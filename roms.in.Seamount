@@ -1,0 +1,73 @@
+title:
+         Flow around isolated Seamount
+
+resolution 48x48
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                43200     300.      19        1
+
+
+ time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                10000     1000.     60       8
+
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                129610     120.      7        1
+
+
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                25920     600.     67        1
+
+
+! resolution 96x96x22
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+              17280      450.     41       1
+
+! resolution 128x128x32
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+              34560      450.     55       1
+
+
+S-coord: theta_s,   theta_b,    hc (m)
+            7.        0.         1500.
+
+initial: nrrec / filename
+           0
+                 restart.nc
+
+restart:  nrst, nrpfrst / filename
+          640      0
+                          restart.nc
+
+
+history: ldefhis, nwrt, nrpfhis / filename
+            T       100     0
+               history.nc
+            T      432     0
+                 history.nc
+
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T    T   T  T    T   T
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL
+                           F   T     T   F    F    F    F
+
+rho0:
+      1000.
+
+lin_rho_eos:  tcoef  T0[deg C]
+                1.       0.
+
+lateral_visc: visc2
+               50.
+
+tracer_diff2: tnu2(1:NT)[m^2/sec for all]
+               0.
+
+vertical_mixing: Akv_bak Akt_bak(1:NT) [m^2/sec for all]
+                 1.0d-3   0.  0.
+
+bottom_drag:     rdrg[m/s],   rdrg2,  Zob[m]
+                 1.0d-3       0.d0    0.01
+gamma2:
+       +1.d0
+
+

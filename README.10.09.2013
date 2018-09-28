@@ -1,0 +1,46 @@
+There is an error in my step2D_FB.F which has been for there for 10+ years,
+which affects all versions of my code since 2003 and all versions of AGRIF
+since 2007.
+
+
+The error is in setting time index "kold" at about line 84 my code (75 in the
+newest version) and at about line 126 in file step2d.F from AGRIF code, search
+for "kold=".
+
+Currently the code is
+        .......
+      else
+        kbak=kstp-1
+        if (kbak.lt.1) kbak=4
+        kold=kstp-2
+        if (kold.lt.1) kold=4
+
+This logic leads to a wrong value of kold=4 instead of 3 when kstp=1, which
+happens once in every 4 barotropic steps.
+
+The correct version should be
+        .......
+      else
+        kbak=kstp-1
+        if (kbak.lt.1) kbak=4
+        kold=kbak-1
+        if (kold.lt.1) kold=4
+
+where only one line changed:       kold=kstp-2  --> kold=kbak-1
+
+The consequences of this error are not severe (this is why it was never
+noticed for very long time at the first place), because effectively it merges
+"kold" with "kbak" r.h.s. terms once in every 4 time steps (when kstp=1, hence
+kbak=kold=4) making it an AB2-AM3 (abet with non-standard, but still sane
+coefficients, resulting in overall stable algorithm) stepping instead of the
+intended AB3-AM4 with modified coefficients.
+
+You would not notice any difference in practice -- the stability limit for
+the barotropic mode 0.87 remains unchanged for all 3D configurations (i.e.,
+when barotropic time step is very small for Coriolis and advection terms to
+play any role in setting the limit). I got a slightly improved stability
+limit for 384x128 soliton problem: dt_max=0.055 --> dt_max=0.061 (which is
+explainable by the fact that handling advection terms is responsible for
+about 25% of the stability limit.
+
+But in any case it is obviously not what was intended and should be corrected.

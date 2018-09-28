@@ -1,0 +1,62 @@
+S-Coordinate Rutgers University Model (SCRUM), Version 3.0:
+
+This ocean model solves the free surface, hydrostatic, primitive
+equations  over  variable  topography  using  stretched terrain-
+following coordinates in the vertical and orthogonal curvilinear
+coordinates in the horizontal.
+Earlier versions of SCRUM are described in:
+
+Song, Y. and D. Haidvogel, 1994: A semi-implicit ocean circulation
+      model using a generalized topography-following coordinate
+      system, J.  Comp.  Physics, 115, 228-244.
+
+The model equations are solved separately for total momentum and
+and  vertically integrated momentum and then coupled.  The total
+momentum and tracer equations are time discretized using a third
+order Adams-Bashforth scheme;  the vertical  viscosity/diffusion
+term is treated  implicitly using a  Crank-Nicolson scheme.  The
+free surface  and  vertically integrated  momentum equations are
+time discretized using a trapezoidal Leapfrog scheme. Horizontal
+and  vertical derivatives are evaluated using finite differences
+on a staggered horizontal C-grid and a staggered vertical grid.
+
+This new version is based on  Dr. Yuhe Song  earlier version and
+the modifications carried out by Dr. Robert Chant which included
+vertical  finite  differences on a  staggered  vertical grid and
+Smolarkiewicz horizontal and vertical advection scheme.  Some of
+advanced features of  SPEM 5.1  were adapted like rotated mixing
+tensors  and  Lagrangian  drifters.  This version was completely
+re-structured and documented by Dr. Hernan G. Arango.
+
+New Features:
+
+  * Vertical staggered grid.
+  * Vertical finite elements are replaced by finite differences.
+  * Option for Horizontal and vertical Smolarkiewicz advection.
+  * Rotated mixing tensors to mix  on constant  z-surfaces  and
+    constant "in situ" density surfaces.
+ * Several vertical closures:
+     (1) Pacanowski and Philander (1981) mixing scheme.
+     (2) Mellor and Yamada (1974) level 2 closure.
+     (3) Mellor and Yamada (1982) level 2.5 closure.
+     (4) Large, McWilliams, and Doney (1994) oceanic planetary
+         boundary layer and ocean interior mixing scheme.
+  * Keen and Glenn (1994) coupled bottom boundary layer model.
+  * Lagrangian drifters.
+  * Analytical and data driven packages for initial conditions,
+    boundary conditions, and forcing functions.
+  * Analytical test examples.
+  * Input/output via netCDF.
+
+Specialists:
+
+  Dr. Hernan G. Arango     (arango@imcs.rutgers.edu)
+  Dr. Robert J. Chant      (chant@imcs.rutgers.edu)
+  Prof. Dale B. Haidvogel  (dale@imcs.rutgers.edu)
+
+  Institute of Marine and Coastal Sciences
+  Rutgers, the State University of New Jersey
+  P.O. Box 231, Cook Campus
+  New Brunswick, NJ 08903-0231
+
+  Copyright (c) 1997 Rutgers University

@@ -1,0 +1,45 @@
+title:
+        Barotropic Wave Radiation test problem
+
+! Stability limit for 384x384 grid is dt=7.4944 (with the fastest
+! mode is checker-bard
+
+! dt=7.48  Cg_max = 0.889 stable (KE+PE --> 8.E-10
+! dt=7.49  Cg_max = 0.8902205 marginally unstable
+
+ time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                 3000      7.40     1   16
+                 3000      5.9493466     1   16
+
+initial: nrrec / filename
+          0
+                 restart.nc
+
+restart:  nrst, nrpfrst / filename
+         99999    -1
+                          restart.nc
+
+
+history: ldefhis, nwrt, nrpfhis / filename
+            T       50     0
+                 history.nc
+
+primary_history_fields: zeta UBAR VBAR
+                          T    T    T
+
+rho0:
+      2000.
+
+
+bottom_drag:     RDRG[m/s],      RDRG2
+                 1.0d-3           0.d0
+gamma2:
+       +1.d0
+
+ubind:
+       0.
+
+nudg_cof: TauM2_in/out  attnM2
+             0.  0.     0.
+
+

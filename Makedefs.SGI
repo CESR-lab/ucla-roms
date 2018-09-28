@@ -1,0 +1,58 @@
+# Platform-specific definitions for SGI PowerChallenge/Origin 2000
+#========= ======== =========== === === ===================== ====
+
+.SUFFIXES: .o .f .i .F
+
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -nocpp -c $(FFLAGS) $*.f
+	/bin/rm $*.f
+.F:
+	$(LDR) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(LDR) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(LDR) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+# Specific for SGI only:
+#   BINARY_TYPE -- binary format for executablefile [n32 or 64]
+#   rii_files  --  directory to store information about common blocks
+#                         for crossreferencing and consistent padding
+#
+
+  BINARY_TYPE = 64
+
+          CPP = /usr/lib32/cmplrs/cpp
+       INCDIR = ../lib$(BINARY_TYPE)
+     CPPFLAGS = -DSGI -I$(INCDIR)
+   COMP_FILES = ./rii_files
+
+
+          CFT = f77 -r8 -$(BINARY_TYPE) -mips4 $(CPPFLAGS)
+#                 -TARG:platform=ip21:processor=r8000:madd=ON
+          LDR = $(CFT) 
+
+       FFLAGS = -O3 -TENV:X=3 -OPT:alias=restrict -mp -MP:open_mp=ON
+
+#     FFLAGS = -g -static -DEBUG:div_check=3:subscript_check=ON:trap_uninitialized=ON:verbose_runtime=ON
+
+#      FFLAGS = -O3 -OPT:fold_arith_limit=2000 -TENV:X=3
+#                   -OPT:Olimit=0:pad_common=OFF:reorg_common=OFF
+#                   -OPT:fold_arith_limit=2000
+#                   -GCM:aggressive_speculation=ON
+#                   -SWP:=on:trip_count=2
+#                   -TENV:large_GOT=ON -avoid_gp_overflow
+#                   -LNO:opt=0
+
+      LDFLAGS = -mp -mpio -mp_schedtype=simple
+#                   -non_shared
+         LCDF = $(INCDIR)/libnetcdf.a
+         LMPI = -lmpi
+
+      LIBNCAR = -L$(NCARG_ROOT)/lib -L/usr/local/lib -lncarg -lncarg_gks -lncarg_c -lX11
+
+      COMP_FILES = rii_files

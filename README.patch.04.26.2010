@@ -1,0 +1,296 @@
+
+There are few updates to the code; one is serious (a bug-fix) others are
+mainly revision of startup procedures.
+
+Attached .tar file contains several ROMS files. Expand it first in a temporal
+directory to avoid overwriting.
+
+If you did not mess with the files listed below (true for most people, since
+the files are mainly I/O related) simply replace files (save backup copies if
+you want to).   I also provide enough detail to allow copy-pasting the
+substantial changes (but not all the changes). [For Yusuke it is a bit more
+complicated because sediment/wave data is part of restart, so we have to sit
+together and reconcile the restart procedures]. 
+
+[update of checkdims.F is new for everyone except Jaison, to whom I updated
+some of my modifications (but not exact restart) quite sometime ago.] 
+
+
+
+
+
+
+
+
+Files involved:
+
+       set_depth.F   <-- bug fix
+
+       set_scoord.F  <-- minor updates to improve printout and
+                         diagnostics (this is not a bug fix; nor
+                         any change in model results caused by
+                         the update) 
+
+
+       ncvars.h   get_initial.F def_rst.F  def_his.F   <-- update restart
+       wrt_rst.F  wrt_grid.F    wrt_avg.F  wrt_his.F   <-- procedures
+
+       checkdims.F  <-- introduce/enforce consistency check of vertical
+                        transform between the current model settings
+                        (roms.in + CPP switches) and input netCDF files; 
+
+       nf_fread.F   <-- error diagnostics 
+
+
+
+
+
+1. file "main.F", comment only: at the beginning of subroutine roms_step
+   find lines 
+
+                                !--> increment time index and clock
+      iic=iic+1
+      .....
+
+   and replace the commentary with:
+
+! Increment time-step index and set model clock. Note that "time" set 
+! below corresponds to step "n" (labelled as "nstp"),  while counter
+! "iic" corresponds to "n+1", so normally, assuming that time is 
+! counted from zero, the following relation holds: time=dt*(iic-1).  
+!  Also note that the output history/restart/averages routines write 
+! time and all the fields at step "n" (not n+1), while the first 
+! element of structure "time_index" written into the files is actually 
+! iic-1, hence normally time=time_index*dt there.  Same rule applies 
+! to the diagnostic routine "diag" which prints time and time step 
+! (actually iic-1) on the screen.
+
+
+  ...yes, this is just a commentary and it does not affect any output
+
+
+
+
+
+
+2. file "set_depth.F", subroutine set_HUV1_tile,  look for the expressions
+   involving  "DU_avg2(i,j) and "DV_avg2(i,j)", hence find loops
+
+       .....
+          do i=istr,iendR
+c??         FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0)
+c>          FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
+
+            FC(i,0)=( FC(i,0) -2.*DU_avg1(i,j)
+     &                     +DU_avg2(i,j) )/DC(i,0)
+          enddo
+        ....
+
+and
+          .....
+            do i=istrR,iendR
+c??           FC(i,0)=(FC(i,0)-DV_avg2(i,j))/DC(i,0)
+c>            FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
+
+              FC(i,0)=( FC(i,0) -2.*DV_avg1(i,j)
+     &                       +DV_avg2(i,j) )/DC(i,0)
+            enddo
+          ......
+
+
+This is actually a bug because during startup from a non-rest initial
+condition DU_avg2(i,j)) and DV_avg2(i,j) are not initialized properly
+(they are set to zero by "init_arrays" and never assigned meaningful
+values thereafter).   The outcome of this error is non-exact restart,
+if the exact restart is requested, and actually some kink during simple
+forward restart using a single-record file.
+
+THIS MUST BE CORRECTED REGARDLESS OF ANYTHING ELSE.
+
+Either substitute the file, or copy-paste the following:
+
+
+       if (FIRST_TIME_STEP) then                         <-- new
+          do i=istr,iendR                                <-- new
+            FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)       <-- new
+          enddo                                          <-- new
+        else                                             <-- new
+          do i=istr,iendR
+c??         FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0)
+c>          FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
+
+            FC(i,0)=( FC(i,0) -2.*DU_avg1(i,j)
+     &                     +DU_avg2(i,j) )/DC(i,0)
+          enddo
+        endif                                             <-- new
+
+and 
+
+          if (FIRST_TIME_STEP) then                       <-- new
+            do i=istrR,iendR                              <-- new
+              FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)      <-- new
+            enddo                                         <-- new
+          else                                            <-- new
+            do i=istrR,iendR
+c??           FC(i,0)=(FC(i,0)-DV_avg2(i,j))/DC(i,0)
+c>            FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
+
+              FC(i,0)=( FC(i,0) -2.*DV_avg1(i,j)
+     &                       +DV_avg2(i,j) )/DC(i,0)
+            enddo
+          endif                                           <-- new
+
+
+SEVERITY OF THIS ERROR:  Because normally FC in the r.h.s. (at input
+in the loop above), DV_avg1, and DV_avg2 are all expected to be close
+to each other, the procedure in the loop above should evaluate their
+difference and compute correction term to modify u,v(:,:,:,n+1/2) in
+such a way that their vertical integrals match forward-extrapolated
+fast-time-averaged fluxes.  Instead, during corrector stage of the
+first time step, DV_avg2=0 (because no barotropic mode has been run
+yet) the computed correction FC is mainly -DV_avg1/DC, and [see the
+following loop where FC is applied to u,v(:,:,:,nnew)] resulting in
+enforcing vertical averages of u(:,:,:,nnew) be equal to 2*DU_avg1
+instead of the desired  2*DU_avg1-DU_avg2.  Because these
+u,v(:,:,:,nnew) are used only for computing r.h.s. advection terms
+for 3D momentum equations, this results on O(dt) error during startup
+(i.e., some terms in r.h.s. are twice as large, and, as the result
+ u^{n+1}=u^n + dt*r.h.s._u^{n+1/2} admits O(dt) error). The error
+is practically not observable. 
+
+
+Fluxes for tracer advection are not affected (even during the starting
+time step) because tracer update takes place after barotropic mode
+using updated u,v velocities and coupling takes place again. 
+
+All subsequent time steps work correctly.
+
+
+NOTE: originally EXACT_RESTART was designed to use the commented-out
+lines
+
+c>             FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0) 
+
+c>             FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
+
+where no extrapolation of barotropic components occurs and no use of
+DU,V_avg2.   The extrapolation was introduce later, and I discovered
+this error while investigating why I am not getting exact restart
+(passing ETALON_CHECK) any more.
+
+REMEDIES:  1. introduce logic in set_HUV1_tile to avoid DU,V_avg2 at the
+              first (meaning starting from the very initial condition);
+              and  
+
+           2. revise EXACT_RESTART procedure: DU,V_avg2 cannot be, in
+              principle, computed from variables normally saved in
+              restart file, and therefore must be stored.
+
+           
+
+3. files    ncvars.h   get_initial.F def_rst.F  def_his.F
+            wrt_rst.F  wrt_grid.F    wrt_avg.F  wrt_his.F   
+
+
+   are modified to update exact restart procedures.
+
+   The update is three-fold:
+
+        1. change meaning of the first element of structure "time_step"
+           in global attributes in roms output files, restart, history,
+           and averages.  The fist element stores time step number at
+           which the data is stored.  The change is to make it more
+           intuitive, i.e., if time=0 at the very beginning of the run,
+           then, as stored in the netCDF file,
+
+                           ocean_time = dt*time_step(1)
+
+           [previously time_step(1) was offset by 1, which makes a more
+           counterintuitive relation
+
+                          ocean_time = dt*(time_step(1)-1)
+
+           which was merely the outcome of just saving current iic into
+           time_step(1) and and the fact that ROMS output data at the
+           early stage of time stepping procedure, which is motivated by
+           convenience and the desire to minimize synchronization events.
+ 
+           Since time_step(1:4) is needed only to restart ROMS stepping
+           and automatic numbering of output files in the sequence, it do
+           not expect any side-effect due to this change as long as all
+           the files are updated consistently, with the exception of 
+           situation when restarting runs using updated code, but old
+           restart file: ==> the time step numbers in the restarted run
+           will be offset by 1.
+
+
+
+        2. Saving/reading DU,V_avg2 to/from restart files.
+
+           The updated procedure is implemented in "soft" way, i.e., if
+           exact restart is requested, the code checks that all necessary
+           data is available, if if not, it reverts to forward time step
+           during restart [a warning message will be issued]
+
+
+       [3.]  various editings in diagnostic messages in handling
+             netCDF errors: basically more intuitive printout.
+
+                  
+
+
+
+ncvars.h introduce two new variables 
+
+# ifdef EXACT_RESTART
+      integer rst_DU_avg2, rst_DV_avg2
+      common /ncvars/ rst_DU_avg2, rst_DV_avg2
+# endif
+
+
+get_initial.F  multiple changes for all the 3 reasons outlined above,
+               especially controlling logic deciding whether exact
+               restart is possible.
+
+
+
+def_rst.F  introduced netCDF variables DU,V_avg2 and saved their IDs.
+            
+
+
+wrt_rst.F  ---> changed  ibuff(1)=iic   into
+
+      ibuff(1)=iic-1
+      ibuff(2)=nrecrst
+      ibuff(3)=nrechis
+#ifdef AVERAGES
+      ibuff(4)=nrecavg
+#else
+     .....
+
+          -->   introduced saving DU,V_avg2
+          -->   changed netCDF error diagnostics in several places
+
+
+
+wrt_his.F wrt_avg.F  --> just changed    ibuff(1)=iic   into
+
+      ibuff(1)=iic-1
+     .....
+                         similar to wrt_his.F
+
+
+
+
+checkdims.F  --> introduced two new functions:  check_scoord and
+                 read_nc1dat; these are needed to enforce S-coord
+                 transform consistency: now if there is a conflict
+                 between roms.in and netCDF data regarding vertical
+                 coordinate, the code with print error message and
+                 quit instead of running. 
+
+
+nf_fread.F   edited netCDF error messages; not crucial
+
+
+

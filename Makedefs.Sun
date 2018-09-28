@@ -1,0 +1,32 @@
+# Header makefile: Sparc/Sun/Ultra version.
+
+.SUFFIXES: .o .f .i .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) $*.f
+	rm $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+               CC = cc
+              CPP = /usr/ccs/lib/cpp
+              CFT = f77 
+              LDR = $(CFT) 
+
+           INCDIR = ../lib_Sun
+         CPPFLAGS = -DSUN -I$(INCDIR)
+#           FFLAGS = -g -C
+           FFLAGS = -xtypemap=real:64,double:64,integer:32 -O4
+
+          LDFLAGS =
+
+           LCDF = $(INCDIR)/libnetcdf.a
+
+

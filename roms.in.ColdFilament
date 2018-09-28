@@ -1,0 +1,55 @@
+title:
+         Cold Filament 
+
+time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                601     120       67     8 
+
+
+history: ldefhis, nwrt, nrpfhis / filename
+            T      1     0
+                 his.nc
+
+S-coord: theta_s  theta_b  hc[m]
+             3.     0.     200.
+
+initial: nrrec / filename
+            0 
+            init.nc
+
+restart:  nrst, nrpfrst / filename
+           14400    -1
+                          restart.nc
+
+
+
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T    F   T  T    T
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt
+                           F   T     F   F    F
+
+rho0:
+      1000.d0
+
+lin_rho_eos:  Tcoef  T0[deg C]   Scoef   S0
+               0.2        0.       0.    0.
+
+lateral_visc: visc2[m^2/sec]
+               0.  !!! 50.
+
+tracer_diff2: tnu2(1:NT)[m^2/sec]
+               0.d0  0.d0
+
+vertical_mixing: Akv_bak Akt_bak(1:NT)  [m^2/sec for all]
+                   0.       0. 
+
+nudg_cof: TauM2_in/out attnM2 TauM3_in/out TauT_in/out [days for all]
+            0.1  1.     0.01      0.1 1.      0.  0.
+
+
+bottom_drag:     rdrg[m/s]   rdrg2   Zob[m]
+                    0.         0.     0.
+gamma2:
+       +1.d0
+
+

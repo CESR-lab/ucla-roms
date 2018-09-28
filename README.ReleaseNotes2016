@@ -1,0 +1,486 @@
+Cumulative summary ROMS code changes:   [ Partial, because not everything
+========== ======= ==== ==== ========     I have changed is covered below,
+                                          but most notable features are. ]
+
+In comparison the most recent, 2013/14 versions the mathematical kernel
+(time stepping and splitting algorithms) received the following changes:
+
+-> Adaptively implicit vertical advection was finalized in We-Wi splitting
+   algorithm in "omega.F" regarding the CFL budgeting between horizontal (2D)
+   and vertical directions [note that it is different than in 2013 version and
+   it is reflected in Appendix C and D of the published article] as well as
+   coefficient settings for the thresholds; This is expected to be stable for
+   some time from now.
+
+-> more flexible splitting of Coriolis and Advection terms between barotropic
+   and baroclinic modes, e.g., now it is possible to keep recomputing of
+   Coriolis terms at every barotropic time step, while not doing so for
+   advection and curvilinear metric. This is regulated by EXTRAP_BAR_FLUXES 
+   and KEEP_CORIOLIS (meaningful setting are undef/undef; def/undef; def/def);
+   The EXTRAP_BAR_FLUXES algorithm is redesigned to use 4-time-slice (vs. 2-
+   before) Adams-Bashforth-type extrapolations, resulting in adding two extra
+   arrays, DU_avg_bak,DV_avg_bak, to save weighted sums of previously-computed
+   fast-time-averaged barotropic fluxes.  In practice this significantly
+   affects stability of the model at course and intermediate resolutions
+   where Courant numbers based on Coriolis frequency, dt*f, is not small, say
+   for time step setting dt=2000 seconds and above.   DU_avg_bak,DV_avg_bak
+   are computed in step2D_FB.F and are used in set_depth.F.  The associated
+   coefficients are semi-stable at this time and a new article is now being
+   written.  Because of the different nature of DU_avg1 vs. DU_avg2 (i.e., 
+   quasi-instantaneous value" vs. interval-averaged between consecutive time
+   steps), these coefficient does not mathematically fit into any known
+   stepping algorithm, and the whole thing is kind of new.
+
+   This change triggers revision of EXACT_RESTART procedures (as now fields
+   DU_avg_bak,DV_avg_bak needs to be saved and read by get_init.F to achieve
+   exact restart).
+
+-> bulk_flux routine added recently. The plan is to get both COAMS and COARE
+   working, but thus far it is only COAMS. And it was run/tested only once.
+
+   The intent here is to make as straightforward data processing as possible.
+   Thus, all temporal interpolations are integrated into the main subroutine,
+   rather than relying on set_something routines.
+
+-> sea-surface-salinity restoring (CPP-switch SFLX_CORR) now expressed in
+   terms of user-specified "piston velocity" (via keyword SSS_correction in
+   roms.in, dimensioned in cm/day with "reasonable" values of order of 3 ...
+   10 cm/day or so).  This is more in line with climate modeling practices,
+   secifically CORE, http://www.clivar.org/clivar-panels/omdp/core-1
+
+   It should be noted that the previous ROMS practices of specifying it via
+   relaxation time (say 30 or 90 days) implicitly couple it to the vertical
+   length scale tied to the top-most grid-box height, which is spatially
+   variable in unclonrolled manner (depens on topography due to nature of
+   sigma-cordinate), as well as sensitive to change in vertical number of
+   grid points and setting of "hc".
+
+   At the same time, it was realized that applying "dqdt" rate of relaxation
+   to salinity (a typical practice in Agrif ROMS) results in way too strong
+   relaxation, as typical values of "dqdt" expressed in kinematic units (that
+   is rescaled by Cp and water density) are too strong -- about 70 cm/sec at
+   maximum, and having spatial distribution with little physical motivation.
+
+
+-> side boundary condition now use "binding velocity" instead of relaxation
+   times tau_in/tau_out specified in roms.in.   This applies only to the normal
+   component of baroclinic velocity (traditionally for UCLA ROMS tau_in/tau_out
+   are specified for both velocities and tracers, and subsequently ignored,
+   since for tracers and velocity components tangential to open boundary the
+   propagation speed is just advection, rather than Orlanski phase speed, so
+   in the case of inflow in-bound velocity sets the rate of change of advected
+   quantity at the row of boundary points.  Normal velocity component in 3D
+   part still uses Orlanski algorithm (motivated by letting internal waves
+   propagate freely out of the domain), so signals propagation phase speed
+   is not necessarily equivalent to advection.  The effect of specifying
+   tau_in/tau_out implicitly depends on the width of grid cells adjacent to the
+   boundary, and, as the result, users must adjust the values of tau_in/tau_out
+   when going to a finer grid for the same physical problem.  Specifying in in
+   terms of "binding velocity" is self-scaling in this sense,
+
+                            u_bind = dx/tau_in
+
+   and, roughly (as a rule of thumb) speaking, u_bind should be comparable
+   to the rate of incoming advection.
+
+   Overall this should be viewed as a stop-gap measure: the goal is to develop
+   an algorithm which does not rely on user-supplied parameters at all. 
+
+   All boundary routines were extensively edited to straighten up  CPP logic,
+   but this does not change them mathematically (other that stated above).
+
+
+
+
+Stylistic changes
+--------- --------
+As of July 2013 the entire code is converted to use Fortran-90-style
+declarations and logical expressions.
+
+   
+
+FORTRAN 2003 standard compliance:
+------- ---- -------- -----------
+Intel FORTRAN compiler allows automatic checking of consistency of arguments
+for functions and subroutines between the calling program and the function or 
+subroutine itself.  This is activated by setting
+
+ FFLAGS = -warn all -g \
+ -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
+
+and compiling the code twice:
+
+  make ; make clean; make
+
+During the first time compiler automatically creates interfaces for each
+function or subroutine it compiles; during the second, it checks each call
+to function against the interface and produces error messages in the case
+of inconsistencies, e.g., number and types of argument, length of arrays,
+etc. Obviously this is useful, but unfortunately somewhat over-restrictive.
+It flags silly  situations like
+
+   real cff                  
+   call sub(cff, 1)  !<-- passing a scalar variable as array of length 1
+   end
+
+   subroutine sub(A,N)
+   integer N
+   real A(N)
+   ....
+   end
+
+and reports them as errors. It also flags situations where length of 1D array
+in calling program overshoots its size in callee (fortunately it still accepts
+interpreting one-dimensional array as multidimensional inside a subroutine).
+
+For example, in older versions if ROMS code, this occurs when compiling
+checkdims.F: the use  of read_nc1dat causes compilation errors like this
+
+                    ierr=read_nc1dat(ncid, fname, 'theta_s', 1,  tst_val)
+                    -------------^
+              checkdims.f(1144): error #8284: If the actual argument is
+              scalar, the dummy argument shall be scalar unless the actual
+              argument is of type character or is an element of an array
+              that is not assumed shape, pointer, or polymorphic.  [VALUE]
+
+
+     In essense, the routine is designed to expect an array "val" (the last
+     argument) of a given size N (one-before the last) and, as one might think,
+     it would be OK to pass a scalar variable instead of an array and specify
+     its length as 1. However the compiler regects this. 
+
+
+So I have to change the code in few dozen places. In all but one cases the
+procedure is simple enough: activate the flag and see where it complains --
+the remedies are self obvious. The most significant change is replacing
+
+           ierr = nf_fread(A, ncid, varid, record, type)
+with
+           ierr = ncdf_read(ncid, varid, record, horiz_type, A, nmax)
+
+The functionality is the same, but the difference is that ncdf_read has one
+more argument because vertical dimension is no longer encoded into grid-type
+argument "type", but is passed explicitly and appears as vertical dimension
+of array A in declaration inside ncdf_read.  This is what compiler wants --
+explicit dimension which it can check. (I deliberately changed name of the
+routine  rather than just add an argument to be able to search and make sure
+that none of the old remains; also made order of arguments be more in line
+with netCDF semantics). It involves replacing the three files
+
+          ncdf_read_write.F   nf_read_bry.F   compute_starts_counts.h
+
+as a set; .  The first one replaces "nf_fread.F", which becomes obsolete,
+so also edit Makefile and replace "nf_fread.F" with "ncdf_read_write.F", as
+well as search-and-replace all calls nf_fread/nf_fwrite with ncdf_read/
+ncdf_write whereever they are called (the function names have been changed
+deliberately to avoid accidental use and mix-ups).
+
+Note that tools are kept to 2003 standard compliance for some time already;
+
+
+
+
+
+Compatibility with Cray Fortran compiler, XC30 series
+------------- ---- ---- ------- --------- ---- -------
+In July-August 2015 I had chance to get access to UK National Supercomputer
+service ARCHER,  http://www.archer.ac.uk/  and able to run my code there using
+their native Cray Fortran.   This require several minor adaptation to the code,
+primarily because certain Fortran extension features commonly supported by most
+compilers (Ifort, Gfortran, PGF, IBM XLF, etc...) are not supported by Cray.
+Since the use of these extensions is not critical, it was eliminated altogether
+and replaced with more standard.  The only notable change stemming from this is
+replacement of  "etime" (dated back to SGI glorious days) with "cpu_time" which
+is now part of F90 standard intrinsics, and it does seem work for all other
+compilers as well.
+
+This applies to both ROMS code itself and tools.
+
+
+
+
+
+Major redesign of netCDF I/O for forcing field input
+----- -------- -- ------ --- --- ------- ----- -----
+I modified input for reading forcing data in my ROMS code to essentially make
+it easy to adjust to receive all kind of data. I studied both Rutgers ROMS and
+AGRIF with respect to  this matter and found that I do not like the approach
+in dealing with it in both of them:
+
+AGRIF essentially follows my approach to generate individual get_smflux.F,
+get_stflux.F, get_sst.F, ... etc routines (which are self-initializing, and
+requiring very little user book-keeping in the main code, and therefore "smart"
+in this sense -- just place one call when data is needed, no input arguments
+except error flag).  The dilemma is that they start multiplying like rabbits
+when someone wants to add a submodel requiring a new forcing input.
+Now AGRIF  comes with get_bulk.F routine, which is, indeed, bulky, but is
+actually not flexible at all -- all the input fields share the  same timing
+variable, but in the case of Drakkar the timings are different.
+
+Rutgers/Hernan's approach is very different: to create a generic routine,
+like get_2dfld.F, but the problem with this is that it creates is way too
+much book-keeping, relying on ever-growing catalog of possible data inputs
+(e.g., file "varinfo.dat" now over 5000 lines long, and after all ...it is
+still too difficult to add ad new type of input -- the code needs to be
+consistently modified in several places in different files.
+
+       I could not eat the perspective of having something
+       like get_bulk.F of AGRIF, or adding a half-a-dozen
+       other get_multiplying_rabbits.F, not to have a sort of
+       5,000-line long "varinfo.dat".
+
+So, after some consideration, I decided to keep the individual routines
+(as before), but instead of having individual FORTRAN files for them, make
+one generic template, and use CPP to create multiple different ones.
+
+       After all this is what all people in UCLA and AGRIF community do
+       any way: if a new input type is needed, copy whatever subroutine
+       among the available is the closest one to what is needed and edit
+       it to mainly change variable names as needed. This manual editing
+       in now replaced with CPP.
+
+Thus:
+
+    get_smth.F  -- template. It is not a ready-to-compile FORTRAN file, but
+                   is designed to be compiled within a certain environment;
+
+  get_forces.F  -- assembly platform where "get_smth.F" is included multiple
+                   times with redefined variables;
+
+      forces.h  -- compartmentalized set of common blocks: a designated
+                   CPP-switch needs to be defined to access each particular
+                   section,
+
+All reconfigurable variable names, and algorithm are described in
+the preamble Of get_smth.F, so there is no need to repeat it here. 
+
+Why not to create a generic subroutine? (like, say, Hernan did)
+There are few reasons:
+
+    1. Bulky Fortran code in calling routine (get_forces.F in my code)
+       equivalent because of large number of arguments unavoidably needed
+       by the generic routine ;
+
+    2. Lack of flexibility: variable number of arguments is required -- say,
+       there are situations where more than one field share the same timing
+       variable, like wind stress components u,v.  One way to address this
+       it to rely on advanced F90 features -- optional arguments to
+       a subroutine. This, in its urn leads to keyed subroutine arguments,
+       and as the result, much more verbose Fortran code;
+       In contrast, CPP-redefined template can handle variable number of
+       input fields in a straightforward way: if the second-, third-, etc.
+       fields are not needed, the code to handle them is removed  by CPP.
+
+
+    3. Robustness with respect to typo errors: by the design misspelling
+       a macro in  get_forces.F 100% leads to compilation error (include
+       file "forces.h" is compartmentalized for this reason) as opposite
+       to run time error;
+
+    4. No need for catalog file or catalog array (e.g., see 3000-line
+       init_scalars.F from  AGRIF code); In contrast, CPP consistently
+       inserts character strings, which otherwise should be kept as
+       variables or parameters, assigned values, and computed length.       
+
+Thus, the way to create a new routine read a netCDF file, one just needs to
+
+  (i) create a block in forces.h using other block as template
+                                  (about 10 lines of code) and;
+ (ii) create an entry in get_forces.F with re-defined character strings
+      matching variable names in the netCDF file it intended to read, and
+      variable names matching the ones in the newly created block in
+      "forces.h". again, about 15 lines added.
+
+The template get_smth.F practically never needs to be modified.
+
+An immediate advantage of having just one get_smth.F (as opposite to
+multiple get_smflux, get_sst, get_swrad, etc...) is that get_smth.F can
+be made very reach in diagnostics and report for all kind of error conditions
+because its code complexity is no longer needs to be compromised with its
+maintainability: in contrast, adding more checks into to multiple routine
+leads to a harder to maintain and modify code.  
+
+Currently all input 2D fields are handled by the template mechanism;
+
+The only left outside are get_stflux.F (because of having index itrc),
+and 3D climatological data (this practice is semi-obsolete any way).
+
+
+Multiple sequential forcing files
+-------- ---------- ------- ------
+The model can now handle it: suppose one needs to run a model using thousands
+of input record of high-frequency wind forcing, so it is not practical to put
+them into a single file. Then
+
+forcing: 
+   wind_year1.nc
+   wind_year2.nc
+   wind_year3.nc
+   wind_year4.nc
+   wind_year5.nc
+     heat_year1.nc
+     heat_year2.nc
+     heat_year3.nc
+     heat_year4.nc
+     heat_year5.nc
+
+whatever.
+
+See "pacific.in" for an example.
+
+The basic rule is that files OF THE SAME KIND corresponding to earlier time
+should appear earlier in the list, but other than that it is pretty much does
+not matter, e.g.,  
+
+forcing:  
+   wind_year1.nc
+     heat_year1.nc
+   wind_year2.nc
+     heat_year2.nc
+   wind_year3.nc
+     heat_year3.nc
+   wind_year4.nc
+     heat_year4.nc
+   wind_year5.nc
+     heat_year5.nc
+
+
+yields the same result; and even semi-randomized
+
+forcing:  
+     heat_year1.nc
+   wind_year1.nc
+   wind_year2.nc
+     heat_year2.nc
+   wind_year3.nc
+     heat_year3.nc
+   wind_year4.nc
+     heat_year4.nc
+   wind_year5.nc
+     heat_year4.nc
+
+is still OK.  Basically the logic of template get_smth.F is designed 
+in such a way that if it searches for wind, in ignores all files which
+do not contain wind variables, and vice versa. 
+
+TO DO: Making code accept wild cards instead of long lists of input
+       files is considered, but no action yet. 
+
+
+
+Error signalling and termination procedures
+----- ---------- --- ----------- -----------
+Because ROMS is an MPI code, one cannot simply quit a process when a netCDF
+reading/writing error occurs.  Instead it has to go through orderly shut down 
+procedure.  In ROMS it is done by reduce-broadcast sequence of "may_day_flag"
+implemented in diag.F.  This means that once a netCDF I/O error occurs in a
+particular subroutine, the code nevertheless proceeds with normal business 
+(just setting may_day_flag to nonzero in the subroutine where error occurs,
+but doing nothing about it until a certain moment -- this is when diag.F
+called, and once it occurs, there is a guarantee that may_day_flag has
+the same value for all MPI processes, so it is nonzero execute shut down
+sequence ending with MPI_Finalize().  This is the rationale.
+
+Unfortunately it is not as simple:  a code like (say get_forces.F all
+previous versions, but not the current):
+
+      ierr=0
+      if (ierr /= 0) call sub1(ierr)
+      if (ierr /= 0) call sub2(ierr)
+      if (ierr /= 0) call sub3(ierr)
+      if (ierr /= 0) call sub4(ierr)
+      if (ierr /= 0) may_day_flag=2
+
+where sub1, sub2, ... etc contain netCDF call and may set error flag.
+
+Now suppose an error occurs inside sub3 and it sets error flag. As the result,
+sub4 is not called at all.  The problem with it is that besides reading netCDF
+file, sub4 may have (and, in fact, has) some other duties, like initializing
+array indices. They remain uninitialized. The problem with this is that while
+after an error in sub3 there is no hope that program will proceed normally,
+uninitialized indices (and other unfulfilled duties) in sub4 will still be used
+as input in subsequent code (like interpolation of 2D forcing fields which were
+never read) -- remember, the program "proceeds as usual" despite the error,
+until the nearest call to diag.F occurs, and only after that termination
+procedures begin.  This in its turn may causes a an avalanche of secondary
+errors (up to segmentation faults), and correspondingly, warning and error
+messages, making it much harder to determine the original cause.
+
+Now all get_init, get_something are inspected and redesigned to insure that
+logically everything gets initialized even in the case of netCDF errors, and
+the sequence above becomes 
+
+      ierr=0
+      call sub1(ierr)
+      call sub2(ierr)
+      call sub3(ierr)
+      call sub4(ierr)
+      if (ierr /= 0) may_day_flag=2
+
+where sub1,sub2,sub3,sub4 are designed to "not touch" the signal variable
+unless
+          (i) ierr=0 at their entry;
+    AND
+         (ii) an error occurs inside.
+
+Thus, in the case of successful execution of all four ierr=0 at the very
+end NOT because they actively return non-zero status, but because they did
+not touch "ierr" at all, so it retains its initial value which is zero;
+
+If errors occur, say in sub2 and sub3, then these particular routines print
+their error messages, may_day_flag will be set to status corresponding to the
+nature of error in sub2; (sub3 will not touch it, despite having error on its
+own); sub4 executes normally; and nobody downstream will complain.  
+ 
+This is the rationale to be followed.
+
+
+Error message format
+----- ------- -------
+
+      ### ERROR: issuing_subroutine_name :: message
+
+now used uniformly throughout the entire code. The intent is to facilitate
+finding the place where the very first error occurs.
+
+An effort is made to reduce verbosity of messages in order to avoid clutter
+in parallel code standard output.  Occasionally messages potentially useful
+for debugging are enclosed into #ifdef VERBOSE ...#endif, which is usually
+kept undefined.
+
+
+
+Automatic self-documentation
+--------- ---- --------------
+It always been an intent to create a code capable to automatically track and
+save its own configuration (composition of source file names and CPP settings)
+without any effort from the user. This is done by creating two signature
+strings, SRCS and CPPS, which are automatically saved as global attributes
+into all netCDF files created by the code.  Later, if a question arise, it is
+always possible to reconstruct the conditions of the specific run by looking
+at these signatures.  The automatic tracking mechanism involves a special
+programs which reads "cppdefs.h", identifies and catalogs all CPP switches
+(both defined and used) and creates a subroutine (source code file) to track
+them, which is then compiled in into ROMS executable. This way, if a user
+wants to create brand-new, previously unknown switches, they also will be
+tracked automatically as long as they appear in "cppdefs.h". Another program
+reads Makefile and created another subroutine to track the source code file
+list. This subroutine is also compiled in into the executable.  Should user
+create his own source files (previously unknown) and add them into Makefile,
+this will the recorded as well without any additional steps from the user. 
+Both mechanisms are known to work for over a decade in UCLA and AGRIF codes. 
+
+At the same time, it is a policy of UCLA ROMS to prevent excessiveness of
+the scope for CPP switches by defining them locally in the files where they
+are needed, and making then invisible to the rest of the code.  Say,defining
+a main switch LMD_KPP enables compilation of the relevant routine as a whole
+(otherwise a trivial sub routine is created), while dependent CPP-switches
+relevant only to KPP routine are controlled/defined/used privately within
+the file where they have effect, rather than globally in "cppdefs.h".
+This, however, circumvents the tracking mechanism described above, but, as
+just stated, it is undesirable to move definition of these switches into
+"cppdefs.h" and/or "set_global_definitions.h". So to keep track of them, every
+file which contains privately-defined CPPs is supplemented by a subroutine to
+track their status. The format of CPPS signature is therefore updated into
+CPPS="<filename1> SWCH1 SWCH2 SWCH3 <filename2> SWCH5 SWCH6 SWCH7 ..."
+indicating that SWCH1,2,3 belong to filename1, and 5,6,7 to filename2.

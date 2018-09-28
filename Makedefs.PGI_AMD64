@@ -1,0 +1,55 @@
+# Definitions for AMD 64-bit Opteron computer using Portland Group
+# compiler. Setup by Xavier Capet, capet@atmos.ucla.edu.
+#
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+#/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+#
+# Meaning of compiler optimization flags for PGI compiler:
+# -mp    activates processing of Open MP directives;
+# -pc 80 (other possibilities 32 and 64) directs compiler to utilize
+#        the extended precision arithmetics on IA-32 platform by
+#        using the full length of its 80-bit registers. In this case
+#        bits 0-63 are used for the significand, bits 64-78 for the
+#        exponent, and bit 79 for sign (the extended 80-bit real
+#        format).  Roundoff to the standard 64-bit length (53-bit
+#        precision significand) occurs at the stage when results
+#        leave the registers. This flag is synonymous to IFC -pc80.
+#
+# -tp k8-64 optimisation flag for AMD 64 bits platform (opteron,
+#        athlon ...). 
+#
+# -mcmodel=medium  has to be present if the job needs 2GB of memory
+#        or more keeping it activated for small jobs results in loss
+#        of efficiency but the job will run ok. Note that netcdf
+#        library has to be compiled with this flag as well for
+#        successful linking (if job is over 2GB). 
+
+      CPP = /lib/cpp -traditional
+ CPPFLAGS = -DPGI
+
+      CFT = pgf90 -pc 80 -mp
+      LDR = $(CFT)
+
+   FFLAGS = -tp k8-64 -mcmodel=medium -O4 -fast -fastsse unroll=n:4 vect=sse,assoc
+
+COMP_FILES =
+
+
+   LCDF =../libn64_3.6.0-p1/libnetcdf.a
+

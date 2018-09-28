@@ -1,0 +1,103 @@
+The second aspect of this problem --- interference between computation
+of 3D--> baroclinic mode forcing term and the restart of barotropic mode
+--- is a more serious issue because it all ROMS codes (UCLA, Rutgers,
+Agrif) are affected by this issue.
+
+
+The problem comes from the fact that full 3D pressure gradient term
+is computed assuming that free-surface elevation is exactly at time
+step "n", while the r.h.s. of 2D at the first barotropic time step is 
+computed from free-surface updated by the first barotropic time step.
+As the result, when fully computed r.h.s. of 2D mode is subtracted
+from vertically integrated r.h.s. of 3D, 
+
+
+          rufrc(i,j) = rufrc(i,j)-rubar(i,j)
+          rvfrc(i,j) = rvfrc(i,j)-rvbar(i,j)
+
+
+the resultant forcing term implicitly contains the difference of
+barotropic pressure gradient terms computed by 3D and 2D modes,
+which contains error due to different time-placement of free surface. 
+Specific errors in time-placement are: 
+
+   0.5*dt/ndtfast  --- Rutgers (all versions); Agrif (except corrected)
+
+   (1./3.)*dt/ndtfast   --- UCLA step2D_LF_AM3.F
+
+   dt/ndtfast   --- UCLA step2D_FB.F
+
+
+The motivation to use updated free-surface during the first barotropic
+step comes from the desire to construct a stable startup algorithm, for
+example, in FB version a backward step for pressure gradient is the only
+alternative because the first step for free surface is always forward
+Euler.  Changing backward step to forward would completely eliminate
+the error in computation of coupling term, but it brings another source
+of instability on its own.  Overall stability of the whole code depends
+on total balance of between this startup instability and numerical
+dissipation during subsequent stable steps and dissipation by fast-time
+averaging filter.  One way or the other (admitting unstable startup or
+coupling error), this leads to unstable code in the case when
+mode-splitting ratio "ndtfast" becomes small. Choosing more dissipative
+weights always helps, but degrades accuracy (this matter was discussed
+previously on this board under "Time-averaging of barotropic fields
+and Power Law Filter").
+
+
+This is a lesser problem in the case of LF-AM3: it is just a matter of
+re-tuning of coefficients, because a perfectly stable algorithm can be
+obtained modified Runge Kutta (RK2) scheme,  Eqs. (2.18)-----(2.20)
+by setting beta=0, epsilon=1, which result in stability limit of 2
+(with characteristic equation exactly the same as of classical FB ---
+not bad at all), and no coupling term error.  [It is still a bit of
+a problem in the case of UCLA LF-AM3 version because the starting
+barotropic step ends up being run slightly outside the stability
+limit set by the regular time-stepping optimized for the largest
+stability range, say LF-TR with gamma=0., beta=0.14, epsil=0.74
+recommended there].
+
+
+
+
+
+A better, and more regular solution to eliminate the conflict between
+start up and coupling error is to compute barotropic pressure gradient
+term during the first barotropic step in two stages:
+
+   (i) at first use just zeta(:,:,kstp) to ensure exact consistency
+       with 3D mode;
+
+   (ii) then, after "rufrc,rvfrc" , which initially contain vertically
+        integrated r.h.s.  of 3D mode are converted into coupling terms
+        by subtracting "rubar,rvbar", add correction based on the
+        difference zeta_new(:,:)-zeta(:,:,kstp) to "rubar,rvbar" to
+        make them  consistent with the desired  Backward step for
+        pressure gradient terms (FB version), or 1/3 of that change
+        (LF-AM3).
+
+Modified UCLA codes can be found in 
+
+      http://www.atmos.ucla.edu/~alex/ROMS/step2D_coupling_patch.tar
+
+To test the effect of this change, I run my Pacific model using
+ndtfast = 61 (which is considered rather large), but I tuned my time
+filter to very aggressive settings:
+
+               p = 2,          q = 4,           r=0.28
+
+where 0.28 is very close to the ideal value of 0.284.  Note that the
+difference 0.284-r   sets the magnitude of  second-order dissipative
+truncation error; which is now nearly 8 times less than that of more
+typical recommended setting
+
+                 p = 2,   q = 4,  r=0.25
+
+
+The code still stable with r=0.28, and I do not see abnormal
+oscillations in free surface.  This was not achievable before.
+
+
+
+See also "Time-averaging of barotropic fields and Power Law Filter"
+in this section below.

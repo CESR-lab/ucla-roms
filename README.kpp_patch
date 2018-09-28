@@ -1,0 +1,81 @@
+Summary of changes in KPP:
+
+"mixing.h" a new global array "swr_frac" is introduced; See it at
+           the very end, next to ghat.
+
+"main.F", initialization part:  introduced a call to new subroutine
+          lmd_swr_frac just after 3D grid is generated for the very
+          first time (note that here z_r, z_w, and Hz correspond to
+          ZERO-FREE surface state at this moment).  Subroutine
+          "lmd_swr_frac" computes light attenuation fraction and
+          puts it into a global 3D array "swr_frac". The state of
+          this array remains constant during the entire run time. 
+
+          This constancy may be reconsidered in future, especially
+          for the case of biological modeling, where light
+          attenuation depends on concentration of Phyto, etc, but at
+          the present state there is no point to recompute "swr_frac" 
+          at every time step, because all what is done here is to
+          use globally fixed Jerlov water type bi-exponential 
+          attenuation model.
+
+
+"lmd_swr_frac.F"  newly introduced routine (supersedes lmd_swfrac.F,
+          which is now obsolete.
+
+          Note that unlike the older version, "swr_frac" is computed
+          by attenuation of light point-by-point, so that in
+          principle attenuation coefficients may be space dependent.
+          (currently they are Jerlov-water-type constants).
+
+
+"lmd_kpp.F" significantly rewritten; incompatible with previous
+            versions because of different array structure and
+            associated internal calls.
+
+          However, the number of arguments of "lmd_kpp_tile" is
+          exactly the same as before and there is no need to modify
+          its driver, which is "lmd_vmix.F".
+
+
+"lmd_wscale_ws_only.h"     these two include files supersede
+"lmd_wscale_wm_and_ws.h"   subroutine "lmd_wscale.F", which is
+                           now obsolete.
+
+
+"step3d_t3S.F" modified code within LMD_KPP CPP logic; basically 
+               to make it compatible with new lmd_kpp. It uses
+               new array "swr_frac" for light attenuation and it
+               also have different algorithm for nonlocal flux.
+
+          Note that meaning of array "ghat" is now changed: it is
+          no longer flux, but just a non-dimensional shape function
+          of nonlocal flux for a tracer.  Consequently, as of right
+          now
+
+          non_local_flux_for_tracer(itrc,k) =
+                   = ghat(k) * surface_forcing_flux(itrc)
+
+          so that ghat is now the same for all tracers.
+
+
+          Depending on previous versions of "step3d_t3S.F", there
+          may be visual changes in the vertical tri-diagonal solver
+          code associated with vertical diffusion step. These
+          changes are purely code optimizations mathematically
+          equivalent to the previous codes.
+
+         
+Obsolete routines: "lmd_wscale.F", "lmd_swfrac.F" these two are
+no longer used for anything.
+
+Modifications to Makefile: (Makefile is not included in this patch)
+
+          1) exclude lmd_wscale.F and lmd_swfrac.F from source list.
+          2) add lmd_swr_frac.F
+          3) execute "make depend" so that dependency list is
+             updated and is aware of "lmd_wscale_ws_only.h" and
+             "lmd_wscale_wm_and_ws.h".
+
+
+

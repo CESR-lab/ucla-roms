@@ -1,0 +1,139 @@
+> 1. in the .in file, that you sent me, you still  keep the other forcing
+> files (in blue) and then you have the list of all the bulk forcing files,
+
+First (actually zeroth) roms.in file allows comments and even arbitrary
+text which may be useful for the user, but is ignored by the model.
+The general rule is that a keyword must be followed (immediately and
+without a blank line in between) by a line or lines which contain some
+information, but a blank line terminates the reading, e.g.,
+
+          forcing:
+                        file1.nc
+                        file2.nc
+                        file3.nc
+
+                        file4.nc
+                        file5.nc
+
+with blank line between 3 and 5 makes   file4.nc  file5.nc be ignored.
+The presence of these lines makes no effect, nor cause and damage.
+
+To de-activate a keyword entry it is sufficient to comment out keyword 
+name, but it is not necessary to comment out the following input lines.  
+
+
+Regarding the bulk forcing and forcing of ROMS in general it is not about
+WHAT FILES  you need, but rather WHAT VARIABLES do you need.After all the
+reforms made during the last year (and you saw it yourself earlier this
+year, February - April) the rationale of ROMS code becomes rather simple
+and clear:
+
+      (a) which input variables are needed by the model is decided
+          by CPP-switches inside the code, and the code will attempt
+          to read from a file every variable it needs.
+
+      (b) the list of input files is treated as continuum both in terms
+          of variable name and in time, that is, for each variable
+          INDEPENDENTLY one from another
+ 
+          (b.1) model attempts to find that variable in an input netCDF file
+                starting from the first file, and if not found there attempts
+                to find it in the second, and if not, check the next until
+                found or the list of files is exhausted;
+
+          (b.2) if the variable is found in the file, check whether timing of
+                the variable in the file bounds current model time  -- the last
+                record is in the future relative to the current model time, and
+                if (and only if) the file is the first in the sequence, the
+                first record must be in the past relative to model time] --
+                simply put, the forcing data can be interpolated.  If not, then
+                proceed to the next file, basically go back to check (b.1) and
+                then (b.2) again until a proper file is found to satisfy both
+                (b.1) and (b.2).
+
+          (b.3) it is possible that a file satisfying both (b.1) and (b.2) at
+                for some model time will not satisfy it later during model run,
+                that is running past the time of the last record of input data.
+                If this occurs, it triggers check (b.2) again and the process
+                repeats itself until conditions (b.1) and (b.2) are restored.
+
+      (c) Note that both the variable and the time searches above are
+          UNIDIRECTIONAL. This means that 
+
+          (c.1) If a variable satisfying both (b.1) and (b.2) is present in
+                more than one netCDF file, only the first occasion will be
+                taken by the model (the variable will never be read from the
+                second file);
+                 
+          (c.2) if the files belonging to a time sequence for a forcing
+                variable a given out of order, say
+                                                       
+                              wind_y2010.nc
+                              wind_y2011.nc 
+                              wind_y2013.nc
+                              wind_y2012.nc    !  <-- out of order
+                              wind_y2014.nc
+                              wind_y2015.nc
+
+                then the algorithm will process 2010, then 2011, then, once
+                (b.2) is no longer satisfiled it will proceed to 2013 (next
+                in the list) and will interpolate data between end of
+                December 2011 and the beginning of January 2013 (obviously
+                not what do you want) and then, once passed December 2013 it
+                will attempt to read  2012 (next file), but will discover
+                that its last record is in the past relative to model time
+                (because your model is at the beginning of January 2014 at
+                this moment), so it will proceed to the next file in the
+                list, which is 2014.
+
+                As the result, the entire wind_y2012.nc will be ignored.
+
+                Model does not care whether the consecutive time records
+                differ by the same or similar intervals in time: 1 hour or
+                1 year.  The logic here is just "model time is in between",
+                yes or no.  In does not matter how far before or after.
+
+With the exception of (c.1) and (c.2) it does not matter which forcing file
+contain which variable, and in what order they are present in the sequence:
+e.g., you can put wind first, heat flux in the middle, and precipitation later,
+and SSS climatology at the end, or may do it differently.
+
+Tip: As the result of this logic, when starting model from a different time
+(for example restart) you DO NOT NEED to change/adjust the sequence
+of forcing files in your "roms.in" file: the model will automatically find the
+correct file to read each variable from the proper record.
+ 
+
+NOTE: for the purpose of all the above "variable" means a netCDF variable
+            with a known name or a set of netCDF variables (like u,v wind
+            components) ALWAYS ACCOMPANIED by a timing variable.  
+
+            Model is designed to report filename for each variable it reads,
+            so you can always check printout to verify that it does what you
+            want it to do, that is, pay attention to the lines like
+
+ Found 'uwnd,vwnd' and its time 'wnd_time' in 'wind_y1996.000.nc'
+   
+ Found 'swrad' and its time 'srf_time' in 'swrad_y1996.000.nc'
+       
+ Found 'lwrad_down' and its time 'lrf_time' in 'lwrad_down_y1996.000.nc'
+            
+ Found 'Tair' and its time 'tair_time' in 'Tair_y1996.000.nc'
+            
+ Found 'Qair' and its time 'qair_time' in 'Qair_y1996.000.nc'
+          
+ Found 'rain' and its time 'rain_time' in 'rain_y1996.000.nc'
+            
+ Found 'SSS' and its time 'sss_time' in 'ncep_heat.000.nc'
+          
+
+ 
+                         
+> 2. In the rain forcing files, do you include also the snow? I mean is
+>     the precipation as rain+snow, or only precipitation from the rain?
+  
+               I believe I added them up (because at this point I do not 
+               see a reason to distinguish between snow and rain, but
+               I have to check (the other possibility is to simply ignore
+               snow).                      
+  

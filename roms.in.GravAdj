@@ -1,0 +1,158 @@
+title:
+         Gravitational Adjustment Problem
+
+ Note that the minimum ndtfast should be 7 for the code stablility, even
+ thought the corresponing barotropic Cu_max ends up being very small.
+ dt=43.0 is the largest at which fully-explicit code remains stable
+ on 160x40 grid with using parabolic spline vertical advection for
+ tracers, although producing very large overshots.    
+
+
+time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 200    514.28571      25      1
+
+history: ldefhis, nwrt, nrpfhis / filename
+            T      7     0
+                 his_dt510.nc
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                  240     450      22      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      8     0
+                 his_dt450.nc
+
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                  170     360       17      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      10     0
+                 his_dt360.nc
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                  255    240.      12      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      15     0
+                 his_dt240.nc
+
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                  340    180       9      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      20     0
+                  his_dt180.nc
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                   510    120.      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T     30     0
+                 his_dt120.nc
+
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 680    90.0      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      40     0
+                  his_dt90.nc
+
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 850    72.0      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      50     0
+                 his_dt72.nc
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 1020    60.      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T     60     0
+                 his_dt60.nc
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 1360    45.0      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T      80     0
+                 his_dt45.nc
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 3060    20.      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T     180     0
+                 his_dt20.nc
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+                 6120     10      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T     360     0
+                 his_dt10.nc
+
+!time_stepping: ntimes  dt[sec]  ndtfast ninfo
+               12340     5      7      1
+
+!history: ldefhis, nwrt, nrpfhis / filename
+            T     720     0
+                 his_dt05.nc
+
+
+
+
+
+
+
+
+
+S-coord: theta_s  theta_b  hc[m]
+           0.0d0   0.d0    1.E+10
+
+initial: nrrec / filename
+          0
+
+restart:  nrst, nrpfrst / filename
+         99999    -1
+                          restart.nc
+
+
+
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T    F   T  F    T
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt
+                           F   T     F   F    F
+
+rho0:
+      1000.d0
+
+lin_rho_eos:  Tcoef  T0[deg C]   Scoef   S0
+               0.2         0.        0.    0.
+
+lateral_visc: visc2[m^2/sec]
+               0.  !!! 50.
+
+tracer_diff2: tnu2(1:NT)[m^2/sec]
+               0.d0  0.d0
+
+vertical_mixing: Akv_bak Akt_bak(1:NT)  [m^2/sec for all]
+                   0.        0.    0.
+
+bottom_drag:     rdrg[m/s]   rdrg2   Zob[m]
+                    0.         0.     0.
+gamma2:
+       +1.d0
+
+

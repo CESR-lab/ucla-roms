@@ -1,0 +1,97 @@
+# Platform-specific definitions for Intel(R) Ifort(TM)
+# compiler on Extended Memory EM64T Linux computer.
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+#/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+# C-preprocessor from Intel compiler package "fpp" treats __IFC as
+# a pre-defined, so there is no need to include it into CPPFLAGS, but
+# the standard CPP is not aware of this.
+
+      CPP = /lib/cpp -traditional -D__IFC
+ CPPFLAGS = -I${MPI_ROOT}/include
+
+# Compiler settings:  -fpp2 is required only if -openmp is present.
+# Not having -fpp2 here just causes compiler warning (-fpp is set to
+# level 2 by -openmp), but other than that has no effect.
+
+# Switch -pc80 increases precision of floating point operation to
+# 64 bits (vs. 53 bits double precision default).
+#
+# -qp  compiles and links for function profiling with  gprof(1);
+#      this is the same as specifying -p or -pg.
+#
+# Setting  FFLAGS = -O2 -mp (or lower optimization level) is needed
+# to pass ETALON_CHECK: -O3 causes roundoff-level differences from
+# the length of innermost i-loop (the results still pass ETALON_CHECK
+# if  NP_XI = NSUB_X = 1, regardless of partition in ETA-direction). 
+# As of ifort v. 11.0.xxx -mp is superseeded by -fp-model <arg> flag.
+
+# Flags collected under LARGE_MEM_FLAG are needed only if exceeding 
+# 2 GBytes of memory: both -mcmodel (sets size of addressing pointers)
+# and -i-dynamic (ensures proper linking with Intel dynamic libraries
+# must be specified.
+
+
+# OMP_FLAG = -fpp -openmp
+
+# LARGE_MEM_FLAG = -mcmodel=medium -i-dynamic
+
+
+#   CFTFLAGS = -pc80 -xSSE2 -auto -stack_temps
+   CFTFLAGS = -pc80 -auto -stack_temps -warn unused
+
+
+      CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#      LDR = $(CFT)
+     LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+
+
+#   FFLAGS = -O3 -IPF_fma -ip 
+# -qopt-report=5 -qopt-report-phase=vec
+
+   FFLAGS =  -O3 -fp-model source
+
+#   FFLAGS =  -fp-model precise -O3 
+#  FFLAGS =  -O2 -fp-model strict
+# -prof_gen
+
+# FFLAGS = -g -check all -CA -CB -CS
+# FFLAGS = -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
+# FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
+
+
+#  FFLAGS = -O1
+
+
+    LDFLAGS = 
+
+ COMP_FILES = ifort?????* tmp?????*
+
+#    LMPI = ${MPI_ROOT}/lib/libmpich.a 
+
+
+   LCDF = -lnetcdff
+#   LCDF = -lnetcdf -lhdf5 -lhdf5_hl
+#    LCDF = -L/opt/netcdf-4.2.1.1_largemem/lib -lnetcdff
+
+#    LCDF = /opt/netcdf-4.2.1.1_largemem/lib/libnetcdff.a  /opt/netcdf-4.2.1.1_largemem/lib/libnetcdf.a
+
+# libncar = -lncarg -lncarg_gks -lncarg_c -lX11 -lm
+  libncar = -lncarg -lncarg_gks -lncarg_c -lXpm -lX11 -lXext -lpng -lz
+  LIBNCAR = -L$(NCARG_ROOT)/lib -L/usr/lib64 $(libncar)
+

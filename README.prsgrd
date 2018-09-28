@@ -1,0 +1,119 @@
+Hernan,
+
+There are couple new things thing I want you to update and test in
+your code. Recently I did extensive overhaul and testing of
+compressibe versions of the new, prsgrd32Ax family routines and
+accompanying EOS routines. A am using Atlantic grid4 as a test
+problem and looking for deep currents: 1 km and below. I learned
+a lot of new thing about all that eddy-mess in abyssal part of the
+model. 
+
+Go to
+              http://www.atmos.ucla.edu/~alex/prsgrd
+
+and get file
+              update.11.27.2001.tar.gz
+
+
+This tar file contains the following files:
+
+   README       -- this message
+
+   AppendixA.ps -- material to read related to energy conservation.
+                   There is nothing exciting here, basically clean
+                   up and slight extention of Tony's 1998 derivation.
+                   I fundamentally do not believe that exact
+                   conservation of KE+PE is useful in practice.
+                   Simply because KE << PE, and numerical errors of
+                   tracer advection generate enough spurious PE to
+                   be available for conversion into KE. 
+
+   AppendixB.ps -- material to read about EOS. Probably worth
+                   discussing with John Wilkin. I found that this
+                   stuff triggers a lot of polemics, for example,
+                   my practical experience tells me that using just
+                   rho1 instead of rho_in_sity, may be grossly wrong
+                   for physical reason, on the other hand, using
+                   rho_in_sity on a coarse grid (dz about 1000 meters
+                   near the bottom) causes too much error. Splitting
+                   of EOS into rho1 and part proportional to absolute
+                   depts allows to use a special technique to
+                   mitigate this error.
+
+   rho_eos.F -- EOS routine from my code designed to work in pair
+                with prsgrd32AC1.F (see below). Also see comment
+                inside rho_eos.F.
+
+                Basically this is implementation of what is described
+                in Appendix B. Regarding the computation of bvf, you
+                may find it a little bit strange piece of code, but
+                it actually does EXACTLY what what a similar code
+                segment from your own beta7.2 does. The difference
+                is that it contains only one division (yours has 3)
+                and it is optimized to minimize roundoff errors.
+
+                Also note loop structure inside rho_eos: This code
+                pipelines fully. Yours in beta7.2 is not: SGI R10k
+                compains loops are too complex in several places.
+
+   prsgrd32AC1.F -- new compressible version of 32A. It superseeds
+                    the existing 32 and 32A, but has new option:
+                    SPLIT_EOS, which is a more accurate enforcement
+                    monotonicity of the cubic interpolant, which is
+                    consistent with physically positive
+                    stratification. [If SPLIT_EOS is not defined,
+                    it is identical to the 32A you already know.
+                    Keeping it this way actually helps, I hope, to
+                    understand how it works: note the "Adiabatic"
+                    differences of density.]
+
+   prsgrd31.F -- pretty much the code you know, except the
+                 implementation of the topmost grid box: it no
+                 longer neglects sigma-slope within the topmost
+                 grid box. See "rsurf" and its usage. Please update
+                 your code, regardless whether you use it or not.
+
+
+   ocean3d.h -- not to be used, but will help to "implant" rho_eos.F
+                and prsgrd32AC1.F into your code.
+
+                Basically it is just to illustrate implementation of
+                mutual exclussivenerss of "rho" and "q1": In my code,
+                I store "rho1" as a global array (it is needed by
+                KPP when computing bulk Ri, and, in the case of
+                SPLIT_EOS, it is also needed by pressure gradient
+                routine). On the other hand, if CPP-switch SPLIT_EOS
+                is activated, grobal array "rho" no longer used for
+                anything and therefore excluded. [Note that in this
+                case "rho" becomes scratch array inside prsgrd32AC1.F]
+
+                I hope, you will follow this convention too.
+
+                This would require a little bit update of other
+                routines, including diag.F and netCFD output.
+                [I prefer output of "rho1" rather than "rho".]
+
+
+NOTE: in my code I made it illegal to define SPLIT_EOS, if NONLIN_EOS
+is not defined, so that my analog of "checkdefs.F" contains code
+segment
+
+#ifdef SPLIT_EOS
+# ifndef NONLIN_EOS
+      write(stdout,'(1x,A,2(/8x,A))') 'ERROR in "cppdefs.h":',
+     &       'illegal combination of CPP-switches, SPLIT_EOS'
+     &       'is defined, but NONLIN_EOS is not.'
+      ierr=ierr+1
+# endif
+#endif
+
+Good luck to implant it.
+
+Sasha
+
+P.S. Please, do not restyle the 32AC1 it beyound recognition.
+
+
+
+
+

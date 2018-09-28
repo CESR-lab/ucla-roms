@@ -1,0 +1,57 @@
+# Settings for NCSA Linux Cluster "tungsten" using Intel Fortran
+# compiler "ifort" and MPI/Pro from Verrari Inc. (previously known
+# as Champion MPI).  Settings are almost the same as in the standard
+# "Makedefs.Intel" setup (hence users are referred there for
+# explanation of the meaning of compiler switches) with the exception
+# that linker is replaced with cmpif90c (which is just a shell shell
+# over ifort to prove correct link to MPI library, hence there is no
+# need to specify LMPI in this file).
+#
+# NOTE: This set of definitions relies on setting of environmental
+# variable CMPIPRO_ROOT in .cshrc file, which should point to the
+# outermost directory of appropriate installation of MPI/Pro (hence
+# "cmpif90c" has absolute path $CMPIPRO_ROOT/bin/cmpif90c, "mpif.h"
+# is taken from $CMPIPRO_ROOT/include/mpif.h, while relevant MPI
+# libraries are coming from $CMPIPRO_ROOT/lib. 
+#
+# WARNING: Optimizations specific to CPU type (.e.g. -tpp7 -axN -xN)
+# MUST BE SET CONSISTENTLY for both CFT and LDR: not doing so results
+# is CFT generating processor-specific code which needs special
+# libraries, while LDR tries to link it to default ones resulting in
+# missing references and linking failure.  Also note that Open MP
+# switch is not activated in this setup. 
+#
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+      CPP = /lib/cpp -traditional
+ CPPFLAGS = -I$(CMPIPRO_ROOT)/include -D__IFC
+
+CPU_ARCH_FLAGS = -pc80 -tpp7 -axN -xN
+
+      CFT = ifort $(CPU_ARCH_FLAGS) -align dcommon -auto -stack_temps
+      LDR = cmpif90c -ifort $(CPU_ARCH_FLAGS) -align dcommon -auto -stack_temps
+
+   FFLAGS = -O3 -IPF_fma -ip
+#  FFLAGS = -g  -CB -CU -CV
+
+  LDFLAGS =
+
+   LCDF =/u/ac/shchepet/lib/libnetcdf.a
+    TMP = /tmp
+
+COMP_FILES = work.pc work.pcl ifc??????

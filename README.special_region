@@ -1,0 +1,180 @@
+Suppose one needs to introduce a piece code which requires special processing
+within the certain part o the grid and nowhere else, so in a single-processor
+code this could be expressed as
+
+
+       do j=jS,jN
+         do i=iW,iE
+           A(i,j)= ....
+         enddo
+       enddo
+
+where iW,iE,jS,jN are the bounding indices of the special region on the
+PHYSICAL GRID (that is grid of the size of LLm x MMm in our terms). 
+
+
+On an OpenMP code, if this needed to be executed inside a tiled region,
+it translates into
+
+       do j=max(jstr,jS),min(jN,jend)
+         do i=max(istr,iW),min(iE,iend)
+           A(i,j)= ....
+         enddo
+       enddo
+
+which implicitly relies on the modern Fortran rule that loops with the upper
+bound smaller that the lower bound are not executed at all.
+
+The above is equivalent to
+
+       imin=max(istr,iW)
+       imax=min(iE,iend)
+       jmin=max(jstr,jS)
+       jmax=min(jN,jend)
+
+       if (imin.le.imax .and. jmin.le.jmax) then
+         do j=jmin,jmax
+           do i=imin,imax
+             A(i,j)= ....
+           enddo
+         enddo
+       endif
+
+Although this seems to be more verbose, and the encircling if() statement is
+redundant, it is useful to have variables for imin,...,jmax for two reasons:
+(1) it optimized execution of the code a little bit because do-loops are
+implemented by the compiler as termination by "if" condition, and pre-computing
+some of the operations helps (it is likely that this may be done by the
+compiler during optimization phase, but who knows exactly what compiler is
+doing), and if() statement is useful if there is more than one stage in
+computation, say
+
+       imin=max(istr,iW)
+       imax=min(iE,iend)
+       jmin=max(jstr,jS)
+       jmax=min(jN,jend)
+
+       if (imin.le.imax .and. jmin.le.jmax) then
+         do j=jmin,jmax
+           do i=imin-1,imax
+             tmp(i,j)= ....
+           enddo
+         enddo
+         do j=jmin,jmax
+           do i=imin,imax
+             A(i,j)= tmp(i,j)-tmp(i-1,j)
+           enddo
+         enddo
+       endif
+
+There there is chance that loop
+
+           do i=max(istr,iW),min(iE,iend)
+
+is empty, while
+
+           do i=max(istr,iW)-1,min(iE,iend)
+
+is not (may be executed once). 
+
+
+
+In MPI code (actually hybrid  MPI+OpenMP code, so there is tiling within MPI
+subdomains) the semantics is basically the same, except that the bounding
+indices iW,iE,jS,jN defining the special region on the PHYSICAL GRID (hence
+are "absolute indices") needs to be translated first into relative indices
+within the subdomain,
+
+#ifdef MPI
+       imin=max(istr, iW-iSW_corn)
+       imax=min(iE-iSW_corn, iend)
+       jmin=max(jstr, jS-jSW_corn)
+       jmax=min(jN-jSW_corn, jend)
+#else
+       imin=max(istr,iW)
+       imax=min(iE,iend)
+       jmin=max(jstr,jS)
+       jmax=min(jN,jend)
+#endif
+  
+where iSW_corn,jSW_corn are ABSOLUTE i,j indices corresponding to the RHO-point
+with RELATIVE indices i,j=0,0 defined within the particular MPI subdomain. 
+
+
+The values of  iSW_corn,jSW_corn computed by mpi_setup.F, and should be
+considered as part of ROMS environment, i.e., any physical/user code should
+rely on their existence, treat them in read-only mode (do not attempt to
+modify them), do not make any specific assumption about how they are computed,
+and do not attempt to make an alternative algorithm to by-pass them. 
+
+
+P.S. In the past some legacy codes may use "processor grid" indices
+     inode,jnode (in very old codes known as ii,jj), so the equivalent
+     translation of global into local indices would be
+
+                i = i_global - inode*Lm
+
+     This relies on the fact that all MPI subdomains have exactly the same
+     size, it is legacy, and it is not to be used.
+
+
+----------------------------------------------------------------
+The one-dimensional application of the above is straightforward:
+
+assuming that iS=.., jN=... are absolute indices of the southern and
+northern edge of Gibraltar, the code should be
+
+
+       integer, parameter :: iS=.., jN=...
+
+       .....
+       if (EASTERN_EDGE) then
+
+           compute the standard boundary condition (Flather or whatever),
+           along the eastern edge, then overwrite it 
+
+
+#ifdef MPI
+          jmin=max(jstr, jS-jSW_corn)
+          jmax=min(jN-jSW_corn, jend)
+#else
+          jmin=max(jstr,jS)
+          jmax=min(jN,jend)
+#endif
+          do j=jmin,jmax
+            ubar(iend+1,j,knew)=ubar(iend,j,knew) 
+          endif
+       endif 
+
+
+A little bit care should be exercised in computing "zeta_new" -- a private
+array because it requires an extra point (compare this with the standard code
+in zetabc.F):
+
+
+       if (EASTERN_EDGE) then
+          ....
+          ....
+#ifdef MPI
+          jmin=max(jstrV, jS-jSW_corn)
+          jmax=min(jN-jSW_corn, jend)
+#else
+          jmin=max(jstrV,jS)
+          jmax=min(jN ,jend)
+#endif
+          do j=jmin-1,jmax
+            zeta_new(iend+1,j,knew)=zeta_new(iend,j,knew)  
+          endif
+       endif
+
+
+where subtraction of -1 from jmin is kept OUTSIDE the max operator.
+
+This is because "zeta_new" is private, and the extra point is needed
+even if the tile edge "jstr" is north from Gibraltar, but "jstr-1"
+happened to be inside.  I.e., "jmin=max(jstrV-1, jS-jSW_corn)" followed
+by  "do j=jmin,jmax" would be a mistake.
+
+Also, for purely stylistic reasons it is not advisable to have it
+"jmin=max(jstrV, jS-jSW_corn)-1" and then "do j=jmin,jmax", because the
+redundant computations should appear explicitly as elsewhere in the code.

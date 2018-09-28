@@ -1,0 +1,90 @@
+This file contains set of remarks about boundary conditions:
+
+Remark 1:
+
+  PERIODICITY RULES: in the case of periodicity conditions in either
+  directions, all fields have the same number of points regardless of
+  their type according to the staggered grid convention, (RHO-, U-,
+  V- and PSI-types). The internal ranges of indices are 
+
+         1:Lm in XI-direction
+         1:Mm in ETA-direction
+
+  Two rows of ghost zones are set for each field in this case, so
+  that:
+
+         A(-1,j,..)=A(Lm-1,j,..)     A(i,-1,..)=A(i,Mm-1,..)
+         A( 0,j,..)=A(Lm  ,j,..)     A(i, 0,..)=A(i,Mm  ,..) 
+         A(Lm+1,j,..)=A( 1,j,..)     A(i,Mm+1,..)=A(i, 1,..)
+         A(Lm+2,j,..)=A( 2,j,..)     A(i,Mm+2,..)=A(i, 2,..)
+
+  Periodic boundary conditions are extracted from the bcs routines
+  (which perform physical boundary conditions) and are done by the
+  generic routines exchange_XXX_tile, where XXX ={r2d,u2d,v2d,p2d,
+  r3d,u3d,v3d,p3d,w3d} is the type of the array according to the
+  staggered grid convention.
+
+  From now on the periodicity conditions are NO LONGER considered
+  as boundary conditions, but as exchange of ghost points between
+  different subdomains and different processors. Conversely, all
+  places in the code where periodicity rules are applied are
+  logically consistent with the places of ghost zone exchanges as
+  it would be in a message passing code.
+
+
+
+Remark 2:
+
+  NOTICE ABOUT PARALLELIZATION STRATEGY: Because of their nonlocal
+  nature, periodic boundary conditions must be applied first, if the
+  the boundary conditions are applied just _after_ a synchronization
+  point. In this case the periodic boundary [ghost, or target] points
+  are set by the thread working on subdomain to which these [ghost]
+  points belong. This is the IMPLOSION strategy.
+
+  Conversly, periodic boundaries must be applied last, if the
+  boundary conditions are applied just _before_ the synchronization
+  point. In this case the periodic boundary [ghost] points must be
+  set by the thread working on the subdomain which has the internal
+  [source] points from which the [ghost, or target] points are
+  receiving their values. This is the RADIATION strategy.
+
+  The present version of the code employs the RADIATION strategy.
+
+
+
+Remark 3:
+
+  ORDER OF APPLICATION  of physical boundary conditions: In the case
+  of U- and V-type variables the boundaries normal to the direction
+  of propagation are set; after that the boundary tangential to the
+  direction of propagation is set:
+
+     U-type                         V-type
+       first                          first
+         Western edge                   Southern edge   
+         Eastern edge                   Northern edge
+       then                           then
+         Southern edge                  Western edge
+         Northern edge                  Eastern edge
+
+  This is done to avoid necessity of special care about the corner 
+  ghost points in the case of combinations of open and solid
+  boudaries. 
+
+Remark 4:
+
+  RADIATION mode used in these routine is derived from Raymond and
+  Kuo (1984: A radiation boundary condition for multi-dimensional
+  flows, Quart. J. R. Met. Soc., 110, pp 535-551). The outgoing
+  phase speed is projected in each horizontal coordinate direction
+  at the open boundary. As opposed to Orlanski (1976), this greatly
+  reduces the sentivity on the spatial derivative normally displayed
+  in the phase speed calculations. The present conditions differ
+  from Raymond-Kuo by using upstream scheme for spatial derivatives
+  and implicit phase speed to increase numerical stability.
+
+  Explicit and implicit versions of radiation boundary conditions
+  are being developed.
+
+

@@ -1,0 +1,1108 @@
+1,28c1,11
+< /* This is "cppdefs.h": MODEL CONFIGURATION FILE
+<    ==== == ============ ===== ============= ==== */
+< 
+< #undef BALTIC          /* Baltic Sea */
+< #undef DOUBLE_GYRE           /* Big Bad Basin */
+< #undef CANBAS2
+< #undef CANYON_A        /* Canyon_A */
+< #undef CANYON_B        /* Canyon_B */
+< #undef COLD_FILAMENT   /* Submesoscale cold filament */
+< #undef DAMEE_B         /* North Atlantic DAMEE, Big Domain */
+< #undef EKMAN_SPIRAL
+< #undef GRAV_ADJ        /* Graviational Adjustment */
+< #undef ISWAKE          /* Island Wake Problem */
+< #undef OVERFLOW        /* Graviational/Overflow */
+< c--#define BLACK_SEA
+< #undef ATLANTIC      /* Atlantic, Gulf of Mexico */
+< #undef PACIFIC         /* North-Equatorial Pacific */
+< #undef PACIFIC_2D      /* Pacific Tsunami model */
+< #undef RIVER           /* River runoff test problem */
+< #undef SEAMOUNT        /* Seamount */
+< #define SEAMOUNT100        /* Seamount */
+< #undef SOLITON         /* Equatorial Rossby Wave */
+< #undef UPWELLING      /* Upwelling */
+< #undef USWC            /* US West Coast Yusuke 2010 */
+< #undef USWEST          /* US West Coast */
+< #undef WAVE_RAD        /* Test for wave radiation boundaries */
+< #undef SLOSH
+< 
+---
+> ! $Id: cppdefs.h 1628 2015-01-10 13:53:00Z marchesiello $
+> !
+> !======================================================================
+> ! ROMS_AGRIF is a branch of ROMS developped at IRD and INRIA, in France
+> ! The two other branches from UCLA (Shchepetkin et al) 
+> ! and Rutgers University (Arango et al) are under MIT/X style license.
+> ! ROMS_AGRIF specific routines (nesting) are under CeCILL-C license.
+> ! 
+> ! ROMS_AGRIF website : http://www.romsagrif.org
+> !======================================================================
+> !
+30c13,14
+<     Embedded (nested) grid configuration segment
+---
+>    This is "cppdefs.h": MODEL CONFIGURATION FILE
+>    ==== == ============ ===== ============= ====
+32,36c16
+< 
+< c--#ifndef MAX_GRID_LEVEL
+< c--# define MAX_GRID_LEVEL 2
+< c--# include "redefs.X"
+< c--#endif
+---
+> #define REGIONAL        /* REGIONAL Applications */
+38a19
+> #if defined REGIONAL
+40c21,28
+<    Main switch starts here: model configuration choice.
+---
+> !====================================================================
+> !               REGIONAL (realistic) Configurations
+> !==================================================================== 
+> !
+> !----------------------
+> ! BASIC OPTIONS
+> !----------------------
+> !
+41a30,31
+>                       /* Configuration Name */
+> # define SEAMOUNT
+43,146c33
+< #if defined DOUBLE_GYRE    /* Big Bad Basin Configuration */
+< # define SOLVE3D
+< 
+< # define UV_ADV
+< # define UV_COR
+< 
+< # undef SALINITY
+< # undef NONLIN_EOS
+< 
+< # define UV_VIS2
+< # undef  TS_DIF2
+< # undef  TS_DIF4
+< 
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_VMIX
+< 
+< #elif defined CANYON_A      /* Canyon A Configuration */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< # define UV_VIS2
+< # define TS_DIF2
+< # define EW_PERIODIC
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< 
+< #elif defined CANYON_B      /* Canyon B Configuration */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< # define UV_VIS2
+< # define TS_DIF2
+< # define EW_PERIODIC
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_VMIX
+< 
+< #elif defined DAMEE_B               /* North Atlantic DAMEE configuration */
+< # define SOLVE3D
+< c--# define AVERAGES
+< # define UV_COR
+< # define UV_ADV
+< !                       Equation of State
+< # define SALINITY
+< # define NONLIN_EOS
+< !                       Forcing and Climatology
+< # define TCLIMATOLOGY
+< # define TNUDGING
+< # define QCORRECTION
+< # define SFLX_CORR
+< !                       Lateral Mixing
+< # define VIS_GRID
+< # define DIF_GRID
+< !                       Vertical Mixing
+< # define LMD_MIXING
+< #  define LMD_RIMIX
+< #  define LMD_CONVEC
+< c--#  define LMD_DDMIX
+< 
+< c--#  define LMD_KPP
+< c--#  define LMD_NONLOCAL
+< 
+< !       Grid Configuration and Boundaries
+< 
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< # define EASTERN_WALL
+< # define WESTERN_WALL
+< # define SOUTHERN_WALL
+< # define NORTHERN_WALL
+< 
+< 
+< c--# define REST_STATE_TEST    /* Rest-state unforced problem */
+< # ifdef REST_STATE_TEST     /* (pressure gradient error test) */
+< #  define ANA_INITIAL
+< 
+< #  define SALINITY
+< #  define NONLIN_EOS
+< 
+< #  define ANA_SMFLUX
+< #  define ANA_SSFLUX
+< #  define ANA_STFLUX
+< #  define ANA_SST
+< #  define ANA_SRFLUX
+< #  undef TCLIMATOLOGY
+< #  undef TNUDGING
+< #  undef QCORRECTION
+< #  undef LMD_MIXING
+< #  define UV_VIS2
+< # endif
+< 
+< 
+< #elif defined EKMAN_SPIRAL     /* Ekman Spiral Test Problem */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+---
+> # define ICE_NOFLUX
+148,196c35,46
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< 
+< # define EW_PERIODIC
+< # define NS_PERIODIC
+< 
+< #define STATIONS
+< 
+< #elif defined GRAV_ADJ     /* Gravitational Adjustment */
+< # define SOLVE3D
+< 
+< # define UV_ADV
+< # undef UV_COR
+< # define UV_VIS2
+< 
+< # define TS_DIF2
+< 
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< 
+< c--# define OBC_WEST
+< c--# define OBC_EAST
+< c--# define OBC_M2ORLANSKI
+< c--# define OBC_M3ORLANSKI
+< c--# define OBC_TORLANSKI
+< 
+< #elif defined COLD_FILAMENT   /* Submesoscale cold filament */
+< # define SOLVE3D
+< 
+< c--# undef UV_ADV
+< c--# define CONST_TRACERS
+< 
+< # define UV_COR
+< # define UV_VIS2
+< 
+< # define TS_DIF2
+< 
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_SRFLUX
+< 
+< # define NS_PERIODIC
+< # define OBC_WEST
+---
+>                       /* Parallelization */
+> # undef  OPENMP
+> # define  MPI
+>                       /* Nesting */
+> # undef AGRIF
+> # undef AGRIF_2WAY
+>                       /* OA Coupling via OASIS (MPI) */
+> # undef  OA_COUPLING
+>                       /* Open Boundary Conditions */
+> # undef  XIOS
+>                       /* I/O server */
+> # undef  TIDES
+198,258c48,71
+< # define OBC_M2FLATHER
+< c--# define OBC_M2ORLANSKI
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< 
+< # define ANA_BRY
+< # define T_FRC_BRY
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< 
+< 
+< c--# define LMD_MIXING
+< c--# define LMD_KPP
+< 
+< #elif defined BLACK_SEA  /* Black Sea, an all-around closed basin */
+< # define SOLVE3D
+< # define UV_COR
+< c---# define NON_TRADITIONAL
+< # define UV_ADV
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+<                         ! Equation of State
+< # define SALINITY
+< # define NONLIN_EOS
+<                        ! Lateral Mixing
+< # define UV_VIS2
+< # undef VIS_GRID
+< 
+< c--# define ADV_ISONEUTRAL
+< # define TS_DIF2
+< # undef DIF_GRID
+<                         ! Forcing
+< # define BULK_FLUX
+< # define BULK_SM_UPDATE
+< # define WIND_AT_RHO_POINTS
+< 
+< c--# define QCORRECTION
+< c--# define SFLX_CORR      /* salinity restoring at surface */
+< c--# define SEA_ICE_NOFLUX
+< 
+< # undef WIND_MAGN
+<                        ! Vertical Mixing
+< # define LMD_MIXING
+< # define LMD_KPP
+< # define LMD_BKPP
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< c--# define DIURNAL_SRFLUX
+< # undef LMD_DDMIX
+< 
+< 
+< #elif defined ATLANTIC  /* Atlantic, Gulf of Mexico */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< # define SALINITY
+< # define NONLIN_EOS
+< 
+---
+> # define OBC_WEST
+> # define OBC_NORTH
+> # define OBC_SOUTH
+>                       /* Applications */
+> # undef  BIOLOGY
+> # undef  FLOATS
+> # undef  STATIONS
+> # undef  PASSIVE_TRACER
+> # undef  SEDIMENT
+> # undef  BBL
+> /*!
+> !-------------------------------------------------
+> ! PRE-SELECTED OPTIONS
+> !
+> ! ADVANCED OPTIONS ARE IN CPPDEFS_DEV.H
+> !-------------------------------------------------
+> */
+>                       /* Parallelization */
+> # ifdef MPI
+> #  define  PARALLEL_FILES
+> # endif
+> # undef  AUTOTILING
+> # undef  ETALON_CHECK
+>                       /* Grid configuration */
+262,297c75,77
+< 
+< c--# define AVERAGES
+< 
+< c--# define ADV_ISONEUTRAL
+< # define UV_VIS2
+< # define TS_DIF2
+< 
+< # define WIND_AT_RHO_POINTS
+< 
+< # define DIURNAL_SRFLUX
+< 
+< c?? define ROBUST_DIURNAL_SRFLUX
+< # define QCORRECTION
+< 
+< # define LMD_MIXING
+< # define LMD_KPP
+< # define LMD_BKPP
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< 
+< # define OBC_WEST
+< # define OBC_EAST
+< # define OBC_SOUTH
+< c-# define OBC_NORTH
+< 
+< # define OBC_M2FLATHER
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< # define T_FRC_BRY
+< # define SPONGE
+< 
+< #elif defined SEAMOUNT100   /* North-Equatorial Pacific Configuration */
+---
+> # undef  WET_DRY
+> # define  NEW_S_COORD
+>                       /* Model dynamics */
+300d79
+< c---# define NON_TRADITIONAL
+302,307c81,89
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< 
+< c--# define AVERAGES
+<                         ! Equation of State
+---
+>                       /* NHMG */
+> # define NHMG 
+> # ifdef NHMG
+> #  undef NHMG_DOUBLE_PROJ
+> #  define NHMG_WBRY_ZERO
+> #  undef NHMG_2D_DAMPING
+> #  define NHMG_MASKING
+> # endif
+>                       /* Equation of State */
+310a93
+>                       /* Lateral Tracer Advection (default UP3) */
+312,365c95,108
+<                        ! Lateral Mixing
+< # define UV_VIS2
+< # undef VIS_GRID
+< 
+< c--# define ADV_ISONEUTRAL
+< # define TS_DIF2
+< # undef DIF_GRID
+<                         ! Forcing 
+< c# define BULK_FLUX
+< c# define BULK_SM_UPDATE
+< c-# define WIND_AT_RHO_POINTS
+< 
+< c--# define QCORRECTION
+< c--# define SFLX_CORR     /* salinity restoring at surface */
+< c--# define SEA_ICE_NOFLUX
+< 
+< # undef WIND_MAGN
+<                        ! Vertical Mixing
+< # define LMD_MIXING
+< # define LMD_KPP
+< # define LMD_BKPP
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< c--# define DIURNAL_SRFLUX
+< 
+< # undef LMD_DDMIX
+<                        ! Open Boundary Conditions
+< # define OBC_WEST
+< # define OBC_EAST
+< # define OBC_SOUTH
+< # define OBC_NORTH
+< 
+< # define OBC_M2FLATHER
+< c--# define OBC_M2ORLANSKI
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< c--# define M2NUDGING
+< c--# define M3NUDGING
+< 
+< c>>># define TNUDGING
+< c>>># define TCLIMATOLOGY
+< c>>># define UCLIMATOLOGY
+< 
+< # define FRC_BRY
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< # define T_FRC_BRY
+< 
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_SSFLUX
+< # define ANA_SRFLUX
+---
+> # undef TS_HADV_RSUP3
+> # undef  TS_HADV_UP5
+> # undef  TS_HADV_C4
+> # undef  TS_HADV_WENO5
+>                       /* Lateral Explicit Momentum Mixing */
+> # undef  UV_VIS2
+> # ifdef UV_VIS2
+> #  define UV_VIS_SMAGO
+> # endif
+>                       /* Lateral Explicit Tracer Mixing */
+> # undef  TS_DIF2
+> # undef  TS_DIF4
+> # undef  TS_MIX_S
+>                       /* Sponge layers for UV and TS */
+367,402c110,114
+< 
+< 
+< c--# define SSH_TIDES
+< c--# define UV_TIDES
+< 
+< #elif defined PACIFIC   /* North-Equatorial Pacific Configuration */
+< # define SOLVE3D
+< # define UV_COR
+< c---# define NON_TRADITIONAL
+< # define UV_ADV
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< 
+< c--# define AVERAGES
+<                         ! Equation of State
+< # define SALINITY
+< # define NONLIN_EOS
+<                        ! Lateral Mixing
+< # define UV_VIS2
+< # undef VIS_GRID
+< 
+< c--# define ADV_ISONEUTRAL
+< # define TS_DIF2
+< # undef DIF_GRID
+<                         ! Forcing 
+< c# define BULK_FLUX
+< c# define BULK_SM_UPDATE
+< c-# define WIND_AT_RHO_POINTS
+< 
+< # define QCORRECTION
+< # define SFLX_CORR     /* salinity restoring at surface */
+< # define SEA_ICE_NOFLUX
+< 
+< # undef WIND_MAGN
+<                        ! Vertical Mixing
+---
+>                       /* Semi-implicit Vertical Tracer/Mom Advection */
+> # define  VADV_ADAPT_IMP
+>                       /* Vertical Mixing */
+> # undef  BODYFORCE
+> # undef  BVF_MIXING
+404,613c116,118
+< # define LMD_KPP
+< # define LMD_BKPP
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< # define DIURNAL_SRFLUX
+< 
+< # undef LMD_DDMIX
+<                        ! Open Boundary Conditions
+< # define OBC_WEST
+< # define OBC_EAST
+< # define OBC_SOUTH
+< # define OBC_NORTH
+< 
+< # define OBC_M2FLATHER
+< c--# define OBC_M2ORLANSKI
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< # define M2NUDGING
+< # define M3NUDGING
+< 
+< c>>># define TNUDGING
+< c>>># define TCLIMATOLOGY
+< c>>># define UCLIMATOLOGY
+< 
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< # define T_FRC_BRY
+< 
+< # define SPONGE
+< 
+< 
+< c--# define SSH_TIDES
+< c--# define UV_TIDES
+< 
+< 
+< #elif defined PACIFIC_2D   /* Pacific Tsunami model */
+< # define UV_COR
+< # define UV_ADV
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< # undef VIS_GRID
+< # define UV_VIS2
+< # define ANA_SMFLUX
+< # define ANA_INITIAL
+< 
+< # define OBC_WEST
+< # define OBC_SOUTH
+< # define OBC_M2FLATHER
+< # define ANA_BRY
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< c--# define OBC_M2ORLANSKI
+< c--# define OBC_VOLCONS
+< # define SPONGE
+< 
+< #elif defined OVERFLOW      /* Gravitational Overflow */
+< # define SOLVE3D
+< 
+< # define UV_ADV
+< # define UV_VIS2
+< 
+< # define TS_DIF2
+< 
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< 
+< #elif defined SEAMOUNT     /* Seamount Configuration */
+< # define SOLVE3D
+< 
+< # define UV_ADV
+< # define UV_COR
+< c--# define UV_VIS2
+< 
+< # undef TS_DIF2
+< # undef  TS_DIF4
+< 
+< # define SALINITY
+< # define NONLIN_EOS
+< # define SPLIT_EOS
+< 
+< c--# define EW_PERIODIC
+< c--# define NS_PERIODIC
+< # define OBC_EAST
+< # define OBC_WEST
+< # define OBC_NORTH
+< # define OBC_SOUTH
+< 
+< c--# define ANA_GRID
+< c--# define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_SSFLUX
+< # define ANA_SRFLUX
+< 
+< 
+< #elif defined ISWAKE     /* Island Wake Configuration */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< 
+< # define UV_VIS2
+< c---# define SPONGE
+< # define LINEAR_DRAG_ONLY
+< 
+< c--# define OBC_NORTH
+< 
+< c--# define OBC_M2ORLANSKI
+< c--# define OBC_M3ORLANSKI
+< c--# define OBC_TORLANSKI
+< c--# define OBC_M2SPECIFIED
+< # define OBC_M3SPECIFIED
+< # define OBC_TSPECIFIED
+< 
+< #define OBC_M2FLATHER
+< 
+< # define ANA_BRY
+< # define T_FRC_BRY
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< 
+< c--# define AVERAGES
+< 
+< # define ANA_GRID
+< # define MASKING
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_SSFLUX
+< # define ANA_SRFLUX
+< 
+< ! Vertical mixing: nothing is defined here => use
+< ! externally supplied constant background value.
+< 
+< #elif defined SOLITON    /* Equatorial Rossby Soliton */
+< # undef  SOLVE3D
+< 
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< 
+< # define UV_COR
+< # define UV_ADV
+< # undef UV_VIS2
+< # define EW_PERIODIC
+< c--# define NS_PERIODIC
+< 
+< c--# define OBC_WEST
+< c--# define OBC_EAST
+< c--# define OBC_NORTH
+< c--# define OBC_SOUTH
+< c--# define OBC_M2ORLANSKI
+< 
+< #elif defined RIVER     /* River run-off test problem */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< 
+< # define SALINITY
+< # define NONLIN_EOS
+< 
+< # define ANA_GRID
+< # define MASKING
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_SSFLUX
+< # define ANA_SRFLUX
+< 
+< # define PSOURCE
+< # define ANA_PSOURCE
+< 
+< # define EASTERN_WALL
+< # define WESTERN_WALL
+< # define NORTHERN_WALL
+< # define OBC_SOUTH
+< # define OBC_TORLANSKI
+< # define OBC_M2ORLANSKI
+< # define OBC_M3ORLANSKI
+< 
+< #elif defined UPWELLING     /* Upwelling Configuration */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< 
+< c--# define ADV_ISONEUTRAL
+< 
+< # define SALINITY
+< # undef NONLIN_EOS
+< 
+< # define EW_PERIODIC
+< 
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< # define ANA_STFLUX
+< # define ANA_SSFLUX
+< # define ANA_SRFLUX
+< 
+< # undef ANA_VMIX
+< 
+< 
+< # ifndef ANA_VMIX
+< #  define LMD_MIXING
+< #  define LMD_KPP
+---
+> # undef  GLS_MIXING
+> # ifdef LMD_MIXING
+> #  define LMD_SKPP
+616,617c121,151
+< c--# define LMD_CONVEC
+< c--# define LMD_NONLOCAL
+---
+> #  define LMD_CONVEC
+> #  undef  LMD_DDMIX
+> #  define LMD_NONLOCAL
+> #  define MLCONVEC
+> # endif
+> # ifdef GLS_MIXING
+> #  define GLS_KKL
+> #  undef  GLS_KOMEGA
+> #  undef  GLS_KEPSILON
+> #  undef  GLS_GEN
+> #  undef  KANTHA_CLAYSON
+> #  undef  CRAIG_BANNER
+> #  undef  CANUTO_A
+> #  undef  ZOS_HSIG
+> # endif
+>                       /* Surface Forcing */
+> # undef  BULK_FLUX
+> # ifdef BULK_FLUX
+> #  define BULK_FAIRALL
+> #  define BULK_LW
+> #  define BULK_EP
+> #  define BULK_SMFLUX
+> #  undef  SST_SKIN
+> #  undef  ANA_DIURNAL_SW
+> #  undef  ONLINE
+> #  undef  ERA_ECMWF
+> #  undef  RELATIVE_WIND
+> # else
+> #  undef QCORRECTION
+> #  undef SFLX_CORR
+> #  undef ANA_DIURNAL_SW
+619,690d152
+< 
+< 
+< 
+< 
+< 
+< #elif defined CANBAS2   /* Canary Basin model */
+< 
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< 
+< # define SALINITY
+< # define NONLIN_EOS
+< 
+< # define AVERAGES
+< 
+< # define UV_VIS2
+< # define TS_DIF2
+< 
+< # define QCORRECTION
+< 
+< # define LMD_MIXING
+< # define LMD_KPP
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< 
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< 
+< # define OBC_WEST
+< # define OBC_EAST
+< # define OBC_NORTH
+< # define OBC_SOUTH
+< 
+< # define OBC_M2FLATHER
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< 
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< # define T_FRC_BRY
+< 
+< #elif defined BALTIC  /* Baltic Sea model */
+< 
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< 
+< # define SALINITY
+< # define NONLIN_EOS
+< 
+< # undef AVERAGES
+< 
+< # define UV_VIS2
+< # define TS_DIF2
+< 
+< 
+< # define LMD_MIXING
+< # define LMD_KPP
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< 
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< 
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+693a156,158
+> # define ANA_SMFLUX
+> !!!!# define ANA_BSFLUX
+> !!!!# define ANA_BTFLUX
+695,707c160,172
+< #elif defined USWC   /* US West Coast 2010 */
+< # define SOLVE3D
+< # define UV_ADV
+< # define UV_COR
+< 
+< # define SALINITY
+< # define NONLIN_EOS
+< 
+< # define AVERAGES
+< 
+< # define UV_VIS2
+< # define MIX_GP_UV
+< # define TS_DIF2
+---
+>                       /* Lateral Forcing */
+> # undef CLIMATOLOGY
+> # ifdef CLIMATOLOGY
+> #  define ZCLIMATOLOGY
+> #  define M2CLIMATOLOGY
+> #  define M3CLIMATOLOGY
+> #  define TCLIMATOLOGY
+> #  define ZNUDGING
+> #  define M2NUDGING
+> #  define M3NUDGING
+> #  define TNUDGING
+> #  undef  ROBUST_DIAG
+> # endif
+709,710c174,193
+< c------# define DIURNAL_SRFLUX
+< # undef TIDES
+---
+> # define  FRC_BRY
+> # ifdef FRC_BRY
+> #  define Z_FRC_BRY
+> #  define M2_FRC_BRY
+> #  define M3_FRC_BRY
+> #  ifdef NHMG
+> #   define W_FRC_BRY
+> #  endif
+> #  define T_FRC_BRY
+> # endif
+>                       /* Bottom Forcing */
+> # define ANA_BSFLUX
+> # define ANA_BTFLUX
+>                       /* Point Sources - Rivers */
+> # undef PSOURCE
+> # undef PSOURCE_NCFILE
+> # ifdef PSOURCE_NCFILE                    
+> #   define PSOURCE_NCFILE_TS
+> # endif
+>                       /* Open Boundary Conditions */
+714c197,204
+< c#  define TIDERAMP
+---
+> #  undef  POT_TIDES
+> #  define TIDERAMP
+> #  define OBC_M2FLATHER
+> # else
+> #  undef  OBC_M2SPECIFIED
+> #  undef  OBC_M2FLATHER
+> #  undef  OBC_M2CHARACT
+> #  undef  OBC_M2ORLANSKI
+716,780c206,208
+< 
+< # define QCORRECTION
+< 
+< # define LMD_MIXING
+< # define LMD_KPP
+< # define LMD_BKPP
+< c# define LMD_RIMIX
+< # define LMD_CONVEC
+< # define LMD_NONLOCAL
+< 
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+< 
+< # define OBC_WEST
+< # define OBC_EAST
+< # undef OBC_NORTH
+< # define OBC_SOUTH
+< 
+< # define OBC_M2FLATHER
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< 
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< # define T_FRC_BRY
+< # define SPONGE
+< 
+< #elif defined USWEST   /* US West Coast Configuration */
+< # define SOLVE3D
+< # define UV_COR
+< # define UV_ADV
+<                        /* Equation of State */
+< # define SALINITY
+< # define NONLIN_EOS
+<                        /* Forcing and Climatology */
+< # define QCORRECTION
+< # define SPONGE
+< # define SFLX_CORR
+<                       /* Lateral viscosity/mixing  */
+< # define UV_VIS2
+< # undef VIS_GRID
+< # define TS_DIF2
+< # undef DIF_GRID
+<                       /* Vertical Mixing */
+< # define LMD_MIXING
+< # define LMD_RIMIX
+< # define LMD_CONVEC
+< # undef LMD_DDMIX
+< # define LMD_KPP
+< # define LMD_NONLOCAL
+<                       /* Grid Configuration */
+< # define CURVGRID
+< # define SPHERICAL
+< # define MASKING
+<                       /* Open Boundary Conditions */
+< # undef OBC_EAST
+< # define OBC_WEST
+< # define OBC_NORTH
+< # define OBC_SOUTH
+< c--> # define OBC_VOLCONS
+< c--> # define OBC_FLUX_CORR
+< 
+< # undef OBC_M2ORLANSKI
+---
+> # undef OBC_M3ORLANSKI
+> # undef OBC_TORLANSKI
+> # undef  OBC_M2SPECIFIED
+782,805c210,220
+< # define OBC_M3ORLANSKI
+< # define OBC_TORLANSKI
+< 
+< #define BRY
+< #ifdef BRY
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+< # define M3_FRC_BRY
+< # define T_FRC_BRY
+< # undef TNUDGING
+< # undef M3NUDGING
+< # undef M2NUDGING
+< # undef CLIMAT_TS_MIXH
+< #else
+< # define TNUDGING
+< # define M3NUDGING
+< # define M2NUDGING
+< #endif
+< 
+< # undef OBC_TSPECIFIED
+< # undef OBC_M2SPECIFIED
+< # undef OBC_M3SPECIFIED
+< 
+< # define AVERAGES
+---
+> # define  OBC_M3SPECIFIED
+> # define  OBC_TSPECIFIED
+>                       /* Input/Output & Diagnostics */
+> # undef AVERAGES
+> # undef AVERAGES_K
+> # undef  DIAGNOSTICS_TS
+> # undef  DIAGNOSTICS_UV
+> # ifdef DIAGNOSTICS_TS
+> #  undef DIAGNOSTICS_TS_ADV
+> #  define DIAGNOSTICS_TS_MLD
+> # endif
+807,811c222,227
+< #elif defined WAVE_RAD
+< # undef  SOLVE3D
+< # define UV_COR
+< # define UV_ADV
+< # undef UV_VIS2
+---
+> # undef DIAGNOSTICS_VRT
+> # undef  DIAGNOSTICS_EK
+> # ifdef DIAGNOSTICS_EK
+> #  undef DIAGNOSTICS_EK_FULL
+> #  define DIAGNOSTICS_EK_MLD
+> # endif
+813,828c229
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< 
+< # define OBC_WEST
+< # define OBC_EAST
+< # define OBC_NORTH
+< # define OBC_SOUTH
+< # define OBC_M2FLATHER
+< c--# define OBC_M2ORLANSKI
+< c--# define OBC_Z2ORLANSKI
+< # define LEGACY_ORLANSKI
+< 
+< # define ANA_BRY
+< # define Z_FRC_BRY
+< # define M2_FRC_BRY
+---
+> # undef OUTPUTS_SURFACE
+829a231,294
+> /*
+> !           Applications:
+> !---------------------------------
+> ! Biology, floats, Stations, 
+> ! Passive tracer, Sediments, BBL
+> !---------------------------------
+> !
+>    Quasi-monotone lateral advection scheme (WENO5)
+>    for passive/biology/sediment tracers 
+> */
+> # if defined PASSIVE_TRACER || defined BIOLOGY || defined SEDIMENT
+> #  define BIO_HADV_WENO5
+> # endif
+>                       /*   Choice of Biology models   */
+> # ifdef BIOLOGY
+> #  undef  PISCES
+> #  undef BIO_NChlPZD
+> #  undef  BIO_N2ChlPZD2
+> #  define BIO_BioEBUS
+>                       /*   Biology options    */
+> #  ifdef PISCES
+> #   define DIURNAL_INPUT_SRFLX
+> #   define key_trc_pisces
+> #   define key_passivetrc
+> #  endif
+> #  ifdef BIO_NChlPZD
+> #   define  OXYGEN
+> #  endif
+> #  ifdef BIO_BioEBUS
+> #   define NITROUS_OXIDE
+> #  endif
+>                       /*   Biology diagnostics    */
+> #  define DIAGNOSTICS_BIO
+> #  if defined DIAGNOSTICS_BIO && defined PISCES
+> #   define key_trc_diaadd
+> #   define key_trc_dia3d
+> #  endif
+> # endif
+>                       /*   Lagrangian floats model    */
+> # ifdef FLOATS
+> #  undef  FLOATS_GLOBAL_ATTRIBUTES
+> #  undef  IBM
+> #  undef  RANDOM_WALK
+> #  ifdef RANDOM_WALK
+> #   define DIEL_MIGRATION
+> #   define RANDOM_VERTICAL
+> #   define RANDOM_HORIZONTAL
+> #  endif
+> # endif
+>                       /*   Stations recording    */
+> # ifdef STATIONS
+> #  define ALL_SIGMA
+> # endif
+>                       /*   Sediment dynamics model     */
+> # ifdef SEDIMENT
+> #  define ANA_SEDIMENT
+> #  undef  BED_ARMOR
+> #  undef  ANA_SPFLUX
+> #  undef  ANA_BPFLUX
+> # endif
+>                       /*   Bottom Boundary Layer model     */
+> # ifdef BBL
+> #  define ANA_WWAVE
+> # endif
+831,835c296
+< #elif defined SLOSH
+< # define ANA_GRID
+< # define ANA_INITIAL
+< # define ANA_SMFLUX
+< #endif
+---
+> #endif /* END OF CONFIGURATION CHOICE */
+836a298
+> #include "cppdefs_dev.h"
+837a300
+> 

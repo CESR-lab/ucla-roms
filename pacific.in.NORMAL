@@ -1,0 +1,78 @@
+title:
+         Pacific, 1/2 degree resolution, 30 levels
+
+
+time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
+             1296000     7200.       78      1
+
+
+S-coord: THETA_S,   THETA_B,    hc (m)
+           6.0d0      0.0d0     50.d0
+
+grid:  filename
+                          pacific_jpl_grd_xa.nc
+
+forcing: filename
+                          pacific_jpl_ncep.nc
+
+
+initial: NRREC  filename
+           1 
+                         pacific_z30_new_ini15.nc
+                         pacific_jan80_z30.nc
+
+
+
+climatology: filename
+                        pacific_z30_new_clim.nc
+
+
+restart:          NRST, NRPFRST / filename
+                  4320      +1
+                           rst.nc
+                          /work/Pcfc/rst.nc
+
+history: LDEFHIS, NWRT, NRPFHIS / filename 
+            T      180     24 
+              his.nc
+                          /work/Pcfc/his.nc
+
+averages: NTSAVG, NAVG, NRPFAVG / filename
+            1      120     36 
+                 avg.nc
+                          /work/Pcfc/avg.nc
+
+primary_history_fields: zeta U,VBAR  U,V   wrtT(1:NT)
+                          T   T T    T T   T T
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL
+                           F   F     T   F    T    F    T 
+
+primary_averages: zeta U,VBAR  U,V   wrtT(1:NT)
+                    T    T T   T T      T T
+
+auxiliary_averages: rho Omega  W  Akv  Akt  Aks  HBL
+                     F    F    T   F    T    F    T
+
+rho0:
+      1000.
+
+lateral_visc:   VISC2[m^2/sec]
+                 0.
+
+tracer_diff2: TNU2(1:NT)           [m^2/sec for all]
+0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
+
+
+bottom_drag:     RDRG [m/s],  RDRG2,  Zob [m],  Cdb_min, Cdb_max
+                 3.0E-04      0.d0     0.E-4     1.E-4    1.E-2
+
+gamma2:
+                 1.
+
+sponge:          X_SPONGE [m],    V_SPONGE [m^2/sec]
+                   500.e3           1000.
+
+nudg_cof:    TauM_in TauM_out   TauT_in TauT_out [days for all]
+                3.       360.      1.       360.
+

@@ -1,0 +1,37 @@
+# Platform-specific definitions for Linux using Fujitsu frt/f90/f95 
+# ======== ======== =========== === ===== ===== =======  ==========
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) $*.f
+	/bin/rm -f $*.f
+
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+
+      CPP = /lib/cpp
+      CFT = frt
+      LDR = $(CFT)
+
+   FFLAGS = -fs -O3 -KPENTIUM_PRO
+
+
+#   LCDF = -L/usr/local/lib -lnetcdf
+    LCDF = -L/work/netcdf-3.5.0/src/libsrc -lnetcdf
+
+ LIBNCAR = -L/usr/local/ncarg/lib -L/usr/X11R6/lib -lncarg -lncarg_gks -lncarg_c -lX11 -lm
+
+#  LPEPCD = -L/opt/intel/compiler50/ia32/lib  -lPEPCF90
+
+

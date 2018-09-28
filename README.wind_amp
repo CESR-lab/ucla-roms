@@ -1,0 +1,88 @@
+This is patch tarfile to include reading of wind stress amplitude
+from file. 
+
+Usage of this file:
+
+   There are total of 5 files involved in code modification:
+   4 of them can be (and recommended to be so) safely overwritten;
+   the fifth file, "lmd_kpp.F", should be examined and it is safer
+   to patch it rather than (e.g., my CPP setting may be different
+   than yours; but the only place which needs to be modified is
+   computation of "ustar": 
+
+
+# ifdef WIND_STRESS_AMP
+          ustar(i,j)=sqrt(amptau(i,j))
+# else
+          ustar(i,j)=sqrt(0.5*sqrt( (sustr(i,j)+sustr(i+1,j))**2
+     &                             +(svstr(i,j)+svstr(i,j+1))**2))
+# endif
+
+
+Description of changes:
+----------------------
+
+forces.h    added extra variables to handle wind-stress amplitude.
+ 
+get_smflux.F        added interpolation of wind-stress amplitude;
+                    also improved netCDF error diagnostics, but
+                    other than that everything is identical to what
+                    it was before;
+
+get_stress_magn.F   new file --> this file should be added to 
+                         SRC list of Makefile.
+
+get_forces.F        added call to get_stress_magn just after call
+                    to get_smflux.
+
+
+lmd_kpp.F    change in "ustar"  as stated above.
+
+
+NOTES:
+-----
+
+1. The whole procedure is activated by CPP switch WIND_STRESS_AMP
+
+2. Wind-stress magnitude is expected to be in one of the forcing
+   files (not necessarily the same as wind-stress components) and
+   is expected to have name netCDF variable name 'atau', which,
+   however, can be changed as parameter setting in
+   "get_stress_magn.F".
+
+   The code is designed to handle without and adjustment the
+   following situations:
+
+         a. If 'atau' is placed into the same netCDF file as wind
+            stress components, it may share timing variable
+            'sms_time' with them, or may have its own time variable
+            called 'atau_time' or whatever name_time, if its name
+            is changed from 'atau' (ROMS convention is to name
+            timing variables using the same name in suffix '_time'
+            attached at the end for scalars).
+
+         b. If 'atau' is placed into a different netCDF file, it
+            must be supplied with timing variable.  Again, the
+            time variable is must be named either as 'atau_time'
+            or 'sms_time'.
+
+         c. Of the two possibilities, 'atau_time' or 'sms_time',
+            the first one takes precedence; the second it used
+            only if the first does not exist.
+
+         d. 'atau_time' may or may not have netCDF attribute
+            'cycle_length'.  It is treated accordingly.
+
+         e. Theoretically it is possible to have independent timings
+            for sustr,svstr and atau (including situations where
+            they are defined at different times of frequencies),
+            while all of them are placed into the same netCDF file.
+
+
+
+
+
+
+ 
+
+

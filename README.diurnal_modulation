@@ -1,0 +1,39 @@
+The daily cycle issue has been 100% resolved and was tracked to evolutionary
+change in the code associated with the introduction of bulk formula forcing
+algorithm earlier this year due to the associated changes in the order of
+operations in computing heat flux. Specifically, bulk formula requires
+computation of short-wave radiation (including its diurnal cycle modulation)
+first and having it readily available to the bulk routine which perform the
+final assembly of surface thermodynamic fluxes.  In contrast, the traditional
+q-correction way needed short-wave radiation routine be the last operation
+because externally-precomputed total heat flux (read from input netCDF files)
+already contains short-wave radiation component, so the role of short-wave is
+to (1) interpolate short-wave flux in time, then (2) subtract it from the net
+heat flux; (3) modulate the interpolated short-wave flux with diurnal cycle and
+have it available to other routines (specifically step3d_t and  KPP-related);
+and, finally, (4) add the modulated version back to the net heat flux.
+This procedure may seem somewhat awkward (why not to simply keep solar heat
+flux separately in the file and DO NOT ADD IT TO THE NET as an alternative?
+We have to store and read two fields -- either net (incl. solar) and solar, or
+net (without solar) and solar) -- in any case, right?  But the historical
+rationale for doing it the way it is is traced ack to the legacies in the
+beginning of 1990x where solar flux was kind of "optional", so model can be
+run by having just one forcing input per variable -- net heat flux and net
+surface salinity flux.  It is for this reason ROMS CPP-switch related to SWRAD
+is logically tied to KPP -- other mixing schemes, BVF-mixing or Pacanowski and
+Philander, 1981 -- do not need swrad at all.  So it is what it is.
+
+Moving swrad routine ahead of stflux (as dictated by bulk formula, which is
+the counterpart of stflux routine) results in elimination of the subtract-
+modulate-add back mechanism  [that is (2)  and (4) above], while the radiation
+flux itself is still computed correctly, and so does the net heat flux averaged
+in for a 24-hour period. Thus the only what is missing is the loss of diurnal
+modulation in the net heat flux, while its temporal mean is still correct, and
+so does swrad participating in KPP -- so you still have response of mixed layer
+depth to diurnal cycle, and, because of changing mixing, still have some
+response in SST, although at smaller amplitude because there are two causes
+for diurnal variation of SST (i) direct heat flux (missing) and (ii) mixing
+it from below as mixed-layer depth propagates downward (retained).
+This explains while the diurnal response in vorticity fileld in the solutions
+computed in the end of May this year was less vivid than that of last year.
+

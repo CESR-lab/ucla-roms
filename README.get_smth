@@ -1,0 +1,82 @@
+Secondly, I modified input for reading forcing data in my ROMS
+code to essentially make it easy to adjust to receive all kind of
+data. I studied both Rutgers ROMS and AGRIF with respect to 
+this and found that I do not like the approach in dealing with this
+in both of them:
+
+  AGRIF essentially follows my approach to generate individual
+  get_smflux, get_stflux, get_sst, ... etc routines (which are self-
+  initializing, and therefore require very little user book-keeping in
+  the main code -- just place one call when data is needed, no
+  input arguments except error flag).  The dilemma is that they
+  start multiply as rabbits.  Now AGRIF   comes with get_bulk
+  routine, which is, indeed, bulky, bulky  actually not flexible
+  enough -- all the input fields share the  same timing variable,
+  but in the case of Drakkar the timings are different.
+
+ Hernan tried to make generic routines, like  get_2dfld, but the
+ problem this creates is way too much book-keeping, relying on
+ ever-growing catalog of possible data inputs e.g., varinfo.dat,
+ and after all  ... still too difficult to add ad new type of input --
+ the code needs to be consistently modified in several places
+ in different files.
+
+       I could not eat the perspective of having something like
+       get_bulk.F of AGRIF, or adding a half-a-dozen other
+       get_multiplying_rabbits.F, not to have a sort of
+       5,000-line long "varinfo.dat".
+
+So, after some consideration, I decided to keep the individual
+routines (as before), but instead of having individual FORTRAN
+ files for them, make one generic template, and use CPP to
+ create multiple different ones.
+
+ After all this is what all people in UCLA and AGRIF community
+ do: if a new input type is needed, copy whatever file among the
+ available is the closest one to what is needed and edit it to
+ mainly change variable names as needed.  This manual
+ editing in now replaced with CPP.
+
+In the same web directory find 
+
+          get_smth.F  <-- template
+        get_forces.F  <-- assembly platform;
+               forces.h  <-- compartmentalized set of common
+                                  blocks: a designated CPP-switch needs
+                                  to be defined to access each particular
+                                  section,
+
+Why not to create a generic subroutine? (like, say, Hernan did)
+
+There are two reasons: 
+
+       1. Bulky Fortran code in get_forces.F equivalent because of
+           large number of arguments; 
+
+       2. Lack of flexibility: variable number of arguments is required,
+           leading to potentially advanced reliance of F90 features,
+           i.e., keyed subroutine arguments, and as the result, much
+           more verbose Fortran code;
+
+       3. Robustness with respect to typo errors: by the design
+           misspelling a macro in  get_forces.F 100% leads to
+           compilation error (forces.h  is compartmentalized for
+           this reason) as opposite to run time error;
+
+       4. No need for catalog file or catalog array (e.g., see
+           3000-line  init_scalars.F from  AGRIF code);
+           In contrast, CPP consistently inserts character
+           strings, which otherwise should be kept as variables
+           or parameters, assigned values, and computed
+           length.        
+    
+This way to create a new routine read a netCDF file, one just needs
+ to
+       (i) create a block in forces.h using other block as template
+                                  (about 10 lines of code) and;
+       (ii) create an entry in get_forces.F with  defined character
+            strings matching variable names in the netCDF file it intended
+            to read, and variable names matching the ones in the newly
+            created block in  forces.h. again, about 15 lines added.
+
+   The template get_smth.F never needs to be modified.

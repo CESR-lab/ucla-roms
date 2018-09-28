@@ -1,0 +1,59 @@
+title:
+       Ekman Spiral test problem
+
+time_stepping: ntimes dt[sec] ndtfast ninfo
+                1000.  900.     5      10
+
+
+S-coord: theta_s  theta_b  hc(m)
+          .0      0.      1000.
+
+rho0:
+     1000.
+
+lin_rho_eos: tcoef T0[deg C]  SCOEFF  S0
+                0.    0.        0.     0.
+
+
+bottom_drag:  rdrg[m/s]   rdrg2   Zob[m]
+                  0.        0.     0.01
+
+vertical_mixing: Akv Akt[m^2/s]
+                 0.002  0.002
+
+initial: nrrec / filename
+           0
+          restart.nc
+
+restart: nrst nrpfrst / filename
+         999999 -1
+         restart.nc
+
+
+history: ldefhis nwrt nrpfhis / filename
+            T 10000 0
+            history.nc
+
+
+primary_history_fields: zeta ubar vbar  u  v  wrtT(1:NT)
+                          F    F    F   F  F    F
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt Aks  HBL
+                           F    F    F   F    F   F    F
+
+
+
+stations: nsta, nrpfstn / input / output
+           10  20
+          stat.dat
+          station.nc
+
+
+primary_stations: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                   F     F    F   T  T       T
+
+auxiliary_stations: rho Omega  W  Akv  Akt Aks  HBL
+                     F    F    F   F    F   F    F
+
+
+

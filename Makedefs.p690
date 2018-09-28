@@ -1,0 +1,80 @@
+# Compiler definitions for IBM p690
+# ======== =========== === === ====
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+#/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+
+      CPP = /usr/ccs/lib/cpp 
+ CPPFLAGS = -DAIX -I/usr/lpp/ppe.poe/include/thread
+
+# NOTE: by default, non-F90/95 versions of IBM compilers produce
+# static allocation of internal variables of subroutines. This also
+# makes them shared among the threads, hence these routines cannot
+# be executed inside a parallel region.   Compiler switch -qnosave
+# overrides this behavior (when using xlf_r -qsmp=omp  it is also
+# mandatory to specify -qnosave ==> otherwise Open MP code fails;
+# however it is not necessary for xlf95_r).  Also, by default F90/95  
+# compilers interprete source code as in free format, while ROMS uses
+# fixed format. Thus, -qfixed is needed when using xlf95_r.
+#
+# Compiler is sensitive to -qalias=noaryovrlp (about 15% gain in
+# performance) 
+      
+
+ OMP_FLAG = -qsmp=omp
+
+#     CFT = xlf_r -qnosave $(OMP_FLAG)
+      CFT = xlf95_r -qfixed $(OMP_FLAG) -qstrict -qrealsize=8 -qintsize=4 -qalias=noaryovrlp
+      LDR = $(CFT)
+
+# Settings for MPI note that one needs to use mpxlf as loader
+# instead of xlf + link it with MPI library.
+
+#      CFT = xlf95_r -qfixed
+#      LDR = mpxlf95_r -qfixed $(OMP_FLAG)
+
+       LDR = mp$(CFT)
+
+
+#      CFT = xlf95_r -qfixed -q64 -qwarn64
+#      LDR = mpxlf95_r -qfixed -q64 -qwarn64
+#     LMPI = /usr/lpp/ppe.poe/lib/libmpi_r.a
+
+
+
+
+#   FFLAGS = -O5 -qstrict -qhot -qalias=noaryovrlp -qarch=auto -qunroll=yes
+    FFLAGS = -O5 -qstrict -qhot -qalias=noaryovrlp -qarch=pwr4 -qtune=pwr4 -qunroll=yes
+
+    FFLAGS = -g -O0 -qsigtrap=xl__ieee -qflttrap=enable:zerodivide:invalid:overflow -qsigtrap -C 
+#
+# Profiling flag: -pg
+#
+
+
+
+ COMP_FILES =
+
+#  LCDF = -lnetcdf
+#  LCDF = ../lib/libnetcdf.a
+   LCDF = ../netcdf/netcdf-3.6.1-beta3/src/libsrc/libnetcdf.a
+
+
+ LIBNCAR = -L/usr/local/ncarg/lib -L/usr/X11R6/lib -lncarg -lncarg_gks -lncarg_c -lX11 -lm
+
+

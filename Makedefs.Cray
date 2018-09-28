@@ -1,0 +1,40 @@
+# Definitions for Cray XC30 system using Cray ftn compiler
+# =========== === ==== ==== ====== ===== ==== === =========
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+#/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) $*.f -o $*.o
+.F:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.o:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+
+      CPP = /lib/cpp -traditional
+ CPPFLAGS = -DCRAY -DINT_IARGC -I/opt/cray/netcdf/4.3.2/CRAY/83/include
+
+      OMP_FLAG = -h omp
+
+      CFT = ftn $(OMP_FLAG)
+
+      LDR = $(CFT) 
+
+   FFLAGS = -O3
+
+  LDFLAGS = -lsci_cray
+
+ COMP_FILES = work.pc work.pcl ifc??????
+
+ LCDF = -L/opt/cray/netcdf/4.3.2/CRAY/83/lib -lnetcdff -lnetcdf \
+        -L/opt/cray/hdf5/1.8.13/CRAY/83/lib -lhdf5_hl -lhdf5 \
+        -L/opt/cray/xc-sysroot/5.1.29/usr/lib64 -lz -ldl
+

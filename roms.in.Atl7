@@ -1,0 +1,53 @@
+title:
+           North Atlantic Damee #7, 0.375 resolution
+
+time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+               70000     5400      61      1
+
+initial: nrrec  filename
+          1
+         damee7_levfeb_a.nc
+
+restart:  nrst, nrpfrst / filename
+           2880     1
+           restart.nc
+
+history: ldefhis, nwrt, nrpfhis / filename
+            F     480     36
+            history.nc
+
+S-coord: theta_s  theta_b  Tcline (m)
+          5.        0.4      200.
+grid:  filename
+        damee7_grid_a.nc
+forcing: filename
+         damee7_coads.nc
+climatology: filename
+         damee7_Lclm_a.nc
+
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T    T   T  T    T   T
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL
+                           F   T     T   F    F    F    F
+
+
+averages: ntsavg navg nrpfavg / filename
+           3600  1800    0
+               /work/alex/MP/averages.nc.30.nonlinEOS
+
+primary_averages: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                    T    T    T   T  T    T T
+auxiliary_averages: rho Omega  W  Akv  Akt  Aks  HBL
+                     F    F    F   F    F    F    F
+
+rho0:
+      1025.d0
+
+bottom_drag:     RDRG(m/s),      RDRG2
+                 3.0E-04          0.d0
+gamma2:
+       -1.d0
+
+
+

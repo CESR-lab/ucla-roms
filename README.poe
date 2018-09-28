@@ -1,0 +1,34 @@
+The Parallel Operating Environment is used for running MPI programs.
+Instead of using mpirun to run MPI programs, use the poe command.
+List the poe options after the program options and any file
+redirections. For example, to run a program on 4 processors:
+
+   poe a.out < myin > myout -procs 4
+
+See "poe -h" for the short help. There are many environment variables
+and options that can be used with poe. When debugging MPI programs,
+consider using the following poe options:
+
+-infolevel 1
+    poe displays errors and warnings 
+-labelio yes
+    output from the parallel tasks is labeled by task ID 
+-euidevelop yes
+    the message passing interface performs more detailed checking
+    during execution. This additional checking is intended for
+    developing applications and can significantly slow performance. 
+
+Here is an example of the poe command with various debug options:
+
+% poe allall 100 100 2000 -procs 2 -labelio yes -infolevel 1 -euidevelop yes
+   0:Node 0 Complete...
+   0:Host Cu12 to Host Cu12(1): 1642.407474MB/sec
+   1:Node 1 Complete...
+   1:Host Cu12 to Host Cu12(0): 1623.271113MB/sec
+
+See web suite
+
+http://www.ncsa.uiuc.edu/UserInfo/Resources/Hardware/IBMp690/Doc/Jobs.html#mpi
+
+
+

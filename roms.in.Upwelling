@@ -1,0 +1,64 @@
+title:
+     Wind-Driven Upwelling/Downwelling over a Periodic Channel
+
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                 1440    900.d0     57     32
+
+ time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+                 2000   600.d0      55     32
+
+ history: ldefhis, nwrt, nrpfhis / filename
+           T   96     0
+                 history_kpp.nc
+
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+!                 7680   225.d0      23     32
+
+! history: ldefhis, nwrt, nrpfhis / filename
+           T       192     0
+                  history_kpp.nc
+
+
+
+
+
+S-coord: theta_s,   theta_b,    hc[m]
+            6.d0      6.d0      75.d0
+
+initial: nrrec / filename
+           0
+         restart.nc
+
+restart:  nrst, nrpfrst / filename
+          80000    -1
+                  restart.nc
+
+
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T    T   T  T    T   T
+
+auxiliary_history_fields: rho Omega W  Akv Akt Aks  HBL HBBL
+                           F   T    T   T   F   F    F   F
+
+rho0:
+      1000.d0
+
+lin_rho_eos:  tcoef  T0[deg C]   scoeff  S0
+               0.28     12.5       0.     0.
+
+lateral_visc: visc2[m^2/sec]
+                 0.
+
+tracer_diff2: tnu2(1:NT)[m^2/sec]
+               0.d0  0.d0
+
+vertical_mixing: Akv_bak Akt_bak(1:NT)  [m^2/sec for all]
+                 0.01     0.     0.
+                 1.0d-5   0.
+
+bottom_drag:   rdrg[m/s]   rdrg2    Zob[m]
+                   0.        0.     0.01
+
+gamma2:
+       1.
+

@@ -1,0 +1,224 @@
+There are several incremental updated to the code, which although
+does not affect anything you are doing right now  are still useful
+to to immediately.
+
+These are:
+
+  1. CODE SEMANTICS CHANGE: "set_global_definitions.h" which is
+     needed by bugfix in rhs3d35S.F, but it is also in line with
+     overall stuctural evolution of the entire code (periodic
+     boundaries are handled together with MPI and are independent
+     from physical boundaries). This changes the scope of
+     applicability of things like WEST_INTER to handle periodic
+     conditions in non-MPI mode.   
+
+     Backward effects NONE.
+
+     It affects you only if you play with periodic problem
+     in non-MPI mode AND you have quadratic bottom drag (like
+     Yusuke does). 
+
+
+  2. BUGFIX: rhs3d35S.F :: Insufficient index ranges for definition
+     of r_D (bottom drag array) in periodic case, non-MPI mode.
+     NOTE: Please fix it even if you decide to replace "rhs3d35S.F"
+     altogether.  
+
+     Backward effects NONE, except for Yusuke.
+
+
+
+  3. BUGFIX: step2D_FB.F :: lines 446 and 459, see under CPP-switch  
+     #ifndef LINEAR_DRAG_ONLY :: wrong i-index range (2 occasions)
+     when adding bottom drag term into "rubar" and "rvbar".  The
+     correct index range should be
+
+        do j=jstr,jend
+          do i=istr,iend
+            rubar(i,j)=...
+
+            rvbar(i,j)=...
+          enddo
+        enddo
+
+     In the code you find     do i=istrU,iend     this is a mistake.
+
+
+     Backward effects: NONE for virtually everything of what you are
+     doing.   This part of the code is used only if you do a purely
+     2D, non-periodic problem with non-zero bottom drag. 
+
+
+
+
+  4. MAJOR UPDATE: BOTTOM DRAG NO-LONGER NEEDS TO BE LIMITED BY
+     NON-PHYSICAL NUMERICAL STABILITY CONSTRAINT,
+
+                    dt*rd(i,j)/H(i,j,1) < 1
+     
+     THIS REQUIRES MOVING IMPLICIT VERTICAL VISCOSITY COMPUTATION
+     FROM "step3d_uv2.F"  to "rhs3d35S.F" IN ORDER TO ACHIEVE PROPER 
+     INTERACTION WITH THE BAROTROPIC MODE.
+
+     In practical terms changes in the two routines are too massive
+     for copy-pasting, so BOTH files should be replaced as a set. 
+
+     NOTE: both updated files contain CPP switches to activate
+     the changes
+
+# define NO_SLIP_BOTTOM
+# define IMPLICIT_BOTTOM_DRAG
+
+     and these switches must be set consistently in both (basically
+     they should be always defined no mater what, unless, of course
+     you want to play with them and study splitting errors of two
+     stiff update operators.
+
+
+     Backward effects: MINOR 
+
+         a. Undefining both CPP switches in both files reverts
+            the code to what it was before, except replacement 
+
+            FC(i,k)=dt*(Akv(i,j,k)+Akv(i-1,j,k))
+     &                       /( z_r(i,j,k+1)+z_r(i-1,j,k+1)
+     &                         -z_r(i,j,k  )-z_r(i-1,j,k ))
+
+            with
+
+
+            FC(i,k-1)= dt*2.*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
+     &                        /(  Hz(i,j,k  )+Hz(i-1,j,k  )
+     &                          +Hz(i,j,k-1)+Hz(i-1,j,k-1))
+
+            
+            in tridiagonal solver.  These two are close, but not
+            exactly equivalent, but are numerically close.  The
+            former one is more consistent with finite-difference
+            interpretation of grid-point data, the latter with
+            finite-volume.
+
+         c. Application of surface winds stress is now done entirely
+            in rhs3d35S, and there is no mentioning of sustr, svstr
+            in step3d_uv2 even if the switch IMPLICIT_BOTTOM_DRAG
+            is deactivated (hence implicit vertical viscosity solver
+            is moved back to step3d_uv2 where it was been originally.
+            This is done for more clean view what CPP switches
+            are doing, and to a large extent to simplify switching.
+ 
+            But this also mandated that both routines must be
+            replaced together, since one-by one they are incompatible
+            with their partners from the original code. 
+              
+
+
+         d. The code can still work in PREDICTOR_COUPLED_MODE 
+            (like AGRIF) but only if both switches, NO_SLIP_BOTTOM
+            and IMPLICIT_BOTTOM_DRAG are undefined. This
+            necessitates imposing limit on bottom drag as in the
+            original code. 
+
+
+         e. In future I forecee removing of these CPP switches and
+            supporting only the best option, which is, tentatively,
+            corrector coupled mode with fully implicit bottom drag
+            with possibility of no-stress bottom via CPP switch
+            (useful for many idealised problems).  So that the code
+            will be streamlined with most of CPP switching removed.
+
+             
+
+
+
+
+
+
+
+
+
+
+Details for items 1 and 2:
+======= === ===== ========
+
+
+
+1. Edit file "set_global_definitions.h" and find
+
+
+
+#ifdef MPI
+# define WEST_INTER west_inter.and.istr.eq.iwest
+# define EAST_INTER east_inter.and.iend.eq.ieast
+# define SOUTH_INTER south_inter.and.jstr.eq.jsouth
+# define NORTH_INTER north_inter.and.jend.eq.jnorth
+#endif
+
+
+
+
+Add "#else# branch along with the comment, so the above becomes
+
+
+/* The following four macros are to signal the proximity of 
+ communication boundaries: rows of ghost points associated with 
+ either MPI exchange zones or periodicity.
+*/
+
+#ifdef MPI
+# define WEST_INTER west_inter.and.istr.eq.iwest
+# define EAST_INTER  east_inter.and.iend.eq.ieast
+# define SOUTH_INTER south_inter.and.jstr.eq.jsouth
+# define NORTH_INTER north_inter.and.jend.eq.jnorth
+#else
+# ifdef EW_PERIODIC
+#  define WEST_INTER istr.eq.1
+#  define EAST_INTER iend.eq.Lm
+# endif
+# ifdef NS_PERIODIC
+#  define SOUTH_INTER jstr.eq.1
+#  define NORTH_INTER jend.eq.Mm
+# endif
+#endif
+
+
+
+
+Note that in the new code macros like WESTERN_EDGE are
+restricted to physical boundaries only, and are #undefined
+if there are no boundaries, i.e., periodicity to prevent
+their accidental use; similarly, WEST_INTER applies only
+to exchange boundaries, and are in undefined state, if there
+are no such boundaries. 
+
+
+
+
+2. Edit file "rhs3d35S.F" and  make ranges for  "r_D" as follows 
+
+
+# if defined MPI  || defined EW_PERIODIC
+        if (WEST_INTER) then          ! Save "rd" into shared array
+          imin=istr-1                 ! "r_D" for the subsequent use
+        else                          ! in barotropic mode. Note that
+          imin=istr                   ! in the case of MPI code the
+        endif                         ! range of indices is extended
+# else
+        imin=istr                     ! into one row of points in MPI
+# endif
+# if defined MPI  || defined NS_PERIODIC
+        if (SOUTH_INTER) then
+          jmin=jstr-1                 ! exchange margines so that
+        else                          ! "r_D" can be correctly
+          jmin=jstr                   ! averaged to U- and V-points
+        endif                         ! without exchanging its halo
+# else
+        jmin=jstr                     ! points by MPI messages.
+
+# endif
+        do j=jmin,jend
+          do i=imin,iend
+            r_D(i,j)=rd(i,j)
+          enddo
+        enddo
+      endif
+

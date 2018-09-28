@@ -1,0 +1,53 @@
+title:
+        River experiment
+
+time_stepping: ntimes   dt[sec]  ndtfast  ninfo  DSTART[days]
+               10000    480.d0     24      1      0.d0
+
+!time_stepping: ntimes   dt[sec]  ndtfast  ninfo  DSTART[days]
+               100000    240.d0     20      1      0.d0
+
+
+
+S-coord: theta_s,   theta_b,    hc (m)
+            3.d0      0.d0      15.d0
+
+initial: nrrec / filename
+           0
+         restart.nc
+
+restart:  nrst, nrpfrst / filename
+          80000    -1
+                  restart.nc
+
+history: ldefhis, nwrt, nrpfhis / filename
+           T       45    0
+                 history.nc
+
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T    T   T  T    T   T
+
+auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL
+                           F   F     F   F    F    F   F
+
+rho0:
+      1000.d0
+
+lin_EOS_cff: R0[kg/m^3] T0[deg C]  tcoef   S0[PSU] scoef
+                  0.       0.       0.28      0.    0.8
+
+lateral_visc: visc2[m^2/sec]
+               0.
+
+tracer_diff2: tnu2(1:NT)[m^2/sec for all]
+                0.  0.
+
+vertical_mixing: Akv_bak Akt_bak(1:NT)  [m^2/sec for all]
+                 1.0d-5   0.d0    0.0d0
+
+bottom_drag:     RDRG(m/s),      RDRG2
+                   4.5d-4           0.d0
+
+gamma2:
+       1.d0
+

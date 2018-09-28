@@ -1,0 +1,67 @@
+# Platform-specific definitions for McIntosh G5 with IBM xlf compiler
+#========= ======== =========== === ======== == ==== === === ========
+# NOTES: (1) Due to specifics of the operating system (???),
+#            redirections and move commands do not distinguish
+#            between upper .F and lowercase .f-suffixed filenames. 
+#            as the result, execution of CPP in a standard way
+#            causes the original source code .F file be overwritten. 
+#            This can be checked, for example, by executing
+#
+#                     cp file.F file.f
+#
+#            after which the operating system complains that 
+#            cp: file.f and file.F are identical (not copied).
+#            Consequently, 
+#
+#                        cpp -P file.F > file.i
+#                        ./mpc  file.i > file.f
+#
+#            results in loss of file.F.  To work around of this  
+#            problem .f files are placed in temporal directory.
+#
+#            ??? straight compilation of .F files does not work. 
+#
+#
+#        (2) Names of fortran callable functions from GCC compiled
+#            netCDF library receive one leading underscore and two
+#            trailing underscores, while xlf compiler adds only one
+#            leading underscore.  To overcome this problem, redefine
+#            function names in netcdf.inc files as follows:
+#
+#                 #define nf_func_name nf_func_name__ 
+#
+#        (3) cpp inserts #pragmas into C-preprocessed files, which
+#            cause errors in subsequent fortran compilations.
+#            Although mpc program removes the #pragmas, compilation
+#            of mpc itself requires manual interference to remove
+#            the #pragma in the first line of the .f file.
+#
+# P.S. Overall behavior is very similar to IBM SPx series.  Open MP
+#      is available and works, however man pages for xlf compiler on
+#      on McIntosh G5 provide no clue about even its existence; It is 
+#      activated by the standard -qsmp=omp flag (using _r version of
+#      the compiler is imperative here, along with the -qnosave flag
+#      in the case of just xlf_r: IBM default is static. 
+
+.SUFFIXES: .o .f .F
+
+.F.o:
+	$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > /tmp/$*.f
+	$(CFT) -c $(FFLAGS) /tmp/$*.f
+	/bin/rm -f /tmp/$*.f
+
+     CPP = cpp -traditional-cpp
+CPPFLAGS = -DAIX
+
+     CFT = xlf95_r -qsmp=omp -qfixed
+#    CFT = xlf_r -qsmp=omp -qnosave
+
+     LDR = $(CFT)
+
+  FFLAGS = -O5 -qarch=G5 -qtune=G5 -qhot -qunroll=yes
+ LDFLAGS =
+
+    LCDF = -L/Users/alex/lib -lnetcdf
+
+
+

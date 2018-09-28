@@ -1,0 +1,76 @@
+! This is startup file for Equatorial Rossby Soliton Test Problem
+! The Soliton should move to the west without changing shape, and
+! practically without dissipation. This example works for any choice
+! of boundary conditions:  EW_RERIODIC, double periodic or radiation.
+! this problem typically used to test radiation boundaries.
+
+title:
+         Equatorial Rossby Soliton
+
+! time_stepping: ntimes  dt[sec] ndtfast  ninfo  FB,96x32
+                2400    0.115    1      128  .118 stable, .119 not
+
+! time_stepping: ntimes  dt[sec]  ndtfast  ninfo  FB,192x64
+                2400    0.105      1      128  .107 stable, .108 not
+
+ time_stepping: ntimes  dt[sec] ndtfast ninfo  FB,384x128
+                4800    0.060     1    128   .061 stable, .062 not 
+
+! time_stepping: ntimes  dt[sec]  ndtfast ninfo  FB,576x192
+               7200     0.040     1     128   .040 stable, .041 not
+
+1  time_stepping: ntimes  dt[sec]  ndtfast  ninfo  FB,768x256
+                9600    0.030      1      128  .030 stable, .031 not
+
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+               6400       0.015      1      128  FB,1536x512
+
+! time_stepping: ntimes   dt[sec]  ndtfast  ninfo
+               6400       0.007      1      128  FB,3072x1024
+
+
+! time_stepping: ntimes  dt  ndtfast  ninfo
+                1025    0.10d0    1      128   LF_AM3,96x32
+
+! time_stepping: ntimes  dt[sec]  ndtfast  ninfo
+               2400       0.05       1      128   LF_AM3,192x64
+
+! time_stepping: ntimes  dt[sec]  ndtfast  ninfo
+               1600       0.0958  1          128      LF_AM3,384x128
+
+
+
+! Stability limits are: Resolution 384x128
+!--------------------------------------------
+!  LF_TR (no forw-back feedback)   0.0601
+!  LF_AM3 (no forw-back feedback)  0.0642
+!  LF_AM3 (beta=0.1,  epsil=0.6)   0.0760    min phase error.
+!  LF_TR  (beta=0.18, epsil=0.6)   0.0894
+!  FB (beta=0.281105, epsil=0.013) 0.0569    best optimization
+
+
+
+
+initial: nrrec [/filename]
+         0
+              restart.nc
+
+
+restart:  nrst, nrpfrst / filename
+          8000000    -2
+                  restart.nc
+
+history: ldefhis, nwrt, nrpfhis / filename
+            F      100000   0
+                 history.nc
+
+primary_history_fields: zeta ubar vbar
+                          T    T    T
+
+bottom_drag: rdrg[m/s]   rdrg2
+               0.d0       0.d0
+gamma2:
+        1.d0
+
+lateral_visc:
+             0.011  0.
