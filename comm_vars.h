@@ -21,10 +21,7 @@
 
       real*QUAD area, volume, bc_crss
       common /comm_vars/ area, volume, bc_crss
-#ifdef OBC_VOLCONS
-      real*QUAD bc_flux, ubar_xs
-      common /comm_vars/ bc_flux, ubar_xs
-#endif
+
       real hmin,hmax, grdmin,grdmax, rx0,rx1, Cg_min,Cg_max, Cu_Cor
       common /comm_vars/ hmin,hmax, grdmin,grdmax, rx0,rx1,
      &                                        Cg_min,Cg_max, Cu_Cor

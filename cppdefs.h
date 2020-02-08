@@ -152,7 +152,6 @@ c--# define REST_STATE_TEST    /* Rest-state unforced problem */
 # define EW_PERIODIC
 # define NS_PERIODIC
 
-#define STATIONS
 
 #elif defined GRAV_ADJ     /* Gravitational Adjustment */
 # define SOLVE3D
@@ -459,7 +458,6 @@ c--# define UV_TIDES
 # define Z_FRC_BRY
 # define M2_FRC_BRY
 c--# define OBC_M2ORLANSKI
-c--# define OBC_VOLCONS
 # define SPONGE
 
 #elif defined OVERFLOW      /* Gravitational Overflow */
@@ -777,7 +775,6 @@ c# define LMD_RIMIX
 # define OBC_WEST
 c---# define OBC_NORTH
 # define OBC_SOUTH
-c--> # define OBC_VOLCONS
 c--> # define OBC_FLUX_CORR
 
 # undef OBC_M2ORLANSKI

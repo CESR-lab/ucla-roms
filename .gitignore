@@ -4,4 +4,7 @@
 *.f
 *.o
 roms
+test_tiling
+redefs
+incl
 lsb_string

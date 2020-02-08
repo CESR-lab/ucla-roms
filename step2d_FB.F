@@ -140,9 +140,6 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
         enddo
       enddo
 
-#ifdef OBC_VOLCONS
-      call set_DUV_bc_tile(istr,iend,jstr,jend, Drhs, DUon,DVom)
-#endif
 
 ! Advance free-surface:  Compute "zeta_new" at new time step and
 !-------- ---- --------  interpolate it half-step backward, "zwrk"
@@ -712,9 +709,6 @@ c<<     &     +cff*iA_v(i,j)
 
       call    u2dbc_tile(istr,iend,jstr,jend, UFx)
       call    v2dbc_tile(istr,iend,jstr,jend, UFx)
-#ifdef OBC_VOLCONS
-      call obc_flux_tile(istr,iend,jstr,jend, UFx)
-#endif
 
 ! Fast-time-averaged barotropic fluxes along physical boundaries.
 

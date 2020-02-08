@@ -64,10 +64,6 @@ c      v3bc_max=0.
       rx0=-1.E+20    ; rx1=-1.E+20      ! context.
 #endif
       bc_crss=QuadZero
-#ifdef OBC_VOLCONS
-      bc_flux=QuadZero
-      ubar_xs=QuadZero
-#endif
 #ifdef BIOLOGY
       do i=0,2*NT+1
         global_sum(i)=QuadZero
