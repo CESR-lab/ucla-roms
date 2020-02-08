@@ -111,7 +111,7 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
 
 
          fwd=1.781105  ; fwd1=-1.06221 ; fwd2=0.281105
-         bkw_new=0.614 ; bkw=0.285 ; bkw1=0.0880 ; bkw2=0.013
+         bkw_new=0.614 ; bkw=0.285 ; bkw1=0.088 ; bkw2=0.013
       endif
 
 ! Preliminary step: compute total depth of water column and vertically
