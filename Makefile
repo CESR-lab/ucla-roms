@@ -19,7 +19,7 @@ include Makedefs/Makedefs.IntelEM64T
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = main.F		step2d_FB.F	read_inp.F	read_sta_pos.F\
+KRNSRC = main.F		step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
 	set_nudgcof.F	ana_grid.F	analytical.F\
@@ -28,7 +28,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F	read_sta_pos.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
 	visc3d_GP.F	t3dmix_GP.F	ana_vmix.F\
 \
-	zetabc.F	u2dbc_im.F	v2dbc_im.F	obc_volcons.F\
+	zetabc.F	u2dbc_im.F	v2dbc_im.F\
 	u3dbc_im.F	v3dbc_im.F	t3dbc_im.F	exchange.F\
 \
 	rho_eos.F	ab_ratio.F	alfabeta.F\
@@ -46,7 +46,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F	read_sta_pos.F\
 IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 	get_grid.F	get_init.F	wrt_grid.F	put_global_atts.F\
 	def_rst.F	wrt_rst.F	def_his.F	wrt_his.F\
-	set_avg.F	wrt_avg.F	def_statn.F	wrt_statn.F\
+	set_avg.F	wrt_avg.F\
 	get_forces.F	get_stflux.F	get_bry_all.F	set_forces.F\
 	set_smflux.F	set_stflux.F	nf_read_bry.F	bulk_flux_COAMS.F\
 	get_tides.F	set_tides.F	set_srflux.F\

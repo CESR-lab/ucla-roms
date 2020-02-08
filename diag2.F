@@ -28,7 +28,7 @@
 # include "ocean3d.h"
 # include "scalars.h"
 
-# define  ETALON_CHECK
+c----# define  ETALON_CHECK
 # ifdef ETALON_CHECK
       integer ncheck, nparam
       parameter (ncheck=10, nparam=4)

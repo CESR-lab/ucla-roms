@@ -20,7 +20,7 @@
 #endif
 
 #define SUM_BY_PAIRS
-#define ETALON_CHECK
+c---#define ETALON_CHECK
 #define MAX_ADV_CFL
 c--#define MAX_BY_VERT_CFL_ONLY
 
@@ -118,28 +118,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
         etalon_line(icheck)=' '        ! is needed because some of them
       enddo                            ! may be left uninitialized.
 
-# if defined SOLITON
-#  include "etalon_data.SOLITON"
-# elif defined WAVE_RAD
-#  include "etalon_data.WAVE_RAD"
-
-# elif defined SEAMOUNT
-#  include "etalon_data.SEAMOUNT"
-# elif defined GRAV_ADJ
-#  include "etalon_data.GRAV_ADJ"
-# elif defined ISWAKE
-#  include "etalon_data.ISWAKE"
-# elif defined UPWELLING
-#  include "etalon_data.UPWELLING"
-# elif defined DAMEE_B
-#  include "etalon_data.DAMEE_B"
-# elif defined USWEST
-#  include "etalon_data.USWEST"
-# elif defined PACIFIC
-#  include "etalon_data.PACIFIC"
-# elif defined DOUBLE_GYRE 
-#  include "etalon_data.DOUBLE_GYRE"
-# endif
 #endif
 
       ierr=0

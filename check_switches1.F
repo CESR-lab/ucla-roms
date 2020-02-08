@@ -12,7 +12,7 @@
 !!!!!! as an independent program, or use commands              !!!!!!
 !!!!!! "make checkdefs" or "make depend".                      !!!!!!
 !!!!!! Number of Configuration Choices:                     22 !!!!!!
-!!!!!! Total number of CPP-switches:                       103 !!!!!!
+!!!!!! Total number of CPP-switches:                       102 !!!!!!
 
       implicit none
       integer ierr, is,ie, iexample
@@ -395,12 +395,6 @@
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='NS_PERIODIC'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef STATIONS
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='STATIONS'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef OBC_WEST

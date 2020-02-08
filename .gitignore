@@ -3,6 +3,8 @@
 ###################
 *.f
 *.o
+mpc
+Make.depend
 roms
 test_tiling
 redefs
