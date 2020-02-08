@@ -11,7 +11,7 @@
 !!!!!! To refresh this file compile and execute "cppcheck.F"   !!!!!!
 !!!!!! as an independent program, or use commands              !!!!!!
 !!!!!! "make checkdefs" or "make depend".                      !!!!!!
-!!!!!! Number of Configuration Choices:                     23 !!!!!!
+!!!!!! Number of Configuration Choices:                     22 !!!!!!
 !!!!!! Total number of CPP-switches:                       103 !!!!!!
 
       implicit none
@@ -138,13 +138,6 @@
       cpps(is:ie)='RIVER'
       cpps(ie+1:ie+1)=' '
 #endif
-#ifdef SEAMOUNT
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SEAMOUNT'
-      cpps(ie+1:ie+1)=' '
-#endif
 #ifdef SEAMOUNT100
       iexample=iexample+1
       is=ie+2 ; ie=is+10
@@ -187,11 +180,11 @@
       cpps(is:ie)='WAVE_RAD'
       cpps(ie+1:ie+1)=' '
 #endif
-#ifdef SLOSH
+#ifdef SPLASH
       iexample=iexample+1
-      is=ie+2 ; ie=is+4
+      is=ie+2 ; ie=is+5
       if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SLOSH'
+      cpps(is:ie)='SPLASH'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef SOLVE3D
@@ -542,12 +535,6 @@
       cpps(is:ie)='SPONGE'
       cpps(ie+1:ie+1)=' '
 #endif
-#ifdef SPLIT_EOS
-      is=ie+2 ; ie=is+8
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SPLIT_EOS'
-      cpps(ie+1:ie+1)=' '
-#endif
 #ifdef TS_HADV_UP3
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
@@ -594,6 +581,12 @@
       is=ie+2 ; ie=is+8
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='M3NUDGING'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SEAMOUNT
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SEAMOUNT'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef LINEAR_DRAG_ONLY
@@ -672,6 +665,12 @@
       is=ie+2 ; ie=is+14
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='LEGACY_ORLANSKI'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SLOSH
+      is=ie+2 ; ie=is+4
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SLOSH'
       cpps(ie+1:ie+1)=' '
 #endif
       if (iexample == 0) then

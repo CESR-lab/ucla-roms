@@ -164,7 +164,7 @@
 # else
       ierr=nf_inq_varid (ncid, 'x_rho', varid)
       if (ierr == nf_noerr) then
-        ierr=ncf_fread(ncid, varid, 0, r_var, xr(START_2D_ARRAY), 1)
+        ierr=ncdf_read(ncid, varid, 0, r_var, xr(START_2D_ARRAY), 1)
         if (ierr /= nf_noerr) then
           write(*,2) 'x_rho', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR

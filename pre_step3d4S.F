@@ -61,7 +61,7 @@
 ! at this stage yet), but is rather chosen to absorb the
 ! 3D-divergence of mass fluxes FlxU, FlxV, and W consistently with
 ! time-stepping algorithm of this preliminary step (recall that
-! computation of "Hz_fwd" mimics time step for tracers themselves).
+! computation of "Hz_fwd" mimics the time step for tracers themselves).
 ! Later in this code the "Hz_fwd"-field plays the role of new-step
 ! "Hz" in the updates for tracer and 3D momenta to n+1/2, and it
 ! does not participate in any further computation.  Hence, division

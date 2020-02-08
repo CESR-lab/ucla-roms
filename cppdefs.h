@@ -17,14 +17,13 @@ c--#define BLACK_SEA
 #undef PACIFIC         /* North-Equatorial Pacific */
 #undef PACIFIC_2D      /* Pacific Tsunami model */
 #undef RIVER           /* River runoff test problem */
-#undef SEAMOUNT        /* Seamount */
-#define SEAMOUNT100        /* Seamount */
+#undef SEAMOUNT100        /* Seamount */
 #undef SOLITON         /* Equatorial Rossby Wave */
 #undef UPWELLING      /* Upwelling */
 #undef USWC            /* US West Coast Yusuke 2010 */
 #undef USWEST          /* US West Coast */
 #undef WAVE_RAD        /* Test for wave radiation boundaries */
-#undef SLOSH
+#define SPLASH
 
 /*
     Embedded (nested) grid configuration segment
@@ -306,8 +305,8 @@ c---# define NON_TRADITIONAL
 c--# define AVERAGES
                         ! Equation of State
 # define SALINITY
-# define NONLIN_EOS
-# define SPLIT_EOS
+c--# define NONLIN_EOS
+c--# define SPLIT_EOS
 # define  TS_HADV_UP3
                        ! Lateral Mixing
 # define UV_VIS2
@@ -486,9 +485,9 @@ c--# define UV_VIS2
 # undef TS_DIF2
 # undef  TS_DIF4
 
-# define SALINITY
-# define NONLIN_EOS
-# define SPLIT_EOS
+c--# define SALINITY
+c--# define NONLIN_EOS
+c--# define SPLIT_EOS
 
 c--# define EW_PERIODIC
 c--# define NS_PERIODIC
@@ -497,8 +496,8 @@ c--# define NS_PERIODIC
 # define OBC_NORTH
 # define OBC_SOUTH
 
-c--# define ANA_GRID
-c--# define ANA_INITIAL
+# define ANA_GRID
+# define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_STFLUX
 # define ANA_SSFLUX
@@ -746,7 +745,7 @@ c# define LMD_RIMIX
 # define T_FRC_BRY
 # define SPONGE
 
-#elif defined USWEST   /* US West Coast Configuration */
+#elif defined SPLASH   /* US West Coast Configuration */
 # define SOLVE3D
 # define UV_COR
 # define UV_ADV
@@ -774,9 +773,9 @@ c# define LMD_RIMIX
 # define SPHERICAL
 # define MASKING
                       /* Open Boundary Conditions */
-# undef OBC_EAST
+# define OBC_EAST
 # define OBC_WEST
-# define OBC_NORTH
+c---# define OBC_NORTH
 # define OBC_SOUTH
 c--> # define OBC_VOLCONS
 c--> # define OBC_FLUX_CORR

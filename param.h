@@ -30,6 +30,8 @@ c**  &               LLm=256, MMm=256, N=20
 c     &                LLm=800, MMm=2,  N=80
 #elif defined BLACK_SEA
      &             LLm=1256,  MMm=768, N=40
+#elif defined SPLASH
+     &              LLm=1504,  MMm=1024 ,N=50   ! 150 m resolutionu
 #elif defined ATLANTIC
 c     &             LLm=840,  MMm=520, N=50   !<-- 5km Gulf Stream area
 c     &             LLm=1218,  MMm=896, N=50 !<-- 1.5km, full Gulf
@@ -156,7 +158,7 @@ c**  &               LLm=126,  MMm=254, N=20    ! USWEST grid 16
 !                                             XI- and ETA-directions;
       integer, parameter ::
 #ifdef MPI
-     &      NP_XI=16, NP_ETA=16, NSUB_X=1, NSUB_E=1
+     &      NP_XI=8, NP_ETA=32, NSUB_X=1, NSUB_E=1
 #else
 c     &      NSUB_X=4, NSUB_E=40  ! PAC44
 c     &      NSUB_X=8, NSUB_E=80   ! PAC22
