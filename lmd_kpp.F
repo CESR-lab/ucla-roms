@@ -466,7 +466,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
      &                            )/(Cr(i,k)-Cr(i,k-1)) -z_w(i,j,0)
             endif
           else
-            bbl(i,j)=z_w(i,j,N)-z_w(i,j,0) ! todal depth
+            bbl(i,j)=z_w(i,j,N)-z_w(i,j,0) ! total depth
           endif
 #   ifdef MASKING
           bbl(i,j)=bbl(i,j)*rmask(i,j)

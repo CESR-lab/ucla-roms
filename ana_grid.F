@@ -41,12 +41,6 @@
 # if defined DOUBLE_GYRE
      &                  Size_ETA=3840.0e+3, Size_XI=(Size_ETA*LLm)/MMm,
      &                  depth=4000.,        f0=0.83e-4,  beta=2.E-11
-# elif defined CANYON_A || defined CANYON_B
-     &                  Size_XI=128.0E+3,   Size_ETA=96.0E+3,
-     &                  depth=4000.,        f0=1.E-4,   beta=0.
-# elif defined EKMAN_SPIRAL
-     &                  Size_XI=1000.,      Size_ETA=1000.,
-     &                  depth=10.,          f0=1.E-4,   beta=0.
 # elif defined GRAV_ADJ
      &                  Size_XI=64.0E+3,    Size_ETA=Size_XI*MMm/LLm,
      &                  depth=20.,          f0=0.,         beta=0.
