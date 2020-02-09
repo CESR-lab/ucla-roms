@@ -40,6 +40,10 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
 	mpi_setup.F	mpi_exchange8TA.F
+\
+	river_frc.F
+
+
 #rho_eos.F	ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 
