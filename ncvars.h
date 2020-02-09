@@ -113,14 +113,6 @@
       integer ntsavg,  navg
       common /ncvars/ ntsavg, navg
 #endif
-#ifdef STATIONS
-      integer nsta
-      common /ncvars/ nsta
-#endif
-#ifdef FLOATS
-      integer nflt
-      common /ncvars/ nflt
-#endif
 
 ! NetCFD IDs for model variables
 
@@ -177,26 +169,6 @@
 # endif
 #endif
 
-#ifdef STATIONS
-      integer nstation,  ispos(NS), jspos(NS),
-     &        ncidstn, nrecstn, nrpfstn, stnTime, stnZ, stnUb, stnVb
-      common /ncvars/ nstation, ispos,   jspos,
-     &        ncidstn, nrecstn, nrpfstn, stnTime, stnZ, stnUb, stnVb
-# ifdef SOLVE3D
-      integer stnU,  stnV,  stnT(NT+1),  stnR,    stnO,    stnW,
-     &                                   stnAkv,  stnAkt,  stnAks
-      common /ncvars/ stnU, stnV, stnT,  stnR,    stnO,    stnW,
-     &                                   stnAkv,  stnAkt,  stnAks
-#  ifdef LMD_KPP
-      integer stnHbls
-      common /ncvars/ stnHbls
-#  endif
-#  ifdef LMD_BKPP
-      integer stnHbbl
-      common /ncvars/ stnHbbl
-#  endif
-# endif
-#endif
 
 #ifdef SOLVE3D
 # define NWRTHIS 16+NT-2
@@ -208,14 +180,6 @@
 #ifdef AVERAGES
       logical wrtavg(NWRTHIS)
       common /ncvars/ wrtavg
-#endif
-#ifdef FLOATS
-      logical ldefflt
-      common /ncvars/ ldefflt
-#endif
-#ifdef STATIONS
-      logical wrtsta(NWRTHIS)
-      common /ncvars/ wrtsta
 #endif
 
 
@@ -259,14 +223,6 @@
       common /cncvars/ bry_file
 #endif
 
-#ifdef STATIONS
-      character(len=max_name_size) staname
-      common /cncvars/ staname
-#endif
-#ifdef ASSIMILATION
-      character(len=max_name_size) aparnam, assname
-      common /cncvars/ aparnam, assname
-#endif
       character*42  vname(3,
 #ifdef BIOLOGY
      &                       39+NT-2)

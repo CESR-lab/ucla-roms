@@ -31,7 +31,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
 	zetabc.F	u2dbc_im.F	v2dbc_im.F\
 	u3dbc_im.F	v3dbc_im.F	t3dbc_im.F	exchange.F\
 \
-	rho_eos.F	ab_ratio.F	alfabeta.F\
+	rho_eos.F	alfabeta.F\
 \
 	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	bvf_mix.F\
 \
@@ -40,6 +40,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
 	mpi_setup.F	mpi_exchange8TA.F
+#rho_eos.F	ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 
 
@@ -55,9 +56,9 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 
 
 
-FLTSRC = init_floats.F	init_arrays_floats.F	get_init_flts.F\
-	interp_rho.F	rhs_floats.F	step_floats.F\
-	def_floats.F	wrt_floats.F
+#FLTSRC = init_floats.F	init_arrays_floats.F	get_init_flts.F\
+#	interp_rho.F	rhs_floats.F	step_floats.F\
+#	def_floats.F	wrt_floats.F
 
 # old/obsolete/non-parallelized stuff
 #       pp_vmix.F	get_wwave.F	smol_adv.F	get_bsedim.F

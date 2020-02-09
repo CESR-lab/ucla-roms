@@ -23,14 +23,6 @@
 
 #include "netcdf.inc"
 
-#if defined FLOATS
-# include "ncvars_floats.h"
-# include "floats.h"
-      integer startTinfo(3), starttrack(4), i,j,
-     &        countTinfo(3), counttrack(4), level
-      integer tmp(NFT+1,-1:0)
-      real bufftrack(1:6,NFT+1,nfloats)
-#endif
 #if defined MPI && !defined PARALLEL_FILES
 # include "mpif.h"
       integer status(MPI_STATUS_SIZE), blank
@@ -57,12 +49,6 @@
       ibuff(4:iaux)=0 ; ibuff(3)=nrechis        ! record numbers.
 #ifdef AVERAGES
       ibuff(4)=nrecavg
-#endif
-#ifdef STATIONS
-      ibuff(5)=nrecstn
-#endif
-#ifdef FLOATS
-      ibuff(6)=nrecflt
 #endif
       start(1)=1      ; count(1)=iaux
       start(2)=record ; count(2)=1
@@ -214,78 +200,6 @@
 # endif
 #endif /* SOLVE3D */
 
-#ifdef FLOATS
-! write nfloats
-      ierr=nf_put_vara_int (ncrst, rstnfloats, record, 1, nfloats)
-      if (ierr /= nf_noerr) then
-        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
-     &         'Cannot write variable ''nfloats'' into restart file, ',
-     &         'rec =', record, nf_strerror(ierr) MYID
-        goto 99                                           !--> ERROR
-      endif
-
-! write Tinfo
-
-      startTinfo(1)=1      ; countTinfo(1)=5
-      startTinfo(2)=1      ; countTinfo(2)=nfloats
-      startTinfo(3)=record ; countTinfo(3)=1
-
-      ierr=nf_put_vara_FTYPE (ncrst, rstTinfo, startTinfo,
-     &                        countTinfo, Tinfo)
-      if (ierr /= nf_noerr) then
-        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
-     &           'Cannot write variable ''Tinfo'' into restart file, ',
-     &           'rec =', record, nf_strerror(ierr) MYID
-        goto 99                                           !--> ERROR
-      endif
-
-! write grid level
-
-      start(1)=1      ; count(1)=nfloats
-      start(2)=record ; count(2)=1
-
-      ierr=nf_put_vara_int(ncrst, rstfltgrd, start,count, fltgrd)
-      if (ierr /= nf_noerr) then
-        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
-     &      'Cannot write variable ''grid level'' into restart file, ',
-     &      'rec =', record, nf_strerror(ierr) MYID
-        goto 99                                           !--> ERROR
-      endif
-
-! write track
-
-      starttrack(1)=1      ; counttrack(1)=6
-      starttrack(2)=1      ; counttrack(2)=NFT+1
-      starttrack(3)=1      ; counttrack(3)=nfloats
-      starttrack(4)=record ; counttrack(4)=1
-
-
-      do level=-1,0
-        tmp(1,level)=nf
-        tmp(2,level)=nfm1
-        tmp(3,level)=nfm2
-        tmp(4,level)=nfm3
-      enddo
-
-      do i=1,NFT+1
-        do j=1,nfloats
-          bufftrack(1,i,j)=track(ixgrd,tmp(i,fltgrd(j)),j)
-          bufftrack(2,i,j)=track(iygrd,tmp(i,fltgrd(j)),j)
-          bufftrack(3,i,j)=track(izgrd,tmp(i,fltgrd(j)),j)
-          bufftrack(4,i,j)=track(ixrhs,tmp(i,fltgrd(j)),j)
-          bufftrack(5,i,j)=track(iyrhs,tmp(i,fltgrd(j)),j)
-          bufftrack(6,i,j)=track(izrhs,tmp(i,fltgrd(j)),j)
-        enddo
-      enddo
-      ierr=nf_put_vara_FTYPE(ncrst,  rsttrack,   starttrack,
-     &                               counttrack, bufftrack)
-      if (ierr /= nf_noerr) then
-        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
-     &           'Cannot write variable ''track'' into restart file, ',
-     &           'rec =', record, nf_strerror(ierr) MYID
-        goto 99                                           !--> ERROR
-      endif
-#endif
 
   1   format(/1x, '### ERROR: wrt_rst :: Cannot write variable ''',
      &             A, ''' into restart file, rec =', i6, 3x,A,i4/)

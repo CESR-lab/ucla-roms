@@ -222,9 +222,3 @@ c     &      NSUB_X=8, NSUB_E=48
 #ifdef PSOURCE
      &       , Msrc=10   ! Number of point sources
 #endif
-#ifdef STATIONS
-     &       , NS=5      ! Number of output stations
-#endif
-#ifdef FLOATS
-     &       , Mfloats=32000 ! Maximum number of floats
-#endif

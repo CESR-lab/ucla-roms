@@ -26,18 +26,12 @@
 #ifdef SOLVE3D
      &                           , iif, nstp, nnew, nrhs
 #endif
-#ifdef FLOATS
-     &                     , nfp1, nf,  nfm1, nfm2, nfm3
-#endif
      &                           , priv_count(16)
       logical synchro_flag, diag_sync
       common /priv_scalars/ WallClock, cpu_init, cpu_net,
      &   proc, time, tdays, numthreads, iic,  kstp, knew
 #ifdef SOLVE3D
      &                           , iif, nstp, nnew, nrhs
-#endif
-#ifdef FLOATS
-     &                      ,nfp1, nf,  nfm1, nfm2, nfm3
 #endif
      &       , priv_count, synchro_flag, diag_sync
 C$OMP THREADPRIVATE(/priv_scalars/)

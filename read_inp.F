@@ -11,9 +11,6 @@
 #ifndef NONLIN_EOS
 # include "eos_vars.h"
 #endif
-#ifdef FLOATS
-# include "ncvars_floats.h"
-#endif
 #ifdef MPI
 # include "mpif.h"
 #endif
@@ -133,9 +130,6 @@ c--      fname='roms.in.US_West'
       wrthis(indxTime)=.false.
 #ifdef AVERAGES
       wrtavg(indxTime)=.false.
-#endif
-#ifdef STATIONS
-      wrtsta(indxTime)=.true.
 #endif
 
 ! Read in keyword name: keep trying, until keyword is found.
@@ -810,169 +804,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #  endif
 # endif /* SOLVE3D */
 #endif /* AVERAGES */
-
-#ifdef STATIONS
-! Stations control: file with station locations; output
-! interval and number of records per file; output filename:
-
-        elseif (keyword(1:kwlen) == 'stations') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) nsta, nrpfstn
-          read(input,'(A)',err=95) fname
-          read(input,'(A)',err=95) staname
-          lstr=lenstr(fname)
-
-          mpi_master_only write(*,'(1x,A,I5,2x,A,I4,2x,3A/13x,3A)')
-     &            'stations :: nsta =', nsta,  'rec/file =', nrpfstn,
-     &            'positions file = ''', fname(1:lstr), '''',
-     &            'output file = ''', staname(1:lenstr(staname)), ''''
-
-          call read_sta_pos (fname,ierr)
-
-! Switches for fields to sample into stations file:
-
-        elseif (keyword(1:kwlen) == 'primary_stations') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrtsta(indxZ),  wrtsta(indxUb)
-     &                                         , wrtsta(indxVb)
-# ifdef SOLVE3D
-     &                      ,  wrtsta(indxU),     wrtsta(indxV)
-     &                      , (wrtsta(indxT+itrc-1), itrc=1,NT)
-# endif
-          if ( wrtsta(indxZ) .or. wrtsta(indxUb) .or. wrtsta(indxVb)
-# ifdef SOLVE3D
-     &                       .or. wrtsta(indxU)  .or. wrtsta(indxV)
-# endif
-     &       ) wrtsta(indxTime)=.true.
-
-          mpi_master_only write(*,'(/1x,A,5(/8x,A,T16,L1,T20,A))')
-     &                   'fields to sample into stations file: (T/F)'
-     &                 , 'zeta',   wrtsta(indxZ),    vname(2,indxZ)
-     &                 , 'ubar',   wrtsta(indxUb),   vname(2,indxUb)
-     &                 , 'vbar',   wrtsta(indxVb),   vname(2,indxVb)
-# ifdef SOLVE3D
-     &                 , 'u',      wrtsta(indxU),    vname(2,indxU)
-     &                 , 'v',      wrtsta(indxV),    vname(2,indxV)
-          do itrc=1,NT
-            if (wrtsta(indxT+itrc-1)) wrtsta(indxTime)=.true.
-            mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
-     &        itrc, ')', wrtsta(indxT+itrc-1), vname(2,indxT+itrc-1)
-          enddo
-
-        elseif (keyword(1:kwlen) == 'auxiliary_stations') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrtsta(indxR), wrtsta(indxO)
-     &          ,  wrtsta(indxW),  wrtsta(indxAkv),  wrtsta(indxAkt)
-#  ifdef SALINITY
-     &                                            ,  wrtsta(indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                                            ,  wrtsta(indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                                            ,  wrtsta(indxHbbl)
-#  endif
-          if ( wrtsta(indxR) .or. wrtsta(indxO) .or. wrtsta(indxW)
-     &                     .or. wrtsta(indxAkv) .or. wrtsta(indxAkt)
-#  ifdef SALINITY
-     &                                          .or. wrtsta(indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                                          .or. wrtsta(indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                                          .or. wrtsta(indxHbbl)
-#  endif
-     &       ) wrtsta(indxTime)=.true.
-
-          mpi_master_only write(*,'(8(/8x,A,T16,L1,T20,A))')
-     &                   'rho',    wrtsta(indxR),    vname(2,indxR)
-     &                 , 'Omega',  wrtsta(indxO),    vname(2,indxO)
-     &                 , 'W',      wrtsta(indxW),    vname(2,indxW)
-     &                 , 'Akv',    wrtsta(indxAkv),  vname(2,indxAkv)
-     &                 , 'Akt',    wrtsta(indxAkt),  vname(2,indxAkt)
-#  ifdef SALINITY
-     &                 , 'Aks',    wrtsta(indxAks),  vname(2,indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                 , 'hbls',   wrtsta(indxHbls), vname(2,indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                 , 'hbbl',   wrtsta(indxHbbl), vname(2,indxHbbl)
-#  endif
-# endif /* SOLVE3D */
-#endif /* STATIONS */
-
-
-#ifdef FLOATS
-! Floats file name.
-
-      elseif (keyword(1:kwlen) == 'floats') then
-        call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) ldefflt, nflt, nrpfflt
-          read(input,'(A)',err=95) fposnam
-          read(input,'(A)',err=95) fltname
-# if defined MPI && defined PARALLEL_FILES
-          call insert_node(fposname, lstr, mynode, NNODES, ierr)
-# endif
-          lstr=lenstr(fltname)
-          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4,2x,3A)')
-     &       'floats :: overwrite = ', ldefflt,      'nflt =', nflt,
-     &       'rec/file =', nrpfflt, 'file = ''', fltname(1:lstr), ''''
-
-! Switches for fields to be saved into floats output file.
-
-      elseif (keyword(1:kwlen)=='float_fields') then
-        call cancel_kwd(keyword(1:kwlen), ierr)
-# ifdef AGRIF
-        if (Agrif_Root()) then
-# endif
-          read(input,*,err=95) wrtflt(indxfltGrd),
-     &       wrtflt(indxfltTemp), wrtflt(indxfltSalt),
-     &       wrtflt(indxfltRho),  wrtflt(indxfltVel)
-          mpi_master_only write(*,'(/1x,A,5(/6x,l1,2x,A))')
-     &      'fields to be saved in floats output  (T/F)'
-     &     , wrtflt(indxfltGrd),   'write Grid location variables'
-     &     , wrtflt(indxfltTemp),  'write temperature.'
-     &     , wrtflt(indxfltSalt),  'write salinity.'
-     &     , wrtflt(indxfltRho),   'write density.'
-     &     , wrtflt(indxfltVel),   'write mean float velocity'
-# ifdef AGRIF
-        endif
-# endif
-#endif /* FLOATS */
-
-
-
-#ifdef MOORE_BEC
-        elseif (keyword(1:kwlen)=='mgm_history') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) nwrtmgm,  nprfmgm
-          read(input,'(A)',err=95) fname
-          lstr=lenstr(fname)
-# if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
-# endif
-          mgmfname=fname(1:lstr)
-          mpi_master_only write(*,'(7x,A,2x,A,2x,A,2x,A,I42x,A,I3)')
-     &         'MGM History File:', mgmfname(1:lstr),  'Create new:',
-     &          'nwrt =', nwrtmgm, 'rec/file =', nprfmgm
-
-
-        elseif (keyword(1:kwlen)=='mgm_avg') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) nwrtmgmavg,  nprfmgmavg
-          read(input,'(A)',err=95) fname
-          lstr=lenstr(fname)
-# if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
-# endif
-          mgmavgfname=fname(1:lstr)
-          mpi_master_only write(*,'(7x,A,2x,A,2x,A,2x,A,I42x,A,I3)')
-     &        'MGM History File:', mgmavgfname(1:lstr),  'Create new:',
-     &        'nwrt =', nwrtmgmavg, 'rec/file =', nprfmgmavg
-#endif   /* MOORE_BEC */
-
 
         else
           mpi_master_only write(*,'(/1x,4A/)') 'WARNING: ',

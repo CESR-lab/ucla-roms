@@ -22,8 +22,6 @@
       is=1
 #ifndef NONLIN_EOS
 #endif
-#ifdef FLOATS
-#endif
 #ifdef MPI
 #endif
 #ifdef SOLVE3D
@@ -60,8 +58,6 @@
 #ifdef MPI
 #endif
 #ifdef AVERAGES
-#endif
-#ifdef STATIONS
 #endif
       ie=is + 5
       if (ie>=max_opt_size) goto 99
@@ -349,81 +345,6 @@
 #  endif
 # endif /* SOLVE3D */
 #endif /* AVERAGES */
-#ifdef STATIONS
-      ie=is + 8
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='stations'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-      ie=is +16
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='primary_stations'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-# ifdef SOLVE3D
-# endif
-# ifdef SOLVE3D
-# endif
-# ifdef SOLVE3D
-      ie=is +18
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='auxiliary_stations'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-#  ifdef SALINITY
-#  endif
-#  ifdef LMD_KPP
-#  endif
-#  ifdef LMD_BKPP
-#  endif
-#  ifdef SALINITY
-#  endif
-#  ifdef LMD_KPP
-#  endif
-#  ifdef LMD_BKPP
-#  endif
-#  ifdef SALINITY
-#  endif
-#  ifdef LMD_KPP
-#  endif
-#  ifdef LMD_BKPP
-#  endif
-# endif /* SOLVE3D */
-#endif /* STATIONS */
-#ifdef FLOATS
-      ie=is + 6
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='floats'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-# if defined MPI && defined PARALLEL_FILES
-# endif
-      ie=is +12
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='float_fields'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-# ifdef AGRIF
-# endif
-# ifdef AGRIF
-# endif
-#endif /* FLOATS */
-#ifdef MOORE_BEC
-      ie=is +11
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='mgm_history'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-# if defined MPI && defined PARALLEL_FILES
-# endif
-      ie=is + 7
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='mgm_avg'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-# if defined MPI && defined PARALLEL_FILES
-# endif
-#endif   /* MOORE_BEC */
 #ifdef MPI
 #endif
       return

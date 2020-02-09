@@ -7,17 +7,11 @@
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"
-#ifdef FLOATS
-# include "ncvars_floats.h"
-#endif
 
       if (ncrst /= -1) ierr=nf_close(ncrst)
       if (nchis /= -1) ierr=nf_close(nchis)
 #ifdef AVERAGES
       if (ncavg /= -1) ierr=nf_close(ncavg)
-#endif
-#ifdef FLOATS
-      if (ncidflt/=-1) ierr=nf_close(ncidflt)
 #endif
 # ifdef MPI_SILENT_MODE
       if (mynode == 0) then
@@ -26,12 +20,6 @@
      &                     'history:', nrechis ,  'restart:', nrecrst
 #ifdef AVERAGES
      &                                         ,  'averages:', nrecavg
-#endif
-#ifdef FLOATS
-     &                                         ,   'floats:', nrecflt
-#endif
-#ifdef STATIONS
-     &                                         ,  'stations:', nrecstn
 #endif
      &                                             MYID
 

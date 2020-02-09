@@ -51,12 +51,6 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 #ifdef AVERAGES
       ibuff(4)=nrecavg
 #endif
-#ifdef STATIONS
-      ibuff(5)=nrecstn
-#endif
-#ifdef FLOATS
-      ibuff(6)=nrecflt
-#endif
       start(1)=1      ; count(1)=iaux
       start(2)=record ; count(2)=1
 

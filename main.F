@@ -69,12 +69,6 @@ C$    integer omp_get_thread_num, omp_get_num_threads
 #include "scalars.h"
 
 #include "ncvars.h"
-#ifdef FLOATS
-! grid.h is needed so that lonr and latr are readily available
-# include "grid.h"
-# include "floats.h"
-# include "ncvars_floats.h"
-#endif
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
 C$    trd=omp_get_thread_num()
@@ -268,34 +262,6 @@ C$OMP MASTER
         call wrt_ana_grid
 #endif
         if (ldefhis .and. wrthis(indxTime)) call wrt_his
-#ifdef FLOATS
-! Initialization for Lagrangian floats
-!-------------------------------------------------------
-      nrecflt=0      ! initialization done here and not in
-      ncidflt=-1     ! init_scalars since it must be done only
-                     ! once (whether child levels exist or not)
-      spval=1.E15    ! spval is the nodata flag for float variables
-
-      deltac2p=2.3   ! distance from the boundary at which a float
-                     ! is transferred from child to parent
-      deltap2c=2.5   ! same for transfer from parent to child
-
-      call init_arrays_floats
-      call init_floats
-# ifdef SPHERICAL
-      call interp_r2d_type_ini (lonr(START_2D_ARRAY), iflon)
-
-      call interp_r2d_type_ini (latr(START_2D_ARRAY), iflat)
-# else
-      call interp_r2d_type_ini (  xr(START_2D_ARRAY), iflon)
-      call interp_r2d_type_ini (  yr(START_2D_ARRAY), iflat)
-# endif
-# ifdef SOLVE3D
-      call fill_ini   ! fills in trackaux for ixgrd,iygrd,izgrd
-                      ! and ifld (either izgrd or ifld is meaningful)
-# endif
-      if (ldefflt) call wrt_floats
-#endif /* FLOATS */
 C$OMP END MASTER
 C$OMP BARRIER
 CR      write(*,*) '  0' MYID
@@ -306,21 +272,6 @@ C$OMP MASTER
      &     'main :: initialization complete, started time-steping.'
 C$OMP END MASTER
 
-! Initialize child-grid model, if any. Note that this call introduces
-! recursive sequence, since child-grid model may also have child on its
-! own.
-
-#ifdef GRID_LEVEL
-# if GRID_LEVEL < MAX_GRID_LEVEL
-#  if GRID_LEVEL == 1
-        call roms_init_2
-#  elif GRID_LEVEL == 2
-        call roms_init_3
-#  elif GRID_LEVEL == 3
-        call roms_init_4
-#  endif
-# endif
-#endif
   99  return
       end
 
@@ -340,15 +291,6 @@ C$OMP END MASTER
 #include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
-#ifdef FLOATS
-# include "ncvars_floats.h"
-# include "floats.h"
-      integer chunk_size_flt, Lstr,Lend, flt_str
-      common /floats_step/ flt_str
-#endif
-#ifdef GRID_LEVEL
-      integer iter
-#endif
 
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
@@ -373,16 +315,6 @@ C$OMP END MASTER
       nrhs=nstp ; nnew=3
 #endif
 
-#ifdef FLOATS
-      nfp1=mod(nfp1+1,NFT+1)           ! rotate time
-      nf  =mod(nf  +1,NFT+1)           ! indices for
-      nfm1=mod(nfm1+1,NFT+1)           ! floats
-      nfm2=mod(nfm2+1,NFT+1)
-      nfm3=mod(nfm3+1,NFT+1)
-C$OMP MASTER
-      flt_str=0
-C$OMP END MASTER
-#endif
                                        ! Read forcing and climatology
       if (synchro_flag) then           ! data. This operation may raise
         synchro_flag=.false.           ! "may_day_flag" in the case of
@@ -469,12 +401,6 @@ C$OMP BARRIER
 #ifdef AVERAGES
      &   .or. (mod(iic-ntsavg,navg) == 0  .and. wrtavg(indxTime))
 #endif
-#ifdef STATIONS
-     &   .or. (mod(iic-ntstart,nsta) == 0 .and. nstation > 0)
-#endif
-#ifdef FLOATS
-     &   .or. (mod(iic-ntstart,nflt) == 0 .and. nfloats > 0)
-#endif
      &                                                  )) then
 C$OMP MASTER
         if (mod(iic-ntstart,nrst) == 0
@@ -485,12 +411,6 @@ C$OMP MASTER
         if (mod(iic-ntstart,nwrt) == 0) nrechis=nrechis+1
 #ifdef AVERAGES
         if (mod(iic-ntsavg,navg) == 0) nrecavg=nrecavg+1
-#endif
-#ifdef STATIONS
-        if (mod(iic-ntstart,nsta) == 0) nrecstn=nrecstn+1
-#endif
-#ifdef FLOATS
-        if (mod(iic-ntstart,nflt) == 0) nrecflt=nrecflt+1
 #endif
         if (mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART
@@ -506,26 +426,10 @@ c          if (iic>60) nwrt=1 !<-- useful for debugging
         if (mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
      &      call wrt_avg
 #endif
-#ifdef STATIONS
-        if (mod(iic-ntstart,nsta)==0 .and. nstation>0)
-     &      call wrt_statn
-#endif
-#ifdef FLOATS
-        if (mod(iic-ntstart,nflt)==0 .and. nfloats>0)
-     &      call wrt_floats
-        diagfloats=.false.
-#endif
 C$OMP END MASTER
 C$OMP BARRIER
         if (iic-ntstart > ntimes) goto 99   !-->  DONE
       endif
-
-#ifdef FLOATS
-! flag for diagnostic computation (for writing at next time step)
-      if (mod(iic-ntstart,nflt)==0) then
-        diagfloats=.true.
-      endif
-#endif
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
@@ -607,31 +511,6 @@ C$OMP BARRIER                            ! time step for momenta
 C$OMP BARRIER
 #endif /* SOLVE3D */
 
-#ifdef FLOATS
-      chunk_size_flt=32
-      do while (flt_str < nfloats)
-C$OMP CRITICAL
-        Lstr=flt_str+1
-        flt_str=Lstr+chunk_size_flt-1
-C$OMP END CRITICAL
-        Lend=min(Lstr+chunk_size_flt-1,nfloats)
-        call step_floats(Lstr,Lend)
-      enddo
-c**    call step_floats(1,nfloats)    ! serial version for debugging
-#endif
 
-#ifdef GRID_LEVEL
-# if GRID_LEVEL < MAX_GRID_LEVEL
-      do iter=1,3
-#  if GRID_LEVEL == 1
-        call roms_step_2
-#  elif GRID_LEVEL == 2
-        call roms_step_3
-#  elif GRID_LEVEL == 3
-        call roms_step_4
-#  endif
-      enddo
-# endif
-#endif
   99  return
       end

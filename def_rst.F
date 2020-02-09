@@ -7,21 +7,12 @@
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"
-#ifdef FLOATS
-# include "floats.h"
-# include "ncvars_floats.h"
-#endif
       logical create_new_file
       integer lenstr, checkdims, my_nf_def_dim
       integer rec, lrst, lvar, timedim, prev_fill_mode,
      &        r2dgrd(3), u2dgrd(3), v2dgrd(3),  auxil(2)
 #ifdef SOLVE3D
      &      , r3dgrd(4), u3dgrd(4), v3dgrd(4),  w3dgrd(4), itrc
-#endif
-#ifdef FLOATS
-      integer fltdim, NFVdim, Tinfovardim, NFTdim,
-     &        dim_Tinfo(3), dim_track(4), dim_fltgrd(2)
-      character(len=64) vinfo(4)
 #endif
 #ifdef MASK_LAND_DATA
 # ifdef DBLEPREC
@@ -144,24 +135,6 @@
         w3dgrd(2)=r2dgrd(2)
 #endif
 
-#ifdef FLOATS
-        ierr=my_nf_def_dim(ncrst, 'drifter', nfloats, fltdim)
-        ierr=my_nf_def_dim(ncrst, 'Tinfovar', 5, Tinfovardim)
-        ierr=my_nf_def_dim(ncrst, 'NFV',      6,      NFVdim)
-        ierr=my_nf_def_dim(ncrst, 'NFT',     NFT+1,   NFTdim)
-
-        dim_Tinfo(1)=Tinfovardim
-        dim_Tinfo(2)=fltdim
-        dim_Tinfo(3)=timedim
-
-        dim_track(1)=NFVdim
-        dim_track(2)=NFTdim
-        dim_track(3)=fltdim
-        dim_track(4)=timedim
-
-        dim_fltgrd(1)=fltdim
-        dim_fltgrd(2)=timedim
-#endif
 
 #ifdef PUT_GRID_INTO_RESTART
 
@@ -377,56 +350,6 @@
 #  endif
 # endif
 #endif /* SOLVE3D */
-#ifdef FLOATS
-        vinfo(1)='nfloats'
-        vinfo(2)='total number of floats'
-
-        lvar=lenstr(vinfo(1))
-        ierr=nf_def_var(ncrst,vinfo(1)(1:lvar),nf_int,
-     &                    1,timedim,rstnfloats)
-        lvar=lenstr(vinfo(2))
-        ierr=nf_put_att_text(ncrst,rstnfloats,'long_name',lvar,
-     &                         vinfo(2)(1:lvar))
-
-! define Tinfo
-
-        vinfo(1)='Tinfo'
-        vinfo(2)='initial float release information array'
-
-        lvar=lenstr(vinfo(1))
-        ierr=nf_def_var (ncrst, vinfo(1)(1:lvar), NF_FTYPE,
-     &                                3, dim_Tinfo, rstTinfo)
-        lvar=lenstr(vinfo(2))
-        ierr=nf_put_att_text (ncrst,rstTinfo, 'long_name', lvar,
-     &                                        vinfo(2)(1:lvar))
-
-! define grid level
-
-        vinfo(1)='grid_level'
-        vinfo(2)='float position in nested grids hierarchy'
-
-        lvar=lenstr(vinfo(1))
-        ierr=nf_def_var(ncrst,vinfo(1)(1:lvar),nf_int,
-     &                           2,dim_fltgrd,rstfltgrd)
-        lvar=lenstr(vinfo(2))
-        ierr=nf_put_att_text(ncrst,rstfltgrd,'long_name',lvar,
-     &                         vinfo(2)(1:lvar))
-
-! define track
-
-        vinfo(1)='track'
-        vinfo(2)='Position and velocity array for released floats'
-        vinfo(3)='x,y,z,u,v,w in this order'
-        lvar=lenstr(vinfo(1))
-        ierr=nf_def_var(ncrst,vinfo(1)(1:lvar),NF_FTYPE,
-     &                   4,dim_track,rsttrack)
-        lvar=lenstr(vinfo(2))
-        ierr=nf_put_att_text(ncrst,rsttrack,'long_name',lvar,
-     &                         vinfo(2)(1:lvar))
-        lvar=lenstr(vinfo(3))
-        ierr=nf_put_att_text(ncrst,rsttrack,'Content',lvar,
-     &                         vinfo(3)(1:lvar))
-#endif /* FLOATS */
 
 ! Leave definition mode.                  Also initialize record
 ! ----- ---------- -----                  dimension size to zero.

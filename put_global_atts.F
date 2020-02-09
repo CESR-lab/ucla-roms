@@ -9,12 +9,6 @@
 #include "ncvars.h"
 #include "netcdf.inc"
 #include "strings.h"
-#ifdef FLOATS
-# include "init_floats.h"
-# include "ncvars_floats.h"
-      real tempreal(i_floats)
-      integer tempint(i_floats),i
-#endif
 #ifndef NONLIN_EOS
 # include "eos_vars.h"
 #endif
@@ -74,16 +68,6 @@
         ierr=nf_put_att_text (ncid, nf_global, 'type',  18,
      &                                'ROMS averages file')
 #endif
-#ifdef STATIONS
-      elseif (ncid == ncidstn) then
-        ierr=nf_put_att_text(ncid,  nf_global, 'type', 18,
-     &                                'ROMS stations file')
-#endif
-#ifdef FLOATS
-      elseif (ncid == ncidflt) then
-        ierr=nf_put_att_text(ncid,  nf_global, 'type', 24,
-     &                          'ROMS floats history file')
-#endif
       endif
 
 ! Grid and initial conditions file names
@@ -111,9 +95,6 @@
       ierr=nf_put_att_int (ncid, nf_global, 'ntsavg',nf_int, 1, ntsavg)
 
       ierr=nf_put_att_int (ncid, nf_global, 'navg',  nf_int, 1,   navg)
-#endif
-#ifdef STATIONS
-      ierr=nf_put_att_int (ncid, nf_global, 'nsta',  nf_int, 1,  nsta)
 #endif
 
 ! Vertical coordinate type, control parameters "theta_s", "theta_b",
@@ -269,95 +250,6 @@
      &                                            nf_ftype,1,wkb_roller)
 # endif
 #endif
-
-
-
-
-
-#ifdef FLOATS
-c      lvar=lenstr(fltname)
-c      ierr=nf_put_att_text(ncid, nf_global, 'flt_file',lvar,
-c     &                                       fltname(1:lvar))
-c      lvar=lenstr(fposnam)
-c      ierr=nf_put_att_text(ncid, nf_global, 'fpos_file',lvar,
-c     &                                       fposnam(1:lvar))
-      if (ncid == ncidflt) then
-# ifdef FLOATS_GLOBAL_ATTRIBUTES
-        do i=1,i_floats
-          tempreal(i)=Ft0(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Ft0',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempreal(i)=Fx0(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fx0',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempreal(i)=Fy0(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fy0',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempreal(i)=Fz0(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fz0',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempint(i)=Fgrd(i)
-        enddo
-        ierr=nf_put_att_int(ncid, nf_global, 'Fgrd',nf_int,
-     &                                   i_floats, tempint)
-        do i=1,i_floats
-          tempint(i)=Fcoor(i)
-        enddo
-        ierr=nf_put_att_int(ncid, nf_global, 'Fcoor',nf_int,
-     &                                    i_floats, tempint)
-        do i=1,i_floats
-          tempint(i)=Ftype(i)
-        enddo
-        ierr=nf_put_att_int(ncid, nf_global, 'Ftype',nf_int,
-     &                                    i_floats, tempint)
-        do i=1,i_floats
-          tempint(i)=Fcount(i)
-        enddo
-        ierr=nf_put_att_int(ncid, nf_global, 'Fcount',nf_int,
-     &                                     i_floats, tempint)
-        do i=1,i_floats
-          tempreal(i)=Fdt(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fdt',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempreal(i)=Fdx(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fdx',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempreal(i)=Fdy(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fdy',nf_ftype,
-     &                                     i_floats, tempreal)
-        do i=1,i_floats
-          tempreal(i)=Fdz(i)
-        enddo
-        ierr=nf_put_att_FTYPE(ncid, nf_global, 'Fdz',nf_ftype,
-     &                                     i_floats, tempreal)
-# endif
-      endif
-#endif /* FLOATS */
-
-#ifdef STATIONS
-c      lvar=lenstr(staname)
-c      ierr=nf_put_att_text(ncid, nf_global, 'sta_file',lvar,
-c     &                                       staname(1:lvar))
-c      lvar=lenstr(sposnam)
-c      ierr=nf_put_att_text(ncid, nf_global, 'spos_file',lvar,
-c     &                                       sposnam(1:lvar))
-#endif
-
-
-
 
 
 

@@ -17,7 +17,6 @@
 #include "sources.h"
 #include "mixing.h"
 #include "ncvars.h"
-#include "ncvars_floats.h"
 #include "boundary.h"
 
 c      integer size, kmp_get_stacksize_s
@@ -31,11 +30,6 @@ c      write(*,*) 'kmp_stacksize =', size
 #ifdef SOLVE3D
       iif=1   ; nstp=1               ! proper logical initialization
       nrhs=1  ; nnew=1               ! of model fields.
-#endif
-#ifdef FLOATS
-      nfp1=0                         ! set time step indices for
-      nf=3    ; nfm1=2               ! 5th order AB4AM4 corrected
-      nfm2=1  ; nfm3=0               ! scheme
 #endif
                                      ! Reset intra-thread
       may_day_flag=0                 ! communication signal
@@ -77,12 +71,6 @@ c      v3bc_max=0.
       nchis=-1   ; nrechis=0       ! values to indicate their initially
 #ifdef AVERAGES
       ncavg=-1   ; nrecavg=0       ! closed status. Also reset record
-#endif
-#ifdef STATIONS
-      ncidstn=-1 ; nrecstn=0       ! counters for restart, history,
-#endif
-#ifdef FLOATS
-      ncidflt=-1 ; nrecflt=0       ! averages, stations, and floats.
 #endif
       do i=1,max_frc_files
         ncfrc(i)=-1

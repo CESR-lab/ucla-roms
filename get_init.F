@@ -265,12 +265,6 @@ c--#define VERBOSE
 #ifdef AVERAGES
               nrecavg=ibuff(4)
 #endif
-#ifdef STATIONS
-              if (count(1) >= 5) nrecstn=ibuff(5)
-#endif
-#ifdef FLOATS
-              if (count(1) >= 6) nrecflt=ibuff(6)
-#endif
 #ifdef EXACT_RESTART
               if (tindx == 2 .and. record < max_rec) then
                 start(2)=record+1
@@ -326,12 +320,6 @@ c--#define VERBOSE
         nrechis=0               ! all counters to zero (initial run).
 #ifdef AVERAGES
         nrecavg=0
-#endif
-#ifdef STATIONS
-        nrecstn=0
-#endif
-#ifdef FLOATS
-        nrecflt=0
 #endif
       endif
 #ifdef EXACT_RESTART
