@@ -32,14 +32,22 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
+      use river_frc
+!     use dimensions
+
       implicit none
+
+
+      real  tmid
       integer tile, ierr
 #include "param.h"
+#include "scalars.h"
 
 #include "compute_tile_bounds.h"
 
-      ierr=0
+      tmid=time+0.5*dt
 
+      ierr=0
 ! External data to supply at open boundaries. Note that there are
 ! two mutually exclusive mechanisms for each variable: either _BRY
 ! or climatological data. 
@@ -129,6 +137,17 @@ c***              no code here
 #   endif
 #  endif
 # endif
+
+# ifdef RIVER_SOURCE
+#   ifdef ANA_RIVER_SOURCE
+      call ana_river_source_tile(istr,iend,jstr,jend)
+#   else
+!     call set_river_src_tile(istr,iend,jstr,jend, ierr)
+      call set_river_frc(tmid)
+#   endif
+#  endif
+
+
 #endif  /* SOLVE3D */
 
                                  
