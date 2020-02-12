@@ -11,8 +11,8 @@
 !!!!!! To refresh this file compile and execute "cppcheck.F"   !!!!!!
 !!!!!! as an independent program, or use commands              !!!!!!
 !!!!!! "make checkdefs" or "make depend".                      !!!!!!
-!!!!!! Number of Configuration Choices:                     22 !!!!!!
-!!!!!! Total number of CPP-switches:                       102 !!!!!!
+!!!!!! Number of Configuration Choices:                      1 !!!!!!
+!!!!!! Total number of CPP-switches:                        92 !!!!!!
 
       implicit none
       integer ierr, is,ie, iexample
@@ -33,158 +33,17 @@
       cpps(is:ie)='<cppdefs.h>'
       cpps(ie+1:ie+1)=' '
 
-#ifdef BALTIC
-      iexample=iexample+1
-      is=ie+2 ; ie=is+5
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='BALTIC'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef DOUBLE_GYRE
-      iexample=iexample+1
-      is=ie+2 ; ie=is+10
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='DOUBLE_GYRE'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef CANBAS2
-      iexample=iexample+1
-      is=ie+2 ; ie=is+6
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='CANBAS2'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef CANYON_A
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='CANYON_A'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef CANYON_B
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='CANYON_B'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef COLD_FILAMENT
-      iexample=iexample+1
-      is=ie+2 ; ie=is+12
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='COLD_FILAMENT'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef DAMEE_B
-      iexample=iexample+1
-      is=ie+2 ; ie=is+6
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='DAMEE_B'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef EKMAN_SPIRAL
-      iexample=iexample+1
-      is=ie+2 ; ie=is+11
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='EKMAN_SPIRAL'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef GRAV_ADJ
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='GRAV_ADJ'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef ISWAKE
-      iexample=iexample+1
-      is=ie+2 ; ie=is+5
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='ISWAKE'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef OVERFLOW
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='OVERFLOW'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef ATLANTIC
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='ATLANTIC'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef PACIFIC
-      iexample=iexample+1
-      is=ie+2 ; ie=is+6
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='PACIFIC'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef PACIFIC_2D
-      iexample=iexample+1
-      is=ie+2 ; ie=is+9
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='PACIFIC_2D'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef RIVER
-      iexample=iexample+1
-      is=ie+2 ; ie=is+4
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='RIVER'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef SEAMOUNT100
-      iexample=iexample+1
-      is=ie+2 ; ie=is+10
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SEAMOUNT100'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef SOLITON
-      iexample=iexample+1
-      is=ie+2 ; ie=is+6
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SOLITON'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef UPWELLING
-      iexample=iexample+1
-      is=ie+2 ; ie=is+8
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='UPWELLING'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef USWC
-      iexample=iexample+1
-      is=ie+2 ; ie=is+3
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='USWC'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef USWEST
-      iexample=iexample+1
-      is=ie+2 ; ie=is+5
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='USWEST'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef WAVE_RAD
-      iexample=iexample+1
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='WAVE_RAD'
-      cpps(ie+1:ie+1)=' '
-#endif
 #ifdef SPLASH
       iexample=iexample+1
       is=ie+2 ; ie=is+5
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='SPLASH'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef DOUBLE_GYRE
+      is=ie+2 ; ie=is+10
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='DOUBLE_GYRE'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef SOLVE3D
@@ -265,10 +124,28 @@
       cpps(is:ie)='ANA_VMIX'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef CANYON_A
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='CANYON_A'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef EW_PERIODIC
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='EW_PERIODIC'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef CANYON_B
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='CANYON_B'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef DAMEE_B
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='DAMEE_B'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef TCLIMATOLOGY
@@ -391,10 +268,28 @@
       cpps(is:ie)='ANA_SRFLUX'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef EKMAN_SPIRAL
+      is=ie+2 ; ie=is+11
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='EKMAN_SPIRAL'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef NS_PERIODIC
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='NS_PERIODIC'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef GRAV_ADJ
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='GRAV_ADJ'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef COLD_FILAMENT
+      is=ie+2 ; ie=is+12
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='COLD_FILAMENT'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef OBC_WEST
@@ -511,6 +406,12 @@
       cpps(is:ie)='LMD_DDMIX'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef ATLANTIC
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='ATLANTIC'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef DIURNAL_SRFLUX
       is=ie+2 ; ie=is+13
       if (ie >= max_opt_size) goto 99
@@ -527,6 +428,12 @@
       is=ie+2 ; ie=is+5
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='SPONGE'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SEAMOUNT100
+      is=ie+2 ; ie=is+10
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SEAMOUNT100'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef TS_HADV_UP3
@@ -559,6 +466,12 @@
       cpps(is:ie)='FRC_BRY'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef PACIFIC
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='PACIFIC'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef SEA_ICE_NOFLUX
       is=ie+2 ; ie=is+13
       if (ie >= max_opt_size) goto 99
@@ -577,16 +490,46 @@
       cpps(is:ie)='M3NUDGING'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef PACIFIC_2D
+      is=ie+2 ; ie=is+9
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='PACIFIC_2D'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef OVERFLOW
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='OVERFLOW'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef SEAMOUNT
       is=ie+2 ; ie=is+7
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='SEAMOUNT'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef ISWAKE
+      is=ie+2 ; ie=is+5
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='ISWAKE'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef LINEAR_DRAG_ONLY
       is=ie+2 ; ie=is+15
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='LINEAR_DRAG_ONLY'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SOLITON
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SOLITON'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef RIVER
+      is=ie+2 ; ie=is+4
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='RIVER'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef PSOURCE
@@ -607,34 +550,28 @@
       cpps(is:ie)='OBC_M2ORLANSKI'
       cpps(ie+1:ie+1)=' '
 #endif
+#ifdef UPWELLING
+      is=ie+2 ; ie=is+8
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='UPWELLING'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef CANBAS2
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='CANBAS2'
+      cpps(ie+1:ie+1)=' '
+#endif
 #ifdef AVERAGES
       is=ie+2 ; ie=is+7
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='AVERAGES'
       cpps(ie+1:ie+1)=' '
 #endif
-#ifdef MIX_GP_UV
-      is=ie+2 ; ie=is+8
+#ifdef RIVER_SOURCE
+      is=ie+2 ; ie=is+11
       if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='MIX_GP_UV'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef TIDES
-      is=ie+2 ; ie=is+4
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='TIDES'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef SSH_TIDES
-      is=ie+2 ; ie=is+8
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SSH_TIDES'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef UV_TIDES
-      is=ie+2 ; ie=is+7
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='UV_TIDES'
+      cpps(is:ie)='RIVER_SOURCE'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef BRY
@@ -643,28 +580,10 @@
       cpps(is:ie)='BRY'
       cpps(ie+1:ie+1)=' '
 #endif
-#ifdef CLIMAT_TS_MIXH
-      is=ie+2 ; ie=is+13
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='CLIMAT_TS_MIXH'
-      cpps(ie+1:ie+1)=' '
-#endif
 #ifdef OBC_M2SPECIFIED
       is=ie+2 ; ie=is+14
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='OBC_M2SPECIFIED'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef LEGACY_ORLANSKI
-      is=ie+2 ; ie=is+14
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='LEGACY_ORLANSKI'
-      cpps(ie+1:ie+1)=' '
-#endif
-#ifdef SLOSH
-      is=ie+2 ; ie=is+4
-      if (ie >= max_opt_size) goto 99
-      cpps(is:ie)='SLOSH'
       cpps(ie+1:ie+1)=' '
 #endif
       if (iexample == 0) then

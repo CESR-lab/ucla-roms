@@ -1,28 +1,6 @@
 /* This is "cppdefs.h": MODEL CONFIGURATION FILE
    ==== == ============ ===== ============= ==== */
 
-#undef BALTIC          /* Baltic Sea */
-#undef DOUBLE_GYRE           /* Big Bad Basin */
-#undef CANBAS2
-#undef CANYON_A        /* Canyon_A */
-#undef CANYON_B        /* Canyon_B */
-#undef COLD_FILAMENT   /* Submesoscale cold filament */
-#undef DAMEE_B         /* North Atlantic DAMEE, Big Domain */
-#undef EKMAN_SPIRAL
-#undef GRAV_ADJ        /* Graviational Adjustment */
-#undef ISWAKE          /* Island Wake Problem */
-#undef OVERFLOW        /* Graviational/Overflow */
-c--#define BLACK_SEA
-#undef ATLANTIC      /* Atlantic, Gulf of Mexico */
-#undef PACIFIC         /* North-Equatorial Pacific */
-#undef PACIFIC_2D      /* Pacific Tsunami model */
-#undef RIVER           /* River runoff test problem */
-#undef SEAMOUNT100        /* Seamount */
-#undef SOLITON         /* Equatorial Rossby Wave */
-#undef UPWELLING      /* Upwelling */
-#undef USWC            /* US West Coast Yusuke 2010 */
-#undef USWEST          /* US West Coast */
-#undef WAVE_RAD        /* Test for wave radiation boundaries */
 #define SPLASH
 
 /*
@@ -662,88 +640,10 @@ c--# define LMD_NONLOCAL
 # define M3_FRC_BRY
 # define T_FRC_BRY
 
-#elif defined BALTIC  /* Baltic Sea model */
 
-# define SOLVE3D
-# define UV_ADV
-# define UV_COR
+#elif defined SPLASH   /* CARTHE SPLASH REGION */
 
-# define SALINITY
-# define NONLIN_EOS
-
-# undef AVERAGES
-
-# define UV_VIS2
-# define TS_DIF2
-
-
-# define LMD_MIXING
-# define LMD_KPP
-# define LMD_RIMIX
-# define LMD_CONVEC
-# define LMD_NONLOCAL
-
-# define CURVGRID
-# define SPHERICAL
-# define MASKING
-
-# define ANA_INITIAL
-# define ANA_SMFLUX
-# define ANA_STFLUX
-# define ANA_SSFLUX
-# define ANA_SRFLUX
-
-#elif defined USWC   /* US West Coast 2010 */
-# define SOLVE3D
-# define UV_ADV
-# define UV_COR
-
-# define SALINITY
-# define NONLIN_EOS
-
-# define AVERAGES
-
-# define UV_VIS2
-# define MIX_GP_UV
-# define TS_DIF2
-
-c------# define DIURNAL_SRFLUX
-# undef TIDES
-# ifdef TIDES
-#  define SSH_TIDES
-#  define UV_TIDES
-c#  define TIDERAMP
-# endif
-
-# define QCORRECTION
-
-# define LMD_MIXING
-# define LMD_KPP
-# define LMD_BKPP
-c# define LMD_RIMIX
-# define LMD_CONVEC
-# define LMD_NONLOCAL
-
-# define CURVGRID
-# define SPHERICAL
-# define MASKING
-
-# define OBC_WEST
-# define OBC_EAST
-# undef OBC_NORTH
-# define OBC_SOUTH
-
-# define OBC_M2FLATHER
-# define OBC_M3ORLANSKI
-# define OBC_TORLANSKI
-
-# define Z_FRC_BRY
-# define M2_FRC_BRY
-# define M3_FRC_BRY
-# define T_FRC_BRY
-# define SPONGE
-
-#elif defined SPLASH   /* US West Coast Configuration */
+# define RIVER_SOURCE
 # define SOLVE3D
 # define UV_COR
 # define UV_ADV
@@ -763,7 +663,7 @@ c# define LMD_RIMIX
 # define LMD_MIXING
 # define LMD_RIMIX
 # define LMD_CONVEC
-# undef LMD_DDMIX
+c--# undef LMD_DDMIX
 # define LMD_KPP
 # define LMD_NONLOCAL
                       /* Grid Configuration */
@@ -788,10 +688,6 @@ c--> # define OBC_FLUX_CORR
 # define M2_FRC_BRY
 # define M3_FRC_BRY
 # define T_FRC_BRY
-# undef TNUDGING
-# undef M3NUDGING
-# undef M2NUDGING
-# undef CLIMAT_TS_MIXH
 #else
 # define TNUDGING
 # define M3NUDGING
@@ -802,36 +698,9 @@ c--> # define OBC_FLUX_CORR
 # undef OBC_M2SPECIFIED
 # undef OBC_M3SPECIFIED
 
-# define AVERAGES
-
-#elif defined WAVE_RAD
-# undef  SOLVE3D
-# define UV_COR
-# define UV_ADV
-# undef UV_VIS2
-
-# define ANA_GRID
-# define ANA_INITIAL
-# define ANA_SMFLUX
-
-# define OBC_WEST
-# define OBC_EAST
-# define OBC_NORTH
-# define OBC_SOUTH
-# define OBC_M2FLATHER
-c--# define OBC_M2ORLANSKI
-c--# define OBC_Z2ORLANSKI
-# define LEGACY_ORLANSKI
-
-# define ANA_BRY
-# define Z_FRC_BRY
-# define M2_FRC_BRY
+c---# define AVERAGES
 
 
-#elif defined SLOSH
-# define ANA_GRID
-# define ANA_INITIAL
-# define ANA_SMFLUX
 #endif
 
 #include "set_global_definitions.h"

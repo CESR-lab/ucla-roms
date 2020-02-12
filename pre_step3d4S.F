@@ -16,6 +16,10 @@
       subroutine pre_step3d_tile (istr,iend,jstr,jend, ru,rv, Hz_bak,
      &                                         Hz_fwd,   WC,FC,CF,DC,
      &                                    UFx,UFe,VFx,VFe, wrk1,wrk2)
+# ifdef RIVER_SOURCE
+      use river_frc
+# endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -31,9 +35,7 @@
      &                 , gamma=0.3333333333333333 !! gamma=0.25
 # endif
       integer indx, itrc, iAkt
-# ifdef PSOURCE
-     &                  , is
-# endif
+
 # include "grid.h"
 # include "ocean3d.h"
 # include "coupling.h"
@@ -61,7 +63,7 @@
 ! at this stage yet), but is rather chosen to absorb the
 ! 3D-divergence of mass fluxes FlxU, FlxV, and W consistently with
 ! time-stepping algorithm of this preliminary step (recall that
-! computation of "Hz_fwd" mimics the time step for tracers themselves).
+! computation of "Hz_fwd" mimics time step for tracers themselves).
 ! Later in this code the "Hz_fwd"-field plays the role of new-step
 ! "Hz" in the updates for tracer and 3D momenta to n+1/2, and it
 ! does not participate in any further computation.  Hence, division
@@ -104,9 +106,10 @@
 # define FX UFx
 # define FE VFe
                                              ! Advance tracer fields
-        do itrc=1,NT                         ! starting with applying
+        do itrc=1,nt                         ! starting with applying
                                              ! horizontal fluxes. Also
-# include "compute_horiz_tracer_fluxes.h"
+# include "compute_horiz_tracer_fluxes.h"   
+!! river included in above include file
                                              ! INITIALIZE CORRECTOR
           do j=jstr,jend                     ! STEP by pre-multiplying
             do i=istr,iend
@@ -143,14 +146,28 @@
 ! monotonicity constraint; linear interpolation is considered obsolete,
 ! but the code is retained for reference].
 
+# ifdef PIPE_SOURCE
+      Q2d = 0
+      Q2d(25:25,25:25) = 10
       do j=jstr,jend
-        do itrc=1,NT
+         do i=istr,iend
+            t(i,j,1,nnew,1)=t(i,j,1,nnew,1)
+     &           +dtau*pm(i,j)*pn(i,j)*Q2d(i,j)*20
+            t(i,j,1,nnew,2)=t(i,j,1,nnew,2)
+     &           +dtau*pm(i,j)*pn(i,j)*Q2d(i,j)*1
+         enddo
+      enddo 
+# endif
+
+      do j=jstr,jend
+        do itrc=1,nt
+
 
 # include "compute_vert_tracer_fluxes.h"
 
-          do k=1,N
+          do k=1,n
             do i=istr,iend
-             t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            -dtau*pm(i,j)*pn(i,j)*(FC(i,k)-FC(i,k-1))
 
 # ifdef CONST_TRACERS
@@ -386,6 +403,36 @@
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
 
+# ifdef RIVER_SOURCE
+      do j=jstr,jend
+        do i=istrU,iend
+          if (abs(riv_uflx(i,j)).gt.1e-3) then
+            depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
+     &                   +z_w(i  ,j,N)-z_w(i  ,j,0) )
+            iriver = nint(riv_uflx(i,j)/10)
+            riv_uvel = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)/
+     &                 ( dn_u(i,j)*depth)
+            do k= 1,N
+              u(i,j,k,nnew) = riv_uvel
+            enddo
+          endif
+        enddo
+      enddo
+      do j=jstrV,jend
+        do i=istr,iend
+          if (abs(riv_vflx(i,j)).gt.1e-3) then
+            depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
+     &                   +z_w(i,j  ,N)-z_w(i,j  ,0) )
+            iriver = nint(riv_vflx(i,j)/10)
+            riv_vvel = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)/
+     &                 ( dm_v(i,j)*depth)
+            do k= 1,N
+              v(i,j,k,nnew) = riv_vvel
+            enddo
+          endif
+        enddo
+      enddo
+# endif
 # ifdef PSOURCE
       do is=1,Nsrc           ! Apply point mass sources associated
         i=Isrc(is)           ! with river runoff simulations.

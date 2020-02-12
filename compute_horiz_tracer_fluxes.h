@@ -13,9 +13,10 @@
 ! twice, in predictor and corrector substeps for tracer variables.
 
 
-
-#ifdef BIO_1ST_USTREAM_TEST
+c---#define BIO_1ST_USTREAM_TEST
+#ifdef  BIO_1ST_USTREAM_TEST
         if (itrc>isalt) then       ! biological tracer components:
+!       if (itrc>0) then       ! biological tracer components: 
           if (nrhs==3) then         ! compute fluxes during corrector
             do j=jstr,jend            ! stage only
               do i=istr,iend+1
@@ -186,21 +187,37 @@
 #endif
             enddo
           enddo             !--> discard curv,grad, keep FE
-
-#ifdef PSOURCE
-          do is=1,Nsrc             ! Set tracer fluxes due to point
-            i=Isrc(is)             ! sources to simulate river run off
-            j=Jsrc(is)
-            if ( istr<=i .and. i<=iend+1 .and.
-     &           jstr<=j .and. j<=jend+1 ) then
-              if (Dsrc(is)==0) then
-                FX(i,j)=FlxU(i,j,k)*Tsrc(is,k,itrc)
-              else
-                FE(i,j)=FlxV(i,j,k)*Tsrc(is,k,itrc)
-              endif
-            endif
-          enddo
-#endif
 #ifdef BIO_1ST_USTREAM_TEST
         endif  !<-- itrc>isalt, bio-components only.
+#endif
+
+#ifdef RIVER_SOURCE
+	  !! inefficient because this is inside a k-loop
+	  !! we could try to compute riv_uvel(i,j) somewhere else
+          do j=jstr,jend
+            do i=istr,iend+1
+              if (abs(riv_uflx(i,j)).gt.1e-3) then
+                depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
+     &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )
+	        iriver = nint(riv_uflx(i,j)/10)
+                riv_uvel = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)/depth
+                FX(i,j)= riv_trc(iriver,itrc)*
+     &            0.5*(Hz(i-1,j,k)+Hz(i,j,k))*riv_uvel
+
+              endif
+            enddo
+          enddo
+          do j=jstr,jend+1
+            do i=istr,iend
+              if (abs(riv_vflx(i,j)).gt.1e-3) then
+                depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
+     &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )
+	        iriver = nint(riv_vflx(i,j)/10)
+                riv_vvel = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)/depth
+                FE(i,j)= riv_trc(iriver,itrc)*
+     &            0.5*(Hz(i,j-1,k)+Hz(i,j,k))*riv_vvel
+
+              endif
+            enddo
+          enddo
 #endif

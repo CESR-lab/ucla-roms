@@ -11,6 +11,7 @@ c--# define CONST_TRACERS
 ! algorithms.  They must always be defined whenever the isoneutral
 ! hyperdiffusion is selected.
 
+
 # ifdef ADV_ISONEUTRAL
 #  define SW_TRIADS
 #  define STABILIZE
@@ -47,6 +48,10 @@ c--# define CONST_TRACERS
 #  endif
 # endif
      &                                                             )
+#  ifdef RIVER_SOURCE
+      use river_frc
+#  endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -130,7 +135,7 @@ c--#  define ntdf nrhs
 ! (iii) arrays of RHO-type are computed at k -
 
 
-      do itrc=1,NT
+      do itrc=1,nt
 # ifdef ADV_ISONEUTRAL
         k2=1
         do k=0,N,+1       !--> recursive

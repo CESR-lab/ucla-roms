@@ -4,38 +4,54 @@
       ! riv_uflx, riv_vflx should be on faces between a masked and unmasked cell,
       ! in the direction of the unmasked cell.
 
+      ! TODO
+      ! * Deal with rivers in the buffer that impact boundary uflx,vflx
+      ! * we could do the faces thingy in the distribution field
+      ! already (better for doing the boundary)
+      
+
       ! call set_river_source_tile(istr,iend,jstr,jend, ierr)
   
        use dimensions !! has dimensions, a list of forcing files, and rmask
        implicit none
-       ! gnx full domain, nx  subdomain
+
        private
 
-#include "cppdefs.h"
-#include "param.h"
-#include "grid.h"
-#include "ncvars.h"
-
       ! These are usable by code that uses this module
+       integer,public,parameter :: nriv = 10 !! max number of rivers
        real,public, dimension(nx+1,ny) :: riv_uflx
        real,public, dimension(nx,ny+1) :: riv_vflx
+       real,public, dimension(nriv)    :: riv_vol
+       real,public, dimension(nriv,nt) :: riv_trc
+
+       integer,public :: iriver
+       real,   public :: depth
+       real,   public :: riv_uvel,riv_vvel
+       real,   public :: river_flux
 
        ! These are private to this module
-       character(len=10) :: var_name = 'river_flux'
-       character(len=15) :: var_time = 'river_flux_time'
-       character(len=15) :: var_time = 'river_flux_time'
-       character(len=15) :: var_time = 'river_flux_time'
-       character(len=15) :: var_time = 'river_flux_time'
+       character(len=10) :: riv_flx_name = 'river_flux'  !! stored in the grid file
+       character(len=12) :: riv_vol_name = 'river_volume'!! stored in a forcing file
+       character(len=12) :: riv_trc_name = 'river_tracer'!! stored in a forcing file
+       character(len=10) :: riv_tim_name = 'river_time'  !! stored in a forcing file
+
+       character(len=6) :: nriv_dim_name = 'nriver'      !! dimension name for number of rivers in file
+       character(len=8) :: ntrc_dim_name = 'ntracers'    !! dimension name for number of tracers in file
+
+       logical :: analytical = .false.                   !! analytical or forcing files
 
        integer    :: ifile = 0
        integer    :: irec  = 0
   
-       integer                  :: it1 = 1
-       integer                  :: it2 = 2
-       real, dimension(2)       :: frc_tim = [-99,-99]
-       real, dimension(nx,ny,3) :: rflx 
+       integer                          :: it1 = 1
+       integer                          :: it2 = 2
+       integer                          :: nriv_frc ! number of rivers in forcing file
+       integer                          :: ntrc_frc ! number of tracers in forcing file
+       real, dimension(2)               :: rtim = [-99,-99]
+       real, dimension(0:nx+1,0:ny+1)   :: rflx  ! include 1 width buffer
+       real,public, dimension(nriv,2)   :: rvol
+       real,public, dimension(nriv,nt,2):: rtrc
 
-       public nx
        public set_river_frc
 
       contains
@@ -47,8 +63,53 @@
        ! --------------------------------------------------------------------
         subroutine ini_river_frc
          use ncio
+         use netcdf
          implicit none
          ! Initialize river forcing
+
+         integer :: is,js,ierr,ncid
+         integer :: partition_info(4)
+         integer :: i,j
+         integer :: faces
+
+         !! We need to deal with the fact that currently, the first subdomain
+         !! includes the west (or south) buffer, which we'll want to skip.
+
+         !! Hack to deal with the fact that currently roms partitions
+         !! the buffer in some of the partitioned files
+
+         ierr = nf90_open(grdname, nf90_nowrite, ncid)
+         ierr=nf90_get_att(ncid,nf90_global,'partition',partition_info)
+         if (partition_info(3)==1) then
+           is = 2;
+         else
+           is = 1;
+         endif
+         if (partition_info(4)==1) then
+           js = 2;
+         else
+           js = 1;
+         endif
+
+         call nc_read(grdname,riv_flx_name,rflx(1:nx,1:ny),[is,js],[nx,ny])
+
+         ! compute uflx,vflx from rflx 
+         do i = 1,nx
+           do j = 1,ny
+             if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
+               iriver = floor(rflx(i,j)-1e-5)
+               faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
+               if ( faces == 0 .or. rmask(i,j)>0  ) then
+                  stop 'river forcing error'
+               endif
+               if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rflx(i,j)-iriver)/faces + 10*iriver
+               if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
+               if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
+               if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
+               endif
+             enddo
+           enddo
+          
         end subroutine ini_river_frc
 
 
@@ -61,65 +122,55 @@
 
          real(kind=8), intent(in) :: time
          integer  :: tmp
-         integer  :: is,js,ierr
-
-         !! We need to deal with the fact that currently, the first subdomain
-         !! includes the west (or south) buffer, which we'll want to skip.
-         !! Find_rec_new checks for this and will change is or js from 1 to 2 if needed
 
 
-         if (frc_tim(it1) < 0) then !! first time
+         if (rtim(it1) < 0) then !! first time
+           call ini_river_frc
+
            ! calling find_rec_new with irec==0 returns the last record with var_time<time
-           call init_river_frc
-           call find_rec_new(time,var_name,var_time,ifile,irec)
-           if (mynode==0) then
-!             print *, '----------------------'
-!             print *, 'READ_RIVER'
-!             print *, ifile,irec,is,js
-!             print *, frcfile(ifile)
-!             print *, var_name,' ',var_time
-!             print *, 'it1: ', it1
-!             print *, 'nx, ny: ', nx,ny
-!             print *, 'irec: ', irec
-              print *, '-------'
-           endif
-           
-           call nc_read(frcfile(ifile),var_time,frc_tim(it1),[irec],[1])
-           frc_tim(it1) = frc_tim(it1) + 360  !! place holder for proper cycle_length treatment
+           call find_rec_new(time,riv_vol_name,riv_tim_name,ifile,irec)
+           call nc_read(frcfile(ifile),riv_tim_name,rtim(it1),[irec],[1])
+           rtim(it1) = rtim(it1) + 360  !! place holder for proper cycle_length treatment
 
-           call nc_read(frcfile(ifile),var_name,rflx(:,:,it1),[is,js,irec],[nx,ny,1])
-!          rsum = sum(rflx(:,:,it1))
-!          if (rsum>0) then
-!            print *, 'rsum: ',mynode,rsum
-!          endif
-!          call mpi_barrier(ocean_grid_comm,ierr)
-!          stop 'returning from 2D nc_read'
+           nriv_frc = nc_size(frcfile(ifile),nriv_dim_name)
+           ntrc_frc = nc_size(frcfile(ifile),ntrc_dim_name)
+           if (ntrc_frc>nt) then
+             ntrc_frc= nt;
+             print *, 'Ignoring some tracers in river input'
+           endif
+
+           if (nriv_frc>nriv) then
+             if (mynode==0) then
+               print *, 'Too many rivers in forcing file,'
+               print *, 'Increase nriv in river_frc.F'
+             endif
+             stop
+           endif
+
+           call nc_read(frcfile(ifile),riv_vol_name,rvol(1:nriv_frc,it1),[1,irec],[nriv_frc,1])
+           call nc_read(frcfile(ifile),riv_trc_name,rtrc(1:nriv_frc,1:ntrc_frc,it1),[1,1,irec],[nriv_frc,ntrc_frc,1])
+
          else
            tmp =it1
            it1 =it2
            it2 =tmp
          endif
 
-!        if (mynode==0) then
-!           print *,'read_river_frc, it1: ', frc_tim(it1)
-!        endif
+         call find_rec_new(time,riv_vol_name,riv_tim_name,ifile,irec)
 
-         call find_rec_new(time,var_name,var_time,ifile,irec,is,js)
+         call nc_read(frcfile(ifile),riv_tim_name,rtim(it2),[irec],[1])
+         rtim(it2) = rtim(it2) + 360  !! place holder for proper cycle_length'
+
+         call nc_read(frcfile(ifile),riv_vol_name,rvol(1:nriv_frc,it2),[1,irec],[nriv_frc,1])
+         call nc_read(frcfile(ifile),riv_trc_name,rtrc(1:nriv_frc,1:ntrc_frc,it2),[1,1,irec],[nriv_frc,ntrc_frc,1])
 !        if (mynode==0) then
-!          print *,'back from FRN ', ifile,irec
-!        endif
-         call nc_read(frcfile(ifile),var_time,frc_tim(it2),[irec],[1])
-         frc_tim(it2) = frc_tim(it2) + 360  !! place holder for proper cycle_length'
-!        if (mynode==0) then
-!          print *,'back from nc_read ', frc_tim(it2)
+!          print *,'back from nc_read ', rtim(it2)
 !        endif
 !        call mpi_barrier(ocean_grid_comm,ierr)
 
-         call nc_read(frcfile(ifile),var_name,rflx(:,:,it2),[is,js,irec],[nx,ny,1])
-
-!        if (mynode==0) then
-!           print *,'read_river_frc: ', frc_tim(it1),frc_tim(it2)
-!        endif
+         if (mynode==0) then
+            print *,'read_river_frc: ', rtim(it1),rtim(it2)
+         endif
 
        end subroutine read_river_frc
 
@@ -131,60 +182,34 @@
          ! import/export
          real(kind=8), intent(in) :: time
          ! local
-         integer :: i,j
-         integer :: faces
-         logical :: analytical 
          real    :: cf1,cf2
          real    :: tday
 
-         tday = time/(24*3600)
-!        if (mynode==0) then
-!          print *,'SRF  ', mynode
-!          print *,'SRF  ', tday
-!          print *,'SRF  ', var_name
-!          print *,'SRF  ', var_time
-!          stop 'testing set_river_frc'
-!        endif
-         analytical = .false.
+         tday = time/(24*3600) ! convert from time seconds to days
+
          if (analytical) then
             !! cal ana_river_frc
             stop 'no analytical river data'
          else
            ! check whether we need to update forcing data
-           if (frc_tim(it2) < tday) then
+           if (rtim(it2) < tday) then
              call read_river_frc(tday)
            endif
 
            ! linear interpolation in time
-           cf1 = ( frc_tim(it2) - tday )/(frc_tim(it2) - frc_tim(it1) ) 
-           cf2 = ( tday - frc_tim(it1) )/(frc_tim(it2) - frc_tim(it1) ) 
-           rflx(:,:,3) = cf1*rflx(:,:,it1) + cf2 * rflx(:,:,it2)
-
-           ! compute uflx,vflx from rflx
-           do i = 1,nx
-             do j = 1,ny
-               if (rflx(i,j,3) > 0) then ! distribute mass flux to all available unmasked cells
-                 faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
-!                faces = 3
-                 if ( faces == 0 .or. rmask(i,j)>0  ) then
-                   stop 'river forcing error'
-                 endif
-                 if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-rflx(i,j,3)/faces
-                 if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = rflx(i,j,3)/faces
-                 if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-rflx(i,j,3)/faces
-                 if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = rflx(i,j,3)/faces
-!                print *,'river flux: ',rflx(i,j,3),rflx(i,j,1),faces
-!                print *,'river flux: ',cf1, cf2
-!                stop
-               endif
-             enddo
-           enddo
+           cf1 = ( rtim(it2) - tday )/(rtim(it2) - rtim(it1) ) 
+           cf2 = ( tday - rtim(it1) )/(rtim(it2) - rtim(it1) ) 
+           riv_vol = cf1*rvol(:,it1) + cf2 * rvol(:,it2)
+           riv_trc = cf1*rtrc(:,:,it1) + cf2 * rtrc(:,:,it2)
+!          if (mynode==0) then
+!            print *, 'volume: ',riv_vol(1:nriv_frc)
+!          endif
      
          endif
        end subroutine set_river_frc
        ! --------------------------------------------------------------------
  
-       subroutine find_rec_new(time,v_name,vt_name,ifile,irec,is,js)
+       subroutine find_rec_new(time,v_name,vt_name,ifile,irec) 
 
          use netcdf
          use ncio
@@ -214,7 +239,6 @@
          real(kind=8)    ,intent(in)    :: time
          character(len=*),intent(in)  :: v_name,vt_name
          integer     ,intent(inout) :: ifile,irec
-         integer     ,intent(inout) :: is,js
 ! LOCAL
          real        :: vtime
          integer     :: found_var,found_rec
@@ -222,7 +246,6 @@
          integer     :: ierr,v_id,ncid
          integer     :: nfiles,nrecords
          integer     :: ifile_old,irec_old
-         integer     :: partition_info(4)
 
          logical :: first
       
@@ -241,7 +264,6 @@
 
          found_var = 0
          found_rec = 0
-
 
          nfiles = max_frc
 
@@ -286,7 +308,7 @@
              enddo ! while not found and irec<nrecs
            else
              if (mynode==0) then
-               print *, 'Variable ',v_name,' NOT found in file ',frcfile(ifile)
+               print *, 'Variable ',v_name,' NOT found in file:',frcfile(ifile)
              endif
            endif
 
@@ -297,31 +319,17 @@
 
          enddo !while ifile<=nfiles
 
-         call mpi_barrier(ocean_grid_comm,ierr)
+!        call mpi_barrier(ocean_grid_comm,ierr)
          if (found_rec==1) then
            if (mynode==0) then
-             print *,'SUCCES: vtime,ifile,irec: ',vtime,ifile,irec
+!            print *,'SUCCES: vtime,ifile,irec: ',vtime,ifile,irec
            endif
          else
            if (mynode==0) then
-             print *,'FAIL: vtime,ifile,irec: ',vtime,ifile,irec
+!            print *,'FAIL: vtime,ifile,irec: ',vtime,ifile,irec
            endif
          endif
 
-         ! Hack to deal with the fact that currently roms partitions
-         ! the buffer in some of the partitioned files
-         ierr=nf90_get_att(ncid,nf90_global,'partition',partition_info)
-         if (partition_info(3)==1) then
-           is = 2;
-         else
-           is = 1;
-         endif
-         if (partition_info(4)==1) then
-           js = 2;
-         else
-           js = 1;
-         endif
-          
          if (first) then
            ifile = ifile_old
            irec  = irec_old
@@ -340,7 +348,7 @@
          endif
 
          if (mynode==0) then
-           print *,'FNR: ',found_rec,irec,ifile
+           print *,'FNR: ',frcfile(ifile),irec
          endif
 
         end subroutine find_rec_new

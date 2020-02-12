@@ -7,6 +7,7 @@
 ! stepping algorithm [Sec. 2.3 from SM2005 starting with Eq. (2.49)]
 ! and perform fast-time averaging to interact with baroclinic mode.
 
+
       implicit none
       integer tile
 #include "param.h"
@@ -21,6 +22,11 @@
       subroutine step2d_FB_tile( istr,iend,jstr,jend, zeta_new,Dnew,
      &                           rubar,rvbar, urhs,vrhs,  DUon,DVom,
      &                                       Drhs, UFx,UFe,VFx,VFe)
+
+#ifdef RIVER_SOURCE
+      use river_frc
+#endif
+
       implicit none
 #include "param.h"
       integer istr,iend,jstr,jend, i,j, kbak, kold
@@ -29,16 +35,12 @@
      &                                       Drhs, UFx,UFe,VFx,VFe
       real fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
      &            cff,cff1,cff2, DUnew,DVnew
-#ifdef PSOURCE
-      integer is
-#endif
 #include "grid.h"
 #include "ocean2d.h"
 #ifdef SOLVE3D
 # include "coupling.h"
-#else
-# include "forces.h"
 #endif
+#include "forces.h"
 #include "mixing.h"
 #include "climat.h"
 #include "scalars.h"
@@ -149,11 +151,16 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
 #define rzeta  UFe
 #define rzeta2  VFe
 #define rzetaSA VFx
-
       do j=jstrV-1,jend
         do i=istrU-1,iend
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
+#ifdef PIPE_SOURCE
+          zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*Q2d(i,j)
+          if (Q2d(i,j)>0) then
+             write(*,*) 'Q2D', i,j
+          endif
+#endif
 #ifdef MASKING
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j)
 #endif
@@ -172,6 +179,7 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
 #endif
         enddo
       enddo
+
 
 ! Set boundary conditions for the free-surface, after which copy
 ! the newly computed free-surface zeta_new into shared array.
@@ -783,27 +791,36 @@ c<<     &     +cff*iA_v(i,j)
       endif
 # endif
 #endif
-#ifdef PSOURCE
-      do is=1,Nsrc                             ! Point sources due  
-        i=Isrc(is) ; j=Jsrc(is)                ! to river runoff
-        if (istrR <= i .and. i <= iendR .and.
-     &      jstrR <= j .and. j <= jendR) then
-          if (Dsrc(is)==0) then
-            ubar(i,j,knew)=2.*Qbar(is)/( dn_u(i,j)
-     &                   *(Dnew(i-1,j)+Dnew(i,j)) )
+
+
+#ifdef RIVER_SOURCE
+      do j=jstr,jend
+        do i=istrU,iend
+          if (abs(riv_uflx(i,j)).gt.1e-3) then
+            iriver = nint(riv_uflx(i,j)/10)
+            river_flux = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)
+            ubar(i,j,knew) = river_flux*
+     &           2/( dn_u(i,j)*(Dnew(i-1,j)+Dnew(i,j)) )
 # ifdef SOLVE3D
-            DU_avg1(i,j)=Qbar(is)
-# endif
-          else
-            vbar(i,j,knew)=2.*Qbar(is)/( dm_v(i,j)
-     &                   *(Dnew(i,j-1)+Dnew(i,j)) )
-# ifdef SOLVE3D
-            DV_avg1(i,j)=Qbar(is)
+            DU_avg1(i,j) = river_flux
 # endif
           endif
-        endif
+        enddo
       enddo
-#endif
+      do j=jstrV,jend
+        do i=istr,iend
+          if (abs(riv_vflx(i,j)).gt.1e-3) then
+            iriver = nint(riv_vflx(i,j)/10)
+            river_flux = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)
+            vbar(i,j,knew) = river_flux*
+     &           2/( dm_v(i,j)*(Dnew(i,j-1)+Dnew(i,j)) )
+# ifdef SOLVE3D
+            DV_avg1(i,j) = river_flux
+# endif
+          endif
+        enddo
+      enddo
+#endif   /* RIVER_SOURCE */
 
 ! At the end of the last 2D step replace the new free-surface field
 ! "zeta(:,:,knew)" with its fast-time-averaged "_avg1" version: this

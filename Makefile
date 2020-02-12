@@ -39,9 +39,9 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
-	mpi_setup.F	mpi_exchange8TA.F
+	mpi_setup.F	mpi_exchange8TA.F\
 \
-	river_frc.F
+	river_frc.F	dimensions.F
 
 
 #rho_eos.F	ab_ratio.F	alfabeta.F\
@@ -69,8 +69,8 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 
   SRCS = $(KRNSRC) $(IOSRC)
    RCS = $(SRCS:.F=.f)
-  OBJS = $(RCS:.f=.o)
-  SBIN = roms
+  OBJS = $(RCS:.f=.o) ncio.o
+  SBIN = /maya/nmolem/SPLASH/roms_splash
  LROMS = libroms.a
  LROMS2 = 2/$(LROMS)
  LROMS3 = 2/$(LROMS) 3/$(LROMS)
@@ -80,31 +80,14 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 
 $(SBIN): mpc $(OBJS)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
+	mv a.out $(SBIN)
 
-#$(SBIN): $(LROMS)
-#	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(LROMS) $(LCDF) $(LMPI)
-	mv a.out $(SBIN)
-2level: $(OBJS) $(LROMS2)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LROMS2) $(LCDF) $(LMPI)
-	mv a.out $(SBIN)
-3level: $(OBJS) $(LROMS3)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LROMS3) $(LCDF) $(LMPI)
-	mv a.out $(SBIN)
-4level: $(OBJS) $(LROMS4)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LROMS4) $(LCDF) $(LMPI)
-	mv a.out $(SBIN)
 
 # Multilevel libraries
 
 $(LROMS): $(OBJS)
 	/bin/rm -f $(LROMS)
 	ar r $(LROMS) $(OBJS)
-2/$(LROMS): $(SRCS)
-	cd 2; make -f ./Makefile $(LROMS); cd ..
-#$(LROMS3): $(SRCS) $(LROMS2)
-#cd 3; make $(LROMS); cd ..
-#$(LROMS4): $(SRCS) $(LROMS3)
-#cd 3; make $(LROMS); cd ..
 
 
 check_forces: check_forces.o $(SBIN)

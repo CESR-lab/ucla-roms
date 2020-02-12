@@ -52,8 +52,9 @@
 # LARGE_MEM_FLAG = -mcmodel=medium -i-dynamic
 
 
-#   CFTFLAGS = -pc80 -xSSE2 -auto -stack_temps
-   CFTFLAGS = -pc80 -auto -stack_temps -warn unused
+#  CFTFLAGS = -pc80 -auto -stack_temps -warn unused
+   CFTFLAGS = -pc64 -auto -stack_temps -warn all
+   CFTFLAGS = -pc64 -auto -stack_temps 
 
 
       CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
@@ -71,7 +72,6 @@
 # -prof_gen
 
 # FFLAGS = -g -check all -CA -CB -CS
-# FFLAGS = -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
 # FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
 
 

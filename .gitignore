@@ -3,6 +3,8 @@
 ###################
 *.f
 *.o
+*.mod
+*.swp
 mpc
 Make.depend
 roms

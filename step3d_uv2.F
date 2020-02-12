@@ -1,4 +1,5 @@
 #include "cppdefs.h"
+
 #ifdef SOLVE3D
 
       subroutine step3d_uv2(tile)
@@ -12,6 +13,9 @@
       end
 
       subroutine step3d_uv2_tile(istr,iend,jstr,jend, WC,FC,CF,DC)
+# ifdef RIVER_SOURCE
+      use river_frc
+# endif
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -32,10 +36,6 @@
       real, parameter :: epsil=1.E-33
 #  define  ALPHA_MAX 4.
 #  define GAMMA 0.0833333333333
-# endif
-# ifdef PSOURCE
-#  include "sources.h"
-      integer is
 # endif
 
 # include "compute_auxiliary_bounds.h"
@@ -170,6 +170,7 @@
 #  ifdef MASKING
      &                          *umask(i,j)
 #  endif
+
           enddo
         enddo        !--> discard DC,CF
 
@@ -567,6 +568,43 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif
         endif    !<-- j >= jstr
       enddo    ! <-- j
+      
+
+# ifdef RIVER_SOURCE
+      do j=jstr,jend
+        do i=istr,iend
+
+          if (abs(riv_uflx(i,j)).gt.1e-3) then
+            depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
+     &                   +z_w(i  ,j,N)-z_w(i  ,j,0) )
+            iriver = nint(riv_uflx(i,j)/10)
+            riv_uvel = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)/
+     &                 ( dn_u(i,j)*depth)
+            do k= 1,N
+              u(i,j,k,nnew) = riv_uvel
+            enddo
+!           print *, 'node: ', mynode, 'riv_uvel: ', riv_uvel
+!           print *, 'node: ', mynode, 'riv_vol: ', riv_vol(iriver)
+!           print *, 'node: ', mynode, 'iriver: ', iriver
+!           print *, 'node: ', mynode, 'riv_vflx: ', riv_uflx(i,j)
+          endif
+
+          if (abs(riv_vflx(i,j)).gt.1e-3) then
+            depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
+     &                   +z_w(i,j  ,N)-z_w(i,j  ,0) )
+                        iriver = nint(riv_vflx(i,j)/10)
+            riv_vvel = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)/
+     &                 ( dm_v(i,j)*depth)
+            do k= 1,N
+              v(i,j,k,nnew) = riv_vvel
+            enddo
+          endif
+
+        enddo
+      enddo
+# endif
+
+
 
 # undef IU_RANGE
 # undef IV_RANGE
