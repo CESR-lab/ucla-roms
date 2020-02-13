@@ -28,6 +28,8 @@
        real,   public :: depth
        real,   public :: riv_uvel,riv_vvel
        real,   public :: river_flux
+       real,   public, dimension(nriv,2)   :: rvol
+       real,   public, dimension(nriv,nt,2):: rtrc
 
        ! These are private to this module
        character(len=10) :: riv_flx_name = 'river_flux'  !! stored in the grid file
@@ -49,8 +51,7 @@
        integer                          :: ntrc_frc ! number of tracers in forcing file
        real, dimension(2)               :: rtim = [-99,-99]
        real, dimension(0:nx+1,0:ny+1)   :: rflx  ! include 1 width buffer
-       real,public, dimension(nriv,2)   :: rvol
-       real,public, dimension(nriv,nt,2):: rtrc
+       real, parameter :: pi=3.14159265358979323
 
        public set_river_frc
 
@@ -163,10 +164,6 @@
 
          call nc_read(frcfile(ifile),riv_vol_name,rvol(1:nriv_frc,it2),[1,irec],[nriv_frc,1])
          call nc_read(frcfile(ifile),riv_trc_name,rtrc(1:nriv_frc,1:ntrc_frc,it2),[1,1,irec],[nriv_frc,ntrc_frc,1])
-!        if (mynode==0) then
-!          print *,'back from nc_read ', rtim(it2)
-!        endif
-!        call mpi_barrier(ocean_grid_comm,ierr)
 
          if (mynode==0) then
             print *,'read_river_frc: ', rtim(it1),rtim(it2)
@@ -189,6 +186,8 @@
 
          if (analytical) then
             !! cal ana_river_frc
+            !! fill riv_uflx, riv_vflx (river distribution)
+            !! fill riv_vol, riv_trc (volume and tracer value data)
             stop 'no analytical river data'
          else
            ! check whether we need to update forcing data
@@ -204,6 +203,9 @@
 !          if (mynode==0) then
 !            print *, 'volume: ',riv_vol(1:nriv_frc)
 !          endif
+           ! tidal modulation of river volume
+           riv_vol = (cos(2*pi*tday) + 1)*riv_vol
+
      
          endif
        end subroutine set_river_frc

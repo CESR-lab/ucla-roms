@@ -665,6 +665,7 @@ c--# define LMD_NONLOCAL
 # define LMD_CONVEC
 c--# undef LMD_DDMIX
 # define LMD_KPP
+# define LMD_BKPP
 # define LMD_NONLOCAL
                       /* Grid Configuration */
 # define CURVGRID

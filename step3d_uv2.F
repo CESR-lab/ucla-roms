@@ -583,10 +583,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
             do k= 1,N
               u(i,j,k,nnew) = riv_uvel
             enddo
-!           print *, 'node: ', mynode, 'riv_uvel: ', riv_uvel
-!           print *, 'node: ', mynode, 'riv_vol: ', riv_vol(iriver)
-!           print *, 'node: ', mynode, 'iriver: ', iriver
-!           print *, 'node: ', mynode, 'riv_vflx: ', riv_uflx(i,j)
           endif
 
           if (abs(riv_vflx(i,j)).gt.1e-3) then
