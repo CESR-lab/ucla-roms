@@ -10,16 +10,28 @@
       call pre_step3d_tile (istr,iend,jstr,jend,   A3d(1,1),A3d(1,2),
      &         A3d(1,3),A3d(1,4), A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
-     &                                             A2d(1,5),A2d(1,6))
+     &                                             A2d(1,5),A2d(1,6)
+# ifdef NHMG
+     &                                            ,A3d(1,5d)
+# endif
+     &          )
       end
 
       subroutine pre_step3d_tile (istr,iend,jstr,jend, ru,rv, Hz_bak,
      &                                         Hz_fwd,   WC,FC,CF,DC,
-     &                                    UFx,UFe,VFx,VFe, wrk1,wrk2)
+     &                                    UFx,UFe,VFx,VFe, wrk1,wrk2 
+# ifdef NHMG
+     &                                            ,Hz_half
+# endif
+     &          )
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
-
+#ifdef NHMG
+      use nhmg, only : nhmg_solve
+      use mg_grids
+      use mg_tictoc, only : tic, toc
+#endif
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k

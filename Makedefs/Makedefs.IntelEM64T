@@ -1,7 +1,7 @@
 # Platform-specific definitions for Intel(R) Ifort(TM)
 # compiler on Extended Memory EM64T Linux computer.
 
-.SUFFIXES: .o .f .F
+.SUFFIXES: .o .f .F .f90
 
 .F.o:
 	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
@@ -11,9 +11,14 @@
 	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
 .f.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+
+.f90.o:
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f90
 .F:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 .f:
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+.f90:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 .o:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
@@ -85,7 +90,8 @@
 #    LMPI = ${MPI_ROOT}/lib/libmpich.a 
 
 
-   LCDF = -lnetcdff
+#   LCDF = -lnetcdff 
+  LCDF = -lnetcdff -Lncio-master/lib/ -lncio -Incio-master/include/ 
 #   LCDF = -lnetcdf -lhdf5 -lhdf5_hl
 #    LCDF = -L/opt/netcdf-4.2.1.1_largemem/lib -lnetcdff
 

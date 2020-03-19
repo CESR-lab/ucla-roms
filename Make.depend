@@ -238,7 +238,7 @@ rho_eos.f: rho_eos.F cppdefs.h param.h grid.h ocean3d.h scalars.h eos_vars.h\
  compute_tile_bounds.h compute_extended_bounds.h private_scratch.h mixing.h\
  coupling.h hidden_mpi_vars.h set_global_definitions.h
 
-river_frc.o: river_frc.f dimensions.mod ncio.mod 
+river_frc.o: river_frc.f dimensions.mod 
 
 sediment.f: sediment.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h forces.h hidden_mpi_vars.h\

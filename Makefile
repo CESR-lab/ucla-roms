@@ -41,7 +41,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
 \
 	mpi_setup.F	mpi_exchange8TA.F\
 \
-	river_frc.F	dimensions.F
+	river_frc.F	dimensions.F 
 
 
 #rho_eos.F	ab_ratio.F	alfabeta.F\
@@ -69,7 +69,7 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 
   SRCS = $(KRNSRC) $(IOSRC)
    RCS = $(SRCS:.F=.f)
-  OBJS = $(RCS:.f=.o) ncio.o
+  OBJS = $(RCS:.f=.o) 
   SBIN = /maya/nmolem/SPLASH/roms_splash
  LROMS = libroms.a
  LROMS2 = 2/$(LROMS)
@@ -164,12 +164,12 @@ plotter: plotter.o
 # Target to create tar file.
 # ------ -- ------ --- -----
 tarfile: clean
-	tar cvf roms.tar Make* *.F *.h etalon_data.* README.*  *.in*
+	tar cvf roms.tar Make* *.F *.h etalon_data.* README.*  *.in* *.mod
 
 # Cleaning targets
 # -------- -------
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.trace *~ $(COMP_FILES)
+	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ $(COMP_FILES)
 allclean: clean
 	cd 2; make -f ./Makefile clean; cd ..
 	cd 3; make -f ./Makefile clean; cd ..

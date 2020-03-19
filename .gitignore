@@ -5,10 +5,13 @@
 *.o
 *.mod
 *.swp
+*.so
 mpc
-Make.depend
 roms
 test_tiling
 redefs
 incl
 lsb_string
+checkkwds
+cppcheck
+srcscheck

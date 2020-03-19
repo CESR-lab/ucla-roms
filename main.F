@@ -3,6 +3,9 @@
 
 !!    program main               ! Open MP version of ROMS driver
       implicit none              ! with single parallel region using
+#ifdef NHMG
+!          USE nhmg, only : nhmg_clean
+#endif
       integer ierr               ! explicit barrier synchronization.
 # include "param.h"
 # ifdef MPI
@@ -28,6 +31,10 @@ C$OMP PARALLEL                           ! fast-time averaging weights
           call roms_thread               ! for barotropic mode, and
 C$OMP END PARALLEL                       ! launch the model in OpenMP
         endif                            ! parallel regime.
+#ifdef NHMG  
+      ! write nhmg statistics to fort.10
+      call nhmg_clean()
+#endif
 # ifdef MPI
       endif
       call MPI_Barrier(ocean_grid_comm, ierr)
@@ -35,6 +42,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
       mpi_master_only write(*,*) 'MPI_run_time =', tend-tstart
       call MPI_Finalize (ierr)
 # endif
+
       stop
       end
 
@@ -63,6 +71,11 @@ C$OMP END MASTER                         ! is in uniform state]. This
 
       subroutine roms_init
       implicit none
+#ifdef NHMG
+          USE nhmg, only : nhmg_init
+          USE nhmg, only : nhmg_matrices
+#endif
+
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
 #include "param.h"
@@ -103,6 +116,10 @@ C$OMP BARRIER
         call init_arrays(tile)         ! global arrays (most of them
       enddo                            ! are just set to to zero).
 C$OMP BARRIER
+
+#ifdef NHMG
+      call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
+#endif
 
 c--#define CR
 CR      write(*,*) '-11' MYID
@@ -205,6 +222,21 @@ CR      write(*,*) ' -5' MYID
         call set_depth(tile)      ! coordinate system: at this moment
       enddo                       ! free surface has non-zero status
 C$OMP BARRIER
+
+!----------------------------------------------------------------------
+!  Set NHMG horizontal and vertical grids 
+!  then set matrices coefficients for the elliptic problem
+!----------------------------------------------------------------------
+#ifdef NHMG
+# ifdef THREE_GHOST_POINTS
+      halo = 3
+# else
+      halo = 2
+# endif
+      call nhmg_matrices(Lm,Mm,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
+     &                   om_r(0:Lm+1,0:Mm+1),
+     &                   on_r(0:Lm+1,0:Mm+1)    )
+#endif
 
 CR      write(*,*)  ' -4' MYID
       do tile=my_tile_range
@@ -430,6 +462,12 @@ C$OMP END MASTER
 C$OMP BARRIER
         if (iic-ntstart > ntimes) goto 99   !-->  DONE
       endif
+#ifdef  NHMG
+      ! indexes for nhmg ab2 pressure corrections
+      iprec1 = 1
+      iprec2 = 2
+#endif
+
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
