@@ -70,7 +70,7 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
   SRCS = $(KRNSRC) $(IOSRC)
    RCS = $(SRCS:.F=.f)
   OBJS = $(RCS:.f=.o) 
-  SBIN = /maya/nmolem/SPLASH/roms_splash
+  SBIN = roms
  LROMS = libroms.a
  LROMS2 = 2/$(LROMS)
  LROMS3 = 2/$(LROMS) 3/$(LROMS)

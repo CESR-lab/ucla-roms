@@ -26,6 +26,8 @@ iii. Make.depend -- an automatically generated list of dependencies. Usually
 How to make Makefile work:
 === == ==== ======== =====
 
+  0. cd ncio-master/ and execute make to produce lib/libncio.a and include/ncio.mod
+
   1. Edit the include statements on the top of Makefile and chose an
      appropriate one for your computer.  Simply comment/uncomment
      Makedefs.machine_type file using pound symbol #. Note, only one 
