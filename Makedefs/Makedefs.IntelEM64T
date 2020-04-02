@@ -10,7 +10,7 @@
 .F.f:
 	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
 .f.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f -Lncio-master/lib/ -lncio -Incio-master/include
 
 .f90.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f90

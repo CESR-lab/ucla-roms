@@ -19,7 +19,7 @@ include Makedefs/Makedefs.IntelEM64T
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = main.F		step2d_FB.F	read_inp.F\
+KRNSRC = main.F		dimensions.F	river_frc.F	wec_frc.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
 	set_nudgcof.F	ana_grid.F	analytical.F\
@@ -39,9 +39,8 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
-	mpi_setup.F	mpi_exchange8TA.F\
-\
-	river_frc.F	dimensions.F 
+	mpi_setup.F	mpi_exchange8TA.F
+		  
 
 
 #rho_eos.F	ab_ratio.F	alfabeta.F\
