@@ -26,6 +26,10 @@
 #ifdef RIVER_SOURCE
       use river_frc
 #endif
+#define WEC
+#ifdef WEC
+      use wec_frc
+#endif
 
       implicit none
 #include "param.h"
@@ -131,14 +135,22 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
         do i=istrU-1,iend+1
           urhs(i,j)=fwd*ubar(i,j,kstp) +fwd1*ubar(i,j,kbak)
      &                                         +fwd2*ubar(i,j,kold)
-          DUon(i,j)=0.5*(Drhs(i,j)+Drhs(i-1,j))*dn_u(i,j)*urhs(i,j)
+          DUon(i,j)=0.5*(Drhs(i,j)+Drhs(i-1,j))*dn_u(i,j)*( urhs(i,j)
+#  ifdef WEC
+     &                                                  + ust2d(i,j)
+#  endif
+     &                                                               )
         enddo
       enddo
       do j=jstrV-1,jend+1
         do i=istr-1,iend+1
           vrhs(i,j)=fwd*vbar(i,j,kstp) +fwd1*vbar(i,j,kbak)
      &                                         +fwd2*vbar(i,j,kold)
-          DVom(i,j)=0.5*(Drhs(i,j)+Drhs(i,j-1))*dm_v(i,j)*vrhs(i,j)
+          DVom(i,j)=0.5*(Drhs(i,j)+Drhs(i,j-1))*dm_v(i,j)*(vrhs(i,j)
+#  ifdef WEC
+     &                                                  + vst2d(i,j)
+#  endif
+     &                                                               )
         enddo
       enddo
 

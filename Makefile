@@ -41,7 +41,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
 \
 	mpi_setup.F	mpi_exchange8TA.F\
 \
-	river_frc.F	dimensions.F 
+	river_frc.F	dimensions.F  wec_frc.F
 
 
 #rho_eos.F	ab_ratio.F	alfabeta.F\

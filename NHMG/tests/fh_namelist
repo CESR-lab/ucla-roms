@@ -1,0 +1,9 @@
+&fhparam
+    nxg     =   16     , ! Total point number in x
+    nyg     =   16     , ! Total point number in y
+    nzg     =    4     , ! Total point number in z
+    npxg    =    4     , ! Number of precessus in x
+    npyg    =    4     , ! Number of precessus in y
+/
+
+

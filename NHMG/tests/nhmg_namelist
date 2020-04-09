@@ -1,0 +1,19 @@
+!- Default value are available in mg_namelist.f90 file -!
+&nhparam
+       solver_prec    = 1.d-6,         !- Solver precision 
+       solver_maxiter = 50,            !- maximum of solver iterations
+       nsmall         = 8,             !- smallest dimension ever for the global domain
+       ns_coarsest    = 40,            !- 
+       ns_pre         = 3,             !-
+       ns_post        = 2,             !-
+       autotune       =.false.,        !- autotuning tests
+       autotune_ts    = 100,           !- number of solver calls before to activate autotuning test if autotune=.true. 
+       cmatrix        = 'real',        !- Take the 'simple' or 'real' matric coefs
+       relax_method   = 'RB',          !- 'Gauss-Seidel','GS','Red-Black','RB','Four-Color','FC'
+       aggressive     = .false.,       !- .false. or .true.
+       interp_type    = 'linear',      !- linear or nearest
+       restrict_type  = 'avg',         !- linear or avg
+       netcdf_output  = .true.,        !- .false. or .true.
+       check_output   = .true.,        !- .false. or .true.
+       surface_neumann = .false..
+/

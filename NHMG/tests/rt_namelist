@@ -1,0 +1,15 @@
+&rtparam
+	nit     =    1     , ! Number of iteration of the same test
+    nxg     =   64     , ! Total point number in x
+	nyg     =   64     , ! Total point number in y
+	nzg     =   64     , ! Total point number in z
+	npxg    =    1     , ! Number of precessus in x
+	npyg    =    1     , ! Number of precessus in y
+	Lx      =   1.d4   , ! Domain length in x [meter]
+	Ly      =   1.d4   , ! Domain length in y [meter]
+	Htot    =   4.d3   , ! Depth [meter]
+	hc      =   4.d3   , ! 
+	theta_b =   1.     , !
+	theta_s =   1.     , !
+/
+

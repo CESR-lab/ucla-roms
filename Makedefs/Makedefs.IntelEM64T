@@ -83,7 +83,7 @@
 #  FFLAGS = -O1
 
 
-    LDFLAGS = 
+    LDFLAGS = -I./NHMG/include/
 
  COMP_FILES = ifort?????* tmp?????*
 

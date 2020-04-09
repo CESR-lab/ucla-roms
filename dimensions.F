@@ -14,6 +14,8 @@
        integer, public, parameter :: gny = MMm
        integer, public, parameter ::  nx = Lm
        integer, public, parameter ::  ny = Mm
+       integer, public, parameter ::  nz = N
+
 
        public nt,frcfile,max_frc,rmask
        public grdname

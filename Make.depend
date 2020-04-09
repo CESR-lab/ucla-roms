@@ -33,10 +33,6 @@
 #                                      --------------------------
 #                                      total lines:         45486
 
-dimensions.mod: dimensions.o
-
-river_frc.mod: river_frc.o
-
 
 alfabeta.f: alfabeta.F cppdefs.h param.h grid.h ocean3d.h scalars.h eos_vars.h\
  set_global_definitions.h
@@ -216,7 +212,7 @@ omega.f: omega.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h compute_auxiliary_bounds.h\
  hidden_mpi_vars.h set_global_definitions.h
 
-pre_step3d4S.o: pre_step3d4S.f river_frc.mod 
+pre_step3d4S.o: pre_step3d4S.f river_frc.o
 pre_step3d4S.f: pre_step3d4S.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h mixing.h compute_auxiliary_bounds.h\
  forces.h sources.h strings.h coupling.h hidden_mpi_vars.h\
@@ -238,7 +234,7 @@ rho_eos.f: rho_eos.F cppdefs.h param.h grid.h ocean3d.h scalars.h eos_vars.h\
  compute_tile_bounds.h compute_extended_bounds.h private_scratch.h mixing.h\
  coupling.h hidden_mpi_vars.h set_global_definitions.h
 
-river_frc.o: river_frc.f dimensions.mod 
+river_frc.o: river_frc.f dimensions.o
 
 sediment.f: sediment.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h forces.h hidden_mpi_vars.h\
@@ -253,7 +249,7 @@ set_depth.f: set_depth.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h ocean2d.h compute_auxiliary_bounds.h\
  scoord.h strings.h coupling.h hidden_mpi_vars.h set_global_definitions.h
 
-set_forces.o: set_forces.f river_frc.mod
+set_forces.o: set_forces.f 
 set_forces.f: set_forces.F cppdefs.h param.h scalars.h compute_tile_bounds.h\
  hidden_mpi_vars.h set_global_definitions.h
 
@@ -293,13 +289,13 @@ set_weights.f: set_weights.F cppdefs.h param.h scalars.h coupling.h\
 
 srcscheck.f: srcscheck.F strings.h
 
-step2d_FB.o: step2d_FB.f river_frc.mod
+step2d_FB.o: step2d_FB.f 
 step2d_FB.f: step2d_FB.F cppdefs.h param.h grid.h scalars.h\
  compute_tile_bounds.h private_scratch.h mixing.h ocean2d.h climat.h\
  compute_auxiliary_bounds.h forces.h sources.h coupling.h hidden_mpi_vars.h\
  set_global_definitions.h
 
-step3d_t_ISO.o: step3d_t_ISO.f river_frc.mod
+step3d_t_ISO.o: step3d_t_ISO.f 
 step3d_t_ISO.f: step3d_t_ISO.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h mixing.h climat.h\
  compute_auxiliary_bounds.h forces.h strings.h hidden_mpi_vars.h\
@@ -312,7 +308,7 @@ step3d_uv1.f: step3d_uv1.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_horiz_rhs_uv_terms.h compute_rd_bott_drag.h\
  compute_vert_rhs_uv_terms.h track_advec_switches.h set_global_definitions.h
 
-step3d_uv2.o: step3d_uv2.f river_frc.mod
+step3d_uv2.o: step3d_uv2.f 
 step3d_uv2.f: step3d_uv2.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h mixing.h ocean2d.h\
  compute_auxiliary_bounds.h strings.h coupling.h hidden_mpi_vars.h\
