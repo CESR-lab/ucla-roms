@@ -77,6 +77,11 @@
 # elif defined SLOSH
      &                  Size_XI=200.,     Size_ETA=Size_XI*MMm/LLm,
      &                  depth=20.,         f0=0.,      beta=0.
+!----- DevinD add analytical WEC (old WAVE_PACKET)
+# elif defined ANA_WEC_FRC
+     &                  Size_XI = 1400.0,   Size_ETA= 2.0,
+     &                  depth=10.,          f0=0.0,        beta=0.
+!----- DevinD end analytical WEC
 # else
 #  error ANA_GRID CPP-switch is set, but grid parameters are missing.
 # endif

@@ -12,6 +12,8 @@
 #if defined DOUBLE_GYRE
 c     &               LLm=192, MMm=192, N=12
      &                LLm=384, MMm=384, N=16
+#elif defined ANA_WEC_FRC
+     &               LLm=1400, MMm=2, N=2    ! DevinD added
 #elif defined CANYON_A
      &               LLm=65,  MMm=48,  N=10
 #elif defined CANYON_B
@@ -158,7 +160,7 @@ c**  &               LLm=126,  MMm=254, N=20    ! USWEST grid 16
 !                                             XI- and ETA-directions;
       integer, parameter ::
 #ifdef MPI
-     &      NP_XI=8, NP_ETA=32, NSUB_X=1, NSUB_E=1
+     &      NP_XI=8, NP_ETA=1, NSUB_X=1, NSUB_E=1  ! DevinD - changed NP_ETA 32to1 for ANA_WEC
 #else
 c     &      NSUB_X=4, NSUB_E=40  ! PAC44
 c     &      NSUB_X=8, NSUB_E=80   ! PAC22

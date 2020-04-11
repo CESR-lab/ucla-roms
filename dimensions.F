@@ -17,7 +17,11 @@
        integer, public, parameter ::  nz = N
 
 
-       public nt,frcfile,max_frc,rmask
+       public nt,frcfile,max_frc
+!------DevinD added Masking - else won't compile if MASKING not defined
+# ifdef MASKING
+     &                          ,rmask
+# endif
        public grdname
 
        public mynode

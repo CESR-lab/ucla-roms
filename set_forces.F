@@ -32,8 +32,15 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
+      ! DevinD - Jeroen should probably put in the river flag (RIVER_SOURCE)
+      ! # ifdef RIVER_SOURCE
       use river_frc
 !     use dimensions
+
+      ! DevinD added
+# ifdef WEC
+      use wec_frc
+# endif
 
       implicit none
 
@@ -147,6 +154,16 @@ c***              no code here
 #   endif
 #  endif
 
+! DevinD - start (note there is an alaytical bool in WEC module already.
+# ifdef WEC
+#   ifdef ANA_WEC_FRC
+      call ana_wec_frc_tile(istr,iend,jstr,jend)
+#   else
+!     call set_river_src_tile(istr,iend,jstr,jend, ierr)
+      call set_wec_frc(tmid)
+#   endif
+#  endif
+! DevinD - end
 
 #endif  /* SOLVE3D */
 

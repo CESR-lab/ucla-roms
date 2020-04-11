@@ -26,7 +26,7 @@
 #ifdef RIVER_SOURCE
       use river_frc
 #endif
-#define WEC
+! #define WEC
 #ifdef WEC
       use wec_frc
 #endif
