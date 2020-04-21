@@ -26,7 +26,7 @@
 #ifdef RIVER_SOURCE
       use river_frc
 #endif
-! #define WEC
+
 #ifdef WEC
       use wec_frc
 #endif
@@ -135,6 +135,9 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
         do i=istrU-1,iend+1
           urhs(i,j)=fwd*ubar(i,j,kstp) +fwd1*ubar(i,j,kbak)
      &                                         +fwd2*ubar(i,j,kold)
+#  if defined WEC && defined MASKING
+          urhs(i,j)=urhs(i,j)*umask(i,j)+ust2d(i,j)*(umask(i,j)-1.0)
+#  endif
           DUon(i,j)=0.5*(Drhs(i,j)+Drhs(i-1,j))*dn_u(i,j)*( urhs(i,j)
 #  ifdef WEC
      &                                                  + ust2d(i,j)
@@ -146,6 +149,9 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
         do i=istr-1,iend+1
           vrhs(i,j)=fwd*vbar(i,j,kstp) +fwd1*vbar(i,j,kbak)
      &                                         +fwd2*vbar(i,j,kold)
+#  if defined WEC && defined MASKING
+          vrhs(i,j)=vrhs(i,j)*vmask(i,j)+vst2d(i,j)*(vmask(i,j)-1.0)
+#  endif
           DVom(i,j)=0.5*(Drhs(i,j)+Drhs(i,j-1))*dm_v(i,j)*(vrhs(i,j)
 #  ifdef WEC
      &                                                  + vst2d(i,j)
@@ -289,6 +295,11 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &                        +0.333333333333*(rhoA(i-1,j)-rhoA(i,j))
      &                                     *(zwrk(i-1,j)-zwrk(i,j)) )
 #endif
+! DevinD add
+#ifdef WEC
+     &                  + ( h(i-1,j)+h(i,j)+rzeta(i-1,j)+rzeta(i,j) )
+     &                                       *( sup(i,j)-sup(i-1,j) )
+#endif
      &                                                              )
 !>
           rvbar(i,j)=cff*dm_v(i,j)*( (h(i,j-1)+h(i,j))*(rzeta(i,j-1)
@@ -298,6 +309,11 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &              +(h(i,j-1)-h(i,j))*( rzetaSA(i,j-1)+rzetaSA(i,j)
      &                        +0.333333333333*(rhoA(i,j-1)-rhoA(i,j))
      &                                     *(zwrk(i,j-1)-zwrk(i,j)) )
+#endif
+! DevinD add
+#ifdef MRL_WCI
+     &                  + ( h(i,j-1)+h(i,j)+rzeta(i,j-1)+rzeta(i,j) )
+     &                                       *( sup(i,j)-sup(i,j-1) )
 #endif
      &                                                              )
         enddo
@@ -397,8 +413,23 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &        -dmde(i,j)*(urhs(i,j)+urhs(i+1,j)))
 # endif
      &                                          )
+! Daniel add
+#  ifdef WEC
+#    if defined CURVGRID && defined UV_ADV
+          cff1 = Drhs(i,j)*(
+     &    0.5*( dndx(i,j)*(vst2d(i,j)+vst2d(i,j+1))
+     &          -dmde(i,j)*(ust2d(i,j)+ust2d(i+1,j)) ))
+#    else
+          cff1 = 0.0
+#    endif
+          UFx(i,j)=(cff+cff1)*(vrhs(i,j)+vrhs(i,j+1))
+     &                 +cff*(vst2d(i,j)+vst2d(i,j+1))
+          VFe(i,j)=(cff+cff1)*(urhs(i,j)+urhs(i+1,j))
+     &                 +cff*(ust2d(i,j)+ust2d(i+1,j))
+#  else
           UFx(i,j)=cff*(vrhs(i,j)+vrhs(i,j+1))
           VFe(i,j)=cff*(urhs(i,j)+urhs(i+1,j))
+#  endif
         enddo
       enddo
       do j=jstr,jend
@@ -493,6 +524,38 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
       endif
 # undef rd
 #endif
+
+! Daniel add
+! Add 2DH vortex-force terms combined with advection terms
+#if (defined WEC && defined UV_ADV)
+      do j=jstr,jend
+        do i=istrU,iend
+          vstu = 0.25*( vst2d(i,j) + vst2d(i,j+1)
+     &                 +vst2d(i-1,j)+vst2d(i-1,j+1) )
+          dudx = 0.5*( urhs(i+1,j)-urhs(i-1,j) )
+          dvdx = 0.5*( vrhs(i,j) - vrhs(i-1,j)
+     &                 +vrhs(i,j+1) - vrhs(i-1,j+1) )
+          rubar(i,j) = rubar(i,j) + 0.5*dn_u(i,j)*
+     &                      ( Drhs(i-1,j)+Drhs(i,j) )
+     &               *( ust2d(i,j)*dudx + vstu*dvdx )
+        enddo
+      enddo
+      do j=jstrV,jend
+        do i=istr,iend
+          ustv = 0.25*( ust2d(i,j) + ust2d(i+1,j)
+     &                 +ust2d(i,j-1)+ust2d(i+1,j-1) )
+          dude = 0.5*( urhs(i,j) - urhs(i,j-1)
+     &                 +urhs(i+1,j) - urhs(i+1,j-1) )
+          dvde = 0.5*( vrhs(i,j-1)-vrhs(i,j+1) )
+          rvbar(i,j) = rvbar(i,j) + 0.5*dm_v(i,j)*
+     &                      ( Drhs(i,j-1)+Drhs(i,j) )
+     &               *( ustv*dude + vst2d(i,j)*dvde )
+        enddo
+      enddo
+#endif
+
+
+
 
 ! Coupling between 2D and 3D parts.
 !--------- ------- -- --- -- ------
@@ -677,6 +740,13 @@ c<<     &     +cff*iA_u(i,j)
 # else
      &                                    +cff2*sustr(i,j)
 # endif
+! Daniel add
+# ifdef WEC 
+     &                                    +cff2*brk2dx(i,j)
+#  ifdef WAVE_FRICTION
+     &                                    +cff2*frc2dx(i,j)
+#  endif
+# endif
 #endif
      &                                                   )
 #ifdef MASKING
@@ -687,7 +757,15 @@ c<<     &     +cff*iA_u(i,j)
      &                       +dtfast*(r_D(i,j)+r_D(i-1,j))
      &                                                   )
 
-          DU_avg1(i,j)=DU_avg1(i,j) +cff1*DUnew*dn_u(i,j)
+!          DU_avg1(i,j)=DU_avg1(i,j) +cff1*DUnew*dn_u(i,j) ! DevinD - old
+
+! DevinD added
+          DU_avg1(i,j)=DU_avg1(i,j)+cff1*dn_u(i,j)*( DUnew
+# ifdef WEC
+     &                 +(Dnew(i,j)+Dnew(i-1,j))*ust2d(i,j)
+# endif
+     &                                                   )
+
 #else
      &                                                   )
 #endif
@@ -707,6 +785,13 @@ c<<     &     +cff*iA_v(i,j)
 # else
      &                                    +cff2*svstr(i,j)
 # endif
+! DevinD add
+# ifdef WEC
+     &                                    +cff2*brk2de(i,j)
+#  ifdef WAVE_FRICTION
+     &                                    +cff2*frc2de(i,j)
+#  endif
+# endif
 #endif
      &                                                   )
 #ifdef MASKING
@@ -716,8 +801,15 @@ c<<     &     +cff*iA_v(i,j)
 #ifdef SOLVE3D
      &                       +dtfast*(r_D(i,j)+r_D(i,j-1))
      &                                                   )
+!Daniel add, changed parentheses formulation for WEC
+ 
+          !DV_avg1(i,j)=DV_avg1(i,j) +cff1*DVnew*dm_v(i,j)
+          DV_avg1(i,j)=DV_avg1(i,j) +cff1*dm_v(i,j) * ( DVnew
+# ifdef WEC 
+     &                 +(Dnew(i,j)+Dnew(i,j-1))*vst2d(i,j)
+# endif
+     &                                                   )
 
-          DV_avg1(i,j)=DV_avg1(i,j) +cff1*DVnew*dm_v(i,j)
 #else
      &                                                   )
 #endif
@@ -762,43 +854,91 @@ c<<     &     +cff*iA_v(i,j)
       if (WESTERN_EDGE) then
         do j=jstrR,jendR
           DU_avg1(istrU-1,j)=DU_avg1(istrU-1,j)+cff1*(Dnew(istrU-1,j)
-     &         +Dnew(istrU-2,j))*ubar(istrU-1,j,knew)*dn_u(istrU-1,j)
+! Daniel add/edit for WEC
+!    &         +Dnew(istrU-2,j))*ubar(istrU-1,j,knew)*dn_u(istrU-1,j)
+     &         +Dnew(istrU-2,j))*( ubar(istrU-1,j,knew)
+# ifdef WEC
+     &                                             +ust2d(istrU-1,j)
+# endif
+     &                                             )*dn_u(istrU-1,j)  
         enddo
         do j=jstrV,jend
           DV_avg1(istr-1,j)=DV_avg1(istr-1,j) +cff1*(Dnew(istr-1,j)
-     &       +Dnew(istr-1,j-1) )*vbar(istr-1,j,knew)*dm_v(istr-1,j)
+!Daniel add/edit for WEC
+!     &       +Dnew(istr-1,j-1) )*vbar(istr-1,j,knew)*dm_v(istr-1,j)
+     &       +Dnew(istr-1,j-1) )*( vbar(istr-1,j,knew)
+# ifdef WEC
+     &                                              +vst2d(istr-1,j)
+# endif
+     &                                              )*dm_v(istr-1,j)
         enddo
       endif
       if (EASTERN_EDGE) then
         do j=jstrR,jendR
           DU_avg1(iend+1,j)=DU_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-     &            +Dnew(iend,j) )*ubar(iend+1,j,knew)*dn_u(iend+1,j)
+!Daniel add/edit for WEC
+!     &            +Dnew(iend,j) )*ubar(iend+1,j,knew)*dn_u(iend+1,j)
+     &            +Dnew(iend,j) )*( ubar(iend+1,j,knew)
+# ifdef WEC 
+     &                                              +ust2d(iend+1,j)
+# endif
+     &                                              )*dn_u(iend+1,j)
         enddo
         do j=jstrV,jend
           DV_avg1(iend+1,j)=DV_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-     &        +Dnew(iend+1,j-1) )*vbar(iend+1,j,knew)*dm_v(iend+1,j)
-        enddo
+!Daniel add/edit for WEC
+!     &        +Dnew(iend+1,j-1) )*vbar(iend+1,j,knew)*dm_v(iend+1,j)
+     &        +Dnew(iend+1,j-1) )*( vbar(iend+1,j,knew)
+# ifdef WEC 
+     &                                              +vst2d(iend+1,j)
+# endif
+     &                                              )*dm_v(iend+1,j)   
+       enddo
       endif
 # endif
 # ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
         do i=istrU,iend
           DU_avg1(i,jstr-1)=DU_avg1(i,jstr-1) +cff1*( Dnew(i,jstr-1)
-     &        +Dnew(i-1,jstr-1) )*ubar(i,jstr-1,knew)*dn_u(i,jstr-1)
+!Daniel add/edit for WEC
+!     &        +Dnew(i-1,jstr-1) )*ubar(i,jstr-1,knew)*dn_u(i,jstr-1)
+     &        +Dnew(i-1,jstr-1) )*( ubar(i,jstr-1,knew)
+# ifdef WEC
+     &                                              +ust2d(i,jstr-1)
+# endif
+     &                                              )*dn_u(i,jstr-1)
         enddo
         do i=istrR,iendR
           DV_avg1(i,jstrV-1)=DV_avg1(i,jstrV-1)+cff1*(Dnew(i,jstrV-1)
-     &         +Dnew(i,jstrV-2))*vbar(i,jstrV-1,knew)*dm_v(i,jstrV-1)
+! Daniel add/edit for WEC
+!     &         +Dnew(i,jstrV-2))*vbar(i,jstrV-1,knew)*dm_v(i,jstrV-1)
+     &         +Dnew(i,jstrV-2))*( vbar(i,jstrV-1,knew)
+# ifdef WEC 
+     &                                              +vst2d(i,jstrV-1)
+# endif
+     &                                              )*dm_v(i,jstrV-1)
         enddo
       endif
       if (NORTHERN_EDGE) then
         do i=istrU,iend
           DU_avg1(i,jend+1)=DU_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-     &        +Dnew(i-1,jend+1) )*ubar(i,jend+1,knew)*dn_u(i,jend+1)
+! Daniel add/edit for WEC
+!     &        +Dnew(i-1,jend+1) )*ubar(i,jend+1,knew)*dn_u(i,jend+1)
+     &        +Dnew(i-1,jend+1) )*( ubar(i,jend+1,knew)
+# ifdef WEC 
+     &                                               +ust2d(i,jend+1)
+# endif
+     &                                               )*dn_u(i,jend+1)
         enddo
         do i=istrR,iendR
           DV_avg1(i,jend+1)=DV_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-     &            +Dnew(i,jend) )*vbar(i,jend+1,knew)*dm_v(i,jend+1)
+! Daniel add/edit for WEC
+!     &            +Dnew(i,jend) )*vbar(i,jend+1,knew)*dm_v(i,jend+1)
+     &            +Dnew(i,jend) )*( vbar(i,jend+1,knew)
+# ifdef WEC 
+     &                                               +vst2d(i,jend+1)
+# endif
+     &                                               )*dm_v(i,jend+1)
         enddo
       endif
 # endif

@@ -2,6 +2,7 @@
 #ifdef SOLVE3D
 
       subroutine set_depth(tile)
+
       implicit none
       integer tile
 # include "param.h"
@@ -15,6 +16,11 @@
 ! Compute evolving z-coordinates "z_r" and "z_w" and the heights
 ! of vertical grid boxes "Hz" from fast-time-averaged free surface,
 ! topography h(i,j), and vertical coordinate transformation formula.
+
+! DevinD add
+# ifdef WEC
+      use wec_frc
+# endif
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -54,14 +60,26 @@
         do j=jstrR,jendR               ! all subsequent steps.
           do i=istr,iendR
             DU_avg1(i,j)=0.5*( h(i-1,j)+h(i,j)+zeta(i,j,1)
-     &              +zeta(i-1,j,1) )*dn_u(i,j)*ubar(i,j,1)
+! Daniel add/edit for WEC
+!   &              +zeta(i-1,j,1) )*dn_u(i,j)*ubar(i,j,1)
+     &            +zeta(i-1,j,1) )*dn_u(i,j)*( ubar(i,j,1)
+# ifdef WEC
+     &                                        + ust2d(i,j)
+# endif
+     &                                                   )
           enddo
         enddo
 
         do j=jstr,jendR
           do i=istrR,iendR
             DV_avg1(i,j)=0.5*( h(i,j)+h(i,j-1)+zeta(i,j,1)
-     &              +zeta(i,j-1,1) )*dm_v(i,j)*vbar(i,j,1)
+! Daniel add/edit for WEC
+!     &              +zeta(i,j-1,1) )*dm_v(i,j)*vbar(i,j,1)
+     &            +zeta(i,j-1,1) )*dm_v(i,j)*( vbar(i,j,1)
+# ifdef WEC
+     &                                        + vst2d(i,j)
+# endif
+     &                                                   )
           enddo
         enddo
       endif
@@ -190,6 +208,12 @@ C$OMP END CRITICAL (obc_flux_corr_crgn)
       end
 
       subroutine set_HUV_tile (istr,iend,jstr,jend)
+
+      ! DevinD add
+# ifdef WEC
+      use wec_frc
+# endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 # include "param.h"
@@ -203,13 +227,31 @@ C$OMP END CRITICAL (obc_flux_corr_crgn)
         do j=jstrR,jendR
           do i=istr,iendR
             FlxU(i,j,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
-     &                                         *u(i,j,k,nrhs)
+! Daniel add/edit for WEC
+!     &                                         *u(i,j,k,nrhs)
+     &                                       *( u(i,j,k,nrhs)
+# ifdef WEC 
+     &                                            +ust(i,j,k)
+# endif
+     &                                                      )
+# if defined WEC && defined MASKING
+            FlxU(i,j,k)=FlxU(i,j,k)*umask(i,j)
+# endif
           enddo
         enddo
         do j=jstr,jendR
           do i=istrR,iendR
             FlxV(i,j,k)=0.5*(Hz(i,j,k)+Hz(i,j-1,k))*dm_v(i,j)
-     &                                         *v(i,j,k,nrhs)
+! Daniel add/edit for WEC
+!     &                                         *v(i,j,k,nrhs)
+     &                                       *( v(i,j,k,nrhs)
+# ifdef WEC 
+     &                                           + vst(i,j,k)
+# endif
+     &                                                      )
+# if defined WEC && defined MASKING
+            FlxV(i,j,k)=FlxV(i,j,k)*vmask(i,j)
+# endif
           enddo
         enddo
       enddo
@@ -222,6 +264,7 @@ C$OMP END CRITICAL (obc_flux_corr_crgn)
 
 
       subroutine set_HUV1(tile)
+
       implicit none
       integer tile
 # include "param.h"
@@ -231,6 +274,12 @@ C$OMP END CRITICAL (obc_flux_corr_crgn)
       end
 
       subroutine set_HUV1_tile (istr,iend,jstr,jend, DC,FC)
+
+! DevinD add
+# ifdef WEC
+      use wec_frc
+# endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -274,8 +323,12 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 #  endif
           do i=istr,iendR
             FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
+! Daniel add
+#  ifdef WEC 
+     &                                 +ust2d(i,j)
+#  endif
           enddo
-#  ifdef EXTRAP_BAR_FLUXES
+# ifdef EXTRAP_BAR_FLUXES
 ! PAC23 verified setting with theoretical alpha_max=1.0877.
 ! This should match the simlar-labelled setting in step2d_FB.F.
 ! All the other settings below  are to be considered as
@@ -332,9 +385,15 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
           enddo
         endif
 #  endif
+
+
 # else
         do i=istr,iendR
           FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0)
+! DevinD add
+#  ifdef WEC
+     &                               +ust2d(i,j)
+#  endif
         enddo
 # endif
         do k=1,N
@@ -342,8 +401,18 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                *umask(i,j)
+! Daniel add, why is WEC inside masking ifdef ??
+#  ifdef WEC
+     &               +ust(i,j,k)*(umask(i,j)-1.0)
+#  endif
 # endif
-            FlxU(i,j,k)=DC(i,k)*u(i,j,k,nnew)
+! Daniel add/edit for WEC
+           !FlxU(i,j,k)=DC(i,k)*u(i,j,k,nnew)
+            FlxU(i,j,k)=DC(i,k)*( u(i,j,k,nnew)
+# ifdef WEC
+     &                                +ust(i,j,k)
+# endif
+     &                                          )           
           enddo
         enddo
         if (j >= jstr) then
@@ -365,6 +434,10 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 #  endif
             do i=istrR,iendR
               FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
+! Daniel add/edit
+#  ifdef WEC 
+     &                                   +vst2d(i,j)
+#  endif
             enddo
 #  ifdef EXTRAP_BAR_FLUXES
           else
@@ -381,6 +454,10 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
      &                          +MID*DV_avg2(i,j)
      &                       -BAK*DV_avg_bak(i,j)
      &                 )/DC(i,0)
+! Daniel add --> not sure if WEC should be in here. DevinD also note sure but suspect so.
+#ifdef WEC
+     &                   +vst2d(i,j)
+#endif
 #   endif
             enddo
           endif
@@ -388,6 +465,10 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 # else
           do i=istrR,iendR
             FC(i,0)=(FC(i,0)-DV_avg2(i,j))/DC(i,0)
+! Daniel add
+#  ifdef WEC 
+     &                                 +vst2d(i,j)
+#  endif
           enddo
 # endif
           do k=1,N
@@ -395,8 +476,18 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
               v(i,j,k,nnew)=(v(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                  *vmask(i,j)
+! Daniel add
+#  ifdef WEC
+     &                 +vst(i,j,k)*(vmask(i,j)-1.0)
+#  endif
 # endif
-              FlxV(i,j,k)=DC(i,k)*v(i,j,k,nnew)
+! Daniel add/edit for WEC
+            ! FlxV(i,j,k)=DC(i,k)*v(i,j,k,nnew)
+              FlxV(i,j,k)=DC(i,k)*( v(i,j,k,nnew)
+# ifdef WEC 
+     &                                +vst(i,j,k)
+# endif
+     &                                          )
             enddo
           enddo
         endif

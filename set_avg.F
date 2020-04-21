@@ -2,6 +2,11 @@
 #ifdef AVERAGES
 
       subroutine set_avg (tile)
+
+#ifdef WEC
+      use wec_frc, only: wstokes_wec_tile
+#endif
+
       implicit none
       integer tile
 # include "param.h"
@@ -16,7 +21,16 @@
         call wvlcty_tile(istr,iend,jstr,jend, work, A2d(1,1),
      &                                    A2d(1,2), A2d(1,3))
       endif
+
+! Daniel add
+#  ifdef WEC
+      if (wrtavg(indxWST)) then
+        ! ** wstokes_tile needs to be added to wec module **
+        call wstokes_wec_tile(istr,iend,jstr,jend)
+      endif
+#  endif
 # endif
+
       call set_avg_tile (istr,iend,jstr,jend)
       return
       end
@@ -42,6 +56,11 @@
 ! are set to the first contribution; (2) accumulation of averaged data,
 ! when mod(iic-1,navg)>1; and (3) adding the last contribution and
 ! scaling.
+
+! DevinD add
+# ifdef WEC
+      use wec_frc
+# endif
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -230,6 +249,103 @@
         endif
 #  endif
 # endif /* SOLVE3D */
+! Daniel add
+# ifdef WEC 
+        if (wrtavg(indxSUP)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              sup_avg(i,j)= cff1*sup_avg(i,j) +cff*sup(i,j)
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxUST2D)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              ust2d_avg(i,j)= cff1*ust2d_avg(i,j) +cff*ust2d(i,j)
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxVST2D)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              vst2d_avg(i,j)= cff1*vst2d_avg(i,j) +cff*vst2d(i,j)
+            enddo
+          enddo
+        endif
+
+#  ifdef SOLVE3D
+        if (wrtavg(indxUST)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                ust_avg(i,j,k)= cff1*ust_avg(i,j,k) +cff*ust(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxVST)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                vst_avg(i,j,k)= cff1*vst_avg(i,j,k) +cff*vst(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxWST)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                wst_avg(i,j,k)= cff1*wst_avg(i,j,k) +cff*wst(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxAkb)) then
+          do k=0,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                akb_avg(i,j,k)= cff1*akb_avg(i,j,k) +cff*Akb(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxAkw)) then
+          do k=0,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                akw_avg(i,j,k)= cff1*akw_avg(i,j,k) +cff*Akw(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxKVF)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                kvf_avg(i,j,k)= cff1*kvf_avg(i,j,k) +cff*kvf(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxCALP)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              calp_avg(i,j)= cff1*calp_avg(i,j) +cff*calP(i,j)
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxKAPS)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              kaps_avg(i,j)= cff1*kaps_avg(i,j) +cff*Kapsrf(i,j)
+            enddo
+          enddo
+        endif
+#  endif  /* SOLVE3D */
+# endif   /* WEC */
+
+
 
         if (mod(iic-ntsavg,navg) == 0) then
           if (ZEROTH_TILE) then

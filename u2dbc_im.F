@@ -5,6 +5,11 @@
 ! Set lateral boundary conditions for the barotropic (i.e. vertically
 ! integrated) XI-component velocity ubar(:,:,knew).
 
+! Daniel add
+#ifdef WEC
+      use wec_frc
+#endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
@@ -162,9 +167,22 @@
         enddo
 #  endif
 # else
-        do j=jstr,jend                          ! Western edge closed
-          ubar(istr,j,knew)=0.                  ! ======= ==== ======
-        enddo                                   !  (no-flux, default)
+			! Western edge closed
+        do j=jstr,jend       
+! Daniel add 
+#  ifdef WEC
+          ! No lagrangian flux
+          ubar(istr,j,knew)=-ust2d(istr,j)     
+#   ifdef MASKING
+     &                      *umask(istr,j)
+#   endif
+#  else                                              
+         ! Western edge closed
+         ! ==================
+         ! (no-flux, default) 
+          ubar(istr,j,knew)=0.
+#  endif         
+        enddo                                  
 # endif           /* OBC_WEST */
       endif     !<-- WESTERN_EDGE
 
@@ -288,8 +306,17 @@ c--#endif
         enddo
 #  endif
 # else
-        do j=jstr,jend                       ! Eastern edge closed BC
-          ubar(iend+1,j,knew)=0.             ! ======= ==== ====== ==
+       ! Eastern edge closed 
+        do j=jstr,jend                   
+! Daniel add
+#  ifdef WEC
+          ubar(iend+1,j,knew)=-ust2d(iend+1,j)  ! no Lagrangian flux
+#   ifdef MASKING
+     &                        *umask(iend+1,j)
+#   endif
+#  else   
+          ubar(iend+1,j,knew)=0.          
+#  endif 
         enddo
 # endif /* OBC_EAST */
       endif         !<-- EASTERN_EDGE
@@ -575,5 +602,19 @@ c****
      &                                +ubar(iend+1,jend,knew))
       endif
 #endif
+! Daniel add
+!====================================================================
+!       NO LAGRANGIAN FLUX CONDITION AT LAND-SEA INTERFACES
+!====================================================================
+#if defined WEC && defined MASKING
+      do i=istr,iendR
+        do j=jstrR,jendR
+          ubar(i,j,knew)=ubar(i,j,knew)*umask(i,j)
+     &                  +ust2d(i,j)*(umask(i,j)-1.0)
+        enddo
+      enddo
+#endif
+
+     ! return     ! return in old code, not one here? 
       end
 

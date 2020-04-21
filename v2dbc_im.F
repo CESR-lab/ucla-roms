@@ -4,7 +4,10 @@
 
 ! Set lateral boundary conditions for the barotropic (i.e. vertically
 ! integrated) ETA-component velocity vbar(:,:,knew).
-
+! Daniel add
+#ifdef WEC
+      use wec_frc
+#endif
       implicit none
       integer istr,iend,jstr,jend, i,j
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
@@ -146,9 +149,18 @@
         enddo
 #  endif
 # else
-        do i=istr,iend                        ! Southern edge closed
-          vbar(i,jstr,knew)=0.                ! ======== ==== ======
-        enddo                                 !  (no-flux, default)
+					      ! Southern edge closed
+        do i=istr,iend                        ! ======== ==== ======
+#  ifdef WEC
+          vbar(i,jstr,knew)=-vst2d(i,jstr)   ! no Lagrangian flux
+#   ifdef MASKING
+     &                      *vmask(i,jstr)
+#   endif
+#  else
+          vbar(i,jstr,knew)=0.               ! (no-flux, default)
+#  endif 
+           
+        enddo                                
 # endif          /* OBC_SOUTH */
       endif   !<-- SOUTHERN_EDGE
 
@@ -269,9 +281,17 @@
         enddo
 #  endif
 # else
+
         do i=istr,iend                        ! Northern edge closed
-          vbar(i,jend+1,knew)=0.              ! ======== ==== ======
-        enddo                                 !  (no-flux: default)
+#  ifdef WEC
+          vbar(i,jend+1,knew)=-vst2d(i,jend+1)  ! no Lagrangian flux
+#   ifdef MASKING
+     &                        *vmask(i,jend+1)
+#   endif
+#  else
+          vbar(i,jend+1,knew)=0.                ! (no-flux, default)
+#  endif                        
+        enddo                               
 # endif /* OBC_NORTH */
       endif          !<--  NORTHERN_EDGE
 #endif                  /* !NS_PERIODIC */
@@ -560,5 +580,19 @@ c--#endif
      &                                +vbar(iend,jend+1,knew))
       endif
 #endif
+
+! Daniel add
+!====================================================================
+!       NO LAGRANGIAN FLUX CONDITION AT LAND-SEA INTERFACES
+!====================================================================
+#if defined WEC && defined MASKING
+      do i=istrR,iendR
+        do j=jstr,jendR
+          vbar(i,j,knew)=vbar(i,j,knew)*vmask(i,j)
+     &                  +vst2d(i,j)*(vmask(i,j)-1.0)
+        enddo
+      enddo
+#endif
+      ! return     no return in new code (there was one in old code) 
       end
 

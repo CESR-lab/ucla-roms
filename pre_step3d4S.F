@@ -27,6 +27,11 @@
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
+! DevinD added
+# ifdef WEC
+      use wec_frc, only: ust, vst, cff1 => cff_ext
+# endif
+! DevinD added
 #ifdef NHMG
       use nhmg, only : nhmg_solve
       use mg_grids

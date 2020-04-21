@@ -5,7 +5,10 @@
 
 ! Set lateral boundary conditions for XI-component velocity
 ! u(:,:,:,nnew).
-
+! Daniel add
+#ifdef WEC
+      use wec_frc 
+#endif
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
@@ -120,7 +123,16 @@
 #  else           /* alternative to open */
         do k=1,N                               ! Western edge closed
           do j=jstr,jend                       ! ======= ==== ======
+#   ifdef WEC
+c            u(istr,j,k,nnew)=-ust(istr,j,k)    ! no Lagrangian flux
+            u(istr,j,k,nnew)=u(istr+1,j,k,nnew) ! Gradient: default
+c            u(istr,j,k,nnew)=0.
+#    ifdef MASKING
+     &                       *umask(istr,j)
+#    endif
+#   else
             u(istr,j,k,nnew)=0.                !  (no-flux: default)
+#   endif          
           enddo
         enddo
 #  endif              /* OBC_WEST */
@@ -217,7 +229,15 @@
 #  else
         do k=1,N                                ! Eastern edge closed
           do j=jstr,jend                        ! ======= ==== ======
+#   ifdef WEC
+c            u(iend+1,j,k,nnew)=-ust(iend+1,j,k) ! no Lagrangian flux
+            u(iend+1,j,k,nnew)=u(iend,j,k,nnew)  ! gradient (default)
+#    ifdef MASKING
+     &                         *umask(iend+1,j)
+#    endif
+#   else
             u(iend+1,j,k,nnew)=0.               !  (no-flux: default)
+#   endif   
           enddo
         enddo
 #  endif
@@ -506,6 +526,22 @@
         enddo
       endif
 # endif
+
+! Daniel add
+!====================================================================
+!       NO LAGRANGIAN FLUX CONDITION AT LAND-SEA INTERFACES
+!====================================================================
+# if defined WEC && defined MASKING
+      do i=istr,iendR
+        do j=jstrR,jendR
+          do k=1,N
+            u(i,j,k,nnew)=u(i,j,k,nnew)*umask(i,j)
+     &                   +ust(i,j,k)*(umask(i,j)-1.0)
+          enddo
+        enddo
+      enddo
+# endif
+      !return 
       end
 #else
       subroutine u3dbc_empty

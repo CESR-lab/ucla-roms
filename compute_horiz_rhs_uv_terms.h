@@ -10,18 +10,47 @@
      &                   -(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))*dmde(i,j))
 # endif
      &                                                             )
+!Daniel add
+# ifdef WEC
+#  if (defined CURVGRID && defined UV_ADV)
+     ! Define a cff1 that is added to UFx, VFe for stokes terms 
+           cff1=0.5*Hz(i,j,k)*(
+     &          0.5*( dndx(i,j)*(vst(i,j,k)+vst(i,j+1,k))
+     &               -dmde(i,j)*(ust(i,j,k)+ust(i+1,j,k)) ))
+#    else
+           cff1 = 0.0
+#  endif
+! end CURVGRID && UV_ADV
+           UFx(i,j)=(cff+cff1)*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
+           UFe(i,j)=cff*(vst(i,j,k)+vst(i,j+1,k))
+           VFe(i,j)=(cff+cff1)*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
+           VFx(i,j)=cff*(ust(i,j,k)+ust(i+1,j,k)) 
+#  else
+! NO WEC
+! end Daniel add
+
             UFx(i,j)=cff*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
             VFe(i,j)=cff*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
+# endif
+! end WEC
           enddo
         enddo
         do j=jstr,jend
           do i=istrU,iend
             ru(i,j,k)=ru(i,j,k)+0.5*(UFx(i,j)+UFx(i-1,j))
+!Daniel add
+# ifdef WEC
+     &               + 0.5*(UFe(i,j)+UFe(i-1,j))
+# endif
           enddo
         enddo
         do j=jstrV,jend
           do i=istr,iend
             rv(i,j,k)=rv(i,j,k)-0.5*(VFe(i,j)+VFe(i,j-1))
+!Daniel add
+# ifdef WEC
+     &               -0.5*(VFx(i,j)+VFx(i,j-1))
+# endif
           enddo
         enddo
 #endif

@@ -22,6 +22,11 @@ c--# define MERGE_OVERLAP
      &                         Cr,FC, wrk1,wrk2,
      &                         Gm1,dGm1dS,  Gt1,dGt1dS,  Gs1,dGs1dS,
      &                                                   kbls, kmo)
+
+# ifdef WEC
+      use wec
+# endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -868,6 +873,24 @@ c              Ks(i,j,k)=Ks(i,j,k) + wsb*bbl(i,j)*cff1
                 Akt(i,j,k,isalt) = 0.5*Akt(i,j,k,isalt) + 0.5*Ks(i,j,k)
 # endif
               enddo
+
+! DevinD - add WEC from DH's MRL_WCI WAVE_PACKET implemtation
+# ifdef WEC
+          do k=1,N      ! Apply wave effects
+            Akv(i,j,k)       =Akv(i,j,k)+Akb(i,j,k)
+            Akt(i,j,k,itemp) =Akt(i,j,k,itemp)+Akb(i,j,k)+Akw(i,j,k)
+#  ifdef SALINITY
+            Akt(i,j,k,isalt) =Akt(i,j,k,isalt)+Akb(i,j,k)+Akw(i,j,k)
+#  endif
+          enddo
+          Akv(i,j,0)       =2.*Akv(i,j,1)-Akv(i,j,2)
+          Akt(i,j,0,itemp) =2.*Akt(i,j,1,itemp)-Akt(i,j,2,itemp)
+#  ifdef SALINITY
+          Akt(i,j,0,isalt) =2.*Akt(i,j,1,isalt)-Akt(i,j,2,isalt)
+#  endif
+# endif
+! DevinD - end WEC
+
             endif  !<-- FIRST_TIME_STEP
 # ifdef MASKING
           else

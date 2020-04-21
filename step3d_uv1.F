@@ -17,6 +17,11 @@
       subroutine step3d_uv1_tile( istr,iend,jstr,jend, ru,rv,
      &                                            WC,FC,CF,DC,
      &                             UFx,UFe,VFx,VFe, wrk1,wrk2)
+
+# ifdef WEC
+      use wec_frc
+# endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -65,6 +70,30 @@
       do j=jstr,jend
 
 # include "compute_vert_rhs_uv_terms.h"
+      
+! Daniel add
+# ifdef WEC
+      enddo !---> end j-loop
+
+      call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
+
+      do j=jstr,jend ! ---> restart j-loop
+# endif
+
+! Daniel add
+! Apply wave bottom streaming stress as a body force in the bottom-most
+! grid cells only (if !defined BODY_FRICTION)
+# ifdef WEC
+#  if defined WAVE_FRICTION && !defined BODY_FRICTION
+        do i=istrU,iend
+          ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
+        enddo
+        do i=istr,iend
+          rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
+        enddo
+#  endif
+# endif 
+
 
 # ifdef IMPLICIT_BOTTOM_DRAG
         do i=istrU,iend
@@ -82,10 +111,19 @@
           CF(i,N-1)=cff*( FC(i,N-1)+max(WC(i,N-1),0.) )
 
           DC(i,N)=cff*( u(i,j,N,nnew) +DC(i,0)*ru(i,j,N)
+!Daniel add
 #  ifdef WIND_AT_RHO_POINTS
-     &                  +0.5*dt*(sustr(i-1,j)+sustr(i,j))
+
+     &                    +dt*( 0.5 * (sustr(i,j)+sustr(i-1,j))
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2dx(i,j) )
+#    endif 
 #  else
-     &                                     +dt*sustr(i,j)
+     &                                       +dt*(sustr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2dx(i,j)
+#    endif
+     &                                                   )
 #  endif
      &                                                  )
         enddo
@@ -128,6 +166,10 @@
 #   else
      &                                      sustr(i,j)
 #   endif
+! Daniel add
+#   ifdef WEC
+     &                                     + brk2dx(i,j)
+#   endif     
      &            -0.5*(r_D(i-1,j)+r_D(i,j))*DC(i,1) )
 #  endif
         enddo
@@ -159,10 +201,19 @@
             CF(i,N-1)=cff*( FC(i,N-1)+max(WC(i,N-1),0.) )
 
             DC(i,N)=cff*( v(i,j,N,nnew) +DC(i,0)*rv(i,j,N)
+!Daniel add
 #  ifdef WIND_AT_RHO_POINTS
-     &                    +0.5*dt*(svstr(i,j-1)+svstr(i,j))
+
+     &                    +dt*( 0.5 * (svstr(i,j-1)+svstr(i,j))
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2de(i,j) )
+#    endif 
 #  else
-     &                                       +dt*svstr(i,j)
+     &                                       +dt*(svstr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2de(i,j)
+#    endif
+     &                                                   )
 #  endif
      &                                                    )
           enddo
@@ -203,6 +254,10 @@
 #   else
      &                                        svstr(i,j)
 #   endif
+! Daniel add
+# ifdef WEC
+     &                                      + brk2de(i,j)
+# endif
      &              -0.5*(r_D(i,j-1)+r_D(i,j))*DC(i,1) )
 #  endif
           enddo
@@ -229,6 +284,10 @@
 #  else
      &                                     +dt*sustr(i,j)
 #  endif
+!Daniel add
+#  ifdef WEC
+     &                                    + dt * brk2dx(i,j)
+#  endif
           u(i,j,1,nnew)=u(i,j,1,nnew)+DC(i,0)*ru(i,j,1)
 #  ifndef IMPLCT_NO_SLIP_BTTM_BC
      &                   -0.5*(r_D(i-1,j)+r_D(i,j))*u(i,j,1,nstp)
@@ -239,6 +298,10 @@
      &                              0.5*(sustr(i-1,j)+sustr(i,j))
 #   else
      &                                                 sustr(i,j)
+#   endif
+! Daniel add
+#   ifdef WEC
+     &                                      + brk2dx(i,j)
 #   endif
      &                 -0.5*(r_D(i-1,j)+r_D(i,j))*u(i,j,1,nstp) )
 #  endif
@@ -261,6 +324,10 @@
 #  else
      &                                       +dt*svstr(i,j)
 #  endif
+! Daniel add
+#  ifdef WEC
+     &                                      +dt * brk2de(i,j)
+#  endif
             v(i,j,1,nnew)=v(i,j,1,nnew) +DC(i,0)*rv(i,j,1)
 #  ifndef IMPLCT_NO_SLIP_BTTM_BC
      &                    -0.5*(r_D(i,j-1)+r_D(i,j))*v(i,j,1,nstp)
@@ -272,6 +339,10 @@
 #   else
      &                                                   svstr(i,j)
 #   endif
+!Daniel add
+# ifdef WEC
+     &                                               +brk2de(i,j)
+# endif
      &                   -0.5*(r_D(i,j-1)+r_D(i,j))*v(i,j,1,nstp) )
 #  endif
           enddo
