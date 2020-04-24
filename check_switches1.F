@@ -11,7 +11,7 @@
 !!!!!! To refresh this file compile and execute "cppcheck.F"   !!!!!!
 !!!!!! as an independent program, or use commands              !!!!!!
 !!!!!! "make checkdefs" or "make depend".                      !!!!!!
-!!!!!! Number of Configuration Choices:                     18 !!!!!!
+!!!!!! Number of Configuration Choices:                      1 !!!!!!
 !!!!!! Total number of CPP-switches:                        20 !!!!!!
 
       implicit none
@@ -41,119 +41,102 @@
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_WEC_FRC
-      iexample=iexample+1
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_WEC_FRC'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef VERBOSE
-      iexample=iexample+1
       is=ie+2 ; ie=is+6
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='VERBOSE'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_GRID
-      iexample=iexample+1
       is=ie+2 ; ie=is+7
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_GRID'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_INITIAL
-      iexample=iexample+1
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_INITIAL'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_SMFLUX
-      iexample=iexample+1
       is=ie+2 ; ie=is+9
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_SMFLUX'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_SRFLUX
-      iexample=iexample+1
       is=ie+2 ; ie=is+9
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_SRFLUX'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_STFLUX
-      iexample=iexample+1
       is=ie+2 ; ie=is+9
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_STFLUX'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_SST
-      iexample=iexample+1
       is=ie+2 ; ie=is+6
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_SST'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef SALINITY
-      iexample=iexample+1
       is=ie+2 ; ie=is+7
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='SALINITY'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef ANA_SSFLUX
-      iexample=iexample+1
       is=ie+2 ; ie=is+9
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='ANA_SSFLUX'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef SOLVE3D
-      iexample=iexample+1
       is=ie+2 ; ie=is+6
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='SOLVE3D'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef UV_ADV
-      iexample=iexample+1
       is=ie+2 ; ie=is+5
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='UV_ADV'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef NONLIN_EOS
-      iexample=iexample+1
       is=ie+2 ; ie=is+9
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='NONLIN_EOS'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef SPLIT_EOS
-      iexample=iexample+1
       is=ie+2 ; ie=is+8
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='SPLIT_EOS'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef EW_PERIODIC
-      iexample=iexample+1
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='EW_PERIODIC'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef NS_PERIODIC
-      iexample=iexample+1
       is=ie+2 ; ie=is+10
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='NS_PERIODIC'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef MRL_WCI
-      iexample=iexample+1
       is=ie+2 ; ie=is+6
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='MRL_WCI'

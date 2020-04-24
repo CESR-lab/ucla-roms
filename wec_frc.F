@@ -2,7 +2,7 @@
       ! Wave Effect on Current (WEC) module which provides all the terms that enter
       ! in the momentum equations
 
-       use dimensions !! has dimensions, a list of forcing files and rmask
+       use dimensions, nt_dimensions => nt, mynode_dims => mynode !! has dimensions, a list of forcing files and rmask
 
        implicit none
 
@@ -174,6 +174,7 @@
       public ana_init_wec_frc_tile
       public wstokes_wec_tile
       public compute_wec_rhs_uv_terms
+      public wstokes_wec
 
 
 
@@ -1335,6 +1336,17 @@ c            u_east(j,k)=-ust(iendR,j,k)
 !
 ! Vertical Stokes drift velocity at rho-point
 ! ===========================================
+
+      subroutine wstokes_wec (tile)
+      implicit none
+! already included at top of module # include "param.h"
+      integer tile
+# include "private_scratch.h"
+# include "compute_tile_bounds.h"
+      call wstokes_wec_tile(istr,iend,jstr,jend)
+!      return
+      end subroutine wstokes_wec
+
 
       subroutine wstokes_wec_tile (istr,iend,jstr,jend)
 
