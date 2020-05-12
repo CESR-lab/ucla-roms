@@ -171,9 +171,12 @@
 
 
 #ifdef SOLVE3D
-# define NWRTHIS 16+NT-2
+! DevinD - 180 and 24 are values from old code
+# define NWRTHIS 180
+!# define NWRTHIS 16+NT-2
 #else
-# define NWRTHIS 14
+# define NWRTHIS 24
+!# define NWRTHIS 14
 #endif
       logical ldefhis, wrthis(NWRTHIS)
       common /ncvars/ ldefhis, wrthis
@@ -227,6 +230,7 @@
 #ifdef BIOLOGY
      &                       39+NT-2)
 #else
-     &                       39)
+     &                       180) ! DevinD - copied from old code
+!     &                       39)
 #endif
       common /cncvars/ vname

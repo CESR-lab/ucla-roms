@@ -7,6 +7,10 @@
 ! global summation counters, model utility switches, i/o contlol, etc.
 ! Note that NONE of the model physical parameters is initialized here.
 
+#ifdef WEC
+      use wec_frc
+#endif
+
       implicit none
       integer ierr, i
 #define ALL_DATA
@@ -269,6 +273,10 @@ CR      write(*,'(1x,A,I3)') 'indxHbbl =',indxHbbl
       vname(1,indxTIsrf)='tisrf'
       vname(2,indxTIsrf)='temperature of ice surface'
       vname(3,indxTIsrf)='Kelvin'
+#endif
+
+#ifdef WEC
+      call init_scalars_wec
 #endif
 
       ierr=0

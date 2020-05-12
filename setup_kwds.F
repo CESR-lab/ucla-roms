@@ -20,6 +20,8 @@
         kwds(is:is)=' '
       enddo
       is=1
+#ifdef WEC
+#endif
 #ifndef NONLIN_EOS
 #endif
 #ifdef MPI
@@ -345,6 +347,26 @@
 #  endif
 # endif /* SOLVE3D */
 #endif /* AVERAGES */
+      ie=is +18
+      if (ie>=max_opt_size) goto 99
+      kwds(is:ie)='wci_history_fields'
+      kwds(ie+1:ie+1)=' '
+      is=ie+2
+# ifdef SOLVE3D
+# endif
+# ifdef SOLVE3D
+# endif
+# ifdef AVERAGES
+      ie=is +18
+      if (ie>=max_opt_size) goto 99
+      kwds(is:ie)='wci_average_fields'
+      kwds(ie+1:ie+1)=' '
+      is=ie+2
+#  ifdef SOLVE3D
+#  endif
+#  ifdef SOLVE3D
+#  endif
+# endif /* AVERAGES */
 #ifdef MPI
 #endif
       return

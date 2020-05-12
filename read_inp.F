@@ -1,7 +1,13 @@
 #include "cppdefs.h"
                                         ! Read and report model input
       subroutine read_inp(ierr)         ! parameters from keyword-based
-      implicit none                     ! startup file.
+                                        ! startup file.
+
+#ifdef WEC
+      use wec_frc
+#endif
+
+      implicit none
       integer ierr
 #include "param.h"
 #include "scoord.h"
@@ -804,6 +810,71 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #  endif
 # endif /* SOLVE3D */
 #endif /* AVERAGES */
+
+
+!#ifdef WEC
+!      call read_inp_wec
+!#endif
+
+!
+! MRL wave-current interaction variables history fields
+!
+        elseif (keyword(1:kwlen).eq.'wci_history_fields') then
+          call cancel_kwd (keyword(1:kwlen), ierr)
+          read(input,*,err=95) wrthis(indxSUP),  wrthis(indxUST2D)
+     &                                        ,  wrthis(indxVST2D)
+# ifdef SOLVE3D
+     &         , wrthis(indxUST), wrthis(indxVST), wrthis(indxwST)
+     &         , wrthis(indxAKB), wrthis(indxAKW), wrthis(indxKVF)
+     &                        , wrthis(indxCALP), wrthis(indxKAPS)
+# endif
+          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 2D history: (T/F)'
+     &             ,  'SUP',    wrthis(indxSUP),    vname(2,indxSUP)
+     &             ,  'UST2D',  wrthis(indxUST2D),  vname(2,indxUST2D)
+     &             ,  'VST2D',  wrthis(indxVST2D),  vname(2,indxVST2D)
+
+# ifdef SOLVE3D
+          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 3D history: (T/F)'
+     &             ,  'UST',    wrthis(indxUST),    vname(2,indxUST)
+     &             ,  'VST',    wrthis(indxVST),    vname(2,indxVST)
+     &             ,  'WST',    wrthis(indxWST),    vname(2,indxWST)
+     &             ,  'Akb',    wrthis(indxAkb),    vname(2,indxAkb)
+     &             ,  'Akw',    wrthis(indxAkw),    vname(2,indxAkw)
+     &             ,  'KVF',    wrthis(indxKVF),    vname(2,indxKVF)
+     &             ,  'CALP',   wrthis(indxCALP),   vname(2,indxCALP)
+     &             ,  'KAPS',   wrthis(indxKAPS),   vname(2,indxKAPS)
+# endif
+# ifdef AVERAGES
+        elseif (keyword(1:kwlen).eq.'wci_average_fields') then
+          call cancel_kwd (keyword(1:kwlen), ierr)
+          read(input,*,err=95) wrtavg(indxSUP),  wrtavg(indxUST2D)
+     &                                        ,  wrtavg(indxVST2D)
+#  ifdef SOLVE3D
+     &         , wrtavg(indxUST), wrtavg(indxVST), wrtavg(indxwST)
+     &         , wrtavg(indxAKB), wrtavg(indxAKW), wrtavg(indxKVF)
+     &                        , wrtavg(indxCALP), wrtavg(indxKAPS)
+#  endif
+          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 2D average: (T/F)'
+     &             ,  'SUP',    wrtavg(indxSUP),    vname(2,indxSUP)
+     &             ,  'UST2D',  wrtavg(indxUST2D),  vname(2,indxUST2D)
+     &             ,  'VST2D',  wrtavg(indxVST2D),  vname(2,indxVST2D)
+
+#  ifdef SOLVE3D
+          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 3D average: (T/F)'
+     &             ,  'UST',    wrtavg(indxUST),    vname(2,indxUST)
+     &             ,  'VST',    wrtavg(indxVST),    vname(2,indxVST)
+     &             ,  'WST',    wrtavg(indxWST),    vname(2,indxWST)
+     &             ,  'Akb',    wrtavg(indxAkb),    vname(2,indxAkb)
+     &             ,  'Akw',    wrtavg(indxAkw),    vname(2,indxAkw)
+     &             ,  'KVF',    wrtavg(indxKVF),    vname(2,indxKVF)
+     &             ,  'CALP',   wrtavg(indxCALP),   vname(2,indxCALP)
+     &             ,  'KAPS',   wrtavg(indxKAPS),   vname(2,indxKAPS)
+#  endif
+# endif /* AVERAGES */
 
         else
           mpi_master_only write(*,'(/1x,4A/)') 'WARNING: ',

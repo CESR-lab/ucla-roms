@@ -11,6 +11,9 @@
 #include "param.h"
 #include "grid.h"
 
+! DevinD - added 05/07 for init_scalars_wec subroutine
+#include "ncvars.h"
+
 ! DevinD - get universal scalars, g and pi
 # include "scalars.h"
 ! DevinD - get ocean variables
@@ -168,6 +171,13 @@
 
       ! DevinD - end wave terms previously contained in ncvars.h
 
+      ! strings needed for wrt_his.F
+      character*15, public :: mynode_text
+      character*20, public :: mynode_nc_file
+      ! end strings needed for wrt_his.F
+
+      public init_scalars_wec
+!      public read_inp_wec
       public set_wec_frc
       public ana_wec_frc_tile
       public init_arrays_wec_tile
@@ -180,9 +190,65 @@
 
       contains 
 
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
+
+
+      subroutine init_scalars_wec
+
+      ! Called from init_scalars.F for WEC specific scalars
+
+      implicit none
+
+      vname(1,indxSUP)='sup'
+      vname(2,indxSUP)='quasi-static sea-level response (set-up)'
+      vname(3,indxSUP)='meter'
+
+      vname(1,indxUST2D)='ust2d'
+      vname(2,indxUST2D)='u depth-averaged Stokes drift velocity'
+      vname(3,indxUST2D)='meter second-1'
+
+      vname(1,indxVST2D)='vst2d'
+      vname(2,indxVST2D)='v depth-averaged Stokes drift velocity'
+      vname(3,indxVST2D)='meter second-1'
+# ifdef SOLVE3D
+      vname(1,indxUST)  ='ust'
+      vname(2,indxUST)  ='u 3D Stokes drift velocity'
+      vname(3,indxUST)  ='meter second-1'
+
+      vname(1,indxVST)  ='vst'
+      vname(2,indxVST)  ='v 3D Stokes drift velocity'
+      vname(3,indxVST)  ='meter second-1'
+
+      vname(1,indxWST)  ='wst'
+      vname(2,indxWST)  ='w vertical 3D Stokes drift velocity'
+      vname(3,indxWST)  ='meter second-1'
+
+      vname(1,indxAKB)  ='Akb'
+      vname(2,indxAKB)  ='eddy viscosity due to wave breaking'
+      vname(3,indxAKB)  ='meter2 second-1'
+
+      vname(1,indxAKW)  ='Akw'
+      vname(2,indxAKW)  ='eddy diffusivity due to primary waves'
+      vname(3,indxAKW)  ='meter2 second-1'
+
+      vname(1,indxKVF)  ='kvf'
+      vname(2,indxKVF)  ='vertical vortex force (u^st du/dz)'
+      vname(3,indxKVF)  ='meter second-2'
+
+      vname(1,indxCALP) ='calP'
+      vname(2,indxCALP) ='surface pressure correction in prsgrd'
+      vname(3,indxCALP) ='meter2 second-2'
+
+      vname(1,indxKAPS) ='Kapsrf'
+      vname(2,indxKAPS) ='surface Bernoulli head in prsgrd term'
+      vname(3,indxKAPS) ='meter2 second-2'
+# endif
+
+      end subroutine init_scalars_wec
+
+      ! --------------------------------------------------------------------
 
         subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
 
@@ -254,6 +320,18 @@
 
         end subroutine init_arrays_wec_tile
 
+
+      ! --------------------------------------------------------------------
+
+
+!      subroutine read_inp_wec
+!
+!      implicit none
+!
+!
+!      end subroutine read_inp_wec
+
+
        ! --------------------------------------------------------------------
 
         subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
@@ -270,6 +348,7 @@
          integer :: i, j, k
 
          real :: cff1 ! This could be declared in module but not sure - here for now.
+         real :: cff2 ! DevinD added for debug check
 
           ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
           ! This had to appear after other variables declared else wont compile
@@ -278,45 +357,75 @@
 
          ! Taken from ana_init.F of DH's WAVE_PACKET code
 
+         real :: stk(PRIVATE_2D_SCRATCH_ARRAY)
 
           kkw=2.0*pi/1.0 ! Changed kw to kkw so as not to conflict part 2 also has kw
           env=0.0001
           Clw=sqrt(g*h(2,2))
           Cg=0.5*sqrt(g/kkw)
-           do j=jstrR,jendR
-            do i=istrR,iendR
+!           do j=jstrR,jendR
+!            do i=istrR,iendR
+          do j=jstr-1,jend+1
+            do i=istr-1,iend+1
              do k=1,N
               t(i,j,k,1,itemp)=18.0
               t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
              enddo
-             cff1=(dble(i)+dble(iSW_corn)-(LLm/2))/pm(2,2)
-             whrm(i,j)  = 0.001*2.0*exp(-env*cff1**2)       ! Hrms=2*A
+             ! DevinD - whrm from Eq(29) of DH's 'A propagating wave packet.pdf
+!             cff1=(dble(i)+dble(iSW_corn)-(LLm/2))/pm(2,2)
+!             whrm(i,j)  = 0.001*2.0*exp(-env*cff1**2)       ! Hrms=2*A
+             cff1=modulo(time,(gnx/Cg))        ! Changed LLm to gnx
+             cff2=(dble(i)-(Cg*cff1)
+     &                +dble(iSW_corn)-(gnx/2))/pm(2,2)    ! initial shift mid domain
+             whrm(i,j)= 0.001*2.0*(exp(-env*cff2**2)
+     &                      +exp(-env*(cff2+gnx/pm(2,2))**2))
              wfrq(i,j)   = sqrt(g*kkw)
              wdrx(i,j)   = 1.0                             ! cosine wave direction (xi)
              wdre(i,j)   = 0.0                             ! sine wave direction (eta)
              wdsp(i,j)   = 0.0
              sup(i,j)    = 0.0
     !         sup(i,j)    = -(0.25*whrm(i,j)**2)*kw/(2.*sinh(2*kw*h(i,j)))   ! A**2 = 0.25 Hrms**2
-             ust2d(i,j)  = (0.125*whrm(i,j)**2)*sqrt(g*kkw)/h(i,j)
-             ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-     &                         ust2d(i,j)/h(i,j)
-             zeta(i,j,1) = ubar(i,j,1)*Cg/g
-             brk2dx(i,j) = 0.0
-             brk2de(i,j) = 0.0
-             frc2dx(i,j) = 0.0
-             frc2de(i,j) = 0.0
+!             ust2d(i,j)  = (0.125*whrm(i,j)**2)*sqrt(g*kkw)/h(i,j)
+             ! DevinD - stk & whrm appear to be at u-points because loop
+             ! is through integers and i represents x. For this grid u-points
+             ! are on the integer meters, and rho-points between on .5m
+             stk(i,j)  = (0.125*whrm(i,j)**2)*sqrt(g*kkw)/h(i,j)
+             if (i>istr-1) then
+                ! DevinD - ust2d averaged to rho-point, but it seems this
+                ! is the wrong conversion process for u-to-rho conversion.
+                ust2d(i,j)= 0.5*(stk(i-1,j)*wdrx(i-1,j)+stk(i,j)*wdrx(i,j))
+!                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+!     &                         ust2d(i,j)
+                ! ubar should be at u-point - hence using stk
+                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+     &                         stk(i,j)
+!                ! DevinD - attempted hack to correct phase shift stk(i-1)
+!                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+!     &                         stk(i-1,j)
+!                zeta(i,j,1) = ubar(i,j,1)*Cg/g
+                ! zeta should be at rho-point - hence using ust2d
+                zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+     &                         ust2d(i,j)*Cg/g
+                brk2dx(i,j) = 0.0
+                brk2de(i,j) = 0.0
+                frc2dx(i,j) = 0.0
+                frc2de(i,j) = 0.0
 
-             vbar(i,j,1)= 0.0
-             vst2d(i,j) = 0.0
-             do k=1,N
-              u(i,j,k,1) = ubar(i,j,1)                     ! actually need
-              v(i,j,k,1) = vbar(i,j,1)                     ! to init u even if baro
-              ust(i,j,k) = ust2d(i,j)
-              vst(i,j,k) = vst2d(i,j)
-             enddo
+                vbar(i,j,1)= 0.0
+                vst2d(i,j) = 0.0
+                do k=1,N
+                    u(i,j,k,1) = ubar(i,j,1)                     ! actually need
+                    v(i,j,k,1) = vbar(i,j,1)                     ! to init u even if baro
+                    ust(i,j,k) = ust2d(i,j)
+                    vst(i,j,k) = vst2d(i,j)
+                enddo
+             end if
            enddo
           enddo
 
+      ! DevinD  debug output
+!      write(*,*) 'ust0(1,1,1)', ust(1,1,1)
+!      write(*,*) 'ust0(1,1,2)', ust(1,1,2)
 
         end subroutine ana_init_wec_frc_tile
 
@@ -413,6 +522,8 @@
           ! This had to appear after eps=1.e-10 else wont compile
 #include "compute_auxiliary_bounds.h"
 
+      ! DevinD - this flag is needed for kh variable used for ust/vst
+# define KH_HUNT
 
           !!!!!!!!!!
           ! If first step - Cancelled as put in ana_init.F instead
@@ -479,7 +590,8 @@
 
           do j=jstr-1,jend+1
             do i=istr-1,iend+1
-              Dstp(i,j)=max(h(i,j)+zeta(i,j,knew),eps)
+!              Dstp(i,j)=max(h(i,j)+zeta(i,j,knew),eps)
+              Dstp(i,j)=h(i,j)
               inv_d(i,j)=1.0/Dstp(i,j)
 # ifdef WKB_WWAVE
           fr(i,j) =frq(i,j,wnew)
@@ -575,7 +687,21 @@
             enddo
           enddo
 # endif
-
+!
+! sup : quasi-static sea-level response, set-up. no interaction.
+! ==============================================================
+!
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          sup(i,j) =0.0
+!          sup(i,j) =-0.125*(wh(i,j)**2)*kw(i,j)
+!     &              /sinh(2.*kD(i,j))
+!     &              /max(sinh(2.*min(kD(i,j),khmax)),eps)
+#  ifdef MASKING
+     &                                        *rmask(i,j)
+#  endif
+        enddo
+      enddo
 !
 ! Dissipation terms : copy into shared arrays
 ! ===========================================
@@ -714,7 +840,17 @@
         enddo
       enddo                 ! <-- keep ust_r, inv_dz, inv_ex
 
-
+      ! DevinD  debug output
+!      write(*,*) 'act(1,1)', act(1,1)
+!      write(*,*) 'inv_ex(1,1)', inv_ex(1,1)
+!      write(*,*) 'kh', kh
+!      write(*,*) 'kD(1,1)', kD(1,1)
+!      write(*,*) 'tanh(kD(1,1))', tanh(kD(1,1))
+!      write(*,*) 'ust_ker', ust_ker
+!      write(*,*) 'inv_dz(1,1,2)', inv_dz(1,1,2)
+!      write(*,*) 'ust_r(1,1,2)', ust_r(1,1,2)
+!      write(*,*) 'ust(1,1,1)', ust(1,1,1)
+!      write(*,*) 'ust(1,1,2)', ust(1,1,2)
 
 !
 ! calP & Kapsrf: surface pressure & Bernoulli head at rho-point

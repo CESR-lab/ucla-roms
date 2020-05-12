@@ -6,6 +6,7 @@
 ! DevinD add for hisSUP variables, etc. Improve with use, only: in future
 #ifdef WEC
       use wec_frc
+      use ncio ! for netcdf writing
 #endif
 
       implicit none
@@ -309,8 +310,57 @@ CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
 # endif
 #endif
 
+! DevinD add - writing with ncio module
+#ifdef WEC
+      ! This should be in if "first-time" create, else nc_open
+      if (time <= 0) then
+!        write(*,*) 'mynode: ', mynode
+        write(mynode_text,*) mynode
+!        write(mynode_nc_file,'(a,i4.4,a)') "WEC_results.",mynode,".nc"
+!        write(mynode_text,'("TEST",I,".TXT")') mynode+10
+!        write(*,*) trim(mynode_text)
+!        mynode_nc_file = "WEC_results."//mynode_text//".nc"
+        mynode_nc_file = "WEC_results."//trim(adjustl(mynode_text))//".nc"
+!        write(*,*) mynode_nc_file
+!        mynode_nc_file = "WEC_results."
+!        write(*,*) 'wrt_his:  mynode_nc_file: ', mynode_nc_file
+        call nc_create(mynode_nc_file)
+!        call nc_write_dim(mynode_nc_file,'xi_u',x=xi_u,units="m/s")
+!        call nc_write_dim(mynode_nc_file,'eta_v',x=eta_v,units="m/s")
+!        write(*,*) 'eta_rho: ', eta_rho
+!        call nc_write_dim(mynode_nc_file,'eta_rho',x=eta_rho,
+!     &                                                     units="m/s")
+!        call nc_write_dim(mynode_nc_file,'time',x=nf_unlimited,
+!     &                                                 units="m/s")
+        call nc_write_dim(mynode_nc_file,"xi_u",x=1.0,dx=1.d0,nx=xi_u,units="m")
+        call nc_write_dim(mynode_nc_file,"eta_rho",x=1.0,dx=1.d0,nx=eta_rho,units="m")
+        call nc_write_dim(mynode_nc_file,"time",x=1.0,dx=1.d0,
+     &                                 nx=nf_unlimited,units="seconds")
+      end if
+!      call nc_write(mynode_nc_file,'ust2d',ust2d,units="m/s",dim1="time",
+!     &                 dim2="eta_rho",dim3="xi_u")
+!      if (mynode == 4) then
+!        write(*,*) 'shape(ust2d): ', shape(ust2d)
+!        write(*,*) 'size(ust2d): ', size(ust2d)
+!        call nc_write(mynode_nc_file,'ust2d',ust2d,units="m/s",dim1="time",
+!     &                  dim2="eta_rho",dim3="xi_u",
+!     &                  start=[1,1],count=[175,4])
+!        call nc_write(mynode_nc_file,"ust2d",ust2d(1:175,1:4),dim1="xi_u",
+!     &                  dim2="eta_rho")
+
+!! This works!
+!       call nc_write(mynode_nc_file,"ust2d",ust2d(1:175,1:4),
+!    &                  dims=["xi_u","eta_rho"])
+
+        call nc_write(mynode_nc_file,"ust2d",ust2d(1:175,1:4),
+     &                  dims=["xi_u","eta_rho","time"],
+     &                  start=[1,1,record],count=[175,4,1])
+!        write(*,*) 'record', record
+!      end if
+#endif
+
 ! Daniel add 
-!#ifdef WEC
+#ifdef WEC
 !      ! DevinD add: for old nf_fwrite subroutine to work with
 !      ! new ncdf_write routine which has extra arguement 'nmax'
 !!      integer :: nmax = N+1
@@ -319,126 +369,126 @@ CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
 !! DevinD - define r2dvar as r_var as that is old code ncvar to new code ncvar
 !!# define r2dvar r_var
 !
-!      if (wrthis(indxSUP)) then
-!!        write(*,*) 'wrt_his: wrtSUP - ncidhis: ', ncidhis,
-!!     &         ' *** hisSUP: ', hisSUP
-!!        ierr=ncdf_write (sup, ncidhis, hisSUP, record, r2dvar)
-!        ierr=ncdf_write (nchis, hisSUP, record, r_var, sup, 1)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxSUP))
-!          write(*,1) vname(1,indxSUP)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtSUP' MYID
-!      endif
-!      if (wrthis(indxUST2D)) then
-!!        ierr=nf_fwrite (ust2d, ncidhis, hisUST2D, record, u2dvar)
-!        ierr=ncdf_write (nchis, hisUST2D, record, u_var, ust2d, 1)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxUST2D))
-!          write(*,1) vname(1,indxUST2D)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtUST2D' MYID
-!      endif
-!      if (wrthis(indxVST2D)) then
-!!        ierr=nf_fwrite (vst2d, ncidhis, hisVST2D, record, v2dvar)
-!        ierr=ncdf_write (nchis, hisVST2D, record, v_var, vst2d, 1)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxVST2D))
-!          write(*,1) vname(1,indxVST2D)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtUST2D' MYID
-!      endif
-!# ifdef SOLVE3D
-!      if (wrthis(indxUST)) then
-!!        ierr=nf_fwrite (ust, ncidhis, hisUST,  record,  u3dvar)
-!        ierr=ncdf_write (nchis, hisUST,  record,  u_var, ust, N)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxUST))
-!          write(*,1) vname(1,indxUST)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtUST' MYID
-!      endif
-!      if (wrthis(indxVST)) then
-!!        ierr=nf_fwrite (vst, ncidhis, hisVST,  record,  v3dvar)
-!        ierr=ncdf_write (nchis, hisVST,  record,  v_var, vst, N)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxVST))
-!          write(*,1) vname(1,indxVST)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtVST' MYID
-!      endif
-!      if (wrthis(indxWST)) then
-!        do tile=0,NSUB_X*NSUB_E-1
-!          call wstokes_wec(tile)
-!        enddo
-!!        ierr=nf_fwrite (wst, ncidhis, hisWST, record, r3dvar)
-!        ierr=ncdf_write (nchis, hisWST, record, r_var, wst, N)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxWST))
-!          write(*,1) vname(1,indxWST)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtWST' MYID
-!      endif
-!      if (wrthis(indxAkb)) then
-!!        ierr=nf_fwrite (Akb, ncidhis, hisAkb, record, w3dvar)
-!        ierr=ncdf_write (nchis, hisAkb, record, q_var, Akb, N+1)
-!! DevinD - left this uncommented as don't know what w3dvar is in new code.
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxAkb))
-!          write(*,1) vname(1,indxAkb)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtAkb' MYID
-!      endif
-!      if (wrthis(indxAkw)) then
-!!        ierr=nf_fwrite (Akw, ncidhis, hisAkw, record, w3dvar)
-!        ierr=ncdf_write (nchis, hisAkw, record, q_var, Akw, N+1)
-!! DevinD - left this uncommented as don't know what w3dvar is in new code.
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxAkw))
-!          write(*,1) vname(1,indxAkw)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtAkw' MYID
-!      endif
-!      if (wrthis(indxKVF)) then
-!!        ierr=nf_fwrite (kvf, ncidhis, hisKVF, record, r3dvar)
-!        ierr=ncdf_write (nchis, hisKVF, record, r_var, kvf, N)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxKVF))
-!          write(*,1) vname(1,indxKVF)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtKVF' MYID
-!      endif
-!      if (wrthis(indxCALP)) then
-!!        ierr=nf_fwrite (calP, ncidhis, hisCALP, record, r2dvar)
-!        ierr=ncdf_write (nchis, hisCALP, record, r_var, calP, 1)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxCALP))
-!          write(*,1) vname(1,indxCALP)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtCALP' MYID
-!      endif
-!      if (wrthis(indxKAPS)) then
-!!        ierr=nf_fwrite (Kapsrf, ncidhis, hisKAPS, record, r2dvar)
-!        ierr=ncdf_write (nchis, hisKAPS, record, r_var, Kapsrf, 1)
-!        if (ierr .ne. nf_noerr) then
-!          lvar=lenstr(vname(1,indxKAPS))
-!          write(*,1) vname(1,indxKAPS)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his: wrtKAPS' MYID
-!      endif
-!# endif  /* SOLVE3D */
-!#endif   /* WEC */
+      if (wrthis(indxSUP)) then
+!        write(*,*) 'wrt_his: wrtSUP - ncidhis: ', ncidhis,
+!     &         ' *** hisSUP: ', hisSUP
+!        ierr=ncdf_write (sup, ncidhis, hisSUP, record, r2dvar)
+        ierr=ncdf_write (nchis, hisSUP, record, r_var, sup, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxSUP))
+          write(*,1) vname(1,indxSUP)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtSUP' MYID
+      endif
+      if (wrthis(indxUST2D)) then
+!        ierr=nf_fwrite (ust2d, ncidhis, hisUST2D, record, u2dvar)
+        ierr=ncdf_write (nchis, hisUST2D, record, u_var, ust2d, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxUST2D))
+          write(*,1) vname(1,indxUST2D)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtUST2D' MYID
+      endif
+      if (wrthis(indxVST2D)) then
+!        ierr=nf_fwrite (vst2d, ncidhis, hisVST2D, record, v2dvar)
+        ierr=ncdf_write (nchis, hisVST2D, record, v_var, vst2d, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxVST2D))
+          write(*,1) vname(1,indxVST2D)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtUST2D' MYID
+      endif
+# ifdef SOLVE3D
+      if (wrthis(indxUST)) then
+!        ierr=nf_fwrite (ust, ncidhis, hisUST,  record,  u3dvar)
+        ierr=ncdf_write (nchis, hisUST,  record,  u_var, ust(START_2D_ARRAY,1), N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxUST))
+          write(*,1) vname(1,indxUST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtUST' MYID
+      endif
+      if (wrthis(indxVST)) then
+!        ierr=nf_fwrite (vst, ncidhis, hisVST,  record,  v3dvar)
+        ierr=ncdf_write (nchis, hisVST,  record,  v_var, vst, N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxVST))
+          write(*,1) vname(1,indxVST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtVST' MYID
+      endif
+      if (wrthis(indxWST)) then
+        do tile=0,NSUB_X*NSUB_E-1
+          call wstokes_wec(tile)
+        enddo
+!        ierr=nf_fwrite (wst, ncidhis, hisWST, record, r3dvar)
+        ierr=ncdf_write (nchis, hisWST, record, r_var, wst, N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxWST))
+          write(*,1) vname(1,indxWST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtWST' MYID
+      endif
+      if (wrthis(indxAkb)) then
+!        ierr=nf_fwrite (Akb, ncidhis, hisAkb, record, w3dvar)
+        ierr=ncdf_write (nchis, hisAkb, record, r_var, Akb, N+1)
+! DevinD - left this uncommented as don't know what w3dvar is in new code.
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxAkb))
+          write(*,1) vname(1,indxAkb)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtAkb' MYID
+      endif
+      if (wrthis(indxAkw)) then
+!        ierr=nf_fwrite (Akw, ncidhis, hisAkw, record, w3dvar)
+        ierr=ncdf_write (nchis, hisAkw, record, r_var, Akw, N+1)
+! DevinD - left this uncommented as don't know what w3dvar is in new code.
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxAkw))
+          write(*,1) vname(1,indxAkw)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtAkw' MYID
+      endif
+      if (wrthis(indxKVF)) then
+!        ierr=nf_fwrite (kvf, ncidhis, hisKVF, record, r3dvar)
+        ierr=ncdf_write (nchis, hisKVF, record, r_var, kvf, N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxKVF))
+          write(*,1) vname(1,indxKVF)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtKVF' MYID
+      endif
+      if (wrthis(indxCALP)) then
+!        ierr=nf_fwrite (calP, ncidhis, hisCALP, record, r2dvar)
+        ierr=ncdf_write (nchis, hisCALP, record, r_var, calP, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxCALP))
+          write(*,1) vname(1,indxCALP)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtCALP' MYID
+      endif
+      if (wrthis(indxKAPS)) then
+!        ierr=nf_fwrite (Kapsrf, ncidhis, hisKAPS, record, r2dvar)
+        ierr=ncdf_write (nchis, hisKAPS, record, r_var, Kapsrf, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxKAPS))
+          write(*,1) vname(1,indxKAPS)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtKAPS' MYID
+      endif
+# endif  /* SOLVE3D */
+#endif   /* WEC */
 
 
 
