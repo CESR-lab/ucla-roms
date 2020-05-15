@@ -149,11 +149,16 @@
 
       !!!!!!!!
 
-        integer, public :: hisSUP, hisUST2D, hisVST2D
+        integer, public, target :: hisSUP, hisUST2D, hisVST2D ! Target for pointers if used in def_his_def_var_wec!!!
 !      common /ncvars/ hisSUP, hisUST2D, hisVST2D
+
+      type domainptr
+        integer, pointer :: p ! For target hisUST2D above
+      end type domainptr
+
 # ifdef SOLVE3D
-        integer, public :: hisUST, hisVST, hisAkb, hisAkw, hisKVF,
-     &        hisCALP, hisKAPS, hisWST
+        integer, public, target :: hisUST, hisVST, hisAkb, hisAkw, hisKVF,
+     &        hisCALP, hisKAPS, hisWST ! Target for pointers if used in def_his_def_var_wec!!!
 !      common /ncvars/ hisUST, hisVST, hisAkb, hisAkw, hisKVF,
 !     &        hisCALP, hisKAPS, hisWST
 # endif
@@ -171,13 +176,55 @@
 
       ! DevinD - end wave terms previously contained in ncvars.h
 
-      ! strings needed for wrt_his.F
-      character*15, public :: mynode_text
-      character*20, public :: mynode_nc_file
+
+! flags taken from def_his.F and used in def_his_def_var_wec & def_his_nf_inq_varid
+#ifndef AVRH
+# define ncid nchis
+# define fname hisname
+# define wrt wrthis
+# ifdef WEC
+#  define vidSUP hisSUP
+#  define vidUST2D hisUST2D
+#  define vidVST2D hisVST2D
+#  define vidUST hisUST
+#  define vidVST hisVST
+#  define vidWST hisWST
+#  define vidAkb hisAkb
+#  define vidAkw hisAkw
+#  define vidKVF hisKVF
+#  define vidCALP hisCALP
+#  define vidKAPS hisKAPS
+# endif
+#else
+# define ncid ncavg
+# define fname avgname
+# define wrt wrtavg
+# ifdef WEC
+#  define vidSUP avgSUP
+#  define vidUST2D avgUST2D
+#  define vidVST2D avgVST2D
+#  define vidUST avgUST
+#  define vidWST avgWST
+#  define vidVST avgVST
+#  define vidAkb avgAkb
+#  define vidAkw avgAkw
+#  define vidKVF avgKVF
+#  define vidCALP avgCALP
+#  define vidKAPS avgKAPS
+# endif
+#endif
+
+
+
+      ! strings needed for wrt_his.F if using ncio method
+!      character*15, public :: mynode_text
+!      character*20, public :: mynode_nc_file
       ! end strings needed for wrt_his.F
 
       public init_scalars_wec
-!      public read_inp_wec
+      public read_inp_wec
+      public def_his_def_var_wec
+      public def_his_nf_inq_varid
       public set_wec_frc
       public ana_wec_frc_tile
       public init_arrays_wec_tile
@@ -185,6 +232,7 @@
       public wstokes_wec_tile
       public compute_wec_rhs_uv_terms
       public wstokes_wec
+      public wrt_his_wec
 
 
 
@@ -324,15 +372,602 @@
       ! --------------------------------------------------------------------
 
 
-!      subroutine read_inp_wec
-!
-!      implicit none
-!
-!
-!      end subroutine read_inp_wec
+      subroutine read_inp_wec (keyword, ierr, kwlen)
+
+      implicit none
+
+      character(len=32) :: keyword
+      integer ierr, kwlen
+      integer, parameter :: input=15
+
+        call cancel_kwd (keyword(1:kwlen), ierr)
+
+# ifndef AVERAGES
+        read(input,*,err=95) wrthis(indxSUP),  wrthis(indxUST2D)
+     &                                        ,  wrthis(indxVST2D)
+#  ifdef SOLVE3D
+     &         , wrthis(indxUST), wrthis(indxVST), wrthis(indxwST)
+     &         , wrthis(indxAKB), wrthis(indxAKW), wrthis(indxKVF)
+     &                        , wrthis(indxCALP), wrthis(indxKAPS)
+#  endif
+          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 2D history: (T/F)'
+     &             ,  'SUP',    wrthis(indxSUP),    vname(2,indxSUP)
+     &             ,  'UST2D',  wrthis(indxUST2D),  vname(2,indxUST2D)
+     &             ,  'VST2D',  wrthis(indxVST2D),  vname(2,indxVST2D)
+
+#  ifdef SOLVE3D
+          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 3D history: (T/F)'
+     &             ,  'UST',    wrthis(indxUST),    vname(2,indxUST)
+     &             ,  'VST',    wrthis(indxVST),    vname(2,indxVST)
+     &             ,  'WST',    wrthis(indxWST),    vname(2,indxWST)
+     &             ,  'Akb',    wrthis(indxAkb),    vname(2,indxAkb)
+     &             ,  'Akw',    wrthis(indxAkw),    vname(2,indxAkw)
+     &             ,  'KVF',    wrthis(indxKVF),    vname(2,indxKVF)
+     &             ,  'CALP',   wrthis(indxCALP),   vname(2,indxCALP)
+     &             ,  'KAPS',   wrthis(indxKAPS),   vname(2,indxKAPS)
+#  endif
 
 
-       ! --------------------------------------------------------------------
+# else
+!        elseif (keyword(1:kwlen).eq.'wci_average_fields') then
+!          call cancel_kwd (keyword(1:kwlen), ierr)
+        read(input,*,err=95) wrtavg(indxSUP),  wrtavg(indxUST2D)
+     &                                        ,  wrtavg(indxVST2D)
+#  ifdef SOLVE3D
+     &         , wrtavg(indxUST), wrtavg(indxVST), wrtavg(indxwST)
+     &         , wrtavg(indxAKB), wrtavg(indxAKW), wrtavg(indxKVF)
+     &                        , wrtavg(indxCALP), wrtavg(indxKAPS)
+#  endif
+          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 2D average: (T/F)'
+     &             ,  'SUP',    wrtavg(indxSUP),    vname(2,indxSUP)
+     &             ,  'UST2D',  wrtavg(indxUST2D),  vname(2,indxUST2D)
+     &             ,  'VST2D',  wrtavg(indxVST2D),  vname(2,indxVST2D)
+
+#  ifdef SOLVE3D
+          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+     &               'fields to be saved in MRL-WEC 3D average: (T/F)'
+     &             ,  'UST',    wrtavg(indxUST),    vname(2,indxUST)
+     &             ,  'VST',    wrtavg(indxVST),    vname(2,indxVST)
+     &             ,  'WST',    wrtavg(indxWST),    vname(2,indxWST)
+     &             ,  'Akb',    wrtavg(indxAkb),    vname(2,indxAkb)
+     &             ,  'Akw',    wrtavg(indxAkw),    vname(2,indxAkw)
+     &             ,  'KVF',    wrtavg(indxKVF),    vname(2,indxKVF)
+     &             ,  'CALP',   wrtavg(indxCALP),   vname(2,indxCALP)
+     &             ,  'KAPS',   wrtavg(indxKAPS),   vname(2,indxKAPS)
+#  endif
+# endif /* AVERAGES */
+
+      goto 100
+  95  write(*,'(/1x,4A/)') '### ERROR: read_inp_wec :: Cannot read ',
+     &                       'entry ''', keyword(1:kwlen), '''.'
+      ierr=ierr+1 ! Possible source for error here?
+!      goto 99
+!  99  close (input)
+ 100  continue
+
+      end subroutine read_inp_wec
+
+      ! ---------------------------------------------------
+      ! ---------------------------------------------------
+      ! ---------------------------------------------------
+
+      subroutine def_his_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
+#ifdef SOLVE3D
+     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
+#endif
+     &                                                             )
+
+!      use netcdf, only: nf_float ! Didn't work
+
+      implicit none
+
+      integer lenstr, lvar, ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
+#ifdef SOLVE3D
+     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+#endif
+      integer, external :: nf_def_var, nf_put_att_text ! Taken from netcdf.inc
+      character(len=64) text
+      integer, parameter :: nf_float = 5
+
+      ! These variables are new and needed for looping of attributes
+      type(domainptr), dimension(3) :: dom ! array of pointers to hisUST2d etc
+      integer indx_loop ! looping index
+      integer loop_grd(3,3) ! grid type - can make second dimension (i,:) for length 3 and 4
+      integer :: i=0 ! additional looping integer
+
+      ! 3D loop variables - may need to deallocate pointers at end of subroutine if memory leak!
+      type(domainptr), dimension(8) :: dom3D ! array of pointers to hisUST2d etc
+      integer loop_grd3D(8,4) ! grid type - can make second dimension (i,:) for length 3 and 4
+      integer loop_dims(8) ! array of variable's dimensions
+
+      ! Put in type of variable here.
+      loop_grd(1,:) = r2dgrd; loop_grd(2,:) = u2dgrd; loop_grd(3,:) = v2dgrd
+      ! Put in pointer to varid here (e.g. hisUST2D - see flags above)
+      dom(1)%p => vidSUP; dom(2)%p => vidUST2D; dom(3)%p => vidVST2D
+
+      do indx_loop = indxSUP, indxVST2D ! Loop through the relevant indices for wrt
+        i=i+1 ! This is for loop index from 1
+        if (wrt(indx_loop)) then
+          lvar=lenstr(vname(1,indx_loop))
+          ierr=nf_def_var (ncid, vname(1,indx_loop)(1:lvar), NF_FOUT,
+     &                                      3, loop_grd(i,:), dom(i)%p)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indx_loop)
+# else
+          text=vname(2,indx_loop)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, dom(i)%p, 'long_name', lvar,
+     &                                               text(1:lvar))
+          lvar=lenstr(vname(3,indx_loop))
+          ierr=nf_put_att_text (ncid, dom(i)%p, 'units',     lvar,
+     &                                 vname(3,indx_loop)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, dom(i)%p, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+
+        endif
+      end do
+
+! THIS IS OLD CODE REPLACED BY LOOP ABOVE - LEFT IN UNTIL SURE NO MEMORY LEAK
+! WHEN DOING LARGE SCALE NON-ANALYTICAL MODEL
+
+! Wave-current interaction diagnostic variables.
+! =============================================
+!
+! sup: quasi-static sea-level response (wave set-up/down)
+!
+!        if (wrt(indxSUP)) then
+!          lvar=lenstr(vname(1,indxSUP))
+!          ierr=nf_def_var (ncid, vname(1,indxSUP)(1:lvar), NF_FOUT,
+!     &                                           3, r2dgrd, vidSUP)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxSUP)
+!# else
+!          text=vname(2,indxSUP)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidSUP, 'long_name', lvar,
+!     &                                             text(1:lvar))
+!          lvar=lenstr(vname(3,indxSUP))
+!          ierr=nf_put_att_text (ncid, vidSUP, 'units',     lvar,
+!     &                                 vname(3,indxSUP)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidiSUP, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+
+!
+! ust2d & vst2d: 2D, depth-averaged Stokes drift velocities.
+!
+!        if (wrt(indxUST2D)) then
+!          lvar=lenstr(vname(1,indxUST2D))
+!          ierr=nf_def_var (ncid, vname(1,indxUST2D)(1:lvar), NF_FOUT,
+!     &                                           3, u2dgrd, vidUST2D)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxUST2D)
+!# else
+!          text=vname(2,indxUST2D)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidUST2D, 'long_name', lvar,
+!     &                                               text(1:lvar))
+!          lvar=lenstr(vname(3,indxUST2D))
+!          ierr=nf_put_att_text (ncid, vidUST2D, 'units',     lvar,
+!     &                                 vname(3,indxUST2D)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidUST2D, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!
+!        endif
+
+!        if (wrt(indxVST2D)) then
+!          lvar=lenstr(vname(1,indxVST2D))
+!          ierr=nf_def_var (ncid, vname(1,indxVST2D)(1:lvar), NF_FOUT,
+!     &                                           3, v2dgrd, vidVST2D)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxVST2D)
+!# else
+!          text=vname(2,indxVST2D)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidVST2D, 'long_name', lvar,
+!     &                                               text(1:lvar))
+!          lvar=lenstr(vname(3,indxVST2D))
+!          ierr=nf_put_att_text (ncid, vidVST2D, 'units',     lvar,
+!     &                                  vname(3,indxVST2D)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidVST2D, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+# ifdef SOLVE3D
+
+      ! Put in type of variable here.
+      loop_grd3D(1,:) = u3dgrd; loop_grd3D(2,:) = v3dgrd; loop_grd3D(3,:) = r3dgrd
+      loop_grd3D(4,:) = w3dgrd; loop_grd3D(5,:) = w3dgrd; loop_grd3D(6,:) = r3dgrd
+      loop_grd3D(7,1:3) = r2dgrd; loop_grd3D(8,1:3) = r2dgrd ! Potential bug - 3 not 4 length integers
+      ! Put in pointer to varid here (e.g. hisUST2D - see flags above)
+      dom3D(1)%p => vidUST; dom3D(2)%p => vidVST; dom3D(3)%p => vidWST
+      dom3D(4)%p => vidAkb; dom3D(5)%p => vidAkw; dom3D(6)%p => vidKVF
+      dom3D(7)%p => vidCALP; dom3D(8)%p => vidKAPS
+      ! The number of dimensions of variable (includes time)
+      loop_dims = [4,4,4,4,4,4,3,3]
+
+      ! Could avoid having whole extra loop by using if statement for loop over 3d
+      ! variables or not. I.e. add to sup, ust2d and vst2d loop above.
+      i=0 ! reset loop counter
+      do indx_loop = indxUST, indxKAPS ! Loop through relevant indices for wrt
+        i=i+1 ! This is for loop index from 1
+                if (wrt(indx_loop)) then
+          lvar=lenstr(vname(1,indx_loop))
+          ierr=nf_def_var (ncid, vname(1,indx_loop)(1:lvar), NF_FOUT,
+     &                        loop_dims(i), loop_grd3D(i,:), dom3D(i)%p)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indx_loop)
+# else
+          text=vname(2,indx_loop)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, dom3D(i)%p, 'long_name', lvar,
+     &                                             text(1:lvar))
+          lvar=lenstr(vname(3,indx_loop))
+          ierr=nf_put_att_text (ncid, dom3D(i)%p, 'units',     lvar,
+     &                                 vname(3,indx_loop)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, dom3D(i)%p, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
+
+      end do
+
+! THIS IS OLD CODE REPLACED BY LOOP ABOVE - LEFT IN UNTIL SURE NO MEMORY LEAK
+! WHEN DOING LARGE SCALE NON-ANALYTICAL MODEL
+
+!
+! ust3d & vst3d: 3D Stokes drift velocities.
+!
+!        if (wrt(indxUST)) then
+!          lvar=lenstr(vname(1,indxUST))
+!          ierr=nf_def_var (ncid, vname(1,indxUST)(1:lvar), NF_FOUT,
+!     &                                           4, u3dgrd, vidUST)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxUST)
+!# else
+!          text=vname(2,indxUST)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidUST, 'long_name', lvar,
+!     &                                             text(1:lvar))
+!          lvar=lenstr(vname(3,indxUST))
+!          ierr=nf_put_att_text (ncid, vidUST, 'units',     lvar,
+!     &                                 vname(3,indxUST)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidUST, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+
+!        if (wrt(indxVST)) then
+!          lvar=lenstr(vname(1,indxVST))
+!          ierr=nf_def_var (ncid, vname(1,indxVST)(1:lvar), NF_FOUT,
+!     &                                           4, v3dgrd, vidVST)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxVST)
+!# else
+!          text=vname(2,indxVST)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidVST, 'long_name', lvar,
+!     &                                             text(1:lvar))
+!          lvar=lenstr(vname(3,indxVST))
+!          ierr=nf_put_att_text (ncid, vidVST, 'units',     lvar,
+!     &                                 vname(3,indxVST)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidVST, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+!
+! wst: vertical Stokes drift velocity (m/s) at rho-point
+!
+!        if (wrt(indxWST)) then
+!          lvar=lenstr(vname(1,indxWST))
+!          ierr=nf_def_var (ncid, vname(1,indxWST)(1:lvar), NF_FOUT,
+!     &                                           4, r3dgrd, vidWST)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxWST)
+!# else
+!          text=vname(2,indxWST)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidWST, 'long_name', lvar,
+!     &                                              text(1:lvar))
+!          lvar=lenstr(vname(3,indxWST))
+!          ierr=nf_put_att_text (ncid, vidWST, 'units',     lvar,
+!     &                                 vname(3,indxWST)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidWST, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+!
+! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
+!
+!        if (wrt(indxAkb)) then
+!          lvar=lenstr(vname(1,indxAkb))
+!          ierr=nf_def_var (ncid, vname(1,indxAkb)(1:lvar), NF_FOUT,
+!     &                                           4, w3dgrd, vidAkb)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxAkb)
+!# else
+!          text=vname(2,indxAkb)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidAkb, 'long_name', lvar,
+!     &                                              text(1:lvar))
+!          lvar=lenstr(vname(3,indxAkb))
+!          ierr=nf_put_att_text (ncid, vidAkb, 'units',     lvar,
+!     &                                  vname(3,indxAkb)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidAkb, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+! Akw: Vertical eddy diffusivity coefficient due to primary waves.
+!
+!        if (wrt(indxAkw)) then
+!          lvar=lenstr(vname(1,indxAkw))
+!          ierr=nf_def_var (ncid, vname(1,indxAkw)(1:lvar), NF_FOUT,
+!     &                                           4, w3dgrd, vidAkw)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxAkw)
+!# else
+!          text=vname(2,indxAkw)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidAkw, 'long_name', lvar,
+!     &                                              text(1:lvar))
+!          lvar=lenstr(vname(3,indxAkw))
+!          ierr=nf_put_att_text (ncid, vidAkw, 'units',     lvar,
+!     &                                  vname(3,indxAkw)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidAkw, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+!
+! kvf: vertical vortex force term (u^St du/dz)
+!
+!        if (wrt(indxKVF)) then
+!          lvar=lenstr(vname(1,indxKVF))
+!          ierr=nf_def_var (ncid, vname(1,indxKVF)(1:lvar), NF_FOUT,
+!     &                                           4, r3dgrd, vidKVF)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxKVF)
+!# else
+!          text=vname(2,indxKVF)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidKVF, 'long_name', lvar,
+!     &                                             text(1:lvar))
+!          lvar=lenstr(vname(3,indxKVF))
+!          ierr=nf_put_att_text (ncid, vidKVF, 'units',     lvar,
+!     &                                 vname(3,indxKVF)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidKVF, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+
+!
+! calP: surface pressure correction term appeared in prsgrd term
+!
+!        if (wrt(indxCALP)) then
+!          lvar=lenstr(vname(1,indxCALP))
+!          ierr=nf_def_var (ncid, vname(1,indxCALP)(1:lvar), NF_FOUT,
+!     &                                           3, r2dgrd, vidCALP)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxCALP)
+!# else
+!          text=vname(2,indxCALP)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidCALP, 'long_name', lvar,
+!     &                                              text(1:lvar))
+!          lvar=lenstr(vname(3,indxCALP))
+!          ierr=nf_put_att_text (ncid, vidCALP, 'units',     lvar,
+!     &                                 vname(3,indxCALP)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidCALP, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+!
+! Kapsrf: surface Bernoulli head term appeared in prsgrd term
+!
+!        if (wrt(indxKAPS)) then
+!          lvar=lenstr(vname(1,indxKAPS))
+!          ierr=nf_def_var (ncid, vname(1,indxKAPS)(1:lvar), NF_FOUT,
+!     &                                           3, r2dgrd, vidKAPS)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indxKAPS)
+!# else
+!          text=vname(2,indxKAPS)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, vidKAPS, 'long_name', lvar,
+!     &                                              text(1:lvar))
+!          lvar=lenstr(vname(3,indxKAPS))
+!          ierr=nf_put_att_text (ncid, vidKAPS, 'units',     lvar,
+!     &                                 vname(3,indxKAPS)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, vidKAPS, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!        endif
+# endif  /* SOLVE3D */
+
+      end subroutine def_his_def_var_wec
+
+
+      ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
+
+      subroutine def_his_nf_inq_varid (ierr, lfnm)
+
+      implicit none
+
+      integer lenstr, lvar, ierr, lfnm
+      ! Taken from netcdf.inc to avoid include. Used before consider top of module
+      integer, parameter :: nf_noerr=0
+      integer, external  :: nf_inq_varid ! unique to this method
+
+!
+! sup: quasi-static sea-level response (wave set-up/down)
+!
+        if (wrt(indxSUP)) then
+          lvar=lenstr(vname(1,indxSUP))
+          ierr=nf_inq_varid (ncid, vname(1,indxSUP)(1:lvar), vidSUP)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxSUP)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! ust2d & vst2d: 2D, depth-averaged Stokes drift velocities.
+!
+        if (wrt(indxUST2D)) then
+          lvar=lenstr(vname(1,indxUST2D))
+          ierr=nf_inq_varid (ncid, vname(1,indxUST2D)(1:lvar), vidUST2D)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxUST2D)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+        if (wrt(indxVST2D)) then
+          lvar=lenstr(vname(1,indxVST2D))
+          ierr=nf_inq_varid (ncid, vname(1,indxVST2D)(1:lvar), vidVST2D)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxVST2D)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+# ifdef SOLVE3D
+!
+! ust3d & vst3d: 3D Stokes drift velocities.
+!
+        if (wrt(indxUST)) then
+          lvar=lenstr(vname(1,indxUST))
+          ierr=nf_inq_varid (ncid, vname(1,indxUST)(1:lvar), vidUST)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxUST)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+
+        if (wrt(indxVST)) then
+          lvar=lenstr(vname(1,indxVST))
+          ierr=nf_inq_varid (ncid, vname(1,indxVST)(1:lvar), vidVST)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxVST)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! wst: vertical Stokes drift velocity (m/s) at rho-point
+!
+        if (wrthis(indxWST)) then
+          lvar=lenstr(vname(1,indxWST))
+          ierr=nf_inq_varid (ncid, vname(1,indxWST)(1:lvar), vidWST)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxWST)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
+!
+        if (wrt(indxAkb)) then
+          lvar=lenstr(vname(1,indxAkb))
+          ierr=nf_inq_varid (ncid, vname(1,indxAkb)(1:lvar), vidAkb)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxAkb)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! Akw: Vertical eddy diffusivity coefficient due to primary waves.
+!
+        if (wrt(indxAkw)) then
+          lvar=lenstr(vname(1,indxAkw))
+          ierr=nf_inq_varid (ncid, vname(1,indxAkw)(1:lvar), vidAkw)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxAkw)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! kvf: vertical vortex force term (u^St du/dz)
+!
+        if (wrt(indxKVF)) then
+          lvar=lenstr(vname(1,indxKVF))
+          ierr=nf_inq_varid (ncid, vname(1,indxKVF)(1:lvar), vidKVF)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxKVF)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! calP: surface pressure correction term appeared in prsgrd term
+!
+        if (wrt(indxCALP)) then
+          lvar=lenstr(vname(1,indxCALP))
+          ierr=nf_inq_varid (ncid, vname(1,indxCALP)(1:lvar), vidCALP)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxCALP)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+!
+! Kapsrf: surface Bernoulli head term appeared in prsgrd term
+!
+        if (wrt(indxKAPS)) then
+          lvar=lenstr(vname(1,indxKAPS))
+          ierr=nf_inq_varid (ncid, vname(1,indxKAPS)(1:lvar), vidKAPS)
+          if (ierr .ne. nf_noerr) then
+            write(*,1) vname(1,indxKAPS)(1:lvar), fname(1:lfnm)
+            goto 99                                       !--> ERROR
+          endif
+        endif
+# endif  /* SOLVE3D */
+
+      goto 100
+  99  return
+
+#ifdef AVRH
+   1  format(/1x,'### ERROR: def_avg :: Cannot find variable ''',
+#else
+   1  format(/1x,'### ERROR: def_his :: Cannot find variable ''',
+#endif
+     &                            A, ''' in file ''', A, '''.'/)
+
+ 100  continue
+
+      end subroutine def_his_nf_inq_varid
+
+
+      ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
+      ! --------------------------------------------------------------------
 
         subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
 
@@ -1706,6 +2341,151 @@ c      gam2=9./8.
 
 
        end subroutine compute_wec_rhs_uv_terms
+
+
+       ! --------------------------------------------------------------------
+       ! --------------------------------------------------------------------
+       ! --------------------------------------------------------------------
+
+      subroutine wrt_his_wec (record, ierr, may_day_flag)
+
+      ! use netcdf, only: nf_noerr ! didn't work for nf_noerr
+
+      implicit none
+
+      integer :: ierr, record, lvar, ncdf_write, lenstr, may_day_flag, tile
+      integer, parameter :: nf_noerr=0 ! Taken from netcdf.inc to avoid include
+
+      if (wrthis(indxSUP)) then
+!        write(*,*) 'wrt_his: wrtSUP - ncidhis: ', ncidhis,
+!     &         ' *** hisSUP: ', hisSUP
+!        ierr=ncdf_write (sup, ncidhis, hisSUP, record, r2dvar)
+        ierr=ncdf_write (nchis, hisSUP, record, r_var, sup, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxSUP))
+          write(*,1) vname(1,indxSUP)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtSUP' MYID
+      endif
+
+      if (wrthis(indxUST2D)) then
+!        ierr=nf_fwrite (ust2d, ncidhis, hisUST2D, record, u2dvar)
+        ierr=ncdf_write (nchis, hisUST2D, record, u_var, ust2d, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxUST2D))
+          write(*,1) vname(1,indxUST2D)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtUST2D' MYID
+      endif
+
+      if (wrthis(indxVST2D)) then
+!        ierr=nf_fwrite (vst2d, ncidhis, hisVST2D, record, v2dvar)
+        ierr=ncdf_write (nchis, hisVST2D, record, v_var, vst2d, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxVST2D))
+          write(*,1) vname(1,indxVST2D)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtUST2D' MYID
+      endif
+# ifdef SOLVE3D
+      if (wrthis(indxUST)) then
+!        ierr=nf_fwrite (ust, ncidhis, hisUST,  record,  u3dvar)
+        ierr=ncdf_write (nchis, hisUST,  record,  u_var, ust(START_2D_ARRAY,1), N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxUST))
+          write(*,1) vname(1,indxUST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtUST' MYID
+      endif
+      if (wrthis(indxVST)) then
+!        ierr=nf_fwrite (vst, ncidhis, hisVST,  record,  v3dvar)
+        ierr=ncdf_write (nchis, hisVST,  record,  v_var, vst, N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxVST))
+          write(*,1) vname(1,indxVST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtVST' MYID
+      endif
+      if (wrthis(indxWST)) then
+        do tile=0,NSUB_X*NSUB_E-1
+          call wstokes_wec(tile)
+        enddo
+!        ierr=nf_fwrite (wst, ncidhis, hisWST, record, r3dvar)
+        ierr=ncdf_write (nchis, hisWST, record, r_var, wst, N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxWST))
+          write(*,1) vname(1,indxWST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtWST' MYID
+      endif
+      if (wrthis(indxAkb)) then
+!        ierr=nf_fwrite (Akb, ncidhis, hisAkb, record, w3dvar)
+        ierr=ncdf_write (nchis, hisAkb, record, r_var, Akb, N+1)
+! DevinD - left this uncommented as don't know what w3dvar is in new code.
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxAkb))
+          write(*,1) vname(1,indxAkb)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtAkb' MYID
+      endif
+      if (wrthis(indxAkw)) then
+!        ierr=nf_fwrite (Akw, ncidhis, hisAkw, record, w3dvar)
+        ierr=ncdf_write (nchis, hisAkw, record, r_var, Akw, N+1)
+! DevinD - left this uncommented as don't know what w3dvar is in new code.
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxAkw))
+          write(*,1) vname(1,indxAkw)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtAkw' MYID
+      endif
+      if (wrthis(indxKVF)) then
+!        ierr=nf_fwrite (kvf, ncidhis, hisKVF, record, r3dvar)
+        ierr=ncdf_write (nchis, hisKVF, record, r_var, kvf, N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxKVF))
+          write(*,1) vname(1,indxKVF)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtKVF' MYID
+      endif
+      if (wrthis(indxCALP)) then
+!        ierr=nf_fwrite (calP, ncidhis, hisCALP, record, r2dvar)
+        ierr=ncdf_write (nchis, hisCALP, record, r_var, calP, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxCALP))
+          write(*,1) vname(1,indxCALP)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtCALP' MYID
+      endif
+      if (wrthis(indxKAPS)) then
+!        ierr=nf_fwrite (Kapsrf, ncidhis, hisKAPS, record, r2dvar)
+        ierr=ncdf_write (nchis, hisKAPS, record, r_var, Kapsrf, 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxKAPS))
+          write(*,1) vname(1,indxKAPS)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+CR      write(*,*) 'wrt_his: wrtKAPS' MYID
+      endif
+# endif  /* SOLVE3D */
+
+
+  1   format(/1x, '### ERROR: wrt_his :: Cannot write variable ''',
+     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+      goto 100
+  99  if (may_day_flag == 0) may_day_flag=3
+ 100  continue
+
+      end subroutine wrt_his_wec
 
 
        ! --------------------------------------------------------------------

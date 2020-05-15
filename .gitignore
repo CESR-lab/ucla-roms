@@ -16,3 +16,4 @@ lsb_string
 checkkwds
 cppcheck
 srcscheck
+setup_kwds.F
