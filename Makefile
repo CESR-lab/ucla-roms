@@ -24,12 +24,12 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
 	set_nudgcof.F	ana_grid.F	analytical.F\
 \
-	prsgrd32AC1.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
+	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
 	visc3d_GP.F	t3dmix_GP.F	ana_vmix.F\
 \
 	zetabc.F	u2dbc_im.F	v2dbc_im.F\
-	u3dbc_im.F	v3dbc_im.F	t3dbc_im.F	exchange.F\
+	u3dbc_im.F	v3dbc_im.F	w3dbc_im.F	t3dbc_im.F\
 \
 	rho_eos.F	alfabeta.F\
 \
@@ -39,9 +39,10 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
-	mpi_setup.F	mpi_exchange8TA.F\
+	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
 \
-	river_frc.F	dimensions.F  wec_frc.F
+	river_frc.F	dimensions.F
+#wec_frc.F
 
 
 #rho_eos.F	ab_ratio.F	alfabeta.F\
