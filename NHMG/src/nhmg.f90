@@ -15,7 +15,15 @@ module nhmg
 
   implicit none
 
+  private
+
     integer(kind=ip) :: tscount = 1
+    integer(kind=ip),public,parameter :: halo = 2
+
+    public nhmg_matrices
+    public nhmg_init
+    public nhmg_clean
+    public nhmg_solve
 
 contains
 

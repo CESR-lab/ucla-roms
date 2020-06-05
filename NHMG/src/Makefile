@@ -8,6 +8,7 @@ FC = ifort
 # Normal options for the compiler
 #FFLAGS =  -O3 -fp-model source -I/opt/mpich-3.2/include/
 FFLAGS =  -O3 -fp-model source 
+# make sure that the environment variable CPATH is defined and points to the mpich include dir
 
 # Debugging options for the compiler
 #FFLAGS =  -g -check -warn
