@@ -33,8 +33,8 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      integer u_west_id, v_west_id
-      common /bry_time_vars/ u_west_id, v_west_id
+      integer u_west_id, v_west_id, w_west_id
+      common /bry_time_vars/ u_west_id, v_west_id, w_west_id
 #   endif
 #   ifdef T_FRC_BRY
       integer t_west_id(NT)
@@ -54,8 +54,8 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      integer u_east_id, v_east_id
-      common /bry_time_vars/ u_east_id, v_east_id
+      integer u_east_id, v_east_id, w_east_id
+      common /bry_time_vars/ u_east_id, v_east_id, w_east_id
 #   endif
 #   ifdef T_FRC_BRY
       integer t_east_id(NT)
@@ -75,8 +75,8 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      integer u_south_id, v_south_id
-      common /bry_time_vars/ u_south_id, v_south_id
+      integer u_south_id, v_south_id, w_south_id
+      common /bry_time_vars/ u_south_id, v_south_id, w_south_id
 #   endif
 #   ifdef T_FRC_BRY
       integer t_south_id(NT)
@@ -96,8 +96,8 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      integer u_north_id, v_north_id
-      common /bry_time_vars/ u_north_id, v_north_id
+      integer u_north_id, v_north_id, w_north_id
+      common /bry_time_vars/ u_north_id, v_north_id, w_north_id
 #   endif
 #   ifdef T_FRC_BRY
       integer t_north_id(NT)
@@ -105,8 +105,7 @@
 #   endif
 #  endif
 # endif
-#endif  /* ANA_BRY */
-
+#endif  /* ~ANA_BRY */
 
 
 
@@ -126,9 +125,11 @@
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
       real u_west(0:Mm+1,N), u_west_dt(0:Mm+1,N,2),
-     &     v_west(0:Mm+1,N), v_west_dt(0:Mm+1,N,2)
+     &     v_west(0:Mm+1,N), v_west_dt(0:Mm+1,N,2),
+     &     w_west(0:Mm+1,N), w_west_dt(0:Mm+1,N,2)
       common /bry_west/ u_west, u_west_dt,
-     &                  v_west, v_west_dt
+     &                  v_west, v_west_dt,
+     &                  w_west, w_west_dt
 #   endif
 #   ifdef T_FRC_BRY
       real t_west(0:Mm+1,N,NT), t_west_dt(0:Mm+1,N,2,NT)
@@ -151,9 +152,11 @@
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
       real u_east(0:Mm+1,N), u_east_dt(0:Mm+1,N,2),
-     &     v_east(0:Mm+1,N), v_east_dt(0:Mm+1,N,2)
+     &     v_east(0:Mm+1,N), v_east_dt(0:Mm+1,N,2),
+     &     w_east(0:Mm+1,N), w_east_dt(0:Mm+1,N,2)
       common /bry_east/ u_east, u_east_dt,
-     &                  v_east, v_east_dt
+     &                  v_east, v_east_dt,
+     &                  w_east, w_east_dt
 #   endif
 #   ifdef T_FRC_BRY
       real t_east(0:Mm+1,N,NT), t_east_dt(0:Mm+1,N,2,NT)
@@ -176,9 +179,11 @@
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
       real u_south(0:Lm+1,N), u_south_dt(0:Lm+1,N,2),
-     &     v_south(0:Lm+1,N), v_south_dt(0:Lm+1,N,2)
+     &     v_south(0:Lm+1,N), v_south_dt(0:Lm+1,N,2),
+     &     w_south(0:Lm+1,N), w_south_dt(0:Lm+1,N,2)
       common /bry_south/ u_south, u_south_dt,
-     &                   v_south, v_south_dt
+     &                   v_south, v_south_dt,
+     &                   w_south, w_south_dt
 #   endif
 #   ifdef T_FRC_BRY
       real t_south(0:Lm+1,N,NT), t_south_dt(0:Lm+1,N,2,NT)
@@ -201,9 +206,11 @@
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
       real u_north(0:Lm+1,N), u_north_dt(0:Lm+1,N,2),
-     &     v_north(0:Lm+1,N), v_north_dt(0:Lm+1,N,2)
+     &     v_north(0:Lm+1,N), v_north_dt(0:Lm+1,N,2),
+     &     w_north(0:Lm+1,N), w_north_dt(0:Lm+1,N,2)
       common /bry_north/ u_north, u_north_dt,
-     &                   v_north, v_north_dt
+     &                   v_north, v_north_dt,
+     &                   w_north, w_north_dt
 #   endif
 #   ifdef T_FRC_BRY
       real t_north(0:Lm+1,N,NT), t_north_dt(0:Lm+1,N,2,NT)
