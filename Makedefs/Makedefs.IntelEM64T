@@ -70,7 +70,8 @@
 #   FFLAGS = -O3 -IPF_fma -ip 
 # -qopt-report=5 -qopt-report-phase=vec
 
-   FFLAGS =  -O3 -fp-model source
+   FFLAGS =  -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I./ncio-master/include
+
 
 #   FFLAGS =  -fp-model precise -O3 
 #  FFLAGS =  -O2 -fp-model strict
@@ -90,10 +91,10 @@
 #    LMPI = ${MPI_ROOT}/lib/libmpich.a 
 
 
-#   LCDF = -lnetcdff 
-  LCDF = -lnetcdff -Lncio-master/lib/ -lncio -Incio-master/include/ 
-#   LCDF = -lnetcdf -lhdf5 -lhdf5_hl
-#    LCDF = -L/opt/netcdf-4.2.1.1_largemem/lib -lnetcdff
+    LCDF = -lnetcdff 
+   LCDF = -lnetcdff -Lncio-master/lib/ -lncio -Incio-master/include/ -LNHMG/lib/ -lnhmg
+
+
 
 #    LCDF = /opt/netcdf-4.2.1.1_largemem/lib/libnetcdff.a  /opt/netcdf-4.2.1.1_largemem/lib/libnetcdf.a
 

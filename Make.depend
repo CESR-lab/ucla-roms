@@ -345,6 +345,9 @@ v2dbc_im.f: v2dbc_im.F cppdefs.h param.h grid.h scalars.h ocean2d.h boundary.h\
 v3dbc_im.f: v3dbc_im.F cppdefs.h param.h grid.h ocean3d.h scalars.h boundary.h\
  climat.h compute_auxiliary_bounds.h set_global_definitions.h
 
+w3dbc_im.f: w3dbc_im.F cppdefs.h param.h grid.h ocean3d.h scalars.h boundary.h\
+ climat.h compute_auxiliary_bounds.h set_global_definitions.h
+
 visc3d_GP.f: visc3d_GP.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h mixing.h compute_auxiliary_bounds.h\
  coupling.h hidden_mpi_vars.h diagnostics.h set_global_definitions.h
