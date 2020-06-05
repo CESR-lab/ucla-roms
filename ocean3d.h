@@ -8,6 +8,10 @@ CSDISTRIBUTE_RESHAPE v(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
       real t(GLOBAL_2D_ARRAY,N,3,NT)
 CSDISTRIBUTE_RESHAPE t(BLOCK_PATTERN,*,*,*) BLOCK_CLAUSE
       common /ocean_u/u /ocean_v/v /ocean_t/t
+# if defined NHMG 
+      real w(GLOBAL_2D_ARRAY,0:N,3)
+CSDISTRIBUTE_RESHAPE w(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
+# endif
 
       real FlxU(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE  FlxU(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -26,5 +30,12 @@ CSDISTRIBUTE_RESHAPE z_r(BLOCK_PATTERN,*) BLOCK_CLAUSE
       real z_w(GLOBAL_2D_ARRAY,0:N)
 CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /grid_zw/z_w /grid_zr/z_r /grid_Hz/Hz
+# if defined NHMG || defined NONTRAD_COR
+      real dzdxi(GLOBAL_2D_ARRAY,1:N)
+      real dzdeta(GLOBAL_2D_ARRAY,1:N)
+      common /ocean_dzdxi/dzdxi
+      common /ocean_dzdeta/dzdeta
+# endif
+
 
 #endif  /* SOLVE3D */
