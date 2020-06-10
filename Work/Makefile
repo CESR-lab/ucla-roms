@@ -33,8 +33,8 @@ libnhmg =  ../lib/libnhmg.a
 all:
 	rsync -a $(ROMS_ROOT)/*.F $(ROMS_ROOT)/*.h $(ROMS_ROOT)/*.mod Compile
 	rsync -r $(ROMS_ROOT)/Makedefs Compile
-	rsync    $(ROMS_ROOT)/Make.depend Compile
-	rsync    $(ROMS_ROOT)/Makefile Compile
+	rsync -a $(ROMS_ROOT)/Make.depend Compile
+	rsync -a $(ROMS_ROOT)/Makefile Compile
 	cp -p *h *F Compile
 	cd Compile; make; mv roms ../
 	

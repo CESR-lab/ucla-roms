@@ -16,3 +16,5 @@ lsb_string
 checkkwds
 cppcheck
 srcscheck
+Examples/*/*/Compile
+Work/Compile

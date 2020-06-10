@@ -1,32 +1,10 @@
+# This makefile make a sync of the distribution code to a compile directory,
+# After that, it copies local file into that directory
+# and make the executable for the example.
+# Just type: make
 
 # This line de-activates all implicit rules
 .SUFFIXES:
-
-# Fortran Compiler
-FC = ifort
-
-# Normal options for the compiler
-#FFLAGS =  -O3 -fp-model source -I/opt/mpich-3.2/include/
-FFLAGS =  -O3 -fp-model source 
-
-# Debugging options for the compiler
-#FFLAGS =  -g -check -warn
-
-# Rule to make *.o out of *.f90
-%.o : %.f90
-	$(FC) -c $(FFLAGS)  $<
-
-
-sources = mg_autotune.f90 mg_cst.f90 mg_gather.f90 \
-  	mg_grids.f90 mg_horiz_grids.f90 mg_intergrids.f90 mg_mpi_exchange.f90\
-	mg_mpi.f90 mg_namelist.f90 mg_netcdf_out.f90 mg_projection.f90\
-	mg_relax.f90 mg_solvers.f90 mg_tictoc.f90 mg_vert_grids.f90 \
-	nhmg_debug.f90 nhmg.f90
-
-objects = $(sources:.f90=.o)
-
-libnhmg =  ../lib/libnhmg.a
-
 
 .PHONY: all clean depend
 

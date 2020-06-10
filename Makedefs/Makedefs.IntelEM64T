@@ -70,7 +70,7 @@
 #   FFLAGS = -O3 -IPF_fma -ip 
 # -qopt-report=5 -qopt-report-phase=vec
 
-   FFLAGS =  -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I./ncio-master/include
+   FFLAGS =  -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
 
 
 #   FFLAGS =  -fp-model precise -O3 
@@ -92,7 +92,7 @@
 
 
     LCDF = -lnetcdff 
-   LCDF = -lnetcdff -Lncio-master/lib/ -lncio -Incio-master/include/ -LNHMG/lib/ -lnhmg
+   LCDF = -lnetcdff -L$(ROMS_ROOT)/ncio-master/lib/ -lncio -I$(ROMS_ROOT)/ncio-master/include/ -L$(ROMS_ROOT)/NHMG/lib/ -lnhmg
 
 
 
