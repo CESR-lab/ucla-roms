@@ -318,6 +318,11 @@ C$OMP END MASTER
 
 
       subroutine roms_step
+
+#ifdef WEC
+      use wec_frc, only: wec_forces
+#endif
+
       implicit none
       integer trd, tile, my_first, my_last, range
 #include "param.h"
@@ -370,6 +375,13 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
 # endif
       enddo
 C$OMP BARRIER
+
+# ifdef WEC
+      do tile=my_tile_range
+        call  wec_forces(tile)
+      enddo
+C$OMP BARRIER
+# endif
 
       do tile=my_tile_range
         call omega(tile)

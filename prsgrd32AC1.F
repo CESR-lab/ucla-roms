@@ -384,12 +384,14 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
             enddo
           endif
         enddo   ! <-- j
+      enddo   !<-- k
 !Daniel add
 ! ------------------------------------
 !add in wave effect using POM-Jacobian
 ! ------------------------------------
 #ifdef WEC
 #  define DC rx
+      do k=N,1,-1           !--> irreversible
         if (k.eq.N) then
           do j=jstrV-1,jend
             do i=istrU-1,iend
@@ -426,10 +428,11 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
             rv(i,j,k)=rv(i,j,k) + cff1 + cff2
           enddo
         enddo
+      enddo   !<-- k
 #  undef DC
 #endif /* WEC */
 
-
+      do k=N,1,-1
 # ifdef ADV_ISONEUTRAL
         if (CORR_STAGE) then   !<-- corrector stage only
           r0g=rho0/g

@@ -1,2 +1,15 @@
-the files here should override the permanent ones.
-it should have an example using both anlytical forcing and using input files
+README for WEC analytical example:
+
+STEPS:
+1) Copy the roms executable into this same folder once ROMS is compiled for this WEC example
+2) In the terminal opened to this directory, enter the command: bash WEC_analytical_test_error_script.sh
+
+### DETAILS ###
+
+This example is based on Delphine Hypolite's wave_packet.pdf analytical example for a forced wave travelling eastward in a 1400m x 2m channel with depth of 10m.
+
+The script will run the analytical example locally (only 8 cores needed so can be run locally). It will then use the python script to calculate the Mean Absolute Error (MAE) and the Root Mean Squared Error (RMSE) at a particular time step for a domain centred around the wave packet that is 300m long in the x-direction.
+
+The repository ROMS solution has been hard-coded into the python script, and the new ROMS solution for RMSE error will be compared against that. The script will tell you if the new values are the same as the stored value or not. If it is the same then everything was successful and any changes you might have made to the working of ROMS did not affect the WEC module (or atleast the analytical example). If there is a difference the script will warn you that a bug has been created that affects WEC. Recommended to undo your changes until WEC is working again.
+
+The script will produce plots in this folder of the results.

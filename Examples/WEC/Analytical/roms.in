@@ -2,7 +2,7 @@ title:
 Wave packet propagation 1m 2 levels
 
 time_stepping: NTIMES dt[sec] NDTFAST NINFO
-50 1 50 1 
+200 1 50 1 
 
 S-coord: THETA_S, THETA_B, hc (m)
 6.0D0 6.0D0 50.0D0 
@@ -16,11 +16,11 @@ restart: NRST, NRPFRST / filename
 wpp_rst.nc
 
 history: LDEFHIS, NWRT, NRPFHIS / filename
-T 1 51 
+T 1 201 
 wpp_his.nc
 
-primary_history_fields: zeta, Ubar,Vbar, U, V, wrtT(1:NT)
-T T F T F F T T T 
+primary_history_fields: zeta U,VBAR U,V wrtT(1:NT)
+T T T T T F T T T 
 
 auxiliary_history_fields: rho Omega W Akv Akt Aks HBL HBBL
 F F F F F F F F 

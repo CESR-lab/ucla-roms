@@ -12,7 +12,7 @@
 !!!!!! as an independent program, or use commands              !!!!!!
 !!!!!! "make checkdefs" or "make depend".                      !!!!!!
 !!!!!! Number of Configuration Choices:                      1 !!!!!!
-!!!!!! Total number of CPP-switches:                        99 !!!!!!
+!!!!!! Total number of CPP-switches:                       116 !!!!!!
 
       implicit none
       integer ierr, is,ie, iexample
@@ -626,6 +626,108 @@
       is=ie+2 ; ie=is+3
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='BRK0'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef USWC_WEC
+      is=ie+2 ; ie=is+7
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='USWC_WEC'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef GRID_ANG_DEG
+      is=ie+2 ; ie=is+11
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='GRID_ANG_DEG'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef NEW_S_COORD
+      is=ie+2 ; ie=is+10
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='NEW_S_COORD'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef MIX_GP_UV
+      is=ie+2 ; ie=is+8
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='MIX_GP_UV'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef MIX_GP_TS
+      is=ie+2 ; ie=is+8
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='MIX_GP_TS'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SURFACE_BREAK
+      is=ie+2 ; ie=is+12
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SURFACE_BREAK'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SPEC_DD
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SPEC_DD'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef LOG_BDRAG
+      is=ie+2 ; ie=is+8
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='LOG_BDRAG'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef WKB_WWAVE
+      is=ie+2 ; ie=is+8
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='WKB_WWAVE'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef BBL
+      is=ie+2 ; ie=is+2
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='BBL'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef WAVE_OFFLINE
+      is=ie+2 ; ie=is+11
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='WAVE_OFFLINE'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef WAVE_FRICTION
+      is=ie+2 ; ie=is+12
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='WAVE_FRICTION'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef BBL_S95
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='BBL_S95'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef SUP_OFF
+      is=ie+2 ; ie=is+6
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='SUP_OFF'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef WAVE_DIFF_FROM_LM
+      is=ie+2 ; ie=is+16
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='WAVE_DIFF_FROM_LM'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef COUPLED_SURF_CURR
+      is=ie+2 ; ie=is+16
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='COUPLED_SURF_CURR'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef WND_AT_RHO_POINTS
+      is=ie+2 ; ie=is+16
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='WND_AT_RHO_POINTS'
       cpps(ie+1:ie+1)=' '
 #endif
       if (iexample == 0) then

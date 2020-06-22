@@ -4,7 +4,7 @@
                                         ! startup file.
 
 #ifdef WEC
-      use wec_frc, only: read_inp_wec
+      use wec_frc, only: read_inp_wec, read_inp_avg_wec
 #endif
 
       implicit none
@@ -815,11 +815,14 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 
 #ifdef WEC
 ! MRL wave-current interaction variables history fields
+!# ifndef AVERAGES - DevinD added ifndef AVERAGES though not in old code
+!                  - don't know why it's not here in old code?
         elseif (keyword(1:kwlen).eq.'wci_history_fields') then
           call read_inp_wec(keyword, ierr, kwlen)
+!# endif
 # ifdef AVERAGES
         elseif (keyword(1:kwlen).eq.'wci_average_fields') then
-          call read_inp_wec(keyword, ierr, kwlen)
+          call read_inp_avg_wec(keyword, ierr, kwlen)
 # endif /* AVERAGES */
 #endif /* WEC */
 

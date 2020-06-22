@@ -311,7 +311,7 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &                                     *(zwrk(i,j-1)-zwrk(i,j)) )
 #endif
 ! DevinD add
-#ifdef MRL_WCI
+#ifdef WEC
      &                  + ( h(i,j-1)+h(i,j)+rzeta(i,j-1)+rzeta(i,j) )
      &                                       *( sup(i,j)-sup(i,j-1) )
 #endif

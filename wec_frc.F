@@ -8,6 +8,9 @@
 
 ! DevinD - need the following includes for GLOBAL_2D_ARRAY to work
 #include "cppdefs.h"
+
+#if defined WEC /* WEC for whole module! */
+
 #include "param.h"
 #include "grid.h"
 
@@ -28,65 +31,206 @@
        save
 
       ! Variables usable by code that uses this module
-       real, public, dimension(GLOBAL_2D_ARRAY) :: brk2dx, brk2de !! xi/eta-direction 2D breaking dissipation (rho)
-       real, public, dimension(GLOBAL_2D_ARRAY) :: frc2dx,frc2de  !! xi/eta-direction 2D frictional dissipation (rho)
-       real, public, dimension(GLOBAL_2D_ARRAY) :: ust2d     !! xi-direction 2D Stokes transport (u-point)
-       real, public, dimension(GLOBAL_2D_ARRAY) :: vst2d     !! eta-direction 2D Stokes transport (v-point)
-       real, public, dimension(GLOBAL_2D_ARRAY) :: sup            !! quasi-static wave set-up (rho-point)
-       real, public, dimension(GLOBAL_2D_ARRAY) :: calP           !! pressure correction term (rho-point)
-       real, public, dimension(GLOBAL_2D_ARRAY) :: Kapsrf         !! Bernoulli head term at the surface (rho-point)
-!      real, public, dimension(nx,ny) :: lm             !! Daniel's term: wavelength for diffusivity (not used)
-
-
-       ! 3D terms
-       real, public, dimension(GLOBAL_2D_ARRAY, nz) :: brk3dx, brk3de !! xi/eta-direction 3D breaking dissipation (rho)
-       real, public, dimension(GLOBAL_2D_ARRAY, nz) :: ust       !! xi-direction 3D Stokes drift velocity (u-point)
-       real, public, dimension(GLOBAL_2D_ARRAY, nz) :: vst       !! eta-direction 3D Stokes drift velocity (u-point)
-       real, public, dimension(GLOBAL_2D_ARRAY, nz) :: wst,      !! vertical 3D Stokes drift velocity (rho-point)
-     &                                                 Kappa,    !! 3D Bernoulli head term (rho-point)
-     &                                                 kvf,      !! vertical vortex force term (K term, 3D, rho-point)
-     &                                                 frc3dx, frc3de    !! xi/eta-direction 3D frictional dissipation (rho)
-
-
-       ! terms with extra z-index
-       real, public, dimension(GLOBAL_2D_ARRAY,0:nz) :: Akb,  !! breaking-wave-induced additional diffusivity (w-point
-     &                                                  Akw,  !! wave-induced additional diffusivity (rho-point)
-     &                                                  E_pre !! previous time-step value for Akw estimation (rho)
-
-       ! DevinD added from set_forces.F
-       real, public :: vstu,ustv,dudx,dvdx,dude,dvde
-
-
-       logical :: analytical = .true.  ! analytical forcing
-
-      !!!
-      !!!!! DevinD - variables added as per DH's WAVE_PACKET forces.h for old MRL_WCI flag
-      !!!
-
-       ! wfrq | BBL/MRL | wind-induced wave frequency [rad/s]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wfrq
-       ! wdrx | MRL     | cosine of wave direction [non dimension]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wdrx
-       ! wdre | MRL     | sine of   wave direction [non dimension]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wdre
-       ! whrm | MRL     | (RMS) wave height (twice the wave amplitude) [m]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: whrm
-       ! wdsp | MRL     | breaking dissipation rate (\epsilon_b term) [m3/s3]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wdsp
-       ! wdrg | MRL     | frictional dissipation rate (\epsilon_d term) [m3/s3]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wdrg
-       ! wbst | MRL/BKPP| frictional dissipation stress (e_d k/sigma) [m2/s2]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wbst
-
-       ! breaking dissipation [m3/s3]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wveb
-       ! frictional dissipation [m3/s3]
-       real, public, dimension(GLOBAL_2D_ARRAY) :: wved
 
 
       !!!
-      !!!!! DevinD - end variables added as per forces.h
+      !###### DevinD - variables added as per DH's WAVE_PACKET forces.h
+      !                for old MRL_WCI flag ######
       !!!
+
+!--------------------------------------------------------------------
+!  WIND INDUCED WAVES: everything is defined at rho-point
+!--------------------------------------------------------------------
+! wfrq | BBL/MRL | wind-induced wave frequency [rad/s]
+! uorb | BBL     | xi-component  of wave-induced bed orbital velocity [m/s]
+! vorb | BBL     | eta-component of wave-induced bed orbital velocity [m/s]
+! wdrx | MRL     | cosine of wave direction [non dimension]
+! wdre | MRL     | sine of   wave direction [non dimension]
+! whrm | MRL     | (RMS) wave height (twice the wave amplitude) [m]
+! wdsp | MRL     | breaking dissipation rate (\epsilon_b term) [m3/s3]
+! wdrg | MRL     | frictional dissipation rate (\epsilon_d term) [m3/s3]
+! rdsp | ROLLER  | roller dissipation rate (\epsilon_r term) [m3/s3]
+! wbst | MRL/BKPP| frictional dissipation stress (e_d k/sigma) [m2/s2]
+!--------------------------------------------------------------------
+
+#if defined BBL || defined WEC
+      real wfrq(GLOBAL_2D_ARRAY)
+#endif
+
+#ifdef BBL
+      real uorb(GLOBAL_2D_ARRAY)
+      real vorb(GLOBAL_2D_ARRAY)
+#endif   /* BBL */
+
+
+      real whrm(GLOBAL_2D_ARRAY)
+      real wdsp(GLOBAL_2D_ARRAY)
+      real wdrg(GLOBAL_2D_ARRAY)
+      real wbst(GLOBAL_2D_ARRAY)
+      real wdrx(GLOBAL_2D_ARRAY)
+      real wdre(GLOBAL_2D_ARRAY)
+# ifdef SURFACE_ROLLER
+      real rdsp(GLOBAL_2D_ARRAY)
+# endif
+!
+!--------------------------------------------------------------------
+!  WAVE AVEREAGED QUANTITIES AND TERMS
+!--------------------------------------------------------------------
+!  2D  |  brk2dx   |   xi-direciton 2D breaking dissipation (rho)
+!  2D  |  brk2de   |  eta-direction 2D breaking dissipation (rho)
+!  2D  |  frc2dx   |   xi-direciton 2D frictional dissipation (rho)
+!  2D  |  frc2de   |  eta-direction 2D frictional dissipation (rho)
+!  2D  |  ust2d    |   xi-direciton Stokes transport (u-point)
+!  2D  |  vst2d    |  eta-direciton Stokes transport (v-point)
+!  2D  |  ustr2d    |   xi-direciton Stokes transport (r-point)
+!  2D  |  vstr2d    |  eta-direciton Stokes transport (r-point)
+!  2D  |  ustr0    |   xi-direciton Surface Stokes drift (r-point)
+!  2D  |  vstr0    |  eta-direciton Surface Stokes drift (r-point)
+!  2D  |  sup      |  quasi-static wave set-up (rho-point)
+!  2D  |  calP     |  pressure correction term (rho-point)
+!  2D  |  Kapsrf   |  Bernoulli head terrm at the surface (rho-point)
+!  2D  |  lm       |  mean wave length (rho-point)
+!--------------------------------------------------------------------
+!  3D  |  brk3dx   |   xi-direciton 3D breaking dissipation (rho)
+!  3D  |  brk3de   |  eta-direction 3D breaking dissipation (rho)
+!  3D  |  ust      |   xi-direciton 3D Stokes drift velocity (u-point)
+!  3D  |  vst      |  eta-direciton 3D Stokes drift velocity (v-point)
+!  3D  |  wst      |       vertical 3D Stokes drift velocity (rho-point)
+!  3D  |  Kappa    |  3D Bernoulli head term (rho-point)
+!  3D  |  kvf      |  vertical vortex force term (K term, 3D, rho-point)
+!  3D  |  Akb      |  breaking-wave-induced additional diffusivity (w-point)
+!  3D  |  Akw      |  wave-induced additional diffusivity (rho-point)
+!  3D  |  E_pre    |  previous time-step value for Akw estimation (rho)
+!  3D  |  frc3dx   |   xi-direciton 3D frictional dissipation (rho)
+!  3D  |  frc3de   |  eta-direction 3D frictional dissipation (rho)
+!--------------------------------------------------------------------
+!
+      real, public :: brk2dx(GLOBAL_2D_ARRAY)
+      real, public :: brk2de(GLOBAL_2D_ARRAY)
+      real, public :: ust2d(GLOBAL_2D_ARRAY)
+      real, public :: vst2d(GLOBAL_2D_ARRAY)
+      real, public :: ustr2d(GLOBAL_2D_ARRAY)
+      real, public :: vstr2d(GLOBAL_2D_ARRAY)
+      real, public :: ustr0(GLOBAL_2D_ARRAY)
+      real, public :: vstr0(GLOBAL_2D_ARRAY)
+      real, public :: llmm(GLOBAL_2D_ARRAY)
+      real, public :: frc2dx(GLOBAL_2D_ARRAY)
+      real, public :: frc2de(GLOBAL_2D_ARRAY)
+      real, public :: sup(GLOBAL_2D_ARRAY)
+# ifdef SOLVE3D
+      real, public :: calP(GLOBAL_2D_ARRAY)
+      real, public :: Kapsrf(GLOBAL_2D_ARRAY)
+#  ifndef SURFACE_BREAK
+      real, public :: brk3dx(GLOBAL_2D_ARRAY,N)
+      real, public :: brk3de(GLOBAL_2D_ARRAY,N)
+#  endif
+#  ifdef BODY_FRICTION
+      real, public :: frc3dx(GLOBAL_2D_ARRAY,N)
+      real, public :: frc3de(GLOBAL_2D_ARRAY,N)
+#  endif
+      real, public :: ust(GLOBAL_2D_ARRAY,N)
+      real, public :: vst(GLOBAL_2D_ARRAY,N)
+      real, public :: wst(GLOBAL_2D_ARRAY,N)
+      real, public :: kvf(GLOBAL_2D_ARRAY,N)
+      real, public :: Akb(GLOBAL_2D_ARRAY,0:N)
+      real, public :: Akw(GLOBAL_2D_ARRAY,0:N)
+      real, public :: E_pre(GLOBAL_2D_ARRAY,0:N)
+# endif  /* SOLVE3D */
+
+      ! NON-ANALYTICAL VARIABLES
+
+#if defined BBL || defined WEC
+# if !defined ANA_WEC_FRC && !defined WKB_WWAVE
+!--------------------------------------------------------------------
+!wwv_time|                    | time of wind-induced waves
+!--------------------------------------------------------------------
+!  wwag  |                    | wave amplitude [m]
+!  wwdg  |                    | wave direction [radians]
+!  wwpg  |                    | wave period [s]
+!  wwub  |                    | orbital velocity magnitude [m/s]
+!  wwfrq |  Two-time-level    | wave frequency [rad/s]
+!  wwuob |  point data        | xi-orbital velocity [m/s]
+!  wwvob |  for wind induced  ! eta-orbital velocity [m/s]
+!  wwdrx |                    | cosine wave direction [ND]
+!  wwdre |                    ! sine wave direction [ND]
+!  wwhrm |                    ! (RMS) wave height [m]
+!  wweb  |                    ! breaking dissipation [m3/s3]
+!  wwed  |                    ! frictional dissipation [m3/s3]
+!  wwqb  |                    ! fraction of breaking waves [ND]
+!  wwUSg |                    ! Depth averaged Stokes drift [m/s]
+!  wwVSg |                    ! Depth averaged Stokes drift [m/s]
+!  wwus0g|                    ! Surface Stokes drift [m/s]
+!  wwvs0g|                    ! Surface Stokes drift [m/s]
+!  wwsup |                    | Set down [m]
+!  wwlm  |                    | Mean wavelength [m] - for diffusivity approx.
+!--------------------------------------------------------------------
+!  wveb  |                    | breaking dissipation [m3/s3]
+!  wved  |  for present time  | frictional dissipation [m3/s3]
+!  wvqb  |  step              | fraction of breaking waves [ND]
+!--------------------------------------------------------------------
+
+      real, public :: wwag(GLOBAL_2D_ARRAY,2)
+      real, public :: wwdg(GLOBAL_2D_ARRAY,2)
+      real, public :: wwpg(GLOBAL_2D_ARRAY,2)
+      real, public :: wwfrq(GLOBAL_2D_ARRAY,2)
+#  ifdef BBL
+#   ifdef WAVE_OFFLINE
+      real, public :: wwub(GLOBAL_2D_ARRAY,2)
+      real, public :: wwuob(GLOBAL_2D_ARRAY,2)
+      real, public :: wwvob(GLOBAL_2D_ARRAY,2)
+#   endif
+#  endif
+#  ifdef WEC
+      real, public :: wwhrm(GLOBAL_2D_ARRAY,2)
+      real, public :: wwdrx(GLOBAL_2D_ARRAY,2)
+      real, public :: wwdre(GLOBAL_2D_ARRAY,2)
+      real, public :: wweb(GLOBAL_2D_ARRAY,2)
+      real, public :: wveb(GLOBAL_2D_ARRAY)
+#   ifdef WAVE_OFFLINE
+      real, public :: wved(GLOBAL_2D_ARRAY)
+      real, public :: wwed(GLOBAL_2D_ARRAY,2)
+      real, public :: wwUSg(GLOBAL_2D_ARRAY,2)
+      real, public :: wwVSg(GLOBAL_2D_ARRAY,2)
+      real, public :: wwus0g(GLOBAL_2D_ARRAY,2)
+      real, public :: wwvs0g(GLOBAL_2D_ARRAY,2)
+#   endif
+#   if defined WAVE_OFFLINE && defined SURFACE_ROLLER
+      real, public :: wvqb(GLOBAL_2D_ARRAY)
+      real, public :: wwqb(GLOBAL_2D_ARRAY,2)
+#   endif
+#   if defined WAVE_OFFLINE && defined SUP_OFF
+      real, public :: wwsup(GLOBAL_2D_ARRAY,2)
+#  endif
+#  if defined WAVE_OFFLINE && defined WAVE_DIFF_FROM_LM
+      real, public :: wwlm(GLOBAL_2D_ARRAY,2)
+#  endif
+#  endif
+
+      real, public :: ww_cycle, wwv_time(2)
+      integer, public :: ww_ncycle,  ww_rec,  itww, ntww,
+     &        ww_file_id, ww_tid,  wwaid, wwpid, wwdid
+#   if defined BBL && defined WAVE_OFFLINE
+     &       ,wwuid, wwvid
+#   endif
+#   if defined WEC && defined WAVE_OFFLINE
+     &       ,wweid, wwqid, wwfid, wwusaid, wwvsaid
+     &       ,wwus0id, wwvs0id
+#    if defined SUP_OFF
+     &       ,wwsupid
+#    endif
+#    if defined WAVE_DIFF_FROM_LM
+     &       ,wwlmid
+#    endif
+#   endif
+# elif defined ANA_WEC_FRC && defined WEC
+      real, public :: wveb(GLOBAL_2D_ARRAY)
+      real, public :: wved(GLOBAL_2D_ARRAY)
+
+# endif /* !ANA_WEC_FRC && !WKB_WWAVE */
+#endif /* BBL || WEC */
+
+
+      !#### DevinD - end variables added as per forces.h #####
 
       ! DevinD - variables used in ana_wec_frc_tile and ana_init_wec_frc_tile
 
@@ -97,85 +241,92 @@
        real, public :: cff_ext, cff_ext2
 
        ! DevinD - timestep variables as per river_frc.F
-       integer              :: it1 = 1  ! step n. Note: should be parameter as unchanging
-       integer              :: it2 = 2  ! step n+1. Note: should be parameter as unchanging
-       real, dimension(2)   :: rtim = [-99,-99] ! used to store both time steps (n, n+1)
+!       integer              :: it1 = 1  ! step n. Note: should be parameter as unchanging
+!       integer              :: it2 = 2  ! step n+1. Note: should be parameter as unchanging
+!       real, dimension(2)   :: rtim = [-99,-99] ! used to store both time steps (n, n+1)
 
 
-
+      ! ########################################################
       ! DevinD - Add wave terms previously contained in ncvars.h
 
 !      type, public :: wec_ncvars
 
-        ! ** MRL wave-current interaction variables ***
-        ! < indx???: use between 81 and 100 >
-        ! indxSUP          quasi-static sea-level response (wave set-up/down),
-        ! indxUST2D,indxVST2D      2D depth-averaged Stokes drift velocities
-        ! indxUST,indxVST,indxWST  3D Stokes drift velocities
-        ! indxAkb,indxAkw  breaking eddy viscosity & primary wave eddy diffusivity
-        ! indxKVF          vertical vortex force (u^St du/dz)
-        ! indxCALP,indxKAPS  surface pressure correction & surface Bernoulli head
+! ** MRL wave-current interaction variables ***
+! < indx???: use between 81 and 100 >
+! indxSUP          quasi-static sea-level response (wave set-up/down),
+! indxUST2D,indxVST2D      2D depth-averaged Stokes drift velocities
+! indxUST,indxVST,indxWST  3D Stokes drift velocities
+! indxAkb,indxAkw  breaking eddy viscosity & primary wave eddy diffusivity
+! indxKVF          vertical vortex force (u^St du/dz)
+! indxCALP,indxKAPS  surface pressure correction & surface Bernoulli head
+! indxUs0,indxVs0      Surface Stokes drift velocities
+! indxLM               Mean wave length (for diffusivity approximation)
+!
 
+#if defined BBL || defined WEC
 # if !defined ANA_WWAVE && !defined WKB_WWAVE
-        integer, public, parameter :: indxWAVE =71,       indxWWA=indxWAVE
+      integer, public, parameter :: indxWAVE =71,       indxWWA=indxWAVE
      &                    , indxWWD=indxWAVE+1, indxWWP=indxWAVE+2
-#  ifdef SWAN_OFFLINE
+#  ifdef WAVE_OFFLINE
 #    ifdef BBL
-        integer, public, parameter :: indxWUB=indxWAVE+3
+      integer, public, parameter :: indxWUB=indxWAVE+3, indxWVB=indxWAVE+4
 #    endif
-#    ifdef MRL_WCI
-        integer, public, parameter :: indxWEB=indxWAVE+4, indxWQB=indxWAVE+5
-     &                    , indxWED=indxWAVE+6
+#    ifdef WEC
+      integer, public, parameter :: indxWEB=indxWAVE+5, indxWQB=indxWAVE+6
+     &                    , indxWED=indxWAVE+7
 #    endif
 #  endif
 # elif defined WKB_WWAVE
-        integer, public, parameter :: indxHRM=71
+      integer, public, parameter :: indxHRM=71
      &                    , indxFRQ=indxHRM+1, indxWAC=indxHRM+2
      &                    , indxWKX=indxHRM+3, indxWKE=indxHRM+4
      &                    , indxEPB=indxHRM+5, indxEPD=indxHRM+6
      &                    , indxWAR=indxHRM+7, indxEPR=indxHRM+8
 # endif
+#endif
 
-
-
-         integer, public, parameter :: indxSUP=81
+#ifdef WEC
+      integer, public, parameter :: indxSUP=81
      &                    , indxUST2D=indxSUP+1, indxVST2D=indxSUP+2
 # ifdef SOLVE3D
      &                    , indxUST=indxSUP+3, indxVST=indxSUP+4
      &                    , indxWST=indxSUP+5, indxAkb=indxSUP+6
      &                    , indxAkw=indxSUP+7, indxKVF=indxSUP+8
      &                    , indxCALP=indxSUP+9, indxKAPS=indxSUP+10
+     &                    , indxUs0=indxSUP+11, indxVs0=indxSUP+12
+     &                    , indxLM=indxSUP+13
 # endif
+#endif
 
       !!!!!!!!
 
-        integer, public, target :: hisSUP, hisUST2D, hisVST2D ! Target for pointers if used in def_his_def_var_wec!!!
-!      common /ncvars/ hisSUP, hisUST2D, hisVST2D
-
-      type domainptr
-        integer, pointer :: p ! For target hisUST2D above
-      end type domainptr
-
+#ifdef WEC
+      integer, public :: hisSUP, hisUST2D, hisVST2D, hisUSTR0
 # ifdef SOLVE3D
-        integer, public, target :: hisUST, hisVST, hisAkb, hisAkw, hisKVF,
-     &        hisCALP, hisKAPS, hisWST ! Target for pointers if used in def_his_def_var_wec!!!
-!      common /ncvars/ hisUST, hisVST, hisAkb, hisAkw, hisKVF,
-!     &        hisCALP, hisKAPS, hisWST
+      integer, public :: hisUST, hisVST, hisAkb, hisAkw, hisKVF,
+     &        hisCALP, hisKAPS, hisWST
 # endif
+#endif
 
+#ifdef AVERAGES
+# ifdef WEC
       integer, public :: avgSUP, avgUST2D, avgVST2D
-!      common /ncvars/ avgSUP, avgUST2D, avgVST2D
 #  ifdef SOLVE3D
       integer, public :: avgUST, avgVST, avgAkb, avgAkw, avgKVF,
      &        avgCALP, avgKAPS, avgWST
-!      common /ncvars/ avgUST, avgVST, avgAkb, avgAkw, avgKVF,
-!     &        avgCALP, avgKAPS, avgWST
 #  endif
+# endif
+#endif /* AVERAGES */
 
 !      end type wec_ncvars
 
       ! DevinD - end wave terms previously contained in ncvars.h
 
+      !#### Taken from old init_scalars.F #########
+
+        ! Put in init_scalar_wec subroutine for now.
+
+      !#### END old init_scalars.F #########
 
 ! flags taken from def_his.F and used in def_his_def_var_wec & def_his_nf_inq_varid
 #ifndef AVRH
@@ -186,6 +337,7 @@
 #  define vidSUP hisSUP
 #  define vidUST2D hisUST2D
 #  define vidVST2D hisVST2D
+#  define vidUSTR0 hisUSTR0
 #  define vidUST hisUST
 #  define vidVST hisVST
 #  define vidWST hisWST
@@ -215,6 +367,23 @@
 #endif
 
 
+! ###### Taken from averages.h of old code ######
+#ifdef AVERAGES
+      real sup_avg(GLOBAL_2D_ARRAY)
+      real ust2d_avg(GLOBAL_2D_ARRAY)
+      real vst2d_avg(GLOBAL_2D_ARRAY)
+#  ifdef SOLVE3D
+      real ust_avg(GLOBAL_2D_ARRAY,N)
+      real vst_avg(GLOBAL_2D_ARRAY,N)
+      real wst_avg(GLOBAL_2D_ARRAY,N)
+      real akb_avg(GLOBAL_2D_ARRAY,0:N)
+      real akw_avg(GLOBAL_2D_ARRAY,0:N)
+      real kvf_avg(GLOBAL_2D_ARRAY,N)
+      real calp_avg(GLOBAL_2D_ARRAY)
+      real kaps_avg(GLOBAL_2D_ARRAY)
+#  endif  /* SOLVE3D */
+#endif /* AVERAGES */
+! ###### END from averages.h of old code ######
 
       ! strings needed for wrt_his.F if using ncio method
 !      character*15, public :: mynode_text
@@ -223,9 +392,12 @@
 
       public init_scalars_wec
       public read_inp_wec
+#ifndef ANA_WEC_FRC
+      public read_wec_frc
+      public set_wec_frc_tile
+#endif
       public def_his_def_var_wec
       public def_his_nf_inq_varid
-      public set_wec_frc
       public ana_wec_frc_tile
       public init_arrays_wec_tile
       public ana_init_wec_frc_tile
@@ -233,6 +405,12 @@
       public compute_wec_rhs_uv_terms
       public wstokes_wec
       public wrt_his_wec
+      public wec_forces
+#ifdef AVERAGES
+      public read_inp_avg_wec
+      public set_avg_wec_tile
+      public wrt_avg_wec
+#endif
 
 
 
@@ -270,7 +448,7 @@
       vname(3,indxVST)  ='meter second-1'
 
       vname(1,indxWST)  ='wst'
-      vname(2,indxWST)  ='w vertical 3D Stokes drift velocity'
+      vname(2,indxWST)  ='w veitical 3D Stokes drift velocity'
       vname(3,indxWST)  ='meter second-1'
 
       vname(1,indxAKB)  ='Akb'
@@ -292,81 +470,186 @@
       vname(1,indxKAPS) ='Kapsrf'
       vname(2,indxKAPS) ='surface Bernoulli head in prsgrd term'
       vname(3,indxKAPS) ='meter2 second-2'
+
+      vname(1,indxUs0)  ='ust0'
+      vname(2,indxUs0)  ='Surface Stokes drift velocity'
+      vname(3,indxUs0)  ='meter second-1'
+
+      vname(1,indxVs0)  ='vst0'
+      vname(2,indxVs0)  ='Surface Stokes drift velocity'
+      vname(3,indxVs0)  ='meter second-1'
+
+      vname(1,indxLM)   ='lmw'
+      vname(2,indxLM)   ='Mean Wave length'
+      vname(3,indxLM)   ='meter'
 # endif
+
+#if defined BBL || defined WEC
+# if !defined ANA_WWAVE && !defined WKB_WWAVE
+      vname(1,indxWWA)='Awave'
+      vname(2,indxWWA)='wind induced wave amplitude'
+      vname(3,indxWWA)='meter'
+
+      vname(1,indxWWD)='Dwave'
+      vname(2,indxWWD)='wind induced wave direction'
+      vname(3,indxWWD)='degrees'
+
+      vname(1,indxWWP)='Pwave'
+      vname(2,indxWWP)='wind induced wave Period'
+      vname(3,indxWWP)='second'
+#  ifdef WAVE_OFFLINE
+#    ifdef BBL
+      vname(1,indxWUB)='uorb'
+      vname(2,indxWUB)='Eastward bottom orbital velocity (SWAN)'
+      vname(3,indxWUB)='meter second-1'
+      vname(1,indxWVB)='vorb'
+      vname(2,indxWVB)='Northward bottom orbital velocity (SWAN)'
+      vname(3,indxWVB)='meter second-1'
+#    endif
+#    ifdef WEC
+      vname(1,indxWEB)='eb'
+      vname(2,indxWEB)='breaking energy dissipation (SWAN)'
+      vname(3,indxWEB)='meter3 second-3'
+
+#      ifdef WAVE_FRICTION
+      vname(1,indxWED)='ed'
+      vname(2,indxWED)='bottom frictional dissipation (SWAN)'
+      vname(3,indxWED)='meter3 second-3'
+#      endif
+
+#      ifdef SURFACE_ROLLER
+      vname(1,indxWQB)='qb'
+      vname(2,indxWQB)='fraction of breaking waves (SWAN)'
+      vname(3,indxWQB)='non dimension'
+#      endif
+#    endif
+#  endif
+# endif
+#endif  /* BBL || WEC */
 
       end subroutine init_scalars_wec
 
       ! --------------------------------------------------------------------
 
-        subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
+      subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
 
-          ! This is called from init_arrays_tile of init_arrays.F
-          ! It is needed to "first touch" arrays to optimize
-          ! NUMA shared memory allocation on linux.
+      ! This is called from init_arrays_tile of init_arrays.F
+      ! It is needed to "first touch" arrays to optimize
+      ! NUMA shared memory allocation on linux.
 
-          implicit none
+      implicit none
 
-          integer, intent(in) :: istr, iend, jstr, jend
-          ! Declare looping indices
-          integer :: i, j
+      integer, intent(in) :: istr, iend, jstr, jend
+      ! Declare looping indices
+      integer :: i, j, k
 
-          real, parameter :: init=0.
+      real, parameter :: init=0.
 
-          ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
-          ! This had to declared last else won't compile
+      ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
+      ! This had to declared last else won't compile
 #include "compute_auxiliary_bounds.h"
 
-          ! This section of code is taken from DH's WAVE_PACKET init_arrays.F
+      ! This section of code is taken from DH's WAVE_PACKET init_arrays.F
 
+      do j=jstrR,jendR
+        do i=istrR,iendR
 
-              whrm(i,j) =init
-              wdrx(i,j) =init
-              wdre(i,j) =init
-              wbst(i,j) =init
-
-          do j=jstrR,jendR
-            do i=istrR,iendR
-              sup(i,j)    =init
-              ust2d(i,j)  =init
-              vst2d(i,j)  =init
-              brk2dx(i,j) =init
-              brk2de(i,j) =init
-              frc2dx(i,j) =init
-              frc2de(i,j) =init
-# ifdef SOLVE_3D
-              calP(i,j)   =init
-              Kapsrf(i,j) =init
-              do k=1,N
-#  ifndef SURFACE_BREAK
-                brk3dx(i,j,k) =init
-                brk3de(i,j,k) =init
-#  endif
-#  ifdef BODY_FRICTION
-                frc3dx(i,j,k) =init
-                frc3de(i,j,k) =init
-#  endif
-                ust(i,j,k) =init
-                vst(i,j,k) =init
-                wst(i,j,k) =init
-                kvf(i,j,k) =init
-              enddo
-              do k=0,N
-#  if defined LMD_KPP || defined LMD_BKPP
-                Akb(i,j,k) =init
-#  endif
-                Akw(i,j,k) =init
-                E_pre(i,j,k) =init
-              enddo
-# endif /* SOLVE_3D */
-              wdsp(i,j) =init
-#    ifdef SURFACE_ROLLER
-              rdsp(i,j) =init
+! DevinD - NON-ANA old code L
+#ifdef SOLVE3D
+# if defined BBL || defined WEC
+#  if !defined ANA_WWAVE && !defined WKB_WWAVE
+          do k=1,2
+            wwag(i,j,k)=init
+            wwdg(i,j,k)=init
+            wwpg(i,j,k)=init
+            wwfrq(i,j,k)=init
+#   ifdef BBL
+            wwuob(i,j,k)=init
+            wwvob(i,j,k)=init
+#    ifdef WAVE_OFFLINE
+            wwub(i,j,k) =init
 #    endif
-            enddo
+#   endif
+#   ifdef WEC
+            wwhrm(i,j,k)=init
+            wwdrx(i,j,k)=init
+            wwdre(i,j,k)=init
+#    ifdef WAVE_OFFLINE
+            wweb(i,j,k) =init
+#     ifdef SURFACE_ROLLER
+            wwqb(i,j,k) =init
+#     endif
+            wwUSg(i,j,k) = init
+#    endif
+#   endif /* WEC */
           enddo
 
+          wfrq(i,j) =init
+#   ifdef BBL
+          uorb(i,j) =init
+          vorb(i,j) =init
+#   endif
+#   ifdef WEC
+          whrm(i,j) =init
+          wdrx(i,j) =init
+          wdre(i,j) =init
+          wbst(i,j) =init
+#    ifdef WAVE_OFFLINE
+          wveb(i,j) =init
+#     ifdef SURFACE_ROLLER
+          wvqb(i,j) =init
+#     endif
+#    endif
+#   endif /* WEC */
+#  endif
+# endif /* defined BBL || defined WEC */
+#endif /* SOLVE3D */
 
-        end subroutine init_arrays_wec_tile
+      ! DevinD - even though they are split in the old code's init_arrays.F
+      ! I don't see a need as it is the same loop so wave variables and
+      ! stokes variables in the same loop
+
+          sup(i,j)    =init
+          ust2d(i,j)  =init
+          vst2d(i,j)  =init
+          brk2dx(i,j) =init
+          brk2de(i,j) =init
+          frc2dx(i,j) =init
+          frc2de(i,j) =init
+# ifdef SOLVE_3D
+          calP(i,j)   =init
+          Kapsrf(i,j) =init
+          do k=1,N
+#  ifndef SURFACE_BREAK
+            brk3dx(i,j,k) =init
+            brk3de(i,j,k) =init
+#  endif
+#  ifdef BODY_FRICTION
+            frc3dx(i,j,k) =init
+            frc3de(i,j,k) =init
+#  endif
+            ust(i,j,k) =init
+            vst(i,j,k) =init
+            wst(i,j,k) =init
+            kvf(i,j,k) =init
+          enddo
+          do k=0,N
+#  if defined LMD_KPP || defined LMD_BKPP
+            Akb(i,j,k) =init
+#  endif
+            Akw(i,j,k) =init
+            E_pre(i,j,k) =init
+          enddo
+# endif /* SOLVE_3D */
+          wdsp(i,j) =init
+#    ifdef SURFACE_ROLLER
+          rdsp(i,j) =init
+#    endif
+        enddo
+      enddo
+
+
+      end subroutine init_arrays_wec_tile
 
 
       ! --------------------------------------------------------------------
@@ -382,7 +665,7 @@
 
         call cancel_kwd (keyword(1:kwlen), ierr)
 
-# ifndef AVERAGES
+!# ifndef AVERAGES
         read(input,*,err=95) wrthis(indxSUP),  wrthis(indxUST2D)
      &                                        ,  wrthis(indxVST2D)
 #  ifdef SOLVE3D
@@ -410,7 +693,32 @@
 #  endif
 
 
-# else
+      goto 100
+  95  write(*,'(/1x,4A/)') '### ERROR: read_inp_wec :: Cannot read ',
+     &                       'entry ''', keyword(1:kwlen), '''.'
+      ierr=ierr+1 ! Possible source for error here?
+!      goto 99
+!  99  close (input)
+ 100  continue
+
+      end subroutine read_inp_wec
+
+      ! ---------------------------------------------------
+      ! ---------------------------------------------------
+      ! ---------------------------------------------------
+
+#ifdef AVERAGES
+      subroutine read_inp_avg_wec (keyword, ierr, kwlen)
+
+      implicit none
+
+      character(len=32) :: keyword
+      integer ierr, kwlen
+      integer, parameter :: input=15
+
+        call cancel_kwd (keyword(1:kwlen), ierr)
+
+!# else
 !        elseif (keyword(1:kwlen).eq.'wci_average_fields') then
 !          call cancel_kwd (keyword(1:kwlen), ierr)
         read(input,*,err=95) wrtavg(indxSUP),  wrtavg(indxUST2D)
@@ -438,7 +746,7 @@
      &             ,  'CALP',   wrtavg(indxCALP),   vname(2,indxCALP)
      &             ,  'KAPS',   wrtavg(indxKAPS),   vname(2,indxKAPS)
 #  endif
-# endif /* AVERAGES */
+!# endif /* AVERAGES */
 
       goto 100
   95  write(*,'(/1x,4A/)') '### ERROR: read_inp_wec :: Cannot read ',
@@ -448,11 +756,14 @@
 !  99  close (input)
  100  continue
 
-      end subroutine read_inp_wec
+      end subroutine read_inp_avg_wec
+#endif /* AVERAGES */
 
       ! ---------------------------------------------------
       ! ---------------------------------------------------
       ! ---------------------------------------------------
+
+
 
       subroutine def_his_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
 #ifdef SOLVE3D
@@ -464,54 +775,73 @@
 
       implicit none
 
+
+
       integer lenstr, lvar, ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
 #ifdef SOLVE3D
      &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer, external :: nf_def_var, nf_put_att_text ! Taken from netcdf.inc
+      integer, external :: nf_def_var, nf_put_att_text, nf_put_att_real ! Taken from netcdf.inc
       character(len=64) text
       integer, parameter :: nf_float = 5
 
-      ! These variables are new and needed for looping of attributes
-      type(domainptr), dimension(3) :: dom ! array of pointers to hisUST2d etc
-      integer indx_loop ! looping index
-      integer loop_grd(3,3) ! grid type - can make second dimension (i,:) for length 3 and 4
-      integer :: i=0 ! additional looping integer
-
-      ! 3D loop variables - may need to deallocate pointers at end of subroutine if memory leak!
-      type(domainptr), dimension(8) :: dom3D ! array of pointers to hisUST2d etc
-      integer loop_grd3D(8,4) ! grid type - can make second dimension (i,:) for length 3 and 4
-      integer loop_dims(8) ! array of variable's dimensions
-
-      ! Put in type of variable here.
-      loop_grd(1,:) = r2dgrd; loop_grd(2,:) = u2dgrd; loop_grd(3,:) = v2dgrd
-      ! Put in pointer to varid here (e.g. hisUST2D - see flags above)
-      dom(1)%p => vidSUP; dom(2)%p => vidUST2D; dom(3)%p => vidVST2D
-
-      do indx_loop = indxSUP, indxVST2D ! Loop through the relevant indices for wrt
-        i=i+1 ! This is for loop index from 1
-        if (wrt(indx_loop)) then
-          lvar=lenstr(vname(1,indx_loop))
-          ierr=nf_def_var (ncid, vname(1,indx_loop)(1:lvar), NF_FOUT,
-     &                                      3, loop_grd(i,:), dom(i)%p)
-# ifdef AVRH
-          text='averaged '/ /vname(2,indx_loop)
+! Taken from def_his.F
+#ifdef MASK_LAND_DATA
+# ifdef HIS_DOUBLE
+      real*8, parameter :: spv_set=1.D+33
 # else
-          text=vname(2,indx_loop)
+      real*4, parameter :: spv_set=1.E+33
 # endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text (ncid, dom(i)%p, 'long_name', lvar,
-     &                                               text(1:lvar))
-          lvar=lenstr(vname(3,indx_loop))
-          ierr=nf_put_att_text (ncid, dom(i)%p, 'units',     lvar,
-     &                                 vname(3,indx_loop)(1:lvar))
-#  ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT (ncid, dom(i)%p, '_FillValue',
-     &                                NF_FOUT, 1, spv_set)
-#  endif
+#endif
 
-        endif
-      end do
+!! ATTEMPTED POINTER IMPLEMENTATION
+!
+!      type domainptr
+!        integer, pointer :: p => null() ! For target hisUST2D above
+!      end type domainptr
+!      ! These variables are new and needed for looping of attributes
+!      type(domainptr), dimension(3) :: dom ! array of pointers to hisUST2d etc
+!      integer indx_loop ! looping index
+!      integer loop_grd(3,3) ! grid type - can make second dimension (i,:) for length 3 and 4
+!      integer :: i=0 ! additional looping integer
+!      ! 3D loop variables - may need to deallocate pointers at end of subroutine if memory leak!
+!      type(domainptr), dimension(8) :: dom3D ! array of pointers to hisUST2d etc
+!      integer loop_grd3D(8,4) ! grid type - can make second dimension (i,:) for length 3 and 4
+!      integer loop_dims(8) ! array of variable's dimensions
+!      ! Put in type of variable here.
+!      loop_grd(1,:) = r2dgrd; loop_grd(2,:) = u2dgrd; loop_grd(3,:) = v2dgrd
+!      ! Put in pointer to varid here (e.g. hisUST2D - see flags above)
+!!      allocate(dom(1)%p) ; allocate(dom(2)%p) ; allocate(dom(3)%p)
+!      dom(1)%p => vidSUP; dom(2)%p => vidUST2D; dom(3)%p => vidVST2D
+!      write(*,*) 'vidSUP = ', vidSUP
+!      do indx_loop = indxSUP, indxVST2D ! Loop through the relevant indices for wrt
+!        i=i+1 ! This is for loop index from 1
+!        if (wrt(indx_loop)) then
+!           write(*,*) 'wrt(indx_loop)'
+!          lvar=lenstr(vname(1,indx_loop))
+!          ierr=nf_def_var (ncid, vname(1,indx_loop)(1:lvar), NF_FOUT,
+!     &                                      3, loop_grd(i,:), dom(i)%p)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indx_loop)
+!# else
+!          text=vname(2,indx_loop)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, dom(i)%p, 'long_name', lvar,
+!     &                                               text(1:lvar))
+!          lvar=lenstr(vname(3,indx_loop))
+!          ierr=nf_put_att_text (ncid, dom(i)%p, 'units',     lvar,
+!     &                                 vname(3,indx_loop)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, dom(i)%p, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!          nullify(dom(i)%p) ! disassociate pointer from target
+!!          deallocate(dom(i)%p)
+!        endif
+!      end do
+
+!!!  END ATTEMPTED POINTER IMPLEMENTATION
 
 ! THIS IS OLD CODE REPLACED BY LOOP ABOVE - LEFT IN UNTIL SURE NO MEMORY LEAK
 ! WHEN DOING LARGE SCALE NON-ANALYTICAL MODEL
@@ -521,112 +851,115 @@
 !
 ! sup: quasi-static sea-level response (wave set-up/down)
 !
-!        if (wrt(indxSUP)) then
-!          lvar=lenstr(vname(1,indxSUP))
-!          ierr=nf_def_var (ncid, vname(1,indxSUP)(1:lvar), NF_FOUT,
-!     &                                           3, r2dgrd, vidSUP)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxSUP)
-!# else
-!          text=vname(2,indxSUP)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidSUP, 'long_name', lvar,
-!     &                                             text(1:lvar))
-!          lvar=lenstr(vname(3,indxSUP))
-!          ierr=nf_put_att_text (ncid, vidSUP, 'units',     lvar,
-!     &                                 vname(3,indxSUP)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidiSUP, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
-
-!
-! ust2d & vst2d: 2D, depth-averaged Stokes drift velocities.
-!
-!        if (wrt(indxUST2D)) then
-!          lvar=lenstr(vname(1,indxUST2D))
-!          ierr=nf_def_var (ncid, vname(1,indxUST2D)(1:lvar), NF_FOUT,
-!     &                                           3, u2dgrd, vidUST2D)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxUST2D)
-!# else
-!          text=vname(2,indxUST2D)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidUST2D, 'long_name', lvar,
-!     &                                               text(1:lvar))
-!          lvar=lenstr(vname(3,indxUST2D))
-!          ierr=nf_put_att_text (ncid, vidUST2D, 'units',     lvar,
-!     &                                 vname(3,indxUST2D)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidUST2D, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!
-!        endif
-
-!        if (wrt(indxVST2D)) then
-!          lvar=lenstr(vname(1,indxVST2D))
-!          ierr=nf_def_var (ncid, vname(1,indxVST2D)(1:lvar), NF_FOUT,
-!     &                                           3, v2dgrd, vidVST2D)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxVST2D)
-!# else
-!          text=vname(2,indxVST2D)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidVST2D, 'long_name', lvar,
-!     &                                               text(1:lvar))
-!          lvar=lenstr(vname(3,indxVST2D))
-!          ierr=nf_put_att_text (ncid, vidVST2D, 'units',     lvar,
-!     &                                  vname(3,indxVST2D)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidVST2D, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
-# ifdef SOLVE3D
-
-      ! Put in type of variable here.
-      loop_grd3D(1,:) = u3dgrd; loop_grd3D(2,:) = v3dgrd; loop_grd3D(3,:) = r3dgrd
-      loop_grd3D(4,:) = w3dgrd; loop_grd3D(5,:) = w3dgrd; loop_grd3D(6,:) = r3dgrd
-      loop_grd3D(7,1:3) = r2dgrd; loop_grd3D(8,1:3) = r2dgrd ! Potential bug - 3 not 4 length integers
-      ! Put in pointer to varid here (e.g. hisUST2D - see flags above)
-      dom3D(1)%p => vidUST; dom3D(2)%p => vidVST; dom3D(3)%p => vidWST
-      dom3D(4)%p => vidAkb; dom3D(5)%p => vidAkw; dom3D(6)%p => vidKVF
-      dom3D(7)%p => vidCALP; dom3D(8)%p => vidKAPS
-      ! The number of dimensions of variable (includes time)
-      loop_dims = [4,4,4,4,4,4,3,3]
-
-      ! Could avoid having whole extra loop by using if statement for loop over 3d
-      ! variables or not. I.e. add to sup, ust2d and vst2d loop above.
-      i=0 ! reset loop counter
-      do indx_loop = indxUST, indxKAPS ! Loop through relevant indices for wrt
-        i=i+1 ! This is for loop index from 1
-                if (wrt(indx_loop)) then
-          lvar=lenstr(vname(1,indx_loop))
-          ierr=nf_def_var (ncid, vname(1,indx_loop)(1:lvar), NF_FOUT,
-     &                        loop_dims(i), loop_grd3D(i,:), dom3D(i)%p)
+        if (wrt(indxSUP)) then
+          lvar=lenstr(vname(1,indxSUP))
+          ierr=nf_def_var (ncid, vname(1,indxSUP)(1:lvar), NF_FOUT,
+     &                                           3, r2dgrd, vidSUP)
 # ifdef AVRH
-          text='averaged '/ /vname(2,indx_loop)
+          text='averaged '/ /vname(2,indxSUP)
 # else
-          text=vname(2,indx_loop)
+          text=vname(2,indxSUP)
 # endif
           lvar=lenstr(text)
-          ierr=nf_put_att_text (ncid, dom3D(i)%p, 'long_name', lvar,
+          ierr=nf_put_att_text (ncid, vidSUP, 'long_name', lvar,
      &                                             text(1:lvar))
-          lvar=lenstr(vname(3,indx_loop))
-          ierr=nf_put_att_text (ncid, dom3D(i)%p, 'units',     lvar,
-     &                                 vname(3,indx_loop)(1:lvar))
+          lvar=lenstr(vname(3,indxSUP))
+          ierr=nf_put_att_text (ncid, vidSUP, 'units',     lvar,
+     &                                 vname(3,indxSUP)(1:lvar))
 #  ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT (ncid, dom3D(i)%p, '_FillValue',
+          ierr=nf_put_att_FOUT (ncid, vidSUP, '_FillValue',
      &                                NF_FOUT, 1, spv_set)
 #  endif
         endif
+!
+! ust2d & vst2d: 2D, depth-averaged Stokes drift velocities.
+!
+        if (wrt(indxUST2D)) then
+          lvar=lenstr(vname(1,indxUST2D))
+          ierr=nf_def_var (ncid, vname(1,indxUST2D)(1:lvar), NF_FOUT,
+     &                                           3, u2dgrd, vidUST2D)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxUST2D)
+# else
+          text=vname(2,indxUST2D)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidUST2D, 'long_name', lvar,
+     &                                               text(1:lvar))
+          lvar=lenstr(vname(3,indxUST2D))
+          ierr=nf_put_att_text (ncid, vidUST2D, 'units',     lvar,
+     &                                 vname(3,indxUST2D)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidUST2D, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
 
-      end do
+        endif
+        if (wrt(indxVST2D)) then
+          lvar=lenstr(vname(1,indxVST2D))
+          ierr=nf_def_var (ncid, vname(1,indxVST2D)(1:lvar), NF_FOUT,
+     &                                           3, v2dgrd, vidVST2D)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxVST2D)
+# else
+          text=vname(2,indxVST2D)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidVST2D, 'long_name', lvar,
+     &                                               text(1:lvar))
+          lvar=lenstr(vname(3,indxVST2D))
+          ierr=nf_put_att_text (ncid, vidVST2D, 'units',     lvar,
+     &                                  vname(3,indxVST2D)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidVST2D, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
+# ifdef SOLVE3D
+
+!!! ATTEMPTED POINTER IMPLEMENTATION
+
+!      ! Put in type of variable here.
+!      loop_grd3D(1,:) = u3dgrd; loop_grd3D(2,:) = v3dgrd; loop_grd3D(3,:) = r3dgrd
+!      loop_grd3D(4,:) = w3dgrd; loop_grd3D(5,:) = w3dgrd; loop_grd3D(6,:) = r3dgrd
+!      loop_grd3D(7,1:3) = r2dgrd; loop_grd3D(8,1:3) = r2dgrd ! Potential bug - 3 not 4 length integers
+!      ! Put in pointer to varid here (e.g. hisUST2D - see flags above)
+!      dom3D(1)%p => vidUST; dom3D(2)%p => vidVST; dom3D(3)%p => vidWST
+!      dom3D(4)%p => vidAkb; dom3D(5)%p => vidAkw; dom3D(6)%p => vidKVF
+!      dom3D(7)%p => vidCALP; dom3D(8)%p => vidKAPS
+!      ! The number of dimensions of variable (includes time)
+!      loop_dims = [4,4,4,4,4,4,3,3]
+!
+!      ! Could avoid having whole extra loop by using if statement for loop over 3d
+!      ! variables or not. I.e. add to sup, ust2d and vst2d loop above.
+!      i=0 ! reset loop counter
+!      do indx_loop = indxUST, indxKAPS ! Loop through relevant indices for wrt
+!        i=i+1 ! This is for loop index from 1
+!                if (wrt(indx_loop)) then
+!          lvar=lenstr(vname(1,indx_loop))
+!          ierr=nf_def_var (ncid, vname(1,indx_loop)(1:lvar), NF_FOUT,
+!     &                        loop_dims(i), loop_grd3D(i,:), dom3D(i)%p)
+!# ifdef AVRH
+!          text='averaged '/ /vname(2,indx_loop)
+!# else
+!          text=vname(2,indx_loop)
+!# endif
+!          lvar=lenstr(text)
+!          ierr=nf_put_att_text (ncid, dom3D(i)%p, 'long_name', lvar,
+!     &                                             text(1:lvar))
+!          lvar=lenstr(vname(3,indx_loop))
+!          ierr=nf_put_att_text (ncid, dom3D(i)%p, 'units',     lvar,
+!     &                                 vname(3,indx_loop)(1:lvar))
+!#  ifdef MASK_LAND_DATA
+!          ierr=nf_put_att_FOUT (ncid, dom3D(i)%p, '_FillValue',
+!     &                                NF_FOUT, 1, spv_set)
+!#  endif
+!          nullify(dom3D(i)%p) ! disassociate pointer from target
+!        endif
+!
+!      end do
+
+!!! END ATTEMPTED POINTER IMPLEMENTATION
 
 ! THIS IS OLD CODE REPLACED BY LOOP ABOVE - LEFT IN UNTIL SURE NO MEMORY LEAK
 ! WHEN DOING LARGE SCALE NON-ANALYTICAL MODEL
@@ -634,185 +967,184 @@
 !
 ! ust3d & vst3d: 3D Stokes drift velocities.
 !
-!        if (wrt(indxUST)) then
-!          lvar=lenstr(vname(1,indxUST))
-!          ierr=nf_def_var (ncid, vname(1,indxUST)(1:lvar), NF_FOUT,
-!     &                                           4, u3dgrd, vidUST)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxUST)
-!# else
-!          text=vname(2,indxUST)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidUST, 'long_name', lvar,
-!     &                                             text(1:lvar))
-!          lvar=lenstr(vname(3,indxUST))
-!          ierr=nf_put_att_text (ncid, vidUST, 'units',     lvar,
-!     &                                 vname(3,indxUST)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidUST, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
-
-!        if (wrt(indxVST)) then
-!          lvar=lenstr(vname(1,indxVST))
-!          ierr=nf_def_var (ncid, vname(1,indxVST)(1:lvar), NF_FOUT,
-!     &                                           4, v3dgrd, vidVST)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxVST)
-!# else
-!          text=vname(2,indxVST)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidVST, 'long_name', lvar,
-!     &                                             text(1:lvar))
-!          lvar=lenstr(vname(3,indxVST))
-!          ierr=nf_put_att_text (ncid, vidVST, 'units',     lvar,
-!     &                                 vname(3,indxVST)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidVST, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxUST)) then
+          lvar=lenstr(vname(1,indxUST))
+          ierr=nf_def_var (ncid, vname(1,indxUST)(1:lvar), NF_FOUT,
+     &                                           4, u3dgrd, vidUST)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxUST)
+# else
+          text=vname(2,indxUST)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidUST, 'long_name', lvar,
+     &                                             text(1:lvar))
+          lvar=lenstr(vname(3,indxUST))
+          ierr=nf_put_att_text (ncid, vidUST, 'units',     lvar,
+     &                                 vname(3,indxUST)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidUST, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
+        if (wrt(indxVST)) then
+          lvar=lenstr(vname(1,indxVST))
+          ierr=nf_def_var (ncid, vname(1,indxVST)(1:lvar), NF_FOUT,
+     &                                           4, v3dgrd, vidVST)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxVST)
+# else
+          text=vname(2,indxVST)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidVST, 'long_name', lvar,
+     &                                             text(1:lvar))
+          lvar=lenstr(vname(3,indxVST))
+          ierr=nf_put_att_text (ncid, vidVST, 'units',     lvar,
+     &                                 vname(3,indxVST)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidVST, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 !
 ! wst: vertical Stokes drift velocity (m/s) at rho-point
 !
-!        if (wrt(indxWST)) then
-!          lvar=lenstr(vname(1,indxWST))
-!          ierr=nf_def_var (ncid, vname(1,indxWST)(1:lvar), NF_FOUT,
-!     &                                           4, r3dgrd, vidWST)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxWST)
-!# else
-!          text=vname(2,indxWST)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidWST, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxWST))
-!          ierr=nf_put_att_text (ncid, vidWST, 'units',     lvar,
-!     &                                 vname(3,indxWST)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidWST, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxWST)) then
+          lvar=lenstr(vname(1,indxWST))
+          ierr=nf_def_var (ncid, vname(1,indxWST)(1:lvar), NF_FOUT,
+     &                                           4, r3dgrd, vidWST)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxWST)
+# else
+          text=vname(2,indxWST)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidWST, 'long_name', lvar,
+     &                                              text(1:lvar))
+          lvar=lenstr(vname(3,indxWST))
+          ierr=nf_put_att_text (ncid, vidWST, 'units',     lvar,
+     &                                 vname(3,indxWST)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidWST, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 !
 ! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
 !
-!        if (wrt(indxAkb)) then
-!          lvar=lenstr(vname(1,indxAkb))
-!          ierr=nf_def_var (ncid, vname(1,indxAkb)(1:lvar), NF_FOUT,
-!     &                                           4, w3dgrd, vidAkb)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxAkb)
-!# else
-!          text=vname(2,indxAkb)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidAkb, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxAkb))
-!          ierr=nf_put_att_text (ncid, vidAkb, 'units',     lvar,
-!     &                                  vname(3,indxAkb)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidAkb, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxAkb)) then
+          lvar=lenstr(vname(1,indxAkb))
+          ierr=nf_def_var (ncid, vname(1,indxAkb)(1:lvar), NF_FOUT,
+     &                                           4, w3dgrd, vidAkb)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxAkb)
+# else
+          text=vname(2,indxAkb)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidAkb, 'long_name', lvar,
+     &                                              text(1:lvar))
+          lvar=lenstr(vname(3,indxAkb))
+          ierr=nf_put_att_text (ncid, vidAkb, 'units',     lvar,
+     &                                  vname(3,indxAkb)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidAkb, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 ! Akw: Vertical eddy diffusivity coefficient due to primary waves.
 !
-!        if (wrt(indxAkw)) then
-!          lvar=lenstr(vname(1,indxAkw))
-!          ierr=nf_def_var (ncid, vname(1,indxAkw)(1:lvar), NF_FOUT,
-!     &                                           4, w3dgrd, vidAkw)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxAkw)
-!# else
-!          text=vname(2,indxAkw)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidAkw, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxAkw))
-!          ierr=nf_put_att_text (ncid, vidAkw, 'units',     lvar,
-!     &                                  vname(3,indxAkw)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidAkw, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxAkw)) then
+          lvar=lenstr(vname(1,indxAkw))
+          ierr=nf_def_var (ncid, vname(1,indxAkw)(1:lvar), NF_FOUT,
+     &                                           4, w3dgrd, vidAkw)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxAkw)
+# else
+          text=vname(2,indxAkw)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidAkw, 'long_name', lvar,
+     &                                              text(1:lvar))
+          lvar=lenstr(vname(3,indxAkw))
+          ierr=nf_put_att_text (ncid, vidAkw, 'units',     lvar,
+     &                                  vname(3,indxAkw)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidAkw, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 !
 ! kvf: vertical vortex force term (u^St du/dz)
 !
-!        if (wrt(indxKVF)) then
-!          lvar=lenstr(vname(1,indxKVF))
-!          ierr=nf_def_var (ncid, vname(1,indxKVF)(1:lvar), NF_FOUT,
-!     &                                           4, r3dgrd, vidKVF)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxKVF)
-!# else
-!          text=vname(2,indxKVF)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidKVF, 'long_name', lvar,
-!     &                                             text(1:lvar))
-!          lvar=lenstr(vname(3,indxKVF))
-!          ierr=nf_put_att_text (ncid, vidKVF, 'units',     lvar,
-!     &                                 vname(3,indxKVF)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidKVF, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxKVF)) then
+          lvar=lenstr(vname(1,indxKVF))
+          ierr=nf_def_var (ncid, vname(1,indxKVF)(1:lvar), NF_FOUT,
+     &                                           4, r3dgrd, vidKVF)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxKVF)
+# else
+          text=vname(2,indxKVF)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidKVF, 'long_name', lvar,
+     &                                             text(1:lvar))
+          lvar=lenstr(vname(3,indxKVF))
+          ierr=nf_put_att_text (ncid, vidKVF, 'units',     lvar,
+     &                                 vname(3,indxKVF)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidKVF, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 
 !
 ! calP: surface pressure correction term appeared in prsgrd term
 !
-!        if (wrt(indxCALP)) then
-!          lvar=lenstr(vname(1,indxCALP))
-!          ierr=nf_def_var (ncid, vname(1,indxCALP)(1:lvar), NF_FOUT,
-!     &                                           3, r2dgrd, vidCALP)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxCALP)
-!# else
-!          text=vname(2,indxCALP)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidCALP, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxCALP))
-!          ierr=nf_put_att_text (ncid, vidCALP, 'units',     lvar,
-!     &                                 vname(3,indxCALP)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidCALP, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxCALP)) then
+          lvar=lenstr(vname(1,indxCALP))
+          ierr=nf_def_var (ncid, vname(1,indxCALP)(1:lvar), NF_FOUT,
+     &                                           3, r2dgrd, vidCALP)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxCALP)
+# else
+          text=vname(2,indxCALP)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidCALP, 'long_name', lvar,
+     &                                              text(1:lvar))
+          lvar=lenstr(vname(3,indxCALP))
+          ierr=nf_put_att_text (ncid, vidCALP, 'units',     lvar,
+     &                                 vname(3,indxCALP)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidCALP, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 !
 ! Kapsrf: surface Bernoulli head term appeared in prsgrd term
 !
-!        if (wrt(indxKAPS)) then
-!          lvar=lenstr(vname(1,indxKAPS))
-!          ierr=nf_def_var (ncid, vname(1,indxKAPS)(1:lvar), NF_FOUT,
-!     &                                           3, r2dgrd, vidKAPS)
-!# ifdef AVRH
-!          text='averaged '/ /vname(2,indxKAPS)
-!# else
-!          text=vname(2,indxKAPS)
-!# endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidKAPS, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxKAPS))
-!          ierr=nf_put_att_text (ncid, vidKAPS, 'units',     lvar,
-!     &                                 vname(3,indxKAPS)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidKAPS, '_FillValue',
-!     &                                NF_FOUT, 1, spv_set)
-!#  endif
-!        endif
+        if (wrt(indxKAPS)) then
+          lvar=lenstr(vname(1,indxKAPS))
+          ierr=nf_def_var (ncid, vname(1,indxKAPS)(1:lvar), NF_FOUT,
+     &                                           3, r2dgrd, vidKAPS)
+# ifdef AVRH
+          text='averaged '/ /vname(2,indxKAPS)
+# else
+          text=vname(2,indxKAPS)
+# endif
+          lvar=lenstr(text)
+          ierr=nf_put_att_text (ncid, vidKAPS, 'long_name', lvar,
+     &                                              text(1:lvar))
+          lvar=lenstr(vname(3,indxKAPS))
+          ierr=nf_put_att_text (ncid, vidKAPS, 'units',     lvar,
+     &                                 vname(3,indxKAPS)(1:lvar))
+#  ifdef MASK_LAND_DATA
+          ierr=nf_put_att_FOUT (ncid, vidKAPS, '_FillValue',
+     &                                NF_FOUT, 1, spv_set)
+#  endif
+        endif
 # endif  /* SOLVE3D */
 
       end subroutine def_his_def_var_wec
@@ -985,6 +1317,8 @@
          real :: cff1 ! This could be declared in module but not sure - here for now.
          real :: cff2 ! DevinD added for debug check
 
+         real :: stk(PRIVATE_2D_SCRATCH_ARRAY) ! ust2d = stk * wdrx
+
           ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
           ! This had to appear after other variables declared else wont compile
 #include "compute_auxiliary_bounds.h"
@@ -992,7 +1326,6 @@
 
          ! Taken from ana_init.F of DH's WAVE_PACKET code
 
-         real :: stk(PRIVATE_2D_SCRATCH_ARRAY)
 
           kkw=2.0*pi/1.0 ! Changed kw to kkw so as not to conflict part 2 also has kw
           env=0.0001
@@ -1000,20 +1333,30 @@
           Cg=0.5*sqrt(g/kkw)
 !           do j=jstrR,jendR
 !            do i=istrR,iendR
+!      ! DevinD  debug output
+!      write(*,*) 'iSW_corn', iSW_corn
+!      write(*,*) 'istr', istr
+!      write(*,*) 'dm_u(1,1)', dm_u(1,1)
           do j=jstr-1,jend+1
             do i=istr-1,iend+1
              do k=1,N
               t(i,j,k,1,itemp)=18.0
               t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
              enddo
+!             ! Debug to check coordinate vs index number
+!             if (i-istr==0 .or. i-istr==1) then
+!               write(*,*) 'i=', i, '; coord=', ( dble(i)+dble(iSW_corn) ) * dm_u(1,1)
+!             endif
+
              ! DevinD - whrm from Eq(29) of DH's 'A propagating wave packet.pdf
-!             cff1=(dble(i)+dble(iSW_corn)-(LLm/2))/pm(2,2)
-!             whrm(i,j)  = 0.001*2.0*exp(-env*cff1**2)       ! Hrms=2*A
-             cff1=modulo(time,(gnx/Cg))        ! Changed LLm to gnx
-             cff2=(dble(i)-(Cg*cff1)
-     &                +dble(iSW_corn)-(gnx/2))/pm(2,2)    ! initial shift mid domain
-             whrm(i,j)= 0.001*2.0*(exp(-env*cff2**2)
-     &                      +exp(-env*(cff2+gnx/pm(2,2))**2))
+             cff1=modulo(time, (gnx * dm_u(1,1)) / Cg ) ! = t' = cff1. Changed LLm to gnx.
+             ! Position relative to wave centre.
+             ! Cg*t gives metres, other variables in grid points not meters.
+             ! -1 is needed because node number i=1 is at coord 0m
+             cff2= ( dble(i)+dble(iSW_corn)-1 ) * dm_u(1,1) - (Cg*cff1) ! dm_u is grid spacing (m) in x. Uniform grid.
+     &             - (gnx*dm_u(1,1) )/2 ! initial shift mid domain
+             whrm(i,j)= 0.001*2.0*( exp(-env * cff2**2)
+     &                      + exp( -env * (cff2+gnx*dm_u(1,1))**2 ) ) ! gnx*dm_u = nodes x spacing = metres
              wfrq(i,j)   = sqrt(g*kkw)
              wdrx(i,j)   = 1.0                             ! cosine wave direction (xi)
              wdre(i,j)   = 0.0                             ! sine wave direction (eta)
@@ -1028,19 +1371,33 @@
              if (i>istr-1) then
                 ! DevinD - ust2d averaged to rho-point, but it seems this
                 ! is the wrong conversion process for u-to-rho conversion.
-                ust2d(i,j)= 0.5*(stk(i-1,j)*wdrx(i-1,j)+stk(i,j)*wdrx(i,j))
-!                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-!     &                         ust2d(i,j)
-                ! ubar should be at u-point - hence using stk
+!                ust2d(i,j)= 0.5*(stk(i-1,j)*wdrx(i-1,j)+stk(i,j)*wdrx(i,j))
+!                ust2d(i,j)= stk(i,j)*wdrx(i,j)
+!                if(mynode==4 .and. i==1) then
+!                  write(*,*) 'time=',time
+!                  write(*,*) 'b4ust2d(i,j)=',ust2d(i,j),',i=', i,',j=', j
+!                  write(*,*) 'b4ust2d(i+1,j)=',ust2d(i+1,j)
+!                end if
+                ust2d(i,j)= stk(i,j)*wdrx(i,j) ! Try i-1
+!                if(mynode==4 .and. i==1) then
+!                  write(*,*) 'aust2d(i,j)=',ust2d(i,j),',i=', i,',j=', j
+!                  write(*,*) 'aust2d(i+1,j)=',ust2d(i+1,j)
+!                end if
                 ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-     &                         stk(i,j)
+     &                         ust2d(i,j)
+                ! ubar should be at u-point - hence using stk
+!                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+!     &                         stk(i,j)
 !                ! DevinD - attempted hack to correct phase shift stk(i-1)
 !                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
 !     &                         stk(i-1,j)
 !                zeta(i,j,1) = ubar(i,j,1)*Cg/g
                 ! zeta should be at rho-point - hence using ust2d
+!                zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+!     &                         ust2d(i,j)*Cg/g
+                ! zeta is rho-point, so averaging u-to-rho
                 zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-     &                         ust2d(i,j)*Cg/g
+     &                         0.5*( ust2d(i,j)+ust2d(i+1,j) )  *Cg/g
                 brk2dx(i,j) = 0.0
                 brk2de(i,j) = 0.0
                 frc2dx(i,j) = 0.0
@@ -1077,6 +1434,9 @@
          integer, intent(in) :: istr, iend, jstr, jend
          ! Declare looping indices
          integer :: i, j
+      ! Declare coefficient variables
+      real :: cff1,cff2
+      real :: x_coord ! x_coordinate for calculating whrm
 
          ! get all cppdefs flags
 ! # include "cppdefs.h" - included in top of module (left here to remember where they were needed)
@@ -1098,67 +1458,7 @@
 !          ! For PART 1: Declare some variables from analytical.F
 !          real :: kkw, env, Cg - in top of module
 
-          ! For PART 2: declare variables needed
-          ! note - commented out SEEMINGLY unneeded variables
-          real :: cff,cff1,cff2,cff3,cff4,
-     &      inv_g,
-     &      khd, kh,
-     &      umag,
-     &      eps,
-     &      wave_ramp,
-     &      wramp2,kbrk,fb,fb0,fb1,fb2,inv_fbs,
-     &      bconst,tauc,tauw,Uorb1,ka_f00,hz0,z_tide,
-     &      dtinv,inv_zb,a_brk,a_kv,c1o3,c4o3,inv_k,dd,ust_ker,intfb,
-     &      fbsrf,fn1,fn2,khmax,bz1,bz2,beta,abot,delta,
-     &      a_frc,kfrc
 
-          real ::  wh(PRIVATE_2D_SCRATCH_ARRAY),
-     &             fr(PRIVATE_2D_SCRATCH_ARRAY),
-     &             kw(PRIVATE_2D_SCRATCH_ARRAY),
-     &            brk(PRIVATE_2D_SCRATCH_ARRAY),
-     &            stk(PRIVATE_2D_SCRATCH_ARRAY),
-     &           Dstp(PRIVATE_2D_SCRATCH_ARRAY),
-     &            act(PRIVATE_2D_SCRATCH_ARRAY),
-     &             kD(PRIVATE_2D_SCRATCH_ARRAY),
-     &          inv_d(PRIVATE_2D_SCRATCH_ARRAY),
-     &          inv_f(PRIVATE_2D_SCRATCH_ARRAY),
-     &            frc(PRIVATE_2D_SCRATCH_ARRAY),
-     &           ebrk(PRIVATE_2D_SCRATCH_ARRAY),
-     &           erol(PRIVATE_2D_SCRATCH_ARRAY)
-
-
-
-!          real, parameter :: eps=1.e-10,
-          parameter ( eps=1.e-10,
-# ifdef STOKESEKMAN
-     &                bconst=0.D0,
-# else
-     &                bconst=0.1D0, !0.03D0,               ! breaking contribution to KPP
-# endif
-     &                a_kv=1.2D0, !1.2D0                 ! breaking scale for eddy visc.
-     &                a_brk=0.2D0,                ! breaking scale for body force
-     &                a_frc=3.D0,                 ! friction scale for body force
-     &                khmax=20.D0,                ! deep-water limit for k x dep
-     &                c1o3=0.3333333333333333,    ! 1/3
-     &                c4o3=1.3333333333333333     ! 4/3
-     &               )
-
-
-# ifdef SOLVE3D
-          integer  k,kk
-          real     wrk1(PRIVATE_2D_SCRATCH_ARRAY,0:nz),
-     &             wrk2(PRIVATE_2D_SCRATCH_ARRAY,0:nz),
-     &             wrk3(PRIVATE_2D_SCRATCH_ARRAY,0:N),
-     &             wrk4(0:N),wrk5(0:N),wrk6(0:N), kvsurf
-# endif
-
-
-          ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
-          ! This had to appear after eps=1.e-10 else wont compile
-#include "compute_auxiliary_bounds.h"
-
-      ! DevinD - this flag is needed for kh variable used for ust/vst
-# define KH_HUNT
 
           !!!!!!!!!!
           ! If first step - Cancelled as put in ana_init.F instead
@@ -1182,18 +1482,44 @@
           ! The following code is taken from analytical.F L995 from DH's
           ! WAVE_PACKET example code
 
+! ######## NOTE: stokes variables calculated in wec_forces and take in
+!                whrm as rho-point variable because that is how non-analytical
+!                code works, so need to be consistent.
 
+
+! Note: grid node i=1 is the western most node at x=0m <- account for this.
+!       Hence also, u-point to rho conversion as index is at u-point
+!       Hence: wrhm_rho(i,j) = 0.5*(tmp_whrm_u(i,j)+tmp_whrm_u(i+1,j))
 
           kkw=2.0*pi/1.0 ! Changed kw to kkw so as not to conflict part 2
           env=0.0001
           Cg=0.5*sqrt(g/kkw)
           do j=jstr-1,jend+1
             do i=istr-1,iend+1
-              cff1=modulo(time,(gnx/Cg))        ! Changed LLm to gnx
-              cff2=(dble(i)-(Cg*cff1)
-     &                +dble(iSW_corn)-(gnx/2))/pm(2,2)    ! initial shift mid domain
-              whrm(i,j)= 0.001*2.0*(exp(-env*cff2**2)
-     &                      +exp(-env*(cff2+gnx/pm(2,2))**2))
+
+              ! DevinD - whrm from Eq(29) of DH's 'A propagating wave packet.pdf
+
+              ! t' = cff1
+              cff1=modulo(time, (gnx * dm_u(1,1)) / Cg )
+
+              ! ### whrm at rho-point=i ###
+
+              ! Calculate x coordinate at rho-point=i.
+              ! Since u-point i=1 should equal 0m for western tile.
+              ! Since rho-point i=1 should equal 0.5m for western tile
+              ! if grid spacing dx=1m. Hence -0.5*dm_u for rho-point coord.
+              x_coord = ( dble(i)+dble(iSW_corn)-0.5 ) * dm_u(1,1)
+
+              ! Position relative to wave centre.
+              ! Cg*t' = Cg*cff1 gives metres of distance wave travelled,
+              ! other variables in grid points not meters.
+              ! -1 is needed because node number i=1 is at coord 0m
+              cff2= x_coord - (Cg*cff1) ! dm_u is grid spacing (m) in x. Uniform grid.
+     &             - ( gnx*dm_u(1,1) )/2 ! initial shift mid domain
+              whrm(i,j)= 0.001*2.0*( exp(-env * cff2**2)
+     &                      + exp( -env * (cff2+gnx*dm_u(1,1))**2 ) ) ! gnx*dm_u = nodes x spacing = metres
+
+
               wfrq(i,j)= sqrt(g*2.0*pi)
               wdrx(i,j)= 1.0                             ! cosine wave direction (xi)
               wdre(i,j)= 0.0                             ! sine wave direction (eta)
@@ -1204,897 +1530,8 @@
 
             !*** END PART 1 ***!
 
-          !!!!!
-          ! Taken from mrl_wci.F
-          !!!!!
-
-            !*** PART 2 - from DH's WAVE_PACKET mrl_wci.F ***!
-
-          wave_ramp = 1.0
-!          wramp2= wave_ramp**2
-          inv_g = 1.0/g
-!
-!        ! Evaluate 2DH wave-current interaction variable.
-!        ! ================================================
-!        !
-!        ! 2DH Stokes velocities, breaking, roller and bottom-friction
-!        ! dissipation terms, defined at horizontal rho-points.
-
-          ! Note: this would normally involve A3d and A2d scratch
-          ! variables, but I have ignored them for ease now.
-
-          do j=jstr-1,jend+1
-            do i=istr-1,iend+1
-!              Dstp(i,j)=max(h(i,j)+zeta(i,j,knew),eps)
-              Dstp(i,j)=h(i,j)
-              inv_d(i,j)=1.0/Dstp(i,j)
-# ifdef WKB_WWAVE
-          fr(i,j) =frq(i,j,wnew)
-          wh(i,j) =wave_ramp*hrm(i,j,wnew)
-          kw(i,j) =max(wvn(i,j,wnew),eps)
-#  ifndef SURFACE_ROLLER
-          cff = wramp2*wsb(i,j,wnew)
-          ebrk(i,j)=cff*fr(i,j)                  ! epsilon_b (m3/s3)
-!          ebrk(i,j)=0                  ! epsilon_b (m3/s3) ! kaida
-#  else
-          ebrk(i,j)=wramp2*wsb(i,j,wnew)*fr(i,j) ! epsilon_b (m3/s3)
-!          ebrk(i,j)=0 ! epsilon_b (m3/s3) ! kaida
-          erol(i,j)=wamp2*wsr(i,j,wnew)*fr(i,j) ! epsilon_r (m3/s3)
-!          erol(i,j)=0 !kaida
-          cff =wramp2*( wsr(i,j,wnew)+           ! for breaking term
-     &           (1.-wkb_roller)*wsb(i,j,wnew) ) ! primary + roller
-#  endif
-          brk(i,j) =cff*kw(i,j)                  ! 2DH breaking term
-          frc(i,j) =wramp2*wfc(i,j,wnew)*kw(i,j) ! 2DH friction term
-#  ifdef MRL_CEW
-          kD(i,j) =kw(i,j)*Dstp(i,j)
-#  else
-          kD(i,j) =kw(i,j)*(h(i,j)+wkb_tide)
-#  endif
-#  ifndef SURFACE_ROLLER
-          act(i,j) =wramp2*wac(i,j,wnew)         ! wave action density
-#  else
-          act(i,j) =wramp2*(wac(i,j,wnew)+war(i,j,wnew))
-#  endif
-# else    /* ifndef WKB_WWAVE */
-          fr(i,j) =wfrq(i,j)
-          wh(i,j) =wave_ramp*whrm(i,j)
-          inv_f(i,j) =1.0/max(fr(i,j),eps)
-          khd = Dstp(i,j)*(fr(i,j)**2)*inv_g
-#  if defined KH_SOULSBY
-          if (khd.ge.1.0D0) then        ! explicit wavenumber estimator
-           kh=khd
-          else
-           kh=sqrt(khd)
-          endif
-          do k=1,3
-            cff = tanh(kh)
-            kh = kh-(kh*cff-khd)/max(cff+kh*(1.0-cff**2),eps)
-          enddo
-#  elif defined KH_HUNT
-          kh = sqrt( khd*khd + khd/(1.0 + khd*(0.6666666666
-     &               +khd*(0.3555555555 + khd*(0.1608465608
-     &               +khd*(0.0632098765 + khd*(0.0217540484
-     &                            +khd*0.0065407983)))))) )
-#  endif
-          kD(i,j) =kh
-          kw(i,j) =kh*inv_d(i,j)
-          ebrk(i,j) =wramp2*wveb(i,j)            ! epsilon_b (m3/s3)
-          ebrk(i,j) =0            ! epsilon_b (m3/s3) kaida DD
-
-#  ifdef SURFACE_ROLLER
-          erol(i,j) =wramp2*0.5762*Dstp(i,j)*    ! epsilon_r (m3/s3)
-     &               whrm(i,j)*wvqb(i,j)*        ! 0.5762=0.06*sinb*g^2
-     &               kw(i,j)*inv_f(i,j)          ! Nairn et al (1991)
-          erol(i,j) =0            ! DD
-          cff =(1.-wkb_roller)*ebrk(i,j)+erol(i,j)
-#  else
-          cff =ebrk(i,j)
-#  endif
-          frc(i,j) =wramp2*wved(i,j)*kw(i,j)
-     &                           *inv_f(i,j)     ! 2DH friction term
-          brk(i,j) =cff*kw(i,j)*inv_f(i,j)       ! 2DH breaking term
-          act(i,j) =inv_f(i,j)*(
-     &                      0.125*g*(wh(i,j)**2) ! wave action density
-#  ifdef SURFACE_ROLLER
-     &          +wramp2*0.03*g*Dstp(i,j)*wh(i,j)*wvqb(i,j)
-#  endif
-     &                                                   )
-# endif   /* ifdef WKB_WWAVE */
-!          stk(i,j) =act(i,j)*kw(i,j)*inv_d(i,j)  ! depth-averaged Stokes
-          stk(i,j) = 0.125*(whrm(i,j)**2)*wfrq(i,j)   ! DD
-     &                      /Dstp(i,j)
-# ifdef MASKING
-           kw(i,j) = kw(i,j)*rmask(i,j)
-           kD(i,j) = kD(i,j)*rmask(i,j)
-          act(i,j) =act(i,j)*rmask(i,j)
-          stk(i,j) =stk(i,j)*rmask(i,j)
-          brk(i,j) =brk(i,j)*rmask(i,j)
-          frc(i,j) =frc(i,j)*rmask(i,j)
-# endif   /* apply land mask */
-            enddo
-          enddo              ! <-- discard inv_d (ifndef BBL_F00)
-# ifdef BRK0
-    !      print *, 'depth-induced wave breaking deactivated'
-          do j=jstr-1,jend+1
-            do i=istr-1,iend+1
-              brk(i,j)=0.D0
-            enddo
-          enddo
-# endif
-!
-! sup : quasi-static sea-level response, set-up. no interaction.
-! ==============================================================
-!
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sup(i,j) =0.0
-!          sup(i,j) =-0.125*(wh(i,j)**2)*kw(i,j)
-!     &              /sinh(2.*kD(i,j))
-!     &              /max(sinh(2.*min(kD(i,j),khmax)),eps)
-#  ifdef MASKING
-     &                                        *rmask(i,j)
-#  endif
-        enddo
-      enddo
-!
-! Dissipation terms : copy into shared arrays
-! ===========================================
-!
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          wdsp(i,j)=ebrk(i,j)         ! epsilon_b (m3/s3)
-# ifdef SURFACE_ROLLER
-          rdsp(i,j)=erol(i,j)         ! epsilon_r (m3/s3)
-# endif
-# ifdef WKB_WWAVE
-          cff = wramp2*wfc(i,j,wnew)
-# else
-!# elif !defined WKB_WWAVE & defined SWAN_OFFLINE
-          cff = wramp2*wved(i,j)*inv_f(i,j)
-# endif
-          wdrg(i,j)=cff*fr(i,j)       ! epsilon_d (m3/s3)
-          wbst(i,j)=cff*kw(i,j)       ! e_d stress (m2/s2) for KPP
-# ifdef MASKING
-          wdsp(i,j)=wdsp(i,j)*rmask(i,j)
-          wbst(i,j)=wbst(i,j)*rmask(i,j)
-          wdrg(i,j)=wdrg(i,j)*rmask(i,j)
-#  ifdef SURFACE_ROLLER
-          rdsp(i,j)=rdsp(i,j)*rmask(i,j)
-#  endif
-# endif
-        enddo
-      enddo
-# ifndef WKB_WWAVE
-#  undef inv_f
-# endif
-!
-! 2DH depth-averaged Stokes drift and breaking acceleration
-! =========================================================
-!
-      do j=jstrR,jendR
-        do i=istr,iendR
-          ust2d(i,j)  =0.5*(stk(i-1,j)*wdrx(i-1,j)+stk(i,j)*wdrx(i,j))
-          brk2dx(i,j) =0.5*(brk(i-1,j)*wdrx(i-1,j)+brk(i,j)*wdrx(i,j))
-          frc2dx(i,j) =0.5*(frc(i-1,j)*wdrx(i-1,j)+frc(i,j)*wdrx(i,j))
-#  ifdef MASKING
-#   ifdef SHOREFACE
-          ust2d(i,j)  = ust2d(i,j)*umask(i,j)
-#   endif
-          brk2dx(i,j) =brk2dx(i,j)*umask(i,j)
-          frc2dx(i,j) =frc2dx(i,j)*umask(i,j)
-#  endif
-        enddo
-      enddo
-
-            ! DevinD - I don't know why vst2d is not included in loop
-            ! above for efficiency, but I have kept it separate.
-
-      do j=jstr,jendR
-        do i=istrR,iendR
-          vst2d(i,j)  =0.5*(stk(i,j-1)*wdre(i,j-1)+stk(i,j)*wdre(i,j))
-          brk2de(i,j) =0.5*(brk(i,j-1)*wdre(i,j-1)+brk(i,j)*wdre(i,j))
-          frc2de(i,j) =0.5*(frc(i,j-1)*wdre(i,j-1)+frc(i,j)*wdre(i,j))
-#  ifdef MASKING
-#   ifdef SHOREFACE
-          vst2d(i,j)  = vst2d(i,j)*vmask(i,j)
-#   endif
-          brk2de(i,j) =brk2de(i,j)*vmask(i,j)
-          frc2de(i,j) =frc2de(i,j)*vmask(i,j)
-#  endif
-        enddo
-      enddo       ! <-- discard stk
-
-!
-! Combined wave-current bottom drag coefficient r_D at rho-points
-! ===============================================================
-!
-!# if !defined BBL && (defined BBL_S95 || defined BBL_F00 || defined BBL_QUAD2D)
-!      inv_zb=1.0/max(Zob,eps)
-! continues here but have left out as does not seem relevant and a lot of code
-
-#ifdef SOLVE3D
-!
-! Conservative 3D wave-current interaction variables.
-! ===================================================
-!
-! We estimate cell-averaged 3D Stokes drift velocity (ust_r) by
-! presuming that roller Stokes drift has the same z-dependency as
-! the primary waves.  Analytical volume-averaging operation is
-! applied to 3D Stokes drift velocity such that:
-!
-!   u^st = 0.5*g*A^2/frq*k/dz/(1-exp(-4*k*D))*
-!         ( exp(2*k*(z_up +h-D)) -exp(-2*k*(z_up +h+D))
-!          -exp(2*k*(z_low+h-D)) +exp(-2*k*(z_low+h+D)) )
-!
-! in which sinh, cosh, and tanh functions in u^st are expanded to
-! exponential function so as not to be singular when kD gets very
-! large.  Here 0.5*g*A^2/frq is equivalent to wave action density.
-! The similar rule is also adapted in computation of CalP, Kapsrf,
-! and Akw terms (see the code below).
-!
-# define ust_r wrk1
-# define inv_dz wrk2
-# define inv_ex inv_f
-!
-! 3D depth-dependent Stokes drift velocities
-! ==========================================
-!
-
-      do j=jstr-1,jend+1
-        do i=istr-1,iend+1
-
-          inv_ex(i,j)=1.0/(1.0-exp(-4.*kD(i,j))
-     &                        -2.0*exp(-2.*kD(i,j)))
-!          inv_ex(i,j)=1.0/max(1.0-exp(-4.*kD(i,j))
-!     &                        -2.0*exp(-2.*kD(i,j)),eps)
-          ust_ker=(act(i,j)*(sqrt(g*kw(i,j)*tanh(kD(i,j)))**2)/9.81)
-     &                    *inv_ex(i,j)
-!          ust_ker=act(i,j)*kw(i,j)*inv_ex(i,j)
-          cff1 = exp( 2.*kw(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
-     &          -exp(-2.*kw(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
-          do k=1,N,+1              ! <-- irreversible
-            inv_dz(i,j,k)=1./Hz(i,j,k)
-            cff2 = exp( 2.*kw(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
-     &            -exp(-2.*kw(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
-            ust_r(i,j,k) =ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
-            cff1=cff2
-!
-! Horizontal interpolation of ust_r to u- & v- points.
-! *** Notice that mask should NOT be applied here.
-!
-            if (i>istr-1) then
-                    ust(i,j,k)=0.5*( ust_r(i-1,j,k)*wdrx(i-1,j)
-     &                        +ust_r(i,j,k)*wdrx(i,j) )
-            end if
-            if (j>jstr-1) then
-                    vst(i,j,k)=0.5*( ust_r(i,j-1,k)*wdre(i,j-1)
-     &                        +ust_r(i,j,k)*wdre(i,j) )
-            end if
-          enddo
-        enddo
-      enddo                 ! <-- keep ust_r, inv_dz, inv_ex
-
-      ! DevinD  debug output
-!      write(*,*) 'act(1,1)', act(1,1)
-!      write(*,*) 'inv_ex(1,1)', inv_ex(1,1)
-!      write(*,*) 'kh', kh
-!      write(*,*) 'kD(1,1)', kD(1,1)
-!      write(*,*) 'tanh(kD(1,1))', tanh(kD(1,1))
-!      write(*,*) 'ust_ker', ust_ker
-!      write(*,*) 'inv_dz(1,1,2)', inv_dz(1,1,2)
-!      write(*,*) 'ust_r(1,1,2)', ust_r(1,1,2)
-!      write(*,*) 'ust(1,1,1)', ust(1,1,1)
-!      write(*,*) 'ust(1,1,2)', ust(1,1,2)
-
-!
-! calP & Kapsrf: surface pressure & Bernoulli head at rho-point
-! =============================================================
-!
-# define kv wrk4
-# define dkvdz wrk5
-# define d2kv  wrk6
-# define actp umag
-      do j=jstr,jend        ! kv (k dot v) at rho-point
-        do i=istr,iend      ! and its 1st & 2nd derivertives
-          do k=1,N  ! DevinD change N to nz    ! at rho-point
-            kv(k) =0.5*kw(i,j)*(
-     &         wdrx(i,j)* ( u(i,j,k,nstp)+u(i+1,j,k,nstp) )
-     &       + wdre(i,j)* ( v(i,j,k,nstp)+v(i,j+1,k,nstp) ) )
-          enddo
-          kvsurf =1.5*kv(N)-0.5*kv(N-1) ! extrapolate to surface
-          do k=1,N-1
-            dkvdz(k) =2.0*(kv(k+1)-kv(k))/(Hz(i,j,k+1)+Hz(i,j,k))
-          enddo
-          dkvdz(0) = dkvdz(1)    !2.*dkvdz(1)-dkvdz(2) ! severe!
-          dkvdz(N) = dkvdz(N-1)  !2.*dkvdz(N-1)-dkvdz(N-2)
-          do k=1,N
-            d2kv(k) =dkvdz(k)-dkvdz(k-1) ! d^2kv/dz^2 x Hz
-          enddo
-          cff3 = 0.0
-          do k=1,N
-            dd   = z_r(i,j,k)-z_w(i,j,N)
-            cff3 = cff3 + d2kv(k)*(
-     &             exp( 2.*kw(i,j)*(dd-Dstp(i,j)))
-     &           + exp(-2.*kw(i,j)*(dd+Dstp(i,j))) )
-          enddo
-          cff1 =-2.0*exp(-2.*kD(i,j))*inv_ex(i,j)*dkvdz(N)
-          cff2 = dkvdz(0)/max(tanh(2.*kD(i,j)),eps)
-          cff3 = cff3*inv_ex(i,j)
-          cff4 =-2.0*kw(i,j)*kvsurf
-!ccccc          actp =0.125*g*(wh(i,j)**2)/max(fr(i,j),eps)
-!ccccc          calP(i,j) = actp*inv_g*tanh(kD(i,j))
-          actp=act(i,j) ! DevinD - this is unnecessary as is define actp
-          calP(i,j) = actp*tanh(kD(i,j))
-     &                    *( cff1+cff2+cff3+cff4 )
-#  ifdef MASKING
-     &                                 *rmask(i,j)
-#  endif
-          cff=0.0
-          do k=1,N
-            cff = cff +  d2kv(k)*
-     &         ( exp( 2.*kw(i,j)*(z_w(i,j,N)-z_r(i,j,k)-Dstp(i,j)))
-     &          -exp(-2.*kw(i,j)*(z_w(i,j,N)-z_r(i,j,k)+Dstp(i,j))) )
-          enddo
-#  undef KAPSRF_SAFE
-#  ifdef KAPSRF_SAFE
-c#   define FLT 0.98
-#   define FLT 0.5
-          Kapsrf(i,j) = ( FLT*Kapsrf(i,j)  ! time-filter to suppress noises
-     &                   +(1.0-FLT)*cff*actp*inv_ex(i,j) )
-#  else
-          Kapsrf(i,j) = cff*actp*inv_ex(i,j)
-#  endif
-#  ifdef MASKING
-     &                           *rmask(i,j)
-#  endif
-        enddo
-      enddo      ! <-- discard kv, dkvdz, d2kv, & inv_ex
-# undef kv
-# undef dkvdz
-# undef d2kv
-# undef inv_ex
-
-!
-! kvf : vertical vortex force term (K term) at rho-point
-! ======================================================
-!
-# define kvr wrk5
-      do j=jstr,jend
-        do i=istr,iend
-          do k=1,N-1       ! K term at horz rho- & vert w-point
-            kvr(k) = 0.25*(ust_r(i,j,k)+ust_r(i,j,k+1))*
-     &                ( wdrx(i,j)*(u(i,j,k+1,nstp)-u(i,j,k,nstp)
-     &                        +u(i+1,j,k+1,nstp)-u(i+1,j,k,nstp))
-     &                 +wdre(i,j)*(v(i,j,k+1,nstp)-v(i,j,k,nstp)
-     &                        +v(i,j+1,k+1,nstp)-v(i,j+1,k,nstp)))
-     &                                 /(z_r(i,j,k+1)-z_r(i,j,k))
-          enddo
-          kvr(0)=2.*kvr(1)-kvr(2)    ! 0.D0    ! bottom & top B.Cs.
-          kvr(N)=2.*kvr(N-1)-kvr(N-2)
-          do k=1,N                             ! move to vert rho-point
-            kvf(i,j,k)=0.5*( kvr(k)+kvr(k-1) ) ! copy into a shared array
-#  ifdef MASKING
-     &                             *rmask(i,j)
-#  endif
-          enddo
-        enddo
-      enddo           ! <-- discard ust_r, kvr
-# undef ust_r
-# undef kvr
-
-# ifdef KVF0
-      do k=1,N
-        do j=jmin,jend
-          do i=imin,iend
-            kvf(i,j,k)=0.D0
-          enddo
-        enddo
-      enddo
-# endif
-
-
-!
-! Akw: primary wave-induced additional diffusivity for tracers at w-point
-! =======================================================================
-!
-!      cff=wave_ramp/dt
-      do j=jstrR,jendR
-        do i=istrR,iendR
-!          cff2 = 0.25*wh(i,j)/max(1.-exp(-2.*kD(i,j)),eps)
-          do k=0,N
-!            cff1 = cff2*( exp( kw(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
-!     &                   -exp(-kw(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j))) )
-!            cff3 = cff1**2
-            Akw(i,j,k) = 0.D0
-!            Akw(i,j,k) = cff*(cff3-E_pre(i,j,k))
-#  ifdef MASKING
-     &                               *rmask(i,j)
-#  endif
-!            E_pre(i,j,k) = cff3   ! store this for the next time step.
-          enddo
-        enddo
-      enddo
-!
-! Non conservative wave-current interaction variables.
-! ====================================================
-!
-! We estimate cell-averaged 3D breaking acceleration (brk_r),
-! breaking-enhaced vertical eddy viscosity (Akb), and bottom
-! wave streaming-induced acceleration (frc_r).  brk_r, Akb, and
-! frc_r are assumed to follow an arbitrary vertical shape function,
-! fb (or fkv, fwd for Akb & frc_r) with a surface/bottom scale,
-! where kb^-1 = a_brk Hrms (for fb), or kb^-1 = a_kv Hrms (for fkv),
-! or kb^-1 = a_frc x delta (for fwd), where Hrms is rms wave height
-! and delta is turbulent wave boundary layer thickness.  a_brk,
-! a_kv and a_frc are considered O(1) parameters which determine
-! vertical penetration of breaking-driven momenta, additional eddy
-! kinetic energy by breaking, and streaming-induced momenta near
-! the bed.  fb (fkv and fwd) is designed with three (plus one
-! special case for fb) different ways:
-!
-!  FUNC1: gb~1-tanh(kb(\zeta-z))^4 : Warner et al (2008)
-!  FUNC2: gb~1-tanh(kb(\zeta-z))^2 : modified from the above
-!  FUNC3: gb~cosh(kb(z+h))         : analogous to primary wave
-!  FUNC0: gb~1                     : vertically uniform (Fb only)
-!
-! where fb(z) = gb(z) / [\int^D gb(z') dz'] = 1, thus vertical
-! integral of fb is normalized.  Then volume-averaging operation is
-! applied.  Exactly the same procedure is taken for fkv (not show
-! here), while slightly different consideration is taken for fwd
-! (see below).  In practice, vertical integrals of gb should have
-! the following forms:
-!
-!   1) FUNC1
-!
-!                      4      3e^{4kbz}+3e^{2kbz}+2
-!   \int gb(z') dz' = ---*-------------------------------
-!                     3kb  e^{6kbz}+3e^{4kbz}+3e^{2kbz}+1
-!
-!                      4  3e^{-2kbz}+3e^{-4kbz}+2e^{-6kbz}
-!                   = ---*---------------------------------
-!                     3kb 1+3e^{-2kbz}+3e^{-4kbz}+e^{-6kbz}
-!
-!   2) FUNC2
-!
-!                      2     1         2  e^{-2kbz}
-!   \int gb(z') dz' = --*---------- = --*-----------
-!                     kb e^{2kbz}+1   kb 1+e^{-2kbz}
-!
-!   3) FUNC3
-!
-!   \int gb(z') dz' = [sinh(kb*z)]/kb
-!
-!   and then for FUNC3
-!
-!           kb       1     z2
-!   fb = ----------*--*\int  cosh[kb(z+h)] dz
-!        sinh(kb*D) dz     z1
-!
-!                1                                       z2
-!      = -----------------*[e^{kb(z+h-D)}-e^{-kb(z+h+D)}]
-!        dz*(1-e^{-2kb*D})                               z1
-!
-! in which hyperbolic functions (sinh, cosh, and tanh) in fb
-! are expanded to exponential function so as not to be singular
-! when kD is very large.
-!
-! Additionally, we can introduce gb=1 (vertically uniform function)
-! with FB_FUNC0 for experimental purposes.  This option can be
-! chosen only for fb since it may be unappropriate to fkv and fwd.
-!
-! Note that the above expressions are introduced in order to
-! avoid the integral being Inf or NaN when kb^-1 -> 0.
-!
-# if defined LMD_MIXING && !defined AKB0
-#  define kb0 wrk4
-#  define vs  cff1
-#  define kvb cff2
-!
-! Akb: Eddy viscosity due to depth-induced wave breaking
-! ======================================================
-!
-!yu      do j=jstr-1,jend+1
-!yu        do i=istr-1,iend+1
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          inv_k =min(max(a_kv*wh(i,j),eps),Dstp(i,j))
-          kbrk  =1.0/inv_k         ! vertical scale for breaking
-#  ifdef FKV_FUNC1
-          fn1   =3.*(exp(-2.*kbrk*Dstp(i,j))+exp(-4.*kbrk*Dstp(i,j)))
-          fn2   =exp(-6.*kbrk*Dstp(i,j))
-          fb1   =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
-          intfb =c4o3*inv_k - fb1  ! intfb = \int^D gb(z') dz'
-          fb0   =1.D0/intfb        ! 1/[\int^D gb(z') dz']
-#  elif defined FKV_FUNC2
-          fn1   =exp(-2.*kbrk*Dstp(i,j))
-          fb1   =2.*inv_k*fn1/(1.+fn1)
-          intfb =inv_k - fb1
-          fb0   =1.D0/intfb
-#  elif defined FKV_FUNC3
-          fb1   =0.0               ! fb1 = \int gb dz at z = -h
-          fb0   =1.D0/(1.-exp(-2.*kbrk*Dstp(i,j)))
-#  endif
-#  ifndef SURFACE_ROLLER
-          vs    =ebrk(i,j)**c1o3   ! representative velocity scale
-#  else
-          vs    =((1.-wkb_roller)*ebrk(i,j)+erol(i,j))**c1o3
-#  endif
-          kvb   =bconst*vs*wh(i,j) ! depth-averaged Akb
-          do k=1,N,+1              ! <-- irreversible
-#  ifdef FKV_FUNC1
-            dd  =zeta(i,j,knew)-z_w(i,j,k)
-            fn1 =3.*(exp(-2.*kbrk*dd)+exp(-4.*kbrk*dd))
-            fn2 =exp(-6.*kbrk*dd)
-            fb2 =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
-#  elif defined FKV_FUNC2
-            fn1 =exp(-2.*kbrk*(zeta(i,j,knew)-z_w(i,j,k)))
-            fb2 =2.*inv_k*fn1/(1.+fn1)
-#  elif defined FKV_FUNC3
-            fb2 =exp( kbrk*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
-     &          -exp(-kbrk*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
-#  endif
-            fb =fb0*inv_dz(i,j,k)*(fb2-fb1)
-
-            kb0(k) = kvb*fb*Dstp(i,j)
-            fb1=fb2     ! recursive procedure
-          enddo
-          do k=1,N-1
-            Akb(i,j,k)=0.5*(kb0(k)+kb0(k+1))
-          enddo
-          Akb(i,j,0)=0.D0
-          Akb(i,j,N)=max(1.5*kb0(N)-0.5*kb0(N-1),0.0)
-!            if (mynode.eq.1) then
-!              print*,' '
-!              print*, Akb(10,10,k)
-!              print*,' '
-!            endif
-#  ifdef MASKING
-          do k=0,N
-            Akb(i,j,k)=Akb(i,j,k)*rmask(i,j)
-          enddo
-#  endif
-        enddo
-      enddo        ! <-- discard kb0
-#  undef kb0
-# endif    /* LMD_MIXING */
-
-# ifndef SURFACE_BREAK
-#  define brk_r wrk3
-!
-! 3D breaking acceleration term defined as a body force.
-! =====================================================
-!
-      do j=jstr-1,jend+1
-        do i=istr-1,iend+1
-#  ifdef FB_FUNC0
-          do k=1,N                 ! vertically uniform case
-            brk_r(i,j,k) = brk(i,j)*inv_d(i,j)
-          enddo                    ! <-- discard inv_d
-#  else
-#   ifdef FB_WSCALE
-          inv_k =1.0/max(2.0*kw(i,j),eps)  ! Stokes scale
-#   else
-          inv_k =min(max(a_brk*wh(i,j),eps),Dstp(i,j))
-#   endif
-          kbrk  =1.0/inv_k         ! vertical scale for breaking
-#   ifdef FB_FUNC1
-          fn1   =3.*(exp(-2.*kbrk*Dstp(i,j))+exp(-4.*kbrk*Dstp(i,j)))
-          fn2   =exp(-6.*kbrk*Dstp(i,j))
-          fb1   =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
-          intfb =c4o3*inv_k - fb1  ! intfb = \int^D gb(z') dz'
-          fb0   =1.D0/intfb        ! 1/[\int^D gb(z') dz']
-#   elif defined FB_FUNC2
-          fn1   =exp(-2.*kbrk*Dstp(i,j))
-          fb1   =2.*inv_k*fn1/(1.+fn1)
-          intfb =inv_k - fb1
-          fb0   =1.D0/intfb
-#   elif defined FB_FUNC3
-          fb1   =0.0               ! fb1 = \int gb dz at z = -h
-          fb0   =1.D0/(1.-exp(-2.*kbrk*Dstp(i,j)))
-#   endif
-          do k=1,N,+1              ! <-- irreversible
-#   ifdef FB_FUNC1
-            dd  =zeta(i,j,knew)-z_w(i,j,k)
-            fn1 =3.*(exp(-2.*kbrk*dd)+exp(-4.*kbrk*dd))
-            fn2 =exp(-6.*kbrk*dd)
-            fb2 =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
-#   elif defined FB_FUNC2
-            fn1 =exp(-2.*kbrk*(zeta(i,j,knew)-z_w(i,j,k)))
-            fb2 =2.*inv_k*fn1/(1.+fn1)
-#   elif defined FB_FUNC3
-            fb2 =exp( kbrk*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
-     &          -exp(-kbrk*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
-#   endif
-            fb =fb0*inv_dz(i,j,k)*(fb2-fb1)
-            brk_r(i,j,k) = fb*brk(i,j)
-            fb1=fb2     ! recursive procedure
-          enddo
-#  endif       /* ifdef FB_FUNC0 */
-        enddo
-      enddo
-
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istr,iendR
-            brk3dx(i,j,k)=0.5*( brk_r(i-1,j,k)*wdrx(i-1,j)
-     &                           +brk_r(i,j,k)*wdrx(i,j) )
-#  ifdef MASKING
-     &                                         *umask(i,j)
-#  endif
-          enddo
-        enddo
-        do j=jstr,jendR
-          do i=istrR,iendR
-            brk3de(i,j,k)=0.5*( brk_r(i,j-1,k)*wdre(i,j-1)
-     &                           +brk_r(i,j,k)*wdre(i,j) )
-#  ifdef MASKING
-     &                                         *vmask(i,j)
-#  endif
-          enddo
-        enddo
-      enddo       ! <-- discard brk_r, but keep ust_r
-#  undef brk_r
-# endif        /* ifndef SURFACE_BREAK */
-# undef inv_d
-!
-! 3D bottom streaming acceleration term defined as a body force.
-! ==============================================================
-!
-!  Convert wave-induced bottom streaming as a grid-averaged body
-!  force. Similarly to the breaking acceleration, we can invoke one
-!  of the following three kernal functions:
-!
-!   FUNC1: fb~1-tanh(kf(h+z))^4 : Warner et al (2008)
-!   FUNC2: fb~1-tanh(kf(h+z))^2 : modified from the above
-!   FUNC3: fb~cosh(kf(zeta-z))  : analogous to primary wave
-!
-!  Notice that for now the z-coordinate is inverted, and thus defined
-!  from the bottom.  The length scale, k_wd^-1, is referenced to the
-!  turbulent wave bottom boundary layer thickness, delta, which is
-!  evaluated by Eq (2.45) in Fredsoe & Deigaard (Mechanics of Caostal
-!  Sediment Transport, 1992, p.25).  There is also another option to
-!  identify the laminar bottom streaming by Longuet-Higgins (1953),
-!  which is required to reproduce Xu & Bowen (1994) and Lentz et al.
-!  (2008).
-!
-# if defined WAVE_FRICTION && defined BODY_FRICTION
-#  undef LH53_STREAMING
-#  ifdef ANA_VMIX
-#   define LH53_STREAMING
-#  endif
-#  define frc_r wrk3
-#  define frc2d stk
-      do j=jstr-1,jend+1
-        do i=istr-1,iend+1
-#  ifndef LH53_STREAMING
-          abot  =wh(i,j)/max(2.D0*sinh(min(kD(i,j),khmax)),eps)
-          delta =0.160455*((abot/Zob)**0.83)*Zob  ! BBL thickness
-          inv_k =min(max(a_frc*delta,eps),Dstp(i,j))
-          kfrc  =1.0/inv_k         ! vertical scale for wave friction
-#   ifdef FF_FUNC1
-          fn1   =3.*(exp(-2.*kfrc*Dstp(i,j))+exp(-4.*kfrc*Dstp(i,j)))
-          fn2   =exp(-6.*kfrc*Dstp(i,j))
-          fb1   =c4o3*inv_k        ! fb1: at z=-h (z_w at k=0)
-          fb2   =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
-          intfb =fb2-fb1           ! intfb = \int^D gb(z') dz'
-          fb0   =1.D0/intfb        ! 1/[\int^D gb(z') dz']
-#   elif defined FF_FUNC2
-          fn1   =exp(-2.*kfrc*Dstp(i,j))
-          fb1   =inv_k
-          fb2   =2.*inv_k*fn1/(1.+fn1)
-          intfb =fb2-fb1
-          fb0   =1.D0/intfb
-#   elif defined FF_FUNC3
-          fb1   =1.0-exp(-2.*kfrc*Dstp(i,j))
-          fb0   =1.D0/(exp(-2.*kfrc*Dstp(i,j))-1.0)
-#   endif
-          do k=1,N,+1              ! <-- irreversible
-#   ifdef FF_FUNC1
-            dd  =h(i,j)+z_w(i,j,k)
-            fn1 =3.*(exp(-2.*kfrc*dd)+exp(-4.*kfrc*dd))
-            fn2 =exp(-6.*kfrc*dd)
-            fb2 =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
-#   elif defined FF_FUNC2
-            fn1 =exp(-2.*kfrc*(h(i,j)+z_w(i,j,k)))
-            fb2 =2.*inv_k*fn1/(1.+fn1)
-#   elif defined FF_FUNC3
-            fb2 =exp( kfrc*(zeta(i,j,knew)-z_w(i,j,k)-Dstp(i,j)))
-     &          -exp(-kfrc*(zeta(i,j,knew)-z_w(i,j,k)+Dstp(i,j)))
-#   endif
-            fb =fb0*inv_dz(i,j,k)*(fb2-fb1)
-            frc_r(i,j,k) = fb*frc(i,j)
-            fb1=fb2
-          enddo
-#  else  /* LH53_STREAMING */
-          frc2d(i,j)=0.0
-          beta=sqrt(fr(i,j)/(Akv(i,j,0)+Akv(i,j,1)))
-          cff =wramp2*(wh(i,j)**2)*(fr(i,j)**2)*kw(i,j)
-     &         /max(16.0*(sinh(min(kD(i,j),khmax))**2)*beta,eps)
-          bz1 =beta*(h(i,j)+z_w(i,j,0))
-          cff1=2.*exp(-bz1)*(bz1*sin(bz1)+cos(bz1))-1.-exp(-2.*bz1)
-          cff3=1.D0 !min(1.0, pi/beta/Hz(i,j,1)) ! <-- unresoluved viscous layer
-          do k=1,N,+1              ! <-- irreversible
-            bz2 =beta*(h(i,j)+z_w(i,j,k))
-            cff2=2.*exp(-bz2)*(bz2*sin(bz2)+cos(bz2))-1.-exp(-2.*bz2)
-            frc_r(i,j,k)=-cff*(cff2-cff1)*inv_dz(i,j,k)*cff3
-            cff1=cff2; cff3=1.0
-            frc2d(i,j) = frc2d(i,j) + frc_r(i,j,k)*Hz(i,j,k)
-          enddo
-#  endif  /* !LH53_STREAMING */
-        enddo
-      enddo
-      do j=jstrR,jendR
-        do i=istr,iendR
-#  ifdef LH53_STREAMING
-          frc2dx(i,j)=0.5*( frc2d(i-1,j)*wdrx(i-1,j)
-     &                       +frc2d(i,j)*wdrx(i,j) )
-#   ifdef MASKING
-     &                                   *umask(i,j)
-#   endif
-#  endif
-          do k=1,N
-            frc3dx(i,j,k)=0.5*( frc_r(i-1,j,k)*wdrx(i-1,j)
-     &                           +frc_r(i,j,k)*wdrx(i,j) )
-#  ifdef MASKING
-     &                                         *umask(i,j)
-#  endif
-          enddo
-        enddo
-      enddo
-      do j=jstr,jendR
-        do i=istrR,iendR
-#  ifdef LH53_STREAMING
-          frc2de(i,j)=0.5*( frc2d(i,j-1)*wdre(i,j-1)
-     &                       +frc2d(i,j)*wdre(i,j) )
-#   ifdef MASKING
-     &                                   *vmask(i,j)
-#   endif
-#  endif
-          do k=1,N
-            frc3de(i,j,k)=0.5*( frc_r(i,j-1,k)*wdre(i,j-1)
-     &                           +frc_r(i,j,k)*wdre(i,j) )
-#  ifdef MASKING
-     &                                         *vmask(i,j)
-#  endif
-          enddo
-        enddo
-      enddo       ! <-- discard frc_r, frc2d
-#  undef frc_r
-#  undef frc2d
-# endif   /* BODY_FRICTION */
-# undef inv_dz
-
-
-#endif /* SOLVE3D */
-
-! Open boundary condition (valid only for idealized situations)
-! =============================================================
-
-#   ifdef ANA_BRY
-      z_tide=0.0
-#    ifdef WKB_WWAVE
-      z_tide=wkb_tide
-#    endif
-
-#    if defined Z_FRC_BRY || defined M2_FRC_BRY || defined M3_FRC_BRY
-
-#     ifdef OBC_WEST
-      if (WESTERN_EDGE) then
-        do j=jstrR,jendR
-#      ifdef Z_FRC_BRY
-          zeta_west(j)=z_tide + sup(istrR,j)
-#      endif
-#      ifdef M2_FRC_BRY
-#       ifdef SHOREFACE
-          ubar_west(j)=ubar(istr,j,knew)
-#       else
-          ubar_west(j)=-ust2d(istrR,j)    ! Stokes drift (xi)
-#       endif
-          vbar_west(j)=vbar(istr,j,knew) ! Stokes drift (eta)
-#      endif
-#      if defined SOLVE3D && defined M3_FRC_BRY
-          do k=1,N
-            u_west(j,k)=u(istr,j,k,nnew)
-c            u_west(j,k)=-ust(istrR,j,k)
-            v_west(j,k)=v(istr,j,k,nnew)
-          enddo
-#      endif
-        enddo
-      endif
-#     endif  /* OBC_WEST */
-!
-#     ifdef OBC_EAST
-      if (EASTERN_EDGE) then
-        do j=jstrR,jendR
-#      ifdef Z_FRC_BRY
-          zeta_east(j)=z_tide + sup(iendR,j)
-#      endif
-#      ifdef M2_FRC_BRY
-c#      ifdef STOKESEKMAN
-c          ubar_east(j)=ubar(iend,j,knew) ! Neumann
-c#      else
-          ubar_east(j)=-ust2d(iend,j)  ! Stokes drift (xi)
-c#      endif
-          vbar_east(j)=vbar(iend,j,knew) !-vst2d(iendR,j)  ! Stokes drift (eta)
-#      endif
-#      if defined SOLVE3D && defined M3_FRC_BRY
-          do k=1,N
-            u_east(j,k)=u(iend,j,k,nnew)
-c            u_east(j,k)=-ust(iendR,j,k)
-            v_east(j,k)=v(iend,j,k,nnew)
-          enddo
-#      endif
-        enddo
-      endif
-#     endif  /* OBC_EAST */
-!
-#     ifdef OBC_SOUTH
-      if (SOUTHERN_EDGE) then
-        do i=istrR,iendR
-#      ifdef Z_FRC_BRY
-          zeta_south(i)=z_tide + sup(i,jstrR)
-#      endif
-#      ifdef M2_FRC_BRY
-          ubar_south(i)=ubar(i,jstr,knew)  ! Neumann
-          vbar_south(i)=-vst2d(i,jstr)     ! Stokes drift
-#      endif
-#      if defined SOLVE3D && defined M3_FRC_BRY
-          do k=1,N
-            u_south(i,k)=u(i,jstr,k,nnew)
-            v_south(i,k)=v(i,jstr,k,nnew)
-          enddo
-#      endif
-        enddo
-      endif
-#     endif  /* OBC_SOUTH */
-!
-#     ifdef OBC_NORTH
-      if (NORTHERN_EDGE) then
-        do i=istrR,iendR
-#      ifdef Z_FRC_BRY
-          zeta_north(i)=z_tide + sup(i,jendR)
-#      endif
-#      ifdef M2_FRC_BRY
-          ubar_north(i)=ubar(i,jend,knew)  ! Neumann
-          vbar_north(i)=-vst2d(i,jend)     ! Stokes drift
-#      endif
-#      if defined SOLVE3D && defined M3_FRC_BRY
-          do k=1,N
-            u_north(i,k)=u(i,jend,k,nnew)
-            v_north(i,k)=v(i,jend,k,nnew)
-          enddo
-#      endif
-        enddo
-      endif
-#     endif  /* OBC_NORTH */
-!
-#    endif  /* Z_FRC_BRY || M2_FRC_BRY || M3_FRC_BRY */
-!
-#   endif  /* ANA_BRY */
-
-
-# ifdef EXCHANGE
-      call exchange2d_4_tile(istr,iend,jstr,jend, sup,wdsp,wdrg,wbst)
-      call exchange2d_3_tile(istr,iend,jstr,jend, ust2d,brk2dx,frc2dx)
-      call exchange2d_3_tile(istr,iend,jstr,jend, vst2d,brk2de,frc2de)
-#  ifdef SURFACE_ROLLER
-      call exchange2d_tile(istr,iend,jstr,jend,rdsp)
-#  endif
-#  if defined BBL_S95 || defined BBL_F00 || defined BBL_QUAD2D
-      call exchange2d_tile (istr,iend,jstr,jend, r_D)
-#  endif
-#  ifdef SOLVE3D
-      call exchange2d_2_tile(istr,iend,jstr,jend,Kapsrf,calP)
-      call exchange_3_tile(istr,iend,jstr,jend, ust,N, vst,N, kvf,N)
-#   ifndef SURFACE_BREAK
-      call exchange_2_tile (istr,iend,jstr,jend, brk3dx,N, brk3de,N)
-#   endif
-#   if defined WAVE_FRICTION && defined BODY_FRICTION
-      call exchange_2_tile (istr,iend,jstr,jend, frc3dx,N, frc3de,N)
-#   endif
-#  endif
-# endif
+!      !###### NOW CALCULATE WEC FORCES USING WHRM, etc ####
+!      call wec_forces(istr,iend,jstr,jend)
 
 
         end subroutine ana_wec_frc_tile
@@ -2138,11 +1575,14 @@ c            u_east(j,k)=-ust(iendR,j,k)
           enddo
 
           wst(i,j,N)=+0.375*Wrk(N) +0.75*Wrk(N-1) -0.125*Wrk(N-2)
+!          wst(i,j,N)=0. ! DevinD zeros
           do k=N-1,2,-1
             wst(i,j,k)=+0.5625*(Wrk(k  )+Wrk(k-1))
      &                 -0.0625*(Wrk(k+1)+Wrk(k-2))
+!            wst(i,j,k)=0. ! DevinD zeros
           enddo
           wst(i,j,1)= -0.125*Wrk(2) +0.75*Wrk(1) +0.375*Wrk(0)
+!          wst(i,j,1)= 0. ! DevinD zeros
         enddo
       enddo
 # ifndef EW_PERIODIC
@@ -2208,10 +1648,10 @@ c            u_east(j,k)=-ust(iendR,j,k)
        ! --------------------------------------------------------------------
        ! --------------------------------------------------------------------
 
-       subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,
+      subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,
      &                                           wrkone, wrktwo)
 
-        implicit none
+      implicit none
 
         integer, intent(in) :: istr, iend, jstr, jend
          ! Declare looping indices
@@ -2223,6 +1663,11 @@ c            u_east(j,k)=-ust(iendR,j,k)
 
         real :: cff, cff1
 
+      real :: gam1, gam2
+
+# include "compute_auxiliary_bounds.h" /* Taken from top of rhs3d35S.F */
+# define VF_ROBUST /* Taken from top of rhs3d35S.F */
+
 !
 ! Add combined vortex-force and advection terms & breaking terms
 ! 2nd- and 4th-order centered schemes, or 2nd with local weighted
@@ -2232,8 +1677,8 @@ c            u_east(j,k)=-ust(iendR,j,k)
 #  define utmp wrkone
 #  define vtmp wrktwo
 #  ifdef VF_ROBUST
-      real :: gam1=0.1         ! local weighted filter (gam1 may be 0-1/3)
-      real :: gam2=1.-3.*gam1  ! gam1=0 to revert back to 2nd-order centered
+      gam1=0.1        ! local weighted filter (gam1 may be 0-1/3)
+      gam2=1.-3.*gam1  ! gam1=0 to revert back to 2nd-order centered
 c      gam1=-1./24.     ! 4th-order centered scheme
 c      gam2=9./8.
 #  endif
@@ -2492,123 +1937,2454 @@ CR      write(*,*) 'wrt_his: wrtKAPS' MYID
        ! --------------------------------------------------------------------
        ! --------------------------------------------------------------------
 
-        subroutine read_wec_frc  !(time)
-         ! Reads WEC forcing data from input file
+#ifdef AVERAGES
+      subroutine wrt_avg_wec (record, ierr, may_day_flag)
 
-         ! Not applicable for analytical version
+      ! Taken from wrt_avg.F in old code. Called from wrt_avg.F
 
-        end subroutine read_wec_frc
+      implicit none
 
+      integer :: ierr, record, lvar, ncdf_write, lenstr, may_day_flag
+      integer, parameter :: nf_noerr=0 ! Taken from netcdf.inc to avoid include
 
-               ! --------------------------------------------------------------------
-       subroutine set_wec_frc(time)
-         ! Use an analytical forcing or interpolate two instances
-         ! of the forcing that are read from input files
-         implicit none
-         ! import/export
-         real(kind=8), intent(in) :: time
-         ! local
-!         real    :: cf1,cf2
-         real    :: tday
+      if (wrtavg(indxSUP)) then
+!        ierr=nf_fwrite (sup_avg(START_2D_ARRAY), ncidavg, avgSUP,
+!     &                                            record, r2dvar)
+        ierr=ncdf_write(ncavg, avgSUP, record, r_var,
+     &                            sup_avg(START_2D_ARRAY), 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxSUP))
+          write(*,1) vname(1,indxSUP)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxUST2D)) then
+        ierr=ncdf_write(ncavg, avgUST2D, record, u_var,
+     &                           ust2d_avg(START_2D_ARRAY), 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxUST2D))
+          write(*,1) vname(1,indxUST2D)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxVST2D)) then
+        ierr=ncdf_write(ncavg, avgVST2D, record, v_var,
+     &                           vst2d_avg(START_2D_ARRAY), 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxVST2D))
+          write(*,1) vname(1,indxVST2D)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
 
-         tday = time/(24*3600) ! convert from time seconds to days
+# ifdef SOLVE3D
+      if (wrtavg(indxUST)) then
+        ierr=ncdf_write(ncavg, avgUST, record, u_var,
+     &                           ust_avg(START_2D_ARRAY,1), N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxUST))
+          write(*,1) vname(1,indxUST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxVST)) then
+        ierr=ncdf_write(ncavg, avgVST, record, v_var,
+     &                           vst_avg(START_2D_ARRAY,1), N)
+        if (ierr .ne. nf_noerr) then
+        lvar=lenstr(vname(1,indxVST))
+          write(*,1) vname(1,indxVST)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+!      if (wrtavg(indxWST)) then
+!        ierr=nf_fwrite (wst_avg(START_2D_ARRAY,1), ncidavg, avgWST,
+!     &                                              record, r3dvar)
+!        if (ierr .ne. nf_noerr) then
+!         lvar=lenstr(vname(1,indxWST))
+!          write(*,1) vname(1,indxWST)(1:lvar), record MYID
+!          goto 99                                         !--> ERROR
+!        endif
+!      endif
+      if (wrtavg(indxAkb)) then
+        ierr=ncdf_write(ncavg, avgAkb, record, r_var,
+     &                           akb_avg(START_2D_ARRAY,0), N+1 )
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxAkb))
+          write(*,1) vname(1,indxAkb)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxAkw)) then
+        ierr=ncdf_write(ncavg,avgAkw, record, r_var,
+     &                          akw_avg(START_2D_ARRAY,0), N+1 )
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxAkw))
+          write(*,1) vname(1,indxAkw)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxKVF)) then
+        ierr=ncdf_write(ncavg, avgKVF,record, r_var,
+     &                           kvf_avg(START_2D_ARRAY,1), N)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxKVF))
+          write(*,1) vname(1,indxKVF)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxCALP)) then
+        ierr=ncdf_write(ncavg, avgCALP,record, r_var,
+     &                           calp_avg(START_2D_ARRAY), 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxCALP))
+          write(*,1) vname(1,indxCALP)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+      if (wrtavg(indxKAPS)) then
+        ierr=ncdf_write(ncavg, avgKAPS,record, r_var,
+     &                           kaps_avg(START_2D_ARRAY), 1)
+        if (ierr .ne. nf_noerr) then
+          lvar=lenstr(vname(1,indxKAPS))
+          write(*,1) vname(1,indxKAPS)(1:lvar), record MYID
+          goto 99                                         !--> ERROR
+        endif
+      endif
+# endif  /* SOLVE3D */
 
-         if (analytical) then
+  1   format(/1x, '### ERROR: wrt_avg :: Cannot write variable ''',
+     &             A, ''' into averages file, rec =', i6, 3x,A,i4)
+      goto 100
+  99  if (may_day_flag == 0) may_day_flag=3
+ 100  continue
 
-!            call ana_wec_frc(tday)
-        ! This is from river_frc but I don't believe it is relevant
-        ! because ana_wec_frc_tile is called from set_forces.F
-
-         else
-           ! check whether we need to update forcing data
-!           if (rtim(it2) < tday) then
-!             call read_wec_frc(tday)
-!           endif
-
-!           ! linear interpolation in time
-!           cf1 = ( rtim(it2) - tday )/(rtim(it2) - rtim(it1) )
-!           cf2 = ( tday - rtim(it1) )/(rtim(it2) - rtim(it1) )
-!           riv_vol = cf1*rvol(:,it1) + cf2 * rvol(:,it2)
-!           riv_trc = cf1*rtrc(:,:,it1) + cf2 * rtrc(:,:,it2)
-!          if (mynode==0) then
-!            print *, 'volume: ',riv_vol(1:nriv_frc)
-!          endif
-!           ! tidal modulation of river volume
-!           riv_vol = (cos(2*pi*tday) + 1)*riv_vol
-
-           stop 'no analytical river data'
-
-         endif
-       end subroutine set_wec_frc
-
+      end subroutine wrt_avg_wec
+#endif /* AVERAGES */
 
        ! --------------------------------------------------------------------
+       ! --------------------------------------------------------------------
+       ! --------------------------------------------------------------------
 
-       subroutine find_wec_new  !(time,v_name,vt_name,ifile,irec)
+#ifndef ANA_WEC_FRC
+      subroutine read_wec_frc (ierr)  !(time)
+      ! Reads WEC forcing data from input file
+      ! This code is taken from get_wwave() subrountine in get_wwave.F in the old code.
 
-        ! Get nc file model input data
+      ! Read gridded wind wave height, direction, period at appropriate
+      ! time from forcing netCDF file
 
-       end subroutine find_wec_new
+      implicit none
 
-!        ! -------------------------------------
-!        subroutine ana_wec_tile(istr,jstr,iend,jend)
-!         !analytical wec forcing
-!         ! Set everything to zero for testing
-!         implicit none
-!         real(kind=8), intent(in) :: istr,jstr,iend,jend
-!         integer :: i, j, k
+# define WWAVE_DATA
+!# include "param.h"
+!# include "scalars.h"
+!# include "forces.h"
+!# include "ncvars.h"
+# include "netcdf.inc"
+      real cff
+      integer ncid,ifrc, ierr, lfrc,lvar, lenstr, ncdf_read
+      character*(max_name_size) frcname
+
+! Initialization: Check, whether forcing netCDF file is already
+!===============  opened, an if not, open it. Find and save netCDF
+! IDs for relevant variables. Determine whether there is cycling to
+! reuse the input data and what is cycling period "ww_cycle", find
+! initial cycling index "ww_ncycle" and record index "ww_rec".
+! Set initial value for time index "itww" and set both time record
+! bounds to large negative artificial values to trigger the logic
+! in reading part below.
+c#define VERBOSE
+#ifdef VERBOSE
+      write(*,*) 'enter get_wwave' MYID
+#endif
+
+      ifrc=max(ww_file_id,1)
+ 100  ncid=ncfrc(ifrc) ! Old code was ncidfrc
+      frcname=frcfile(ifrc)
+      lfrc=lenstr(frcname)
+      ierr=nf_noerr
+
+#ifdef VERBOSE
+      write(*,*) 'get_wwave : ncid = ',ncid MYID
+      write(*,*) 'get_wwave : iic = ',iic,' ntstart = ',ntstart MYID
+#endif
+      if (iic.eq.ntstart) then !i1
+!        write(*,*) 'HERE i1!!!!!!!!!!' ! DevinD debug
+        if (ncid.eq.-1) then !i2
+          ierr=nf_open (frcname(1:lfrc), nf_nowrite, ncid)
+#ifdef VERBOSE
+      write(*,*) 'get_wwave : nf_noerr = ',nf_noerr,' ierr = ',ierr MYID
+#endif
+          if (ierr.eq.nf_noerr) then !i3
+            ncfrc(ifrc)=ncid ! DevinD - old code was ncidfrc
+#ifdef VERBOSE
+      write(*,*) 'get_wwave : opened' MYID
+#endif
+          else
+            write(*,'(/1x,4A/)') '### ERROR in get_wwave :: ',
+     &      'Cannot open netCDF file ''', frcname(1:lfrc), '''.'
+          endif
+        endif
+        if (ierr .eq. nf_noerr) then !i4
+          lvar=lenstr(vname(1,indxWWA))
+          ierr=nf_inq_varid (ncid, vname(1,indxWWA)(1:lvar), wwaid)
+#ifdef VERBOSE
+      write(*,*) 'get_wwave : check variable ',vname(1,indxWWA)(1:lvar) MYID
+#endif
+          if (ierr .eq. nf_noerr) then !i5
+            ww_file_id=ifrc
+            mpi_nonexit_warn write(*,'(1x,5A,I3)') 'Found ''',
+     &        vname(1,indxWWA)(1:lvar),
+     &        ''' in ''', frcname(1:lfrc), ''', ifrc =', ifrc
+            lvar=lenstr(vname(1,indxWWD))
+            ierr=nf_inq_varid (ncid,vname(1,indxWWD)(1:lvar),wwdid)
+            if (ierr .eq. nf_noerr) then !i6
+              lvar=lenstr(vname(1,indxWWP))
+              ierr=nf_inq_varid (ncid,vname(1,indxWWP)(1:lvar),wwpid)
+
+#  if defined WAVE_OFFLINE && defined BBL
+              if (ierr .eq. nf_noerr) then !i7
+                lvar=lenstr(vname(1,indxWUB))
+                ierr=nf_inq_varid (ncid,vname(1,indxWUB)(1:lvar),wwuid)
+              if (ierr .eq. nf_noerr) then !i8
+                lvar=lenstr(vname(1,indxWVB))
+                ierr=nf_inq_varid (ncid,vname(1,indxWVB)(1:lvar),wwvid)
+#  endif
+#  if defined WAVE_OFFLINE && defined WEC
+#   if !defined U2010
+                if (ierr .eq. nf_noerr) then !9
+                  lvar=lenstr(vname(1,indxUST2D))
+                  ierr=nf_inq_varid (ncid,vname(1,indxUST2d)(1:lvar),
+     &                                                     wwusaid)
+                if (ierr .eq. nf_noerr) then !10
+                  lvar=lenstr(vname(1,indxVST2D))
+                  ierr=nf_inq_varid (ncid,vname(1,indxVST2d)(1:lvar),
+     &                                                     wwvsaid)
+                if (ierr .eq. nf_noerr) then !11
+                  lvar=lenstr(vname(1,indxUs0))
+                  ierr=nf_inq_varid (ncid,vname(1,indxUs0)(1:lvar),
+     &                                                     wwus0id)
+                if (ierr .eq. nf_noerr) then !12
+                  lvar=lenstr(vname(1,indxVs0))
+                  ierr=nf_inq_varid (ncid,vname(1,indxVs0)(1:lvar),
+     &                                                     wwvs0id)
+# endif
+                if (ierr .eq. nf_noerr) then !i13
+                  lvar=lenstr(vname(1,indxWEB))
+                  ierr=nf_inq_varid (ncid,vname(1,indxWEB)(1:lvar),
+     &                                                     wweid)
+#   ifdef WAVE_FRICTION
+                  if (ierr .eq. nf_noerr) then !i14
+                    lvar=lenstr(vname(1,indxWED))
+                    ierr=nf_inq_varid (ncid,vname(1,indxWED)(1:lvar),
+     &                                                           wwfid)
+#   endif
+#   ifdef SURFACE_ROLLER
+                  if (ierr .eq. nf_noerr) then !i15
+                    lvar=lenstr(vname(1,indxWQB))
+                    ierr=nf_inq_varid (ncid,vname(1,indxWQB)(1:lvar),
+     &                                                           wwqid)
+#   endif
+#   ifdef SUP_OFF
+                  if (ierr .eq. nf_noerr) then !i16
+                    lvar=lenstr(vname(1,indxSUP))
+                    ierr=nf_inq_varid (ncid,vname(1,indxSUP)(1:lvar),
+     &                                                          wwsupid)
+#  endif
+#   ifdef WAVE_DIFF_FROM_LM
+                  if (ierr .eq. nf_noerr) then !i16
+                    lvar=lenstr(vname(1,indxLM))
+                    ierr=nf_inq_varid (ncid,vname(1,indxLM)(1:lvar),
+     &                                                          wwlmid)
+#  endif
+#  endif
+                    if (ierr .eq. nf_noerr) then !i18
+                      ierr=nf_inq_varid (ncid, 'wwv_time', ww_tid)
+                      if (ierr .eq. nf_noerr) then !i18
+!                        call set_cycle (ncid, ww_tid, ntww, ww_cycle,
+!     &                                         ww_ncycle, ww_rec, ierr)
+                        call find_record(ncid, ww_tid,
+     &                         ww_rec, ntww,
+     &                      ww_ncycle, ww_cycle,
+     &                                  ifrc, max_frc,  ierr)
+      ! DevinD - Example taken from set_stflux.F
+!              call find_record(         ncid, stf_tid(itrc),
+!     &                         stf_rec(itrc), ntstf(itrc),
+!     &                      stf_ncycle(itrc), stf_cycle(itrc),
+!     &                                  ifrc, max_frc,  ierr)
+                        itww=1
+                        wwv_time(1)=-1.E+20
+                        wwv_time(2)=-1.E+20
+                      else
+                        write(*,1) 'wwv_time', frcname(1:lfrc)
+                      endif !ie12
+#  if defined WAVE_OFFLINE && defined WEC
+#   ifdef WAVE_DIFF_FROM_LM
+                    else
+                      write(*,1) vname(1,indxLM)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                    endif
+#   endif
+#   ifdef SUP_OFF
+                    else
+                      write(*,1) vname(1,indxSUP)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                    endif
+#   endif
+#   ifdef SURFACE_ROLLER
+                    else
+                      write(*,1) vname(1,indxWQB)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                    endif
+#   endif
+#   ifdef WAVE_FRICTION
+                    else
+                      write(*,1) vname(1,indxWED)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                    endif
+#   endif
+                  else
+                    write(*,1) vname(1,indxWEB)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                  endif
+#   if !defined U2010
+                   else
+                    write(*,1) vname(1,indxVs0)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                  endif
+                   else
+                    write(*,1) vname(1,indxUs0)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                  endif
+                   else
+                    write(*,1) vname(1,indxVST2D)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                  endif
+                   else
+                    write(*,1) vname(1,indxUST2D)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                  endif
+#  endif
+#  endif
+#  if defined WAVE_OFFLINE && defined BBL
+                else
+                  write(*,1) vname(1,indxWVB)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                endif
+                else
+                  write(*,1) vname(1,indxWUB)(1:lvar),
+     &                                                  frcname(1:lfrc)
+                endif
+#  endif
+
+              else
+                write(*,1) vname(1,indxWWP)(1:lvar),
+     &                                   frcname(1:lfrc)
+              endif
+            else
+              write(*,1) vname(1,indxWWD)(1:lvar),
+     &                                   frcname(1:lfrc)
+            endif
+          else
+            write(*,1) vname(1,indxWWA)(1:lvar),
+     &                                 frcname(1:lfrc)
+            if (ifrc .lt. max_frc) then
+              ifrc=ifrc+1
+              goto 100
+            endif
+          endif
+        endif
+      endif
+  9   format(1x,a,a,a,a,a,1x,i2)
+  1   format(/1x,'WARNING: get_wwave :: Cannot find variable ''',
+     &                       A, ''' in netCDF file ''', A, '''.')
+
+!      write(*,*)'set_cycle: ',ntww, ww_cycle, itww, wwv_time(itww),
+!     &                    wwaid,wwpid,wwdid,wweid
+
 !
-!          ! rho-point variables
-!          do i=istr,iend
-!            do j=jstr,jend
-!               sup(i,j)    = 0.D0
-!               brk2dx(i,j) = 0.D0
-!               brk2de(i,j) = 0.D0
-!               frc2dx(i,j) = 0.D0
-!               frc2de(i,j) = 0.D0
-!               calP(i,j)   = 0.D0
-!               Kapsrf(i,j) = 0.D0
-!!               lm(i,j)     = 0.D0
-!               do k=1,nz
-!                  brk3dx(i,j,k) = 0.D0
-!                  brk3de(i,j,k) = 0.D0
-!                  wst(i,j,k)    = 0.D0
-!                  Kappa(i,j,k)  = 0.D0 !may not need this variable
-!                  kvf(i,j,k)    = 0.D0
-!                  Akw(i,j,k)    = 0.D0
-!                  frc3dx(i,j,k) = 0.D0
-!                  frc3de(i,j,k) = 0.D0
-!                enddo
-!                do k=0,nz
-!                   Akb(i,j,k) = 0.D0
-!                enddo
-!             enddo
-!          enddo
+! Read data from the file:  Check if model time is bounded by past
+!===== ==== ==== === =====  and future data times: if not, increment
+! record and cycling indices, flip time index and read a new portion
+! of data. Repeat until model time falls between the two data times.
 !
-!          !u-point variables
-!          do i=istr,iend-1
-!           do j=jstr,jend
-!              ust2d(i,j) = 0.D0
-!              do k=1,nz
-!                 ust(i,j,k) = 0.D0
-!              enddo
-!           enddo
-!          enddo
-!
-!          !v-point variables
-!          do i=istr,iend
-!           do j=jstr,jend-1
-!              vst2d(i,j) = 0.D0
-!              do k=1,nz
-!                 vst(i,j,k) =0.D0
-!              enddo
-!            enddo
-!          enddo
-!
-!        end subroutine ana_wec_tile
+!      do while (wwv_time(itww).lt.time+0.5*dt .and. ierr.eq.nf_noerr) !
+!      this results in ### WARNING: set_wwave_tile :: Current model time
+!      is outside bounds of 'wwv_time'
+      do while (wwv_time(itww).lt.time .and. ierr.eq.nf_noerr)
+!        call advance_cycle (ww_cycle, ntww, ww_ncycle,
+!     &                                        ww_rec, ierr)
+        call advance_record(ww_rec, ntww,
+     &                      ww_ncycle, ww_ncycle,
+     &                                  ifrc, max_frc,  ierr)
+      ! DevinD - Example taken from set_stflux.F of new code
+!        call advance_record(   stf_rec(itrc), ntstf(itrc),
+!     &                      stf_ncycle(itrc), stf_cycle(itrc),
+!     &                                  ifrc, max_frc,  ierr)
+        if (ierr.eq.nf_noerr) then
+          ierr=nf_get_var1_FTYPE (ncid, ww_tid, ww_rec, cff)
+          if (ierr .eq. nf_noerr) then
+            itww=min(3-itww,ntww)
+            wwv_time(itww)=ww_cycle*ww_ncycle + cff*day2sec
+!            ierr=nf_fread (wwag(START_2D_ARRAY,itww), ncid,
+!     &                                      wwaid, ww_rec, r2dvar)
+            ierr=ncdf_read(ncid, wwaid,  ww_rec, r_var,
+     &                                 wwag(START_2D_ARRAY,itww), 1)
+
+!      ! DevinD debug
+!      write(*,*) 'wwag(1,1,itww)=?,node', wwag(1,1,itww), mynode
+
+      ! Example from get_grid.F:
+!      ierr=ncdf_read(ncid, varid, 0, r_var, h(START_2D_ARRAY), 1)
+      ! Example from get_stflux.F
+!            ierr=ncdf_read(ncid, stf_id(itrc),  stf_rec(itrc),  r_var,
+!     &                     stflxg(START_2D_ARRAY,itstf(itrc),itrc), 1)
+
+            if (ierr .eq. nf_noerr) then
+              ierr=ncdf_read(ncid, wwdid, ww_rec, r_var,
+     &                                     wwdg(START_2D_ARRAY,itww), 1 )
+              if (ierr .eq. nf_noerr) then
+                ierr=ncdf_read(ncid,wwpid, ww_rec, r_var,
+     &                                     wwpg(START_2D_ARRAY,itww), 1 )
+
+#  if defined WAVE_OFFLINE && defined BBL
+                if (ierr .eq. nf_noerr) then
+                  ierr=ncdf_read(ncid, wwuid, ww_rec, r_var,
+     &                                wwuob(START_2D_ARRAY,itww), 1 )
+                if (ierr .eq. nf_noerr) then
+                  ierr=ncdf_read(ncid,wwvid, ww_rec, r_var,
+     &                                     wwvob(START_2D_ARRAY,itww), 1 )
+#  endif
+#  if defined WAVE_OFFLINE && defined WEC
+#  if !defined U2010
+                  if (ierr .eq. nf_noerr) then
+                    ierr=ncdf_read(ncid,wwusaid, ww_rec, r_var,
+     &                                   wwUSg(START_2D_ARRAY,itww), 1 )
+                  if (ierr .eq. nf_noerr) then
+                    ierr=ncdf_read(ncid,wwvsaid, ww_rec, r_var,
+     &                                   wwVSg(START_2D_ARRAY,itww), 1 )
+                  if (ierr .eq. nf_noerr) then
+                    ierr=ncdf_read(ncid, wwus0id, ww_rec, r_var,
+     &                                  wwus0g(START_2D_ARRAY,itww), 1 )
+                  if (ierr .eq. nf_noerr) then
+                    ierr=ncdf_read(ncid,wwvs0id, ww_rec, r_var,
+     &                                  wwvs0g(START_2D_ARRAY,itww), 1 )
+# endif
+                  if (ierr .eq. nf_noerr) then
+                    ierr=ncdf_read(ncid,wweid, ww_rec, r_var,
+     &                                  wweb(START_2D_ARRAY,itww), 1 )
+#   ifdef WAVE_FRICTION
+                    if (ierr .eq. nf_noerr) then
+                      ierr=ncdf_read(ncid,wwfid, ww_rec, r_var,
+     &                                    wwed(START_2D_ARRAY,itww), 1 )
+#   endif
+#   ifdef SURFACE_ROLLER
+                    if (ierr .eq. nf_noerr) then
+                      ierr=ncdf_read(ncid,wwqid, ww_rec, r_var,
+     &                                    wwqb(START_2D_ARRAY,itww), 1 )
+#   endif
+#   ifdef SUP_OFF
+                    if (ierr .eq. nf_noerr) then
+                      ierr=ncdf_read(ncid,wwsupid, ww_rec, r_var,
+     &                                    wwsup(START_2D_ARRAY,itww), 1)
+#   endif
+#   ifdef WAVE_DIFF_FROM_LM
+                    if (ierr .eq. nf_noerr) then
+                      ierr=ncdf_read(ncid,wwlmid, ww_rec, r_var,
+     &                                    wwlm(START_2D_ARRAY,itww), 1 )
+#   endif
+#  endif
+
+                      if (ierr .eq. nf_noerr) then
+                       mpi_nonexit_warn
+!----- Cigdem (extra & is removed)
+     &                  write(*,'(5x,A,28x,A,F12.4,2(1x,A,I4))')
+     &                   'get_wwave :: read wwave', 'time =',cff,
+     &                   'rec =', ww_rec MYID
+                         if (ntww.eq.1) return
+
+#  if defined WAVE_OFFLINE && defined MRL_WCI
+#   ifdef WAVE_DIFF_FROM_LM
+                      else
+                        write(*,2) 'Mean wavelength ', ww_rec
+                      endif
+#   endif
+#   ifdef SUP_OFF
+                      else
+                        write(*,2) 'Set sup (down) ', ww_rec
+                      endif
+#   endif
+#   ifdef SURFACE_ROLLER
+                      else
+                        write(*,2) 'fraction of breaking', ww_rec
+                      endif
+#   endif
+#   ifdef WAVE_FRICTION
+                      else
+                        write(*,2) 'frictional dissipation', ww_rec
+                      endif
+#   endif
+! kaida
+                    else
+                      write(*,2) 'breaking dissipation', ww_rec
+                    endif
+#  if !defined U2010
+                      else
+                        write(*,2) 'North Surface Stokes Drift',ww_rec
+                      endif
+                      else
+                        write(*,2) 'East Surface Stokes Drift',ww_rec
+                      endif
+                      else
+                        write(*,2) 'North depth avg. Stokes Drift',ww_rec
+                      endif
+                      else
+                        write(*,2) 'East depth avg. Stokes Drift',ww_rec
+                      endif
+#  endif
+#  endif
+#  if defined WAVE_OFFLINE && defined BBL
+                  else
+                    write(*,2) 'North wave orbital velocity', ww_rec
+                  endif
+                  else
+                    write(*,2) 'East wave orbital velocity', ww_rec
+                  endif
+#  endif
+                else
+                  write(*,2) 'wave period', ww_rec
+                endif
+              else
+                write(*,2) 'wave direction', ww_rec
+              endif
+            else
+              write(*,2) 'wave amplitude', ww_rec
+            endif
+          else
+            write(*,2) 'wwv_time', ww_rec
+          endif
+        else
+          write(*,'(/1x,A,I4,1x,A,I4/7x,4A/7x,2(A,F12.4)/)')
+     &      'ERROR in get_wwave :: requested time record ', ww_rec,
+     &      'exeeds the last record', ntww,  'available in forcing ',
+     &      'netCDF file ''',   frcname(1:lfrc),   '''',  'tdays = ',
+     &      tdays,            '  but the last available  wwv_time =',
+     &                                        wwv_time(itww)*sec2day
+        endif
+      enddo
+  2   format(/1x,'### ERROR: get_wwave :: Cannot read variable ''', A,
+     &                                          ''' for record ', I4/)
+# ifdef VERBOSE
+      write(*,*) 'return from get_wwave' MYID
+# endif
+!      return
 
 
-        ! ----------------------------------------
+      end subroutine read_wec_frc
+
+#endif /* !ANA_WEC_FRC */
+
+      ! -----------------------------------------------------------
+      ! -----------------------------------------------------------
+      ! -----------------------------------------------------------
+
+#ifndef ANA_WEC_FRC
+      subroutine set_wec_frc_tile (istr,iend,jstr,jend,ierr)
+
+      ! This is a copy of set_wwave_tile from get_wwave.F in old code.
+
+      implicit none
+
+      integer istr,iend,jstr,jend, ierr, i,j,k, it1,it2,kt1,kt2
+      real cff,cff1,cff2, Dstp,cfrq,wdir, kh,khd, eps,xdir,ydir,
+     &                                           wramp,m2p,isr2
+# ifdef BBL
+     &                                            , ab, orb_vel
+# endif
+# if !defined WAVE_OFFLINE && defined WEC
+     &                                          , Btg, Gtg, sbc
+# endif
+      parameter (eps = 1.0d-10, m2p=1.2804973111, isr2=0.70710678)
+# define WWAVE_DATA
+!# include "param.h"
+!# include "grid.h"
+!# include "forces.h"
+!# include "scalars.h"
+!# include "ocean2d.h"
+!
+# include "compute_extended_bounds.h"
+
+!
+! Set coefficients for interpolation. Check that for the next time
+! step [when time=time+dt] both weights will still be positive, and
+! if not, set "synchro flag" to signal that new data should be read
+! from an appropriate netCDF input file.
+! After that either load time-invariant data, or interpolate in time
+! or complain about error and signal to quit, if interpolation is
+! needed, but not possible.
+!
+      it1=3-itww
+      it2=itww
+      cff1=wwv_time(it2)-time
+      cff2=time-wwv_time(it1)
+      if (cff1.lt.dt) synchro_flag=.true.
+
+! Compute bed wave orbital velocity (uorb,vorb) and wave frequency,
+! wfrq, used with BBL, and/or Stokes transport (wvstx,wvsty) and wave
+! set-up, wvsup, for MRL_WCI.  Dispersion relation is approximated by
+! an explicit polynomial function proposed by Dean & Dalrymple (1991).
+
+!c      if (FIRST_TIME_STEP) then
+      if (iic.le.ntstart) then
+        kt1=1
+        kt2=2
+      elseif (cff2.le.dt) then
+        kt1=it2
+        kt2=it2
+      else
+        kt1=2
+        kt2=1
+      endif
+
+      if (kt1.le.kt2) then
+# if !defined WAVE_OFFLINE && defined MRL_WCI
+        Btg=0.8; Gtg=0.4       ! breaking model by Thornton & Guza (1986)
+        sbc=3.0*sqrt(pi)/16.0*g*(Btg**3)/(Gtg**4)/(2.0*pi)
+!        sbc=0 ! kaida
+# endif
+        do k=kt1,kt2,+1
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              Dstp=max(h(i,j),eps)
+!              cfrq=2.0*pi/max(wwpg(i,j,k)*m2p,0.1D0) ! mean to peak period
+              cfrq=2.0*pi/max(wwpg(i,j,k),0.1D0) !  peak per. to freq.
+# ifdef SHOREFACE
+              wdir=deg2rad*wwdg(i,j,k)-1.5*pi  ! wdir is dir waves travel FROM N
+# else
+#  if defined WAVE_OFFLINE
+              wdir=-(deg2rad*wwdg(i,j,k)-1.5*pi)  ! FROM N (WAVE_OFFLINE) to travel to 0deg --> x-dir
+# endif
+# endif
+# ifdef CURVGRID
+c#  ifndef USWC_WEC
+#  if defined WAVE_OFFLINE
+     &                    -deg2rad*angler(i,j)  !
+#  endif
+# endif
+              xdir=cos(wdir)
+              ydir=sin(wdir)
+# ifdef BBL
+#  ifdef WAVE_OFFLINE
+!             wwuob(i,j,k) and wwvob(i,j,k) read above
+#  else
+              khd = Dstp*cfrq*cfrq/g
+              kh = sqrt( khd*khd + khd/(1.0 + khd*(0.6666666666
+     &                   +khd*(0.3555555555 + khd*(0.1608465608
+     &                   +khd*(0.0632098765 + khd*(0.0217540484
+     &                                   +khd*0.0065407983)))))) )
+              ab =wwag(i,j,k)/max(sinh(kh),eps)
+              orb_vel =cfrq*ab
+              wwuob(i,j,k)=orb_vel*xdir
+              wwvob(i,j,k)=orb_vel*ydir
+#  endif
+#  ifdef MASKING
+              wwuob(i,j,k)=wwuob(i,j,k)*rmask(i,j)
+              wwvob(i,j,k)=wwuob(i,j,k)*rmask(i,j)
+#  endif
+# endif
+
+# if defined BBL || defined MRL_WCI
+              wwfrq(i,j,k)=cfrq
+#  ifdef MASKING
+     &                             *rmask(i,j)
+#  endif
+# endif
+
+# ifdef MRL_WCI
+cccc              wwhrm(i,j,k) =2.0*wwag(i,j,k)*isr2 ! Hsig to Hrms conversion
+              wwhrm(i,j,k) =2.0*wwag(i,j,k)  ! Awave should be a 1/2 of Hrms
+              wwdrx(i,j,k) =xdir
+              wwdre(i,j,k) =ydir
+#  ifndef WAVE_OFFLINE
+!              wweb(i,j,k)  =0.0 ! kaida
+              wweb(i,j,k)  =sbc*cfrq*((0.7071*wwhrm(i,j,k))**7)/
+     &                      max(Dstp**5,eps)   ! 0.7071 = 1/sqrt(2): Hsig -> Hrms
+#  endif
+#  ifdef MASKING
+              wwhrm(i,j,k) =wwhrm(i,j,k)*rmask(i,j)
+              wwdrx(i,j,k) =wwdrx(i,j,k)*rmask(i,j)
+              wwdre(i,j,k) =wwdre(i,j,k)*rmask(i,j)
+              wweb(i,j,k)  = wweb(i,j,k)*rmask(i,j)
+#   if defined WAVE_OFFLINE && defined WAVE_FRICTION
+              wwed(i,j,k)  = wwed(i,j,k)*rmask(i,j)
+#   endif
+#   if defined WAVE_OFFLINE && defined SURFACE_ROLLER
+              wwqb(i,j,k)  = wwqb(i,j,k)*rmask(i,j)
+#   endif
+#   if defined WAVE_OFFLINE && defined SUP_OFF
+              wwsup(i,j,k)  = wwsup(i,j,k)*rmask(i,j)
+#   endif
+#   if defined WAVE_OFFLINE && defined WAVE_DIFF_FROM_LM
+              wwlm(i,j,k)  = wwlm(i,j,k)*rmask(i,j)
+#   endif
+#  endif
+# endif
+            enddo
+          enddo
+        enddo
+
+c        if (istr.eq.1.and.jstr.eq.1) write(*,*) 'finish compute wave'
+      endif    !<-- kt1 < kt2
+
+# if !defined MRL_WCI && defined BBL && defined WAVE_RAMP
+      wramp =tanh(3.0*dt*sec2day*float(iic-ntstart))
+# else
+      wramp =1.0
+# endif
+
+      if (ntww.eq.1) then                 ! Load time-invariant
+        if (iic.eq.ntstart) then          ! wind-wave quantities
+          do j=jstrR,jendR
+            do i=IstR,iendR
+# ifdef BBL
+# ifdef WAVE_OFFLINE
+              uorb(i,j)=wwuob(i,j,itww)*cos(deg2rad*angler(i,j))
+     &                +wwvob(i,j,itww)*sin(deg2rad*angler(i,j))! U-east to xi-dir orbital velocity
+              vorb(i,j)=-wwuob(i,j,itww)*sin(deg2rad*angler(i,j))
+     &                +wwvob(i,j,itww)*cos(deg2rad*angler(i,j))! V-north to eta-dir orbital velocity
+              uorb(i,j)=wramp*uorb(i,j)
+              vorb(i,j)=wramp*vorb(i,j)
+# else
+              uorb(i,j)=wwuob(i,j,itww)   !  xi-dir orbital velocity
+              vorb(i,j)=wwvob(i,j,itww)   ! eta-dir orbital velocity
+# endif
+# endif
+# if defined BBL || defined MRL_WCI
+              wfrq(i,j)=wwfrq(i,j,itww)
+# endif
+# ifdef MRL_WCI
+              whrm(i,j)=wwhrm(i,j,itww)
+              wdrx(i,j)=wwdrx(i,j,itww)
+              wdre(i,j)=wwdre(i,j,itww)
+              wveb(i,j)= wweb(i,j,itww)
+!              wveb(i,j)= 0.0 ! kaida
+#  if defined WAVE_OFFLINE && defined WAVE_FRICTION
+              wved(i,j)= wwed(i,j,itww)
+#  endif
+#  if defined WAVE_OFFLINE && defined SURFACE_ROLLER
+              wvqb(i,j)= wwqb(i,j,itww)
+#  endif
+#  if defined WAVE_OFFLINE && defined SUP_OFF
+              sup(i,j)= wwsup(i,j,itww)
+#  endif
+#  if defined WAVE_OFFLINE && defined WAVE_DIFF_FROM_LM
+              llmm(i,j)= wwlm(i,j,itww)
+#  endif
+#  if defined WAVE_OFFLINE && !defined U2010
+c rotate
+              ustr2d(i,j)=wwUSg(i,j,itww)*cos(deg2rad*angler(i,j))
+     &                +wwVSg(i,j,itww)*sin(deg2rad*angler(i,j))! U-east to xi-dir depth ave. Stokes drift
+              vstr2d(i,j)=-wwUSg(i,j,itww)*sin(deg2rad*angler(i,j))
+     &                +wwVSg(i,j,itww)*cos(deg2rad*angler(i,j))! V-north to eta-dir depth ave. Stokdes drift
+
+              ustr2d(i,j)=wramp*ustr2d(i,j)
+              vstr2d(i,j)=wramp*vstr2d(i,j)
+
+              ustr0(i,j)=wwus0g(i,j,itww)*cos(deg2rad*angler(i,j))
+     &                +wwvs0g(i,j,itww)*sin(deg2rad*angler(i,j))! U-east to xi-dir depth ave. Stokes drift
+              vstr0(i,j)=-wwus0g(i,j,itww)*sin(deg2rad*angler(i,j))
+     &                +wwvs0g(i,j,itww)*cos(deg2rad*angler(i,j))! V-north to eta-dir depth ave. Stokdes drift
+              ustr0(i,j)=wramp*ustr0(i,j)
+              vstr0(i,j)=wramp*vstr0(i,j)
+#  endif
+# endif
+            enddo
+          enddo
+# if defined WEC
+#  if defined WAVE_OFFLINE && !defined U2010
+cc interpolate ust and ut2d on u,v points
+          do j=jstrR,jendR
+            do i=istr,iendR
+                 ust2d(i,j)=0.5*(ustr2d(i-1,j)+ustr2d(i,j))
+c                 ust0(i,j)=0.5*(ustr0(i-1,j)+ustr0(i,j))
+        enddo
+        enddo
+          do j=jstr,jendR
+            do i=istrR,iendR
+                 vst2d(i,j)=0.5*(vstr2d(i,j-1)+vstr2d(i,j))
+c                 vst0(i,j)=0.5*(vstr0(i,j-1)+vstr0(i,j))
+        enddo
+        enddo
+
+#  endif
+# endif
+        endif
+      elseif (cff1.ge.0. .and. cff2.ge.0.) then
+!        write(*,*) 'set_wwave_tile::cff1.ge.0.' ! DevinD debug
+        cff=1./(cff1+cff2)
+        cff1=cff1*cff
+        cff2=cff2*cff
+        do j=jstrR,jendR
+          do i=istrR,iendR
+# ifdef BBL
+# ifdef WAVE_OFFLINE
+              uorb(i,j)=(cff1*wwuob(i,j,it1)+cff2*wwuob(i,j,it2))
+     &                                         *cos(deg2rad*angler(i,j))
+     &                +(cff1*wwvob(i,j,it1)+cff2*wwvob(i,j,it2))
+     &                                         *sin(deg2rad*angler(i,j))! U-east to xi-dir orbital velocity
+              vorb(i,j)=-(cff1*wwuob(i,j,it1)+cff2*wwuob(i,j,it2))
+     &                                         *sin(deg2rad*angler(i,j))
+     &                +(cff1*wwvob(i,j,it1)+cff2*wwvob(i,j,it2))
+     &                 *cos(deg2rad*angler(i,j))! V-north to eta-dir orbital velocity
+              uorb(i,j)=wramp*uorb(i,j)
+              vorb(i,j)=wramp*vorb(i,j)
+# else
+            uorb(i,j)=wramp*(cff1*wwuob(i,j,it1)+cff2*wwuob(i,j,it2))
+            vorb(i,j)=wramp*(cff1*wwvob(i,j,it1)+cff2*wwvob(i,j,it2))
+# endif
+# endif
+# if defined BBL || defined MRL_WCI
+            wfrq(i,j)=cff1*wwfrq(i,j,it1)+cff2*wwfrq(i,j,it2)
+# endif
+# ifdef MRL_WCI
+            whrm(i,j)=wramp*(cff1*wwhrm(i,j,it1)+cff2*wwhrm(i,j,it2))
+            wdrx(i,j)=cff1*wwdrx(i,j,it1)+cff2*wwdrx(i,j,it2)
+            wdre(i,j)=cff1*wwdre(i,j,it1)+cff2*wwdre(i,j,it2)
+            wveb(i,j)=wramp*(cff1*wweb(i,j,it1)+cff2*wweb(i,j,it2))
+!            wveb(i,j)=0.0 ! kaida
+#  ifdef WAVE_OFFLINE
+#   ifdef WAVE_FRICTION
+            wved(i,j)=wramp*(cff1*wwed(i,j,it1)+cff2*wwed(i,j,it2))
+#   else
+            wved(i,j)=0.0
+#   endif
+# if !defined U2010
+c rotate and interpolate in time
+              ustr2d(i,j)=(cff1*wwUSg(i,j,it1)+cff2*wwUSg(i,j,it2))
+     &                                         *cos(deg2rad*angler(i,j))
+     &                +(cff1*wwVSg(i,j,it1)+cff2*wwVSg(i,j,it2))
+     &                                         *sin(deg2rad*angler(i,j))! U-east to xi-dir depth ave. Stokes drift
+              vstr2d(i,j)=-(cff1*wwUSg(i,j,it1)+cff2*wwUSg(i,j,it2))
+     &                                         *sin(deg2rad*angler(i,j))
+     &                +(cff1*wwVSg(i,j,it1)+cff2*wwVSg(i,j,it2))
+     &                                         *cos(deg2rad*angler(i,j))! V-north to eta-dir depth ave. Stokdes drift
+              ustr2d(i,j)=wramp*ustr2d(i,j)
+              vstr2d(i,j)=wramp*vstr2d(i,j)
+
+              ustr0(i,j)=(cff1*wwus0g(i,j,it1)+cff2*wwus0g(i,j,it2))
+     &                                         *cos(deg2rad*angler(i,j))
+     &                +(cff1*wwvs0g(i,j,it1)+cff2*wwvs0g(i,j,it2))
+     &                                         *sin(deg2rad*angler(i,j))! U-east to xi-dir depth ave. Stokes drift
+              vstr0(i,j)=-(cff1*wwus0g(i,j,it1)+cff2*wwus0g(i,j,it2))
+     &                                         *sin(deg2rad*angler(i,j))
+     &                +(cff1*wwvs0g(i,j,it1)+cff2*wwvs0g(i,j,it2))
+     &                                         *cos(deg2rad*angler(i,j))! V-north to eta-dir depth ave. Stokdes drift
+
+              ustr0(i,j)=wramp*ustr0(i,j)
+              vstr0(i,j)=wramp*vstr0(i,j)
+# endif
+#  endif
+#  if defined WAVE_OFFLINE && defined SURFACE_ROLLER
+            wvqb(i,j)=cff1*wwqb(i,j,it1)+cff2*wwqb(i,j,it2)
+#  endif
+#  if defined WAVE_OFFLINE && defined SUP_OFF
+            sup(i,j)= cff1*wwsup(i,j,it1)+cff2*wwsup(i,j,it2)
+#  endif
+#  if defined WAVE_OFFLINE && defined WAVE_DIFF_FROM_LM
+            llmm(i,j)= cff1*wwlm(i,j,it1)+cff2*wwlm(i,j,it2)
+#  endif
+# endif
+          enddo
+        enddo
+#  if defined MRL_WCI
+#  if defined WAVE_OFFLINE && !defined U2010
+cc interpolate ust and ut2d on u,v points
+          do j=jstrR,jendR
+            do i=istr,iendR
+                 ust2d(i,j)=0.5*(ustr2d(i-1,j)+ustr2d(i,j))
+c                 ust0(i,j)=0.5*(ustr0(i-1,j)+ustr0(i,j))
+        enddo
+        enddo
+          do j=jstr,jendR
+            do i=istrR,iendR
+                 vst2d(i,j)=0.5*(vstr2d(i,j-1)+vstr2d(i,j))
+c                 vst0(i,j)=0.5*(vstr0(i,j-1)+vstr0(i,j))
+        enddo
+        enddo
+# endif
+# endif
+      elseif (ZEROTH_TILE) then
+        write(*,'(/1x,3A/3(1x,A,F16.10)/)')       '### WARNING: ',
+     &  'set_wwave_tile :: Current model time is outside bounds of ',
+     &  '''wwv_time''.',  'ww_tstart =', wwv_time(it1)*sec2day,
+     &                    'tdays =',     tdays,
+     &                    'ww_tend =',   wwv_time(it2)*sec2day
+        ierr=ierr+1
+      endif
+
+
+      !*** END PART 1 ***!
+
+!      !###### NOW CALCULATE WEC FORCES USING WHRM, etc ####
+!      call wec_forces(istr,iend,jstr,jend)
+
+
+
+      end subroutine set_wec_frc_tile
+
+#endif /* !ANA_WEC_FRC */
+
+      ! -------------------------------------------
+      ! -------------------------------------------
+      ! -------------------------------------------
+
+#ifdef AVERAGES
+      subroutine set_avg_wec_tile (istr,iend,jstr,jend,cff,cff1
+     &                                 ,jstrR,jendR,istrR,iendR)
+
+      ! Taken from set_avg.F in old code.
+
+! Compute time-averaged fields within a tile.
+
+      implicit none
+
+      integer istr,iend,jstr,jend,i,j,jstrR,jendR,istrR,iendR
+# ifdef SOLVE3D
+     &                       , k
+# endif
+      real cff,cff1
+
+        if (wrtavg(indxSUP)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              sup_avg(i,j)= cff1*sup_avg(i,j) +cff*sup(i,j)
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxUST2D)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              ust2d_avg(i,j)= cff1*ust2d_avg(i,j) +cff*ust2d(i,j)
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxVST2D)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              vst2d_avg(i,j)= cff1*vst2d_avg(i,j) +cff*vst2d(i,j)
+            enddo
+          enddo
+        endif
+
+#  ifdef SOLVE3D
+        if (wrtavg(indxUST)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                ust_avg(i,j,k)= cff1*ust_avg(i,j,k) +cff*ust(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxVST)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                vst_avg(i,j,k)= cff1*vst_avg(i,j,k) +cff*vst(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxWST)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                wst_avg(i,j,k)= cff1*wst_avg(i,j,k) +cff*wst(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxAkb)) then
+          do k=0,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                akb_avg(i,j,k)= cff1*akb_avg(i,j,k) +cff*Akb(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxAkw)) then
+          do k=0,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                akw_avg(i,j,k)= cff1*akw_avg(i,j,k) +cff*Akw(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxKVF)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                kvf_avg(i,j,k)= cff1*kvf_avg(i,j,k) +cff*kvf(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxCALP)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              calp_avg(i,j)= cff1*calp_avg(i,j) +cff*calP(i,j)
+            enddo
+          enddo
+        endif
+        if (wrtavg(indxKAPS)) then
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              kaps_avg(i,j)= cff1*kaps_avg(i,j) +cff*Kapsrf(i,j)
+            enddo
+          enddo
+        endif
+#  endif  /* SOLVE3D */
+
+      end subroutine set_avg_wec_tile
+#endif /* AVERAGES */
+
+      ! -------------------------------------------
+      ! -------------------------------------------
+      ! -------------------------------------------
+
+      subroutine wec_forces (tile)
+
+      ! This is mrl_wci (tile) from mrl_wci.F in old code.
+
+      implicit none
+
+      integer  tile
+!# include "param.h" ! DevinD - already included in top of module
+# include "private_scratch.h"
+# include "compute_tile_bounds.h"
+      call wec_forces_tile (istr,iend,jstr,jend,
+# ifdef SOLVE3D
+     &                              A3d(1,1),A3d(1,2),A3d(1,3),A3d(1,4),
+# endif
+     &            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),A2d(1,5),A2d(1,6),
+     &                   A2d(1,7),A2d(1,8),A2d(1,9),A2d(1,10),A2d(1,11),
+     &                                              A2d(1,12),A2d(1,13))
+
+
+      end subroutine wec_forces
+
+
+      ! -------------------------------------------
+      ! -------------------------------------------
+      ! -------------------------------------------
+
+
+
+      subroutine wec_forces_tile (istr,iend,jstr,jend,
+# ifdef SOLVE3D
+     &                                              wrk1,wrk2,wrk3,wrk7,
+# endif
+     &           wh,fr,kw,brk,stk,Dstp,act,kD,inv_d,inv_f,frc,ebrk,erol)
+
+      ! NOTE: input wave data is at rho-points, thus conversion from
+      ! whrm at rho-points, is needed to get ust2d and u-points, etc.
+
+      ! This is taken from mrl_wci.F of old code.
+
+!   Evaluating wave-averaged terms and Stokes drift based on MRL04
+!   (see: McWilliams, Restrepo & Lane, 2004, JFM, 511, pp.135-178)
+!   inputs: R.M.S. wave height (m);
+!           peak wave freqiuency (rad/s);
+!           mean wave direction: wdrx & wdre (non dimensional);
+!           breaking dissipation   (\epsilon_b / \rho, m3/s3);
+!           roller dissipation     (\epsilon_r / \rho, m3/s3); and
+!           frictional dissipation (\epsilon_d / \rho, m3/s3)
+!
+!   Note that if wkb_wwave.F is used, all the dissipation terms are
+!   divided by wave frequency, sigma (2pi/T).
+!
+      implicit none
+!# include "param.h"
+!# include "forces.h"
+!# include "grid.h"
+!# include "scalars.h"
+!# include "ocean2d.h"
+# ifdef SOLVE3D
+!#   include "ocean3d.h"
+#  if defined WAVE_FRICTION && defined BODY_FRICTION
+#   include "mixing.h"
+#  endif
+# endif
+# ifdef ANA_BRY
+#   include "boundary.h"
+# endif
+# ifdef WKB_WWAVE
+#   include "wkb_wwave.h"
+# endif
+# if defined BBL_S95 || defined BBL_F00 || defined BBL_QUAD2D
+#  include "coupling.h"
+# endif
+!----- Cigdem (Uorb => Uorb1)
+      integer istr,iend,jstr,jend,i,j,imin,jmin
+      real    cff,cff1,cff2,cff3,cff4,inv_g,khd,kh,umag,
+     &   eps,wave_ramp,wramp2,kbrk,fb,fb0,fb1,fb2,inv_fbs,
+     &   bconst,tauc,tauw,Uorb1,ka_f00,hz0,z_tide,
+     %   dtinv,inv_zb,a_brk,a_kv,c1o3,c4o3,inv_k,dd,ust_ker,intfb,
+     &   fbsrf,fn1,fn2,khmax,bz1,bz2,beta,abot,delta,vst_ker,
+     &   a_frc,kfrc,
+     &             wh(PRIVATE_2D_SCRATCH_ARRAY),
+     &             fr(PRIVATE_2D_SCRATCH_ARRAY),
+     &             kw(PRIVATE_2D_SCRATCH_ARRAY),
+     &            brk(PRIVATE_2D_SCRATCH_ARRAY),
+     &            stk(PRIVATE_2D_SCRATCH_ARRAY),
+     &           Dstp(PRIVATE_2D_SCRATCH_ARRAY),
+     &            act(PRIVATE_2D_SCRATCH_ARRAY),
+     &             kD(PRIVATE_2D_SCRATCH_ARRAY),
+     &          inv_d(PRIVATE_2D_SCRATCH_ARRAY),
+     &          inv_f(PRIVATE_2D_SCRATCH_ARRAY),
+     &            frc(PRIVATE_2D_SCRATCH_ARRAY),
+     &           ebrk(PRIVATE_2D_SCRATCH_ARRAY),
+     &           erol(PRIVATE_2D_SCRATCH_ARRAY)
+# if defined WAVE_OFFLINE && !defined U2010
+     &         ,usec,vsec,USEZ,VSEZ,ustm0w
+     &         ,FAC,FACo,COUNTR, USTERR, ustm0
+     &         ,fac2d(PRIVATE_2D_SCRATCH_ARRAY)
+     &         ,inv_exef(PRIVATE_2D_SCRATCH_ARRAY)
+     &         ,keff(PRIVATE_2D_SCRATCH_ARRAY)
+# endif
+# if defined SUP_OFF
+     &         ,supm, Fsup
+     &         ,actf(PRIVATE_2D_SCRATCH_ARRAY)
+# endif
+# if defined WAVE_DIFF_FROM_LM
+     &         ,keffkw
+# endif
+# ifdef SOLVE3D
+      integer  k,kk
+      real     wrk1(PRIVATE_2D_SCRATCH_ARRAY,0:N),
+     &         wrk2(PRIVATE_2D_SCRATCH_ARRAY,0:N),
+     &         wrk3(PRIVATE_2D_SCRATCH_ARRAY,0:N),
+     &         wrk4(0:N),wrk5(0:N),wrk6(0:N), kvsurf
+     &         ,wrk7(PRIVATE_2D_SCRATCH_ARRAY,0:N)
+# endif
+      parameter ( eps=1.e-10,
+# ifdef STOKESEKMAN
+     &            bconst=0.D0,
+# else
+     &            bconst=0.1D0, !0.03D0,               ! breaking contribution to KPP
+# endif
+     &            a_kv=1.2D0, !1.2D0                 ! breaking scale for eddy visc.
+     &            a_brk=0.2D0,                ! breaking scale for body force
+     &            a_frc=3.D0,                 ! friction scale for body force
+     &            khmax=20.D0,                ! deep-water limit for k x dep
+     &            c1o3=0.3333333333333333,    ! 1/3
+     &            c4o3=1.3333333333333333     ! 4/3
+     &           )
+# ifdef WAVE_OFFLINE
+      real roller_fraction
+#  ifdef SURFACE_ROLLER
+      parameter ( roller_fraction=1.0)
+#  else
+      parameter ( roller_fraction=0.0)
+#  endif
+#  define wkb_roller roller_fraction
+# endif
+#include "compute_auxiliary_bounds.h"
+
+!      write(*,*) 'WEC_FORCES:::' ! DevinD debug
+
+! explicit wavenumber estimator
+
+# undef KH_SOULSBY
+# define KH_HUNT
+
+! vertical distribution function F_Kv(z) for eddy viscosity
+
+c# define FKV_FUNC1
+# define FKV_FUNC2
+c# define FKV_FUNC3
+
+! vertical distribution function F_B(z) for breaking accerelation
+
+# undef FB_FUNC0
+c# define FB_FUNC1
+c# define FB_FUNC2
+# define FB_FUNC3
+!----- Cigdem
+c# define FB_WSCALE
+c# define BRK0
+c# define KVF0
+c# define AKB0
+
+!      if (time/86400.0.ge.4352.0.and.time/86400.0.le.4352.0001) then
+!        write(*,*)'hello'
+!# ifdef FB_WSCALE
+!        write(*,*)'kb=2k'
+!        write(*,*)'a_brk=',a_brk
+!        write(*,*)'a_kv=',a_kv
+!        write(*,*)'c_b=',bconst
+!# else
+!        write(*,*)'kb=1/(a_brk*Hs)'
+!        write(*,*)'a_brk=',a_brk
+!        write(*,*)'a_kv=',a_kv
+!        write(*,*)'c_b=',bconst
+!# endif
+!# ifdef BRK0
+!        write(*,*)'BRK0'
+!# endif
+!# ifdef KVF0
+!        write(*,*)'KVF0'
+!# endif
+!# ifdef AKB0
+!        write(*,*)'AKB0'
+!# endif
+!      endif
+
+! vertical distribution function F_B(z) for bottom streaming
+
+c# define FF_FUNC1
+c# define FF_FUNC2
+# define FF_FUNC3
+
+! initial ramping coefficients
+
+# if defined WAVE_RAMP
+#  ifdef STOKESEKMAN
+      wave_ramp = tanh(3.0*dt*sec2day*float(iic-ntstart))
+#  elif defined DUCK94
+      wave_ramp = tanh(24.0*dt*sec2day*float(iic-ntstart))
+#  elif defined MVCO
+      wave_ramp = tanh(3.0*dt*sec2day*float(iic-ntstart))
+!----- Cigdem (added RIP_CURRENT option)
+#  elif defined RIP_CURRENT
+c      wave_ramp = tanh(144.0*dt*sec2day*float(iic-ntstart)) ! 30 min
+      wave_ramp = tanh(432.0*dt*sec2day*float(iic-ntstart))  ! 10 min
+#  else
+      wave_ramp = tanh(24.0*dt*sec2day*float(iic-ntstart))
+#  endif
+# else
+      wave_ramp = 1.0
+# endif
+      wramp2= wave_ramp**2
+!
+! Evaluate 2DH wave-current intreraction variable.
+! ================================================
+!
+! 2DH Stokes velocities, breaking, roller and bottom-friction
+! dissipation terms, defined at horizontal rho-points.
+!
+      inv_g = 1.0/g
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
+          Dstp(i,j)=max(h(i,j)+zeta(i,j,knew),eps)
+          inv_d(i,j)=1.0/Dstp(i,j)
+# ifdef WKB_WWAVE
+          fr(i,j) =frq(i,j,wnew)
+          wh(i,j) =wave_ramp*hrm(i,j,wnew)
+          kw(i,j) =max(wvn(i,j,wnew),eps)
+#  ifndef SURFACE_ROLLER
+          cff = wramp2*wsb(i,j,wnew)
+          ebrk(i,j)=cff*fr(i,j)                  ! epsilon_b (m3/s3)
+!          ebrk(i,j)=0                  ! epsilon_b (m3/s3) ! kaida
+#  else
+          ebrk(i,j)=wramp2*wsb(i,j,wnew)*fr(i,j) ! epsilon_b (m3/s3)
+!          ebrk(i,j)=0 ! epsilon_b (m3/s3) ! kaida
+          erol(i,j)=wamp2*wsr(i,j,wnew)*fr(i,j) ! epsilon_r (m3/s3)
+!          erol(i,j)=0 !kaida
+          cff =wramp2*( wsr(i,j,wnew)+           ! for breaking term
+     &           (1.-wkb_roller)*wsb(i,j,wnew) ) ! primary + roller
+#  endif
+          brk(i,j) =cff*kw(i,j)                  ! 2DH breaking term
+          frc(i,j) =wramp2*wfc(i,j,wnew)*kw(i,j) ! 2DH friction term
+#  ifdef MRL_CEW
+          kD(i,j) =kw(i,j)*Dstp(i,j)
+#  else
+          kD(i,j) =kw(i,j)*(h(i,j)+wkb_tide)
+#  endif
+#  ifndef SURFACE_ROLLER
+          act(i,j) =wramp2*wac(i,j,wnew)         ! wave action density
+#  else
+          act(i,j) =wramp2*(wac(i,j,wnew)+war(i,j,wnew))
+#  endif
+# else    /* ifndef WKB_WWAVE */
+          fr(i,j) =wfrq(i,j)
+          wh(i,j) =wave_ramp*whrm(i,j)
+          inv_f(i,j) =1.0/max(fr(i,j),eps)
+          khd = Dstp(i,j)*(fr(i,j)**2)*inv_g
+#  ifdef KH_SOULSBY
+          if (khd.ge.1.0D0) then        ! explicit wavenumber estimator
+           kh=khd
+          else
+           kh=sqrt(khd)
+          endif
+          do k=1,3
+            cff = tanh(kh)
+            kh = kh-(kh*cff-khd)/max(cff+kh*(1.0-cff**2),eps)
+          enddo
+#  elif defined KH_HUNT
+          kh = sqrt( khd*khd + khd/(1.0 + khd*(0.6666666666
+     &               +khd*(0.3555555555 + khd*(0.1608465608
+     &               +khd*(0.0632098765 + khd*(0.0217540484
+     &                            +khd*0.0065407983)))))) )
+#  endif
+          kD(i,j) =kh
+          kw(i,j) =kh*inv_d(i,j)
+          ebrk(i,j) =wramp2*wveb(i,j)            ! epsilon_b (m3/s3)
+!          ebrk(i,j) =0            ! epsilon_b (m3/s3) kaida
+
+#  ifdef SURFACE_ROLLER
+          erol(i,j) =wramp2*0.5762*Dstp(i,j)*    ! epsilon_r (m3/s3)
+     &               whrm(i,j)*wvqb(i,j)*        ! 0.5762=0.06*sinb*g^2
+     &               kw(i,j)*inv_f(i,j)          ! Nairn et al (1991)
+          cff =(1.-wkb_roller)*ebrk(i,j)+erol(i,j)
+#  else
+          cff =ebrk(i,j)
+#  endif
+          frc(i,j) =wramp2*wved(i,j)*kw(i,j)
+     &                           *inv_f(i,j)     ! 2DH friction term
+          brk(i,j) =cff*kw(i,j)*inv_f(i,j)       ! 2DH breaking term
+          act(i,j) =inv_f(i,j)*(
+     &                      0.125*g*(wh(i,j)**2) ! wave action density
+#  ifdef SURFACE_ROLLER
+     &          +wramp2*0.03*g*Dstp(i,j)*wh(i,j)*wvqb(i,j)
+#  endif
+     &                                                   )
+# endif   /* ifdef WKB_WWAVE */
+          stk(i,j) =act(i,j)*kw(i,j)*inv_d(i,j)  ! depth-averaged Stokes
+# ifdef MASKING
+           kw(i,j) = kw(i,j)*rmask(i,j)
+           kD(i,j) = kD(i,j)*rmask(i,j)
+          act(i,j) =act(i,j)*rmask(i,j)
+          stk(i,j) =stk(i,j)*rmask(i,j)
+          brk(i,j) =brk(i,j)*rmask(i,j)
+          frc(i,j) =frc(i,j)*rmask(i,j)
+# endif   /* apply land mask */
+        enddo
+      enddo              ! <-- discard inv_d (ifndef BBL_F00)
+
+!      ! DevinD debug
+!      if (mynode==5) then
+!        write(*,*) 'tile-5: act(14,39)', act(14,39) ! DevinD debug
+!      endif
+
+# ifdef BRK0
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
+          brk(i,j)=0.D0
+        enddo
+      enddo
+# endif
+
+!
+! sup : quasi-static sea-level response, set-up. no interaction.
+! ==============================================================
+!
+
+# if !defined SUP_OFF
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          sup(i,j) =-0.125*(wh(i,j)**2)*kw(i,j)
+     &              /max(sinh(2.*min(kD(i,j),khmax)),eps)
+#  ifdef MASKING
+     &                                        *rmask(i,j)
+#  endif
+        enddo
+      enddo
+# endif
+
+# if defined SUP_OFF
+      actf(:,:)=0.
+! determine the effective filtered action density g a^2/w
+      do j=jstrR,jendR
+        do i=istrR,iendR
+# if defined WAVE_OFF_WTIDES
+          supm=-0.125*(wh(i,j)**2)*kw(i,j)
+     &              /max(sinh(2.*min(kD(i,j),khmax)),eps)
+          if (kD(i,j).lt.6.and.supm.ne.0.) then
+          Fsup=min(1.,sqrt(sup(i,j)/supm))
+          else
+          Fsup=1.
+          endif
+# else
+          supm=-0.125*(wh(i,j)**2)*kw(i,j)
+     &              /max(sinh(2.*min(kw(i,j)*h(i,j),khmax)),eps)
+! re calculate sup with \hat{\eta}
+          if (kD(i,j).lt.6.and.supm.ne.0.) then
+          Fsup=min(1.,sqrt(sup(i,j)/supm))
+          else
+          Fsup=1.
+          endif
+          sup(i,j) =-0.125*(wh(i,j)**2)*kw(i,j)*Fsup**2
+     &              /max(sinh(2.*min(kD(i,j),khmax)),eps)
+!          sup=0. ! DevinD zeros
+# endif
+          actf(i,j)=act(i,j)*Fsup**2
+        enddo
+      enddo
+# endif
+
+!      ! DevinD debug
+!      if (mynode==5) then
+!        write(*,*) 'tile-5: actf(14,39)', actf(14,39) ! DevinD debug
+!        write(*,*) 'tile-5: Fsup', Fsup ! DevinD debug
+!      endif
+
+!
+! Dissipation terms : copy into shared arrays
+! ===========================================
+!
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          wdsp(i,j)=ebrk(i,j)         ! epsilon_b (m3/s3)
+# ifdef SURFACE_ROLLER
+          rdsp(i,j)=erol(i,j)         ! epsilon_r (m3/s3)
+# endif
+# ifdef WKB_WWAVE
+          cff = wramp2*wfc(i,j,wnew)
+# else
+!# elif !defined WKB_WWAVE & defined WAVE_OFFLINE
+          cff = wramp2*wved(i,j)*inv_f(i,j)
+# endif
+          wdrg(i,j)=cff*fr(i,j)       ! epsilon_d (m3/s3)
+          wbst(i,j)=cff*kw(i,j)       ! e_d stress (m2/s2) for KPP
+# ifdef MASKING
+          wdsp(i,j)=wdsp(i,j)*rmask(i,j)
+          wbst(i,j)=wbst(i,j)*rmask(i,j)
+          wdrg(i,j)=wdrg(i,j)*rmask(i,j)
+#  ifdef SURFACE_ROLLER
+          rdsp(i,j)=rdsp(i,j)*rmask(i,j)
+#  endif
+# endif
+        enddo
+      enddo
+# ifndef WKB_WWAVE
+#  undef inv_f
+# endif
+!
+! 2DH depth-averaged Stokes drift and breaking acceleration
+! =========================================================
+!
+      do j=jstrR,jendR
+        do i=istr,iendR
+# if defined WKB_WWAVE || defined U2010
+          ust2d(i,j)  =0.5*(stk(i-1,j)*wdrx(i-1,j)+stk(i,j)*wdrx(i,j))
+# endif
+!          brk2dx(i,j) =0.5*(brk(i-1,j)*wdrx(i-1,j)+brk(i,j)*wdrx(i,j))
+          brk2dx(i,j) =0.
+!          frc2dx(i,j) =0.5*(frc(i-1,j)*wdrx(i-1,j)+frc(i,j)*wdrx(i,j))
+          frc2dx(i,j) =0.
+#  ifdef MASKING
+#   ifdef SHOREFACE
+          ust2d(i,j)  = ust2d(i,j)*umask(i,j)
+#   endif
+          brk2dx(i,j) =brk2dx(i,j)*umask(i,j)
+          frc2dx(i,j) =frc2dx(i,j)*umask(i,j)
+#  endif
+        enddo
+      enddo
+      do j=jstr,jendR
+        do i=istrR,iendR
+# if defined WKB_WWAVE || defined U2010
+          vst2d(i,j)  =0.5*(stk(i,j-1)*wdre(i,j-1)+stk(i,j)*wdre(i,j))
+# endif
+!          brk2de(i,j) =0.5*(brk(i,j-1)*wdre(i,j-1)+brk(i,j)*wdre(i,j))
+          brk2de(i,j) =0.
+!          frc2de(i,j) =0.5*(frc(i,j-1)*wdre(i,j-1)+frc(i,j)*wdre(i,j))
+          frc2de(i,j) =0.
+#  ifdef MASKING
+#   ifdef SHOREFACE
+          vst2d(i,j)  = vst2d(i,j)*vmask(i,j)
+#   endif
+          brk2de(i,j) =brk2de(i,j)*vmask(i,j)
+          frc2de(i,j) =frc2de(i,j)*vmask(i,j)
+#  endif
+        enddo
+      enddo       ! <-- discard stk
+!
+! Combined wave-current bottom drag coefficient r_D at rho-points
+! ===============================================================
+!
+# if !defined BBL && (defined BBL_S95 || defined BBL_F00 || defined BBL_QUAD2D)
+      inv_zb=1.0/max(Zob,eps)
+      do j=jstr,jend
+        do i=istr,iend
+#  if defined SOLVE3D && !defined BBL_QUAD2D
+          cff1 = 0.5*(u(i,j,1,nrhs)+u(i+1,j,1,nrhs))
+          cff2 = 0.5*(v(i,j,1,nrhs)+v(i,j+1,1,nrhs))
+#  else
+          cff1 = 0.5*(ubar(i,j,knew)+ubar(i+1,j,knew))
+          cff2 = 0.5*(vbar(i,j,knew)+vbar(i,j+1,knew))
+#  endif
+          umag = sqrt( cff1*cff1+cff2*cff2 )
+# if defined BBL_F00 || defined BBL_S95
+          Uorb1 = 0.5*fr(i,j)*wh(i,j)
+     &              /max(sinh(min(kD(i,j),khmax)),eps)
+#  if defined BBL_F00
+          ka_f00  =0.0125   ! apparent roughness (Ruessink et al., 2001)
+          r_D(i,j)=0.015*((ka_f00*inv_d(i,j))**c1o3)
+     &               *sqrt(1.3456*(Uorb1**2)+umag**2)
+#  else
+#   ifdef SOLVE3D
+          cff1=umag*(vonKar/log(1.+0.5*Hz(i,j,1)*inv_zb))**2
+c**          hz0 =max(z_r(i,j,1)-z_w(i,j,0),1.1*Zob)
+#   else
+          cff1=umag*(vonKar/log(1.+Dstp(i,j)*inv_zb))**2
+c**          hz0 =max(0.5*Dstp(i,j),1.1*Zob)
+#   endif
+c**          cff1=umag*(vonKar/log(hz0*inv_zb))**2
+          tauc=cff1*umag
+          tauw=0.695*(Uorb1**1.48)*((Zob*fr(i,j))**0.52)
+          cff2=1.0 + 1.2*((tauw/max(tauw+tauc,eps))**3.2)
+          r_D(i,j)=cff1*cff2
+#  endif   /* BBL_F00 */
+# elif defined BBL_QUAD2D
+          r_D(i,j)=rdrg2*umag
+# endif    /* BBL_F00 || BBL_S95 */
+# ifdef MASKING
+          r_D(i,j)=r_D(i,j)*rmask(i,j)
+# endif
+        enddo
+      enddo
+
+#  ifndef EW_PERIODIC
+      if (WESTERN_EDGE) then
+        do j=jstr,jend
+          r_D(istr-1,j)=r_D(istr,j)
+        enddo
+      endif
+      if (EASTERN_EDGE) then
+        do j=jstr,jend
+          r_D(iend+1,j)=r_D(iend,j)
+        enddo
+      endif
+#  endif
+#  ifndef NS_PERIODIC
+      if (SOUTHERN_EDGE) then
+        do i=istr,iend
+          r_D(i,jstr-1)=r_D(i,jstr)
+        enddo
+      endif
+      if (NORTHERN_EDGE) then
+        do i=istr,iend
+          r_D(i,jend+1)=r_D(i,jend)
+        enddo
+      endif
+#   ifndef EW_PERIODIC
+      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
+        r_D(istr-1,jstr-1)=r_D(istr,jstr)
+      endif
+      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
+        r_D(istr-1,jend+1)=r_D(istr,jend)
+      endif
+      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
+        r_D(iend+1,jstr-1)=r_D(iend,jstr)
+      endif
+      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
+        r_D(iend+1,jend+1)=r_D(iend,jend)
+      endif
+#   endif
+#  endif
+# endif   /* BBL */
+
+# ifdef SOLVE3D
+!
+! Conservative 3D wave-current interaction variables.
+! ===================================================
+!
+! We estimate cell-averaged 3D Stokes drift velocity (ust_r) by
+! presuming that roller Stokes drift has the same z-dependency as
+! the primary waves.  Analytical volume-averaging operation is
+! applied to 3D Stokes drift velocity such that:
+!
+!   u^st = 0.5*g*A^2/frq*k/dz/(1-exp(-4*k*D))*
+!         ( exp(2*k*(z_up +h-D)) -exp(-2*k*(z_up +h+D))
+!          -exp(2*k*(z_low+h-D)) +exp(-2*k*(z_low+h+D)) )
+!
+! in which sinh, cosh, and tanh functions in u^st are expanded to
+! exponential function so as not to be singular when kD gets very
+! large.  Here 0.5*g*A^2/frq is equivalent to wave action density.
+! The similar rule is also adapted in computation of CalP, Kapsrf,
+! and Akw terms (see the code below).
+!
+# define ust_rm wrk1
+! careful wrk3 also used for breaker body force, not for WAVE_OFFLINE
+# if defined WAVE_OFFLINE
+# define vst_r wrk7
+# define ust_r wrk3
+# endif
+# define inv_dz wrk2
+# define inv_ex inv_f
+!
+! 3D depth-dependent Stokes drift velocities
+! ==========================================
+!
+! act= 0.5 g A^2/w
+! kw= k
+! h vs Dstp, Dstp= h+zeta+hzeta
+
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
+          inv_ex(i,j)=1.0/max(1.0-exp(-4.*kD(i,j)),eps)
+          ust_ker=act(i,j)*kw(i,j)*inv_ex(i,j)
+          cff1 = exp( 2.*kw(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*kw(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
+          do k=1,N,+1              ! <-- irreversible
+            inv_dz(i,j,k)=1./Hz(i,j,k)
+            cff2 = exp( 2.*kw(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &            -exp(-2.*kw(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
+            ust_rm(i,j,k) =ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
+            cff1=cff2
+          enddo
+c        enddo
+c      enddo                 ! <-- keep ust_r, inv_dz, &inv_ex
+!
+# if defined WAVE_OFFLINE && !defined U2010
+!
+! keff
+c
+c      do j=jstr-1,jend+1
+c        do i=istr-1,iend+1
+          keff(i,j)=max(2.*pi/20./h(i,j),0.5*sqrt(ustr0(i,j)**2
+     &               +vstr0(i,j)**2)/
+     &          max(.001,Dstp(i,j)*sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)))
+           usec=ustr0(i,j)*tanh(2*keff(i,j)*Dstp(i,j))
+           vsec=vstr0(i,j)*tanh(2*keff(i,j)*Dstp(i,j))
+! rescale kD/kw*keff
+          inv_exef(i,j)=1./max(1.0-exp(-4.*kD(i,j)/kw(i,j)*keff(i,j)),eps)
+! act--> .5.*usec/keff**2
+          ust_ker=0.5*usec/keff(i,j)*inv_exef(i,j)
+          vst_ker=0.5*vsec/keff(i,j)*inv_exef(i,j)
+
+          FACo=0.
+          FAC=2.
+          COUNTR=0.
+          USTERR=.01
+          ustm0=ust_rm(i,j,N)
+          ustm0w=sqrt(ustr0(i,j)**2+vstr0(i,j))
+          do while (abs(1-FAC).gt.USTERR.and.
+     &         abs(FAC-FACo)/FAC.gt.1e-6.and.COUNTR.lt.15.)
+          ! reset cff1
+          cff1 = exp( 2.*keff(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*keff(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
+          USEZ=0.
+          VSEZ=0.
+          COUNTR=COUNTR+1.
+          if (FACo.ne.0.) then
+             ust_rm(i,j,:)=ust_rm(i,j,:)/FAC
+          endif
+          FACo=FAC
+          do k=1,N,+1              ! <-- irreversible
+c          if (COUNTR.ne.1.) then
+c            ust_rm(i,j,k)=ust_rm(i,j,k)/FAC
+c          endif
+          if (kw(i,j)*Dstp(i,j).gt.2.*pi/20.
+     &            .or.abs(ustm0-ustm0w)/ustm0w.gt..1) then ! should avoid if inside loop
+C  abs(ustm0-ustm0w)/ustm0w> .1 helps in conditions of mixed wind sea
+C  and swell
+c            inv_dz(i,j,k)=1./Hz(i,j,k)
+            cff2 = exp( 2.*keff(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &            -exp(-2.*keff(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
+            vst_r(i,j,k)=ust_rm(i,j,k)*wdre(i,j)*
+     &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
+     &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
+     &             vst_ker*inv_dz(i,j,k)*( cff2-cff1 )
+c             vst_r(i,j,k)= vst_ker*inv_dz(i,j,k)*( cff2-cff1 ) ! test
+c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
+            ust_r(i,j,k)=ust_rm(i,j,k)*wdrx(i,j)*
+     &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
+     &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
+     &             ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
+!            ! DevinD debug
+!            if (mynode==1 .and. i==50 .and. j==45 .and. k==N) then
+!              write(*,*) 'z_r(50,45,N)', z_r(50,45,N)
+!              write(*,*) 'keff(50,45)', keff(50,45)
+!              write(*,*) 'ust_ker', ust_ker,'cff1',cff1,'cff2',cff2
+!              write(*,*) 'inv_dz(50,45,N)', inv_dz(50,45,N)
+!            endif
+c             ust_r(i,j,k)= ust_ker*inv_dz(i,j,k)*( cff2-cff1 ) !test
+c             ust_r(i,j,k)= ust_r(i,j,k)*wdrx(i,j)  !test
+            cff1=cff2
+          else
+             vst_r(i,j,k)= ust_rm(i,j,k)*wdre(i,j) !
+             ust_r(i,j,k)= ust_rm(i,j,k)*wdrx(i,j)  ! monochromatic in shallow water
+          endif
+             USEZ=USEZ+ust_r(i,j,k)*Hz(i,j,k)
+             VSEZ=VSEZ+vst_r(i,j,k)*Hz(i,j,k)
+             enddo
+             if (sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2).ne.0) then ! ensure consistency betwew ustk and the depth integraded
+             FAC=sqrt(USEZ**2+VSEZ**2)/(
+     &           sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)*Dstp(i,j))
+             else
+             FAC=1.
+             endif
+!             write(*,*) 'FAC=', FAC
+             end do ! while
+             fac2d(i,j)=FAC
+          if (kw(i,j)*Dstp(i,j).lt.2.*pi/20.
+     &            .or.abs(ustm0-ustm0w)/ustm0w.lt..1) then
+               keff(i,j)=kw(i,j)  ! shallow water
+              endif
+
+c             vst_r(i,j,:)= ust_rm(i,j,:)*wdre(i,j) !
+c             ust_r(i,j,:)= ust_rm(i,j,:)*wdrx(i,j)  !
+c             if (abs(1-FAC).gt.0.02) then
+c             write(*,*) 'FAC=', FAC, 'count=',COUNTR,'i=',i,'j=',j
+c!             write(*,*) 'FAC=', FAC, 'count=',COUNTR,'h=',h(i,j)
+c             endif
+# endif
+        enddo
+      enddo                 ! <-- keep ust_r, inv_dz, &inv_ex
+
+!  depth-integrate
+
+! Horizontal interpolation of ust_r to u- & v- points.
+! *** Notice that mask should NOT be applied here.
+!
+! DD test times 10
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istr,iendR
+# if !defined WAVE_OFFLINE || defined U2010
+            ust(i,j,k)=0.5*( ust_rm(i-1,j,k)*wdrx(i-1,j)
+     &                        +ust_rm(i,j,k)*wdrx(i,j) )
+# else
+            ust(i,j,k)=0.5*( ust_r(i-1,j,k)
+     &                        +ust_r(i,j,k))/fac2d(i,j)
+# endif
+          enddo
+        enddo
+        do j=jstr,jendR
+          do i=istrR,iendR
+# if !defined WAVE_OFFLINE || defined U2010
+            vst(i,j,k)=0.5*( ust_rm(i,j-1,k)*wdre(i,j-1)
+     &                        +ust_rm(i,j,k)*wdre(i,j) )
+# else
+            vst(i,j,k)=0.5*( vst_r(i,j-1,k)
+     &                        +vst_r(i,j,k) )/fac2d(i,j)
+# endif
+          enddo
+        enddo
+      enddo
+
+
+!      ! DevinD debug
+!     if (mynode==1) then
+!        write(*,*) 'mynode=', mynode, 'ust(47,45,N)=', ust(47,45,N)
+!        write(*,*) 'mynode=', mynode, 'ust(48,45,N)=', ust(48,45,N)
+!        write(*,*) 'mynode=', mynode, 'ust(49,45,N)=', ust(49,45,N)
+!        write(*,*) 'wdrx(50,45)=',wdrx(50,45)
+!        write(*,*) 'ust_rm(50,45,N)=',ust_rm(50,45,N)
+!        write(*,*) 'ust_r(49,45,N)=',ust_r(49,45,N)
+!        write(*,*) 'ust_r(50,45,N)=',ust_r(50,45,N),'fac2d(50,45)=',fac2d(50,45)
+!        write(*,*) 'mynode=', mynode, 'ust(50,45,N)=', ust(50,45,N)
+!        write(*,*) 'mynode=', mynode, 'ust(51,45,N)=', ust(51,45,N)
+!      endif
+!      write(*,*) 'mynode=', mynode
+!      write(*,*) 'ust(10,10,N)=', ust(10,10,N)
+!!      write(*,*) 'ust_rm(9,10,N)=', ust_rm(9,10,N)
+!!      write(*,*) 'wdre(9,10)=', wdre(9,10)
+!!      write(*,*) 'ust_rm(10,10,N)=', ust_rm(10,10,N)
+!!      write(*,*) 'wdre(10,10)=', wdre(10,10)
+!      write(*,*) 'ustr0(10,10)=', ustr0(10,10)
+!      write(*,*) 'vst(10,10,N)=', vst(10,10,N)
+!      write(*,*) 'vstr0(10,10)=', vstr0(10,10)
+
+!
+!
+! calP & Kapsrf: surface pressure & Bernoulli head at rho-point
+! =============================================================
+!
+# define kv wrk4
+# define dkvdz wrk5
+# define d2kv  wrk6
+# define actp umag
+      do j=jstr,jend        ! kv (k dot v) at rho-point
+        do i=istr,iend      ! and its 1st & 2nd derivertives
+          do k=1,N          ! at rho-point
+            kv(k) =0.5*kw(i,j)*(
+     &         wdrx(i,j)* ( u(i,j,k,nstp)+u(i+1,j,k,nstp) )
+     &       + wdre(i,j)* ( v(i,j,k,nstp)+v(i,j+1,k,nstp) ) )
+          enddo
+# if !defined WAVE_OFFLINE || defined U2010
+          kvsurf =1.5*kv(N)-0.5*kv(N-1) ! extrapolate to surface
+# else
+          kvsurf = 0.5*(ust_r(i,j,N)*( u(i,j,N,nstp)+u(i+1,j,N,nstp))
+     &              + vst_r(i,j,N)*(v(i,j,N,nstp)+v(i,j+1,N,nstp) ))
+# endif
+          do k=1,N-1
+            dkvdz(k) =2.0*(kv(k+1)-kv(k))/(Hz(i,j,k+1)+Hz(i,j,k))
+          enddo
+          dkvdz(0) = dkvdz(1)    !2.*dkvdz(1)-dkvdz(2) ! severe!
+          dkvdz(N) = dkvdz(N-1)  !2.*dkvdz(N-1)-dkvdz(N-2)
+!      ! DevinD debug
+!      if (mynode==5 .and. i==14 .and. j==39) then
+!        write(*,*) 'tile-5: Hz(14,39,49)', Hz(14,39,49) ! DevinD debug
+!        write(*,*) 'tile-5: kv(48)', kv(48) ! DevinD debug
+!        write(*,*) 'tile-5: kv(49)', kv(49) ! DevinD debug
+!        write(*,*) 'tile-5: dkvdz(49)', dkvdz(49) ! DevinD debug
+!      endif
+          do k=1,N
+            d2kv(k) =dkvdz(k)-dkvdz(k-1) ! d^2kv/dz^2 x Hz
+          enddo
+!      ! DevinD debug
+!      if (mynode==5 .and. i==14 .and. j==39) then
+!        write(*,*) 'tile-5: d2kv(49)', d2kv(49) ! DevinD debug
+!      endif
+          cff3 = 0.0
+          do k=1,N
+            dd   = z_r(i,j,k)-z_w(i,j,N)
+            cff3 = cff3 + d2kv(k)*(
+     &             exp( 2.*kw(i,j)*(dd-Dstp(i,j)))
+     &           + exp(-2.*kw(i,j)*(dd+Dstp(i,j))) )
+          enddo
+          cff1 =-2.0*exp(-2.*kD(i,j))*inv_ex(i,j)*dkvdz(N)
+          cff2 = dkvdz(0)/max(tanh(2.*kD(i,j)),eps)
+          cff3 = cff3*inv_ex(i,j)
+# if !defined WAVE_OFFLINE || defined U2010
+          cff4 =-2.0*kw(i,j)*kvsurf
+# else
+          cff4 = -2.0*(sinh(min(khmax,keff(i,j)*Dstp(i,j))))**2/
+     &                 cosh(min(2.*khmax,2.*keff(i,j)*h(i,j)))*kvsurf
+# endif
+! min limits to avoid blowups
+!ccccc          actp =0.125*g*(wh(i,j)**2)/max(fr(i,j),eps)
+!ccccc          calP(i,j) = actp*inv_g*tanh(kD(i,j))
+# if defined SUP_OFF
+          actp=actf(i,j)
+# else
+          actp=act(i,j)
+# endif
+# if !defined WAVE_OFFLINE || defined U2010
+          calP(i,j) = actp*tanh(kD(i,j))
+     &                    *( cff1+cff2+cff3+cff4 )
+# else
+          calP(i,j) = (actp*tanh(kD(i,j))
+     &                    *( cff1+cff2+cff3)+ cff4) ! cfff4 now computed from surface Ustk with u
+!          calP(i,j) = 0. ! DevinD zeros
+# endif
+#  ifdef MASKING
+     &                                 *rmask(i,j)
+#  endif
+          cff=0.0
+          do k=1,N
+            cff = cff +  d2kv(k)*
+     &         ( exp( 2.*kw(i,j)*(z_w(i,j,N)-z_r(i,j,k)-Dstp(i,j)))
+     &          -exp(-2.*kw(i,j)*(z_w(i,j,N)-z_r(i,j,k)+Dstp(i,j))) )
+          enddo
+!      ! DevinD debug
+!      if (mynode==5 .and. i==14 .and. j==39) then
+!        write(*,*) 'tile-5: actp', actp ! DevinD debug
+!        write(*,*) 'tile-5: d2kv(48)', d2kv(48) ! DevinD debug
+!        write(*,*) 'tile-5: d2kv(49)', d2kv(49) ! DevinD debug
+!        write(*,*) 'tile-5: kw(14,39)', kw(14,39) ! DevinD debug
+!        write(*,*) 'tile-5: z_w(14,39,N)', z_w(14,39,N) ! DevinD debug
+!        write(*,*) 'tile-5: z_r(14,39,49)', z_r(14,39,49) ! DevinD debug
+!        write(*,*) 'tile-5: Dstp(14,39)', Dstp(14,39) ! DevinD debug
+!        write(*,*) 'tile-5: cff', cff ! DevinD debug
+!      endif
+#  undef KAPSRF_SAFE
+#  ifdef KAPSRF_SAFE
+c#   define FLT 0.98
+#   define FLT 0.5
+          Kapsrf(i,j) = ( FLT*Kapsrf(i,j)  ! time-filter to suppress noises
+     &                   +(1.0-FLT)*cff*actp*inv_ex(i,j) )
+#  else
+          Kapsrf(i,j) = cff*actp*inv_ex(i,j)
+!          Kapsrf(i,j) = 0. ! DevinD zeros
+#  endif
+#  ifdef MASKING
+     &                           *rmask(i,j)
+#  endif
+        enddo
+      enddo      ! <-- discard kv, dkvdz, d2kv, & inv_ex
+
+!      ! DevinD debug
+!      if (mynode==5) then
+!        write(*,*) 'tile-5: inv_ex(14,39)', inv_ex(14,39) ! DevinD debug
+!        write(*,*) 'tile-5: Kapsrf(14,39)', Kapsrf(14,39) ! DevinD debug
+!      endif
+
+# undef kv
+# undef dkvdz
+# undef d2kv
+# undef inv_ex
+!
+! kvf : vertical vortex force term (K term) at rho-point
+! ======================================================
+!
+# define kvr wrk5
+      do j=jstr,jend
+        do i=istr,iend
+          do k=1,N-1       ! K term at horz rho- & vert w-point
+# if defined WAVE_OFFLINE && !defined U2010
+            kvr(k) = 0.25*(
+     &                  (ust_r(i,j,k)+ust_r(i,j,k+1))*
+     &                (u(i,j,k+1,nstp)-u(i,j,k,nstp)
+     &                        +u(i+1,j,k+1,nstp)-u(i+1,j,k,nstp))
+     &                 + (vst_r(i,j,k)+vst_r(i,j,k+1))*
+     &                (v(i,j,k+1,nstp)-v(i,j,k,nstp)
+     &                        +v(i,j+1,k+1,nstp)-v(i,j+1,k,nstp)))
+     &                                 /(z_r(i,j,k+1)-z_r(i,j,k))
+# else
+            kvr(k) = 0.25*(ust_rm(i,j,k)+ust_rm(i,j,k+1))*
+     &                ( wdrx(i,j)*(u(i,j,k+1,nstp)-u(i,j,k,nstp)
+     &                        +u(i+1,j,k+1,nstp)-u(i+1,j,k,nstp))
+     &                 +wdre(i,j)*(v(i,j,k+1,nstp)-v(i,j,k,nstp)
+     &                        +v(i,j+1,k+1,nstp)-v(i,j+1,k,nstp)))
+     &                                 /(z_r(i,j,k+1)-z_r(i,j,k))
+# endif
+          enddo
+          kvr(0)=2.*kvr(1)-kvr(2)    ! 0.D0    ! bottom & top B.Cs.
+          kvr(N)=2.*kvr(N-1)-kvr(N-2)
+          do k=1,N                             ! move to vert rho-point
+            kvf(i,j,k)=0.5*( kvr(k)+kvr(k-1) ) ! copy into a shared array
+!            kvf(i,j,k)=0.
+#  ifdef MASKING
+     &                             *rmask(i,j)
+#  endif
+          enddo
+        enddo
+      enddo           ! <-- discard ust_r, kvr
+# undef ust_r
+# undef ust_rm
+# undef vst_r
+# undef kvr
+
+# ifdef KVF0
+      do k=1,N
+        do j=jmin,jend
+          do i=imin,iend
+            kvf(i,j,k)=0.D0
+          enddo
+        enddo
+      enddo
+# endif
+
+
+!
+! Akw: primary wave-induced additional diffusivity for tracers at w-point
+! =======================================================================
+!
+      cff=wave_ramp/dt
+      do j=jstrR,jendR
+        do i=istrR,iendR
+# if !defined WAVE_DIFF_FROM_LM
+          cff2 = 0.25*wh(i,j)/max(1.-exp(-2.*kD(i,j)),eps)
+          do k=0,N
+            cff1 = cff2*( exp( kw(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &                   -exp(-kw(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j))) )
+            cff3 = cff1**2
+            Akw(i,j,k) = max(0.,cff*(cff3-E_pre(i,j,k))) ! avoid negatives
+#  ifdef MASKING
+     &                               *rmask(i,j)
+#  endif
+            E_pre(i,j,k) = cff3   ! store this for the next time step.
+          enddo
+# else
+! Akw from Lm (llmm), mean wave length
+          keffkw=2*pi/max(1.,llmm(i,j))
+          cff2 = 0.25*wh(i,j)/max(1.-exp(-2.*keffkw*Dstp(i,j)),eps)
+          do k=0,N
+            cff1 = cff2*( exp( keffkw*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &                   -exp(-keffkw*(z_w(i,j,k)+h(i,j)+Dstp(i,j))) )
+            cff3 = cff1**2
+            Akw(i,j,k) = max(0.,cff*(cff3-E_pre(i,j,k))) ! avoid negatives
+!            Akw(i,j,k) = 0. ! DevinD zeros
+#  ifdef MASKING
+     &                               *rmask(i,j)
+#  endif
+            E_pre(i,j,k) = cff3   ! store this for the next time step.
+          enddo
+# endif
+        enddo
+      enddo
+!
+! Non conservative wave-current interaction variables.
+! ====================================================
+!
+! We estimate cell-averaged 3D breaking acceleration (brk_r),
+! breaking-enhaced vertical eddy viscosity (Akb), and bottom
+! wave streaming-induced acceleration (frc_r).  brk_r, Akb, and
+! frc_r are assumed to follow an arbitrary vertical shape function,
+! fb (or fkv, fwd for Akb & frc_r) with a surface/bottom scale,
+! where kb^-1 = a_brk Hrms (for fb), or kb^-1 = a_kv Hrms (for fkv),
+! or kb^-1 = a_frc x delta (for fwd), where Hrms is rms wave height
+! and delta is turbulent wave boundary layer thickness.  a_brk,
+! a_kv and a_frc are considered O(1) parameters which determine
+! vertical penetration of breaking-driven momenta, additional eddy
+! kinetic energy by breaking, and streaming-induced momenta near
+! the bed.  fb (fkv and fwd) is designed with three (plus one
+! special case for fb) different ways:
+!
+!  FUNC1: gb~1-tanh(kb(\zeta-z))^4 : Warner et al (2008)
+!  FUNC2: gb~1-tanh(kb(\zeta-z))^2 : modified from the above
+!  FUNC3: gb~cosh(kb(z+h))         : analogous to primary wave
+!  FUNC0: gb~1                     : vertically uniform (Fb only)
+!
+! where fb(z) = gb(z) / [\int^D gb(z') dz'] = 1, thus vertical
+! integral of fb is normalized.  Then volume-averaging operation is
+! applied.  Exactly the same procedure is taken for fkv (not show
+! here), while slightly different consideration is taken for fwd
+! (see below).  In practice, vertical integrals of gb should have
+! the following forms:
+!
+!   1) FUNC1
+!
+!                      4      3e^{4kbz}+3e^{2kbz}+2
+!   \int gb(z') dz' = ---*-------------------------------
+!                     3kb  e^{6kbz}+3e^{4kbz}+3e^{2kbz}+1
+!
+!                      4  3e^{-2kbz}+3e^{-4kbz}+2e^{-6kbz}
+!                   = ---*---------------------------------
+!                     3kb 1+3e^{-2kbz}+3e^{-4kbz}+e^{-6kbz}
+!
+!   2) FUNC2
+!
+!                      2     1         2  e^{-2kbz}
+!   \int gb(z') dz' = --*---------- = --*-----------
+!                     kb e^{2kbz}+1   kb 1+e^{-2kbz}
+!
+!   3) FUNC3
+!
+!   \int gb(z') dz' = [sinh(kb*z)]/kb
+!
+!   and then for FUNC3
+!
+!           kb       1     z2
+!   fb = ----------*--*\int  cosh[kb(z+h)] dz
+!        sinh(kb*D) dz     z1
+!
+!                1                                       z2
+!      = -----------------*[e^{kb(z+h-D)}-e^{-kb(z+h+D)}]
+!        dz*(1-e^{-2kb*D})                               z1
+!
+! in which hyperbolic functions (sinh, cosh, and tanh) in fb
+! are expanded to exponential function so as not to be singular
+! when kD is very large.
+!
+! Additionally, we can introduce gb=1 (vertically uniform function)
+! with FB_FUNC0 for experimental purposes.  This option can be
+! chosen only for fb since it may be unappropriate to fkv and fwd.
+!
+! Note that the above expressions are introduced in order to
+! avoid the integral being Inf or NaN when kb^-1 -> 0.
+!
+# if defined LMD_MIXING && !defined AKB0
+#  define kb0 wrk4
+#  define vs  cff1
+#  define kvb cff2
+!
+! Akb: Eddy viscosity due to depth-induced wave breaking
+! ======================================================
+!
+!yu      do j=jstr-1,jend+1
+!yu        do i=istr-1,iend+1
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          inv_k =min(max(a_kv*wh(i,j),eps),Dstp(i,j))
+          kbrk  =1.0/inv_k         ! vertical scale for breaking
+#  ifdef FKV_FUNC1
+          fn1   =3.*(exp(-2.*kbrk*Dstp(i,j))+exp(-4.*kbrk*Dstp(i,j)))
+          fn2   =exp(-6.*kbrk*Dstp(i,j))
+          fb1   =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
+          intfb =c4o3*inv_k - fb1  ! intfb = \int^D gb(z') dz'
+          fb0   =1.D0/intfb        ! 1/[\int^D gb(z') dz']
+#  elif defined FKV_FUNC2
+          fn1   =exp(-2.*kbrk*Dstp(i,j))
+          fb1   =2.*inv_k*fn1/(1.+fn1)
+          intfb =inv_k - fb1
+          fb0   =1.D0/intfb
+#  elif defined FKV_FUNC3
+          fb1   =0.0               ! fb1 = \int gb dz at z = -h
+          fb0   =1.D0/(1.-exp(-2.*kbrk*Dstp(i,j)))
+#  endif
+#  ifndef SURFACE_ROLLER
+          vs    =ebrk(i,j)**c1o3   ! representative velocity scale
+#  else
+          vs    =((1.-wkb_roller)*ebrk(i,j)+erol(i,j))**c1o3
+#  endif
+          kvb   =bconst*vs*wh(i,j) ! depth-averaged Akb
+          do k=1,N,+1              ! <-- irreversible
+#  ifdef FKV_FUNC1
+            dd  =zeta(i,j,knew)-z_w(i,j,k)
+            fn1 =3.*(exp(-2.*kbrk*dd)+exp(-4.*kbrk*dd))
+            fn2 =exp(-6.*kbrk*dd)
+            fb2 =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
+#  elif defined FKV_FUNC2
+            fn1 =exp(-2.*kbrk*(zeta(i,j,knew)-z_w(i,j,k)))
+            fb2 =2.*inv_k*fn1/(1.+fn1)
+#  elif defined FKV_FUNC3
+            fb2 =exp( kbrk*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &          -exp(-kbrk*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
+#  endif
+            fb =fb0*inv_dz(i,j,k)*(fb2-fb1)
+            kb0(k) = kvb*fb*Dstp(i,j)
+            fb1=fb2     ! recursive procedure
+          enddo
+          do k=1,N-1
+            Akb(i,j,k)=0.5*(kb0(k)+kb0(k+1))
+!            Akb(i,j,k)=0. ! DevinD zeros
+          enddo
+          Akb(i,j,0)=0.D0
+          Akb(i,j,N)=max(1.5*kb0(N)-0.5*kb0(N-1),0.0)
+!          Akb(i,j,N)= 0. ! DevinD zeros
+#  ifdef MASKING
+          do k=0,N
+            Akb(i,j,k)=Akb(i,j,k)*rmask(i,j)
+          enddo
+#  endif
+        enddo
+      enddo        ! <-- discard kb0
+#  undef kb0
+# endif    /* LMD_MIXING */
+
+# ifndef SURFACE_BREAK
+#  define brk_r wrk3
+!
+! 3D breaking acceleration term defined as a body force.
+! =====================================================
+!
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
+#  ifdef FB_FUNC0
+          do k=1,N                 ! vertically uniform case
+            brk_r(i,j,k) = brk(i,j)*inv_d(i,j)
+          enddo                    ! <-- discard inv_d
+#  else
+#   ifdef FB_WSCALE
+          inv_k =1.0/max(2.0*kw(i,j),eps)  ! Stokes scale
+#   else
+          inv_k =min(max(a_brk*wh(i,j),eps),Dstp(i,j))
+#   endif
+          kbrk  =1.0/inv_k         ! vertical scale for breaking
+#   ifdef FB_FUNC1
+          fn1   =3.*(exp(-2.*kbrk*Dstp(i,j))+exp(-4.*kbrk*Dstp(i,j)))
+          fn2   =exp(-6.*kbrk*Dstp(i,j))
+          fb1   =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
+          intfb =c4o3*inv_k - fb1  ! intfb = \int^D gb(z') dz'
+          fb0   =1.D0/intfb        ! 1/[\int^D gb(z') dz']
+#   elif defined FB_FUNC2
+          fn1   =exp(-2.*kbrk*Dstp(i,j))
+          fb1   =2.*inv_k*fn1/(1.+fn1)
+          intfb =inv_k - fb1
+          fb0   =1.D0/intfb
+#   elif defined FB_FUNC3
+          fb1   =0.0               ! fb1 = \int gb dz at z = -h
+          fb0   =1.D0/(1.-exp(-2.*kbrk*Dstp(i,j)))
+#   endif
+          do k=1,N,+1              ! <-- irreversible
+#   ifdef FB_FUNC1
+            dd  =zeta(i,j,knew)-z_w(i,j,k)
+            fn1 =3.*(exp(-2.*kbrk*dd)+exp(-4.*kbrk*dd))
+            fn2 =exp(-6.*kbrk*dd)
+            fb2 =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
+#   elif defined FB_FUNC2
+            fn1 =exp(-2.*kbrk*(zeta(i,j,knew)-z_w(i,j,k)))
+            fb2 =2.*inv_k*fn1/(1.+fn1)
+#   elif defined FB_FUNC3
+            fb2 =exp( kbrk*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &          -exp(-kbrk*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
+#   endif
+            fb =fb0*inv_dz(i,j,k)*(fb2-fb1)
+            brk_r(i,j,k) = fb*brk(i,j)
+            fb1=fb2     ! recursive procedure
+          enddo
+#  endif       /* ifdef FB_FUNC0 */
+        enddo
+      enddo
+
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istr,iendR
+            brk3dx(i,j,k)=0.5*( brk_r(i-1,j,k)*wdrx(i-1,j)
+     &                           +brk_r(i,j,k)*wdrx(i,j) )
+!            brk3dx(i,j,k)=0. ! DevinD zeros
+#  ifdef MASKING
+     &                                         *umask(i,j)
+#  endif
+          enddo
+        enddo
+        do j=jstr,jendR
+          do i=istrR,iendR
+            brk3de(i,j,k)=0.5*( brk_r(i,j-1,k)*wdre(i,j-1)
+     &                           +brk_r(i,j,k)*wdre(i,j) )
+!            brk3de(i,j,k)=0. ! DevinD
+#  ifdef MASKING
+     &                                         *vmask(i,j)
+#  endif
+          enddo
+        enddo
+      enddo       ! <-- discard brk_r, but keep ust_r
+#  undef brk_r
+# endif        /* ifndef SURFACE_BREAK */
+# undef inv_d
+!
+! 3D bottom streaming acceleration term defined as a body force.
+! ==============================================================
+!
+!  Convert wave-induced bottom streaming as a grid-averaged body
+!  force. Similarly to the breaking acceleration, we can invoke one
+!  of the following three kernal functions:
+!
+!   FUNC1: fb~1-tanh(kf(h+z))^4 : Warner et al (2008)
+!   FUNC2: fb~1-tanh(kf(h+z))^2 : modified from the above
+!   FUNC3: fb~cosh(kf(zeta-z))  : analogous to primary wave
+!
+!  Notice that for now the z-coordinate is inverted, and thus defined
+!  from the bottom.  The length scale, k_wd^-1, is referenced to the
+!  turbulent wave bottom boundary layer thickness, delta, which is
+!  evaluated by Eq (2.45) in Fredsoe & Deigaard (Mechanics of Caostal
+!  Sediment Transport, 1992, p.25).  There is also another option to
+!  identify the laminar bottom streaming by Longuet-Higgins (1953),
+!  which is required to reproduce Xu & Bowen (1994) and Lentz et al.
+!  (2008).
+!
+# if defined WAVE_FRICTION && defined BODY_FRICTION
+#  undef LH53_STREAMING
+#  ifdef ANA_VMIX
+#   define LH53_STREAMING
+#  endif
+#  define frc_r wrk3
+#  define frc2d stk
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
+#  ifndef LH53_STREAMING
+          abot  =wh(i,j)/max(2.D0*sinh(min(kD(i,j),khmax)),eps)
+          delta =0.160455*((abot/Zob)**0.83)*Zob  ! BBL thickness
+          inv_k =min(max(a_frc*delta,eps),Dstp(i,j))
+          kfrc  =1.0/inv_k         ! vertical scale for wave friction
+#   ifdef FF_FUNC1
+          fn1   =3.*(exp(-2.*kfrc*Dstp(i,j))+exp(-4.*kfrc*Dstp(i,j)))
+          fn2   =exp(-6.*kfrc*Dstp(i,j))
+          fb1   =c4o3*inv_k        ! fb1: at z=-h (z_w at k=0)
+          fb2   =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
+          intfb =fb2-fb1           ! intfb = \int^D gb(z') dz'
+          fb0   =1.D0/intfb        ! 1/[\int^D gb(z') dz']
+#   elif defined FF_FUNC2
+          fn1   =exp(-2.*kfrc*Dstp(i,j))
+          fb1   =inv_k
+          fb2   =2.*inv_k*fn1/(1.+fn1)
+          intfb =fb2-fb1
+          fb0   =1.D0/intfb
+#   elif defined FF_FUNC3
+          fb1   =1.0-exp(-2.*kfrc*Dstp(i,j))
+          fb0   =1.D0/(exp(-2.*kfrc*Dstp(i,j))-1.0)
+#   endif
+          do k=1,N,+1              ! <-- irreversible
+#   ifdef FF_FUNC1
+            dd  =h(i,j)+z_w(i,j,k)
+            fn1 =3.*(exp(-2.*kfrc*dd)+exp(-4.*kfrc*dd))
+            fn2 =exp(-6.*kfrc*dd)
+            fb2 =c4o3*inv_k*(fn1+2.*fn2)/(1.+fn1+fn2)
+#   elif defined FF_FUNC2
+            fn1 =exp(-2.*kfrc*(h(i,j)+z_w(i,j,k)))
+            fb2 =2.*inv_k*fn1/(1.+fn1)
+#   elif defined FF_FUNC3
+            fb2 =exp( kfrc*(zeta(i,j,knew)-z_w(i,j,k)-Dstp(i,j)))
+     &          -exp(-kfrc*(zeta(i,j,knew)-z_w(i,j,k)+Dstp(i,j)))
+#   endif
+            fb =fb0*inv_dz(i,j,k)*(fb2-fb1)
+            frc_r(i,j,k) = fb*frc(i,j)
+            fb1=fb2
+          enddo
+#  else  /* LH53_STREAMING */
+          frc2d(i,j)=0.0
+          beta=sqrt(fr(i,j)/(Akv(i,j,0)+Akv(i,j,1)))
+          cff =wramp2*(wh(i,j)**2)*(fr(i,j)**2)*kw(i,j)
+     &         /max(16.0*(sinh(min(kD(i,j),khmax))**2)*beta,eps)
+          bz1 =beta*(h(i,j)+z_w(i,j,0))
+          cff1=2.*exp(-bz1)*(bz1*sin(bz1)+cos(bz1))-1.-exp(-2.*bz1)
+          cff3=1.D0 !min(1.0, pi/beta/Hz(i,j,1)) ! <-- unresoluved viscous layer
+          do k=1,N,+1              ! <-- irreversible
+            bz2 =beta*(h(i,j)+z_w(i,j,k))
+            cff2=2.*exp(-bz2)*(bz2*sin(bz2)+cos(bz2))-1.-exp(-2.*bz2)
+            frc_r(i,j,k)=-cff*(cff2-cff1)*inv_dz(i,j,k)*cff3
+            cff1=cff2; cff3=1.0
+            frc2d(i,j) = frc2d(i,j) + frc_r(i,j,k)*Hz(i,j,k)
+          enddo
+#  endif  /* !LH53_STREAMING */
+        enddo
+      enddo
+      do j=jstrR,jendR
+        do i=istr,iendR
+#  ifdef LH53_STREAMING
+          frc2dx(i,j)=0.5*( frc2d(i-1,j)*wdrx(i-1,j)
+     &                       +frc2d(i,j)*wdrx(i,j) )
+#   ifdef MASKING
+     &                                   *umask(i,j)
+#   endif
+#  endif
+          do k=1,N
+            frc3dx(i,j,k)=0.5*( frc_r(i-1,j,k)*wdrx(i-1,j)
+     &                           +frc_r(i,j,k)*wdrx(i,j) )
+#  ifdef MASKING
+     &                                         *umask(i,j)
+#  endif
+          enddo
+        enddo
+      enddo
+      do j=jstr,jendR
+        do i=istrR,iendR
+#  ifdef LH53_STREAMING
+          frc2de(i,j)=0.5*( frc2d(i,j-1)*wdre(i,j-1)
+     &                       +frc2d(i,j)*wdre(i,j) )
+#   ifdef MASKING
+     &                                   *vmask(i,j)
+#   endif
+#  endif
+          do k=1,N
+            frc3de(i,j,k)=0.5*( frc_r(i,j-1,k)*wdre(i,j-1)
+     &                           +frc_r(i,j,k)*wdre(i,j) )
+#  ifdef MASKING
+     &                                         *vmask(i,j)
+#  endif
+          enddo
+        enddo
+      enddo       ! <-- discard frc_r, frc2d
+#  undef frc_r
+#  undef frc2d
+# endif   /* BODY_FRICTION */
+# undef inv_dz
+
+# endif       /* SOLVE3D */
+
+! Open boundary condition (valid only for idealized situations)
+! =============================================================
+
+#   ifdef ANA_BRY
+      z_tide=0.0
+#    ifdef WKB_WWAVE
+      z_tide=wkb_tide
+#    endif
+
+#    if defined Z_FRC_BRY || defined M2_FRC_BRY || defined M3_FRC_BRY
+
+#     ifdef OBC_WEST
+      if (WESTERN_EDGE) then
+        do j=jstrR,jendR
+#      ifdef Z_FRC_BRY
+          zeta_west(j)=z_tide + sup(istrR,j)
+#      endif
+#      ifdef M2_FRC_BRY
+#       ifdef SHOREFACE
+          ubar_west(j)=ubar(istr,j,knew)
+#       else
+          ubar_west(j)=-ust2d(istrR,j)    ! Stokes drift (xi)
+#       endif
+          vbar_west(j)=vbar(istr,j,knew) ! Stokes drift (eta)
+#      endif
+#      if defined SOLVE3D && defined M3_FRC_BRY
+          do k=1,N
+            u_west(j,k)=u(istr,j,k,nnew)
+c            u_west(j,k)=-ust(istrR,j,k)
+            v_west(j,k)=v(istr,j,k,nnew)
+          enddo
+#      endif
+        enddo
+      endif
+#     endif  /* OBC_WEST */
+!
+#     ifdef OBC_EAST
+      if (EASTERN_EDGE) then
+        do j=jstrR,jendR
+#      ifdef Z_FRC_BRY
+          zeta_east(j)=z_tide + sup(iendR,j)
+#      endif
+#      ifdef M2_FRC_BRY
+c#      ifdef STOKESEKMAN
+c          ubar_east(j)=ubar(iend,j,knew) ! Neumann
+c#      else
+          ubar_east(j)=-ust2d(iend,j)  ! Stokes drift (xi)
+c#      endif
+          vbar_east(j)=vbar(iend,j,knew) !-vst2d(iendR,j)  ! Stokes drift (eta)
+#      endif
+#      if defined SOLVE3D && defined M3_FRC_BRY
+          do k=1,N
+            u_east(j,k)=u(iend,j,k,nnew)
+c            u_east(j,k)=-ust(iendR,j,k)
+            v_east(j,k)=v(iend,j,k,nnew)
+          enddo
+#      endif
+        enddo
+      endif
+#     endif  /* OBC_EAST */
+!
+#     ifdef OBC_SOUTH
+      if (SOUTHERN_EDGE) then
+        do i=istrR,iendR
+#      ifdef Z_FRC_BRY
+          zeta_south(i)=z_tide + sup(i,jstrR)
+#      endif
+#      ifdef M2_FRC_BRY
+          ubar_south(i)=ubar(i,jstr,knew)  ! Neumann
+          vbar_south(i)=-vst2d(i,jstr)     ! Stokes drift
+#      endif
+#      if defined SOLVE3D && defined M3_FRC_BRY
+          do k=1,N
+            u_south(i,k)=u(i,jstr,k,nnew)
+            v_south(i,k)=v(i,jstr,k,nnew)
+          enddo
+#      endif
+        enddo
+      endif
+#     endif  /* OBC_SOUTH */
+!
+#     ifdef OBC_NORTH
+      if (NORTHERN_EDGE) then
+        do i=istrR,iendR
+#      ifdef Z_FRC_BRY
+          zeta_north(i)=z_tide + sup(i,jendR)
+#      endif
+#      ifdef M2_FRC_BRY
+          ubar_north(i)=ubar(i,jend,knew)  ! Neumann
+          vbar_north(i)=-vst2d(i,jend)     ! Stokes drift
+#      endif
+#      if defined SOLVE3D && defined M3_FRC_BRY
+          do k=1,N
+            u_north(i,k)=u(i,jend,k,nnew)
+            v_north(i,k)=v(i,jend,k,nnew)
+          enddo
+#      endif
+        enddo
+      endif
+#     endif  /* OBC_NORTH */
+!
+#    endif  /* Z_FRC_BRY || M2_FRC_BRY || M3_FRC_BRY */
+!
+#   endif  /* ANA_BRY */
+
+
+# ifdef EXCHANGE
+      call exchange2d_4_tile(istr,iend,jstr,jend, sup,wdsp,wdrg,wbst)
+      call exchange2d_3_tile(istr,iend,jstr,jend, ust2d,brk2dx,frc2dx)
+      call exchange2d_3_tile(istr,iend,jstr,jend, vst2d,brk2de,frc2de)
+#  ifdef SURFACE_ROLLER
+      call exchange2d_tile(istr,iend,jstr,jend,rdsp)
+#  endif
+#  if defined BBL_S95 || defined BBL_F00 || defined BBL_QUAD2D
+      call exchange2d_tile (istr,iend,jstr,jend, r_D)
+#  endif
+#  ifdef SOLVE3D
+      call exchange2d_2_tile(istr,iend,jstr,jend,Kapsrf,calP)
+      call exchange_3_tile(istr,iend,jstr,jend, ust,N, vst,N, kvf,N)
+#   ifndef SURFACE_BREAK
+      call exchange_2_tile (istr,iend,jstr,jend, brk3dx,N, brk3de,N)
+#   endif
+#   if defined WAVE_FRICTION && defined BODY_FRICTION
+      call exchange_2_tile (istr,iend,jstr,jend, frc3dx,N, frc3de,N)
+#   endif
+#  endif
+# endif
+
+
+      end subroutine wec_forces_tile
+
+
+      ! -------------------------------------------
+      ! -------------------------------------------
+      ! -------------------------------------------
 
 
 !        subroutine init_wec_arrays ! DevinD added this routine.
@@ -2625,87 +4401,6 @@ CR      write(*,*) 'wrt_his: wrtKAPS' MYID
 !        end subroutine init_wec_arrays
 
 
-        ! ----------------------------------------
-                 
-!        subroutine wstokes_tile(istr,jstr,iend,jend, pm, pn)
-         ! Compute vertical stokes velocity         
-!         implicit none
-!         real(kind=8), intent(in) :: istr,jstr,iend,jend
-!         integer :: i, j, k
-!         real Wrk(0:nz)
-
-!         do j=jstr,jend
-!           do i=istr,iend
-!              Wrk(0) = 0.D0
-!              do k=1,nz,+1 ! --> recursive
-!                  Wrk(k) = Wrk(k-1) -Hz(i,j,k)
-!     &       *( pm(i,j)*(ust(i+1,j,k)-ust(i,j,k))
-!     &         +pn(i,j)*(vst(i,j+1,k)-vst(i,j,k)) )
-!             enddo 
-!           wst(i,j,nz)=+0.375*Wrk(nz) +0.75*Wrk(nz-1) -0.125*Wrk(nz-2)
-!           do k=nz-1,2,-1
-!              wst(i,j,k)=+0.5625*(Wrk(k  )+Wrk(k-1))
-!     &                 -0.0625*(Wrk(k+1)+Wrk(k-2))
-!           enddo
-!           wst(i,j,1)= -0.125*Wrk(2) +0.75*Wrk(1) +0.375*Wrk(0)
-!          enddo
-!         enddo
-!# ifndef EW_PERIODIC
-!         if (WESTERN_EDGE) then                       ! Set lateral
-!           do k=1,nz                                   ! boundary
-!             do j=jstr,jend                           ! conditions
-!               wst(istr-1,j,k)=wst(istr,j,k)
-!           enddo
-!          enddo
-!         endif
-!        if (EASTERN_EDGE) then
-!          do k=1,nz
-!            do j=jstr,jend
-!              wst(iend+1,j,k)=wst(iend,j,k)
-!            enddo
-!          enddo
-!        endif
-!# endif
-!# ifndef NS_PERIODIC
-!         if (SOUTHERN_EDGE) then
-!           do k=1,nz
-!             do i=istr,iend
-!               wst(i,jstr-1,k)=wst(i,jstr,k)
-!             enddo
-!          enddo
-!         endif
-!         if (NORTHERN_EDGE) then
-!           do k=1,nz
-!             do i=istr,iend
-!               wst(i,jend+1,k)=wst(i,jend,k)
-!             enddo
-!           enddo
-!         endif
-!#  ifndef EW_PERIODIC
-!         if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-!           do k=1,nz
-!             wst(istr-1,jstr-1,k)=wst(istr,jstr,k)
-!           enddo
-!         endif
-!         if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-!           do k=1,nz
-!             wst(istr-1,jend+1,k)=wst(istr,jend,k)
-!          enddo
-!         endif
-!         if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-!           do k=1,nz
-!             wst(iend+1, jstr-1,k)=wst(iend,jstr,k)
-!           enddo
-!         endif
-!         if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-!           do k=1,nz
-!             wst(iend+1,jend+1,k)=wst(iend,jend,k)
-!           enddo
-!         endif
-!#  endif
-!# endif
-   
-!        end subroutine wstokes_tile
-        ! ----------------------------------------
+#endif /* WEC for whole module */
         
       end module wec_frc

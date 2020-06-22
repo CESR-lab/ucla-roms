@@ -24,7 +24,7 @@ c--# define MERGE_OVERLAP
      &                                                   kbls, kmo)
 
 # ifdef WEC
-      use wec
+      use wec_frc
 # endif
 
       implicit none
@@ -876,17 +876,17 @@ c              Ks(i,j,k)=Ks(i,j,k) + wsb*bbl(i,j)*cff1
 
 ! DevinD - add WEC from DH's MRL_WCI WAVE_PACKET implemtation
 # ifdef WEC
-          do k=1,N      ! Apply wave effects
-            Akv(i,j,k)       =Akv(i,j,k)+Akb(i,j,k)
-            Akt(i,j,k,itemp) =Akt(i,j,k,itemp)+Akb(i,j,k)+Akw(i,j,k)
+              do k=1,N      ! Apply wave effects
+                Akv(i,j,k)       =Akv(i,j,k)+Akb(i,j,k)
+                Akt(i,j,k,itemp) =Akt(i,j,k,itemp)+Akb(i,j,k)+Akw(i,j,k)
 #  ifdef SALINITY
-            Akt(i,j,k,isalt) =Akt(i,j,k,isalt)+Akb(i,j,k)+Akw(i,j,k)
+                Akt(i,j,k,isalt) =Akt(i,j,k,isalt)+Akb(i,j,k)+Akw(i,j,k)
 #  endif
-          enddo
-          Akv(i,j,0)       =2.*Akv(i,j,1)-Akv(i,j,2)
-          Akt(i,j,0,itemp) =2.*Akt(i,j,1,itemp)-Akt(i,j,2,itemp)
+              enddo
+              Akv(i,j,0)       =2.*Akv(i,j,1)-Akv(i,j,2)
+              Akt(i,j,0,itemp) =2.*Akt(i,j,1,itemp)-Akt(i,j,2,itemp)
 #  ifdef SALINITY
-          Akt(i,j,0,isalt) =2.*Akt(i,j,1,isalt)-Akt(i,j,2,isalt)
+              Akt(i,j,0,isalt) =2.*Akt(i,j,1,isalt)-Akt(i,j,2,isalt)
 #  endif
 # endif
 ! DevinD - end WEC

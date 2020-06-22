@@ -235,31 +235,6 @@
 #endif /* SOLVE3D */
 
 !------ DevinD add from DH MRL init_arrays.F
-!# if defined BBL || defined MRL_WCI
-!          whrm(i,j) =init
-!          ....
-
-! Initialize WEC-related arrays (see "forces.h").
-
-!#ifdef MRL_WCI
-!      do j=jstrR,jendR
-!        do i=istrR,iendR
-!          sup(i,j)    =init
-!          ...
-!# ifdef SOLVE_3D
-!          calP(i,j)   =init
-!          Kapsrf(i,j) =init
-!          do k=1,N
-!            ust(i,j,k) =init
-!            vst(i,j,k) =init
-!            ...
-!#endif /* MRL_WCI */
-
-!------ DevinD - end add from DH MRL init_arrays.F
-
-
-
-!------ DevinD added
 # ifdef WEC
         ! (only use this if needed - JM's river_frc does not, but
         !  river's might not be a global attribute for NUMA)

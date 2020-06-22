@@ -29,7 +29,7 @@
 # endif
 ! DevinD added
 # ifdef WEC
-      use wec_frc, only: ust, vst, cff1 => cff_ext
+      use wec_frc
 # endif
 ! DevinD added
 #ifdef NHMG
@@ -60,6 +60,15 @@
 # include "mixing.h"
 # include "scalars.h"
 # include "sources.h"
+
+! Taken from rhs3d35S.F for WEC
+# ifdef MRL_WCI
+#  include "ocean2d.h"
+#  ifdef VF_ROBUST
+      real gam1,gam2
+#  endif
+      real cff1
+# endif
 
 # include "compute_auxiliary_bounds.h"
 
@@ -147,6 +156,12 @@
 # include "compute_horiz_rhs_uv_terms.h"
 
       enddo !<-- k
+
+! DevinD add
+#ifdef WEC
+      call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
+#endif
+
 
 ! Compute dynamic bottom drag coefficient.  Note that "rd" must be
 ! aliased to a horizontal array beyond #4 to avoid overlap with one
@@ -255,6 +270,17 @@
 
 # include "compute_vert_rhs_uv_terms.h"
 
+# ifdef WEC
+#  if defined WAVE_FRICTION && !defined BODY_FRICTION
+        do i=istrU,iend
+          ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
+        enddo
+        do i=istr,iend
+          rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
+        enddo
+#  endif
+# endif   /* WEC */
+
         do i=istrU,iend
           DC(i,0)=dtau*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
         enddo
@@ -282,11 +308,23 @@
 
           DC(i,N)=cff*( DC(i,N)
 # ifdef WIND_AT_RHO_POINTS
-     &               +0.5*dtau*(sustr(i-1,j)+sustr(i,j))
-# else
-     &                                  +dtau*sustr(i,j)
-# endif
-     &                                                 )
+!     &               +0.5*dtau*(sustr(i-1,j)+sustr(i,j))
+!# else
+!     &                                  +dtau*sustr(i,j)
+!# endif
+!     &                                                 )
+     &                    +dtau*( 0.5 * (sustr(i,j)+sustr(i-1,j))
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2dx(i,j) )
+#    endif
+#  else
+     &                                       +dtau*(sustr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2dx(i,j)
+#    endif
+     &                                                   )
+#  endif
+     &                                                  )
         enddo
         do k=N-1,2,-1      !--> forward elimination
           do i=istrU,iend
@@ -321,6 +359,9 @@
      &                   0.5*(sustr(i-1,j)+sustr(i,j))
 #  else
      &                                      sustr(i,j)
+#  endif
+#  ifdef WEC
+     &                                     + brk2dx(i,j)
 #  endif
      &        -0.5*(rd(i-1,j)+rd(i,j))*u(i,j,1,nnew) )
 # endif
@@ -361,11 +402,23 @@
 
             DC(i,N)=cff*( DC(i,N)
 # ifdef WIND_AT_RHO_POINTS
-     &                 +0.5*dtau*(svstr(i,j-1)+svstr(i,j))
-# else
-     &                                    +dtau*svstr(i,j)
-# endif
+!     &                 +0.5*dtau*(svstr(i,j-1)+svstr(i,j))
+!# else
+!     &                                    +dtau*svstr(i,j)
+!# endif
+!     &                                                   )
+     &                    +dtau*( 0.5 * (svstr(i,j-1)+svstr(i,j))
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2de(i,j) )
+#    endif
+#  else
+     &                                       +dtau*(svstr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2de(i,j)
+#    endif
      &                                                   )
+#  endif
+     &                                                    )
           enddo
           do k=N-1,2,-1      !--> forward elimination
             do i=istr,iend
@@ -401,6 +454,9 @@
      &                     0.5*(svstr(i,j-1)+svstr(i,j))
 #  else
      &                                        svstr(i,j)
+#  endif
+#  ifdef WEC
+     &                                      + brk2de(i,j)
 #  endif
      &          -0.5*(rd(i,j-1)+rd(i,j))*v(i,j,1,nnew) )
 # endif

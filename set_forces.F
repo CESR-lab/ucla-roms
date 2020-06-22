@@ -156,13 +156,16 @@ c***              no code here
 
 ! DevinD - start (note there is an alaytical bool in WEC module already.
 # ifdef WEC
-#   ifdef ANA_WEC_FRC
+#  ifdef ANA_WEC_FRC
+      ! Calculate analytical wave attributes (whrm, wfrq, wdir, etc)
+      ! and calls wec_forces to calculate stokes forces
       call ana_wec_frc_tile(istr,iend,jstr,jend)
-#   else
-!     call set_river_src_tile(istr,iend,jstr,jend, ierr)
-      call set_wec_frc(tmid)
-#   endif
+#  else
+      ! This sets stokes drift variables for both analytical and non-analyitcal.
+      ! and calls wec_forces to calculate stokes forces
+      call set_wec_frc_tile(istr,iend,jstr,jend,ierr)
 #  endif
+# endif
 ! DevinD - end
 
 #endif  /* SOLVE3D */

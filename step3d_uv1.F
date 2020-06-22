@@ -44,6 +44,14 @@
 #  include "eos_vars.h"
 # endif
 
+# ifdef WEC
+#  include "ocean2d.h"
+#  ifdef VF_ROBUST
+      real gam1,gam2
+#  endif
+      real cff1
+# endif
+
 # include "compute_auxiliary_bounds.h"
 
        do k=1,N

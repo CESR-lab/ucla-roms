@@ -413,7 +413,7 @@
 ! weird mask thing we still don't understand
 #   ifdef MASKING
            ubar(i,j,knew)=ubar(i,j,knew)*umask(i,j)
-&                +ust2d(i,j)*(umask(i,j)-1.0)    
+     &                +ust2d(i,j)*(umask(i,j)-1.0)
 #   endif 
 # endif 
 
