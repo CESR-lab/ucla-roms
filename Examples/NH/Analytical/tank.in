@@ -1,0 +1,77 @@
+title:
+       Tank analytical NH test
+
+
+time_stepping: NTIMES   dt[sec] NDTFAST  NINFO
+                  10    0.01      10      1
+
+
+S-coord: THETA_S  THETA_B   hc (m)
+          0.0D0   0.5D0     1.D16
+
+grid:  filename
+
+
+initial: NRREC  filename
+           0 
+
+
+restart:  NRST, NRPFRST / filename
+           11520  -2   !<-- 360 days with dt=2700
+           tank_rst.nc
+
+history: LDEFHIS NWRT NRPFHIS / filename
+            T    1   11
+             tank_his.nc
+
+averages: NTSAVG, NAVG, NRPFAVG / filename
+            1     360    18
+                 tank_avg.nc
+
+primary_history_fields: zeta U,VBAR  U,V   wrtT(1:NT)
+                          T   T T    T T   T T
+
+auxiliary_history_fields: rho Omega W  Akv Akt Aks  HBL HBBL
+                           F   T    T   F   F   F    T   T
+
+primary_averages: zeta U,VBAR  U,V   wrtT(1:NT)
+                    T    T T   T T      T T
+
+auxiliary_averages: rho Omega W  Akv Akt Aks  HBL HBBL
+                     F    T   F   F   T   F    T   T
+
+boundary: filename
+
+
+forcing: filename
+
+
+rho0:
+      1027.8
+
+lateral_visc: visc2 [m^2/s]
+                 0.
+
+vertical_mixing: Akv_bak, Akt_bak [m^2/sec]
+                   0.       0.
+
+
+tracer_diff2: tnu2(1:NT) [m^2/s] for all
+ 0. 0. 0. 0. 0. 0. 0. 0. 0.
+
+
+SSS_correction: a.k.a. "piston velocity" [cm/day] 
+          3.5 
+
+bottom_drag:  rdrg[m/s]   rdrg2  Zob[m]
+                    0.      0.    0.01
+
+gamma2:
+                 1.
+
+v_sponge:           V_SPONGE [m^2/sec]
+                   2000.
+
+ubind: OBC binding velocity scale [m/s]
+       0.1
+

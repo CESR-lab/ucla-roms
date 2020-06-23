@@ -3,10 +3,6 @@
 
       subroutine set_avg (tile)
 
-# ifdef WEC
-      use wec_frc, only: wstokes_wec_tile, indxWST
-# endif
-
       implicit none
       integer tile
 # include "param.h"
@@ -21,14 +17,6 @@
         call wvlcty_tile(istr,iend,jstr,jend, work, A2d(1,1),
      &                                    A2d(1,2), A2d(1,3))
       endif
-
-! Daniel add
-#  ifdef WEC
-      if (wrtavg(indxWST)) then
-        ! ** wstokes_tile needs to be added to wec module **
-        call wstokes_wec_tile(istr,iend,jstr,jend)
-      endif
-#  endif
 # endif
 
       call set_avg_tile (istr,iend,jstr,jend)

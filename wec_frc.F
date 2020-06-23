@@ -1,13 +1,15 @@
+#include "cppdefs.h"
       module wec_frc
       ! Wave Effect on Current (WEC) module which provides all the terms that enter
       ! in the momentum equations
 
-       use dimensions, nt_dimensions => nt, mynode_dims => mynode !! has dimensions, a list of forcing files and rmask
+       use dimensions, nt1 => nt, mynode1 => mynode, 
+     &     rmask1 => rmask, max_frc1 => max_frc, grdname1 => grdname,
+     &     frcfile1 => frcfile
+
 
        implicit none
-! Jeroen testing git
 ! DevinD - need the following includes for GLOBAL_2D_ARRAY to work
-#include "cppdefs.h"
 
 #if defined WEC /* WEC for whole module! */
 
@@ -74,52 +76,62 @@
 # endif
 !
 !--------------------------------------------------------------------
-!  WAVE AVEREAGED QUANTITIES AND TERMS
+!  PUBLIC WAVE AVERAGED QUANTITIES THAT ARE USED BY THE CODE
 !--------------------------------------------------------------------
-!  2D  |  brk2dx   |   xi-direciton 2D breaking dissipation (rho)
-!  2D  |  brk2de   |  eta-direction 2D breaking dissipation (rho)
-!  2D  |  frc2dx   |   xi-direciton 2D frictional dissipation (rho)
-!  2D  |  frc2de   |  eta-direction 2D frictional dissipation (rho)
-!  2D  |  ust2d    |   xi-direciton Stokes transport (u-point)
-!  2D  |  vst2d    |  eta-direciton Stokes transport (v-point)
-!  2D  |  ustr2d    |   xi-direciton Stokes transport (r-point)
-!  2D  |  vstr2d    |  eta-direciton Stokes transport (r-point)
-!  2D  |  ustr0    |   xi-direciton Surface Stokes drift (r-point)
-!  2D  |  vstr0    |  eta-direciton Surface Stokes drift (r-point)
-!  2D  |  sup      |  quasi-static wave set-up (rho-point)
+!  2D  |  ust2d    |   xi-direction Stokes transport (u-point)
+!  2D  |  vst2d    |  eta-direction Stokes transport (v-point)
+!  3D  |  ust      |   xi-direction 3D Stokes drift velocity (u-point)
+!  3D  |  vst      |  eta-direction 3D Stokes drift velocity (v-point)
+!--------------------------------------------------------------------
+!  2D  |  sup      |  quasi-static wave set-up (rho-point) 
 !  2D  |  calP     |  pressure correction term (rho-point)
 !  2D  |  Kapsrf   |  Bernoulli head terrm at the surface (rho-point)
-!  2D  |  lm       |  mean wave length (rho-point)
 !--------------------------------------------------------------------
-!  3D  |  brk3dx   |   xi-direciton 3D breaking dissipation (rho)
-!  3D  |  brk3de   |  eta-direction 3D breaking dissipation (rho)
-!  3D  |  ust      |   xi-direciton 3D Stokes drift velocity (u-point)
-!  3D  |  vst      |  eta-direciton 3D Stokes drift velocity (v-point)
-!  3D  |  wst      |       vertical 3D Stokes drift velocity (rho-point)
-!  3D  |  Kappa    |  3D Bernoulli head term (rho-point)
-!  3D  |  kvf      |  vertical vortex force term (K term, 3D, rho-point)
+!  2D  |  brk2dx   |   xi-direction 2D breaking dissipation (rho)
+!  2D  |  brk2de   |  eta-direction 2D breaking dissipation (rho)
+!  2D  |  frc2dx   |   xi-direction 2D frictional dissipation (rho)
+!  2D  |  frc2de   |  eta-direction 2D frictional dissipation (rho)
+!--------------------------------------------------------------------
 !  3D  |  Akb      |  breaking-wave-induced additional diffusivity (w-point)
 !  3D  |  Akw      |  wave-induced additional diffusivity (rho-point)
 !  3D  |  E_pre    |  previous time-step value for Akw estimation (rho)
+!--------------------------------------------------------------------
+! not used yet due to cpp choices
+!--------------------------------------------------------------------
+!  3D  |  brk3dx   |   xi-direciton 3D breaking dissipation (rho)
+!  3D  |  brk3de   |  eta-direction 3D breaking dissipation (rho)
 !  3D  |  frc3dx   |   xi-direciton 3D frictional dissipation (rho)
 !  3D  |  frc3de   |  eta-direction 3D frictional dissipation (rho)
 !--------------------------------------------------------------------
 !
-      real, public :: brk2dx(GLOBAL_2D_ARRAY)
-      real, public :: brk2de(GLOBAL_2D_ARRAY)
+
       real, public :: ust2d(GLOBAL_2D_ARRAY)
       real, public :: vst2d(GLOBAL_2D_ARRAY)
-      real, public :: ustr2d(GLOBAL_2D_ARRAY)
-      real, public :: vstr2d(GLOBAL_2D_ARRAY)
-      real, public :: ustr0(GLOBAL_2D_ARRAY)
-      real, public :: vstr0(GLOBAL_2D_ARRAY)
-      real, public :: llmm(GLOBAL_2D_ARRAY)
+# ifdef SOLVE3D
+      real, public :: ust(GLOBAL_2D_ARRAY,N)
+      real, public :: vst(GLOBAL_2D_ARRAY,N)
+# endif  /* SOLVE3D */
+      real, public :: calP(GLOBAL_2D_ARRAY)
+# ifdef SOLVE3D
+      real, public :: Kapsrf(GLOBAL_2D_ARRAY)
+      real, public :: sup(GLOBAL_2D_ARRAY)
+# endif  /* SOLVE3D */
+
+      real, public :: brk2dx(GLOBAL_2D_ARRAY)
+      real, public :: brk2de(GLOBAL_2D_ARRAY)
       real, public :: frc2dx(GLOBAL_2D_ARRAY)
       real, public :: frc2de(GLOBAL_2D_ARRAY)
-      real, public :: sup(GLOBAL_2D_ARRAY)
+
 # ifdef SOLVE3D
-      real, public :: calP(GLOBAL_2D_ARRAY)
-      real, public :: Kapsrf(GLOBAL_2D_ARRAY)
+      real, public :: Akb(GLOBAL_2D_ARRAY,0:N)
+      real, public :: Akw(GLOBAL_2D_ARRAY,0:N)
+      real, public :: E_pre(GLOBAL_2D_ARRAY,0:N)
+
+      real, public :: kvf(GLOBAL_2D_ARRAY,N)
+# endif  /* SOLVE3D */
+
+
+# ifdef SOLVE3D
 #  ifndef SURFACE_BREAK
       real, public :: brk3dx(GLOBAL_2D_ARRAY,N)
       real, public :: brk3de(GLOBAL_2D_ARRAY,N)
@@ -128,14 +140,14 @@
       real, public :: frc3dx(GLOBAL_2D_ARRAY,N)
       real, public :: frc3de(GLOBAL_2D_ARRAY,N)
 #  endif
-      real, public :: ust(GLOBAL_2D_ARRAY,N)
-      real, public :: vst(GLOBAL_2D_ARRAY,N)
-      real, public :: wst(GLOBAL_2D_ARRAY,N)
-      real, public :: kvf(GLOBAL_2D_ARRAY,N)
-      real, public :: Akb(GLOBAL_2D_ARRAY,0:N)
-      real, public :: Akw(GLOBAL_2D_ARRAY,0:N)
-      real, public :: E_pre(GLOBAL_2D_ARRAY,0:N)
 # endif  /* SOLVE3D */
+
+
+      real :: llmm(GLOBAL_2D_ARRAY)
+      real :: ustr2d(GLOBAL_2D_ARRAY)
+      real :: vstr2d(GLOBAL_2D_ARRAY)
+      real :: ustr0(GLOBAL_2D_ARRAY)
+      real :: vstr0(GLOBAL_2D_ARRAY)
 
       ! NON-ANALYTICAL VARIABLES
 
@@ -234,8 +246,7 @@
 
       ! DevinD - variables used in ana_wec_frc_tile and ana_init_wec_frc_tile
 
-       ! For PART 1: Declare some variables from analytical.F
-       real :: kkw, env, Clw, Cg
+       real :: env
 
        ! DevinD - coefficient variable for external calculations
        real, public :: cff_ext, cff_ext2
@@ -375,7 +386,6 @@
 #  ifdef SOLVE3D
       real ust_avg(GLOBAL_2D_ARRAY,N)
       real vst_avg(GLOBAL_2D_ARRAY,N)
-      real wst_avg(GLOBAL_2D_ARRAY,N)
       real akb_avg(GLOBAL_2D_ARRAY,0:N)
       real akw_avg(GLOBAL_2D_ARRAY,0:N)
       real kvf_avg(GLOBAL_2D_ARRAY,N)
@@ -401,9 +411,7 @@
       public ana_wec_frc_tile
       public init_arrays_wec_tile
       public ana_init_wec_frc_tile
-      public wstokes_wec_tile
       public compute_wec_rhs_uv_terms
-      public wstokes_wec
       public wrt_his_wec
       public wec_forces
 #ifdef AVERAGES
@@ -446,10 +454,6 @@
       vname(1,indxVST)  ='vst'
       vname(2,indxVST)  ='v 3D Stokes drift velocity'
       vname(3,indxVST)  ='meter second-1'
-
-      vname(1,indxWST)  ='wst'
-      vname(2,indxWST)  ='w veitical 3D Stokes drift velocity'
-      vname(3,indxWST)  ='meter second-1'
 
       vname(1,indxAKB)  ='Akb'
       vname(2,indxAKB)  ='eddy viscosity due to wave breaking'
@@ -630,7 +634,6 @@
 #  endif
             ust(i,j,k) =init
             vst(i,j,k) =init
-            wst(i,j,k) =init
             kvf(i,j,k) =init
           enddo
           do k=0,N
@@ -1008,29 +1011,6 @@
 #  endif
         endif
 !
-! wst: vertical Stokes drift velocity (m/s) at rho-point
-!
-        if (wrt(indxWST)) then
-          lvar=lenstr(vname(1,indxWST))
-          ierr=nf_def_var (ncid, vname(1,indxWST)(1:lvar), NF_FOUT,
-     &                                           4, r3dgrd, vidWST)
-# ifdef AVRH
-          text='averaged '/ /vname(2,indxWST)
-# else
-          text=vname(2,indxWST)
-# endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text (ncid, vidWST, 'long_name', lvar,
-     &                                              text(1:lvar))
-          lvar=lenstr(vname(3,indxWST))
-          ierr=nf_put_att_text (ncid, vidWST, 'units',     lvar,
-     &                                 vname(3,indxWST)(1:lvar))
-#  ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT (ncid, vidWST, '_FillValue',
-     &                                NF_FOUT, 1, spv_set)
-#  endif
-        endif
-!
 ! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
 !
         if (wrt(indxAkb)) then
@@ -1215,16 +1195,6 @@
           endif
         endif
 !
-! wst: vertical Stokes drift velocity (m/s) at rho-point
-!
-        if (wrthis(indxWST)) then
-          lvar=lenstr(vname(1,indxWST))
-          ierr=nf_inq_varid (ncid, vname(1,indxWST)(1:lvar), vidWST)
-          if (ierr .ne. nf_noerr) then
-            write(*,1) vname(1,indxWST)(1:lvar), fname(1:lfnm)
-            goto 99                                       !--> ERROR
-          endif
-        endif
 !
 ! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
 !
@@ -1297,149 +1267,70 @@
       end subroutine def_his_nf_inq_varid
 
 
-      ! --------------------------------------------------------------------
-      ! --------------------------------------------------------------------
-      ! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
+! ----------------------------------------------------------------------
+      subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
+      implicit none
 
-        subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
+      integer, intent(in) :: istr, iend, jstr, jend
+      integer :: i, j, k
 
-         ! Initialize wec forcing - chose to include because DH's WAVE_PACKET
-         ! version is separate, and init version doesn't include time, whereas
-         ! ana_wec_frc_tile does include time.
-         ! Might be able to just add if statement to ana_wec_frc_tile instead?
+      real :: kkw,Clw,Cg
 
-         implicit none
 
-         integer, intent(in) :: istr, iend, jstr, jend
-         ! Declare looping indices
-         integer :: i, j, k
-
-         real :: cff1 ! This could be declared in module but not sure - here for now.
-         real :: cff2 ! DevinD added for debug check
-
-         real :: stk(PRIVATE_2D_SCRATCH_ARRAY) ! ust2d = stk * wdrx
-
-          ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
-          ! This had to appear after other variables declared else wont compile
+      ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
+      ! This had to appear after other variables declared else wont compile
 #include "compute_auxiliary_bounds.h"
 
 
-         ! Taken from ana_init.F of DH's WAVE_PACKET code
+      kkw = 2.0*pi   ! Changed kw to kkw so as not to conflict part 2 also has kw
+      Clw = sqrt(g*h(2,2))
+      Cg  = 0.5*sqrt(g/kkw)
 
-
-          kkw=2.0*pi/1.0 ! Changed kw to kkw so as not to conflict part 2 also has kw
-          env=0.0001
-          Clw=sqrt(g*h(2,2))
-          Cg=0.5*sqrt(g/kkw)
-!           do j=jstrR,jendR
-!            do i=istrR,iendR
-!      ! DevinD  debug output
-!      write(*,*) 'iSW_corn', iSW_corn
-!      write(*,*) 'istr', istr
-!      write(*,*) 'dm_u(1,1)', dm_u(1,1)
-          do j=jstr-1,jend+1
-            do i=istr-1,iend+1
-             do k=1,N
-              t(i,j,k,1,itemp)=18.0
-              t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
-             enddo
-!             ! Debug to check coordinate vs index number
-!             if (i-istr==0 .or. i-istr==1) then
-!               write(*,*) 'i=', i, '; coord=', ( dble(i)+dble(iSW_corn) ) * dm_u(1,1)
-!             endif
-
-             ! DevinD - whrm from Eq(29) of DH's 'A propagating wave packet.pdf
-             cff1=modulo(time, (gnx * dm_u(1,1)) / Cg ) ! = t' = cff1. Changed LLm to gnx.
-             ! Position relative to wave centre.
-             ! Cg*t gives metres, other variables in grid points not meters.
-             ! -1 is needed because node number i=1 is at coord 0m
-             cff2= ( dble(i)+dble(iSW_corn)-1 ) * dm_u(1,1) - (Cg*cff1) ! dm_u is grid spacing (m) in x. Uniform grid.
-     &             - (gnx*dm_u(1,1) )/2 ! initial shift mid domain
-             whrm(i,j)= 0.001*2.0*( exp(-env * cff2**2)
-     &                      + exp( -env * (cff2+gnx*dm_u(1,1))**2 ) ) ! gnx*dm_u = nodes x spacing = metres
-             wfrq(i,j)   = sqrt(g*kkw)
-             wdrx(i,j)   = 1.0                             ! cosine wave direction (xi)
-             wdre(i,j)   = 0.0                             ! sine wave direction (eta)
-             wdsp(i,j)   = 0.0
-             sup(i,j)    = 0.0
-    !         sup(i,j)    = -(0.25*whrm(i,j)**2)*kw/(2.*sinh(2*kw*h(i,j)))   ! A**2 = 0.25 Hrms**2
-!             ust2d(i,j)  = (0.125*whrm(i,j)**2)*sqrt(g*kkw)/h(i,j)
-             ! DevinD - stk & whrm appear to be at u-points because loop
-             ! is through integers and i represents x. For this grid u-points
-             ! are on the integer meters, and rho-points between on .5m
-             stk(i,j)  = (0.125*whrm(i,j)**2)*sqrt(g*kkw)/h(i,j)
-             if (i>istr-1) then
-                ! DevinD - ust2d averaged to rho-point, but it seems this
-                ! is the wrong conversion process for u-to-rho conversion.
-!                ust2d(i,j)= 0.5*(stk(i-1,j)*wdrx(i-1,j)+stk(i,j)*wdrx(i,j))
-!                ust2d(i,j)= stk(i,j)*wdrx(i,j)
-!                if(mynode==4 .and. i==1) then
-!                  write(*,*) 'time=',time
-!                  write(*,*) 'b4ust2d(i,j)=',ust2d(i,j),',i=', i,',j=', j
-!                  write(*,*) 'b4ust2d(i+1,j)=',ust2d(i+1,j)
-!                end if
-                ust2d(i,j)= stk(i,j)*wdrx(i,j) ! Try i-1
-!                if(mynode==4 .and. i==1) then
-!                  write(*,*) 'aust2d(i,j)=',ust2d(i,j),',i=', i,',j=', j
-!                  write(*,*) 'aust2d(i+1,j)=',ust2d(i+1,j)
-!                end if
-                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-     &                         ust2d(i,j)
-                ! ubar should be at u-point - hence using stk
-!                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-!     &                         stk(i,j)
-!                ! DevinD - attempted hack to correct phase shift stk(i-1)
-!                ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-!     &                         stk(i-1,j)
-!                zeta(i,j,1) = ubar(i,j,1)*Cg/g
-                ! zeta should be at rho-point - hence using ust2d
-!                zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-!     &                         ust2d(i,j)*Cg/g
-                ! zeta is rho-point, so averaging u-to-rho
-                zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
-     &                         0.5*( ust2d(i,j)+ust2d(i+1,j) )  *Cg/g
-                brk2dx(i,j) = 0.0
-                brk2de(i,j) = 0.0
-                frc2dx(i,j) = 0.0
-                frc2de(i,j) = 0.0
-
-                vbar(i,j,1)= 0.0
-                vst2d(i,j) = 0.0
-                do k=1,N
-                    u(i,j,k,1) = ubar(i,j,1)                     ! actually need
-                    v(i,j,k,1) = vbar(i,j,1)                     ! to init u even if baro
-                    ust(i,j,k) = ust2d(i,j)
-                    vst(i,j,k) = vst2d(i,j)
-                enddo
-             end if
-           enddo
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
+          do k=1,N
+            t(i,j,k,1,itemp)=18.0
+            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
           enddo
 
-      ! DevinD  debug output
-!      write(*,*) 'ust0(1,1,1)', ust(1,1,1)
-!      write(*,*) 'ust0(1,1,2)', ust(1,1,2)
+          if (i>istr-1) then
 
-        end subroutine ana_init_wec_frc_tile
+            ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+     &                        ust2d(i,j)
+            ubar(i,j,2) = ubar(i,j,1) !! not actually sure if that is needed
 
-       ! --------------------------------------------------------------------
+            ! zeta is rho-point, so averaging u-to-rho
+            zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
+     &                         0.5*( ust2d(i,j)+ust2d(i+1,j) )  *Cg/g
+            do k=1,N
+              u(i,j,k,1) = ubar(i,j,1)                     ! actually need
+              v(i,j,k,1) = vbar(i,j,1)                     ! to init u even if baro
+            enddo
+          end if
+        enddo
+      enddo
 
+      end subroutine ana_init_wec_frc_tile
 
+! --------------------------------------------------------------------
+! --------------------------------------------------------------------
 
+      subroutine ana_wec_frc_tile (istr,iend,jstr,jend)
+      ! Analytical WEC forcing
+      implicit none
 
-        subroutine ana_wec_frc_tile (istr,iend,jstr,jend)
-         ! Analytical river forcing data
-
-         implicit none
-
-         integer, intent(in) :: istr, iend, jstr, jend
-         ! Declare looping indices
-         integer :: i, j
+      integer, intent(in) :: istr, iend, jstr, jend
+      integer :: i, j
       ! Declare coefficient variables
       real :: cff1,cff2
-      real :: x_coord ! x_coordinate for calculating whrm
 
-         ! get all cppdefs flags
-! # include "cppdefs.h" - included in top of module (left here to remember where they were needed)
+      real :: kkw,Clw,Cg
+
+      real :: dx,x,timed
+      real :: amp,Lx
+
+
          ! get universal scalars, g and pi
 ! # include "scalars.h" - included in top of module
          ! get iSW_corn variable
@@ -1455,28 +1346,6 @@
 !#   include "ocean3d.h"
 !# endif
 
-!          ! For PART 1: Declare some variables from analytical.F
-!          real :: kkw, env, Cg - in top of module
-
-
-
-          !!!!!!!!!!
-          ! If first step - Cancelled as put in ana_init.F instead
-          !!!!!!!!!!        This is taken from river_frc.F read
-
-!          if (rtim(it1) < 0) then !! first time
-!
-!
-!            call ana_init_wec_frc_tile(istr,iend,jstr,jend)
-!
-!
-!          !!!!!!!!!!
-!          ! Else timestep > 0
-!          !!!!!!!!!!
-!
-!          else
-
-
             !*** PART 1 - from DH's WAVE_PACKET analytical.F ***!
 
           ! The following code is taken from analytical.F L995 from DH's
@@ -1491,172 +1360,68 @@
 !       Hence also, u-point to rho conversion as index is at u-point
 !       Hence: wrhm_rho(i,j) = 0.5*(tmp_whrm_u(i,j)+tmp_whrm_u(i+1,j))
 
-          kkw=2.0*pi/1.0 ! Changed kw to kkw so as not to conflict part 2
-          env=0.0001
-          Cg=0.5*sqrt(g/kkw)
-          do j=jstr-1,jend+1
-            do i=istr-1,iend+1
+      kkw=2.0*pi  ! Changed kw to kkw so as not to conflict part 2
+      env=0.0001
+      Cg=0.5*sqrt(g/kkw)
+      amp = 0.001 ! wave amplitude
+      Lx = gnx*dx ! Domain size in x direction
+
+      dx = dm_u(1,1)  !! the grid has constant spacing dx
+
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
 
               ! DevinD - whrm from Eq(29) of DH's 'A propagating wave packet.pdf
 
-              ! t' = cff1
-              cff1=modulo(time, (gnx * dm_u(1,1)) / Cg )
+          timed = modulo(time, Lx / Cg )  ! t' from eq(29)
 
               ! ### whrm at rho-point=i ###
 
               ! Calculate x coordinate at rho-point=i.
               ! Since u-point i=1 should equal 0m for western tile.
               ! Since rho-point i=1 should equal 0.5m for western tile
-              ! if grid spacing dx=1m. Hence -0.5*dm_u for rho-point coord.
-              x_coord = ( dble(i)+dble(iSW_corn)-0.5 ) * dm_u(1,1)
+              ! if grid spacing dx=1m. Hence -0.5*dx for rho-point coord.
+          x = ( dble(i)+dble(iSW_corn)-0.5 ) * dx  
 
               ! Position relative to wave centre.
               ! Cg*t' = Cg*cff1 gives metres of distance wave travelled,
               ! other variables in grid points not meters.
               ! -1 is needed because node number i=1 is at coord 0m
-              cff2= x_coord - (Cg*cff1) ! dm_u is grid spacing (m) in x. Uniform grid.
-     &             - ( gnx*dm_u(1,1) )/2 ! initial shift mid domain
-              whrm(i,j)= 0.001*2.0*( exp(-env * cff2**2)
-     &                      + exp( -env * (cff2+gnx*dm_u(1,1))**2 ) ) ! gnx*dm_u = nodes x spacing = metres
+
+          ! gnx*dx = domain size
+          cff2 = x - Cg*timed - Lx/2 ! initial shift mid domain
+          whrm(i,j)= amp*2.0*( exp(-env * cff2**2)
+     &                      + exp( -env * (cff2+ Lx)**2 ) ) 
 
 
-              wfrq(i,j)= sqrt(g*2.0*pi)
-              wdrx(i,j)= 1.0                             ! cosine wave direction (xi)
-              wdre(i,j)= 0.0                             ! sine wave direction (eta)
-              wveb(i,j)= 0.0
-              wved(i,j)= 0.0
-            enddo
-          enddo
-
-            !*** END PART 1 ***!
-
-!      !###### NOW CALCULATE WEC FORCES USING WHRM, etc ####
-!      call wec_forces(istr,iend,jstr,jend)
-
-
-        end subroutine ana_wec_frc_tile
-
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
-
-#ifdef SOLVE3D
-!
-! Vertical Stokes drift velocity at rho-point
-! ===========================================
-
-      subroutine wstokes_wec (tile)
-      implicit none
-! already included at top of module # include "param.h"
-      integer tile
-# include "private_scratch.h"
-# include "compute_tile_bounds.h"
-      call wstokes_wec_tile(istr,iend,jstr,jend)
-!      return
-      end subroutine wstokes_wec
-
-
-      subroutine wstokes_wec_tile (istr,iend,jstr,jend)
-
-      implicit none
-!! # include "param.h"
-      integer istr,iend,jstr,jend, i,j,k
-      real Wrk(0:N) ! DevinD - move to top of module once code is working
-!! # include "grid.h"
-!! # include "ocean3d.h"
-!! # include "forces.h"
-      do j=jstr,jend
-        do i=istr,iend
-          Wrk(0)=0.D0
-          do k=1,N,+1        !--> recursive
-            Wrk(k) = Wrk(k-1) -Hz(i,j,k)
-     &       *( pm(i,j)*(ust(i+1,j,k)-ust(i,j,k))
-     &         +pn(i,j)*(vst(i,j+1,k)-vst(i,j,k)) )
-          enddo
-
-          wst(i,j,N)=+0.375*Wrk(N) +0.75*Wrk(N-1) -0.125*Wrk(N-2)
-!          wst(i,j,N)=0. ! DevinD zeros
-          do k=N-1,2,-1
-            wst(i,j,k)=+0.5625*(Wrk(k  )+Wrk(k-1))
-     &                 -0.0625*(Wrk(k+1)+Wrk(k-2))
-!            wst(i,j,k)=0. ! DevinD zeros
-          enddo
-          wst(i,j,1)= -0.125*Wrk(2) +0.75*Wrk(1) +0.375*Wrk(0)
-!          wst(i,j,1)= 0. ! DevinD zeros
+          wfrq(i,j)= sqrt(g*2.0*pi)
+          wdrx(i,j)= 1.0                             ! cosine wave direction (xi)
+          wdre(i,j)= 0.0                             ! sine wave direction (eta)
+          wveb(i,j)= 0.0
+          wved(i,j)= 0.0
         enddo
       enddo
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then                       ! Set lateral
-        do k=1,N                                   ! boundary
-          do j=jstr,jend                           ! conditions
-            wst(istr-1,j,k)=wst(istr,j,k)
-          enddo
-        enddo
-      endif
-      if (EASTERN_EDGE) then
-        do k=1,N
-          do j=jstr,jend
-            wst(iend+1,j,k)=wst(iend,j,k)
-          enddo
-        enddo
-      endif
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do k=1,N
-          do i=istr,iend
-            wst(i,jstr-1,k)=wst(i,jstr,k)
-          enddo
-        enddo
-      endif
-      if (NORTHERN_EDGE) then
-        do k=1,N
-          do i=istr,iend
-            wst(i,jend+1,k)=wst(i,jend,k)
-          enddo
-        enddo
-      endif
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=1,N
-          wst(istr-1,jstr-1,k)=wst(istr,jstr,k)
-        enddo
-      endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=1,N
-          wst(istr-1,jend+1,k)=wst(istr,jend,k)
-        enddo
-      endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=1,N
-          wst(iend+1, jstr-1,k)=wst(iend,jstr,k)
-        enddo
-      endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=1,N
-          wst(iend+1,jend+1,k)=wst(iend,jend,k)
-        enddo
-      endif
-#  endif
-# endif
 
-      end subroutine wstokes_wec_tile
+!      !###### NOW CALCULATE WEC FORCES USING WHRM, etc ####
+!  for now, in main.
+!      call wec_wave2frc_method1(istr,iend,jstr,jend)
 
-#endif  /* SOLVE3D */
+!      call wec_wv2frc_method2(istr,iend,jstr,jend)
 
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
+      end subroutine ana_wec_frc_tile
+! --------------------------------------------------------------------
 
+
+! --------------------------------------------------------------------
       subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,
      &                                           wrkone, wrktwo)
 
       implicit none
 
-        integer, intent(in) :: istr, iend, jstr, jend
-         ! Declare looping indices
-        real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
-        real, dimension(PRIVATE_2D_SCRATCH_ARRAY) ::  wrkone,wrktwo
+      integer, intent(in) :: istr, iend, jstr, jend
+
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) ::  wrkone,wrktwo
 
 
         integer :: i, j, k
@@ -1856,19 +1621,7 @@ CR      write(*,*) 'wrt_his: wrtUST' MYID
         endif
 CR      write(*,*) 'wrt_his: wrtVST' MYID
       endif
-      if (wrthis(indxWST)) then
-        do tile=0,NSUB_X*NSUB_E-1
-          call wstokes_wec(tile)
-        enddo
-!        ierr=nf_fwrite (wst, ncidhis, hisWST, record, r3dvar)
-        ierr=ncdf_write (nchis, hisWST, record, r_var, wst, N)
-        if (ierr .ne. nf_noerr) then
-          lvar=lenstr(vname(1,indxWST))
-          write(*,1) vname(1,indxWST)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his: wrtWST' MYID
-      endif
+
       if (wrthis(indxAkb)) then
 !        ierr=nf_fwrite (Akb, ncidhis, hisAkb, record, w3dvar)
         ierr=ncdf_write (nchis, hisAkb, record, r_var, Akb, N+1)
@@ -1996,15 +1749,7 @@ CR      write(*,*) 'wrt_his: wrtKAPS' MYID
           goto 99                                         !--> ERROR
         endif
       endif
-!      if (wrtavg(indxWST)) then
-!        ierr=nf_fwrite (wst_avg(START_2D_ARRAY,1), ncidavg, avgWST,
-!     &                                              record, r3dvar)
-!        if (ierr .ne. nf_noerr) then
-!         lvar=lenstr(vname(1,indxWST))
-!          write(*,1) vname(1,indxWST)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!      endif
+
       if (wrtavg(indxAkb)) then
         ierr=ncdf_write(ncavg, avgAkb, record, r_var,
      &                           akb_avg(START_2D_ARRAY,0), N+1 )
@@ -2891,15 +2636,6 @@ c                 vst0(i,j)=0.5*(vstr0(i,j-1)+vstr0(i,j))
             do j=jstrR,jendR
               do i=istrR,iendR
                 vst_avg(i,j,k)= cff1*vst_avg(i,j,k) +cff*vst(i,j,k)
-              enddo
-            enddo
-          enddo
-        endif
-        if (wrtavg(indxWST)) then
-          do k=1,N
-            do j=jstrR,jendR
-              do i=istrR,iendR
-                wst_avg(i,j,k)= cff1*wst_avg(i,j,k) +cff*wst(i,j,k)
               enddo
             enddo
           enddo

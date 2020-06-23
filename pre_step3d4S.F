@@ -307,23 +307,11 @@
           CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
 
           DC(i,N)=cff*( DC(i,N)
-# ifdef WIND_AT_RHO_POINTS
-!     &               +0.5*dtau*(sustr(i-1,j)+sustr(i,j))
-!# else
-!     &                                  +dtau*sustr(i,j)
-!# endif
-!     &                                                 )
-     &                    +dtau*( 0.5 * (sustr(i,j)+sustr(i-1,j))
-#    if defined WEC && defined SURFACE_BREAK
-     &                            + brk2dx(i,j) )
-#    endif
-#  else
      &                                       +dtau*(sustr(i,j)
 #    if defined WEC && defined SURFACE_BREAK
      &                            + brk2dx(i,j)
 #    endif
      &                                                   )
-#  endif
      &                                                  )
         enddo
         do k=N-1,2,-1      !--> forward elimination
@@ -355,11 +343,7 @@
      &                                                               )
 # ifdef PRED_COUPLED_MODE
           rufrc(i,j)=ru(i,j,1) +dm_u(i,j)*dn_u(i,j)*(
-#  ifdef WIND_AT_RHO_POINTS
-     &                   0.5*(sustr(i-1,j)+sustr(i,j))
-#  else
      &                                      sustr(i,j)
-#  endif
 #  ifdef WEC
      &                                     + brk2dx(i,j)
 #  endif
@@ -401,23 +385,11 @@
             CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
 
             DC(i,N)=cff*( DC(i,N)
-# ifdef WIND_AT_RHO_POINTS
-!     &                 +0.5*dtau*(svstr(i,j-1)+svstr(i,j))
-!# else
-!     &                                    +dtau*svstr(i,j)
-!# endif
-!     &                                                   )
-     &                    +dtau*( 0.5 * (svstr(i,j-1)+svstr(i,j))
-#    if defined WEC && defined SURFACE_BREAK
-     &                            + brk2de(i,j) )
-#    endif
-#  else
      &                                       +dtau*(svstr(i,j)
 #    if defined WEC && defined SURFACE_BREAK
      &                            + brk2de(i,j)
 #    endif
      &                                                   )
-#  endif
      &                                                    )
           enddo
           do k=N-1,2,-1      !--> forward elimination
@@ -450,11 +422,7 @@
 
 # ifdef PRED_COUPLED_MODE
             rvfrc(i,j)=rv(i,j,1) +dm_v(i,j)*dn_v(i,j)*(
-#  ifdef WIND_AT_RHO_POINTS
-     &                     0.5*(svstr(i,j-1)+svstr(i,j))
-#  else
      &                                        svstr(i,j)
-#  endif
 #  ifdef WEC
      &                                      + brk2de(i,j)
 #  endif
