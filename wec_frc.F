@@ -5,7 +5,7 @@
        use dimensions, nt_dimensions => nt, mynode_dims => mynode !! has dimensions, a list of forcing files and rmask
 
        implicit none
-
+! Jeroen testing git
 ! DevinD - need the following includes for GLOBAL_2D_ARRAY to work
 #include "cppdefs.h"
 
