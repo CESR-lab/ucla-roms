@@ -44,7 +44,7 @@
 
 # ifndef IMPLICIT_BOTTOM_DRAG
 
-! Apply implicit time step for vertical viscosty term to horizontal
+! Apply implicit time step for vertical viscosity term to horizontal
 ! velocity components,
 !
 !   du(k)     1     [         u(k+1)-u(k)             u(k)-u(k-1) ]
@@ -388,21 +388,21 @@
 
       do j=J_RANGE                  !--> XI-component
         do i=IU_RANGE
-          DC(i,N)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))*dn_u(i,j)
-          DC(i,0)=DC(i,N)
-          FC(i,0)=DC(i,N)*u(i,j,N,nnew)
+          DC(i,0)= 0.0
+          FC(i,0)= 0.0
         enddo
-        do k=N-1,1,-1
+        do k=N,1,-1
           do i=IU_RANGE
             DC(i,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
             DC(i,0)=DC(i,0)+DC(i,k)
             FC(i,0)=FC(i,0)+DC(i,k)*u(i,j,k,nnew)
           enddo
         enddo
+        ! FC(0) is int(dz*U)*dy, DC(0) is int(dz)*dy
         do i=IU_RANGE
-          DC(i,0)=1./DC(i,0)
-          ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)
-          FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg1(i,j))
+          DC(i,0)=1./DC(i,0)  !!1/H
+          ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)  !! avg1 is at n+1?
+          FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg1(i,j)) !! FC(0) is now correction velocity
 !>
           CF(i,0)=0.   !<-- initialize vertical integral
         enddo          !--> keep DC(:,0) for later

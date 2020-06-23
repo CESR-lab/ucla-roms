@@ -98,7 +98,7 @@
 !                 (ii) at least one error occurs inside this routine;
 ! "ierr_all" is cumulative "OR" status of all errors occurring here;
 !            essentially this variable "locks" on the first error
-!            occurring selely within this routine;
+!            occurring solely within this routine;
 
 
       if (iic == ntstart) then
@@ -171,6 +171,14 @@
               if (ierr_all == nf_noerr) ierr_all=ierr
               write(*,1) 'v_west', bry_file(ibry)(1:lsrc)
             endif
+
+#    ifdef NHMG
+!           ierr=nf_inq_varid(bry_id,    'w_west', w_west_id)
+!           if (ierr /= nf_noerr) then
+!             if (ierr_all == nf_noerr) ierr_all=ierr
+!             write(*,1) 'w_west', bry_file(ibry)(1:lsrc)
+!           endif
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
             ierr=nf_inq_varid(bry_id,'temp_west', t_west_id(itemp))
@@ -226,6 +234,13 @@
               if (ierr_all == nf_noerr) ierr_all=ierr
               write(*,1)   'v_east', bry_file(ibry)(1:lsrc)
             endif
+#    ifdef NHMG
+!           ierr=nf_inq_varid(bry_id,    'w_east', w_east_id)
+!           if (ierr /= nf_noerr) then
+!             if (ierr_all == nf_noerr) ierr_all=ierr
+!             write(*,1) 'w_east', bry_file(ibry)(1:lsrc)
+!           endif
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
             ierr=nf_inq_varid(bry_id, 'temp_east', t_east_id(itemp))
@@ -682,6 +697,9 @@
      &                   +cff2*u_west_dt(j,k,it2)
               v_west(j,k)=cff1*v_west_dt(j,k,it1)
      &                   +cff2*v_west_dt(j,k,it2)
+#     ifdef NHMG
+              w_west(j,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif
@@ -723,6 +741,9 @@
      &                   +cff2*u_east_dt(j,k,it2)
               v_east(j,k)=cff1*v_east_dt(j,k,it1)
      &                   +cff2*v_east_dt(j,k,it2)
+#     ifdef NHMG
+              w_east(j,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif
@@ -764,6 +785,9 @@
      &                    +cff2*u_south_dt(i,k,it2)
               v_south(i,k)=cff1*v_south_dt(i,k,it1)
      &                    +cff2*v_south_dt(i,k,it2)
+#     ifdef NHMG
+              w_south(i,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif
@@ -805,6 +829,9 @@
      &                    +cff2*u_north_dt(i,k,it2)
               v_north(i,k)=cff1*v_north_dt(i,k,it1)
      &                    +cff2*v_north_dt(i,k,it2)
+#     ifdef NHMG
+              w_north(i,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif

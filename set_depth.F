@@ -7,10 +7,10 @@
 # include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
-      call set_depth_tile(istr,iend,jstr,jend, A2d(1,1))
+      call set_depth_tile(istr,iend,jstr,jend)
       end
 
-      subroutine set_depth_tile(istr,iend,jstr,jend, dV)
+      subroutine set_depth_tile(istr,iend,jstr,jend)
 
 ! Compute evolving z-coordinates "z_r" and "z_w" and the heights
 ! of vertical grid boxes "Hz" from fast-time-averaged free surface,
@@ -22,13 +22,7 @@
 # include "param.h"
 # include "scoord.h"
 # include "scalars.h"
-# ifdef OBC_FLUX_CORR
-      real*QUAD dV(PRIVATE_2D_SCRATCH_ARRAY), my_exc_vol
-      logical lsumX, lsumY
-      integer nsubs, inc, jnc
-# else
-      real dV(PRIVATE_2D_SCRATCH_ARRAY)  !<-- not actually needed
-# endif
+
 # ifndef VERT_COORD_TYPE_SM09
       real cff2_r,cff2_w, z_r0,z_w0
 # endif
@@ -43,11 +37,7 @@
       if (iic == 0) then               ! restart compute barotropic
         do j=jstrR,jendR               ! fluxes and place them into
           do i=istrR,iendR             ! arrays for fast-time-averaged
-# ifdef VERT_COORD_TYPE_SM09
             hinv(i,j)=1./(h(i,j)+hc)   ! fluxes. Later during the first
-# else
-            hinv(i,j)=1./h(i,j)        ! step the regular time stepping
-# endif
           enddo                        ! procedure uses these DU_avg1,
         enddo                          ! DV_avg1 as input to compute
                                        ! ubar,vbar as it does so during
@@ -66,72 +56,6 @@
         enddo
       endif
 
-# ifdef OBC_FLUX_CORR
-      do j=jstr,jend
-        do i=istr,iend
-#  ifdef MASKING
-         dV(i,j)=rmask(i,j)*Zt_avg1(i,j)/(pm(i,j)*pn(i,j))
-#  else
-         dV(i,j)=           Zt_avg1(i,j)/(pm(i,j)*pn(i,j))
-#  endif
-        enddo
-      enddo                           ! The following segment computes
-                                      ! sums of dV within the subdomain
-      lsumX=.true. ; inc=1            ! tile using split-directional
-      lsumY=.true. ; jnc=1            ! reduction-by-pairs algorithm,
-                                      ! to avoid the  accumulation of
-      do while (lsumX .or. lsumY)     ! roundoff errors.
-        if (istr <= iend-inc) then
-          do j=jstr,jend
-            do i=istr,iend-inc,2*inc
-              dV(i,j)=dV(i,j)+dV(i+inc,j)
-            enddo
-          enddo
-          inc=2*inc
-        else
-          lsumX=.false.
-        endif
-        if (jstr <= jend-jnc) then
-          do j=jstr,jend-jnc,2*jnc
-            do i=istr,iend
-              dV(i,j)=dV(i,j)+dV(i,j+jnc)
-            enddo
-          enddo
-          jnc=2*jnc
-        else
-          lsumY=.false.
-        endif
-      enddo
-      my_exc_vol=dV(istr,jstr)
-
-c**   my_exc_vol=QuadZero                 ! Straight summation: this
-c**   do j=jstr,jend                      ! code produces result which
-c**     do i=istr,iend                    ! differs the above only by
-c**       my_exc_vol=my_exc_vol+dV(i,j)   ! roundoff errors.
-c**     enddo
-c**   enddo
-
-      if (SINGLE_TILE_MODE) then
-        nsubs=1
-      else
-        nsubs=NSUB_X*NSUB_E
-      endif
-
-C$OMP CRITICAL (obc_flux_corr_crgn)
-      if (tile_count == 0) exc_vol=QuadZero
-      tile_count=tile_count+1
-      exc_vol=exc_vol+my_exc_vol
-      if (tile_count == nsubs) then
-        tile_count=0
-#  ifdef MPI
-  ........ to be filled in
-#  endif
-        ubar_xs=exc_vol/(bc_crss*tau_obc)
-c        write(*,*) 'ubar_xs = ', ubar_xs
-      endif
-C$OMP END CRITICAL (obc_flux_corr_crgn)
-# endif  /* OBC_FLUX_CORR */
-
       ds=1.D0/dble(N)
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -139,33 +63,20 @@ C$OMP END CRITICAL (obc_flux_corr_crgn)
         enddo
 
         do k=1,N,+1   !--> irreversible because of recursion in Hz
-# ifdef VERT_COORD_TYPE_SM09
+
           cff_w=hc*ds* dble(k-N)
           cff_r=hc*ds*(dble(k-N)-0.5)
-# else
-          cff_w=hc*(ds* dble(k-N)     -Cs_w(k))
-          cff_r=hc*(ds*(dble(k-N)-0.5)-Cs_r(k))
 
-          cff2_w=ds* dble(k)
-          cff2_r=ds*(dble(k)-0.5)
-# endif
           cff1_w=Cs_w(k)
           cff1_r=Cs_r(k)
 
           do i=istrR,iendR
-# ifdef VERT_COORD_TYPE_SM09
+
             z_w(i,j,k)=zeta(i,j,knew) +(zeta(i,j,knew)+h(i,j))
      &                        *(cff_w+cff1_w*h(i,j))*hinv(i,j)
 
             z_r(i,j,k)=zeta(i,j,knew) +(zeta(i,j,knew)+h(i,j))
      &                        *(cff_r+cff1_r*h(i,j))*hinv(i,j)
-# else
-            z_w0=cff_w+cff1_w*h(i,j)
-            z_w(i,j,k)=z_w0+zeta(i,j,knew)*(1.+z_w0*hinv(i,j))
-
-            z_r0=cff_r+cff1_r*h(i,j)
-            z_r(i,j,k)=z_r0+zeta(i,j,knew)*(1.+z_r0*hinv(i,j))
-# endif
 
             Hz(i,j,k)=z_w(i,j,k)-z_w(i,j,k-1)
           enddo
@@ -177,6 +88,62 @@ C$OMP END CRITICAL (obc_flux_corr_crgn)
       endif
       call exchange_3_tile(istr,iend,jstr,jend, z_w,N+1, z_r,N, Hz,N)
 # endif
+
+#if defined NHMG || defined NONTRAD_COR
+!     Compute slopes
+      do k = 1, N
+         do j = 0,Mm+1
+            do i = 0,Lm+1
+               dzdxi (i,j,k)=0.5*(z_r(i+1,j,k)-z_r(i-1,j,k))*pn(i,j)
+               dzdeta(i,j,k)=0.5*(z_r(i,j+1,k)-z_r(i,j-1,k))*pm(i,j)
+            enddo
+         enddo
+      enddo
+      ! z_r is buffer filled in the interior halos but not in the outer halos
+      if (WESTERN_EDGE) then
+         do k = 1, N
+            do j = 0,Mm+1
+               dzdxi (0,j,k) = 0.
+               dzdxi (1,j,k) = 0.
+               dzdeta(0,j,k) = 0.
+               dzdeta(1,j,k) = 0.
+            enddo
+         enddo
+       endif
+      if (EASTERN_EDGE) then
+         do k = 1, N
+            do j = 0,Mm+1
+               dzdxi (Lm  ,j,k) = 0.
+               dzdxi (Lm+1,j,k) = 0.
+               dzdeta(Lm  ,j,k) = 0.
+               dzdeta(Lm+1,j,k) = 0.
+            enddo
+         enddo
+       endif
+      if (SOUTHERN_EDGE) then
+         do k = 1, N
+            do i = 0,Lm+1
+               dzdxi (i,0,k) = 0.
+               dzdxi (i,1,k) = 0.
+               dzdeta(i,0,k) = 0.
+               dzdeta(i,1,k) = 0.
+            enddo
+         enddo
+       endif
+      if (NORTHERN_EDGE) then
+         do k = 1, N
+            do i = 0,Lm+1
+               dzdxi (i,Mm  ,k) = 0.
+               dzdxi (i,Mm+1,k) = 0.
+               dzdeta(i,Mm  ,k) = 0.
+               dzdeta(i,Mm+1,k) = 0.
+            enddo
+         enddo
+       endif
+
+#endif /* NHMG */
+
+
       end
 
 
@@ -312,9 +279,10 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 #   define BAK 0.D0
 */
 
+!  DC(i,0) is the barotropic surface H*dy = dy*integral(Hz)
+!  FC(i,0) is the barotropic flux dy*integral(Hz*u)
 
-
-        else
+        else ! not first time step
           do i=istr,iendR
 #   ifdef KEEP_CORIOLIS
             cff=1./DC(i,0)
@@ -332,18 +300,19 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
           enddo
         endif
 #  endif
-# else
+  !! now FC(i,0) = ubar
+# else 
         do i=istr,iendR
           FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0)
         enddo
 # endif
         do k=1,N
           do i=istr,iendR
-            u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0))
+            u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0)) !! removing ubar from u
 # ifdef MASKING
      &                                *umask(i,j)
 # endif
-            FlxU(i,j,k)=DC(i,k)*u(i,j,k,nnew)
+            FlxU(i,j,k)=DC(i,k)*u(i,j,k,nnew)  !! now a perturbation flux only
           enddo
         enddo
         if (j >= jstr) then

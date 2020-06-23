@@ -33,15 +33,21 @@ c**           rd(i,j)=rdrg + cff*(  vonKar/(   (1.+Zob/Hz(i,j,1))
 c**                                  *log(1.+Hz(i,j,1)/Zob) -1. ) )**2
 
               rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
+# ifdef WEC
 
+! Combined wave-current bottom drag coefficient rd at rho-points 
+! Based on formulation in Soulsby, 1995 (See Uchiyama, 2008, eq. 8)
+!  ubmag = magnitude of orbital bottom velocity
+!!       Uorb1 = 0.5*fr(i,j)*wh(i,j)/max(sinh(min(kD(i,j),khmax)),eps)
+!! we need both orbital velocity and frq of wave field
 
-! A couple drag laws of academic interest.
+          tau_c = rd(i,j)*cff
+          tau_w = 0.695*(ubmag**1.48)*((Zob*fr(i,j))**0.52)
 
-c**           rd(i,j)=2.*Akv(i,j,0)/Hz(i,j,1)  !<-- laminar drag law
+          rd(i,j) = rd(i,j)*(1.0 + 1.2*((tau_w/(tau_w+tau_c))**3.2))
 
-c**           rd(i,j)=rdrg + rdrg2*cff
+# endif
 
-c**           rd(i,j)=min(rd(i,j), Hz(i,j,1)/dt) !!! FOR_TEST_ONLY
 
 # if !defined IMPLICIT_BOTTOM_DRAG
 #  if !defined IMPLCT_NO_SLIP_BTTM_BC

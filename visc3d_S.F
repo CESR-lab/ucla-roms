@@ -55,8 +55,8 @@
      &     -dm_r(i,j)*pn(i,j)*( (pm(i,j  )+pm(i,j+1))*v(i,j+1,k,nstp)
      &                         -(pm(i,j-1)+pm(i,j  ))*v(i,j  ,k,nstp)
      &                                                             ))
-            UFx(i,j)=  cff*dn_r(i,j)*dn_r(i,j)
-            VFe(i,j)= -cff*dm_r(i,j)*dm_r(i,j)
+            UFx(i,j)=  cff*dn_r(i,j)*dn_r(i,j)  !! u_x + v_y at rho
+            VFe(i,j)= -cff*dm_r(i,j)*dm_r(i,j)  !! 
           enddo
         enddo
         do j=jstr,jend+1
@@ -76,7 +76,7 @@
 # ifdef MASKING
      &                                                   *pmask(i,j)
 # endif
-            UFe(i,j)= cff*dm_p(i,j)*dm_p(i,j)
+            UFe(i,j)= cff*dm_p(i,j)*dm_p(i,j)  !! v_x + u_y = 
             VFx(i,j)= cff*dn_p(i,j)*dn_p(i,j)
           enddo
         enddo
@@ -106,8 +106,12 @@
             v(i,j,k,indx)=v(i,j,k,indx) + dt*cff
           enddo
         enddo
-      enddo
+# if defined NHMG
+
+# endif
+      enddo ! k loop
       end
+
 #else
       subroutine visc3d_empty
       end

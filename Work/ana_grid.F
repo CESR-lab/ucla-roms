@@ -38,6 +38,42 @@
 ! f0,beta    Coriolis parameters to setup a beta-plane [1/s, 1/(m*s)].
 
       real, parameter ::
+# if defined DOUBLE_GYRE
+     &                  Size_ETA=3840.0e+3, Size_XI=(Size_ETA*LLm)/MMm,
+     &                  depth=4000.,        f0=0.83e-4,  beta=2.E-11
+# elif defined GRAV_ADJ
+     &                  Size_XI=64.0E+3,    Size_ETA=Size_XI*MMm/LLm,
+     &                  depth=20.,          f0=0.,         beta=0.
+# elif defined COLD_FILAMENT
+     &                  Size_XI=40.0E+3,    Size_ETA=Size_XI*MMm/LLm,
+     &                  depth=250.,         f0=0.8E-4,      beta=0.
+# elif defined OVERFLOW
+     &                  Size_XI=2.0E+3,     Size_ETA=64.0E+3,
+     &                  depth=40.,          f0=0.,     beta=0.
+# elif defined SEAMOUNT
+     &                  Size_ETA=320.0e+3,  Size_XI=Size_ETA*LLm/MMm,
+     &                  depth=5000.,        beta=0.,   f0=1.0E-4
+
+
+# elif defined WAVE_RAD
+     &                  Size_ETA=320.0e+3,  Size_XI=Size_ETA*LLm/MMm,
+     &                  depth=500.,         beta=0.,  f0=0.
+
+# elif defined ISWAKE
+     &                  Size_ETA=120.0e+3,  Size_XI=Size_ETA*LLm/MMm,
+     &                  depth=500.,         beta=0.,  f0=1.0E-4
+# elif defined SHELFRONT
+     &                  Size_XI=20.0e+3,    Size_ETA=200.0e+3,
+     &                  depth=1660.,        f0=1.E-4,      beta=0.
+# elif defined SOLITON
+     &                  Size_XI=48.,        Size_ETA=16.,
+     &                  depth=1.,           f0=0.,      beta=+1.
+# elif defined UPWELLING
+     &                  Size_ETA=8.E+4,     Size_XI=Size_ETA*LLm/MMm,
+     &                  depth=150.,         f0=+8.26E-5,   beta=0.
+# elif defined RIVER
+     &                  Size_XI=60.e+3,     Size_ETA=Size_XI*MMm/LLm,
+     &                  depth=150.,         f0=1.E-4,      beta=0.
 # elif defined SLOSH
      &                  Size_XI=200.,     Size_ETA=Size_XI*MMm/LLm,
      &                  depth=20.,         f0=0.,      beta=0.
@@ -46,7 +82,13 @@
 # endif
 
       real cff,y, x0,y0,dx,dy
-
+# if defined ISWAKE
+      real rd, rd_inner, rd_outer, ypL,yC,ypR
+# elif defined SEAMOUNT
+      real xpL,xC,xpR,  ypL,yC,ypR
+# elif defined RIVER
+      integer imax,jchn
+# endif
 # include "grid.h"
 # include "scalars.h"
 

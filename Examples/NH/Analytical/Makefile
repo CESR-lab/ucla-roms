@@ -14,5 +14,7 @@ all:
 	rsync    $(ROMS_ROOT)/Make.depend Compile
 	rsync    $(ROMS_ROOT)/Makefile Compile
 	cp -p *h *F Compile
-	cd Compile; make; mv roms ../
+	cd Compile; make -j8; mv roms ../roms_tank
+
+
 	

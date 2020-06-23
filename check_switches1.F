@@ -12,7 +12,7 @@
 !!!!!! as an independent program, or use commands              !!!!!!
 !!!!!! "make checkdefs" or "make depend".                      !!!!!!
 !!!!!! Number of Configuration Choices:                      1 !!!!!!
-!!!!!! Total number of CPP-switches:                        92 !!!!!!
+!!!!!! Total number of CPP-switches:                        93 !!!!!!
 
       implicit none
       integer ierr, is,ie, iexample
@@ -566,6 +566,12 @@
       is=ie+2 ; ie=is+7
       if (ie >= max_opt_size) goto 99
       cpps(is:ie)='AVERAGES'
+      cpps(ie+1:ie+1)=' '
+#endif
+#ifdef NHMG
+      is=ie+2 ; ie=is+3
+      if (ie >= max_opt_size) goto 99
+      cpps(is:ie)='NHMG'
       cpps(ie+1:ie+1)=' '
 #endif
 #ifdef RIVER_SOURCE

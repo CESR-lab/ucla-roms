@@ -17,7 +17,10 @@
        integer, public, parameter ::  nz = N
 
 
-       public nt,frcfile,max_frc,rmask
+       public nt,frcfile,max_frc
+# if defined MASKING 
+       public rmask
+# endif
        public grdname
 
        public mynode

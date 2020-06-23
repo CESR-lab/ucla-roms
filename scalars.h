@@ -26,6 +26,10 @@
 #ifdef SOLVE3D
      &                           , iif, nstp, nnew, nrhs
 #endif
+#ifdef NHMG
+     &                           , iprec1, iprec2
+#endif
+
      &                           , priv_count(16)
       logical synchro_flag, diag_sync
       common /priv_scalars/ WallClock, cpu_init, cpu_net,

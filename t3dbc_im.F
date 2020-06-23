@@ -80,7 +80,7 @@ c-->     &                                           , dft,dfx,dfy
      &                                -min(cy,0.)*grad(istr-1,j+1)
      &                                                 )/(cff+cx)
 
-#   else
+#   else  /* not legacy_orlanski */
             cx=-dtfwd*u(istr,j,k,nrhs)*pm(istr-1,j)
             cy=0.5*dtfwd*(v(istr-1,j,k,nrhs)+v(istr-1,j+1,k,nrhs))
      &                                               *pn(istr-1,j)

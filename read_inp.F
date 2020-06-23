@@ -417,15 +417,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           mpi_master_only write(*,'(3x,A,F10.2,2x,A)') 'v_sponge =',
      &        v_sponge, 'maximum viscosity in sponge layer [m^2/s]'
 #endif
-#ifdef OBC_FLUX_CORR
-        elseif (keyword(1:kwlen) == 'tau_obc') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) tau_obc
-          mpi_master_only write(*,'(1x,A,ES10.3,2x,2A)')
-     &      'tau_obc =',  tau_obc, 'OBC volume constraint ',
-     &                           'relaxation period [days]'
-          tau_obc=tau_obc*day2sec
-#endif
 
 ! Input file controls:  grid, initial conditions, surface forcing,
 !----- ----- ---------  climatology, lateral boundary forcing data

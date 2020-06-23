@@ -12,7 +12,7 @@
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                                             A2d(1,5),A2d(1,6)
 # ifdef NHMG
-     &                                            ,A3d(1,5d)
+     &                                            ,A3d(1,5)
 # endif
      &          )
       end
@@ -21,14 +21,14 @@
      &                                         Hz_fwd,   WC,FC,CF,DC,
      &                                    UFx,UFe,VFx,VFe, wrk1,wrk2 
 # ifdef NHMG
-     &                                            ,Hz_half
+     &                                            ,rw
 # endif
-     &          )
+     &                                                              )
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
 #ifdef NHMG
-      use nhmg, only : nhmg_solve
+      use nhmg
       use mg_grids
       use mg_tictoc, only : tic, toc
 #endif
@@ -40,6 +40,11 @@
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) ::  WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe,
      &                                                   wrk1,wrk2
+#ifdef NHMG
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: rw
+      real  Flxw,Uflxw,Vflxw
+#endif
+
       real dtau, cf_stp,cf_bak,  cff, FlxDiv
       real, parameter :: AM3_crv=1./6., epsil=1.E-33
      &                 , delta=0.1666666666666667 !! delta=0.125
@@ -136,6 +141,11 @@
           enddo                              ! tracer at "nstp" by Hz
         enddo !<-- itrc                      ! also at "nstp" before
                                              ! it is owerwritten by
+
+# ifdef NHMG
+#  include "compute_horiz_rhs_w_terms.h"
+# endif
+
 # undef FE                                /* ! barotropic mode. */
 # undef FX
 
@@ -171,14 +181,13 @@
       enddo 
 # endif
 
-      do j=jstr,jend
+      do j=jstr,jend  !! Start of the giant j-loop
+
         do itrc=1,nt
-
-
 # include "compute_vert_tracer_fluxes.h"
 
           do k=1,n
-            do i=istr,iend
+            do i=istr,iend   !! t(..) is Hz*T
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            -dtau*pm(i,j)*pn(i,j)*(FC(i,k)-FC(i,k-1))
 
@@ -197,15 +206,22 @@
 # else
           iAkt=itrc
 # endif
+          !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  )) 
+          !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
+          !!                                                  Hz*T(k)
+          !! See numerical recipes p40
+          !! b(1) = Hz(1) + dt*2*Ak(1)/(Hz(2)+Hz(1))
+          !! c(1) =       - dt*2*Ak(1)/(Hz(2)+Hz(1))
+          !! U(k) --> DC(k)
           do i=istr,iend
-            FC(i,1)=2.*dtau*Akt(i,j,1,iAkt)/( Hz_fwd(i,j,2)
+            FC(i,1)=2.*dtau*Akt(i,j,1,iAkt)/( Hz_fwd(i,j,2) !!  dt*2*Ak(1)/(Hz(2)+Hz(1))
      &                                       +Hz_fwd(i,j,1))
             DC(i,0)=dtau*pm(i,j)*pn(i,j)
             WC(i,1)=DC(i,0)*Wi(i,j,1)
 
-            cff=1./(Hz_fwd(i,j,1) +FC(i,1)+max(WC(i,1),0.))
-            CF(i,1)=cff*(          FC(i,1)-min(WC(i,1),0.))
-            DC(i,1)=cff*t(i,j,1,nnew,itrc)
+            cff=1./(Hz_fwd(i,j,1) +FC(i,1)+max(WC(i,1),0.))  !! 1./bet
+            CF(i,1)=cff*(          FC(i,1)-min(WC(i,1),0.))  !! c(1)/bet
+            DC(i,1)=cff*t(i,j,1,nnew,itrc)                 !! u(1) = r(1)/bet
           enddo
 
           do k=2,N-1,+1
@@ -214,13 +230,13 @@
      &                                         +Hz_fwd(i,j,k) )
               WC(i,k)=DC(i,0)*Wi(i,j,k)
 
-              cff=1./( Hz_fwd(i,j,k) +FC(i,k)+max(WC(i,k),0.)
+              cff=1./( Hz_fwd(i,j,k) +FC(i,k)+max(WC(i,k),0.)  !!  1./((b(k) -a(k)*c(k-1))/bet)
      &                             +FC(i,k-1)-min(WC(i,k-1),0.)
      &                  -CF(i,k-1)*(FC(i,k-1)+max(WC(i,k-1),0.))
      &                                                          )
-              CF(i,k)=cff*(FC(i,k)-min(WC(i,k),0.))
+              CF(i,k)=cff*(FC(i,k)-min(WC(i,k),0.))             !! c(k)/bet
 
-              DC(i,k)=cff*( t(i,j,k,nnew,itrc) +DC(i,k-1)*(
+              DC(i,k)=cff*( t(i,j,k,nnew,itrc) +DC(i,k-1)*(     !!  u(k)=(r(k)-u(j-1)*a(j))/bet
      &                          FC(i,k-1)+max(WC(i,k-1),0.) ))
             enddo
           enddo  !--> discard DC(:,0)
@@ -250,6 +266,83 @@
 
 # include "compute_vert_rhs_uv_terms.h"
 
+# ifdef NHMG
+
+# include "compute_vert_rhs_w_terms.h"
+
+        do i=istr,iend
+          DC(i,0) =dtau*pm(i,j)*pn(i,j)
+        enddo
+        !! This assumes that rw is in m^4*m/s2, w(indx),w(nstp) in m/s, 
+        !! w(0) is always zero
+        do k=1,N-1
+          do i=istr,iend
+            DC(i,k)=0.5*(Hz_bak(i,j,k+1)+Hz_bak(i,j,k))*(
+     &                  cf_stp*w(i,j,k,nstp)+cf_bak*w(i,j,k,indx) )
+     &                                           + DC(i,0)*rw(i,j,k)
+
+            w(i,j,k,indx)=0.5*(Hz(i,j,k+1)+Hz(i,j,k))*w(i,j,k,nstp)
+          enddo
+        enddo
+        k = N
+        do i=istr,iend
+          DC(i,k)=0.5*(   Hz_bak(i,j,k))*(
+     &                cf_stp*w(i,j,k,nstp)+cf_bak*w(i,j,k,indx) )
+     &                                         + DC(i,0)*rw(i,j,k)
+
+          w(i,j,k,indx)=0.5*(  Hz(i,j,k))*w(i,j,k,nstp)
+        enddo
+
+        !! start of tri-diag solve
+        !   FC(i,1)=0.5*dtau*(Akt(i,j,k+1)+Akt(i,j,k)/( Hz_fwd(i,j,k) 
+        do i=istrU,iend
+          FC(i,N-1)= 0.5*dtau*(Akv(i,j,N)+Akv(i,j,N-1))  !! flux coef between w(k) and w(k-1)
+     &                      /Hz_fwd(i,j,N)
+
+          WC(i,N-1)= DC(i,0)*0.5*(Wi(i,j,N)+Wi(i,j,N-1))
+
+          cff=1./( 0.5*(Hz_fwd(i,j,N)                )
+     &                    +FC(i,N-1)-min(WC(i,N-1),0.) )
+
+          CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
+
+          DC(i,N)=cff*DC(i,N)
+        enddo
+
+        do k=N-1,2,-1      !--> forward elimination for w
+          do i=istr,iend
+            FC(i,k-1)= 0.5*dtau*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
+     &                   /Hz_fwd(i,j,k)
+
+            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
+
+            cff=1./( 0.5*(Hz_fwd(i,j,k)+Hz_fwd(i,j,k-1))
+     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
+     &                              +FC(i,k)+max(WC(i,k),0.)
+     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
+     &                                                       )
+            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
+
+            DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+          enddo
+        enddo
+        !! change this you feel energetic. Instead of no-flux at the bottom we
+        !! have w(0) = 0 (different BC for tri-diag system)
+        do i=istr,iend
+          w(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
+     &                         )/( 0.5*(Hz_fwd(i,j,2)+Hz_fwd(i,j,1))
+     &                                       +FC(i,1)+max(WC(i,1),0.)
+     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
+     &                                                               )
+        enddo
+        do k=2,N,+1          !--> backsubstitution for w
+          do i=istr,iend
+            w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
+          enddo
+        enddo
+        !------- end computing of w(:,:,:,nnew) -----
+# endif
+
         do i=istrU,iend
           DC(i,0)=dtau*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
         enddo
@@ -276,11 +369,7 @@
           CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
 
           DC(i,N)=cff*( DC(i,N)
-# ifdef WIND_AT_RHO_POINTS
-     &               +0.5*dtau*(sustr(i-1,j)+sustr(i,j))
-# else
      &                                  +dtau*sustr(i,j)
-# endif
      &                                                 )
         enddo
         do k=N-1,2,-1      !--> forward elimination
@@ -310,24 +399,13 @@
      &                                       +FC(i,1)+max(WC(i,1),0.)
      &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                               )
-# ifdef PRED_COUPLED_MODE
-          rufrc(i,j)=ru(i,j,1) +dm_u(i,j)*dn_u(i,j)*(
-#  ifdef WIND_AT_RHO_POINTS
-     &                   0.5*(sustr(i-1,j)+sustr(i,j))
-#  else
-     &                                      sustr(i,j)
-#  endif
-     &        -0.5*(rd(i-1,j)+rd(i,j))*u(i,j,1,nnew) )
-# endif
         enddo
         do k=2,N,+1          !--> backsubstitution
           do i=istrU,iend
             u(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*u(i,j,k-1,nnew)
-# ifdef PRED_COUPLED_MODE
-            rufrc(i,j)=rufrc(i,j)+ru(i,j,k)
-# endif
           enddo
         enddo
+        !------- end computing of u(:,:,:,nnew) -----
 
         if (j >= jstrV) then
           do i=istr,iend
@@ -389,23 +467,10 @@
      &                                       +FC(i,1)+max(WC(i,1),0.)
      &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                               )
-
-# ifdef PRED_COUPLED_MODE
-            rvfrc(i,j)=rv(i,j,1) +dm_v(i,j)*dn_v(i,j)*(
-#  ifdef WIND_AT_RHO_POINTS
-     &                     0.5*(svstr(i,j-1)+svstr(i,j))
-#  else
-     &                                        svstr(i,j)
-#  endif
-     &          -0.5*(rd(i,j-1)+rd(i,j))*v(i,j,1,nnew) )
-# endif
           enddo
           do k=2,N,+1          !--> backsubstitution
             do i=istr,iend
               v(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*v(i,j,k-1,nnew)
-# ifdef PRED_COUPLED_MODE
-              rvfrc(i,j)=rvfrc(i,j)+rv(i,j,k)
-# endif
             enddo
           enddo
         endif  !<-- j>=jstrV

@@ -1,4 +1,5 @@
       module river_frc
+# if defined RIVER_SOURCE
       ! Contains all the neccesary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time
       ! riv_uflx, riv_vflx should be on faces between a masked and unmasked cell,
@@ -8,6 +9,7 @@
       ! * Deal with rivers in the buffer that impact boundary uflx,vflx
       ! * we could do the faces thingy in the distribution field
       ! already (better for doing the boundary)
+      ! * Deal with nx/ny that is not divisible by cpu's
       
 
       ! call set_river_source_tile(istr,iend,jstr,jend, ierr)
@@ -80,7 +82,7 @@
          !! the buffer in some of the partitioned files
 
          ierr = nf90_open(grdname, nf90_nowrite, ncid)
-         ierr=nf90_get_att(ncid,nf90_global,'partition',partition_info)
+         ierr = nf90_get_att(ncid,nf90_global,'partition',partition_info)
          if (partition_info(3)==1) then
            is = 2;
          else
@@ -355,4 +357,5 @@
 
         end subroutine find_rec_new
 
+# endif
       end module river_frc

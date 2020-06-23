@@ -122,8 +122,6 @@ CSDISTRIBUTE_RESHAPE grdscl(BLOCK_PATTERN) BLOCK_CLAUSE
       real om_r(GLOBAL_2D_ARRAY)
       real on_r(GLOBAL_2D_ARRAY)
       common /metrics_omr/om_r /metrics_on_r/on_r
-
-
 #endif
 
  

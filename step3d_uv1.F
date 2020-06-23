@@ -45,23 +45,6 @@
 # include "compute_horiz_rhs_uv_terms.h"
        enddo
 
-! Compute dynamic bottom drag coefficient.  Note that "rd" must be
-! aliased to a horizontal array beyond #4 to avoid overlap with one
-! of the vertical arrays used below. Because "rd" computed inside the
-! include file has extra rows of points on the western and southern
-! sides, it can interpolated to U- and V-points without being
-! synchronized(exchanged). It is also copied into shared array "r_D".
-! If recomputed here, it is the private array which must be used in
-! the code below, so "r_D" needs to be redefined accordingly.
-
-# ifdef RECOMPUTE_RD
-#  define dtau dt
-#  define rd wrk1
-#  include "compute_rd_bott_drag.h"
-#  undef rd
-#  define r_D wrk1
-# endif
-
       do j=jstr,jend
 
 # include "compute_vert_rhs_uv_terms.h"

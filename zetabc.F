@@ -51,7 +51,7 @@ c--#define OBC_Z2ORLANSKI
         enddo
 # else
         do j=jstrV-1,jend                              ! Western edge
-          zeta_new(istr-1,j)=zeta_new(istr,j)          ! gradient BC
+          zeta_new(istr-1,j)=zeta_new(istr,j)          ! no gradient BC
 #  ifdef MASKING
      &                        *rmask(istr-1,j)
 #  endif

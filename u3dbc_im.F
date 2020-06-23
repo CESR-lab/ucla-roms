@@ -126,9 +126,6 @@
 #  endif              /* OBC_WEST */
       endif         !<-- WESTERN_EDGE
 
-#  ifdef ISWAKE_XXX
-#   define OBC_M3ORLANSKI
-#  endif
 
       if (EASTERN_EDGE) then
 #  ifdef OBC_EAST

@@ -8,8 +8,7 @@
 ! Mm    a single MPI-subdomain.  These are identical to LLm, MMm if
 !       there is no MPI-partitioning.
 
-      integer, parameter ::  LLm=128, MMm=2, N=20
-
+      integer, parameter ::  LLm = 64,MMm = 64,N=64 ! NHMG test
 
 ! Domain subdivision parameters:
 !------- ----------- -----------
@@ -19,7 +18,7 @@
 !                                             XI- and ETA-directions;
       integer, parameter ::
 #ifdef MPI
-     &      NP_XI=8, NP_ETA=32, NSUB_X=1, NSUB_E=1
+     &      NP_XI=2, NP_ETA=2, NSUB_X=1, NSUB_E=1
 #else
      &      NSUB_X=3, NSUB_E=32
 #endif

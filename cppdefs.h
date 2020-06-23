@@ -643,6 +643,7 @@ c--# define LMD_NONLOCAL
 
 #elif defined SPLASH   /* CARTHE SPLASH REGION */
 
+# define NHMG
 # define RIVER_SOURCE
 # define SOLVE3D
 # define UV_COR
@@ -676,7 +677,6 @@ c--# undef LMD_DDMIX
 # define OBC_WEST
 c---# define OBC_NORTH
 # define OBC_SOUTH
-c--> # define OBC_FLUX_CORR
 
 # undef OBC_M2ORLANSKI
 # define OBC_M2FLATHER
