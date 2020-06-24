@@ -550,9 +550,89 @@
      &                      t(START_2D_ARRAY,1,nnew,itrc), N)
 # endif
       enddo
+
+# ifdef NHMG
+!======================================================================
+! Non-hydro projection of momentum
+!======================================================================
+
+      if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
+        do k=1,N
+          do j=Jstr,Jend
+            do i=IstrU,Iend
+              u(i,j,k,nnew) = u(i,j,k,nnew)
+     &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1))*dtau
+     &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k))) * pn_u(i,j)
+# if defined NHMG_MASKING
+              u(i,j,k,nnew) = u(i,j,k,nnew)*umask(i,j)
+# endif
+              rufrc(i,j) = rufrc(i,j)
+     &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1)) 
+     &            * om_u(i,j)
+            enddo
+          enddo
+
+          do j=JstrV,Jend
+            do i=Istr,Iend
+              v(i,j,k,nnew) = v(i,j,k,nnew)
+     &            + (1.5*nhdv(i,j,k,iprec2)-0.5*nhdv(i,j,k,iprec1))*dtau
+     &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k))) * pm_v(i,j)
+# if defined NHMG_MASKING
+              v(i,j,k,nnew) = v(i,j,k,nnew)*vmask(i,j)
+# endif
+              rvfrc(i,j) = rvfrc(i,j)
+     &            + (1.5*nhdv(i,j,k,iprec2)-0.5*nhdv(i,j,k,iprec1)) 
+     &            * on_v(i,j)
+            enddo
+          enddo
+
+          do j=Jstr,Jend
+            do i=Istr,Iend
+              w(i,j,k,nnew) = w(i,j,k,nnew)
+     &            + (1.5*nhdw(i,j,k,iprec2)-0.5*nhdw(i,j,k,iprec1))*dtau
+     &            * (pm(i,j)*pn(i,j))
+# if defined NHMG_MASKING
+              w(i,j,k,nnew) = w(i,j,k,nnew)*rmask(i,j)
+# endif
+            enddo
+          enddo
+        enddo
+
+      else  !! instead of using AB2 to extrapolate the nh pressure gradient from corrector steps, we project here
+         !! fill buffer for Hz_fwd ????
+       ! We do need 
+
+!    Multiply u,v,w to get back fluxes for use inside mg_solve
+        do k=1,N
+          do j=Jstr,Jend
+            do i=Istr,Iend+1
+              u(i,j,k,nnew) = u(i,j,k,nnew)
+     &            *(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))/pn_u(i,j)
+            enddo
+          enddo
+          do j=Jstr,Jend+1
+            do i=Istr,Iend
+              v(i,j,k,nnew) = v(i,j,k,nnew)
+     &            *(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))/pm_v(i,j)
+            enddo
+          enddo
+          do j=Jstr,Jend
+            do i=Istr,Iend
+              wz(i,j,k,nnew) = wz(i,j,k,nnew)/(pm(i,j)*pn(i,j))
+            enddo
+          enddo
+        enddo
+
+
+
+
+      endif 
+
+# endif
+
       end
 
-
+!------------------------------------------------------------------------------------------
       subroutine check_pre_step_switches (ierr)
 
 ! This routine keeps track of the status of local CPP-settings in

@@ -1,4 +1,5 @@
       module river_frc
+#include "cppdefs.h"
 # if defined RIVER_SOURCE
       ! Contains all the neccesary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time

@@ -7,8 +7,10 @@
 *.mod
 *.swp
 *.so
+*.log
 mpc
 roms
+jobout
 test_tiling
 redefs
 incl
@@ -17,4 +19,5 @@ checkkwds
 cppcheck
 srcscheck
 Examples/*/*/Compile
+Examples/*/*/*.nc
 Work/Compile
