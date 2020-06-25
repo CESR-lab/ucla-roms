@@ -9,7 +9,7 @@
 *.so
 *.log
 mpc
-roms
+roms*
 jobout
 test_tiling
 redefs
