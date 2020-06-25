@@ -1813,7 +1813,8 @@ CR      write(*,*) 'wrt_his: wrtKAPS' MYID
 #ifndef ANA_WEC_FRC
       subroutine read_wec_frc (ierr)  !(time)
       ! Reads WEC forcing data from input file
-      ! This code is taken from get_wwave() subrountine in get_wwave.F in the old code.
+      ! This version is now exclusively intended to read variables that are
+      ! part of 'Leonels method'
 
       ! Read gridded wind wave height, direction, period at appropriate
       ! time from forcing netCDF file
@@ -2488,6 +2489,7 @@ c                 vst0(i,j)=0.5*(vstr0(i,j-1)+vstr0(i,j))
             vorb(i,j)=wramp*(cff1*wwvob(i,j,it1)+cff2*wwvob(i,j,it2))
 # endif
 # endif
+
 # if defined BBL || defined MRL_WCI
             wfrq(i,j)=cff1*wwfrq(i,j,it1)+cff2*wwfrq(i,j,it2)
 # endif
@@ -2910,6 +2912,8 @@ c      wave_ramp = tanh(144.0*dt*sec2day*float(iic-ntstart)) ! 30 min
 !
 ! 2DH Stokes velocities, breaking, roller and bottom-friction
 ! dissipation terms, defined at horizontal rho-points.
+iled
+make: *** [wec_frc.o] Error 1
 !
       inv_g = 1.0/g
       do j=jstr-1,jend+1
@@ -3267,21 +3271,40 @@ c**          cff1=umag*(vonKar/log(hz0*inv_zb))**2
           cff1 = exp( 2.*kw(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
      &          -exp(-2.*kw(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
           do k=1,N,+1              ! <-- irreversible
-            inv_dz(i,j,k)=1./Hz(i,j,k)
+!           inv_dz(i,j,k)=1./Hz(i,j,k)
             cff2 = exp( 2.*kw(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
      &            -exp(-2.*kw(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
-            ust_rm(i,j,k) =ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
+!           ust_rm(i,j,k) =ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
+            ust_rm(i,j,k) =ust_ker*( cff2-cff1 )/Hz(i,j,k)
+            if (mynode==1) then
+              if (i==10.and.j==10.and.k<3) then
+!               print *,'cff1/2:  ',cff2-cff1,inv_dz(i,j,k)
+!               print *,'ust_rm:  ',ust_rm(i,j,k)
+              endif
+            endif
             cff1=cff2
           enddo
-c        enddo
-c      enddo                 ! <-- keep ust_r, inv_dz, &inv_ex
+         enddo
+       enddo                 ! <-- keep ust_r, inv_dz, &inv_ex
+       if (mynode==1) then
+c        if (i==10.and.j==10) then
+           write(*,*) 'i,j:      ',i,j
+           write(*,*) 'ust_ker:  ',ust_ker
+           write(*,*) 'ust_rm(1): ',ust_rm(10,10,1)
+           write(*,*) 'ust_rm(2): ',ust_rm(10,10,2)
+           write(*,*) 'ust_rm(N): ',ust_rm(10,10,N)
+c        endif
+       endif
+       stop
+
 !
 # if defined WAVE_OFFLINE && !defined U2010
 !
 ! keff
 c
-c      do j=jstr-1,jend+1
-c        do i=istr-1,iend+1
+       do j=jstr-1,jend+1
+         do i=istr-1,iend+1
+
           keff(i,j)=max(2.*pi/20./h(i,j),0.5*sqrt(ustr0(i,j)**2
      &               +vstr0(i,j)**2)/
      &          max(.001,Dstp(i,j)*sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)))
@@ -3326,21 +3349,12 @@ c            inv_dz(i,j,k)=1./Hz(i,j,k)
      &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
      &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
      &             vst_ker*inv_dz(i,j,k)*( cff2-cff1 )
-c             vst_r(i,j,k)= vst_ker*inv_dz(i,j,k)*( cff2-cff1 ) ! test
-c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
+
             ust_r(i,j,k)=ust_rm(i,j,k)*wdrx(i,j)*
      &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
      &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
      &             ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
-!            ! DevinD debug
-!            if (mynode==1 .and. i==50 .and. j==45 .and. k==N) then
-!              write(*,*) 'z_r(50,45,N)', z_r(50,45,N)
-!              write(*,*) 'keff(50,45)', keff(50,45)
-!              write(*,*) 'ust_ker', ust_ker,'cff1',cff1,'cff2',cff2
-!              write(*,*) 'inv_dz(50,45,N)', inv_dz(50,45,N)
-!            endif
-c             ust_r(i,j,k)= ust_ker*inv_dz(i,j,k)*( cff2-cff1 ) !test
-c             ust_r(i,j,k)= ust_r(i,j,k)*wdrx(i,j)  !test
+
             cff1=cff2
           else
              vst_r(i,j,k)= ust_rm(i,j,k)*wdre(i,j) !

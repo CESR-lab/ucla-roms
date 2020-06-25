@@ -8,6 +8,7 @@
 *.swp
 *.so
 *.log
+*.nc
 jobout
 mpc
 roms
@@ -20,3 +21,5 @@ cppcheck
 srcscheck
 setup_kwds.F
 roms*
+Work/*
+Examples/*/*/Compile
