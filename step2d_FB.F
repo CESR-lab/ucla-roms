@@ -798,7 +798,7 @@ c<<     &     +cff*iA_v(i,j)
             zeta(i,j,knew)=Zt_avg1(i,j)
           enddo
         enddo
-        call set_depth_tile(istr,iend,jstr,jend, UFx)
+        call set_depth_tile(istr,iend,jstr,jend)
       endif
 #else
       j=min(iic,2*ninfo)-1          ! This introduces "logarithmic"

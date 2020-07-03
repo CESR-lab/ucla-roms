@@ -444,7 +444,8 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             enddo
          enddo
 
-         do k = 1,N-1
+         !! rw is a V*dwdt units object (m4/s2), just like ru, rv
+         do k = 1,N-1 
             do i=Istr,Iend
               rw(i,j,k)=-0.25*(dR(i,k+1)+dR(i,k))*(Hz(i,j,k+1)+Hz(i,j,k))
             enddo

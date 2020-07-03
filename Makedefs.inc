@@ -58,8 +58,8 @@
 
 
 #  CFTFLAGS = -pc80 -auto -stack_temps -warn unused
-   CFTFLAGS = -pc64 -auto -stack_temps -warn all
-#  CFTFLAGS = -pc64 -auto -stack_temps 
+#  CFTFLAGS = -pc64 -auto -stack_temps -warn all
+   CFTFLAGS = -pc64 -auto -stack_temps 
 
 
       CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)

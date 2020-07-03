@@ -3,7 +3,7 @@
 # Set machine dependent definitions and rules.
 
 #include Makedefs.Intel
-include Makedefs/Makedefs.IntelEM64T
+include Makedefs.inc
 #include Makedefs.Intel_MPI
 #include Makedefs.CMPI
 #include Makedefs.GCC

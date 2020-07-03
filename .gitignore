@@ -18,6 +18,7 @@ lsb_string
 checkkwds
 cppcheck
 srcscheck
-Examples/*/*/Compile
-Examples/*/*/*.nc
+Examples/*/Compile
+Examples/*/*.nc
+Examples/*/fort*
 Work/Compile

@@ -7,13 +7,8 @@
 # include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
-      call ana_init_tile( istr,iend,jstr,jend,
-# ifdef SOLVE3D
-     &                                 A3d(1,1)
-# else
-     &                                 A2d(1,1)
-# endif
-     &                                        )
+      call ana_init_tile( istr,iend,jstr,jend)
+
       end
 
       subroutine ana_init_tile (istr,iend,jstr,jend)
@@ -23,15 +18,17 @@
 
       integer istr,iend,jstr,jend, i,j,k,itrc
 
-      real amp, fac, x,y, x0,y0, cff
+      real x0,y0
 
 # include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
 # include "eos_vars.h"
 
-      real depth, Lt
+      real  amp,Lt
+# if defined TANKINT
       real drho, thickn
+# endif 
 
 # include "compute_auxiliary_bounds.h"
 
@@ -62,7 +59,7 @@
 # endif
 
 # if defined TANK 
-      amp = 0.15
+      amp = 0.001
       Lt  = 10.0
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -78,14 +75,13 @@
           enddo
         enddo
       enddo
-      write(*,*) 'init: ',t(10,10,10,1,1)
 
 # elif defined TANKINT
       drho=10
       thickn=2
       cff=2.*(log((0.99+1.)/(-0.99+1.))/2.)/thickn
       amp=0.5
-      Lt=100.
+      Lt=10.
       do k=1,N
         do j=jstrR,jendR
           do i=jstrR,jendR

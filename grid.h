@@ -78,12 +78,16 @@ CSDISTRIBUTE_RESHAPE pn(BLOCK_PATTERN) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE dm_r(BLOCK_PATTERN) BLOCK_CLAUSE
       real dn_r(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE dn_r(BLOCK_PATTERN) BLOCK_CLAUSE
+      real pn_u(GLOBAL_2D_ARRAY)
+CSDISTRIBUTE_RESHAPE pn_u(BLOCK_PATTERN) BLOCK_CLAUSE
       real dm_u(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE dm_u(BLOCK_PATTERN) BLOCK_CLAUSE
       real dn_u(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE dn_u(BLOCK_PATTERN) BLOCK_CLAUSE
       real dm_v(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE dm_v(BLOCK_PATTERN) BLOCK_CLAUSE
+      real pm_v(GLOBAL_2D_ARRAY)
+CSDISTRIBUTE_RESHAPE pm_v(BLOCK_PATTERN) BLOCK_CLAUSE
       real dn_v(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE dn_v(BLOCK_PATTERN) BLOCK_CLAUSE
       real dm_p(GLOBAL_2D_ARRAY)
@@ -94,6 +98,7 @@ CSDISTRIBUTE_RESHAPE dn_p(BLOCK_PATTERN) BLOCK_CLAUSE
      &       /mtrix_dm_r/dm_r /mtrix_dn_r/dn_r
      &       /mtrix_dm_u/dm_u /mtrix_dn_u/dn_u
      &       /mtrix_dm_v/dm_v /mtrix_dn_v/dn_v
+     &       /mtrix_pn_u/pn_u /mtrix_pm_v/pm_v
      &       /mtrix_dm_p/dm_p /mtrix_dn_p/dn_p
 
       real iA_u(GLOBAL_2D_ARRAY)
@@ -117,12 +122,6 @@ CSDISTRIBUTE_RESHAPE pnom_v(BLOCK_PATTERN) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE grdscl(BLOCK_PATTERN) BLOCK_CLAUSE
       common /mtrix_pmon_u/pmon_u /mtrix_pnom_v/pnom_v
      &                            /mtrix_grdscl/grdscl
-
-#ifdef NHMG
-      real om_r(GLOBAL_2D_ARRAY)
-      real on_r(GLOBAL_2D_ARRAY)
-      common /metrics_omr/om_r /metrics_on_r/on_r
-#endif
 
  
 #ifdef MASKING

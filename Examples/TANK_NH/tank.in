@@ -1,0 +1,35 @@
+title:
+	Tank Example
+time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
+                 3    0.05      10       1
+S-coord: THETA_S,   THETA_B,    Hc (m)
+         0.0d0      0.0d0       10.d15
+initial: NRREC  filename
+          0 
+                          tank_rst.nc         
+restart:          NRST, NRPFRST / filename
+                  5000    -1
+                          tank_rst.nc
+history: LDEFHIS, NWRT, NRPFHIS / filename 
+            T      1    10 
+                          tank_his.nc
+primary_history_fields: zeta UBAR VBAR  U  V   wrtT(1:NT)
+                          T    T   T   T  T    30*T
+auxiliary_history_fields:   rho Omega W  Akv  Akt  Aks Visc3d Diff3d  HBL HBBL Bostr Wstr Ustr Vstr Shfl rsw rlw lat sen Hm HEL BIOL
+                             T   T    T   F    F    F   F      F       F   F    F     20*F
+
+rho0:
+      1029
+      
+bottom_drag:     RDRG(m/s),      RDRG2, Zob [m],  Cdb_min, Cdb_max
+                   0.             0.     0.        0.       0. 
+gamma2:
+                  1.
+lin_EOS_cff:  R0 [kg/m3], T0 [Celsius], S0 [PSU], TCOEF [1/Celsius], SCOEF [1/PSU]
+              0.          0.            0.        -1.                0.     
+vertical_mixing: Akv_bak, Akt_bak [m^2/sec]
+                   0.       0.
+lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
+                 0.       0.
+
+

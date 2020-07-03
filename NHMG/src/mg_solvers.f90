@@ -24,7 +24,7 @@ contains
 
     real(kind=lg) :: tstart,tend,perf
     real(kind=rp) :: rnxg,rnyg,rnzg
-    real(kind=rp) :: rnpxg,rnpyg
+    real(kind=rp) :: rnpxg,rnpyg,fac
 
     integer, save :: count = 1
     logical :: verbose
@@ -35,7 +35,7 @@ contains
     count = count+1
     if ((myrank==0).and.verbose) write(*,*)'     ---------------'
 
-    ! if commented, we used the previous pressure as first guess for the current projection
+    ! if commented, we use the previous pressure as first guess for the current projection
     ! grid(1)%p(:,:,:) = zero
 
     p  => grid(1)%p
@@ -54,13 +54,18 @@ contains
     res0 = sum(grid(1)%b(1:nz,1:ny,1:nx)**2)
     call global_sum(1,res0,bnorm)
     bnorm = sqrt(bnorm)
+    fac = sqrt(1./(nx*ny*nz))
 
     ! residual returns both 'r' and its norm
     call compute_residual(1,rnorm) 
     res0   = rnorm/bnorm
     rnorm0 = res0
 
-    do while ((nite < solver_maxiter).and.(res0 > solver_prec))
+!   JM July 2020
+!   solver_prec indicated an error reduction rather than an absolute error.
+!   This is a problem for small bnorm (small absolute incoming divergence)
+!   I added an absolute error criterium
+    do while ((nite < solver_maxiter).and.(res0 > solver_prec).and.(res0*bnorm*fac>1e-15) )
 
        call Fcycle()
 

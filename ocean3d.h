@@ -11,6 +11,13 @@ CSDISTRIBUTE_RESHAPE t(BLOCK_PATTERN,*,*,*) BLOCK_CLAUSE
 # if defined NHMG 
       real w(GLOBAL_2D_ARRAY,0:N,3)
 CSDISTRIBUTE_RESHAPE w(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
+      real nhdu(GLOBAL_2D_ARRAY,1:N,2)
+      real nhdv(GLOBAL_2D_ARRAY,1:N,2)
+      real nhdw(GLOBAL_2D_ARRAY,0:N,2)
+      common /ocean_w/w
+      common /ocean_nhdu/nhdu
+      common /ocean_nhdv/nhdv
+      common /ocean_nhdw/nhdw
 # endif
 
       real FlxU(GLOBAL_2D_ARRAY,N)

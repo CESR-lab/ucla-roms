@@ -45,7 +45,7 @@
 #  error ANA_GRID CPP-switch is set, but grid parameters are missing.
 # endif
 
-      real cff,y, x0,y0,dx,dy
+      real x0,y0,dx,dy
 
 # include "grid.h"
 # include "scalars.h"
