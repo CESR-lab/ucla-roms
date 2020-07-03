@@ -234,8 +234,8 @@ C$OMP BARRIER
 !----------------------------------------------------------------------
 #ifdef NHMG
       call nhmg_matrices(Lm,Mm,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
-     &                   om_r(0:Lm+1,0:Mm+1),
-     &                   on_r(0:Lm+1,0:Mm+1)    )
+     &                   dm_r(0:Lm+1,0:Mm+1),
+     &                   dn_r(0:Lm+1,0:Mm+1)    )
 #endif
 
 CR      write(*,*)  ' -4' MYID
@@ -324,6 +324,7 @@ C$OMP END MASTER
 #include "scalars.h"
 #include "ncvars.h"
 
+
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
       my_first=trd*range
@@ -392,9 +393,9 @@ C$OMP BARRIER
       enddo
 C$OMP BARRIER
 
-      do tile=my_tile_range              ! This code segment is for
-        call set_HUV1(tile)              ! corrector-coupled version
-      enddo                              ! of time stepping only.
+      do tile=my_tile_range
+        call set_HUV1(tile)
+      enddo
 C$OMP BARRIER
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING

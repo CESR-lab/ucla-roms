@@ -20,7 +20,7 @@ c---#define TANKINT
 # define MPI
 
 # define NHMG
-c---# undef NHMG
+# undef NHMG
 # ifdef NHMG
 #  define NHMG_WBRY_INIT
 #  define NHMG_WBRY_COUPLING
@@ -31,7 +31,8 @@ c---# undef NHMG
 #  undef NHMG_2D_DAMPING
 # endif
 # define SOLVE3D
-# define UV_ADV
+c---# define UV_ADV
+# define LINEAR_DRAG_ONLY
 # define NONLIN_EOS
 # define ANA_GRID
 # define ANA_INITIAL
@@ -57,7 +58,7 @@ c---# undef NHMG
 #  undef NHMG_2D_DAMPING
 # endif
 # define SOLVE3D
-# define UV_ADV
+c---# define UV_ADV
 # define NONLIN_EOS
 # define ANA_GRID
 # define ANA_INITIAL

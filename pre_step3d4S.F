@@ -43,6 +43,9 @@
 #ifdef NHMG
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: rw
       real  Flxw,Uflxw,Vflxw
+      real  div,dmax
+      real  ub,ut
+!     integer :: ierr !,imx,jmx,kmx
 #endif
 
       real dtau, cf_stp,cf_bak,  cff, FlxDiv
@@ -55,6 +58,7 @@
 
 # include "grid.h"
 # include "ocean3d.h"
+# include "ocean2d.h"
 # include "coupling.h"
 # include "forces.h"
 # include "mixing.h"
@@ -263,6 +267,7 @@
 !--------- ----------  ! equation EXCEPT the implicit part of vertical
 !                      ! advection, vertical viscosity, bottom drag,
 !                      ! and wind forcing at surface.
+!                      ! ru,rv, and rw are volume integrated and [m4/s2]
 
 # include "compute_vert_rhs_uv_terms.h"
 
@@ -273,7 +278,7 @@
         do i=istr,iend
           DC(i,0) =dtau*pm(i,j)*pn(i,j)
         enddo
-        !! This assumes that rw is in m^4*m/s2, w(indx),w(nstp) in m/s, 
+        !! w(indx),w(nstp) in m/s, 
         !! w(0) is always zero
         do k=1,N-1
           do i=istr,iend
@@ -295,7 +300,7 @@
 
         !! start of tri-diag solve
         !   FC(i,1)=0.5*dtau*(Akt(i,j,k+1)+Akt(i,j,k)/( Hz_fwd(i,j,k) 
-        do i=istrU,iend
+        do i=istr,iend
           FC(i,N-1)= 0.5*dtau*(Akv(i,j,N)+Akv(i,j,N-1))  !! flux coef between w(k) and w(k-1)
      &                      /Hz_fwd(i,j,N)
 
@@ -476,13 +481,11 @@
         endif  !<-- j>=jstrV
       enddo     !<-- j
 # undef rd
-
-      call u3dbc_tile (istr,iend,jstr,jend, wrk1)
-      call v3dbc_tile (istr,iend,jstr,jend, wrk1)
+      !! velocities are now in m/s
 
 # ifdef RIVER_SOURCE
       do j=jstr,jend
-        do i=istrU,iend
+        do i=istr,iend
           if (abs(riv_uflx(i,j)).gt.1e-3) then
             depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
      &                   +z_w(i  ,j,N)-z_w(i  ,j,0) )
@@ -495,7 +498,7 @@
           endif
         enddo
       enddo
-      do j=jstrV,jend
+      do j=jstr,jend
         do i=istr,iend
           if (abs(riv_vflx(i,j)).gt.1e-3) then
             depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
@@ -535,6 +538,9 @@
       enddo
 # endif
 
+      call u3dbc_tile (istr,iend,jstr,jend, wrk1)
+      call v3dbc_tile (istr,iend,jstr,jend, wrk1)
+
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)
 ! have wrong vertical integrals, which will be corrected later
@@ -556,19 +562,15 @@
 ! Non-hydro projection of momentum
 !======================================================================
 
+!     if (iic.lt.-10) then ! should never happen
       if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
+        if  (mynode==0) print *, 'AB2 extrapolate'
         do k=1,N
           do j=Jstr,Jend
             do i=IstrU,Iend
               u(i,j,k,nnew) = u(i,j,k,nnew)
      &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1))*dtau
      &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k))) * pn_u(i,j)
-# if defined NHMG_MASKING
-              u(i,j,k,nnew) = u(i,j,k,nnew)*umask(i,j)
-# endif
-              rufrc(i,j) = rufrc(i,j)
-     &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1)) 
-     &            * om_u(i,j)
             enddo
           enddo
 
@@ -577,12 +579,6 @@
               v(i,j,k,nnew) = v(i,j,k,nnew)
      &            + (1.5*nhdv(i,j,k,iprec2)-0.5*nhdv(i,j,k,iprec1))*dtau
      &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k))) * pm_v(i,j)
-# if defined NHMG_MASKING
-              v(i,j,k,nnew) = v(i,j,k,nnew)*vmask(i,j)
-# endif
-              rvfrc(i,j) = rvfrc(i,j)
-     &            + (1.5*nhdv(i,j,k,iprec2)-0.5*nhdv(i,j,k,iprec1)) 
-     &            * on_v(i,j)
             enddo
           enddo
 
@@ -591,43 +587,218 @@
               w(i,j,k,nnew) = w(i,j,k,nnew)
      &            + (1.5*nhdw(i,j,k,iprec2)-0.5*nhdw(i,j,k,iprec1))*dtau
      &            * (pm(i,j)*pn(i,j))
-# if defined NHMG_MASKING
-              w(i,j,k,nnew) = w(i,j,k,nnew)*rmask(i,j)
-# endif
             enddo
           enddo
         enddo
 
       else  !! instead of using AB2 to extrapolate the nh pressure gradient from corrector steps, we project here
-         !! fill buffer for Hz_fwd ????
-       ! We do need 
+#  ifndef EW_PERIODIC
+      if (WESTERN_EDGE) then
+        do k=1,N
+          do j=jstr,jend
+            Hz_fwd(istr-1,j,k)=Hz_fwd(istr,j,k)
+          enddo
+        enddo
+      endif
+      if (EASTERN_EDGE) then
+        do k=1,N
+          do j=jstr,jend
+            Hz_fwd(iend+1,j,k)=Hz_fwd(iend,j,k)
+          enddo
+        enddo
+      endif
+#  endif
+#  ifndef NS_PERIODIC
+      if (SOUTHERN_EDGE) then
+        do k=1,N
+          do i=istr,iend
+            Hz_fwd(i,jstr-1,k)=Hz_fwd(i,jstr,k)
+          enddo
+        enddo
+      endif
+      if (NORTHERN_EDGE) then
+        do k=1,N
+          do i=istr,iend
+            Hz_fwd(i,jend+1,k)=Hz_fwd(i,jend,k)
+          enddo
+        enddo
+      endif
+#  endif
 
+!    At the end of the tridiag solves, the velocities are in m/s
 !    Multiply u,v,w to get back fluxes for use inside mg_solve
         do k=1,N
-          do j=Jstr,Jend
-            do i=Istr,Iend+1
+          do j=jstr,jend
+            do i=istr,iend+1
               u(i,j,k,nnew) = u(i,j,k,nnew)
      &            *(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))/pn_u(i,j)
             enddo
           enddo
-          do j=Jstr,Jend+1
-            do i=Istr,Iend
+          do j=jstr,jend+1
+            do i=istr,iend
               v(i,j,k,nnew) = v(i,j,k,nnew)
      &            *(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))/pm_v(i,j)
             enddo
           enddo
+          do j=jstr,jend
+            do i=istr,iend
+              w(i,j,k,nnew) = w(i,j,k,nnew)/(pm(i,j)*pn(i,j))
+            enddo
+          enddo
+        enddo
+# ifdef EXCHANGE
+        call exchange_2_tile(istr,iend,jstr,jend,u(START_2D_ARRAY,1,nnew),N
+     &                                          ,v(START_2D_ARRAY,1,nnew),N)
+# endif
+
+        ! Compute a 'barotropic' correction to w such that it matches
+        ! the current ubar,vbar divergence (see Molemaker et al., 2018)
+        if (surface_neumann) then
+          print *,'neumann'
+          nh_ubar = 0.
+          nh_vbar = 0.
+          do k=1,N
+            do j=Jstr,Jend
+              do i=Istr,Iend+1
+                nh_ubar(i,j) = nh_ubar(i,j) + u(i,j,k,nnew)
+              enddo
+            enddo
+            do j=Jstr,Jend+1
+              do i=Istr,Iend
+                nh_vbar(i,j) = nh_vbar(i,j) + v(i,j,k,nnew)
+              enddo
+            enddo
+          enddo
+
           do j=Jstr,Jend
             do i=Istr,Iend
-              wz(i,j,k,nnew) = wz(i,j,k,nnew)/(pm(i,j)*pn(i,j))
+              nh_wcor(i,j) = w(i,j,N,nnew) +
+     &        (nh_ubar(i+1,j)-nh_ubar(i,j)+nh_vbar(i,j+1)-nh_vbar(i,j))
+            enddo
+          enddo
+          do k=1,N
+            do j=Jstr,Jend
+              do i=Istr,Iend
+                w(i,j,k,nnew) = w(i,j,k,nnew) - nh_wcor(i,j)
+     &                         * (z_w(i,j,k)-z_w(i,j,0))
+     &                         / (z_w(i,j,N)-z_w(i,j,0))
+              enddo
+            enddo
+          enddo
+        endif  ! surface_neumann !
+
+!       !! compute divergence
+!       dmax = 0;
+!       do k=1,N
+!         do j=jstr,Jend
+!           do i=istr,Iend
+!             div=u(i+1,j,k,nnew)-u(i,j,k,nnew)
+!    &           +v(i,j+1,k,nnew)-v(i,j,k,nnew)
+!    &           -w(i,j,k-1,nnew)+w(i,j,k,nnew)
+!             dmax = max(dmax,abs(div))
+!           if ( (mynode==0).and.(i==10).and.(j==10).and.(k==20) ) then
+!              print *, 'BEFORE div(10,10,20): ', div
+!           endif
+!           enddo
+!         enddo
+!       enddo
+!
+!       if (mynode==0) then
+!         print 98, dmax
+!         ub = u(31,10,1,nnew)*pn_u(31,10)/(0.5*(Hz_fwd(31,10,1)+Hz_fwd(30,10,1)))
+!         ut = u(31,10,n,nnew)*pn_u(31,10)/(0.5*(Hz_fwd(31,10,n)+Hz_fwd(30,10,n)))
+!         print 99,ub,ut,ut/ub
+!         ub = u(31,10,n,nnew)*pn(1,10)*pm(1,10)
+!         ut = w(1,10,n,nnew)*pn(1,10)*pm(1,10)
+!         print 97,ub,ut,ut/ub
+!       endif
+! 98  format( 'pre befor dmax: ',e13.4)
+! 99  format( 'pre befor ub,ut,ratio: ',3e13.4)
+! 97  format( 'pre befor ut,wt,ratio: ',3e13.4)
+
+        call nhmg_solve(Lm,Mm,N,halo,padd_X,padd_E,
+     &          u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
+
+!     !! compute divergence
+!     dmax = 0;
+!     do k=1,N
+!       do j=jstr,Jend
+!         do i=istr,Iend
+!           div= (u(i+1,j,k,nnew) + grid(1)%du(k,j,i+1))
+!    &         - (u(i  ,j,k,nnew) + grid(1)%du(k,j,i  ))
+!    &         + (v(i,j+1,k,nnew) + grid(1)%dv(k,j+1,i))
+!    &         - (v(i,j  ,k,nnew) + grid(1)%dv(k,j  ,i))
+!    &         + (w(i,j,k  ,nnew) + grid(1)%dw(k+1,j,i))
+!    &         - (w(i,j,k-1,nnew) + grid(1)%dw(k  ,j,i))
+!           if ( (mynode==0).and.(i==10).and.(j==10).and.(k==20) ) then
+!              print *, 'div(10,10,20): ', div
+!           endif
+!           dmax = max(dmax,abs(div))
+!         enddo
+!       enddo
+!     enddo
+
+!     if (mynode==0) then
+!       print 95,  u(31,10,n,nnew),grid(1)%du(n,10,31)
+!     endif
+! 95  format( 'pre after u,du ',2e13.4)
+
+        ! add the non-hydro correction (du, dv, dw are in flux form)
+        ! add the non-hydrostatic pressure gradient to rufrc, rvfrc
+        do k=1,N
+          do j=jstr,Jend
+            do i=istrU,Iend
+              u(i,j,k,nnew) = (u(i,j,k,nnew) + grid(1)%du(k,j,i))
+     &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))* pn_u(i,j)
+            enddo
+          enddo
+
+          do j=jstrV,Jend
+            do i=istr,Iend
+              v(i,j,k,nnew) = (v(i,j,k,nnew) + grid(1)%dv(k,j,i))
+     &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))* pm_v(i,j)
+            enddo
+          enddo
+
+          do j=jstr,Jend
+            do i=istr,Iend
+              w(i,j,k,nnew) = (w(i,j,k,nnew) + grid(1)%dw(k+1,j,i))
+     &             * (pm(i,j)*pn(i,j))
             enddo
           enddo
         enddo
 
+      endif  !! AB2 or projection
+
+      ! velocities are now in m/s
+
+!     if (mynode==0) then
+!       print 96, dmax
+!       print 93, ru(31,10,1)*dtau*0.5*(pm(31,10)+pm(30,10))
+!    &              *pn_u(31,10)/(0.5*(Hz_fwd(31,10,1)+Hz_fwd(30,10,1)))
+!    &           ,grid(1)%du(1,10,31)
+!    &              *pn_u(31,10)/(0.5*(Hz_fwd(31,10,1)+Hz_fwd(30,10,1)))
+!         ub = u(31,10,1,nnew)
+!         ut = u(31,10,n,nnew)
+!         print 95,ub,ut,ut/ub
+!         ub = u(31,10,n,nnew)
+!         ut = w(1,10,n,nnew)
+!         print 94,ub,ut,ut/ub
+!         print 92, grid(1)%dw(n,10,1)/dtau,dtau
+!         write(20,91), grid(1)%dw(n,10,1)/dtau
+
+!     endif
+! 93  format( 'pre after ru,du: ',2e13.4)
+! 96  format( 'pre after dmax: ',e13.4)
+! 95  format( 'pre after ub,ut,ratio: ',3e13.4)
+! 94  format( 'pre after ut,wt,ratio: ',3e13.4)
+! 92  format( 'pre after rw,dt: ',2e15.6)
+! 91  format(2e15.6)
 
 
-
-      endif 
-
+      call u3dbc_tile(istr,iend,jstr,jend, wrk1)
+      call v3dbc_tile(istr,iend,jstr,jend, wrk1)
+      call w3dbc_tile(istr,iend,jstr,jend, wrk1)
 # endif
 
       end

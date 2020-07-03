@@ -16,14 +16,6 @@ CSDISTRIBUTE_RESHAPE rufrc(BLOCK_PATTERN) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE rvfrc(BLOCK_PATTERN) BLOCK_CLAUSE
       common /coup_rufrc/rufrc /coup_rvfrc/rvfrc
 
-# ifdef PRED_COUPLED_MODE
-      real rufrc_bak(GLOBAL_2D_ARRAY,2)
-CSDISTRIBUTE_RESHAPE rufrc_bak(BLOCK_PATTERN,2) BLOCK_CLAUSE
-      real rvfrc_bak(GLOBAL_2D_ARRAY,2)
-CSDISTRIBUTE_RESHAPE rvfrc_bak(BLOCK_PATTERN,2) BLOCK_CLAUSE
-      common /coup_rufrc_bak/rufrc_bak /coup_rvfrc_bak/rvfrc_bak
-# endif
-
 # ifdef VAR_RHO_2D
       real rhoA(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE rhoA(BLOCK_PATTERN) BLOCK_CLAUSE

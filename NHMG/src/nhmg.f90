@@ -156,9 +156,9 @@ contains
     integer(kind=ip), intent(in) :: nx,ny,nz
     integer(kind=ip), intent(in) :: hl,pdx,pdy
 
-    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in)   :: ua
-    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in)   :: va
-    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz+1),intent(inout):: wa
+    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in) :: ua
+    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in) :: va
+    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz+1),intent(in) :: wa
 
     integer(kind=ip) :: i,j,k
 
@@ -185,6 +185,19 @@ contains
     tscount = tscount + 1
 
     call correction_uvw()
+
+!   do i = 1,nx
+!      do j = 1,ny 
+!         do k = 1,nz
+!            grid(1)%b(k,j,i) = ( ua(i+1,j,k) + grid(1)%du(k,j,i+1) )  &
+!                             - ( ua(i  ,j,k) + grid(1)%du(k,j,i  ) )  &
+!                             + ( va(i,j+1,k) + grid(1)%dv(k,j+1,i) )  &
+!                             - ( va(i,j  ,k) + grid(1)%dv(k,j  ,i) )  &
+!                             + ( wa(i,j,k+1) + grid(1)%dw(k+1,j,i) )  &
+!                             - ( wa(i,j,k  ) + grid(1)%dw(k  ,j,i) )
+!         enddo
+!      enddo
+!   enddo
 
     if (netcdf_output) then
        call write_netcdf(grid(1)%b,vname='b',netcdf_file_name='so.nc',rank=myrank,iter=1)

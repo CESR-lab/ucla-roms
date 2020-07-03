@@ -9,6 +9,7 @@
 ! This code is extracted into a special module because it is used
 ! twice, in predictor and corrector substeps for w
 
+#ifdef UV_ADV
 
 #ifdef UPSTREAM_W
 # define curv wrk1
@@ -151,3 +152,11 @@
 #endif
             enddo
           enddo             !--> discard curv,grad, keep FE
+
+        do j=jstr,jend
+          do i=istr,iend
+            rw(i,j,k)=rw(i,j,k)-(Fx(i+1,j)-Fx(i,j))
+     &                         -(Fe(i,j+1)-Fe(i,j))
+          enddo
+        enddo
+#endif
