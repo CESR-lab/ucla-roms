@@ -1,0 +1,435 @@
+title:
+       Pacific Ocean, 0.22 degree resolution
+
+
+time_stepping: NTIMES   dt[sec] NDTFAST  NINFO
+            12800000    2700      84      1
+
+            12800000    2400      75      1
+
+            12800000    1350      42      1
+
+!            12800000    2160      68      1
+!            12800000    2250      71      1
+!            12800000    2700      84      1
+
+
+
+S-coord: THETA_S  THETA_B   hc (m)
+          7.5D0   0.5D0     350.D0
+
+grid:  filename
+          pac23_grid.nc
+
+initial: NRREC  filename
+           1 
+         pac23_ini.nc
+
+restart:  NRST, NRPFRST / filename
+           11520  -2   !<-- 360 days with dt=2700
+           rst.nc
+
+history: LDEFHIS NWRT NRPFHIS / filename
+            F  320  12 !<-- settings for 10-day output dt=2700
+             his.nc
+
+            F  640  12 !<-- settings for 10-day output dt=1350
+             his.nc
+
+
+
+
+
+
+!restart:  NRST, NRPFRST / filename
+           13149  -2   !<-- 365.25 days with dt=2400
+           rst.nc
+
+!history: LDEFHIS, NWRT, NRPFHIS / filename
+            F    360    12 !<-- settings for 10-day output dt=2400
+              his.nc
+
+averages: NTSAVG, NAVG, NRPFAVG / filename
+            1     360    18
+                 avg.nc
+
+primary_history_fields: zeta U,VBAR  U,V   wrtT(1:NT)
+                          T   T T    T T   T T
+
+auxiliary_history_fields: rho Omega W  Akv Akt Aks  HBL HBBL
+                           F   T    F   T   F   F    T   T
+
+primary_averages: zeta U,VBAR  U,V   wrtT(1:NT)
+                    T    T T   T T      T T
+
+auxiliary_averages: rho Omega W  Akv Akt Aks  HBL HBBL
+                     F    T   F   F   T   F    T   T
+
+boundary: filename
+     pac23_360bry.nc
+
+         pac23_bry.nc
+
+forcing: filename
+         ncep_heat360.nc
+         ncep_winds_spline.nc
+
+         ncep_heat.nc
+         ncep_winds_spline.nc
+      wind_y1958.nc
+      wind_y1959.nc
+      wind_y1960.nc
+      wind_y1961.nc
+      wind_y1962.nc
+      wind_y1963.nc
+      wind_y1964.nc
+      wind_y1965.nc
+      wind_y1966.nc
+      wind_y1967.nc
+      wind_y1968.nc
+      wind_y1969.nc
+      wind_y1970.nc
+      wind_y1971.nc
+      wind_y1972.nc
+      wind_y1973.nc
+      wind_y1974.nc
+      wind_y1975.nc
+      wind_y1976.nc
+      wind_y1977.nc
+      wind_y1978.nc
+      wind_y1979.nc
+      wind_y1980.nc
+      wind_y1981.nc
+      wind_y1982.nc
+      wind_y1983.nc
+      wind_y1984.nc
+      wind_y1985.nc
+      wind_y1986.nc
+      wind_y1987.nc
+      wind_y1988.nc
+      wind_y1989.nc
+      wind_y1990.nc
+      wind_y1991.nc
+      wind_y1992.nc
+      wind_y1993.nc
+      wind_y1994.nc
+      wind_y1995.nc
+      wind_y1996.nc
+      wind_y1997.nc
+      wind_y1998.nc
+      wind_y1999.nc
+      wind_y2000.nc
+      wind_y2001.nc
+      wind_y2002.nc
+      wind_y2003.nc
+      wind_y2004.nc
+      wind_y2005.nc
+      wind_y2006.nc
+      wind_y2007.nc
+      wind_y2008.nc
+      wind_y2009.nc
+      wind_y2010.nc
+      wind_y2011.nc
+      wind_y2012.nc
+         swrad_y1958.nc
+         swrad_y1959.nc
+         swrad_y1960.nc
+         swrad_y1961.nc
+         swrad_y1962.nc
+         swrad_y1963.nc
+         swrad_y1964.nc
+         swrad_y1965.nc
+         swrad_y1966.nc
+         swrad_y1967.nc
+         swrad_y1968.nc
+         swrad_y1969.nc
+         swrad_y1970.nc
+         swrad_y1971.nc
+         swrad_y1972.nc
+         swrad_y1973.nc
+         swrad_y1974.nc
+         swrad_y1975.nc
+         swrad_y1976.nc
+         swrad_y1977.nc
+         swrad_y1978.nc
+         swrad_y1979.nc
+         swrad_y1980.nc
+         swrad_y1981.nc
+         swrad_y1982.nc
+         swrad_y1983.nc
+         swrad_y1984.nc
+         swrad_y1985.nc
+         swrad_y1986.nc
+         swrad_y1987.nc
+         swrad_y1988.nc
+         swrad_y1989.nc
+         swrad_y1990.nc
+         swrad_y1991.nc
+         swrad_y1992.nc
+         swrad_y1993.nc
+         swrad_y1994.nc
+         swrad_y1995.nc
+         swrad_y1996.nc
+         swrad_y1997.nc
+         swrad_y1998.nc
+         swrad_y1999.nc
+         swrad_y2000.nc
+         swrad_y2001.nc
+         swrad_y2002.nc
+         swrad_y2003.nc
+         swrad_y2004.nc
+         swrad_y2005.nc
+         swrad_y2006.nc
+         swrad_y2007.nc
+         swrad_y2008.nc
+         swrad_y2009.nc
+         swrad_y2010.nc
+         swrad_y2011.nc
+         swrad_y2012.nc
+      lwrad_down_y1958.nc
+      lwrad_down_y1959.nc
+      lwrad_down_y1960.nc
+      lwrad_down_y1961.nc
+      lwrad_down_y1962.nc
+      lwrad_down_y1963.nc
+      lwrad_down_y1964.nc
+      lwrad_down_y1965.nc
+      lwrad_down_y1966.nc
+      lwrad_down_y1967.nc
+      lwrad_down_y1968.nc
+      lwrad_down_y1969.nc
+      lwrad_down_y1970.nc
+      lwrad_down_y1971.nc
+      lwrad_down_y1972.nc
+      lwrad_down_y1973.nc
+      lwrad_down_y1974.nc
+      lwrad_down_y1975.nc
+      lwrad_down_y1976.nc
+      lwrad_down_y1977.nc
+      lwrad_down_y1978.nc
+      lwrad_down_y1979.nc
+      lwrad_down_y1980.nc
+      lwrad_down_y1981.nc
+      lwrad_down_y1982.nc
+      lwrad_down_y1983.nc
+      lwrad_down_y1984.nc
+      lwrad_down_y1985.nc
+      lwrad_down_y1986.nc
+      lwrad_down_y1987.nc
+      lwrad_down_y1988.nc
+      lwrad_down_y1989.nc
+      lwrad_down_y1990.nc
+      lwrad_down_y1991.nc
+      lwrad_down_y1992.nc
+      lwrad_down_y1993.nc
+      lwrad_down_y1994.nc
+      lwrad_down_y1995.nc
+      lwrad_down_y1996.nc
+      lwrad_down_y1997.nc
+      lwrad_down_y1998.nc
+      lwrad_down_y1999.nc
+      lwrad_down_y2000.nc
+      lwrad_down_y2001.nc
+      lwrad_down_y2002.nc
+      lwrad_down_y2003.nc
+      lwrad_down_y2004.nc
+      lwrad_down_y2005.nc
+      lwrad_down_y2006.nc
+      lwrad_down_y2007.nc
+      lwrad_down_y2008.nc
+      lwrad_down_y2009.nc
+      lwrad_down_y2010.nc
+      lwrad_down_y2011.nc
+      lwrad_down_y2012.nc
+         Tair_y1958.nc
+         Tair_y1959.nc
+         Tair_y1960.nc
+         Tair_y1961.nc
+         Tair_y1962.nc
+         Tair_y1963.nc
+         Tair_y1964.nc
+         Tair_y1965.nc
+         Tair_y1966.nc
+         Tair_y1967.nc
+         Tair_y1968.nc
+         Tair_y1969.nc
+         Tair_y1970.nc
+         Tair_y1971.nc
+         Tair_y1972.nc
+         Tair_y1973.nc
+         Tair_y1974.nc
+         Tair_y1975.nc
+         Tair_y1976.nc
+         Tair_y1977.nc
+         Tair_y1978.nc
+         Tair_y1979.nc
+         Tair_y1980.nc
+         Tair_y1981.nc
+         Tair_y1982.nc
+         Tair_y1983.nc
+         Tair_y1984.nc
+         Tair_y1985.nc
+         Tair_y1986.nc
+         Tair_y1987.nc
+         Tair_y1988.nc
+         Tair_y1989.nc
+         Tair_y1990.nc
+         Tair_y1991.nc
+         Tair_y1992.nc
+         Tair_y1993.nc
+         Tair_y1994.nc
+         Tair_y1995.nc
+         Tair_y1996.nc
+         Tair_y1997.nc
+         Tair_y1998.nc
+         Tair_y1999.nc
+         Tair_y2000.nc
+         Tair_y2001.nc
+         Tair_y2002.nc
+         Tair_y2003.nc
+         Tair_y2004.nc
+         Tair_y2005.nc
+         Tair_y2006.nc
+         Tair_y2007.nc
+         Tair_y2008.nc
+         Tair_y2009.nc
+         Tair_y2010.nc
+         Tair_y2011.nc
+         Tair_y2012.nc
+      Qair_y1958.nc
+      Qair_y1959.nc
+      Qair_y1960.nc
+      Qair_y1961.nc
+      Qair_y1962.nc
+      Qair_y1963.nc
+      Qair_y1964.nc
+      Qair_y1965.nc
+      Qair_y1966.nc
+      Qair_y1967.nc
+      Qair_y1968.nc
+      Qair_y1969.nc
+      Qair_y1970.nc
+      Qair_y1971.nc
+      Qair_y1972.nc
+      Qair_y1973.nc
+      Qair_y1974.nc
+      Qair_y1975.nc
+      Qair_y1976.nc
+      Qair_y1977.nc
+      Qair_y1978.nc
+      Qair_y1979.nc
+      Qair_y1980.nc
+      Qair_y1981.nc
+      Qair_y1982.nc
+      Qair_y1983.nc
+      Qair_y1984.nc
+      Qair_y1985.nc
+      Qair_y1986.nc
+      Qair_y1987.nc
+      Qair_y1988.nc
+      Qair_y1989.nc
+      Qair_y1990.nc
+      Qair_y1991.nc
+      Qair_y1992.nc
+      Qair_y1993.nc
+      Qair_y1994.nc
+      Qair_y1995.nc
+      Qair_y1996.nc
+      Qair_y1997.nc
+      Qair_y1998.nc
+      Qair_y1999.nc
+      Qair_y2000.nc
+      Qair_y2001.nc
+      Qair_y2002.nc
+      Qair_y2003.nc
+      Qair_y2004.nc
+      Qair_y2005.nc
+      Qair_y2006.nc
+      Qair_y2007.nc
+      Qair_y2008.nc
+      Qair_y2009.nc
+      Qair_y2010.nc
+      Qair_y2011.nc
+      Qair_y2012.nc
+         rain_y1958.nc
+         rain_y1959.nc
+         rain_y1960.nc
+         rain_y1961.nc
+         rain_y1962.nc
+         rain_y1963.nc
+         rain_y1964.nc
+         rain_y1965.nc
+         rain_y1966.nc
+         rain_y1967.nc
+         rain_y1968.nc
+         rain_y1969.nc
+         rain_y1970.nc
+         rain_y1971.nc
+         rain_y1972.nc
+         rain_y1973.nc
+         rain_y1974.nc
+         rain_y1975.nc
+         rain_y1976.nc
+         rain_y1977.nc
+         rain_y1978.nc
+         rain_y1979.nc
+         rain_y1980.nc
+         rain_y1981.nc
+         rain_y1982.nc
+         rain_y1983.nc
+         rain_y1984.nc
+         rain_y1985.nc
+         rain_y1986.nc
+         rain_y1987.nc
+         rain_y1988.nc
+         rain_y1989.nc
+         rain_y1990.nc
+         rain_y1991.nc
+         rain_y1992.nc
+         rain_y1993.nc
+         rain_y1994.nc
+         rain_y1995.nc
+         rain_y1996.nc
+         rain_y1997.nc
+         rain_y1998.nc
+         rain_y1999.nc
+         rain_y2000.nc
+         rain_y2001.nc
+         rain_y2002.nc
+         rain_y2003.nc
+         rain_y2004.nc
+         rain_y2005.nc
+         rain_y2006.nc
+         rain_y2007.nc
+         rain_y2008.nc
+         rain_y2009.nc
+         rain_y2010.nc
+         rain_y2011.nc
+         rain_y2012.nc
+
+
+rho0:
+      1027.8
+
+lateral_visc: visc2 [m^2/s]
+                 0.
+
+tracer_diff2: tnu2(1:NT) [m^2/s] for all
+ 0. 0. 0. 0. 0. 0. 0. 0. 0.
+
+
+SSS_correction: a.k.a. "piston velocity" [cm/day] 
+          3.5 
+
+bottom_drag:  rdrg[m/s]   rdrg2  Zob[m]
+                    0.      0.    0.01
+
+gamma2:
+                 1.
+
+v_sponge:           V_SPONGE [m^2/sec]
+                   2000.
+
+ubind: OBC binding velocity scale [m/s]
+       0.1
+
