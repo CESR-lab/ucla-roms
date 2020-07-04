@@ -730,11 +730,17 @@ c<<     cff=2.*dtfast
         do i=istrU,iend
           DUnew=( (Dstp(i,j)+Dstp(i-1,j))*ubar(i,j,kstp)
      &        +cff*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
+c<<     &     +cff*iA_u(i,j)
 #ifdef SOLVE3D
      &                            *(rubar(i,j)+rufrc(i,j))
 #else
      &                            *rubar(i,j)
+# ifdef WIND_AT_RHO_POINTS
+     &                   +dtfast*(sustr(i-1,j)+sustr(i,j))
+# else
      &                                    +cff2*sustr(i,j)
+# endif
+! Daniel add
 # ifdef WEC 
      &                                    +cff2*brk2dx(i,j)
 #  ifdef WAVE_FRICTION
@@ -774,7 +780,12 @@ c<<     &     +cff*iA_v(i,j)
      &                            *(rvbar(i,j)+rvfrc(i,j))
 #else
      &                            *rvbar(i,j)
+# ifdef WIND_AT_RHO_POINTS
+     &                   +dtfast*(svstr(i,j-1)+svstr(i,j))
+# else
      &                                    +cff2*svstr(i,j)
+# endif
+! DevinD add
 # ifdef WEC
      &                                    +cff2*brk2de(i,j)
 #  ifdef WAVE_FRICTION

@@ -1,18 +1,23 @@
       module read_write
-      ! Contains functions and subroutine for interacting with netcdf
-      ! file input and output
-
-      ! call set_river_source_tile(istr,iend,jstr,jend, ierr)
+      ! =================================================
+      ! Contains functions and subroutine for interacting
+      ! with netcdf file input and output
+      ! =================================
   
-       use dimensions !! has dimensions, a list of forcing files, and rmask
-       use netcdf
-       implicit none
+      use dimensions !! has dimensions, a list of forcing files, and rmask
+      use netcdf
+      implicit none
 
-       private
+      private
 
+      public find_rec_new_mod
+
+      contains
 
 ! --------------------------------------------------------------------
-      subroutine find_rec_new(time,v_name,vt_name,ifile,irec) 
+      subroutine find_rec_new_mod(time,v_name,vt_name,ifile,irec)
+
+      use netcdf
 
 ! Find the first time record number "irec" and its forcing file
 ! "ifile" for variable "var", with accompanying time "var_time". 
@@ -35,18 +40,24 @@
 !         irec       record number in file
 
       implicit none
+
+
       ! input/output
       real(kind=8)    ,intent(in)   :: time
       character(len=*),intent(in)   :: v_name,vt_name
       integer         ,intent(inout):: ifile,irec
       ! local
-      real        :: vtime
+      real,dimension(1):: vtime
       integer     :: found_var,found_rec
-      integer     :: ierr,v_id,ncid
+      integer     :: ierr,v_id,ncid,vt_id
       integer     :: nfiles,nrecords
       integer     :: ifile_old,irec_old
+      integer     :: dimid ! DevinD added from ncio-nc_size()
+
+      integer,dimension(1) :: ir1,ic1
     
       logical :: first
+
     
       ! When called for the first time (ifile==0) for this variable, this 
       ! routine will return the last record with vtime<time. 
@@ -85,15 +96,21 @@
              endif
              found_var = 1
              irec = 1
-             nrecords= nc_size(frcfile(ifile),vt_name)
+
+             ! Find the size of a dimension in netcdf file
+             ierr=nf90_inq_dimid(ncid, vt_name, dimid) ! from ncio-nc_size
+             ierr=nf90_inquire_dimension(ncid, dimid, len=nrecords)
+!            if (mynode==0) write(*,*) 'nrecords=',nrecords ! debug
+
              do while (irec<=nrecords.and.found_rec==0)
 
-               call nc_read(frcfile(ifile),vt_name,vtime,[irec],[1])
-               vtime = vtime + 360
-!              if (mynode==0) then
-!                print *,'vtime: ',vtime
-!              endif
-               if (vtime>time) then
+               ierr = nf90_inq_varid(ncid, vt_name, vt_id) ! Get time ID (vt_id_
+               ! nf90_get_var needs an arry for last 2 terms hence syntax
+               ierr = nf90_get_var(ncid, vt_id, vtime, (/irec/), (/1/))
+
+               ! hard code conversion of input time in days to seconds
+               vtime = vtime * 86400
+               if (vtime(1)>time) then
                  found_rec = 1
                else
                  irec_old = irec
@@ -101,7 +118,7 @@
                  irec = irec+1
                endif
              enddo ! while not found and irec<nrecs
-           else
+           else ! Var not found in file
              if (mynode==0) then
                print *, 'Variable ',v_name,' NOT found in file:',frcfile(ifile)
              endif
@@ -113,17 +130,6 @@
            endif
 
          enddo !while ifile<=nfiles
-
-!        call mpi_barrier(ocean_grid_comm,ierr)
-         if (found_rec==1) then
-           if (mynode==0) then
-!            print *,'SUCCES: vtime,ifile,irec: ',vtime,ifile,irec
-           endif
-         else
-           if (mynode==0) then
-!            print *,'FAIL: vtime,ifile,irec: ',vtime,ifile,irec
-           endif
-         endif
 
          if (first) then
            ifile = ifile_old
@@ -142,10 +148,8 @@
            stop 'First available forcing record is past current time'
          endif
 
-         if (mynode==0) then
-           print *,'FNR: ',frcfile(ifile),irec
-         endif
+        end subroutine find_rec_new_mod
 
-        end subroutine find_rec_new
 
       end module read_write
+

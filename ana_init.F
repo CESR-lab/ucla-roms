@@ -18,10 +18,10 @@
 
       subroutine ana_init_tile (istr,iend,jstr,jend, AA)
 
-      !---- DevinD added for WEC module
-# ifdef WEC
-      use wec_frc
-# endif
+!      !---- DevinD added for WEC module
+!# ifdef WEC
+!      use wec_frc
+!# endif
 
 
       implicit none
@@ -1088,10 +1088,10 @@ c*     &                                  +(z_r(i,j,k)-Z1)/STRAT
 #  endif
 
 !----- DevinD add WEC module
-# elif defined WEC
-
-      call ana_init_wec_frc_tile(istr,iend,jstr,jend)
-
+!# elif defined WEC
+!
+!      call ana_init_wec_frc_tile(istr,iend,jstr,jend)
+!
 !----- DevinD end WEC module
 
 # else

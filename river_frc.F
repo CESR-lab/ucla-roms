@@ -12,7 +12,10 @@
 
       ! call set_river_source_tile(istr,iend,jstr,jend, ierr)
   
-       use dimensions !! has dimensions, a list of forcing files, and rmask
+       use dimensions !! has dimensions, and rmask
+       use read_write !!  a list of forcing files
+
+
        implicit none
 
        private

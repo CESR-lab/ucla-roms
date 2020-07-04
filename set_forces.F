@@ -35,9 +35,7 @@
       ! DevinD - Jeroen should probably put in the river flag (RIVER_SOURCE)
       ! # ifdef RIVER_SOURCE
       use river_frc
-!     use dimensions
 
-      ! DevinD added
 # ifdef WEC
       use wec_frc
 # endif
@@ -154,19 +152,9 @@ c***              no code here
 #   endif
 #  endif
 
-! DevinD - start (note there is an alaytical bool in WEC module already.
 # ifdef WEC
-#  ifdef ANA_WEC_FRC
-      ! Calculate analytical wave attributes (whrm, wfrq, wdir, etc)
-      ! and calls wec_forces to calculate stokes forces
-      call ana_wec_frc_tile(istr,iend,jstr,jend)
-#  else
-      ! This sets stokes drift variables for both analytical and non-analyitcal.
-      ! and calls wec_forces to calculate stokes forces
       call set_wec_frc_tile(istr,iend,jstr,jend,ierr)
-#  endif
 # endif
-! DevinD - end
 
 #endif  /* SOLVE3D */
 

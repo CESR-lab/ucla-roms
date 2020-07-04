@@ -12,12 +12,6 @@
 ! to heat flux dQdSST is in [Watts/(deg C * m^2)]; surface fresh
 ! water flux is in [mm/day].
 
-#ifdef WEC
-# ifndef ANA_WEC_FRC
-      use wec_frc, only: read_wec_frc
-# endif
-#endif
-
       implicit none
       integer ierr
 #include "param.h"
@@ -90,12 +84,6 @@ c--#define VERBOSE
 # endif
 # ifndef ANA_BSEDIM
       call get_bsedim(ierr)
-# endif
-#endif
-
-#ifdef WEC
-# ifndef ANA_WEC_FRC
-      call read_wec_frc(ierr)
 # endif
 #endif
 

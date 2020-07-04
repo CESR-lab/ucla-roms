@@ -120,11 +120,19 @@
 
           DC(i,N)=cff*( u(i,j,N,nnew) +DC(i,0)*ru(i,j,N)
 !Daniel add
+#  ifdef WIND_AT_RHO_POINTS
+
+     &                    +dt*( 0.5 * (sustr(i,j)+sustr(i-1,j))
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2dx(i,j) )
+#    endif 
+#  else
      &                                       +dt*(sustr(i,j)
 #    if defined WEC && defined SURFACE_BREAK
      &                            + brk2dx(i,j)
 #    endif
      &                                                   )
+#  endif
      &                                                  )
         enddo
         do k=N-1,2,-1      !--> forward elimination
@@ -161,7 +169,12 @@
 
 #  ifdef CORR_COUPLED_MODE
           rufrc(i,j)=ru(i,j,1) +dm_u(i,j)*dn_u(i,j)*(
+#   ifdef WIND_AT_RHO_POINTS
+     &                   0.5*(sustr(i-1,j)+sustr(i,j))
+#   else
      &                                      sustr(i,j)
+#   endif
+! Daniel add
 #   ifdef WEC
      &                                     + brk2dx(i,j)
 #   endif     
@@ -196,11 +209,20 @@
             CF(i,N-1)=cff*( FC(i,N-1)+max(WC(i,N-1),0.) )
 
             DC(i,N)=cff*( v(i,j,N,nnew) +DC(i,0)*rv(i,j,N)
+!Daniel add
+#  ifdef WIND_AT_RHO_POINTS
+
+     &                    +dt*( 0.5 * (svstr(i,j-1)+svstr(i,j))
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + brk2de(i,j) )
+#    endif 
+#  else
      &                                       +dt*(svstr(i,j)
-#   if defined WEC && defined SURFACE_BREAK
+#    if defined WEC && defined SURFACE_BREAK
      &                            + brk2de(i,j)
-#   endif
+#    endif
      &                                                   )
+#  endif
      &                                                    )
           enddo
           do k=N-1,2,-1      !--> forward elimination
@@ -235,6 +257,12 @@
             v(i,j,1,nnew)=DC(i,1) * 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
 #  ifdef CORR_COUPLED_MODE
             rvfrc(i,j)=rv(i,j,1) +dm_v(i,j)*dn_v(i,j)*(
+#   ifdef WIND_AT_RHO_POINTS
+     &                     0.5*(svstr(i,j-1)+svstr(i,j))
+#   else
+     &                                        svstr(i,j)
+#   endif
+! Daniel add
 # ifdef WEC
      &                                      + brk2de(i,j)
 # endif
@@ -259,7 +287,12 @@
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
           u(i,j,N,nnew)=u(i,j,N,nnew) +DC(i,0)*ru(i,j,N)
+#  ifdef WIND_AT_RHO_POINTS
+     &                  +0.5*dt*(sustr(i-1,j)+sustr(i,j))
+#  else
      &                                     +dt*sustr(i,j)
+#  endif
+!Daniel add
 #  ifdef WEC
      &                                    + dt * brk2dx(i,j)
 #  endif
@@ -269,7 +302,12 @@
 #  endif
 #  ifdef CORR_COUPLED_MODE
           rufrc(i,j)=ru(i,j,1) +ru(i,j,N) +dn_u(i,j)*dm_u(i,j)*(
+#   ifdef WIND_AT_RHO_POINTS
+     &                              0.5*(sustr(i-1,j)+sustr(i,j))
+#   else
      &                                                 sustr(i,j)
+#   endif
+! Daniel add
 #   ifdef WEC
      &                                      + brk2dx(i,j)
 #   endif
@@ -289,7 +327,12 @@
             DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
 
             v(i,j,N,nnew)=v(i,j,N,nnew) +DC(i,0)*rv(i,j,N)
+#  ifdef WIND_AT_RHO_POINTS
+     &                    +0.5*dt*(svstr(i,j-1)+svstr(i,j))
+#  else
      &                                       +dt*svstr(i,j)
+#  endif
+! Daniel add
 #  ifdef WEC
      &                                      +dt * brk2de(i,j)
 #  endif
@@ -299,7 +342,12 @@
 #  endif
 #  ifdef CORR_COUPLED_MODE
             rvfrc(i,j)=rv(i,j,1) +rv(i,j,N) +dm_v(i,j)*dn_v(i,j)*(
+#   ifdef WIND_AT_RHO_POINTS
+     &                                0.5*(svstr(i,j-1)+svstr(i,j))
+#   else
      &                                                   svstr(i,j)
+#   endif
+!Daniel add
 # ifdef WEC
      &                                               +brk2de(i,j)
 # endif
