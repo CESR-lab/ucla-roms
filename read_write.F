@@ -8,9 +8,20 @@
       use netcdf
       implicit none
 
+#include "cppdefs.h"
+
+      ! scalars.h - needed for may_day_flag in error handling
+#include "scalars.h"
+
       private
 
+      ! Needed in order to use the ncdf_write & ncdf_read subroutines
+      integer, external :: ncdf_write, ncdf_read
+
       public find_rec_new_mod
+      public nc_define_var
+      public nc_write_var
+      public nc_read_var
 
       contains
 
@@ -149,6 +160,226 @@
          endif
 
         end subroutine find_rec_new_mod
+
+
+! ----------------------------------------------------------------------
+
+      subroutine nc_define_var(ncid,var_name,var_long_name,var_units,
+     &                              var_grd,ierr)
+
+      ! =======================================
+      ! Define variables for output netcdf file
+      ! =======================================
+
+      ! Flow of function calls taken from old def_his.F
+
+      implicit none
+
+      ! Input variables
+      ! ---------------
+
+      integer, intent(in) :: ncid ! netcdf file ID
+      ! Variable attributes - similar to vname() from old roms ncvars.h
+      character(len=*), intent(in) :: var_name, var_long_name, var_units
+      integer, dimension(:), intent(in)  :: var_grd ! Could be 2d or 3d grid
+      integer ierr ! Track netcdf errors
+
+      ! Local variables
+      ! ---------------
+
+      integer var_id ! variable ID
+      character(len=64) text
+
+      ! Taken from def_his.F
+#ifdef MASK_LAND_DATA
+# ifdef HIS_DOUBLE
+      real*8, parameter :: spv_set=1.D+33
+# else
+      real*4, parameter :: spv_set=1.E+33
+# endif
+#endif
+
+      ! Define variables
+      ! ================
+
+      ! Get variable ID
+      ierr = nf90_inq_varid (ncid,var_name,var_id)
+!      if(ierr .ne. nf90_noerr) goto 2 ! Don't know why this creates an error???
+
+      ! Set variable short name
+        ! Note: nf90 functionality no longer requires number of dimensions
+        ! assume it can work it out from size of array var_grd.
+      ierr=nf90_def_var (ncid, var_name, nf90_float,
+     &                         var_grd, var_id)
+      if(ierr .ne. nf90_noerr) goto 2
+      ! Old code:
+      !      ierr=nf_def_var (ncid, var_name(1:lvar), nf_float,
+      !     &                       var_dims, var_grd, his_var)
+
+      ! add if variable averaged or not to variable long name
+#ifdef AVRH
+      text='averaged '/ /var_long_name
+#else
+      text=var_long_name
+#endif
+
+      ! Set variable long name
+      ierr=nf90_put_att (ncid, var_id, 'long_name', text)
+      if(ierr .ne. nf90_noerr) goto 2
+
+      ! Set variable units
+      ierr=nf90_put_att (ncid, var_id, 'units', var_units)
+      if(ierr .ne. nf90_noerr) goto 2
+
+      ! Set variable masking fill value
+#ifdef MASK_LAND_DATA
+      ierr=nf90_put_att (ncid, var_id, '_FillValue', spv_set)
+      if(ierr .ne. nf90_noerr) goto 2
+#endif
+
+      ! Error handling
+      ! --------------
+
+  2   if (ierr .ne. nf90_noerr) then
+        write(*,1) var_name MYID
+        goto 99                                         !--> ERROR
+      endif
+
+      ! text format for '1' in write(*,1) above
+  1   format(/1x, '### ERROR: nc_define_var :: Cannot def. variable ''',
+     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+      goto 100 ! Skip 99
+  99  if (may_day_flag == 0) may_day_flag=3
+ 100  continue
+
+
+      end subroutine nc_define_var
+
+
+! ----------------------------------------------------------------------
+
+      subroutine nc_write_var(ncid,var_array,nmax,var_name,
+     &                             var_type,record,ierr)
+
+      ! =====================================
+      ! Write variables to output netcdf file
+      ! =====================================
+
+      ! Taken from old wrt_his.F
+
+      implicit none
+
+      ! Input variables
+      ! ---------------
+
+      integer, intent(in) :: ncid ! netcdf file ID
+      ! nmax - number of vertical indices (=1 if 2D variable)
+      ! this process needed so ncdf_write can handle both
+      ! 2D or 3D variable arrays
+      integer, intent(in) :: nmax
+      ! param.h & cppdefs.h needed for var_array for GLOBAL_2D_ARRAY
+#include "param.h"
+      real, intent(in)    :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
+      integer, intent(in) :: record ! Timestep to record
+      ! Similar to vname(1,inx) from old ncvars.h
+      character(len=*), intent(in) :: var_name ! Variable short name
+      integer, intent(in) :: var_type ! variable type: u-, v- or rho-point
+      integer ierr ! Track netcdf errors
+
+      ! Local variables
+      ! ---------------
+      integer var_id ! variable ID
+
+      ! Subroutine
+      ! ==========
+
+      ! Get variable ID
+      ierr = nf90_inq_varid (ncid,var_name,var_id)
+      if(ierr .ne. nf90_noerr) goto 2
+
+      ! Write variable
+      ierr = ncdf_write(ncid, var_id, record, var_type, var_array, nmax)
+
+      ! Error handling
+      ! --------------
+
+  2   if (ierr .ne. nf90_noerr) then
+        write(*,1) var_name, record MYID
+        goto 99                                         !--> ERROR
+      endif
+
+      ! text format for '1' in write(*,1) above
+  1   format(/1x, '### ERROR: nc_write_var :: Cannot write variable ''',
+     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+      goto 100 ! Skip 99
+  99  if (may_day_flag == 0) may_day_flag=3
+ 100  continue
+
+
+      end subroutine nc_write_var
+
+
+! ----------------------------------------------------------------------
+
+      subroutine nc_read_var(ncid,var_array,nmax,var_name,
+     &                             var_type,record,ierr)
+
+      ! =====================================
+      ! Read variables from input netcdf file
+      ! =====================================
+
+      ! Similar to old get_forces.F
+
+      implicit none
+
+      ! Input variables
+      ! ---------------
+
+      integer, intent(in) :: ncid ! netcdf file ID
+      ! nmax - number of vertical indices (=1 if 2D variable)
+      ! this process needed so ncdf_read can handle both
+      ! 2D or 3D variable arrays
+      integer, intent(in) :: nmax
+      ! param.h & cppdefs.h needed for var_array for GLOBAL_2D_ARRAY
+#include "param.h"
+      real, intent(in) :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
+      integer, intent(in) :: record ! Timestep to record
+      ! Similar to vname(1,inx) from old ncvars.h
+      character(len=*), intent(in) :: var_name ! Variable short name
+      integer, intent(in)  :: var_type ! variable type: u-, v- or rho-point
+      integer ierr ! Track netcdf errors
+
+      ! Local variables
+      ! ---------------
+      integer var_id ! variable ID
+
+      ! Subroutine
+      ! ==========
+
+      ! Get variable ID
+      ierr = nf90_inq_varid (ncid,var_name,var_id)
+      if(ierr .ne. nf90_noerr) goto 2
+
+      ! Read variable
+      ierr = ncdf_read(ncid, var_id, record, var_type, var_array, nmax)
+
+      ! Error handling
+      ! --------------
+
+  2   if (ierr .ne. nf90_noerr) then
+        write(*,1) var_name, record MYID
+        goto 99                                         !--> ERROR
+      endif
+
+      ! text format for '1' in write(*,1) above
+  1   format(/1x, '### ERROR: nc_read_var :: Cannot write variable ''',
+     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+      goto 100 ! Skip 99
+  99  if (may_day_flag == 0) may_day_flag=3
+ 100  continue
+
+
+      end subroutine nc_read_var
 
 
       end module read_write

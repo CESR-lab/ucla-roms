@@ -1,15 +1,12 @@
 #include "cppdefs.h"
 
-       subroutine init_scalars (ierr)
+      subroutine init_scalars (ierr)
 
 ! Set initial values for globally accessable (stored in common blocks)
 ! scalar variables.  Typically these are associated with time indices,
 ! global summation counters, model utility switches, i/o contlol, etc.
 ! Note that NONE of the model physical parameters is initialized here.
 
-#ifdef WEC
-      use wec_frc
-#endif
 
       implicit none
       integer ierr, i
@@ -275,9 +272,6 @@ CR      write(*,'(1x,A,I3)') 'indxHbbl =',indxHbbl
       vname(3,indxTIsrf)='Kelvin'
 #endif
 
-#ifdef WEC
-      call init_scalars_wec
-#endif
 
       ierr=0
       call read_inp (ierr)

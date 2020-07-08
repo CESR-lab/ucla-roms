@@ -814,12 +814,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 
 
 #ifdef WEC
-! MRL wave-current interaction variables history fields
-!# ifndef AVERAGES - DevinD added ifndef AVERAGES though not in old code
-!                  - don't know why it's not here in old code?
+      ! MRL wave-current interaction variables history fields
         elseif (keyword(1:kwlen).eq.'wci_history_fields') then
           call read_inp_wec(keyword, ierr, kwlen)
-!# endif
 # ifdef AVERAGES
         elseif (keyword(1:kwlen).eq.'wci_average_fields') then
           call read_inp_avg_wec(keyword, ierr, kwlen)

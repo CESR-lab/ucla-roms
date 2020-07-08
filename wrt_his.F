@@ -302,56 +302,7 @@ CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
 # endif
 #endif
 
-! DevinD add - writing with ncio module
-!#ifdef WEC
-!      ! This should be in if "first-time" create, else nc_open
-!      if (time <= 0) then
-!!        write(*,*) 'mynode: ', mynode
-!        write(mynode_text,*) mynode
-!!        write(mynode_nc_file,'(a,i4.4,a)') "WEC_results.",mynode,".nc"
-!!        write(mynode_text,'("TEST",I,".TXT")') mynode+10
-!!        write(*,*) trim(mynode_text)
-!!        mynode_nc_file = "WEC_results."//mynode_text//".nc"
-!        mynode_nc_file = "WEC_results."//trim(adjustl(mynode_text))//".nc"
-!!        write(*,*) mynode_nc_file
-!!        mynode_nc_file = "WEC_results."
-!!        write(*,*) 'wrt_his:  mynode_nc_file: ', mynode_nc_file
-!        call nc_create(mynode_nc_file)
-!!        call nc_write_dim(mynode_nc_file,'xi_u',x=xi_u,units="m/s")
-!!        call nc_write_dim(mynode_nc_file,'eta_v',x=eta_v,units="m/s")
-!!        write(*,*) 'eta_rho: ', eta_rho
-!!        call nc_write_dim(mynode_nc_file,'eta_rho',x=eta_rho,
-!!     &                                                     units="m/s")
-!!        call nc_write_dim(mynode_nc_file,'time',x=nf_unlimited,
-!!     &                                                 units="m/s")
-!        call nc_write_dim(mynode_nc_file,"xi_u",x=1.0,dx=1.d0,nx=xi_u,units="m")
-!        call nc_write_dim(mynode_nc_file,"eta_rho",x=1.0,dx=1.d0,nx=eta_rho,units="m")
-!        call nc_write_dim(mynode_nc_file,"time",x=1.0,dx=1.d0,
-!     &                                 nx=nf_unlimited,units="seconds")
-!      end if
-!!      call nc_write(mynode_nc_file,'ust2d',ust2d,units="m/s",dim1="time",
-!!     &                 dim2="eta_rho",dim3="xi_u")
-!!      if (mynode == 4) then
-!!        write(*,*) 'shape(ust2d): ', shape(ust2d)
-!!        write(*,*) 'size(ust2d): ', size(ust2d)
-!!        call nc_write(mynode_nc_file,'ust2d',ust2d,units="m/s",dim1="time",
-!!     &                  dim2="eta_rho",dim3="xi_u",
-!!     &                  start=[1,1],count=[175,4])
-!!        call nc_write(mynode_nc_file,"ust2d",ust2d(1:175,1:4),dim1="xi_u",
-!!     &                  dim2="eta_rho")
-!
-!!! This works!
-!!       call nc_write(mynode_nc_file,"ust2d",ust2d(1:175,1:4),
-!!    &                  dims=["xi_u","eta_rho"])
-!
-!        call nc_write(mynode_nc_file,"ust2d",ust2d(1:175,1:4),
-!     &                  dims=["xi_u","eta_rho","time"],
-!     &                  start=[1,1,record],count=[175,4,1])
-!!        write(*,*) 'record', record
-!!      end if
-!#endif
-
-! DevinD add
+      ! Wave Effect on Current (WEC) variables
 #ifdef WEC
       call wrt_his_wec(record, ierr, may_day_flag)
 #endif

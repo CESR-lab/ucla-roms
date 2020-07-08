@@ -26,9 +26,8 @@
 
 c--#define nf_def_var my_nf_def_var
 
-! DevinD - would have liked to utilize use wec, only: ncvar variables
 #ifdef WEC
-      use wec_frc, only: def_his_def_var_wec, def_his_nf_inq_varid
+      use wec_frc, only: def_his_def_var_wec
 #endif
 
       implicit none
@@ -585,6 +584,7 @@ c--#define nf_def_var my_nf_def_var
 #endif /* SOLVE3D */
 
 
+      ! Define WEC related variable attributes
 #ifdef WEC
         call def_his_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
 #ifdef SOLVE3D
@@ -833,10 +833,6 @@ c--#define nf_def_var my_nf_def_var
 ! Daniel add
 #endif /* SOLVE3D */
 
-
-#ifdef WEC
-        call def_his_nf_inq_varid(ierr, lfnm)
-#endif   /* WEC */
 
 
 ! ---------------------
