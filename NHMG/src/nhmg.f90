@@ -19,6 +19,7 @@ module nhmg
 
     integer(kind=ip) :: tscount = 1
     integer(kind=ip),public,parameter :: halo = 2
+    integer(kind=ip),public :: iprec1 = 1,iprec2 = 2
 
     public nhmg_matrices
     public nhmg_init

@@ -98,7 +98,7 @@ c-->     &                                           , dft,dfx,dfy
      &                                      -max(cy,0.)*grad(istr,j  )
      &                                      -min(cy,0.)*grad(istr,j+1)
      &                                                              )
-#   endif /* LEGACY_ORLANSKI */
+#   endif /* LEGACY_ORLANSKI or not*/
 
 
 #   if defined T_FRC_BRY || defined TNUDGING

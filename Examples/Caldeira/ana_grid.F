@@ -41,7 +41,8 @@
 
       real, parameter :: depth = 1300.
       real, parameter :: f0 = 0.5e-4, beta = 0.
-      real, parameter :: Size_XI =2.e3, Size_ETA= 2.0e3
+!     real, parameter :: f0 = 0.0e-4, beta = 0.
+      real, parameter :: Size_XI =4.e3, Size_ETA= 4.0e3
 
       real x0,y0,dx,dy,cff
 

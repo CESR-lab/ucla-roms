@@ -26,7 +26,7 @@
 # endif
      &                                                              )
 #ifdef NHMG
-      use nhmg, only : nhmg_solve,halo
+      use nhmg
       use mg_grids
       use mg_tictoc, only : tic, toc
 #endif
@@ -46,7 +46,7 @@
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: rw
       real  Flxw,Uflxw,Vflxw
       real  ub,ut
-!     real  div,dmax
+      real  div,dmax
 !     integer :: ierr !,imx,jmx,kmx
 #endif
 
@@ -78,16 +78,13 @@
 # undef FE
 # undef FX
 
-
       do j=jstr,jend
 
 # include "compute_vert_rhs_w_terms.h"
-!  what is the dimension of w at this point?
-!  Since rw is m4/s2, this would make w in dz*w, just like u and v
         do i=istr,iend
           DC(i,0)=dt*pm(i,j)*pn(i,j)
         enddo
-        do k=1,N
+        do k=1,N           !! w is dz*w after this
           do i=istr,iend
             w(i,j,k,nnew)=w(i,j,k,nnew) +DC(i,0)*rw(i,j,k)
           enddo
@@ -144,19 +141,58 @@
         endif
 
       enddo  !<-- j
-      !! Looks like we have u*dz, v*dz, w*dz at the moment
+      !! velocities are in the form:  u*dz, v*dz, w*dz
 
 # if defined NHMG
+
+#  ifndef EW_PERIODIC
+      if (WESTERN_EDGE) then
+        do k=1,N
+          do j=jstr,jend
+            u(istr,j,k,nnew) = u(istr,j,k,nnew)*
+     &         0.5*(Hz(istr-1,j,k)+Hz(istr,j,k))
+          enddo
+        enddo
+      endif
+      if (EASTERN_EDGE) then
+        do k=1,N
+          do j=jstr,jend
+            u(iend+1,j,k,nnew) = u(iend+1,j,k,nnew)*
+     &         0.5*(Hz(iend+1,j,k)+Hz(iend,j,k))
+          enddo
+        enddo
+      endif
+#  endif
+#  ifndef NS_PERIODIC
+      if (SOUTHERN_EDGE) then
+        do k=1,N
+          do i=istr,iend
+            v(i,jstr,k,nnew) = v(i,jstr,k,nnew)*
+     &         0.5*(Hz(i,jstr-1,k)+Hz(i,jstr,k))
+          enddo
+        enddo
+      endif
+      if (NORTHERN_EDGE) then
+        do k=1,N
+          do i=istr,iend
+            v(i,jend+1,k,nnew) = v(i,jend+1,k,nnew)*
+     &         0.5*(Hz(i,jend+1,k)+Hz(i,jend,k))
+          enddo
+        enddo
+      endif
+#  endif
+
+
       ! Translate to fluxes, different than in pre_step, we have dz*u
       ! instead of u
 
       do k=1,N
         do j=jstr,jend
-          do i=istr,iend
+          do i=istr,iend+1
             u(i,j,k,nnew) = u(i,j,k,nnew)*dn_u(i,j)
           enddo
         enddo
-        do j=jstr,jend
+        do j=jstr,jend+1
           do i=istr,iend
             v(i,j,k,nnew) = v(i,j,k,nnew)*dm_v(i,j)
           enddo
@@ -222,20 +258,9 @@
         enddo
       endif
 
-!     if (mynode==0) then
-!       print *,'----------------------'
-!       ub = u(31,10,1,nnew)*pn_u(31,10)/(0.5*(Hz(31,10,1)+Hz(30,10,1)))
-!       ut = u(31,10,n,nnew)*pn_u(31,10)/(0.5*(Hz(31,10,n)+Hz(30,10,n)))
-!       print 99,ub,ut,ut/ub
-!       ub = u(31,10,n,nnew)*pn_u(31,10)/(0.5*(Hz(31,10,n)+Hz(30,10,n)))
-!       ut = w(1,10,n,nnew)*pn(10,1)*pm(10,1)
-!       print 98,ub,ut,ut/ub
-!     endif
-! 99  format( 'uv1 befor ub,ut,ratio: ',3e13.4)
-! 98  format( 'uv1 befor ut,wt,ratio: ',3e13.4)
-
       call nhmg_solve(Lm,Mm,N,halo,padd_X,padd_E,
      &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
+
 
       ! At this point u,v,w are fluxes with the dimension of m^3/s
       do k=1,N
@@ -278,32 +303,15 @@
         endif
       enddo
 
+      iprec1 = 1+mod(iprec1,2)
+      iprec2 = 1+mod(iprec2,2)
+
 # endif
-      !! velocities are now in m2/s (dz*u)
 
-!     if (mynode==0) then
-!       print 93, ru(31,10,1)*dt*0.5*(pm(31,10)+pm(30,10))
-!    &              *pn_u(31,10)/(0.5*(Hz(31,10,1)+Hz(30,10,1)))
-!    &           ,grid(1)%du(1,10,31)
-!    &              *pn_u(31,10)/(0.5*(Hz(31,10,1)+Hz(30,10,1)))
-!       ub = u(31,10,1,nnew)/(0.5*(Hz(31,10,1)+Hz(30,10,1)))
-!       ut = u(31,10,n,nnew)/(0.5*(Hz(31,10,n)+Hz(30,10,n)))
-!       print 97, ub,ut,ut/ub
-!       ub = u(31,10,n,nnew)/(0.5*(Hz(31,10,n)+Hz(30,10,n)))
-!       ut = w(1,10,n,nnew)/(0.5*Hz(1,10,n))
-!       print 96,ub,ut,ut/ub
-!       print 92, grid(1)%dw(n,10,1)/dt,dt
-!       write(20,91), grid(1)%dw(n,10,1)/dt
-
-!     endif
-! 93  format( 'uv1 after ru,du: ',2e13.4)
-! 97  format( 'uv1 after ub,ut,ratio: ',3e13.4)
-! 96  format( 'uv1 after ut,wt,ratio: ',3e13.4)
-! 92  format( 'uv1 after rw, dt: ',2e15.6)
-! 91  format(2e15.6)
 
 # undef r_D
 # if defined ADV_ISONEUTRAL && defined EXCHANGE
+       !!!! not clear what this does !!!
       call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
 # endif
       end

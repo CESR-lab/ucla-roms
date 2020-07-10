@@ -26,9 +26,6 @@
 #ifdef SOLVE3D
      &                           , iif, nstp, nnew, nrhs
 #endif
-#ifdef NHMG
-     &                           , iprec1, iprec2
-#endif
 
      &                           , priv_count(16)
       logical synchro_flag, diag_sync
@@ -36,9 +33,6 @@
      &   proc, time, tdays, numthreads, iic,  kstp, knew
 #ifdef SOLVE3D
      &                           , iif, nstp, nnew, nrhs
-#endif
-#ifdef NHMG
-     &                           , iprec1, iprec2
 #endif
      &       , priv_count, synchro_flag, diag_sync
 C$OMP THREADPRIVATE(/priv_scalars/)

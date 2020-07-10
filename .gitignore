@@ -21,4 +21,4 @@ srcscheck
 Examples/*/Compile
 Examples/*/*.nc
 Examples/*/fort*
-Work/Compile
+Work/
