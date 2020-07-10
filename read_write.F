@@ -15,8 +15,6 @@
 
       private
 
-      ! Needed in order to use the ncdf_write & ncdf_read subroutines
-      integer, external :: ncdf_write, ncdf_read
 
       public find_rec_new_mod
       public nc_define_var
@@ -298,7 +296,7 @@
       if(ierr .ne. nf90_noerr) goto 2
 
       ! Write variable
-      ierr = ncdf_write(ncid, var_id, record, var_type, var_array, nmax)
+      ierr = ncdf_write_mod(ncid, var_id, record, var_type, var_array, nmax)
 
       ! Error handling
       ! --------------
@@ -361,7 +359,8 @@
       if(ierr .ne. nf90_noerr) goto 2
 
       ! Read variable
-      ierr = ncdf_read(ncid, var_id, record, var_type, var_array, nmax)
+      ierr = ncdf_read_mod(ncid, var_id, record,
+     &                           var_type, var_array, nmax)
 
       ! Error handling
       ! --------------
@@ -380,6 +379,503 @@
 
 
       end subroutine nc_read_var
+
+
+! ----------------------------------------------------------------------
+
+      function ncdf_write_mod(ncid, varid, record, horiz_type, A, nmax)
+
+      ! ============================
+      ! Write variable to input file (low-level)
+      ! ============================
+
+      ! Routine is tailored to account for MPI tile size differences
+      ! and boundary nodes.
+
+      ! Routine is an exact copy of old code's ncdf_write function,
+      ! which came from ncdf_read_write.F. However, netcdf calls
+      ! changed from e.g. nf_def_var to nf90_def_var.
+
+      ! NOTE: ncdf_write was combined with ncdf_read in ncdf_read_write
+      ! to ensure consistency, thus any changes here should probably be
+      ! made to read equivalent in this module!
+
+      ! ---------------------------------------------
+
+      ! Write a floating point array into an output netCDF file.
+
+      ! Arguments:
+      !            A       real array of standard horizontal dimensions
+      !                                  which is to be read or written.
+      !            ncid    netCDF ID of in the file.
+      !            varid   variable ID of that variable in netCDF file.
+      !            record  record number.
+      !            type    type of the grid (RHO-, U, V, W, PSI etc.)
+
+      implicit none
+
+
+      ! Output
+      ! ------
+      integer ncdf_write_mod
+
+      ! Inputs
+      ! ------
+      integer ncid, varid, record, horiz_type, nmax
+#include "param.h"
+      ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
+      real A(GLOBAL_2D_ARRAY,nmax)
+      ! commented: CSDISTRIBUTE_RESHAPE  A...
+
+      ! Local
+      ! -----
+
+      logical mask_land_data
+      integer vid, i,j,k, shft, ierr
+      integer datatype, ndims, natts, dimid(8)
+      character(len=16) vname
+#include "buffer.h"
+#ifdef MASK_LAND_DATA
+# include "grid.h"
+      real*8, parameter :: spv_set=1.D+33
+#endif
+#include "compute_starts_counts.h"
+
+      if (varid > 0) then          ! Normally netCDF IDs are positive.
+        vid=varid                  ! Negative "varid" is used here as
+        mask_land_data=.true.      ! flag to signal that land masking
+      else                         ! does not need to be applied for
+        vid=-varid                 ! this variable (typically this is
+        mask_land_data=.false.     ! reserved for grid variables and
+      endif                        ! topography).
+
+      ! Write array from the disk.
+      ! ===== ===== ==== === =====
+
+      ! Note that expression for "shft" is exactly the same in all five
+      ! cases below, while application of land mask is different for the
+      ! variables of different grid staggering; also note effectively .or.
+      ! rather than .and. logic in setting velocity values to infinity:
+      ! velocity components at the boundary (normal to it) are set to 0,
+      ! while the ones fully inside (between two land points) to spv.
+
+#ifdef MASK_LAND_DATA
+      if (mask_land_data) then
+        if (horiz_type == 0) then
+          do k=1,nmax
+            do j=jmin,jmax
+              shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+              do i=imin,imax
+                if (rmask(i,j) > 0.5) then
+
+                  buff(i+shft)=A(i,j,k)
+
+                else
+
+                  buff(i+shft)=spv_set
+
+                endif
+              enddo
+            enddo
+          enddo
+        elseif (horiz_type == 1) then
+          do k=1,nmax
+            do j=jmin,jmax
+              shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+              do i=imin,imax
+                if (rmask(i,j)+rmask(i-1,j) > 0.5) then
+
+                  buff(i+shft)=A(i,j,k)
+
+                else
+
+                  buff(i+shft)=spv_set
+
+                endif
+              enddo
+            enddo
+          enddo
+        elseif (horiz_type == 2) then
+          do k=1,nmax
+            do j=jmin,jmax
+              shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+              do i=imin,imax
+                if (rmask(i,j)+rmask(i,j-1) > 0.5) then
+
+                  buff(i+shft)=A(i,j,k)
+
+                else
+
+                  buff(i+shft)=spv_set
+
+                endif
+              enddo
+            enddo
+          enddo
+        elseif (horiz_type == 3) then
+          do k=1,nmax
+            do j=jmin,jmax
+              shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+              do i=imin,imax
+                if ( rmask(i,j)+rmask(i-1,j)+rmask(i,j-1)
+     &                           +rmask(i-1,j-1) > 0.5 ) then
+
+                  buff(i+shft)=A(i,j,k)
+
+                else
+
+                  buff(i+shft)=spv_set
+
+                endif
+              enddo
+            enddo
+          enddo
+        endif  !<-- horiz_type == 0,1,2,3
+      else  !<-- mask_land_data
+#endif
+        do k=1,nmax
+          do j=jmin,jmax
+            shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+            do i=imin,imax
+
+              buff(i+shft)=A(i,j,k)
+
+            enddo
+          enddo
+        enddo
+#ifdef MASK_LAND_DATA
+      endif  !<-- mask_land_data
+#endif
+
+      ! Put variable in netcdf file
+      ! ---------------------------
+
+      ierr=nf90_put_var(ncid, vid, buff, start, count)
+
+      ! Error handling
+      ! --------------
+
+      if (ierr /= nf90_noerr) then
+        write(*,'(/1x,2A,3x,A,I4/)')  '### ERROR: ncdf_write_mod :: ',
+     &             nf90_strerror(ierr) MYID
+        write(*,'(12x,A,I7,3x,A,I7/12x,A,I3,7I6)') 'ncid =', ncid,
+     &   'varid =', vid, 'start,count =', (start(i),count(i), i=1,4)
+
+        ! get netcdf variable information for error message
+        i=nf90_inquire_variable(ncid, vid,vname, datatype,
+     &                                  ndims,dimid,natts)
+        if (i == nf90_noerr) then
+          write(*,'(1x,2A,1x,A,I2,2x,A,I3,2x,A,8I3)') 'vname = ',
+     &             vname, 'datatype =', datatype, 'ndims =', ndims,
+     &                             'dimid =', (dimid(i), i=1,ndims)
+
+          ! Cycle through bad variable's dimensions to see which
+          ! has the error
+          do i=1,ndims
+            ! Return dimension length (k) for error message
+            j=nf90_inquire_dimension(ncid, dimid(i), vname, k)
+            if (j == nf90_noerr) write(*,'(29x,2A,I5)') vname,' =',k
+          enddo
+
+        endif
+      endif
+
+      ncdf_write_mod=ierr
+
+
+      end function ncdf_write_mod
+
+
+! ----------------------------------------------------------------------
+
+      function ncdf_read_mod(ncid, varid, record, horiz_type, A, nmax)
+
+      ! ===========================
+      ! Read variable to input file (low-level)
+      ! ===========================
+
+      ! Routine is tailored to account for MPI tile size differences
+      ! and boundary nodes.
+
+      ! Routine is an exact copy of old code's ncdf_read function,
+      ! which came from ncdf_read_write.F. However, netcdf calls
+      ! changed from e.g. nf_def_var to nf90_def_var.
+
+      ! NOTE: ncdf_write was combined with ncdf_write in ncdf_read_write.F
+      ! to ensure consistency, thus any changes here should probably be
+      ! made to write equivalent in this module!
+
+      ! ---------------------------------------------
+
+      ! Read a floating point array from an input netCDF file.
+
+      ! Arguments:
+      !            A       real array of standard horizontal dimensions
+      !                                  which is to be read or written.
+      !            ncid    netCDF ID of in the file.
+      !            varid   variable ID of that variable in netCDF file.
+      !            record  record number.
+      !            type    type of the grid (RHO-, U, V, W, PSI etc.)
+
+      implicit none
+
+
+      ! Output
+      ! ------
+      integer ncdf_read_mod
+
+      ! Inputs
+      ! ------
+      integer ncid, varid, record, horiz_type, nmax
+#include "param.h"
+      ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
+      real A(GLOBAL_2D_ARRAY,nmax)
+      ! commented: CSDISTRIBUTE_RESHAPE  A...
+
+      ! Local
+      ! -----
+
+      logical mask_land_data
+      integer vid, i,j,k, shft, ierr
+#include "buffer.h"
+#ifdef MASK_LAND_DATA
+# include "grid.h"
+      real*8, parameter :: spv_set=1.D+33
+#endif
+#include "compute_starts_counts.h"
+
+      if (varid > 0) then          ! Normally netCDF IDs are positive.
+        vid=varid                  ! Negative "varid" is used here as
+        mask_land_data=.true.      ! flag to signal that land masking
+      else                         ! does not need to be applied for
+        vid=-varid                 ! this variable (typically this is
+        mask_land_data=.false.     ! reserved for grid variables and
+      endif                        ! topography).
+
+      ! Read array from the disk.
+      !===== ===== ==== === =====
+
+      ierr=nf90_get_var(ncid, vid, buff, start,count)
+      if (ierr /= nf90_noerr) then
+        write(*,'(/1x,2A,3x,A,I4/)') '### ERROR: ncdf_read :: ',
+     &             nf90_strerror(ierr) MYID
+      else
+
+      ! Note that expression for "shft" is exactly the same in all five
+      ! cases below, while application of land mask is different for the
+      ! variables of different grid staggering; also note effectively .or.
+      ! rather than .and. logic in setting velocity values to infinity:
+      ! velocity components at the boundary (normal to it) are set to 0,
+      ! while the ones fully inside (between two land points) to spv.
+
+#ifdef MASK_LAND_DATA
+        if (mask_land_data) then
+          if (horiz_type == 0) then
+            do k=1,nmax
+              do j=jmin,jmax
+                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+                do i=imin,imax
+                  if (rmask(i,j) > 0.5) then
+
+                    A(i,j,k)=buff(i+shft)
+
+                  else
+
+                    A(i,j,k)=0.D0
+
+                  endif
+                enddo
+              enddo
+            enddo
+          elseif (horiz_type == 1) then
+            do k=1,nmax
+              do j=jmin,jmax
+                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+                do i=imin,imax
+                  if (rmask(i,j)+rmask(i-1,j) > 0.5) then
+
+                    A(i,j,k)=buff(i+shft)
+
+                  else
+
+                    A(i,j,k)=0.D0
+
+                  endif
+                enddo
+              enddo
+            enddo
+          elseif (horiz_type == 2) then
+            do k=1,nmax
+              do j=jmin,jmax
+                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+                do i=imin,imax
+                  if (rmask(i,j)+rmask(i,j-1) > 0.5) then
+
+                    A(i,j,k)=buff(i+shft)
+
+                  else
+
+                    A(i,j,k)=0.D0
+
+                  endif
+                enddo
+              enddo
+            enddo
+          elseif (horiz_type == 3) then
+            do k=1,nmax
+              do j=jmin,jmax
+                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+                do i=imin,imax
+                  if ( rmask(i,j)+rmask(i-1,j)+rmask(i,j-1)
+     &                           +rmask(i-1,j-1) > 0.5 ) then
+
+                    A(i,j,k)=buff(i+shft)
+
+                  else
+
+                    A(i,j,k)=0.D0
+
+                  endif
+                enddo
+              enddo
+            enddo
+          endif  !<-- horiz_type == 0,1,2,3
+        else  !<-- mask_land_data
+#endif
+          do k=1,nmax
+            do j=jmin,jmax
+              shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+              do i=imin,imax
+
+                A(i,j,k)=buff(i+shft)
+
+              enddo
+            enddo
+          enddo
+#ifdef MASK_LAND_DATA
+        endif  !<-- mask_land_data
+#endif
+      endif
+
+      ! Exchange periodic and computational margins (reader only).
+
+#ifdef EXCHANGE
+# ifdef MPI
+#  define EXCH_ARR_RANGE iwest,ieast,jsouth,jnorth
+# else
+#  define EXCH_ARR_RANGE 1,Lm,1,Mm
+# endif
+# ifdef SOLVE3D
+      call exchange_tile(EXCH_ARR_RANGE, A,nmax)
+# else
+      call exchange2d_tile(EXCH_ARR_RANGE, A)
+# endif
+#endif
+
+      ncdf_read_mod=ierr
+
+
+      end function ncdf_read_mod
+
+! ----------------------------------------------------------------------
+!
+!      subroutine ncdf_create_new_file(fname,ncid,prev_fill_mode,
+!     &                          rec_per_file,total_rec,
+!     &                   r2dgrd1,u2dgrd1,r2dgrd2,v2dgrd2,
+!     &                   r3dgrd3,w3dgrd3,timedim,auxil1,N,
+!     &                   ierr,create_err)
+!
+!      ! =============================================
+!      ! CREATE NEW NETCDF FILE with global attributes
+!      ! and dimensions only
+!      ! ===================
+!
+!      implicit none
+!
+!      ! Inputs
+!      ! ------
+!      integer:: ncid ! netcdf file ID
+!      character(len=32), intent(in) :: fname ! desired netcdf file name
+!      integer prev_fill_mode ! Needed for nf90_set_fill
+!      integer rec_per_file ! records per file
+!      integer total_rec
+!      ! dimension numbers
+!      integer r2dgrd1,u2dgrd1,r2dgrd2,v2dgrd2
+!      integer r3dgrd3,w3dgrd3,timedim,auxil1
+!      integer N ! Vertical number of rho-points
+!      integer ierr ! Track netcdf errors
+!      integer create_err ! DevinD created this to return error from def_his.F
+!
+!      ! External function needed
+!      integer, external :: my_nf_def_dim
+!
+!      ! Common
+!      ! Need ncvars.h for xi_rho, xi_u, eta_rho, eta_v and iaux
+!#include "ncvars.h"
+!
+!
+!      ! Create new file
+!      ! ---------------
+!
+!      ierr=nf90_create(fname, nf90_clobber+nf90_64bit_offset, ncid)
+!
+!      if (ierr == nf90_noerr) then
+!
+!        ! Set fill value handling
+!        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+!
+!        ! Error handling
+!        if (ierr /= nf90_noerr) then
+!# ifdef AVRH
+!          write(*,'(1x,4A,I4)') '### ERROR:def_avg read_write::Cannot ',
+!# else
+!          write(*,'(1x,4A,I4)') '### ERROR:def_his read_write::Cannot ',
+!# endif
+!     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
+!     &         MYID
+!        endif
+!
+!      ! Error: cannot create file
+!      else
+!
+!#ifdef AVRH
+!        write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_avg read_write :: ',
+!#else
+!        write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_his read_write :: ',
+!#endif
+!     &       'Cannot create ''', fname, '''.', nf90_strerror(ierr)
+!
+!        ! Set return error flag
+!        create_err = ierr
+!
+!      endif
+!
+!      if (rec_per_file == 0) total_rec=0
+!
+!      ! Put global attributes:
+!      !---- ------ -----------
+!
+!      call put_global_atts(ncid, ierr)
+!
+!      ! Define dimensions for field placement on staggered grids:
+!      ! ------ ---------- --- ----- --------- -- --------- -------
+!
+!      ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd1)
+!      ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd1)
+!      ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd2)
+!      ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd2)
+!#ifdef SOLVE3D
+!      ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd3)
+!      ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd3)
+!#endif
+!      ierr=my_nf_def_dim(ncid, 'time', nf90_unlimited, timedim)
+!      ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil1)
+!
+!
+!      end subroutine ncdf_create_new_file
+
+
+! ----------------------------------------------------------------------
 
 
       end module read_write

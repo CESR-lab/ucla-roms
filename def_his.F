@@ -155,10 +155,15 @@ c--#define nf_def_var my_nf_def_var
 ! ====== === ======= ======== =====    define all the variables.
 
   10  if (create_new_file) then
+
         ierr=nf_create(fname(1:lfnm), nf_clobber+nf_64bit_offset,
      &                                                     ncid)
         if (ierr == nf_noerr) then
+
+          ! Set fill value handling
           ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
+
+          ! Error handling
           if (ierr /= nf_noerr) then
 # ifdef AVRH
             write(*,'(1x,4A,I4)') '### ERROR: def_avg :: Cannot ',
@@ -168,6 +173,8 @@ c--#define nf_def_var my_nf_def_var
      &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
      &         MYID
           endif
+
+        ! Error: cannot create file
         else
 #ifdef AVRH
           write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_avg :: ',
@@ -198,6 +205,11 @@ c--#define nf_def_var my_nf_def_var
 #endif
         ierr=my_nf_def_dim(ncid, 'time', nf_unlimited, timedim)
         ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
+
+      ! Transfer all newly defined dimensions to grid types that use
+      ! that dimension - e.g. u-point = ( xi_u, eta_rho, timedim )
+      ! for eta_rho it can use u2dgrd(2)=r2dgrd(2) rather than nf call
+      ! --------------------------------------------------------------
 
         auxil(2)=timedim
 
