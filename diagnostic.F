@@ -43,13 +43,22 @@
        public write_diagnostics
 
       contains
-       ! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
         subroutine write_diagnostics
-         use ncio
          use netcdf
          implicit none
 
         end subroutine write_diagnostics
+! ----------------------------------------------------------------------
+
+! ----------------------------------------------------------------------
+        subroutine create_diagnostics_file
+         use netcdf
+         implicit none
+
+
+
+        end subroutine create_diagnostics_file
        ! --------------------------------------------------------------------
 #endif
       end module diagnostics

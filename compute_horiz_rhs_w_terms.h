@@ -10,6 +10,8 @@
 ! twice, in predictor and corrector substeps for w
 
 #ifdef UV_ADV
+# define UPSTREAM_W
+
 
 #ifdef UPSTREAM_W
 # define curv wrk1
@@ -155,8 +157,10 @@
 
         do j=jstr,jend
           do i=istr,iend
-            rw(i,j,k)=rw(i,j,k)-(Fx(i+1,j)-Fx(i,j))
-     &                         -(Fe(i,j+1)-Fe(i,j))
+            rw(i,j,k)=rw(i,j,k)-(FX(i+1,j)-FX(i,j))
+     &                         -(FE(i,j+1)-FE(i,j))
           enddo
         enddo
 #endif
+
+#undef curv

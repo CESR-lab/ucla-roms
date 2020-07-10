@@ -69,7 +69,7 @@
 
       do k=1,N
         do j=jstrR,jendR
-          do i=jstrR,jendR
+          do i=istrR,iendR
             t(i,j,k,1,itemp)=20.
             t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
           enddo
@@ -84,7 +84,7 @@
       Lt=10.
       do k=1,N
         do j=jstrR,jendR
-          do i=jstrR,jendR
+          do i=istrR,iendR
             t(i,j,k,1,itemp)=rho0-0.5*drho*
      &      tanh(cff*(z_r(i,j,k)+h(i,j)/2-amp*cos(pi*xr(i,j)/Lt)))
      &      - 1000.

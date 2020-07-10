@@ -177,17 +177,10 @@
 # ifdef NONLIN_EOS
       Tt=3.8D0 ; Ts=34.5D0 ; sqrtTs=sqrt(Ts)
 #  ifdef DUKO_2001
-c*    cff=r00-1000.D0
-c*    rho1_0=cff +Tt*( r01+Tt*( r02+Tt*( r03+Tt*( r04+Tt*r05 ))))
-c*   &                            +Ts*( r10+Tt*( r11+Tt*( r12+Tt*(
-c*   &                                              r13+Tt*r14 )))
-c*   &                   +sqrtTs*( rS0+Tt*( rS1+Tt*rS2 ))+Ts*r20 )
-
       K0_Duk= Tt*( K01+Tt*( K02+Tt*( K03+Tt*K04 )))
      &       +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
      &            +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
 
-c**   write(*,'(2(4x,A,F16.8))') 'rho1_0=',rho1_0, 'K0_Duk=',K0_Duk
 #  endif
       dr00=r00-rho0
 # endif
@@ -231,28 +224,12 @@ c**   write(*,'(2(4x,A,F16.8))') 'rho1_0=',rho1_0, 'K0_Duk=',K0_Duk
 
             K2=E00+Tt*(E01+Tt*E02) +Ts*(E10+Tt*(E11+Tt*E12))
 
-
-c**         rho(i,j,k)=rho1(i,j,k) + 0.1*(z_w(i,j,N)-z_r(i,j,k))
-c**  &                  *(K00*rho1(i,j,k)-rho0*K0)/(K00*(K00+K0))
-
-c**         dpth=z_w(i,j,N)-z_r(i,j,k)
             dpth=-z_r(i,j,k)
             cff=K00-0.1*dpth
             cff1=K0+dpth*(K1+K2*dpth)
             rho(i,j,k)=( rho1(i,j,k)*cff*(K00+cff1)
      &                           -0.1*dpth*rho0*cff1
      &                            )/(cff*(cff+cff1))
-
-c**  &                    +0.1*dpth*rho0/cff
-
-
-c**            rho(i,j,k)=(rho0+rho1(i,j,k))
-c**  &            /( 1.-0.1*dpth/(K00+K0+dpth*(K1+K2*dpth)))
-c**  &                                                 -rho0
-
-c**         rho(i,j,k)=rho1(i,j,k)
-
-
 #   ifdef MASKING
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #   endif
@@ -260,10 +237,9 @@ c**         rho(i,j,k)=rho1(i,j,k)
 #  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
    || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
 #   ifndef SPLIT_EOS
-c**         dpth=z_w(i,j,N)-z_w(i,j,k)
             dpth=-z_w(i,j,k)
             K_up(i,k)=K0+dpth*(K1+K2*dpth)
-c**         dpth=z_w(i,j,N)-z_w(i,j,k-1)
+
             dpth=-z_w(i,j,k-1)
             K_dw(i,k)=K0+dpth*(K1+K2*dpth)
 #   endif
@@ -382,7 +358,6 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
         do k=N-1,1,-1
           do i=istrR,iendR
 #  ifdef SPLIT_EOS
-c**         dpth=z_w(i,j,N)-z_r(i,j,k)
             dpth=-z_r(i,j,k)
             cff=Hz(i,j,k)*(rho1(i,j,k)+qp1(i,j,k)*dpth*(1.-qp2*dpth))
 #  else
@@ -411,6 +386,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
         enddo
 # endif
       enddo    ! <-- j
+
       end
 #else
       subroutine rho_eos_empty

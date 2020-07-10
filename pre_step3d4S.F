@@ -262,6 +262,7 @@
 
 
 
+
 !                      ! At this moment arrays "ru", "rv" contain all
 ! Momentum equations:  ! terms of finite-volume r.h.s. for 3D momentum
 !--------- ----------  ! equation EXCEPT the implicit part of vertical
@@ -289,8 +290,11 @@
             w(i,j,k,indx)=0.5*(Hz(i,j,k+1)+Hz(i,j,k))*w(i,j,k,nstp)
           enddo
         enddo
-        k = N
-        do i=istr,iend
+        k = N   
+        !! here is the special volume weighting for w(N)
+        !! Still, write out the volume integrated (dz*w) vertical mixing eq.
+        !! Just to check :)
+        do i=istr,iend 
           DC(i,k)=0.5*(   Hz_bak(i,j,k))*(
      &                cf_stp*w(i,j,k,nstp)+cf_bak*w(i,j,k,indx) )
      &                                         + DC(i,0)*rw(i,j,k)
@@ -301,22 +305,21 @@
         !! start of tri-diag solve
         !   FC(i,1)=0.5*dtau*(Akt(i,j,k+1)+Akt(i,j,k)/( Hz_fwd(i,j,k) 
         do i=istr,iend
-          FC(i,N-1)= 0.5*dtau*(Akv(i,j,N)+Akv(i,j,N-1))  !! flux coef between w(k) and w(k-1)
+          FC(i,N-1)= 0.5*dtau*(-Akv(i,j,N)+Akv(i,j,N-1)) ! see notes, exception for k=N
      &                      /Hz_fwd(i,j,N)
 
           WC(i,N-1)= DC(i,0)*0.5*(Wi(i,j,N)+Wi(i,j,N-1))
 
-          cff=1./( 0.5*(Hz_fwd(i,j,N)                )
-     &                    +FC(i,N-1)-min(WC(i,N-1),0.) )
+          cff = 0.5*Hz_fwd(i,j,N) +FC(i,N-1)-min(WC(i,N-1),0.)
 
-          CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
+          CF(i,N-1)= ( FC(i,N-1)+max(WC(i,N-1),0.) )/cff ! gam(n-1)=c(n)/bet 
 
-          DC(i,N)=cff*DC(i,N)
+          DC(i,N)=  DC(i,N)/cff                          ! u(1) = r(1)/bet
         enddo
 
         do k=N-1,2,-1      !--> forward elimination for w
           do i=istr,iend
-            FC(i,k-1)= 0.5*dtau*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
+            FC(i,k-1)= 0.5*dtau*(Akv(i,j,k)+Akv(i,j,k-1))!! A(k-1)
      &                   /Hz_fwd(i,j,k)
 
             WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
@@ -331,11 +334,16 @@
             DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
           enddo
         enddo
-        !! change this you feel energetic. Instead of no-flux at the bottom we
-        !! have w(0) = 0 (different BC for tri-diag system)
+        !! Use the fact that w(0) is always 0
         do i=istr,iend
+          FC(i,0)= 0.5*dtau*(Akv(i,j,1)+Akv(i,j,0))!! A(0)
+     &                   /Hz_fwd(i,j,1)
+
+          WC(i,0)= DC(i,0)*0.5*(Wi(i,j,1)+Wi(i,j,0))
+
           w(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                         )/( 0.5*(Hz_fwd(i,j,2)+Hz_fwd(i,j,1))
+     &                                       +FC(i,0)-min(WC(i,0),0.)
      &                                       +FC(i,1)+max(WC(i,1),0.)
      &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                               )
@@ -353,10 +361,12 @@
         enddo
         do k=1,N
           do i=istrU,iend
+            !! DC is dz*u
             DC(i,k)=0.5*(Hz_bak(i,j,k)+Hz_bak(i-1,j,k))*(
      &                  cf_stp*u(i,j,k,nstp)+cf_bak*u(i,j,k,indx) )
      &                                           +DC(i,0)*ru(i,j,k)
 
+            !! also dz*u
             u(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nstp)
           enddo
         enddo
@@ -438,11 +448,7 @@
             CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
 
             DC(i,N)=cff*( DC(i,N)
-# ifdef WIND_AT_RHO_POINTS
-     &                 +0.5*dtau*(svstr(i,j-1)+svstr(i,j))
-# else
      &                                    +dtau*svstr(i,j)
-# endif
      &                                                   )
           enddo
           do k=N-1,2,-1      !--> forward elimination
@@ -541,6 +547,13 @@
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
 
+!       if (mynode==0) then
+!         print 89,u(1,1,1,nnew)-0.15,u(2,1,1,nnew)-0.15
+!         print 89,ru(1,1,1),ru(2,1,1)
+!       endif
+! 89  format( 'pre after bc: ',3e13.4)
+!     stop
+
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)
 ! have wrong vertical integrals, which will be corrected later
@@ -562,7 +575,7 @@
 ! Non-hydro projection of momentum
 !======================================================================
 
-!     if (iic.lt.-10) then ! should never happen
+!     if (iic.lt.-10) then ! should never happen, so always project twice
       if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
         if  (mynode==0) print *, 'AB2 extrapolate'
         do k=1,N
@@ -647,6 +660,7 @@
           enddo
         enddo
 # ifdef EXCHANGE
+        !! try to see if we could avoid this.
         call exchange_2_tile(istr,iend,jstr,jend,u(START_2D_ARRAY,1,nnew),N
      &                                          ,v(START_2D_ARRAY,1,nnew),N)
 # endif
@@ -687,39 +701,9 @@
           enddo
         endif  ! surface_neumann !
 
-!       !! compute divergence
-!       dmax = 0;
-!       do k=1,N
-!         do j=jstr,Jend
-!           do i=istr,Iend
-!             div=u(i+1,j,k,nnew)-u(i,j,k,nnew)
-!    &           +v(i,j+1,k,nnew)-v(i,j,k,nnew)
-!    &           -w(i,j,k-1,nnew)+w(i,j,k,nnew)
-!             dmax = max(dmax,abs(div))
-!           if ( (mynode==0).and.(i==10).and.(j==10).and.(k==20) ) then
-!              print *, 'BEFORE div(10,10,20): ', div
-!           endif
-!           enddo
-!         enddo
-!       enddo
-!
-!       if (mynode==0) then
-!         print 98, dmax
-!         ub = u(31,10,1,nnew)*pn_u(31,10)/(0.5*(Hz_fwd(31,10,1)+Hz_fwd(30,10,1)))
-!         ut = u(31,10,n,nnew)*pn_u(31,10)/(0.5*(Hz_fwd(31,10,n)+Hz_fwd(30,10,n)))
-!         print 99,ub,ut,ut/ub
-!         ub = u(31,10,n,nnew)*pn(1,10)*pm(1,10)
-!         ut = w(1,10,n,nnew)*pn(1,10)*pm(1,10)
-!         print 97,ub,ut,ut/ub
-!       endif
-! 98  format( 'pre befor dmax: ',e13.4)
-! 99  format( 'pre befor ub,ut,ratio: ',3e13.4)
-! 97  format( 'pre befor ut,wt,ratio: ',3e13.4)
-
         call nhmg_solve(Lm,Mm,N,halo,padd_X,padd_E,
      &          u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
 
-!     !! compute divergence
 !     dmax = 0;
 !     do k=1,N
 !       do j=jstr,Jend
@@ -730,21 +714,14 @@
 !    &         - (v(i,j  ,k,nnew) + grid(1)%dv(k,j  ,i))
 !    &         + (w(i,j,k  ,nnew) + grid(1)%dw(k+1,j,i))
 !    &         - (w(i,j,k-1,nnew) + grid(1)%dw(k  ,j,i))
-!           if ( (mynode==0).and.(i==10).and.(j==10).and.(k==20) ) then
-!              print *, 'div(10,10,20): ', div
-!           endif
 !           dmax = max(dmax,abs(div))
 !         enddo
 !       enddo
 !     enddo
 
-!     if (mynode==0) then
-!       print 95,  u(31,10,n,nnew),grid(1)%du(n,10,31)
-!     endif
-! 95  format( 'pre after u,du ',2e13.4)
-
         ! add the non-hydro correction (du, dv, dw are in flux form)
         ! add the non-hydrostatic pressure gradient to rufrc, rvfrc
+        ! Can't do to Iend+1 because we dont have Hz_fwd(Iend+1)
         do k=1,N
           do j=jstr,Jend
             do i=istrU,Iend
@@ -770,36 +747,21 @@
 
       endif  !! AB2 or projection
 
-      ! velocities are now in m/s
+!     ! velocities are now in m/s
 
-!     if (mynode==0) then
-!       print 96, dmax
-!       print 93, ru(31,10,1)*dtau*0.5*(pm(31,10)+pm(30,10))
-!    &              *pn_u(31,10)/(0.5*(Hz_fwd(31,10,1)+Hz_fwd(30,10,1)))
-!    &           ,grid(1)%du(1,10,31)
-!    &              *pn_u(31,10)/(0.5*(Hz_fwd(31,10,1)+Hz_fwd(30,10,1)))
-!         ub = u(31,10,1,nnew)
-!         ut = u(31,10,n,nnew)
-!         print 95,ub,ut,ut/ub
-!         ub = u(31,10,n,nnew)
-!         ut = w(1,10,n,nnew)
-!         print 94,ub,ut,ut/ub
-!         print 92, grid(1)%dw(n,10,1)/dtau,dtau
-!         write(20,91), grid(1)%dw(n,10,1)/dtau
+!     call u3dbc_tile(istr,iend,jstr,jend, wrk1)
+!     call v3dbc_tile(istr,iend,jstr,jend, wrk1)
+!     call w3dbc_tile(istr,iend,jstr,jend, wrk1)
 
-!     endif
-! 93  format( 'pre after ru,du: ',2e13.4)
-! 96  format( 'pre after dmax: ',e13.4)
-! 95  format( 'pre after ub,ut,ratio: ',3e13.4)
-! 94  format( 'pre after ut,wt,ratio: ',3e13.4)
-! 92  format( 'pre after rw,dt: ',2e15.6)
-! 91  format(2e15.6)
+      !! u and v are exchanged in set_depth (set_HUV1)
+      !! for neatness, we could move it there
+#  ifdef EXCHANGE
+      call exchange_tile (istr,iend,jstr,jend,
+     &                          w(START_2D_ARRAY,1,nnew),N)
+#  endif
 
 
-      call u3dbc_tile(istr,iend,jstr,jend, wrk1)
-      call v3dbc_tile(istr,iend,jstr,jend, wrk1)
-      call w3dbc_tile(istr,iend,jstr,jend, wrk1)
-# endif
+# endif /* NHMG */
 
       end
 

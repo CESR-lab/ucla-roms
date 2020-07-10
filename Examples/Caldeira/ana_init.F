@@ -26,14 +26,16 @@
 # include "ocean2d.h"
 # include "ocean3d.h"
 # include "eos_vars.h"
+# include "boundary.h"
 
-      real, parameter :: u0 = 1.5
-      real, parameter :: v0 = 1.2
+      real, parameter :: u0 = 0.15
+      real, parameter :: v0 = 0.12
 
 # include "compute_auxiliary_bounds.h"
 
-      do j=jstrR,jendR         ! Set everything to an all-zero state
-          zeta(i,j,:) = 0.     ! then modify some of the variables.
+      do j=jstrR,jendR         ! Set everything to an all-zero state,
+        do i=istrR,iendR       ! then modify variables as required
+          zeta(i,j,:) = 0.
           ubar(i,j,:) = 0.
           vbar(i,j,:) = 0.
         enddo
@@ -53,7 +55,7 @@
       enddo
 # endif
 
-!---- Begin of user defined part -------
+!---- Begin of user defined part -------------------
 
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -68,18 +70,18 @@
 
       do k=1,N
         do j=jstrR,jendR
-          do i=jstrR,jendR
+          do i=istrR,iendR
             u(i,j,k,:) = u0
             v(i,j,k,:) = v0
-            t(i,j,k,:,itemp) = 15.+10./1300.*z_r(i,j,k)
+            t(i,j,k,1,itemp) = 15.+10./1300.*z_r(i,j,k)
 #  ifdef SALINITY
-            t(i,j,k,:,isalt) = 34.54
+            t(i,j,k,1,isalt) = 34.54
 #  endif
           enddo
         enddo
       enddo
 
-!---- End of user defined part -------
+!---- End of user defined part -------------------
 
 
 ! The rest of the code is independent of the specific configuration.
@@ -111,9 +113,12 @@
 #     ifdef M3_FRC_BRY
             u_west(j,k)=u(istr  ,j,k,1)
             v_west(j,k)=v(istr-1,j,k,1)
+#      ifdef NHMG
+            w_west(j,k)=w(istr-1,j,k,1)
+#      endif
 #     endif
 #     ifdef T_FRC_BRY
-            t_west(j,k,itemp)=t(istr-1,j,k,1,itemp)
+            t_west(j,k,:)=t(istr-1,j,k,1,:)
 #     endif
           enddo
         enddo
@@ -136,9 +141,12 @@
 #     ifdef M3_FRC_BRY
             u_east(j,k)=u(iend+1,j,k,1)
             v_east(j,k)=v(iend+1,j,k,1)
+#      ifdef NHMG
+            w_east(j,k)=w(iend+1,j,k,1)
+#      endif
 #     endif
 #     ifdef T_FRC_BRY
-            t_east(j,k,itemp)=t(iend+1,j,k,1,itemp)
+            t_east(j,k,:)=t(iend+1,j,k,1,:)
 #     endif
           enddo
         enddo
@@ -162,9 +170,12 @@
 #     ifdef M3_FRC_BRY
             u_south(i,k)=u(i,jstr-1,k,1)
             v_south(i,k)=v(i,jstr  ,k,1)
+#      ifdef NHMG
+            w_south(i,k)=w(i,jstr-1,k,1)
+#      endif
 #     endif
 #     ifdef T_FRC_BRY
-            t_south(i,k,itemp)=t(i,jstr-1,k,1,itemp)
+            t_south(i,k,:)=t(i,jstr-1,k,1,:)
 #     endif
           enddo
         enddo
@@ -187,9 +198,12 @@
 #     ifdef M3_FRC_BRY
             u_north(i,k)=u(i,jend+1,k,1)
             v_north(i,k)=v(i,jend+1,k,1)
+#      ifdef NHMG
+            w_north(i,k)=w(i,jend+1,k,1)
+#      endif
 #     endif
 #     ifdef T_FRC_BRY
-            t_north(i,k,itemp)=t(i,jend+1,k,1,itemp)
+            t_north(i,k,:)=t(i,jend+1,k,1,:)
 #     endif
           enddo
         enddo
@@ -336,6 +350,8 @@
 #  endif
       endif
 # endif
+
+
       end
 #else
       subroutine ana_init_empty

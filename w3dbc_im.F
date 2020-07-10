@@ -5,7 +5,6 @@
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd
-c-->     &                                           , dft,dfx,dfy
       real, parameter :: eps=1.E-33
 # include "param.h"
 # include "grid.h"
@@ -24,23 +23,19 @@ c-->     &                                           , dft,dfx,dfy
 
 # define dt illegal
 
+# define OBC_M3SPECIFIEDW
+
 # ifndef EW_PERIODIC
+
       if (WESTERN_EDGE) then
 #  if defined OBC_WEST 
 #   if defined OBC_M3ORLANSKI
         do k=1,N
           do j=jstr,jend+1
-            grad(istr-1,j)=( w(istr-1,j  ,k,nstp)
-     &                      -w(istr-1,j-1,k,nstp))
-#    ifdef MASKING
-     &                            *vmask(istr-1,j)
-#    endif
-            grad(istr  ,j)=( w(istr  ,j  ,k,nstp)
-     &                      -w(istr  ,j-1,k,nstp))
-#    ifdef MASKING
-     &                              *vmask(istr,j)
-#    endif
+            grad(istr-1,j)= w(istr-1,j,k,nstp)- w(istr-1,j-1,k,nstp)
+            grad(istr  ,j)= w(istr  ,j,k,nstp)- w(istr  ,j-1,k,nstp)
           enddo
+
           do j=jstr,jend
 
             cx=-dtfwd*u(istr,j,k,nrhs)*pm(istr-1,j)
@@ -54,24 +49,19 @@ c-->     &                                           , dft,dfx,dfy
 
             w(istr-1,j,k,nnew)=(1.-cx)*( w(istr-1,j,k,nstp)
      &                                -max(cy,0.)*grad(istr-1,j  )
-     &                                -min(cy,0.)*grad(istr-1,j+1)
-     &                                                            )
+     &                                -min(cy,0.)*grad(istr-1,j+1) )
      &                             +cx*( w(istr  ,j,k,nstp)
-     &                                -max(cy,0.)*grad(istr,j  )
-     &                                -min(cy,0.)*grad(istr,j+1)
-     &                                                            )
-
+     &                                -max(cy,0.)*grad(istr  ,j  )
+     &                                -min(cy,0.)*grad(istr  ,j+1) )
 
 #    if defined M3_FRC_BRY
-            w(istr-1,j,k,nnew)=(1.-cext)*w(istr-1,j,k,nnew)
-     &                                    +cext*w_west(j,k)
-#    endif
-#    ifdef MASKING
-            w(istr-1,j,k,nnew)=w(istr-1,j,k,nnew)*rmask(istr-1,j)
+            w(istr-1,j,k,nnew)= (1.-cext)*w(istr-1,j,k,nnew)
+     &                                +cext*w_west(j,k) 
 #    endif
           enddo
         enddo
-#   else  /* !OBC_M3ORLANSKI */
+#   else  /* not OBC_M3ORLANSKI */
+        ! not orlanski, can be either no gradient, or specified
         do k=1,N
           do j=jstr,jend
 #    if defined OBC_M3SPECIFIED
@@ -79,22 +69,18 @@ c-->     &                                           , dft,dfx,dfy
 #    else
             w(istr-1,j,k,nnew)=w(istr,j,k,nnew)  ! no gradient
 #    endif
-#    ifdef MASKING
-     &                                   *rmask(istr-1,j)
-#    endif
           enddo
         enddo
-#   endif /* OBC_M3ORLANSKI */
+#   endif /* OBC_M3ORLANSKI or SPECIFIED/NO-GRAD*/
 
 #  else /* !OBC_WEST (closed)*/
         do k=1,N                          ! Wall: slip: gamma= 1
           do j=jstr,jend                  !    no-slip: gamma=-1
-            w(istr-1,j,k,nnew)=gamma2*w(istr-1,j,k,nnew)
+            w(istr-1,j,k,nnew)=gamma2*w(istr,j,k,nnew)
           enddo
         enddo
 #  endif
       endif     ! <-- WESTERN_EDGE
-
 
 
       if (EASTERN_EDGE) then
@@ -102,19 +88,10 @@ c-->     &                                           , dft,dfx,dfy
 #   if defined OBC_M3ORLANSKI
         do k=1,N
           do j=jstr,jend+1
-           grad(iend  ,j)=( w(iend  ,j  ,k,nstp)
-     &                     -w(iend  ,j-1,k,nstp))
-#   ifdef MASKING
-     &                                *vmask(iend  ,j)
-#   endif
-           grad(iend+1,j)=( w(iend+1,j  ,k,nstp)
-     &                     -w(iend+1,j-1,k,nstp))
-#   ifdef MASKING
-     &                                *vmask(iend+1,j)
-#   endif
+           grad(iend  ,j)= w(iend  ,j,k,nstp)-w(iend  ,j-1,k,nstp)
+           grad(iend+1,j)= w(iend+1,j,k,nstp)-w(iend+1,j-1,k,nstp)
           enddo
           do j=jstr,jend
-
             cx=    dtfwd* u(iend+1,j,k,nrhs)*pm(iend+1,j)
             cy=0.5*dtfwd*(v(iend+1,j,k,nrhs)+v(iend+1,j+1,k,nrhs))
      &                                               *pn(iend+1,j)
@@ -125,106 +102,54 @@ c-->     &                                           , dft,dfx,dfy
             endif
 
             w(iend+1,j,k,nnew)=(1.-cx)*( w(iend+1,j,k,nstp)
-     &                             -max(cy,0.)*grad(iend+1,j  )
-     &                             -min(cy,0.)*grad(iend+1,j+1)
-     &                                                         )
-     &                             +cx*( w(iend  ,j,k,nnew)
-     &                               -max(cy,0.)*grad(iend,j  )
-     &                               -min(cy,0.)*grad(iend,j+1)
-     &                                                         )
+     &                          -max(cy,0.)*grad(iend+1,j  )
+     &                          -min(cy,0.)*grad(iend+1,j+1)  )
+     &                            +cx *( w(iend  ,j,k,nnew)
+     &                          -max(cy,0.)*grad(iend  ,j  )
+     &                          -min(cy,0.)*grad(iend  ,j+1)  )
 
-#   if defined M3_FRC_BRY
-            w(iend+1,j,k,nnew)=(1.-cext)*w(iend+1,j,k,nnew)
-     &                                  +cext*w_east(j,k)
-#   endif
-#   ifdef MASKING
-            w(iend+1,j,k,nnew)=w(iend+1,j,k,nnew)*rmask(iend+1,j)
-#   endif
+#    if defined M3_FRC_BRY
+            w(iend+1,j,k,nnew)=((1.-cext)*w(iend+1,j,k,nnew)
+     &                             +cext*w_east(j,k)  )
+#    endif
           enddo
         enddo
-#  else  /* not ORLANSKI */
+#   else  /* not ORLANSKI  (Spec or no grad)*/
         do k=1,N
           do j=jstr,jend
-#   if defined OBC_M3SPECIFIED
+#    if defined OBC_M3SPECIFIED
             w(iend+1,j,k,nnew)=w_east(j,k)
-#   else
+#    else
             w(iend+1,j,k,nnew)=w(iend,j,k,nnew)
-#   endif
-#   ifdef MASKING
-     &                               *rmask(iend+1,j)
-#   endif
+#    endif
           enddo
         enddo
-#  endif
+#   endif /* orlanski,spec, or no-grad */
 
-#  else /* !OBC_EAST (closed) */
+#  else /* not OBC_EAST (closed) */
         do k=1,N                          ! Wall: slip: gamma= 1
           do j=jstr,jend                  !    no-slip: gamma=-1
-            w(iend+1,j,k,nnew)=gamma2*w(iend+1,j,k,nnew)
+            w(iend+1,j,k,nnew)=gamma2*w(iend,j,k,nnew)
           enddo
         enddo
-#  endif        /* OBC_EAST */
+#  endif        /* OBC_EAST or not */
       endif    ! <-- EASTERN_EDGE
-# endif        /* !EW_PERIODIC */
 
-
+# endif        /* not EW_PERIODIC */
 
 
 
 # ifndef NS_PERIODIC
+
       if (SOUTHERN_EDGE) then
-#  if defined OBC_SOUTH && defined OBC_TORLANSKI
+#  if defined OBC_SOUTH
+#   if defined OBC_M3ORLANSKI
         do k=1,N
           do i=istr,iend+1
-            grad(i,jstr  )=( w(i  ,jstr  ,k,nstp)
-     &                      -w(i-1,jstr  ,k,nstp))
-#   ifdef MASKING
-     &                                   *umask(i,jstr)
-#   endif
-            grad(i,jstr-1)=( w(i  ,jstr-1,k,nstp)
-     &                      -w(i-1,jstr-1,k,nstp))
-#   ifdef MASKING
-     &                                *umask(i,jstr-1)
-#   endif
+            grad(i,jstr  )= w(i  ,jstr  ,k,nstp)-w(i-1,jstr  ,k,nstp)
+            grad(i,jstr-1)= w(i  ,jstr-1,k,nstp)-w(i-1,jstr-1,k,nstp)
           enddo
           do i=istr,iend
-#   ifdef LEGACY_ORLANSKI
-            dft=w(i,jstr,k,nstp)-w(i,jstr  ,k,nnew)
-            dfx=w(i,jstr,k,nnew)-w(i,jstr+1,k,nnew)
-
-#    ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#    else
-            if (dft*(grad(i,jstr)+grad(i+1,jstr)) > 0.) then
-              dfy=grad(i,jstr)
-            else
-              dfy=grad(i+1,jstr)
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#     ifdef OBC_RAD_NPO
-            cy=0.
-#     else
-            cy=min(cff,max(dft*dfy,-cff))
-#     endif
-#    endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#    if defined T_FRC_BRY || defined TNUDGING
-              cext=dtfwd*ubind * pn(i,jstr-1)
-            else
-              cext=0.
-#    endif
-            endif
-
-            w(i,jstr-1,k,nnew)=( cff*w(i,jstr-1,k,nstp)
-     &                                   +cx*w(i,jstr,k,nnew)
-     &                                -max(cy,0.)*grad(i  ,jstr-1)
-     &                                -min(cy,0.)*grad(i+1,jstr-1)
-     &                                                 )/(cff+cx)
-
-#   else
             cx=-dtfwd*v(i,jstr,k,nrhs)*pn(i,jstr-1)
             cy=0.5*dtfwd*(u(i,jstr-1,k,nrhs)+u(i+1,jstr-1,k,nrhs))
      &                                               *pm(i,jstr-1)
@@ -233,106 +158,49 @@ c-->     &                                           , dft,dfx,dfy
             else
               cext=-cx ; cx=0.
             endif
-
             w(i,jstr-1,k,nnew)=(1.-cx)*( w(i,jstr-1,k,nstp)
-     &                                    -max(cy,0.)*grad(i  ,jstr-1)
-     &                                    -min(cy,0.)*grad(i+1,jstr-1)
-     &                                                              )
-     &                                   +cx*(  w(i,jstr,k,nstp)
-     &                                      -max(cy,0.)*grad(i  ,jstr)
-     &                                      -min(cy,0.)*grad(i+1,jstr)
-     &                                                              )
-
-#   endif /* LEGACY_ORLANSKI */
-
-#   if defined T_FRC_BRY || defined TNUDGING
-            w(i,jstr-1,k,nnew)=(1.-cext)*w(i,jstr-1,k,nnew)
-#    ifdef T_FRC_BRY
-     &                                    +cext*w_south(i,k)
-#    else
-     &                                    +cext*wclm(i,jstr-1,k)
+     &                               -max(cy,0.)*grad(i  ,jstr-1)
+     &                               -min(cy,0.)*grad(i+1,jstr-1) )
+     &                             +cx*( w(i,jstr  ,k,nstp)
+     &                               -max(cy,0.)*grad(i  ,jstr  )
+     &                               -min(cy,0.)*grad(i+1,jstr  ) )
+#    if defined W_FRC_BRY
+            w(i,jstr-1,k,nnew)=( (1.-cext)*w(i,jstr-1,k,nnew)
+     &                              +cext*w_south(i,k) )
 #    endif
-#   endif
-#   ifdef MASKING
-            w(i,jstr-1,k,nnew)=w(i,jstr-1,k,nnew)
-     &                                    *rmask(i,jstr-1)
-#   endif
           enddo
         enddo
-#  else
+#   else /* not orlanski, but spec or no-grad */
         do k=1,N
           do i=istr,iend
-#   if defined OBC_SOUTH && defined OBC_TSPECIFIED
-#    ifdef T_FRC_BRY
+#    if defined OBC_WSPECIFIED
             w(i,jstr-1,k,nnew)=w_south(i,k)
 #    else
-            w(i,jstr-1,k,nnew)=wclm(i,jstr-1,k)
-#    endif
-#   else
             w(i,jstr-1,k,nnew)=w(i,jstr,k,nnew)
-#   endif
-#   ifdef MASKING
-     &                                   *rmask(i,jstr-1)
-#   endif
+#    endif
           enddo
         enddo
-#  endif
+#   endif /* orlanski, spec, or no-grad */
+#  else /* not open, but closed */
+        do k=1,N                          ! Wall: slip: gamma= 1
+          do j=jstr,jend                  !    no-slip: gamma=-1
+            w(i,jstr-1,k,nnew)=gamma2*w(i,jstr,k,nnew)
+          enddo
+        enddo
+#  endif /* OBC_SOUTH or not */
       endif    ! <-- SOUTHERN_EDGE
 
 
       if (NORTHERN_EDGE) then
-#  if defined OBC_NORTH && defined OBC_TORLANSKI
+#  if defined OBC_NORTH
+#   if defined OBC_M3ORLANSKI
         do k=1,N
           do i=istr,iend+1
-            grad(i,jend  )=( w(i  ,jend  ,k,nstp)
-     &                      -w(i-1,jend  ,k,nstp))
-#   ifdef MASKING
-     &                                   *umask(i,jend)
-#   endif
-            grad(i,jend+1)=( w(i  ,jend+1,k,nstp)
-     &                      -w(i-1,jend+1,k,nstp))
-#   ifdef MASKING
-     &                                 *umask(i,jend+1)
-#   endif
+            grad(i,jend  )= w(i  ,jend  ,k,nstp)-w(i-1,jend  ,k,nstp)
+            grad(i,jend+1)= w(i  ,jend+1,k,nstp)-w(i-1,jend+1,k,nstp)
           enddo
           do i=istr,iend
-#   ifdef LEGACY_ORLANSKI
-            dft=w(i,jend,k,nstp)-w(i,jend  ,k,nnew)
-            dfx=w(i,jend,k,nnew)-w(i,jend-1,k,nnew)
 
-#    ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#    else
-            if (dft*(grad(i,jend)+grad(i+1,jend)) > 0.) then
-              dfy=grad(i,jend)
-            else
-              dfy=grad(i+1,jend)
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#     ifdef OBC_RAD_NPO
-            cy=0.
-#     else
-            cy=min(cff,max(dft*dfy,-cff))
-#     endif
-#    endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#    if defined T_FRC_BRY || defined TNUDGING
-              cext=dtfwd*ubind * pn(i,jend+1)
-            else
-              cext=0.
-#    endif
-            endif
-
-            w(i,jend+1,k,nnew)=( cff*w(i,jend+1,k,nstp)
-     &                                 +cx*w(i,jend  ,k,nnew)
-     &                                -max(cy,0.)*grad(i  ,jend+1)
-     &                                -min(cy,0.)*grad(i+1,jend+1)
-     &                                                 )/(cff+cx)
-
-#   else
             cx=dtfwd*v(i,jend+1,k,nrhs)*pn(i,jend+1)
             cy=0.5*dtfwd*(u(i,jend+1,k,nrhs)+u(i+1,jend+1,k,nrhs))
      &                                               *pm(i,jend+1)
@@ -343,49 +211,38 @@ c-->     &                                           , dft,dfx,dfy
             endif
 
             w(i,jend+1,k,nnew)=(1.-cx)*( w(i,jend+1,k,nstp)
-     &                                    -max(cy,0.)*grad(i  ,jend+1)
-     &                                    -min(cy,0.)*grad(i+1,jend+1)
-     &                                                              )
-     &                                  +cx*(  w(i,jend,k,nnew)
-     &                                      -max(cy,0.)*grad(i  ,jend)
-     &                                      -min(cy,0.)*grad(i+1,jend)
-     &                                                              )
-#   endif /* LEGACY_ORLANSKI */
-
-#   if defined T_FRC_BRY || defined TNUDGING
-            w(i,jend+1,k,nnew)=(1.-cext)*w(i,jend+1,k,nnew)
-#    ifdef T_FRC_BRY
-     &                                        +cext*w_north(i,k)
-#    else
-     &                                    +cext*wclm(i,jend+1,k)
+     &                             -max(cy,0.)*grad(i  ,jend+1)
+     &                             -min(cy,0.)*grad(i+1,jend+1) )
+     &                             +cx*( w(i,jend  ,k,nnew)
+     &                             -max(cy,0.)*grad(i  ,jend  )
+     &                             -min(cy,0.)*grad(i+1,jend  ) )
+#    if defined W_FRC_BRY 
+            w(i,jend+1,k,nnew)= ((1.-cext)*w(i,jend+1,k,nnew)
+     &                             +cext*w_north(i,k) )
 #    endif
-#   endif
-#   ifdef MASKING
-            w(i,jend+1,k,nnew)=w(i,jend+1,k,nnew)
-     &                                     *rmask(i,jend+1)
-#   endif
           enddo
         enddo
-#  else
+#   else  /* not orlanski, spec or non-grad instead */
         do k=1,N
           do i=istr,iend
-#   if defined OBC_NORTH && defined OBC_TSPECIFIED
-#    ifdef T_FRC_BRY
+#    if defined OBC_M3SPECIFIED
             w(i,jend+1,k,nnew)=w_north(i,k)
 #    else
-            w(i,jend+1,k,nnew)=wclm(i,jend+1,k)
+            w(i,jend+1,k,nnew)=w(i,jend,k,nnew)  
 #    endif
-#   else
-            w(i,jend+1,k,nnew)=w(i,jend,k,nnew)
-#   endif
-#   ifdef MASKING
-     &                                   *rmask(i,jend+1)
-#   endif
           enddo
         enddo
-#  endif
+#   endif  /* orlanski, spec, or non-grad */
+#  else /* not open, but closed */
+        do k=1,N                          ! Wall: slip: gamma= 1
+          do j=jstr,jend                  !    no-slip: gamma=-1
+            w(i,jend+1,k,nnew)=gamma2*w(i,jend,k,nnew)
+          enddo
+        enddo
+#  endif /* OBC_NORTH or not */
       endif    ! <-- NORTHERN_EDGE
-# endif /* ! NS_PERIODIC */
+
+# endif /* not NS_PERIODIC */
 
 ! Corner points between adjacent boundaries. Note that because boundary
 ! conditions for tracers are of gradient nature -- either Neumann, or
@@ -491,7 +348,10 @@ c-->     &                                           , dft,dfx,dfy
 #  endif
 # endif
       end
-#else
+
+#else 
+
       subroutine w3dbc_empty
       end
+
 #endif /* SOLVE3D && NHMG */

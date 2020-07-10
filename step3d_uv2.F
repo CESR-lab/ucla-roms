@@ -16,11 +16,6 @@
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
-#ifdef NHMG
-!     use nhmg, only : nhmg_solve,halo
-!     use mg_grids
-!     use mg_tictoc, only : tic, toc
-#endif
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -380,10 +375,6 @@
 
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
-# ifdef NHMG
-      call w3dbc_tile (istr,iend,jstr,jend, DC)
-# endif
-
 
 
 ! Coupling 2D and 3D momentum equations:
@@ -611,7 +602,10 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif
         endif    !<-- j >= jstr
       enddo    ! <-- j
-      
+
+# undef IU_RANGE
+# undef IV_RANGE
+# undef J_RANGE
 
 # ifdef RIVER_SOURCE
       do j=jstr,jend
@@ -642,22 +636,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         enddo
       enddo
 # endif
-!     if (mynode==0) then
-!       print *,'-----------------------------------------------------'
-!       ub = u(31,10,1,nnew)
-!       ut = u(31,10,n,nnew)
-!       print 97, ub,ut,ut/ub
-!       ub = u(31,10,n,nnew)
-!       ut = w(1,10,n,nnew)
-!       print 96, ub,ut,ut/ub
-!     endif
-! 97  format( 'uv2 after ub,ut,ratio: ',3e13.4)
-! 96  format( 'uv2 after ut,wt,ratio: ',3e13.4)
-
-
-# undef IU_RANGE
-# undef IV_RANGE
-# undef J_RANGE
 
 ! Exchange periodic boundaries and computational margins.
 
@@ -669,21 +647,19 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
       call exchange_3_tile (istr,iend,jstr,jend,   FlxV,N,
      &                         v(START_2D_ARRAY,1,nnew), N,
      &                         vbar(START_2D_ARRAY,knew),1)
-#  ifdef NHMG
-      call exchange_tile (istr,iend,jstr,jend,
-     &                         w(START_2D_ARRAY,1,nnew), N)
-#  endif
 
 #  ifdef ADV_ISONEUTRAL
       call exchange_3_tile (istr,iend,jstr,jend, idRz,N+1,
      &                                 diff3u,N, diff3v,N)
 #  endif
 # endif
+
+
+# ifdef NHMG
 !--------------------------------------------------------------------
 ! Coupling w
 !--------------------------------------------------------------------
 !
-# ifdef NHMG
       ! We've modified u and v, w needs to be made consistent
       do j=istr,iend
         do k=1,N
@@ -713,18 +689,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
       call exchange_tile (istr,iend,jstr,jend,
      &                          w(START_2D_ARRAY,1,nnew),N)
 #  endif
-
-!     if (mynode==0) then
-!       ub = u(31,10,1,nnew)
-!       ut = u(31,10,n,nnew)
-!       print 97, ub,ut,ut/ub
-!       ub = u(31,10,n,nnew)
-!       ut = w(1,10,n,nnew)
-!       print 96, ub,ut,ut/ub
-!     endif
-! 95  format( 'uv2 coupl ub,ut,ratio: ',3e13.4)
-! 94  format( 'uv2 coupl wm,wt,ratio: ',3e13.4)
-
 
 # endif /* NHMG */
 

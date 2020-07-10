@@ -324,6 +324,9 @@ C$OMP END MASTER
 #include "scalars.h"
 #include "ncvars.h"
 
+!! JM
+#include "ocean3d.h"
+
 
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
@@ -456,11 +459,6 @@ C$OMP END MASTER
 C$OMP BARRIER
         if (iic-ntstart > ntimes) goto 99   !-->  DONE
       endif
-#ifdef  NHMG
-      ! indexes for nhmg ab2 pressure corrections
-      iprec1 = 1
-      iprec2 = 2
-#endif
 
 
 ! Solve the 2D equations for the barotropic mode.
