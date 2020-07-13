@@ -27,7 +27,7 @@
 c--#define nf_def_var my_nf_def_var
 
 #ifdef WEC
-      use wec_frc, only: def_his_def_var_wec
+      use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
 #endif
 
       implicit none
@@ -597,12 +597,27 @@ c--#define nf_def_var my_nf_def_var
 
 
       ! Define WEC related variable attributes
+      ! --------------------------------------
 #ifdef WEC
+
+# ifndef AVRH /* NOT AVRH */
+        ! Define WEC variables to be output
         call def_his_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
-#ifdef SOLVE3D
+#  ifdef SOLVE3D
      &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
-#endif
+#  endif
      &                                                             )
+
+# else /* AVRH */
+        ! Define WEC AVERAGED variables to be output
+        call def_avg_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
+#  ifdef SOLVE3D
+     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
+#  endif
+     &                                                             )
+
+# endif /* END AVRH */
+
 #endif   /* WEC */
 
 

@@ -186,7 +186,6 @@
       ! ---------------
 
       integer var_id ! variable ID
-      character(len=64) text
 
       ! Taken from def_his.F
 #ifdef MASK_LAND_DATA
@@ -214,15 +213,8 @@
       !      ierr=nf_def_var (ncid, var_name(1:lvar), nf_float,
       !     &                       var_dims, var_grd, his_var)
 
-      ! add if variable averaged or not to variable long name
-#ifdef AVRH
-      text='averaged '/ /var_long_name
-#else
-      text=var_long_name
-#endif
-
       ! Set variable long name
-      ierr=nf90_put_att (ncid, var_id, 'long_name', text)
+      ierr=nf90_put_att (ncid, var_id, 'long_name', var_long_name)
       if(ierr .ne. nf90_noerr) goto 2
 
       ! Set variable units
