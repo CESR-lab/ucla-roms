@@ -25,7 +25,9 @@
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
-      real cff
+      real cff !,dmax,div
+      real ub,ut
+!     integer ierr
 
 # include "grid.h"
 # include "ocean2d.h"
@@ -49,7 +51,7 @@
 
 # ifndef IMPLICIT_BOTTOM_DRAG
 
-! Apply implicit time step for vertical viscosty term to horizontal
+! Apply implicit time step for vertical viscosity term to horizontal
 ! velocity components,
 !
 !   du(k)     1     [         u(k+1)-u(k)             u(k)-u(k-1) ]
@@ -179,7 +181,9 @@
           enddo
         enddo        !--> discard DC,CF
 
-# else /* IMPLICIT_BOTTOM_DRAG */
+# else /* yes IMPLICIT_BOTTOM_DRAG */
+        ! the only thing we do is 'coupling'.
+        ! correcting the 3D flow to be in line with the 2D prediction
 
         do i=istrU,iend                          !--> coupling only
           CF(i,0)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))
@@ -287,7 +291,7 @@
             enddo
           enddo       !--> discard DC,CF(:,0)
 
-# else  /* IMPLICIT_BOTTOM_DRAG */
+# else  /* yes IMPLICIT_BOTTOM_DRAG */
 
           do i=istr,iend
             CF(i,0)=0.5*(Hz(i,j,N)+Hz(i,j-1,N))
@@ -316,6 +320,60 @@
           enddo       !--> discard DC,CF(:,0)
 # endif
         endif  !<-- j>=jstrV
+
+# ifdef NHMG
+      
+        do i=istr,iend
+          DC(i,0) =dt*pm(i,j)*pn(i,j)
+          FC(i,N-1)= 0.5*dt*(Akv(i,j,N)+Akv(i,j,N-1))
+     &                      /Hz(i,j,N)
+
+          WC(i,N-1)= DC(i,0)*0.5*(Wi(i,j,N)+Wi(i,j,N-1))
+
+          cff=1./( 0.5*(Hz(i,j,N)                )
+     &                    +FC(i,N-1)-min(WC(i,N-1),0.) )
+
+          CF(i,N-1)=cff*(  FC(i,N-1)+max(WC(i,N-1),0.) )
+
+          DC(i,N)=cff*w(i,j,N,nnew)
+        enddo
+
+        do k=N-1,2,-1      !--> forward elimination for w
+          do i=istr,iend
+            FC(i,k-1)= 0.5*dt*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
+     &                   /Hz(i,j,k)
+
+            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
+
+            cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j,k-1))
+     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
+     &                            +FC(i,k  )+max(WC(i,k),0.)
+     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
+     &                                                       )
+            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
+
+            DC(i,k)=cff*( w(i,j,k,nnew)
+     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+          enddo
+        enddo
+        !! change this you feel energetic. Instead of no-flux at the bottom we
+        !! have w(0) = 0 (different BC for tri-diag system)
+        do i=istr,iend
+          w(i,j,1,nnew)=( w(i,j,k,nnew)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
+     &                         )/( 0.5*(Hz(i,j,2)+Hz(i,j,1))
+     &                                       +FC(i,1)+max(WC(i,1),0.)
+     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
+     &                                                               )
+        enddo
+        do k=2,N,+1          !--> backsubstitution for w
+          do i=istr,iend
+            w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
+          enddo
+        enddo
+        !------- end computing of w(:,:,:,nnew) -----
+
+# endif
+
       enddo      ! <-- j
 
 ! Set PHYSICAL lateral boundary conditions.
@@ -323,30 +381,6 @@
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
-# ifdef PSOURCE
-      do is=1,Nsrc           ! Apply point mass sources associated
-        i=Isrc(is)           ! with river runoff simulations.
-        j=Jsrc(is)
-        if (istrR<=i .and. i<=iendR .and.
-     &      jstrR<=j .and. j<=jendR) then
-          if (Dsrc(is)==0) then
-            do k=1,N
-              u(i,j,k,nnew)=2.*Qsrc(is,k)/( dn_u(i,j)*(
-     &                       z_w(i-1,j,k)-z_w(i-1,j,k-1)
-     &                      +z_w(i  ,j,k)-z_w(i  ,j,k-1)
-     &                                                ))
-            enddo
-          else
-            do k=1,N
-              v(i,j,k,nnew)=2.*Qsrc(is,k)/( dm_v(i,j)*(
-     &                       z_w(i,j-1,k)-z_w(i,j-1,k-1)
-     &                      +z_w(i,j  ,k)-z_w(i,j  ,k-1)
-     &                                                ))
-            enddo
-          endif
-        endif
-      enddo
-# endif
 
 ! Coupling 2D and 3D momentum equations:
 !--------- -- --- -- -------- ----------
@@ -404,21 +438,20 @@
             FC(i,0)=FC(i,0)+DC(i,k)*u(i,j,k,nnew)
           enddo
         enddo
+        ! FC(0) is int(dz*U)*dy, DC(0) is int(dz)*dy
         do i=IU_RANGE
-          DC(i,0)=1./DC(i,0)
-          ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)
-!Daniel add
+          DC(i,0)=1./DC(i,0)  !!1/H
+          ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)  !! avg1 is at n+1?
 # ifdef WEC
      &                   -ust2d(i,j) 
-! weird mask thing we still don't understand
+! JM mask thing we do understand. Fix by properly masking in wec_frc
 #   ifdef MASKING
            ubar(i,j,knew)=ubar(i,j,knew)*umask(i,j)
      &                +ust2d(i,j)*(umask(i,j)-1.0)
 #   endif 
 # endif 
 
-          FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg1(i,j))
-! DevinD add
+          FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg1(i,j)) !! FC(0) is now correction velocity
 # ifdef WEC
      &                               +ust2d(i,j)
 # endif
@@ -430,7 +463,6 @@
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                  *umask(i,j)
-! Daniel add 
 #  ifdef WEC 
             ! again, weird mask - 1.0 thing --> waiting to hear back
             ! from Yusuke
@@ -457,7 +489,7 @@ c--#define DELTA 0.75
 
 c>># define EPSIL 0.2105
 c>># define DELTA 0.5790
-! DevinD add
+
             CF(i,k)=DELTA*FlxU(i,j,k) + EPSIL*DC(i,k)
      &                         *(u(i,j,k,nstp)+u(i,j,k,nnew)
 #  ifdef WEC 
@@ -475,6 +507,7 @@ c>># define DELTA 0.5790
           do i=IU_RANGE
             FlxU(i,j,k)=CF(i,k)-DC(i,k)*CF(i,0)   !<-- correction
 ! Daniel add, again why WEC and MASKING ???
+! JM Good question, fix in wec_frc and investigate
 #if defined WEC && defined MASKING
             FlxU(i,j,k)=FlxU(i,j,k)*umask(i,j)
 #endif 
@@ -532,7 +565,6 @@ c>># define DELTA 0.5790
 #   endif
 # endif
 # ifdef TR
-! Daniel add
 #  ifdef WEC
               CF(i,k)=DC(i,k)*( 0.5*(v(i,j,k,nstp)+v(i,j,k,nnew))
      &                                              +vst(i,j,k) )
@@ -556,7 +588,6 @@ c>># define DELTA 0.5790
           do k=1,N,+1
             do i=IV_RANGE
               FlxV(i,j,k)=CF(i,k)-DC(i,k)*CF(i,0)
-! Daniel add
 # if defined WEC && defined MASKING
              FlxV(i,j,k)=FlxV(i,j,k)*vmask(i,j)
 # endif
@@ -642,7 +673,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         endif    !<-- j >= jstr
       enddo    ! <-- j
       
-
 # ifdef RIVER_SOURCE
       do j=jstr,jend
         do i=istr,iend
@@ -673,8 +703,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
       enddo
 # endif
 
-
-
 # undef IU_RANGE
 # undef IV_RANGE
 # undef J_RANGE
@@ -695,6 +723,45 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
      &                                 diff3u,N, diff3v,N)
 #  endif
 # endif
+
+
+# ifdef NHMG
+!--------------------------------------------------------------------
+! Coupling w
+!--------------------------------------------------------------------
+!
+      ! We've modified u and v, w needs to be made consistent
+      do j=istr,iend
+        do k=1,N
+          do i=Istr,Iend
+            DC(i,0)=pm(i,j)*pn(i,j)
+            ! at this time, Huon and Hvom CANNOT used : they are 
+            ! defined at n+1/2 instead of n+1
+            w(i,j,k,nnew)=w(i,j,k-1,nnew)
+     &      - DC(i,0)*(
+     &       +0.5*(Hz(i,j,k)+Hz(i+1,j,k))*dn_u(i+1,j)*u(i+1,j,k,nnew)
+     &       -0.5*(Hz(i-1,j,k)+Hz(i,j,k))*dn_u(i,j)*u(i,j,k,nnew)
+     &       +0.5*(Hz(i,j,k)+Hz(i,j+1,k))*dm_v(i,j+1)*v(i,j+1,k,nnew)
+     &       -0.5*(Hz(i,j-1,k)+Hz(i,j,k))*dm_v(i,j)*v(i,j,k,nnew) )
+          enddo
+        enddo
+      enddo
+!
+
+!--------------------------------------------------------------------
+! Update physical boundary values
+!--------------------------------------------------------------------
+      call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
+!--------------------------------------------------------------------
+! Exchange periodic boundaries and computational margins.
+!--------------------------------------------------------------------
+#  ifdef EXCHANGE
+      call exchange_tile (istr,iend,jstr,jend,
+     &                          w(START_2D_ARRAY,1,nnew),N)
+#  endif
+
+# endif /* NHMG */
+
       end
 
 

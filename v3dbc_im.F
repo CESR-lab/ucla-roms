@@ -368,10 +368,6 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
 #  endif
       endif          !<-- WESTERN_EDGE
 
-#  ifdef ISWAKE_XXX
-#   define OBC_M3ORLANSKI
-#  endif
-
       if (EASTERN_EDGE) then
 #  ifdef OBC_EAST
 #   ifdef OBC_M3ORLANSKI
@@ -381,58 +377,21 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
             grad(iend+1,j)=v(iend+1,j+1,k,nstp)-v(iend+1,j,k,nstp)
           enddo
           do j=jstrV,jend
-#    ifdef LEGACY_ORLANSKI
-            dft=v(iend,j,k,nstp)-v(iend  ,j,k,nnew)
-            dfx=v(iend,j,k,nnew)-v(iend-1,j,k,nnew)
 
-#     ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#     else
-            if (dft*(grad(iend,j-1)+grad(iend,j)) > 0.) then
-              dfy=grad(iend,j-1)
-            else
-              dfy=grad(iend,j  )
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#      ifdef OBC_RAD_NPO
-            cy=0.
-#      else
-            cy=min(cff, max(dft*dfy, -cff))
-#      endif
-#     endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#     if defined M3_FRC_BRY || defined M3NUDGING
-              cext=dtfwd*ubind * 0.5*(pm(iend+1,j-1)+pm(iend+1,j))
-            else
-              cext=0.
-#     endif
-            endif
-
-            v(iend+1,j,k,nnew)=( cff*v(iend+1,j,k,nstp)
-     &                              +cx*v(iend,j,k,nnew)
-     &                       -max(cy,0.)*grad(iend+1,j-1)
-     &                       -min(cy,0.)*grad(iend+1,j  )
-     &                                        )/(cff+cx)
-
-#    else
-
-          cx=0.125*dtfwd*(u(iend+1,j,k,nrhs)+u(iend+1,j-1,k,nrhs))
+            cx=0.125*dtfwd*(u(iend+1,j,k,nrhs)+u(iend+1,j-1,k,nrhs))
      &                               *( pm(iend+1,j)+pm(iend+1,j-1)
      &                                   +pm(iend,j)+pm(iend,j-1) )
 
-          cy=0.125*dtfwd*(v(iend,j,k,nrhs)+v(iend+1,j,k,nrhs))
+            cy=0.125*dtfwd*(v(iend,j,k,nrhs)+v(iend+1,j,k,nrhs))
      &                               *( pn(iend+1,j)+pn(iend+1,j-1)
      &                                   +pn(iend,j)+pn(iend,j-1) )
-          if (cx > 0.) then
-            cext=0.
-          else
-            cext=-cx ; cx=0.
-          endif
+            if (cx > 0.) then
+              cext=0.
+            else
+              cext=-cx ; cx=0.
+            endif
 
-          v(iend+1,j,k,nnew)=(1.-cx)*(   v(iend+1,j,k,nstp)
+            v(iend+1,j,k,nnew)=(1.-cx)*(   v(iend+1,j,k,nstp)
      &                          -max(cy,0.)*grad(iend+1,j-1)
      &                          -min(cy,0.)*grad(iend+1,j  )
      &                                                     )
@@ -440,7 +399,6 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
      &                            -max(cy,0.)*grad(iend,j-1)
      &                            -min(cy,0.)*grad(iend,j  )
      &                                                     )
-#    endif /* LEGACY_ORLANSKI */
 
 #    if defined M3_FRC_BRY  || defined M3NUDGING
             v(iend+1,j,k,nnew)=(1.-cext)*v(iend+1,j,k,nnew)
@@ -544,8 +502,6 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
 # endif
 !     return
       end
-
-
 #else
       subroutine v3dbc_empty
       end

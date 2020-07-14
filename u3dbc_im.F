@@ -5,7 +5,6 @@
 
 ! Set lateral boundary conditions for XI-component velocity
 ! u(:,:,:,nnew).
-! Daniel add
 #ifdef WEC
       use wec_frc 
 #endif
@@ -138,9 +137,6 @@ c            u(istr,j,k,nnew)=0.
 #  endif              /* OBC_WEST */
       endif         !<-- WESTERN_EDGE
 
-#  ifdef ISWAKE_XXX
-#   define OBC_M3ORLANSKI
-#  endif
 
       if (EASTERN_EDGE) then
 #  ifdef OBC_EAST

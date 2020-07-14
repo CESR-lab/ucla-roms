@@ -5,7 +5,6 @@
 ! Set lateral boundary conditions for the barotropic (i.e. vertically
 ! integrated) XI-component velocity ubar(:,:,knew).
 
-! Daniel add
 #ifdef WEC
       use wec_frc
 #endif
@@ -167,22 +166,13 @@
         enddo
 #  endif
 # else
-			! Western edge closed
-        do j=jstr,jend       
-! Daniel add 
-#  ifdef WEC
-          ! No lagrangian flux
-          ubar(istr,j,knew)=-ust2d(istr,j)     
-#   ifdef MASKING
-     &                      *umask(istr,j)
-#   endif
-#  else                                              
-         ! Western edge closed
-         ! ==================
-         ! (no-flux, default) 
-          ubar(istr,j,knew)=0.
-#  endif         
-        enddo                                  
+! For WEC there was this (talk to delphine)
+! No lagrangian flux
+!      ubar(istr,j,knew)=-ust2d(istr,j)     
+!     &                    *umask(istr,j)  
+        do j=jstr,jend                          ! Western edge closed
+          ubar(istr,j,knew)=0.                  ! ======= ==== ======
+        enddo                                   !  (no-flux, default)
 # endif           /* OBC_WEST */
       endif     !<-- WESTERN_EDGE
 
@@ -306,17 +296,9 @@ c--#endif
         enddo
 #  endif
 # else
-       ! Eastern edge closed 
-        do j=jstr,jend                   
-! Daniel add
-#  ifdef WEC
-          ubar(iend+1,j,knew)=-ust2d(iend+1,j)  ! no Lagrangian flux
-#   ifdef MASKING
-     &                        *umask(iend+1,j)
-#   endif
-#  else   
-          ubar(iend+1,j,knew)=0.          
-#  endif 
+!! See comments for WESTERN boundary WEC (closed BC)
+        do j=jstr,jend                       ! Eastern edge closed BC
+          ubar(iend+1,j,knew)=0.             ! ======= ==== ====== ==
         enddo
 # endif /* OBC_EAST */
       endif         !<-- EASTERN_EDGE

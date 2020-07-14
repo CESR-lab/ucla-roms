@@ -4,7 +4,6 @@
 
 ! Set lateral boundary conditions for the barotropic (i.e. vertically
 ! integrated) ETA-component velocity vbar(:,:,knew).
-! Daniel add
 #ifdef WEC
       use wec_frc
 #endif
@@ -281,7 +280,6 @@
         enddo
 #  endif
 # else
-
         do i=istr,iend                        ! Northern edge closed
 #  ifdef WEC
           vbar(i,jend+1,knew)=-vst2d(i,jend+1)  ! no Lagrangian flux

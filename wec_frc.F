@@ -2203,11 +2203,17 @@ C$OMP BARRIER
       do j=jstrR,jendR
         do i=istr,iendR
           ust2d(i,j)=0.5*(ustr2d(i-1,j)+ustr2d(i,j))
+# ifdef MASKING
+!    &                  *umask(i,j) 
+# endif
         enddo
       enddo
       do j=jstr,jendR
         do i=istrR,iendR
           vst2d(i,j)=0.5*(vstr2d(i,j-1)+vstr2d(i,j))
+# ifdef MASKING
+!    &                  *vmask(i,j)
+# endif
         enddo
       enddo
 
@@ -2651,6 +2657,9 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 !# else
             ust(i,j,k)=0.5*( ust_r(i-1,j,k)
      &                        +ust_r(i,j,k))/fac2d(i,j)
+# ifdef MASKING
+!    &                  *umask(i,j)
+# endif
 !# endif
           enddo
         enddo
@@ -2662,6 +2671,9 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 !# else
             vst(i,j,k)=0.5*( vst_r(i,j-1,k)
      &                        +vst_r(i,j,k) )/fac2d(i,j)
+# ifdef MASKING
+!    &                  *vmask(i,j)
+# endif
 !# endif
           enddo
         enddo
