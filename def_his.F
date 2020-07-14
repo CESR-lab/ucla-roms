@@ -26,6 +26,10 @@
 
 c--#define nf_def_var my_nf_def_var
 
+#ifdef WEC
+      use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
+#endif
+
       implicit none
       integer total_rec, ierr
 #include "param.h"
@@ -71,19 +75,6 @@ c--#define nf_def_var my_nf_def_var
 # ifdef WKB_WWAVE
 #  define vidWKB hisWKB
 # endif
-# ifdef MRL_WCI
-#  define vidSUP hisSUP
-#  define vidUST2D hisUST2D
-#  define vidVST2D hisVST2D
-#  define vidUST hisUST
-#  define vidVST hisVST
-#  define vidWST hisWST
-#  define vidAkb hisAkb
-#  define vidAkw hisAkw
-#  define vidKVF hisKVF
-#  define vidCALP hisCALP
-#  define vidKAPS hisKAPS
-# endif
 #else
 # define ncid ncavg
 # define fname avgname
@@ -106,19 +97,6 @@ c--#define nf_def_var my_nf_def_var
 # define vidHbbl avgHbbl
 # ifdef WKB_WWAVE
 #  define vidWKB avgWKB
-# endif
-# ifdef MRL_WCI
-#  define vidSUP avgSUP
-#  define vidUST2D avgUST2D
-#  define vidVST2D avgVST2D
-#  define vidUST avgUST
-#  define vidWST avgWST
-#  define vidVST avgVST
-#  define vidAkb avgAkb
-#  define vidAkw avgAkw
-#  define vidKVF avgKVF
-#  define vidCALP avgCALP
-#  define vidKAPS avgKAPS
 # endif
 #endif
 
@@ -177,10 +155,15 @@ c--#define nf_def_var my_nf_def_var
 ! ====== === ======= ======== =====    define all the variables.
 
   10  if (create_new_file) then
+
         ierr=nf_create(fname(1:lfnm), nf_clobber+nf_64bit_offset,
      &                                                     ncid)
         if (ierr == nf_noerr) then
+
+          ! Set fill value handling
           ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
+
+          ! Error handling
           if (ierr /= nf_noerr) then
 # ifdef AVRH
             write(*,'(1x,4A,I4)') '### ERROR: def_avg :: Cannot ',
@@ -190,6 +173,8 @@ c--#define nf_def_var my_nf_def_var
      &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
      &         MYID
           endif
+
+        ! Error: cannot create file
         else
 #ifdef AVRH
           write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_avg :: ',
@@ -220,6 +205,11 @@ c--#define nf_def_var my_nf_def_var
 #endif
         ierr=my_nf_def_dim(ncid, 'time', nf_unlimited, timedim)
         ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
+
+      ! Transfer all newly defined dimensions to grid types that use
+      ! that dimension - e.g. u-point = ( xi_u, eta_rho, timedim )
+      ! for eta_rho it can use u2dgrd(2)=r2dgrd(2) rather than nf call
+      ! --------------------------------------------------------------
 
         auxil(2)=timedim
 
@@ -605,6 +595,32 @@ c--#define nf_def_var my_nf_def_var
 # endif
 #endif /* SOLVE3D */
 
+
+      ! Define WEC related variable attributes
+      ! --------------------------------------
+#ifdef WEC
+
+# ifndef AVRH /* NOT AVRH */
+        ! Define WEC variables to be output
+        call def_his_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
+#  ifdef SOLVE3D
+     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
+#  endif
+     &                                                             )
+
+# else /* AVRH */
+        ! Define WEC AVERAGED variables to be output
+        call def_avg_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
+#  ifdef SOLVE3D
+     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
+#  endif
+     &                                                             )
+
+# endif /* END AVRH */
+
+#endif   /* WEC */
+
+
 ! Leave definition mode.
 ! ----- ---------- -----
 
@@ -842,6 +858,13 @@ c--#define nf_def_var my_nf_def_var
         endif
 # endif
 #endif /* SOLVE3D */
+
+
+
+! ---------------------
+! Leave definition mode
+! ---------------------
+
         if (ierr == nf_noerr) then
 #ifdef MPI_SILENT_MODE
           if (mynode == 0) then
@@ -933,19 +956,6 @@ c--#define nf_def_var my_nf_def_var
 #undef vidHbbl
 #ifdef WKB_WWAVE
 # undef vidWKB
-#endif
-#ifdef MRL_WCI
-# undef vidSUP
-# undef vidUST2D
-# undef vidVST2D
-# undef vidUST
-# undef vidVST
-# undef vidWST
-# undef vidAkb
-# undef vidAkw
-# undef vidKVF
-# undef vidCALP
-# undef vidKAPS
 #endif
 
 #ifndef AVRH

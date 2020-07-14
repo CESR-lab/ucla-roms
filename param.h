@@ -12,6 +12,8 @@
 #if defined DOUBLE_GYRE
 c     &               LLm=192, MMm=192, N=12
      &                LLm=384, MMm=384, N=16
+#elif defined ANA_WEC_FRC
+     &               LLm=1400, MMm=2, N=2    ! DevinD added
 #elif defined CANYON_A
      &               LLm=65,  MMm=48,  N=10
 #elif defined CANYON_B
@@ -120,6 +122,11 @@ c     &    LLm=1120, MMm=560, N=40  ! US West Coast 2010 (L3, 0.25km)
 c     &    LLm=640,  MMm=400, N=32  ! US West Coast 2010 (L4 SMB, 75m)
      &     LLm=1600, MMm=560, N=32  ! US West Coast 2010 (L4 PV, 75 m)
 
+#elif defined USWC_WEC
+c     &               LLm=1600, MMm=800, N=50       ! US West Coast L2 DD
+c     &               LLm=1700, MMm=850, N=50       ! US West Coast L3 DD
+     &               LLm=199, MMm=99, N=50       ! test Devin L3 WEC DD
+
 
 #elif defined USWEST
 # ifdef GRID_LEVEL
@@ -158,7 +165,11 @@ c**  &               LLm=126,  MMm=254, N=20    ! USWEST grid 16
 !                                             XI- and ETA-directions;
       integer, parameter ::
 #ifdef MPI
-     &      NP_XI=8, NP_ETA=32, NSUB_X=1, NSUB_E=1
+# if defined ANA_WEC_FRC
+     &      NP_XI=8, NP_ETA=1, NSUB_X=1, NSUB_E=1  ! DevinD - analytical WEC
+# elif defined USWC_WEC
+     &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1 ! DevinD - WEC
+# endif
 #else
 c     &      NSUB_X=4, NSUB_E=40  ! PAC44
 c     &      NSUB_X=8, NSUB_E=80   ! PAC22

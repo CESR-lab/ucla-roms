@@ -2,6 +2,10 @@
                                ! Writes requested model
       subroutine wrt_his       ! fields at requested levels
                                ! into history netCDF file.
+#ifdef WEC
+      use wec_frc, only: wrt_his_wec
+#endif
+
       implicit none
 #include "param.h"
 #include "ncvars.h"
@@ -12,6 +16,7 @@
 #include "eos_vars.h"
 #include "mixing.h"
 #include "netcdf.inc"
+
       integer ierr,  record, i, lstr, lvar, lenstr
      &   , start(2), count(2), ibuff(iaux), ncdf_write
       character(len=18) tstring
@@ -289,6 +294,12 @@ CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
       endif
 # endif
 #endif
+
+      ! Wave Effect on Current (WEC) variables
+#ifdef WEC
+      call wrt_his_wec(record, ierr, may_day_flag)
+#endif
+
 
   1   format(/1x, '### ERROR: wrt_his :: Cannot write variable ''',
      &              A, ''' into history file, rec =', i6, 3x,A,i4)

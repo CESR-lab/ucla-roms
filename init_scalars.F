@@ -1,11 +1,12 @@
 #include "cppdefs.h"
 
-       subroutine init_scalars (ierr)
+      subroutine init_scalars (ierr)
 
 ! Set initial values for globally accessable (stored in common blocks)
 ! scalar variables.  Typically these are associated with time indices,
 ! global summation counters, model utility switches, i/o contlol, etc.
 ! Note that NONE of the model physical parameters is initialized here.
+
 
       implicit none
       integer ierr, i
@@ -270,6 +271,7 @@ CR      write(*,'(1x,A,I3)') 'indxHbbl =',indxHbbl
       vname(2,indxTIsrf)='temperature of ice surface'
       vname(3,indxTIsrf)='Kelvin'
 #endif
+
 
       ierr=0
       call read_inp (ierr)

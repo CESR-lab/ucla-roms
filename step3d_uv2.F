@@ -16,6 +16,11 @@
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
+
+# ifdef WEC
+      use wec_frc, only: ust2d, vst2d, ust, vst
+# endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -169,7 +174,6 @@
         do k=N,1,-1
           do i=istrU,iend
             u(i,j,k,nnew)=(DC(i,k)-DC(i,0))      !<-- correction
-!           u(i,j,k,nnew)= DC(i,k)  !!!! JM testing only, no barotropic correction !!!!!
 #  ifdef MASKING
      &                          *umask(i,j)
 #  endif
@@ -181,6 +185,7 @@
         ! the only thing we do is 'coupling'.
         ! correcting the 3D flow to be in line with the 2D prediction
 
+        do i=istrU,iend                          !--> coupling only
           CF(i,0)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))
           DC(i,0)=u(i,j,N,nnew)
           u(i,j,N,nnew)=u(i,j,N,nnew)/CF(i,0)
@@ -422,10 +427,11 @@
 
       do j=J_RANGE                  !--> XI-component
         do i=IU_RANGE
-          DC(i,0)= 0.0
-          FC(i,0)= 0.0
+          DC(i,N)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))*dn_u(i,j)
+          DC(i,0)=DC(i,N)
+          FC(i,0)=DC(i,N)*u(i,j,N,nnew)
         enddo
-        do k=N,1,-1
+        do k=N-1,1,-1
           do i=IU_RANGE
             DC(i,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
             DC(i,0)=DC(i,0)+DC(i,k)
@@ -436,7 +442,19 @@
         do i=IU_RANGE
           DC(i,0)=1./DC(i,0)  !!1/H
           ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)  !! avg1 is at n+1?
+# ifdef WEC
+     &                   -ust2d(i,j) 
+! JM mask thing we do understand. Fix by properly masking in wec_frc
+#   ifdef MASKING
+           ubar(i,j,knew)=ubar(i,j,knew)*umask(i,j)
+     &                +ust2d(i,j)*(umask(i,j)-1.0)
+#   endif 
+# endif 
+
           FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg1(i,j)) !! FC(0) is now correction velocity
+# ifdef WEC
+     &                               +ust2d(i,j)
+# endif
 !>
           CF(i,0)=0.   !<-- initialize vertical integral
         enddo          !--> keep DC(:,0) for later
@@ -445,10 +463,23 @@
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                  *umask(i,j)
+#  ifdef WEC 
+            ! again, weird mask - 1.0 thing --> waiting to hear back
+            ! from Yusuke
+            u(i,j,k,nnew)=u(i,j,k,nnew)*umask(i,j)
+     &                +ust(i,j,k)*(umask(i,j)-1.0)
+#  endif
 # endif
 c--# define TR
 # ifdef TR
+! Daniel add, can proably clean this up with & +ust(i,j,k) instead of
+! double repeated line, but wait for testing
+#  ifdef WEC
+            CF(i,k)=DC(i,k)*( 0.5*(u(i,j,k,nstp)+u(i,j,k,nnew))
+     &                                            +ust(i,j,k) )
+#  else
             CF(i,k)=0.5*DC(i,k)*(u(i,j,k,nstp)+u(i,j,k,nnew))
+#  endif 
 # else
 c--#define EPSIL 0.125
 c--#define DELTA 0.75
@@ -460,7 +491,11 @@ c>># define EPSIL 0.2105
 c>># define DELTA 0.5790
 
             CF(i,k)=DELTA*FlxU(i,j,k) + EPSIL*DC(i,k)
-     &                         *(u(i,j,k,nstp)+u(i,j,k,nnew))
+     &                         *(u(i,j,k,nstp)+u(i,j,k,nnew)
+#  ifdef WEC 
+     &                                  + 2. * ust(i,j,k)       
+#  endif
+     &                                                        )
 # endif
             CF(i,0)=CF(i,0)+CF(i,k)    !<-- vertical integration
           enddo
@@ -471,6 +506,11 @@ c>># define DELTA 0.5790
         do k=1,N,+1
           do i=IU_RANGE
             FlxU(i,j,k)=CF(i,k)-DC(i,k)*CF(i,0)   !<-- correction
+! Daniel add, again why WEC and MASKING ???
+! JM Good question, fix in wec_frc and investigate
+#if defined WEC && defined MASKING
+            FlxU(i,j,k)=FlxU(i,j,k)*umask(i,j)
+#endif 
 
 # ifdef ADV_ISONEUTRAL
             diff3u(i,j,k)=sqrt(GAMMA*abs(u(i,j,k,nnew))*dm_u(i,j))
@@ -495,7 +535,20 @@ c>># define DELTA 0.5790
           do i=IV_RANGE
             DC(i,0)=1./DC(i,0)
             vbar(i,j,knew)=DC(i,0)*DV_avg1(i,j)
+!Daniel add, again weird mask -1
+# ifdef WEC
+     &                             -vst2d(i,j) 
+#  ifdef MASKING
+            vbar(i,j,knew)=vbar(i,j,knew)*vmask(i,j)
+     &                  +vst2d(i,j)*(vmask(i,j)-1.0)
+
+#  endif
+# endif
+
             FC(i,0)=DC(i,0)*(FC(i,0)-DV_avg1(i,j))
+# ifdef WEC
+     &                             +vst2d(i,j)
+# endif 
 !>
             CF(i,0)=0.
           enddo        !--> keep DC(:,0) for later
@@ -504,12 +557,27 @@ c>># define DELTA 0.5790
               v(i,j,k,nnew)=(v(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                    *vmask(i,j)
+
+! Daniel add, mask-1  again, remember to check with Yusuke
+#   ifdef WEC
+              v(i,j,k,nnew)=v(i,j,k,nnew)*vmask(i,j)
+     &                  +vst(i,j,k)*(vmask(i,j)-1.0)
+#   endif
 # endif
 # ifdef TR
+#  ifdef WEC
+              CF(i,k)=DC(i,k)*( 0.5*(v(i,j,k,nstp)+v(i,j,k,nnew))
+     &                                              +vst(i,j,k) )
+#  else
               CF(i,k)=0.5*DC(i,k)*(v(i,j,k,nstp)+v(i,j,k,nnew))
+#  endif
 # else
               CF(i,k)=DELTA*FlxV(i,j,k) + EPSIL*DC(i,k)
-     &                           *(v(i,j,k,nstp)+v(i,j,k,nnew))
+     &                           *(v(i,j,k,nstp)+v(i,j,k,nnew)
+#  ifdef WEC
+     &                                  +2.*vst(i,j,k) 
+#  endif
+     &                                                        )
 # endif
               CF(i,0)=CF(i,0)+CF(i,k)
             enddo
@@ -520,7 +588,9 @@ c>># define DELTA 0.5790
           do k=1,N,+1
             do i=IV_RANGE
               FlxV(i,j,k)=CF(i,k)-DC(i,k)*CF(i,0)
-
+# if defined WEC && defined MASKING
+             FlxV(i,j,k)=FlxV(i,j,k)*vmask(i,j)
+# endif
 # ifdef ADV_ISONEUTRAL
               diff3v(i,j,k)=sqrt(GAMMA*abs(v(i,j,k,nnew))*dn_v(i,j))
      &                                                   *dn_v(i,j)
@@ -602,11 +672,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif
         endif    !<-- j >= jstr
       enddo    ! <-- j
-
-# undef IU_RANGE
-# undef IV_RANGE
-# undef J_RANGE
-
+      
 # ifdef RIVER_SOURCE
       do j=jstr,jend
         do i=istr,iend
@@ -636,6 +702,10 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         enddo
       enddo
 # endif
+
+# undef IU_RANGE
+# undef IV_RANGE
+# undef J_RANGE
 
 ! Exchange periodic boundaries and computational margins.
 

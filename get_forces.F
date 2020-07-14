@@ -86,6 +86,7 @@ c--#define VERBOSE
       call get_bsedim(ierr)
 # endif
 #endif
+
       if (ierr /= 0) may_day_flag=2
 #ifdef VERBOSE
       write(*,*) 'leaving get_forces' MYID

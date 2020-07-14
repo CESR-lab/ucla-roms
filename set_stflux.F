@@ -1,5 +1,5 @@
 #include "cppdefs.h"
-#if defined SOLVE3D && (!defined ANA_STFLUX || (SALINITY && !defined ANA_SSFLUX ))
+#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX)
 
       subroutine set_stflux_tile(istr,iend,jstr,jend, itrc, ierr)
 
