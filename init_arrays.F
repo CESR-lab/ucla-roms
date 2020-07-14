@@ -39,12 +39,9 @@
 ! within a cluster node) unless another distribution policy is
 ! specified to override the default.
 
-! DevinD added
 #ifdef WEC
       use wec_frc
 #endif
-! DevinD end
-
       implicit none
       integer istr,iend,jstr,jend, i,j,k,itrc
       real, parameter :: init=0.    !!!!  0xFFFA5A5A ==> NaN
@@ -161,6 +158,10 @@
           do i=istrR,iendR
             We(i,j,k)=init
             Wi(i,j,k)=init
+# ifdef NHMG
+            w(i,j,k,1)=init
+            w(i,j,k,2)=init
+# endif
 # ifdef AVERAGES
             w_avg(i,j,k)=init
             wvl_avg(i,j,k)=init
@@ -234,13 +235,9 @@
       enddo
 #endif /* SOLVE3D */
 
-!------ DevinD add from DH MRL init_arrays.F
 # ifdef WEC
-        ! (only use this if needed - JM's river_frc does not, but
-        !  river's might not be a global attribute for NUMA)
         call init_arrays_wec_tile(istr,iend,jstr,jend)
 # endif
-
 
 ! Initialize climatology arrays (see "climat.h").
 

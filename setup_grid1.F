@@ -95,8 +95,9 @@
       do j=jstrR,jendR
         do i=istr,iendR
            pmon_u(i,j)=(pm(i,j)+pm(i-1,j))/(pn(i,j)+pn(i-1,j))
-           dm_u(i,j)=2./(pm(i,j)+pm(i-1,j))
-           dn_u(i,j)=2./(pn(i,j)+pn(i-1,j))
+           dm_u(i,j)=2.0/(pm(i,j)+pm(i-1,j))
+           dn_u(i,j)=2.0/(pn(i,j)+pn(i-1,j))
+!          pn_u(i,j)=0.5*(pn(i,j)+pn(i-1,j))
 #ifdef MASKING
            umask(i,j)=rmask(i,j)*rmask(i-1,j)
 #endif
@@ -109,8 +110,10 @@
       do j=jstr,jendR
         do i=istrR,iendR
           pnom_v(i,j)=(pn(i,j)+pn(i,j-1))/(pm(i,j)+pm(i,j-1))
-          dm_v(i,j)=2./(pm(i,j)+pm(i,j-1))
-          dn_v(i,j)=2./(pn(i,j)+pn(i,j-1))
+          dm_v(i,j)=2.0/(pm(i,j)+pm(i,j-1))
+          dn_v(i,j)=2.0/(pn(i,j)+pn(i,j-1))
+!         pm_v(i,j)=0.5*(pm(i,j)+pm(i,j-1))
+
 #ifdef MASKING
           vmask(i,j)=rmask(i,j)*rmask(i,j-1)
 #endif

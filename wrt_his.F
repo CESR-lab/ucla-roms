@@ -2,12 +2,8 @@
                                ! Writes requested model
       subroutine wrt_his       ! fields at requested levels
                                ! into history netCDF file.
-
-! DevinD add for hisSUP variables, etc. Improve with use, only: in future
 #ifdef WEC
       use wec_frc, only: wrt_his_wec
-!      use ncio ! for netcdf writing ysing ncio. Delete if no longer used
-!      use wec_frc, only: ust2d, mynode_text, mynode_nc_file ! for ncio only!
 #endif
 
       implicit none
@@ -106,9 +102,6 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
         endif
 CR      write(*,*) 'wrt_his:  wrtZ  ' MYID
       endif
-!      ! DevinD - debug output
-!      write(*,*) 'mynode ', mynode, '   wrt_his:  ubar(1,1,1) = ', ubar(1,1,1)
-!      write(*,*) 'mynode ', mynode, '   wrt_his:  ust2d(1,1) = ', ust2d(1,1)
       if (wrthis(indxUb)) then
         ierr=ncdf_write(nchis, hisUb,  record,  u_var,
      &                  ubar(START_2D_ARRAY,knew), 1)

@@ -98,7 +98,7 @@
 !                 (ii) at least one error occurs inside this routine;
 ! "ierr_all" is cumulative "OR" status of all errors occurring here;
 !            essentially this variable "locks" on the first error
-!            occurring selely within this routine;
+!            occurring solely within this routine;
 
 
       if (iic == ntstart) then
@@ -171,6 +171,13 @@
               if (ierr_all == nf_noerr) ierr_all=ierr
               write(*,1) 'v_west', bry_file(ibry)(1:lsrc)
             endif
+#    ifdef NHMG
+            ierr=nf_inq_varid(bry_id,    'w_west', w_west_id)
+            if (ierr /= nf_noerr) then
+              if (ierr_all == nf_noerr) ierr_all=ierr
+              write(*,1) 'w_west', bry_file(ibry)(1:lsrc)
+            endif
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
             ierr=nf_inq_varid(bry_id,'temp_west', t_west_id(itemp))
@@ -226,6 +233,13 @@
               if (ierr_all == nf_noerr) ierr_all=ierr
               write(*,1)   'v_east', bry_file(ibry)(1:lsrc)
             endif
+#    ifdef NHMG
+            ierr=nf_inq_varid(bry_id,    'w_east', w_east_id)
+            if (ierr /= nf_noerr) then
+              if (ierr_all == nf_noerr) ierr_all=ierr
+              write(*,1) 'w_east', bry_file(ibry)(1:lsrc)
+            endif
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
             ierr=nf_inq_varid(bry_id, 'temp_east', t_east_id(itemp))
@@ -281,6 +295,13 @@
               if (ierr_all == nf_noerr) ierr_all=ierr
               write(*,1)    'v_south', bry_file(ibry)(1:lsrc)
             endif
+#    ifdef NHMG
+            ierr=nf_inq_varid(bry_id,    'w_south', w_south_id)
+            if (ierr /= nf_noerr) then
+              if (ierr_all == nf_noerr) ierr_all=ierr
+              write(*,1) 'w_south', bry_file(ibry)(1:lsrc)
+            endif
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
             ierr=nf_inq_varid(bry_id,'temp_south',t_south_id(itemp))
@@ -336,6 +357,13 @@
               if (ierr_all == nf_noerr) ierr_all=ierr
               write(*,1)  'v_north', bry_file(ibry)(1:lsrc)
             endif
+#    ifdef NHMG
+            ierr=nf_inq_varid(bry_id,    'w_north', w_north_id)
+            if (ierr /= nf_noerr) then
+              if (ierr_all == nf_noerr) ierr_all=ierr
+              write(*,1) 'w_north', bry_file(ibry)(1:lsrc)
+            endif
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
             ierr=nf_inq_varid(bry_id,'temp_north', t_north_id(itemp))
@@ -411,6 +439,11 @@
                 ierr=read_bry_EW(bry_id, v_west_id, bry_rec, v_var,
      &                                   v_west_dt(0,1,itbry), N)
                 if (ierr_all == nf_noerr) ierr_all=ierr
+#    ifdef NHMG
+                ierr=read_bry_EW(bry_id, w_west_id, bry_rec, r_var,
+     &                                   w_west_dt(0,1,itbry), N)
+                if (ierr_all == nf_noerr) ierr_all=ierr
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
@@ -438,6 +471,11 @@
                 ierr=read_bry_EW(bry_id, vbar_east_id, bry_rec, v_var,
      &                                   vbar_east_dt(0,itbry), 1)
                 if (ierr_all == nf_noerr) ierr_all=ierr
+#   ifdef NHMG
+                ierr=read_bry_EW(bry_id, w_east_id, bry_rec, r_var,
+     &                                   w_east_dt(0,1,itbry), N)
+                if (ierr_all == nf_noerr) ierr_all=ierr
+#   endif
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
@@ -448,6 +486,11 @@
                 ierr=read_bry_EW(bry_id, v_east_id, bry_rec, v_var,
      &                                   v_east_dt(0,1,itbry), N)
                 if (ierr_all == nf_noerr) ierr_all=ierr
+#    ifdef NHMG
+                ierr=read_bry_EW(bry_id, w_east_id, bry_rec, r_var,
+     &                                   w_east_dt(0,1,itbry), N)
+                if (ierr_all == nf_noerr) ierr_all=ierr
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
@@ -485,6 +528,11 @@
                 ierr=read_bry_NS(bry_id, v_south_id,  bry_rec, v_var,
      &                                   v_south_dt(0,1,itbry), N)
                 if (ierr_all == nf_noerr) ierr_all=ierr
+#    ifdef NHMG
+                ierr=read_bry_NS(bry_id, w_south_id, bry_rec, r_var,
+     &                                   w_south_dt(0,1,itbry), N)
+                if (ierr_all == nf_noerr) ierr_all=ierr
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
@@ -522,6 +570,11 @@
                 ierr=read_bry_NS(bry_id, v_north_id, bry_rec, v_var,
      &                                   v_north_dt(0,1,itbry), N)
                 if (ierr_all == nf_noerr) ierr_all=ierr
+#    ifdef NHMG
+                ierr=read_bry_NS(bry_id, w_north_id, bry_rec, r_var,
+     &                                   w_north_dt(0,1,itbry), N)
+                if (ierr_all == nf_noerr) ierr_all=ierr
+#    endif
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
@@ -682,6 +735,9 @@
      &                   +cff2*u_west_dt(j,k,it2)
               v_west(j,k)=cff1*v_west_dt(j,k,it1)
      &                   +cff2*v_west_dt(j,k,it2)
+#     ifdef NHMG
+              w_west(j,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif
@@ -723,6 +779,9 @@
      &                   +cff2*u_east_dt(j,k,it2)
               v_east(j,k)=cff1*v_east_dt(j,k,it1)
      &                   +cff2*v_east_dt(j,k,it2)
+#     ifdef NHMG
+              w_east(j,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif
@@ -764,6 +823,9 @@
      &                    +cff2*u_south_dt(i,k,it2)
               v_south(i,k)=cff1*v_south_dt(i,k,it1)
      &                    +cff2*v_south_dt(i,k,it2)
+#     ifdef NHMG
+              w_south(i,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif
@@ -805,6 +867,9 @@
      &                    +cff2*u_north_dt(i,k,it2)
               v_north(i,k)=cff1*v_north_dt(i,k,it1)
      &                    +cff2*v_north_dt(i,k,it2)
+#     ifdef NHMG
+              w_north(i,k)= 0.0
+#     endif
             enddo
           enddo
 #   endif

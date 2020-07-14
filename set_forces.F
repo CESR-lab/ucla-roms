@@ -32,10 +32,9 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
-      ! DevinD - Jeroen should probably put in the river flag (RIVER_SOURCE)
-      ! # ifdef RIVER_SOURCE
+# ifdef RIVER_SOURCE
       use river_frc
-
+# endif
 # ifdef WEC
       use wec_frc
 # endif

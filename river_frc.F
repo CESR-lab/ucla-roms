@@ -1,4 +1,6 @@
       module river_frc
+#include "cppdefs.h"
+# if defined RIVER_SOURCE
       ! Contains all the neccesary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time
       ! riv_uflx, riv_vflx should be on faces between a masked and unmasked cell,
@@ -8,13 +10,13 @@
       ! * Deal with rivers in the buffer that impact boundary uflx,vflx
       ! * we could do the faces thingy in the distribution field
       ! already (better for doing the boundary)
+      ! * Deal with nx/ny that is not divisible by cpu's
       
 
       ! call set_river_source_tile(istr,iend,jstr,jend, ierr)
   
-       use dimensions !! has dimensions, and rmask
+       use dimensions !! has dimensions, a list of forcing files, and rmask
        use read_write !!  a list of forcing files
-
 
        implicit none
 
@@ -83,7 +85,7 @@
          !! the buffer in some of the partitioned files
 
          ierr = nf90_open(grdname, nf90_nowrite, ncid)
-         ierr=nf90_get_att(ncid,nf90_global,'partition',partition_info)
+         ierr = nf90_get_att(ncid,nf90_global,'partition',partition_info)
          if (partition_info(3)==1) then
            is = 2;
          else
@@ -102,12 +104,7 @@
            do j = 1,ny
              if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
                iriver = floor(rflx(i,j)-1e-5)
-
-               !----DevinD - won't compile if MASKING not defined
-               ! Need to discuss with JeroenM how to deal with this.
-
 # ifdef MASKING
-
                faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
                if ( faces == 0 .or. rmask(i,j)>0  ) then
                   stop 'river forcing error'
@@ -116,14 +113,8 @@
                if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
                if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
                if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
-
-
 # endif
-
-               !----DevinD - end MASKING
-
                endif
-
              enddo
            enddo
           
@@ -371,4 +362,5 @@
 
         end subroutine find_rec_new
 
+# endif
       end module river_frc

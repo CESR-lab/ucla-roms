@@ -3,9 +3,7 @@
 
       subroutine wrt_avg             ! Write time-averaged fields
                                      ! into averages netCDF file.
-      
-! DevinD add - should only need indxSUP,etc from WEC
-!		so use, only: at some point
+
 # ifdef WEC
       use wec_frc, only: wrt_avg_wec
 # endif
@@ -216,7 +214,6 @@
 #  endif
 # endif /* SOLVE3D */
 
-! DevinD add
 #ifdef WEC
       call wrt_avg_wec(record, ierr, may_day_flag)
 #endif

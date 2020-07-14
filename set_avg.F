@@ -22,15 +22,12 @@
      &                                    A2d(1,2), A2d(1,3))
       endif
 
-! Daniel add
 #  ifdef WEC
       if (wrtavg(indxWST)) then
-        ! ** wstokes_tile needs to be added to wec module **
         call wstokes_wec_tile(istr,iend,jstr,jend)
       endif
 #  endif
 # endif
-
       call set_avg_tile (istr,iend,jstr,jend)
       return
       end
@@ -57,7 +54,6 @@
 ! when mod(iic-1,navg)>1; and (3) adding the last contribution and
 ! scaling.
 
-! DevinD add
 # ifdef WEC
       use wec_frc, only: set_avg_wec_tile
 # endif
@@ -250,7 +246,6 @@
 #  endif
 # endif /* SOLVE3D */
 
-! DevinD add
 # ifdef WEC 
         call set_avg_wec_tile(istr,iend,jstr,jend,cff,cff1
      &                                 ,jstrR,jendR,istrR,iendR)

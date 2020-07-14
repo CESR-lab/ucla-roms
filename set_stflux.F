@@ -56,8 +56,10 @@
         if (cff1 < dt .and. ntstf(itrc) > 1) synchro_flag=.true.
         if (itrc == itemp) then
           cff=1./(rho0*Cp*(cff1+cff2))
+# ifdef SALINITY
         elseif (itrc == isalt) then
           cff=0.01/(day2sec*(cff1+cff2))
+# endif
         else
           cff=1./(cff1+cff2)
         endif

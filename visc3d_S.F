@@ -106,8 +106,12 @@
             v(i,j,k,indx)=v(i,j,k,indx) + dt*cff
           enddo
         enddo
-      enddo
+# if defined NHMG
+!   Do things
+# endif
+      enddo ! k loop
       end
+
 #else
       subroutine visc3d_empty
       end

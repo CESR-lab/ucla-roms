@@ -874,7 +874,6 @@ c              Ks(i,j,k)=Ks(i,j,k) + wsb*bbl(i,j)*cff1
 # endif
               enddo
 
-! DevinD - add WEC from DH's MRL_WCI WAVE_PACKET implemtation
 # ifdef WEC
               do k=1,N      ! Apply wave effects
                 Akv(i,j,k)       =Akv(i,j,k)+Akb(i,j,k)
@@ -889,7 +888,6 @@ c              Ks(i,j,k)=Ks(i,j,k) + wsb*bbl(i,j)*cff1
               Akt(i,j,0,isalt) =2.*Akt(i,j,1,isalt)-Akt(i,j,2,isalt)
 #  endif
 # endif
-! DevinD - end WEC
 
             endif  !<-- FIRST_TIME_STEP
 # ifdef MASKING

@@ -178,13 +178,6 @@
       kwds(ie+1:ie+1)=' '
       is=ie+2
 #endif
-#ifdef OBC_FLUX_CORR
-      ie=is + 7
-      if (ie>=max_opt_size) goto 99
-      kwds(is:ie)='tau_obc'
-      kwds(ie+1:ie+1)=' '
-      is=ie+2
-#endif
 #ifndef ANA_GRID
       ie=is + 4
       if (ie>=max_opt_size) goto 99

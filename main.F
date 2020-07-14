@@ -2,10 +2,11 @@
 #if !defined GRID_LEVEL || GRID_LEVEL == 1
 
 !!    program main               ! Open MP version of ROMS driver
-      implicit none              ! with single parallel region using
+
 #ifdef NHMG
-!          USE nhmg, only : nhmg_clean
+      use nhmg
 #endif
+      implicit none              ! with single parallel region using
       integer ierr               ! explicit barrier synchronization.
 # include "param.h"
 # ifdef MPI
@@ -70,18 +71,23 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
 
       subroutine roms_init
-      implicit none
+
 #ifdef NHMG
-          USE nhmg, only : nhmg_init
-          USE nhmg, only : nhmg_matrices
+      use nhmg
 #endif
+      implicit none
 
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
+
 #include "param.h"
 #include "scalars.h"
-
 #include "ncvars.h"
+
+#ifdef NHMG
+#include "ocean3d.h"
+#include "grid.h"
+#endif 
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
 C$    trd=omp_get_thread_num()
@@ -228,14 +234,9 @@ C$OMP BARRIER
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
 #ifdef NHMG
-# ifdef THREE_GHOST_POINTS
-      halo = 3
-# else
-      halo = 2
-# endif
       call nhmg_matrices(Lm,Mm,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
-     &                   om_r(0:Lm+1,0:Mm+1),
-     &                   on_r(0:Lm+1,0:Mm+1)    )
+     &                   dm_r(0:Lm+1,0:Mm+1),
+     &                   dn_r(0:Lm+1,0:Mm+1)    )
 #endif
 
 CR      write(*,*)  ' -4' MYID
@@ -329,6 +330,7 @@ C$OMP END MASTER
 #include "scalars.h"
 #include "ncvars.h"
 
+
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
       my_first=trd*range
@@ -398,21 +400,15 @@ C$OMP BARRIER
       do tile=my_tile_range
         call     prsgrd(tile)
         call pre_step3d(tile)
-# ifdef PRED_COUPLED_MODE
-#  ifdef UV_VIS2
-        call     visc3d(tile)
-#  endif
-# endif
 # ifdef AVERAGES
         call    set_avg(tile)
 # endif
       enddo
 C$OMP BARRIER
 
-# ifdef CORR_COUPLED_MODE
-      do tile=my_tile_range              ! This code segment is for
-        call set_HUV1(tile)              ! corrector-coupled version
-      enddo                              ! of time stepping only.
+      do tile=my_tile_range
+        call set_HUV1(tile)
+      enddo
 C$OMP BARRIER
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING
@@ -431,7 +427,6 @@ C$OMP BARRIER
 #  endif
       enddo
 C$OMP BARRIER
-# endif
 #endif  /* SOLVE3D */
 
 ! Output block: write restart/history files.
@@ -474,11 +469,6 @@ C$OMP END MASTER
 C$OMP BARRIER
         if (iic-ntstart > ntimes) goto 99   !-->  DONE
       endif
-#ifdef  NHMG
-      ! indexes for nhmg ab2 pressure corrections
-      iprec1 = 1
-      iprec2 = 2
-#endif
 
 
 ! Solve the 2D equations for the barotropic mode.
@@ -526,26 +516,6 @@ C$OMP BARRIER
 #endif
 #ifdef SOLVE3D
       enddo    ! <-- iif
-
-# ifdef PRED_COUPLED_MODE
-      do tile=my_tile_range              ! This code segment is for
-        call set_HUV1(tile)              ! predictor-coupled version
-      enddo                              ! of time stepping only. 
-C$OMP BARRIER
-
-      nrhs=3 ; nnew=3-nstp
-
-      do tile=my_tile_range
-        call omega(tile)
-        call rho_eos(tile)
-      enddo
-C$OMP BARRIER
-      do tile=my_tile_range
-        call     prsgrd(tile)
-        call step3d_uv1(tile)
-      enddo
-C$OMP BARRIER
-# endif
 
       do tile=my_tile_range              ! Continue solution of
         call step3d_uv2(tile)            ! the three-dimensional

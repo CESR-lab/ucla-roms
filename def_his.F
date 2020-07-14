@@ -857,7 +857,6 @@ c--#define nf_def_var my_nf_def_var
      &                                                 fname(1:lfnm)
         endif
 # endif
-! Daniel add
 #endif /* SOLVE3D */
 
 
