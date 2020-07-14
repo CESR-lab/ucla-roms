@@ -579,24 +579,24 @@
       if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
         if  (mynode==0) print *, 'AB2 extrapolate'
         do k=1,N
-          do j=Jstr,Jend
-            do i=IstrU,Iend
+          do j=jstr,iend
+            do i=istrU,iend
               u(i,j,k,nnew) = u(i,j,k,nnew)
      &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1))*dtau
      &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k))) * pn_u(i,j)
             enddo
           enddo
 
-          do j=JstrV,Jend
-            do i=Istr,Iend
+          do j=jstrV,jend
+            do i=istr,iend
               v(i,j,k,nnew) = v(i,j,k,nnew)
      &            + (1.5*nhdv(i,j,k,iprec2)-0.5*nhdv(i,j,k,iprec1))*dtau
      &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k))) * pm_v(i,j)
             enddo
           enddo
 
-          do j=Jstr,Jend
-            do i=Istr,Iend
+          do j=jstr,jend
+            do i=istr,iend
               w(i,j,k,nnew) = w(i,j,k,nnew)
      &            + (1.5*nhdw(i,j,k,iprec2)-0.5*nhdw(i,j,k,iprec1))*dtau
      &            * (pm(i,j)*pn(i,j))
@@ -672,27 +672,27 @@
           nh_ubar = 0.
           nh_vbar = 0.
           do k=1,N
-            do j=Jstr,Jend
-              do i=Istr,Iend+1
+            do j=jstr,jend
+              do i=istr,iend+1
                 nh_ubar(i,j) = nh_ubar(i,j) + u(i,j,k,nnew)
               enddo
             enddo
-            do j=Jstr,Jend+1
-              do i=Istr,Iend
+            do j=jstr,jend+1
+              do i=istr,iend
                 nh_vbar(i,j) = nh_vbar(i,j) + v(i,j,k,nnew)
               enddo
             enddo
           enddo
 
-          do j=Jstr,Jend
-            do i=Istr,Iend
+          do j=jstr,jend
+            do i=istr,iend
               nh_wcor(i,j) = w(i,j,N,nnew) +
      &        (nh_ubar(i+1,j)-nh_ubar(i,j)+nh_vbar(i,j+1)-nh_vbar(i,j))
             enddo
           enddo
           do k=1,N
-            do j=Jstr,Jend
-              do i=Istr,Iend
+            do j=jstr,jend
+              do i=istr,iend
                 w(i,j,k,nnew) = w(i,j,k,nnew) - nh_wcor(i,j)
      &                         * (z_w(i,j,k)-z_w(i,j,0))
      &                         / (z_w(i,j,N)-z_w(i,j,0))
@@ -704,41 +704,45 @@
         call nhmg_solve(Lm,Mm,N,halo,padd_X,padd_E,
      &          u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
 
-!     dmax = 0;
-!     do k=1,N
-!       do j=jstr,Jend
-!         do i=istr,Iend
-!           div= (u(i+1,j,k,nnew) + grid(1)%du(k,j,i+1))
-!    &         - (u(i  ,j,k,nnew) + grid(1)%du(k,j,i  ))
-!    &         + (v(i,j+1,k,nnew) + grid(1)%dv(k,j+1,i))
-!    &         - (v(i,j  ,k,nnew) + grid(1)%dv(k,j  ,i))
-!    &         + (w(i,j,k  ,nnew) + grid(1)%dw(k+1,j,i))
-!    &         - (w(i,j,k-1,nnew) + grid(1)%dw(k  ,j,i))
-!           dmax = max(dmax,abs(div))
-!         enddo
-!       enddo
-!     enddo
+      dmax = 0
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            div= (u(i+1,j,k,nnew) + grid(1)%du(k,j,i+1))
+     &         - (u(i  ,j,k,nnew) + grid(1)%du(k,j,i  ))
+     &         + (v(i,j+1,k,nnew) + grid(1)%dv(k,j+1,i))
+     &         - (v(i,j  ,k,nnew) + grid(1)%dv(k,j  ,i))
+     &         + (w(i,j,k  ,nnew) + grid(1)%dw(k+1,j,i))
+     &         - (w(i,j,k-1,nnew) + grid(1)%dw(k  ,j,i))
+            dmax = max(dmax,abs(div))
+          enddo
+        enddo
+      enddo
+      if (mynode==0) then
+          print 99, dmax
+      endif
+  99  format('pre after, dmax: ',e15.4)
 
         ! add the non-hydro correction (du, dv, dw are in flux form)
         ! add the non-hydrostatic pressure gradient to rufrc, rvfrc
-        ! Can't do to Iend+1 because we dont have Hz_fwd(Iend+1)
+        ! Can't do to iend+1 because we dont have Hz_fwd(iend+1)
         do k=1,N
-          do j=jstr,Jend
-            do i=istrU,Iend
+          do j=jstr,jend
+            do i=istrU,iend
               u(i,j,k,nnew) = (u(i,j,k,nnew) + grid(1)%du(k,j,i))
      &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))* pn_u(i,j)
             enddo
           enddo
 
-          do j=jstrV,Jend
-            do i=istr,Iend
+          do j=jstrV,jend
+            do i=istr,iend
               v(i,j,k,nnew) = (v(i,j,k,nnew) + grid(1)%dv(k,j,i))
      &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))* pm_v(i,j)
             enddo
           enddo
 
-          do j=jstr,Jend
-            do i=istr,Iend
+          do j=jstr,jend
+            do i=istr,iend
               w(i,j,k,nnew) = (w(i,j,k,nnew) + grid(1)%dw(k+1,j,i))
      &             * (pm(i,j)*pn(i,j))
             enddo
