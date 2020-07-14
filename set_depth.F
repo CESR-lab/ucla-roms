@@ -100,6 +100,7 @@
          enddo
       enddo
       ! z_r is buffer filled in the interior halos but not in the outer halos
+# ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
          do k = 1, N
             do j = 0,Mm+1
@@ -120,6 +121,8 @@
             enddo
          enddo
        endif
+# endif
+# ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
          do k = 1, N
             do i = 0,Lm+1
@@ -140,6 +143,7 @@
             enddo
          enddo
        endif
+# endif
 
 #endif /* NHMG */
 
