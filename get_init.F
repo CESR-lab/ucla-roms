@@ -504,6 +504,25 @@ c--#define VERBOSE
       endif
       if (ierr /= nf_noerr) goto 99                        !--> ERROR
 
+# if define NHMG
+      ! since ncdf_read already does an exchange to fill buffers, we're
+      ! ready to initialy w using no-div
+      do j=1,Lm
+        do k=1,N
+          do i=1,Mm
+            DC(i,0)=pm(i,j)*pn(i,j)
+            w(i,j,k,nnew)=w(i,j,k-1,nnew)
+     &      - DC(i,0)*(
+     &       +0.5*(Hz(i,j,k)+Hz(i+1,j,k))*dn_u(i+1,j)*u(i+1,j,k,nnew)
+     &       -0.5*(Hz(i-1,j,k)+Hz(i,j,k))*dn_u(i,j)*u(i,j,k,nnew)
+     &       +0.5*(Hz(i,j,k)+Hz(i,j+1,k))*dm_v(i,j+1)*v(i,j+1,k,nnew)
+     &       -0.5*(Hz(i,j-1,k)+Hz(i,j,k))*dm_v(i,j)*v(i,j,k,nnew) )
+          enddo
+        enddo
+      enddo
+# endif
+
+
 ! Tracer variables.
 
       do itrc=1,NT
