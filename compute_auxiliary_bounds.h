@@ -5,7 +5,7 @@
 ! cover also the outer ghost points, if the subdomain "tile" is
 ! adjacent to a PHYSICAL boundary. (NOTE: istrR,iendR,jstrR,jendR
 ! computed by this module DO NOT COVER ghost points associated with
-! periodic boundaries (if any) or with 2-point computational marhins
+! periodic boundaries (if any) or with 2-point computational margins
 ! of MPI subdomains.
 ! 
 ! This module also computes loop-bounds for U- and V-type variables
