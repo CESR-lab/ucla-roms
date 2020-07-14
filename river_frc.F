@@ -16,6 +16,8 @@
       ! call set_river_source_tile(istr,iend,jstr,jend, ierr)
   
        use dimensions !! has dimensions, a list of forcing files, and rmask
+       use read_write !!  a list of forcing files
+
        implicit none
 
        private
@@ -102,6 +104,7 @@
            do j = 1,ny
              if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
                iriver = floor(rflx(i,j)-1e-5)
+# ifdef MASKING
                faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
                if ( faces == 0 .or. rmask(i,j)>0  ) then
                   stop 'river forcing error'
@@ -110,6 +113,7 @@
                if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
                if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
                if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
+# endif
                endif
              enddo
            enddo

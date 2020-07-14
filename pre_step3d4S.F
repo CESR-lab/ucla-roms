@@ -27,6 +27,9 @@
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
+# ifdef WEC
+      use wec_frc
+# endif
 #ifdef NHMG
       use nhmg
       use mg_grids
@@ -64,6 +67,15 @@
 # include "mixing.h"
 # include "scalars.h"
 # include "sources.h"
+
+! Taken from rhs3d35S.F for WEC
+! JM Devin go figure this out and remove the comment ;)
+# ifdef WEC
+#  ifdef VF_ROBUST
+      real gam1,gam2
+#  endif
+      real cff1
+# endif
 
 # include "compute_auxiliary_bounds.h"
 
@@ -156,6 +168,11 @@
 # include "compute_horiz_rhs_uv_terms.h"
 
       enddo !<-- k
+
+#ifdef WEC
+      call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
+#endif
+
 
 ! Compute dynamic bottom drag coefficient.  Note that "rd" must be
 ! aliased to a horizontal array beyond #4 to avoid overlap with one
@@ -272,6 +289,17 @@
 
 # include "compute_vert_rhs_uv_terms.h"
 
+# ifdef WEC
+#  if defined WAVE_FRICTION && !defined BODY_FRICTION
+        do i=istrU,iend
+          ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
+        enddo
+        do i=istr,iend
+          rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
+        enddo
+#  endif
+# endif   /* WEC */
+
 # ifdef NHMG
 
 # include "compute_vert_rhs_w_terms.h"
@@ -385,6 +413,9 @@
 
           DC(i,N)=cff*( DC(i,N)
      &                                  +dtau*sustr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + dtau*brk2dx(i,j)
+#    endif
      &                                                 )
         enddo
         do k=N-1,2,-1      !--> forward elimination
@@ -449,6 +480,9 @@
 
             DC(i,N)=cff*( DC(i,N)
      &                                    +dtau*svstr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + dtau*brk2de(i,j)
+#    endif
      &                                                   )
           enddo
           do k=N-1,2,-1      !--> forward elimination
@@ -491,7 +525,7 @@
 
 # ifdef RIVER_SOURCE
       do j=jstr,jend
-        do i=istr,iend
+        do i=istrU,iend
           if (abs(riv_uflx(i,j)).gt.1e-3) then
             depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
      &                   +z_w(i  ,j,N)-z_w(i  ,j,0) )
@@ -504,7 +538,7 @@
           endif
         enddo
       enddo
-      do j=jstr,jend
+      do j=jstrV,jend
         do i=istr,iend
           if (abs(riv_vflx(i,j)).gt.1e-3) then
             depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
@@ -546,13 +580,6 @@
 
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
-
-!       if (mynode==0) then
-!         print 89,u(1,1,1,nnew)-0.15,u(2,1,1,nnew)-0.15
-!         print 89,ru(1,1,1),ru(2,1,1)
-!       endif
-! 89  format( 'pre after bc: ',3e13.4)
-!     stop
 
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)

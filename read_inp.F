@@ -1,7 +1,13 @@
 #include "cppdefs.h"
                                         ! Read and report model input
       subroutine read_inp(ierr)         ! parameters from keyword-based
-      implicit none                     ! startup file.
+                                        ! startup file.
+
+#ifdef WEC
+      use wec_frc, only: read_inp_wec, read_inp_avg_wec
+#endif
+
+      implicit none
       integer ierr
 #include "param.h"
 #include "scoord.h"
@@ -795,6 +801,16 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #  endif
 # endif /* SOLVE3D */
 #endif /* AVERAGES */
+
+#ifdef WEC
+      ! MRL wave-current interaction variables history fields
+        elseif (keyword(1:kwlen).eq.'wci_history_fields') then
+          call read_inp_wec(keyword, ierr, kwlen)
+# ifdef AVERAGES
+        elseif (keyword(1:kwlen).eq.'wci_average_fields') then
+          call read_inp_avg_wec(keyword, ierr, kwlen)
+# endif /* AVERAGES */
+#endif /* WEC */
 
         else
           mpi_master_only write(*,'(/1x,4A/)') 'WARNING: ',

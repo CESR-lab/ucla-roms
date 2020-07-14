@@ -122,7 +122,6 @@ CSDISTRIBUTE_RESHAPE pnom_v(BLOCK_PATTERN) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE grdscl(BLOCK_PATTERN) BLOCK_CLAUSE
       common /mtrix_pmon_u/pmon_u /mtrix_pnom_v/pnom_v
      &                            /mtrix_grdscl/grdscl
-
  
 #ifdef MASKING
       real rmask(GLOBAL_2D_ARRAY)

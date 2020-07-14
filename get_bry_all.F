@@ -471,11 +471,11 @@
                 ierr=read_bry_EW(bry_id, vbar_east_id, bry_rec, v_var,
      &                                   vbar_east_dt(0,itbry), 1)
                 if (ierr_all == nf_noerr) ierr_all=ierr
-#    ifdef NHMG
+#   ifdef NHMG
                 ierr=read_bry_EW(bry_id, w_east_id, bry_rec, r_var,
      &                                   w_east_dt(0,1,itbry), N)
                 if (ierr_all == nf_noerr) ierr_all=ierr
-#    endif
+#   endif
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY

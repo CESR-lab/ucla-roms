@@ -30,6 +30,9 @@
       use mg_grids
       use mg_tictoc, only : tic, toc
 #endif
+# ifdef WEC
+      use wec_frc
+# endif
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -63,8 +66,14 @@
 #  include "eos_vars.h"
 # endif
 
-# include "compute_auxiliary_bounds.h"
+# ifdef WEC
+#  ifdef VF_ROBUST
+      real gam1,gam2
+#  endif
+      real cff1
+# endif
 
+# include "compute_auxiliary_bounds.h"
 
 # ifdef NHMG
 
@@ -97,19 +106,44 @@
 # include "compute_horiz_rhs_uv_terms.h"
       enddo
 
+# ifdef WEC
+      call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
+# endif
+
       do j=jstr,jend
 
 # include "compute_vert_rhs_uv_terms.h"
+
+! Apply wave bottom streaming stress as a body force in the bottom-most
+! grid cells only (if !defined BODY_FRICTION)
+!! JM move this bit to inside compute_wec_rhs_uv_terms...
+# ifdef WEC
+#  if defined WAVE_FRICTION && !defined BODY_FRICTION
+        do i=istrU,iend
+          ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
+        enddo
+        do i=istr,iend
+          rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
+        enddo
+#  endif
+# endif 
+
 
         do i=istrU,iend
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
           u(i,j,N,nnew)=u(i,j,N,nnew) +DC(i,0)*ru(i,j,N)
      &                                     +dt*sustr(i,j)
+#  if defined WEC && defined SURFACE_BREAK
+     &                                    + dt * brk2dx(i,j)
+#  endif
           u(i,j,1,nnew)=u(i,j,1,nnew)+DC(i,0)*ru(i,j,1)
 
           rufrc(i,j)=ru(i,j,1) +ru(i,j,N) +dn_u(i,j)*dm_u(i,j)*(
      &                                                 sustr(i,j)
+#   if defined WEC && defined SURFACE_BREAK
+     &                                      + brk2dx(i,j)
+#   endif
      &                 -0.5*(r_D(i-1,j)+r_D(i,j))*u(i,j,1,nstp) )
         enddo
         do k=2,N-1
@@ -125,10 +159,16 @@
 
             v(i,j,N,nnew)=v(i,j,N,nnew) +DC(i,0)*rv(i,j,N)
      &                                       +dt*svstr(i,j)
+#  ifdef WEC
+     &                                       +dt*brk2de(i,j)
+#  endif
             v(i,j,1,nnew)=v(i,j,1,nnew) +DC(i,0)*rv(i,j,1)
-     &                    -0.5*(r_D(i,j-1)+r_D(i,j))*v(i,j,1,nstp)
+
             rvfrc(i,j)=rv(i,j,1) +rv(i,j,N) +dm_v(i,j)*dn_v(i,j)*(
      &                                                   svstr(i,j)
+# ifdef WEC
+     &                                               +brk2de(i,j)
+# endif
      &                   -0.5*(r_D(i,j-1)+r_D(i,j))*v(i,j,1,nstp) )
           enddo
           do k=2,N-1
@@ -311,7 +351,7 @@
 
 # undef r_D
 # if defined ADV_ISONEUTRAL && defined EXCHANGE
-       !!!! not clear what this does !!!
+       !!!! JM not clear what this does !!!
       call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
 # endif
       end

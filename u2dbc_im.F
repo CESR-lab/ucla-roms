@@ -5,6 +5,10 @@
 ! Set lateral boundary conditions for the barotropic (i.e. vertically
 ! integrated) XI-component velocity ubar(:,:,knew).
 
+#ifdef WEC
+      use wec_frc
+#endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
@@ -162,6 +166,10 @@
         enddo
 #  endif
 # else
+! For WEC there was this (talk to delphine)
+! No lagrangian flux
+!      ubar(istr,j,knew)=-ust2d(istr,j)     
+!     &                    *umask(istr,j)  
         do j=jstr,jend                          ! Western edge closed
           ubar(istr,j,knew)=0.                  ! ======= ==== ======
         enddo                                   !  (no-flux, default)
@@ -288,6 +296,7 @@ c--#endif
         enddo
 #  endif
 # else
+!! See comments for WESTERN boundary WEC (closed BC)
         do j=jstr,jend                       ! Eastern edge closed BC
           ubar(iend+1,j,knew)=0.             ! ======= ==== ====== ==
         enddo
@@ -575,5 +584,19 @@ c****
      &                                +ubar(iend+1,jend,knew))
       endif
 #endif
+! Daniel add
+!====================================================================
+!       NO LAGRANGIAN FLUX CONDITION AT LAND-SEA INTERFACES
+!====================================================================
+#if defined WEC && defined MASKING
+      do i=istr,iendR
+        do j=jstrR,jendR
+          ubar(i,j,knew)=ubar(i,j,knew)*umask(i,j)
+     &                  +ust2d(i,j)*(umask(i,j)-1.0)
+        enddo
+      enddo
+#endif
+
+     ! return     ! return in old code, not one here? 
       end
 

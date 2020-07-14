@@ -39,6 +39,9 @@
 ! within a cluster node) unless another distribution policy is
 ! specified to override the default.
 
+#ifdef WEC
+      use wec_frc
+#endif
       implicit none
       integer istr,iend,jstr,jend, i,j,k,itrc
       real, parameter :: init=0.    !!!!  0xFFFA5A5A ==> NaN
@@ -231,6 +234,10 @@
         enddo
       enddo
 #endif /* SOLVE3D */
+
+# ifdef WEC
+        call init_arrays_wec_tile(istr,iend,jstr,jend)
+# endif
 
 ! Initialize climatology arrays (see "climat.h").
 

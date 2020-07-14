@@ -3,7 +3,13 @@
 
       subroutine wrt_avg             ! Write time-averaged fields
                                      ! into averages netCDF file.
+
+# ifdef WEC
+      use wec_frc, only: wrt_avg_wec
+# endif
+
       implicit none
+
       integer record, i, ierr, lstr, lvar, lenstr, ncdf_write
 # ifdef SOLVE3D
      &             , itrc
@@ -207,6 +213,11 @@
       endif
 #  endif
 # endif /* SOLVE3D */
+
+#ifdef WEC
+      call wrt_avg_wec(record, ierr, may_day_flag)
+#endif
+
 
   1   format(/1x, '### ERROR: wrt_avg :: Cannot write variable ''',
      &             A, ''' into averages file, rec =', i6, 3x,A,i4)

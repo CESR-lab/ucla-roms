@@ -71,6 +71,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
 
       subroutine roms_init
+
 #ifdef NHMG
       use nhmg
 #endif
@@ -318,14 +319,16 @@ C$OMP END MASTER
 
 
       subroutine roms_step
+
+#ifdef WEC
+      use wec_frc, only: wec_forces
+#endif
+
       implicit none
       integer trd, tile, my_first, my_last, range
 #include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
-
-!! JM
-#include "ocean3d.h"
 
 
       trd=proc(2)
@@ -374,6 +377,13 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
 # endif
       enddo
 C$OMP BARRIER
+
+# ifdef WEC
+      do tile=my_tile_range
+        call  wec_forces(tile)
+      enddo
+C$OMP BARRIER
+# endif
 
       do tile=my_tile_range
         call omega(tile)

@@ -6,6 +6,10 @@
 ! Set lateral boundary conditions for ETA-component velocity
 ! v(:,:,:,nnew)
 
+# ifdef WEC
+      use wec_frc 
+# endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
@@ -120,7 +124,15 @@
 #  else
         do k=1,N                               ! Southern edge closed
           do i=istr,iend                       ! ======== ==== ======
-            v(i,jstr,k,nnew)=0.                !  (no-flux: default)
+#   ifdef WEC
+cc            v(i,jstr,k,nnew)=-vst(i,jstr,k)    ! no Lagrangian flux
+            v(i,jstr,k,nnew)=v(i,jstr+1,k,nnew)  ! gradient (default)
+#    ifdef MASKING
+     &                       *vmask(i,jstr)
+#    endif
+#   else
+            v(i,jstr,k,nnew)=0.                ! (no-flux, default)
+#   endif              
           enddo
         enddo
 #  endif              /* OBC_SOUTH */
@@ -216,7 +228,15 @@
 #  else
         do k=1,N                               ! Northern edge closed
           do i=istr,iend                       ! ======== ==== ======
-            v(i,jend+1,k,nnew)=0.              !   (no-flux: default)
+#   ifdef WEC 
+cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
+            v(i,jend+1,k,nnew)=v(i,jend,k,nnew)  ! gradient (default)
+#    ifdef MASKING
+     &                        *vmask(i,jend+1)
+#    endif
+#   else
+            v(i,jend+1,k,nnew)=0.               ! (no-flux, default)
+#   endif          
           enddo
         enddo
 #  endif
@@ -465,6 +485,22 @@
         enddo
       endif
 # endif
+
+! Daniel add
+!====================================================================
+!       NO LAGRANGIAN FLUX CONDITION AT LAND-SEA INTERFACES
+!====================================================================
+# if defined WEC && defined MASKING
+      do i=istrR,iendR
+        do j=jstr,jendR
+          do k=1,N
+            v(i,j,k,nnew)=v(i,j,k,nnew)*vmask(i,j)
+     &                   +vst(i,j,k)*(vmask(i,j)-1.0)
+          enddo
+        enddo
+      enddo
+# endif
+!     return
       end
 #else
       subroutine v3dbc_empty

@@ -16,6 +16,10 @@
 ! of vertical grid boxes "Hz" from fast-time-averaged free surface,
 ! topography h(i,j), and vertical coordinate transformation formula.
 
+# ifdef WEC
+      use wec_frc
+# endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff_r,cff1_r, cff_w,cff1_w, ds
@@ -44,14 +48,22 @@
         do j=jstrR,jendR               ! all subsequent steps.
           do i=istr,iendR
             DU_avg1(i,j)=0.5*( h(i-1,j)+h(i,j)+zeta(i,j,1)
-     &              +zeta(i-1,j,1) )*dn_u(i,j)*ubar(i,j,1)
+     &            +zeta(i-1,j,1) )*dn_u(i,j)*( ubar(i,j,1)
+# ifdef WEC
+     &                                        + ust2d(i,j)
+# endif
+     &                                                   )
           enddo
         enddo
 
         do j=jstr,jendR
           do i=istrR,iendR
             DV_avg1(i,j)=0.5*( h(i,j)+h(i,j-1)+zeta(i,j,1)
-     &              +zeta(i,j-1,1) )*dm_v(i,j)*vbar(i,j,1)
+     &            +zeta(i,j-1,1) )*dm_v(i,j)*( vbar(i,j,1)
+# ifdef WEC
+     &                                        + vst2d(i,j)
+# endif
+     &                                                   )
           enddo
         enddo
       endif
@@ -161,6 +173,11 @@
       end
 
       subroutine set_HUV_tile (istr,iend,jstr,jend)
+
+# ifdef WEC
+      use wec_frc
+# endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 # include "param.h"
@@ -174,13 +191,31 @@
         do j=jstrR,jendR
           do i=istr,iendR
             FlxU(i,j,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
-     &                                         *u(i,j,k,nrhs)
+
+     &                                       *( u(i,j,k,nrhs)
+# ifdef WEC 
+     &                                            +ust(i,j,k)
+# endif
+     &                                                      )
+! JM make sure that ust,vst are properly masked in wec_frc and remove
+# if defined WEC && defined MASKING
+            FlxU(i,j,k)=FlxU(i,j,k)*umask(i,j)
+# endif
           enddo
         enddo
         do j=jstr,jendR
           do i=istrR,iendR
             FlxV(i,j,k)=0.5*(Hz(i,j,k)+Hz(i,j-1,k))*dm_v(i,j)
-     &                                         *v(i,j,k,nrhs)
+! Daniel add/edit for WEC
+!     &                                         *v(i,j,k,nrhs)
+     &                                       *( v(i,j,k,nrhs)
+# ifdef WEC 
+     &                                           + vst(i,j,k)
+# endif
+     &                                                      )
+# if defined WEC && defined MASKING
+            FlxV(i,j,k)=FlxV(i,j,k)*vmask(i,j)
+# endif
           enddo
         enddo
       enddo
@@ -202,6 +237,9 @@
       end
 
       subroutine set_HUV1_tile (istr,iend,jstr,jend, DC,FC)
+# ifdef WEC
+      use wec_frc
+# endif
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -245,6 +283,9 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 #  endif
           do i=istr,iendR
             FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
+#  ifdef WEC 
+     &                                 +ust2d(i,j)
+#  endif
           enddo
 #  ifdef EXTRAP_BAR_FLUXES
 ! PAC23 verified setting with theoretical alpha_max=1.0877.
@@ -308,15 +349,26 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 # else 
         do i=istr,iendR
           FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0)
+#  ifdef WEC
+     &                               +ust2d(i,j)
+#  endif
         enddo
 # endif
         do k=1,N
           do i=istr,iendR
+!!JM make sure that ust, vst is masked in wec_frc and fix this!!
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0)) !! removing ubar from u
 # ifdef MASKING
      &                                *umask(i,j)
+#  ifdef WEC
+     &               +ust(i,j,k)*(umask(i,j)-1.0)
+#  endif
 # endif
-            FlxU(i,j,k)=DC(i,k)*u(i,j,k,nnew)  !! now a perturbation flux only
+            FlxU(i,j,k)=DC(i,k)*( u(i,j,k,nnew)
+# ifdef WEC
+     &                                +ust(i,j,k)
+# endif
+     &                                          )           
           enddo
         enddo
         if (j >= jstr) then
@@ -338,6 +390,9 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 #  endif
             do i=istrR,iendR
               FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
+#  ifdef WEC 
+     &                                   +vst2d(i,j)
+#  endif
             enddo
 #  ifdef EXTRAP_BAR_FLUXES
           else
@@ -354,6 +409,10 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
      &                          +MID*DV_avg2(i,j)
      &                       -BAK*DV_avg_bak(i,j)
      &                 )/DC(i,0)
+! Daniel add --> not sure if WEC should be in here. DevinD also not sure but suspect so.
+#ifdef WEC
+     &                   +vst2d(i,j)
+#endif
 #   endif
             enddo
           endif
@@ -361,15 +420,26 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 # else
           do i=istrR,iendR
             FC(i,0)=(FC(i,0)-DV_avg2(i,j))/DC(i,0)
+#  ifdef WEC 
+     &                                 +vst2d(i,j)
+#  endif
           enddo
 # endif
           do k=1,N
             do i=istrR,iendR
+!! JM same thing as above for ust. (masking in wec_frc)
               v(i,j,k,nnew)=(v(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                  *vmask(i,j)
+#  ifdef WEC
+     &                 +vst(i,j,k)*(vmask(i,j)-1.0)
+#  endif
 # endif
-              FlxV(i,j,k)=DC(i,k)*v(i,j,k,nnew)
+              FlxV(i,j,k)=DC(i,k)*( v(i,j,k,nnew)
+# ifdef WEC 
+     &                                +vst(i,j,k)
+# endif
+     &                                          )
             enddo
           enddo
         endif

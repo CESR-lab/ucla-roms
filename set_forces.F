@@ -32,8 +32,12 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
+# ifdef RIVER_SOURCE
       use river_frc
-!     use dimensions
+# endif
+# ifdef WEC
+      use wec_frc
+# endif
 
       implicit none
 
@@ -147,6 +151,9 @@ c***              no code here
 #   endif
 #  endif
 
+# ifdef WEC
+      call set_wec_frc_tile(istr,iend,jstr,jend,ierr)
+# endif
 
 #endif  /* SOLVE3D */
 

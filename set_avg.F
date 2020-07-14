@@ -2,6 +2,11 @@
 #ifdef AVERAGES
 
       subroutine set_avg (tile)
+
+# ifdef WEC
+      use wec_frc, only: wstokes_wec_tile, indxWST
+# endif
+
       implicit none
       integer tile
 # include "param.h"
@@ -16,6 +21,12 @@
         call wvlcty_tile(istr,iend,jstr,jend, work, A2d(1,1),
      &                                    A2d(1,2), A2d(1,3))
       endif
+
+#  ifdef WEC
+      if (wrtavg(indxWST)) then
+        call wstokes_wec_tile(istr,iend,jstr,jend)
+      endif
+#  endif
 # endif
       call set_avg_tile (istr,iend,jstr,jend)
       return
@@ -42,6 +53,10 @@
 ! are set to the first contribution; (2) accumulation of averaged data,
 ! when mod(iic-1,navg)>1; and (3) adding the last contribution and
 ! scaling.
+
+# ifdef WEC
+      use wec_frc, only: set_avg_wec_tile
+# endif
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -230,6 +245,13 @@
         endif
 #  endif
 # endif /* SOLVE3D */
+
+# ifdef WEC 
+        call set_avg_wec_tile(istr,iend,jstr,jend,cff,cff1
+     &                                 ,jstrR,jendR,istrR,iendR)
+# endif /* WEC */
+
+
 
         if (mod(iic-ntsavg,navg) == 0) then
           if (ZEROTH_TILE) then
