@@ -58,9 +58,9 @@
 ! barotropic step, the pressure-gradient term in momentum equation must
 ! be computed via Backward step to keep it numerically stable. However,
 ! this interferes with the computation of forcing terms "rufrc" and
-! "rvfrc" because free surface in pressure gradient computation in 3D
+! "rvfrc" because the free surface in pressure gradient computation in 3D
 ! is exactly at time corresponding to baroclinic step "nstp" (rather
-! than ahead by one barotropic step after it updated by a normal
+! than ahead by one barotropic step after it is updated by a normal
 ! forward-backward step).  To resolve this conflict, the pressure
 ! gradient term is computed in two  stages during the first barotropic
 ! step: use zeta(:,:,kstp) at first to ensure exact consistency with
@@ -84,8 +84,6 @@
         if (kbak < 1) kbak=4
         kold=kbak
 
-cxx     fwd= 1.5 ; fwd1=-0.5 ; fwd2=0.
-cxx     bkw_new=0.779 ; bkw=-0.058 ; bkw1=0.279 ; bkw2=0.
 
         fwd=1.; fwd1=0. ; fwd2=0.        ! Logically AB2-AM3 forward-
         bkw_new=1.0833333333333          ! backward scheme with maximum
@@ -98,23 +96,6 @@ cxx     bkw_new=0.779 ; bkw=-0.058 ; bkw1=0.279 ; bkw2=0.
         kold=kbak-1
         if (kold < 1) kold=4
 
-czz     fwd= 1.72     ; fwd1=-0.94    ;   fwd2=0.22
-czz     bkw_new=0.6133333333333 ; bkw=0.2821333333333
-czz        bkw1=0.0957333333333 ; bkw2=0.0088
-
-c        fwd=1.725     ; fwd1=-0.95    ;  fwd2=0.225
-
-c        bkw_new=0.601333333333333 ; bkw=0.304333333333333
-c                        bkw1=0.087333333333333 ; bkw2=0.007
-
-c        bkw_new=0.5948  ; bkw=0.3154 ; bkw1=0.0848  ; bkw2=0.005
-c        bkw_new=0.59867 ; bkw=0.30966; bkw1=0.08467 ; bkw2=0.007
-c        bkw_new=0.601   ; bkw=0.306  ; bkw1=0.0850  ; bkw2=0.008
-c        bkw_new=0.6035  ; bkw=0.302  ; bkw1=0.0855  ; bkw2=0.009
-c        bkw_new=0.6062  ; bkw=0.2976 ; bkw1=0.0862  ; bkw2=0.010
-c        bkw_new=0.6091  ; bkw=0.2928 ; bkw1=0.0871  ; bkw2=0.011
-c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
-
 
          fwd=1.781105  ; fwd1=-1.06221 ; fwd2=0.281105
          bkw_new=0.614 ; bkw=0.285 ; bkw1=0.088 ; bkw2=0.013
@@ -123,7 +104,9 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
 ! Preliminary step: compute total depth of water column and vertically
 ! ----------- ----- integrated fluxes needed for computing horizontal
 ! divergence to advance free surface and for nonlinear advection terms
-! for the barotropic momentum equations.
+! for the barotropic momentum equations. DUon == H*dy*Ubar, DVom ==
+! H*dx*Vbar, at u, and v positions respectively
+! In case of WEC, ust2d is added to Ubar (and vst2d added to Vbar)
 
       do j=jstrV-2,jend+1
         do i=istrU-2,iend+1
@@ -169,7 +152,7 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
 #define rzeta  UFe
 #define rzeta2  VFe
 #define rzetaSA VFx
-      do j=jstrV-1,jend
+      do j=jstrV-1,jend !! why are these from ...-1?
         do i=istrU-1,iend
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
@@ -180,7 +163,7 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
           endif
 #endif
 #ifdef MASKING
-          zeta_new(i,j)=zeta_new(i,j)*rmask(i,j)
+          zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed
 #endif
           Dnew(i,j)=zeta_new(i,j)+h(i,j)
 
@@ -189,12 +172,11 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
 
 #if defined VAR_RHO_2D && defined SOLVE3D
           rzeta(i,j)=(1.+rhoS(i,j))*zwrk(i,j)
-          rzeta2(i,j)=rzeta(i,j)*zwrk(i,j)
           rzetaSA(i,j)=zwrk(i,j)*(rhoS(i,j)-rhoA(i,j))
 #else
           rzeta(i,j)=zwrk(i,j)
-          rzeta2(i,j)=zwrk(i,j)*zwrk(i,j)
 #endif
+          rzeta2(i,j)=rzeta(i,j)*zwrk(i,j) !! zeta^2
         enddo
       enddo
 
@@ -235,27 +217,6 @@ c        bkw_new=0.6117  ; bkw=0.2886 ; bkw1=0.0877  ; bkw2=0.012
               DV_avg_bak(i,j)=DV_avg1(i,j)
      &                       -0.1024390243902439D0*DV_avg2(i,j)
 
-c              DU_avg_bak(i,j)=DU_avg1(i,j)
-c              DV_avg_bak(i,j)=DV_avg1(i,j)
-
-
-c              DU_avg_bak(i,j)=DU_avg1(i,j)
-c     &                       +0.083333333333333D0*DU_avg2(i,j)
-c              DV_avg_bak(i,j)=DV_avg1(i,j)
-c     &                       +0.083333333333333D0*DV_avg2(i,j)
-
-
-
-c              DU_avg_bak(i,j)=0.93333333333333D0*DU_avg1(i,j)
-c     &                       +0.06666666666667D0*DU_avg2(i,j)
-c              DV_avg_bak(i,j)=0.93333333333333D0*DV_avg1(i,j)
-c     &                       +0.06666666666667D0*DV_avg2(i,j)
-
-
-c              DU_avg_bak(i,j)=1.142857142857143D0*DU_avg1(i,j)
-c     &                       -0.142857142857143D0*DU_avg2(i,j)
-c              DV_avg_bak(i,j)=0.142857142857143D0*DV_avg1(i,j)
-c     &                       -1.142857142857143D0*DV_avg2(i,j)
 
 # endif
               Zt_avg1(i,j)=cff1*zeta(i,j,knew)
@@ -295,7 +256,7 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &                        +0.333333333333*(rhoA(i-1,j)-rhoA(i,j))
      &                                     *(zwrk(i-1,j)-zwrk(i,j)) )
 #endif
-! DevinD add
+
 #ifdef WEC
      &                  + ( h(i-1,j)+h(i,j)+rzeta(i-1,j)+rzeta(i,j) )
      &                                       *( sup(i,j)-sup(i-1,j) )
@@ -310,7 +271,7 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &                        +0.333333333333*(rhoA(i,j-1)-rhoA(i,j))
      &                                     *(zwrk(i,j-1)-zwrk(i,j)) )
 #endif
-! DevinD add
+
 #ifdef WEC
      &                  + ( h(i,j-1)+h(i,j)+rzeta(i,j-1)+rzeta(i,j) )
      &                                       *( sup(i,j)-sup(i,j-1) )
@@ -413,7 +374,7 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
      &        -dmde(i,j)*(urhs(i,j)+urhs(i+1,j)))
 # endif
      &                                          )
-! Daniel add
+
 #  ifdef WEC
 #    if defined CURVGRID && defined UV_ADV
           cff1 = Drhs(i,j)*(
@@ -525,7 +486,6 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
 # undef rd
 #endif
 
-! Daniel add
 ! Add 2DH vortex-force terms combined with advection terms
 #if (defined WEC && defined UV_ADV)
       do j=jstr,jend
@@ -613,16 +573,16 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
 ! because 2D bottom drag will be computed implicitly during the final
 ! stage of updating ubar(:,:,knew) and vbar(:,:,knew) below.  Note
 ! that unlike other terms, bottom drag should not be extrapolated
-! forward, if "rufrc" is, so this cancelation is dene now rather
+! forward, if "rufrc" is, so this cancelation is done now rather
 ! than at the bottom of this loop.
 
             rufrc(i,j)=rufrc(i,j) + 0.5*(r_D(i,j)+r_D(i-1,j))
-     &                    *dm_u(i,j)*dn_u(i,j)*ubar(i,j,kstp)
+     &                    *dm_u(i,j)*dn_u(i,j)*ubar(i,j,kstp) !! not sure about this
 
             rvfrc(i,j)=rvfrc(i,j) + 0.5*(r_D(i,j)+r_D(i,j-1))
-     &                    *dm_v(i,j)*dn_v(i,j)*vbar(i,j,kstp)
+     &                    *dm_v(i,j)*dn_v(i,j)*vbar(i,j,kstp) !! not sure about this
 
-# ifdef CORR_COUPLED_MODE
+!! Here, we remove all the terms that are in 2d rhs
             rufrc(i,j)=rufrc(i,j)-rubar(i,j)  ! Barotropic mode runnig
 #  if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
      &           -0.25*(UFx(i,j)+UFx(i-1,j))  ! during corrector stage:
@@ -631,18 +591,7 @@ c     &                       -1.142857142857143D0*DV_avg2(i,j)
 #  if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
      &           +0.25*(VFe(i,j)+VFe(i,j-1))  ! forward extrapolation.
 #  endif
-# else   /*--> PRED_COUPLED_MODE */
 
-            cff=rufrc(i,j)-rubar(i,j)
-            rufrc(i,j)=fwd*cff + fwd1*rufrc_bak(i,j, nstp )
-     &                         + fwd2*rufrc_bak(i,j,3-nstp)
-            rufrc_bak(i,j,3-nstp)=cff
-
-            cff1=rvfrc(i,j)-rvbar(i,j)
-            rvfrc(i,j)=fwd*cff1 + fwd1*rvfrc_bak(i,j, nstp )
-     &                          + fwd2*rvfrc_bak(i,j,3-nstp)
-            rvfrc_bak(i,j,3-nstp)=cff1
-# endif
           enddo
         enddo
 
@@ -740,7 +689,7 @@ c<<     &     +cff*iA_u(i,j)
 # else
      &                                    +cff2*sustr(i,j)
 # endif
-! Daniel add
+
 # ifdef WEC 
      &                                    +cff2*brk2dx(i,j)
 #  ifdef WAVE_FRICTION
@@ -757,9 +706,6 @@ c<<     &     +cff*iA_u(i,j)
      &                       +dtfast*(r_D(i,j)+r_D(i-1,j))
      &                                                   )
 
-!          DU_avg1(i,j)=DU_avg1(i,j) +cff1*DUnew*dn_u(i,j) ! DevinD - old
-
-! DevinD added
           DU_avg1(i,j)=DU_avg1(i,j)+cff1*dn_u(i,j)*( DUnew
 # ifdef WEC
      &                 +(Dnew(i,j)+Dnew(i-1,j))*ust2d(i,j)
@@ -785,7 +731,6 @@ c<<     &     +cff*iA_v(i,j)
 # else
      &                                    +cff2*svstr(i,j)
 # endif
-! DevinD add
 # ifdef WEC
      &                                    +cff2*brk2de(i,j)
 #  ifdef WAVE_FRICTION
@@ -801,9 +746,7 @@ c<<     &     +cff*iA_v(i,j)
 #ifdef SOLVE3D
      &                       +dtfast*(r_D(i,j)+r_D(i,j-1))
      &                                                   )
-!Daniel add, changed parentheses formulation for WEC
  
-          !DV_avg1(i,j)=DV_avg1(i,j) +cff1*DVnew*dm_v(i,j)
           DV_avg1(i,j)=DV_avg1(i,j) +cff1*dm_v(i,j) * ( DVnew
 # ifdef WEC 
      &                 +(Dnew(i,j)+Dnew(i,j-1))*vst2d(i,j)
@@ -854,8 +797,7 @@ c<<     &     +cff*iA_v(i,j)
       if (WESTERN_EDGE) then
         do j=jstrR,jendR
           DU_avg1(istrU-1,j)=DU_avg1(istrU-1,j)+cff1*(Dnew(istrU-1,j)
-! Daniel add/edit for WEC
-!    &         +Dnew(istrU-2,j))*ubar(istrU-1,j,knew)*dn_u(istrU-1,j)
+
      &         +Dnew(istrU-2,j))*( ubar(istrU-1,j,knew)
 # ifdef WEC
      &                                             +ust2d(istrU-1,j)
@@ -864,8 +806,7 @@ c<<     &     +cff*iA_v(i,j)
         enddo
         do j=jstrV,jend
           DV_avg1(istr-1,j)=DV_avg1(istr-1,j) +cff1*(Dnew(istr-1,j)
-!Daniel add/edit for WEC
-!     &       +Dnew(istr-1,j-1) )*vbar(istr-1,j,knew)*dm_v(istr-1,j)
+
      &       +Dnew(istr-1,j-1) )*( vbar(istr-1,j,knew)
 # ifdef WEC
      &                                              +vst2d(istr-1,j)
@@ -876,8 +817,6 @@ c<<     &     +cff*iA_v(i,j)
       if (EASTERN_EDGE) then
         do j=jstrR,jendR
           DU_avg1(iend+1,j)=DU_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-!Daniel add/edit for WEC
-!     &            +Dnew(iend,j) )*ubar(iend+1,j,knew)*dn_u(iend+1,j)
      &            +Dnew(iend,j) )*( ubar(iend+1,j,knew)
 # ifdef WEC 
      &                                              +ust2d(iend+1,j)
@@ -886,8 +825,6 @@ c<<     &     +cff*iA_v(i,j)
         enddo
         do j=jstrV,jend
           DV_avg1(iend+1,j)=DV_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-!Daniel add/edit for WEC
-!     &        +Dnew(iend+1,j-1) )*vbar(iend+1,j,knew)*dm_v(iend+1,j)
      &        +Dnew(iend+1,j-1) )*( vbar(iend+1,j,knew)
 # ifdef WEC 
      &                                              +vst2d(iend+1,j)
@@ -900,8 +837,6 @@ c<<     &     +cff*iA_v(i,j)
       if (SOUTHERN_EDGE) then
         do i=istrU,iend
           DU_avg1(i,jstr-1)=DU_avg1(i,jstr-1) +cff1*( Dnew(i,jstr-1)
-!Daniel add/edit for WEC
-!     &        +Dnew(i-1,jstr-1) )*ubar(i,jstr-1,knew)*dn_u(i,jstr-1)
      &        +Dnew(i-1,jstr-1) )*( ubar(i,jstr-1,knew)
 # ifdef WEC
      &                                              +ust2d(i,jstr-1)
@@ -910,8 +845,6 @@ c<<     &     +cff*iA_v(i,j)
         enddo
         do i=istrR,iendR
           DV_avg1(i,jstrV-1)=DV_avg1(i,jstrV-1)+cff1*(Dnew(i,jstrV-1)
-! Daniel add/edit for WEC
-!     &         +Dnew(i,jstrV-2))*vbar(i,jstrV-1,knew)*dm_v(i,jstrV-1)
      &         +Dnew(i,jstrV-2))*( vbar(i,jstrV-1,knew)
 # ifdef WEC 
      &                                              +vst2d(i,jstrV-1)
@@ -922,8 +855,6 @@ c<<     &     +cff*iA_v(i,j)
       if (NORTHERN_EDGE) then
         do i=istrU,iend
           DU_avg1(i,jend+1)=DU_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-! Daniel add/edit for WEC
-!     &        +Dnew(i-1,jend+1) )*ubar(i,jend+1,knew)*dn_u(i,jend+1)
      &        +Dnew(i-1,jend+1) )*( ubar(i,jend+1,knew)
 # ifdef WEC 
      &                                               +ust2d(i,jend+1)
@@ -932,8 +863,6 @@ c<<     &     +cff*iA_v(i,j)
         enddo
         do i=istrR,iendR
           DV_avg1(i,jend+1)=DV_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-! Daniel add/edit for WEC
-!     &            +Dnew(i,jend) )*vbar(i,jend+1,knew)*dm_v(i,jend+1)
      &            +Dnew(i,jend) )*( vbar(i,jend+1,knew)
 # ifdef WEC 
      &                                               +vst2d(i,jend+1)
@@ -988,7 +917,7 @@ c<<     &     +cff*iA_v(i,j)
             zeta(i,j,knew)=Zt_avg1(i,j)
           enddo
         enddo
-        call set_depth_tile(istr,iend,jstr,jend, UFx)
+        call set_depth_tile(istr,iend,jstr,jend)
       endif
 #else
       j=min(iic,2*ninfo)-1          ! This introduces "logarithmic"
