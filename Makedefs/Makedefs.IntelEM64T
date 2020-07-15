@@ -10,7 +10,7 @@
 .F.f:
 	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
 .f.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f -Lncio-master/lib/ -lncio -Incio-master/include
 
 .f90.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f90
@@ -70,8 +70,11 @@
 #   FFLAGS = -O3 -IPF_fma -ip 
 # -qopt-report=5 -qopt-report-phase=vec
 
-   FFLAGS =  -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
-
+# DevinD - This was the new code flag originally -O3 -fp-model source
+#   FFLAGS =  -O3 -fp-model source
+# DevinD - Changed flag to the following to avoid memory issue with WEC
+#	 	 - it exists above already anyway -O3 -IPF_fma -ip
+ FFLAGS = -O3 -IPF_fma -ip
 
 #   FFLAGS =  -fp-model precise -O3 
 #  FFLAGS =  -O2 -fp-model strict

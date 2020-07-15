@@ -53,9 +53,7 @@
 !     integer :: ierr !,imx,jmx,kmx
 #endif
 
-# if defined NHMG
 #  include "ocean2d.h"
-# endif
 # include "grid.h"
 # include "ocean3d.h"
 # include "coupling.h"

@@ -15,8 +15,8 @@ all:
 	rsync -a $(ROMS_ROOT)/netcdf.inc Compile
 	rsync -a $(ROMS_ROOT)/Make.depend Compile
 	rsync -a $(ROMS_ROOT)/Makefile Compile
-	cp -p *h *F Compile
-	cd Compile; make mpc; make -j8; mv roms ../roms_cald
+	cp -p *.h  Compile
+	cd Compile; make mpc; make -j8; mv roms ..
 
 
 	

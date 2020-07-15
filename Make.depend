@@ -222,13 +222,15 @@ pre_step3d4S.f: pre_step3d4S.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
 
 prsgrd32AC1.f: prsgrd32AC1.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h compute_auxiliary_bounds.h\
- hidden_mpi_vars.h set_global_definitions.h
+ hidden_mpi_vars.h set_global_definitions.h wec_frc.o
 
 put_global_atts.f: put_global_atts.F cppdefs.h param.h scalars.h eos_vars.h\
  ncvars.h scoord.h strings.h set_global_definitions.h
 
 read_inp.f: read_inp.F cppdefs.h param.h scalars.h eos_vars.h boundary.h\
  ncvars.h scoord.h strings.h set_global_definitions.h
+
+read_write.f: read_write.F dimensions.o
 
 rho_eos.f: rho_eos.F cppdefs.h param.h grid.h ocean3d.h scalars.h eos_vars.h\
  compute_tile_bounds.h compute_extended_bounds.h private_scratch.h mixing.h\

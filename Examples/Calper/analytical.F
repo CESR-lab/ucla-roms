@@ -47,9 +47,6 @@
 
 
 
-
-
-
 #if defined SOLVE3D && defined ANA_MEANRHO
       subroutine ana_meanRHO_tile(istr,iend,jstr,jend)
 
@@ -167,81 +164,6 @@
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-# ifdef DOUBLE_GYRE
-      if (FIRST_TIME_STEP) then    ! Wind is constant in time, so
-        TauX=(0.1/1000.)           ! initialize it during the first
-        cff=2.*pi/el               ! time step, and use thereafter. 
-        do j=jstrR,jendR
-          sustr(istr,j)=TauX*(1.-cos(cff*yr(istr,j)))
-          do i=istr+1,iendR
-            sustr(i,j)=sustr(istr,j)
-          enddo
-        enddo
-      endif
-# elif defined CANYON_A || defined CANYON_B
-      do j=jstrR,jendR
-        do i=istr,iendR
-          sustr(i,j)=0.0001*0.5*sin(2.*pi*tdays/10.)*(
-     &               1.-tanh((yr(i,j)-0.5*el)/10000.) )
-        enddo
-      enddo
-# elif defined EKMAN_SPIRAL
-      TauX=0.1/rho0
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=TauX
-        enddo
-      enddo
-
-# elif defined COLD_FILAMENT
-      TauY=0.1/rho0   ;  TauX=-1.0*TauY ! This setup allows rotating
-      cff=TauY/sqrt(TauY**2+TauX**2)    ! wind direction by setting the
-      TauX=cff*TauX   ;  TauY=cff*TauY  ! initial value of TauX, then
-      do j=jstrR,jendR                  ! adjacting both components to
-        do i=istrR,iendR                ! kee the overall amplitute as
-          sustr(i,j)=TauX               ! initially specified by TauY.
-          svstr(i,j)=TauY
-        enddo
-      enddo
-
-# elif defined UPWELLING
-      if (tdays < 2.) then
-        TauX=+0.1*sin(pi*tdays/4.)/rho0
-      else
-        TauX=+0.1/rho0
-      endif
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=TauX
-c?        svstr(i,j)=0.2*TauX !<-- to make it ETALON_CHECK sensitive
-        enddo
-      enddo
-# elif defined BALTIC
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=0.1/rho0  ! Wind blowing West --> East
-        enddo
-      enddo
-
-
-# elif defined USWEST
-      do j=jstrR,jendR
-        do i=istr,iendR
-c         cff1=(latr(i,j)-latr(Lm/2,Mm/2))/20.
-c         sustr(i,j)=1.d-4.*cff1
-c         sustr(i,j)=-1.d-4
-          sustr(i,j)=0.
-        enddo
-      enddo
-      do j=jstr,jendR
-        do i=istrR,iendR
-c          svstr(i,j)=-1.0d-4
-          svstr(i,j)=0.
-        enddo
-      enddo
-# endif
       end
 #endif /* ANA_SMFLUX */
 
@@ -292,30 +214,14 @@ c          svstr(i,j)=-1.0d-4
 
 # include "compute_extended_bounds.h"
 
-# if defined JET
-      TL0=-TL1 - 0.5*TL2*ZREF**2 - ZL1*TL3*exp(ZREF/ZL1)
-      TC0=-TC1 - 0.5*TC2*ZREF**2 - ZC2*TC3*exp((ZREF-ZC1)/ZC2)
       do j=jstrR,jendR
         do i=istrR,iendR
-         cff1=YC1+YC2*tanh(YC3*xr(i,j)+YC4)
-         cff2=TL0+ZL1*TL3
-         cff3=TC0+ZC2*TC3*exp(-ZC1/ZC2)
-         cff4=-0.5*g*Tcoef*(cff2+cff3)
-         ssh(i,j)=cff4/(rho0*g)
-                +Tcoef*cff2*(1+tanh((cff1-yr(i,j))/LCUR))/(2*rho0)
-                +Tcoef*cff3*(1+tanh((yr(i,j)-cff1)/LCUR))/(2*rho0)
+          ssh(i,j)= 0.0
         enddo
       enddo
-# else
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ssh(i,j)=???
-        enddo
-      enddo
-#endif /* JET */
-      end
-#endif
 
+      end
+#endif /* ANA_SSH */
 
 
 #ifdef SOLVE3D

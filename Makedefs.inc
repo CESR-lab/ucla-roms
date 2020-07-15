@@ -59,6 +59,7 @@
 
 #  CFTFLAGS = -pc80 -auto -stack_temps -warn unused
 #  CFTFLAGS = -pc64 -auto -stack_temps -warn all
+#  CFTFLAGS = -pc64 -auto -stack_temps -check all
    CFTFLAGS = -pc64 -auto -stack_temps 
 
 
@@ -67,17 +68,13 @@
      LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 
-#   FFLAGS = -O3 -IPF_fma -ip 
-# -qopt-report=5 -qopt-report-phase=vec
 
-   FFLAGS =  -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
+#  FFLAGS = -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
+#  FFLAGS = -O3 -IPF_fma -ip -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
 
 
-#   FFLAGS =  -fp-model precise -O3 
-#  FFLAGS =  -O2 -fp-model strict
-# -prof_gen
 
-# FFLAGS = -g -check all -CA -CB -CS
+ FFLAGS = -g -check all -CA -CB -CS
 # FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
 
 
@@ -91,14 +88,4 @@
 #    LMPI = ${MPI_ROOT}/lib/libmpich.a 
 
 
-    LCDF = -lnetcdff 
    LCDF = -lnetcdff -L$(ROMS_ROOT)/ncio-master/lib/ -lncio -I$(ROMS_ROOT)/ncio-master/include/ -L$(ROMS_ROOT)/NHMG/lib/ -lnhmg
-
-
-
-#    LCDF = /opt/netcdf-4.2.1.1_largemem/lib/libnetcdff.a  /opt/netcdf-4.2.1.1_largemem/lib/libnetcdf.a
-
-# libncar = -lncarg -lncarg_gks -lncarg_c -lX11 -lm
-  libncar = -lncarg -lncarg_gks -lncarg_c -lXpm -lX11 -lXext -lpng -lz
-  LIBNCAR = -L$(NCARG_ROOT)/lib -L/usr/lib64 $(libncar)
-

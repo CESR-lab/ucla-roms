@@ -1,0 +1,133 @@
+Note on the tridiagonal systems solves in pre_step3d and step3d_uv1/2
+
+
+We solve implicitly for vertical diffusion and (part of the) vertical advection to avoid CFL like stability issues.
+
+
+The discrete equation that is solved for u (and similar for v,w, and tracers t) is:
+
+!
+!   du(k)     1     [         u(k+1)-u(k)             u(k)-u(k-1) ]
+!  ------ = ----- * [ Akv(k)* ----------- - Akv(k-1)* ----------- ]  
+!    dt     Hz(k)   [           dz(k)                   dz(k-1)   ]
+
+
+     - wi(k  )*0.5*(u(k+1)+u(k) )/Hz(k) if wi(k  ) < 0
+     + wi(k-1)*0.5*(u(k-1)+u(k) )/Hz(k) if wi(k-1) > 0
+
+wi is the implicit part of the grid-relative flux (zero at top and bottom)
+
+where u(k) represents u,v(:,:,:,nnew) velocity components; Hz(k) and
+dz(k) are grid spacing between vertical W and RHO-points respectively
+interpolated to horizontal U,V locations. Backward Euler implicit
+time step requires solution of a tri-diagonal system. The advection is discretized
+as euler backward, first order upwind.
+
+
+ Hz(k)*(u(k)-u_old(k)) = A(k)*(u(k+1)-u(k)) - A(k-1)*(u(k)-u(k-1))
+           - dt*(wi(k)*0.5*(u(k+1)+u(k)) - wi(k-1)*0.5*(u(k-1)+u(k)) ) 
+                    
+ with W(k) = dt*wi(k) and A(k) = dt*Avk(k)/dz(k), defined at w-points. or:
+
+
+     [          -A(k-1)        - W(k-1)]*u(k-1) +
+     [Hz(k)+A(k)+A(k-1) + W(k) - W(k-1)]*u(k)   +
+     [     -A(k)        + W(k)         ]*u(k+1) = 
+                                    Hz(k)*u_old(k)
+
+Use W(k) with u(k+1) when negative, and with u(k) when positive.
+Use W(k-1) with u(k) when negative, and with u(k-1) when positive.
+u_old(k) is the incoming value.
+
+Neuman top would be:
+
+     [          -A(n-1)        - W(n-1)]*u(n-1) +   (when W(n-1) is positive)
+     [Hz(n)     +A(n-1)        - W(n-1)]*u(n)   =   (when W(n-1) is negative)
+                                    Hz(k)*u_old(n) + dt*sustr
+
+Bottom is:
+     [Hz(1)+A(1)        + W(1)         ]*u(1)   +
+     [     -A(1)        + W(1)         ]*u(2) = 
+                                    Hz(k)*u_old(1) -dt*rd*u(1)
+
+or 
+     [Hz(1)+A(1)        + W(1) + dt*rd ]*u(1)   +
+     [     -A(1)        + W(1)         ]*u(2) = 
+                                    Hz(k)*u_old(1)
+
+
+
+In the code, FC denotes the rescaled mixing coefs, A. WC denotes W, there is 
+a division by dx*dy to go from flux to velocity.
+
+
+Now (see numerical recipies, p40): lower diag is a, center diag b, and upper c.
+
+the right hand side r of the system is Hz*u (+ top and bottom stress)
+
+     FC(n-1) = A(n)
+     WC(n-1) = W(n)
+
+     
+     cff = 1/ (Hz(n) + A(n-1) - W(n-1) )  --> 1/bet  bet = b(n)
+
+     CF(n-1) = ( A(n-1) + W(n-1) )/bet  -->  gam(n-1) = c(n)/bet
+   
+     DC(n) = r(n)/bet  --> u(n) = r(1)/bet
+
+    ! r(n) = u_old(n) + dt*sustr ---> don't add again (we can since sustr is known)
+
+     do k=n-1,2,-1  decomp and forward substitution
+
+       cff = 1/(Hz(k) + A(k-1) + A(k) - W(k-1) + W(k) - CF(k-1)*gam(k) ) --> 1/bet
+                                                          !!  bet = b(k)-a(k)*gam(k)
+       CF(k-1) = ( A(k-1) +W(k-1) )/bet  -- gam(k-1) = c(k-1)/bet
+
+       DC(k) = cff*( DC(k) + DC(k+1)*( A(k)-WC(k)) ) --> u(k) = r(k) -a(k)*u(k+1)/bet
+
+     enddo
+
+     bet = Hz(1) + dt*rd + A(1) + W(1) -CF(1)*( A(1) - W(1))
+     u(1) =  (DC(1) + DC(k+1)*( A(1)-W(1))/bet     --> u(1) = (r(1)-a(1)*u(k+1))/bet
+
+     do k=2,n
+      u(k) = DC(k) + CF(k-1)*u(k-1)    --> u(k) = u(k) - gam(k-1)*u(k-1)
+     enddo
+
+
+---------------------------------------------------------------------------------
+
+    Consider w.
+
+Top is:
+
+     dw/dt = 1/(0.5*hzw) *[ A(n)*dwz(n) - A(n-1/2)*(w(n)-w(n-1)) 
+                             - wi(n-1/2)*(w(n) + w(n-1) ]
+
+0.5*hzw*w(n) = dt*[ A(n)*dwz(n) - A(n-1/2)*(w(n)-w(n-1)/hzw) 
+                             - wi(n-1/2)*(w(n) + w(n-1) ]
+                                              + w_old(n)*0.5*hzw
+
+write dwz(n) as: A(n)*(W(n)-W(n-1))/Hz(n)
+
+so, we get: 
+
+0.5*hzw*w(n) = dt*[ A(n)*(w(n)-w(n-1))/hz - A(n-1/2)*(w(n)-w(n-1)/hz) 
+                             - wi(n-1/2)*(w(n) + w(n-1) ]
+                                              + w_old(n)*0.5*hzw
+
+for w, A(n-1/2) = 0.5*(Akv(n) + Akv(n-1)) and A(n) = Akv(n)
+
+
+     [          -0.5*(-Ak(n)+Ak(n-1))- W(n-1)]*u(n-1) +   (when W(n-1) is positive)
+     [0.5*Hz(n) +0.5*(-Ak(n)+Ak(n-1))- W(n-1)]*u(n)   =   (when W(n-1) is negative)
+                                    Hz(k)*u_old(n) + dt*sustr
+
+
+
+
+near bottom w(1) is:
+
+     [Hz(1)+A(1)+A(0) + W(1)- W(0)]*u(1)   +
+     [     -A(1)      + W(1)         ]*u(2) = 
+                                    Hz(k)*u_old(1)

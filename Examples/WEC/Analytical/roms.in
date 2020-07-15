@@ -1,0 +1,43 @@
+title: 
+Wave packet propagation 1m 2 levels
+
+time_stepping: NTIMES dt[sec] NDTFAST NINFO
+200 1 50 1 
+
+S-coord: THETA_S, THETA_B, hc (m)
+6.0D0 6.0D0 50.0D0 
+
+initial: NRREC filename
+0 
+none 
+
+restart: NRST, NRPFRST / filename
+9999999 1 
+wpp_rst.nc
+
+history: LDEFHIS, NWRT, NRPFHIS / filename
+T 1 201 
+wpp_his.nc
+
+primary_history_fields: zeta U,VBAR U,V wrtT(1:NT)
+T T T T T F T T T 
+
+auxiliary_history_fields: rho Omega W Akv Akt Aks HBL HBBL
+F F F F F F F F 
+
+wci_history_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
+F T F T F F F F F F F 
+
+rho0:
+      1027.5
+
+lin_EOS_cff:
+1027.5 18.0 32.0 0.14 0.80 
+
+vertical_mixing:
+0.e-6 0.e-6 0.e-6 0.e-6 0.e-6 0.e-6
+
+bottom_drag: RDRG [m/s], RDRG2, Zob [m], Cdb_min, Cdb_max
+0.E-4 0.0E-3 0.E-2 0.E-4 0.E-2
+
+
