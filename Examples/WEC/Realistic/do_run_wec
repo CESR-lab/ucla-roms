@@ -1,0 +1,4 @@
+#!/bin/csh
+
+#mpiexec -np 6 roms_wec wec.in < /dev/null > & jobout &
+mpiexec -np 6 roms_wec wec.in 

@@ -8,6 +8,7 @@
 *.swp
 *.so
 *.log
+jobout
 mpc
 roms*
 jobout
@@ -22,3 +23,7 @@ Examples/*/Compile
 Examples/*/*.nc
 Examples/*/fort*
 Work/
+setup_kwds.F
+roms*
+Examples/*/Compile
+check_switches1.F

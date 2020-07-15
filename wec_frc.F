@@ -1,4 +1,10 @@
       module wec_frc
+#include "cppdefs.h"
+! CPP flag WEC covering entire module so that the module is empty if
+! WEC is unused, and thus module will not take up unnecessary size in
+! the executable.
+#if defined WEC /* WEC for whole module! */
+
 
       ! ===================================
       ! Wave Effect on Current (WEC) module
@@ -15,12 +21,6 @@
       use read_write ! new roms netcdf functionality module
 
       implicit none
-
-#include "cppdefs.h"
-! CPP flag WEC covering entire module so that the module is empty if
-! WEC is unused, and thus module will not take up unnecessary size in
-! the executable.
-#if defined WEC /* WEC for whole module! */
 
 
       ! ****************************

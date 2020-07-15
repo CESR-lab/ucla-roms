@@ -19,7 +19,8 @@ include Makedefs.inc
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = main.F		step2d_FB.F	read_inp.F\
+KRNSRC = 		dimensions.F	read_write.F\
+	wec_frc.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
 	set_nudgcof.F	ana_grid.F	analytical.F\
@@ -41,9 +42,7 @@ KRNSRC = main.F		step2d_FB.F	read_inp.F\
 \
 	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
 \
-	river_frc.F	dimensions.F
-#wec_frc.F
-
+	river_frc.F	main.F
 
 #rho_eos.F	ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
