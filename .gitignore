@@ -27,3 +27,4 @@ setup_kwds.F
 roms*
 Examples/*/Compile
 check_switches1.F
+check_srcs.F

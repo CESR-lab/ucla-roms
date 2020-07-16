@@ -44,7 +44,7 @@ KRNSRC = 		dimensions.F	read_write.F\
 \
 	river_frc.F	main.F
 
-#rho_eos.F	ab_ratio.F	alfabeta.F\
+#ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 
 
@@ -157,6 +157,7 @@ setup_kwds.F: checkkwds read_inp.F
 
 depend:  # Note: cross_matrix is external here and should be in path
 	cross_matrix *.F
+#cross_matrix ${SRCS}
 
 plotter: plotter.o
 	$(CFT) -o plotter plotter.o $(LIBNCAR)

@@ -399,7 +399,7 @@ C$OMP BARRIER
 
       do tile=my_tile_range
         call     prsgrd(tile)
-        call pre_step3d(tile)
+        call pre_step3d(tile)  ! u is m/s here
 # ifdef AVERAGES
         call    set_avg(tile)
 # endif

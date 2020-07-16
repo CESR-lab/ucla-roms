@@ -192,14 +192,14 @@ c---#define BIO_1ST_USTREAM_TEST
 #endif
 
 #ifdef RIVER_SOURCE
-	  !! inefficient because this is inside a k-loop
-	  !! we could try to compute riv_uvel(i,j) somewhere else
+          !! inefficient because this is inside a k-loop
+          !! we could try to compute riv_uvel(i,j) somewhere else
           do j=jstr,jend
             do i=istr,iend+1
               if (abs(riv_uflx(i,j)).gt.1e-3) then
                 depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
      &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )
-	        iriver = nint(riv_uflx(i,j)/10)
+                iriver = nint(riv_uflx(i,j)/10)
                 riv_uvel = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)/depth
                 FX(i,j)= riv_trc(iriver,itrc)*
      &            0.5*(Hz(i-1,j,k)+Hz(i,j,k))*riv_uvel
@@ -212,7 +212,7 @@ c---#define BIO_1ST_USTREAM_TEST
               if (abs(riv_vflx(i,j)).gt.1e-3) then
                 depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
      &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )
-	        iriver = nint(riv_vflx(i,j)/10)
+                iriver = nint(riv_vflx(i,j)/10)
                 riv_vvel = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)/depth
                 FE(i,j)= riv_trc(iriver,itrc)*
      &            0.5*(Hz(i,j-1,k)+Hz(i,j,k))*riv_vvel
