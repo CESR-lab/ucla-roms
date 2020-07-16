@@ -5,6 +5,7 @@
 
 /* DevinD added flags */
 #define WEC
+#define NHMG
 
 /*
     Embedded (nested) grid configuration segment

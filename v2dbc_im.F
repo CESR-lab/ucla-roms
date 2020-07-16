@@ -148,8 +148,8 @@
         enddo
 #  endif
 # else
-					      ! Southern edge closed
-        do i=istr,iend                        ! ======== ==== ======
+                                             ! Southern edge closed
+        do i=istr,iend                       ! ======== ==== ======
 #  ifdef WEC
           vbar(i,jstr,knew)=-vst2d(i,jstr)   ! no Lagrangian flux
 #   ifdef MASKING

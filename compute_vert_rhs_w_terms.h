@@ -31,7 +31,7 @@
      &                               +curv(i,k  )*min(Flxw,0.))
             enddo
           enddo
-	  
+  
           !! These guys (FC) are fluxes (m3/s) of velocity (m/s) -> m4/s2
           do k=1,N-1
             do i=istr,iend
@@ -39,8 +39,8 @@
             enddo
           enddo
 
-	  ! flux at surfac is zero because it moves with omega.
-	  ! this also takes care of the half-volume of w(N)
+          ! flux at surface is zero because it moves with omega.
+          ! this also takes care of the half-volume of w(N)
           do i=istr,iend
             rw(i,j,N) = rw(i,j,N)   + FC(i,N)
           enddo

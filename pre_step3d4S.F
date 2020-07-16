@@ -33,7 +33,7 @@
 #ifdef NHMG
       use nhmg
       use mg_grids
-      use mg_tictoc, only : tic, toc
+      use mg_tictoc
 #endif
       implicit none
 # include "param.h"
@@ -669,12 +669,12 @@
 !    Multiply u,v,w to get back fluxes for use inside mg_solve
         do k=1,N
           do j=jstr,jend
-            do i=istr,iend+1
+            do i=istr,iend
               u(i,j,k,nnew) = u(i,j,k,nnew)
      &            *(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))/pn_u(i,j)
             enddo
           enddo
-          do j=jstr,jend+1
+          do j=jstr,jend
             do i=istr,iend
               v(i,j,k,nnew) = v(i,j,k,nnew)
      &            *(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))/pm_v(i,j)
@@ -695,7 +695,7 @@
         ! Compute a 'barotropic' correction to w such that it matches
         ! the current ubar,vbar divergence (see Molemaker et al., 2018)
         if (surface_neumann) then
-          print *,'neumann'
+!         print *,'neumann'
           nh_ubar = 0.
           nh_vbar = 0.
           do k=1,N
@@ -745,23 +745,19 @@
           enddo
         enddo
       enddo
-      if (mynode==0) then
-          print 99, dmax
-      endif
-  99  format('pre after, dmax: ',e15.4)
 
         ! add the non-hydro correction (du, dv, dw are in flux form)
         ! add the non-hydrostatic pressure gradient to rufrc, rvfrc
         ! Can't do to iend+1 because we dont have Hz_fwd(iend+1)
         do k=1,N
           do j=jstr,jend
-            do i=istrU,iend
+            do i=istr,iend
               u(i,j,k,nnew) = (u(i,j,k,nnew) + grid(1)%du(k,j,i))
      &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))* pn_u(i,j)
             enddo
           enddo
 
-          do j=jstrV,jend
+          do j=jstr,jend
             do i=istr,iend
               v(i,j,k,nnew) = (v(i,j,k,nnew) + grid(1)%dv(k,j,i))
      &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))* pm_v(i,j)
@@ -785,7 +781,7 @@
 !     call w3dbc_tile(istr,iend,jstr,jend, wrk1)
 
       !! u and v are exchanged in set_depth (set_HUV1)
-      !! for neatness, we could move it there
+      !! for neatness, we could move this exchange there as well
 #  ifdef EXCHANGE
       call exchange_tile (istr,iend,jstr,jend,
      &                          w(START_2D_ARRAY,1,nnew),N)

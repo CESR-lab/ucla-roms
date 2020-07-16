@@ -64,11 +64,11 @@
           enddo             !--> discard FX
           do j=jstr,jend
             do i=istr,iend+1
-	      if (k<N) then
-	        Uflxw= 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
- 	      else
-	        Uflxw= 0.5*(FlxU(i,j,k)              )
-	      endif
+              if (k<N) then
+                Uflxw= 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
+              else
+                Uflxw= 0.5*(FlxU(i,j,k)              )
+              endif
 #ifdef UPSTREAM_W
               FX(i,j)=0.5*(w(i,j,k,nrhs)+w(i-1,j,k,nrhs))
      &                                       *Uflxw
@@ -133,11 +133,11 @@
 
           do j=jstr,jend+1
             do i=istr,iend
-	      if (k<N) then
-	        Vflxw= 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
- 	      else
-	        Vflxw= 0.5*(FlxV(i,j,k)              )
-	      endif
+              if (k<N) then
+                Vflxw= 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
+              else
+                Vflxw= 0.5*(FlxV(i,j,k)              )
+              endif
 #ifdef UPSTREAM_W
               FE(i,j)=0.5*(w(i,j,k,nrhs)+w(i,j-1,k,nrhs))
      &                                                  *Vflxw

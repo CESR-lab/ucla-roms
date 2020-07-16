@@ -1,5 +1,5 @@
 # Platform-specific definitions for Intel(R) Ifort(TM)
-# compiler on Extended Memory EM64T Linux computer.
+
 
 .SUFFIXES: .o .f .F .f90
 
@@ -28,7 +28,7 @@
 # the standard CPP is not aware of this.
 
       CPP = /lib/cpp -traditional -D__IFC
- CPPFLAGS = -I${MPI_ROOT}/include
+ CPPFLAGS = -I${MPI_ROOT}/include -I${NETCDF_INC}
 
 # Compiler settings:  -fpp2 is required only if -openmp is present.
 # Not having -fpp2 here just causes compiler warning (-fpp is set to
@@ -51,6 +51,9 @@
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
 
+VPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+#CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+
 
 # OMP_FLAG = -fpp -openmp
 
@@ -63,29 +66,20 @@
    CFTFLAGS = -pc64 -auto -stack_temps 
 
 
-      CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
-#      LDR = $(CFT)
+     CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+
      LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 
 
-#  FFLAGS = -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
-#  FFLAGS = -O3 -IPF_fma -ip -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
+# FFLAGS = -g -check all -CA -CB -CS -I./NHMG/include -I/opt/netcdf-4.6.1/include -I$(ROMS_ROOT)/ncio-master/include
+ 
+  NHMG_ROOT = $(ROMS_ROOT)/NHMG
+  NHMG_LIB  = $(NHMG_ROOT)/lib
+  NHMG_INC  = $(NHMG_ROOT)/include
+
+# FFLAGS = -O3 -IPF_fma -ip -I$(NHMG_INC) -I$(NETCDF_INC)
+  FFLAGS = -O3 -IPF_fma -ip
 
 
-
- FFLAGS = -g -check all -CA -CB -CS
-# FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
-
-
-#  FFLAGS = -O1
-
-
-    LDFLAGS = -I./NHMG/include/
-
- COMP_FILES = ifort?????* tmp?????*
-
-#    LMPI = ${MPI_ROOT}/lib/libmpich.a 
-
-
-   LCDF = -lnetcdff -L$(ROMS_ROOT)/ncio-master/lib/ -lncio -I$(ROMS_ROOT)/ncio-master/include/ -L$(ROMS_ROOT)/NHMG/lib/ -lnhmg
+  LCDF = -lnetcdff -L$(NHMG_LIB) -lnhmg

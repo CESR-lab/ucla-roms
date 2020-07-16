@@ -261,7 +261,8 @@
       if (kbak < 1) kbak=4
 # endif
 
-      do j=jstrR,jendR
+      do j=jstrR,jendR ! big j-loop
+
         do i=istr,iendR
           DC(i,N)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))*dn_u(i,j)
           DC(i,0)=DC(i,N)
@@ -371,6 +372,7 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
      &                                          )           
           enddo
         enddo
+
         if (j >= jstr) then
           do i=istrR,iendR
             DC(i,N)=0.5*(Hz(i,j,N)+Hz(i,j-1,N))*dm_v(i,j)
@@ -443,7 +445,8 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
             enddo
           enddo
         endif
-      enddo  ! <-- k
+      enddo  ! <-- j-loop
+
 
 # ifdef EXCHANGE
 #  if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
