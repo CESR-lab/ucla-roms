@@ -64,10 +64,10 @@
 #  include "eos_vars.h"
 # endif
 
+! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
+! but needs to be declared here in declarations section not in
+! the compute_horiz_rhs_uv_terms.h file else wont compile.
 # ifdef WEC
-#  ifdef VF_ROBUST
-      real gam1,gam2
-#  endif
       real cff1
 # endif
 

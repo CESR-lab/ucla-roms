@@ -955,7 +955,7 @@ c*            t(i,j,k,1,isalt)=1.E-4*yr(i,j)-S0 +0.1
         enddo
       enddo
 #  endif
-# elif defined  RIVER
+# elif defined  RIVER_SOURCE
 #  ifdef SOLVE3D
       do k=1,N
         do j=jstrR,jendR

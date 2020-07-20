@@ -156,7 +156,7 @@ setup_kwds.F: checkkwds read_inp.F
 	./checkkwds
 
 depend:  # Note: cross_matrix is external here and should be in path
-	cross_matrix *.F
+	Tools-Roms/cross_matrix *.F
 
 plotter: plotter.o
 	$(CFT) -o plotter plotter.o $(LIBNCAR)

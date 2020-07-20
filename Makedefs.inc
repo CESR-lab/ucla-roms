@@ -51,6 +51,10 @@
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
 
+ROMS_ROOT = /home/devin/repos_hp/ucla-roms
+
+VPATH = ${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+
 
 # OMP_FLAG = -fpp -openmp
 
@@ -69,12 +73,18 @@
 
 
 
-#  FFLAGS = -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
-#  FFLAGS = -O3 -IPF_fma -ip -I$(ROMS_ROOT)/NHMG/include/ -I$(ROMS_ROOT)/ncio-master/include
+#  FFLAGS = -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/
+# repo:
+  FFLAGS = -O3 -IPF_fma -ip -I$(ROMS_ROOT)/NHMG/include/
+
+# DevinD - This was the new code flag originally -O3 -fp-model source
+#   FFLAGS =  -O3 -fp-model source
+# DevinD - Changed flag to the following to avoid memory issue with WEC
+#	 	 - it exists above already anyway -O3 -IPF_fma -ip
+# FFLAGS = -O3 -IPF_fma -ip
 
 
-
- FFLAGS = -g -check all -CA -CB -CS
+# FFLAGS = -g -check all -CA -CB -CS
 # FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
 
 
@@ -88,4 +98,4 @@
 #    LMPI = ${MPI_ROOT}/lib/libmpich.a 
 
 
-   LCDF = -lnetcdff -L$(ROMS_ROOT)/ncio-master/lib/ -lncio -I$(ROMS_ROOT)/ncio-master/include/ -L$(ROMS_ROOT)/NHMG/lib/ -lnhmg
+   LCDF = -lnetcdff -L$(ROMS_ROOT)/NHMG/lib/ -lnhmg

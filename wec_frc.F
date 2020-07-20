@@ -379,21 +379,6 @@
 # endif
 
 
-      ! flags taken from def_his.F
-      ! ==========================
-      ! and used in def_his_def_var_wec
-
-#ifndef AVRH
-# define ncid nchis
-# define fname hisname
-# define wrt wrt_wec_vars /* DevinD changed for new wrt_wec_vars array */
-#else
-# define ncid ncavg
-# define fname avgname
-# define wrt wrtavg
-#endif
-
-
       ! ===============
       ! MISC. VARIABLES
       ! ===============
@@ -600,18 +585,33 @@
      &                , wrt_wec_vars(indxCALP),  wrt_wec_vars(indxKAPS)
 #  endif
 
+      ! Check if any WEC outputs turned on, if so
+      ! set wrthis(IndxTime) == true so that history file creation is
+      ! triggered in def_his.F
+      ! ----------------------
+          if (      wrt_wec_vars(indxSUP)
+     &         .or. wrt_wec_vars(indxUST2D) .or. wrt_wec_vars(indxVST2D)
+#  ifdef SOLVE3D
+     &         .or. wrt_wec_vars(indxUST)   .or. wrt_wec_vars(indxVST)
+     &         .or. wrt_wec_vars(indxwST)   .or. wrt_wec_vars(indxAKB)
+     &         .or. wrt_wec_vars(indxAKW)   .or. wrt_wec_vars(indxKVF)
+     &         .or. wrt_wec_vars(indxCALP)  .or. wrt_wec_vars(indxKAPS)
+#  endif
+     &       ) wrthis(indxTime)=.true.
+
+
       ! Write to terminal output in simulation pre-amble text which
       ! WEC result variables are being stored
       ! -------------------------------------
 
-          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+      mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
      &               'fields to be saved in WEC 2D history: (T/F)'
      &     ,  'SUP',    wrt_wec_vars(indxSUP),   sup_long_name
      &     ,  'UST2D',  wrt_wec_vars(indxUST2D), ust2d_long_name
      &     ,  'VST2D',  wrt_wec_vars(indxVST2D), vst2d_long_name
 
 #  ifdef SOLVE3D
-          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+      mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
      &               'fields to be saved in WEC 3D history: (T/F)'
      &     ,  'UST',    wrt_wec_vars(indxUST),   ust_long_name
      &     ,  'VST',    wrt_wec_vars(indxVST),   vst_long_name
@@ -670,18 +670,34 @@
      &                , wrt_avg_vars(indxCALP),  wrt_avg_vars(indxKAPS)
 #  endif
 
+
+      ! Check if any WEC outputs turned on, if so
+      ! set wrthis(IndxTime) == true so that history file creation is
+      ! triggered in def_his.F
+      ! ----------------------
+      if (      wrt_avg_vars(indxSUP)
+     &         .or. wrt_avg_vars(indxUST2D) .or. wrt_avg_vars(indxVST2D)
+#  ifdef SOLVE3D
+     &         .or. wrt_avg_vars(indxUST)   .or. wrt_avg_vars(indxVST)
+     &         .or. wrt_avg_vars(indxwST)   .or. wrt_avg_vars(indxAKB)
+     &         .or. wrt_avg_vars(indxAKW)   .or. wrt_avg_vars(indxKVF)
+     &         .or. wrt_avg_vars(indxCALP)  .or. wrt_avg_vars(indxKAPS)
+#  endif
+     &       ) wrtavg(indxTime)=.true.
+
+
       ! Write to terminal output in simulation pre-amble text which
       ! WEC AVERAGES result variables are being stored
       ! ----------------------------------------------
 
-          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+      mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
      &               'fields to be saved in WEC 2D average: (T/F)'
      &     ,  'SUP',    wrt_avg_vars(indxSUP),   sup_long_name
      &     ,  'UST2D',  wrt_avg_vars(indxUST2D), ust2d_long_name
      &     ,  'VST2D',  wrt_avg_vars(indxVST2D), vst2d_long_name
 
 #  ifdef SOLVE3D
-          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+      mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
      &               'fields to be saved in WEC 3D average: (T/F)'
      &     ,  'UST',    wrt_avg_vars(indxUST),   ust_long_name
      &     ,  'VST',    wrt_avg_vars(indxVST),   vst_long_name
@@ -705,74 +721,39 @@
 
  100  continue
 
-
-!# else
-!        elseif (keyword(1:kwlen).eq.'wci_average_fields') then
-!          call cancel_kwd (keyword(1:kwlen), ierr)
-!        read(input,*,err=95) wrtavg(indxSUP),  wrtavg(indxUST2D)
-!     &                                        ,  wrtavg(indxVST2D)
-!#  ifdef SOLVE3D
-!     &         , wrtavg(indxUST), wrtavg(indxVST), wrtavg(indxwST)
-!     &         , wrtavg(indxAKB), wrtavg(indxAKW), wrtavg(indxKVF)
-!     &                        , wrtavg(indxCALP), wrtavg(indxKAPS)
-!#  endif
-!          mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
-!     &               'fields to be saved in MRL-WEC 2D average: (T/F)'
-!     &             ,  'SUP',    wrtavg(indxSUP),    vname(2,indxSUP)
-!     &             ,  'UST2D',  wrtavg(indxUST2D),  vname(2,indxUST2D)
-!     &             ,  'VST2D',  wrtavg(indxVST2D),  vname(2,indxVST2D)
-!
-!#  ifdef SOLVE3D
-!          mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
-!     &               'fields to be saved in MRL-WEC 3D average: (T/F)'
-!     &             ,  'UST',    wrtavg(indxUST),    vname(2,indxUST)
-!     &             ,  'VST',    wrtavg(indxVST),    vname(2,indxVST)
-!     &             ,  'WST',    wrtavg(indxWST),    vname(2,indxWST)
-!     &             ,  'Akb',    wrtavg(indxAkb),    vname(2,indxAkb)
-!     &             ,  'Akw',    wrtavg(indxAkw),    vname(2,indxAkw)
-!     &             ,  'KVF',    wrtavg(indxKVF),    vname(2,indxKVF)
-!     &             ,  'CALP',   wrtavg(indxCALP),   vname(2,indxCALP)
-!     &             ,  'KAPS',   wrtavg(indxKAPS),   vname(2,indxKAPS)
-!#  endif
-!# endif /* AVERAGES */
-
-!      goto 100
-!  95  write(*,'(/1x,4A/)') '### ERROR: read_inp_wec :: Cannot read ',
-!     &                       'entry ''', keyword(1:kwlen), '''.'
-!      ierr=ierr+1 ! Possible source for error here?
-!!      goto 99
-!!  99  close (input)
-! 100  continue
-
       end subroutine read_inp_avg_wec
 #endif /* AVERAGES */
 
 
+!-----------------------------------------------------------------------
+
 #ifndef ANA_WEC_FRC
-!-------------------------------------------------------------------------
-      subroutine read_wec_frc(fname,irec,idx,wec_time)
+      subroutine read_wec_frc(fname,irec,idx,wec_in_time)
+
+      ! =========================================
+      ! READ WEC VARIABLES FROM INPUT NETCDF FILE
+      ! =========================================
+
       ! This version is intended to exclusively read WEC variables that are
       ! part of 'Leonel's method'
+
       use netcdf
+
       implicit none
 
       ! input/output
       character(len=*),intent(in) :: fname
       integer         ,intent(in) :: irec,idx
+      ! Set wec_time for read in variables
+      real,dimension(1):: wec_in_time
+
       ! local
       integer ierr,ncid
       integer varid
-      ! external function
-      integer ncdf_read
-      ! Set wec_time for read in variables
-      real,dimension(1):: wec_time
 
-!      integer,parameter :: r_var = 0 !! grid type of var (u_var=1,v_var=2,q_var=3)
-        ! -> comes from ncvars.h -> read_write module.
-
-        ! ifile and irec should be in the module pre-amble, initial as 0
-        ! Look for a file that has the requested variable and search
-        ! for the last record for which wec_tim > time.
+      ! Read in river variables are all from rho-points (r_var)
+      ! integer,parameter :: r_var = 0 !! grid type of var (u_var=1,v_var=2,q_var=3)
+      ! comes from ncvars.h.
 
       ! open the file (maybe check if the file is open already)
       ! =============
@@ -782,54 +763,55 @@
       ! =============
       ierr = nf90_inq_varid(ncid, wec_tim_name, varid) ! Get time ID (varid)
       ! nf90_get_var needs an array for last 2 terms hence syntax
-      ierr = nf90_get_var(ncid, varid, wec_time, (/irec/), (/1/))
-      wec_time = wec_time * 86400 ! covnert time in days to seconds
+      ierr = nf90_get_var(ncid, varid, wec_in_time, (/irec/), (/1/))
+      ! covnert read in time (currently in days) to seconds
+      wec_in_time = wec_in_time * 86400
 
       ! read the vars
       ! =============
 
       ! Wave amplitude
-      call nc_read_var(nchis,wwag(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwag(START_2D_ARRAY,idx),1,
      &                       wec_awv_name,r_var,irec,ierr)
 
       ! Wave direction
-      call nc_read_var(nchis,wwdg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwdg(START_2D_ARRAY,idx),1,
      &                       wec_dwv_name,r_var,irec,ierr)
 
       ! Wave period
-      call nc_read_var(nchis,wwpg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwpg(START_2D_ARRAY,idx),1,
      &                       wec_pwv_name,r_var,irec,ierr)
 
       ! ust2d
-      call nc_read_var(nchis,wwUSg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwUSg(START_2D_ARRAY,idx),1,
      &                       ust2d_name,r_var,irec,ierr)
 
       ! vst2d
-      call nc_read_var(nchis,wwVSg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwVSg(START_2D_ARRAY,idx),1,
      &                       vst2d_name,r_var,irec,ierr)
 
       ! ustr0
-      call nc_read_var(nchis,wwUS0g(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwUS0g(START_2D_ARRAY,idx),1,
      &                       ust0_name,r_var,irec,ierr)
 
       ! vstr0
-      call nc_read_var(nchis,wwVS0g(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwVS0g(START_2D_ARRAY,idx),1,
      &                       vst0_name,r_var,irec,ierr)
 
       ! eb
-      call nc_read_var(nchis,wweb(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wweb(START_2D_ARRAY,idx),1,
      &                       wec_ebwv_name,r_var,irec,ierr)
 
       ! ed
-      call nc_read_var(nchis,wwed(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwed(START_2D_ARRAY,idx),1,
      &                       wec_edwv_name,r_var,irec,ierr)
 
       ! lmv
-      call nc_read_var(nchis,wwlm(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwlm(START_2D_ARRAY,idx),1,
      &                       wec_lwv_name,r_var,irec,ierr)
 
       ! sup
-      call nc_read_var(nchis,wwsup(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwsup(START_2D_ARRAY,idx),1,
      &                       sup_name,r_var,irec,ierr)
 
       end subroutine read_wec_frc
@@ -852,7 +834,7 @@
       implicit none
 
       ! STORE r2dgrd, etc in WEC rather???
-      integer lenstr, lvar, ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
+      integer ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
 #ifdef SOLVE3D
      &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
@@ -863,19 +845,19 @@
       ! sup: quasi-static sea-level response (wave set-up/down)
       ! Call read_write module subroutine
       if (wrt_wec_vars(indxSUP)) then ! if = outputing variable yes or no
-        call nc_define_var(ncid,sup_name,sup_long_name,sup_units,
+        call nc_define_var(nchis,sup_name,sup_long_name,sup_units,
      &                          r2dgrd,ierr)
       endif
 
       ! ust2d: 2D, depth-averaged Stokes drift velocities.
       if (wrt_wec_vars(indxUST2D)) then
-        call nc_define_var(ncid,ust2d_name,ust2d_long_name,ust2d_units,
+        call nc_define_var(nchis,ust2d_name,ust2d_long_name,ust2d_units,
      &                          u2dgrd,ierr)
       endif
 
       ! vst2d: 2D, depth-averaged Stokes drift velocities.
       if (wrt_wec_vars(indxVST2D)) then
-        call nc_define_var(ncid,vst2d_name,vst2d_long_name,vst2d_units,
+        call nc_define_var(nchis,vst2d_name,vst2d_long_name,vst2d_units,
      &                          v2dgrd,ierr)
       endif
 
@@ -883,49 +865,49 @@
 
       ! ust: 3D Stokes drift velocities.
       if (wrt_wec_vars(indxUST)) then
-        call nc_define_var(ncid,ust_name,ust_long_name,ust_units,
+        call nc_define_var(nchis,ust_name,ust_long_name,ust_units,
      &                          u3dgrd,ierr)
       endif
 
       ! vst: 3D Stokes drift velocities.
       if (wrt_wec_vars(indxVST)) then
-        call nc_define_var(ncid,vst_name,vst_long_name,vst_units,
+        call nc_define_var(nchis,vst_name,vst_long_name,vst_units,
      &                          v3dgrd,ierr)
       endif
 
       ! wst: vertical Stokes drift velocity (m/s) at rho-point
       if (wrt_wec_vars(indxWST)) then
-        call nc_define_var(ncid,wst_name,wst_long_name,wst_units,
+        call nc_define_var(nchis,wst_name,wst_long_name,wst_units,
      &                          r3dgrd,ierr)
       endif
 
       ! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
       if (wrt_wec_vars(indxAkb)) then
-        call nc_define_var(ncid,Akb_name,Akb_long_name,Akb_units,
+        call nc_define_var(nchis,Akb_name,Akb_long_name,Akb_units,
      &                          w3dgrd,ierr)
       endif
 
       ! Akw: Vertical eddy diffusivity coefficient due to primary waves.
       if (wrt_wec_vars(indxAkw)) then
-        call nc_define_var(ncid,Akw_name,Akw_long_name,Akw_units,
+        call nc_define_var(nchis,Akw_name,Akw_long_name,Akw_units,
      &                          w3dgrd,ierr)
       endif
 
       ! kvf: vertical vortex force term (u^St du/dz)
       if (wrt_wec_vars(indxKVF)) then
-        call nc_define_var(ncid,kvf_name,kvf_long_name,kvf_units,
+        call nc_define_var(nchis,kvf_name,kvf_long_name,kvf_units,
      &                          r3dgrd,ierr)
       endif
 
       ! calP: surface pressure correction term appeared in prsgrd term
       if (wrt_wec_vars(indxCALP)) then
-        call nc_define_var(ncid,calP_name,calP_long_name,calP_units,
+        call nc_define_var(nchis,calP_name,calP_long_name,calP_units,
      &                          r2dgrd,ierr)
       endif
 
       ! Kapsrf: surface Bernoulli head term appeared in prsgrd term
       if (wrt_wec_vars(indxKAPS)) then
-        call nc_define_var(ncid,Kapsrf_name,Kapsrf_long_name,
+        call nc_define_var(nchis,Kapsrf_name,Kapsrf_long_name,
      &                          Kapsrf_units,r2dgrd,ierr)
       endif
 
@@ -951,7 +933,7 @@
       implicit none
 
       ! STORE r2dgrd, etc in WEC rather???
-      integer lenstr, lvar, ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
+      integer ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
 #ifdef SOLVE3D
      &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
@@ -1406,30 +1388,33 @@
 
 
 #ifdef SOLVE3D
-!
-! Vertical Stokes drift velocity at rho-point
-! ===========================================
 
       subroutine wstokes_wec (tile)
+
+      ! ===========================================
+      ! Vertical Stokes drift velocity at rho-point
+      ! ===========================================
+
       implicit none
-! already included at top of module # include "param.h"
+! # include "param.h" ! already included at top of module
       integer tile
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call wstokes_wec_tile(istr,iend,jstr,jend)
-!      return
+
       end subroutine wstokes_wec
 
 
       subroutine wstokes_wec_tile (istr,iend,jstr,jend)
 
       implicit none
-!! # include "param.h"
+!! # include "param.h" ! already included at top of module
       integer istr,iend,jstr,jend, i,j,k
-      real Wrk(0:N) ! DevinD - move to top of module once code is working
-!! # include "grid.h"
-!! # include "ocean3d.h"
-!! # include "forces.h"
+      real Wrk(0:N)
+!! # include "grid.h" ! already included at top of module
+!! # include "ocean3d.h" ! already included at top of module
+!! # include "forces.h" ! already included at top of module
+
       do j=jstr,jend
         do i=istr,iend
           Wrk(0)=0.D0
@@ -1512,9 +1497,13 @@
 
 ! ----------------------------------------------------------------------
 
-
       subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,
      &                                           wrkone, wrktwo)
+
+      ! ========================================
+      ! Add some of the WEC variables to the RHS
+      ! of the equation system
+      ! ======================
 
       implicit none
 
@@ -1531,13 +1520,14 @@
       real :: gam1, gam2
 
 # include "compute_auxiliary_bounds.h" /* Taken from top of rhs3d35S.F */
+! VF_ROBUST is not undefined at end of rhs3d35S.F, hence not undefined here.
 # define VF_ROBUST /* Taken from top of rhs3d35S.F */
 
-!
-! Add combined vortex-force and advection terms & breaking terms
-! 2nd- and 4th-order centered schemes, or 2nd with local weighted
-! filter (with VF_ROBUST) are available.
-!
+
+      ! Add combined vortex-force and advection terms & breaking terms
+      ! 2nd- and 4th-order centered schemes, or 2nd with local weighted
+      ! filter (with VF_ROBUST) are available.
+
 # if defined  WEC && defined UV_ADV
 #  define utmp wrkone
 #  define vtmp wrktwo
@@ -1648,11 +1638,10 @@ c      gam2=9./8.
 #  undef utmp
 #  undef vtmp
 # endif
+# undef VF_ROBUST
 
 
       end subroutine compute_wec_rhs_uv_terms
-
-
 
 
 !-----------------------------------------------------------------------
@@ -1666,10 +1655,11 @@ c      gam2=9./8.
       ! =================================
 
       implicit none
-!      ! import/export
+
+      ! input/outputs
       integer istr,iend,jstr,jend ! ,intent(in) ::
       integer ierr ! ,intent(out)::
-!      ! local
+      ! local
       integer :: tmp,i,j
       real cff1,cff2
 
@@ -1700,18 +1690,36 @@ c      gam2=9./8.
         ! wec_tim(it1) & wec_tim(its) declared < 0 at top of module:
         if (wec_tim(it1) < 0) then ! First timestep
 
-          !! First time, we need to read an extra slice of data
-          !! Read in the last record with wec_time < tday
-          !! this routine provides irec = irec - 1 for first time.
-          call find_rec_new_mod(time,wec_awv_name,wec_tim_name,
+          ! ifile and irec should be in the module pre-amble, initial as 0
+          ! Find the force file (ifile) and the record (irec) for
+          ! the last record with wec_time < tday
+          ! First time, we need to read an extra slice of data
+          ! so this routine provides irec = irec - 1 for first time.
+          ! Must make sure model time format (secs/days) matches data time
+          ! Hence tdays as input data times are in days
+          call find_rec_new_mod(tdays,wec_awv_name,wec_tim_name,
      &                               ifile,irec)
 
+          ! Reading is only done by master processor hence C$OMP MASTER
 C$OMP MASTER
           ! For the first time irec = irec - 1, as above, such that
-          ! wec_tim(it1) < time.
-          call read_wec_frc(frcfile(ifile),irec,it1,wec_tim(it1)) !! reads raw input values
+          ! closest record to wec_tim(it1) < time.
+          ! read in raw input variables and
+          ! read and set input time in wec_tim(it1) to seconds
+          call read_wec_frc(frcfile(ifile),irec,it1,wec_tim(it1))
 C$OMP END MASTER
 C$OMP BARRIER
+          ! Barrier needed because master processor must have read in all
+          ! WEC data before child processors try to access read in data!
+
+          ! Confirm to terminal reading of variables and
+          ! time for read in data
+          if (mynode == 0) then
+            write(*,'(4x,A,5x,A,G14.6,1x,A,I4)')
+     &               'set_wec_frc :: read WEC inputs',
+     &               'wec_input_time (s) =',wec_tim(it1),
+     &               'rec =',irec MYID
+          endif
 
           ! Convert read inputs into useable, rotated & rmask'ed variables
           ! for the first, earlier read in time variables(time) < time.
@@ -1728,14 +1736,36 @@ C$OMP BARRIER
           it1 = it2 ! If it1 = 1, it now equals 2, and vice-versa
           it2 = tmp ! If it2 = 2, it now equals 1, and vice-versa
 
-        endif ! End of if first step
+        endif ! End of first step
 
-        call find_rec_new_mod(time,wec_awv_name,wec_tim_name,
+        ! Find the force file (ifile) and the record (irec) for
+        ! the first record with wec_time > tday
+        ! Must make sure model time format (secs/days) matches data time
+        ! Hence tdays as input data times are in days
+        call find_rec_new_mod(tdays,wec_awv_name,wec_tim_name,
      &                             ifile,irec)
 
+             ! Causes heisenbug
+!             if (mynode==0) print *,'irec=',irec ! Debug
+
+        ! Reading is only done by master processor hence C$OMP MASTER
+C$OMP MASTER
         ! Read in the first record with wec_time > tday
-        ! Remember, its alternates between index 1 & 2 for each reading
+        ! Remember, it2 alternates between index 1 & 2 for each reading
+        ! read in raw input variables and
+        ! read and set input time in wec_tim(it2) to second
         call read_wec_frc(frcfile(ifile),irec,it2,wec_tim(it2))
+C$OMP END MASTER
+C$OMP BARRIER
+
+        ! Confirm to terminal reading of variables and
+        ! time for read in data
+        if (mynode == 0) then                  ! Text formatting:
+          write(*,'(4x,A,5x,A,G14.6,1x,A,I4)') ! 4x is spaces, A is string
+     &               'set_wec_frc :: read WEC inputs', ! 5x is 5 spaces, A is string
+     &               'wec_input_time (s) =',wec_tim(it2), ! ! G is number for time
+     &               'rec =',irec MYID ! I is integer
+        endif
 
         ! Convert read inputs into useable, rotated & rmask'ed variables
         ! for the latter read in time variables(time) > time.
@@ -1826,19 +1856,25 @@ C$OMP BARRIER
 # endif /* ANA_WEC_FRC or REALISTIC MODEL */
 
       end subroutine set_wec_frc_tile
-! #endif /* !ANA_WEC_FRC */
+
+
+
 !-------------------------------------------------------------------------
 
 #ifndef ANA_WEC_FRC
       subroutine set_wec_inp2vars (istr,iend,jstr,jend,idx)
+
+      ! ===============================
+      ! CONVERT & MASK READ IN WEC DATA
+      ! ===============================
 
       ! This is a partial copy of set_wwave_tile from get_wwave.F in old code.
 
       implicit none
 
       !Input
-      integer idx ! Index relating to read in variables set 1 or set 2
       integer istr,iend,jstr,jend
+      integer idx ! Index relating to read in variables set 1 or set 2
 
       ! Local
       integer i,j
@@ -1848,10 +1884,10 @@ C$OMP BARRIER
 # include "compute_extended_bounds.h"
 
 
-! Compute bed wave orbital velocity (uorb,vorb) and wave frequency,
-! wfrq, used with BBL, and/or Stokes transport (wvstx,wvsty) and wave
-! set-up, wvsup, for MRL_WCI.  Dispersion relation is approximated by
-! an explicit polynomial function proposed by Dean & Dalrymple (1991).
+      ! Compute bed wave orbital velocity (uorb,vorb) and wave frequency,
+      ! wfrq, used with BBL, and/or Stokes transport (wvstx,wvsty) and wave
+      ! set-up, wvsup, for MRL_WCI.  Dispersion relation is approximated by
+      ! an explicit polynomial function proposed by Dean & Dalrymple (1991).
 
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -1928,9 +1964,9 @@ C$OMP BARRIER
 
 #endif /* !ANA_WEC_FRC */
 
-      ! -------------------------------------------
-      ! -------------------------------------------
-      ! -------------------------------------------
+
+
+! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
       subroutine set_avg_wec_tile (istr,iend,jstr,jend,cff,cff1
@@ -1948,7 +1984,7 @@ C$OMP BARRIER
 
       implicit none
 
-      integer istr,iend,jstr,jend,i,j,jstrR,jendR,istrR,iendR
+      integer istr,iend,jstr,jend,jstrR,jendR,istrR,iendR,i,j
 # ifdef SOLVE3D
      &                       , k
 # endif
@@ -2076,9 +2112,8 @@ C$OMP BARRIER
       end subroutine wec_forces
 
 
-      ! -------------------------------------------
-      ! -------------------------------------------
-      ! -------------------------------------------
+
+! ----------------------------------------------------------------------
 
 
       subroutine wec_forces_tile (istr,iend,jstr,jend,
