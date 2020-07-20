@@ -143,12 +143,12 @@ c***              no code here
 # endif
 
 # ifdef RIVER_SOURCE
-#   ifdef ANA_RIVER_SOURCE
-      call ana_river_source_tile(istr,iend,jstr,jend)
-#   else
+!#   ifdef ANA_RIVER_SOURCE
+!      call ana_river_source_tile(istr,iend,jstr,jend)
+!#   else
 !     call set_river_src_tile(istr,iend,jstr,jend, ierr)
-      call set_river_frc(tmid)
-#   endif
+      call set_river_frc_tile(istr,iend,jstr,jend,ierr,tmid)
+!#   endif
 #  endif
 
 # ifdef WEC

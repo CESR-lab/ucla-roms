@@ -1,10 +1,13 @@
 /* This is "cppdefs.h": MODEL CONFIGURATION FILE
    ==== == ============ ===== ============= ==== */
 
-/* #define SPLASH - DevinD commented out */
+/*
+ * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
+ */
 
-/* DevinD added flags */
-#define WEC
+#define WEC /* Wave Effect on Current model */
+
+c--#define RIVER_SOURCE /* River model */
 
 /*
     Embedded (nested) grid configuration segment
@@ -540,7 +543,7 @@ c--# define OBC_NORTH
 c--# define OBC_SOUTH
 c--# define OBC_M2ORLANSKI
 
-#elif defined RIVER     /* River run-off test problem */
+#elif defined RIVER_SOURCE     /* River run-off test problem */
 # define SOLVE3D
 # define UV_ADV
 # define UV_COR
@@ -548,16 +551,18 @@ c--# define OBC_M2ORLANSKI
 # define SALINITY
 # define NONLIN_EOS
 
-# define ANA_GRID
+/* # define ANA_GRID */
 # define MASKING
+/*
 # define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_STFLUX
 # define ANA_SSFLUX
 # define ANA_SRFLUX
+*/
 
-# define PSOURCE
-# define ANA_PSOURCE
+/* # define PSOURCE */
+/* # define ANA_PSOURCE */
 
 # define EASTERN_WALL
 # define WESTERN_WALL
@@ -730,7 +735,6 @@ c---# define AVERAGES
 #  define EW_PERIODIC
 #  define NS_PERIODIC
 
-#  define MRL_WCI
 #  ifdef ANA_WEC_FRC
 #   define ANA_WWAVE
 #  endif
@@ -795,7 +799,6 @@ c# define IMPLICIT_BOTTOM_DRAG
 #  define T_FRC_BRY
 #  define SPONGE
 
-#  define MRL_WCI
 #  ifdef WEC
 #    define BRK0
 #    define SURFACE_BREAK
