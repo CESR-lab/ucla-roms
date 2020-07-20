@@ -604,7 +604,7 @@
 
 !     if (iic.lt.-10) then ! should never happen, so always project twice
       if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
-        if  (mynode==0) print *, 'AB2 extrapolate'
+!       if  (mynode==0) print *, 'AB2 extrapolate'
         do k=1,N
           do j=jstr,iend
             do i=istrU,iend
