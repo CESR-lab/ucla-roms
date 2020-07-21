@@ -59,7 +59,7 @@
       ! ------------
       ! model_time must already be converted if necessary
       ! to match data format of seconds or days
-      real(kind=8)    ,intent(in)   :: model_time
+      real            ,intent(in)   :: model_time
       character(len=*),intent(in)   :: v_name,vt_name
       integer         ,intent(inout):: ifile,irec
       ! local
@@ -68,20 +68,21 @@
       integer     :: ierr,v_id,ncid,vt_id
       integer     :: nfiles,nrecords
       integer     :: ifile_old,irec_old
-      integer     :: dimid ! DevinD added from ncio-nc_size()
+      integer     :: dimid
 
       integer,dimension(1) :: ir1,ic1
     
       logical :: first
 
-    
       ! When called for the first time (ifile==0) for this variable, this 
       ! routine will return the last record with vtime < model_time.
-      
+
       if (ifile==0) then 
         first    =.true.
         ifile    = 1
         irec_old = 0
+      else
+        first    =.false.
       endif
 
       found_var = 0
@@ -115,21 +116,22 @@
           irec = 1
 
           ! Find the size of a dimension in netcdf file
-          ierr=nf90_inq_dimid(ncid, vt_name, dimid) ! from ncio-nc_size
+          ierr=nf90_inq_dimid(ncid, vt_name, dimid) 
           ierr=nf90_inquire_dimension(ncid, dimid, len=nrecords)
-!            if (mynode==0) write(*,*) 'nrecords=',nrecords ! debug
 
           do while (irec<=nrecords.and.found_rec==0)
+           
 
             ierr = nf90_inq_varid(ncid, vt_name, vt_id) ! Get time ID (vt_id_
             ! nf90_get_var needs an arry for last 2 terms hence syntax
             ierr = nf90_get_var(ncid, vt_id, vtime, (/irec/), (/1/))
 
+
             ! hard code conversion of input time in days to seconds
 !             vtime = vtime * 86400
             if (vtime(1)>model_time) then
               ! Causes heisenbug - print vtime
-!               if(mynode==0) print *,'vtime=',vtime ! Debug
+!              if(mynode==0) print *,'vtime=',vtime ! Debug
               found_rec = 1
             else
               irec_old = irec
@@ -144,7 +146,6 @@
      &                          ''' in file:',frcfile(ifile)
           endif
         endif
-
         if (found_rec == 0) then
           !! go to next file if ifile<nfiles
           ifile = ifile+1

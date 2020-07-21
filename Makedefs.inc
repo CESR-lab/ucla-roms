@@ -51,7 +51,7 @@
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
 
-ROMS_ROOT = /home/devin/repos_hp/ucla-roms
+#ROMS_ROOT = /home/devin/repos_hp/ucla-roms
 
 VPATH = ${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
 
@@ -75,13 +75,14 @@ VPATH = ${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
 
 #  FFLAGS = -O3 -fp-model source -I$(ROMS_ROOT)/NHMG/include/
 # repo:
-  FFLAGS = -O3 -IPF_fma -ip -I$(ROMS_ROOT)/NHMG/include/
+# FFLAGS = -O3 -IPF_fma -ip -I$(ROMS_ROOT)/NHMG/include/
 
 # DevinD - This was the new code flag originally -O3 -fp-model source
-#   FFLAGS =  -O3 -fp-model source
+    FFLAGS =  -O3 -fp-model source
+
 # DevinD - Changed flag to the following to avoid memory issue with WEC
 #	 	 - it exists above already anyway -O3 -IPF_fma -ip
-# FFLAGS = -O3 -IPF_fma -ip
+#FFLAGS = -O3 
 
 
 # FFLAGS = -g -check all -CA -CB -CS

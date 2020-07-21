@@ -2162,6 +2162,8 @@ C$OMP BARRIER
 # endif
 !----- Cigdem (Uorb => Uorb1)
       integer istr,iend,jstr,jend,i,j,imin,jmin
+      !JM
+      real cf0,cf1,cf2
       real    cff,cff1,cff2,cff3,cff4,inv_g,khd,kh,umag,
      &   eps,wave_ramp,wramp2,kbrk,fb,fb0,fb1,fb2,inv_fbs,
      &   bconst,tauc,tauw,Uorb1,ka_f00,hz0,z_tide,
@@ -2226,6 +2228,8 @@ C$OMP BARRIER
 #  define wkb_roller roller_fraction
 # endif
 # include "compute_auxiliary_bounds.h"
+
+
 
 ! TRANSLATIONS AND MANIPULATIONS OF WEV VARIABLES FROM RAW VALUES IN
 ! FORCING FILE TO NEEDED VARIABLES HERE. AS PER SET_WWAVE_TILE (OLD) OR
@@ -2443,7 +2447,7 @@ c# define FF_FUNC2
       do j=jstr,jendR
         do i=istrR,iendR
 !# if defined WKB_WWAVE || defined U2010
-!          vst2d(i,j)  =0.5*(stk(i,j-1)*wdre(i,j-1)+stk(i,j)*wdre(i,j))
+!          vst2d(i,j)  =0.5*(stk(i,j-1)*wdre(i,j-1)+stk(i,j)*wdre(i,j)).
 !# endif
           brk2de(i,j) =0.5*(brk(i,j-1)*wdre(i,j-1)+brk(i,j)*wdre(i,j))
           frc2de(i,j) =0.5*(frc(i,j-1)*wdre(i,j-1)+frc(i,j)*wdre(i,j))
@@ -2588,11 +2592,38 @@ c**          cff1=umag*(vonKar/log(hz0*inv_zb))**2
             inv_dz(i,j,k)=1./Hz(i,j,k)
             cff2 = exp( 2.*kw(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
      &            -exp(-2.*kw(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
+
+!           if ((i.eq.40).and.(j.eq.40).and.(k==1)) then
+!             if (mynode==0) then
+!               print *,'wec_frc -2: ',ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
+!             endif
+!           endif
+            if ((i.eq.40).and.(j.eq.40)) then
+              if (mynode==0) then
+                print *,'wec_frc -2: ',k,ust_rm(i,j,2)
+              endif
+            endif
+
             ust_rm(i,j,k) =ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
             cff1=cff2
           enddo
 c        enddo
 c      enddo                 ! <-- keep ust_r, inv_dz, &inv_ex
+       if ((i.eq.40).and.(j.eq.40)) then
+         if (mynode==0) then
+           print *,'wec_frc -1: ',ust_rm(i,j,1:2)
+          cf0 = exp( 2.*kw(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*kw(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
+          cf1 = exp( 2.*kw(i,j)*(z_w(i,j,1)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*kw(i,j)*(z_w(i,j,1)+h(i,j)+Dstp(i,j)))
+          cf2 = exp( 2.*kw(i,j)*(z_w(i,j,2)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*kw(i,j)*(z_w(i,j,2)+h(i,j)+Dstp(i,j)))
+           print *,'wec_frc -1: ',ust_ker*inv_dz(i,j,1)*( cf1-cf0 )
+           print *,'wec_frc -1: ',ust_ker*inv_dz(i,j,2)*( cf2-cf1 )
+           stop
+         endif
+       endif
+       !! ust_rm(:,:,2) should not be zero!
 
 !
 # if defined WAVE_OFFLINE && !defined U2010
@@ -2626,6 +2657,11 @@ c        do i=istr-1,iend+1
           USEZ=0.
           VSEZ=0.
           COUNTR=COUNTR+1.
+       if ((i.eq.40).and.(j.eq.40)) then
+         if (mynode==0) then
+           print *,'wec_frc -2a: ',countr,ust_rm(i,j,1:2)
+         endif
+       endif
           if (FACo.ne.0.) then
              ust_rm(i,j,:)=ust_rm(i,j,:)/FAC
           endif
@@ -2634,39 +2670,56 @@ c        do i=istr-1,iend+1
 c          if (COUNTR.ne.1.) then
 c            ust_rm(i,j,k)=ust_rm(i,j,k)/FAC
 c          endif
-          if (kw(i,j)*Dstp(i,j).gt.2.*pi/20.
+       if ((i.eq.40).and.(j.eq.40).and.(k.eq.1)) then
+         if (mynode==0) then
+           print *,'wec_frc -1a: ',countr,ust_rm(i,j,1:2)
+         endif
+       endif
+            if (kw(i,j)*Dstp(i,j).gt.2.*pi/20.
      &            .or.abs(ustm0-ustm0w)/ustm0w.gt..1) then ! should avoid if inside loop
 C  abs(ustm0-ustm0w)/ustm0w> .1 helps in conditions of mixed wind sea
 C  and swell
 c            inv_dz(i,j,k)=1./Hz(i,j,k)
-            cff2 = exp( 2.*keff(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+              cff2 = exp( 2.*keff(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
      &            -exp(-2.*keff(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
-            vst_r(i,j,k)=ust_rm(i,j,k)*wdre(i,j)*
+              vst_r(i,j,k)=ust_rm(i,j,k)*wdre(i,j)*
      &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
      &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
      &             vst_ker*inv_dz(i,j,k)*( cff2-cff1 )
 c             vst_r(i,j,k)= vst_ker*inv_dz(i,j,k)*( cff2-cff1 ) ! test
 c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
-            ust_r(i,j,k)=ust_rm(i,j,k)*wdrx(i,j)*
+             ust_r(i,j,k)=ust_rm(i,j,k)*wdrx(i,j)*
      &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
      &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
      &             ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
-            cff1=cff2
-          else
+             cff1=cff2
+            else
              vst_r(i,j,k)= ust_rm(i,j,k)*wdre(i,j) !
              ust_r(i,j,k)= ust_rm(i,j,k)*wdrx(i,j)  ! monochromatic in shallow water
+            endif
+            USEZ=USEZ+ust_r(i,j,k)*Hz(i,j,k)
+            VSEZ=VSEZ+vst_r(i,j,k)*Hz(i,j,k)
+          enddo  ! k-loop
+
+       if ((i.eq.40).and.(j.eq.40)) then
+         if (mynode==0) then
+           print *,'wec_frc -1b: ',countr,ust_rm(i,j,1:2)
+         endif
+       endif
+
+          if (sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2).ne.0) then ! ensure consistency betwew ustk and the depth integraded
+            FAC=sqrt(USEZ**2+VSEZ**2)/(
+     &          sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)*Dstp(i,j))
+          else
+            FAC=1.
           endif
-             USEZ=USEZ+ust_r(i,j,k)*Hz(i,j,k)
-             VSEZ=VSEZ+vst_r(i,j,k)*Hz(i,j,k)
-             enddo
-             if (sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2).ne.0) then ! ensure consistency betwew ustk and the depth integraded
-             FAC=sqrt(USEZ**2+VSEZ**2)/(
-     &           sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)*Dstp(i,j))
-             else
-             FAC=1.
-             endif
 !             write(*,*) 'FAC=', FAC
-             end do ! while
+       if ((i.eq.40).and.(j.eq.40)) then
+         if (mynode==0) then
+           print *,'wec_frc -1c: ',countr,ust_rm(i,j,1:2)
+         endif
+       endif
+        end do ! while
              fac2d(i,j)=FAC
           if (kw(i,j)*Dstp(i,j).lt.2.*pi/20.
      &            .or.abs(ustm0-ustm0w)/ustm0w.lt..1) then
@@ -2676,6 +2729,26 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 # endif
         enddo
       enddo                 ! <-- keep ust_r, inv_dz, &inv_ex
+      if (mynode==0) then
+              ! JM
+         print *,'wec_frc: ', ust_r(40,40,1:2)
+!        print *,'wec_frc: ', ust(40,40,1:2)
+         i = 40
+         j = 40
+          cff1 = exp( 2.*keff(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*keff(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
+          cff2 = exp( 2.*keff(i,j)*(z_w(i,j,1)+h(i,j)-Dstp(i,j)))
+     &          -exp(-2.*keff(i,j)*(z_w(i,j,1)+h(i,j)+Dstp(i,j)))
+          print *,'wec_frc 0: ', ust_rm(40,40,1:2)
+          print *,'wec_frc 1: ', ust_rm(40,40,1:1)*wdrx(40,40)*
+     &                sqrt(tanh(abs(z_r(40,40,1:1)*keff(40,40)/2.)))
+
+          print *,'wec_frc 2: ',
+     &            (1.-sqrt(tanh(abs(z_r(40,40,1:1)*keff(40,40)/2.))))*
+     &             ust_ker*inv_dz(40,40,1:1)*( cff2-cff1 )
+          print *,'wec_frc 3: ',cff2-cff1
+          stop
+      endif
 
 !  depth-integrate
 
@@ -2713,6 +2786,12 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
           enddo
         enddo
       enddo
+      if (mynode==0) then
+              ! JM
+         print *,'wec_frc: ', ust_r(40,40,1:2)
+!        print *,'wec_frc: ', ust(40,40,1:2)
+      endif
+!     stop
 
 !
 !
