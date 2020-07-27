@@ -32,6 +32,10 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
+# ifdef BULK_FRC_DPD
+      use bulk_frc, only: set_bulk_frc_tile
+# endif
+
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
@@ -107,6 +111,11 @@ c***              no code here
 ! time first, then subtract it from total, then modulate short-wave,
 ! and, finally, add it back to total -- hence it must be called after.
 
+      ! DevinD bulk force test
+#ifdef BULK_FRC_DPD
+      ! Send in model time in seconds
+      call set_bulk_frc_tile(istr,iend,jstr,jend)
+#endif
 
 #ifdef SOLVE3D
 # ifdef BULK_FLUX

@@ -4,13 +4,17 @@
       ! Contains functions and subroutine for interacting
       ! with netcdf file input and output
       ! =================================
+
+      ! Initial coding by Jeroen Molemaker & Devin Dollery (2020)
   
       use dimensions !! has dimensions, a list of forcing files, and rmask
       use netcdf
       implicit none
 
-#include "cppdefs.h"
+      ! Includes
+      ! ========
 
+#include "cppdefs.h"
       ! scalars.h - needed for may_day_flag in error handling
 #include "scalars.h"
 
@@ -22,9 +26,12 @@
       public nc_write_var
       public nc_read_var
 
+      public set_frc_var_tile
+
       contains
 
-! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
+
       subroutine find_rec_new_mod(model_time,v_name,vt_name,ifile,irec)
 
       ! =================================================
@@ -62,16 +69,14 @@
       real(kind=8)    ,intent(in)   :: model_time
       character(len=*),intent(in)   :: v_name,vt_name
       integer         ,intent(inout):: ifile,irec
-      ! local
-      real,dimension(1):: vtime ! Read in variable time (must be in days)
-      integer     :: found_var,found_rec
-      integer     :: ierr,v_id,ncid,vt_id
-      integer     :: nfiles,nrecords
-      integer     :: ifile_old,irec_old
-      integer     :: dimid ! DevinD added from ncio-nc_size()
 
-      integer,dimension(1) :: ir1,ic1
-    
+      ! local
+      real,dimension(1):: vtime ! Read in variable time
+      integer :: found_var,found_rec
+      integer :: ierr,v_id,ncid,vt_id
+      integer :: nfiles,nrecords
+      integer :: ifile_old,irec_old
+      integer :: dimid
       logical :: first
 
     
@@ -82,6 +87,8 @@
         first    =.true.
         ifile    = 1
         irec_old = 0
+      else
+        first = .false.
       endif
 
       found_var = 0
@@ -115,9 +122,8 @@
           irec = 1
 
           ! Find the size of a dimension in netcdf file
-          ierr=nf90_inq_dimid(ncid, vt_name, dimid) ! from ncio-nc_size
+          ierr=nf90_inq_dimid(ncid, vt_name, dimid)
           ierr=nf90_inquire_dimension(ncid, dimid, len=nrecords)
-!            if (mynode==0) write(*,*) 'nrecords=',nrecords ! debug
 
           do while (irec<=nrecords.and.found_rec==0)
 
@@ -170,6 +176,481 @@
       endif
 
       end subroutine find_rec_new_mod
+
+
+!-----------------------------------------------------------------------
+
+      subroutine set_frc_var_tile (
+     &                istr,iend,     jstr,jend,     ! Tile bounds indices
+     &                var_name,      var_time_name, ! Text names
+     &                var_data,      var,           ! Variable arrays
+     &                var_times,     var_grd_type,  ! Input times & Grid type
+     &                var_file_indx, var_irec,      ! File indx & Current input record
+     &                it1,           it2 )          ! Time index placeholders
+
+      ! ===========================================
+      ! WRAPPER TO READ & SET SINGLE FORCE VARIABLE
+      ! VARIABLE FROM NETCDF INPUT FILE
+      ! ===============================
+
+      ! Bulk forcing variables only interpolated in time, not converted
+      ! in any other way currently, so can all use the same, generic
+      ! set function
+
+      ! INPUT DATA - TIME MUST BE IN DAYS
+
+      implicit none
+
+      ! input/outputs
+      integer,intent(in) :: istr, iend, jstr, jend
+      character(len=*)   :: var_name
+      character(len=*)   :: var_time_name
+
+      real :: var_data(GLOBAL_2D_ARRAY,2) ! Read in raw data for 2 times to interpolate
+      real :: var(GLOBAL_2D_ARRAY)
+      real, dimension(2) :: var_times ! Store input file record times
+
+      integer,intent(in) :: var_grd_type
+      integer :: var_file_indx, var_irec ! File indx & Current input record
+      integer :: it1, it2 ! Placeholders for 2 read in times
+
+      ! local
+      integer :: tmp,i,j
+      real cff1,cff2 ! for time interpolations
+      real tmid_days
+
+! Needed for istrR,iendR, etc
+# include "compute_extended_bounds.h"
+
+
+      ! note: var_times(it2) > var_times(it1), but values of it1
+      ! and it2 change between each reading of values so that only one
+      ! value is read in.
+
+      ! Interpolated time is based on 1/2 step time
+      tmid_days = tdays + 0.5*dt*sec2day ! Input data times in days
+
+      ! UPDATE LATEST READ IN VARIABLE?
+      ! ===============================
+
+      ! Need var_times(it1) < time < var_times(it2), thus:
+      if (var_times(it2) < tmid_days) then  ! We need to refresh data
+
+        ! FIRST TIMESTEP
+        ! --------------
+        ! var_times(it1) & var_times(it2) declared < 0 at top their module:
+        if (var_times(it1) < 0) then ! Only first timestep
+
+          ! Reading is only done by master hence C$OMP MASTER
+C$OMP MASTER
+
+          ! ifile and irec are in their module pre-amble, initially as 0
+          ! Find the force file (file_indx) and the record (irec) for
+          ! the last record with var_times < model_time
+          ! First time, we need to read an extra slice of data
+          ! so this routine provides irec = irec - 1 for first time.
+          call find_new_record( var_name, var_time_name, tmid_days,
+     &                          var_file_indx, var_irec )
+
+          ! For the first time irec = irec - 1, as above, such that
+          ! closest record to var_times(it1) < model_time.
+          ! read in raw input variables and
+          ! read and set input time in var_times(it1) to days (units)
+          call read_var_frc( var_file_indx, var_irec,
+     &                       var_data(GLOBAL_2D_ARRAY,it1),
+     &                       var_name, var_grd_type, var_times(it1),
+     &                       var_time_name )
+
+C$OMP END MASTER
+C$OMP BARRIER
+          ! Barrier needed because master processor must have read in
+          ! all data before child processors try to access read in data
+
+          ! Confirm to terminal success reading of variable
+          ! show time of read in data
+          if (mynode == 0) then
+            write(*,'(4x,A,5x,A,G14.6,1x,A,I4)')
+     &               'set_frc_var_tile :: read input', ! add variable name
+     &               'var_input_time (days) =',var_times(it1),
+     &               'rec =',var_irec MYID
+          endif
+
+!          ! Convert read inputs into useable, rotated & rmask'ed variables
+!          ! for the first, earlier read in time variables(time) < time.
+!          call set_var_inp2vars (istr,iend,jstr,jend,it1)
+
+        ! ALL OTHER TIMESTEPS
+        ! -------------------
+        ! Every time step switch indices such that
+        ! var_data(i,j,1) & var_times(1) -> earlier && var_data(i,j,2) & var_times(2) -> later: step t=x
+        ! var_data(i,j,1) & var_times(1) -> later   && var_data(i,j,2) & var_times(2) -> earlier: step t=x+1
+        ! and so on. The benifit is only need to change one variable each time.
+        else
+
+          tmp = it1
+          it1 = it2 ! If it1 = 1, it now equals 2, and vice-versa
+          it2 = tmp ! If it2 = 2, it now equals 1, and vice-versa
+
+        endif ! End of first step
+
+        ! Reading is only done by master hence C$OMP MASTER
+C$OMP MASTER
+
+        ! Find the force file (file_indx) and the record (irec) for
+        ! the first record with var_time > model_time
+        call find_new_record( var_name, var_time_name, tmid_days,
+     &                        var_file_indx, var_irec )
+
+        ! Read in the first record with var_time > model_time
+        ! Remember, it2 alternates between index 1 & 2 for each reading
+        ! read in raw input variables and
+        ! read and set input time in var_times(it2) to days (units)
+        call read_var_frc( var_file_indx, var_irec,
+     &                     var_data(GLOBAL_2D_ARRAY,it2),
+     &                     var_name, var_grd_type, var_times(it2),
+     &                     var_time_name )
+
+C$OMP END MASTER
+C$OMP BARRIER
+
+        ! Confirm to terminal reading of variables and
+        ! time for read in data
+        if (mynode == 0) then                  ! Text formatting:
+          write(*,'(4x,A,5x,A,G14.6,1x,A,I4)') ! 4x is spaces, A is string
+     &               'set_frc_var_tile :: read input', ! 5x is 5 spaces, A is string
+     &               'var_input_time (days) =',var_times(it2), ! G is number for time
+     &               'rec =', var_irec MYID ! I is integer
+        endif
+
+!        ! Convert read inputs into useable, rotated & rmask'ed variables
+!        ! for the latter read in time variables(time) > time.
+!        call set_wec_inp2vars (istr,iend,jstr,jend,it2)
+
+      endif ! -> END OF UPDATING VARIABLE INPUT DATA
+
+      ! Temporal interpolation
+      ! ======================
+
+      ! Set coefficients for interpolation.
+      ! Time difference in seconds. Not yet ratios of 1.
+      ! cff1 with it2 because if time=it1 then difference=0, but want cff1 = 1.
+      cff1=( var_times(it2)-tmid_days ) / ( var_times(it2)-var_times(it1) )
+      cff2=( tmid_days-var_times(it1) ) / ( var_times(it2)-var_times(it1) )
+
+      ! Do r-masking? Jeroen didn't necessarily want to do that.
+      ! Could be here or at set_inp2vars but might be unessary extra loop
+      ! when just * rmask less of an overhead?
+
+      ! Check the interpolation coefficients such that modeltime is
+      ! bounded by read in variable times.
+      if (cff1.ge.0. .and. cff2.ge.0.) then
+
+        do j=jstrR,jendR
+          do i=istrR,iendR
+
+            var(i,j)=cff1*var_data(i,j,it1)+cff2*var_data(i,j,it2)
+
+          enddo
+        enddo
+
+      ! Throw warning if interpolation times do not bound model time.
+      elseif (ZEROTH_TILE) then
+        write(*,'(/1x,3A/3(1x,A,F16.10)/)')       '### WARNING: ',
+     &  'set_wec_frc_tile :: Current model time is outside bounds of ',
+     &  '''wec_time''.',  'start =', var_times(it1),
+     &                    'tmid_days =',     tmid_days,
+     &                    'end =',   var_times(it2)
+!        ierr=ierr+1
+        error stop 'set_frc_var_tile :: time interpolation error '
+      endif
+
+
+      end subroutine set_frc_var_tile
+
+
+! ----------------------------------------------------------------------
+
+      subroutine find_new_record( var_name, var_time_name, time_model,
+     &                            var_file_indx, irec )
+
+      ! ====================================
+      ! FIND NETCDF FILE CONTAINING VARIABLE
+      ! STORE VAR_FILE_INDX (File record)
+      ! STORE irec (needed time record)
+      ! ===============================
+
+      ! Input: var_name
+
+      ! Find: if var contained in file
+
+      ! Check: see if model time is bounded by model
+
+        ! -> yes: save record (irec) and save var_file_indx
+
+        ! ->  no: try another file
+
+      ! Limitations
+      ! -----------
+      ! 1) Files for a variable must be in chronological order in input
+      !    file list of forcing files
+      ! 2) Files for the same variable do not need to be grouped together
+      !    but it is slightly more efficient if they are.
+      ! 3) Algorithm does not detect a missing year of data.
+      !    E.g. if modeling 2005-2007, and annual data for 2006 is missing,
+      !    then times will just be interpolated between end of 2005 & start 2007.
+
+      implicit none
+
+
+      ! input/output
+      ! ------------
+      character(len=*),intent(in)   :: var_name, var_time_name
+      real            ,intent(in)   :: time_model ! Model time same units as data
+      integer         ,intent(inout):: var_file_indx
+      integer         ,intent(inout):: irec ! Variable record entry
+
+      ! local
+      ! -----
+      real,dimension(1) :: vtime ! Read in variable time
+      integer :: found_var, found_rec
+      integer :: ncid
+      integer :: ierr
+      integer :: nfiles ! Number of forcing files
+      integer :: irec_old, file_indx_old
+      integer :: var_max_recs ! Total variable records in file
+      integer :: v_id
+      integer :: var_tid      ! Variable time id
+      logical :: first        ! Check if first time finding an entry
+
+      ! Routine
+      ! =======
+
+      ! First timestep (var_file_indx==0) for each variable
+      if (var_file_indx==0) then
+        first    = .true. ! used to set irec = irec-1 for first read
+        irec_old = 0
+        file_indx_old = 0
+        var_file_indx = 1
+      else
+        first = .false.
+      endif
+
+      found_rec = 0
+
+      ! max_frc = number of files in list 'frcfile' of force file names
+      nfiles = max_frc
+
+      ! Continue searching while record not found & still more files to check
+      do while ((found_rec==0).and.(var_file_indx <= nfiles))
+
+        found_var = 0 ! Reset variable to not found
+
+        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
+          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
+     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
+        endif
+
+        ! Try to open force file
+        ierr = nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
+        if (ierr.ne.nf90_noerr) then ! Force file not found. Stop.
+          if (mynode==0) then
+            print *,var_file_indx,frcfile(var_file_indx)
+            error stop 'FNR: Forcing file not found'
+          endif
+        endif
+
+        ! Check if this file contains the variable
+        ierr = nf90_inq_varid(ncid, var_name, v_id)
+
+        ! Variable found, now check if file times contain model time
+        if (ierr.eq.nf90_noerr) then
+
+          if (mynode==0) then
+            write(*,'(3x,4A)') 'Found variable ''',var_name,
+     &           ''' in file ',frcfile(var_file_indx)
+          endif
+          found_var = 1
+
+          ! Get & save time dimension ID
+          ierr=nf90_inq_dimid(ncid, var_time_name, var_tid)
+          ! Find the size of dimensions (var_max_recs)
+          ! I.e. total number of records per variable, using time dimension
+          ierr=nf90_inquire_dimension(ncid, var_tid, len=var_max_recs)
+
+          ! Search through all time records until correct time is found
+          do while (irec<var_max_recs.and.found_rec==0)
+          ! Had to change the do while because irec still needs +1
+          ! therefore irec < var_max_recs not <=
+
+            ! Advance irec. If at start then irec=0 -> irec=1 here.
+            ! Also, reset irec = 0 below at label (B) if record not found in file
+            ! otherwise irec = irec+1 so doesn't start from 1, but
+            ! continues from previous irec.
+            ! E.g. previous record was irec=3, now check time of irec=4
+            irec = irec + 1
+
+            ! nf90_get_var needs an array for last 2 terms hence syntax
+            ierr = nf90_get_var(ncid, var_tid, vtime, (/irec/), (/1/))
+
+            if (vtime(1)>time_model) then ! Correct time
+              found_rec = 1
+
+            else ! Wrong time
+              irec_old = irec
+              ! file_indx_old is only needed for very first timestep
+              file_indx_old = var_file_indx ! see label (A)
+
+            endif
+
+          enddo ! while not found and irec<nrecs
+
+        ! Variable not found in file
+        else
+          if (mynode==0) then
+            write(*,'(3x,4A)') 'NOT found variable ''',var_name,
+     &                            ''' in file ',frcfile(var_file_indx)
+          endif
+        endif
+
+        ! Variable times don't contain model time, try another file
+        if (found_rec == 0) then
+
+          ! If the variable was found but the record not then time not bounded
+          if (mynode==0 .and. found_var==1) then
+            write(*,'(3x,5A)') 'times outside of model time for var ''',
+     &            var_name, ''' in file ',frcfile(var_file_indx)
+          endif
+
+          ! Go to next file if ifile<nfiles
+          var_file_indx = var_file_indx+1 ! Go to next file
+          irec = 0 ! Reset irec for search in new file. See label (B)
+
+        endif
+
+      enddo ! while ifile<=nfiles.
+
+      ! End of variable & record search
+      ! -------------------------------
+
+      if (first) then ! For first time step only
+
+        ! For the very first timestep we need the record just before
+        ! vtime(1)<time_model. Therefore irec = irec_old.
+        ! E.g. if record 3 gives  vtime(1)>time_model
+        ! then record 2 will give vtime(1)<time_model
+
+        ! (A) Handling first data read if model time is between 2 files.
+        ! However, if the model time is between two input files for the
+        ! very first timestep. The record 1 of the later file will give
+        ! vtime(1)>time_model, but we can't simply use irec = irec_old,
+        ! as record 0 doesn't exist.
+        ! Instead, we use the last record for the previous file for that
+        ! variable. This does assume there are no missing periods between
+        ! the data, and the data is chronological.
+
+        if (irec==1) then ! Model time between input files.
+          ! set file index to previous file so that read in time is
+          ! from the last record of the previous file containing
+          ! this variable.
+          var_file_indx = file_indx_old
+          ! Explain we are using previous file's last record
+          if (mynode==0 .and. var_file_indx>0) then ! var_file_indx>0 so not 1st file
+            write(*,'(3x,3A)') 'Model time between input files - using',
+     &           ' last entry in previous file ',frcfile(var_file_indx)
+          endif
+        endif
+
+        irec = irec_old
+
+      endif
+
+      if (found_var==0) then
+!          write(*,'(/1x,2A/)')  '### ERROR: find_record: Could not find variable ', var_name
+        error stop 'variable not found in forcing files'
+      endif
+      if (found_rec==0) then
+!          write(*,'(/1x,2A/)')  '### ERROR: find_record: Ran out of time records for ', var_name
+        error stop 'ran out of time records'
+      endif
+
+      ! For the first timestep we set irec=irec-1, if the first file's
+      ! first record (irec=1) is past current time, then irec=1-1=0
+      if (irec==0) then
+        error stop 'First available forcing record is past current time'
+      endif
+
+
+      end subroutine find_new_record
+
+
+!-----------------------------------------------------------------------
+
+      subroutine read_var_frc( var_file_indx, irec, var_array,
+     &               var_name, var_type, var_time,var_time_name )
+
+      ! ========================================
+      ! READ ONE VARIABLE FROM INPUT NETCDF FILE
+      ! ========================================
+
+      implicit none
+
+      ! input/output
+      ! ------------
+      integer, intent(in) :: var_file_indx
+      integer, intent(in) :: irec
+
+      ! param.h needed for GLOBAL_2D_ARRAY
+#include "param.h"
+      real, intent(in) :: var_array(GLOBAL_2D_ARRAY,1) ! variables array to record
+
+      ! Similar to vname(1,inx) from old ncvars.h
+      character(len=*), intent(in) :: var_name ! Variable short name
+      integer, intent(in)  :: var_type ! variable type: u-, v- or rho-point
+
+      ! Set var_time for read in variables
+      real,dimension(1) :: var_time
+      character(len=*)  :: var_time_name
+
+      ! local
+      ! -----
+      integer ierr,ncid
+      integer :: var_tid ! Variable time_id
+
+
+      ! open the file (maybe check if the file is open already)
+      ! =============
+      ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
+      ! Need error handling
+
+      ! read the time
+      ! =============
+      ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (varid)
+      ierr = nf90_get_var(ncid, var_tid, var_time, (/irec/), (/1/))
+
+      ! read the var
+      ! ============
+      call nc_read_var(ncid,var_array,1,
+     &                       var_name,var_type,irec,ierr)
+
+      ! NOTE about masking here. C$OMP beware
+
+      ! Error handling
+      ! --------------
+
+!  2   if (ierr .ne. nf90_noerr) then
+!        write(*,1) var_name, record MYID
+!        goto 99                                         !--> ERROR
+!      endif
+!
+!      ! text format for '1' in write(*,1) above
+!  1   format(/1x, '### ERROR: nc_read_var :: Cannot read variable ''',
+!     &              A, ''' from file, rec =', i6, 3x,A,i4)
+!      goto 100 ! Skip 99
+!  99  if (may_day_flag == 0) may_day_flag=3
+! 100  continue
+
+
+      end subroutine read_var_frc
 
 
 ! ----------------------------------------------------------------------
@@ -332,6 +813,10 @@
 
       ! Similar to old get_forces.F
 
+      ! This is based on ncid being common to all variables.
+      ! Would be better if takes in file_id, and then computes ncid
+      ! WEC used this because ncid already calculated in read_wec_var
+
       implicit none
 
       ! Input variables
@@ -375,8 +860,8 @@
       endif
 
       ! text format for '1' in write(*,1) above
-  1   format(/1x, '### ERROR: nc_read_var :: Cannot write variable ''',
-     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+  1   format(/1x, '### ERROR: nc_read_var :: Cannot read variable ''',
+     &              A, ''' from file, rec =', i6, 3x,A,i4)
       goto 100 ! Skip 99
   99  if (may_day_flag == 0) may_day_flag=3
  100  continue
