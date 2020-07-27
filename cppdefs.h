@@ -821,6 +821,8 @@ c#    define BBL_F00
 #   define WND_AT_RHO_POINTS
 #  endif
 
+#  define BULK_FRC_DPD /* Test flag to trigger new bulk flux */
+
 # endif
 
 /* DevinD - end DH's non-analytical WEC */
