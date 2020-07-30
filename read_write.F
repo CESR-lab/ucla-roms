@@ -316,7 +316,7 @@ C$OMP BARRIER
         ! Confirm to terminal reading of variables and
         ! time for read in data
         if (mynode == 0) then                  ! Text formatting:
-          write(*,'(4x,A,5x,A,G14.6,1x,A,I4)') ! 4x is spaces, A is string
+          write(*,'(4x,A,5x,A,G14.6,1x,A,I4,/)') ! 4x is spaces, A is string. / at end adds blank line
      &               'set_frc_var_tile :: read input', ! 5x is 5 spaces, A is string
      &               'var_input_time (days) =',var_times(it2), ! G is number for time
      &               'rec =', var_irec MYID ! I is integer

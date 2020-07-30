@@ -815,13 +815,11 @@ c#    define BBL_F00
 #  else
 #   define LOG_BDRAG
 #  endif
-#  undef BULK_FLUX
+#  define BULK_FLUX
 #  ifdef BULK_FLUX
-#   define COUPLED_SURF_CURR
-#   define WND_AT_RHO_POINTS
+c---#   define COUPLED_SURF_CURR /* not used in new code */
+c---#   define WND_AT_RHO_POINTS /* Not needed in new code as wind converted to u/v */
 #  endif
-
-#  define BULK_FRC_DPD /* Test flag to trigger new bulk flux */
 
 # endif
 

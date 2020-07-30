@@ -39,9 +39,20 @@
 ! within a cluster node) unless another distribution policy is
 ! specified to override the default.
 
+      ! Required modules
+      ! ----------------
+
 #ifdef WEC
       use wec_frc
 #endif
+
+! DevinD added for bluk flux as srflux and swradg moved to bulk_frc.F module
+! but only when BULK_FLUX is on, else variables still live in forces.h
+#ifdef BULK_FLUX
+      use bulk_frc, only: srflx, swradg => swrad_data
+      use flux_all, only: sustr, svstr, stflx, sst_data, sss_data
+#endif
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k,itrc
       real, parameter :: init=0.    !!!!  0xFFFA5A5A ==> NaN
@@ -204,8 +215,16 @@
           do i=istrR,iendR
             stflx(i,j,itrc)=init
 # if !defined ANA_STFLUX || !defined ANA_SSFLUX
+! DevinD added !defined BULK_FLUX
+#  ifndef BULK_FLUX
             stflxg(i,j,1,itrc)=init
             stflxg(i,j,2,itrc)=init
+#  else
+            sst_data(i,j,1)=init ! This needs to be fixed because
+            sst_data(i,j,2)=init ! don't need to do this for do itrc=1,NT
+            sss_data(i,j,1)=init ! Quick fix
+            sss_data(i,j,2)=init
+#  endif
 # endif
           enddo
         enddo
