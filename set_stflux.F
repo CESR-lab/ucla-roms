@@ -1,5 +1,7 @@
 #include "cppdefs.h"
-#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX)
+! DevinD added BULK_FLUX as set surface tracers accounted for in flux modules
+! when BULK_FLUX is turned on
+#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX) && !defined BULK_FLUX
 
       subroutine set_stflux_tile(istr,iend,jstr,jend, itrc, ierr)
 

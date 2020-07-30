@@ -1,5 +1,6 @@
 #include "cppdefs.h"
-#if defined SOLVE3D && !defined ANA_SRFLUX
+! DevinD moved set_srflux to bulk_frc.F module when BULK_FLUX on. Avoid variable clash
+#if defined SOLVE3D && !defined ANA_SRFLUX && !defined BULK_FLUX
 
 c--#define DIURNAL_SRFLUX
 c--#define ROBUST_DIURNAL_SRFLUX
