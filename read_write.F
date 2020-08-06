@@ -15,18 +15,31 @@
       ! ========
 
 #include "cppdefs.h"
+      ! param.h needed for GLOBAL_2D_ARRAY
+#include "param.h"
       ! scalars.h - needed for may_day_flag in error handling
 #include "scalars.h"
 
       private
 
+      ! Root name for prefix of all output files, chosen as 26 characters
+      ! as less than 32 characters of output_file_names as nodes & time
+      ! numbers need to be appended to name, so root must be shorter.
+      character(len=26), public :: output_root_name
 
+      ! Horizontal Grid Type Codes =  0,1,2,3 (RHO-, U-, V-, PSI-points)
+      ! for reading and writing to correct grid type
+      integer, parameter, public :: r_var=0, u_var=1, v_var=2, q_var=3
+
+      ! Public subroutines
       public find_rec_new_mod
       public nc_define_var
       public nc_write_var
       public nc_read_var
-
       public set_frc_var_tile
+      public ncdf_create_file
+      public nc_write_time
+      public read_output_root_name
 
       contains
 
@@ -127,7 +140,7 @@
 
           do while (irec<=nrecords.and.found_rec==0)
 
-            ierr = nf90_inq_varid(ncid, vt_name, vt_id) ! Get time ID (vt_id_
+            ierr = nf90_inq_varid(ncid, vt_name, vt_id) ! Get time ID (vt_id)
             ! nf90_get_var needs an arry for last 2 terms hence syntax
             ierr = nf90_get_var(ncid, vt_id, vtime, (/irec/), (/1/))
 
@@ -412,13 +425,13 @@ C$OMP BARRIER
       ! local
       ! -----
       real,dimension(1) :: vtime ! Read in variable time
-      integer :: found_var, found_rec
+      integer :: found_var, found_rec, found_var_log
       integer :: ncid
       integer :: ierr
       integer :: nfiles ! Number of forcing files
       integer :: irec_old, file_indx_old
       integer :: var_max_recs ! Total variable records in file
-      integer :: v_id
+      integer :: v_id, dimid  ! variable ID & dimension ID
       integer :: var_tid      ! Variable time id
       logical :: first        ! Check if first time finding an entry
 
@@ -436,6 +449,7 @@ C$OMP BARRIER
       endif
 
       found_rec = 0
+      found_var_log = 0 ! Track if variable was found in previous files
 
       ! max_frc = number of files in list 'frcfile' of force file names
       nfiles = max_frc
@@ -470,12 +484,16 @@ C$OMP BARRIER
      &           ''' in file ',frcfile(var_file_indx)
           endif
           found_var = 1
+          ! Needed to deal with found_var = 0 further above, so that
+          ! If variable is found in a file but time is wrong, and it
+          ! gets to last file without finding variable, that error msg correct
+          found_var_log = found_var_log + found_var
 
           ! Get & save time dimension ID
-          ierr=nf90_inq_dimid(ncid, var_time_name, var_tid)
+          ierr=nf90_inq_dimid(ncid, var_time_name, dimid)
           ! Find the size of dimensions (var_max_recs)
           ! I.e. total number of records per variable, using time dimension
-          ierr=nf90_inquire_dimension(ncid, var_tid, len=var_max_recs)
+          ierr=nf90_inquire_dimension(ncid, dimid, len=var_max_recs)
 
           ! Search through all time records until correct time is found
           do while (irec<var_max_recs.and.found_rec==0)
@@ -489,6 +507,8 @@ C$OMP BARRIER
             ! E.g. previous record was irec=3, now check time of irec=4
             irec = irec + 1
 
+            ! Find variable ID for time variable
+            ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (vt_id)
             ! nf90_get_var needs an array for last 2 terms hence syntax
             ierr = nf90_get_var(ncid, var_tid, vtime, (/irec/), (/1/))
 
@@ -564,12 +584,13 @@ C$OMP BARRIER
 
       endif
 
-      if (found_var==0) then
+      if (found_var_log==0) then
 !          write(*,'(/1x,2A/)')  '### ERROR: find_record: Could not find variable ', var_name
         error stop 'variable not found in forcing files'
       endif
       if (found_rec==0) then
-!          write(*,'(/1x,2A/)')  '### ERROR: find_record: Ran out of time records for ', var_name
+        mpi_master_only write(*,'(/1x,2A/)')
+     &  'ERROR: find_new_record: Ran out of time records for ', var_name
         error stop 'ran out of time records'
       endif
 
@@ -600,7 +621,7 @@ C$OMP BARRIER
       integer, intent(in) :: irec
 
       ! param.h needed for GLOBAL_2D_ARRAY
-#include "param.h"
+!#include "param.h"
       real, intent(in) :: var_array(GLOBAL_2D_ARRAY,1) ! variables array to record
 
       ! Similar to vname(1,inx) from old ncvars.h
@@ -651,6 +672,237 @@ C$OMP BARRIER
 
 
       end subroutine read_var_frc
+
+
+! ----------------------------------------------------------------------
+
+      subroutine read_output_root_name(keyword, kwlen)
+
+      ! ==============================
+      ! Read from input file root-name
+      ! for output netcdf result files
+      ! ==============================
+
+      ! This is called from read_inp.F
+
+      ! 1) Save desired prefix name (root name) for
+      !    all additional output files
+
+      ! The following needs to be in the roms.in input file to use this
+      ! subroutine (file name needs to be 5 spaces from left margin):
+      !output_root_name:
+      !     rootname (<- insert desired rootname)
+
+      implicit none
+
+      ! Inputs
+      character(len=32) :: keyword
+      integer kwlen ! Keyword length
+
+      ! Local
+      integer :: ierr = nf90_noerr
+      integer, parameter :: input=15
+
+
+      ! Remove keyword from keyword list to know it's accounted for.
+      call cancel_kwd (keyword(1:kwlen), ierr)
+
+      ! Read & save filename root
+      read(input,'(A)',err=95) output_root_name
+
+      ! Error handling
+      ! --------------
+      goto 100
+      ! Error for read(input,'(A)',err=95)
+  95  write(*,'(/1x,4A/)') '### ERROR: read_write :: Cannot read ',
+     &                       'entry ''', keyword(1:kwlen), '''.'
+      error stop
+ 100  continue
+
+
+      end subroutine read_output_root_name
+
+
+!-----------------------------------------------------------------------
+
+      subroutine ncdf_create_file( fname, ncid, prev_fill_mode,
+     &                   rec_per_file, total_rec, auxil,
+#ifdef SOLVE3D
+     &                   r3dgrd, u3dgrd, v3dgrd, w3dgrd, ! 3D grid dimensions
+#endif
+     &                   r2dgrd, u2dgrd, v2dgrd )        ! 2D grid dimensions
+
+      ! =============================================
+      ! CREATE NEW NETCDF FILE with global attributes
+      ! dimensions and time only
+      ! ========================
+
+      implicit none
+
+      ! Needed for 'N'
+!#include "param.h"
+
+      ! Inputs
+      ! ------
+      integer, intent(out) :: ncid ! netcdf file ID
+      character(len=32), intent(inout) :: fname ! desired netcdf file name
+      integer, intent(inout) :: prev_fill_mode  ! Needed for nf90_set_fill
+      integer, intent(in)    :: rec_per_file    ! records per file
+      integer, intent(in)    :: total_rec       ! Total netcdf records so far for these variables
+      ! Associated dimension arrays (e.g. r2dgrd = xi_r, eta_r, time)
+      integer, intent(out) :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
+#ifdef SOLVE3D
+     &                      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+#endif
+
+      ! Local
+      ! -----
+      integer var_id_tmp, lfnm, lvar, lenstr, lstr
+      character(len=64) :: fname_tmp ! Taken from read_inp.F
+      integer :: ierr = 0 ! Set local no_error
+      integer timedim(1) ! Made it (1). Can remain local as time defined here
+
+      ! External function needed
+      integer, external :: my_nf_def_dim
+
+      ! Common
+      ! Need ncvars.h for xi_rho, xi_u, eta_rho, eta_v and iaux
+#include "ncvars.h"
+
+
+      ! Add node number to file name (Functionality normaly in read_inp.F)
+      ! ----------------------------
+
+      ! Only done once - commented out if read_inp_net_flux is used
+      if(total_rec == 0) then
+
+        fname_tmp=fname
+        lstr=lenstr(fname_tmp) ! Function in lenstr.F
+#if defined MPI && defined PARALLEL_FILES
+        ! Insert MPI node numbers to file name
+        call insert_node(fname_tmp, lstr, mynode, NNODES, ierr)
+#endif
+        fname=fname_tmp(1:lstr)
+
+      endif ! (nrechis_flux == 0)
+
+
+      ! Insert time index to file name
+      ! ------------------------------
+
+      lfnm=lenstr(fname) ! Function in lenstr.F
+        ! DevinD: a fix to deal with file ncrechis +2 at the beginning
+        ! for wrt_his, because rec=rec+1 in different order for new ncdf stuff
+      if (total_rec==0) then
+        lvar=total_rec-(1+mod(total_rec-1, rec_per_file))
+      else
+        lvar=total_rec
+      endif
+      call insert_time_index(fname, lfnm, lvar,  ierr)
+      if (ierr /= 0) call handle_ierr(ierr) ! Error termination
+
+      ! Create new file
+      ! ---------------
+
+      ierr=nf90_create(fname, nf90_clobber+nf90_64bit_offset, ncid)
+
+      if (ierr == nf90_noerr) then
+
+        ! Set fill value - nf90_nofill produces optimized writes:
+        ! "Use “no fill” mode, omitting the initialization of variable values
+        ! with fill values. Creation of large files much faster, but
+        ! eliminates possibility of detecting reading of values not yet written"
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        ! Error handling
+        if (ierr /= nf90_noerr) then
+          write(*,'(1x,4A,I4)') '### ERROR: read_write::Cannot ',
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
+     &         MYID
+        endif
+
+      ! Error: cannot create file
+      else
+
+        if(mynode==0) then
+          write(*,'(/1x,4A/12x,A/)')  '### ERROR: read_write :: ',
+     &       'Cannot create ''', fname, '''.', nf90_strerror(ierr)
+        endif
+        error stop ! Stop simulation
+      endif
+
+      ! Put global attributes:
+      !---- ------ -----------
+
+      call put_global_atts(ncid, ierr)
+
+      ! Define dimensions for field placement on staggered grids:
+      ! ------ ---------- --- ----- --------- -- --------- -------
+
+      ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd(1))
+      ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd(1))
+      ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd(2))
+      ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd(2))
+#ifdef SOLVE3D
+      ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd(3))
+      ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd(3))
+#endif
+      ierr=my_nf_def_dim(ncid, 'time', nf90_unlimited, timedim(1))
+      ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
+
+      ! Transfer prescribed dimensions to rest of dimension arrays
+
+      auxil(2)=timedim(1)
+
+      r2dgrd(3)=timedim(1)                          ! Free surface
+
+      u2dgrd(2)=r2dgrd(2) ; u2dgrd(3)=timedim(1)    ! 2D UBAR-type
+
+      v2dgrd(1)=r2dgrd(1) ; v2dgrd(3)=timedim(1)    ! 2D VBAR-type
+
+#ifdef SOLVE3D
+      r3dgrd(1)=r2dgrd(1)
+      r3dgrd(2)=r2dgrd(2) ; r3dgrd(4)=timedim(1)    ! 3D RHO-type
+
+      u3dgrd(1)=u2dgrd(1) ; u3dgrd(3)=r3dgrd(3)     ! 3D U-type
+      u3dgrd(2)=r2dgrd(2) ; u3dgrd(4)=timedim(1)    !
+
+      v3dgrd(1)=r2dgrd(1) ; v3dgrd(3)=r3dgrd(3)     ! 3D V-type
+      v3dgrd(2)=v2dgrd(2) ; v3dgrd(4)=timedim(1)    !
+
+      w3dgrd(1)=r2dgrd(1) ; w3dgrd(4)=timedim(1)    ! 3D W-type
+      w3dgrd(2)=r2dgrd(2)
+#endif
+
+
+!#if (defined PUT_GRID_INTO_HISTORY && !defined AVRH)\
+! || (defined PUT_GRID_INTO_AVERAGES && defined AVRH)
+!
+!! Define grid variables.
+!! ------ ---- ----------
+!
+!      if (total_rec <= 1) call def_grid(ncid, r2dgrd)
+!#endif
+
+      ! Insert time variables
+      ! ---------------------
+
+      ! Time-step number and time-record indices: (history file only, this
+      ! may be needed in the event when a history record is used to restart
+      ! the current model run);
+      ierr=nf90_def_var (ncid, 'time_step', nf90_int,
+     &                          auxil, var_id_tmp )
+
+      ! Set variable long name
+      ierr=nf90_put_att (ncid, var_id_tmp, 'long_name',
+     &             'time step and record numbers from initialization')
+
+      ! Define ocean_time variable
+      call nc_define_var(ncid, 'ocean_time',
+     &            'Time since initialization', 'second', timedim,ierr)
+
+
+      end subroutine ncdf_create_file
 
 
 ! ----------------------------------------------------------------------
@@ -761,7 +1013,7 @@ C$OMP BARRIER
       ! 2D or 3D variable arrays
       integer, intent(in) :: nmax
       ! param.h & cppdefs.h needed for var_array for GLOBAL_2D_ARRAY
-#include "param.h"
+!#include "param.h"
       real, intent(in)    :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
       integer, intent(in) :: record ! Timestep to record
       ! Similar to vname(1,inx) from old ncvars.h
@@ -804,6 +1056,76 @@ C$OMP BARRIER
 
 ! ----------------------------------------------------------------------
 
+      subroutine nc_write_time( ncid, record, total_recs )
+
+      ! =============================
+      ! Write timestep and ocean time
+      ! to output netcdf file
+      ! =====================
+
+      implicit none
+
+      ! Inputs
+      ! ------
+      integer :: ncid
+      integer :: record     ! Current file record number
+      integer :: total_recs ! Total records for variable
+
+      ! Local
+      ! -----
+      integer ibuff(6), start(2), count(2) ! iaux = 6 from wrt_his.F
+      integer :: var_id_tmp, ierr
+
+
+      ibuff(1)=iic-1 ; ibuff(2)=999999     ! Time step and nrecrst=999999 DevinD hardcode
+      ibuff(4:6)=0   ; ibuff(3)=total_recs ! record numbers. iaux = 6 in ncvars.h
+!#ifdef AVERAGES
+!      ibuff(4)=nrecavg
+!#endif
+      start(1)=1      ; count(1)=6 ! iaux = 6 in ncvars.h
+      start(2)=record ; count(2)=1
+
+      ! get time step var_id & record time step info
+      ! --------------------------------------------
+      ierr=nf90_inq_varid(ncid, 'time_step', var_id_tmp)
+      ierr=nf90_put_var(ncid, var_id_tmp, ibuff, start, count)
+      if (ierr /= nf90_noerr) then
+        if (mynode==0) then
+          write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') 'ERROR: read_write :: ',
+     &       'Cannot write variable ''time_step'' into history file, ',
+     &       'rec =', record, nf90_strerror(ierr) MYID
+        endif
+        error stop
+      endif
+
+
+      ! get ocean_time var_id & record ocean_time
+      ! -----------------------------------------
+
+      ! Which one to write into the file, time or tdays, is decided by attribute
+      ! "units" stored as vname(3,indxTime).  When computng time is always
+      ! in seconds, however it is more convenient to have it in days in all
+      ! the files.
+
+!        if (vname(3,indxTime)(1:6) == 'second') then
+      ierr=nf90_inq_varid(ncid, 'ocean_time', var_id_tmp)
+      ierr=nf90_put_var(ncid, var_id_tmp, time,(/record/))
+!        else
+!          ierr=nf_put_var1_double(nchis, hisTime, record, tdays)
+!        endif
+
+      if (ierr /= nf90_noerr) then
+        write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') 'ERROR: read_write :: ',
+     &        'Cannot write variable ''', 'ocean_time',
+     &        ''' into history file, rec =', record, nf90_strerror(ierr)
+     &            MYID
+      endif
+
+      end subroutine nc_write_time
+
+
+! ----------------------------------------------------------------------
+
       subroutine nc_read_var(ncid,var_array,nmax,var_name,
      &                             var_type,record,ierr)
 
@@ -828,7 +1150,7 @@ C$OMP BARRIER
       ! 2D or 3D variable arrays
       integer, intent(in) :: nmax
       ! param.h & cppdefs.h needed for var_array for GLOBAL_2D_ARRAY
-#include "param.h"
+!#include "param.h"
       real, intent(in) :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
       integer, intent(in) :: record ! Timestep to record
       ! Similar to vname(1,inx) from old ncvars.h
@@ -911,7 +1233,7 @@ C$OMP BARRIER
       ! Inputs
       ! ------
       integer ncid, varid, record, horiz_type, nmax
-#include "param.h"
+!#include "param.h"
       ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
       real A(GLOBAL_2D_ARRAY,nmax)
       ! commented: CSDISTRIBUTE_RESHAPE  A...
@@ -1116,7 +1438,7 @@ C$OMP BARRIER
       ! Inputs
       ! ------
       integer ncid, varid, record, horiz_type, nmax
-#include "param.h"
+!#include "param.h"
       ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
       real A(GLOBAL_2D_ARRAY,nmax)
       ! commented: CSDISTRIBUTE_RESHAPE  A...
@@ -1266,13 +1588,146 @@ C$OMP BARRIER
 
       end function ncdf_read_mod
 
+
 ! ----------------------------------------------------------------------
+      subroutine handle_ierr(ierr)
+      ! Handle ierr with error message. Assumed fatal error.
+
+      implicit none
+
+      integer ierr
+
+      if(mynode==0) then
+        write(*,'(/3x,2A/12x,A/)') 'ERROR: read_write :: ',
+     &       'netcdf ierr != 0 ', nf90_strerror(ierr)
+      endif
+
+      error stop ! Stop simulation assumed fatal error
+
+      end subroutine handle_ierr
+
+! ----------------------------------------------------------------------
+
+! Copy of subroutine in case anyone wants to use it in future to have
+! control of netcdf output file in roms.in file.
+
+!      subroutine read_inp_net_flux(keyword, ierr, kwlen)
 !
-!      subroutine ncdf_create_new_file(fname,ncid,prev_fill_mode,
-!     &                          rec_per_file,total_rec,
-!     &                   r2dgrd1,u2dgrd1,r2dgrd2,v2dgrd2,
-!     &                   r3dgrd3,w3dgrd3,timedim,auxil1,N,
-!     &                   ierr,create_err)
+!      ! =============================================
+!      ! Read from input file which net-flux variables
+!      ! to output to own netcdf results file
+!      ! ====================================
+!
+!      ! This will serve two functions from read_inp.F
+!
+!      ! 1) Save output file specifications:
+!      !    output intervals, max number records per file, etc
+!
+!      ! 2) Choose which variables to turn on/off for outputting:
+!      !    E.g.: sustr (True or False)
+!
+!      ! 3) Save desired name of output file
+!
+!      ! The following needs to be in the roms.in input file to use this
+!      ! subroutine (file name needs to be 5 spaces from left margin):
+!      !net_flux_fields: write_file, rec_rate, recs/file | sustr  / filename
+!      !       T         1    4       T
+!      !     net_flux_results.nc
+!
+!      implicit none
+!
+!      ! Inputs
+!      character(len=32) :: keyword
+!      integer ierr, kwlen
+!      integer, parameter :: input=15
+!
+!      ! Local
+!      character(len=64) :: fname ! Taken from read_inp.F
+!      integer lstr, lenstr ! length of string, function to get lstr
+!
+!
+!      ! Just have one keyword to trigger both 1), 2) & 3) functions
+!      ! Remove keyword from keyword list to know it's accounted for.
+!      call cancel_kwd (keyword(1:kwlen), ierr)
+!
+!      read(input,*,err=95) ! Read variables below
+!
+!      ! Part 1) Specifications of output file
+!      ! =====================================
+!
+!     &  write_file, rec_rate, recs_per_file,
+!
+!      ! Part 2) Select variables to write
+!      ! =================================
+!
+!      ! Store input file output information (yes or no)
+!      ! in wrt_wec_vars which is an array of bools (logical)
+!     &  wrt_net_flux_vars(indxSUSTR)
+!
+!      ! Part 3) store filename
+!      ! ======================
+!
+!      read(input,'(A)',err=95) fname
+!      lstr=lenstr(fname) ! Function in lenstr.F
+!#if defined MPI && defined PARALLEL_FILES
+!      ! Insert MPI node numbers to file name
+!      call insert_node(fname, lstr, mynode, NNODES, ierr)
+!#endif
+!      file_name_flux_net=fname(1:lstr)
+!
+!      ! Write to terminal output in simulation pre-amble text which
+!      ! result variables are being stored
+!      ! ---------------------------------
+!
+!      mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4,2x,2A)')
+!     &     'surf_flux: save results net_flux = ', write_file,
+!     &     'nwrt =', rec_rate, 'recs/file =', recs_per_file,
+!     &     'file = ', file_name_flux_net(1:lstr)
+!
+!      mpi_master_only write(*,'(/1x,A,3(/8x,A,T16,L1,T20,A))')
+!     &               'fields to be saved in 2D Flux history: (T/F)'
+!     &     ,'sustr',  wrt_net_flux_vars(indxSUSTR),   sustr_long_name
+!
+!! Template for any 3D variables in future
+!!#  ifdef SOLVE3D
+!!      mpi_master_only write(*,'(/1x,A,8(/8x,A,T16,L1,T20,A))')
+!!     &               'fields to be saved in WEC 3D history: (T/F)'
+!!     &     ,  'UST',    wrt_wec_vars(indxUST),   ust_long_name
+!!#  endif
+!
+!      ! Error handling
+!      ! --------------
+!
+!      goto 100
+!
+!      ! Text format for error message: read(input,*,err=95) above
+!  95  write(*,'(/1x,4A/)') '### ERROR: surf_flux :: Cannot read ',
+!     &                       'entry ''', keyword(1:kwlen), '''.'
+!      ierr=ierr+1
+!
+! 100  continue
+!
+!
+!
+!      end subroutine read_inp_net_flux
+
+
+!-----------------------------------------------------------------------
+
+
+! ----------------------------------------------------------------------
+
+      ! =======================================================
+      ! COPY OF ORIGINAL ROUTINE THAT WORKED FOR DEF_HIS.F, TOO
+      ! =======================================================
+
+!      subroutine ncdf_create_new_file( fname,ncid, prev_fill_mode,
+!     &                   rec_per_file, total_rec,
+!     &                   r2dgrd, u2dgrd, v2dgrd,
+!#ifdef SOLVE3D
+!     &                   r3dgrd, u3dgrd, v3dgrd, w3dgrd,
+!#endif
+!     &                   timedim, auxil, N, ierr ) ! ,create_err
 !
 !      ! =============================================
 !      ! CREATE NEW NETCDF FILE with global attributes
@@ -1289,10 +1744,17 @@ C$OMP BARRIER
 !      integer rec_per_file ! records per file
 !      integer total_rec
 !      ! dimension numbers
-!      integer r2dgrd1,u2dgrd1,r2dgrd2,v2dgrd2
-!      integer r3dgrd3,w3dgrd3,timedim,auxil1
+!      integer r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
+!#ifdef SOLVE3D
+!     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+!#endif
+!!      integer r2dgrd1,u2dgrd1,v2dgrd2
+!!      integer r3dgrd3,w3dgrd3,timedim,auxil1
+!      integer timedim
 !      integer N ! Vertical number of rho-points
 !      integer ierr ! Track netcdf errors
+!
+!
 !      integer create_err ! DevinD created this to return error from def_his.F
 !
 !      ! External function needed
@@ -1315,11 +1777,11 @@ C$OMP BARRIER
 !
 !        ! Error handling
 !        if (ierr /= nf90_noerr) then
-!# ifdef AVRH
-!          write(*,'(1x,4A,I4)') '### ERROR:def_avg read_write::Cannot ',
-!# else
-!          write(*,'(1x,4A,I4)') '### ERROR:def_his read_write::Cannot ',
-!# endif
+!!# ifdef AVRH
+!!          write(*,'(1x,4A,I4)') '### ERROR: read_write::Cannot ',
+!!# else
+!          write(*,'(1x,4A,I4)') '### ERROR: read_write::Cannot ',
+!!# endif
 !     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
 !     &         MYID
 !        endif
@@ -1327,11 +1789,11 @@ C$OMP BARRIER
 !      ! Error: cannot create file
 !      else
 !
-!#ifdef AVRH
-!        write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_avg read_write :: ',
-!#else
-!        write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_his read_write :: ',
-!#endif
+!!#ifdef AVRH
+!!        write(*,'(/1x,4A/12x,A/)')  '### ERROR: read_write :: ',
+!!#else
+!        write(*,'(/1x,4A/12x,A/)')  '### ERROR: read_write :: ',
+!!#endif
 !     &       'Cannot create ''', fname, '''.', nf90_strerror(ierr)
 !
 !        ! Set return error flag
@@ -1349,16 +1811,50 @@ C$OMP BARRIER
 !      ! Define dimensions for field placement on staggered grids:
 !      ! ------ ---------- --- ----- --------- -- --------- -------
 !
-!      ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd1)
-!      ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd1)
-!      ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd2)
-!      ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd2)
+!      ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd(1))
+!      ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd(1))
+!      ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd(2))
+!      ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd(2))
 !#ifdef SOLVE3D
-!      ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd3)
-!      ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd3)
+!      ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd(3))
+!      ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd(3))
 !#endif
 !      ierr=my_nf_def_dim(ncid, 'time', nf90_unlimited, timedim)
-!      ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil1)
+!      ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
+!
+!      ! Transfer prescribed dimensions to rest of dimension arrays
+!
+!      auxil(2)=timedim
+!
+!      r2dgrd(3)=timedim                          ! Free surface
+!
+!      u2dgrd(2)=r2dgrd(2) ; u2dgrd(3)=timedim    ! 2D UBAR-type
+!
+!      v2dgrd(1)=r2dgrd(1) ; v2dgrd(3)=timedim    ! 2D VBAR-type
+!
+!#ifdef SOLVE3D
+!      r3dgrd(1)=r2dgrd(1)
+!      r3dgrd(2)=r2dgrd(2) ; r3dgrd(4)=timedim    ! 3D RHO-type
+!
+!      u3dgrd(1)=u2dgrd(1) ; u3dgrd(3)=r3dgrd(3)  ! 3D U-type
+!      u3dgrd(2)=r2dgrd(2) ; u3dgrd(4)=timedim    !
+!
+!      v3dgrd(1)=r2dgrd(1) ; v3dgrd(3)=r3dgrd(3)  ! 3D V-type
+!      v3dgrd(2)=v2dgrd(2) ; v3dgrd(4)=timedim    !
+!
+!      w3dgrd(1)=r2dgrd(1) ; w3dgrd(4)=timedim    ! 3D W-type
+!      w3dgrd(2)=r2dgrd(2)
+!#endif
+!
+!
+!#if (defined PUT_GRID_INTO_HISTORY && !defined AVRH)\
+! || (defined PUT_GRID_INTO_AVERAGES && defined AVRH)
+!
+!! Define grid variables.
+!! ------ ---- ----------
+!
+!        if (total_rec <= 1) call def_grid(ncid, r2dgrd)
+!#endif
 !
 !
 !      end subroutine ncdf_create_new_file

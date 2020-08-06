@@ -331,7 +331,10 @@
 
       ! Modules required
       ! ----------------
-      use flux_all, only: sustr, svstr, stflx
+      use surf_flux, only: sustr, svstr, stflx
+# ifdef BULK_FLUX_OUTPUT
+     &  , wrt_surface_flux_his
+# endif
 
       implicit none
 
@@ -1239,6 +1242,13 @@
 !      mpi_master_only print *, 'svstr(20,20)',svstr(20,20)
 !      mpi_master_only print *, 'stflx(20,20,itemp)',stflx(20,20,itemp)
 !      mpi_master_only print *, 'stflx(20,20,isalt)',stflx(20,20,isalt)
+
+# ifdef BULK_FLUX_OUTPUT
+C$OMP MASTER
+      call wrt_surface_flux_his ! write flux variables to flux output file
+C$OMP END MASTER
+C$OMP BARRIER
+# endif
 
 
       end subroutine calc_all_bulk_forces

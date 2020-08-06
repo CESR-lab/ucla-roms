@@ -50,7 +50,7 @@
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
       use bulk_frc, only: srflx, swradg => swrad_data
-      use flux_all, only: sustr, svstr, stflx, sst_data, sss_data
+      use surf_flux, only: sustr, svstr, stflx, sst_data, sss_data
 #endif
 
       implicit none

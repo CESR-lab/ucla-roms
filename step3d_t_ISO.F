@@ -58,10 +58,10 @@ c--# define CONST_TRACERS
       use bulk_frc, only: srflx
 #endif
 
-! DevinD added for bluk flux as stflx moved to flux_all.F module
+! DevinD added for bluk flux as stflx moved to surf_flux.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
-      use flux_all, only: stflx
+      use surf_flux, only: stflx
 #endif
 
       implicit none
