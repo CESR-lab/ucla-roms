@@ -7,6 +7,9 @@
       use wec_frc, only: read_inp_wec, read_inp_avg_wec
 #endif
 
+! For root name of output files
+      use read_write, only: read_output_root_name
+
       implicit none
       integer ierr
 #include "param.h"
@@ -811,6 +814,10 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           call read_inp_avg_wec(keyword, ierr, kwlen)
 # endif /* AVERAGES */
 #endif /* WEC */
+
+! Read output file root name using read_write.F module
+        elseif (keyword(1:kwlen).eq.'output_root_name') then
+          call read_output_root_name(keyword, kwlen)
 
         else
           mpi_master_only write(*,'(/1x,4A/)') 'WARNING: ',

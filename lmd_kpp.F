@@ -33,10 +33,10 @@ c--# define MERGE_OVERLAP
       use bulk_frc, only: srflx
 #endif
 
-! DevinD added for bluk flux as sustr,svstr, stflx moved to flux_all.F module
+! DevinD added for bluk flux as sustr,svstr, stflx moved to surf_flux.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
-      use flux_all, only: sustr, svstr, stflx
+      use surf_flux, only: sustr, svstr, stflx
 #endif
 
       implicit none

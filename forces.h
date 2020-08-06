@@ -7,7 +7,7 @@
 ! uwind  two-time level gridded data for XI- anf ETA-componets
 ! vwind  of wind stess (normally assumed to be in [Newton/m^2].
 
-! DevinD - ported to flux_all.F only for BULK_FLUX
+! DevinD - ported to surf_flux.F only for BULK_FLUX
 #if !defined BULK_FLUX
       real sustr(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE sustr(BLOCK_PATTERN) BLOCK_CLAUSE
@@ -206,7 +206,7 @@ CSDISTRIBUTE_RESHAPE swradg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 !  stflxg  two-time level surface tracer flux grided data.
 !  tstflx  time of surface tracer flux.
 
-! DevinD - ported to flux_all.F only for BULK_FLUX so far
+! DevinD - ported to surf_flux.F only for BULK_FLUX so far
 #if !defined BULK_FLUX
       real stflx(GLOBAL_2D_ARRAY,NT)
 CSDISTRIBUTE_RESHAPE stflx(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -258,7 +258,7 @@ CSDISTRIBUTE_RESHAPE dqdtg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 ! Sea-surface temperature (SST) data
 
-! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & flux_all.F
+! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & surf_flux.F
 # if defined QCORRECTION && !defined ANA_SST && !defined BULK_FLUX
 #  if defined SST_DATA || defined ALL_DATA
 #   undef SST_DATA
@@ -278,7 +278,7 @@ CSDISTRIBUTE_RESHAPE  sstg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 
 ! Sea-surface salinity (SSS) data
-! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & flux_all.F
+! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & surf_flux.F
 # if defined SFLX_CORR && defined SALINITY && !defined BULK_FLUX
 #  if defined SSS_DATA || defined ALL_DATA
       real sssg(GLOBAL_2D_ARRAY,2)

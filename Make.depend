@@ -18,20 +18,20 @@
 #             total files analyzed for dependencies:          171
 #
 #
-# Total number of lines of Fortran code in all files:       27638
+# Total number of lines of Fortran code in all files:       27871
 # (excluding CPP-commands, empty, and comment lines)
 #
-# Total number of CPP-preprocessor lines in all files:       9421
+# Total number of CPP-preprocessor lines in all files:       9428
 #
-# Total number of compiler directive lines, Open MP, etc...   205
+# Total number of compiler directive lines, Open MP, etc...   208
 #
-# Total number of comment lines in all files:                7989
+# Total number of comment lines in all files:                8219
 # (excluding empty and containing only "!", "C", "c", "*")
 #
-# Total number of empty lines in all files:                  6165
+# Total number of empty lines in all files:                  6338
 # (including lines containing only "!", "C", "c", and "*")
 #                                      --------------------------
-#                                      total lines:         51418
+#                                      total lines:         52064
 
 bulk_frc.mod: bulk_frc.o
 
@@ -39,11 +39,11 @@ diagnostics.mod: diagnostic.o
 
 dimensions.mod: dimensions.o
 
-flux_all.mod: flux_all.o
-
 read_write.mod: read_write.o
 
 river_frc.mod: river_frc.o
+
+surf_flux.mod: surf_flux.o
 
 wec_frc.mod: wec_frc.o
 
@@ -75,7 +75,7 @@ bulk_flux_COAMS.f: bulk_flux_COAMS.F cppdefs.h param.h grid.h ocean3d.h\
 bulk_flux_COARE.f: bulk_flux_COARE.F cppdefs.h param.h grid.h ocean3d.h\
  scalars.h compute_extended_bounds.h forces.h set_global_definitions.h
  
-bulk_frc.o: bulk_frc.f read_write.mod flux_all.mod
+bulk_frc.o: bulk_frc.f read_write.mod surf_flux.mod
 bulk_frc.f: bulk_frc.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_extended_bounds.h mixing.h set_global_definitions.h
  
@@ -125,9 +125,6 @@ ext_copy_prv2shr.f: ext_copy_prv2shr.F cppdefs.h param.h\
 find_record.f: find_record.F cppdefs.h param.h scalars.h\
  set_global_definitions.h
  
-flux_all.o: flux_all.f read_write.mod
-flux_all.f: flux_all.F cppdefs.h param.h set_global_definitions.h
- 
 get_bry_all.f: get_bry_all.F cppdefs.h param.h scalars.h boundary.h ncvars.h\
  set_global_definitions.h
  
@@ -176,7 +173,7 @@ incl.f: incl.F cppdefs.h param.h grid.h ocean3d.h scalars.h private_scratch.h\
  scoord.h coupling.h tides.h averages.h buffer.h diagnostics.h floats.h\
  init_floats.h ncvars_floats.h work.h set_global_definitions.h
  
-init_arrays.o: init_arrays.f bulk_frc.mod flux_all.mod wec_frc.mod
+init_arrays.o: init_arrays.f bulk_frc.mod surf_flux.mod wec_frc.mod
 init_arrays.f: init_arrays.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h compute_extended_bounds.h private_scratch.h\
  mixing.h ocean2d.h climat.h forces.h coupling.h hidden_mpi_vars.h averages.h\
@@ -190,7 +187,7 @@ int_r3d.f: int_r3d.F cppdefs.h param.h grid.h set_global_definitions.h
 interp.f: interp.F cppdefs.h param.h grid.h scalars.h ocean2d.h coupling.h\
  set_global_definitions.h
  
-lmd_kpp.o: lmd_kpp.f bulk_frc.mod flux_all.mod wec_frc.mod
+lmd_kpp.o: lmd_kpp.f bulk_frc.mod surf_flux.mod wec_frc.mod
 lmd_kpp.f: lmd_kpp.F cppdefs.h param.h grid.h ocean3d.h scalars.h mixing.h\
  forces.h strings.h lmd_wscale_ws_only.h lmd_kpp_smooth_hbl.h\
  lmd_wscale_wm_and_ws.h set_global_definitions.h
@@ -231,8 +228,8 @@ omega.f: omega.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h compute_auxiliary_bounds.h\
  hidden_mpi_vars.h set_global_definitions.h
  
-pre_step3d4S.o: pre_step3d4S.f flux_all.mod wec_frc.mod nhmg.mod river_frc.mod\
- mg_grids.mod mg_tictoc.mod
+pre_step3d4S.o: pre_step3d4S.f surf_flux.mod wec_frc.mod nhmg.mod\
+ river_frc.mod mg_grids.mod mg_tictoc.mod
 pre_step3d4S.f: pre_step3d4S.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  compute_tile_bounds.h private_scratch.h mixing.h ocean2d.h\
  compute_auxiliary_bounds.h forces.h sources.h strings.h coupling.h\
@@ -249,13 +246,13 @@ prsgrd.f: prsgrd.F cppdefs.h param.h grid.h ocean3d.h scalars.h eos_vars.h\
 put_global_atts.f: put_global_atts.F cppdefs.h param.h scalars.h eos_vars.h\
  ncvars.h strings.h scoord.h set_global_definitions.h
  
-read_inp.o: read_inp.f wec_frc.mod
+read_inp.o: read_inp.f read_write.mod wec_frc.mod
 read_inp.f: read_inp.F cppdefs.h param.h scalars.h eos_vars.h boundary.h\
  ncvars.h strings.h scoord.h set_global_definitions.h
  
 read_write.o: read_write.f dimensions.mod netcdf.mod
 read_write.f: read_write.F cppdefs.h param.h grid.h scalars.h\
- compute_extended_bounds.h compute_starts_counts.h buffer.h\
+ compute_extended_bounds.h ncvars.h compute_starts_counts.h buffer.h\
  set_global_definitions.h
  
 rho_eos.f: rho_eos.F cppdefs.h param.h grid.h ocean3d.h scalars.h eos_vars.h\
@@ -327,14 +324,14 @@ step2d_FB.f: step2d_FB.F cppdefs.h param.h grid.h scalars.h\
  compute_auxiliary_bounds.h forces.h sources.h coupling.h hidden_mpi_vars.h\
  set_global_definitions.h
  
-step3d_t_ISO.o: step3d_t_ISO.f bulk_frc.mod flux_all.mod river_frc.mod
+step3d_t_ISO.o: step3d_t_ISO.f bulk_frc.mod surf_flux.mod river_frc.mod
 step3d_t_ISO.f: step3d_t_ISO.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h mixing.h climat.h\
  compute_auxiliary_bounds.h forces.h strings.h hidden_mpi_vars.h\
  compute_horiz_tracer_fluxes.h compute_vert_tracer_fluxes.h\
  track_advec_switches.h set_global_definitions.h
  
-step3d_uv1.o: step3d_uv1.f flux_all.mod wec_frc.mod nhmg.mod mg_grids.mod\
+step3d_uv1.o: step3d_uv1.f surf_flux.mod wec_frc.mod nhmg.mod mg_grids.mod\
  mg_tictoc.mod
 step3d_uv1.f: step3d_uv1.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h mixing.h ocean2d.h\
@@ -348,6 +345,9 @@ step3d_uv2.f: step3d_uv2.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h mixing.h ocean2d.h\
  compute_auxiliary_bounds.h strings.h coupling.h hidden_mpi_vars.h\
  set_global_definitions.h
+ 
+surf_flux.o: surf_flux.f read_write.mod netcdf.mod
+surf_flux.f: surf_flux.F cppdefs.h param.h scalars.h set_global_definitions.h
  
 t3dbc_im.f: t3dbc_im.F cppdefs.h param.h grid.h ocean3d.h scalars.h boundary.h\
  climat.h compute_auxiliary_bounds.h set_global_definitions.h
