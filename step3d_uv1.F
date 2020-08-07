@@ -5,6 +5,7 @@
       subroutine step3d_uv1(tile)
       implicit none
       integer tile
+
 # include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
@@ -32,6 +33,9 @@
 #endif
 # ifdef WEC
       use wec_frc
+# endif
+# ifdef DIAGNOSTICS
+      use diagnostics
 # endif
       implicit none
 # include "param.h"
@@ -72,6 +76,27 @@
 # endif
 
 # include "compute_auxiliary_bounds.h"
+
+# ifdef DIAGNOSTICS
+      !! remove here and move to the rhs include files
+      if (diag_time) do_diags = .true. !! only do diags in step3d_uv12
+
+      !! ru,rv,rw contain hydrostatic pressure gradient only
+      !! all terms are volume integrated
+      if (do_diags) then
+        do j=jstr,jend
+          do i=istr,iend
+            do k=1,N
+              Mdiag(i,j,k,1,2) = ru(i,j,k)
+              Mdiag(i,j,k,2,2) = rv(i,j,k)
+# ifdef NHMG
+              Mdiag(i,j,k,3,2) = rw(i,j,k)
+# endif  /* DIAGNOSTICS */
+            enddo
+          enddo
+        enddo
+      endif
+# endif  /* DIAGNOSTICS */
 
 # ifdef NHMG
 
@@ -117,6 +142,8 @@
 !! JM move this bit to inside compute_wec_rhs_uv_terms...
 # ifdef WEC
 #  if defined WAVE_FRICTION && !defined BODY_FRICTION
+        !! JM add this somehow like a bustr in a manner like below
+        !! or move into compute_wec_rhs_uv.
         do i=istrU,iend
           ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
         enddo
@@ -133,6 +160,7 @@
           u(i,j,N,nnew)=u(i,j,N,nnew) +DC(i,0)*ru(i,j,N)
      &                                     +dt*sustr(i,j)
 #  if defined WEC && defined SURFACE_BREAK
+        !! JM we will add brk2dx to sustr
      &                                    + dt * brk2dx(i,j)
 #  endif
           u(i,j,1,nnew)=u(i,j,1,nnew)+DC(i,0)*ru(i,j,1)
