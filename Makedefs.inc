@@ -71,7 +71,6 @@ CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
      LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 
-
 # FFLAGS = -g -check all -CA -CB -CS -I./NHMG/include -I/opt/netcdf-4.6.1/include -I$(ROMS_ROOT)/ncio-master/include
  
   NHMG_ROOT = $(ROMS_ROOT)/NHMG
