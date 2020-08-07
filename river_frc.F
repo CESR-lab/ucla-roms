@@ -4,7 +4,7 @@
       ! RIVER FORCING MODULE
       ! ====================
 
-      ! Coded by Jeroen Molemaker
+      ! Initial coding by Jeroen Molemaker & Devin Dollery (2020)
 
 #include "cppdefs.h"
 # if defined RIVER_SOURCE
@@ -76,12 +76,13 @@
       contains
 
 
-      ! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
+
       subroutine ana_river_frc
          ! Analytical river forcing data
       end subroutine ana_river_frc
 
-      ! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
       subroutine ini_river_frc
 
       ! A grid file with integers where rivers need to be
@@ -146,7 +147,7 @@
       end subroutine ini_river_frc
 
 
-       ! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !       subroutine read_river_frc_old(time)
 !         ! Reads river forcing data from input file
 !         ! The first time, it reads two instances
@@ -422,7 +423,7 @@ C$OMP BARRIER
 #endif /* !ANA_RIVER_SOURCE */
 
 
-!-------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 #ifndef ANA_RIVER_SOURCE
       subroutine set_river_inp2vars (istr,iend,jstr,jend,idx)

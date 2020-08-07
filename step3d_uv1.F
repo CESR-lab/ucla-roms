@@ -33,6 +33,13 @@
 # ifdef WEC
       use wec_frc
 # endif
+
+! DevinD added for bluk flux as sustr and svstr moved to surf_flux.F module
+! but only when BULK_FLUX is on, else variables still live in forces.h
+#ifdef BULK_FLUX
+      use surf_flux, only: sustr, svstr
+#endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
