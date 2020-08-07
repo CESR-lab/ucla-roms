@@ -7,7 +7,7 @@ FC = ifort
 
 # Normal options for the compiler
 #FFLAGS =  -O3 -fp-model source -I/opt/mpich-3.2/include/
-FFLAGS =  -O3 -fp-model source 
+FFLAGS =  -O3 -fp-model source -I/home/devin/mpich-install/include
 
 # Debugging options for the compiler
 #FFLAGS =  -g -check -warn

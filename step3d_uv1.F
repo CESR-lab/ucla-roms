@@ -26,17 +26,21 @@
      &                                            ,rw
 # endif
      &                                                              )
-#ifdef NHMG
+# ifdef NHMG
       use nhmg
       use mg_grids
       use mg_tictoc, only : tic, toc
-#endif
+# endif
 # ifdef WEC
       use wec_frc
 # endif
 # ifdef DIAGNOSTICS
       use diagnostics
 # endif
+# ifdef BULK_FLUX
+      use surf_flux, only: sustr, svstr
+# endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k

@@ -81,11 +81,14 @@ c      v3bc_max=0.
 #endif
 #ifdef SOLVE3D
 # if !defined ANA_STFLUX || !defined ANA_SSFLUX
+! DevinD added BULK_FLUX
+#  if !defined BULK_FLUX
       do i=1,NT
         stf_file_id(i)=-1
       enddo
+#  endif
 # endif
-# ifndef ANA_SRFLUX
+# if !defined ANA_SRFLUX && !defined BULK_FLUX
       srf_file_id=-1
 # endif
 # if defined QCORRECTION && !defined ANA_SST

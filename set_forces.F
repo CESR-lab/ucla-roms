@@ -32,6 +32,10 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
+# ifdef BULK_FLUX
+      use bulk_frc, only: set_bulk_frc_tile
+# endif
+
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
@@ -94,7 +98,8 @@ c***              no code here
 
 #ifdef ANA_SMFLUX
       call ana_smflux_tile(istr,iend,jstr,jend)
-#elif !defined BULK_SM_UPDATE
+! DevinD added BULK_FLUX as account for in new flux module for BULK_FLUX
+#elif !defined BULK_SM_UPDATE && !defined BULK_FLUX
       call set_smflux_tile(istr,iend,jstr,jend, ierr)
 #endif
 
@@ -113,12 +118,16 @@ c***              no code here
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
       call ana_srflux_tile(istr,iend,jstr,jend)
-#   else
+! DevinD for BULK_FLUX get/set swrad has been moved to bulk_frc.F module
+#   elseif !defined ANA_SRFLUX && !defined BULK_FLUX
       call set_srflux_tile(istr,iend,jstr,jend, ierr)
 #   endif
 #  endif
 
-      call bulk_flux_tile(istr,iend,jstr,jend)
+      ! DevinD bulk flux module
+      call set_bulk_frc_tile(istr,iend,jstr,jend)
+      ! DevinD commented out as using bulk_frc.F module rather
+!      call bulk_flux_tile(istr,iend,jstr,jend)
 
 # else
 #  ifdef ANA_STFLUX
@@ -143,12 +152,7 @@ c***              no code here
 # endif
 
 # ifdef RIVER_SOURCE
-!#   ifdef ANA_RIVER_SOURCE
-!      call ana_river_source_tile(istr,iend,jstr,jend)
-!#   else
-!     call set_river_src_tile(istr,iend,jstr,jend, ierr)
       call set_river_frc_tile(istr,iend,jstr,jend,ierr,tmid)
-!#   endif
 #  endif
 
 # ifdef WEC

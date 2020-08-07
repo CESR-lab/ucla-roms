@@ -51,8 +51,12 @@
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
 
+<<<<<<< HEAD
 VPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
 CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+=======
+VPATH = ${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+>>>>>>> forcing_devin
 
 
 # OMP_FLAG = -fpp -openmp
