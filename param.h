@@ -98,7 +98,7 @@ c     &               LLm=768, MMm=256, N=1
 #elif defined BRAZIL
      &               LLm=168, MMm=272, N=40
 
-#elif defined RIVER
+#elif defined RIVER_SOURCE
      &               LLm=40,  MMm=160,  N=16
 c     &                LLm=60,  MMm=240,  N=24
 #elif defined UPWELLING
@@ -169,6 +169,8 @@ c**  &               LLm=126,  MMm=254, N=20    ! USWEST grid 16
      &      NP_XI=8, NP_ETA=1, NSUB_X=1, NSUB_E=1  ! DevinD - analytical WEC
 # elif defined USWC_WEC
      &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1 ! DevinD - WEC
+# elif defined RIVER_SOURCE
+     &      NP_XI=1, NP_ETA=1,  NSUB_X=1, NSUB_E=1 ! DevinD just to compile
 # endif
 #else
 c     &      NSUB_X=4, NSUB_E=40  ! PAC44
