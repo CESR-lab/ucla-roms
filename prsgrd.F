@@ -7,7 +7,7 @@
 # include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
-      call prsgrd32AC1_tile(istr,iend,jstr,jend,  A3d(1,1),A3d(1,2),
+      call prsgrd_tile(istr,iend,jstr,jend,  A3d(1,1),A3d(1,2),
      &                                                      A3d(1,3),
 # ifdef SPLIT_EOS
      &                                                      A3d(1,4),
@@ -20,7 +20,7 @@
      &                                                             )
       end
 
-      subroutine prsgrd32AC1_tile(istr,iend,jstr,jend, ru,rv, P,
+      subroutine prsgrd_tile(istr,iend,jstr,jend, ru,rv, P,
 # ifdef SPLIT_EOS
      &                                                       rho,
 # endif
@@ -32,6 +32,7 @@
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
+      use diagnostics
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -390,16 +391,91 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
      &              -(dZx(i,j)-dZx(i,j-1))*( rho(i,j,k)-rho(i,j-1,k)
      &                            -OneTwelfth*(dRx(i,j)+dRx(i,j-1)) )
      &                                                            )))
+
             enddo
           endif
         enddo   ! <-- j
+
+# ifdef ADV_ISONEUTRAL
+        if (CORR_STAGE) then   !<-- corrector stage only
+          r0g=rho0/g
+          do j=jstr,jendR
+            do i=istr,iend
+#ifdef ISO
+c              dRde(i,j,k)=-0.5*(pn(i,j)+pn(i,j-1))*rx(i,j)
+
+              dRde(i,j,k)=0.5*(pn(i,j)+pn(i,j-1))*(
+     &                      r0g*0.25*(f(i,j)+f(i,j-1))**2
+     &                        *(z_r(i,j,k)-z_r(i,j-1,k))
+
+c    &                -rx(i,j)
+
+c    &            -0.5*rx(i,j)-0.25*(dRx(i,j)+dRx(i,j-1))
+
+c    &                         -0.5*(dRx(i,j)+dRx(i,j-1))
+
+     &            -0.5*rx(i,j)-0.25*(rx(i,j-1)+rx(i,j+1))
+
+c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
+
+     &                                                    )
+#else
+              dRde(i,j,k)=0.5*(pn(i,j)+pn(i,j-1))
+     &                 *(z_r(i,j,k)-z_r(i,j-1,k))
+#endif
+            enddo
+          enddo
+        endif
+# endif
+
+
       enddo   !<-- k
-!Daniel add
+
+
+# ifdef NHMG
+!
+!--------------------------------------------------------------------
+! hydrostatic pressure gradient for the vertical flux
+!       dpdz = -zx*dpdx - zy*dpdy (See Molemaker et al., 2018)
+!--------------------------------------------------------------------
+!
+!     We are re-using dR as a work array 
+
+      do j=Jstr,Jend
+         do k = 1,N
+            do i=Istr,Iend
+              dR(i,k) = dzdxi(i,j,k) *(                                
+     $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k)) 
+     $            + ru(i+1,j,k  )/(Hz(i,j,k)+Hz(i+1,j,k)))
+     $            +     dzdeta(i,j,k) *(                               
+     $              rv(i,j  ,k  )/(Hz(i,j,k)+Hz(i,j-1,k)) 
+     $            + rv(i,j+1,k  )/(Hz(i,j,k)+Hz(i,j+1,k)))
+            enddo
+         enddo
+
+         !! rw is a V*dwdt units object (m4/s2), just like ru, rv
+         do k = 1,N-1 
+            do i=Istr,Iend
+              rw(i,j,k)=-0.25*(dR(i,k+1)+dR(i,k))*(Hz(i,j,k+1)+Hz(i,j,k))
+            enddo
+         enddo
+         do i=Istr,Iend
+            rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
+         enddo
+      enddo
+# endif /* NHMG */
+
+
+#ifdef WEC
 ! ------------------------------------
 !add in wave effect using POM-Jacobian
 ! ------------------------------------
-#ifdef WEC
 #  define DC rx
+      !! FC contains the vertical vortex force K (eq(5) from uchiyama2010)
+      !! which behaves like a hydrostatic pressure
+      !! JM We should be able to add these term directly to the
+      !! hydrostatic pressure above
+      !! In addition, instead of K, we should compute  ust.u_z in place
       do k=N,1,-1           !--> irreversible
         if (k.eq.N) then
           do j=jstrV-1,jend
@@ -407,7 +483,7 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
               FC(i,j)=-(z_w(i,j,N)-z_r(i,j,N))
      &                          *(1.5*kvf(i,j,N)-0.5*kvf(i,j,N-1))
      &          *(z_w(i,j,N)-z_r(i,j,N))/(z_r(i,j,N)-z_r(i,j,N-1))
-              DC(i,j)=-g*sup(i,j)-calP(i,j)+Kapsrf(i,j)
+              DC(i,j)=-g*sup(i,j)-calP(i,j)+Kapsrf(i,j)  !! additional surface pressure gradient
             enddo
           enddo
         else
@@ -441,78 +517,27 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
 #  undef DC
 #endif /* WEC */
 
-      do k=N,1,-1
-# ifdef ADV_ISONEUTRAL
-        if (CORR_STAGE) then   !<-- corrector stage only
-          r0g=rho0/g
-          do j=jstr,jendR
-            do i=istr,iend
-#ifdef ISO
-c              dRde(i,j,k)=-0.5*(pn(i,j)+pn(i,j-1))*rx(i,j)
-
-              dRde(i,j,k)=0.5*(pn(i,j)+pn(i,j-1))*(
-     &                      r0g*0.25*(f(i,j)+f(i,j-1))**2
-     &                        *(z_r(i,j,k)-z_r(i,j-1,k))
-
-c    &                -rx(i,j)
-
-c    &            -0.5*rx(i,j)-0.25*(dRx(i,j)+dRx(i,j-1))
-
-c    &                         -0.5*(dRx(i,j)+dRx(i,j-1))
-
-     &            -0.5*rx(i,j)-0.25*(rx(i,j-1)+rx(i,j+1))
-
-c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
-
-     &                                                    )
-#else
-              dRde(i,j,k)=0.5*(pn(i,j)+pn(i,j-1))
-     &                 *(z_r(i,j,k)-z_r(i,j-1,k))
-#endif
+# ifdef DIAGNOSTICS
+      !! set this switch such that we only do this during a corrector
+      !! step and only when it's time to write a history file
+      !! These are hydrostatic pressure gradient terms, possibly
+      !! including wec
+      !! 
+      if (do_diags) then
+        do j=Jstr,Jend
+          do k = 1,N
+            do i=Istr,Iend
+              Mdiag(i,j,k,1,2) = ru(i,j,k)
+              Mdiag(i,j,k,2,2) = rv(i,j,k)
+#  ifdef NHMG
+              Mdiag(i,j,k,3,2) = rw(i,j,k)
+#  endif
             enddo
           enddo
-        endif
-# endif
-      enddo   !<-- k
-
-# ifdef NHMG
-!
-!--------------------------------------------------------------------
-! hydrostatic pressure gradient for the vertical flux
-!       dpdz = -zx*dpdx - zy*dpdy (See Molemaker et al., 2018)
-!--------------------------------------------------------------------
-!
-!     We are re-using dR as a work array 
-
-      do j=Jstr,Jend
-         do k = 1,N
-            do i=Istr,Iend
-              dR(i,k) = dzdxi(i,j,k) *(                                
-     $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k)) 
-     $            + ru(i+1,j,k  )/(Hz(i,j,k)+Hz(i+1,j,k)))
-     $            +     dzdeta(i,j,k) *(                               
-     $              rv(i,j  ,k  )/(Hz(i,j,k)+Hz(i,j-1,k)) 
-     $            + rv(i,j+1,k  )/(Hz(i,j,k)+Hz(i,j+1,k)))
-            enddo
-         enddo
-
-         !! rw is a V*dwdt units object (m4/s2), just like ru, rv
-         do k = 1,N-1 
-            do i=Istr,Iend
-              rw(i,j,k)=-0.25*(dR(i,k+1)+dR(i,k))*(Hz(i,j,k+1)+Hz(i,j,k))
-            enddo
-         enddo
-         do i=Istr,Iend
-            rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
-         enddo
-      enddo
+        enddo
+      endif
 # endif
 
-# ifdef DIAGNOSTICS_UV
-!     Mdph(i,j,k,1) = ru(i,j,k)
-!     Mdph(i,j,k,2) = rv(i,j,k)
-!     Mdph(i,j,k,3) = rw(i,j,k)
-# endif
       end
 
 

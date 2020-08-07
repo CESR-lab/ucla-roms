@@ -16,16 +16,14 @@
            cff1=0.5*Hz(i,j,k)*(
      &          0.5*( dndx(i,j)*(vst(i,j,k)+vst(i,j+1,k))
      &               -dmde(i,j)*(ust(i,j,k)+ust(i+1,j,k)) ))
-#    else
+#  else
            cff1 = 0.0
 #  endif
-! end CURVGRID && UV_ADV
            UFx(i,j)=(cff+cff1)*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
            UFe(i,j)=cff*(vst(i,j,k)+vst(i,j+1,k))
            VFe(i,j)=(cff+cff1)*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
            VFx(i,j)=cff*(ust(i,j,k)+ust(i+1,j,k)) 
-#  else
-! NO WEC
+#  else /* no WEC */
 
             UFx(i,j)=cff*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
             VFe(i,j)=cff*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))

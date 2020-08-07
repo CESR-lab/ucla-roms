@@ -10,6 +10,7 @@
 
 # ifdef CALDEIRA  /* Caldeira test */
 
+# define DIAGNOSTICS
 # define MPI
 
 # define NHMG

@@ -52,7 +52,7 @@
 # must be specified.
 
 VPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
-#CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
 
 
 # OMP_FLAG = -fpp -openmp

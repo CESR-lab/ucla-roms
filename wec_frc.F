@@ -2779,6 +2779,7 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
         do i=istr,iend
           do k=1,N-1       ! K term at horz rho- & vert w-point
 !# if defined WAVE_OFFLINE && !defined U2010
+           !! kvr = ust*u_z + vst*v_z (at w-points )
             kvr(k) = 0.25*(
      &                  (ust_r(i,j,k)+ust_r(i,j,k+1))*
      &                (u(i,j,k+1,nstp)-u(i,j,k,nstp)
