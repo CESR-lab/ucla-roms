@@ -51,8 +51,6 @@
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
 
-#ROMS_ROOT = /home/devin/repos_hp/ucla-roms
-
 VPATH = ${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
 
 

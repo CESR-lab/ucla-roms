@@ -1,10 +1,4 @@
       module wec_frc
-#include "cppdefs.h"
-! CPP flag WEC covering entire module so that the module is empty if
-! WEC is unused, and thus module will not take up unnecessary size in
-! the executable.
-#if defined WEC /* WEC for whole module! */
-
 
       ! ===================================
       ! Wave Effect on Current (WEC) module
@@ -12,11 +6,17 @@
       ! which provides all WEC terms that
       ! enter in the momentum equations.
       !
-      ! coding: Devin Dollery & Jeroen Molemaker
+      ! coding: Devin Dollery & Jeroen Molemaker (2020)
       !
       ! code essentially a copy of work already done under MRL_WCI cppflag
       ! of previous roms implementation, based on Delphine Hypolite's
       ! version of old (pre 2020) ROMS used for USWC simulations.
+
+#include "cppdefs.h"
+! CPP flag WEC covering entire module so that the module is empty if
+! WEC is unused, and thus module will not take up unnecessary size in
+! the executable.
+#if defined WEC /* WEC for whole module! */
 
       use read_write ! new roms netcdf functionality module
 
@@ -50,7 +50,7 @@
 ! For netcdf variables
 #include "ncvars.h"
 
-! get universal scalars, g and pi
+! get universal scalars, g and pi, model time and time in days
 # include "scalars.h"
 ! get non-wec ocean variables, e.g. u & v
 # include "ocean2d.h"
@@ -123,7 +123,6 @@
 !  3D  |  ust      |   xi-direciton 3D Stokes drift velocity (u-point)
 !  3D  |  vst      |  eta-direciton 3D Stokes drift velocity (v-point)
 !  3D  |  wst      |       vertical 3D Stokes drift velocity (rho-point)
-!  3D  |  Kappa    |  3D Bernoulli head term (rho-point)
 !  3D  |  kvf      |  vertical vortex force term (K term, 3D, rho-point)
 !  3D  |  Akb      |  breaking-wave-induced additional diffusivity (w-point)
 !  3D  |  Akw      |  wave-induced additional diffusivity (rho-point)
@@ -148,12 +147,12 @@
       real, public :: calP(GLOBAL_2D_ARRAY) ! used in prsgrd32AC1.F
       real, public :: Kapsrf(GLOBAL_2D_ARRAY) ! used in prsgrd32AC1.F
 #  ifndef SURFACE_BREAK
-      real         :: brk3dx(GLOBAL_2D_ARRAY,N)
-      real         :: brk3de(GLOBAL_2D_ARRAY,N)
+      real         :: brk3dx(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
+      real         :: brk3de(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
 #  endif
 #  ifdef BODY_FRICTION
-      real         :: frc3dx(GLOBAL_2D_ARRAY,N)
-      real         :: frc3de(GLOBAL_2D_ARRAY,N)
+      real         :: frc3dx(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
+      real         :: frc3de(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
 #  endif
       real, public :: ust(GLOBAL_2D_ARRAY,N)
       real, public :: vst(GLOBAL_2D_ARRAY,N)
@@ -361,7 +360,7 @@
 
       ! Size of array hard coded, change as required
       logical wrt_wec_vars(11) ! Previously part of wrthis in old roms
-      ! samr as wrt_wec_vars but for averaging of wec variables:
+      ! same as wrt_wec_vars but for averaging of wec variables:
       logical wrt_avg_vars(11) ! Previously part of wrtavg in old roms
 
       ! Index numbers are arbitrary, they are just place holders for
@@ -390,11 +389,11 @@
       integer, parameter :: gnx = LLm
       integer, parameter :: nz  = N
 
-       ! timestep variables for read in WEC data
-      integer              :: it1 = 1  ! step n. Note: should be parameter as unchanging
-      integer              :: it2 = 2  ! step n+1. Note: should be parameter as unchanging
-      real, dimension(2)   :: wec_tim = [-99,-99] ! used to store both time steps (n, n+1)
-      integer    :: ifile = 0 ! read in file number
+      ! timestep variables for read in WEC data
+      integer              :: it1 = 1  ! Placeholder for read in time
+      integer              :: it2 = 2  ! Placeholder for read in time
+      real, dimension(2)   :: wec_tim = [-99,-99] ! used to store both time steps (n <-> n+1)
+      integer    :: ifile = 0 ! read in force file number
       ! current record number of data point in read in data - irec
       integer    :: irec  = 0
 
@@ -435,127 +434,6 @@
       ! ##################
 
 
-
-      subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
-
-      ! This is called from init_arrays_tile of init_arrays.F
-      ! It is needed to "first touch" arrays to optimize
-      ! NUMA shared memory allocation on linux.
-
-      implicit none
-
-      integer, intent(in) :: istr, iend, jstr, jend
-      ! Declare looping indices
-      integer :: i, j, k
-
-      real, parameter :: init=0.
-
-      ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
-      ! This had to declared last else won't compile
-#include "compute_auxiliary_bounds.h"
-
-      ! This section of code is taken from DH's WAVE_PACKET init_arrays.F
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-
-! DevinD - NON-ANA old code L
-#ifdef SOLVE3D
-# if defined BBL || defined WEC
-#  if !defined ANA_WWAVE && !defined WKB_WWAVE
-          do k=1,2
-            wwag(i,j,k)=init
-            wwdg(i,j,k)=init
-            wwpg(i,j,k)=init
-#   ifdef BBL
-            wwuob(i,j,k)=init
-            wwvob(i,j,k)=init
-#    ifdef WAVE_OFFLINE
-            wwub(i,j,k) =init
-#    endif
-#   endif
-#   ifdef WEC
-            wwdrx(i,j,k)=init
-            wwdre(i,j,k)=init
-#    ifdef WAVE_OFFLINE
-            wweb(i,j,k) =init
-#     ifdef SURFACE_ROLLER
-            wwqb(i,j,k) =init
-#     endif
-            wwUSg(i,j,k) = init
-#    endif
-#   endif /* WEC */
-          enddo
-
-          wfrq(i,j) =init
-#   ifdef BBL
-          uorb(i,j) =init
-          vorb(i,j) =init
-#   endif
-#   ifdef WEC
-          whrm(i,j) =init
-          wdrx(i,j) =init
-          wdre(i,j) =init
-          wbst(i,j) =init
-#    ifdef WAVE_OFFLINE
-          wveb(i,j) =init
-#     ifdef SURFACE_ROLLER
-          wvqb(i,j) =init
-#     endif
-#    endif
-#   endif /* WEC */
-#  endif
-# endif /* defined BBL || defined WEC */
-#endif /* SOLVE3D */
-
-      ! DevinD - even though they are split in the old code's init_arrays.F
-      ! I don't see a need as it is the same loop so wave variables and
-      ! stokes variables in the same loop
-
-          sup(i,j)    =init
-          ust2d(i,j)  =init
-          vst2d(i,j)  =init
-          brk2dx(i,j) =init
-          brk2de(i,j) =init
-          frc2dx(i,j) =init
-          frc2de(i,j) =init
-# ifdef SOLVE_3D
-          calP(i,j)   =init
-          Kapsrf(i,j) =init
-          do k=1,N
-#  ifndef SURFACE_BREAK
-            brk3dx(i,j,k) =init
-            brk3de(i,j,k) =init
-#  endif
-#  ifdef BODY_FRICTION
-            frc3dx(i,j,k) =init
-            frc3de(i,j,k) =init
-#  endif
-            ust(i,j,k) =init
-            vst(i,j,k) =init
-            wst(i,j,k) =init
-            kvf(i,j,k) =init
-          enddo
-          do k=0,N
-#  if defined LMD_KPP || defined LMD_BKPP
-            Akb(i,j,k) =init
-#  endif
-            Akw(i,j,k) =init
-            E_pre(i,j,k) =init
-          enddo
-# endif /* SOLVE_3D */
-          wdsp(i,j) =init
-#    ifdef SURFACE_ROLLER
-          rdsp(i,j) =init
-#    endif
-        enddo
-      enddo
-
-
-      end subroutine init_arrays_wec_tile
-
-
-! ----------------------------------------------------------------------
 
       subroutine read_inp_wec (keyword, ierr, kwlen)
 
@@ -742,7 +620,7 @@
       implicit none
 
       ! input/output
-      character(len=*),intent(in) :: fname
+      character(len=*),intent(in) :: fname ! This isn't even used! Should be ifile
       integer         ,intent(in) :: irec,idx
       ! Set wec_time for read in variables
       real,dimension(1):: wec_in_time
@@ -1124,9 +1002,7 @@
       end subroutine wrt_his_wec
 
 
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
-       ! --------------------------------------------------------------------
+! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
       subroutine wrt_avg_wec (record, ierr, may_day_flag)
@@ -1264,8 +1140,8 @@
       end subroutine ana_init_wec_frc_tile
 #endif /* ANA_WEC_FRC */
 
-! --------------------------------------------------------------------
-! --------------------------------------------------------------------
+
+! ----------------------------------------------------------------------
 
 #ifdef ANA_WEC_FRC
       subroutine ana_wec_frc_tile (istr,iend,jstr,jend)
@@ -1384,7 +1260,126 @@
       ! ###################
 
 
+      subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
 
+      ! This is called from init_arrays_tile of init_arrays.F
+      ! It is needed to "first touch" arrays to optimize
+      ! NUMA shared memory allocation on linux.
+
+      implicit none
+
+      integer, intent(in) :: istr, iend, jstr, jend
+      ! Declare looping indices
+      integer :: i, j, k
+
+      real, parameter :: init=0.
+
+      ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
+      ! This had to declared last else won't compile
+#include "compute_auxiliary_bounds.h"
+
+      ! This section of code is taken from DH's WAVE_PACKET init_arrays.F
+
+      do j=jstrR,jendR
+        do i=istrR,iendR
+
+! DevinD - NON-ANA old code L
+#ifdef SOLVE3D
+# if defined BBL || defined WEC
+#  if !defined ANA_WWAVE && !defined WKB_WWAVE
+          do k=1,2
+            wwag(i,j,k)=init
+            wwdg(i,j,k)=init
+            wwpg(i,j,k)=init
+#   ifdef BBL
+            wwuob(i,j,k)=init
+            wwvob(i,j,k)=init
+#    ifdef WAVE_OFFLINE
+            wwub(i,j,k) =init
+#    endif
+#   endif
+#   ifdef WEC
+            wwdrx(i,j,k)=init
+            wwdre(i,j,k)=init
+#    ifdef WAVE_OFFLINE
+            wweb(i,j,k) =init
+#     ifdef SURFACE_ROLLER
+            wwqb(i,j,k) =init
+#     endif
+            wwUSg(i,j,k) = init
+#    endif
+#   endif /* WEC */
+          enddo
+
+          wfrq(i,j) =init
+#   ifdef BBL
+          uorb(i,j) =init
+          vorb(i,j) =init
+#   endif
+#   ifdef WEC
+          whrm(i,j) =init
+          wdrx(i,j) =init
+          wdre(i,j) =init
+          wbst(i,j) =init
+#    ifdef WAVE_OFFLINE
+          wveb(i,j) =init
+#     ifdef SURFACE_ROLLER
+          wvqb(i,j) =init
+#     endif
+#    endif
+#   endif /* WEC */
+#  endif
+# endif /* defined BBL || defined WEC */
+#endif /* SOLVE3D */
+
+      ! DevinD - even though they are split in the old code's init_arrays.F
+      ! I don't see a need as it is the same loop so wave variables and
+      ! stokes variables in the same loop
+
+          sup(i,j)    =init
+          ust2d(i,j)  =init
+          vst2d(i,j)  =init
+          brk2dx(i,j) =init
+          brk2de(i,j) =init
+          frc2dx(i,j) =init
+          frc2de(i,j) =init
+# ifdef SOLVE_3D
+          calP(i,j)   =init
+          Kapsrf(i,j) =init
+          do k=1,N
+#  ifndef SURFACE_BREAK
+            brk3dx(i,j,k) =init
+            brk3de(i,j,k) =init
+#  endif
+#  ifdef BODY_FRICTION
+            frc3dx(i,j,k) =init
+            frc3de(i,j,k) =init
+#  endif
+            ust(i,j,k) =init
+            vst(i,j,k) =init
+            wst(i,j,k) =init
+            kvf(i,j,k) =init
+          enddo
+          do k=0,N
+#  if defined LMD_KPP || defined LMD_BKPP
+            Akb(i,j,k) =init
+#  endif
+            Akw(i,j,k) =init
+            E_pre(i,j,k) =init
+          enddo
+# endif /* SOLVE_3D */
+          wdsp(i,j) =init
+#    ifdef SURFACE_ROLLER
+          rdsp(i,j) =init
+#    endif
+        enddo
+      enddo
+
+
+      end subroutine init_arrays_wec_tile
+
+
+! ----------------------------------------------------------------------
 
 
 #ifdef SOLVE3D
@@ -1657,8 +1652,8 @@ c      gam2=9./8.
       implicit none
 
       ! input/outputs
-      integer istr,iend,jstr,jend ! ,intent(in) ::
-      integer ierr ! ,intent(out)::
+      integer,intent(in) :: istr,iend,jstr,jend
+      integer,intent(out):: ierr
       ! local
       integer :: tmp,i,j
       real cff1,cff2
@@ -2086,9 +2081,8 @@ C$OMP BARRIER
       end subroutine set_avg_wec_tile
 #endif /* AVERAGES */
 
-      ! -------------------------------------------
-      ! -------------------------------------------
-      ! -------------------------------------------
+
+! ----------------------------------------------------------------------
 
       subroutine wec_forces (tile)
 
@@ -2112,9 +2106,7 @@ C$OMP BARRIER
       end subroutine wec_forces
 
 
-
 ! ----------------------------------------------------------------------
-
 
       subroutine wec_forces_tile (istr,iend,jstr,jend,
 # ifdef SOLVE3D

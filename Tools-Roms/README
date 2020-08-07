@@ -1,0 +1,51 @@
+This directory contains a set to basic tool to manipulate Fortran
+source codes and, in principle, other text files.
+
+! Dependecy list: Make.depend
+! ===========================
+
+ cross_matrix - analyses dependencies of Fortran source files to track 
+                down CPP #include, F77-style include, and Fortran 90
+                modules to guarantee the correct order of compilation
+                of the cross-dependent source code files, even when
+                using multiple CPUs to compile (via "make -j N" command);
+
+! NETCDF tools
+! ============
+
+ partit -	Separates single input files over domain into multiple input
+ 		files based on the MPI tiling based on the parameters you set
+ 		in param.h file.
+
+ ncjoin -	Joins partitioned netcdf result files (.nc) into one file
+ 		for better viewing of results:
+ 		E.g.: with files result.0.nc result.1.nc
+ 		ncjoin -d result.*
+ 		Will prodcue result.nc file containing joined results.
+ 		the -d flag will delete the individual files, e.g. .0. and .1.                
+ 
+! Code editing
+! ============ 
+
+ chkindent -    checks identing and alignment of CPP #directives; 
+
+ mreplace -  	searches and renames objects in Fortran source codes.
+              	Useful for speed editing multiple files if consistent name
+              	changes are required simultaneously in many places in many
+              	files.  Also known to be useful for speed editing labels in
+              	LaTeX files where it is non-practical or too cumbersome to
+              	do it manually by standard editing tools.
+
+
+All the above are compile-once-use-forever, stand-alone, self-explanatory
+programs -- just execute each of them without any arguments to see what
+they are and for instructions how to use them.
+
+
+To compile: Simply type "make" then "make install". The executables
+will be moved to ~/bin directory. The directory must pre-exist and
+should be included in $PATH in ~/.cshrc or ~/.bashrc files.  
+The installation path can be changed by editing Makefile. 
+The compiler can be selected by chosing an appropriate Makedes.XXX file.  
+There is no need for any external library beside the standard intrinsic functions.
+

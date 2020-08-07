@@ -19,7 +19,7 @@ include Makedefs.inc
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = 		dimensions.F	read_write.F\
+KRNSRC = 		dimensions.F	read_write.F surf_flux.F bulk_frc.F\
 	wec_frc.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
@@ -53,11 +53,11 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 	def_rst.F	wrt_rst.F	def_his.F	wrt_his.F\
 	set_avg.F	wrt_avg.F\
 	get_forces.F	get_stflux.F	get_bry_all.F	set_forces.F\
-	set_smflux.F	set_stflux.F	nf_read_bry.F	bulk_flux_COAMS.F\
+	set_smflux.F	set_stflux.F	nf_read_bry.F\
 	get_tides.F	set_tides.F	set_srflux.F\
 	get_ssh.F	get_tclima.F	get_uclima.F	closecdf.F
 
-
+# bulk_flux_COAMS.F DevinD removed
 
 
 #FLTSRC = init_floats.F	init_arrays_floats.F	get_init_flts.F\
