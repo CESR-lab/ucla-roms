@@ -130,7 +130,7 @@
 
       use netcdf ! for nf90_routines
       use read_write, only: ncdf_create_file, nc_define_var, nc_write_var
-     &   , nc_write_time, output_root_name, r_var, u_var, v_var
+     &   , nc_write_time, output_root_name, rp_var, up_var, vp_var
 
       implicit none
 
@@ -255,18 +255,18 @@
         ! write variables
         ! ---------------
         if (wrt_sustr) then
-          call nc_write_var(ncid, sustr, 1, sustr_name, u_var, output_rec, ierr)
+          call nc_write_var(ncid, sustr, 1, sustr_name, up_var, output_rec, ierr)
         endif
         if (wrt_svstr) then
-          call nc_write_var(ncid, svstr, 1, svstr_name, v_var, output_rec, ierr)
+          call nc_write_var(ncid, svstr, 1, svstr_name, vp_var, output_rec, ierr)
         endif
         if (wrt_shflx) then
           call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,itemp), 1,
-     &                      shflx_name, r_var, output_rec, ierr)
+     &                      shflx_name, rp_var, output_rec, ierr)
         endif
         if (wrt_ssflx) then
           call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,isalt), 1,
-     &                      ssflx_name, r_var, output_rec, ierr)
+     &                      ssflx_name, rp_var, output_rec, ierr)
         endif
 
         ! Close netcdf file
