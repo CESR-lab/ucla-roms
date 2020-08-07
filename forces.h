@@ -7,6 +7,8 @@
 ! uwind  two-time level gridded data for XI- anf ETA-componets
 ! vwind  of wind stess (normally assumed to be in [Newton/m^2].
 
+! DevinD - ported to surf_flux.F only for BULK_FLUX
+#if !defined BULK_FLUX
       real sustr(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE sustr(BLOCK_PATTERN) BLOCK_CLAUSE
       real svstr(GLOBAL_2D_ARRAY)
@@ -17,6 +19,7 @@ CSDISTRIBUTE_RESHAPE svstr(BLOCK_PATTERN) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE wndmag(BLOCK_PATTERN) BLOCK_CLAUSE
       common /frc_wmag/wndmag
 #endif
+#endif /* !defined BULK_FLUX */
 
 ! Two-time-slice 2D arrays and associated timing variables to store
 ! wind data read from netCDF file. These fields, "uwind" and "vwind",
@@ -65,12 +68,14 @@ CSDISTRIBUTE_RESHAPE windmag(BLOCK_PATTERN,*) BLOCK_CLAUSE
 !                         [degC m/s] at horizontal RHO-points
 ! swradg  two-time-level grided data for surface [Watts/m^2]
 
+! DevinD shortwave radiation for bulk flux moved to bulk_frc.F module. Hence:
+# ifndef BULK_FLUX
       real srflx(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE srflx(BLOCK_PATTERN) BLOCK_CLAUSE
       common /frc_srflx/srflx
-# ifndef ANA_SRFLUX
-#  if defined SWRAD_DATA || defined ALL_DATA
-#   undef SWRAD_DATA
+#  ifndef ANA_SRFLUX
+#   if defined SWRAD_DATA || defined ALL_DATA
+#    undef SWRAD_DATA
       real swradg(GLOBAL_2D_ARRAY,2)
 CSDISTRIBUTE_RESHAPE swradg(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /srfdat_srflxg/swradg
@@ -82,28 +87,30 @@ CSDISTRIBUTE_RESHAPE swradg(BLOCK_PATTERN,*) BLOCK_CLAUSE
      &        srf_ncycle,  srf_rec, itsrf, ntsrf,
      &        srf_file_id, srf_tid, srf_id
 
-#  endif /* SWRAD_DATA */
-# endif /* !ANA_SRFLUX */
+#   endif /* SWRAD_DATA */
+#  endif /* !ANA_SRFLUX */
+# endif /* !BULK_FLUX */
 
 
-
-# ifdef BULK_FLUX
-! Long-wave radiation flux [Watts/m^2]
-!---------- ------ -- ---- -----------
-#  if defined LWRAD_DATA || defined ALL_DATA
-#   undef LWRAD_DATA
-      real lwradg(GLOBAL_2D_ARRAY,2)
-CSDISTRIBUTE_RESHAPE lwflxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      common /lwfdat_lwflxg/lwradg
-
-      real(kind=8) lrf_cycle, lrf_time(2)
-      integer lrf_ncycle,  lrf_rec, itlrf, ntlrf,
-     &        lrf_file_id, lrf_tid, lrf_id
-      common /lrfdat/ lrf_cycle,    lrf_time,
-     &        lrf_ncycle,  lrf_rec, itlrf, ntlrf,
-     &        lrf_file_id, lrf_tid, lrf_id
-
-#  endif /* SWRAD_DATA */
+! DevinD - commented these variables out as only for BULK_FLUX which has
+! permanently moved to bulk_frc.F module.
+!# ifdef BULK_FLUX
+!! Long-wave radiation flux [Watts/m^2]
+!!---------- ------ -- ---- -----------
+!#  if defined LWRAD_DATA || defined ALL_DATA
+!#   undef LWRAD_DATA
+!      real lwradg(GLOBAL_2D_ARRAY,2)
+!CSDISTRIBUTE_RESHAPE lwflxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
+!      common /lwfdat_lwflxg/lwradg
+!
+!      real(kind=8) lrf_cycle, lrf_time(2)
+!      integer lrf_ncycle,  lrf_rec, itlrf, ntlrf,
+!     &        lrf_file_id, lrf_tid, lrf_id
+!      common /lrfdat/ lrf_cycle,    lrf_time,
+!     &        lrf_ncycle,  lrf_rec, itlrf, ntlrf,
+!     &        lrf_file_id, lrf_tid, lrf_id
+!
+!#  endif /* SWRAD_DATA */
 
 
 
@@ -119,74 +126,66 @@ CSDISTRIBUTE_RESHAPE lwflxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 !  radsw    net solar shortwave radiation [Watts meter-2]
 
 
-! Air temperature [degree Celsius] at 2m above ocean surface
-!---- ----------- ------- -------- -- -- ----- ----- --------
-#  if defined TAIR_DATA || defined ALL_DATA
-#   undef TAIR_DATA
-      real tairg(GLOBAL_2D_ARRAY,2)
-      common /bulk_tair/ tairg
+!! Air temperature [degree Celsius] at 2m above ocean surface
+!!---- ----------- ------- -------- -- -- ----- ----- --------
+!#  if defined TAIR_DATA || defined ALL_DATA
+!#   undef TAIR_DATA
+!      real tairg(GLOBAL_2D_ARRAY,2)
+!      common /bulk_tair/ tairg
+!
+!      real(kind=8) tair_cycle, tair_time(2)
+!      integer tair_ncycle,  ittair, nttair, tair_rec,
+!     &        tair_file_id, tair_tid, tair_id
+!      common /tairdat/ tair_cycle, tair_time,
+!     &        tair_ncycle,  ittair, nttair, tair_rec,
+!     &        tair_file_id, tair_tid, tair_id
+!#  endif
 
-      real(kind=8) tair_cycle, tair_time(2)
-      integer tair_ncycle,  ittair, nttair, tair_rec,
-     &        tair_file_id, tair_tid, tair_id
-      common /tairdat/ tair_cycle, tair_time,
-     &        tair_ncycle,  ittair, nttair, tair_rec,
-     &        tair_file_id, tair_tid, tair_id
-#  endif
+!! Relative humidity of air [fraction] at 2m above ocean surface
+!!--------- -------- -- --- ---------- -- -- ----- ------ -------
+!#  if defined RHUM_DATA || defined ALL_DATA
+!#   undef RHUM_DATA
+!      real rhumg(GLOBAL_2D_ARRAY,2)
+!      common /bulk_rhum/ rhumg
 
-! Relative humidity of air [fraction] at 2m above ocean surface
-!--------- -------- -- --- ---------- -- -- ----- ------ -------
-#  if defined RHUM_DATA || defined ALL_DATA
-#   undef RHUM_DATA
-      real rhumg(GLOBAL_2D_ARRAY,2)
-      common /bulk_rhum/ rhumg
+!      real(kind=8) rhum_cycle, rhum_time(2)
+!      integer rhum_ncycle,  itrhum, ntrhum, rhum_rec,
+!     &        rhum_file_id, rhum_tid, rhum_id
+!      common /rhumdat/ rhum_cycle, rhum_time,
+!     &        rhum_ncycle,  itrhum, ntrhum, rhum_rec,
+!     &        rhum_file_id, rhum_tid, rhum_id
+!#  endif
 
-      real(kind=8) rhum_cycle, rhum_time(2)
-      integer rhum_ncycle,  itrhum, ntrhum, rhum_rec,
-     &        rhum_file_id, rhum_tid, rhum_id
-      common /rhumdat/ rhum_cycle, rhum_time,
-     &        rhum_ncycle,  itrhum, ntrhum, rhum_rec,
-     &        rhum_file_id, rhum_tid, rhum_id
-#  endif
+!! Precifitation rate (a.k.a. rain fall), [cm day-1]
+!!-------------- ---- ------- ---- ------ -----------
+!#  if defined PRATE_DATA || defined ALL_DATA
+!#   undef PRATE_DATA
+!      real prateg(GLOBAL_2D_ARRAY,2)
+!     common/bulk_prate/ prateg
 
-! Precifitation rate (a.k.a. rain fall), [cm day-1]
-!-------------- ---- ------- ---- ------ -----------
-#  if defined PRATE_DATA || defined ALL_DATA
-#   undef PRATE_DATA
-      real prateg(GLOBAL_2D_ARRAY,2)
-      common/bulk_prate/ prateg
-
-      real(kind=8) prate_cycle, prate_time(2)
-      integer prate_ncycle,  itprate, ntprate, prate_rec,
-     &        prate_file_id, prate_tid, prate_id
-      common /pratedat/ prate_cycle,  prate_time,
-     &        prate_ncycle,  itprate, ntprate, prate_rec,
-     &        prate_file_id, prate_tid, prate_id
-#  endif
-
-
+!      real(kind=8) prate_cycle, prate_time(2)
+!      integer prate_ncycle,  itprate, ntprate, prate_rec,
+!     &        prate_file_id, prate_tid, prate_id
+!      common /pratedat/ prate_cycle,  prate_time,
+!     &        prate_ncycle,  itprate, ntprate, prate_rec,
+!     &        prate_file_id, prate_tid, prate_id
+!#  endif
 
 
+!      real radlwg(GLOBAL_2D_ARRAY,2)
+!      real radswg(GLOBAL_2D_ARRAY,2)
+!#  ifdef DIURNAL_INPUT_SRFLX
+!      real radswbiog(GLOBAL_2D_ARRAY,2)
+!#  endif
+
+!      common /bulkdat_radlwg/radlwg
+!     &       /bulkdat_radswg/radswg
+!#  ifdef DIURNAL_INPUT_SRFLX
+!     &       /bulkdat_radswbiog/radswbiog
+!#  endif
 
 
-
-
-
-
-      real radlwg(GLOBAL_2D_ARRAY,2)
-      real radswg(GLOBAL_2D_ARRAY,2)
-#  ifdef DIURNAL_INPUT_SRFLX
-      real radswbiog(GLOBAL_2D_ARRAY,2)
-#  endif
-
-      common /bulkdat_radlwg/radlwg
-     &       /bulkdat_radswg/radswg
-#  ifdef DIURNAL_INPUT_SRFLX
-     &       /bulkdat_radswbiog/radswbiog
-#  endif
-
-
-# endif /* BULK_FLUX */
+!# endif /* BULK_FLUX */
 
 !XXXXXXXXXXXXXXXXXXX
 !XXXXXXXXXXXXXXXXXXX
@@ -207,6 +206,8 @@ CSDISTRIBUTE_RESHAPE lwflxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 !  stflxg  two-time level surface tracer flux grided data.
 !  tstflx  time of surface tracer flux.
 
+! DevinD - ported to surf_flux.F only for BULK_FLUX so far
+#if !defined BULK_FLUX
       real stflx(GLOBAL_2D_ARRAY,NT)
 CSDISTRIBUTE_RESHAPE stflx(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /frc_stflx/stflx
@@ -228,6 +229,7 @@ CSDISTRIBUTE_RESHAPE stflxg(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
 
 #  endif /*  STFLUX_DATA */
 # endif /* !ANA_STFLUX || !ANA_SSFLUX */
+#endif /* !BULK_FLUX */
 
 
 
@@ -238,6 +240,7 @@ CSDISTRIBUTE_RESHAPE stflxg(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
 # if defined QCORRECTION && !defined ANA_SST
 #  if defined DQDT_DATA || defined ALL_DATA
 #   undef DQDT_DATA
+! DEVIND haven't ported this yet to flux module
 
       real dqdtg(GLOBAL_2D_ARRAY,2)
 CSDISTRIBUTE_RESHAPE dqdtg(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -255,7 +258,8 @@ CSDISTRIBUTE_RESHAPE dqdtg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 ! Sea-surface temperature (SST) data
 
-# if defined QCORRECTION && !defined ANA_SST
+! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & surf_flux.F
+# if defined QCORRECTION && !defined ANA_SST && !defined BULK_FLUX
 #  if defined SST_DATA || defined ALL_DATA
 #   undef SST_DATA
 
@@ -274,8 +278,8 @@ CSDISTRIBUTE_RESHAPE  sstg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 
 ! Sea-surface salinity (SSS) data
-
-# if defined SFLX_CORR && defined SALINITY
+! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & surf_flux.F
+# if defined SFLX_CORR && defined SALINITY && !defined BULK_FLUX
 #  if defined SSS_DATA || defined ALL_DATA
       real sssg(GLOBAL_2D_ARRAY,2)
 CSDISTRIBUTE_RESHAPE  sssg(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -293,7 +297,7 @@ CSDISTRIBUTE_RESHAPE  sssg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 
 
-
+! DevinD - This can be removed as all accounted for by WEC module
 # if defined SG_BBL96 && !defined ANA_WWAVE
 #  if defined WWAVE_DATA || defined ALL_DATA
 

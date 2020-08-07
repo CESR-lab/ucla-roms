@@ -1,5 +1,7 @@
 #include "cppdefs.h"
-#ifndef ANA_SMFLUX
+! DevinD added BULK_FLUX as get wind accounted for in flux modules
+! when BULK_FLUX is turned on
+#if !defined ANA_SMFLUX && !defined BULK_FLUX
 
       subroutine set_smflux_tile(istr,iend,jstr,jend, ierr)
       implicit none

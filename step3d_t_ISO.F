@@ -52,6 +52,18 @@ c--# define CONST_TRACERS
       use river_frc
 #  endif
 
+! DPD added for bluk flux as srflux and swradg moved to bulk_frc.F module
+! but only when BULK_FLUX is on, else variables still live in forces.h
+#ifdef BULK_FLUX
+      use bulk_frc, only: srflx
+#endif
+
+! DevinD added for bluk flux as stflx moved to surf_flux.F module
+! but only when BULK_FLUX is on, else variables still live in forces.h
+#ifdef BULK_FLUX
+      use surf_flux, only: stflx
+#endif
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k

@@ -354,6 +354,11 @@
       is=ie+2
 # endif /* AVERAGES */
 #endif /* WEC */
+      ie=is +16
+      if (ie>=max_opt_size) goto 99
+      kwds(is:ie)='output_root_name'
+      kwds(ie+1:ie+1)=' '
+      is=ie+2
 #ifdef MPI
 #endif
       return
