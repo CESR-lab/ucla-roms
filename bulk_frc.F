@@ -427,7 +427,7 @@
       ! some point of doing time interpolation here, in order to avoid
       ! storing the interpolated time in its own array.
 
-      real wspd ! uwnd, vwnd, - DevinD
+      real wspd ! uwnd, vwnd, - DevinD commented
 !      real tair ! DevinD commented
 !      real prate ! DevinD commented
 !      real rhum ! DevinD commented
@@ -493,7 +493,8 @@
 
 
 
-# include "compute_extended_bounds.h"
+!# include "compute_extended_bounds.h" ! DevinD commented use auxil rather
+# include "compute_auxiliary_bounds.h" /* For istrU, jstrV */
 
 
       ! SET_SRFLUX.F PLACED HERE FOR MODULE VERSION
@@ -709,10 +710,8 @@
 !      cff15=cff15*cff ; cff16=cff16*cff
 # endif
 
-
       do j=jstrR,jendR
         do i=istrR,iendR
-
           ! DevinD uwnd & vwnd already interpolated???
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
@@ -1142,6 +1141,7 @@
         enddo
       enddo
 
+
 !---------------------------------------------------------------------
 !  Correct kinematic, surface wind stress (m2/s2) due to surface
 !  current feedback     -----> CFB
@@ -1173,8 +1173,9 @@
       Wspd_min=3.        ! [m/s]
       stau_ref=-0.0027   ! [N.m^-3.s]
 
+      ! Since u-wind stress (sustr) is now at u-points imin=istrU not istrR
       do j=jstrR,jendR
-        do i=istrR,iend
+        do i=istrU,iend ! DevinD bounds need to be for u-point
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
 !          wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
@@ -1189,11 +1190,6 @@
 !          sustr(i,j)=sustr(i,j) + cff*0.5*(u(i,j,N,nrhs)+u(i+1,j,N,nrhs))/rho0
           !! This rho0 should be worked into the coefficients
           ! NOTE: sustr is now at u-point not rho-point
-      ! DevinD debug
-!      if (mynode==0 .and. i==20 .and. j==20) then
-!        print *, 'u(20,20,N,nrhs)',u(20,20,N,nrhs)
-!        print *, 'wspd',wspd,'cff',cff
-!      endif
           sustr(i,j)=sustr(i,j) + cff*u(i,j,N,nrhs)/rho0
           !! Do a mask multiply at reading time for input vars ?
 # ifdef MASKING
@@ -1204,7 +1200,8 @@
         enddo
       enddo
 
-      do j=jstrR,jend
+      ! Since v-wind stress (sustr) is now at u-points jmin=jstrV not jstrR
+      do j=jstrV,jend ! DevinD bounds need to be for v-point
         do i=istrR,iendR
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
@@ -1235,13 +1232,6 @@
           svstr_blk(i,j)= svstr(i,j)*rho0  !<== diagnostics
         enddo
       enddo
-
-
-      ! DevinD debug
-!      mpi_master_only print *, 'sustr(20,20)',sustr(20,20)
-!      mpi_master_only print *, 'svstr(20,20)',svstr(20,20)
-!      mpi_master_only print *, 'stflx(20,20,itemp)',stflx(20,20,itemp)
-!      mpi_master_only print *, 'stflx(20,20,isalt)',stflx(20,20,isalt)
 
 # ifdef BULK_FLUX_OUTPUT
 C$OMP MASTER

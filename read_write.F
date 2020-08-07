@@ -16,7 +16,7 @@
 
 #include "cppdefs.h"
       ! param.h needed for GLOBAL_2D_ARRAY
-#include "param.h"
+!#include "param.h" - Aug 7th get from 'dimensions'
       ! scalars.h - needed for may_day_flag in error handling
 #include "scalars.h"
 
@@ -27,9 +27,12 @@
       ! numbers need to be appended to name, so root must be shorter.
       character(len=26), public :: output_root_name
 
+      ! DevinD - this clashes with dimensions which contains ncvars.h
+      ! where these variables live. But soon ncvars should be moved from
+      ! dimensions and put into this module or another plan be made.
       ! Horizontal Grid Type Codes =  0,1,2,3 (RHO-, U-, V-, PSI-points)
       ! for reading and writing to correct grid type
-      integer, parameter, public :: r_var=0, u_var=1, v_var=2, q_var=3
+      integer, parameter, public :: rp_var=0, up_var=1, vp_var=2, qp_var=3
 
       ! Public subroutines
       public find_rec_new_mod

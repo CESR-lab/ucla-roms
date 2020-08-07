@@ -18,20 +18,20 @@
 #             total files analyzed for dependencies:          171
 #
 #
-# Total number of lines of Fortran code in all files:       27871
+# Total number of lines of Fortran code in all files:       28098
 # (excluding CPP-commands, empty, and comment lines)
 #
-# Total number of CPP-preprocessor lines in all files:       9428
+# Total number of CPP-preprocessor lines in all files:       9435
 #
 # Total number of compiler directive lines, Open MP, etc...   208
 #
-# Total number of comment lines in all files:                8219
+# Total number of comment lines in all files:                8233
 # (excluding empty and containing only "!", "C", "c", "*")
 #
-# Total number of empty lines in all files:                  6338
+# Total number of empty lines in all files:                  6336
 # (including lines containing only "!", "C", "c", and "*")
 #                                      --------------------------
-#                                      total lines:         52064
+#                                      total lines:         52310
 
 bulk_frc.mod: bulk_frc.o
 
