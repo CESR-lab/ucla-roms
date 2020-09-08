@@ -35,11 +35,9 @@
       ! These are usable by code that uses this module
       integer,public,parameter :: nriv = 10 !! max number of rivers
 
-      ! JM AGREED CAN MAKE DIMENSIONS GLOBAL_2D_ARRAY FOR SIMPLICITY
-      ! WITH NCDF_READ/WRITE FUNCTIONALITY AS EXPECTING THAT SIZE
-      real,public, dimension(nx+1,ny) :: riv_uflx ! Do you want to use nx, ny
-      real,public, dimension(nx,ny+1) :: riv_vflx ! or GLOBAL_2D_array???
-      real,public, dimension(nriv)    :: riv_vol  ! River volume
+      real,public, dimension(GLOBAL_2D_ARRAY) :: riv_uflx ! Do you want to use nx, ny
+      real,public, dimension(GLOBAL_2D_ARRAY) :: riv_vflx ! or GLOBAL_2D_array???
+      real,public, dimension(nriv)    :: riv_vol  ! River volume CHANGE TO GLOBAL ARRAYS
       real,public, dimension(nriv,nt) :: riv_trc  ! River tracer
 
       integer,public :: iriver
@@ -203,6 +201,18 @@
 !         endif
 !
 !       end subroutine read_river_frc_old
+
+! ----------------------------------------------------------------------
+      subroutine set_river_frc_tile_new(istr,iend,jstr,jend)
+
+      ! read and interpolation all river forcing
+
+      ! All river variables need time interpolation only
+      ! here so can use same generic routine
+
+      ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!
+
+      end subroutine set_river_frc_tile_new
 
 ! ----------------------------------------------------------------------
 

@@ -167,6 +167,7 @@
      &                          ''' in file:',frcfile(ifile)
           endif
         endif
+
         if (found_rec == 0) then
           !! go to next file if ifile<nfiles
           ifile = ifile+1
@@ -812,7 +813,7 @@ C$OMP BARRIER
       if (ierr == nf90_noerr) then
 
         ! Set fill value - nf90_nofill produces optimized writes:
-        ! "Use “no fill” mode, omitting the initialization of variable values
+        ! "Use "no fill" mode, omitting the initialization of variable values
         ! with fill values. Creation of large files much faster, but
         ! eliminates possibility of detecting reading of values not yet written"
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
