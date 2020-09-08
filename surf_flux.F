@@ -163,7 +163,9 @@
 
         ! Add root output name to file name (only done once)
         if(total_output_rec == 0) then
-          file_name = trim(output_root_name) // trim(file_name)
+          ! Notice below space between '/ /', this is needed to avoid
+          ! cpp preprocessor seeing // as a c++ comment and deleting it.
+          file_name = trim(output_root_name) / / trim(file_name)
         endif
 
         ! If file doesn't yet exist or need new file!
