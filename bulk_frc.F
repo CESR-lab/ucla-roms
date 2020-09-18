@@ -83,28 +83,26 @@
       integer :: tair_irec      = 0
       integer :: tair_it1 = 1, tair_it2 = 2
       real, dimension(2) :: tair_times = [-99,-99]
-      character(len=4)   :: tair_name = 'tair'
-      character(len=8)   :: tair_time_name = 'tra_time'
+      character(len=4)   :: tair_name = 'Tair'
+      character(len=9)   :: tair_time_name = 'tair_time'
 
-       ! rhum (currently specific humidity! Not relative hum.) qair in old code
+       ! Q (SPECIFIC HUMIDITY (KG/KG) NOT relative hum.) qair in old code
        ! ----
-       ! Search for label(HUMIDITY) to convert to relative humidity instead
-       ! if input data is in relative humidity. Currently set for input
-       ! data in specific humidity
-       ! Input data units: fraction
-      real    :: rhum_data(GLOBAL_2D_ARRAY,2)
-      real    :: rhum(GLOBAL_2D_ARRAY)
-      integer :: rhum_grd_type  = 0
-      integer :: rhum_file_indx = 0
-      integer :: rhum_irec      = 0
-      integer :: rhum_it1 = 1, rhum_it2 = 2
-      real, dimension(2) :: rhum_times = [-99,-99]
-      character(len=4)   :: rhum_name = 'qair'
-      character(len=8)   :: rhum_time_name = 'tra_time'
+       ! Input data units: kg/kg
+      real    :: Q_data(GLOBAL_2D_ARRAY,2)
+      real    :: Q(GLOBAL_2D_ARRAY)
+      integer :: Q_grd_type  = 0
+      integer :: Q_file_indx = 0
+      integer :: Q_irec      = 0
+      integer :: Q_it1 = 1, Q_it2 = 2
+      real, dimension(2) :: Q_times = [-99,-99]
+      character(len=4)   :: Q_name = 'Qair'
+      character(len=9)   :: Q_time_name = 'qair_time'
+!      character(len=5)   :: Q_units = 'kg/kg'
 
        ! Precifitation rate (a.k.a. rain fall)
        ! ------------------
-       ! Input data units: [kg/m^2/s^1], which is converted to m/s later.
+       ! Input data units: [cm/day], which is converted to m/s later.
       real    :: prate_data(GLOBAL_2D_ARRAY,2)
       real    :: prate(GLOBAL_2D_ARRAY)
       integer :: prate_grd_type  = 0
@@ -113,7 +111,7 @@
       integer :: prate_it1 = 1, prate_it2 = 2
       real, dimension(2) :: prate_times = [-99,-99]
       character(len=4)   :: prate_name = 'rain'
-      character(len=9)   :: prate_time_name = 'prec_time'
+      character(len=9)   :: prate_time_name = 'rain_time'
 
        ! net terrestrial longwave radiation [Watts/m^2]
        ! ----------------------------------
@@ -124,8 +122,8 @@
       integer :: lwrad_irec      = 0
       integer :: lwrad_it1 = 1, lwrad_it2 = 2
       real, dimension(2) :: lwrad_times = [-99,-99]
-      character(len=5)   :: lwrad_name = 'radlw'
-      character(len=8)   :: lwrad_time_name = 'rad_time'
+      character(len=10)   :: lwrad_name = 'lwrad_down'
+      character(len=8)   :: lwrad_time_name = 'lrf_time'
 
        ! net solar shortwave radiation [Watts meter-2]
        ! -----------------------------
@@ -137,21 +135,37 @@
       integer :: swrad_irec      = 0
       integer :: swrad_it1 = 1, swrad_it2 = 2
       real, dimension(2) :: swrad_times = [-99,-99]
-      character(len=5)   :: swrad_name = 'radsw'
-      character(len=8)   :: swrad_time_name = 'rad_time'
+      character(len=5)   :: swrad_name = 'swrad'
+      character(len=8)   :: swrad_time_name = 'srf_time'
 
 
-      ! OTHER VARIABLES
-      ! ===============
+      ! TAU_CORRECTION
+      ! ==============
 
-      ! /* Pierre sustr-OUTPUT */
-      real sustr_blk(GLOBAL_2D_ARRAY)
-      real svstr_blk(GLOBAL_2D_ARRAY)
-      real shflx_rsw(GLOBAL_2D_ARRAY)
-      real shflx_lat(GLOBAL_2D_ARRAY)
-      real shflx_sen(GLOBAL_2D_ARRAY)
-      real shflx_rlw(GLOBAL_2D_ARRAY)
-      real shflx_tot(GLOBAL_2D_ARRAY)
+      ! The TAU_CORRECTION flag is used to active a correction term to
+      ! bring bulk force field closer to that of the measured data.
+
+#if defined TAU_CORRECTION
+      real    :: taux_data(GLOBAL_2D_ARRAY,2)
+      real    :: taux(GLOBAL_2D_ARRAY)
+      integer :: taux_grd_type  = 0
+      integer :: taux_file_indx = 0
+      integer :: taux_irec      = 0
+      integer :: taux_it1 = 1, taux_it2 = 2
+      real, dimension(2) :: taux_times = [-99,-99]
+      character(len=9)   :: taux_name = 'TauX_corr'
+      character(len=12)   :: taux_time_name = 'Taucorr_time'
+
+      real    :: tauy_data(GLOBAL_2D_ARRAY,2)
+      real    :: tauy(GLOBAL_2D_ARRAY)
+      integer :: tauy_grd_type  = 0
+      integer :: tauy_file_indx = 0
+      integer :: tauy_irec      = 0
+      integer :: tauy_it1 = 1, tauy_it2 = 2
+      real, dimension(2) :: tauy_times = [-99,-99]
+      character(len=9)   :: tauy_name = 'TauY_corr'
+      character(len=12)   :: tauy_time_name = 'Taucorr_time'
+#endif
 
       public set_bulk_frc_tile
 
@@ -196,7 +210,6 @@
      &          swrad_times,    swrad_grd_type, ! Input times & Grid type
      &          swrad_file_indx,swrad_irec,     ! File indx & Current input record
      &          swrad_it1,      swrad_it2 )     ! Time index placeholders
-!      mpi_master_only print *, 'srflx(20,20)',srflx(20,20)
 
         ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
       call set_frc_var_tile(
@@ -206,12 +219,11 @@
      &          lwrad_times,    lwrad_grd_type, ! Input times & Grid type
      &          lwrad_file_indx,lwrad_irec,     ! File indx & Current input record
      &          lwrad_it1,      lwrad_it2 )     ! Time index placeholders
-!      mpi_master_only print *, 'lwrad(20,20)',lwrad(20,20)
 
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
       ! ----
 
-        ! u-wind -
+        ! u-wind
       call set_frc_var_tile(
      &          istr,iend,      jstr,jend,      ! Tile bounds indices
      &          uwnd_name,      uwnd_time_name, ! Text names
@@ -219,7 +231,6 @@
      &          uwnd_times,     uwnd_grd_type,  ! Input times & Grid type
      &          uwnd_file_indx, uwnd_irec,      ! File indx & Current input record
      &          uwnd_it1,       uwnd_it2 )      ! Time index placeholders
-!      mpi_master_only print *, 'uwnd(20,20)',uwnd(20,20)
 
         ! v-wind
       call set_frc_var_tile(
@@ -229,7 +240,6 @@
      &          vwnd_times,     vwnd_grd_type,  ! Input times & Grid type
      &          vwnd_file_indx, vwnd_irec,      ! File indx & Current input record
      &          vwnd_it1,       vwnd_it2 )      ! Time index placeholders
-!      mpi_master_only print *, 'vwnd(20,20)',vwnd(20,20)
 
       ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
       ! -------------------
@@ -242,17 +252,22 @@
      &          tair_times,     tair_grd_type,  ! Input times & Grid type
      &          tair_file_indx, tair_irec,      ! File indx & Current input record
      &          tair_it1,       tair_it2 )      ! Time index placeholders
-!      mpi_master_only print *, 'tair(20,20)',tair(20,20)
 
-        ! rhum (currently specific (not relative) humidity) qair in old code
+        ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
       call set_frc_var_tile(
      &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          rhum_name,      rhum_time_name, ! Text names
-     &          rhum_data,      rhum,           ! Variable arrays
-     &          rhum_times,     rhum_grd_type,  ! Input times & Grid type
-     &          rhum_file_indx, rhum_irec,      ! File indx & Current input record
-     &          rhum_it1,       rhum_it2 )      ! Time index placeholders
-!      mpi_master_only print *, 'rhum(20,20)',rhum(20,20)
+     &          Q_name,         Q_time_name,    ! Text names
+     &          Q_data,         Q,              ! Variable arrays
+     &          Q_times,        Q_grd_type,     ! Input times & Grid type
+     &          Q_file_indx,    Q_irec,         ! File indx & Current input record
+     &          Q_it1,          Q_it2 )         ! Time index placeholders
+
+        ! Check units of Q:
+        ! Needs to come after so Q_file_indx has been set.
+        ! If irec =1 only so that it only does it once as requires nf90_open
+        ! Can't be irec==0 as set to 1 by function above.
+        ! Incomplete at the moment.
+!        if (Q_irec==1) call nc_check_units( Q_file_indx, Q_name, 'kg/kg' )
 
         ! prate (precipitation rate) - 'rain' variable in old code
         ! get_bulk_prec.F & set_bulk_prec() in old code
@@ -263,7 +278,31 @@
      &          prate_times,    prate_grd_type, ! Input times & Grid type
      &          prate_file_indx,prate_irec,     ! File indx & Current input record
      &          prate_it1,      prate_it2 )     ! Time index placeholders
-!      mpi_master_only print *, 'prate(20,20)',prate(20,20)
+
+      ! Include tau_correction if applicable
+      ! ====================================
+
+#if defined TAU_CORRECTION
+
+      ! Set field corrector in x-axis
+      call set_frc_var_tile(
+     &          istr,iend,      jstr,jend,      ! Tile bounds indices
+     &          taux_name,      taux_time_name, ! Text names
+     &          taux_data,      taux,           ! Variable arrays
+     &          taux_times,     taux_grd_type,  ! Input times & Grid type
+     &          taux_file_indx, taux_irec,      ! File indx & Current input record
+     &          taux_it1,       taux_it2 )      ! Time index placeholders
+
+      ! Set field corrector in y-axis
+      call set_frc_var_tile(
+     &          istr,iend,      jstr,jend,      ! Tile bounds indices
+     &          tauy_name,      tauy_time_name, ! Text names
+     &          tauy_data,      tauy,           ! Variable arrays
+     &          tauy_times,     tauy_grd_type,  ! Input times & Grid type
+     &          tauy_file_indx, tauy_irec,      ! File indx & Current input record
+     &          tauy_it1,       tauy_it2 )      ! Time index placeholders
+
+#endif /* TAU_CORRECTION */
 
 
       ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY
@@ -331,22 +370,13 @@
 
       ! Modules required
       ! ----------------
-      use surf_flux, only: sustr, svstr, stflx
-# ifdef BULK_FLUX_OUTPUT
-     &  , wrt_surface_flux_his
-# endif
+      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his
 
       implicit none
-
-! THIS WAS UNCOMMENTED!!!! DevinD - JM says wind must be at rho-points
-!# ifndef WIND_AT_RHO_POINTS
-!???? ERROR: bulk_flux requires WIND_AT_RHO_POINTS
-!# endif
 
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
 
-!
 !# include "param.h" ! included at the top of the module
 # include "scalars.h"
 # include "grid.h"
@@ -366,8 +396,8 @@
       real a
       real rho0i
       real TseaC,TseaK,Qsea
-      real TairC,TairK,rhoAir,Qair
-      real Q,RH,VisAir,Hlv
+      real TairC,TairK,rhoAir ! ,Qair
+      real VisAir,Hlv ! Q, RH,
       real delW,delT,delQ
       real u10,Zo10,Cd10,Ch10,Ct10,Cd
       real Ct,CC,Ri,Ribcu,Zetu,L10
@@ -469,6 +499,7 @@
 !!!     &      CtoK=273.16,       ! conversion from [C] to [K]
 !!!# endif
 
+      ! DevinD don't need these anymore!
       integer it1,it2, it3,it4, it5,it6, it7,it8, it9,it10
       real tmid, cff1,cff2, cff3,cff4, cff5,cff6, cff7,cff8,
      &                                 cff9,cff10, cff
@@ -710,13 +741,13 @@
 !      cff15=cff15*cff ; cff16=cff16*cff
 # endif
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ! DevinD uwnd & vwnd already interpolated???
+      ! Need i/j=i/jstr-1 for rho2u avg: i/j = ((i-1/j-1)+i/j) /2 otherwise
+      ! (i-1) not calculated for first entry of averaging.
+      do j=jstr-1,jendR
+        do i=istr-1,iendR
+
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
-          ! DevinD is wspd for rho-point or u/v-point calc?
-          ! Currently setup for rho-point
           wspd=sqrt(uwnd(i,j)*uwnd(i,j)+vwnd(i,j)*vwnd(i,j))
 
 !          tair=cff3*tairg(i,j,it3)  +cff4*tairg(i,j,it4) ! DevinD time only
@@ -737,8 +768,8 @@
           TseaK=TseaC+273.16
 
           ! label(HUMIDITY) - chose between specific or relative humidity
-          RH=rhum(i,j)        ! Specific humidity (if input data is in specific hum.)
-!          RH=rhum(i,j)/100.0 ! Specific humidity (if input data is in relative hum.)
+!          RH=rhum(i,j)       ! Specific humidity (if input data is in specific hum.)
+!          RH=rhum(i,j)/100.0 ! To get specific humidity (if input data is pdamien's pacific model L217 COAREnew)
 
 !!!          Ssea=t(i,j,N,nrhs,isalt)
 
@@ -786,14 +817,18 @@
 !
 ! air saturation vapor pressure (mb), using Teten formula.
 
-          cff=(1.0007+3.46e-6*patm)*6.1121
-     &        *exp(17.502*TairC/(240.97+TairC))
+!          cff=(1.0007+3.46e-6*patm)*6.1121
+!     &        *exp(17.502*TairC/(240.97+TairC))
 
 ! specific humidity at Saturation, Qair (kg/kg).
 
-          Qair=0.62197*(cff/(patm-0.378*cff))
+!          Qair=0.62197*(cff/(patm-0.378*cff))
 
 ! specific humidity, Q (kg/kg).
+!
+! The following is CROCO's version to automatically establish the units of the
+! the input file. For ROMS we don't want the code to do this automatically, we
+! want the user to be sure.
 !
 !          if (RH < 2.) then                          !RH fraction
 !            cff=cff*RH                                 !Vapor pres (mb)
@@ -802,8 +837,12 @@
 !            Q=RH/1000.0                                !Spec Hum (kg/kg)
 !          endif
 
-!   RH is already fraction of SPECIFIC humidity in kg/kg
-             Q=RH
+!   RH is already fraction of SPECIFIC humidity in kg/kg (DPD original)
+!             Q=RH (DPD original)
+
+!   RH input is currently actually specific humidity in g/kg.
+!      DevinD: this should be corrected so that input is in kg/kg.
+!             Q=RH/1000.0                                !Spec Hum (kg/kg)
 
 ! water saturation vapor pressure (mb), using Teten formula.
 
@@ -826,7 +865,7 @@
 !  Moist air density (kg/m3).
 !
           rhoAir=patm*100.0/(blk_Rgas*TairK*
-     &                              (1.0+0.61*Q))
+     &                              (1.0+0.61*Q(i,j)))
 !
 !  Kinematic viscosity of dry air (m2/s), Andreas (1989).
 !
@@ -842,7 +881,7 @@
 !
           Wgus=0.5
           delW=SQRT(wspd0*wspd0+Wgus*Wgus)
-          delQ=Qsea-Q
+          delQ=Qsea-Q(i,j)
           delT=TseaC-TairC
 !
 !  Neutral coefficients.
@@ -899,41 +938,41 @@
 !  Iterate until convergence. It usually converges within four
 !  iterations.
 !
-        do Iter=1,IterMax
-          ZoW=charn*Wstar*Wstar/g+0.11*VisAir/(Wstar+eps)
-          Rr=ZoW*Wstar/VisAir
+          do Iter=1,IterMax
+            ZoW=charn*Wstar*Wstar/g+0.11*VisAir/(Wstar+eps)
+            Rr=ZoW*Wstar/VisAir
 !
 !  Compute Monin-Obukhov stability parameter, Z/L.
 !
-          ZoQ=MIN(1.15e-4,5.5e-5/Rr**0.6)
-          ZoT=ZoQ
-          ZoL=vonKar*g*blk_ZW*
-     &             (Tstar*(1.0+0.61*Q)+0.61*TairK*Qstar)/
-     &             (TairK*Wstar*Wstar*(1.0+0.61*Q)+eps)
-          L=blk_ZW/(ZoL+eps)
+            ZoQ=MIN(1.15e-4,5.5e-5/Rr**0.6)
+            ZoT=ZoQ
+            ZoL=vonKar*g*blk_ZW*
+     &             (Tstar*(1.0+0.61*Q(i,j))+0.61*TairK*Qstar)/
+     &             (TairK*Wstar*Wstar*(1.0+0.61*Q(i,j))+eps)
+            L=blk_ZW/(ZoL+eps)
 !
 !  Evaluate stability functions at Z/L.
 !
-          Wpsi=bulk_psiu(ZoL,pi)
-          Tpsi=bulk_psit(blk_ZT/L,pi)
-          Qpsi=bulk_psit(blk_ZQ/L,pi)
+            Wpsi=bulk_psiu(ZoL,pi)
+            Tpsi=bulk_psit(blk_ZT/L,pi)
+            Qpsi=bulk_psit(blk_ZQ/L,pi)
 !
 !  Compute wind scaling parameters, Wstar.
 !
-          Wstar=MAX(eps,delW*vonKar/(LOG(blk_ZW/ZoW)-Wpsi))
-          Tstar=-delT*vonKar/(LOG(blk_ZT/ZoT)-Tpsi)
-          Qstar=-delQ*vonKar/(LOG(blk_ZQ/ZoQ)-Qpsi)
+            Wstar=MAX(eps,delW*vonKar/(LOG(blk_ZW/ZoW)-Wpsi))
+            Tstar=-delT*vonKar/(LOG(blk_ZT/ZoT)-Tpsi)
+            Qstar=-delQ*vonKar/(LOG(blk_ZQ/ZoQ)-Qpsi)
 !
 !  Compute gustiness in wind speed.
 !
-          Bf=-g/TairK*Wstar*(Tstar+0.61*TairK*Qstar)
-          if (Bf.gt.0.0) then
-            Wgus=blk_beta*(Bf*blk_Zabl)**r3
-          else
-            Wgus=0.2
-          endif
-          delW=SQRT(wspd0*wspd0+Wgus*Wgus)
-        enddo
+            Bf=-g/TairK*Wstar*(Tstar+0.61*TairK*Qstar)
+            if (Bf.gt.0.0) then
+              Wgus=blk_beta*(Bf*blk_Zabl)**r3
+            else
+              Wgus=0.2
+            endif
+            delW=SQRT(wspd0*wspd0+Wgus*Wgus)
+          enddo
 
 !
 !-----------------------------------------------------------------------
@@ -956,8 +995,8 @@
 !
 !  Compute Webb correction (Webb effect) to latent heat flux, Hlw.
 !
-          upvel=-1.61*Wstar*Qstar-(1.0+1.61*Q)*Wstar*Tstar/TairK
-          hflat=hflat+rhoAir*Hlv*upvel*Q
+          upvel=-1.61*Wstar*Qstar-(1.0+1.61*Q(i,j))*Wstar*Tstar/TairK
+          hflat=hflat+rhoAir*Hlv*upvel*Q(i,j)
 !
 !=======================================================================
 !  Convert to ROMS tracer and momentum surface fluxes
@@ -1001,8 +1040,10 @@
 !  Total surface salt flux
 !
           evap=-cp*hflat/Hlv
-          ! DevinD divide prate by 1000: units of [kg/m^2/s^1] convert to m/s.
-          stflx(i,j,isalt)=(evap- (prate(i,j)/1000) )*t(i,j,N,nrhs,isalt)
+          ! DevinD old: divide prate by 1000: units of [kg/m^2/s^1 == mm/s] convert to m/s.
+          ! DevinD current: divide prate by 100.*3600.*24.: units of [cm/day] convert to [m/s] as per pdamien pacific.
+          stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
+
 # endif
 
 # ifdef MASKING
@@ -1021,14 +1062,8 @@
 ! svstr = rhoA/rhoW * Cd * wspd*vwnd
 
 ! BULK_SM_UPDATE removed as it is always needed
-          sustr(i,j)=aer(i,j)*cer(i,j)*uwnd(i,j)
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
-          svstr(i,j)=aer(i,j)*cer(i,j)*vwnd(i,j)
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
+          sustr_r(i,j)=aer(i,j)*cer(i,j)*uwnd(i,j)
+          svstr_r(i,j)=aer(i,j)*cer(i,j)*vwnd(i,j)
 
 !
 !  Store fluxes for diagnostics
@@ -1060,16 +1095,17 @@
 ! Flux correction to surface salt flux.
 !--------------------------------------------------------------
 ! Pierre : This is shit, yu want to change this !!
-# ifdef SFLX_CORR
-          cff=cff11*dqdtg(i,j,it11)+cff12*dqdtg(i,j,it12)
-          stflx(i,j,isalt)=stflx(i,j,isalt) +cff*(
-     &           t(i,j,N,nrhs,isalt) -cff15*sssg(i,j,it15)
-     &                               -cff16*sssg(i,j,it16)
-     &                                                  )
-#  ifdef MASKING
-     &                                           *rmask(i,j)
-#  endif
-# endif
+!# ifdef SFLX_CORR
+!          cff=cff11*dqdtg(i,j,it11)+cff12*dqdtg(i,j,it12)
+!          stflx(i,j,isalt)=stflx(i,j,isalt) +cff*(
+!     &           t(i,j,N,nrhs,isalt) -cff15*sssg(i,j,it15)
+!     &                               -cff16*sssg(i,j,it16)
+!     &                                                  )
+!#  ifdef MASKING
+!     &                                           *rmask(i,j)
+!#  endif
+!# endif
+
 
 !!# ifdef SFLX_CORR
 !!          stflx(i,j,isalt)=stflx(i,j,isalt)
@@ -1082,6 +1118,25 @@
 !!     &                                           *rmask_wet(i,j)
 !!#  endif
 !!# endif /* SFLX_CORR */
+
+! PD original
+!# ifdef SFLX_CORR
+!          stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
+!     &           t(i,j,N,nrhs,isalt) -cff15*sssg(i,j,it15) ! cff15 straight time interp
+!     &                               -cff16*sssg(i,j,it16) ! cff16 straight time interp
+!     &                                                  )
+!#  ifdef MASKING
+!     &                                           *rmask(i,j)
+!#  endif
+!# endif
+
+# ifdef SFLX_CORR
+          stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
+     &           t(i,j,N,nrhs,isalt) - sss(i,j)  )
+#  ifdef MASKING
+     &                                           *rmask(i,j)
+#  endif
+# endif
 
 !---------------------------------------------------------------
 !
@@ -1110,33 +1165,6 @@
 #    endif
               endif
 #endif
-!-------------------------------------------------
-!
-!  Store fluxes for diagnostics
-!  When storing in netCDF file, multiplied
-!  by rho0.Cp to get W/m2
-!
-          shflx_rsw(i,j)=srflx(i,j)*rho0*Cp
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
-          shflx_lat(i,j)=hflat*rho0*Cp
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
-          shflx_sen(i,j)=hfsen*rho0*Cp
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
-          shflx_rlw(i,j)=hflw*rho0*Cp
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
-          shflx_tot(i,j)=stflx(i,j,itemp)*rho0*Cp
-#  ifdef MASKING
-     &                  *rmask(i,j)
-#  endif
-
 
         enddo
       enddo
@@ -1173,63 +1201,78 @@
       Wspd_min=3.        ! [m/s]
       stau_ref=-0.0027   ! [N.m^-3.s]
 
-      ! Since u-wind stress (sustr) is now at u-points imin=istrU not istrR
+      ! Need i=istr-1 for rho2u avg: i = ((i-1)+i) /2 otherwise
+      ! sustr(i-1) not calculated for first entry.
+      ! Loop through rho-points as sustr still at rho-point until end.
       do j=jstrR,jendR
-        do i=istrU,iend ! DevinD bounds need to be for u-point
-!          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
-!          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
-!          wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
-          ! Rho-2-u point averaging
-          wspd=0.5*sqrt(  (uwnd(i,j)+uwnd(i-1,j))**2
-     &                  + (vwnd(i,j)+vwnd(i-1,j))**2 )
+        do i=istr-1,iend
+
+          wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
+
           if (wspd .gt. Wspd_min) then
-            cff = cfb_slope*wspd + cfb_offset
+            cff = cfb_slope*wspd + cfb_offset ! both cfb's are parameters
           else
             cff = stau_ref
           endif
-!          sustr(i,j)=sustr(i,j) + cff*0.5*(u(i,j,N,nrhs)+u(i+1,j,N,nrhs))/rho0
+
+          ! u values averaged to rho points as sustr still at rho-point
+          ! Can't do this at rho2u step below because then sustr(i-1) doesn't
+          ! include 'u' addition.
+          sustr_r(i,j)=sustr_r(i,j) + cff*0.5*(u(i,j,N,nrhs)+u(i+1,j,N,nrhs))/rho0
           !! This rho0 should be worked into the coefficients
-          ! NOTE: sustr is now at u-point not rho-point
-          sustr(i,j)=sustr(i,j) + cff*u(i,j,N,nrhs)/rho0
           !! Do a mask multiply at reading time for input vars ?
-# ifdef MASKING
-          !! I don't think that this is actually doing anything usefull
-          ! This would be improved with & *umask instead of it's own line.
-          sustr(i,j)=sustr(i,j)*umask(i,j)
+
+# ifdef TAU_CORRECTION
+          ! Correction to bring bulk forcing towards observed fluxes. taux at rho-point.
+          sustr_r(i,j)=sustr_r(i,j) + taux(i,j) / rho0
 # endif
+
+          ! Convert sustr at rho-point to u-point for Eq.System
+          ! Need if (i >= istrU) because loop over istr-1, but we use
+          ! index i-1 below which is out of array bounds at western boundary.
+          if (i >= istrU) then
+            sustr(i,j) = ( sustr_r(i-1,j) + sustr_r(i,j) ) / 2
+# ifdef MASKING
+          !! JM: I don't think that this is actually doing anything usefull
+     &                    *umask(i,j)
+# endif
+          end if
+
         enddo
       enddo
 
-      ! Since v-wind stress (sustr) is now at u-points jmin=jstrV not jstrR
-      do j=jstrV,jend ! DevinD bounds need to be for v-point
+      ! Need j=jstr-1 for rho2u avg: i = ((i-1)+i) /2 otherwise
+      ! sustr(i-1) not calculated for first entry.
+      ! Loop through rho-points as svstr still at rho-point until end.
+      do j=jstr-1,jend
         do i=istrR,iendR
-!          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
-!          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
-!          wspd=sqrt(uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
-          ! Rho-2-v point averaging
-          wspd=0.5*sqrt(  (uwnd(i,j)+uwnd(i,j-1))**2
-     &                  + (vwnd(i,j)+vwnd(i,j-1))**2 )
+
+          wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
+
           if (wspd .gt. Wspd_min) then
             cff = cfb_slope*wspd + cfb_offset
           else
             cff = stau_ref
           endif
-!          svstr(i,j)=svstr(i,j) + cff*0.5*(v(i,j,N,nrhs)+v(i,j+1,N,nrhs))/rho0
-          ! NOTE: sustr is now at v-point not rho-point
-          svstr(i,j)=svstr(i,j) + cff*v(i,j,N,nrhs)/rho0
-# ifdef MASKING
-          svstr(i,j)=svstr(i,j)*vmask(i,j)
-# endif
-        enddo
-      enddo
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!! DIAGNOSTICS !!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr_blk(i,j)= sustr(i,j)*rho0  !<== diagnostics
-          svstr_blk(i,j)= svstr(i,j)*rho0  !<== diagnostics
+          ! v values averaged to rho points as svstr still at rho-point
+          svstr_r(i,j)=svstr_r(i,j) + cff*0.5*(v(i,j,N,nrhs)+v(i,j+1,N,nrhs))/rho0
+
+# ifdef TAU_CORRECTION
+          ! Correction to bring bulk forcing towards observed fluxes.
+          svstr_r(i,j)=svstr_r(i,j) + tauy(i,j) /rho0
+# endif
+
+          ! Convert svstr at rho-point to u-point for Eq.System
+          ! Need if (j >= istrV) because loop over istr-1, but we use
+          ! index j-1 below which is out of array bounds at southern boundary.
+          if (j >= jstrV) then
+            svstr(i,j) = ( svstr_r(i,j-1) + svstr_r(i,j) ) / 2
+# ifdef MASKING
+     &                    *vmask(i,j)
+# endif
+          end if
+
         enddo
       enddo
 

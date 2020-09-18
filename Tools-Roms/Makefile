@@ -1,5 +1,5 @@
 #include Makedefs.GCC
-include Makedefs.IntelEM64T
+include Makedefs.inc
 
 ALL = cross_matrix chkindent mreplace partit ncjoin
 
@@ -23,12 +23,13 @@ mreplace.f: mreplace.F
 	
 
 # Need to set up partit properly - previously in main roms makefile	
-#partit: partit.o insert_node.o lenstr.o
-#	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)	
+partit: partit.o insert_node.o lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)	
+	$(info NOTE: MAKE SURE TO COMPILE ROMS FIRST SO MPC EXE IS AVAILABLE)
 
 # Need to set up ncjoin properly - previously in main roms makefile
-#ncjoin: ncjoin.o lenstr.o
-#	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
+ncjoin: ncjoin.o lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
 
 depend: ./cross_matrix
 	./cross_matrix *.F

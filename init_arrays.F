@@ -50,7 +50,7 @@
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
       use bulk_frc, only: srflx, swradg => swrad_data
-      use surf_flux, only: sustr, svstr, stflx, sst_data, sss_data
+      use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
 #endif
 
       implicit none
@@ -219,11 +219,6 @@
 #  ifndef BULK_FLUX
             stflxg(i,j,1,itrc)=init
             stflxg(i,j,2,itrc)=init
-#  else
-            sst_data(i,j,1)=init ! This needs to be fixed because
-            sst_data(i,j,2)=init ! don't need to do this for do itrc=1,NT
-            sss_data(i,j,1)=init ! Quick fix
-            sss_data(i,j,2)=init
 #  endif
 # endif
           enddo

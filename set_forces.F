@@ -33,7 +33,8 @@
 ! first.
 
 # ifdef BULK_FLUX
-      use bulk_frc, only: set_bulk_frc_tile
+      use bulk_frc,  only: set_bulk_frc_tile
+      use surf_flux, only: set_surf_field_corr
 # endif
 
 # ifdef RIVER_SOURCE
@@ -120,14 +121,16 @@ c***              no code here
       call ana_srflux_tile(istr,iend,jstr,jend)
 ! DevinD for BULK_FLUX get/set swrad has been moved to bulk_frc.F module
 #   elseif !defined ANA_SRFLUX && !defined BULK_FLUX
-      call set_srflux_tile(istr,iend,jstr,jend, ierr)
+      call set_srflux_tile(istr,iend,jstr,jend, ierr) ! DevinD - Only for bulk so can remove now
 #   endif
 #  endif
 
-      ! DevinD bulk flux module
-      call set_bulk_frc_tile(istr,iend,jstr,jend)
-      ! DevinD commented out as using bulk_frc.F module rather
-!      call bulk_flux_tile(istr,iend,jstr,jend)
+#  if defined QCORRECTION || defined SFLX_CORR
+      call set_surf_field_corr(istr,iend,jstr,jend)
+#  endif
+
+      call set_bulk_frc_tile(istr,iend,jstr,jend) ! DevinD bulk flux module
+!      call bulk_flux_tile(istr,iend,jstr,jend) ! Old version
 
 # else
 #  ifdef ANA_STFLUX

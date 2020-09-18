@@ -7,6 +7,10 @@
       use wec_frc, only: read_inp_wec, read_inp_avg_wec
 #endif
 
+#if defined SFLX_CORR && defined SALINITY && defined BULK_FLUX
+      use surf_flux, only: dSSSdt
+#endif
+
 ! For root name of output files
       use read_write, only: read_output_root_name
 
@@ -24,7 +28,7 @@
 # include "mpif.h"
 #endif
       integer, parameter :: input=15, testunit=40,
-     &                  max_fname=64, max_kwsize=32
+     &                  max_fname=256, max_kwsize=32
       character(len=max_fname)  :: fname
       character(len=max_kwsize) :: keyword
       character(len=3), parameter :: end_signal='end'
@@ -350,7 +354,8 @@ c--      fname='roms.in.US_West'
      &                       'coefficient expressed',
      &            'kinematically as "piston velocity" [cm/day]' 
 
-          dSSSdt=dSSSdt/(100.D0*day2sec)   !<-- convert to [m/s]
+          dSSSdt=dSSSdt/(100*day2sec)   !<-- Convert cm/day to convert to [m/s]
+          ! This is also defined in put_global_atts so needs to be consistent.
            
 # endif
 #endif /* SOLVE3D */
