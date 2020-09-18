@@ -95,7 +95,9 @@ c      v3bc_max=0.
       sst_file_id=-1
       dqdt_file_id=-1
 # endif
-# if defined SFLX_CORR && defined SALINITY
+! DevinD addded !defined bulk_flux as 'sss' now lives in surf_flux.F module
+! only for bulk_flux currently
+# if defined SFLX_CORR && defined SALINITY && !defined BULK_FLUX
       sss_file_id=-1
 # endif
 #endif
