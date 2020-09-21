@@ -4,11 +4,11 @@
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f
 #/bin/rm -f $*.f
 .F.f:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
 .f.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f
 
@@ -22,6 +22,15 @@
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 .o:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
+# DPD comet add:
+ ROMS_ROOT   = .
+# NETCDF_INC  = /opt/netcdf/4.6.1/intel/mvapich2_ib/include
+# NETCDFF_INC = /opt/netcdf/4.6.1/intel/serial/include
+ NETCDFF     = /opt/netcdf/4.6.1/intel/mvapich2_ib
+ NETCDF_INC  = /opt/netcdf/4.6.1/intel/mvapich2_ib/include
+ NETCDFF_INC = /opt/netcdf/4.6.1/intel/mvapich2_ib/include
+ 
 
 # C-preprocessor from Intel compiler package "fpp" treats __IFC as
 # a pre-defined, so there is no need to include it into CPPFLAGS, but
@@ -51,8 +60,8 @@
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
 
-VPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
-CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+VPATH = ${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
+CPATH = ${MPI_INC}:${NETCDF_INC}:${NETCDFF_INC}:${ROMS_ROOT}/NHMG/include
 
 # OMP_FLAG = -fpp -openmp
 
@@ -65,7 +74,8 @@ CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
    CFTFLAGS = -pc64 -auto -stack_temps 
 
 
-     CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#     CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+     CFT = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
      LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
@@ -78,6 +88,7 @@ CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
 
 # FFLAGS = -O3 -IPF_fma -ip -I$(NHMG_INC) -I$(NETCDF_INC)
   FFLAGS = -O3 -IPF_fma -ip
+# FFLAGS = -g -check all -CA -CB -CS
 
 
-  LCDF = -lnetcdff -L$(NHMG_LIB) -lnhmg
+  LCDF = -L$(NETCDFF)/lib/ -lnetcdff -L$(NHMG_LIB) -lnhmg

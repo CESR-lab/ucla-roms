@@ -205,7 +205,7 @@
      &                     xi_u=xi_rho-1, eta_v=eta_rho-1
 #endif
 
-      integer, parameter :: max_name_size=32
+      integer, parameter :: max_name_size=256
       character date_str*44, title*80
       character(len=max_name_size) :: ininame, grdname, rstname,
      &                             hisname, frcfile(max_frc_files)

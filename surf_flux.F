@@ -28,8 +28,8 @@
       ! User inputs
 
       logical :: write_file = .true. ! Whether to write a flux file or not
-      integer :: rec_rate = 2        ! Output record rate,
-      integer :: recs_per_file = 3   ! total recs per file
+      integer :: rec_rate = 1        ! Output record rate,
+      integer :: recs_per_file = 10   ! total recs per file
 
       logical :: wrt_sustr = .True.  ! Output surface u-stress
       logical :: wrt_svstr = .True. ! Output surface v-stress
@@ -40,8 +40,11 @@
       ! End of user inputs
       ! *************************************************************
 
-      real, public :: sustr(GLOBAL_2D_ARRAY) ! Surface momemtum flux [N/m^2]
-      real, public :: svstr(GLOBAL_2D_ARRAY) ! Surface momemtum flux [N/m^2]
+      ! Surface momemtum flux [m^2/s^2] units as per Eq.Sys. m^2/s^2 not N/m^2
+      real, public :: sustr(GLOBAL_2D_ARRAY)    ! u-point: used in Eq.System
+      real, public :: sustr_r(GLOBAL_2D_ARRAY)  ! rho-point, for calculation only and seemingly unavoidable
+      real, public :: svstr(GLOBAL_2D_ARRAY)    ! v-point: used in Eq.System
+      real, public :: svstr_r(GLOBAL_2D_ARRAY)  ! rho-point, for calculation only and seemingly unavoidable
       real, public :: stflx(GLOBAL_2D_ARRAY,NT) ! Surface fluxes of tracer type variables (rho-points)
       character(len=5) :: sustr_name        = 'sustr'
       character(len=5) :: svstr_name        = 'svstr'
@@ -55,8 +58,9 @@
       ! a restoring terms towards a climatological SST/SSS field.
       ! ----------------------------------------------------------------
       ! sea-surface temperature (SST) data
-      real         :: sst(GLOBAL_2D_ARRAY)
-      real, public :: sst_data(GLOBAL_2D_ARRAY,2)
+#if defined QCORRECTION && !defined ANA_SST
+      real, public :: sst(GLOBAL_2D_ARRAY)
+      real         :: sst_data(GLOBAL_2D_ARRAY,2)
       integer :: sst_grd_type  = 0
       integer :: sst_file_indx = 0
       integer :: sst_irec      = 0
@@ -64,17 +68,22 @@
       real, dimension(2) :: sst_times = [-99,-99]
       character(len=5)   :: sst_name = 'sst'
       character(len=8)   :: sst_time_name = 'sst_time'
+#endif
 
+#if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      real        :: sss(GLOBAL_2D_ARRAY)
-      real,public :: sss_data(GLOBAL_2D_ARRAY,2)
+      real, public :: sss(GLOBAL_2D_ARRAY)
+      real         :: sss_data(GLOBAL_2D_ARRAY,2)
       integer :: sss_grd_type  = 0
       integer :: sss_file_indx = 0
       integer :: sss_irec      = 0
       integer :: sss_it1 = 1, sss_it2 = 2
       real, dimension(2) :: sss_times = [-99,-99]
-      character(len=5)   :: sss_name = 'sss'
+      character(len=5)   :: sss_name = 'SSS'
       character(len=8)   :: sss_time_name = 'sss_time'
+
+      real, public :: dSSSdt ! Input units (cm/day)
+#endif
 
 
       ! Netcdf outputting
@@ -85,12 +94,13 @@
       character (len=32) :: file_name = '_surf_flux.nc'
 
 
+      public set_surf_field_corr
       public wrt_surface_flux_his
 
       contains
 ! ----------------------------------------------------------------------
 
-      subroutine set_field_corr(istr,iend,jstr,jend)
+      subroutine set_surf_field_corr(istr,iend,jstr,jend)
       ! Set surface fields that will be restored towards
 
       use read_write, only: set_frc_var_tile
@@ -100,7 +110,7 @@
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
 
-!#if !defined ANA_STFLUX
+#if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
       call set_frc_var_tile(
      &          istr,iend,      jstr,jend,      ! Tile bounds indices
@@ -109,8 +119,9 @@
      &          sst_times,      sst_grd_type,   ! Input times & Grid type
      &          sst_file_indx,  sst_irec,       ! File indx & current input record
      &          sst_it1,        sst_it2 )       ! Indices to input data and time
+#endif
 
-!#if !defined ANA_SSFLUX
+#if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
       call set_frc_var_tile(
      &          istr,iend,      jstr,jend,      ! Tile bounds indices
@@ -119,8 +130,9 @@
      &          sss_times,      sss_grd_type,   ! Input times & Grid type
      &          sss_file_indx,  sss_irec,       ! File indx & current input record
      &          sss_it1,        sss_it2 )       ! Indices to input data and time
+#endif
 
-      end subroutine set_field_corr
+      end subroutine set_surf_field_corr
 !-----------------------------------------------------------------------
 
 
@@ -163,7 +175,9 @@
 
         ! Add root output name to file name (only done once)
         if(total_output_rec == 0) then
-          file_name = trim(output_root_name) // trim(file_name)
+          ! Notice below space between '/ /', this is needed to avoid
+          ! cpp preprocessor seeing // as a c++ comment and deleting it.
+          file_name = trim(output_root_name) / / trim(file_name)
         endif
 
         ! If file doesn't yet exist or need new file!
@@ -184,12 +198,14 @@
           ! --------------------------
 
           if (wrt_sustr) then
+            ! Output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
             call nc_define_var(ncid, sustr_name,
-     &              'wind stress in x-direction','N/m^2', u2dgrd, ierr )
+     &            'wind stress in x-direction','m^2/s^2', u2dgrd, ierr )
           endif
           if (wrt_svstr) then
+            ! Output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
             call nc_define_var(ncid, svstr_name,
-     &             'wind stress in y-direction', 'N/m^2', v2dgrd, ierr )
+     &           'wind stress in y-direction', 'm^2/s^2', v2dgrd, ierr )
           endif
           if (wrt_shflx) then
             call nc_define_var(ncid, shflx_name,
