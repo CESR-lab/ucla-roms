@@ -39,6 +39,7 @@
       public nc_define_var
       public nc_write_var
       public nc_read_var
+!      public nc_check_units
       public set_frc_var_tile
       public ncdf_create_file
       public nc_write_time
@@ -167,6 +168,7 @@
      &                          ''' in file:',frcfile(ifile)
           endif
         endif
+
         if (found_rec == 0) then
           !! go to next file if ifile<nfiles
           ifile = ifile+1
@@ -255,7 +257,8 @@
         ! FIRST TIMESTEP
         ! --------------
         ! var_times(it1) & var_times(it2) declared < 0 at top their module:
-        if (var_times(it1) < 0) then ! Only first timestep
+!        if (var_times(it1) < 0) then ! Only first timestep
+        if (FIRST_TIME_STEP) then ! Only first timestep
 
           ! Reading is only done by master hence C$OMP MASTER
 C$OMP MASTER
@@ -285,8 +288,8 @@ C$OMP BARRIER
           ! Confirm to terminal success reading of variable
           ! show time of read in data
           if (mynode == 0) then
-            write(*,'(4x,A,5x,A,G14.6,1x,A,I4)')
-     &               'set_frc_var_tile :: read input', ! add variable name
+            write(*,'(4x,2A,5x,A,G14.6,1x,A,I4)')
+     &               'set_frc_var_tile :: read var: ', var_name,
      &               'var_input_time (days) =',var_times(it1),
      &               'rec =',var_irec MYID
           endif
@@ -332,8 +335,8 @@ C$OMP BARRIER
         ! Confirm to terminal reading of variables and
         ! time for read in data
         if (mynode == 0) then                  ! Text formatting:
-          write(*,'(4x,A,5x,A,G14.6,1x,A,I4,/)') ! 4x is spaces, A is string. / at end adds blank line
-     &               'set_frc_var_tile :: read input', ! 5x is 5 spaces, A is string
+          write(*,'(4x,2A,5x,A,G14.6,1x,A,I4)') ! 4x is spaces, A is string. / at end adds blank line
+     &               'set_frc_var_tile :: read var: ', var_name, ! 5x is 5 spaces, A is string
      &               'var_input_time (days) =',var_times(it2), ! G is number for time
      &               'rec =', var_irec MYID ! I is integer
         endif
@@ -371,9 +374,10 @@ C$OMP BARRIER
 
       ! Throw warning if interpolation times do not bound model time.
       elseif (ZEROTH_TILE) then
-        write(*,'(/1x,3A/3(1x,A,F16.10)/)')       '### WARNING: ',
-     &  'set_wec_frc_tile :: Current model time is outside bounds of ',
-     &  '''wec_time''.',  'start =', var_times(it1),
+        write(*,'(/1x,4A/3(1x,A,F16.10)/)') 'WARNING: set_frc_var_tile',
+     &  ':: Model time outside bounds of variable (times):',
+     &     var_name, var_time_name,
+     &                    'start =', var_times(it1),
      &                    'tmid_days =',     tmid_days,
      &                    'end =',   var_times(it2)
 !        ierr=ierr+1
@@ -462,10 +466,10 @@ C$OMP BARRIER
 
         found_var = 0 ! Reset variable to not found
 
-        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
-          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
-     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
-        endif
+!        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
+!          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
+!     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
+!        endif
 
         ! Try to open force file
         ierr = nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
@@ -482,10 +486,10 @@ C$OMP BARRIER
         ! Variable found, now check if file times contain model time
         if (ierr.eq.nf90_noerr) then
 
-          if (mynode==0) then
-            write(*,'(3x,4A)') 'Found variable ''',var_name,
-     &           ''' in file ',frcfile(var_file_indx)
-          endif
+!          if (mynode==0) then
+!            write(*,'(3x,4A)') 'Found variable ''',var_name,
+!     &           ''' in file ',frcfile(var_file_indx)
+!          endif
           found_var = 1
           ! Needed to deal with found_var = 0 further above, so that
           ! If variable is found in a file but time is wrong, and it
@@ -529,20 +533,20 @@ C$OMP BARRIER
 
         ! Variable not found in file
         else
-          if (mynode==0) then
-            write(*,'(3x,4A)') 'NOT found variable ''',var_name,
-     &                            ''' in file ',frcfile(var_file_indx)
-          endif
+!          if (mynode==0) then
+!            write(*,'(3x,4A)') 'NOT found variable ''',var_name,
+!     &                            ''' in file ',frcfile(var_file_indx)
+!          endif
         endif
 
         ! Variable times don't contain model time, try another file
         if (found_rec == 0) then
 
           ! If the variable was found but the record not then time not bounded
-          if (mynode==0 .and. found_var==1) then
-            write(*,'(3x,5A)') 'times outside of model time for var ''',
-     &            var_name, ''' in file ',frcfile(var_file_indx)
-          endif
+!          if (mynode==0 .and. found_var==1) then
+!            write(*,'(3x,5A)') 'times outside of model time for var ''',
+!     &            var_name, ''' in file ',frcfile(var_file_indx)
+!          endif
 
           ! Go to next file if ifile<nfiles
           var_file_indx = var_file_indx+1 ! Go to next file
@@ -588,8 +592,9 @@ C$OMP BARRIER
       endif
 
       if (found_var_log==0) then
-!          write(*,'(/1x,2A/)')  '### ERROR: find_record: Could not find variable ', var_name
-        error stop 'variable not found in forcing files'
+        write(*,'(/1x,3A/)') 'ERROR: find_new_record:: ',
+     &                       'Could not find var:', var_name
+        error stop 'find_new_record: var not found in forcing files'
       endif
       if (found_rec==0) then
         mpi_master_only write(*,'(/1x,2A/)')
@@ -812,7 +817,7 @@ C$OMP BARRIER
       if (ierr == nf90_noerr) then
 
         ! Set fill value - nf90_nofill produces optimized writes:
-        ! "Use “no fill” mode, omitting the initialization of variable values
+        ! "Use "no fill" mode, omitting the initialization of variable values
         ! with fill values. Creation of large files much faster, but
         ! eliminates possibility of detecting reading of values not yet written"
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
@@ -1193,8 +1198,53 @@ C$OMP BARRIER
 
 
       end subroutine nc_read_var
+!-----------------------------------------------------------------------
 
-
+!      subroutine nc_check_units( var_file_indx, var_name, var_units )
+!
+!      ! ===========================================
+!      ! Ensure units in file are same as roms units
+!      ! ===========================================
+!
+!      ! DevinD - not tested yet might not work. Parked for now.
+!
+!      implicit none
+!
+!      ! input/output
+!      ! ------------
+!      integer, intent(in) :: var_file_indx
+!      character(len=*), intent(in) :: var_name ! Variable short name
+!      character(len=*), intent(in) :: var_units
+!
+!      ! local
+!      ! -----
+!      integer ierr,ncid
+!      integer var_id
+!      character(len=20) :: file_var_units ! Variable units of forcing file
+!
+!
+!      ! open the file (maybe check if the file is open already)
+!      ! =============
+!      ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
+!      call handle_ierr(ierr)
+!
+!      ! Get units
+!      ! =========
+!      ierr = nf90_inq_varid(ncid, var_name, var_id) ! Get variable ID (varid)
+!      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)
+!
+!      if (mynode==0) print *, 'file_var_units',file_var_units
+!
+!      if (var_name /= file_var_units) then
+!        if(mynode==0) then
+!          write(*,'(/3x,3A/)') 'ERROR: read_write.F :: ',
+!     &       'nc_check_units - units not equal for var: ', var_name
+!        endif
+!        error stop ! Stop simulation, fatal error
+!      end if
+!
+!
+!      end subroutine nc_check_units
 ! ----------------------------------------------------------------------
 
       function ncdf_write_mod(ncid, varid, record, horiz_type, A, nmax)

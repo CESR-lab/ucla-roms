@@ -1,6 +1,11 @@
 #include "cppdefs.h"
 
       subroutine put_global_atts (ncid, ierr)
+
+#if defined SFLX_CORR && defined SALINITY && defined BULK_FLUX
+      use surf_flux, only: dSSSdt
+#endif
+
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr
 #include "param.h"

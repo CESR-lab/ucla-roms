@@ -78,7 +78,8 @@ c--#define VERBOSE
       call get_sst(ierr)
       call get_dqdt(ierr)
 # endif
-# ifdef SFLX_CORR
+! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & surf_flux.F
+# if defined SFLX_CORR && !defined BULK_FLUX
       call get_sss(ierr)
 # endif
 #endif
@@ -320,7 +321,8 @@ c--#  define timename 'dqdt_time'
 #  include "get_smth.F"
 # endif /* QCORRECTION */
 
-# ifdef SFLX_CORR
+! DevinD added !defined BULK_FLUX as this is ported into bulk_frc.F & surf_flux.F
+# if defined SFLX_CORR && !defined BULK_FLUX
 #  define get_smth get_sss
 #  define varname 'SSS'
 #  define timename 'sss_time'
