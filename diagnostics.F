@@ -7,8 +7,8 @@
 
        private
        ! Udiag(1): du/dt
-       ! Mdiag(2): hydrostatic pressure gradient
-       ! Udiag(3): cor(u) 
+       ! Udiag(2): hydrostatic pressure gradient (includes WEC terms)
+       ! Udiag(3): cor(u)  + curvilinear
        ! Udiag(4): adv(u) (non-dissipative part)
        ! Udiag(5): horizontal mixing (including numerical dissipation)
        ! Udiag(6): vertical mixing   (including numerical dissipation)
@@ -44,11 +44,14 @@
 
       contains
 ! ----------------------------------------------------------------------
-        subroutine write_diagnostics
-         use netcdf
-         implicit none
+      subroutine write_diagnostics
+      use netcdf
+      implicit none
 
-        end subroutine write_diagnostics
+         write(20,999) Mdiag(10,10,10,1,:)
+ 999  format(7e12.4)
+
+      end subroutine write_diagnostics
 ! ----------------------------------------------------------------------
 
 ! ----------------------------------------------------------------------

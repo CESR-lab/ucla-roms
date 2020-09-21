@@ -323,6 +323,7 @@ C$OMP END MASTER
 #ifdef WEC
       use wec_frc, only: wec_forces
 #endif
+      use diagnostics
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -520,6 +521,7 @@ C$OMP BARRIER
       do tile=my_tile_range              ! Continue solution of
         call step3d_uv2(tile)            ! the three-dimensional
       enddo                              ! equations: finalize
+      call write_diagnostics
 C$OMP BARRIER                            ! time step for momenta
       do tile=my_tile_range              ! and tracers.
         call omega(tile)

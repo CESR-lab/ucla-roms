@@ -521,7 +521,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       !! set this switch such that we only do this during a corrector
       !! step and only when it's time to write a history file
       !! These are hydrostatic pressure gradient terms, possibly
-      !! including wec
+      !! including wec effects
       !! 
       if (do_diags) then
         do j=Jstr,Jend
