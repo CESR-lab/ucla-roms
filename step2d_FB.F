@@ -31,6 +31,10 @@
       use wec_frc
 #endif
 
+#if defined POT_TIDES && !defined SOLVE3D
+      use tides, only: Ptide
+#endif
+
       implicit none
 #include "param.h"
       integer istr,iend,jstr,jend, i,j, kbak, kold
@@ -257,6 +261,11 @@
      &                                     *(zwrk(i-1,j)-zwrk(i,j)) )
 #endif
 
+#if defined POT_TIDES && !defined SOLVE3D
+     &                  + ( h(i-1,j)+h(i,j)+rzeta(i-1,j)+rzeta(i,j) )
+     &                                   *( Ptide(i,j)-Ptide(i-1,j) )
+#endif
+
 #ifdef WEC
      &                  + ( h(i-1,j)+h(i,j)+rzeta(i-1,j)+rzeta(i,j) )
      &                                       *( sup(i,j)-sup(i-1,j) )
@@ -270,6 +279,11 @@
      &              +(h(i,j-1)-h(i,j))*( rzetaSA(i,j-1)+rzetaSA(i,j)
      &                        +0.333333333333*(rhoA(i,j-1)-rhoA(i,j))
      &                                     *(zwrk(i,j-1)-zwrk(i,j)) )
+#endif
+
+#if defined POT_TIDES && !defined SOLVE3D
+     &                  + ( h(i,j-1)+h(i,j)+rzeta(i,j-1)+rzeta(i,j) )
+     &                                   *( Ptide(i,j)-Ptide(i,j-1) )
 #endif
 
 #ifdef WEC

@@ -33,7 +33,7 @@
 
 
 #if defined SSH_TIDES || defined UV_TIDES
-      integer, parameter :: Ntides=10
+      integer, parameter :: Ntides=15
       real Tperiod(Ntides)
       common /tides_Tperiod/ Tperiod
 #endif

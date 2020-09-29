@@ -39,9 +39,10 @@
 #  include "compute_auxiliary_bounds.h"
 
       ramp=1.
-# ifdef TIDERAMP
-      ramp=TANH(dt*sec2day*float(iic-ntstart))
-# endif
+      ! JM confirmed no longer want tide ramp
+!# ifdef TIDERAMP
+!      ramp=TANH(dt*sec2day*float(iic-ntstart))
+!# endif
 
       do itide=1,Ntides
         if (Tperiod(itide) > 0.) then
