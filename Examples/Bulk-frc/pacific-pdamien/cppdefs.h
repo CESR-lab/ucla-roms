@@ -45,7 +45,7 @@ c--#endif
                      /*  Forcing */
                      /*         - surface */
 #define DIURNAL_SRFLUX
-c-dd#define QCORRECTION /* DevinD turned off for bulk_frc.F to compile */
+c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
                      /*         - lateral */
 #define T_FRC_BRY
 #define Z_FRC_BRY
@@ -99,7 +99,7 @@ c-dd#define QCORRECTION /* DevinD turned off for bulk_frc.F to compile */
 #define OBC_NORTH  /* Open boundary North (Arctic) */
 #define OBC_EAST
 #define OBC_SOUTH
-#undef SPONGE
+#undef SPONGE /* DevinD - defined in cppdefs_UP.h */
 
 
 /* Switches required for Flux correction */
@@ -131,13 +131,13 @@ c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
-c-dd# define TIDES
-c-dd# ifdef TIDES
-c-dd#  define POT_TIDES
-c-dd#  define SSH_TIDES
-c-dd#  define UV_TIDES
-c-dd#  define TIDERAMP
-c-dd# endif
+# define TIDES
+# ifdef TIDES
+#  define POT_TIDES
+#  define SSH_TIDES
+#  define UV_TIDES
+c-dd-gone#  define TIDERAMP ! No longer using tideramp
+# endif
 
 
 #elif defined WEC

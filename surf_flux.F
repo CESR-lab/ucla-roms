@@ -28,8 +28,8 @@
       ! User inputs
 
       logical :: write_file = .true. ! Whether to write a flux file or not
-      integer :: rec_rate = 1        ! Output record rate,
-      integer :: recs_per_file = 10   ! total recs per file
+      integer :: rec_rate = 220        ! Output record rate,
+      integer :: recs_per_file = 100   ! total recs per file
 
       logical :: wrt_sustr = .True.  ! Output surface u-stress
       logical :: wrt_svstr = .True. ! Output surface v-stress
@@ -216,6 +216,12 @@
      &                 'Surface salinity flux','PSU m/s', r2dgrd, ierr )
           endif
 
+!          ! Output of sustr_rho and svstr_rho
+!            call nc_define_var(ncid, 'sustr_r',
+!     &            'rho wind stress in x-direction','m^2/s^2', r2dgrd, ierr )
+!            call nc_define_var(ncid, 'svstr_r',
+!     &            'rho wind stress in y-direction','m^2/s^2', r2dgrd, ierr )
+
           ! Leave definition mode.
           ! ----------------------
           ierr=nf90_enddef(ncid) ! End definition to write changes to disk
@@ -284,6 +290,10 @@
           call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,isalt), 1,
      &                      ssflx_name, rp_var, output_rec, ierr)
         endif
+
+!          ! Output of sustr_rho and svstr_rho
+!          call nc_write_var(ncid, sustr_r, 1, 'sustr_r', rp_var, output_rec, ierr)
+!          call nc_write_var(ncid, svstr_r, 1, 'svstr_r', rp_var, output_rec, ierr)
 
         ! Close netcdf file
         ! -----------------

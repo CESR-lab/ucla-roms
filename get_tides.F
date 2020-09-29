@@ -2,6 +2,9 @@
 #if defined SSH_TIDES || defined UV_TIDES
                                      ! Read tidal forcing parameters
       subroutine get_tides (ierr)    ! from netCDF file. Also convert
+
+      use tides, only: POT_Tamp, POT_Tphase
+
       implicit none                  ! their units where needed.
 
 # include "param.h"
@@ -27,7 +30,7 @@
           if (ierr == nf_noerr) then
             ncfrc(ifrc)=ncid
           else
-            write(*,'(/1x,4A/)') '### ERROR in get_tides: Can not ',
+            mpi_master_only write(*,'(/1x,4A/)') '### ERROR in get_tides: Can not ',
      &                'open netCDF file ''', frcname(1:lfrc), '''.',
      &                                            nf_strerror(ierr)
           endif
@@ -39,11 +42,11 @@
               ierr=nf_get_var1_FTYPE (ncid, varid, itide,
      &                                           Tperiod(itide))
               if (ierr == nf_noerr) then
-                write(*,'(5x,2A,I3,1x,3A)')     'get_tides :: read ',
+                mpi_master_only write(*,'(5x,2A,I3,1x,3A)')     'get_tides :: read ',
      &                  '''tide_period'' for mode', itide, 'from ''',
      &                                        frcname(1:lfrc), '''.'
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot read ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot read ',
      &           'variable ''tide_period'' from ''', frcname(1:lfrc),
      &                                     '''.',  nf_strerror(ierr)
               endif
@@ -56,17 +59,17 @@
                 ierr=ncdf_read(ncid, varid, itide, r_var,
      &                         SSH_Tamp(START_2D_ARRAY,itide), 1)
                 if (ierr == nf_noerr) then
-                  write(*,'(1x,2A,I3,1x,3A)')   'get_tides :: read ',
+                  mpi_master_only write(*,'(1x,2A,I3,1x,3A)')   'get_tides :: read ',
      &                    '''tide_Eamp'' for mode', itide, 'from ''',
      &                                         frcname(1:lfrc),'''.'
                 else
-                  write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+                  mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
      &                    'read variable ''tide_Eamp'' from ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                   ierr_count=ierr_count+1
                 endif
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
      &                'netCDF ID  variable ''tide_Eamp'' in file ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                 ierr_count=ierr_count+1
@@ -77,17 +80,17 @@
                 ierr=ncdf_read(ncid, varid, itide, r_var,
      &                         SSH_Tphase(START_2D_ARRAY,itide), 1)
                 if (ierr == nf_noerr) then
-                  write(*,'(1x,2A,I3,1x,3A)')   'get_tides :: read ',
+                  mpi_master_only write(*,'(1x,2A,I3,1x,3A)')   'get_tides :: read ',
      &                  '''tide_Ephase'' for mode', itide, 'from ''',
      &                                        frcname(1:lfrc), '''.'
                 else
-                  write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+                  mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
      &                    'read variable ''tide_Ephase'' from ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                   ierr_count=ierr_count+1
                 endif
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
      &              'netCDF ID  variable ''tide_Ephase'' in file ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                 ierr_count=ierr_count+1
@@ -102,17 +105,17 @@
                 ierr=ncdf_read(ncid, varid, itide, r_var,
      &                         UV_Tangle(START_2D_ARRAY,itide), 1)
                 if (ierr == nf_noerr) then
-                  write(*,'(5x,2A,I3,1x,3A)') 'get_tides :: read ',
+                  mpi_master_only write(*,'(5x,2A,I3,1x,3A)') 'get_tides :: read ',
      &                '''tide_Cangle'' for mode', itide, 'from ''',
      &                                      frcname(1:lfrc), '''.'
                 else
-                  write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+                  mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
      &                    'read variable ''tide_Cangle'' from ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                   ierr_count=ierr_count+1
                 endif
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
      &              'netCDF ID  variable ''tide_Cangle'' in file ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                 ierr_count=ierr_count+1
@@ -123,17 +126,17 @@
                 ierr=ncdf_read(ncid, varid, itide, r_var,
      &                         UV_Tphase(START_2D_ARRAY,itide), 1)
                 if (ierr == nf_noerr) then
-                  write(*,'(1x,2A,I3,1x,3A)')  'get_tides :: read ',
+                  mpi_master_only write(*,'(1x,2A,I3,1x,3A)')  'get_tides :: read ',
      &                 '''tide_Cphase'' for mode', itide, 'from ''',
      &                                       frcname(1:lfrc), '''.'
                 else
-                  write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+                  mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
      &                    'read variable ''tide_Cphase'' from ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                   ierr_count=ierr_count+1
                 endif
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
      &              'netCDF ID  variable ''tide_Cphase'' in file ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                 ierr_count=ierr_count+1
@@ -144,17 +147,17 @@
                 ierr=ncdf_read(ncid, varid, itide, r_var,
      &                         UV_Tmajor(START_2D_ARRAY,itide), 1)
                 if (ierr == nf_noerr) then
-                  write(*,'(5x,2A,I3,1x,3A)')   'get_tides :: read ',
+                  mpi_master_only write(*,'(5x,2A,I3,1x,3A)')   'get_tides :: read ',
      &                    '''tide_Cmax'' for mode', itide, 'from ''',
      &                                        frcname(1:lfrc), '''.'
                 else
-                  write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+                  mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
      &                    'read variable ''tide_Cmax'' from ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                   ierr_count=ierr_count+1
                 endif
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
      &                'netCDF ID  variable ''tide_Cmax'' in file ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                 ierr_count=ierr_count+1
@@ -165,21 +168,67 @@
                 ierr=ncdf_read(ncid,  varid,  itide,  r_var,
      &                         UV_Tminor(START_2D_ARRAY,itide), 1)
                 if (ierr == nf_noerr) then
-                  write(*,'(5x,2A,I3,1x,3A)')   'get_tides :: read ',
+                  mpi_master_only write(*,'(5x,2A,I3,1x,3A)')   'get_tides :: read ',
      &                    '''tide_Cmin'' for mode', itide, 'from ''',
      &                                        frcname(1:lfrc), '''.'
                 else
-                  write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+                  mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
      &                    'read variable ''tide_Cmin'' from ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                   ierr_count=ierr_count+1
                 endif
               else
-                write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+                mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
      &              'netCDF ID  variable ''tide_Cmin'' in file ''',
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
                 ierr_count=ierr_count+1
               endif
+# endif
+# ifdef POT_TIDES
+!
+!  Tidal potential amplitude and phase.
+!
+        ierr=nf_inq_varid(ncid,'tide_Pamp',varid)
+        if (ierr == nf_noerr) then
+        ierr=ncdf_read(ncid, varid, itide, r_var,
+     &                 POT_Tamp(START_2D_ARRAY,itide), 1)
+            if (ierr == nf_noerr) then
+               mpi_master_only write(*,'(1x,2A,I3,1x,3A)')   'get_tides :: read ',
+     &                    '''tide_Pamp'' for mode', itide, 'from ''',
+     &                                         frcname(1:lfrc),'''.'
+            else
+               mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+     &                    'read variable ''tide_Pamp'' from ''',
+     &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
+               ierr_count=ierr_count+1
+            endif
+        else
+            mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+     &                'netCDF ID  variable ''tide_Pamp'' in file ''',
+     &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
+            ierr_count=ierr_count+1
+        endif
+        
+        ierr=nf_inq_varid(ncid,'tide_Pphase',varid)
+        if (ierr == nf_noerr) then
+        ierr=ncdf_read(ncid, varid, itide, r_var,
+     &                 POT_Tphase(START_2D_ARRAY,itide), 1)
+            if (ierr == nf_noerr) then
+               mpi_master_only write(*,'(1x,2A,I3,1x,3A)')   'get_tides :: read ',
+     &                    '''tide_Pphase'' for mode', itide, 'from ''',
+     &                                         frcname(1:lfrc),'''.'
+            else
+               mpi_master_only write(*,'(/1x,4A/8x,A/)')     '### ERROR: Cannot ',
+     &                    'read variable ''tide_Pphase'' from ''',
+     &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
+               ierr_count=ierr_count+1
+            endif
+        else
+            mpi_master_only write(*,'(/1x,4A/8x,A/)')  '### ERROR: Cannot find ',
+     &                'netCDF ID  variable ''tide_Pphase'' in file ''',
+     &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
+            ierr_count=ierr_count+1
+        endif
 # endif
 
 ! Convert tidal phase and angle from degrees to radians.
@@ -194,11 +243,14 @@
                   UV_Tangle(i,j,itide)=UV_Tangle(i,j,itide)*deg2rad
                   UV_Tphase(i,j,itide)=UV_Tphase(i,j,itide)*deg2rad
 # endif
+# ifdef POT_TIDES
+                POT_Tphase(i,j,itide)=POT_Tphase(i,j,itide)*deg2rad
+# endif
                 enddo
               enddo
               ierr=ierr_count
             else
-              write(*,'(1x,4A)')  'WARNING: get_tides :: cannot find ',
+              mpi_master_only write(*,'(1x,4A)')  'WARNING: get_tides :: cannot find ',
      &       'variable ''tidal_period'' in ''', frcname(1:lfrc), '''.'
               if (ifrc < max_frc) then
                 ifrc=ifrc+1

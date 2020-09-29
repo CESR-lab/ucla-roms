@@ -474,10 +474,8 @@ C$OMP BARRIER
         ! Try to open force file
         ierr = nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
         if (ierr.ne.nf90_noerr) then ! Force file not found. Stop.
-          if (mynode==0) then
-            print *,var_file_indx,frcfile(var_file_indx)
-            error stop 'FNR: Forcing file not found'
-          endif
+          print *,frcfile(var_file_indx),'mynode=',mynode
+          error stop 'Find_new_record: Forcing file not found' ! Any node not just 0
         endif
 
         ! Check if this file contains the variable
@@ -554,6 +552,9 @@ C$OMP BARRIER
 
         endif
 
+        ! Close netcdf file - necessary otherwise roms crashes if many variables.
+        ierr=nf90_close (ncid)
+
       enddo ! while ifile<=nfiles.
 
       ! End of variable & record search
@@ -592,12 +593,12 @@ C$OMP BARRIER
       endif
 
       if (found_var_log==0) then
-        write(*,'(/1x,3A/)') 'ERROR: find_new_record:: ',
-     &                       'Could not find var:', var_name
+        write(*,'(/1x,4A,I3/)') 'ERROR: find_new_record:: ',
+     &              'Could not find var: ', var_name, ' mynode=', mynode
         error stop 'find_new_record: var not found in forcing files'
       endif
       if (found_rec==0) then
-        mpi_master_only write(*,'(/1x,2A/)')
+        if(mynode==0) write(*,'(/1x,2A/)')
      &  'ERROR: find_new_record: Ran out of time records for ', var_name
         error stop 'ran out of time records'
       endif
@@ -661,6 +662,10 @@ C$OMP BARRIER
       call nc_read_var(ncid,var_array,1,
      &                       var_name,var_type,irec,ierr)
 
+      ! Close netcdf file (necessary otherwise roms crashes if many variables.)
+      ! =================
+      ierr=nf90_close (ncid)
+
       ! NOTE about masking here. C$OMP beware
 
       ! Error handling
@@ -677,6 +682,7 @@ C$OMP BARRIER
 !      goto 100 ! Skip 99
 !  99  if (may_day_flag == 0) may_day_flag=3
 ! 100  continue
+
 
 
       end subroutine read_var_frc
