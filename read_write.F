@@ -661,6 +661,8 @@ C$OMP BARRIER
       call nc_read_var(ncid,var_array,1,
      &                       var_name,var_type,irec,ierr)
 
+      call nf90_close(ncid)
+
       ! NOTE about masking here. C$OMP beware
 
       ! Error handling

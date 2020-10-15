@@ -684,11 +684,7 @@ c<<     &     +cff*iA_u(i,j)
      &                            *(rubar(i,j)+rufrc(i,j))
 #else
      &                            *rubar(i,j)
-# ifdef WIND_AT_RHO_POINTS
-     &                   +dtfast*(sustr(i-1,j)+sustr(i,j))
-# else
      &                                    +cff2*sustr(i,j)
-# endif
 
 # ifdef WEC 
      &                                    +cff2*brk2dx(i,j)
