@@ -33,10 +33,10 @@ c--# define MERGE_OVERLAP
       use bulk_frc, only: srflx
 #endif
 
-! DevinD added for bluk flux as sustr,svstr, stflx moved to surf_flux.F module
+! DevinD added for bluk flux as sustr_r,svstr_R, stflx moved to surf_flux.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
-      use surf_flux, only: sustr, svstr, stflx
+      use surf_flux, only: sustr_r, svstr_r, stflx
 #endif
 
       implicit none
@@ -59,7 +59,8 @@ c--# define MERGE_OVERLAP
 # endif
 
       real, parameter ::
-     &   Ricr=0.45,     ! Critical bulk Richardson number (0.3)
+      ! Ricr - chosen as 0.15 by JM & PD 2020-09
+     &   Ricr=0.15,     ! Critical bulk Richardson number (0.3)
      &   Ri_inv=1./Ricr,
      &   epssfc=0.1,    ! nondimensional extent of the surface layer
      &   betaT=-0.2,    ! ratio of entrainment flux to surface buoyancy
@@ -196,15 +197,24 @@ c>>>#  include "coupling.h"    /* <-- needs "r_D"  */
      &                                                           ))))
 #   endif
 #  else
-#   ifdef WIND_AT_RHO_POINTS
-          ustar(i,j)=sqrt( sqrt( sustr(i,j)**2 +svstr(i,j)**2 ))
+! DevinD & JM: better to use rho variables for sustr & svstr since we
+! currently calculated both u/v and rho versions. If we converted u/v back to rho
+! it would be a double average and dilute the answer further. Currently
+! only for BULK_FLUX
+#   ifdef BULK_FLUX
+          ustar(i,j)=sqrt( sqrt( sustr_r(i,j)**2 +svstr_r(i,j)**2 ))
 #   else
+! Orginal for non-bulk-flux
+#    ifdef WIND_AT_RHO_POINTS
+          ustar(i,j)=sqrt( sqrt( sustr(i,j)**2 +svstr(i,j)**2 ))
+#    else
           ustar(i,j)=sqrt( sqrt( 0.333333333333*(
      &      sustr(i,j)**2 + sustr(i+1,j)**2 + sustr(i,j)*sustr(i+1,j)
      &     +svstr(i,j)**2 + svstr(i,j+1)**2 + svstr(i,j)*svstr(i,j+1)
      &                                                            )))
-#   endif
-#  endif
+#    endif
+#   endif /* BULK_FLUX */
+#  endif /* WIND_MAGN */
 
 #  ifdef LMD_KPP
           hbl(i,j)=hbls(i,j,nstp)     ! use old-time-step values

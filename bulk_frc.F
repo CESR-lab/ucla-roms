@@ -28,6 +28,17 @@
       ! param.h needed for GLOBAL_2D_array to work
 #include "param.h"
 
+      ! ****************************************************************
+      ! User inputs
+
+      ! Interpolate forcing from coarser input grid
+      integer :: interp_frc = 0 ! Possibly needs to be public?
+      ! 0 -> don't interpolate, read same sized forcing files
+      ! 1 -> interpolate from coarser input grid
+
+      ! End of user inputs
+      ! *************************************************************
+
       ! Variables
       ! =========
 
@@ -209,7 +220,8 @@
      &          swrad_data,     srflx,          ! Variable arrays
      &          swrad_times,    swrad_grd_type, ! Input times & Grid type
      &          swrad_file_indx,swrad_irec,     ! File indx & Current input record
-     &          swrad_it1,      swrad_it2 )     ! Time index placeholders
+     &          swrad_it1,      swrad_it2,      ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
       call set_frc_var_tile(
@@ -218,7 +230,8 @@
      &          lwrad_data,     lwrad,          ! Variable arrays
      &          lwrad_times,    lwrad_grd_type, ! Input times & Grid type
      &          lwrad_file_indx,lwrad_irec,     ! File indx & Current input record
-     &          lwrad_it1,      lwrad_it2 )     ! Time index placeholders
+     &          lwrad_it1,      lwrad_it2,      ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
       ! ----
@@ -230,7 +243,8 @@
      &          uwnd_data,      uwnd,           ! Variable arrays
      &          uwnd_times,     uwnd_grd_type,  ! Input times & Grid type
      &          uwnd_file_indx, uwnd_irec,      ! File indx & Current input record
-     &          uwnd_it1,       uwnd_it2 )      ! Time index placeholders
+     &          uwnd_it1,       uwnd_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! v-wind
       call set_frc_var_tile(
@@ -239,7 +253,8 @@
      &          vwnd_data,      vwnd,           ! Variable arrays
      &          vwnd_times,     vwnd_grd_type,  ! Input times & Grid type
      &          vwnd_file_indx, vwnd_irec,      ! File indx & Current input record
-     &          vwnd_it1,       vwnd_it2 )      ! Time index placeholders
+     &          vwnd_it1,       vwnd_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
       ! -------------------
@@ -251,7 +266,8 @@
      &          tair_data,      tair,           ! Variable arrays
      &          tair_times,     tair_grd_type,  ! Input times & Grid type
      &          tair_file_indx, tair_irec,      ! File indx & Current input record
-     &          tair_it1,       tair_it2 )      ! Time index placeholders
+     &          tair_it1,       tair_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
       call set_frc_var_tile(
@@ -260,7 +276,8 @@
      &          Q_data,         Q,              ! Variable arrays
      &          Q_times,        Q_grd_type,     ! Input times & Grid type
      &          Q_file_indx,    Q_irec,         ! File indx & Current input record
-     &          Q_it1,          Q_it2 )         ! Time index placeholders
+     &          Q_it1,          Q_it2,          ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! Check units of Q:
         ! Needs to come after so Q_file_indx has been set.
@@ -277,7 +294,8 @@
      &          prate_data,     prate,          ! Variable arrays
      &          prate_times,    prate_grd_type, ! Input times & Grid type
      &          prate_file_indx,prate_irec,     ! File indx & Current input record
-     &          prate_it1,      prate_it2 )     ! Time index placeholders
+     &          prate_it1,      prate_it2,      ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Include tau_correction if applicable
       ! ====================================
@@ -291,7 +309,8 @@
      &          taux_data,      taux,           ! Variable arrays
      &          taux_times,     taux_grd_type,  ! Input times & Grid type
      &          taux_file_indx, taux_irec,      ! File indx & Current input record
-     &          taux_it1,       taux_it2 )      ! Time index placeholders
+     &          taux_it1,       taux_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Set field corrector in y-axis
       call set_frc_var_tile(
@@ -300,7 +319,8 @@
      &          tauy_data,      tauy,           ! Variable arrays
      &          tauy_times,     tauy_grd_type,  ! Input times & Grid type
      &          tauy_file_indx, tauy_irec,      ! File indx & Current input record
-     &          tauy_it1,       tauy_it2 )      ! Time index placeholders
+     &          tauy_it1,       tauy_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
 #endif /* TAU_CORRECTION */
 
@@ -523,9 +543,9 @@
 !# include "forces.h"
 
 
-
-!# include "compute_extended_bounds.h" ! DevinD commented use auxil rather
-# include "compute_auxiliary_bounds.h" /* For istrU, jstrV */
+! Extended bounds needed since u2rho and rho2u averaging occurs, and
+! lmd_kpp has SMOOTH_HBL which requires extended loop ranges for smoothing.
+# include "compute_extended_bounds.h"
 
 
       ! SET_SRFLUX.F PLACED HERE FOR MODULE VERSION
@@ -741,10 +761,10 @@
 !      cff15=cff15*cff ; cff16=cff16*cff
 # endif
 
-      ! Need i/j=i/jstr-1 for rho2u avg: i/j = ((i-1/j-1)+i/j) /2 otherwise
-      ! (i-1) not calculated for first entry of averaging.
-      do j=jstr-1,jendR
-        do i=istr-1,iendR
+      ! All calculations in this loop at rho-points. Loop over extended
+      ! bounds.
+      do j=jstrR,jendR
+        do i=istrR,iendR
 
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
@@ -1063,7 +1083,13 @@
 
 ! BULK_SM_UPDATE removed as it is always needed
           sustr_r(i,j)=aer(i,j)*cer(i,j)*uwnd(i,j)
+#  ifdef MASKING
+     &                                           *rmask(i,j)
+#  endif
           svstr_r(i,j)=aer(i,j)*cer(i,j)*vwnd(i,j)
+#  ifdef MASKING
+     &                                           *rmask(i,j)
+#  endif
 
 !
 !  Store fluxes for diagnostics
@@ -1201,11 +1227,14 @@
       Wspd_min=3.        ! [m/s]
       stau_ref=-0.0027   ! [N.m^-3.s]
 
-      ! Need i=istr-1 for rho2u avg: i = ((i-1)+i) /2 otherwise
-      ! sustr(i-1) not calculated for first entry.
-      ! Loop through rho-points as sustr still at rho-point until end.
+
+      ! Note loop ranges: iend+1 is needed because lmd_kpp uses SMOOTH_HBL
+      ! and smoothing needs iend+1 buffer information for ustar calc.
+      ! iend+1 instead of iendR because rho2u sustr_r = u(i) + u(i+1) & since
+      ! iendR=iend+2 for interior tiles (as per compute_extended_bounds.h)
+      ! if we used i=iendR then u(i+1) = u(iend+3) is not a value.
       do j=jstrR,jendR
-        do i=istr-1,iend
+        do i=istrR,iend+1
 
           wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
 
@@ -1226,11 +1255,16 @@
           ! Correction to bring bulk forcing towards observed fluxes. taux at rho-point.
           sustr_r(i,j)=sustr_r(i,j) + taux(i,j) / rho0
 # endif
+          ! rmask applies to tau_correction if on, else svstr_r above that.
+          ! either way end result is that svstr_r is rmask'ed.
+# ifdef MASKING
+     &                    *rmask(i,j)
+# endif
 
           ! Convert sustr at rho-point to u-point for Eq.System
-          ! Need if (i >= istrU) because loop over istr-1, but we use
-          ! index i-1 below which is out of array bounds at western boundary.
-          if (i >= istrU) then
+          ! Need if (i >= istrR+1) because loop over istrR, but we use
+          ! index i-1 below which is out of array bounds at tile's western boundary.
+          if (i >= istrR+1) then
             sustr(i,j) = ( sustr_r(i-1,j) + sustr_r(i,j) ) / 2
 # ifdef MASKING
           !! JM: I don't think that this is actually doing anything usefull
@@ -1241,10 +1275,10 @@
         enddo
       enddo
 
-      ! Need j=jstr-1 for rho2u avg: i = ((i-1)+i) /2 otherwise
-      ! sustr(i-1) not calculated for first entry.
-      ! Loop through rho-points as svstr still at rho-point until end.
-      do j=jstr-1,jend
+      ! jend+1 instead of jendR because rho2u svstr_r = v(j) + v(j+1) & since
+      ! jendR=jend+2 for interior tiles (as per compute_extended_bounds.h)
+      ! if we used j=jendR then v(j+1) = u(jend+3) is not a value.
+      do j=jstrR,jend+1
         do i=istrR,iendR
 
           wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
@@ -1262,11 +1296,16 @@
           ! Correction to bring bulk forcing towards observed fluxes.
           svstr_r(i,j)=svstr_r(i,j) + tauy(i,j) /rho0
 # endif
+          ! rmask applies to tau_correction if on, else svstr_r above that.
+          ! either way end result is that svstr_r is rmask'ed.
+# ifdef MASKING
+     &                    *rmask(i,j)
+# endif
 
-          ! Convert svstr at rho-point to u-point for Eq.System
-          ! Need if (j >= istrV) because loop over istr-1, but we use
-          ! index j-1 below which is out of array bounds at southern boundary.
-          if (j >= jstrV) then
+          ! Convert svstr at rho-point to v-point for Eq.System
+          ! Need if (j >= jstrR+1) because loop over jstrR, but we use
+          ! index j-1 below which is out of array bounds at tile's southern boundary.
+          if (j >= jstrR+1) then
             svstr(i,j) = ( svstr_r(i,j-1) + svstr_r(i,j) ) / 2
 # ifdef MASKING
      &                    *vmask(i,j)
@@ -1275,6 +1314,10 @@
 
         enddo
       enddo
+
+# ifdef debug_ddevin_frc
+      uwnd_bf = uwnd ! Set uwnd to surf_flux variable so it can be output
+# endif
 
 # ifdef BULK_FLUX_OUTPUT
 C$OMP MASTER

@@ -125,7 +125,7 @@ c***              no code here
 #   endif
 #  endif
 
-#  if defined QCORRECTION || defined SFLX_CORR
+#  if defined QCORRECTION || defined SFLX_CORR || defined debug_ddevin || defined debug_ddevin_frc
       call set_surf_field_corr(istr,iend,jstr,jend)
 #  endif
 
