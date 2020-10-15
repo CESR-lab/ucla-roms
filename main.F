@@ -420,7 +420,7 @@ C$OMP BARRIER
       enddo
 C$OMP BARRIER
 
-      do_diags = .true.
+!     do_diags = .true.
       if (mynode==0) then
 !       print *,'going prsgrd',do_diags
       endif
@@ -525,8 +525,8 @@ C$OMP BARRIER
       do tile=my_tile_range              ! Continue solution of
         call step3d_uv2(tile)            ! the three-dimensional
       enddo                              ! equations: finalize
-      call write_diagnostics
-      do_diags = .false.
+!     call write_diagnostics
+!     do_diags = .false.
 C$OMP BARRIER                            ! time step for momenta
       do tile=my_tile_range              ! and tracers.
         call omega(tile)
