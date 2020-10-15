@@ -324,6 +324,9 @@ C$OMP END MASTER
       use wec_frc, only: wec_forces
 #endif
       use diagnostics
+#ifdef POT_TIDES
+      use tides, only: set_tides_mod
+#endif
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -369,6 +372,9 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
         call set_forces(tile)               ! data to model time and
 # if defined SSH_TIDES || defined UV_TIDES
         call set_tides(tile)                ! compute surface fluxes.
+# endif
+# if defined POT_TIDES
+        call set_tides_mod(tile)            ! DevinD new tidal module
 # endif
         call    rho_eos(tile)
         call    set_HUV(tile)

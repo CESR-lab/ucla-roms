@@ -173,7 +173,7 @@ c**  &               LLm=126,  MMm=254, N=20    ! USWEST grid 16
 # elif defined USWC_WEC
      &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1 ! DevinD - WEC
 #elif defined PACIFIC_PD
-     &		NP_XI=4, NP_ETA=12, NSUB_X=1, NSUB_E=1
+     &      NP_XI=8, NP_ETA=6, NSUB_X=1, NSUB_E=1
 # elif defined RIVER_SOURCE
      &      NP_XI=1, NP_ETA=1,  NSUB_X=1, NSUB_E=1 ! DevinD just to compile
 # endif
@@ -240,3 +240,10 @@ c     &      NSUB_X=8, NSUB_E=48
 #ifdef PSOURCE
      &       , Msrc=10   ! Number of point sources
 #endif
+
+! Tides
+! -----
+!#if defined TIDES
+!      integer Ntides   ! Number of tides
+!      parameter (Ntides=15)
+!#endif

@@ -229,7 +229,8 @@
       lfile=lenstr(fname)
       ierr=read_nc1dat(ncid, fname, 'hc', 1, tst_val)
       if (ierr == 0) then
-        if (abs(hc-tst_val(1))>epsil) then
+        if (abs((hc-tst_val(1))/hc)>epsil) then
+                print *, hc,tst_val(1)
           write(*,'(/1x,2A,F12.5,1x,A,F12.5,1x,3A/)')  '### ERROR: ',
      &                  'Mismatch in ''hc'': should be', hc, 'found',
      &               tst_val(1), 'in file ''', fname(1:lfile), '''.'

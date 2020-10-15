@@ -33,6 +33,9 @@
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
       use diagnostics
+# ifdef POT_TIDES
+      use tides, only: Ptide
+# endif
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -185,6 +188,9 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           P(i,j,N)=g*z_w(i,j,N) + grho*( rho(i,j,N)
      &       +0.5*(rho(i,j,N)-rho(i,j,N-1))*(z_w(i,j,N)-z_r(i,j,N))
      &          /(z_r(i,j,N)-z_r(i,j,N-1)) )*(z_w(i,j,N)-z_r(i,j,N))
+# ifdef POT_TIDES
+          P(i,j,N) = P(i,j,N) - g*Ptide(i,j)
+# endif
         enddo
         do k=N-1,1,-1
           do i=istrU-1,iend

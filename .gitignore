@@ -10,8 +10,8 @@
 *.log
 jobout
 mpc
-roms*
-jobout
+roms
+roms-*
 test_tiling
 redefs
 incl
@@ -24,8 +24,10 @@ Examples/*/*.nc
 Examples/*/fort*
 Work/
 setup_kwds.F
-roms*
 Examples/*/Compile
 check_switches1.F
 check_srcs.F
 Tools-Roms/cross_matrix
+./cppdefs.h
+./param.h
+Make.depend

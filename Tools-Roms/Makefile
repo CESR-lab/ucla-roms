@@ -43,4 +43,3 @@ clobber: clean
 
 # Need to set up Make.depend properly. cross_matrix didn't work for some reason.
 # Make.depend was created but contained no dependencies.
-include Make.depend
