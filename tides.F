@@ -115,12 +115,12 @@
 # endif /* POT_TIDES */
 
           ! DevinD debug
-          if(mynode==0) then
-            print *, 'itide',itide,'omega',omega
-            print *, 'POT_Tamp(20,20,itide)',POT_Tamp(20,20,itide)
-            print *, 'POT_Tphase(20,20,itide)',POT_Tphase(20,20,itide)
-            print *, 'mynode==0: Ptide(20,20)', Ptide(20,20)
-          end if
+!          if(mynode==0) then
+!            print *, 'itide',itide,'omega',omega
+!            print *, 'POT_Tamp(20,20,itide)',POT_Tamp(20,20,itide)
+!            print *, 'POT_Tphase(20,20,itide)',POT_Tphase(20,20,itide)
+!            print *, 'mynode==0: Ptide(20,20)', Ptide(20,20)
+!          end if
 
         endif  !<--- period > 0
       enddo  !<-- itide

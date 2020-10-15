@@ -28,6 +28,17 @@
       ! param.h needed for GLOBAL_2D_array to work
 #include "param.h"
 
+      ! ****************************************************************
+      ! User inputs
+
+      ! Interpolate forcing from coarser input grid
+      integer :: interp_frc = 0 ! Possibly needs to be public?
+      ! 0 -> don't interpolate, read same sized forcing files
+      ! 1 -> interpolate from coarser input grid
+
+      ! End of user inputs
+      ! *************************************************************
+
       ! Variables
       ! =========
 
@@ -209,7 +220,8 @@
      &          swrad_data,     srflx,          ! Variable arrays
      &          swrad_times,    swrad_grd_type, ! Input times & Grid type
      &          swrad_file_indx,swrad_irec,     ! File indx & Current input record
-     &          swrad_it1,      swrad_it2 )     ! Time index placeholders
+     &          swrad_it1,      swrad_it2,      ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
       call set_frc_var_tile(
@@ -218,7 +230,8 @@
      &          lwrad_data,     lwrad,          ! Variable arrays
      &          lwrad_times,    lwrad_grd_type, ! Input times & Grid type
      &          lwrad_file_indx,lwrad_irec,     ! File indx & Current input record
-     &          lwrad_it1,      lwrad_it2 )     ! Time index placeholders
+     &          lwrad_it1,      lwrad_it2,      ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
       ! ----
@@ -230,7 +243,8 @@
      &          uwnd_data,      uwnd,           ! Variable arrays
      &          uwnd_times,     uwnd_grd_type,  ! Input times & Grid type
      &          uwnd_file_indx, uwnd_irec,      ! File indx & Current input record
-     &          uwnd_it1,       uwnd_it2 )      ! Time index placeholders
+     &          uwnd_it1,       uwnd_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! v-wind
       call set_frc_var_tile(
@@ -239,7 +253,8 @@
      &          vwnd_data,      vwnd,           ! Variable arrays
      &          vwnd_times,     vwnd_grd_type,  ! Input times & Grid type
      &          vwnd_file_indx, vwnd_irec,      ! File indx & Current input record
-     &          vwnd_it1,       vwnd_it2 )      ! Time index placeholders
+     &          vwnd_it1,       vwnd_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
       ! -------------------
@@ -251,7 +266,8 @@
      &          tair_data,      tair,           ! Variable arrays
      &          tair_times,     tair_grd_type,  ! Input times & Grid type
      &          tair_file_indx, tair_irec,      ! File indx & Current input record
-     &          tair_it1,       tair_it2 )      ! Time index placeholders
+     &          tair_it1,       tair_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
       call set_frc_var_tile(
@@ -260,7 +276,8 @@
      &          Q_data,         Q,              ! Variable arrays
      &          Q_times,        Q_grd_type,     ! Input times & Grid type
      &          Q_file_indx,    Q_irec,         ! File indx & Current input record
-     &          Q_it1,          Q_it2 )         ! Time index placeholders
+     &          Q_it1,          Q_it2,          ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
         ! Check units of Q:
         ! Needs to come after so Q_file_indx has been set.
@@ -277,7 +294,8 @@
      &          prate_data,     prate,          ! Variable arrays
      &          prate_times,    prate_grd_type, ! Input times & Grid type
      &          prate_file_indx,prate_irec,     ! File indx & Current input record
-     &          prate_it1,      prate_it2 )     ! Time index placeholders
+     &          prate_it1,      prate_it2,      ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Include tau_correction if applicable
       ! ====================================
@@ -291,7 +309,8 @@
      &          taux_data,      taux,           ! Variable arrays
      &          taux_times,     taux_grd_type,  ! Input times & Grid type
      &          taux_file_indx, taux_irec,      ! File indx & Current input record
-     &          taux_it1,       taux_it2 )      ! Time index placeholders
+     &          taux_it1,       taux_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
       ! Set field corrector in y-axis
       call set_frc_var_tile(
@@ -300,7 +319,8 @@
      &          tauy_data,      tauy,           ! Variable arrays
      &          tauy_times,     tauy_grd_type,  ! Input times & Grid type
      &          tauy_file_indx, tauy_irec,      ! File indx & Current input record
-     &          tauy_it1,       tauy_it2 )      ! Time index placeholders
+     &          tauy_it1,       tauy_it2,       ! Time index placeholders
+     &          interp_frc )                    ! Spatially grid interpolation
 
 #endif /* TAU_CORRECTION */
 
@@ -1295,6 +1315,9 @@
         enddo
       enddo
 
+# ifdef debug_ddevin_frc
+      uwnd_bf = uwnd ! Set uwnd to surf_flux variable so it can be output
+# endif
 
 # ifdef BULK_FLUX_OUTPUT
 C$OMP MASTER

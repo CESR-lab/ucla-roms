@@ -28,7 +28,7 @@
       ! User inputs
 
       logical :: write_file = .true. ! Whether to write a flux file or not
-      integer :: rec_rate = 220        ! Output record rate,
+      integer :: rec_rate = 1        ! Output record rate,
       integer :: recs_per_file = 100   ! total recs per file
 
       logical :: wrt_sustr = .True.  ! Output surface u-stress
@@ -97,6 +97,37 @@
       public set_surf_field_corr
       public wrt_surface_flux_his
 
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+      ! Debug test read in coarse grid.
+      ! -------------------------------
+      real, public :: h_interp(GLOBAL_2D_ARRAY)
+      real, public :: lat_interp(GLOBAL_2D_ARRAY)
+#endif
+
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin_frc
+      ! Test read in coarse forcing.
+      ! -------------------------------
+      real, public :: uwnd_int(GLOBAL_2D_ARRAY)
+      real         :: uwnd_int_data(GLOBAL_2D_ARRAY,2)
+      integer :: uwnd_int_grd_type  = 0
+      integer :: uwnd_int_file_indx = 0
+      integer :: uwnd_int_irec      = 0
+      integer :: uwnd_int_it1 = 1, uwnd_int_it2 = 2
+      real, dimension(2) :: uwnd_int_times = [-99,-99]
+      ! Note: need to rename uwnd in coarse input file else variable name
+      ! will be confused with the refined grid input file containing 'uwnd'
+      character(len=8)   :: uwnd_int_name = 'uwnd-int'
+      character(len=8)   :: uwnd_int_time_name = 'wnd_time'
+
+      ! Used to copy uwnd from bulk force as can't refer directly due to
+      ! circular reference
+      real, public :: uwnd_bf(GLOBAL_2D_ARRAY)
+#endif
+
+
+
       contains
 ! ----------------------------------------------------------------------
 
@@ -104,11 +135,23 @@
       ! Set surface fields that will be restored towards
 
       use read_write, only: set_frc_var_tile
+     &  , ncdf_read_coarser_grid ! coarser only for ddevin debug
 
       implicit none
 
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
+
+      integer :: ierr = 0 ! debug coarse temporary delete later.
+
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+      integer :: tmp1=0 ! debug delete later
+      integer :: tmp2=0
+      integer :: tmp3=0
+      integer :: tmp4=0
+#endif
+
 
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
@@ -130,6 +173,26 @@
      &          sss_times,      sss_grd_type,   ! Input times & Grid type
      &          sss_file_indx,  sss_irec,       ! File indx & current input record
      &          sss_it1,        sss_it2 )       ! Indices to input data and time
+#endif
+
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+      ! Debug test read in coarse grid.
+      ! -------------------------------
+!      ierr = ncdf_read_coarser_grid(1,1,0,0,lat_interp,1) ! ncid,varid,record,horiz_type,A,nmax)
+      ierr = ncdf_read_coarser_grid(tmp1,tmp2,tmp3,tmp4,lat_interp,1)
+#endif
+
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin_frc
+      ! Debug test read in coarse forcing
+      call set_frc_var_tile(
+     &          istr,iend,           jstr,jend,           ! Tile bounds indices
+     &          uwnd_int_name,       uwnd_int_time_name,  ! Netcdf names for var and time
+     &          uwnd_int_data,       uwnd_int,            ! Input data and var arrays
+     &          uwnd_int_times,      uwnd_int_grd_type,   ! Input times & Grid type
+     &          uwnd_int_file_indx,  uwnd_int_irec,       ! File indx & current input record
+     &          uwnd_int_it1,        uwnd_int_it2, 1 )       ! Indices to input data and time
 #endif
 
       end subroutine set_surf_field_corr
@@ -222,6 +285,22 @@
 !            call nc_define_var(ncid, 'svstr_r',
 !     &            'rho wind stress in y-direction','m^2/s^2', r2dgrd, ierr )
 
+
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+          ! debug only: output of hraw interpolation from coarse grid
+          call nc_define_var(ncid, 'lat_rho',
+     &      'lat_rho interpolated from coarse grid','m', r2dgrd, ierr )
+#endif
+
+#ifdef debug_ddevin_frc
+          ! debug only:
+            call nc_define_var(ncid, 'uwnd-int', ! Note: rho-point
+     &            'uwnd interpolated from coarse grid','m', r2dgrd, ierr )
+            call nc_define_var(ncid, 'uwnd', ! Note: rho-point
+     &            'uwnd bulk_frc','m', r2dgrd, ierr )
+#endif
+
           ! Leave definition mode.
           ! ----------------------
           ierr=nf90_enddef(ncid) ! End definition to write changes to disk
@@ -295,6 +374,18 @@
 !          call nc_write_var(ncid, sustr_r, 1, 'sustr_r', rp_var, output_rec, ierr)
 !          call nc_write_var(ncid, svstr_r, 1, 'svstr_r', rp_var, output_rec, ierr)
 
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+        ! debug only: output of hraw interpolation from coarse grid
+        call nc_write_var(ncid,lat_interp,1,'lat_rho',rp_var,output_rec,ierr)
+#endif
+
+#ifdef debug_ddevin_frc
+        ! debug only:
+          call nc_write_var(ncid, uwnd_int, 1, 'uwnd-int', rp_var, output_rec, ierr)
+          call nc_write_var(ncid, uwnd_bf, 1, 'uwnd', rp_var, output_rec, ierr)
+#endif
+
         ! Close netcdf file
         ! -----------------
         ierr=nf90_close (ncid)
@@ -316,6 +407,12 @@
 
       endif ! (write_file==.true.)
 
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+      ! Debug test read in coarse grid.
+      ! -------------------------------
+      stop 'stop wrt_surf_flux_his debug'
+#endif
 
       end subroutine wrt_surface_flux_his
 
