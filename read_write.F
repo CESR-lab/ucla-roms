@@ -45,6 +45,8 @@
       public nc_write_time
       public read_output_root_name
 
+      public ncdf_read_coarser_grid
+
       contains
 
 ! ----------------------------------------------------------------------
@@ -204,7 +206,7 @@
      &                var_data,      var,           ! Variable arrays
      &                var_times,     var_grd_type,  ! Input times & Grid type
      &                var_file_indx, var_irec,      ! File indx & Current input record
-     &                it1,           it2 )          ! Time index placeholders
+     &                it1,           it2, coarse )          ! Time index placeholders
 
       ! ===========================================
       ! WRAPPER TO READ & SET SINGLE FORCE VARIABLE
@@ -231,6 +233,9 @@
       integer,intent(in) :: var_grd_type
       integer :: var_file_indx, var_irec ! File indx & Current input record
       integer :: it1, it2 ! Placeholders for 2 read in times
+      integer coarse ! Whether function is interpolated from coarse data
+      ! Try make coarse set to default value if not included using
+      ! OPTIONAL argument
 
       ! local
       integer :: tmp,i,j
@@ -278,7 +283,7 @@ C$OMP MASTER
           call read_var_frc( var_file_indx, var_irec,
      &                       var_data(GLOBAL_2D_ARRAY,it1),
      &                       var_name, var_grd_type, var_times(it1),
-     &                       var_time_name )
+     &                       var_time_name, coarse )
 
 C$OMP END MASTER
 C$OMP BARRIER
@@ -327,7 +332,7 @@ C$OMP MASTER
         call read_var_frc( var_file_indx, var_irec,
      &                     var_data(GLOBAL_2D_ARRAY,it2),
      &                     var_name, var_grd_type, var_times(it2),
-     &                     var_time_name )
+     &                     var_time_name, coarse )
 
 C$OMP END MASTER
 C$OMP BARRIER
@@ -616,7 +621,7 @@ C$OMP BARRIER
 !-----------------------------------------------------------------------
 
       subroutine read_var_frc( var_file_indx, irec, var_array,
-     &               var_name, var_type, var_time,var_time_name )
+     &               var_name, var_type, var_time,var_time_name, coarse )
 
       ! ========================================
       ! READ ONE VARIABLE FROM INPUT NETCDF FILE
@@ -641,6 +646,8 @@ C$OMP BARRIER
       real,dimension(1) :: var_time
       character(len=*)  :: var_time_name
 
+      integer coarse ! Whether function is interpolated from coarse data
+
       ! local
       ! -----
       integer ierr,ncid
@@ -659,8 +666,8 @@ C$OMP BARRIER
 
       ! read the var
       ! ============
-      call nc_read_var(ncid,var_array,1,
-     &                       var_name,var_type,irec,ierr)
+      call nc_read_var(ncid,var_array,1, ! 1 is nmax (vertical layers)
+     &                       var_name,var_type,irec,ierr, coarse)
 
       ! Close netcdf file (necessary otherwise roms crashes if many variables.)
       ! =================
@@ -1141,7 +1148,7 @@ C$OMP BARRIER
 ! ----------------------------------------------------------------------
 
       subroutine nc_read_var(ncid,var_array,nmax,var_name,
-     &                             var_type,record,ierr)
+     &                             var_type,record,ierr, coarse)
 
       ! =====================================
       ! Read variables from input netcdf file
@@ -1172,6 +1179,8 @@ C$OMP BARRIER
       integer, intent(in)  :: var_type ! variable type: u-, v- or rho-point
       integer ierr ! Track netcdf errors
 
+      integer coarse ! Whether function is interpolated from coarse data
+
       ! Local variables
       ! ---------------
       integer var_id ! variable ID
@@ -1184,8 +1193,18 @@ C$OMP BARRIER
       if(ierr .ne. nf90_noerr) goto 2
 
       ! Read variable
-      ierr = ncdf_read_mod(ncid, var_id, record,
+
+      if(coarse==1) then ! INTERPOLATED CASE: read coarse grid data
+
+        ierr = ncdf_read_coarser_grid(ncid, var_id, record,
+     &                           var_type, var_array, nmax) ! grid type, array, nmax
+
+      else ! NORMAL CASE: Reading forcing from same sized grid
+
+        ierr = ncdf_read_mod(ncid, var_id, record,
      &                           var_type, var_array, nmax)
+
+      endif
 
       ! Error handling
       ! --------------
@@ -1255,9 +1274,9 @@ C$OMP BARRIER
 
       function ncdf_write_mod(ncid, varid, record, horiz_type, A, nmax)
 
-      ! ============================
-      ! Write variable to input file (low-level)
-      ! ============================
+      ! =============================
+      ! Write variable to output file (low-level)
+      ! =============================
 
       ! Routine is tailored to account for MPI tile size differences
       ! and boundary nodes.
@@ -1460,9 +1479,9 @@ C$OMP BARRIER
 
       function ncdf_read_mod(ncid, varid, record, horiz_type, A, nmax)
 
-      ! ===========================
-      ! Read variable to input file (low-level)
-      ! ===========================
+      ! =============================
+      ! Read variable from input file (low-level)
+      ! =============================
 
       ! Routine is tailored to account for MPI tile size differences
       ! and boundary nodes.
@@ -1664,6 +1683,769 @@ C$OMP BARRIER
       error stop ! Stop simulation assumed fatal error
 
       end subroutine handle_ierr
+
+
+! ----------------------------------------------------------------------
+
+      function ncdf_read_coarser_grid(ncid, varid, record,
+     &                                             horiz_type, A, nmax)
+
+      ! =========================
+      ! Read coarse grid variable
+      ! from input file
+      ! =========================
+
+      ! Routine is tailored to account for MPI tile size differences
+      ! and boundary nodes.
+
+      ! Routine is tailored from ncdf_read_mod
+
+      ! LIMITATIONS
+      ! -----------
+      ! It can read in forcing data from files with a grid exactly half the
+      ! number of grid points as the simulation grid points. It has the
+      ! following limitations (note the 'c' is used to signify the coarser
+      ! grid):
+      ! A) LLm = 2 x LLmc    and    MMm = 2 x MMmc
+      ! B) Boundary MPI tiles need to be used completely, i.e. the number
+      !    of grid points in a direction are perfectly divisble by the
+      !    number of MPI subdomains in that direction. This is necessary
+      !    so that the MPI subdomains cover the same physical grid regions. (If LLm/NP_XI divides perfectly, but LLmc/NP_XI does not, then with width of the subdomains in the xi direction will be a different size, which is the current algorithm cannot handle.
+      ! C) Input variables & resulting interpolated variable 'A' are both
+      !    rho-point variables.
+
+      ! ---------------------------------------------
+
+      ! Read a floating point array from an input netCDF file.
+
+      ! Arguments:
+      !            A       real array of standard horizontal dimensions
+      !                                  which is to be read.
+      !            ncid    netCDF ID of in the file.
+      !            varid   variable ID of that variable in netCDF file.
+      !            record  record number.
+      !            type    type of the grid (RHO-, U, V, W, PSI etc.)
+
+      implicit none
+
+
+      ! Output
+      ! ------
+      integer ncdf_read_coarser_grid
+
+      ! Inputs
+      ! ------
+      integer ncid, varid, record, horiz_type, nmax
+      ! record = 0 for reading grid variables not forcing variables
+!#include "param.h"
+      ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
+      ! 'A' represents variable used within simulation
+      ! If A remains 2D variable for coarse grid interp then make it
+      ! 2D variable instead of 3D with z-index=1
+      real A(GLOBAL_2D_ARRAY,nmax)
+
+      ! Local
+      ! -----
+
+      logical mask_land_data
+      integer vid, i,j,k, shft, ierr
+#include "buffer.h"
+#ifdef MASK_LAND_DATA
+# include "grid.h"
+      real*8, parameter :: spv_set=1.D+33
+#endif
+
+      ! New variables (DevinD)
+      ! =============
+      integer Cimin,Cimax,Cjmin,Cjmax, Cstart(4),Ccount(4)
+      integer ic,jc,ir,jr,Lmc,Mmc,c,adj_ir,adj_jr ! indices of coarse and refined variables
+      integer corn_imin,corn_imax,corn_jmin,corn_jmax
+      real    shftC
+      real    temp_int ! Temporary internal rho-point for calculations
+      real    temp_ext ! Temporary external rho-point for calculations
+      ! Raw coarse corner values and indices from MPI exchange:
+      real    SE_raw,SW_raw,NE_raw,NW_raw ! temperary variables
+      integer, dimension(4) :: x_SW,y_SW,x_SE,y_SE,x_NW,y_NW,x_NE,y_NE ! temperary variables
+      logical corner_bool
+
+#include "compute_starts_counts.h"
+
+      ierr=nf90_noerr ! Set ierr to no error
+
+      ! Compute coarse grid
+      ! -------------------
+
+      ! Currently algorithm is for perfectly
+      ! divisible grid points vs mpi tiling only:
+
+      ! For perfect tile size scaling, number of internal nodes in each
+      ! direction is half of refined grid for the coarser grid.
+      Lmc = Lm/2 ! Lmc = coarse grid number of rho-points in xi-direction in cell
+      Mmc = Mm/2
+
+      Cimin = imin        ! Interior imin=1 Cimin=1, west bound: imin=0 Cimin=0
+
+      if (EASTERN_MPI_EDGE) then ! Could switch this round (!EAST) for faster code?
+        Cimax=Lmc+1       ! east bound: imax=Lm+1 Cimax=Lmc+1
+      else
+        Cimax=Lmc         ! Interior imax=Lm Cimax=Lmc
+      endif
+
+      Cjmin = jmin        ! Interior jmin=1 Cjmin=1, west bound: jmin=0 Cjmin=0
+
+      if (NORTHERN_MPI_EDGE) then ! Could switch this round (!EAST) for faster code?
+        Cjmax=Mmc+1
+      else
+        Cjmax=Mmc         ! Interior jmax=Mm Cjmax=Mmc
+      endif
+
+      do i=1,4          ! start,count(1:2) correspond to XI- and ETA-
+        Cstart(i)=1     ! dimensions, while 3 is either for vertical
+        Ccount(i)=1     ! dimension (if any) or for time record
+      enddo             ! (2D-fields); 4 is for time record only
+
+
+      Ccount(1)=Cimax-Cimin+1 ! No. points in x. Usually Lmc, E/W boundary = Lmc+1
+      Ccount(2)=Cjmax-Cjmin+1 ! No. points in y. Usually Mmc, N/S boundary = Mmc+1
+      Cstart(3)=record
+
+
+      if (varid > 0) then          ! Normally netCDF IDs are positive.
+        vid=varid                  ! Negative "varid" is used here as
+        mask_land_data=.true.      ! flag to signal that land masking
+      else                         ! does not need to be applied for
+        vid=-varid                 ! this variable (typically this is
+        mask_land_data=.false.     ! reserved for grid variables and
+      endif                        ! topography).
+
+      ! Read array from the disk.
+      !===== ===== ==== === =====
+
+! Leaving debug functionality in until fully testsed
+#ifdef debug_ddevin
+      ! Needed if reading in grid variables as does not go through
+      ! set_frc_var_tile wrapper and hence netcdf file not open already
+      ierr=nf90_open(frcfile(3), nf90_nowrite, ncid)
+      ierr=nf90_inq_varid (ncid,'lat_rho',vid)
+#endif
+
+      ierr=nf90_get_var(ncid, vid, buff, Cstart,Ccount)
+      if (ierr /= nf90_noerr) call handle_ierr(ierr) ! Error termination
+!      ierr=nf90_get_var(ncid, vid, buff, start,count) ! ncdf_read_mod version
+
+      if(mynode==0) print*, 'Interp-var' ! Confirm interpolating
+
+!      if(mynode==0) then
+!        print *, 'buff(1)',buff(1),'buff(2)',buff(2)
+!        print *, 'buff(1+Ccount(1))',buff(1+Ccount(1))
+!        print *, 'buff(2+Ccount(1))',buff(2+Ccount(1))
+!        print *, 'imin',imin,'imax',imax,'jmin',jmin,'jmax',jmax
+!        print *, 'Cimin',Cimin,'Cimax',Cimax,'Cjmin',Cjmin,'Cjmax',Cjmax
+!        print *, 'start(1)',start(1),'start(2)',start(2)
+!        print *, 'Cstart(1)',Cstart(1),'Cstart(2)',Cstart(2)
+!        print *, 'count(1)',count(1),'count(2)',count(2)
+!        print *, 'Ccount(1)',Ccount(1),'Ccount(2)',Ccount(2)
+!        print *, 'Lmc',Lmc,'Lm',Lm
+!        print *, 'Mmc',Mmc,'Mm',Mm
+!      endif
+
+      ! This paragraph is from ncdf_read_mod:
+      ! Note that expression for "shft" is exactly the same in all five
+      ! cases below, while application of land mask is different for the
+      ! variables of different grid staggering; also note effectively .or.
+      ! rather than .and. logic in setting velocity values to infinity:
+      ! velocity components at the boundary (normal to it) are set to 0,
+      ! while the ones fully inside (between two land points) to spv.
+
+      ! Interpolation process
+      ! =====================
+
+      ! Interpolation scheme: bilinear interpolation.
+
+      ! Tile relations
+      ! --------------
+
+      ! relation between refined nodes to coarse nodes:
+      ! Refined node is closer to cell border
+      ! hence between coarse nodes AA and BB
+      ! we interpolate refined nodes 22,32,23,33
+      ! (Letters for numbers AA=1,1 & BB=2,2 for coarse nodes)
+      ! (numbers for refined nodes)
+      !
+      !       (Internal tile)
+      !     ___________________
+      !    |                   |
+      !    | 14    24 34    44 |
+      !    |    AB       BB    |
+      !    | 13    23 33    43 |
+      !    | 12    22 32    42 |
+      !    |    AA       BA    |
+      !    | 11    21 31    41 |
+      !    |___________________|
+
+      ! Part 1 - Interior points
+      ! ------------------------
+      ! 1a) Interpolate interior points (excluding refined grid tile
+      !     boundary).In this case only 22,32,23,33 are surrounded by
+      !     coarse data andhence can be interpolated fully.
+      ! 1b) Adjust refined grid indices to interpolate tile boundaries
+      !     for cells that sit on the domain boundary. [See 2d) below]
+
+      ! Part 2 - Tile boundary
+      ! ----------------------
+      ! 2a) Interpolate north and south boundary in x-direction (exclude corner points)
+      !     E.g.: x-interpolation of 21 and 31 using coarse nodes AA & BA
+      ! 2b) Interpolate west and east boundary in y-direction (exclude corner points)
+      !     E.g.: y-interpolation of 12 and 31 using coarse nodes AA & AB
+      ! 2c) Populate the corner nodes with raw value of coarse corner points,
+      !     since cannot interpolate from 1 point. This will be done later.
+      !     E.g.: 11=AA, 41=BA, 14=AB, 44=BB
+      ! 2d) Deal with boundary edges of boundary tiles since the domain
+      !     has extra rho-point beyond each grid boundary, it is possible
+      !     to immediately interpolate these boundaries.
+      !     In the 'boundary tile' diagram below we can see that for the
+      !     western edge refined nodes 00-03 and 10-13 can be directly
+      !     interpolated from coarse nodes ZZ-ZB and AZ-AB.
+      !     Similar applies for the southern edge.
+      !     Note, a 1D interpolation in x-direction for refined nodes
+      !     04 & 14 is needed from coarse nodes ZB & AB. These can only
+      !     be completed after an MPI exchange.
+      !     Same applies for refined nodes 40 & 41 in y-direction.
+      !
+      !
+      !          (Boundary tile)
+      !       |___________________|_
+      !       |                   |
+      !    04 | 14    24 34    44 |
+      ! ZB    |    AB       BB    |
+      !    03 | 13    23 33    43 |
+      !    02 | 12    22 32    42 |
+      ! ZA    |    AA       BA    |
+      !    01 | 11    21 31    41 |
+      !       |___________________|___
+      !
+      !    00   10    20 30    40
+      ! ZZ         AZ       BZ
+
+      ! Part 3 - MPI exchange
+      ! ---------------------
+      ! In order to complete the interpolation of the tile boundary, an
+      ! MPI exchange is needed to get the coarse point values in the
+      ! conputational margin beyond the tile boundary.
+
+      ! Part 4 - Interpolate boundary
+      ! -----------------------------
+      ! 4a) Complete 1D tile boundary interpolations using values
+      !     received from MPI exchange
+      ! 4b) Complete tile corner interpolations of raw corner value
+      !     now available from MPI exchange
+
+      ! Note: There is no need to do another MPI exchange as computational
+      ! margins of tile are complete and interpolated.
+
+
+      ! *Part 1b (adjustment of refined indices)
+      ! -------- (Additional description)
+      ! For internal MPI tiles, it is not possible to calculate the
+      ! single row/column directly against the tile border, since the
+      ! border coarse points sit closer to the cell centre than the border
+      ! refined points (as seen above in 'internal tile' diagram).
+      ! This means interpolating the refined points is
+      ! not immediately possible without and MPI exchange to get coarse
+      ! point values in the tile's computational margin. As per refined
+      ! nodes 11-41 in 'Internal tile' diagram above.
+      ! However, since there is an extra rho-point beyond the domain
+      ! boundary for all tiles on the domain boundary (see 'Boundary tile'
+      ! diagram, it is possible to interpolate all the refined nodes on
+      ! the boundary imediately.
+      ! The most efficient way to do the boundary is to use the same routine
+      ! to populate the interior nodes, but just use a mechanism to shift
+      ! the refined node numbers to correspond to the boundary tiles.
+      !
+      ! Here is an example of how coarse node numbers ic/jc relate to
+      ! refined grid numbers for interior/boundary tiles.
+      ! For interior tiles the loop populates as follows:
+      ! ic=1,jc=1 -> ir=2,jr=2 (refined nodes adjacent to the NE direction)
+      ! E.g. AA -> 22 in the 'internal tile' diagram
+      !
+      ! However, for interior and boundary tiles:
+      ! TILE       ic jc   ir jr
+      ! interior   1  1    2  2
+      ! SW corner  0  0    0  0
+      ! southern   1  0    2  0
+      ! western    0  1    0  2
+
+      ! This are only necessary on the minimum side as the maximum size
+      ! is satisfied already by the algorithm.
+
+      ! The goal is thus to get the Cimin & Cjmin to correspond to the
+      ! correct ir and jr points using an adjustment index.
+      ! It is necessary to look at how ir/jr are calculated relative
+      ! to ic/jc in order to get the correct adj_ir/adj_jr.
+
+      if (SOUTHERN_MPI_EDGE) then
+        adj_jr = -1  ! If Cjmin=0, need jr=0, but jr= 2*jc-Cjmin+1 = 2*0-0+1 = 1, hence need adj_jr=-1
+      else
+        adj_jr = 0
+      endif
+
+      if (WESTERN_MPI_EDGE) then
+        adj_ir = -1  ! If Cimin=0, need ir=0, but ir= 2*ic-Cimin+1 = 2*0-0+1 = 1, hence need adj_ir=-1
+      else
+        adj_ir = 0
+      endif
+
+      ! debug
+!      if(mynode==9) then
+!        print *, 'adj_ir', adj_ir, 'adj_jr', adj_jr
+!      endif
+
+      ! debug DevinD - set A to zero to highlight missed indices if any.
+      A = 0
+
+!#ifdef MASK_LAND_DATA
+!        if (mask_land_data) then
+
+!      if (horiz_type == 0) then ! r_var
+
+      ! Part 1 (Interpolate interior of tile)
+      ! ------
+
+      ! Removed k index loop
+
+      do jc=Cjmin,Cjmax-1 ! Loop through coarse indices
+        ! +1 below because refined node is closer to border so 1c1c -> 2r,2r are neighbours.
+        jr=2*jc-Cjmin + 1 + adj_jr ! +1 could be worked into adj_jr
+        ! ncdf_read_mod version of shft:
+        ! shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+        ! shft=1... because netcdf indices start from 1 not 0.
+        ! For rho points imin=jmin=1 for interior nodes.
+        ! Ccount(1) is number of nodes in xi-direction for coarse
+        ! tile. This is needed because coarse variable is read into
+        ! an array called 'buff' which is stored based on rows in
+        ! xi-direction.
+        ! In terms of coarse points we find points:
+        ! (1,1)   = buff(1)
+        ! (2,1)   = buff(2)
+        ! (Lmc,1) = buff(Lmc)
+        ! (2,1)   = buff(Lmc+1)
+        ! (2,2)   = buff(Lmc+2)
+        shftC=1-Cimin+Ccount(1)*(jc-Cjmin) ! shft for coarse variable
+        do ic=Cimin,Cimax-1 ! Loop through coarse point indices
+          ! +1 below because refined node is closer to border so 1c1c -> 2r,2r are neighbours.
+          ir=2*ic-Cimin + 1 + adj_ir ! +1 should be worked into adj_ir
+
+!          if (mynode==0 .and. ic <= 1 .and. jc <= 1) then ! debug
+!            print *, 'ic',ic,'jc',jc
+!            print *, 'ir',ir,'jr',jr
+!            print *, 'ic+shftC',ic+shftC,buff(ic+shftC)
+!            print *, 'ic+shftC+1',ic+shftC+1,buff(ic+shftC+1)
+!            print *, 'ic+shftC+Lmc',ic+shftC+Lmc,buff(ic+shftC+Lmc)
+!            print *, 'ic+shftC+Lmc+1',ic+shftC+Lmc+1,buff(ic+shftC+Lmc+1)
+!          endif
+
+!                  if (rmask(i,j) > 0.5) then ! JM -> don't need to mask
+
+          ! 1N,1E of ic,jc (Decimal required to prevent integer division)
+          A(ir  ,jr  ,1)= 9./16.*buff(ic+shftC)             ! AA -> 22
+     &                  + 3./16.*buff(ic+shftC+1)           ! BA -> 22
+     &                  + 3./16.*buff(ic+shftC+Ccount(1))   ! AB -> 22
+     &                  + 1./16.*buff(ic+shftC+Ccount(1)+1) ! BB -> 22
+
+          ! 1N,2E of ic,jc
+          A(ir+1,jr  ,1)= 3./16.*buff(ic+shftC)             ! AA -> 32
+     &                  + 9./16.*buff(ic+shftC+1)           ! BA -> 32
+     &                  + 1./16.*buff(ic+shftC+Ccount(1))   ! AB -> 32
+     &                  + 3./16.*buff(ic+shftC+Ccount(1)+1) ! BB -> 32
+
+          ! 2N,1E of ic,jc
+          A(ir  ,jr+1,1)= 3./16.*buff(ic+shftC)             ! AA -> 23
+     &                  + 1./16.*buff(ic+shftC+1)           ! BA -> 23
+     &                  + 9./16.*buff(ic+shftC+Ccount(1))   ! AB -> 23
+     &                  + 3./16.*buff(ic+shftC+Ccount(1)+1) ! BB -> 23
+
+          ! 2N,2E of ic,jc
+          A(ir+1,jr+1,1)= 1./16.*buff(ic+shftC)             ! AA -> 33
+     &                  + 3./16.*buff(ic+shftC+1)           ! BA -> 33
+     &                  + 3./16.*buff(ic+shftC+Ccount(1))   ! AB -> 33
+     &                  + 9./16.*buff(ic+shftC+Ccount(1)+1) ! BB -> 33
+
+! debug
+!      if ((mynode==0) .and. ic==Cimin .and. jc==Cjmin) then
+!        print *, 'ic',ic,'jc',jc,': ir',ir,'jr',jr
+!        print *, 'A(ir  ,jr  ,1)',  A(ir  ,jr  ,1), mynode
+!        print *, 'A(ir+1,jr  ,1)',  A(ir+1,jr  ,1), mynode
+!        print *, 'A(ir  ,jr+1,1)',  A(ir  ,jr+1,1), mynode
+!        print *, 'A(ir+1,jr+1,1)',  A(ir+1,jr+1,1), mynode
+!      endif
+
+!                  else
+!
+!                    A(i,j,1)=0.D0
+!
+!                  endif
+
+          ! Part 2a (Tile boundary - xi-direction)
+          ! -------
+
+          ! This should account for refined rho point beyond
+          ! domain boundary, for boundary tiles.
+
+          ! South boundary - 1D xi-interpolation only on
+          ! southern row of course points
+          ! Must actually be exchanging with a southern MPI
+          ! neighbour
+          if(south_exchng .and. jc==Cjmin) then ! If first course j index
+            A(ir  ,jmin,1)= 3./4.*buff(ic+shftC)      ! AA -> 21
+     &                    + 1./4.*buff(ic+shftC+1)    ! BA -> 21
+
+            A(ir+1,jmin,1)= 1./4.*buff(ic+shftC)      ! AA -> 31
+     &                    + 3./4.*buff(ic+shftC+1)    ! BA -> 31
+          endif
+
+          ! North boundary - 1D xi-interpolation only on
+          ! northern row of course points
+          if(north_exchng .and. jc==Cjmax-1) then ! If last course j index of loop
+            A(ir  ,jmax,1)= 3./4.*buff(ic+shftC+Ccount(1))  ! AB -> 24
+     &                    + 1./4.*buff(ic+shftC+Ccount(1)+1)! BB -> 24
+
+            A(ir+1,jmax,1)= 1./4.*buff(ic+shftC+Ccount(1))  ! AB -> 34
+     &                    + 3./4.*buff(ic+shftC+Ccount(1)+1)! BB -> 34
+          endif
+
+          ! Part 2b (Tile boundary - eta-direction)
+          ! -------
+
+          ! This should account for refined rho point beyond
+          ! domain boundary, for boundary tiles.
+
+          ! West boundary - 1D eta-interpolation only on
+          ! western column of course points
+          if(west_exchng .and. ic==Cimin) then ! If first course i index
+            A(imin,jr  ,1)= 3./4.*buff(ic+shftC)            ! AA -> 12
+     &                    + 1./4.*buff(ic+shftC+Ccount(1))  ! AB -> 12
+
+            A(imin,jr+1,1)= 1./4.*buff(ic+shftC)            ! AA -> 13
+     &                    + 3./4.*buff(ic+shftC+Ccount(1))  ! AB -> 13
+          endif
+
+          ! East boundary - 1D eta-interpolation only on
+          ! eastern column of course points
+          if(east_exchng .and. ic==Cimax-1) then ! If last course i index of loop
+            A(imax,jr  ,1)= 3./4.*buff(ic+shftC+1)          ! BA -> 42
+     &                    + 1./4.*buff(ic+shftC+Ccount(1)+1)! BB -> 42
+
+            A(imax,jr+1,1)= 1./4.*buff(ic+shftC+1)          ! BA -> 43
+     &                    + 3./4.*buff(ic+shftC+Ccount(1)+1)! BB -> 43
+          endif
+
+        enddo ! i
+      enddo ! j
+
+
+
+      ! Part 2c (Corner nodes)
+      ! -------
+      ! Store raw value of coarse corners into refined corners
+      ! to transfer in MPI exchange later for interpolation of
+      ! corners
+      ! This should only be for interior corners not tile corners
+      ! that sit on the grid boundary.
+      ! E.g. Tile with NE corner that is considered interior will
+      ! exchange both north and east. if north_exchng .and. east_exchang
+      ! Note, have not used 'else if' as tile could exchng in all directions.
+      if (south_exchng) then
+        ! Point 11 -> SW corner
+        if (west_exchng) A(imin,jmin,1)=buff(1)
+        ! Point 41 -> SE corner
+        if (east_exchng) A(imax,jmin,1)=buff(Ccount(1))
+      endif
+      if (north_exchng) then
+      ! Point 41 -> NW corner
+        if (west_exchng) A(imin,jmax,1)=buff(1+Ccount(1)*(Cjmax-Cjmin))
+      ! Point 44 -> NE corner
+!                if (east_exchng) A(imax,jmax,1)=buff(Ccount(1)*Cjmax) ! Should be Cjmax-Cjmin+1
+        ! need: Cjmax-Cjmin+1 as bottom boundary tiles start from
+        ! Cjmin=0 thus need +1 to account for that
+        if (east_exchng) A(imax,jmax,1)=buff(Ccount(1)*(Cjmax-Cjmin+1))
+      endif
+
+
+              ! Debug
+!              if(mynode==9) then
+!          print *, 'A(imin  ,jmin  ,1)', A(imin  ,jmin,1), 'SW corner'
+!          print *, 'A(imin+1,jmin  ,1)', A(imin+1,jmin,1), 'south bound'
+!          print *, 'A(imin+2,jmin  ,1)', A(imin+2,jmin,1), 'south bound'
+!          print *, 'A(imin  ,jmax  ,1)', A(imin,jmax,1),   'NW corner'
+!          print *, 'A(imin  ,jmin+1,1)', A(imin,jmin+1,1), 'west bound'
+!          print *, 'A(imin  ,jmin+2,1)', A(imin,jmin+2,1), 'west bound'
+!          print *, 'A(imax  ,jmin  ,1)', A(imax,jmin,1),   'SE corner'
+!          print *, 'A(imax  ,jmin+1,1)', A(imax,jmin+1,1), 'east bound'
+!          print *, 'A(imax  ,jmin+2,1)', A(imax,jmin+2,1), 'east bound'
+!          print *, 'A(imax  ,jmax  ,1)', A(imax,jmax,1),   'NE corner'
+!          print *, 'A(imin+1,jmax  ,1)', A(imin+1,jmax,1), 'north bound'
+!          print *, 'A(imin+2,jmax  ,1)', A(imin+2,jmax,1), 'north bound'
+!              endif
+
+      ! Part 3 (MPI exchange)
+      ! ------
+
+#ifdef EXCHANGE
+# ifdef MPI
+#  define EXCH_ARR_RANGE iwest,ieast,jsouth,jnorth
+# else
+#  define EXCH_ARR_RANGE 1,Lm,1,Mm
+# endif
+# ifdef SOLVE3D
+      call exchange_tile(EXCH_ARR_RANGE, A,1) ! Swapped nmax for 1 for now
+# else
+      call exchange2d_tile(EXCH_ARR_RANGE, A)
+# endif
+#endif
+
+
+      ! Part 4 (Complete tile boundary interpolation)
+      ! ------
+
+      ! After the MPI exchange we find the following, let's look at the
+      ! computational margin of an interior tile at its SW corner:
+      !
+      ! Current tile margins filled in exchange
+      !
+      !  .       |
+      !  .  from |     current
+      !  .    W  |      tile
+      !  .       |
+      !  .       |
+      !  . . . . |_______________           ! Solid line is tile boundary
+      !  .       .
+      !  .  from .     from                 ! 2 point computational margin
+      !  .   SW  .       S
+      !  . . . . . . . . . . . . .          ! Dotted lines to show tile margin
+      !
+      !
+      !
+      !  Remaining interpolations:
+      !
+      !  . o   x | x   o   o   o
+      !  .       |
+      !  . o   x | x   o   o   o
+      !  .       |
+      !  . y   c | c   y   y   y
+      !  . . . . |_______________           ! Solid line is tile boundary
+      !  . y   c . c   y   y   y
+      !  .       .                          ! 2 point computational margin
+      !  . o   x . x   o   o   0
+      !  . . . . . . . . . . . . .          ! Dotted lines to show tile margin
+      !
+      !
+      ! After the MPI exchange:
+      ! - points marked 'o' are complete already from 'part 1'
+      ! - points marked 'x' have had 1D interpolation in y already in 'part 2'
+      !   and all that remains is remaining 1D interpolation in x to complete bilinear interp.
+      ! - points marked 'y' have had 1D interpolation in x already in 'part 2'
+      !   and all that remains is remaining 1D interpolation in y to complete bilinear interp.
+      ! - points marked 'c' are raw corner values for coarse grid tiles,
+      !   and still need full bilinear interpolation.
+      !
+      ! For boundary tiles:
+      !   We only have the 'c' corner exchange for interior corners of the
+      !   boundary tile. For corners on the domain boundary we do not have
+      !   to do the special routine for 'c' points.
+      !   Hence we introduce indices markers corn_imin/jmin/imax/jmax
+      !   that act as imin/jmin/imax/jmax for interior corners, but are
+      !   ignored on the domain boundary. In the routine below.
+
+      ! Note: this might not be needed due to:
+      ! if (west_exchng) then temp_int... below.
+      ! Use on or the other. This one probably more efficient but
+      ! messier code
+      if (SOUTHERN_MPI_EDGE) then ! using if (not SOUTHERN) might be more efficient order.
+        ! Arbitrary negative number beyond loop range to
+        ! over-ride 'c' value since it is not an internal tile corner
+        corn_jmin = -100
+      else
+        corn_jmin = jmin
+      endif
+      if (NORTHERN_MPI_EDGE) then
+        ! Arbitrary negative number beyond loop range to
+        ! over-ride 'c' value since it is not an internal tile corner
+        corn_jmax = -100
+      else
+        corn_jmax = jmax
+      endif
+      if (WESTERN_MPI_EDGE) then
+        ! Arbitrary negative number beyond loop range to
+        ! over-ride 'c' value since it is not an internal tile corner
+        corn_imin = -100
+      else
+        corn_imin = imin
+      endif
+      if (EASTERN_MPI_EDGE) then
+        ! Arbitrary negative number beyond loop range to
+        ! over-ride 'c' value since it is not an internal tile corner
+        corn_imax = -100
+      else
+        corn_imax = imax
+      endif
+
+      ! Points 'x' (1D interpolation in xi-direction)
+      ! ---------- (west + east sides of tile)
+
+      ! Loop through entire cell range including margin
+      do j=imin-2,jmax+2 ! Hardcoded for interior nodes?
+
+        ! Avoid overridding 'c' points. (Note, overhead of if statement)
+        if(j/=corn_jmin-1 .and. j/=corn_jmin .and.
+     &     j/=corn_jmax   .and. j/=corn_jmax+1) then
+
+          ! Tile's west boundary:
+          if (west_exchng) then ! Not for western boundary tiles as they are accounted for in part 1
+            temp_int      = A(imin,j,1) ! Need to store one value temporarily
+            A(imin  ,j,1) = 3./4.*temp_int + 1./4.*A(imin-1,j,1)
+            A(imin-1,j,1) = 1./4.*temp_int + 3./4.*A(imin-1,j,1)
+          endif
+
+          ! Tile's east boundary:
+          if (east_exchng) then ! Not for western boundary tiles as they are accounted for in part 1
+            temp_int      = A(imax,j,1) ! Need to store one value temporarily
+            A(imax  ,j,1) = 3./4.*temp_int + 1./4.*A(imax+1,j,1)
+            A(imax+1,j,1) = 1./4.*temp_int + 3./4.*A(imax+1,j,1)
+          endif
+
+        endif
+
+      end do
+
+      ! Could hard code 4 outstanding x-interps in outer tile
+      ! margin corners for lower overhead of if's. E.g. 1st SW corner:
+      ! temp_ext           = A(imin-1,jmin-2,1)
+      ! A(imin-1,jmin-2,1) = 3./4.*temp_ext + 1./4.*A(imin  ,jmin-2,1)
+      ! A(imin  ,jmin-2,1) = 1./4.*temp_ext + 3./4.*A(imin  ,jmin-2,1)
+
+      ! Points 'y' (1D interpolation in eta-direction)
+      ! ---------- (north + south sides of tile)
+
+      do i=imin-2,imax+2
+
+        ! Avoid overridding 'c' points. (Note, overhead of if statement)
+        if(i/=corn_imin-1 .and. i/=corn_imin .and.
+     &     i/=corn_imax   .and. i/=corn_imax+1) then
+
+          ! Tile's south boundary:
+          if(south_exchng) then
+            temp_int      = A(i,jmin,1) ! Need to store one value temporarily
+            A(i,jmin  ,1) = 3./4.*temp_int + 1./4.*A(i,jmin-1,1)
+            A(i,jmin-1,1) = 1./4.*temp_int + 3./4.*A(i,jmin-1,1)
+          endif
+
+          ! Tile's north boundary:
+          if(north_exchng) then
+            temp_int      = A(i,jmax,1) ! Need to store one value temporarily
+            A(i,jmax  ,1) = 3./4.*temp_int + 1./4.*A(i,jmax+1,1)
+            A(i,jmax+1,1) = 1./4.*temp_int + 3./4.*A(i,jmax+1,1)
+          endif
+
+        endif
+
+      end do
+
+      ! Could hard code 4 outstanding x-interps in outer tile
+      ! margin corners for lower overhead of if's. E.g. 1st SW corner:
+      ! temp_ext           = A(imin-2,jmin-1,1)
+      ! A(imin-2,jmin-1,1) = 3./4.*temp_ext + 1./4.*A(imin-2,jmin,1)
+      ! A(imin-2,jmin  ,1) = 1./4.*temp_ext + 3./4.*A(imin-2,jmin,1)
+
+
+      ! Corner points 'c' (bilinear interpolation)
+      ! -----------------
+
+      ! Can loop through 4 corners but requires array,
+      ! Or write it out explicitly for each corner,
+      ! not sure what is more worthwhile.
+      ! Loop would be: store x/y indices in array for loop
+      ! Indices: 1-SW of tile, 2-SE, 3-NW, 4-NE
+      ! And within each corner there are 4 'c' points again split
+      ! by SW/SE/NW/NE.
+      x_SW = [ imin-1, imax  , imin-1, imax   ]
+      y_SW = [ jmin-1, jmin-1, jmax  , jmax   ]
+      x_SE = [ imin  , imax+1, imin  , imax+1 ]
+      y_SE = [ jmin-1, jmin-1, jmax  , jmax   ]
+      x_NW = [ imin-1, imax  , imin-1, imax   ]
+      y_NW = [ jmin  , jmin  , jmax+1, jmax+1 ]
+      x_NE = [ imin  , imax+1, imin  , imax+1 ]
+      y_NE = [ jmin  , jmin  , jmax+1, jmax+1 ]
+
+      ! Loop through 4 corners
+      do c=1,4
+
+        ! Only internal corners remaining, hence to be an internal
+        ! corner it need to be exchanging in both directions
+        ! i.e. internal SW corner will exchange south and
+        ! exchange west
+        corner_bool = .false. ! Refresh corner bool
+        if      (c==1) then
+          if (south_exchng .and. west_exchng) then
+            corner_bool = .true.
+          endif
+        else if (c==2) then
+          if (south_exchng .and. east_exchng) then
+            corner_bool = .true.
+          endif
+        else if (c==3) then
+          if (north_exchng .and. west_exchng) then
+            corner_bool = .true.
+          endif
+        else if (c==4) then
+          if (north_exchng .and. east_exchng) then
+            corner_bool = .true.
+          endif
+        endif
+
+        ! If it is an interior corner, interpolate corner
+        if (corner_bool==.true.) then
+
+        ! This would probably be better dealth with by putting the
+        ! below in its own function and calling:
+        ! calc_interp(A(x_SW(c),y_SW(c),1),x_SE(c),y_SE(c),1)...)
+
+        ! store values so not over-written
+        SW_raw = A(x_SW(c),y_SW(c),1)
+        SE_raw = A(x_SE(c),y_SE(c),1)
+        NW_raw = A(x_NW(c),y_NW(c),1)
+        NE_raw = A(x_NE(c),y_NE(c),1) ! Could leave last one for efficiency
+
+        ! Could put this in a seperate function to call multiple
+        ! times neatly.
+        A(x_SW(c),y_SW(c),1)= 3./16.*NW_raw + 1./16.*NE_raw
+     &                      + 9./16.*SW_raw + 3./16.*SE_raw
+
+        A(x_SE(c),y_SE(c),1)= 1./16.*NW_raw + 3./16.*NE_raw
+     &                      + 3./16.*SW_raw + 9./16.*SE_raw
+
+        A(x_NW(c),y_NW(c),1)= 9./16.*NW_raw + 3./16.*NE_raw
+     &                      + 3./16.*SW_raw + 1./16.*SE_raw
+
+        A(x_NE(c),y_NE(c),1)= 3./16.*NW_raw + 9./16.*NE_raw
+     &                      + 1./16.*SW_raw + 3./16.*SE_raw
+
+        end if ! corner_bool
+
+      end do ! c
+
+
+!      endif ! rho-variable
+
+
+!#endif ! mask_land_data
+
+!      endif
+
+      ncdf_read_coarser_grid=ierr
+
+
+      end function ncdf_read_coarser_grid
+
 
 ! ----------------------------------------------------------------------
 

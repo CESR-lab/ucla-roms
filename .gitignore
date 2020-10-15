@@ -10,7 +10,8 @@
 *.log
 jobout
 mpc
-roms*
+roms
+roms-*
 test_tiling
 redefs
 incl
@@ -23,7 +24,6 @@ Examples/*/*.nc
 Examples/*/fort*
 Work/
 setup_kwds.F
-roms*
 Examples/*/Compile
 check_switches1.F
 check_srcs.F
