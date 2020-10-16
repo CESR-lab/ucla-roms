@@ -29,38 +29,59 @@
 #include "param.h"
 
       ! ****************************************************************
-      ! User inputs
+      ! User inputs, make sure that units in the forcing files match!
 
-      ! Interpolate forcing from coarser input grid
-      integer :: interp_frc = 0 ! Possibly needs to be public?
-      ! 0 -> don't interpolate, read same sized forcing files
-      ! 1 -> interpolate from coarser input grid
+      ! Interpolate forcing from coarser input grid or not (0/1)
+      integer :: interp_frc = 0 ! Factor 2 only for now
+
+      ! u-wind (input data in m/s)
+      ! ------
+      character(len=4) :: uwnd_name = 'uwnd'
+      character(len=8) :: uwnd_time_name = 'wnd_time'
+
+      ! v-wind (input data in m/s)
+      ! ------
+      character(len=4) :: vwnd_name = 'vwnd'
+      character(len=8) :: vwnd_time_name = 'wnd_time'
+
+      ! Air temp (input data Degrees C)
+      ! ---------------
+      character(len=4) :: tair_name = 'Tair'
+      character(len=9) :: tair_time_name = 'tair_time'
+
+      ! Q (Specific humidity (kg/kg) NOT relative hum.)
+      ! ----
+      character(len=4) :: Q_name = 'Qair'
+      character(len=9) :: Q_time_name = 'qair_time'
+
+      ! Precipitation rate (cm/day)
+      ! ------------------
+      character(len=4) :: prate_name = 'rain'
+      character(len=9) :: prate_time_name = 'rain_time'
+
+      ! Net downward longwave radiation [W/m^2]
+      ! ----------------------------------
+      character(len=10):: lwrad_name = 'lwrad_down'
+      character(len=8) :: lwrad_time_name = 'lrf_time'
+
+      ! net shortwave radiation [W/m^2] 
+      ! -----------------------------
+      character(len=5) :: swrad_name = 'swrad'
+      character(len=8) :: swrad_time_name = 'srf_time'
 
       ! End of user inputs
       ! *************************************************************
 
-      ! Variables
-      ! =========
 
-      ! wind
-      ! ----
-
-      ! Note in old code u-wind was uwnd but in new code it is
-      ! uwind. Should be consistent as some point. Same for v-wind.
-
-       ! u-wind (input data in m/s)
-       ! ------
         ! stores raw data u-wind for 2 times: time_A < model_time < time_B
       real uwnd_data(GLOBAL_2D_ARRAY,2)
       real uwnd(GLOBAL_2D_ARRAY) ! Stores time interpolated u-wind
       ! grid type are needed for ncdf_read in read_write ncdf module
       integer :: uwnd_grd_type = 0 ! should be = r_var but need to include ncvars.h
-      character(len=4) :: uwnd_name = 'uwnd'
       ! timestep variables for wind bulk force
       ! Notice time here is called something different wnd not uwnd.
       ! get_smth.F has a method to deal with different time names, might
       ! be worth using. Hard coded now for ease.
-      character(len=8) :: uwnd_time_name = 'wnd_time'
       integer :: uwnd_file_indx = 0 ! Set file index in force file list as zero to begin with
       integer :: uwnd_irec      = 0 ! Set netcdf record number to zero to start
       ! These were only one variable (itwnd) in old code, but maybe it is clearer
@@ -69,8 +90,6 @@
       integer :: uwnd_it1 = 1, uwnd_it2 = 2  ! Placeholder for read in time
       real, dimension(2) :: uwnd_times = [-99,-99] ! Store input file times
 
-       ! v-wind (input data in m/s)
-       ! ------
       real    :: vwnd_data(GLOBAL_2D_ARRAY,2)
       real    :: vwnd(GLOBAL_2D_ARRAY)
       integer :: vwnd_grd_type  = 0
@@ -78,15 +97,7 @@
       integer :: vwnd_irec      = 0
       integer :: vwnd_it1 = 1, vwnd_it2 = 2
       real, dimension(2) :: vwnd_times = [-99,-99]
-      character(len=4)   :: vwnd_name = 'vwnd'
-      character(len=8)   :: vwnd_time_name = 'wnd_time'
 
-      ! Atmospheric tracers
-      ! -------------------
-
-       ! tair (air temp)
-       ! ---------------
-       ! Input data units: Degrees C
       real    :: tair_data(GLOBAL_2D_ARRAY,2)
       real    :: tair(GLOBAL_2D_ARRAY)
       integer :: tair_grd_type  = 0
@@ -94,12 +105,8 @@
       integer :: tair_irec      = 0
       integer :: tair_it1 = 1, tair_it2 = 2
       real, dimension(2) :: tair_times = [-99,-99]
-      character(len=4)   :: tair_name = 'Tair'
-      character(len=9)   :: tair_time_name = 'tair_time'
 
-       ! Q (SPECIFIC HUMIDITY (KG/KG) NOT relative hum.) qair in old code
-       ! ----
-       ! Input data units: kg/kg
+      !! qair in old code
       real    :: Q_data(GLOBAL_2D_ARRAY,2)
       real    :: Q(GLOBAL_2D_ARRAY)
       integer :: Q_grd_type  = 0
@@ -107,13 +114,7 @@
       integer :: Q_irec      = 0
       integer :: Q_it1 = 1, Q_it2 = 2
       real, dimension(2) :: Q_times = [-99,-99]
-      character(len=4)   :: Q_name = 'Qair'
-      character(len=9)   :: Q_time_name = 'qair_time'
-!      character(len=5)   :: Q_units = 'kg/kg'
 
-       ! Precifitation rate (a.k.a. rain fall)
-       ! ------------------
-       ! Input data units: [cm/day], which is converted to m/s later.
       real    :: prate_data(GLOBAL_2D_ARRAY,2)
       real    :: prate(GLOBAL_2D_ARRAY)
       integer :: prate_grd_type  = 0
@@ -121,11 +122,7 @@
       integer :: prate_irec      = 0
       integer :: prate_it1 = 1, prate_it2 = 2
       real, dimension(2) :: prate_times = [-99,-99]
-      character(len=4)   :: prate_name = 'rain'
-      character(len=9)   :: prate_time_name = 'rain_time'
 
-       ! net terrestrial longwave radiation [Watts/m^2]
-       ! ----------------------------------
       real    :: lwrad_data(GLOBAL_2D_ARRAY,2)
       real    :: lwrad(GLOBAL_2D_ARRAY)
       integer :: lwrad_grd_type  = 0
@@ -133,21 +130,15 @@
       integer :: lwrad_irec      = 0
       integer :: lwrad_it1 = 1, lwrad_it2 = 2
       real, dimension(2) :: lwrad_times = [-99,-99]
-      character(len=10)   :: lwrad_name = 'lwrad_down'
-      character(len=8)   :: lwrad_time_name = 'lrf_time'
 
-       ! net solar shortwave radiation [Watts meter-2]
-       ! -----------------------------
       ! swrad_data (as swradg) and srflx needed in init_arrays.F to comply with old code
       real, public    :: swrad_data(GLOBAL_2D_ARRAY,2)
-      real, public    :: srflx(GLOBAL_2D_ARRAY) ! Kept same name convention as old code
+->    real, public    :: srflx(GLOBAL_2D_ARRAY) ! Kept same name convention as old code
       integer :: swrad_grd_type  = 0
       integer :: swrad_file_indx = 0
       integer :: swrad_irec      = 0
       integer :: swrad_it1 = 1, swrad_it2 = 2
       real, dimension(2) :: swrad_times = [-99,-99]
-      character(len=5)   :: swrad_name = 'swrad'
-      character(len=8)   :: swrad_time_name = 'srf_time'
 
 
       ! TAU_CORRECTION
@@ -221,7 +212,7 @@
      &          swrad_times,    swrad_grd_type, ! Input times & Grid type
      &          swrad_file_indx,swrad_irec,     ! File indx & Current input record
      &          swrad_it1,      swrad_it2,      ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
+     &          interp_frc )                    ! Online spatial interpolation flag
 
         ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
       call set_frc_var_tile(
@@ -1120,42 +1111,6 @@
 !--------------------------------------------------------------
 ! Flux correction to surface salt flux.
 !--------------------------------------------------------------
-! Pierre : This is shit, yu want to change this !!
-!# ifdef SFLX_CORR
-!          cff=cff11*dqdtg(i,j,it11)+cff12*dqdtg(i,j,it12)
-!          stflx(i,j,isalt)=stflx(i,j,isalt) +cff*(
-!     &           t(i,j,N,nrhs,isalt) -cff15*sssg(i,j,it15)
-!     &                               -cff16*sssg(i,j,it16)
-!     &                                                  )
-!#  ifdef MASKING
-!     &                                           *rmask(i,j)
-!#  endif
-!# endif
-
-
-!!# ifdef SFLX_CORR
-!!          stflx(i,j,isalt)=stflx(i,j,isalt)
-!!# ifdef SFLX_CORR_COEF
-!!     &  -Hz(i,j,N)/(dSdt*day2sec)*(t(i,j,N,nrhs,isalt)-sss(i,j))
-!!# else
-!!     &                 +dqdt(i,j)*(t(i,j,N,nrhs,isalt)-sss(i,j))
-!!# endif
-!!#  ifdef WET_DRY
-!!     &                                           *rmask_wet(i,j)
-!!#  endif
-!!# endif /* SFLX_CORR */
-
-! PD original
-!# ifdef SFLX_CORR
-!          stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
-!     &           t(i,j,N,nrhs,isalt) -cff15*sssg(i,j,it15) ! cff15 straight time interp
-!     &                               -cff16*sssg(i,j,it16) ! cff16 straight time interp
-!     &                                                  )
-!#  ifdef MASKING
-!     &                                           *rmask(i,j)
-!#  endif
-!# endif
-
 # ifdef SFLX_CORR
           stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
      &           t(i,j,N,nrhs,isalt) - sss(i,j)  )
@@ -1165,24 +1120,9 @@
 # endif
 
 !---------------------------------------------------------------
-!
-!---------------------------------------------------------------
-!
-
 ! Restrict stflx to prevent surface temperature to go below -2
 ! degrees C.
-!
-!!# ifdef SEA_ICE_NOFLUX
-!!              stflx(i,j,itemp)=max( stflx(i,j,itemp),
-!!#  ifdef LMD_KPP
-!!     &                          max(hbls(i,j,nstp), Hz(i,j,N))
-!!#  else
-!!     &                                               Hz(i,j,N)
-!!#  endif
-!!     &                         *(-2.D0-t(i,j,N,nrhs,itemp))/dt
-!!     &                                                       )
-!!# endif
-
+!---------------------------------------------------------------
 #ifdef SEA_ICE_NOFLUX
               if( t(i,j,N,nrhs,itemp) .le. -1.8 ) then
                    stflx(i,j,itemp)=0.
@@ -1227,7 +1167,7 @@
       Wspd_min=3.        ! [m/s]
       stau_ref=-0.0027   ! [N.m^-3.s]
 
-
+      ! maybe move computation of ustar to here
       ! Note loop ranges: iend+1 is needed because lmd_kpp uses SMOOTH_HBL
       ! and smoothing needs iend+1 buffer information for ustar calc.
       ! iend+1 instead of iendR because rho2u sustr_r = u(i) + u(i+1) & since
