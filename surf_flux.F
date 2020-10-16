@@ -29,9 +29,9 @@
 
       logical :: write_file = .true. ! Whether to write a flux file or not
       integer :: rec_rate = 1        ! Output record rate,
-      integer :: recs_per_file = 100   ! total recs per file
+      integer :: recs_per_file = 100 ! total recs per file
 
-      logical :: wrt_sustr = .True.  ! Output surface u-stress
+      logical :: wrt_sustr = .True. ! Output surface u-stress
       logical :: wrt_svstr = .True. ! Output surface v-stress
       logical :: wrt_shflx = .True. ! Output surface heat flux
       logical :: wrt_ssflx = .True. ! Output surface salinity flux
@@ -41,10 +41,11 @@
       ! *************************************************************
 
       ! Surface momemtum flux [m^2/s^2] units as per Eq.Sys. m^2/s^2 not N/m^2
-      real, public :: sustr(GLOBAL_2D_ARRAY)    ! u-point: used in Eq.System
-      real, public :: sustr_r(GLOBAL_2D_ARRAY)  ! rho-point, for calculation only and seemingly unavoidable
+      ! possibly make sustr_r,svstr_r private to bulk_frc, and add here ustar instead
+      real, public :: sustr(GLOBAL_2D_ARRAY)    ! stress u-point: used in Eq.System
+      real, public :: sustr_r(GLOBAL_2D_ARRAY)  ! rho-point, only used in lmd_kpp to get ustar
       real, public :: svstr(GLOBAL_2D_ARRAY)    ! v-point: used in Eq.System
-      real, public :: svstr_r(GLOBAL_2D_ARRAY)  ! rho-point, for calculation only and seemingly unavoidable
+      real, public :: svstr_r(GLOBAL_2D_ARRAY)  ! rho-point, only used in lmd_kpp to get ustar
       real, public :: stflx(GLOBAL_2D_ARRAY,NT) ! Surface fluxes of tracer type variables (rho-points)
       character(len=5) :: sustr_name        = 'sustr'
       character(len=5) :: svstr_name        = 'svstr'
