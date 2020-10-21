@@ -5,6 +5,9 @@
                           defined M3_FRC_BRY || defined T_FRC_BRY )
 
       subroutine get_bry_all(ierr_ext)     ! Read side boundary forcing
+
+      use tracers, only: t_vname
+
       implicit none                        ! fields from boundary file
       integer ierr_ext
 # include "param.h"
@@ -36,6 +39,8 @@
 # ifdef VERBOSE
       write(*,*) 'enter get_bry_all' MYID
 # endif
+
+      character(len=47) :: v_name ! Variable name after concatenating DevinD
 
 ! Determine which side(s) require boundary conditions and check
 ! whether it is needed at all. Logical variable "need_bry" is used
@@ -180,18 +185,28 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-            ierr=nf_inq_varid(bry_id,'temp_west', t_west_id(itemp))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'temp_west', bry_file(ibry)(1:lsrc)
-            endif
-#    ifdef SALINITY
-            ierr=nf_inq_varid(bry_id, 'salt_west', t_west_id(isalt))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'salt_west', bry_file(ibry)(1:lsrc)
-            endif
-#    endif
+!            ierr=nf_inq_varid(bry_id,'temp_west', t_west_id(itemp))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'temp_west', bry_file(ibry)(1:lsrc)
+!            endif
+!#    ifdef SALINITY
+!            ierr=nf_inq_varid(bry_id, 'salt_west', t_west_id(isalt))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'salt_west', bry_file(ibry)(1:lsrc)
+!            endif
+!#    endif
+
+            do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
+              v_name = trim(t_vname(itrc)) / / '_west'
+              ierr=nf_inq_varid(bry_id,v_name, t_west_id(itrc))
+              if (ierr /= nf_noerr) then
+                if (ierr_all == nf_noerr) ierr_all=ierr
+                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+              endif
+            enddo
+
 #   endif
 #  endif
           endif !<-- west_bry_active
@@ -242,18 +257,26 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'temp_east', t_east_id(itemp))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'temp_east', bry_file(ibry)(1:lsrc)
-            endif
-#    ifdef SALINITY
-            ierr=nf_inq_varid(bry_id, 'salt_east', t_east_id(isalt))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'salt_east', bry_file(ibry)(1:lsrc)
-            endif
-#    endif
+!            ierr=nf_inq_varid(bry_id, 'temp_east', t_east_id(itemp))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'temp_east', bry_file(ibry)(1:lsrc)
+!            endif
+!#    ifdef SALINITY
+!            ierr=nf_inq_varid(bry_id, 'salt_east', t_east_id(isalt))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'salt_east', bry_file(ibry)(1:lsrc)
+!            endif
+!#    endif
+            do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
+              v_name = trim(t_vname(itrc)) / / '_east'
+              ierr=nf_inq_varid(bry_id,v_name, t_east_id(itrc))
+              if (ierr /= nf_noerr) then
+                if (ierr_all == nf_noerr) ierr_all=ierr
+                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+              endif
+            enddo
 #   endif
 #  endif
           endif  !<-- east_bry_active
@@ -304,18 +327,26 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-            ierr=nf_inq_varid(bry_id,'temp_south',t_south_id(itemp))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'temp_south', bry_file(ibry)(1:lsrc)
-            endif
-#    ifdef SALINITY
-            ierr=nf_inq_varid(bry_id,'salt_south', t_south_id(isalt))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'salt_south', bry_file(ibry)(1:lsrc)
-            endif
-#    endif
+!            ierr=nf_inq_varid(bry_id,'temp_south',t_south_id(itemp))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'temp_south', bry_file(ibry)(1:lsrc)
+!            endif
+!#    ifdef SALINITY
+!            ierr=nf_inq_varid(bry_id,'salt_south', t_south_id(isalt))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'salt_south', bry_file(ibry)(1:lsrc)
+!            endif
+!#    endif
+            do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
+              v_name = trim(t_vname(itrc)) / / '_south'
+              ierr=nf_inq_varid(bry_id,v_name, t_south_id(itrc))
+              if (ierr /= nf_noerr) then
+                if (ierr_all == nf_noerr) ierr_all=ierr
+                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+              endif
+            enddo
 #   endif
 #  endif
           endif  !<-- south_bry_active
@@ -366,18 +397,26 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-            ierr=nf_inq_varid(bry_id,'temp_north', t_north_id(itemp))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'temp_north', bry_file(ibry)(1:lsrc)
-            endif
-#    ifdef SALINITY
-            ierr=nf_inq_varid(bry_id,'salt_north', t_north_id(isalt))
-            if (ierr /= nf_noerr) then
-              if (ierr_all == nf_noerr) ierr_all=ierr
-              write(*,1) 'salt_north', bry_file(ibry)(1:lsrc)
-            endif
-#    endif
+!            ierr=nf_inq_varid(bry_id,'temp_north', t_north_id(itemp))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'temp_north', bry_file(ibry)(1:lsrc)
+!            endif
+!#    ifdef SALINITY
+!            ierr=nf_inq_varid(bry_id,'salt_north', t_north_id(isalt))
+!            if (ierr /= nf_noerr) then
+!              if (ierr_all == nf_noerr) ierr_all=ierr
+!              write(*,1) 'salt_north', bry_file(ibry)(1:lsrc)
+!            endif
+!#    endif
+            do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
+              v_name = trim(t_vname(itrc)) / / '_north'
+              ierr=nf_inq_varid(bry_id,v_name, t_north_id(itrc))
+              if (ierr /= nf_noerr) then
+                if (ierr_all == nf_noerr) ierr_all=ierr
+                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+              endif
+            enddo
 #   endif
 #  endif
           endif !<-- north_bry_active

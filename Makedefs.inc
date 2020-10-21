@@ -68,15 +68,13 @@ CPATH = ${MPI_INC}:${NETCDF_INC}:${ROMS_ROOT}/NHMG/include
      CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
      LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
-
-
-# FFLAGS = -g -check all -CA -CB -CS -I./NHMG/include -I/opt/netcdf-4.6.1/include -I$(ROMS_ROOT)/ncio-master/include
  
   NHMG_ROOT = $(ROMS_ROOT)/NHMG
   NHMG_LIB  = $(NHMG_ROOT)/lib
   NHMG_INC  = $(NHMG_ROOT)/include
 
-# FFLAGS = -O3 -IPF_fma -ip -I$(NHMG_INC) -I$(NETCDF_INC)
+#  FFLAGS = -g -traceback -check all -CA -CB -CS -I./NHMG/include -I/opt/netcdf-4.6.1/include -I$(ROMS_ROOT)/ncio-master/include
+#  FFLAGS = -O3 -IPF_fma -ip -I$(NHMG_INC) -I$(NETCDF_INC)
   FFLAGS = -O3 -IPF_fma -ip
 
 

@@ -1,7 +1,11 @@
 #include "cppdefs.h"
 
       subroutine get_init(req_rec, tindx)    ! Reads initial conditions
-      implicit none                          ! from netCDF file.
+                                             ! from netCDF file.
+
+      use tracers, only: t_vname
+
+      implicit none
 #include "param.h"
 #include "ncvars.h"
 #include "scalars.h"
@@ -533,20 +537,32 @@ c--#define VERBOSE
 
 
 ! Tracer variables.
-
+      ! DevinD - could move this to tracers.F -> get_init_tracers()
       do itrc=1,NT
-        lvar=lenstr(vname(1,indxT+itrc-1))
-        ierr=nf_inq_varid(ncid, vname(1,indxT+itrc-1)(1:lvar), varid)
+
+        ! This can be done in one call (already made wrapper for this:
+        ! example from read_var_frc (read_write.F):
+!        call nc_read_var(ncid,var_array,1, ! 1 is nmax (vertical layers)
+!     &                       var_name,var_type,irec,ierr, coarse)
+        ! Adjusted for here:
+!        call nc_read_var(ncid,t(START_2D_ARRAY,1,tindx,itrc),1, ! 1 is nmax (vertical layers)
+!     &                        t_vname(itrc),t_vtype(itrc),t_irec(itrc),
+!     &                        ierr, t_coarse)
+
+
+!        lvar=lenstr(vname(1,indxT+itrc-1))
+        lvar=lenstr(t_vname(itrc))
+        ierr=nf_inq_varid(ncid, t_vname(itrc)(1:lvar), varid)
         if (ierr == nf_noerr) then
           ierr=ncdf_read( ncid,   varid,   record,   r_var,
      &                    t(START_2D_ARRAY,1,tindx,itrc), N)
           if (ierr /= nf_noerr) then
-            write(*,2) vname(1,indxT+itrc-1)(1:lvar), record,
+            write(*,2) t_vname(itrc)(1:lvar), record,
      &                     ininame(1:linit), nf_strerror(ierr)
             goto 99                                       !--> ERROR
           endif
         else
-          write(*,1) vname(1,indxT+itrc-1)(1:lvar), ininame(1:linit),
+          write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
      &                                            nf_strerror(ierr)
           goto 99                                         !--> ERROR
         endif

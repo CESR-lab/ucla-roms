@@ -30,6 +30,10 @@ c--#define nf_def_var my_nf_def_var
       use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
 #endif
 
+      use tracers, only: t_vname, t_lname, t_units, wrt_t
+
+      use read_write, only: output_root_name
+
       implicit none
       integer total_rec, ierr
 #include "param.h"
@@ -112,6 +116,15 @@ c--#define nf_def_var my_nf_def_var
 ! total_record changes continuously throughout the sequence of files.
 
       ierr=0
+! DevinD added, just for his file for now to use output root name from roms.in
+!#ifndef AVRH
+      fname=trim(output_root_name) / / '_his.nc'
+      lfnm=lenstr(fname)
+#if defined MPI && defined PARALLEL_FILES
+        ! Insert MPI node numbers to file name
+        call insert_node(fname, lfnm, mynode, NNODES, ierr)
+#endif
+!#endif
       lfnm=lenstr(fname)
       if (rec_per_file > 0) then
         lvar=total_rec-(1+mod(total_rec-1, rec_per_file))
@@ -384,22 +397,43 @@ c--#define nf_def_var my_nf_def_var
 
 ! Tracer variables.
 
+! DevinD this needs to conform with new tracer module
         do itrc=1,NT
-          if (wrt(indxT+itrc-1) .and. ierr == nf_noerr) then
-            lvar=lenstr(vname(1,indxT+itrc-1))
-            ierr=nf_def_var (ncid, vname(1,indxT+itrc-1)(1:lvar),
+!          if (wrt(indxT+itrc-1) .and. ierr == nf_noerr) then
+!            lvar=lenstr(vname(1,indxT+itrc-1))
+!            ierr=nf_def_var (ncid, vname(1,indxT+itrc-1)(1:lvar),
+!     &                             NF_FOUT, 4, r3dgrd, vidT(itrc))
+!# ifdef AVRH
+!            text='averaged '/ /vname(2,indxT+itrc-1)
+!# else
+!            text=vname(2,indxT+itrc-1)
+!# endif
+!            lvar=lenstr(text)
+!            ierr=nf_put_att_text (ncid, vidT(itrc), 'long_name',
+!     &                                          lvar, text(1:lvar))
+!            lvar=lenstr(vname(3,indxT+itrc-1))
+!            ierr=nf_put_att_text (ncid, vidT(itrc), 'units', lvar,
+!     &                               vname(3,indxT+itrc-1)(1:lvar))
+!# ifdef MASK_LAND_DATA
+!            ierr=nf_put_att_FOUT (ncid, vidT(itrc), '_FillValue',
+!     &                                      NF_FOUT, 1, spv_set)
+!# endif
+!          endif
+          if (wrt_t(itrc) .and. ierr == nf_noerr) then
+            lvar=lenstr(t_vname(itrc))
+            ierr=nf_def_var (ncid, t_vname(itrc)(1:lvar),
      &                             NF_FOUT, 4, r3dgrd, vidT(itrc))
 # ifdef AVRH
             text='averaged '/ /vname(2,indxT+itrc-1)
 # else
-            text=vname(2,indxT+itrc-1)
+            text=t_lname(itrc)
 # endif
             lvar=lenstr(text)
             ierr=nf_put_att_text (ncid, vidT(itrc), 'long_name',
      &                                          lvar, text(1:lvar))
-            lvar=lenstr(vname(3,indxT+itrc-1))
+            lvar=lenstr(t_units(itrc))
             ierr=nf_put_att_text (ncid, vidT(itrc), 'units', lvar,
-     &                               vname(3,indxT+itrc-1)(1:lvar))
+     &                               t_units(itrc)(1:lvar))
 # ifdef MASK_LAND_DATA
             ierr=nf_put_att_FOUT (ncid, vidT(itrc), '_FillValue',
      &                                      NF_FOUT, 1, spv_set)
@@ -778,13 +812,21 @@ c--#define nf_def_var my_nf_def_var
 
 ! Tracer variables.
 
+! DevinD this needs to conform with new tracer module
         do itrc=1,NT
-          if (wrt(indxT+itrc-1) .and. ierr == nf_noerr) then
-            lvar=lenstr(vname(1,indxT+itrc-1))
-            ierr=nf_inq_varid(ncid, vname(1,indxT+itrc-1)(1:lvar),
+!          if (wrt(indxT+itrc-1) .and. ierr == nf_noerr) then
+!            lvar=lenstr(vname(1,indxT+itrc-1))
+!            ierr=nf_inq_varid(ncid, vname(1,indxT+itrc-1)(1:lvar),
+!     &                                                 vidT(itrc))
+!            if (ierr /= nf_noerr) write(*,1)
+!     &               vname(1,indxT+itrc-1)(1:lvar), fname(1:lfnm)
+!          endif
+          if (wrt_t(itrc) .and. ierr == nf_noerr) then
+            lvar=lenstr(t_vname(itrc))
+            ierr=nf_inq_varid(ncid, t_vname(itrc)(1:lvar),
      &                                                 vidT(itrc))
             if (ierr /= nf_noerr) write(*,1)
-     &               vname(1,indxT+itrc-1)(1:lvar), fname(1:lfnm)
+     &               t_vname(itrc)(1:lvar), fname(1:lfnm)
           endif
         enddo
 

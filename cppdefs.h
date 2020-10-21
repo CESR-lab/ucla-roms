@@ -6,8 +6,8 @@
  */
 
 c---#define WEC /* Wave Effect on Current model */
-#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-
+c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -23,10 +23,13 @@ c--#endif
 */
 
 
-#if defined PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+#if defined PACIFIC_PD || defined USWC_sample /* PierreD's pacific coast model with tau-correction */
+
+c-dd# define debug_ddevin /* Test coarse interpolation of 'hraw' & 'lat_rho */
+c-dd# define debug_ddevin_frc /* Test coarse interpolation of 'uwnd' force */
 
 /* Include standard CPP switches for UP ETH Zurich */
-!#include "cppdefs_UP.h"
+c-dd#include "cppdefs_UP.h"
 
 /*
    Standard UP ETH Zurich Settings for Regional and Basin Configurations
@@ -41,7 +44,7 @@ c--#endif
 #define NONLIN_EOS
 #define SPLIT_EOS
 #define SALINITY
-#define SFLX_CORR    /* DevinD turned off for bulk_frc.F to compile */
+c-dd#define SFLX_CORR    /* DevinD turned off as new 25km input wrong for sss */
                      /*  Forcing */
                      /*         - surface */
 #define DIURNAL_SRFLUX
@@ -107,7 +110,7 @@ c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
 #undef VFLX_CORR
 #undef QCORRECTION
 c-dd#define DQDT_DATA ! DevinD not entirely sure but dont think I need it
-#define TAU_CORRECTION
+c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
      /* Output */
@@ -131,7 +134,7 @@ c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
-# define TIDES
+c-dd# define TIDES
 # ifdef TIDES
 #  define POT_TIDES
 #  define SSH_TIDES

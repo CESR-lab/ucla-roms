@@ -6,6 +6,8 @@
 #ifdef NHMG
       use nhmg
 #endif
+      use tracers, only: init_tracers
+
       implicit none              ! with single parallel region using
       integer ierr               ! explicit barrier synchronization.
 # include "param.h"
@@ -26,7 +28,9 @@ C$    ierr=0
       if (ierr == 0) then
 # endif
         call init_scalars(ierr)          ! Initialize global scalars,
-        if (ierr == 0) then              ! model tunable parameters,
+                                         ! model tunable parameters,
+        call init_tracers                ! New: initiate tracer variables
+        if (ierr == 0) then
 C$        call omp_set_dynamic(.false.)
 C$OMP PARALLEL                           ! fast-time averaging weights
           call roms_thread               ! for barotropic mode, and
@@ -323,7 +327,6 @@ C$OMP END MASTER
 #ifdef WEC
       use wec_frc, only: wec_forces
 #endif
-      use diagnostics
 #ifdef POT_TIDES
       use tides, only: set_tides_mod
 #endif
@@ -426,10 +429,6 @@ C$OMP BARRIER
       enddo
 C$OMP BARRIER
 
-!     do_diags = .true.
-      if (mynode==0) then
-!       print *,'going prsgrd',do_diags
-      endif
       do tile=my_tile_range
         call     prsgrd(tile)
         call step3d_uv1(tile)
@@ -531,8 +530,6 @@ C$OMP BARRIER
       do tile=my_tile_range              ! Continue solution of
         call step3d_uv2(tile)            ! the three-dimensional
       enddo                              ! equations: finalize
-!     call write_diagnostics
-!     do_diags = .false.
 C$OMP BARRIER                            ! time step for momenta
       do tile=my_tile_range              ! and tracers.
         call omega(tile)

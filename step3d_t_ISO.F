@@ -64,6 +64,8 @@ c--# define CONST_TRACERS
       use surf_flux, only: stflx
 #endif
 
+      use tracers, only: iTandS
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -853,15 +855,9 @@ c??         enddo
 ! the content of array t(:,:,:,nnew,itrc) has meaning of Hz*tracer.
 ! After the implicit step it becomes just tracer.
 
-# ifdef BIOLOGY
-#  ifdef SALINITY
-          iAkt=min(itrc,isalt)
-#  else
-          iAkt=min(itrc,itemp)
-#  endif
-# else
-          iAkt=itrc
-# endif
+
+          iAkt=min(itrc,iTandS)
+
           do i=istr,iend
             DC(i,0)=dt*pm(i,j)*pn(i,j) !<--horizontal metric
 

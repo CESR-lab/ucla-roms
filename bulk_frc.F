@@ -31,7 +31,7 @@
       ! ****************************************************************
       ! User inputs, make sure that units in the forcing files match!
 
-      ! Interpolate forcing from coarser input grid or not (0/1)
+      ! Interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! Factor 2 only for now
 
       ! u-wind (input data in m/s)
@@ -133,7 +133,7 @@
 
       ! swrad_data (as swradg) and srflx needed in init_arrays.F to comply with old code
       real, public    :: swrad_data(GLOBAL_2D_ARRAY,2)
-->    real, public    :: srflx(GLOBAL_2D_ARRAY) ! Kept same name convention as old code
+      real, public    :: srflx(GLOBAL_2D_ARRAY) ! Kept same name convention as old code
       integer :: swrad_grd_type  = 0
       integer :: swrad_file_indx = 0
       integer :: swrad_irec      = 0

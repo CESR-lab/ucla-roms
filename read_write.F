@@ -673,8 +673,6 @@ C$OMP BARRIER
       ! =================
       ierr=nf90_close (ncid)
 
-!     call nf90_close(ncid)
-
       ! NOTE about masking here. C$OMP beware
 
       ! Error handling
