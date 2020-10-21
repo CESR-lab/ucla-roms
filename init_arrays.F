@@ -53,6 +53,8 @@
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
 #endif
 
+      use tracers, only: iTandS
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k,itrc
       real, parameter :: init=0.    !!!!  0xFFFA5A5A ==> NaN
@@ -367,7 +369,7 @@
 # endif
           enddo
         enddo
-        do itrc=1,NT
+        do itrc=1,iTandS
           do j=jstrR,jendR
             do i=istrR,iendR
 # if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\

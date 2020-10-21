@@ -208,7 +208,7 @@
       integer, parameter :: max_name_size=256
       character date_str*44, title*80
       character(len=max_name_size) :: ininame, grdname, rstname,
-     &                             hisname, frcfile(max_frc_files)
+     &                             hisname, frcfile(max_frc_files) ! DevinD hisname not needed due to output_root_name
       common /cncvars/ date_str, title, ininame, grdname, rstname,
      &                                           hisname, frcfile
 #ifdef AVERAGES

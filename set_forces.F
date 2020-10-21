@@ -35,6 +35,7 @@
 # ifdef BULK_FLUX
       use bulk_frc,  only: set_bulk_frc_tile
       use surf_flux, only: set_surf_field_corr
+      use tracers,   only: set_surf_tracer_flx, iTandS
 # endif
 
 # ifdef RIVER_SOURCE
@@ -131,6 +132,10 @@ c***              no code here
 
       call set_bulk_frc_tile(istr,iend,jstr,jend) ! DevinD bulk flux module
 !      call bulk_flux_tile(istr,iend,jstr,jend) ! Old version
+
+      ! DevinD, this would probably be faster if using CPPFLAG instead, e.g. PASSIVE_TRACERS
+      ! For now just use number of tracers to decide:
+      if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
 
 # else
 #  ifdef ANA_STFLUX

@@ -24,10 +24,6 @@ Examples/*/*.nc
 Examples/*/fort*
 Work/
 setup_kwds.F
-Examples/*/Compile
 check_switches1.F
 check_srcs.F
 Tools-Roms/cross_matrix
-./cppdefs.h
-./param.h
-Make.depend

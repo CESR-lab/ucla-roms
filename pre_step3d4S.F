@@ -42,6 +42,8 @@
       use surf_flux, only: sustr, svstr
 #endif
 
+      use tracers, only: iTandS
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -223,15 +225,19 @@
             enddo
           enddo            !--> discard FC
 
-# ifdef BIOLOGY
-#  ifdef SALINITY
-          iAkt=min(itrc,isalt)
-#  else
-          iAkt=min(itrc,itemp)
-#  endif
-# else
-          iAkt=itrc
-# endif
+! DevinD no longer need can rather use: iAkt=min(itrc,iTandS) below
+!# if defined BIOLOGY
+!#  ifdef SALINITY
+!          iAkt=min(itrc,isalt)
+!#  else
+!          iAkt=min(itrc,itemp)
+!#  endif
+!# else
+!          iAkt=itrc
+!# endif
+
+          iAkt=min(itrc,iTandS)
+
           !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  )) 
           !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
           !!                                                  Hz*T(k)

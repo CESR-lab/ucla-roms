@@ -22,8 +22,6 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
-#define DIAGNOSTICS
-
 
 #if defined PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
 
