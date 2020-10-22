@@ -42,7 +42,7 @@
       use surf_flux, only: sustr, svstr
 #endif
 
-      use tracers, only: iTandS
+      use tracers, only: iTandS, t
 
       implicit none
 # include "param.h"
@@ -224,17 +224,6 @@
 # endif
             enddo
           enddo            !--> discard FC
-
-! DevinD no longer need can rather use: iAkt=min(itrc,iTandS) below
-!# if defined BIOLOGY
-!#  ifdef SALINITY
-!          iAkt=min(itrc,isalt)
-!#  else
-!          iAkt=min(itrc,itemp)
-!#  endif
-!# else
-!          iAkt=itrc
-!# endif
 
           iAkt=min(itrc,iTandS)
 

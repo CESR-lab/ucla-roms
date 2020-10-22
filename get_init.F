@@ -3,7 +3,7 @@
       subroutine get_init(req_rec, tindx)    ! Reads initial conditions
                                              ! from netCDF file.
 
-      use tracers, only: t_vname
+      use tracers, only: t_vname, t
 
       implicit none
 #include "param.h"

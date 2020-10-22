@@ -382,6 +382,7 @@
       ! Modules required
       ! ----------------
       use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his
+      use tracers, only: t
 
       implicit none
 

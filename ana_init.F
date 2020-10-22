@@ -17,6 +17,9 @@
       end
 
       subroutine ana_init_tile (istr,iend,jstr,jend, AA)
+
+      use tracers, only: t
+
       implicit none
 
 # include "param.h"

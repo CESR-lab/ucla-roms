@@ -16,6 +16,9 @@
 
       subroutine t3dmix_tile (istr,iend,jstr,jend, itrc, LapT,FX,FE,
      &                               FSC,dTdz, dTdx,dTde,dZdx,dZde)
+
+      use tracers, only: t
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, itrc, i,j,k,k1,k2
