@@ -28,6 +28,22 @@ c--#endif
 c-dd# define debug_ddevin /* Test coarse interpolation of 'hraw' & 'lat_rho */
 c-dd# define debug_ddevin_frc /* Test coarse interpolation of 'uwnd' force */
 
+# define WEC
+# ifdef WEC
+#    define BRK0
+#    define SURFACE_BREAK
+#    undef SPEC_DD
+#    undef LOG_BDRAG
+#    undef WKB_WWAVE
+#    undef BBL
+#    define WAVE_OFFLINE
+#    define WAVE_FRICTION
+#    define BBL_S95
+c#    define BBL_F00
+#    define SUP_OFF
+#    define WAVE_DIFF_FROM_LM
+# endif /* WEC */
+
 /* Include standard CPP switches for UP ETH Zurich */
 c-dd#include "cppdefs_UP.h"
 
