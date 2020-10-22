@@ -206,7 +206,7 @@
      &                var_data,      var,           ! Variable arrays
      &                var_times,     var_grd_type,  ! Input times & Grid type
      &                var_file_indx, var_irec,      ! File indx & Current input record
-     &                it1,           it2, coarse )          ! Time index placeholders
+     &                it1, it2,      coarse )       ! Time index placeholders & interp flag
 
       ! ===========================================
       ! WRAPPER TO READ & SET SINGLE FORCE VARIABLE

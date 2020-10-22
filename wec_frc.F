@@ -682,6 +682,9 @@
       ! local
       integer ierr,ncid
       integer varid
+      ! Whether or not to interpolate from coarse data, needed to comply
+      ! with latest nc_read_var in read_write.F
+      integer :: coarse = 0 ! 0=don't interpolate
 
       ! Read in river variables are all from rho-points (r_var)
       ! integer,parameter :: r_var = 0 !! grid type of var (u_var=1,v_var=2,q_var=3)
@@ -704,47 +707,47 @@
 
       ! Wave amplitude
       call nc_read_var(ncid,wwag(START_2D_ARRAY,idx),1,
-     &                       wec_awv_name,r_var,irec,ierr)
+     &                       wec_awv_name,r_var,irec,ierr,coarse)
 
       ! Wave direction
       call nc_read_var(ncid,wwdg(START_2D_ARRAY,idx),1,
-     &                       wec_dwv_name,r_var,irec,ierr)
+     &                       wec_dwv_name,r_var,irec,ierr,coarse)
 
       ! Wave period
       call nc_read_var(ncid,wwpg(START_2D_ARRAY,idx),1,
-     &                       wec_pwv_name,r_var,irec,ierr)
+     &                       wec_pwv_name,r_var,irec,ierr,coarse)
 
       ! ust2d
       call nc_read_var(ncid,wwUSg(START_2D_ARRAY,idx),1,
-     &                       ust2d_name,r_var,irec,ierr)
+     &                       ust2d_name,r_var,irec,ierr,coarse)
 
       ! vst2d
       call nc_read_var(ncid,wwVSg(START_2D_ARRAY,idx),1,
-     &                       vst2d_name,r_var,irec,ierr)
+     &                       vst2d_name,r_var,irec,ierr,coarse)
 
       ! ustr0
       call nc_read_var(ncid,wwUS0g(START_2D_ARRAY,idx),1,
-     &                       ust0_name,r_var,irec,ierr)
+     &                       ust0_name,r_var,irec,ierr,coarse)
 
       ! vstr0
       call nc_read_var(ncid,wwVS0g(START_2D_ARRAY,idx),1,
-     &                       vst0_name,r_var,irec,ierr)
+     &                       vst0_name,r_var,irec,ierr,coarse)
 
       ! eb
       call nc_read_var(ncid,wweb(START_2D_ARRAY,idx),1,
-     &                       wec_ebwv_name,r_var,irec,ierr)
+     &                       wec_ebwv_name,r_var,irec,ierr,coarse)
 
       ! ed
       call nc_read_var(ncid,wwed(START_2D_ARRAY,idx),1,
-     &                       wec_edwv_name,r_var,irec,ierr)
+     &                       wec_edwv_name,r_var,irec,ierr,coarse)
 
       ! lmv
       call nc_read_var(ncid,wwlm(START_2D_ARRAY,idx),1,
-     &                       wec_lwv_name,r_var,irec,ierr)
+     &                       wec_lwv_name,r_var,irec,ierr,coarse)
 
       ! sup
       call nc_read_var(ncid,wwsup(START_2D_ARRAY,idx),1,
-     &                       sup_name,r_var,irec,ierr)
+     &                       sup_name,r_var,irec,ierr,coarse)
 
       end subroutine read_wec_frc
 #endif /* !ANA_WEC_FRC */
