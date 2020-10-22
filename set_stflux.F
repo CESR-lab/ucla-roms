@@ -7,6 +7,8 @@
 
 ! Interpolate and assemble surface tracer flux for current tile.
 
+      use tracers, only: t
+
       implicit none
       integer istr,iend,jstr,jend, itrc, ierr, i,j, it1,it2
       real tmid, cff1,cff2, cff

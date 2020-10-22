@@ -53,7 +53,7 @@
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
 #endif
 
-      use tracers, only: iTandS
+      use tracers, only: iTandS, t
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k,itrc

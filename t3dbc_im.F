@@ -5,6 +5,8 @@
 
 ! Set lateral boundary conditions for tracer field t(:,:,:,itrc)
 
+      use tracers, only: t
+
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd

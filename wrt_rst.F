@@ -2,6 +2,8 @@
                               ! Write model prognostic
       subroutine wrt_rst      ! variables into restart
                               ! netCDF file.
+      use tracers, only: t
+
       implicit none
 #include "param.h"
 #include "ncvars.h"

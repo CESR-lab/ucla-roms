@@ -39,6 +39,8 @@
 !             A Review and model with a nonlocal boundary layer
 !             parameterization.  Reviews of Geophysics, 32,363-403.
 
+      use tracers, only: t
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k

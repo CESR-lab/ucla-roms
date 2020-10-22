@@ -58,6 +58,8 @@
       use wec_frc, only: set_avg_wec_tile
 # endif
 
+      use tracers, only: t
+
       implicit none
       integer istr,iend,jstr,jend, i,j
 # ifdef SOLVE3D

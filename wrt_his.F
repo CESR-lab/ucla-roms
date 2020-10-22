@@ -6,7 +6,7 @@
       use wec_frc, only: wrt_his_wec
 #endif
 
-      use tracers, only: t_vname, wrt_t
+      use tracers, only: t_vname, wrt_t, t
 
       implicit none
 #include "param.h"

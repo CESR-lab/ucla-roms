@@ -5,9 +5,10 @@
 CSDISTRIBUTE_RESHAPE u(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
       real v(GLOBAL_2D_ARRAY,N,3)
 CSDISTRIBUTE_RESHAPE v(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
-      real t(GLOBAL_2D_ARRAY,N,3,NT)
-CSDISTRIBUTE_RESHAPE t(BLOCK_PATTERN,*,*,*) BLOCK_CLAUSE
-      common /ocean_u/u /ocean_v/v /ocean_t/t
+! 't' has been moved to tracers.F module since it is a tracer
+!      real t(GLOBAL_2D_ARRAY,N,3,NT)
+!CSDISTRIBUTE_RESHAPE t(BLOCK_PATTERN,*,*,*) BLOCK_CLAUSE
+      common /ocean_u/u /ocean_v/v ! /ocean_t/t
 # if defined NHMG 
       real w(GLOBAL_2D_ARRAY,0:N,3)
 CSDISTRIBUTE_RESHAPE w(BLOCK_PATTERN,*,*) BLOCK_CLAUSE

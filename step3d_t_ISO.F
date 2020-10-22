@@ -64,7 +64,7 @@ c--# define CONST_TRACERS
       use surf_flux, only: stflx
 #endif
 
-      use tracers, only: iTandS
+      use tracers, only: iTandS, t
 
       implicit none
 # include "param.h"

@@ -15,6 +15,8 @@
 ! Both are evaluated at the surface.  Adapted from original "rati"
 ! and "beta" routines.
 
+      use tracers, only: t
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j

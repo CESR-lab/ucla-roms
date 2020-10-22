@@ -1150,6 +1150,9 @@
 
 #ifdef ANA_WEC_FRC
       subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
+
+      use tracers, only: t
+
       implicit none
 
       integer, intent(in) :: istr, iend, jstr, jend

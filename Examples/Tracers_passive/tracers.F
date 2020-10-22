@@ -49,6 +49,7 @@
       character*42, dimension(nt), public :: t_units ! Tracer units
       character*47, dimension(nt), public :: t_tname ! Tracer input time variable name
       logical, dimension(nt), public      :: wrt_t   ! T/F output tracer.
+      integer, dimension(nt) :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length
       ! Abstracted from user.
@@ -76,7 +77,7 @@
       implicit none
 
       ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
+      integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
       integer itrc ! Tracer number for loop index
@@ -87,13 +88,15 @@
 
       do itrc=iTandS+1,NT ! Instead of 3 use iTandS variable DevinD todo
 
-        ! For now set up variable _flx name here but might be better to
-        ! create in init_tracers function where this is done once and
-        ! storedin an array for speed.
+        if(t_ana_frc(itrc)==0) then ! Read in forcing data (not analytical)
 
-        t_flx_name = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
+          ! For now set up variable _flx name here but might be better to
+          ! create in init_tracers function where this is done once and
+          ! storedin an array for speed.
 
-        call set_frc_var_tile(
+          t_flx_name = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
+
+          call set_frc_var_tile(
      &        istr,iend,          jstr,jend,        ! Tile bounds indices
      &        t_flx_name,         t_tname(itrc),    ! Text name of array and time
      &        t_data(:,:,:,itrc), stflx(:,:,itrc),  ! Variable arrays
@@ -102,9 +105,64 @@
      &        t_it1(itrc),        t_it2(itrc),      ! Time index placeholders
      &        interp_t )                            ! Online spatial interpolation flag
 
+        elseif(t_ana_frc(itrc)==1) then ! Analytical forcing
+
+          call set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)
+
+        else
+
+          if(mynode==0) then
+            write(*,'(/1x,2A,I3,2A/)') 'ERROR: set_surf_tracer_flx:: ',
+     &      'Forcing type not supported: t_ana_frc(itrc)= ', t_ana_frc(itrc),
+     &      ', for passive tracer: ', t_vname(itrc)
+          endif
+          error stop
+
+        endif ! if(t_ana_frc(itrc)==0)
+
       enddo
 
       end subroutine set_surf_tracer_flx
+! ----------------------------------------------------------------------
+
+      subroutine set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)
+      ! Set analytical surface tracer flux
+      implicit none
+
+      ! input/outputs
+      integer,intent(in) :: istr,iend,jstr,jend
+      integer itrc ! Current tracer index number
+
+      ! local
+      integer i,j
+
+! Needed for 'FIRST_TIME_STEP'
+#include "scalars.h"
+
+#include "compute_extended_bounds.h"
+
+      ! Currently set up for zero surface tracer flux
+      ! Also, time invariant so only set once for efficiency (doesn't change each timestep)
+      if (FIRST_TIME_STEP) then ! Only first timestep
+
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            stflx(i,j,itrc)= 0.5 ! 0.
+          enddo
+        enddo
+
+      endif
+
+!     Could have various switches here for the different tracers, e.g.:
+!     if(itrc==iptrace1) then
+!        do j=jstrR,jendR
+!          do i=istrR,iendR
+!            stflx(i,j,itrc)=sin(time)*100. ! Made up example
+!          enddo
+!        enddo
+!     endif
+
+      end subroutine set_ana_surf_tracer_flx
 ! ----------------------------------------------------------------------
 
       subroutine init_tracers()

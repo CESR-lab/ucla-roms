@@ -118,6 +118,8 @@
 ! interchangeable. >>
 !                                          John Wilkin, 29 July 92
 
+      use tracers, only: t
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 # include "param.h"
