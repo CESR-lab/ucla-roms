@@ -27,15 +27,15 @@
 !             specific for each variable using its 'itrace' index...
 
 
-      itrace1=1+iTandS;              wrt_t(itrace1) =.True.
-      t_vname(itrace1)='trace1';     t_units(itrace1)='%/%/%'
-      t_tname(itrace1)='trace1_time';t_ana_frc(itrace1)=0
-      t_lname(itrace1)='long trace1'
+!      itrace1=1+iTandS;              wrt_t(itrace1) =.True.
+!      t_vname(itrace1)='trace1';     t_units(itrace1)='%/%/%'
+!      t_tname(itrace1)='trace1_time';t_ana_frc(itrace1)=0
+!      t_lname(itrace1)='long trace1'
 
-      isalt2=2+iTandS;               wrt_t(isalt2) =.True.
-      t_vname(isalt2)='salt2';       t_units(isalt2)='PSUuu'
-      t_tname(isalt2)='salt2_time';  t_ana_frc(isalt2)=0
-      t_lname(isalt2)='long salt2'
+!      isalt2=2+iTandS;               wrt_t(isalt2) =.True.
+!      t_vname(isalt2)='salt2';       t_units(isalt2)='PSUuu'
+!      t_tname(isalt2)='salt2_time';  t_ana_frc(isalt2)=0
+!      t_lname(isalt2)='long salt2'
 
 !      iptrace2=2+iTandS;             wrt_t(iptrace2) =.True.
 !      t_vname(iptrace2)='ptrace2';   t_units(iptrace2)='uuunits'

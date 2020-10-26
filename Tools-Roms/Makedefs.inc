@@ -61,10 +61,10 @@
 
  LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
-# FFLAGS =  -O3 -IPF_fma -ip $(LARGE_MEM_FLAG)
+ FFLAGS =  -O3 -IPF_fma -ip $(LARGE_MEM_FLAG)
 # Debug options:
 # FFLAGS = -g -check all -CA -CB -CS
- FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
+# FFLAGS = -warn all -g -check arg_temp_created,bounds,pointers,uninit,format,output_conversion
 
  COMP_FILES = work.pc work.pcl ifort*
 

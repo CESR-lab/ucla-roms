@@ -9,18 +9,8 @@
 !       there is no MPI-partitioning.
 
       integer, parameter ::
-#if defined DOUBLE_GYRE
-c     &               LLm=192, MMm=192, N=12
-     &                LLm=384, MMm=384, N=16
-#elif defined ANA_WEC_FRC
+#if defined ANA_WEC_FRC
      &               LLm=1400, MMm=2, N=2    ! DevinD added
-#elif defined USWC
-c     &    LLm=400,  MMm=512, N=40  ! US West Coast 2010 (L1, 5km)
-c     &    LLm=512,  MMm=400, N=40  ! US West Coast 2010 (L2, 1km)
-c     &    LLm=1120, MMm=560, N=40  ! US West Coast 2010 (L3, 0.25km)
-c     &    LLm=640,  MMm=400, N=32  ! US West Coast 2010 (L4 SMB, 75m)
-     &     LLm=1600, MMm=560, N=32  ! US West Coast 2010 (L4 PV, 75 m)
-
 #elif defined USWC_WEC || defined USWC_sample
 c     &               LLm=1600, MMm=800, N=50       ! US West Coast L2 DD
 c     &               LLm=1700, MMm=850, N=50       ! US West Coast L3 DD
@@ -28,8 +18,8 @@ c     &               LLm=1700, MMm=850, N=50       ! US West Coast L3 DD
 
 #elif defined PACIFIC_PD
 c     &               LLm=930, MMm=480, N=60    ! Incorrect grid
-     &               LLm=920, MMm=480, N=60    ! Pacific model PierreD
-c     &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD
+     &               LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
+c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 #else
      &                LLm=??, MMm=??, N=??
 #endif
@@ -49,8 +39,6 @@ c     &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD
      &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1 ! DevinD - WEC
 #elif defined PACIFIC_PD
      &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
-# elif defined RIVER_SOURCE
-     &      NP_XI=1, NP_ETA=1,  NSUB_X=1, NSUB_E=1 ! DevinD just to compile
 # endif
 #else
      &      NSUB_X=??, NSUB_E=??
@@ -99,11 +87,7 @@ c     &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD
      &       , NT=2
 #  endif
 # else
-#  ifdef BIOLOGY
-     &       , NT=6, iNO3_=2, iNH4_=3, iDet_=4, iPhyt=5, iZoo_=6
-#  else
      &       , NT=1
-#  endif
 # endif
 #endif
 

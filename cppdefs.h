@@ -5,9 +5,9 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-c---#define WEC /* Wave Effect on Current model */
-c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-#define USWC_sample
+c-dd#define WEC /* Wave Effect on Current model */
+#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+c-dd#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -25,10 +25,7 @@ c--#endif
 
 #if defined PACIFIC_PD || defined USWC_sample /* PierreD's pacific coast model with tau-correction */
 
-c-dd# define debug_ddevin /* Test coarse interpolation of 'hraw' & 'lat_rho */
-c-dd# define debug_ddevin_frc /* Test coarse interpolation of 'uwnd' force */
-
-# define WEC
+c-dd# define WEC
 # ifdef WEC
 #    define BRK0
 #    define SURFACE_BREAK
