@@ -32,7 +32,7 @@
       ! User inputs, make sure that units in the forcing files match!
 
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
-      integer :: interp_frc = 0 ! Factor 2 only for now
+      integer :: interp_frc = 1 ! Factor 2 only for now
 
       ! u-wind (input data in m/s)
       ! ------
@@ -1256,9 +1256,6 @@
         enddo
       enddo
 
-# ifdef debug_ddevin_frc
-      uwnd_bf = uwnd ! Set uwnd to surf_flux variable so it can be output
-# endif
 
 # ifdef BULK_FLUX_OUTPUT
 C$OMP MASTER
