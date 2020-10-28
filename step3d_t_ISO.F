@@ -54,14 +54,16 @@ c--# define CONST_TRACERS
 
 ! DPD added for bluk flux as srflux and swradg moved to bulk_frc.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
-#ifdef BULK_FLUX
-      use bulk_frc, only: srflx
-#endif
+!#ifdef BULK_FLUX ! srflx moved to surf_flux.F
+!      use bulk_frc, only: srflx
+!#endif
 
 ! DevinD added for bluk flux as stflx moved to surf_flux.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
-#ifdef BULK_FLUX
-      use surf_flux, only: stflx
+! FLUX_FRC needed until completely tested and old system removed, then don't
+! need any flags here
+#if defined BULK_FLUX || defined FLUX_FRC
+      use surf_flux, only: stflx, srflx
 #endif
 
       use tracers, only: iTandS, t

@@ -1,7 +1,8 @@
 #include "cppdefs.h"
 ! DevinD added BULK_FLUX as get wind accounted for in flux modules
 ! when BULK_FLUX is turned on
-#if !defined ANA_SMFLUX && !defined BULK_FLUX
+! DevinD flux_frc module. Remove this file completely once working
+#if !defined ANA_SMFLUX && !defined BULK_FLUX && !defined FLUX_FRC
 
       subroutine set_smflux_tile(istr,iend,jstr,jend, ierr)
       implicit none
@@ -99,6 +100,13 @@
         enddo
       endif
 # endif
+
+      ! DevinD debug
+      if(mynode==0) then
+        print *, 'sustr(20,20)= ', sustr(20,20)
+        print *, 'svstr(20,20)= ', svstr(20,20)
+      endif
+
       end
 #else
       subroutine get_smflux_empty

@@ -32,7 +32,7 @@
       ! User inputs, make sure that units in the forcing files match!
 
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
-      integer :: interp_frc = 1 ! Factor 2 only for now
+      integer :: interp_frc = 0 ! Factor 2 only for now
 
       ! u-wind (input data in m/s)
       ! ------
@@ -131,9 +131,9 @@
       integer :: lwrad_it1 = 1, lwrad_it2 = 2
       real, dimension(2) :: lwrad_times = [-99,-99]
 
-      ! swrad_data (as swradg) and srflx needed in init_arrays.F to comply with old code
+      ! srflx stored in surf_flux.F module as used in flux_frc too
       real, public    :: swrad_data(GLOBAL_2D_ARRAY,2)
-      real, public    :: srflx(GLOBAL_2D_ARRAY) ! Kept same name convention as old code
+!      real, public    :: srflx(GLOBAL_2D_ARRAY)
       integer :: swrad_grd_type  = 0
       integer :: swrad_file_indx = 0
       integer :: swrad_irec      = 0
@@ -189,6 +189,8 @@
       ! here so can use same generic routine
 
       ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!
+
+      use surf_flux, only: srflx
 
       implicit none
 
@@ -381,7 +383,7 @@
 
       ! Modules required
       ! ----------------
-      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his
+      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his, srflx
       use tracers, only: t
 
       implicit none

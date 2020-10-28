@@ -1,7 +1,7 @@
 #include "cppdefs.h"
 ! DevinD added BULK_FLUX as set surface tracers accounted for in flux modules
 ! when BULK_FLUX is turned on
-#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX) && !defined BULK_FLUX
+#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX) && !defined BULK_FLUX && !defined FLUX_FRC
 
       subroutine set_stflux_tile(istr,iend,jstr,jend, itrc, ierr)
 
@@ -177,6 +177,13 @@ c**  &                             -tclm(i,j,N,isalt)
 # endif
         endif
       endif   !<-- ntstf(itrc) > 1
+
+      ! DevinD debug
+      if(mynode==0) then
+        print *, 'stflx(20,20,itemp)= ', stflx(20,20,itemp)
+        print *, 'stflx(20,20,isalt)= ', stflx(20,20,isalt)
+      endif
+
       end
 #else
       subroutine set_stflux_empty

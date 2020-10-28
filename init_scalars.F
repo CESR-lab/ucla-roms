@@ -76,19 +76,19 @@ c      v3bc_max=0.
       do i=1,max_frc_files
         ncfrc(i)=-1
       enddo
-#ifndef ANA_SMFLUX
-      wnd_file_id=-1
+#if !defined ANA_SMFLUX && !defined FLUX_FRC
+      wnd_file_id=-1 ! DevinD remove entirely once FLUX_FRC module is working.
 #endif
 #ifdef SOLVE3D
 # if !defined ANA_STFLUX || !defined ANA_SSFLUX
 ! DevinD added BULK_FLUX
-#  if !defined BULK_FLUX
+#  if !defined BULK_FLUX && !defined FLUX_FRC
       do i=1,NT
         stf_file_id(i)=-1
       enddo
 #  endif
 # endif
-# if !defined ANA_SRFLUX && !defined BULK_FLUX
+# if !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
       srf_file_id=-1
 # endif
 # if defined QCORRECTION && !defined ANA_SST

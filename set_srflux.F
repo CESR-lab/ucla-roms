@@ -1,6 +1,6 @@
 #include "cppdefs.h"
 ! DevinD moved set_srflux to bulk_frc.F module when BULK_FLUX on. Avoid variable clash
-#if defined SOLVE3D && !defined ANA_SRFLUX && !defined BULK_FLUX
+#if defined SOLVE3D && !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
 
 c--#define DIURNAL_SRFLUX
 c--#define ROBUST_DIURNAL_SRFLUX
@@ -130,6 +130,12 @@ c--#define ROBUST_DIURNAL_SRFLUX
           enddo
         endif
       endif
+
+      ! DevinD debug
+      if(mynode==0) then
+        print *, 'srflx(20,20)= ', srflx(20,20)
+      endif
+
       end
 #else
       subroutine set_srflux_empty

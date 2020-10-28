@@ -38,7 +38,9 @@
 
 ! DevinD added for bluk flux as sustr and svstr moved to surf_flux.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
-#ifdef BULK_FLUX
+! FLUX_FRC needed until completely tested and old system removed, then don't
+! need any flags here
+#if defined BULK_FLUX || defined FLUX_FRC
       use surf_flux, only: sustr, svstr
 #endif
 

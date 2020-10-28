@@ -1,7 +1,7 @@
 #include "cppdefs.h"
 ! DevinD added BULK_FLUX as get sst & sst accounted for in flux modules
 ! when BULK_FLUX is turned on
-#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX) && !defined BULK_FLUX
+#if defined SOLVE3D && (!defined ANA_STFLUX || !defined ANA_SSFLUX) && !defined BULK_FLUX && !defined FLUX_FRC
 
                                             ! Read surface flux for
       subroutine get_stflux(itrc, ierr_ext) ! tracer itrc from forcing

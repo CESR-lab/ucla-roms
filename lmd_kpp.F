@@ -29,14 +29,17 @@ c--# define MERGE_OVERLAP
 
 ! DPD added for bluk flux as srflx moved to bulk_frc.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
-#ifdef BULK_FLUX
-      use bulk_frc, only: srflx
-#endif
-
+!#ifdef BULK_FLUX ! This now moved to surf_flux.F
+!      use bulk_frc, only: srflx
+!#endif
 ! DevinD added for bluk flux as sustr_r,svstr_R, stflx moved to surf_flux.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
-      use surf_flux, only: sustr_r, svstr_r, stflx
+      use surf_flux, only: sustr_r, svstr_r, stflx, srflx
+#endif
+
+#ifdef FLUX_FRC
+      use surf_flux, only: sustr, svstr, stflx, srflx
 #endif
 
       implicit none
