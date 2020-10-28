@@ -11,33 +11,35 @@
 #            P R O J E C T    S T A T I S T I C S
 #           ---------------  ---------------------
 #
-# Number of files given for dependency analysis:              114
+# Number of files given for dependency analysis:              115
 #
-# Number of newly discovered files:                            62
+# Number of newly discovered files:                            63
 #             ---------------------------------------------------
-#             total files analyzed for dependencies:          176
+#             total files analyzed for dependencies:          178
 #
 #
-# Total number of lines of Fortran code in all files:       28221
+# Total number of lines of Fortran code in all files:       28388
 # (excluding CPP-commands, empty, and comment lines)
 #
-# Total number of CPP-preprocessor lines in all files:       9046
+# Total number of CPP-preprocessor lines in all files:       9067
 #
 # Total number of compiler directive lines, Open MP, etc...   208
 #
-# Total number of comment lines in all files:                8925
+# Total number of comment lines in all files:                8954
 # (excluding empty and containing only "!", "C", "c", "*")
 #
-# Total number of empty lines in all files:                  6605
+# Total number of empty lines in all files:                  6614
 # (including lines containing only "!", "C", "c", and "*")
 #                                      --------------------------
-#                                      total lines:         53005
+#                                      total lines:         53231
 
 bulk_frc.mod: bulk_frc.o
 
 diagnostics.mod: diagnostics.o
 
 dimensions.mod: dimensions.o
+
+flux_frc.mod: flux_frc.o
 
 read_write.mod: read_write.o
 
@@ -131,6 +133,10 @@ ext_copy_prv2shr.f: ext_copy_prv2shr.F cppdefs.h param.h\
 find_record.f: find_record.F cppdefs.h param.h scalars.h\
  set_global_definitions.h
  
+flux_frc.o: flux_frc.f tracers.mod read_write.mod surf_flux.mod
+flux_frc.f: flux_frc.F cppdefs.h param.h grid.h scalars.h\
+ compute_extended_bounds.h set_global_definitions.h
+ 
 get_bry_all.o: get_bry_all.f tracers.mod
 get_bry_all.f: get_bry_all.F cppdefs.h param.h scalars.h boundary.h ncvars.h\
  set_global_definitions.h
@@ -197,7 +203,7 @@ int_r3d.f: int_r3d.F cppdefs.h param.h grid.h set_global_definitions.h
 interp.f: interp.F cppdefs.h param.h grid.h scalars.h ocean2d.h coupling.h\
  set_global_definitions.h
  
-lmd_kpp.o: lmd_kpp.f bulk_frc.mod surf_flux.mod wec_frc.mod
+lmd_kpp.o: lmd_kpp.f surf_flux.mod wec_frc.mod
 lmd_kpp.f: lmd_kpp.F cppdefs.h param.h grid.h ocean3d.h scalars.h mixing.h\
  forces.h strings.h lmd_wscale_ws_only.h lmd_kpp_smooth_hbl.h\
  lmd_wscale_wm_and_ws.h set_global_definitions.h
@@ -292,7 +298,7 @@ set_depth.f: set_depth.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  strings.h scoord.h coupling.h hidden_mpi_vars.h set_global_definitions.h
  
 set_forces.o: set_forces.f tracers.mod bulk_frc.mod surf_flux.mod wec_frc.mod\
- river_frc.mod
+ flux_frc.mod river_frc.mod
 set_forces.f: set_forces.F cppdefs.h param.h scalars.h compute_tile_bounds.h\
  hidden_mpi_vars.h set_global_definitions.h
  
@@ -339,8 +345,7 @@ step2d_FB.f: step2d_FB.F cppdefs.h param.h grid.h scalars.h\
  compute_auxiliary_bounds.h forces.h sources.h coupling.h hidden_mpi_vars.h\
  set_global_definitions.h
  
-step3d_t_ISO.o: step3d_t_ISO.f tracers.mod bulk_frc.mod surf_flux.mod\
- river_frc.mod
+step3d_t_ISO.o: step3d_t_ISO.f tracers.mod surf_flux.mod river_frc.mod
 step3d_t_ISO.f: step3d_t_ISO.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  eos_vars.h compute_tile_bounds.h private_scratch.h mixing.h climat.h\
  compute_auxiliary_bounds.h forces.h strings.h hidden_mpi_vars.h\

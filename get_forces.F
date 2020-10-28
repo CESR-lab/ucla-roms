@@ -44,7 +44,8 @@ c--#define VERBOSE
 #endif
 
 ! DevinD for BULK_FLUX get_wind has been moved to bulk_frc.F module
-#if !defined ANA_SMFLUX && !defined BULK_FLUX
+! DevinD for FLUX_FRC  get_wind has been moved to flux_frc.F module
+#if !defined ANA_SMFLUX && !defined BULK_FLUX && !defined FLUX_FRC
       call get_wind(ierr)
 # ifdef WIND_MAGN
       call get_windmag(ierr)
@@ -52,7 +53,7 @@ c--#define VERBOSE
 #endif
 #ifdef SOLVE3D
 ! DevinD for BULK_FLUX get/set swrad has been moved to bulk_frc.F module
-# if defined LMD_KPP && !defined ANA_SRFLUX && !defined BULK_FLUX
+# if defined LMD_KPP && !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
       call get_swrad(ierr)
 # endif
 
@@ -64,7 +65,8 @@ c--#define VERBOSE
 !      call get_prate(ierr)
 !# else
 ! DevinD - addded # ifndef BULK_FLUX because commented out above.
-# ifndef BULK_FLUX
+! DevinD - FLUX_FRC
+# if !defined BULK_FLUX && !defined FLUX_FRC
 #  ifndef ANA_STFLUX
       call get_stflux(itemp, ierr)
 #  endif
@@ -100,7 +102,8 @@ c--#define VERBOSE
 
 
 ! DevinD for BULK_FLUX get_wind has been moved to bulk_frc.F module
-#if !defined ANA_SMFLUX && !defined BULK_FLUX
+! DevinD for FLUX_FRC  get_wind has been moved to flux_frc.F module
+#if !defined ANA_SMFLUX && !defined BULK_FLUX && !defined FLUX_FRC
 ! Wind velocities or wind stress components
 !----- ---------- -- ---- ------ -----------
 # define get_smth get_wind
@@ -176,7 +179,7 @@ c--#define VERBOSE
 
 #ifdef SOLVE3D
 ! DevinD for BULK_FLUX get/set swrad has been moved to bulk_frc.F module
-# if !defined ANA_SRFLUX && !defined BULK_FLUX
+# if !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
 
 ! Solar short-wave radiation flux [Watts/m^2]
 !------ ---------- --------- ---- ------------

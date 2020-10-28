@@ -49,8 +49,11 @@
 ! DevinD added for bluk flux as srflux and swradg moved to bulk_frc.F module
 ! but only when BULK_FLUX is on, else variables still live in forces.h
 #ifdef BULK_FLUX
-      use bulk_frc, only: srflx, swradg => swrad_data
+      use bulk_frc !, only: srflx, swradg => swrad_data
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
+#endif
+#ifdef FLUX_FRC
+      use surf_flux ! Remove cppflags for this and bulk surf_flux when complete
 #endif
 
       use tracers, only: iTandS, t
@@ -203,8 +206,8 @@
         do i=istrR,iendR
           sustr(i,j)=init
           svstr(i,j)=init
-#ifndef ANA_SMFLUX
-          uwind(i,j,1)=init
+#if !defined ANA_SMFLUX && !defined FLUX_FRC
+          uwind(i,j,1)=init ! DevinD remove entirely once FLUX_FRC module working
           vwind(i,j,1)=init
           uwind(i,j,2)=init
           vwind(i,j,2)=init
@@ -218,7 +221,7 @@
             stflx(i,j,itrc)=init
 # if !defined ANA_STFLUX || !defined ANA_SSFLUX
 ! DevinD added !defined BULK_FLUX
-#  ifndef BULK_FLUX
+#  if !defined BULK_FLUX && !defined FLUX_FRC
             stflxg(i,j,1,itrc)=init
             stflxg(i,j,2,itrc)=init
 #  endif
@@ -235,7 +238,8 @@
           sstg (i,j,2)=init
 # endif
           srflx(i,j)=init
-# ifndef ANA_SRFLUX
+! DevinD get rid of this when forcing complete.
+# if !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
           swradg(i,j,1)=init
           swradg(i,j,2)=init
 # endif

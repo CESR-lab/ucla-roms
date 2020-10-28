@@ -6,8 +6,8 @@
  */
 
 c-dd#define WEC /* Wave Effect on Current model */
-#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-c-dd#define USWC_sample
+c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -24,6 +24,8 @@ c--#endif
 
 
 #if defined PACIFIC_PD || defined USWC_sample /* PierreD's pacific coast model with tau-correction */
+
+# define FLUX_FRC /* DevinD for new flux_frc.F module - should remove flag later */
 
 c-dd# define WEC
 # ifdef WEC
@@ -60,7 +62,7 @@ c-dd#include "cppdefs_UP.h"
 c-dd#define SFLX_CORR    /* DevinD turned off as new 25km input wrong for sss */
                      /*  Forcing */
                      /*         - surface */
-#define DIURNAL_SRFLUX
+#define DIURNAL_SRFLUX /* Note this is 'undef'ed' below */
 c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
                      /*         - lateral */
 #define T_FRC_BRY
@@ -138,7 +140,7 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
      /* Biology */
 c-dd#define BIOLOGY_BEC2
 
-#define BULK_FLUX
+c-DDDD#define BULK_FLUX
 c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
 c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 #define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */

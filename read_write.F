@@ -447,6 +447,11 @@ C$OMP BARRIER
       integer :: var_tid      ! Variable time id
       logical :: first        ! Check if first time finding an entry
 
+#ifdef FLUX_FRC
+      real    :: cycle_length ! Deal with cyclical forcing files
+      integer :: icycle
+#endif
+
       ! Routine
       ! =======
 
@@ -471,10 +476,10 @@ C$OMP BARRIER
 
         found_var = 0 ! Reset variable to not found
 
-!        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
-!          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
-!     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
-!        endif
+        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
+          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
+     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
+        endif
 
         ! Try to open force file
         ierr = nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
@@ -489,10 +494,10 @@ C$OMP BARRIER
         ! Variable found, now check if file times contain model time
         if (ierr.eq.nf90_noerr) then
 
-!          if (mynode==0) then
-!            write(*,'(3x,4A)') 'Found variable ''',var_name,
-!     &           ''' in file ',frcfile(var_file_indx)
-!          endif
+          if (mynode==0) then
+            write(*,'(3x,4A)') 'Found variable ''',var_name,
+     &           ''' in file ',frcfile(var_file_indx)
+          endif
           found_var = 1
           ! Needed to deal with found_var = 0 further above, so that
           ! If variable is found in a file but time is wrong, and it
@@ -518,9 +523,29 @@ C$OMP BARRIER
             irec = irec + 1
 
             ! Find variable ID for time variable
+            ! This should go outside 'do while' only done once!
             ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (vt_id)
             ! nf90_get_var needs an array for last 2 terms hence syntax
             ierr = nf90_get_var(ncid, var_tid, vtime, (/irec/), (/1/))
+            if(mynode==0) print*,'vtime(1)=',vtime(1),' time_model=',time_model ! debug
+
+#ifdef FLUX_FRC
+            ! Deal with cyclical forcing files
+      !      ierr = nf90_noerr ! Set ierr flag to no error
+            ! Reset cycle variables
+            cycle_length=0; icycle=0 !; cycle_start_time=0
+            ! Most likely data won't have ''cycle_length' attribute, which
+            ! is fine code will continue without it.
+            ierr=nf90_get_att(ncid, var_tid, 'cycle_length', cycle_length)
+            if(cycle_length>0.) then ! Variable does have cycle length
+              icycle=int( (time_model/cycle_length) ) ! Force integer division
+!              cycle_start_time=icycle*cycle_length ! Gives 'real' result despite icycle as integer
+            endif
+            ! Currently this won't work if time falls before 1st cyclical entry
+            ! Preferable if cyclicaly entry starts from 0.0 not e.g. 15.0
+            vtime(1)=vtime(1)+icycle*cycle_length
+            if(mynode==0) print*,'vtimeA(1)=',vtime(1),' time_model=',time_model ! debug
+#endif
 
             if (vtime(1)>time_model) then ! Correct time
               found_rec = 1
@@ -640,11 +665,11 @@ C$OMP BARRIER
 
       ! Similar to vname(1,inx) from old ncvars.h
       character(len=*), intent(in) :: var_name ! Variable short name
-      integer, intent(in)  :: var_type ! variable type: u-, v- or rho-point
+      integer, intent(in)          :: var_type ! variable type: u-, v- or rho-point
 
       ! Set var_time for read in variables
-      real,dimension(1) :: var_time
-      character(len=*)  :: var_time_name
+      real,dimension(1)   :: var_time
+      character(len=*)    :: var_time_name
 
       integer, intent(in) :: coarse ! Whether function is interpolated from coarse data
 
@@ -652,7 +677,10 @@ C$OMP BARRIER
       ! -----
       integer ierr,ncid
       integer :: var_tid ! Variable time_id
-
+#ifdef FLUX_FRC
+      real    :: cycle_length ! Deal with cyclical forcing files
+      integer :: icycle
+#endif
 
       ! open the file (maybe check if the file is open already)
       ! =============
@@ -663,6 +691,16 @@ C$OMP BARRIER
       ! =============
       ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (varid)
       ierr = nf90_get_var(ncid, var_tid, var_time, (/irec/), (/1/))
+#ifdef FLUX_FRC
+            ! Deal with cyclical forcing files (see find_new_record for info)
+            cycle_length=0; icycle=0
+            ierr=nf90_get_att(ncid, var_tid, 'cycle_length', cycle_length)
+            if(cycle_length>0.) then ! Variable does have cycle length
+              icycle=int( ( (tdays + 0.5*dt*sec2day) /cycle_length) ) ! Timestep time
+            endif
+            var_time=var_time+icycle*cycle_length
+      if(mynode==0) print*,'var_time=',var_time,' time_model=',tdays+0.5*dt*sec2day ! debug
+#endif
 
       ! read the var
       ! ============

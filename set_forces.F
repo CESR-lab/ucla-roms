@@ -32,10 +32,12 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
-# ifdef BULK_FLUX
+# if defined BULK_FLUX
       use bulk_frc,  only: set_bulk_frc_tile
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
+# elif defined FLUX_FRC
+      use flux_frc,  only: set_flux_frc ! DevinD remove FLUX_FRC flag to just else when working
 # endif
 
 # ifdef RIVER_SOURCE
@@ -100,8 +102,9 @@ c***              no code here
 
 #ifdef ANA_SMFLUX
       call ana_smflux_tile(istr,iend,jstr,jend)
-! DevinD added BULK_FLUX as account for in new flux module for BULK_FLUX
-#elif !defined BULK_SM_UPDATE && !defined BULK_FLUX
+! DevinD added BULK_FLUX as accounted for in new bulk module for BULK_FLUX
+! DevinD added FLUX_FRC  as accounted for in new flux module for flux_frc.F
+#elif !defined BULK_SM_UPDATE && !defined BULK_FLUX && !defined FLUX_FRC
       call set_smflux_tile(istr,iend,jstr,jend, ierr)
 #endif
 
@@ -135,25 +138,32 @@ c***              no code here
 
       ! DevinD, this would probably be faster if using CPPFLAG instead, e.g. PASSIVE_TRACERS
       ! For now just use number of tracers to decide:
+      ! This should be for both BULK and FLUX_FRC once FLUX is implemented
       if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
 
 # else
+
+      ! DevinD flux_frc module:
+#  ifdef FLUX_FRC
+      call set_flux_frc(istr,iend,jstr,jend)
+#  endif
+
 #  ifdef ANA_STFLUX
       call ana_stflux_tile(istr,iend,jstr,jend, itemp)
-#  else
+#  elif !defined FLUX_FRC
       call set_stflux_tile(istr,iend,jstr,jend, itemp, ierr)
 #  endif
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
       call ana_srflux_tile(istr,iend,jstr,jend)
-#   else
+#   elif !defined FLUX_FRC
       call set_srflux_tile(istr,iend,jstr,jend, ierr)
 #   endif
 #  endif
 #  ifdef SALINITY
 #   ifdef ANA_SSFLUX
       call ana_stflux_tile(istr,iend,jstr,jend, isalt)
-#   else
+#   elif !defined FLUX_FRC
       call set_stflux_tile(istr,iend,jstr,jend, isalt, ierr)
 #   endif
 #  endif

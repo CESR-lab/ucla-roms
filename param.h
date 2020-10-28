@@ -82,7 +82,7 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 #  ifdef BIOLOGY
      &       , NT=7, iNO3_=3, iNH4_=4, iDet_=5, iPhyt=6, iZoo_=7
 #  elif defined USWC_sample
-     &       , NT=4
+     &       , NT=2
 #  else
      &       , NT=2
 #  endif

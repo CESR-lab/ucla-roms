@@ -11,7 +11,8 @@
 ! the executable.
 ! Currently only set-up for BULK_FLUX but eventually should be used for all
 ! fluxes once forces.h is fully ported into flux modules.
-#if defined BULK_FLUX /* for whole module! */  
+!#if defined BULK_FLUX /* for whole module! */
+! Don't need this flag as now have flux_frc module
 
       implicit none
 
@@ -50,6 +51,7 @@
       real, public :: svstr(GLOBAL_2D_ARRAY)    ! v-point: used in Eq.System
       real, public :: svstr_r(GLOBAL_2D_ARRAY)  ! rho-point, only used in lmd_kpp to get ustar
       real, public :: stflx(GLOBAL_2D_ARRAY,NT) ! Surface fluxes of tracer type variables (rho-points)
+      real, public :: srflx(GLOBAL_2D_ARRAY) ! Short-wave radiation surface flux
       character(len=5) :: sustr_name        = 'sustr'
       character(len=5) :: svstr_name        = 'svstr'
       character(len=5) :: shflx_name        = 'shflx'
@@ -330,6 +332,6 @@
 
 !-----------------------------------------------------------------------
 
-#endif /* BULK_FLUX for whole module */
+!#endif /* BULK_FLUX for whole module */
 
       end module surf_flux

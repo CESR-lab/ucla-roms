@@ -8,7 +8,8 @@
 ! vwind  of wind stess (normally assumed to be in [Newton/m^2].
 
 ! DevinD - ported to surf_flux.F only for BULK_FLUX
-#if !defined BULK_FLUX
+! and added ANA_SMFLUX to trigger flux_frc module
+#if !defined BULK_FLUX && !defined FLUX_FRC
       real sustr(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE sustr(BLOCK_PATTERN) BLOCK_CLAUSE
       real svstr(GLOBAL_2D_ARRAY)
@@ -28,7 +29,8 @@ CSDISTRIBUTE_RESHAPE wndmag(BLOCK_PATTERN) BLOCK_CLAUSE
 ! into wind stress using bulk formula), so the variable names here
 ! are kind of "neutral" to fit both possibilities.
 
-#ifndef ANA_SMFLUX
+! DevinD added FLUX_FRC as transition to flux_frc.F module functionality rather
+#if !defined ANA_SMFLUX && !defined FLUX_FRC
 # if defined WIND_DATA || defined ALL_DATA
 #  undef WIND_DATA
       real uwind(GLOBAL_2D_ARRAY,2)
@@ -69,7 +71,8 @@ CSDISTRIBUTE_RESHAPE windmag(BLOCK_PATTERN,*) BLOCK_CLAUSE
 ! swradg  two-time-level grided data for surface [Watts/m^2]
 
 ! DevinD shortwave radiation for bulk flux moved to bulk_frc.F module. Hence:
-# ifndef BULK_FLUX
+! DevinD also moved to flux_frc.F module hence FLUX_FRC flag
+# if !defined BULK_FLUX && !defined FLUX_FRC
       real srflx(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE srflx(BLOCK_PATTERN) BLOCK_CLAUSE
       common /frc_srflx/srflx
@@ -207,7 +210,8 @@ CSDISTRIBUTE_RESHAPE swradg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 !  tstflx  time of surface tracer flux.
 
 ! DevinD - ported to surf_flux.F only for BULK_FLUX so far
-#if !defined BULK_FLUX
+! DevinD - ported to surf_flux.F for FLUX_FRC too
+#if !defined BULK_FLUX && !defined FLUX_FRC
       real stflx(GLOBAL_2D_ARRAY,NT)
 CSDISTRIBUTE_RESHAPE stflx(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /frc_stflx/stflx

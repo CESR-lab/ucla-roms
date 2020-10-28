@@ -37,7 +37,9 @@
 # ifdef DIAGNOSTICS
       use diagnostics
 # endif
-# ifdef BULK_FLUX
+! FLUX_FRC needed until completely tested and old system removed, then don't
+! need any flags here
+#if defined BULK_FLUX || defined FLUX_FRC
       use surf_flux, only: sustr, svstr
 # endif
 
