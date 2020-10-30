@@ -117,8 +117,8 @@
      &  istr,iend,              jstr,jend,            ! Tile bounds indices
      &  svstr_name,             svstr_time_name,      ! Text name of array and time
      &  flx_data(:,:,:,isvstr), svstr,                ! Variable arrays
-     &  flx_times(:,isvstr),    svstr_grd_type, ! Input times & Grid type
-     &  flx_file_indx(isvstr),  flx_irec(isvstr),    ! File indx & Current input record
+     &  flx_times(:,isvstr),    svstr_grd_type,       ! Input times & Grid type
+     &  flx_file_indx(isvstr),  flx_irec(isvstr),     ! File indx & Current input record
      &  flx_it1(isvstr),        flx_it2(isvstr),      ! Time index placeholders
      &  interp_frc )                                  ! Online spatial interpolation flag
 
