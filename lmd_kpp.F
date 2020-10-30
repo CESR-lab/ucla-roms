@@ -26,21 +26,8 @@ c--# define MERGE_OVERLAP
 # ifdef WEC
       use wec_frc
 # endif
-
-! DPD added for bluk flux as srflx moved to bulk_frc.F module
-! but only when BULK_FLUX is on, else variables still live in forces.h
-!#ifdef BULK_FLUX ! This now moved to surf_flux.F
-!      use bulk_frc, only: srflx
-!#endif
-! DevinD added for bluk flux as sustr_r,svstr_R, stflx moved to surf_flux.F module
-! but only when BULK_FLUX is on, else variables still live in forces.h
-#ifdef BULK_FLUX
-      use surf_flux, only: sustr_r, svstr_r, stflx, srflx
-#endif
-
-#ifdef FLUX_FRC
-      use surf_flux, only: sustr, svstr, stflx, srflx
-#endif
+      use surf_flux ! bulk_frc-> only: sustr_r, svstr_r, stflx, srflx
+                    ! flux_frc-> only: sustr, svstr, stflx, srflx
 
       implicit none
 # include "param.h"
@@ -104,7 +91,6 @@ c--# define MERGE_OVERLAP
 
 # include "grid.h"
 # include "ocean3d.h"
-# include "forces.h"
 # include "mixing.h"
 # ifdef LMD_BKPP
 c>>>#  include "coupling.h"    /* <-- needs "r_D"  */
@@ -189,22 +175,10 @@ c>>>#  include "coupling.h"    /* <-- needs "r_D"  */
 #  undef beta
 #  undef alpha
 
-#  ifdef WIND_MAGN
-#   ifdef WIND_AT_RHO_POINTS
-          ustar(i,j)=sqrt( max( wndmag(i,j), sqrt( sustr(i,j)**2
-     &                                            +svstr(i,j)**2 )))
-#   else
-          ustar(i,j)=sqrt( max( wndmag(i,j),  sqrt( 0.333333333333*(
-     &      sustr(i,j)**2 + sustr(i+1,j)**2 + sustr(i,j)*sustr(i+1,j)
-     &     +svstr(i,j)**2 + svstr(i,j+1)**2 + svstr(i,j)*svstr(i,j+1)
-     &                                                           ))))
-#   endif
-#  else
 ! DevinD & JM: better to use rho variables for sustr & svstr since we
 ! currently calculated both u/v and rho versions. If we converted u/v back to rho
-! it would be a double average and dilute the answer further. Currently
-! only for BULK_FLUX
-#   ifdef BULK_FLUX
+! it would be a double average and dilute the answer further.
+#   ifdef BULK_FRC
           ustar(i,j)=sqrt( sqrt( sustr_r(i,j)**2 +svstr_r(i,j)**2 ))
 #   else
 ! Orginal for non-bulk-flux
@@ -216,8 +190,7 @@ c>>>#  include "coupling.h"    /* <-- needs "r_D"  */
      &     +svstr(i,j)**2 + svstr(i,j+1)**2 + svstr(i,j)*svstr(i,j+1)
      &                                                            )))
 #    endif
-#   endif /* BULK_FLUX */
-#  endif /* WIND_MAGN */
+#   endif /* BULK_FRC */
 
 #  ifdef LMD_KPP
           hbl(i,j)=hbls(i,j,nstp)     ! use old-time-step values

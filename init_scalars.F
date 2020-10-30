@@ -14,7 +14,6 @@
 #include "param.h"
 #include "scalars.h"
 #include "comm_vars.h"
-#include "forces.h"
 #include "sources.h"
 #include "mixing.h"
 #include "ncvars.h"
@@ -76,31 +75,6 @@ c      v3bc_max=0.
       do i=1,max_frc_files
         ncfrc(i)=-1
       enddo
-#if !defined ANA_SMFLUX && !defined FLUX_FRC
-      wnd_file_id=-1 ! DevinD remove entirely once FLUX_FRC module is working.
-#endif
-#ifdef SOLVE3D
-# if !defined ANA_STFLUX || !defined ANA_SSFLUX
-! DevinD added BULK_FLUX
-#  if !defined BULK_FLUX && !defined FLUX_FRC
-      do i=1,NT
-        stf_file_id(i)=-1
-      enddo
-#  endif
-# endif
-# if !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
-      srf_file_id=-1
-# endif
-# if defined QCORRECTION && !defined ANA_SST
-      sst_file_id=-1
-      dqdt_file_id=-1
-# endif
-! DevinD addded !defined bulk_flux as 'sss' now lives in surf_flux.F module
-! only for bulk_flux currently
-# if defined SFLX_CORR && defined SALINITY && !defined BULK_FLUX
-      sss_file_id=-1
-# endif
-#endif
       ncidclm=-1
 #ifndef ANA_BRY
        bry_id=-1

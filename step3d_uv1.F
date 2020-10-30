@@ -37,11 +37,7 @@
 # ifdef DIAGNOSTICS
       use diagnostics
 # endif
-! FLUX_FRC needed until completely tested and old system removed, then don't
-! need any flags here
-#if defined BULK_FLUX || defined FLUX_FRC
       use surf_flux, only: sustr, svstr
-# endif
 
       implicit none
 # include "param.h"
@@ -68,7 +64,6 @@
 # include "ocean3d.h"
 # include "coupling.h"
 # include "mixing.h"
-# include "forces.h"
 # include "scalars.h"
 # if defined ADV_ISONEUTRAL && defined EXCHANGE
 #  include "eos_vars.h"

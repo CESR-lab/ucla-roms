@@ -152,7 +152,6 @@
       integer istr,iend,jstr,jend, i,j
 # include "param.h"
 # include "grid.h"
-# include "forces.h"
 # include "scalars.h"
       real TauX, TauY, cff
 
@@ -256,7 +255,6 @@ c          svstr(i,j)=-1.0d-4
       integer istr,iend,jstr,jend, i,j
 # include "param.h"
 # include "grid.h"
-# include "forces.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -329,7 +327,6 @@ c          svstr(i,j)=-1.0d-4
       integer istr,iend,jstr,jend, itrc, i,j
 #  include "param.h"
 #  include "grid.h"
-#  include "forces.h"
 #  include "scalars.h"
 
 # include "compute_extended_bounds.h"

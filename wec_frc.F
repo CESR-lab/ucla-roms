@@ -1468,7 +1468,6 @@
       real Wrk(0:N)
 !! # include "grid.h" ! already included at top of module
 !! # include "ocean3d.h" ! already included at top of module
-!! # include "forces.h" ! already included at top of module
 
       do j=jstr,jend
         do i=istr,iend
@@ -2239,7 +2238,6 @@ C$OMP BARRIER
 !
       implicit none
 !# include "param.h"
-!# include "forces.h"
 !# include "grid.h"
 !# include "scalars.h"
 !# include "ocean2d.h"

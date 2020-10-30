@@ -7,10 +7,8 @@
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020)
 
 #include "cppdefs.h"
-! CPP flag BULK_FRC_MOD covering entire module so that the module is empty if
-! BULK_FRC_MOD is unused, and thus module will not take up unnecessary size in
-! the executable.
-#if defined BULK_FLUX /* for whole module! */
+! CPP flag BULK_FRC covering entire module, module empty if off
+#if defined BULK_FRC /* for whole module! */
 
       ! Modules required
       ! ================
@@ -203,6 +201,10 @@
 
       ! Short/Long radiation
       ! --------------------
+
+! Thermodynamic forcing: Note that BULK_FLUX requires computing the
+! short-wave radiation flux first because bulk flux routine performs
+! the final assembly of everything.
 
         ! Short wave radiation -
         ! this accounts for get_srflx.F & time interp of set_srflx.F in newer code
@@ -533,10 +535,6 @@
 # define PRATE_DATA
 # define LWRAD_DATA
 
-! DevinD commented forces.h as everything should be module contained
-!# include "forces.h"
-
-
 ! Extended bounds needed since u2rho and rho2u averaging occurs, and
 ! lmd_kpp has SMOOTH_HBL which requires extended loop ranges for smoothing.
 # include "compute_extended_bounds.h"
@@ -560,7 +558,6 @@
 !# include "param.h"
 !# include "scalars.h"
 !# include "grid.h"
-!# include "forces.h"
 !
 !# include "compute_extended_bounds.h"
 !
@@ -638,7 +635,7 @@
             srflx(i,j)= srflx(i,j)/(rho0*Cp)
 
 # if defined DIURNAL_SRFLUX || defined ROBUST_DIURNAL_SRFLUX
-#  ifdef BULK_FLUX
+#  ifdef BULK_FRC
             srflx(i,j)=srflx(i,j)*Ampl         ! just modulate
 #  else
             cff=stflx(i,j,itemp)-srflx(i,j)    ! subtract short-wave
@@ -1400,6 +1397,6 @@ C$OMP BARRIER
 
 !-----------------------------------------------------------------------
 
-#endif /* BULK_FLUX for whole module */
+#endif /* BULK_FRC for whole module */
 
       end module bulk_frc

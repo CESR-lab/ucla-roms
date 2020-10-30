@@ -25,8 +25,6 @@ c--#endif
 
 #if defined PACIFIC_PD || defined USWC_sample /* PierreD's pacific coast model with tau-correction */
 
-# define FLUX_FRC /* DevinD for new flux_frc.F module - should remove flag later */
-
 c-dd# define WEC
 # ifdef WEC
 #    define BRK0
@@ -140,7 +138,7 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
      /* Biology */
 c-dd#define BIOLOGY_BEC2
 
-c-DDDD#define BULK_FLUX
+c-dd#define BULK_FRC
 c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
 c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 #define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
@@ -265,8 +263,8 @@ c#    define BBL_F00
 #  else
 #   define LOG_BDRAG
 #  endif
-#  define BULK_FLUX
-#  ifdef BULK_FLUX
+#  define BULK_FRC
+#  ifdef BULK_FRC
 c---#   define COUPLED_SURF_CURR /* not used in new code */
 c---#   define WND_AT_RHO_POINTS /* Not needed in new code as wind converted to u/v */
 #   define BULK_FLUX_OUTPUT /* DevinD output flux variables to ncdf */

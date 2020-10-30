@@ -145,10 +145,10 @@
       ! Move rho0 into arguement of set_var_frc_tile eventually?
 
       ! DevinD debug
-      if(mynode==0) then
-        print *, 'sustr(20,20)= ', sustr(20,20)
-        print *, 'svstr(20,20)= ', svstr(20,20)
-      endif
+!      if(mynode==0) then
+!        print *, 'sustr(20,20)= ', sustr(20,20)
+!        print *, 'svstr(20,20)= ', svstr(20,20)
+!      endif
 
 
       end subroutine set_smflux
@@ -202,9 +202,9 @@
       enddo
 
       ! DevinD debug
-      if(mynode==0) then
-        print *, 'stflx(20,20,itemp)= ', stflx(20,20,itemp)
-      endif
+!      if(mynode==0) then
+!        print *, 'stflx(20,20,itemp)= ', stflx(20,20,itemp)
+!      endif
 
       end subroutine set_shflux
 ! ----------------------------------------------------------------------
@@ -247,9 +247,9 @@
       enddo
 
       ! DevinD debug
-      if(mynode==0) then
-        print *, 'stflx(20,20,isalt)= ', stflx(20,20,isalt)
-      endif
+!      if(mynode==0) then
+!        print *, 'stflx(20,20,isalt)= ', stflx(20,20,isalt)
+!      endif
 
       end subroutine set_swflux
 #endif /* SALINITY */
@@ -363,13 +363,9 @@
             srflx(i,j)=srflx(i,j)/(rho0*Cp) ! DevinD equivalent
 
 # if defined DIURNAL_SRFLUX || defined ROBUST_DIURNAL_SRFLUX
-#  ifdef BULK_FLUX
-            srflx(i,j)=srflx(i,j)*Ampl         ! just modulate
-#  else
             cff=stflx(i,j,itemp)-srflx(i,j)    ! subtract short-wave
             srflx(i,j)=srflx(i,j)*Ampl         ! radiatin from the net,
             stflx(i,j,itemp)= cff+srflx(i,j)   ! modulate and add back
-#  endif
 # endif
           enddo
         enddo
