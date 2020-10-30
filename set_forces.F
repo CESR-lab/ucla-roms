@@ -32,14 +32,13 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
-# if defined BULK_FLUX
+# if defined BULK_FRC
       use bulk_frc,  only: set_bulk_frc_tile
+# else
+      use flux_frc,  only: set_flux_frc
+# endif
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
-# elif defined FLUX_FRC
-      use flux_frc,  only: set_flux_frc ! DevinD remove FLUX_FRC flag to just else when working
-      use surf_flux, only: set_surf_field_corr
-# endif
 
 # ifdef RIVER_SOURCE
       use river_frc
@@ -103,10 +102,6 @@ c***              no code here
 
 #ifdef ANA_SMFLUX
       call ana_smflux_tile(istr,iend,jstr,jend)
-! DevinD added BULK_FLUX as accounted for in new bulk module for BULK_FLUX
-! DevinD added FLUX_FRC  as accounted for in new flux module for flux_frc.F
-#elif !defined BULK_SM_UPDATE && !defined BULK_FLUX && !defined FLUX_FRC
-      call set_smflux_tile(istr,iend,jstr,jend, ierr)
 #endif
 
 ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
@@ -125,53 +120,36 @@ c***              no code here
       call set_surf_field_corr(istr,iend,jstr,jend)
 # endif
 
-# ifdef BULK_FLUX
+# ifdef BULK_FRC
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
-      call ana_srflux_tile(istr,iend,jstr,jend)
-! DevinD for BULK_FLUX get/set swrad has been moved to bulk_frc.F module
-#   elseif !defined ANA_SRFLUX && !defined BULK_FLUX
-      call set_srflux_tile(istr,iend,jstr,jend, ierr) ! DevinD - Only for bulk so can remove now
+      call ana_srflux_tile(istr,iend,jstr,jend) ! Should move this to bulk module
 #   endif
 #  endif
-
-      ! call set_surf_field_corr ! placed higher up
-
-      call set_bulk_frc_tile(istr,iend,jstr,jend) ! DevinD bulk flux module
-!      call bulk_flux_tile(istr,iend,jstr,jend) ! Old version
-
-      ! DevinD, this would probably be faster if using CPPFLAG instead, e.g. PASSIVE_TRACERS
-      ! For now just use number of tracers to decide:
-      ! This should be for both BULK and FLUX_FRC once FLUX is implemented
-      if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
+      call set_bulk_frc_tile(istr,iend,jstr,jend) ! bulk flux module
 
 # else
 
-      ! DevinD flux_frc module:
-#  ifdef FLUX_FRC
       call set_flux_frc(istr,iend,jstr,jend)
-#  endif
 
 #  ifdef ANA_STFLUX
-      call ana_stflux_tile(istr,iend,jstr,jend, itemp)
-#  elif !defined FLUX_FRC
-      call set_stflux_tile(istr,iend,jstr,jend, itemp, ierr)
+      call ana_stflux_tile(istr,iend,jstr,jend, itemp) ! DevinD Should move to module
 #  endif
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
-      call ana_srflux_tile(istr,iend,jstr,jend)
-#   elif !defined FLUX_FRC
-      call set_srflux_tile(istr,iend,jstr,jend, ierr)
+      call ana_srflux_tile(istr,iend,jstr,jend) ! DevinD Should move to module
 #   endif
 #  endif
 #  ifdef SALINITY
 #   ifdef ANA_SSFLUX
-      call ana_stflux_tile(istr,iend,jstr,jend, isalt)
-#   elif !defined FLUX_FRC
-      call set_stflux_tile(istr,iend,jstr,jend, isalt, ierr)
+      call ana_stflux_tile(istr,iend,jstr,jend, isalt) ! DevinD Should move to module
 #   endif
 #  endif
 # endif
+
+      ! DevinD, this would probably be faster if using CPPFLAG instead,
+      ! e.g. PASSIVE_TRACERS for now just use number of tracers to decide:
+      if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
 
 # ifdef RIVER_SOURCE
       call set_river_frc_tile(istr,iend,jstr,jend,ierr,tmid)

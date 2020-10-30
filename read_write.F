@@ -788,9 +788,9 @@ C$OMP BARRIER
       ! Fix time for cyclical forcing file if applicable
       call cycle_length_handling(var_time, ncid, var_tid,
      &                  var_time_name, irec, cycle_length )
-      if(mynode==0) then ! debug
-      print*,'read_var_frc: var_time=',var_time,' time_model=',tdays+0.5*dt*sec2day ! debug
-      endif
+!      if(mynode==0) then ! debug
+!      print*,'read_var_frc: var_time=',var_time,' time_model=',tdays+0.5*dt*sec2day ! debug
+!      endif
 
       ! read the var
       ! ============

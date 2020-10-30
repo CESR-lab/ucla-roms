@@ -134,7 +134,7 @@
 #ifdef SSH_DATA
 # include "climat.h"
 #else
-!# include "forces.h" ! DevinD commented out
+# include "forces.h"
 #endif
 #include "netcdf.inc"
       character(len=max_name_size) frcname

@@ -46,15 +46,10 @@
       use wec_frc
 #endif
 
-! DevinD added for bluk flux as srflux and swradg moved to bulk_frc.F module
-! but only when BULK_FLUX is on, else variables still live in forces.h
-#ifdef BULK_FLUX
-      use bulk_frc !, only: srflx, swradg => swrad_data
+#ifdef BULK_FRC
+      use bulk_frc !, only: srflx
+#endif
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
-#endif
-#ifdef FLUX_FRC
-      use surf_flux ! Remove cppflags for this and bulk surf_flux when complete
-#endif
 
       use tracers, only: iTandS, t
 
@@ -71,7 +66,6 @@
 #include "coupling.h"
 #include "averages.h"
 #include "mixing.h"
-#include "forces.h"
 #include "climat.h"
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
@@ -200,18 +194,12 @@
       enddo
 #endif /* SOLVE3D */
 
-! Initialize forcing arrays (see "forces.h").
+! Initialize forcing arrays.
 
       do j=jstrR,jendR
         do i=istrR,iendR
           sustr(i,j)=init
           svstr(i,j)=init
-#if !defined ANA_SMFLUX && !defined FLUX_FRC
-          uwind(i,j,1)=init ! DevinD remove entirely once FLUX_FRC module working
-          vwind(i,j,1)=init
-          uwind(i,j,2)=init
-          vwind(i,j,2)=init
-#endif
         enddo
       enddo
 #ifdef SOLVE3D
@@ -219,38 +207,12 @@
         do j=jstrR,jendR
           do i=istrR,iendR
             stflx(i,j,itrc)=init
-# if !defined ANA_STFLUX || !defined ANA_SSFLUX
-! DevinD added !defined BULK_FLUX
-#  if !defined BULK_FLUX && !defined FLUX_FRC
-            stflxg(i,j,1,itrc)=init
-            stflxg(i,j,2,itrc)=init
-#  endif
-# endif
           enddo
         enddo
       enddo
       do j=jstrR,jendR
         do i=istrR,iendR
-# ifdef QCORRECTION
-          dqdtg(i,j,1)=init
-          sstg (i,j,1)=init
-          dqdtg(i,j,2)=init
-          sstg (i,j,2)=init
-# endif
           srflx(i,j)=init
-! DevinD get rid of this when forcing complete.
-# if !defined ANA_SRFLUX && !defined BULK_FLUX && !defined FLUX_FRC
-          swradg(i,j,1)=init
-          swradg(i,j,2)=init
-# endif
-# if defined SG_BBL96 && !defined ANA_WWAVE
-          wwag(i,j,1)=init
-          wwdg(i,j,1)=init
-          wwpg(i,j,1)=init
-          wwag(i,j,2)=init
-          wwdg(i,j,2)=init
-          wwpg(i,j,2)=init
-# endif
         enddo
       enddo
 #endif /* SOLVE3D */

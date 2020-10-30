@@ -48,7 +48,6 @@
 #ifdef SOLVE3D
 # include "coupling.h"
 #endif
-#include "forces.h"
 #include "mixing.h"
 #include "climat.h"
 #include "scalars.h"

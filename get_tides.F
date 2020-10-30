@@ -8,7 +8,7 @@
       implicit none                  ! their units where needed.
 
 # include "param.h"
-# include "forces.h"
+!# include "forces.h" ! DevinD removed
 # include "scalars.h"
 # include "tides.h"
 # include "ncvars.h"

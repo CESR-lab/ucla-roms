@@ -7,10 +7,7 @@
       use wec_frc, only: read_inp_wec, read_inp_avg_wec
 #endif
 
-#if defined SFLX_CORR && defined SALINITY && defined BULK_FLUX
-      use surf_flux, only: dSSSdt
-#endif
-#if defined SFLX_CORR && defined SALINITY && defined FLUX_FRC
+#if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
 

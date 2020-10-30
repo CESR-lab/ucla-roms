@@ -151,7 +151,6 @@ CR      write(*,*) 'wrt_his:  wrtV  ' MYID
       endif
 
 ! Tracer variables.
-!#if !defined BULK_FLUX /* DevinD removed for bulk & new tracer module */
       do itrc=1,NT
 !        if (wrthis(indxT+itrc-1)) then
 !          ierr=ncdf_write(nchis,  hisT(itrc), record, r_var,
@@ -180,13 +179,6 @@ CR      write(*,*) 'wrt_his:  wrtV  ' MYID
      &                    t(START_2D_ARRAY,1,nstp,itrc), N)
 
 
-c          write(*,*) 'Replacing T,S with rho1,qp1.'
-c          if (itrc == 1) then
-c            ierr=ncdf_write(nchis, hisT(itrc), record, r_var, rho1, N)
-c          elseif (itrc == 2) then
-c            ierr=ncdf_write(nchis, hisT(itrc), record, r_var,  qp1, N)
-c          endif
-
           if (ierr /= nf_noerr) then
             lvar=lenstr(t_vname(itrc))
             write(*,1) t_vname(itrc)(1:lvar),
@@ -196,7 +188,6 @@ c          endif
 CR      write(*,*) 'wrt_his:  wrtT  ' MYID
         endif
       enddo
-!#endif /* DevinD BULK_FLUX */
 
 ! Density anomaly.
 

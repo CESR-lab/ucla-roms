@@ -2,10 +2,7 @@
 
       subroutine put_global_atts (ncid, ierr)
 
-#if defined SFLX_CORR && defined SALINITY && defined BULK_FLUX
-      use surf_flux, only: dSSSdt
-#endif
-#if defined SFLX_CORR && defined SALINITY && defined FLUX_FRC
+#if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
 

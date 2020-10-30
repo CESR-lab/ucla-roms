@@ -89,10 +89,6 @@ C$OMP THREADPRIVATE(/priv_scalars/)
       real Akq_bak,   q2nu2,   q2nu4
       common /scalars_main/ Akq_bak, q2nu2, q2nu4
 # endif
-# if defined SFLX_CORR && defined SALINITY && !defined BULK_FLUX && !defined FLUX_FRC
-      real dSSSdt
-      common /scalars_main/ dSSSdt
-# endif
 #endif
 #ifdef SPONGE
       real v_sponge
