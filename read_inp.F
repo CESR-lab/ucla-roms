@@ -10,6 +10,9 @@
 #if defined SFLX_CORR && defined SALINITY && defined BULK_FLUX
       use surf_flux, only: dSSSdt
 #endif
+#if defined SFLX_CORR && defined SALINITY && defined FLUX_FRC
+      use surf_flux, only: dSSSdt
+#endif
 
 ! For root name of output files
       use read_write, only: read_output_root_name

@@ -1,0 +1,85 @@
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+       def_his :: created new netCDF file 'uswc_his.0000.0.nc'.
+      wrt_grid :: wrote grid data into file 'uswc_his.0000.0.nc'.
+       wrt_his :: wrote history, tdays = 4726.5656  step =     -1 rec =   1/   1
+
+ main :: initialization complete, started time-steping.
+
+         get_bry_all :: read all boundary fields   bry_time =   4726.5657 rec =    1
+         get_bry_all :: read all boundary fields   bry_time =   4726.5865 rec =    2
+ Found 'sustr,svstr' and its time 'sms_time' in '/home/devin/code-roms-versions/waves_dh/NON-analytical/data_tiles_3x2/exwec_frc.0.nc' ifrc =   1  rec =    2
+            get_smth :: read sustr,svstr           sms_time =     45.0000 rec =    2
+            get_smth :: read sustr,svstr           sms_time =     75.0000 rec =    3
+ Found 'swrad' and its time 'srf_time' in '/home/devin/code-roms-versions/waves_dh/NON-analytical/data_tiles_3x2/exwec_frc.0.nc' ifrc =   1  rec =    2
+            get_smth :: read swrad                 srf_time =     45.0000 rec =    2
+            get_smth :: read swrad                 srf_time =     75.0000 rec =    3
+ Found 'shflux' in '/home/devin/code-roms-versions/waves_dh/NON-analytical/data_tiles_3x2/exwec_frc.0.nc', ifrc =  1
+          get_stflux :: read shflux flux for tracershf_time =     45.0000 rec =    2
+          get_stflux :: read shflux flux for tracershf_time =     75.0000 rec =    3
+ Found 'swflux' in '/home/devin/code-roms-versions/waves_dh/NON-analytical/data_tiles_3x2/exwec_frc.0.nc', ifrc =  1
+          get_stflux :: read swflux flux for tracerswf_time =     45.0000 rec =    2
+          get_stflux :: read swflux flux for tracerswf_time =     75.0000 rec =    3
+ sustr(20,20)=   4.975979722967606E-005
+ svstr(20,20)=   1.652503272851408E-006
+ stflx(20,20,itemp)=  -3.852965107253143E-006
+                      -3.852965107253330E-006
+ stflx(20,20,isalt)=   0.000000000000000E+000
+ srflx(20,20)=   3.233324572495101E-005
+                 3.233324572495086E-005
+ stflx(20,20,itemp)=  -3.852965107253143E-006
+ stflx(20,20,isalt)=   1.382973409791721E-007
+                       4.172755541830587E-009
+                       1.382973409791692E-007
+
+ STEP  time[DAYS] KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL     i_cx   j_cx k_c
+      0 4726.5656 4.22974108083-03 2.7901936656-03  0.453420664594  0.340747933947    113     83   14
+       set_avg :: started averaging at iic =       1  ntsavg=       0  navg=*****
+ sustr(20,20)=   4.975990387793038E-005
+ svstr(20,20)=   1.652511619788195E-006
+ stflx(20,20,itemp)=  -3.852852151417166E-006
+ stflx(20,20,isalt)=   1.382973409791721E-007
+ srflx(20,20)=   3.233333767578371E-005
+ stflx(20,20,itemp)=  -3.852852151417166E-006
+ stflx(20,20,isalt)=   1.382989508959065E-007
+      1 4726.5659 4.22444768520-03 2.7865698521-03  0.305864208493  0.305864208493    113     83   18
+       wrt_his :: wrote history, tdays = 4726.5659  step =      1 rec =   2/   2
+ sustr(20,20)=   4.976001052618471E-005
+ svstr(20,20)=   1.652519966724982E-006
+ stflx(20,20,itemp)=  -3.852739195581189E-006
+ stflx(20,20,isalt)=   1.382989508959065E-007
+ srflx(20,20)=   3.233342962661640E-005
+ stflx(20,20,itemp)=  -3.852739195581189E-006
+ stflx(20,20,isalt)=   1.383005551703098E-007
+      2 4726.5661 4.21862453438-03 2.7821722710-03  0.330575387421  0.187712949902    114     84   25
+       wrt_his :: wrote history, tdays = 4726.5661  step =      2 rec =   3/   3
+ sustr(20,20)=   4.976011717443902E-005
+ svstr(20,20)=   1.652528313661769E-006
+ stflx(20,20,itemp)=  -3.852626239745213E-006
+ stflx(20,20,isalt)=   1.383005551703098E-007
+ srflx(20,20)=   3.233352157744909E-005
+ stflx(20,20,itemp)=  -3.852626239745213E-006
+ stflx(20,20,isalt)=   1.383021557181955E-007
+      3 4726.5663 4.21195702272-03 2.7765430740-03  0.464960247026  0.408636739710    114     84   25
+       wrt_his :: wrote history, tdays = 4726.5663  step =      3 rec =   4/   4
+ sustr(20,20)=   4.976022382269333E-005
+ svstr(20,20)=   1.652536660598556E-006
+ stflx(20,20,itemp)=  -3.852513283909236E-006
+ stflx(20,20,isalt)=   1.383021557181955E-007
+ srflx(20,20)=   3.233361352828178E-005
+ stflx(20,20,itemp)=  -3.852513283909236E-006
+ stflx(20,20,isalt)=   1.383037537653049E-007
+      4 4726.5666 4.20839122966-03 2.7738234783-03  0.378510994146  0.296522590243    113     83   21
+       wrt_his :: wrote history, tdays = 4726.5666  step =      4 rec =   5/   5
+ sustr(20,20)=   4.976033047094766E-005
+ svstr(20,20)=   1.652545007535343E-006
+ stflx(20,20,itemp)=  -3.852400328073259E-006
+ stflx(20,20,isalt)=   1.383037537653049E-007
+ srflx(20,20)=   3.233370547911448E-005
+ stflx(20,20,itemp)=  -3.852400328073259E-006
+ stflx(20,20,isalt)=   1.383053496534414E-007
+      5 4726.5668 4.20612879897-03 2.7722043761-03  0.203455392234  0.195217566428    197     38   32
+       wrt_his :: wrote history, tdays = 4726.5668  step =      5 rec =   6/   6
+ Process    0  thread  0  cpu time =        1.43 sec
+
+ MAIN: DONE - Records written: history:    6 restart:    0 averages:    0
+ MPI_run_time =   1.43289303779602 

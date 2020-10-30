@@ -472,10 +472,10 @@ C$OMP BARRIER
 
         found_var = 0 ! Reset variable to not found
 
-        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
-          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
-     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
-        endif
+!        if (mynode==0) then ! ''' 3 of these ' writes in terminal 'var_name'
+!          write(*,'(1x,4A)') 'Searching for variable ''', ! 1x makes 1 space
+!     &     var_name, ''' in file ',frcfile(var_file_indx) ! 4A says join 4 strings
+!        endif
 
         ! Try to open force file
         ierr = nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
@@ -490,10 +490,10 @@ C$OMP BARRIER
         ! Variable found, now check if file times contain model time
         if (ierr.eq.nf90_noerr) then
 
-          if (mynode==0) then
-            write(*,'(3x,4A)') 'Found variable ''',var_name,
-     &           ''' in file ',frcfile(var_file_indx)
-          endif
+!          if (mynode==0) then
+!            write(*,'(3x,4A)') 'Found variable ''',var_name,
+!     &           ''' in file ',frcfile(var_file_indx)
+!          endif
           found_var = 1
           ! Needed to deal with found_var = 0 further above, so that
           ! If variable is found in a file but time is wrong, and it
@@ -530,7 +530,7 @@ C$OMP BARRIER
             ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (vt_id)
             ! nf90_get_var needs an array for last 2 terms hence syntax
             ierr = nf90_get_var(ncid, var_tid, vtime, (/irec/), (/1/))
-            if(mynode==0) print*,'vtime(1)=',vtime(1),' time_model=',time_model ! debug
+!            if(mynode==0) print*,'vtime(1)=',vtime(1),' time_model=',time_model ! debug
 
             ! Fix time for cyclical forcing file if applicable
             call cycle_length_handling(vtime(1), ncid, var_tid,
@@ -736,8 +736,7 @@ C$OMP BARRIER
 
       ! If cycle_length==0 then not cyclical forcing, vtime remains unchanged.
 
-      ! debug
-      if(mynode==0) print*,'vtimeA=',vtime,' time_model=',time_model
+!      if(mynode==0) print*,'vtimeA=',vtime,' time_model=',time_model ! debug
 
       end subroutine cycle_length_handling
 !-----------------------------------------------------------------------
