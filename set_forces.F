@@ -38,6 +38,7 @@
       use tracers,   only: set_surf_tracer_flx, iTandS
 # elif defined FLUX_FRC
       use flux_frc,  only: set_flux_frc ! DevinD remove FLUX_FRC flag to just else when working
+      use surf_flux, only: set_surf_field_corr
 # endif
 
 # ifdef RIVER_SOURCE
@@ -119,6 +120,11 @@ c***              no code here
 
 
 #ifdef SOLVE3D
+
+# if defined QCORRECTION || defined SFLX_CORR
+      call set_surf_field_corr(istr,iend,jstr,jend)
+# endif
+
 # ifdef BULK_FLUX
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
@@ -129,9 +135,7 @@ c***              no code here
 #   endif
 #  endif
 
-#  if defined QCORRECTION || defined SFLX_CORR
-      call set_surf_field_corr(istr,iend,jstr,jend)
-#  endif
+      ! call set_surf_field_corr ! placed higher up
 
       call set_bulk_frc_tile(istr,iend,jstr,jend) ! DevinD bulk flux module
 !      call bulk_flux_tile(istr,iend,jstr,jend) ! Old version

@@ -3,19 +3,24 @@
       ! Direct flux forcing module
 
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020 Oct)
-      ! (only refactoring old code's get/set_stflux/smflux into module)
+      ! (only refactoring old code's get/set _st/sm/srflux into module)
 
 #include "cppdefs.h"
+
+      ! Modules needed:
+      use read_write, only: set_frc_var_tile
+      use tracers,    only: t
+      use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
+
 
       implicit none
 
       private ! All variables private to module unless public specified
 
-      ! Includes
-      ! ========
-
+      ! Includes:
       ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
 #include "param.h"
+#include "scalars.h"
 
       ! ****************************************************************
       ! User inputs
@@ -70,38 +75,46 @@
 
       subroutine set_flux_frc(istr,iend,jstr,jend)
 
-      use read_write, only: set_frc_var_tile
-      use surf_flux,  only: sustr, svstr, stflx
-      use tracers,    only: t
+      implicit none
+
+      ! input/outputs
+      integer,intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer i, j
+
+! scalars.h for rho0
+! index bounds for do loop division by rho0
+#include "compute_extended_bounds.h"
+
+      ! 1) set surface momentum flux
+      call set_smflux(istr,iend,jstr,jend)
+
+      ! 2) set surface heat flux: stflx(itemp)
+      call set_shflux(istr,iend,jstr,jend)
+
+      ! 3) set short-wave radiation flux
+      call set_srflux(istr,iend,jstr,jend)
+
+      ! 4) set water flux: stflx(isalt)
+#ifdef SALINITY
+      call set_swflux(istr,iend,jstr,jend)
+#endif
+
+
+      end subroutine set_flux_frc
+! ----------------------------------------------------------------------
+
+      subroutine set_smflux(istr,iend,jstr,jend)
+      ! set surface momentum flux, sustr, svstr
 
       implicit none
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
-
       ! local
       integer i, j
-
-! scalars.h for rho0
-#include "scalars.h"
-! index bounds for do loop division by rho0
 #include "compute_extended_bounds.h"
 
-
-      ! Can either do everything here with cppflags or create
-      ! more subroutines like set_smflux, set_stflx, etc
-
-      ! set_forces:
-      ! 1) set_sm_flux
-      ! 2) set_stflux_tile(itemp)
-      ! 3) set_srflux_tile
-      ! 4) set_stflux_tile(isalt)
-
-      ! debug
-      if(mynode==0) print *, 'set_flux_frc:::::'
-
-      ! 1) set surface momentum flux (could be its own subroutine?)
-      ! ----------------------------
       ! sustr
       call set_frc_var_tile(
      &  istr,iend,              jstr,jend,            ! Tile bounds indices
@@ -129,7 +142,7 @@
           svstr(i,j)=svstr(i,j) / rho0
         enddo
       enddo
-      ! Move rho0 into set_var_frc_tile eventually...
+      ! Move rho0 into arguement of set_var_frc_tile eventually?
 
       ! DevinD debug
       if(mynode==0) then
@@ -137,8 +150,22 @@
         print *, 'svstr(20,20)= ', svstr(20,20)
       endif
 
-      ! 2) set surface heat flux (could be its own subroutine?)
-      ! ------------------------
+
+      end subroutine set_smflux
+! ----------------------------------------------------------------------
+
+      subroutine set_shflux(istr,iend,jstr,jend)
+      ! Set surface heat flux
+
+      implicit none
+
+      ! input/outputs
+      integer,intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer i, j
+      real rho0cp
+#include "compute_extended_bounds.h"
+
       ! stflx(itemp)
       call set_frc_var_tile(
      &  istr,iend,              jstr,jend,            ! Tile bounds indices
@@ -149,27 +176,51 @@
      &  flx_it1(ishflx),        flx_it2(ishflx),      ! Time index placeholders
      &  interp_frc )                                  ! Online spatial interpolation flag
 
-      ! Can't combine this loop into one loop at the end as stflx(itemp) needed by set_srflx
+      rho0cp=rho0*Cp ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
         do i=istrR,iendR
-          stflx(i,j,itemp)=stflx(i,j,itemp)/(rho0*Cp)
+          stflx(i,j,itemp)=stflx(i,j,itemp)/rho0cp
+
+# if defined QCORRECTION && !defined ANA_SST
+     &         + (t(i,j,N,nrhs,itemp) - sst(i,j))
+
+! Restrict stflx to prevent surface temperature to go below -2
+! degrees C.
+#  ifdef SEA_ICE_NOFLUX
+              stflx(i,j,itemp)=max( stflx(i,j,itemp),
+#   ifdef LMD_KPP
+     &                          max(hbls(i,j,nstp), Hz(i,j,N))
+#   else
+     &                                               Hz(i,j,N)
+#   endif
+     &                         *(-2.D0-t(i,j,N,nrhs,itemp))/dt
+     &                                                       )
+#  endif
+# endif
+
         enddo
       enddo
-      ! Move unit conversion into set_var_frc_tile eventually...
 
       ! DevinD debug
       if(mynode==0) then
         print *, 'stflx(20,20,itemp)= ', stflx(20,20,itemp)
       endif
 
-      ! 3) set short-wave radiation flux (could be its own subroutine?)
-      ! --------------------------------
-      call set_srflux(istr,iend,jstr,jend)
+      end subroutine set_shflux
+! ----------------------------------------------------------------------
+#ifdef SALINITY
+      subroutine set_swflux(istr,iend,jstr,jend)
+      ! set surface freshwater flux: stflx(isalt)
 
-      ! 4) set water flux (could be its own subroutine?)
-      ! -----------------
-      ! stflx(itemp)
-      ! #if def SALINITY?
+      implicit none
+
+      ! input/outputs
+      integer,intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer i, j
+      real cmday2ms
+# include "compute_extended_bounds.h"
+
       call set_frc_var_tile(
      &  istr,iend,              jstr,jend,            ! Tile bounds indices
      &  swflx_name,             swflx_time_name,      ! Text name of array and time
@@ -179,34 +230,38 @@
      &  flx_it1(iswflx),        flx_it2(iswflx),      ! Time index placeholders
      &  interp_frc )                                  ! Online spatial interpolation flag
 
+      cmday2ms=0.01/day2sec ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
         do i=istrR,iendR
-          ! #if def SALINITY
-          ! cm/day -> m/s ! Calc coefficient outside loop
-          stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N,nrhs,isalt)*0.01/(day2sec)
+          ! cm/day -> m/s
+          stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N,nrhs,isalt)*cmday2ms
+
+! Add relaxation of surface salinity back to climatological value to
+! avoid long-term drift.  Note that dSSSdt below is "piston velocity"
+! expressed in [m/s].
+# if defined SFLX_CORR
+     &                 -dSSSdt*( t(i,j,N,nrhs,isalt)-sss(i,j) )
+# endif
+
         enddo
       enddo
-      ! Move unit conversion into set_var_frc_tile eventually...
 
       ! DevinD debug
       if(mynode==0) then
         print *, 'stflx(20,20,isalt)= ', stflx(20,20,isalt)
       endif
 
-
-      end subroutine set_flux_frc
+      end subroutine set_swflux
+#endif /* SALINITY */
 ! ----------------------------------------------------------------------
 
       subroutine set_srflux(istr,iend,jstr,jend)
-
-      use read_write, only: set_frc_var_tile
-      use surf_flux,  only: srflx
+      ! set short-wave radiation flux
 
       implicit none
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
-
       ! local
       integer i, j, it1, it2
       real tmid, cff, cff1, cff2
@@ -218,7 +273,7 @@
 # endif
 # define SWRAD_DATA
 !# include "param.h" ! Have in module preamble
-# include "scalars.h"
+!# include "scalars.h"! Have in module preamble
 # include "grid.h"
 
 #include "compute_extended_bounds.h"
@@ -232,6 +287,9 @@
      &  flx_file_indx(iswrad),  flx_irec(iswrad),     ! File indx & Current input record
      &  flx_it1(iswrad),        flx_it2(iswrad),      ! Time index placeholders
      &  interp_frc )                                  ! Online spatial interpolation flag
+
+      ! Note: the additional CPPFLAG option have been left in from old
+      ! code but are untested here, might not compile.
 
 # ifdef ROBUST_DIURNAL_SRFLUX
       dtau=2.D0*pi * dt*sec2day
@@ -315,11 +373,6 @@
 # endif
           enddo
         enddo
-
-      ! DevinD debug
-      if(mynode==0) then
-        print *, 'srflx(20,20)= ', srflx(20,20)
-      endif
 
       end subroutine set_srflux
 ! ----------------------------------------------------------------------
