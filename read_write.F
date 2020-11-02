@@ -33,6 +33,7 @@
       ! Horizontal Grid Type Codes =  0,1,2,3 (RHO-, U-, V-, PSI-points)
       ! for reading and writing to correct grid type
       integer, parameter, public :: rp_var=0, up_var=1, vp_var=2, qp_var=3
+      real :: cycle_length ! Deal with cyclical forcing files
 
       ! Public subroutines
       public find_rec_new_mod
@@ -446,7 +447,7 @@ C$OMP BARRIER
       integer :: v_id, dimid  ! variable ID & dimension ID
       integer :: var_tid      ! Variable time id
       logical :: first        ! Check if first time finding an entry
-      real    :: cycle_length ! Deal with cyclical forcing files
+!      real    :: cycle_length ! Deal with cyclical forcing files
 
       ! Routine
       ! =======
@@ -506,9 +507,12 @@ C$OMP BARRIER
           ! I.e. total number of records per variable, using time dimension
           ierr=nf90_inquire_dimension(ncid, dimid, len=var_max_recs)
 
-          ! Reset and get cycle length (if avaiable) for new variable for if cyclical forcing
-          cycle_length=0
-          ierr=nf90_get_att(ncid, var_tid, 'cycle_length', cycle_length)
+          ! Find variable ID for time variable
+          ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (var_tid)
+
+          ! Reset and get cycle length (if available for cyclical forcing) for new variable
+          cycle_length=0.
+          ierr=nf90_get_att(ncid, var_tid, 'cycle_length', cycle_length) ! Will continue if not available
           ! Set irec back to 0 for cyclical loading if irec==var_max_recs
           ! else won't be able to enter do while loop below, and must stay on same file.
           if(cycle_length/=0. .and. irec==var_max_recs) irec=0
@@ -525,16 +529,16 @@ C$OMP BARRIER
             ! E.g. previous record was irec=3, now check time of irec=4
             irec = irec + 1
 
-            ! Find variable ID for time variable
-            ! This should go outside 'do while' only done once!
-            ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (vt_id)
+            ! Get vtime - variable time for irec
             ! nf90_get_var needs an array for last 2 terms hence syntax
             ierr = nf90_get_var(ncid, var_tid, vtime, (/irec/), (/1/))
 !            if(mynode==0) print*,'vtime(1)=',vtime(1),' time_model=',time_model ! debug
 
             ! Fix time for cyclical forcing file if applicable
-            call cycle_length_handling(vtime(1), ncid, var_tid,
-     &                                var_time_name, irec, cycle_length)
+            if(cycle_length/=0.) then
+              call cycle_length_handling(vtime(1), ncid, var_tid,
+     &                                var_time_name, irec )
+            endif
 
             if (vtime(1)>time_model) then ! Correct time
               found_rec = 1
@@ -641,7 +645,7 @@ C$OMP BARRIER
 !-----------------------------------------------------------------------
 
       subroutine cycle_length_handling(vtime, ncid, var_tid,
-     &                               var_time_name, irec, cycle_length )
+     &                               var_time_name, irec )
       ! Find correct timestep for cyclical forcing files
       ! e.g. 1 year repeating data
       ! NOTE: assumes model_time is mid-point of time-step: time+0.5*dt
@@ -653,8 +657,9 @@ C$OMP BARRIER
       integer, intent(in) :: ncid, var_tid
       character(len=*), intent(in) :: var_time_name
       integer :: irec ! Variable record entry
-      real    :: cycle_length ! cycle_length of forcing file
+
       ! local
+!      real    :: cycle_length ! cycle_length of forcing file
       real    :: time_model
       integer :: icycle=0
       integer :: var_max_recs ! Total variable records in file
@@ -664,74 +669,67 @@ C$OMP BARRIER
 
 
       time_model=tdays+0.5*dt*sec2day ! Calculate model time (assumed mid-point!)
-      cycle_length=0.                 ! Reset cycle variables
-      ! Read cycle length, if available. Most likely data won't have
-      ! 'cycle_length' attribute, which is fine code will continue without it.
-      ierr=nf90_get_att(ncid, var_tid, 'cycle_length', cycle_length)
 
-      if(cycle_length>0.) then ! Variable does have cycle length & thus cyclical
+      ! Should never go to the next var_file_indx because this method ensures
+      ! time is within cycle_length. So if you hit last cycle record,
+      ! then for the next record: icycle = icycle_old+1 and hence
+      ! still within cycle_length.
 
-        ! Should never go to the next var_file_indx because this method ensures
-        ! time is within cycle_length. So if you hit last cycle record,
-        ! then for the next record: icycle = icycle_old+1 and hence
-        ! still within cycle_length.
+      ! Need index of last record (var_max_recs):
+      ierr=nf90_inq_dimid(ncid, var_time_name, dimid) ! Get time dimension ID
+      ! Find the size of dimension (var_max_recs)
+      ierr=nf90_inquire_dimension(ncid, dimid, len=var_max_recs)
+      ! Find the maximum time in cyclical data (t_max)
+      ierr=nf90_get_var(ncid, var_tid, t_max, (/var_max_recs/), (/1/))
+      ! Find the minimum time in cyclical data (t_min)
+      ierr=nf90_get_var(ncid, var_tid, t_min, (/1/), (/1/))
 
-        ! Need index of last record (var_max_recs):
-        ierr=nf90_inq_dimid(ncid, var_time_name, dimid) ! Get time dimension ID
-        ! Find the size of dimension (var_max_recs)
-        ierr=nf90_inquire_dimension(ncid, dimid, len=var_max_recs)
-        ! Find the maximum time in cyclical data (t_max)
-        ierr=nf90_get_var(ncid, var_tid, t_max, (/var_max_recs/), (/1/))
-        ! Find the minimum time in cyclical data (t_min)
-        ierr=nf90_get_var(ncid, var_tid, t_min, (/1/), (/1/))
+      ! Get time to nearest model time using 'icycle' using 2 steps:
+      ! 1) icycle=floor( (time_model/cycle_length) ) ! Floor for integer division
+      ! 2) vtime=vtime+icycle*cycle_length
+      ! However, need to handle irec=1 and irec=var_max_recs
 
-        ! Get time to nearest model time using 'icycle' using 2 steps:
-        ! 1) icycle=floor( (time_model/cycle_length) ) ! Floor for integer division
-        ! 2) vtime=vtime+icycle*cycle_length
-        ! However, need to handle irec=1 and irec=var_max_recs
+      if(irec==1) then
 
-        if(irec==1) then
+        ! If irec==1 is nearest for t_data > t_model, it is possible that
+        ! model_time can sit in different icycle's.
+        ! E.g. cycle_length=360, t_data=[15;45;...;345]
+        ! then if t=346, icycle=0, but if t=374, icycle=1.
+        ! To avoid this we add the difference: (cycle_length-t_data(end)) to model time.
+        ! icycle=floor(( (time_model+cycle_length-t_max(1)) /cycle_length))
+        ! icycle=floor((346+360-345)/360)) = 361/360 = 1
+        ! icycle=floor((374+360-345)/360)) = 389/360 = 1
+        ! This ensures icycle=1 for irec=1, to get correct relative time.
 
-          ! If irec==1 is nearest for t_data > t_model, it is possible that
-          ! model_time can sit in different icycle's.
-          ! E.g. cycle_length=360, t_data=[15;45;...;345]
-          ! then if t=346, icycle=0, but if t=374, icycle=1.
-          ! To avoid this we add the difference: (cycle_length-t_data(end)) to model time.
-          ! icycle=floor(( (time_model+cycle_length-t_max(1)) /cycle_length))
-          ! icycle=floor((346+360-345)/360)) = 361/360 = 1
-          ! icycle=floor((374+360-345)/360)) = 389/360 = 1
-          ! This ensures icycle=1 for irec=1, to get correct relative time.
+        ! Find number of cycle_length's to get within model time
+        ! Use floor() instead of just integer divsion so that always uses
+        ! lower number even when times are negative.
+        icycle=floor(( (time_model+cycle_length-t_max(1)) /cycle_length)) ! Force lower integer division
+        ! Set input data time record as per model time
+        vtime=vtime+icycle*cycle_length
 
-          ! Find number of cycle_length's to get within model time
-          ! Use floor() instead of just integer divsion so that always uses
-          ! lower number even when times are negative.
-          icycle=floor(( (time_model+cycle_length-t_max(1)) /cycle_length)) ! Force lower integer division
-          ! Set input data time record as per model time
-          vtime=vtime+icycle*cycle_length
+      elseif(irec==var_max_recs) then
 
-        elseif(irec==var_max_recs) then
+        ! From the above example, if model startup time=370s then:
+        ! 345 < tmodel < 15+360
+        ! In this case for the 'first' step in find_new_record, irec is
+        ! set to var_max_recs, as that time < model time.
+        ! For the icycle calc to still work we must subtract t_min(1):
+        ! icycle=floor(( (time_model-t_min(1)) /cycle_length) )
+        ! icycle=floor((370-15)/360)) = 355/360 = 0
+        ! This will ensure correct 'icycle' even for 'first' switch in find_record
 
-          ! From the above example, if model startup time=370s then:
-          ! 345 < tmodel < 15+360
-          ! In this case for the 'first' step in find_new_record, irec is
-          ! set to var_max_recs, as that time < model time.
-          ! For the icycle calc to still work we must subtract t_min(1):
-          ! icycle=floor(( (time_model-t_min(1)) /cycle_length) )
-          ! icycle=floor((370-15)/360)) = 355/360 = 0
-          ! This will ensure correct 'icycle' even for 'first' switch in find_record
+        icycle=floor(( (time_model-t_min(1)) /cycle_length) ) ! Force integer division
+        ! Set input data time record as per model time
+        vtime=vtime+icycle*cycle_length
 
-          icycle=floor(( (time_model-t_min(1)) /cycle_length) ) ! Force integer division
-          ! Set input data time record as per model time
-          vtime=vtime+icycle*cycle_length
+      else
 
-        else
+        ! Find number of cycle_length's to get within model time
+        icycle=floor( (time_model/cycle_length) ) ! Force integer division
+        ! Set input data time record as per model time
+        vtime=vtime+icycle*cycle_length
 
-          ! Find number of cycle_length's to get within model time
-          icycle=floor( (time_model/cycle_length) ) ! Force integer division
-          ! Set input data time record as per model time
-          vtime=vtime+icycle*cycle_length
-
-        endif
       endif
 
       ! If cycle_length==0 then not cyclical forcing, vtime remains unchanged.
@@ -773,7 +771,6 @@ C$OMP BARRIER
       ! -----
       integer ierr,ncid
       integer :: var_tid ! Variable time_id
-      real    :: cycle_length ! Deal with cyclical forcing files
 
       ! open the file (maybe check if the file is open already)
       ! =============
@@ -786,8 +783,10 @@ C$OMP BARRIER
       ierr = nf90_get_var(ncid, var_tid, var_time, (/irec/), (/1/)) ! Get var_time
 
       ! Fix time for cyclical forcing file if applicable
-      call cycle_length_handling(var_time, ncid, var_tid,
-     &                  var_time_name, irec, cycle_length )
+      if(cycle_length/=0.) then
+        call cycle_length_handling(var_time, ncid, var_tid,
+     &                             var_time_name, irec )
+      endif
 !      if(mynode==0) then ! debug
 !      print*,'read_var_frc: var_time=',var_time,' time_model=',tdays+0.5*dt*sec2day ! debug
 !      endif
