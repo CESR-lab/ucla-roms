@@ -358,6 +358,22 @@ c--      fname='roms.in.US_West'
           ! This is also defined in put_global_atts so needs to be consistent.
            
 # endif
+
+# if defined QCORRECTION
+
+        elseif (keyword(1:kwlen) == 'SST_correction') then
+          call cancel_kwd(keyword(1:kwlen), ierr)
+          read(input,*,err=95) dSSTdt
+          mpi_master_only write(*,'(5x,A,ES10.3,2x,2A/38x,A)')
+     &   'dSSSdt =', dSSSdt, 'Sea-Surface Temperature correction ',
+     &                       'coefficient expressed',
+     &            'kinematically as "piston velocity" [cm/day]'
+
+          dSSTdt=dSSTdt/(100*day2sec)   !<-- Convert cm/day to convert to [m/s]
+          ! This is also defined in put_global_atts so needs to be consistent.
+
+# endif
+
 #endif /* SOLVE3D */
 
 
