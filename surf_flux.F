@@ -65,6 +65,7 @@
       real, dimension(2) :: sst_times = [-99,-99]
       character(len=5)   :: sst_name = 'sst'
       character(len=8)   :: sst_time_name = 'sst_time'
+      real, public :: dSSTdt
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX

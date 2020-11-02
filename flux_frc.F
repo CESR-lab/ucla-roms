@@ -182,7 +182,7 @@
           stflx(i,j,itemp)=stflx(i,j,itemp)/rho0cp
 
 # if defined QCORRECTION && !defined ANA_SST
-     &         + (t(i,j,N,nrhs,itemp) - sst(i,j))
+     &         -dSSTdt*(t(i,j,N,nrhs,itemp) - sst(i,j))
 
 ! Restrict stflx to prevent surface temperature to go below -2
 ! degrees C.
