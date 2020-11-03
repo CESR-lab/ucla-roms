@@ -23,12 +23,15 @@
 
       subroutine set_tides_tile (istr,iend,jstr,jend, Cangle, Sangle,
      &                                                Cphase, Sphase)
+
+      use tides
+
       implicit none
 # include "param.h"
 # include "scalars.h"
 # include "climat.h"
 # include "grid.h"
-# include "tides.h"
+!# include "tides.h"
 # include "boundary.h"
 
       integer istr,iend,jstr,jend,    itide, i,j
@@ -37,6 +40,12 @@
       real angle, phase, omega, ramp
 
 #  include "compute_auxiliary_bounds.h"
+
+!# ifdef TIDES_DEBUG
+!      if (iic==ntstart) then
+!        call read_tides(istr,iend,jstr,jend)
+!      endif
+!# endif
 
       ramp=1.
       ! JM confirmed no longer want tide ramp
@@ -280,6 +289,21 @@
 
         endif  !<--- period > 0
       enddo  !<-- itide
+
+      ! DevinD debug
+      if(mynode==0) then
+        print*,'OLD VERSION'
+        print*,'zeta_north(20)',zeta_north(20)
+        print*,'zeta_west(20)',zeta_west(20)
+        print*,'zeta_south(20)',zeta_south(20)
+        print*,'zeta_east(20)',zeta_east(20)
+        !
+        print*,'ubar_north(20)',ubar_north(20),'vbar_north(20)',vbar_north(20)
+        print*,'ubar_west(20)',ubar_west(20),'vbar_west(20)',vbar_west(20)
+        print*,'ubar_south(20)',ubar_south(20),'vbar_south(20)',vbar_south(20)
+        print*,'ubar_east(20)',ubar_east(20),'vbar_east(20)',vbar_east(20)
+      endif
+
       end
 #else
       subroutine set_tides_empty

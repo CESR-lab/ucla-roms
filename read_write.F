@@ -45,6 +45,8 @@
       public ncdf_create_file
       public nc_write_time
       public read_output_root_name
+      public ncdf_read_mod
+      public handle_ierr
 
       public ncdf_read_coarser_grid
 
@@ -1795,16 +1797,29 @@ C$OMP BARRIER
 
 
 ! ----------------------------------------------------------------------
-      subroutine handle_ierr(ierr)
+      subroutine handle_ierr(ierr, err_msg)
       ! Handle ierr with error message. Assumed fatal error.
+      ! err_msg is optional message to include to know more about
+      ! location of error
 
       implicit none
 
+      ! Inputs
       integer ierr
+      character(len=*), optional :: err_msg
+      ! Local
+      character(len=100) :: f_msg
+
+      ! Check if error message is available
+      if(present(err_msg))then
+          f_msg=err_msg
+      else
+          f_msg=''
+      endif
 
       if(mynode==0) then
-        write(*,'(/3x,2A/12x,A/)') 'ERROR: read_write :: ',
-     &       'netcdf ierr != 0 ', nf90_strerror(ierr)
+        write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
+     &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
       endif
 
       error stop ! Stop simulation assumed fatal error

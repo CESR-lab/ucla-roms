@@ -3,14 +3,14 @@
                                      ! Read tidal forcing parameters
       subroutine get_tides (ierr)    ! from netCDF file. Also convert
 
-      use tides, only: POT_Tamp, POT_Tphase
+      use tides !, only: POT_Tamp, POT_Tphase
 
       implicit none                  ! their units where needed.
 
 # include "param.h"
 !# include "forces.h" ! DevinD removed
 # include "scalars.h"
-# include "tides.h"
+!# include "tides.h"
 # include "ncvars.h"
 # include "netcdf.inc"
       integer ierr, ierr_count,  ifrc, ncid, varid,

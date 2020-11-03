@@ -6,8 +6,8 @@
  */
 
 c-dd#define WEC /* Wave Effect on Current model */
-c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-#define USWC_sample
+#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+c-dd#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -138,7 +138,7 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
      /* Biology */
 c-dd#define BIOLOGY_BEC2
 
-c-dd#define BULK_FRC
+#define BULK_FRC
 c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
 c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 #define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
@@ -147,7 +147,8 @@ c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
-c-dd# define TIDES
+# define TIDES
+# define TIDES_DEBUG
 # ifdef TIDES
 #  define POT_TIDES
 #  define SSH_TIDES
