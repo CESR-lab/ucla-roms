@@ -40,7 +40,10 @@ c--#define VERBOSE
 # endif
 #endif
 #if defined SSH_TIDES || defined UV_TIDES
+! DevinD debug
+# ifndef TIDES_DEBUG
       call get_tides(ierr)
+# endif
 #endif
 
       if (ierr /= 0) may_day_flag=2

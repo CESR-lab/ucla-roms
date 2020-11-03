@@ -18,20 +18,20 @@
 #             total files analyzed for dependencies:          172
 #
 #
-# Total number of lines of Fortran code in all files:       27532
+# Total number of lines of Fortran code in all files:       27827
 # (excluding CPP-commands, empty, and comment lines)
 #
-# Total number of CPP-preprocessor lines in all files:       8583
+# Total number of CPP-preprocessor lines in all files:       8672
 #
 # Total number of compiler directive lines, Open MP, etc...   208
 #
-# Total number of comment lines in all files:                8423
+# Total number of comment lines in all files:                8464
 # (excluding empty and containing only "!", "C", "c", "*")
 #
-# Total number of empty lines in all files:                  6225
+# Total number of empty lines in all files:                  6260
 # (including lines containing only "!", "C", "c", and "*")
 #                                      --------------------------
-#                                      total lines:         50971
+#                                      total lines:         51431
 
 bulk_frc.mod: bulk_frc.o
 
@@ -163,7 +163,7 @@ get_tclima.f: get_tclima.F cppdefs.h param.h ocean3d.h scalars.h\
  compute_extended_bounds.h climat.h ncvars.h set_global_definitions.h
  
 get_tides.o: get_tides.f tides.mod
-get_tides.f: get_tides.F cppdefs.h param.h scalars.h ncvars.h tides.h\
+get_tides.f: get_tides.F cppdefs.h param.h scalars.h ncvars.h\
  set_global_definitions.h
  
 get_uclima.f: get_uclima.F cppdefs.h param.h scalars.h\
@@ -175,8 +175,8 @@ grid_stiffness.f: grid_stiffness.F cppdefs.h param.h grid.h ocean3d.h\
  
 incl.f: incl.F cppdefs.h param.h grid.h ocean3d.h scalars.h private_scratch.h\
  mixing.h ocean2d.h boundary.h climat.h sources.h ncvars.h forces.h strings.h\
- scoord.h coupling.h tides.h averages.h buffer.h diagnostics.h floats.h\
- init_floats.h ncvars_floats.h work.h set_global_definitions.h
+ scoord.h coupling.h averages.h buffer.h diagnostics.h floats.h init_floats.h\
+ ncvars_floats.h tides.h work.h set_global_definitions.h
  
 init_arrays.o: init_arrays.f tracers.mod bulk_frc.mod surf_flux.mod\
  wec_frc.mod
@@ -299,9 +299,10 @@ set_nudgcof.f: set_nudgcof.F cppdefs.h param.h grid.h scalars.h\
 set_scoord.f: set_scoord.F cppdefs.h param.h scalars.h strings.h scoord.h\
  comm_vars.h set_global_definitions.h
  
+set_tides.o: set_tides.f tides.mod
 set_tides.f: set_tides.F cppdefs.h param.h grid.h scalars.h\
  compute_tile_bounds.h private_scratch.h boundary.h climat.h\
- compute_auxiliary_bounds.h hidden_mpi_vars.h tides.h set_global_definitions.h
+ compute_auxiliary_bounds.h hidden_mpi_vars.h set_global_definitions.h
  
 set_weights.f: set_weights.F cppdefs.h param.h scalars.h coupling.h\
  set_global_definitions.h
@@ -365,8 +366,10 @@ t3dmix_S.f: t3dmix_S.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  
 test_tiling.f: test_tiling.F compute_tile_bounds.h hidden_mpi_vars.h
  
+tides.o: tides.f read_write.mod netcdf.mod
 tides.f: tides.F cppdefs.h param.h grid.h scalars.h compute_tile_bounds.h\
- compute_auxiliary_bounds.h hidden_mpi_vars.h tides.h set_global_definitions.h
+ private_scratch.h boundary.h compute_auxiliary_bounds.h ncvars.h\
+ hidden_mpi_vars.h set_global_definitions.h
  
 timers.f: timers.F cppdefs.h param.h scalars.h comm_vars.h\
  set_global_definitions.h

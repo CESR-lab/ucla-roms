@@ -374,7 +374,9 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
       do tile=my_tile_range                 ! interpolate forcing
         call set_forces(tile)               ! data to model time and
 # if defined SSH_TIDES || defined UV_TIDES
+#  ifndef TIDES_DEBUG
         call set_tides(tile)                ! compute surface fluxes.
+#  endif
 # endif
 # if defined POT_TIDES
         call set_tides_mod(tile)            ! DevinD new tidal module
