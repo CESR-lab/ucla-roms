@@ -1,7 +1,7 @@
       module tides
 
 #include "cppdefs.h"
-! Empty module is TIDES not defined.
+! Empty module if TIDES not defined.
 #ifdef TIDES
 
       implicit none
@@ -17,8 +17,6 @@
 #include "param.h"
       ! For iic, ntstart, deg2rad
 #include "scalars.h"
-      ! tides.h for variable Ntides
-!#include "tides.h"
 
       ! ****************************************************************
 
@@ -58,7 +56,6 @@
 #endif
 
       public set_tides_mod
-      public read_tides ! Remove this after debuggin
 
       contains
 ! ----------------------------------------------------------------------
@@ -102,11 +99,9 @@
 #include "compute_auxiliary_bounds.h"
 
       ! Read tides (only once)
-#ifdef TIDES_DEBUG
       if (iic==ntstart) then
         call read_tides(istr,iend,jstr,jend)
       endif
-#endif
 
       ramp = 1.
 
@@ -362,40 +357,18 @@
 !
           do j=jstrR-1,jendR ! DevinD does jstrR-1 not go beyond computational margin?
             do i=istrR-1,iendR
-              Ptide(i,j)=Ptide(i,j)+
+              Ptide(i,j)=( Ptide(i,j)+
      &                   ramp*POT_Tamp(i,j,itide)*
-     &                   cos(omega-POT_Tphase(i,j,itide))
+     &                   cos(omega-POT_Tphase(i,j,itide)) )
 #  ifdef MASKING
-              Ptide(i,j)=Ptide(i,j)*rmask(i,j) ! DevinD change to *rmask only
+     &                   *rmask(i,j)
 #  endif
             enddo
           enddo
 # endif /* POT_TIDES */
 
-          ! DevinD debug
-!          if(mynode==0) then
-!            print *, 'itide',itide,'omega',omega
-!            print *, 'POT_Tamp(20,20,itide)',POT_Tamp(20,20,itide)
-!            print *, 'POT_Tphase(20,20,itide)',POT_Tphase(20,20,itide)
-!            print *, 'mynode==0: Ptide(20,20)', Ptide(20,20)
-!          end if
-
         endif  !<--- period > 0
       enddo  !<-- itide
-
-      ! DevinD debug
-      if(mynode==0) then
-        print*,'NEW MODULE VERSION'
-        print*,'zeta_north(20)',zeta_north(20)
-        print*,'zeta_west(20)',zeta_west(20)
-        print*,'zeta_south(20)',zeta_south(20)
-        print*,'zeta_east(20)',zeta_east(20)
-        !
-        print*,'ubar_north(20)',ubar_north(20),'vbar_north(20)',vbar_north(20)
-        print*,'ubar_west(20)',ubar_west(20),'vbar_west(20)',vbar_west(20)
-        print*,'ubar_south(20)',ubar_south(20),'vbar_south(20)',vbar_south(20)
-        print*,'ubar_east(20)',ubar_east(20),'vbar_east(20)',vbar_east(20)
-      endif
 
       end subroutine set_tides_mod_tile
 !-----------------------------------------------------------------------

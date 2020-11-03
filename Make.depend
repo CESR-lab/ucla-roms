@@ -11,27 +11,27 @@
 #            P R O J E C T    S T A T I S T I C S
 #           ---------------  ---------------------
 #
-# Number of files given for dependency analysis:              109
+# Number of files given for dependency analysis:              107
 #
 # Number of newly discovered files:                            63
 #             ---------------------------------------------------
-#             total files analyzed for dependencies:          172
+#             total files analyzed for dependencies:          170
 #
 #
-# Total number of lines of Fortran code in all files:       27827
+# Total number of lines of Fortran code in all files:       27373
 # (excluding CPP-commands, empty, and comment lines)
 #
-# Total number of CPP-preprocessor lines in all files:       8672
+# Total number of CPP-preprocessor lines in all files:       8564
 #
-# Total number of compiler directive lines, Open MP, etc...   208
+# Total number of compiler directive lines, Open MP, etc...   207
 #
-# Total number of comment lines in all files:                8464
+# Total number of comment lines in all files:                8392
 # (excluding empty and containing only "!", "C", "c", "*")
 #
-# Total number of empty lines in all files:                  6260
+# Total number of empty lines in all files:                  6195
 # (including lines containing only "!", "C", "c", and "*")
 #                                      --------------------------
-#                                      total lines:         51431
+#                                      total lines:         50731
 
 bulk_frc.mod: bulk_frc.o
 
@@ -162,10 +162,6 @@ get_ssh.f: get_ssh.F cppdefs.h param.h scalars.h compute_extended_bounds.h\
 get_tclima.f: get_tclima.F cppdefs.h param.h ocean3d.h scalars.h\
  compute_extended_bounds.h climat.h ncvars.h set_global_definitions.h
  
-get_tides.o: get_tides.f tides.mod
-get_tides.f: get_tides.F cppdefs.h param.h scalars.h ncvars.h\
- set_global_definitions.h
- 
 get_uclima.f: get_uclima.F cppdefs.h param.h scalars.h\
  compute_extended_bounds.h climat.h ncvars.h set_global_definitions.h
  
@@ -209,7 +205,7 @@ lmd_vmix.f: lmd_vmix.F cppdefs.h param.h grid.h ocean3d.h scalars.h\
  
 lsb_string.f: lsb_string.F lenstr.F
  
-main.o: main.f tracers.mod wec_frc.mod tides.mod nhmg.mod
+main.o: main.f tracers.mod wec_frc.mod nhmg.mod tides.mod
 main.f: main.F cppdefs.h param.h grid.h ocean3d.h scalars.h ncvars.h\
  set_global_definitions.h
  
@@ -298,11 +294,6 @@ set_nudgcof.f: set_nudgcof.F cppdefs.h param.h grid.h scalars.h\
  
 set_scoord.f: set_scoord.F cppdefs.h param.h scalars.h strings.h scoord.h\
  comm_vars.h set_global_definitions.h
- 
-set_tides.o: set_tides.f tides.mod
-set_tides.f: set_tides.F cppdefs.h param.h grid.h scalars.h\
- compute_tile_bounds.h private_scratch.h boundary.h climat.h\
- compute_auxiliary_bounds.h hidden_mpi_vars.h set_global_definitions.h
  
 set_weights.f: set_weights.F cppdefs.h param.h scalars.h coupling.h\
  set_global_definitions.h

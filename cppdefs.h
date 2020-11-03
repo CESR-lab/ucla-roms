@@ -148,7 +148,6 @@ c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
 # define TIDES
-# define TIDES_DEBUG
 # ifdef TIDES
 #  define POT_TIDES
 #  define SSH_TIDES
