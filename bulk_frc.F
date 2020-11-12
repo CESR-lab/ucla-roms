@@ -32,22 +32,22 @@
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! Factor 2 only for now
 
-      ! u-wind (input data in m/s)
+      ! u-wind (input data in m/s at 10m)
       ! ------
       character(len=4) :: uwnd_name = 'uwnd'
       character(len=8) :: uwnd_time_name = 'wnd_time'
 
-      ! v-wind (input data in m/s)
+      ! v-wind (input data in m/s at 10m)
       ! ------
       character(len=4) :: vwnd_name = 'vwnd'
       character(len=8) :: vwnd_time_name = 'wnd_time'
 
-      ! Air temp (input data Degrees C)
+      ! Air temp (input data Degrees C at 2m)
       ! ---------------
       character(len=4) :: tair_name = 'Tair'
       character(len=9) :: tair_time_name = 'tair_time'
 
-      ! Q (Specific humidity (kg/kg) NOT relative hum.)
+      ! Q (Specific humidity (kg/kg) NOT relative hum. at 2m)
       ! ----
       character(len=4) :: Q_name = 'Qair'
       character(len=9) :: Q_time_name = 'qair_time'

@@ -85,7 +85,7 @@
         cff=1./dble(navg)    !<-- scaling
         if (mod(iic-ntsavg,navg) == 1) then
           if (ZEROTH_TILE) then
-            mpi_master_only write(*,'(7x,A,I8,2x,A,I8,2x,A,I5)')
+            mpi_master_only write(*,'(7x,A,I8,2x,A,I8,2x,A,I8)')
      &              'set_avg :: started averaging at iic =', iic,
      &                          'ntsavg=', ntsavg, 'navg=', navg
           endif

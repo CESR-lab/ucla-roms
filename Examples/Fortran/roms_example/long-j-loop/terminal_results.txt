@@ -1,0 +1,26 @@
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ long-j 
+ pre_step3d loop:
+Performed    1000 loops: CPU time =  12.24205200 seconds
+Elapsed time =  12.24437523 seconds
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ long-j 
+ pre_step3d loop:
+Performed    1000 loops: CPU time =  12.04747700 seconds
+Elapsed time =  12.05363274 seconds
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ long-j 
+ pre_step3d loop:
+Performed    1000 loops: CPU time =  12.14542900 seconds
+Elapsed time =  12.14680481 seconds
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ long-splitj 
+ pre_step3d loop:
+Performed    1000 loops: CPU time =  11.32567300 seconds
+Elapsed time =  11.32759857 seconds
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ long-splitj 
+ pre_step3d loop:
+Performed    1000 loops: CPU time =  11.49802600 seconds
+Elapsed time =  11.50001812 seconds
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ long-splitj 
+ pre_step3d loop:
+Performed    1000 loops: CPU time =  11.69550500 seconds
+Elapsed time =  11.69851780 seconds
+devin@devin-HP2-Ubuntu:~/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC/Examples/Fortran/roms/long-j-loop$ 
+

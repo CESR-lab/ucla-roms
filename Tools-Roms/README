@@ -1,14 +1,27 @@
 This directory contains a set to basic tool to manipulate Fortran
 source codes and, in principle, other text files.
 
+To compile: Simply type "make" 
+
 ! Dependecy list: Make.depend
 ! ===========================
-
- cross_matrix - analyses dependencies of Fortran source files to track 
-                down CPP #include, F77-style include, and Fortran 90
-                modules to guarantee the correct order of compilation
-                of the cross-dependent source code files, even when
-                using multiple CPUs to compile (via "make -j N" command);
+ 
+ makedepf90 -   This is an open-source dependency generator. The exectuable
+                should work across platforms, and hence is kept in repo as such.
+                It is possible to install through package managers, e.g.:
+                sudo apt install makedepf90
+                A .tar file with the source code is available in the Tools-Roms
+                folder for manual install if necessary.
+                The program is able to detect cppflags, e.g. if you turn on WEC flag,
+                be sure to run 'make depend' again, as now more files will depend
+                on wec_frc.F module.
+                Dependecy does not handle external modules like netcdf and NHMG,
+                but this will almost never be an issue.
+                If compiled with -Wconfused then it will print warnings when confused.
+                
+                Source code: https://salsa.debian.org/science-team/makedepf90
+                Man page: https://linux.die.net/man/1/makedepf90 
+                (Note: cross_matrix is no longer used)
 
 ! NETCDF tools
 ! ============
@@ -42,7 +55,9 @@ programs -- just execute each of them without any arguments to see what
 they are and for instructions how to use them.
 
 
-To compile: Simply type "make" then "make install". The executables
+# The following is old from Sasha, set up if you want it...
+To compile: Simply type "make" ...
+... then "make install". The executables
 will be moved to ~/bin directory. The directory must pre-exist and
 should be included in $PATH in ~/.cshrc or ~/.bashrc files.  
 The installation path can be changed by editing Makefile. 

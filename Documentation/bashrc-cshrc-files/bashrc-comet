@@ -1,0 +1,18 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# User specific aliases and functions
+
+module purge 
+module load intel 
+module load mvapich2_ib/2.3.2
+module load netcdf
+module load ncview/2.1.7
+export NETCDF=/opt/netcdf/4.6.1/intel/mvapich2_ib
+export NETCDFF=/opt/netcdf/4.6.1/intel/serial
+export MPI_ROOT=/opt/mvapich2/intel/ib
+

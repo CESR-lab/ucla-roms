@@ -116,9 +116,11 @@ c--#define nf_def_var my_nf_def_var
 ! total_record changes continuously throughout the sequence of files.
 
       ierr=0
-! DevinD added, just for his file for now to use output root name from roms.in
-!#ifndef AVRH
+#ifndef AVRH
       fname=trim(output_root_name) / / '_his.nc'
+#else
+      fname=trim(output_root_name) / / '_avg.nc'
+#endif
       lfnm=lenstr(fname)
 #if defined MPI && defined PARALLEL_FILES
         ! Insert MPI node numbers to file name

@@ -19,8 +19,16 @@
 #include "scalars.h"
 
       ! ****************************************************************
+      ! user inputs
 
 !** Ntides       Number of tidal components to consider.
+#if defined SSH_TIDES || defined UV_TIDES
+      integer, parameter, public :: Ntides=15
+#endif
+
+      ! ****************************************************************
+      ! end user inputs
+
 !** Tperiod      Tidal period (s).
 !** SSH_Tamp     Tidal elevation amplitude (m) at RHO-points.
 !** SSH_Tphase   Tidal elevation phase (degrees/360) at RHO-points.
@@ -35,7 +43,7 @@
 
       ! Get rid of some flags. Also decide what needs to be public if any.
 #if defined SSH_TIDES || defined UV_TIDES
-      integer, parameter, public :: Ntides=15
+!      integer, parameter, public :: Ntides=15
       real, public :: Tperiod(Ntides)
 #endif
 #if defined SSH_TIDES
@@ -55,12 +63,12 @@
       real, public :: PTide(GLOBAL_2D_ARRAY)
 #endif
 
-      public set_tides_mod
+      public set_tides
 
       contains
 ! ----------------------------------------------------------------------
 
-      subroutine set_tides_mod(tile)
+      subroutine set_tides(tile)
 
       ! DevinD created seperate step as can't have compute_tile_bounds
       ! and compute_auxilliary_bounds in the same subroutine as they both
@@ -72,13 +80,13 @@
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
 
-      call set_tides_mod_tile(istr,iend,jstr,jend,A2d(1,1),A2d(1,2),
+      call set_tides_tile(istr,iend,jstr,jend,A2d(1,1),A2d(1,2),
      &                                            A2d(1,3),A2d(1,4))
 
-      end subroutine set_tides_mod
+      end subroutine set_tides
 !-----------------------------------------------------------------------
 
-      subroutine set_tides_mod_tile(istr,iend,jstr,jend,Cangle,Sangle,
+      subroutine set_tides_tile(istr,iend,jstr,jend,Cangle,Sangle,
      &                                                  Cphase,Sphase)
 
       implicit none
@@ -370,7 +378,7 @@
         endif  !<--- period > 0
       enddo  !<-- itide
 
-      end subroutine set_tides_mod_tile
+      end subroutine set_tides_tile
 !-----------------------------------------------------------------------
 
       subroutine read_tides(istr,iend,jstr,jend)

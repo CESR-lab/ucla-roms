@@ -328,7 +328,7 @@ C$OMP END MASTER
       use wec_frc, only: wec_forces
 #endif
 #if defined SSH_TIDES || defined UV_TIDES
-      use tides, only: set_tides_mod
+      use tides, only: set_tides
 #endif
 
       implicit none
@@ -374,7 +374,7 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
       do tile=my_tile_range                 ! interpolate forcing
         call set_forces(tile)               ! data to model time and
 # if defined SSH_TIDES || defined UV_TIDES
-        call set_tides_mod(tile)            ! compute surface fluxes.
+        call set_tides(tile)            ! compute surface fluxes.
 # endif
         call    rho_eos(tile)
         call    set_HUV(tile)
