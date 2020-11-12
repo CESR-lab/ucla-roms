@@ -1,0 +1,74 @@
+
+ROMS MODEL SETUP & CONFIGURATION
+--------------------------------
+
+Below are a few intructions that should assist in configuring the roms
+executable to work for your simulation of interest:
+(Note, these intructions will assist users of the old roms code, but
+are likely insufficient for first time roms users)
+
+Forcing file units:
+
+    You will need to edit the units of your forcing file to match the units
+    stated at the top of:
+    bulk_frc.F -> for BULK_FRC simulations (BULK_FLUX of old is now BULK_FRC)
+    flux_frc.F -> for direct flux simulations (still default)
+     
+    For the names of the variable and variable time, either change the forcing 
+    files to match: the variable name, the variable's time name, the value to 
+    the correct units, and the name of the units. 
+    Alternatively, you can change the variable name and time name in bulk_frc.F
+    or flux_frc.F if you prefer. Note, the units must be changed to match code.
+    
+    You can use scripts to edit netcdf files, or below is a command line example 
+    of how to do it if you prefer:
+    - change name:  ncrename -v prec,rain sample_prec.nc (changes prec -> rain)
+    - change value: ncap2 -s 'rain=2*rain' sample_prec.nc (e.g. multiply rain 
+      variable by 2)
+    - change units: ncatted -a units,rain,m,c,'cm/day' sample_prec.nc (changes 
+      name of units of 'rain' to 'cm/day')
+
+roms.in:
+
+    See Examples/Tracers_passive/USWC_sample.in as a template. 
+    Note, we now use one root name, e.g. 'pacific', stored in 
+    variable 'output_root_name' for the output file names. 
+    So the history file will be pacific_his.*.nc.
+    It is possible to output the resulting bulk forcing sustr, svstr, etc. The 
+    output frequency is controlled at the top of bulk_frc.F, not the roms.in file. 
+    If you don't need this output then remove the CPPFLAG 'BULK_FLUX_OUTPUT'.
+
+cppdefs.h:
+
+    We have removed some cppflags, 'grep' search the code to see if they still
+    exist, or ask someone who might know :).
+    
+param.h:
+
+    Set you domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
+    Set number of tracers here.    
+
+Passive tracers:
+
+    The setup for passive tracers is done in the module tracers.F. There are some 
+    instructions at the top of the file in the user inputs section. You need to create
+    an index variable there for each tracer you want beyond 'islt'. You will then need 
+    to insert all your details about your tracers in tracers_defs.h, there are 
+    instructions in the file.
+    I would suggest starting with no tracers or just 1 or 2 to ensure that you can get 
+    it working, and then finally set it up with all of your tracers.
+    Selection of tracers for outputting comes at the end of 'primary_history_fields' in 
+    the roms.in file as before.
+    No longer need PASSIVE_TRACER flag for this to work.
+    
+tides:
+
+    Set the number of tidal contributions you are using in tides.F variable Ntides.    
+
+Misc.:
+
+    The machine compilation file Makedefs/Makedefs.IntelEM64T is now Makedefs.inc.
+    Note, Comet (cluster) has 2 debug nodes per user that gives you instant access to test 
+    if your code runs as you get setup (without long waits to run).
+
+

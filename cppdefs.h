@@ -6,8 +6,8 @@
  */
 
 c-dd#define WEC /* Wave Effect on Current model */
-#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-c-dd#define USWC_sample
+c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -147,7 +147,7 @@ c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
-# define TIDES
+c-dd# define TIDES
 # ifdef TIDES
 #  define POT_TIDES
 #  define SSH_TIDES

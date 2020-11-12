@@ -1,0 +1,208 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+Intel(R) Fortran Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 19.1.2.254 Build 20200623
+
+Compiler options: -O3 -qopt-report=3 -o kji
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: TIMINGS
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (TIMINGS) [1] loop-k-j-i.f90(11,9)
+  -> EXTERN: (11,9) for_set_reentrancy
+  -> EXTERN: (21,10) for_system_clock_count
+  -> EXTERN: (23,5) for_write_seq_lis_xmit
+  -> EXTERN: (23,5) for_write_seq_lis
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_check_mult_overflow64
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_check_mult_overflow64
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_check_mult_overflow64
+  -> EXTERN: (33,10) for_cpusec_t
+  -> EXTERN: (45,10) for_cpusec_t
+  -> EXTERN: (46,5) for_write_seq_fmt_xmit
+  -> EXTERN: (46,5) for_write_seq_fmt
+  -> EXTERN: (50,10) for_system_clock_rate
+  -> EXTERN: (50,10) for_system_clock_count
+  -> EXTERN: (52,5) for_write_seq_fmt
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at loop-k-j-i.f90(29,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at loop-k-j-i.f90(29,5)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at loop-k-j-i.f90(29,5)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at loop-k-j-i.f90(29,5)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 4 
+         remark #15477: vector cost: 1.500 
+         remark #15478: estimated potential speedup: 2.550 
+         remark #15488: --- end vector cost summary ---
+      LOOP END
+
+      LOOP BEGIN at loop-k-j-i.f90(29,5)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at loop-k-j-i.f90(30,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at loop-k-j-i.f90(30,5)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at loop-k-j-i.f90(30,5)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at loop-k-j-i.f90(30,5)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 4 
+         remark #15477: vector cost: 1.500 
+         remark #15478: estimated potential speedup: 2.550 
+         remark #15488: --- end vector cost summary ---
+      LOOP END
+
+      LOOP BEGIN at loop-k-j-i.f90(30,5)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at loop-k-j-i.f90(31,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at loop-k-j-i.f90(31,5)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at loop-k-j-i.f90(31,5)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at loop-k-j-i.f90(31,5)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 4 
+         remark #15477: vector cost: 1.500 
+         remark #15478: estimated potential speedup: 2.550 
+         remark #15488: --- end vector cost summary ---
+      LOOP END
+
+      LOOP BEGIN at loop-k-j-i.f90(31,5)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at loop-k-j-i.f90(39,21)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at loop-k-j-i.f90(35,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at loop-k-j-i.f90(36,13)
+         remark #15542: loop was not vectorized: inner loop was already vectorized
+
+         LOOP BEGIN at loop-k-j-i.f90(37,17)
+         <Peeled loop for vectorization>
+            remark #25015: Estimate of max trip count of loop=1
+         LOOP END
+
+         LOOP BEGIN at loop-k-j-i.f90(37,17)
+            remark #15300: LOOP WAS VECTORIZED
+            remark #15442: entire loop may be executed in remainder
+            remark #15448: unmasked aligned unit stride loads: 2 
+            remark #15449: unmasked aligned unit stride stores: 1 
+            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 9 
+            remark #15477: vector cost: 4.500 
+            remark #15478: estimated potential speedup: 1.880 
+            remark #15488: --- end vector cost summary ---
+            remark #25015: Estimate of max trip count of loop=25
+         LOOP END
+
+         LOOP BEGIN at loop-k-j-i.f90(37,17)
+         <Alternate Alignment Vectorized Loop>
+            remark #25015: Estimate of max trip count of loop=25
+         LOOP END
+
+         LOOP BEGIN at loop-k-j-i.f90(37,17)
+         <Remainder loop for vectorization>
+         LOOP END
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+loop-k-j-i.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] loop-k-j-i.f90:11
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   22[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm7]
+        
+    Routine temporaries
+        Total         :     384
+            Global    :     119
+            Local     :     265
+        Regenerable   :      96
+        Spilled       :      35
+        
+    Routine stack
+        Variables     :     156 bytes*
+            Reads     :       7 [6.04e-04 ~ 0.0%]
+            Writes    :      11 [9.49e-04 ~ 0.0%]
+        Spills        :     240 bytes*
+            Reads     :      34 [1.32e+00 ~ 1.3%]
+            Writes    :      33 [1.73e-01 ~ 0.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

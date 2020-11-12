@@ -153,8 +153,8 @@ check_srcs.F: srcscheck Makefile
 setup_kwds.F: checkkwds read_inp.F
 	./checkkwds
 
-depend:  # Note: cross_matrix points directly to Tools folder executable
-	Tools-Roms/cross_matrix *.F
+depend:  # Note: cross_matrix no longer used
+	Tools-Roms/makedepf90 *.F > Make.depend
 
 plotter: plotter.o
 	$(CFT) -o plotter plotter.o $(LIBNCAR)

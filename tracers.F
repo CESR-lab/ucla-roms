@@ -34,7 +34,7 @@
       !-- Tracer indices specific to each tracer
       ! Set to zero as possible means to avoid errors later? Might not be
       ! Necessary. itmp -> itemp, had to spell differently for now as
-      ! itemp lives in param.h still (avodi clash). Same for islt -> isalt
+      ! itemp lives in param.h still (avoid clash). Same for islt -> isalt
       integer :: itmp=0, islt=0 !, itrace1=0, isalt2=0 ! , iptrace2=0
 
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
