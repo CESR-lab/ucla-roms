@@ -1,8 +1,8 @@
-include Makedefs.inc
+include ../Makedefs.inc
 
 ALL = partit ncjoin
 
-all: $(ALL)
+all:	$(info NOTE: MAKE SURE TO COMPILE ROMS FIRST SO MPC EXE IS AVAILABLE) $(ALL)
 
 #install: $(ALL)
 #	mv $(ALL) ~/bin
@@ -23,7 +23,6 @@ mreplace.f: mreplace.F
 # Need to set up partit properly - previously in main roms makefile	
 partit: partit.o insert_node.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)	
-	$(info NOTE: MAKE SURE TO COMPILE ROMS FIRST SO MPC EXE IS AVAILABLE)
 
 # Need to set up ncjoin properly - previously in main roms makefile
 ncjoin: ncjoin.o lenstr.o

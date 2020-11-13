@@ -152,32 +152,9 @@ CR      write(*,*) 'wrt_his:  wrtV  ' MYID
 
 ! Tracer variables.
       do itrc=1,NT
-!        if (wrthis(indxT+itrc-1)) then
-!          ierr=ncdf_write(nchis,  hisT(itrc), record, r_var,
-!     &                    t(START_2D_ARRAY,1,nstp,itrc), N)
-!
-!
-!c          write(*,*) 'Replacing T,S with rho1,qp1.'
-!c          if (itrc == 1) then
-!c            ierr=ncdf_write(nchis, hisT(itrc), record, r_var, rho1, N)
-!c          elseif (itrc == 2) then
-!c            ierr=ncdf_write(nchis, hisT(itrc), record, r_var,  qp1, N)
-!c          endif
-!
-!          if (ierr /= nf_noerr) then
-!            lvar=lenstr(vname(1,indxT+itrc-1))
-!            write(*,1) vname(1,indxT+itrc-1)(1:lvar),
-!     &                 record MYID
-!            goto 99                                       !--> ERROR
-!          endif
-!CR      write(*,*) 'wrt_his:  wrtT  ' MYID
-!        endif
-
-! DevinD version:
         if (wrt_t(itrc)) then
           ierr=ncdf_write(nchis,  hisT(itrc), record, r_var,
      &                    t(START_2D_ARRAY,1,nstp,itrc), N)
-
 
           if (ierr /= nf_noerr) then
             lvar=lenstr(t_vname(itrc))
@@ -185,7 +162,6 @@ CR      write(*,*) 'wrt_his:  wrtV  ' MYID
      &                 record MYID
             goto 99                                       !--> ERROR
           endif
-CR      write(*,*) 'wrt_his:  wrtT  ' MYID
         endif
       enddo
 
