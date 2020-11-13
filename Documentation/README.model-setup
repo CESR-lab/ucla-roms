@@ -45,7 +45,7 @@ cppdefs.h:
     
 param.h:
 
-    Set you domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
+    Set your domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
     Set number of tracers here.    
 
 Passive tracers:

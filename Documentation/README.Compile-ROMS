@@ -28,7 +28,7 @@ How to make the Makefile work:
      this file. If you have compiling issues, then see the Makedefs/  
      folder for examples that work on different clusters.     
 
-  3. Compile NHMG library:
+  4. (Optional) Compile NHMG library:
   
      Even if you are not using non-hydrostatic library you still need to
      compile it once (and never again), as follows:
@@ -37,7 +37,7 @@ How to make the Makefile work:
      cd .. ; 
      Note, NHMG/Makedefs.inc may need to be edited for your machine.
 
-  4. Generate dependency list:
+  5. Generate dependency list:
   
      make depend
      This will update file "Make.depend" consistent with the
@@ -45,7 +45,7 @@ How to make the Makefile work:
      See Tools-Roms/README for more info.
      
 
-  5. Compile roms:
+  6. Compile roms:
    
      make clean
      make -j6 (6 or number of processors you decide)
@@ -75,7 +75,7 @@ Roms tools:
      and for 'ncjoin' for rejoining results files into one complete file.
      cd Tools-Roms
      make
-     (Resultinf executables will be there)                  
+     (Resulting executables will be there)                  
              
 *********************************             
 EXTRA READING MATERIAL BELOW ONLY

@@ -74,7 +74,7 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
  LROMS3 = 2/$(LROMS) 3/$(LROMS)
  LROMS4 = 2/$(LROMS) 3/$(LROMS) 4/$(LROMS)
 
-# ROMS excutable
+# ROMS excutable:
 
 $(SBIN): mpc $(OBJS)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
@@ -108,7 +108,7 @@ mpi_test: $(MPI_TEST_OBJ)
 
 # Auxiliary utility programs
 # --------- ------- --------
- TOOLS = mpc cppcheck srcscheck checkkwds ncextract redefs
+ TOOLS = mpc cppcheck srcscheck checkkwds redefs
 
 tools: $(TOOLS)
 
@@ -126,9 +126,6 @@ partit_t: partit_t.f insert_node.o lenstr.o
 
 partit: partit_t partit.o insert_node.o lenstr.o
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)
-
-ncextract: ncextract.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o ncextract ncextract.o
 
 cppcheck: cppcheck.o
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck.o
@@ -154,7 +151,8 @@ setup_kwds.F: checkkwds read_inp.F
 	./checkkwds
 
 depend:  # Note: cross_matrix no longer used
-	Tools-Roms/makedepf90 *.F > Make.depend
+	@${ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend
+	@echo 'Updated Make.depend (dependency list)'
 
 plotter: plotter.o
 	$(CFT) -o plotter plotter.o $(LIBNCAR)

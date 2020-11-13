@@ -147,7 +147,9 @@ c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
-c-dd# define TIDES
+#ifdef PACIFIC_PD
+# define TIDES
+#endif
 # ifdef TIDES
 #  define POT_TIDES
 #  define SSH_TIDES
