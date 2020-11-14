@@ -2,15 +2,9 @@
 #========== ======= =========== ======== === ==== =====
 # Set machine dependent definitions and rules.
 
-#include Makedefs.Intel
 include Makedefs.inc
 #include Makedefs.Intel_MPI
-#include Makedefs.CMPI
 #include Makedefs.GCC
-#include Makedefs.p690
-#include Makedefs.PGI_AMD64
-#include Makedefs.Fujitsu
-#include Makedefs.Cray
 
 # Configuration for ROMS model:  All source code files are sorted into
 # ------------- --- ---- ------  eight groups separated by blanc lines:
@@ -74,8 +68,7 @@ IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
  LROMS3 = 2/$(LROMS) 3/$(LROMS)
  LROMS4 = 2/$(LROMS) 3/$(LROMS) 4/$(LROMS)
 
-# ROMS excutable:
-
+# ROMS excutable (This is the first target and hence the default):
 $(SBIN): mpc $(OBJS)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
 	mv a.out $(SBIN)
