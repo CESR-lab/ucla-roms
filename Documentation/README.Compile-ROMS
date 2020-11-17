@@ -30,8 +30,8 @@ How to make the Makefile work:
 
   4. (Optional) Compile NHMG library:
   
-     Even if you are not using non-hydrostatic library you still need to
-     compile it once (and never again), as follows:
+     Only if you are using non-hydrostatic library (you will know if you do)
+     you need to compile it once (and never again), as follows:
      cd <roms-folder>/NHMG/src ; make clean
      cd .. ; make (ignore the warnings)
      cd .. ; 

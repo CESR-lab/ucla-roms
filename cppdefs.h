@@ -25,6 +25,8 @@ c--#endif
 
 #if defined PACIFIC_PD || defined USWC_sample /* PierreD's pacific coast model with tau-correction */
 
+# define RIVER_SOURCE
+
 c-dd# define WEC
 # ifdef WEC
 #    define BRK0

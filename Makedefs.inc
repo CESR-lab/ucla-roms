@@ -4,7 +4,7 @@
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
-	$(CPP) -P $(CPPFLAGS) $*.F | ${ROMS_ROOT}/mpc > $*.f
+	@$(CPP) -P $(CPPFLAGS) $*.F | ${ROMS_ROOT}/mpc > $*.f
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f
 	@/bin/rm -f $*.f
 .F.f:
