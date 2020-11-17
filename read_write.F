@@ -42,6 +42,7 @@
       public nc_read_var
 !      public nc_check_units
       public set_frc_var_tile
+      public set_small_arrays
       public ncdf_create_file
       public nc_write_time
       public read_output_root_name
@@ -394,8 +395,6 @@ C$OMP BARRIER
 
 
       end subroutine set_frc_var_tile
-
-
 ! ----------------------------------------------------------------------
 
       subroutine find_new_record( var_name, var_time_name, time_model,
@@ -647,7 +646,7 @@ C$OMP BARRIER
 !-----------------------------------------------------------------------
 
       subroutine cycle_length_handling(vtime, ncid, var_tid,
-     &                               var_time_name, irec )
+     &                                 var_time_name, irec )
       ! Find correct timestep for cyclical forcing files
       ! e.g. 1 year repeating data
       ! NOTE: assumes model_time is mid-point of time-step: time+0.5*dt
@@ -822,8 +821,191 @@ C$OMP BARRIER
 
 
       end subroutine read_var_frc
+! ----------------------------------------------------------------------
 
+      subroutine set_small_arrays (
+     &                var_name,      var_time_name, ! Text names
+     &                var_data,      var,           ! Variable arrays
+     &                var_times,                    ! Input times
+     &                dim1,          dim2,          ! small array dimensions (dim2=1 if 1D)
+     &                var_file_indx, var_irec,      ! File indx & Current input record
+     &                it1, it2 )                    ! Time index placeholders
 
+      ! Wrapper to set small, odd sized arrays 1D or 2D (but not 2D of total grid)
+      ! e.g. river/pipe sources
+      ! Input data - time must be in days
+
+      implicit none
+
+      ! input/outputs
+      character(len=*), intent(in) :: var_name
+      character(len=*), intent(in) :: var_time_name
+      integer, intent(in) :: dim1, dim2 ! Dimensions of variable (dim2=1 if 1D)
+
+      real :: var_data(dim1,dim2,2) ! Read in raw data for 2 times to interpolate
+      real :: var(dim1,dim2)
+      real, dimension(2) :: var_times ! Store input file record times
+      integer :: var_file_indx, var_irec ! File indx & Current input record
+      integer :: it1, it2 ! Placeholders for 2 read in times
+
+      ! local
+      integer :: tmp, i, j
+      real cff1,cff2 ! for time interpolations
+      real tmid_days
+
+      ! Interpolated time is based on 1/2 step time
+      tmid_days = tdays + 0.5*dt*sec2day ! Input data times in days
+
+      ! UPDATE LATEST READ IN VARIABLE?
+      ! Need var_times(it1) < time < var_times(it2), thus:
+      if (var_times(it2) < tmid_days) then  ! We need to refresh data
+
+        if (FIRST_TIME_STEP) then ! Only first timestep
+
+C$OMP MASTER
+          call find_new_record( var_name, var_time_name, tmid_days,
+     &                          var_file_indx, var_irec )
+
+          call read_small_arrays( var_file_indx, var_irec,
+     &                       var_name, var_times(it1), var_time_name,
+     &                       dim1, dim2,var_data(:,:,it1) )
+C$OMP END MASTER
+C$OMP BARRIER
+
+          if (mynode == 0) then
+            write(*,'(4x,2A,5x,A,G14.6,1x,A,I4)')
+     &               'set_small_array :: read var: ', var_name,
+     &               'var_input_time (days) =',var_times(it1),
+     &               'rec =',var_irec MYID
+          endif
+
+        ! ALL OTHER TIMESTEPS
+        ! Every time step switch indices such that
+        ! var_data(i,j,1) & var_times(1) -> earlier && var_data(i,j,2) & var_times(2) -> later: step t=x
+        ! var_data(i,j,1) & var_times(1) -> later   && var_data(i,j,2) & var_times(2) -> earlier: step t=x+1
+        ! and so on. The benifit is only need to change one variable each time.
+        else
+          tmp = it1
+          it1 = it2 ! If it1 = 1, it now equals 2, and vice-versa
+          it2 = tmp ! If it2 = 2, it now equals 1, and vice-versa
+        endif ! End of first step
+
+C$OMP MASTER
+        call find_new_record( var_name, var_time_name, tmid_days,
+     &                        var_file_indx, var_irec )
+
+        call read_small_arrays( var_file_indx, var_irec,
+     &                     var_name, var_times(it2), var_time_name,
+     &                     dim1, dim2, var_data(:,:,it2) )
+C$OMP END MASTER
+C$OMP BARRIER
+
+        if (mynode == 0) then
+          write(*,'(4x,2A,5x,A,G14.6,1x,A,I4)')
+     &               'set_small_array :: read var: ', var_name,
+     &               'var_input_time (days) =',var_times(it2),
+     &               'rec =', var_irec MYID
+        endif
+
+      endif ! -> END OF UPDATING VARIABLE INPUT DATA
+
+      ! Temporal interpolation
+      ! ======================
+
+      ! Set coefficients for interpolation.
+      cff1=( var_times(it2)-tmid_days ) / ( var_times(it2)-var_times(it1) )
+      cff2=( tmid_days-var_times(it1) ) / ( var_times(it2)-var_times(it1) )
+
+      ! Check the interpolation coefficients such that modeltime is
+      ! bounded by read in variable times.
+      if (cff1.ge.0. .and. cff2.ge.0.) then
+        do j=1,dim2
+          do i=1,dim1
+            var(i,j)=cff1*var_data(i,j,it1)+cff2*var_data(i,j,it2)
+          enddo
+        enddo
+      ! Throw warning if interpolation times do not bound model time.
+      else
+        write(*,'(/1x,4A/3(1x,A,F16.10)/)') 'ERROR: set_small_array',
+     &  ':: Model time outside bounds of variable (times):',
+     &     var_name, var_time_name,
+     &                    'start =', var_times(it1),
+     &                    'tmid_days =',     tmid_days,
+     &                    'end =',   var_times(it2)
+        error stop 'set_small_array :: time interpolation error '
+      endif
+
+      end subroutine set_small_arrays
+! ----------------------------------------------------------------------
+
+      subroutine read_small_arrays( var_file_indx, irec,
+     &    var_name, var_time, var_time_name, dim1, dim2, var_array )
+
+      ! Wrapper to read small array 1D or 2D from netcdf input file
+
+      implicit none
+
+      ! input/output
+      integer, intent(in) :: var_file_indx
+      integer, intent(in) :: irec
+      character(len=*), intent(in) :: var_name ! Variable short name
+      real, dimension(1) :: var_time
+      character(len=*), intent(in) :: var_time_name
+      integer, intent(in) :: dim1, dim2 ! Dimensions of variable (dim2=1 if 1D)
+      real :: var_array(dim1, dim2,1) ! variables array to record
+
+      ! local
+      integer ierr,ncid, start(4), count(4), i, j
+      integer :: var_tid, var_id ! Variable time_id
+      real    :: buff(dim1*dim2) ! 1D version of variable array
+
+      ! read the time
+      ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)  ! Open file
+      ierr=nf90_inq_varid(ncid, var_time_name, var_tid)           ! Get time ID (varid)
+      ierr=nf90_get_var(ncid, var_tid, var_time, (/irec/), (/1/)) ! Get var_time
+
+      ! Fix time for cyclical forcing file if applicable
+      if(cycle_length/=0.) then
+        call cycle_length_handling(var_time, ncid, var_tid,
+     &                             var_time_name, irec )
+      endif
+!      if(mynode==0) then ! debug
+!      print*,'read_var_frc: var_time=',var_time,' time_model=',tdays+0.5*dt*sec2day ! debug
+!      endif
+
+      ! Setup netcdf variables
+      do i=1,4          ! start,count(1:2) correspond to dim1 and dim2
+        start(i)=1      ! dimensions, while start(3) is either
+        count(i)=1      ! time record for (2D-fields)
+      enddo             ! or start(2) is time record for 1D field
+      count(1)=dim1     ! Size of dim1 to read
+      if (dim2 > 1) then! If 2D variable
+        count(2)=dim2   ! Size of dim2 to read
+        start(3)=irec
+      else              ! If 1D variable
+        start(2)=irec
+      endif
+
+      ! read variable
+      ierr=nf90_inq_varid(ncid, var_name, var_id) ! get variable ID var_id
+      ierr=nf90_get_var(ncid, var_id, buff, start,count) ! buff is vector of coarse grid array
+      if(ierr/=0) call handle_ierr(ierr,var_name)
+      ierr=nf90_close(ncid)
+
+      if(mynode==0) print *, var_name,' buff= ',buff
+      ! Convert buffer array into roms variable
+      do j=1,dim2
+        do i=1,dim1
+          ! buff stored as rows starting i=1, j=1
+          ! Hence var(2,1) = buff(1+dim2*1)
+          var_array(i,j,1) = buff(i + dim1*(j-1))
+          if(mynode==0) then
+            print*,'var_array(i,j)=,i=,j=',var_array(i,j,1),i,j
+          endif
+        enddo
+      enddo
+
+      end subroutine read_small_arrays
 ! ----------------------------------------------------------------------
 
       subroutine read_output_root_name(keyword, kwlen)

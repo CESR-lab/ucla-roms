@@ -152,7 +152,7 @@ c***              no code here
       if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
 
 # ifdef RIVER_SOURCE
-      call set_river_frc_tile(istr,iend,jstr,jend,ierr,tmid)
+      call set_river_frc_tile(istr,iend,jstr,jend)
 #  endif
 
 # ifdef WEC

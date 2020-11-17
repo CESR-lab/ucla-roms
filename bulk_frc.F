@@ -33,37 +33,30 @@
       integer :: interp_frc = 0 ! Factor 2 only for now
 
       ! u-wind (input data in m/s at 10m)
-      ! ------
       character(len=4) :: uwnd_name = 'uwnd'
       character(len=8) :: uwnd_time_name = 'wnd_time'
 
       ! v-wind (input data in m/s at 10m)
-      ! ------
       character(len=4) :: vwnd_name = 'vwnd'
       character(len=8) :: vwnd_time_name = 'wnd_time'
 
       ! Air temp (input data Degrees C at 2m)
-      ! ---------------
       character(len=4) :: tair_name = 'Tair'
       character(len=9) :: tair_time_name = 'tair_time'
 
       ! Q (Specific humidity (kg/kg) NOT relative hum. at 2m)
-      ! ----
       character(len=4) :: Q_name = 'Qair'
       character(len=9) :: Q_time_name = 'qair_time'
 
       ! Precipitation rate (cm/day)
-      ! ------------------
       character(len=4) :: prate_name = 'rain'
       character(len=9) :: prate_time_name = 'rain_time'
 
       ! Net downward longwave radiation [W/m^2]
-      ! ----------------------------------
       character(len=10):: lwrad_name = 'lwrad_down'
       character(len=8) :: lwrad_time_name = 'lrf_time'
 
       ! net shortwave radiation [W/m^2] 
-      ! -----------------------------
       character(len=5) :: swrad_name = 'swrad'
       character(len=8) :: swrad_time_name = 'srf_time'
 

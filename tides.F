@@ -26,8 +26,9 @@
       integer, parameter, public :: Ntides=15
 #endif
 
-      ! ****************************************************************
       ! end user inputs
+      ! ****************************************************************
+
 
 !** Tperiod      Tidal period (s).
 !** SSH_Tamp     Tidal elevation amplitude (m) at RHO-points.
