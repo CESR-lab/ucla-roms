@@ -38,14 +38,18 @@
 ! f0,beta    Coriolis parameters to setup a beta-plane [1/s, 1/(m*s)].
 
       real, parameter ::
-# if defined ANA_WEC_FRC
-     &                  Size_XI = 1400.0,   Size_ETA= 2.0,
-     &                  depth=10.,          f0=0.0,        beta=0.
+# if defined ANA_RIVER_USWC
+     &       Size_XI = 1.0e4,   Size_ETA= 1.0e4,
+     &       depth=5.,          max_depth=100.0,
+     &       f0=0.0,            beta=0.
 # else
 #  error ANA_GRID CPP-switch is set, but grid parameters are missing.
 # endif
 
       real cff,y, x0,y0,dx,dy
+# ifdef ANA_RIVER_USWC
+     &  , dh, shelf, slope, land, riv_west, riv_east
+# endif
 
 # include "grid.h"
 # include "scalars.h"
@@ -89,11 +93,49 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 ! Set bathymetry [meters; positive] at RHO-points.
 
-      do j=jstrR,jendR           ! Default version: Setup flat-bottom
-        do i=istrR,iendR         ! topography of prescribed depth.
-          h(i,j)=depth           ! This is used by some examples:
-        enddo                    ! Soliton and Wave Radiation test.
+      ! Default version: Setup flat-bottom
+!      do j=jstrR,jendR
+!        do i=istrR,iendR         ! topography of prescribed depth.
+!          h(i,j)=depth           ! This is used by some examples:
+!        enddo                    ! Soliton and Wave Radiation test.
+!      enddo
+
+      ! Non-default version: ANA_RIVER_USWC (DevinD)
+      shelf=size_eta/5 ! shelf location in meters from south
+      slope=(max_depth-depth)/(size_eta*4/5) ! Similar triangles o/a=dh/pm=(max_depth-depth)/(MMm*4/5)
+      do j=jstrR,jendR
+        do i=istrR,iendR
+
+          if(yr(i,j)<shelf .and. SOUTHERN_EDGE) then
+            ! Constant shallow region 20% of domain in south.
+            h(i,j)=depth
+          else
+            ! Uniform gradient from south (shallow) to north (deep).
+            dh=(yr(i,j)-shelf)*slope
+            h(i,j)=depth+dh
+          endif
+
+        enddo
       enddo
+
+      ! Set up land masking for river channel
+      land=el/10       ! Land extends 10% of domain from south
+      riv_west=xl*4/10 ! River west bank at 40% from west
+      riv_east=xl*6/10 ! River west bank at 60% from west
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          ! Doesn't extend north beyond land
+          if(yr(i,j)<land .and. SOUTHERN_EDGE) then
+            ! Isn't in river mouth, also need row (j<=jstr) of mask in
+            ! river as river forcing can only be from land cells
+            if(j<=jstr .or. xr(i,j)<riv_west .or. xr(i,j)>riv_east) then
+              rmask(i,j)=0.0
+            endif
+          endif
+        enddo
+      enddo
+
+! set up river location in rivers.F
 
       end
 #else

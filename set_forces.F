@@ -130,7 +130,10 @@ c***              no code here
 
 # else
 
+      ! DevinD not sure what flag to use here to avoid set_flux for purely analytical
+#  ifndef ANA_SMFLUX
       call set_flux_frc(istr,iend,jstr,jend)
+#  endif
 
 #  ifdef ANA_STFLUX
       call ana_stflux_tile(istr,iend,jstr,jend, itemp) ! DevinD Should move to module

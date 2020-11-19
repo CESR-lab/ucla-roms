@@ -992,7 +992,7 @@ C$OMP BARRIER
       if(ierr/=0) call handle_ierr(ierr,var_name)
       ierr=nf90_close(ncid)
 
-      if(mynode==0) print *, var_name,' buff= ',buff
+!      if(mynode==0) print *, var_name,' buff= ',buff
       ! Convert buffer array into roms variable
       do j=1,dim2
         do i=1,dim1
@@ -1000,7 +1000,7 @@ C$OMP BARRIER
           ! Hence var(2,1) = buff(1+dim2*1)
           var_array(i,j,1) = buff(i + dim1*(j-1))
           if(mynode==0) then
-            print*,'var_array(i,j)=,i=,j=',var_array(i,j,1),i,j
+!            print*,'var_array(i,j)=,i=,j=',var_array(i,j,1),i,j
           endif
         enddo
       enddo
@@ -1939,7 +1939,21 @@ C$OMP BARRIER
                 enddo
               enddo
             enddo
-          endif  !<-- horiz_type == 0,1,2,3
+          ! No masking for river locations as on land cells only
+          elseif (horiz_type == 100) then
+            do k=1,nmax
+              do j=jmin,jmax
+                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
+                do i=imin,imax
+
+                    A(i,j,k)=buff(i+shft)
+
+                enddo
+              enddo
+            enddo
+          else
+            error stop 'ncdf_read_mod: horiz_type not supported'
+          endif  !<-- horiz_type == 0,1,2,3,100
         else  !<-- mask_land_data
 #endif
           do k=1,nmax
