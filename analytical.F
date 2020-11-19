@@ -148,6 +148,8 @@
 
 #ifdef ANA_SMFLUX
       subroutine ana_smflux_tile(istr,iend,jstr,jend)
+
+      use surf_flux, only: sustr,svstr
       implicit none
       integer istr,iend,jstr,jend, i,j
 # include "param.h"
@@ -251,6 +253,7 @@ c          svstr(i,j)=-1.0d-4
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
 
+      use surf_flux, only: srflx
       implicit none
       integer istr,iend,jstr,jend, i,j
 # include "param.h"
@@ -323,6 +326,7 @@ c          svstr(i,j)=-1.0d-4
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
 
+      use surf_flux, only: stflx
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j
 #  include "param.h"

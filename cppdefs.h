@@ -7,7 +7,8 @@
 
 c-dd#define WEC /* Wave Effect on Current model */
 c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-#define USWC_sample
+c-dd#define USWC_sample
+#define ANA_RIVER_USWC
 
 /*
     Embedded (nested) grid configuration segment
@@ -159,6 +160,46 @@ c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 c-dd-gone#  define TIDERAMP ! No longer using tideramp
 # endif
 
+#elif defined ANA_RIVER_USWC
+
+# define RIVER_SOURCE
+# define ANA_RIVER_FRC
+
+# ifdef ANA_RIVER_FRC
+#  define ANA_GRID
+c-dd#  define ANA_BRY
+#  define ANA_INITIAL
+#  define ANA_SMFLUX
+#  define ANA_SRFLUX
+#  define ANA_STFLUX
+#  define ANA_SSFLUX
+# endif /* ANA_RIVER_FRC */
+
+        /* Basics */
+# define SOLVE3D
+# define UV_ADV
+# define UV_COR
+        /*  Equation of State */
+# define NONLIN_EOS
+# define SPLIT_EOS
+# define SALINITY
+        /* Mixing */
+        /*        - lateral */
+#define UV_VIS2
+#define TS_DIF2
+        /*        - vertical */
+#define LMD_MIXING
+#define LMD_KPP
+#define LMD_NONLOCAL
+#define LMD_RIMIX
+#define LMD_CONVEC
+#define LMD_BKPP
+        /* Grid Configuration */
+c-dd#define CURVGRID
+c-dd#define SPHERICAL
+#define MASKING
+        /* Output Options */
+#define MASK_LAND_DATA
 
 #elif defined WEC
 

@@ -20,6 +20,8 @@ c     &               LLm=1700, MMm=850, N=50       ! US West Coast L3 DD
 c     &               LLm=930, MMm=480, N=60    ! Incorrect grid
      &               LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
 c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
+#elif defined ANA_RIVER_USWC
+     &               LLm=100, MMm=100, N=10 ! DevinD created USWC_sample
 #else
      &                LLm=??, MMm=??, N=??
 #endif
@@ -35,9 +37,11 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 #ifdef MPI
 # if defined ANA_WEC_FRC
      &      NP_XI=8, NP_ETA=1, NSUB_X=1, NSUB_E=1  ! DevinD - analytical WEC
-# elif defined USWC_WEC || defined USWC_sample
+# elif defined USWC_WEC || defined USWC_sample || defined ANA_RIVER_USWC
      &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1 ! DevinD - WEC
-#elif defined PACIFIC_PD
+# elif defined ANA_RIVER_USWC
+	 &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1
+# elif defined PACIFIC_PD
      &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
 # endif
 #else
@@ -91,13 +95,7 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 # endif
 #endif
 
-#ifdef PSOURCE
-     &       , Msrc=10   ! Number of point sources
-#endif
-
-! Tides
-! -----
-!#if defined TIDES
-!      integer Ntides   ! Number of tides
-!      parameter (Ntides=15)
+!#ifdef PSOURCE
+!     &       , Msrc=10   ! Number of point sources
 !#endif
+
