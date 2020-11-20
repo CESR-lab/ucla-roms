@@ -129,6 +129,7 @@
       integer,intent(in) :: istr,iend,jstr,jend
       ! local
       integer :: ierr,ncid,v_id
+!      integer :: faces
 
       ! Read 'river_flux' (River mouth locations)
       ! Should put this in wrapper in read_write.F as 'nc_read_once'
@@ -141,6 +142,28 @@
 
       ! compute uflx,vflx from rflx
       call calc_river_flux(istr,iend,jstr,jend)
+!      do j = jstr,jend
+!        do i = istr,iend
+!          if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
+!            ! subtract 1e-5 in case only 1 grid point for river, so that floor still
+!            ! produces correct iriver number.
+!!            write(*,*) 'mynode=',mynode,'i,j',i,j,rflx(i,j),'rflx(i,j)'
+!            iriver = floor(rflx(i,j)-1e-5)
+!#ifdef MASKING
+!            faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
+!            if ( faces == 0 .or. rmask(i,j)>0  ) then
+!              error stop 'river grid position error'
+!            endif
+!            ! 10*iriver needed because uflx/vflx can be positive or negative around
+!            ! the iriver number, and hence nearest integer is safest done with 10*.
+!            if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rflx(i,j)-iriver)/faces + 10*iriver
+!            if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
+!            if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
+!            if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
+!#endif
+!          endif
+!        enddo
+!      enddo
 
       if(mynode==0) print*, 'rivers: read in river locations'
           
@@ -186,7 +209,9 @@
       integer :: i,loop,riv_cells=0
       real :: riv_west, riv_east
 
-      ! grid.h needed for yr(i,j)
+!      ! grid.h needed for yr(i,j)
+!#include "grid.h"
+      ! Probably need to loop over extended bounds
 #include "compute_extended_bounds.h"
 
       rflx=0 ! Set all river values to zero
@@ -263,6 +288,44 @@
       enddo
 
       end subroutine calc_river_flux
+! ----------------------------------------------------------------------
+!
+!      subroutine calc_ana_conservations(istr,iend,jstr,jend)
+!
+!      ! Calculate the conservation of volume, temperature & salinity
+!      ! to confirm correct implementation of river module
+!
+!      implicit none
+!
+!      ! inputs
+!      integer,intent(in) :: istr,iend,jstr,jend
+!
+!      ! local
+!      integer, save :: n_sea_cells ! save to ensure value remains
+!      integer :: i,j
+!      real :: zeta_mean,zeta_sum
+!
+!      ! param.h is needed for compute_tile_bounds.h but should get it from "dimensions"
+!      ! Need auxiliary bounds?
+!!#include "compute_tile_bounds.h"
+!
+!      ! Count the number of ocean cells (only once)
+!      if (FIRST_TIME_STEP) then
+!        n_sea_cells=0
+!        do j=jstr,jend
+!          do i=istr,iend
+!            if(rmask(i,j)>0.) n_sea_cells=n_sea_cells+1
+!          enddo
+!        enddo
+!        print *, 'mynode= ',mynode,'n_sea_cells= ',n_sea_cells
+!      endif
+!
+!      ! Volume conservation
+!      ! -------------------
+!
+!
+!
+!      end subroutine calc_ana_conservations
 ! ----------------------------------------------------------------------
 
 # endif
