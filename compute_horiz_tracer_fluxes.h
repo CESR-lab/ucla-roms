@@ -210,7 +210,7 @@ c---#define BIO_1ST_USTREAM_TEST
           do j=jstr,jend+1
             do i=istr,iend
               if (abs(riv_vflx(i,j)).gt.1e-3) then
-                depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
+                depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
      &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )
                 iriver = nint(riv_vflx(i,j)/10)
                 riv_vvel = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)/depth
