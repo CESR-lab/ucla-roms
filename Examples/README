@@ -1,3 +1,5 @@
+Work is not stored on repo so better to use.
+
 If you want to modify one of the examples for your own project,
 copy the contents of an example directory into ../Work/.
 After that cd to ../Work and modify the files specific to your
@@ -5,7 +7,6 @@ project in that directory
 
 Available examples:
 
-TANK
-
-A analytical test case for the Non-hydrostatic kernel. A sloshing solution in a tank
+TANK - A analytical test case for the Non-hydrostatic kernel. 
+       A sloshing solution in a tank.
 

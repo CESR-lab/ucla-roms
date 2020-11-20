@@ -1,8 +1,8 @@
-include ../Makedefs.inc
+include ../src/Makedefs.inc
 
 ALL = partit ncjoin
 
-all:	$(info NOTE: MAKE SURE TO COMPILE ROMS FIRST SO MPC EXE IS AVAILABLE) $(ALL)
+all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
 
 #install: $(ALL)
 #	mv $(ALL) ~/bin
@@ -27,6 +27,10 @@ partit: partit.o insert_node.o lenstr.o
 # Need to set up ncjoin properly - previously in main roms makefile
 ncjoin: ncjoin.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
+	
+mpc: mpc.F Makefile
+	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
 
 clean:
 	/bin/rm -f *.f *.o *.a *.s *.trace *~ $(COMP_FILES)

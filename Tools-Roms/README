@@ -1,7 +1,7 @@
-This directory contains a set to basic tool to manipulate Fortran
-source codes and, in principle, other text files.
+ROMS related tools:
 
-To compile: Simply type "make" 
+To compile tools: 
+1) Simply type "make" 
 
 ! Dependecy list: Make.depend
 ! ===========================
