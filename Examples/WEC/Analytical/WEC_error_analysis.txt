@@ -1,0 +1,30 @@
+WEC analytical wave packet - error analysis:
+
+
+Time-step: 60, time: 60.0secs
+*** ZETA error analysis ***
+Domain range (m): 586.5 - 886.5
+Number of rho-points (m): 301
+--- Benchmark Error Values (MAE) ---
+A) roms_benchmark_MAE_error = 1.33848114262e-10
+B) roms_benchmark_RMSE_error = 1.60293489555e-10
+
+--- Mean Absolute Error (MAE) ---
+A) MAErr_new = 1.3384811426220066e-10
+MAE_new_precent_of_max(%) = 0.5332621474907799
+max(abs(zeta_a)) = 2.5099871590738567e-08
+
+--- Root Mean Squared Error (RMSE) ---
+B) RMSErr_new = 1.6029348955464868e-10
+RMSE_new_precent_of_max(%) = 0.6386227474318805
+max(abs(zeta_a)) = 2.5099871590738567e-08
+
+--- Max error value ---
+Max zeta abs. error = 2.896216541498731e-10 at rho-point: 682 at coord (m) x = 681.5
+Max error % at point = 2.159783037358913
+Max error % of max = 1.153877035198613
+
+--- Check ROMS against repo benchmark RMSE ---
+ROMS change = ROMS benchmark RMSE - ROMS compiled RMSE = 0.0
+
+SUCCESSFUL: ROMS build WEC results the same as benchmark ROMS repository version

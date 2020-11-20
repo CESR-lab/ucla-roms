@@ -2,8 +2,6 @@
 INSTRUCTIONS: COMPILING ROMS
 ----------------------------
 
-How to make the Makefile work:
-
   1. Get roms code:
   
      - git: ask a roms admin to give you access rights to the roms
@@ -39,30 +37,43 @@ How to make the Makefile work:
 
   5. Generate dependency list:
   
+     This step is done automatically using Work/ or 
+     Examples/ directory so it's just here for your info:
      make depend
      This will update file "Make.depend" consistent with the
      content of all *.F files in the current working directory. 
      See Tools-Roms/README for more info.
      
-
   6. Compile roms:
    
      make clean
      make -j6 (6 or number of processors you decide)
      (it might fail the first time due to mpc, just do 'make -j6' again)
+     
+     I)   Copy files you need to physically edit from src/ into:
+          A) Work/ if you are working on your own simulation config,
+          or
+          B) Example/<example>/ if you want to run a pre-existing example.
+   
+     II)  Edit your files in A) or B) as applicable.
+
+     III) Hit 'make' in directory A) or B) to compile roms.
+
+     Do not edit code in the src/ directory!     
   
           
 Recompiling roms:
 -----------------
 
-  A. If basic edits to the code are made, you only need to run 'make -j6'
+  A. If basic edits to the code are made, you only need to run 'make'
      to get the new roms executable.
      Only the necessary files will recompile, so it will be faster than a
      full compile.
   
   B. If cppdefs.h is changed, then with the new dependency generator, you
      are required to update the dependency list with 'make depend', as it 
-     is effected by cppflags.
+     is effected by cppflags. 
+     This will be done automatically using the Work/ or Examples/ directory.
      
   C. If you change compiler options, you should first run make clean, and
      do a full rebuild.
