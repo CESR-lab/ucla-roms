@@ -26,6 +26,12 @@ all:
 
 clean:
 	rm roms; cd Compile; make clean
+	
+work_clean:
+	rm -r Compile/ *.F *.h *.in *.sh *.nc roms 2>/dev/null || :	
+	
+copy_to_Work_dir:
+	cp -p *.F *.h *.in *.sh ../../Work 2>/dev/null || :		
 
 # The no-print suppress makes messages of entering/leaving directories
 MAKEFLAGS += --no-print-directory

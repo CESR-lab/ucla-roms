@@ -5,8 +5,6 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-c---#define WEC /* Wave Effect on Current model */
-c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
 #define USWC_sample
 
 /*
@@ -23,11 +21,7 @@ c--#endif
 */
 
 
-#if defined PACIFIC_PD || defined USWC_sample /* PierreD's pacific coast model with tau-correction */
-
-c-dd# define debug_ddevin /* Test coarse interpolation of 'hraw' & 'lat_rho */
-c-dd# define debug_ddevin_frc /* Test coarse interpolation of 'uwnd' force */
-#define PASSIVE_TRACERS
+#if defined USWC_sample
 
 /* Include standard CPP switches for UP ETH Zurich */
 c-dd#include "cppdefs_UP.h"
@@ -107,32 +101,22 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 
 
 /* Switches required for Flux correction */
-c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
 #undef VFLX_CORR
 #undef QCORRECTION
-c-dd#define DQDT_DATA ! DevinD not entirely sure but dont think I need it
 c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
      /* Output */
 #define AVERAGES
 #undef SLICE_AVG
-/* DPD CALENDER is in def_his.F of Pierre's code but not mine  */
-c-dd#define CALENDAR '365_day'     /* netCDF CF-convention CALENDAR attribute default: '360_day' */
-c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars.F seemingly for netcdf stamp */
 
 #define ADV_ISONEUTRAL
 
      /* Biology */
 c-dd#define BIOLOGY_BEC2
 
-#define BULK_FLUX
-c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
-c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
+#define BULK_FRC
 #define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
-
-    /* Flux Analysis */
-c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 
     /* Tides */
 c-dd# define TIDES
@@ -146,122 +130,7 @@ c-dd-gone#  define TIDERAMP ! No longer using tideramp
 
 #elif defined WEC
 
-/* WEC */
-
-# undef ANA_WEC_FRC /* DEFINE FOR ANALYTICAL WEC */
-
-/* DevinD - from DH's analytical wave_packet cppdefs.h */
-
-# ifdef ANA_WEC_FRC
-#  undef VERBOSE
-#  define ANA_GRID
-#  define ANA_INITIAL
-#  define ANA_SMFLUX
-#  define ANA_SRFLUX
-#  define ANA_STFLUX
-#  undef ANA_SST
-
-#  undef SALINITY
-#  define ANA_SSFLUX
-#  define SOLVE3D
-#  define UV_ADV
-#  define NONLIN_EOS
-#  define SPLIT_EOS
-
-#  define EW_PERIODIC
-#  define NS_PERIODIC
-
-#  ifdef ANA_WEC_FRC
-#   define ANA_WWAVE
-#  endif
-#  ifdef WEC
-#   define ANA_WWAVE
-#   define BRK0
-#  endif
-
-# endif /* ANA_WEC_FRC */
-
-/* DevinD - end from DH's analytical wave_packet */
-
-/* DevinD - start DH's non-analytical WEC */
-
-# define USWC_WEC /* DEFINE FOR NON-ANALYTICAL WEC - US West Coast with WEC */
-
-/* -------------------------------------------------------  */
-
-# if defined USWC_WEC
-
-#  undef GRID_ANG_DEG
-#  define SOLVE3D
-#  define UV_COR
-#  define UV_ADV
-
-#  define CURVGRID
-#  define SPHERICAL
 #  define MASKING
-
-#  define SALINITY
-#  define NONLIN_EOS
-#  define SPLIT_EOS
-
-#  define AVERAGES /* DevinD uncommented */
-c# define EXACT_RESTART
-#  define NEW_S_COORD
-c# define IMPLICIT_BOTTOM_DRAG
-
-#  define UV_VIS2
-#  define MIX_GP_UV
-#  define TS_DIF2
-#  define MIX_GP_TS
-
-#  define LMD_MIXING
-#  define LMD_KPP
-#  define LMD_BKPP
-#  define LMD_CONVEC
-#  define LMD_NONLOCAL
-
-#  define OBC_WEST
-#  define OBC_EAST
-#  define OBC_NORTH
-#  define OBC_SOUTH
-
-#  define OBC_M2FLATHER
-#  define OBC_M3ORLANSKI
-#  define OBC_TORLANSKI
-
-#  define Z_FRC_BRY
-#  define M2_FRC_BRY
-#  define M3_FRC_BRY
-#  define T_FRC_BRY
-#  define SPONGE
-
-#  ifdef WEC
-#    define BRK0
-#    define SURFACE_BREAK
-#    undef SPEC_DD
-#    undef LOG_BDRAG
-#    undef WKB_WWAVE
-#    undef BBL
-#    define WAVE_OFFLINE
-#    define WAVE_FRICTION
-#    define BBL_S95
-c#    define BBL_F00
-#    define SUP_OFF
-#    define WAVE_DIFF_FROM_LM
-#  else
-#   define LOG_BDRAG
-#  endif
-#  define BULK_FLUX
-#  ifdef BULK_FLUX
-c---#   define COUPLED_SURF_CURR /* not used in new code */
-c---#   define WND_AT_RHO_POINTS /* Not needed in new code as wind converted to u/v */
-#   define BULK_FLUX_OUTPUT /* DevinD output flux variables to ncdf */
-#   define TAU_CORRECTION /* PierreD used to correct bulk flux towards measured data */
-#  endif
-
-# endif
-
-/* DevinD - end DH's non-analytical WEC */
 
 #endif
 

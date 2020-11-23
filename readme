@@ -1,0 +1,32 @@
+ROMS basic usage:
+-----------------
+
+See Documentation/ directory, for further instructions:
+
+   README.1.compile-ROMS - Info on getting roms to compile on your machine.
+   
+   README.2.model-setup  - How to configure roms for your specific simulation.
+
+Directories:
+------------
+
+Relevant:
+
+   Documentation/ - Your next step for more info...
+
+   src/           - The latest roms code is kept here.
+                    Do not modify code here! Use Work/ directory.
+
+   Examples/      - Collection of previously run examples, some
+                    without netcdf files (stored on cloud drive).
+                    
+   Tools-Roms/    - Useful pre & post processing tools can be compiled here.
+   
+   Work/          - Edit roms files here and compile simulations here.                
+                   
+Less relevant: (you're unlikely to use these)                   
+                 
+   Legacy/        - Old code no longer used in latest version of ROMS.
+   
+   NHMG/          - Non-hydrostatic modules   
+

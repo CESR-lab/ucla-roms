@@ -83,19 +83,9 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
      &       , itemp=1
 # ifdef SALINITY
      &       , isalt=2
-#  ifdef BIOLOGY
-     &       , NT=7, iNO3_=3, iNH4_=4, iDet_=5, iPhyt=6, iZoo_=7
-#  elif defined USWC_sample
      &       , NT=2
-#  else
-     &       , NT=2
-#  endif
 # else
      &       , NT=1
 # endif
 #endif
-
-!#ifdef PSOURCE
-!     &       , Msrc=10   ! Number of point sources
-!#endif
 

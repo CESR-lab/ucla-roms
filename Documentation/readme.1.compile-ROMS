@@ -1,0 +1,278 @@
+
+INSTRUCTIONS: COMPILING ROMS
+----------------------------
+
+  1. Get roms code (git repo):
+  
+     Ask a roms admin to give you access rights to the roms
+     repo. Once you have that and set up an account on
+     bitbucket.com, chose a location you want to store the 
+     code and then type the following:
+     git clone https://<user-name>@bitbucket.org/nmolem/ucla-roms.git
+
+  2. Set up environment variables:
+  
+     Edit your .bashrc file or .cshrc file depending on which shell you
+     are using (echo $SHELL) will tell you your shell.
+     See examples of .bashrc or .cshrc files in: 
+     Documentation/machine-specific/bashrc-cshrc-files
+     Load modules if on cluster such as Comet (through .bashrc).
+     You will need to ensure any variables listed in Makedefs.inc 
+     such as NETCDF, ROMS_ROOT, MPI_ROOT, etc, have a path set.
+     You can test this by typing e.g. 'echo $ROMS_ROOT' and it should
+     display where you keep your roms directory.
+     Typically, for best roms performance use intel compiler (ifort) 
+     and netcdf/mpi libraries that are also compiled using intel compilers.
+     
+  3. (Optional) Edit Makedefs.inc:
+  
+     Hopefully this step can be skipped. Return here if roms won't compile.
+     Depending on which cluster you are using, you might need to edit
+     this file. If you have compiling issues, then see the folder in
+     Documentation/machine-specific/Makedefs/ for examples that work 
+     on different clusters.     
+
+  4. (Optional) Compile NHMG library:
+  
+     Only if you are using non-hydrostatic library (you will know if you do)
+     you need to compile it once (and never again), as follows:
+     cd <roms-folder>/NHMG/src ; make clean
+     cd .. ; make (ignore the warnings)
+     cd .. ; 
+     Note, NHMG/src/Makefile may need to be edited for your machine, ask for
+     help if you have issues.
+
+  5. (Info only) Generate dependency list:
+  
+     This step is done automatically using 'make' in the Work/
+     directory so it's just here for your info:
+     'make depend'
+     This will update file "Make.depend" consistent with the
+     contents of all *.F files in the source code directory. 
+     See Tools-Roms/README for more info.
+     The dependency list is for the build automation program 'make'
+     to know if one source code file depends on another file.
+     
+  6. Compile & test roms:
+     
+     To ensure you can successfully compile roms and run roms on your machine,
+     quickly run the following test example as follows:
+     (this is even recommended for experienced roms users using the new code
+      for the first time...)
+     
+     A. Copy all files (excluding Makefile) in Examples/Rivers_ana/ to Work/ with:
+        Type: 'make copy_to_Work_dir'
+     B. Open Work/, Type 'make'.
+     C. Type './do_roms.sh' (after roms has successfully compiled)
+     D. (Optional) If using machine without 'ncjoin', see 'Roms tools' below
+        for info on getting ncjoin on your machine to view result.     
+     D. Type 'make work_clean' to empty Work/ directory for next step.
+        Note, Makefile must be left untouched in Work/ as it is part of the
+        tracked files on the repo.
+     
+  7. Compile your specifc simulation:
+
+     A. If you are running your own simulation, copy the only the files that you 
+        need to edit from src/ folder into the Work/ folder. If you are using an
+        example then also copy the files from Examples/... into Work/ (excluding Makefile) 
+     B. Open Work/. Edit your files as appropriate. See Documentation/README-model-setup  
+        for details on configuring roms for your simulation.
+        Type 'make'.
+     C. Copy 'roms' executable to wherever you are running your simulation.
+  
+     Never edit code in the src/ directory!     
+  
+          
+Recompiling roms:
+-----------------
+
+  A. Run 'make' to get the new roms executable.
+     Only the necessary files will recompile, so it will be faster than a
+     full compile.
+  
+  B. If cppdefs.h is changed, then with the new dependency generator, you
+     are required to update the dependency list with 'make depend', as it 
+     is effected by cppflags. 
+     This will be done automatically using the Work/ or Examples/ directory.
+     
+  C. If you change compiler options in Makedefs.inc, you should first run 
+     'make clean', and then 'make' to do a full rebuild.
+
+
+Roms tools:
+-----------
+
+     For roms tools, 'partit' for partitioning input files as per MPI decomposition,
+     and for 'ncjoin' for rejoining results files into one complete file.
+     cd Tools-Roms/
+     make
+     (Resulting executables will be there)
+     
+     
+Keeping code up to date:
+------------------------    
+     
+     The repo is periodically updated (daily/weekly). This will mean source code 
+     in the src/ folder can change. Also, additional examples may be added to Examples/.
+     To update your code to the latest version use the command: 'git pull'.
+     (If git complains, try using 'git stash' then 'git pull')
+     
+     Since you are editing code in the Work/ directory, your edited files will not be
+     affected. However, it is possibly that the file you have edited for your needs, e.g. 
+     bulk_frc.F, has been changed in the latest code update and hence in src/ directory, 
+     such that your version of bulk_frc.F in Work/ is no longer compatible with the code.
+     
+     This is not something that will happen often, but it is somewhere to look if your code
+     suddenly doesn't work. It is worth periodically comparing your edited files in Work/
+     against the respective file in src/ using a difference viewer such as 'meld'.
+     You can use 'meld' to merge in the new code changes into your version in Work/, such as 
+     the names of your variables in bulk_frc.F, if that is something you needed to change.
+     Important updates to the code will be broadcasted to users in an email.
+             
+
+Additional readme's:
+--------------------
+     
+     See readme-specifics for more detailed readme's on specific 
+     functionalities of roms.
+             
+             
+             
+*********************************             
+EXTRA READING MATERIAL BELOW ONLY (you're unlikely to need this)
+*********************************
+
+  
+     'make tools' will create auxiliary utility executable file named
+     "mpc".
+     "mpc" is an auxiliary multi-functional precompiler designed
+     to make .f files generated by CPP more human readable by
+     cleaning them from blank lines and comments, as well as to
+     perform certain code transformations and optimizations
+     (optionally). Read headers of files "mpc.F"
+     for more details. Once tools are build, it is not necessary
+     to rebuild them every time when compiling the model, unless
+     file "mpc.F" was modified.
+
+
+Instructions how to use Makefile to build ROMS/UCLA model.
+============ === == === ======== == ===== ========= ======
+There are three types of makefiles files associated with the
+ROMS/UCLA building procedure:
+
+  i. Makefile -- a universal machine independent makefile. This file
+     contains the list of source code files which determine the particular
+     model configuration to be build. User is free to add or delete files
+     from this configuration list at his/her own discretion without any
+     restrictions, depending on physical formulation of the problem. 
+
+ ii. Makedefs.inc:
+     Makedefs.machine_type (e.g., Makedefs.sgi, Makedefs.Linux): These files
+     contain definitions of rules, compilers and compiler options, which are
+     generally machine dependent. These files may be edited by the user in
+     order to insure optimal usage of the compiler flags for a particular
+     machine type or compiler.  
+
+iii. Make.depend -- an automatically generated list of dependencies. Usually
+     this list contains the names and dependencies of ALL source codes in the
+     directory regardless weather they are actually needed in the present
+     configuration or not. This file is practically machine independent.
+     This file should not be edited by the user under any circumstances,
+     instead use "made depend" to update it, should it be needed.
+
+
+Specifying libraries:
+========== ==========
+
+It is of ten the case that computer contains more than one version for each
+library: netCDF, HDF5, MPI, and their dependencies, as well as different
+versions of compilers.
+
+
+
+For ROMS it is always preferable to use Intel compiler for performance reasons.
+Especially if the machine Intel CPU.  Linux always comes with GCC compilers and
+they are available as default. In principle ROMS can be compiled using gfortran
+as well.  GCC/Gfortran is free, but Intel compiler is not (currently you can
+download free Intel compiler for Linux only if you are student, and Intel has
+way to verify this).
+
+It is desirable, but not strictly necessary that netCDF library (along with
+its dependencies) compiled using the same compiler, however sometimes it is
+not possible because compiler is not available (e.g., Intel Ifort Fortran
+compiler may or may not have matching C compiler installed on the
+machine.)
+
+Having N different version of libraries and M version of compilers in principle
+leads to N x M possibilities, some of which may be mutually incompatible,
+So...
+
+There are two ways to control which library is used when compiling ROMS
+or any other executable file:
+
+(1) specifying LD_LIBRARY_PATH
+
+(2) explicitly specifying path to library inside Makedefs.XXXX file
+
+
+The first one is kind of default; the second overrides it.  Note that ORDER
+of directories inside LD_LIBRARY_PATH DOES MATTER, as loader searches for the
+libraries by FORWARD scanning the sequence of directories and takes library
+on the first occasion.  Basically this means that if, say, file libnetcdff.so
+is present  in both /usr/lib64  (this is typically where Linux distribution
+puts it) AND in /usr/local/lib, and  LD_LIBRARY_PATH contains
+
+                    ..:/usr/lib64:/usr/local/lib:...
+
+among other things, loader takes the library from /usr/lib64 and ignores what
+is stored in the other directory.  This may or may not what one wants,
+depending on compiler you use.
+
+On all our machines all 3rd-party packages are located in /opt directory
+also known as /usr/local, and typically I compile everything there myself
+using Intel compiler.   On the other hand, libraries stored in /usr/lib64
+are compiled using GCC and come with Linux distribution.  This is to be
+kept in mind.
+
+Sometimes it is impossible to specify LD_LIBRARY_PATH  in .cshrc or .bashrc
+file because of conflicting demands, e.g., if one wants to use python which
+comes from Linux distribution and Python needs GCC-compiled netCDF library
+along with its dependencies.  At the same time he or she wantas to use
+Intel-compiled library for ROMS, so neither order of directories in
+LD_LIBRARY_PATH will suite for both.
+
+In this case your may set LD_LIBRARY_PATH  suitable for Python, but
+specify library directory inside Makedes.XXX file, say
+
+   LCDF = -L/opt/netcdf-4.2.1.1_largemem/lib -lnetcdff
+
+where -L option is the directory, and -l is library  name (meaning that
+the actual library file is called libnetcdff.so or  libnetcdff.a and file
+with such name (at least one or both) should be present in that directory.
+The rule is that when specifying -l the prefix "lib" and suffix ".so" or
+".a" should be omitted resulting in middle name, which is usually name of
+the package.
+
+Which file, .so or .a will be used by the loader: it depends on default
+policy setting, which is typically .so which is shared object (in windows
+world this is called dynamically shared library, or "dll").
+.so is not "compiled-in" into the executable, but is loaded at launch time.
+
+
+Another thing to know is that Linux loader actually looks first not for .so,
+or .a,  but rather for .la file, e.g., libnetcdff.la.  This is not the actual
+library, but it is a text file which contains library dependencies. It is for
+this reason one can get away with specifying only head library, while omitting
+all the dependencies: that is, the "ff" library is just fortran wrapper around
+C netCDF library, which itself needs hdf5 library, and hdf5 library netds zlib
+compression library, so the actual LCDF should look like
+
+  -L/opt/netcdf-4.3.3.1/lib -lnetcdff -lnetcdf -L/opt/hdf5-1.8.16/lib -lhdf5 \
+                                     -L/opt/zlib-1.2.8/lib -lz
+
+but instead one can get away with just specifying  -lnetcdff which is the first
+in the sequence. This is because -L/opt/netcdf-4.3.3.1/lib/libnetcdff.la file
+contains all the dependencies.
+
+
+

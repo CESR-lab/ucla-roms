@@ -43,6 +43,9 @@
       ! End of user inputs
       ! ****************************************************************
 
+      !-- Array of tracers
+      real, public :: t(GLOBAL_2D_ARRAY,N,3,NT)
+
       !-- Tracer variables (user input required in init_tracers)
       character*42, dimension(nt), public :: t_vname ! Short name
       character*60, dimension(nt), public :: t_lname ! long name
@@ -55,7 +58,7 @@
       ! Abstracted from user.
       ! Final tracer concentrations live in 't' in ocean3d.h
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
-      real                   :: t_data(GLOBAL_2D_ARRAY,2,NT)
+      real                   :: t_data(GLOBAL_2D_ARRAY,2,NT) ! Could set to zero here?
       integer, dimension(NT) :: t_grd_type  = 0
       integer, dimension(NT) :: t_file_indx = 0
       integer, dimension(NT) :: t_irec      = 0
@@ -147,7 +150,7 @@
 
         do j=jstrR,jendR
           do i=istrR,iendR
-            stflx(i,j,itrc)= 0.5 ! 0.
+            stflx(i,j,itrc)= 0.
           enddo
         enddo
 
