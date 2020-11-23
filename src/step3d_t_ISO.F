@@ -48,9 +48,8 @@ c--# define CONST_TRACERS
 #  endif
 # endif
      &                                                             )
-#  ifdef RIVER_SOURCE
       use river_frc
-#  endif
+
       use surf_flux, only: stflx, srflx
 
       use tracers, only: iTandS, t
@@ -753,6 +752,14 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             do i=istr,iend
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)*pn(i,j)
      &                                              *(FC(i,k)-FC(i,k-1))
+# ifdef PIPE_SOURCE
+              if (pipe_idx(i,j)>0) then
+                pidx = pipe_idx(i,j)
+                t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+     &            +dt*pm(i,j)*pn(i,j)*
+     &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
+              endif
+# endif
             enddo
           enddo
 

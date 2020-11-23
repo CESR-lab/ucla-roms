@@ -31,6 +31,8 @@
 ! below which vertical advection is fully explicit; "cu_max" is the
 ! maximum CN which the explicit component "We" is allowed to reach.
 
+      use river_frc
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 # include "param.h"
@@ -57,6 +59,7 @@ c**     dtau=(1.-1./6.)*dt
       endif
 
       do j=jstr,jend
+
         do i=istr,iend
           Wi(i,j,0)=0.
         enddo
@@ -64,6 +67,13 @@ c**     dtau=(1.-1./6.)*dt
           do i=istr,iend
             Wi(i,j,k)=Wi(i,j,k-1) -FlxU(i+1,j,k) +FlxU(i,j,k)
      &                            -FlxV(i,j+1,k) +FlxV(i,j,k)
+#ifdef PIPE_SOURCE
+            if (pipe_idx(i,j)>0) then
+              pidx = pipe_idx(i,j)
+              Wi(i,j,k)=Wi(i,j,k)
+     &             + pipe_flx(i,j)*pipe_prf(pidx,k)
+            endif
+#endif
 
             CX(i,k)=max(FlxU(i+1,j,k),0.)-min(FlxU(i,j,k),0.)
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)
@@ -78,7 +88,7 @@ c**     dtau=(1.-1./6.)*dt
         enddo                               ! number within Hz(i,j,k)
         do k=N-1,1,-1
           do i=istr,iend
-            Wi(i,j,k)=Wi(i,j,k)-wrk(i)*(z_w(i,j,k)-z_w(i,j,0))
+            Wi(i,j,k)=Wi(i,j,k)-wrk(i)*(z_w(i,j,k)-z_w(i,j,0))  !! this removes the grid motion
 
 c*          if (Wi(i,j,k) > 0.) then         ! Three different variants 
 c*            c2d=CX(i,k)   ; dh=Hz(i,j,k)   ! for computing 2D Courant 
