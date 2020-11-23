@@ -9,18 +9,7 @@
 !       there is no MPI-partitioning.
 
       integer, parameter ::
-#if defined ANA_WEC_FRC
-     &               LLm=1400, MMm=2, N=2    ! DevinD added
-#elif defined USWC_WEC || defined USWC_sample
-c     &               LLm=1600, MMm=800, N=50       ! US West Coast L2 DD
-c     &               LLm=1700, MMm=850, N=50       ! US West Coast L3 DD
-     &               LLm=199, MMm=99, N=50       ! test Devin L3 WEC DD
-
-#elif defined PACIFIC_PD
-c     &               LLm=930, MMm=480, N=60    ! Incorrect grid
-     &               LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
-c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
-#elif defined ANA_RIVER_USWC
+#if defined ANA_RIVER_USWC
      &               LLm=100, MMm=100, N=10 ! DevinD created USWC_sample
 #else
      &                LLm=??, MMm=??, N=??
@@ -35,14 +24,8 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 !                                             XI- and ETA-directions;
       integer, parameter ::
 #ifdef MPI
-# if defined ANA_WEC_FRC
-     &      NP_XI=8, NP_ETA=1, NSUB_X=1, NSUB_E=1  ! DevinD - analytical WEC
-# elif defined USWC_WEC || defined USWC_sample || defined ANA_RIVER_USWC
-     &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1 ! DevinD - WEC
-# elif defined ANA_RIVER_USWC
-	 &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1
-# elif defined PACIFIC_PD
-     &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
+# if defined ANA_RIVER_USWC
+     &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1
 # endif
 #else
      &      NSUB_X=??, NSUB_E=??
@@ -83,19 +66,9 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
      &       , itemp=1
 # ifdef SALINITY
      &       , isalt=2
-#  ifdef BIOLOGY
-     &       , NT=7, iNO3_=3, iNH4_=4, iDet_=5, iPhyt=6, iZoo_=7
-#  elif defined USWC_sample
      &       , NT=2
-#  else
-     &       , NT=2
-#  endif
 # else
      &       , NT=1
 # endif
 #endif
-
-!#ifdef PSOURCE
-!     &       , Msrc=10   ! Number of point sources
-!#endif
 

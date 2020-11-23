@@ -1,0 +1,29 @@
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! ROMS ROUTINES
+!!
+!! copied from actual ROMS scripts
+!!
+!! compile with:
+!! "cpp R_tools_fort.F R_tools_fort.f"
+!! "f2py -DF2PY_REPORT_ON_ARRAY_COPY=1 -c -m R_tools_fort R_tools_fort.f" for python use
+!!
+!! print R_tools_fort.rho_eos.__doc__
+!!
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+# include "set_global_definitions.h"
+# include "cppdefs.h"
+# include "rho_eos.F"
+# include "bvf_eos.F"
+# include "prsgrd.F"
+# include "rho_eos_v2.F"
+# include "prsgrd_nosplit.F"
+# include "prsgrd32ac1_momentum.F"
+# include "prsgrd32ac1_momentum_v2.F"
+
+
+

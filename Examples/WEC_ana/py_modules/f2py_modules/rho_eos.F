@@ -1,0 +1,221 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!Compute density anomaly (adapted from rho_eos.F)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine rho_eos(Lm,Mm,N, T,S, z_r,z_w,rho0, rho)
+
+
+
+!
+! Compute density anomaly from T,S via Equation Of State (EOS) for
+!-------- ------- ------- ----  for seawater. Following Jackett and 
+! McDougall, 1995, physical EOS is assumed to have form
+!
+!                           rho0 + rho1(T,S)
+!           rho(T,S,z) = ------------------------                 (1)
+!                         1 - 0.1*|z|/K(T,S,|z|)
+!
+! where rho1(T,S) is sea-water density perturbation[kg/m^3] at
+! standard pressure of 1 Atm (sea surface); |z| is absolute depth,
+! i.e. distance from free-surface to the point at which density is
+! computed, and
+!
+!     K(T,S,|z|) = K00 + K01(T,S) + K1(T,S)*|z| + K2(T,S)*|z|^2.  (2)
+!
+! To reduce errors of pressure-gradient scheme associated with
+! nonlinearity of compressibility effects, as well as to reduce
+! roundoff errors, the dominant part of density profile,
+!
+!                           rho0
+!                     ----------------                            (3)
+!                      1 - 0.1|z|/K00
+!
+! is removed from from (1). [Since (3) is purely a function of z,
+! it does not contribute to pressure gradient.]  This results in
+!
+!                   rho1 - rho0*[K01+K1*|z|+K2*|z|^2]/[K00-0.1|z|]
+!    rho1 + 0.1|z| -----------------------------------------------
+!                        K00 + K01 + (K1-0.1)*|z| + K2*|z|^2
+!                                                                 (4)
+! which is suitable for pressure-gradient calculation.
+!
+! Optionally, if CPP-switch SPLIT_EOS is defined, term proportional
+! to |z| is linearized using smallness 0.1|z|/[K00 + K01] << 1 and
+! the resultant EOS has form
+!
+!              rho(T,S,z) = rho1(T,S) + qp1(T,S)*|z|              (5)
+!
+! where
+!                            rho1(T,S) - rho0*K01(T,S)/K00
+!             qp1(T,S)= 0.1 -------------------------------       (6)
+!                                   K00 + K01(T,S)
+!
+! is stored in a special array.
+!
+! This splitting allows representation of spatial derivatives (and
+! also differences) of density as sum of adiabatic derivatives and
+! compressible part according to
+!
+!         d rho     d rho1           d qp1             d |z|
+!        ------- = -------- + |z| * -------  +  qp1 * -------     (7)
+!         d x,s      d x,s           d x,s             d x,s
+!
+!                  |<----- adiabatic ----->|   |<- compress ->|
+!
+! so that constraining of adiabatic derivative for monotonicity is
+! equivalent to enforcement of physically stable stratification.
+! [This separation and constraining algorithm is subsequently used
+! in computation of pressure gradient within prsgrd32ACx-family
+! schemes.]
+!
+! If so prescribed compute the Brunt-Vaisala frequency [1/s^2] at
+! horizontal RHO-points and vertical W-points,
+!
+!                          g    d rho  |
+!             bvf^2 = - ------ ------- |                          (8)
+!                        rho0    d z   | adiabatic
+!
+! where density anomaly difference is computed by adiabatically
+! rising/lowering the water parcel from RHO point above/below to
+! the W-point depth at "z_w".
+!
+! WARNING: Shared target arrays in the code below: "rho1",
+!          "bvf" (if needed), and
+!
+!          SPLIT_EOS is defined: "qp1"  ["rho" does not exist]
+!                   not defined  "rho"  ["qp1" does not exist]
+!
+!
+! Reference:  Jackett, D. R. and T. J. McDougall, 1995, Minimal
+!             Adjustment of Hydrostatic Profiles to Achieve Static
+!             Stability. J. Atmos. Ocean. Tec., vol. 12, pp. 381-389.
+!
+! << This equation of state formulation has been derived by Jackett
+! and McDougall (1992), unpublished manuscript, CSIRO, Australia. It
+! computes in-situ density anomaly as a function of potential
+! temperature (Celsius) relative to the surface, salinity (PSU),
+! and depth (meters).  It assumes  no  pressure  variation along
+! geopotential  surfaces,  that  is,  depth  and  pressure  are
+! interchangeable. >>
+!                                          John Wilkin, 29 July 92
+!
+
+
+      implicit none
+      integer Lm,Mm,N, imin,imax,jmin,jmax, i,j,k
+
+      real*8 T(0:Lm+1,0:Mm+1,N),  S(0:Lm+1,0:Mm+1,N),
+     &      z_r(0:Lm+1,0:Mm+1,N),  z_w(0:Lm+1,0:Mm+1,0:N),
+     &      rho(0:Lm+1,0:Mm+1,N),
+     &      rho1(0:Lm+1,0:Mm+1,N), qp1(0:Lm+1,0:Mm+1,N),
+     &      dpth,cff,cff2, Tt,Ts,sqrtTs, rho0, K0, dr00
+
+      real*8, parameter :: r00=999.842594,   r01=6.793952E-2,
+     &          r02=-9.095290E-3, r03=1.001685E-4,  r04=-1.120083E-6,
+     &                                              r05=6.536332E-9,
+     &          r10=0.824493,     r11=-4.08990E-3,  r12=7.64380E-5,
+     &                            r13=-8.24670E-7,  r14=5.38750E-9,
+     &          rS0=-5.72466E-3,  rS1=1.02270E-4,   rS2=-1.65460E-6,
+     &          r20=4.8314E-4,
+     &          K00=19092.56,     K01=209.8925,     K02=-3.041638,
+     &                            K03=-1.852732e-3, K04=-1.361629e-5,
+     &          K10=104.4077,     K11=-6.500517,    K12=0.1553190,
+     &                                              K13=2.326469e-4,
+     &          KS0=-5.587545,    KS1=+0.7390729,   KS2=-1.909078e-2,
+     &      qp2=0.0000172, g=9.81
+
+#  ifdef DUKO_2001
+      real rho1_0, K0_Duk
+#  endif
+
+      integer numthreads, trd, chunk_size, margin, jstr,jend
+
+
+Cf2py intent(in) Lm,Mm,N, T,S, z_r,z_w, rho0
+Cf2py intent(out) rho
+
+
+
+!!!!!!!!!!!!!!!!!!
+
+
+
+#  ifdef DUKO_2001
+      Tt=3.8D0
+      Ts=34.5D0
+      sqrtTs=sqrt(Ts)
+
+      dr00=r00-1000.D0
+
+      rho1_0=dr00 +Tt*( r01+Tt*( r02+Tt*( r03+Tt*( r04+Tt*r05 ))))
+     &                            +Ts*( R10+Tt*( r11+Tt*( r12+Tt*(
+     &                                              r13+Tt*r14 )))
+     &                   +sqrtTs*( rS0+Tt*( rS1+Tt*rS2 ))+Ts*r20 )
+
+      K0_Duk= Tt*( K01+Tt*( K02+Tt*( K03+Tt*K04 )))
+     &       +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
+     &            +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
+#  endif
+
+      dr00=r00-rho0
+
+      imin=0
+      imax=Lm+1
+      jmin=0
+      jmax=Mm+1
+
+
+      numthreads=1
+C$    numthreads=omp_get_num_threads()
+      trd=0
+C$    trd=omp_get_thread_num()
+      chunk_size=(jmax-jmin + numthreads)/numthreads
+      margin=(chunk_size*numthreads -jmax+jmin-1)/2
+      jstr=max(  trd   *chunk_size  -margin, jmin )
+      jend=min( (trd+1)*chunk_size-1-margin, jmax )
+
+
+
+
+      do j=jstr,jend
+        do k=1,N
+          do i=imin,imax
+            Tt=T(i,j,k)                   
+
+            Ts=max(S(i,j,k), 0.)
+            sqrtTs=sqrt(Ts)
+
+            rho1(i,j,k)=( dr00 +Tt*( r01+Tt*( r02+Tt*( r03+Tt*(
+     &                                           r04+Tt*r05 ))))
+     &                         +Ts*( r10+Tt*( r11+Tt*( r12+Tt*(
+     &                                            r13+Tt*r14 )))
+     &                              +sqrtTs*(rS0+Tt*(
+     &                                   rS1+Tt*rS2 ))+Ts*r20 ))
+
+            K0= Tt*( K01+Tt*( K02+Tt*( K03+Tt*K04 )))
+     &         +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
+     &              +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
+ 
+
+
+
+#   ifdef DUKO_2001
+            qp1(i,j,k)= 0.1D0*(rho0+rho1(i,j,k))*(K0_Duk-K0)
+     &                               /((K00+K0)*(K00+K0_Duk))
+#   else
+            qp1(i,j,k)=( 0.000649D0 +0.1D0*( K00*rho1(i,j,k)
+     &                             -rho0*K0)/(K00*(K00+K0)) )
+#   endif
+
+         rho(i,j,k) = rho1(i,j,k) +  qp1(i,j,k)*(z_w(i,j,N)-z_r(i,j,k))
+
+
+          enddo
+        enddo
+ 
+
+
+      enddo    ! <-- j
+
+      return
+      end

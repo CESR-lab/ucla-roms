@@ -1,5 +1,7 @@
 README for WEC analytical example:
 
+2020-11: DevinD - This is currently not compiling as WEC has changed somewhat.
+
 STEPS:
 1) Copy the roms executable into this same folder once ROMS is compiled for this WEC example
 2) In the terminal opened to this directory, enter the command: bash WEC_analytical_test_error_script.sh

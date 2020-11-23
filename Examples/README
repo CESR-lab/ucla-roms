@@ -1,9 +1,10 @@
-Work is not stored on repo so better to use.
+If you want to try one of the examples for your own project:
 
-If you want to modify one of the examples for your own project,
-copy the contents of an example directory into ../Work/.
-After that cd to ../Work and modify the files specific to your
-project in that directory
+1) copy the contents of an example directory into ../Work/ (except
+for the Makefile).
+2) cd to Work/
+3) Type 'make' to compile example.
+4) Type do_roms.sh to run example. 
 
 Available examples:
 

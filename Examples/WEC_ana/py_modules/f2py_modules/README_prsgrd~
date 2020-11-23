@@ -1,0 +1,34 @@
+=========================================================
+COMPUTATION OF THE PRESSURE GRADIENT USING F2PY IN PYTHON
+=========================================================
+
+STEPS:
+1) calculated density using rho_eos_V2
+2) calculate Hz,dn_u,dm_v in python
+3) call prsgrd() with all inputs
+
+
+
+IF SPLIT_EOS is defined:
+    Density needs to be calculated first using rho_eos_V2
+
+    rho_eos_V2 will return: rho,rho1,qp1,qp2 
+
+Also, need to input some grid-specific variables for prsgrd() function
+To maintain the nativeness of the ROMS code and for debugging purposes
+compute these 3 variables in python before calling the prsgrd() function
+
+	 Hz --> depths between z_w levels
+	 dn_u --> dn_u(i,j)=2./(pn(i,j)+pn(i-1,j))
+	 dm_v --> dm_v(i,j)=2./(pm(i,j)+pm(i,j-1))
+
+
+
+
+
+
+
+
+
+
+
