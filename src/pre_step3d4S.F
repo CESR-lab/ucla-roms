@@ -189,19 +189,6 @@
 ! monotonicity constraint; linear interpolation is considered obsolete,
 ! but the code is retained for reference].
 
-# ifdef PIPE_SOURCE
-      Q2d = 0
-      Q2d(25:25,25:25) = 10
-      do j=jstr,jend
-         do i=istr,iend
-            t(i,j,1,nnew,1)=t(i,j,1,nnew,1)
-     &           +dtau*pm(i,j)*pn(i,j)*Q2d(i,j)*20
-            t(i,j,1,nnew,2)=t(i,j,1,nnew,2)
-     &           +dtau*pm(i,j)*pn(i,j)*Q2d(i,j)*1
-         enddo
-      enddo 
-# endif
-
       do j=jstr,jend  !! Start of the giant j-loop
 
         do itrc=1,nt
@@ -211,6 +198,14 @@
             do i=istr,iend   !! t(..) is Hz*T
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            -dtau*pm(i,j)*pn(i,j)*(FC(i,k)-FC(i,k-1))
+# ifdef PIPE_SOURCE
+              if (pipe_idx(i,j)>0) then
+                pidx = pipe_idx(i,j)
+                t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+     &            +dtau*pm(i,j)*pn(i,j)*
+     &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
+              endif
+# endif
 
 # ifdef CONST_TRACERS
               t(i,j,k,nnew,itrc)=t(i,j,k,nstp,itrc)

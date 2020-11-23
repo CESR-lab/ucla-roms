@@ -1,14 +1,18 @@
       module river_frc
 
       ! ====================
-      ! RIVER FORCING MODULE
+      ! RIVER AND PIPES FORCING MODULE
       ! ====================
+
+      ! for pipes:  Qbar(nx,y), the total pipe flux for that grid point ! (m3/s) function of time
+      !             Qshape(npipes), the vertical shape of the pipe distribution ! fractions sum(Qshape) = 1
 
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
 
 #include "cppdefs.h"
-#ifdef RIVER_SOURCE
-      ! Contains all the neccesary components to produce the riv_uflx,riv_vflx
+#if defined RIVER_SOURCE || defined PIPE_SOURCE
+
+      ! Contains all the necessary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time
       ! riv_uflx, riv_vflx should be on faces between a masked and unmasked cell,
       ! in the direction of the unmasked cell.
@@ -26,6 +30,7 @@
       ! ****************************************************************
       ! user inputs
       integer,public,parameter :: nriv = 1 ! number of rivers
+      integer,public,parameter :: npip = 1 ! number of pipes
 #ifdef ANA_RIVER_FRC
       logical :: analytical = .true.      ! analytical or forcing files
 #else
@@ -33,6 +38,18 @@
 #endif
       ! end user inputs
       ! ****************************************************************
+
+      ! Variables used in the evolution equations
+      integer,public  :: pidx
+      integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe index
+
+      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_flx  ! pipe flux
+      real   ,public, dimension(npip,N)          :: pipe_prf  ! Pipe vertical profile
+      real   ,public, dimension(npip,nt)         :: pipe_trc  ! Pipe tracer conc.
+
+      ! These are multiplied in set_forces to produce pipe_flx
+      real,dimension(npip)            :: pipe_vol  ! Pipe volume
+      real,dimension(GLOBAL_2D_ARRAY) :: pflx      ! Pipe location
 
       ! Variables used for equation system calculations
       real,public, dimension(GLOBAL_2D_ARRAY) :: riv_uflx
@@ -265,5 +282,5 @@
       end subroutine calc_river_flux
 ! ----------------------------------------------------------------------
 
-# endif
+# endif /* ifdef RIVER_SOURCE */
       end module river_frc
