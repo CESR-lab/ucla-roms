@@ -147,6 +147,39 @@
 
 #endif /* SOLVE3D */
 
-
       subroutine ana_empty
       end
+
+! ----------------------------------------------------------------------
+# if defined RIVER_SOURCE
+      subroutine set_ana_river_frc
+      ! Analytical river forcing volume and tracer data
+
+      use river_frc
+      implicit none
+
+      ! Set river volume and tracer values for each time step
+      riv_vol(1)   = 5e2  ! Volume flux in m3/s
+      riv_trc(1,1) = 24.0 ! Temperature in  Degrees C
+      riv_trc(1,2) = 1.0  ! Salinity in PSU
+
+      end subroutine set_ana_river_frc
+#endif /* RIVER_SOURCE */
+
+! ----------------------------------------------------------------------
+# if defined PIPE_SOURCE
+      subroutine set_ana_river_frc
+      ! Analytical river forcing volume and tracer data
+
+      use river_frc
+      implicit none
+
+      ! Set river volume and tracer values for each time step
+      pip_vol(1)   = 5e2  ! Volume flux in m3/s
+      pip_trc(1,1) = 24.0 ! Temperature in  Degrees C
+      pip_trc(1,2) = 1.0  ! Salinity in PSU
+
+      end subroutine set_ana_river_frc
+#endif /* PIPE_SOURCE */
+! ----------------------------------------------------------------------
+

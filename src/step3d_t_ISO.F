@@ -48,9 +48,7 @@ c--# define CONST_TRACERS
 #  endif
 # endif
      &                                                             )
-#  ifdef RIVER_SOURCE
       use river_frc
-#  endif
       use surf_flux, only: stflx, srflx
 
       use tracers, only: iTandS, t

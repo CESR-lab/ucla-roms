@@ -8,12 +8,8 @@
 ! Mm    a single MPI-subdomain.  These are identical to LLm, MMm if
 !       there is no MPI-partitioning.
 
-      integer, parameter ::
-#if defined ANA_RIVER_USWC
-     &               LLm=100, MMm=100, N=10 ! DevinD created USWC_sample
-#else
-     &                LLm=??, MMm=??, N=??
-#endif
+!     integer, parameter ::   LLm=200, MMm=200, N=20
+      integer, parameter ::   LLm=100, MMm=100, N=10
 
 
 ! Domain subdivision parameters:
@@ -24,11 +20,9 @@
 !                                             XI- and ETA-directions;
       integer, parameter ::
 #ifdef MPI
-# if defined ANA_RIVER_USWC
      &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1
-# endif
 #else
-     &      NSUB_X=??, NSUB_E=??
+     &      NSUB_X=2, NSUB_E=2
 #endif
 
 ! Array dimensions and bounds of the used portions of sub-arrays
