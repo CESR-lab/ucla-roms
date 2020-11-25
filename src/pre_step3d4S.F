@@ -520,11 +520,11 @@
       do j=jstr,jend
         do i=istrU,iend
           if (abs(riv_uflx(i,j)).gt.1e-3) then
-            depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
+            riv_depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
      &                   +z_w(i  ,j,N)-z_w(i  ,j,0) )
             iriver = nint(riv_uflx(i,j)/10)
             riv_uvel = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)/
-     &                 ( dn_u(i,j)*depth)
+     &                 ( dn_u(i,j)*riv_depth)
             do k= 1,N
               u(i,j,k,nnew) = riv_uvel
             enddo
@@ -534,11 +534,11 @@
       do j=jstrV,jend
         do i=istr,iend
           if (abs(riv_vflx(i,j)).gt.1e-3) then
-            depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
+            riv_depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
      &                   +z_w(i,j  ,N)-z_w(i,j  ,0) )
             iriver = nint(riv_vflx(i,j)/10)
             riv_vvel = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)/
-     &                 ( dm_v(i,j)*depth)
+     &                 ( dm_v(i,j)*riv_depth)
             do k= 1,N
               v(i,j,k,nnew) = riv_vvel
             enddo

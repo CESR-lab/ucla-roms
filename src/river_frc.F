@@ -39,10 +39,10 @@
       real,public, dimension(GLOBAL_2D_ARRAY) :: riv_vflx
       real,public, dimension(nriv)     :: riv_vol  ! River volume
       real,public, dimension(nriv,nt)  :: riv_trc  ! River tracer conc.
-      real, dimension(GLOBAL_2D_ARRAY) :: rflx     ! Raw read in river locations
+      real,public, dimension(GLOBAL_2D_ARRAY) :: rflx ! River locations
 
       integer,public :: iriver
-      real,   public :: depth
+      real,   public :: riv_depth
       real,   public :: riv_uvel,riv_vvel
       real,   public :: river_flux
 
@@ -79,14 +79,13 @@
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
 
-      if(analytical) then
-#ifdef ANA_RIVER_FRC
-        call set_ana_river_frc(istr,iend,jstr,jend)
-#endif
-      else
+      ! Initialize river flux locations (One time only)
+      if(FIRST_TIME_STEP) call init_river_frc(istr,iend,jstr,jend)
 
-        ! Read in river flux locations (once off)
-        if(FIRST_TIME_STEP) call init_river_frc(istr,iend,jstr,jend)
+      ! Set river flux volumes and tracer data
+      if(analytical) then
+        call set_ana_river_frc
+      else
 
         ! Set river volume flux for all rivers at current time
         call set_small_arrays(
@@ -130,106 +129,34 @@
       ! local
       integer :: ierr,ncid,v_id
 
-      ! Read 'river_flux' (River mouth locations)
       ! Should put this in wrapper in read_write.F as 'nc_read_once'
-      ierr=nf90_open(grdname, nf90_nowrite, ncid)
-      ierr=nf90_inq_varid(ncid, riv_flx_name, v_id)
-      ! 0 for only one record, 100 to prevent land masking in ncdf_read_mod as rivers
-      ! defined on land cells only.
-      ierr=ncdf_read_mod(ncid, v_id, 0, 100, rflx(START_2D_ARRAY), 1)
-      if(ierr/=0) call handle_ierr(ierr,'init_river:: riv not in gridfile!')
+      if (analytical) then
 
-      ! compute uflx,vflx from rflx
+        ! rflx is defined in ana_grid
+
+      else ! Read 'river_flux' from grid file (River mouth locations)
+        ierr=nf90_open(grdname, nf90_nowrite, ncid)
+        ierr=nf90_inq_varid(ncid, riv_flx_name, v_id)
+        ! 0 for only one record, 100 to prevent land masking in ncdf_read_mod as rivers
+        ! defined on land cells only.
+        ierr=ncdf_read_mod(ncid, v_id, 0, 100, rflx(START_2D_ARRAY), 1)
+        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
+
+      endif
+
+      ! Compute uflx,vflx from rflx
       call calc_river_flux(istr,iend,jstr,jend)
 
       if(mynode==0) print*, 'rivers: read in river locations'
           
       end subroutine init_river_frc
+
 ! ----------------------------------------------------------------------
-
-#ifdef ANA_RIVER_FRC
-      subroutine set_ana_river_frc(istr,iend,jstr,jend)
-      ! Analytical river forcing data
-      implicit none
-
-      ! inputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
-      ! Set up river mouth locations and flux ratios (only once)
-      if(FIRST_TIME_STEP) call init_ana_river_frc(istr,iend,jstr,jend)
-
-      ! Set river volume and tracer values for each time step
-      riv_vol(1)=5e2
-      riv_trc(1,1)=24.0 ! Temp DegC
-      riv_trc(1,2)=1.0  ! PSU
-
-      ! Calculate conservations of volume, temp and salt
-!      call calc_ana_conservations(istr,iend,jstr,jend)
-
-      end subroutine set_ana_river_frc
-#endif /* ANA_RIVER_FRC */
-! ----------------------------------------------------------------------
-
-#ifdef ANA_RIVER_FRC
-      subroutine init_ana_river_frc(istr,iend,jstr,jend)
-
-      ! Initialize river forcing:
-      ! Set locations of river mouths and flux contribution per cell.
-      ! Done only once as river mouth position does not change.
-
-      implicit none
-
-      ! inputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
-      ! local
-      integer :: i,loop,riv_cells=0
-      real :: riv_west, riv_east
-
-      ! grid.h needed for yr(i,j)
-#include "compute_extended_bounds.h"
-
-      rflx=0 ! Set all river values to zero
-
-      ! Create river locations and proportion of flux in rflx(i,j)
-      riv_west=xl*4/10 ! River west bank at 40% from west
-      riv_east=xl*6/10 ! River west bank at 60% from west
-      do loop=1,2 ! Do extra loop to count number of river cells for ratio
-        do i=istrR,iendR
-          ! Doesn't extend north beyond land
-          if(SOUTHERN_EDGE) then ! Can go outside loop
-            ! Need row (j==jstr) of mask in
-            ! river as river forcing can only be from land cells
-            if(xr(i,jstr)>riv_west .and. xr(i,jstr)<riv_east) then
-              ! First loop just count number of river cells
-              if(loop==1) then
-                riv_cells=riv_cells+1
-              ! Second loop actually set srflx value now no. riv_cells known
-              elseif(loop==2) then
-                rflx(i,jstr)=1.0+1.0/riv_cells
-              endif
-            endif
-          endif
-        enddo
-      enddo
-
-      if(mynode==1) print*,'riv_cells= ',riv_cells,'cell_ratio= ',1.0/riv_cells
-
-      ! Calculate the river flux contributions to each cell
-      call calc_river_flux(istr,iend,jstr,jend)
-
-      if(mynode==0) print*, 'rivers: created analytical river locations'
-
-      end subroutine init_ana_river_frc
-#endif /* ANA_RIVER_FRC */
-! ----------------------------------------------------------------------
-
       subroutine calc_river_flux(istr,iend,jstr,jend)
       ! Calculate the river flux contributions to each cell.
       ! river_flux = iriver + fraction of river's flux through grid point.
       ! E.g. River 3 is over 2 grid points (half flux through each point),
-      ! hence river_flux = 3 + 0.5 = 3.5.
-
+      ! hence river_flux = 3 + 0.5 = 3.5
       implicit none
 
       ! inputs
