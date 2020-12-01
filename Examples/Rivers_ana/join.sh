@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/bash
 
 ncjoin --delete river_ana_his*.?.nc
 ncjoin --delete grid.?.nc

@@ -1,0 +1,60 @@
+# CSHRC FOR MAYA 2020-12 - DEVIND
+
+# NEEDED FOR ROMS 2020-12
+
+# user defined: 
+setenv ROMS_ROOT /home/ddevin/repos-devin-maya/ucla-roms
+
+# should be the same for all maya users:
+setenv NETCDFHOME /opt/netcdf-4.6.1
+setenv MPIHOME /opt/mpich-3.2
+
+# Should not need to alter:
+#  Set MPI variables:
+setenv PATH $MPIHOME/bin:$PATH
+setenv LD_LIBRARY_PATH $MPIHOME/lib
+#  NetCDF
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${NETCDFHOME}/lib
+#  CPATH needed to find .mod files for modules
+setenv CPATH /opt/mpich-3.2/include
+setenv CPATH ${ROMS_ROOT}:$CPATH
+setenv CPATH ${NETCDFHOME}/include:${CPATH}
+#  adds roms tools to path (you still need to build them first)
+setenv PATH ${PATH}:$ROMS_ROOT/Tools-Roms
+
+
+# **** NOT ROMS RELATED BELOW **** #
+
+# Environmental variables related to Intel
+set IFC_ROOT = /home/intel/composer_xe_2013_sp1.3.174
+
+if (`uname -m` == x86_64) then
+        set IFC_ARCH_TYPE = intel64
+else
+        set IFC_ARCH_TYPE = ia32
+endif
+setenv PATH ${IFC_ROOT}/bin/${IFC_ARCH_TYPE}:${PATH}
+setenv LD_LIBRARY_PATH ${IFC_ROOT}/compiler/lib/${IFC_ARCH_TYPE}:$LD_LIBRARY_PATH
+setenv MANPATH ${IFC_ROOT}/man
+
+# limit stacksize unlimited
+unlimit
+
+# NCO tools (ncdiff, ncdump, etc)
+setenv NCO_ROOT /opt/nco-4.3.1
+setenv PATH ${NCO_ROOT}/bin:${PATH}
+
+# from Jeroen's cshrc (not sure that I need this)
+setenv PATH ${PATH}:/usr/local/bin:/usr/bin:/bin:/opt/bin:/opt/include
+setenv PATH ./:$PATH
+setenv MANPATH /usr/local/man:/usr/share/man:$MANPATH
+
+# For python anaconda
+setenv PATH /home/ddevin/anaconda1/bin:$PATH
+
+# aliasses
+alias lt 'ls -lth | head -20'
+alias ltr 'ls -lhtr | tail -20'
+
+
+

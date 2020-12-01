@@ -22,8 +22,14 @@ srcscheck
 Examples/*/Compile
 Examples/*/*.nc
 Examples/*/fort*
-Work/
 setup_kwds.F
 check_switches1.F
 check_srcs.F
-Tools-Roms/cross_matrix
+Work/*.F
+Work/*.h
+Work/*.sh
+
+# DevinD related ignores:
+.settings
+.project
+.cproject
