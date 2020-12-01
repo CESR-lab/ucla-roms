@@ -1,0 +1,28 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# NEEDED FOR ROMS ON COMET 2020-11
+
+#  comet user-defined - path to where you have cloned the repo code
+export ROMS_ROOT=~/repos/ucla-roms
+#  comet non-user defined (same for everyone)
+module purge 
+module load intel 
+module load mvapich2_ib/2.3.2
+module load netcdf
+module load ncview/2.1.7
+#  adds roms tools to path (you still need to build them first)
+export PATH=$PATH:$ROMS_ROOT/Tools-Roms
+
+
+# DEVIND COMMANDS ONLY (NOT ROMS RELATED):
+
+export SCRATCH=/oasis/scratch/comet/ddevin/temp_project
+alias ls='ls --color=auto'
+alias qstat='squeue -u ddevin'
+alias scratch='cd /oasis/scratch/comet/ddevin/temp_project/RUNS'
+alias lt='ls -lth | head -20'

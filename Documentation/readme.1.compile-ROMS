@@ -13,12 +13,14 @@ INSTRUCTIONS: COMPILING ROMS
   2. Set up environment variables:
   
      Edit your .bashrc file or .cshrc file depending on which shell you
-     are using (echo $SHELL) will tell you your shell.
+     are using ('echo $SHELL' will tell you your shell).
+     Note, even users of old ROMS code must do this, as environment
+     variable names have changed, e.g. MPI_ROOT -> MPIHOME.
      See examples of .bashrc or .cshrc files in: 
      Documentation/machine-specific/bashrc-cshrc-files
      Load modules if on cluster such as Comet (through .bashrc).
      You will need to ensure any variables listed in Makedefs.inc 
-     such as NETCDF, ROMS_ROOT, MPI_ROOT, etc, have a path set.
+     such as NETCDFHOME, ROMS_ROOT, MPIHOME, etc, have a path set.
      You can test this by typing e.g. 'echo $ROMS_ROOT' and it should
      display where you keep your roms directory.
      Typically, for best roms performance use intel compiler (ifort) 
@@ -32,15 +34,14 @@ INSTRUCTIONS: COMPILING ROMS
      Documentation/machine-specific/Makedefs/ for examples that work 
      on different clusters.     
 
-  4. (Optional) Compile NHMG library:
+  4. Compile NHMG library:
   
-     Only if you are using non-hydrostatic library (you will know if you do)
-     you need to compile it once (and never again), as follows:
-     cd <roms-folder>/NHMG/src ; make clean
-     cd .. ; make (ignore the warnings)
-     cd .. ; 
-     Note, NHMG/src/Makefile may need to be edited for your machine, ask for
-     help if you have issues.
+     Regardless of whether you use the non-hydrostatic library
+     you need to compile NHMG once (and never again), as follows:
+     cd Work/
+     make nhmg 
+     (Note, NHMG/src/Makefile may need to be edited for your machine, 
+     ask for help if 'make' fails.)
 
   5. (Info only) Generate dependency list:
   
@@ -61,12 +62,13 @@ INSTRUCTIONS: COMPILING ROMS
       for the first time...)
      
      A. Copy all files (excluding Makefile) in Examples/Rivers_ana/ to Work/ with:
-        Type: 'make copy_to_Work_dir'
+        cd Examples/Rivers_ana
+        make copy_to_Work_dir
      B. Open Work/, Type 'make'.
-     C. Type './do_roms.sh' (after roms has successfully compiled)
+     C. Type './do_run.sh' (after roms has successfully compiled)
      D. (Optional) If using machine without 'ncjoin', see 'Roms tools' below
         for info on getting ncjoin on your machine to view result.     
-     D. Type 'make work_clean' to empty Work/ directory for next step.
+     E. Type 'make work_clean' to empty Work/ directory for next step.
         Note, Makefile must be left untouched in Work/ as it is part of the
         tracked files on the repo.
      

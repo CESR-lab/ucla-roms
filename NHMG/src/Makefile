@@ -6,11 +6,14 @@
 FC = ifort
 
 # Normal options for the compiler
-#FFLAGS =  -O3 -fp-model source -I/opt/mpich-3.2/include/
-FFLAGS =  -O3 -fp-model source -I/home/devin/mpich-install/include
+FFLAGS =  -O3 -fp-model source
 
 # Debugging options for the compiler
 #FFLAGS =  -g -check -warn
+
+# Library paths:
+VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
+CPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
 
 # Rule to make *.o out of *.f90
 %.o : %.f90
