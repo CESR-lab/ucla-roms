@@ -1,14 +1,18 @@
       module river_frc
 
       ! ====================
-      ! RIVER FORCING MODULE
+      ! RIVER AND PIPES FORCING MODULE
       ! ====================
+
+      ! for pipes:  Qbar(nx,y), the total pipe flux for that grid point ! (m3/s) function of time
+      !             Qshape(npipes), the vertical shape of the pipe distribution ! fractions sum(Qshape) = 1
 
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
 
 #include "cppdefs.h"
-#ifdef RIVER_SOURCE
-      ! Contains all the neccesary components to produce the riv_uflx,riv_vflx
+#if defined RIVER_SOURCE || defined PIPE_SOURCE
+
+      ! Contains all the necessary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time
       ! riv_uflx, riv_vflx should be on faces between a masked and unmasked cell,
       ! in the direction of the unmasked cell.
@@ -26,13 +30,25 @@
       ! ****************************************************************
       ! user inputs
       integer,public,parameter :: nriv = 1 ! number of rivers
+      integer,public,parameter :: npip = 1 ! number of pipes
 #ifdef ANA_RIVER_FRC
-      logical :: analytical = .true.      ! analytical or forcing files
+      logical :: analytical = .true.      ! analytical forcing 
 #else
-      logical :: analytical = .false.      ! analytical or forcing files
+      logical :: analytical = .false.     ! forcing netcdf files
 #endif
       ! end user inputs
       ! ****************************************************************
+
+      ! Variables used in the evolution equations
+      integer,public  :: pidx
+      integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe index
+      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_frc  ! pipe fractional flux
+
+      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_flx  ! pipe flux
+      real   ,public, dimension(npip,N)          :: pipe_prf  ! Pipe vertical profile
+      real   ,public, dimension(npip,nt)         :: pipe_trc  ! Pipe tracer conc.
+
+      real   ,public, dimension(npip)            :: pipe_vol  ! Pipe volume
 
       ! Variables used for equation system calculations
       real,public, dimension(GLOBAL_2D_ARRAY) :: riv_uflx
@@ -84,7 +100,13 @@
 
       ! Set river flux volumes and tracer data
       if(analytical) then
-        call set_ana_river_frc
+!       if(mynode==0) print*, 'rivers: going to set_ana'
+        call set_ana_river_frc 
+!       if(mynode==0) print*, 'rivers: going to set_ana_pip'
+#if defined PIPE_SOURCE
+        call set_ana_pipe_frc
+#endif
+!       if(mynode==0) print*, 'rivers: going to set_ana'
       else
 
         ! Set river volume flux for all rivers at current time
@@ -147,7 +169,7 @@
       ! Compute uflx,vflx from rflx
       call calc_river_flux(istr,iend,jstr,jend)
 
-      if(mynode==0) print*, 'rivers: read in river locations'
+      if(mynode==0) print*, 'rivers: init river and pipe locations'
           
       end subroutine init_river_frc
 
@@ -192,5 +214,5 @@
       end subroutine calc_river_flux
 ! ----------------------------------------------------------------------
 
-# endif
+# endif /* ifdef RIVER_SOURCE */
       end module river_frc

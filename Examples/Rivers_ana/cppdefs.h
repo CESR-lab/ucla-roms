@@ -23,11 +23,11 @@ c--#endif
 #if defined ANA_RIVER_USWC
 
 # define RIVER_SOURCE
+# define PIPE_SOURCE
 # define ANA_RIVER_FRC
 
 # ifdef ANA_RIVER_FRC
 #  define ANA_GRID
-c-dd#  define ANA_BRY
 #  define ANA_INITIAL
 #  define ANA_SMFLUX
 #  define ANA_SRFLUX
