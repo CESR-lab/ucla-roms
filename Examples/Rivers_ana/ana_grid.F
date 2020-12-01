@@ -45,11 +45,12 @@
       real, parameter ::
      &       Size_XI = 1.0e4,   Size_ETA= 1.0e4,
      &       depth=5.,          max_depth=100.0,
-     &       f0=1.0e-4,            beta=0.
+     &       f0=0.0e-4,            beta=0.
 
       real cff,y, x0,y0,dx,dy
       real dh, shelf, slope, land, coast
       real riv_west, riv_east,riv_cells
+      real psz,px,py,pipe_cells
 
 # include "grid.h"
 # include "scalars.h"
@@ -138,6 +139,25 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
             ! find 'coastline' masked cells
             if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
               rflx(i,j) = 1.0+1.0/riv_cells
+            endif
+          endif
+        enddo
+      enddo
+#endif
+
+#if defined PIPE_SOURCE
+      psz = xl*0.02 ! Width of the pipe
+      px  = xl*.5  ! x location pipe 
+      py  = el*.5  ! y location pipe 
+      pipe_cells = nint(psz/dx)**2 !number of cells in this pipe
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          pipe_frc(i,j) = 0.0
+          pipe_idx(i,j) = 0
+          if (xr(i,j)> px-0.5*psz .and. xr(i,j)<px+0.5*psz) then
+            if (yr(i,j)> py-0.5*psz .and. yr(i,j)<py+0.5*psz) then
+               pipe_frc(i,j) = 1.0/pipe_cells
+               pipe_idx(i,j) = 1
             endif
           endif
         enddo

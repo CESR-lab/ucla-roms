@@ -23,9 +23,7 @@
      &                           rubar,rvbar, urhs,vrhs,  DUon,DVom,
      &                                       Drhs, UFx,UFe,VFx,VFe)
 
-#ifdef RIVER_SOURCE
       use river_frc
-#endif
 
 #ifdef WEC
       use wec_frc
@@ -160,10 +158,7 @@
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
 #ifdef PIPE_SOURCE
-          zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*Q2d(i,j)
-          if (Q2d(i,j)>0) then
-             write(*,*) 'Q2D', i,j
-          endif
+          zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
 #endif
 #ifdef MASKING
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed

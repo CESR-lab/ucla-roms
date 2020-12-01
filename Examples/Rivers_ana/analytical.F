@@ -159,27 +159,48 @@
       implicit none
 
       ! Set river volume and tracer values for each time step
-      riv_vol(1)   = 5e2  ! Volume flux in m3/s
+      riv_vol(1)   = 0e2  ! Volume flux in m3/s
       riv_trc(1,1) = 24.0 ! Temperature in  Degrees C
-      riv_trc(1,2) = 1.0  ! Salinity in PSU
+      riv_trc(1,2) =  1.0  ! Salinity in PSU
 
       end subroutine set_ana_river_frc
 #endif /* RIVER_SOURCE */
 
 ! ----------------------------------------------------------------------
 # if defined PIPE_SOURCE
-      subroutine set_ana_river_frc
-      ! Analytical river forcing volume and tracer data
+      subroutine set_ana_pipe_frc(istr,iend,jstr,jend)
+      ! Analytical pipe forcing volume and tracer data
 
       use river_frc
       implicit none
 
-      ! Set river volume and tracer values for each time step
-      pip_vol(1)   = 5e2  ! Volume flux in m3/s
-      pip_trc(1,1) = 24.0 ! Temperature in  Degrees C
-      pip_trc(1,2) = 1.0  ! Salinity in PSU
+      ! input/outputs
+      integer,intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer :: i,j,ip
 
-      end subroutine set_ana_river_frc
+      ! Set river volume and tracer values for each time step
+      pipe_vol(1)   = 5e2  ! Volume flux in m3/s
+      pipe_trc(1,1) = 24.0 ! Temperature in  Degrees C
+      pipe_trc(1,2) =  1.0  ! Salinity in PSU
+
+      pipe_prf(1,:) = 0.0  ! Dispersion profile
+      pipe_prf(1,1) = 0.5  ! Dispersion profile
+      pipe_prf(1,2) = 0.5  ! Dispersion profile
+
+      pipe_flx = pipe_frc*pipe_vol(1)
+!     do j = jstr,jend
+!       do i = istr,iend
+!         pipe_flx(i,j) = 0.0
+!         if (pipe_idx(i,j) > 0) then
+!           pidx = pipe_idx(i,j)
+!           pipe_flx(i,j) = pipe_frc(i,j)*pipe_vol(pidx)
+!         endif
+!       enddo
+!     enddo
+
+
+      end subroutine set_ana_pipe_frc
 #endif /* PIPE_SOURCE */
 ! ----------------------------------------------------------------------
 
