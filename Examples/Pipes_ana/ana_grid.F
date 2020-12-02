@@ -30,7 +30,7 @@
 ! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
 
-      use river_frc
+      use pipe_frc
       implicit none
       integer istr,iend,jstr,jend, i,j
 # include "param.h"
@@ -131,14 +131,19 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-#if defined RIVER_SOURCE
-      riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
+#if defined PIPE_SOURCE
+      psz = xl*0.02 ! Width of the pipe
+      px  = xl*.5  ! x location pipe 
+      py  = el*.5  ! y location pipe 
+      pipe_cells = nint(psz/dx)**2 !number of cells in this pipe
       do j=jstrR,jendR
         do i=istrR,iendR
-          if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
-            ! find 'coastline' masked cells
-            if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-              rflx(i,j) = 1.0+1.0/riv_cells
+          pipe_ratio(i,j) = 0.0
+          pipe_idx(i,j) = 0
+          if (xr(i,j)> px-0.5*psz .and. xr(i,j)<px+0.5*psz) then
+            if (yr(i,j)> py-0.5*psz .and. yr(i,j)<py+0.5*psz) then
+               pipe_ratio(i,j) = 1.0/pipe_cells
+               pipe_idx(i,j) = 1
             endif
           endif
         enddo

@@ -25,7 +25,7 @@ all:
 #       stop if no .h or .F files in current directory.
 
 clean_compile:
-	rm roms; cd Compile; make clean
+	rm roms; rm -r Compile/
 	
 work_clean:
 	rm -r Compile/ *.F *.h *.in *.sh *.nc roms 2>/dev/null || :	
