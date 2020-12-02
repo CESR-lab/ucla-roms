@@ -34,8 +34,10 @@
 
 # if defined BULK_FRC
       use bulk_frc,  only: set_bulk_frc_tile
-# else
-      use flux_frc,  only: set_flux_frc
+# endif
+! Can't have #else here because makedepf90 doesn't pick up flux_frc for set_forces
+# if !defined BULK_FRC
+      use flux_frc
 # endif
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
@@ -43,6 +45,7 @@
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
+      use pipe_frc
 # ifdef WEC
       use wec_frc
 # endif
@@ -156,6 +159,10 @@ c***              no code here
 
 # ifdef RIVER_SOURCE
       call set_river_frc_tile(istr,iend,jstr,jend)
+#  endif
+
+# ifdef PIPE_SOURCE
+      call set_pipe_frc_tile(istr,iend,jstr,jend)
 #  endif
 
 # ifdef WEC

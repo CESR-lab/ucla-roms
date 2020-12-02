@@ -18,6 +18,12 @@ INSTRUCTIONS: COMPILING ROMS
      variable names have changed, e.g. MPI_ROOT -> MPIHOME.
      See examples of .bashrc or .cshrc files in: 
      Documentation/machine-specific/bashrc-cshrc-files
+     For existing ROMS user's who might want to use a version pre 2020/12/01
+     as well, then you should only need to add MPIHOME exactly as your
+     existing MPI_ROOT and same for NETCDFHOME as your NETCDF, in addition 
+     to what you already have. Now both old version and new version of roms 
+     should work.
+     
      Load modules if on cluster such as Comet (through .bashrc).
      You will need to ensure any variables listed in Makedefs.inc 
      such as NETCDFHOME, ROMS_ROOT, MPIHOME, etc, have a path set.
@@ -109,6 +115,8 @@ Roms tools:
      cd Tools-Roms/
      make
      (Resulting executables will be there)
+     If you add 'export PATH=$PATH:$ROMS_ROOT/Tools-Roms' to your bashrc file you
+     will then have access to those tools from any directory (see example bashrc files).
      
      
 Keeping code up to date:

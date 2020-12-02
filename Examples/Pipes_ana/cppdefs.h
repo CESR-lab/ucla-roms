@@ -5,7 +5,7 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define ANA_RIVER_USWC
+#define ANA_PIPES
 
 /*
     Embedded (nested) grid configuration segment
@@ -20,19 +20,19 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
-#if defined ANA_RIVER_USWC
+#if defined ANA_PIPES
 
-# define RIVER_SOURCE
-# define ANA_RIVER_FRC
+# define PIPE_SOURCE
+# define ANA_PIPE_FRC
 
-# ifdef ANA_RIVER_FRC
+# ifdef ANA_PIPE_FRC
 #  define ANA_GRID
 #  define ANA_INITIAL
 #  define ANA_SMFLUX
 #  define ANA_SRFLUX
 #  define ANA_STFLUX
 #  define ANA_SSFLUX
-# endif /* ANA_RIVER_FRC */
+# endif /* ANA_PIPE_FRC */
 
         /* Basics */
 # define SOLVE3D

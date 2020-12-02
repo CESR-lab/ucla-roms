@@ -14,7 +14,11 @@ To compile tools:
                 folder for manual install if necessary.
                 The program is able to detect cppflags, e.g. if you turn on WEC flag,
                 be sure to run 'make depend' again, as now more files will depend
-                on wec_frc.F module.
+                on wec_frc.F module. 
+                HOWEVER, it does not seem to be able to handle if-else with cppflags. 
+                I found this with flux_frc in set_forces, where
+                it had #if def BULK_FRC / # else (flux_frc), but then in Make.depend
+                set_forces had no dependence on flux_frc.
                 If compiled with -Wconfused then it will print warnings when confused.
                 
                 Source code: https://salsa.debian.org/science-team/makedepf90

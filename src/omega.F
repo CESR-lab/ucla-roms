@@ -31,7 +31,7 @@
 ! below which vertical advection is fully explicit; "cu_max" is the
 ! maximum CN which the explicit component "We" is allowed to reach.
 
-      use river_frc
+      use pipe_frc
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
