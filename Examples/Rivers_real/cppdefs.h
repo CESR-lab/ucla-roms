@@ -5,7 +5,6 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
 #define USWC_sample
 
 /*
@@ -21,27 +20,9 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
-#if defined PACIFIC_PD || defined USWC_sample
-/* PierreD's pacific coast model */
+#if defined USWC_sample
 
-c-dd# define RIVER_SOURCE
-# define PIPE_SOURCE
-
-c-dd# define WEC
-# ifdef WEC
-#    define BRK0
-#    define SURFACE_BREAK
-#    undef SPEC_DD
-#    undef LOG_BDRAG
-#    undef WKB_WWAVE
-#    undef BBL
-#    define WAVE_OFFLINE
-#    define WAVE_FRICTION
-#    define BBL_S95
-c#    define BBL_F00
-#    define SUP_OFF
-#    define WAVE_DIFF_FROM_LM
-# endif /* WEC */
+# define RIVER_SOURCE
 
 /* Include standard CPP switches for UP ETH Zurich */
 c-dd#include "cppdefs_UP.h"
@@ -124,16 +105,12 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
 #undef VFLX_CORR
 #undef QCORRECTION
-c-dd#define DQDT_DATA ! DevinD not entirely sure but dont think I need it
 c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
      /* Output */
 #define AVERAGES
 #undef SLICE_AVG
-/* DPD CALENDER is in def_his.F of Pierre's code but not mine  */
-c-dd#define CALENDAR '365_day'     /* netCDF CF-convention CALENDAR attribute default: '360_day' */
-c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars.F seemingly for netcdf stamp */
 
 #define ADV_ISONEUTRAL
 
@@ -141,23 +118,8 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
 c-dd#define BIOLOGY_BEC2
 
 c-dd#define BULK_FRC
-c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
-c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
 
-    /* Flux Analysis */
-c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
-
-    /* Tides */
-#ifdef PACIFIC_PD
-# define TIDES
-#endif
-# ifdef TIDES
-#  define POT_TIDES
-#  define SSH_TIDES
-#  define UV_TIDES
-c-dd-gone#  define TIDERAMP ! No longer using tideramp
-# endif
 
 #endif
 

@@ -41,7 +41,7 @@
       real,public, dimension(nriv,nt) :: riv_trc      ! River tracer conc.
       real,public, dimension(GLOBAL_2D_ARRAY) :: rflx ! River locations
 
-      integer,public :: iriver
+      integer,public :: iriver            ! River index for looping through rivers
       real,   public :: riv_depth
       real,   public :: riv_uvel,riv_vvel
       real,   public :: river_flux
@@ -54,8 +54,8 @@
       character(len=6) :: nriv_dim_name = 'nriver'      !! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'    !! dimension name for number of tracers in file
       ! Netcdf variables used for both riv_vol & riv_trc
-      real, dimension(nriv,2) :: riv_vol_data    ! rvol - river data at input times
-      real, dimension(nriv,nt,2) :: riv_trc_data !rtrc - river tracer data at input times
+      real, dimension(nriv,2)    :: riv_vol_data ! rvol - river data at input times
+      real, dimension(nriv,nt,2) :: riv_trc_data ! rtrc - river tracer data at input times
       integer, dimension(2) :: r_file_indx = 0
       integer, dimension(2) :: r_irec      = 0
       integer, dimension(2) :: r_it1 = 1, r_it2 = 2
@@ -85,7 +85,9 @@
       ! Set river flux volumes and tracer data
       if(analytical) then
 !       if(mynode==0) print*, 'rivers: going to set_ana'
-        call set_ana_river_frc 
+#ifdef ANA_RIVER_FRC
+        call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
+#endif
 
       else
 
@@ -98,9 +100,9 @@
      &          r_file_indx(1), r_irec(1),    ! File indx & Current input record
      &          r_it1(1),       r_it2(1) )    ! Time index placeholders                   ! Online spatial interpolation flag
 
-!      if(mynode==0) print*, 'riv_vol= ', riv_vol ! debug
+!        if(mynode==0) print*, 'riv_vol= ', riv_vol ! debug
 
-      ! Set river tracers flux for all rivers at current time
+        ! Set river tracers flux for all rivers at current time
         call set_small_arrays(
      &          riv_trc_name,   riv_tim_name, ! Text names
      &          riv_trc_data,   riv_trc,      ! Variable arrays
