@@ -1,0 +1,4 @@
+2020/12/02: JM's matlab scripts to create river and pipe locations and flux fractions.
+
+river & pipe scripts are basically identical, someone in future should combine them as no need for two. 
+Slight difference is that river needs to be in mask, pipe in ocean.

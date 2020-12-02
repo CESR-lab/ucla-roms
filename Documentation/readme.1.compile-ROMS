@@ -62,33 +62,30 @@ INSTRUCTIONS: COMPILING ROMS
      
   6. Compile & test roms:
      
-     To ensure you can successfully compile roms and run roms on your machine,
+     To ensure you can successfully compile run roms on your machine,
      quickly run the following test example as follows:
-     (this is even recommended for experienced roms users using the new code
-      for the first time...)
+     (this is even recommended for experienced roms users using the new 
+      code for the first time...)
      
-     A. Copy all files (excluding Makefile) in Examples/Rivers_ana/ to Work/ with:
-        cd Examples/Rivers_ana
-        make copy_to_Work_dir
-     B. Open Work/, Type 'make'.
-     C. Type './do_run.sh' (after roms has successfully compiled)
-     D. (Optional) If using machine without 'ncjoin', see 'Roms tools' below
-        for info on getting ncjoin on your machine to view result.     
-     E. Type 'make work_clean' to empty Work/ directory for next step.
-        Note, Makefile must be left untouched in Work/ as it is part of the
-        tracked files on the repo.
+     A. cd Examples/Rivers_ana
+        make
+     B. ./do_run.sh (after roms has successfully compiled)
+     C. (Optional) If using machine without 'ncjoin', see 'Roms tools' below
+        for info on getting ncjoin on your machine to view result.
+        
      
   7. Compile your specifc simulation:
 
-     A. If you are running your own simulation, copy the only the files that you 
-        need to edit from src/ folder into the Work/ folder. If you are using an
-        example then also copy the files from Examples/... into Work/ (excluding Makefile) 
+     A. If you are running your own simulation, copy only the files that you 
+        need to edit from src/ folder into the Work/ folder. 
+        If you are using an example then also copy the files from Examples/... 
+        into Work/ (excluding Makefile) 
      B. Open Work/. Edit your files as appropriate. See Documentation/README-model-setup  
         for details on configuring roms for your simulation.
         Type 'make'.
      C. Copy 'roms' executable to wherever you are running your simulation.
   
-     Never edit code in the src/ directory!     
+     Never edit code in the src/ directory, nor the examples in Examples/!     
   
           
 Recompiling roms:

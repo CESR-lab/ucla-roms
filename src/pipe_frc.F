@@ -33,15 +33,30 @@
       ! ****************************************************************
 
       ! Variables used in the evolution equations
-      integer,public  :: pidx
-      integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe index
-      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_ratio! pipe fractional flux
+      integer,public  :: pidx ! Pipe index for looping through pipes
+      integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe indices at grid points
+      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_ratio! pipe fractional flux at grid points
 
       real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_flx  ! pipe flux
       real   ,public, dimension(npip,N)          :: pipe_prf  ! Pipe vertical profile
       real   ,public, dimension(npip,nt)         :: pipe_trc  ! Pipe tracer conc.
 
       real   ,public, dimension(npip)            :: pipe_vol  ! Pipe volume
+
+     ! Netcdf names
+      character(len=9)  :: pipe_flx_name = 'pipe_flux'  !! stored in the grid file
+      character(len=11) :: pipe_vol_name = 'pipe_volume'!! stored in a forcing file
+      character(len=11) :: pipe_trc_name = 'pipe_tracer'!! stored in a forcing file
+      character(len=9)  :: pipe_tim_name = 'pipe_time'  !! stored in a forcing file
+      character(len=5)  ::npipe_dim_name = 'npipe'      !! dimension name for number of pipes in file
+      character(len=8)  :: ntrc_dim_name = 'ntracers'   !! dimension name for number of tracers in file
+      ! Netcdf variables used for both pipe_vol & pipe_trc
+      real, dimension(npip,2)    :: pipe_vol_data ! pvol - pipe data at input times
+      real, dimension(npip,nt,2) :: pipe_trc_data ! ptrc - pipe tracer data at input times
+      integer, dimension(2) :: p_file_indx = 0
+      integer, dimension(2) :: p_irec      = 0
+      integer, dimension(2) :: p_it1 = 1, p_it2 = 2
+      real, dimension(2,2)  :: p_times = -99 ! [-99,-99]
 
 
       public set_pipe_frc_tile
@@ -51,9 +66,9 @@
 
       subroutine set_pipe_frc_tile(istr,iend,jstr,jend)
 
-      ! SET RIVER FORCES (REALISTIC OR ANALYTICAL FORCING):
-      ! - read and interpolation all river forcing.
-      ! - All river variables need time interpolation only
+      ! SET PIPE FORCES (REALISTIC OR ANALYTICAL FORCING):
+      ! - read and interpolation all pipe forcing.
+      ! - All pipe variables need time interpolation only
       !   here so can use same generic routine.
       ! - Input data in days!
 
@@ -61,18 +76,54 @@
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer :: i, j
 
       ! Initialize pipe flux locations (One time only)
       if(FIRST_TIME_STEP) call init_pipe_frc(istr,iend,jstr,jend)
 
-      ! Set river flux volumes and tracer data
+      ! Set pipe flux volumes and tracer data
       if(analytical) then
-!       if(mynode==0) print*, 'rivers: going to set_ana_pip'
-        call set_ana_pipe_frc
+!       if(mynode==0) print*, 'pipes: going to set_ana_pipe_frc'
+#ifdef ANA_PIPE_FRC
+        call set_ana_pipe_frc ! cppflags needed else won't link without the analytical.F
+#endif
+        ! pipe vertical profile (pipe_prf) is currently set in analytical.F
         
       else
 
+        ! Set pipe volume for all pipes at current time
+        call set_small_arrays(
+     &          pipe_vol_name,  pipe_tim_name, ! Text names
+     &          pipe_vol_data,  pipe_vol,      ! Variable arrays
+     &          p_times(:,1),                  ! Input times
+     &          npip,           1,             ! dim1 and dim2=1 if 1D
+     &          p_file_indx(1), p_irec(1),     ! File indx & Current input record
+     &          p_it1(1),       p_it2(1) )     ! Time index placeholders                   ! Online spatial interpolation flag
 
+!        if(mynode==0) print*, 'pipe_vol= ', pipe_vol ! debug
+
+        ! Set pipe tracers conc. for all pipes at current time
+        call set_small_arrays(
+     &          pipe_trc_name,  pipe_tim_name, ! Text names
+     &          pipe_trc_data,  pipe_trc,      ! Variable arrays
+     &          p_times(:,2),                  ! Input times
+     &          npip,           nt,            ! dim1 and dim2
+     &          p_file_indx(2), p_irec(2),     ! File indx & Current input record
+     &          p_it1(2),       p_it2(2) )     ! Time index placeholders
+
+!        if(mynode==0) print*, 'pipe_trc(1,1)= ', pipe_trc(1,1) ! debug
+!        if(mynode==0) print*, 'pipe_trc(1,2)= ', pipe_trc(1,2) ! debug
+
+        ! Set pipe vertical profiles
+        call set_pipe_vert_prf
+
+        ! Now calculated fluxes with time interpolated volumes and conc.:
+        do j = jstr,jend
+          do i = istr,iend
+            pipe_flx(i,j)=pipe_ratio(i,j)*pipe_vol( pipe_idx(i,j) )
+          enddo
+        enddo
 
       endif
 
@@ -81,9 +132,11 @@
 
       subroutine init_pipe_frc(istr,iend,jstr,jend)
 
-      ! Initialize river forcing:
-      ! Read in a grid file with locations of river mouths and flux contribution per cell.
-      ! Done only once as river mouth position does not change.
+      ! Initialize pipe forcing:
+      ! Read in a grid file with locations of pipes and flux contribution per cell.
+      ! Done only once as pipe position does not change.
+      ! Realistic case - stored as one value in NetCDF file where
+      ! pipe grid point value = pidx + pipe_ratio
 
       use netcdf
       implicit none
@@ -91,69 +144,60 @@
       ! inputs
       integer,intent(in) :: istr,iend,jstr,jend
       ! local
-      integer :: ierr,ncid,v_id
+      integer :: ierr,ncid,v_id,i,j
 
       ! Should put this in wrapper in read_write.F as 'nc_read_once'
       if (analytical) then
 
-        ! rflx is defined in ana_grid
+        ! pipe_flx is defined in ana_grid.F
 
-      else ! Read 'pipe_flux' from grid file (River mouth locations)
-!        ierr=nf90_open(grdname, nf90_nowrite, ncid)
-!        ierr=nf90_inq_varid(ncid, riv_flx_name, v_id)
-!        ! 0 for only one record, 100 to prevent land masking in ncdf_read_mod as rivers
-!        ! defined on land cells only.
-!        ierr=ncdf_read_mod(ncid, v_id, 0, 100, rflx(START_2D_ARRAY), 1)
-!        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
+      else
+
+        ! Read 'pipe_flux' from grid file (Pipe_idx & Pipe_ratio in one value)
+        ierr=nf90_open(grdname, nf90_nowrite, ncid)
+        ierr=nf90_inq_varid(ncid, pipe_flx_name, v_id)
+        ! Temporarily store as pipe_ratio to avoid extra array,
+        ! but value still pipe_idx + pipe_ratio
+        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_ratio(START_2D_ARRAY), 1)
+        if(ierr/=0) call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
+
+        ! Separate pipe_idx & pipe_ratio:
+        do j = jstr,jend
+          do i = istr,iend
+            ! read in value = pidx + pipe_ratio = pipe_idx(i,j) + pipe_ratio(i,j)
+            pipe_idx(i,j)=floor(pipe_ratio(i,j)-1e-5)
+            pipe_ratio(i,j)=pipe_ratio(i,j)-pipe_idx(i,j)
+          enddo
+        enddo
 
       endif
-
-      ! Compute uflx,vflx from rflx
-      call calc_pipe_flux(istr,iend,jstr,jend)
 
       if(mynode==0) print*, 'pipes: init pipe locations'
           
       end subroutine init_pipe_frc
 
 ! ----------------------------------------------------------------------
-      subroutine calc_pipe_flux(istr,iend,jstr,jend)
-      ! Calculate the river flux contributions to each cell.
-      ! river_flux = iriver + fraction of river's flux through grid point.
-      ! E.g. River 3 is over 2 grid points (half flux through each point),
-      ! hence river_flux = 3 + 0.5 = 3.5
+
+      subroutine set_pipe_vert_prf
+      ! set vertical discharge profile of pipes
+
+      ! This is a time-independent equation for now, but
+      ! it is a placeholder for a more sophisticated time-evolving
+      ! profile in future as per the requirement.
+
       implicit none
 
-      ! inputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
       ! local
-      integer :: i,j,faces
+      integer :: i,j,ipipe
 
-      ! compute uflx,vflx from rflx
-!      do j = jstr,jend
-!        do i = istr,iend
-!          if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
-!            ! subtract 1e-5 in case only 1 grid point for river, so that floor still
-!            ! produces correct iriver number.
-!!            write(*,*) 'mynode=',mynode,'i,j',i,j,rflx(i,j),'rflx(i,j)'
-!            iriver = floor(rflx(i,j)-1e-5)
-!#ifdef MASKING
-!            faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
-!            if ( faces == 0 .or. rmask(i,j)>0  ) then
-!              error stop 'river grid position error'
-!            endif
-!            ! 10*iriver needed because uflx/vflx can be positive or negative around
-!            ! the iriver number, and hence nearest integer is safest done with 10*.
-!            if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rflx(i,j)-iriver)/faces + 10*iriver
-!            if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
-!            if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
-!            if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
-!#endif
-!          endif
-!        enddo
-!      enddo
+      ! Loop through all pipes and set the same profile:
+      do ipipe=1,npip
+        pipe_prf(ipipe,:)=0     ! Set all values to zero
+        pipe_prf(ipipe,1)= 0.5  ! Dispersion profile bottom cell
+        pipe_prf(ipipe,2)= 0.5  ! Dispersion profile 2nd from bottom cell
+      enddo
 
-      end subroutine calc_pipe_flux
+      end subroutine set_pipe_vert_prf
 ! ----------------------------------------------------------------------
 
 # endif /* ifdef PIPE_SOURCE */
