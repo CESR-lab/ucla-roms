@@ -170,8 +170,8 @@
       integer :: i,j,faces
 
       ! compute uflx,vflx from rflx
-      do j = jstr,jend
-        do i = istr,iend
+      do j = jstr-1,jend+1   ! Loop over -1 and +1 because rflx cell only flows into
+        do i = istr-1,iend+1 ! neighbour, hence cell next to boundary could flow into cell.
           if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
             ! subtract 1e-5 in case only 1 grid point for river, so that floor still
             ! produces correct iriver number.

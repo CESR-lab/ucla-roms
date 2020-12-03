@@ -35,7 +35,7 @@
       ! Variables used in the evolution equations
       integer,public  :: pidx ! Pipe index for looping through pipes
       integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe indices at grid points
-      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_ratio! pipe fractional flux at grid points
+      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_fraction ! pipe fractional flux at grid points
 
       real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_flx  ! pipe flux
       real   ,public, dimension(npip,N)          :: pipe_prf  ! Pipe vertical profile
@@ -121,7 +121,7 @@
         ! Now calculated fluxes with time interpolated volumes and conc.:
         do j = jstr,jend
           do i = istr,iend
-            pipe_flx(i,j)=pipe_ratio(i,j)*pipe_vol( pipe_idx(i,j) )
+            pipe_flx(i,j)=pipe_fraction(i,j)*pipe_vol( pipe_idx(i,j) )
           enddo
         enddo
 
@@ -136,7 +136,7 @@
       ! Read in a grid file with locations of pipes and flux contribution per cell.
       ! Done only once as pipe position does not change.
       ! Realistic case - stored as one value in NetCDF file where
-      ! pipe grid point value = pidx + pipe_ratio
+      ! pipe grid point value = pidx + pipe_fraction
 
       use netcdf
       implicit none
@@ -153,20 +153,20 @@
 
       else
 
-        ! Read 'pipe_flux' from grid file (Pipe_idx & Pipe_ratio in one value)
+        ! Read 'pipe_flux' from grid file (Pipe_idx & pipe_fraction in one value)
         ierr=nf90_open(grdname, nf90_nowrite, ncid)
         ierr=nf90_inq_varid(ncid, pipe_flx_name, v_id)
-        ! Temporarily store as pipe_ratio to avoid extra array,
-        ! but value still pipe_idx + pipe_ratio
-        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_ratio(START_2D_ARRAY), 1)
+        ! Temporarily store as pipe_fraction to avoid extra array,
+        ! but value still pipe_idx + pipe_fraction
+        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_fraction(START_2D_ARRAY), 1)
         if(ierr/=0) call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
 
-        ! Separate pipe_idx & pipe_ratio:
+        ! Separate pipe_idx & pipe_fraction:
         do j = jstr,jend
           do i = istr,iend
-            ! read in value = pidx + pipe_ratio = pipe_idx(i,j) + pipe_ratio(i,j)
-            pipe_idx(i,j)=floor(pipe_ratio(i,j)-1e-5)
-            pipe_ratio(i,j)=pipe_ratio(i,j)-pipe_idx(i,j)
+            ! read in value = pidx + pipe_fraction = pipe_idx(i,j) + pipe_fraction(i,j)
+            pipe_idx(i,j)=floor(pipe_fraction(i,j)-1e-5)
+            pipe_fraction(i,j)=pipe_fraction(i,j)-pipe_idx(i,j)
           enddo
         enddo
 
