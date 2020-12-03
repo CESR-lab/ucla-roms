@@ -172,7 +172,7 @@
       pipe_prf(1,1) = 0.5  ! Dispersion profile
       pipe_prf(1,2) = 0.5  ! Dispersion profile
 
-      pipe_flx = pipe_ratio*pipe_vol(1)
+      pipe_flx = pipe_fraction*pipe_vol(1)
 !     do j = jstr,jend
 !       do i = istr,iend
 !         pipe_flx(i,j) = 0.0

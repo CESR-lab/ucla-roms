@@ -138,11 +138,11 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       pipe_cells = nint(psz/dx)**2 !number of cells in this pipe
       do j=jstrR,jendR
         do i=istrR,iendR
-          pipe_ratio(i,j) = 0.0
+          pipe_fraction(i,j) = 0.0
           pipe_idx(i,j) = 0
           if (xr(i,j)> px-0.5*psz .and. xr(i,j)<px+0.5*psz) then
             if (yr(i,j)> py-0.5*psz .and. yr(i,j)<py+0.5*psz) then
-               pipe_ratio(i,j) = 1.0/pipe_cells
+               pipe_fraction(i,j) = 1.0/pipe_cells
                pipe_idx(i,j) = 1
             endif
           endif

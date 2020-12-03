@@ -20,7 +20,7 @@ INSTRUCTIONS: COMPILING ROMS
      Documentation/machine-specific/bashrc-cshrc-files
      For existing ROMS user's who might want to use a version pre 2020/12/01
      as well, then you should only need to add MPIHOME exactly as your
-     existing MPI_ROOT and same for NETCDFHOME as your NETCDF, in addition 
+     existing MPI_ROOT, and same for NETCDFHOME as your NETCDF, in addition 
      to what you already have. Now both old version and new version of roms 
      should work.
      
@@ -29,8 +29,8 @@ INSTRUCTIONS: COMPILING ROMS
      such as NETCDFHOME, ROMS_ROOT, MPIHOME, etc, have a path set.
      You can test this by typing e.g. 'echo $ROMS_ROOT' and it should
      display where you keep your roms directory.
-     Typically, for best roms performance use intel compiler (ifort) 
-     and netcdf/mpi libraries that are also compiled using intel compilers.
+     (Typically, for best roms performance use intel compiler (ifort) and
+      netcdf/mpi libraries that are also compiled using intel compilers.)
      
   3. (Optional) Edit Makedefs.inc:
   
@@ -38,7 +38,7 @@ INSTRUCTIONS: COMPILING ROMS
      Depending on which cluster you are using, you might need to edit
      this file. If you have compiling issues, then see the folder in
      Documentation/machine-specific/Makedefs/ for examples that work 
-     on different clusters.     
+     on different clusters. Shouldn't need to changethis for 'comet' & 'maya'.    
 
   4. Compile NHMG library:
   
@@ -47,41 +47,51 @@ INSTRUCTIONS: COMPILING ROMS
      cd Work/
      make nhmg 
      (Note, NHMG/src/Makefile may need to be edited for your machine, 
-     ask for help if 'make' fails.)
-
-  5. (Info only) Generate dependency list:
+     ask for help if 'make nhmg' fails.)
+     
+  5. Compile ROMS tools:
   
-     This step is done automatically using 'make' in the Work/
-     directory so it's just here for your info:
+     This gives you access to roms tools, as of 2020/12 only produces
+     'partit' for partitioning netcdf files, and 'ncjoin' for joining 
+     netcdf result files into one file. 
+     Compile tools:
+     cd Tools-Roms
+     make
+     (If not done in step 2, add 'export PATH=$PATH:$ROMS_ROOT/Tools-Roms'
+      to your .bashrc file to have access to these tools from any dir.)
+
+  6. (Info only) Generate dependency list:
+  
+     This step is done automatically using 'make' in the Work/ or Examples/
+     directory, so it's just here for your info:
      'make depend'
      This will update file "Make.depend" consistent with the
      contents of all *.F files in the source code directory. 
-     See Tools-Roms/README for more info.
+     See Tools-Roms/readme for more info.
      The dependency list is for the build automation program 'make'
      to know if one source code file depends on another file.
      
-  6. Compile & test roms:
+  7. Compile & test roms:
      
-     To ensure you can successfully compile run roms on your machine,
+     To ensure you can successfully compile & run roms on your machine,
      quickly run the following test example as follows:
      (this is even recommended for experienced roms users using the new 
       code for the first time...)
      
      A. cd Examples/Rivers_ana
-        make
+        make        (note this can be a bit slow on 'comet' machine)
      B. ./do_run.sh (after roms has successfully compiled)
-     C. (Optional) If using machine without 'ncjoin', see 'Roms tools' below
-        for info on getting ncjoin on your machine to view result.
+     C. ./join.sh   (to view join & view results file)
         
      
-  7. Compile your specifc simulation:
+  8. Compile your specifc simulation:
 
-     A. If you are running your own simulation, copy only the files that you 
-        need to edit from src/ folder into the Work/ folder. 
-        If you are using an example then also copy the files from Examples/... 
-        into Work/ (excluding Makefile) 
-     B. Open Work/. Edit your files as appropriate. See Documentation/README-model-setup  
-        for details on configuring roms for your simulation.
+     A. If you are running your own simulation, copy ONLY the files that you 
+        need to EDIT from src/ folder into the Work/ folder. 
+        If you are using an example then also copy relevant files from Examples/... 
+        into Work/ (excluding the Makefile) 
+     B. Open Work/ dir. Edit your files. See Documentation/README-model-setup  
+        for details on configuring roms for your simulation as per new code.
         Type 'make'.
      C. Copy 'roms' executable to wherever you are running your simulation.
   
@@ -101,7 +111,7 @@ Recompiling roms:
      This will be done automatically using the Work/ or Examples/ directory.
      
   C. If you change compiler options in Makedefs.inc, you should first run 
-     'make clean', and then 'make' to do a full rebuild.
+     'make clean_compile', and then 'make' to do a full rebuild.
 
 
 Roms tools:
@@ -126,7 +136,7 @@ Keeping code up to date:
      
      Since you are editing code in the Work/ directory, your edited files will not be
      affected. However, it is possibly that the file you have edited for your needs, e.g. 
-     bulk_frc.F, has been changed in the latest code update and hence in src/ directory, 
+     bulk_frc.F, has been changed in the latest code update and hence in the src/ directory, 
      such that your version of bulk_frc.F in Work/ is no longer compatible with the code.
      
      This is not something that will happen often, but it is somewhere to look if your code
@@ -134,7 +144,22 @@ Keeping code up to date:
      against the respective file in src/ using a difference viewer such as 'meld'.
      You can use 'meld' to merge in the new code changes into your version in Work/, such as 
      the names of your variables in bulk_frc.F, if that is something you needed to change.
+     
      Important updates to the code will be broadcasted to users in an email.
+     
+     
+Git repo (and Bitbucket)
+------------------------
+
+     In order to keep all versions of ROMS as it evolves over time, we store it on a git 
+     repository (repo).The version control program we use is called 'git'. It is terminal 
+     based, but there are also GUI's for it. Each time we want to make a permanent change 
+     to the ROMS code, we then'commit' and 'push' the code to the repo.
+     In order to store the version history of code 'commits', we used a web-based hosting 
+     service called 'Bitbucket' (the other popular one is 'github'). This is essentially 
+     our cloud based storage of the code.
+     With one command, it is possible to jump between the current version and all older
+     versions of the code.
              
 
 Additional readme's:
