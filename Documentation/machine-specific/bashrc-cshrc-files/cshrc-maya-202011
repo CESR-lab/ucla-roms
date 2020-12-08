@@ -21,6 +21,9 @@ setenv CPATH ${ROMS_ROOT}:$CPATH
 setenv CPATH ${NETCDFHOME}/include:${CPATH}
 #  adds roms tools to path (you still need to build them first)
 setenv PATH ${PATH}:$ROMS_ROOT/Tools-Roms
+#  for ncjoin to work with hdf5 libraries:
+setenv HDF5_LIB /opt/hdf5-1.8.20/lib
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${HDF5_LIB}
 
 
 # **** NOT ROMS RELATED BELOW **** #
