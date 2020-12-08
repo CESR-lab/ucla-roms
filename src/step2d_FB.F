@@ -24,6 +24,7 @@
      &                                       Drhs, UFx,UFe,VFx,VFe)
 
       use river_frc
+      use pipe_frc
 
 #ifdef WEC
       use wec_frc
