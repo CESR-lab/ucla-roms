@@ -831,7 +831,7 @@ c              Ks(i,j,k)=Ks(i,j,k) + wsb*bbl(i,j)*cff1
 #  ifdef LMD_CONVEC
             else
               if (bvf(i,j,k) < 0.) then
-#   ifdef LMD_KPP
+#   if defined LMD_KPP && !defined MLCONV
                 z_bl=z_w(i,j,N)-hbl(i,j)
                 if (z_w(i,j,k) < z_bl) then
 #   endif
@@ -840,7 +840,7 @@ c              Ks(i,j,k)=Ks(i,j,k) + wsb*bbl(i,j)*cff1
 #   ifdef SALINITY
                   Ks(i,j,k)=Ks(i,j,k) + nu0c   ! of mixed layers.
 #   endif
-#   ifdef LMD_KPP
+#   if defined LMD_KPP && !defined MLCONV
                 endif
 #   endif
               endif

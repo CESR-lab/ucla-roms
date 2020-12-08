@@ -23,12 +23,12 @@
        logical,public :: diag_time = .true.
        logical,public :: do_diags
 
-# ifdef NHMG
-       real,public, dimension(nx,ny,nz,3,7) :: Mdiag
-# else
-       real,public, dimension(nx,ny,nz,2,6) :: Mdiag
-# endif
+
+       integer,public,parameter :: ndm = 6  !! number of momentum diag terms
        integer,public,parameter :: ndt = 5  !! number of tracer diag terms
+
+       real,public, dimension(nx,ny,nz,3,ndm)  :: Mdiag  !! u,v,w
+
        real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
        
 
