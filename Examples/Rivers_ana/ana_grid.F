@@ -58,7 +58,7 @@
 # include "compute_extended_bounds.h"
 
 C$OMP MASTER                           ! Copy physical dimensions of
-      xl=Size_XI ; el=Size_ETA         ! the grid into glabally vizible
+      xl=Size_XI ; el=Size_ETA         ! the grid into glabally visible
 C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       dx=Size_XI/dble(LLm)             ! Set grid spacings for
@@ -89,6 +89,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       do j=jstrR,jendR
         do i=istrR,iendR
           f(i,j)=f0+beta*( yr(i,j)-y0 )
+# if defined NONTRAD_COR
+!         feta(i,j) = f0*cos(pi/4)
+!         fxi(i,j)  = f0*sin(pi/4)
+# endif
         enddo
       enddo
 
