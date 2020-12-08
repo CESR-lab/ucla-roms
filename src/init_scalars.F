@@ -143,32 +143,32 @@ CR      write(*,'(1x,A,I3)') 'indxS = ', indxS
       vname(2,indxS)='salinity'
       vname(3,indxS)='PSU'
 # endif
-# ifdef BIOLOGY
-CR      write(*,'(1x,A,I3)') 'indxNO3 =', indxNO3
-      vname(1,indxNO3)='NO3'
-      vname(2,indxNO3)='NO3 Nutrient'
-      vname(3,indxNO3)='mMol N m-3'
-
-CR      write(*,'(1x,A,I3)') 'indxNH4 =', indxNH4
-      vname(1,indxNH4='NH4'
-      vname(2,indxNH4)='NH4 Nutrient'
-      vname(3,indxNH4)='mMol N m-3'
-
-CR      write(*,'(1x,A,I3)') 'indxDet =', indxDet
-      vname(1,indxDet)='DET'
-      vname(2,indxDet)='Detritus'
-      vname(3,indxDet)='mMol N m-3'
-
-CR      write(*,'(1x,A,I3)') 'indxPhyt =', indxPhyt
-      vname(1,indxPhyt)='PHYTO'
-      vname(2,indxPhyt)='Phytoplankton'
-      vname(3,indxPhyt)='mMol N m-3'
-
-CR      write(*,'(1x,A,I3)') 'indxZoo =', indxZoo
-      vname(1,indxZoo)='ZOO'
-      vname(2,indxZoo)='Zooplankton'
-      vname(3,indxZoo)='mMol N m-3'
-# endif
+!# ifdef BIOLOGY
+!CR      write(*,'(1x,A,I3)') 'indxNO3 =', indxNO3
+!      vname(1,indxNO3)='NO3'
+!      vname(2,indxNO3)='NO3 Nutrient'
+!      vname(3,indxNO3)='mMol N m-3'
+!
+!CR      write(*,'(1x,A,I3)') 'indxNH4 =', indxNH4
+!      vname(1,indxNH4='NH4'
+!      vname(2,indxNH4)='NH4 Nutrient'
+!      vname(3,indxNH4)='mMol N m-3'
+!
+!CR      write(*,'(1x,A,I3)') 'indxDet =', indxDet
+!      vname(1,indxDet)='DET'
+!      vname(2,indxDet)='Detritus'
+!      vname(3,indxDet)='mMol N m-3'
+!
+!CR      write(*,'(1x,A,I3)') 'indxPhyt =', indxPhyt
+!      vname(1,indxPhyt)='PHYTO'
+!      vname(2,indxPhyt)='Phytoplankton'
+!      vname(3,indxPhyt)='mMol N m-3'
+!
+!CR      write(*,'(1x,A,I3)') 'indxZoo =', indxZoo
+!      vname(1,indxZoo)='ZOO'
+!      vname(2,indxZoo)='Zooplankton'
+!      vname(3,indxZoo)='mMol N m-3'
+!# endif
 
 CR      write(*,'(1x,A,I3)') 'indxAkv =', indxAkv
       vname(1,indxAkv)='Akv'

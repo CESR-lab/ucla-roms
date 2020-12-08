@@ -22,7 +22,7 @@ INSTRUCTIONS: COMPILING ROMS
      as well, then you should only need to add MPIHOME exactly as your
      existing MPI_ROOT, and same for NETCDFHOME as your NETCDF, in addition 
      to what you already have. Now both old version and new version of roms 
-     should work.
+     should work. MPIHOME & NETCDFHOME are set by default already on comet. 
      
      Load modules if on cluster such as Comet (through .bashrc).
      You will need to ensure any variables listed in Makedefs.inc 
@@ -37,8 +37,8 @@ INSTRUCTIONS: COMPILING ROMS
      Hopefully this step can be skipped. Return here if roms won't compile.
      Depending on which cluster you are using, you might need to edit
      this file. If you have compiling issues, then see the folder in
-     Documentation/machine-specific/Makedefs/ for examples that work 
-     on different clusters. Shouldn't need to changethis for 'comet' & 'maya'.    
+     Documentation/machine-specific/Makedefs/ for examples that work on 
+     different clusters. Shouldn't need to change this for 'comet' & 'maya'.    
 
   4. Compile NHMG library:
   
