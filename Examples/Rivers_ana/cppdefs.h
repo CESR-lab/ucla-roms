@@ -23,7 +23,6 @@ c--#endif
 #if defined ANA_RIVER_USWC
 
 # define RIVER_SOURCE
-# define PIPE_SOURCE
 # define ANA_RIVER_FRC
 
 # ifdef ANA_RIVER_FRC

@@ -1,16 +1,12 @@
       module river_frc
 
-      ! ====================
-      ! RIVER AND PIPES FORCING MODULE
-      ! ====================
-
-      ! for pipes:  Qbar(nx,y), the total pipe flux for that grid point ! (m3/s) function of time
-      !             Qshape(npipes), the vertical shape of the pipe distribution ! fractions sum(Qshape) = 1
+      ! RIVER FORCING MODULE
+      ! --------------------
 
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
 
 #include "cppdefs.h"
-#if defined RIVER_SOURCE || defined PIPE_SOURCE
+#if defined RIVER_SOURCE
 
       ! Contains all the necessary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time
@@ -30,7 +26,6 @@
       ! ****************************************************************
       ! user inputs
       integer,public,parameter :: nriv = 1 ! number of rivers
-      integer,public,parameter :: npip = 1 ! number of pipes
 #ifdef ANA_RIVER_FRC
       logical :: analytical = .true.      ! analytical forcing 
 #else
@@ -39,25 +34,14 @@
       ! end user inputs
       ! ****************************************************************
 
-      ! Variables used in the evolution equations
-      integer,public  :: pidx
-      integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe index
-      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_frc  ! pipe fractional flux
-
-      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_flx  ! pipe flux
-      real   ,public, dimension(npip,N)          :: pipe_prf  ! Pipe vertical profile
-      real   ,public, dimension(npip,nt)         :: pipe_trc  ! Pipe tracer conc.
-
-      real   ,public, dimension(npip)            :: pipe_vol  ! Pipe volume
-
       ! Variables used for equation system calculations
       real,public, dimension(GLOBAL_2D_ARRAY) :: riv_uflx
       real,public, dimension(GLOBAL_2D_ARRAY) :: riv_vflx
-      real,public, dimension(nriv)     :: riv_vol  ! River volume
-      real,public, dimension(nriv,nt)  :: riv_trc  ! River tracer conc.
+      real,public, dimension(nriv)    :: riv_vol      ! River volume
+      real,public, dimension(nriv,nt) :: riv_trc      ! River tracer conc.
       real,public, dimension(GLOBAL_2D_ARRAY) :: rflx ! River locations
 
-      integer,public :: iriver
+      integer,public :: iriver            ! River index for looping through rivers
       real,   public :: riv_depth
       real,   public :: riv_uvel,riv_vvel
       real,   public :: river_flux
@@ -70,8 +54,8 @@
       character(len=6) :: nriv_dim_name = 'nriver'      !! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'    !! dimension name for number of tracers in file
       ! Netcdf variables used for both riv_vol & riv_trc
-      real, dimension(nriv,2) :: riv_vol_data ! rvol - river data at input times
-      real, dimension(nriv,nt,2) :: riv_trc_data !rtrc - river tracer data at input times
+      real, dimension(nriv,2)    :: riv_vol_data ! rvol - river data at input times
+      real, dimension(nriv,nt,2) :: riv_trc_data ! rtrc - river tracer data at input times
       integer, dimension(2) :: r_file_indx = 0
       integer, dimension(2) :: r_irec      = 0
       integer, dimension(2) :: r_it1 = 1, r_it2 = 2
@@ -101,12 +85,10 @@
       ! Set river flux volumes and tracer data
       if(analytical) then
 !       if(mynode==0) print*, 'rivers: going to set_ana'
-        call set_ana_river_frc 
-!       if(mynode==0) print*, 'rivers: going to set_ana_pip'
-#if defined PIPE_SOURCE
-        call set_ana_pipe_frc
+#ifdef ANA_RIVER_FRC
+        call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
 #endif
-!       if(mynode==0) print*, 'rivers: going to set_ana'
+
       else
 
         ! Set river volume flux for all rivers at current time
@@ -118,9 +100,9 @@
      &          r_file_indx(1), r_irec(1),    ! File indx & Current input record
      &          r_it1(1),       r_it2(1) )    ! Time index placeholders                   ! Online spatial interpolation flag
 
-!      if(mynode==0) print*, 'riv_vol= ', riv_vol ! debug
+!        if(mynode==0) print*, 'riv_vol= ', riv_vol ! debug
 
-      ! Set river tracers flux for all rivers at current time
+        ! Set river tracers flux for all rivers at current time
         call set_small_arrays(
      &          riv_trc_name,   riv_tim_name, ! Text names
      &          riv_trc_data,   riv_trc,      ! Variable arrays
@@ -169,7 +151,7 @@
       ! Compute uflx,vflx from rflx
       call calc_river_flux(istr,iend,jstr,jend)
 
-      if(mynode==0) print*, 'rivers: init river and pipe locations'
+      if(mynode==0) print*, 'rivers: init river locations'
           
       end subroutine init_river_frc
 
@@ -188,8 +170,8 @@
       integer :: i,j,faces
 
       ! compute uflx,vflx from rflx
-      do j = jstr,jend
-        do i = istr,iend
+      do j = jstr-1,jend+1   ! Loop over -1 and +1 because rflx cell only flows into
+        do i = istr-1,iend+1 ! neighbour, hence cell next to boundary could flow into cell.
           if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
             ! subtract 1e-5 in case only 1 grid point for river, so that floor still
             ! produces correct iriver number.

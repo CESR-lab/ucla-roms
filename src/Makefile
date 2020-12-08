@@ -37,7 +37,7 @@ KRNSRC = 		dimensions.F	read_write.F tracers.F\
 \
 	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
 \
-	river_frc.F	main.F		diagnostics.F
+	river_frc.F	pipe_frc.F	main.F		diagnostics.F
 
 #ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\

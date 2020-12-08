@@ -13,6 +13,7 @@
 	$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
 .f.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+	@/bin/rm -f $*.f
 
 .f90.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f90
