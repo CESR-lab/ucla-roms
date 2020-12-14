@@ -14,7 +14,7 @@ include Makedefs.inc
 #   4) sea-water EOS routines;     8) model forcing routines;
 
 KRNSRC = 		dimensions.F	read_write.F tracers.F\
-	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F\
+	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F\
  step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
@@ -37,7 +37,11 @@ KRNSRC = 		dimensions.F	read_write.F tracers.F\
 \
 	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
 \
-	river_frc.F	pipe_frc.F	main.F		diagnostics.F
+	river_frc.F	pipe_frc.F	diagnostics.F\
+\
+	ecosys_bec2_init.F	ecosys_bec2.F\
+\
+	main.F	
 
 #ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\

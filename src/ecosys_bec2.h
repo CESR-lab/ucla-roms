@@ -4,7 +4,8 @@
 !
       real tracer(GLOBAL_2D_ARRAY,N,ntrc_bio)
       real DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio)
-      common /tracers/ tracer, DTRACER_MODULE
+      ! DevinD changed /tracers/ as clashes with module name 'tracers'
+      common /tracers_com/ tracer, DTRACER_MODULE
 
       integer counter_no3(288),counter_coccochl(288)      
       common /counter_neg/ counter_no3, counter_coccochl

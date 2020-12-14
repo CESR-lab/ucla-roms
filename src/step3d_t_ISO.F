@@ -922,6 +922,9 @@ c??         enddo
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
       enddo     !<-- itrc
 
+# if defined BIOLOGY_BEC2
+      call ecosys_bec2_tile(istr,iend,jstr,jend) ! BEC, 2014
+# endif
 
 # if defined EW_PERIODIC || defined NS_PERIODIC || defined MPI
       do itrc=1,NT-1,2

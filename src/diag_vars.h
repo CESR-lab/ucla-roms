@@ -6,11 +6,6 @@
       common /diag_vars/ avzeta, avke,    prev_ke,
      &             avpe, avke2b, avke3bc, avkesrf
 
-#ifdef BIOLOGY
-      real*QUAD global_sum(0:15)
-      common /diag_vars/ global_sum
-#endif
-
       real v2d_max
       common /diag_vars/ v2d_max
 #ifdef SOLVE3D

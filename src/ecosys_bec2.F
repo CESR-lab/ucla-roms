@@ -2,11 +2,14 @@
 #ifdef BIOLOGY_BEC2
 
        subroutine ecosys_bec2_tile(Istr,Iend,Jstr,Jend)
-
+       ! Taken from PDamien's ecosys_bec2_td2.F
 !# ifdef CCHEM_MOCSY
 !       use msingledouble
 !       use mvars
 !# endif
+
+       use tracers, only: t ! DevinD added
+       use surf_flux ! , only: sustr,sustr_r,svstr,svstr_r,srflx
 
        implicit none
 
@@ -14,7 +17,9 @@
 #include "param_bec2.h"
 #include "ecosys_bec2.h"
 #include "ocean3d.h"
-#include "forces.h"
+!#include "forces.h" ! DevinD commented out. Contains dailypar_bec and
+! bgc_forces.h, so including it directly here.
+#include "bgc_forces.h"
 #include "scalars.h"
 #include "grid.h"
 
@@ -97,6 +102,9 @@
        real,dimension(istr:iend,jstr:jend)::
      &    N2SAT_1atm   ! N2 saturation @ 1 atm (mmol/m^3)
 # endif
+
+      if(mynode==0) print *,'ecosys_bec2_td:: computing bgc' ! DevinD added
+
 !
 ! Interpolate/extrapolate wind stress to rho grid:
 !
@@ -123,6 +131,7 @@
              else
                 su_i2 = i-1
              end if
+             ! DevinD: should change to sustr_r from surf_flux module, have already
              sustr_rho(i,j) = 0.5*(sustr(su_i1,j)+sustr(su_i2,j))
              svstr_rho(i,j) = 0.5*(svstr(i,sv_j1)+svstr(i,sv_j2))
           end do
@@ -131,6 +140,9 @@
 !
 ! Initialize local copies of tracer array:
 !
+
+      ! DevinD - surely this is avoidable just by using iPO4, etc rather
+      ! than po4_ind_t?
        do m=1,ntrc_bio
           do k=1,N
              tracer(istr:iend,jstr:jend,k,m) =
@@ -622,6 +634,7 @@ c$$$       enddo
      &         AP_USED(istr:iend,j), CO2STAR_ROW(istr:iend),
      &         DCO2STAR_ROW(istr:iend), pco2oc_ROW(istr:iend),
      &         DpCO2_ROW(istr:iend),istr,iend)
+
 #  ifdef BEC2_DIAG
 #   ifdef BEC2_DIAG_USER
              ! bec2_diag_2d_idx(ph_idx_t) is always defined:
@@ -760,7 +773,7 @@ c$$$       enddo
 !       ! assumption: only 1% is bioavailable (very crude, just a test)
 !          FLUX(istr:iend,jstr:jend)=FLUX(istr:iend,jstr:jend)*0.01
 
-       ! add to tracer: PO4       
+       ! add to tracer: PO4
        tracer(istr:iend,jstr:jend,N,po4_ind_t) =
      &         tracer(istr:iend,jstr:jend,N,po4_ind_t) +
      &         FLUX(istr:iend,jstr:jend)
@@ -899,7 +912,6 @@ c$$$       enddo
      &             tracer(istr:iend,jstr:jend,k,m)
      &             + dt * DTRACER_MODULE(istr:iend,jstr:jend,k,m)
           enddo 
-
 ! total chl
 # ifdef BEC2_DIAG
 !       bec2_diag_3d(istr:iend,jstr:jend,k,totchl_idx_t) =  !! NEED_FIX_TRACER_INDICES!!
@@ -910,6 +922,7 @@ c$$$       enddo
 # endif
 
        enddo
+
 !       if (mynode==15) then
 !          print *, 'NO3 conc new: ', t(15,11,32,nnew,1+ntrc_salt+ntrc_pas+2)
 !       endif
@@ -2639,6 +2652,7 @@ c$$$       enddo
      &                  + remaining_P_dip(istr:iend,auto_ind)
           endif
        end do
+
 
     !-----------------------------------------------------------------------
     !  autotroph Carbon

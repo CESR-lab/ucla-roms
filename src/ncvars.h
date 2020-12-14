@@ -27,16 +27,6 @@
 # ifdef SALINITY
      &                    , indxS=indxT+1
 # endif
-# ifdef BIOLOGY
-#  ifdef SALINITY
-     &                    , indxNO3=indxS+1
-#  else
-     &                    , indxNO3=indxT+1
-#  endif
-     &                    , indxNH4 =indxNO3+1, indxChla=indxNO3+2
-     &                    , indxPhyt=indxNO3+3, indxZoo =indxNO3+4
-     &                    , indxSDet=indxNO3+5, indxLDet=indxNO3+6
-# endif
      &                    , indxAkv=indxT+NT,   indxAkt=indxAkv+1
 # ifdef SALINITY
      &                    , indxAks=indxAkt+1
@@ -227,10 +217,6 @@
 #endif
 
       character*42  vname(3,
-#ifdef BIOLOGY
-     &                       39+NT-2)
-#else
      &                       180) ! DevinD - copied from old code
 !     &                       39)
-#endif
       common /cncvars/ vname

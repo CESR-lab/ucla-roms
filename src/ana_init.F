@@ -1040,18 +1040,6 @@ c*     &                                  +(z_r(i,j,k)-Z1)/STRAT
             t(i,j,k,1,isalt)=35.
             t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
 #   endif
-#   ifdef BIOLOGY
-            t(i,j,k,1,ino3_)=0.
-            t(i,j,k,2,ino3_)=t(i,j,k,1,ino3_)
-            t(i,j,k,1,inh4_)=0.
-            t(i,j,k,2,inh4_)=t(i,j,k,1,inh4_)
-            t(i,j,k,1,idet_)=0.
-            t(i,j,k,2,idet_)=t(i,j,k,1,idet_)
-            t(i,j,k,1,iphyt)=0.
-            t(i,j,k,2,iphyt)=t(i,j,k,1,iphyt)
-            t(i,j,k,1,izoo_)=0.
-            t(i,j,k,2,izoo_)=t(i,j,k,1,izoo_)
-#   endif
           enddo
         enddo
       enddo

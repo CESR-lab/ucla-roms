@@ -5,8 +5,8 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-c-dd#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-#define USWC_sample
+#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+c-dd#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -25,7 +25,10 @@ c--#endif
 /* PierreD's pacific coast model */
 
 c-dd# define RIVER_SOURCE
-# define PIPE_SOURCE
+c-dd# define PIPE_SOURCE
+c-dd#define BGC_DPD
+c-dd#define DEFAULT_BRY_VALUES
+#define BIOLOGY_BEC2
 
 c-dd# define WEC
 # ifdef WEC
@@ -99,16 +102,6 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 #define OBC_M3ORLANSKI /* Baroclin. BC: OBC_M3ORLANSKI, OBC_M3SPECIFIED */
 #define OBC_TORLANSKI  /* Tracer BC: OBC_TORLANSKI, OBC_TSPECIFIED */
 
-                      /* Biology Settings */
-#ifdef BIOLOGY_BEC2
-# define BIOLOGY
-# define DAILYPAR_BEC
-#endif
-#ifdef BIOLOGY_NPZDOC
-# define BIOLOGY
-# define DAILYPAR_PHOTOINHIBITION
-#endif
-
 
 /* End of UP ETH Standard Settings */
 
@@ -119,7 +112,6 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 #define OBC_SOUTH
 #undef SPONGE /* DevinD - defined in cppdefs_UP.h */
 
-
 /* Switches required for Flux correction */
 c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
 #undef VFLX_CORR
@@ -128,8 +120,8 @@ c-dd#define DQDT_DATA ! DevinD not entirely sure but dont think I need it
 c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
-     /* Output */
-#define AVERAGES
+      /* Output */
+/* #define AVERAGES  */
 #undef SLICE_AVG
 /* DPD CALENDER is in def_his.F of Pierre's code but not mine  */
 c-dd#define CALENDAR '365_day'     /* netCDF CF-convention CALENDAR attribute default: '360_day' */
@@ -137,10 +129,26 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
 
 #define ADV_ISONEUTRAL
 
-     /* Biology */
-c-dd#define BIOLOGY_BEC2
+/* Biology Settings */
+#ifdef BIOLOGY_BEC2
+# define BIOLOGY /* DPD current does nothing in new code */
+# define DEFAULT_BRY_VALUES /* PD: this is useful */
+!--> # define MULT_CLIM_FILES
+# undef VFLX_CORR
+# undef BEC2_DIAG /* pd: confirmed can undef */
+# undef Ncycle_SY
+# undef N2O_TRACER_DECOMP
+# undef N2O_NEV
+# undef RIVER_LOAD_N
+# undef RIVER_LOAD_P
+!-- # define NHY_FORCING
+!-- # define NOX_FORCING
+# undef PCO2AIR_FORCING
+# undef BEC_COCCO
+#endif /* BIOLOGY_BEC2 */
+#undef DAILYPAR_BEC
 
-c-dd#define BULK_FRC
+#define BULK_FRC
 c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
 c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
@@ -158,6 +166,11 @@ c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
 #  define UV_TIDES
 c-dd-gone#  define TIDERAMP ! No longer using tideramp
 # endif
+
+
+#elif defined DUMMY_CASE
+
+#  define MASKING
 
 #endif
 
