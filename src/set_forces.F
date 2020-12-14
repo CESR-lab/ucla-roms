@@ -49,6 +49,9 @@
 # ifdef WEC
       use wec_frc
 # endif
+# ifdef BIOLOGY_BEC2
+      use bgc, only: set_bgc_surf_frc
+# endif
 
       implicit none
 
@@ -156,6 +159,11 @@ c***              no code here
       ! DevinD, this would probably be faster if using CPPFLAG instead,
       ! e.g. PASSIVE_TRACERS for now just use number of tracers to decide:
       if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
+
+      ! BGC surface flux:
+# ifdef BIOLOGY_BEC2
+      call set_bgc_surf_frc(istr,iend,jstr,jend)
+# endif
 
 # ifdef RIVER_SOURCE
       call set_river_frc_tile(istr,iend,jstr,jend)

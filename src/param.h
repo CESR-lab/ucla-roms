@@ -17,8 +17,8 @@ c     &               LLm=1700, MMm=850, N=50       ! US West Coast L3 DD
      &               LLm=199, MMm=99, N=50       ! test Devin L3 WEC DD
 
 #elif defined PACIFIC_PD
-c     &               LLm=930, MMm=480, N=60    ! Incorrect grid
-     &               LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
+     &               LLm=930, MMm=480, N=60    ! Incorrect grid
+C     &               LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
 c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 #elif defined ANA_RIVER_USWC
      &               LLm=100, MMm=100, N=10 ! DevinD created USWC_sample
@@ -42,7 +42,8 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
 # elif defined ANA_RIVER_USWC
 	 &      NP_XI=3, NP_ETA=2,  NSUB_X=1, NSUB_E=1
 # elif defined PACIFIC_PD
-     &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
+c     &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
+     &      NP_XI=8, NP_ETA=6, NSUB_X=1, NSUB_E=1
 # endif
 #else
      &      NSUB_X=??, NSUB_E=??
@@ -83,7 +84,16 @@ c    &               LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
      &       , itemp=1
 # ifdef SALINITY
      &       , isalt=2
+#  if defined BIOLOGY_BEC2 || defined BGC_DPD
+     &       , NT=28
+     &       , ntrc_pas=0
+     &       , ntrc_salt=1
+     &       , itrc_bio=isalt+1  ! itemp+ntrc_salt+ntrc_pas+1
+     &       , ntrc_bio_base=26
+     &       , ntrc_bio=ntrc_bio_base ! +ntrc_bio_cocco+ntrc_bio_ncycle
+#  else
      &       , NT=2
+#  endif
 # else
      &       , NT=1
 # endif

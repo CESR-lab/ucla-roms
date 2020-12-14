@@ -27,9 +27,10 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
+        call init_tracers ! New: initiate tracer variables (must be before init_scalars)
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
-        call init_tracers                ! New: initiate tracer variables
+
         if (ierr == 0) then
 C$        call omp_set_dynamic(.false.)
 C$OMP PARALLEL                           ! fast-time averaging weights
@@ -190,6 +191,11 @@ C$OMP BARRIER                          ! Here it is assumed that free
 C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
 CR      write(*,*) ' -6' MYID
 #endif
+
+# ifdef BIOLOGY_BEC2
+      ! pH is initialized to 0 in ecosys_init
+      call ecosys2_init
+# endif
 
 #ifdef ANA_INITIAL
       do tile=my_tile_range            ! Set initial conditions for
@@ -379,9 +385,10 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
         call    rho_eos(tile)
         call    set_HUV(tile)
         call       diag(tile)
-# ifdef BIOLOGY
-        call   bio_diag(tile)
-# endif
+! DevinD commented out bio_diag 20201208
+!# ifdef BIOLOGY
+!        call   bio_diag(tile)
+!# endif
       enddo
 C$OMP BARRIER
 

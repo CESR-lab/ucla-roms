@@ -8,11 +8,11 @@ S-coord: THETA_S,   THETA_B,    TCLINE (m)
            6.5d0      1.5d0       250.d0
 
 grid:  filename
-       pacmed_grd.nc
+       pacmed_0p25_grd_corrected.nc
 
 forcing: filename
        pacmed_0p25riverdis_corrected_Y2000M01_frc_newQair.nc
-       pacmed_0p25_tidestpxo9_sal_Y1980M01D01.nc
+       pacmed_0p25_tides_Y1980M01D01.nc
 
 initial: NRREC  filename
         1
@@ -33,6 +33,7 @@ rst/rst_for_Y2000M02.nc
 
 history: LDEFHIS, NWRT, NRPFHIS / filename  
             T     1     40
+      pac_his.nc
 
 averages: NTSAVG, NAVG, NRPFAVG / filename
             100000     100000  5 
@@ -49,7 +50,7 @@ primary_history_fields:    zeta UBAR VBAR  U  V   wrtT(1:NT)                    
                              T    T    T   T  T   T T   T  T   F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F      F       F     F      F      F       F     F     F   F    F      F
 
 auxiliary_history_fields:  rho Omega  W  Akv  Akt  Aks  HBL
-                            F   F     F   F    F    F    F   F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F       F       F     F      F      F       F     F     F   F    F      F
+                            F   F     F   F    F    F    T   T    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F       F       F     F      F      F       F     F     F   F    F      F
 
 primary_averages:          zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
                              T    T    T   T  T   T T T   T   F    T   F  T  T   T   T   F   F    T   F    F    T    T     T   F    T       T       T     F      F      T       T     F      T       F     F      F       F      F      F    F   F   F       F
@@ -103,8 +104,8 @@ nudg_cof: TauM2_in/out  attnM2   TauM3_in/out  TauT_in/out [days for all]
 ubind:  binding velocity [m/s]
             0.5 
 
-SSS_correction:   dSSSdt [cm/day]
-                   7.777
+SSS_correction:   dSSSdt [m/day]
+                   0.07777
 
 
 

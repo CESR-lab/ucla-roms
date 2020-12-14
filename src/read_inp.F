@@ -684,7 +684,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                 , 'u',      wrthis(indxU),    vname(2,indxU)
      &                 , 'v',      wrthis(indxV),    vname(2,indxV)
           do itrc=1,NT
-            if (wrthis(indxT+itrc-1)) wrthis(indxTime)=.true.
+            if (wrt_t(itrc)) wrthis(indxTime)=.true.
             mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
      &        itrc, ')', wrt_t(itrc), t_vname(itrc)
           enddo
@@ -780,6 +780,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                 , 'u',      wrtavg(indxU),    vname(2,indxU)
      &                 , 'v',      wrtavg(indxV),    vname(2,indxV)
           do itrc=1,NT
+            ! Currently have wrt_t(itrc) for primary_history fields. Need consistency.
             if (wrtavg(indxT+itrc-1)) wrtavg(indxTime)=.true.
             mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
      &        itrc, ')', wrt_t(itrc), t_vname(itrc)

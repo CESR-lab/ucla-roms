@@ -6,7 +6,7 @@
 
       subroutine get_bry_all(ierr_ext)     ! Read side boundary forcing
 
-      use tracers, only: t_vname
+      use tracers, only: t_vname, set_bry_tracer_defaults
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
@@ -202,8 +202,15 @@
               v_name = trim(t_vname(itrc)) / / '_west'
               ierr=nf_inq_varid(bry_id,v_name, t_west_id(itrc))
               if (ierr /= nf_noerr) then
+#    ifdef DEFAULT_BRY_VALUES
+                if(mynode==0) write(*,11) t_vname(itrc),
+     &                        bry_file(ibry)(1:lsrc) MYID
+                t_west_id(itrc) = -100 ! Set to -100 to avoid read_bry_EW/NS
+                ierr=nf_noerr
+#    else
                 if (ierr_all == nf_noerr) ierr_all=ierr
-                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+                write(*,1) t_vname(itrc), bry_file(ibry)(1:lsrc)
+#    endif
               endif
             enddo
 
@@ -273,8 +280,15 @@
               v_name = trim(t_vname(itrc)) / / '_east'
               ierr=nf_inq_varid(bry_id,v_name, t_east_id(itrc))
               if (ierr /= nf_noerr) then
+#    ifdef DEFAULT_BRY_VALUES
+                if(mynode==0) write(*,11) t_vname(itrc),
+     &                        bry_file(ibry)(1:lsrc) MYID
+                t_east_id(itrc) = -100 ! Set to -100 to avoid read_bry_EW/NS
+                ierr=nf_noerr
+#    else
                 if (ierr_all == nf_noerr) ierr_all=ierr
-                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+                write(*,1) t_vname(itrc), bry_file(ibry)(1:lsrc)
+#    endif
               endif
             enddo
 #   endif
@@ -343,8 +357,15 @@
               v_name = trim(t_vname(itrc)) / / '_south'
               ierr=nf_inq_varid(bry_id,v_name, t_south_id(itrc))
               if (ierr /= nf_noerr) then
+#    ifdef DEFAULT_BRY_VALUES
+                if(mynode==0) write(*,11) t_vname(itrc),
+     &                        bry_file(ibry)(1:lsrc) MYID
+                t_south_id(itrc) = -100 ! Set to -100 to avoid read_bry_EW/NS
+                ierr=nf_noerr
+#    else
                 if (ierr_all == nf_noerr) ierr_all=ierr
-                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+                write(*,1) t_vname(itrc), bry_file(ibry)(1:lsrc)
+#    endif
               endif
             enddo
 #   endif
@@ -413,8 +434,15 @@
               v_name = trim(t_vname(itrc)) / / '_north'
               ierr=nf_inq_varid(bry_id,v_name, t_north_id(itrc))
               if (ierr /= nf_noerr) then
+#    ifdef DEFAULT_BRY_VALUES
+                if(mynode==0) write(*,11) t_vname(itrc),
+     &                      bry_file(ibry)(1:lsrc) MYID
+                t_north_id(itrc) = -100 ! Set to -100 to avoid read_bry_EW/NS
+                ierr=nf_noerr
+#    else
                 if (ierr_all == nf_noerr) ierr_all=ierr
-                write(*,1) v_name, bry_file(ibry)(1:lsrc)
+                write(*,1) t_vname(itrc), bry_file(ibry)(1:lsrc)
+#    endif
               endif
             enddo
 #   endif
@@ -426,6 +454,8 @@
 
   1   format(1x,'### ERROR: get_bry_all :: Cannot find variable ''',
      &                                A, ''' in file ''', A, '''.')
+  11  format(1x,'--- WARNING: get_bry_all :: Cannot find variable ''',
+     &                                A, ''' in file ''', A, '''.',A,i5)
 
 ! Read data from the file:  Check if model time is bounded by past and
 !----- ---- ---- --- -----  future data times: if not, increment record
@@ -486,8 +516,19 @@
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
+#    ifdef DEFAULT_BRY_VALUES
+                  if(t_west_id(itrc)>=0) then ! read boundary values
+                    ierr=read_bry_EW(bry_id, t_west_id(itrc),  bry_rec,
+     &                           r_var, t_west_dt(0,1,itbry,itrc), N)
+                  else ! Use default values
+                    call set_bry_tracer_defaults(t_west_dt,itrc,itbry,Mm+1)
+                    if(mynode==0) print 3, trim(t_vname(itrc))
+!                    ierr=nf_noerr
+                  endif
+#    else
                   ierr=read_bry_EW(bry_id, t_west_id(itrc),  bry_rec,
      &                           r_var, t_west_dt(0,1,itbry,itrc), N)
+#    endif /* DEFAULT_BRY_VALUES */
                   if (ierr_all == nf_noerr) ierr_all=ierr
                 enddo
 #   endif
@@ -533,8 +574,19 @@
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
+#    ifdef DEFAULT_BRY_VALUES
+                  if(t_east_id(itrc)>=0) then ! Read boundary values
+                    ierr=read_bry_EW(bry_id, t_east_id(itrc),  bry_rec,
+     &                           r_var, t_east_dt(0,1,itbry,itrc), N)
+                  else ! Use default values
+                    call set_bry_tracer_defaults(t_east_dt,itrc,itbry,Mm+1)
+                    if(mynode==0) print 3, trim(t_vname(itrc))
+!                    ierr=nf_noerr
+                  endif
+#    else
                   ierr=read_bry_EW(bry_id, t_east_id(itrc),  bry_rec,
      &                           r_var, t_east_dt(0,1,itbry,itrc), N)
+#    endif /* DEFAULT_BRY_VALUES */
                   if (ierr_all == nf_noerr) ierr_all=ierr
                 enddo
 #   endif
@@ -575,8 +627,19 @@
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
+#    ifdef DEFAULT_BRY_VALUES
+                  if(t_south_id(itrc)>=0) then ! Read boundary values
+                    ierr=read_bry_NS(bry_id, t_south_id(itrc),  bry_rec,
+     &                             r_var, t_south_dt(0,1,itbry,itrc), N)
+                  else ! Use default values
+                    call set_bry_tracer_defaults(t_south_dt,itrc,itbry,Lm+1)
+                    if(mynode==0) print 3, trim(t_vname(itrc))
+!                    ierr=nf_noerr
+                  endif
+#    else
                   ierr=read_bry_NS(bry_id, t_south_id(itrc),  bry_rec,
      &                           r_var, t_south_dt(0,1,itbry,itrc), N)
+#    endif /* DEFAULT_BRY_VALUES */
                   if (ierr_all == nf_noerr) ierr_all=ierr
                 enddo
 #   endif
@@ -617,8 +680,19 @@
 #   endif
 #   ifdef T_FRC_BRY
                 do itrc=1,NT
+#    ifdef DEFAULT_BRY_VALUES
+                  if(t_north_id(itrc)>=0) then ! Read boundary values
+                    ierr=read_bry_NS(bry_id, t_north_id(itrc),  bry_rec,
+     &                           r_var, t_north_dt(0,1,itbry,itrc), N)
+                  else ! Use default values
+                    call set_bry_tracer_defaults(t_north_dt,itrc,itbry,Lm+1)
+                    if(mynode==0) print 3, trim(t_vname(itrc))
+!                    ierr=nf_noerr
+                  endif
+#    else
                   ierr=read_bry_NS(bry_id, t_north_id(itrc),  bry_rec,
      &                           r_var, t_north_dt(0,1,itbry,itrc), N)
+#    endif /* DEFAULT_BRY_VALUES */
                   if (ierr_all == nf_noerr) ierr_all=ierr
                 enddo
 #   endif
@@ -655,6 +729,10 @@
      &                                   bry_time(itbry)*sec2day
         endif
       enddo
+! 3    format(1x,'--- WARNING get_bry_all: Using default for ''',
+!     &          ''''/10x,' Sample value = ',g9.2,' (',A,i3,')'
+!     &          ,' itrc = ',i3,A,i5)
+ 3    format(1x,'--- WARNING get_bry_all: Using default value for ',A)
       if (ierr_ext == nf_noerr) ierr_ext=ierr_all
 # ifdef VERBOSE
       write(*,*) 'leaving get_bry_all' MYID
