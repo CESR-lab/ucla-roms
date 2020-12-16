@@ -7,6 +7,7 @@
 #endif
 
       use tracers, only: t_vname, wrt_t, t
+      use bgc ! wrt_his_bgc_diag
 
       implicit none
 #include "param.h"
@@ -290,6 +291,10 @@ CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
       ! Wave Effect on Current (WEC) variables
 #ifdef WEC
       call wrt_his_wec(record, ierr, may_day_flag)
+#endif
+
+#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+      call wrt_his_bgc_diag(record, ierr)
 #endif
 
 

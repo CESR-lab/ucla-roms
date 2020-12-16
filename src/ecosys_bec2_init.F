@@ -9,7 +9,7 @@
  
 #include "param.h" 
 #include "param_bec2.h"
-#include "ecosys_bec2.h"
+#include "bgc_ecosys_bec2.h"
 #include "grid.h"
 
       integer auto_ind

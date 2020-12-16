@@ -217,6 +217,5 @@
 #endif
 
       character*42  vname(3,
-     &                       180) ! DevinD - copied from old code
-!     &                       39)
+     &                       180) ! DevinD 180 copied from old code only
       common /cncvars/ vname

@@ -131,22 +131,16 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
 
 /* Biology Settings */
 #ifdef BIOLOGY_BEC2
-# define BIOLOGY /* DPD current does nothing in new code */
-# define DEFAULT_BRY_VALUES /* PD: this is useful */
-!--> # define MULT_CLIM_FILES
-# undef VFLX_CORR
-# undef BEC2_DIAG /* pd: confirmed can undef */
+# define BIOLOGY /* Needed for init_scalars.F */
+# define DEFAULT_BRY_VALUES
+# define BEC2_DIAG
 # undef Ncycle_SY
 # undef N2O_TRACER_DECOMP
 # undef N2O_NEV
-# undef RIVER_LOAD_N
-# undef RIVER_LOAD_P
-!-- # define NHY_FORCING
-!-- # define NOX_FORCING
+# undef RIVER_LOAD_N /* PD had undef'ed */
+# undef RIVER_LOAD_P /* PD had undef'ed */
 # undef PCO2AIR_FORCING
-# undef BEC_COCCO
 #endif /* BIOLOGY_BEC2 */
-#undef DAILYPAR_BEC
 
 #define BULK_FRC
 c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED

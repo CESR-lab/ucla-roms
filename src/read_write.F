@@ -1490,7 +1490,7 @@ C$OMP BARRIER
       integer, intent(in)  :: var_type ! variable type: u-, v- or rho-point
       integer ierr ! Track netcdf errors
 
-      integer, intent(in) :: coarse ! Whether function is interpolated from coarse data
+      integer, optional :: coarse ! Whether function is interpolated from coarse data
 
       ! Local variables
       ! ---------------
@@ -1498,6 +1498,11 @@ C$OMP BARRIER
 
       ! Subroutine
       ! ==========
+
+      ! Check if 'coarse' is available as optional arguement, if not set to 0
+      if(.not. present(coarse))then
+        coarse=0
+      endif
 
       ! Get variable ID
       ierr = nf90_inq_varid (ncid,var_name,var_id)

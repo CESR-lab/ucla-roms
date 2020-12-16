@@ -7,6 +7,7 @@
 ! global summation counters, model utility switches, i/o contlol, etc.
 ! Note that NONE of the model physical parameters is initialized here.
 
+      use bgc, only: init_scalars_bec2
 
       implicit none
       integer ierr, i
@@ -251,6 +252,9 @@ CR      write(*,'(1x,A,I3)') 'indxHbbl =',indxHbbl
       vname(3,indxTIsrf)='Kelvin'
 #endif
 
+#ifdef BIOLOGY_BEC2
+        call init_scalars_bec2
+#endif
 
       ierr=0
       call read_inp (ierr)

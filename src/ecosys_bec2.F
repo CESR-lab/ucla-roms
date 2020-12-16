@@ -15,7 +15,7 @@
 
 #include "param.h"  
 #include "param_bec2.h"
-#include "ecosys_bec2.h"
+#include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
 !#include "forces.h" ! DevinD commented out. Contains dailypar_bec and
 ! bgc_forces.h, so including it directly here.
@@ -964,7 +964,7 @@ c$$$       enddo
         implicit none
 #include "param.h"  
 #include "param_bec2.h"
-#include "ecosys_bec2.h"
+#include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
 #include "scalars.h"
 #include "grid.h"
@@ -2912,7 +2912,7 @@ c$$$       enddo
         implicit none
 #include "param.h" 
 #include "param_bec2.h"
-#include "ecosys_bec2.h"
+#include "bgc_ecosys_bec2.h"
 #include "scalars.h"
 #include "ocean3d.h"
 
@@ -3051,7 +3051,7 @@ c$$$       enddo
 
        implicit none
 #include "param.h"
-#include "ecosys_bec2.h"
+#include "bgc_ecosys_bec2.h"
 #include "param_bec2.h"
 #include "ocean3d.h"
 #include "grid.h"
