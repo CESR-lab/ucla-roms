@@ -13,7 +13,7 @@
 
 ! BGC tracers:
 
-      integer :: iPO4=0,
+      integer, public :: iPO4=0,
      &           iNO3=0,
      &           iSIO3=0,
      &           iNH4=0,

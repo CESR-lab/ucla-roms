@@ -59,6 +59,7 @@
 # endif
 
       use tracers, only: t
+      use bgc ! set_avg_bgc_diag
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -246,13 +247,15 @@
           enddo
         endif
 #  endif
+#  if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+      call set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)
+#  endif
 # endif /* SOLVE3D */
 
 # ifdef WEC 
         call set_avg_wec_tile(istr,iend,jstr,jend,cff,cff1
      &                                 ,jstrR,jendR,istrR,iendR)
 # endif /* WEC */
-
 
 
         if (mod(iic-ntsavg,navg) == 0) then

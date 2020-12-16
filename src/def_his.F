@@ -34,6 +34,8 @@ c--#define nf_def_var my_nf_def_var
 
       use read_write, only: output_root_name
 
+      use bgc ! def_his_bgc_diag, def_avg_bgc_diag
+
       implicit none
       integer total_rec, ierr
 #include "param.h"
@@ -656,6 +658,29 @@ c--#define nf_def_var my_nf_def_var
 
 #endif   /* WEC */
 
+      ! Define BGC diag variables
+      ! -------------------------
+#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+
+# ifndef AVRH /* NOT AVRH */
+        ! Define bgc BEC2_DIAG his variables to output
+        call def_his_bgc_diag(r2dgrd
+#  ifdef SOLVE3D
+     &                      , r3dgrd
+#  endif
+     &                               )
+
+# else /* AVRH */
+        ! Define bgc BEC2_DIAG AVERAGED variables to output
+        call def_avg_bgc_diag(r2dgrd
+#  ifdef SOLVE3D
+     &                      , r3dgrd
+#  endif
+     &                               )
+
+# endif /* END AVRH */
+
+#endif   /* BEC2_DIAG */
 
 ! Leave definition mode.
 ! ----- ---------- -----

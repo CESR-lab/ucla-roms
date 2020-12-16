@@ -7,6 +7,7 @@
 # ifdef WEC
       use wec_frc, only: wrt_avg_wec
 # endif
+      use bgc ! wrt_avg_bgc_diag
 
       implicit none
 
@@ -216,6 +217,10 @@
 
 #ifdef WEC
       call wrt_avg_wec(record, ierr, may_day_flag)
+#endif
+
+#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+      call wrt_avg_bgc_diag(record, ierr)
 #endif
 
 

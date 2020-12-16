@@ -4,6 +4,7 @@
                                              ! from netCDF file.
 
       use tracers, only: t_vname, t, iTandS
+      use bgc ! get_init_bgc_diag
 
       implicit none
 #include "param.h"
@@ -49,6 +50,11 @@
 #define time illegal
 #define tdays illegal
 #define nrrec illegal
+
+#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+# include "bgc_ecosys_bec2.h"
+#endif
+
 c--#define VERBOSE
 #ifdef VERBOSE
       write(*,'(3(2x,A,I3))') 'enter get_init: req_rec =', req_rec,
@@ -563,7 +569,7 @@ c--#define VERBOSE
           endif
         else
 
-# if defined BIOLOGY_BEC2 || defined BGC_DPD
+# if defined BIOLOGY_BEC2
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
             write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
      &                                            nf_strerror(ierr)
@@ -581,7 +587,7 @@ c--#define VERBOSE
           write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
      &                                            nf_strerror(ierr)
           goto 99                                         !--> ERROR
-# endif
+# endif /* BIOLOGY_BEC2 */
 
         endif
       enddo
@@ -622,6 +628,54 @@ c--#define VERBOSE
 
       endif
 # endif
+
+# if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+      if(mynode==0) write(*,*),'total # of 2D diagnostics:',nr_bec2_diag_2d
+      if(mynode==0) write(*,*),'total # of 3D diagnostics:',nr_bec2_diag_3d
+
+      do itrc=1,nr_bec2_diag_2d
+         lvar=lenstr(vname_bec2_diag_2d(1,itrc))
+         ierr=nf_inq_varid (ncid, vname_bec2_diag_2d(1,itrc)(1:lvar), varid)
+         if (ierr .eq. nf_noerr) then
+            ierr=ncdf_read (ncid,  varid, record, r_var
+     &                     , bec2_diag_2d(START_2D_ARRAY,itrc), 1)
+            if (ierr .ne. nf_noerr) then
+               write(*,2) vname_bec2_diag_2d(1,itrc)(1:lvar), record,
+     &              trim(ininame)
+               goto 99             !--> ERROR
+            endif
+         else
+            bec2_diag_2d(GLOBAL_2D_ARRAY,itrc) = 0.0
+            mpi_master_only write(*,*) ' --- WARNING: '
+     &         , vname_bec2_diag_2d(1,itrc)(1:lvar)
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf_noerr
+         endif
+      end do
+
+
+      ! Read in 3d diagnostic variables:
+      do itrc=1,nr_bec2_diag_3d
+         lvar=lenstr(vname_bec2_diag_3d(1,itrc))
+         ierr=nf_inq_varid (ncid, vname_bec2_diag_3d(1,itrc)(1:lvar), varid)
+         if (ierr == nf_noerr) then
+            ierr=ncdf_read (ncid,  varid, record, r_var
+     &                    , bec2_diag_3d(START_2D_ARRAY,1,itrc), N)
+            if (ierr /= nf_noerr) then
+               write(*,2) vname_bec2_diag_3d(1,itrc)(1:lvar), record,
+     &              trim(ininame)
+               goto 99             !--> ERROR
+            endif
+         else
+            bec2_diag_3d(GLOBAL_2D_ARRAY,1,itrc) = 0.0
+            mpi_master_only write(*,*) ' --- WARNING: '
+     &         , vname_bec2_diag_3d(1,itrc)(1:lvar)
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf_noerr
+         endif
+      end do
+# endif /* BIOLOGY_BEC2 && BEC2_DIAG */
+
 #endif /* SOLVE3D */
 
 ! Close input NetCDF file and  write greeting message depending
