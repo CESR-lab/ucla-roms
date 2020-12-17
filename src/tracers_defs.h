@@ -193,11 +193,77 @@
 
       !ntrc_bio_base=26 ! Total number of base bgc tracers. Hard-coded for now. Use itot later.
 
+#define LAST_I iDIAZFE
+
 !# ifdef BEC_COCCO
 !# endif
 
-!# ifdef Ncycle_SY
-!# endif
+#ifdef Ncycle_SY
+      iNO2=LAST_I+1;              wrt_t(iNO2) =.True.
+	  t_vname(iNO2)='NO2';        t_units(iNO2)='mMol N m-3'
+	  t_tname(iNO2)='';t_ana_frc(iNO2)=1
+	  t_lname(iNO2)='Nitrite'
+
+      iN2 =LAST_I+2;              wrt_t(iN2) =.True.
+	  t_vname(iN2)='N2';          t_units(iN2)='mMol N2 m-3'
+	  t_tname(iN2)='';t_ana_frc(iN2)=1
+	  t_lname(iN2)='Dinitrogen'
+
+      iN2O=LAST_I+3;              wrt_t(iN2O) =.True.
+	  t_vname(iN2O)='N2O';        t_units(iN2O)='mMol N2O m-3'
+	  t_tname(iN2O)='';t_ana_frc(iN2O)=1
+	  t_lname(iN2O)='Nitrous oxide'
+# undef LAST_I
+# define LAST_I iN2O
+# ifdef N2O_TRACER_DECOMP
+      iN2O_AO1=LAST_I+1;          wrt_t(iN2O_AO1) =.True.
+	  t_vname(iN2O_AO1)='N2O_AO1';t_units(iN2O_AO1)='mMol N2O m-3'
+	  t_tname(iN2O_AO1)='';t_ana_frc(iN2O_AO1)=1
+	  t_lname(iN2O_AO1)='Nitrous oxide produced via AO1'
+
+	  iN2O_SIDEN=LAST_I+2;        wrt_t(iN2O_SIDEN) =.True.
+	  t_vname(iN2O_SIDEN)='N2O_SIDEN';t_units(iN2O_SIDEN)='mMol N2O m-3'
+	  t_tname(iN2O_SIDEN)='';t_ana_frc(iN2O_SIDEN)=1
+	  t_lname(iN2O_SIDEN)='Nitrous oxide consumed via denitrif.'
+
+	  iN2O_SODEN=LAST_I+3;        wrt_t(iN2O_SODEN) =.True.
+	  t_vname(iN2O_SODEN)='N2O_SODEN';t_units(iN2O_SODEN)='mMol N2O m-3'
+	  t_tname(iN2O_SODEN)='';t_ana_frc(iN2O_SODEN)=1
+	  t_lname(iN2O_SODEN)='Nitrous oxide produced via denitrif.'
+
+	  iN2O_ATM=LAST_I+4;          wrt_t(iN2O_ATM) =.True.
+	  t_vname(iN2O_ATM)='N2O_ATM';t_units(iN2O_ATM)='mMol N2O m-3'
+	  t_tname(iN2O_ATM)='';t_ana_frc(iN2O_ATM)=1
+	  t_lname(iN2O_ATM)='N2O of atmospheric provenance'
+
+	  iN2_SED=LAST_I+5;           wrt_t(iN2_SED) =.True.
+	  t_vname(iN2_SED)='N2_SED';  t_units(iN2_SED)='mMol N2 m-3'
+	  t_tname(iN2_SED)='';t_ana_frc(iN2_SED)=1
+	  t_lname(iN2_SED)='N2 from sedimentary denitrification'
+#  undef LAST_I
+#  define LAST_I iN2_SED
+# endif /* N2O_TRACER_DECOMP */
+# ifdef N2O_NEV
+      iN2O_NEV=LAST_I+1
+#  undef LAST_I
+# endif /* N2O_NEV*/
+#elif defined N2O_NEV
+      iN2O_NEV=LAST_I+1
+# undef LAST_I
+#endif /* Ncycle_SY */
+
+#ifdef N2O_NEV
+! This is done without index as defined in 2 places:
+      wrt_t(iN2O_NEV) =.True.
+	  t_vname(iN2O_NEV)='N2O_NEV';t_units(iN2O_NEV)='mMol N2O m-3'
+	  t_tname(iN2O_NEV)='';t_ana_frc(iN2O_NEV)=1
+	  t_lname(iN2O_NEV)='N2O (Nevison)'
+#endif
+
+!	  i=               wrt_t() =.True.
+!	  t_vname()='';        t_units()=''
+!	  t_tname()='';t_ana_frc()=1
+!	  t_lname()=''
 
       ! total number of bgc tracers
       !ntrc_bio=ntrc_bio_base ! +ntrc_bio_cocco +ntrc_bio_ncycle

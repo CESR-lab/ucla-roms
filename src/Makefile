@@ -39,7 +39,7 @@ KRNSRC = 		dimensions.F	read_write.F tracers.F\
 \
 	river_frc.F	pipe_frc.F	diagnostics.F\
 \
-	ecosys_bec2_init.F	ecosys_bec2.F\
+	bgc_ecosys_bec2_init.F	bgc_ecosys_bec2.F\
 \
 	main.F	
 
