@@ -667,7 +667,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                                      ,  wrthis(indxVb)
 #ifdef SOLVE3D
      &                      ,  wrthis(indxU),  wrthis(indxV)
-     &                      , (wrthis(indxT+itrc-1), itrc=1,NT)
+      ! DevinD: no longer use roms.in for tracer T/F inputs
+!     &                      , (wrthis(indxT+itrc-1), itrc=1,NT)
 #endif
           if ( wrthis(indxZ) .or. wrthis(indxUb) .or. wrthis(indxVb)
 #ifdef SOLVE3D

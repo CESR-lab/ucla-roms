@@ -8,7 +8,7 @@
       implicit none
  
 #include "param.h" 
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "grid.h"
 

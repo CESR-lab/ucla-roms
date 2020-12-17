@@ -7,7 +7,7 @@
 ! global summation counters, model utility switches, i/o contlol, etc.
 ! Note that NONE of the model physical parameters is initialized here.
 
-      use bgc, only: init_scalars_bec2
+      use bgc ! init_scalars_bec2
 
       implicit none
       integer ierr, i

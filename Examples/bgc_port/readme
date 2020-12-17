@@ -1,0 +1,1 @@
+This folder contains the .h include files used to port the ETH version of bgc code into ROMS. roms-pd.in is the input file used on the ETH code.

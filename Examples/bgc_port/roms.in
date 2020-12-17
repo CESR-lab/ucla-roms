@@ -45,15 +45,15 @@ slavg/slavg_2000.nc
 output_root_name:
      pac
 
-!Variable Names:                                  T S PO4 NO3 SiO3 NH4 Fe O2 DIC ALK DOC DON DOFe DOP DOPr DONr ZooC SPChl SPC SPFe SPCaCO3 DiatChl DiatC DiatFe DiatSi DiazChl DiazC DiazFe NO2 N2O_AO1 N2O_AO2 N2O_SIDEN N2O_SODEN N2 N2O_ATM N2O N2_SED N2O_NEV
-primary_history_fields:    zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
-                             T    T    T   T  T   T T   T  T   F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F      F       F     F      F      F       F     F     F   F    F      F
+!Variable Names:                                  
+primary_history_fields:    zeta UBAR VBAR  U  V   T S
+                             T    T    T   T  T   T T
 
 auxiliary_history_fields:  rho Omega  W  Akv  Akt  Aks  HBL
                             F   F     F   F    F    F    T   T    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F       F       F     F      F      F       F     F     F   F    F      F
 
-primary_averages:          zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
-                             T    T    T   T  T   T T T   T   F    T   F  T  T   T   T   F   F    T   F    F    T    T     T   F    T       T       T     F      F      T       T     F      T       F     F      F       F      F      F    F   F   F       F
+primary_averages:          zeta UBAR VBAR  U  V   T S
+                             T    T    T   T  T   T T
 
 primary_slice_avg:         zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
                              T    F    F   T  T   T T T   T   F    T   F  T  T   T   T   T   F    T   T    T    T    T     T   F    T       T       T     F      T      T       T     F      F       F     F      F      F       F     F     F   F    F      F

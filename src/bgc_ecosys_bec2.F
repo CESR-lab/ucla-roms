@@ -14,7 +14,7 @@
        implicit none
 
 #include "param.h"  
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
 !#include "forces.h" ! DevinD commented out. Contains dailypar_bec and
@@ -963,7 +963,7 @@ c$$$       enddo
 
         implicit none
 #include "param.h"  
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
 #include "scalars.h"
@@ -2911,7 +2911,7 @@ c$$$       enddo
 
         implicit none
 #include "param.h" 
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "scalars.h"
 #include "ocean3d.h"
@@ -3052,7 +3052,7 @@ c$$$       enddo
        implicit none
 #include "param.h"
 #include "bgc_ecosys_bec2.h"
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
 #include "ocean3d.h"
 #include "grid.h"
 
@@ -4001,7 +4001,7 @@ c$$$       enddo
      &         iend,jstr,jend)
         implicit none
 ! needed for c0
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
        integer::istr,iend,jstr,jend
        LOGICAL,DIMENSION(istr:iend,jstr:jend) :: landmask
 
@@ -4128,7 +4128,7 @@ c$$$       enddo
      &         iend,jstr,jend)
         implicit none
 ! needed for c0
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
        integer::istr,iend,jstr,jend
        LOGICAL,DIMENSION(istr:iend,jstr:jend) :: landmask
 
@@ -4272,7 +4272,7 @@ c$$$       enddo
      &         iend,jstr,jend)
         implicit none
 ! needed for c0
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
        integer::istr,iend,jstr,jend
        LOGICAL,DIMENSION(istr:iend,jstr:jend) :: landmask
 
@@ -4361,7 +4361,7 @@ c$$$       enddo
      &                     iend,jstr,jend )
         implicit none
 ! needed for c0
-#include "param_bec2.h"
+#include "bgc_param_bec2.h"
        integer::istr,iend,jstr,jend
          LOGICAL,DIMENSION(istr:iend,jstr:jend) :: landmask
 
