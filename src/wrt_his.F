@@ -6,7 +6,7 @@
       use wec_frc, only: wrt_his_wec
 #endif
 
-      use tracers, only: t_vname, wrt_t, t
+      use tracers, only: wrt_his_trc
       use bgc ! wrt_his_bgc_diag
 
       implicit none
@@ -152,19 +152,8 @@ CR      write(*,*) 'wrt_his:  wrtV  ' MYID
       endif
 
 ! Tracer variables.
-      do itrc=1,NT
-        if (wrt_t(itrc)) then
-          ierr=ncdf_write(nchis,  hisT(itrc), record, r_var,
-     &                    t(START_2D_ARRAY,1,nstp,itrc), N)
 
-          if (ierr /= nf_noerr) then
-            lvar=lenstr(t_vname(itrc))
-            write(*,1) t_vname(itrc)(1:lvar),
-     &                 record MYID
-            goto 99                                       !--> ERROR
-          endif
-        endif
-      enddo
+      call wrt_his_trc(record, ierr)
 
 ! Density anomaly.
 

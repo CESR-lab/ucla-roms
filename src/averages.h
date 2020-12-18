@@ -15,13 +15,14 @@ CSDISTRIBUTE_RESHAPE  vbar_avg(BLOCK_PATTERN) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE u_avg(BLOCK_PATTERN,*) BLOCK_CLAUSE
       real v_avg(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE v_avg(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      real t_avg(GLOBAL_2D_ARRAY,N,NT)
-CSDISTRIBUTE_RESHAPE t_avg(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
+!     t_avg now stored in tracers.F
+!      real t_avg(GLOBAL_2D_ARRAY,N,NT)
+!CSDISTRIBUTE_RESHAPE t_avg(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
       real rho_avg(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE rho_avg(BLOCK_PATTERN,*) BLOCK_CLAUSE
       real w_avg(GLOBAL_2D_ARRAY,0:N)
 CSDISTRIBUTE_RESHAPE w_avg(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      common /avg_u/u_avg /avg_v/v_avg /avg_t/t_avg
+      common /avg_u/u_avg /avg_v/v_avg ! /avg_t/t_avg
      &                /avg_rho/rho_avg /avg_w/w_avg
       real wvl_avg(GLOBAL_2D_ARRAY,0:N)
 CSDISTRIBUTE_RESHAPE wvl_avg(BLOCK_PATTERN,*) BLOCK_CLAUSE

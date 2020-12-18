@@ -3,6 +3,7 @@
       subroutine def_rst(total_rec, ierr)  ! Create or open
                                            ! restart netCDF file.
       use bgc ! def_rst_bgc_diag
+      use tracers, only: t_vname, t_lname, t_units, wrt_t
 
       implicit none
       integer total_rec, ierr
@@ -303,15 +304,15 @@
 ! Tracer variables.
 
         do itrc=1,NT
-          lvar=lenstr(vname(1,indxT+itrc-1))
-          ierr=nf_def_var (ncrst, vname(1,indxT+itrc-1)(1:lvar),
+          lvar=lenstr(t_vname(itrc))
+          ierr=nf_def_var (ncrst, t_vname(itrc)(1:lvar),
      &                          NF_FTYPE, 4, r3dgrd, rstT(itrc))
-          lvar=lenstr(vname(2,indxT+itrc-1))
+          lvar=lenstr(t_lname(itrc))
           ierr=nf_put_att_text (ncrst, rstT(itrc), 'long_name',
-     &                     lvar,   vname(2,indxT+itrc-1)(1:lvar))
+     &                     lvar,   t_lname(itrc)(1:lvar))
           lvar=lenstr(vname(3,indxT+itrc-1))
           ierr=nf_put_att_text (ncrst, rstT(itrc), 'units', lvar,
-     &                             vname(3,indxT+itrc-1)(1:lvar))
+     &                             t_units(itrc)(1:lvar))
 # ifdef MASK_LAND_DATA
           ierr=nf_put_att_FTYPE (ncrst, rstT(itrc), '_FillValue',
      &                                     NF_FTYPE, 1, spv_set)

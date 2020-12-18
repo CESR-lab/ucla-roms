@@ -3,7 +3,7 @@
       subroutine wrt_rst      ! variables into restart
                               ! netCDF file.
 
-      use tracers, only: t,t_vname
+      use tracers, only: wrt_rst_trc
       use bgc ! wrt_rst_bgc_diag
 
       implicit none
@@ -170,17 +170,7 @@
 
 ! Tracer variables.
 
-      do itrc=1,NT
-        ierr=ncdf_write(ncrst,  rstT(itrc), record, r_var,
-     &                  t(START_2D_ARRAY,1,nstp,itrc), N)
-        if (ierr /= nf_noerr) then
-!          lvar=lenstr(vname(1,indxT+itrc-1))
-!          write(*,1) vname(1,indxT+itrc-1)(1:lvar), record MYID
-          lvar=lenstr(t_vname(itrc))
-          write(*,1) t_vname(itrc)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-      enddo
+      call wrt_rst_trc(record, ierr)
 
 # ifdef LMD_KPP
 ! Depth of planetary boundary layer [m].

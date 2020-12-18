@@ -8,6 +8,7 @@
       use wec_frc, only: wrt_avg_wec
 # endif
       use bgc ! wrt_avg_bgc_diag
+      use tracers, only: wrt_avg_trc
 
       implicit none
 
@@ -111,16 +112,7 @@
 
 ! Tracer variables.
 
-      do itrc=1,NT
-        if (wrtavg(indxT+itrc-1) .and. ierr == nf_noerr) then
-          ierr=ncdf_write(ncavg, avgT(itrc), record, r_var,
-     &                    t_avg(START_2D_ARRAY,1,itrc), N)
-          if (ierr /= nf_noerr) then
-            lvar=lenstr(vname(1,indxT+itrc-1))
-            write(*,1) vname(1,indxT+itrc-1)(1:lvar),record MYID
-          endif
-        endif
-      enddo
+      call wrt_avg_trc(record, ierr)
 
 ! Density anomaly.
 

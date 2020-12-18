@@ -58,7 +58,7 @@
       use wec_frc, only: set_avg_wec_tile
 # endif
 
-      use tracers, only: t
+      use tracers, only: set_avg_trc
       use bgc ! set_avg_bgc_diag
 
       implicit none
@@ -137,18 +137,9 @@
             enddo
           enddo
         endif
-        do itrc=1,NT
-          if (wrtavg(indxT+itrc-1)) then
-            do k=1,N
-              do j=jstrR,jendR
-                do i=istrR,iendR
-                  t_avg(i,j,k,itrc)=cff1*t_avg(i,j,k,itrc)
-     &                              +cff*t(i,j,k,nstp,itrc)
-                enddo
-              enddo
-            enddo
-          endif
-        enddo
+        ! Set tracer averages
+        call set_avg_trc(istrR,iendR,jstrR,jendR,cff,cff1)
+
         if (wrtavg(indxR)) then
           do k=1,N
             do j=jstrR,jendR

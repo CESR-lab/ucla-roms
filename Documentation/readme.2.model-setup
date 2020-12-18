@@ -57,13 +57,18 @@ Passive tracers:
     instructions in the file.
     I would suggest starting with no tracers or just 1 or 2 to ensure that you can get 
     it working, and then finally set it up with all of your tracers.
-    Selection of tracers for outputting comes at the end of 'primary_history_fields' in 
-    the roms.in file as before.
+    Selection of tracers for outputting is also done in tracers_defs.h.
     No longer need PASSIVE_TRACER flag for this to work.
     
 tides:
 
-    Set the number of tidal contributions you are using in tides.F variable Ntides.    
+    Set the number of tidal contributions you are using in tides.F variable Ntides. 
+    
+Averages:
+
+    Only compile roms with AVERAGES flag if you do in fact need averages. The reason for
+    this is that AVERAGES creates a second array for every variable in your model, hence
+    doubles your memory requirement. Better to remove AVERAGES flag if not using this.       
 
 Misc.:
 

@@ -50,8 +50,12 @@
 
 # COMPILER SETTINGS:
 
+# OpenMP flags:
 #	OMP_FLAG = -fpp -openmp
-#	LARGE_MEM_FLAG = -mcmodel=medium -i-dynamic
+
+# Large memory runs (e.g. for bgc):
+#	LARGE_MEM_FLAG = -mcmodel=medium
+#	LARGE_MEM_FLAG = -mcmodel=large
 
 # Fortran compiler flags:
 	CFTFLAGS = -pc64 -auto
@@ -108,4 +112,11 @@
 #	your program depends on variables having the same value as the last
 #	time the routine was invoked, your program may not function properly.
 #   the default is 'auto-scalar'.
+
+#	LARGE_MEM_FLAG:
+#	-mcmodel: Tells the compiler to use a specific memory model to
+#	generate code and store data.
+#	-shared-intel: Causes Intel-provided libraries to be linked in
+#	dynamically. This is the default for -mcmodel=medium or -mcmodel=large
+#	(-shared-intel was previously -i-dynamic, now depracated)
 
