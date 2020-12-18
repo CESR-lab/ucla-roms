@@ -29,11 +29,8 @@ c--#define nf_def_var my_nf_def_var
 #ifdef WEC
       use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
 #endif
-
-      use tracers, only: t_vname, t_lname, t_units, wrt_t
-
+      use tracers ! def_his_trc, def_avg_trc
       use read_write, only: output_root_name
-
       use bgc ! def_his_bgc_diag, def_avg_bgc_diag
 
       implicit none
@@ -399,51 +396,15 @@ c--#define nf_def_var my_nf_def_var
 # endif
         endif
 
-! Tracer variables.
-
-! DevinD this needs to conform with new tracer module
-        do itrc=1,NT
-!          if (wrt(indxT+itrc-1) .and. ierr == nf_noerr) then
-!            lvar=lenstr(vname(1,indxT+itrc-1))
-!            ierr=nf_def_var (ncid, vname(1,indxT+itrc-1)(1:lvar),
-!     &                             NF_FOUT, 4, r3dgrd, vidT(itrc))
-!# ifdef AVRH
-!            text='averaged '/ /vname(2,indxT+itrc-1)
-!# else
-!            text=vname(2,indxT+itrc-1)
-!# endif
-!            lvar=lenstr(text)
-!            ierr=nf_put_att_text (ncid, vidT(itrc), 'long_name',
-!     &                                          lvar, text(1:lvar))
-!            lvar=lenstr(vname(3,indxT+itrc-1))
-!            ierr=nf_put_att_text (ncid, vidT(itrc), 'units', lvar,
-!     &                               vname(3,indxT+itrc-1)(1:lvar))
-!# ifdef MASK_LAND_DATA
-!            ierr=nf_put_att_FOUT (ncid, vidT(itrc), '_FillValue',
-!     &                                      NF_FOUT, 1, spv_set)
-!# endif
-!          endif
-          if (wrt_t(itrc) .and. ierr == nf_noerr) then
-            lvar=lenstr(t_vname(itrc))
-            ierr=nf_def_var (ncid, t_vname(itrc)(1:lvar),
-     &                             NF_FOUT, 4, r3dgrd, vidT(itrc))
-# ifdef AVRH
-            text='averaged '/ /vname(2,indxT+itrc-1)
-# else
-            text=t_lname(itrc)
-# endif
-            lvar=lenstr(text)
-            ierr=nf_put_att_text (ncid, vidT(itrc), 'long_name',
-     &                                          lvar, text(1:lvar))
-            lvar=lenstr(t_units(itrc))
-            ierr=nf_put_att_text (ncid, vidT(itrc), 'units', lvar,
-     &                               t_units(itrc)(1:lvar))
-# ifdef MASK_LAND_DATA
-            ierr=nf_put_att_FOUT (ncid, vidT(itrc), '_FillValue',
-     &                                      NF_FOUT, 1, spv_set)
-# endif
-          endif
-        enddo
+      ! Tracer variables
+      ! ----------------
+# ifndef AVRH /* NOT AVRH */
+        ! Define tracer his variables to output
+        call def_his_trc(r3dgrd)
+# else /* AVRH */
+        ! Define tracers AVERAGED variables to output
+        call def_avg_trc(r3dgrd)
+# endif /* END AVRH */
 
 ! Density anomaly.
 
@@ -637,7 +598,6 @@ c--#define nf_def_var my_nf_def_var
       ! Define WEC related variable attributes
       ! --------------------------------------
 #ifdef WEC
-
 # ifndef AVRH /* NOT AVRH */
         ! Define WEC variables to be output
         call def_his_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
@@ -645,7 +605,6 @@ c--#define nf_def_var my_nf_def_var
      &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
 #  endif
      &                                                             )
-
 # else /* AVRH */
         ! Define WEC AVERAGED variables to be output
         call def_avg_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
@@ -653,15 +612,12 @@ c--#define nf_def_var my_nf_def_var
      &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
 #  endif
      &                                                             )
-
 # endif /* END AVRH */
-
 #endif   /* WEC */
 
       ! Define BGC diag variables
       ! -------------------------
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-
 # ifndef AVRH /* NOT AVRH */
         ! Define bgc BEC2_DIAG his variables to output
         call def_his_bgc_diag(r2dgrd
@@ -669,7 +625,6 @@ c--#define nf_def_var my_nf_def_var
      &                      , r3dgrd
 #  endif
      &                               )
-
 # else /* AVRH */
         ! Define bgc BEC2_DIAG AVERAGED variables to output
         call def_avg_bgc_diag(r2dgrd
@@ -677,9 +632,7 @@ c--#define nf_def_var my_nf_def_var
      &                      , r3dgrd
 #  endif
      &                               )
-
 # endif /* END AVRH */
-
 #endif   /* BEC2_DIAG */
 
 ! Leave definition mode.
@@ -839,23 +792,16 @@ c--#define nf_def_var my_nf_def_var
 
 ! Tracer variables.
 
-! DevinD this needs to conform with new tracer module
-        do itrc=1,NT
-!          if (wrt(indxT+itrc-1) .and. ierr == nf_noerr) then
-!            lvar=lenstr(vname(1,indxT+itrc-1))
-!            ierr=nf_inq_varid(ncid, vname(1,indxT+itrc-1)(1:lvar),
+! DevinD: no longer need to set var id as handled by read_write.F module
+!        do itrc=1,NT
+!          if (wrt_t(itrc) .and. ierr == nf_noerr) then
+!            lvar=lenstr(t_vname(itrc))
+!            ierr=nf_inq_varid(ncid, t_vname(itrc)(1:lvar),
 !     &                                                 vidT(itrc))
 !            if (ierr /= nf_noerr) write(*,1)
-!     &               vname(1,indxT+itrc-1)(1:lvar), fname(1:lfnm)
+!     &               t_vname(itrc)(1:lvar), fname(1:lfnm)
 !          endif
-          if (wrt_t(itrc) .and. ierr == nf_noerr) then
-            lvar=lenstr(t_vname(itrc))
-            ierr=nf_inq_varid(ncid, t_vname(itrc)(1:lvar),
-     &                                                 vidT(itrc))
-            if (ierr /= nf_noerr) write(*,1)
-     &               t_vname(itrc)(1:lvar), fname(1:lfnm)
-          endif
-        enddo
+!        enddo
 
 ! Density anomaly.
 

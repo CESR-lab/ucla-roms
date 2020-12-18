@@ -10,7 +10,8 @@ CSDISTRIBUTE_RESHAPE  pCO2air(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # ifndef SET_SMTH
 #  undef PCO2AIR_DATA
 # endif
-      real pco2airg(GLOBAL_2D_ARRAY,2)
+! DevinD: pco2airg not needed, flx_data in bgc.F instead
+!      real pco2airg(GLOBAL_2D_ARRAY,2)
 CSDISTRIBUTE_RESHAPE  pco2airg(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /pco2airg_dat/ pco2airg
       real pco2air_cycle, pco2air_time(2)
@@ -83,7 +84,8 @@ CSDISTRIBUTE_RESHAPE  dust(BLOCK_PATTERN) BLOCK_CLAUSE
 #  ifndef SET_SMTH
 #   undef DUST_DATA
 #  endif
-      real dustg(GLOBAL_2D_ARRAY,2)
+! DevinD: dustg not needed, flx_data in bgc.F instead
+!      real dustg(GLOBAL_2D_ARRAY,2)
 CSDISTRIBUTE_RESHAPE  dustg(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /dustg_dat/dustg
       real dust_cycle, dust_time(2)
@@ -105,7 +107,8 @@ CSDISTRIBUTE_RESHAPE  iron(BLOCK_PATTERN) BLOCK_CLAUSE
 #  ifndef SET_SMTH
 #   undef IRON_DATA
 #  endif
-      real irong(GLOBAL_2D_ARRAY,2)
+! DevinD: irong not needed, flx_data in bgc.F instead
+!      real irong(GLOBAL_2D_ARRAY,2)
 CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /irong_dat/irong
       real iron_cycle, iron_time(2)

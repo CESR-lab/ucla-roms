@@ -19,10 +19,14 @@ all:
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
 	@rsync -a $(ROMS_ROOT)/src/Makefile Compile
 	cp -p *.h *.F Compile 2>/dev/null || :
-	cd Compile; make depend; make mpc; make -j6; mv roms ..
+	cd Compile; make depend 2>/dev/null || :
+	cd Compile; make mpc; make -j6; mv roms ..
 
 # note: "2>/dev/null || :" above is needed to suppress error 
 #       stop if no .h or .F files in current directory.
+#       Also, makedepf90 in make depend can throw out strange
+#       errors for .h files for inexplicable changes made to
+#       cppdefs.h.
 
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :

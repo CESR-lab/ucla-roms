@@ -20,7 +20,7 @@
       ! Includes:
       ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
 #include "param.h"
-      ! ncvars.h for nchis and ncavg
+      ! ncvars.h for nchis, ncavg, ncrst
 #include "ncvars.h"
 #include "bgc_ecosys_bec2.h"
 
@@ -28,6 +28,13 @@
       ! User inputs
 
       integer, parameter :: nbgc_flx = 2 ! Number of surface bgc flux forcings
+#ifdef PCO2AIR_FORCING
+     &                                +1
+      ! pco2air forcing
+      character(len=8) :: pco2air_vname = 'pco2_air'
+      character(len=9) :: pco2air_tname = 'pco2_time'
+#endif
+
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! Factor 2 only for now
       ! dust forcing
@@ -55,14 +62,20 @@
       character(len=40) tclm_name(NT) ! Taken from ETH code ncvars.h
 
       public set_bgc_surf_frc
-      public def_his_bgc_diag
-#ifdef AVERAGES
-      public def_avg_bgc_diag
-      public wrt_avg_bgc_diag
+#ifdef PCO2AIR_FORCING
+      public set_pco2air_tile
 #endif
+#ifdef BEC2_DIAG
+      public def_his_bgc_diag
       public def_rst_bgc_diag
       public wrt_his_bgc_diag
       public wrt_rst_bgc_diag
+# ifdef AVERAGES
+      public def_avg_bgc_diag
+      public wrt_avg_bgc_diag
+      public set_avg_bgc_diag
+# endif
+#endif
       public init_scalars_bec2
 
       contains
@@ -84,6 +97,8 @@
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
+
+      ! dust & iron controlled by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
       ! dust
       call set_frc_var_tile(
@@ -111,6 +126,41 @@
       end subroutine set_bgc_surf_frc
 ! ----------------------------------------------------------------------
 
+#ifdef PCO2AIR_FORCING
+      subroutine set_pco2air_tile(istr,iend,jstr,jend)
+      ! read in bgc pco2air flux and interpolate to model time.
+      ! Taken from get_forces.F, get_smth.F & set_smth.F of ETH code.
+
+      use read_write, only: set_frc_var_tile
+
+      implicit none
+
+! Needed for pco2air variable, not yet ported to this module. Should do so at some point.
+#include "bgc_forces.h"
+
+      ! input/outputs
+      integer,intent(in) :: istr,iend,jstr,jend
+
+      ! pco2air controlled by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
+
+      ! Index 3 below is because currently there are 3 surface forcings,
+      ! and dust=1 and iron=2.
+      call set_frc_var_tile(
+     &        istr,iend,          jstr,jend,        ! Tile bounds indices
+     &        pco2air_vname,      pco2air_tname,    ! Text name of array and time
+     &        flx_data(:,:,:,3),  pco2air,          ! Variable arrays
+     &        flx_times(:,3),     flx_grd_type(3),  ! Input times & Grid type
+     &        flx_file_indx(3),   flx_irec(3),      ! File indx & Current input record
+     &        flx_it1(3),         flx_it2(3),       ! Time index placeholders
+     &        interp_frc )                          ! Online spatial interpolation flag
+
+!      if(mynode==0) print*, 'pco2air(20,20) ',pco2air(20,20)
+
+      end subroutine set_pco2air_tile
+#endif /* PCO2AIR_FORCING */
+! ----------------------------------------------------------------------
+
+#ifdef BEC2_DIAG
       subroutine def_his_bgc_diag(r2dgrd
 #ifdef SOLVE3D
      &                           ,r3dgrd
@@ -135,8 +185,8 @@
       do idiag=1,nr_bec2_diag_2d
         if (wrtavg_bec2_diag_2d(idiag)) then
           call nc_define_var(nchis, vname_bec2_diag_2d(1,idiag),
-     &      vname_bec2_diag_2d(2,idiag), vname_bec2_diag_2d(3,idiag),
-     &      r2dgrd, ierr )
+     &    vname_bec2_diag_2d(2,idiag), vname_bec2_diag_2d(3,idiag),
+     &    r2dgrd, ierr )
         endif
       enddo
 
@@ -144,16 +194,18 @@
       do idiag=1,nr_bec2_diag_3d
         if (wrtavg_bec2_diag_3d(idiag)) then
           call nc_define_var(nchis, vname_bec2_diag_3d(1,idiag),
-     &      vname_bec2_diag_3d(2,idiag), vname_bec2_diag_3d(3,idiag),
-     &      r3dgrd, ierr )
+     &    vname_bec2_diag_3d(2,idiag), vname_bec2_diag_3d(3,idiag),
+     &    r3dgrd, ierr )
         endif
       enddo
 
       end subroutine def_his_bgc_diag
+#endif /* BEC2_DIAG */
 ! ----------------------------------------------------------------------
 
 ! Need AVERAGES as 'ncavg' only exists in AVERAGES is defined.
 #ifdef AVERAGES
+#ifdef BEC2_DIAG
       subroutine def_avg_bgc_diag(r2dgrd
 # ifdef SOLVE3D
      &                           ,r3dgrd
@@ -180,7 +232,7 @@
         if (wrtavg_bec2_diag_2d(idiag)) then
           long_name='averaged '/ /vname_bec2_diag_2d(2,idiag) ! Add averaged to long name
           call nc_define_var(ncavg, vname_bec2_diag_2d(1,idiag),
-     &      long_name, vname_bec2_diag_2d(3,idiag), r2dgrd, ierr )
+     &    long_name, vname_bec2_diag_2d(3,idiag), r2dgrd, ierr )
         endif
       enddo
 
@@ -189,14 +241,16 @@
         if (wrtavg_bec2_diag_3d(idiag)) then
           long_name='averaged '/ /vname_bec2_diag_3d(2,idiag) ! Add averaged to long name
           call nc_define_var(ncavg, vname_bec2_diag_3d(1,idiag),
-     &      long_name, vname_bec2_diag_3d(3,idiag), r3dgrd, ierr )
+     &    long_name, vname_bec2_diag_3d(3,idiag), r3dgrd, ierr )
         endif
       enddo
 
       end subroutine def_avg_bgc_diag
+#endif /* BEC2_DIAG */
 #endif /* AVERAGES */
 ! ----------------------------------------------------------------------
 
+#ifdef BEC2_DIAG
       subroutine def_rst_bgc_diag(r2dgrd
 #ifdef SOLVE3D
      &                           ,r3dgrd
@@ -236,8 +290,10 @@
       enddo
 
       end subroutine def_rst_bgc_diag
+#endif /* BEC2_DIAG */
 ! ----------------------------------------------------------------------
 
+#ifdef BEC2_DIAG
       subroutine wrt_his_bgc_diag (record, ierr)
       ! Write BEC2_DIAG to history file
       implicit none
@@ -265,9 +321,11 @@
       end do
 
       end subroutine wrt_his_bgc_diag
+#endif /* BEC2_DIAG */
 ! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
+#ifdef BEC2_DIAG
       subroutine wrt_avg_bgc_diag (record, ierr)
       ! Write BEC2_DIAG to avg file
       implicit none
@@ -281,23 +339,25 @@
       ! 2d diagnostics:
       do itrc=1,nr_bec2_diag_2d
          if (wrtavg_bec2_diag_2d(itrc)) then
-           call nc_write_var(ncavg, bec2_diag_2d_avg(START_2D_ARRAY,itrc), 1,
-     &             vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
+           call nc_write_var(ncavg, bec2_diag_2d_avg(START_2D_ARRAY,itrc),
+     &          1, vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
          endif
       end do
 
       ! 3d diagnostics:
       do itrc=1,nr_bec2_diag_3d
          if (wrtavg_bec2_diag_3d(itrc)) then
-           call nc_write_var(ncavg, bec2_diag_3d_avg(START_2D_ARRAY,1,itrc), N,
-     &             vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
+           call nc_write_var(ncavg, bec2_diag_3d_avg(START_2D_ARRAY,1,itrc),
+     &          N, vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
          endif
       end do
 
       end subroutine wrt_avg_bgc_diag
+#endif /* BEC2_DIAG */
 #endif /* AVERAGES */
 ! ----------------------------------------------------------------------
 
+#ifdef BEC2_DIAG
       subroutine wrt_rst_bgc_diag (record, ierr)
       ! Write BEC2_DIAG to restart file
       implicit none
@@ -310,24 +370,22 @@
 
       ! 2d diagnostics:
       do itrc=1,nr_bec2_diag_2d
-         if (wrtavg_bec2_diag_2d(itrc)) then
-           call nc_write_var(ncrst, bec2_diag_2d(START_2D_ARRAY,itrc), 1,
-     &             vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
-         endif
+        call nc_write_var(ncrst, bec2_diag_2d(START_2D_ARRAY,itrc),
+     &          1, vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
       end do
 
       ! 3d diagnostics:
       do itrc=1,nr_bec2_diag_3d
-         if (wrtavg_bec2_diag_3d(itrc)) then
-           call nc_write_var(ncrst, bec2_diag_3d(START_2D_ARRAY,1,itrc), N,
-     &             vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
-         endif
+        call nc_write_var(ncrst, bec2_diag_3d(START_2D_ARRAY,1,itrc),
+     &          N, vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
       end do
 
       end subroutine wrt_rst_bgc_diag
+#endif /* BEC2_DIAG */
 ! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
+#ifdef BEC2_DIAG
       subroutine set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)
 
       implicit none
@@ -337,14 +395,6 @@
       real cff,cff1
       ! local
       integer i,j,k,itrc
-
-      if (wrt_avg_vars(indxSUP)) then
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            sup_avg(i,j)= cff1*sup_avg(i,j) +cff*sup(i,j)
-          enddo
-        enddo
-      endif
 
       do itrc=1,nr_bec2_diag_2d
          do j=jstrR,jendR
@@ -366,7 +416,8 @@
       end do
 
       end subroutine set_avg_bgc_diag
-#endif /* AVERGAES */
+#endif /* BEC2_DIAG */
+#endif /* AVERAGES */
 ! ----------------------------------------------------------------------
 
       subroutine init_scalars_bec2()

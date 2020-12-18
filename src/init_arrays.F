@@ -51,7 +51,7 @@
 #endif
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
 
-      use tracers, only: iTandS, t
+      use tracers ! iTandS, t, t_avg
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k,itrc

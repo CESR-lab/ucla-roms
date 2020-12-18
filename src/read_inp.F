@@ -9,7 +9,7 @@
 #if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
-      use tracers, only: wrt_t, t_vname
+      use tracers, only: wrt_t, t_vname, wrt_t_avg
 ! For root name of output files
       use read_write, only: read_output_root_name
 
@@ -764,7 +764,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                                        ,  wrtavg(indxVb)
 # ifdef SOLVE3D
      &                      ,  wrtavg(indxU),     wrtavg(indxV)
-     &                      , (wrtavg(indxT+itrc-1), itrc=1,NT)
+      ! DevinD: no longer use roms.in for tracer T/F inputs
+!     &                      , (wrtavg(indxT+itrc-1), itrc=1,NT)
 # endif
           if ( wrtavg(indxZ) .or. wrtavg(indxUb) .or. wrtavg(indxVb)
 # ifdef SOLVE3D
@@ -782,9 +783,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                 , 'v',      wrtavg(indxV),    vname(2,indxV)
           do itrc=1,NT
             ! Currently have wrt_t(itrc) for primary_history fields. Need consistency.
-            if (wrtavg(indxT+itrc-1)) wrtavg(indxTime)=.true.
+            if (wrt_t_avg(itrc)) wrtavg(indxTime)=.true.
             mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
-     &        itrc, ')', wrt_t(itrc), t_vname(itrc)
+     &        itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
           enddo
 
         elseif (keyword(1:kwlen) == 'auxiliary_averages') then

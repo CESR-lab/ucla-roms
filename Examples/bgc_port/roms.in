@@ -18,67 +18,37 @@ initial: NRREC  filename
         1
        pacmed_0p25_ini2000_5daysAVGsoda.nc
 
-!climatology:
-!2
-!         Input/SAWC_clm.nc 
-!         Input/SAWC_clm2.nc
-
 boundary: filename
        pacmed_0p25_bry_2000.nc
 
 restart:          NRST,  NRPFRST / filename
                   2232  2 
-rst/rst_for_Y2000M02.nc
+       rst_for_Y2000M02.nc
 
 
 history: LDEFHIS, NWRT, NRPFHIS / filename  
             T     1     40
-      pac_his.nc
 
 averages: NTSAVG, NAVG, NRPFAVG / filename
             100000     100000  5 
 
-slice_averages: K2D, NTSSLAVG, NSLAVG, NRPFSLAVG / filename
-                 42      1     72    0
-slavg/slavg_2000.nc
 
 output_root_name:
-     pac
+       pac
 
 !Variable Names:                                  
-primary_history_fields:    zeta UBAR VBAR  U  V   T S
-                             T    T    T   T  T   T T
+primary_history_fields:    zeta UBAR VBAR  U  V
+                             T    T    T   T  T
 
 auxiliary_history_fields:  rho Omega  W  Akv  Akt  Aks  HBL
                             F   F     F   F    F    F    T   T    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F       F       F     F      F      F       F     F     F   F    F      F
 
-primary_averages:          zeta UBAR VBAR  U  V   T S
-                             T    T    T   T  T   T T
-
-primary_slice_avg:         zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
-                             T    F    F   T  T   T T T   T   F    T   F  T  T   T   T   T   F    T   T    T    T    T     T   F    T       T       T     F      T      T       T     F      F       F     F      F      F       F     F     F   F    F      F
+primary_averages:          zeta UBAR VBAR  U  V
+                             T    T    T   T  T
 
 auxiliary_averages: rho Omega  W  Akv  Akt   Aks  HBL
                      F   F     T   F    T     F    T  F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F
 
-auxiliary_slice_avg: rho Omega  W  Akv  Akt  Aks  HBL
-                     F   F     F   F    F    F    T  F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F
-
-!bgc_flux_histories: newfile, nwrt, nrpfhis / filename
-!                      T      2635200     0
-!bgc_flux/bgc_flux_his_2000.nc
-
-!bgc_flux_averages:  newfile, ntsavg, navg, nrpfavg / filename
-!                      T       1      2196   0
-!bgc_flux/bgc_flux_avg_2000.nc
-
-!phys_flux_histories: newfile, nwrt, nrpfhis / filename
-!                      T      2635200     0
-!phys_flux/phys_flux_his_2000.nc
-
-!phys_flux_averages:  newfile, ntsavg, navg, nrpfavg / filename
-!                      T       1      2635200   0
-!phys_flux/phys_flux_avg_2000.nc
 
 rho0:
        1000.0d0

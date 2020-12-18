@@ -4,7 +4,7 @@
 
 #include "cppdefs.h"
 
-      use read_write, only: set_frc_var_tile ! Modules required
+      use read_write ! set_frc_var_tile, nc_define_var, rp_var
       use surf_flux,  only: stflx ! Surface tracer flux should possibly
                                   ! live in this module rather?
 
@@ -17,6 +17,10 @@
 
       ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
 #include "param.h"
+      ! ncvars.h for nchis and ncavg
+#include "ncvars.h"
+      ! scalars.h for 'FIRST_TIME_STEP' and nstp
+#include "scalars.h"
 
       ! ****************************************************************
       ! User inputs
@@ -49,6 +53,9 @@
 
       !-- Array of tracers
       real, public :: t(GLOBAL_2D_ARRAY,N,3,NT)
+#ifdef AVERAGES
+      real, public :: t_avg(GLOBAL_2D_ARRAY,N,NT)
+#endif
 
       !-- Tracer variables (user input required in init_tracers)
       character*42, dimension(nt), public :: t_vname ! Short name
@@ -56,6 +63,7 @@
       character*42, dimension(nt), public :: t_units ! Tracer units
       character*47, dimension(nt), public :: t_tname ! Tracer input time variable name
       logical, dimension(nt), public      :: wrt_t   ! T/F output tracer.
+      logical, dimension(nt), public      :: wrt_t_avg ! T/F output avg tracer.
       integer, dimension(nt) :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length
@@ -84,7 +92,14 @@
       public set_surf_tracer_flx
       public init_tracers
       public set_bry_tracer_defaults
-
+      public def_his_trc
+      public wrt_his_trc
+      public wrt_rst_trc
+#ifdef AVERAGES
+      public def_avg_trc
+      public wrt_avg_trc
+      public set_avg_trc
+#endif
       contains
 ! ----------------------------------------------------------------------
 
@@ -152,9 +167,6 @@
       ! local
       integer i,j
 
-! Needed for 'FIRST_TIME_STEP'
-#include "scalars.h"
-
 #include "compute_extended_bounds.h"
 
       ! Currently set up for zero surface tracer flux
@@ -179,6 +191,138 @@
 !     endif
 
       end subroutine set_ana_surf_tracer_flx
+! ----------------------------------------------------------------------
+
+      subroutine def_his_trc(r3dgrd)
+      ! Define history file variables in def_his.F
+
+      implicit none
+
+      ! inputs
+      integer r3dgrd(4)
+      ! local
+      integer itrc, ierr
+
+      do itrc=1,NT
+        if (wrt_t(itrc)) then
+          call nc_define_var(nchis, t_vname(itrc),
+     &    t_lname(itrc), t_units(itrc), r3dgrd, ierr )
+        endif
+      enddo
+
+      end subroutine def_his_trc
+! ----------------------------------------------------------------------
+
+! Need AVERAGES as 'ncavg' only exists in AVERAGES is defined.
+#ifdef AVERAGES
+      subroutine def_avg_trc(r3dgrd)
+
+      implicit none
+
+      ! inputs
+      integer r3dgrd(4)
+      ! local
+      integer itrc, ierr
+      character(len=64) long_name
+
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
+          call nc_define_var(ncavg, t_vname(itrc),
+     &    long_name, t_units(itrc), r3dgrd, ierr )
+        endif
+      enddo
+
+      end subroutine def_avg_trc
+#endif /* AVERAGES */
+! ----------------------------------------------------------------------
+
+      subroutine wrt_his_trc (record, ierr)
+      ! Write tracers to history file
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: record ! The timestep to be recorded
+      integer :: ierr ! Error handling
+      ! local
+      integer itrc
+
+      do itrc=1,NT
+        if (wrt_t(itrc)) then
+          call nc_write_var(nchis, t(START_2D_ARRAY,1,nstp,itrc), N,
+     &            t_vname(itrc), rp_var, record, ierr )
+        endif
+      end do
+
+      end subroutine wrt_his_trc
+! ----------------------------------------------------------------------
+
+#ifdef AVERAGES
+      subroutine wrt_avg_trc (record, ierr)
+      ! Write tracers to avg file
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: record ! The timestep to be recorded
+      integer :: ierr ! Error handling
+      ! local
+      integer itrc
+
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itrc), N,
+     &            t_vname(itrc), rp_var, record, ierr )
+        endif
+      end do
+
+      end subroutine wrt_avg_trc
+#endif /* AVERAGES */
+! ----------------------------------------------------------------------
+
+      subroutine wrt_rst_trc (record, ierr)
+      ! Write tracers to restart file
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: record ! The timestep to be recorded
+      integer :: ierr ! Error handling
+      ! local
+      integer itrc
+
+      do itrc=1,NT
+        call nc_write_var(ncrst, t(START_2D_ARRAY,1,nstp,itrc), N,
+     &          t_vname(itrc), rp_var, record, ierr )
+      end do
+
+      end subroutine wrt_rst_trc
+! ----------------------------------------------------------------------
+
+#ifdef AVERAGES
+      subroutine set_avg_trc(istrR,iendR,jstrR,jendR,cff,cff1)
+
+      implicit none
+
+      ! inputs
+      integer istrR,iendR,jstrR,jendR
+      real cff,cff1
+      ! local
+      integer i,j,k,itrc
+
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                t_avg(i,j,k,itrc)=cff1*t_avg(i,j,k,itrc)
+     &                           +cff*t(i,j,k,nstp,itrc)
+              enddo
+            enddo
+          enddo
+        endif
+      enddo
+
+      end subroutine set_avg_trc
+#endif /* AVERAGES */
 ! ----------------------------------------------------------------------
 
       subroutine init_tracers()
@@ -208,12 +352,12 @@
 #endif
 
       ! Core tracers - temp and salt:
-      itmp=1;                      wrt_t(itmp) =.True.
+      itmp=1;
       t_vname(itmp)='temp';        t_units(itmp)='Celsius'
       t_lname(itmp)='potential temperature'
       iTandS = 1 ! If only temp, no salt.
 #ifdef SALINITY
-      islt=2;                      wrt_t(islt) =.True.
+      islt=2;
       t_vname(islt)='salt';        t_units(islt)='PSU'
       t_lname(islt)='salinity'
       iTandS = 2 ! If both temp and salt.

@@ -116,16 +116,9 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
 #undef VFLX_CORR
 #undef QCORRECTION
-c-dd#define DQDT_DATA ! DevinD not entirely sure but dont think I need it
 c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
-      /* Output */
-/* #define AVERAGES  */
-#undef SLICE_AVG
-/* DPD CALENDER is in def_his.F of Pierre's code but not mine  */
-c-dd#define CALENDAR '365_day'     /* netCDF CF-convention CALENDAR attribute default: '360_day' */
-c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars.F seemingly for netcdf stamp */
 
 #define ADV_ISONEUTRAL
 
@@ -139,12 +132,10 @@ c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars
 # define N2O_NEV
 # undef RIVER_LOAD_N /* PD had undef'ed */
 # undef RIVER_LOAD_P /* PD had undef'ed */
-# undef PCO2AIR_FORCING
+# define PCO2AIR_FORCING
 #endif /* BIOLOGY_BEC2 */
 
 #define BULK_FRC
-c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
-c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
 c-dd#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
 
     /* Flux Analysis */
