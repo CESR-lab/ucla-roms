@@ -1696,9 +1696,9 @@ c      gam2=9./8.
 
 
       end subroutine compute_wec_rhs_uv_terms
-
 !-----------------------------------------------------------------------
-      subroutine set_wec_frc_tile_new(istr,iend,jstr,jend)
+
+!      subroutine set_wec_frc_tile_new(istr,iend,jstr,jend)
       ! Read and interpolate wec
 
       ! All WEC variables need time interpolation only
@@ -1706,12 +1706,12 @@ c      gam2=9./8.
 
       ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!
 
-      use read_write, only: set_frc_var_tile
-
-      implicit none
-
-      ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
+!      use read_write, only: set_frc_var_tile
+!
+!      implicit none
+!
+!      ! input/outputs
+!      integer,intent(in)  :: istr,iend,jstr,jend
 
       ! 1) Find & save force variable file_indx & correct record (irec)
       ! 2) Read in forcing data
@@ -1741,9 +1741,7 @@ c      gam2=9./8.
       ! set_wec_inp2vars()
 
 
-      end subroutine set_wec_frc_tile_new
-
-
+!      end subroutine set_wec_frc_tile_new
 !-----------------------------------------------------------------------
 
 
@@ -1797,8 +1795,7 @@ c      gam2=9./8.
           ! so this routine provides irec = irec - 1 for first time.
           ! Must make sure model time format (secs/days) matches data time
           ! Hence tdays as input data times are in days
-          call find_rec_new_mod(tdays,wec_awv_name,wec_tim_name,
-     &                               ifile,irec)
+          call find_new_record(wec_awv_name,wec_tim_name,tdays,ifile,irec)
 
           ! Reading is only done by master processor hence C$OMP MASTER
 C$OMP MASTER
@@ -1842,8 +1839,7 @@ C$OMP BARRIER
         ! the first record with wec_time > tday
         ! Must make sure model time format (secs/days) matches data time
         ! Hence tdays as input data times are in days
-        call find_rec_new_mod(tdays,wec_awv_name,wec_tim_name,
-     &                             ifile,irec)
+        call find_new_record(wec_awv_name,wec_tim_name,tdays,ifile,irec)
 
              ! Causes heisenbug
 !             if (mynode==0) print *,'irec=',irec ! Debug
