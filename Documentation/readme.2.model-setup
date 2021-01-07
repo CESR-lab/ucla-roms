@@ -7,6 +7,18 @@ executable to work for your simulation of interest:
 (Note, these intructions will assist users of the old roms code, but
 are likely insufficient for first time roms users)
 
+Running new simulations:
+
+    When running a new simulation (i.e. new input files / grid ), it is best to do a very
+    short run first. E.g. only 5 time steps, with result outputting at everytime step, this
+    should make iterating to get the model to run properly go faster, rather than waiting
+    for your first desired output only to realize there's a netcdf output issue.
+    
+    Using comet (cluster): Comet  has 2 debug nodes per user that gives you instant access 
+    to test if your code runs as you get setup (without long waits to run). Strongly encouraged.
+    See Documentation/machine-specific/Job_submission_scrips/run_script_comet_debug_nodes.lsf
+    for an example of a job submission script on the 2 debug nodes.
+
 Forcing file units:
 
     You will need to edit the units of your forcing file to match the units
@@ -18,7 +30,8 @@ Forcing file units:
     files to match: the variable name, the variable's time name, the value to 
     the correct units, and the name of the units. 
     Alternatively, you can change the variable name and time name in bulk_frc.F
-    or flux_frc.F if you prefer. Note, the units must be changed to match code.
+    or flux_frc.F if you prefer (ensure character(len=?) matches length of new name. 
+    Note, the units must be changed to match code.
     
     You can use scripts to edit netcdf files, or below is a command line example 
     of how to do it if you prefer:
@@ -73,7 +86,5 @@ Averages:
 Misc.:
 
     The machine compilation file Makedefs/Makedefs.IntelEM64T is now Makedefs.inc.
-    Note, Comet (cluster) has 2 debug nodes per user that gives you instant access to test 
-    if your code runs as you get setup (without long waits to run).
 
 

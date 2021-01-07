@@ -21,10 +21,7 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
-#if defined DOUBLE_GYRE    
-# define SOLVE3D
-
-#elif defined WEC
+#if defined WEC
 
 /* WEC */
 

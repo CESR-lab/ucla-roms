@@ -486,6 +486,15 @@
 ! Inner dimension is for variable type and outer is for variable
 ! attributes (name, long-name, units, field).
 !
+
+      ! DevinD: NOTE: 'vname' was previously used to store all
+      ! variable names (primary vars, tracers, etc).
+      ! However, tracers variable names, etc are now stored in tracers.F
+      ! in t_vname, t_lname, etc. Hence populating vname for bgc should not
+      ! be necessary. I have left it populated for now as it is somewhat harmless.
+      ! HOWEVER, vname_bec2_diag_2d & vname_bec2_diag_3d are STILL used and must
+      ! be correctly populated.
+
 #ifdef SOLVE3D
       vname(1,indxPO4)='PO4                                       '
       vname(2,indxpO4)='Phosphate                                 '
@@ -698,15 +707,16 @@ CR      write(*,'(1x,A,I3)') 'indxNH4 =',indxNH4
       vname(4,indxn2o_nev)='  '
 # endif
 
-      vname(1,indxdust)='dust                                       '
-      vname(2,indxdust)='dust flux                      '
-      vname(3,indxdust)='kg m-2 s-1                                '
-      vname(4,indxdust)='  '
-
-      vname(1,indxiron)='iron                                    '
-      vname(2,indxiron)='iron flux                      '
-      vname(3,indxiron)='nmol cm-2 s-1                             '
-      vname(4,indxiron)='  '
+      ! DevinD: commented these out as were overidding Akv & Akt vname's
+!      vname(1,indxdust)='dust                                       '
+!      vname(2,indxdust)='dust flux                      '
+!      vname(3,indxdust)='kg m-2 s-1                                '
+!      vname(4,indxdust)='  '
+!
+!      vname(1,indxiron)='iron                                    '
+!      vname(2,indxiron)='iron flux                      '
+!      vname(3,indxiron)='nmol cm-2 s-1                             '
+!      vname(4,indxiron)='  '
 
 # ifndef BEC2_DIAG
       vname(1,indxPH)='PH'

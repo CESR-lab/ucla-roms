@@ -3,7 +3,7 @@
       ! ===================================
       ! Wave Effect on Current (WEC) module
       ! ===================================
-      ! which provides all WEC terms that
+      ! provides all WEC terms that
       ! enter in the momentum equations.
       !
       ! coding: Devin Dollery & Jeroen Molemaker (2020)
@@ -11,6 +11,8 @@
       ! code essentially a copy of work already done under MRL_WCI cppflag
       ! of previous roms implementation, based on Delphine Hypolite's
       ! version of old (pre 2020) ROMS used for USWC simulations.
+
+      ! Original WEC theory and code is courtesy of Leonel Romero.
 
 #include "cppdefs.h"
 ! CPP flag WEC covering entire module so that the module is empty if
@@ -135,8 +137,8 @@
       real, public :: brk2de(GLOBAL_2D_ARRAY)
       real, public :: ust2d(GLOBAL_2D_ARRAY)
       real, public :: vst2d(GLOBAL_2D_ARRAY)
-      real         :: ustr2d(GLOBAL_2D_ARRAY)
-      real         :: vstr2d(GLOBAL_2D_ARRAY)
+      real         :: ustr2d(GLOBAL_2D_ARRAY) ! At rho point
+      real         :: vstr2d(GLOBAL_2D_ARRAY) ! At rho point
       real         :: ustr0(GLOBAL_2D_ARRAY)
       real         :: vstr0(GLOBAL_2D_ARRAY)
       real         :: llmm(GLOBAL_2D_ARRAY)
@@ -422,36 +424,6 @@
 !      character(len=5)   :: wdrx_name = 'Dwave'
 !      character(len=8)   :: wdrx_time_name = 'wwv_time'
 
-!      real    :: whrm_data(GLOBAL_2D_ARRAY,2)
-!      real    :: whrm(GLOBAL_2D_ARRAY)
-!      integer :: whrm_grd_type  = r_var
-!      integer :: whrmd_file_indx = 0
-!      integer :: whrm_irec      = 0
-!      integer :: whrm_it1 = 1, whrm_it2 = 2
-!      real, dimension(2) :: whrm_times = [-99,-99]
-!      character(len=5)   :: whrm_name = 'Awave'
-!      character(len=8)   :: whrm_time_name = 'wwv_time'
-
-!      real    :: whrm_data(GLOBAL_2D_ARRAY,2)
-!      real    :: whrm(GLOBAL_2D_ARRAY)
-!      integer :: whrm_grd_type  = r_var
-!      integer :: whrmd_file_indx = 0
-!      integer :: whrm_irec      = 0
-!      integer :: whrm_it1 = 1, whrm_it2 = 2
-!      real, dimension(2) :: whrm_times = [-99,-99]
-!      character(len=5)   :: whrm_name = 'Awave'
-!      character(len=8)   :: whrm_time_name = 'wwv_time'
-
-!      real    :: whrm_data(GLOBAL_2D_ARRAY,2)
-!      real    :: whrm(GLOBAL_2D_ARRAY)
-!      integer :: whrm_grd_type  = r_var
-!      integer :: whrmd_file_indx = 0
-!      integer :: whrm_irec      = 0
-!      integer :: whrm_it1 = 1, whrm_it2 = 2
-!      real, dimension(2) :: whrm_times = [-99,-99]
-!      character(len=5)   :: whrm_name = 'Awave'
-!      character(len=8)   :: whrm_time_name = 'wwv_time'
-
       ! ================================
       ! WEC subroutines needed as public (accessed outside of module)
       ! ================================
@@ -476,18 +448,11 @@
       ! =======================
 
       contains 
-
 ! ----------------------------------------------------------------------
-! ----------------------------------------------------------------------
-! ----------------------------------------------------------------------
-
-
 
       ! ##################
       ! NETCDF SUBROUTINES
       ! ##################
-
-
 
       subroutine read_inp_wec (keyword, ierr, kwlen)
 
@@ -568,10 +533,7 @@
  100  continue
 
       end subroutine read_inp_wec
-
-
 ! ----------------------------------------------------------------------
-
 
 #ifdef AVERAGES
       subroutine read_inp_avg_wec (keyword, ierr, kwlen)
@@ -655,8 +617,6 @@
 
       end subroutine read_inp_avg_wec
 #endif /* AVERAGES */
-
-
 !-----------------------------------------------------------------------
 
 #ifndef ANA_WEC_FRC
@@ -751,9 +711,7 @@
 
       end subroutine read_wec_frc
 #endif /* !ANA_WEC_FRC */
-
 ! ----------------------------------------------------------------------
-
 
       subroutine def_his_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
 #ifdef SOLVE3D
@@ -849,9 +807,7 @@
 # endif  /* SOLVE3D */
 
       end subroutine def_his_def_var_wec
-
-
-      ! --------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 #ifdef AVERAGES
       subroutine def_avg_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
@@ -967,11 +923,7 @@
 
       end subroutine def_avg_def_var_wec
 #endif /* AVERAGES */
-
-
-
 ! ----------------------------------------------------------------------
-
 
       subroutine wrt_his_wec (record, ierr, may_day_flag)
 
@@ -1057,8 +1009,6 @@
 # endif  /* SOLVE3D */
 
       end subroutine wrt_his_wec
-
-
 ! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
@@ -1138,18 +1088,11 @@
 
       end subroutine wrt_avg_wec
 #endif /* AVERAGES */
-
-
 ! ----------------------------------------------------------------------
-
-
 
       ! ######################
       ! ANALYTICAL SUBROUTINES
       ! ######################
-
-
-
 
 #ifdef ANA_WEC_FRC
       subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
@@ -1199,8 +1142,6 @@
 
       end subroutine ana_init_wec_frc_tile
 #endif /* ANA_WEC_FRC */
-
-
 ! ----------------------------------------------------------------------
 
 #ifdef ANA_WEC_FRC
@@ -1308,17 +1249,11 @@
 
       end subroutine ana_wec_frc_tile
 #endif /* ANA_WEC_FRC */
-
-
-
 ! ----------------------------------------------------------------------
-
-
 
       ! ###################
       ! FORCING SUBROUTINES
       ! ###################
-
 
       subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
 
@@ -1437,10 +1372,7 @@
 
 
       end subroutine init_arrays_wec_tile
-
-
 ! ----------------------------------------------------------------------
-
 
 #ifdef SOLVE3D
 
@@ -1458,7 +1390,7 @@
       call wstokes_wec_tile(istr,iend,jstr,jend)
 
       end subroutine wstokes_wec
-
+!-----------------------------------------------------------------------
 
       subroutine wstokes_wec_tile (istr,iend,jstr,jend)
 
@@ -1546,9 +1478,6 @@
 
       end subroutine wstokes_wec_tile
 #endif  /* SOLVE3D */
-
-
-
 ! ----------------------------------------------------------------------
 
       subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,
@@ -1743,7 +1672,6 @@ c      gam2=9./8.
 
 !      end subroutine set_wec_frc_tile_new
 !-----------------------------------------------------------------------
-
 
       subroutine set_wec_frc_tile (istr,iend,jstr,jend,ierr)
 
@@ -1952,9 +1880,6 @@ C$OMP BARRIER
 # endif /* ANA_WEC_FRC or REALISTIC MODEL */
 
       end subroutine set_wec_frc_tile
-
-
-
 !-------------------------------------------------------------------------
 
 #ifndef ANA_WEC_FRC
@@ -2059,9 +1984,6 @@ C$OMP BARRIER
       end subroutine set_wec_inp2vars
 
 #endif /* !ANA_WEC_FRC */
-
-
-
 ! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
@@ -2181,8 +2103,6 @@ C$OMP BARRIER
 
       end subroutine set_avg_wec_tile
 #endif /* AVERAGES */
-
-
 ! ----------------------------------------------------------------------
 
       subroutine wec_forces (tile)
@@ -2205,8 +2125,6 @@ C$OMP BARRIER
      &                                              A2d(1,12),A2d(1,13))
 
       end subroutine wec_forces
-
-
 ! ----------------------------------------------------------------------
 
       subroutine wec_forces_tile (istr,iend,jstr,jend,
@@ -2321,7 +2239,7 @@ C$OMP BARRIER
 
 
 
-! TRANSLATIONS AND MANIPULATIONS OF WEV VARIABLES FROM RAW VALUES IN
+! TRANSLATIONS AND MANIPULATIONS OF WEC VARIABLES FROM RAW VALUES IN
 ! FORCING FILE TO NEEDED VARIABLES HERE. AS PER SET_WWAVE_TILE (OLD) OR
 ! SET_WEC_FRC_TILE (NEW).
 
@@ -2715,57 +2633,57 @@ c        do i=istr-1,iend+1
           do while (abs(1-FAC).gt.USTERR.and.
      &         abs(FAC-FACo)/FAC.gt.1e-6.and.COUNTR.lt.15.)
           ! reset cff1
-          cff1 = exp( 2.*keff(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
-     &          -exp(-2.*keff(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
-          USEZ=0.
-          VSEZ=0.
-          COUNTR=COUNTR+1.
-          if (FACo.ne.0.) then
-             ust_rm(i,j,:)=ust_rm(i,j,:)/FAC
-          endif
-          FACo=FAC
-          do k=1,N,+1              ! <-- irreversible
+            cff1 = exp( 2.*keff(i,j)*(z_w(i,j,0)+h(i,j)-Dstp(i,j)))
+     &            -exp(-2.*keff(i,j)*(z_w(i,j,0)+h(i,j)+Dstp(i,j)))
+            USEZ=0.
+            VSEZ=0.
+            COUNTR=COUNTR+1.
+            if (FACo.ne.0.) then
+               ust_rm(i,j,:)=ust_rm(i,j,:)/FAC
+            endif
+            FACo=FAC
+            do k=1,N,+1              ! <-- irreversible
 c          if (COUNTR.ne.1.) then
 c            ust_rm(i,j,k)=ust_rm(i,j,k)/FAC
 c          endif
-          if (kw(i,j)*Dstp(i,j).gt.2.*pi/20.
+              if (kw(i,j)*Dstp(i,j).gt.2.*pi/20.
      &            .or.abs(ustm0-ustm0w)/ustm0w.gt..1) then ! should avoid if inside loop
 C  abs(ustm0-ustm0w)/ustm0w> .1 helps in conditions of mixed wind sea
 C  and swell
 c            inv_dz(i,j,k)=1./Hz(i,j,k)
-            cff2 = exp( 2.*keff(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
-     &            -exp(-2.*keff(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
-            vst_r(i,j,k)=ust_rm(i,j,k)*wdre(i,j)*
-     &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
-     &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
-     &             vst_ker*inv_dz(i,j,k)*( cff2-cff1 )
+                cff2 = exp( 2.*keff(i,j)*(z_w(i,j,k)+h(i,j)-Dstp(i,j)))
+     &                -exp(-2.*keff(i,j)*(z_w(i,j,k)+h(i,j)+Dstp(i,j)))
+                vst_r(i,j,k)=ust_rm(i,j,k)*wdre(i,j)*
+     &                       sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
+     &                   (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
+     &                       vst_ker*inv_dz(i,j,k)*( cff2-cff1 )
 c             vst_r(i,j,k)= vst_ker*inv_dz(i,j,k)*( cff2-cff1 ) ! test
 c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
-            ust_r(i,j,k)=ust_rm(i,j,k)*wdrx(i,j)*
-     &                sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
-     &            (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
-     &             ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
-            cff1=cff2
-          else
-             vst_r(i,j,k)= ust_rm(i,j,k)*wdre(i,j) !
-             ust_r(i,j,k)= ust_rm(i,j,k)*wdrx(i,j)  ! monochromatic in shallow water
-          endif
-             USEZ=USEZ+ust_r(i,j,k)*Hz(i,j,k)
-             VSEZ=VSEZ+vst_r(i,j,k)*Hz(i,j,k)
-             enddo
-             if (sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2).ne.0) then ! ensure consistency betwew ustk and the depth integraded
-               FAC=sqrt(USEZ**2+VSEZ**2)/(
-     &           sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)*Dstp(i,j))
-             else
-               FAC=1.
-             endif
-!             write(*,*) 'FAC=', FAC
-             end do ! while
-             fac2d(i,j)=FAC
-          if (kw(i,j)*Dstp(i,j).lt.2.*pi/20.
-     &            .or.abs(ustm0-ustm0w)/ustm0w.lt..1) then
-               keff(i,j)=kw(i,j)  ! shallow water
+                ust_r(i,j,k)=ust_rm(i,j,k)*wdrx(i,j)*
+     &                       sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.)))+
+     &                   (1.-sqrt(tanh(abs(z_r(i,j,k)*keff(i,j)/2.))))*
+     &                       ust_ker*inv_dz(i,j,k)*( cff2-cff1 )
+                cff1=cff2
+              else
+                vst_r(i,j,k)= ust_rm(i,j,k)*wdre(i,j) !
+                ust_r(i,j,k)= ust_rm(i,j,k)*wdrx(i,j)  ! monochromatic in shallow water
               endif
+              USEZ=USEZ+ust_r(i,j,k)*Hz(i,j,k)
+              VSEZ=VSEZ+vst_r(i,j,k)*Hz(i,j,k)
+            enddo
+            if (sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2).ne.0) then ! ensure consistency betwew ustk and the depth integraded
+              FAC=sqrt(USEZ**2+VSEZ**2)/(
+     &            sqrt(ustr2d(i,j)**2+vstr2d(i,j)**2)*Dstp(i,j))
+            else
+              FAC=1.
+            endif
+!             write(*,*) 'FAC=', FAC
+          end do ! while
+          fac2d(i,j)=FAC
+          if (kw(i,j)*Dstp(i,j).lt.2.*pi/20.
+     &        .or.abs(ustm0-ustm0w)/ustm0w.lt..1) then
+            keff(i,j)=kw(i,j)  ! shallow water
+          endif
 
 # endif
         enddo

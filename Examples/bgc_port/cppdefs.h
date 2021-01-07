@@ -26,8 +26,6 @@ c--#endif
 
 c-dd# define RIVER_SOURCE
 c-dd# define PIPE_SOURCE
-c-dd#define BGC_DPD
-c-dd#define DEFAULT_BRY_VALUES
 #define BIOLOGY_BEC2
 
 c-dd# define WEC
