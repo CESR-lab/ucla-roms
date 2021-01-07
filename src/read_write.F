@@ -294,10 +294,10 @@ C$OMP BARRIER
       integer :: nfiles ! Number of forcing files
       integer :: irec_old, file_indx_old
       integer :: var_max_recs ! Total variable records in file
-      integer :: v_id, dimid  ! variable ID & dimension ID
+      integer :: v_id         ! variable ID
       integer :: var_tid      ! Variable time id
       logical :: first        ! Check if first time finding an entry
-!      real    :: cycle_length ! Deal with cyclical forcing files
+      integer, dimension(1) :: dimids ! Time dimension ID
 
       ! Routine
       ! =======
@@ -351,14 +351,20 @@ C$OMP BARRIER
           ! gets to last file without finding variable, that error msg correct
           found_var_log = found_var_log + found_var
 
-          ! Get time dimension ID
-          ierr=nf90_inq_dimid(ncid, var_time_name, dimid)
-          ! Find the size of dimensions (var_max_recs)
-          ! I.e. total number of records per variable, using time dimension
-          ierr=nf90_inquire_dimension(ncid, dimid, len=var_max_recs)
-
           ! Find variable ID for time variable
           ierr = nf90_inq_varid(ncid, var_time_name, var_tid) ! Get time ID (var_tid)
+          if(ierr/=0) call handle_ierr(ierr,
+     &      'find_new_record:: cannot find time variable:',var_time_name)
+
+          ! Get time dimension ID as only dimension of time variable
+          ! (time dimension & time variable are different entities)
+          ierr=nf90_inquire_variable(ncid, var_tid, dimids = dimids)
+          if(ierr/=0) call handle_ierr(ierr,
+     &      'find_new_record:: time dimension issue for var:',var_time_name)
+
+          ! Find the size of dimensions (var_max_recs)
+          ! I.e. total number of records per variable, using time dimension
+          ierr=nf90_inquire_dimension(ncid, dimids(1), len=var_max_recs)
 
           ! Reset and get cycle length (if available for cyclical forcing) for new variable
           cycle_length=0.
@@ -479,14 +485,18 @@ C$OMP BARRIER
         error stop 'find_new_record: var not found in forcing files'
       endif
       if (found_rec==0) then
-        if(mynode==0) write(*,'(/1x,2A/)')
-     &  'ERROR: find_new_record: Ran out of time records for ', var_name
-        error stop 'ran out of time records'
+        write(*,'(/1x,3A,I3/)')
+     &  'ERROR: find_new_record: Found variable, but ran out of time records for ',
+     &                                var_name, ' mynode=', mynode
+        error stop 'Found variable, but ran out of time records'
       endif
 
       ! For the first timestep we set irec=irec-1, if the first file's
       ! first record (irec=1) is past current time, then irec=1-1=0
       if (irec==0) then
+        write(*,'(/1x,4A,I3/)') 'ERROR: find_new_record:: ',
+     &    'First available forcing record is past current time for var: ',
+     &     var_name, ' mynode=', mynode
         error stop 'First available forcing record is past current time'
       endif
 
@@ -1844,28 +1854,36 @@ C$OMP BARRIER
 
 
       end function ncdf_read_mod
-
-
 ! ----------------------------------------------------------------------
-      subroutine handle_ierr(ierr, err_msg)
-      ! Handle ierr with error message. Assumed fatal error.
-      ! err_msg is optional message to include to know more about
-      ! location of error
+
+      subroutine handle_ierr(ierr, err_msg1, err_msg2)
+      ! Handle ierr with error messages. Assumed fatal error.
+      ! err_msg1 & 2 are optional messages to include to know
+      ! more about location/source of error.
 
       implicit none
 
       ! Inputs
       integer ierr
-      character(len=*), optional :: err_msg
+      character(len=*), optional :: err_msg1, err_msg2
       ! Local
-      character(len=100) :: f_msg
+!      character(len=*), allocatable :: f_msg, f_msg1, f_msg2
+      character(:), allocatable :: f_msg, f_msg1, f_msg2
 
-      ! Check if error message is available
-      if(present(err_msg))then
-          f_msg=err_msg
+      ! Check if error message 1 is available
+      if(present(err_msg1))then
+          f_msg1=err_msg1
       else
-          f_msg=''
+          f_msg1=''
       endif
+      ! Check if error message 2 is available
+      if(present(err_msg2))then
+          f_msg2=err_msg2
+      else
+          f_msg2=''
+      endif
+      ! Combine optional messages:
+      f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
 
       if(mynode==0) then
         write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
@@ -1875,8 +1893,6 @@ C$OMP BARRIER
       error stop ! Stop simulation assumed fatal error
 
       end subroutine handle_ierr
-
-
 ! ----------------------------------------------------------------------
 
       function ncdf_read_coarser_grid(ncid, varid, record,

@@ -87,9 +87,11 @@ INSTRUCTIONS: COMPILING ROMS
   8. Compile your specifc simulation:
 
      A. If you are running your own simulation, copy ONLY the files that you 
-        need to EDIT from src/ folder into the Work/ folder. 
+        need to EDIT from src/ folder into the Work/ folder.         
         If you are using an example then also copy relevant files from Examples/... 
         into Work/ (excluding the Makefile) 
+        You can copy Makedefs.inc into work if you need to change compilation
+        settings, but don't copy the Makefile from src/ to Work/.
      B. Open Work/ dir. Edit your files. See Documentation/README-model-setup  
         for details on configuring roms for your simulation as per new code.
         Type 'make'.
@@ -111,7 +113,8 @@ Recompiling roms:
      This will be done automatically using the Work/ or Examples/ directory.
      
   C. If you change compiler options in Makedefs.inc, you should first run 
-     'make clean_compile', and then 'make' to do a full rebuild.
+     'make compile_clean' (or delete Compile/ directory), 
+     and then 'make' to do a full rebuild.
 
 
 Roms tools:

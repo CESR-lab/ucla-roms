@@ -74,7 +74,7 @@ nudg_cof: TauM2_in/out  attnM2   TauM3_in/out  TauT_in/out [days for all]
 ubind:  binding velocity [m/s]
             0.5 
 
-SSS_correction:   dSSSdt [m/day]
+SSS_correction:   dSSSdt [cm/day]
                    0.07777
 
 

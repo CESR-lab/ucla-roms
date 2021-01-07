@@ -33,7 +33,7 @@ restart:          NRST, NRPFRST / filename
      none
      
 output_root_name:
-     uswc_wec     
+     sample_wec     
 
 history: LDEFHIS, NWRT, NRPFHIS / filename
             T    1   48
