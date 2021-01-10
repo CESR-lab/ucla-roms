@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH -A cla119
+#SBATCH --job-name="roms_tests"
+#SBATCH --output="roms_code_tests.out"
+#SBATCH --partition=debug
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=6
+#SBATCH --export=ALL
+#SBATCH -t 00:05:00
+#SBATCH --mail-user=ddevin
+
+module load python
+./test_roms.sh
+

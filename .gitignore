@@ -7,7 +7,6 @@
 *.mod
 *.swp
 *.so
-*.log
 jobout
 mpc
 roms
@@ -30,6 +29,9 @@ Work/*.h
 Work/*.sh
 Tools-Roms/partit
 Tools-Roms/ncjoin
+# For code_check/:
+sample_wec_test_old.log
+river_ana_test_old.log
 
 # DevinD related ignores:
 .settings

@@ -45,8 +45,8 @@
 	NHMG_LIB  = $(NHMG_ROOT)/lib
 	NHMG_INC  = $(NHMG_ROOT)/include
 
-	VPATH = ${NETCDFHOME}/include:${NHMG_INC}
-	CPATH = ${NETCDFHOME}/include:${NHMG_INC}
+	VPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${NHMG_INC}
+	CPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${NHMG_INC}
 
 # COMPILER SETTINGS:
 

@@ -1,0 +1,249 @@
+
+ Activated CPP configuration switches:
+ <cppdefs.h>
+       WEC                     SALINITY                SOLVE3D
+       UV_ADV                  NONLIN_EOS              SPLIT_EOS
+       BRK0                    USWC_WEC                UV_COR
+       CURVGRID                SPHERICAL               MASKING
+       AVERAGES                NEW_S_COORD             UV_VIS2
+       MIX_GP_UV               TS_DIF2                 MIX_GP_TS
+       LMD_MIXING              LMD_KPP                 LMD_BKPP
+       LMD_CONVEC              LMD_NONLOCAL            OBC_WEST
+       OBC_EAST                OBC_NORTH               OBC_SOUTH
+       OBC_M2FLATHER           OBC_M3ORLANSKI          OBC_TORLANSKI
+       Z_FRC_BRY               M2_FRC_BRY              M3_FRC_BRY
+       T_FRC_BRY               SPONGE                  SURFACE_BREAK
+       WAVE_OFFLINE            WAVE_FRICTION           BBL_S95
+       SUP_OFF                 WAVE_DIFF_FROM_LM       BULK_FRC
+       BULK_FLUX_OUTPUT
+ <scoord.h>
+       VERT_COORD_TYPE_SM09
+ <pre_step3d4S.F>
+       SPLINE_UV               SPLINE_TS
+ <step3d_uv1.F>
+       UPSTREAM_UV             SPLINE_UV
+ <step3d_uv2.F>
+       DELTA=0.28              EPSIL=0.36
+ <step3d_t_ISO.F>
+       UPSTREAM_TS             SPLINE_TS
+ <set_depth.F>
+       NOW=3.63                MID=4.47                BAK=2.05
+       (N-M+B)/B=0.10243902439
+ <lmd_kpp.F>
+       INT_AT_RHO_POINTS       SMOOTH_HBL              LIMIT_UNSTABLE_ONLY
+ <set_global_definitions.h>
+       CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
+       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
+
+ 2020-11: uswc sample domain with WEC
+     ntimes =         5   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: ../USWC_model/input_data/sample_grd_riv.0.nc
+ forcing data file(s): ../USWC_model/input_data/sample_prec_units_DPD.0.nc
+                       ../USWC_model/input_data/sample_wnd.0.nc
+                       ../USWC_model/input_data/sample_tra_units_DPD.0.nc
+                       ../USWC_model/input_data/sample_rad_units_DPD.0.nc
+                       ../USWC_model/input_data/sample_tracers.0.nc
+                       ../USWC_model/input_data/sample_wwv_riv.0.nc
+ initial condition :: rec =  1  file = '../USWC_model/input_data/roms_init_trace.0.nc'
+
+ WARNING: Urecognized keyword 'climatology' --> DISREGARDED.
+
+ boundary forcing file(s): ../USWC_model/input_data/roms_bry_trace.0.nc
+ restart :: nrst =  999999  rec/file =    1  file ='none.0'
+
+ history :: overwrite = F  nwrt =   10  rec/file =  48  '
+
+ averages :: ntsavg =    10  navg =*****  rec/file =   8  file = '.0'
+
+ fields to write into history file: (T/F)
+        zeta   T   free-surface elevation                    
+        ubar   T   vertically averaged u-momentum component  
+        vbar   T   vertically averaged v-momentum component  
+        u      T   u-momentum component                      
+        v      T   v-momentum component                      
+        t( 1)  T   temp                                      
+        t( 2)  T   salt                                      
+
+        rho    F   density anomaly                           
+        Omega  F   S-coordinate vertical velocity            
+        W      F   vertical velocity                         
+        Akv    F   vertical viscosity coefficient            
+        Akt    F   vertical thermal conductivity coefficient 
+        Aks    F   salinity vertical diffusion coefficient   
+        hbls   F   Thickness of KPP surface boundary layer   
+        hbbl   F   Thickness of KPP bottom boundary layer    
+
+ fields to compute time averages of: (T/F)
+        zeta   T   free-surface elevation                    
+        ubar   T   vertically averaged u-momentum component  
+        vbar   T   vertically averaged v-momentum component  
+        u      T   u-momentum component                      
+        v      T   v-momentum component                      
+        t( 1)  T   temp                                      
+        t( 2)  T   salt                                      
+
+        rho    F   density anomaly                           
+        Omega  T   S-coordinate vertical velocity            
+        W      F   vertical velocity                         
+        Akv    F   vertical viscosity coefficient            
+        Akt    F   vertical thermal conductivity coefficient 
+        Aks    F   salinity vertical diffusion coefficient   
+        hbls   T   Thickness of KPP surface boundary layer   
+        hbbl   T   Thickness of KPP bottom boundary layer    
+
+ fields to be saved in WEC 2D history: (T/F)
+        SUP    F   quasi-static sea-level response (set-up)
+        UST2D  T   u depth-averaged Stokes drift velocity
+        VST2D  T   v depth-averaged Stokes drift velocity
+
+ fields to be saved in WEC 3D history: (T/F)
+        UST    T   u 3D Stokes drift velocity
+        VST    T   v 3D Stokes drift velocity
+        WST    F   w vertical 3D Stokes drift velocity
+        Akb    F   eddy viscosity due to wave breaking
+        Akw    F   eddy diffusivity due to primary waves
+        KVF    F   vertical vortex force (u^st du/dz)
+        CALP   T   surface pressure correction in prsgrd
+        KAPS   F   surface Bernoulli head in prsgrd term
+
+ fields to be saved in WEC 2D average: (T/F)
+        SUP    F   quasi-static sea-level response (set-up)
+        UST2D  F   u depth-averaged Stokes drift velocity
+        VST2D  F   v depth-averaged Stokes drift velocity
+
+ fields to be saved in WEC 3D average: (T/F)
+        UST    F   u 3D Stokes drift velocity
+        VST    F   v 3D Stokes drift velocity
+        WST    F   w vertical 3D Stokes drift velocity
+        Akb    F   eddy viscosity due to wave breaking
+        Akw    F   eddy diffusivity due to primary waves
+        KVF    F   vertical vortex force (u^st du/dz)
+        CALP   F   surface pressure correction in prsgrd
+        KAPS   F   surface Bernoulli head in prsgrd term
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+
+ NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+ Spherical grid detected.
+
+      get_grid :: read grid data from file '../USWC_model/input_data/sample_grd_riv.0.nc'.
+ hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
+ hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
+                                           open_cross = 5.4367977391196312E+06
+ Cg_max = 0.3808322   Cg_min = 0.0337713   Cu_Cor = 0.0016583
+
+ Vertical S-coordinate system (z at W-points):
+
+  level   S-coord    Cs-curve    Z at hmin       at hc    half way     at hmax
+
+     50   0.000000   0.0000000       0.000       0.000       0.000       0.000
+     49  -0.020000  -0.0002160      -0.035      -0.253      -0.436      -0.500
+     48  -0.040000  -0.0008668      -0.070      -0.511      -0.915      -1.096
+     47  -0.060000  -0.0019610      -0.105      -0.775      -1.438      -1.788
+     46  -0.080000  -0.0035129      -0.140      -1.044      -2.007      -2.580
+     45  -0.100000  -0.0055425      -0.175      -1.319      -2.624      -3.476
+     44  -0.120000  -0.0080762      -0.211      -1.601      -3.292      -4.483
+     43  -0.140000  -0.0111465      -0.246      -1.889      -4.012      -5.607
+     42  -0.160000  -0.0147924      -0.281      -2.185      -4.791      -6.857
+     41  -0.180000  -0.0190596      -0.317      -2.488      -5.631      -8.242
+     40  -0.200000  -0.0240012      -0.352      -2.800      -6.539      -9.775
+     39  -0.220000  -0.0296773      -0.388      -3.121      -7.520     -11.469
+     38  -0.240000  -0.0361561      -0.424      -3.452      -8.581     -13.338
+     37  -0.260000  -0.0435132      -0.460      -3.794      -9.730     -15.399
+     36  -0.280000  -0.0518329      -0.496      -4.148     -10.975     -17.670
+     35  -0.300000  -0.0612071      -0.532      -4.515     -12.326     -20.171
+     34  -0.320000  -0.0717362      -0.568      -4.897     -13.792     -22.925
+     33  -0.340000  -0.0835284      -0.604      -5.294     -15.384     -25.955
+     32  -0.360000  -0.0966989      -0.641      -5.709     -17.113     -29.286
+     31  -0.380000  -0.1113694      -0.678      -6.142     -18.993     -32.945
+     30  -0.400000  -0.1276667      -0.715      -6.596     -21.035     -36.960
+     29  -0.420000  -0.1457202      -0.752      -7.072     -23.252     -41.358
+     28  -0.440000  -0.1656599      -0.790      -7.571     -25.658     -46.169
+     27  -0.460000  -0.1876125      -0.827      -8.095     -28.265     -51.419
+     26  -0.480000  -0.2116970      -0.866      -8.646     -31.085     -57.135
+     25  -0.500000  -0.2380192      -0.904      -9.225     -34.128     -63.341
+     24  -0.520000  -0.2666648      -0.943      -9.833     -37.403     -70.054
+     23  -0.540000  -0.2976916      -0.982     -10.471     -40.917     -77.287
+     22  -0.560000  -0.3311200      -1.021     -11.139     -44.670     -85.045
+     21  -0.580000  -0.3669228      -1.060     -11.837     -48.660     -93.322
+     20  -0.600000  -0.4050140      -1.100     -12.563     -52.879    -102.099
+     19  -0.620000  -0.4452377      -1.141     -13.315     -57.311    -111.343
+     18  -0.640000  -0.4873571      -1.181     -14.092     -61.932    -121.000
+     17  -0.660000  -0.5310454      -1.222     -14.888     -66.710    -131.000
+     16  -0.680000  -0.5758799      -1.262     -15.698     -71.602    -141.251
+     15  -0.700000  -0.6213408      -1.303     -16.517     -76.557    -151.639
+     14  -0.720000  -0.6668167      -1.344     -17.335     -81.514    -162.030
+     13  -0.740000  -0.7116186      -1.385     -18.145     -86.403    -172.273
+     12  -0.760000  -0.7550040      -1.425     -18.938     -91.151    -182.207
+     11  -0.780000  -0.7962112      -1.466     -19.703     -95.681    -191.666
+     10  -0.800000  -0.8345042      -1.506     -20.431     -99.920    -200.487
+      9  -0.820000  -0.8692240      -1.545     -21.115    -103.802    -208.527
+      8  -0.840000  -0.8998432      -1.584     -21.748    -107.274    -215.671
+      7  -0.860000  -0.9260154      -1.622     -22.325    -110.303    -221.844
+      6  -0.880000  -0.9476126      -1.660     -22.845    -112.874    -227.017
+      5  -0.900000  -0.9647416      -1.697     -23.309    -114.999    -231.213
+      4  -0.920000  -0.9777332      -1.734     -23.722    -116.711    -234.505
+      3  -0.940000  -0.9871030      -1.770     -24.089    -118.061    -237.006
+      2  -0.960000  -0.9934885      -1.806     -24.419    -119.113    -238.854
+      1  -0.980000  -0.9975709      -1.841     -24.720    -119.935    -240.199
+      0  -1.000000  -1.0000000      -1.876     -25.000    -120.592    -241.183
+
+ Maximum grid stiffness ratios:   rx0 = 0.100020449  rx1 =  17.833965349
+
+ WARNING: Exact restart is requested, but is not possible: initial
+          file '../USWC_model/input_data/roms_init_trace.0.nc' does not contain sufficient records.
+ WARNING: netCDF variable 'hbls' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+
+ main :: initialization complete, started time-steping.
+
+         get_bry_all :: read all boundary fields   bry_time =   4726.5657 rec =    1
+         get_bry_all :: read all boundary fields   bry_time =   4726.5865 rec =    2
+    set_frc_var_tile :: read var: swrad     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: swrad     var_input_time (days) =   4726.58     rec =   3
+    set_frc_var_tile :: read var: lwrad_down     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: lwrad_down     var_input_time (days) =   4726.58     rec =   3
+    set_frc_var_tile :: read var: uwnd     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: uwnd     var_input_time (days) =   4726.58     rec =   3
+    set_frc_var_tile :: read var: vwnd     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: vwnd     var_input_time (days) =   4726.58     rec =   3
+    set_frc_var_tile :: read var: Tair     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: Tair     var_input_time (days) =   4726.58     rec =   3
+    set_frc_var_tile :: read var: Qair     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: Qair     var_input_time (days) =   4726.58     rec =   3
+    set_frc_var_tile :: read var: rain     var_input_time (days) =   4726.54     rec =   2
+    set_frc_var_tile :: read var: rain     var_input_time (days) =   4726.58     rec =   3
+    set_wec_frc :: read WEC inputs     wec_input_time (s) =  0.408373E+09 rec =   2
+    set_wec_frc :: read WEC inputs     wec_input_time (s) =  0.408377E+09 rec =   3
+
+ STEP  time[DAYS] KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL     i_cx   j_cx k_c
+      0 4726.5656 4.22974108083-03 2.7901936656-03  0.542637776810  0.425188904437    113     83   16
+      1 4726.5659 4.22923298177-03 2.7905553687-03  0.293860159127  0.293860159127    113     83   14
+      2 4726.5661 4.22812313258-03 2.7903132915-03  0.291859360653  0.158317603363    114     84    9
+      3 4726.5663 4.22467325013-03 2.7874116018-03  0.458516336522  0.367291019925    114     84   14
+      4 4726.5666 4.22370211059-03 2.7868553582-03  0.340827127008  0.253680744515    113     83   26
+      5 4726.5668 4.22412386112-03 2.7875627726-03  0.243789449704  0.138687659053    113     83    9
+ Process    0  thread  0  cpu time =        1.79 sec
+
+ MAIN: DONE - Records written: history:    0 restart:    0 averages:    0
+ MPI_run_time =   1.79475402832031     
