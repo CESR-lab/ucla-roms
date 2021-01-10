@@ -1,0 +1,6 @@
+Scripts to confirm simulation results still match benchmark results.
+This should ensure bugs have not been added to code.
+
+The scripts can be run directly on Maya, but needs to be run on
+'comet' using the job submission: qsub run_tests_comet.lsf
+(Currently this hasn't been tested)
