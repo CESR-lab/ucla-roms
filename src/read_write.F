@@ -1236,7 +1236,7 @@ C$OMP BARRIER
 
       ! text format for '1' in write(*,1) above
   1   format(/1x, '### ERROR: nc_write_var :: Cannot write variable ''',
-     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+     &              A, ''' into file, rec =', i6, 3x,A,i4)
       goto 100 ! Skip 99
   99  if (may_day_flag == 0) may_day_flag=3
  100  continue
