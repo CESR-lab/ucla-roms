@@ -65,7 +65,7 @@ c--#define VERBOSE
 
       implicit none
 #include "netcdf.inc"
-      integer, parameter :: maxdims=32, maxvars=120 ! BGC run has 96 vars
+      integer, parameter :: maxdims=32, maxvars=220 ! BGC has 201 vars in restart file
       integer, parameter :: part_XI=1,  part_ETA=2, part_2D=3
 
       logical complete, clean_set,  digit, var_mask,    lnewvar

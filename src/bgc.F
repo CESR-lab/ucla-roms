@@ -273,20 +273,16 @@
 
       ! 2d diagnostics:
       do idiag=1,nr_bec2_diag_2d
-        if (wrtavg_bec2_diag_2d(idiag)) then
-          call nc_define_var(ncrst, vname_bec2_diag_2d(1,idiag),
-     &      vname_bec2_diag_2d(2,idiag), vname_bec2_diag_2d(3,idiag),
-     &      r2dgrd, ierr )
-        endif
+        call nc_define_var(ncrst, vname_bec2_diag_2d(1,idiag),
+     &     vname_bec2_diag_2d(2,idiag), vname_bec2_diag_2d(3,idiag),
+     &     r2dgrd, ierr )
       enddo
 
       ! 3d diagnostics:
       do idiag=1,nr_bec2_diag_3d
-        if (wrtavg_bec2_diag_3d(idiag)) then
-          call nc_define_var(ncrst, vname_bec2_diag_3d(1,idiag),
-     &      vname_bec2_diag_3d(2,idiag), vname_bec2_diag_3d(3,idiag),
-     &      r3dgrd, ierr )
-        endif
+        call nc_define_var(ncrst, vname_bec2_diag_3d(1,idiag),
+     &    vname_bec2_diag_3d(2,idiag), vname_bec2_diag_3d(3,idiag),
+     &    r3dgrd, ierr )
       enddo
 
       end subroutine def_rst_bgc_diag
