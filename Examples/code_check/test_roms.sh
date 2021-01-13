@@ -2,11 +2,14 @@
 
 # 1) Run test cases: first copy files to this directory, run simulation, delete files leaving netcdf.
 
-# SET UP AS LOOP TO ADD MORE EXAMPLES!! AFTER YOU HAVE 2 as a saving point.
-# Need to decide what I am piping to terminal and what to results file.
+# SET UP AS LOOP TO ADD MORE EXAMPLES!!
+
+# - Declare an array of Example folders and .in names to use:
+#declare -a folders=("WEC_real" "Rivers_ana")
 
 # - a) WEC test:
 cd ../WEC_real
+#cd ../$folders[0]
 echo 'WEC_real test compiling...'
 make &> /dev/null
 mv roms ../code_check
@@ -28,7 +31,7 @@ cp benchmarks/river/river_ana_benchmark.in .
 rm river_ana_benchmark.in roms grid.?.nc
 
 # 2) Python - confirm values:
-python test_roms.py
+python3 test_roms.py
 
 # 3) Rename results logs so they can't be mistakenly read by python 
 # script even if new simulation doesn't run
