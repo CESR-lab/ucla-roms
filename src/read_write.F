@@ -1895,6 +1895,9 @@ C$OMP BARRIER
       end subroutine handle_ierr
 ! ----------------------------------------------------------------------
 
+! This routine is unlikely to be used with EW_PERIODIC && NS_PERIODIC
+! and won't compile due to north_exchng, etc. Hence cppflags.
+#if !defined EW_PERIODIC && !defined NS_PERIODIC
       function ncdf_read_coarser_grid(ncid, varid, record,
      &                                horiz_type, A, nmax)
 
@@ -2544,6 +2547,7 @@ C$OMP BARRIER
 
 
       end function ncdf_read_coarser_grid
+#endif /* EW_PERIODIC && NS_PERIODIC */
 ! ----------------------------------------------------------------------
 
 ! Copy of subroutine in case anyone wants to use it in future to have
