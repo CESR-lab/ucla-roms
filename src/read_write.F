@@ -48,7 +48,9 @@
       public read_output_root_name
       public ncdf_read_mod
       public handle_ierr
+#if !defined EW_PERIODIC && !defined NS_PERIODIC
       public ncdf_read_coarser_grid
+#endif
 
       contains
 ! ----------------------------------------------------------------------
