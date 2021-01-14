@@ -36,7 +36,7 @@
        IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
 
  2020-11: uswc sample domain with WEC
-     ntimes =         5   total number of 3D timesteps
+     ntimes =         2   total number of 3D timesteps
          dt =    20.0000  time step [sec] for 3D equations
     ndtfast =        30   mode-splitting ratio
       ninfo =         1   number of steps between runtime diagnostics
@@ -56,11 +56,11 @@
  WARNING: Urecognized keyword 'climatology' --> DISREGARDED.
 
  boundary forcing file(s): ../USWC_model/input_data/roms_bry_trace.0.nc
- restart :: nrst =  999999  rec/file =    1  file ='none.0'
+ restart :: nrst =       1  rec/file =   10  file ='sample_wec_rst.0.nc'
 
- history :: overwrite = F  nwrt =   10  rec/file =  48  '
+ history :: overwrite = T  nwrt =    1  rec/file =  48  '
 
- averages :: ntsavg =    10  navg =*****  rec/file =   8  file = '.0'
+ averages :: ntsavg =     1  navg =    1  rec/file =  10  file = '.0'
 
  fields to write into history file: (T/F)
         zeta   T   free-surface elevation                    
@@ -72,7 +72,7 @@
         t( 2)  T   salt                                      
 
         rho    F   density anomaly                           
-        Omega  F   S-coordinate vertical velocity            
+        Omega  T   S-coordinate vertical velocity            
         W      F   vertical velocity                         
         Akv    F   vertical viscosity coefficient            
         Akt    F   vertical thermal conductivity coefficient 
@@ -96,7 +96,7 @@
         Akt    F   vertical thermal conductivity coefficient 
         Aks    F   salinity vertical diffusion coefficient   
         hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
+        hbbl   F   Thickness of KPP bottom boundary layer    
 
  fields to be saved in WEC 2D history: (T/F)
         SUP    F   quasi-static sea-level response (set-up)
@@ -114,13 +114,13 @@
         KAPS   F   surface Bernoulli head in prsgrd term
 
  fields to be saved in WEC 2D average: (T/F)
-        SUP    F   quasi-static sea-level response (set-up)
-        UST2D  F   u depth-averaged Stokes drift velocity
+        SUP    T   quasi-static sea-level response (set-up)
+        UST2D  T   u depth-averaged Stokes drift velocity
         VST2D  F   v depth-averaged Stokes drift velocity
 
  fields to be saved in WEC 3D average: (T/F)
         UST    F   u 3D Stokes drift velocity
-        VST    F   v 3D Stokes drift velocity
+        VST    T   v 3D Stokes drift velocity
         WST    F   w vertical 3D Stokes drift velocity
         Akb    F   eddy viscosity due to wave breaking
         Akw    F   eddy diffusivity due to primary waves
@@ -214,6 +214,9 @@
  WARNING: netCDF variable 'hbls' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
  WARNING: netCDF variable 'hbbl' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
       get_init :: Read initial conditions for day =   4726.5657 record =   1
+       def_his :: created new netCDF file 'sample_wec_BM_his.0000.0.nc'.
+      wrt_grid :: wrote grid data into file 'sample_wec_BM_his.0000.0.nc'.
+       wrt_his :: wrote history, tdays = 4726.5656  step =     -1 rec =   1/   1
 
  main :: initialization complete, started time-steping.
 
@@ -239,11 +242,19 @@
  STEP  time[DAYS] KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL     i_cx   j_cx k_c
       0 4726.5656 4.22974108083-03 2.7901936656-03  0.542637776810  0.425188904437    113     83   16
       1 4726.5659 4.22923298177-03 2.7905553687-03  0.293860159127  0.293860159127    113     83   14
+       set_avg :: finished averaging at iic=       2  ntsavg=       1  navg=    1
+       def_rst :: Created new netCDF file 'sample_wec_rst.0000.0.nc'.
+       wrt_rst :: wrote restart, tdays = 4726.5659  step =      1 rec =   1/   2
+       wrt_his :: wrote history, tdays = 4726.5659  step =      1 rec =   2/   2
+       def_avg :: created new netCDF file 'sample_wec_BM_avg.0000.0.nc'.
+      wrt_grid :: wrote grid data into file 'sample_wec_BM_avg.0000.0.nc'.
+       wrt_avg :: wrote averages for time_avg = 4726.5659 rec =   1/   1
       2 4726.5661 4.22812313258-03 2.7903132915-03  0.291859360653  0.158317603363    114     84    9
-      3 4726.5663 4.22467325013-03 2.7874116018-03  0.458516336522  0.367291019925    114     84   14
-      4 4726.5666 4.22370211059-03 2.7868553582-03  0.340827127008  0.253680744515    113     83   26
-      5 4726.5668 4.22412386112-03 2.7875627726-03  0.243789449704  0.138687659053    113     83    9
- Process    0  thread  0  cpu time =        5.18 sec
+       set_avg :: finished averaging at iic=       3  ntsavg=       1  navg=    1
+       wrt_rst :: wrote restart, tdays = 4726.5661  step =      2 rec =   2/   3
+       wrt_his :: wrote history, tdays = 4726.5661  step =      2 rec =   3/   3
+       wrt_avg :: wrote averages for time_avg = 9453.1320 rec =   2/   2
+ Process    0  thread  0  cpu time =        1.03 sec
 
- MAIN: DONE - Records written: history:    0 restart:    0 averages:    0
- MPI_run_time =   5.88525009155273     
+ MAIN: DONE - Records written: history:    3 restart:    2 averages:    2
+ MPI_run_time =   1.02645206451416     

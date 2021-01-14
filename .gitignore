@@ -32,6 +32,7 @@ Tools-Roms/ncjoin
 # For code_check/:
 sample_wec_test_old.log
 river_ana_test_old.log
+Examples/code_check/code_check.log
 
 # DevinD related ignores:
 .settings

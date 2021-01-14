@@ -1,42 +1,39 @@
 #!/bin/bash
 
+# ******** USER INPUT START ************
+# Declare an array of Example folders and .in names to use:
+#                      TEST 1         TEST 2        TEST 3
+declare -a Examples=("WEC_real"     "Rivers_ana"  "WEC_real"    )
+#   results folder in benchmarks/
+declare -a      dir=("wec"          "river"       "netcdf"      )
+#   name of .in file without .in extension
+declare -a     file=("sample_wec"   "river_ana"   "wec_netcdf"  )
+# ******** USER INPUT END **************
+
 # 1) Run test cases: first copy files to this directory, run simulation, delete files leaving netcdf.
-
-# SET UP AS LOOP TO ADD MORE EXAMPLES!!
-
-# - Declare an array of Example folders and .in names to use:
-#declare -a folders=("WEC_real" "Rivers_ana")
-
-# - a) WEC test:
-cd ../WEC_real
-#cd ../$folders[0]
-echo 'WEC_real test compiling...'
-make &> /dev/null
-mv roms ../code_check
-cd ../code_check
+total=${#Examples[*]} # Total number of examples
+for (( i=0; i<=$(( $total -1 )); i++ ))
+do
+  cd ../${Examples[i]}
+  echo "${Examples[i]} test compiling..."
+  make &> /dev/null
+  mv roms ../code_check
+  cd ../code_check
   # .in file needs to be in this directory as can't have more than 3 leading periods ../../../ not allowed.
-cp benchmarks/wec/sample_wec_benchmark.in .
-./benchmarks/wec/do_BM.sh # run roms - output piped to benchmarks/wec/*.log
-rm sample_wec_benchmark.in roms
-
-# - b) Another test:
-cd ../Rivers_ana
-echo 'Rivers_ana test compiling...'
-make &> /dev/null
-mv roms ../code_check
-cd ../code_check
-  # .in file needs to be in this directory as can't have more than 3 leading periods ../../../ not allowed.
-cp benchmarks/river/river_ana_benchmark.in .
-./benchmarks/river/do_BM.sh
-rm river_ana_benchmark.in roms grid.?.nc
+  cp benchmarks/${dir[i]}/${file[i]}_benchmark.in .
+  ./benchmarks/${dir[i]}/do_BM.sh # run roms - output piped to benchmarks/wec/*.log
+  rm ${file[i]}_benchmark.in roms
+done
 
 # 2) Python - confirm values:
 python3 test_roms.py
 
 # 3) Rename results logs so they can't be mistakenly read by python 
 # script even if new simulation doesn't run
-mv benchmarks/wec/sample_wec_test.log benchmarks/wec/sample_wec_test_old.log
-mv benchmarks/river/river_ana_test.log benchmarks/river/river_ana_test_old.log
+for (( i=0; i<=$(( $total -1 )); i++ ))
+do
+  mv benchmarks/${dir[i]}/${file[i]}_test.log benchmarks/${dir[i]}/${file[i]}_test_old.log
+done
 
 # Notes:
 # - Compile/ directories are left in the various examples for fast re-compilation of all
