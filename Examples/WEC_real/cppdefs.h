@@ -81,7 +81,7 @@ c--#endif
 #  define NONLIN_EOS
 #  define SPLIT_EOS
 
-#  define AVERAGES /* DevinD uncommented */
+#  define AVERAGES
 c# define EXACT_RESTART
 #  define NEW_S_COORD
 c# define IMPLICIT_BOTTOM_DRAG
@@ -130,7 +130,8 @@ c#    define BBL_F00
 #  endif
 #  define BULK_FRC
 #  ifdef BULK_FRC
-#   define BULK_FLUX_OUTPUT /* DevinD output flux variables to ncdf */
+#   define SURF_FLUX_OUTPUT_HIS /* DevinD output flux variables */
+#   define SURF_FLUX_OUTPUT_AVG /* DevinD output flux variables as averages */
 #  endif
 
 # endif

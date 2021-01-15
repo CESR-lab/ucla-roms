@@ -134,7 +134,8 @@ c-dd#define TAU_CORRECTION
 #endif /* BIOLOGY_BEC2 */
 
 #define BULK_FRC
-c-dd#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
+c#define SURF_FLUX_OUTPUT_HIS /* output flux variables -> control in surf_flux.F */
+c#define SURF_FLUX_OUTPUT_AVG /* output flux variables as averages -> control in surf_flux.F */
 
     /* Flux Analysis */
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */

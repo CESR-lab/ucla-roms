@@ -46,10 +46,9 @@ roms.in:
     See Examples/Tracers_passive/USWC_sample.in as a template. 
     Note, we now use one root name, e.g. 'pacific', stored in 
     variable 'output_root_name' for the output file names. 
-    So the history file will be pacific_his.*.nc.
-    It is possible to output the resulting bulk forcing sustr, svstr, etc. The 
-    output frequency is controlled at the top of bulk_frc.F, not the roms.in file. 
-    If you don't need this output then remove the CPPFLAG 'BULK_FLUX_OUTPUT'.
+    So the history file will be pacific_his.*.nc,
+    and the averages file will be pacific_avg.*.nc
+
 
 cppdefs.h:
 
@@ -82,6 +81,17 @@ Averages:
     Only compile roms with AVERAGES flag if you do in fact need averages. The reason for
     this is that AVERAGES creates a second array for every variable in your model, hence
     doubles your memory requirement. Better to remove AVERAGES flag if not using this.       
+
+Surface flux outputting:
+    
+    It is possible to output the resulting surface flux sustr, svstr, etc. The 
+    output frequency is controlled at the top of surf_flux.F, not the roms.in file.
+    You need to activate the following cppflag: SURF_FLUX_OUTPUT_HIS 
+    It will produce its own output file separate from the _his.F file.
+    The averages (sustr_avg, etc) are activated using the cppflags: 
+    SURF_FLUX_OUTPUT_AVG && AVERAGES
+    The output will be placed in the normal _avg.F file.
+    The T/F to print the averages is controlled in surf_flux.F
 
 Misc.:
 
