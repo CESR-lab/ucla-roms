@@ -1248,7 +1248,7 @@
       enddo
 
 
-# ifdef BULK_FLUX_OUTPUT
+# ifdef SURF_FLUX_OUTPUT_HIS
 C$OMP MASTER
       call wrt_surface_flux_his ! write flux variables to flux output file
 C$OMP END MASTER

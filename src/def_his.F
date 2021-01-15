@@ -32,6 +32,7 @@ c--#define nf_def_var my_nf_def_var
       use tracers ! def_his_trc, def_avg_trc
       use read_write, only: output_root_name
       use bgc ! def_his_bgc_diag, def_avg_bgc_diag
+      use surf_flux ! set_avg_surf_flux
 
       implicit none
       integer total_rec, ierr
@@ -634,6 +635,12 @@ c--#define nf_def_var my_nf_def_var
      &                               )
 # endif /* END AVRH */
 #endif   /* BEC2_DIAG */
+
+      ! Define surface flux variables (sustr,svstr,etc) averages only
+#ifdef AVRH
+      call def_avg_surf_flux(r2dgrd, u2dgrd, v2dgrd)
+#endif
+
 
 ! Leave definition mode.
 ! ----- ---------- -----

@@ -9,6 +9,7 @@
 # endif
       use bgc ! wrt_avg_bgc_diag
       use tracers, only: wrt_avg_trc
+      use surf_flux ! wrt_avg_surf_flux
 
       implicit none
 
@@ -215,6 +216,8 @@
       call wrt_avg_bgc_diag(record, ierr)
 #endif
 
+      ! Write surface flux averages (sustr_avg, etc)
+      call wrt_avg_surf_flux(record, ierr)
 
   1   format(/1x, '### ERROR: wrt_avg :: Cannot write variable ''',
      &             A, ''' into averages file, rec =', i6, 3x,A,i4)

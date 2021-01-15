@@ -60,6 +60,7 @@
 
       use tracers, only: set_avg_trc
       use bgc ! set_avg_bgc_diag
+      use surf_flux ! set_avg_surf_flux
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -248,6 +249,10 @@
      &                                 ,jstrR,jendR,istrR,iendR)
 # endif /* WEC */
 
+      ! Set surface flux averages of sustr, etc
+#ifdef SURF_FLUX_OUTPUT_AVG
+      call set_avg_surf_flux(istrR,iendR,jstrR,jendR,cff,cff1)
+#endif
 
         if (mod(iic-ntsavg,navg) == 0) then
           if (ZEROTH_TILE) then

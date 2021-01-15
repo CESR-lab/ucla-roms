@@ -7,6 +7,8 @@
 
 #include "cppdefs.h"
 
+      use read_write ! rp_var, up_var, vp_var
+
       implicit none
 
       ! Make all variable private to this module unless public specified
@@ -15,6 +17,8 @@
       ! Includes:
       ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
 #include "param.h"
+      ! ncvars.h for ncavg
+#include "ncvars.h"
 
       ! ****************************************************************
       ! User inputs
@@ -22,15 +26,22 @@
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! For SST and SSS correction
 
-      logical :: write_file = .false. ! Whether to write a flux file or not
-      integer :: rec_rate = 1         ! Output record rate,
-      integer :: recs_per_file = 100  ! total recs per file
+      logical :: write_file    = .false. ! Whether to write a flux file or not
+      integer :: rec_rate      = 1       ! Output record rate,
+      integer :: recs_per_file = 100     ! total recs per file
 
       logical :: wrt_sustr = .True. ! Output surface u-stress
       logical :: wrt_svstr = .True. ! Output surface v-stress
       logical :: wrt_shflx = .True. ! Output surface heat flux
       logical :: wrt_ssflx = .True. ! Output surface salinity flux
-      !logical :: wrt_scflx = .true. ! for instance all surface chemical fluxes
+      !logical :: wrt_scflx = .true.! for instance all surface chemical fluxes
+
+      ! Writing averages to the main _avg.F file. Output averaging controlled
+      ! by roms.in, but T/F for printing variables is controlled here.
+      logical :: wrt_sustr_avg = .True. ! Output average surface u-stress
+      logical :: wrt_svstr_avg = .True. ! Output average surface v-stress
+      logical :: wrt_shflx_avg = .True. ! Output average surface heat flux
+      logical :: wrt_ssflx_avg = .True. ! Output average surface salinity flux
 
       ! End of user inputs
       ! *************************************************************
@@ -43,10 +54,22 @@
       real, public :: svstr_r(GLOBAL_2D_ARRAY)  ! rho-point, only used in lmd_kpp to get ustar
       real, public :: stflx(GLOBAL_2D_ARRAY,NT) ! Surface fluxes of tracer type variables (rho-points)
       real, public :: srflx(GLOBAL_2D_ARRAY)    ! Short-wave radiation surface flux
-      character(len=5) :: sustr_name        = 'sustr'
-      character(len=5) :: svstr_name        = 'svstr'
-      character(len=5) :: shflx_name        = 'shflx'
-      character(len=5) :: ssflx_name        = 'ssflx'
+      character(len=5) :: sustr_name = 'sustr'
+      character(len=5) :: svstr_name = 'svstr'
+      character(len=5) :: shflx_name = 'shflx'
+      character(len=5) :: ssflx_name = 'ssflx'
+
+      ! Output surface flux averages
+#if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
+      real :: sustr_avg(GLOBAL_2D_ARRAY)    ! surf stress u-point average
+      real :: svstr_avg(GLOBAL_2D_ARRAY)    ! surf stress v-point average
+      real :: shflx_avg(GLOBAL_2D_ARRAY)    ! surf heat flux average
+      real :: ssflx_avg(GLOBAL_2D_ARRAY)    ! surf salinity flux average
+      character(len=9) :: sustr_avg_name = 'sustr_avg'
+      character(len=9) :: svstr_avg_name = 'svstr_avg'
+      character(len=9) :: shflx_avg_name = 'shflx_avg'
+      character(len=9) :: ssflx_avg_name = 'ssflx_avg'
+#endif
 
 
       ! Currently haven't incorporated dQdSST
@@ -89,11 +112,16 @@
       integer :: output_rec = 0 ! record number of output. 0 indicates we need new file
       integer :: total_output_rec = 0 ! Total flux output recordings so far
       ! Suffix to append to simulation output rootname
-      character (len=32) :: file_name = '_surf_flux.nc'
+      character (len=60) :: file_name = '_surf_flux.nc'
 
-
+      ! Public functions
       public set_surf_field_corr
       public wrt_surface_flux_his
+#if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
+      public set_avg_surf_flux
+      public def_avg_surf_flux
+      public wrt_avg_surf_flux
+#endif
 
 
       contains
@@ -139,8 +167,108 @@
       end subroutine set_surf_field_corr
 !-----------------------------------------------------------------------
 
+#if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
+      subroutine set_avg_surf_flux(istrR,iendR,jstrR,jendR,cff,cff1)
+      ! Set surface flux averages
 
+      implicit none
+
+      ! inputs
+      integer istrR,iendR,jstrR,jendR
+      real cff,cff1
+      ! local
+      integer i,j,k,itrc
+
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          if (wrt_sustr_avg) then
+              sustr_avg(i,j)=cff1*sustr_avg(i,j)
+     &                      + cff*sustr(i,j)
+          endif
+          if (wrt_svstr_avg) then
+              svstr_avg(i,j)=cff1*svstr_avg(i,j)
+     &                      + cff*svstr(i,j)
+          endif
+          if (wrt_shflx_avg) then
+              shflx_avg(i,j)=cff1*shflx_avg(i,j)
+     &                      + cff*stflx(i,j,itemp)
+          endif
+          if (wrt_ssflx_avg) then
+              ssflx_avg(i,j)=cff1*ssflx_avg(i,j)
+     &                      + cff*stflx(i,j,isalt)
+          endif
+        enddo
+      enddo
+
+      end subroutine set_avg_surf_flux
+#endif /* AVERAGES && SURF_FLUX_OUTPUT_AVG*/
 !-----------------------------------------------------------------------
+
+#if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
+      subroutine def_avg_surf_flux(r2dgrd, u2dgrd, v2dgrd)
+      ! Define surface flux averaged variables in average output file.
+
+      implicit none
+
+      ! Inputs
+      integer r2dgrd(3), u2dgrd(3), v2dgrd(3)
+      ! Local
+      integer ierr
+
+      if (wrt_sustr) then
+        call nc_define_var(ncavg, sustr_avg_name,
+     &   'Averaged wind stress in x-direction','m^2/s^2', u2dgrd, ierr )
+      endif
+      if (wrt_svstr) then
+        call nc_define_var(ncavg, svstr_avg_name,
+     &   'Averaged wind stress in y-direction', 'm^2/s^2', v2dgrd, ierr )
+      endif
+      if (wrt_shflx) then
+        call nc_define_var(ncavg, shflx_avg_name,
+     &   'Averaged Surface heat flux', 'degC m/s', r2dgrd, ierr )
+      endif
+      if (wrt_ssflx) then
+        call nc_define_var(ncavg, ssflx_avg_name,
+     &   'Averaged Surface salinity flux','PSU m/s', r2dgrd, ierr )
+      endif
+
+
+      end subroutine def_avg_surf_flux
+#endif /* AVERAGES && SURF_FLUX_OUTPUT_AVG*/
+!-----------------------------------------------------------------------
+
+#if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
+      subroutine wrt_avg_surf_flux(record, ierr)
+      ! Write averaged surface flux variables to averaged output file
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: record ! The timestep to be recorded
+      integer :: ierr
+
+      if (wrt_sustr_avg) then
+        call nc_write_var(ncavg, sustr_avg, 1, sustr_avg_name, up_var,
+     &                    record, ierr)
+      endif
+      if (wrt_svstr_avg) then
+        call nc_write_var(ncavg, svstr_avg, 1, svstr_avg_name, vp_var,
+     &                    record, ierr)
+      endif
+      if (wrt_shflx_avg) then
+        call nc_write_var(ncavg, shflx_avg, 1,
+     &                    shflx_avg_name, rp_var, record, ierr)
+      endif
+      if (wrt_ssflx_avg) then
+        call nc_write_var(ncavg, ssflx_avg, 1,
+     &                    ssflx_avg_name, rp_var, record, ierr)
+      endif
+
+
+      end subroutine wrt_avg_surf_flux
+#endif /* AVERAGES && SURF_FLUX_OUTPUT_AVG*/
+!-----------------------------------------------------------------------
+
       subroutine wrt_surface_flux_his
       ! Write surface fluxes to output netcdf file
 
@@ -166,11 +294,9 @@
       integer :: ierr = 0 ! This is local so need to set to no-error
       integer :: ncid = -1 ! File ID number - will be set below
 
-
       ! Only plot if write_file is true from roms.in or top of module
       ! and timestep is divisble by record rate
       ! =======================================
-
 
       if (write_file==.true. .and. mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
 
@@ -190,17 +316,16 @@
           !! lose the prev_fill_mode?
           ! r2dgrd, ...., auxil are id's to dimensions, needed to
           ! create vars in the file
-          call ncdf_create_file( file_name, ncid, prev_fill_mode,
-     &                   recs_per_file, total_output_rec, auxil,
+          call ncdf_create_file(file_name, ncid, prev_fill_mode
+     &                  ,recs_per_file, total_output_rec, auxil
 #ifdef SOLVE3D
-     &                   r3dgrd, u3dgrd, v3dgrd, w3dgrd, ! 3D grid dimensions
+     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd ! 3D grid dimensions
 #endif
-     &                   r2dgrd, u2dgrd, v2dgrd )        ! 2D grid dimensions
+     &                  ,r2dgrd, u2dgrd, v2dgrd )        ! 2D grid dimensions
 
 
           ! Define remaining variables
           ! --------------------------
-
           if (wrt_sustr) then
             ! Output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
             call nc_define_var(ncid, sustr_name,
@@ -219,12 +344,12 @@
             call nc_define_var(ncid, ssflx_name,
      &                 'Surface salinity flux','PSU m/s', r2dgrd, ierr )
           endif
-
 !          ! Output of sustr_rho and svstr_rho
 !            call nc_define_var(ncid, 'sustr_r',
 !     &            'rho wind stress in x-direction','m^2/s^2', r2dgrd, ierr )
 !            call nc_define_var(ncid, 'svstr_r',
 !     &            'rho wind stress in y-direction','m^2/s^2', r2dgrd, ierr )
+
 
           ! Leave definition mode.
           ! ----------------------
@@ -294,7 +419,6 @@
           call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,isalt), 1,
      &                      ssflx_name, rp_var, output_rec, ierr)
         endif
-
 !          ! Output of sustr_rho and svstr_rho
 !          call nc_write_var(ncid, sustr_r, 1, 'sustr_r', rp_var, output_rec, ierr)
 !          call nc_write_var(ncid, svstr_r, 1, 'svstr_r', rp_var, output_rec, ierr)
@@ -320,8 +444,6 @@
       endif ! (write_file==.true.)
 
       end subroutine wrt_surface_flux_his
-
-
 !-----------------------------------------------------------------------
 
 
