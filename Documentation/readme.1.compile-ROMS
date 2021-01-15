@@ -95,9 +95,14 @@ INSTRUCTIONS: COMPILING ROMS
      B. Open Work/ dir. Edit your files. See Documentation/README-model-setup  
         for details on configuring roms for your simulation as per new code.
         Type 'make'.
+        All the remaining code in src/ and your edited files in Work/ will be 
+        copied into Work/Compile/, and roms will be compiled.
      C. Copy 'roms' executable to wherever you are running your simulation.
   
-     Never edit code in the src/ directory, nor the examples in Examples/!     
+     NEVER edit code in the src/ directory, nor the examples in Examples/!
+     The reason for this is 'git' will complain if you edit any 'tracked' 
+     files in the repo, and won't allow you to update the code without first 
+     using 'git stash'.     
   
           
 Recompiling roms:
@@ -127,29 +132,7 @@ Roms tools:
      (Resulting executables will be there)
      If you add 'export PATH=$PATH:$ROMS_ROOT/Tools-Roms' to your bashrc file you
      will then have access to those tools from any directory (see example bashrc files).
-     
-     
-Keeping code up to date:
-------------------------    
-     
-     The repo is periodically updated (daily/weekly). This will mean source code 
-     in the src/ folder can change. Also, additional examples may be added to Examples/.
-     To update your code to the latest version use the command: 'git pull'.
-     (If git complains, try using 'git stash' then 'git pull')
-     
-     Since you are editing code in the Work/ directory, your edited files will not be
-     affected. However, it is possibly that the file you have edited for your needs, e.g. 
-     bulk_frc.F, has been changed in the latest code update and hence in the src/ directory, 
-     such that your version of bulk_frc.F in Work/ is no longer compatible with the code.
-     
-     This is not something that will happen often, but it is somewhere to look if your code
-     suddenly doesn't work. It is worth periodically comparing your edited files in Work/
-     against the respective file in src/ using a difference viewer such as 'meld'.
-     You can use 'meld' to merge in the new code changes into your version in Work/, such as 
-     the names of your variables in bulk_frc.F, if that is something you needed to change.
-     
-     Important updates to the code will be broadcasted to users in an email.
-     
+      
      
 Git repo (and Bitbucket)
 ------------------------
@@ -163,6 +146,36 @@ Git repo (and Bitbucket)
      our cloud based storage of the code.
      With one command, it is possible to jump between the current version and all older
      versions of the code.
+     
+     You see the online version of the repository at: 
+     https://bitbucket.org/nmolem/ucla-roms/src/master/
+     If you click on 'commits' you can see the full history of all the code updates if you
+     are interested in seeing any older version of the code.
+         
+     
+Keeping code up to date:
+------------------------    
+     
+     The repo is periodically updated (daily/weekly). This will mean source code 
+     in the src/ folder can change. Also, additional examples may be added to Examples/.
+     To update your code to the latest version use the command: 'git pull'.
+     (If git complains, try using 'git stash' then 'git pull')
+     
+     Since you are editing code in the Work/ directory, your edited files will not be
+     effected. The Work/ directory is not 'tracked' by git, and therefore none of your files 
+     in there risk being overwritten when you update you code in future.
+     However, it is possibly that the file you have edited for your needs, e.g. 
+     bulk_frc.F, has been changed in the latest code update and hence in the src/ directory, 
+     such that your version of bulk_frc.F in Work/ is no longer compatible with the code.
+     
+     This is not something that will happen often, but it is somewhere to look if your code
+     suddenly doesn't work. It is worth periodically comparing your edited files in Work/
+     against the respective file in src/ using a difference viewer such as 'meld'.
+     You can use 'meld' to merge in the new code changes into your version in Work/, such as 
+     the names of your variables in bulk_frc.F, if that is something you needed to change.
+     
+     Important updates to the code will be broadcasted to users in an email, but ff you want 
+     to you can also sign up on bitbucket.com to receive an email each time the code is updated.
              
 
 Additional readme's:
