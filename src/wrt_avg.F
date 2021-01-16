@@ -217,7 +217,9 @@
 #endif
 
       ! Write surface flux averages (sustr_avg, etc)
+#ifdef SURF_FLUX_OUTPUT_AVG
       call wrt_avg_surf_flux(record, ierr)
+#endif
 
   1   format(/1x, '### ERROR: wrt_avg :: Cannot write variable ''',
      &             A, ''' into averages file, rec =', i6, 3x,A,i4)

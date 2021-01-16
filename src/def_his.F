@@ -637,7 +637,7 @@ c--#define nf_def_var my_nf_def_var
 #endif   /* BEC2_DIAG */
 
       ! Define surface flux variables (sustr,svstr,etc) averages only
-#ifdef AVRH
+#if defined AVRH && defined SURF_FLUX_OUTPUT_AVG
       call def_avg_surf_flux(r2dgrd, u2dgrd, v2dgrd)
 #endif
 
