@@ -213,7 +213,7 @@
       end subroutine def_his_trc
 ! ----------------------------------------------------------------------
 
-! Need AVERAGES as 'ncavg' only exists in AVERAGES is defined.
+! Need AVERAGES as 'ncavg' only exists if AVERAGES is defined.
 #ifdef AVERAGES
       subroutine def_avg_trc(r3dgrd)
 

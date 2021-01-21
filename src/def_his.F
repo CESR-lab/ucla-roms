@@ -30,9 +30,10 @@ c--#define nf_def_var my_nf_def_var
       use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
 #endif
       use tracers ! def_his_trc, def_avg_trc
-      use read_write, only: output_root_name
+      use read_write ! , only: output_root_name, nc_define_var
       use bgc ! def_his_bgc_diag, def_avg_bgc_diag
       use surf_flux ! set_avg_surf_flux
+      use netcdf ! nf90_create()
 
       implicit none
       integer total_rec, ierr
@@ -171,7 +172,7 @@ c--#define nf_def_var my_nf_def_var
 
   10  if (create_new_file) then
 
-        ierr=nf_create(fname(1:lfnm), nf_clobber+nf_64bit_offset,
+        ierr=nf90_create(fname(1:lfnm), NF90_NETCDF4,
      &                                                     ncid)
         if (ierr == nf_noerr) then
 
@@ -287,114 +288,56 @@ c--#define nf_def_var my_nf_def_var
 ! Free-surface and 2D barotropic velocity components
 
         if (wrt(indxZ) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxZ))
-          ierr=nf_def_var(ncid, vname(1,indxZ)(1:lvar), NF_FOUT,
-     &                                         3, r2dgrd, vidZ)
 #ifdef AVRH
           text='averaged '/ /vname(2,indxZ)
 #else
           text=vname(2,indxZ)
 #endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text(ncid, vidZ, 'long_name', lvar,
-     &                                          text(1:lvar))
-          lvar=lenstr(vname(3,indxZ))
-          ierr=nf_put_att_text(ncid, vidZ, 'units',     lvar,
-     &                                 vname(3,indxZ)(1:lvar))
-#ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT(ncid, vidZ, '_FillValue', NF_FOUT,
-     &                                               1, spv_set)
-          if (ierr /= nf_noerr) then
-           write(*,*)  'nf_put_att_XXX:', nf_strerror(ierr)
-          endif
-#endif
+          call nc_define_var(ncid, vname(1,indxZ),
+     &           text,vname(3,indxZ), r2dgrd, ierr )
         endif
 
         if (wrt(indxUb) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxUb))
-          ierr=nf_def_var(ncid, vname(1,indxUb)(1:lvar), NF_FOUT,
-     &                                         3, u2dgrd, vidUb)
 #ifdef AVRH
           text='averaged '/ /vname(2,indxUb)
 #else
           text=vname(2,indxUb)
 #endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text(ncid, vidUb, 'long_name', lvar,
-     &                                          text(1:lvar))
-          lvar=lenstr(vname(3,indxUb))
-          ierr=nf_put_att_text(ncid, vidUb, 'units',     lvar,
-     &                               vname(3,indxUb)(1:lvar))
-#ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT(ncid, vidUb, '_FillValue', NF_FOUT,
-     &                                                1, spv_set)
-#endif
+          call nc_define_var(ncid, vname(1,indxUb),
+     &           text,vname(3,indxUb), u2dgrd, ierr )
         endif
 
         if (wrt(indxVb) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxVb))
-          ierr=nf_def_var(ncid, vname(1,indxVb)(1:lvar), NF_FOUT,
-     &                                         3, v2dgrd, vidVb)
 #ifdef AVRH
           text='averaged '/ /vname(2,indxVb)
 #else
           text=vname(2,indxVb)
 #endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text(ncid, vidVb, 'long_name', lvar,
-     &                                            text(1:lvar))
-          lvar=lenstr(vname(3,indxVb))
-          ierr=nf_put_att_text(ncid, vidVb, 'units',     lvar,
-     &                                 vname(3,indxVb)(1:lvar))
-#ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT(ncid, vidVb, '_FillValue', NF_FOUT,
-     &                                                1, spv_set)
-#endif
+          call nc_define_var(ncid, vname(1,indxVb),
+     &           text,vname(3,indxVb), v2dgrd, ierr )
         endif
 #ifdef SOLVE3D
 
 ! 3D momenta in XI- and ETA-directions.
 
         if (wrt(indxU) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxU))
-          ierr=nf_def_var(ncid, vname(1,indxU)(1:lvar), NF_FOUT,
-     &                                         4, u3dgrd, vidU)
 # ifdef AVRH
           text='averaged '/ /vname(2,indxU)
 # else
           text=vname(2,indxU)
 # endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text (ncid, vidU, 'long_name', lvar,
-     &                                            text(1:lvar))
-          lvar=lenstr(vname(3,indxU))
-          ierr=nf_put_att_text (ncid, vidU, 'units',     lvar,
-     &                                  vname(3,indxU)(1:lvar))
-# ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT (ncid, vidU, '_FillValue', NF_FOUT,
-     &                                                 1, spv_set)
-# endif
+          call nc_define_var(ncid, vname(1,indxU),
+     &           text,vname(3,indxU), u3dgrd, ierr )
         endif
 
         if (wrt(indxV) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          ierr=nf_def_var(ncid, vname(1,indxV)(1:lvar), NF_FOUT,
-     &                                           4, v3dgrd, vidV)
 # ifdef AVRH
           text='averaged '/ /vname(2,indxV)
 # else
           text=vname(2,indxV)
 # endif
-          lvar=lenstr(text)
-          ierr=nf_put_att_text (ncid, vidV, 'long_name', lvar,
-     &                                            text(1:lvar))
-          lvar=lenstr(vname(3,indxV))
-          ierr=nf_put_att_text (ncid, vidV, 'units',     lvar,
-     &                                  vname(3,indxV)(1:lvar))
-# ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FOUT (ncid, vidV, '_FillValue', NF_FOUT,
-     &                                                 1, spv_set)
-# endif
+          call nc_define_var(ncid, vname(1,indxV),
+     &           text,vname(3,indxV), v3dgrd, ierr )
         endif
 
       ! Tracer variables

@@ -8,6 +8,7 @@
 
       use tracers, only: wrt_his_trc
       use bgc ! wrt_his_bgc_diag
+      use read_write ! nc_write_var
 
       implicit none
 #include "param.h"
@@ -96,34 +97,13 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! components in XI-,ETA-directions.
 
       if (wrthis(indxZ)) then
-        ierr=ncdf_write(nchis, hisZ,  record,  r_var,
-     &                  zeta(START_2D_ARRAY,knew), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxZ))
-          write(*,1) vname(1,indxZ)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtZ  ' MYID
+        call nc_write_var(nchis, zeta, 1, vname(1,indxZ), rp_var, record, ierr)
       endif
       if (wrthis(indxUb)) then
-        ierr=ncdf_write(nchis, hisUb,  record,  u_var,
-     &                  ubar(START_2D_ARRAY,knew), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxUb))
-          write(*,1) vname(1,indxUb)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his: wrtUBAR' MYID
+        call nc_write_var(nchis, ubar, 1, vname(1,indxUb), up_var, record, ierr)
       endif
       if (wrthis(indxVb)) then
-        ierr=ncdf_write(nchis, hisVb,  record,  v_var,
-     &                  vbar(START_2D_ARRAY,knew), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxVb))
-          write(*,1) vname(1,indxVb)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his: wrtVBAR' MYID
+        call nc_write_var(nchis, vbar, 1, vname(1,indxVb), vp_var, record, ierr)
       endif
 
 #ifdef SOLVE3D
@@ -131,24 +111,10 @@ CR      write(*,*) 'wrt_his: wrtVBAR' MYID
 ! 3D momentum components in XI- and ETA-directions.
 
       if (wrthis(indxU)) then
-        ierr=ncdf_write(nchis, hisU,  record,  u_var,
-     &                  u(START_2D_ARRAY,1,nstp), N)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxU))
-          write(*,1) vname(1,indxU)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtU  ' MYID
+        call nc_write_var(nchis, u, N, vname(1,indxU), up_var, record, ierr)
       endif
       if (wrthis(indxV)) then
-        ierr=ncdf_write(nchis, hisV,  record,  v_var,
-     &                  v(START_2D_ARRAY,1,nstp), N)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          write(*,1) vname(1,indxV)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtV  ' MYID
+        call nc_write_var(nchis, v, N, vname(1,indxV), vp_var, record, ierr)
       endif
 
 ! Tracer variables.

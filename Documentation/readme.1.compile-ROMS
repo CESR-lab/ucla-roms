@@ -174,7 +174,7 @@ Keeping code up to date:
      You can use 'meld' to merge in the new code changes into your version in Work/, such as 
      the names of your variables in bulk_frc.F, if that is something you needed to change.
      
-     Important updates to the code will be broadcasted to users in an email, but ff you want 
+     Important updates to the code will be broadcasted to users in an email, but if you want 
      to you can also sign up on bitbucket.com to receive an email each time the code is updated.
              
 
