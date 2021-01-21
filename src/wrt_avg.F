@@ -10,6 +10,7 @@
       use bgc ! wrt_avg_bgc_diag
       use tracers, only: wrt_avg_trc
       use surf_flux ! wrt_avg_surf_flux
+      use read_write ! nc_write_var, rp_var, etc
 
       implicit none
 
@@ -64,51 +65,31 @@
 ! in XI-,ETA-directions.
 
       if (wrtavg(indxZ) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgZ, record,  r_var,
-     &                  zeta_avg(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxZ))
-          write(*,1) vname(1,indxTime)(1:lvar), record MYID
-        endif
+        call nc_write_var(ncavg, zeta_avg, 1, vname(1,indxZ), rp_var,
+     &                    record, ierr)
       endif
 
       if (wrtavg(indxUb) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgUb, record, u_var,
-     &                  ubar_avg(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxUb))
-          write(*,1) vname(1,indxUb)(1:lvar), record MYID
-        endif
+        call nc_write_var(ncavg, ubar_avg, 1, vname(1,indxUb), up_var,
+     &                    record, ierr)
       endif
 
       if (wrtavg(indxVb) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgVb, record, v_var,
-     &                  vbar_avg(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxVb))
-          write(*,1) vname(1,indxVb)(1:lvar), record MYID
-        endif
+        call nc_write_var(ncavg, vbar_avg, 1, vname(1,indxVb), vp_var,
+     &                    record, ierr)
       endif
 # ifdef SOLVE3D
 
 ! 3D momentum components in XI- and ETA-directions.
 
       if (wrtavg(indxU) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgU, record, u_var,
-     &                  u_avg(START_2D_ARRAY,1), N)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxU))
-          write(*,1) vname(1,indxU)(1:lvar), record MYID
-        endif
+        call nc_write_var(ncavg, u_avg, N, vname(1,indxU), up_var,
+     &                    record, ierr)
       endif
 
       if (wrtavg(indxV) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgV, record, v_var,
-     &                  v_avg(START_2D_ARRAY,1), N)
-        if (ierr /= nf_noerr) then
-        lvar=lenstr(vname(1,indxV))
-          write(*,1) vname(1,indxV)(1:lvar), record MYID
-        endif
+        call nc_write_var(ncavg, v_avg, N, vname(1,indxV), vp_var,
+     &                    record, ierr)
       endif
 
 ! Tracer variables.

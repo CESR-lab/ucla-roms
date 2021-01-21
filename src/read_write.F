@@ -997,7 +997,7 @@ C$OMP BARRIER
       ! Create new file
       ! ---------------
 
-      ierr=nf90_create(fname, nf90_clobber+nf90_64bit_offset, ncid)
+      ierr=nf90_create(fname, NF90_NETCDF4, ncid) !  NF90_NETCDF4 nf90_clobber+nf90_64bit_offset
 
       if (ierr == nf90_noerr) then
 
@@ -1145,7 +1145,7 @@ C$OMP BARRIER
         ! Note: nf90 functionality no longer requires number of dimensions
         ! assume it can work it out from size of array var_grd.
       ierr=nf90_def_var (ncid, var_name, nf90_float,
-     &                         var_grd, var_id)
+     &                         var_grd, var_id) ! , deflate_level = 1
       if(ierr .ne. nf90_noerr) goto 2
       ! Old code:
       !      ierr=nf_def_var (ncid, var_name(1:lvar), nf_float,
@@ -1182,8 +1182,6 @@ C$OMP BARRIER
 
 
       end subroutine nc_define_var
-
-
 ! ----------------------------------------------------------------------
 
       subroutine nc_write_var(ncid,var_array,nmax,var_name,
