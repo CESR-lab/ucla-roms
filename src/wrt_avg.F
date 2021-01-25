@@ -11,10 +11,11 @@
       use tracers, only: wrt_avg_trc
       use surf_flux ! wrt_avg_surf_flux
       use read_write ! nc_write_var, rp_var, etc
+      use netcdf ! nf90 subroutines
 
       implicit none
 
-      integer record, i, ierr, lstr, lvar, lenstr, ncdf_write
+      integer record, i, ierr, lstr, lvar, lenstr, ncdf_write, var_id_tmp
 # ifdef SOLVE3D
      &             , itrc
 # endif
@@ -48,18 +49,21 @@
 
 ! Write out time-averaged variables:
 ! ----- --- ------------- ----------
-! Averaged time
 
-      if (vname(3,indxTime)(1:6) == 'second') then
-        ierr=nf_put_var1_double(ncavg, avgTime, record, time_avg)
-      else
-        time_avg=time_avg*sec2day
-        ierr=nf_put_var1_double(ncavg, avgTime, record, time_avg)
-      endif
-      if (ierr /= nf_noerr) then
-        lvar=lenstr(vname(1,indxTime))
-        write(*,1) vname(1,indxTime)(1:lvar), record MYID
-      endif
+      ! write ocean time
+      ! ----------------
+      ierr=nf90_inq_varid(ncavg, 'ocean_time', var_id_tmp)
+      ierr=nf90_put_var(ncavg, var_id_tmp, time_avg,(/record/))
+!      if (vname(3,indxTime)(1:6) == 'second') then
+!        ierr=nf_put_var1_double(ncavg, avgTime, record, time_avg)
+!      else
+!        time_avg=time_avg*sec2day
+!        ierr=nf_put_var1_double(ncavg, avgTime, record, time_avg)
+!      endif
+!      if (ierr /= nf_noerr) then
+!        lvar=lenstr(vname(1,indxTime))
+!        write(*,1) vname(1,indxTime)(1:lvar), record MYID
+!      endif
 
 ! Barotropic mode variables: free-surface and 2D momentum components
 ! in XI-,ETA-directions.
@@ -99,66 +103,62 @@
 ! Density anomaly.
 
       if (wrtavg(indxR) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgR, record, r_var,
-     &                  rho_avg(START_2D_ARRAY,1), N)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxR))
-          write(*,1) vname(1,indxR)(1:lvar), record  MYID
-        endif
+        call nc_write_var(ncavg, rho_avg, N, vname(1,indxR), rp_var,
+     &                    record, ierr)
       endif
 
 ! S-coordinate omega vertical velocity (m/s).
 
       if (wrtavg(indxO) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgO, record, r_var, w_avg, N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxO))
-          write(*,1) vname(1,indxO)(1:lvar), record  MYID
-        endif
+        call nc_write_var(ncavg, w_avg, N+1, vname(1,indxO), rp_var,
+     &                    record, ierr)
       endif
 
 ! True vertical velocity (m/s).
 
       if (wrtavg(indxW) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgW, record, r_var, wvl_avg, N)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxW))
-          write(*,1) vname(1,indxW)(1:lvar), record MYID
-        endif
+        call nc_write_var(ncavg, wvl_avg, N, vname(1,indxW), rp_var,
+     &                    record, ierr)
       endif
 
 ! Vertical eddy viscosity coefficient for momentum.
 
       if (wrtavg(indxAkv) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg,  avgAkv,  record,  r_var,
-     &                  akv_avg(START_2D_ARRAY,0), N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxAkv))
-          write(*,1) vname(1,indxAkv)(1:lvar), record MYID
-        endif
+!        ierr=ncdf_write(ncavg,  avgAkv,  record,  r_var,
+!     &                  akv_avg(START_2D_ARRAY,0), N+1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxAkv))
+!          write(*,1) vname(1,indxAkv)(1:lvar), record MYID
+!        endif
+        call nc_write_var(ncavg, akv_avg, N+1, vname(1,indxAkv), rp_var,
+     &                    record, ierr)
       endif
 
 ! Vertical heat conductivity
 
       if (wrtavg(indxAkt) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg,  avgAkt,  record,  r_var,
-     &                  akt_avg(START_2D_ARRAY,0), N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxAkt))
-          write(*,1) vname(1,indxAkt)(1:lvar), record MYID
-        endif
+!        ierr=ncdf_write(ncavg,  avgAkt,  record,  r_var,
+!     &                  akt_avg(START_2D_ARRAY,0), N+1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxAkt))
+!          write(*,1) vname(1,indxAkt)(1:lvar), record MYID
+!        endif
+        call nc_write_var(ncavg, akt_avg, N+1, vname(1,indxAkt), rp_var,
+     &                    record, ierr)
       endif
 #  ifdef SALINITY
 
 ! Vertical diffusion coefficient for salinity.
 
       if (wrtavg(indxAks) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg,  avgAks,  record,  r_var,
-     &                  Aks_avg(START_2D_ARRAY,0), N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxAks))
-          write(*,1) vname(1,indxAks)(1:lvar), record MYID
-        endif
+!        ierr=ncdf_write(ncavg,  avgAks,  record,  r_var,
+!     &                  Aks_avg(START_2D_ARRAY,0), N+1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxAks))
+!          write(*,1) vname(1,indxAks)(1:lvar), record MYID
+!        endif
+        call nc_write_var(ncavg, Aks_avg, N+1, vname(1,indxAks), rp_var,
+     &                    record, ierr)
       endif
 #  endif
 #  ifdef LMD_KPP
@@ -166,12 +166,14 @@
 ! Depth of planetary boundary layer [m].
 
       if (wrtavg(indxHbls) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgHbls, record, r_var,
-     &                  hbl_avg(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxHbls))
-          write(*,1) vname(1,indxHbls)(1:lvar), record MYID
-        endif
+!        ierr=ncdf_write(ncavg, avgHbls, record, r_var,
+!     &                  hbl_avg(START_2D_ARRAY), 1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxHbls))
+!          write(*,1) vname(1,indxHbls)(1:lvar), record MYID
+!        endif
+        call nc_write_var(ncavg, hbl_avg, 1, vname(1,indxHbls), rp_var,
+     &                    record, ierr)
       endif
 #  endif
 #  ifdef LMD_BKPP
@@ -179,12 +181,14 @@
 ! Thickness of KPP bottom boundary layer [m].
 
       if (wrtavg(indxHbbl) .and. ierr == nf_noerr) then
-        ierr=ncdf_write(ncavg, avgHbbl, record, r_var,
-     &                  hbbl_avg(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxHbbl))
-          write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
-        endif
+!        ierr=ncdf_write(ncavg, avgHbbl, record, r_var,
+!     &                  hbbl_avg(START_2D_ARRAY), 1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxHbbl))
+!          write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
+!        endif
+        call nc_write_var(ncavg, hbbl_avg, 1, vname(1,indxHbbl), rp_var,
+     &                    record, ierr)
       endif
 #  endif
 # endif /* SOLVE3D */

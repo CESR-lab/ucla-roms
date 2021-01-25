@@ -9,6 +9,7 @@
       use tracers, only: wrt_his_trc
       use bgc ! wrt_his_bgc_diag
       use read_write ! nc_write_var
+      use netcdf ! for nf90_routines
 
       implicit none
 #include "param.h"
@@ -21,7 +22,7 @@
 #include "mixing.h"
 #include "netcdf.inc"
 
-      integer ierr,  record, i, lstr, lvar, lenstr
+      integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
      &   , start(2), count(2), ibuff(iaux), ncdf_write
       character(len=18) tstring
 #ifdef SOLVE3D
@@ -63,11 +64,14 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
       start(1)=1      ; count(1)=iaux
       start(2)=record ; count(2)=1
 
-      ierr=nf_put_vara_int(nchis, hisTstep, start, count, ibuff)
+      ! get time step var_id & record time step info
+      ! --------------------------------------------
+      ierr=nf90_inq_varid(nchis, 'time_step', var_id_tmp)
+      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start, count)
       if (ierr /= nf_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
-     &       'rec =', record, nf_strerror(ierr) MYID
+     &       'rec =', record, nf90_strerror(ierr) MYID
         goto 99                                           !--> ERROR
       endif
 
@@ -77,20 +81,24 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 ! in seconds, however it is more convenient to have it in days in all
 ! the files.
 
+      ! write ocean time
+      ! ----------------
+      ierr=nf90_inq_varid(nchis, 'ocean_time', var_id_tmp)
+      ierr=nf90_put_var(nchis, var_id_tmp, time,(/record/))
 
-      if (vname(3,indxTime)(1:6) == 'second') then
-        ierr=nf_put_var1_double(nchis, hisTime, record, time)
-      else
-        ierr=nf_put_var1_double(nchis, hisTime, record, tdays)
-      endif
-      if (ierr /= nf_noerr) then
-        lvar=lenstr(vname(1,indxTime))
-        write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
-     &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
-     &        ''' into history file, rec =', record, nf_strerror(ierr)
-     &            MYID
-        goto 99                                           !--> ERROR
-      endif
+!      if (vname(3,indxTime)(1:6) == 'second') then
+!        ierr=nf_put_var1_double(nchis, hisTime, record, time)
+!      else
+!        ierr=nf_put_var1_double(nchis, hisTime, record, tdays)
+!      endif
+!      if (ierr /= nf_noerr) then
+!        lvar=lenstr(vname(1,indxTime))
+!        write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
+!     &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
+!     &        ''' into history file, rec =', record, nf_strerror(ierr)
+!     &            MYID
+!        goto 99                                           !--> ERROR
+!      endif
 CR      write(*,*) 'wrt_his:  time  ' MYID
 
 ! Barotropic mode variables: free-surface and 2D momentum
@@ -111,6 +119,7 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! 3D momentum components in XI- and ETA-directions.
 
       if (wrthis(indxU)) then
+      ! ISSUE U has 3 variables!!!! FIX
         call nc_write_var(nchis, u, N, vname(1,indxU), up_var, record, ierr)
       endif
       if (wrthis(indxV)) then
@@ -125,19 +134,10 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 
       if (wrthis(indxR)) then
 # ifdef SPLIT_EOS
-cxxxxxxxxxx
-cxxxxxxxxxx
-cxxxxxxxxxx
-        ierr=ncdf_write(nchis, hisR, record, r_var, rho1, N)
+        call nc_write_var(nchis, rho1, N, vname(1,indxR), rp_var, record, ierr)
 # else
-        ierr=ncdf_write(nchis, hisR, record, r_var, rho,  N)
+        call nc_write_var(nchis, rho, N, vname(1,indxR), rp_var, record, ierr)
 # endif
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxR))
-          write(*,1) vname(1,indxR)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtRHO' MYID
       endif
 
 ! S-coordinate omega vertical velocity (m/s).
@@ -150,13 +150,7 @@ CR      write(*,*) 'wrt_his:  wrtRHO' MYID
             enddo
           enddo
         enddo
-        ierr=ncdf_write(nchis, hisO, record, r_var, work, N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxO))
-          write(*,1) vname(1,indxO)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtO  ' MYID
+        call nc_write_var(nchis, work, N+1, vname(1,indxO), rp_var, record, ierr)
       endif
 
 ! True vertical velocity (m/s).
@@ -165,80 +159,83 @@ CR      write(*,*) 'wrt_his:  wrtO  ' MYID
         do tile=0,NSUB_X*NSUB_E-1
           call wvlcty (tile, work)
         enddo
-        ierr=ncdf_write(nchis, hisW, record, r_var, work, N)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxW))
-          write(*,1) vname(1,indxW)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtW  ' MYID
+        call nc_write_var(nchis, work, N, vname(1,indxW), rp_var, record, ierr)
       endif
 
 ! Vertical viscosity coefficient.
 
       if (wrthis(indxAkv)) then
-        ierr=ncdf_write(nchis, hisAkv, record, r_var, Akv, N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxAkv))
-          write(*,1) vname(1,indxAkv)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtAkv' MYID
+!        ierr=ncdf_write(nchis, hisAkv, record, r_var, Akv, N+1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxAkv))
+!          write(*,1) vname(1,indxAkv)(1:lvar), record MYID
+!          goto 99                                         !--> ERROR
+!        endif
+!CR      write(*,*) 'wrt_his:  wrtAkv' MYID
+        call nc_write_var(nchis, Akv, N+1, vname(1,indxAkv), rp_var, record, ierr)
       endif
 
 ! Vertical diffusion coefficient for potential temperature.
 
       if (wrthis(indxAkt)) then
-        ierr=ncdf_write(nchis,   hisAkt,   record,  r_var,
-     &                  Akt(START_2D_ARRAY,0,itemp), N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxAkt))
-          write(*,1) vname(1,indxAkt)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtAkt' MYID
+!        ierr=ncdf_write(nchis,   hisAkt,   record,  r_var,
+!     &                  Akt(START_2D_ARRAY,0,itemp), N+1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxAkt))
+!          write(*,1) vname(1,indxAkt)(1:lvar), record MYID
+!          goto 99                                         !--> ERROR
+!        endif
+!CR      write(*,*) 'wrt_his:  wrtAkt' MYID
+        call nc_write_var(nchis, Akt(START_2D_ARRAY,0,itemp), N+1,
+     &                    vname(1,indxAkt), rp_var, record, ierr)
       endif
 # ifdef SALINITY
 
 ! Vertical diffusion coefficient for salinity.
 
       if (wrthis(indxAks)) then
-        ierr=ncdf_write(nchis,  hisAks,   record,   r_var,
-     &                  Akt(START_2D_ARRAY,0,isalt), N+1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxAks))
-          write(*,1) vname(1,indxAks)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtAks' MYID
+!        ierr=ncdf_write(nchis,  hisAks,   record,   r_var,
+!     &                  Akt(START_2D_ARRAY,0,isalt), N+1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxAks))
+!          write(*,1) vname(1,indxAks)(1:lvar), record MYID
+!          goto 99                                         !--> ERROR
+!        endif
+!CR      write(*,*) 'wrt_his:  wrtAks' MYID
+        call nc_write_var(nchis, Akt(START_2D_ARRAY,0,isalt), N+1,
+     &                    vname(1,indxAks), rp_var, record, ierr)
       endif
 # endif
 # ifdef LMD_KPP
 ! Depth of planetary boundary layer [m].
 
       if (wrthis(indxHbls)) then
-        ierr=ncdf_write(nchis, hisHbls, record, r_var,
-     &                  hbls(START_2D_ARRAY,nstp), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxHbls))
-          write(*,1) vname(1,indxHbls)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtHBL' MYID
+!        ierr=ncdf_write(nchis, hisHbls, record, r_var,
+!     &                  hbls(START_2D_ARRAY,nstp), 1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxHbls))
+!          write(*,1) vname(1,indxHbls)(1:lvar), record MYID
+!          goto 99                                         !--> ERROR
+!        endif
+!CR      write(*,*) 'wrt_his:  wrtHBL' MYID
+        call nc_write_var(nchis, hbls(START_2D_ARRAY,nstp), 1,
+     &                    vname(1,indxHbls), rp_var, record, ierr)
       endif
 # endif
 # ifdef LMD_BKPP
 ! Thickness of KPP bottom boundary layer [m].
 
       if (wrthis(indxHbbl)) then
-        ierr=ncdf_write(nchis, hisHbbl, record, r_var,
-     &                  hbbl(START_2D_ARRAY,nstp), 1)
-        if (ierr /= nf_noerr) then
-          lvar=lenstr(vname(1,indxHbbl))
-          write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
-          goto 99                                         !--> ERROR
-        endif
-CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
+!        ierr=ncdf_write(nchis, hisHbbl, record, r_var,
+!     &                  hbbl(START_2D_ARRAY,nstp), 1)
+!        if (ierr /= nf_noerr) then
+!          lvar=lenstr(vname(1,indxHbbl))
+!          write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
+!          goto 99                                         !--> ERROR
+!        endif
+!CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
+        call nc_write_var(nchis, hbbl(START_2D_ARRAY,nstp), 1,
+     &                    vname(1,indxHbbl), rp_var, record, ierr)
       endif
 # endif
 #endif

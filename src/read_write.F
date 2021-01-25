@@ -979,7 +979,6 @@ C$OMP BARRIER
 
       endif ! (nrechis_flux == 0)
 
-
       ! Insert time index to file name
       ! ------------------------------
 
@@ -1096,8 +1095,6 @@ C$OMP BARRIER
 
 
       end subroutine ncdf_create_file
-
-
 ! ----------------------------------------------------------------------
 
       subroutine nc_define_var(ncid,var_name,var_long_name,var_units,
