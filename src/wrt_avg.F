@@ -130,8 +130,8 @@
 !          lvar=lenstr(vname(1,indxAkv))
 !          write(*,1) vname(1,indxAkv)(1:lvar), record MYID
 !        endif
-        call nc_write_var(ncavg, akv_avg, N+1, vname(1,indxAkv), rp_var,
-     &                    record, ierr)
+        call nc_write_var(ncavg, akv_avg(START_2D_ARRAY,0), N+1,
+     &                    vname(1,indxAkv), rp_var, record, ierr)
       endif
 
 ! Vertical heat conductivity
@@ -143,8 +143,8 @@
 !          lvar=lenstr(vname(1,indxAkt))
 !          write(*,1) vname(1,indxAkt)(1:lvar), record MYID
 !        endif
-        call nc_write_var(ncavg, akt_avg, N+1, vname(1,indxAkt), rp_var,
-     &                    record, ierr)
+        call nc_write_var(ncavg, akt_avg(START_2D_ARRAY,0), N+1,
+     &                    vname(1,indxAkt), rp_var, record, ierr)
       endif
 #  ifdef SALINITY
 
@@ -157,8 +157,8 @@
 !          lvar=lenstr(vname(1,indxAks))
 !          write(*,1) vname(1,indxAks)(1:lvar), record MYID
 !        endif
-        call nc_write_var(ncavg, Aks_avg, N+1, vname(1,indxAks), rp_var,
-     &                    record, ierr)
+        call nc_write_var(ncavg, Aks_avg(START_2D_ARRAY,0), N+1,
+     &                    vname(1,indxAks), rp_var, record, ierr)
       endif
 #  endif
 #  ifdef LMD_KPP
