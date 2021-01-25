@@ -27,8 +27,8 @@
       integer :: interp_frc = 0 ! For SST and SSS correction
 
       logical :: write_file    = .false. ! Whether to write a flux file or not
-      integer :: rec_rate      = 1       ! Output record rate,
-      integer :: recs_per_file = 100     ! total recs per file
+      integer :: rec_rate      = 2       ! Output record rate,
+      integer :: recs_per_file = 3     ! total recs per file
 
       logical :: wrt_sustr = .True. ! Output surface u-stress
       logical :: wrt_svstr = .True. ! Output surface v-stress
@@ -273,8 +273,8 @@
       ! Write surface fluxes to output netcdf file
 
       use netcdf ! for nf90_routines
-      use read_write, only: ncdf_create_file, nc_define_var, nc_write_var
-     &   , nc_write_time, output_root_name, rp_var, up_var, vp_var
+      use read_write !, only: ncdf_create_file, nc_define_var, nc_write_var
+                     !&   , nc_write_time, output_root_name, rp_var, up_var, vp_var
 
       implicit none
 

@@ -71,6 +71,8 @@
 	FFLAGS = -O3 -ip
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
+# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
+#	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
 
 # Name/path to libraries (NetCDF, etc):
 	LCDF = -L$(NETCDFHOME)/lib/ -lnetcdff -L$(NHMG_LIB) -lnhmg
