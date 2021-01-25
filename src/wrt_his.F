@@ -105,13 +105,16 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! components in XI-,ETA-directions.
 
       if (wrthis(indxZ)) then
-        call nc_write_var(nchis, zeta, 1, vname(1,indxZ), rp_var, record, ierr)
+        call nc_write_var(nchis, zeta(START_2D_ARRAY,knew), 1,
+     &                    vname(1,indxZ), rp_var, record, ierr)
       endif
       if (wrthis(indxUb)) then
-        call nc_write_var(nchis, ubar, 1, vname(1,indxUb), up_var, record, ierr)
+        call nc_write_var(nchis, ubar(START_2D_ARRAY,knew), 1,
+     &                    vname(1,indxUb), up_var, record, ierr)
       endif
       if (wrthis(indxVb)) then
-        call nc_write_var(nchis, vbar, 1, vname(1,indxVb), vp_var, record, ierr)
+        call nc_write_var(nchis, vbar(START_2D_ARRAY,knew), 1,
+     &                    vname(1,indxVb), vp_var, record, ierr)
       endif
 
 #ifdef SOLVE3D
@@ -119,11 +122,12 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! 3D momentum components in XI- and ETA-directions.
 
       if (wrthis(indxU)) then
-      ! ISSUE U has 3 variables!!!! FIX
-        call nc_write_var(nchis, u, N, vname(1,indxU), up_var, record, ierr)
+        call nc_write_var(nchis, u(START_2D_ARRAY,1,nstp), N,
+     &                    vname(1,indxU), up_var, record, ierr)
       endif
       if (wrthis(indxV)) then
-        call nc_write_var(nchis, v, N, vname(1,indxV), vp_var, record, ierr)
+        call nc_write_var(nchis, v(START_2D_ARRAY,1,nstp), N,
+     &                    vname(1,indxV), vp_var, record, ierr)
       endif
 
 ! Tracer variables.
