@@ -487,256 +487,44 @@
       ! variable names (primary vars, tracers, etc).
       ! However, tracers variable names, etc are now stored in tracers.F
       ! in t_vname, t_lname, etc. Hence populating vname for bgc should not
-      ! be necessary. I have left it populated for now as it is somewhat harmless.
+      ! be necessary.
+      ! Further, ETH vname(4,NT) but roms vname(3,NT), see below for PO4 where
+      ! row '4' is populated with '  '. This overide data as only 3 rows!
+      ! Hence I have removed.
       ! HOWEVER, vname_bec2_diag_2d & vname_bec2_diag_3d are STILL used and must
       ! be correctly populated.
 
 #ifdef SOLVE3D
-      vname(1,indxPO4)='PO4                                       '
-      vname(2,indxpO4)='Phosphate                                 '
-      vname(3,indxpO4)='mMol P m-3                                '
-      vname(4,indxpO4)='  '
+!      vname(1,indxPO4)='PO4                                       '
+!      vname(2,indxpO4)='Phosphate                                 '
+!      vname(3,indxpO4)='mMol P m-3                                '
+!      vname(4,indxpO4)='  '
 
-CR      write(*,'(1x,A,I3)') 'indxNO3 =',indxNO3
-      vname(1,indxNO3)='NO3                                       '
-      vname(2,indxNO3)='Nitrate                                   '
-      vname(3,indxNO3)='mMol N m-3                                '
-      vname(4,indxNO3)='  '
-
-      vname(1,indxSIO3)='SiO3                                      '
-      vname(2,indxSIO3)='Silicate                                  '
-      vname(3,indxSIO3)='mMol Si m-3                               '
-      vname(4,indxSIO3)='  '
-
-CR      write(*,'(1x,A,I3)') 'indxNH4 =',indxNH4
-      vname(1,indxNH4)='NH4                                       '
-      vname(2,indxNH4)='Ammonium                                  '
-      vname(3,indxNH4)='mMol N m-3                                '
-      vname(4,indxNH4)='  '
-
-
-      vname(1,indxFE)='Fe                                        '
-      vname(2,indxFE)='Iron                                      '
-      vname(3,indxFE)='mMol Fe m-3                               '
-      vname(4,indxFE)='  '
-
-      vname(1,indxO2)='O2                                        '
-      vname(2,indxO2)='Oxygen                                    '
-      vname(3,indxO2)='mMol O2 m-3                               '
-      vname(4,indxO2)='  '
-
-      vname(1,indxDIC)='DIC                                       '
-      vname(2,indxDIC)='Dissolved inorganic carbon                '
-      vname(3,indxDIC)='mMol C m-3                                '
-      vname(4,indxDIC)='  '
-
-      vname(1,indxALK)='Alk                                       '
-      vname(2,indxALK)='Alkalinity                                '
-      vname(3,indxALK)='mMol m-3                                '
-      vname(4,indxALK)='  '
-
-      vname(1,indxDOC)='DOC                                       '
-      vname(2,indxDOC)='Dissolved organic carbon                  '
-      vname(3,indxDOC)='mMol C m-3                                '
-      vname(4,indxDOC)='  '
-
-      vname(1,indxDon)='DON                                      '
-      vname(2,indxDon)='Dissolved organic nitrogen               '
-      vname(3,indxDon)='mMol N m-3                               '
-      vname(4,indxDon)='  '
-
-      vname(1,indxDofe)='DOFE                                     '
-      vname(2,indxDofe)='Dissolved organic iron                   '
-      vname(3,indxDofe)='mMol Fe m-3                              '
-      vname(4,indxDofe)='  '
-
-      vname(1,indxDop)='DOP                                      '
-      vname(2,indxDop)='Dissolved organic phosphorus             '
-      vname(3,indxDop)='mMol P m-3                               '
-      vname(4,indxDop)='  '
-
-      vname(1,indxDopr)='DOPR'
-      vname(2,indxDopr)='Refractory dissolved organic phosphorus  '
-      vname(3,indxDopr)='mMol P m-3'
-      vname(4,indxDopr)='  '
-
-      vname(1,indxDonr)='DONR'
-      vname(2,indxDonr)='Refractory dissolved organic nitrogen    '
-      vname(3,indxDonr)='mMol N m-3'
-      vname(4,indxDonr)='  '
-
-      vname(1,indxZOOC)='ZOOC'
-      vname(2,indxZOOC)='Zooplankton'
-      vname(3,indxZOOC)='mMol C m-3'
-      vname(4,indxZOOC)='  '
-
-      vname(1,indxSPCHL)='SPCHL'
-      vname(2,indxSPCHL)='Small phytoplankton chlorophyll'
-      vname(3,indxSPCHL)='mg Chl-a m-3'
-      vname(4,indxSPCHL)='  '
-
-      vname(1,indxSPC)='SPC                                       '
-      vname(2,indxSPC)='Small phytoplankton carbon                '
-      vname(3,indxSPC)='mMol C m-3                                '
-      vname(4,indxSPC)='  '
-
-      vname(1,indxSPFE)='SPFE                                     '
-      vname(2,indxSPFE)='Small phytoplankton iron                 '
-      vname(3,indxSPFE)='mMol Fe m-3                              '
-      vname(4,indxSPFE)='  '
-
-      vname(1,indxSPCACO3)='SPCACO3                                   '
-      vname(2,indxSPCACO3)='Small phytoplankton CaCO3                 '
-      vname(3,indxSPCACO3)='mMol CaCO3 m-3                            '
-      vname(4,indxSPCACO3)='  '
-
-      vname(1,indxDIATCHL)='DIATCHL                                   '
-      vname(2,indxDIATCHL)='Diatom chlorophyll                        '
-      vname(3,indxDIATCHL)='mg Chl-a m-3                              '
-      vname(4,indxDIATCHL)='  '
-
-      vname(1,indxDIATC)='DIATC                                     '
-      vname(2,indxDIATC)='Diatom carbon                             '
-      vname(3,indxDIATC)='mMol C m-3                                '
-      vname(4,indxDIATC)='  '
-
-      vname(1,indxDIATFE)='DIATFE                                    '
-      vname(2,indxDIATFE)='Diatom Iron                               '
-      vname(3,indxDIATFE)='mMol Fe m-3                               '
-      vname(4,indxDIATFE)='  '
-
-      vname(1,indxDIATSI)='DIATSI                                    '
-      vname(2,indxDIATSI)='Diatom silicon                            '
-      vname(3,indxDIATSI)='mMol Si m-3                               '
-      vname(4,indxDIATSI)='  '
-
-      vname(1,indxDiazchl)='DIAZCHL                                  '
-      vname(2,indxDiazchl)='Diazotroph chlorophyll                   '
-      vname(3,indxDiazchl)='mg Chl-a m-3                             '
-      vname(4,indxDiazchl)='  '
-
-      vname(1,indxdiazc)='DIAZC                                    '
-      vname(2,indxDiazc)='Diazotroph carbon                        '
-      vname(3,indxDiazc)='mMol C m-3                               '
-      vname(4,indxDiazc)='  '
-
-      vname(1,indxDiazfe)='DIAZFE                                   '
-      vname(2,indxDiazfe)='Diazotroph iron                          '
-      vname(3,indxDiazfe)='mMol Fe m-3                              '
-      vname(4,indxDiazfe)='  '
-
-# ifdef BEC_COCCO
-      vname(1,indxCoccoc)='COCCOC                                   '
-      vname(2,indxCoccoc)='Coccolithophore Carbon                   '
-      vname(3,indxCoccoc)='mMol C m-3                              '
-      vname(4,indxCoccoc)='  '
-
-      vname(1,indxCoccochl)='COCCOCHL                                 '
-      vname(2,indxCoccochl)='Coccolithophore Chlorophyll              '
-      vname(3,indxCoccochl)='mg Chl-a m-3                              '
-      vname(4,indxCoccochl)='  '
-
-      vname(1,indxCoccocal)='COCCOCAL                                '
-      vname(2,indxCoccocal)='Coccolithophore CaCO3                   '
-      vname(3,indxCoccocal)='mMol CaCO3 m-3                          '
-      vname(4,indxCoccocal)='  '
-
-      vname(1,indxCoccofe)='COCCOFE                                   '
-      vname(2,indxCoccofe)='Coccolithophore iron                    '
-      vname(3,indxCoccofe)='mMol Fe m-3                              '
-      vname(4,indxCoccofe)='  '
-
-      vname(1,indxCal)='CAL                                   '
-      vname(2,indxCal)='CaCO3                                   '
-      vname(3,indxCal)='mMol CaCO3 m-3                         '
-      vname(4,indxCal)='  '
-# endif
-
-# ifdef Ncycle_SY
-      vname(1,indxno2)='NO2                                   '
-      vname(2,indxno2)='Nitrite                                 '
-      vname(3,indxno2)='mMol N m-3                              '
-      vname(4,indxno2)='  '
-
-      vname(1,indxn2)='N2                              '
-      vname(2,indxn2)='Dinitrogen   '
-      vname(3,indxn2)='mMol N2 m-3                         '
-      vname(4,indxn2)='  '
-
-      vname(1,indxn2o)='N2O                              '
-      vname(2,indxn2o)='Nitrous oxide   '
-      vname(3,indxn2o)='mMol N2O m-3                         '
-      vname(4,indxn2o)='  '
-
-# ifdef N2O_TRACER_DECOMP
-      vname(1,indxn2o_ao1)='N2O_AO1                                 '
-      vname(2,indxn2o_ao1)='Nitrous oxide produced via AO1             '
-      vname(3,indxn2o_ao1)='mMol N2O m-3                              '
-      vname(4,indxn2o_ao1)='  '
-
-      vname(1,indxn2o_siden)='N2O_SIDEN                                '
-      vname(2,indxn2o_siden)='Nitrous oxide consumed via denitrif. '
-      vname(3,indxn2o_siden)='mMol N2O m-3                             '
-      vname(4,indxn2o_siden)='  '
-
-      vname(1,indxn2o_soden)='N2O_SODEN                              '
-      vname(2,indxn2o_soden)='Nitrous oxide produced via denitrif.   '
-      vname(3,indxn2o_soden)='mMol N2O m-3                         '
-      vname(4,indxn2o_soden)='  '
-
-      vname(1,indxn2o_atm)='N2O_ATM                              '
-      vname(2,indxn2o_atm)='N2O of atmospheric provenance   '
-      vname(3,indxn2o_atm)='mMol N2 m-3                         '
-      vname(4,indxn2o_atm)='  '
-
-      vname(1,indxn2_sed)='N2_SED                              '
-      vname(2,indxn2_sed)='N2 from sedimentary denitrification   '
-      vname(3,indxn2_sed)='mMol N2 m-3                         '
-      vname(4,indxn2_sed)='  '
-# endif
-# endif
-
-# ifdef N2O_NEV
-      vname(1,indxn2o_nev)='N2O_NEV                              '
-      vname(2,indxn2o_nev)='N2O (Nevison)   '
-      vname(3,indxn2o_nev)='mMol N2O m-3                         '
-      vname(4,indxn2o_nev)='  '
-# endif
-
-      ! DevinD: commented these out as were overidding Akv & Akt vname's
-!      vname(1,indxdust)='dust                                       '
-!      vname(2,indxdust)='dust flux                      '
-!      vname(3,indxdust)='kg m-2 s-1                                '
-!      vname(4,indxdust)='  '
-!
-!      vname(1,indxiron)='iron                                    '
-!      vname(2,indxiron)='iron flux                      '
-!      vname(3,indxiron)='nmol cm-2 s-1                             '
-!      vname(4,indxiron)='  '
-
+! DevinD left this in for now and not sure what it does but removed offending
+! entry to row '4' of vname.
 # ifndef BEC2_DIAG
       vname(1,indxPH)='PH'
       vname(2,indxPH)='surf pH value'
       vname(3,indxPH)=' '
-      vname(4,indxPH)=' '
+!      vname(4,indxPH)=' '
       vname(1,indxPCO2)='pCO2                                 '
       vname(2,indxPCO2)='Surface water pCO2                   '
       vname(3,indxPCO2)='ppm                                  '
-      vname(4,indxPCO2)='  '
+!      vname(4,indxPCO2)='  '
       vname(1,indxPCO2air)='pCO2air                           '
       vname(2,indxPCO2air)='Atmospheric pCO2                  '
       vname(3,indxPCO2air)='ppm                               '
-      vname(4,indxPCO2air)='           '
+!      vname(4,indxPCO2air)='           '
       vname(1,indxPARinc)='PARinc                                '
       vname(2,indxPARinc)=
      &  'Incoming photosynth. active radiation '
       vname(3,indxPARinc)='W m-2                                 '
-      vname(4,indxPARinc)='  '
+!      vname(4,indxPARinc)='  '
       vname(1,indxPAR)='PAR'
       vname(2,indxPAR)=
      &  'Photosynthetically active radiation'
       vname(3,indxPAR)='W m-2'
-      vname(4,indxPAR)='  '
+!      vname(4,indxPAR)='  '
 # endif /*BEC2_DIAG */
 
 

@@ -1120,7 +1120,7 @@ C$OMP BARRIER
       ! Local variables
       ! ---------------
 
-      integer var_id ! variable ID
+      integer var_id, lvar, lenstr ! variable ID
 
       ! Taken from def_his.F
 #ifdef MASK_LAND_DATA
@@ -1134,14 +1134,14 @@ C$OMP BARRIER
       ! Define variables
       ! ================
 
-      ! Get variable ID
-      ierr = nf90_inq_varid (ncid,var_name,var_id)
-!      if(ierr .ne. nf90_noerr) goto 2 ! Don't know why this creates an error???
-
-      ! Set variable short name
+      ! Set variable short name:
         ! Note: nf90 functionality no longer requires number of dimensions
         ! assume it can work it out from size of array var_grd.
-      ierr=nf90_def_var (ncid, var_name, nf90_float,
+        ! Note: since 'maya' machine has 2014 ifort, it complains when taking
+        ! in var_name with trailing spaces. Hence send in only required
+        ! characters 'lvar'. Remove this step when maya is updated.
+      lvar=lenstr(var_name)
+      ierr=nf90_def_var (ncid, var_name(1:lvar), nf90_float,
      &                         var_grd, var_id) ! , deflate_level = 1
       if(ierr .ne. nf90_noerr) goto 2
       ! Old code:
@@ -1211,13 +1211,17 @@ C$OMP BARRIER
 
       ! Local variables
       ! ---------------
-      integer var_id ! variable ID
+      integer var_id, lvar, lenstr ! variable ID
 
       ! Subroutine
       ! ==========
 
       ! Get variable ID
-      ierr = nf90_inq_varid (ncid,var_name,var_id)
+        ! Note: since 'maya' machine has 2014 ifort, it complains when taking
+        ! in var_name with trailing spaces. Hence send in only required
+        ! characters 'lvar'. Remove this step when maya is updated.
+      lvar=lenstr(var_name)
+      ierr = nf90_inq_varid (ncid,var_name(1:lvar),var_id)
       if(ierr .ne. nf90_noerr) goto 2
 
       ! Write variable
