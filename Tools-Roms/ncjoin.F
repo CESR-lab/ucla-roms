@@ -3,6 +3,12 @@
 
       program ncjoin
 
+      ! Creator: Sasha (Alex S.)
+      ! Edits:
+      ! - 2021-Jan: DevinD changed nf_create and nf_def_var to nf90
+      !             routines to create netcdf-4 files to allow for
+      !             file compression. ADD USER ARGUEMENT for deflate
+
 ! Generic netCDF assembly tool: reads ROMS partial netCDF files and
 ! assembles them into a file for the whole physical grid.  It is the
 ! inverse operation to partit.  Usage:
@@ -62,6 +68,7 @@ c--#define KEEP_CLOSED
 c--#define AUTORENICE
 c--#define VERBOSE
 
+      use netcdf ! 2021 addition
 
       implicit none
 #include "netcdf.inc"
@@ -863,7 +870,7 @@ c**           endif
 
 !--> create...
 
-        ierr=nf_create (nctargname(1:ltrg), nf_clobber+nf_64bit_offset,
+        ierr=nf90_create (nctargname(1:ltrg), NF90_NETCDF4, ! old verson: nf_clobber+nf_64bit_offset
      &                                                          nctarg)
         if (ierr .eq. nf_noerr) then
           write(*,'(/1x,3A)')  'Created netCDF file ''',
@@ -982,8 +989,17 @@ c**           endif
      &                vartype(i), vdims(i), dimids(1,i),  varatts)
             if (ierr .eq. nf_noerr) then
               lvar=lenstr(vname(i))
-              ierr=nf_def_var (nctarg, vname(i)(1:lvar),vartype(i),
-     &                            vdims(i), dimids(1,i), varid(i))
+              ! OLD F77 method:
+!              ierr=nf_def_var (nctarg, vname(i)(1:lvar),vartype(i),
+!     &                            vdims(i), dimids(1,i), varid(i))
+              ! NEW F90 method:
+              ! - nf90 routine no longer requires number of dimensions for
+              !   the variable (hence vdims(i) not required).
+              ! - However, dimids needs to be passed as an array.
+              ! - Default compression is set to 1.
+              !   Change to 'deflate_level = 0' for no compression.
+              ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),
+     &               dimids(1:vdims(i),i), varid(i), deflate_level=1)
               if (ierr .eq. nf_noerr) then
 #ifdef VERBOSE
                 write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
@@ -1010,7 +1026,7 @@ c**           endif
                     write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: ',
      &                             'Cannot get name of attribute #', j,
      &                      'for variable ''', vname(i)(1:lvar), '''.',
-     &                                               nf_strerror(ierr) 
+     &                                               nf90_strerror(ierr)
                     goto 97
                   endif
                 enddo

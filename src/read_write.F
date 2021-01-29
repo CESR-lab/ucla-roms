@@ -996,6 +996,9 @@ C$OMP BARRIER
       ! Create new file
       ! ---------------
 
+      ! Note: old roms used netcdf-3 files, with 'nf90_clobber+nf90_64bit_offset'
+      ! The nf90_64bit_offset allowed for larger file sizes.
+      ! We have now upgraded to netcdf-4 files, since they allow for files compression.
       ierr=nf90_create(fname, NF90_NETCDF4, ncid) !  NF90_NETCDF4 nf90_clobber+nf90_64bit_offset
 
       if (ierr == nf90_noerr) then
@@ -1135,14 +1138,18 @@ C$OMP BARRIER
       ! ================
 
       ! Set variable short name:
-        ! Note: nf90 functionality no longer requires number of dimensions
-        ! assume it can work it out from size of array var_grd.
-        ! Note: since 'maya' machine has 2014 ifort, it complains when taking
-        ! in var_name with trailing spaces. Hence send in only required
-        ! characters 'lvar'. Remove this step when maya is updated.
+        ! Note:
+        ! - nf90 functionality no longer requires number of dimensions
+        !   assume it can work it out from size of array var_grd.
+        ! - Since 'maya' machine has 2014 ifort, it complains when taking
+        !   in var_name with trailing spaces. Hence send in only required
+        !   characters 'lvar'. Remove this step when maya is updated.
+        ! - Default compression chosen at level 1, since this almost halves
+        !   size of full ocean node (greater reductions if land present in
+        !   node). Set 'deflate_level=0' for no compression.
       lvar=lenstr(var_name)
       ierr=nf90_def_var (ncid, var_name(1:lvar), nf90_float,
-     &                         var_grd, var_id) ! , deflate_level = 1
+     &                         var_grd, var_id, deflate_level = 1)
       if(ierr .ne. nf90_noerr) goto 2
       ! Old code:
       !      ierr=nf_def_var (ncid, var_name(1:lvar), nf_float,
