@@ -80,7 +80,35 @@ Averages:
 
     Only compile roms with AVERAGES flag if you do in fact need averages. The reason for
     this is that AVERAGES creates a second array for every variable in your model, hence
-    doubles your memory requirement. Better to remove AVERAGES flag if not using this.       
+    doubles your memory requirement. Better to remove AVERAGES flag if not using this. 
+    
+Netcdf output compression:
+
+    The new roms code now uses netcdf-4 file outputting (previously netcdf-3). This allows
+    for compression of output files. After testing, it was decided to set the default
+    compression level as "deflate_level=1" in read_write.F. There was not much difference
+    between d1 and d5 compression, hence d1 was chosen.
+    For a tile of only ocean (no land), we found a 30% reduction in output file sizes.
+    For a tile of mostly land, a huge reduction in file size can be found (99% if almost
+    all land!).
+    On maya this actually reduced the run time by a few percent, as it reduced to the amount
+    of data written to disk, which is a cost on maya.
+    On comet the compression increased run time by a few percent. Note that the output
+    frequency was quite high to test the impact of compression, so for normal simulation
+    output rates it is unlikely to make an impact.
+    
+    If you are outputting at every time-step for some reason, you may want to remove compression
+    by setting "deflate_level=0" in read_write.F.
+    The code currently uses default 'chunking' of netcdf variables. Depending on your simulation
+    it is possible that compression might not work nicely. It is recommended you do a small test,
+    e.g. 50 steps outputting every 25 steps (2 outputs), and confirm that the compression does
+    not cost a lot of time, and that the output files are considerably smaller (worth the cost).
+    
+    ncjoin has been modified to create compressed files as well. On maya we found:
+    no compression = 316s execution time -> 21GB
+    d1 compression = 808s execution time ->  8GB
+    The time penalty is considerable but the file size savings is impressive.
+    Again, if you are finding ncjoin too slow, change to "deflate_level=0" in Tools-Roms/ncjoin.F.        
 
 Surface flux outputting:
     

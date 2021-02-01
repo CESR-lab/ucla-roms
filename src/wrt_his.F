@@ -86,21 +86,6 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
       ierr=nf90_inq_varid(nchis, 'ocean_time', var_id_tmp)
       ierr=nf90_put_var(nchis, var_id_tmp, time,(/record/))
 
-!      if (vname(3,indxTime)(1:6) == 'second') then
-!        ierr=nf_put_var1_double(nchis, hisTime, record, time)
-!      else
-!        ierr=nf_put_var1_double(nchis, hisTime, record, tdays)
-!      endif
-!      if (ierr /= nf_noerr) then
-!        lvar=lenstr(vname(1,indxTime))
-!        write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
-!     &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
-!     &        ''' into history file, rec =', record, nf_strerror(ierr)
-!     &            MYID
-!        goto 99                                           !--> ERROR
-!      endif
-CR      write(*,*) 'wrt_his:  time  ' MYID
-
 ! Barotropic mode variables: free-surface and 2D momentum
 ! components in XI-,ETA-directions.
 
@@ -169,27 +154,12 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! Vertical viscosity coefficient.
 
       if (wrthis(indxAkv)) then
-!        ierr=ncdf_write(nchis, hisAkv, record, r_var, Akv, N+1)
-!        if (ierr /= nf_noerr) then
-!          lvar=lenstr(vname(1,indxAkv))
-!          write(*,1) vname(1,indxAkv)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his:  wrtAkv' MYID
         call nc_write_var(nchis, Akv, N+1, vname(1,indxAkv), rp_var, record, ierr)
       endif
 
 ! Vertical diffusion coefficient for potential temperature.
 
       if (wrthis(indxAkt)) then
-!        ierr=ncdf_write(nchis,   hisAkt,   record,  r_var,
-!     &                  Akt(START_2D_ARRAY,0,itemp), N+1)
-!        if (ierr /= nf_noerr) then
-!          lvar=lenstr(vname(1,indxAkt))
-!          write(*,1) vname(1,indxAkt)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his:  wrtAkt' MYID
         call nc_write_var(nchis, Akt(START_2D_ARRAY,0,itemp), N+1,
      &                    vname(1,indxAkt), rp_var, record, ierr)
       endif
@@ -198,14 +168,6 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! Vertical diffusion coefficient for salinity.
 
       if (wrthis(indxAks)) then
-!        ierr=ncdf_write(nchis,  hisAks,   record,   r_var,
-!     &                  Akt(START_2D_ARRAY,0,isalt), N+1)
-!        if (ierr /= nf_noerr) then
-!          lvar=lenstr(vname(1,indxAks))
-!          write(*,1) vname(1,indxAks)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his:  wrtAks' MYID
         call nc_write_var(nchis, Akt(START_2D_ARRAY,0,isalt), N+1,
      &                    vname(1,indxAks), rp_var, record, ierr)
       endif
@@ -214,14 +176,6 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! Depth of planetary boundary layer [m].
 
       if (wrthis(indxHbls)) then
-!        ierr=ncdf_write(nchis, hisHbls, record, r_var,
-!     &                  hbls(START_2D_ARRAY,nstp), 1)
-!        if (ierr /= nf_noerr) then
-!          lvar=lenstr(vname(1,indxHbls))
-!          write(*,1) vname(1,indxHbls)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his:  wrtHBL' MYID
         call nc_write_var(nchis, hbls(START_2D_ARRAY,nstp), 1,
      &                    vname(1,indxHbls), rp_var, record, ierr)
       endif
@@ -230,14 +184,6 @@ CR      write(*,*) 'wrt_his:  time  ' MYID
 ! Thickness of KPP bottom boundary layer [m].
 
       if (wrthis(indxHbbl)) then
-!        ierr=ncdf_write(nchis, hisHbbl, record, r_var,
-!     &                  hbbl(START_2D_ARRAY,nstp), 1)
-!        if (ierr /= nf_noerr) then
-!          lvar=lenstr(vname(1,indxHbbl))
-!          write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
-!          goto 99                                         !--> ERROR
-!        endif
-!CR      write(*,*) 'wrt_his:  wrtHbBL' MYID
         call nc_write_var(nchis, hbbl(START_2D_ARRAY,nstp), 1,
      &                    vname(1,indxHbbl), rp_var, record, ierr)
       endif
