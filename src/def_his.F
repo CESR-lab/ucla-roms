@@ -63,47 +63,11 @@ c--#define nf_def_var my_nf_def_var
 # define fname hisname
 # define rec_per_file nrpfhis
 # define wrt wrthis
-# define vidTime hisTime
-# define vidZ hisZ
-# define vidUb hisUb
-# define vidVb hisVb
-# define vidU hisU
-# define vidV hisV
-# define vidT hisT
-# define vidR hisR
-# define vidO hisO
-# define vidW hisW
-# define vidAkv hisAkv
-# define vidAkt hisAkt
-# define vidAks hisAks
-# define vidHbls hisHbls
-# define vidHbbl hisHbbl
-# ifdef WKB_WWAVE
-#  define vidWKB hisWKB
-# endif
 #else
 # define ncid ncavg
 # define fname avgname
 # define rec_per_file nrpfavg
 # define wrt wrtavg
-# define vidTime avgTime
-# define vidZ avgZ
-# define vidUb avgUb
-# define vidVb avgVb
-# define vidU avgU
-# define vidV avgV
-# define vidT avgT
-# define vidR avgR
-# define vidO avgO
-# define vidW avgW
-# define vidAkv avgAkv
-# define vidAkt avgAkt
-# define vidAks avgAks
-# define vidHbls avgHbls
-# define vidHbbl avgHbbl
-# ifdef WKB_WWAVE
-#  define vidWKB avgWKB
-# endif
 #endif
 
 ! Put time record index into file name. In  the case when model
@@ -276,9 +240,6 @@ c--#define nf_def_var my_nf_def_var
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
 #ifndef AVRH
-!        ierr=nf_def_var(ncid, 'time_step', nf_int, 2, auxil, hisTstep)
-!        ierr=nf_put_att_text (ncid, hisTstep, 'long_name', 48,
-!     &             'time step and record numbers from initialization')
         ierr=nf90_def_var (ncid, 'time_step', nf90_int, auxil, var_id_tmp )
         ! Set variable long name
         ierr=nf90_put_att (ncid, var_id_tmp, 'long_name',
@@ -286,21 +247,11 @@ c--#define nf_def_var my_nf_def_var
 #endif
 
 ! Time.
-!        lvar=lenstr(vname(1,indxTime))
-!        ierr=nf_def_var(ncid, vname(1,indxTime)(1:lvar), NF_FTYPE,
-!     &                                        1, timedim, vidTime)
 #ifdef AVRH
         text='averaged '/ /vname(2,indxTime)
 #else
         text=vname(2,indxTime)
 #endif
-!        lvar=lenstr(text)
-!        ierr=nf_put_att_text (ncid, vidTime, 'long_name', lvar,
-!     &                                            text(1:lvar))
-!        lvar=lenstr(vname(3,indxTime))
-!        ierr=nf_put_att_text (ncid, vidTime, 'units',  lvar,
-!     &                               vname(3,indxTime)(1:lvar))
-        ! Define ocean_time variable
         ierr=nf90_inq_dimid(ncid, 'time', timedimid(1))
         call nc_define_var(ncid, vname(1,indxTime),
      &            text, vname(3,indxTime), timedimid,ierr)
@@ -409,24 +360,11 @@ c--#define nf_def_var my_nf_def_var
 ! Vertical viscosity coefficient.
 
         if (wrt(indxAkv) .and. ierr == nf_noerr) then
-!          lvar=lenstr(vname(1,indxAkv))
-!          ierr=nf_def_var (ncid, vname(1,indxAkv)(1:lvar), NF_FOUT,
-!     &                                           4, w3dgrd, vidAkv)
 # ifdef AVRH
           text='averaged '/ /vname(2,indxAkv)
 # else
           text=vname(2,indxAkv)
 # endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidAkv, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxAkv))
-!          ierr=nf_put_att_text (ncid, vidAkv, 'units',     lvar,
-!     &                                  vname(3,indxAkv)(1:lvar))
-!# ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidAkv, '_FillValue', NF_FOUT,
-!     &                                                   1, spv_set)
-!# endif
           call nc_define_var(ncid, vname(1,indxAkv),
      &           text,vname(3,indxAkv), w3dgrd, ierr )
         endif
@@ -434,24 +372,11 @@ c--#define nf_def_var my_nf_def_var
 ! Vertical thermal conductivity coefficient.
 
         if (wrt(indxAkt) .and. ierr == nf_noerr) then
-!          lvar=lenstr(vname(1,indxAkt))
-!          ierr=nf_def_var (ncid, vname(1,indxAkt)(1:lvar), NF_FOUT,
-!     &                                           4, w3dgrd, vidAkt)
 # ifdef AVRH
           text='averaged '/ /vname(2,indxAkt)
 # else
           text=vname(2,indxAkt)
 # endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidAkt, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxAkt))
-!          ierr=nf_put_att_text (ncid, vidAkt, 'units',     lvar,
-!     &                                  vname(3,indxAkt)(1:lvar))
-!# ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidAkt, '_FillValue', NF_FOUT,
-!     &                                                   1, spv_set)
-!# endif
           call nc_define_var(ncid, vname(1,indxAkt),
      &           text,vname(3,indxAkt), w3dgrd, ierr )
         endif
@@ -459,24 +384,11 @@ c--#define nf_def_var my_nf_def_var
 ! Vertical diffusion coefficient for salinity.
 
         if (wrt(indxAks) .and. ierr == nf_noerr) then
-!          lvar=lenstr(vname(1,indxAks))
-!          ierr=nf_def_var (ncid, vname(1,indxAks)(1:lvar), NF_FOUT,
-!     &                                           4, w3dgrd, vidAks)
 #  ifdef AVRH
           text='averaged '/ /vname(2,indxAks)
 #  else
           text=vname(2,indxAks)
 #  endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidAks, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxAks))
-!          ierr=nf_put_att_text (ncid, vidAks, 'units',     lvar,
-!     &                                  vname(3,indxAks)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidAks, '_FillValue', NF_FOUT,
-!     &                                                   1, spv_set)
-!#  endif
           call nc_define_var(ncid, vname(1,indxAks),
      &           text,vname(3,indxAks), w3dgrd, ierr )
         endif
@@ -485,24 +397,11 @@ c--#define nf_def_var my_nf_def_var
 ! Depth of surface planetary boundary layer.
 
         if (wrt(indxHbls) .and. ierr == nf_noerr) then
-!          lvar=lenstr(vname(1,indxHbls))
-!          ierr=nf_def_var (ncid, vname(1,indxHbls)(1:lvar),
-!     &                           NF_FOUT, 3, r2dgrd, vidHbls)
 #  ifdef AVRH
           text='averaged '/ /vname(2,indxHbls)
 #  else
           text=vname(2,indxHbls)
 #  endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidHbls, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxHbls))
-!          ierr=nf_put_att_text (ncid, vidHbls, 'units',     lvar,
-!     &                                 vname(3,indxHbls)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidHbls, '_FillValue',
-!     &                                       NF_FOUT, 1, spv_set)
-!#  endif
           call nc_define_var(ncid, vname(1,indxHbls),
      &           text,vname(3,indxHbls), r2dgrd, ierr )
         endif
@@ -511,24 +410,11 @@ c--#define nf_def_var my_nf_def_var
 ! Thickness of bottom boundary layer.
 
         if (wrt(indxHbbl) .and. ierr == nf_noerr) then
-!          lvar=lenstr(vname(1,indxHbbl))
-!          ierr=nf_def_var (ncid, vname(1,indxHbbl)(1:lvar),
-!     &                            NF_FOUT, 3, r2dgrd, vidHbbl)
 #  ifdef AVRH
           text='averaged '/ /vname(2,indxHbbl)
 #  else
           text=vname(2,indxHbbl)
 #  endif
-!          lvar=lenstr(text)
-!          ierr=nf_put_att_text (ncid, vidHbbl, 'long_name', lvar,
-!     &                                              text(1:lvar))
-!          lvar=lenstr(vname(3,indxHbbl))
-!          ierr=nf_put_att_text (ncid, vidHbbl, 'units',     lvar,
-!     &                                 vname(3,indxHbbl)(1:lvar))
-!#  ifdef MASK_LAND_DATA
-!          ierr=nf_put_att_FOUT (ncid, vidHbbl, '_FillValue',
-!     &                                       NF_FOUT, 1, spv_set)
-!#  endif
           call nc_define_var(ncid, vname(1,indxHbbl),
      &           text,vname(3,indxHbbl), r2dgrd, ierr )
         endif
@@ -686,141 +572,7 @@ c--#define nf_def_var my_nf_def_var
 ! Find netCDF IDs of evolving model variables:
 ! ---- ------ --- -- -------- ----- ----------
 
-! Time-step indices, ocean time:
-
-#ifndef AVRH
-        ierr=nf_inq_varid(ncid, 'time_step', hisTstep)
-        if (ierr /= nf_noerr) write(*,1) 'time_step', fname(1:lfnm)
-#endif
-        if (ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxTime))
-          ierr=nf_inq_varid(ncid,vname(1,indxTime)(1:lvar), vidTime)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxTime)(1:lvar),
-     &                                                 fname(1:lfnm)
-        endif
-
-! Free-surface and 2D barotropic velocity components
-
-        if (wrt(indxZ) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxZ))
-          ierr=nf_inq_varid(ncid, vname(1,indxZ)(1:lvar), vidZ)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxZ)(1:lvar),
-     &                                              fname(1:lfnm)
-        endif
-        if (wrt(indxUb) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxUb))
-          ierr=nf_inq_varid(ncid, vname(1,indxUb)(1:lvar), vidUb)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxUb)(1:lvar),
-     &                                               fname(1:lfnm)
-        endif
-        if (wrt(indxVb) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxVb))
-          ierr=nf_inq_varid(ncid, vname(1,indxVb)(1:lvar), vidVb)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxVb)(1:lvar),
-     &                                               fname(1:lfnm)
-        endif
-
-#ifdef SOLVE3D
-
-! 3D momenta in XI- and ETA-directions.
-
-        if (wrt(indxU) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxU))
-          ierr=nf_inq_varid(ncid, vname(1,indxU)(1:lvar), vidU)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxU)(1:lvar),
-     &                                              fname(1:lfnm)
-        endif
-        if (wrt(indxV)  .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          ierr=nf_inq_varid(ncid, vname(1,indxV)(1:lvar), vidV)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxV)(1:lvar),
-     &                                              fname(1:lfnm)
-        endif
-
-! Tracer variables.
-
 ! DevinD: no longer need to set var id as handled by read_write.F module
-!        do itrc=1,NT
-!          if (wrt_t(itrc) .and. ierr == nf_noerr) then
-!            lvar=lenstr(t_vname(itrc))
-!            ierr=nf_inq_varid(ncid, t_vname(itrc)(1:lvar),
-!     &                                                 vidT(itrc))
-!            if (ierr /= nf_noerr) write(*,1)
-!     &               t_vname(itrc)(1:lvar), fname(1:lfnm)
-!          endif
-!        enddo
-
-! Density anomaly.
-
-        if (wrt(indxR) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxR))
-          ierr=nf_inq_varid(ncid, vname(1,indxR)(1:lvar), vidR)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxR)(1:lvar),
-     &                                              fname(1:lfnm)
-        endif
-
-! S-coordinate "omega" and "true" W- vertical velocities.
-
-        if (wrt(indxO) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxO))
-          ierr=nf_inq_varid(ncid, vname(1,indxO)(1:lvar), vidO)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxO)(1:lvar),
-     &                                              fname(1:lfnm)
-        endif
-
-        if (wrt(indxW) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxW))
-          ierr=nf_inq_varid(ncid, vname(1,indxW)(1:lvar), vidW)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxW)(1:lvar),
-     &                                              fname(1:lfnm)
-        endif
-
-! Vertical viscosity, thermal conductivity, and salinity diffusion.
-
-        if (wrt(indxAkv) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxAkv))
-          ierr=nf_inq_varid(ncid, vname(1,indxAkv)(1:lvar), vidAkv)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxAkv)(1:lvar),
-     &                                                fname(1:lfnm)
-        endif
-
-        if (wrt(indxAkt) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxAkt))
-          ierr=nf_inq_varid(ncid,vname(1,indxAkt)(1:lvar), vidAkt)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxAkt)(1:lvar),
-     &                                                fname(1:lfnm)
-        endif
-
-# ifdef SALINITY
-        if (wrt(indxAks) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxAks))
-          ierr=nf_inq_varid(ncid,vname(1,indxAks)(1:lvar), vidAks)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxAks)(1:lvar),
-     &                                                fname(1:lfnm)
-        endif
-# endif
-# ifdef LMD_KPP
-! Depth of surface planetary boundary layer.
-
-        if (wrt(indxHbls) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxHbls))
-          ierr=nf_inq_varid(ncid,vname(1,indxHbls)(1:lvar), vidHbls)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxHbls)(1:lvar),
-     &                                                 fname(1:lfnm)
-        endif
-# endif
-# ifdef LMD_BKPP
-! Thickness of bottom boundary layer.
-
-        if (wrt(indxHbbl) .and. ierr == nf_noerr) then
-          lvar=lenstr(vname(1,indxHbbl))
-          ierr=nf_inq_varid(ncid,vname(1,indxHbbl)(1:lvar), vidHbbl)
-          if (ierr /= nf_noerr) write(*,1) vname(1,indxHbbl)(1:lvar),
-     &                                                 fname(1:lfnm)
-        endif
-# endif
-#endif /* SOLVE3D */
-
 
 
 ! ---------------------
@@ -901,24 +653,6 @@ c--#define nf_def_var my_nf_def_var
 #undef fname
 #undef rec_per_file
 #undef wrt
-#undef vidTime
-#undef vidZ
-#undef vidUb
-#undef vidVb
-#undef vidU
-#undef vidV
-#undef vidT
-#undef vidR
-#undef vidO
-#undef vidW
-#undef vidAkv
-#undef vidAkt
-#undef vidAks
-#undef vidHbls
-#undef vidHbbl
-#ifdef WKB_WWAVE
-# undef vidWKB
-#endif
 
 #ifndef AVRH
 # define AVRH
