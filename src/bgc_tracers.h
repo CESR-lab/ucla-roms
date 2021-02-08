@@ -1,4 +1,4 @@
-! DevinD: this was tracres.h in the ETH code.
+! DevinD: this was tracers.h in the ETH code.
 
 !
 ! Biological and other tracers

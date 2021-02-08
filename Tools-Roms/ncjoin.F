@@ -7,7 +7,8 @@
       ! Edits:
       ! - 2021-Jan: DevinD changed nf_create and nf_def_var to nf90
       !             routines to create netcdf-4 files to allow for
-      !             file compression. ADD USER ARGUEMENT for deflate
+      !             file compression.
+      !             Change compression level with 'deflate_level='.
 
 ! Generic netCDF assembly tool: reads ROMS partial netCDF files and
 ! assembles them into a file for the whole physical grid.  It is the
@@ -68,7 +69,7 @@ c--#define KEEP_CLOSED
 c--#define AUTORENICE
 c--#define VERBOSE
 
-      use netcdf ! 2021 addition
+      use netcdf ! 2021 addition for nf90_create & nf90_def_var
 
       implicit none
 #include "netcdf.inc"
@@ -183,7 +184,12 @@ c--#define VERBOSE
       sffx_bak(1:1)=' '
       code_size_bak=-1
  
+      ! DD: will cycle through arguement list of names of partitioned
+      !     files by coming back here with 'goto 2'
   2   arg=arg+1
+        ! DD: get the arguements from calling ncjoin arg1 ...
+        !     e.g. ncjoin his.0000.*.nc will actually send in
+        !     ncjoin his.0000.00.nc his.0000.01.nc ... and so on.
         call getarg(arg,nctestname)
         lncn=lenstr(nctestname)
 #ifdef DEL_PART_FILES
@@ -202,9 +208,12 @@ c--#define VERBOSE
         ierr=nf_open (nctestname, nf_nowrite, ntest)
         if (ierr .eq. nf_noerr) then
           ierr=nf_inq_att (ntest, nf_global, 'partition', i, lvar)
+          ! DD: e.g. :partition = 0, 6, 1, 1 ;
+          ! i=attribute type, lvar= number of values stored in attribute.
           if (ierr .eq. nf_noerr) then
             if (i.eq.nf_int .and. lvar.eq.4) then
               ierr=nf_get_att_int (ntest,nf_global, 'partition', ibuff)
+              ! DD: ibuff array stores 4 integers of 'partition'.
               if (ierr .eq. nf_noerr) then
 
                 if (nnodes.eq.-1) then
@@ -998,8 +1007,11 @@ c**           endif
               ! - However, dimids needs to be passed as an array.
               ! - Default compression is set to 1.
               !   Change to 'deflate_level = 0' for no compression.
+              ! - Default is to turn shuffle on, this is what nc3to4z had.
+              !   In tests it gave an extra ~10% compression over just d1 compression.
               ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),
-     &               dimids(1:vdims(i),i), varid(i), deflate_level=1)
+     &                           dimids(1:vdims(i),i), varid(i),
+     &                           deflate_level=1, shuffle=.true.)
               if (ierr .eq. nf_noerr) then
 #ifdef VERBOSE
                 write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
