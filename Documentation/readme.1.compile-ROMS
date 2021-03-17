@@ -51,9 +51,13 @@ INSTRUCTIONS: COMPILING ROMS
      
   5. Compile ROMS tools:
   
-     This gives you access to roms tools, as of 2020/12 only produces
-     'partit' for partitioning netcdf files, and 'ncjoin' for joining 
-     netcdf result files into one file. 
+     This gives you access to roms tools, as of 2021/03 only produces:
+     'partit' for partitioning netcdf files,
+     'ncjoin' for joining netcdf result files into one file, and
+     'ncjoin_mpi' for joining netcdf result files using many cores
+     (much faster than ncjoin and recommended, also compresses data
+      so no need to use nc3to4z anymore. Expanse only with run script!
+      see Tools-Roms/readme for more info.)
      Compile tools:
      cd Tools-Roms
      make
@@ -125,8 +129,14 @@ Recompiling roms:
 Roms tools:
 -----------
 
-     For roms tools, 'partit' for partitioning input files as per MPI decomposition,
-     and for 'ncjoin' for rejoining results files into one complete file.
+     'partit' for partitioning input files as per MPI decomposition,
+     'ncjoin' for rejoining results files into one complete file.
+     'ncjoin_mpi' for joining netcdf result files using many cores
+     (much faster than ncjoin and recommended, also compresses data
+      so no need to use nc3to4z anymore. Expanse only with run script!
+      see Tools-Roms/readme for more info.)
+      
+     To build tools:
      cd Tools-Roms/
      make
      (Resulting executables will be there)

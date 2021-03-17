@@ -1,0 +1,51 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# User specific environment
+PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH
+
+# Uncomment the following line if you don't like systemctl's auto-paging feature:
+# export SYSTEMD_PAGER=
+
+# User specific aliases and functions
+module load gcc
+module load slurm
+
+# DEVIND additions:
+
+# - expanse user-defined path to where you have cloned the repo code:
+export ROMS_ROOT=~/repos/ucla-roms
+
+# Expanse non-user defined (same for everyone)
+# - Prerequisite modules for netcdf (as told by using 'module spider netcdf')
+module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
+# - netCDF-c
+module load netcdf-c/4.7.4
+# - netCDF-Fortran
+module load netcdf-fortran/4.5.3
+# - ncview
+module load ncview/2.1.8
+
+# - adds roms tools to path (you still need to build them first)
+export PATH=$PATH:$ROMS_ROOT/Tools-Roms
+
+# - set roms' environment variables to match expanse module paths:
+export NETCDFHOME=$NETCDF_FORTRANHOME
+export MPIHOME=$MVAPICH2HOME
+
+# DEVIND COMMANDS ONLY (NOT ROMS RELATED):
+alias ltr='ls -lthr | tail -20'
+# - Show my current submitted jobs
+alias qstat='squeue -u ddevin' 
+alias scratch='cd /expanse/lustre/scratch/ddevin/temp_project'
+alias projects='cd /expanse/lustre/projects/cla119/ddevin'
+export PROJ='/expanse/lustre/projects/cla119/ddevin'
+alias roms='cd ~/repos/ucla-roms'
+
+
+
