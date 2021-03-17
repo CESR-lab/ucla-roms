@@ -31,11 +31,39 @@ To compile tools:
  partit -	Separates single input files over domain into multiple input
  		files based on the MPI tiling based on the parameters you set
  		in param.h file.
+ 				
+ ncjoin_mpi -	Generic netCDF assembly tool that reads ROMS partial netCDF files (.nc)
+		and assembles them into a file for the whole physical grid.
+		It is the inverse operation to partit.
+ 		Runs in parallel with many cores using MPI.
+ 		Compresses joined file (no need for nc3to4z).
+ 		Currently, ncjoin_mpi can only be used  on Xsede's expanse. 
+ 		To run on Expanse, see run script here:
+ 		Documentation/machine-specific/Job_submission_scrips/run_script_expanse_ncjoin_mpi
+ 				
+		ncjoin_mpi usage:
+				
+		       mpiexec -n np ncjoin_mpi np_x np_y files.???.nc
+		 or
+		       mpiexec -n np ncjoin_mpi np_x np_y -d files.???.nc
+				
+		where files.???.nc matches a complete set of partial files (or
+		several complete sets) and "-d" or "--delete" forces deletion of
+		partial files upon successful joining. 
 
- ncjoin -	Joins partitioned netcdf result files (.nc) into one file
+		np is the total number of processors you use.
+		np_x and np_y are the number of sub-domains you choose in x and y
+		for ncjoin_mpi not your input partition files, they can be different!
+		For efficiency, try to keep keep the ratio of np_x to np_y similar to
+		the sub-domaining of your partitial files.
+		Note, np = np_x X np_y !
+
+ ncjoin - 	This is a legacy tool - it runs in serial (on one core).
+ 		Can be used still for very small result files like in Examples/.
+ 		Joins partitioned netcdf result files (.nc) into one file
  		for better viewing of results:
  		E.g.: with files result.0.nc result.1.nc
- 		ncjoin -d result.*
+ 		ncjoin -d result.*.nc
  		Will prodcue result.nc file containing joined results.
  		the -d flag will delete the individual files, e.g. .0. and .1.                
  

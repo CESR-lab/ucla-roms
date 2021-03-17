@@ -40,17 +40,6 @@
 ! missing file, or one file has fewer records than others, or reading
 ! error; etc), the files stay intact.  If ncjoin is interrupted, the
 ! partial files stay intact.
- 
-! CPP-switch "KEEP_CLOSED" forces regime in which to keep no more
-! than one partial file for MPI-nodes 1:nnnodes-1 be opened at any
-! given time (file belonging to MPI-node=0 is kept permanently open,
-! so does the target file). This regime is needed to avoid netCDF
-! internal memory limitation associated with opening too many files
-! simultaneously. DevinD, currently probably not working.
-
-! CPP-switch "AUTORENICE" forces automatic lowering priority of ncjoin
-! to 19 (the lowest possible) to run it in "background" regime.
-! DevinD - autorenice is old and should probably be removed.
 
 !] --------------------------------------------------------------------
 
@@ -58,7 +47,7 @@
 !           (parts 1-3 -> master proc only)
 ! - PART 1: Confirm all input files are correct and related to each other
 ! - PART 2: Veryify all variables and dimensions in input files
-! - PART 3: Create outputfile
+! - PART 3: Create output file
 !           (parts 4+  -> all procs)
 ! - PART 4: Exchange all partial file info from master to all procs
 ! - PART 5: Collectively (MPI-I/O) open all input and output files
@@ -68,19 +57,199 @@
 ! - PART 9: Read/write partitioned variables   (bulk of work done here)
 ! - PART10: Close all files and display program timing summary
 
-![ NCJOIN_MPI INFO:
+![NCJOIN_MPI INFO:
 
-![ISSUES TO ONE-DAY RESOLVE:
+![LIMITATIONS:
+! Currently ncjoin_mpi only works on Xsede's Expanse platform, as it has up-to-date
+! netCDF libraries that can do parallel I/O with compression.
+! Xsede's comet can handle parallel I/O but not with compression.
+! Maya currently does not support parallel I/O at all.
+! Scaling limitations: based on initial testing during implementation, the reading
+! of input files was scaling well with increasing numbers of procs. However, the
+! writing was not scaling very well, with diminishing return beyond a certain point. !]
+
+![USEFUL LINKS:
+! https://www.archer.ac.uk/documentation/white-papers/fortanIO_netCDF/fortranIO_netCDF.pdf
+! http://www.spscicomp.org/ScicomP14/talks/Latham.pdf
+! https://www.researchgate.net/publication/332190037_Best_Practice_Guide_-_Parallel_IO
+!]
+
+! MPI SUB-DOMAINS OF NCJOIN_MPI:
+! Unlike the old version of ncjoin that ran on one core, ncjoin_mpi uses many cores (procs).
+! The work to join files is shared among procs by dividing the full domain into
+! sub-domains within x & y. This is similar (but not the same) to how roms uses sub-domains.
+! However, the sub-domain configuration of ncjoin_mpi is completely independent from
+! the sub-domain configuration of the roms partial files to be joined!
+! For roms we use inode and jnode to locate a sub-domain in the full domain.
+! For ncjoin_mpi we use iproc and jproc to locate a sub-domain in the full domain.
+! Note again, iproc/jproc does not need to match inode/jnode.
+! In that sense, you should avoided conflating roms sub-domains (referred to henceforth
+! as nodes, partitions or partial files) with that ncjoin_mpi sub-domains (referred to
+! as mpi processes or procs).
+! For example, a set of partial result files might come from a roms simulation with
+! 30x20 sub-domains (and hence files from 000-599). However, we may chose to run
+! ncjoin_mpi to join those result files with 10x5 sub-domains using 50 cores.
+! The potentially uncoupled nature of roms partitioning to ncjoin_mpi proc sub-domains
+! is illustrated in EXAMPLE A and DIAGRAM A below.
+
+! NEED FOR CHUNKING:
+! In order to compress variables with netCDF (and the underlying HDF5 library), a
+! variable must first be sub-divided into uniform chunks along each of its dimensions.
+! The reason for this is when you read a specific bit of compressed data, the entire
+! chunk that contains it needs to be decompressed to get that specific point. So if
+! there was no chunking, all of the variable's data would need to be decompressed (costly!)
+! each time you want a small section of its data. Hence, the need for chunking the data.
+! For example: if we have temperature 'T' with dimensions (1000x500x100), and with
+! 10 timesteps. We could then divide 'T' into chunks of 100x50x100x1, where we have
+! divided x & y into 10x10 chunks, we have left z as 100, we have split each timestep
+! into 1.
+! Note, chunksize selection affects speed of data access depending on how you plan to use
+! the data. If you want to look at the full domain at a single timestep, then the above
+! chunking of 'T' is useful as we have one chunk per time step. If you wanted to get a
+! timeseries at a single point, this would not be so efficient as you'd have to decompress
+! many chunks to access everytime step at a point. Currently we have prioritized domain
+! access (for ncview) rather than time series access.
+
+! NEED UNIFORM MPI PROC SUB-DOMAINS FOR EFFICIENT WRITES:
+! The principle behind this routine is that in order for efficient writing
+! to be done,and hence the compression (which is the cpu expensive process),
+! it is necessary to have each mpi process (proc) write into whole chunks where possible.
+! Hence, an mpi proc range should overlap exactly with the prescribed chunk sizes of
+! the variable.
+
+! ROMS HAS NON-UNIFORM SUB-DOMAINS:
+! In roms, the sub-domains are created such that the internal sub-domains are
+! all the same size, but the boundary sub-domains are modified such that
+! the total number of grid points in x & y match the domain. I.e. the E and W
+! boundary sub-domains might be a different size in x to the internal sub-domains.
+! The N and S boundary sub-domains might be a different size in y to the internal
+! sub-domains.
+
+! NETCDF NEEDS UNIFORM CHUNKSIZING:
+! However, with the netCDF library (and thus its underlying HDF5 library), it
+! is not possible to have non-uniform chunksizes. Consequently, it is not
+! possible to efficiently write the roms sub-domains directly into the joined file
+! with compression. (Note, it is possible without compression as no chunking is
+! required when uncompressed, but obviously we want compression to save space).
+
+! RANGE OF NCJOIN_MPI PROCS TO FOLLOW CHUNKSIZE:
+! The writing range to the joined output file of each MPI process must therefore follow
+! the prescribed chunksizing. As such, starting from the SW corner of the domain,
+! each proc will write complete chunks, until the eastern boundary and northern
+! boundary of the full domain where it is possible 1 column/row of partially filled
+! chunks will be written. (See DIAGRAM A below - procs C and D do not fill thier
+! northern most chunks, and procs B and D do not fill their eastern most chunks).
+
+! The need for this is that if procs had to share overlapping chunks, there is
+! contention between procs for that memory, and when the second proc goes to
+! add its data to the chunk, it will have to fully uncompress the existing partial
+! data in the chunk, and recompress the whole chunk. This is inefficient...
+
+! ASSIGN READ IN PARTITIONS TO PROCS:
+! Since the MPI proc write range does not match the roms partitions, we must
+! decide which partitions are to be read in by each proc. Unfortunately here
+! there will be some repeated work, as ingoing partitions that overlap MPI proc
+!  ranges will have to be read (and decompressed if roms output is compressed) twice.
+! See INFO A) below for more details.
+
+! ROUTINE VARIABLE INDICES:
+! There are two sets of variable indices for data read in, and two sets for data
+! written out. Match labels R1/2 & W1/2 with variable declarations in the
+! code below. Note, variable's with 'p_' belong to each mpi proc of ncjoin_mpi.
+! '_in_'  refers to variables involved in reading in data.
+! '_out_' refers to variables involved in writing outt data.
+
+  ! READ VARIABLES:
+
+    ! R1) Index ranges as per each partitioned input file.
+    !     Read in from file: these are ranges of the data in the input
+    !     partition file.
+
+    ! R2) Index ranges as per MPI proc temporary array.
+    !     These are the ranges with which to populate the temporary array 'data'
+    !     to store the read in data. Indices local to 'data' array.
+    !     Since the MPI write ranges don't match the roms partition sub-domain sizes,
+    !     these ranges differ from R1).
+
+    !       partition_infile( R1 ) -> data( R2 )
+
+  ! WRITE VARIABLES:
+
+    ! W1) Index ranges local to MPI proc temporary array.
+    !     These are the ranges to take from the temporary array
+    !     of each MPI proc to write out. The indices are local the temporary
+    !     array 'data' of the MPI proc.
+
+    ! W2) Index ranges as per full model domain.
+    !     Write to joined file: these are ranges of the full domain to write
+    !     to the joined file from a proc's 'data' variable.
+
+    !       data( W1 ) -> joined_outfile ( W2 )
+
+
+! EXTRA INFO:
+! -----------
+
+! INFO A) ASSIGN READ IN PARTITIONS TO PROCS (cont.):
+
+! Once we've calculated the MPI proc's write ranges to the joined full
+! domain outfile, the SW corner and NW corner of those ranges is determined.
+! - p_str_out_x, p_end_out_x
+! - p_str_out_y, p_end_out_y
+
+! From there we need to find all input partitions that contribute to this
+! range. To do so we calculate x & y of the 4 corners of input partition:
+! x_nc_sw, y_nc_sw, ...
+! Then we see if those corners fall within the proc's corners.
+! If so, then proc must read in some or all data from that partitions.
+
+! EXAMPLE A:
+! Say we use ncjoin_mpi with 4 procs. Let's choose a 2x2 split in x & y sub-domains
+! of the proc's, labelled A-D with double lines in the diagram below.
+! Let's say the partial result files had a partitioning of 3x2, labelled 0-5
+! with single lines.
+! If total number of grid points in x was not exactly divisible by nprocs_x (i.e. 2),
+! the ncjoin_mpi procs on the eastern edge would have partial incomplete ranges.
+! Similarly if the num. grid points in y was not exactly divisible by nprocs_y (i.e. 2),
+! the ncjoin_mpi procs on the northern edge would have partial incomplete ranges.
+
+! We can assign read in partial files to procs as follows:
+! 0 & 1 -> A,    1 & 2 -> B,    3 & 4 -> C,    4 & 5 -> D
+
+!    ═══════════════════════════════════
+!   ║─────────────────║──────────────   ║
+!   ║          │      ║     │        │  ║
+!   ║        C │      ║     │  D     │  ║
+!   ║     3    │     4║     │    5   │  ║        (DIAGRAM A)
+!   ║          │      ║     │        │  ║
+!   ║          │      ║     │        │  ║     - nodes (partitions 0-5)
+!   ║─═─═─═─═─═─═─═─══─═─═─═─═─══─═─════║
+!   ║          │      ║     │        │  ║     = mpi procs of ncjoin_mpi (A-D)
+!   ║          │      ║     │        │  ║
+!   ║        A │      ║     │  B     │  ║   -=- overlap of proc range and partition range
+!   ║     0    │     1║     │    2   │  ║
+!   ║          │      ║     │        │  ║
+!   ║          │      ║     │        │  ║
+!    ═══════════════════════════════════
+
+! Unfortunately partial files 1 and 4 are each read in by 2 procs.
+! E.g. the left part of 1 is read by proc A and the right part of 1 by proc B.
+! This is not ideal but deemed unavoiable with our method.
+
+! Once we have assigned partial files (nodes) to proc's, then each proc just loops
+! over those specific nodes to fill its 'data' variable.
+
+![ISSUES TO ONE DAY RESOLVE:
 !
 ! Note, initially it was attempted to parallelize ncjoin using openMP. It turns out
 ! netCDF does not have good support for openMP, so this approach was abandoned.
 !
 ! Parallel I/O with netcdf has been around since atleast 2010. However, parallel I/O
-! with compression is very recent, only really since 2020. netCDF uses hdf5 for netcdf 4
+! with compression is very recent, only really since 2020. NetCDF uses hdf5 for netcdf 4
 ! files, and only recently did hdf5 allow for parellel compression. Subsequently netCDF
 ! followed suit. It is my suspicion that the netCDF wrapper around hdf5 might improve
-! with subsequent updates, so the performance from ncjoin-mpi might improve passively
-! with library upgrades.
+! with subsequent updates, so the performance from ncjoin_mpi might improve passively
+! with netCDF library upgrades.
 !
 ! Collective/Independent access to netcdf files:
 ! This is something that needs to be fine tuned as I found conflicting information.
@@ -91,10 +260,10 @@
 ! My intuition suggests that `independent' writes would be the most efficient with many
 ! cores, since files can be accessed independently. However, many sources said collective
 ! setting should be used. When I had the code written without only master doing the
-! pre-processing, I was able to use both collective or independent modes. Initial
+! pre-processing, I was able to use both collective or independent modes, and initial
 ! testing gave me similar timings.
-
-! However, when I wrote ncjoin-mpi such that only the master did the pre-processing,
+!
+! However, when I wrote ncjoin_mpi such that only the master did the pre-processing,
 ! it required closing the files and re-opening the newly created file. For some reason I
 ! could only get it working in collective mode and not independent, but this test should
 ! be looked into further at some point. This is likely the way I am calling the parallel
@@ -105,138 +274,28 @@
 ! Currently the chunk sizes are split such there is one chunk per MPI proc. If you are
 ! using many cores with ncjoin-mpi this is probably efficient, but if you have a huge
 ! domain and use very few cores, these chunks might be too big. An investigation into the
-! effect of chunk size would be nice. Prevailing wisdom online seems to be bigger the
-! better provided several chunks still fit into your chunk cache.
+! effect of chunk size would be nice. Prevailing wisdom online seems to be 'bigger the
+! better' provided several chunks still fit into your chunk cache.
 !
 ! Legacy vars and code:
 ! Haven't fully cleaned up old ncjoin vars and code that is not actually used anymore.
 !
 ! Misc:
+! Improve scaling of writing.
+! Create module and move sections into subroutines.
 ! guess_nnodes variable needs a better choice.
 ! change all netcdf calls to nf90.
 ! non-partioned sections it doesn't catch all types of variables as it did in ncjoin.
 !
 !]
 
-![USEFUL LINKS:
-! https://www.archer.ac.uk/documentation/white-papers/fortanIO_netCDF/fortranIO_netCDF.pdf
-! http://www.spscicomp.org/ScicomP14/talks/Latham.pdf
-! https://www.researchgate.net/publication/332190037_Best_Practice_Guide_-_Parallel_IO
-!]
-
-! NEED UNIFORM CHUNKSIZES FOR EFFICIENT WRITES:
-! The principle behind this routine is that in order for efficient writing
-! to be done,and hence the compression (which is the cpu expensive process),
-! it is necessary to have each process write into whole chunks where possible.
-
-! ROMS HAS NON-UNIFORM SUB-DOMAINS:
-! In roms, the sub-domains are created such that the internal sub-domains are
-! all the same size, but the boundary sub-domains are modified such that
-! the total number of grid points in x & y match the domain. I.e. the E and W
-! boundary sub-domains might be a different size in x to the internal sub-domains.
-! The N and S boundary sub-domains might be a different size in y to the internal
-! sub-domains.
-
-! NETCDF CANNOT VARY CHUNKSIZING:
-! However, with the netCDF library (and thus its underlying HDF5 library), it
-! is not possible to have non-uniform chunksizes. Consequently, it is not
-! possible to write the roms sub-domains directly into the joined file with
-! compression. (Note, it is possible without compression as no chunking is
-! required when uncompressed, but obviously we want compression to save space).
-
-! RANGE OF WRITING PROCS TO FOLLOW CHUNKSIZE:
-! The writing range of each MPI process to the joined (full) domain will follow
-! the prescribed chunksizing. As such, starting from the SW corner of the domain,
-! each proc will write complete chunks, until the eastern boundary and northern
-! boundary where it is possible 1 column/row of partially filled chunks will be
-! written.
-! The need for this is that if procs had to share overlapping chunks, there is
-! contention between procs for that memory, and when the second proc goes to
-! add its data to the chunk, it will have to fully uncompress the existing partial
-! data in the chunk, and recompress the whole chunk. This is inefficient...
-
-! ASSIGN READ IN PARTITIONS TO PROCS:
-! Since the MPI proc write range does not match the roms partitions, we must
-! decide which partitions are to be read in by each proc. Unfortunately here
-! there will be some repeated work, as ingoing partitions that overlap MPI
-! write chunks will have to be read (and decompressed) twice. (Unless the
-! netCDF library is able to recognize this repatition, and do it only once?)
-! See A) for more details.
-
-! ROUTINE VARIABLES:
-! There are two sets of variables for data read in, and two sets for data
-! written out. Match labels R1/2 & W1/2 with variable declarations in the
-! code below
-
-  ! READ VARIABLES:
-
-    ! R1) Index ranges as per each partitioned input file.
-    !     Read in from file: these are ranges of the data in the input
-    !     partition file.
-
-    ! R2) Index ranges as per MPI proc temporary array.
-    !     These are the ranges with which to populate the temporary array
-    !     to store the read in data. Since the MPI write ranges don't match
-    !     the roms partition sub-domain sizes, these ranges differ from R1).
-
-    !       partition_infile( R1 ) -> data_temp( R2 )
-
-  ! WRITE VARIABLES:
-
-    ! W1) Index ranges as per MPI proc temporary array.
-    !     These are the ranges to take from the temporary array
-    !     of each MPI proc to write out. The indices is based on the temporary
-    !     array of the MPI proc
-
-    ! W2) Index ranges as per full model domain.
-    !     Write to joined file: these are ranges of the full domain to write
-    !     to the joined file.
-
-    !       data_temp( W1 ) -> joined_outfile ( W2 )
-
-
-! EXTRA INFO:
-! -----------
-
-! A) ASSIGN READ IN PARTITIONS TO PROCS (cont.):
-
-! Once the MPI proc's write ranges to joined full domain outfile,
-! the SW corner and NW corner of those ranges is determined.
-! - my_str_out_x, my_end_out_x
-! - my_str_out_y, my_end_out_y
-
-! From there we need to find all input partitions that contribute to this
-! range.
-! - xi_start  (These need to be adjusted for u points)
-! - eta_start (These need to be adjusted for v points)
-
-! Loop through procs
-!   Loop through partitions (nodes)
-!     - Check if SW corner of partition is contained within proc.
-!     - Check if NE corner of partition is contained within proc.
-!     - If either or both is satisfied then the proc must get data
-!       from this partition.
-!     - Can exit search once first point is satisfied.
-!     - Might be worth storing partitions that are fully covered by proc
-!       so that start and count is easy.
-!     - Note, since the partitions are rectangular, only need to check
-!       these two corners, not all four corners.
-!     - Note, will need to adjust for rho/u/v points!
-!     - see A) variable below
-
-! Add ascii diagram showing MPI output chunks vs input partitions
-
 !]    ===================================================================
 
 ![ CPP DEFS:
 ! Delete partial files after joining:
 #define DEL_PART_FILES
-! Keep netcdf files closed: (untested and likely unneeded)
-c--#define KEEP_CLOSED
 ! Document program execution time:
 #define TIMING
-! Allow ncjoin to run in background: (likely to remove)
-c--#define AUTORENICE
 ! Verbose terminal output:
 c--#define VERBOSE
 ! Verbose terminal output for MPI specifics:
@@ -264,18 +323,18 @@ c--#define MPIVERBOSE
       integer :: n_procs, my_rank    ! number of processors, rank of each processor
       integer :: nprocs_x            ! number of mpi processes in x
       integer :: nprocs_y            ! number of mpi processes in y
-      integer :: inode, jnode        ! MPI sub-domain positions in x and y
-      integer :: iproc               ! loop index over processes
+      integer :: iproc, jproc        ! MPI proc sub-domain positions in x and y
+      integer :: p_indx               ! loop index over processes
 
       ! Chunking vars:
-      integer, dimension(:), allocatable  :: chunk_x, chunk_y       ! Chunk sizes in x & y dimensions per variable
-      integer, dimension(:), allocatable  :: n_chunks_x, n_chunks_y ! no. of chunks to cover each dim of full domain per var
-      integer, dimension(:), allocatable  :: p_chunks_x, p_chunks_y ! no. of chunks to cover each dim of sub-domain (mpi proc)
-      integer                             :: p_points_x, p_points_y ! no. of grid points for each dim of proc sub-domain
-      integer, dimension(4)               :: set_req_chunk_sizes    ! Set required chunk sizes in each dim
-      integer, dimension(4)               :: chunk_sizes            ! Confirm chunk sizes in newly defined variable
+      integer, dimension(:), allocatable  :: chunksize_x, chunksize_y ! Chunk sizes in x & y dimensions per variable
+      integer, dimension(:), allocatable  :: n_chunks_x, n_chunks_y   ! no. of chunks to cover each dim of full domain per var
+      integer, dimension(:), allocatable  :: p_chunks_x, p_chunks_y   ! no. of chunks to cover each dim of sub-domain (mpi proc)
+      integer                             :: p_points_x, p_points_y   ! no. of grid points for each dim of proc sub-domain
+      integer, dimension(4)               :: set_req_chunk_sizes      ! Set required chunk sizes in each dim
+      integer, dimension(4)               :: chunk_sizes              ! Confirm chunk sizes in newly defined variable
 
-      real, allocatable, dimension(:,:,:) :: data                   ! store 2D/3D data
+      real, allocatable, dimension(:,:,:) :: data                     ! store 2D/3D data
 
       ! R1) Read in: Index ranges as per each partitioned input file.
       integer, dimension(4) :: start, count                      ! netcdf vars for non-partitioned variables
@@ -286,12 +345,12 @@ c--#define MPIVERBOSE
       integer :: y_in_dimsize ! temp var to store y dimension size of read partial file
 
       ! R2) Index ranges to store read in data in proc's temp 'data' array
-      integer :: d_x_in_str, d_y_in_str     ! start value to read into data from input parition.
-      integer :: d_x_in_end, d_y_in_end     ! end   value to read into data from input parition.
+      integer, dimension(:), allocatable :: data_x_in_str, data_x_in_end ! proc stores data in array 'data' with local (not global)
+      integer, dimension(:), allocatable :: data_y_in_str, data_y_in_end ! indices, hence set inbound indices for proc's data array.
 
       ! W1) Index ranges from data in temp array to write to joined output file
-      integer :: my_str_out_x, my_str_out_y ! mpi (sub-domain) proc's temporary 'data' array start x and y grid points
-      integer :: my_end_out_x, my_end_out_y ! mpi (sub-domain) proc's temporary 'data' array end   x and y grid points
+      integer :: p_str_out_x, p_str_out_y ! mpi (sub-domain) proc's temporary 'data' array start x and y grid points
+      integer :: p_end_out_x, p_end_out_y ! mpi (sub-domain) proc's temporary 'data' array end   x and y grid points
 
       ! W2) Write out: Index ranges as per full model domain.
       integer, dimension(4) :: start_out, count_out ! proc's data indices relative to global output file
@@ -307,12 +366,9 @@ c--#define MPIVERBOSE
       logical :: sw_corner, se_corner, nw_corner, ne_corner ! if node's corner is contained within proc range
       integer :: x_nc_sw,x_nc_se,x_nc_nw,x_nc_ne            ! x index of corners of input node
       integer :: y_nc_sw,y_nc_se,y_nc_nw,y_nc_ne            ! y index of corners of input node
-      integer, dimension(:), allocatable :: data_x_in_str, data_x_in_end ! proc stores data in array 'data' with local (not global)
-      integer, dimension(:), allocatable :: data_y_in_str, data_y_in_end ! indices, hence set inbound indices for proc's data array.
 
       ! Misc vars:
       character(len=4)  :: char_arg       ! Store program input argument
-      integer           :: idim           ! loop index over dimensions
       integer           :: d              ! loop index over dimensions
       integer           :: v_dimsize      ! Size of current dimension length
       character(len=1)  :: char_in        ! Text read in. I.e. scalar 'spherical' variable
@@ -361,36 +417,14 @@ c--#define MPIVERBOSE
      &          net_sync_clk,  net_gray_clk, inc_clk
       real*8 ReadSize, ReadTime, WrtSize,  WrtTime, 
      &       FcrtTime, AssmTime, SyncTime, GrayTime
-# ifdef __IFC
-      real*4 etime
-# endif
+
 # ifdef DEL_PART_FILES
       integer*8 net_rmcmd_clk
 # endif
-#endif             /* ! Function "iargc" is viewed as intrinsic by  */
-#ifdef AIX         /* ! most modern compilers and does not need to   */
-      integer iargc   ! be declared. IBM xlf95 is a notable exclusion.
-#endif             /* ! So do 7.x and earlier versions of Intel IFC; */
-                      ! 8.x and later IFORT recognize it as intrinsic.
-#ifdef AUTORENICE
-      integer getpid, pid              ! Sometimes it makes sense to
-      character(len=32) cmd            ! run ncjoin in the background
-      pid=getpid()                     ! mode with lowered priority to
-      write(cmd,'(I8)') pid            ! not interfere with running MPI
-      lstr=lenstr(cmd)                 ! job. This code segment catches
-      cmd(11:lstr+10)=cmd(1:lstr)      ! pid of its own process and
-      lstr=lstr+10                     ! executes re-nice command.
-      cmd(1:10)='renice 19 '
-      write(*,'(/3A/)') 'Autorenice: executing ''',cmd(1:lstr),'''.'
-      call system(cmd(1:lstr))
-      write(*,*)
 #endif
+
 #ifdef TIMING
-# ifdef __IFC
-      tstart = etime(CPU_time)
-# else
       call etime(CPU_time, tstart)
-# endif
       nclk=1
       call system_clock (iclk(nclk), clk_rate, clk_max)
       iclk_init=iclk(nclk)
@@ -432,14 +466,15 @@ c--#define MPIVERBOSE
           write(*,'(1x,A/10x,2A/)') 'or',
      &      'mpiexec  -n  np  ncjoin_mpi  ',
      &      'np_x  np_y  -d  his.0000.*.nc'
-          write (*,'(/1x,2A/1x,2A//1x,2A/1x,A//1x,A//)')
+          write (*,'(/1x,2A/1x,2A//1x,2A/1x,A//1x,A//1x,A//)')
      &      'np_x and np_y are the ',
      &      'number of sub-domains you choose in x and y...',
      &      '...for ncjoin_mpi not your input partition files, ',
      &      'they can be different!',
      &      'For efficiency, try to keep keep the ratio of np_x to ',
      &      'np_y similar ','to the sub-domaining of your partitions.',
-     &      '-d deletes the partitioned files after joining.'
+     &      '-d deletes the partitioned files after joining.',
+     &      'ncjoin_mpi can only be used on expanse!'
         endif
         call MPI_Barrier(MPI_COMM_WORLD, ierr)
         call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
@@ -1307,11 +1342,11 @@ c**           endif
 
         ! Note this division rounds down but i/j node uses zero counting.
         ! This is also for all vars!
-        jnode=my_rank/nprocs_x          ! indices inode,jnode identifying
-        inode=my_rank-jnode*nprocs_x    ! the location of current subdomain
+        jproc=my_rank/nprocs_x          ! indices iproc,jproc identifying
+        iproc=my_rank-jproc*nprocs_x    ! the location of current subdomain
 
-        allocate(chunk_x(nvars))    ! Allocate chunking variables per variable.
-        allocate(chunk_y(nvars))    ! Note this should probably be done per variable
+        allocate(chunksize_x(nvars))    ! Allocate chunking variables per variable.
+        allocate(chunksize_y(nvars))    ! Note this should probably be done per variable
         allocate(n_chunks_x(nvars)) ! type (r/u/v) and not for every variable.
         allocate(n_chunks_y(nvars))
         allocate(p_chunks_x(nvars))
@@ -1323,13 +1358,11 @@ c**           endif
         if(my_rank==0) write(*,'(/1x,2A)') 'Defining var:', vname(i)
 #endif
 
-        node=vnode(i)
-        lncn=lenstr(ncname(node))
-!#ifdef KEEP_CLOSED
+          node=vnode(i)
+          lncn=lenstr(ncname(node))
           if (ncid(node).eq.-1) ierr=nf_open  (ncname(node),
      &                               nf_nowrite, ncid(node))
           if (ierr .eq. nf_noerr) then
-!#endif
             ierr=nf_inq_var (ncid(node), vid(i,node), vname(i),
      &                vartype(i), vdims(i), dimids(1,i),  varatts)
             ! DevinD: set variable as a collective I/O variable: ! Now done by master only but leave here for record of independent mode!
@@ -1367,12 +1400,12 @@ c**           endif
 
                 ! Chunksizing
                 ! - currently for 1 chunk per process. This potentially needs further work.
-                chunk_x(i) = (n_x+nprocs_x-1) / nprocs_x        ! rounding up of n_x / nprocs_x
-                chunk_y(i) = (n_y+nprocs_y-1) / nprocs_y
+                chunksize_x(i) = (n_x+nprocs_x-1) / nprocs_x        ! rounding up of n_x / nprocs_x
+                chunksize_y(i) = (n_y+nprocs_y-1) / nprocs_y
 
                 ! Number of chunks in x and y
-                n_chunks_x(i) = (n_x+chunk_x(i)-1) / chunk_x(i) ! rounding up of n_x / chunk_x
-                n_chunks_y(i) = (n_y+chunk_y(i)-1) / chunk_y(i)
+                n_chunks_x(i) = (n_x+chunksize_x(i)-1) / chunksize_x(i) ! rounding up of n_x / chunksize_x
+                n_chunks_y(i) = (n_y+chunksize_y(i)-1) / chunksize_y(i)
 
                 ! Number of chunks for each proc in x and y
                 p_chunks_x = (n_chunks_x(i)+nprocs_x-1) / nprocs_x ! rounding up of n_chunks_x / nprocs_x
@@ -1383,7 +1416,7 @@ c**           endif
                 if(my_rank==0) write(*,'(3(A,i5))')' n_x= ',n_x,' n_y= ',n_y,
      &                                             ' n_z= ',n_z
                 if(my_rank==0) print *,'chunk sizing of var:', vname(i)
-                if(my_rank==0) print *,'chunk_x= ',chunk_x(i),' chunk_y= ',chunk_y(i)
+                if(my_rank==0) print *,'chunksize_x= ',chunksize_x(i),' chunksize_y= ',chunksize_y(i)
                 if(my_rank==0) print *,'n_chunks_x= ',n_chunks_x(i),
      &                                ' n_chunks_y= ',n_chunks_y(i)
                 if(my_rank==0) print *,'p_chunks_x= ',p_chunks_x(i),
@@ -1395,17 +1428,17 @@ c**           endif
                 ! adding another timestep to that chunk. This is inefficient.
                 ! Hence set time dim to 1. We don't bother with dividing the z dim.
                 set_req_chunk_sizes=0 ! reset chunk sizes for new variable
-                do idim=1,vdims(i) ! Loop through number of variable's dimensions
+                do d=1,vdims(i)       ! Loop through number of variable's dimensions
 
-                  if(idim == vdims(i) .and.
-     &               dimsize(dimids(idim,i),nnodes)==tsize) then ! Should be time (tiny risk of bug here if dim randomly = tsize...)
-                    set_req_chunk_sizes(idim)=1 ! time dim
-                  elseif(idim == 1) then        ! x dim, (not time dimension caught above)
-                    set_req_chunk_sizes(idim)=chunk_x(i)
-                  elseif(idim == 2) then        ! y dim
-                    set_req_chunk_sizes(idim)=chunk_y(i)
-                  elseif(idim == 3) then        ! z dim
-                    set_req_chunk_sizes(idim)=n_z
+                  if(d == vdims(i) .and.
+     &               dimsize(dimids(d,i),nnodes)==tsize) then ! Should be time (tiny risk of bug here if dim randomly = tsize...)
+                    set_req_chunk_sizes(d)=1 ! time dim
+                  elseif(d == 1) then        ! x dim, (not time dimension caught above)
+                    set_req_chunk_sizes(d)=chunksize_x(i)
+                  elseif(d == 2) then        ! y dim
+                    set_req_chunk_sizes(d)=chunksize_y(i)
+                  elseif(d == 3) then        ! z dim
+                    set_req_chunk_sizes(d)=n_z
                   endif
                 end do
 
@@ -1506,7 +1539,7 @@ c**           endif
               endif
             enddo
 
-!#ifdef KEEP_CLOSED
+
             if (node.gt.0) then
               ierr=nf90_close(ncid(node)) ! DevinD: Most vars in node==0, hence keep
               ncid(node)=-1               ! it open whilst looping through vars, close
@@ -1518,7 +1551,7 @@ c**           endif
      &                                           nf90_strerror(ierr)
             goto 97
           endif
-!#endif
+
         enddo  ! <-- i=1,nvars, variable IDs.
 
         ierr=nf90_close(ncid(0)) ! DevinD: completed master only reads, close remaining
@@ -1546,10 +1579,10 @@ c**           endif
         call MPI_BCAST(nvars,  1, MPI_INT, 0, MPI_COMM_WORLD, ierr) ! Once working group scalars together and send in
         call MPI_BCAST(nnodes, 1, MPI_INT, 0, MPI_COMM_WORLD, ierr) ! 1 long array to spare latency of repeated calls.
         if(my_rank /= 0) then                                       ! Even with 120 cores didn't make a difference...
-          jnode=my_rank/nprocs_x        ! indices inode,jnode identifying
-          inode=my_rank-jnode*nprocs_x  ! the location of current mpi proc subdomain
-          allocate(chunk_x(nvars))
-          allocate(chunk_y(nvars))      ! We previously only allocated all these arrays
+          jproc=my_rank/nprocs_x        ! indices iproc,jproc identifying
+          iproc=my_rank-jproc*nprocs_x  ! the location of current mpi proc subdomain
+          allocate(chunksize_x(nvars))
+          allocate(chunksize_y(nvars))      ! We previously only allocated all these arrays
           allocate(p_chunks_x(nvars))   ! for the master proc. Hence need to do again
           allocate(p_chunks_y(nvars))   ! for all other procs.
 
@@ -1581,9 +1614,9 @@ c**           endif
         if(ierr/=0) print *, 'POOR EXCHANGE'
         call MPI_BCAST(part_type, maxvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
         if(ierr/=0) print *, 'POOR EXCHANGE'
-        call MPI_BCAST(chunk_x,     nvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
+        call MPI_BCAST(chunksize_x,     nvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
         if(ierr/=0) print *, 'POOR EXCHANGE'
-        call MPI_BCAST(chunk_y,     nvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
+        call MPI_BCAST(chunksize_y,     nvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
         if(ierr/=0) print *, 'POOR EXCHANGE'
         call MPI_BCAST(p_chunks_x,  nvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
         if(ierr/=0) print *, 'POOR EXCHANGE'
@@ -1735,16 +1768,16 @@ c**           endif
           if (part_type(i).gt.0) then           ! Assign nodes to proc once per variable
                                                 ! Only necessary for partitioned variable (2D/3D vars)
 
-            start_out=1                         ! init array, z dimension always starts at 1 as not subdivided.
-            p_points_x=p_chunks_x(i)*chunk_x(i) ! sub-domain covers (chunk_size_x X processor_chunks_in_x)
-            p_points_y=p_chunks_y(i)*chunk_y(i)
-            start_out(1)=inode*p_points_x+1     ! Start of sub-domain in x
-            my_str_out_x=start_out(1)
+            start_out=1                             ! init array, z dimension always starts at 1 as not subdivided.
+            p_points_x=p_chunks_x(i)*chunksize_x(i) ! sub-domain covers (chunk_size_x X processor_chunks_in_x)
+            p_points_y=p_chunks_y(i)*chunksize_y(i)
+            start_out(1)=iproc*p_points_x+1     ! Start of sub-domain in x
+            p_str_out_x=start_out(1)
                                                 ! is not full domain, it will differ.
-            my_end_out_x=(inode+1)*p_points_x
-            start_out(2)=jnode*p_points_y+1     ! Start of sub-domain in y
-            my_str_out_y=start_out(2)
-            my_end_out_y=(jnode+1)*p_points_y
+            p_end_out_x=(iproc+1)*p_points_x
+            start_out(2)=jproc*p_points_y+1     ! Start of sub-domain in y
+            p_str_out_y=start_out(2)
+            p_end_out_y=(jproc+1)*p_points_y
 
             if (vdims(i)==4) then               ! 4D variable (x,y,z,t), thus has z dim.
               n_z = dimsize(dimids(3,i),nnodes) ! Num points in z of full domain.
@@ -1755,36 +1788,36 @@ c**           endif
             count_out=(/p_points_x,p_points_y,n_z,1/) ! If 2D var then n_z is set to 1 so this works
 
             ! catch N & E boundaries with partially full chunks:
-            if(inode==(nprocs_x-1)) then        ! -1 as nodes 0 counting
+            if(iproc==(nprocs_x-1)) then        ! -1 as nodes 0 counting
               n_x=dimsize(dimids(1,i),nnodes)
-              my_end_out_x=n_x
-              p_points_x=n_x-(inode*p_points_x) ! Total x points - start of eastern sub-domain
+              p_end_out_x=n_x
+              p_points_x=n_x-(iproc*p_points_x) ! Total x points - start of eastern sub-domain
               count_out=(/p_points_x,p_points_y,n_z,1/)
             end if
-            if(jnode==(nprocs_y-1)) then        ! -1 as nodes 0 counting
+            if(jproc==(nprocs_y-1)) then        ! -1 as nodes 0 counting
               n_y=dimsize(dimids(2,i),nnodes)
-              my_end_out_y=n_y
-              p_points_y=n_y-(jnode*p_points_y) ! Total y points - start of northern sub-domain
+              p_end_out_y=n_y
+              p_points_y=n_y-(jproc*p_points_y) ! Total y points - start of northern sub-domain
               count_out=(/p_points_x,p_points_y,n_z,1/)
             end if
 
 #ifdef MPIVERBOSE
             if(my_rank==0) print *,'  ' ![
             if(my_rank==0) print *,'p_points_x= ',p_points_x,' p_points_y= ',p_points_y
-            do iproc=0,n_procs-1
-              if(my_rank==iproc) then
+            do p_indx=0,n_procs-1
+              if(my_rank==p_indx) then
                 print *, '------ my_rank= ',my_rank
-                print *, 'inode= ', inode,' jnode= ', jnode
-                print *, 'my_str_out_x= ',my_str_out_x
-                print *, 'my_end_out_x= ',my_end_out_x
+                print *, 'iproc= ', iproc,' jproc= ', jproc
+                print *, 'p_str_out_x= ',p_str_out_x
+                print *, 'p_end_out_x= ',p_end_out_x
                 print *, 'count_out_x=  ',count_out(1)
-                print *, 'my_str_out_y= ',my_str_out_y
-                print *, 'my_end_out_y= ',my_end_out_y
+                print *, 'p_str_out_y= ',p_str_out_y
+                print *, 'p_end_out_y= ',p_end_out_y
                 print *, 'count_out_y=  ',count_out(2)
                 print *, 'count_out_z=  ',count_out(3)
               end if
               call MPI_Barrier(MPI_COMM_WORLD, ierr)
-            end do ! <- iproc
+            end do ! <- p_indx
             if(my_rank==0) print *,'  '
             call MPI_Barrier(MPI_COMM_WORLD, ierr) !]
 #endif
@@ -1878,31 +1911,31 @@ c**           endif
               y_nc_ne=y_start_in+y_in_dimsize-1
 
               if( ! SW corner
-     &           x_nc_sw >= my_str_out_x .and.  ! Check partition's SW corner
-     &           x_nc_sw <= my_end_out_x .and.  ! falls within node.
-     &           y_nc_sw >= my_str_out_y .and.
-     &           y_nc_sw <= my_end_out_y) then
+     &           x_nc_sw >= p_str_out_x .and.  ! Check partition's SW corner
+     &           x_nc_sw <= p_end_out_x .and.  ! falls within node.
+     &           y_nc_sw >= p_str_out_y .and.
+     &           y_nc_sw <= p_end_out_y) then
                 sw_corner=.true.
               end if
               if( ! SE corner
-     &           x_nc_se >= my_str_out_x .and.  ! Check partition's SE corner
-     &           x_nc_se <= my_end_out_x .and.  ! falls within node.
-     &           y_nc_se >= my_str_out_y .and.
-     &           y_nc_se <= my_end_out_y) then
+     &           x_nc_se >= p_str_out_x .and.  ! Check partition's SE corner
+     &           x_nc_se <= p_end_out_x .and.  ! falls within node.
+     &           y_nc_se >= p_str_out_y .and.
+     &           y_nc_se <= p_end_out_y) then
                 se_corner=.true.
               end if
               if( ! NW corner
-     &           x_nc_nw >= my_str_out_x .and.  ! Check partition's NW corner
-     &           x_nc_nw <= my_end_out_x .and.  ! falls within node.
-     &           y_nc_nw >= my_str_out_y .and.
-     &           y_nc_nw <= my_end_out_y) then
+     &           x_nc_nw >= p_str_out_x .and.  ! Check partition's NW corner
+     &           x_nc_nw <= p_end_out_x .and.  ! falls within node.
+     &           y_nc_nw >= p_str_out_y .and.
+     &           y_nc_nw <= p_end_out_y) then
                 nw_corner=.true.
               end if
               if( ! NE corner
-     &           x_nc_ne >= my_str_out_x .and.  ! Check partition's NE corner
-     &           x_nc_ne <= my_end_out_x .and.  ! falls within node.
-     &           y_nc_ne >= my_str_out_y .and.
-     &           y_nc_ne <= my_end_out_y) then
+     &           x_nc_ne >= p_str_out_x .and.  ! Check partition's NE corner
+     &           x_nc_ne <= p_end_out_x .and.  ! falls within node.
+     &           y_nc_ne >= p_str_out_y .and.
+     &           y_nc_ne <= p_end_out_y) then
                 ne_corner=.true.
               end if
 
@@ -1916,42 +1949,42 @@ c**           endif
                 ! ALL WEST NODE FACES (x)
                 ! Subtract west (start) corners of node x from proc x.
                 ! If negative then read in from beginning of input file.
-                start_in(1,p_in_nodes)=my_str_out_x-x_nc_sw+1
-                count_in(1,p_in_nodes)=x_in_dimsize-(my_str_out_x-x_nc_sw) ! Less the indented start
-                if(start_in(1,p_in_nodes)<1) then ! x_nc_sw is east of my_str_out_x
+                start_in(1,p_in_nodes)=p_str_out_x-x_nc_sw+1
+                count_in(1,p_in_nodes)=x_in_dimsize-(p_str_out_x-x_nc_sw) ! Less the indented start
+                if(start_in(1,p_in_nodes)<1) then ! x_nc_sw is east of p_str_out_x
                   start_in(1,p_in_nodes)=1
                   count_in(1,p_in_nodes)=x_in_dimsize ! x size entire dim
                 end if
 
                 ! ALL EAST NODE FACES (x)
                 ! catch nodes that go beyond proc range on east side
-                if(my_end_out_x-x_nc_se<0) then
-                  count_in(1,p_in_nodes)=x_in_dimsize-(x_nc_se-my_end_out_x)
+                if(p_end_out_x-x_nc_se<0) then
+                  count_in(1,p_in_nodes)=x_in_dimsize-(x_nc_se-p_end_out_x)
                 end if
 
                 ! ALL SOUTH NODE FACES (y)
                 ! Subtract south (start) corners of node y from proc y.
                 ! If negative then read in from beginning of input file.
-                start_in(2,p_in_nodes)=my_str_out_y-y_nc_sw+1
-                count_in(2,p_in_nodes)=y_in_dimsize-(my_str_out_y-y_nc_sw) ! Less the indented start
-                if(start_in(2,p_in_nodes)<1) then ! y_nc_sw is north of my_str_out_y
+                start_in(2,p_in_nodes)=p_str_out_y-y_nc_sw+1
+                count_in(2,p_in_nodes)=y_in_dimsize-(p_str_out_y-y_nc_sw) ! Less the indented start
+                if(start_in(2,p_in_nodes)<1) then ! y_nc_sw is north of p_str_out_y
                   start_in(2,p_in_nodes)=1
                   count_in(2,p_in_nodes)=y_in_dimsize ! x size entire dim
                 end if
 
                 ! ALL NORTH NODE FACES (y)
                 ! catch nodes that go beyond proc range on north side
-                if(my_end_out_y-y_nc_ne<0) then
-                  count_in(2,p_in_nodes)=y_in_dimsize-(y_nc_ne-my_end_out_y)
+                if(p_end_out_y-y_nc_ne<0) then
+                  count_in(2,p_in_nodes)=y_in_dimsize-(y_nc_ne-p_end_out_y)
                 end if
 
                 ! Also, proc stores data in array 'data' with local (not global)
                 ! indices, hence set inbound indices for proc's data array.
                 ! Set data_x_in_str, data_x_in_end, & for y
-                data_x_in_str(p_in_nodes)=max(x_nc_sw-my_str_out_x+1,1)          ! if node sw corner is west of proc sw corner, then use 1.
-                data_x_in_end(p_in_nodes)=min(x_nc_se-my_str_out_x+1,p_points_x) ! if node se corner is east of proc se corner, then use end of data array in x. +1 for typical subtraction count issue.
-                data_y_in_str(p_in_nodes)=max(y_nc_sw-my_str_out_y+1,1)          ! if node sw corner is west of proc sw corner, then use 1.
-                data_y_in_end(p_in_nodes)=min(y_nc_ne-my_str_out_y+1,p_points_y) ! if node se corner is east of proc se corner, then use end of data array in x
+                data_x_in_str(p_in_nodes)=max(x_nc_sw-p_str_out_x+1,1)          ! if node sw corner is west of proc sw corner, then use 1.
+                data_x_in_end(p_in_nodes)=min(x_nc_se-p_str_out_x+1,p_points_x) ! if node se corner is east of proc se corner, then use end of data array in x. +1 for typical subtraction count issue.
+                data_y_in_str(p_in_nodes)=max(y_nc_sw-p_str_out_y+1,1)          ! if node sw corner is west of proc sw corner, then use 1.
+                data_y_in_end(p_in_nodes)=min(y_nc_ne-p_str_out_y+1,p_points_y) ! if node se corner is east of proc se corner, then use end of data array in x
 
               end if ! <- sw_corner .or. ... (any corner)
 
@@ -1959,8 +1992,8 @@ c**           endif
             nnodes_in_proc=p_in_nodes
 
 #ifdef MPIVERBOSE
-            do iproc=0,n_procs-1 ![
-              if(my_rank==iproc) then
+            do p_indx=0,n_procs-1 ![
+              if(my_rank==p_indx) then
                 if(my_rank==0) print *, 'ASSIGN READ NODES TO PROC:'
                 print *, '      '
                 print *, '------ my_rank= ',my_rank
@@ -1978,7 +2011,7 @@ c**           endif
                 end do
               end if
               call MPI_Barrier(MPI_COMM_WORLD, ierr)
-            end do !] <- iproc
+            end do !] <- p_indx
 #endif
 
           endif ! <- end assign partitions to mpi proc
@@ -2250,11 +2283,6 @@ c**           endif
 !     &                   'max_buff_size =', max_buff_size
                     endif
 
-#ifdef KEEP_CLOSED
-                    if (ncid(node).eq.-1) ierr=nf_open (ncname(node),
-     &                                       nf_nowrite, ncid(node))
-                    if (ierr.eq.nf_noerr) then
-#endif
 #ifdef VERBOSE
                       write(*,'(3x,A,I4,2x,A,I7,2x,A,I4,1x,A,I4,1x,A)')
      &                     'node =', node, 'ncid=',ncid(node),
@@ -2305,19 +2333,6 @@ c**           endif
 !dd                        goto 97
                       endif
 
-#ifdef KEEP_CLOSED
-                      if (node.gt.0) then
-                        ierr=nf_close(ncid(node))
-                        ncid(node)=-1
-                      endif
-                    else
-                      lncn=lenstr(ncname(node))
-                      write(*,'(/1x,A,1x,3A/14x,A)')   '### ERROR: ',
-     &                                  'Cannot open netCDF file ''',
-     &                ncname(node)(1:lncn), '''.', nf_strerror(ierr)
-!dd                      goto 97
-                    endif
-#endif
 # ifdef VERBOSE
                     write(*,'(1x,A)')  'copying ...'
 # endif
@@ -2506,11 +2521,7 @@ c--#endif !]
                                    ! DevinD changed from 1 to 11 to avoid goto into master only.
 
 #ifdef TIMING
-# ifdef __IFC
-      RUN_time=etime(CPU_time)
-# else
       call etime(CPU_time, RUN_time)
-# endif
       RUN_time=RUN_time-tstart
       
 
@@ -2564,7 +2575,6 @@ c--#endif !]
      &   'Elapsed wall-clock time:', inc_clk/dble(clk_rate), 'sec'
       endif
 #endif
-!      stop ! DevinD removed (this is old fortran)
 
       !] END PART10: CLOSE ALL FILES & DISPLAY TIMING SUMMARY:
 

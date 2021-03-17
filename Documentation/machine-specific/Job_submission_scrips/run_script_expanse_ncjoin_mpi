@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --job-name="ncj_mpi50"
+# %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
+#SBATCH --output="ncjoin_mpi50_10x5_d1s.%N.out"
+# If using les than 128 cores then the partition is 'shared' 
+# or 'large-shared' if extra memory is needed.
+#SBATCH --partition=large-shared
+#SBATCH --nodes=1
+# Request number of cores:
+#SBATCH --ntasks-per-node=50
+# Leave this at 1:
+#SBATCH --cpus-per-task=1
+# Default is 1GB ram per core, increases on large-shared with mem:
+# #SBATCH --mem=200G
+#SBATCH --account=cla119
+#SBATCH --export=ALL
+#SBATCH -t 00:10:00
+
+module purge
+module load slurm
+module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
+module load netcdf-c/4.7.4
+module load netcdf-fortran/4.5.3
+
+srun --mpi=pmi2 -n 50 ncjoin_mpi 10 5 pac_his.0000.*.nc
+
+
+
