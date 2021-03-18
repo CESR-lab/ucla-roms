@@ -4,7 +4,7 @@
       ![ NCJOIN INFO:
 
       ! Creator: Sasha (Alex S.)      (Serial version)
-      !           Devin.D & Jeroen.M   (  MPI  version)
+      !          Devin.D & Jeroen.M   (  MPI  version)
 
       ! Edits:
       ! - 2021-Jan: DevinD changed nf_create and nf_def_var to nf90
@@ -286,6 +286,15 @@
 ! guess_nnodes variable needs a better choice.
 ! change all netcdf calls to nf90.
 ! non-partioned sections it doesn't catch all types of variables as it did in ncjoin.
+! Could have used global incides on proc's data array. I.e. for a 9x9 ncjoin_mpi run
+! the proc range with the NE corner of the global domain for 300x300 domain could be
+! data(200:300,200:300,z). So really the local array is 100x100 in x and y, but the
+! indices stick with global indices, and therefore don't have to carry extra index
+! conversion.
+! Could print out each proc's write time to see more about bad write scaling.
+! Currently I use nf90_put_var and nf90_get_var using multi-dimensional array instead
+! of 1D buffer. E.g nf90_put_var(ncid, varid, data(istr:iend,jstr:jend,z:..). But it's
+! possible that a local copy is made into a buffer by netCDF, this would be inefficient.
 !
 !]
 
@@ -449,7 +458,7 @@ c--#define MPIVERBOSE
       alloc_buff_size=0                ! and "alloc_*" is the size of 
                                        ! the actually allocated array.
       nargs=iargc()
-      arg=0
+      arg=2          ! start at 2+1 since first 2 arguements are mpi sub-domain values np_x & np_y
 
       !] ---------------- PROGRAM STARTS ---------------------
 
@@ -506,7 +515,6 @@ c--#define MPIVERBOSE
         sffx_bak(1:1)=' '  ! define the file set.
         code_size_bak=-1
 
-        arg=2     ! start at 2+1 since first 2 arguements are mpi sub-domain values np_x & np_y
   2     arg=arg+1 ! cycle through argument list of names of partitioned files by
                   ! coming back here with 'goto 2' after each filename.
 
@@ -533,7 +541,6 @@ c--#define MPIVERBOSE
             if (i.eq.nf_int .and. lvar.eq.4) then
               ierr=nf_get_att_int (ntest,nf_global, 'partition', ibuff) ! ibuff array stores the 4 integers of 'partition'.
               if (ierr .eq. nf_noerr) then
-
                 if (nnodes.eq.-1) then
                   nnodes=ibuff(2)
                   if (nnodes.gt.maxnodes) then
@@ -653,10 +660,11 @@ c--#define MPIVERBOSE
      &                                     nctestname(1:lncn), '''.'
                   endif
 # ifdef VERBOSE
-      if(my_rank==0) write(*,'(1x,3A,I3,1x,A,I4,1x,A,I4,3x,A,2I4)')
-     &           'fname = ''', nctestname(1:lncn),  ''' code_size =',
-     &            code_size,  'code =', k, 'node =', node, 'i,jSW =',
-     &                              xi_start(node), eta_start(node)
+                  if(my_rank==0)
+     &              write(*,'(1x,3A,I3,1x,A,I4,1x,A,I4,3x,A,2I4)')
+     &             'fname = ''', nctestname(1:lncn),  ''' code_size =',
+     &              code_size,  'code =', k, 'node =', node, 'i,jSW =',
+     &              xi_start(node), eta_start(node)
 # endif
 
 ! Checking consistency of root name with previously found.
@@ -742,6 +750,13 @@ c--#define MPIVERBOSE
           else
             write(*,'(/1x,3A/)') '### WARNING: ''', nctestname(1:lncn),
      &      ''' is not a partial netCDF file: ==> The file is ignored.'
+            if (arg<nargs) then  ! Not last file
+              goto 2             ! -> next file
+            else
+              write(*,'(/1x,A/)') 'Final file. Terminating ncjoin_mpi.'
+              complete=.false.   ! Use this to skip parallel read/write section of code.
+              goto 23            ! goto end of mater only pre-processing.
+            endif
           endif
         else
           write(*,'(/1x,4A/14x,A/)')   '### WARNING: Cannot open ''',
@@ -762,6 +777,7 @@ c--#define MPIVERBOSE
             if (ncid(node).lt.0) complete=.false.
           enddo
         endif 
+
       if (.not.complete .and. arg.lt.nargs) goto 2  !--> next file
 
 #ifdef VERBOSE
@@ -1221,7 +1237,7 @@ c**           endif
         if (ierr .eq. nf_noerr) then
           if(my_rank==0) write(*,'(/1x,3A)')  'Created netCDF file ''',
      &                        nctargname(1:ltrg), '''.'
-          if(my_rank==0) write(*,*)
+          if(my_rank==0) write(*,'(1x,A,I1)')
      &      '-> compression level (deflate_level) = ', deflate_level
           if(my_rank==0) write(*,*)
      &      '-> compression shuffle = ', shuffle
@@ -1342,12 +1358,20 @@ c**           endif
 
         ! Note this division rounds down but i/j node uses zero counting.
         ! This is also for all vars!
-        jproc=my_rank/nprocs_x          ! indices iproc,jproc identifying
-        iproc=my_rank-jproc*nprocs_x    ! the location of current subdomain
+        jproc=my_rank/nprocs_x            ! indices iproc,jproc identifying
+        iproc=my_rank-jproc*nprocs_x      ! the location of current subdomain
 
-        allocate(chunksize_x(nvars))    ! Allocate chunking variables per variable.
-        allocate(chunksize_y(nvars))    ! Note this should probably be done per variable
-        allocate(n_chunks_x(nvars)) ! type (r/u/v) and not for every variable.
+        if (allocated(chunksize_x)) then  ! If several sets of partial files then
+          deallocate(chunksize_x)         ! need to deallocate for next set else seg fault.
+          deallocate(chunksize_y)
+          deallocate(n_chunks_x)
+          deallocate(n_chunks_y)
+          deallocate(p_chunks_x)
+          deallocate(p_chunks_y)
+        endif
+        allocate(chunksize_x(nvars))      ! Allocate chunking variables per variable.
+        allocate(chunksize_y(nvars))      ! Note this should probably be done per variable
+        allocate(n_chunks_x(nvars))       ! type (r/u/v) and not for every variable.
         allocate(n_chunks_y(nvars))
         allocate(p_chunks_x(nvars))
         allocate(p_chunks_y(nvars))
@@ -1565,7 +1589,7 @@ c**           endif
         if(my_rank==0) write(*,'(/1x,A)') 'Leaving definition mode.'
 # endif
 
-        if(my_rank==0) write(*,'(/1x,A/)')
+  23    if(my_rank==0) write(*,'(/1x,A/)')
      &                          'End of master proc pre-processing.'
 
       endif ! <- if(my_rank==0) END OF MASTER ONLY PRE-PROCESSING
@@ -1574,15 +1598,28 @@ c**           endif
 
       ![ PART 4: EXCHANGE ALL PARTIAL FILE INFO FROM MASTER TO ALL PROCS:
 
-        call MPI_Barrier(MPI_COMM_WORLD, ierr) ! Might not be necessary.
+      call MPI_Barrier(MPI_COMM_WORLD, ierr) ! Might not be necessary.
+
+      call MPI_BCAST(complete,  1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
+      call MPI_BCAST(arg,   1, MPI_INT, 0, MPI_COMM_WORLD, ierr)          ! Need for catch at end of program
+      call MPI_BCAST(nargs, 1, MPI_INT, 0, MPI_COMM_WORLD, ierr)
+
+      if (complete) then  ! Covers entire read/write section of code
+                          ! Needed to skip last file is not partial file (i.e. his.0000.nc)
 
         call MPI_BCAST(nvars,  1, MPI_INT, 0, MPI_COMM_WORLD, ierr) ! Once working group scalars together and send in
         call MPI_BCAST(nnodes, 1, MPI_INT, 0, MPI_COMM_WORLD, ierr) ! 1 long array to spare latency of repeated calls.
         if(my_rank /= 0) then                                       ! Even with 120 cores didn't make a difference...
           jproc=my_rank/nprocs_x        ! indices iproc,jproc identifying
           iproc=my_rank-jproc*nprocs_x  ! the location of current mpi proc subdomain
+          if (allocated(chunksize_x)) then
+            deallocate(chunksize_x)
+            deallocate(chunksize_y)
+            deallocate(p_chunks_x)
+            deallocate(p_chunks_y)
+          endif
           allocate(chunksize_x(nvars))
-          allocate(chunksize_y(nvars))      ! We previously only allocated all these arrays
+          allocate(chunksize_y(nvars))  ! We previously only allocated all these arrays
           allocate(p_chunks_x(nvars))   ! for the master proc. Hence need to do again
           allocate(p_chunks_y(nvars))   ! for all other procs.
 
@@ -1667,11 +1704,6 @@ c**           endif
         call MPI_BCAST(id_eta_rho,     1, MPI_INT, 0, MPI_COMM_WORLD, ierr)
         if(ierr/=0) print *, 'POOR EXCHANGE'
         call MPI_BCAST(unlimdimid,     1, MPI_INT, 0, MPI_COMM_WORLD, ierr)
-        if(ierr/=0) print *, 'POOR EXCHANGE'
-
-        call MPI_BCAST(arg,   1, MPI_INT, 0, MPI_COMM_WORLD, ierr)
-        if(ierr/=0) print *, 'POOR EXCHANGE'
-        call MPI_BCAST(nargs, 1, MPI_INT, 0, MPI_COMM_WORLD, ierr)
         if(ierr/=0) print *, 'POOR EXCHANGE'
 
       !] END PART 4: EXCHANGE ALL PARTIAL FILE INFO FROM MASTER TO ALL PROCS
@@ -1857,11 +1889,11 @@ c**           endif
      &        allocate(lnodes_in_proc(guess_nnodes)) ! All nodes if using single proc, as all partitions relevant to 1 proc...
             lnodes_in_proc=-1                        ! Set to safe value
             if (.not. allocated(start_in))
-     &        allocate(start_in(4,guess_nnodes))
-            if (.not. allocated(count_in))
-     &        allocate(count_in(4,guess_nnodes))
-            start_in(1:2,:)=-1  ! set x & y to safe (wrong) value
-            count_in(1:2,:)=-1
+     &        allocate(start_in(4,guess_nnodes))     ! In theory for a new set of partial files
+            if (.not. allocated(count_in))           ! these arrays should be deallocated and
+     &        allocate(count_in(4,guess_nnodes))     ! reallocated. But since the size if based on
+            start_in(1:2,:)=-1                       ! fixed 'guess_nnodes', should be fine to leave.
+            count_in(1:2,:)=-1  ! set x & y to safe (wrong) value
             start_in(3,:)=1     ! set z
             count_in(3,:)=n_z   ! if 2D variable n_z is set to 1
             start_in(4,:)=1     ! set t
@@ -2449,6 +2481,8 @@ c--#endif !]
 
         ![ PART10: CLOSE ALL FILES & DISPLAY TIMING SUMMARY:
 
+      endif ! <- complete (all the way at start of read/write parallel section)
+
         if (ierr.eq.nf_noerr) then
           clean_set=.true.
           goto 98
@@ -2517,6 +2551,7 @@ c--#endif !]
           endif ! <- del_part_files
         endif   ! <- my_rank==0
 #endif
+
       if (arg .lt. nargs)  goto 11 !--> next set of partial files.
                                    ! DevinD changed from 1 to 11 to avoid goto into master only.
 
@@ -2524,9 +2559,9 @@ c--#endif !]
       call etime(CPU_time, RUN_time)
       RUN_time=RUN_time-tstart
       
-
-      if(my_rank==0) write(*,'(/3(1x,A,F11.2,1x))') 'CPU_time:  run =', RUN_time,
-     &                   'usr =', CPU_time(1),  'sys =', CPU_time(2)
+      ! DevinD commented this out as etime now takes array not 2 arguements. Might fix in future.
+!      if(my_rank==0) write(*,'(/3(1x,A,F11.2,1x))') 'CPU_time:  run =', RUN_time,
+!     &                   'usr =', CPU_time(1),  'sys =', CPU_time(2)
 
       if (clk_rate.gt.0) then
         ReadSize=1.0D-6*net_read_size
