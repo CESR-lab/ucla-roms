@@ -38,14 +38,14 @@
 ! subdomains is extracted from the source file and copied into
 ! partial files.
 
-#define AUTORENICE
+c--#define AUTORENICE ! DevinD: turned off autorenice. Think it makes partit slower?
 #define TIMING
 c--#define VERBOSE
 
 
       implicit none
 #include "netcdf.inc"
-      integer, parameter ::  maxdims=32,  maxvars=64
+      integer, parameter ::  maxdims=32,  maxvars=180 ! 180 vars required for BGC
       character(len=80) src_name,         string
       character(len=32) dimname(maxdims), varname(maxvars)
 
