@@ -284,6 +284,8 @@
 ! Improve scaling of writing.
 ! Create module and move sections into subroutines.
 ! guess_nnodes variable needs a better choice.
+! Memory demand is higher on expanse than it was for ncjoin. All the auxiliary variables
+! are using up too much memory, I need to streamline this.
 ! change all netcdf calls to nf90.
 ! non-partioned sections it doesn't catch all types of variables as it did in ncjoin.
 ! Could have used global incides on proc's data array. I.e. for a 9x9 ncjoin_mpi run
