@@ -1025,11 +1025,17 @@ c**           endif
               !   Change to 'deflate_level = 0' for no compression.
               ! - Default is to turn shuffle on, this is what nc3to4z had.
               !   In tests it gave an extra ~10% compression over just d1 compression.
-              ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),
-     &                           dimids(1:vdims(i),i), varid(i),
-     &                           deflate_level=deflate_level, shuffle=shuffle)
+              if(vdims(i) > 2) then  ! 2D & 3D vars
+                ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),
+     &                             dimids(1:vdims(i),i), varid(i),
+     &                             deflate_level=deflate_level, shuffle=shuffle)
 !         ierr=nf90_inquire_variable(nctarg,varid(i),chunksizes=chunk_sizes) ! DevinD debug
 !         print *, 'var: ',vname(i)(1:lvar),' chunksizes: ',chunk_sizes      ! DevinD debug
+              else ! 1D and grd vars
+                ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),
+     &                             dimids(1:vdims(i),i), varid(i))
+              endif
+
               if (ierr .eq. nf_noerr) then
 #ifdef VERBOSE
                 write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
