@@ -73,6 +73,14 @@ c--#define VERBOSE
 
       implicit none
 #include "netcdf.inc"
+
+      ! START USER INPUT
+      integer :: deflate_level=1 ! Compression level for joined file
+      logical :: shuffle=.true.  ! Shuffle on for extra conmpression
+      ! END USER INPUT
+      
+      integer, dimension(4) :: chunk_sizes ! DevinD: chunksize debugging
+
       integer, parameter :: maxdims=32, maxvars=220 ! BGC has 201 vars in restart file
       integer, parameter :: part_XI=1,  part_ETA=2, part_2D=3
 
@@ -88,6 +96,8 @@ c--#define VERBOSE
       character(len=32) vname(maxvars), dimname(maxdims) 
       character(len=64) nctestname, nctargname, root, root_bak, string
       character(len=64), dimension(:), allocatable :: ncname
+      character(len=1) :: buff_char ! DevinD added as Expanse complained about putting
+                                    ! spherical character in numerical 'buff' array...
 
       integer, dimension(:), allocatable:: ncid, xi_start, eta_start
       integer, dimension(:,:), allocatable :: vid, dimsize
@@ -159,6 +169,7 @@ c--#define VERBOSE
       net_sync_clk=0
       net_assm_clk=0
       net_gray_clk=0
+      net_fcrt_clk=0 ! DevinD added this was missing and caused seg fault.
 #endif
 #ifdef DEL_PART_FILES
       del_part_files=.false.
@@ -177,6 +188,7 @@ c--#define VERBOSE
       nargs=iargc()
       arg=0
 
+
 ! Extract a set of files which cover the whole physical grid.
 
   1   nnodes=-1                        ! Reset variables which
@@ -184,7 +196,7 @@ c--#define VERBOSE
       sffx_bak(1:1)=' '
       code_size_bak=-1
  
-      ! DD: will cycle through arguement list of names of partitioned
+      ! DD: will cycle through argument list of names of partitioned
       !     files by coming back here with 'goto 2'
   2   arg=arg+1
         ! DD: get the arguements from calling ncjoin arg1 ...
@@ -443,7 +455,7 @@ c--#define VERBOSE
           do node=0,nnodes-1
             if (ncid(node).lt.0) complete=.false.
           enddo
-        endif 
+        endif
       if (.not.complete .and. arg.lt.nargs) goto 2  !--> next file
 
 #ifdef VERBOSE
@@ -884,6 +896,10 @@ c**           endif
         if (ierr .eq. nf_noerr) then
           write(*,'(/1x,3A)')  'Created netCDF file ''',
      &                        nctargname(1:ltrg), '''.'
+          write(*,*)  '-> compression level (deflate_level) = ',
+     &                        deflate_level
+          write(*,*)  '-> compression shuffle = ',
+     &                        shuffle
         else
           write(*,'(/1x,4A/12x,A/)')     '### ERROR: Cannot create ',
      &                          'netCDF file ''', nctargname(1:ltrg),
@@ -1011,7 +1027,9 @@ c**           endif
               !   In tests it gave an extra ~10% compression over just d1 compression.
               ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),
      &                           dimids(1:vdims(i),i), varid(i),
-     &                           deflate_level=1, shuffle=.true.)
+     &                           deflate_level=deflate_level, shuffle=shuffle)
+!         ierr=nf90_inquire_variable(nctarg,varid(i),chunksizes=chunk_sizes) ! DevinD debug
+!         print *, 'var: ',vname(i)(1:lvar),' chunksizes: ',chunk_sizes      ! DevinD debug
               if (ierr .eq. nf_noerr) then
 #ifdef VERBOSE
                 write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
@@ -1174,7 +1192,7 @@ c**           endif
      &                               vname(i)(1:lvar), '''...'
 
                 if (vartype(i) .eq. nf_char) then
-                  ierr=nf_get_var_text  (ncid(0), vid(i,0), buff)
+                  ierr=nf_get_var_text  (ncid(0), vid(i,0), buff_char)
                 elseif (vartype(i) .eq. nf_byte) then
                   ierr=nf_get_var_int1   (ncid(0), vid(i,0), buff)
                 elseif (vartype(i) .eq. nf_short) then
@@ -1193,7 +1211,7 @@ c**           endif
                 endif
                 if (ierr .eq. nf_noerr) then
                   if (vartype(i) .eq. nf_char) then
-                    ierr=nf_put_var_text  (nctarg, varid(i), buff)
+                    ierr=nf_put_var_text  (nctarg, varid(i), buff_char)
                   elseif (vartype(i) .eq. nf_byte) then
                     ierr=nf_put_var_int1   (nctarg, varid(i), buff)
                   elseif (vartype(i) .eq. nf_short) then
@@ -1325,6 +1343,7 @@ c**           endif
                 write(*,'(16x,2A,I3,1x,3A)')  'Assembly partitioned ',
      &                       'array type', part_type(i),  'name = ''',
      &                                         vname(i)(1:lvar), ''''
+
                 do node=0,nnodes-1
                   var_mask=.false.
                   if (part_type(i).eq.1 .and. lvar.gt.6) then 
@@ -1370,6 +1389,7 @@ c**           endif
      &                      'identified 2D-partitioned array ''',
      &                       vname(i)(1:lvar), ''''
 #endif
+
                   endif
                   if (var_mask) then
                     size=1
@@ -1446,7 +1466,7 @@ c**           endif
                       lvar=lenstr(vname(i))
                       write(*,'(/8x,4A/)') '### ERROR: variable ''',
      &                     vname(i)(1:lvar), ''' has unknown type.'
-                      goto 97
+!dd                      goto 97
                     endif
 
                     if (size .gt. 8*max_buff_size) then
@@ -1475,7 +1495,15 @@ c**           endif
                       inc_clk=iclk(nclk)-iclk(3-nclk)
                       net_gray_clk=net_gray_clk+inc_clk
 # endif
+                      ! DevinD: nf90_get_var is one call, it doesn't need
+                      ! to know the data type.
                       if (vartype(i) .eq. nf_char) then
+                        ! DevinD: This call is technically illegal, and will cause
+                        ! ncjoin to abort in debug mode because you cannot read a
+                        ! 'character' into a 'real'.
+                        ! This final result still seems correct though, hence not
+                        ! previously noticed. (Only for 'spherical' which is not
+                        ! commonly looked at.
                         ierr=nf_get_vara_text (ncid(node), vid(i,node),
      &                                             start, count, buff)
                       elseif (vartype(i) .eq. nf_byte) then
@@ -1488,6 +1516,7 @@ c**           endif
                         ierr=nf_get_vara_int  (ncid(node), vid(i,node),
      &                                             start, count, buff)
                       elseif (vartype(i) .eq. nf_float) then
+!                        print *, 'READING FLOAT: '
                         ierr=nf_get_vara_real (ncid(node), vid(i,node),
      &                                             start, count, buff)
                       elseif (vartype(i) .eq. nf_double) then
@@ -1512,7 +1541,7 @@ c**           endif
      &                   vname(i)(1:lvar), ''' for time record', rec,
      &                  'from netCDF file ''',  ncname(node)(1:lncn),
      &                                      '''.', nf_strerror(ierr)
-                        goto 97
+!dd                        goto 97
                       endif
 
 #ifdef KEEP_CLOSED
@@ -1525,7 +1554,7 @@ c**           endif
                       write(*,'(/1x,A,1x,3A/14x,A)')   '### ERROR: ',
      &                                  'Cannot open netCDF file ''',
      &                ncname(node)(1:lncn), '''.', nf_strerror(ierr)
-                      goto 97
+!dd                      goto 97
                     endif
 #endif
 # ifdef VERBOSE
@@ -1596,6 +1625,7 @@ c**           endif
                     inc_clk=iclk(nclk)-iclk(3-nclk)
                     net_gray_clk=net_gray_clk+inc_clk
 # endif
+
                     if (vartype(i) .eq. nf_char) then
                       ierr=nf_put_vara_text   (nctarg, varid(i),
      &                                     start1, count, buff)
@@ -1634,7 +1664,7 @@ c**           endif
      &                     vname(i)(1:lvar),''' for time record',rec,
      &                     'into netCDF file ''', nctargname(1:ltrg),
      &                                     '''.',  nf_strerror(ierr)
-                      goto 97
+!dd                      goto 97
                     endif
 #endif /* FAST_MODE */
                   endif  ! <-- var_mask 
@@ -1647,6 +1677,7 @@ c**           endif
                     inc_clk=iclk(nclk)-iclk(3-nclk)
                     net_gray_clk=net_gray_clk+inc_clk
 # endif
+
                     if (vartype(i) .eq. nf_char) then
                       ierr=nf_put_vara_text   (nctarg, varid(i),
      &                                  start, count1, bfr_out)
@@ -1685,11 +1716,12 @@ c**           endif
      &                     vname(i)(1:lvar),''' for time record',rec,
      &                    'into netCDF file ''',  nctargname(1:ltrg),
      &                                     '''.',  nf_strerror(ierr)
-                      goto 97
+!dd                      goto 97
                     endif
                   endif    !<--  node.eq.nnodes-1
 #endif /* FAST_MODE */
                 enddo   !<-- node=0,nnodes-1
+
               endif    !<-- part_type .eq./.gt. 0 switch
             endif    !<-- rec.eq.1 .or. series(i) switch
 

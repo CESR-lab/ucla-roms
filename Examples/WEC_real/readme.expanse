@@ -1,0 +1,3 @@
+To run this example on expanse, simply use command:
+
+sbatch do_roms_expanse.sh
