@@ -57,6 +57,10 @@ To compile tools:
 		For efficiency, try to keep keep the ratio of np_x to np_y similar to
 		the sub-domaining of your partitial files.
 		Note, np = np_x X np_y !
+		
+		Please read detailed instructions to get most productivity from tool, here:
+		Documentation/readme-tools/readme.ncjoin_mpi
+
 
  ncjoin - 	This is a legacy tool - it runs in serial (on one core).
  		Can be used still for very small result files like in Examples/.
@@ -85,12 +89,5 @@ programs -- just execute each of them without any arguments to see what
 they are and for instructions how to use them.
 
 
-# The following is old from Sasha, set up if you want it...
-To compile: Simply type "make" ...
-... then "make install". The executables
-will be moved to ~/bin directory. The directory must pre-exist and
-should be included in $PATH in ~/.cshrc or ~/.bashrc files.  
-The installation path can be changed by editing Makefile. 
-The compiler can be selected by chosing an appropriate Makedes.XXX file.  
-There is no need for any external library beside the standard intrinsic functions.
+
 
