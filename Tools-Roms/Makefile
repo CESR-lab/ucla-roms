@@ -28,8 +28,8 @@ partit: partit.o insert_node.o lenstr.o
 ncjoin: ncjoin.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
 	
-ncjoin_mpi: ncjoin_mpi.o lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi ncjoin_mpi.o lenstr.o $(LCDF)
+ncjoin_mpi: ncjoin_mod.o ncjoin_mpi.o lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi ncjoin_mod.o ncjoin_mpi.o lenstr.o $(LCDF)
 	
 nc3to4z: nc3to4z.o lenstr.o read_string.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o nc3to4z nc3to4z.o lenstr.o read_string.o $(LCDF)
@@ -39,7 +39,7 @@ mpc: mpc.F Makefile
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
 
 clean:
-	/bin/rm -f *.f *.o *.a *.s *.trace *~ $(COMP_FILES)
+	/bin/rm -f *.f *.o *.a *.s *.trace
 
 clobber: clean
 	/bin/rm -f $(ALL) *.bak
