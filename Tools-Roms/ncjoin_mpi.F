@@ -1303,7 +1303,13 @@ c**           endif
         if(my_rank==0) write(*,'(1x,A)')
      &                'Set ''collective'' write of variables (MPI-I/O).'
         do i=1,nvars
-          ierr=nf90_var_par_access(nctarg, varid(i), NF90_COLLECTIVE)
+          if (part_type(i)/=0) then  ! catch to enable master only of non-partitioned arrays
+          ierr=nf90_var_par_access(nctarg, varid(i), NF90_COLLECTIVE)  ! Otherwise hang for master only waiting for other procs
+#ifdef MPIVERBOSE
+            if(my_rank==0)
+     &        print *, 'nf90_var_par_access = collective: ', vname(i) ! debug output
+#endif
+          endif
 !          ierr=nf90_var_par_access(nctarg, varid(i), NF90_INDEPENDENT) ! Doesn't work?
 !          ierr=nf90_inquire_variable(nctarg, varid(i), var_name_debug)
 !          if(ierr/=0) print *, 'BAD INQUIRE VAR'
@@ -1662,7 +1668,7 @@ c**           endif
                 ![ PART 8: READ/WRITE Non-partitionable array:
                 !  ===========================================
 
-                ! This should only really be done by one proc.
+                if (my_rank==0) then  ! ONLY DONE BY MASTER
 
                 lvar=lenstr(vname(i))
                 if(my_rank==0 .and. rec==1) write(*,'(16x,3A)')
@@ -1709,25 +1715,28 @@ c**           endif
                 elseif (vartype(i) .eq. nf_int) then
                   ierr=nf_get_vara_int    (ncid(0), vid(i,0),
      &                                    start,count, buff)
-
                 elseif (vartype(i) .eq. nf_float) then
                   ierr=nf_get_vara_real   (ncid(0), vid(i,0),
      &                                    start,count, buff)
+                elseif (vartype(i) .eq. nf_double) then
+                  ierr=nf_get_vara_double (ncid(0), vid(i,0),
+     &                                    start,count, buff)
                 endif
                 if (ierr .eq. nf_noerr) then
+
                   if (vartype(i) .eq. nf_char) then
 
                   elseif (vartype(i) .eq. nf_int) then
                     ierr=nf_put_vara_int   (nctarg, varid(i),
      &                                    start,count, buff)
-
                   elseif (vartype(i) .eq. nf_float) then
-
 #ifdef MPIVERBOSE
                     print *, 'WRITING FLOAT non-par: ', 'my_rank', my_rank
 #endif
-
                     ierr=nf_put_vara_real  (nctarg, varid(i),
+     &                                    start,count, buff)
+                  elseif (vartype(i) .eq. nf_double) then
+                    ierr=nf_put_vara_double(nctarg, varid(i),
      &                                    start,count, buff)
                   endif
                   if (ierr .ne. nf_noerr) then
@@ -1745,6 +1754,9 @@ c**           endif
      &              ''' for time record',rec,'.', nf_strerror(ierr)
                   goto 97
                 endif
+
+                endif  ! <- my_rank==0 (master only)
+
               elseif (part_type(i).gt.0) then !] END PART 8: READ/WRITE Non-partitionable array:
 
                 ![ PART 9: READ/WRITE Partitioned array:
