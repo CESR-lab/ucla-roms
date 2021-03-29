@@ -27,17 +27,45 @@
 !             specific for each variable using its 'itrace' index...
 
 
-      itrace1=1+iTandS;              wrt_t(itrace1) =.True.
-      t_vname(itrace1)='trace1';     t_units(itrace1)='%/%/%'
-      t_tname(itrace1)='trace1_time';t_ana_frc(itrace1)=0
+
+! - TEMP & SALT:
+
+!     Defined in tracers.F, but outputting controller here:
+      wrt_t(itmp) =.True.;           wrt_t_avg(itmp) =.True.
+#ifdef SALINITY
+      wrt_t(islt) =.True.;           wrt_t_avg(islt) =.True.
+#endif
+
+
+
+! - PASSIVE TRACERS:
+
+      itrace1=1+iTandS;              
+      wrt_t(itrace1)  =.True.;        wrt_t_avg(itrace1)=.True.
+      t_vname(itrace1)='trace1';      t_units(itrace1)  ='%/%/%'
+      t_tname(itrace1)='trace1_time'; t_ana_frc(itrace1)=0
       t_lname(itrace1)='long trace1'
 
-      isalt2=2+iTandS;               wrt_t(isalt2) =.True.
-      t_vname(isalt2)='salt2';       t_units(isalt2)='PSUuu'
-      t_tname(isalt2)='salt2_time';  t_ana_frc(isalt2)=0
+      isalt2=2+iTandS;               
+      wrt_t(isalt2) =.True.;          wrt_t_avg(isalt2)=.True.
+      t_vname(isalt2)='salt2';        t_units(isalt2)  ='PSUuu'
+      t_tname(isalt2)='salt2_time';   t_ana_frc(isalt2)=0
       t_lname(isalt2)='long salt2'
 
-!      iptrace2=2+iTandS;             wrt_t(iptrace2) =.True.
-!      t_vname(iptrace2)='ptrace2';   t_units(iptrace2)='uuunits'
-!      t_tname(iptrace2)='ptrace2_time';t_ana_frc(iptrace2)=0
-!      t_lname(iptrace2)='long ptrace2'
+
+
+! - BGC TRACERS:
+
+!      - Number bgc tracers from 1 and add on itrace index
+!        from passive tracers above: e.g. ibgc1 = 1+isalt2
+!      - If no passive tracers then add on iTandS index:
+!        e.g. ibgc1=1+iTandS
+
+!     idea: would be useful to do:
+!           indxPO4=itotal+iTandS; itotal=1+itotal
+!           This way if you comment out a tracer you no longer want, it doesn't
+!           mess up your numbering. Not hard-coded.
+!           Should then put in error checking to make sure NT = itotal at the end!
+
+
+
