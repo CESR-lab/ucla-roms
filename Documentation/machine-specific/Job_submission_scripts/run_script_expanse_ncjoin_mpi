@@ -1,25 +1,36 @@
 #!/bin/bash
 #SBATCH --job-name="ncj_mpi50"
 
-# %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
-#SBATCH --output="ncjoin_mpi50_10x5_d1s.%N.out"
+#       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
+#SBATCH --output="ncjoin_mpi50.%N.out"
 
-# If using less than 128 cores then the partition is 'shared' 
-# or 'large-shared' if extra memory is needed.
-#SBATCH --partition=large-shared
+#       If using less than 128 cores then the partition is 'shared' 
+#       or 'large-shared' if extra memory is needed (only use if 'shared' failed due to memory error).
+#       Note, the job charge costs 8x more for 'large-shared' than 'shared' or 'compute', use allocation wisely!
+#SBATCH --partition=shared
 #SBATCH --nodes=1
 
-# Request number of cores:
+#       Request number of cores: (Expanse has 128 cores per node)
+#       If using 'compute', you will be charged 128 x number of nodes requested! Regardless of ntasks=per-node,
+#       which is very important to understand to avoid being overcharged and wasting resources.
+#       For ncjoin_mpi, not recommend to go higher than 50, as diminishing returns.
 #SBATCH --ntasks-per-node=50
 
-# Leave this at 1:
+#       Leave this at 1:
 #SBATCH --cpus-per-task=1
 
-# Default is 1GB ram per core, increases on large-shared with mem:
+#       Default is 1GB ram per core. Uncomment & edit to increase mem:
+#       compute/shared has max of 248G of ram you can request,
+#       large-shared has max of 2000G of ram you can request.
+#       Note, you are charged by the larger of cores used or portion of node's memory requested!
 # #SBATCH --mem=200G
+
 #SBATCH --account=cla119
 #SBATCH --export=ALL
+#       Time duration requested for run:
 #SBATCH -t 00:10:00
+
+#-----------------------------------------------------------------	
 
 # Flags needed for mvapich2:
 export MV2_USE_RDMA_CM=0
