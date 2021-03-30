@@ -1631,10 +1631,14 @@ c**           endif
                 if(my_rank==0) write(*,'(16x,3A)')
      &            'Copy scalar variable: ''',vname(i)(1:lvar),'''...'
 
-                if (vartype(i) .eq. nf_char) then
-                  ierr=nf90_get_var(ncid(0), vid(i,0),char_in)
-!                elseif (vartype(i) .eq. nf_float) then
-!                  ierr=nf_get_var_real   (ncid(0), vid(i,0), buff)
+                if (vartype(i) .eq. nf_char)       then
+                  ierr=nf90_get_var(ncid(0), vid(i,0), char_in)
+                elseif (vartype(i) .eq. nf_int)    then
+                  ierr=nf90_get_var(ncid(0), vid(i,0), scalar_int)
+                elseif (vartype(i) .eq. nf_float)  then
+                  ierr=nf90_get_var(ncid(0), vid(i,0), scalar_real) ! Hoping double precision variable works fine here.
+                elseif (vartype(i) .eq. nf_double) then             ! Compiler default for real is double.
+                  ierr=nf90_get_var(ncid(0), vid(i,0), scalar_real)
                 else
                   lvar=lenstr(vname(i))
                   write(*,'(/8x,4A/)') '### ERROR: scalar variable ',
@@ -1642,10 +1646,14 @@ c**           endif
                   goto 97
                 endif
                 if (ierr .eq. nf_noerr) then
-                  if (vartype(i) .eq. nf_char) then
+                  if (vartype(i) .eq. nf_char)       then
                     ierr=nf90_put_var(nctarg ,varid(i),char_in)
-!                  elseif (vartype(i) .eq. nf_float) then
-!                    ierr=nf_put_var_real   (nctarg ,varid(i), buff)
+                  elseif (vartype(i) .eq. nf_int)    then
+                    ierr=nf90_put_var(nctarg, varid(i), scalar_int)
+                  elseif (vartype(i) .eq. nf_float)  then
+                    ierr=nf90_put_var(nctarg ,varid(i), scalar_real)
+                  elseif (vartype(i) .eq. nf_double) then
+                    ierr=nf90_put_var(nctarg, varid(i), scalar_real)
                   endif
                   if (ierr .ne. nf_noerr) then
                     lvar=lenstr(vname(i))

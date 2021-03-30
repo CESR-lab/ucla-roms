@@ -1,20 +1,22 @@
 #!/bin/bash
 #SBATCH --job-name="roms"
 
-# %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
+#       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
 #SBATCH --output="roms_log.%N.run.out"
-#SBATCH --partition=debug
 
-# Can only use a max of 2 nodes on 'debug' partition:
+#       Can only use a max of 2 nodes on 'debug' partition:
+#SBATCH --partition=debug
 #SBATCH --nodes=1
 
-# Expanse has 128 cores per node:
+#       Request number of cores: (Expanse has 128 cores per node)
 #SBATCH --ntasks-per-node=128
 #SBATCH --account=cla119
 #SBATCH --export=ALL
 
-# Max run time on 'debug' is 30 minutes:
+#       Max run time on 'debug' is 30 minutes:
 #SBATCH -t 00:30:00
+
+#-----------------------------------------------------------------	
 
 # Flags needed for mvapich2:
 export MV2_USE_RDMA_CM=0

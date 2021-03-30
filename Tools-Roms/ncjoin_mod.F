@@ -74,7 +74,8 @@ c--#define MPIVERBOSE
       integer           :: v_dimsize      ! Size of current dimension length
       character(len=1)  :: char_in        ! Text read in. I.e. scalar 'spherical' variable
       character(len=15) :: var_name_debug ! debug. should delete when confirmed collective/independent I/O
-
+      integer           :: scalar_int     ! variable for joining scalar integers
+      real              :: scalar_real    ! variable for joining scalar reals (float or double)
 
       ! ------ ORIGINAL NCJOIN VARS -------
 
