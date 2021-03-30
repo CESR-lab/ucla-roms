@@ -65,8 +65,9 @@ Passive tracers:
     The setup for passive tracers is done in the module tracers.F. There are some 
     instructions at the top of the file in the user inputs section. You need to create
     an index variable there for each tracer you want beyond 'islt'. You will then need 
-    to insert all your details about your tracers in tracers_defs.h, there are 
-    instructions in the file.
+    to insert all your details about your tracers in tracers_defs.h,  
+    there are instructions in the files.
+    Set number of tracers 'NT' in param.h as before.
     I would suggest starting with no tracers or just 1 or 2 to ensure that you can get 
     it working, and then finally set it up with all of your tracers.
     Selection of tracers for outputting is also done in tracers_defs.h.

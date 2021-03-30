@@ -97,7 +97,7 @@ INSTRUCTIONS: COMPILING ROMS
         into Work/ (excluding the Makefile) 
         You can copy Makedefs.inc into work if you need to change compilation
         settings, but don't copy the Makefile from src/ to Work/.
-     B. Open Work/ dir. Edit your files. See Documentation/README-model-setup  
+     B. Open Work/ dir. Edit your files. See Documentation/readme.2.model-setup  
         for details on configuring roms for your simulation as per new code.
         Type 'make'.
         All the remaining code in src/ and your edited files in Work/ will be 
