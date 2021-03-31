@@ -19,7 +19,7 @@ Basic usage:
 	It is the inverse operation to partit.
  	Runs in parallel with many cores using MPI. 
  	To run on Expanse, modify and use run script here:
- 	Documentation/machine-specific/Job_submission_scrips/run_script_expanse_ncjoin_mpi
+ 	Documentation/machine-specific/Job_submission_scripts/run_script_expanse_ncjoin_mpi
  				
 	ncjoin_mpi usage:
 			
