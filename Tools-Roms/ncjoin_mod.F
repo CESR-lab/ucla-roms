@@ -20,6 +20,8 @@ c--#define MPIVERBOSE
       ! remove netcdf.inc once fully converted to nf90_ routines
 #include "netcdf.inc"
 
+      ![ DECLARATION OF VARIABLES:
+
       integer :: n_x=1, n_y=1, n_z=1 ! number of gpoints in x, y & z (temporarily 1)
 
       ! MPI vars:
@@ -76,6 +78,7 @@ c--#define MPIVERBOSE
       character(len=15) :: var_name_debug ! debug. should delete when confirmed collective/independent I/O
       integer           :: scalar_int     ! variable for joining scalar integers
       real              :: scalar_real    ! variable for joining scalar reals (float or double)
+      logical           :: mayday         ! flag to break out of subroutine with error
 
       ! ------ ORIGINAL NCJOIN VARS -------
 
@@ -127,13 +130,14 @@ c--#define MPIVERBOSE
 # endif
 #endif
 
+      !]
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine setup_mpi  ! setup MPI system and
-                            ! error checking of user MPI config
-      implicit none
+      subroutine setup_mpi  ![
+                            !  setup MPI system and
+      implicit none         !  error checking of user MPI config
 
       call MPI_Init(ierr)                               ! initialize MPI
       call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr) ! get proc's rank (rank starts from 0)
@@ -166,20 +170,22 @@ c--#define MPIVERBOSE
       call getarg(2,char_arg)    ! read program argument as text
       read(char_arg,*) nprocs_y  ! convert argument to integer
 
-      if(n_procs /= nprocs_x*nprocs_y) then     ! Abort if wrong mpi sub-domain tiling
-        print *, 'Error: number of mpi processes /= nprocs_x * nprocs_y (sub-domains)'
+      if (n_procs /= nprocs_x*nprocs_y) then  ! Abort if wrong mpi sub-domain tiling
+        write(*,'(/1x,2A/)') 'Error: number of mpi ',
+     &             'processes /= nprocs_x * nprocs_y (sub-domains)'
         call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
       endif
 
-      if(my_rank==0) write(*,'(/1x,A,/1x,A,I3,2(/1x,A,I2)/)')
+      if(my_rank==0) write(*,'(/1x,A,/1x,A,I3,2(/1x,A,I2))')
      &                'MPI procs:', 'n_procs= ', n_procs,
      &                'nprocs_x= ', nprocs_x, 'nprocs_y= ', nprocs_y
 
-      end subroutine setup_mpi
+      end subroutine setup_mpi !]
 
 ! ----------------------------------------------------------------------
-      subroutine check_partial_file_set  ! determine is there is a complete
-                                         ! set of partial files to join
+      subroutine check_partial_file_set  ![
+                                         !  determine if there is a complete
+      implicit none                      !  set of partial files to join
 
   1     nnodes=-1
         root_bak(1:1)=' '  ! Reset variables which
@@ -401,7 +407,9 @@ c--#define MPIVERBOSE
 
 ! Stop, if something is wrong.
 
-                  if (ierr.ne.nf_noerr) return ! goto 97 can't have go to
+                  if (ierr.ne.nf_noerr) then
+                    mayday=.true.; return ! goto 97 can't have go to
+                  endif
                 else
                   arg=arg-1
                   goto 5
@@ -425,8 +433,8 @@ c--#define MPIVERBOSE
               goto 2             ! -> next file
             else
               write(*,'(/1x,A/)') 'Final file. Terminating ncjoin_mpi.'
-              complete=.false.   ! Use this to skip parallel read/write section of code.
-              return ! goto 23            ! goto end of mater only pre-processing.
+              complete=.false.   ! Probably not needed anymore... Use this to skip parallel read/write section of code.
+              mayday=.true.; return ! goto 23            ! goto end of mater only pre-processing.
             endif
           endif
         else
@@ -451,10 +459,6 @@ c--#define MPIVERBOSE
 
       if (.not.complete .and. arg.lt.nargs) goto 2  !--> next file
 
-#ifdef VERBOSE
-      if(my_rank==0) write(*,*) ' line 433, complete =', complete,
-     &                          ' nnodes =', nnodes
-#endif
 
 ! Once a complete set is identified, print the finenames.
 
@@ -490,7 +494,179 @@ c--#define MPIVERBOSE
         stop
       endif
 
-      end subroutine check_partial_file_set
+      end subroutine check_partial_file_set  !]
+
+! ----------------------------------------------------------------------
+      subroutine check_ndims_nvars_natts( node )  ![
+                                                  !  check consistent number of dimensions,
+      implicit none                               !  variables and attributes.
+
+      integer, intent(in) :: node
+
+            ierr=nf_inq (ncid(node), ibuff(1), ibuff(2),  ! returns: 1-ndims,  2-nvars
+     &                               ibuff(3), ibuff(4))  !          2-ngatts, 4-unlimid
+            if (ierr .ne. nf_noerr) then
+              write(*,'(/1x,4A/12x,A/)')  '### ERROR: Cannot make ',
+     &                        'general inquiry into netCDF file ''',
+     &               ncname(node)(1:lncn), '''.', nf_strerror(ierr)
+              mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+            elseif (ibuff(1) .gt. maxdims) then
+              write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
+     &         'number of dimensions', ibuff(1), 'in netCDF file ''',
+     &          ncname(node)(1:lncn),    '''',   'exceeds limit.  ',
+     &             'Increase parameter maxdims in file "ncjoin.F".'
+              mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+            elseif (ibuff(2) .gt. maxvars) then
+              write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
+     &         'number of variables',  ibuff(2), 'in netCDF file ''',
+     &          ncname(node)(1:lncn),  '''',      'exceeds limit. ',
+     &             'Increase parameter maxvars in file "ncjoin.F".'
+              mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+            elseif (node.eq.0) then
+              ndims=ibuff(1)
+c**           nvars=ibuff(2)
+              ngatts=ibuff(3)
+              unlimdimid=ibuff(4)
+            else
+              if (ibuff(1) .ne. ndims) then
+                write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
+     &                    'file ''', ncname(node)(1:lncn), ''' has ',
+     &                    'different number of dimensions than ''',
+     &                                       ncname(0)(1:lstr), '''.'
+                ierr=ierr+1
+              endif
+c**           if (ibuff(2) .ne. nvars) then
+c**             write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
+c**  &                    'file ''', ncname(node)(1:lncn), ''' has ',
+c**  &                       'different number of variables than ''',
+c**  &                                      ncname(0)(1:lstr), '''.'
+c**             ierr=ierr+1
+c**           endif
+              if (ibuff(3) .ne. ngatts) then
+                write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
+     &                   'file ''',  ncname(node)(1:lncn), ''' has ',
+     &               'different number of global attributes than ''',
+     &                                       ncname(0)(1:lstr),'''.'
+                ierr=ierr+1
+              endif
+              if (ibuff(4) .ne. unlimdimid) then
+                write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
+     &                    'file ''', ncname(node)(1:lncn), ''' has ',
+     &                'different ID for unlimited dimension than ''',
+     &                                      ncname(0)(1:lstr), '''.'
+                ierr=ierr+1
+              endif
+              if (ierr .ne. nf_noerr) then
+                mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+              endif
+            endif
+
+! Verify that the sequence of dimension names is consistent
+! throughout the entire set of variables.
+
+#define i ilegal
+            do j=1,ibuff(1)
+              ierr=nf_inq_dim (ncid(node),j,string,dimsize(j,node))
+              if (ierr .eq. nf_noerr) then
+                lstr=lenstr(string)
+                if (node.eq.0) then
+                  ldim(j)=lstr
+                  dimname(j)=string(1:lstr)
+                elseif (lstr.ne.ldim(j) .or. string(1:lstr).ne.
+     &                                 dimname(j)(1:ldim(j)) )then
+                  write(*,'(/1x,2A,I3,3A/12x,6A/12x,3A/)')    '### ',
+     &                 'ERROR: Name of dimension #', j, ', named ''',
+     &                  string(1:lstr),   ''' in netCDF file',  '''',
+     &                  ncname(node)(1:lncn),   ''' does not match ',
+     &                 'name ''',  dimname(j)(1:ldim(j)), ''' with ',
+     &                 'the corresponding name from netCDF file ''',
+     &                                  ncname(0)(1:lncn),    '''.'
+                  mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+                endif                   ! error not based on ierr so using mayday.
+              else
+                write(*,'(/1x,2A,I3/12x,3A/12x,A)')    '### ERROR: ',
+     &            'Cannot determine name and size of dimension #', j,
+     &            'in netCDF file ''',   ncname(node)(1:lncn), '''.',
+     &                                             nf_strerror(ierr)
+                mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+              endif
+            enddo
+#undef i
+
+
+      end subroutine check_ndims_nvars_natts  !]
+
+! ----------------------------------------------------------------------
+      subroutine create_catalog_of_var_names_IDs_ranks( node )  ![
+
+      ![Create catalog of variable names, IDs, and ranks (number of
+      ! dimensions) throughout the entire set. The meaning of the arrays
+      ! defined here is as follows:
+      !
+      !     nvars    -- total number of variables discovered;
+      !     vname(i), where i=1:nvars -- variable name;
+      !     vid(i,node) -- netCDF ID for that variable in netCDF file for
+      !                      MPI node "node", where node=0:nnodes-1;
+      !     vdims(i) -- "rank", i.e. namber of dimensions of that variable;
+      !     vnode(i) -- the file index for the lowest MPI node where the
+      !                 variable has been found, or has achieved first time
+      !                 its full rank (this is needed to differentiate
+      !                 between the true variable and its proxy "dummy
+      !                 scalar", if partit creates one, e.g., in the case
+      !                 of boundary forcing variable in inner MPI node,
+      !]                 where it is not needed).
+
+      implicit none
+
+      integer, intent(in) :: node
+
+            if (node.eq.0) nvars=0
+            do i=1,ibuff(2)
+              ierr=nf_inq_varname (ncid(node), i, string)
+              if (ierr .eq. nf_noerr) then
+                lstr=lenstr(string)
+                ierr=nf_inq_varndims (ncid(node), i, k)
+                if (ierr .eq. nf_noerr) then
+                  lnewvar=.true.
+                  do j=1,nvars
+                    lvar=lenstr(vname(j))
+                    if (lstr.eq.lvar .and. string(1:lstr)
+     &                               .eq.vname(j)(1:lvar)) then
+                      lnewvar=.false.
+                      vid(j,node)=i
+                      if (k.gt.vdims(j)) then
+                        vdims(j)=k
+                        vnode(j)=node
+                      endif
+                    endif
+                  enddo
+                  if (lnewvar) then
+                    nvars=nvars+1
+                    vname(nvars)=string(1:lstr)
+                    vid(nvars,node)=i
+                    vnode(nvars)=node
+                    vdims(nvars)=k
+                  endif
+                else
+                  write(*,'(/1x,3A,I3/12x,5A/12x,A)')  '### ERROR: ',
+     &                      'Cannot determine number of dimensions ',
+     &                      'for variable with id =', i,  'named ''',
+     &                       string(1:lstr),  ''' in netCDF file ''',
+     &                       ncname(node)(1:lncn), '''.',
+     &                                             nf_strerror(ierr)
+                  mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+                endif
+              else
+                write(*,'(/1x,2A,I3/12x,3A/12x,A)')    '### ERROR: ',
+     &                 'Cannot determine name of variable with id =',
+     &                  i, 'in netCDF file ''', ncname(node)(1:lncn),
+     &                                      '''.', nf_strerror(ierr)
+                mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
+              endif
+            enddo
+
+      end subroutine create_catalog_of_var_names_IDs_ranks  !]
+
 ! ----------------------------------------------------------------------
 
       end module ncjoin_mod

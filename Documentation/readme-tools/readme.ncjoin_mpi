@@ -67,7 +67,7 @@ Large-memory requirements:
 	Charges are based on either the number of cores or the fraction of the memory requested, whichever 
 	is larger! So if you request 64 cores, only request 1000G of memory.
 	The following command shows what percentage of the memory you used in the run once complete: seff jobid
-	Note, 'large-shared' costs 8x more in allocation, so only use if needed!
+	Note, 'large-shared' costs 4x more in allocation, so only use if needed!
 
 
 ROMS output compression:

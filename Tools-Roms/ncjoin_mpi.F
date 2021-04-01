@@ -368,17 +368,19 @@ c--#define MPIVERBOSE
 
       call setup_mpi
 
-  11  nnodes=-1 ! DevinD repeated to get 'goto' outside of master only region, as called by all procs.
+  11  nnodes=-1       ! DevinD repeated to get 'goto' outside of master only region, as called by all procs.
+      mayday=.false.  ! reset mayday flag
 
       if(my_rank==0) then  ! MPI MASTER ONLY: PRE-PROCESSING. i.e. check input files, creating output file, etc.
                            ! Extract a set of files which cover the whole physical grid.
 
-        call check_partial_file_set    ! PART 1: CHECK ALL INPUT PARTIAL FILES ARE CORRECT
-        if     (ierr.ne.nf_noerr) then
-          goto 97  ! Taken from within check_partial_file_set as can't have goto
-        elseif (complete==.false.) then
-          goto 23  ! Taken from within check_partial_file_set as can't have goto
-        endif
+        write(*,'(/1x,A/)') 'Pre-processing input files...'
+
+        call check_partial_file_set  ! PART 1: CHECK ALL INPUT PARTIAL FILES ARE CORRECT
+        if (mayday) goto 23          ! Using goto the break from if(my_rank==0)
+                                     ! Only other idea I can think of is using
+                                     ! select case (my_rank)
+                                     !   case (0) ... as I can use exit with this but not for if.
 
       ![ PART 2: VERIFY ALL VARIABLES & DIMENSIONS:
 
@@ -410,156 +412,11 @@ c--#define MPIVERBOSE
 
           if (ierr .eq. nf_noerr) then
 
-            ierr=nf_inq (ncid(node), ibuff(1), ibuff(2),
-     &                               ibuff(3), ibuff(4))
-            if (ierr .ne. nf_noerr) then
-              write(*,'(/1x,4A/12x,A/)')  '### ERROR: Cannot make ',
-     &                        'general inquiry into netCDF file ''',
-     &               ncname(node)(1:lncn), '''.', nf_strerror(ierr)
-              goto 97
-            elseif (ibuff(1) .gt. maxdims) then
-              write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
-     &         'number of dimensions', ibuff(1), 'in netCDF file ''',
-     &          ncname(node)(1:lncn),    '''',   'exceeds limit.  ',
-     &             'Increase parameter maxdims in file "ncjoin.F".'
-              goto 97
-            elseif (ibuff(2) .gt. maxvars) then
-              write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
-     &         'number of variables',  ibuff(2), 'in netCDF file ''',
-     &          ncname(node)(1:lncn),  '''',      'exceeds limit. ',
-     &             'Increase parameter maxvars in file "ncjoin.F".'
-              goto 97
-            elseif (node.eq.0) then
-              ndims=ibuff(1)
-c**           nvars=ibuff(2) 
-              ngatts=ibuff(3)
-              unlimdimid=ibuff(4)
-            else
-              if (ibuff(1) .ne. ndims) then
-                write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
-     &                    'file ''', ncname(node)(1:lncn), ''' has ',
-     &                    'different number of dimensions than ''',
-     &                                       ncname(0)(1:lstr), '''.'
-                ierr=ierr+1
-              endif
-c**           if (ibuff(2) .ne. nvars) then
-c**             write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
-c**  &                    'file ''', ncname(node)(1:lncn), ''' has ',
-c**  &                       'different number of variables than ''',
-c**  &                                      ncname(0)(1:lstr), '''.'
-c**             ierr=ierr+1
-c**           endif
-              if (ibuff(3) .ne. ngatts) then
-                write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
-     &                   'file ''',  ncname(node)(1:lncn), ''' has ',
-     &               'different number of global attributes than ''',
-     &                                       ncname(0)(1:lstr),'''.'
-                ierr=ierr+1
-              endif 
-              if (ibuff(4) .ne. unlimdimid) then
-                write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
-     &                    'file ''', ncname(node)(1:lncn), ''' has ',
-     &                'different ID for unlimited dimension than ''',
-     &                                      ncname(0)(1:lstr), '''.'
-                ierr=ierr+1
-              endif
-              if (ierr .ne. nf_noerr) goto 97 
-            endif
+            call check_ndims_nvars_natts(node)
+            if (mayday) goto 23
 
-
-! Verify that the sequence of dimension names is consistent
-! throughout the entire set of variables.
-
-#define i ilegal
-            do j=1,ibuff(1)
-              ierr=nf_inq_dim (ncid(node),j,string,dimsize(j,node))
-              if (ierr .eq. nf_noerr) then
-                lstr=lenstr(string)
-                if (node.eq.0) then
-                  ldim(j)=lstr
-                  dimname(j)=string(1:lstr)
-                elseif (lstr.ne.ldim(j) .or. string(1:lstr).ne.
-     &                                 dimname(j)(1:ldim(j)) )then
-                  write(*,'(/1x,2A,I3,3A/12x,6A/12x,3A/)')    '### ',
-     &                 'ERROR: Name of dimension #', j, ', named ''',
-     &                  string(1:lstr),   ''' in netCDF file',  '''',
-     &                  ncname(node)(1:lncn),   ''' does not match ',
-     &                 'name ''',  dimname(j)(1:ldim(j)), ''' with ',
-     &                 'the corresponding name from netCDF file ''',
-     &                                  ncname(0)(1:lncn),    '''.'
-                  goto 97
-                endif
-              else
-                write(*,'(/1x,2A,I3/12x,3A/12x,A)')    '### ERROR: ',
-     &            'Cannot determine name and size of dimension #', j,
-     &            'in netCDF file ''',   ncname(node)(1:lncn), '''.',
-     &                                             nf_strerror(ierr)
-                goto 97
-              endif
-            enddo
-#undef i
-
-! Create catalog of variable names, IDs, and ranks (number of
-! dimensions) throughout the entire set. The meaning of the arrays
-! defined here is as follows:
-!
-!     nvars    -- total number of variables discovered;
-!     vname(i), where i=1:nvars -- variable name; 
-!     vid(i,node) -- netCDF ID for that variable in netCDF file for
-!                      MPI node "node", where node=0:nnodes-1;
-!     vdims(i) -- "rank", i.e. namber of dimensions of that variable;
-!     vnode(i) -- the file index for the lowest MPI node where the
-!                 variable has been found, or has achieved first time
-!                 its full rank (this is needed to differentiate
-!                 between the true variable and its proxy "dummy
-!                 scalar", if partit creates one, e.g., in the case
-!                 of boundary forcing variable in inner MPI node,
-!                 where it is not needed).   
-
-            if (node.eq.0) nvars=0 
-            do i=1,ibuff(2)
-              ierr=nf_inq_varname (ncid(node), i, string)
-              if (ierr .eq. nf_noerr) then
-                lstr=lenstr(string)
-                ierr=nf_inq_varndims (ncid(node), i, k)
-                if (ierr .eq. nf_noerr) then
-                  lnewvar=.true.
-                  do j=1,nvars
-                    lvar=lenstr(vname(j))
-                    if (lstr.eq.lvar .and. string(1:lstr)
-     &                               .eq.vname(j)(1:lvar)) then
-                      lnewvar=.false.
-                      vid(j,node)=i
-                      if (k.gt.vdims(j)) then
-                        vdims(j)=k
-                        vnode(j)=node
-                      endif
-                    endif
-                  enddo
-                  if (lnewvar) then
-                    nvars=nvars+1
-                    vname(nvars)=string(1:lstr)
-                    vid(nvars,node)=i
-                    vnode(nvars)=node
-                    vdims(nvars)=k
-                  endif
-                else
-                  write(*,'(/1x,3A,I3/12x,5A/12x,A)')  '### ERROR: ',
-     &                      'Cannot determine number of dimensions ',
-     &                      'for variable with id =', i,  'named ''',
-     &                       string(1:lstr),  ''' in netCDF file ''',
-     &                       ncname(node)(1:lncn), '''.',
-     &                                             nf_strerror(ierr)
-                  goto 97
-                endif
-              else
-                write(*,'(/1x,2A,I3/12x,3A/12x,A)')    '### ERROR: ',
-     &                 'Cannot determine name of variable with id =',
-     &                  i, 'in netCDF file ''', ncname(node)(1:lncn),
-     &                                      '''.', nf_strerror(ierr)
-                goto 97
-              endif
-            enddo
+            call create_catalog_of_var_names_IDs_ranks(node)
+            if (mayday) goto 23
 
             if (node.gt.0) then           ! close all the files, except for node=0.
               ierr=nf_close(ncid(node))   ! since master only, need to close files to open collectively later.
@@ -990,7 +847,8 @@ c**           endif
                 if(my_rank==0) write(*,'(3(A,i5))')' n_x= ',n_x,' n_y= ',n_y,
      &                                             ' n_z= ',n_z
                 if(my_rank==0) print *,'chunk sizing of var:', vname(i)
-                if(my_rank==0) print *,'chunksize_x= ',chunksize_x(i),' chunksize_y= ',chunksize_y(i)
+                if(my_rank==0) print *,'chunksize_x= ',chunksize_x(i),
+     &                                ' chunksize_y= ',chunksize_y(i)
                 if(my_rank==0) print *,'n_chunks_x= ',n_chunks_x(i),
      &                                ' n_chunks_y= ',n_chunks_y(i)
                 if(my_rank==0) print *,'p_chunks_x= ',p_chunks_x(i),
@@ -1150,11 +1008,13 @@ c**           endif
 
       call MPI_Barrier(MPI_COMM_WORLD, ierr) ! Might not be necessary.
 
+      call MPI_BCAST(mayday,    1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
       call MPI_BCAST(complete,  1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
       call MPI_BCAST(arg,   1, MPI_INT, 0, MPI_COMM_WORLD, ierr)          ! Need for catch at end of program
       call MPI_BCAST(nargs, 1, MPI_INT, 0, MPI_COMM_WORLD, ierr)
+      if (mayday==.true.) goto 97
 
-      if (complete) then  ! Covers entire read/write section of code
+      if (complete) then  ! Covers entire read/write section of code. Probably not required anymore.
                           ! Needed to skip last file is not partial file (i.e. his.0000.nc)
 
         call MPI_BCAST(nvars,  1, MPI_INT, 0, MPI_COMM_WORLD, ierr) ! Once working group scalars together and send in

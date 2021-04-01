@@ -6,7 +6,7 @@
 
 #       If using less than 128 cores then the partition is 'shared' 
 #       or 'large-shared' if extra memory is needed (only use if 'shared' failed due to memory error).
-#       Note, the job charge costs 8x more for 'large-shared' than 'shared' or 'compute', use allocation wisely!
+#       Note, the job charge costs 4x more for 'large-shared' than 'shared' or 'compute', use allocation wisely!
 #SBATCH --partition=shared
 #SBATCH --nodes=1
 
