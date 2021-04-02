@@ -333,38 +333,8 @@ c--#define MPIVERBOSE
       !   END USER INPUT          ! ncjoin_mpi will tell you at run time if number is too low (i.e. guess_nnodes < nnodes_in_proc).
       ! ***************************************************************
 
-      ![ DECLARATION OF VARIABLES:
 
-#ifdef TIMING
-      call etime(CPU_time, tstart)
-      nclk=1
-      call system_clock (iclk(nclk), clk_rate, clk_max)
-      iclk_init=iclk(nclk)
-      net_read_clk=0       ! Set all timing counters
-      net_read_size=0
-      net_wrt_size=0
-      net_wrt_clk =0
-      net_sync_clk=0
-      net_assm_clk=0
-      net_gray_clk=0
-      net_fcrt_clk=0
-#endif
-#ifdef DEL_PART_FILES
-      del_part_files=.false.
-# ifdef TIMING
-      net_rmcmd_clk=0
-# endif
-#endif
-      ntest=-1                         ! initialize sizes of buffer
-      maxnodes=-1                      ! arrays to be allocated. Here
-      max_buff_size=0                  ! "max_*" means the needed size,
-      alloc_buff_size=0                ! and "alloc_*" is the size of
-                                       ! the actually allocated array.
-      nargs=iargc()
-      arg=2          ! start at 2+1 since first 2 arguements are mpi sub-domain values np_x & np_y
-
-      !] ---------------- PROGRAM STARTS ---------------------
-
+      call init_timing_and_vars
 
       call setup_mpi
 
