@@ -2,7 +2,7 @@
 
       subroutine def_rst(total_rec, ierr)  ! Create or open
                                            ! restart netCDF file.
-      use bgc ! def_rst_bgc_diag
+
       use tracers, only: t_vname, t_lname, t_units, wrt_t
 
       implicit none
@@ -355,15 +355,6 @@
 # endif
 #endif /* SOLVE3D */
 
-      ! Define BGC diag variables
-      ! -------------------------
-#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-        call def_rst_bgc_diag(r2dgrd
-# ifdef SOLVE3D
-     &                      , r3dgrd
-# endif
-     &                               )
-#endif
 
 ! Leave definition mode.                  Also initialize record
 ! ----- ---------- -----                  dimension size to zero.

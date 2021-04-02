@@ -4,7 +4,6 @@
                               ! netCDF file.
 
       use tracers, only: wrt_rst_trc
-      use bgc ! wrt_rst_bgc_diag
 
       implicit none
 #include "param.h"
@@ -196,9 +195,6 @@
 # endif
 #endif /* SOLVE3D */
 
-#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-      call wrt_rst_bgc_diag(record, ierr)
-#endif
 
   1   format(/1x, '### ERROR: wrt_rst :: Cannot write variable ''',
      &             A, ''' into restart file, rec =', i6, 3x,A,i4/)

@@ -67,9 +67,7 @@
 #endif
 #ifdef BEC2_DIAG
       public def_his_bgc_diag
-      public def_rst_bgc_diag
       public wrt_his_bgc_diag
-      public wrt_rst_bgc_diag
 # ifdef AVERAGES
       public def_avg_bgc_diag
       public wrt_avg_bgc_diag
@@ -251,45 +249,6 @@
 ! ----------------------------------------------------------------------
 
 #ifdef BEC2_DIAG
-      subroutine def_rst_bgc_diag(r2dgrd
-#ifdef SOLVE3D
-     &                           ,r3dgrd
-#endif
-     &                                  )
-
-      ! Define history/avg file variables for BEC2_DIAG
-      ! Taken from def_his.F of ETH code.
-      ! Called from def_his.F
-
-      implicit none
-
-      ! Inputs
-      integer r2dgrd(3) !, u2dgrd(3), v2dgrd(3)
-#ifdef SOLVE3D
-     &      , r3dgrd(4) !, u3dgrd(4), v3dgrd(4), w3dgrd(4)
-#endif
-      ! Local
-      integer idiag, ierr
-
-      ! 2d diagnostics:
-      do idiag=1,nr_bec2_diag_2d
-        call nc_define_var(ncrst, vname_bec2_diag_2d(1,idiag),
-     &     vname_bec2_diag_2d(2,idiag), vname_bec2_diag_2d(3,idiag),
-     &     r2dgrd, ierr )
-      enddo
-
-      ! 3d diagnostics:
-      do idiag=1,nr_bec2_diag_3d
-        call nc_define_var(ncrst, vname_bec2_diag_3d(1,idiag),
-     &    vname_bec2_diag_3d(2,idiag), vname_bec2_diag_3d(3,idiag),
-     &    r3dgrd, ierr )
-      enddo
-
-      end subroutine def_rst_bgc_diag
-#endif /* BEC2_DIAG */
-! ----------------------------------------------------------------------
-
-#ifdef BEC2_DIAG
       subroutine wrt_his_bgc_diag (record, ierr)
       ! Write BEC2_DIAG to history file
       implicit none
@@ -351,33 +310,6 @@
       end subroutine wrt_avg_bgc_diag
 #endif /* BEC2_DIAG */
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
-
-#ifdef BEC2_DIAG
-      subroutine wrt_rst_bgc_diag (record, ierr)
-      ! Write BEC2_DIAG to restart file
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr ! Error handling
-      ! local
-      integer itrc
-
-      ! 2d diagnostics:
-      do itrc=1,nr_bec2_diag_2d
-        call nc_write_var(ncrst, bec2_diag_2d(START_2D_ARRAY,itrc),
-     &          1, vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
-      end do
-
-      ! 3d diagnostics:
-      do itrc=1,nr_bec2_diag_3d
-        call nc_write_var(ncrst, bec2_diag_3d(START_2D_ARRAY,1,itrc),
-     &          N, vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
-      end do
-
-      end subroutine wrt_rst_bgc_diag
-#endif /* BEC2_DIAG */
 ! ----------------------------------------------------------------------
 
 #ifdef AVERAGES
