@@ -21,7 +21,7 @@
      &                    margin_E=(NSUB_E*size_E-Mm)/2
 #endif
 
-
+! 2021/03: currently ALLOW_SINGLE_BLOCK_MODE is not defined.
 #ifdef ALLOW_SINGLE_BLOCK_MODE
 C$    integer trd, omp_get_thread_num
       if (tile==NSUB_X*NSUB_E) then

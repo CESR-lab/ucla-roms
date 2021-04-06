@@ -1,0 +1,6 @@
+This simulation is designed to check that read_write.F (specifically find_new_record) handles start up between input files.
+As well as find correct next step in new file. 
+Hence, wind file is split up across multiple time records.
+
+Simulations should start between record 2 of sample_wnd_12.nc and record 1 of sample_wnd_33.nc.
+Around step 80 it should read in record 2 of sample_wnd_34.nc.

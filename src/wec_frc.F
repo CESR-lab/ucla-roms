@@ -1723,7 +1723,7 @@ c      gam2=9./8.
           ! so this routine provides irec = irec - 1 for first time.
           ! Must make sure model time format (secs/days) matches data time
           ! Hence tdays as input data times are in days
-          call find_new_record(wec_awv_name,wec_tim_name,tdays,ifile,irec)
+          call find_new_record(wec_awv_name,wec_tim_name,tdays,ifile,irec,wec_tim(it1))
 
           ! Reading is only done by master processor hence C$OMP MASTER
 C$OMP MASTER
@@ -1767,7 +1767,7 @@ C$OMP BARRIER
         ! the first record with wec_time > tday
         ! Must make sure model time format (secs/days) matches data time
         ! Hence tdays as input data times are in days
-        call find_new_record(wec_awv_name,wec_tim_name,tdays,ifile,irec)
+        call find_new_record(wec_awv_name,wec_tim_name,tdays,ifile,irec,wec_tim(it2))
 
              ! Causes heisenbug
 !             if (mynode==0) print *,'irec=',irec ! Debug

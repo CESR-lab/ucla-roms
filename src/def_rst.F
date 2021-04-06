@@ -3,7 +3,8 @@
       subroutine def_rst(total_rec, ierr)  ! Create or open
                                            ! restart netCDF file.
 
-      use tracers, only: t_vname, t_lname, t_units, wrt_t
+      use tracers,    only: t_vname, t_lname, t_units, wrt_t
+      use read_write, only: output_root_name
 
       implicit none
       integer total_rec, ierr
@@ -37,7 +38,14 @@
 ! where, 1 =< record_within_the_file =< records_per_file, so that
 ! total_record changes continuously throughout the sequence of files.
 
-      ierr=0 ; lrst=lenstr(rstname)
+      ierr=0
+      rstname=trim(output_root_name) / / '_rst.nc'
+      lrst=lenstr(rstname)
+#if defined MPI && defined PARALLEL_FILES
+        ! Insert MPI node numbers to file name
+        call insert_node(rstname, lrst, mynode, NNODES, ierr)  ! previously done in ncdf_create_file:
+#endif
+      lrst=lenstr(rstname)
       if (nrpfrst > 0) then
         lvar=total_rec - (1+mod(total_rec-1, nrpfrst))
         call insert_time_index (rstname, lrst, lvar, ierr)

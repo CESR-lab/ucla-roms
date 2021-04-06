@@ -476,7 +476,7 @@ c          if (iic>60) nwrt=1 !<-- useful for debugging
         endif
 
 #ifdef AVERAGES
-        if (mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
+        if (iic > ntsavg .and. mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
      &      call wrt_avg
 #endif
 C$OMP END MASTER
