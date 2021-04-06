@@ -569,28 +569,20 @@ C$OMP BARRIER
       real    :: cff1,cff2  ! for time interpolations
       real    :: tmid_days
 
-      tmid_days = tdays + 0.5*dt*sec2day ! input data times in days. Interpolated time is based on 1/2 step time
+      tmid_days = tdays + 0.5*dt*sec2day    ! input data times in days. Interpolated time is based on 1/2 step time
 
       if (var_times(it2) < tmid_days) then  ! need to refresh data
 
-        if (FIRST_TIME_STEP) then ! Only first timestep
+        if (var_file_indx == 0) then        ! initially only
 
 C$OMP MASTER
           call find_new_record( var_name, var_time_name, tmid_days,
      &                          var_file_indx, var_irec, var_times(it1) )
 
-          call read_small_arrays( var_file_indx, var_irec,
-     &                       var_name, var_times(it1), var_time_name,
-     &                       dim1, dim2,var_data(:,:,it1) )
-C$OMP END MASTER
-C$OMP BARRIER
+          call read_small_arrays( var_file_indx, var_irec, var_name, var_times(it1),
+     &                            dim1, dim2,var_data(:,:,it1) )
 
-          if (mynode == 0) then
-            write(*,'(4x,2A,5x,A,G14.6,1x,A,I4)')  ! USE NEW WRAPPER HERE
-     &               'set_small_array :: read var: ', var_name,
-     &               'var_input_time (days) =',var_times(it1),
-     &               'rec =',var_irec MYID
-          endif
+          if (mynode == 0) call display_read_time_to_log( var_name, var_times(it1), var_irec )
 
         else
           tmp = it1
@@ -598,22 +590,16 @@ C$OMP BARRIER
           it2 = tmp
         endif
 
-C$OMP MASTER
         call find_new_record( var_name, var_time_name, tmid_days,
      &                        var_file_indx, var_irec, var_times(it2) )
 
-        call read_small_arrays( var_file_indx, var_irec,
-     &                     var_name, var_times(it2), var_time_name,
-     &                     dim1, dim2, var_data(:,:,it2) )
+        call read_small_arrays( var_file_indx, var_irec, var_name, var_times(it2),
+     &                          dim1, dim2, var_data(:,:,it2) )
+
 C$OMP END MASTER
 C$OMP BARRIER
 
-        if (mynode == 0) then
-          write(*,'(4x,2A,5x,A,G14.6,1x,A,I4)')    ! USE NEW WRAPPER HERE
-     &               'set_small_array :: read var: ', var_name,
-     &               'var_input_time (days) =',var_times(it2),
-     &               'rec =', var_irec MYID
-        endif
+        if (mynode == 0) call display_read_time_to_log( var_name, var_times(it2), var_irec )
 
       endif ! -> END OF UPDATING VARIABLE INPUT DATA
 
@@ -633,49 +619,34 @@ C$OMP BARRIER
         write(*,'(/1x,4A/3(1x,A,F16.10)/)') 'ERROR: set_small_array',
      &  ':: Model time outside bounds of variable (times):',
      &     var_name, var_time_name,
-     &                    'start =', var_times(it1),
-     &                    'tmid_days =',     tmid_days,
-     &                    'end =',   var_times(it2)
+     &                    'start =',    var_times(it1),
+     &                    'tmid_days=', tmid_days,
+     &                    'end =',      var_times(it2)
         error stop 'ERROR: set_small_array :: time interpolation error'
       endif
 
       end subroutine set_small_arrays  !]
 
 ! ----------------------------------------------------------------------
-      subroutine read_small_arrays( var_file_indx, irec,             ![
-     &    var_name, var_time, var_time_name, dim1, dim2, var_array )
+      subroutine read_small_arrays( var_file_indx, irec, var_name,     ![
+     &                              var_time, dim1, dim2, var_array )
 
       ! Wrapper to read small array 1D or 2D from netcdf input file
 
       implicit none
 
       ! input/output
-      integer, intent(in) :: var_file_indx
-      integer, intent(in) :: irec
-      character(len=*), intent(in) :: var_name ! Variable short name
-      real, dimension(1) :: var_time
-      character(len=*), intent(in) :: var_time_name
-      integer, intent(in) :: dim1, dim2 ! Dimensions of variable (dim2=1 if 1D)
-      real :: var_array(dim1, dim2,1) ! variables array to record
+      integer,            intent(in)  :: var_file_indx
+      integer,            intent(in)  :: irec
+      character(len=*),   intent(in)  :: var_name
+      real, dimension(1), intent(in)  :: var_time
+      integer,            intent(in)  :: dim1, dim2              ! Dimensions of variable (dim2=1 if 1D)
+      real,               intent(out) :: var_array(dim1, dim2,1) ! variables array to record
 
       ! local
-      integer ierr,ncid, start(4), count(4), i, j
-      integer :: var_tid, var_id ! Variable time_id
-      real    :: buff(dim1*dim2) ! 1D version of variable array
-
-      ! read the time
-      ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)  ! Open file
-      ierr=nf90_inq_varid(ncid, var_time_name, var_tid)           ! Get time ID (varid)
-      ierr=nf90_get_var(ncid, var_tid, var_time, (/irec/), (/1/)) ! Get var_time
-
-      ! Fix time for cyclical forcing file if applicable
-      if(cycle_length/=0.) then
-        call cycle_length_handling(var_time, ncid, var_tid,
-     &                             var_time_name, irec )
-      endif
-!      if(mynode==0) then ! debug
-!      print*,'read_var_frc: var_time=',var_time,' time_model=',tdays+0.5*dt*sec2day ! debug
-!      endif
+      integer :: ierr,ncid, start(4), count(4), i, j
+      integer :: var_tid, var_id                      ! Variable time_id
+      real    :: buff(dim1*dim2)                      ! 1D version of variable array
 
       ! DevinD: don't need to read into buff array anymore! Can read into multi-dim array!
 
@@ -693,8 +664,9 @@ C$OMP BARRIER
       endif
 
       ! read variable
-      ierr=nf90_inq_varid(ncid, var_name, var_id) ! get variable ID var_id
-      ierr=nf90_get_var(ncid, var_id, buff, start,count) ! buff is vector of coarse grid array
+      ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)  ! Open file
+      ierr=nf90_inq_varid(ncid, var_name, var_id)                 ! get variable ID var_id
+      ierr=nf90_get_var(ncid, var_id, buff, start,count)          ! read 2D grid array into 1D 'buff' variable
       if(ierr/=0) call handle_ierr(ierr,var_name)
       ierr=nf90_close(ncid)
 
@@ -775,31 +747,25 @@ C$OMP BARRIER
 
       implicit none
 
-      ! Needed for 'N'
-!#include "param.h"
+      ! inputs/outputs
+      integer,           intent(out)   :: ncid
+      character(len=32), intent(inout) :: fname           ! desired netcdf file name
+      integer,           intent(inout) :: prev_fill_mode  ! Needed for nf90_set_fill
+      integer,           intent(in)    :: rec_per_file    ! records per file
+      integer,           intent(in)    :: total_rec       ! Total netcdf records so far for these variables
 
-      ! Inputs
-      ! ------
-      integer, intent(out) :: ncid ! netcdf file ID
-      character(len=32), intent(inout) :: fname ! desired netcdf file name
-      integer, intent(inout) :: prev_fill_mode  ! Needed for nf90_set_fill
-      integer, intent(in)    :: rec_per_file    ! records per file
-      integer, intent(in)    :: total_rec       ! Total netcdf records so far for these variables
-      ! Associated dimension arrays (e.g. r2dgrd = xi_r, eta_r, time)
-      integer, intent(out) :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
+      integer,           intent(out)   :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)  ! associated dimension arrays (e.g. r2dgrd = xi_r, eta_r, time)
 #ifdef SOLVE3D
-     &                      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+     &                                  , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
 
-      ! Local
-      ! -----
-      integer var_id_tmp, lfnm, lvar, lenstr, lstr
-      character(len=64) :: fname_tmp ! Taken from read_inp.F
-      integer :: ierr = 0 ! Set local no_error
-      integer timedim(1) ! Made it (1). Can remain local as time defined here
+      ! local
+      integer           :: var_id_tmp, lfnm, lvar, lenstr, lstr
+      character(len=64) :: fname_tmp
+      integer           :: ierr = 0    ! set local no_error
+      integer           :: timedim(1)  ! Made it (1). Can remain local as time defined here
 
-      ! External function needed
-      integer, external :: my_nf_def_dim
+      integer, external :: my_nf_def_dim  ! external function needed
 
       ! Common
       ! Need ncvars.h for xi_rho, xi_u, eta_rho, eta_v and iaux
@@ -1173,65 +1139,48 @@ C$OMP BARRIER
       ! =====================================
 
       ! Similar to old get_forces.F
-
       ! This is based on ncid being common to all variables.
       ! Would be better if takes in file_id, and then computes ncid
       ! WEC used this because ncid already calculated in read_wec_var
 
       implicit none
 
-      ! Input variables
-      ! ---------------
+      ! inputs/outputs
+      integer,          intent(in) :: ncid                            ! netcdf file ID
+      integer,          intent(in) :: nmax                            ! nmax - number of vertical indices (=1 if 2D variable), so can handle 2D or 3D arrays
+      real,             intent(in) :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
+      integer,          intent(in) :: record                          ! timestep to record
+      character(len=*), intent(in) :: var_name
+      integer,          intent(in) :: var_type                        ! variable type: u-, v- or rho-point
+      integer                      :: ierr                            ! track netcdf errors
+      integer, optional            :: coarse                          ! whether function is interpolated from coarse data
 
-      integer, intent(in) :: ncid ! netcdf file ID
-      ! nmax - number of vertical indices (=1 if 2D variable)
-      ! this process needed so ncdf_read can handle both
-      ! 2D or 3D variable arrays
-      integer, intent(in) :: nmax
-      ! param.h & cppdefs.h needed for var_array for GLOBAL_2D_ARRAY
-!#include "param.h"
-      real, intent(in) :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
-      integer, intent(in) :: record ! Timestep to record
-      ! Similar to vname(1,inx) from old ncvars.h
-      character(len=*), intent(in) :: var_name ! Variable short name
-      integer, intent(in)  :: var_type ! variable type: u-, v- or rho-point
-      integer ierr ! Track netcdf errors
+      ! local
+      integer var_id  ! variable ID
 
-      integer, optional :: coarse ! Whether function is interpolated from coarse data
 
-      ! Local variables
-      ! ---------------
-      integer var_id ! variable ID
-
-      ! Subroutine
-      ! ==========
-
-      ! Check if 'coarse' is available as optional arguement, if not set to 0
-      if(.not. present(coarse))then
+      if(.not. present(coarse))then  ! check if 'coarse' is available as optional arguement, if not set to 0
         coarse=0
       endif
 
-      ! Get variable ID
-      ierr = nf90_inq_varid (ncid,var_name,var_id)
+      ierr = nf90_inq_varid (ncid,var_name,var_id)  ! get variable ID
       if(ierr .ne. nf90_noerr) goto 2
 
       ! Read variable
 
-      if(coarse==1) then ! INTERPOLATED CASE: read coarse grid data
+      if(coarse==1) then ! INTERPOLATED CASE: read forcing from coarse grid
 
         ierr = ncdf_read_coarser_grid(ncid, var_id, record,
-     &                           var_type, var_array, nmax) ! grid type, array, nmax
+     &                           var_type, var_array, nmax)
 
-      else ! NORMAL CASE: Reading forcing from same sized grid
+      else               ! NORMAL CASE: read forcing from same sized grid
 
         ierr = ncdf_read_mod(ncid, var_id, record,
      &                           var_type, var_array, nmax)
 
       endif
 
-      ! Error handling
-      ! --------------
-
+      ! error handling
   2   if (ierr .ne. nf90_noerr) then
         write(*,1) var_name, record MYID
         goto 99                                         !--> ERROR
