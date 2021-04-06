@@ -227,7 +227,7 @@
           enddo
           write(*,'(7x,A,1x,A,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
      &      'wrt_rst :: wrote restart, tdays =', tstring(i:i+8),
-     &      'step =', ibuff(1),  'rec =', record, '/',  nrechis
+     &      'step =', ibuff(1),  'rec =', record, '/',  nrecrst
      &       MYID
 #ifdef MPI_SILENT_MODE
         endif

@@ -623,15 +623,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
         elseif (keyword(1:kwlen) == 'restart') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) nrst, nrpfrst
-          read(input,'(A)',err=95)  fname
-          lstr=lenstr(fname)
-#if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
-#endif
-          rstname=fname(1:lstr)
-          mpi_master_only write(*,'(1x,A,I8, 2x,A,I5, 2x,3A)')
-     &          'restart :: nrst =',nrst, 'rec/file =', nrpfrst,
-     &                        'file =''', rstname(1:lstr), ''''
+          mpi_master_only write(*,'(1x,A,I8, 2x,A,I5)')
+     &          'restart :: nrst =',nrst, 'rec/file =', nrpfrst
 #ifndef SOLVE3D
           nrst=nrst*ndtfast
 #endif
@@ -642,19 +635,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
         elseif (keyword(1:kwlen) == 'history') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) ldefhis, nwrt, nrpfhis
-          ! DevinD removed reading history file name as now it comes
-          ! from output_root_name in read_write.F
-!          read(input,'(A)',err=95) fname
-!          lstr=lenstr(fname)
-!#if defined MPI && defined PARALLEL_FILES
-!          call insert_node(fname, lstr, mynode, NNODES, ierr)
-!#endif
-!          hisname=fname(1:lstr)
-          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4,2x,3A)')
-     &       'history :: overwrite = ', ldefhis,      'nwrt =', nwrt,
-     &       'rec/file =', nrpfhis,
-!     &       'file = ''',hisname(1:lstr),
-     &       ''''
+          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4)')
+     &       'history :: overwrite = ', ldefhis, 'nwrt =', nwrt,
+     &       'rec/file =', nrpfhis
 #ifndef SOLVE3D
           nwrt=nwrt*ndtfast
 #endif
@@ -743,15 +726,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
         elseif (keyword(1:kwlen) == 'averages') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) ntsavg, navg, nrpfavg
-          read(input,'(A)',err=95) fname
-          lstr=lenstr(fname)
-# if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
-# endif
-          avgname=fname(1:lstr)
-          mpi_master_only write(*,'(/1x,A,I5,2x,A,I5,2x,A,I4,2x,3A)')
+          mpi_master_only write(*,'(/1x,A,I5,2x,A,I5,2x,A,I4)')
      &       'averages :: ntsavg = ', ntsavg,      'navg =', navg,
-     &       'rec/file =', nrpfavg, 'file = ''', avgname(1:lstr), ''''
+     &       'rec/file =', nrpfavg
 # ifndef SOLVE3D
           ntsavg=ntsavg*ndtfast ; navg=navg*ndtfast
 # endif

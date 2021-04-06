@@ -1,0 +1,3 @@
+Create restart file with:   do_roms_make_restart.sh
+
+Run from restart file with: do_roms_from_restart.sh
