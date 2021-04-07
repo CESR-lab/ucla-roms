@@ -417,7 +417,7 @@ c--#define MPIVERBOSE
 
       !] END PART 2: VERIFY ALL VARIABLES & DIMENSIONS
 
-        call create_joined_file                                        ! PART 3:
+        call create_joined_chunked_file                                ! PART 3:
         if (mayday) goto 97
 
   23    if(my_rank==0) write(*,'(/1x,A/)')

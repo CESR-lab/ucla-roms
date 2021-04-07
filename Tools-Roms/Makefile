@@ -37,6 +37,9 @@ nc3to4z: nc3to4z.o lenstr.o read_string.o
 mpc: mpc.F Makefile
 	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
+	
+join_child_bry: ncjoin_mod.o join_child_bry.o  lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o join_child_bry ncjoin_mod.o join_child_bry.o lenstr.o  $(LCDF)
 
 clean:
 	/bin/rm -f *.f *.o *.a *.s *.trace
