@@ -84,6 +84,11 @@ c--#define MPIVERBOSE
       integer           :: deflate_level  ! compression level for joined file
       logical           :: shuffle        ! shuffle on for extra compression (nc3to4z had this).
 
+      ! ------ CHILD_BRY VARS -------------
+      integer :: global_south_bry_size    ! size of join dimension in child boundary file
+      integer :: global_west_bry_size
+      integer, dimension(4) :: vid_out    ! variable ID's in joined output file
+
       ! ------ ORIGINAL NCJOIN VARS -------
 
       integer, parameter :: maxdims=32  ! max allowed dimensions in file (change as required)
@@ -232,6 +237,8 @@ c--#define MPIVERBOSE
 
   2     arg=arg+1 ! cycle through argument list of names of partitioned files by
                   ! coming back here with 'goto 2' after each filename.
+                  ! Struggled to remove all goto's here. Can atleast use 'do while'
+                  ! with 'cycle'.
 
         call getarg(arg,nctestname) ! get arguements from calling ncjoin arg1 ...
         lncn=lenstr(nctestname)     ! e.g. ncjoin his.0000.*.nc will actually send in his.0000.00.nc his.0000.01.nc ...
@@ -877,55 +884,16 @@ c**           endif
       end subroutine indentify_boundary_edges  !]
 
 ! ----------------------------------------------------------------------
-      subroutine create_joined_file  ![
-      implicit none
+      subroutine create_joined_chunked_file  ![
+      implicit none                          !  create joined file with chunking for compression
 
       ! Create combined netCDF file:   Once the completeness of the set of
       !------- -------- ------ -----   partial files have been established
       ! and dimensions survive consistency check, create the combined file,
       ! define its dimensions and copy global attributes.
 
-        i=lenstr(root_bak)
-        if (sffx_bak(1:1).ne.' ') then
-          j=lenstr(sffx_bak)
-          if (root_bak(i:i).eq.'.' .and. sffx_bak(1:1).eq.'.') then
-            nctargname=root_bak(1:i)/ /sffx_bak(2:j)
-          else
-            nctargname=root_bak(1:i)/ /sffx_bak(1:j)
-          endif
-        else
-          nctargname=root_bak(1:i)
-        endif
-        ltrg=lenstr(nctargname)
-
-        j=0
-        do i=1,ltrg
-          if (nctargname(i:i).eq.'/') j=i+1
-        enddo
-        if (j.gt.0) then
-          nctargname=nctargname(j:ltrg)
-          ltrg=ltrg-j+1
-        endif
-
-!--> create...
-
-!        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO),       ! for not master only version that worked with independent mode!
-!     &                    nctarg, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
-        ierr=nf90_create (nctargname(1:ltrg), NF90_NETCDF4, nctarg)                 ! Master only works!
-!        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO), nctarg) ! Master only didn't work (hdf error at write)
-        if (ierr .eq. nf_noerr) then
-          if(my_rank==0) write(*,'(/1x,3A)')  'Created netCDF file ''',
-     &                        nctargname(1:ltrg), '''.'
-          if(my_rank==0) write(*,'(1x,A,I1)')
-     &      '-> compression level (deflate_level) = ', deflate_level
-          if(my_rank==0) write(*,*)
-     &      '-> compression shuffle = ', shuffle
-        else
-          write(*,'(/1x,4A/12x,A/)')     '### ERROR: Cannot create ',
-     &                          'netCDF file ''', nctargname(1:ltrg),
-     &                                      '''.', nf_strerror(ierr)
-          mayday=.true.; return ! goto 97
-        endif
+      call create_joined_empty_file
+      if(mayday) return                ! return if error occured in create_joined_empty_file
 
 ! Define dimensions: also compute the size of buffer needed to
 ! accommodate the largest array.
@@ -978,47 +946,8 @@ c**           endif
           endif
         enddo ! <-- i loop over dimensions
 
-! Copy all global attributes, except 'partition'.
-
-# ifdef VERBOSE
-        write(*,'(1x,A)') 'Copying global attributes:'
-# endif
-        lncn=lenstr(ncname(0))
-        if (ncid(0).eq.-1) ierr=nf_open (ncname(0), nf_nowrite,
-     &                                                 ncid(0))
-        if (ierr .eq. nf_noerr) then
-
-          do i=1,ngatts
-            ierr=nf_inq_attname (ncid(0), nf_global, i, string)
-            if (ierr. eq. nf_noerr) then
-              lvar=lenstr(string)
-              if (string(1:lvar) .ne. 'partition') then
-                ierr=nf_copy_att (ncid(0), nf_global, string(1:lvar),
-     &                                             nctarg, nf_global)
-                if (ierr .ne. nf_noerr) then
-                  write(*,'(/1x,4A/12x,3A/12x,A)')     '### ERROR: ',
-     &             'Cannot copy global attribute ''', string(1:lvar),
-     &             ''' into netCDF',  'file ''',  nctargname(1:ltrg),
-     &                                     '''.',  nf_strerror(ierr)
-                  mayday=.true.; return ! goto 97
-                endif
-# ifdef VERBOSE
-                if(my_rank==0) write(*,'(20x,3A)') '''', string(1:lvar), ''''
-# endif
-              endif
-            else
-            write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: Cannot',
-     &                    ' determine name of global attribute #', i,
-     &                     'from netCDF file ''',  ncname(0)(1:lncn),
-     &                                     '''.',  nf_strerror(ierr)
-              mayday=.true.; return ! goto 97
-            endif
-          enddo
-        else
-          write(*,'(/1x,A,1x,3A/14x,A)')     '### ERROR: Cannot open ',
-     &   'netCDF file ''', ncname(0)(1:lncn), '''.', nf_strerror(ierr)
-          mayday=.true.; return ! goto 97
-        endif
+        call copy_global_attributes
+        if(mayday) return
 
 ! Define variables and copy their attributes.
 
@@ -1270,7 +1199,103 @@ c**           endif
         if(my_rank==0) write(*,'(/1x,A)') 'Leaving definition mode.'
 # endif
 
-      end subroutine create_joined_file  !]
+      end subroutine create_joined_chunked_file  !]
+
+! ----------------------------------------------------------------------
+      subroutine create_joined_empty_file  ![
+      implicit none
+
+        i=lenstr(root_bak)
+        if (sffx_bak(1:1).ne.' ') then
+          j=lenstr(sffx_bak)
+          if (root_bak(i:i).eq.'.' .and. sffx_bak(1:1).eq.'.') then
+            nctargname=root_bak(1:i)/ /sffx_bak(2:j)
+          else
+            nctargname=root_bak(1:i)/ /sffx_bak(1:j)
+          endif
+        else
+          nctargname=root_bak(1:i)
+        endif
+        ltrg=lenstr(nctargname)
+
+        j=0
+        do i=1,ltrg
+          if (nctargname(i:i).eq.'/') j=i+1
+        enddo
+        if (j.gt.0) then
+          nctargname=nctargname(j:ltrg)
+          ltrg=ltrg-j+1
+        endif
+
+!--> create...
+
+!        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO),       ! for not master only version that worked with independent mode!
+!     &                    nctarg, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
+        ierr=nf90_create (nctargname(1:ltrg), NF90_NETCDF4, nctarg)                 ! Master only works!
+!        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO), nctarg) ! Master only didn't work (hdf error at write)
+        if (ierr .eq. nf_noerr) then
+          if(my_rank==0) write(*,'(/1x,3A)')  'Created netCDF file ''',
+     &                        nctargname(1:ltrg), '''.'
+          if(my_rank==0) write(*,'(1x,A,I1)')
+     &      '-> compression level (deflate_level) = ', deflate_level
+          if(my_rank==0) write(*,*)
+     &      '-> compression shuffle = ', shuffle
+        else
+          write(*,'(/1x,4A/12x,A/)')     '### ERROR: Cannot create ',
+     &                          'netCDF file ''', nctargname(1:ltrg),
+     &                                      '''.', nf_strerror(ierr)
+          mayday=.true.; return ! goto 97
+        endif
+
+      end subroutine create_joined_empty_file
+
+! ----------------------------------------------------------------------
+      subroutine copy_global_attributes  ![
+      implicit none
+
+! Copy all global attributes, except 'partition'.
+
+# ifdef VERBOSE
+        write(*,'(1x,A)') 'Copying global attributes:'
+# endif
+        lncn=lenstr(ncname(0))
+        if (ncid(0).eq.-1) ierr=nf_open (ncname(0), nf_nowrite,
+     &                                                 ncid(0))
+        if (ierr .eq. nf_noerr) then
+
+          do i=1,ngatts
+            ierr=nf_inq_attname (ncid(0), nf_global, i, string)
+            if (ierr. eq. nf_noerr) then
+              lvar=lenstr(string)
+              if (string(1:lvar) .ne. 'partition') then
+                ierr=nf_copy_att (ncid(0), nf_global, string(1:lvar),
+     &                                             nctarg, nf_global)
+                if (ierr .ne. nf_noerr) then
+                  write(*,'(/1x,4A/12x,3A/12x,A)')     '### ERROR: ',
+     &             'Cannot copy global attribute ''', string(1:lvar),
+     &             ''' into netCDF',  'file ''',  nctargname(1:ltrg),
+     &                                     '''.',  nf_strerror(ierr)
+                  mayday=.true.; return ! goto 97
+                endif
+# ifdef VERBOSE
+                if(my_rank==0) write(*,'(20x,3A)') '''', string(1:lvar), ''''
+# endif
+              endif
+            else
+            write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: Cannot',
+     &                    ' determine name of global attribute #', i,
+     &                     'from netCDF file ''',  ncname(0)(1:lncn),
+     &                                     '''.',  nf_strerror(ierr)
+              mayday=.true.; return ! goto 97
+            endif
+          enddo
+        else
+          write(*,'(/1x,A,1x,3A/14x,A)')     '### ERROR: Cannot open ',
+     &   'netCDF file ''', ncname(0)(1:lncn), '''.', nf_strerror(ierr)
+          mayday=.true.; return ! goto 97
+        endif
+
+      end subroutine copy_global_attributes  !]
 
 ! ----------------------------------------------------------------------
       subroutine exchange_mpi_master_pre_processing_to_all  ![
@@ -2137,6 +2162,112 @@ c**           endif
 #endif
 
       end subroutine close_file_set  !]
+
+! ----------------------------------------------------------------------
+! JOIN_CHILD_BRY ROUTINES:
+! ----------------------------------------------------------------------
+      subroutine determine_global_child_bry_dims      ![
+      implicit none
+
+      ! Determine the size of global child dimensions
+      ! in order to create joined child file
+
+      ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'global_south_size', global_south_bry_size)
+      ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'global_west_size', global_west_bry_size)
+
+      end subroutine determine_global_child_bry_dims  !]
+
+! ----------------------------------------------------------------------
+      subroutine create_joined_child_file  ![
+      implicit none
+
+      call create_joined_empty_file
+      if(mayday) return
+
+      call copy_global_attributes
+      if(mayday) return
+
+      ! Define dimensions
+
+      ierr=nf_def_dim (nctarg, 'xi_rho',                 ! dimname(i)(1:lvar),
+     &                 global_south_bry_size, dimid(1))  ! hardcoded 1 and dimsize(i,nnodes)
+      ierr=nf_def_dim (nctarg, 'eta_rho',
+     &                 global_west_bry_size,  dimid(2))
+      ierr=nf_def_dim (nctarg, 'rec_time', 0, dimid(3))  ! 0 for unlimited
+
+      ! Define variables
+
+      ierr=nf90_def_var (nctarg, 'i_south', NF90_FLOAT, ! vartype(i),
+     &                  (/dimid(1),dimid(3)/), vid_out(1)) ! dimids(1:vdims(i),i), varid(i)
+      ierr=nf90_def_var (nctarg, 'i_west', NF90_FLOAT,
+     &                  (/dimid(2),dimid(3)/), vid_out(2))
+      ierr=nf90_def_var (nctarg, 'i_north', NF90_FLOAT,
+     &                  (/dimid(1),dimid(3)/), vid_out(3))
+      ierr=nf90_def_var (nctarg, 'i_east', NF90_FLOAT,
+     &                  (/dimid(2),dimid(3)/), vid_out(4))
+
+      ! Leave definition mode
+
+!      ierr=nf90_close(ncid(0)) ! close last input file. completed master only reads
+!      ncid(0)=-1
+
+      ierr=nf_enddef (nctarg)
+!      ierr=nf90_close(nctarg)  ! no need to close since serial
+
+# ifdef VERBOSE
+      if(my_rank==0) write(*,'(/1x,A)') 'Leaving definition mode.'
+# endif
+
+      end subroutine create_joined_child_file  !]
+
+! ----------------------------------------------------------------------
+      subroutine read_write_child_bry  ![
+      implicit none
+
+      ! local
+      integer :: in_varid, len_dim
+      integer, dimension(2)           :: child_start, child_count=1, dimids
+      real, dimension(:), allocatable :: bry_data
+      character(len=12) :: dimname
+
+      ! get start and count attributes
+      if (ncid(node).eq.-1)
+     &  ierr=nf90_open (ncname(node), nf90_nowrite, ncid(node))
+
+      ierr = nf90_get_att(ncid(node), vid(i,node), 'start', child_start(1))
+      ierr = nf90_get_att(ncid(node), vid(i,node), 'count', child_count(1))
+
+      if (child_count(1) /= 0) then  ! only write if parent has child boundary (0 if not)
+
+        ! read variable
+        if (allocated(bry_data)) deallocate (bry_data)
+        allocate (bry_data(child_count(1)))
+        ierr = nf90_get_var( ncid(node), vid(i,node), bry_data )
+        if(ierr/=0) print *, 'read ierr=', nf90_strerror(ierr), 'node=', node
+
+        ! write variable
+        child_start(2)=1 ! rec  ! set recorded timestep
+!        ierr = nf90_inq_varid( nctarg, 'i_south', vid_out )
+
+!        ierr = nf90_inquire_variable(nctarg, vid_out, dimids=dimids)
+!        ierr = nf90_inquire_dimension(nctarg, dimids(1), dimname, len_dim)
+!        print *, 'dim1=',dimname, 'len=',len_dim, 'node=',node
+!        ierr = nf90_inquire_dimension(nctarg, dimids(2), dimname, len_dim)
+!        print *, 'dim1=',dimname, 'len=',len_dim, 'node=',node
+!        print *, 'child_start=',child_start, 'node=',node
+!        print *, 'child_count=',child_count, 'node=',node
+
+        ierr = nf90_put_var( nctarg, vid_out(i), bry_data,
+     &                       start=child_start, count=child_count )
+
+!        print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
+
+      endif
+
+      ! Need to close and sync for time being.
+      ierr=nf90_sync (nctarg) ! debug only
+
+      end subroutine read_write_child_bry  !]
 
 ! ----------------------------------------------------------------------
 
