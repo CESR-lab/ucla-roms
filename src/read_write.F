@@ -1,6 +1,6 @@
       module read_write
 
-      ![INFO:===========================================================
+      ![INFO: ---------------------------------------------------------
       !
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020)
       !
@@ -11,12 +11,12 @@
       ! Length is limited to 26 characters, because output_file_names
       ! are appended with frame and node number and are limited to 32
 
-      ! DevinD - this clashes with dimensions which contains ncvars.h
+      ! Horizontal Grid Type Codes =  0,1,2,3 (RHO-, U-, V-, PSI-points)
+      ! This clashes with dimensions which contains ncvars.h
       ! where these variables live. But soon ncvars should be moved from
       ! dimensions and put into this module or another plan be made.
-      ! Horizontal Grid Type Codes =  0,1,2,3 (RHO-, U-, V-, PSI-points)
       ! for reading and writing to correct grid types
-      !] ==================================================================
+      !] --------------------------------------------------------------
 
       use dimensions  ! has dimensions, a list of forcing files, and rmask
       use netcdf
@@ -197,8 +197,8 @@ C$OMP BARRIER
       end subroutine set_frc_var_tile  !]
 
 ! ----------------------------------------------------------------------
-      subroutine find_new_record( vname,     time_name, time_model,
-     &                            file_indx, irec,      vtime       )  ![
+      subroutine find_new_record( vname,     time_name, time_model,    ![
+     &                            file_indx, irec,      vtime       )
 
       ![================================================================= 
       ! Finds the index for the filename and record number of the first record
@@ -468,9 +468,9 @@ C$OMP BARRIER
       end subroutine cycle_length_handling  !]
 
 !-----------------------------------------------------------------------
-      subroutine get_time_max_recs(ncid, time_name, max_recs)  ![ get total number of time
-      implicit none                                            !  records for time variable
-
+      subroutine get_time_max_recs(ncid, time_name, max_recs)  ![
+      implicit none                                            !  get total number of time
+                                                               !  records for time variable
       ! input/output
       integer,         intent(in) :: ncid
       character(len=*),intent(in) :: time_name
@@ -493,8 +493,8 @@ C$OMP BARRIER
       end subroutine get_time_max_recs  !]
 
 !-----------------------------------------------------------------------
-      subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![ Confirm read in variable, time & record.
-      implicit none
+      subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![
+      implicit none                                                      !  Confirm read in variable, time & record.
 
       character(len=*), intent(in) :: var_name
       integer,          intent(in) :: var_irec
@@ -912,29 +912,30 @@ C$OMP BARRIER
       subroutine nc_define_var(ncid,var_name,var_long_name,var_units,  ![
      &                              var_grd,ierr)
 
-      ! =======================================
-      ! Define variables for output netcdf file
-      ! =======================================
-
+      ![Define variables for output netcdf file
       ! Flow of function calls taken from old def_his.F
+      ! Note:
+      ! - nf90 functionality no longer requires number of dimensions
+      !   assume it can work it out from size of array var_grd.
+      ! - Since 'maya' machine has 2014 ifort, it complains when taking
+      !   in var_name with trailing spaces. Hence send in only required
+      !   characters 'lvar'. Remove this step when maya is updated.
+      ! - Default compression chosen at level 1, since this almost halves
+      !   size of full ocean node (greater reductions if land present in
+      !   node). Set 'deflate_level=0' for no compression.  !]
 
       implicit none
 
-      ! Input variables
-      ! ---------------
+      ! inputs
+      integer,               intent(in) :: ncid
+      character(len=*),      intent(in) :: var_name, var_long_name, var_units
+      integer, dimension(:), intent(in) :: var_grd                             ! dould be 2d or 3d grid
+      integer                           :: ierr
 
-      integer, intent(in) :: ncid ! netcdf file ID
-      ! Variable attributes - similar to vname() from old roms ncvars.h
-      character(len=*), intent(in) :: var_name, var_long_name, var_units
-      integer, dimension(:), intent(in)  :: var_grd ! Could be 2d or 3d grid
-      integer ierr ! Track netcdf errors
+      ! local
+      integer var_id, lvar, lenstr
 
-      ! Local variables
-      ! ---------------
 
-      integer var_id, lvar, lenstr ! variable ID
-
-      ! Taken from def_his.F
 #ifdef MASK_LAND_DATA
 # ifdef HIS_DOUBLE
       real*8, parameter :: spv_set=1.D+33
@@ -943,45 +944,24 @@ C$OMP BARRIER
 # endif
 #endif
 
-      ! Define variables
-      ! ================
-
-      ! Set variable short name:
-        ! Note:
-        ! - nf90 functionality no longer requires number of dimensions
-        !   assume it can work it out from size of array var_grd.
-        ! - Since 'maya' machine has 2014 ifort, it complains when taking
-        !   in var_name with trailing spaces. Hence send in only required
-        !   characters 'lvar'. Remove this step when maya is updated.
-        ! - Default compression chosen at level 1, since this almost halves
-        !   size of full ocean node (greater reductions if land present in
-        !   node). Set 'deflate_level=0' for no compression.
       lvar=lenstr(var_name)
       ierr=nf90_def_var (ncid, var_name(1:lvar), nf90_float,
      &                         var_grd, var_id,
      &                         deflate_level=deflate_level, shuffle=shuffle)
       if(ierr .ne. nf90_noerr) goto 2
-      ! Old code:
-      !      ierr=nf_def_var (ncid, var_name(1:lvar), nf_float,
-      !     &                       var_dims, var_grd, his_var)
 
-      ! Set variable long name
-      ierr=nf90_put_att (ncid, var_id, 'long_name', var_long_name)
+      ierr=nf90_put_att (ncid, var_id, 'long_name', var_long_name)  ! set variable long name
       if(ierr .ne. nf90_noerr) goto 2
 
-      ! Set variable units
-      ierr=nf90_put_att (ncid, var_id, 'units', var_units)
+      ierr=nf90_put_att (ncid, var_id, 'units', var_units)          ! set variable units
       if(ierr .ne. nf90_noerr) goto 2
 
-      ! Set variable masking fill value
 #ifdef MASK_LAND_DATA
-      ierr=nf90_put_att (ncid, var_id, '_FillValue', spv_set)
+      ierr=nf90_put_att (ncid, var_id, '_FillValue', spv_set)       ! set variable masking fill value
       if(ierr .ne. nf90_noerr) goto 2
 #endif
 
       ! Error handling
-      ! --------------
-
   2   if (ierr .ne. nf90_noerr) then
         write(*,1) var_name MYID
         goto 99                                         !--> ERROR
@@ -1001,55 +981,34 @@ C$OMP BARRIER
       subroutine nc_write_var(ncid,var_array,nmax,var_name,  ![
      &                             var_type,record,ierr)
 
-      ! =====================================
-      ! Write variables to output netcdf file
-      ! =====================================
-
+      ! Write one variable to output netcdf file
       ! Taken from old wrt_his.F
 
       implicit none
 
-      ! Input variables
-      ! ---------------
+      ! inputs/outputs
+      integer,          intent(in) :: ncid
+      integer,          intent(in) :: nmax                            ! number of vertical levels (=1 if 2D variable)
+      real                         :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record. Will be changed with ncdf_write_mod.
+      character(len=*), intent(in) :: var_name
+      integer,          intent(in) :: var_type                        ! variable type: u-, v- or rho-point
+      integer,          intent(in) :: record                          ! timestep to record
+      integer                      :: ierr
 
-      integer, intent(in) :: ncid ! netcdf file ID
-      ! nmax - number of vertical indices (=1 if 2D variable)
-      ! this process needed so ncdf_write can handle both
-      ! 2D or 3D variable arrays
-      integer, intent(in) :: nmax
-      ! param.h & cppdefs.h needed for var_array for GLOBAL_2D_ARRAY
-!#include "param.h"
-      real, intent(in)    :: var_array(GLOBAL_2D_ARRAY,nmax) ! variables array to record
-      integer, intent(in) :: record ! Timestep to record
-      ! Similar to vname(1,inx) from old ncvars.h
-      character(len=*), intent(in) :: var_name ! Variable short name
-      integer, intent(in) :: var_type ! variable type: u-, v- or rho-point
-      integer ierr ! Track netcdf errors
+      ! local
+      integer :: var_id, lvar, lenstr
 
-      ! Local variables
-      ! ---------------
-      integer var_id, lvar, lenstr ! variable ID
 
-      ! Subroutine
-      ! ==========
+      lvar=lenstr(var_name)                                  ! Note: since 'maya' machine has 2014 ifort, it complains when taking
+      ierr = nf90_inq_varid (ncid,var_name(1:lvar),var_id)   ! in var_name with trailing spaces. Hence send in only required
+      if(ierr .ne. nf90_noerr) goto 2                        ! characters 'lvar'. Remove this step when maya is updated.
 
-      ! Get variable ID
-        ! Note: since 'maya' machine has 2014 ifort, it complains when taking
-        ! in var_name with trailing spaces. Hence send in only required
-        ! characters 'lvar'. Remove this step when maya is updated.
-      lvar=lenstr(var_name)
-      ierr = nf90_inq_varid (ncid,var_name(1:lvar),var_id)
-      if(ierr .ne. nf90_noerr) goto 2
-
-      ! Write variable
-      ierr = ncdf_write_mod(ncid, var_id, record, var_type, var_array, nmax)
+      ierr = ncdf_write_mod(ncid, var_id, record, var_type, var_array, nmax)  ! write variable
 
       ! Error handling
-      ! --------------
-
   2   if (ierr .ne. nf90_noerr) then
         write(*,1) var_name, record MYID
-        goto 99                                         !--> ERROR
+        goto 99
       endif
 
       ! text format for '1' in write(*,1) above
@@ -1065,37 +1024,30 @@ C$OMP BARRIER
 ! ----------------------------------------------------------------------
       subroutine nc_write_time( ncid, record, total_recs )  ![
 
-      ! =============================
-      ! Write timestep and ocean time
-      ! to output netcdf file
-      ! =====================
+      ! Write timestep and ocean time to output netcdf file
 
       implicit none
 
-      ! Inputs
-      ! ------
-      integer :: ncid
-      integer :: record     ! Current file record number
-      integer :: total_recs ! Total records for variable
+      ! inputs
+      integer, intent(in) :: ncid
+      integer, intent(in) :: record           ! current file record number
+      integer, intent(in) :: total_recs       ! total records for variable
 
-      ! Local
-      ! -----
-      integer ibuff(6), start(2), count(2) ! iaux = 6 from wrt_his.F
+      ! local
+      integer :: ibuff(6), start(2), count(2) ! iaux = 6 from wrt_his.F
       integer :: var_id_tmp, ierr
 
 
-      ibuff(1)=iic-1 ; ibuff(2)=999999     ! Time step and nrecrst=999999 DevinD hardcode
-      ibuff(4:6)=0   ; ibuff(3)=total_recs ! record numbers. iaux = 6 in ncvars.h
+      ibuff(1)=iic-1 ; ibuff(2)=999999        ! time step and nrecrst=999999 DevinD hardcode
+      ibuff(4:6)=0   ; ibuff(3)=total_recs    ! record numbers. iaux = 6 in ncvars.h
 !#ifdef AVERAGES
 !      ibuff(4)=nrecavg
 !#endif
-      start(1)=1      ; count(1)=6 ! iaux = 6 in ncvars.h
+      start(1)=1      ; count(1)=6            ! iaux = 6 in ncvars.h
       start(2)=record ; count(2)=1
 
-      ! get time step var_id & record time step info
-      ! --------------------------------------------
-      ierr=nf90_inq_varid(ncid, 'time_step', var_id_tmp)
-      ierr=nf90_put_var(ncid, var_id_tmp, ibuff, start, count)
+      ierr=nf90_inq_varid(ncid, 'time_step', var_id_tmp)        ! get time step var_id
+      ierr=nf90_put_var(ncid, var_id_tmp, ibuff, start, count)  ! & record time step info
       if (ierr /= nf90_noerr) then
         if (mynode==0) then
           write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') 'ERROR: read_write :: ',
@@ -1106,9 +1058,7 @@ C$OMP BARRIER
       endif
 
 
-      ! get ocean_time var_id & record ocean_time
-      ! -----------------------------------------
-
+      ! get ocean_time var_id & record ocean_time:
       ! Which one to write into the file, time or tdays, is decided by attribute
       ! "units" stored as vname(3,indxTime).  When computng time is always
       ! in seconds, however it is more convenient to have it in days in all
@@ -1134,9 +1084,7 @@ C$OMP BARRIER
       subroutine nc_read_var(ncid, var_array, nmax, var_name,  ![
      &                       var_type, record, ierr, coarse)
 
-      ! =====================================
-      ! Read variables from input netcdf file
-      ! =====================================
+      ! Read one variable from input netcdf file
 
       ! Similar to old get_forces.F
       ! This is based on ncid being common to all variables.
@@ -1156,7 +1104,7 @@ C$OMP BARRIER
       integer, optional            :: coarse                          ! whether function is interpolated from coarse data
 
       ! local
-      integer var_id  ! variable ID
+      integer var_id
 
 
       if(.not. present(coarse))then  ! check if 'coarse' is available as optional arguement, if not set to 0
@@ -1166,7 +1114,6 @@ C$OMP BARRIER
       ierr = nf90_inq_varid (ncid,var_name,var_id)  ! get variable ID
       if(ierr .ne. nf90_noerr) goto 2
 
-      ! Read variable
 
       if(coarse==1) then ! INTERPOLATED CASE: read forcing from coarse grid
 
@@ -1198,36 +1145,27 @@ C$OMP BARRIER
 !-----------------------------------------------------------------------
 !      subroutine nc_check_units( var_file_indx, var_name, var_units )  ![
 !
-!      ! ===========================================
 !      ! Ensure units in file are same as roms units
-!      ! ===========================================
 !
 !      ! DevinD - not tested yet might not work. Parked for now.
 !
 !      implicit none
 !
 !      ! input/output
-!      ! ------------
-!      integer, intent(in) :: var_file_indx
-!      character(len=*), intent(in) :: var_name ! Variable short name
+!      integer,          intent(in) :: var_file_indx
+!      character(len=*), intent(in) :: var_name
 !      character(len=*), intent(in) :: var_units
 !
 !      ! local
-!      ! -----
-!      integer ierr,ncid
-!      integer var_id
+!      integer           :: ierr,ncid
+!      integer           :: var_id
 !      character(len=20) :: file_var_units ! Variable units of forcing file
 !
-!
-!      ! open the file (maybe check if the file is open already)
-!      ! =============
 !      ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
 !      call handle_ierr(ierr)
 !
-!      ! Get units
-!      ! =========
-!      ierr = nf90_inq_varid(ncid, var_name, var_id) ! Get variable ID (varid)
-!      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)
+!      ierr = nf90_inq_varid(ncid, var_name, var_id)               ! get variable ID (varid)
+!      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)  ! get units
 !
 !      if (mynode==0) print *, 'file_var_units',file_var_units
 !
