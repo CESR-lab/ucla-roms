@@ -1247,7 +1247,7 @@ c**           endif
           mayday=.true.; return ! goto 97
         endif
 
-      end subroutine create_joined_empty_file
+      end subroutine create_joined_empty_file  !]
 
 ! ----------------------------------------------------------------------
       subroutine copy_global_attributes  ![
@@ -2197,13 +2197,13 @@ c**           endif
 
       ! Define variables
 
-      ierr=nf90_def_var (nctarg, 'i_south', NF90_FLOAT, ! vartype(i),
+      ierr=nf90_def_var (nctarg, 'zeta_south', NF90_FLOAT, ! vartype(i),
      &                  (/dimid(1),dimid(3)/), vid_out(1)) ! dimids(1:vdims(i),i), varid(i)
-      ierr=nf90_def_var (nctarg, 'i_west', NF90_FLOAT,
+      ierr=nf90_def_var (nctarg, 'zeta_west', NF90_FLOAT,
      &                  (/dimid(2),dimid(3)/), vid_out(2))
-      ierr=nf90_def_var (nctarg, 'i_north', NF90_FLOAT,
+      ierr=nf90_def_var (nctarg, 'zeta_north', NF90_FLOAT,
      &                  (/dimid(1),dimid(3)/), vid_out(3))
-      ierr=nf90_def_var (nctarg, 'i_east', NF90_FLOAT,
+      ierr=nf90_def_var (nctarg, 'zeta_east', NF90_FLOAT,
      &                  (/dimid(2),dimid(3)/), vid_out(4))
 
       ! Leave definition mode

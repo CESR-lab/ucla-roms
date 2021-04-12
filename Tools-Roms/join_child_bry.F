@@ -41,7 +41,7 @@ c--#define VERBOSE
 
 
       call init_timing_and_vars
-      arg=0                       ! set this for serial version
+      arg=0                       ! set to 0 for serial version as arguments of program start at 1, unlike ncjoin_mpi.
 
       my_rank=0                   ! allows easy use of ncjoin_mpi routines
 
