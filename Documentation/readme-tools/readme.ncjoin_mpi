@@ -3,6 +3,7 @@ NCJOIN_MPI INSTRUCTIONS: (2021/03)
 
 Build:
 
+	If not done before, follow steps in Documenation/readme.1.compile-ROMS
 	cd Tools-Roms
 	make ncjoin_mpi
 	(For access to program anywhere, add to your .bashrc as per
