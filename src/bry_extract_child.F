@@ -45,8 +45,8 @@
       !    As mentioned each parent node will read in the full child boundary data.
       !    It then needs to calculate which (if any) of the child boundary fall within
       !    the parent node's range.
-      !    Since the child bry is given in i/j relative to the parent grid points,
-      !    one can simply compare the parent's node number against the child's i/j number.
+      !    Since the child bry is given in i/j relative to the parent's global grid points,
+      !    one can simply compare the parent's GP's against the child's i/j number.
       !    However, the child i/j values are relative to the global parent domain.
       !    Typically roms uses 1:Lm (istr:iend) for local xi ranges, and 1:Mm for local
       !    eta ranges of a parent node.  These are local to the parent node and
@@ -66,6 +66,11 @@
       !    The 4 parent grid points are calculated on the fly based on the floor and
       !    ceiling of the fractional i/j child numbers. I.e. child point b is interpolated
       !    from parent points A-D in DIAGRAM (A) using bilinear interpolation.
+      !
+      !    However, since the parent's variable arrays use local indexing,
+      !    e.g. i=1:Lm and j=1:Mm, we need to convert the child's global i/j position
+      !    to a local i/j position in the parent node. This way we can access the
+      !    correct entries in the local parent variable array to interpolate from.
       !
       !
       ! 4) WRITE RESULTS TO FILE:
@@ -121,6 +126,10 @@
       implicit none
       private
 
+#include "ocean2d.h"
+! scalars.h for 'knew' var
+#include "scalars.h"
+
       ! ****************************************************************
       ! USER INPUTS
       integer :: rec_rate      = 1     ! output record rate
@@ -138,22 +147,24 @@
       ! INPUT VARS:
         ! Would be cleaner to have variables 1-4 for W/S/E/N rather than loads of variables.
 
+                                                                             ! CHANGE: since i/j same length can be one var e.g. ij_west
       real, dimension(:,:), allocatable :: i_west, i_south, i_east, i_north  ! i position of child bry in parent grid
       real, dimension(:,:), allocatable :: j_west, j_south, j_east, j_north  ! j position of child bry in parent grid
 
-      integer, dimension(2)             :: west_tot=0,   south_tot=0,        ! Number of child points within parent
-     &                                     east_tot=0,   north_tot=0
-      integer, dimension(2)             :: west_c_str=0, south_c_str=0,      ! start indices of child boundary within parent
-     &                                     east_c_str=0, north_c_str=0
+      integer, dimension(2,4)           :: rho_tot=0                         ! Number of child points within parent on each boundary. 4 = s/w/n/e, 2 = 2 rows of i/j input
+     &
+      integer, dimension(2,4)           :: rho_c_str=0                       ! start indices of child boundary within parent
+     &
 
       integer :: glob_c_s, glob_c_w, glob_c_n, glob_c_e                      ! Total number of global child points along child boundary
 
       ! INTERPOLATION VARS:
       real,    dimension(:,:), allocatable :: vwest, vsouth, veast, vnorth   ! array storing interpolated variable (2D or 3D)
+                                                                             ! allocated for each var so only need one.
       real,    dimension(:,:), allocatable :: west_r_cffs, south_r_cffs,     ! 4 interpolation coefficients to interp from 4 parent points surronding child point.
      &                                        east_r_cffs, north_r_cffs      ! i=each bry point. j=1-4 (4 interpolants). Will need for u_cff, v_cff. 4 interpolation coefficients
       integer, dimension(:), allocatable   :: iw_sw, jw_sw, is_sw, js_sw,    ! sw parent interpolant i and j position
-     &                                        ie_sw, je_sw, in_sw, jn_sw
+     &                                        ie_sw, je_sw, in_sw, jn_sw     ! could merge with coefficients.
 
       ! NETCDF:
       integer            :: ncid=-1                     ! in file for child bry positions
@@ -181,19 +192,36 @@
       ! only plot if timestep is divisble by record rate
 !      if (mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
 
-      if (ncid==-1) then                       ! First time only
-        call read_child_bry
+      if (ncid==-1) then                               ! first time only
+        call read_child_bry                            ! not per variable, just r,u,v types
         call calc_child_interpolation_coeffs
       endif
 
-      ! DO INTERPOLATION:
-      call interpolate_child_bry
 
-      ! WRT CHILD BOUNDARY VALUES:
+      if(output_rec == 0) then                         ! if file doesn't yet exist or need new file
+        call create_child_output_file
+      endif
+
+      ierr=nf90_open(file_name, nf90_write, ncid_out)
+      output_rec = output_rec + 1                      ! current file record
+      total_output_rec = total_output_rec + 1          ! total number of recs written
+
+      ! zeta:
+      call interpolate_child_bry( zeta(:,:,knew), 1 )  ! , rp_var var, nz, grd_type
       call wrt_child_bry
 
-!      call MPI_Barrier(MPI_COMM_WORLD, ierr)  ! debug
-!      call MPI_Abort(MPI_COMM_WORLD, 1, ierr) ! debug
+      ! ubar:
+
+      ! vbar:
+      ! u:
+      ! v:
+      ! tracers:
+
+
+      ierr=nf90_close(ncid_out)
+      if (output_rec == recs_per_file) then  ! Reset output_rec to create new file
+        output_rec = 0
+      endif
 
 !      endif ! <- mod(iic-1,rec_rate)
 
@@ -209,20 +237,20 @@
       implicit none
 
       ! Do for 4 sides, if it has i then it must have j:
-      call assign_child_bry_to_parent(bry_name(1), i_south, j_south, south_tot,
-     &                                south_c_str, glob_c_s )
+      call assign_child_bry_to_parent(bry_name(1), i_south, j_south, rho_tot(:,1),
+     &                                rho_c_str(:,1), glob_c_s )
       call MPI_Barrier(MPI_COMM_WORLD, ierr)  ! debug
 
-      call assign_child_bry_to_parent(bry_name(2), i_west,  j_west,  west_tot ,
-     &                                west_c_str , glob_c_w )
+      call assign_child_bry_to_parent(bry_name(2), i_west,  j_west,  rho_tot(:,2),
+     &                                rho_c_str(:,2) , glob_c_w )
       call MPI_Barrier(MPI_COMM_WORLD, ierr)  ! debug
 
-      call assign_child_bry_to_parent(bry_name(3), i_north, j_north, north_tot,
-     &                                north_c_str, glob_c_n )
+      call assign_child_bry_to_parent(bry_name(3), i_north, j_north, rho_tot(:,3),
+     &                                rho_c_str(:,3), glob_c_n )
       call MPI_Barrier(MPI_COMM_WORLD, ierr)  ! debug
 
-      call assign_child_bry_to_parent(bry_name(4), i_east,  j_east,  east_tot ,
-     &                                east_c_str , glob_c_e )
+      call assign_child_bry_to_parent(bry_name(4), i_east,  j_east,  rho_tot(:,4),
+     &                                rho_c_str(:,4) , glob_c_e )
       call MPI_Barrier(MPI_COMM_WORLD, ierr)  ! debug
 
       end subroutine read_child_bry  !]
@@ -242,12 +270,13 @@
       character(len=*),                  intent(in)    :: side_name
       real, dimension(:,:), allocatable, intent(out)   :: i_bry, j_bry  ! Final lists local to parent.
       integer, dimension(2),             intent(inout) :: side_totals   ! Number of child points within parent
+      integer, dimension(2),             intent(out)   :: c_str         ! full child boundary start index falling in parent
       integer,                           intent(out)   :: dim_size      ! Size of global child boundary
 
       ! local
       integer               :: varid, ij, l, counter
       character(len=30)     :: vname
-      integer, dimension(2) :: dimids, c_str  ! full child boundary start index falling in parent
+      integer, dimension(2) :: dimids
 
       real, dimension(:,:), allocatable :: i_in_bry, j_in_bry ! Store read in child boundary
 
@@ -281,7 +310,8 @@
         do l=1,2            ! Need to check both rows as might slightly differ e.g. i=9.95 vs i=10.05
           counter=0
           do ij=1,dim_size
-
+                                                               ! Note for boundary edges, western edge glob_istr=0
+                                                               ! eatern edge and glob_iend=LLm+1. This catches child points in the ghost cell.
             if (glob_istr-0.5  <= i_in_bry(ij,l) .and.         ! Child point within parent node
      &          glob_jstr-0.5  <= j_in_bry(ij,l) .and.
      &          i_in_bry(ij,l) <  glob_iend+0.5  .and.         ! Catch +/- 0.5 to catch between parent nodes
@@ -333,19 +363,19 @@
       integer :: ij
 
       if (allocated(i_south)) then                                       ! 2 rows are orientated as per child grid. i.e. row 1 = west/south edge
-        call calc_bry_coeffs(south_tot(1), i_south(:,1), j_south(:,1),
+        call calc_bry_coeffs(rho_tot(1,1), i_south(:,1), j_south(:,1),
      &                       south_r_cffs, is_sw, js_sw)                 ! index 1 since uses southern ghost points.
       endif
       if (allocated(i_west))  then
-        call calc_bry_coeffs(west_tot(1),  i_west(:,1),  j_west(:,1),
+        call calc_bry_coeffs(rho_tot(1,2),  i_west(:,1),  j_west(:,1),
      &                       west_r_cffs,  iw_sw, jw_sw)                 ! index 1 since uses wester   ghost points.
       endif
       if (allocated(i_north)) then
-        call calc_bry_coeffs(north_tot(2), i_north(:,2), j_north(:,2),
+        call calc_bry_coeffs(rho_tot(2,3), i_north(:,2), j_north(:,2),
      &                       north_r_cffs, in_sw, jn_sw)                 ! index 2 since uses northern ghost points.
       endif
       if (allocated(i_east))  then
-        call calc_bry_coeffs(east_tot(2),  i_east(:,2),  j_east(:,2),
+        call calc_bry_coeffs(rho_tot(2,4),  i_east(:,2),  j_east(:,2),
      &                       east_r_cffs,  ie_sw, je_sw)                 ! index 2 since uses eastern  ghost points.
       endif
 
@@ -383,6 +413,9 @@
 
       implicit none
 
+      ! hidden_mpi_vars.h needed for inode & jnode to establish if boundary edge
+# include "hidden_mpi_vars.h"
+
       ! input/output
       integer,                              intent(in)  :: bry_tot     ! total child bry points in parent
       real,    dimension(bry_tot),          intent(in)  :: i_bry
@@ -398,10 +431,26 @@
       allocate( i_sw(bry_tot) )               ! i_sw is i grid point of sw parent interpolant
       allocate( j_sw(bry_tot) )
 
-      do ij=1,bry_tot
+      if(mynode==4) then
+        print *,'calcB FI-glob_istr=',floor(i_bry(1)),glob_istr,mynode
+        print *,'calcB FJ-glob_jstr=',floor(j_bry(1)),glob_jstr,mynode
+      endif
 
-        i_sw(ij) = floor(i_bry(ij)) - glob_istr          ! set the SW parent i position
-        j_sw(ij) = floor(j_bry(ij)) - glob_jstr          ! set the SW parent j position
+      do ij=1,bry_tot
+                                                       ! Since glob_istr=0 on western_edge to catch child in ghost row in assign_child_interpolation_coeffs
+                                                       ! we need to treat W & S edges diferently.
+
+        if (inode==0) then                             ! western_edge
+          i_sw(ij) = floor(i_bry(ij)) - glob_istr      ! local coords, set the SW parent i position. western edge glob_istr=0 not 1 hence no +1
+        else
+          i_sw(ij) = floor(i_bry(ij)) - glob_istr + 1  ! +1 since e.g. glob_jstr=51, j_bry=51.23 want sw corner to be 1 not 0
+        endif
+
+        if (jnode==0) then                             ! eastern_edge
+          j_sw(ij) = floor(j_bry(ij)) - glob_jstr      ! local coords, set the SW parent j position
+        else
+          j_sw(ij) = floor(j_bry(ij)) - glob_jstr + 1
+        endif
 
         ri = i_bry(ij) - floor(i_bry(ij))             ! i fraction (e.g. 23.47 - 23 = 0.47)
         rj = j_bry(ij) - floor(j_bry(ij))             ! j fraction
@@ -425,36 +474,49 @@
 
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_child_bry  ![
+      subroutine interpolate_child_bry( var, nmax )  ![
 
-      ! interpolate all boundaries if applicable
+      ! Interpolate all boundaries if applicable
 
       implicit none
 
-#include "ocean2d.h"
-! scalars.h for 'knew' var
-#include "scalars.h"
+      integer, intent(in):: nmax
+      real               :: var(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+                                                            ! wasn't able to use dimension(:,:,:), but vars start from -1 index so maybe this is safer.
 
       if (allocated(i_south))
-     &  call interpolate_one_child_bry(south_tot(1), south_r_cffs, is_sw, js_sw,
-     &                                 1, zeta(:,:,knew), vsouth)
+     &  call interpolate_one_child_bry(rho_tot(1,1), south_r_cffs, is_sw, js_sw,
+     &                                 nmax, var, vsouth)
 
       if (allocated(i_west))
-     &  call interpolate_one_child_bry(west_tot(1),  west_r_cffs,  iw_sw, jw_sw,
-     &                                 1, zeta(:,:,knew), vwest)
+     &  call interpolate_one_child_bry(rho_tot(1,2),  west_r_cffs, iw_sw, jw_sw,
+     &                                 nmax, var, vwest)
+
+      if(mynode==1) then  ! debug
+        print *, 'vwest: rho_tot=', rho_tot(1,2),'mynode',mynode
+      print *,'i/j(end)=',i_west(rho_tot(1,2),1),j_west(rho_tot(1,2),1)
+        print *,'i/jsw(end)=',iw_sw(rho_tot(1,2)),jw_sw(rho_tot(1,2))
+        print *,'vwest(end)=',vwest(rho_tot(1,2),1)
+      endif
+      if(mynode==4) then  ! debug
+        print *, 'vwest: rho_tot=', rho_tot(1,2),'mynode',mynode
+        print *,'i/j(1)=',i_west(1,1),j_west(1,1)
+        print *,'i/jsw(1)=',iw_sw(1),jw_sw(1)
+        print *,'vwest(1)=',vwest(1,1)
+      endif
 
       if (allocated(i_north))
-     &  call interpolate_one_child_bry(north_tot(1), north_r_cffs, in_sw, jn_sw,
-     &                                 1, zeta(:,:,knew), vnorth)
+     &  call interpolate_one_child_bry(rho_tot(2,3), north_r_cffs, in_sw, jn_sw,  ! Note (2) as using northern most row of data
+     &                                 nmax, var, vnorth)
 
       if (allocated(i_east))
-     &  call interpolate_one_child_bry(east_tot(1),  east_r_cffs,  ie_sw, je_sw,
-     &                                 1, zeta(:,:,knew), veast)
+     &  call interpolate_one_child_bry(rho_tot(2,4),  east_r_cffs, ie_sw, je_sw,  ! Note (2) as using eastern  most row of data
+     &                                 nmax, var, veast)
 
 
       end subroutine interpolate_child_bry  !]
 ! ----------------------------------------------------------------------
-      subroutine interpolate_one_child_bry(bry_tot, rho_cffs, i_sw, j_sw, nz, var, vbry)  ![
+      subroutine interpolate_one_child_bry(bry_tot, rho_cffs, i_sw, j_sw, nmax, var, vbry)  ![
 
       ! Interpolation coefficients already calculated in calc_child_interpolation_coeffs
 
@@ -464,8 +526,8 @@
       integer,                              intent(in)  :: bry_tot     ! total child bry points in parent
       real,    dimension(:,:),              intent(in)  :: rho_cffs    ! 4 parent interpolants for each child point
       integer, dimension(:),                intent(in)  :: i_sw, j_sw  ! i and j of sw parent interpolant
-      integer,                              intent(in)  :: nz          ! vertical layers of var (1 if 2D)
-      real,                                 intent(in)  :: var(GLOBAL_2D_ARRAY,nz)  ! parent var to interpolate from
+      integer,                              intent(in)  :: nmax        ! vertical layers of var (1 if 2D)
+      real,                                 intent(in)  :: var(GLOBAL_2D_ARRAY,nmax)  ! parent var to interpolate from
       real,    dimension(:,:), allocatable, intent(out) :: vbry        ! bry to interpolated 2D/3D var
 
 
@@ -474,17 +536,67 @@
 
       if (.not. allocated(vbry)) allocate( vbry(bry_tot, N))  ! allocate once for 3D var and reuse for all 2D/3D vars
                                                               ! maybe move this to initialization to avoid if statement repetition
-      do ij=1,bry_tot
-        do k=1,nz
+      do k=1,nmax
+        do ij=1,bry_tot
+
           vbry(ij,k) = rho_cffs(1,ij) * var(i_sw(ij)  , j_sw(ij)  , k)   ! interp from sw parent point.      Note even though 'k' index doesn't exist for 2D var,
      &               + rho_cffs(2,ij) * var(i_sw(ij)+1, j_sw(ij)  , k)   ! interp from se parent point.      fortran won't complain. This is done in ncdf_write_mod() too.
      &               + rho_cffs(3,ij) * var(i_sw(ij)  , j_sw(ij)+1, k)   ! interp from se parent point.
      &               + rho_cffs(4,ij) * var(i_sw(ij)+1, j_sw(ij)+1, k)   ! interp from se parent point.
+
         enddo
       enddo
 
-
       end subroutine interpolate_one_child_bry  !]
+
+! ----------------------------------------------------------------------
+      subroutine create_child_output_file  ![
+
+      implicit none
+
+      ! local
+      integer :: prev_fill_mode
+      integer, dimension(4) :: rho_dimid_bry   ! dimension ID for boundaries
+
+      if(total_output_rec == 0) then                            ! Add root output name to
+        file_name = trim(output_root_name) / / trim(file_name)  ! file name (only done once)
+      endif
+
+      ! For now decided each file still creates file even if not child contained in node.
+      ! so that ncjoin can still check files are correct.
+      ! Might need to then include all dimensions even if no child bry, for ncjoin to work
+      call ncdf_create_blank_file(file_name, ncid_out,  prev_fill_mode,
+     &                              recs_per_file, total_output_rec       )
+
+      ! DEFINE DIMENSIONS & VARIABLES:
+
+      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_south_size', glob_c_s)
+      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_west_size' , glob_c_w)
+      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_north_size', glob_c_n)
+      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_east_size' , glob_c_e)
+      ierr=nf90_def_dim( ncid_out, 'rec_time', 0, dimid_t)
+
+      ! rho dims:
+      ierr=nf90_def_dim( ncid_out, 'xi_rho_south', max( rho_tot(1,1), 1 ), rho_dimid_bry(1) )  ! Set size as 1 if size==0 to avoid unlimited dimension (could be confused with time in ncjoin)
+      ierr=nf90_def_dim( ncid_out, 'eta_rho_west', max( rho_tot(1,2), 1 ), rho_dimid_bry(2) )
+      ierr=nf90_def_dim( ncid_out, 'xi_rho_north', max( rho_tot(2,3), 1 ), rho_dimid_bry(3) )
+      ierr=nf90_def_dim( ncid_out, 'eta_rho_east', max( rho_tot(2,4), 1 ), rho_dimid_bry(4) )
+
+      ! u dims:
+
+      ! v dims:
+
+      ! define boundary even if not contained in parent for joining tool.
+      call define_child_bry( indxZ, rho_tot, rho_c_str, rho_dimid_bry )
+
+
+      ierr=nf90_enddef(ncid_out)  ! end definition to write changes to disk
+      if (mynode == 0) then
+        write(*,'(/1x,2A/)')
+     &     'bry_extract_child :: created new netCDF file ', file_name
+      endif
+
+      end subroutine create_child_output_file  !]
 
 ! ----------------------------------------------------------------------
       subroutine wrt_child_bry  ![
@@ -492,65 +604,20 @@
       ! Each sub-domain writes out its portion of child boundary if applicable.
       ! all procs, make child bc netcdf file, only relevant procs define bc variables (east, north, etc)
 
-      ! For simplicity have only one variable based on the longest of the 2 rows.
-      ! Can add row length as attribute for ncjoin to know how far to go.
-      ! Can still write based on length
-
       implicit none
 
       ! local
-      integer               :: prev_fill_mode, varid
+      integer               :: varid
       integer               :: dimid, dim_len ! debug only
       integer, dimension(2) :: start
 
-      if(total_output_rec == 0) then                            ! Add root output name to
-        file_name = trim(output_root_name) / / trim(file_name)  ! file name (only done once)
-      endif
 
-      if(output_rec == 0) then  ! file doesn't yet exist or need new file
-
-        ! For now decided each file still creates file even if not child contained in node.
-        ! so that ncjoin can still check files are correct.
-        ! Might need to then include all dimensions even if no child bry, for ncjoin to work
-        call ncdf_create_blank_file(file_name, ncid_out,  prev_fill_mode,
-     &                              recs_per_file, total_output_rec       )
-
-        ! DEFINE DIMENSIONS & VARIABLES:
-
-        ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_south_size', glob_c_s)
-        ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_west_size' , glob_c_w)
-        ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_north_size', glob_c_n)
-        ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_east_size' , glob_c_e)
-        ierr=nf90_def_dim( ncid_out, 'rec_time', 0, dimid_t)
-
-!        if (allocated(i_south)) then  ! contains south child boundary ! define boundary even if not contained in parent for joining tool.
-        call define_child_bry( 'zeta_south', 'xi_rho_south', south_tot, south_c_str, indxZ )
-!        endif
-        call define_child_bry( 'zeta_west' , 'eta_rho_west', west_tot , west_c_str,  indxZ )
-        call define_child_bry( 'zeta_north', 'xi_rho_north', north_tot, north_c_str, indxZ )
-        call define_child_bry( 'zeta_east' , 'eta_rho_east', east_tot , east_c_str,  indxZ )
-
-        ierr=nf90_enddef(ncid_out)  ! end definition to write changes to disk
-        if (mynode == 0) then
-          write(*,'(/1x,2A/)')
-     &     'bry_extract_child :: created new netCDF file ', file_name
-        endif
-
-      endif ! <- (output_rec == 0; needed to create a file)
-
-
-      ! WRITE VARIABLES TO OUTPUT:
-
-      ierr=nf90_open(file_name, nf90_write, ncid_out)
-
-      output_rec = output_rec + 1              ! Current file record
-      total_output_rec = total_output_rec + 1  ! total number of recs written
       start=(/1,1/) ! (/1,output_rec/)
 
       ierr=nf90_inq_varid(ncid_out, 'zeta_south', varid )
       if (allocated(vsouth)) then
         ierr=nf90_put_var(  ncid_out, varid    , vsouth(:,:),
-     &                      start=start, count=(/south_tot(1),1/) )
+     &                      start=start, count=(/rho_tot(1,1),1/) )
         if(ierr/=0) write(*,*) 'wrts_bry ierr= ',nf90_strerror(ierr), mynode
       else
         ! Put in dummy value so that ncjoin doesn't complain
@@ -560,7 +627,7 @@
       ierr=nf90_inq_varid(ncid_out, 'zeta_west' , varid )
       if (allocated(i_west )) then
         ierr=nf90_put_var(  ncid_out, varid    , vwest(:,:) ,
-     &                      start=start, count=(/west_tot(1),1/) )
+     &                      start=start, count=(/rho_tot(1,2),1/) )
         if(ierr/=0) write(*,*) 'wrtw_bry ierr= ',nf90_strerror(ierr), mynode
       else
         ! Put in dummy value so that ncjoin doesn't complain
@@ -570,7 +637,7 @@
       ierr=nf90_inq_varid(ncid_out, 'zeta_north', varid )
       if (allocated(i_north)) then
         ierr=nf90_put_var(  ncid_out, varid    , vnorth(:,:),
-     &                      start=start, count=(/north_tot(1),1/) )
+     &                      start=start, count=(/rho_tot(2,3),1/) )
         if(ierr/=0) write(*,*) 'wrtn_bry ierr= ',nf90_strerror(ierr), mynode
       else
         ! Put in dummy value so that ncjoin doesn't complain
@@ -580,51 +647,51 @@
       ierr=nf90_inq_varid(ncid_out, 'zeta_east' , varid )
       if (allocated(i_east )) then
         ierr=nf90_put_var(  ncid_out, varid    , veast(:,:) ,
-     &                      start=start, count=(/east_tot(1),1/) )
+     &                      start=start, count=(/rho_tot(2,4),1/) )
         if(ierr/=0) write(*,*) 'wrte_bry ierr= ',nf90_strerror(ierr), mynode
       else
         ! Put in dummy value so that ncjoin doesn't complain
         ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
       endif
 
-
-      ierr=nf90_close(ncid_out)
-
-      if (output_rec == recs_per_file) then  ! Reset output_rec to create new file
-        output_rec = 0
-      endif
-
       end subroutine wrt_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine define_child_bry( bry_name, dim_name, side_tot, side_c_str, indx_v ) ![ Define child bry variable in output netCDF file.
+      subroutine define_child_bry( indx_v, sides_tot, sides_c_str, dimid_bry ) ![ Define child bry variable in output netCDF file.
       implicit none
 
       ! input/outputs
-      character(len=*),      intent(in) :: bry_name
-      character(len=*),      intent(in) :: dim_name
-      integer, dimension(2), intent(in) :: side_tot
-      integer, dimension(2), intent(in) :: side_c_str
-      integer,               intent(in) :: indx_v
+      integer,                 intent(in) :: indx_v
+      integer, dimension(2,4), intent(in) :: sides_tot
+      integer, dimension(2,4), intent(in) :: sides_c_str
+      integer, dimension(4),   intent(in) :: dimid_bry   ! dimension ID for boundaries
 
       ! local
-      integer, dimension(4)             :: dimid_bry   ! dimension ID for boundaries
-      integer                           :: varid
-      character(len=40)                 :: lname
+      integer               :: varid, bry
+      character(len=40)     :: bname
+      character(len=60)     :: lname
+      integer, dimension(4) :: ghost_p=(/ 1, 1, 2, 2 /)  ! Ghost point position of 2 rows of input i/j
+                                                     ! for S & W row 1, for N & E row 2
 
-      ! Possibly need to check if already exists rather?
-      ierr=nf90_def_dim( ncid_out, dim_name, max( side_tot(1), 1 ), dimid_bry(1) )  ! Set size as 1 if size==0 to avoid unlimited dimension (could be confused with time in ncjoin)
+      ! loop through 4 boundaries:
 
-      lname=trim(vname(2,indx_v))                                 ! / / ' of child bry from parent simulation'
-      call nc_define_var(ncid_out, bry_name, lname,
-     &      vname(3,indx_v),                                      ! units
-     &       (/dimid_bry(1), dimid_t/), ierr )
+      lname=trim(vname(2,indx_v))
+      do bry=1,4
+
+        bname=trim(vname(1,indx_v)) / /'_'/ /trim( bry_name(bry) )
+
+        call nc_define_var(ncid_out, bname, lname,
+     &         vname(3,indx_v),                                      ! units
+     &         (/dimid_bry(bry), dimid_t/), ierr )
 
 
-      ierr=nf90_inq_varid(ncid_out, bry_name, varid)              ! ADD ATTRIBUTE WITH GLOBAL CHILD START VALUE (i.e. south_c_str)
-      ierr=nf90_put_att(ncid_out, varid, 'start', side_c_str(1))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
-      ierr=nf90_put_att(ncid_out, varid, 'count', side_tot(1))
-      ierr=nf90_put_att(ncid_out, varid, 'child_bry', 'True')     ! True is not required
+        ierr=nf90_inq_varid(ncid_out, bname, varid)              ! ADD ATTRIBUTE WITH GLOBAL CHILD START VALUE (i.e. south_c_str)
+
+        ierr=nf90_put_att(ncid_out, varid, 'start', sides_c_str( ghost_p(bry), bry ))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
+        ierr=nf90_put_att(ncid_out, varid, 'count', sides_tot(   ghost_p(bry), bry ))
+        ierr=nf90_put_att(ncid_out, varid, 'child_bry', 'True')                        ! True is not required
+
+      enddo
 
       end subroutine define_child_bry  !]
 
