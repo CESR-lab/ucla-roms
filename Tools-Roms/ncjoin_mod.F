@@ -2195,16 +2195,9 @@ c**           endif
      &                 global_west_bry_size,  dimid(2))
       ierr=nf_def_dim (nctarg, 'rec_time', 0, dimid(3))  ! 0 for unlimited
 
-      ! Define variables
+      ! Define variables & atts
 
-      ierr=nf90_def_var (nctarg, 'zeta_south', NF90_FLOAT, ! vartype(i),
-     &                  (/dimid(1),dimid(3)/), vid_out(1)) ! dimids(1:vdims(i),i), varid(i)
-      ierr=nf90_def_var (nctarg, 'zeta_west', NF90_FLOAT,
-     &                  (/dimid(2),dimid(3)/), vid_out(2))
-      ierr=nf90_def_var (nctarg, 'zeta_north', NF90_FLOAT,
-     &                  (/dimid(1),dimid(3)/), vid_out(3))
-      ierr=nf90_def_var (nctarg, 'zeta_east', NF90_FLOAT,
-     &                  (/dimid(2),dimid(3)/), vid_out(4))
+      call copy_vars_atts
 
       ! Leave definition mode
 
@@ -2226,7 +2219,7 @@ c**           endif
 
       ! local
       integer :: in_varid, len_dim
-      integer, dimension(2)           :: child_start, child_count=1, dimids
+      integer, dimension(2)           :: child_start, child_count=1, dimids, start_in=1
       real, dimension(:), allocatable :: bry_data
       character(len=12) :: dimname
 
@@ -2239,16 +2232,18 @@ c**           endif
 
       if (child_count(1) /= 0) then  ! only write if parent has child boundary (0 if not)
 
+        start_in(2)    = rec  ! set recorded timestep for read in partial bry
+        child_start(2) = rec  ! set recorded timestep for written join bry
+
         ! read variable
         if (allocated(bry_data)) deallocate (bry_data)
         allocate (bry_data(child_count(1)))
-        ierr = nf90_get_var( ncid(node), vid(i,node), bry_data )
+        ierr = nf90_get_var( ncid(node), vid(i,node), bry_data, start=start_in )
         if(ierr/=0) print *, 'read ierr=', nf90_strerror(ierr), 'node=', node
 
         ! write variable
-        child_start(2)=1 ! rec  ! set recorded timestep
-!        ierr = nf90_inq_varid( nctarg, 'i_south', vid_out )
 
+!        ierr = nf90_inq_varid( nctarg, 'i_south', vid_out )
 !        ierr = nf90_inquire_variable(nctarg, vid_out, dimids=dimids)
 !        ierr = nf90_inquire_dimension(nctarg, dimids(1), dimname, len_dim)
 !        print *, 'dim1=',dimname, 'len=',len_dim, 'node=',node
@@ -2257,7 +2252,7 @@ c**           endif
 !        print *, 'child_start=',child_start, 'node=',node
 !        print *, 'child_count=',child_count, 'node=',node
 
-        ierr = nf90_put_var( nctarg, vid_out(i), bry_data,
+        ierr = nf90_put_var( nctarg, varid(i), bry_data,
      &                       start=child_start, count=child_count )
 
 !        print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
@@ -2269,6 +2264,127 @@ c**           endif
 
       end subroutine read_write_child_bry  !]
 
+! ----------------------------------------------------------------------
+      subroutine copy_vars_atts  ![
+      implicit none              !  copy the variables and attributes for join_child_bry.
+                                 !  can't use ncjoin_mpi routine because of chunking and dimension issues,
+                                 !  since child bry sizes are different on east and west as orientation different from parent.
+
+#ifdef VERBOSE
+        if(my_rank==0) write(*,'(1x,2A)') 'Variables, their dimensions and ',
+     &                                           'attributes:'
+#endif
+
+        do i=1,nvars ! LOOP THROUGH VARS
+
+          node=vnode(i)
+          lncn=lenstr(ncname(node))
+          if (ncid(node).eq.-1) ierr=nf_open  (ncname(node),
+     &                               nf_nowrite, ncid(node))
+          if (ierr .eq. nf_noerr) then
+            ierr=nf_inq_var (ncid(node), vid(i,node), vname(i),
+     &                vartype(i), vdims(i), dimids(1,i),  varatts)
+
+            if (ierr .eq. nf_noerr) then
+              lvar=lenstr(vname(i))
+
+              if (vname(i)(lvar-4:lvar)=='south'  .or. ! DEVIND added - this doesn't catch u/v/rho
+     &            vname(i)(lvar-4:lvar)=='north') then ! hardcoded
+                dimids(1:vdims(i),i)=(/dimid(1),dimid(3)/)
+              else
+                dimids(1:vdims(i),i)=(/dimid(2),dimid(3)/)
+              endif
+
+              ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),  ! add compression here if desired
+     &                           dimids(1:vdims(i),i), varid(i))
+
+              if (ierr .eq. nf_noerr) then
+!#ifdef VERBOSE
+!                write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
+!     &              ''',  dimids =', (dimids(j,i), j=1,vdims(i))
+!#endif
+                do j=1,varatts                                         ! copy attributes
+                  ierr=nf_inq_attname (ncid(node), vid(i,node),
+     &                                              j, string)
+                  if (ierr .eq. nf_noerr) then
+                    lstr=lenstr(string)
+                    ierr=nf_copy_att (ncid(node), vid(i,node),
+     &                       string(1:lstr), nctarg, varid(i))
+                    if (ierr. ne. nf_noerr) then
+                      write(*,'(/1x,2A,I3,3A/12x,4A)')   '### ERROR: ',
+     &                 'Cannot copy attribute #', j,' for variable ''',
+     &                  vname(i)(1:lvar),  ''' into netCDF', 'file ''',
+     &                  nctargname(1:ltrg), '''.  ', nf_strerror(ierr)
+                      mayday=.true.; return ! goto 97
+                    endif
+#ifdef VERBOSE
+                    write(*,'(16x,3A)') '''', string(1:lstr), ''''
+#endif
+                  else
+                    write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: ',
+     &                             'Cannot get name of attribute #', j,
+     &                      'for variable ''', vname(i)(1:lvar), '''.',
+     &                                               nf90_strerror(ierr)
+                    mayday=.true.; return ! goto 97
+                  endif
+                enddo
+              else
+                write(*,'(/8x,5A/)') 'ERROR: Cannot define ',
+     &                  'variable ''', vname(i)(1:lvar), '''.',
+     &                   nf90_strerror(ierr)
+                mayday=.true.; return ! goto 97
+              endif
+            else
+
+            write(*,'(/8x,2A/15x,A,I3,1x,3A/)')  '### ERROR: Cannot ',
+     &        'determine name, type and attributes for variable #', i,
+     &            'from netCDF file ''', ncname(node)(1:lncn),  '''.'
+              mayday=.true.; return ! goto 97
+            endif
+
+! Determine whether partitionable dimensions or unlimited dimension
+! are present for this variable: the convention adopted here is:
+!           part_type = 0 -- non-partitionable array;
+!                     = 1 -- has partitionable XI-dimension only;
+!                     = 2 -- has partitionable ETA-dimension only;
+!                     = 3 -- partitionable in both XI and ETA.
+
+!            series(i)=.false.
+!            part_type(i)=0
+!            do j=1,vdims(i)
+!              if (dimids(j,i).eq.id_xi_rho .or.
+!     &            dimids(j,i).eq.id_xi_u) then
+!                part_type(i)=part_type(i)+1
+!              elseif (dimids(j,i).eq.id_eta_rho .or.
+!     &                dimids(j,i).eq.id_eta_v) then
+!                part_type(i)=part_type(i)+2
+!              elseif (dimids(j,i).eq.unlimdimid) then
+!                series(i)=.true.
+!              endif
+!            enddo
+
+!            if (node.gt.0) then
+!              ierr=nf90_close(ncid(node)) ! DevinD: Most vars in node==0, hence keep
+!              ncid(node)=-1               ! it open whilst looping through vars, close
+!            endif                         ! any node>0 as might not be used again.
+
+          else
+            write(*,'(/1x,A,1x,3A/12x,A)')  '### ERROR: Cannot open ',
+     &                  'netCDF file ''', ncname(node)(1:lncn), '''.',
+     &                                           nf90_strerror(ierr)
+            mayday=.true.; return ! goto 97
+          endif
+
+        enddo  ! <-- i=1,nvars, variable IDs.
+
+
+        do i=1,ndims                  ! set time record size
+          if (i.eq. unlimdimid) then
+            tsize=dimsize(i,0)
+          endif
+        enddo
+
+      end subroutine copy_vars_atts  !]
 ! ----------------------------------------------------------------------
 
       end module ncjoin_mod

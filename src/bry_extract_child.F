@@ -15,7 +15,9 @@
       !    and is read in by every mpi node.
       !    The child boundary file consists of fractional i'th and j'th positions of the
       !    child boundary points relative to the parent's index domain.
-      !    Each i'th/j'th data consists of 2 rows per boundary side.
+      !    Each i'th/j'th data consists of 2 rows per boundary side. They are orientated
+      !    as per child grid. I.e. west_bry row 1 is western most. north_bry row 1 is south side.
+      !
       !    Seen in DIAGRAM (A) below, each child point (a-f) will have a input variable
       !    giving it's i'th position, i.e. variable 'i_west', which for point b = 1.4.
       !    Another variable will hold the j'th position, i.e. 'j_west' which for point b = 1.2.
@@ -53,7 +55,16 @@
       !    thus you can't directly compare the child bry i/j to (istr:iend).
       !
       !    We need the global start and end i/j of the parent node, stored in variables:
-      !    insert names here!!!
+      !    Compare child values to parent global value using glob_istr, glob_iend.
+      !    Note, glob_istr=0 for western edge and 1 for rest. This is to catch child
+      !    points in the ghost cell.
+      !
+      !    The northern grid points of a sub-domain might have j=50, then the sub-domain
+      !    to the north will start with j=51. If the child grid point has a j value
+      !    of 50.41 in terms of the parent domain, we decide to use the midpoint to
+      !    chose which parent sub-domain to assign the child point to. For this example
+      !    the midpoint is 50.5. So the point j=50.41 would fall in the sub-domain to
+      !    the south.
       !
       !    For further explanation of local and global grid point numbering see:
       !    Documentation/readme-specifics/README.grid.2021.03
@@ -71,6 +82,8 @@
       !    e.g. i=1:Lm and j=1:Mm, we need to convert the child's global i/j position
       !    to a local i/j position in the parent node. This way we can access the
       !    correct entries in the local parent variable array to interpolate from.
+      !
+      !    Need to catch the fact that glob_istr=0 on western edge and 1 everywhere else.
       !
       !
       ! 4) WRITE RESULTS TO FILE:
@@ -208,7 +221,7 @@
 
       ! zeta:
       call interpolate_child_bry( zeta(:,:,knew), 1 )  ! , rp_var var, nz, grd_type
-      call wrt_child_bry
+      call wrt_child_bry( indxZ )
 
       ! ubar:
 
@@ -346,7 +359,9 @@
         endif
 
       else     ! Side not contained
-        if(mynode==0) write (*,*) 'No child boundary for: ', vname
+        if(mynode==0)
+     &    write (*,'(/1x,3A)') 'No child boundary in parent domain ',
+     &                         'for: ', side_name
         dim_size=0
       endif
 
@@ -431,15 +446,13 @@
       allocate( i_sw(bry_tot) )               ! i_sw is i grid point of sw parent interpolant
       allocate( j_sw(bry_tot) )
 
-      if(mynode==4) then
-        print *,'calcB FI-glob_istr=',floor(i_bry(1)),glob_istr,mynode
-        print *,'calcB FJ-glob_jstr=',floor(j_bry(1)),glob_jstr,mynode
-      endif
+!      if(mynode==4) then
+!        print *,'calcB FI-glob_istr=',floor(i_bry(1)),glob_istr,mynode
+!        print *,'calcB FJ-glob_jstr=',floor(j_bry(1)),glob_jstr,mynode
+!      endif
 
-      do ij=1,bry_tot
-                                                       ! Since glob_istr=0 on western_edge to catch child in ghost row in assign_child_interpolation_coeffs
+      do ij=1,bry_tot                                  ! Since glob_istr=0 on western_edge to catch child in ghost row in assign_child_interpolation_coeffs
                                                        ! we need to treat W & S edges diferently.
-
         if (inode==0) then                             ! western_edge
           i_sw(ij) = floor(i_bry(ij)) - glob_istr      ! local coords, set the SW parent i position. western edge glob_istr=0 not 1 hence no +1
         else
@@ -492,18 +505,18 @@
      &  call interpolate_one_child_bry(rho_tot(1,2),  west_r_cffs, iw_sw, jw_sw,
      &                                 nmax, var, vwest)
 
-      if(mynode==1) then  ! debug
-        print *, 'vwest: rho_tot=', rho_tot(1,2),'mynode',mynode
-      print *,'i/j(end)=',i_west(rho_tot(1,2),1),j_west(rho_tot(1,2),1)
-        print *,'i/jsw(end)=',iw_sw(rho_tot(1,2)),jw_sw(rho_tot(1,2))
-        print *,'vwest(end)=',vwest(rho_tot(1,2),1)
-      endif
-      if(mynode==4) then  ! debug
-        print *, 'vwest: rho_tot=', rho_tot(1,2),'mynode',mynode
-        print *,'i/j(1)=',i_west(1,1),j_west(1,1)
-        print *,'i/jsw(1)=',iw_sw(1),jw_sw(1)
-        print *,'vwest(1)=',vwest(1,1)
-      endif
+!      if(mynode==1) then  ! debug
+!        print *, 'vwest: rho_tot=', rho_tot(1,2),'mynode',mynode
+!      print *,'i/j(end)=',i_west(rho_tot(1,2),1),j_west(rho_tot(1,2),1)
+!        print *,'i/jsw(end)=',iw_sw(rho_tot(1,2)),jw_sw(rho_tot(1,2))
+!        print *,'vwest(end)=',vwest(rho_tot(1,2),1)
+!      endif
+!      if(mynode==4) then  ! debug
+!        print *, 'vwest: rho_tot=', rho_tot(1,2),'mynode',mynode
+!        print *,'i/j(1)=',i_west(1,1),j_west(1,1)
+!        print *,'i/jsw(1)=',iw_sw(1),jw_sw(1)
+!        print *,'vwest(1)=',vwest(1,1)
+!      endif
 
       if (allocated(i_north))
      &  call interpolate_one_child_bry(rho_tot(2,3), north_r_cffs, in_sw, jn_sw,  ! Note (2) as using northern most row of data
@@ -599,22 +612,26 @@
       end subroutine create_child_output_file  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_child_bry  ![
+      subroutine wrt_child_bry ( indx_v )  ![
 
       ! Each sub-domain writes out its portion of child boundary if applicable.
       ! all procs, make child bc netcdf file, only relevant procs define bc variables (east, north, etc)
 
       implicit none
 
+      ! inputs
+      integer, intent(in)   :: indx_v
       ! local
       integer               :: varid
       integer               :: dimid, dim_len ! debug only
       integer, dimension(2) :: start
+      character(len=40)     :: bname
 
 
-      start=(/1,1/) ! (/1,output_rec/)
+      start = (/1,output_rec/)
 
-      ierr=nf90_inq_varid(ncid_out, 'zeta_south', varid )
+      bname=trim(vname(1,indx_v)) / /'_south'
+      ierr=nf90_inq_varid(ncid_out, bname, varid )
       if (allocated(vsouth)) then
         ierr=nf90_put_var(  ncid_out, varid    , vsouth(:,:),
      &                      start=start, count=(/rho_tot(1,1),1/) )
@@ -624,7 +641,8 @@
         ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
       endif
 
-      ierr=nf90_inq_varid(ncid_out, 'zeta_west' , varid )
+      bname=trim(vname(1,indx_v)) / /'_west'
+      ierr=nf90_inq_varid(ncid_out, bname, varid )
       if (allocated(i_west )) then
         ierr=nf90_put_var(  ncid_out, varid    , vwest(:,:) ,
      &                      start=start, count=(/rho_tot(1,2),1/) )
@@ -634,7 +652,8 @@
         ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
       endif
 
-      ierr=nf90_inq_varid(ncid_out, 'zeta_north', varid )
+      bname=trim(vname(1,indx_v)) / /'_north'
+      ierr=nf90_inq_varid(ncid_out, bname, varid )
       if (allocated(i_north)) then
         ierr=nf90_put_var(  ncid_out, varid    , vnorth(:,:),
      &                      start=start, count=(/rho_tot(2,3),1/) )
@@ -644,7 +663,8 @@
         ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
       endif
 
-      ierr=nf90_inq_varid(ncid_out, 'zeta_east' , varid )
+      bname=trim(vname(1,indx_v)) / /'_east'
+      ierr=nf90_inq_varid(ncid_out, bname, varid )
       if (allocated(i_east )) then
         ierr=nf90_put_var(  ncid_out, varid    , veast(:,:) ,
      &                      start=start, count=(/rho_tot(2,4),1/) )
