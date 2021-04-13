@@ -131,7 +131,11 @@ c--#define VERBOSE
 
         do i=1,nvars ! LOOP THROUGH VARIABLES & WRITE EACH ONE
 
-          do rec=1,1 ! tsize ! LOOP THROUGH TIMESTEPS OF CURRENT VAR
+          lvar=lenstr(vname(i))
+          if(my_rank==0) write(*,'(16x,3A)')
+     &      'Assembly of array name = ''', vname(i)(1:lvar), ''''
+
+          do rec=1, tsize ! LOOP THROUGH TIMESTEPS OF CURRENT VAR
 
             if(my_rank==0) write(*,'(4x,A,I8,1x,A,I8,1x,A)')
      &       'Processing record', rec, 'out of', tsize,  '...'
