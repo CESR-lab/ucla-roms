@@ -15,6 +15,7 @@
       !    and is read in by every mpi node.
       !    The child boundary file consists of fractional i'th and j'th positions of the
       !    child boundary points relative to the parent's index domain.
+      !    The i/j value is -1 over a land mask and -2 if not in parent domain.
       !    Each i'th/j'th data consists of 2 rows per boundary side. They are orientated
       !    as per child grid. I.e. west_bry row 1 is western most. north_bry row 1 is south side.
       !
@@ -178,6 +179,7 @@
      &                                        east_r_cffs, north_r_cffs      ! i=each bry point. j=1-4 (4 interpolants). Will need for u_cff, v_cff. 4 interpolation coefficients
       integer, dimension(:), allocatable   :: iw_sw, jw_sw, is_sw, js_sw,    ! sw parent interpolant i and j position
      &                                        ie_sw, je_sw, in_sw, jn_sw     ! could merge with coefficients.
+      real                                 :: rt2                            ! square root of 2 stored for efficiency
 
       ! NETCDF:
       integer            :: ncid=-1                     ! in file for child bry positions
@@ -243,9 +245,6 @@
 ! ----------------------------------------------------------------------
       subroutine read_child_bry  ![
       ! Assign 4 parent GP from which to interpolate 1 child BP. Done only once.
-
-      ! a) Loop through contained child BP's from part 1) and find 4 enclosing parent GP's.
-      ! b) Calulate (once) interpolation coefficients for contribution of 4 parent GP's to 1 child BP.
 
       implicit none
 
@@ -394,6 +393,8 @@
      &                       east_r_cffs,  ie_sw, je_sw)                 ! index 2 since uses eastern  ghost points.
       endif
 
+      rt2=sqrt(2.0)  ! set interpolation coefficient once
+
       end subroutine calc_child_interpolation_coeffs  !]
 
 ! ----------------------------------------------------------------------
@@ -485,7 +486,6 @@
 
       end subroutine calc_bry_coeffs  !]
 
-
 ! ----------------------------------------------------------------------
       subroutine interpolate_child_bry( var, nmax )  ![
 
@@ -528,6 +528,7 @@
 
 
       end subroutine interpolate_child_bry  !]
+
 ! ----------------------------------------------------------------------
       subroutine interpolate_one_child_bry(bry_tot, rho_cffs, i_sw, j_sw, nmax, var, vbry)  ![
 
@@ -546,19 +547,60 @@
 
       ! local
       integer :: ij, k
+      real, dimension(nmax) :: var_sw, var_se, var_nw, var_ne  ! temporary copies of columns of data
+      real(kind=8), parameter :: spv_set=1.D+33
 
-      if (.not. allocated(vbry)) allocate( vbry(bry_tot, N))  ! allocate once for 3D var and reuse for all 2D/3D vars
-                                                              ! maybe move this to initialization to avoid if statement repetition
-      do k=1,nmax
-        do ij=1,bry_tot
+      if (.not. allocated(vbry)) allocate( vbry(bry_tot, N))   ! allocate once for 3D var and reuse for all 2D/3D vars
+                                                               ! maybe move this to initialization to avoid if statement repetition
 
-          vbry(ij,k) = rho_cffs(1,ij) * var(i_sw(ij)  , j_sw(ij)  , k)   ! interp from sw parent point.      Note even though 'k' index doesn't exist for 2D var,
-     &               + rho_cffs(2,ij) * var(i_sw(ij)+1, j_sw(ij)  , k)   ! interp from se parent point.      fortran won't complain. This is done in ncdf_write_mod() too.
-     &               + rho_cffs(3,ij) * var(i_sw(ij)  , j_sw(ij)+1, k)   ! interp from se parent point.
-     &               + rho_cffs(4,ij) * var(i_sw(ij)+1, j_sw(ij)+1, k)   ! interp from se parent point.
 
-        enddo
-      enddo
+      ! Normally would have k as outer loop for cache coherence but can avoid many
+      ! if statements by swapping order here:
+      do ij=1,bry_tot
+
+        if(i_sw(ij) >= 0) then  ! child point not masked. >=0 as mask value is -1. i_sw can be 0 if point is between nodes.
+
+          if ( rmask( i_sw(ij)  , j_sw(ij)  ) == 0) then
+            call interp_masked_var( i_sw(ij)  , j_sw(ij)  , nmax, var, var_sw )
+          else
+            var_sw = var(i_sw(ij)  , j_sw(ij)  , :)
+          endif
+
+          if ( rmask( i_sw(ij)+1, j_sw(ij)  ) == 0) then
+            call interp_masked_var( i_sw(ij)+1, j_sw(ij)  , nmax, var, var_se )
+          else
+            var_se = var(i_sw(ij)+1, j_sw(ij)  , :)
+          endif
+
+          if ( rmask( i_sw(ij)  , j_sw(ij)+1) == 0) then
+            call interp_masked_var( i_sw(ij)  , j_sw(ij)+1, nmax, var, var_nw )
+          else
+            var_nw = var(i_sw(ij)  , j_sw(ij)+1, :)
+          endif
+
+          if ( rmask( i_sw(ij)+1, j_sw(ij)+1) == 0) then
+            call interp_masked_var( i_sw(ij)+1, j_sw(ij)+1, nmax, var, var_ne )
+          else
+            var_ne = var(i_sw(ij)+1, j_sw(ij)+1, :)
+          endif
+
+
+          do k=1,nmax
+
+            vbry(ij,k) = rho_cffs(1,ij) * var_sw(k)   ! interp from sw parent point.      Note even though 'k' index doesn't exist for 2D var,
+     &                 + rho_cffs(2,ij) * var_se(k)   ! interp from se parent point.      fortran won't complain. This is done in ncdf_write_mod() too.
+     &                 + rho_cffs(3,ij) * var_nw(k)   ! interp from nw parent point.
+     &                 + rho_cffs(4,ij) * var_ne(k)   ! interp from ne parent point.
+
+          enddo
+
+        else  ! child point masked
+
+          vbry(ij,:) = spv_set
+
+        endif ! <- i_sw(ij)>0
+
+      enddo   ! <- ij
 
       end subroutine interpolate_one_child_bry  !]
 
@@ -714,6 +756,79 @@
       enddo
 
       end subroutine define_child_bry  !]
+
+! ----------------------------------------------------------------------
+      subroutine interp_masked_var( i, j, nmax, var, vinterp )  ![
+
+      ![ Since we interpolate child point from 4 parent points, there are
+      !  situations where 1, 2 or 3 of the parent points are in the land mask.
+      !
+      !  This routine interpolates those specific points using the 8 surrounding
+      !  surrounding grip points, using a inverse distance weighting method:
+      !
+      !    f(x) = sum( w_i(x) f_i ) / sum( w_i(x) )
+      !
+      !  where:
+      !
+      !    w_i(x) = 1 / d(x,x_i)
+      !
+      !  If any of the 8 surrounding points are also in the mask, we set their
+      !  weighting contribution to zero. This way the total contribution of the
+      !  weightings is still 1. This is a crude approximation, but we are favoring
+      !  simplicity here.
+      !
+      !  Since we are interpolating from +/- 1 in i/j, the weights are 1 or 1/sqrt(2)
+      !  as seen in the following diagram.
+      !
+      !  Diagram: X point interpolated from 8 surrouring points A-H
+      !
+      !       F   G   H               weights:
+      !                               X to middles B,D,E,G = 1
+      !       D   X   E               X to corners A,C,F,H = 1/sqrt(2)
+      !
+      !       A   B   C
+      !]
+
+      implicit none
+
+      ! input/output
+      integer,               intent(in)  :: i, j                       ! indices of masked point to interpolate
+      integer,               intent(in)  :: nmax                       ! vertical layers of variable
+      real,                  intent(in)  :: var(GLOBAL_2D_ARRAY,nmax)  ! parent variable array
+      real, dimension(nmax), intent(out) :: vinterp                    ! interpolated scalar (2D var) or column (3D var) at masked point
+
+      ! local
+      real    :: ca, cc, cf, ch, mb, md, me, mg  ! middle & corner interpolants as per diagram above
+      real    :: sum_cffs                        ! sum of weightings (denominator in interpolation)
+      integer :: k
+
+      ca = rt2*vmask(i-1,j-1)  ! corner point weightings
+      cc = rt2*vmask(i+1,j-1)  ! (calculate once outside of vertical loop)
+      cf = rt2*vmask(i-1,j+1)
+      ch = rt2*vmask(i+1,j+1)
+
+      mb = vmask(i  ,j-1)      ! middle point weightings
+      md = vmask(i-1,j  )
+      me = vmask(i+1,j  )
+      mg = vmask(i  ,j+1)
+
+      sum_cffs = ca+cc+cf+ch+mb+md+me+mg
+
+      do k=1,nmax
+
+        vinterp(k) = (  var(i-1,j-1,k)*ca
+     &                + var(i+1,j-1,k)*cc
+     &                + var(i-1,j+1,k)*cf
+     &                + var(i+1,j+1,k)*ch
+     &                + var(i  ,j-1,k)*mb
+     &                + var(i-1,j  ,k)*md
+     &                + var(i+1,j  ,k)*me
+     &                + var(i  ,j+1,k)*mg )
+     &                / sum_cffs
+
+      enddo ! <- k
+
+      end subroutine interp_masked_var  !]
 
 ! ----------------------------------------------------------------------
 
