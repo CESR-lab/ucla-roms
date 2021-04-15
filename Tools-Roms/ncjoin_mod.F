@@ -23,6 +23,10 @@ c--#define MPIVERBOSE
 
       ![ DECLARATION OF VARIABLES:
 
+      ! maxvars and maxdims should be low for memory management
+      integer, parameter :: maxdims=32  ! max allowed dimensions in file (change as required)
+      integer, parameter :: maxvars=220 ! max allowed vars. BGC has 201 vars in restart file
+
       integer :: n_x=1, n_y=1, n_z=1 ! number of gpoints in x, y & z (temporarily 1)
 
       ! MPI vars:
@@ -83,6 +87,8 @@ c--#define MPIVERBOSE
       integer           :: guess_nnodes   ! guessed number of input nodes (files) linked to mpi proc for storage array size
       integer           :: deflate_level  ! compression level for joined file
       logical           :: shuffle        ! shuffle on for extra compression (nc3to4z had this).
+      integer           :: s_rho          ! vertical rho levels
+      integer           :: nmax(maxvars)           ! vertical levels of current variable
 
       ! ------ CHILD_BRY VARS -------------
       integer :: global_south_bry_size    ! size of join dimension in child boundary file
@@ -90,9 +96,6 @@ c--#define MPIVERBOSE
       integer, dimension(4) :: vid_out    ! variable ID's in joined output file
 
       ! ------ ORIGINAL NCJOIN VARS -------
-
-      integer, parameter :: maxdims=32  ! max allowed dimensions in file (change as required)
-      integer, parameter :: maxvars=220 ! max allowed vars. BGC has 201 vars in restart file
 
       logical complete, clean_set,  digit, var_mask,    lnewvar
       integer nargs, nnodes,  size_XI,  XI_rho, id_xi_rho,  id_xi_u,
@@ -2167,13 +2170,20 @@ c**           endif
 ! JOIN_CHILD_BRY ROUTINES:
 ! ----------------------------------------------------------------------
       subroutine determine_global_child_bry_dims      ![
-      implicit none
 
       ! Determine the size of global child dimensions
       ! in order to create joined child file
 
+      implicit none
+
+      ! local
+      integer :: dimid
+
       ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'global_south_size', global_south_bry_size)
       ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'global_west_size', global_west_bry_size)
+
+      ierr=nf90_inq_dimid( ncid(0), 's_rho', dimid)  ! get s_rho veritcal levels
+      ierr=nf90_inquire_dimension(ncid(0), dimid, len=s_rho)
 
       end subroutine determine_global_child_bry_dims  !]
 
@@ -2193,7 +2203,9 @@ c**           endif
      &                 global_south_bry_size, dimid(1))  ! hardcoded 1 and dimsize(i,nnodes)
       ierr=nf_def_dim (nctarg, 'eta_rho',
      &                 global_west_bry_size,  dimid(2))
-      ierr=nf_def_dim (nctarg, 'rec_time', 0, dimid(3))  ! 0 for unlimited
+      ierr=nf_def_dim (nctarg, 's_rho',
+     &                 s_rho,  dimid(3))
+      ierr=nf_def_dim (nctarg, 'rec_time', 0, dimid(4))  ! 0 for unlimited
 
       ! Define variables & atts
 
@@ -2218,10 +2230,15 @@ c**           endif
       implicit none
 
       ! local
-      integer :: in_varid, len_dim
-      integer, dimension(2)           :: child_start, child_count=1, dimids, start_in=1
-      real, dimension(:), allocatable :: bry_data
+      integer               :: in_varid, len_dim
+      integer, dimension(3) :: child_start, child_count, dimids, startin, countin
+      real, dimension(:,:), allocatable :: bry_data
       character(len=12) :: dimname
+
+      startin=1
+      countin=1
+      child_start=1
+      child_count=1
 
       ! get start and count attributes
       if (ncid(node).eq.-1)
@@ -2232,30 +2249,32 @@ c**           endif
 
       if (child_count(1) /= 0) then  ! only write if parent has child boundary (0 if not)
 
-        start_in(2)    = rec  ! set recorded timestep for read in partial bry
-        child_start(2) = rec  ! set recorded timestep for written join bry
+        countin(1:2)=(/ child_count(1), nmax(i) /)
+        if     (vdims(i) == 2) then                      ! handle 2D or 3D variable dimids
+          startin(2)    = rec   ! set recorded timestep for read in partial bry
+          child_start(2) = rec   ! set recorded timestep for written join bry
+        elseif (vdims(i) == 3) then
+          startin(3)    = rec   ! set recorded timestep for read in partial bry
+          child_start(3) = rec   ! set recorded timestep for written join bry
+          child_count(2) = s_rho ! should be nmax rather?
+        else
+          error stop 'ERROR: dimensions!'
+        endif
 
-        ! read variable
+        ! read variable:
+
         if (allocated(bry_data)) deallocate (bry_data)
-        allocate (bry_data(child_count(1)))
-        ierr = nf90_get_var( ncid(node), vid(i,node), bry_data, start=start_in )
+        allocate ( bry_data( child_count(1), nmax(i) ) )
+
+        ierr = nf90_get_var( ncid(node), vid(i,node), bry_data,
+     &                      start=startin(1:vdims(i)), count=countin(1:vdims(i)) )
         if(ierr/=0) print *, 'read ierr=', nf90_strerror(ierr), 'node=', node
 
-        ! write variable
-
-!        ierr = nf90_inq_varid( nctarg, 'i_south', vid_out )
-!        ierr = nf90_inquire_variable(nctarg, vid_out, dimids=dimids)
-!        ierr = nf90_inquire_dimension(nctarg, dimids(1), dimname, len_dim)
-!        print *, 'dim1=',dimname, 'len=',len_dim, 'node=',node
-!        ierr = nf90_inquire_dimension(nctarg, dimids(2), dimname, len_dim)
-!        print *, 'dim1=',dimname, 'len=',len_dim, 'node=',node
-!        print *, 'child_start=',child_start, 'node=',node
-!        print *, 'child_count=',child_count, 'node=',node
+        ! write variable:
 
         ierr = nf90_put_var( nctarg, varid(i), bry_data,
-     &                       start=child_start, count=child_count )
-
-!        print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
+     &                       start=child_start(1:vdims(i)), count=child_count(1:vdims(i)) )
+        if(ierr/=0) print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
 
       endif
 
@@ -2286,13 +2305,24 @@ c**           endif
      &                vartype(i), vdims(i), dimids(1,i),  varatts)
 
             if (ierr .eq. nf_noerr) then
-              lvar=lenstr(vname(i))
 
-              if (vname(i)(lvar-4:lvar)=='south'  .or. ! DEVIND added - this doesn't catch u/v/rho
-     &            vname(i)(lvar-4:lvar)=='north') then ! hardcoded
-                dimids(1:vdims(i),i)=(/dimid(1),dimid(3)/)
+              if     (vdims(i) == 2) then                      ! handle 2D or 3D variable dimids
+                dimids(2:vdims(i),i) = (/ dimid(4) /)
+                nmax(i)=1                                         ! record vertical levels of var
+              elseif (vdims(i) == 3) then
+                dimids(2:vdims(i),i) = (/ dimid(3), dimid(4) /)
+                nmax(i)=s_rho
               else
-                dimids(1:vdims(i),i)=(/dimid(2),dimid(3)/)
+                error stop 'ERROR: dimensions!'
+              endif
+
+
+              lvar=lenstr(vname(i))
+              if (vname(i)(lvar-4:lvar)=='south'  .or.      ! DEVIND added - this doesn't catch u/v/rho
+     &            vname(i)(lvar-4:lvar)=='north') then      ! hardcoded
+                dimids(1,i) = dimid(1)
+              else
+                dimids(1,i) = dimid(2)
               endif
 
               ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),  ! add compression here if desired

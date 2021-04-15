@@ -181,7 +181,6 @@
       integer, dimension(:), allocatable   :: iw_sw, jw_sw, is_sw, js_sw,    ! sw parent interpolant i and j position
      &                                        ie_sw, je_sw, in_sw, jn_sw     ! could merge with coefficients.
       real                                 :: rt2                            ! square root of 2 stored for efficiency
-      integer                              :: itrc                           ! tracer index
 
       ! NETCDF:
       integer            :: ncid=-1                     ! in file for child bry positions
@@ -204,6 +203,8 @@
       subroutine set_child_bry  ![
       implicit none             !  Interpolate child boundary at desired intervals.
 
+      ! local
+      integer :: itrc  ! tracer index
 
       ! Use this to only set at required output rate. Rather have it here than in main
       ! to keep main less cluttered? Although wrt_his has it in main? Ask JM
@@ -234,7 +235,7 @@
       ! v:
 
       ! tracers:
-      do itrc=1,1
+      do itrc=1,NT
         call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N )
         call wrt_child_bry( itrc, N, .true. )
       enddo
@@ -617,8 +618,9 @@
       implicit none
 
       ! local
-      integer :: prev_fill_mode
+      integer               :: prev_fill_mode
       integer, dimension(5) :: rho_dimid_bry   ! dimension ID for boundaries
+      integer               :: itrc            ! tracer index
 
       if(total_output_rec == 0) then                            ! Add root output name to
         file_name = trim(output_root_name) / / trim(file_name)  ! file name (only done once)
@@ -654,7 +656,9 @@
       call define_child_bry( indxZ, rho_tot, rho_c_str, rho_dimid_bry, 1, .false. )
 
       ! tracers:
-      call define_child_bry(   1  , rho_tot, rho_c_str, rho_dimid_bry, N, .true.  )
+      do itrc=1,NT
+        call define_child_bry( itrc , rho_tot, rho_c_str, rho_dimid_bry, N, .true.  )
+      enddo
 
 
       ierr=nf90_enddef(ncid_out)  ! end definition to write changes to disk
