@@ -144,13 +144,9 @@ c--#define VERBOSE
               call read_write_child_bry                                 ! PART X:
             enddo  !<-- nodes
 
-!            stop 'STOP HERE!'
-
           enddo    !<-- rec, loop over records
 
         enddo      !<-- i=1,nvars, loop over variables
-
-        stop 'STOP HERE!'
 
         if (ierr.eq.nf_noerr) then
           clean_set=.true.
@@ -164,8 +160,6 @@ c--#define VERBOSE
 
 
       call display_timing_summary
-
-
 
 
       end program join_child_bry
