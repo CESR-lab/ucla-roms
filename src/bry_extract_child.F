@@ -136,6 +136,7 @@
       use read_write
       use netcdf
       use mpi         ! debug temporary for mpi abort
+      use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
 
       implicit none
       private
@@ -180,6 +181,7 @@
       integer, dimension(:), allocatable   :: iw_sw, jw_sw, is_sw, js_sw,    ! sw parent interpolant i and j position
      &                                        ie_sw, je_sw, in_sw, jn_sw     ! could merge with coefficients.
       real                                 :: rt2                            ! square root of 2 stored for efficiency
+      integer                              :: itrc                           ! tracer index
 
       ! NETCDF:
       integer            :: ncid=-1                     ! in file for child bry positions
@@ -202,6 +204,7 @@
       subroutine set_child_bry  ![
       implicit none             !  Interpolate child boundary at desired intervals.
 
+
       ! Use this to only set at required output rate. Rather have it here than in main
       ! to keep main less cluttered? Although wrt_his has it in main? Ask JM
       ! only plot if timestep is divisble by record rate
@@ -223,14 +226,18 @@
 
       ! zeta:
       call interpolate_child_bry( zeta(:,:,knew), 1 )  ! , rp_var var, nz, grd_type
-      call wrt_child_bry( indxZ )
+      call wrt_child_bry( indxZ, 1, .false. )
 
       ! ubar:
-
       ! vbar:
       ! u:
       ! v:
+
       ! tracers:
+      do itrc=1,1
+        call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N )
+        call wrt_child_bry( itrc, N, .true. )
+      enddo
 
 
       ierr=nf90_close(ncid_out)
@@ -611,7 +618,7 @@
 
       ! local
       integer :: prev_fill_mode
-      integer, dimension(4) :: rho_dimid_bry   ! dimension ID for boundaries
+      integer, dimension(5) :: rho_dimid_bry   ! dimension ID for boundaries
 
       if(total_output_rec == 0) then                            ! Add root output name to
         file_name = trim(output_root_name) / / trim(file_name)  ! file name (only done once)
@@ -637,12 +644,17 @@
       ierr=nf90_def_dim( ncid_out, 'xi_rho_north', max( rho_tot(2,3), 1 ), rho_dimid_bry(3) )
       ierr=nf90_def_dim( ncid_out, 'eta_rho_east', max( rho_tot(2,4), 1 ), rho_dimid_bry(4) )
 
+      ierr=nf90_def_dim( ncid_out, 's_rho', N, rho_dimid_bry(5) )
+
       ! u dims:
 
       ! v dims:
 
       ! define boundary even if not contained in parent for joining tool.
-      call define_child_bry( indxZ, rho_tot, rho_c_str, rho_dimid_bry )
+      call define_child_bry( indxZ, rho_tot, rho_c_str, rho_dimid_bry, 1, .false. )
+
+      ! tracers:
+      call define_child_bry(   1  , rho_tot, rho_c_str, rho_dimid_bry, N, .true.  )
 
 
       ierr=nf90_enddef(ncid_out)  ! end definition to write changes to disk
@@ -654,7 +666,7 @@
       end subroutine create_child_output_file  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_child_bry ( indx_v )  ![
+      subroutine wrt_child_bry ( indx_v, nmax, trc_yn )  ![
 
       ! Each sub-domain writes out its portion of child boundary if applicable.
       ! all procs, make child bc netcdf file, only relevant procs define bc variables (east, north, etc)
@@ -662,96 +674,139 @@
       implicit none
 
       ! inputs
-      integer, intent(in)   :: indx_v
+      integer, intent(in)   :: indx_v  ! index of primary var or itrc
+      integer, intent(in)   :: nmax    ! vertical levels
+      logical, intent(in)   :: trc_yn  ! is variable a tracer y/n
+
       ! local
-      integer               :: varid
+      integer               :: varid, ndims
       integer               :: dimid, dim_len ! debug only
-      integer, dimension(2) :: start
-      character(len=40)     :: bname
+      integer, dimension(3) :: start_out, count_out, count_dummy=1
+      character(len=40)     :: bname, rname
 
 
-      start = (/1,output_rec/)
+      if (trc_yn) then                              ! handle primary variable or tracers name
+        rname=t_vname(indx_v)
+      else
+        rname=vname(1,indx_v)
+      endif
 
-      bname=trim(vname(1,indx_v)) / /'_south'
-      ierr=nf90_inq_varid(ncid_out, bname, varid )
+      if (nmax == 1) then                           ! handle 2D or 3D variable dimids
+        ndims=2
+        start_out(1:ndims) = (/1, output_rec/)
+        count_out(1:ndims) = (/1, 1         /)
+      else
+        ndims=3
+        start_out(1:ndims) = (/1, 1   , output_rec/)
+        count_out(1:ndims) = (/1, nmax, 1         /)
+      endif
+
+
+      bname = trim(rname) / /'_south'
+      ierr  = nf90_inq_varid(ncid_out, bname, varid )
+      count_out(1) = rho_tot(1,1)
       if (allocated(vsouth)) then
-        ierr=nf90_put_var(  ncid_out, varid    , vsouth(:,:),
-     &                      start=start, count=(/rho_tot(1,1),1/) )
+        ierr=nf90_put_var( ncid_out, varid , vsouth(:,:),         ! put dummy value so ncjoin doesn't complain
+     &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrts_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ! Put in dummy value so that ncjoin doesn't complain
-        ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
+
+        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+     &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
-      bname=trim(vname(1,indx_v)) / /'_west'
+      bname = trim(rname) / /'_west'
       ierr=nf90_inq_varid(ncid_out, bname, varid )
+      count_out(1) = rho_tot(1,2)
       if (allocated(i_west )) then
-        ierr=nf90_put_var(  ncid_out, varid    , vwest(:,:) ,
-     &                      start=start, count=(/rho_tot(1,2),1/) )
+        ierr=nf90_put_var( ncid_out, varid    , vwest(:,:) ,         ! put dummy value
+     &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrtw_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ! Put in dummy value so that ncjoin doesn't complain
-        ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
+        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+     &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
-      bname=trim(vname(1,indx_v)) / /'_north'
+      bname = trim(rname) / /'_north'
       ierr=nf90_inq_varid(ncid_out, bname, varid )
+      count_out(1) = rho_tot(2,3)
       if (allocated(i_north)) then
-        ierr=nf90_put_var(  ncid_out, varid    , vnorth(:,:),
-     &                      start=start, count=(/rho_tot(2,3),1/) )
+        ierr=nf90_put_var( ncid_out, varid    , vnorth(:,:),         ! put dummy value
+     &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrtn_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ! Put in dummy value so that ncjoin doesn't complain
-        ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
+        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+     &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
-      bname=trim(vname(1,indx_v)) / /'_east'
+      bname = trim(rname) / /'_east'
       ierr=nf90_inq_varid(ncid_out, bname, varid )
+      count_out(1) = rho_tot(2,4)
       if (allocated(i_east )) then
-        ierr=nf90_put_var(  ncid_out, varid    , veast(:,:) ,
-     &                      start=start, count=(/rho_tot(2,4),1/) )
+        ierr=nf90_put_var( ncid_out, varid    , veast(:,:) ,         ! put dummy value
+     &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrte_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ! Put in dummy value so that ncjoin doesn't complain
-        ierr=nf90_put_var(  ncid_out, varid, (/1.0/), start=start, count=(/1,1/) )
+        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+     &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
       end subroutine wrt_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine define_child_bry( indx_v, sides_tot, sides_c_str, dimid_bry ) ![ Define child bry variable in output netCDF file.
+      subroutine define_child_bry( indx_v, sides_tot, sides_c_str,
+     &                             dimid_bry, nmax, trc_yn )        ![ Define child bry variable in output netCDF file.
       implicit none
 
       ! input/outputs
       integer,                 intent(in) :: indx_v
       integer, dimension(2,4), intent(in) :: sides_tot
       integer, dimension(2,4), intent(in) :: sides_c_str
-      integer, dimension(4),   intent(in) :: dimid_bry   ! dimension ID for boundaries
+      integer, dimension(5),   intent(in) :: dimid_bry   ! dimension ID for boundaries
+      integer,                 intent(in) :: nmax
+      logical,                 intent(in) :: trc_yn
 
       ! local
-      integer               :: varid, bry
-      character(len=40)     :: bname
-      character(len=60)     :: lname
+      integer               :: varid, bry, ndims
+      character(len=40)     :: bname, rname
+      character(len=60)     :: lname, uname
       integer, dimension(4) :: ghost_p=(/ 1, 1, 2, 2 /)  ! Ghost point position of 2 rows of input i/j
-                                                     ! for S & W row 1, for N & E row 2
-
-      ! loop through 4 boundaries:
-
-      lname=trim(vname(2,indx_v))
-      do bry=1,4
-
-        bname=trim(vname(1,indx_v)) / /'_'/ /trim( bry_name(bry) )
-
-        call nc_define_var(ncid_out, bname, lname,
-     &         vname(3,indx_v),                                      ! units
-     &         (/dimid_bry(bry), dimid_t/), ierr )
+                                                         ! for S & W row 1, for N & E row 2
+      integer, dimension(3) :: vdimids
 
 
-        ierr=nf90_inq_varid(ncid_out, bname, varid)              ! ADD ATTRIBUTE WITH GLOBAL CHILD START VALUE (i.e. south_c_str)
+      if (trc_yn) then           ! handle primary variable or tracers name
+        rname=t_vname(indx_v)
+        lname=t_lname(indx_v)
+        uname=t_units(indx_v)
+      else
+        rname=vname(1,indx_v)
+        lname=vname(2,indx_v)
+        uname=vname(3,indx_v)
+      endif
 
-        ierr=nf90_put_att(ncid_out, varid, 'start', sides_c_str( ghost_p(bry), bry ))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
-        ierr=nf90_put_att(ncid_out, varid, 'count', sides_tot(   ghost_p(bry), bry ))
-        ierr=nf90_put_att(ncid_out, varid, 'child_bry', 'True')                        ! True is not required
+      do bry=1,4                                                 ! loop through 4 boundaries:
+
+        if (nmax == 1) then                                      ! handle 2D or 3D variable dimids
+          ndims=2
+          vdimids(1:ndims) = (/dimid_bry(bry), dimid_t/)
+        else
+          ndims=3
+          vdimids(1:ndims) = (/dimid_bry(bry), dimid_bry(5), dimid_t/)
+        endif
+
+
+        bname=trim(rname) / /'_'/ /trim( bry_name(bry) )
+
+        call nc_define_var(ncid_out, bname, lname, uname,        ! longname, units
+     &                     vdimids(1:ndims), ierr )
+
+
+        ierr=nf90_inq_varid(ncid_out, bname, varid)
+
+        ierr=nf90_put_att(ncid_out, varid, 'start', sides_c_str( ghost_p(bry), bry ))  ! add attribute with global child start value (i.e. south_c_str)
+        ierr=nf90_put_att(ncid_out, varid, 'count', sides_tot(   ghost_p(bry), bry ))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
+        ierr=nf90_put_att(ncid_out, varid, 'child_bry', 'True')                        ! 'child_bry' for ncjoin to identify variable. 'True' just a filler.
 
       enddo
 
