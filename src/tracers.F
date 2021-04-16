@@ -391,64 +391,7 @@
       else if (itrc == isalt) then
         t_bry_dt(:,:,itbry,itrc) = 35.0 ! default salinity
 #  endif
-#  ifdef BIOLOGY_NPZDOC
-      elseif (itrc == iNO3_) then
-        cff=20./3.
-        cff1=2./3.
-        do k=1,N
-          do ij=0,LMmpp
-            temp=t_bry_dt(j,k,itbry,itemp)
-              if (temp.lt.8.) then
-                SiO4=30.
-              elseif (temp.le.11.) then
-                SiO4=30.-((temp-8.)*cff)
-              elseif (temp.le.13.) then
-                SiO4=10.-((temp-11.)*4.)
-              elseif (temp.le.16.) then
-                SiO4=2.-((temp-13.)*cff1)
-              else
-                SiO4=0.
-              endif
-              t_bry_dt(j,k,itbry,itrc)=1.67+0.5873*SiO4
-     &             +0.0144*SiO4**2
-     &             +0.0003099*SiO4**3
-#   ifdef NO3_SFC_CUTOFF
-              t_bry_dt(ij,k,itbry,itrc)=t_bry_dt(ij,k,itbry,itrc)*
-     &             (1-.5*(tanh((z_r(iwest,ij,k)+100.)/8.)+1))
-#   endif /* NO3_SFC_CUTOFF */
-          enddo
-        enddo
-      elseif (itrc .eq. iNH4_) then ! DevinD why is there an underscore?? Flag not used anyway
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iChla) then
-        t_bry_dt(:,:,itbry,itrc) = 0.10
-      elseif (itrc .eq. iPhyt) then
-        t_bry_dt(:,:,itbry,itrc) = 0.05
-      elseif (itrc .eq. iZoo_) then ! DevinD why is there an underscore?? Flag not used anyway
-        t_bry_dt(:,:,itbry,itrc) = 0.02
-      elseif (itrc .eq. iSDet) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iLDet) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-#   ifdef OXYGEN
-      elseif (itrc .eq. iO2) then
-        t_bry_dt(:,:,itbry,itrc) = 177.9  ! mmol/m3
-#    ifdef CARBON
-      elseif (itrc .eq. iDIC) then
-        t_bry_dt(:,:,itbry,itrc) = 2200.
-      elseif (itrc .eq. iTALK) then
-        t_bry_dt(:,:,itbry,itrc) = 2300.
-      elseif (itrc .eq. iSDetC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iLDetC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iCaCO3) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-#    endif
-#   endif /* OXYGEN */
-#  endif /* BIOLOGY_NPZDOC */
-
-#    if defined BIOLOGY_BEC2
+#  if defined BIOLOGY_BEC2
 ! provide defaults for selected biogeochemical variables
       elseif (itrc .eq. iNH4 .or. itrc .eq. iDOC .or.
      &    itrc .eq. iDON .or. itrc. eq. iDOFE .or.

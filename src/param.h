@@ -93,15 +93,6 @@ c     &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
      &       , ntrc_bio_ncycle=
 #   ifdef Ncycle_SY
      &  3
-#    ifdef N2O_TRACER_DECOMP
-     & +5
-#    endif /* N2O_TRACER_DECOMP */
-#    ifdef N2O_NEV
-     & +1
-#    endif /* N2O_NEV*/
-
-#   elif defined N2O_NEV
-     &  1
 #   else /* not Ncycle_SY */
      &  0
 #   endif /* Ncycle_SY */

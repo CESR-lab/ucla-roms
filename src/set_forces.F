@@ -49,7 +49,7 @@
 # ifdef WEC
       use wec_frc
 # endif
-      use bgc ! , only: set_bgc_surf_frc, set_pco2air_tile
+      use bgc ! , only: set_bgc_surf_frc
 
       implicit none
 
@@ -102,11 +102,6 @@ c***              no code here
 #endif
 
                                         !--> Surface fluxes
-
-# if defined PCO2AIR_FORCING && defined BIOLOGY_BEC2
-      call set_pco2air_tile(istr,iend,jstr,jend)
-# endif
-
 
 #ifdef ANA_SMFLUX
       call ana_smflux_tile(istr,iend,jstr,jend)

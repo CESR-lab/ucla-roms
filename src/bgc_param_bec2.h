@@ -145,13 +145,6 @@
      &   parm_n2o_gor_a, ! n2o yield constant (Goreau et al. 1980)
      &   parm_n2o_gor_b, ! n2o yield constant (Goreau et al. 1980)
 # endif
-# ifdef N2O_NEV
-     &   parm_n2o_nev_a1, ! n2o production constant (Nevison et al. 2oo3)
-     &   parm_n2o_nev_a2, ! n2o production constant (Nevison et al. 2oo3)
-     &   O2_crit_nev, ! [O2] at which we switch to N2O consumption (Nevison et al. 2003)
-     &   N2O_cons_tau_nev, ! n2o consumption timescale [1/s] (Cornejo and Farias 2007)
-     &   z_scale_nev, ! Depth scale for N2O production (Nevison et al. 2oo3)
-# endif
 
      &   parm_nitrif_par_lim,    ! PAR limit for nitrif. (W/m^2)
      &   parm_z_mort_0,          ! zoo linear mort rate (1/sec)
@@ -174,15 +167,15 @@
      &   parm_BSIbury, parm_Fe_scavenge_rate0, parm_f_prod_sp_CaCO3, parm_POC_diss,
      &   parm_SiO2_diss, parm_CaCO3_diss,
      &   parm_scalelen_z, parm_scalelen_vals
+# ifdef TDEP_REMIN
+     &   , parm_ktfunc_soft
+# endif
 # ifdef Ncycle_SY
      &   , parm_kao, parm_kno, parm_ko2_ao, parm_knh4_ao, parm_ko2_no, parm_kno2_no, parm_kno3_den1,
      &   parm_kno2_den2, parm_kn2o_den3, parm_ko2_oxic, parm_ko2_den1, parm_ko2_den2, parm_ko2_den3,
      &   parm_koxic, parm_kden1, parm_kden2, parm_kden3, parm_kax, parm_knh4_ax, 
      &   parm_kno2_ax, parm_ko2_ax, parm_n2o_ji_a, parm_n2o_ji_b, parm_n2o_gor_a,
      &   parm_n2o_gor_b
-# endif
-# ifdef N2O_NEV
-     &   ,parm_n2o_nev_a1, parm_n2o_nev_a2, O2_crit_nev, N2O_cons_tau_nev, z_scale_nev
 # endif
 
   !---------------------------------------------------------------------
@@ -344,34 +337,4 @@
      &   parm_sed_denitrif_NO3_limit = 5.0 ! threshold for reducing sediment denitrification
      & )
 
-#ifdef USE_EXPLICIT_VSINK
-   !---------------------------------------------------------------------
-   !  Vertical sinking speeds used for explicit sinking (in m/day)
-   !  Remineralization rates (in day^{-1})
-   !
-   !  MF:
-   !  hard/soft components are both mineral associated (except for POC) 
-   !  and thus have the same sinking speed, but different remineralization rates.
-   !  Set values to reflect what we had in implicit sinking. Iron desorption
-   !  following Moore and Braucher 2008.
-   ! 
-   !  With sinking speeds (w) and remin rates (k) I tried to represent more or
-   !  less what the implicit sinking parameter for dissolution length (D=w/k)
-   !  is set to: D(SiO2)=360, D(CaCO3)=400, D(POC)=82
-   !  NOTE: This only applies to soft components! Hard components are more resistant
-   !        to dissolution and should have approx. D=40000m (Moore 2013, Lima 2014)
-   !
-   !---------------------------------------------------------------------
-       real wDustHard, wPOCHard, wPCaCO3Hard, wPSiO2Hard, wPIronHard
-       real wDustSoft, wPOCSoft, wPCaCO3Soft, wPSiO2Soft, wPIronSoft
-       parameter( wDustHard=50.0,  wPOCHard=10., wPCaCO3Hard=50., wPSiO2Hard=50., wPIronHard=50. )
-       parameter( wDustSoft=50.0,  wPOCSoft=10., wPCaCO3Soft=50., wPSiO2Soft=50., wPIronSoft=50. )
-       real param_dusthard_remin, param_pochard_remin, param_pcaco3hard_remin,
-     &   param_psio2hard_remin, param_pironhard_remin
-       real param_dustsoft_remin, param_pocsoft_remin, param_pcaco3soft_remin,
-     &   param_psio2soft_remin, param_pironsoft_remin
-       parameter( param_dusthard_remin=8.0e-5, param_pochard_remin=0.0005, param_pcaco3hard_remin=0.00125,
-     &   param_psio2hard_remin=0.00125, param_pironhard_remin=0.00125 )
-       parameter( param_dustsoft_remin=8.0e-5, param_pocsoft_remin=0.125, param_pcaco3soft_remin=0.125,
-     &   param_psio2soft_remin=0.125, param_pironsoft_remin=0.125 )
-#endif
+

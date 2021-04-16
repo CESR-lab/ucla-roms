@@ -30,10 +30,10 @@
       integer, parameter :: nbgc_flx = 2 ! Number of surface bgc flux forcings
 #ifdef PCO2AIR_FORCING
      &                                +1
-      ! pco2air forcing
-      character(len=8) :: pco2air_vname = 'pco2_air'
-      character(len=9) :: pco2air_tname = 'pco2_time'
 #endif
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+     &                                +1
+#endif  
 
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! Factor 2 only for now
@@ -43,6 +43,16 @@
       ! iron forcing
       character(len=4) :: iron_vname = 'iron'
       character(len=9) :: iron_tname = 'iron_time'
+      
+#ifdef PCO2AIR_FORCING
+      character(len=8) :: pco2air_vname = 'pco2_air'
+      character(len=9) :: pco2air_tname = 'pco2_time'
+#endif      
+      
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+      character(len=10) :: swrad_avg_name = 'swrad_davg'
+      character(len=13) :: swrad_avg_time_name = 'srf_davg_time'
+#endif      
 
 #include "bgc_tracers.h"
 #include "bgc_bio_diag.h"
@@ -58,13 +68,14 @@
       integer, dimension(nbgc_flx) :: flx_it1 = 1, flx_it2 = 2
       real, dimension(2,nbgc_flx)  :: flx_times = -99 ! [-99,-99]
 
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+      real, public    :: srflx_dailyavg(GLOBAL_2D_ARRAY)  ! daily average short-wave rad 
+#endif
+
       ! Misc from porting ETH code:
       character(len=40) tclm_name(NT) ! Taken from ETH code ncvars.h
 
       public set_bgc_surf_frc
-#ifdef PCO2AIR_FORCING
-      public set_pco2air_tile
-#endif
 #ifdef BEC2_DIAG
       public def_his_bgc_diag
       public wrt_his_bgc_diag
@@ -95,6 +106,9 @@
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
+      
+      ! local
+      integer :: ibgc
 
       ! dust & iron controlled by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
@@ -118,44 +132,54 @@
      &        flx_it1(2),         flx_it2(2),       ! Time index placeholders
      &        interp_frc )                          ! Online spatial interpolation flag
 
-!      if(mynode==0) print*, 'dust(20,20) ',dust(20,20)
-!      if(mynode==0) print*, 'iron(20,20) ',iron(20,20)
+      ibgc=2  ! so far count dust & iron
+      
+#ifdef PCO2AIR_FORCING
+      ibgc=ibgc+1
+      call set_frc_var_tile(
+     &        istr,iend,             jstr,jend,           ! Tile bounds indices
+     &        pco2air_vname,         pco2air_tname,       ! Text name of array and time
+     &        flx_data(:,:,:,ibgc),  pco2air,             ! Variable arrays
+     &        flx_times(:,ibgc),     flx_grd_type(ibgc),  ! Input times & Grid type
+     &        flx_file_indx(ibgc),   flx_irec(ibgc),      ! File indx & Current input record
+     &        flx_it1(ibgc),         flx_it2(ibgc),       ! Time index placeholders
+     &        interp_frc )                                ! Online spatial interpolation flag
+#endif /* PCO2AIR_FORCING */   
+
+
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+      ! Daily average Short wave radiation 
+      ibgc=ibgc+1
+      call set_frc_var_tile(
+     &        istr,iend,             jstr,jend,           ! Tile bounds indices
+     &        swrad_avg_name,        swrad_avg_time_name, ! Text names
+     &        flx_data(:,:,:,ibgc),  srflx_dailyavg,      ! Variable arrays
+     &        flx_times(:,ibgc),     flx_grd_type(ibgc),  ! Input times & Grid type
+     &        flx_file_indx(ibgc),   flx_irec(ibgc),      ! File indx & Current input record
+     &        flx_it1(ibgc),         flx_it2(ibgc),       ! Time index placeholders
+     &        interp_frc )                                ! Online spatial interpolation flag
+     
+     
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          srflx_dailyavg(i,j)= srflx_dailyavg(i,j)/(rho0*Cp)
+          
+#ifdef SEA_ICE_NOFLUX
+          if( t(i,j,N,nrhs,itemp) .le. -1.8 ) then    ! Restrict stflx to prevent surface temperature to go below -2 degrees C.
+#   if defined LMD_KPP
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+            srflx_dailyavg(i,j)=0.
+#endif                   
+#   endif
+          endif
+#endif
+
+        enddo !<- istrR
+      enddo   !<- jstrR
+     
+#endif /* DAILYPAR_PHOTOINHIBITION */ 
 
       end subroutine set_bgc_surf_frc
-! ----------------------------------------------------------------------
-
-#ifdef PCO2AIR_FORCING
-      subroutine set_pco2air_tile(istr,iend,jstr,jend)
-      ! read in bgc pco2air flux and interpolate to model time.
-      ! Taken from get_forces.F, get_smth.F & set_smth.F of ETH code.
-
-      use read_write, only: set_frc_var_tile
-
-      implicit none
-
-! Needed for pco2air variable, not yet ported to this module. Should do so at some point.
-#include "bgc_forces.h"
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
-      ! pco2air controlled by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
-
-      ! Index 3 below is because currently there are 3 surface forcings,
-      ! and dust=1 and iron=2.
-      call set_frc_var_tile(
-     &        istr,iend,          jstr,jend,        ! Tile bounds indices
-     &        pco2air_vname,      pco2air_tname,    ! Text name of array and time
-     &        flx_data(:,:,:,3),  pco2air,          ! Variable arrays
-     &        flx_times(:,3),     flx_grd_type(3),  ! Input times & Grid type
-     &        flx_file_indx(3),   flx_irec(3),      ! File indx & Current input record
-     &        flx_it1(3),         flx_it2(3),       ! Time index placeholders
-     &        interp_frc )                          ! Online spatial interpolation flag
-
-!      if(mynode==0) print*, 'pco2air(20,20) ',pco2air(20,20)
-
-      end subroutine set_pco2air_tile
-#endif /* PCO2AIR_FORCING */
 ! ----------------------------------------------------------------------
 
 #ifdef BEC2_DIAG
@@ -360,7 +384,7 @@
 #include "scalars.h"
 !#include "ncvars.h"
 #include "comm_vars.h"
-#include "ncroms_bgcflux.h"
+!#include "ncroms_bgcflux.h"
 
 ! CN: take this part out of the NEVER_DEF part
 !#ifdef BEC2_DIAG
@@ -465,16 +489,6 @@
       !
       ! 2d diagnotics:
       !
-#  if defined CCHEM_MOCSY && defined CCHEM_TODEPTH
-      vname_bec2_diag_3d(1,indxPH)='PH'
-      vname_bec2_diag_3d(2,indxPH)='surf pH value'
-      vname_bec2_diag_3d(3,indxPH)=' '
-      vname_bec2_diag_3d(4,indxPH)=' '
-      vname_bec2_diag_3d(1,indxPCO2)='pCO2'
-      vname_bec2_diag_3d(2,indxPCO2)='Surface water pCO2'
-      vname_bec2_diag_3d(3,indxPCO2)='ppm'
-      vname_bec2_diag_3d(4,indxPCO2)='  '
-#  else
       vname_bec2_diag_2d(1,indxPH)='PH'
       vname_bec2_diag_2d(2,indxPH)='surf pH value'
       vname_bec2_diag_2d(3,indxPH)=' '
@@ -483,7 +497,6 @@
       vname_bec2_diag_2d(2,indxPCO2)='Surface water pCO2'
       vname_bec2_diag_2d(3,indxPCO2)='ppm'
       vname_bec2_diag_2d(4,indxPCO2)='  '
-#  endif
       vname_bec2_diag_2d(1,indxPCO2air)='pCO2air'
       vname_bec2_diag_2d(2,indxPCO2air)='Atmospheric pCO2'
       vname_bec2_diag_2d(3,indxPCO2air)='ppm'
@@ -536,38 +549,7 @@
       vname_bec2_diag_2d(2,indxPVCO2)='Piston velocity for CO2'
       vname_bec2_diag_2d(3,indxPVCO2)='m/s '
       vname_bec2_diag_2d(4,indxPVCO2)=' '
-#ifdef N2O_NEV
-      vname_bec2_diag_2d(1,indxfgn2o_nev)='FG_N2O_NEV'
-      vname_bec2_diag_2d(2,indxfgn2o_nev)='Air-sea N2O flux (Nevison)'
-      vname_bec2_diag_2d(3,indxfgn2o_nev)='mmol/m2/s '
-      vname_bec2_diag_2d(4,indxfgn2o_nev)=' '
-#endif
 # ifdef Ncycle_SY
-# ifdef N2O_TRACER_DECOMP
-      vname_bec2_diag_2d(1,indxfgn2o_ao1)='FG_N2O_AO1'
-      vname_bec2_diag_2d(2,indxfgn2o_ao1)='Air-sea flux of N2O from AO1'
-      vname_bec2_diag_2d(3,indxfgn2o_ao1)='mmol/m2/s'
-      vname_bec2_diag_2d(4,indxfgn2o_ao1)=' '
-
-      vname_bec2_diag_2d(1,indxfgn2o_siden)='FG_N2O_SIDEN'
-      vname_bec2_diag_2d(2,indxfgn2o_siden)=
-     &   'Air-sea flux of N2O from denitrification sink'
-      vname_bec2_diag_2d(3,indxfgn2o_siden)='mmol/m2/s '
-      vname_bec2_diag_2d(4,indxfgn2o_siden)=' '
-
-      vname_bec2_diag_2d(1,indxfgn2o_soden)='FG_N2O_SODEN'
-      vname_bec2_diag_2d(2,indxfgn2o_soden)=
-     &   'Air-sea flux of N2O from denitrification source'
-      vname_bec2_diag_2d(3,indxfgn2o_soden)='mmol/m2/s '
-      vname_bec2_diag_2d(4,indxfgn2o_soden)=' '
-
-      vname_bec2_diag_2d(1,indxfgn2o_atm)='FG_N2O_ATM'
-      vname_bec2_diag_2d(2,indxfgn2o_atm)=
-     &   'Air-sea flux of atmopsheric N2O'
-      vname_bec2_diag_2d(3,indxfgn2o_atm)='mmol/m2/s '
-      vname_bec2_diag_2d(4,indxfgn2o_atm)=' '
-# endif
-
       vname_bec2_diag_2d(1,indxfgn2o)='FG_N2O'
       vname_bec2_diag_2d(2,indxfgn2o)=
      &   'Air-sea flux of N2O '
@@ -610,17 +592,11 @@
       vname_bec2_diag_2d(3,indxpvn2)='m/s '
       vname_bec2_diag_2d(4,indxpvn2)=' '
 #endif
-#  if defined CCHEM_MOCSY && defined CCHEM_TODEPTH
-      vname_bec2_diag_3d(1,indxCO2STAR)='CO2STAR'
-      vname_bec2_diag_3d(2,indxCO2STAR)='CO2STAR'
-      vname_bec2_diag_3d(3,indxCO2STAR)='mmol/m3 '
-      vname_bec2_diag_3d(4,indxCO2STAR)=' '
-#  else
       vname_bec2_diag_2d(1,indxCO2STAR)='CO2STAR'
       vname_bec2_diag_2d(2,indxCO2STAR)='CO2STAR'
       vname_bec2_diag_2d(3,indxCO2STAR)='mmol/m3 '
       vname_bec2_diag_2d(4,indxCO2STAR)=' '
-#  endif
+
       vname_bec2_diag_2d(1,indxDCO2STAR)='DCO2STAR'
       vname_bec2_diag_2d(2,indxDCO2STAR)='DCO2STAR'
       vname_bec2_diag_2d(3,indxDCO2STAR)='mmol/m3'
@@ -640,40 +616,6 @@
       vname_bec2_diag_2d(2,indxSEDDENITRIF)='Sediment denitrification'
       vname_bec2_diag_2d(3,indxSEDDENITRIF)='mmol/m3/s'
       vname_bec2_diag_2d(4,indxSEDDENITRIF)=' '
-
-#  ifdef CCHEM_MOCSY
-#   ifdef CCHEM_TODEPTH
-      vname_bec2_diag_3d(1,indxCO3)='CO3'
-      vname_bec2_diag_3d(2,indxCO3)='carbonate ion (CO3-) concentration'
-      vname_bec2_diag_3d(3,indxCO3)='mmol/m3'
-      vname_bec2_diag_3d(4,indxCO3)=' '
-      vname_bec2_diag_3d(1,indxHCO3)='HCO3'
-      vname_bec2_diag_3d(2,indxHCO3)=
-     &  'bicarbonate ion (HCO3-) concentration'
-      vname_bec2_diag_3d(3,indxHCO3)='mmol/m3'
-      vname_bec2_diag_3d(4,indxHCO3)=' '
-      vname_bec2_diag_3d(1,indxOMEGACALC)='OMEGA_CALC'
-      vname_bec2_diag_3d(2,indxOMEGACALC)=
-     &  'Calcite saturation state'
-      vname_bec2_diag_3d(3,indxOMEGACALC)=' '
-      vname_bec2_diag_3d(4,indxOMEGACALC)=' '
-      vname_bec2_diag_3d(1,indxOMEGAARAG)='OMEGA_ARAG'
-      vname_bec2_diag_3d(2,indxOMEGAARAG)=
-     &  'Aragonite saturation state'
-      vname_bec2_diag_3d(3,indxOMEGAARAG)=' '
-      vname_bec2_diag_3d(4,indxOMEGAARAG)=' '
-#   else
-      vname_bec2_diag_2d(1,indxCO3)='CO3'
-      vname_bec2_diag_2d(2,indxCO3)='carbonate ion (CO3-) concentration'
-      vname_bec2_diag_2d(3,indxCO3)='mmol/m3'
-      vname_bec2_diag_2d(4,indxCO3)=' '
-      vname_bec2_diag_2d(1,indxHCO3)='HCO3'
-      vname_bec2_diag_2d(2,indxHCO3)=
-     &  'bicarbonate ion (HCO3-) concentration'
-      vname_bec2_diag_2d(3,indxHCO3)='mmol/m3'
-      vname_bec2_diag_2d(4,indxHCO3)=' '
-#   endif /* CCHEM_TODEPTH */
-#  endif /* CCHEM_MOCSY */
 
       vname_bec2_diag_2d(1,indxFESEDFLUX)='SED_FE_FLUX'
       vname_bec2_diag_2d(2,indxFESEDFLUX)='Benthic Iron Flux'
@@ -727,22 +669,16 @@
 
 
       ! MF: Control BEC2_DIAG Output vars
-      wrtavg_bec2_diag_2d=(/.true.,.false.,.false.,.false.,.false.,   ! pCO2air, PARinc,FG_O2,FG_CO2, WS10m
+      wrtavg_bec2_diag_2d=(/.false.,.false.,.false.,.true.,.true.,   ! pCO2air, PARinc,FG_O2,FG_CO2, WS10m
      &                     .false.,.false.,.false.,.false.,.false.,   ! XKW, ATM_PRESS,SCHMIDT_O2,O2SAT, SCHMIDT_CO2
-     &                     .false.,.false.,.true.,.true.,.false.,    ! PVO2, PV_CO2,IRON_FLUX, SED_DENITRI, PH
-     &                     .true.,.false.,.false.,.false.,          ! PCO2, CO2STAR, PCO2OC, DCO2STAR
+     &                     .false.,.false.,.false.,.false.,.false.,    ! PVO2, PV_CO2,IRON_FLUX, SED_DENITRI, PH
+     &                     .false.,.false.,.false.,.false.,          ! PCO2, CO2STAR, PCO2OC, DCO2STAR
 #ifdef Ncycle_SY
-     &                     .false.,.false.,.true.,.true., !SCHMIDT_N2O, PV_N2O, N2OSAT, FG_N2O
-     &                     .false.,.false.,.true.,.true., !SCHMIDT_N2,PV_N2, N2SAT, FG_N2
-# ifdef N2O_TRACER_DECOMP
-     &                     .true.,.true.,.true.,.true., !FG_N2O_AO1,  FG_N2O_SIDEN, FG_N2O_SODEN, FG_N2O_ATM
+     &                     .false.,.false.,.false.,.false., !SCHMIDT_N2O, PV_N2O, N2OSAT, FG_N2O
+     &                     .false.,.false.,.false.,.false., !SCHMIDT_N2,PV_N2, N2SAT, FG_N2
 # endif
-# endif
-# ifdef N2O_NEV
-     &                     .true.,!FG_N2O_NEV
-#endif
-     &                     .false.,.false.,.false.,.false.,.false.,   ! FE_SED_FLUX,FLUX_TO_SED,CACO3_FLUX_TO_SED,SIO2_FLUX_TO_SED,PIRON_FLUX_TO_SED
-     &                     .false.,.true.,.true.,.false.,.false./)  ! DUST_FLUX_SED, POC_SED_LOSS, OTHER_REMIN,CaCO3_sed_loss,P_SiO2_sed_loss
+     &                     .true.,.false.,.false.,.false.,.false.,   ! FE_SED_FLUX,FLUX_TO_SED,CACO3_FLUX_TO_SED,SIO2_FLUX_TO_SED,PIRON_FLUX_TO_SED
+     &                     .false.,.false.,.false.,.false.,.false./)  ! DUST_FLUX_SED, POC_SED_LOSS, OTHER_REMIN,CaCO3_sed_loss,P_SiO2_sed_loss
 
       !
       ! More 3d diagnostics:
@@ -1250,20 +1186,6 @@
      &  'O2 production rate'
       vname_bec2_diag_3d(3,indxo2prod)='mmol O2/m3/s'
       vname_bec2_diag_3d(4,indxo2prod)=' '
-# ifdef N2O_NEV
-      vname_bec2_diag_3d(1,indxn2oconsnev)='N2O_CONS_NEV'
-      vname_bec2_diag_3d(2,indxn2oconsnev)=
-     &  'N2O consumption rate (Nevison)'
-      vname_bec2_diag_3d(3,indxn2oconsnev)='mmol N2O/m3/s'
-      vname_bec2_diag_3d(4,indxn2oconsnev)=' '
-
-      vname_bec2_diag_3d(1,indxn2oprodnev)='N2O_PROD_NEV'
-      vname_bec2_diag_3d(2,indxn2oprodnev)=
-     &  'N2O production rate (Nevison)'
-      vname_bec2_diag_3d(3,indxn2oprodnev)='mmol N2O/m3/s'
-      vname_bec2_diag_3d(4,indxn2oprodnev)=' '
-# endif
-
 
 # ifdef BEC_COCCO
       vname_bec2_diag_3d(1,indxGRAZECOCCO)='GRAZE_COCCO'
@@ -1412,26 +1334,6 @@
       vname_bec2_diag_3d(3,indxN2OAMMOX)='mmol/m3/s'
       vname_bec2_diag_3d(4,indxN2OAMMOX)=''
 
-      vname_bec2_diag_3d(1,indxN2OSODEN_CONS)='N2OSODEN_CONS'
-      vname_bec2_diag_3d(2,indxN2OSODEN_CONS)='N2O_SODEN consumption'
-      vname_bec2_diag_3d(3,indxN2OSODEN_CONS)='mmol/m3/s'
-      vname_bec2_diag_3d(4,indxN2OSODEN_CONS)=''
-
-      vname_bec2_diag_3d(1,indxN2OAO1_CONS)='N2OAO1_CONS'
-      vname_bec2_diag_3d(2,indxN2OAO1_CONS)='N2O_AO1 consumption'
-      vname_bec2_diag_3d(3,indxN2OAO1_CONS)='mmol/m3/s'
-      vname_bec2_diag_3d(4,indxN2OAO1_CONS)=''
-
-      vname_bec2_diag_3d(1,indxN2OSIDEN_CONS)='N2OSIDEN_CONS'
-      vname_bec2_diag_3d(2,indxN2OSIDEN_CONS)='N2O_SIDEN consumption'
-      vname_bec2_diag_3d(3,indxN2OSIDEN_CONS)='mmol/m3/s'
-      vname_bec2_diag_3d(4,indxN2OSIDEN_CONS)=''
-
-      vname_bec2_diag_3d(1,indxN2OATM_CONS)='N2OATM_CONS'
-      vname_bec2_diag_3d(2,indxN2OATM_CONS)='N2O_ATM consumption'
-      vname_bec2_diag_3d(3,indxN2OATM_CONS)='mmol/m3/s'
-      vname_bec2_diag_3d(4,indxN2OATM_CONS)=''
-
       vname_bec2_diag_3d(1,indxSPNO2UPTAKE)='SP_NO2_UPTAKE'
       vname_bec2_diag_3d(2,indxSPNO2UPTAKE)=
      &   'NO2 uptake rate of small phyto'
@@ -1453,131 +1355,19 @@
 # endif
 # endif /* BEC2_DIAG */
 
-# ifdef USE_EXPLICIT_VSINK
-! For output files:
-      vname(1,indxdusthard)='dust_hard                             '
-      vname(2,indxdusthard)='Hard component of dust                '
-      vname(3,indxdusthard)='kg m-3                                '
-      vname(4,indxdusthard)='  '
-      vname(1,indxdustsoft)='dust_soft                             '
-      vname(2,indxdustsoft)='Soft component of dust                '
-      vname(3,indxdustsoft)='kg m-3                                '
-      vname(4,indxdustsoft)='  '
-
-      vname(1,indxpochard)='POC_hard'
-      vname(2,indxpochard)='Hard component of POC'
-      vname(3,indxpochard)='mmol C/m^3'
-      vname(4,indxpochard)='  '
-      vname(1,indxpocsoft)='POC_soft'
-      vname(2,indxpocsoft)='Soft component of POC'
-      vname(3,indxpocsoft)='mmol C/m^3'
-      vname(4,indxpocsoft)='  '
-
-      vname(1,indxpcaco3hard)='PCaCO3_hard'
-      vname(2,indxpcaco3hard)='Hard component of particulate CaCO3'
-      vname(3,indxpcaco3hard)='mmol CaCO3/m^3'
-      vname(4,indxpcaco3hard)='  '
-      vname(1,indxpcaco3soft)='PCaCO3_soft'
-      vname(2,indxpcaco3soft)='Soft component of particulate CaCO3'
-      vname(3,indxpcaco3soft)='mmol CaCO3/m^3'
-      vname(4,indxpcaco3soft)='  '
-
-      vname(1,indxpsio2hard)='PSiO2_hard'
-      vname(2,indxpsio2hard)='Hard component of particulate SiO2'
-      vname(3,indxpsio2hard)='mmol Si/m^3'
-      vname(4,indxpsio2hard)='  '
-      vname(1,indxpsio2soft)='PSiO2_soft'
-      vname(2,indxpsio2soft)='Soft component of particulate SiO2'
-      vname(3,indxpsio2soft)='mmol Si/m^3'
-      vname(4,indxpsio2soft)='  '
-
-      vname(1,indxpironhard)='PFe_hard'
-      vname(2,indxpironhard)='Hard component of particulate iron'
-      vname(3,indxpironhard)='mmol Fe/m^3'
-      vname(4,indxpironhard)='  '
-      vname(1,indxpironsoft)='PFe_soft'
-      vname(2,indxpironsoft)='Soft component of particulate iron'
-      vname(3,indxpironsoft)='mmol Fe/m^3'
-      vname(4,indxpironsoft)='  '
-
-# if defined BEC2_DIAG
-      vname_bec2_diag_3d(1,indxDUSTHARDREMIN)='dust_hard_remin       '
-      vname_bec2_diag_3d(2,indxDUSTHARDREMIN)=
-     &       'Remin of Hard component of dust'
-      vname_bec2_diag_3d(3,indxDUSTHARDREMIN)='kg m-3 s-1 (check) '
-      vname_bec2_diag_3d(4,indxDUSTHARDREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxDUSTSOFTREMIN)='dust_soft_remin        '
-      vname_bec2_diag_3d(2,indxDUSTSOFTREMIN)=
-     &       'Remin of Soft component of dust'
-      vname_bec2_diag_3d(3,indxDUSTSOFTREMIN)='kg m-3 s-1 (check)   '
-      vname_bec2_diag_3d(4,indxDUSTSOFTREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxPOCHARDREMIN)='POC_hard_remin'
-      vname_bec2_diag_3d(2,indxPOCHARDREMIN)=
-     &        'Remin of Hard component of POC'
-      vname_bec2_diag_3d(3,indxPOCHARDREMIN)='mmol C m-3 s-1'
-      vname_bec2_diag_3d(4,indxPOCHARDREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxPOCSOFTREMIN)='POC_soft_remin'
-      vname_bec2_diag_3d(2,indxPOCSOFTREMIN)=
-     &        'Remin of Soft component of POC'
-      vname_bec2_diag_3d(3,indxPOCSOFTREMIN)='mmol C m-3 s-1'
-      vname_bec2_diag_3d(4,indxPOCSOFTREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxCACO3HARDREMIN)='CaCO3_hard_remin'
-      vname_bec2_diag_3d(2,indxCACO3HARDREMIN)=
-     &       'Remin of Hard component of CaCO3'
-      vname_bec2_diag_3d(3,indxCACO3HARDREMIN)='mmol CaCO3 m-3 s-1'
-      vname_bec2_diag_3d(4,indxCACO3HARDREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxCACO3SOFTREMIN)='CaCO3_soft_remin'
-      vname_bec2_diag_3d(2,indxCACO3SOFTREMIN)=
-     &        'Remin of Soft component of CaCO3'
-      vname_bec2_diag_3d(3,indxCACO3SOFTREMIN)='mmol CaCO3 m-3 s-1'
-      vname_bec2_diag_3d(4,indxCACO3SOFTREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxSIO2HARDREMIN)='SiO2_hard_remin'
-      vname_bec2_diag_3d(2,indxSIO2HARDREMIN)=
-     &         'Remin of Hard component of SiO2'
-      vname_bec2_diag_3d(3,indxSIO2HARDREMIN)='mmol Si m-3 s-1'
-      vname_bec2_diag_3d(4,indxSIO2HARDREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxSIO2SOFTREMIN)='SiO2_soft_remin'
-      vname_bec2_diag_3d(2,indxSIO2SOFTREMIN)=
-     &       'Remin of Soft component of SiO2'
-      vname_bec2_diag_3d(3,indxSIO2SOFTREMIN)='mmol Si m-3 s-1'
-      vname_bec2_diag_3d(4,indxSIO2SOFTREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxPIRONHARDREMIN)='PFe_hard_remin'
-      vname_bec2_diag_3d(2,indxPIRONHARDREMIN)=
-     &        'Remin of Hard component of piron'
-      vname_bec2_diag_3d(3,indxPIRONHARDREMIN)='mmol Fe m-3 s-1'
-      vname_bec2_diag_3d(4,indxPIRONHARDREMIN)='  '
-
-      vname_bec2_diag_3d(1,indxPIRONSOFTREMIN)='PFe_soft_remin'
-      vname_bec2_diag_3d(2,indxPIRONSOFTREMIN)=
-     &        'Remin of Soft component of piron'
-      vname_bec2_diag_3d(3,indxPIRONSOFTREMIN)='mmol Fe m-3 s-1'
-      vname_bec2_diag_3d(4,indxPIRONSOFTREMIN)='  '
-
-# endif /* BEC2_DIAG */
-# endif /* USE_EXPLICIT_VSINK */
-
-
 # ifdef BEC2_DIAG
 
         ! MF: Control BEC2_DIAG Output vars
-      wrtavg_bec2_diag_3d=(/.true.,.false.,.false.,.true.,.false.,      !PAR, POC_FLUX_IN, POC_Prod,POC_REMIN, CACO3_FLUX_IN,
+      wrtavg_bec2_diag_3d=(/.true.,.true.,.false.,.true.,.false.,      !PAR, POC_FLUX_IN, POC_Prod,POC_REMIN, CACO3_FLUX_IN,
      &                     .false.,.false.,.false.,.false.,.false.,       !PCACO3_PROD, CACO3_REMIN,SIO2_FLUX_IN, SIO2_PROD, SIO2_REMIN,
      &                     .false.,.false.,.false.,.false.,.false.,       !DUST_FLUX_IN, DUST_REMIN,P_IRON_FLUX_IN, P_IRON_PROD, P_IRON_REMIN,
      &                     .false.,.false.,.false.,.false.,.false.,       !GRAZE_SP, GRAZE_DIAT,GRAZE_DIAZ, SP_LOSS, DIAT_LOSS,
      &                     .false.,.false.,.false.,.false.,.false.,       !ZOO_LOSS, SP_AGG, DIAT_AGG,PHOTOC_SP, PHOTOC_DIA,
-     &                     .true.,.false.,.true.,.false.,.false.,       !TOT_PROD, DOC_PROD,DOC_REMIN, FE_SCAVENGE, SP_N_LIM,
+     &                     .true.,.false.,.true.,.true.,.false.,       !TOT_PROD, DOC_PROD,DOC_REMIN, FE_SCAVENGE, SP_N_LIM,
      &                     .false.,.false.,.false.,.false.,.false.,       !SP_FE_LIM, SP_PO4_LIM,SP_LIGHT_LIM, DIAT_N_LIM, DIAT_FE_LIM,
      &                     .false.,.false.,.false.,.false.,.false.,       !DIAT_PO4_LIM, DIAT_SIO3_LIM,DIAT_LIGHT_LIM, CACO3_PROD, DIAZ_NFIX,
      &                     .false.,.false.,.false.,.false.,.false.,       !DIAZ_LOSS, PHOTOC_DIAZ,DIAZ_PO4_LIM, DIAZ_FE_LIM, DIAZ_LIGHT_LIM,
-     &                     .true.,.false.,.false.,.false.,.false.,       !FE_SCAVENGE_RATE, DON_PROD,DON_REMIN, DOFE_PROD, DOFE_REMIN,
+     &                     .false.,.false.,.false.,.false.,.false.,       !FE_SCAVENGE_RATE, DON_PROD,DON_REMIN, DOFE_PROD, DOFE_REMIN,
      &                     .false.,.false.,.false.,.false.,.false.,     !DOP_PROD, DOP_REMIN,DIAT_SI_UPTAKE, PHOTOFE_SP, PHOTOFE_DIA,
      &                     .false.,.false.,.false.,.false.,.false.,    !PHOTOFE_DIAZ, NITRI,DENITRI,SP_NO3_UPTAKE,DIAT_NO3_UPTAKE,
      &                     .false.,.false.,.false.,.false.,.false.,  !DIAZ_NO3_UPTAKE,SP_NH4_UPTAKE, DIAT_NH4_UPTAKE,DIAZ_NH4_UPTAKE,SP_GRAZE_DIC,
@@ -1588,11 +1378,6 @@
      &                     .false.,.false.,.true.,.false.,           !SPCACO3_ZERO, DONR_REMIN, TOTCHL, SP_P_LIM
      &                     .false.,.false.,.false.,.false.,.false.      !DIAT_P_LIM,DIAZ_P_LIM, TOT_PHYTO_C, O2_CONSUMPTION, O2_PRODUCTION
      ! 93 tracer
-# ifdef USE_EXPLICIT_VSINK
-     ! +10 -> 101 tracer
-     &                     ,.false.,.true.,.true.,.false.,.true.,  ! PIRON_HARD_REMIN, CACO3_HARD_REMIN, SIO2_HARD_REMIN, POC_HARD_REMIN,DUST_HARD_REMIN
-     &                     .true.,.true.,.true.,.true.,.true.    ! PIRON_SOFT_REMIN, CACO3_SOFT_REMIN, SIO2_SOFT_REMIN, POC_SOFT_REMIN,DUST_SOFT_REMIN
-# endif
 # ifdef BEC_COCCO
      ! + 18 -> 119 tracer (w/ expl sinking) or 109 tracer (w/ impl sinking)
      &                     ,.true., ! GRAZE_COCCO
@@ -1603,12 +1388,8 @@
      &                     .true.   ! COCCO_P_LIM
 # endif
 # ifdef Ncycle_SY
-     &                     ,.true.,.true.,.true.,.true.,.true.,.true.!AMMOX, NITROX,ANAMMOX,DENITRIF1,DENITRIF2,DENITRIF3
-     &                     ,.true.,.true.,.true., .true., .true. !SP_NO2_UPTAKE,DIAT_NO2_UPTAKE, DIAZ_NO2_UPTAKE, N2OAMMOX, N2OSODEN_CONS
-     &                     ,.true.,.true.,.true. !N2OAO1_CONS, N2OATM_CONS, N2OSIDEN_CONS
-# endif
-# ifdef N2O_NEV
-     &                     ,.true.,.true. ! n2o_cons_nev, n2o_prod_nev
+     &                     ,.true.,.true.,.false.,.false.,.false.,.false.!AMMOX, NITROX,ANAMMOX,DENITRIF1,DENITRIF2,DENITRIF3
+     &                     ,.false.,.false.,.false.,.false. !SP_NO2_UPTAKE,DIAT_NO2_UPTAKE, DIAZ_NO2_UPTAKE, N2OAMMOX,
 # endif
      &                     /)
 
@@ -1652,16 +1433,6 @@
       tclm_name(iNO2) = 'no2_time'
       tclm_name(iN2) = 'n2_time'
       tclm_name(iN2O) = 'n2o_time'
-# ifdef N2O_TRACER_DECOMP
-      tclm_name(iN2O_AO1) = 'n2o_ao1_time'
-      tclm_name(iN2O_SIDEN) = 'n2o_siden_time'
-      tclm_name(iN2O_SODEN) = 'n2o_soden_time'
-      tclm_name(iN2O_ATM) = 'n2o_atm_time'
-      tclm_name(iN2_SED) = 'n2_sed_time'
-# endif
-# endif
-# ifdef N2O_NEV
-      tclm_name(iN2O_NEV) = 'n2o_nev_time'
 # endif
 #endif /* SOLVE3D */
 
