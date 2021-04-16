@@ -59,11 +59,6 @@ c      v3bc_max=0.
       rx0=-1.E+20    ; rx1=-1.E+20      ! context.
 #endif
       bc_crss=QuadZero
-#ifdef BIOLOGY
-      do i=0,2*NT+1
-        global_sum(i)=QuadZero
-      enddo
-#endif
                              ! Set slipperness parameter to "free slip"
       gamma2=1.              ! along the straight boundaries: this may
                              ! be overwritten later by "read_inp".

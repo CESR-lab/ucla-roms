@@ -5,16 +5,6 @@
 ! It must be define in ncvars.h and should be redefined accordingly
 ! at the end of this include file
 
-#ifdef BIOLOGY_NPZDOC
-# ifdef CARBON
-       integer, parameter :: indxPH_rst=LAST_I+1
-     &                   , indxPCO2_rst=indxPH_rst+1
-     &                   , indxPCO2air_rst=indxPCO2_rst+1
-#  undef LAST_I
-#  define LAST_I indxPCO2air_rst
-# endif
-#endif /* BIOLOGY_NPZDOC */
-
 #ifdef BIOLOGY_BEC2
       integer, parameter :: indxdust=LAST_I+1
      &            , indxiron=LAST_I+2
@@ -47,30 +37,7 @@
      &            , indxfgn2=LAST_I+7, indxn2sat=LAST_I+8
 # undef LAST_I
 # define LAST_I indxn2sat
-# ifdef N2O_TRACER_DECOMP
-     &            , indxfgn2o_ao1=LAST_I+1, indxfgn2o_siden=LAST_I+2
-     &            , indxfgn2o_soden=LAST_I+3, indxfgn2o_atm=LAST_I+4
-# undef LAST_I
-# define LAST_I indxfgn2o_atm
 # endif
-# endif
-# ifdef N2O_NEV
-     &            , indxfgn2o_nev=LAST_I+1
-# undef LAST_I
-# define LAST_I indxfgn2o_nev
-# endif
-#  ifdef CCHEM_MOCSY
-#   if !defined CCHEM_TODEPTH
-     &            , indxPH=LAST_I+1, indxPCO2=LAST_I+2, indxCO3=LAST_I+3
-     &            , indxHCO3=LAST_I+4, indxCO2STAR=LAST_I+5
-# undef LAST_I
-# define LAST_I indxCO2STAR
-#   endif
-#  else /* CCHEM_MOCSY */
-!     &            , indxPH=LAST_I+1, indxPCO2=LAST_I+2, indxCO2STAR=LAST_I+3
-!# undef LAST_I
-!# define LAST_I indxCO2STAR
-#  endif /* CCHEM_MOCSY */
      &            , indxFESEDFLUX=LAST_I+1,indxFLUXTOSED=LAST_I+2,indxCACO3FLUXTOSED=LAST_I+3
      &            , indxSIO2FLUXTOSED=LAST_I+4,indxPIRONFLUXTOSED=LAST_I+5
      &            , indxDUSTFLUXTOSED=LAST_I+6,indxPOCSEDLOSS=LAST_I+7
@@ -115,25 +82,6 @@
      &            , indxTOTPHYTOC=indxPAR+90, indxo2cons=indxPAR+91, indxo2prod=indxPAR+92
 #  undef LAST_I
 #  define LAST_I indxO2PROD
-#  if defined CCHEM_MOCSY && defined CCHEM_TODEPTH
-     &            , indxPH=indxPAR+91, indxPCO2=indxPH+1, indxCO3=indxPH+2
-     &            , indxHCO3=indxPH+3, indxCO2STAR=indxPH+4
-     &            , indxOMEGACALC=indxPH+5, indxOMEGAARAG=indxPH+6
-#  undef LAST_I
-#  define LAST_I indxOMEGAARAG
-#  endif
-# ifdef USE_EXPLICIT_VSINK
-     &            , indxPIRONHARDREMIN=LAST_I+1,indxCACO3HARDREMIN=LAST_I+2
-     &            , indxSIO2HARDREMIN=LAST_I+3
-     &            , indxPOCHARDREMIN=LAST_I+4,indxDUSTHARDREMIN=LAST_I+5
-     &            , indxPIRONSOFTREMIN=LAST_I+6,indxCACO3SOFTREMIN=LAST_I+7
-     &            , indxSIO2SOFTREMIN=LAST_I+8
-     &            , indxPOCSOFTREMIN=LAST_I+9,indxDUSTSOFTREMIN=LAST_I+10
-#  undef LAST_I
-#  define LAST_I indxDUSTSOFTREMIN
-# else /* USE_EXPLICIT_VSINK */
-! already defined above
-# endif /* USE_EXPLICIT_VSINK */
 # ifdef BEC_COCCO
      &            , indxGRAZECOCCO=LAST_I+1,indxCOCCOLOSS=LAST_I+2
      &            , indxCOCCOAGG=LAST_I+3,indxPHOTOCCOCCO=LAST_I+4,indxCOCCONLIM=LAST_I+5
@@ -151,13 +99,9 @@
      &            , indxammox=LAST_I+1,indxnitrox=LAST_I+2
      &            , indxanammox=LAST_I+3,indxDENITRIF1=LAST_I+4,indxDENITRIF2=LAST_I+5
      &            , indxDENITRIF3=LAST_I+6, indxSPNO2UPTAKE=LAST_I+7,indxDIATNO2UPTAKE=LAST_I+8
-     &            , indxDIAZNO2UPTAKE=LAST_I+9, indxN2OAMMOX=LAST_I+10, indxN2OSODEN_CONS=LAST_I+11
-     &            , indxN2OAO1_CONS=LAST_I+12, indxN2OATM_CONS=LAST_I+13, indxN2OSIDEN_CONS=LAST_I+14
+     &            , indxDIAZNO2UPTAKE=LAST_I+9, indxN2OAMMOX=LAST_I+10 
 #  undef LAST_I
-#  define LAST_I indxN2OSIDEN_CONS
-# endif
-# ifdef N2O_NEV
-     &            , indxn2oprodnev=LAST_I+1,indxn2oconsnev=LAST_I+2
+#  define LAST_I indxN2OAMMOX
 # endif
 
 
@@ -168,18 +112,11 @@
 ! Integer NetCDF IDs for BIOLOGY variables
 !
 
-#if defined BIOLOGY_NPZDOC || defined BIOLOGY_BEC2
+#if defined BIOLOGY_BEC2
       integer rstPH, rstPCO2, rstPCO2air, rstPAR
      &      , hisPH, hisPCO2, hisPCO2air, hisPARinc, hisPAR
-# ifdef CH_CARBON_DEPTH
-     &      , rstHCO3d, rstCO3d, rstCO2STARd, rstPHd
-     &      , hisHCO3d, hisCO3d, hisCO2STARd, hisPHd
-# endif
 # ifdef AVERAGES
      &      , avgPH, avgPCO2, avgPCO2air, avgPARinc, avgPAR
-#  ifdef CH_CARBON_DEPTH
-     &      , avgHCO3d, avgCO3d, avgCO2STARd, avgPHd
-#  endif
 # endif /* AVERAGES */
 # ifdef SLICE_AVG
      &      , slavgPH, slavgPCO2, slavgPCO2air, slavgPARinc, slavgPAR
@@ -208,24 +145,24 @@
 # if defined BGC_FLUX_ANALYSIS && !defined PHYS_FLUX_ANALYSIS
      &      , rstTstepFA
 # endif
-#endif /* BIOLOGY_NPZDOC or BIOLOGY_BEC2 */
+#endif /* BIOLOGY_BEC2 */
 
 
-#ifdef SEDIMENT_BIOLOGY
-      integer, dimension(NT_sed) :: rstTsed, hisTsed
-# ifdef AVERAGES
-     &       , avgTsed
-# endif
-# ifdef SLICE_AVG
-     &       , slavgTset
-# endif
-      common /ncvars/ rstTsed, hisTsed
-# ifdef AVERAGES
-     &      , avgTsed
-# endif
-# ifdef SLICE_AVG
-     &      , slavgTsed
-# endif
-#endif /* SEDIMENT_BIOLOGY */
+!#ifdef SEDIMENT_BIOLOGY
+!      integer, dimension(NT_sed) :: rstTsed, hisTsed
+!# ifdef AVERAGES
+!     &       , avgTsed
+!# endif
+!# ifdef SLICE_AVG
+!     &       , slavgTset
+!# endif
+!      common /ncvars/ rstTsed, hisTsed
+!# ifdef AVERAGES
+!     &      , avgTsed
+!# endif
+!# ifdef SLICE_AVG
+!     &      , slavgTsed
+!# endif
+!#endif /* SEDIMENT_BIOLOGY */
 
 

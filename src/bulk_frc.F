@@ -130,6 +130,7 @@
       integer :: swrad_it1 = 1, swrad_it2 = 2
       real, dimension(2) :: swrad_times = [-99,-99]
 
+      real, public :: wspd_used(GLOBAL_2D_ARRAY)  ! wind speed at rho point (also used in BGC routines)
 
       ! TAU_CORRECTION
       ! ==============
@@ -751,7 +752,7 @@
 
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
-          wspd=sqrt(uwnd(i,j)*uwnd(i,j)+vwnd(i,j)*vwnd(i,j))
+          wspd_used(i,j)=sqrt(uwnd(i,j)*uwnd(i,j)+vwnd(i,j)*vwnd(i,j))
 
 !          tair=cff3*tairg(i,j,it3)  +cff4*tairg(i,j,it4) ! DevinD time only
 !          rhum=cff5*rhumg(i,j,it5)  +cff6*rhumg(i,j,it6) ! DevinD time only
@@ -760,7 +761,7 @@
           ! convert [Watts/m^2] into kinematic flux [degC*m/s]
           radlw=lwrad(i,j) / (rho0*Cp)
 
-          wspd0=wspd
+          wspd0=wspd_used(i,j)
           TairC=tair(i,j) ! DevinD
           TairK=TairC+273.16
 # ifdef SST_SKIN

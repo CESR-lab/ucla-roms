@@ -122,15 +122,21 @@ c-dd#define TAU_CORRECTION
 
 /* Biology Settings */
 #ifdef BIOLOGY_BEC2
-# define BIOLOGY /* Needed for init_scalars.F */
-# define DEFAULT_BRY_VALUES
-# define BEC2_DIAG
-# define Ncycle_SY
-# define N2O_TRACER_DECOMP
-# define N2O_NEV
-# undef RIVER_LOAD_N /* PD had undef'ed */
-# undef RIVER_LOAD_P /* PD had undef'ed */
-# define PCO2AIR_FORCING
+# define BIOLOGY                  /* DPD current does nothing in new code. Needed for init_scalars.F */
+# define DEFAULT_BRY_VALUES       /* Default values set to tracers not found in bry forcing file */
+# define BEC2_DIAG                /* BGC diagnostics */
+# define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
+# undef N2O_TRACER_DECOMP         /* Deleted  */
+# undef N2O_NEV                   /* Deleted  */
+# undef RIVER_LOAD_N              /* under construction */ 
+# undef RIVER_LOAD_P              /* under construction */
+c-dd# undef define NHY_FORCING        /* under construction */
+c-dd# undef define NOX_FORCING        /* under construction */
+# define PCO2AIR_FORCING          /* CO2 forcing */
+# undef BEC_COCCO                 /* Coccolitophorus */ 
+# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
+# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 
+# undef DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
 #endif /* BIOLOGY_BEC2 */
 
 #define BULK_FRC

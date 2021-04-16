@@ -44,16 +44,4 @@
      & , iNO2=0
      & , iN2 =0
      & , iN2O=0
-# ifdef N2O_TRACER_DECOMP
-     & , iN2O_AO1=0
-     & , iN2O_SIDEN=0
-     & , iN2O_SODEN=0
-     & , iN2O_ATM=0
-     & , iN2_SED=0
-# endif /* N2O_TRACER_DECOMP */
-# ifdef N2O_NEV
-     & , iN2O_NEV=0
-# endif /* N2O_NEV*/
-#elif defined N2O_NEV
-     & , iN2O_NEV=0
 #endif /* Ncycle_SY */
