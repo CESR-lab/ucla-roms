@@ -108,7 +108,12 @@
       integer,intent(in) :: istr,iend,jstr,jend
       
       ! local
-      integer :: ibgc
+      integer :: ibgc, i, j
+
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+# include "scalars.h"
+# include "compute_extended_bounds.h"
+#endif
 
       ! dust & iron controlled by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
