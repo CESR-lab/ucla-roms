@@ -10,6 +10,9 @@
 # ifdef BULK_FRC
        use bulk_frc, only: wspd_used ! to compute gas exchange
 # endif
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+       use bgc, only: srflx_dailyavg
+#endif
 
        implicit none
 
