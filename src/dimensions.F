@@ -45,6 +45,9 @@
                                                ! of subdomain based on global index numbering
       implicit none
 
+      ! This routine includes start and end of boundary edges to include ghost point!
+      ! E.g. glob_istr=0 for western edge and glob_iend=LLm+1 for eastern edge!
+
       if     (WESTERN_MPI_EDGE) then
         glob_istr=iSW_corn+iwest-1             ! -1 as global rho-points start from 0
       else
@@ -73,8 +76,10 @@
         glob_jend=glob_jstr+jnorth-1
       endif
 
+!      print *, mynode,glob_istr,glob_iend,glob_jstr,glob_jend
 
       end subroutine set_global_ij_SW_NE_corners
+
 ! ----------------------------------------------------------------------
 
       end module dimensions
