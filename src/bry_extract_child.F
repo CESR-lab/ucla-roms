@@ -204,11 +204,17 @@
       real,    dimension(:,:), allocatable :: south_v2u_cffs, west_v2u_cffs,        ! 4 interpolation coefficients to interp from 4 parent v-points surronding child u-point.
      &                                        north_v2u_cffs, east_v2u_cffs         ! i=each bry point. j=1-4 (4 interpolants).
 
-      integer, dimension(:),   allocatable :: isu2u_sw, jsu2u_sw, iwu2u_sw, jwu2u_sw, ! sw parent interpolant i and j position
+      real,    dimension(:,:), allocatable :: south_r2u_cffs, west_r2u_cffs,        ! 4 interpolation coefficients to interp from 4 parent r-points surronding child u-point. (angle)
+     &                                        north_r2u_cffs, east_r2u_cffs
+
+      integer, dimension(:),   allocatable :: isu2u_sw, jsu2u_sw, iwu2u_sw, jwu2u_sw, ! uparent 2 uchild sw parent interpolant i and j position
      &                                        inu2u_sw, jnu2u_sw, ieu2u_sw, jeu2u_sw
 
-      integer, dimension(:),   allocatable :: isv2u_sw, jsv2u_sw, iwv2u_sw, jwv2u_sw, ! sw parent interpolant i and j position
+      integer, dimension(:),   allocatable :: isv2u_sw, jsv2u_sw, iwv2u_sw, jwv2u_sw, ! vparent 2 uchild sw parent interpolant i and j position
      &                                        inv2u_sw, jnv2u_sw, iev2u_sw, jev2u_sw
+
+      integer, dimension(:),   allocatable :: isr2u_sw, jsr2u_sw, iwr2u_sw, jwr2u_sw, ! vparent 2 uchild sw parent interpolant i and j position
+     &                                        inr2u_sw, jnr2u_sw, ier2u_sw, jer2u_sw
 
       real,    dimension(:,:), allocatable :: usouth,   uwest,    unorth,   ueast,    ! final interpolated & rotated variable (2D or 3D)
      &                                        us_uprnt, uw_uprnt, un_uprnt, ue_uprnt, ! u value of parent at child u location
@@ -444,20 +450,18 @@
 
       ! u cffs:
       if (allocated(iu_south)) then
-        call calc_bry_coeffs(u_tot(1), iu_south, ju_south, south_u2u_cffs,
+        call calc_bry_coeffs(u_tot(1), iu_south, ju_south, south_u2u_cffs,  ! cffs to interp parent u to child u
      &                       isu2u_sw, jsu2u_sw, up_var,   up_var        )
-        ! now we need to get u-point in terms of v-points to interpolate parent v to child u position:
-        call calc_bry_coeffs(u_tot(1), iu_south, ju_south, south_v2u_cffs,
+        call calc_bry_coeffs(u_tot(1), iu_south, ju_south, south_v2u_cffs,  ! cffs to interp parent v to child u
      &                       isv2u_sw, jsv2u_sw, vp_var,   up_var        )
+        call calc_bry_coeffs(u_tot(1), iu_south, ju_south, south_r2u_cffs,  ! cffs to interp parent r to child u (angle)
+     &                       isr2u_sw, jsr2u_sw, rp_var,   up_var        )
       endif
-!      if (allocated(ir_west))  then
-!        call calc_bry_coeffs(u_tot(2), iu_west,  ju_west,  west_u2u_cffs,  iwu2u_sw, jwu_sw)
+!      if (allocated(iu_west))  then
 !      endif
-!      if (allocated(ir_north)) then
-!        call calc_bry_coeffs(r_tot(3), ir_north, jr_north, north_r_cffs, inr_sw, jnr_sw)
+!      if (allocated(iu_north)) then
 !      endif
-!      if (allocated(ir_east))  then
-!        call calc_bry_coeffs(r_tot(4),  ir_east, jr_east,  east_r_cffs,  ier_sw, jer_sw)
+!      if (allocated(iu_east))  then
 !      endif
 
       rt2=sqrt(2.0)  ! set interpolation coefficient once
@@ -496,6 +500,8 @@
       !
       ! These interpolation coefficients can be used for all vertical layers.
       !
+      ! We need to shift
+      !
       !]
 
       implicit none
@@ -533,29 +539,32 @@
       elseif (p_vtype==vp_var .and. c_vtype==up_var) then
         sx=-0.5                                            ! shift i_u   to i_rho
         sy=+0.5                                            ! shift j_rho to j_v
+      elseif (p_vtype==rp_var .and. c_vtype==up_var) then
+        sx=-0.5                                            ! shift i_u   to i_rho
+        sy=+0.5                                            ! shift j_rho to j_v
       endif
 
-      do ij=1,bry_tot                                  ! Since glob_istr=0 on western_edge to catch child in ghost row in assign_child_interpolation_coeffs
-                                                       ! we need to treat W & S edges diferently.
-        if (inode==0) then                             ! western_edge
-          i_sw(ij) = floor(i_bry(ij)+sx) - glob_istr      ! local coords, set the SW parent i position. western edge glob_istr=0 not 1 hence no +1
+      do ij=1,bry_tot                                      ! Since glob_istr=0 on western_edge to catch child in ghost row in assign_child_interpolation_coeffs
+                                                           ! we need to treat W & S edges diferently.
+        if (inode==0) then                                 ! western_edge
+          i_sw(ij) = floor(i_bry(ij)+sx) - glob_istr       ! local coords, set the SW parent i position. western edge glob_istr=0 not 1 hence no +1
         else
-          i_sw(ij) = floor(i_bry(ij)+sx) - glob_istr + 1  ! +1 since e.g. glob_jstr=51, j_bry=51.23 want sw corner to be 1 not 0
+          i_sw(ij) = floor(i_bry(ij)+sx) - glob_istr + 1   ! +1 since e.g. glob_jstr=51, j_bry=51.23 want sw corner to be 1 not 0
         endif
 
-        if (jnode==0) then                             ! eastern_edge
-          j_sw(ij) = floor(j_bry(ij)+sy) - glob_jstr      ! local coords, set the SW parent j position
+        if (jnode==0) then                                 ! eastern_edge
+          j_sw(ij) = floor(j_bry(ij)+sy) - glob_jstr       ! local coords, set the SW parent j position
         else
           j_sw(ij) = floor(j_bry(ij)+sy) - glob_jstr + 1
         endif
 
-        ri = i_bry(ij) - floor(i_bry(ij))              ! i fraction (e.g. 23.47 - 23 = 0.47)
-        rj = j_bry(ij) - floor(j_bry(ij))              ! j fraction
+        ri = i_bry(ij)+sx - floor(i_bry(ij)+sx)            ! i fraction (e.g. 23.47 - 23 = 0.47)
+        rj = j_bry(ij)+sy - floor(j_bry(ij)+sy)            ! j fraction
 
-        cffs(1,ij) = (1-ri)*(1-rj)                     ! sw parent interp
-        cffs(2,ij) =    ri *(1-rj)                     ! se parent interp
-        cffs(3,ij) = (1-ri)*   rj                      ! nw parent interp
-        cffs(4,ij) =    ri *   rj                      ! ne parent interp
+        cffs(1,ij) = (1-ri)*(1-rj)                         ! sw parent interp
+        cffs(2,ij) =    ri *(1-rj)                         ! se parent interp
+        cffs(3,ij) = (1-ri)*   rj                          ! nw parent interp
+        cffs(4,ij) =    ri *   rj                          ! ne parent interp
 
 !        if(mynode==1) then ! debug
 !          if(ij<3) then
@@ -736,7 +745,7 @@
       if (.not. allocated(ubry)) allocate( ubry(bry_tot, N))   ! allocate once for 3D var and reuse for all 2D/3D vars
 
       do ij=1,u_tot(1)
-        do k=1,nmax
+        do k=1,nmax  ! calculate trg outside of k loop! Store lookup table rather to only do trig once!!
           ubry(ij,k) = uparent(ij,k) * cos(angl) - vparent(ij,k) * sin(angl)
         enddo
       enddo
