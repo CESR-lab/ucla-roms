@@ -32,13 +32,14 @@ clc; clear
 %% init
 
 % START USER INPUT ----------
-pname = 'sample_grd_riv.nc';                                                % parent grid
+grids_dir  = '/home/devin/code-roms-versions/eclipse/WEC/WEC_simus/bry_child_2021_03/'; % directory of grid files
+pname      = append(grids_dir, 'sample_grd_riv.nc');                        % parent grid
 pgrid_info = 'Sample domain - Santa Barbara. 120m grid.';                   % identifiable info about grid to add to output file
 
-cname = 'sample_child_grd.nc';                                              % child grid
+cname      = append(grids_dir, 'sample_child_grd.nc');                       % child grid
 cgrid_info = 'Sample child grid - Santa Barbara. 50m grid.';
 
-bcname = 'sample_child_ij_bry.nc';                                          % output file name of i/j child points in parent coords
+bcname     = append(grids_dir, 'sample_child_ij_bry.nc');                   % output file name of i/j child points in parent coords
 delete(bcname);                                                             % prevents overwriting error
 
 OBC_SWNE = [1,1,1,0];                                                       % choose open boundaries: south,west,north,east. 1=yes, 0=no.
@@ -49,9 +50,10 @@ dim_names  = [ "xi_rho"  "eta_rho"  "xi_rho"  "eta_rho" ];
 dim_unames = [ "xi_u"    "eta_rho"  "xi_u"    "eta_rho" ];
 dim_vnames = [ "xi_rho"  "eta_v"    "xi_rho"  "eta_v"   ];
 
-lonc = ncread(cname,'lon_rho') - 360;  
-latc = ncread(cname,'lat_rho');
-mskc = ncread(cname,'mask_rho');
+lonc     = ncread(cname,'lon_rho') - 360;  
+latc     = ncread(cname,'lat_rho');
+mskc     = ncread(cname,'mask_rho');
+anglec_r = ncread(cname,'angle');
 
 lonp = ncread(pname,'lon_rho');        
 latp = ncread(pname,'lat_rho');
@@ -81,13 +83,15 @@ for b=1:4
         %% rho positions:
         
         irbry_name = strcat('i_rho_',bry_names(b));       
-        jrbry_name = strcat('j_rho_',bry_names(b));       
+        jrbry_name = strcat('j_rho_',bry_names(b));
+        anglb_name = strcat('angle_rho_',bry_names(b));
 
         blname = strcat(bry_names(b),' child boundary in parent grid coordinates'); % long name
 
         lonbc = lonc( b_xrows(b,1):b_xrows(b,2) , b_yrows(b,1):b_yrows(b,2) );      % 1st 2 rows/cols (S & W) or last 2 rows/cols (N & E) of grid
         latbc = latc( b_xrows(b,1):b_xrows(b,2) , b_yrows(b,1):b_yrows(b,2) );
         mskbc = mskc( b_xrows(b,1):b_xrows(b,2) , b_yrows(b,1):b_yrows(b,2) );
+        angcr2 = anglec_r( b_xrows(b,1):b_xrows(b,2) , b_yrows(b,1):b_yrows(b,2) );
 
         ic_rho = griddata(lonp,latp,ip_rho,lonbc,latbc).*mskbc+(mskbc-1);           % +(mskbc-1) does nothing if ocean, and sets value to -1 if mask
         jc_rho = griddata(lonp,latp,jp_rho,lonbc,latbc).*mskbc+(mskbc-1);           
@@ -103,13 +107,19 @@ for b=1:4
         nccreate(bcname, jrbry_name, 'dimensions', {dim_names(b), b_rdimsize(b)},'datatype','single');
         ncwriteatt(bcname, jrbry_name, 'long_name', strcat('j-rho coordinate of',{' '}, blname));
         ncwriteatt(bcname, jrbry_name, 'units', 'non-dimensional');
+        
+        nccreate(bcname, anglb_name, 'dimensions', {dim_names(b), b_rdimsize(b)},'datatype','single');
+        ncwriteatt(bcname, anglb_name, 'long_name', strcat('angle at rho of',{' '}, blname));
+        ncwriteatt(bcname, anglb_name, 'units', 'radians');        
 
         if b==1 || b==3                                                             % transpose indices if W or E boundaries (since only printing one row/column)
             ncwrite(bcname, irbry_name, ic_rho( :,b_indx(b) ) );  
-            ncwrite(bcname, jrbry_name, jc_rho( :,b_indx(b) ));
+            ncwrite(bcname, jrbry_name, jc_rho( :,b_indx(b) ) );
+            ncwrite(bcname, anglb_name, angcr2( :,b_indx(b) ) );
         else
             ncwrite(bcname, irbry_name, ic_rho( b_indx(b),: )');
-            ncwrite(bcname, jrbry_name, jc_rho( b_indx(b),: )');        
+            ncwrite(bcname, jrbry_name, jc_rho( b_indx(b),: )');
+            ncwrite(bcname, anglb_name, angcr2( b_indx(b),: )');
         end        
         
         %% u positions:
@@ -120,11 +130,13 @@ for b=1:4
                 ic_u(i) = 0.5 + 0.5 * ( ic_rho( i, b_indx(b) ) + ic_rho( i+1, b_indx(b) ) );  % b_indx(b) is to choose outer edge of 2 bry rows. 
                                                                                               % +0.5 for u-point shift from rho point.
                 jc_u(i) =       0.5 * ( jc_rho( i, b_indx(b) ) + jc_rho( i+1, b_indx(b) ) );  % no +0.5 as j is at rho coordinate for u-points
-                                                                                              % jc_u not the same as jc_rho since child is at an angle to parent.
+                                                                                              % jc_u not the same as jc_rho since child is at an angle to parent.                                                                                             
                 if ic_rho( i, b_indx(b) ) == -1 || ic_rho( i+1, b_indx(b) ) == -1             % catch umask! rmask was set to -1 above in rho section
                     ic_u(i) = -1;
                     jc_u(i) = -1;
-                end              
+                end   
+                
+                anglec_u(i) =   0.5 * ( angcr2( i, b_indx(b) ) + angcr2( i+1, b_indx(b) ) );  % child angle at bry u-points                
             end
         else             % W/E boundaries (transpose)                     
           
@@ -136,7 +148,9 @@ for b=1:4
                 if ic_rho( 1 , j ) == -1 || ic_rho( 2, j ) == -1                              % catch umask
                     ic_u(j) = -1;
                     jc_u(j) = -1;
-                end            
+                end
+                
+                anglec_u(j) =    0.5 * ( angcr2( 1 , j )       + angcr2( 2 , j ) );              
             end            
         end      
               
@@ -153,7 +167,13 @@ for b=1:4
         ncwriteatt(bcname, jubry_name, 'units', 'non-dimensional');
         ncwrite(bcname, jubry_name, jc_u );
         clear jc_u;
-             
+
+        anglb_name = strcat('angle_u_',bry_names(b));
+        nccreate(bcname, anglb_name, 'dimensions', {dim_unames(b), b_udimsize(b)},'datatype','single');
+        ncwriteatt(bcname, anglb_name, 'long_name', strcat('angle at u-point of',{' '}, blname));
+        ncwriteatt(bcname, anglb_name, 'units', 'radians'); 
+        ncwrite(bcname, anglb_name, anglec_u );
+        clear anglec_u;
                     
         %% v positions:
       
@@ -168,7 +188,9 @@ for b=1:4
                 if ic_rho( i, 1 ) == -1 || ic_rho( i, 2 ) == -1             % catch vmask
                     ic_v(i) = -1;
                     jc_v(i) = -1;
-                end              
+                end
+                
+                anglec_v(i) =       0.5 * ( angcr2( i, 1 ) + angcr2( i, 2 ) ); % child angle at bry v-points                
             end
         else                                                                % W/E boundaries (transpose)                     
           
@@ -181,7 +203,9 @@ for b=1:4
                 if ic_rho( b_indx(b) , j ) == -1 || ic_rho( b_indx(b), j+1 ) == -1            % catch vmask
                     ic_v(j) = -1;
                     jc_v(j) = -1;
-                end            
+                end
+                
+                anglec_v(j) =   0.5 * ( angcr2( b_indx(b) , j ) + angcr2( b_indx(b), j+1 ) );
             end            
         end      
       
@@ -199,6 +223,12 @@ for b=1:4
         ncwrite(bcname, jvbry_name, jc_v );
         clear jc_v;     
 
+        anglb_name = strcat('angle_v_',bry_names(b));
+        nccreate(bcname, anglb_name, 'dimensions', {dim_vnames(b), b_vdimsize(b)},'datatype','single');
+        ncwriteatt(bcname, anglb_name, 'long_name', strcat('angle at v-point of',{' '}, blname));
+        ncwriteatt(bcname, anglb_name, 'units', 'radians'); 
+        ncwrite(bcname, anglb_name, anglec_v );
+        clear anglec_v;        
 
 	end
    
