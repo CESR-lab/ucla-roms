@@ -106,20 +106,14 @@ for b=1:4
 
         nccreate(bcname, jrbry_name, 'dimensions', {dim_names(b), b_rdimsize(b)},'datatype','single');
         ncwriteatt(bcname, jrbry_name, 'long_name', strcat('j-rho coordinate of',{' '}, blname));
-        ncwriteatt(bcname, jrbry_name, 'units', 'non-dimensional');
-        
-        nccreate(bcname, anglb_name, 'dimensions', {dim_names(b), b_rdimsize(b)},'datatype','single');
-        ncwriteatt(bcname, anglb_name, 'long_name', strcat('angle at rho of',{' '}, blname));
-        ncwriteatt(bcname, anglb_name, 'units', 'radians');        
+        ncwriteatt(bcname, jrbry_name, 'units', 'non-dimensional');       
 
         if b==1 || b==3                                                             % transpose indices if W or E boundaries (since only printing one row/column)
             ncwrite(bcname, irbry_name, ic_rho( :,b_indx(b) ) );  
             ncwrite(bcname, jrbry_name, jc_rho( :,b_indx(b) ) );
-            ncwrite(bcname, anglb_name, angcr2( :,b_indx(b) ) );
         else
             ncwrite(bcname, irbry_name, ic_rho( b_indx(b),: )');
             ncwrite(bcname, jrbry_name, jc_rho( b_indx(b),: )');
-            ncwrite(bcname, anglb_name, angcr2( b_indx(b),: )');
         end        
         
         %% u positions:
