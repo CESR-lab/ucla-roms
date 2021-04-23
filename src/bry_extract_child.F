@@ -146,6 +146,7 @@
       private
 
 #include "ocean2d.h"
+#include "ocean3d.h"
 ! scalars.h for 'knew' var
 #include "scalars.h"
 
@@ -278,13 +279,17 @@
       call wrt_child_bry( indxUb, 1, .false., usouth, uwest, unorth, ueast, u_tot )
 
       ! vbar:
+
       ! u:
+      call interpolate_u_child_bry( u(START_2D_ARRAY,1,nstp), v(START_2D_ARRAY,1,nstp), N )
+      call wrt_child_bry( indxU,  N, .false., usouth, uwest, unorth, ueast, u_tot )
+
       ! v:
 
       ! tracers:
       do itrc=1,NT
         call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N )
-        call wrt_child_bry( itrc, N, .true., vsouth, vwest, vnorth, veast, r_tot )
+        call wrt_child_bry( itrc, N, .true.,  vsouth, vwest, vnorth, veast, r_tot )
       enddo
 
 
@@ -760,7 +765,7 @@
         call interpolate_one_child_bry(u_tot(1), south_u2u_cffs, isu2u_sw,  jsu2u_sw,
      &                                 nmax,     uvar,           us_uprnt,  umask   )
         call interpolate_one_child_bry(u_tot(1), south_v2u_cffs, isv2u_sw,  jsv2u_sw,
-     &                                 nmax,     vvar,           us_vprnt,  umask   )
+     &                                 nmax,     vvar,           us_vprnt,  vmask   )
 
         call interpolate_one_u_bry(    u_tot(1), nmax, usouth,   us_uprnt,  us_vprnt,
      &                                 us_angcos,us_angsin                          )
@@ -770,7 +775,7 @@
         call interpolate_one_child_bry(u_tot(2), west_u2u_cffs,  iwu2u_sw,  jwu2u_sw,
      &                                 nmax,     uvar,           uw_uprnt,  umask   )
         call interpolate_one_child_bry(u_tot(2), west_v2u_cffs,  iwv2u_sw,  jwv2u_sw,
-     &                                 nmax,     vvar,           uw_vprnt,  umask   )
+     &                                 nmax,     vvar,           uw_vprnt,  vmask   )
 
         call interpolate_one_u_bry(    u_tot(2), nmax, uwest,    uw_uprnt,  uw_vprnt,
      &                                 uw_angcos,uw_angsin                          )
@@ -780,7 +785,7 @@
         call interpolate_one_child_bry(u_tot(3), north_u2u_cffs, inu2u_sw,  jnu2u_sw,
      &                                 nmax,     uvar,           un_uprnt,  umask   )
         call interpolate_one_child_bry(u_tot(3), north_v2u_cffs, inv2u_sw,  jnv2u_sw,
-     &                                 nmax,     vvar,           un_vprnt,  umask   )
+     &                                 nmax,     vvar,           un_vprnt,  vmask   )
 
         call interpolate_one_u_bry(    u_tot(3), nmax, unorth,   un_uprnt,  un_vprnt,
      &                                 un_angcos,un_angsin                          )
@@ -790,7 +795,7 @@
         call interpolate_one_child_bry(u_tot(4), east_u2u_cffs,  ieu2u_sw,  jeu2u_sw,
      &                                 nmax,     uvar,           ue_uprnt,  umask   )
         call interpolate_one_child_bry(u_tot(4), east_v2u_cffs,  iev2u_sw,  jev2u_sw,
-     &                                 nmax,     vvar,           ue_vprnt,  umask   )
+     &                                 nmax,     vvar,           ue_vprnt,  vmask   )
 
         call interpolate_one_u_bry(    u_tot(4), nmax, ueast,    ue_uprnt,  ue_vprnt,
      &                                 ue_angcos,ue_angsin                          )
@@ -895,6 +900,16 @@
         do k=1,nmax
           ubry(ij,k) = uparent(ij,k) * angcos(ij) - vparent(ij,k) * angsin(ij)
         enddo
+
+!        if (mynode==5) then
+!          if( jsu2u_sw(ij) > 45 ) then  ! debug
+!            print *, 'jsu2u_sw(ij)',jsu2u_sw(ij), mynode
+!            print *, 'uparent(ij,1)',uparent(ij,1), mynode
+!            print *, 'vparent(ij,1)',vparent(ij,1), mynode
+!            print *, 'angcos(ij)',angcos(ij),'angsin(ij)',angsin(ij)
+!          endif
+!        endif
+
       enddo
 
       end subroutine interpolate_one_u_bry  !]
@@ -962,9 +977,13 @@
 
       ! v dims:
 
-
+      ! 2D vars:
       call define_child_bry( indxZ,  r_tot, r_c_str, r_dimid_bry, 1, .false. )
       call define_child_bry( indxUb, u_tot, u_c_str, u_dimid_bry, 1, .false. )
+      !call vbar
+
+      ! 3D vars:
+      call define_child_bry( indxU,  u_tot, u_c_str, u_dimid_bry, N, .false. )
 
       ! tracers:
       do itrc=1,NT
