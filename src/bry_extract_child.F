@@ -206,6 +206,7 @@
 
       type (grid_type_vars) :: r  ! rho variables
       type (grid_type_vars) :: up ! u   variables
+      type (grid_type_vars) :: vp ! v   variables
 
 
       character(len=9), dimension(4) ::  bry_name =     (/ 'south',     'west',
@@ -214,6 +215,8 @@
      &                                                 'rho_north', 'rho_east'  /)
       character(len=9), dimension(4) :: ubry_name = (/   'u_south',   'u_west',
      &                                                   'u_north',   'u_east'  /)
+      character(len=9), dimension(4) :: vbry_name = (/   'v_south',   'v_west',
+     &                                                   'v_north',   'v_east'  /)
 
 
       ! INTERPOLATION:
@@ -262,7 +265,7 @@
       total_output_rec = total_output_rec + 1          ! total number of recs written
 
       ! zeta:
-      call interpolate_child_bry( zeta(:,:,knew), 1 )  ! var, nz
+      call interpolate_child_bry( zeta(:,:,knew), 1 )
       call wrt_child_bry( indxZ,  1, .false.,
      &                    r%south, r%west, r%north, r%east, r%tot )
 
@@ -272,6 +275,9 @@
      &                    up%south, up%west, up%north, up%east, up%tot )
 
       ! vbar:
+      call interpolate_v_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1 )
+      call wrt_child_bry( indxVb, 1, .false.,
+     &                    vp%south, vp%west, vp%north, vp%east, vp%tot )
 
       ! u:
       call interpolate_u_child_bry( u(START_2D_ARRAY,1,nstp),
@@ -321,6 +327,15 @@
      &                                up%c_str(3),  up%glob_cn, up_var )
       call assign_child_bry_to_parent(ubry_name(4), up%i_east,  up%j_east,  up%tot(4),
      &                                up%c_str(4) , up%glob_ce, up_var )
+
+      call assign_child_bry_to_parent(vbry_name(1), vp%i_south, vp%j_south, vp%tot(1),
+     &                                vp%c_str(1),  vp%glob_cs, vp_var )
+      call assign_child_bry_to_parent(vbry_name(2), vp%i_west,  vp%j_west,  vp%tot(2),
+     &                                vp%c_str(2) , vp%glob_cw, vp_var )
+      call assign_child_bry_to_parent(vbry_name(3), vp%i_north, vp%j_north, vp%tot(3),
+     &                                vp%c_str(3),  vp%glob_cn, vp_var )
+      call assign_child_bry_to_parent(vbry_name(4), vp%i_east,  vp%j_east,  vp%tot(4),
+     &                                vp%c_str(4) , vp%glob_ce, vp_var )
 
 !      call MPI_Barrier(MPI_COMM_WORLD, ierr) ! debug
 !      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
@@ -493,6 +508,49 @@
      &                       up%ier2d_sw, up%jer2d_sw, rp_var,     up_var       )
         call calc_parent_vs_child_grid_angles(         up%tot(4),  up%c_str(4),
      &        up%e_r2d_cffs, up%ier2d_sw, up%jer2d_sw, up%e_angcos,up%e_angsin, up_var, 4 )
+      endif
+
+      ! v cffs:
+      if (allocated(vp%i_south)) then
+        call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_cffs,        ! cffs to interp parent u to child u
+     &                       vp%is_sw,    vp%js_sw,    vp_var,     vp_var   )
+        call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_d2d_cffs,        ! cffs to interp parent v to child u
+     &                       vp%isd2d_sw, vp%jsd2d_sw, up_var,     vp_var       )
+        call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_r2d_cffs,        ! cffs to interp parent r to child u (angle)
+     &                       vp%isr2d_sw, vp%jsr2d_sw, rp_var,     vp_var       )
+
+        call calc_parent_vs_child_grid_angles(         vp%tot(1),  vp%c_str(1),            ! don't need south_r2u after this, should deallocate
+     &        vp%s_r2d_cffs, vp%isr2d_sw, vp%jsr2d_sw, vp%s_angcos,vp%s_angsin, vp_var, 1 ) ! 1=S
+      endif
+      if (allocated(vp%i_west)) then
+        call calc_bry_coeffs(vp%tot(2),   vp%i_west,   vp%j_west,  vp%w_cffs,
+     &                       vp%iw_sw,    vp%jw_sw,    vp_var,     vp_var   )
+        call calc_bry_coeffs(vp%tot(2),   vp%i_west,   vp%j_west,  vp%w_d2d_cffs,
+     &                       vp%iwd2d_sw, vp%jwd2d_sw, up_var,     vp_var       )
+        call calc_bry_coeffs(vp%tot(2),   vp%i_west,   vp%j_west,  vp%w_r2d_cffs,
+     &                       vp%iwr2d_sw, vp%jwr2d_sw, rp_var,     vp_var       )
+        call calc_parent_vs_child_grid_angles(         vp%tot(2),  vp%c_str(2),
+     &        vp%w_r2d_cffs, vp%iwr2d_sw, vp%jwr2d_sw, vp%w_angcos,vp%w_angsin, vp_var, 2 ) ! 2=W
+      endif
+      if (allocated(vp%i_north)) then
+        call calc_bry_coeffs(vp%tot(3),   vp%i_north,  vp%j_north, vp%n_cffs,
+     &                       vp%in_sw,    vp%jn_sw,    vp_var,     vp_var   )
+        call calc_bry_coeffs(vp%tot(3),   vp%i_north,  vp%j_north, vp%n_d2d_cffs,
+     &                       vp%ind2d_sw, vp%jnd2d_sw, up_var,     vp_var       )
+        call calc_bry_coeffs(vp%tot(3),   vp%i_north,  vp%j_north, vp%n_r2d_cffs,
+     &                       vp%inr2d_sw, vp%jnr2d_sw, rp_var,     vp_var       )
+        call calc_parent_vs_child_grid_angles(         vp%tot(3),  vp%c_str(3),
+     &        vp%n_r2d_cffs, vp%inr2d_sw, vp%jnr2d_sw, vp%n_angcos,vp%n_angsin, vp_var, 3 )
+      endif
+      if (allocated(vp%i_east)) then
+        call calc_bry_coeffs(vp%tot(4),   vp%i_east,   vp%j_east,  vp%e_cffs,
+     &                       vp%ie_sw,    vp%je_sw,    vp_var,     vp_var   )
+        call calc_bry_coeffs(vp%tot(4),   vp%i_east,   vp%j_east,  vp%e_d2d_cffs,
+     &                       vp%ied2d_sw, vp%jed2d_sw, up_var,     vp_var       )
+        call calc_bry_coeffs(vp%tot(4),   vp%i_east,   vp%j_east,  vp%e_r2d_cffs,
+     &                       vp%ier2d_sw, vp%jer2d_sw, rp_var,     vp_var       )
+        call calc_parent_vs_child_grid_angles(         vp%tot(4),  vp%c_str(4),
+     &        vp%e_r2d_cffs, vp%ier2d_sw, vp%jer2d_sw, vp%e_angcos,vp%e_angsin, vp_var, 4 )
       endif
 
       rt2=sqrt(2.0)  ! set interpolation coefficient once
@@ -800,6 +858,60 @@
       end subroutine interpolate_u_child_bry  !]
 
 ! ----------------------------------------------------------------------
+      subroutine interpolate_v_child_bry( uvar, vvar, nmax )  ![
+      ! Interpolate all v boundaries if applicable
+      ! Shouldn't really need this, rather have uv function with a type as an arguement!!!
+
+      implicit none
+
+      integer, intent(in) :: nmax
+      real   , intent(in) :: uvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      real   , intent(in) :: vvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+
+
+      if (allocated(vp%i_south)) then
+        call interpolate_one_child_bry(vp%tot(1), vp%s_cffs,     vp%is_sw,    vp%js_sw,
+     &                                 nmax,      vvar,          vp%s_vprnt,  vmask   )
+        call interpolate_one_child_bry(vp%tot(1), vp%s_d2d_cffs, vp%isd2d_sw, vp%jsd2d_sw,
+     &                                 nmax,      uvar,          vp%s_uprnt,  umask      )
+
+        call interpolate_one_v_bry(    vp%tot(1), nmax, vp%south, vp%s_uprnt, vp%s_vprnt,
+     &                                 vp%s_angcos, vp%s_angsin                         )
+      endif
+
+      if (allocated(vp%i_west)) then
+        call interpolate_one_child_bry(vp%tot(2), vp%w_cffs,     vp%iw_sw,    vp%jw_sw,
+     &                                 nmax,      vvar,          vp%w_vprnt,  vmask   )
+        call interpolate_one_child_bry(vp%tot(2), vp%w_d2d_cffs, vp%iwd2d_sw, vp%jwd2d_sw,
+     &                                 nmax,      uvar,          vp%w_uprnt,  umask      )
+
+        call interpolate_one_v_bry(    vp%tot(2), nmax, vp%west, vp%w_uprnt,  vp%w_vprnt,
+     &                                 vp%w_angcos, vp%w_angsin                         )
+      endif
+
+      if (allocated(vp%i_north)) then
+        call interpolate_one_child_bry(vp%tot(3), vp%n_cffs,     vp%in_sw,    vp%jn_sw,
+     &                                 nmax,      vvar,          vp%n_vprnt,  vmask   )
+        call interpolate_one_child_bry(vp%tot(3), vp%n_d2d_cffs, vp%ind2d_sw, vp%jnd2d_sw,
+     &                                 nmax,      uvar,          vp%n_uprnt,  umask      )
+
+        call interpolate_one_v_bry(    vp%tot(3), nmax, vp%north, vp%n_uprnt, vp%n_vprnt,
+     &                                 vp%n_angcos, vp%n_angsin                          )
+      endif
+
+      if (allocated(vp%i_east)) then
+        call interpolate_one_child_bry(vp%tot(4), vp%e_cffs,     vp%ie_sw,    vp%je_sw,
+     &                                 nmax,      vvar,          vp%e_vprnt,  vmask   )
+        call interpolate_one_child_bry(vp%tot(4), vp%e_d2d_cffs, vp%ied2d_sw, vp%jed2d_sw,
+     &                                 nmax,      uvar,          vp%e_uprnt,  umask      )
+
+        call interpolate_one_v_bry(    vp%tot(4), nmax, vp%east, vp%e_uprnt,  vp%e_vprnt,
+     &                                 vp%e_angcos, vp%e_angsin                         )
+      endif
+
+      end subroutine interpolate_v_child_bry  !]
+
+! ----------------------------------------------------------------------
       subroutine interpolate_one_child_bry(bry_tot, cffs, i_sw, j_sw,  ![
      &                                     nmax,    var,  vbry, mask )
 
@@ -912,6 +1024,34 @@
       end subroutine interpolate_one_u_bry  !]
 
 ! ----------------------------------------------------------------------
+      subroutine interpolate_one_v_bry( bry_tot, nmax, vbry, uparent, vparent,  ![
+     &                                  angcos,  angsin )
+
+      implicit none
+
+      ! inputs
+      integer,                              intent(in)  :: bry_tot     ! total child bry points in parent
+      integer,                              intent(in)  :: nmax        ! vertical layers of var (1 if 2D)
+      real,    dimension(:,:), allocatable, intent(out) :: vbry        ! bry to interpolated 2D/3D var
+      real,    dimension(:,:),              intent(in)  :: uparent     ! u-value of parent grid at child u-point
+      real,    dimension(:,:),              intent(in)  :: vparent     ! v-value of parent grid at child u-point
+      real,    dimension(:),                intent(in)  :: angcos      ! cos of angle difference between parent-child grids
+      real,    dimension(:),                intent(in)  :: angsin      ! sin of ...
+
+      ! local
+      integer :: ij, k
+
+      if (.not. allocated(vbry)) allocate( vbry(bry_tot, N))   ! allocate once for 3D var and reuse for all 2D/3D vars
+
+      do ij=1,bry_tot
+        do k=1,nmax
+          vbry(ij,k) = uparent(ij,k) * angsin(ij) + vparent(ij,k) * angcos(ij)
+        enddo
+      enddo
+
+      end subroutine interpolate_one_v_bry  !]
+
+! ----------------------------------------------------------------------
       subroutine create_child_output_file  ![
 
       ! For now decided each file still creates file even if not child contained in node.
@@ -973,11 +1113,16 @@
       u_dimid_bry(5) = r_dimid_bry(5)  ! k dimension of u-point is same as rho
 
       ! v dims:
+      ierr=nf90_def_dim( ncid_out, 'xi_vrho_south',max( vp%tot(1), 1 ), v_dimid_bry(1) )
+      ierr=nf90_def_dim( ncid_out, 'eta_v_west',   max( vp%tot(2), 1 ), v_dimid_bry(2) )
+      ierr=nf90_def_dim( ncid_out, 'xi_vrho_north',max( vp%tot(3), 1 ), v_dimid_bry(3) )
+      ierr=nf90_def_dim( ncid_out, 'eta_v_east',   max( vp%tot(4), 1 ), v_dimid_bry(4) )
+      v_dimid_bry(5) = r_dimid_bry(5)  ! k dimension of u-point is same as rho
 
       ! 2D vars:
-      call define_child_bry( indxZ,  r%tot, r%c_str, r_dimid_bry, 1, .false. )
+      call define_child_bry( indxZ,  r%tot,   r%c_str, r_dimid_bry, 1, .false. )
       call define_child_bry( indxUb, up%tot, up%c_str, u_dimid_bry, 1, .false. )
-      !call vbar
+      call define_child_bry( indxVb, vp%tot, vp%c_str, v_dimid_bry, 1, .false. )
 
       ! 3D vars:
       call define_child_bry( indxU,  up%tot, up%c_str, u_dimid_bry, N, .false. )
