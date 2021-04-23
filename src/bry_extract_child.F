@@ -170,6 +170,19 @@
       character(len=9),       dimension(4) :: bry_name = (/ 'south', 'west',
      &                                                      'north', 'east'  /)
 
+      ! -----------------------------------------------------------------------------
+
+      type grid_type_vars  ! contains all interpolation record keeping variables for rho, u and v points.
+
+        integer, dimension(4)                :: tot=0                               ! number of child points within parent on each boundary. 4 = s/w/n/e, 2 = 2 rows of i/j input
+        integer, dimension(4)                :: c_str=0                             ! start index of child boundary within parent
+        real,    dimension(:),   allocatable :: i_south
+
+      end type grid_type_vars
+
+      type (grid_type_vars) :: r  ! rho variables
+
+      ! -----------------------------------------------------------------------------
 
       ! RHO-VARS:
       ! - input vars:
@@ -179,14 +192,16 @@
       real,    dimension(:),   allocatable :: ir_south, ir_west, ir_north, ir_east  ! i position of child bry in parent grid
       real,    dimension(:),   allocatable :: jr_south, jr_west, jr_north, jr_east  ! j position of child bry in parent grid
 
-      integer, dimension(4)                :: r_tot=0                               ! number of child points within parent on each boundary. 4 = s/w/n/e, 2 = 2 rows of i/j input
-      integer, dimension(4)                :: r_c_str=0                             ! start indices of child boundary within parent
+!      integer, dimension(4)                :: r_tot=0                               ! number of child points within parent on each boundary. 4 = s/w/n/e, 2 = 2 rows of i/j input
+      integer, dimension(4)                :: r_c_str=0                             ! start index of child boundary within parent
       ! - interp vars:
       real,    dimension(:,:), allocatable :: south_r_cffs, west_r_cffs,            ! 4 interpolation coefficients to interp from 4 parent points surronding child point.
      &                                        north_r_cffs, east_r_cffs             ! i=each bry point. j=1-4 (4 interpolants).
 
       integer, dimension(:),   allocatable :: isr_sw, jsr_sw, iwr_sw, jwr_sw,       ! sw parent interpolant i and j position
      &                                        inr_sw, jnr_sw, ier_sw, jer_sw        ! could merge with coefficients.
+
+      real,    dimension(:,:), allocatable :: rsouth, rwest, rnorth, reast   ! final interpolated variable (2D or 3D)
 
       ! U-VARS:
       ! - input vars:
@@ -225,9 +240,8 @@
      &                                        us_vprnt, uw_vprnt, un_vprnt, ue_vprnt  ! v value of parent at child u location
 
       ! INTERPOLATION:
-      real,    dimension(:,:), allocatable :: vsouth, vwest, vnorth, veast   ! array storing interpolated variable (2D or 3D)
-      real                                 :: rt2                            ! square root of 2 stored for efficiency
-                                                                             ! allocated for each var so only need one.
+      real               :: rt2                         ! square root of 2 stored for efficiency
+                                                        ! allocated for each var so only need one.
       ! NETCDF:
       integer            :: ncid=-1                     ! in file for child bry positions
       integer            :: ncid_out                    ! output file
@@ -272,7 +286,7 @@
 
       ! zeta:
       call interpolate_child_bry( zeta(:,:,knew), 1 )  ! var, nz
-      call wrt_child_bry( indxZ,  1, .false., vsouth, vwest, vnorth, veast, r_tot )
+      call wrt_child_bry( indxZ,  1, .false., rsouth, rwest, rnorth, reast, r%tot )
 
       ! ubar:
       call interpolate_u_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1 )
@@ -289,7 +303,7 @@
       ! tracers:
       do itrc=1,NT
         call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N )
-        call wrt_child_bry( itrc, N, .true.,  vsouth, vwest, vnorth, veast, r_tot )
+        call wrt_child_bry( itrc, N, .true.,  rsouth, rwest, rnorth, reast, r%tot )
       enddo
 
 
@@ -308,13 +322,13 @@
 
       implicit none
 
-      call assign_child_bry_to_parent(rbry_name(1), ir_south,  jr_south, r_tot(1),
+      call assign_child_bry_to_parent(rbry_name(1), r%i_south,  jr_south, r%tot(1),
      &                                r_c_str(1),   glob_c_rs, rp_var )
-      call assign_child_bry_to_parent(rbry_name(2), ir_west,   jr_west,  r_tot(2),
+      call assign_child_bry_to_parent(rbry_name(2), ir_west,   jr_west,  r%tot(2),
      &                                r_c_str(2) ,  glob_c_rw, rp_var )
-      call assign_child_bry_to_parent(rbry_name(3), ir_north,  jr_north, r_tot(3),
+      call assign_child_bry_to_parent(rbry_name(3), ir_north,  jr_north, r%tot(3),
      &                                r_c_str(3),   glob_c_rn, rp_var )
-      call assign_child_bry_to_parent(rbry_name(4), ir_east,   jr_east,  r_tot(4),
+      call assign_child_bry_to_parent(rbry_name(4), ir_east,   jr_east,  r%tot(4),
      &                                r_c_str(4) ,  glob_c_re, rp_var )
 
       call assign_child_bry_to_parent(ubry_name(1), iu_south,  ju_south, u_tot(1),
@@ -439,20 +453,20 @@
       implicit none
 
       ! rho cffs:
-      if (allocated(ir_south)) then
-        call calc_bry_coeffs(r_tot(1), ir_south, jr_south, south_r_cffs,
+      if (allocated(r%i_south)) then
+        call calc_bry_coeffs(r%tot(1), r%i_south, jr_south, south_r_cffs,
      &                       isr_sw,   jsr_sw,   rp_var,   rp_var        )
       endif
       if (allocated(ir_west))  then
-        call calc_bry_coeffs(r_tot(2), ir_west,  jr_west,  west_r_cffs,
+        call calc_bry_coeffs(r%tot(2), ir_west,  jr_west,  west_r_cffs,
      &                       iwr_sw,   jwr_sw,   rp_var,   rp_var        )
       endif
       if (allocated(ir_north)) then
-        call calc_bry_coeffs(r_tot(3), ir_north, jr_north, north_r_cffs,
+        call calc_bry_coeffs(r%tot(3), ir_north, jr_north, north_r_cffs,
      &                       inr_sw,   jnr_sw,   rp_var,   rp_var        )
       endif
       if (allocated(ir_east))  then
-        call calc_bry_coeffs(r_tot(4), ir_east,  jr_east,  east_r_cffs,
+        call calc_bry_coeffs(r%tot(4), ir_east,  jr_east,  east_r_cffs,
      &                       ier_sw,   jer_sw,   rp_var,   rp_var        )
       endif
 
@@ -717,34 +731,34 @@
       real   , intent(in) :: var(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
                                                         ! wasn't able to use dimension(:,:,:), but vars start from -1 index so maybe this is safer.
 
-      if (allocated(ir_south))
-     &  call interpolate_one_child_bry(r_tot(1), south_r_cffs, isr_sw, jsr_sw,
-     &                                 nmax,     var,          vsouth, rmask  )
+      if (allocated(r%i_south))
+     &  call interpolate_one_child_bry(r%tot(1), south_r_cffs, isr_sw, jsr_sw,
+     &                                 nmax,     var,          rsouth, rmask  )
 
       if (allocated(ir_west))
-     &  call interpolate_one_child_bry(r_tot(2),  west_r_cffs, iwr_sw, jwr_sw,
-     &                                 nmax,      var,         vwest,  rmask  )
+     &  call interpolate_one_child_bry(r%tot(2),  west_r_cffs, iwr_sw, jwr_sw,
+     &                                 nmax,      var,         rwest,  rmask  )
 
 !      if(mynode==1) then  ! debug
-!        print *, 'vwest: r_tot=', r_tot(2),'mynode',mynode
-!      print *,'i/j(end)=',ir_west(r_tot(2)),jr_west(r_tot(2))
-!        print *,'i/jsw(end)=',iwr_sw(r_tot(2)),jwr_sw(r_tot(2))
-!        print *,'vwest(end)=',vwest(r_tot(2),1)
+!        print *, 'rwest: r%tot=', r%tot(2),'mynode',mynode
+!      print *,'i/j(end)=',ir_west(r%tot(2)),jr_west(r%tot(2))
+!        print *,'i/jsw(end)=',iwr_sw(r%tot(2)),jwr_sw(r%tot(2))
+!        print *,'rwest(end)=',rwest(r%tot(2),1)
 !      endif
 !      if(mynode==4) then  ! debug
-!        print *, 'vwest: r_tot=', r_tot(2),'mynode',mynode
+!        print *, 'rwest: r%tot=', r%tot(2),'mynode',mynode
 !        print *,'i/j(1)=',ir_west(1),jr_west(1)
 !        print *,'i/jsw(1)=',iwr_sw(1),jwr_sw(1)
-!        print *,'vwest(1)=',vwest(1,1)
+!        print *,'rwest(1)=',rwest(1,1)
 !      endif
 
       if (allocated(ir_north))
-     &  call interpolate_one_child_bry(r_tot(3), north_r_cffs, inr_sw, jnr_sw,
-     &                                 nmax,     var,          vnorth, rmask  )
+     &  call interpolate_one_child_bry(r%tot(3), north_r_cffs, inr_sw, jnr_sw,
+     &                                 nmax,     var,          rnorth, rmask  )
 
       if (allocated(ir_east))
-     &  call interpolate_one_child_bry(r_tot(4), east_r_cffs,  ier_sw, jer_sw,
-     &                                 nmax,     var,          veast,  rmask  )
+     &  call interpolate_one_child_bry(r%tot(4), east_r_cffs,  ier_sw, jer_sw,
+     &                                 nmax,     var,          reast,  rmask  )
 
 
       end subroutine interpolate_child_bry  !]
@@ -962,10 +976,10 @@
       ierr=nf90_def_dim( ncid_out, 'rec_time', 0, dimid_t)
 
       ! rho dims:
-      ierr=nf90_def_dim( ncid_out, 'xi_rho_south', max( r_tot(1), 1 ), r_dimid_bry(1) )  ! Set size as 1 if size==0 to avoid unlimited dimension (could be confused with time in ncjoin)
-      ierr=nf90_def_dim( ncid_out, 'eta_rho_west', max( r_tot(2), 1 ), r_dimid_bry(2) )
-      ierr=nf90_def_dim( ncid_out, 'xi_rho_north', max( r_tot(3), 1 ), r_dimid_bry(3) )
-      ierr=nf90_def_dim( ncid_out, 'eta_rho_east', max( r_tot(4), 1 ), r_dimid_bry(4) )
+      ierr=nf90_def_dim( ncid_out, 'xi_rho_south', max( r%tot(1), 1 ), r_dimid_bry(1) )  ! Set size as 1 if size==0 to avoid unlimited dimension (could be confused with time in ncjoin)
+      ierr=nf90_def_dim( ncid_out, 'eta_rho_west', max( r%tot(2), 1 ), r_dimid_bry(2) )
+      ierr=nf90_def_dim( ncid_out, 'xi_rho_north', max( r%tot(3), 1 ), r_dimid_bry(3) )
+      ierr=nf90_def_dim( ncid_out, 'eta_rho_east', max( r%tot(4), 1 ), r_dimid_bry(4) )
       ierr=nf90_def_dim( ncid_out, 's_rho'       , N                 , r_dimid_bry(5) )
 
       ! u dims: (see preamble for eta_urho_west & eta_urho_east info)
@@ -978,7 +992,7 @@
       ! v dims:
 
       ! 2D vars:
-      call define_child_bry( indxZ,  r_tot, r_c_str, r_dimid_bry, 1, .false. )
+      call define_child_bry( indxZ,  r%tot, r_c_str, r_dimid_bry, 1, .false. )
       call define_child_bry( indxUb, u_tot, u_c_str, u_dimid_bry, 1, .false. )
       !call vbar
 
@@ -987,7 +1001,7 @@
 
       ! tracers:
       do itrc=1,NT
-        call define_child_bry( itrc, r_tot, r_c_str, r_dimid_bry, N, .true.  )
+        call define_child_bry( itrc, r%tot, r_c_str, r_dimid_bry, N, .true.  )
       enddo
 
 
