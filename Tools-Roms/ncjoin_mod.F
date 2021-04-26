@@ -2359,14 +2359,19 @@ c**           endif
      &                                              j, string)
                   if (ierr .eq. nf_noerr) then
                     lstr=lenstr(string)
-                    ierr=nf_copy_att (ncid(node), vid(i,node),
-     &                       string(1:lstr), nctarg, varid(i))
-                    if (ierr. ne. nf_noerr) then
-                      write(*,'(/1x,2A,I3,3A/12x,4A)')   '### ERROR: ',
-     &                 'Cannot copy attribute #', j,' for variable ''',
-     &                  vname(i)(1:lvar),  ''' into netCDF', 'file ''',
-     &                  nctargname(1:ltrg), '''.  ', nf_strerror(ierr)
-                      mayday=.true.; return ! goto 97
+
+                    if (string /= 'start' .and.                ! ignore 'start' and 'count' attributes, not relevant to joined file.
+     &                  string /= 'count'      ) then
+
+                      ierr=nf_copy_att (ncid(node), vid(i,node),
+     &                         string(1:lstr), nctarg, varid(i))
+                      if (ierr. ne. nf_noerr) then
+                        write(*,'(/1x,2A,I3,3A/12x,4A)')   '### ERROR: ',
+     &                   'Cannot copy attribute #', j,' for variable ''',
+     &                    vname(i)(1:lvar),  ''' into netCDF', 'file ''',
+     &                    nctargname(1:ltrg), '''.  ', nf_strerror(ierr)
+                        mayday=.true.; return ! goto 97
+                      endif
                     endif
 #ifdef VERBOSE
                     write(*,'(16x,3A)') '''', string(1:lstr), ''''
