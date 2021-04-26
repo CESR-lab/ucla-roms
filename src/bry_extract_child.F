@@ -286,6 +286,11 @@
      &                    up%south, up%west, up%north, up%east, up%tot )
 
       ! v:
+      call interpolate_v_child_bry( u(START_2D_ARRAY,1,nstp),
+     &                              v(START_2D_ARRAY,1,nstp), N )
+      call wrt_child_bry( indxV,  N, .false.,
+     &                    vp%south, vp%west, vp%north, vp%east, vp%tot )
+
 
       ! tracers:
       do itrc=1,NT
@@ -554,9 +559,6 @@
       endif
 
       rt2=sqrt(2.0)  ! set interpolation coefficient once
-
-!      call MPI_Barrier(MPI_COMM_WORLD, ierr) ! debug
-!      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
 
       end subroutine calc_child_interpolation_coeffs  !]
 
@@ -1126,6 +1128,7 @@
 
       ! 3D vars:
       call define_child_bry( indxU,  up%tot, up%c_str, u_dimid_bry, N, .false. )
+      call define_child_bry( indxV,  vp%tot, vp%c_str, v_dimid_bry, N, .false. )
 
       ! tracers:
       do itrc=1,NT
