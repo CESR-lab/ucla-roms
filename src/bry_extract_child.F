@@ -19,29 +19,29 @@
       !    and is read in by every mpi node.
       !    The child boundary file consists of fractional i'th and j'th positions of the
       !    child boundary points relative to the parent's index domain.
-      !    The i/j value is -1 over a land mask and -2 if not in parent domain.
-      !    Each i'th/j'th data consists of 2 rows per boundary side. They are orientated
-      !    as per child grid. I.e. west_bry row 1 is western most. north_bry row 1 is south side.
+      !    The i/j value is -1 over a land mask and -2 if not in parent domain (for rho points).
       !
       !    Seen in DIAGRAM (A) below, each child point (a-f) will have a input variable
-      !    giving it's i'th position, i.e. variable 'r%i_west', which for point b = 1.4.
-      !    Another variable will hold the j'th position, i.e. 'r%j_west' which for point b = 1.2.
+      !    giving it's i'th position, i.e. variable 'rp%i_west', which for point b = 1.4.
+      !    Another variable will hold the j'th position, i.e. 'rp%j_west' which for point b = 1.2.
       !    If the boundary is closed then i and j variables will not exist for that boundary.
       !
       !         DIAGRAM (A)
       !
-      !   C  ^                ^  D
-      ! (1,2)|                |(2,2)
-      !      X---o---o--------X-->         A-D = parent grid points (X)
-      !      |   e   f        |
-      ! N    |                |            a-f = child boundary grid points (West boundary)
-      ! ^    |   o   o        |
-      ! |    |   c   d        |            Fractional i/j coordinates of child
-      ! |    |                |            relative to parent grid:
-      !      |   o   o        |              e = (1.2, 2.0)  f = (1.4, 2.0)
-      !      |   a   b        |              c = (1.2, 1.6)  d = (1.4, 1.6)
-      !      X----------------X-->           a = (1.2, 1.2)  b = (1.4, 1.2)
-      ! (1,1)                  (2,1)
+      !   C  ^        u       ^  D
+      ! (1,2)|              v |(2,2)
+      !      X-------rc-------X-->         A-D = parent grid points (X)
+      !      |                |
+      !      |      ue        |            a-f = child boundary grid points (West boundary)
+      ! N    |            vg  |
+      ! ^    |     rb         |
+      ! |    |                |            Fractional i/j coordinates of child
+      ! |    |    ud          |            relative to parent grid:
+      !      |          vf    |            - r-vars:
+      !      |   ra           |              c = (1.2 , 2.0)   b = (1.3 , 1.6)  a = (1.4, 1.2)
+      !      |                |
+      !      X--u-------------X-->         - u vars:
+      ! (1,1)                  (2,1)         d = (1.25, 2.0)   e = (1.35, 1.6)
       !   A                      B
       !
       !
@@ -129,8 +129,6 @@
       !    child point    e -> parent node C
       !    child point    d -> parent node D
       !
-      !
-      !
       !]
 
 #include "cppdefs.h"
@@ -153,9 +151,13 @@
 
       ! ****************************************************************
       ! USER INPUTS
-      integer           :: rec_rate      = 1                           ! output record rate
-      integer           :: recs_per_file = 10                          ! total recs per file
-      character(len=50) :: c_bry_file    = '../sample_child_ij_bry.nc' ! child boundary input file
+      integer            :: rec_rate      = 2                                            ! output record rate for interpolated child boundaries
+      integer            :: recs_per_file = 2                                            ! total recs per output file
+      integer, parameter :: nc_grds       = 2                                            ! number of child grids required
+      character(len=50)  :: c_bry_files(nc_grds) = (/ 'sample_child_ij_bry.nc',
+     &                                                'sample_child_ij_bry_2nd.nc' /)    ! child boundary input file
+      character(len=60)  :: file_names(nc_grds)  = (/ '_child_bry.nc',
+     &                                                '_child_bry_2.nc' /)               ! suffix to append to simulation output rootname
       ! END USER INPUTS
       ! ****************************************************************
 
@@ -204,9 +206,9 @@
 
       end type grid_type_vars
 
-      type (grid_type_vars) :: r  ! rho variables
-      type (grid_type_vars) :: up ! u   variables
-      type (grid_type_vars) :: vp ! v   variables
+      type (grid_type_vars) :: rp_vars(nc_grds) ! rho variables
+      type (grid_type_vars) :: up_vars(nc_grds) ! u   variables
+      type (grid_type_vars) :: vp_vars(nc_grds) ! v   variables
 
 
       character(len=9), dimension(4) ::  bry_name =     (/ 'south',     'west',
@@ -220,17 +222,21 @@
 
 
       ! INTERPOLATION:
-      real               :: rt2                         ! square root of 2 stored for efficiency
-                                                        ! allocated for each var so only need one.
+      real                :: rt2                         ! square root of 2 stored for efficiency
+                                                         ! allocated for each var so only need one.
       ! NETCDF:
-      integer            :: ncid=-1                     ! in file for child bry positions
-      integer            :: ncid_out                    ! output file
-      integer            :: ierr=0                      ! debug temporary
-      integer            :: dimid_t                     ! time dimension id in output file
-      integer            :: output_rec = 0              ! record number of output. 0 indicates we need new file
-      integer            :: total_output_rec = 0        ! total flux output recordings so far
-      character (len=60) :: file_name = '_child_bry.nc' ! suffix to append to simulation output rootname
+      integer             :: ierr=0                      ! debug temporary
+      type nc_vars
+        integer           :: ncid=-1                     ! in file for child bry positions
+        integer           :: ncid_out                    ! output file
+        integer           :: dimid_t                     ! time dimension id in output file
+        integer           :: output_rec = 0              ! record number of output. 0 indicates we need new file
+        integer           :: total_output_rec = 0        ! total flux output recordings so far
+        character(len=50) :: c_bry_file                  ! input  child boundary file name
+        character(len=60) :: file_name                   ! output child boundary file name
+      end type nc_vars
 
+      type (nc_vars)      :: ncvars(nc_grds)             ! netcdf variables for each child grd
 
       public set_child_bry
 
@@ -243,113 +249,123 @@
       implicit none             !  Interpolate child boundary at desired intervals.
 
       ! local
-      integer :: itrc  ! tracer index
-
-      ! Use this to only set at required output rate. Rather have it here than in main
-      ! to keep main less cluttered? Although wrt_his has it in main? Ask JM
-      ! only plot if timestep is divisble by record rate
-!      if (mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
-
-      if (ncid==-1) then                               ! first time only
-        call read_child_bry                            ! not per variable, just r,u,v types
-        call calc_child_interpolation_coeffs
-      endif
+      integer :: itrc, c  ! tracer and child grid indices
 
 
-      if(output_rec == 0) then                         ! if file doesn't yet exist or need new file
-        call create_child_output_file
-      endif
+      if (mod(iic-1,rec_rate) == 0) then  ! only plot if timestep is divisble by record rate. 1 replaces ntstart?
 
-      ierr=nf90_open(file_name, nf90_write, ncid_out)
-      output_rec = output_rec + 1                      ! current file record
-      total_output_rec = total_output_rec + 1          ! total number of recs written
+        do c=1,nc_grds
 
-      ! zeta:
-      call interpolate_child_bry( zeta(:,:,knew), 1 )
-      call wrt_child_bry( indxZ,  1, .false.,
-     &                    r%south, r%west, r%north, r%east, r%tot )
-
-      ! ubar:
-      call interpolate_u_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1 )
-      call wrt_child_bry( indxUb, 1, .false.,
-     &                    up%south, up%west, up%north, up%east, up%tot )
-
-      ! vbar:
-      call interpolate_v_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1 )
-      call wrt_child_bry( indxVb, 1, .false.,
-     &                    vp%south, vp%west, vp%north, vp%east, vp%tot )
-
-      ! u:
-      call interpolate_u_child_bry( u(START_2D_ARRAY,1,nstp),
-     &                              v(START_2D_ARRAY,1,nstp), N )
-      call wrt_child_bry( indxU,  N, .false.,
-     &                    up%south, up%west, up%north, up%east, up%tot )
-
-      ! v:
-      call interpolate_v_child_bry( u(START_2D_ARRAY,1,nstp),
-     &                              v(START_2D_ARRAY,1,nstp), N )
-      call wrt_child_bry( indxV,  N, .false.,
-     &                    vp%south, vp%west, vp%north, vp%east, vp%tot )
+          if (ncvars(c)%ncid==-1) then                                                            ! first time only
+            ncvars(c)%c_bry_file = c_bry_files(c)                                       ! set to user input value
+            ncvars(c)%file_name  = file_names(c)
+            call read_child_bry(       ncvars(c), rp_vars(c), up_vars(c), vp_vars(c) )  ! change to rp1 once working                            ! not per variable, just r,u,v types
+            call calc_child_interpolation_coeffs( rp_vars(c), up_vars(c), vp_vars(c), ncvars(c) )
+          endif
 
 
-      ! tracers:
-      do itrc=1,NT
-        call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N )
-        call wrt_child_bry( itrc, N, .true.,
-     &                      r%south, r%west, r%north, r%east, r%tot )
-      enddo
+          if(ncvars(c)%output_rec == 0) then                                                  ! if file doesn't yet exist or need new file
+            call create_child_output_file( rp_vars(c), up_vars(c), vp_vars(c), ncvars(c) )
+          endif
+
+          ierr=nf90_open(ncvars(c)%file_name, nf90_write, ncvars(c)%ncid_out)
+          ncvars(c)%output_rec       = ncvars(c)%output_rec       + 1                                                   ! current file record
+          ncvars(c)%total_output_rec = ncvars(c)%total_output_rec + 1                                       ! total number of recs written
+
+          ! zeta:
+          call interpolate_child_bry(   zeta(:,:,knew), 1,  rp_vars(c)            )
+          call wrt_child_bry(           indxZ,  1, .false., rp_vars(c), ncvars(c) )
+
+          ! ubar:
+          call interpolate_u_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1, up_vars(c) )
+          call wrt_child_bry(           indxUb, 1, .false., up_vars(c),     ncvars(c) )
+
+          ! vbar:
+          call interpolate_v_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1, vp_vars(c) )
+          call wrt_child_bry(           indxVb, 1, .false., vp_vars(c),     ncvars(c) )
+
+          ! u:
+          call interpolate_u_child_bry( u(START_2D_ARRAY,1,nstp),
+     &                                  v(START_2D_ARRAY,1,nstp), N,    up_vars(c) )
+          call wrt_child_bry(           indxU,  N, .false., up_vars(c),  ncvars(c) )
+
+          ! v:
+          call interpolate_v_child_bry( u(START_2D_ARRAY,1,nstp),
+     &                                  v(START_2D_ARRAY,1,nstp), N, vp_vars(c) )
+          call wrt_child_bry( indxV,  N, .false., vp_vars(c),         ncvars(c) )
 
 
-      ierr=nf90_close(ncid_out)
-      if (output_rec == recs_per_file) then  ! Reset output_rec to create new file
-        output_rec = 0
-      endif
+          ! tracers:
+          do itrc=1,NT
+            call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N, rp_vars(c) )
+            call wrt_child_bry(         itrc, N, .true., rp_vars(c),       ncvars(c) )
+          enddo
 
-!      endif ! <- mod(iic-1,rec_rate)
+          if (mynode == 0) then
+            write(*,'(9x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+     &       'wrote child grid, tdays =', tdays,
+     &       'step =', iic-1, 'rec =',    ncvars(c)%output_rec, '/',
+     &       ncvars(c)%total_output_rec
+          endif
+
+          ierr=nf90_close(ncvars(c)%ncid_out)
+          if (ncvars(c)%output_rec == recs_per_file) then                              ! reset output_rec to create new file
+            ncvars(c)%output_rec = 0
+          endif
+
+        end do ! <- c
+
+!        write(*,'(9x,A,A12,5x,A,G14.6,1x,A,I4)')   ! 4x is spaces, A is string. / at end adds blank line
+!     &  'set_frc :: ',         var_name,         ! 5x is 5 spaces, A is string
+!     &  'input time (days) =', var_time,         ! G is number for time
+!     &  'rec =',               var_irec MYID     ! I is integer
+
+      endif ! <- mod(iic-1,rec_rate)
 
       end subroutine set_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine read_child_bry  ![
+      subroutine read_child_bry(ncv, rp, up, vp )  ![
       ! Assign 4 parent GP from which to interpolate 1 child BP. Done only once.
 
       implicit none
 
-      call assign_child_bry_to_parent(rbry_name(1),  r%i_south,  r%j_south,  r%tot(1),
-     &                                r%c_str(1),    r%glob_cs,  rp_var )
-      call assign_child_bry_to_parent(rbry_name(2),  r%i_west,   r%j_west,   r%tot(2),
-     &                                r%c_str(2) ,   r%glob_cw,  rp_var )
-      call assign_child_bry_to_parent(rbry_name(3),  r%i_north,  r%j_north,  r%tot(3),
-     &                                r%c_str(3),    r%glob_cn,  rp_var )
-      call assign_child_bry_to_parent(rbry_name(4),  r%i_east,   r%j_east,   r%tot(4),
-     &                                r%c_str(4) ,   r%glob_ce,  rp_var )
+      ! inputs
+      type(nc_vars)        :: ncv         ! netcdf variables for child
+      type(grid_type_vars) :: rp, up, vp  ! rho, u, v-point variable types
+
+      call assign_child_bry_to_parent(rbry_name(1), rp%i_south, rp%j_south, rp%tot(1),
+     &                                rp%c_str(1),  rp%glob_cs, rp_var,     ncv      )
+      call assign_child_bry_to_parent(rbry_name(2), rp%i_west,  rp%j_west,  rp%tot(2),
+     &                                rp%c_str(2) , rp%glob_cw, rp_var,     ncv      )
+      call assign_child_bry_to_parent(rbry_name(3), rp%i_north, rp%j_north, rp%tot(3),
+     &                                rp%c_str(3),  rp%glob_cn, rp_var,     ncv      )
+      call assign_child_bry_to_parent(rbry_name(4), rp%i_east,  rp%j_east,  rp%tot(4),
+     &                                rp%c_str(4) , rp%glob_ce, rp_var,     ncv      )
 
       call assign_child_bry_to_parent(ubry_name(1), up%i_south, up%j_south, up%tot(1),
-     &                                up%c_str(1),  up%glob_cs, up_var )
+     &                                up%c_str(1),  up%glob_cs, up_var,     ncv      )
       call assign_child_bry_to_parent(ubry_name(2), up%i_west,  up%j_west,  up%tot(2),
-     &                                up%c_str(2) , up%glob_cw, up_var )
+     &                                up%c_str(2) , up%glob_cw, up_var,     ncv      )
       call assign_child_bry_to_parent(ubry_name(3), up%i_north, up%j_north, up%tot(3),
-     &                                up%c_str(3),  up%glob_cn, up_var )
+     &                                up%c_str(3),  up%glob_cn, up_var,     ncv      )
       call assign_child_bry_to_parent(ubry_name(4), up%i_east,  up%j_east,  up%tot(4),
-     &                                up%c_str(4) , up%glob_ce, up_var )
+     &                                up%c_str(4) , up%glob_ce, up_var,     ncv      )
 
       call assign_child_bry_to_parent(vbry_name(1), vp%i_south, vp%j_south, vp%tot(1),
-     &                                vp%c_str(1),  vp%glob_cs, vp_var )
+     &                                vp%c_str(1),  vp%glob_cs, vp_var,     ncv      )
       call assign_child_bry_to_parent(vbry_name(2), vp%i_west,  vp%j_west,  vp%tot(2),
-     &                                vp%c_str(2) , vp%glob_cw, vp_var )
+     &                                vp%c_str(2) , vp%glob_cw, vp_var,     ncv      )
       call assign_child_bry_to_parent(vbry_name(3), vp%i_north, vp%j_north, vp%tot(3),
-     &                                vp%c_str(3),  vp%glob_cn, vp_var )
+     &                                vp%c_str(3),  vp%glob_cn, vp_var,     ncv      )
       call assign_child_bry_to_parent(vbry_name(4), vp%i_east,  vp%j_east,  vp%tot(4),
-     &                                vp%c_str(4) , vp%glob_ce, vp_var )
-
-!      call MPI_Barrier(MPI_COMM_WORLD, ierr) ! debug
-!      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+     &                                vp%c_str(4) , vp%glob_ce, vp_var,     ncv      )
 
       end subroutine read_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine assign_child_bry_to_parent( side_name,  i_bry, j_bry,            ![
-     &                                       side_total, c_str, dim_size, vtype )
+      subroutine assign_child_bry_to_parent( side_name,  i_bry, j_bry,                 ![
+     &                                       side_total, c_str, dim_size, vtype, ncv )
       ! Read in N/W/E/S arrays of child BP's. (in i,j coordinates)
 
       ! All procs read the child bc file and determine if and what work they need to do.
@@ -365,6 +381,7 @@
       integer,                         intent(out)   :: c_str         ! full child bry start index falling in parent
       integer,                         intent(out)   :: dim_size      ! size of global child boundary
       integer,                         intent(in)    :: vtype         ! r, u or v type
+      type(nc_vars)                                  :: ncv           ! netcdf variables for child
 
       ! local
       integer               :: varid, ij, l, counter
@@ -374,31 +391,27 @@
 
       real, dimension(:), allocatable :: i_in_bry, j_in_bry           ! store read in child boundary
 
-      if (ncid==-1) then                                              ! file not yet opened.
-        ierr=nf90_open(c_bry_file, nf90_nowrite, ncid)                ! var will later be in grdname file
+      if (ncv%ncid==-1) then                                          ! file not yet opened.
+        ierr=nf90_open(ncv%c_bry_file, nf90_nowrite, ncv%ncid)        ! var will later be in grdname file
         if(ierr/=0) call handle_ierr(ierr,
-     &             'read_child_bry:: Error opening file with child bry!')
+     &              'Error opening child bry file:', ncv%c_bry_file)
       endif
 
 
       vname='i_' / / side_name
-!      if(mynode==0) print *, 'child bry name: ', vname
-      ierr=nf90_inq_varid(ncid, vname, varid)                         ! Check if contains bry
+      ierr=nf90_inq_varid(ncv%ncid, vname, varid)                         ! Check if contains bry
       if (ierr==nf90_noerr) then
-!        if(mynode==0) write (*,*) 'Found child boundary in file for: ', vname
+        ierr=nf90_inquire_variable( ncv%ncid, varid,     dimids = dimids)
+        ierr=nf90_inquire_dimension(ncv%ncid, dimids(1), len=dim_size)    ! bry vars only have 1 dim.
 
-        ierr=nf90_inquire_variable(ncid, varid, dimids = dimids)
-        ierr=nf90_inquire_dimension(ncid, dimids(1), len=dim_size)    ! bry vars only have 1 dim.
-!        if(mynode==0) write (*,*) 'dim_size=', dim_size
-
-        allocate(i_in_bry(dim_size))                                  ! allocate temporary array for all bry data.
-        ierr=nf90_get_var(ncid, varid, i_in_bry)                      ! read in data
+        allocate(i_in_bry(dim_size))                                      ! allocate temporary array for all bry data.
+        ierr=nf90_get_var(ncv%ncid, varid, i_in_bry)                      ! read in data
         if(ierr/=0) print *, 'bad read of bry', mynode
 
         allocate(j_in_bry(dim_size))
         vname='j_' / / side_name
-        ierr=nf90_inq_varid(ncid, vname, varid)
-        ierr=nf90_get_var(ncid, varid, j_in_bry)
+        ierr=nf90_inq_varid(ncv%ncid, vname, varid)
+        ierr=nf90_get_var(  ncv%ncid, varid, j_in_bry)
                                                              ! check if in sub-domain relative to parent rho-coords
         sx=0.; sy=0.                                         ! reset var type shift
         if (vtype==up_var) sx=-0.5                           ! shift i_u to i_rho
@@ -428,16 +441,9 @@
           i_bry(1:side_total) = i_in_bry( c_str:c_str+side_total-1 ) ! -1 for closed interval counting
           j_bry(1:side_total) = j_in_bry( c_str:c_str+side_total-1 )
 
-!          write(*,'(/1x,I2,A)') mynode, ' Child points within parent node' ! debug
-!          print *, mynode, 'side_total=', side_total         ! debug
-!          print *, mynode, 'c_str=',c_str                    ! debug
-!          print *, mynode, 'i_bry(str)= ', i_bry(1)          ! debug
-!          print *, mynode, 'i_bry(end)= ', i_bry(side_total) ! debug
-!          print *, mynode, 'j_bry(str)= ', j_bry(1)          ! debug
-!          print *, mynode, 'j_bry(end)= ', j_bry(side_total) ! debug
         endif
 
-      else     ! Side not contained
+      else
         if(mynode==0)
      &    write (*,'(/1x,3A)') 'No child boundary in parent domain ',
      &                         'for: ', side_name
@@ -447,42 +453,46 @@
       end subroutine assign_child_bry_to_parent  !]
 
 ! ----------------------------------------------------------------------
-      subroutine calc_child_interpolation_coeffs  ![
+      subroutine calc_child_interpolation_coeffs( rp, up, vp, ncv )  ![
 
       ! Get interpolation coefficients from fraction of i/j positons.
       ! Calculate interpolation coefficients once only.
 
       implicit none
 
+      ! inputs
+      type(grid_type_vars) :: rp, up, vp  ! rho, u, v-point variable type
+      type(nc_vars)        :: ncv
+
       ! rho cffs:
-      if (allocated(r%i_south)) then
-        call calc_bry_coeffs(r%tot(1), r%i_south, r%j_south, r%s_cffs,
-     &                       r%is_sw,  r%js_sw,   rp_var,    rp_var  )
+      if (allocated(rp%i_south)) then
+        call calc_bry_coeffs(rp%tot(1),   rp%i_south,  rp%j_south, rp%s_cffs,
+     &                       rp%is_sw,    rp%js_sw,    rp_var,     rp_var   )
       endif
-      if (allocated(r%i_west))  then
-        call calc_bry_coeffs(r%tot(2), r%i_west,  r%j_west,  r%w_cffs,
-     &                       r%iw_sw,  r%jw_sw,   rp_var,    rp_var  )
+      if (allocated(rp%i_west))  then
+        call calc_bry_coeffs(rp%tot(2),   rp%i_west,   rp%j_west,  rp%w_cffs,
+     &                       rp%iw_sw,    rp%jw_sw,    rp_var,     rp_var   )
       endif
-      if (allocated(r%i_north)) then
-        call calc_bry_coeffs(r%tot(3), r%i_north, r%j_north, r%n_cffs,
-     &                       r%in_sw,  r%jn_sw,   rp_var,    rp_var  )
+      if (allocated(rp%i_north)) then
+        call calc_bry_coeffs(rp%tot(3),   rp%i_north,  rp%j_north, rp%n_cffs,
+     &                       rp%in_sw,    rp%jn_sw,    rp_var,     rp_var   )
       endif
-      if (allocated(r%i_east))  then
-        call calc_bry_coeffs(r%tot(4), r%i_east,  r%j_east,  r%e_cffs,
-     &                       r%ie_sw,  r%je_sw,   rp_var,    rp_var  )
+      if (allocated(rp%i_east))  then
+        call calc_bry_coeffs(rp%tot(4),   rp%i_east,   rp%j_east,  rp%e_cffs,
+     &                       rp%ie_sw,    rp%je_sw,    rp_var,     rp_var   )
       endif
 
       ! u cffs:
       if (allocated(up%i_south)) then
-        call calc_bry_coeffs(up%tot(1),   up%i_south,  up%j_south, up%s_cffs,        ! cffs to interp parent u to child u
+        call calc_bry_coeffs(up%tot(1),   up%i_south,  up%j_south, up%s_cffs,            ! cffs to interp parent u to child u
      &                       up%is_sw,    up%js_sw,    up_var,     up_var   )
         call calc_bry_coeffs(up%tot(1),   up%i_south,  up%j_south, up%s_d2d_cffs,        ! cffs to interp parent v to child u
      &                       up%isd2d_sw, up%jsd2d_sw, vp_var,     up_var       )
         call calc_bry_coeffs(up%tot(1),   up%i_south,  up%j_south, up%s_r2d_cffs,        ! cffs to interp parent r to child u (angle)
      &                       up%isr2d_sw, up%jsr2d_sw, rp_var,     up_var       )
 
-        call calc_parent_vs_child_grid_angles(         up%tot(1),  up%c_str(1),            ! don't need south_r2u after this, should deallocate
-     &        up%s_r2d_cffs, up%isr2d_sw, up%jsr2d_sw, up%s_angcos,up%s_angsin, up_var, 1 ) ! 1=S
+        call calc_parent_vs_child_grid_angles(         up%tot(1),  up%c_str(1),          ! don't need south_r2u after this, should deallocate
+     &        up%s_r2d_cffs, up%isr2d_sw, up%jsr2d_sw, up%s_angcos,up%s_angsin, up_var, 1, ncv ) ! 1=S
       endif
       if (allocated(up%i_west)) then
         call calc_bry_coeffs(up%tot(2),   up%i_west,   up%j_west,  up%w_cffs,
@@ -492,7 +502,7 @@
         call calc_bry_coeffs(up%tot(2),   up%i_west,   up%j_west,  up%w_r2d_cffs,
      &                       up%iwr2d_sw, up%jwr2d_sw, rp_var,     up_var       )
         call calc_parent_vs_child_grid_angles(         up%tot(2),  up%c_str(2),
-     &        up%w_r2d_cffs, up%iwr2d_sw, up%jwr2d_sw, up%w_angcos,up%w_angsin, up_var, 2 ) ! 2=W
+     &        up%w_r2d_cffs, up%iwr2d_sw, up%jwr2d_sw, up%w_angcos,up%w_angsin, up_var, 2, ncv ) ! 2=W
       endif
       if (allocated(up%i_north)) then
         call calc_bry_coeffs(up%tot(3),   up%i_north,  up%j_north, up%n_cffs,
@@ -502,7 +512,7 @@
         call calc_bry_coeffs(up%tot(3),   up%i_north,  up%j_north, up%n_r2d_cffs,
      &                       up%inr2d_sw, up%jnr2d_sw, rp_var,     up_var       )
         call calc_parent_vs_child_grid_angles(         up%tot(3),  up%c_str(3),
-     &        up%n_r2d_cffs, up%inr2d_sw, up%jnr2d_sw, up%n_angcos,up%n_angsin, up_var, 3 )
+     &        up%n_r2d_cffs, up%inr2d_sw, up%jnr2d_sw, up%n_angcos,up%n_angsin, up_var, 3, ncv )
       endif
       if (allocated(up%i_east)) then
         call calc_bry_coeffs(up%tot(4),   up%i_east,   up%j_east,  up%e_cffs,
@@ -512,20 +522,20 @@
         call calc_bry_coeffs(up%tot(4),   up%i_east,   up%j_east,  up%e_r2d_cffs,
      &                       up%ier2d_sw, up%jer2d_sw, rp_var,     up_var       )
         call calc_parent_vs_child_grid_angles(         up%tot(4),  up%c_str(4),
-     &        up%e_r2d_cffs, up%ier2d_sw, up%jer2d_sw, up%e_angcos,up%e_angsin, up_var, 4 )
+     &        up%e_r2d_cffs, up%ier2d_sw, up%jer2d_sw, up%e_angcos,up%e_angsin, up_var, 4, ncv )
       endif
 
       ! v cffs:
       if (allocated(vp%i_south)) then
-        call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_cffs,        ! cffs to interp parent u to child u
+        call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_cffs,            ! cffs to interp parent u to child u
      &                       vp%is_sw,    vp%js_sw,    vp_var,     vp_var   )
         call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_d2d_cffs,        ! cffs to interp parent v to child u
      &                       vp%isd2d_sw, vp%jsd2d_sw, up_var,     vp_var       )
         call calc_bry_coeffs(vp%tot(1),   vp%i_south,  vp%j_south, vp%s_r2d_cffs,        ! cffs to interp parent r to child u (angle)
      &                       vp%isr2d_sw, vp%jsr2d_sw, rp_var,     vp_var       )
 
-        call calc_parent_vs_child_grid_angles(         vp%tot(1),  vp%c_str(1),            ! don't need south_r2u after this, should deallocate
-     &        vp%s_r2d_cffs, vp%isr2d_sw, vp%jsr2d_sw, vp%s_angcos,vp%s_angsin, vp_var, 1 ) ! 1=S
+        call calc_parent_vs_child_grid_angles(         vp%tot(1),  vp%c_str(1),          ! don't need south_r2u after this, should deallocate
+     &        vp%s_r2d_cffs, vp%isr2d_sw, vp%jsr2d_sw, vp%s_angcos,vp%s_angsin, vp_var, 1, ncv ) ! 1=S
       endif
       if (allocated(vp%i_west)) then
         call calc_bry_coeffs(vp%tot(2),   vp%i_west,   vp%j_west,  vp%w_cffs,
@@ -535,7 +545,7 @@
         call calc_bry_coeffs(vp%tot(2),   vp%i_west,   vp%j_west,  vp%w_r2d_cffs,
      &                       vp%iwr2d_sw, vp%jwr2d_sw, rp_var,     vp_var       )
         call calc_parent_vs_child_grid_angles(         vp%tot(2),  vp%c_str(2),
-     &        vp%w_r2d_cffs, vp%iwr2d_sw, vp%jwr2d_sw, vp%w_angcos,vp%w_angsin, vp_var, 2 ) ! 2=W
+     &        vp%w_r2d_cffs, vp%iwr2d_sw, vp%jwr2d_sw, vp%w_angcos,vp%w_angsin, vp_var, 2, ncv ) ! 2=W
       endif
       if (allocated(vp%i_north)) then
         call calc_bry_coeffs(vp%tot(3),   vp%i_north,  vp%j_north, vp%n_cffs,
@@ -545,7 +555,7 @@
         call calc_bry_coeffs(vp%tot(3),   vp%i_north,  vp%j_north, vp%n_r2d_cffs,
      &                       vp%inr2d_sw, vp%jnr2d_sw, rp_var,     vp_var       )
         call calc_parent_vs_child_grid_angles(         vp%tot(3),  vp%c_str(3),
-     &        vp%n_r2d_cffs, vp%inr2d_sw, vp%jnr2d_sw, vp%n_angcos,vp%n_angsin, vp_var, 3 )
+     &        vp%n_r2d_cffs, vp%inr2d_sw, vp%jnr2d_sw, vp%n_angcos,vp%n_angsin, vp_var, 3, ncv )
       endif
       if (allocated(vp%i_east)) then
         call calc_bry_coeffs(vp%tot(4),   vp%i_east,   vp%j_east,  vp%e_cffs,
@@ -555,7 +565,7 @@
         call calc_bry_coeffs(vp%tot(4),   vp%i_east,   vp%j_east,  vp%e_r2d_cffs,
      &                       vp%ier2d_sw, vp%jer2d_sw, rp_var,     vp_var       )
         call calc_parent_vs_child_grid_angles(         vp%tot(4),  vp%c_str(4),
-     &        vp%e_r2d_cffs, vp%ier2d_sw, vp%jer2d_sw, vp%e_angcos,vp%e_angsin, vp_var, 4 )
+     &        vp%e_r2d_cffs, vp%ier2d_sw, vp%jer2d_sw, vp%e_angcos,vp%e_angsin, vp_var, 4, ncv )
       endif
 
       rt2=sqrt(2.0)  ! set interpolation coefficient once
@@ -693,7 +703,7 @@
 
 ! ----------------------------------------------------------------------
       subroutine calc_parent_vs_child_grid_angles( bry_tot, c_str,   cffs,    i_sw, j_sw,    ![
-     &                                             anglcos, anglsin, c_vtype, bry   )
+     &                                             anglcos, anglsin, c_vtype, bry,  ncv )
 
       ! Calcluate the angle between the parent and child and grid in order to
       ! rotate u/v in parent axes to u/v in child axes.
@@ -711,6 +721,7 @@
       real   , dimension(:),   allocatable, intent(out) :: anglsin
       integer,                              intent(in)  :: c_vtype     ! child bry point type
       integer,                              intent(in)  :: bry         ! 1/2/3/4 = S/W/N/E
+      type(nc_vars)                                     :: ncv
 
       ! local
       integer                         :: ij, varid
@@ -729,9 +740,9 @@
         vname='angle_v_' / / bry_name(bry)
       endif
 
-      ierr=nf90_inq_varid(ncid, vname, varid)                          ! Check if contains bry
+      ierr=nf90_inq_varid(ncv%ncid, vname, varid)                          ! Check if contains bry
       if (ierr==nf90_noerr) then
-        ierr=nf90_get_var( ncid, varid, c_angle, start=(/c_str/), count=(/bry_tot/) ) ! only read child points in subdomain
+        ierr=nf90_get_var(ncv%ncid, varid, c_angle, start=(/c_str/), count=(/bry_tot/) ) ! only read child points in subdomain
         if (ierr/=0) call handle_ierr(ierr, 'Bad read of ', vname)
       else
         write (*,'(/1x,3A)') 'ERROR: No child boundary in parent ',    ! angle not contained but should be because
@@ -763,58 +774,49 @@
       end subroutine calc_parent_vs_child_grid_angles  !]
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_child_bry( var, nmax )  ![
+      subroutine interpolate_child_bry( var, nmax, rp )  ![ ! CHANGE NAME TO INTERP RHO
 
       ! Interpolate all boundaries if applicable
 
       implicit none
 
+      ! inputs
+      type(grid_type_vars) :: rp  ! rho-point variable type
+
       integer, intent(in) :: nmax
       real   , intent(in) :: var(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
                                                         ! wasn't able to use dimension(:,:,:), but vars start from -1 index so maybe this is safer.
 
-      if (allocated(r%i_south))
-     &  call interpolate_one_child_bry(r%tot(1), r%s_cffs, r%is_sw, r%js_sw,
-     &                                 nmax,     var,          r%south, rmask  )
+      if (allocated(rp%i_south))
+     &  call interpolate_one_child_bry(rp%tot(1), rp%s_cffs, rp%is_sw, rp%js_sw,
+     &                                 nmax,      var,       rp%south, rmask   )
 
-      if (allocated(r%i_west))
-     &  call interpolate_one_child_bry(r%tot(2),  r%w_cffs, r%iw_sw, r%jw_sw,
-     &                                 nmax,      var,         r%west,  rmask  )
+      if (allocated(rp%i_west))
+     &  call interpolate_one_child_bry(rp%tot(2), rp%w_cffs, rp%iw_sw, rp%jw_sw,
+     &                                 nmax,      var,       rp%west,  rmask   )
 
-!      if(mynode==1) then  ! debug
-!        print *, 'r%west: r%tot=', r%tot(2),'mynode',mynode
-!      print *,'i/j(end)=',r%i_west(r%tot(2)),r%j_west(r%tot(2))
-!        print *,'i/jsw(end)=',r%iw_sw(r%tot(2)),r%jw_sw(r%tot(2))
-!        print *,'r%west(end)=',r%west(r%tot(2),1)
-!      endif
-!      if(mynode==4) then  ! debug
-!        print *, 'r%west: r%tot=', r%tot(2),'mynode',mynode
-!        print *,'i/j(1)=',r%i_west(1),r%j_west(1)
-!        print *,'i/jsw(1)=',r%iw_sw(1),r%jw_sw(1)
-!        print *,'r%west(1)=',r%west(1,1)
-!      endif
+      if (allocated(rp%i_north))
+     &  call interpolate_one_child_bry(rp%tot(3), rp%n_cffs, rp%in_sw, rp%jn_sw,
+     &                                 nmax,      var,       rp%north, rmask   )
 
-      if (allocated(r%i_north))
-     &  call interpolate_one_child_bry(r%tot(3), r%n_cffs, r%in_sw, r%jn_sw,
-     &                                 nmax,     var,          r%north, rmask  )
-
-      if (allocated(r%i_east))
-     &  call interpolate_one_child_bry(r%tot(4), r%e_cffs,  r%ie_sw, r%je_sw,
-     &                                 nmax,     var,          r%east,  rmask  )
+      if (allocated(rp%i_east))
+     &  call interpolate_one_child_bry(rp%tot(4), rp%e_cffs, rp%ie_sw, rp%je_sw,
+     &                                 nmax,      var,       rp%east,  rmask   )
 
 
       end subroutine interpolate_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_u_child_bry( uvar, vvar, nmax )  ![
+      subroutine interpolate_u_child_bry( uvar, vvar, nmax, up )  ![
       ! Interpolate all u boundaries if applicable
 
       implicit none
 
-
-      integer, intent(in) :: nmax
-      real   , intent(in) :: uvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
-      real   , intent(in) :: vvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      ! inputs
+      integer,  intent(in) :: nmax
+      real   ,  intent(in) :: uvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      real   ,  intent(in) :: vvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      type(grid_type_vars) :: up                          ! u-point variable type
 
 
       if (allocated(up%i_south)) then
@@ -823,7 +825,7 @@
         call interpolate_one_child_bry(up%tot(1), up%s_d2d_cffs, up%isd2d_sw, up%jsd2d_sw,
      &                                 nmax,      vvar,          up%s_vprnt,  vmask      )
 
-        call interpolate_one_u_bry(    up%tot(1), nmax, up%south, up%s_uprnt, up%s_vprnt,
+        call rotate_one_u_bry(         up%tot(1), nmax, up%south, up%s_uprnt, up%s_vprnt,
      &                                 up%s_angcos, up%s_angsin                         )
       endif
 
@@ -833,7 +835,7 @@
         call interpolate_one_child_bry(up%tot(2), up%w_d2d_cffs, up%iwd2d_sw, up%jwd2d_sw,
      &                                 nmax,      vvar,          up%w_vprnt,  vmask      )
 
-        call interpolate_one_u_bry(    up%tot(2), nmax, up%west, up%w_uprnt,  up%w_vprnt,
+        call rotate_one_u_bry(         up%tot(2), nmax, up%west, up%w_uprnt,  up%w_vprnt,
      &                                 up%w_angcos, up%w_angsin                         )
       endif
 
@@ -843,7 +845,7 @@
         call interpolate_one_child_bry(up%tot(3), up%n_d2d_cffs, up%ind2d_sw, up%jnd2d_sw,
      &                                 nmax,      vvar,          up%n_vprnt,  vmask      )
 
-        call interpolate_one_u_bry(    up%tot(3), nmax, up%north, up%n_uprnt, up%n_vprnt,
+        call rotate_one_u_bry(         up%tot(3), nmax, up%north, up%n_uprnt, up%n_vprnt,
      &                                 up%n_angcos, up%n_angsin                          )
       endif
 
@@ -853,22 +855,23 @@
         call interpolate_one_child_bry(up%tot(4), up%e_d2d_cffs, up%ied2d_sw, up%jed2d_sw,
      &                                 nmax,      vvar,          up%e_vprnt,  vmask      )
 
-        call interpolate_one_u_bry(    up%tot(4), nmax, up%east, up%e_uprnt,  up%e_vprnt,
+        call rotate_one_u_bry(         up%tot(4), nmax, up%east, up%e_uprnt,  up%e_vprnt,
      &                                 up%e_angcos, up%e_angsin                         )
       endif
 
       end subroutine interpolate_u_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_v_child_bry( uvar, vvar, nmax )  ![
+      subroutine interpolate_v_child_bry( uvar, vvar, nmax, vp )  ![
       ! Interpolate all v boundaries if applicable
       ! Shouldn't really need this, rather have uv function with a type as an arguement!!!
 
       implicit none
 
-      integer, intent(in) :: nmax
-      real   , intent(in) :: uvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
-      real   , intent(in) :: vvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      integer,  intent(in) :: nmax
+      real   ,  intent(in) :: uvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      real   ,  intent(in) :: vvar(GLOBAL_2D_ARRAY,nmax)  ! variable to interpolate.
+      type(grid_type_vars) :: vp                          ! v-point variable type
 
 
       if (allocated(vp%i_south)) then
@@ -877,7 +880,7 @@
         call interpolate_one_child_bry(vp%tot(1), vp%s_d2d_cffs, vp%isd2d_sw, vp%jsd2d_sw,
      &                                 nmax,      uvar,          vp%s_uprnt,  umask      )
 
-        call interpolate_one_v_bry(    vp%tot(1), nmax, vp%south, vp%s_uprnt, vp%s_vprnt,
+        call rotate_one_v_bry(         vp%tot(1), nmax, vp%south, vp%s_uprnt, vp%s_vprnt,
      &                                 vp%s_angcos, vp%s_angsin                         )
       endif
 
@@ -887,7 +890,7 @@
         call interpolate_one_child_bry(vp%tot(2), vp%w_d2d_cffs, vp%iwd2d_sw, vp%jwd2d_sw,
      &                                 nmax,      uvar,          vp%w_uprnt,  umask      )
 
-        call interpolate_one_v_bry(    vp%tot(2), nmax, vp%west, vp%w_uprnt,  vp%w_vprnt,
+        call rotate_one_v_bry(         vp%tot(2), nmax, vp%west, vp%w_uprnt,  vp%w_vprnt,
      &                                 vp%w_angcos, vp%w_angsin                         )
       endif
 
@@ -897,7 +900,7 @@
         call interpolate_one_child_bry(vp%tot(3), vp%n_d2d_cffs, vp%ind2d_sw, vp%jnd2d_sw,
      &                                 nmax,      uvar,          vp%n_uprnt,  umask      )
 
-        call interpolate_one_v_bry(    vp%tot(3), nmax, vp%north, vp%n_uprnt, vp%n_vprnt,
+        call rotate_one_v_bry(         vp%tot(3), nmax, vp%north, vp%n_uprnt, vp%n_vprnt,
      &                                 vp%n_angcos, vp%n_angsin                          )
       endif
 
@@ -907,15 +910,15 @@
         call interpolate_one_child_bry(vp%tot(4), vp%e_d2d_cffs, vp%ied2d_sw, vp%jed2d_sw,
      &                                 nmax,      uvar,          vp%e_uprnt,  umask      )
 
-        call interpolate_one_v_bry(    vp%tot(4), nmax, vp%east, vp%e_uprnt,  vp%e_vprnt,
+        call rotate_one_v_bry(         vp%tot(4), nmax, vp%east, vp%e_uprnt,  vp%e_vprnt,
      &                                 vp%e_angcos, vp%e_angsin                         )
       endif
 
       end subroutine interpolate_v_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_one_child_bry(bry_tot, cffs, i_sw, j_sw,  ![
-     &                                     nmax,    var,  vbry, mask )
+      subroutine interpolate_one_child_bry(bry_tot, cffs, i_sw,   j_sw,  ![
+     &                                     nmax,    var,  varbry, mask )
 
       ! Interpolate 4 parent points to 1 child bry point (r2r, u2u, or v2v)
       ! Interpolation coefficients already calculated in calc_child_interpolation_coeffs
@@ -923,12 +926,12 @@
       implicit none
 
       ! inputs
-      integer,                              intent(in)  :: bry_tot     ! total child bry points in parent
-      real,    dimension(:,:),              intent(in)  :: cffs    ! 4 parent interpolants for each child point
-      integer, dimension(:),                intent(in)  :: i_sw, j_sw  ! i and j of sw parent interpolant
-      integer,                              intent(in)  :: nmax        ! vertical layers of var (1 if 2D)
+      integer,                              intent(in)  :: bry_tot                    ! total child bry points in parent
+      real,    dimension(:,:),              intent(in)  :: cffs                       ! 4 parent interpolants for each child point
+      integer, dimension(:),                intent(in)  :: i_sw, j_sw                 ! i and j of sw parent interpolant
+      integer,                              intent(in)  :: nmax                       ! vertical layers of var (1 if 2D)
       real,                                 intent(in)  :: var(GLOBAL_2D_ARRAY,nmax)  ! parent var to interpolate from
-      real,    dimension(:,:), allocatable, intent(out) :: vbry        ! bry to interpolated 2D/3D var
+      real,    dimension(:,:), allocatable, intent(out) :: varbry                     ! bry to interpolated 2D/3D var
       real,                                 intent(in)  :: mask(GLOBAL_2D_ARRAY)      ! grid type r/u/v mask
 
       ! local
@@ -936,7 +939,7 @@
       real, dimension(nmax)   :: var_sw, var_se, var_nw, var_ne  ! temporary copies of columns of data
       real(kind=8), parameter :: spv_set=1.D+33
 
-      if (.not. allocated(vbry)) allocate( vbry(bry_tot, N))     ! allocate once for 3D var and reuse for all 2D/3D vars
+      if (.not. allocated(varbry)) allocate( varbry(bry_tot, N)) ! allocate once for 3D var and reuse for all 2D/3D vars
                                                                  ! maybe move this to initialization to avoid if statement repetition
 
       do ij=1,bry_tot                                            ! Normally would have k as outer loop for cache coherence but can avoid many if statements by swapping order here:
@@ -970,16 +973,16 @@
 
           do k=1,nmax
 
-            vbry(ij,k) = cffs(1,ij) * var_sw(k)   ! interp from sw parent point.      Note even though 'k' index doesn't exist for 2D var,
-     &                 + cffs(2,ij) * var_se(k)   ! interp from se parent point.      fortran won't complain. This is done in ncdf_write_mod() too.
-     &                 + cffs(3,ij) * var_nw(k)   ! interp from nw parent point.
-     &                 + cffs(4,ij) * var_ne(k)   ! interp from ne parent point.
+            varbry(ij,k) = cffs(1,ij) * var_sw(k)   ! interp from sw parent point.      Note even though 'k' index doesn't exist for 2D var,
+     &                   + cffs(2,ij) * var_se(k)   ! interp from se parent point.      fortran won't complain. This is done in ncdf_write_mod() too.
+     &                   + cffs(3,ij) * var_nw(k)   ! interp from nw parent point.
+     &                   + cffs(4,ij) * var_ne(k)   ! interp from ne parent point.
 
           enddo
 
         else  ! child point masked
 
-          vbry(ij,:) = spv_set
+          varbry(ij,:) = spv_set
 
         endif ! <- i_sw(ij)>0
 
@@ -988,7 +991,7 @@
       end subroutine interpolate_one_child_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_one_u_bry( bry_tot, nmax, ubry, uparent, vparent,  ![
+      subroutine rotate_one_u_bry( bry_tot, nmax, ubry, uparent, vparent,  ![
      &                                  angcos,  angsin )
 
       implicit none
@@ -1023,10 +1026,10 @@
 
       enddo
 
-      end subroutine interpolate_one_u_bry  !]
+      end subroutine rotate_one_u_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine interpolate_one_v_bry( bry_tot, nmax, vbry, uparent, vparent,  ![
+      subroutine rotate_one_v_bry( bry_tot, nmax, vbry, uparent, vparent,  ![
      &                                  angcos,  angsin )
 
       implicit none
@@ -1051,12 +1054,12 @@
         enddo
       enddo
 
-      end subroutine interpolate_one_v_bry  !]
+      end subroutine rotate_one_v_bry  !]
 
 ! ----------------------------------------------------------------------
-      subroutine create_child_output_file  ![
+      subroutine create_child_output_file( rp, up, vp, ncv )  ![
 
-      ! For now decided each file still creates file even if not child contained in node.
+      ![For now decided each file still creates file even if not child contained in node.
       ! so that ncjoin can still check files are correct.
       ! define boundary even if not contained in parent for joining tool.
       !
@@ -1076,76 +1079,81 @@
       !
       ! Therefore, we need to give u and v bry variables their own xi_rho, and eta_rho
       ! dimensions, e.g. eta_urho_west.
+      !]
 
       implicit none
 
+      ! inputs
+      type(grid_type_vars)  :: rp, up, vp                                   ! rho,u,v-point variable types
+      type(nc_vars)         :: ncv                                          ! netcdf variables for child
+
       ! local
       integer               :: prev_fill_mode
-      integer, dimension(5) :: r_dimid_bry,  u_dimid_bry,  v_dimid_bry  ! dimension ID for boundaries
-      integer               :: itrc                                     ! tracer index
+      integer, dimension(5) :: r_dimid_bry,  u_dimid_bry,  v_dimid_bry      ! dimension ID for boundaries
+      integer               :: itrc                                         ! tracer index
 
-      if(total_output_rec == 0) then                                    ! Add root output name to
-        file_name = trim(output_root_name) / / trim(file_name)          ! file name (only done once)
+      if(ncv%total_output_rec == 0) then                                    ! Add root output name to
+        ncv%file_name = trim(output_root_name) / / trim(ncv%file_name)      ! file name (only done once)
       endif
 
 
-      call ncdf_create_blank_file(file_name, ncid_out,  prev_fill_mode,
-     &                              recs_per_file, total_output_rec       )
+      call ncdf_create_blank_file(ncv%file_name, ncv%ncid_out,  prev_fill_mode,
+     &                            recs_per_file, ncv%total_output_rec )
 
       ! DEFINE DIMENSIONS & VARIABLES:
 
-      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_south_size', r%glob_cs)
-      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_west_size' , r%glob_cw)
-      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_north_size', r%glob_cn)
-      ierr=nf90_put_att(ncid_out, NF90_GLOBAL, 'global_east_size' , r%glob_ce)
-      ierr=nf90_def_dim( ncid_out, 'rec_time', 0, dimid_t)
+      ierr=nf90_put_att( ncv%ncid_out, NF90_GLOBAL, 'global_south_size', rp%glob_cs )
+      ierr=nf90_put_att( ncv%ncid_out, NF90_GLOBAL, 'global_west_size' , rp%glob_cw )
+      ierr=nf90_put_att( ncv%ncid_out, NF90_GLOBAL, 'global_north_size', rp%glob_cn )
+      ierr=nf90_put_att( ncv%ncid_out, NF90_GLOBAL, 'global_east_size' , rp%glob_ce )
+      ierr=nf90_def_dim( ncv%ncid_out, 'rec_time', 0, ncv%dimid_t)
 
       ! rho dims:
-      ierr=nf90_def_dim( ncid_out, 'xi_rho_south', max( r%tot(1), 1 ), r_dimid_bry(1) )  ! Set size as 1 if size==0 to avoid unlimited dimension (could be confused with time in ncjoin)
-      ierr=nf90_def_dim( ncid_out, 'eta_rho_west', max( r%tot(2), 1 ), r_dimid_bry(2) )
-      ierr=nf90_def_dim( ncid_out, 'xi_rho_north', max( r%tot(3), 1 ), r_dimid_bry(3) )
-      ierr=nf90_def_dim( ncid_out, 'eta_rho_east', max( r%tot(4), 1 ), r_dimid_bry(4) )
-      ierr=nf90_def_dim( ncid_out, 's_rho'       , N                 , r_dimid_bry(5) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'xi_rho_south', max( rp%tot(1), 1 ), r_dimid_bry(1) )  ! Set size as 1 if size==0 to avoid unlimited dimension (could be confused with time in ncjoin)
+      ierr=nf90_def_dim( ncv%ncid_out, 'eta_rho_west', max( rp%tot(2), 1 ), r_dimid_bry(2) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'xi_rho_north', max( rp%tot(3), 1 ), r_dimid_bry(3) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'eta_rho_east', max( rp%tot(4), 1 ), r_dimid_bry(4) )
+      ierr=nf90_def_dim( ncv%ncid_out, 's_rho'       , N                  , r_dimid_bry(5) )
 
       ! u dims: (see preamble for eta_urho_west & eta_urho_east info)
-      ierr=nf90_def_dim( ncid_out, 'xi_u_south',   max( up%tot(1), 1 ), u_dimid_bry(1) )
-      ierr=nf90_def_dim( ncid_out, 'eta_urho_west',max( up%tot(2), 1 ), u_dimid_bry(2) )
-      ierr=nf90_def_dim( ncid_out, 'xi_u_north',   max( up%tot(3), 1 ), u_dimid_bry(3) )
-      ierr=nf90_def_dim( ncid_out, 'eta_urho_east',max( up%tot(4), 1 ), u_dimid_bry(4) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'xi_u_south',   max( up%tot(1), 1 ), u_dimid_bry(1) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'eta_urho_west',max( up%tot(2), 1 ), u_dimid_bry(2) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'xi_u_north',   max( up%tot(3), 1 ), u_dimid_bry(3) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'eta_urho_east',max( up%tot(4), 1 ), u_dimid_bry(4) )
       u_dimid_bry(5) = r_dimid_bry(5)  ! k dimension of u-point is same as rho
 
       ! v dims:
-      ierr=nf90_def_dim( ncid_out, 'xi_vrho_south',max( vp%tot(1), 1 ), v_dimid_bry(1) )
-      ierr=nf90_def_dim( ncid_out, 'eta_v_west',   max( vp%tot(2), 1 ), v_dimid_bry(2) )
-      ierr=nf90_def_dim( ncid_out, 'xi_vrho_north',max( vp%tot(3), 1 ), v_dimid_bry(3) )
-      ierr=nf90_def_dim( ncid_out, 'eta_v_east',   max( vp%tot(4), 1 ), v_dimid_bry(4) )
-      v_dimid_bry(5) = r_dimid_bry(5)  ! k dimension of u-point is same as rho
+      ierr=nf90_def_dim( ncv%ncid_out, 'xi_vrho_south',max( vp%tot(1), 1 ), v_dimid_bry(1) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'eta_v_west',   max( vp%tot(2), 1 ), v_dimid_bry(2) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'xi_vrho_north',max( vp%tot(3), 1 ), v_dimid_bry(3) )
+      ierr=nf90_def_dim( ncv%ncid_out, 'eta_v_east',   max( vp%tot(4), 1 ), v_dimid_bry(4) )
+      v_dimid_bry(5) = r_dimid_bry(5)  ! k dimension of v-point is same as rho
 
       ! 2D vars:
-      call define_child_bry( indxZ,  r%tot,   r%c_str, r_dimid_bry, 1, .false. )
-      call define_child_bry( indxUb, up%tot, up%c_str, u_dimid_bry, 1, .false. )
-      call define_child_bry( indxVb, vp%tot, vp%c_str, v_dimid_bry, 1, .false. )
+      call define_child_bry( indxZ,  rp%tot, rp%c_str, r_dimid_bry, 1, .false., ncv )
+      call define_child_bry( indxUb, up%tot, up%c_str, u_dimid_bry, 1, .false., ncv )
+      call define_child_bry( indxVb, vp%tot, vp%c_str, v_dimid_bry, 1, .false., ncv )
 
       ! 3D vars:
-      call define_child_bry( indxU,  up%tot, up%c_str, u_dimid_bry, N, .false. )
-      call define_child_bry( indxV,  vp%tot, vp%c_str, v_dimid_bry, N, .false. )
+      call define_child_bry( indxU,  up%tot, up%c_str, u_dimid_bry, N, .false., ncv )
+      call define_child_bry( indxV,  vp%tot, vp%c_str, v_dimid_bry, N, .false., ncv )
 
       ! tracers:
       do itrc=1,NT
-        call define_child_bry( itrc, r%tot, r%c_str, r_dimid_bry, N, .true.  )
+        call define_child_bry( itrc, rp%tot, rp%c_str, r_dimid_bry, N, .true. , ncv )
       enddo
 
 
-      ierr=nf90_enddef(ncid_out)  ! end definition to write changes to disk
+      ierr=nf90_enddef(ncv%ncid_out)  ! end definition to write changes to disk
       if (mynode == 0) then
         write(*,'(/1x,2A/)')
-     &     'bry_extract_child :: created new netCDF file ', file_name
+     &     'bry_extract_child :: created new netCDF file ', ncv%file_name
       endif
 
       end subroutine create_child_output_file  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_child_bry ( indx_v, nmax, trc_yn, sbry, wbry, nbry, ebry, bry_tot )  ![
+      subroutine wrt_child_bry ( indx_v, nmax, trc_yn, ap, ncv )  ![
 
       ! Each sub-domain writes out its portion of child boundary if applicable.
       ! all procs, make child bc netcdf file, only relevant procs define bc variables (east, north, etc)
@@ -1153,18 +1161,14 @@
       implicit none
 
       ! inputs
-      integer,                           intent(in) :: indx_v  ! index of primary var or itrc
-      integer,                           intent(in) :: nmax    ! vertical levels
-      logical,                           intent(in) :: trc_yn  ! is variable a tracer y/n
-      real, dimension(:,:), allocatable, intent(in) :: sbry    ! interpolated south bry values
-      real, dimension(:,:), allocatable, intent(in) :: wbry    ! interpolated west  bry values
-      real, dimension(:,:), allocatable, intent(in) :: nbry    ! interpolated north bry values
-      real, dimension(:,:), allocatable, intent(in) :: ebry    ! interpolated east  bry values
-      integer, dimension(4),             intent(in) :: bry_tot ! total child bry points in parent
+      integer,              intent(in) :: indx_v    ! index of primary var or itrc
+      integer,              intent(in) :: nmax      ! vertical levels
+      logical,              intent(in) :: trc_yn    ! is variable a tracer y/n
+      type(grid_type_vars), intent(in) :: ap        ! any variable type
+      type(nc_vars)                    :: ncv
 
       ! local
       integer               :: varid, ndims
-      integer               :: dimid, dim_len ! debug only
       integer, dimension(3) :: start_out, count_out, count_dummy=1
       character(len=40)     :: bname, rname
 
@@ -1177,61 +1181,60 @@
 
       if (nmax == 1) then                           ! handle 2D or 3D variable dimids
         ndims=2
-        start_out(1:ndims) = (/1, output_rec/)
-        count_out(1:ndims) = (/1, 1         /)
+        start_out(1:ndims) = (/1, ncv%output_rec/)
+        count_out(1:ndims) = (/1, 1             /)
       else
         ndims=3
-        start_out(1:ndims) = (/1, 1   , output_rec/)
-        count_out(1:ndims) = (/1, nmax, 1         /)
+        start_out(1:ndims) = (/1, 1   , ncv%output_rec/)
+        count_out(1:ndims) = (/1, nmax, 1             /)
       endif
 
 
-      bname = trim(rname) / /'_south'               ! Move this inside if allocated...
-      ierr  = nf90_inq_varid(ncid_out, bname, varid )
-      count_out(1) = bry_tot(1)
-      if (allocated(sbry)) then
-        ierr=nf90_put_var( ncid_out, varid , sbry(:,:),
+      bname = trim(rname) / /'_south'
+      ierr  = nf90_inq_varid( ncv%ncid_out, bname, varid )
+      count_out(1) = ap%tot(1)
+      if (allocated(ap%south)) then
+        ierr=nf90_put_var( ncv%ncid_out, varid, ap%south(:,:),
      &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrts_bry ierr= ',nf90_strerror(ierr), mynode
       else
-
-        ierr=nf90_put_var( ncid_out, varid, (/1.0/),                               ! put dummy value so ncjoin doesn't complain
+        ierr=nf90_put_var( ncv%ncid_out, varid, (/1.0/),                               ! put dummy value so ncjoin doesn't complain
      &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
       bname = trim(rname) / /'_west'
-      ierr=nf90_inq_varid(ncid_out, bname, varid )
-      count_out(1) = bry_tot(2)
-      if (allocated(wbry )) then
-        ierr=nf90_put_var( ncid_out, varid    , wbry(:,:) ,
+      ierr  = nf90_inq_varid( ncv%ncid_out, bname, varid )
+      count_out(1) = ap%tot(2)
+      if (allocated(ap%west)) then
+        ierr=nf90_put_var( ncv%ncid_out, varid, ap%west(:,:) ,
      &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrtw_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+        ierr=nf90_put_var( ncv%ncid_out, varid, (/1.0/),
      &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
       bname = trim(rname) / /'_north'
-      ierr=nf90_inq_varid(ncid_out, bname, varid )
-      count_out(1) = bry_tot(3)
-      if (allocated(nbry)) then
-        ierr=nf90_put_var( ncid_out, varid    , nbry(:,:),
+      ierr  = nf90_inq_varid( ncv%ncid_out, bname, varid )
+      count_out(1) = ap%tot(3)
+      if (allocated(ap%north)) then
+        ierr=nf90_put_var( ncv%ncid_out, varid, ap%north(:,:),
      &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrtn_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+        ierr=nf90_put_var( ncv%ncid_out, varid, (/1.0/),
      &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
       bname = trim(rname) / /'_east'
-      ierr=nf90_inq_varid(ncid_out, bname, varid )
-      count_out(1) = bry_tot(4)
-      if (allocated(ebry )) then
-        ierr=nf90_put_var( ncid_out, varid    , ebry(:,:) ,
+      ierr  = nf90_inq_varid( ncv%ncid_out, bname, varid )
+      count_out(1) = ap%tot(4)
+      if (allocated(ap%east )) then
+        ierr=nf90_put_var( ncv%ncid_out, varid, ap%east(:,:) ,
      &                     start=start_out(1:ndims), count=count_out(1:ndims) )
         if(ierr/=0) write(*,*) 'wrte_bry ierr= ',nf90_strerror(ierr), mynode
       else
-        ierr=nf90_put_var( ncid_out, varid, (/1.0/),
+        ierr=nf90_put_var( ncv%ncid_out, varid, (/1.0/),
      &                     start=start_out(1:ndims), count=count_dummy(1:ndims) )
       endif
 
@@ -1239,7 +1242,7 @@
 
 ! ----------------------------------------------------------------------
       subroutine define_child_bry( indx_v, sides_tot, sides_c_str,  ![
-     &                             dimid_bry, nmax, trc_yn )
+     &                             dimid_bry, nmax, trc_yn, ncv  )
 
       ! Define child bry variable in output netCDF file.
 
@@ -1252,6 +1255,7 @@
       integer, dimension(5), intent(in) :: dimid_bry     ! dimension ID for boundaries
       integer,               intent(in) :: nmax
       logical,               intent(in) :: trc_yn
+      type(nc_vars)                     :: ncv           ! netcdf variables for child
 
       ! local
       integer               :: varid, bry, ndims
@@ -1274,24 +1278,24 @@
 
         if (nmax == 1) then                              ! handle 2D or 3D variable dimids
           ndims=2
-          vdimids(1:ndims) = (/dimid_bry(bry), dimid_t/)
+          vdimids(1:ndims) = (/dimid_bry(bry), ncv%dimid_t/)
         else
           ndims=3
-          vdimids(1:ndims) = (/dimid_bry(bry), dimid_bry(5), dimid_t/)
+          vdimids(1:ndims) = (/dimid_bry(bry), dimid_bry(5), ncv%dimid_t/)
         endif
 
 
         bname=trim(rname) / /'_'/ /trim( bry_name(bry) )
 
-        call nc_define_var(ncid_out, bname, lname, uname, ! longname, units
-     &                     vdimids(1:ndims), ierr )
+        call nc_define_var( ncv%ncid_out,     bname, lname, uname, ! longname, units
+     &                      vdimids(1:ndims), ierr )
 
 
-        ierr=nf90_inq_varid(ncid_out, bname, varid)
+        ierr=nf90_inq_varid(ncv%ncid_out, bname, varid)
 
-        ierr=nf90_put_att(ncid_out, varid, 'start', sides_c_str( bry ))  ! add attribute with global child start value (i.e. south_c_str)
-        ierr=nf90_put_att(ncid_out, varid, 'count', sides_tot(   bry ))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
-        ierr=nf90_put_att(ncid_out, varid, 'child_bry', 'True')                        ! 'child_bry' for ncjoin to identify variable. 'True' just a filler.
+        ierr=nf90_put_att(  ncv%ncid_out, varid, 'start',     sides_c_str( bry ))  ! add attribute with global child start value (i.e. south_c_str)
+        ierr=nf90_put_att(  ncv%ncid_out, varid, 'count',     sides_tot(   bry ))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
+        ierr=nf90_put_att(  ncv%ncid_out, varid, 'child_bry', 'True')                        ! 'child_bry' for ncjoin to identify variable. 'True' just a filler.
 
       enddo
 
@@ -1343,12 +1347,12 @@
       real    :: sum_cffs                        ! sum of weightings (denominator in interpolation)
       integer :: k
 
-      ca = rt2*mask(i-1,j-1)  ! corner point weightings BUG THIS SHOULD BE RMASK
-      cc = rt2*mask(i+1,j-1)  ! (calculate once outside of vertical loop)
+      ca = rt2*mask(i-1,j-1)                     ! corner point weightings BUG THIS SHOULD BE RMASK
+      cc = rt2*mask(i+1,j-1)                     ! (calculate once outside of vertical loop)
       cf = rt2*mask(i-1,j+1)
       ch = rt2*mask(i+1,j+1)
 
-      mb = mask(i  ,j-1)      ! middle point weightings
+      mb = mask(i  ,j-1)                         ! middle point weightings
       md = mask(i-1,j  )
       me = mask(i+1,j  )
       mg = mask(i  ,j+1)
