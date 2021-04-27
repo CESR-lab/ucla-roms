@@ -1,0 +1,6 @@
+ROMS now has functionality to generate child boundary files directly from the parent simulation.
+
+Parent variables are interpolated (and rotated for u/v) to child grid point positions.
+See bry_extract_child.F for more information.
+
+Required cpp key is BRY_EXTRACT_CHILD

@@ -304,9 +304,6 @@ CR      write(*,*) ' -1' MYID
 
       call set_global_ij_SW_NE_corners
 
-#ifdef BRY_EXTRACT_CHILD
-      call set_child_bry
-#endif
 
 C$OMP MASTER
 #ifdef ANA_GRID
