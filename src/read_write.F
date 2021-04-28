@@ -50,6 +50,7 @@
       public set_frc_var_tile
       public set_small_arrays
       public ncdf_create_file
+      public ncdf_create_blank_file
       public nc_write_time
       public read_output_root_name
       public ncdf_read_mod
@@ -472,23 +473,23 @@ C$OMP BARRIER
       implicit none                                            !  get total number of time
                                                                !  records for time variable
       ! input/output
-      integer,         intent(in) :: ncid
-      character(len=*),intent(in) :: time_name
-      integer,        intent(out) :: max_recs
+      integer,          intent(in)  :: ncid
+      character(len=*), intent(in)  :: time_name
+      integer,          intent(out) :: max_recs
 
       ! local
       integer               :: timeid, ierr
-      integer, dimension(1) :: dimids                 ! time dimension ID
+      integer, dimension(1) :: dimids                                     ! time dimension ID
 
-      ierr = nf90_inq_varid(ncid, time_name, timeid)  ! Get time ID
+      ierr = nf90_inq_varid(ncid, time_name, timeid)                      ! get time ID
       if(ierr/=0) call handle_ierr(ierr,
      &      'find_new_record:: cannot find time variable:', time_name)
 
-      ierr=nf90_inquire_variable(ncid, timeid, dimids = dimids)  ! (time dimension & time variable are different entities)
+      ierr=nf90_inquire_variable(ncid, timeid, dimids = dimids)           ! (time dimension & time variable are different entities)
       if(ierr/=0) call handle_ierr(ierr,
      &      'find_new_record:: time dimension issue for var:', time_name)
 
-      ierr=nf90_inquire_dimension(ncid, dimids(1), len=max_recs)  ! I.e. total number of records per variable, using time dimension
+      ierr=nf90_inquire_dimension(ncid, dimids(1), len=max_recs)          ! I.e. total number of records per variable, using time dimension
 
       end subroutine get_time_max_recs  !]
 
@@ -771,78 +772,11 @@ C$OMP BARRIER
       ! Need ncvars.h for xi_rho, xi_u, eta_rho, eta_v and iaux
 #include "ncvars.h"
 
+      ! CREATE BLANK FILE WITH CORRECT NAME & GLOBAL ATTS ONLY:
+      call ncdf_create_blank_file(fname, ncid,  prev_fill_mode, rec_per_file, total_rec )
 
-      ! Add node number to file name (Functionality normaly in read_inp.F)
-      ! ----------------------------
-
-      ! Only done once - commented out if read_inp_net_flux is used
-      if(total_rec == 0) then
-
-        fname_tmp=fname
-        lstr=lenstr(fname_tmp) ! Function in lenstr.F
-#if defined MPI && defined PARALLEL_FILES
-        ! Insert MPI node numbers to file name
-        call insert_node(fname_tmp, lstr, mynode, NNODES, ierr)
-#endif
-        fname=fname_tmp(1:lstr)
-
-      endif ! (nrechis_flux == 0)
-
-      ! Insert time index to file name
-      ! ------------------------------
-
-      lfnm=lenstr(fname) ! Function in lenstr.F
-        ! DevinD: a fix to deal with file ncrechis +2 at the beginning
-        ! for wrt_his, because rec=rec+1 in different order for new ncdf stuff
-      if (total_rec==0) then
-        lvar=total_rec-(1+mod(total_rec-1, rec_per_file))
-      else
-        lvar=total_rec
-      endif
-      call insert_time_index(fname, lfnm, lvar,  ierr)
-      if (ierr /= 0) call handle_ierr(ierr) ! Error termination
-
-      ! Create new file
-      ! ---------------
-
-      ! Note: old roms used netcdf-3 files, with 'nf90_clobber+nf90_64bit_offset'
-      ! The nf90_64bit_offset allowed for larger file sizes.
-      ! We have now upgraded to netcdf-4 files, since they allow for files compression.
-      ierr=nf90_create(fname, NF90_NETCDF4, ncid) !  NF90_NETCDF4 nf90_clobber+nf90_64bit_offset
-
-      if (ierr == nf90_noerr) then
-
-        ! Set fill value - nf90_nofill produces optimized writes:
-        ! "Use "no fill" mode, omitting the initialization of variable values
-        ! with fill values. Creation of large files much faster, but
-        ! eliminates possibility of detecting reading of values not yet written"
-        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
-
-        ! Error handling
-        if (ierr /= nf90_noerr) then
-          write(*,'(1x,4A,I4)') '### ERROR: read_write::Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
-     &         MYID
-        endif
-
-      ! Error: cannot create file
-      else
-
-        if(mynode==0) then
-          write(*,'(/1x,4A/12x,A/)')  '### ERROR: read_write :: ',
-     &       'Cannot create ''', fname, '''.', nf90_strerror(ierr)
-        endif
-        error stop ! Stop simulation
-      endif
-
-      ! Put global attributes:
-      !---- ------ -----------
-
-      call put_global_atts(ncid, ierr)
 
       ! Define dimensions for field placement on staggered grids:
-      ! ------ ---------- --- ----- --------- -- --------- -------
-
       ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd(1))
       ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd(1))
       ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd(2))
@@ -909,6 +843,72 @@ C$OMP BARRIER
       end subroutine ncdf_create_file  !]
 
 ! ----------------------------------------------------------------------
+      subroutine ncdf_create_blank_file( fname, ncid,  prev_fill_mode,   ![
+     &                                   rec_per_file, total_rec       )
+      ! Create an empty netcdf result file without any dimensions
+      ! It will take in file name and add node number.
+
+      implicit none
+
+      ! inputs/outputs
+      character(len=32), intent(inout) :: fname              ! desired netcdf file name
+      integer,           intent(out)   :: ncid
+      integer,           intent(inout) :: prev_fill_mode     ! needed for nf90_set_fill
+      integer,           intent(in)    :: rec_per_file       ! records per file
+      integer,           intent(in)    :: total_rec          ! total netcdf records so far for these variables
+
+      ! local
+      integer           :: lfnm, lvar, lenstr, lstr, ierr=0
+      character(len=64) :: fname_tmp                         ! taken from read_inp.F
+
+      if(total_rec == 0) then  ! only first file type made, not subsequent
+        fname_tmp=fname
+        lstr=lenstr(fname_tmp)
+#if defined MPI && defined PARALLEL_FILES
+        call insert_node(fname_tmp, lstr, mynode, NNODES, ierr)  ! insert MPI node numbers to file name
+#endif
+        fname=fname_tmp(1:lstr)
+      endif ! (total_rec == 0)
+
+      lfnm=lenstr(fname)
+      if (total_rec==0) then                               ! fix to deal with file ncrechis +2 at the beginning
+        lvar=total_rec-(1+mod(total_rec-1, rec_per_file))  ! for wrt_his, because rec=rec+1 in different order for new ncdf stuff
+      else
+        lvar=total_rec
+      endif
+      call insert_time_index(fname, lfnm, lvar,  ierr)     ! insert time index to file name
+      if (ierr /= 0) call handle_ierr(ierr)
+
+      ierr=nf90_create(fname, NF90_NETCDF4, ncid)          ! create new file
+
+      if (ierr == nf90_noerr) then
+
+        ! Set fill value - nf90_nofill produces optimized writes:
+        ! "Use "no fill" mode, omitting the initialization of variable values
+        ! with fill values. Creation of large files much faster, but
+        ! eliminates possibility of detecting reading of values not yet written"
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        if (ierr /= nf90_noerr) then
+          write(*,'(1x,4A,I4)') '### ERROR: read_write::Cannot ',
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
+     &         MYID
+        endif
+
+      else         ! error: cannot create file
+
+        if(mynode==0) then
+          write(*,'(/1x,4A/12x,A/)')  '### ERROR: read_write :: ',
+     &       'Cannot create ''', fname, '''.', nf90_strerror(ierr)
+        endif
+        error stop ! stop simulation
+      endif
+
+      call put_global_atts(ncid, ierr)  ! put global attributes in file
+
+      end subroutine ncdf_create_blank_file  !]
+
+!-----------------------------------------------------------------------
       subroutine nc_define_var(ncid,var_name,var_long_name,var_units,  ![
      &                              var_grd,ierr)
 
@@ -1617,10 +1617,8 @@ C$OMP BARRIER
       ! Combine optional messages:
       f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
 
-      if(mynode==0) then
-        write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
+      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
      &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
-      endif
 
       error stop ! Stop simulation assumed fatal error
 
