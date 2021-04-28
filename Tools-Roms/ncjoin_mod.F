@@ -47,30 +47,30 @@ c--#define MPIVERBOSE
       real, allocatable, dimension(:,:,:) :: data                     ! store 2D/3D data
 
       ! R1) Read in: Index ranges as per each partitioned input file.
-      integer, dimension(4) :: start, count                      ! netcdf vars for non-partitioned variables
-      integer, dimension(:,:), allocatable :: start_in, count_in ! reading start & count ranges for each dim of 2D/3D arrays
-      integer :: x_start_in   ! temp var to adjust for xi_rho  vs xi_u  points of read partial file
-      integer :: y_start_in   ! temp var to adjust for eta_rho vs eta_v points of read partial file
-      integer :: x_in_dimsize ! temp var to store x dimension size of read partial file
-      integer :: y_in_dimsize ! temp var to store y dimension size of read partial file
+      integer, dimension(4)                :: start, count            ! netcdf vars for non-partitioned variables
+      integer, dimension(:,:), allocatable :: start_in, count_in      ! reading start & count ranges for each dim of 2D/3D arrays
+      integer :: x_start_in                                           ! temp var to adjust for xi_rho  vs xi_u  points of read partial file
+      integer :: y_start_in                                           ! temp var to adjust for eta_rho vs eta_v points of read partial file
+      integer :: x_in_dimsize                                         ! temp var to store x dimension size of read partial file
+      integer :: y_in_dimsize                                         ! temp var to store y dimension size of read partial file
 
       ! R2) Index ranges to store read in data in proc's temp 'data' array
       integer, dimension(:), allocatable :: data_x_in_str, data_x_in_end ! proc stores data in array 'data' with local (not global)
       integer, dimension(:), allocatable :: data_y_in_str, data_y_in_end ! indices, hence set inbound indices for proc's data array.
 
       ! W1) Index ranges from data in temp array to write to joined output file
-      integer :: p_str_out_x, p_str_out_y ! mpi (sub-domain) proc's temporary 'data' array start x and y grid points
-      integer :: p_end_out_x, p_end_out_y ! mpi (sub-domain) proc's temporary 'data' array end   x and y grid points
+      integer :: p_str_out_x, p_str_out_y                                ! mpi (sub-domain) proc's temporary 'data' array start x and y grid points
+      integer :: p_end_out_x, p_end_out_y                                ! mpi (sub-domain) proc's temporary 'data' array end   x and y grid points
 
       ! W2) Write out: Index ranges as per full model domain.
       integer, dimension(4) :: start_out, count_out ! proc's data indices relative to global output file
 
       ! A)  Assign read in partitions to procs:
       ! Each mpi process will loop through the nodes (partitions) it is responsible for.
-      integer, dimension(:), allocatable :: lnodes_in_proc ! list of nodes (partial files) read into proc
-      integer :: nnodes_in_proc  ! number of nodes into proc for looping.
-      integer :: p_in_nodes      ! counter for nodes linked to proc. nnodes_in_proc=p_in_nodes
-      integer :: in2p            ! looping index for nodes read in by proc
+      integer, dimension(:), allocatable :: lnodes_in_proc  ! list of nodes (partial files) read into proc
+      integer :: nnodes_in_proc                             ! number of nodes into proc for looping.
+      integer :: p_in_nodes                                 ! counter for nodes linked to proc. nnodes_in_proc=p_in_nodes
+      integer :: in2p                                       ! looping index for nodes read in by proc
       logical :: sw_corner, se_corner, nw_corner, ne_corner ! if node's corner is contained within proc range
       integer :: x_nc_sw,x_nc_se,x_nc_nw,x_nc_ne            ! x index of corners of input node
       integer :: y_nc_sw,y_nc_se,y_nc_nw,y_nc_ne            ! y index of corners of input node
@@ -189,7 +189,7 @@ c--#define MPIVERBOSE
       call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr) ! get proc's rank (rank starts from 0)
       call MPI_Comm_size(MPI_COMM_WORLD, n_procs, ierr) ! get total number of processors
 
-      if(nargs < 4) then   ! Incorrect program arguments: give instructions
+      if(nargs < 4) then                                ! incorrect program arguments: give instructions
         if(my_rank==0) then
           write(*,'(/1x,A//10x,2A)') 'Correct usage of ncjoin_mpi:',
      &      'mpiexec  -n  np  ncjoin_mpi  ',
@@ -246,7 +246,8 @@ c--#define MPIVERBOSE
         call getarg(arg,nctestname) ! get arguements from calling ncjoin arg1 ...
         lncn=lenstr(nctestname)     ! e.g. ncjoin his.0000.*.nc will actually send in his.0000.00.nc his.0000.01.nc ...
 #ifdef DEL_PART_FILES
-        if (arg.eq.3 .and. (lncn.eq.2 .and. nctestname(1:2).eq.'-d'
+        if (   (arg.eq.3 .or. arg.eq.1) .and.                         ! 1 for ncjoin & join_child_bry
+     &         (lncn.eq.2 .and. nctestname(1:2).eq.'-d'               ! 3 for ncjoin_mpi
      &     .or. lncn.eq.8 .and. nctestname(1:8).eq.'--delete') ) then
            write(*,'(/1x,2A/)') '>>>> Flag to delete partial files ', ! Already in master
      &                                                  'is raised.'  ! only section
@@ -2169,6 +2170,30 @@ c**           endif
 ! ----------------------------------------------------------------------
 ! JOIN_CHILD_BRY ROUTINES:
 ! ----------------------------------------------------------------------
+      subroutine check_args_join_child_bry  ![
+
+      ! Ensure reasonable number of arguements used,
+      ! if not give usage instructions.
+
+      implicit none
+
+      if(nargs < 4) then                                               ! too few program arguments
+        write(*,'(/1x,A//10x,A)') 'Correct usage of join_child_bry:',
+     &    'join_child_bry      child_bry.0000.*.nc'
+        write(*,'(1x,A/10x,A/)') 'or',
+     &    'join_child_bry  -d  child_bry.0000.*.nc'
+        write (*,'(/1x,A//1x,A/1x,A/)')
+     &    'where -d deletes the partial files.',
+     &    'This tool joins partial files of online interpolated child',
+     &    'boundary files created by a ROMS parent simulation.'
+
+
+        error stop
+      endif
+
+      end subroutine check_args_join_child_bry
+
+! ----------------------------------------------------------------------
       subroutine determine_global_child_bry_dims      ![
 
       ! Determine the size of global child dimensions
@@ -2229,6 +2254,13 @@ c**           endif
       if(my_rank==0) write(*,'(/1x,A)') 'Leaving definition mode.'
 # endif
 
+#ifdef TIMING
+      nclk=3-nclk
+      call system_clock (iclk(nclk), clk_rate,clk_max)
+      inc_clk=iclk(nclk)-iclk(3-nclk)
+      net_fcrt_clk=net_fcrt_clk+inc_clk  ! Timing for file creation
+#endif
+
       end subroutine create_joined_child_file  !]
 
 ! ----------------------------------------------------------------------
@@ -2240,6 +2272,13 @@ c**           endif
       integer, dimension(3) :: child_start, child_count, dimids, startin, countin
       real, dimension(:,:), allocatable :: bry_data
       character(len=12) :: dimname
+
+# ifdef TIMING
+      nclk=3-nclk
+      call system_clock (iclk(nclk), clk_rate,clk_max)
+      inc_clk=iclk(nclk)-iclk(3-nclk)
+      net_gray_clk=net_gray_clk+inc_clk
+# endif
 
       startin=1
       countin=1
@@ -2279,11 +2318,32 @@ c**           endif
           print *, 'cnt=',countin(1:vdims(i))
         endif
 
+# ifdef TIMING
+        net_read_size=net_read_size+size
+        nclk=3-nclk
+        call system_clock (iclk(nclk),clk_rate,clk_max)
+        inc_clk=iclk(nclk)-iclk(3-nclk)
+        net_read_clk=net_read_clk+inc_clk
+
+        nclk=3-nclk  ! DevinD moved here
+        call system_clock (iclk(nclk), clk_rate, clk_max)
+        inc_clk=iclk(nclk)-iclk(3-nclk)
+        net_gray_clk=net_gray_clk+inc_clk
+# endif
+
         ! write variable:
 
         ierr = nf90_put_var( nctarg, varid(i), bry_data,
      &                       start=child_start(1:vdims(i)), count=child_count(1:vdims(i)) )
         if(ierr/=0) print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
+
+#ifdef TIMING
+        net_wrt_size=net_wrt_size+size
+        nclk=3-nclk
+        call system_clock(iclk(nclk), clk_rate,clk_max)
+        inc_clk=iclk(nclk)-iclk(3-nclk)
+        net_wrt_clk=net_wrt_clk+inc_clk
+#endif
 
       endif
 

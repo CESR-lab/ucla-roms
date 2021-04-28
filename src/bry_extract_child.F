@@ -11,6 +11,14 @@
       !
       ! STEPS:
       !
+      ! 0) CREATE INPUT FILE OF CHILD BRY POSITIONS:
+      !
+      !    The ROMS parent simulation needs to know where the child boundary sits in its
+      !    parent domain. This is easiest to do it the child bry points are given i and j
+      !    coords in terms of the parent grid. We created a matlab tool to do this found
+      !    here:
+      !    Tools-Roms/bry_child_input_gen.m
+      !
       ! 1) READ CHILD BOUNDARY LOCATIONS:
       !
       !    subroutine assign_child_bry_to_parent
@@ -154,8 +162,8 @@
       integer            :: rec_rate      = 2                                            ! output record rate for interpolated child boundaries
       integer            :: recs_per_file = 2                                            ! total recs per output file
       integer, parameter :: nc_grds       = 2                                            ! number of child grids required
-      character(len=50)  :: c_bry_files(nc_grds) = (/ 'sample_child_ij_bry.nc',
-     &                                                'sample_child_ij_bry_2nd.nc' /)    ! child boundary input file
+      character(len=50)  :: c_bry_files(nc_grds) = (/ 'cgrd_input/sample_child_ij_bry.nc',
+     &                                                'cgrd_input/sample_child_ij_bry_2nd.nc' /)    ! child boundary input file
       character(len=60)  :: file_names(nc_grds)  = (/ '_child_bry.nc',
      &                                                '_child_bry_2.nc' /)               ! suffix to append to simulation output rootname
       ! END USER INPUTS

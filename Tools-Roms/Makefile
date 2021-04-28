@@ -1,6 +1,6 @@
 include ../src/Makedefs.inc
 
-ALL = partit ncjoin ncjoin_mpi join_child_bry
+ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z
 
 all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
 
