@@ -70,6 +70,32 @@ To compile tools:
  		ncjoin -d result.*.nc
  		Will prodcue result.nc file containing joined results.
  		the -d flag will delete the individual files, e.g. .0. and .1.                
+
+
+! Online child boundary interpolation
+! ===================================
+
+		As of 2021/04 ROMS now has functionality to generate online interpolated 
+		child boundary files using src/bry_extract_child.F. This functionality 
+		requires the following two auxiliary tools:
+
+  bry_child_input_gen.m:
+
+		This matlab script takes in the child grid and parent grid, and produces
+		a netcdf file with the child boundary r, u and v points in terms of the
+		parent grid"s i and j coordinates. This way the child grid can be easily
+		located within the parent grid simulation.
+
+		For more info see the matlab script and complete the user input section.
+
+  join_child_bry:
+
+		This fortran program is somewhat based off ncjoin, and it borrows pre-
+		processing subroutines from ncjoin_mod.F.
+		
+
+
+
  
 ! Code editing
 ! ============ 

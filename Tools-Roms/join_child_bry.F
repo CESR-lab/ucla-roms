@@ -36,14 +36,16 @@ c--#define VERBOSE
       implicit none
 
 
-      deflate_level=0             ! leave as is - no compression and no shuffle.
-      shuffle=.false.             ! just needed for compatibility with shared ncjoin_mod routines
+      deflate_level=0                ! leave as is - no compression and no shuffle.
+      shuffle=.false.                ! just needed for compatibility with shared ncjoin_mod routines
 
 
       call init_timing_and_vars
-      arg=0                       ! set to 0 for serial version as arguments of program start at 1, unlike ncjoin_mpi.
+      arg=0                          ! set to 0 for serial version as arguments of program start at 1, unlike ncjoin_mpi.
 
-      my_rank=0                   ! allows easy use of ncjoin_mpi routines
+      my_rank=0                      ! allows easy use of ncjoin_mpi routines
+
+      call check_args_join_child_bry
 
       do while (arg .lt. nargs)
 
