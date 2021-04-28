@@ -12,19 +12,21 @@ Usage:
   A) Child boundary mask must match parent boundary mask:
      Edit the child mask at its boundary to match the parent boundary mask to best 
      preserve fluxes at the boundaries!
+     
+  B) Parent and child grid files need angles in radians.
 
-  B) Prepare input file:
+  C) Prepare input file:
      The ROMS parent simulation needs to know where the child boundary sits in its
      parent domain. For this there is the matlab tool to convert the child boundary 
      at r, u & v grid points into the i and j coordinate system of the parent grid.
      The tool for this is found here, complete the user input section in the script:
      Tools-Roms/bry_child_input_gen.m
      
-  C) Required cpp key is BRY_EXTRACT_CHILD.
+  D) Required cpp key is BRY_EXTRACT_CHILD.
   
-  D) Edit user defined values in src/bry_extract_child.F. Run your parent simulation.
+  E) Edit user defined values in src/bry_extract_child.F. Run your parent simulation.
   
-  E) Join partial child output files from parent simulation:
+  F) Join partial child output files from parent simulation:
      Once the simulation has created partial files of the interpolated child
      boundary, it is not possible to join the partial files with ncjoin, since the joined
      child grid does not match the parent grid that generated the partial files.
