@@ -125,5 +125,7 @@ Surface flux outputting:
 Misc.:
 
     The machine compilation file Makedefs/Makedefs.IntelEM64T is now Makedefs.inc.
+    For information on generating online child boundary files, see:
+    - Documentation/readme-specifics/README.bry_child_extract_202104
 
 

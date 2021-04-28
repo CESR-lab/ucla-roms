@@ -80,6 +80,8 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #ifdef NHMG
       use nhmg
 #endif
+      use bry_extract_child
+      use dimensions, only: set_global_ij_SW_NE_corners
       implicit none
 
       integer trd, tile, my_first, my_last, range
@@ -300,13 +302,18 @@ CR      write(*,*) ' -1' MYID
 ! exclusive with respect to calls ana_tclima, ana_ssh, and ana_bsedim
 ! just above.
 
+      call set_global_ij_SW_NE_corners
+
+
 C$OMP MASTER
 #ifdef ANA_GRID
-        call wrt_ana_grid
+      call wrt_ana_grid
 #endif
-        if (ldefhis .and. wrthis(indxTime)) call wrt_his
+      if (ldefhis .and. wrthis(indxTime)) call wrt_his
 C$OMP END MASTER
 C$OMP BARRIER
+
+
 CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
@@ -336,7 +343,7 @@ C$OMP END MASTER
 #if defined SSH_TIDES || defined UV_TIDES
       use tides, only: set_tides
 #endif
-
+      use bry_extract_child
       implicit none
       integer trd, tile, my_first, my_last, range
 #include "param.h"
@@ -445,6 +452,10 @@ C$OMP BARRIER
 
 ! Output block: write restart/history files.
 !======= ====== ===== =============== ======
+
+#ifdef BRY_EXTRACT_CHILD
+        call set_child_bry ! DevinD needs a frequency flag
+#endif
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART
