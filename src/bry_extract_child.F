@@ -5,18 +5,34 @@
       ! - Tools-Roms/bry_child_input_gen.m   -> creates input file of child bry i/j values used here
       ! - Tools-Roms/join_child_bry.F        -> joins partial files created here
 
-      ![ INFO:
+      ![INFO:
       !
       ! coded by: Devin Dollery & Jeroen Molemaker - 2021 March
+      !
+      ! DERIVED TYPES:
+      !
+      !    Up to now ROMS has not used 'derived types', but they are used here.
+      !    Derived types allow you to declare a set of veriables, and then repeat
+      !    all those variables without having to copy and paste all of them.
+      !
+      !    Child points are interpolated from 4 surrounding parent points. For rho
+      !    points the interpolation coefficients to parent rho-points, differ from
+      !    all the interp coeffs of child u-points to parent u-points, etc.
+      !    As such, all the book-keeping variables of interp coeffs, etc are stored
+      !    for each variable type r, u & v as a derived type.
+      !
+      !    The variables within a derived type are accessed using the $ symbol.
+      !    E.g. r%tot, u%tot and v%tot access the boundary length totals (tot)
+      !    for each variable.
+      !    This avoids declaring 3 separate variables (e.g. rtot, utot & vtot)
       !
       ! STEPS:
       !
       ! 0) CREATE INPUT FILE OF CHILD BRY POSITIONS:
       !
       !    The ROMS parent simulation needs to know where the child boundary sits in its
-      !    parent domain. This is easiest to do it the child bry points are given i and j
-      !    coords in terms of the parent grid. We created a matlab tool to do this found
-      !    here:
+      !    parent domain. To do this the child bry points are given i and j coords in
+      !    terms of the parent grid. We created a matlab tool to do this found here:
       !    Tools-Roms/bry_child_input_gen.m
       !
       ! 1) READ CHILD BOUNDARY LOCATIONS:
@@ -24,33 +40,45 @@
       !    subroutine assign_child_bry_to_parent
       !
       !    The location of the child boundary is stored in one full-domain file
-      !    and is read in by every mpi node.
+      !    (created in step 0 above), which is read in by every mpi sub-domain.
       !    The child boundary file consists of fractional i'th and j'th positions of the
       !    child boundary points relative to the parent's index domain.
-      !    The i/j value is -1 over a land mask and -2 if not in parent domain (for rho points).
+      !    The i/j value is -1 over a land mask and -2 if not in parent domain (for rho
+      !    points or possibly -1.5 for u/v points).
       !
-      !    Seen in DIAGRAM (A) below, each child point (a-f) will have a input variable
-      !    giving it's i'th position, i.e. variable 'rp%i_west', which for point b = 1.4.
-      !    Another variable will hold the j'th position, i.e. 'rp%j_west' which for point b = 1.2.
-      !    If the boundary is closed then i and j variables will not exist for that boundary.
+      !    Seen in DIAGRAM (A) below, each child point (a-g) in a parent sub-domain (A-D) will
+      !    have an input variable giving its i'th & j'th position.
+      !    E.g. for the west child boundary the i'th position of rho-points will be stored
+      !    in the input file as i_rho_west. The i'th positon of u-points as i_u_west, etc.
+      !
+      !    These positonal values will be stored here in variable 'i_west' and 'j_west'.
+      !    E.g. i for 'rb' r-point b = 1.3 stored in 'rp%i_west'
+      !    E.g. j for 'rb' r-point b = 1.6 stored in 'rp%j_west'
+      !    If the child bry is closed then i and j variables will not exist for that bry.
+      !
+      !    i and j positions in the input file are relative to the parent grid w.r.t the
+      !    variable type. Diagram (A) below shows an example of this, and also how the child
+      !    and parent grid are likely not orientated the same way.
       !
       !         DIAGRAM (A)
-      !
-      !   C  ^        u       ^  D
-      ! (1,2)|              v |(2,2)
-      !      X-------rc-------X-->         A-D = parent grid points (X)
-      !      |                |
-      !      |      ue        |            a-f = child boundary grid points (West boundary)
-      ! N    |            vg  |
-      ! ^    |     rb         |
-      ! |    |                |            Fractional i/j coordinates of child
-      ! |    |    ud          |            relative to parent grid:
-      !      |          vf    |            - r-vars:
-      !      |   ra           |              c = (1.2 , 2.0)   b = (1.3 , 1.6)  a = (1.4, 1.2)
-      !      |                |
-      !      X--u-------------X-->         - u vars:
-      ! (1,1)                  (2,1)         d = (1.25, 2.0)   e = (1.35, 1.6)
-      !   A                      B
+      !                                    --- = cell boundaries
+      !               |
+      !   (1,2)       |     v (2,2)        A-D = parent rho-points (R)
+      !      RC      rUE      RD           D-E = parent   u-points (U), UD=(2,1)
+      ! N             |                    F-G = parent   v-points (V), VF=(1,2)
+      ! ^           ue|
+      ! |             |   vg               a-g = child boundary grid points (West boundary)
+      ! |          rb |
+      !   ---VF-------|-------VG----       Fractional i/j coordinates of child
+      !           ud  |                    relative to parent grid:
+      !               | vf                 - r-vars:
+      !          ra   |                      a = (1.2 , 1.2)   b = (1.3 , 1.6)  c = (1.4, 2.0)
+      !               |
+      !      RA u     UD      RB           - u vars:
+      !   (1,1)       |       (2,1)          d = (1.75, 1.4)   e = (1.85, 1.8)
+      !               |
+      !                                    - v vars:
+      !                                      f = (1.6 , 1.8)   g = (1.7 , 2.2)
       !
       !
       ! 2) ASSIGN CHILD BRY TO PARENT NODE:
@@ -61,13 +89,14 @@
       !    It then needs to calculate which (if any) of the child boundary fall within
       !    the parent node's range.
       !    Since the child bry is given in i/j relative to the parent's global grid points,
-      !    one can simply compare the parent's GP's against the child's i/j number.
+      !    one can simply compare the parent's GP's against the input file child's i/j number.
       !    However, the child i/j values are relative to the global parent domain.
       !    Typically roms uses 1:Lm (istr:iend) for local xi ranges, and 1:Mm for local
       !    eta ranges of a parent node.  These are local to the parent node and
       !    thus you can't directly compare the child bry i/j to (istr:iend).
       !
       !    We need the global start and end i/j of the parent node, stored in variables:
+      !    glob_istr, glob_iend, etc.
       !    Compare child values to parent global value using glob_istr, glob_iend.
       !    Note, glob_istr=0 for western edge and 1 for rest. This is to catch child
       !    points in the ghost cell.
@@ -82,37 +111,41 @@
       !    For further explanation of local and global grid point numbering see:
       !    Documentation/readme-specifics/README.grid.2021.03
       !
+      ! 3) CALC INTERPOLATION COEFFICIENTS ONCE PER VARIABLE TYPE:
       !
-      ! 3) INTERPOLATE CHILD BRY AT REQUIRED OUTPUT RATE:
+      !    The coefficients used to interpolate the 4 parent grid points surrounding the
+      !    child point are calculated once for efficiency and stored in arrays. (E.g. rp%s_cffs)
       !
-      !    When required the child bry is interpolated using the surrounding 4 parent
-      !    grid points.
-      !    The 4 parent grid points are calculated on the fly based on the floor and
-      !    ceiling of the fractional i/j child numbers. I.e. child point b is interpolated
-      !    from parent points A-D in DIAGRAM (A) using bilinear interpolation.
+      !    We use the floor/ceiling of the i and j child positions to determine the 4 parent points.
+      !    E.g. child point rb is interpolated from parent points RA-RD in DIAGRAM (A) using bilinear interpolation.
       !
       !    However, since the parent's variable arrays use local indexing,
       !    e.g. i=1:Lm and j=1:Mm, we need to convert the child's global i/j position
       !    to a local i/j position in the parent node. This way we can access the
       !    correct entries in the local parent variable array to interpolate from.
       !
-      !    Need to catch the fact that glob_istr=0 on western edge and 1 everywhere else.
+      ! 4) INTERPOLATE CHILD BRY AT REQUIRED OUTPUT RATE:
+      !
+      !    When required the child bry is interpolated using the surrounding 4 parent
+      !    grid points using the already calculated interpolation coefficients and
+      !    local grid point numbers of the 4 surrounding grid points.
       !
       !
-      ! 4) WRITE RESULTS TO FILE:
+      ! 5) WRITE RESULTS TO FILE:
       !
       !    subroutine wrt_child_bry
       !
       !
-      ! 5) JOIN PARTITIONED RESULTS FILES:
+      ! 6) JOIN PARTITIONED RESULTS FILES:
       !
       !    Tools-Roms/join_child_bry.F (program)
+      !    For usage info see: Documentation/readme-specifics/README.bry_child_extract_202104
       !
       !
-      ! X) ADDITIONAL INFO:
+      ! 7) ADDITIONAL INFO:
       !
       !    The ascii diagrams so far ignore that fact that nodes so not actually share
-      !    a boundary. If you zoom in on an intersection of 4 node corners, it looks like:
+      !    a boundary. If you zoom in on an intersection of 4 sub-domain corners, it looks like:
       !
       !      C    |    |    D
       !           | e  |
@@ -137,6 +170,31 @@
       !    child point    e -> parent node C
       !    child point    d -> parent node D
       !
+      !
+      ! DATA FLOW:
+      !
+      !    The example below follows the data flow for a rho variable on the south
+      !    child boundary.
+      !
+      !    file/routine:         variables:            info:
+      !
+      !     input file            i_rho_south           store position of child in terms
+      !                           j_rho_south           of parent grid i & j coords.
+      !
+      !     assign_child_         rp%i_south            only child points contained within parent
+      !     bry_to_parent()       rp%j_south            sub-domain i & j values stored here.
+      !                           rp%tot(1)             stores number of child r-points in sub-domain.
+      !                           rp%c_str(1)           stores the start index of the first child point
+      !                                                 in parent in terms of global child boundary length.
+      !
+      !     calc_bry_coeffs()     rp%s_cffs             stores coefficients for 4 parent points used to calc child value.
+      !                           rp%is_sw              stores i index of       4 parent .....
+      !                           rp%js_sw              stores i index of       4 parent .....
+      !
+      !     interpolate_child_    rp%south              final interpolated rho value along south child boundary.
+      !     bry()
+      !
+      !     wrt_child_bry()       rp%south              writes out interpolated value to file.
       !]
 
 #include "cppdefs.h"
@@ -322,11 +380,6 @@
           endif
 
         end do ! <- c
-
-!        write(*,'(9x,A,A12,5x,A,G14.6,1x,A,I4)')   ! 4x is spaces, A is string. / at end adds blank line
-!     &  'set_frc :: ',         var_name,         ! 5x is 5 spaces, A is string
-!     &  'input time (days) =', var_time,         ! G is number for time
-!     &  'rec =',               var_irec MYID     ! I is integer
 
       endif ! <- mod(iic-1,rec_rate)
 
