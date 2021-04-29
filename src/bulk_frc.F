@@ -1,271 +1,102 @@
       module bulk_frc
 
-      ! ===================
       ! BULK FORCING MODULE
-      ! ===================
 
-      ! initial coding: Devin Dollery & Jeroen Molemaker (2020)
+      ! initial coding: Devin Dollery,Jeroen Molemaker & Pierre Damien (2020)
 
 #include "cppdefs.h"
 ! CPP flag BULK_FRC covering entire module, module empty if off
 #if defined BULK_FRC /* for whole module! */
 
-      ! Modules required
-      ! ================
-
-      use read_write, only: set_frc_var_tile
+      use read_write, only: set_frc_var_tile, set_frc_var_type_tile, ncvs
 
       implicit none
 
-      ! Make all variable private to this module unless public specified
-      private
-
-      ! Includes
-      ! ========
+      private  ! make all variable private to this module unless public specified
 
       ! param.h needed for GLOBAL_2D_array to work
 #include "param.h"
 
-      ! ****************************************************************
+      ! ***************************************************************
       ! User inputs, make sure that units in the forcing files match!
 
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! Factor 2 only for now
 
-      ! u-wind (input data in m/s at 10m)
-      character(len=4) :: uwnd_name = 'uwnd'
-      character(len=8) :: uwnd_time_name = 'wnd_time'
-
-      ! v-wind (input data in m/s at 10m)
-      character(len=4) :: vwnd_name = 'vwnd'
-      character(len=8) :: vwnd_time_name = 'wnd_time'
-
-      ! Air temp (input data Degrees C at 2m)
-      character(len=4) :: tair_name = 'Tair'
-      character(len=9) :: tair_time_name = 'tair_time'
-
-      ! Q (Specific humidity (kg/kg) NOT relative hum. at 2m)
-      character(len=4) :: Q_name = 'Qair'
-      character(len=9) :: Q_time_name = 'qair_time'
-
-      ! Precipitation rate (cm/day)
-      character(len=4) :: prate_name = 'rain'
-      character(len=9) :: prate_time_name = 'rain_time'
-
-      ! Net downward longwave radiation [W/m^2]
-      character(len=10):: lwrad_name = 'lwrad_down'
-      character(len=8) :: lwrad_time_name = 'lrf_time'
-
-      ! net shortwave radiation [W/m^2] 
-      character(len=5) :: swrad_name = 'swrad'
-      character(len=8) :: swrad_time_name = 'srf_time'
+      ! Type ncvs contains all required netcdf variables and input data array for frc variable.
+      ! Set the name and time_name of variable to match what is in the input forcing files.
+      ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
+      type (ncvs) :: nc_uwnd  = ncvs( name='uwnd',       time_name='wnd_time'  )  ! u-wind (input data in m/s at 10m)
+      type (ncvs) :: nc_vwnd  = ncvs( name='vwnd',       time_name='wnd_time'  )  ! v-wind (input data in m/s at 10m)
+      type (ncvs) :: nc_tair  = ncvs( name='Tair',       time_name='tair_time' )  ! Air temp (input data Degrees C at 2m)
+      type (ncvs) :: nc_Q     = ncvs( name='Qair',       time_name='qair_time' )  ! Q (Specific humidity (kg/kg) NOT relative hum. at 2m)
+      type (ncvs) :: nc_prate = ncvs( name='rain',       time_name='rain_time' )  ! Precipitation rate (cm/day)
+      type (ncvs) :: nc_lwrad = ncvs( name='lwrad_down', time_name='lrf_time'  )  ! Net downward longwave radiation [W/m^2]
+      type (ncvs) :: nc_swrad = ncvs( name='swrad',      time_name='srf_time'  )  ! net shortwave radiation [W/m^2]
 
       ! End of user inputs
-      ! *************************************************************
+      ! ***************************************************************
 
-      ! stores raw data u-wind for 2 times: time_A < model_time < time_B
-      real uwnd_data(GLOBAL_2D_ARRAY,2)
-      real uwnd(GLOBAL_2D_ARRAY) ! Stores time interpolated u-wind
-      ! grid type are needed for ncdf_read in read_write ncdf module
-      integer :: uwnd_grd_type = 0 ! should be = r_var but need to include ncvars.h
-      ! timestep variables for wind bulk force
-      ! Notice time here is called something different wnd not uwnd.
-      ! get_smth.F has a method to deal with different time names, might
-      ! be worth using. Hard coded now for ease.
-      integer :: uwnd_file_indx = 0 ! Set file index in force file list as zero to begin with
-      integer :: uwnd_irec      = 0 ! Set netcdf record number to zero to start
-      ! These were only one variable (itwnd) in old code, but maybe it is clearer
-      ! with 2. Although if it's one it's forcing you to realise that
-      ! it jumps between values.
-      integer :: uwnd_it1 = 1, uwnd_it2 = 2  ! Placeholder for read in time
-      real, dimension(2) :: uwnd_times = [-99,-99] ! Store input file times
+      real ::  uwnd(GLOBAL_2D_ARRAY) ! time interpolated u-wind
+      real ::  vwnd(GLOBAL_2D_ARRAY)
+      real ::  tair(GLOBAL_2D_ARRAY) ! air temp
+      real ::     Q(GLOBAL_2D_ARRAY) ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
+      real :: prate(GLOBAL_2D_ARRAY) ! prate (precipitation rate) - 'rain' variable in old code
+      real :: lwrad(GLOBAL_2D_ARRAY) ! ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
+      !real:: srflx(GLOBAL_2D_ARRAY) ! short wave radiation: srflx stored in surf_flux.F module as used in flux_frc too
 
-      real    :: vwnd_data(GLOBAL_2D_ARRAY,2)
-      real    :: vwnd(GLOBAL_2D_ARRAY)
-      integer :: vwnd_grd_type  = 0
-      integer :: vwnd_file_indx = 0
-      integer :: vwnd_irec      = 0
-      integer :: vwnd_it1 = 1, vwnd_it2 = 2
-      real, dimension(2) :: vwnd_times = [-99,-99]
-
-      real    :: tair_data(GLOBAL_2D_ARRAY,2)
-      real    :: tair(GLOBAL_2D_ARRAY)
-      integer :: tair_grd_type  = 0
-      integer :: tair_file_indx = 0
-      integer :: tair_irec      = 0
-      integer :: tair_it1 = 1, tair_it2 = 2
-      real, dimension(2) :: tair_times = [-99,-99]
-
-      !! qair in old code
-      real    :: Q_data(GLOBAL_2D_ARRAY,2)
-      real    :: Q(GLOBAL_2D_ARRAY)
-      integer :: Q_grd_type  = 0
-      integer :: Q_file_indx = 0
-      integer :: Q_irec      = 0
-      integer :: Q_it1 = 1, Q_it2 = 2
-      real, dimension(2) :: Q_times = [-99,-99]
-
-      real    :: prate_data(GLOBAL_2D_ARRAY,2)
-      real    :: prate(GLOBAL_2D_ARRAY)
-      integer :: prate_grd_type  = 0
-      integer :: prate_file_indx = 0
-      integer :: prate_irec      = 0
-      integer :: prate_it1 = 1, prate_it2 = 2
-      real, dimension(2) :: prate_times = [-99,-99]
-
-      real    :: lwrad_data(GLOBAL_2D_ARRAY,2)
-      real    :: lwrad(GLOBAL_2D_ARRAY)
-      integer :: lwrad_grd_type  = 0
-      integer :: lwrad_file_indx = 0
-      integer :: lwrad_irec      = 0
-      integer :: lwrad_it1 = 1, lwrad_it2 = 2
-      real, dimension(2) :: lwrad_times = [-99,-99]
-
-      ! srflx stored in surf_flux.F module as used in flux_frc too
-      real, public    :: swrad_data(GLOBAL_2D_ARRAY,2)
-!      real, public    :: srflx(GLOBAL_2D_ARRAY)
-      integer :: swrad_grd_type  = 0
-      integer :: swrad_file_indx = 0
-      integer :: swrad_irec      = 0
-      integer :: swrad_it1 = 1, swrad_it2 = 2
-      real, dimension(2) :: swrad_times = [-99,-99]
+#if defined TAU_CORRECTION
+      type (ncvs)  :: nc_taux = ncvs( name='TauX_corr',  time_name='Taucorr_time'  )  ! The TAU_CORRECTION flag is used to active a correction term to
+      real         :: taux(GLOBAL_2D_ARRAY)                                           ! bring bulk force field closer to that of the measured data.
+      type (ncvs)  :: nc_tauy = ncvs( name='TauY_corr',  time_name='Taucorr_time'  )
+      real         :: tauy(GLOBAL_2D_ARRAY)
+#endif
 
       real, public :: wspd_used(GLOBAL_2D_ARRAY)  ! wind speed at rho point (also used in BGC routines)
 
-      ! TAU_CORRECTION
-      ! ==============
-
-      ! The TAU_CORRECTION flag is used to active a correction term to
-      ! bring bulk force field closer to that of the measured data.
-
-#if defined TAU_CORRECTION
-      real    :: taux_data(GLOBAL_2D_ARRAY,2)
-      real    :: taux(GLOBAL_2D_ARRAY)
-      integer :: taux_grd_type  = 0
-      integer :: taux_file_indx = 0
-      integer :: taux_irec      = 0
-      integer :: taux_it1 = 1, taux_it2 = 2
-      real, dimension(2) :: taux_times = [-99,-99]
-      character(len=9)   :: taux_name = 'TauX_corr'
-      character(len=12)   :: taux_time_name = 'Taucorr_time'
-
-      real    :: tauy_data(GLOBAL_2D_ARRAY,2)
-      real    :: tauy(GLOBAL_2D_ARRAY)
-      integer :: tauy_grd_type  = 0
-      integer :: tauy_file_indx = 0
-      integer :: tauy_irec      = 0
-      integer :: tauy_it1 = 1, tauy_it2 = 2
-      real, dimension(2) :: tauy_times = [-99,-99]
-      character(len=9)   :: tauy_name = 'TauY_corr'
-      character(len=12)   :: tauy_time_name = 'Taucorr_time'
-#endif
 
       public set_bulk_frc_tile
 
       contains
 
-
 ! ----------------------------------------------------------------------
+      subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
 
-      subroutine set_bulk_frc_tile(istr,iend,jstr,jend)
-
-      ! ===================
-      ! SET ALL BULK FORCES
-      ! ===================
-
+      ![Set all bulk forces.
+      !
       ! Landing subroutine from set_forces
       ! where all bulk forces are set.
-
+      !
       ! All bulk variables need time interpolation only
       ! here so can use same generic routine
-
-      ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!
+      !
+      ! 1) Find & save force variable file_indx & correct record (irec)
+      ! 2) Read in forcing data
+      ! 3) Interpolate input forcing to correct model time
+      !
+      ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!]
 
       use surf_flux, only: srflx
 
       implicit none
 
       ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
+      integer,intent(in) :: istr,iend,jstr,jend
 
-      ! 1) Find & save force variable file_indx & correct record (irec)
-      ! 2) Read in forcing data
-      ! 3) Interpolate input forcing to correct model time
-
-      ! Short/Long radiation
-      ! --------------------
-
-! Thermodynamic forcing: Note that BULK_FLUX requires computing the
-! short-wave radiation flux first because bulk flux routine performs
-! the final assembly of everything.
-
-        ! Short wave radiation -
-        ! this accounts for get_srflx.F & time interp of set_srflx.F in newer code
-        ! and get_srflux.F & set_srflux() in old code
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          swrad_name,     swrad_time_name,! Text names
-     &          swrad_data,     srflx,          ! Variable arrays
-     &          swrad_times,    swrad_grd_type, ! Input times & Grid type
-     &          swrad_file_indx,swrad_irec,     ! File indx & Current input record
-     &          swrad_it1,      swrad_it2,      ! Time index placeholders
-     &          interp_frc )                    ! Online spatial interpolation flag
-
-        ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          lwrad_name,     lwrad_time_name,! Text names
-     &          lwrad_data,     lwrad,          ! Variable arrays
-     &          lwrad_times,    lwrad_grd_type, ! Input times & Grid type
-     &          lwrad_file_indx,lwrad_irec,     ! File indx & Current input record
-     &          lwrad_it1,      lwrad_it2,      ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
+      ! Short/Long radiation:
+      ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
+      ! short-wave radiation flux first because bulk flux routine performs
+      ! the final assembly of everything.
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )  ! short wave radiation - this accounts for get_srflx.F & time interp of set_srflx.F in newer code and get_srflux.F & set_srflux() in old code
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_lwrad, lwrad, interp_frc )  ! lwrad
 
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
-      ! ----
-
-        ! u-wind
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          uwnd_name,      uwnd_time_name, ! Text names
-     &          uwnd_data,      uwnd,           ! Variable arrays
-     &          uwnd_times,     uwnd_grd_type,  ! Input times & Grid type
-     &          uwnd_file_indx, uwnd_irec,      ! File indx & Current input record
-     &          uwnd_it1,       uwnd_it2,       ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
-
-        ! v-wind
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          vwnd_name,      vwnd_time_name, ! Text names
-     &          vwnd_data,      vwnd,           ! Variable arrays
-     &          vwnd_times,     vwnd_grd_type,  ! Input times & Grid type
-     &          vwnd_file_indx, vwnd_irec,      ! File indx & Current input record
-     &          vwnd_it1,       vwnd_it2,       ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc )  ! u-wind
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc )  ! v-wind
 
       ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
-      ! -------------------
-
-        ! tair (air temp)
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          tair_name,      tair_time_name, ! Text names
-     &          tair_data,      tair,           ! Variable arrays
-     &          tair_times,     tair_grd_type,  ! Input times & Grid type
-     &          tair_file_indx, tair_irec,      ! File indx & Current input record
-     &          tair_it1,       tair_it2,       ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
-
-        ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          Q_name,         Q_time_name,    ! Text names
-     &          Q_data,         Q,              ! Variable arrays
-     &          Q_times,        Q_grd_type,     ! Input times & Grid type
-     &          Q_file_indx,    Q_irec,         ! File indx & Current input record
-     &          Q_it1,          Q_it2,          ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_tair,  tair,  interp_frc )
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_Q,     Q,     interp_frc )  ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
 
         ! Check units of Q:
         ! Needs to come after so Q_file_indx has been set.
@@ -274,59 +105,25 @@
         ! Incomplete at the moment.
 !        if (Q_irec==1) call nc_check_units( Q_file_indx, Q_name, 'kg/kg' )
 
-        ! prate (precipitation rate) - 'rain' variable in old code
-        ! get_bulk_prec.F & set_bulk_prec() in old code
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          prate_name,     prate_time_name,! Text names
-     &          prate_data,     prate,          ! Variable arrays
-     &          prate_times,    prate_grd_type, ! Input times & Grid type
-     &          prate_file_indx,prate_irec,     ! File indx & Current input record
-     &          prate_it1,      prate_it2,      ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_prate, prate, interp_frc )  ! prate (precipitation rate) - 'rain' variable in old code get_bulk_prec.F & set_bulk_prec() in old code
 
-      ! Include tau_correction if applicable
-      ! ====================================
 
 #if defined TAU_CORRECTION
-
-      ! Set field corrector in x-axis
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          taux_name,      taux_time_name, ! Text names
-     &          taux_data,      taux,           ! Variable arrays
-     &          taux_times,     taux_grd_type,  ! Input times & Grid type
-     &          taux_file_indx, taux_irec,      ! File indx & Current input record
-     &          taux_it1,       taux_it2,       ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
-
-      ! Set field corrector in y-axis
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          tauy_name,      tauy_time_name, ! Text names
-     &          tauy_data,      tauy,           ! Variable arrays
-     &          tauy_times,     tauy_grd_type,  ! Input times & Grid type
-     &          tauy_file_indx, tauy_irec,      ! File indx & Current input record
-     &          tauy_it1,       tauy_it2,       ! Time index placeholders
-     &          interp_frc )                    ! Spatially grid interpolation
-
-#endif /* TAU_CORRECTION */
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_taux,  taux,  interp_frc )  ! Set field corrector in x-axis
+      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_tauy,  tauy,  interp_frc )  ! Set field corrector in y-axis
+#endif
 
 
-      ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY
-      ! =================================================================
+      ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY:
 
-      ! CALCULATE FLUX INTERACTIONS
-      ! ===========================
+      ! CALCULATE FLUX INTERACTIONS:
       call calc_all_bulk_forces(istr,iend,jstr,jend)
 
 
-      end subroutine set_bulk_frc_tile
-
+      end subroutine set_bulk_frc_tile  !]
 
 !-----------------------------------------------------------------------
-
-      subroutine calc_all_bulk_forces(istr,iend,jstr,jend)
+      subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
 
       ! =========================================
       ! CALCULATE INTERACTIVE BULK FORCE TRANSFER
@@ -1257,12 +1054,10 @@ C$OMP BARRIER
 # endif
 
 
-      end subroutine calc_all_bulk_forces
-
+      end subroutine calc_all_bulk_forces  !]
 
 !-----------------------------------------------------------------------
-
-      function bulk_psiu (ZoL, pi)
+      function bulk_psiu (ZoL, pi)  ![
 !
 !=======================================================================
 !                                                                      !
@@ -1322,12 +1117,10 @@ C$OMP BARRIER
       endif
 
       return
-      end function bulk_psiu
-
+      end function bulk_psiu  !]
 
 !-----------------------------------------------------------------------
-
-      function bulk_psit (ZoL, pi)
+      function bulk_psit (ZoL, pi)  ![
 
 !=======================================================================
 !                                                                      !
@@ -1385,8 +1178,7 @@ C$OMP BARRIER
       endif
 
       return
-      end function bulk_psit
-
+      end function bulk_psit  !]
 
 !-----------------------------------------------------------------------
 

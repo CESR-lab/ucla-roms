@@ -33,6 +33,10 @@ compile_clean:
 	
 work_clean:
 	rm -r Compile/ *.F *.h *.in *.sh *.nc roms 2>/dev/null || :	
+
+code_check_clean:
+	@cd $(ROMS_ROOT)/Examples/WEC_real   ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/Rivers_ana ; make compile_clean
 	
 copy_to_Work_dir:
 	cp -p *.F *.h *.in *.sh ../../Work 2>/dev/null || :
