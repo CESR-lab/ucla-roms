@@ -1,32 +1,41 @@
 clc; clear
 
 %% info
-
+%
+%![
 %  This tool enables the use of online child boundary input file from
-%  parent grid simulation in roms.
+%  parent grid simulation in roms: src/bry_extract_child.F
 %
 %  This tool generates the child boundary positions for the child boundary rho,
 %  u and v points in terms of the parent grid coordinates.
+%
 %  Outputs:
 %  - child bry rho-points in terms of parent rho-points = ic_rho, jc_rho
 %  - child bry   u-points in terms of parent   u-points = ic_u,   jc_u
 %  - child bry   u-points in terms of parent   v-points = ic_v,   jc_v
 %
-%  On a roms grid a rh-var will have i and j positions (xi_rho, eta_rho),
+%  On a roms grid a rho-var will have i and j positions (xi_rho, eta_rho),
 %  a u-var will have (xi_u, eta_rho) and a v-var will have (xi_rho, eta_v).
 %
-%  This means in thr same grid a u-point will have the same j value as a 
-%  rho-point if positioned on thesame row. 
+%  This means in the same grid a u-point will have the same j value as a 
+%  rho-point if positioned on the same row. 
 %  However, since the child grid is likely not orientated with its x & y axes the
 %  same way as the parent grid, the child rho-var j value in terms of the parent
-%  j coordinate will not match the j value of a child u-var in term of the
-%  parent coordinate!
+%  j coordinate will not match the j value of a child u-var in terms of the
+%  parent coordinate.
 %  Therefore, we cannot share directly i-rho and j-rho for u/v points compared 
 %  with rho-points. E.g. jc_rho /= jc_u and ic_rho /= ic_v.
 %
-%  For i_u we +0.5 because we first average to u point from rho:
-%  r0  u1  r1 -> thus u1 is at 0.5 rho, so +0.5 to get u=1.
-%  The same is done for j_v.
+%  For i_u we add 0.5 because we first average to e.g. u1 point from r0
+%  and r1 points:
+%  r0  u1  r1 -> thus u1 is at 0.5  of rho-coords, so +0.5 to get u=1 in
+%  u-coords.
+%  The same is done for j_v. 
+%
+%  If the child grid point is not in the parent domain it is given a value
+%  of -2 (might be -1.5 for i_u or j_v).
+%  If the child point is a masked point, it is given a value of -1.
+%!]
 
 
 %% init
