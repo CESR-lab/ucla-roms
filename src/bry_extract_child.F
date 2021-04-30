@@ -801,8 +801,11 @@
         vname='angle_v_' / / bry_name(bry)
       endif
 
-      ierr=nf90_inq_varid(ncv%ncid, vname, varid)                          ! Check if contains bry
+      ierr=nf90_inq_varid(ncv%ncid, vname, varid)                      ! Check if contains bry
       if (ierr==nf90_noerr) then
+
+        call nc_check_units( ncv%ncid, vname, 'radians' )              ! angles must be in radians
+
         ierr=nf90_get_var(ncv%ncid, varid, c_angle, start=(/c_str/), count=(/bry_tot/) ) ! only read child points in subdomain
         if (ierr/=0) call handle_ierr(ierr, 'Bad read of ', vname)
       else
