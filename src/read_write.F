@@ -64,8 +64,6 @@
       !public nc_check_units
       public set_frc_var_tile
 
-      public set_frc_var_type_tile
-
       public set_small_arrays
       public ncdf_create_file
       public ncdf_create_blank_file
@@ -79,147 +77,9 @@
 
       contains
 
-!-----------------------------------------------------------------------
-      subroutine set_frc_var_tile (                 ![
-     &                istr,iend,     jstr,jend,     ! Tile bounds indices
-     &                var_name,      var_time_name, ! Text names
-     &                var_data,      var,           ! Variable arrays
-     &                var_times,     var_grd_type,  ! Input times & Grid type
-     &                var_file_indx, var_irec,      ! File indx & Current input record
-     &                it1, it2,      coarse_arg )   ! Time index placeholders & interp flag
-
-      ![================================================================
-      ! Read a single 2D forcing variable from a netcdf file:
-      !
-      ! Find nearest times in input file before model time and after model time.
-      ! Store the times and corresponding 2D variable values so that values at
-      ! model time can be interpolated.
-      ! Hence, we store times:
-      !
-      !        var_times(it1) < time < var_times(it2)
-      !
-      ! and we store the data at 2 times to interpolate into 'var':
-      !
-      !     var_data(:,:,it1) ~ var  ~ var_data(:,:,it2)
-      !
-      !
-      ! The values of it1 and it2 switch between 1 and 2 for each new update of input
-      ! data. This means that only var_times(it2) and var_data(:,:,it2) need to be updated.
-      ! Hence we find the following over 2 timesteps if the input times need to change:
-      !
-      !   step t=x   -> it1=1 & it2=2
-      !
-      !     var_data(i,j,1) & var_times(1) -> earlier && var_data(i,j,2) & var_times(2) -> later
-      !
-      !   step t=x+1 -> it1=2 & it2=1
-      !
-      !     var_data(i,j,1) & var_times(1) -> later   && var_data(i,j,2) & var_times(2) -> earlier
-      !
-      !
-      ! At the beginning of the simulation, we need to read an extra slice of data
-      ! so this routine provides irec = irec - 1 for first time.
-
-      ! Time for all forcing variables is assumed to be in days.
-
-      !] ==============================================================
-
-      implicit none
-
-      ! input/outputs
-      integer,                          intent(in)    :: istr,iend,jstr,jend
-      character(len=*),                 intent(in)    :: var_name,var_time_name  ! Names of forcing variable and time in the netcdf file
-      real,dimension(GLOBAL_2D_ARRAY,2),intent(inout) :: var_data  ! Forcing data at 2 records to interpolate
-      real,dimension(GLOBAL_2D_ARRAY),  intent(out)   :: var       ! Time interpolated forcing variable
-      real,dimension(2),                intent(inout) :: var_times ! Times of forcing data records
-      integer,                          intent(inout) :: it1,it2   ! Indices for the forcing records
-
-      integer,intent(in)    :: var_grd_type  ! rho,u, or v type grids
-      integer,intent(inout) :: var_file_indx ! current index in list of filenames
-      integer,intent(inout) :: var_irec      ! current input record
-      integer,optional      :: coarse_arg    ! whether function is interpolated from coarse data (optional so no intent)
-
-      ! local
-      integer :: tmp,i,j
-      real    :: cff1,cff2 ! for time interpolations
-      real    :: tmid_days ! time for which the forcing is needed
-      integer :: coarse
-
-# include "compute_extended_bounds.h"
-
-      if (.not. present(coarse_arg)) then  ! handle optional arguement
-        coarse = 0
-      else
-        coarse = coarse_arg
-      endif
-
-      tmid_days = tdays + 0.5*dt*sec2day   ! input data times in days
-
-      if (var_times(it2) < tmid_days) then ! need to refresh data
-
-        if (var_file_indx == 0) then       ! initially, we need to fill both time slots
-
-C$OMP MASTER
-          call find_new_record( var_name, var_time_name, tmid_days,           ! returns the correct file_indx and irec,
-     &                          var_file_indx, var_irec, var_times(it1) )     ! also returns the time
-
-          call read_var_frc( var_file_indx, var_irec,                         ! read a record of forcing data
-     &                       var_data(:,:,it1),
-     &                       var_name, var_grd_type, var_times(it1), coarse )
-
-          if (mynode==0) call display_read_time_to_log( var_name, var_times(it1), var_irec )
-
-        else                               ! Otherwise, flip forcing indices
-
-          tmp = it1
-          it1 = it2  ! If it1 = 1, it now equals 2, and vice-versa
-          it2 = tmp 
-
-        endif 
-
-        call find_new_record( var_name, var_time_name, tmid_days,             ! returns the correct file_indx and irec
-     &                        var_file_indx, var_irec, var_times(it2) )       ! also returns the time
-
-        call read_var_frc( var_file_indx, var_irec,                           ! read a record of forcing data
-     &                     var_data(:,:,it2),
-     &                     var_name, var_grd_type, var_times(it2), coarse )
-
-        if (mynode==0) call display_read_time_to_log( var_name, var_times(it2), var_irec )
-
-C$OMP END MASTER
-C$OMP BARRIER
-
-      endif ! <- end of refresh forcing data
-
-      ! Temporal interpolation
-
-      cff1=( var_times(it2)-tmid_days ) / ( var_times(it2)-var_times(it1) )
-      cff2=( tmid_days-var_times(it1) ) / ( var_times(it2)-var_times(it1) )
-
-      if (cff1.ge.0. .and. cff2.ge.0.) then  ! check model-time is between forcing times
-
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            var(i,j) = cff1*var_data(i,j,it1)+cff2*var_data(i,j,it2)
-          enddo
-        enddo
-
-      else
-        write(*,'(/1x,4A/3(1x,A,F16.10)/)') 'ERROR: set_frc_var_tile',
-     &  ':: Model time outside bounds of variable (times):',
-     &     var_name, var_time_name,
-     &                    'start =',     var_times(it1),
-     &                    'tmid_days =', tmid_days,
-     &                    'end =',       var_times(it2)
-        error stop 'ERROR: set_frc_var_tile :: time interpolation error '
-      endif
-
-      end subroutine set_frc_var_tile  !]
-
 ! ----------------------------------------------------------------------
-      subroutine set_frc_var_type_tile (            ![
-     &                istr,iend,     jstr,jend,     ! Tile bounds indices
-     &                ncv,           var,           ! Variable arrays
-     &                coarse_arg )                  ! interp flag
+      subroutine set_frc_var_tile ( istr, iend, jstr, jend,     ![
+     &                              ncv,  var,  coarse_arg )
 
       ![================================================================
       ! Read a single 2D forcing variable from a netcdf file:
@@ -259,15 +119,15 @@ C$OMP BARRIER
       implicit none
 
       ! input/outputs
-      integer,                          intent(in)    :: istr,iend,jstr,jend
-      type (ncvs)                                     :: ncv
-      real,dimension(GLOBAL_2D_ARRAY),  intent(out)   :: var           ! Time interpolated forcing variable
-      integer,optional                                :: coarse_arg    ! whether function is interpolated from coarse data (optional so no intent)
+      integer,                          intent(in)    :: istr,iend,jstr,jend  ! tile bounds
+      type (ncvs)                                     :: ncv                  ! type containg all netcdf variables for each frc var
+      real,dimension(GLOBAL_2D_ARRAY),  intent(out)   :: var                  ! time interpolated forcing variable
+      integer,optional                                :: coarse_arg           ! whether function is interpolated from coarse data (optional so no intent)
 
       ! local
-      integer :: tmp,i,j
-      real    :: cff1,cff2 ! for time interpolations
-      real    :: tmid_days ! time for which the forcing is needed
+      integer :: tmp, i, j
+      real    :: cff1, cff2                ! for time interpolations
+      real    :: tmid_days                 ! time for which the forcing is needed
       integer :: coarse
 
 # include "compute_extended_bounds.h"
@@ -339,7 +199,7 @@ C$OMP BARRIER
         error stop 'ERROR: set_frc_var_tile :: time interpolation error '
       endif
 
-      end subroutine set_frc_var_type_tile  !]
+      end subroutine set_frc_var_tile  !]
 
 ! ----------------------------------------------------------------------
       subroutine find_new_record( vname,     time_name, time_model,    ![

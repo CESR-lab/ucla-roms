@@ -8,7 +8,7 @@
 #include "cppdefs.h"
 
       ! Modules needed:
-      use read_write, only: set_frc_var_tile
+      use read_write, only: set_frc_var_tile, ncvs
       use tracers,    only: t
       use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
 
@@ -25,62 +25,35 @@
       ! ****************************************************************
       ! User inputs
 
-      integer, parameter :: nflx = 5 ! Number of flux variables
+!      integer, parameter :: nflx = 5 ! number of flux variables
 
-      ! Interpolate forcing from coarser input grid (=1) or not (=0)
-      integer :: interp_frc = 0 ! Factor 2 only for now
+      integer     :: interp_frc = 0  ! interpolate forcing from coarser input grid (=1) or not (=0). factor 2 only for now
 
-      ! sustr - surface u-momentum stress flux (input data in N/m^2)
-      character(len=5) :: sustr_name = 'sustr'
-      character(len=8) :: sustr_time_name  = 'sms_time'
-      integer, parameter :: sustr_grd_type = 1 ! u-point
-      integer, parameter :: isustr = 1 ! Needed for its netcdf variables
-                                       ! Sequential for 'nflx'
-      ! svstr - surface v-momentum stress flux (input data in N/m^2)
-      character(len=5) :: svstr_name = 'svstr'
-      character(len=8) :: svstr_time_name  = 'sms_time'
-      integer, parameter :: svstr_grd_type = 2 ! v-point
-      integer, parameter :: isvstr = 2
-      ! stflx(itemp) - surface heat flux (input data in W/m^2)
-      character(len=6) :: shflx_name = 'shflux'
-      character(len=8) :: shflx_time_name  = 'shf_time'
-      integer, parameter :: ishflx = 3 ! Could swap to beginning in order to use itemp=1 & isalt=2?
-      ! stflx(isalt) - surface freshwater flux (input data in cm/day)
-      ! Might want to use #if def SALINITY?
-      character(len=6) :: swflx_name = 'swflux'
-      character(len=8) :: swflx_time_name  = 'swf_time'
-      integer, parameter :: iswflx = 4
-      ! swrad - surface short-wave radiation flux (input data in W/m^2)
-      character(len=5) :: swrad_name = 'swrad'
-      character(len=8) :: swrad_time_name  = 'srf_time'
-      integer, parameter :: iswrad = 5
+      type (ncvs) :: nc_sustr  = ncvs( name='sustr',  time_name='sms_time', grd_type=1 )  ! sustr - surface u-momentum stress flux (input data in N/m^2)
+      type (ncvs) :: nc_svstr  = ncvs( name='svstr',  time_name='sms_time', grd_type=2 )  ! svstr - surface v-momentum stress flux (input data in N/m^2)
+
+      type (ncvs) :: nc_shflx  = ncvs( name='shflux', time_name='shf_time' )  ! stflx(itemp) - surface heat flux (input data in W/m^2)
+      type (ncvs) :: nc_swflux = ncvs( name='swflux', time_name='swf_time' )  ! stflx(isalt) - surface freshwater flux (input data in cm/day). Might want to use #if def SALINITY?
+      type (ncvs) :: nc_swrad  = ncvs( name='swrad',  time_name='srf_time' )  ! swrad - surface short-wave radiation flux (input data in W/m^2)
 
       ! End of user inputs
       ! ****************************************************************
-
-      !-- Flux netcdf variables as arrays/matrices of 'nflx' length
-      ! Abstracted from user.
-      real                     :: flx_data(GLOBAL_2D_ARRAY,2,nflx) ! Could set to zero here?
-      integer, dimension(nflx) :: flx_grd_type  = 0
-      integer, dimension(nflx) :: flx_file_indx = 0
-      integer, dimension(nflx) :: flx_irec      = 0
-      integer, dimension(nflx) :: flx_it1 = 1, flx_it2 = 2
-      real, dimension(2,nflx)  :: flx_times = -99 ! [-99,-99]
 
 
       public set_flux_frc
 
       contains
-! ----------------------------------------------------------------------
 
-      subroutine set_flux_frc(istr,iend,jstr,jend)
+! ----------------------------------------------------------------------
+      subroutine set_flux_frc(istr,iend,jstr,jend)  ![
 
       implicit none
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
+
       ! local
-      integer i, j
+      integer :: i, j
 
 ! scalars.h for rho0
 ! index bounds for do loop division by rho0
@@ -101,10 +74,10 @@
 #endif
 
 
-      end subroutine set_flux_frc
-! ----------------------------------------------------------------------
+      end subroutine set_flux_frc  !]
 
-      subroutine set_smflux(istr,iend,jstr,jend)
+! ----------------------------------------------------------------------
+      subroutine set_smflux(istr,iend,jstr,jend)  ![
       ! set surface momentum flux, sustr, svstr
 
       implicit none
@@ -115,25 +88,8 @@
       integer i, j
 #include "compute_extended_bounds.h"
 
-      ! sustr
-      call set_frc_var_tile(
-     &  istr,iend,              jstr,jend,            ! Tile bounds indices
-     &  sustr_name,             sustr_time_name,      ! Text name of array and time
-     &  flx_data(:,:,:,isustr), sustr,                ! Variable arrays
-     &  flx_times(:,isustr),    sustr_grd_type,       ! Input times & Grid type
-     &  flx_file_indx(isustr),  flx_irec(isustr),     ! File indx & Current input record
-     &  flx_it1(isustr),        flx_it2(isustr),      ! Time index placeholders
-     &  interp_frc )                                  ! Online spatial interpolation flag
-
-      ! svstr
-      call set_frc_var_tile(
-     &  istr,iend,              jstr,jend,            ! Tile bounds indices
-     &  svstr_name,             svstr_time_name,      ! Text name of array and time
-     &  flx_data(:,:,:,isvstr), svstr,                ! Variable arrays
-     &  flx_times(:,isvstr),    svstr_grd_type,       ! Input times & Grid type
-     &  flx_file_indx(isvstr),  flx_irec(isvstr),     ! File indx & Current input record
-     &  flx_it1(isvstr),        flx_it2(isvstr),      ! Time index placeholders
-     &  interp_frc )                                  ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_sustr, sustr, interp_frc )
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_svstr, svstr, interp_frc )
 
       ! Combine this loop into one loop at the end
       do j=jstrR,jendR
@@ -150,11 +106,10 @@
 !        print *, 'svstr(20,20)= ', svstr(20,20)
 !      endif
 
+      end subroutine set_smflux  !]
 
-      end subroutine set_smflux
 ! ----------------------------------------------------------------------
-
-      subroutine set_shflux(istr,iend,jstr,jend)
+      subroutine set_shflux(istr,iend,jstr,jend)  ![
       ! Set surface heat flux
 
       implicit none
@@ -166,15 +121,8 @@
       real rho0cp
 #include "compute_extended_bounds.h"
 
-      ! stflx(itemp)
-      call set_frc_var_tile(
-     &  istr,iend,              jstr,jend,            ! Tile bounds indices
-     &  shflx_name,             shflx_time_name,      ! Text name of array and time
-     &  flx_data(:,:,:,ishflx), stflx(:,:,itemp),     ! Variable arrays
-     &  flx_times(:,ishflx),    flx_grd_type(ishflx), ! Input times & Grid type
-     &  flx_file_indx(ishflx),  flx_irec(ishflx),     ! File indx & Current input record
-     &  flx_it1(ishflx),        flx_it2(ishflx),      ! Time index placeholders
-     &  interp_frc )                                  ! Online spatial interpolation flag
+
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, stflx(:,:,itemp), interp_frc )
 
       rho0cp=rho0*Cp ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
@@ -206,10 +154,11 @@
 !        print *, 'stflx(20,20,itemp)= ', stflx(20,20,itemp)
 !      endif
 
-      end subroutine set_shflux
+      end subroutine set_shflux  !]
+
 ! ----------------------------------------------------------------------
 #ifdef SALINITY
-      subroutine set_swflux(istr,iend,jstr,jend)
+      subroutine set_swflux(istr,iend,jstr,jend)  ![
       ! set surface freshwater flux: stflx(isalt)
 
       implicit none
@@ -221,14 +170,7 @@
       real cmday2ms
 # include "compute_extended_bounds.h"
 
-      call set_frc_var_tile(
-     &  istr,iend,              jstr,jend,            ! Tile bounds indices
-     &  swflx_name,             swflx_time_name,      ! Text name of array and time
-     &  flx_data(:,:,:,iswflx), stflx(:,:,isalt),     ! Variable arrays
-     &  flx_times(:,iswflx),    flx_grd_type(iswflx), ! Input times & Grid type
-     &  flx_file_indx(iswflx),  flx_irec(iswflx),     ! File indx & Current input record
-     &  flx_it1(iswflx),        flx_it2(iswflx),      ! Time index placeholders
-     &  interp_frc )                                  ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_swflux, stflx(:,:,isalt), interp_frc )
 
       cmday2ms=0.01/day2sec ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
@@ -251,11 +193,11 @@
 !        print *, 'stflx(20,20,isalt)= ', stflx(20,20,isalt)
 !      endif
 
-      end subroutine set_swflux
+      end subroutine set_swflux  !]
 #endif /* SALINITY */
-! ----------------------------------------------------------------------
 
-      subroutine set_srflux(istr,iend,jstr,jend)
+! ----------------------------------------------------------------------
+      subroutine set_srflux(istr,iend,jstr,jend)  ![
       ! set short-wave radiation flux
 
       implicit none
@@ -279,14 +221,7 @@
 #include "compute_extended_bounds.h"
 
       ! Do initial time interpolation only of swrad:
-      call set_frc_var_tile(
-     &  istr,iend,              jstr,jend,            ! Tile bounds indices
-     &  swrad_name,             swrad_time_name,      ! Text name of array and time
-     &  flx_data(:,:,:,iswrad), srflx,                ! Variable arrays
-     &  flx_times(:,iswrad),    flx_grd_type(iswrad), ! Input times & Grid type
-     &  flx_file_indx(iswrad),  flx_irec(iswrad),     ! File indx & Current input record
-     &  flx_it1(iswrad),        flx_it2(iswrad),      ! Time index placeholders
-     &  interp_frc )                                  ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )
 
       ! Note: the additional CPPFLAG option have been left in from old
       ! code but are untested here, might not compile.
@@ -370,7 +305,8 @@
           enddo
         enddo
 
-      end subroutine set_srflux
+      end subroutine set_srflux  !]
+
 ! ----------------------------------------------------------------------
 
       end module flux_frc

@@ -7,11 +7,10 @@
 
 #include "cppdefs.h"
 
-      use read_write ! rp_var, up_var, vp_var
+      use read_write
 
       implicit none
 
-      ! Make all variable private to this module unless public specified
       private
 
       ! Includes:
@@ -79,31 +78,16 @@
       ! ----------------------------------------------------------------
       ! sea-surface temperature (SST) data
 #if defined QCORRECTION && !defined ANA_SST
+      type (ncvs)  :: nc_sst  = ncvs( name='sst', time_name='sst_time' )
       real, public :: sst(GLOBAL_2D_ARRAY)
-      real         :: sst_data(GLOBAL_2D_ARRAY,2)
-      integer :: sst_grd_type  = 0
-      integer :: sst_file_indx = 0
-      integer :: sst_irec      = 0
-      integer :: sst_it1 = 1, sst_it2 = 2
-      real, dimension(2) :: sst_times = [-99,-99]
-      character(len=5)   :: sst_name = 'sst'
-      character(len=8)   :: sst_time_name = 'sst_time'
       real, public :: dSSTdt
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
+      type (ncvs)  :: nc_sss  = ncvs( name='SSS', time_name='sss_time' )
       real, public :: sss(GLOBAL_2D_ARRAY)
-      real         :: sss_data(GLOBAL_2D_ARRAY,2)
-      integer :: sss_grd_type  = 0
-      integer :: sss_file_indx = 0
-      integer :: sss_irec      = 0
-      integer :: sss_it1 = 1, sss_it2 = 2
-      real, dimension(2) :: sss_times = [-99,-99]
-      character(len=5)   :: sss_name = 'SSS'
-      character(len=8)   :: sss_time_name = 'sss_time'
-
-      real, public :: dSSSdt ! Input units (cm/day)
+      real, public :: dSSSdt                                             ! input units (cm/day)
 #endif
 
 
@@ -141,26 +125,12 @@
 
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          sst_name,       sst_time_name,  ! Netcdf names for var and time
-     &          sst_data,       sst,            ! Input data and var arrays
-     &          sst_times,      sst_grd_type,   ! Input times & Grid type
-     &          sst_file_indx,  sst_irec,       ! File indx & current input record
-     &          sst_it1,        sst_it2,        ! Time index placeholders
-     &          interp_frc )                    ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_sst, sst, interp_frc )
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      call set_frc_var_tile(
-     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-     &          sss_name,       sss_time_name,  ! Netcdf names for var and time
-     &          sss_data,       sss,            ! Input data and var arrays
-     &          sss_times,      sss_grd_type,   ! Input times & Grid type
-     &          sss_file_indx,  sss_irec,       ! File indx & current input record
-     &          sss_it1,        sss_it2,        ! Time index placeholders
-     &          interp_frc )                    ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_sss, sss, interp_frc )
 #endif
 
 
