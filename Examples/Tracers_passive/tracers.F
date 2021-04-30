@@ -4,9 +4,8 @@
 
 #include "cppdefs.h"
 
-      use read_write ! set_frc_var_tile, nc_define_var, rp_var
-      use surf_flux,  only: stflx ! Surface tracer flux should possibly
-                                  ! live in this module rather?
+      use read_write              ! set_frc_var_tile, nc_define_var, rp_var
+      use surf_flux,  only: stflx ! surface tracer flux should possibly live in this module rather?
 
       implicit none
 
@@ -64,18 +63,19 @@
       character*47, dimension(nt), public :: t_tname ! Tracer input time variable name
       logical, dimension(nt), public      :: wrt_t   ! T/F output tracer.
       logical, dimension(nt), public      :: wrt_t_avg ! T/F output avg tracer.
-      integer, dimension(nt) :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
+      integer, dimension(nt)              :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length
       ! Abstracted from user.
       ! Final tracer concentrations live in 't' in ocean3d.h
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
-      real                   :: t_data(GLOBAL_2D_ARRAY,2,NT) ! Could set to zero here?
-      integer, dimension(NT) :: t_grd_type  = 0
-      integer, dimension(NT) :: t_file_indx = 0
-      integer, dimension(NT) :: t_irec      = 0
-      integer, dimension(NT) :: t_it1 = 1, t_it2 = 2
-      real, dimension(2,NT)  :: t_times = -99 ! [-99,-99]
+!      real                   :: t_data(GLOBAL_2D_ARRAY,2,NT) ! Could set to zero here?
+!      integer, dimension(NT) :: t_grd_type  = 0
+!      integer, dimension(NT) :: t_file_indx = 0
+!      integer, dimension(NT) :: t_irec      = 0
+!      integer, dimension(NT) :: t_it1 = 1, t_it2 = 2
+!      real, dimension(2,NT)  :: t_times = -99 ! [-99,-99]
+      type (ncvs) :: nc_t( NT ) ! array of ncvs for each tracer
 
       integer, public :: iTandS ! Combined index of temperature and salinity
                                 ! public as used in set_forces.F. Need to be parameter
@@ -101,9 +101,9 @@
       public set_avg_trc
 #endif
       contains
-! ----------------------------------------------------------------------
 
-      subroutine set_surf_tracer_flx(istr,iend,jstr,jend) ! set tracer flux at surface
+! ----------------------------------------------------------------------
+      subroutine set_surf_tracer_flx(istr,iend,jstr,jend) ![ set tracer flux at surface
 
       implicit none
 
@@ -111,7 +111,7 @@
       integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
-      integer itrc ! Tracer number for loop index
+      integer           :: itrc       ! tracer number for loop index
       character(len=46) :: t_flx_name ! Tracer time name
 
       ! Need ocean3d.h for 't' tracer variables:
@@ -119,22 +119,19 @@
 
       do itrc=iTandS+1,NT ! Instead of 3 use iTandS variable DevinD todo
 
-        if(t_ana_frc(itrc)==0) then ! Read in forcing data (not analytical)
+        if (t_ana_frc(itrc)==0) then ! Read in forcing data (not analytical)
 
           ! For now set up variable _flx name here but might be better to
           ! create in init_tracers function where this is done once and
           ! storedin an array for speed.
 
-          t_flx_name = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
+          ! set nc_v%name and nc_t%time_name only once: currently set in t_vname & t_tname,
+          ! left it like this so people don't need to change their files.
 
-          call set_frc_var_tile(
-     &        istr,iend,          jstr,jend,        ! Tile bounds indices
-     &        t_flx_name,         t_tname(itrc),    ! Text name of array and time
-     &        t_data(:,:,:,itrc), stflx(:,:,itrc),  ! Variable arrays
-     &        t_times(:,itrc),    t_grd_type(itrc), ! Input times & Grid type
-     &        t_file_indx(itrc),  t_irec(itrc),     ! File indx & Current input record
-     &        t_it1(itrc),        t_it2(itrc),      ! Time index placeholders
-     &        interp_t )                            ! Online spatial interpolation flag
+          nc_t(itrc)%name      = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
+          nc_t(itrc)%time_name = t_tname(itrc)
+
+          call set_frc_var_tile( istr, iend, jstr, jend, nc_t(itrc), stflx(:,:,itrc), interp_t )
 
         elseif(t_ana_frc(itrc)==1) then ! Analytical forcing
 
@@ -153,10 +150,10 @@
 
       enddo
 
-      end subroutine set_surf_tracer_flx
-! ----------------------------------------------------------------------
+      end subroutine set_surf_tracer_flx  !]
 
-      subroutine set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)
+! ----------------------------------------------------------------------
+      subroutine set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)  ![
       ! Set analytical surface tracer flux
       implicit none
 
@@ -190,10 +187,10 @@
 !        enddo
 !     endif
 
-      end subroutine set_ana_surf_tracer_flx
-! ----------------------------------------------------------------------
+      end subroutine set_ana_surf_tracer_flx  !]
 
-      subroutine def_his_trc(r3dgrd)
+! ----------------------------------------------------------------------
+      subroutine def_his_trc(r3dgrd)  ![
       ! Define history file variables in def_his.F
 
       implicit none
@@ -210,12 +207,12 @@
         endif
       enddo
 
-      end subroutine def_his_trc
-! ----------------------------------------------------------------------
+      end subroutine def_his_trc  !]
 
+! ----------------------------------------------------------------------
 ! Need AVERAGES as 'ncavg' only exists if AVERAGES is defined.
 #ifdef AVERAGES
-      subroutine def_avg_trc(r3dgrd)
+      subroutine def_avg_trc(r3dgrd)  ![
 
       implicit none
 
@@ -233,19 +230,20 @@
         endif
       enddo
 
-      end subroutine def_avg_trc
+      end subroutine def_avg_trc  !]
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
 
-      subroutine wrt_his_trc (record, ierr)
+! ----------------------------------------------------------------------
+      subroutine wrt_his_trc (record, ierr)  ![
       ! Write tracers to history file
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr ! Error handling
+      integer, intent(in) :: record ! timestep to be recorded
+      integer             :: ierr   ! error handling
+
       ! local
-      integer itrc
+      integer :: itrc
 
       do itrc=1,NT
         if (wrt_t(itrc)) then
@@ -254,11 +252,11 @@
         endif
       end do
 
-      end subroutine wrt_his_trc
-! ----------------------------------------------------------------------
+      end subroutine wrt_his_trc  !]
 
+! ----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine wrt_avg_trc (record, ierr)
+      subroutine wrt_avg_trc (record, ierr)  ![
       ! Write tracers to avg file
       implicit none
 
@@ -275,38 +273,38 @@
         endif
       end do
 
-      end subroutine wrt_avg_trc
+      end subroutine wrt_avg_trc  !]
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
 
-      subroutine wrt_rst_trc (record, ierr)
+! ----------------------------------------------------------------------
+      subroutine wrt_rst_trc (record, ierr)  ![
       ! Write tracers to restart file
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr ! Error handling
+      integer, intent(in) :: record ! timestep to be recorded
+      integer             :: ierr
       ! local
-      integer itrc
+      integer :: itrc
 
       do itrc=1,NT
         call nc_write_var(ncrst, t(START_2D_ARRAY,1,nstp,itrc), N,
      &          t_vname(itrc), rp_var, record, ierr )
       end do
 
-      end subroutine wrt_rst_trc
-! ----------------------------------------------------------------------
+      end subroutine wrt_rst_trc  !]
 
+! ----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine set_avg_trc(istrR,iendR,jstrR,jendR,cff,cff1)
+      subroutine set_avg_trc(istrR,iendR,jstrR,jendR,cff,cff1)  ![
 
       implicit none
 
       ! inputs
-      integer istrR,iendR,jstrR,jendR
-      real cff,cff1
+      integer :: istrR, iendR, jstrR, jendR
+      real    :: cff, cff1
       ! local
-      integer i,j,k,itrc
+      integer :: i, j, k, itrc
 
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
@@ -321,11 +319,11 @@
         endif
       enddo
 
-      end subroutine set_avg_trc
+      end subroutine set_avg_trc  !]
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
 
-      subroutine init_tracers()
+! ----------------------------------------------------------------------
+      subroutine init_tracers()  ![
 
       ! Set all tracer variable values. This was placed at bottom of
       ! the module for ease of reading the rest of the module's code.
@@ -367,10 +365,10 @@
       ! Additional passive tracers:
 #include "tracers_defs.h"
 
-      end subroutine init_tracers
-! ----------------------------------------------------------------------
+      end subroutine init_tracers  !]
 
-      subroutine set_bry_tracer_defaults(t_bry_dt, itrc, itbry, LMmpp)
+! ----------------------------------------------------------------------
+      subroutine set_bry_tracer_defaults(t_bry_dt, itrc, itbry, LMmpp)  ![
       ! Sets default values for tracers at the boundary if missing
       ! in the _bry.nc file.
       ! In the long run this should be put into an include file to avoid
@@ -391,64 +389,7 @@
       else if (itrc == isalt) then
         t_bry_dt(:,:,itbry,itrc) = 35.0 ! default salinity
 #  endif
-#  ifdef BIOLOGY_NPZDOC
-      elseif (itrc == iNO3_) then
-        cff=20./3.
-        cff1=2./3.
-        do k=1,N
-          do ij=0,LMmpp
-            temp=t_bry_dt(j,k,itbry,itemp)
-              if (temp.lt.8.) then
-                SiO4=30.
-              elseif (temp.le.11.) then
-                SiO4=30.-((temp-8.)*cff)
-              elseif (temp.le.13.) then
-                SiO4=10.-((temp-11.)*4.)
-              elseif (temp.le.16.) then
-                SiO4=2.-((temp-13.)*cff1)
-              else
-                SiO4=0.
-              endif
-              t_bry_dt(j,k,itbry,itrc)=1.67+0.5873*SiO4
-     &             +0.0144*SiO4**2
-     &             +0.0003099*SiO4**3
-#   ifdef NO3_SFC_CUTOFF
-              t_bry_dt(ij,k,itbry,itrc)=t_bry_dt(ij,k,itbry,itrc)*
-     &             (1-.5*(tanh((z_r(iwest,ij,k)+100.)/8.)+1))
-#   endif /* NO3_SFC_CUTOFF */
-          enddo
-        enddo
-      elseif (itrc .eq. iNH4_) then ! DevinD why is there an underscore?? Flag not used anyway
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iChla) then
-        t_bry_dt(:,:,itbry,itrc) = 0.10
-      elseif (itrc .eq. iPhyt) then
-        t_bry_dt(:,:,itbry,itrc) = 0.05
-      elseif (itrc .eq. iZoo_) then ! DevinD why is there an underscore?? Flag not used anyway
-        t_bry_dt(:,:,itbry,itrc) = 0.02
-      elseif (itrc .eq. iSDet) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iLDet) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-#   ifdef OXYGEN
-      elseif (itrc .eq. iO2) then
-        t_bry_dt(:,:,itbry,itrc) = 177.9  ! mmol/m3
-#    ifdef CARBON
-      elseif (itrc .eq. iDIC) then
-        t_bry_dt(:,:,itbry,itrc) = 2200.
-      elseif (itrc .eq. iTALK) then
-        t_bry_dt(:,:,itbry,itrc) = 2300.
-      elseif (itrc .eq. iSDetC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iLDetC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      elseif (itrc .eq. iCaCO3) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-#    endif
-#   endif /* OXYGEN */
-#  endif /* BIOLOGY_NPZDOC */
-
-#    if defined BIOLOGY_BEC2
+#  if defined BIOLOGY_BEC2
 ! provide defaults for selected biogeochemical variables
       elseif (itrc .eq. iNH4 .or. itrc .eq. iDOC .or.
      &    itrc .eq. iDON .or. itrc. eq. iDOFE .or.
@@ -531,7 +472,8 @@
       endif ! tracer cases
 
 
-      end subroutine set_bry_tracer_defaults
+      end subroutine set_bry_tracer_defaults  !]
+
 ! ----------------------------------------------------------------------
 
       end module tracers

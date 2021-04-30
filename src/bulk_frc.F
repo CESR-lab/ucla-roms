@@ -8,7 +8,7 @@
 ! CPP flag BULK_FRC covering entire module, module empty if off
 #if defined BULK_FRC /* for whole module! */
 
-      use read_write, only: set_frc_var_tile, set_frc_var_type_tile, ncvs
+      use read_write, only: set_frc_var_tile, ncvs
 
       implicit none
 
@@ -87,16 +87,16 @@
       ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
       ! short-wave radiation flux first because bulk flux routine performs
       ! the final assembly of everything.
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )  ! short wave radiation - this accounts for get_srflx.F & time interp of set_srflx.F in newer code and get_srflux.F & set_srflux() in old code
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_lwrad, lwrad, interp_frc )  ! lwrad
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )  ! short wave radiation - this accounts for get_srflx.F & time interp of set_srflx.F in newer code and get_srflux.F & set_srflux() in old code
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_lwrad, lwrad, interp_frc )  ! lwrad
 
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc )  ! u-wind
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc )  ! v-wind
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc )  ! u-wind
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc )  ! v-wind
 
       ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_tair,  tair,  interp_frc )
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_Q,     Q,     interp_frc )  ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_tair,  tair,  interp_frc )
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_Q,     Q,     interp_frc )  ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
 
         ! Check units of Q:
         ! Needs to come after so Q_file_indx has been set.
@@ -105,12 +105,12 @@
         ! Incomplete at the moment.
 !        if (Q_irec==1) call nc_check_units( Q_file_indx, Q_name, 'kg/kg' )
 
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_prate, prate, interp_frc )  ! prate (precipitation rate) - 'rain' variable in old code get_bulk_prec.F & set_bulk_prec() in old code
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_prate, prate, interp_frc )  ! prate (precipitation rate) - 'rain' variable in old code get_bulk_prec.F & set_bulk_prec() in old code
 
 
 #if defined TAU_CORRECTION
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_taux,  taux,  interp_frc )  ! Set field corrector in x-axis
-      call set_frc_var_type_tile( istr, iend, jstr, jend, nc_tauy,  tauy,  interp_frc )  ! Set field corrector in y-axis
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_taux,  taux,  interp_frc )  ! Set field corrector in x-axis
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_tauy,  tauy,  interp_frc )  ! Set field corrector in y-axis
 #endif
 
 

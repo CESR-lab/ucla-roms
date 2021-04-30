@@ -1625,54 +1625,8 @@ c      gam2=9./8.
 
 
       end subroutine compute_wec_rhs_uv_terms
+
 !-----------------------------------------------------------------------
-
-!      subroutine set_wec_frc_tile_new(istr,iend,jstr,jend)
-      ! Read and interpolate wec
-
-      ! All WEC variables need time interpolation only
-      ! here so can use same generic routine
-
-      ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!
-
-!      use read_write, only: set_frc_var_tile
-!
-!      implicit none
-!
-!      ! input/outputs
-!      integer,intent(in)  :: istr,iend,jstr,jend
-
-      ! 1) Find & save force variable file_indx & correct record (irec)
-      ! 2) Read in forcing data
-      ! 3) Interpolate input forcing to correct model time
-
-!      call set_frc_var_tile(
-!     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-!     &          whrm_name,      wec_time_name,  ! Text names
-!     &          whrm_data,      whrm,           ! Variable arrays
-!     &          whrm_times,     whrm_grd_type,  ! Input times & Grid type
-!     &          whrm_file_indx, whrm_irec,      ! File indx & Current input record
-!     &          whrm_it1,       whrm_it2 )      ! Time index placeholders
-
-      ! Only do wdrx and then do wdre = wdrx * sin(angle)
-      ! wdre = wdre * cos(angle)
-!      call set_frc_var_tile(
-!     &          istr,iend,      jstr,jend,      ! Tile bounds indices
-!     &          wdrx_name,      wdrx_time_name, ! Text names
-!     &          wdrx_data,      wrdx,           ! Variable arrays
-!     &          whrm_times,     wdrx_grd_type,  ! Input times & Grid type
-!     &          whrm_file_indx, whrm_irec,      ! File indx & Current input record
-!     &          whrm_it1,       whrm_it2 )      ! Time index placeholders
-
-      ! Do remaining conversion to variables that require it
-      ! ----------------------------------------------------
-
-      ! set_wec_inp2vars()
-
-
-!      end subroutine set_wec_frc_tile_new
-!-----------------------------------------------------------------------
-
       subroutine set_wec_frc_tile (istr,iend,jstr,jend,ierr)
 
       ! ==============

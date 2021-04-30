@@ -10,8 +10,8 @@
 #include "cppdefs.h"
 #ifdef BIOLOGY_BEC2
 
-      use read_write
-      use tracers ! For iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use read_write  ! ncvs
+      use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
 
       implicit none
 
@@ -36,22 +36,17 @@
 #endif  
 
       ! Interpolate forcing from coarser input grid (=1) or not (=0)
-      integer :: interp_frc = 0 ! Factor 2 only for now
-      ! dust forcing
-      character(len=4) :: dust_vname = 'dust'
-      character(len=9) :: dust_tname = 'dust_time'
-      ! iron forcing
-      character(len=4) :: iron_vname = 'iron'
-      character(len=9) :: iron_tname = 'iron_time'
+      integer :: interp_frc  = 0 ! Factor 2 only for now
+
+      type (ncvs) :: nc_dust = ncvs( name='dust', time_name='dust_time' )  ! dust forcing
+      type (ncvs) :: nc_iron = ncvs( name='iron', time_name='iron_time' )  ! iron forcing
       
 #ifdef PCO2AIR_FORCING
-      character(len=8) :: pco2air_vname = 'pco2_air'
-      character(len=9) :: pco2air_tname = 'pco2_time'
+      type (ncvs) :: nc_pco2air   = ncvs( name='pco2_air',   time_name='pco2_time' )
 #endif      
       
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      character(len=10) :: swrad_avg_name = 'swrad_davg'
-      character(len=13) :: swrad_avg_time_name = 'srf_davg_time'
+      type (ncvs) :: nc_swrad_avg = ncvs( name='swrad_davg', time_name='srf_davg_time' )
 #endif      
 
 #include "bgc_tracers.h"
@@ -60,13 +55,6 @@
       ! End of user inputs
       ! *************************************************************
 
-      ! Netcdf variables for surface forcing - BGC FLUX ONLY
-      real                         :: flx_data(GLOBAL_2D_ARRAY,2,nbgc_flx)
-      integer, dimension(nbgc_flx) :: flx_grd_type  = 0
-      integer, dimension(nbgc_flx) :: flx_file_indx = 0
-      integer, dimension(nbgc_flx) :: flx_irec      = 0
-      integer, dimension(nbgc_flx) :: flx_it1 = 1, flx_it2 = 2
-      real, dimension(2,nbgc_flx)  :: flx_times = -99 ! [-99,-99]
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       real, public    :: srflx_dailyavg(GLOBAL_2D_ARRAY)  ! daily average short-wave rad 
@@ -88,16 +76,19 @@
       public init_scalars_bec2
 
       contains
-! ----------------------------------------------------------------------
 
-      subroutine set_bgc_surf_frc(istr,iend,jstr,jend)
+! ----------------------------------------------------------------------
+      subroutine set_bgc_surf_frc(istr,iend,jstr,jend)  ![
+
       ! read in bgc surface flux and interpolate to model time.
       ! Taken from get_smth.F & set_smth.F of ETH code.
 
       ! Since bgc is set up such that iron and dust have flux at surface but
       ! are not directly bgc tracers, I have separated them into set_bgc_frc
 
-      use read_write, only: set_frc_var_tile
+      ! this routine is called by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
+
+      use read_write, only: set_frc_var_tile, ncvs
 
       implicit none
 
@@ -108,62 +99,26 @@
       integer,intent(in) :: istr,iend,jstr,jend
       
       ! local
-      integer :: ibgc, i, j
+      integer :: i, j
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
 # include "scalars.h"
 # include "compute_extended_bounds.h"
 #endif
 
-      ! dust & iron controlled by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
-      ! dust
-      call set_frc_var_tile(
-     &        istr,iend,          jstr,jend,        ! Tile bounds indices
-     &        dust_vname,         dust_tname,       ! Text name of array and time
-     &        flx_data(:,:,:,1),  dust,             ! Variable arrays
-     &        flx_times(:,1),     flx_grd_type(1),  ! Input times & Grid type
-     &        flx_file_indx(1),   flx_irec(1),      ! File indx & Current input record
-     &        flx_it1(1),         flx_it2(1),       ! Time index placeholders
-     &        interp_frc )                          ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
 
-      ! iron
-      call set_frc_var_tile(
-     &        istr,iend,          jstr,jend,        ! Tile bounds indices
-     &        iron_vname,         iron_tname,       ! Text name of array and time
-     &        flx_data(:,:,:,2),  iron,             ! Variable arrays
-     &        flx_times(:,2),     flx_grd_type(2),  ! Input times & Grid type
-     &        flx_file_indx(2),   flx_irec(2),      ! File indx & Current input record
-     &        flx_it1(2),         flx_it2(2),       ! Time index placeholders
-     &        interp_frc )                          ! Online spatial interpolation flag
 
-      ibgc=2  ! so far count dust & iron
-      
 #ifdef PCO2AIR_FORCING
-      ibgc=ibgc+1
-      call set_frc_var_tile(
-     &        istr,iend,             jstr,jend,           ! Tile bounds indices
-     &        pco2air_vname,         pco2air_tname,       ! Text name of array and time
-     &        flx_data(:,:,:,ibgc),  pco2air,             ! Variable arrays
-     &        flx_times(:,ibgc),     flx_grd_type(ibgc),  ! Input times & Grid type
-     &        flx_file_indx(ibgc),   flx_irec(ibgc),      ! File indx & Current input record
-     &        flx_it1(ibgc),         flx_it2(ibgc),       ! Time index placeholders
-     &        interp_frc )                                ! Online spatial interpolation flag
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
 #endif /* PCO2AIR_FORCING */   
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      ! Daily average Short wave radiation 
-      ibgc=ibgc+1
-      call set_frc_var_tile(
-     &        istr,iend,             jstr,jend,           ! Tile bounds indices
-     &        swrad_avg_name,        swrad_avg_time_name, ! Text names
-     &        flx_data(:,:,:,ibgc),  srflx_dailyavg,      ! Variable arrays
-     &        flx_times(:,ibgc),     flx_grd_type(ibgc),  ! Input times & Grid type
-     &        flx_file_indx(ibgc),   flx_irec(ibgc),      ! File indx & Current input record
-     &        flx_it1(ibgc),         flx_it2(ibgc),       ! Time index placeholders
-     &        interp_frc )                                ! Online spatial interpolation flag
-     
+      ! Daily average Short wave radiation
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, srflx_dailyavg, interp_frc )
      
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -184,11 +139,11 @@
      
 #endif /* DAILYPAR_PHOTOINHIBITION */ 
 
-      end subroutine set_bgc_surf_frc
-! ----------------------------------------------------------------------
+      end subroutine set_bgc_surf_frc  !]
 
+! ----------------------------------------------------------------------
 #ifdef BEC2_DIAG
-      subroutine def_his_bgc_diag(r2dgrd
+      subroutine def_his_bgc_diag(r2dgrd  ![
 #ifdef SOLVE3D
      &                           ,r3dgrd
 #endif
@@ -226,14 +181,14 @@
         endif
       enddo
 
-      end subroutine def_his_bgc_diag
+      end subroutine def_his_bgc_diag  !]
 #endif /* BEC2_DIAG */
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
 ! Need AVERAGES as 'ncavg' only exists in AVERAGES is defined.
 #ifdef AVERAGES
 #ifdef BEC2_DIAG
-      subroutine def_avg_bgc_diag(r2dgrd
+      subroutine def_avg_bgc_diag(r2dgrd  ![
 # ifdef SOLVE3D
      &                           ,r3dgrd
 # endif
@@ -272,13 +227,13 @@
         endif
       enddo
 
-      end subroutine def_avg_bgc_diag
+      end subroutine def_avg_bgc_diag  !]
 #endif /* BEC2_DIAG */
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
 #ifdef BEC2_DIAG
-      subroutine wrt_his_bgc_diag (record, ierr)
+      subroutine wrt_his_bgc_diag (record, ierr)  ![
       ! Write BEC2_DIAG to history file
       implicit none
 
@@ -304,13 +259,13 @@
          endif
       end do
 
-      end subroutine wrt_his_bgc_diag
+      end subroutine wrt_his_bgc_diag  !]
 #endif /* BEC2_DIAG */
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
 #ifdef AVERAGES
 #ifdef BEC2_DIAG
-      subroutine wrt_avg_bgc_diag (record, ierr)
+      subroutine wrt_avg_bgc_diag (record, ierr)  ![
       ! Write BEC2_DIAG to avg file
       implicit none
 
@@ -336,14 +291,14 @@
          endif
       end do
 
-      end subroutine wrt_avg_bgc_diag
+      end subroutine wrt_avg_bgc_diag  !]
 #endif /* BEC2_DIAG */
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
 #ifdef AVERAGES
 #ifdef BEC2_DIAG
-      subroutine set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)
+      subroutine set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)  ![
 
       implicit none
 
@@ -372,12 +327,12 @@
         end do
       end do
 
-      end subroutine set_avg_bgc_diag
+      end subroutine set_avg_bgc_diag  !]
 #endif /* BEC2_DIAG */
 #endif /* AVERAGES */
-! ----------------------------------------------------------------------
 
-      subroutine init_scalars_bec2()
+! ----------------------------------------------------------------------
+      subroutine init_scalars_bec2()  ![
 !
 ! Set initial values for  globally accessible (stored in common
 ! blocks) scalar variables of the BEC model.
@@ -1441,7 +1396,8 @@
 # endif
 #endif /* SOLVE3D */
 
-      end subroutine init_scalars_bec2
+      end subroutine init_scalars_bec2  !]
+
 ! ----------------------------------------------------------------------
 
 #endif /* BIOLOGY_BEC2 - entire module */
