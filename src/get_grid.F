@@ -2,6 +2,9 @@
 #ifndef ANA_GRID
 
       subroutine get_grid         ! Read in grid data from NetCDF file.
+
+      use read_write, only: nc_check_units
+
       implicit none
       character*1 char1
       integer ierr, ncid, varid, lstr, lenstr, checkdims, ncdf_read
@@ -192,6 +195,7 @@
 
       ierr=nf_inq_varid (ncid, 'angle', varid)
       if (ierr == nf_noerr) then
+        call nc_check_units( ncid, 'angle', 'radians' )                  ! must be in radians, abort if not
         ierr=ncdf_read(ncid, varid, 0, r_var, angler(START_2D_ARRAY), 1)
         if (ierr /= nf_noerr) then
           write(*,2) 'angle', grdname(1:lstr), nf_strerror(ierr)

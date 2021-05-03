@@ -8,7 +8,7 @@ S-coord: THETA_S,   THETA_B,    hc (m)
           6.0D0        6.0D0     25.0D0
 
 grid:  filename
-     pgrd_rads/sample_grd_riv.nc
+     ../USWC_model/input_data/sample_grd_riv.nc
 
 forcing: filename
      ../USWC_model/input_data/sample_prec_units_DPD.nc

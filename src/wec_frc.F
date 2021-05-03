@@ -1881,7 +1881,7 @@ C$OMP BARRIER
               ! Calculate wdir once as used twice below
           wdir=-(deg2rad*wwdg(i,j,idx)-1.5*pi)  ! FROM N (WAVE_OFFLINE) to travel to 0deg --> x-dir
 # ifdef CURVGRID
-     &                    -deg2rad*angler(i,j)
+     &                    -angler(i,j)          ! angler must be in radians
 # endif
               ! Direction (wwdg) is read in as one variable so can't be
               ! reused for dir-x and dir-y, need new interim variables
@@ -1927,8 +1927,8 @@ C$OMP BARRIER
           ! Need once as doesn't change.
           if(FIRST_TIME_STEP) then
 
-            angler_cos(i,j) = cos(deg2rad*angler(i,j))
-            angler_sin(i,j) = sin(deg2rad*angler(i,j))
+            angler_cos(i,j) = cos(angler(i,j))
+            angler_sin(i,j) = sin(angler(i,j))
 
           endif
 

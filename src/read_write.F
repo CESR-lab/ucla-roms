@@ -1173,7 +1173,7 @@ C$OMP BARRIER
       if (var_units /= file_var_units) then
         write(*,'(/3x,3A/5x,3A/)') 'ERROR: read_write.F :: ',
      &  'nc_check_units: wrong units for var: ', var_name,
-     &  var_units ,' -> should be -> ', file_var_units
+     &  trim(file_var_units) ,' -> input file should be -> ', var_units
         error stop                                                              ! stop simulation, fatal error
       end if
 
