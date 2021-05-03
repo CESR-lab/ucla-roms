@@ -15,7 +15,7 @@
        T_FRC_BRY               SPONGE                  SURFACE_BREAK
        WAVE_OFFLINE            WAVE_FRICTION           BBL_S95
        SUP_OFF                 WAVE_DIFF_FROM_LM       BULK_FRC
-       BULK_FLUX_OUTPUT
+       SURF_FLUX_OUTPUT_HIS    SURF_FLUX_OUTPUT_AVG
  <scoord.h>
        VERT_COORD_TYPE_SM09
  <pre_step3d4S.F>
@@ -56,11 +56,11 @@
  WARNING: Urecognized keyword 'climatology' --> DISREGARDED.
 
  boundary forcing file(s): ../USWC_model/input_data/roms_bry_trace.0.nc
- restart :: nrst =  999999  rec/file =    1  file ='none.0'
+ restart :: nrst =  999999  rec/file =    1
 
- history :: overwrite = F  nwrt =   10  rec/file =  48  '
+ history :: overwrite = F  nwrt =   10  rec/file =  48
 
- averages :: ntsavg =    10  navg =*****  rec/file =   8  file = '.0'
+ averages :: ntsavg =    10  navg =*****  rec/file =   8
 
  fields to write into history file: (T/F)
         zeta   T   free-surface elevation                    
@@ -219,31 +219,31 @@
 
          get_bry_all :: read all boundary fields   bry_time =   4726.5657 rec =    1
          get_bry_all :: read all boundary fields   bry_time =   4726.5865 rec =    2
-    set_frc_var_tile :: read var: swrad     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: swrad     var_input_time (days) =   4726.58     rec =   3
-    set_frc_var_tile :: read var: lwrad_down     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: lwrad_down     var_input_time (days) =   4726.58     rec =   3
-    set_frc_var_tile :: read var: uwnd     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: uwnd     var_input_time (days) =   4726.58     rec =   3
-    set_frc_var_tile :: read var: vwnd     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: vwnd     var_input_time (days) =   4726.58     rec =   3
-    set_frc_var_tile :: read var: Tair     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: Tair     var_input_time (days) =   4726.58     rec =   3
-    set_frc_var_tile :: read var: Qair     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: Qair     var_input_time (days) =   4726.58     rec =   3
-    set_frc_var_tile :: read var: rain     var_input_time (days) =   4726.54     rec =   2
-    set_frc_var_tile :: read var: rain     var_input_time (days) =   4726.58     rec =   3
+         set_frc :: swrad            input time (days) =   4726.54     rec =   2
+         set_frc :: swrad            input time (days) =   4726.58     rec =   3
+         set_frc :: lwrad_down       input time (days) =   4726.54     rec =   2
+         set_frc :: lwrad_down       input time (days) =   4726.58     rec =   3
+         set_frc :: uwnd             input time (days) =   4726.54     rec =   2
+         set_frc :: uwnd             input time (days) =   4726.58     rec =   3
+         set_frc :: vwnd             input time (days) =   4726.54     rec =   2
+         set_frc :: vwnd             input time (days) =   4726.58     rec =   3
+         set_frc :: Tair             input time (days) =   4726.54     rec =   2
+         set_frc :: Tair             input time (days) =   4726.58     rec =   3
+         set_frc :: Qair             input time (days) =   4726.54     rec =   2
+         set_frc :: Qair             input time (days) =   4726.58     rec =   3
+         set_frc :: rain             input time (days) =   4726.54     rec =   2
+         set_frc :: rain             input time (days) =   4726.58     rec =   3
     set_wec_frc :: read WEC inputs     wec_input_time (s) =  0.408373E+09 rec =   2
     set_wec_frc :: read WEC inputs     wec_input_time (s) =  0.408377E+09 rec =   3
 
  STEP  time[DAYS] KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL     i_cx   j_cx k_c
       0 4726.5656 4.22974108083-03 2.7901936656-03  0.542637776810  0.425188904437    113     83   16
-      1 4726.5659 4.22923298177-03 2.7905553687-03  0.293860159127  0.293860159127    113     83   14
-      2 4726.5661 4.22812313258-03 2.7903132915-03  0.291859360653  0.158317603363    114     84    9
-      3 4726.5663 4.22467325013-03 2.7874116018-03  0.458516336522  0.367291019925    114     84   14
-      4 4726.5666 4.22370211059-03 2.7868553582-03  0.340827127008  0.253680744515    113     83   26
-      5 4726.5668 4.22412386112-03 2.7875627726-03  0.243789449704  0.138687659053    113     83    9
- Process    0  thread  0  cpu time =        5.18 sec
+      1 4726.5659 4.22923298168-03 2.7905553687-03  0.293860162108  0.293860162108    113     83   14
+      2 4726.5661 4.22812313238-03 2.7903132913-03  0.291859361654  0.158317604531    114     84    9
+      3 4726.5663 4.22467324988-03 2.7874116016-03  0.458516334679  0.367291019788    114     84   14
+      4 4726.5666 4.22370211030-03 2.7868553580-03  0.340827125596  0.253680742236    113     83   26
+      5 4726.5668 4.22412386074-03 2.7875627723-03  0.243789449003  0.138687659552    113     83    9
+ Process    0  thread  0  cpu time =        1.80 sec
 
  MAIN: DONE - Records written: history:    0 restart:    0 averages:    0
- MPI_run_time =   5.88525009155273     
+ MPI_run_time =   1.80249524116516     
