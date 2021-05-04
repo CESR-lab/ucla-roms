@@ -24,10 +24,7 @@ Examples/*/fort*
 setup_kwds.F
 check_switches1.F
 check_srcs.F
-Work/*.F
-Work/*.h
-Work/*.sh
-Work/Compile
+Work/*
 Tools-Roms/partit
 Tools-Roms/ncjoin
 Tools-Roms/ncjoin_mpi
