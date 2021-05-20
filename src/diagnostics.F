@@ -66,30 +66,22 @@
      &                                                 'visc3d',
      &                                                 'uv2_DC',
      &                                                 'uv2_FC',
-!     &                                                 'HUV1',
-!     &                                                 'prestep',
      &                                                 'u3dbc'
      &                                                                  /)
 
       character (len=60), dimension(ndm) :: lname = (/
-!     &  'hydrostatic pressure gradient volume averaged'
      &  'uv1_ru',
      &  'visc3d L376',
      &  'uv2_DC L176',
      &  'uv2_FC L463',
-!     &  'HUV1',
-!     &  'prestep',
      &  'u3dbc'
      &                                                                  /)
 
       character (len=20), dimension(ndm) :: units = (/
-!     &                                                 'm/s^2'
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
-!     &                                                 'm/s',
-!     &                                                 'm/s',
      &                                                 'm^2/s (dz*u)'
      &                                                                  /)
 
@@ -115,7 +107,7 @@
 #ifdef SOLVE3D
      &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag
+      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k
       character(len=64) :: fname
       character(len=20) :: text
 
@@ -218,9 +210,11 @@
         call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
         u_old = u(:,:,:,nstp)
 #else
-        u_dif = ( u(:,:,:,nstp) * Hz ) - u_old ! Now in units of dz*u!
+        ! do u_dif calculation at end of step3d_uv2.F as have istr, iend there already.
+        ! but use 'nnew' there as still in previou timestep!
+!        u_dif = ( u(:,:,:,nstp) * Hz ) - u_old ! Now in units of dz*u!
         call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
-        u_old = u(:,:,:,nstp) * Hz
+!        u_old = u(:,:,:,nstp) * Hz
 #endif
 
         Mdsum = 0  ! refresh for this step

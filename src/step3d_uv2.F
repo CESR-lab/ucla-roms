@@ -423,8 +423,16 @@
 # endif
 
 # ifdef HZU
-      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
-      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
+!      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
+!      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_af(i,j,k,iuv2DC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+            Mdiag(i,j,k,1,iuv2DC) = u_af(i,j,k,iuv2DC) - u_b4(i,j,k,iuv2DC)
+          enddo
+        enddo
+      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -447,7 +455,14 @@
 # endif
 
 # ifdef HZU
-      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
+!      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_b4(i,j,k,iu3d) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+          enddo
+        enddo
+      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -469,8 +484,14 @@
 # endif
 
 # ifdef HZU
-      u_af(:,:,:,iu3d)    = u(:,:,:,nnew) * Hz(:,:,:) ! crude convert to dz*u
-      Mdiag(:,:,:,1,iu3d) = u_af(:,:,:,iu3d) - u_b4(:,:,:,iu3d)
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_af(i,j,k,iu3d)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! crude convert to dz*u
+            Mdiag(i,j,k,1,iu3d) = u_af(i,j,k,iu3d) - u_b4(i,j,k,iu3d)
+          enddo
+        enddo
+      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -490,7 +511,13 @@
 # endif
 
 # ifdef HZU
-      u_b4(:,:,:,iuv2FC)  = u(:,:,:,nnew) * Hz(:,:,:)
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_b4(i,j,k,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+          enddo
+        enddo
+      enddo
 # endif
 
 
@@ -880,8 +907,17 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif
 
 # ifdef HZU
-      u_af(:,:,:,iuv2FC)    = u(:,:,:,nnew) * Hz(:,:,:)
-      Mdiag(:,:,:,1,iuv2FC) = u_af(:,:,:,iuv2FC) - u_b4(:,:,:,iuv2FC)
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_af(i,j,k,iuv2FC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            Mdiag(i,j,k,1,iuv2FC) = u_af(i,j,k,iuv2FC) - u_b4(i,j,k,iuv2FC)
+
+            u_dif(i,j,k) = u_af(i,j,k,iuv2FC) - u_old(i,j,k) ! do this here as units are correct
+            u_old(i,j,k) = u_af(i,j,k,iuv2FC)
+          enddo
+        enddo
+      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG
