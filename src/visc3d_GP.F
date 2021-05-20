@@ -117,6 +117,10 @@
       enddo
 # endif
 
+# ifdef HZU
+      u_b4(:,:,:,ivisc) = u(:,:,:,nnew) ! units in dz*u already
+# endif
+
       k2=1
       do k=0,N,+1  !--> irreversible
         k1=k2
@@ -435,6 +439,11 @@ c        enddo
           enddo
         enddo
       enddo
+# endif
+
+# ifdef HZU
+      u_af(:,:,:,ivisc)    = u(:,:,:,nnew) ! units already in dz*u
+      Mdiag(:,:,:,1,ivisc) = u_af(:,:,:,ivisc) - u_b4(:,:,:,ivisc)
 # endif
 
 #ifdef DIAG3D_DEBUG

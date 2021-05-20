@@ -141,6 +141,10 @@
       u_b4(:,:,:,iuv1) = u(:,:,:,nstp) ! using nstp will catch change to indx in prestep3d
 # endif
 
+# ifdef HZU
+      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) * Hz(:,:,:) ! crude convert u to dz * u
+# endif
+
       do k=1,N
 # include "compute_horiz_rhs_uv_terms.h"
       enddo
@@ -411,6 +415,11 @@
           enddo
         enddo
       enddo
+# endif
+
+# ifdef HZU
+      u_af(:,:,:,iuv1)    = u(:,:,:,nnew)  ! units in dz*u already
+      Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
 # endif
 
 #ifdef DIAG3D_DEBUG

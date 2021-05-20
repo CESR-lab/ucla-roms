@@ -84,13 +84,13 @@
 
       character (len=20), dimension(ndm) :: units = (/
 !     &                                                 'm/s^2'
-     &                                                 'm/s',
-     &                                                 'm/s',
-     &                                                 'm/s',
-     &                                                 'm/s',
+     &                                                 'm^2/s (dz*u)',
+     &                                                 'm^2/s (dz*u)',
+     &                                                 'm^2/s (dz*u)',
+     &                                                 'm^2/s (dz*u)',
 !     &                                                 'm/s',
 !     &                                                 'm/s',
-     &                                                 'm/s'
+     &                                                 'm^2/s (dz*u)'
      &                                                                  /)
 
       character (len=2), dimension(3) :: uvw = (/ 'u_', 'v_', 'w_' /)
@@ -123,7 +123,11 @@
 
         if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
           file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
+#ifndef HZU
           u_old = u(:,:,:,nstp)  !debug only possibly
+#else
+          u_old = u(:,:,:,nstp) * Hz
+#endif
         endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
 
 
@@ -209,9 +213,15 @@
           call nc_write_var(ncid, Mdiag(:,:,:,1,diag), N, text, up_var, output_rec, ierr)
         enddo
 
+#ifndef HZU
         u_dif = u(:,:,:,nstp) - u_old
         call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
         u_old = u(:,:,:,nstp)
+#else
+        u_dif = ( u(:,:,:,nstp) * Hz ) - u_old ! Now in units of dz*u!
+        call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
+        u_old = u(:,:,:,nstp) * Hz
+#endif
 
         Mdsum = 0  ! refresh for this step
         do diag=1,ndm
