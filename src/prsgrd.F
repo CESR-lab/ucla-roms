@@ -32,7 +32,7 @@
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
-      use diagnostics
+!      use diagnostics
 # ifdef POT_TIDES
       use tides, only: Ptide
 # endif
@@ -523,26 +523,26 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 #  undef DC
 #endif /* WEC */
 
-# ifdef DIAGNOSTICS
-      !! set this switch such that we only do this during a corrector
-      !! step and only when it's time to write a history file
-      !! These are hydrostatic pressure gradient terms, possibly
-      !! including wec
-      !! 
-      if (do_diags) then
-        do j=Jstr,Jend
-          do k = 1,N
-            do i=Istr,Iend
-              Mdiag(i,j,k,1,2) = ru(i,j,k)
-              Mdiag(i,j,k,2,2) = rv(i,j,k)
-#  ifdef NHMG
-              Mdiag(i,j,k,3,2) = rw(i,j,k)
-#  endif
-            enddo
-          enddo
-        enddo
-      endif
-# endif
+!# ifdef DIAGNOSTICS
+!      !! set this switch such that we only do this during a corrector
+!      !! step and only when it's time to write a history file
+!      !! These are hydrostatic pressure gradient terms, possibly
+!      !! including wec
+!      !!
+!      if (do_diags) then
+!        do j=Jstr,Jend
+!          do k = 1,N
+!            do i=Istr,Iend
+!              Mdiag(i,j,k,1,2) = ru(i,j,k)
+!              Mdiag(i,j,k,2,2) = rv(i,j,k)
+!#  ifdef NHMG
+!              Mdiag(i,j,k,3,2) = rw(i,j,k)
+!#  endif
+!            enddo
+!          enddo
+!        enddo
+!      endif
+!# endif
 
       end
 

@@ -103,6 +103,17 @@
          bkw_new=0.614 ; bkw=0.285 ; bkw1=0.088 ; bkw2=0.013
       endif
 
+#ifdef DIAG2D_DEBUG
+      if(mynode==0 .and. iif==1) then ! devind debug
+        write (*,'(/A)') '2D step2d start:'
+        print *, 'ubar(10,10,knew)=',ubar(10,10,knew),'knew=',knew
+        print *, 'ubar(10,10,kstp)=',ubar(10,10,kstp),'kstp=',kstp
+        print *, 'ubar(10,10,kbak)=',ubar(10,10,kbak),'kbak=',kbak
+        print *, 'ubar(10,10,kold)=',ubar(10,10,kold),'kold=',kold
+        print *, ' '
+      endif
+#endif
+
 ! Preliminary step: compute total depth of water column and vertically
 ! ----------- ----- integrated fluxes needed for computing horizontal
 ! divergence to advance free surface and for nonlinear advection terms
@@ -940,4 +951,16 @@ c<<     &     +cff*iA_v(i,j)
      &                  ubar(START_2D_ARRAY,knew),
      &                  vbar(START_2D_ARRAY,knew))
 #endif
+
+#ifdef DIAG2D_DEBUG
+      if(mynode==0 .and. iif==nfast) then ! devind debug
+        write (*,'(/A)') '2D step2d end: DUnew/( Dnew..) +dtfast*r_D'
+        print *, 'ubar(10,10,knew)=',ubar(10,10,knew),'knew=',knew
+        print *, 'ubar(10,10,kstp)=',ubar(10,10,kstp),'kstp=',kstp
+        print *, 'ubar(10,10,kbak)=',ubar(10,10,kbak),'kbak=',kbak
+        print *, 'ubar(10,10,kold)=',ubar(10,10,kold),'kold=',kold
+        print *, ' '
+      endif
+#endif
+
       end

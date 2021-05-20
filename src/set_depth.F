@@ -240,6 +240,9 @@
 # ifdef WEC
       use wec_frc
 # endif
+
+      use diagnostics
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, i,j,k
@@ -260,6 +263,29 @@
       kbak=knew-1
       if (kbak < 1) kbak=4
 # endif
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'set_depth HUV1 start:'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+      endif
+#endif
+
+#ifdef DIAG2D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') '2D set_depth HUV1 start:'
+        print *, 'ubar(10,10,knew)=',ubar(10,10,knew),'knew=',knew
+        print *, 'ubar(10,10,kstp)=',ubar(10,10,kstp),'kstp=',kstp
+        print *, 'ubar(10,10,kbak)=',ubar(10,10,kbak),'kbak=',kbak
+        print *, ' '
+      endif
+#endif
+
+!# ifdef DIAGNOSTICS
+!        u_b4(:,:,:,5) = u(:,:,:,nnew)
+!# endif
 
       do j=jstrR,jendR ! big j-loop
 
@@ -349,7 +375,7 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
   !! now FC(i,0) = ubar
 # else 
         do i=istr,iendR
-          FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0)
+          FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0) !! 2 corrector of ubar? JM
 #  ifdef WEC
      &                               +ust2d(i,j)
 #  endif
@@ -447,6 +473,32 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
         endif
       enddo  ! <-- j-loop
 
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,5)    = u(:,:,:,nnew)
+!      Mdiag(:,:,:,1,5) = u_af(:,:,:,5) - u_b4(:,:,:,5)
+!# endif
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'set_depth HUV1 end: u(nnew)=u(nnew)-FC(i,0)'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+!        print *, 'u_b4(10,10,48,5)=',u_b4(10,10,48,5)
+!        print *, 'u_af(10,10,48,5)=',u_af(10,10,48,5)
+!        print *, 'Mdiag(10,10,48,1,5)=',Mdiag(10,10,48,1,5)
+      endif
+#endif
+
+#ifdef DIAG2D_DEBUG
+      if(mynode==0) then ! devind debug
+      write (*,'(/A)') '2D set_depth HUV1 end: ubar(kbak)=NOW*DU_avg1'
+        print *, 'ubar(10,10,knew)=',ubar(10,10,knew),'knew=',knew
+        print *, 'ubar(10,10,kstp)=',ubar(10,10,kstp),'kstp=',kstp
+        print *, 'ubar(10,10,kbak)=',ubar(10,10,kbak),'kbak=',kbak
+        print *, ' '
+      endif
+#endif
 
 # ifdef EXCHANGE
 #  if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS

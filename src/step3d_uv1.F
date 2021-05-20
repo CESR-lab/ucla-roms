@@ -34,9 +34,7 @@
 # ifdef WEC
       use wec_frc
 # endif
-# ifdef DIAGNOSTICS
       use diagnostics
-# endif
       use surf_flux, only: sustr, svstr
 
       implicit none
@@ -78,42 +76,42 @@
 
 # include "compute_auxiliary_bounds.h"
 
-# ifdef DIAGNOSTICS
-      !! remove here and move to the rhs include files
-      if (diag_time) do_diags = .true. !! only do diags in step3d_uv12
+!# ifdef DIAGNOSTICS
+!      !! remove here and move to the rhs include files
+!      if (diag_time) do_diags = .true. !! only do diags in step3d_uv12
+!
+!      !! ru,rv,rw contain hydrostatic pressure gradient only
+!      !! all terms are volume integrated
+!      if (do_diags) then
+!        do j=jstr,jend
+!          do i=istr,iend
+!            do k=1,N
+!              Mdiag(i,j,k,1,2) = ru(i,j,k)
+!              Mdiag(i,j,k,2,2) = rv(i,j,k)
+!#  ifdef NHMG
+!              Mdiag(i,j,k,3,2) = rw(i,j,k)
+!#  endif  /* DIAGNOSTICS */
+!            enddo
+!          enddo
+!        enddo
+!      endif
+!# endif  /* DIAGNOSTICS */
 
-      !! ru,rv,rw contain hydrostatic pressure gradient only
-      !! all terms are volume integrated
-      if (do_diags) then
-        do j=jstr,jend
-          do i=istr,iend
-            do k=1,N
-              Mdiag(i,j,k,1,2) = ru(i,j,k)
-              Mdiag(i,j,k,2,2) = rv(i,j,k)
 # ifdef NHMG
-              Mdiag(i,j,k,3,2) = rw(i,j,k)
-# endif  /* DIAGNOSTICS */
-            enddo
-          enddo
-        enddo
-      endif
-# endif  /* DIAGNOSTICS */
 
-# ifdef NHMG
-
-# define FX UFx
-# define FE VFe
+#  define FX UFx
+#  define FE VFe
 
       do k=1,N
-# include "compute_horiz_rhs_w_terms.h"
+#  include "compute_horiz_rhs_w_terms.h"
       enddo
 
-# undef FE
-# undef FX
+#  undef FE
+#  undef FX
 
       do j=jstr,jend
 
-# include "compute_vert_rhs_w_terms.h"
+#  include "compute_vert_rhs_w_terms.h"
         do i=istr,iend
           DC(i,0)=dt*pm(i,j)*pn(i,j)
         enddo
@@ -125,6 +123,23 @@
 
       enddo
 # endif  /* NHMG */
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'UV1 start:'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+      endif
+#endif
+
+# ifdef DIAGNOSTICS
+!        u_b4(:,:,:,1) = u(:,:,:,nnew)
+      ! nnew has swapped indices in main since set_HUV1 in set_depth.F,
+      ! so rather use previous u_af(5) from set depth. units are good.
+!      u_b4(:,:,:,iuv1) = u(:,:,:,nrhs) ! prestep working well
+      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) ! using nstp will catch change to indx in prestep3d
+# endif
 
       do k=1,N
 # include "compute_horiz_rhs_uv_terms.h"
@@ -373,7 +388,7 @@
       iprec1 = 1+mod(iprec1,2)
       iprec2 = 1+mod(iprec2,2)
 
-# endif
+# endif /* NHMG */
 
 
 # undef r_D
@@ -381,6 +396,35 @@
        !!!! JM not clear what this does !!!
       call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
 # endif
+
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,iuv1)    = u(:,:,:,nnew) / Hz(:,:,:) ! crude convert to m/s
+!      Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
+!# endif
+
+# ifdef DIAGNOSTICS
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_af(i,j,k,iuv1)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+            Mdiag(i,j,k,1,iuv1) = u_af(i,j,k,iuv1) - u_b4(i,j,k,iuv1)
+          enddo
+        enddo
+      enddo
+# endif
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'UV1 end: u(nnew)=u(nnew)+DC(i,0)*ru(i,j,k)'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+        print *, 'u_b4(10,10,48,iuv1)=',u_b4(10,10,48,iuv1)
+        print *, 'u_af(10,10,48,iuv1)=',u_af(10,10,48,iuv1)
+        print *, 'Mdiag(10,10,48,1,iuv1)=',Mdiag(10,10,48,1,iuv1)
+      endif
+#endif
+
       end
 
       subroutine check_step_uv1_switches(ierr)

@@ -2,6 +2,12 @@
                                ! Writes requested model
       subroutine wrt_his       ! fields at requested levels
                                ! into history netCDF file.
+
+      ! NOTE: wrt_his is called in middle of roms_step in main.F because
+      !       even though u/ubar, etc, were computed at the end of the
+      !       previous timestep, other variables like 'rho', 'Akv', etc
+      !       have only just been computed.
+
 #ifdef WEC
       use wec_frc, only: wrt_his_wec
 #endif
@@ -88,6 +94,9 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 
 ! Barotropic mode variables: free-surface and 2D momentum
 ! components in XI-,ETA-directions.
+! 'knew' index is normally 'n+1' timestep, but at this point
+! its value hasn't evolved from 'n+1' of previous timestep,
+! which makes it 'n' of this timestep still.
 
       if (wrthis(indxZ)) then
         call nc_write_var(nchis, zeta(START_2D_ARRAY,knew), 1,
@@ -104,7 +113,11 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 
 #ifdef SOLVE3D
 
-! 3D momentum components in XI- and ETA-directions.
+! 3D momentum components in XI- and ETA-directions:
+! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
+! in the previous timestep (same result).
+! Currently not sure why Sasha chose to do wrt_his in middle of timestep,
+! rather than at the beginning.
 
       if (wrthis(indxU)) then
         call nc_write_var(nchis, u(START_2D_ARRAY,1,nstp), N,

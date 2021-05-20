@@ -344,6 +344,8 @@ C$OMP END MASTER
       use tides, only: set_tides
 #endif
       use bry_extract_child
+      use diagnostics
+
       implicit none
       integer trd, tile, my_first, my_last, range
 #include "param.h"
@@ -373,6 +375,12 @@ C$OMP END MASTER
       nstp=1+mod(iic-ntstart,2)
       nrhs=nstp ; nnew=3
 #endif
+
+
+#ifdef DIAGNOSTICS
+      call wrt_online_diags
+#endif
+
 
                                        ! Read forcing and climatology
       if (synchro_flag) then           ! data. This operation may raise
@@ -454,7 +462,7 @@ C$OMP BARRIER
 !======= ====== ===== =============== ======
 
 #ifdef BRY_EXTRACT_CHILD
-        call set_child_bry ! DevinD needs a frequency flag
+      call set_child_bry ! DevinD needs a frequency flag
 #endif
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
@@ -482,10 +490,9 @@ C$OMP MASTER
 #endif
      &                                 ) call wrt_rst
         if (mod(iic-ntstart,nwrt) == 0 .and. wrthis(indxTime)) then
-          call wrt_his
-c          if (iic>60) nwrt=1 !<-- useful for debugging
-        endif
-
+          call wrt_his  ! this is called here, in the middle of a roms_step, because
+        endif           ! 'rho', 'Akv', etc have only just been computed for step 'n'.
+                        ! Whereas, u & ubar, etc, remain unchanged from the end of the previous step
 #ifdef AVERAGES
         if (iic > ntsavg .and. mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
      &      call wrt_avg
