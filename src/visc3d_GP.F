@@ -51,6 +51,8 @@
 !       eddy-permitting ocean models, Monthly Weather Rev.,v. 128,
 !       No. 8, pp. 2935-2946.
 
+      use diagnostics
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k, k1,k2, indx
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFe,VFx
@@ -91,6 +93,29 @@
 !
 ! Compute sigma-slopes (nondimensional) at RHO- and PSI-points.
 ! Compute momentum horizontal (1/m/s) and vertical (1/s) gradients.
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'visc3d start:'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+      endif
+#endif
+
+!# ifdef DIAGNOSTICS
+!      u_b4(:,:,:,ivisc) = u(:,:,:,nnew) / Hz(:,:,:)
+!# endif
+
+# ifdef DIAGNOSTICS
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_b4(i,j,k,ivisc) = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+          enddo
+        enddo
+      enddo
+# endif
 
       k2=1
       do k=0,N,+1  !--> irreversible
@@ -368,8 +393,10 @@ c        enddo
      &                 +(pm(i-1,j)+pm(i,j))*(UFe(i,j+1)-UFe(i,j))
      &                                                          )
               rufrc(i,j)=rufrc(i,j) + cff
+
               u(i,j,k,indx)=u(i,j,k,indx) + dt*( cff+UFs(i,j,k2)
      &                                              -UFs(i,j,k1))
+
 # ifdef DIAGNOSTICS_UV
               MHmix(i,j,k,1) = (cff+UFs(i,j,k2)-UFs(i,j,k1))
      &                                  *dm_u(i,j)*dn_u(i,j)
@@ -393,6 +420,36 @@ c        enddo
           enddo
         endif
       enddo
+
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,ivisc)    = u(:,:,:,nnew) / Hz(:,:,:) ! crude convert to m/s
+!      Mdiag(:,:,:,1,ivisc) = u_af(:,:,:,ivisc) - u_b4(:,:,:,ivisc)
+!# endif
+
+# ifdef DIAGNOSTICS
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            u_af(i,j,k,ivisc)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+            Mdiag(i,j,k,1,ivisc) = u_af(i,j,k,ivisc) - u_b4(i,j,k,ivisc)
+          enddo
+        enddo
+      enddo
+# endif
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+      write (*,'(/A)') 'visc3d end: u(indx)=u(indx)+dt*(UFs(k2)-UFs)'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+        print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
+        print *, 'u_b4(10,10,48,ivisc)=',u_b4(10,10,48,ivisc)
+        print *, 'u_af(10,10,48,ivisc)=',u_af(10,10,48,ivisc)
+        print *, 'Mdiag(10,10,48,1,ivisc)=',Mdiag(10,10,48,1,ivisc)
+      endif
+#endif
+
       end
 #else
       subroutine visc3d_empty

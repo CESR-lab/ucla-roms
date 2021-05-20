@@ -38,6 +38,8 @@
       use surf_flux, only: sustr, svstr
       use tracers,   only: iTandS, t
 
+      use diagnostics
+
       implicit none
 # include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -112,6 +114,20 @@
 ! preserving.
 
       indx=3-nstp
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'pre_step3d start:'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+        print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
+      endif
+#endif
+
+!# ifdef DIAGNOSTICS
+!      u_b4(:,:,:,6) = u(:,:,:,nstp) ! use nstp here as nnew is still old
+!# endif
 
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
         dtau=0.5*dt                   ! form LF-AM3 stepping algorithm,
@@ -566,8 +582,28 @@
       enddo
 # endif
 
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'u3dbc (prestep) start:'
+        print *, 'u(istr,10,48,nnew)=',u(istr,10,48,nnew),'nnew=',nnew
+        print *, 'u(istr,10,48,nstp)=',u(istr,10,48,nstp),'nstp=',nstp
+        print *, 'u(istr,10,48,nrhs)=',u(istr,10,48,nrhs),'nrhs=',nrhs
+        print *, ' '
+      endif
+#endif
+
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'u3dbc (prestep) end:'
+        print *, 'u(istr,10,48,nnew)=',u(istr,10,48,nnew),'nnew=',nnew
+        print *, 'u(istr,10,48,nstp)=',u(istr,10,48,nstp),'nstp=',nstp
+        print *, 'u(istr,10,48,nrhs)=',u(istr,10,48,nrhs),'nrhs=',nrhs
+        print *, ' '
+      endif
+#endif
 
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)
@@ -777,6 +813,25 @@
 
 
 # endif /* NHMG */
+
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,6)    = u(:,:,:,nnew)
+!      Mdiag(:,:,:,1,6) = u_af(:,:,:,6) - u_b4(:,:,:,6)
+!# endif
+
+#ifdef DIAG3D_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'pre_step3d end: u(nnew)=DC+CF*u(nnew)'
+        write (*,'(16x,A)') 'u(indx)=Hz*u(nstp)'
+        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
+        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
+        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
+        print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
+!        print *, 'u_b4(10,10,48,6)=',u_b4(10,10,48,6)
+!        print *, 'u_af(10,10,48,6)=',u_af(10,10,48,6)
+!        print *, 'Mdiag(10,10,48,1,6)=',Mdiag(10,10,48,1,6)
+      endif
+#endif
 
       end
 

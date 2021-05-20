@@ -93,10 +93,9 @@
 
       ! Netcdf outputting
       ! -----------------
-      integer :: output_rec = 0 ! record number of output. 0 indicates we need new file
-      integer :: total_output_rec = 0 ! Total flux output recordings so far
-      ! Suffix to append to simulation output rootname
-      character (len=60) :: file_name = '_surf_flux.nc'
+      integer            :: output_rec = 0               ! record number of output. 0 indicates we need new file
+      integer            :: total_output_rec = 0         ! total flux output recordings so far
+      character (len=60) :: file_name = '_surf_flux.nc'  ! suffix to append to simulation output rootname
 
       ! Public functions
       public set_surf_field_corr
@@ -248,54 +247,40 @@
 
       implicit none
 
-      ! Local
-      ! -----
+      ! local
 #include "scalars.h"
-      integer lenstr, my_nf_def_dim
-      integer lfnm, lvar, prev_fill_mode,
-     &        r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
+      integer :: lenstr, my_nf_def_dim
+      integer :: lfnm, lvar, prev_fill_mode,
+     &           r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
 #ifdef SOLVE3D
-     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+     &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
 
-      integer var_id_tmp
-      integer lstr ! length of string
+      integer :: ierr = 0        ! This is local so need to set to no-error
+      integer :: ncid = -1       ! File ID number - will be set below
       character(len=64) :: fname ! Taken from read_inp.F
-      integer :: ierr = 0 ! This is local so need to set to no-error
-      integer :: ncid = -1 ! File ID number - will be set below
 
       ! Only plot if write_file is true from roms.in or top of module
       ! and timestep is divisble by record rate
-      ! =======================================
 
       if (write_file==.true. .and. mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
 
-        ! Create file
-        ! ===========
+        if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
+          file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
+        endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
 
-        ! Add root output name to file name (only done once)
-        if(total_output_rec == 0) then
-          ! Notice below space between '/ /', this is needed to avoid
-          ! cpp preprocessor seeing // as a c++ comment and deleting it.
-          file_name = trim(output_root_name) / / trim(file_name)
-        endif
 
-        ! If file doesn't yet exist or need new file!
-        if(output_rec == 0) then
+        if(output_rec == 0) then                                  ! if file doesn't yet exist or need new file!
 
-          !! lose the prev_fill_mode?
-          ! r2dgrd, ...., auxil are id's to dimensions, needed to
-          ! create vars in the file
-          call ncdf_create_file(file_name, ncid, prev_fill_mode
+          call ncdf_create_file(file_name, ncid, prev_fill_mode   ! lose the prev_fill_mode? r2dgrd, ...., auxil are id's to dimensions, needed to create vars in the file
      &                  ,recs_per_file, total_output_rec, auxil
 #ifdef SOLVE3D
-     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd ! 3D grid dimensions
+     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd           ! 3D grid dimensions
 #endif
-     &                  ,r2dgrd, u2dgrd, v2dgrd )        ! 2D grid dimensions
+     &                  ,r2dgrd, u2dgrd, v2dgrd )                 ! 2D grid dimensions
 
 
-          ! Define remaining variables
-          ! --------------------------
+          ! Define remaining variables:
           if (wrt_sustr) then
             ! Output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
             call nc_define_var(ncid, sustr_name,
@@ -321,9 +306,7 @@
 !     &            'rho wind stress in y-direction','m^2/s^2', r2dgrd, ierr )
 
 
-          ! Leave definition mode.
-          ! ----------------------
-          ierr=nf90_enddef(ncid) ! End definition to write changes to disk
+          ierr=nf90_enddef(ncid) ! end definition to write changes to disk
           if (mynode == 0) then
             write(*,'(6x,2A)') 'surf_flux :: created new netCDF file '
      &                          ,file_name
@@ -335,18 +318,14 @@
         ! Info to terminal output
         ! =======================
 
-        ! Only done once - commented out if read_inp_net_flux is used
-        if(total_output_rec == 0) then
+        if(total_output_rec == 0) then                                 ! Only done once - commented out if read_inp_net_flux is used
 
-          ! Write to terminal output in simulation pre-amble text which
-          ! result variables are being stored
-          ! ---------------------------------
-          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4,2x,2A)')
-     &     'surf_flux: save results net_flux = ', write_file,
+          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4,2x,2A)')  ! write to terminal output in simulation pre-amble text which
+     &     'surf_flux: save results net_flux = ', write_file,          ! result variables are being stored
      &     'rec_rate =', rec_rate, 'recs/file =', recs_per_file,
      &     'file = ', file_name
 
-          mpi_master_only write(*,'(/1x,A,4(/8x,A,T16,L1),/)') ! Change to number of variables 4(
+          mpi_master_only write(*,'(/1x,A,4(/8x,A,T16,L1),/)')         ! Change to number of variables 4(
      &               'fields to be saved in 2D Flux history: (T/F)'
      &     ,sustr_name,  wrt_sustr
      &     ,svstr_name,  wrt_svstr
@@ -359,23 +338,19 @@
         ! WRITE VARIABLES TO FILE
         ! =======================
 
-        ! Open netcdf file
         ierr=nf90_open(file_name, nf90_write, ncid)
 
-        ! Set fill value - nf90_nofill for optimized writing
-        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  ! set fill value - nf90_nofill for optimized writing
 
-        ! Advance output record number
-        output_rec = output_rec + 1 ! Current file record
+                                                ! advance output record number
+        output_rec = output_rec + 1             ! current file record
         total_output_rec = total_output_rec + 1 ! total number of recs written
 
-        ! write ocean time
-        ! ----------------
-        call nc_write_time(ncid, output_rec, total_output_rec)
 
-        ! write variables
-        ! ---------------
-        if (wrt_sustr) then
+        call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
+
+
+        if (wrt_sustr) then  ! write variables
           call nc_write_var(ncid, sustr, 1, sustr_name, up_var, output_rec, ierr)
         endif
         if (wrt_svstr) then
@@ -393,21 +368,17 @@
 !          call nc_write_var(ncid, sustr_r, 1, 'sustr_r', rp_var, output_rec, ierr)
 !          call nc_write_var(ncid, svstr_r, 1, 'svstr_r', rp_var, output_rec, ierr)
 
-        ! Close netcdf file
-        ! -----------------
-        ierr=nf90_close (ncid)
 
-        ! Confirm work completed
-        ! ----------------------
+        ierr=nf90_close (ncid)  ! close netcdf file
+
         if (mynode == 0) then
-          write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+          write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
      &     'flux_his :: wrote history, tdays =', tdays,
      &     'step =', iic-1, 'rec =', output_rec, '/', total_output_rec
      &      MYID
         endif
 
-        ! Reset output_rec to create new file
-        if (output_rec == recs_per_file) then
+        if (output_rec == recs_per_file) then  ! reset output_rec to create new file
           output_rec = 0 
         endif
 

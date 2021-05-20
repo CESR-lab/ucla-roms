@@ -15,7 +15,7 @@ include Makedefs.inc
 
 KRNSRC = 		dimensions.F	read_write.F tracers.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F\
-	bry_extract_child.F 		step2d_FB.F	read_inp.F\
+	bry_extract_child.F		diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	ana_init.F	setup_grid1.F	setup_grid2.F	visc_rescale.F\
 	set_nudgcof.F	ana_grid.F	analytical.F\
@@ -37,7 +37,7 @@ KRNSRC = 		dimensions.F	read_write.F tracers.F\
 \
 	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
 \
-	river_frc.F	pipe_frc.F	diagnostics.F\
+	river_frc.F	pipe_frc.F\
 \
 	bgc_ecosys_bec2_init.F	bgc_ecosys_bec2.F\
 \

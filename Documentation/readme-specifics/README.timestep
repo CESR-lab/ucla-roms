@@ -1,0 +1,11 @@
+2021/05/19: Timesteps in ROMS
+
+In the roms.in file we specify the desired number of timsteps using variable 'NTIMES'.
+
+However, ROMS actually does NTIMES + 1 steps, as wrt_his is only done in the following timestep.
+
+The final values for u & v are computed at the end of the timestep into u(nnew) which is u(t=n+1).
+
+This value then becomes u(nstp) in the next timestep. Since it's the next timestep that same value now represents u(t=n).
+
+The odd location of wrt_his in the middle of a roms step is assumed to be because some of the derived quantities, such as 'rho', can only be done at that point.
