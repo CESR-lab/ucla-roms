@@ -82,6 +82,10 @@
       enddo
 # endif
 
+# ifdef HZU
+      u_b4(:,:,:,iuv2DC) = u(:,:,:,nnew) ! units in dz*u already
+# endif
+
       do j=jstr,jend
 
 # ifndef IMPLICIT_BOTTOM_DRAG
@@ -418,6 +422,11 @@
       Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
 # endif
 
+# ifdef HZU
+      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
+      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
+# endif
+
 #ifdef DIAG3D_DEBUG
       if(mynode==0) then ! devind debug
         write (*,'(/A)') 'UV2 DC-end: u(nnew)=DC(i,k)-DC(i,0)'
@@ -435,6 +444,10 @@
 
 # ifdef DIAGNOSTICS
       u_b4(:,:,:,iu3d) = u(:,:,:,nnew) ! put iu3d diags here not in u3dbc_im.F as called by pre_step3d too
+# endif
+
+# ifdef HZU
+      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -455,6 +468,11 @@
       Mdiag(:,:,:,1,iu3d) = u_af(:,:,:,iu3d) - u_b4(:,:,:,iu3d)
 # endif
 
+# ifdef HZU
+      u_af(:,:,:,iu3d)    = u(:,:,:,nnew) * Hz(:,:,:) ! crude convert to dz*u
+      Mdiag(:,:,:,1,iu3d) = u_af(:,:,:,iu3d) - u_b4(:,:,:,iu3d)
+# endif
+
 #ifdef DIAG3D_DEBUG
       if(mynode==0) then ! devind debug
         write (*,'(/A)') 'u3dbc (uv2) end:'
@@ -469,6 +487,10 @@
 
 # ifdef DIAGNOSTICS
       u_b4(:,:,:,iuv2FC)  = u(:,:,:,nnew)
+# endif
+
+# ifdef HZU
+      u_b4(:,:,:,iuv2FC)  = u(:,:,:,nnew) * Hz(:,:,:)
 # endif
 
 
@@ -854,6 +876,11 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # ifdef DIAGNOSTICS
       u_af(:,:,:,iuv2FC)    = u(:,:,:,nnew)
+      Mdiag(:,:,:,1,iuv2FC) = u_af(:,:,:,iuv2FC) - u_b4(:,:,:,iuv2FC)
+# endif
+
+# ifdef HZU
+      u_af(:,:,:,iuv2FC)    = u(:,:,:,nnew) * Hz(:,:,:)
       Mdiag(:,:,:,1,iuv2FC) = u_af(:,:,:,iuv2FC) - u_b4(:,:,:,iuv2FC)
 # endif
 
