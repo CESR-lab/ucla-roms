@@ -32,7 +32,7 @@
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
-!      use diagnostics
+      use diagnostics
 # ifdef POT_TIDES
       use tides, only: Ptide
 # endif
@@ -543,6 +543,17 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 !        enddo
 !      endif
 !# endif
+
+# ifdef DIAGNOSTICS
+      ! This is done twice but only want it the second time (wasted computing first time). Fix later.
+      do k=N,1,-1
+        do j=jstr,jend
+          do i=istrU,iend
+            rus(i,j,k,1)=ru(i,j,k) ! Need to do in loop as ru is scratch size not global size
+          enddo
+        enddo
+      enddo
+# endif
 
       end
 

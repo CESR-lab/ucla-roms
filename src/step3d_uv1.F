@@ -9,12 +9,12 @@
 # include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
-      call step3d_uv1_tile( istr,iend,jstr,jend,  A3d(1,1), A3d(1,2),
+      call step3d_uv1_tile( istr,iend,jstr,jend,    A3d(1,1),A3d(1,2),
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
-     &                                             A2d(1,5),A2d(1,6)
+     &                                              A2d(1,5),A2d(1,6)
 # ifdef NHMG
-     &                                            ,A3d(1,5)
+     &                                             ,A3d(1,5)
 # endif
      &                                                              )
       end
@@ -180,7 +180,6 @@
 #  endif
 # endif 
 
-
         do i=istrU,iend
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
@@ -191,6 +190,15 @@
      &                                    + dt * brk2dx(i,j)
 #  endif
           u(i,j,1,nnew)=u(i,j,1,nnew)+DC(i,0)*ru(i,j,1)
+
+# ifdef DIAGNOSTICS
+          rus(i,j,N,3) = DC(i,0)*ru(i,j,N) + dt*sustr(i,j)
+          rus(i,j,1,3) = DC(i,0)*ru(i,j,1) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+          rus(i,j,N,1) = rus(i,j,N,1) * DC(i,0)
+          rus(i,j,1,1) = rus(i,j,1,1) * DC(i,0)
+          rus(i,j,N,2) = rus(i,j,N,2) * DC(i,0)
+          rus(i,j,1,2) = rus(i,j,1,2) * DC(i,0)
+# endif
 
           rufrc(i,j)=ru(i,j,1) +ru(i,j,N) +dn_u(i,j)*dm_u(i,j)*(
      &                                                 sustr(i,j)
@@ -204,6 +212,13 @@
             u(i,j,k,nnew)=u(i,j,k,nnew)+DC(i,0)*ru(i,j,k)
 
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
+
+# ifdef DIAGNOSTICS
+            rus(i,j,k,3) = DC(i,0)*ru(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+            rus(i,j,k,1) = rus(i,j,k,1) * DC(i,0)
+            rus(i,j,k,2) = rus(i,j,k,2) * DC(i,0)
+# endif
+
           enddo
         enddo
         if (j >= jstrV) then

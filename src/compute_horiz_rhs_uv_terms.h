@@ -36,6 +36,11 @@
 # ifdef WEC
      &               + 0.5*(UFe(i,j)+UFe(i-1,j))
 # endif
+
+# ifdef DIAGNOSTICS
+		    rus(i,j,k,2)=ru(i,j,k) ! correolis & curvilinear coords
+# endif
+
           enddo
         enddo
         do j=jstrV,jend

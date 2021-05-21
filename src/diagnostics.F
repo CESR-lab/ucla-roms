@@ -47,11 +47,13 @@
 !      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
       real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_b4   ! temporary u for debugging.
       real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_af   ! u after
-      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_ch   ! u_change
 
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_old=0! u from previous timestep
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_dif=0! u difference current vs previous u
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Mdsum=0! sum of Mdiag
+
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: rus=0  ! 3 contributions to ru
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: drus=0 ! changes in 3 ru terms
 
       integer, parameter, public :: iuv1   = 1,  ! indices in Mdiag array
      &                              ivisc  = 2,
@@ -80,6 +82,24 @@
       character (len=20), dimension(ndm) :: units = (/
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
+     &                                                 'm^2/s (dz*u)',
+     &                                                 'm^2/s (dz*u)',
+     &                                                 'm^2/s (dz*u)'
+     &                                                                  /)
+
+      character (len=20), dimension(3) :: ruvname = (/
+     &                                                 'prsgrd',
+     &                                                 'coriolis',
+     &                                                 'advection'
+     &                                                                  /)
+
+      character (len=60), dimension(3) :: rulname = (/
+     &  'prsgrd L275',
+     &  'horiz_uv.h L35 coriolis & curvilinear coords',
+     &  'advection'
+     &                                                                  /)
+
+      character (len=20), dimension(3) :: ruunits = (/
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)'
@@ -156,8 +176,16 @@
             call nc_define_var(ncid, text, lname(diag), units(diag), u3dgrd, ierr )
           enddo
 
+          do diag=1,3
+            do dim=1,1  ! loop through dims
+              text  = uvw(dim) / / ruvname(diag)  ! diag short name
+              call nc_define_var(ncid, text, rulname(diag), ruunits(diag), u3dgrd, ierr )
+            enddo
+          enddo
+
           call nc_define_var(ncid, 'u_diff', 'u_diff', 'u_diff', u3dgrd, ierr )
           call nc_define_var(ncid, 'Mdsum',  'Mdsum',  'Mdsum',  u3dgrd, ierr )
+          call nc_define_var(ncid, 'rusum',  'rusum',  'rusum',  u3dgrd, ierr )
 
 
           ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -204,6 +232,17 @@
           text = 'Md_' / / vname(diag)
           call nc_write_var(ncid, Mdiag(:,:,:,1,diag), N, text, up_var, output_rec, ierr)
         enddo
+
+        drus(:,:,:,1)=rus(:,:,:,1)
+        drus(:,:,:,2)=rus(:,:,:,2)-rus(:,:,:,1)
+        drus(:,:,:,3)=rus(:,:,:,3)-rus(:,:,:,2)
+        do diag=1,3
+          do dim=1,1  ! loop through dims
+            text = uvw(dim) / / ruvname(diag)
+            call nc_write_var(ncid, drus(:,:,:,diag), N, text, up_var, output_rec, ierr)
+          enddo
+        enddo
+        call nc_write_var(ncid, rus(:,:,:,3), N, 'rusum', up_var, output_rec, ierr)
 
 #ifndef HZU
         u_dif = u(:,:,:,nstp) - u_old
