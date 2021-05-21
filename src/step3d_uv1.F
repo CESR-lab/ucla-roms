@@ -144,8 +144,8 @@
 # ifdef HZU
 !      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) * Hz(:,:,:) ! crude convert u to dz * u
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
+        do j=jstr-1,jend+1
+          do i=istr,iend+1
             u_b4(i,j,k,iuv1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo

@@ -129,6 +129,18 @@
 !      u_b4(:,:,:,6) = u(:,:,:,nstp) ! use nstp here as nnew is still old
 !# endif
 
+# ifdef HZU
+      if (FIRST_TIME_STEP) then  ! only once set original 'u'
+        do k=1,N
+          do j=jstr-1,jend+1
+            do i=istr,iend+1
+              u_old(i,j,k) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            enddo
+          enddo
+        enddo
+      endif
+# endif
+
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
         dtau=0.5*dt                   ! form LF-AM3 stepping algorithm,
         cf_stp=1.                     ! see Fig. 8, Eqs. (2.38)-(2.39);
