@@ -118,7 +118,7 @@
 #ifndef HZU
           u_old = u(:,:,:,nstp)  !debug only possibly
 #else
-          u_old = u(:,:,:,nstp) * Hz
+!          u_old = u(:,:,:,nstp) * Hz ! Now done in pre_step3d since need loop ranges for dz*u calc
 #endif
         endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
 

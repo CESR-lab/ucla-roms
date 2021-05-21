@@ -426,8 +426,8 @@
 !      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
 !      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
+        do j=jstr-1,jend+1
+          do i=istr,iend+1
             u_af(i,j,k,iuv2DC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
             Mdiag(i,j,k,1,iuv2DC) = u_af(i,j,k,iuv2DC) - u_b4(i,j,k,iuv2DC)
           enddo
@@ -457,8 +457,8 @@
 # ifdef HZU
 !      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
+        do j=jstr-1,jend+1
+          do i=istr,iend+1
             u_b4(i,j,k,iu3d) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
           enddo
         enddo
@@ -485,8 +485,8 @@
 
 # ifdef HZU
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
+        do j=jstr-1,jend+1
+          do i=istr,iend+1
             u_af(i,j,k,iu3d)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! crude convert to dz*u
             Mdiag(i,j,k,1,iu3d) = u_af(i,j,k,iu3d) - u_b4(i,j,k,iu3d)
           enddo
@@ -512,8 +512,8 @@
 
 # ifdef HZU
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
+        do j=jstr-1,jend+1
+          do i=istr,iend+1
             u_b4(i,j,k,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
@@ -908,8 +908,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # ifdef HZU
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
+        do j=jstr-1,jend+1
+          do i=istr,iend+1
             u_af(i,j,k,iuv2FC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
             Mdiag(i,j,k,1,iuv2FC) = u_af(i,j,k,iuv2FC) - u_b4(i,j,k,iuv2FC)
 
