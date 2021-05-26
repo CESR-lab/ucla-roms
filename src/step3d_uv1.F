@@ -76,27 +76,6 @@
 
 # include "compute_auxiliary_bounds.h"
 
-!# ifdef DIAGNOSTICS
-!      !! remove here and move to the rhs include files
-!      if (diag_time) do_diags = .true. !! only do diags in step3d_uv12
-!
-!      !! ru,rv,rw contain hydrostatic pressure gradient only
-!      !! all terms are volume integrated
-!      if (do_diags) then
-!        do j=jstr,jend
-!          do i=istr,iend
-!            do k=1,N
-!              Mdiag(i,j,k,1,2) = ru(i,j,k)
-!              Mdiag(i,j,k,2,2) = rv(i,j,k)
-!#  ifdef NHMG
-!              Mdiag(i,j,k,3,2) = rw(i,j,k)
-!#  endif  /* DIAGNOSTICS */
-!            enddo
-!          enddo
-!        enddo
-!      endif
-!# endif  /* DIAGNOSTICS */
-
 # ifdef NHMG
 
 #  define FX UFx
@@ -133,19 +112,21 @@
       endif
 #endif
 
-# ifdef DIAGNOSTICS
-!        u_b4(:,:,:,1) = u(:,:,:,nnew)
-      ! nnew has swapped indices in main since set_HUV1 in set_depth.F,
-      ! so rather use previous u_af(5) from set depth. units are good.
-!      u_b4(:,:,:,iuv1) = u(:,:,:,nrhs) ! prestep working well
-      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) ! using nstp will catch change to indx in prestep3d
-# endif
+!# ifdef DIAGNOSTICS
+!!        u_b4(:,:,:,1) = u(:,:,:,nnew)
+!      ! nnew has swapped indices in main since set_HUV1 in set_depth.F,
+!      ! so rather use previous u_af(5) from set depth. units are good.
+!!      u_b4(:,:,:,iuv1) = u(:,:,:,nrhs) ! prestep working well
+!      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) ! using nstp will catch change to indx in prestep3d
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
 !      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) * Hz(:,:,:) ! crude convert u to dz * u
       do k=1,N
         do j=jstr-1,jend+1
           do i=istr,iend+1
+!        do j=jstr,jend ! debug only
+!          do i=istrU,iend
             u_b4(i,j,k,iuv1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
@@ -428,18 +409,18 @@
 !      Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
 !# endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
-            u_af(i,j,k,iuv1)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
-            Mdiag(i,j,k,1,iuv1) = u_af(i,j,k,iuv1) - u_b4(i,j,k,iuv1)
-          enddo
-        enddo
-      enddo
-# endif
+!# ifdef DIAGNOSTICS
+!      do k=1,N
+!        do j=jstr,jend
+!          do i=istr,iend
+!            u_af(i,j,k,iuv1)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+!            Mdiag(i,j,k,1,iuv1) = u_af(i,j,k,iuv1) - u_b4(i,j,k,iuv1)
+!          enddo
+!        enddo
+!      enddo
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       u_af(:,:,:,iuv1)    = u(:,:,:,nnew)  ! units in dz*u already
       Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
 # endif

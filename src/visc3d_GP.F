@@ -107,17 +107,17 @@
 !      u_b4(:,:,:,ivisc) = u(:,:,:,nnew) / Hz(:,:,:)
 !# endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
-            u_b4(i,j,k,ivisc) = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
-          enddo
-        enddo
-      enddo
-# endif
+!# ifdef DIAGNOSTICS
+!      do k=1,N
+!        do j=jstr,jend
+!          do i=istr,iend
+!            u_b4(i,j,k,ivisc) = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+!          enddo
+!        enddo
+!      enddo
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       u_b4(:,:,:,ivisc) = u(:,:,:,nnew) ! units in dz*u already
 # endif
 
@@ -430,18 +430,18 @@ c        enddo
 !      Mdiag(:,:,:,1,ivisc) = u_af(:,:,:,ivisc) - u_b4(:,:,:,ivisc)
 !# endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
-            u_af(i,j,k,ivisc)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
-            Mdiag(i,j,k,1,ivisc) = u_af(i,j,k,ivisc) - u_b4(i,j,k,ivisc)
-          enddo
-        enddo
-      enddo
-# endif
+!# ifdef DIAGNOSTICS
+!      do k=1,N
+!        do j=jstr,jend
+!          do i=istr,iend
+!            u_af(i,j,k,ivisc)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+!            Mdiag(i,j,k,1,ivisc) = u_af(i,j,k,ivisc) - u_b4(i,j,k,ivisc)
+!          enddo
+!        enddo
+!      enddo
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       u_af(:,:,:,ivisc)    = u(:,:,:,nnew) ! units already in dz*u
       Mdiag(:,:,:,1,ivisc) = u_af(:,:,:,ivisc) - u_b4(:,:,:,ivisc)
 # endif
