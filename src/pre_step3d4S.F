@@ -129,7 +129,7 @@
 !      u_b4(:,:,:,6) = u(:,:,:,nstp) ! use nstp here as nnew is still old
 !# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       if (FIRST_TIME_STEP) then  ! only once set original 'u'
         do k=1,N
           do j=jstr-1,jend+1

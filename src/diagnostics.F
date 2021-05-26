@@ -52,6 +52,8 @@
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_dif=0! u difference current vs previous u
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Mdsum=0! sum of Mdiag
 
+      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0
+
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: rus=0  ! 3 contributions to ru
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: drus=0 ! changes in 3 ru terms
 
@@ -59,7 +61,10 @@
      &                              ivisc  = 2,
      &                              iuv2DC = 3,
      &                              iuv2FC = 4,
-     &                              iu3d   = 5
+     &                              iu3d   = 5,
+     &                              iprsgr = 6,
+     &                              icori  = 7,
+     &                              iadv   = 8
 
 
       character (len=20), dimension(ndm) :: vname = (/
@@ -135,11 +140,11 @@
 
         if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
           file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
-#ifndef HZU
-          u_old = u(:,:,:,nstp)  !debug only possibly
-#else
-!          u_old = u(:,:,:,nstp) * Hz ! Now done in pre_step3d since need loop ranges for dz*u calc
-#endif
+!#ifndef HZU
+!          u_old = u(:,:,:,nstp)  !debug only possibly
+!#else
+!!          u_old = u(:,:,:,nstp) * Hz ! Now done in pre_step3d since need loop ranges for dz*u calc
+!#endif
         endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
 
 
@@ -186,6 +191,7 @@
           call nc_define_var(ncid, 'u_diff', 'u_diff', 'u_diff', u3dgrd, ierr )
           call nc_define_var(ncid, 'Mdsum',  'Mdsum',  'Mdsum',  u3dgrd, ierr )
           call nc_define_var(ncid, 'rusum',  'rusum',  'rusum',  u3dgrd, ierr )
+          call nc_define_var(ncid, 'diff',    'diff',   'diff',  u3dgrd, ierr )
 
 
           ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -244,23 +250,27 @@
         enddo
         call nc_write_var(ncid, rus(:,:,:,3), N, 'rusum', up_var, output_rec, ierr)
 
-#ifndef HZU
-        u_dif = u(:,:,:,nstp) - u_old
-        call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
-        u_old = u(:,:,:,nstp)
-#else
+!#ifndef HZU
+!        u_dif = u(:,:,:,nstp) - u_old
+!        call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
+!        u_old = u(:,:,:,nstp)
+!#else
         ! do u_dif calculation at end of step3d_uv2.F as have istr, iend there already.
         ! but use 'nnew' there as still in previou timestep!
 !        u_dif = ( u(:,:,:,nstp) * Hz ) - u_old ! Now in units of dz*u!
         call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
 !        u_old = u(:,:,:,nstp) * Hz
-#endif
+!#endif
 
         Mdsum = 0  ! refresh for this step
-        do diag=1,ndm
+        do diag=2,ndm ! 2 to ignore uv1_ru
           Mdsum = Mdsum + Mdiag(:,:,:,1,diag)
         enddo
+        Mdsum = Mdsum + rus(:,:,:,3)
         call nc_write_var(ncid, Mdsum, N, 'Mdsum', up_var, output_rec, ierr)
+
+        diff=u_dif-Mdsum
+        call nc_write_var(ncid, diff, N, 'diff', up_var, output_rec, ierr)
 
         ierr=nf90_close (ncid)  ! close netcdf file
 

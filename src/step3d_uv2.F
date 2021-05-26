@@ -72,17 +72,17 @@
 !      u_b4(:,:,:,iuv2DC) = u(:,:,:,nnew) / Hz(:,:,:) ! crude convert to m/s
 !# endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
-            u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
-          enddo
-        enddo
-      enddo
-# endif
+!# ifdef DIAGNOSTICS
+!      do k=1,N
+!        do j=jstr,jend
+!          do i=istr,iend
+!            u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
+!          enddo
+!        enddo
+!      enddo
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       u_b4(:,:,:,iuv2DC) = u(:,:,:,nnew) ! units in dz*u already
 # endif
 
@@ -417,12 +417,12 @@
 
       enddo      ! <-- j
 
-# ifdef DIAGNOSTICS
-      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew)
-      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
-# endif
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew)
+!      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
 !      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
 !      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
       do k=1,N
@@ -450,11 +450,11 @@
 
 ! Set PHYSICAL lateral boundary conditions.
 
-# ifdef DIAGNOSTICS
-      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) ! put iu3d diags here not in u3dbc_im.F as called by pre_step3d too
-# endif
+!# ifdef DIAGNOSTICS
+!      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) ! put iu3d diags here not in u3dbc_im.F as called by pre_step3d too
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
 !      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
       do k=1,N
         do j=jstr-1,jend+1
@@ -478,12 +478,12 @@
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
-# ifdef DIAGNOSTICS
-      u_af(:,:,:,iu3d)    = u(:,:,:,nnew)
-      Mdiag(:,:,:,1,iu3d) = u_af(:,:,:,iu3d) - u_b4(:,:,:,iu3d)
-# endif
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,iu3d)    = u(:,:,:,nnew)
+!      Mdiag(:,:,:,1,iu3d) = u_af(:,:,:,iu3d) - u_b4(:,:,:,iu3d)
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       do k=1,N
         do j=jstr-1,jend+1
           do i=istr,iend+1
@@ -506,11 +506,11 @@
 
 
 
-# ifdef DIAGNOSTICS
-      u_b4(:,:,:,iuv2FC)  = u(:,:,:,nnew)
-# endif
+!# ifdef DIAGNOSTICS
+!      u_b4(:,:,:,iuv2FC)  = u(:,:,:,nnew)
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       do k=1,N
         do j=jstr-1,jend+1
           do i=istr,iend+1
@@ -901,12 +901,12 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # endif /* NHMG */
 
-# ifdef DIAGNOSTICS
-      u_af(:,:,:,iuv2FC)    = u(:,:,:,nnew)
-      Mdiag(:,:,:,1,iuv2FC) = u_af(:,:,:,iuv2FC) - u_b4(:,:,:,iuv2FC)
-# endif
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,iuv2FC)    = u(:,:,:,nnew)
+!      Mdiag(:,:,:,1,iuv2FC) = u_af(:,:,:,iuv2FC) - u_b4(:,:,:,iuv2FC)
+!# endif
 
-# ifdef HZU
+# ifdef DIAGNOSTICS
       do k=1,N
         do j=jstr-1,jend+1
           do i=istr,iend+1
