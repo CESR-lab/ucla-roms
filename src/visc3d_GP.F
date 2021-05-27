@@ -118,7 +118,13 @@
 !# endif
 
 # ifdef DIAGNOSTICS
-      u_b4(:,:,:,ivisc) = u(:,:,:,nnew) ! units in dz*u already
+      do k=1,N
+        do j=jstr,jend
+          do i=istrU,iend
+            u_b4(i,j,k,ivisc) = u(i,j,k,nnew) ! units in dz*u already
+          enddo
+        enddo
+      enddo
 # endif
 
       k2=1
@@ -398,7 +404,7 @@ c        enddo
      &                                                          )
               rufrc(i,j)=rufrc(i,j) + cff
 
-              u(i,j,k,indx)=u(i,j,k,indx) + dt*( cff+UFs(i,j,k2)
+              u(i,j,k,indx)=u(i,j,k,indx) + dt*( cff+UFs(i,j,k2)  ! DevinD indx=nnew here. Not sure why didn't use nnew.
      &                                              -UFs(i,j,k1))
 
 # ifdef DIAGNOSTICS_UV
@@ -441,9 +447,20 @@ c        enddo
 !      enddo
 !# endif
 
+!# ifdef DIAGNOSTICS
+!      u_af(:,:,:,ivisc)    = u(:,:,:,nnew) ! units already in dz*u
+!      Mdiag(:,:,:,1,ivisc) = u_af(:,:,:,ivisc) - u_b4(:,:,:,ivisc)
+!# endif
+
 # ifdef DIAGNOSTICS
-      u_af(:,:,:,ivisc)    = u(:,:,:,nnew) ! units already in dz*u
-      Mdiag(:,:,:,1,ivisc) = u_af(:,:,:,ivisc) - u_b4(:,:,:,ivisc)
+      do k=1,N
+        do j=jstr,jend
+          do i=istrU,iend
+            u_af(i,j,k,ivisc)    = u(i,j,k,nnew) ! units already in dz*u
+            Mdiag(i,j,k,1,ivisc) = u_af(i,j,k,ivisc) - u_b4(i,j,k,ivisc)
+          enddo
+        enddo
+      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG

@@ -43,10 +43,10 @@
       integer,public,parameter :: ndm = 5  !! number of momentum diag terms
       integer,public,parameter :: ndt = 5  !! number of tracer diag terms
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3, ndm)  :: Mdiag  ! 3 for u,v,w
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3, ndm)  :: Mdiag=0  ! 3 for u,v,w
 !      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
-      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_b4   ! temporary u for debugging.
-      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_af   ! u after
+      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_b4=0   ! temporary u for debugging.
+      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_af=0   ! u after
 
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_old=0! u from previous timestep
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_dif=0! u difference current vs previous u
@@ -56,6 +56,8 @@
 
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: rus=0  ! 3 contributions to ru
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: drus=0 ! changes in 3 ru terms
+
+      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Hz_old=0
 
       integer, parameter, public :: iuv1   = 1,  ! indices in Mdiag array
      &                              ivisc  = 2,
