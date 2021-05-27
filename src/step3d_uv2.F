@@ -68,23 +68,9 @@
       endif
 #endif
 
-!# ifdef DIAGNOSTICS
-!      u_b4(:,:,:,iuv2DC) = u(:,:,:,nnew) / Hz(:,:,:) ! crude convert to m/s
-!# endif
-
-!# ifdef DIAGNOSTICS
-!      do k=1,N
-!        do j=jstr,jend
-!          do i=istr,iend
-!            u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
-!          enddo
-!        enddo
-!      enddo
-!# endif
-
 # ifdef DIAGNOSTICS
       do k=1,N
-        do j=jstr,jend
+        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=istrU,iend ! could rather do array operation! code will be cleaner
             u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) ! units in dz*u already
           enddo
@@ -423,16 +409,9 @@
 
       enddo      ! <-- j
 
-!# ifdef DIAGNOSTICS
-!      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew)
-!      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
-!# endif
-
 # ifdef DIAGNOSTICS
-!      u_af(:,:,:,iuv2DC)    = u(:,:,:,nnew) * Hz(:,:,:) ! convert to dz*u
-!      Mdiag(:,:,:,1,iuv2DC) = u_af(:,:,:,iuv2DC) - u_b4(:,:,:,iuv2DC)
       do k=1,N
-        do j=jstr,jend
+        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=istrU,iend ! could rather do array operation! code will be cleaner
             u_af(i,j,k,iuv2DC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
             Mdiag(i,j,k,1,iuv2DC) = u_af(i,j,k,iuv2DC) - u_b4(i,j,k,iuv2DC)
@@ -456,24 +435,11 @@
 
 ! Set PHYSICAL lateral boundary conditions.
 
-!# ifdef DIAGNOSTICS
-!      u_b4(:,:,:,iu3d) = u(:,:,:,nnew) ! put iu3d diags here not in u3dbc_im.F as called by pre_step3d too
-!# endif
-
 # ifdef DIAGNOSTICS
-!      do k=1,N
-!        do j=jstr-1,jend+1 ! Need full loop range since interested in bry change
-!          do i=istr,iend+1 ! should rather do u_b4(istr,:,:) = , etc for speed.
-!            u_b4(i,j,k,iu3d) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-!          enddo
-!        enddo
-!      enddo
-      if (WESTERN_EDGE)  u_b4(istr  ,:,:,iu3d) = u_old(istr  ,:,:)  ! u(istr  ,:,:,nnew) * (0.5*( Hz_old(istr-1,:,:)+Hz_old(istr  ,:,:) ))
-      if (EASTERN_EDGE)  u_b4(iend+1,:,:,iu3d) = u_old(iend+1,:,:) ! u(iend+1,:,:,nnew) * (0.5*( Hz_old(iend  ,:,:)+Hz_old(iend+1,:,:) ))
-      if (SOUTHERN_EDGE) u_b4(:,jstr-1,:,iu3d) = u_old(:,jstr-1,:)
+      if (WESTERN_EDGE)  u_b4(istr  ,:,:,iu3d) = u_old(istr  ,:,:)  ! only bry changes, hence
+      if (EASTERN_EDGE)  u_b4(iend+1,:,:,iu3d) = u_old(iend+1,:,:)  ! no need to loop full domain
+      if (SOUTHERN_EDGE) u_b4(:,jstr-1,:,iu3d) = u_old(:,jstr-1,:)  ! should make 2D arrays for u3dbc changes
       if (NORTHERN_EDGE) u_b4(:,jend+1,:,iu3d) = u_old(:,jend+1,:)
-!      u_b4(:,jstr-1,:,iu3d) = u(:,jstr-1,:,nnew) * (0.5*( Hz_old(istr-1,:,:)+Hz_old(istr  ,:,:) ))
-!      u_b4(:,jstr+1,:,iu3d) = u(istr  ,:,:,nnew) * (0.5*( Hz_old(istr-1,:,:)+Hz_old(istr  ,:,:) ))
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -489,20 +455,7 @@
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
-!# ifdef DIAGNOSTICS
-!      u_af(:,:,:,iu3d)    = u(:,:,:,nnew)
-!      Mdiag(:,:,:,1,iu3d) = u_af(:,:,:,iu3d) - u_b4(:,:,:,iu3d)
-!# endif
-
 # ifdef DIAGNOSTICS
-!      do k=1,N
-!        do j=jstr-1,jend+1
-!          do i=istr,iend+1
-!            u_af(i,j,k,iu3d)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! crude convert to dz*u
-!            Mdiag(i,j,k,1,iu3d) = u_af(i,j,k,iu3d) - u_b4(i,j,k,iu3d)
-!          enddo
-!        enddo
-!      enddo
       if (WESTERN_EDGE)  u_af(istr  ,:,:,iu3d) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  u_af(iend+1,:,:,iu3d) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
       if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_af(istr  ,:,:,iu3d) - u_b4(istr  ,:,:,iu3d)
@@ -525,15 +478,9 @@
       endif
 #endif
 
-
-
-!# ifdef DIAGNOSTICS
-!      u_b4(:,:,:,iuv2FC)  = u(:,:,:,nnew)
-!# endif
-
 # ifdef DIAGNOSTICS
       do k=1,N
-        do j=jstrR,jendR  ! since this section uses IU_RANGE & J_RANGE which includes boundary
+        do j=jstrR,jendR  ! since this following section uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
             u_b4(i,j,k,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
@@ -922,28 +869,15 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # endif /* NHMG */
 
-!# ifdef DIAGNOSTICS
-!      u_af(:,:,:,iuv2FC)    = u(:,:,:,nnew)
-!      Mdiag(:,:,:,1,iuv2FC) = u_af(:,:,:,iuv2FC) - u_b4(:,:,:,iuv2FC)
-!# endif
-
-
 # ifdef DIAGNOSTICS
       do k=1,N
-        do j=jstrR,jendR  ! since this section uses IU_RANGE & J_RANGE which includes boundary
+        do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
             u_af(i,j,k,iuv2FC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
             Mdiag(i,j,k,1,iuv2FC) = u_af(i,j,k,iuv2FC) - u_b4(i,j,k,iuv2FC)
-          enddo
-        enddo
-      enddo
-# endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr-1,jend+1 ! This should possible be jstrR, etc
-          do i=istr,iend+1
-            ! Full loop ranges since u-change over every point including bry:
+            ! Full loop ranges since u-change over every point including bry.
+            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             u_dif(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_old(i,j,k) ! do this here as units are correct
             u_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo

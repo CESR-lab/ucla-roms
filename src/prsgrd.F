@@ -547,7 +547,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 # ifdef DIAGNOSTICS
       ! This is done twice but only want it the second time (wasted computing first time). Fix later.
       do k=N,1,-1
-        do j=jstr,jend
+        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
             rus(i,j,k,1)=ru(i,j,k) ! Need to do in loop as ru is scratch size not global size
           enddo

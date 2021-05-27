@@ -125,31 +125,16 @@
       endif
 #endif
 
-#ifdef DIAGBC_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'pre_step3d start:'
-        print *, 'u(istr,jstr+20,13,nnew)=',u(istr,jstr+20,13,nnew),'nnew=',nnew
-        print *, 'u(istr,jstr+20,13,nstp)=',u(istr,jstr+20,13,nstp),'nstp=',nstp
-        print *, 'u(istr,jstr+20,13,nrhs)=',u(istr,jstr+20,13,nrhs),'nrhs=',nrhs
-        print *, 'u(istr,jstr+20,13,indx)=',u(istr,jstr+20,13,indx),'indx=',indx
-      endif
-#endif
-
-!# ifdef DIAGNOSTICS
-!      u_b4(:,:,:,6) = u(:,:,:,nstp) ! use nstp here as nnew is still old
-!# endif
-
 # ifdef DIAGNOSTICS
       if (FIRST_TIME_STEP) then  ! only once set original 'u'
         do k=1,N
-          do j=jstr-1,jend+1 ! Full loop ranges since u-change over every point including bry.
-            do i=istr,iend+1
+          do j=jstrR,jendR  ! Full loop ranges since u-change over every point including bry.
+            do i=istr,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
               u_old(i,j,k) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
             enddo
           enddo
         enddo
       endif
-      Hz_old = Hz
 # endif
 
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
@@ -837,10 +822,6 @@
 
 # endif /* NHMG */
 
-!# ifdef DIAGNOSTICS
-!      u_af(:,:,:,6)    = u(:,:,:,nnew)
-!      Mdiag(:,:,:,1,6) = u_af(:,:,:,6) - u_b4(:,:,:,6)
-!# endif
 
 #ifdef DIAG3D_DEBUG
       if(mynode==0) then ! devind debug
@@ -850,9 +831,6 @@
         print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
         print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
         print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
-!        print *, 'u_b4(10,10,48,6)=',u_b4(10,10,48,6)
-!        print *, 'u_af(10,10,48,6)=',u_af(10,10,48,6)
-!        print *, 'Mdiag(10,10,48,1,6)=',Mdiag(10,10,48,1,6)
       endif
 #endif
 

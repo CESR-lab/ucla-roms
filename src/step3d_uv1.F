@@ -112,16 +112,8 @@
       endif
 #endif
 
-!# ifdef DIAGNOSTICS
-!!        u_b4(:,:,:,1) = u(:,:,:,nnew)
-!      ! nnew has swapped indices in main since set_HUV1 in set_depth.F,
-!      ! so rather use previous u_af(5) from set depth. units are good.
-!!      u_b4(:,:,:,iuv1) = u(:,:,:,nrhs) ! prestep working well
-!      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) ! using nstp will catch change to indx in prestep3d
-!# endif
-
 # ifdef DIAGNOSTICS
-!      u_b4(:,:,:,iuv1) = u(:,:,:,nstp) * Hz(:,:,:) ! crude convert u to dz * u
+      ! Delete once confirmed sum rus = rusum.
       do k=1,N
         do j=jstr-1,jend+1
           do i=istr,iend+1
@@ -404,23 +396,8 @@
       call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
 # endif
 
-!# ifdef DIAGNOSTICS
-!      u_af(:,:,:,iuv1)    = u(:,:,:,nnew) / Hz(:,:,:) ! crude convert to m/s
-!      Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
-!# endif
-
-!# ifdef DIAGNOSTICS
-!      do k=1,N
-!        do j=jstr,jend
-!          do i=istr,iend
-!            u_af(i,j,k,iuv1)    = u(i,j,k,nnew) / (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to m/s
-!            Mdiag(i,j,k,1,iuv1) = u_af(i,j,k,iuv1) - u_b4(i,j,k,iuv1)
-!          enddo
-!        enddo
-!      enddo
-!# endif
-
 # ifdef DIAGNOSTICS
+      ! Delete once confirmed sum rus = rusum
       u_af(:,:,:,iuv1)    = u(:,:,:,nnew)  ! units in dz*u already
       Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
 # endif
