@@ -38,7 +38,7 @@
 # endif
 
 # ifdef DIAGNOSTICS
-		    rus(i,j,k,2)=ru(i,j,k) ! correolis & curvilinear coords
+	        Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
 # endif
 
           enddo

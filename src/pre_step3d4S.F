@@ -130,7 +130,7 @@
         do k=1,N
           do j=jstrR,jendR  ! Full loop ranges since u-change over every point including bry.
             do i=istr,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              u_old(i,j,k) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+              udz_old(i,j,k) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
             enddo
           enddo
         enddo
