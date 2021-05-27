@@ -57,8 +57,6 @@
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: rus=0  ! 3 contributions to ru
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: drus=0 ! changes in 3 ru terms
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Hz_old=0
-
       integer, parameter, public :: iuv1   = 1,  ! indices in Mdiag array
      &                              ivisc  = 2,
      &                              iuv2DC = 3,
