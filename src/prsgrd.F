@@ -549,7 +549,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       do k=N,1,-1
         do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
-            rus(i,j,k,1)=ru(i,j,k) ! Need to do in loop as ru is scratch size not global size
+            Mdiag(i,j,k,1,iprsgr)=ru(i,j,k) ! Need to do in loop as ru is scratch size not global size
           enddo
         enddo
       enddo

@@ -436,10 +436,10 @@
 ! Set PHYSICAL lateral boundary conditions.
 
 # ifdef DIAGNOSTICS
-      if (WESTERN_EDGE)  u_b4(istr  ,:,:,iu3d) = u_old(istr  ,:,:)  ! only bry changes, hence
-      if (EASTERN_EDGE)  u_b4(iend+1,:,:,iu3d) = u_old(iend+1,:,:)  ! no need to loop full domain
-      if (SOUTHERN_EDGE) u_b4(:,jstr-1,:,iu3d) = u_old(:,jstr-1,:)  ! should make 2D arrays for u3dbc changes
-      if (NORTHERN_EDGE) u_b4(:,jend+1,:,iu3d) = u_old(:,jend+1,:)
+      if (WESTERN_EDGE)  u_b4(istr  ,:,:,iu3d) = udz_old(istr  ,:,:)  ! only bry changes, hence
+      if (EASTERN_EDGE)  u_b4(iend+1,:,:,iu3d) = udz_old(iend+1,:,:)  ! no need to loop full domain
+      if (SOUTHERN_EDGE) u_b4(:,jstr-1,:,iu3d) = udz_old(:,jstr-1,:)  ! should make 2D arrays for u3dbc changes
+      if (NORTHERN_EDGE) u_b4(:,jend+1,:,iu3d) = udz_old(:,jend+1,:)
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -460,7 +460,7 @@
       if (EASTERN_EDGE)  u_af(iend+1,:,:,iu3d) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
       if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_af(istr  ,:,:,iu3d) - u_b4(istr  ,:,:,iu3d)
       if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_af(iend+1,:,:,iu3d) - u_b4(iend+1,:,:,iu3d)
-      do i=istr,iend+1
+      do i=istr,iend+1 ! use loop here else indexing would be even messier
         if (SOUTHERN_EDGE) u_af(i,jstr-1,:,iu3d)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
         if (NORTHERN_EDGE) u_af(i,jend+1,:,iu3d)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
       enddo
@@ -878,8 +878,9 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            u_dif(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_old(i,j,k) ! do this here as units are correct
-            u_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
+            u_dif(i,j,k)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k) ! do this here as units are correct
+            udz_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo

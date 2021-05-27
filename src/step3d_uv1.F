@@ -112,19 +112,6 @@
       endif
 #endif
 
-# ifdef DIAGNOSTICS
-      ! Delete once confirmed sum rus = rusum.
-      do k=1,N
-        do j=jstr-1,jend+1
-          do i=istr,iend+1
-!        do j=jstr,jend ! debug only
-!          do i=istrU,iend
-            u_b4(i,j,k,iuv1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-          enddo
-        enddo
-      enddo
-# endif
-
       do k=1,N
 # include "compute_horiz_rhs_uv_terms.h"
       enddo
@@ -165,12 +152,14 @@
           u(i,j,1,nnew)=u(i,j,1,nnew)+DC(i,0)*ru(i,j,1)
 
 # ifdef DIAGNOSTICS
-          rus(i,j,N,3) = DC(i,0)*ru(i,j,N) + dt*sustr(i,j)
-          rus(i,j,1,3) = DC(i,0)*ru(i,j,1) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
-          rus(i,j,N,1) = rus(i,j,N,1) * DC(i,0)
-          rus(i,j,1,1) = rus(i,j,1,1) * DC(i,0)
-          rus(i,j,N,2) = rus(i,j,N,2) * DC(i,0)
-          rus(i,j,1,2) = rus(i,j,1,2) * DC(i,0)
+          Mdiag(i,j,N,1,iprsgr) = Mdiag(i,j,N,1,iprsgr) * DC(i,0)  ! need to convert to dz*u now that we have DC
+          Mdiag(i,j,1,1,iprsgr) = Mdiag(i,j,1,1,iprsgr) * DC(i,0)  ! consider taking this out of loop and doing seperately
+          Mdiag(i,j,N,1,icori)  = Mdiag(i,j,N,1,icori)  * DC(i,0)  ! perhaps even in own subroutine to avoid clutter
+          Mdiag(i,j,1,1,icori)  = Mdiag(i,j,1,1,icori)  * DC(i,0)
+          Mdiag(i,j,N,1,iadv)   = DC(i,0)*ru(i,j,N) + dt*sustr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+     &                           - ( Mdiag(i,j,N,1,iprsgr) + Mdiag(i,j,N,1,icori) ) ! subtract previous 2 terms included in total
+          Mdiag(i,j,1,1,iadv)   = DC(i,0)*ru(i,j,1)
+     &                           - ( Mdiag(i,j,1,1,iprsgr) + Mdiag(i,j,1,1,icori) )
 # endif
 
           rufrc(i,j)=ru(i,j,1) +ru(i,j,N) +dn_u(i,j)*dm_u(i,j)*(
@@ -187,9 +176,10 @@
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
 
 # ifdef DIAGNOSTICS
-            rus(i,j,k,3) = DC(i,0)*ru(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
-            rus(i,j,k,1) = rus(i,j,k,1) * DC(i,0)
-            rus(i,j,k,2) = rus(i,j,k,2) * DC(i,0)
+            Mdiag(i,j,k,1,iprsgr) = Mdiag(i,j,k,1,iprsgr) * DC(i,0)
+            Mdiag(i,j,k,1,icori)  = Mdiag(i,j,k,1,icori)  * DC(i,0)
+            Mdiag(i,j,k,1,iadv)   = DC(i,0)*ru(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+     &                             - ( Mdiag(i,j,k,1,iprsgr) + Mdiag(i,j,k,1,icori) )
 # endif
 
           enddo
@@ -396,21 +386,15 @@
       call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
 # endif
 
-# ifdef DIAGNOSTICS
-      ! Delete once confirmed sum rus = rusum
-      u_af(:,:,:,iuv1)    = u(:,:,:,nnew)  ! units in dz*u already
-      Mdiag(:,:,:,1,iuv1) = u_af(:,:,:,iuv1) - u_b4(:,:,:,iuv1)
-# endif
-
 #ifdef DIAG3D_DEBUG
       if(mynode==0) then ! devind debug
         write (*,'(/A)') 'UV1 end: u(nnew)=u(nnew)+DC(i,0)*ru(i,j,k)'
         print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
         print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
         print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, 'u_b4(10,10,48,iuv1)=',u_b4(10,10,48,iuv1)
-        print *, 'u_af(10,10,48,iuv1)=',u_af(10,10,48,iuv1)
-        print *, 'Mdiag(10,10,48,1,iuv1)=',Mdiag(10,10,48,1,iuv1)
+!        print *, 'u_b4(10,10,48,iuv1)=',u_b4(10,10,48,iuv1)
+!        print *, 'u_af(10,10,48,iuv1)=',u_af(10,10,48,iuv1)
+!        print *, 'Mdiag(10,10,48,1,iuv1)=',Mdiag(10,10,48,1,iuv1)
       endif
 #endif
 
