@@ -40,13 +40,11 @@
       ! Tdiag(4): vertical mixing
       ! Tdiag(5): sources/sinks
 
-      integer,public,parameter :: ndm = 7  !! number of momentum diag terms
+      integer,public,parameter :: nmd = 7  !! number of momentum diag terms
       integer,public,parameter :: ndt = 5  !! number of tracer diag terms
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3, ndm)  :: Mdiag=0   ! 3 for u,v,w
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3, nmd)  :: Mdiag=0   ! 3 for u,v,w
 !      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
-      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_b4=0    ! temporary u for debugging.
-      real, public, dimension(GLOBAL_2D_ARRAY, N, ndm)     :: u_af=0    ! u after
 
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: udz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_dif=0   ! u difference current vs previous u
@@ -54,8 +52,9 @@
 
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0    ! = u_dif - Mdsum
 
-!      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: rus=0     ! 3 contributions to ru
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: drus=0    ! changes in 3 ru terms
+      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_prev=0  ! store incremental
+
+      real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
 
       integer, parameter, public :: iprsgr = 1,
      &                              icori  = 2,
@@ -66,7 +65,7 @@
      &                              iuv2FC = 7
 
 
-      character (len=20), dimension(ndm) :: vname = (/
+      character (len=20), dimension(nmd) :: vname = (/
      &                                                 'prsgrd',
      &                                                 'coriolis',
      &                                                 'advection',
@@ -76,7 +75,7 @@
      &                                                 'uv2_FC'
      &                                                                  /)
 
-      character (len=60), dimension(ndm) :: lname = (/
+      character (len=60), dimension(nmd) :: lname = (/
      &  'prsgrd L275',
      &  'horiz_uv.h L35 coriolis & curvilinear coords',
      &  'advection',
@@ -86,7 +85,7 @@
      &  'uv2_FC L463'
      &                                                                  /)
 
-      character (len=20), dimension(ndm) :: units = (/
+      character (len=20), dimension(nmd) :: units = (/
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
      &                                                 'm^2/s (dz*u)',
@@ -104,8 +103,34 @@
       character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
 
       public wrt_online_diags
+      public set_diags_at_bc
 
       contains
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_bc( istr, iend, jstr, jend )  ![
+      ! set the diagnostics terms for boundary changes
+
+      implicit none
+
+      ! inputs/outputs
+      integer, intent(in) :: istr, iend, jstr, jend
+
+      ! local
+      integer :: i
+
+      if (WESTERN_EDGE)  u_prev(istr  ,:,:) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
+      if (EASTERN_EDGE)  u_prev(iend+1,:,:) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_prev(istr  ,:,:) - udz_old(istr  ,:,:) ! u_prev is already u_current, can do this because have udz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_prev(iend+1,:,:) - udz_old(iend+1,:,:)
+      do i=istr,iend+1 ! use loop here else indexing would be even messier
+        if (SOUTHERN_EDGE) u_prev(i,jstr-1,:)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
+        if (NORTHERN_EDGE) u_prev(i,jend+1,:)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
+      enddo
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_prev(:,jstr-1,:) - udz_old(:,jstr-1,:)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_prev(:,jend+1,:) - udz_old(:,jend+1,:)
+
+      end subroutine set_diags_at_bc
 
 ! ----------------------------------------------------------------------
       subroutine wrt_online_diags  ![ write online diagnostics
@@ -140,7 +165,7 @@
 
 
           ! Define remaining variables:
-          do diag=1,ndm
+          do diag=1,nmd
             do dim=1,1  ! loop through dims
               text  = uvw(dim) / / vname(diag)  ! diag short name
               call nc_define_var(ncid, text, lname(diag), units(diag), u3dgrd, ierr )
@@ -175,7 +200,7 @@
 
         call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
 
-        do diag=1,ndm
+        do diag=1,nmd
           do dim=1,1  ! loop through dims
             text = uvw(dim) / / vname(diag)
             call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, up_var, output_rec, ierr)
@@ -187,7 +212,7 @@
         call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
 
         Mdsum = 0  ! refresh for this step
-        do diag=1,ndm
+        do diag=1,nmd
           Mdsum = Mdsum + Mdiag(:,:,:,1,diag)
         enddo
         call nc_write_var(ncid, Mdsum, N, 'Mdsum', up_var, output_rec, ierr)

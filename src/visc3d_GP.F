@@ -103,16 +103,6 @@
       endif
 #endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-          do i=istrU,iend ! could add above into equation loop but might be messier
-            u_b4(i,j,k,ivisc) = u(i,j,k,nnew) ! units in dz*u already
-          enddo
-        enddo
-      enddo
-# endif
-
       k2=1
       do k=0,N,+1  !--> irreversible
         k1=k2
@@ -418,11 +408,11 @@ c        enddo
       enddo
 
 # ifdef DIAGNOSTICS
-      do k=1,N
+      do k=1,N            ! could be a subroutine call set_diag(ivsic)!!!
         do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
-            u_af(i,j,k,ivisc)    = u(i,j,k,nnew) ! units already in dz*u
-            Mdiag(i,j,k,1,ivisc) = u_af(i,j,k,ivisc) - u_b4(i,j,k,ivisc)
+            Mdiag(i,j,k,1,ivisc) = u(i,j,k,nnew) - u_prev(i,j,k)  ! units already in dz*u
+            u_prev(i,j,k)        = u(i,j,k,nnew)
           enddo
         enddo
       enddo
@@ -435,9 +425,9 @@ c        enddo
         print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
         print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
         print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
-        print *, 'u_b4(10,10,48,ivisc)=',u_b4(10,10,48,ivisc)
-        print *, 'u_af(10,10,48,ivisc)=',u_af(10,10,48,ivisc)
-        print *, 'Mdiag(10,10,48,1,ivisc)=',Mdiag(10,10,48,1,ivisc)
+!        print *, 'u_b4(10,10,48,ivisc)=',u_b4(10,10,48,ivisc)
+!        print *, 'u_af(10,10,48,ivisc)=',u_af(10,10,48,ivisc)
+!        print *, 'Mdiag(10,10,48,1,ivisc)=',Mdiag(10,10,48,1,ivisc)
       endif
 #endif
 
