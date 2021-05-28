@@ -68,15 +68,15 @@
       endif
 #endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-          do i=istrU,iend ! could rather do array operation! code will be cleaner
-            u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) ! units in dz*u already
-          enddo
-        enddo
-      enddo
-# endif
+!# ifdef DIAGNOSTICS
+!      do k=1,N
+!        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+!          do i=istrU,iend ! could rather do array operation! code will be cleaner
+!            u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) ! units in dz*u already
+!          enddo
+!        enddo
+!      enddo
+!# endif
 
       do j=jstr,jend
 
@@ -413,8 +413,9 @@
       do k=1,N
         do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=istrU,iend ! could rather do array operation! code will be cleaner
-            u_af(i,j,k,iuv2DC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag(i,j,k,1,iuv2DC) = u_af(i,j,k,iuv2DC) - u_b4(i,j,k,iuv2DC)
+            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+            Mdiag(i,j,k,1,iuv2DC) = Mdtmp - u_prev(i,j,k)  ! avoids recomputing above
+            u_prev(i,j,k) = Mdtmp
           enddo
         enddo
       enddo
@@ -426,21 +427,14 @@
         print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
         print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
         print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, 'u_b4(10,10,48,iuv2DC)=',u_b4(10,10,48,iuv2DC)
-        print *, 'u_af(10,10,48,iuv2DC)=',u_af(10,10,48,iuv2DC)
-        print *, 'Mdiag(10,10,48,1,iuv2DC)=',Mdiag(10,10,48,1,iuv2DC)
+!        print *, 'u_b4(10,10,48,iuv2DC)=',u_b4(10,10,48,iuv2DC)
+!        print *, 'u_af(10,10,48,iuv2DC)=',u_af(10,10,48,iuv2DC)
+!        print *, 'Mdiag(10,10,48,1,iuv2DC)=',Mdiag(10,10,48,1,iuv2DC)
         print *, ' '
       endif
 #endif
 
 ! Set PHYSICAL lateral boundary conditions.
-
-# ifdef DIAGNOSTICS
-      if (WESTERN_EDGE)  u_b4(istr  ,:,:,iu3d) = udz_old(istr  ,:,:)  ! only bry changes, hence
-      if (EASTERN_EDGE)  u_b4(iend+1,:,:,iu3d) = udz_old(iend+1,:,:)  ! no need to loop full domain
-      if (SOUTHERN_EDGE) u_b4(:,jstr-1,:,iu3d) = udz_old(:,jstr-1,:)  ! should make 2D arrays for u3dbc changes
-      if (NORTHERN_EDGE) u_b4(:,jend+1,:,iu3d) = udz_old(:,jend+1,:)
-# endif
 
 #ifdef DIAG3D_DEBUG
       if(mynode==0) then ! devind debug
@@ -456,16 +450,7 @@
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
 # ifdef DIAGNOSTICS
-      if (WESTERN_EDGE)  u_af(istr  ,:,:,iu3d) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
-      if (EASTERN_EDGE)  u_af(iend+1,:,:,iu3d) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_af(istr  ,:,:,iu3d) - u_b4(istr  ,:,:,iu3d)
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_af(iend+1,:,:,iu3d) - u_b4(iend+1,:,:,iu3d)
-      do i=istr,iend+1 ! use loop here else indexing would be even messier
-        if (SOUTHERN_EDGE) u_af(i,jstr-1,:,iu3d)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
-        if (NORTHERN_EDGE) u_af(i,jend+1,:,iu3d)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
-      enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_af(:,jstr-1,:,iu3d) - u_b4(:,jstr-1,:,iu3d)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_af(:,jend+1,:,iu3d) - u_b4(:,jend+1,:,iu3d)
+      call set_diags_at_bc( istr, iend, jstr, jend )
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -478,15 +463,15 @@
       endif
 #endif
 
-# ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstrR,jendR  ! since this following section uses IU_RANGE & J_RANGE which includes boundary
-          do i=istr,iendR
-            u_b4(i,j,k,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-          enddo
-        enddo
-      enddo
-# endif
+!# ifdef DIAGNOSTICS
+!      do k=1,N
+!        do j=jstrR,jendR  ! since this following section uses IU_RANGE & J_RANGE which includes boundary
+!          do i=istr,iendR
+!            u_b4(i,j,k,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+!          enddo
+!        enddo
+!      enddo
+!# endif
 
 
 ! Coupling 2D and 3D momentum equations:
@@ -873,8 +858,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
       do k=1,N
         do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
-            u_af(i,j,k,iuv2FC)    = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-            Mdiag(i,j,k,1,iuv2FC) = u_af(i,j,k,iuv2FC) - u_b4(i,j,k,iuv2FC)
+            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k)
 
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
@@ -892,9 +876,9 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
         print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
         print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, 'u_b4(10,10,48,iuv2FC)=',u_b4(10,10,48,iuv2FC)
-        print *, 'u_af(10,10,48,iuv2FC)=',u_af(10,10,48,iuv2FC)
-        print *, 'Mdiag(10,10,48,1,iuv2FC)=',Mdiag(10,10,48,1,iuv2FC)
+!        print *, 'u_b4(10,10,48,iuv2FC)=',u_b4(10,10,48,iuv2FC)
+!        print *, 'u_af(10,10,48,iuv2FC)=',u_af(10,10,48,iuv2FC)
+!        print *, 'Mdiag(10,10,48,1,iuv2FC)=',Mdiag(10,10,48,1,iuv2FC)
         print *, ' '
       endif
 #endif

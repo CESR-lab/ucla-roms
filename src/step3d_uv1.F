@@ -158,8 +158,10 @@
           Mdiag(i,j,1,1,icori)  = Mdiag(i,j,1,1,icori)  * DC(i,0)
           Mdiag(i,j,N,1,iadv)   = DC(i,0)*ru(i,j,N) + dt*sustr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                           - ( Mdiag(i,j,N,1,iprsgr) + Mdiag(i,j,N,1,icori) ) ! subtract previous 2 terms included in total
+          u_prev(i,j,N)         = u(i,j,N,nnew)     ! store for visc3d
           Mdiag(i,j,1,1,iadv)   = DC(i,0)*ru(i,j,1)
      &                           - ( Mdiag(i,j,1,1,iprsgr) + Mdiag(i,j,1,1,icori) )
+          u_prev(i,j,1)         = u(i,j,1,nnew)     ! store for visc3d
 # endif
 
           rufrc(i,j)=ru(i,j,1) +ru(i,j,N) +dn_u(i,j)*dm_u(i,j)*(
@@ -178,6 +180,7 @@
 # ifdef DIAGNOSTICS
             Mdiag(i,j,k,1,iprsgr) = Mdiag(i,j,k,1,iprsgr) * DC(i,0)
             Mdiag(i,j,k,1,icori)  = Mdiag(i,j,k,1,icori)  * DC(i,0)
+            u_prev(i,j,k)         = u(i,j,k,nnew)
             Mdiag(i,j,k,1,iadv)   = DC(i,0)*ru(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                             - ( Mdiag(i,j,k,1,iprsgr) + Mdiag(i,j,k,1,icori) )
 # endif
