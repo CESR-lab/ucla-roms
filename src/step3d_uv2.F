@@ -68,16 +68,6 @@
       endif
 #endif
 
-!# ifdef DIAGNOSTICS
-!      do k=1,N
-!        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-!          do i=istrU,iend ! could rather do array operation! code will be cleaner
-!            u_b4(i,j,k,iuv2DC) = u(i,j,k,nnew) ! units in dz*u already
-!          enddo
-!        enddo
-!      enddo
-!# endif
-
       do j=jstr,jend
 
 # ifndef IMPLICIT_BOTTOM_DRAG
@@ -410,15 +400,16 @@
       enddo      ! <-- j
 
 # ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-          do i=istrU,iend ! could rather do array operation! code will be cleaner
-            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag(i,j,k,1,iuv2DC) = Mdtmp - u_prev(i,j,k)  ! avoids recomputing above
-            u_prev(i,j,k) = Mdtmp
-          enddo
-        enddo
-      enddo
+      call set_diags_at_uv2_DC( istrU, iend, jstr, jend, 1 )
+!      do k=1,N
+!        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+!          do i=istrU,iend ! could rather do array operation! code will be cleaner
+!            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+!            Mdiag(i,j,k,1,iuv2DC) = Mdtmp - u_prev(i,j,k,1)  ! avoids recomputing above
+!            u_prev(i,j,k,1) = Mdtmp
+!          enddo
+!        enddo
+!      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -462,16 +453,6 @@
         print *, ' '
       endif
 #endif
-
-!# ifdef DIAGNOSTICS
-!      do k=1,N
-!        do j=jstrR,jendR  ! since this following section uses IU_RANGE & J_RANGE which includes boundary
-!          do i=istr,iendR
-!            u_b4(i,j,k,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-!          enddo
-!        enddo
-!      enddo
-!# endif
 
 
 ! Coupling 2D and 3D momentum equations:
@@ -855,19 +836,20 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-      do k=1,N
-        do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
-          do i=istr,iendR
-            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k)
-
-            ! Full loop ranges since u-change over every point including bry.
-            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-            u_dif(i,j,k)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k) ! do this here as units are correct
-            udz_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-          enddo
-        enddo
-      enddo
+      call set_diags_at_uv2_FC( istr, iendR, jstrR, jendR )
+!      do k=1,N
+!        do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
+!          do i=istr,iendR
+!            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k,1)
+!
+!            ! Full loop ranges since u-change over every point including bry.
+!            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+!            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
+!            u_dif(i,j,k)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k) ! do this here as units are correct
+!            udz_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+!          enddo
+!        enddo
+!      enddo
 # endif
 
 #ifdef DIAG3D_DEBUG
