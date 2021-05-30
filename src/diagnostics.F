@@ -52,17 +52,17 @@
 
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0    ! = u_dif - Mdsum
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_prev=0  ! store incremental
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: u_prev=0  ! store incremental u/v/w (nnew)
 
       real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
 
-      integer, parameter, public :: iprsgr = 1,
-     &                              icori  = 2,
-     &                              iadv   = 3,
-     &                              ivisc  = 4,
-     &                              iuv2DC = 5,
-     &                              iu3d   = 6,
-     &                              iuv2FC = 7
+      integer, parameter, public :: iprsgr = 1, ! internal loop ranges only (i.e. excluding domain boundary)
+     &                              icori  = 2, ! internal loop ranges only
+     &                              iadv   = 3, ! internal loop ranges only
+     &                              ivisc  = 4, ! internal loop ranges only
+     &                              iuv2DC = 5, ! internal loop ranges only
+     &                              iu3d   = 6, ! bry only
+     &                              iuv2FC = 7  ! internal + bry (full domain) loop ranges
 
 
       character (len=20), dimension(nmd) :: vname = (/
@@ -102,10 +102,94 @@
       integer            :: total_output_rec = 0        ! total flux output recordings so far
       character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
 
-      public wrt_online_diags
+      public set_diags_at_visc3d
+      public set_diags_at_uv1
+      public set_diags_at_uv2_DC
       public set_diags_at_bc
+      public set_diags_at_uv2_FC
+      public wrt_online_diags
 
       contains
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, dim, DC, ru, sustr )  ![
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend, istrU, j, dim ! istr, iend, etc. 'A' for any as depends on inputs, which 'dim' dimension.
+      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N),   intent(in) :: DC       ! (:,:)   prevents local copy
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: ru       ! (:,:,:) prevents local copy - ru or rv
+      real, dimension(GLOBAL_2D_ARRAY)  , intent(in) :: sustr
+
+      ! local
+      integer :: i, k
+
+      do i=istrU,iend
+        Mdiag(i,j,N,1,iprsgr) = Mdiag(i,j,N,1,iprsgr) * DC(i,0)  ! need to convert to dz*u now that we have DC
+        Mdiag(i,j,1,1,iprsgr) = Mdiag(i,j,1,1,iprsgr) * DC(i,0)  ! consider taking this out of loop and doing seperately
+        Mdiag(i,j,N,1,icori)  = Mdiag(i,j,N,1,icori)  * DC(i,0)  ! perhaps even in own subroutine to avoid clutter
+        Mdiag(i,j,1,1,icori)  = Mdiag(i,j,1,1,icori)  * DC(i,0)
+        Mdiag(i,j,N,1,iadv)   = DC(i,0)*ru(i,j,N) + dt*sustr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+     &                           - ( Mdiag(i,j,N,1,iprsgr) + Mdiag(i,j,N,1,icori) ) ! subtract previous 2 terms included in total
+        u_prev(i,j,N,1)       = u(i,j,N,nnew)     ! store for visc3d
+        Mdiag(i,j,1,1,iadv)   = DC(i,0)*ru(i,j,1)
+     &                           - ( Mdiag(i,j,1,1,iprsgr) + Mdiag(i,j,1,1,icori) )
+        u_prev(i,j,1,1)       = u(i,j,1,nnew)     ! store for visc3d
+      enddo
+
+      do k=2,N-1
+        do i=istrU,iend
+          Mdiag(i,j,k,1,iprsgr) = Mdiag(i,j,k,1,iprsgr) * DC(i,0)
+          Mdiag(i,j,k,1,icori)  = Mdiag(i,j,k,1,icori)  * DC(i,0)
+          u_prev(i,j,k,1)       = u(i,j,k,nnew)
+          Mdiag(i,j,k,1,iadv)   = DC(i,0)*ru(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+     &                            - ( Mdiag(i,j,k,1,iprsgr) + Mdiag(i,j,k,1,icori) )
+        enddo
+      enddo
+
+      end subroutine set_diags_at_uv1  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_visc3d( isA, iend, jsA, jend, dim )  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: isA, iend, jsA, jend, dim ! changed the name to use for u or v
+      integer :: i, j, k  ! local
+
+      do k=1,N
+        do j=jsA,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+          do i=isA,iend
+            Mdiag(i,j,k,dim,ivisc) = u(i,j,k,nnew) - u_prev(i,j,k,dim)  ! units already in dz*u
+            u_prev(i,j,k,dim)      = u(i,j,k,nnew)
+          enddo
+        enddo
+      enddo
+!      Mdiag (istrU:iend,jstr:jend,:,1,ivisc) = u(istrU:iend,jstr:jend,:,nnew)
+!      u_prev(istrU:iend,jstr:jend,:)         = u(istrU:iend,jstr:jend,:,nnew) ! can remove
+
+      end subroutine set_diags_at_visc3d  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_uv2_DC( isA, iend, jsA, jend, dim )  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: isA, iend, jsA, jend, dim ! changed the name to use for u or v
+      integer :: i, j, k  ! local
+
+      do k=1,N
+        do j=jsA,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+          do i=isA,iend  ! could do vector operation
+            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+            Mdiag(i,j,k,1,iuv2DC) = Mdtmp - u_prev(i,j,k,1)  ! avoids recomputing above
+            u_prev(i,j,k,1) = Mdtmp
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_at_uv2_DC  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_bc( istr, iend, jstr, jend )  ![
@@ -119,18 +203,42 @@
       ! local
       integer :: i
 
-      if (WESTERN_EDGE)  u_prev(istr  ,:,:) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
-      if (EASTERN_EDGE)  u_prev(iend+1,:,:) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_prev(istr  ,:,:) - udz_old(istr  ,:,:) ! u_prev is already u_current, can do this because have udz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_prev(iend+1,:,:) - udz_old(iend+1,:,:)
+      if (WESTERN_EDGE)  u_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
+      if (EASTERN_EDGE)  u_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_prev(istr  ,:,:,1) - udz_old(istr  ,:,:) ! u_prev is already u_current, can do this because have udz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_prev(iend+1,:,:,1) - udz_old(iend+1,:,:)
       do i=istr,iend+1 ! use loop here else indexing would be even messier
-        if (SOUTHERN_EDGE) u_prev(i,jstr-1,:)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
-        if (NORTHERN_EDGE) u_prev(i,jend+1,:)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
+        if (SOUTHERN_EDGE) u_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
+        if (NORTHERN_EDGE) u_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
       enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_prev(:,jstr-1,:) - udz_old(:,jstr-1,:)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_prev(:,jend+1,:) - udz_old(:,jend+1,:)
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_prev(:,jstr-1,:,1) - udz_old(:,jstr-1,:)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_prev(:,jend+1,:,1) - udz_old(:,jend+1,:)
 
       end subroutine set_diags_at_bc
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_uv2_FC( istr, iendR, jstrR, jendR )  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iendR, jstrR, jendR ! changed the name to use for u or v
+      integer :: i, j, k  ! local
+
+      do k=1,N
+        do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
+          do i=istr,iendR
+            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k,1)
+
+            ! Full loop ranges since u-change over every point including bry.
+            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
+            u_dif(i,j,k)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k) ! do this here as units are correct
+            udz_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_at_uv2_FC  !]
 
 ! ----------------------------------------------------------------------
       subroutine wrt_online_diags  ![ write online diagnostics
