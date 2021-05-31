@@ -49,6 +49,11 @@
 # ifdef WEC
      &               -0.5*(VFx(i,j)+VFx(i,j-1))
 # endif
+
+# ifdef DIAGNOSTICS
+	        Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
+# endif
+
           enddo
         enddo
 #endif

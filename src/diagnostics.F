@@ -113,39 +113,45 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, dim, DC, ru, sustr )  ![
+      subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
+      ! Set the diagnostic terms for prsgrd, coriolis, and advection.
+      ! Works for both u and v.
+      ! Prsgrd and coriolis need to also be convert to dz * u/v
 
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrU, j, dim ! istr, iend, etc. 'A' for any as depends on inputs, which 'dim' dimension.
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N),   intent(in) :: DC       ! (:,:)   prevents local copy
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: ru       ! (:,:,:) prevents local copy - ru or rv
-      real, dimension(GLOBAL_2D_ARRAY)  , intent(in) :: sustr
+      integer, intent(in) :: istr, iend, jstr, jend, istrA, j, dim ! istr, iend, etc. 'A' for any as depends on inputs, which 'dim' dimension.
+      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N),   intent(in) :: ruv     ! ru or rv
+      real, dimension(GLOBAL_2D_ARRAY),              intent(in) :: suvstr  ! sustr or svstr
+      real, dimension(GLOBAL_2D_ARRAY,N,3),          intent(in) :: uv      ! u or v
 
       ! local
       integer :: i, k
 
-      do i=istrU,iend
-        Mdiag(i,j,N,1,iprsgr) = Mdiag(i,j,N,1,iprsgr) * DC(i,0)  ! need to convert to dz*u now that we have DC
-        Mdiag(i,j,1,1,iprsgr) = Mdiag(i,j,1,1,iprsgr) * DC(i,0)  ! consider taking this out of loop and doing seperately
-        Mdiag(i,j,N,1,icori)  = Mdiag(i,j,N,1,icori)  * DC(i,0)  ! perhaps even in own subroutine to avoid clutter
-        Mdiag(i,j,1,1,icori)  = Mdiag(i,j,1,1,icori)  * DC(i,0)
-        Mdiag(i,j,N,1,iadv)   = DC(i,0)*ru(i,j,N) + dt*sustr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
-     &                           - ( Mdiag(i,j,N,1,iprsgr) + Mdiag(i,j,N,1,icori) ) ! subtract previous 2 terms included in total
-        u_prev(i,j,N,1)       = u(i,j,N,nnew)     ! store for visc3d
-        Mdiag(i,j,1,1,iadv)   = DC(i,0)*ru(i,j,1)
-     &                           - ( Mdiag(i,j,1,1,iprsgr) + Mdiag(i,j,1,1,icori) )
-        u_prev(i,j,1,1)       = u(i,j,1,nnew)     ! store for visc3d
+      ! NOTE: currently missing WEC term
+
+      do i=istrA,iend
+        Mdiag(i,j,N,dim,iprsgr) = Mdiag(i,j,N,dim,iprsgr) * DC(i,0)  ! need to convert to dz*u now that we have DC
+        Mdiag(i,j,1,dim,iprsgr) = Mdiag(i,j,1,dim,iprsgr) * DC(i,0)  ! consider taking this out of loop and doing seperately
+        Mdiag(i,j,N,dim,icori)  = Mdiag(i,j,N,dim,icori)  * DC(i,0)  ! perhaps even in own subroutine to avoid clutter
+        Mdiag(i,j,1,dim,icori)  = Mdiag(i,j,1,dim,icori)  * DC(i,0)
+        Mdiag(i,j,N,dim,iadv)   = DC(i,0)*ruv(i,j,N) + dt*suvstr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+     &                           - ( Mdiag(i,j,N,dim,iprsgr) + Mdiag(i,j,N,dim,icori) ) ! subtract previous 2 terms included in total
+        u_prev(i,j,N,dim)       = uv(i,j,N,nnew)     ! store for visc3d
+        Mdiag(i,j,1,dim,iadv)   = DC(i,0)*ruv(i,j,1)
+     &                           - ( Mdiag(i,j,1,dim,iprsgr) + Mdiag(i,j,1,dim,icori) )
+        u_prev(i,j,1,dim)       = uv(i,j,1,nnew)     ! store for visc3d
       enddo
 
       do k=2,N-1
-        do i=istrU,iend
-          Mdiag(i,j,k,1,iprsgr) = Mdiag(i,j,k,1,iprsgr) * DC(i,0)
-          Mdiag(i,j,k,1,icori)  = Mdiag(i,j,k,1,icori)  * DC(i,0)
-          u_prev(i,j,k,1)       = u(i,j,k,nnew)
-          Mdiag(i,j,k,1,iadv)   = DC(i,0)*ru(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
-     &                            - ( Mdiag(i,j,k,1,iprsgr) + Mdiag(i,j,k,1,icori) )
+        do i=istrA,iend
+          Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0)
+          Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0)
+          u_prev(i,j,k,dim)       = uv(i,j,k,nnew)
+          Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+     &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
         enddo
       enddo
 
@@ -262,12 +268,12 @@
         enddo
       enddo
 
-      if(mynode==0) then  ! debug
-        print *, 'v(10,10,48,nnew)=',v(10,10,48,nnew)
-        print *, 'udz_old(10,10,48,2)=', udz_old(10,10,48,2)
-        print *, 'u_dif  (10,10,48,2)=', u_dif(10,10,48,2)
-        print *, 'Hz     (10,10,48)  =', Hz(10,10,48)
-      endif
+!      if(mynode==0) then  ! debug
+!        print *, 'v(10,10,48,nnew)=',v(10,10,48,nnew)
+!        print *, 'udz_old(10,10,48,2)=', udz_old(10,10,48,2)
+!        print *, 'u_dif  (10,10,48,2)=', u_dif(10,10,48,2)
+!        print *, 'Hz     (10,10,48)  =', Hz(10,10,48)
+!      endif
 
       end subroutine set_diags_at_uv2_FCv  !]
 
