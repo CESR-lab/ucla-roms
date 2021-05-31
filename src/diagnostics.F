@@ -27,6 +27,8 @@
       ! End of user inputs
       ! ***************************************************************
 
+      ! Preamble:  ![
+
       ! Mdiag(2): hydrostatic pressure gradient
       ! Mdiag(3): cor(u)
       ! Mdiag(4): adv(u) (non-dissipative part)
@@ -47,12 +49,12 @@
 !      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
 
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: udz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: u_dif=0   ! u difference current vs previous u
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: uv_dif=0   ! gross u/v difference between current vs previous timestep u/v
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Mdsum=0   ! sum of Mdiag
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0    ! = u_dif - Mdsum
+      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0    ! = uv_dif - Mdsum
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: u_prev=0  ! store incremental u/v/w (nnew)
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: uv_prev=0  ! store incremental u/v/w (nnew)
 
       real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
 
@@ -66,33 +68,33 @@
 
 
       character (len=20), dimension(nmd) :: vname = (/
-     &                                                 'prsgrd',
-     &                                                 'coriolis',
-     &                                                 'advection',
-     &                                                 'visc3d',
-     &                                                 'uv2_DC',
-     &                                                 'u3dbc',
-     &                                                 'uv2_FC'
+     &  'prsgrd',
+     &  'coriolis',
+     &  'advection',
+     &  'visc3d',
+     &  'uv2_DC',
+     &  '3dbc',       ! should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
+     &  'uv2_FC'
      &                                                                  /)
 
       character (len=60), dimension(nmd) :: lname = (/
-     &  'prsgrd L275',
-     &  'horiz_uv.h L35 coriolis & curvilinear coords',
-     &  'advection',
-     &  'visc3d L376',
-     &  'uv2_DC L176',
-     &  'u3dbc',
-     &  'uv2_FC L463'
+     &  'Hydrostatic pressure gradient - prsgrd.F',
+     &  'Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h',
+     &  'Advection - step3d_uv1.F',
+     &  'Viscous terms - visc3d_GP.F',
+     &  'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1',
+     &  'Boundary changes - u/v3dbc_im.F',
+     &  '2D-3D correction - step3d_uv2.F part 2'
      &                                                                  /)
 
       character (len=20), dimension(nmd) :: units = (/
-     &                                                 'm^2/s (dz*u)',
-     &                                                 'm^2/s (dz*u)',
-     &                                                 'm^2/s (dz*u)',
-     &                                                 'm^2/s (dz*u)',
-     &                                                 'm^2/s (dz*u)',
-     &                                                 'm^2/s (dz*u)',
-     &                                                 'm^2/s (dz*u)'
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)'
      &                                                                  /)
 
       character (len=2), dimension(3) :: uvw = (/ 'u_', 'v_', 'w_' /)
@@ -105,10 +107,11 @@
       public set_diags_at_visc3d
       public set_diags_at_uv1
       public set_diags_at_uv2_DC
-      public set_diags_at_bc
+      public set_diags_at_bc_u
+      public set_diags_at_bc_v
       public set_diags_at_uv2_FCu
       public set_diags_at_uv2_FCv
-      public wrt_online_diags
+      public wrt_online_diags !]
 
       contains
 
@@ -139,17 +142,17 @@
         Mdiag(i,j,1,dim,icori)  = Mdiag(i,j,1,dim,icori)  * DC(i,0)
         Mdiag(i,j,N,dim,iadv)   = DC(i,0)*ruv(i,j,N) + dt*suvstr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                           - ( Mdiag(i,j,N,dim,iprsgr) + Mdiag(i,j,N,dim,icori) ) ! subtract previous 2 terms included in total
-        u_prev(i,j,N,dim)       = uv(i,j,N,nnew)     ! store for visc3d
+        uv_prev(i,j,N,dim)      = uv(i,j,N,nnew)     ! store for visc3d
         Mdiag(i,j,1,dim,iadv)   = DC(i,0)*ruv(i,j,1)
      &                           - ( Mdiag(i,j,1,dim,iprsgr) + Mdiag(i,j,1,dim,icori) )
-        u_prev(i,j,1,dim)       = uv(i,j,1,nnew)     ! store for visc3d
+        uv_prev(i,j,1,dim)      = uv(i,j,1,nnew)     ! store for visc3d
       enddo
 
       do k=2,N-1
         do i=istrA,iend
           Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0)
           Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0)
-          u_prev(i,j,k,dim)       = uv(i,j,k,nnew)
+          uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
           Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
         enddo
@@ -158,40 +161,54 @@
       end subroutine set_diags_at_uv1  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_visc3d( isA, iend, jsA, jend, dim )  ![
+      subroutine set_diags_at_visc3d( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
+      ! set diagnostics for u or v in visc3d_GP.F
+      ! interior points only (i.e. excluding bry)
+
       implicit none
 
       ! inputs
-      integer, intent(in) :: isA, iend, jsA, jend, dim ! changed the name to use for u or v
+      integer, intent(in) :: istr, iend, jstr, jend, isA, jsA, dim  ! isA jsA are starts depending on u or v variable
+      real, dimension(GLOBAL_2D_ARRAY,N,3), intent(in) :: uv        ! u or v
       integer :: i, j, k  ! local
 
       do k=1,N
         do j=jsA,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
           do i=isA,iend
-            Mdiag(i,j,k,dim,ivisc) = u(i,j,k,nnew) - u_prev(i,j,k,dim)  ! units already in dz*u
-            u_prev(i,j,k,dim)      = u(i,j,k,nnew)
+            Mdiag( i,j,k,dim,ivisc) = uv(i,j,k,nnew) - uv_prev(i,j,k,dim)  ! units already in dz*u
+            uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
           enddo
         enddo
       enddo
 !      Mdiag (istrU:iend,jstr:jend,:,1,ivisc) = u(istrU:iend,jstr:jend,:,nnew)
-!      u_prev(istrU:iend,jstr:jend,:)         = u(istrU:iend,jstr:jend,:,nnew) ! can remove
+!      uv_prev(istrU:iend,jstr:jend,:)         = u(istrU:iend,jstr:jend,:,nnew) ! can remove
 
       end subroutine set_diags_at_visc3d  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv2_DC( isA, iend, jsA, jend, dim )  ![
+      subroutine set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )  ![
+      ! set diagnostics for u or v in step3d_uv2.F
+      ! interior points only (i.e. excluding bry)
+
       implicit none
 
       ! inputs
-      integer, intent(in) :: isA, iend, jsA, jend, dim ! changed the name to use for u or v
+      integer, intent(in) :: istr, iend, jstr, jend, istrU, jstrV
       integer :: i, j, k  ! local
 
       do k=1,N
-        do j=jsA,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-          do i=isA,iend  ! could do vector operation
-            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag(i,j,k,1,iuv2DC) = Mdtmp - u_prev(i,j,k,1)  ! avoids recomputing above
-            u_prev(i,j,k,1) = Mdtmp
+        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+          do i=istrU,iend
+            Mdtmp                  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+            Mdiag( i,j,k,1,iuv2DC) = Mdtmp - uv_prev(i,j,k,1)  ! avoids recomputing above
+            uv_prev(i,j,k,1)       = Mdtmp
+          enddo
+        enddo
+        do j=jstrV,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+          do i=istr,iend
+            Mdtmp                  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) ! convert to dz*v
+            Mdiag( i,j,k,2,iuv2DC) = Mdtmp - uv_prev(i,j,k,2)
+            uv_prev(i,j,k,2)       = Mdtmp
           enddo
         enddo
       enddo
@@ -199,8 +216,9 @@
       end subroutine set_diags_at_uv2_DC  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_bc( istr, iend, jstr, jend )  ![
-      ! set the diagnostics terms for boundary changes
+      subroutine set_diags_at_bc_u( istr, iend, jstr, jend )  ![
+      ! set the diagnostics terms for boundary changes in u
+      ! called from step3d_uv2.F right after call to u3dbc_im.F
 
       implicit none
 
@@ -210,18 +228,46 @@
       ! local
       integer :: i
 
-      if (WESTERN_EDGE)  u_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
-      if (EASTERN_EDGE)  u_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_prev(istr  ,:,:,1) - udz_old(istr  ,:,:, 1) ! u_prev is already u_current, can do this because have udz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_prev(iend+1,:,:,1) - udz_old(iend+1,:,:, 1)
-      do i=istr,iend+1 ! use loop here else indexing would be even messier
-        if (SOUTHERN_EDGE) u_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
-        if (NORTHERN_EDGE) u_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
-      enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_prev(:,jstr-1,:,1) - udz_old(:,jstr-1,:, 1)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_prev(:,jend+1,:,1) - udz_old(:,jend+1,:, 1)
+      if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
+      if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = uv_prev(istr  ,:,:,1) - udz_old(istr  ,:,:, 1) ! uv_prev is already u_current, can do this because have udz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = uv_prev(iend+1,:,:,1) - udz_old(iend+1,:,:, 1)
 
-      end subroutine set_diags_at_bc
+      do i=istr,iend+1 ! use loop here else indexing would be even messier
+        if (SOUTHERN_EDGE) uv_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
+        if (NORTHERN_EDGE) uv_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
+      enddo
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = uv_prev(:,jstr-1,:,1) - udz_old(:,jstr-1,:, 1)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = uv_prev(:,jend+1,:,1) - udz_old(:,jend+1,:, 1)
+
+      end subroutine set_diags_at_bc_u  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_bc_v( istr, iend, jstr, jend )  ![
+      ! set the diagnostics terms for boundary changes in v
+      ! called from step3d_uv2.F right after call to v3dbc_im.F
+
+      implicit none
+
+      ! inputs/outputs
+      integer, intent(in) :: istr, iend, jstr, jend
+
+      ! local
+      integer :: j
+
+      do j=jstr,jend+1 ! use loop here else indexing would be even messier
+        if (WESTERN_EDGE)  uv_prev(istr-1,j,:,2) = u(istr-1,j,:,nnew) * 0.5*(Hz(istr-1,j-1,:)+Hz(istr-1,j,:))
+        if (EASTERN_EDGE)  uv_prev(iend+1,j,:,2) = u(iend+1,j,:,nnew) * 0.5*(Hz(iend+1,j-1,:)+Hz(iend+1,j,:))
+      enddo
+      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,iu3d) = uv_prev(istr-1,:,:,2) - udz_old(istr-1,:,:,2) ! uv_prev is already u_current, can do this because have udz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,iu3d) = uv_prev(iend+1,:,:,2) - udz_old(iend+1,:,:,2)
+
+      if (SOUTHERN_EDGE) uv_prev(:,jstr  ,:,2)=u(:,jstr  ,:,nnew)*0.5*(Hz(:,jstr-1,:)+Hz(:,jstr  ,:))
+      if (NORTHERN_EDGE) uv_prev(:,jend+1,:,2)=u(:,jend+1,:,nnew)*0.5*(Hz(:,jend  ,:)+Hz(:,jend+1,:))
+      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,iu3d) = uv_prev(:,jstr  ,:,2) - udz_old(:,jstr  ,:,2)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,iu3d) = uv_prev(:,jend+1,:,2) - udz_old(:,jend+1,:,2)
+
+      end subroutine set_diags_at_bc_v  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv2_FCu( istr, iendR, jstrR, jendR )  ![
@@ -234,18 +280,19 @@
       do k=1,N  ! COULD REUSE THIS BY LOOPING OVER a AND b AND SWITCHING ARGUEMENTS
         do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
-            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k,1)
+            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uv_prev(i,j,k,1)
 
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-            u_dif(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k, 1) ! do this here as units are correct
-            udz_old(i,j,k, 1)  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            uv_dif(i,j,k, 1)  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k, 1) ! do this here as units are correct
+            udz_old(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo
 
       end subroutine set_diags_at_uv2_FCu  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv2_FCv( istrR, iendR, jstr, jendR )  ![
       implicit none
@@ -257,12 +304,12 @@
       do k=1,N  ! COULD REUSE THIS BY LOOPING OVER a AND b AND SWITCHING ARGUEMENTS
         do j=jstr,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istrR,iendR
-            Mdiag(i,j,k,2,iuv2FC) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - u_prev(i,j,k,2)
+            Mdiag(i,j,k,2,iuv2FC) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uv_prev(i,j,k,2)
             ! put = Mdiag below rather than same equation...
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-            u_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - udz_old(i,j,k, 2) ! do this here as units are correct
+            uv_dif(i,j,k, 2)  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - udz_old(i,j,k, 2) ! do this here as units are correct
             udz_old(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
           enddo
         enddo
@@ -271,7 +318,7 @@
 !      if(mynode==0) then  ! debug
 !        print *, 'v(10,10,48,nnew)=',v(10,10,48,nnew)
 !        print *, 'udz_old(10,10,48,2)=', udz_old(10,10,48,2)
-!        print *, 'u_dif  (10,10,48,2)=', u_dif(10,10,48,2)
+!        print *, 'uv_dif  (10,10,48,2)=', uv_dif(10,10,48,2)
 !        print *, 'Hz     (10,10,48)  =', Hz(10,10,48)
 !      endif
 
@@ -358,10 +405,10 @@
             call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
           enddo
 
-          ! do u_dif calculation at end of step3d_uv2.F as have istr, iend there already.
+          ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
           ! but use 'nnew' there as still in previou timestep!
           text = uvw(dim) / / 'diff'
-          call nc_write_var(ncid, u_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
+          call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
 
           Mdsum = 0  ! refresh for this step
           do diag=1,nmd
@@ -370,7 +417,7 @@
           text = uvw(dim) / / 'dsum'
           call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
 
-          diff=u_dif(:,:,:,dim)-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
+          diff=uv_dif(:,:,:,dim)-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
           text  = uvw(dim) / / 'd-d'
           call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
 
