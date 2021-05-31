@@ -400,16 +400,7 @@
       enddo      ! <-- j
 
 # ifdef DIAGNOSTICS
-      call set_diags_at_uv2_DC( istrU, iend, jstr, jend, 1 )
-!      do k=1,N
-!        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-!          do i=istrU,iend ! could rather do array operation! code will be cleaner
-!            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-!            Mdiag(i,j,k,1,iuv2DC) = Mdtmp - u_prev(i,j,k,1)  ! avoids recomputing above
-!            u_prev(i,j,k,1) = Mdtmp
-!          enddo
-!        enddo
-!      enddo
+      call set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -441,7 +432,8 @@
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
 # ifdef DIAGNOSTICS
-      call set_diags_at_bc( istr, iend, jstr, jend )
+      call set_diags_at_bc_u( istr, iend, jstr, jend )
+      call set_diags_at_bc_v( istr, iend, jstr, jend )
 # endif
 
 #ifdef DIAG3D_DEBUG

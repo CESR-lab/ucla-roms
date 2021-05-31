@@ -408,17 +408,8 @@ c        enddo
       enddo
 
 # ifdef DIAGNOSTICS
-      call set_diags_at_visc3d( istrU, iend, jstr, jend, 1 )
-!      do k=1,N            ! could be a subroutine call set_diag(ivsic)!!!
-!        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
-!          do i=istrU,iend
-!            Mdiag(i,j,k,1,ivisc) = u(i,j,k,nnew) - u_prev(i,j,k,1)  ! units already in dz*u
-!            u_prev(i,j,k,1)      = u(i,j,k,nnew)
-!          enddo
-!        enddo
-!      enddo
-!      Mdiag (istrU:iend,jstr:jend,:,1,ivisc) = u(istrU:iend,jstr:jend,:,nnew)
-!      u_prev(istrU:iend,jstr:jend,:)         = u(istrU:iend,jstr:jend,:,nnew) ! can remove
+      call set_diags_at_visc3d( istr, iend, jstr, jend, istrU, jstr,  1, u )  ! set u diags
+      call set_diags_at_visc3d( istr, iend, jstr, jend, istr,  jstrV, 2, v )  ! set v diags
 # endif
 
 #ifdef DIAG3D_DEBUG
