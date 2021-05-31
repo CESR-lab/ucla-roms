@@ -188,7 +188,7 @@
           enddo
         enddo
 # ifdef DIAGNOSTICS
-        call set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr )
+        call set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u )
 # endif
         if (j >= jstrV) then
           do i=istr,iend
@@ -215,7 +215,10 @@
               rvfrc(i,j)=rvfrc(i,j) +rv(i,j,k)
             enddo
           enddo
-        endif
+# ifdef DIAGNOSTICS
+          call set_diags_at_uv1( istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v )
+# endif
+        endif  !<-- if j>=jstrV
 
       enddo  !<-- j
       !! velocities are in the form:  u*dz, v*dz, w*dz
