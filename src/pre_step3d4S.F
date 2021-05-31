@@ -128,9 +128,14 @@
 # ifdef DIAGNOSTICS
       if (FIRST_TIME_STEP) then  ! only once set original 'u'
         do k=1,N
-          do j=jstrR,jendR  ! Full loop ranges since u-change over every point including bry.
-            do i=istr,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              udz_old(i,j,k) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+            do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+              udz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            enddo
+          enddo
+          do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
+            do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+              udz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
             enddo
           enddo
         enddo
