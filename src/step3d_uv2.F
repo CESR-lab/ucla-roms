@@ -836,20 +836,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-      call set_diags_at_uv2_FC( istr, iendR, jstrR, jendR )
-!      do k=1,N
-!        do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
-!          do i=istr,iendR
-!            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k,1)
-!
-!            ! Full loop ranges since u-change over every point including bry.
-!            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-!            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-!            u_dif(i,j,k)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k) ! do this here as units are correct
-!            udz_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-!          enddo
-!        enddo
-!      enddo
+      call set_diags_at_uv2_FCu( istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
+      call set_diags_at_uv2_FCv( istrR, iendR, jstr,  jendR )
 # endif
 
 #ifdef DIAG3D_DEBUG

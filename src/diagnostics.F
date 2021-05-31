@@ -46,8 +46,8 @@
       real, public, dimension(GLOBAL_2D_ARRAY, N, 3, nmd)  :: Mdiag=0   ! 3 for u,v,w
 !      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: udz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: u_dif=0   ! u difference current vs previous u
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: udz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: u_dif=0   ! u difference current vs previous u
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Mdsum=0   ! sum of Mdiag
 
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0    ! = u_dif - Mdsum
@@ -106,7 +106,8 @@
       public set_diags_at_uv1
       public set_diags_at_uv2_DC
       public set_diags_at_bc
-      public set_diags_at_uv2_FC
+      public set_diags_at_uv2_FCu
+      public set_diags_at_uv2_FCv
       public wrt_online_diags
 
       contains
@@ -205,26 +206,26 @@
 
       if (WESTERN_EDGE)  u_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  u_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_prev(istr  ,:,:,1) - udz_old(istr  ,:,:) ! u_prev is already u_current, can do this because have udz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_prev(iend+1,:,:,1) - udz_old(iend+1,:,:)
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = u_prev(istr  ,:,:,1) - udz_old(istr  ,:,:, 1) ! u_prev is already u_current, can do this because have udz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = u_prev(iend+1,:,:,1) - udz_old(iend+1,:,:, 1)
       do i=istr,iend+1 ! use loop here else indexing would be even messier
         if (SOUTHERN_EDGE) u_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
         if (NORTHERN_EDGE) u_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
       enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_prev(:,jstr-1,:,1) - udz_old(:,jstr-1,:)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_prev(:,jend+1,:,1) - udz_old(:,jend+1,:)
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = u_prev(:,jstr-1,:,1) - udz_old(:,jstr-1,:, 1)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = u_prev(:,jend+1,:,1) - udz_old(:,jend+1,:, 1)
 
       end subroutine set_diags_at_bc
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv2_FC( istr, iendR, jstrR, jendR )  ![
+      subroutine set_diags_at_uv2_FCu( istr, iendR, jstrR, jendR )  ![
       implicit none
 
       ! inputs
       integer, intent(in) :: istr, iendR, jstrR, jendR ! changed the name to use for u or v
       integer :: i, j, k  ! local
 
-      do k=1,N
+      do k=1,N  ! COULD REUSE THIS BY LOOPING OVER a AND b AND SWITCHING ARGUEMENTS
         do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
             Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - u_prev(i,j,k,1)
@@ -232,13 +233,43 @@
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-            u_dif(i,j,k)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k) ! do this here as units are correct
-            udz_old(i,j,k) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            u_dif(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k, 1) ! do this here as units are correct
+            udz_old(i,j,k, 1)  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo
 
-      end subroutine set_diags_at_uv2_FC  !]
+      end subroutine set_diags_at_uv2_FCu  !]
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_uv2_FCv( istrR, iendR, jstr, jendR )  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istrR, iendR, jstr, jendR ! changed the name to use for u or v
+      integer :: i, j, k  ! local
+
+      do k=1,N  ! COULD REUSE THIS BY LOOPING OVER a AND b AND SWITCHING ARGUEMENTS
+        do j=jstr,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
+          do i=istrR,iendR
+            Mdiag(i,j,k,2,iuv2FC) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - u_prev(i,j,k,2)
+            ! put = Mdiag below rather than same equation...
+            ! Full loop ranges since u-change over every point including bry.
+            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
+            u_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - udz_old(i,j,k, 2) ! do this here as units are correct
+            udz_old(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+          enddo
+        enddo
+      enddo
+
+      if(mynode==0) then  ! debug
+        print *, 'v(10,10,48,nnew)=',v(10,10,48,nnew)
+        print *, 'udz_old(10,10,48,2)=', udz_old(10,10,48,2)
+        print *, 'u_dif  (10,10,48,2)=', u_dif(10,10,48,2)
+        print *, 'Hz     (10,10,48)  =', Hz(10,10,48)
+      endif
+
+      end subroutine set_diags_at_uv2_FCv  !]
 
 ! ----------------------------------------------------------------------
       subroutine wrt_online_diags  ![ write online diagnostics
@@ -255,6 +286,9 @@
       character(len=64) :: fname
       character(len=20) :: text
 
+      integer, dimension(4,2) :: grdtyp3d ! u and v type to using in loop
+      integer, dimension(2) :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
+
       if (write_file==.true. .and. mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
 
         if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
@@ -267,23 +301,27 @@
           call ncdf_create_file(file_name, ncid, prev_fill_mode   ! lose the prev_fill_mode? r2dgrd, ...., auxil are id's to dimensions, needed to create vars in the file
      &                  ,recs_per_file, total_output_rec, auxil
 #ifdef SOLVE3D
-     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd           ! 3D grid dimensions
+!     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd           ! 3D grid dimensions
+     &                  ,r3dgrd, grdtyp3d(:,1), grdtyp3d(:,2), w3dgrd           ! 3D grid dimensions
 #endif
      &                  ,r2dgrd, u2dgrd, v2dgrd )                 ! 2D grid dimensions
 
 
           ! Define remaining variables:
-          do diag=1,nmd
-            do dim=1,1  ! loop through dims
+          do dim=1,2  ! loop through dims
+            do diag=1,nmd
+
               text  = uvw(dim) / / vname(diag)  ! diag short name
-              call nc_define_var(ncid, text, lname(diag), units(diag), u3dgrd, ierr )
+              call nc_define_var(ncid, text, lname(diag), units(diag), grdtyp3d(:,dim), ierr )
             enddo
+
+            text  = uvw(dim) / / 'diff'
+            call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+            text  = uvw(dim) / / 'dsum'
+            call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+            text  = uvw(dim) / / 'd-d'
+            call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
           enddo
-
-          call nc_define_var(ncid, 'u_diff', 'u_diff', 'u_diff', u3dgrd, ierr )
-          call nc_define_var(ncid, 'Mdsum',  'Mdsum',  'Mdsum',  u3dgrd, ierr )
-          call nc_define_var(ncid, 'diff',    'diff',   'diff',  u3dgrd, ierr )
-
 
           ierr=nf90_enddef(ncid) ! end definition to write changes to disk
           if (mynode == 0) then
@@ -308,25 +346,29 @@
 
         call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
 
-        do diag=1,nmd
-          do dim=1,1  ! loop through dims
+        do dim=1,2  ! loop through dims
+          do diag=1,nmd
             text = uvw(dim) / / vname(diag)
-            call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, up_var, output_rec, ierr)
+            call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
           enddo
-        enddo
 
-        ! do u_dif calculation at end of step3d_uv2.F as have istr, iend there already.
-        ! but use 'nnew' there as still in previou timestep!
-        call nc_write_var(ncid, u_dif, N, 'u_diff', up_var, output_rec, ierr)
+          ! do u_dif calculation at end of step3d_uv2.F as have istr, iend there already.
+          ! but use 'nnew' there as still in previou timestep!
+          text = uvw(dim) / / 'diff'
+          call nc_write_var(ncid, u_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
 
-        Mdsum = 0  ! refresh for this step
-        do diag=1,nmd
-          Mdsum = Mdsum + Mdiag(:,:,:,1,diag)
-        enddo
-        call nc_write_var(ncid, Mdsum, N, 'Mdsum', up_var, output_rec, ierr)
+          Mdsum = 0  ! refresh for this step
+          do diag=1,nmd
+            Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)
+          enddo
+          text = uvw(dim) / / 'dsum'
+          call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
 
-        diff=u_dif-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
-        call nc_write_var(ncid, diff, N, 'diff', up_var, output_rec, ierr)
+          diff=u_dif(:,:,:,dim)-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
+          text  = uvw(dim) / / 'd-d'
+          call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
+
+        enddo  ! dim
 
         ierr=nf90_close (ncid)  ! close netcdf file
 
