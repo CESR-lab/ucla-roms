@@ -127,18 +127,29 @@
 
 # ifdef DIAGNOSTICS
       if (FIRST_TIME_STEP) then  ! only once set original 'u'
-        do k=1,N
+        do k=1,N ! PUT THIS IN DIAGNOSTICS.F subroutine
           do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
             do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              udz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+              uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
             enddo
           enddo
           do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
             do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              udz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+              uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
             enddo
           enddo
         enddo
+# ifdef NHMG
+        do k=1,N ! 0 is always 0?
+          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+            do i=istrR,iendR
+              wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
+              if(k==N)
+     &        wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
+            enddo
+          enddo
+        enddo
+# endif
       endif
 # endif
 
@@ -319,7 +330,7 @@
 
 # ifdef NHMG
 
-# include "compute_vert_rhs_w_terms.h"
+#  include "compute_vert_rhs_w_terms.h"
 
         do i=istr,iend
           DC(i,0) =dtau*pm(i,j)*pn(i,j)
@@ -399,7 +410,7 @@
           enddo
         enddo
         !------- end computing of w(:,:,:,nnew) -----
-# endif
+# endif /* NHMG */
 
         do i=istrU,iend
           DC(i,0)=dtau*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
@@ -723,11 +734,11 @@
             enddo
           enddo
         enddo
-# ifdef EXCHANGE
+#  ifdef EXCHANGE
         !! try to see if we could avoid this.
         call exchange_2_tile(istr,iend,jstr,jend,u(START_2D_ARRAY,1,nnew),N
      &                                          ,v(START_2D_ARRAY,1,nnew),N)
-# endif
+#  endif
 
         ! Compute a 'barotropic' correction to w such that it matches
         ! the current ubar,vbar divergence (see Molemaker et al., 2018)

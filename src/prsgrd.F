@@ -526,6 +526,9 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 # ifdef DIAGNOSTICS
       Mdiag(istrU:iend,jstr :jend,:,1,iprsgr)=ru(istrU:iend,jstr :jend,:) ! ru is scratch size not global size
       Mdiag(istr :iend,jstrV:jend,:,2,iprsgr)=rv(istr :iend,jstrV:jend,:) ! Interior points not bry
+#  ifdef NHMG
+      Wdiag(istr:iend,jstr:jend,1:N,iwprsgr) =rw(istr :iend,jstr :jend,1:N)
+#  endif
 # endif
 
       end
