@@ -118,7 +118,7 @@ c**    Wrk(i,k)=0.!(uncomment to test the second part)
       enddo
 # ifdef NHMG
        ! overwrite with w var
-      do k=1,N
+      do k=1,N  ! WASTED COMPUTING TO OVERWRITE SOMETHING USE IF ELSE RATHER
         do j=jmin,jmax
           do i=imin,imax
             Wvlc(i,j,k) =  w(i,j,k,nstp)

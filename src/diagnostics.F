@@ -45,16 +45,16 @@
       integer,public,parameter :: nmd = 7  !! number of momentum diag terms
       integer,public,parameter :: ndt = 5  !! number of tracer diag terms
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3, nmd)  :: Mdiag=0   ! 3 for u,v,w
+      ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
+
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 2, nmd) :: Mdiag=0    ! 3 for u,v,w
 !      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: udz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: uv_dif=0   ! gross u/v difference between current vs previous timestep u/v
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Mdsum=0   ! sum of Mdiag
-
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: diff=0    ! = uv_dif - Mdsum
-
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 3)       :: uv_prev=0  ! store incremental u/v/w (nnew)
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uvdz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_dif=0   ! gross u/v difference between current vs previous timestep u/v
+      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Mdsum=0    ! sum of Mdiag
+      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: diff=0     ! = uv_dif - Mdsum
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_prev=0  ! store incremental u/v/w (nnew)
 
       real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
 
@@ -103,6 +103,47 @@
       integer            :: output_rec = 0              ! record number of output. 0 indicates we need new file
       integer            :: total_output_rec = 0        ! total flux output recordings so far
       character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
+
+# ifdef NHMG
+      integer,public,parameter :: nwd = 5  !! number of 'w' momentum diag terms (for NHMG runs)
+
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N, nwd) :: Wdiag=0    ! 3 for u,v,w
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_dif=0   ! gross u/v difference between current vs previous timestep u/v
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: Wdsum=0    ! sum of Mdiag
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdif=0     ! = w_dif - Mdsum
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_prev=0  ! store incremental u/v/w (nnew)
+
+      integer, parameter, public :: iwprsgr   = 1,
+     &                              iwhoriadv = 2,
+     &                              iwvertadv = 3,
+     &                              iwuv2     = 4,
+     &                              iwbc      = 5
+
+      character (len=20), dimension(nwd) :: wvname = (/
+     &  'w_prsgrd',
+     &  'w_horiz_flx',
+     &  'w_vert_adv',
+     &  'w_2D_3D_coupling',
+     &  'w_3dbc'
+     &                                                                  /)
+
+      character (len=60), dimension(nwd) :: wlname = (/
+     &  'prsgrd.F',
+     &  'compute_horiz_rhs_w_terms.h',
+     &  'compute_vert_rhs_w_terms.h',
+     &  'step3d_uv2.F',
+     &  'w3dbc_im.F'
+     &                                                                  /)
+
+      character (len=20), dimension(nwd) :: wunits = (/
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)',
+     &  'm^2/s (dz*u)'
+     &                                                                  /)
+# endif /* NHMG */
 
       public set_diags_at_visc3d
       public set_diags_at_uv1
@@ -230,15 +271,15 @@
 
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = uv_prev(istr  ,:,:,1) - udz_old(istr  ,:,:, 1) ! uv_prev is already u_current, can do this because have udz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = uv_prev(iend+1,:,:,1) - udz_old(iend+1,:,:, 1)
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) ! uv_prev is already u_current, can do this because have uvdz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1)
 
       do i=istr,iend+1 ! use loop here else indexing would be even messier
         if (SOUTHERN_EDGE) uv_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
         if (NORTHERN_EDGE) uv_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
       enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = uv_prev(:,jstr-1,:,1) - udz_old(:,jstr-1,:, 1)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = uv_prev(:,jend+1,:,1) - udz_old(:,jend+1,:, 1)
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1)
 
       end subroutine set_diags_at_bc_u  !]
 
@@ -259,13 +300,13 @@
         if (WESTERN_EDGE)  uv_prev(istr-1,j,:,2) = u(istr-1,j,:,nnew) * 0.5*(Hz(istr-1,j-1,:)+Hz(istr-1,j,:))
         if (EASTERN_EDGE)  uv_prev(iend+1,j,:,2) = u(iend+1,j,:,nnew) * 0.5*(Hz(iend+1,j-1,:)+Hz(iend+1,j,:))
       enddo
-      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,iu3d) = uv_prev(istr-1,:,:,2) - udz_old(istr-1,:,:,2) ! uv_prev is already u_current, can do this because have udz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,iu3d) = uv_prev(iend+1,:,:,2) - udz_old(iend+1,:,:,2)
+      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,iu3d) = uv_prev(istr-1,:,:,2) - uvdz_old(istr-1,:,:,2) ! uv_prev is already u_current, can do this because have uvdz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,iu3d) = uv_prev(iend+1,:,:,2) - uvdz_old(iend+1,:,:,2)
 
       if (SOUTHERN_EDGE) uv_prev(:,jstr  ,:,2)=u(:,jstr  ,:,nnew)*0.5*(Hz(:,jstr-1,:)+Hz(:,jstr  ,:))
       if (NORTHERN_EDGE) uv_prev(:,jend+1,:,2)=u(:,jend+1,:,nnew)*0.5*(Hz(:,jend  ,:)+Hz(:,jend+1,:))
-      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,iu3d) = uv_prev(:,jstr  ,:,2) - udz_old(:,jstr  ,:,2)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,iu3d) = uv_prev(:,jend+1,:,2) - udz_old(:,jend+1,:,2)
+      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,iu3d) = uv_prev(:,jstr  ,:,2) - uvdz_old(:,jstr  ,:,2)
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,iu3d) = uv_prev(:,jend+1,:,2) - uvdz_old(:,jend+1,:,2)
 
       end subroutine set_diags_at_bc_v  !]
 
@@ -285,8 +326,8 @@
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-            uv_dif(i,j,k, 1)  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - udz_old(i,j,k, 1) ! do this here as units are correct
-            udz_old(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            uv_dif(i,j,k, 1)  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 1) ! do this here as units are correct
+            uvdz_old(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo
@@ -309,15 +350,15 @@
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
-            uv_dif(i,j,k, 2)  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - udz_old(i,j,k, 2) ! do this here as units are correct
-            udz_old(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+            uv_dif(i,j,k, 2)  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 2) ! do this here as units are correct
+            uvdz_old(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo
 
 !      if(mynode==0) then  ! debug
 !        print *, 'v(10,10,48,nnew)=',v(10,10,48,nnew)
-!        print *, 'udz_old(10,10,48,2)=', udz_old(10,10,48,2)
+!        print *, 'uvdz_old(10,10,48,2)=', uvdz_old(10,10,48,2)
 !        print *, 'uv_dif  (10,10,48,2)=', uv_dif(10,10,48,2)
 !        print *, 'Hz     (10,10,48)  =', Hz(10,10,48)
 !      endif

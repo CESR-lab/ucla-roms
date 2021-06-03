@@ -395,7 +395,7 @@
         enddo
         !------- end computing of w(:,:,:,nnew) -----
 
-# endif
+# endif /* NHMG */
 
       enddo      ! <-- j
 
