@@ -67,7 +67,7 @@
      &                              iuv2FC = 7  ! internal + bry (full domain) loop ranges
 
 
-      character (len=20), dimension(nmd) :: vname = (/
+      character (len=20), dimension(nmd) :: vnames = (/
      &  'prsgrd',
      &  'coriolis',
      &  'advection',
@@ -556,7 +556,7 @@
           do dim=1,2  ! loop through dims
             do diag=1,nmd
 
-              text  = uvw(dim) / / vname(diag)  ! diag short name
+              text  = uvw(dim) / / vnames(diag)  ! diag short name
               call nc_define_var(ncid, text, lname(diag), units(diag), grdtyp3d(:,dim), ierr )
             enddo
 
@@ -593,7 +593,7 @@
 
         do dim=1,2  ! loop through dims
           do diag=1,nmd
-            text = uvw(dim) / / vname(diag)
+            text = uvw(dim) / / vnames(diag)
             call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
           enddo
 
