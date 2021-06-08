@@ -101,6 +101,9 @@
         enddo
 
       enddo
+#  ifdef DIAGNOSTICS
+      call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
+#  endif
 # endif  /* NHMG */
 
 #ifdef DIAG3D_DEBUG

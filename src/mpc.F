@@ -121,7 +121,7 @@ c--#define TRAP_BARRIERS
 
 
       implicit none
-      integer, parameter :: max_length=128, max_filename=32
+      integer, parameter :: max_length=200, max_filename=32
       character(len=max_filename) file_in, file_out
       character(len=1) tab, quote, double_quote, type,
      &                             symbol(2*max_length)

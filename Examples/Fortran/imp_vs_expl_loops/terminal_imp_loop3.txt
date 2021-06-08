@@ -1,0 +1,7 @@
+ Will multiply n by n matrices k-j-i, n=          780
+ implicit loop (array operations):
+ k -> dk:n-dk, where dk=           3
+ j -> dj:n-dj, where dj=           2
+ i -> di:n-di, where di=           4
+Performed   20 matrix multiplies: CPU time =  12.36158500 seconds
+Elapsed time =  14.05553818 seconds

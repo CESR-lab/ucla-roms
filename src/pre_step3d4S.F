@@ -140,12 +140,14 @@
           enddo
         enddo
 # ifdef NHMG
-        do k=1,N ! 0 is always 0?
+        do k=1,N-1 ! 0 is always 0?
           do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
             do i=istrR,iendR
-              wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
-              if(k==N)
-     &        wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
+              if(k==N) then
+                wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
+              else
+                wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
+              endif
             enddo
           enddo
         enddo

@@ -1,0 +1,221 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+Intel(R) Fortran Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 19.1.2.254 Build 20200623
+
+Compiler options: -O3 -qopt-report=3 -o imp_loop
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: TIMINGS
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (TIMINGS) [1] imp_loop.f90(11,9)
+  -> EXTERN: (11,9) for_set_reentrancy
+  -> EXTERN: (22,10) for_system_clock_count
+  -> EXTERN: (24,5) for_write_seq_lis_xmit
+  -> EXTERN: (24,5) for_write_seq_lis
+  -> EXTERN: (25,5) for_write_seq_lis
+  -> EXTERN: (26,5) for_write_seq_lis_xmit
+  -> EXTERN: (26,5) for_write_seq_lis
+  -> EXTERN: (27,5) for_write_seq_lis_xmit
+  -> EXTERN: (27,5) for_write_seq_lis
+  -> EXTERN: (28,5) for_write_seq_lis_xmit
+  -> EXTERN: (28,5) for_write_seq_lis
+  -> EXTERN: (32,5) for_alloc_allocatable
+  -> EXTERN: (32,5) for_check_mult_overflow64
+  -> EXTERN: (32,5) for_alloc_allocatable
+  -> EXTERN: (32,5) for_check_mult_overflow64
+  -> EXTERN: (32,5) for_alloc_allocatable
+  -> EXTERN: (32,5) for_check_mult_overflow64
+  -> EXTERN: (38,10) for_cpusec_t
+  -> EXTERN: (50,10) for_cpusec_t
+  -> EXTERN: (51,5) for_write_seq_fmt_xmit
+  -> EXTERN: (51,5) for_write_seq_fmt
+  -> EXTERN: (55,10) for_system_clock_rate
+  -> EXTERN: (55,10) for_system_clock_count
+  -> EXTERN: (57,5) for_write_seq_fmt
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at imp_loop.f90(35,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at imp_loop.f90(35,5)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at imp_loop.f90(35,5)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at imp_loop.f90(35,5)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 4 
+         remark #15477: vector cost: 1.500 
+         remark #15478: estimated potential speedup: 2.550 
+         remark #15488: --- end vector cost summary ---
+      LOOP END
+
+      LOOP BEGIN at imp_loop.f90(35,5)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at imp_loop.f90(36,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at imp_loop.f90(36,5)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at imp_loop.f90(36,5)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at imp_loop.f90(36,5)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 4 
+         remark #15477: vector cost: 1.500 
+         remark #15478: estimated potential speedup: 2.550 
+         remark #15488: --- end vector cost summary ---
+      LOOP END
+
+      LOOP BEGIN at imp_loop.f90(36,5)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at imp_loop.f90(43,6)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at imp_loop.f90(43,6)
+      remark #25101: Loop Interchange not done due to: Original Order seems proper
+      remark #25452: Original Order found to be proper, but by a close margin
+      remark #25045: Fused Loops: ( 43 44 )
+
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at imp_loop.f90(43,6)
+         remark #25045: Fused Loops: ( 43 44 )
+
+         remark #15542: loop was not vectorized: inner loop was already vectorized
+
+         LOOP BEGIN at imp_loop.f90(43,6)
+         <Peeled loop for vectorization>
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+            remark #25015: Estimate of max trip count of loop=1
+         LOOP END
+
+         LOOP BEGIN at imp_loop.f90(43,6)
+            remark #25045: Fused Loops: ( 43 44 )
+
+            remark #15301: FUSED LOOP WAS VECTORIZED
+            remark #15442: entire loop may be executed in remainder
+            remark #15448: unmasked aligned unit stride loads: 2 
+            remark #15449: unmasked aligned unit stride stores: 2 
+            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 13 
+            remark #15477: vector cost: 6.000 
+            remark #15478: estimated potential speedup: 2.140 
+            remark #15488: --- end vector cost summary ---
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+            remark #25015: Estimate of max trip count of loop=96
+         LOOP END
+
+         LOOP BEGIN at imp_loop.f90(44,6)
+            remark #25046: Loop lost in Fusion 
+         LOOP END
+
+         LOOP BEGIN at imp_loop.f90(43,6)
+         <Alternate Alignment Vectorized Loop>
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
+            remark #25015: Estimate of max trip count of loop=96
+         LOOP END
+
+         LOOP BEGIN at imp_loop.f90(43,6)
+         <Remainder loop for vectorization>
+            remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+            remark #15442: entire loop may be executed in remainder
+            remark #15448: unmasked aligned unit stride loads: 2 
+            remark #15449: unmasked aligned unit stride stores: 2 
+            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 13 
+            remark #15477: vector cost: 6.000 
+            remark #15478: estimated potential speedup: 2.140 
+            remark #15488: --- end vector cost summary ---
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at imp_loop.f90(44,6)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at imp_loop.f90(44,6)
+      remark #25101: Loop Interchange not done due to: Original Order seems proper
+      remark #25452: Original Order found to be proper, but by a close margin
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+imp_loop.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] imp_loop.f90:11
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   24[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm9]
+        
+    Routine temporaries
+        Total         :     438
+            Global    :     119
+            Local     :     319
+        Regenerable   :     144
+        Spilled       :      44
+        
+    Routine stack
+        Variables     :     244 bytes*
+            Reads     :       7 [3.89e-03 ~ 0.0%]
+            Writes    :      26 [1.44e-02 ~ 0.0%]
+        Spills        :     312 bytes*
+            Reads     :      49 [2.26e+00 ~ 2.3%]
+            Writes    :      41 [1.59e-01 ~ 0.2%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

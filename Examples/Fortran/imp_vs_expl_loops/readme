@@ -1,0 +1,29 @@
+In these two examples we test an explicit loop (do loop) against the performance of an implicit loop (array operation). Both do the same calculation.
+
+Explicit:
+        do k = dk,n-dk
+            do j = dj,n-dj
+                do i=di,n-di
+                    c(i,j,k) = 1.d0
+                    c(i,j,k) = c(i,j,k) + a(i,j,k)*b(i,j,k)
+                    
+Implicit:
+     c(di:n-di,dj:n-dj,dk:n-dk) = 1.d0
+     c(di:n-di,dj:n-dj,dk:n-dk) = c(di:n-di,dj:n-dj,dk:n-dk) + a(di:n-di,dj:n-dj,dk:n-dk)*b(di:n-di,dj:n-dj,dk:n-dk)                    
+
+It can be seen in the compiler reports that both produce the same optimization for the 'loop' in question:
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 13 
+            remark #15477: vector cost: 6.000 
+            remark #15478: estimated potential speedup: 2.140 
+            remark #15488: --- end vector cost summary ---
+            
+This is backed up by the actual test result I achieved on my HP i7 laptop:
+
+Machine	Optimization flags	Routine	    Avg Time (s)	Run 1	Run 2	Run 3
+HP i7	 -O3	            exp_loop_do	12.369	        12.393	12.362	12.353
+	     -O3	            imp_loop	12.366	        12.366	12.371	12.361
+	     
+	     
+THUS: we assume there is no performance cost in using array statements in ROMS, which are typically easier to read and require fewer lines than do loops...	     
+
