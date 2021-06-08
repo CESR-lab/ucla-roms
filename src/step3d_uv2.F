@@ -796,7 +796,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
 !
       ! We've modified u and v, w needs to be made consistent
-      do j=istr,iend
+!      do j=istr,iend  ! BUG HERE
+      do j=jstr,jend  ! BUG HERE
         do k=1,N
           do i=Istr,Iend
             DC(i,0)=pm(i,j)*pn(i,j)
@@ -811,12 +812,19 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
           enddo
         enddo
       enddo
+# ifdef DIAGNOSTICS
+      call set_diags_w_at_uv2( istr, iend, jstr, jend )
+# endif
 !
 
 !--------------------------------------------------------------------
 ! Update physical boundary values
 !--------------------------------------------------------------------
       call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
+
+#  ifdef DIAGNOSTICS
+      call set_diags_w_at_bc( istr, iend, jstr, jend )
+#  endif
 !--------------------------------------------------------------------
 ! Exchange periodic boundaries and computational margins.
 !--------------------------------------------------------------------
@@ -828,8 +836,11 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-      call set_diags_at_uv2_FCu( istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
-      call set_diags_at_uv2_FCv( istrR, iendR, jstr,  jendR )
+      call set_diags_at_uv2_FCu(   istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
+      call set_diags_at_uv2_FCv(   istrR, iendR, jstr,  jendR )
+#  ifdef NHMG
+      call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
+#  endif
 # endif
 
 #ifdef DIAG3D_DEBUG

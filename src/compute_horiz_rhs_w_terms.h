@@ -160,7 +160,7 @@
             rw(i,j,k)=rw(i,j,k)-(FX(i+1,j)-FX(i,j))
      &                         -(FE(i,j+1)-FE(i,j))
 #ifdef DIAGNOSTICS
-	        Wdiag(i,j,k,iwhoriadv)=rw(i,j,k)-Wdiag(i,j,k,iwprsgr)
+	        Wdiag(i,j,k,iwhoriadv)=rw(i,j,k)-Wdiag(i,j,k,iwprsgr) ! loop also 1:N. Only called if NHMG anyway
 #endif
           enddo
         enddo

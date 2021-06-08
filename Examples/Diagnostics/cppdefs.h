@@ -34,9 +34,8 @@ c--#endif
 # if defined USWC_WEC
 
 #  define DIAGNOSTICS
-#  define DIAG3D_DEBUG
+c--#  define DIAG3D_DEBUG
 c--#  define DIAG2D_DEBUG
-#  define HZU
 
 c--#  define BRY_EXTRACT_CHILD  /* required for online child bry interp */
 #  undef GRID_ANG_DEG
