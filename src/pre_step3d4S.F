@@ -125,6 +125,16 @@
       endif
 #endif
 
+#ifdef DIAG_T_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'pre_step3d start:'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+        print *, 't(10,10,48,indx,itemp)=',t(10,10,48,indx,itemp),'indx=',indx
+      endif
+#endif
+
 # ifdef DIAGNOSTICS
       if (FIRST_TIME_STEP) then  ! only once set original 'u'
         do k=1,N ! PUT THIS IN DIAGNOSTICS.F subroutine
@@ -139,8 +149,11 @@
             enddo
           enddo
         enddo
-# ifdef NHMG
-        do k=1,N-1 ! 0 is always 0?
+#  ifdef DIAGS_TRC
+        Hz_old = Hz ! store Hz to calculate old dz*t
+#  endif
+#  ifdef NHMG
+        do k=1,N ! 0 is always 0?
           do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
             do i=istrR,iendR
               if(k==N) then
@@ -151,9 +164,9 @@
             enddo
           enddo
         enddo
-# endif
+#  endif /* NHMG */
       endif
-# endif
+# endif /* DIAGNOSTICS */
 
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
         dtau=0.5*dt                   ! form LF-AM3 stepping algorithm,
@@ -849,6 +862,16 @@
         print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
         print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
         print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
+      endif
+#endif
+
+#ifdef DIAG_T_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'pre_step3d end: t(indx,itrc)=Hz*t(nstp,itrc)'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+        print *, 't(10,10,48,indx,itemp)=',t(10,10,48,indx,itemp),'indx=',indx
       endif
 #endif
 

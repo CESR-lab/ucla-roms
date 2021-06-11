@@ -34,8 +34,11 @@ c--#endif
 # if defined USWC_WEC
 
 #  define DIAGNOSTICS
-c--#  define DIAG3D_DEBUG
-c--#  define DIAG2D_DEBUG
+#  define DIAGS_TRC        /* tracers diagnostics */
+#  define DIAG_T_DEBUG     /* tracer      diagnostics terminal outputs */
+c--#  define NHMG
+c--#  define DIAG3D_DEBUG  /* 3D momentum diagnostics terminal outputs */
+c--#  define DIAG2D_DEBUG  /* 2D momentum diagnostics terminal outputs */
 
 c--#  define BRY_EXTRACT_CHILD  /* required for online child bry interp */
 #  undef GRID_ANG_DEG
