@@ -146,6 +146,11 @@ c-# define IMPLICIT_BOTTOM_DRAG
 #ifdef MPI
 # define GLOBAL_2D_ARRAY -1:Lm+2+padd_X,-1:Mm+2+padd_E
 # define START_2D_ARRAY -1,-1
+# define GLOBAL_1DX_ARRAY -1:Lm+2+padd_X
+# define GLOBAL_1DY_ARRAY -1:Mm+2+padd_E
+!# define START_1D -1
+!# define END_1DX Lm+2+padd_X
+!# define END_1DY Mm+2+padd_E
 #else
 # ifdef EW_PERIODIC
 #  ifdef NS_PERIODIC

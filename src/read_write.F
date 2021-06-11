@@ -74,6 +74,7 @@
 #if !defined EW_PERIODIC && !defined NS_PERIODIC
       public ncdf_read_coarser_grid
 #endif
+      public wrt_1D_or_2D_array
 
       contains
 
@@ -2282,6 +2283,41 @@ C$OMP BARRIER
 
       end function ncdf_read_coarser_grid  !]
 #endif /* EW_PERIODIC && NS_PERIODIC */
+
+! ----------------------------------------------------------------------
+      subroutine wrt_1D_or_2D_array(ncid, record, var_name, d1str, d1end, d2str, d2end, var)  ![
+      ! write 1D or 2D array in correct record
+
+      implicit none
+
+      ! inputs:
+      integer,intent(in)           :: ncid, record
+      integer,intent(in)           :: d1str, d1end, d2str, d2end  ! start and end of each dimension d2..=1 if 1D
+      character(len=*), intent(in) :: var_name
+      real,dimension(d1str:d1end,d2str:d2end),intent(in) :: var   ! might just want (:,:)
+
+      ! local:
+      integer :: ierr, lvar, lenstr, start(3), count(3), varid
+
+      ! currently no masking
+
+      start=1; count=1 ! set defaults to 1
+      count(1)=d1end-d1str+1
+      if(d2end>1) then ! 2D var
+        start(3) = record
+        count(2) = d2end-d2str+1
+      else             ! 1D var
+        start(2) = record
+      endif
+
+      lvar=lenstr(var_name)                                  ! Note: since 'maya' machine has 2014 ifort, it complains when taking
+      ierr = nf90_inq_varid (ncid,var_name(1:lvar),varid)   ! in var_name with trailing spaces. Hence send in only required characters 'lvar'. Remove this step when maya is updated.
+      if(ierr/=0) call handle_ierr(ierr,'wrt_1D_or_2D_array','find var')
+
+      ierr=nf90_put_var(ncid, varid, var, start, count)
+      if(ierr/=0) call handle_ierr(ierr,'wrt_1D_or_2D_array','wrt var')
+
+      end subroutine wrt_1D_or_2D_array  !]
 
 ! ----------------------------------------------------------------------
 !      subroutine read_inp_net_flux(keyword, ierr, kwlen)  ![

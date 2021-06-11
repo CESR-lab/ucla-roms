@@ -52,6 +52,8 @@
 
       real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
 
+      real, public, dimension(GLOBAL_1DY_ARRAY, N, 2)     :: uv_wbry    ! bry change for u and v
+
       integer, parameter, public :: iprsgr = 1, ! internal loop ranges only (i.e. excluding domain boundary)
      &                              icori  = 2, ! internal loop ranges only
      &                              iadv   = 3, ! internal loop ranges only
@@ -336,6 +338,9 @@
 
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
+
+      if (WESTERN_EDGE)  uv_wbry(:,:,1)           = uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1)
+
       if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) ! uv_prev is already u_current, can do this because have uvdz_old already
       if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1)
 
@@ -756,6 +761,10 @@
 
       Hz_old = Hz  ! update Hz_old
 
+      if(WESTERN_EDGE) then
+        call wrt_1D_or_2D_array(ncid, output_rec, 'u_wbry', jstrR, jendR, 1, N, uv_wbry(jstrR:jendR,1:N,1) )
+      endif
+
       end subroutine wrt_tracer_diags_tile  !]
 # endif /* DIAGS_TRC */
 
@@ -770,7 +779,7 @@
 #ifdef SOLVE3D
      &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt
+      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, rwebrygrd(3)
       character(len=64) :: fname
       character(len=20) :: text
 
@@ -822,6 +831,14 @@
           text  = 't_' / / 'd-d'
           call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
 # endif
+
+          ! define bry 2D vars:
+          rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
+          rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
+          rwebrygrd(3)=r3dgrd(4) ! set time    dimension
+!          if(WESTERN_EDGE) then
+            call nc_define_var(ncid, 'u_wbry', 'u_wbry', 'u_wbry', rwebrygrd, ierr )
+!          endif
 
           ierr=nf90_enddef(ncid) ! end definition to write changes to disk
           if (mynode == 0) then
