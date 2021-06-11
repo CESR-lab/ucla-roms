@@ -352,6 +352,9 @@ C$OMP END MASTER
 #include "scalars.h"
 #include "ncvars.h"
 
+#ifdef DIAGNOSTICS
+      call wrt_online_diags ! call before nnew and nstp have swapped indices (as if previous timestep)
+#endif
 
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
@@ -375,12 +378,6 @@ C$OMP END MASTER
       nstp=1+mod(iic-ntstart,2)
       nrhs=nstp ; nnew=3
 #endif
-
-
-#ifdef DIAGNOSTICS
-      call wrt_online_diags
-#endif
-
 
                                        ! Read forcing and climatology
       if (synchro_flag) then           ! data. This operation may raise

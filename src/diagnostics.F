@@ -29,27 +29,21 @@
 
       ! Preamble:  ![
 
-      ! Mdiag(2): hydrostatic pressure gradient
+      ! U & V MOMENTUM:
+      ! ---------------
+
+      ! Mdiag(2): hydrostatic pressure gradient  ! OLD JM NOTES
       ! Mdiag(3): cor(u)
       ! Mdiag(4): adv(u) (non-dissipative part)
       ! Mdiag(5): horizontal mixing (including numerical dissipation)
       ! Mdiag(6): vertical mixing   (including numerical dissipation)
       ! Mdiag(7): non-hydrostatic pressure gradient
 
-      ! Tdiag(1): dt/dt
-      ! Tdiag(2): adv(t) (non-dissipative part)
-      ! Tdiag(3): adv(t) (dissipative part)
-      ! Tdiag(4): vertical mixing
-      ! Tdiag(5): sources/sinks
-
-      integer,public,parameter :: nmd = 7  !! number of momentum diag terms
-      integer,public,parameter :: ndt = 5  !! number of tracer diag terms
-
       ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 2, nmd) :: Mdiag=0    ! 3 for u,v,w
-!      real,public, dimension(nx,ny,nz,ndt,nt) :: Tdiag
+      integer,public,parameter                            :: nmd = 7    ! number of momentum diag terms
 
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 2, nmd) :: Mdiag=0    ! 2 for u & v
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uvdz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_dif=0   ! gross u/v difference between current vs previous timestep u/v
       real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Mdsum=0    ! sum of Mdiag
@@ -88,22 +82,87 @@
      &                                                                  /)
 
       character (len=20), dimension(nmd) :: units = (/
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)'
+     &  'm^2/s (dz*(u or v))', ! SINCE UNITS ALL THE SAME DON'T REALLY NEED THIS
+     &  'm^2/s (dz*(u or v))',
+     &  'm^2/s (dz*(u or v))',
+     &  'm^2/s (dz*(u or v))',
+     &  'm^2/s (dz*(u or v))',
+     &  'm^2/s (dz*(u or v))',
+     &  'm^2/s (dz*(u or v))'
      &                                                                  /)
 
       character (len=2), dimension(3) :: uvw = (/ 'u_', 'v_', 'w_' /)
 
+      ! TRACERS:
+      ! --------
+# ifdef DIAGS_TRC
+      ! Since there could be many tracers, it is preferable not to carry any 't_old'
+      ! or temporary arrays for each tracer to avoid the memory burden. This differs
+      ! from the u,v,w implementation here currently.
+      ! Need to consider pipe and river sources.
+
+      ! Tdiag(1): dt/dt  ! OLD JM NOTES
+      ! Tdiag(2): adv(t) (non-dissipative part)
+      ! Tdiag(3): adv(t) (dissipative part)
+      ! Tdiag(4): vertical mixing
+      ! Tdiag(5): sources/sinks
+      integer, public, parameter                           :: ndt = 5  ! number of tracer diag terms
+#  ifdef LMD_KPP
+     &                                                            + 1
+#  endif
+      real, public, dimension(GLOBAL_2D_ARRAY, N, NT, ndt) :: Tdiag=0    ! consider ndt, NT order
+
+      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: T_dsum=0   ! sum of t diagnostics to compare with gross change
+      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Hz_old=0   ! store previous Hz to calculate old dz*t
+                                                                       ! better than storing dz*t for each tracer. Better to recalculate it?
+      integer, parameter, public :: it_h_adv    = 1,  ! compute_horiz_tracer_fluxes.h
+     &                              it_v_adv    = 2,  ! compute_vert_tracer_fluxes.h
+      ! Do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
+     &                              it_imp_vdif = 3,  ! step3d_t_ISO.F
+     &                              it_t3dmix   = 4,
+     &                              it_lmdkpp   = 5,  ! not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
+     &                              it_bc       = 6   ! BC's shouldn't have 3D array
+
+      character (len=20), dimension(ndt) :: tvname = (/
+     &  't_hori_adv',
+     &  't_vert_adv',
+     &  't_imp_vdif',
+     &  't_t3dmix',
+     &  't_lmdkpp',
+     &  't_t3dbc'
+     &                                                                  /)
+
+      character (len=80), dimension(ndt) :: tlname = (/
+     &  'Horizontal advective fluxes - compute_horiz_tracer_fluxes.h',
+     &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h.h',
+     &  'Implicit time step for vertical diffusion - step3d_t_ISO.F',
+     &  'Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F',
+     &  'Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F',
+     &  'Boundary changes - t3dbc_im.F'
+     &                                                                  /)
+
+      character (len=20), dimension(ndt) :: tunits = (/
+     &  'C.m^2/s (dz*t)', ! SINCE UNITS ALL THE SAME DON'T REALLY NEED THIS
+     &  'C.m^2/s (dz*t)', ! Also not sure on units here.
+     &  'C.m^2/s (dz*t)',
+     &  'C.m^2/s (dz*t)',
+     &  'C.m^2/s (dz*t)',
+     &  'C.m^2/s (dz*t)'
+     &                                                                  /)
+
+      public set_diags_t_at_bc
+      public set_diags_t_at_t3dmix_GP
+# endif /* DIAGS_TRC */
+
       ! Netcdf outputting:
+      ! ------------------
       integer            :: output_rec = 0              ! record number of output. 0 indicates we need new file
       integer            :: total_output_rec = 0        ! total flux output recordings so far
       character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
 
+
+      ! W MOMENTUM:
+      ! -----------
 # ifdef NHMG
       integer,public,parameter :: nwd = 5  !! number of 'w' momentum diag terms (for NHMG runs)
 
@@ -137,13 +196,14 @@
      &                                                                  /)
 
       character (len=20), dimension(nwd) :: wunits = (/
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)',
-     &  'm^2/s (dz*u)'
+     &  'm^2/s (dz*w)', ! SINCE UNITS ALL THE SAME DON'T REALLY NEED THIS
+     &  'm^2/s (dz*w)', ! Not sure on units here.
+     &  'm^2/s (dz*w)',
+     &  'm^2/s (dz*w)',
+     &  'm^2/s (dz*w)'
      &                                                                  /)
 
+      ! Public subroutines:
       public set_diags_w_at_uv1
       public set_diags_w_at_uv2
       public set_diags_w_at_uv2_end
@@ -517,6 +577,189 @@
 # endif /* NHMG */
 
 ! ----------------------------------------------------------------------
+# ifdef DIAGS_TRC
+      subroutine set_diags_t_at_bc(istr, iend, jstr, jend, itrc)  ![
+
+      use tracers, only: t
+      implicit none
+
+      ! inputs/outputs
+      integer, intent(in) :: istr, iend, jstr, jend, itrc
+
+      ! local
+      integer :: i, j
+
+      ! PROBABLY DON'T NEED THIS CAN JUST USE T(NNEW) AT THE BOUNDARY SINCE ONLY UPDATE FROM HERE.
+
+      if (WESTERN_EDGE) then
+        i=istr-1
+        Tdiag(i,:,:,itrc,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
+     &                          - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
+      endif
+      if (EASTERN_EDGE) then
+        i=iend+1
+        Tdiag(i,:,:,itrc,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
+     &                          - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
+      endif
+      if (SOUTHERN_EDGE) then
+        j=jstr-1
+        Tdiag(:,j,:,itrc,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
+     &                          - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
+      endif
+      if (NORTHERN_EDGE) then
+        j=jend+1
+        Tdiag(:,j,:,itrc,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
+     &                          - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
+      endif
+
+      end subroutine set_diags_t_at_bc  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend)  ![
+
+      use tracers, only: t
+      implicit none           ! from t3dmix_GP.F
+
+      ! inputs/outputs
+      integer, intent(in) :: istr, iend, jstr, jend
+
+      ! local
+      integer :: i, j, k, itrc
+
+      do itrc=1,NT
+        do k=1,N  ! K>0 in t3dmix
+          do j=jstr,jend
+            do i=istr,iend
+              Tdiag(i,j,k,itrc,it_t3dmix) = t(i,j,k,nnew,itrc)
+            enddo
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_t_at_t3dmix_GP  !]
+
+! ----------------------------------------------------------------------
+      subroutine wrt_tracer_diags (tile, ncid)  ![
+      implicit none
+      ! need tile bound unfortunately hence this construct...
+
+      ! input
+      integer, intent(in) :: tile, ncid
+
+# include "compute_tile_bounds.h"
+
+      call wrt_tracer_diags_tile (istr,iend,jstr,jend, ncid)
+
+      end subroutine wrt_tracer_diags  !]
+
+! ----------------------------------------------------------------------
+      subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend, ncid)  ![
+      ! since the value of the tracer has been stored as dz*t, we need to find the
+      ! differences for the contribution of each diagnostic term
+
+      use tracers, only: t
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr,iend,jstr,jend, ncid
+
+      ! local
+      integer :: itrc, idt, i, j, k, ierr, it_prev
+      real, dimension(GLOBAL_2D_ARRAY, N) :: Td_tmp=0
+
+! Needed for istrU, istrR, etc
+# include "compute_auxiliary_bounds.h"
+
+      do itrc=1,1 ! NT
+
+        T_dsum=0 ! could just do boundaries as the rest can be overwritten in first below
+        Td_tmp=0 ! Do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
+
+        do k=1,N            ! first diagnostic calculated using previous step's value
+          do j=jstr,jend
+            do i=istr,iend
+              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+              T_dsum(i,j,k)=Td_tmp(i,j,k) ! add to total
+            enddo
+          enddo
+        enddo
+        call nc_write_var(ncid, Td_tmp, N, tvname(it_h_adv), rp_var, output_rec, ierr)
+
+        do k=1,N
+          do j=jstr,jend
+            do i=istr,iend
+              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_v_adv) - Tdiag(i,j,k,itrc,it_h_adv)
+              T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
+            enddo
+          enddo
+        enddo
+        call nc_write_var(ncid, Td_tmp, N, tvname(it_v_adv), rp_var, output_rec, ierr)
+        it_prev=it_v_adv ! store index of previous diagnostic
+
+# ifdef LMD_KPP
+        do k=1,N
+          do j=jstr,jend
+            do i=istr,iend
+              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_lmdkpp) - Tdiag(i,j,k,itrc,it_v_adv)
+              T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
+            enddo
+          enddo
+        enddo
+        call nc_write_var(ncid, Td_tmp, N, tvname(it_lmdkpp), rp_var, output_rec, ierr)
+        it_prev=it_lmdkpp ! store index of previous diagnostic if lmd_kpp
+# endif
+
+        ! From here onwards 't' was no longer in dz*t units:
+        do k=1,N
+          do j=jstr,jend
+            do i=istr,iend  ! it_imp_vdif in 't' units, but it_prev in dz*t units
+              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_imp_vdif)*Hz(i,j,k) - Tdiag(i,j,k,itrc,it_prev)
+              T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
+            enddo
+          enddo
+        enddo
+        call nc_write_var(ncid, Td_tmp, N, tvname(it_imp_vdif), rp_var, output_rec, ierr)
+
+        do k=1,N
+          do j=jstr,jend
+            do i=istr,iend  ! both in dz*t units
+              Td_tmp(i,j,k)=(Tdiag(i,j,k,itrc,it_t3dmix)-Tdiag(i,j,k,itrc,it_imp_vdif))*Hz(i,j,k)
+              T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
+            enddo
+          enddo
+        enddo
+        call nc_write_var(ncid, Td_tmp, N, tvname(it_t3dmix), rp_var, output_rec, ierr)
+
+        ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
+        call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,itrc,it_bc), N, tvname(it_bc), rp_var, output_rec, ierr)
+        T_dsum=T_dsum+Tdiag(:,:,:,itrc,it_bc)  ! re-do this just for boundaries not full domain!
+
+        call nc_write_var(ncid, T_dsum, N, 't_dsum', rp_var, output_rec, ierr)
+
+        Td_tmp=0 ! probably don't need this since loop below is full range
+        ! write gross difference:
+        if(total_output_rec > 1) then ! ignore difference at first step as nothing in t(nnew) yet.
+          do k=1,N                    ! first diagnostic calculated using previous step's value
+            do j=jstrR,jendR          ! Full domain loop range incl. bry.
+              do i=istrR,iendR
+                Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+              enddo
+            enddo
+          enddo
+        endif
+        call nc_write_var(ncid, Td_tmp, N, 't_diff', rp_var, output_rec, ierr)
+
+        Td_tmp=Td_tmp-T_dsum ! difference between gross change and sum of diags.
+        call nc_write_var(ncid, Td_tmp, N, 't_d-d', rp_var, output_rec, ierr)
+
+      enddo ! <- itrc=1,NT
+
+      Hz_old = Hz  ! update Hz_old
+
+      end subroutine wrt_tracer_diags_tile  !]
+# endif /* DIAGS_TRC */
+
+! ----------------------------------------------------------------------
       subroutine wrt_online_diags  ![ write online diagnostics
 
       implicit none
@@ -527,12 +770,12 @@
 #ifdef SOLVE3D
      &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k
+      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt
       character(len=64) :: fname
       character(len=20) :: text
 
       integer, dimension(4,2) :: grdtyp3d ! u and v type to using in loop
-      integer, dimension(2) :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
+      integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
       if (write_file==.true. .and. mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
 
@@ -567,6 +810,18 @@
             text  = uvw(dim) / / 'd-d'
             call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
           enddo
+
+# ifdef DIAGS_TRC
+          do idt=1,ndt ! loop through tracer diags
+            call nc_define_var(ncid, tvname(idt), tlname(idt), tunits(idt), r3dgrd, ierr )
+          enddo
+          text  = 't_' / / 'diff'
+          call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+          text  = 't_' / / 'dsum'
+          call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+          text  = 't_' / / 'd-d'
+          call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+# endif
 
           ierr=nf90_enddef(ncid) ! end definition to write changes to disk
           if (mynode == 0) then
@@ -614,6 +869,12 @@
           call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
 
         enddo  ! dim
+
+# ifdef DIAGS_TRC
+        do tile=0,0   ! my_tile_range HARD-CODED
+          call wrt_tracer_diags(tile, ncid)
+        enddo
+# endif
 
         ierr=nf90_close (ncid)  ! close netcdf file
 

@@ -967,6 +967,7 @@ C$OMP BARRIER
 
       ! Error handling
   2   if (ierr .ne. nf90_noerr) then
+        write(*,*) 'netcdf ierr != 0 ', nf90_strerror(ierr)
         write(*,1) var_name MYID
         goto 99                                         !--> ERROR
       endif
@@ -1011,6 +1012,7 @@ C$OMP BARRIER
 
       ! Error handling
   2   if (ierr .ne. nf90_noerr) then
+        write(*,*) 'netcdf ierr != 0 ', nf90_strerror(ierr)
         write(*,1) var_name, record MYID
         goto 99
       endif

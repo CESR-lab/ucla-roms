@@ -52,8 +52,8 @@ c--# define CONST_TRACERS
       use pipe_frc
       use river_frc
       use surf_flux, only: stflx, srflx
-
       use tracers, only: iTandS, t
+      use diagnostics
 
       implicit none
 # include "param.h"
@@ -136,6 +136,14 @@ c--#  define ntdf nrhs
 !  (ii) arrays of W-type are computed ahead at k+1 --> k2
 ! (iii) arrays of RHO-type are computed at k -
 
+#ifdef DIAG_T_DEBUG
+      if(mynode==0) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO start:'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+      endif
+#endif
 
       do itrc=1,nt
 # ifdef ADV_ISONEUTRAL
@@ -161,12 +169,24 @@ c--#  define ntdf nrhs
      &                                *pn(i,j)*( FX(i+1,j)-FX(i,j)
      &                                          +FE(i,j+1)-FE(i,j)
      &                                                           )
+# ifdef DIAGS_TRC
+                Tdiag(i,j,k,itrc,it_h_adv) = t(i,j,k,nnew,itrc)
+# endif
               enddo
             enddo                 !-->  discard FX,FE
 
+#ifdef DIAG_T_DEBUG
+      if(mynode==0 .and. itrc==itemp .and. k==48) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO hor_adv end:t(nnew)=t(nnew)-dt*pm(i,j)*pn(i,j)*(FX-FX'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+        print *, 'Tdiag(10,10,48,itemp,it_h_adv)=',Tdiag(10,10,48,itemp,it_h_adv)
+      endif
+#endif
+
 # ifdef ADV_ISONEUTRAL
           endif !<-- k > 0
-
 
 ! Computation of the rotated (isoneutral) biharmonic operator expects
 ! the following five fields be defined at entry:
@@ -761,9 +781,21 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
      &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
               endif
 # endif
+# ifdef DIAGS_TRC
+              Tdiag(i,j,k,itrc,it_v_adv) = t(i,j,k,nnew,itrc)
+# endif
             enddo
           enddo
 
+
+#ifdef DIAG_T_DEBUG
+      if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO vert_adv end:t(nnew)=t(nnew)-dt*pm(i,j)*pn(i,j)*(FC-FC'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+      endif
+#endif
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
@@ -786,8 +818,17 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 #  endif
                 t(i,j,k+1,nnew,itemp)=t(i,j,k+1,nnew,itemp) -dt*cff
                 t(i,j,k  ,nnew,itemp)=t(i,j,k  ,nnew,itemp) +dt*cff
+# ifdef DIAGS_TRC
+                Tdiag(i,j,k+1,itrc,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+# endif
               enddo
             enddo
+# ifdef DIAGS_TRC
+            do i=istr,iend
+              Tdiag(i,j,1,itrc,it_lmdkpp) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
+            enddo
+# endif
+
 
 c?? WARNING: the above implies that light (if any) reaching all the
 c?? way to the bottom is entirely absorbed within the botom-most grid
@@ -807,12 +848,25 @@ c??         enddo
             do k=N-1,1,-1
               do i=istr,iend
                 cff=-dt*ghat(i,j,k)*stflx(i,j,isalt)
-                t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff
+                t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff ! DevinD why is there no dt here unlike itemp above?
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
+# ifdef DIAGS_TRC
+                Tdiag(i,j,k+1,itrc,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+# endif
               enddo
             enddo
 #  endif
           endif
+
+#ifdef DIAG_T_DEBUG
+      if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO lmd_kpp end:t(nnew)=t(nnew)-dt*cf'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+      endif
+#endif
+
 # endif
 
 ! Perform an implicit time step for vertical diffusion
@@ -900,6 +954,9 @@ c??         enddo
 # ifdef MASKING
      &                                                  *rmask(i,j)
 # endif
+# ifdef DIAGS_TRC
+            Tdiag(i,j,N,itrc,it_imp_vdif) = t(i,j,N,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+# endif
           enddo
           do k=N-1,1,-1
             do i=istr,iend
@@ -907,9 +964,20 @@ c??         enddo
 # ifdef MASKING
      &                                                      *rmask(i,j)
 # endif
-
+# ifdef DIAGS_TRC
+              Tdiag(i,j,k,itrc,it_imp_vdif) = t(i,j,k,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+# endif
             enddo
           enddo           !--> discard FC,WC,CF,DC
+
+#ifdef DIAG_T_DEBUG
+      if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO impl_vert_diffusion end:t(nnew)=DC+CF*t(nnew)'
+        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
+      endif
+#endif
 
 #ifdef CONST_TRACERS
           do k=1,N
@@ -919,7 +987,30 @@ c??         enddo
           enddo
 #endif
         enddo      !<-- j
+
+#ifdef DIAG_T_DEBUG
+      if(mynode==0 .and. itrc==itemp) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO t3dBC start:'
+        print *, 't(istr-1,10,48,nnew,itemp)=',t(istr-1,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(istr-1,10,48,nstp,itemp)=',t(istr-1,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(istr-1,10,48,nrhs,itemp)=',t(istr-1,10,48,nrhs,itemp),'nrhs=',nrhs
+      endif
+#endif
+
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
+# ifdef DIAGS_TRC
+        call set_diags_t_at_bc(istr,iend,jstr,jend,itrc)
+# endif
+
+#ifdef DIAG_T_DEBUG
+      if(mynode==0 .and. itrc==itemp) then ! devind debug
+        write (*,'(/A)') 'step3d_t_ISO t3dBC end:'
+        print *, 't(istr-1,10,48,nnew,itemp)=',t(istr-1,10,48,nnew,itemp),'nnew=',nnew
+        print *, 't(istr-1,10,48,nstp,itemp)=',t(istr-1,10,48,nstp,itemp),'nstp=',nstp
+        print *, 't(istr-1,10,48,nrhs,itemp)=',t(istr-1,10,48,nrhs,itemp),'nrhs=',nrhs
+      endif
+#endif
+
       enddo     !<-- itrc
 
 # if defined BIOLOGY_BEC2
