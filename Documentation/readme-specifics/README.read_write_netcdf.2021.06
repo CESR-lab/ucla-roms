@@ -1,0 +1,38 @@
+This gives some basic tips on input/output (I/O) of netcdf data within roms.
+
+Since 2020 we began using our own module 'read_write(.F)' containing wrappers to interact more easily with netcdf files. 
+
+Useful tips:
+	'ncdump -h file.nc' displays the dimensions of variables in reverse order of what it will be in roms.
+	I.e. var(i,j,k) will show as var(time, s_rho, eta_rho, xi_rho) when you use ncdump.  
+
+Below are some pointers for reading/writing various netcdf data:
+
+    Write 2D or 3D array:
+    use read_write.F -> nc_write_var
+    
+    Read 2D surface forcing:
+    You will need to use wrapper 'set_frc_var_tile', see bulk_frc.F for an example of this.
+    
+    Read 2D array once (such as initial location of pipe):
+    See pipe_frc.F -> init_pipe_frc()
+        ierr=nf90_open(grdname, nf90_nowrite, ncid)
+        ierr=nf90_inq_varid(ncid, pipe_flx_name, v_id)
+        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_fraction(START_2D_ARRAY), 1)
+        if(ierr/=0) call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')  
+        
+    Read arbitrary sized 2D time evolving variable:
+    E.g. pipe_frc.F -> set_pipe_frc_tile
+    This uses from read_write.F the subroutine set_small_arrays()
+
+	Read 3D array from 4D variables:
+	If you need to read a 3D array (for r, u or v type vars) from a 4D variable in a netcdf file, you can use
+	the wrapper in read_write.F -> nc_read_var. For the arguement 'record', just use the 4 dimension you need.
+	You need your 4D array in the netcdf file to have the following dimensions:
+	var(4th_dim, s_rho, eta_rho, xi_rho) or have eta_v or xi_u...
+	
+Creating output file:
+
+	If you feel your new module or routing should have its own output file, 
+	use surf_flux.F -> wrt_surface_flux_his as a template to copy and edit for your variables.
+	
