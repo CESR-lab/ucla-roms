@@ -68,9 +68,9 @@
      &  'coriolis',
      &  'advection',
      &  'visc3d',
-     &  'uv2_DC',
+     &  'vert_mix_2D3D',
      &  '3dbc',       ! should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
-     &  'uv2_FC'
+     &  '2D3D_cor'
      &                                                                  /)
 
       character (len=60), dimension(nmd) :: lname = (/
@@ -83,15 +83,7 @@
      &  '2D-3D correction - step3d_uv2.F part 2'
      &                                                                  /)
 
-      character (len=20), dimension(nmd) :: units = (/
-     &  'm^2/s (dz*(u or v))', ! SINCE UNITS ALL THE SAME DON'T REALLY NEED THIS
-     &  'm^2/s (dz*(u or v))',
-     &  'm^2/s (dz*(u or v))',
-     &  'm^2/s (dz*(u or v))',
-     &  'm^2/s (dz*(u or v))',
-     &  'm^2/s (dz*(u or v))',
-     &  'm^2/s (dz*(u or v))'
-     &                                                                  /)
+      character (len=20) :: units = 'm^2/s (dz*(u or v))'
 
       character (len=2), dimension(3) :: uvw = (/ 'u_', 'v_', 'w_' /)
 
@@ -143,14 +135,7 @@
      &  'Boundary changes - t3dbc_im.F'
      &                                                                  /)
 
-      character (len=20), dimension(ndt) :: tunits = (/
-     &  'C.m^2/s (dz*t)', ! SINCE UNITS ALL THE SAME DON'T REALLY NEED THIS
-     &  'C.m^2/s (dz*t)', ! Also not sure on units here.
-     &  'C.m^2/s (dz*t)',
-     &  'C.m^2/s (dz*t)',
-     &  'C.m^2/s (dz*t)',
-     &  'C.m^2/s (dz*t)'
-     &                                                                  /)
+      character (len=20) :: tunits = 'C.m^2/s (dz*t)'  ! not sure on units here.
 
       public set_diags_t_at_bc
       public set_diags_t_at_t3dmix_GP
@@ -197,13 +182,7 @@
      &  'w3dbc_im.F'
      &                                                                  /)
 
-      character (len=20), dimension(nwd) :: wunits = (/
-     &  'm^2/s (dz*w)', ! SINCE UNITS ALL THE SAME DON'T REALLY NEED THIS
-     &  'm^2/s (dz*w)', ! Not sure on units here.
-     &  'm^2/s (dz*w)',
-     &  'm^2/s (dz*w)',
-     &  'm^2/s (dz*w)'
-     &                                                                  /)
+      character (len=20) :: wunits = 'm^2/s (dz*w)'  ! not sure on units here.
 
       ! Public subroutines:
       public set_diags_w_at_uv1
@@ -809,7 +788,7 @@
             do diag=1,nmd
 
               text  = uvw(dim) / / vnames(diag)  ! diag short name
-              call nc_define_var(ncid, text, lname(diag), units(diag), grdtyp3d(:,dim), ierr )
+              call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
             enddo
 
             text  = uvw(dim) / / 'diff'
@@ -822,7 +801,7 @@
 
 # ifdef DIAGS_TRC
           do idt=1,ndt ! loop through tracer diags
-            call nc_define_var(ncid, tvname(idt), tlname(idt), tunits(idt), r3dgrd, ierr )
+            call nc_define_var(ncid, tvname(idt), tlname(idt), tunits, r3dgrd, ierr )
           enddo
           text  = 't_' / / 'diff'
           call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
