@@ -76,6 +76,16 @@
 
 # include "compute_auxiliary_bounds.h"
 
+# ifdef DIAGNOSTICS
+      if (calc_diag) then                                                      ! called here not in prsgrd as prsgrd is called twice from main.
+        Mdiag(istrU:iend,jstr :jend,:,1,iprsgr)=ru(istrU:iend,jstr :jend,:)    ! ru is scratch size not global size
+        Mdiag(istr :iend,jstrV:jend,:,2,iprsgr)=rv(istr :iend,jstrV:jend,:)    ! interior points not bry
+#  ifdef NHMG
+        Wdiag(istr:iend,jstr:jend,1:N,iwprsgr) =rw(istr :iend,jstr :jend,1:N)  ! Note 1:N
+#  endif
+      endif
+# endif
+
 # ifdef NHMG
 
 #  define FX UFx

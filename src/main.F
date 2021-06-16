@@ -459,7 +459,7 @@ C$OMP BARRIER
 !======= ====== ===== =============== ======
 
 #ifdef BRY_EXTRACT_CHILD
-      call set_child_bry ! DevinD needs a frequency flag
+      call set_child_bry  ! frequency flag handled within routine
 #endif
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0

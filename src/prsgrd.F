@@ -32,7 +32,6 @@
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
-      use diagnostics
 # ifdef POT_TIDES
       use tides, only: Ptide
 # endif
@@ -522,14 +521,6 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       enddo   !<-- k
 #  undef DC
 #endif /* WEC */
-
-# ifdef DIAGNOSTICS
-      Mdiag(istrU:iend,jstr :jend,:,1,iprsgr)=ru(istrU:iend,jstr :jend,:)    ! ru is scratch size not global size
-      Mdiag(istr :iend,jstrV:jend,:,2,iprsgr)=rv(istr :iend,jstrV:jend,:)    ! interior points not bry
-#  ifdef NHMG
-      Wdiag(istr:iend,jstr:jend,1:N,iwprsgr) =rw(istr :iend,jstr :jend,1:N)  ! Note 1:N
-#  endif
-# endif
 
       end
 

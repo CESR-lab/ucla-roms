@@ -317,9 +317,7 @@
       ! local
       integer :: itrc, c  ! tracer and child grid indices
 
-
-      if (mod(iic-1,rec_rate) == 0) then  ! only plot if timestep is divisble by record rate. 1 replaces ntstart?
-
+      if (mod(iic-ntstart,rec_rate) == 0) then
         do c=1,nc_grds
 
           if (ncvars(c)%ncid==-1) then                                                            ! first time only
