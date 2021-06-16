@@ -3,6 +3,27 @@
       ! Online diagnostics for ROMS simulation.
       ! Initial coding DevinD and JeroenM - 2021/05
 
+      ! To compute diagnostics use DIAGNOSTICS flag.
+      ! To chose between history slices of diagnostics or averages,
+      ! set diag_avg to .false. for history, or .true. for averaging.
+      ! Averaging is much less efficient as diagnostics must be collected
+      ! at everytime step to maintain a true average.
+
+      ! It is assumed that by using logicals that are set as parameters
+      ! the if branch will be removed during compiling, since the outcome
+      ! of the branch is always known and unchanging. If this is true it will allow
+      ! for if statements to be placed within loops, which is usually not advised
+      ! due to the cost of the if statment at every index iteration.
+
+      ! We should move some parameters into .in file, as it is way more convenient,
+      ! but a template of what should be in the .in file when using this module should be
+      ! left at the top here, so that it can be copied into the .in, you don't need
+      ! to find an old diagnostics .in file...
+
+      ! It is my feeling that once we use averages, all diagnostic calculations should
+      ! not be calculated in the step3d... loop, but in it's own subroutine to avoid
+      ! having if statments in loops. This will regardless result in the cleanest code.
+
 #include "cppdefs.h"
 #ifdef DIAGNOSTICS
 
@@ -20,14 +41,16 @@
 
       ! ***************************************************************
       ! User inputs
-      logical :: write_file    = .true.  ! whether to write a file or not (probably remove this)
-      integer :: rec_rate      = 1       ! output record rate,
-      integer :: recs_per_file = 20       ! total recs per file
-
+      logical, parameter :: write_file    = .true.  ! whether to write a file or not (probably remove this)
+      logical, parameter :: diag_avg      = .false.  ! compute history (F) or averages (T)
+      integer            :: rec_rate      = 2       ! output record rate, move this to .in file rather?
+      integer            :: recs_per_file = 20      ! total recs per file
       ! End of user inputs
       ! ***************************************************************
 
       ! Preamble:  ![
+
+      logical, public :: calc_diag ! flag to calculate diagnostics in equation system.
 
       ! U & V MOMENTUM:
       ! ---------------
@@ -191,6 +214,7 @@
       public set_diags_w_at_bc
 # endif /* NHMG */
 
+      public init_diags
       public set_diags_at_visc3d
       public set_diags_at_uv1
       public set_diags_at_uv2_DC
@@ -202,6 +226,49 @@
 
       contains
 
+! ----------------------------------------------------------------------
+      subroutine init_diags(istr, jstr, istrR, iendR, jstrR, jendR)  ![
+      ! Set original dz*u/v/w/t for initial timestep, hence only called once.
+      ! Called from prestep before Hz has changed in the timestep.
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, jstr, istrR, iendR, jstrR, jendR
+
+      ! local
+      integer :: i,j,k
+
+      do k=1,N
+        do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+          do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+            uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+          enddo
+        enddo
+        do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
+          do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+            uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+          enddo
+        enddo
+      enddo
+# ifdef DIAGS_TRC
+      Hz_old = Hz ! store Hz to calculate old dz*t
+# endif
+# ifdef NHMG
+      do k=1,N ! 0 is always 0?
+        do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+          do i=istrR,iendR
+            if(k==N) then
+              wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
+            else
+              wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
+            endif
+          enddo
+        enddo
+      enddo
+# endif /* NHMG */
+
+      end subroutine init_diags  !]
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
@@ -722,15 +789,13 @@
 
         Td_tmp=0 ! probably don't need this since loop below is full range
         ! write gross difference:
-        if(total_output_rec > 1) then ! ignore difference at first step as nothing in t(nnew) yet.
-          do k=1,N                    ! first diagnostic calculated using previous step's value
-            do j=jstrR,jendR          ! Full domain loop range incl. bry.
-              do i=istrR,iendR
-                Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
-              enddo
+        do k=1,N                    ! first diagnostic calculated using previous step's value
+          do j=jstrR,jendR          ! Full domain loop range incl. bry.
+            do i=istrR,iendR
+              Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
             enddo
           enddo
-        endif
+        enddo
         call nc_write_var(ncid, Td_tmp, N, 't_diff', rp_var, output_rec, ierr)
 
         Td_tmp=Td_tmp-T_dsum ! difference between gross change and sum of diags.
@@ -762,10 +827,19 @@
       character(len=64) :: fname
       character(len=20) :: text
 
-      integer, dimension(4,2) :: grdtyp3d ! u and v type to using in loop
+      integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
-      if (write_file==.true. .and. mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
+                                                                       ! +rec_rate since don't need to do diags at step=1 because don't need zeros at t=0... -1 since we are actuallty writing results from previous step, so diags should have been calculated in previous step
+      if(diag_avg .or. mod(iic-ntstart-1,rec_rate) == 0) then ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
+        calc_diag = .true.  ! This triggers diags to be calculated in equation system
+      else                  ! set here once rather than everywhere in equation system redo 'mod'
+        calc_diag = .false. ! since this is called at the beginning of main.
+      endif
+
+      if ( write_file==.true.             .and.
+     &     mod(iic-ntstart,rec_rate) == 0 .and.        ! iic=n+1 timestep, since we write the previous step results during the start of the next step
+     &     iic>ntstart                          ) then ! iic>ntstart to avoid zeros at inital step
 
         if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
           file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid

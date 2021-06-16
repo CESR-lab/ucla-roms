@@ -263,7 +263,7 @@
       ! Only plot if write_file is true from roms.in or top of module
       ! and timestep is divisble by record rate
 
-      if (write_file==.true. .and. mod(iic-1,rec_rate) == 0) then ! 1 = ntstart
+      if (write_file==.true. .and. mod(iic-ntstart,rec_rate) == 0) then
 
         if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
           file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid

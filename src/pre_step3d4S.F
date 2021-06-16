@@ -136,37 +136,8 @@
 #endif
 
 # ifdef DIAGNOSTICS
-      if (FIRST_TIME_STEP) then  ! only once set original 'u'
-        do k=1,N ! PUT THIS IN DIAGNOSTICS.F subroutine
-          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-            do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-            enddo
-          enddo
-          do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
-            do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-            enddo
-          enddo
-        enddo
-#  ifdef DIAGS_TRC
-        Hz_old = Hz ! store Hz to calculate old dz*t
-#  endif
-#  ifdef NHMG
-        do k=1,N ! 0 is always 0?
-          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-            do i=istrR,iendR
-              if(k==N) then
-                wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
-              else
-                wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
-              endif
-            enddo
-          enddo
-        enddo
-#  endif /* NHMG */
-      endif
-# endif /* DIAGNOSTICS */
+      if (FIRST_TIME_STEP) call init_diags(istr, jstr, istrR, iendR, jstrR, jendR)
+# endif
 
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
         dtau=0.5*dt                   ! form LF-AM3 stepping algorithm,
