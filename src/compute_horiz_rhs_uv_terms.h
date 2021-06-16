@@ -38,7 +38,8 @@
 # endif
 
 # ifdef DIAGNOSTICS
-	        Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
+	        ! Might want to move if statement out of loop for efficiency.
+	        if (calc_diag) Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
 # endif
 
           enddo
@@ -51,7 +52,7 @@
 # endif
 
 # ifdef DIAGNOSTICS
-	        Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
+            if (calc_diag) Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
 # endif
 
           enddo

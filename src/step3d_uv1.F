@@ -112,7 +112,7 @@
 
       enddo
 #  ifdef DIAGNOSTICS
-      call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
+      if (calc_diag) call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
 #  endif
 # endif  /* NHMG */
 
@@ -201,7 +201,7 @@
           enddo
         enddo
 # ifdef DIAGNOSTICS
-        call set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u )
+        if (calc_diag) call set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u )
 # endif
         if (j >= jstrV) then
           do i=istr,iend
@@ -229,7 +229,7 @@
             enddo
           enddo
 # ifdef DIAGNOSTICS
-          call set_diags_at_uv1( istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v )
+          if (calc_diag) call set_diags_at_uv1( istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v )
 # endif
         endif  !<-- if j>=jstrV
 
