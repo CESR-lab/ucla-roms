@@ -81,7 +81,11 @@ Averages:
 
     Only compile roms with AVERAGES flag if you do in fact need averages. The reason for
     this is that AVERAGES creates a second array for every variable in your model, hence
-    doubles your memory requirement. Better to remove AVERAGES flag if not using this. 
+    doubles your memory requirement. Better to remove AVERAGES flag if not using this.
+    
+    Furthermore, if you used the AVERAGES flag but you don't need them, and your 'NTSAVG'
+    (number to start averaging) in your roms.in file is at any point equal to your timestep 'iic',
+    you will start computing averages at that point, which is expensive and wasted computing.
     
 Netcdf output compression:
 

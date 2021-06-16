@@ -240,7 +240,7 @@
         endif
 #  endif
 #  if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-      call set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)
+        call set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)
 #  endif
 # endif /* SOLVE3D */
 
