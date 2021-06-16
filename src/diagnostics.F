@@ -50,7 +50,8 @@
 
       ! Preamble:  ![
 
-      logical, public :: calc_diag ! flag to calculate diagnostics in equation system.
+      logical, public :: calc_diag  ! flag to calculate diagnostics in equation system.
+      logical, public :: set_dz_old ! set dz*u/v/w/t at previous timestep, needed for diag calc as skipping steps if not averages
 
       ! U & V MOMENTUM:
       ! ---------------
@@ -222,6 +223,7 @@
       public set_diags_at_bc_v
       public set_diags_at_uv2_FCu
       public set_diags_at_uv2_FCv
+      public set_diags_dz_old
       public wrt_online_diags !]
 
       contains
@@ -443,7 +445,6 @@
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
             uv_dif(i,j,k, 1)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 1) ! do this here as units are correct
-            uvdz_old(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo
@@ -467,21 +468,43 @@
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
             uv_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 2) ! do this here as units are correct
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_at_uv2_FCv  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, jstr, istrR, iendR, jstrR, jendR
+
+      ! local
+      integer :: i, j, k
+
+      ! can just loop both over istrR and jstrR and have one loop. No harm?
+
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istr,iendR
+            uvdz_old(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+          enddo
+        enddo
+      enddo
+
+      do k=1,N
+        do j=jstr,jendR
+          do i=istrR,iendR
             uvdz_old(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
           enddo
         enddo
       enddo
 
-!      if(mynode==0) then  ! debug
-!        print *, 'v(10,10,48,nnew)=',v(10,10,48,nnew)
-!        print *, 'uvdz_old(10,10,48,2)=', uvdz_old(10,10,48,2)
-!        print *, 'uv_dif  (10,10,48,2)=', uv_dif(10,10,48,2)
-!        print *, 'Hz     (10,10,48)  =', Hz(10,10,48)
-!      endif
+      ! Don't forget 'w' here.
 
-      end subroutine set_diags_at_uv2_FCv  !]
-
-
+      end subroutine set_diags_dz_old  !]
 ! ----------------------------------------------------------------------
 # ifdef NHMG
       subroutine set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )  ![
@@ -835,6 +858,12 @@
         calc_diag = .true.  ! This triggers diags to be calculated in equation system
       else                  ! set here once rather than everywhere in equation system redo 'mod'
         calc_diag = .false. ! since this is called at the beginning of main.
+      endif
+
+      if (mod(iic-ntstart-2,rec_rate) == 0) then ! -2 as need to set the previous values before diag_avg step
+        set_dz_old=.true.
+      else
+        set_dz_old=.false.
       endif
 
       if ( write_file==.true.             .and.
