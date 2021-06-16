@@ -1,5 +1,6 @@
       module diagnostics
 
+      ! INFO: ![
       ! Online diagnostics for ROMS simulation.
       ! Initial coding DevinD and JeroenM - 2021/05
 
@@ -8,6 +9,31 @@
       ! set diag_avg to .false. for history, or .true. for averaging.
       ! Averaging is much less efficient as diagnostics must be collected
       ! at everytime step to maintain a true average.
+
+      ! The main subroutine is wrt_online_diags, which is called at the very
+      ! beginning of main.F, in order to record the diagnostics of 'nnew' index,
+      ! which was t=n+1 for the previous timestep, and is now t=n since roms_step
+      ! has moved onto the next timestep. I.e. 'nnew' will become 'nstp' in next timestep.
+      ! But wrt_online_diags is called before nnew and nstp indicies change in main.F.
+
+      ! If you are needing averages then the diagnotics need to be computed at everytimestep.
+      ! If you just need snapshots then the diagnostics only need to be calculated at
+      ! your output frequency.
+      ! Both of these are controlled by the logical 'calc_diag', which is set in
+      ! wrt_online_diags at the beginning of a timestep, and then that logical is
+      ! used in the equation system to trigger a calculation of diagnostic.
+
+      ! Units:
+      ! The roms history file give u/v in m/s, and 't' tracers in their
+      ! concentrations. However, since the depth of the water column is also evolving
+      ! during a timestep, it is easier to work in dz*u/v/w/t, since that is the unit
+      ! of u/v/w/t when the depth is changed in the timestep as follows:
+      ! step3d_uv1.F (depth not changed just to show position amongst code)
+      ! step2d_tile -> set_depth_tile -> (Hz changes)
+      ! step3d_uv2.F (depth not changed just to show position amongst code)
+      !
+      ! See Documentation/readme-specifics/README.diagnostics_u_v_value_changes
+      ! for more details on how the units of 'u' change during a timestep.
 
       ! It is assumed that by using logicals that are set as parameters
       ! the if branch will be removed during compiling, since the outcome
@@ -23,6 +49,20 @@
       ! It is my feeling that once we use averages, all diagnostic calculations should
       ! not be calculated in the step3d... loop, but in it's own subroutine to avoid
       ! having if statments in loops. This will regardless result in the cleanest code.
+
+      ! Mdiag(2): hydrostatic pressure gradient  ! OLD JM NOTES
+      ! Mdiag(3): cor(u)
+      ! Mdiag(4): adv(u) (non-dissipative part)
+      ! Mdiag(5): horizontal mixing (including numerical dissipation)
+      ! Mdiag(6): vertical mixing   (including numerical dissipation)
+      ! Mdiag(7): non-hydrostatic pressure gradient
+
+      ! Tdiag(1): dt/dt  ! OLD JM NOTES
+      ! Tdiag(2): adv(t) (non-dissipative part)
+      ! Tdiag(3): adv(t) (dissipative part)
+      ! Tdiag(4): vertical mixing
+      ! Tdiag(5): sources/sinks
+      !]
 
 #include "cppdefs.h"
 #ifdef DIAGNOSTICS
@@ -43,7 +83,7 @@
       ! User inputs
       logical, parameter :: write_file    = .true.  ! whether to write a file or not (probably remove this)
       logical, parameter :: diag_avg      = .false.  ! compute history (F) or averages (T)
-      integer            :: rec_rate      = 2       ! output record rate, move this to .in file rather?
+      integer            :: rec_rate      = 3       ! output record rate, move this to .in file rather?
       integer            :: recs_per_file = 20      ! total recs per file
       ! End of user inputs
       ! ***************************************************************
@@ -51,17 +91,10 @@
       ! Preamble:  ![
 
       logical, public :: calc_diag  ! flag to calculate diagnostics in equation system.
-      logical, public :: set_dz_old ! set dz*u/v/w/t at previous timestep, needed for diag calc as skipping steps if not averages
+      logical, public :: set_dz_old ! set dz*u/v/w/t at previous timestep, needed for diag calculation when skipping steps if not averages.
 
       ! U & V MOMENTUM:
       ! ---------------
-
-      ! Mdiag(2): hydrostatic pressure gradient  ! OLD JM NOTES
-      ! Mdiag(3): cor(u)
-      ! Mdiag(4): adv(u) (non-dissipative part)
-      ! Mdiag(5): horizontal mixing (including numerical dissipation)
-      ! Mdiag(6): vertical mixing   (including numerical dissipation)
-      ! Mdiag(7): non-hydrostatic pressure gradient
 
       ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
 
@@ -78,14 +111,14 @@
 
       real, public, dimension(GLOBAL_1DY_ARRAY, N, 2)     :: uv_wbry    ! bry change for u and v
 
-      integer, parameter, public :: iprsgr = 1, ! internal loop ranges only (i.e. excluding domain boundary)
-     &                              icori  = 2, ! internal loop ranges only
-     &                              iadv   = 3, ! internal loop ranges only
-     &                              ivisc  = 4, ! internal loop ranges only
-     &                              iuv2DC = 5, ! internal loop ranges only
-     &                              iu3d   = 6, ! bry only
-     &                              iuv2FC = 7  ! internal + bry (full domain) loop ranges
-
+      integer, parameter, public ::
+     &  iprsgr = 1, ! internal loop ranges only (i.e. excluding domain boundary)
+     &  icori  = 2, ! internal loop ranges only
+     &  iadv   = 3, ! internal loop ranges only
+     &  ivisc  = 4, ! internal loop ranges only
+     &  iuv2DC = 5, ! internal loop ranges only
+     &  iu3d   = 6, ! bry only
+     &  iuv2FC = 7  ! internal + bry (full domain) loop ranges
 
       character (len=20), dimension(nmd) :: vnames = (/
      &  'prsgrd',
@@ -95,9 +128,9 @@
      &  'vert_mix_2D3D',
      &  '3dbc',       ! should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
      &  '2D3D_cor'
-     &                                                                  /)
+     &                                                /)
 
-      character (len=60), dimension(nmd) :: lname = (/
+      character (len=60), dimension(nmd) :: lname =   (/
      &  'Hydrostatic pressure gradient - prsgrd.F',
      &  'Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h',
      &  'Advection - step3d_uv1.F',
@@ -105,7 +138,7 @@
      &  'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1',
      &  'Boundary changes - u/v3dbc_im.F',
      &  '2D-3D correction - step3d_uv2.F part 2'
-     &                                                                  /)
+     &                                                 /)
 
       character (len=20) :: units = 'm^2/s (dz*(u or v))'
 
@@ -119,11 +152,6 @@
       ! from the u,v,w implementation here currently.
       ! Need to consider pipe and river sources.
 
-      ! Tdiag(1): dt/dt  ! OLD JM NOTES
-      ! Tdiag(2): adv(t) (non-dissipative part)
-      ! Tdiag(3): adv(t) (dissipative part)
-      ! Tdiag(4): vertical mixing
-      ! Tdiag(5): sources/sinks
       integer, public, parameter                           :: ndt = 5  ! number of tracer diag terms
 #  ifdef LMD_KPP
      &                                                            + 1
@@ -133,13 +161,14 @@
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: T_dsum=0   ! sum of t diagnostics to compare with gross change
       real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Hz_old=0   ! store previous Hz to calculate old dz*t
                                                                        ! better than storing dz*t for each tracer. Better to recalculate it?
-      integer, parameter, public :: it_h_adv    = 1,  ! compute_horiz_tracer_fluxes.h
-     &                              it_v_adv    = 2,  ! compute_vert_tracer_fluxes.h
+      integer, parameter, public ::
+     &  it_h_adv    = 1,  ! compute_horiz_tracer_fluxes.h
+     &  it_v_adv    = 2,  ! compute_vert_tracer_fluxes.h
       ! Do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
-     &                              it_imp_vdif = 3,  ! step3d_t_ISO.F
-     &                              it_t3dmix   = 4,
-     &                              it_lmdkpp   = 5,  ! not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
-     &                              it_bc       = 6   ! BC's shouldn't have 3D array
+     &  it_imp_vdif = 3,  ! step3d_t_ISO.F
+     &  it_t3dmix   = 4,
+     &  it_lmdkpp   = 5,  ! not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
+     &  it_bc       = 6   ! BC's shouldn't have 3D array
 
       character (len=20), dimension(ndt) :: tvname = (/
      &  't_hori_adv',
@@ -148,7 +177,7 @@
      &  't_t3dmix',
      &  't_lmdkpp',
      &  't_t3dbc'
-     &                                                                  /)
+     &                                               /)
 
       character (len=80), dimension(ndt) :: tlname = (/
      &  'Horizontal advective fluxes - compute_horiz_tracer_fluxes.h',
@@ -157,7 +186,7 @@
      &  'Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F',
      &  'Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F',
      &  'Boundary changes - t3dbc_im.F'
-     &                                                                  /)
+     &                                               /)
 
       character (len=20) :: tunits = 'C.m^2/s (dz*t)'  ! not sure on units here.
 
@@ -184,11 +213,12 @@
       real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdif=0     ! = w_dif - Mdsum
       real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_prev=0  ! store incremental u/v/w (nnew)
 
-      integer, parameter, public :: iwprsgr   = 1,
-     &                              iwhoriadv = 2,
-     &                              iwvertadv = 3,
-     &                              iwuv2     = 4,
-     &                              iwbc      = 5
+      integer, parameter, public ::
+     &  iwprsgr   = 1,
+     &  iwhoriadv = 2,
+     &  iwvertadv = 3,
+     &  iwuv2     = 4,
+     &  iwbc      = 5
 
       character (len=20), dimension(nwd) :: wvname = (/
      &  'w_prsgrd',
@@ -196,7 +226,7 @@
      &  'w_vert_adv',
      &  'w_2D_3D_coupling',
      &  'w_3dbc'
-     &                                                                  /)
+     &                                               /)
 
       character (len=60), dimension(nwd) :: wlname = (/
      &  'prsgrd.F',
@@ -204,7 +234,7 @@
      &  'compute_vert_rhs_w_terms.h',
      &  'step3d_uv2.F',
      &  'w3dbc_im.F'
-     &                                                                  /)
+     &                                               /)
 
       character (len=20) :: wunits = 'm^2/s (dz*w)'  ! not sure on units here.
 
@@ -271,6 +301,7 @@
 # endif /* NHMG */
 
       end subroutine init_diags  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
@@ -368,6 +399,8 @@
           enddo
         enddo
       enddo
+
+      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  !debug only
 
       end subroutine set_diags_at_uv2_DC  !]
 
@@ -504,7 +537,10 @@
 
       ! Don't forget 'w' here.
 
+      if(mynode==0) print *, 'DZ_OLD  $$$$$$$$$$'
+
       end subroutine set_diags_dz_old  !]
+
 ! ----------------------------------------------------------------------
 # ifdef NHMG
       subroutine set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )  ![
@@ -846,149 +882,153 @@
 #ifdef SOLVE3D
      &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, rwebrygrd(3)
+      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, rwebrygrd(3), tn
       character(len=64) :: fname
       character(len=20) :: text
 
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
-                                                                       ! +rec_rate since don't need to do diags at step=1 because don't need zeros at t=0... -1 since we are actuallty writing results from previous step, so diags should have been calculated in previous step
-      if(diag_avg .or. mod(iic-ntstart-1,rec_rate) == 0) then ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
-        calc_diag = .true.  ! This triggers diags to be calculated in equation system
-      else                  ! set here once rather than everywhere in equation system redo 'mod'
-        calc_diag = .false. ! since this is called at the beginning of main.
-      endif
+      tn = iic-ntstart      ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
-      if (mod(iic-ntstart-2,rec_rate) == 0) then ! -2 as need to set the previous values before diag_avg step
-        set_dz_old=.true.
-      else
-        set_dz_old=.false.
-      endif
+      if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
-      if ( write_file==.true.             .and.
-     &     mod(iic-ntstart,rec_rate) == 0 .and.        ! iic=n+1 timestep, since we write the previous step results during the start of the next step
-     &     iic>ntstart                          ) then ! iic>ntstart to avoid zeros at inital step
+        ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
+        if(diag_avg .or. mod(tn+1,rec_rate) == 0) then ! +1 as calculate in the step before writing. so if tn=5 then calc_diag at tn=4, hence need +1 to trigger mod(tn...)
+          calc_diag = .true.                           ! This triggers diags to be calculated in equation system. Always on for averages
+        else                                           ! set here once rather than everywhere in equation system redo 'mod'
+          calc_diag = .false.                          ! since this is called at the beginning of main.
+        endif
+        if (mod(tn+2,rec_rate) == 0) then              ! +2 as need to set the previous values before calc_diag step above
+          set_dz_old=.true.                            ! So if tn=5 then calc_diag at tn=4, and need set_dz_old tn=3 hence +2 to trigger mod(tn...)
+        else
+          set_dz_old=.false.
+        endif
 
-        if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
-          file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
-        endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
+        if ( write_file==.true.     .and.
+     &       mod(tn,rec_rate) == 0        ) then
+
+          if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
+            file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
+          endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
 
 
-        if(output_rec == 0) then                                  ! if file doesn't yet exist or need new file!
+          if(output_rec == 0) then                                  ! if file doesn't yet exist or need new file!
 
-          call ncdf_create_file(file_name, ncid, prev_fill_mode   ! lose the prev_fill_mode? r2dgrd, ...., auxil are id's to dimensions, needed to create vars in the file
-     &                  ,recs_per_file, total_output_rec, auxil
+            call ncdf_create_file(file_name, ncid, prev_fill_mode   ! lose the prev_fill_mode? r2dgrd, ...., auxil are id's to dimensions, needed to create vars in the file
+     &                    ,recs_per_file, total_output_rec, auxil
 #ifdef SOLVE3D
-!     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd           ! 3D grid dimensions
-     &                  ,r3dgrd, grdtyp3d(:,1), grdtyp3d(:,2), w3dgrd           ! 3D grid dimensions
+!     &                    ,r3dgrd, u3dgrd, v3dgrd, w3dgrd           ! 3D grid dimensions
+     &                    ,r3dgrd, grdtyp3d(:,1), grdtyp3d(:,2), w3dgrd           ! 3D grid dimensions
 #endif
-     &                  ,r2dgrd, u2dgrd, v2dgrd )                 ! 2D grid dimensions
+     &                    ,r2dgrd, u2dgrd, v2dgrd )                 ! 2D grid dimensions
 
 
-          ! Define remaining variables:
-          do dim=1,2  ! loop through dims
-            do diag=1,nmd
+            ! Define remaining variables:
+            do dim=1,2  ! loop through dims
+              do diag=1,nmd
 
-              text  = uvw(dim) / / vnames(diag)  ! diag short name
-              call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / vnames(diag)  ! diag short name
+                call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
+              enddo
+
+              text  = uvw(dim) / / 'diff'
+              call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+              text  = uvw(dim) / / 'dsum'
+              call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+              text  = uvw(dim) / / 'd-d'
+              call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
             enddo
 
-            text  = uvw(dim) / / 'diff'
-            call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-            text  = uvw(dim) / / 'dsum'
-            call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-            text  = uvw(dim) / / 'd-d'
-            call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-          enddo
-
 # ifdef DIAGS_TRC
-          do idt=1,ndt ! loop through tracer diags
-            call nc_define_var(ncid, tvname(idt), tlname(idt), tunits, r3dgrd, ierr )
-          enddo
-          text  = 't_' / / 'diff'
-          call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-          text  = 't_' / / 'dsum'
-          call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-          text  = 't_' / / 'd-d'
-          call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+            do idt=1,ndt ! loop through tracer diags
+              call nc_define_var(ncid, tvname(idt), tlname(idt), tunits, r3dgrd, ierr )
+            enddo
+            text  = 't_' / / 'diff'
+            call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+            text  = 't_' / / 'dsum'
+            call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+            text  = 't_' / / 'd-d'
+            call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
 # endif
 
-          ! define bry 2D vars:
-          rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
-          rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
-          rwebrygrd(3)=r3dgrd(4) ! set time    dimension
+            ! define bry 2D vars:
+            rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
+            rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
+            rwebrygrd(3)=r3dgrd(4) ! set time    dimension
 !          if(WESTERN_EDGE) then
             call nc_define_var(ncid, 'u_wbry', 'u_wbry', 'u_wbry', rwebrygrd, ierr )
 !          endif
 
-          ierr=nf90_enddef(ncid) ! end definition to write changes to disk
-          if (mynode == 0) then
-            write(*,'(6x,2A)') 'diagnostics :: created new netCDF file '
-     &                          ,file_name
-          endif
+            ierr=nf90_enddef(ncid) ! end definition to write changes to disk
+            if (mynode == 0) then
+              write(*,'(6x,2A)') 'diagnostics :: created new netCDF file '
+     &                            ,file_name
+            endif
 
-        endif ! (output_rec == 0; needed to create a file)
-
-
-        ! WRITE VARIABLES TO FILE
-        ! =======================
-
-        ierr=nf90_open(file_name, nf90_write, ncid)
-
-        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)   ! set fill value - nf90_nofill for optimized writing
-
-                                                                ! advance output record number
-        output_rec = output_rec + 1                             ! current file record
-        total_output_rec = total_output_rec + 1                 ! total number of recs written
+          endif ! (output_rec == 0; needed to create a file)
 
 
-        call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
+          ! WRITE VARIABLES TO FILE
+          ! =======================
 
-        do dim=1,2  ! loop through dims
-          do diag=1,nmd
-            text = uvw(dim) / / vnames(diag)
-            call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-          enddo
+          ierr=nf90_open(file_name, nf90_write, ncid)
 
-          ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
-          ! but use 'nnew' there as still in previou timestep!
-          text = uvw(dim) / / 'diff'
-          call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
+          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)   ! set fill value - nf90_nofill for optimized writing
 
-          Mdsum = 0  ! refresh for this step
-          do diag=1,nmd
-            Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)
-          enddo
-          text = uvw(dim) / / 'dsum'
-          call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
+                                                                  ! advance output record number
+          output_rec = output_rec + 1                             ! current file record
+          total_output_rec = total_output_rec + 1                 ! total number of recs written
 
-          diff=uv_dif(:,:,:,dim)-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
-          text  = uvw(dim) / / 'd-d'
-          call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
 
-        enddo  ! dim
+          call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
+
+          do dim=1,2  ! loop through dims
+            do diag=1,nmd
+              text = uvw(dim) / / vnames(diag)
+              call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+            enddo
+
+            ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
+            ! but use 'nnew' there as still in previou timestep!
+            text = uvw(dim) / / 'diff'
+            call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
+
+            Mdsum = 0  ! refresh for this step
+            do diag=1,nmd
+              Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)
+            enddo
+            text = uvw(dim) / / 'dsum'
+            call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
+
+            diff=uv_dif(:,:,:,dim)-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
+            text  = uvw(dim) / / 'd-d'
+            call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
+
+          enddo  ! dim
 
 # ifdef DIAGS_TRC
-        do tile=0,0   ! my_tile_range HARD-CODED
-          call wrt_tracer_diags(tile, ncid)
-        enddo
+          do tile=0,0   ! my_tile_range HARD-CODED
+            call wrt_tracer_diags(tile, ncid)
+          enddo
 # endif
 
-        ierr=nf90_close (ncid)  ! close netcdf file
+          ierr=nf90_close (ncid)  ! close netcdf file
 
-        if (mynode == 0) then
-          write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
-     &     'diagnostics :: wrote output, tdays =', tdays,
-     &     'step =', iic-1, 'rec =', output_rec, '/', total_output_rec
-     &      MYID
-        endif
+          if (mynode == 0) then
+            write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+     &       'diagnostics :: wrote output, tdays =', tdays,
+     &       'step =', iic-1, 'rec =', output_rec, '/', total_output_rec
+     &        MYID
+          endif
 
-        if (output_rec == recs_per_file) then  ! reset output_rec to create new file
-          output_rec = 0
-        endif
+          if (output_rec == recs_per_file) then  ! reset output_rec to create new file
+            output_rec = 0
+          endif
 
-      endif ! (write_file==.true.)
+        endif ! (write_file==.true.)
+
+      endif  ! <- icc>ntstart
 
       end subroutine wrt_online_diags  !]
 
