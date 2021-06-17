@@ -82,9 +82,9 @@
       ! ***************************************************************
       ! User inputs
       logical, parameter :: write_file    = .true.  ! whether to write a file or not (probably remove this)
-      logical, parameter :: diag_avg      = .false.  ! compute history (F) or averages (T)
-      integer            :: rec_rate      = 3       ! output record rate, move this to .in file rather?
-      integer            :: recs_per_file = 20      ! total recs per file
+      logical, parameter :: diag_avg      = .false. ! compute history (F) or averages (T)
+      integer            :: rec_rate      = 2       ! output record rate, move this to .in file rather?
+      integer            :: recs_per_file = 2       ! total recs per file
       ! End of user inputs
       ! ***************************************************************
 
@@ -300,6 +300,8 @@
       enddo
 # endif /* NHMG */
 
+      if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
+
       end subroutine init_diags  !]
 
 ! ----------------------------------------------------------------------
@@ -400,7 +402,7 @@
         enddo
       enddo
 
-      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  !debug only
+      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  ! debug only
 
       end subroutine set_diags_at_uv2_DC  !]
 
@@ -537,7 +539,7 @@
 
       ! Don't forget 'w' here.
 
-      if(mynode==0) print *, 'DZ_OLD  $$$$$$$$$$'
+      if(mynode==0) print *, 'DZ_OLD  $$$$$$$$$$'  ! debug
 
       end subroutine set_diags_dz_old  !]
 
@@ -882,28 +884,29 @@
 #ifdef SOLVE3D
      &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, rwebrygrd(3), tn
-      character(len=64) :: fname
-      character(len=20) :: text
+      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, tn
 
+      character(len=64)       :: fname
+      character(len=20)       :: text
+      integer, dimension(3)   :: rwebrygrd(3)                  ! experimental for if using 2D bry outputs
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
       tn = iic-ntstart      ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
-      if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
+      ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
+      if(diag_avg .or. mod(tn+1,rec_rate) == 0) then ! +1 as calculate in the step before writing. so if tn=5 then calc_diag at tn=4, hence need +1 to trigger mod(tn...)
+        calc_diag = .true.                           ! This triggers diags to be calculated in equation system. Always on for averages
+      else                                           ! set here once rather than everywhere in equation system redo 'mod'
+        calc_diag = .false.                          ! since this is called at the beginning of main.
+      endif
+      if (mod(tn+2,rec_rate) == 0) then              ! +2 as need to set the previous values before calc_diag step above
+        set_dz_old=.true.                            ! So if tn=5 then calc_diag at tn=4, and need set_dz_old tn=3 hence +2 to trigger mod(tn...)
+      else
+        set_dz_old=.false.
+      endif
 
-        ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
-        if(diag_avg .or. mod(tn+1,rec_rate) == 0) then ! +1 as calculate in the step before writing. so if tn=5 then calc_diag at tn=4, hence need +1 to trigger mod(tn...)
-          calc_diag = .true.                           ! This triggers diags to be calculated in equation system. Always on for averages
-        else                                           ! set here once rather than everywhere in equation system redo 'mod'
-          calc_diag = .false.                          ! since this is called at the beginning of main.
-        endif
-        if (mod(tn+2,rec_rate) == 0) then              ! +2 as need to set the previous values before calc_diag step above
-          set_dz_old=.true.                            ! So if tn=5 then calc_diag at tn=4, and need set_dz_old tn=3 hence +2 to trigger mod(tn...)
-        else
-          set_dz_old=.false.
-        endif
+      if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
         if ( write_file==.true.     .and.
      &       mod(tn,rec_rate) == 0        ) then
