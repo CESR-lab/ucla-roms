@@ -257,7 +257,7 @@
       public set_diags_at_uv2_FCu
       public set_diags_at_uv2_FCv
       public set_diags_dz_old
-      public wrt_online_diags !]
+      public wrt_diagnostics !]
 
       contains
 
@@ -756,19 +756,6 @@
       end subroutine set_diags_t_at_t3dmix_GP  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_avg(tile)  ![ set the averages of diagnostic variables
-      implicit none
-
-      ! input
-      integer, intent(in) :: tile
-
-# include "compute_tile_bounds.h"
-
-      call set_diags_avg_tile(istr,iend,jstr,jend)
-
-      end subroutine set_diags_avg  !]
-
-! ----------------------------------------------------------------------
       subroutine set_diags_avg_tile(istr,iend,jstr,jend)  ![ set the averages of diagnostic variables
       implicit none
 
@@ -841,20 +828,6 @@
       end subroutine set_diags_avg_tile  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_tracer_diags (tile, ncid)  ![
-      implicit none
-      ! need tile bound unfortunately hence this construct...
-
-      ! input
-      integer, intent(in) :: tile, ncid
-
-# include "compute_tile_bounds.h"
-
-      call wrt_tracer_diags_tile (istr,iend,jstr,jend, ncid)
-
-      end subroutine wrt_tracer_diags  !]
-
-! ----------------------------------------------------------------------
       subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend, ncid)  ![
       ! since the value of the tracer has been stored as dz*t, we need to find the
       ! differences for the contribution of each diagnostic term
@@ -863,7 +836,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr,iend,jstr,jend, ncid
+      integer, intent(in) :: istr, iend, jstr, jend, ncid
 
       ! local
       integer :: itrc, idt, i, j, k, ierr, it_prev
@@ -964,16 +937,32 @@
 # endif /* DIAGS_TRC */
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_online_diags  ![ write online diagnostics
+      subroutine wrt_diagnostics( tile )  ![
       implicit none
 
+      ! input
+      integer, intent(in) :: tile
+
+# include "compute_tile_bounds.h"
+
+      call wrt_diagnostics_tile(istr, iend, jstr, jend)
+
+      end subroutine wrt_diagnostics  !]
+
+! ----------------------------------------------------------------------
+      subroutine wrt_diagnostics_tile(istr, iend, jstr, jend)  ![ write online diagnostics
+      implicit none
+
+      ! inputs
+      integer, intent(in)     :: istr, iend, jstr, jend
+
       ! local
-      integer :: prev_fill_mode,
-     &           r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
+      integer                 :: prev_fill_mode,
+     &                           r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)   ! 2D grid types
 #ifdef SOLVE3D
-     &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+     &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt
+      integer                 :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt
 
       character(len=64)       :: fname
       character(len=20)       :: text
@@ -1005,10 +994,8 @@
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
-        if (diag_avg) then           ! my_tile_range HARD-CODED
-          do tile=0,0                ! avoid very first step because diags are only all set by the end of the
-            call set_diags_avg(tile) ! first step, and then added to averages and/or output at the beginning of the next step.
-          enddo
+        if (diag_avg) then                               ! avoid very first step because diags are only all set by the end of the
+            call set_diags_avg_tile(istr,iend,jstr,jend) ! first step, and then added to averages and/or output at the beginning of the next step.
         endif
 
         if ( write_file==.true.     .and.
@@ -1119,9 +1106,7 @@
           enddo  ! dim
 
 # ifdef DIAGS_TRC
-          do tile=0,0   ! my_tile_range HARD-CODED
-            call wrt_tracer_diags(tile, ncid)
-          enddo
+          call wrt_tracer_diags_tile(istr, iend, jstr, jend, ncid)
 # endif
 
           ierr=nf90_close (ncid)  ! close netcdf file
@@ -1141,7 +1126,7 @@
 
       endif   ! <-- icc>ntstart
 
-      end subroutine wrt_online_diags  !]
+      end subroutine wrt_diagnostics_tile  !]
 
 ! ----------------------------------------------------------------------
 

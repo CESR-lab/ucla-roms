@@ -352,14 +352,16 @@ C$OMP END MASTER
 #include "scalars.h"
 #include "ncvars.h"
 
-#ifdef DIAGNOSTICS
-      call wrt_online_diags ! call before nnew and nstp have swapped indices (as if previous timestep)
-#endif
-
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
       my_first=trd*range
       my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
+
+#ifdef DIAGNOSTICS
+      do tile=my_tile_range
+        call wrt_diagnostics(tile)  ! call before nnew and nstp have swapped indices (as if previous timestep)
+      enddo
+#endif
 
 ! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (denoted here as "nstp"), while counter
