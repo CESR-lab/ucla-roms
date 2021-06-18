@@ -132,7 +132,7 @@
      &  '2D3D_cor'
      &                                                /)
 
-      character (len=60), dimension(nmd) :: lname =   (/
+      character (len=70), dimension(nmd) :: lname =   (/               ! len=70 allows for 8 characters of 'Average ' if diag_avg
      &  'Hydrostatic pressure gradient - prsgrd.F',
      &  'Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h',
      &  'Advection - step3d_uv1.F',
@@ -523,6 +523,8 @@
       integer :: i, j, k
 
       ! can just loop both over istrR and jstrR and have one loop. No harm?
+      ! This is currently used for bry calculation so is also needed for averaging. u_diff is other use but that's not needed for averaging.
+      ! Should put an if statement here for diags_avg and only compute bry if averages...
 
       do k=1,N
         do j=jstrR,jendR
@@ -784,7 +786,8 @@
       if(mynode==0) print *, '--- SETTING DIAGS AVERAGES' ! debug only
 
       ! This method is arguably more efficient than set_avg.F, however, it requires more
-      ! lines of code...?
+      ! lines of code. Since diagnostic averaging will be heavy, more efficient code is argueably
+      ! more important.
 
       if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
 
@@ -978,36 +981,35 @@
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
-      if (FIRST_TIME_STEP .and. diag_avg) then
-        allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages if needing averages. Only once.
-        Md_avg=0
+      if (FIRST_TIME_STEP .and. diag_avg) then                 ! only if diag averaging and only done once
+        allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
+        Md_avg = 0
+        do diag=1,nmd                                          ! loop through diag terms
+          lname(diag)  = 'Average ' / / trim(lname(diag))      ! and prepend 'Average'
+        enddo
       endif
 
       tn = iic-ntstart      ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
       ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
-      if(diag_avg .or. mod(tn+1,rec_rate) == 0) then ! +1 as calculate in the step before writing. so if tn=5 then calc_diag at tn=4, hence need +1 to trigger mod(tn...)
-        calc_diag = .true.                           ! This triggers diags to be calculated in equation system. Always on for averages
-      else                                           ! set here once rather than everywhere in equation system redo 'mod'
-        calc_diag = .false.                          ! since this is called at the beginning of main.
+      if (diag_avg .or. mod(tn+1,rec_rate) == 0) then ! +1 as calculate in the step before writing. so if tn=5 then calc_diag at tn=4, hence need +1 to trigger mod(tn...)
+        calc_diag = .true.                            ! This triggers diags to be calculated in equation system. Always on for averages
+      else                                            ! set here once rather than everywhere in equation system redo 'mod'
+        calc_diag = .false.                           ! since this is called at the beginning of main.
       endif
-      if (mod(tn+2,rec_rate) == 0) then              ! +2 as need to set the previous values before calc_diag step above
-        set_dz_old=.true.                            ! So if tn=5 then calc_diag at tn=4, and need set_dz_old tn=3 hence +2 to trigger mod(tn...)
+      if (diag_avg .or. mod(tn+2,rec_rate) == 0) then ! +2 as need to set the previous values before calc_diag step above
+        set_dz_old=.true.                             ! So if tn=5 then calc_diag at tn=4, and need set_dz_old tn=3 hence +2 to trigger mod(tn...)
       else
         set_dz_old=.false.
       endif
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
-        if (diag_avg) then
-          do tile=0,0   ! my_tile_range HARD-CODED
-            call set_diags_avg(tile)
+        if (diag_avg) then           ! my_tile_range HARD-CODED
+          do tile=0,0                ! avoid very first step because diags are only all set by the end of the
+            call set_diags_avg(tile) ! first step, and then added to averages and/or output at the beginning of the next step.
           enddo
         endif
-        ! 1) if(diag_avg) SET_DIAG_AVG
-        !    Put here to avoid very first step because diags are only all set by the end of the
-        !    First step, and then added to averages and/or output at the beginning of the next step.
-        ! 2) below will write as averages just need to adjust long name!
 
         if ( write_file==.true.     .and.
      &       mod(tn,rec_rate) == 0        ) then
@@ -1029,35 +1031,35 @@
 
 
             ! Define remaining variables:
-            do dim=1,2  ! loop through dims
-              do diag=1,nmd
 
-                text  = uvw(dim) / / vnames(diag)  ! diag short name
-                if (diag_avg) text=trim(text) / / 'A'
+            do dim=1,2       ! u,v dims
+              do diag=1,nmd  ! diag terms
+                text  = uvw(dim) / / vnames(diag)     ! diag short name
                 call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
               enddo
 
-              text  = uvw(dim) / / 'diff'
+              ! following to compare gross change in u/v and sum of diags. Possibly remove.
+              text  = uvw(dim) / / 'diff'  ! gross change in dz*u or dz*v over 1 timestep
               call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-              text  = uvw(dim) / / 'dsum'
+              text  = uvw(dim) / / 'dsum'  ! sum of all diag terms over 1 timestep
               call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-              text  = uvw(dim) / / 'd-d'
+              text  = uvw(dim) / / 'd-d'   ! compare gross change against sum of diags. Should be approx zero.
               call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-            enddo
+            enddo ! <-- dim
 
 # ifdef DIAGS_TRC
-            do idt=1,ndt ! loop through tracer diags
+            do idt=1,ndt ! tracer diag terms
               call nc_define_var(ncid, tvname(idt), tlname(idt), tunits, r3dgrd, ierr )
             enddo
-            text  = 't_' / / 'diff'
+            text  = 't_' / / 'diff'  ! gross change in dz*t over 1 timestep
             call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-            text  = 't_' / / 'dsum'
+            text  = 't_' / / 'dsum'  ! sum of all diag terms over 1 timestep
             call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-            text  = 't_' / / 'd-d'
+            text  = 't_' / / 'd-d'   ! compare gross change against sum of diags. Should be approx zero.
             call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
 # endif
 
-!            ! define bry 2D vars:
+!            ! define bry 2D vars (experimental):
 !            rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
 !            rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
 !            rwebrygrd(3)=r3dgrd(4) ! set time    dimension
@@ -1088,11 +1090,10 @@
 
           call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
 
-          do dim=1,2  ! loop through dims
-            do diag=1,nmd
+          do dim=1,2                            ! over dims
+            do diag=1,nmd                       ! over diag terms
               text = uvw(dim) / / vnames(diag)
               if (diag_avg) then
-                text=trim(text) / / 'A'
                 call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
               else
                 call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
@@ -1101,18 +1102,18 @@
 
             ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
             ! but use 'nnew' there as still in previou timestep!
-            text = uvw(dim) / / 'diff'
+            text = uvw(dim) / / 'diff'  ! gross change in dz*u or dz*v over 1 timestep
             call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
 
             Mdsum = 0  ! refresh for this step
             do diag=1,nmd
-              Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)
+              Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)
             enddo
-            text = uvw(dim) / / 'dsum'
+            text = uvw(dim) / / 'dsum'               ! sum of diag terms over 1 timestep
             call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
 
-            diff=uv_dif(:,:,:,dim)-Mdsum ! difference between gross dz*u change and sum of diags of dz*u
-            text  = uvw(dim) / / 'd-d'
+            diff = uv_dif(:,:,:,dim)-Mdsum           ! difference between gross dz*u (or v) change and sum of diags of dz*u
+            text = uvw(dim) / / 'd-d'
             call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
 
           enddo  ! dim
@@ -1136,9 +1137,9 @@
             output_rec = 0
           endif
 
-        endif ! (write_file==.true.)
+        endif ! <-- write_file==.true.
 
-      endif  ! <- icc>ntstart
+      endif   ! <-- icc>ntstart
 
       end subroutine wrt_online_diags  !]
 
