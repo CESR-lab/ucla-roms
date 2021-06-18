@@ -82,9 +82,9 @@
       ! ***************************************************************
       ! User inputs
       logical, parameter :: write_file    = .true.  ! whether to write a file or not (probably remove this)
-      logical, parameter :: diag_avg      = .false. ! compute history (F) or averages (T)
+      logical, parameter :: diag_avg      = .true. ! compute history (F) or averages (T)
       integer            :: rec_rate      = 2       ! output record rate, move this to .in file rather?
-      integer            :: recs_per_file = 2       ! total recs per file
+      integer            :: recs_per_file = 20       ! total recs per file
       ! End of user inputs
       ! ***************************************************************
 
@@ -106,6 +106,8 @@
       real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Mdsum=0    ! sum of Mdiag
       real, public, dimension(GLOBAL_2D_ARRAY, N)         :: diff=0     ! = uv_dif - Mdsum
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_prev=0  ! store incremental u/v/w (nnew)
+
+      real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
 
       real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
 
@@ -198,6 +200,7 @@
       ! ------------------
       integer            :: output_rec = 0              ! record number of output. 0 indicates we need new file
       integer            :: total_output_rec = 0        ! total flux output recordings so far
+      integer            :: tn                          ! roms timestep
       character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
 
 
@@ -751,6 +754,90 @@
       end subroutine set_diags_t_at_t3dmix_GP  !]
 
 ! ----------------------------------------------------------------------
+      subroutine set_diags_avg(tile)  ![ set the averages of diagnostic variables
+      implicit none
+
+      ! input
+      integer, intent(in) :: tile
+
+# include "compute_tile_bounds.h"
+
+      call set_diags_avg_tile(istr,iend,jstr,jend)
+
+      end subroutine set_diags_avg  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_avg_tile(istr,iend,jstr,jend)  ![ set the averages of diagnostic variables
+      implicit none
+
+      ! MUST ONLY HAVE ONE TILE IN WRT_ONLINE_DIAGS THEN THIS WILL BECOME EASIER
+
+      ! inputs
+      integer, intent(in) :: istr,iend,jstr,jend
+
+      ! local
+      integer :: i, j, k, iMd
+
+! Needed for istrU, istrR, etc
+# include "compute_auxiliary_bounds.h"
+
+      if(mynode==0) print *, '--- SETTING DIAGS AVERAGES' ! debug only
+
+      ! This method is arguably more efficient than set_avg.F, however, it requires more
+      ! lines of code...?
+
+      if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
+
+!        do iMd=1,iuv2DC                 ! all diagnostic terms with internal loop ranges
+!       ! for greatest efficiency should only do the loop ranges of the diag terms, but doing full
+!       ! ranges for now just to get working.
+
+        do iMd=1,nmd                     ! all diagnostic terms with internal loop ranges
+          do k=1,N                       ! here we divide the average by the averaging rate
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                Md_avg(i,j,k,1,iMD) = ( Md_avg(i,j,k,1,iMD)+Mdiag(i,j,k,1,iMD) ) / rec_rate
+              enddo
+            enddo
+          enddo
+        enddo
+
+        if(mynode==0) print *, '----> DIVIDE FOR AVERAGE'
+
+      else
+
+        if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
+
+          ! or could have Md_avg = 0 at the top of routine but this is more efficient but more code?
+          do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
+            do k=1,N                      ! here we divide the average by the averaging rate
+              do j=jstrR,jendR
+                do i=istrR,iendR
+                  Md_avg(i,j,k,1,iMD) = Mdiag(i,j,k,1,iMD)
+                enddo
+              enddo
+            enddo
+          enddo
+
+        else                              ! all other timesteps
+
+          do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
+            do k=1,N                      ! here we divide the average by the averaging rate
+              do j=jstrR,jendR
+                do i=istrR,iendR
+                  Md_avg(i,j,k,1,iMD) = Md_avg(i,j,k,1,iMD)+Mdiag(i,j,k,1,iMD)
+                enddo
+              enddo
+            enddo
+          enddo
+
+        endif
+
+      endif
+
+      end subroutine set_diags_avg_tile  !]
+
+! ----------------------------------------------------------------------
       subroutine wrt_tracer_diags (tile, ncid)  ![
       implicit none
       ! need tile bound unfortunately hence this construct...
@@ -866,16 +953,15 @@
 
       Hz_old = Hz  ! update Hz_old
 
-      if(WESTERN_EDGE) then
-        call wrt_1D_or_2D_array(ncid, output_rec, 'u_wbry', jstrR, jendR, 1, N, uv_wbry(jstrR:jendR,1:N,1) )
-      endif
+!      if(WESTERN_EDGE) then  ! just here for jstrR, shouldn't be in tracers
+!        call wrt_1D_or_2D_array(ncid, output_rec, 'u_wbry', jstrR, jendR, 1, N, uv_wbry(jstrR:jendR,1:N,1) )
+!      endif
 
       end subroutine wrt_tracer_diags_tile  !]
 # endif /* DIAGS_TRC */
 
 ! ----------------------------------------------------------------------
       subroutine wrt_online_diags  ![ write online diagnostics
-
       implicit none
 
       ! local
@@ -884,13 +970,18 @@
 #ifdef SOLVE3D
      &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
-      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, tn
+      integer :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt
 
       character(len=64)       :: fname
       character(len=20)       :: text
       integer, dimension(3)   :: rwebrygrd(3)                  ! experimental for if using 2D bry outputs
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
+
+      if (FIRST_TIME_STEP .and. diag_avg) then
+        allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages if needing averages. Only once.
+        Md_avg=0
+      endif
 
       tn = iic-ntstart      ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
@@ -907,6 +998,16 @@
       endif
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
+
+        if (diag_avg) then
+          do tile=0,0   ! my_tile_range HARD-CODED
+            call set_diags_avg(tile)
+          enddo
+        endif
+        ! 1) if(diag_avg) SET_DIAG_AVG
+        !    Put here to avoid very first step because diags are only all set by the end of the
+        !    First step, and then added to averages and/or output at the beginning of the next step.
+        ! 2) below will write as averages just need to adjust long name!
 
         if ( write_file==.true.     .and.
      &       mod(tn,rec_rate) == 0        ) then
@@ -932,6 +1033,7 @@
               do diag=1,nmd
 
                 text  = uvw(dim) / / vnames(diag)  ! diag short name
+                if (diag_avg) text=trim(text) / / 'A'
                 call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
               enddo
 
@@ -955,13 +1057,13 @@
             call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
 # endif
 
-            ! define bry 2D vars:
-            rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
-            rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
-            rwebrygrd(3)=r3dgrd(4) ! set time    dimension
-!          if(WESTERN_EDGE) then
-            call nc_define_var(ncid, 'u_wbry', 'u_wbry', 'u_wbry', rwebrygrd, ierr )
-!          endif
+!            ! define bry 2D vars:
+!            rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
+!            rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
+!            rwebrygrd(3)=r3dgrd(4) ! set time    dimension
+!!          if(WESTERN_EDGE) then
+!            call nc_define_var(ncid, 'u_wbry', 'u_wbry', 'u_wbry', rwebrygrd, ierr )
+!!          endif
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
             if (mynode == 0) then
@@ -989,7 +1091,12 @@
           do dim=1,2  ! loop through dims
             do diag=1,nmd
               text = uvw(dim) / / vnames(diag)
-              call nc_write_var(ncid, Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+              if (diag_avg) then
+                text=trim(text) / / 'A'
+                call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+              else
+                call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+              endif
             enddo
 
             ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
