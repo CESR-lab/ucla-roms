@@ -108,8 +108,12 @@
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_prev=0  ! store incremental u/v/w (nnew)
 
       real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
+      real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
+      real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
+      real, allocatable, dimension(:, :, :, :)            :: uvdz_t0    ! original dz*u/v to compare total change in u/v over simulation.
+      real, allocatable, dimension(:, :, :, :)            :: uvdz_ever  ! total change in dz*u/v over simulation.
 
-      real, public :: Mdtmp ! temporary scalar for calculations of Mdiag
+      real, public                                        :: Mdtmp ! temporary scalar for calculations of Mdiag
 
       real, public, dimension(GLOBAL_1DY_ARRAY, N, 2)     :: uv_wbry    ! bry change for u and v
 
@@ -142,7 +146,7 @@
      &  '2D-3D correction - step3d_uv2.F part 2'
      &                                                 /)
 
-      character (len=20) :: units = 'm^2/s (dz*(u or v))'
+      character (len=20)              :: units = 'm^2/s (dz*(u or v))'
 
       character (len=2), dimension(3) :: uvw = (/ 'u_', 'v_', 'w_' /)
 
@@ -286,6 +290,9 @@
           enddo
         enddo
       enddo
+
+      if (FIRST_TIME_STEP .and. diag_avg) uvdz_t0 = uvdz_old  ! store the initial condition for budget confirmation at simulation end
+
 # ifdef DIAGS_TRC
       Hz_old = Hz ! store Hz to calculate old dz*t
 # endif
@@ -474,7 +481,7 @@
       integer, intent(in) :: istr, iendR, jstrR, jendR ! changed the name to use for u or v
       integer :: i, j, k  ! local
 
-      do k=1,N  ! COULD REUSE THIS BY LOOPING OVER a AND b AND SWITCHING ARGUEMENTS
+      do k=1,N
         do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
             Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uv_prev(i,j,k,1)
@@ -792,6 +799,13 @@
           enddo
         enddo
 
+        Md_a_sum = 0 ! improve later
+        do iMd=1,nmd
+          Md_a_sum(:,:,:,1) = Md_a_sum(:,:,:,1) + Md_avg(:,:,:,1,iMd)      ! sum all diag avgs at timestep
+        enddo
+        Md_a_ever = Md_a_ever + Md_a_sum * rec_rate                        ! keep an endless running total for budget closing
+        call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
+
         if(mynode==0) print *, '----> DIVIDE FOR AVERAGE'
 
       else
@@ -821,11 +835,42 @@
             enddo
           enddo
 
-        endif
+        endif  ! <-- mod(tn-1,rec_rate)==0
 
-      endif
+      endif    ! <-- mod(tn  ,rec_rate)==0
 
       end subroutine set_diags_avg_tile  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR )  ![
+      ! need current dz*u/v to compare gross changes in u with sum of averages
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, jstr, istrR, iendR, jstrR, jendR
+
+      ! local
+      integer :: i, j, k
+
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istr,iendR
+            uvdz_ever(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+     &                          - uvdz_t0(i,j,k,1)
+          enddo
+        enddo
+      enddo
+
+      do k=1,N
+        do j=jstr,jendR
+          do i=istrR,iendR
+            uvdz_ever(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+     &                          - uvdz_t0(i,j,k,2)
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_uvdz_ever  !]
 
 ! ----------------------------------------------------------------------
       subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend, ncid)  ![
@@ -971,8 +1016,12 @@
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
       if (FIRST_TIME_STEP .and. diag_avg) then                 ! only if diag averaging and only done once
-        allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
-        Md_avg = 0
+        allocate(    Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )      ! allocate memory for diag averages
+        allocate(  Md_a_sum(GLOBAL_2D_ARRAY, N, 2)      )      ! sum of diag averages at timestep
+        allocate( Md_a_ever(GLOBAL_2D_ARRAY, N, 2)      )      ! continuing total of sum of averages Md_a_ever += Md_a_sum
+        allocate(   uvdz_t0(GLOBAL_2D_ARRAY, N, 2)      )
+        allocate( uvdz_ever(GLOBAL_2D_ARRAY, N, 2)      )
+        Md_avg = 0; Md_a_ever=0                                ! Md_a_sum set to 0 elsewhere, so not needed here
         do diag=1,nmd                                          ! loop through diag terms
           lname(diag)  = 'Average ' / / trim(lname(diag))      ! and prepend 'Average'
         enddo
@@ -1032,6 +1081,14 @@
               call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
               text  = uvw(dim) / / 'd-d'   ! compare gross change against sum of diags. Should be approx zero.
               call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+
+              if (diag_avg) then
+                text  = uvw(dim) / / 'dz_ever'  ! gross change in u/v up until now since t0
+                call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / 'avg_ever' ! total diag avg in u/v up until now since t0
+                call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+              endif
+
             enddo ! <-- dim
 
 # ifdef DIAGS_TRC
@@ -1082,6 +1139,10 @@
               text = uvw(dim) / / vnames(diag)
               if (diag_avg) then
                 call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+                text  = uvw(dim) / / 'dz_ever'  ! gross change in u/v up until now since t0
+                call nc_write_var(ncid, uvdz_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
+                text  = uvw(dim) / / 'avg_ever' ! total diag avg in u/v up until now since t0
+                call nc_write_var(ncid, Md_a_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
               else
                 call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
               endif
