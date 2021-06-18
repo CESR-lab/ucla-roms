@@ -23,7 +23,10 @@ If you are frustrated by wait times on the compute nodes and are still just conf
 If running ROMS for the first time on Expanse, don't forget to run the basic example first to ensure your bashrc is correct, as per step 7. of Documentation/readme.1.compile-ROMS.
 
 Transferring data:
-If you have lots of files to transfer from Comet to Expanse, consider using this web portal: globus.org. You log in with your Xsede account, then it provides a useful GUI to transfer all your files.
+If you have lots of heavy files to transfer between Expanse and Comet (or personal machine / campus server), consider using this web portal: globus.org.  You log in with your Xsede account, then it provides a useful webpage GUI to transfer all your files. 
+In the GUI's path, use /expanse/home/$username$ to get to your expanse home directory. The projects and scratch directory paths are the same as shown on expanse.
+Xsede prefers that you don't use 'scp' for transfers exceeding (I believe) 2GB.
+There are also other command line options to transfer files that Xsede recommends.
 
 New ROMS code:
 If you still aren't using the new ROMS code, ask Jereon for access to the code's repo. Once you have access, the attachment 'ROMS_repo_bitbucket_cloning_instructions.pdf' gives instructions for cloning the code to Expanse, or whichever machine you use.
