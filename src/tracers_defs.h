@@ -17,7 +17,8 @@
 !  the rest of the variables that belong to each tracer.)
 
 ! itrace1   = integer to identify tracer in tracer array 't'
-! wrt_t     = True/False whether to print tracer to output file
+! wrt_t     = True/False whether to write tracer to output file
+! wrt_t_avg = True/False whether to write tracer avg to output file
 ! t_vname   = Tracer short name
 ! t_units   = Tracer units (for outputing tracer)
 ! t_lname   = Tracer long name (for outputing tracer)
@@ -30,9 +31,12 @@
 
 !     Defined in tracers.F, but outputting controller here:
       wrt_t(itmp) =.True.;           wrt_t_avg(itmp) =.True.
+      wrt_t_diag(itmp) =.True.
 #ifdef SALINITY
       wrt_t(islt) =.True.;           wrt_t_avg(islt) =.True.
+      wrt_t_diag(islt) =.True.
 #endif
+
 
 ! - PASSIVE TRACERS:
 

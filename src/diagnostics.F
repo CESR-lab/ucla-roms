@@ -70,6 +70,7 @@
       use dimensions
       use read_write
       use netcdf
+      use tracers
 
       implicit none
       private
@@ -176,13 +177,13 @@
      &  it_lmdkpp   = 5,  ! not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
      &  it_bc       = 6   ! BC's shouldn't have 3D array
 
-      character (len=20), dimension(ndt) :: tvname = (/
-     &  't_hori_adv',
-     &  't_vert_adv',
-     &  't_imp_vdif',
-     &  't_t3dmix',
-     &  't_lmdkpp',
-     &  't_t3dbc'
+      character (len=30), dimension(ndt) :: tdname = (/
+     &  '_hori_adv',
+     &  '_vert_adv',
+     &  '_imp_vdif',
+     &  '_t3dmix',
+     &  '_lmdkpp',
+     &  '_t3dbc'
      &                                               /)
 
       character (len=80), dimension(ndt) :: tlname = (/
@@ -750,7 +751,7 @@
       ! local
       integer :: i, j, k, itrc
 
-      do itrc=1,NT
+      do itrc=1,NT ! CHANGE THIS TO ONLY tracers of interest!
         do k=1,N  ! K>0 in t3dmix
           do j=jstr,jend
             do i=istr,iend
@@ -881,16 +882,17 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, ncid
+      integer, intent(in)                 :: istr, iend, jstr, jend, ncid
 
       ! local
-      integer :: itrc, idt, i, j, k, ierr, it_prev
-      real, dimension(GLOBAL_2D_ARRAY, N) :: Td_tmp=0
+      integer                             :: itrc, idt, i, j, k, ierr, it_prev
+      character(len=30)                   :: text
+      real, dimension(GLOBAL_2D_ARRAY, N) :: Td_tmp=0  ! Move this to top of module for permanent scratch
 
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
 
-      do itrc=1,1 ! NT
+      do itrc=1,NT ! NT  ! CHANGE THIS TO ONLY tracers of interest!
 
         T_dsum=0 ! could just do boundaries as the rest can be overwritten in first below
         Td_tmp=0 ! Do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
@@ -903,7 +905,8 @@
             enddo
           enddo
         enddo
-        call nc_write_var(ncid, Td_tmp, N, tvname(it_h_adv), rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / tdname(it_h_adv)
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
         do k=1,N
           do j=jstr,jend
@@ -913,7 +916,8 @@
             enddo
           enddo
         enddo
-        call nc_write_var(ncid, Td_tmp, N, tvname(it_v_adv), rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / tdname(it_v_adv)
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         it_prev=it_v_adv ! store index of previous diagnostic
 
 # ifdef LMD_KPP
@@ -925,7 +929,8 @@
             enddo
           enddo
         enddo
-        call nc_write_var(ncid, Td_tmp, N, tvname(it_lmdkpp), rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / tdname(it_lmdkpp)
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         it_prev=it_lmdkpp ! store index of previous diagnostic if lmd_kpp
 # endif
 
@@ -938,7 +943,8 @@
             enddo
           enddo
         enddo
-        call nc_write_var(ncid, Td_tmp, N, tvname(it_imp_vdif), rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / tdname(it_imp_vdif)
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
         do k=1,N
           do j=jstr,jend
@@ -948,13 +954,16 @@
             enddo
           enddo
         enddo
-        call nc_write_var(ncid, Td_tmp, N, tvname(it_t3dmix), rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / tdname(it_imp_vdif)
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
         ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
-        call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,itrc,it_bc), N, tvname(it_bc), rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / tdname(it_bc)
+        call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,itrc,it_bc), N, text, rp_var, output_rec, ierr)
         T_dsum=T_dsum+Tdiag(:,:,:,itrc,it_bc)  ! re-do this just for boundaries not full domain!
 
-        call nc_write_var(ncid, T_dsum, N, 't_dsum', rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / '_dsum'
+        call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
 
         Td_tmp=0 ! probably don't need this since loop below is full range
         ! write gross difference:
@@ -965,10 +974,12 @@
             enddo
           enddo
         enddo
-        call nc_write_var(ncid, Td_tmp, N, 't_diff', rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / '_diff'
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
         Td_tmp=Td_tmp-T_dsum ! difference between gross change and sum of diags.
-        call nc_write_var(ncid, Td_tmp, N, 't_d-d', rp_var, output_rec, ierr)
+        text=trim(t_vname(itrc)) / / '_d-d'
+        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
       enddo ! <- itrc=1,NT
 
@@ -1007,10 +1018,10 @@
 #ifdef SOLVE3D
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
-      integer                 :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt
+      integer                 :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, itrc
 
       character(len=64)       :: fname
-      character(len=20)       :: text
+      character(len=30)       :: text
       integer, dimension(3)   :: rwebrygrd(3)                  ! experimental for if using 2D bry outputs
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
@@ -1092,15 +1103,18 @@
             enddo ! <-- dim
 
 # ifdef DIAGS_TRC
-            do idt=1,ndt ! tracer diag terms
-              call nc_define_var(ncid, tvname(idt), tlname(idt), tunits, r3dgrd, ierr )
-            enddo
-            text  = 't_' / / 'diff'  ! gross change in dz*t over 1 timestep
-            call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-            text  = 't_' / / 'dsum'  ! sum of all diag terms over 1 timestep
-            call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-            text  = 't_' / / 'd-d'   ! compare gross change against sum of diags. Should be approx zero.
-            call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+            do itrc=1,NT  ! CHANGE THIS TO ONLY tracers of interest!
+              do idt=1,ndt ! tracer diag terms
+                text=trim(t_vname(itrc)) / / tdname(idt)
+                call nc_define_var(ncid, text, tlname(idt), tunits, r3dgrd, ierr )
+              enddo
+              text  = trim(t_vname(itrc)) / / '_diff'  ! gross change in dz*t over 1 timestep
+              call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+              text  = trim(t_vname(itrc)) / / '_dsum'  ! sum of all diag terms over 1 timestep
+              call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+              text  = trim(t_vname(itrc)) / / '_d-d'   ! compare gross change against sum of diags. Should be approx zero.
+              call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+            enddo  ! <-- itrc
 # endif
 
 !            ! define bry 2D vars (experimental):
