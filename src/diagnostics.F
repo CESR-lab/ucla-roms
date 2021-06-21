@@ -82,10 +82,11 @@
 
       ! ***************************************************************
       ! User inputs
-      logical, parameter :: write_file    = .true.  ! whether to write a file or not (probably remove this)
-      logical, parameter :: diag_avg      = .true. ! compute history (F) or averages (T)
-      integer            :: rec_rate      = 2       ! output record rate, move this to .in file rather?
-      integer            :: recs_per_file = 20       ! total recs per file
+      logical, parameter         :: write_file    = .true.  ! whether to write a file or not (probably remove this)
+      logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
+      integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
+      integer                    :: recs_per_file = 20      ! total recs per file
+      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key
       ! End of user inputs
       ! ***************************************************************
 
@@ -159,15 +160,19 @@
       ! from the u,v,w implementation here currently.
       ! Need to consider pipe and river sources.
 
-      integer, public, parameter                           :: ndt = 5  ! number of tracer diag terms
+      integer, public, parameter                          :: ndt = 5   ! number of tracer diag terms
 #  ifdef LMD_KPP
-     &                                                            + 1
+     &                                                           + 1
 #  endif
-      real, public, dimension(GLOBAL_2D_ARRAY, N, NT, ndt) :: Tdiag=0    ! consider ndt, NT order
+      real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! consider ndt, NT order
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: T_dsum=0   ! sum of t diagnostics to compare with gross change
-      real, public, dimension(GLOBAL_2D_ARRAY, N)          :: Hz_old=0   ! store previous Hz to calculate old dz*t
-                                                                       ! better than storing dz*t for each tracer. Better to recalculate it?
+      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: T_dsum=0  ! sum of t diagnostics to compare with gross change
+      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Hz_old=0  ! store previous Hz to calculate old dz*t. better than storing dz*t for each tracer. Better to recalculate it?
+
+      integer                            :: nd_trc           ! number of tracers selected tracers of interest (from wrt_t_diag array)
+      integer, dimension(:), allocatable :: diag_td_2_NT     ! index of tracer of selected tracers only
+      integer, dimension(NT), public     :: diag_NT_2_td=-1  ! convert itrc=1,NT to index of tracer in Tdiag array. Set to bad value -1
+
       integer, parameter, public ::
      &  it_h_adv    = 1,  ! compute_horiz_tracer_fluxes.h
      &  it_v_adv    = 2,  ! compute_vert_tracer_fluxes.h
@@ -197,6 +202,7 @@
 
       character (len=20) :: tunits = 'C.m^2/s (dz*t)'  ! not sure on units here.
 
+      public init_diags_trc
       public set_diags_t_at_bc
       public set_diags_t_at_t3dmix_GP
 # endif /* DIAGS_TRC */
@@ -315,6 +321,42 @@
 
       end subroutine init_diags  !]
 
+! ----------------------------------------------------------------------
+      subroutine init_diags_trc  ![
+      ! setup tracer arrays only for desired tracers, since can be memory intensive
+      ! if all tracers.
+
+      implicit none
+
+      ! local
+      integer :: itrc, cnt=0
+      integer, dimension(NT) :: temp_t_indx
+
+      do itrc=1,NT
+        if (wrt_t_diag(itrc)) then
+          cnt=cnt+1              ! count tracers we want to calc+write
+          diag_NT_2_td(itrc)=cnt ! t(itrc) = Tdiag(cnt)
+        endif
+      enddo
+
+      nd_trc = cnt                                         ! number of tracers of interest
+      allocate( Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) ) ! only tracers we are interested in
+      Tdiag  = 0
+      allocate( diag_td_2_NT( nd_trc ) )                     ! to store its indices
+      diag_td_2_NT = -1                                      ! set to bad number (<1) as safeguard
+
+      cnt=0
+      do itrc=1,NT
+        if (wrt_t_diag(itrc)) then
+          cnt=cnt+1
+          diag_td_2_NT(cnt)=itrc ! store the actual tracer index of 't' array since t(NT) but Tdiag(nd_trc). NT >= nd_trc...
+        endif
+      enddo
+
+      if(mynode==0) print *, 'nd_trc=',nd_trc
+      if(mynode==0) print *, 'diag_td_2_NT(1)=',diag_td_2_NT(1)
+
+      end subroutine init_diags_trc  !]
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
@@ -703,13 +745,13 @@
 
 ! ----------------------------------------------------------------------
 # ifdef DIAGS_TRC
-      subroutine set_diags_t_at_bc(istr, iend, jstr, jend, itrc)  ![
+      subroutine set_diags_t_at_bc(istr, iend, jstr, jend, itrc, td)  ![
 
       use tracers, only: t
       implicit none
 
       ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend, itrc
+      integer, intent(in) :: istr, iend, jstr, jend, itrc, td
 
       ! local
       integer :: i, j
@@ -718,45 +760,45 @@
 
       if (WESTERN_EDGE) then
         i=istr-1
-        Tdiag(i,:,:,itrc,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
-     &                          - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
+        Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
+     &                        - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
       endif
       if (EASTERN_EDGE) then
         i=iend+1
-        Tdiag(i,:,:,itrc,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
-     &                          - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
+        Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
+     &                        - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
       endif
       if (SOUTHERN_EDGE) then
         j=jstr-1
-        Tdiag(:,j,:,itrc,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
-     &                          - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
+        Tdiag(:,j,:,td,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
+     &                        - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
       endif
       if (NORTHERN_EDGE) then
         j=jend+1
-        Tdiag(:,j,:,itrc,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
-     &                          - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
+        Tdiag(:,j,:,td,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
+     &                        - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
       endif
 
       end subroutine set_diags_t_at_bc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend)  ![
+      subroutine set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend, itrc)  ![
+      ! from t3dmix_GP.F
 
       use tracers, only: t
-      implicit none           ! from t3dmix_GP.F
+      implicit none
 
       ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend
+      integer, intent(in) :: istr, iend, jstr, jend, itrc
 
       ! local
-      integer :: i, j, k, itrc
+      integer :: i, j, k, td
 
-      do itrc=1,NT ! CHANGE THIS TO ONLY tracers of interest!
-        do k=1,N  ! K>0 in t3dmix
-          do j=jstr,jend
-            do i=istr,iend
-              Tdiag(i,j,k,itrc,it_t3dmix) = t(i,j,k,nnew,itrc)
-            enddo
+      td=diag_NT_2_td(itrc)
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            Tdiag(i,j,k,td,it_t3dmix) = t(i,j,k,nnew,itrc)
           enddo
         enddo
       enddo
@@ -885,14 +927,15 @@
       integer, intent(in)                 :: istr, iend, jstr, jend, ncid
 
       ! local
-      integer                             :: itrc, idt, i, j, k, ierr, it_prev
+      integer                             :: itrc, td, i, j, k, ierr, it_prev
       character(len=30)                   :: text
       real, dimension(GLOBAL_2D_ARRAY, N) :: Td_tmp=0  ! Move this to top of module for permanent scratch
 
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
 
-      do itrc=1,NT ! NT  ! CHANGE THIS TO ONLY tracers of interest!
+      do td=1,nd_trc          ! only selected tracers from wrt_t_diag array
+        itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
 
         T_dsum=0 ! could just do boundaries as the rest can be overwritten in first below
         Td_tmp=0 ! Do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
@@ -900,7 +943,7 @@
         do k=1,N            ! first diagnostic calculated using previous step's value
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
               T_dsum(i,j,k)=Td_tmp(i,j,k) ! add to total
             enddo
           enddo
@@ -911,7 +954,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_v_adv) - Tdiag(i,j,k,itrc,it_h_adv)
+              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_v_adv) - Tdiag(i,j,k,td,it_h_adv)
               T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
@@ -924,7 +967,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_lmdkpp) - Tdiag(i,j,k,itrc,it_v_adv)
+              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_lmdkpp) - Tdiag(i,j,k,td,it_v_adv)
               T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
@@ -938,7 +981,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! it_imp_vdif in 't' units, but it_prev in dz*t units
-              Td_tmp(i,j,k)=Tdiag(i,j,k,itrc,it_imp_vdif)*Hz(i,j,k) - Tdiag(i,j,k,itrc,it_prev)
+              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_imp_vdif)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev)
               T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
@@ -949,7 +992,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! both in dz*t units
-              Td_tmp(i,j,k)=(Tdiag(i,j,k,itrc,it_t3dmix)-Tdiag(i,j,k,itrc,it_imp_vdif))*Hz(i,j,k)
+              Td_tmp(i,j,k)=(Tdiag(i,j,k,td,it_t3dmix)-Tdiag(i,j,k,td,it_imp_vdif))*Hz(i,j,k)
               T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
@@ -959,8 +1002,8 @@
 
         ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
         text=trim(t_vname(itrc)) / / tdname(it_bc)
-        call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,itrc,it_bc), N, text, rp_var, output_rec, ierr)
-        T_dsum=T_dsum+Tdiag(:,:,:,itrc,it_bc)  ! re-do this just for boundaries not full domain!
+        call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
+        T_dsum=T_dsum+Tdiag(:,:,:,td,it_bc)  ! re-do this just for boundaries not full domain!
 
         text=trim(t_vname(itrc)) / / '_dsum'
         call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
@@ -1018,7 +1061,7 @@
 #ifdef SOLVE3D
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
-      integer                 :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, itrc
+      integer                 :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, itrc, td
 
       character(len=64)       :: fname
       character(len=30)       :: text
@@ -1103,8 +1146,9 @@
             enddo ! <-- dim
 
 # ifdef DIAGS_TRC
-            do itrc=1,NT  ! CHANGE THIS TO ONLY tracers of interest!
-              do idt=1,ndt ! tracer diag terms
+            do td=1,nd_trc          ! only tracers of interest
+              itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
+              do idt=1,ndt          ! tracer diag terms
                 text=trim(t_vname(itrc)) / / tdname(idt)
                 call nc_define_var(ncid, text, tlname(idt), tunits, r3dgrd, ierr )
               enddo

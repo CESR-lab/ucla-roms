@@ -136,8 +136,9 @@
 #endif
 
 # ifdef DIAGNOSTICS
-      if (FIRST_TIME_STEP .and. set_dz_old) then                 ! only need for avg, or for his with rec_rate=1
-        call init_diags(istr, jstr, istrR, iendR, jstrR, jendR)  ! after first timstep this is achieved by 'set_diags_dz_old'
+      if (FIRST_TIME_STEP) then                                                  ! only need for avg, or for his with rec_rate=1
+        if (set_dz_old) call init_diags(istr, jstr, istrR, iendR, jstrR, jendR)  ! after first timstep this is achieved by 'set_diags_dz_old'
+        if (diag_trc)   call init_diags_trc
       endif
 # endif
 
