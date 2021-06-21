@@ -31,7 +31,7 @@
 
 !     Defined in tracers.F, but outputting controller here:
       wrt_t(itmp) =.True.;           wrt_t_avg(itmp) =.True.
-      wrt_t_diag(itmp) =.True.
+      wrt_t_diag(itmp) =.False.
 #ifdef SALINITY
       wrt_t(islt) =.True.;           wrt_t_avg(islt) =.True.
       wrt_t_diag(islt) =.True.

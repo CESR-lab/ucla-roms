@@ -17,7 +17,7 @@
       subroutine t3dmix_tile (istr,iend,jstr,jend, itrc, LapT,FX,FE,
      &                               FSC,dTdz, dTdx,dTde,dZdx,dZde)
 
-      use tracers, only: t
+      use tracers ! , only: t, wrt_t_diag
       use diagnostics
 
       implicit none
@@ -518,7 +518,8 @@ c**  &                                                             )
 # endif /* TS_DIF4 */
 
 # ifdef DIAGS_TRC
-      call set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
+      if (wrt_t_diag(itrc))
+     &  call set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend,itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
 # endif
 
 #ifdef DIAG_T_DEBUG
