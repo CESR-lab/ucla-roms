@@ -170,7 +170,7 @@ c--#  define ntdf nrhs
      &                                          +FE(i,j+1)-FE(i,j)
      &                                                           )
 # ifdef DIAGS_TRC
-                Tdiag(i,j,k,itrc,it_h_adv) = t(i,j,k,nnew,itrc)
+                Tdiag(i,j,k,itrc,it_h_adv) = t(i,j,k,nnew,itrc)  ! Should only be for tracers of interest...
 # endif
               enddo
             enddo                 !-->  discard FX,FE

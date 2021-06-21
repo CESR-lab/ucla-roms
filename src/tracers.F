@@ -53,17 +53,19 @@
       !-- Array of tracers
       real, public :: t(GLOBAL_2D_ARRAY,N,3,NT)
 #ifdef AVERAGES
-      real, public :: t_avg(GLOBAL_2D_ARRAY,N,NT)
+      real, public :: t_avg(GLOBAL_2D_ARRAY,N,NT)  ! SHOULD CHANGE THIS TO ALLOCATABLE SO DON'T NEED MEMORY FOR EVERY TRACER!
 #endif
 
       !-- Tracer variables (user input required in init_tracers)
-      character*42, dimension(nt), public :: t_vname ! Short name
-      character*60, dimension(nt), public :: t_lname ! long name
-      character*42, dimension(nt), public :: t_units ! Tracer units
-      character*47, dimension(nt), public :: t_tname ! Tracer input time variable name
-      logical, dimension(nt), public      :: wrt_t   ! T/F output tracer.
+      character*42, dimension(nt), public :: t_vname   ! Short name
+      character*60, dimension(nt), public :: t_lname   ! long name
+      character*42, dimension(nt), public :: t_units   ! Tracer units
+      character*47, dimension(nt), public :: t_tname   ! Tracer input time variable name
+      logical, dimension(nt), public      :: wrt_t     ! T/F output tracer.
       logical, dimension(nt), public      :: wrt_t_avg ! T/F output avg tracer.
       integer, dimension(nt)              :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
+
+      logical, dimension(nt), public      :: wrt_t_diag = .false. ! T/F output tracer diagnostics (from diagnostics.F). Declare .false. so that doesn't need to be filled in tracers_defs.h if not used.
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d.h
