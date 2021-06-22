@@ -5,13 +5,15 @@
       ! Initial coding DevinD and JeroenM - 2021/05
 
       ! To compute diagnostics use DIAGNOSTICS flag.
+
+      ! HIS vs AVG:
       ! To chose between history slices of diagnostics or averages,
       ! set diag_avg to .false. for history, or .true. for averaging.
       ! Averaging is much less efficient as diagnostics must be collected
       ! at everytime step to maintain a true average.
 
-      ! The main subroutine is wrt_online_diags, which is called at the very
-      ! beginning of main.F, in order to record the diagnostics of 'nnew' index,
+      ! The main subroutine is wrt_diagnostics_tile, which is called at the very
+      ! beginning of main.F in order to record the diagnostics of 'nnew' index,
       ! which was t=n+1 for the previous timestep, and is now t=n since roms_step
       ! has moved onto the next timestep. I.e. 'nnew' will become 'nstp' in next timestep.
       ! But wrt_online_diags is called before nnew and nstp indicies change in main.F.
@@ -20,23 +22,33 @@
       ! If you just need snapshots then the diagnostics only need to be calculated at
       ! your output frequency.
       ! Both of these are controlled by the logical 'calc_diag', which is set in
-      ! wrt_online_diags at the beginning of a timestep, and then that logical is
+      ! wrt_diagnostics_tile at the beginning of a timestep, and then that logical is
       ! used in the equation system to trigger a calculation of diagnostic.
 
-      ! Units:
+      ! TRACERS:
+      ! Since there are 6 diagnostic terms for each tracer, it becomes very memory
+      ! intensive to keep diag arrays for every tracer. Instead, the user selects
+      ! only tracers of interest by setting T/F in wrt_t_diags in tracers_defs.h.
+      ! Then the number of selected tracers is counted in init_diags_trc and an array
+      ! of the correct size is allocated there. Some book keeping variables are needed
+      ! to convert indices between t(itrc) the tracer variable in roms for all tracers,
+      ! and Tdiag(td) in diagnostics which only has indices for selected tracers.
+
+      ! UNITS:
       ! The roms history file give u/v in m/s, and 't' tracers in their
       ! concentrations. However, since the depth of the water column is also evolving
       ! during a timestep, it is easier to work in dz*u/v/w/t, since that is the unit
       ! of u/v/w/t when the depth is changed in the timestep as follows:
       ! step3d_uv1.F (depth not changed just to show position amongst code)
-      ! step2d_tile -> set_depth_tile -> (Hz changes)
+      ! step2d_tile -> set_depth_tile -> (depth (Hz) changes)
       ! step3d_uv2.F (depth not changed just to show position amongst code)
       !
       ! See Documentation/readme-specifics/README.diagnostics_u_v_value_changes
       ! for more details on how the units of 'u' change during a timestep.
 
+      ! LOGICAL PARAMETERS:
       ! It is assumed that by using logicals that are set as parameters
-      ! the if branch will be removed during compiling, since the outcome
+      ! the 'if branch' will be removed during compiling, since the outcome
       ! of the branch is always known and unchanging. If this is true it will allow
       ! for if statements to be placed within loops, which is usually not advised
       ! due to the cost of the if statment at every index iteration.
@@ -46,6 +58,40 @@
       ! left at the top here, so that it can be copied into the .in, you don't need
       ! to find an old diagnostics .in file...
 
+      ! U/V evolution:
+      ! During a roms_step in main.F, the values of u/v at t=n+1/2 is calculated
+      ! in pre_step3d4s.F. Since we are interested in the change from t=n to t=n+1,
+      ! we do not track and diagnostics in pre_step3d.
+      ! The order of evolution of u/v (showns as u) and its units is as follows:
+      ! 1) dz*u - Hydrostatic pressure gradient - prsgrd.F
+      ! 2) dz*u - Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h
+      ! 3) dz*u - Advection                     - step3d_uv1.F & compute_horiz/vert_rhs_uv_term.h
+      ! 4) dz*u - Viscous terms                 - visc3d_GP.F
+      ! -         Now depth (Hz) at t=n+1 in calculated in step2d_FB -> set_depth_tile.
+      ! 5)    u - Vertical mix & 2D/3D coupling - step3d_uv2.F part 1
+      ! 6)    u - Boundary changes              - u3dbc_im.F
+      ! 7)    u - 2D-3D correction              - step3d_uv2.F part 2
+
+      ! Clearly, care needs to be taken when comparing 'u' at each step, since the units
+      ! after a step can change.
+
+      ! TRACER evolution:
+      ! 1) dz*C - Horizontal advective fluxes                               - compute_horiz_tracer_fluxes.h
+      ! 2) dz*C - Vertical advective fluxes                                 - compute_vert_tracer_fluxes.h
+      ! -         Surface flux is done here
+      ! 3) dz*C - Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F (lmd_kpp)
+      ! 4)    C - Implicit time step for vertical diffusion                 - step3d_t_ISO.F
+      ! 5)    C - Boundary changes                                          - t3dbc_im.F
+      ! 6)    C - Horizontal Laplacian diffusion terms                      - t3dmix_GP.F
+
+      ! W evolution:
+      ! 1)    ? -                                       - prsgrd.F
+      ! 2)    ? -                                       - compute_horiz_rhs_w_terms.h
+      ! 3)    ? -                                       - compute_vert_rhs_w_terms.h'
+      ! 4)    ? -                                       - step3d_uv2.F
+      ! 5)    ? -                                       - w3dbc_im.F
+
+      ! MISC:
       ! It is my feeling that once we use averages, all diagnostic calculations should
       ! not be calculated in the step3d... loop, but in it's own subroutine to avoid
       ! having if statments in loops. This will regardless result in the cleanest code.
@@ -77,12 +123,12 @@
 
 #include "ocean2d.h"
 #include "ocean3d.h"
-! scalars.h for 'knew' var
+! scalars.h for timestep indices 'nnew', 'knew', etc
 #include "scalars.h"
 
       ! ***************************************************************
       ! User inputs
-      logical, parameter         :: write_file    = .true.  ! whether to write a file or not (probably remove this)
+      logical, parameter         :: write_file    = .true.  ! whether to write a file or not (probably remove this as diagnostics not helpful without file)
       logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
@@ -100,10 +146,10 @@
 
       ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
 
-      integer,public,parameter                            :: nmd = 7    ! number of momentum diag terms
+      integer, public, parameter                          :: nmd = 7    ! number of momentum diag terms
 
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2, nmd) :: Mdiag=0    ! 2 for u & v
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uvdz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
+      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uvdz_old=0 ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_dif=0   ! gross u/v difference between current vs previous timestep u/v
       real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Mdsum=0    ! sum of Mdiag
       real, public, dimension(GLOBAL_2D_ARRAY, N)         :: diff=0     ! = uv_dif - Mdsum
@@ -115,7 +161,7 @@
       real, allocatable, dimension(:, :, :, :)            :: uvdz_t0    ! original dz*u/v to compare total change in u/v over simulation.
       real, allocatable, dimension(:, :, :, :)            :: uvdz_ever  ! total change in dz*u/v over simulation.
 
-      real, public                                        :: Mdtmp ! temporary scalar for calculations of Mdiag
+      real, public                                        :: Mdtmp      ! temporary scalar for calculations of Mdiag
 
       real, public, dimension(GLOBAL_1DY_ARRAY, N, 2)     :: uv_wbry    ! bry change for u and v
 
@@ -193,7 +239,7 @@
 
       character (len=80), dimension(ndt) :: tlname = (/
      &  'Horizontal advective fluxes - compute_horiz_tracer_fluxes.h',
-     &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h.h',
+     &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h',
      &  'Implicit time step for vertical diffusion - step3d_t_ISO.F',
      &  'Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F',
      &  'Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F',
@@ -218,14 +264,14 @@
       ! W MOMENTUM:
       ! -----------
 # ifdef NHMG
-      integer,public,parameter :: nwd = 5  !! number of 'w' momentum diag terms (for NHMG runs)
+      integer, public, parameter                         :: nwd = 5    ! number of 'w' momentum diag terms (for NHMG runs)
 
       real, public, dimension(GLOBAL_2D_ARRAY, 0:N, nwd) :: Wdiag=0    ! 3 for u,v,w
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdz_old=0 ! u from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_dif=0   ! gross u/v difference between current vs previous timestep u/v
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdz_old=0  ! u from previous timestep, need to either store this or Hz to get old u*dz.
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_dif=0    ! gross u/v difference between current vs previous timestep u/v
       real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: Wdsum=0    ! sum of Mdiag
       real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdif=0     ! = w_dif - Mdsum
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_prev=0  ! store incremental u/v/w (nnew)
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_prev=0   ! store incremental u/v/w (nnew)
 
       integer, parameter, public ::
      &  iwprsgr   = 1,
@@ -323,50 +369,52 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_diags_trc  ![
-      ! setup tracer arrays only for desired tracers, since can be memory intensive
-      ! if all tracers.
+      ! setup tracer arrays only for desired tracers,
+      ! since can be memory intensive if all tracers.
 
       implicit none
 
       ! local
-      integer :: itrc, cnt=0
+      integer                :: itrc, cnt=0
       integer, dimension(NT) :: temp_t_indx
 
       do itrc=1,NT
         if (wrt_t_diag(itrc)) then
-          cnt=cnt+1              ! count tracers we want to calc+write
-          diag_NT_2_td(itrc)=cnt ! t(itrc) = Tdiag(cnt)
+          cnt=cnt+1                 ! count tracers we want to calc+write
+          diag_NT_2_td(itrc)=cnt    ! t(itrc) = Tdiag(cnt) - to convert between index scheme
         endif
       enddo
 
-      nd_trc = cnt                                         ! number of tracers of interest
-      allocate( Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) ) ! only tracers we are interested in
+      nd_trc = cnt                                           ! number of tracers of interest
+      allocate( Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )   ! only for tracers we are interested in
       Tdiag  = 0
-      allocate( diag_td_2_NT( nd_trc ) )                     ! to store its indices
+      allocate( diag_td_2_NT( nd_trc ) )                     ! to convert indices between 't' and 'Tdiag'
       diag_td_2_NT = -1                                      ! set to bad number (<1) as safeguard
 
       cnt=0
       do itrc=1,NT
         if (wrt_t_diag(itrc)) then
           cnt=cnt+1
-          diag_td_2_NT(cnt)=itrc ! store the actual tracer index of 't' array since t(NT) but Tdiag(nd_trc). NT >= nd_trc...
-        endif
+          diag_td_2_NT(cnt)=itrc                             ! store the actual tracer index of 't' array
+        endif                                                ! since t(NT) but Tdiag(nd_trc). NT >= nd_trc...
       enddo
 
-      if(mynode==0) print *, 'nd_trc=',nd_trc
+      if(mynode==0) print *, 'nd_trc=',nd_trc ! debug
       if(mynode==0) print *, 'diag_td_2_NT(1)=',diag_td_2_NT(1)
 
       end subroutine init_diags_trc  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
       ! Works for both u and v.
-      ! Prsgrd and coriolis need to also be convert to dz * u/v
+      ! Prsgrd and coriolis need to also be convert to dz * u/v units
 
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrA, j, dim ! istr, iend, etc. 'A' for any as depends on inputs, which 'dim' dimension.
+      integer, intent(in) :: istr, iend, jstr, jend, istrA, j, dim         ! 'istrA' for any as depends on inputs, which 'dim' dimension.
+
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N),   intent(in) :: ruv     ! ru or rv
       real, dimension(GLOBAL_2D_ARRAY),              intent(in) :: suvstr  ! sustr or svstr
@@ -384,10 +432,10 @@
         Mdiag(i,j,1,dim,icori)  = Mdiag(i,j,1,dim,icori)  * DC(i,0)
         Mdiag(i,j,N,dim,iadv)   = DC(i,0)*ruv(i,j,N) + dt*suvstr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                           - ( Mdiag(i,j,N,dim,iprsgr) + Mdiag(i,j,N,dim,icori) ) ! subtract previous 2 terms included in total
-        uv_prev(i,j,N,dim)      = uv(i,j,N,nnew)     ! store for visc3d
+        uv_prev(i,j,N,dim)      = uv(i,j,N,nnew)                     ! store for next diag visc3d
         Mdiag(i,j,1,dim,iadv)   = DC(i,0)*ruv(i,j,1)
      &                           - ( Mdiag(i,j,1,dim,iprsgr) + Mdiag(i,j,1,dim,icori) )
-        uv_prev(i,j,1,dim)      = uv(i,j,1,nnew)     ! store for visc3d
+        uv_prev(i,j,1,dim)      = uv(i,j,1,nnew)
       enddo
 
       do k=2,N-1
@@ -395,7 +443,7 @@
           Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0)
           Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0)
           uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
-          Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k) ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+          Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
         enddo
       enddo
@@ -410,20 +458,20 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, isA, jsA, dim  ! isA jsA are starts depending on u or v variable
+      integer,                              intent(in) :: istr, iend, jstr, jend, isA, jsA, dim  ! isA jsA are starts depending on u or v variable
       real, dimension(GLOBAL_2D_ARRAY,N,3), intent(in) :: uv        ! u or v
-      integer :: i, j, k  ! local
+
+      ! local
+      integer :: i, j, k
 
       do k=1,N
-        do j=jsA,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+        do j=jsA,jend    ! interior of subdomains, exludes global domain boundaries
           do i=isA,iend
             Mdiag( i,j,k,dim,ivisc) = uv(i,j,k,nnew) - uv_prev(i,j,k,dim)  ! units already in dz*u
             uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
           enddo
         enddo
       enddo
-!      Mdiag (istrU:iend,jstr:jend,:,1,ivisc) = u(istrU:iend,jstr:jend,:,nnew)
-!      uv_prev(istrU:iend,jstr:jend,:)         = u(istrU:iend,jstr:jend,:,nnew) ! can remove
 
       end subroutine set_diags_at_visc3d  !]
 
@@ -436,19 +484,21 @@
 
       ! inputs
       integer, intent(in) :: istr, iend, jstr, jend, istrU, jstrV
-      integer :: i, j, k  ! local
+
+      ! local
+      integer :: i, j, k
 
       do k=1,N
-        do j=jstr,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+        do j=jstr,jend    ! interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
             Mdtmp                  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag( i,j,k,1,iuv2DC) = Mdtmp - uv_prev(i,j,k,1)  ! avoids recomputing above
+            Mdiag( i,j,k,1,iuv2DC) = Mdtmp - uv_prev(i,j,k,1)                        ! avoids recomputing above
             uv_prev(i,j,k,1)       = Mdtmp
           enddo
         enddo
-        do j=jstrV,jend    ! loop ranges for interior of subdomains, exludes global domain boundaries
+        do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
           do i=istr,iend
-            Mdtmp                  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) ! convert to dz*v
+            Mdtmp                  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
             Mdiag( i,j,k,2,iuv2DC) = Mdtmp - uv_prev(i,j,k,2)
             uv_prev(i,j,k,2)       = Mdtmp
           enddo
@@ -521,8 +571,10 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iendR, jstrR, jendR ! changed the name to use for u or v
-      integer :: i, j, k  ! local
+      integer, intent(in) :: istr, iendR, jstrR, jendR
+
+      ! local
+      integer :: i, j, k
 
       do k=1,N
         do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
@@ -531,7 +583,7 @@
 
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
+            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need the old Hz for u(nstp) as Hz has evolved.
             uv_dif(i,j,k, 1)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 1) ! do this here as units are correct
           enddo
         enddo
@@ -544,17 +596,16 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istrR, iendR, jstr, jendR ! changed the name to use for u or v
-      integer :: i, j, k  ! local
+      integer, intent(in) :: istrR, iendR, jstr, jendR
 
-      do k=1,N  ! COULD REUSE THIS BY LOOPING OVER a AND b AND SWITCHING ARGUEMENTS
+      ! local
+      integer :: i, j, k
+
+      do k=1,N
         do j=jstr,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istrR,iendR
             Mdiag(i,j,k,2,iuv2FC) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uv_prev(i,j,k,2)
-            ! put = Mdiag below rather than same equation...
-            ! Full loop ranges since u-change over every point including bry.
-            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need to old Hz for u(nstp) as Hz has evolved.
+
             uv_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 2) ! do this here as units are correct
           enddo
         enddo
@@ -572,8 +623,8 @@
       ! local
       integer :: i, j, k
 
-      ! can just loop both over istrR and jstrR and have one loop. No harm?
-      ! This is currently used for bry calculation so is also needed for averaging. u_diff is other use but that's not needed for averaging.
+      ! This is currently used for bry calculation so is also needed for averaging.
+      ! Also for 'u_diff', but that's not needed for averaging.
       ! Should put an if statement here for diags_avg and only compute bry if averages...
 
       do k=1,N
@@ -621,7 +672,7 @@
             Wdiag(i,j,k,iwhoriadv) = Wdiag(i,j,k,iwhoriadv) * DC(i,0)
             Wdiag(i,j,k,iwvertadv) = DC(i,0)*rw(i,j,k)
      &                              - ( Wdiag(i,j,k,iwprsgr) + Wdiag(i,j,k,iwhoriadv) ) ! subtract previous 2 terms included in total
-            w_prev(i,j,k)          = w(i,j,k,nnew)     ! store for next change
+            w_prev(i,j,k)          = w(i,j,k,nnew)                     ! store for next change
           enddo
         enddo
       enddo
@@ -719,7 +770,9 @@
 
       ! inputs
       integer, intent(in) :: istrR, iendR, jstrR, jendR ! changed the name to use for u or v
-      integer :: i, j, k, tmp  ! local
+
+      ! local
+      integer :: i, j, k, tmp
 
       do k=1,N-1
         do j=jstrR,jendR
@@ -806,10 +859,10 @@
       end subroutine set_diags_t_at_t3dmix_GP  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_avg_tile(istr,iend,jstr,jend)  ![ set the averages of diagnostic variables
-      implicit none
+      subroutine set_diags_avg_tile(istr,iend,jstr,jend)  ![
+      ! set the averages of diagnostic variables
 
-      ! MUST ONLY HAVE ONE TILE IN WRT_ONLINE_DIAGS THEN THIS WILL BECOME EASIER
+      implicit none
 
       ! inputs
       integer, intent(in) :: istr,iend,jstr,jend
@@ -829,7 +882,7 @@
       if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
 
 !        do iMd=1,iuv2DC                 ! all diagnostic terms with internal loop ranges
-!       ! for greatest efficiency should only do the loop ranges of the diag terms, but doing full
+!       ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
 !       ! ranges for now just to get working.
 
         do iMd=1,nmd                     ! all diagnostic terms with internal loop ranges
@@ -887,6 +940,7 @@
 ! ----------------------------------------------------------------------
       subroutine set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR )  ![
       ! need current dz*u/v to compare gross changes in u with sum of averages
+
       implicit none
 
       ! inputs
@@ -937,10 +991,10 @@
       do td=1,nd_trc          ! only selected tracers from wrt_t_diag array
         itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
 
-        T_dsum=0 ! could just do boundaries as the rest can be overwritten in first below
-        Td_tmp=0 ! Do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
+        T_dsum=0              ! could just do boundaries as the rest can be overwritten in first below
+        Td_tmp=0              ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
 
-        do k=1,N            ! first diagnostic calculated using previous step's value
+        do k=1,N              ! first diagnostic calculated using previous step's value
           do j=jstr,jend
             do i=istr,iend
               Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
@@ -1049,7 +1103,9 @@
       end subroutine wrt_diagnostics  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_diagnostics_tile(istr, iend, jstr, jend)  ![ write online diagnostics
+      subroutine wrt_diagnostics_tile(istr, iend, jstr, jend)  ![
+      ! main subroutine to write online diagnostics
+
       implicit none
 
       ! inputs
