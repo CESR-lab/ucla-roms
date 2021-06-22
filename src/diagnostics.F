@@ -91,6 +91,11 @@
       ! 4)    ? -                                       - step3d_uv2.F
       ! 5)    ? -                                       - w3dbc_im.F
 
+      ! QUESTIONS:
+      ! - leave in functionality to confirm budgets.
+      ! - how to store bry term. and FC terms (does little in middle)
+      ! - might we not want uv diagnostics and just tracers? I.e. a logical for that?
+
       ! MISC:
       ! It is my feeling that once we use averages, all diagnostic calculations should
       ! not be calculated in the step3d... loop, but in it's own subroutine to avoid
@@ -132,7 +137,9 @@
       logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
+
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key
+      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms = gross change in u/v
       ! End of user inputs
       ! ***************************************************************
 
@@ -150,11 +157,14 @@
 
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2, nmd) :: Mdiag=0    ! 2 for u & v
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uvdz_old=0 ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_dif=0   ! gross u/v difference between current vs previous timestep u/v
-      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Mdsum=0    ! sum of Mdiag
-      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: diff=0     ! = uv_dif - Mdsum
       real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_prev=0  ! store incremental u/v/w (nnew)
 
+      ! if check_diag - check that diagnostics match gross change in variable
+      real, allocatable, dimension(:, :, :, :)            :: uv_dif     ! gross u/v difference between current vs previous timestep u/v
+      real, allocatable, dimension(:, :, :)               :: Mdsum      ! sum of Mdiag
+      real, allocatable, dimension(:, :, :)               :: diff       ! = uv_dif - Mdsum
+
+     ! if diag_avg - for averaging of diagnostics
       real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
       real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
       real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
@@ -175,13 +185,13 @@
      &  iuv2FC = 7  ! internal + bry (full domain) loop ranges
 
       character (len=20), dimension(nmd) :: vnames = (/
-     &  'prsgrd',
-     &  'coriolis',
-     &  'advection',
-     &  'visc3d',
-     &  'vert_mix_2D3D',
-     &  '3dbc',       ! should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
-     &  '2D3D_cor'
+     &  '_prsgrd',
+     &  '_coriolis',
+     &  '_advection',
+     &  '_visc3d',
+     &  '_vert_mix_2D3D',
+     &  '_3dbc',       ! should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
+     &  '_2D3D_cor'
      &                                                /)
 
       character (len=70), dimension(nmd) :: lname =   (/               ! len=70 allows for 8 characters of 'Average ' if diag_avg
@@ -194,9 +204,12 @@
      &  '2D-3D correction - step3d_uv2.F part 2'
      &                                                 /)
 
-      character (len=20)              :: units = 'm^2/s (dz*(u or v))'
+      character (len=20)               :: units = 'm^2/s (dz*(u or v))'
 
-      character (len=2), dimension(3) :: uvw = (/ 'u_', 'v_', 'w_' /)
+      character (len=1),  dimension(3) :: uvw = (/ 'u', 'v', 'w' /)      ! prefix for u/v/w outputs
+
+      character (len=80), dimension(:), allocatable :: check_lnm         ! long name for outputs checking diagnostics
+      character (len=20), dimension(:), allocatable :: check_vnm         ! short name ...
 
       ! TRACERS:
       ! --------
@@ -346,9 +359,8 @@
 
       if (FIRST_TIME_STEP .and. diag_avg) uvdz_t0 = uvdz_old  ! store the initial condition for budget confirmation at simulation end
 
-# ifdef DIAGS_TRC
-      Hz_old = Hz ! store Hz to calculate old dz*t
-# endif
+      if (diag_trc) Hz_old(istrR:iendR, jstrR:jendR, :) = Hz(istrR:iendR, jstrR:jendR, :) ! store Hz to calculate old dz*t
+
 # ifdef NHMG
       do k=1,N ! 0 is always 0?
         do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
@@ -362,6 +374,23 @@
         enddo
       enddo
 # endif /* NHMG */
+
+      if (check_diag) then
+
+        allocate( uv_dif(GLOBAL_2D_ARRAY, N, 2) )
+        allocate(  Mdsum(GLOBAL_2D_ARRAY, N)    )
+        allocate(   diff(GLOBAL_2D_ARRAY, N)    )  ! re-use a tmp array rather??
+        uv_dif=0; Mdsum=0; diff=0
+
+        allocate( check_lnm(3), check_vnm(3)    )
+        check_vnm(1) = '_1step'
+        check_lnm(1) = 'Total change in variable over timestep.'
+        check_vnm(2) = '_d_sum'
+        check_lnm(2) = 'Sum of diagnostics terms over timestep.'
+        check_vnm(3) = '_check'
+        check_lnm(3) = 'Diff. of total change in variable ' / /
+     &                 'vs sum of diags (must match) over timestep.'
+      endif
 
       if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
 
@@ -584,7 +613,8 @@
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need the old Hz for u(nstp) as Hz has evolved.
-            uv_dif(i,j,k, 1)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 1) ! do this here as units are correct
+            if (check_diag)  ! if with parameter
+     &        uv_dif(i,j,k, 1)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 1) ! do this here as units are correct
           enddo
         enddo
       enddo
@@ -606,7 +636,8 @@
           do i=istrR,iendR
             Mdiag(i,j,k,2,iuv2FC) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uv_prev(i,j,k,2)
 
-            uv_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 2) ! do this here as units are correct
+            if (check_diag)  ! if with parameter
+     &        uv_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 2) ! do this here as units are correct
           enddo
         enddo
       enddo
@@ -1059,26 +1090,28 @@
         call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
         T_dsum=T_dsum+Tdiag(:,:,:,td,it_bc)  ! re-do this just for boundaries not full domain!
 
-        text=trim(t_vname(itrc)) / / '_dsum'
-        call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
+        if (check_diag) then          ! following to compare gross change in u/v and sum of diags.
+          text=trim(t_vname(itrc)) / / check_vnm(2)
+          call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
 
-        Td_tmp=0 ! probably don't need this since loop below is full range
-        ! write gross difference:
-        do k=1,N                    ! first diagnostic calculated using previous step's value
-          do j=jstrR,jendR          ! Full domain loop range incl. bry.
-            do i=istrR,iendR
-              Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+          Td_tmp=0                    ! probably don't need this since loop below is full range
+                                      ! write gross difference:
+          do k=1,N                    ! first diagnostic calculated using previous step's value
+            do j=jstrR,jendR          ! Full domain loop range incl. bry.
+              do i=istrR,iendR
+                Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+              enddo
             enddo
           enddo
-        enddo
-        text=trim(t_vname(itrc)) / / '_diff'
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+          text=trim(t_vname(itrc)) / / check_vnm(1)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
-        Td_tmp=Td_tmp-T_dsum ! difference between gross change and sum of diags.
-        text=trim(t_vname(itrc)) / / '_d-d'
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+          Td_tmp=Td_tmp-T_dsum        ! difference between gross change and sum of diags.
+          text=trim(t_vname(itrc)) / / check_vnm(3)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif  ! <-- check_diag
 
-      enddo ! <- itrc=1,NT
+      enddo    ! <-- itrc=1,NT
 
       Hz_old = Hz  ! update Hz_old
 
@@ -1184,19 +1217,20 @@
                 call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
               enddo
 
-              ! following to compare gross change in u/v and sum of diags. Possibly remove.
-              text  = uvw(dim) / / 'diff'  ! gross change in dz*u or dz*v over 1 timestep
-              call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-              text  = uvw(dim) / / 'dsum'  ! sum of all diag terms over 1 timestep
-              call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-              text  = uvw(dim) / / 'd-d'   ! compare gross change against sum of diags. Should be approx zero.
-              call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+              if (check_diag) then                 ! following to compare gross change in u/v and sum of diags.
+                text  = uvw(dim) / / check_vnm(1)  ! gross change in dz*u or dz*v over 1 timestep
+                call nc_define_var(ncid, text, check_lnm(1), units, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
+                call nc_define_var(ncid, text, check_lnm(2), units, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / check_vnm(3)   ! compare gross change against sum of diags. Should be approx zero.
+                call nc_define_var(ncid, text, check_lnm(3), units, grdtyp3d(:,dim), ierr )
+              endif
 
               if (diag_avg) then
-                text  = uvw(dim) / / 'dz_ever'  ! gross change in u/v up until now since t0
-                call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
-                text  = uvw(dim) / / 'avg_ever' ! total diag avg in u/v up until now since t0
-                call nc_define_var(ncid, text, text, text, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / '_dz_ever'  ! gross change in u/v up until now since t0
+                call nc_define_var(ncid, text, text, units, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / '_avg_ever' ! total diag avg in u/v up until now since t0
+                call nc_define_var(ncid, text, text, units, grdtyp3d(:,dim), ierr )
               endif
 
             enddo ! <-- dim
@@ -1208,12 +1242,14 @@
                 text=trim(t_vname(itrc)) / / tdname(idt)
                 call nc_define_var(ncid, text, tlname(idt), tunits, r3dgrd, ierr )
               enddo
-              text  = trim(t_vname(itrc)) / / '_diff'  ! gross change in dz*t over 1 timestep
-              call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-              text  = trim(t_vname(itrc)) / / '_dsum'  ! sum of all diag terms over 1 timestep
-              call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
-              text  = trim(t_vname(itrc)) / / '_d-d'   ! compare gross change against sum of diags. Should be approx zero.
-              call nc_define_var(ncid, text, text, text, r3dgrd, ierr )
+              if (check_diag) then
+                text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
+                call nc_define_var(ncid, text,  check_lnm(1), tunits, r3dgrd, ierr )
+                text  = trim(t_vname(itrc)) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
+                call nc_define_var(ncid, text,  check_lnm(2), tunits, r3dgrd, ierr )
+                text  = trim(t_vname(itrc)) / / check_vnm(3)   ! compare gross change against sum of diags. Should be approx zero.
+                call nc_define_var(ncid, text,  check_lnm(3), tunits, r3dgrd, ierr )
+              endif
             enddo  ! <-- itrc
 # endif
 
@@ -1253,30 +1289,33 @@
               text = uvw(dim) / / vnames(diag)
               if (diag_avg) then
                 call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-                text  = uvw(dim) / / 'dz_ever'  ! gross change in u/v up until now since t0
+                ! This should not be in loop
+                text  = uvw(dim) / / '_dz_ever'  ! gross change in u/v up until now since t0
                 call nc_write_var(ncid, uvdz_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
-                text  = uvw(dim) / / 'avg_ever' ! total diag avg in u/v up until now since t0
+                text  = uvw(dim) / / '_avg_ever' ! total diag avg in u/v up until now since t0
                 call nc_write_var(ncid, Md_a_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
               else
                 call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
               endif
             enddo
 
-            ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
-            ! but use 'nnew' there as still in previou timestep!
-            text = uvw(dim) / / 'diff'  ! gross change in dz*u or dz*v over 1 timestep
-            call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
+            if (check_diag) then
+              ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
+              ! but use 'nnew' there as still in previou timestep!
+              text = uvw(dim) / / check_vnm(1)         ! gross change in dz*u or dz*v over 1 timestep
+              call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
 
-            Mdsum = 0  ! refresh for this step
-            do diag=1,nmd
-              Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)
-            enddo
-            text = uvw(dim) / / 'dsum'               ! sum of diag terms over 1 timestep
-            call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
+              Mdsum = 0                                ! refresh for this step
+              do diag=1,nmd
+                Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)
+              enddo
+              text = uvw(dim) / / check_vnm(2)         ! sum of diag terms over 1 timestep
+              call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
 
-            diff = uv_dif(:,:,:,dim)-Mdsum           ! difference between gross dz*u (or v) change and sum of diags of dz*u
-            text = uvw(dim) / / 'd-d'
-            call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
+              diff = uv_dif(:,:,:,dim)-Mdsum           ! difference between gross dz*u (or v) change and sum of diags of dz*u
+              text = uvw(dim) / / check_vnm(3)
+              call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
+            endif
 
           enddo  ! dim
 
