@@ -37,8 +37,7 @@
 #endif
       use surf_flux, only: sustr, svstr
       use tracers,   only: iTandS, t
-
-      use diagnostics
+      use diagnostics                     ! needed for compute_horiz_uv_terms.h below
 
       implicit none
 # include "param.h"
@@ -134,13 +133,6 @@
         print *, 't(10,10,48,indx,itemp)=',t(10,10,48,indx,itemp),'indx=',indx
       endif
 #endif
-
-# ifdef DIAGNOSTICS
-      if (FIRST_TIME_STEP) then                                                  ! only need for avg, or for his with rec_rate=1
-        if (set_dz_old) call init_diags(istr, jstr, istrR, iendR, jstrR, jendR)  ! after first timstep this is achieved by 'set_diags_dz_old'
-        if (diag_trc)   call init_diags_trc
-      endif
-# endif
 
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
         dtau=0.5*dt                   ! form LF-AM3 stepping algorithm,

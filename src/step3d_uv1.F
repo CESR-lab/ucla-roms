@@ -83,6 +83,7 @@
 #  ifdef NHMG
         Wdiag(istr:iend,jstr:jend,1:N,iwprsgr) =rw(istr :iend,jstr :jend,1:N)  ! Note 1:N
 #  endif
+        diag_icori = .true.  ! triggers diag calculation in compute_horiz_uv... as also called from pre_step3d, but only want this time.
       endif
 # endif
 
