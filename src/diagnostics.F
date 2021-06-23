@@ -139,7 +139,8 @@
       integer                    :: recs_per_file = 20      ! total recs per file
 
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key
-      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms = gross change in u/v
+      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep
+      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
       ! End of user inputs
       ! ***************************************************************
 
@@ -205,11 +206,12 @@
      &                                                 /)
 
       character (len=20)               :: units = 'm^2/s (dz*(u or v))'
-
       character (len=1),  dimension(3) :: uvw = (/ 'u', 'v', 'w' /)      ! prefix for u/v/w outputs
 
       character (len=80), dimension(:), allocatable :: check_lnm         ! long name for outputs checking diagnostics
       character (len=20), dimension(:), allocatable :: check_vnm         ! short name ...
+
+      logical, public :: diag_icori  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h
 
       ! TRACERS:
       ! --------
@@ -318,7 +320,6 @@
       public set_diags_w_at_bc
 # endif /* NHMG */
 
-      public init_diags
       public set_diags_at_visc3d
       public set_diags_at_uv1
       public set_diags_at_uv2_DC
@@ -332,34 +333,35 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags(istr, jstr, istrR, iendR, jstrR, jendR)  ![
+      subroutine init_diags(istr, jstr, iend, jend)  ![
       ! Set original dz*u/v/w/t for initial timestep, hence only called once.
       ! Called from prestep before Hz has changed in the timestep.
 
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, jstr, istrR, iendR, jstrR, jendR
+      integer, intent(in) :: istr, jstr, iend, jend
 
       ! local
       integer :: i,j,k
 
-      do k=1,N
-        do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-          do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+! Needed for istrU, istrR, etc
+# include "compute_auxiliary_bounds.h"
+
+      if (set_dz_old) then
+
+        do k=1,N
+          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+            do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+              uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+            enddo
+          enddo
+          do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
+            do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+              uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+            enddo
           enddo
         enddo
-        do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
-          do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-          enddo
-        enddo
-      enddo
-
-      if (FIRST_TIME_STEP .and. diag_avg) uvdz_t0 = uvdz_old  ! store the initial condition for budget confirmation at simulation end
-
-      if (diag_trc) Hz_old(istrR:iendR, jstrR:jendR, :) = Hz(istrR:iendR, jstrR:jendR, :) ! store Hz to calculate old dz*t
 
 # ifdef NHMG
       do k=1,N ! 0 is always 0?
@@ -374,6 +376,12 @@
         enddo
       enddo
 # endif /* NHMG */
+
+      endif  ! <-- set_dz_old
+
+      if (FIRST_TIME_STEP .and. diag_avg) uvdz_t0 = uvdz_old  ! store the initial condition for budget confirmation at simulation end
+
+      if (diag_trc) Hz_old(istrR:iendR, jstrR:jendR, :) = Hz(istrR:iendR, jstrR:jendR, :) ! store Hz to calculate old dz*t
 
       if (check_diag) then
 
@@ -391,6 +399,8 @@
         check_lnm(3) = 'Diff. of total change in variable ' / /
      &                 'vs sum of diags (must match) over timestep.'
       endif
+
+      if (diag_trc) call init_diags_trc
 
       if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
 
@@ -1158,6 +1168,7 @@
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
+
       if (FIRST_TIME_STEP .and. diag_avg) then                 ! only if diag averaging and only done once
         allocate(    Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )      ! allocate memory for diag averages
         allocate(  Md_a_sum(GLOBAL_2D_ARRAY, N, 2)      )      ! sum of diag averages at timestep
@@ -1183,6 +1194,10 @@
       else
         set_dz_old=.false.
       endif
+
+      if (FIRST_TIME_STEP) call init_diags(istr, jstr, iend, jend)  ! only need for avg, or for his with rec_rate=1 after first timstep this is achieved by 'set_diags_dz_old'
+
+      diag_icori = .false.  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h. Won't compute during pre_step3d but will for step3d_uv1
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
