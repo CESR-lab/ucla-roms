@@ -139,7 +139,7 @@
       integer                    :: recs_per_file = 20      ! total recs per file
 
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key
-      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep
+      logical, parameter         :: check_diag    = .false.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep
       logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
       ! End of user inputs
       ! ***************************************************************
@@ -210,6 +210,8 @@
 
       character (len=80), dimension(:), allocatable :: check_lnm         ! long name for outputs checking diagnostics
       character (len=20), dimension(:), allocatable :: check_vnm         ! short name ...
+      character (len=80), dimension(:), allocatable :: check_alnm        ! long name for outputs checking diagnostics averages
+      character (len=20), dimension(:), allocatable :: check_avnm        ! short name ...
 
       logical, public :: diag_icori  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h
 
@@ -343,7 +345,7 @@
       integer, intent(in) :: istr, jstr, iend, jend
 
       ! local
-      integer :: i,j,k
+      integer :: i, j, k, diag
 
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
@@ -379,12 +381,18 @@
 
       endif  ! <-- set_dz_old
 
-      if (FIRST_TIME_STEP .and. diag_avg) uvdz_t0 = uvdz_old  ! store the initial condition for budget confirmation at simulation end
 
       if (diag_trc) Hz_old(istrR:iendR, jstrR:jendR, :) = Hz(istrR:iendR, jstrR:jendR, :) ! store Hz to calculate old dz*t
 
-      if (check_diag) then
+      if (diag_avg) then                                       ! only if diag averaging and only done once
+        allocate(      Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )    ! allocate memory for diag averages
+        Md_avg = 0
+        do diag=1,nmd                                          ! loop through diag terms
+          lname(diag)  = 'Average ' / / trim(lname(diag))      ! and prepend 'Average'
+        enddo
+      endif
 
+      if (check_diag) then
         allocate( uv_dif(GLOBAL_2D_ARRAY, N, 2) )
         allocate(  Mdsum(GLOBAL_2D_ARRAY, N)    )
         allocate(   diff(GLOBAL_2D_ARRAY, N)    )  ! re-use a tmp array rather??
@@ -398,6 +406,22 @@
         check_vnm(3) = '_check'
         check_lnm(3) = 'Diff. of total change in variable ' / /
      &                 'vs sum of diags (must match) over timestep.'
+      endif
+
+      if (check_avg) then
+        allocate(  Md_a_sum(GLOBAL_2D_ARRAY, N, 2) )         ! sum of diag averages at timestep
+        allocate( Md_a_ever(GLOBAL_2D_ARRAY, N, 2) )         ! continuing total of sum of averages Md_a_ever += Md_a_sum
+        allocate(   uvdz_t0(GLOBAL_2D_ARRAY, N, 2) )
+        allocate( uvdz_ever(GLOBAL_2D_ARRAY, N, 2) )
+        Md_a_ever=0                                          ! Md_a_sum set to 0 elsewhere, so not needed here
+        uvdz_t0 = uvdz_old                                   ! store the initial condition for budget confirmation at simulation end
+
+        allocate( check_alnm(2), check_avnm(2)     )
+        check_avnm(1) = '_dz_ever'
+        check_alnm(1) = 'Total change in variable since start of run.'
+        check_avnm(2) = '_avg_ever'
+        check_alnm(2) = 'Sum of diagnostic averages multiplied by time'
+     &                  / / ' since start of run.'
       endif
 
       if (diag_trc) call init_diags_trc
@@ -909,7 +933,7 @@
       integer, intent(in) :: istr,iend,jstr,jend
 
       ! local
-      integer :: i, j, k, iMd
+      integer :: i, j, k, iMd, dim
 
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
@@ -920,61 +944,68 @@
       ! lines of code. Since diagnostic averaging will be heavy, more efficient code is argueably
       ! more important.
 
-      if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
+      do dim=1,2
 
-!        do iMd=1,iuv2DC                 ! all diagnostic terms with internal loop ranges
-!       ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
-!       ! ranges for now just to get working.
+        if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
 
-        do iMd=1,nmd                     ! all diagnostic terms with internal loop ranges
-          do k=1,N                       ! here we divide the average by the averaging rate
-            do j=jstrR,jendR
-              do i=istrR,iendR
-                Md_avg(i,j,k,1,iMD) = ( Md_avg(i,j,k,1,iMD)+Mdiag(i,j,k,1,iMD) ) / rec_rate
-              enddo
-            enddo
-          enddo
-        enddo
+  !        do iMd=1,iuv2DC                 ! all diagnostic terms with internal loop ranges
+  !       ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
+  !       ! ranges for now just to get working.
 
-        Md_a_sum = 0 ! improve later
-        do iMd=1,nmd
-          Md_a_sum(:,:,:,1) = Md_a_sum(:,:,:,1) + Md_avg(:,:,:,1,iMd)      ! sum all diag avgs at timestep
-        enddo
-        Md_a_ever = Md_a_ever + Md_a_sum * rec_rate                        ! keep an endless running total for budget closing
-        call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
 
-        if(mynode==0) print *, '----> DIVIDE FOR AVERAGE'
-
-      else
-
-        if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
-
-          ! or could have Md_avg = 0 at the top of routine but this is more efficient but more code?
-          do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
-            do k=1,N                      ! here we divide the average by the averaging rate
+          do iMd=1,nmd                     ! all diagnostic terms with internal loop ranges
+            do k=1,N                       ! here we divide the average by the averaging rate
               do j=jstrR,jendR
                 do i=istrR,iendR
-                  Md_avg(i,j,k,1,iMD) = Mdiag(i,j,k,1,iMD)
+                  Md_avg(i,j,k,dim,iMD) = ( Md_avg(i,j,k,dim,iMD)+Mdiag(i,j,k,dim,iMD) ) / rec_rate
                 enddo
               enddo
             enddo
           enddo
 
-        else                              ! all other timesteps
+          if (check_avg) then
+            Md_a_sum = 0 ! improve later
+            do iMd=1,nmd
+              Md_a_sum(:,:,:,dim) = Md_a_sum(:,:,:,dim) + Md_avg(:,:,:,dim,iMd)      ! sum all diag avgs at timestep
+            enddo
+            Md_a_ever(:,:,:,dim) = Md_a_ever(:,:,:,dim) + Md_a_sum(:,:,:,dim) * rec_rate                        ! keep an endless running total for budget closing
+            call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
+          endif
 
-          do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
-            do k=1,N                      ! here we divide the average by the averaging rate
-              do j=jstrR,jendR
-                do i=istrR,iendR
-                  Md_avg(i,j,k,1,iMD) = Md_avg(i,j,k,1,iMD)+Mdiag(i,j,k,1,iMD)
+          if(mynode==0 .and. dim==1) print *, '----> DIVIDE FOR AVERAGE'
+
+        else
+
+          if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
+
+            ! or could have Md_avg = 0 at the top of routine but this is more efficient but more code?
+            do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
+              do k=1,N                      ! here we divide the average by the averaging rate
+                do j=jstrR,jendR
+                  do i=istrR,iendR
+                    Md_avg(i,j,k,dim,iMD) = Mdiag(i,j,k,dim,iMD)
+                  enddo
                 enddo
               enddo
             enddo
-          enddo
 
-        endif  ! <-- mod(tn-1,rec_rate)==0
+          else                              ! all other timesteps
 
-      endif    ! <-- mod(tn  ,rec_rate)==0
+            do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
+              do k=1,N                      ! here we divide the average by the averaging rate
+                do j=jstrR,jendR
+                  do i=istrR,iendR
+                    Md_avg(i,j,k,dim,iMD) = Md_avg(i,j,k,1,iMD)+Mdiag(i,j,k,dim,iMD)
+                  enddo
+                enddo
+              enddo
+            enddo
+
+          endif  ! <-- mod(tn-1,rec_rate)==0
+
+        endif    ! <-- mod(tn  ,rec_rate)==0
+
+      enddo    ! <-- dim
 
       end subroutine set_diags_avg_tile  !]
 
@@ -1169,18 +1200,6 @@
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
 
-      if (FIRST_TIME_STEP .and. diag_avg) then                 ! only if diag averaging and only done once
-        allocate(    Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )      ! allocate memory for diag averages
-        allocate(  Md_a_sum(GLOBAL_2D_ARRAY, N, 2)      )      ! sum of diag averages at timestep
-        allocate( Md_a_ever(GLOBAL_2D_ARRAY, N, 2)      )      ! continuing total of sum of averages Md_a_ever += Md_a_sum
-        allocate(   uvdz_t0(GLOBAL_2D_ARRAY, N, 2)      )
-        allocate( uvdz_ever(GLOBAL_2D_ARRAY, N, 2)      )
-        Md_avg = 0; Md_a_ever=0                                ! Md_a_sum set to 0 elsewhere, so not needed here
-        do diag=1,nmd                                          ! loop through diag terms
-          lname(diag)  = 'Average ' / / trim(lname(diag))      ! and prepend 'Average'
-        enddo
-      endif
-
       tn = iic-ntstart      ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
       ! might be able to use diag_avg .or. calc_diag and compiler sees or is parameter!
@@ -1195,7 +1214,7 @@
         set_dz_old=.false.
       endif
 
-      if (FIRST_TIME_STEP) call init_diags(istr, jstr, iend, jend)  ! only need for avg, or for his with rec_rate=1 after first timstep this is achieved by 'set_diags_dz_old'
+      if (FIRST_TIME_STEP) call init_diags(istr, jstr, iend, jend)  ! called here as need set_dz_old set above
 
       diag_icori = .false.  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h. Won't compute during pre_step3d but will for step3d_uv1
 
@@ -1241,11 +1260,11 @@
                 call nc_define_var(ncid, text, check_lnm(3), units, grdtyp3d(:,dim), ierr )
               endif
 
-              if (diag_avg) then
-                text  = uvw(dim) / / '_dz_ever'  ! gross change in u/v up until now since t0
-                call nc_define_var(ncid, text, text, units, grdtyp3d(:,dim), ierr )
-                text  = uvw(dim) / / '_avg_ever' ! total diag avg in u/v up until now since t0
-                call nc_define_var(ncid, text, text, units, grdtyp3d(:,dim), ierr )
+              if (check_avg) then
+                text  = uvw(dim) / / check_avnm(1)  ! gross change in u/v up until now since t0
+                call nc_define_var(ncid, text, check_alnm(1), units, grdtyp3d(:,dim), ierr )
+                text  = uvw(dim) / / check_avnm(2) ! total diag avg in u/v up until now since t0
+                call nc_define_var(ncid, text, check_alnm(2), units, grdtyp3d(:,dim), ierr )
               endif
 
             enddo ! <-- dim
@@ -1304,11 +1323,6 @@
               text = uvw(dim) / / vnames(diag)
               if (diag_avg) then
                 call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-                ! This should not be in loop
-                text  = uvw(dim) / / '_dz_ever'  ! gross change in u/v up until now since t0
-                call nc_write_var(ncid, uvdz_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
-                text  = uvw(dim) / / '_avg_ever' ! total diag avg in u/v up until now since t0
-                call nc_write_var(ncid, Md_a_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
               else
                 call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
               endif
@@ -1332,7 +1346,14 @@
               call nc_write_var(ncid, diff, N, text, gt_wrt(dim), output_rec, ierr)
             endif
 
-          enddo  ! dim
+            if (check_avg) then
+              text  = uvw(dim) / / check_avnm(1)  ! gross change in u/v up until now since t0
+              call nc_write_var(ncid, uvdz_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
+              text  = uvw(dim) / / check_avnm(2)  ! total diag avg in u/v up until now since t0
+              call nc_write_var(ncid, Md_a_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
+            endif
+
+          enddo  ! <-- dim
 
 # ifdef DIAGS_TRC
           call wrt_tracer_diags_tile(istr, iend, jstr, jend, ncid)
