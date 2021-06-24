@@ -23,7 +23,7 @@
            UFe(i,j)=cff*(vst(i,j,k)+vst(i,j+1,k))
            VFe(i,j)=(cff+cff1)*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
            VFx(i,j)=cff*(ust(i,j,k)+ust(i+1,j,k)) 
-#  else /* no WEC */
+# else /* no WEC */
 
             UFx(i,j)=cff*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
             VFe(i,j)=cff*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
@@ -39,7 +39,7 @@
 
 # ifdef DIAGNOSTICS
             ! Might want to move if statement out of loop for efficiency.
-            if (diag_uv) Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
+            if (diag_uv .and. calc_diag) Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
 # endif
 
           enddo
@@ -52,7 +52,7 @@
 # endif
 
 # ifdef DIAGNOSTICS
-            if (diag_uv) Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
+            if (diag_uv .and. calc_diag) Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
 # endif
 
           enddo
@@ -60,7 +60,7 @@
 #endif
 
 # ifdef DIAGNOSTICS
-        if (diag_uv .and. diag_icori) then ! need to catch doing this twice from prestep...
+        if (diag_uv .and. calc_diag .and. diag_icori) then ! need to catch doing this twice from prestep...
           do j=jstr,jend    ! chose to have 2 loops rather than an if i>=istrU and j> as possible more efficient?
             do i=istrU,iend
               Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords

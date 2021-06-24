@@ -77,7 +77,7 @@
 # include "compute_auxiliary_bounds.h"
 
 # ifdef DIAGNOSTICS
-      if (diag_uv) then                                                      ! called here not in prsgrd as prsgrd is called twice from main.
+      if (diag_uv .and. calc_diag) then                                                      ! called here not in prsgrd as prsgrd is called twice from main.
         Mdiag(istrU:iend,jstr :jend,:,1,iprsgr)=ru(istrU:iend,jstr :jend,:)    ! ru is scratch size not global size
         Mdiag(istr :iend,jstrV:jend,:,2,iprsgr)=rv(istr :iend,jstrV:jend,:)    ! interior points not bry
         diag_icori = .true.  ! triggers diag calculation in compute_horiz_uv... as also called from pre_step3d, but only want this time.
@@ -204,7 +204,7 @@
           enddo
         enddo
 # ifdef DIAGNOSTICS
-        if (diag_uv) call set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u )
+        if (diag_uv .and. calc_diag) call set_diags_at_uv1( istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u )
 # endif
         if (j >= jstrV) then
           do i=istr,iend
@@ -232,7 +232,7 @@
             enddo
           enddo
 # ifdef DIAGNOSTICS
-          if (diag_uv) call set_diags_at_uv1( istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v )
+          if (diag_uv .and. calc_diag) call set_diags_at_uv1( istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v )
 # endif
         endif  !<-- if j>=jstrV
 
