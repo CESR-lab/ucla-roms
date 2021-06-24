@@ -138,11 +138,15 @@
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
 
+      logical, parameter, public :: diag_uv       = .false.  ! calc+write diagnostics of u/v. Replaces cppflag.
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key
-      logical, parameter         :: check_diag    = .false.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep
-      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
       ! End of user inputs
       ! ***************************************************************
+
+      ! Developer inputs:
+      ! - need to have on diag_uv to use these flags:
+      logical, parameter         :: check_diag    = .false.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
+      logical, parameter         :: check_avg     = .false.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! Preamble:  ![
 
@@ -156,9 +160,9 @@
 
       integer, public, parameter                          :: nmd = 7    ! number of momentum diag terms
 
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 2, nmd) :: Mdiag=0    ! 2 for u & v
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uvdz_old=0 ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, N, 2)      :: uv_prev=0  ! store incremental u/v/w (nnew)
+      real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
+      real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
+      real, public, allocatable, dimension(:, :, :, :)    :: uv_prev    ! store incremental u/v/w (nnew)
 
       ! if check_diag - check that diagnostics match gross change in variable
       real, allocatable, dimension(:, :, :, :)            :: uv_dif     ! gross u/v difference between current vs previous timestep u/v
@@ -350,43 +354,51 @@
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
 
+      if (diag_uv) then
+        allocate(    Mdiag(GLOBAL_2D_ARRAY, N, 2, nmd) )
+        allocate( uvdz_old(GLOBAL_2D_ARRAY, N, 2)      )
+        allocate(  uv_prev(GLOBAL_2D_ARRAY, N, 2)      )
+        Mdiag    (istrR:iendR,jstrR:jendR,:,:,:) = 0
+        uvdz_old (istrR:iendR,jstrR:jendR,:,:)   = 0
+        uv_prev  (istrR:iendR,jstrR:jendR,:,:)   = 0
+      endif
+
       if (set_dz_old) then
 
-        do k=1,N
-          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-            do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+        if (diag_uv) then
+          do k=1,N
+            do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+              do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+                uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
+              enddo
+            enddo
+            do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
+              do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+                uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+              enddo
             enddo
           enddo
-          do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
-            do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-              uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-            enddo
-          enddo
-        enddo
+        endif
 
 # ifdef NHMG
-      do k=1,N ! 0 is always 0?
-        do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-          do i=istrR,iendR
-            if(k==N) then
-              wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
-            else
-              wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
-            endif
+        do k=1,N ! 0 is always 0?
+          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
+            do i=istrR,iendR
+              if(k==N) then
+                wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
+              else
+                wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
+              endif
+            enddo
           enddo
         enddo
-      enddo
 # endif /* NHMG */
 
       endif  ! <-- set_dz_old
 
-
-      if (diag_trc) Hz_old(istrR:iendR, jstrR:jendR, :) = Hz(istrR:iendR, jstrR:jendR, :) ! store Hz to calculate old dz*t
-
       if (diag_avg) then                                       ! only if diag averaging and only done once
-        allocate(      Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )    ! allocate memory for diag averages
-        Md_avg = 0
+        allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
+        Md_avg(istrR:iendR,jstrR:jendR,:,:,:) = 0
         do diag=1,nmd                                          ! loop through diag terms
           lname(diag)  = 'Average ' / / trim(lname(diag))      ! and prepend 'Average'
         enddo
@@ -395,8 +407,10 @@
       if (check_diag) then
         allocate( uv_dif(GLOBAL_2D_ARRAY, N, 2) )
         allocate(  Mdsum(GLOBAL_2D_ARRAY, N)    )
-        allocate(   diff(GLOBAL_2D_ARRAY, N)    )  ! re-use a tmp array rather??
-        uv_dif=0; Mdsum=0; diff=0
+        allocate(   diff(GLOBAL_2D_ARRAY, N)    )              ! re-use a tmp array rather??
+        uv_dif(istrR:iendR,jstrR:jendR,:,:) = 0
+        Mdsum (istrR:iendR,jstrR:jendR,:)   = 0
+        diff  (istrR:iendR,jstrR:jendR,:)   = 0
 
         allocate( check_lnm(3), check_vnm(3)    )
         check_vnm(1) = '_1step'
@@ -413,7 +427,7 @@
         allocate( Md_a_ever(GLOBAL_2D_ARRAY, N, 2) )         ! continuing total of sum of averages Md_a_ever += Md_a_sum
         allocate(   uvdz_t0(GLOBAL_2D_ARRAY, N, 2) )
         allocate( uvdz_ever(GLOBAL_2D_ARRAY, N, 2) )
-        Md_a_ever=0                                          ! Md_a_sum set to 0 elsewhere, so not needed here
+        Md_a_ever(istrR:iendR,jstrR:jendR,:,:) = 0           ! Md_a_sum set to 0 elsewhere, so not needed here
         uvdz_t0 = uvdz_old                                   ! store the initial condition for budget confirmation at simulation end
 
         allocate( check_alnm(2), check_avnm(2)     )
@@ -424,6 +438,7 @@
      &                  / / ' since start of run.'
       endif
 
+      if (diag_trc) Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:) ! store Hz to calculate old dz*t. Leave here for extended bound indices.
       if (diag_trc) call init_diags_trc
 
       if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
@@ -585,6 +600,7 @@
       ! local
       integer :: i
 
+      ! FIX FOR OpenMP
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
 
@@ -875,7 +891,7 @@
       integer :: i, j
 
       ! PROBABLY DON'T NEED THIS CAN JUST USE T(NNEW) AT THE BOUNDARY SINCE ONLY UPDATE FROM HERE.
-
+      ! FIX FOR OpenMP
       if (WESTERN_EDGE) then
         i=istr-1
         Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
@@ -952,23 +968,24 @@
   !       ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
   !       ! ranges for now just to get working.
 
+          if (check_avg) Md_a_sum(istrR:iendR,jstrR:jendR,:,dim) = 0
 
           do iMd=1,nmd                     ! all diagnostic terms with internal loop ranges
             do k=1,N                       ! here we divide the average by the averaging rate
               do j=jstrR,jendR
                 do i=istrR,iendR
-                  Md_avg(i,j,k,dim,iMD) = ( Md_avg(i,j,k,dim,iMD)+Mdiag(i,j,k,dim,iMD) ) / rec_rate
+                  Md_avg(i,j,k,dim,iMd) = ( Md_avg(i,j,k,dim,iMd)+Mdiag(i,j,k,dim,iMd) ) / rec_rate
+                  if (check_avg)           ! if with parameter
+     &              Md_a_sum(i,j,k,dim) = Md_a_sum(i,j,k,dim) + Md_avg(i,j,k,dim,iMd)
                 enddo
               enddo
             enddo
           enddo
 
           if (check_avg) then
-            Md_a_sum = 0 ! improve later
-            do iMd=1,nmd
-              Md_a_sum(:,:,:,dim) = Md_a_sum(:,:,:,dim) + Md_avg(:,:,:,dim,iMd)      ! sum all diag avgs at timestep
-            enddo
-            Md_a_ever(:,:,:,dim) = Md_a_ever(:,:,:,dim) + Md_a_sum(:,:,:,dim) * rec_rate                        ! keep an endless running total for budget closing
+            do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
+              Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim) + Md_a_sum(i,j,k,dim) * rec_rate                        ! keep an endless running total for budget closing
+            enddo; enddo; enddo
             call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
           endif
 
@@ -1063,6 +1080,7 @@
       do td=1,nd_trc          ! only selected tracers from wrt_t_diag array
         itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
 
+        ! Fix OpenMP
         T_dsum=0              ! could just do boundaries as the rest can be overwritten in first below
         Td_tmp=0              ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
 
@@ -1220,7 +1238,7 @@
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
-        if (diag_avg) then                               ! avoid very first step because diags are only all set by the end of the
+        if (diag_uv .and. diag_avg) then                 ! avoid very first step because diags are only all set by the end of the
             call set_diags_avg_tile(istr,iend,jstr,jend) ! first step, and then added to averages and/or output at the beginning of the next step.
         endif
 
@@ -1246,10 +1264,13 @@
             ! Define remaining variables:
 
             do dim=1,2       ! u,v dims
-              do diag=1,nmd  ! diag terms
-                text  = uvw(dim) / / vnames(diag)     ! diag short name
-                call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
-              enddo
+
+              if (diag_uv) then
+                do diag=1,nmd  ! diag terms
+                  text  = uvw(dim) / / vnames(diag)     ! diag short name
+                  call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
+                enddo
+              endif
 
               if (check_diag) then                 ! following to compare gross change in u/v and sum of diags.
                 text  = uvw(dim) / / check_vnm(1)  ! gross change in dz*u or dz*v over 1 timestep
@@ -1319,14 +1340,17 @@
           call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
 
           do dim=1,2                            ! over dims
-            do diag=1,nmd                       ! over diag terms
-              text = uvw(dim) / / vnames(diag)
-              if (diag_avg) then
-                call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-              else
-                call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-              endif
-            enddo
+
+            if (diag_uv) then
+              do diag=1,nmd                       ! over diag terms
+                text = uvw(dim) / / vnames(diag)
+                if (diag_avg) then
+                  call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+                else
+                  call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
+                endif
+              enddo
+            endif
 
             if (check_diag) then
               ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
@@ -1334,6 +1358,7 @@
               text = uvw(dim) / / check_vnm(1)         ! gross change in dz*u or dz*v over 1 timestep
               call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
 
+              ! FIX FOR OpenMP
               Mdsum = 0                                ! refresh for this step
               do diag=1,nmd
                 Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)

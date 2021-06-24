@@ -74,10 +74,10 @@
      &                                       *Uflxw
      &          -0.1666666666666666*( curv(i-1,j)*max(Uflxw,0.)
      &                               +curv(i  ,j)*min(Uflxw,0.))
-# ifdef DIAGNOSTICS_W
-              TruncFX(i,j)=0.04166666666666667*(curv(i,j)-curv(i-1,j))
-     &                                               *abs(Uflxw)
-# endif
+!# ifdef DIAGNOSTICS_W
+!              TruncFX(i,j)=0.04166666666666667*(curv(i,j)-curv(i-1,j))
+!     &                                               *abs(Uflxw)
+!# endif
 #else
               FX(i,j)=0.5*( w(i,j,k,nrhs)+w(i-1,j,k,nrhs)
      &                   -0.3333333333333333*(grad(i,j)-grad(i-1,j))
@@ -143,10 +143,10 @@
      &                                                  *Vflxw
      &          -0.1666666666666666*( curv(i,j-1)*max(Vflxw,0.)
      &                               +curv(i,j  )*min(Vflxw,0.))
-# ifdef DIAGNOSTICS_W
-              TruncFE(i,j)=0.04166666666666667*(curv(i,j)-curv(i-1,j))
-     &                                               *abs(Vflxw)
-# endif
+!# ifdef DIAGNOSTICS_W
+!              TruncFE(i,j)=0.04166666666666667*(curv(i,j)-curv(i-1,j))
+!     &                                               *abs(Vflxw)
+!# endif
 #else
               FE(i,j)=0.5*( w(i,j,k,nrhs)+w(i,j-1,k,nrhs)
      &                   -0.3333333333333333*(grad(i,j)-grad(i,j-1))
