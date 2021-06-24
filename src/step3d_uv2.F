@@ -400,7 +400,7 @@
       enddo      ! <-- j
 
 # ifdef DIAGNOSTICS
-      if (calc_diag) call set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )
+      if (diag_uv) call set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )
 # endif
 
 #ifdef DIAG3D_DEBUG
@@ -432,7 +432,7 @@
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
 # ifdef DIAGNOSTICS
-      if (calc_diag) then
+      if (diag_uv) then
         call set_diags_at_bc_u( istr, iend, jstr, jend )
         call set_diags_at_bc_v( istr, iend, jstr, jend )
       endif
@@ -838,14 +838,14 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-      if (calc_diag) then
+      if (diag_uv) then
         call set_diags_at_uv2_FCu(   istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
         call set_diags_at_uv2_FCv(   istrR, iendR, jstr,  jendR )
-#  ifdef NHMG
-        call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
-#  endif
+        if (set_dz_old) call set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
       endif
-      if (set_dz_old) call set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
+#  ifdef NHMG
+      if (calc_diag)  call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
+#  endif
 # endif
 
 #ifdef DIAG3D_DEBUG
