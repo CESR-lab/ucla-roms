@@ -69,9 +69,6 @@
 # include "ocean3d.h"
 # include "coupling.h"
 # include "mixing.h"
-# ifdef DIAGNOSTICS_UV
-#  include "diagnostics.h"
-# endif
 
 # include "compute_auxiliary_bounds.h"
       indx=3-nstp    !--> time index for target arrays;
@@ -382,11 +379,6 @@ c        enddo
 
               u(i,j,k,indx)=u(i,j,k,indx) + dt*( cff+UFs(i,j,k2)  ! DevinD indx=nnew here. Not sure why didn't use nnew.
      &                                              -UFs(i,j,k1))
-
-# ifdef DIAGNOSTICS_UV
-              MHmix(i,j,k,1) = (cff+UFs(i,j,k2)-UFs(i,j,k1))
-     &                                  *dm_u(i,j)*dn_u(i,j)
-# endif
             enddo
           enddo
           do j=jstrV,jend
@@ -398,17 +390,13 @@ c        enddo
               rvfrc(i,j)=rvfrc(i,j) + cff
               v(i,j,k,indx)=v(i,j,k,indx) + dt*( cff+VFs(i,j,k2)
      &                                              -VFs(i,j,k1))
-# ifdef DIAGNOSTICS_UV
-              MHmix(i,j,k,2) = (cff+VFs(i,j,k2)-VFs(i,j,k1))
-     &                                  *dm_v(i,j)*dn_v(i,j)
-# endif
             enddo
           enddo
         endif
       enddo
 
 # ifdef DIAGNOSTICS
-      if (calc_diag) then
+      if (diag_uv) then
         call set_diags_at_visc3d( istr, iend, jstr, jend, istrU, jstr,  1, u )  ! set u diags
         call set_diags_at_visc3d( istr, iend, jstr, jend, istr,  jstrV, 2, v )  ! set v diags
       endif
