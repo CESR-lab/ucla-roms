@@ -232,9 +232,8 @@
      &                                                           + 1
 #  endif
       real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! consider ndt, NT order
-
-      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: T_dsum=0  ! sum of t diagnostics to compare with gross change
-      real, public, dimension(GLOBAL_2D_ARRAY, N)         :: Hz_old=0  ! store previous Hz to calculate old dz*t. better than storing dz*t for each tracer. Better to recalculate it?
+      real,         allocatable, dimension(:, :, :)       :: T_dsum    ! sum of t diagnostics to compare with gross change
+      real,         allocatable, dimension(:, :, :)       :: Hz_old    ! store previous Hz to calculate old dz*t. better than storing dz*t for each tracer. Better to recalculate it?
 
       integer                            :: nd_trc           ! number of tracers selected tracers of interest (from wrt_t_diag array)
       integer, dimension(:), allocatable :: diag_td_2_NT     ! index of tracer of selected tracers only
@@ -438,23 +437,27 @@
      &                  / / ' since start of run.'
       endif
 
-      if (diag_trc) Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:) ! store Hz to calculate old dz*t. Leave here for extended bound indices.
-      if (diag_trc) call init_diags_trc
+      if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
 
       if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
 
       end subroutine init_diags  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_trc  ![
+      subroutine init_diags_trc(istrR, jstrR, iendR, jendR)  ![
       ! setup tracer arrays only for desired tracers,
       ! since can be memory intensive if all tracers.
 
       implicit none
 
+      ! inputs
+      integer, intent(in) :: istrR, jstrR, iendR, jendR
+
       ! local
       integer                :: itrc, cnt=0
       integer, dimension(NT) :: temp_t_indx
+
+
 
       do itrc=1,NT
         if (wrt_t_diag(itrc)) then
@@ -464,8 +467,11 @@
       enddo
 
       nd_trc = cnt                                           ! number of tracers of interest
-      allocate( Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )   ! only for tracers we are interested in
-      Tdiag  = 0
+      allocate(  Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )  ! only for tracers we are interested in
+      allocate( Hz_old( GLOBAL_2D_ARRAY, N ) )
+      Tdiag (istrR:iendR, jstrR:jendR, :, :, :) = 0
+      Hz_old(istrR:iendR, jstrR:jendR, :)       = 0
+
       allocate( diag_td_2_NT( nd_trc ) )                     ! to convert indices between 't' and 'Tdiag'
       diag_td_2_NT = -1                                      ! set to bad number (<1) as safeguard
 
@@ -476,6 +482,13 @@
           diag_td_2_NT(cnt)=itrc                             ! store the actual tracer index of 't' array
         endif                                                ! since t(NT) but Tdiag(nd_trc). NT >= nd_trc...
       enddo
+
+      if (check_diag) then
+        allocate( T_dsum( GLOBAL_2D_ARRAY, N ) )
+        T_dsum(istrR:iendR, jstrR:jendR, :) = 0
+      endif
+
+      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)
 
       if(mynode==0) print *, 'nd_trc=',nd_trc ! debug
       if(mynode==0) print *, 'diag_td_2_NT(1)=',diag_td_2_NT(1)
@@ -1256,6 +1269,9 @@
         if ( write_file==.true.     .and.
      &       mod(tn,rec_rate) == 0        ) then
 
+! Defining and writing netcdf variables only done by master thread:
+C$OMP MASTER
+
           if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
             file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
           endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
@@ -1410,6 +1426,9 @@
           if (output_rec == recs_per_file) then  ! reset output_rec to create new file
             output_rec = 0
           endif
+
+C$OMP END MASTER
+C$OMP BARRIER
 
         endif ! <-- write_file==.true.
 
