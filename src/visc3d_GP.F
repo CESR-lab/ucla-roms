@@ -396,7 +396,7 @@ c        enddo
       enddo
 
 # ifdef DIAGNOSTICS
-      if (diag_uv) then
+      if (diag_uv .and. calc_diag) then
         call set_diags_at_visc3d( istr, iend, jstr, jend, istrU, jstr,  1, u )  ! set u diags
         call set_diags_at_visc3d( istr, iend, jstr, jend, istr,  jstrV, 2, v )  ! set v diags
       endif
