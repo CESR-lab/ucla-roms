@@ -138,15 +138,15 @@
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .false.  ! calc+write diagnostics of u/v. Replaces cppflag.
+      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v. Replaces cppflag.
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key
       ! End of user inputs
       ! ***************************************************************
 
       ! Developer inputs:
       ! - need to have on diag_uv to use these flags:
-      logical, parameter         :: check_diag    = .false.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .false.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
+      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
+      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! Preamble:  ![
 
@@ -600,7 +600,9 @@
       ! local
       integer :: i
 
-      ! FIX FOR OpenMP
+      ! currently this is not perfectly setup for openMP since we have ':' instead
+      ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
+
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
 
@@ -630,6 +632,9 @@
 
       ! local
       integer :: j
+
+      ! currently this is not perfectly setup for openMP since we have ':' instead
+      ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
 
       do j=jstr,jend+1 ! use loop here else indexing would be even messier
         if (WESTERN_EDGE)  uv_prev(istr-1,j,:,2) = u(istr-1,j,:,nnew) * 0.5*(Hz(istr-1,j-1,:)+Hz(istr-1,j,:))
@@ -891,7 +896,10 @@
       integer :: i, j
 
       ! PROBABLY DON'T NEED THIS CAN JUST USE T(NNEW) AT THE BOUNDARY SINCE ONLY UPDATE FROM HERE.
-      ! FIX FOR OpenMP
+
+      ! currently this is not perfectly setup for openMP since we have ':' instead
+      ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
+
       if (WESTERN_EDGE) then
         i=istr-1
         Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
@@ -1077,18 +1085,17 @@
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
 
-      do td=1,nd_trc          ! only selected tracers from wrt_t_diag array
-        itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
+      do td=1,nd_trc                         ! only selected tracers from wrt_t_diag array
+        itrc=diag_td_2_NT(td)                ! set the actual tracer index in 't'
 
-        ! Fix OpenMP
-        T_dsum=0              ! could just do boundaries as the rest can be overwritten in first below
-        Td_tmp=0              ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
+        T_dsum(istrR:iendR,jstrR:jendR,:)=0  ! could just do boundaries as the rest can be overwritten in first below
+        Td_tmp(istrR:iendR,jstrR:jendR,:)=0  ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
 
-        do k=1,N              ! first diagnostic calculated using previous step's value
+        do k=1,N                             ! first diagnostic calculated using previous step's value
           do j=jstr,jend
             do i=istr,iend
               Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
-              T_dsum(i,j,k)=Td_tmp(i,j,k) ! add to total
+              T_dsum(i,j,k)=Td_tmp(i,j,k)    ! add to total
             enddo
           enddo
         enddo
@@ -1147,7 +1154,8 @@
         ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
         text=trim(t_vname(itrc)) / / tdname(it_bc)
         call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
-        T_dsum=T_dsum+Tdiag(:,:,:,td,it_bc)  ! re-do this just for boundaries not full domain!
+        T_dsum(istrR:iendR,jstrR:jendR,:)=T_dsum(istrR:iendR,jstrR:jendR,:)
+     &                                    +Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc)  ! re-do this just for boundaries not full domain!
 
         if (check_diag) then          ! following to compare gross change in u/v and sum of diags.
           text=trim(t_vname(itrc)) / / check_vnm(2)
@@ -1165,14 +1173,15 @@
           text=trim(t_vname(itrc)) / / check_vnm(1)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
 
-          Td_tmp=Td_tmp-T_dsum        ! difference between gross change and sum of diags.
+          Td_tmp(istrR:iendR,jstrR:jendR,:)=Td_tmp(istrR:iendR,jstrR:jendR,:)
+     &                                     -T_dsum(istrR:iendR,jstrR:jendR,:)  ! difference between gross change and sum of diags.
           text=trim(t_vname(itrc)) / / check_vnm(3)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif  ! <-- check_diag
 
       enddo    ! <-- itrc=1,NT
 
-      Hz_old = Hz  ! update Hz_old
+      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)  ! update Hz_old
 
 !      if(WESTERN_EDGE) then  ! just here for jstrR, shouldn't be in tracers
 !        call wrt_1D_or_2D_array(ncid, output_rec, 'u_wbry', jstrR, jendR, 1, N, uv_wbry(jstrR:jendR,1:N,1) )
@@ -1217,6 +1226,8 @@
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to using in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
+! Needed for istrU, istrR, etc
+# include "compute_auxiliary_bounds.h"
 
       tn = iic-ntstart      ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
@@ -1358,10 +1369,13 @@
               text = uvw(dim) / / check_vnm(1)         ! gross change in dz*u or dz*v over 1 timestep
               call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
 
-              ! FIX FOR OpenMP
-              Mdsum = 0                                ! refresh for this step
+              Mdsum(istrR:iendR,jstrR:jendR,:) = 0     ! refresh for this step
               do diag=1,nmd
-                Mdsum = Mdsum + Mdiag(:,:,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)
+                do j=jstrR,jendR
+                  do i=istrR,iendR
+                    Mdsum(i,j,:) = Mdsum(i,j,:) + Mdiag(i,j,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)
+                  enddo
+                enddo
               enddo
               text = uvw(dim) / / check_vnm(2)         ! sum of diag terms over 1 timestep
               call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
