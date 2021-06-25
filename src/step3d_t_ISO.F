@@ -171,7 +171,7 @@ c--#  define ntdf nrhs
      &                                          +FE(i,j+1)-FE(i,j)
      &                                                           )
 # ifdef DIAGS_TRC
-                if (wrt_t_diag(itrc))  ! might not want if in loop...
+                if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)  ! might not want if in loop...
      &            Tdiag(i,j,k,td,it_h_adv) = t(i,j,k,nnew,itrc)  ! Should only be for tracers of interest...
 # endif
               enddo
@@ -784,7 +784,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
               endif
 # endif
 # ifdef DIAGS_TRC
-              if (wrt_t_diag(itrc))  ! might not want this in loop...
+              if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)  ! might not want this in loop...
      &          Tdiag(i,j,k,td,it_v_adv) = t(i,j,k,nnew,itrc)
 # endif
             enddo
@@ -823,14 +823,14 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
                 t(i,j,k  ,nnew,itemp)=t(i,j,k  ,nnew,itemp) +dt*cff
 
 # ifdef DIAGS_TRC
-                if (wrt_t_diag(itrc)) ! might not want this in loop...
+                if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
      &            Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
 # endif
               enddo
             enddo
 # ifdef DIAGS_TRC
             do i=istr,iend
-              if (wrt_t_diag(itrc)) ! might not want this in loop...
+              if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
      &          Tdiag(i,j,1,td,it_lmdkpp) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
             enddo
 # endif
@@ -857,7 +857,7 @@ c??         enddo
                 t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff ! DevinD why is there no dt here unlike itemp above?
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
 # ifdef DIAGS_TRC
-                if (wrt_t_diag(itrc)) ! might not want this in loop...
+                if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
      &            Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
 # endif
               enddo ! why have I not done Tdiag(i,j,1... as for temp?
@@ -962,7 +962,7 @@ c??         enddo
      &                                                  *rmask(i,j)
 # endif
 # ifdef DIAGS_TRC
-            if (wrt_t_diag(itrc)) ! might not want this in loop...
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
      &        Tdiag(i,j,N,td,it_imp_vdif) = t(i,j,N,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
 # endif
           enddo
@@ -973,7 +973,7 @@ c??         enddo
      &                                                      *rmask(i,j)
 # endif
 # ifdef DIAGS_TRC
-              if (wrt_t_diag(itrc)) ! might not want this in loop...
+              if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
      &          Tdiag(i,j,k,td,it_imp_vdif) = t(i,j,k,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
 # endif
             enddo
@@ -1008,7 +1008,7 @@ c??         enddo
 
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 # ifdef DIAGS_TRC
-        if (wrt_t_diag(itrc))
+        if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
      &    call set_diags_t_at_bc(istr,iend,jstr,jend,itrc,td)
 # endif
 
