@@ -146,7 +146,7 @@
       ! Developer inputs:
       ! - need to have on diag_uv to use these flags:
       logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .false.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
+      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! Preamble:  ![
 
@@ -166,17 +166,17 @@
 
       ! if diag_avg - for averaging of diagnostics
       real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
-      real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
-      real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
 
       ! if check_diag - check that diagnostics match gross change in variable
       real, allocatable, dimension(:, :, :, :)            :: uv_dif     ! gross u/v difference between current vs previous timestep u/v
       real, allocatable, dimension(:, :, :)               :: Mdsum      ! sum of Mdiag
       real, allocatable, dimension(:, :, :)               :: diff       ! = uv_dif - Mdsum
 
-      ! if check_avg
+      ! if check_avg - could share for u & v for less memory?
       real, allocatable, dimension(:, :, :, :)            :: uvdz_t0    ! original dz*u/v to compare total change in u/v over simulation.
       real, allocatable, dimension(:, :, :, :)            :: uvdz_ever  ! total change in dz*u/v over simulation.
+      real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
+      real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
 
       real, public                                        :: Mdtmp      ! temporary scalar for calculations of Mdiag
 
@@ -191,6 +191,7 @@
      &  iu3d   = 6, ! bry only
      &  iuv2FC = 7  ! internal + bry (full domain) loop ranges
 
+      ! move this to init_diags
       character (len=20), dimension(nmd) :: vnames = (/
      &  '_prsgrd',
      &  '_coriolis',
@@ -243,6 +244,11 @@
       ! if check_diag
       real,         allocatable, dimension(:, :, :)       :: T_dsum    ! sum of t diagnostics to compare with gross change
 
+      ! if check_avg
+      real, allocatable, dimension(:, :, :, :)            :: Tdz_t0    ! original dz*t to compare total change in t over simulation.
+      real, allocatable, dimension(:, :, :)               :: Td_a_sum  ! sum of diag averages at timestep
+      real, allocatable, dimension(:, :, :, :)            :: Td_a_ever ! total of all diag averages for entire simulation. Should add up to change in t over simulation...
+
       integer                            :: nd_trc           ! number of tracers selected tracers of interest (from wrt_t_diag array)
       integer, dimension(:), allocatable :: diag_td_2_NT     ! index of tracer of selected tracers only
       integer, dimension(NT), public     :: diag_NT_2_td=-1  ! convert itrc=1,NT to index of tracer in Tdiag array. Set to bad value -1
@@ -256,6 +262,7 @@
      &  it_lmdkpp   = 5,  ! not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
      &  it_bc       = 6   ! BC's shouldn't have 3D array
 
+      ! move this to init_diags_trc
       character (len=30), dimension(ndt) :: tdname = (/
      &  '_hori_adv',
      &  '_vert_adv',
@@ -463,7 +470,7 @@
       integer, intent(in) :: istrR, jstrR, iendR, jendR
 
       ! local
-      integer                :: itrc, cnt=0, diag
+      integer                :: itrc, cnt=0, diag, td, i, j, k
       integer, dimension(NT) :: temp_t_indx
 
 
@@ -503,6 +510,19 @@
         Td_avg (istrR:iendR, jstrR:jendR, :, :, :) = 0
         do diag=1,ndt
           tlname(diag)  = 'Average ' / / trim(tlname(diag))      ! and prepend 'Average'
+        enddo
+      endif
+
+      if (check_avg) then
+        allocate( Td_a_ever( GLOBAL_2D_ARRAY, N, nd_trc) )
+        allocate(    Tdz_t0( GLOBAL_2D_ARRAY, N, nd_trc) )
+        allocate(  Td_a_sum( GLOBAL_2D_ARRAY, N        ) )
+
+        do td=1,nd_trc
+          itrc=diag_td_2_NT(td)
+          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
+            Tdz_t0(i,j,k,td) = t(i,j,k,nstp,itrc) * Hz(i,j,k)  ! Set t*dz at t=0 for overall budget check of averages
+          enddo; enddo; enddo
         enddo
       endif
 
@@ -1022,7 +1042,7 @@
           enddo
 
           if (check_avg) then
-            do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
+            do k=1,N; do j=jstrR,jendR; do i=istrR,iendR ! Md_a_ever, could write it now then wouldn't need for both u and v? Same for Md_a_sum
               Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim) + Md_a_sum(i,j,k,dim) * rec_rate                        ! keep an endless running total for budget closing
             enddo; enddo; enddo
             call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
@@ -1085,26 +1105,32 @@
 
       if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
 
-!        if (check_avg) Md_a_sum(istrR:iendR,jstrR:jendR,:,dim) = 0
+        if (check_avg .and. iTd==1) Td_a_sum(istrR:iendR,jstrR:jendR,:) = 0  ! reset for new tracer
 
         do k=1,N                       ! here we divide the average by the averaging rate
           do j=jstrR,jendR
             do i=istrR,iendR
               Td_avg(i,j,k,td,iTd) = ( Td_avg(i,j,k,td,iTd)+Td_tmp(i,j,k) ) / rec_rate
-!              if (check_avg)           ! if with parameter
-!     &          Md_a_sum(i,j,k,dim) = Md_a_sum(i,j,k,dim) + Md_avg(i,j,k,dim,iMd)
+              if (check_avg)           ! if with parameter
+     &          Td_a_sum(i,j,k) = Td_a_sum(i,j,k) + Td_avg(i,j,k,td,iTd)
             enddo
           enddo
         enddo
 
         text=trim(t_vname(itrc)) / / tdname(iTd)
         call nc_write_var(ncid, Td_avg(:,:,:,td,iTd), N, text, rp_var, output_rec, ierr)
-!        if (check_avg) then
-!          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
-!            Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim) + Md_a_sum(i,j,k,dim) * rec_rate                        ! keep an endless running total for budget closing
-!          enddo; enddo; enddo
-!          call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
-!        endif
+
+        if (check_avg .and. iTd==ndt) then
+          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
+            Td_a_ever(i,j,k,td) = Td_a_ever(i,j,k,td) + Td_a_sum(i,j,k) * rec_rate  ! keep an endless running total for budget closing
+          enddo; enddo; enddo                                                       ! * rec_rate since tot = avg * t
+          text=trim(t_vname(itrc)) / / check_avnm(2)
+          call nc_write_var(ncid, Td_a_ever(:,:,:,td), N, text, rp_var, output_rec, ierr)
+
+          call set_diags_tdz_ever( istrR, iendR, jstrR, jendR, td, itrc )
+          text=trim(t_vname(itrc)) / / check_avnm(1)
+          call nc_write_var(ncid, Td_a_sum(:,:,:), N, text, rp_var, output_rec, ierr)
+        endif
 
         if(mynode==0) print *, '----> TRACER DIVIDE FOR AVERAGE'
 
@@ -1167,6 +1193,29 @@
       enddo
 
       end subroutine set_diags_uvdz_ever  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_tdz_ever( istrR, iendR, jstrR, jendR, td, itrc )  ![
+      ! need current dz*t to compare gross changes in t with sum of averages
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istrR, iendR, jstrR, jendR, td, itrc
+
+      ! local
+      integer :: i, j, k
+
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            Td_a_sum(i,j,k) = t(i,j,k,nnew,itrc) * Hz(i,j,k)  ! re-use Td_a_sum instead of having Tdz_ever array
+     &                       - tdz_t0(i,j,k,td)
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_tdz_ever  !]
 
 ! ----------------------------------------------------------------------
       subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend)  ![
@@ -1440,6 +1489,7 @@ C$OMP MASTER
                   text=trim(t_vname(itrc)) / / tdname(idt)
                   call nc_define_var(ncid, text, tlname(idt), tunits, r3dgrd, ierr )
                 enddo
+
                 if (check_diag) then
                   text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
                   call nc_define_var(ncid, text,  check_lnm(1), tunits, r3dgrd, ierr )
@@ -1448,6 +1498,14 @@ C$OMP MASTER
                   text  = trim(t_vname(itrc)) / / check_vnm(3)   ! compare gross change against sum of diags. Should be approx zero.
                   call nc_define_var(ncid, text,  check_lnm(3), tunits, r3dgrd, ierr )
                 endif
+
+                if (check_avg) then
+                  text  = trim(t_vname(itrc)) / / check_avnm(1)  ! gross change in t up until now since t0
+                  call nc_define_var(ncid, text, check_alnm(1), tunits, r3dgrd, ierr )
+                  text  = trim(t_vname(itrc)) / / check_avnm(2) ! total diag avg in t up until now since t0
+                  call nc_define_var(ncid, text, check_alnm(2), tunits, r3dgrd, ierr )
+                endif
+
               enddo  ! <-- td
             endif    ! <-- diag_trc
 # endif
