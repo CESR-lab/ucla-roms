@@ -146,7 +146,7 @@
       ! Developer inputs:
       ! - need to have on diag_uv to use these flags:
       logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
+      logical, parameter         :: check_avg     = .false.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! Preamble:  ![
 
@@ -164,15 +164,17 @@
       real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, allocatable, dimension(:, :, :, :)    :: uv_prev    ! store incremental u/v/w (nnew)
 
+      ! if diag_avg - for averaging of diagnostics
+      real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
+      real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
+      real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
+
       ! if check_diag - check that diagnostics match gross change in variable
       real, allocatable, dimension(:, :, :, :)            :: uv_dif     ! gross u/v difference between current vs previous timestep u/v
       real, allocatable, dimension(:, :, :)               :: Mdsum      ! sum of Mdiag
       real, allocatable, dimension(:, :, :)               :: diff       ! = uv_dif - Mdsum
 
-     ! if diag_avg - for averaging of diagnostics
-      real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
-      real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
-      real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
+      ! if check_avg
       real, allocatable, dimension(:, :, :, :)            :: uvdz_t0    ! original dz*u/v to compare total change in u/v over simulation.
       real, allocatable, dimension(:, :, :, :)            :: uvdz_ever  ! total change in dz*u/v over simulation.
 
@@ -231,9 +233,15 @@
 #  ifdef LMD_KPP
      &                                                           + 1
 #  endif
-      real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! consider ndt, NT order
-      real,         allocatable, dimension(:, :, :)       :: T_dsum    ! sum of t diagnostics to compare with gross change
+      real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! tracer diagnostic terms
+      real,         allocatable, dimension(:, :, :)       :: Td_tmp    ! temporary array to calculate change in tracer diags
       real,         allocatable, dimension(:, :, :)       :: Hz_old    ! store previous Hz to calculate old dz*t. better than storing dz*t for each tracer. Better to recalculate it?
+
+      ! if diag_avg
+      real,         allocatable, dimension(:, :, :, :, :) :: Td_avg    ! averages of tracer diagnostic terms
+
+      ! if check_diag
+      real,         allocatable, dimension(:, :, :)       :: T_dsum    ! sum of t diagnostics to compare with gross change
 
       integer                            :: nd_trc           ! number of tracers selected tracers of interest (from wrt_t_diag array)
       integer, dimension(:), allocatable :: diag_td_2_NT     ! index of tracer of selected tracers only
@@ -257,7 +265,7 @@
      &  '_t3dbc'
      &                                               /)
 
-      character (len=80), dimension(ndt) :: tlname = (/
+      character (len=90), dimension(ndt) :: tlname = (/
      &  'Horizontal advective fluxes - compute_horiz_tracer_fluxes.h',
      &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h',
      &  'Implicit time step for vertical diffusion - step3d_t_ISO.F',
@@ -279,6 +287,7 @@
       integer            :: total_output_rec = 0        ! total flux output recordings so far
       integer            :: tn                          ! roms timestep
       character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
+      integer            :: ncid=-1, prev_fill_mode
 
 
       ! W MOMENTUM:
@@ -379,6 +388,8 @@
           enddo
         endif
 
+        if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
+
 # ifdef NHMG
         do k=1,N ! 0 is always 0?
           do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
@@ -439,8 +450,6 @@
 
       if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
 
-      if(mynode==0) print *, 'INIT HZ_OLD **************'  ! debug
-
       end subroutine init_diags  !]
 
 ! ----------------------------------------------------------------------
@@ -454,7 +463,7 @@
       integer, intent(in) :: istrR, jstrR, iendR, jendR
 
       ! local
-      integer                :: itrc, cnt=0
+      integer                :: itrc, cnt=0, diag
       integer, dimension(NT) :: temp_t_indx
 
 
@@ -468,9 +477,9 @@
 
       nd_trc = cnt                                           ! number of tracers of interest
       allocate(  Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )  ! only for tracers we are interested in
-      allocate( Hz_old( GLOBAL_2D_ARRAY, N ) )
+      allocate( Td_tmp( GLOBAL_2D_ARRAY, N ) )               ! don't need to set to zero as written over in code
+      allocate( Hz_old( GLOBAL_2D_ARRAY, N ) )               ! same for Hz_old
       Tdiag (istrR:iendR, jstrR:jendR, :, :, :) = 0
-      Hz_old(istrR:iendR, jstrR:jendR, :)       = 0
 
       allocate( diag_td_2_NT( nd_trc ) )                     ! to convert indices between 't' and 'Tdiag'
       diag_td_2_NT = -1                                      ! set to bad number (<1) as safeguard
@@ -484,11 +493,18 @@
       enddo
 
       if (check_diag) then
-        allocate( T_dsum( GLOBAL_2D_ARRAY, N ) )
-        T_dsum(istrR:iendR, jstrR:jendR, :) = 0
+        allocate( T_dsum( GLOBAL_2D_ARRAY, N ) )             ! don't need to set to zero as done later in code
       endif
 
-      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)
+      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)  ! this should have a set_dz_old flag
+
+      if (diag_avg) then
+        allocate(  Td_avg( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )
+        Td_avg (istrR:iendR, jstrR:jendR, :, :, :) = 0
+        do diag=1,ndt
+          tlname(diag)  = 'Average ' / / trim(tlname(diag))      ! and prepend 'Average'
+        enddo
+      endif
 
       if(mynode==0) print *, 'nd_trc=',nd_trc ! debug
       if(mynode==0) print *, 'diag_td_2_NT(1)=',diag_td_2_NT(1)
@@ -913,6 +929,8 @@
       ! currently this is not perfectly setup for openMP since we have ':' instead
       ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
 
+      if (mynode==0) print *, 'TRACER BC /////////' ! debug
+
       if (WESTERN_EDGE) then
         i=istr-1
         Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
@@ -1033,7 +1051,7 @@
               do k=1,N                      ! here we divide the average by the averaging rate
                 do j=jstrR,jendR
                   do i=istrR,iendR
-                    Md_avg(i,j,k,dim,iMD) = Md_avg(i,j,k,1,iMD)+Mdiag(i,j,k,dim,iMD)
+                    Md_avg(i,j,k,dim,iMD) = Md_avg(i,j,k,dim,iMD)+Mdiag(i,j,k,dim,iMD)
                   enddo
                 enddo
               enddo
@@ -1046,6 +1064,77 @@
       enddo    ! <-- dim
 
       end subroutine set_diags_avg_tile  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_t_avg_tile(istr, iend, jstr, jend, td, iTd, itrc)  ![
+      ! set the averages of tracer diagnostic variables
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend, td, iTd, itrc ! tn  = timestep
+                                                                   ! td  = tracer (local diag index)
+      ! local                                                      ! iTd = diagnostic term
+      integer           :: i, j, k, ierr                           ! itrc = tracer index as per 't' array
+      character(len=30) :: text
+
+! Needed for istrU, istrR, etc
+# include "compute_auxiliary_bounds.h"
+
+      if(mynode==0) print *, '^^^ SETTING TRC DIAGS AVERAGES' ! debug only
+
+      if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
+
+!        if (check_avg) Md_a_sum(istrR:iendR,jstrR:jendR,:,dim) = 0
+
+        do k=1,N                       ! here we divide the average by the averaging rate
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              Td_avg(i,j,k,td,iTd) = ( Td_avg(i,j,k,td,iTd)+Td_tmp(i,j,k) ) / rec_rate
+!              if (check_avg)           ! if with parameter
+!     &          Md_a_sum(i,j,k,dim) = Md_a_sum(i,j,k,dim) + Md_avg(i,j,k,dim,iMd)
+            enddo
+          enddo
+        enddo
+
+        text=trim(t_vname(itrc)) / / tdname(iTd)
+        call nc_write_var(ncid, Td_avg(:,:,:,td,iTd), N, text, rp_var, output_rec, ierr)
+!        if (check_avg) then
+!          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
+!            Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim) + Md_a_sum(i,j,k,dim) * rec_rate                        ! keep an endless running total for budget closing
+!          enddo; enddo; enddo
+!          call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
+!        endif
+
+        if(mynode==0) print *, '----> TRACER DIVIDE FOR AVERAGE'
+
+      else
+
+        if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
+
+          do k=1,N                      ! here we divide the average by the averaging rate
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                Td_avg(i,j,k,td,iTd) = Td_tmp(i,j,k)
+              enddo
+            enddo
+          enddo
+
+        else                              ! all other timesteps
+
+          do k=1,N                      ! here we divide the average by the averaging rate
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                Td_avg(i,j,k,td,iTd) = Td_avg(i,j,k,td,iTd) + Td_tmp(i,j,k)
+              enddo
+            enddo
+          enddo
+
+        endif  ! <-- mod(tn-1,rec_rate)==0
+
+      endif    ! <-- mod(tn  ,rec_rate)==0
+
+      end subroutine set_diags_t_avg_tile  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR )  ![
@@ -1080,20 +1169,27 @@
       end subroutine set_diags_uvdz_ever  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend, ncid)  ![
+      subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend)  ![
       ! since the value of the tracer has been stored as dz*t, we need to find the
       ! differences for the contribution of each diagnostic term
+
+      ! Unlike surf_flux.F -> wrt_surface_flux_his, here we still need to calculate
+      ! averages, and so the if (write_file) is divided.
+      ! Also, since the value of 't' is kept in Tdiag and not the change in 't',
+      ! we use Td_tmp to store the change, and for memory management it is only
+      ! one array, and thus needs to be written to file immediately, or added to averges.
+      ! In wrt_diagnostics_tile the if(write_file) is split where it is so that the file can
+      ! be opened and time written before writing averages if applicable.
 
       use tracers, only: t
       implicit none
 
       ! inputs
-      integer, intent(in)                 :: istr, iend, jstr, jend, ncid
+      integer, intent(in)                 :: istr, iend, jstr, jend
 
       ! local
       integer                             :: itrc, td, i, j, k, ierr, it_prev
       character(len=30)                   :: text
-      real, dimension(GLOBAL_2D_ARRAY, N) :: Td_tmp=0  ! Move this to top of module for permanent scratch
 
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
@@ -1112,8 +1208,12 @@
             enddo
           enddo
         enddo
-        text=trim(t_vname(itrc)) / / tdname(it_h_adv)
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        if (diag_avg) then
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_h_adv, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_h_adv)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif
 
         do k=1,N
           do j=jstr,jend
@@ -1123,8 +1223,12 @@
             enddo
           enddo
         enddo
-        text=trim(t_vname(itrc)) / / tdname(it_v_adv)
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        if (diag_avg) then
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_v_adv, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_v_adv)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif
         it_prev=it_v_adv ! store index of previous diagnostic
 
 # ifdef LMD_KPP
@@ -1136,8 +1240,12 @@
             enddo
           enddo
         enddo
-        text=trim(t_vname(itrc)) / / tdname(it_lmdkpp)
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        if (diag_avg) then
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_lmdkpp, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_lmdkpp)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif
         it_prev=it_lmdkpp ! store index of previous diagnostic if lmd_kpp
 # endif
 
@@ -1150,8 +1258,12 @@
             enddo
           enddo
         enddo
-        text=trim(t_vname(itrc)) / / tdname(it_imp_vdif)
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        if (diag_avg) then
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_imp_vdif, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_imp_vdif)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif
 
         do k=1,N
           do j=jstr,jend
@@ -1161,24 +1273,32 @@
             enddo
           enddo
         enddo
-        text=trim(t_vname(itrc)) / / tdname(it_imp_vdif)
-        call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        if (diag_avg) then
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_t3dmix, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_t3dmix)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif
 
         ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
-        text=trim(t_vname(itrc)) / / tdname(it_bc)
-        call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
+        if (diag_avg) then
+          Td_tmp(istrR:iendR,jstrR:jendR,:)=Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc)
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_bc, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_bc)
+          call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
+        endif
         T_dsum(istrR:iendR,jstrR:jendR,:)=T_dsum(istrR:iendR,jstrR:jendR,:)
      &                                    +Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc)  ! re-do this just for boundaries not full domain!
 
-        if (check_diag) then          ! following to compare gross change in u/v and sum of diags.
+        ! need rec_rate check here as not an average
+        if (check_diag .and. mod(tn,rec_rate) == 0) then          ! following to compare gross change in u/v and sum of diags.
           text=trim(t_vname(itrc)) / / check_vnm(2)
           call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
 
-          Td_tmp=0                    ! probably don't need this since loop below is full range
-                                      ! write gross difference:
-          do k=1,N                    ! first diagnostic calculated using previous step's value
-            do j=jstrR,jendR          ! Full domain loop range incl. bry.
-              do i=istrR,iendR
+          do k=1,N                    ! write gross difference: don't need to set Td_sum to zero as covering full loop ranges.
+            do j=jstrR,jendR          ! first diagnostic calculated using previous step's value
+              do i=istrR,iendR        ! Full domain loop range incl. bry.
                 Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
               enddo
             enddo
@@ -1226,12 +1346,11 @@
       integer, intent(in)     :: istr, iend, jstr, jend
 
       ! local
-      integer                 :: prev_fill_mode,
-     &                           r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)   ! 2D grid types
+      integer                 :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)   ! 2D grid types
 #ifdef SOLVE3D
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
-      integer                 :: ierr = 0, ncid = -1, dim, diag, i, j, k, tile, idt, itrc, td
+      integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td
 
       character(len=64)       :: fname
       character(len=30)       :: text
@@ -1261,10 +1380,6 @@
       diag_icori = .false.  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h. Won't compute during pre_step3d but will for step3d_uv1
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
-
-        if (diag_uv .and. diag_avg) then                 ! avoid very first step because diags are only all set by the end of the
-            call set_diags_avg_tile(istr,iend,jstr,jend) ! first step, and then added to averages and/or output at the beginning of the next step.
-        endif
 
         if ( write_file==.true.     .and.
      &       mod(tn,rec_rate) == 0        ) then
@@ -1318,21 +1433,23 @@ C$OMP MASTER
             enddo ! <-- dim
 
 # ifdef DIAGS_TRC
-            do td=1,nd_trc          ! only tracers of interest
-              itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
-              do idt=1,ndt          ! tracer diag terms
-                text=trim(t_vname(itrc)) / / tdname(idt)
-                call nc_define_var(ncid, text, tlname(idt), tunits, r3dgrd, ierr )
-              enddo
-              if (check_diag) then
-                text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
-                call nc_define_var(ncid, text,  check_lnm(1), tunits, r3dgrd, ierr )
-                text  = trim(t_vname(itrc)) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
-                call nc_define_var(ncid, text,  check_lnm(2), tunits, r3dgrd, ierr )
-                text  = trim(t_vname(itrc)) / / check_vnm(3)   ! compare gross change against sum of diags. Should be approx zero.
-                call nc_define_var(ncid, text,  check_lnm(3), tunits, r3dgrd, ierr )
-              endif
-            enddo  ! <-- itrc
+            if (diag_trc) then
+              do td=1,nd_trc          ! only tracers of interest
+                itrc=diag_td_2_NT(td) ! set the actual tracer index in 't'
+                do idt=1,ndt          ! tracer diag terms
+                  text=trim(t_vname(itrc)) / / tdname(idt)
+                  call nc_define_var(ncid, text, tlname(idt), tunits, r3dgrd, ierr )
+                enddo
+                if (check_diag) then
+                  text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
+                  call nc_define_var(ncid, text,  check_lnm(1), tunits, r3dgrd, ierr )
+                  text  = trim(t_vname(itrc)) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
+                  call nc_define_var(ncid, text,  check_lnm(2), tunits, r3dgrd, ierr )
+                  text  = trim(t_vname(itrc)) / / check_vnm(3)   ! compare gross change against sum of diags. Should be approx zero.
+                  call nc_define_var(ncid, text,  check_lnm(3), tunits, r3dgrd, ierr )
+                endif
+              enddo  ! <-- td
+            endif    ! <-- diag_trc
 # endif
 
 !            ! define bry 2D vars (experimental):
@@ -1349,8 +1466,7 @@ C$OMP MASTER
      &                            ,file_name
             endif
 
-          endif ! (output_rec == 0; needed to create a file)
-
+          endif ! <-- (output_rec == 0; needed to create a file)
 
           ! WRITE VARIABLES TO FILE
           ! =======================
@@ -1365,6 +1481,17 @@ C$OMP MASTER
 
 
           call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
+
+        endif   ! <-- write_file==.true. .and. mod(tn,rec_rate) == 0
+
+        if (diag_avg) then                                                 ! see wrt_diagnostics_tile for description of why if(write_file) is split here.
+          if (diag_uv)  call set_diags_avg_tile   (istr, iend, jstr, jend) ! avoid very first step because diags are only all set by the end of the
+          if (diag_trc) call wrt_tracer_diags_tile(istr, iend, jstr, jend) ! first step, and then added to averages and/or output at the beginning of the next step.
+        endif                                                              ! Need this after defined file as wrt_tracer will output averages so needs file created.
+
+        if ( write_file==.true.     .and.
+     &       mod(tn,rec_rate) == 0        ) then
+
 
           do dim=1,2                            ! over dims
 
@@ -1411,7 +1538,8 @@ C$OMP MASTER
           enddo  ! <-- dim
 
 # ifdef DIAGS_TRC
-          call wrt_tracer_diags_tile(istr, iend, jstr, jend, ncid)
+          if (diag_trc .and. .not. diag_avg)                   ! for averages this has been called already
+     &      call wrt_tracer_diags_tile(istr, iend, jstr, jend) ! we call it here non-averages to get the correct writing frequency
 # endif
 
           ierr=nf90_close (ncid)  ! close netcdf file

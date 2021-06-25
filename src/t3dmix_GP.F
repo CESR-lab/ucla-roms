@@ -518,7 +518,7 @@ c**  &                                                             )
 # endif /* TS_DIF4 */
 
 # ifdef DIAGS_TRC
-      if (wrt_t_diag(itrc))
+      if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
      &  call set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend,itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
 # endif
 
