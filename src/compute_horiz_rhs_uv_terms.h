@@ -36,12 +36,6 @@
 # ifdef WEC
      &               + 0.5*(UFe(i,j)+UFe(i-1,j))
 # endif
-
-# ifdef DIAGNOSTICS
-            ! Might want to move if statement out of loop for efficiency.
-            if (diag_uv .and. calc_diag) Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
-# endif
-
           enddo
         enddo
         do j=jstrV,jend
@@ -50,27 +44,13 @@
 # ifdef WEC
      &               -0.5*(VFx(i,j)+VFx(i,j-1))
 # endif
-
-# ifdef DIAGNOSTICS
-            if (diag_uv .and. calc_diag) Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
-# endif
-
           enddo
         enddo
 #endif
 
 # ifdef DIAGNOSTICS
         if (diag_uv .and. calc_diag .and. diag_icori) then ! need to catch doing this twice from prestep...
-          do j=jstr,jend    ! chose to have 2 loops rather than an if i>=istrU and j> as possible more efficient?
-            do i=istrU,iend
-              Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
-            enddo
-          enddo
-          do j=jstrV,jend
-            do i=istr,iend
-              Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
-            enddo
-          enddo
+          call set_diags_at_compute_horiz( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )
         endif
 # endif /* DIAGNOSTICS */
 
