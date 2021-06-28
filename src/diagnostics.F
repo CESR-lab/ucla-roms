@@ -341,8 +341,9 @@
       public set_diags_w_at_bc
 # endif /* NHMG */
 
-      public set_diags_at_visc3d
+      public set_diags_at_compute_horiz
       public set_diags_at_uv1
+      public set_diags_at_visc3d
       public set_diags_at_uv2_DC
       public set_diags_at_bc_u
       public set_diags_at_bc_v
@@ -532,6 +533,33 @@
 
       end subroutine init_diags_trc  !]
 
+! ----------------------------------------------------------------------
+      subroutine set_diags_at_compute_horiz( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )   ![
+      ! compute coriolis term from compute_horiz_rhs_uv_terms.h
+      ! diag_icori is the logical that prevents this calculation in pre_step3d,
+      ! since only want during step3d_uv1.
+
+      implicit none
+
+      ! inputs
+      integer,                                       intent(in) :: istr, iend, jstr, jend, istrU, jstrV, k
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N),   intent(in) :: ru, rv
+
+      ! local
+      integer :: i, j
+
+      do j=jstr,jend    ! chose to have 2 loops rather than an if i>=istrU and j> as possible more efficient?
+        do i=istrU,iend
+          Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
+        enddo
+      enddo
+      do j=jstrV,jend
+        do i=istr,iend
+          Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
+        enddo
+      enddo
+
+      end subroutine set_diags_at_compute_horiz  !]
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
