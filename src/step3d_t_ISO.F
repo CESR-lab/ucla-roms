@@ -146,7 +146,11 @@ c--#  define ntdf nrhs
 #endif
 
       do itrc=1,nt
+
+# ifdef DIAGS_TRC
         if (diag_trc) td=diag_NT_2_td(itrc) ! get index of tracer in Tdiag (diagnostics)
+# endif
+
 # ifdef ADV_ISONEUTRAL
         k2=1
         do k=0,N,+1       !--> recursive
@@ -170,12 +174,18 @@ c--#  define ntdf nrhs
      &                                *pn(i,j)*( FX(i+1,j)-FX(i,j)
      &                                          +FE(i,j+1)-FE(i,j)
      &                                                           )
-# ifdef DIAGS_TRC
-                if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)  ! might not want if in loop...
-     &            Tdiag(i,j,k,td,it_h_adv) = t(i,j,k,nnew,itrc)  ! Should only be for tracers of interest...
-# endif
               enddo
             enddo                 !-->  discard FX,FE
+
+# ifdef DIAGS_TRC
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
+              do j=jstr,jend                                           ! only be for tracers of interest
+                do i=istr,iend
+                  Tdiag(i,j,k,td,it_h_adv) = t(i,j,k,nnew,itrc)
+                enddo
+              enddo
+            endif
+# endif
 
 #ifdef DIAG_T_DEBUG
       if(mynode==0 .and. itrc==itemp .and. k==48) then ! devind debug
@@ -783,12 +793,18 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
      &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
               endif
 # endif
-# ifdef DIAGS_TRC
-              if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)  ! might not want this in loop...
-     &          Tdiag(i,j,k,td,it_v_adv) = t(i,j,k,nnew,itrc)
-# endif
             enddo
           enddo
+
+# ifdef DIAGS_TRC
+          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want this in loop...
+            do k=1,N
+              do i=istr,iend
+                Tdiag(i,j,k,td,it_v_adv) = t(i,j,k,nnew,itrc)
+              enddo
+            enddo
+          endif
+# endif
 
 
 #ifdef DIAG_T_DEBUG
@@ -821,18 +837,19 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 #  endif
                 t(i,j,k+1,nnew,itemp)=t(i,j,k+1,nnew,itemp) -dt*cff
                 t(i,j,k  ,nnew,itemp)=t(i,j,k  ,nnew,itemp) +dt*cff
-
-# ifdef DIAGS_TRC
-                if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
-     &            Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
-# endif
               enddo
             enddo
 # ifdef DIAGS_TRC
-            do i=istr,iend
-              if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
-     &          Tdiag(i,j,1,td,it_lmdkpp) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
-            enddo
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! might not want this in loop...
+              do k=N-1,1,-1
+                do i=istr,iend
+                  Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+                enddo
+              enddo
+              do i=istr,iend
+                Tdiag(i,j,1,td,it_lmdkpp) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
+              enddo
+            endif
 # endif
 
 
@@ -856,12 +873,17 @@ c??         enddo
                 cff=-dt*ghat(i,j,k)*stflx(i,j,isalt)
                 t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff ! DevinD why is there no dt here unlike itemp above?
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
-# ifdef DIAGS_TRC
-                if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
-     &            Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
-# endif
-              enddo ! why have I not done Tdiag(i,j,1... as for temp?
+              enddo
             enddo
+# ifdef DIAGS_TRC
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
+              do k=N-1,1,-1
+                do i=istr,iend
+                  Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+                enddo ! why have I not done Tdiag(i,j,1... as for temp?
+              enddo
+            endif
+# endif
 #  endif
           endif
 
@@ -961,10 +983,6 @@ c??         enddo
 # ifdef MASKING
      &                                                  *rmask(i,j)
 # endif
-# ifdef DIAGS_TRC
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
-     &        Tdiag(i,j,N,td,it_imp_vdif) = t(i,j,N,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
-# endif
           enddo
           do k=N-1,1,-1
             do i=istr,iend
@@ -972,12 +990,21 @@ c??         enddo
 # ifdef MASKING
      &                                                      *rmask(i,j)
 # endif
-# ifdef DIAGS_TRC
-              if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) ! might not want this in loop...
-     &          Tdiag(i,j,k,td,it_imp_vdif) = t(i,j,k,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
-# endif
             enddo
           enddo           !--> discard FC,WC,CF,DC
+
+# ifdef DIAGS_TRC
+          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
+            do i=istr,iend
+              Tdiag(i,j,N,td,it_imp_vdif) = t(i,j,N,nnew,itrc)      ! k+1 is last to change above as loop from N to 1, -1?
+            enddo
+            do k=N-1,1,-1
+              do i=istr,iend
+                Tdiag(i,j,k,td,it_imp_vdif) = t(i,j,k,nnew,itrc)    ! k+1 is last to change above as loop from N to 1, -1?
+              enddo
+            enddo
+          endif
+# endif
 
 #ifdef DIAG_T_DEBUG
       if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
