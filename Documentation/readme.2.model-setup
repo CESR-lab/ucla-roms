@@ -94,6 +94,7 @@ Diagnostics:
     You then need to edit the user input section at the top of diagnostics.F and then compile ROMS.
     Select the tracer variables for which you want diagnostics in tracers_defs.h in wrt_t_diag array.
     See the top of diagnostics.F for a more detailed description of the available diagnostics.
+    For an example try Examples/Diagnostics/
     
 Netcdf output compression:
 

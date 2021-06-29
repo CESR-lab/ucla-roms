@@ -110,14 +110,17 @@
 #include "scalars.h"
 
       ! ***************************************************************
-      ! User inputs
-      ! - when using for new simulation (especially if different cppflags) make sure
-      !   to do a very short simulation (i.e. 10 steps) with check_diag & check_avg
-      !   as .true. to ensure budget is closing correctly! Then set them as false for
-      !   your production run as they are a waste of resources.
-      ! - note 1) need DIAGNOSTICS flag in cppdefs.h
-      ! - note 2) units are dz*u (or v/w/t) - i.e. vertically integerated over cell
-      ! - note 3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
+      ! User inputs:
+      !   Budget closing check:
+      !     when using for new simulation (especially if different cppflags) make sure
+      !     to do a very short simulation (i.e. 10 steps) with check_diag & check_avg
+      !     as .true. to ensure budget is closing correctly! Then set them as false for
+      !     your production run as they are a waste of resources.
+      !   Notes:
+      !     1) need DIAGNOSTICS flag in cppdefs.h
+      !     2) units are dz*u (or v/w/t) - i.e. vertically integerated over cell
+      !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
+      !     4) For an example try Examples/Diagnostics/
       logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
       integer                    :: rec_rate      = 3       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
