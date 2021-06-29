@@ -114,26 +114,6 @@
 
       indx=3-nstp
 
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'pre_step3d start:'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
-      endif
-#endif
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'pre_step3d start:'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-        print *, 't(10,10,48,indx,itemp)=',t(10,10,48,indx,itemp),'indx=',indx
-      endif
-#endif
-
       if (FIRST_TIME_STEP) then       ! Coefficients for alternative-
         dtau=0.5*dt                   ! form LF-AM3 stepping algorithm,
         cf_stp=1.                     ! see Fig. 8, Eqs. (2.38)-(2.39);
@@ -587,28 +567,8 @@
       enddo
 # endif
 
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'u3dbc (prestep) start:'
-        print *, 'u(istr,10,48,nnew)=',u(istr,10,48,nnew),'nnew=',nnew
-        print *, 'u(istr,10,48,nstp)=',u(istr,10,48,nstp),'nstp=',nstp
-        print *, 'u(istr,10,48,nrhs)=',u(istr,10,48,nrhs),'nrhs=',nrhs
-        print *, ' '
-      endif
-#endif
-
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'u3dbc (prestep) end:'
-        print *, 'u(istr,10,48,nnew)=',u(istr,10,48,nnew),'nnew=',nnew
-        print *, 'u(istr,10,48,nstp)=',u(istr,10,48,nstp),'nstp=',nstp
-        print *, 'u(istr,10,48,nrhs)=',u(istr,10,48,nrhs),'nrhs=',nrhs
-        print *, ' '
-      endif
-#endif
 
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)
@@ -816,30 +776,7 @@
      &                          w(START_2D_ARRAY,1,nnew),N)
 #  endif
 
-
 # endif /* NHMG */
-
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'pre_step3d end: u(nnew)=DC+CF*u(nnew)'
-        write (*,'(16x,A)') 'u(indx)=Hz*u(nstp)'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
-      endif
-#endif
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'pre_step3d end: t(indx,itrc)=Hz*t(nstp,itrc)'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-        print *, 't(10,10,48,indx,itemp)=',t(10,10,48,indx,itemp),'indx=',indx
-      endif
-#endif
 
       end
 

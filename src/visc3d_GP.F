@@ -91,15 +91,6 @@
 ! Compute sigma-slopes (nondimensional) at RHO- and PSI-points.
 ! Compute momentum horizontal (1/m/s) and vertical (1/s) gradients.
 
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'visc3d start:'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-      endif
-#endif
-
       k2=1
       do k=0,N,+1  !--> irreversible
         k1=k2
@@ -401,19 +392,6 @@ c        enddo
         call set_diags_at_visc3d( istr, iend, jstr, jend, istr,  jstrV, 2, v )  ! set v diags
       endif
 # endif
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-      write (*,'(/A)') 'visc3d end: u(indx)=u(indx)+dt*(UFs(k2)-UFs)'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, 'u(10,10,48,indx)=',u(10,10,48,indx),'indx=',indx
-!        print *, 'u_b4(10,10,48,ivisc)=',u_b4(10,10,48,ivisc)
-!        print *, 'u_af(10,10,48,ivisc)=',u_af(10,10,48,ivisc)
-!        print *, 'Mdiag(10,10,48,1,ivisc)=',Mdiag(10,10,48,1,ivisc)
-      endif
-#endif
 
       end
 #else

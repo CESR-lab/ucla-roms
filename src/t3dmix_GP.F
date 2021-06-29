@@ -47,15 +47,6 @@
 # endif
 # ifdef TS_DIF2
 
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp) then ! devind debug
-        write (*,'(/A)') 't3dmix_GP.F start:'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
-
                                              !!! WARNING: RECURSIVE
 ! Compute horizontal (along geopotential     !!!   BLOCKING SEQUENCE
 ! surfaces) Laplacian diffusion terms.       !!!
@@ -517,19 +508,10 @@ c**  &                                                             )
       enddo   ! --> k
 # endif /* TS_DIF4 */
 
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
       if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
      &  call set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend,itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
 # endif
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp) then ! devind debug
-        write (*,'(/A)') 't3dmix_GP.F end:t(nnew)=t(nnew)+dt*(pm*pn*(FX-FX+FE-FE)+FSC-FSC/Hz'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
 
 # ifdef EXCHANGE
         call exchange_tile (istr,iend,jstr,jend,
