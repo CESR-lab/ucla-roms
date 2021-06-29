@@ -111,6 +111,10 @@
 
       ! ***************************************************************
       ! User inputs
+      ! - when using for new simulation (especially if different cppflags) make sure
+      !   to do a very short simulation (i.e. 10 steps) with check_diag & check_avg
+      !   as .true. to ensure budget is closing correctly! Then set them as false for
+      !   your production run as they are a waste of resources.
       ! - note 1) need DIAGNOSTICS flag in cppdefs.h
       ! - note 2) units are dz*u (or v/w/t) - i.e. vertically integerated over cell
       ! - note 3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
