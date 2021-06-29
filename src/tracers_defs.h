@@ -26,6 +26,8 @@
 !             Could be extended 2,3,... depending on different types of
 !             analytical forcing, e.g. time variant/invariant, and further
 !             specific for each variable using its 'itrace' index...
+! wrt_t_diag= Only with DIAGNOSTICS flag. Don't need otherwise.
+!             True/False to output tracer diagnostics
 
 ! - TEMP & SALT:
 

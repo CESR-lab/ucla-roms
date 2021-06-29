@@ -65,7 +65,7 @@
       logical, dimension(nt), public      :: wrt_t_avg ! T/F output avg tracer.
       integer, dimension(nt)              :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
 
-      logical, dimension(nt), public      :: wrt_t_diag = .false. ! T/F output tracer diagnostics (from diagnostics.F). Declare .false. so that doesn't need to be filled in tracers_defs.h if not used.
+      logical, dimension(nt), public      :: wrt_t_diag = .false. ! only with DIAGNOSTICS. T/F output tracer diagnostics (from diagnostics.F). Declare .false. so that doesn't need to be filled in tracers_defs.h if not used.
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d.h
