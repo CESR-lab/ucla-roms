@@ -136,18 +136,9 @@ c--#  define ntdf nrhs
 !  (ii) arrays of W-type are computed ahead at k+1 --> k2
 ! (iii) arrays of RHO-type are computed at k -
 
-#ifdef DIAG_T_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO start:'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
-
       do itrc=1,nt
 
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
         if (diag_trc) td=diag_NT_2_td(itrc) ! get index of tracer in Tdiag (diagnostics)
 # endif
 
@@ -177,7 +168,7 @@ c--#  define ntdf nrhs
               enddo
             enddo                 !-->  discard FX,FE
 
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
               do j=jstr,jend                                           ! only be for tracers of interest
                 do i=istr,iend
@@ -186,16 +177,6 @@ c--#  define ntdf nrhs
               enddo
             endif
 # endif
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp .and. k==48) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO hor_adv end:t(nnew)=t(nnew)-dt*pm(i,j)*pn(i,j)*(FX-FX'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-        print *, 'Tdiag(10,10,48,itemp,it_h_adv)=',Tdiag(10,10,48,itemp,it_h_adv)
-      endif
-#endif
 
 # ifdef ADV_ISONEUTRAL
           endif !<-- k > 0
@@ -796,7 +777,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want this in loop...
             do k=1,N
               do i=istr,iend
@@ -805,16 +786,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           endif
 # endif
-
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO vert_adv end:t(nnew)=t(nnew)-dt*pm(i,j)*pn(i,j)*(FC-FC'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
@@ -839,7 +810,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
                 t(i,j,k  ,nnew,itemp)=t(i,j,k  ,nnew,itemp) +dt*cff
               enddo
             enddo
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! might not want this in loop...
               do k=N-1,1,-1
                 do i=istr,iend
@@ -875,7 +846,7 @@ c??         enddo
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
               enddo
             enddo
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
               do k=N-1,1,-1
                 do i=istr,iend
@@ -886,15 +857,6 @@ c??         enddo
 # endif
 #  endif
           endif
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO lmd_kpp end:t(nnew)=t(nnew)-dt*cf'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
 
 # endif
 
@@ -993,7 +955,7 @@ c??         enddo
             enddo
           enddo           !--> discard FC,WC,CF,DC
 
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
             do i=istr,iend
               Tdiag(i,j,N,td,it_imp_vdif) = t(i,j,N,nnew,itrc)      ! k+1 is last to change above as loop from N to 1, -1?
@@ -1006,15 +968,6 @@ c??         enddo
           endif
 # endif
 
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp .and. j==10) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO impl_vert_diffusion end:t(nnew)=DC+CF*t(nnew)'
-        print *, 't(10,10,48,nnew,itemp)=',t(10,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(10,10,48,nstp,itemp)=',t(10,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(10,10,48,nrhs,itemp)=',t(10,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
-
 #ifdef CONST_TRACERS
           do k=1,N
             do i=istr,iend
@@ -1024,29 +977,11 @@ c??         enddo
 #endif
         enddo      !<-- j
 
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO t3dBC start:'
-        print *, 't(istr-1,10,48,nnew,itemp)=',t(istr-1,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(istr-1,10,48,nstp,itemp)=',t(istr-1,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(istr-1,10,48,nrhs,itemp)=',t(istr-1,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
-
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
-# ifdef DIAGS_TRC
+# ifdef DIAGNOSTICS
         if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
      &    call set_diags_t_at_bc(istr,iend,jstr,jend,itrc,td)
 # endif
-
-#ifdef DIAG_T_DEBUG
-      if(mynode==0 .and. itrc==itemp) then ! devind debug
-        write (*,'(/A)') 'step3d_t_ISO t3dBC end:'
-        print *, 't(istr-1,10,48,nnew,itemp)=',t(istr-1,10,48,nnew,itemp),'nnew=',nnew
-        print *, 't(istr-1,10,48,nstp,itemp)=',t(istr-1,10,48,nstp,itemp),'nstp=',nstp
-        print *, 't(istr-1,10,48,nrhs,itemp)=',t(istr-1,10,48,nrhs,itemp),'nrhs=',nrhs
-      endif
-#endif
 
       enddo     !<-- itrc
 

@@ -49,25 +49,6 @@
 
 # include "compute_auxiliary_bounds.h"
 
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'UV2 start:'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-        print *, ' '
-      endif
-#endif
-
-#ifdef DIAG2D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') '2D uv2 start:'
-        print *, 'ubar(10,10,knew)=',ubar(10,10,knew),'knew=',knew
-        print *, 'ubar(10,10,kstp)=',ubar(10,10,kstp),'kstp=',kstp
-        print *, ' '
-      endif
-#endif
-
       do j=jstr,jend
 
 # ifndef IMPLICIT_BOTTOM_DRAG
@@ -403,30 +384,7 @@
       if (diag_uv .and. calc_diag) call set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )
 # endif
 
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'UV2 DC-end: u(nnew)=DC(i,k)-DC(i,0)'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-!        print *, 'u_b4(10,10,48,iuv2DC)=',u_b4(10,10,48,iuv2DC)
-!        print *, 'u_af(10,10,48,iuv2DC)=',u_af(10,10,48,iuv2DC)
-!        print *, 'Mdiag(10,10,48,1,iuv2DC)=',Mdiag(10,10,48,1,iuv2DC)
-        print *, ' '
-      endif
-#endif
-
 ! Set PHYSICAL lateral boundary conditions.
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'u3dbc (uv2) start:'
-        print *, 'u(istr,10,48,nnew)=',u(istr,10,48,nnew),'nnew=',nnew
-        print *, 'u(istr,10,48,nstp)=',u(istr,10,48,nstp),'nstp=',nstp
-        print *, 'u(istr,10,48,nrhs)=',u(istr,10,48,nrhs),'nrhs=',nrhs
-        print *, ' '
-      endif
-#endif
 
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
@@ -437,16 +395,6 @@
         call set_diags_at_bc_v( istr, iend, jstr, jend )
       endif
 # endif
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'u3dbc (uv2) end:'
-        print *, 'u(istr,10,48,nnew)=',u(istr,10,48,nnew),'nnew=',nnew
-        print *, 'u(istr,10,48,nstp)=',u(istr,10,48,nstp),'nstp=',nstp
-        print *, 'u(istr,10,48,nrhs)=',u(istr,10,48,nrhs),'nrhs=',nrhs
-        print *, ' '
-      endif
-#endif
 
 
 ! Coupling 2D and 3D momentum equations:
@@ -849,28 +797,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
       if (calc_diag)  call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
 #  endif
 # endif
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'UV2 end: u(nnew)=u(nnew)-FC(i,0)'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-!        print *, 'u_b4(10,10,48,iuv2FC)=',u_b4(10,10,48,iuv2FC)
-!        print *, 'u_af(10,10,48,iuv2FC)=',u_af(10,10,48,iuv2FC)
-!        print *, 'Mdiag(10,10,48,1,iuv2FC)=',Mdiag(10,10,48,1,iuv2FC)
-        print *, ' '
-      endif
-#endif
-
-#ifdef DIAG2D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') '2D uv2 end: ubar=DC(i,0)*DU_avg1(i,j)'
-        print *, 'ubar(10,10,knew)=',ubar(10,10,knew),'knew=',knew
-        print *, 'ubar(10,10,kstp)=',ubar(10,10,kstp),'kstp=',kstp
-        print *, ' '
-      endif
-#endif
 
       end
 

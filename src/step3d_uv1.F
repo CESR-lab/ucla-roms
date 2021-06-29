@@ -119,15 +119,6 @@
 #  endif
 # endif  /* NHMG */
 
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'UV1 start:'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-      endif
-#endif
-
       do k=1,N
 # include "compute_horiz_rhs_uv_terms.h"
       enddo
@@ -388,18 +379,6 @@
        !!!! JM not clear what this does !!!
       call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
 # endif
-
-#ifdef DIAG3D_DEBUG
-      if(mynode==0) then ! devind debug
-        write (*,'(/A)') 'UV1 end: u(nnew)=u(nnew)+DC(i,0)*ru(i,j,k)'
-        print *, 'u(10,10,48,nnew)=',u(10,10,48,nnew),'nnew=',nnew
-        print *, 'u(10,10,48,nstp)=',u(10,10,48,nstp),'nstp=',nstp
-        print *, 'u(10,10,48,nrhs)=',u(10,10,48,nrhs),'nrhs=',nrhs
-!        print *, 'u_b4(10,10,48,iuv1)=',u_b4(10,10,48,iuv1)
-!        print *, 'u_af(10,10,48,iuv1)=',u_af(10,10,48,iuv1)
-!        print *, 'Mdiag(10,10,48,1,iuv1)=',Mdiag(10,10,48,1,iuv1)
-      endif
-#endif
 
       end
 

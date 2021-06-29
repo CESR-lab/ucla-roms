@@ -106,7 +106,7 @@ c---#define BIO_1ST_USTREAM_TEST
      &          -0.1666666666666666*( curv(i-1,j)*max(FlxU(i,j,k),0.)
      &                               +curv(i  ,j)*min(FlxU(i,j,k),0.))
 # ifdef DIAGNOSTICS_TS
-              TruncFX(i,j)=0.04166666666666667*(curv(i,j)-curv(i-1,j))
+              TruncFX(i,j)=0.04166666666666667*(curv(i,j)-curv(i-1,j)) ! DevinD - this is old an not part of 2021 diagnostics module
      &                                               *abs(FlxU(i,j,k))
 # endif
 #else
