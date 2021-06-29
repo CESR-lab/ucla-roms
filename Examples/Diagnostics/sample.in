@@ -2,7 +2,7 @@ title:
    2021-05: uswc sample domain
 
 time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
-               3        20       30       1
+               6        20       30       1
 
 S-coord: THETA_S,   THETA_B,    hc (m)
           6.0D0        6.0D0     25.0D0
@@ -37,7 +37,7 @@ output_root_name:
      sample    
 
 history: LDEFHIS, NWRT, NRPFHIS
-            T      1    10
+            T      3    10
 
 averages: NTSAVG, NAVG, NRPFAVG
             1e4     1e4     1e4
