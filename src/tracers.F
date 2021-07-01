@@ -52,9 +52,6 @@
 
       !-- Array of tracers
       real, public :: t(GLOBAL_2D_ARRAY,N,3,NT)
-#ifdef AVERAGES
-      real, public :: t_avg(GLOBAL_2D_ARRAY,N,NT)  ! SHOULD CHANGE THIS TO ALLOCATABLE SO DON'T NEED MEMORY FOR EVERY TRACER!
-#endif
 
       !-- Tracer variables (user input required in init_tracers)
       character*42, dimension(nt), public :: t_vname   ! Short name
@@ -83,6 +80,18 @@
 !      integer :: ntrc_bio_base
 !      integer :: ntrc_bio !  - from (param.h - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
 
+#ifdef AVERAGES
+# ifdef AVG_NEW
+      real, public, allocatable, dimension(:,:,:,:) :: t_avg      ! tracer averages. Memory only allocated for tracers of interest.
+      integer,      allocatable, dimension(:)       :: t_avg_2_NT ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
+
+      integer, dimension(NT) :: NT_2_t_avg                        ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
+      integer, public        :: n_t_avg                           ! number of tracer averages to output <= NT
+# endif
+# ifdef AVG_OLD
+      real, public :: t_avg(GLOBAL_2D_ARRAY,N,NT)  ! leave here for now to compare performance to new method
+# endif
+#endif
 
       public set_surf_tracer_flx
       public init_tracers
@@ -256,17 +265,31 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr ! Error handling
+      integer, intent(in) :: record ! timestep to be recorded
+      integer             :: ierr   ! error handling
       ! local
-      integer itrc
+      integer :: itrc, itavg
 
+      ! temporary system to compare old vs new methods for t_avg
+
+# ifdef AVG_NEW
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
+          call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itavg), N,
+     &            t_vname(itrc), rp_var, record, ierr )
+        endif
+      enddo
+# endif
+
+# ifdef AVG_OLD
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
           call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itrc), N,
-     &            t_vname(itrc), rp_var, record, ierr )
+     &          t_vname(itrc), rp_var, record, ierr )
         endif
-      end do
+      enddo
+# endif
 
       end subroutine wrt_avg_trc  !]
 #endif /* AVERAGES */
@@ -299,34 +322,47 @@
       integer :: istrR, iendR, jstrR, jendR
       real    :: cff, cff1
       ! local
-      integer :: i, j, k, itrc
+      integer :: i, j, k, itrc, itavg
 
+# ifdef AVG_NEW
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
+          do k=1,N
+            do j=jstrR,jendR
+              do i=istrR,iendR
+                t_avg(i,j,k,itavg)=cff1*t_avg(i,j,k,itavg)
+     &                             +cff*t(i,j,k,nstp,itrc)
+              enddo
+            enddo
+          enddo
+        endif
+      enddo
+# endif
+
+# ifdef AVG_OLD
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
           do k=1,N
             do j=jstrR,jendR
               do i=istrR,iendR
                 t_avg(i,j,k,itrc)=cff1*t_avg(i,j,k,itrc)
-     &                           +cff*t(i,j,k,nstp,itrc)
+     &                            +cff*t(i,j,k,nstp,itrc)
               enddo
             enddo
           enddo
         endif
       enddo
+# endif
 
       end subroutine set_avg_trc  !]
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-      subroutine init_tracers()  ![
+      subroutine init_tracers  ![
 
       ! Set all tracer variable values. This was placed at bottom of
       ! the module for ease of reading the rest of the module's code.
-
-      implicit none
-
-      ! save
-      ! SHOULD DECLARE TRACER INDICES IN TRACERS_DEFS.H & USE THE SAVE COMMAND HERE
 
       ! It is necessary to keep track of tracer index number in order to
       ! correctly locate and calculate upon the tracer in 't' the array
@@ -339,6 +375,15 @@
       ! init_scalars.F.
       ! New method, both set here.
 
+      ! save
+      ! SHOULD DECLARE TRACER INDICES IN TRACERS_DEFS.H & USE THE SAVE COMMAND HERE???
+
+      implicit none
+
+      ! local
+      integer :: cnt=0, itrc
+
+
 ! Following is just to test using indxPO4, should delete after confirming not needed.
 #ifdef BIOLOGY_BEC2
 # include "ncvars.h"
@@ -348,17 +393,46 @@
       itmp=1;
       t_vname(itmp)='temp';        t_units(itmp)='Celsius'
       t_lname(itmp)='potential temperature'
-      iTandS = 1 ! If only temp, no salt.
+      iTandS = 1  ! if only temp, no salt.
 #ifdef SALINITY
       islt=2;
       t_vname(islt)='salt';        t_units(islt)='PSU'
       t_lname(islt)='salinity'
-      iTandS = 2 ! If both temp and salt.
+      iTandS = 2  ! if both temp and salt.
 #endif
       itot=iTandS ! Set total number of tracers so far as iTandS
 
       ! Additional passive tracers:
 #include "tracers_defs.h"
+
+#if defined AVERAGES && defined AVG_NEW
+      ! Allocate memory for only the tracer averages required for output
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          cnt=cnt+1                                    ! count tracer averagesto calc+write
+          NT_2_t_avg(itrc)=cnt                         ! t(itrc) = t_avg(cnt) - to convert between index scheme
+        endif
+      enddo
+
+      n_t_avg = cnt                                    ! number of tracers of interest
+      allocate( t_avg( GLOBAL_2D_ARRAY, N, n_t_avg) )  ! only for tracers we are interested in
+
+      allocate( t_avg_2_NT( n_t_avg ) )                ! to convert indices between t_avg(itavg) and t(itrc)
+      t_avg_2_NT = -1                                  ! set to bad number (<1) as safeguard
+
+      cnt=0
+      do itrc=1,NT
+        if (wrt_t_avg(itrc)) then
+          cnt=cnt+1
+          t_avg_2_NT(cnt)=itrc                         ! store the actual tracer index of 't' array
+        endif                                          ! since t(NT) but t_avg(n_t_avg). NT >= n_t_avg...
+      enddo
+
+      if(mynode==0) then ! DEBUG ONLY
+        print *, 'n_t_avg=',n_t_avg
+        print *, 't_avg_2_NT=',t_avg_2_NT
+      endif
+#endif  /* AVERAGES */
 
       end subroutine init_tracers  !]
 
