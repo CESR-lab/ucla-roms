@@ -54,7 +54,7 @@
       use tracers ! iTandS, t, t_avg
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k,itrc
+      integer         :: istr, iend, jstr, jend, i, j, k, itrc, itavg
       real, parameter :: init=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
 #include "param.h"
@@ -185,13 +185,24 @@
             do i=istrR,iendR
               t(i,j,k,1,itrc)=init
               t(i,j,k,2,itrc)=init
-# ifdef AVERAGES
-              t_avg(i,j,k,itrc)=init
+# ifdef AVG_OLD
+              t_avg(i,j,k,itavg)=init
 # endif
             enddo
           enddo
         enddo
       enddo
+# if defined AVERAGES && defined AVG_NEW
+      do itavg=1,n_t_avg              ! only the select tracers to average
+        do k=1,N
+          do j=jstrR,jendR
+            do i=istrR,iendR
+              t_avg(i,j,k,itavg)=init
+            enddo
+          enddo
+        enddo
+      enddo
+# endif
 #endif /* SOLVE3D */
 
 ! Initialize forcing arrays.

@@ -2,7 +2,7 @@
 #SBATCH --job-name="ncj_mpi50"
 
 #       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
-#SBATCH --output="ncjoin_mpi50.%N.out"
+#SBATCH --output="ncjoin_mpi50.%j.%N.out"
 
 #       If using less than 128 cores then the partition is 'shared' 
 #       or 'large-shared' if extra memory is needed (only use if 'shared' failed due to memory error).
@@ -19,11 +19,12 @@
 #       Leave this at 1:
 #SBATCH --cpus-per-task=1
 
-#       Default is 1GB ram per core. Uncomment & edit to increase mem:
-#       compute/shared has max of 248G of ram you can request,
-#       large-shared has max of 2000G of ram you can request.
-#       Note, you are charged by the larger of cores used or portion of node's memory requested!
-# #SBATCH --mem=200G
+#       Memory: default is 1GB on all nodes. However, you can request 2GB per core on  
+#       shared/compute/debug or 15.5GB/core on large-shared at no extra cost.
+#       Charged on number of cores or fraction of total memory, whichever is greater.
+#       shared/compute/debug total mem=256G, large-shared total mem=2000G
+#            for total memory required use: #SBATCH --mem=256G
+#         or for memory per cores      use: #SBATCH --mem-per-cpu=2G
 
 #SBATCH --account=cla119
 #SBATCH --export=ALL
