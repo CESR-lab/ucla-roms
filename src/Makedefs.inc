@@ -36,7 +36,8 @@
 	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include
 
 #   Since we no longer keep .f files after compilation, if you want to still
-#   see the .f to confirm what code is left after CPP, use the following
+#   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
+#   removed) or for runtime debug line numbers, use the following
 #   in the Compile/ folder (change 'main' for your file of interest):
 #   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
 
