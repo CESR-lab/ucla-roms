@@ -398,10 +398,6 @@
         endif                                          ! since t(NT) but t_avg(n_t_avg). NT >= n_t_avg...
       enddo
 
-      if(mynode==0) then ! DEBUG ONLY
-        print *, 'n_t_avg=',n_t_avg
-        print *, 't_avg_2_NT=',t_avg_2_NT
-      endif
 #endif  /* AVERAGES */
 
       end subroutine init_tracers  !]
