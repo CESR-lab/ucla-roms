@@ -25,6 +25,12 @@
 !             Could be extended 2,3,... depending on different types of
 !             analytical forcing, e.g. time variant/invariant, and further
 !             specific for each variable using its 'itrace' index...
+! itot      = Counter to increment tracer indices without hardcoding indices,
+!             thus each new tracer index (e.g. itrcX) simply needs:
+!             itrcX=itot;    and   itot=itot+1 afterwards for the next tracer.
+
+! wrt_t_diag= Only with DIAGNOSTICS flag. Don't need otherwise.
+!             True/False to output tracer diagnostics.
 
 
 
@@ -40,13 +46,13 @@
 
 ! - PASSIVE TRACERS:
 
-      itrace1=1+iTandS;              
+      itrace1=itot;                   itot=itot+1
       wrt_t(itrace1)  =.True.;        wrt_t_avg(itrace1)=.True.
       t_vname(itrace1)='trace1';      t_units(itrace1)  ='%/%/%'
       t_tname(itrace1)='trace1_time'; t_ana_frc(itrace1)=0
       t_lname(itrace1)='long trace1'
 
-      isalt2=2+iTandS;               
+      isalt2=itot;                    itot=itot+1               
       wrt_t(isalt2) =.True.;          wrt_t_avg(isalt2)=.True.
       t_vname(isalt2)='salt2';        t_units(isalt2)  ='PSUuu'
       t_tname(isalt2)='salt2_time';   t_ana_frc(isalt2)=0
@@ -55,17 +61,6 @@
 
 
 ! - BGC TRACERS:
-
-!      - Number bgc tracers from 1 and add on itrace index
-!        from passive tracers above: e.g. ibgc1 = 1+isalt2
-!      - If no passive tracers then add on iTandS index:
-!        e.g. ibgc1=1+iTandS
-
-!     idea: would be useful to do:
-!           indxPO4=itotal+iTandS; itotal=1+itotal
-!           This way if you comment out a tracer you no longer want, it doesn't
-!           mess up your numbering. Not hard-coded.
-!           Should then put in error checking to make sure NT = itotal at the end!
 
 
 

@@ -67,12 +67,14 @@
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d.h
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
-      type (ncvs) :: nc_t( NT ) ! array of ncvs for each tracer
+      type (ncvs)     :: nc_t( NT ) ! array of ncvs for each tracer
 
-      integer, public :: iTandS ! Combined index of temperature and salinity
-                                ! public as used in set_forces.F. Need to be parameter
-      integer :: pt_tot ! total number of passive tracers
-      integer :: itot=0 ! index counter to count total number of tracers.
+      integer, public :: iTandS     ! combined index of temperature and salinity
+                                    ! public as used in set_forces.F. Need to be parameter
+      integer         :: pt_tot     ! total number of passive tracers
+      integer         :: itot=0     ! index counter to count total number of tracers.
+                                    ! this term prevents the need to hardcode tracer indices.
+
       ! 3 below currently in param.h as per old code
 !      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
       ! Number of 'base' bgc tracers, i.e. minimum number of bgc tracers without cocco
@@ -81,16 +83,11 @@
 !      integer :: ntrc_bio !  - from (param.h - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
 
 #ifdef AVERAGES
-# ifdef AVG_NEW
       real, public, allocatable, dimension(:,:,:,:) :: t_avg      ! tracer averages. Memory only allocated for tracers of interest.
       integer,      allocatable, dimension(:)       :: t_avg_2_NT ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
 
       integer, dimension(NT) :: NT_2_t_avg                        ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer, public        :: n_t_avg                           ! number of tracer averages to output <= NT
-# endif
-# ifdef AVG_OLD
-      real, public :: t_avg(GLOBAL_2D_ARRAY,N,NT)  ! leave here for now to compare performance to new method
-# endif
 #endif
 
       public set_surf_tracer_flx
@@ -247,7 +244,7 @@
       integer             :: ierr   ! error handling
 
       ! local
-      integer :: itrc
+      integer             :: itrc
 
       do itrc=1,NT
         if (wrt_t(itrc)) then
@@ -267,12 +264,12 @@
       ! inputs
       integer, intent(in) :: record ! timestep to be recorded
       integer             :: ierr   ! error handling
+
       ! local
-      integer :: itrc, itavg
+      integer             :: itrc, itavg
 
       ! temporary system to compare old vs new methods for t_avg
 
-# ifdef AVG_NEW
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
@@ -280,16 +277,6 @@
      &            t_vname(itrc), rp_var, record, ierr )
         endif
       enddo
-# endif
-
-# ifdef AVG_OLD
-      do itrc=1,NT
-        if (wrt_t_avg(itrc)) then
-          call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itrc), N,
-     &          t_vname(itrc), rp_var, record, ierr )
-        endif
-      enddo
-# endif
 
       end subroutine wrt_avg_trc  !]
 #endif /* AVERAGES */
@@ -324,7 +311,6 @@
       ! local
       integer :: i, j, k, itrc, itavg
 
-# ifdef AVG_NEW
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
@@ -338,22 +324,6 @@
           enddo
         endif
       enddo
-# endif
-
-# ifdef AVG_OLD
-      do itrc=1,NT
-        if (wrt_t_avg(itrc)) then
-          do k=1,N
-            do j=jstrR,jendR
-              do i=istrR,iendR
-                t_avg(i,j,k,itrc)=cff1*t_avg(i,j,k,itrc)
-     &                            +cff*t(i,j,k,nstp,itrc)
-              enddo
-            enddo
-          enddo
-        endif
-      enddo
-# endif
 
       end subroutine set_avg_trc  !]
 #endif /* AVERAGES */
@@ -393,19 +363,19 @@
       itmp=1;
       t_vname(itmp)='temp';        t_units(itmp)='Celsius'
       t_lname(itmp)='potential temperature'
-      iTandS = 1  ! if only temp, no salt.
+      iTandS = 1         ! if only temp, no salt.
 #ifdef SALINITY
       islt=2;
       t_vname(islt)='salt';        t_units(islt)='PSU'
       t_lname(islt)='salinity'
-      iTandS = 2  ! if both temp and salt.
+      iTandS = 2         ! if both temp and salt.
 #endif
-      itot=iTandS ! Set total number of tracers so far as iTandS
+      itot = iTandS + 1  ! set next tracer index if more tracers
 
       ! Additional passive tracers:
 #include "tracers_defs.h"
 
-#if defined AVERAGES && defined AVG_NEW
+#if defined AVERAGES
       ! Allocate memory for only the tracer averages required for output
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
