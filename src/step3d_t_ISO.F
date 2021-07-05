@@ -814,11 +814,11 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! might not want this in loop...
               do k=N-1,1,-1
                 do i=istr,iend
-                  Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+                  Tdiag(i,j,k+1,td,it_nonloc) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
                 enddo
               enddo
               do i=istr,iend
-                Tdiag(i,j,1,td,it_lmdkpp) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
+                Tdiag(i,j,1,td,it_nonloc) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
               enddo
             endif
 # endif
@@ -850,7 +850,7 @@ c??         enddo
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
               do k=N-1,1,-1
                 do i=istr,iend
-                  Tdiag(i,j,k+1,td,it_lmdkpp) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
+                  Tdiag(i,j,k+1,td,it_nonloc) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
                 enddo ! why have I not done Tdiag(i,j,1... as for temp?
               enddo
             endif
@@ -958,11 +958,11 @@ c??         enddo
 # ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
             do i=istr,iend
-              Tdiag(i,j,N,td,it_imp_vdif) = t(i,j,N,nnew,itrc)      ! k+1 is last to change above as loop from N to 1, -1?
+              Tdiag(i,j,N,td,it_v_mix) = t(i,j,N,nnew,itrc)         ! k+1 is last to change above as loop from N to 1, -1?
             enddo
             do k=N-1,1,-1
               do i=istr,iend
-                Tdiag(i,j,k,td,it_imp_vdif) = t(i,j,k,nnew,itrc)    ! k+1 is last to change above as loop from N to 1, -1?
+                Tdiag(i,j,k,td,it_v_mix) = t(i,j,k,nnew,itrc)       ! k+1 is last to change above as loop from N to 1, -1?
               enddo
             enddo
           endif

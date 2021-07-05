@@ -3,7 +3,10 @@
       ! To compute diagnostics use DIAGNOSTICS flag in cppdefs.h.
       ! Also, set configuration at 'User input' below.
 
-      ! INFO: ![
+      ! JM: We are not properly accounting for the Udzeta/dt,Vdzeta/dt terms
+      ! These should only be a signicant error for coastal tidal flows.
+
+      ! INFO (Optional): ![
       ! Online diagnostics for ROMS simulation.
       ! Initial coding DevinD and JeroenM - 2021/05
 
@@ -120,9 +123,10 @@
       !     1) need DIAGNOSTICS flag in cppdefs.h
       !     2) units are dz*u (or v/w/t) - i.e. vertically integerated over cell
       !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
-      !     4) For an example try Examples/Diagnostics/
+      !     4) for an example try Examples/Diagnostics/
+      !     5) averaging frequency = rec_rate * time_step
       logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
-      integer                    :: rec_rate      = 3       ! output record rate, move this to .in file rather?
+      integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
 
       logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v. Replaces cppflag.
@@ -172,15 +176,15 @@
      &  iprsgr = 1, ! Hydrostatic pressure gradient    - internal loop ranges only (i.e. excluding domain boundary)
      &  icori  = 2, ! Coriolis & curvilinear coords    - internal loop ranges only
      &  iadv   = 3, ! Advection                        - internal loop ranges only
-     &  ivisc  = 4, ! Viscous terms                    - internal loop ranges only
-     &  iuv2DC = 5, ! Vertical mixing & 2D/3D coupling - internal loop ranges only
+     &  ihmix  = 4, ! Viscous terms (horiz mixing)     - internal loop ranges only
+     &  ivmix = 5,  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
      &  iu3d   = 6, ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
      &  iuv2FC = 7  ! 2D-3D correction                 - internal + bry (full domain) loop ranges
 
       character (len=20), allocatable, dimension(:) :: vnames
-      character (len=70), allocatable, dimension(:) :: lname             ! len=70 allows for 8 characters of 'Average ' if diag_avg
+      character (len=80), allocatable, dimension(:) :: lname             ! len=70 allows for 8 characters of 'Average ' if diag_avg
 
-      character (len=20)               :: units = 'm^2/s (dz*(u or v))'
+      character (len=26) :: units = 'm^2/s^2    (i.e. du/dt*dz)'         ! Don't go beyond 72nd character else space in units
       character (len=1),  dimension(3) :: uvw = (/ 'u', 'v', 'w' /)      ! prefix for u/v/w outputs
 
       character (len=80), dimension(:), allocatable :: check_lnm         ! long name for outputs checking diagnostics
@@ -225,15 +229,15 @@
      &  it_h_adv    = 1,  ! Horizontal advective fluxes - compute_horiz_tracer_fluxes.h
      &  it_v_adv    = 2,  ! Vertical advective fluxes   - compute_vert_tracer_fluxes.h
                           ! do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
-     &  it_imp_vdif = 3,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
-     &  it_t3dmix   = 4,  ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
-     &  it_lmdkpp   = 5,  ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
+     &  it_v_mix    = 3,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
+     &  it_h_mix    = 4,  ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
+     &  it_nonloc   = 5,  ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
      &  it_bc       = 6   ! Boundary changes - t3dbc_im.F. BC's shouldn't have 3D array
 
       character (len=30), allocatable, dimension(:) :: tdname
       character (len=90), allocatable, dimension(:) :: tlname
 
-      character (len=20) :: tunits = ') * m   (dC*dz)'  ! not sure on units here.
+      character (len=20) :: tunits = ' * m/s   (dC/dt*dz)'  ! not sure on units here.
 
       public init_diags_trc
       public set_diags_t_at_bc
@@ -346,10 +350,10 @@
      &    'Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h'  ! if goes beyond 72 characters the text has big space, hence new line
         vnames(iadv)   = '_advection'
         lname (iadv)   = 'Advection - step3d_uv1.F'
-        vnames(ivisc)  = '_visc3d'
-        lname (ivisc)  = 'Viscous terms - visc3d_GP.F'
-        vnames(iuv2DC) = '_vert_mix_2D3D'
-        lname (iuv2DC) =
+        vnames(ihmix)  = '_h_mix'
+        lname (ihmix)  = 'Viscous terms - visc3d_GP.F'
+        vnames(ivmix) = '_v_mix'
+        lname (ivmix) =
      &    'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1'
         vnames(iu3d)   = '_3dbc'
         lname (iu3d)   = 'Boundary changes - u/v3dbc_im.F'
@@ -456,21 +460,21 @@
 
 
       allocate( tdname(ndt), tlname(ndt) )
-      tdname(it_h_adv)    = '_hori_adv'
+      tdname(it_h_adv)    = '_h_adv'
       tlname(it_h_adv)    =
      &  'Horizontal advective fluxes - compute_horiz_tracer_fluxes.h'
-      tdname(it_v_adv)    = '_vert_adv'
+      tdname(it_v_adv)    = '_v_adv'
       tlname(it_v_adv)    =
      &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h'
-      tdname(it_imp_vdif) = '_imp_vdif'
-      tlname(it_imp_vdif) =
+      tdname(it_v_mix)    = '_v_mix'
+      tlname(it_v_mix)    =
      &  'Implicit time step for vertical diffusion - step3d_t_ISO.F'
-      tdname(it_t3dmix)   = '_t3dmix'
-      tlname(it_t3dmix)   =
+      tdname(it_h_mix)    = '_h_mix'
+      tlname(it_h_mix)    =
      &  'Horizontal (along geopotential surfaces) Laplacian ' / /
      &  'diffusion terms - t3dmix_GP.F'
-      tdname(it_lmdkpp)   = '_lmdkpp'
-      tlname(it_lmdkpp)   =
+      tdname(it_nonloc)   = '_non_local'
+      tlname(it_nonloc)   =
      &  'Nonlocal transport flux for unstable (convective) ' / /
      &  'forcing - step3d_t_ISO.F'
       tdname(it_bc)       = '_t3dbc'
@@ -621,7 +625,7 @@
       do k=1,N
         do j=jsA,jend    ! interior of subdomains, exludes global domain boundaries
           do i=isA,iend
-            Mdiag( i,j,k,dim,ivisc) = uv(i,j,k,nnew) - uv_prev(i,j,k,dim)  ! units already in dz*u
+            Mdiag( i,j,k,dim,ihmix) = uv(i,j,k,nnew) - uv_prev(i,j,k,dim)  ! units already in dz*u
             uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
           enddo
         enddo
@@ -646,14 +650,14 @@
         do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
             Mdtmp                  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag( i,j,k,1,iuv2DC) = Mdtmp - uv_prev(i,j,k,1)                        ! avoids recomputing above
+            Mdiag( i,j,k,1,ivmix)  = Mdtmp - uv_prev(i,j,k,1)                        ! avoids recomputing above
             uv_prev(i,j,k,1)       = Mdtmp
           enddo
         enddo
         do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
           do i=istr,iend
             Mdtmp                  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-            Mdiag( i,j,k,2,iuv2DC) = Mdtmp - uv_prev(i,j,k,2)
+            Mdiag( i,j,k,2,ivmix)  = Mdtmp - uv_prev(i,j,k,2)
             uv_prev(i,j,k,2)       = Mdtmp
           enddo
         enddo
@@ -1022,7 +1026,7 @@
       do k=1,N
         do j=jstr,jend
           do i=istr,iend
-            Tdiag(i,j,k,td,it_t3dmix) = t(i,j,k,nnew,itrc)
+            Tdiag(i,j,k,td,it_h_mix) = t(i,j,k,nnew,itrc)
           enddo
         enddo
       enddo
@@ -1054,7 +1058,7 @@
 
         if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
 
-  !        do iMd=1,iuv2DC                 ! all diagnostic terms with internal loop ranges
+  !        do iMd=1,ivmix                  ! all diagnostic terms with internal loop ranges
   !       ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
   !       ! ranges for now just to get working.
 
@@ -1325,51 +1329,51 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_lmdkpp) - Tdiag(i,j,k,td,it_v_adv)
+              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_nonloc) - Tdiag(i,j,k,td,it_v_adv)
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_lmdkpp, itrc)
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_nonloc, itrc)
         else
-          text=trim(t_vname(itrc)) / / tdname(it_lmdkpp)
+          text=trim(t_vname(itrc)) / / tdname(it_nonloc)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
-        it_prev=it_lmdkpp ! store index of previous diagnostic if lmd_kpp
+        it_prev=it_nonloc ! store index of previous diagnostic if lmd_kpp
 # endif
 
         ! From here onwards 't' was no longer in dz*t units:
         do k=1,N
           do j=jstr,jend
-            do i=istr,iend  ! it_imp_vdif in 't' units, but it_prev in dz*t units
-              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_imp_vdif)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev)
+            do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
+              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev)
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_imp_vdif, itrc)
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_v_mix, itrc)
         else
-          text=trim(t_vname(itrc)) / / tdname(it_imp_vdif)
+          text=trim(t_vname(itrc)) / / tdname(it_v_mix)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! both in dz*t units
-              Td_tmp(i,j,k)=(Tdiag(i,j,k,td,it_t3dmix)-Tdiag(i,j,k,td,it_imp_vdif))*Hz(i,j,k)
+              Td_tmp(i,j,k)=(Tdiag(i,j,k,td,it_h_mix)-Tdiag(i,j,k,td,it_v_mix))*Hz(i,j,k)
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_t3dmix, itrc)
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_h_mix, itrc)
         else
-          text=trim(t_vname(itrc)) / / tdname(it_t3dmix)
+          text=trim(t_vname(itrc)) / / tdname(it_h_mix)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
@@ -1535,29 +1539,29 @@ C$OMP MASTER
             if (diag_trc) then
               do td=1,nd_trc                                    ! only tracers of interest
                 itrc=diag_td_2_NT(td)                           ! set the actual tracer index in 't'
+                utext = trim(t_units(itrc)) / / tunits
                 do idt=1,ndt                                    ! tracer diag terms
                   text  = trim(t_vname(itrc)) / / tdname(idt)
-                  utext = 'd (' / / trim(t_units(itrc)) / / tunits
                   call nc_define_var(ncid, text, tlname(idt), utext, r3dgrd, ierr )
                 enddo
 
                 if (check_diag .or. tot_change) then
                   text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
-                  call nc_define_var(ncid, text,  check_lnm(1), tunits, r3dgrd, ierr )
+                  call nc_define_var(ncid, text,  check_lnm(1), utext, r3dgrd, ierr )
                 endif
 
                 if (check_diag) then
                   text  = trim(t_vname(itrc)) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
-                  call nc_define_var(ncid, text,  check_lnm(2), tunits, r3dgrd, ierr )
+                  call nc_define_var(ncid, text,  check_lnm(2), utext, r3dgrd, ierr )
                   text  = trim(t_vname(itrc)) / / check_vnm(3)  ! compare gross change against sum of diags. Should be approx zero.
-                  call nc_define_var(ncid, text,  check_lnm(3), tunits, r3dgrd, ierr )
+                  call nc_define_var(ncid, text,  check_lnm(3), utext, r3dgrd, ierr )
                 endif
 
                 if (check_avg) then
-                  text  = trim(t_vname(itrc)) / / check_avnm(1)  ! gross change in t up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(1), tunits, r3dgrd, ierr )
+                  text  = trim(t_vname(itrc)) / / check_avnm(1) ! gross change in t up until now since t0
+                  call nc_define_var(ncid, text, check_alnm(1), utext, r3dgrd, ierr )
                   text  = trim(t_vname(itrc)) / / check_avnm(2) ! total diag avg in t up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(2), tunits, r3dgrd, ierr )
+                  call nc_define_var(ncid, text, check_alnm(2), utext, r3dgrd, ierr )
                 endif
 
               enddo  ! <-- td
