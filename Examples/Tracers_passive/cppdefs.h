@@ -108,7 +108,6 @@ c-dd#define TAU_CORRECTION
 
      /* Output */
 #define AVERAGES
-#undef SLICE_AVG
 
 #define ADV_ISONEUTRAL
 

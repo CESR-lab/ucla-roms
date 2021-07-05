@@ -185,14 +185,11 @@
             do i=istrR,iendR
               t(i,j,k,1,itrc)=init
               t(i,j,k,2,itrc)=init
-# ifdef AVG_OLD
-              t_avg(i,j,k,itavg)=init
-# endif
             enddo
           enddo
         enddo
       enddo
-# if defined AVERAGES && defined AVG_NEW
+# if defined AVERAGES
       do itavg=1,n_t_avg              ! only the select tracers to average
         do k=1,N
           do j=jstrR,jendR
