@@ -39,9 +39,11 @@
       ! and Tdiag(td) in diagnostics which only has indices for selected tracers.
 
       ! UNITS:
+      ! We need the rate of change of u or v or tracer, so the diagnostic is
+      ! divided by 'dt' (the timestep) to get a diagnostics rate per second
       ! The roms history file give u/v in m/s, and 't' tracers in their
       ! concentrations. However, since the depth of the water column is also evolving
-      ! during a timestep, it is easier to work in dz*u/v/w/t, since that is the unit
+      ! during a timestep, it is easier to work in dz*u/v/w/t / dt, since that is the unit
       ! of u/v/w/t when the depth is changed in the timestep as follows:
       ! step3d_uv1.F (depth not changed just to show position amongst code)
       ! step2d_tile -> set_depth_tile -> (depth (Hz) changes to t=n+1)
@@ -126,7 +128,7 @@
       !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
       !     4) for an example try Examples/Diagnostics/
       !     5) averaging frequency = rec_rate * time_step
-      logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
+      logical, parameter         :: diag_avg      = .false.  ! compute history (F) or averages (T)
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
 
@@ -139,7 +141,7 @@
       ! Developer inputs:
       ! - need to have on diag_uv to use these flags:
       logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
+      logical, parameter         :: check_avg     = .false.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! Preamble:  ![
 
@@ -430,11 +432,11 @@
         check_vnm(3) = '_budget'
         check_lnm(3) = 'Diff. of rate of change in variable vs '   / /
      &                 'sum of diags during timestep (budget '     / /
-     &                 'close) - (e.g. u_actual-u_diag_sum)'
+     &                 'close) - e.g. (u_actual-u_diag_sum)'
       endif
 
       if (check_avg) then                                             ! used for both uv and tracer
-        allocate( check_alnm(2), check_avnm(2)     )
+        allocate( check_alnm(3), check_avnm(3)     )
         check_avnm(1) = '_ever'
         check_alnm(1) = 'Total change in variable since start of ' / /
      &                  'run - e.g. (u_n*dz_n - u_0*dz_0)'
@@ -442,6 +444,10 @@
         check_alnm(2) = 'Sum of diagnostic averages multiplied '   / /
      &    'by averaging freq. for total time since start of run.'  / /
      &    ' Should match total change in var since model start.'
+        check_avnm(3) = '_budget_ever'
+        check_alnm(3) = 'Complete budget close using averages '    / /
+     &    'since model start until current timestep  - e.g. '      / /
+     &    '(u_ever - u_diag_avg_ever)'
       endif
 
       if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
@@ -587,25 +593,25 @@
       ! local
       integer :: i, k
 
-      do i=istrA,iend
-        Mdiag(i,j,N,dim,iprsgr) = Mdiag(i,j,N,dim,iprsgr) * DC(i,0)  ! need to convert to dz*u now that we have DC
-        Mdiag(i,j,1,dim,iprsgr) = Mdiag(i,j,1,dim,iprsgr) * DC(i,0)  ! consider taking this out of loop and doing seperately
-        Mdiag(i,j,N,dim,icori)  = Mdiag(i,j,N,dim,icori)  * DC(i,0)  ! perhaps even in own subroutine to avoid clutter
-        Mdiag(i,j,1,dim,icori)  = Mdiag(i,j,1,dim,icori)  * DC(i,0)
-        Mdiag(i,j,N,dim,iadv)   = DC(i,0)*ruv(i,j,N) + dt*suvstr(i,j)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+      do i=istrA,iend                                                      ! / dt needed to get rate of change
+        Mdiag(i,j,N,dim,iprsgr) = Mdiag(i,j,N,dim,iprsgr) * DC(i,0) / dt   ! need to convert to dz*u now that we have DC
+        Mdiag(i,j,1,dim,iprsgr) = Mdiag(i,j,1,dim,iprsgr) * DC(i,0) / dt   ! consider taking this out of loop and doing seperately
+        Mdiag(i,j,N,dim,icori)  = Mdiag(i,j,N,dim,icori)  * DC(i,0) / dt   ! perhaps even in own subroutine to avoid clutter
+        Mdiag(i,j,1,dim,icori)  = Mdiag(i,j,1,dim,icori)  * DC(i,0) / dt
+        Mdiag(i,j,N,dim,iadv)   = ( DC(i,0)*ruv(i,j,N) + dt*suvstr(i,j) ) / dt  ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                           - ( Mdiag(i,j,N,dim,iprsgr) + Mdiag(i,j,N,dim,icori) ) ! subtract previous 2 terms included in total
-        uv_prev(i,j,N,dim)      = uv(i,j,N,nnew)                     ! store for next diag visc3d
-        Mdiag(i,j,1,dim,iadv)   = DC(i,0)*ruv(i,j,1)
+        uv_prev(i,j,N,dim)      = uv(i,j,N,nnew)                           ! store for next diag visc3d
+        Mdiag(i,j,1,dim,iadv)   = DC(i,0)*ruv(i,j,1) / dt
      &                           - ( Mdiag(i,j,1,dim,iprsgr) + Mdiag(i,j,1,dim,icori) )
         uv_prev(i,j,1,dim)      = uv(i,j,1,nnew)
       enddo
 
       do k=2,N-1
         do i=istrA,iend
-          Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0)
-          Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0)
+          Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0) / dt
+          Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0) / dt
           uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
-          Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k)                 ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+          Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k) / dt                ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
         enddo
       enddo
@@ -630,8 +636,8 @@
       do k=1,N           ! should limit ranges to that of sponge layer to be efficient
         do j=jsA,jend    ! interior of subdomains, exludes global domain boundaries
           do i=isA,iend
-            Mdiag( i,j,k,dim,ihmix) = uv(i,j,k,nnew) - uv_prev(i,j,k,dim)  ! units already in dz*u
-            uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
+            Mdiag(  i,j,k,dim,ihmix) = (uv(i,j,k,nnew) - uv_prev(i,j,k,dim)) / dt  ! units already in dz*u
+            uv_prev(i,j,k,dim)       =  uv(i,j,k,nnew)
           enddo
         enddo
       enddo
@@ -655,15 +661,15 @@
         do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
             Mdtmp                  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag( i,j,k,1,ivmix)  = Mdtmp - uv_prev(i,j,k,1)                        ! avoids recomputing above
-            uv_prev(i,j,k,1)       = Mdtmp
+            Mdiag( i,j,k,1,ivmix)  = (Mdtmp - uv_prev(i,j,k,1)) / dt                        ! avoids recomputing above
+            uv_prev(i,j,k,1)       =  Mdtmp
           enddo
         enddo
         do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
           do i=istr,iend
             Mdtmp                  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-            Mdiag( i,j,k,2,ivmix)  = Mdtmp - uv_prev(i,j,k,2)
-            uv_prev(i,j,k,2)       = Mdtmp
+            Mdiag( i,j,k,2,ivmix)  = (Mdtmp - uv_prev(i,j,k,2)) / dt
+            uv_prev(i,j,k,2)       =  Mdtmp
           enddo
         enddo
       enddo
@@ -691,15 +697,15 @@
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
 
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) ! uv_prev is already u_current, can do this because have uvdz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1)
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = ( uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = ( uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1) )/dt
 
       do i=istr,iend+1 ! use loop here else indexing would be even messier
         if (SOUTHERN_EDGE) uv_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
         if (NORTHERN_EDGE) uv_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
       enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1)
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = ( uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1) )/dt
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = ( uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1) )/dt
 
       end subroutine set_diags_at_bc_u  !]
 
@@ -723,13 +729,13 @@
         if (WESTERN_EDGE)  uv_prev(istr-1,j,:,2) = u(istr-1,j,:,nnew) * 0.5*(Hz(istr-1,j-1,:)+Hz(istr-1,j,:))
         if (EASTERN_EDGE)  uv_prev(iend+1,j,:,2) = u(iend+1,j,:,nnew) * 0.5*(Hz(iend+1,j-1,:)+Hz(iend+1,j,:))
       enddo
-      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,iu3d) = uv_prev(istr-1,:,:,2) - uvdz_old(istr-1,:,:,2) ! uv_prev is already u_current, can do this because have uvdz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,iu3d) = uv_prev(iend+1,:,:,2) - uvdz_old(iend+1,:,:,2)
+      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,iu3d) = ( uv_prev(istr-1,:,:,2)-uvdz_old(istr-1,:,:,2) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,iu3d) = ( uv_prev(iend+1,:,:,2)-uvdz_old(iend+1,:,:,2) )/dt
 
       if (SOUTHERN_EDGE) uv_prev(:,jstr  ,:,2)=u(:,jstr  ,:,nnew)*0.5*(Hz(:,jstr-1,:)+Hz(:,jstr  ,:))
       if (NORTHERN_EDGE) uv_prev(:,jend+1,:,2)=u(:,jend+1,:,nnew)*0.5*(Hz(:,jend  ,:)+Hz(:,jend+1,:))
-      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,iu3d) = uv_prev(:,jstr  ,:,2) - uvdz_old(:,jstr  ,:,2)
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,iu3d) = uv_prev(:,jend+1,:,2) - uvdz_old(:,jend+1,:,2)
+      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,iu3d) = ( uv_prev(:,jstr  ,:,2)-uvdz_old(:,jstr  ,:,2) )/dt
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,iu3d) = ( uv_prev(:,jend+1,:,2)-uvdz_old(:,jend+1,:,2) )/dt
 
       end subroutine set_diags_at_bc_v  !]
 
@@ -746,13 +752,13 @@
       do k=1,N
         do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istr,iendR
-            Mdiag(i,j,k,1,iuv2FC) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uv_prev(i,j,k,1)
+            Mdiag(i,j,k,1,iuv2FC) = ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) -  uv_prev(i,j,k,1) )/dt
 
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
             ! can't just do (u(nnew)-u(nstp)*Hz here because actual need the old Hz for u(nstp) as Hz has evolved.
             if (check_diag .or. tot_change)  ! if with parameters
-     &        uv_dif(i,j,k, 1)   = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 1) ! do this here as units are correct
+     &        uv_dif(i,j,k, 1)    = ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k,1) )/dt ! do this here as units are correct
           enddo
         enddo
       enddo
@@ -772,10 +778,10 @@
       do k=1,N
         do j=jstr,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
           do i=istrR,iendR
-            Mdiag(i,j,k,2,iuv2FC) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uv_prev(i,j,k,2)
+            Mdiag(i,j,k,2,iuv2FC) = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uv_prev(i,j,k,2) )/dt
 
             if (check_diag .or. tot_change)  ! if with compile time parameters
-     &        uv_dif(i,j,k, 2)   = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) )) - uvdz_old(i,j,k, 2) ! do this here as units are correct
+     &        uv_dif(i,j,k, 2)    = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uvdz_old(i,j,k,2) )/dt ! do this here as units are correct
           enddo
         enddo
       enddo
@@ -1529,6 +1535,8 @@ C$OMP MASTER
                   call nc_define_var(ncid, text, check_alnm(1), units, grdtyp3d(:,dim), ierr )
                   text  = uvw(dim) / / check_avnm(2)      ! total diag avg in u/v up until now since t0
                   call nc_define_var(ncid, text, check_alnm(2), units, grdtyp3d(:,dim), ierr )
+                  text  = uvw(dim) / / check_avnm(3)      ! total budget close until now since t0
+                  call nc_define_var(ncid, text, check_alnm(3), units, grdtyp3d(:,dim), ierr )
                 endif
 
               enddo ! <-- dim
@@ -1645,9 +1653,14 @@ C$OMP MASTER
 
               if (check_avg) then
                 text  = uvw(dim) / / check_avnm(1)                         ! gross change in u/v up until now since t0
-                call nc_write_var(ncid, uvdz_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
+                call nc_write_var(ncid, uvdz_ever(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
                 text  = uvw(dim) / / check_avnm(2)                         ! total diag avg in u/v up until now since t0
-                call nc_write_var(ncid, Md_a_ever(:,:,:,dim),   N, text, gt_wrt(dim), output_rec, ierr)
+                call nc_write_var(ncid, Md_a_ever(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
+                do j=jstrR,jendR; do i=istrR,iendR
+                  Mdsum(i,j,:) = uvdz_ever(i,j,:,dim)-Md_a_ever(i,j,:,dim) ! repurpose Mdsum array
+                enddo; enddo
+                text  = uvw(dim) / / check_avnm(3)
+                call nc_write_var(ncid,     Mdsum(:,:,:),     N, text, gt_wrt(dim), output_rec, ierr)
               endif
 
             enddo  ! <-- dim
