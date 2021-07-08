@@ -1154,6 +1154,9 @@
       subroutine set_diags_t_avg_tile(istr, iend, jstr, jend, td, iTd, itrc)  ![
       ! set the averages of tracer diagnostic variables
 
+      ! NOTE: this won't work for rec_rate=1 because average will never refresh,
+      ! not that you would want rec_rate=1 for averages anyway.
+
       implicit none
 
       ! inputs
@@ -1168,18 +1171,16 @@
 
 !      if(mynode==0) print *, '^^^ SETTING TRC DIAGS AVERAGES' ! debug only
 
-      ! Note this won't work for rec_rate=1 because average will never refresh, not that you would want rec_rate=1 for averages anyway.
-
       if (mod(tn,rec_rate)==0) then    ! timestep / rec_rate
 
         if (check_avg .and. iTd==1) Td_a_sum(istrR:iendR,jstrR:jendR,:) = 0  ! reset for new tracer
 
-        do k=1,N                       ! here we divide the average by the averaging rate
-          do j=jstrR,jendR
+        do k=1,N                       ! here we divide the average
+          do j=jstrR,jendR             ! by the averaging rate
             do i=istrR,iendR
               Td_avg(i,j,k,td,iTd) = ( Td_avg(i,j,k,td,iTd)+Td_tmp(i,j,k) ) / rec_rate
-              if (check_avg)           ! if with parameter
-     &          Td_a_sum(i,j,k) = Td_a_sum(i,j,k) + Td_avg(i,j,k,td,iTd)
+              if (check_avg)
+     &          Td_a_sum(i,j,k) = Td_a_sum(i,j,k) + Td_avg(i,j,k,td,iTd)     ! if with parameter
             enddo
           enddo
         enddo
@@ -1187,15 +1188,21 @@
         text=trim(t_vname(itrc)) / / tdname(iTd)
         call nc_write_var(ncid, Td_avg(:,:,:,td,iTd), N, text, rp_var, output_rec, ierr)
 
-        if (check_avg .and. iTd==ndt) then              ! write out budget checks one at final diag term (iTd==ndt..)
+        if (check_avg .and. iTd==ndt) then                                            ! budget check done after final diag term (iTd==ndt..)
           do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
-            Td_a_ever(i,j,k,td) = Td_a_ever(i,j,k,td) + Td_a_sum(i,j,k) * rec_rate  ! keep an endless running total for budget closing
-          enddo; enddo; enddo                                                       ! * rec_rate since tot = avg * t
+            Td_a_ever(i,j,k,td) = Td_a_ever(i,j,k,td) + Td_a_sum(i,j,k) *rec_rate*dt  ! keep an endless running total for budget closing
+          enddo; enddo; enddo                                                         ! * rec_rate * dt since total change = avg * time (where time = rec_rate*dt)
           text=trim(t_vname(itrc)) / / check_avnm(2)
           call nc_write_var(ncid, Td_a_ever(:,:,:,td), N, text, rp_var, output_rec, ierr)
 
-          call set_diags_tdz_ever( istrR, iendR, jstrR, jendR, td, itrc )
+          call set_diags_tdz_ever( istrR, iendR, jstrR, jendR, td, itrc )             ! calc total change in tracer since model start.
           text=trim(t_vname(itrc)) / / check_avnm(1)
+          call nc_write_var(ncid, Td_a_sum(:,:,:), N, text, rp_var, output_rec, ierr)
+
+          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR                                ! check budget still closing since model start
+            Td_a_sum(i,j,k) = Td_a_sum(i,j,k) - Td_a_ever(i,j,k,td)                   ! Td_a_sum on RHS is tdz_ever array as a difference array
+          enddo; enddo; enddo                                                         ! Td_a_sum on LHS is re-used as a difference array for budget close.
+          text=trim(t_vname(itrc)) / / check_avnm(3)
           call nc_write_var(ncid, Td_a_sum(:,:,:), N, text, rp_var, output_rec, ierr)
         endif
 
@@ -1303,6 +1310,8 @@
       ! can't be calculated in one loop, but must be done individually to adjust for
       ! the correct units of 't'.
 
+      ! We divide by / dt to get diagnostic rate per second.
+
       use tracers, only: t
       implicit none
 
@@ -1325,7 +1334,7 @@
         do k=1,N                                              ! first diagnostic calculated using previous step's value
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+              Td_tmp(i,j,k)=( Tdiag(i,j,k,td,it_h_adv) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=Td_tmp(i,j,k)                     ! add to total
             enddo
@@ -1341,7 +1350,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_v_adv) - Tdiag(i,j,k,td,it_h_adv)
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_adv) - Tdiag(i,j,k,td,it_h_adv) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
@@ -1359,7 +1368,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_nonloc) - Tdiag(i,j,k,td,it_v_adv)
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_nonloc) - Tdiag(i,j,k,td,it_v_adv) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
@@ -1378,7 +1387,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
-              Td_tmp(i,j,k)=Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev)
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
@@ -1393,8 +1402,8 @@
 
         do k=1,N
           do j=jstr,jend
-            do i=istr,iend  ! both in dz*t units
-              Td_tmp(i,j,k)=(Tdiag(i,j,k,td,it_h_mix)-Tdiag(i,j,k,td,it_v_mix))*Hz(i,j,k)
+            do i=istr,iend  ! both in dz*t units and Hz is at the same timestep
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_h_mix)-Tdiag(i,j,k,td,it_v_mix) )*Hz(i,j,k) /dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
@@ -1409,22 +1418,22 @@
 
         ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
         if (diag_avg) then
-          Td_tmp(istrR:iendR,jstrR:jendR,:)=Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc)
+          Td_tmp(istrR:iendR,jstrR:jendR,:)=Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc) /dt
           call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_bc, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_bc)
           call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
         endif
         if (check_diag)
-     &    T_dsum(istrR:iendR,jstrR:jendR,:)=T_dsum(istrR:iendR,jstrR:jendR,:)
-     &                                      +Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc)  ! re-do this just for boundaries not full domain!
+     &    T_dsum(istrR:iendR,jstrR:jendR,:)=T_dsum(istrR:iendR,jstrR:jendR,:)  ! re-do this just for boundaries not full domain!
+     &                                     +Td_tmp(istrR:iendR,jstrR:jendR,:)  ! Td_tmp since Tdiag(it_bc)/dt already done
 
         ! need rec_rate check here as not an average
         if ( (check_diag .or. tot_change) .and. mod(tn,rec_rate) == 0) then
           do k=1,N                    ! write gross difference: don't need to set Td_sum to zero as covering full loop ranges.
             do j=jstrR,jendR          ! first diagnostic calculated using previous step's value
               do i=istrR,iendR        ! Full domain loop range incl. bry.
-                Td_tmp(i,j,k)=t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k)
+                Td_tmp(i,j,k)= ( t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k) )/dt
               enddo
             enddo
           enddo
@@ -1432,9 +1441,8 @@
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
-        ! need rec_rate check here as not an average
-        if (check_diag .and. mod(tn,rec_rate) == 0) then          ! following to compare gross change in u/v and sum of diags.
-          text=trim(t_vname(itrc)) / / check_vnm(2)
+        if (check_diag .and. mod(tn,rec_rate) == 0) then                       ! need rec_rate check here as not an average
+          text=trim(t_vname(itrc)) / / check_vnm(2)                            ! following to compare gross change in u/v and sum of diags.
           call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
 
           Td_tmp(istrR:iendR,jstrR:jendR,:)=Td_tmp(istrR:iendR,jstrR:jendR,:)
@@ -1444,7 +1452,7 @@
         endif  ! <-- check_diag
       enddo    ! <-- itrc=1,NT
 
-      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)  ! update Hz_old
+      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)        ! update Hz_old
 
       end subroutine wrt_tracer_diags_tile  !]
 
@@ -1588,6 +1596,8 @@ C$OMP MASTER
                   call nc_define_var(ncid, text, check_alnm(1), utext, r3dgrd, ierr )
                   text  = trim(t_vname(itrc)) / / check_avnm(2) ! total diag avg in t up until now since t0
                   call nc_define_var(ncid, text, check_alnm(2), utext, r3dgrd, ierr )
+                  text  = trim(t_vname(itrc)) / / check_avnm(3) ! total budget close until now since t0
+                  call nc_define_var(ncid, text, check_alnm(3), utext, r3dgrd, ierr )
                 endif
 
               enddo  ! <-- td
