@@ -66,7 +66,8 @@
       ! 1) dz*u - Hydrostatic pressure gradient - prsgrd.F
       ! 2) dz*u - Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h (2nd time round i.e. not during pre_step3d)
       ! 3) dz*u - Advection                     - step3d_uv1.F & compute_horiz/vert_rhs_uv_term.h
-      ! 4) dz*u - Viscous terms                 - visc3d_GP.F
+      ! 4) dz*u - Viscous terms (horiz. mixing) - visc3d_GP.F
+      !           only does sponge layer (zero in interior beyond sponge)
       ! -         Now depth (Hz) at t=n+1 in calculated in step2d_FB -> set_depth_tile.
       ! 5)    u - Vertical mix & 2D/3D coupling - step3d_uv2.F part 1
       ! 6)    u - Boundary changes              - u3dbc_im.F
@@ -169,28 +170,25 @@
 
       real, public                                        :: Mdtmp      ! temporary scalar for calculations of Mdiag
 
-      ! TEST ONLY DELETE WHEN DECIDED NOT USING
-      real, public, dimension(GLOBAL_1DY_ARRAY, N, 2)     :: uv_wbry    ! bry change for u and v
-
       integer, parameter, public ::
      &  iprsgr = 1, ! Hydrostatic pressure gradient    - internal loop ranges only (i.e. excluding domain boundary)
      &  icori  = 2, ! Coriolis & curvilinear coords    - internal loop ranges only
      &  iadv   = 3, ! Advection                        - internal loop ranges only
      &  ihmix  = 4, ! Viscous terms (horiz mixing)     - internal loop ranges only
-     &  ivmix = 5,  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
+     &  ivmix  = 5, ! Vertical mixing & 2D/3D coupling - internal loop ranges only
      &  iu3d   = 6, ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
      &  iuv2FC = 7  ! 2D-3D correction                 - internal + bry (full domain) loop ranges
 
-      character (len=20), allocatable, dimension(:) :: vnames
-      character (len=80), allocatable, dimension(:) :: lname             ! len=70 allows for 8 characters of 'Average ' if diag_avg
+      character (len=20),  allocatable, dimension(:) :: vnames
+      character (len=80),  allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
 
-      character (len=26) :: units = 'm^2/s^2    (i.e. du/dt*dz)'         ! Don't go beyond 72nd character else space in units
-      character (len=1),  dimension(3) :: uvw = (/ 'u', 'v', 'w' /)      ! prefix for u/v/w outputs
+      character (len=26) :: units = 'm^2/s^2    (e.g. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
+      character (len=1),   dimension(3) :: uvw = (/ 'u', 'v', 'w' /)    ! prefix for u/v/w outputs
 
-      character (len=80), dimension(:), allocatable :: check_lnm         ! long name for outputs checking diagnostics
-      character (len=20), dimension(:), allocatable :: check_vnm         ! short name ...
-      character (len=80), dimension(:), allocatable :: check_alnm        ! long name for outputs checking diagnostics averages
-      character (len=20), dimension(:), allocatable :: check_avnm        ! short name ...
+      character (len=120), dimension(:), allocatable :: check_lnm       ! long name for outputs checking diagnostics
+      character (len=20),  dimension(:), allocatable :: check_vnm       ! short name ...
+      character (len=160), dimension(:), allocatable :: check_alnm      ! long name for outputs checking diagnostics averages
+      character (len=30),  dimension(:), allocatable :: check_avnm      ! short name ...
 
       logical, public :: diag_icori  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h
 
@@ -234,10 +232,10 @@
      &  it_nonloc   = 5,  ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
      &  it_bc       = 6   ! Boundary changes - t3dbc_im.F. BC's shouldn't have 3D array
 
-      character (len=30), allocatable, dimension(:) :: tdname
-      character (len=90), allocatable, dimension(:) :: tlname
+      character (len=30),  allocatable, dimension(:) :: tdname
+      character (len=120), allocatable, dimension(:) :: tlname  ! extra 10 characters for 'Averaged...'
 
-      character (len=20) :: tunits = ' * m/s   (dC/dt*dz)'  ! not sure on units here.
+      character (len=20) :: tunits = ' * m/s   (dC/dt*dz)'
 
       public init_diags_trc
       public set_diags_t_at_bc
@@ -351,7 +349,8 @@
         vnames(iadv)   = '_advection'
         lname (iadv)   = 'Advection - step3d_uv1.F'
         vnames(ihmix)  = '_h_mix'
-        lname (ihmix)  = 'Viscous terms - visc3d_GP.F'
+        lname (ihmix)  =
+     &    'Horizontal mixing (zero beyond sponge layer) - visc3d_GP.F'
         vnames(ivmix) = '_v_mix'
         lname (ivmix) =
      &    'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1'
@@ -422,22 +421,27 @@
 
       if (check_diag .or. tot_change) then                           ! used for both uv and tracer
         allocate( check_lnm(3), check_vnm(3)    )
-        check_vnm(1) = '_1step'
-        check_lnm(1) = 'Total change in variable over timestep.'
-        check_vnm(2) = '_d_sum'
-        check_lnm(2) = 'Sum of diagnostics terms over timestep.'
-        check_vnm(3) = '_check'
-        check_lnm(3) = 'Diff. of total change in variable ' / /
-     &                 'vs sum of diags (must match) over timestep.'
+        check_vnm(1) = '_actual'
+        check_lnm(1) = 'Actual rate of change in variable during ' / /
+     &                 'timestep - e.g. (u_n*dz_n - u_n-1*dz_n-1) / dt'
+        check_vnm(2) = '_diag_sum'
+        check_lnm(2) = 'Sum of rate of diagnostics terms during '  / /
+     &                 'timestep.'
+        check_vnm(3) = '_budget'
+        check_lnm(3) = 'Diff. of rate of change in variable vs '   / /
+     &                 'sum of diags during timestep (budget '     / /
+     &                 'close) - (e.g. u_actual-u_diag_sum)'
       endif
 
       if (check_avg) then                                             ! used for both uv and tracer
         allocate( check_alnm(2), check_avnm(2)     )
-        check_avnm(1) = '_dz_ever'
-        check_alnm(1) = 'Total change in variable since start of run.'
-        check_avnm(2) = '_avg_ever'
-        check_alnm(2) = 'Sum of diagnostic averages multiplied by time'
-     &                  / / ' since start of run.'
+        check_avnm(1) = '_ever'
+        check_alnm(1) = 'Total change in variable since start of ' / /
+     &                  'run - e.g. (u_n*dz_n - u_0*dz_0)'
+        check_avnm(2) = '_diag_avg_ever'
+        check_alnm(2) = 'Sum of diagnostic averages multiplied '   / /
+     &    'by averaging freq. for total time since start of run.'  / /
+     &    ' Should match total change in var since model start.'
       endif
 
       if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
@@ -472,7 +476,7 @@
       tdname(it_h_mix)    = '_h_mix'
       tlname(it_h_mix)    =
      &  'Horizontal (along geopotential surfaces) Laplacian ' / /
-     &  'diffusion terms - t3dmix_GP.F'
+     &  'diffusion terms (zero beyond sponge layer) - t3dmix_GP.F'
       tdname(it_nonloc)   = '_non_local'
       tlname(it_nonloc)   =
      &  'Nonlocal transport flux for unstable (convective) ' / /
@@ -574,7 +578,7 @@
 
       ! inputs
       integer, intent(in) :: istr, iend, jstr, jend, istrA, j, dim         ! 'istrA' for any as depends on inputs, which 'dim' dimension.
-
+                                                                           ! istr, jstr, etc needed for GLOBAL_2D...
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N),   intent(in) :: ruv     ! ru or rv
       real, dimension(GLOBAL_2D_ARRAY),              intent(in) :: suvstr  ! sustr or svstr
@@ -612,6 +616,7 @@
       subroutine set_diags_at_visc3d( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
       ! set diagnostics for u or v in visc3d_GP.F
       ! interior points only (i.e. excluding bry)
+      ! Note this diagnostic is zero beyond the sponge layer (in the interior)
 
       implicit none
 
@@ -622,7 +627,7 @@
       ! local
       integer :: i, j, k
 
-      do k=1,N
+      do k=1,N           ! should limit ranges to that of sponge layer to be efficient
         do j=jsA,jend    ! interior of subdomains, exludes global domain boundaries
           do i=isA,iend
             Mdiag( i,j,k,dim,ihmix) = uv(i,j,k,nnew) - uv_prev(i,j,k,dim)  ! units already in dz*u
@@ -685,8 +690,6 @@
 
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-
-      if (WESTERN_EDGE)  uv_wbry(:,:,1)           = uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1)
 
       if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) ! uv_prev is already u_current, can do this because have uvdz_old already
       if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1)
@@ -1012,6 +1015,7 @@
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend, itrc)  ![
       ! from t3dmix_GP.F
+      ! zero in interior beyond sponge layer!
 
       use tracers, only: t
       implicit none
@@ -1323,7 +1327,7 @@
           text=trim(t_vname(itrc)) / / tdname(it_v_adv)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
-        it_prev=it_v_adv ! store index of previous diagnostic
+        it_prev=it_v_adv                                ! store index of previous diagnostic
 
 # ifdef LMD_KPP
         do k=1,N
@@ -1412,14 +1416,9 @@
           text=trim(t_vname(itrc)) / / check_vnm(3)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif  ! <-- check_diag
-
       enddo    ! <-- itrc=1,NT
 
       Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)  ! update Hz_old
-
-!      if(WESTERN_EDGE) then  ! just here for jstrR, shouldn't be in tracers
-!        call wrt_1D_or_2D_array(ncid, output_rec, 'u_wbry', jstrR, jendR, 1, N, uv_wbry(jstrR:jendR,1:N,1) )
-!      endif
 
       end subroutine wrt_tracer_diags_tile  !]
 
@@ -1456,7 +1455,6 @@
 
       character(len=64)       :: fname
       character(len=30)       :: text, utext
-      integer, dimension(3)   :: rwebrygrd(3)                  ! experimental for if using 2D bry outputs
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to use in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
 
@@ -1566,14 +1564,6 @@ C$OMP MASTER
 
               enddo  ! <-- td
             endif    ! <-- diag_trc
-
-!            ! define bry 2D vars (experimental):
-!            rwebrygrd(1)=r3dgrd(2) ! set eta_rho dimension
-!            rwebrygrd(2)=r3dgrd(3) ! set s_rho dimension
-!            rwebrygrd(3)=r3dgrd(4) ! set time    dimension
-!!          if(WESTERN_EDGE) then
-!            call nc_define_var(ncid, 'u_wbry', 'u_wbry', 'u_wbry', rwebrygrd, ierr )
-!!          endif
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
             if (mynode == 0) then
