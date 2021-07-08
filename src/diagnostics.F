@@ -128,7 +128,7 @@
       !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
       !     4) for an example try Examples/Diagnostics/
       !     5) averaging frequency = rec_rate * time_step
-      logical, parameter         :: diag_avg      = .false.  ! compute history (F) or averages (T)
+      logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
 
@@ -141,7 +141,7 @@
       ! Developer inputs:
       ! - need to have on diag_uv to use these flags:
       logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .false.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
+      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! Preamble:  ![
 
@@ -1047,6 +1047,33 @@
       subroutine set_diags_avg_tile(istr,iend,jstr,jend)  ![
       ! set the averages of diagnostic variables
 
+      ! INFO: ![
+      ! This method is arguably more efficient than set_avg.F, however, it requires more
+      ! lines of code. Since diagnostic averaging will be heavy, more efficient code is argueably
+      ! more important.
+
+      ! Averaging rate is dictated by rec_rate.
+      ! 'Md_avg' stores a running total of diag terms 'Mdiag' until the rec_rate
+      ! is reached, at which point Md_avg is divided by the rec_rate to give the
+      ! the average of the diagnostics terms.
+      ! Md_avg is then refreshed for the next averaging period with Md_avg = Mdiag
+
+      ! 'check_avg' is used to do a complete budget close since model start until current
+      ! timestep using the averages of the diag terms.
+      ! 'Md_a_sum' is the sum of the diag averages during that rec_rate interval.
+      ! 'Md_a_ever' contains the continuous tally of diag averages since model start
+      ! multiplied by rec_rate * dt, this equal the total change in the variable
+      ! since model start and hence serve to check the overall budget.
+      ! Since Md_a_sum is the average rate per second of the diagnostics, multiplying by
+      ! rec_rate (i.e. timesteps in averaging period) * dt, gives the total change in the
+      ! variable over the averaging period, added to Md_a_ever maintains the change since
+      ! model start.
+
+      ! do iMd=1,ivmix                  ! all diagnostic terms with internal loop ranges
+      ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
+      ! ranges for now just to get working.
+      !]
+
       implicit none
 
       ! inputs
@@ -1060,17 +1087,9 @@
 
 !      if(mynode==0) print *, '--- SETTING DIAGS AVERAGES' ! debug only
 
-      ! This method is arguably more efficient than set_avg.F, however, it requires more
-      ! lines of code. Since diagnostic averaging will be heavy, more efficient code is argueably
-      ! more important.
-
       do dim=1,2
 
         if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
-
-  !        do iMd=1,ivmix                  ! all diagnostic terms with internal loop ranges
-  !       ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
-  !       ! ranges for now just to get working.
 
           if (check_avg) Md_a_sum(istrR:iendR,jstrR:jendR,:,dim) = 0
 
@@ -1079,18 +1098,19 @@
               do j=jstrR,jendR
                 do i=istrR,iendR
                   Md_avg(i,j,k,dim,iMd) = ( Md_avg(i,j,k,dim,iMd)+Mdiag(i,j,k,dim,iMd) ) / rec_rate
-                  if (check_avg)           ! if with compile time parameter
-     &              Md_a_sum(i,j,k,dim) = Md_a_sum(i,j,k,dim) + Md_avg(i,j,k,dim,iMd)
+                  if (check_avg)
+     &              Md_a_sum(i,j,k,dim) = Md_a_sum(i,j,k,dim) + Md_avg(i,j,k,dim,iMd)  ! if with compile time parameter
                 enddo
               enddo
             enddo
           enddo
 
-          if (check_avg) then
-            do k=1,N; do j=jstrR,jendR; do i=istrR,iendR ! Md_a_ever, could write it now then wouldn't need for both u and v? Same for Md_a_sum
-              Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim) + Md_a_sum(i,j,k,dim) * rec_rate                        ! keep an endless running total for budget closing
-            enddo; enddo; enddo
-            call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR ) ! * rec_rate since tot = avg * t
+          if (check_avg) then                                                   ! see top of subroutine for more info
+            do k=1,N; do j=jstrR,jendR; do i=istrR,iendR                        ! Md_a_ever, could write it now then wouldn't need
+              Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim)                       ! for both u and v? Same for Md_a_sum
+     &                             +  Md_a_sum(i,j,k,dim) * rec_rate * dt       ! keep an endless running total for budget closing
+            enddo; enddo; enddo                                                 ! * rec_rate since tot = avg * t
+            call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR )
           endif
 
 !          if(mynode==0 .and. dim==1) print *, '----> DIVIDE FOR AVERAGE'

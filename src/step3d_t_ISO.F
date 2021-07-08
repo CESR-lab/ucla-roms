@@ -842,7 +842,7 @@ c??         enddo
             do k=N-1,1,-1
               do i=istr,iend
                 cff=-dt*ghat(i,j,k)*stflx(i,j,isalt)
-                t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff ! DevinD why is there no dt here unlike itemp above?
+                t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
               enddo
             enddo
