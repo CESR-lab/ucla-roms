@@ -223,7 +223,7 @@
       ! ivmix  <--  ! 2D-3D correction                 - internal + bry (full domain) loop ranges. Goes into ivmix array for memory efficiency.
 
       character (len=20),  allocatable, dimension(:) :: vnames
-      character (len=80),  allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
+      character (len=120), allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
 
       character (len=26) :: units = 'm^2/s^2    (e.g. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
       character (len=1),   dimension(3) :: uvw = (/ 'u', 'v', 'w' /)    ! prefix for u/v/w outputs
@@ -243,7 +243,7 @@
       ! from the u,v,w implementation here currently.
       ! Need to consider pipe and river sources. Budget should still close but should label which term receives river/pipe.
 
-      integer, public, parameter                          :: ndt = 5   ! number of tracer diag terms
+      integer, public, parameter                          :: ndt = 4   ! number of tracer diag terms
 #  ifdef LMD_KPP
      &                                                           + 1
 #  endif
@@ -272,8 +272,8 @@
                           ! do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
      &  it_v_mix    = 3,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
      &  it_h_mix    = 4,  ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
-     &  it_nonloc   = 5,  ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
-     &  it_bc       = 6   ! Boundary changes - t3dbc_im.F. BC's shouldn't have 3D array
+     &  it_nonloc   = 5   ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
+      ! it_v_mix    <--   ! Boundary changes - t3dbc_im.F. Only at boundary so shared with v_mix (could be any other term but being consistent with u/v choice of v_mix.
 
       character (len=30),  allocatable, dimension(:) :: tdname
       character (len=120), allocatable, dimension(:) :: tlname  ! extra 10 characters for 'Averaged...'
@@ -394,9 +394,10 @@
         vnames(ihmix)  = '_h_mix'
         lname (ihmix)  =
      &    'Horizontal mixing (zero beyond sponge layer) - visc3d_GP.F'
-        vnames(ivmix) = '_v_mix'
-        lname (ivmix) =
-     &    'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1'
+        vnames(ivmix) = '_v_mix_and_BC'
+        lname (ivmix) = 'Vertical mixing (interior), boundary ' / /
+     &    'changes (bry), and 2D/3D coupling (int+bry) - '      / /
+     &    'step3d_uv2.F part 1 & u/v3dbc_im.F'
 
         if (diag_avg) then                                       ! only if diag averaging and only done once
           allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
@@ -513,9 +514,10 @@
       tdname(it_v_adv)    = '_v_adv'
       tlname(it_v_adv)    =
      &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h'
-      tdname(it_v_mix)    = '_v_mix'
+      tdname(it_v_mix)    = '_v_mix_and_BC'
       tlname(it_v_mix)    =
-     &  'Implicit time step for vertical diffusion - step3d_t_ISO.F'
+     &  'Implicit time step for vertical diffusion and boundary ' / /
+     &  'change - step3d_t_ISO.F & t3dbc_im.F'
       tdname(it_h_mix)    = '_h_mix'
       tlname(it_h_mix)    =
      &  'Horizontal (along geopotential surfaces) Laplacian ' / /
@@ -524,8 +526,6 @@
       tlname(it_nonloc)   =
      &  'Nonlocal transport flux for unstable (convective) ' / /
      &  'forcing - step3d_t_ISO.F'
-      tdname(it_bc)       = '_t3dbc'
-      tlname(it_bc)       = 'Boundary changes - t3dbc_im.F'
 
       do itrc=1,NT
         if (wrt_t_diag(itrc)) then
@@ -1057,7 +1057,8 @@
       ! local
       integer :: i, j
 
-      ! PROBABLY DON'T NEED THIS CAN JUST USE T(NNEW) AT THE BOUNDARY SINCE ONLY UPDATE FROM HERE.
+      ! We use the boundary points of the it_v_mix array to be memory efficient, as
+      ! vertical mixing diag doesn't use the boundary points.
 
       ! currently this is not perfectly setup for openMP since we have ':' instead
       ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
@@ -1066,23 +1067,23 @@
 
       if (WESTERN_EDGE) then
         i=istr-1
-        Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
-     &                        - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
+        Tdiag(i,:,:,td,it_v_mix) = ( t(i,:,:,nnew,itrc) *     Hz(i,:,:)
+     &                             - t(i,:,:,nstp,itrc) * Hz_old(i,:,:) ) /dt  ! divide by dt to get rate /sec
       endif
       if (EASTERN_EDGE) then
         i=iend+1
-        Tdiag(i,:,:,td,it_bc) = t(i,:,:,nnew,itrc) *     Hz(i,:,:)
-     &                        - t(i,:,:,nstp,itrc) * Hz_old(i,:,:)
+        Tdiag(i,:,:,td,it_v_mix) = ( t(i,:,:,nnew,itrc) *     Hz(i,:,:)
+     &                             - t(i,:,:,nstp,itrc) * Hz_old(i,:,:) ) /dt
       endif
       if (SOUTHERN_EDGE) then
         j=jstr-1
-        Tdiag(:,j,:,td,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
-     &                        - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
+        Tdiag(:,j,:,td,it_v_mix) = ( t(:,j,:,nnew,itrc) *     Hz(:,j,:)
+     &                             - t(:,j,:,nstp,itrc) * Hz_old(:,j,:) ) /dt
       endif
       if (NORTHERN_EDGE) then
         j=jend+1
-        Tdiag(:,j,:,td,it_bc) = t(:,j,:,nnew,itrc) *     Hz(:,j,:)
-     &                        - t(:,j,:,nstp,itrc) * Hz_old(:,j,:)
+        Tdiag(:,j,:,td,it_v_mix) = ( t(:,j,:,nnew,itrc) *     Hz(:,j,:)
+     &                             - t(:,j,:,nstp,itrc) * Hz_old(:,j,:) ) /dt
       endif
 
       end subroutine set_diags_t_at_bc  !]
@@ -1257,7 +1258,7 @@
         text=trim(t_vname(itrc)) / / tdname(iTd)
         call nc_write_var(ncid, Td_avg(:,:,:,td,iTd), N, text, rp_var, output_rec, ierr)
 
-        if (check_avg .and. iTd==ndt) then                                            ! budget check done after final diag term (iTd==ndt..)
+        if (check_avg .and. iTd==it_v_mix) then                                       ! budget check done after final diag term from wrt_tracer_diags_tile (iTd==it_v_mix)
           do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
             Td_a_ever(i,j,k,td) = Td_a_ever(i,j,k,td) + Td_a_sum(i,j,k) *rec_rate*dt  ! keep an endless running total for budget closing
           enddo; enddo; enddo                                                         ! * rec_rate * dt since total change = avg * time (where time = rec_rate*dt)
@@ -1400,6 +1401,7 @@
         if (check_diag) T_dsum(istrR:iendR,jstrR:jendR,:)=0   ! could just do boundaries as the rest can be overwritten in first below
         Td_tmp(istrR:iendR,jstrR:jendR,:)=0                   ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
 
+        ! h_adv:
         do k=1,N                                              ! first diagnostic calculated using previous step's value
           do j=jstr,jend
             do i=istr,iend
@@ -1416,6 +1418,7 @@
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
+        ! v_adv:
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
@@ -1434,6 +1437,7 @@
         it_prev=it_v_adv                                ! store index of previous diagnostic
 
 # ifdef LMD_KPP
+        ! nonlocal:
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
@@ -1453,22 +1457,8 @@
 # endif
 
         ! From here onwards 't' was no longer in dz*t units:
-        do k=1,N
-          do j=jstr,jend
-            do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
-              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev) )/dt
-              if (check_diag)
-     &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
-            enddo
-          enddo
-        enddo
-        if (diag_avg) then
-          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_v_mix, itrc)
-        else
-          text=trim(t_vname(itrc)) / / tdname(it_v_mix)
-          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
-        endif
 
+        ! h_mix:
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! both in dz*t units and Hz is at the same timestep
@@ -1485,17 +1475,42 @@
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
-        ! Do boundary changes - already calculated due to need for Hz and Hz_old to differ (they don't when wrt_online_diags is called)
-        if (diag_avg) then
-          Td_tmp(istrR:iendR,jstrR:jendR,:)=Tdiag(istrR:iendR,jstrR:jendR,:,td,it_bc) /dt
-          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_bc, itrc)
-        else
-          text=trim(t_vname(itrc)) / / tdname(it_bc)
-          call nc_write_var(ncid, Tdiag(START_2D_ARRAY,1,td,it_bc), N, text, rp_var, output_rec, ierr)
+        ! v_mix and boundary: (swapped order (vmix before hmix in step3d_t) so don't need to reset boundaries of Td_tmp)
+        do k=1,N
+          do j=jstr,jend
+            do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev) )/dt
+              if (check_diag)
+     &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
+            enddo
+          enddo
+        enddo
+        if (WESTERN_EDGE) then                      ! v_mix array also includes boundary update
+          i=istr-1                                  ! for memory savings. The boundary term is
+          Td_tmp(i,:,:) = Tdiag(i,:,:,td,it_v_mix)  ! already the difference, so can add it
+          T_dsum(i,:,:) = Tdiag(i,:,:,td,it_v_mix)  ! directly to Td_tmp. Only boundary term
+        endif                                       ! contributes to sum at the boundary.
+        if (EASTERN_EDGE) then
+          i=iend+1
+          Td_tmp(i,:,:) = Tdiag(i,:,:,td,it_v_mix)
+          T_dsum(i,:,:) = Tdiag(i,:,:,td,it_v_mix)
         endif
-        if (check_diag)
-     &    T_dsum(istrR:iendR,jstrR:jendR,:)=T_dsum(istrR:iendR,jstrR:jendR,:)  ! re-do this just for boundaries not full domain!
-     &                                     +Td_tmp(istrR:iendR,jstrR:jendR,:)  ! Td_tmp since Tdiag(it_bc)/dt already done
+        if (SOUTHERN_EDGE) then
+          j=jstr-1
+          Td_tmp(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
+          T_dsum(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
+        endif
+        if (NORTHERN_EDGE) then
+          j=jend+1
+          Td_tmp(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
+          T_dsum(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
+        endif
+        if (diag_avg) then
+          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_v_mix, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_v_mix)
+          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
+        endif
 
         ! need rec_rate check here as not an average
         if ( (check_diag .or. tot_change) .and. mod(tn,rec_rate) == 0) then
