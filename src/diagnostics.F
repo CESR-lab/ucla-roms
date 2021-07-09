@@ -78,6 +78,18 @@
       ! Clearly, care needs to be taken when comparing 'u' at each step, since the units
       ! after a step can change.
 
+      ! NOTE:
+      ! Since the change at the boundary is (just that) only at the boundary, it
+      ! would be wasteful to store it as its own 3D diagnostic term.
+      ! Since all of the other changes are only over the interior, we chose to use
+      ! the boundary grid points of horiontal mixing to store the boudnary changes.
+      ! So horizontal mixing diagnostic term is actually the boundary diagnostic at its
+      ! boundary.
+      ! Similarly, the 2D-3D correction is actually only a 2D term (applied consistently
+      ! vertically), and it is really just a numerically adjustment (non-physical), we
+      ! lump it in with horizontal mixing, too. This again saves memory, and it's value
+      ! is very small so horizontal mixing is the dominant signal in that shared array.
+
       ! TRACER evolution:
       ! 1) dz*C - Horizontal advective fluxes                               - compute_horiz_tracer_fluxes.h
       ! 2) dz*C - Vertical advective fluxes                                 - compute_vert_tracer_fluxes.h
@@ -151,7 +163,7 @@
       ! U & V MOMENTUM:
       ! ---------------
 
-      integer, public, parameter                          :: nmd = 7    ! number of momentum diag terms
+      integer, public, parameter                          :: nmd = 5    ! number of momentum diag terms
 
       real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
       real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
@@ -177,9 +189,9 @@
      &  icori  = 2, ! Coriolis & curvilinear coords    - internal loop ranges only
      &  iadv   = 3, ! Advection                        - internal loop ranges only
      &  ihmix  = 4, ! Viscous terms (horiz mixing)     - internal loop ranges only
-     &  ivmix  = 5, ! Vertical mixing & 2D/3D coupling - internal loop ranges only
-     &  iu3d   = 6, ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
-     &  iuv2FC = 7  ! 2D-3D correction                 - internal + bry (full domain) loop ranges
+     &  ivmix  = 5  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
+!     &  iu3d   = 6  ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
+!     &  iuv2FC = 7  ! 2D-3D correction                 - internal + bry (full domain) loop ranges
 
       character (len=20),  allocatable, dimension(:) :: vnames
       character (len=80),  allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
@@ -356,10 +368,10 @@
         vnames(ivmix) = '_v_mix'
         lname (ivmix) =
      &    'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1'
-        vnames(iu3d)   = '_3dbc'
-        lname (iu3d)   = 'Boundary changes - u/v3dbc_im.F'
-        vnames(iuv2FC) = '_2D3D_cor'
-        lname (iuv2FC) = '2D-3D correction - step3d_uv2.F part 2'
+!        vnames(iu3d)   = '_3dbc'
+!        lname (iu3d)   = 'Boundary changes - u/v3dbc_im.F'
+!        vnames(iuv2FC) = '_2D3D_cor'
+!        lname (iuv2FC) = '2D-3D correction - step3d_uv2.F part 2'
 
         if (diag_avg) then                                       ! only if diag averaging and only done once
           allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
@@ -657,6 +669,15 @@
       ! local
       integer :: i, j, k
 
+      ! Since this term includes 2D3D & boundary, need to set boundary to zero to
+      ! allow for Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + ....
+
+      Mdiag(istr-1:istr  ,jstr-1:jend+1,:,:,ivmix) = 0 ! west  (need istrU too (istr))
+      Mdiag(iend+1       ,jstr-1:jend+1,:,:,ivmix) = 0 ! east  (iend+1=iendR=bry)
+
+      Mdiag(istr-1:iend+1,jstr-1:jstr  ,:,:,ivmix) = 0 ! south (need jstrV too (jstr))
+      Mdiag(istr-1:iend+1,jend+1       ,:,:,ivmix) = 0 ! north (jend+1=jendR=bry)
+
       do k=1,N
         do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
@@ -673,6 +694,11 @@
           enddo
         enddo
       enddo
+
+      if(mynode==0) then
+      print*,' '
+      print*,'Mdiag(istr,jstr-1,1,1,ivmix)=',Mdiag(istr,jstr-1,1,1,ivmix)
+      endif
 
 !      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  ! debug only
 
@@ -697,15 +723,18 @@
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
 
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,iu3d) = ( uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,iu3d) = ( uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1) )/dt
+      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,ivmix) = ( uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,ivmix) = ( uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1) )/dt
 
       do i=istr,iend+1 ! use loop here else indexing would be even messier
         if (SOUTHERN_EDGE) uv_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
         if (NORTHERN_EDGE) uv_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
       enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,iu3d) = ( uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1) )/dt
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,iu3d) = ( uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1) )/dt
+      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,ivmix) = ( uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1) )/dt
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,ivmix) = ( uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1) )/dt
+
+      if(mynode==0)
+     &print*,'Mdiag(istr,jstr-1,1,1,ivmix)=',Mdiag(istr,jstr-1,1,1,ivmix)
 
       end subroutine set_diags_at_bc_u  !]
 
@@ -729,18 +758,24 @@
         if (WESTERN_EDGE)  uv_prev(istr-1,j,:,2) = u(istr-1,j,:,nnew) * 0.5*(Hz(istr-1,j-1,:)+Hz(istr-1,j,:))
         if (EASTERN_EDGE)  uv_prev(iend+1,j,:,2) = u(iend+1,j,:,nnew) * 0.5*(Hz(iend+1,j-1,:)+Hz(iend+1,j,:))
       enddo
-      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,iu3d) = ( uv_prev(istr-1,:,:,2)-uvdz_old(istr-1,:,:,2) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,iu3d) = ( uv_prev(iend+1,:,:,2)-uvdz_old(iend+1,:,:,2) )/dt
+      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,ivmix) = ( uv_prev(istr-1,:,:,2)-uvdz_old(istr-1,:,:,2) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
+      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,ivmix) = ( uv_prev(iend+1,:,:,2)-uvdz_old(iend+1,:,:,2) )/dt
 
       if (SOUTHERN_EDGE) uv_prev(:,jstr  ,:,2)=u(:,jstr  ,:,nnew)*0.5*(Hz(:,jstr-1,:)+Hz(:,jstr  ,:))
       if (NORTHERN_EDGE) uv_prev(:,jend+1,:,2)=u(:,jend+1,:,nnew)*0.5*(Hz(:,jend  ,:)+Hz(:,jend+1,:))
-      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,iu3d) = ( uv_prev(:,jstr  ,:,2)-uvdz_old(:,jstr  ,:,2) )/dt
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,iu3d) = ( uv_prev(:,jend+1,:,2)-uvdz_old(:,jend+1,:,2) )/dt
+      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,ivmix) = ( uv_prev(:,jstr  ,:,2)-uvdz_old(:,jstr  ,:,2) )/dt
+      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,ivmix) = ( uv_prev(:,jend+1,:,2)-uvdz_old(:,jend+1,:,2) )/dt
 
       end subroutine set_diags_at_bc_v  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv2_FCu( istr, iendR, jstrR, jendR )  ![
+      ! Final 2D-3D correction, part 2 of step3d_uv2.F.
+
+      ! NOTE: Already done 2D-3D correction in uv2_DC step, then we updated the boundary
+      !       and then do another 2D-3D correction. Values over the interior will change
+      !       by such a small value, could just exclude interior for efficiency...
+
       implicit none
 
       ! inputs
@@ -750,9 +785,10 @@
       integer :: i, j, k
 
       do k=1,N
-        do j=jstrR,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
-          do i=istr,iendR
-            Mdiag(i,j,k,1,iuv2FC) = ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) -  uv_prev(i,j,k,1) )/dt
+        do j=jstrR,jendR   ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
+          do i=istr,iendR  ! we add 2D3D correction to h_mix diag term for memory efficiency
+            Mdiag(i,j,k,1,ivmix) = Mdiag(i,j,k,1,ivmix) +
+     &                             ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) -  uv_prev(i,j,k,1) )/dt
 
             ! Full loop ranges since u-change over every point including bry.
             ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
@@ -763,10 +799,21 @@
         enddo
       enddo
 
+      if(mynode==0) then
+      print*,'Mdiag(istr,jstrR,1,1,ivmix)=',Mdiag(istr,jstrR,1,1,ivmix)
+      print*,' '
+      endif
+
       end subroutine set_diags_at_uv2_FCu  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_at_uv2_FCv( istrR, iendR, jstr, jendR )  ![
+      ! Final 2D-3D correction, part 2 of step3d_uv2.F.
+
+      ! NOTE: Already done 2D-3D correction in uv2_DC step, then we updated the boundary
+      !       and then do another 2D-3D correction. Values over the interior will change
+      !       by such a small value, could just exclude interior for efficiency...
+
       implicit none
 
       ! inputs
@@ -776,12 +823,13 @@
       integer :: i, j, k
 
       do k=1,N
-        do j=jstr,jendR  ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
-          do i=istrR,iendR
-            Mdiag(i,j,k,2,iuv2FC) = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uv_prev(i,j,k,2) )/dt
+        do j=jstr,jendR     ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
+          do i=istrR,iendR  ! we add 2D3D correction to h_mix diag term for memory efficiency
+            Mdiag(i,j,k,2,ivmix) = Mdiag(i,j,k,2,ivmix) +
+     &                             ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uv_prev(i,j,k,2) )/dt
 
             if (check_diag .or. tot_change)  ! if with compile time parameters
-     &        uv_dif(i,j,k, 2)    = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uvdz_old(i,j,k,2) )/dt ! do this here as units are correct
+     &        uv_dif(i,j,k, 2)   = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uvdz_old(i,j,k,2) )/dt ! do this here as units are correct
           enddo
         enddo
       enddo
