@@ -1,7 +1,7 @@
       module diagnostics
 
       ! To compute diagnostics use DIAGNOSTICS flag in cppdefs.h.
-      ! Also, set configuration at 'User input' below.
+      ! Also, set configuration at 'User input' section below.
 
       ! JM: We are not properly accounting for the Udzeta/dt,Vdzeta/dt terms
       ! These should only be a signicant error for coastal tidal flows.
@@ -16,11 +16,12 @@
       ! Averaging is much less efficient as diagnostics must be collected
       ! at everytime step to maintain a true average.
 
+      ! MAIN SUBROUTINE:
       ! The main subroutine is wrt_diagnostics_tile, which is called at the very
       ! beginning of main.F in order to record the diagnostics of 'nnew' index,
       ! which was t=n+1 for the previous timestep, and is now t=n since roms_step
       ! has moved onto the next timestep. I.e. 'nnew' will become 'nstp' in next timestep.
-      ! But wrt_online_diags is called before nnew and nstp indicies change in main.F.
+      ! But wrt_diagnostics_tile is called before nnew and nstp indicies change in main.F.
 
       ! If you are needing averages then the diagnotics need to be computed at everytimestep.
       ! If you just need snapshots then the diagnostics only need to be calculated at
@@ -30,7 +31,7 @@
       ! used in the equation system to trigger a calculation of diagnostics.
 
       ! TRACERS:
-      ! Since there are 6 diagnostic terms for each tracer, it becomes very memory
+      ! Since there are 5 diagnostic terms for each tracer, it can become very memory
       ! intensive to keep diag arrays for every tracer. Instead, the user selects
       ! only tracers of interest by setting T/F in wrt_t_diags in tracers_defs.h.
       ! Then the number of selected tracers is counted in init_diags_trc and an array
@@ -40,11 +41,11 @@
 
       ! UNITS:
       ! We need the rate of change of u or v or tracer, so the diagnostic is
-      ! divided by 'dt' (the timestep) to get a diagnostics rate per second
+      ! divided by 'dt' (the timestep) to get a diagnostics rate per second.
       ! The roms history file give u/v in m/s, and 't' tracers in their
       ! concentrations. However, since the depth of the water column is also evolving
-      ! during a timestep, it is easier to work in dz*u/v/w/t / dt, since that is the unit
-      ! of u/v/w/t when the depth is changed in the timestep as follows:
+      ! during a timestep, it is easier to work in dz*u/v/w/t / dt, since the unit
+      ! of u/v/w/t is e.g. m^2/s (u*dz) when the depth is changed in the timestep as follows:
       ! step3d_uv1.F (depth not changed just to show position amongst code)
       ! step2d_tile -> set_depth_tile -> (depth (Hz) changes to t=n+1)
       ! step3d_uv2.F (depth not changed just to show position amongst code)
@@ -75,20 +76,23 @@
       ! 6)    u - Boundary changes              - u3dbc_im.F
       ! 7)    u - 2D-3D correction              - step3d_uv2.F part 2
 
-      ! Clearly, care needs to be taken when comparing 'u' at each step, since the units
-      ! after a step can change.
+      ! Clearly, care needs to be taken when comparing 'u' at each diagnostic step,
+      ! since the units after a step can change.
 
-      ! NOTE:
+      ! NOTE - steps 5)-7) stored in same array:
       ! Since the change at the boundary is (just that) only at the boundary, it
       ! would be wasteful to store it as its own 3D diagnostic term.
-      ! Since all of the other changes are only over the interior, we chose to use
-      ! the boundary grid points of horiontal mixing to store the boudnary changes.
-      ! So horizontal mixing diagnostic term is actually the boundary diagnostic at its
-      ! boundary.
+      ! Since all of the other changes are only over the interior (ignoring the boundary),
+      ! we chose to use the boundary grid points of vertical mixing to store the boudnary
+      ! changes. So the vertical mixing diagnostic term is actually the boundary diagnostic
+      ! along its boundaries.
       ! Similarly, the 2D-3D correction is actually only a 2D term (applied consistently
       ! vertically), and it is really just a numerically adjustment (non-physical), we
-      ! lump it in with horizontal mixing, too. This again saves memory, and it's value
-      ! is very small so horizontal mixing is the dominant signal in that shared array.
+      ! lump it in with vertical mixing, too. This again saves memory, and it's value
+      ! is very small so vertical mixing is the dominant signal in that shared array.
+      ! The vertical mixing term [5)] was chosen because, as with steps 6) and 7), it
+      ! is calculated after Hz is updated. Therefore, it is more likely to be consistent
+      ! than is steps 6) & 7) were addded to arrays of steps 1)-4) rather.
 
       ! TRACER evolution:
       ! 1) dz*C - Horizontal advective fluxes                               - compute_horiz_tracer_fluxes.h
@@ -99,6 +103,9 @@
       ! 5)    C - Boundary changes                                          - t3dbc_im.F
       ! 6)    C - Horizontal Laplacian diffusion terms                      - t3dmix_GP.F
 
+      ! As with u/v, the boundary change of tracers (step 5) is placed in step 2) for
+      ! memory efficiency.
+
       ! W evolution:
       ! 1)    ? -                                       - prsgrd.F
       ! 2)    ? -                                       - compute_horiz_rhs_w_terms.h
@@ -106,8 +113,7 @@
       ! 4)    ? -                                       - step3d_uv2.F
       ! 5)    ? -                                       - w3dbc_im.F
 
-      ! QUESTIONS:
-      ! - how to store bry term. and FC terms (does little in middle)
+      ! Currently 'w' is untested and unverified and is likely to contain errors.
 
       !]
 
@@ -131,12 +137,13 @@
       ! User inputs:
       !   Budget closing check:
       !     when using for new simulation (especially if different cppflags) make sure
-      !     to do a very short simulation (i.e. 10 steps) with check_diag & check_avg
-      !     as .true. to ensure budget is closing correctly! Then set them as false for
-      !     your production run as they are a waste of resources.
+      !     to do a very short simulation (i.e. 10 steps) with check_diag (and check_avg
+      !     if using averages) as .true. to ensure budget is closing correctly, e.g.
+      !     u_budget -> 0! Then set them as false for your production run as they are a
+      !     waste of resources.
       !   Notes:
       !     1) need DIAGNOSTICS flag in cppdefs.h
-      !     2) units are dz*u (or v/w/t) - i.e. vertically integerated over cell
+      !     2) units are du/dt*dz - m^2/s^2 (or v/w/tracer) - i.e. vertically integerated over cell
       !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
       !     4) for an example try Examples/Diagnostics/
       !     5) averaging frequency = rec_rate * time_step
@@ -144,14 +151,14 @@
       integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
       integer                    :: recs_per_file = 20      ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v. Replaces cppflag.
-      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Replaces CPP key. Select tracers in wrt_t_diag in tracers_defs.h
-      logical, parameter         :: tot_change    = .true.  ! Gross (total) change in variable over timestep. May not want this on since it's just the sum of diagnostic terms.
-      ! End of user inputs
+      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
+      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Select tracers in wrt_t_diag in tracers_defs.h
+      logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
+      ! End of user inputs                                  ! may not want tot_change (wasteful) since it's just the sum of diagnostic terms.
       ! ***************************************************************
 
-      ! Developer inputs:
-      ! - need to have on diag_uv to use these flags:
+      ! Developer inputs - for budget close checks:
+      ! - need to have on diag_uv to use these flags: (not sure that flag still needed for this)
       logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
       logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
@@ -190,8 +197,8 @@
      &  iadv   = 3, ! Advection                        - internal loop ranges only
      &  ihmix  = 4, ! Viscous terms (horiz mixing)     - internal loop ranges only
      &  ivmix  = 5  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
-!     &  iu3d   = 6  ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior
-!     &  iuv2FC = 7  ! 2D-3D correction                 - internal + bry (full domain) loop ranges
+      ! ivmix  <--  ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior. Goes into ivmix array for memory efficiency.
+      ! ivmix  <--  ! 2D-3D correction                 - internal + bry (full domain) loop ranges. Goes into ivmix array for memory efficiency.
 
       character (len=20),  allocatable, dimension(:) :: vnames
       character (len=80),  allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
@@ -368,10 +375,6 @@
         vnames(ivmix) = '_v_mix'
         lname (ivmix) =
      &    'Vertical mixing & 2D/3D coupling - step3d_uv2.F part 1'
-!        vnames(iu3d)   = '_3dbc'
-!        lname (iu3d)   = 'Boundary changes - u/v3dbc_im.F'
-!        vnames(iuv2FC) = '_2D3D_cor'
-!        lname (iuv2FC) = '2D-3D correction - step3d_uv2.F part 2'
 
         if (diag_avg) then                                       ! only if diag averaging and only done once
           allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
@@ -671,11 +674,12 @@
 
       ! Since this term includes 2D3D & boundary, need to set boundary to zero to
       ! allow for Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + ....
+      ! HERE: u and v arrays hence boundary is different on west and south...
 
-      Mdiag(istr-1:istr  ,jstr-1:jend+1,:,:,ivmix) = 0 ! west  (need istrU too (istr))
+      Mdiag(istr-1:istr  ,jstr-1:jend+1,:,:,ivmix) = 0 ! west  (need istrU too (istr)?)
       Mdiag(iend+1       ,jstr-1:jend+1,:,:,ivmix) = 0 ! east  (iend+1=iendR=bry)
 
-      Mdiag(istr-1:iend+1,jstr-1:jstr  ,:,:,ivmix) = 0 ! south (need jstrV too (jstr))
+      Mdiag(istr-1:iend+1,jstr-1:jstr  ,:,:,ivmix) = 0 ! south (need jstrV too (jstr)?)
       Mdiag(istr-1:iend+1,jend+1       ,:,:,ivmix) = 0 ! north (jend+1=jendR=bry)
 
       do k=1,N
