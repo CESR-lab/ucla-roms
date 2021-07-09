@@ -53,14 +53,6 @@
       ! See Documentation/readme-specifics/README.diagnostics_u_v_value_changes
       ! for more details on how the units of 'u' change during a timestep.
 
-      ! LOGICAL PARAMETERS:
-      ! It is assumed that by using logicals that are set as known parameters at compile
-      ! time, the 'if branch' will be removed during compiling, since the outcome
-      ! of the branch is always known and unchanging. If this is true it will allow
-      ! for if statements to be placed within loops, which is usually not advised
-      ! due to the cost of the if statment at every index iteration. This has still
-      ! mostly been avoided anyway.
-
       ! U/V evolution:
       ! During a roms_step in main.F, the values of u/v at t=n+1/2 is calculated
       ! in pre_step3d4s.F. Since we are interested in the change from t=n to t=n+1,
@@ -114,6 +106,36 @@
       ! 5)    ? -                                       - w3dbc_im.F
 
       ! Currently 'w' is untested and unverified and is likely to contain errors.
+
+      ! LOGICAL PARAMETERS:
+      ! It is assumed that by using logicals that are set as known parameters at compile
+      ! time, the 'if branch' will be removed during compiling, since the outcome
+      ! of the branch is always known and unchanging. If this is true it will allow
+      ! for if statements to be placed within loops, which is usually not advised
+      ! due to the cost of the if statment at every index iteration. This has still
+      ! mostly been avoided anyway.
+
+      ! INTERIOR VS BOUNDARY GRID POINTS:
+      ! Most diagnostic terms only act on the interior of the domain and exclude the
+      ! boundary. The boundary term obviously only updates the boundary, whereas the
+      ! 2D/3D correction updates the interior and boundary. This means that indices
+      ! for loops and array statements are important. Here is a quick refresher of loop
+      ! ranges (u has one less point in xi, v has one less point in eta):
+      !
+      !               |       WESTERN_EDGE            |        EASTERN_EDGE          |
+      !     variable  | west-bry     | interior-start |  interior-end |    east-bry  |
+      !  -------------|--------------|----------------|---------------|--------------|
+      !        u      | istr         | istr+1=istrU   | iend          | iend+1=iendR |
+      !        v      | istr-1=istrR | istr           | iend          | iend+1=iendR |
+      !       rho     | istr-1=istrR | istr           | iend          | iend+1=iendR |
+      !
+      !
+      !     variable  |      u       |      v         |     rho       |
+      !  -------------------------------------------------------------|
+      !  north-bry    | jend+1=jendR | jend+1=jendR   | jend+1=jendR  | <- NORTHERN_EDGE
+      !  interior-end | jend         | jend           | jend          |_______________
+      !  interior-str | jstr         | jstr+1=jstrV   | jstr          |
+      !  south-bry    | jstr-1=jstrR | jstr           | jstr-1=jstrR  | <- SOUTHERN_EDGE
 
       !]
 
@@ -663,6 +685,7 @@
       subroutine set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )  ![
       ! set diagnostics for u or v in step3d_uv2.F
       ! interior points only (i.e. excluding bry)
+      ! the calc in step3d_uv2.F includes variable 'DC', hence name set_diags_at_uv2_DC
 
       implicit none
 
@@ -673,13 +696,14 @@
       integer :: i, j, k
 
       ! Since this term includes 2D3D & boundary, need to set boundary to zero to
-      ! allow for Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + ....
-      ! HERE: u and v arrays hence boundary is different on west and south...
+      ! allow for Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + .... later on.
+      ! entire column of west  or east  boundary would use jstr-1:jend+1
+      ! entire row    of south or north boundary would use istr-1:iend+1
 
-      Mdiag(istr-1:istr  ,jstr-1:jend+1,:,:,ivmix) = 0 ! west  (need istrU too (istr)?)
+      Mdiag(istr-1:istr  ,jstr-1:jend+1,:,:,ivmix) = 0 ! west  (istr-1 for v bry, istr for u bry)
       Mdiag(iend+1       ,jstr-1:jend+1,:,:,ivmix) = 0 ! east  (iend+1=iendR=bry)
 
-      Mdiag(istr-1:iend+1,jstr-1:jstr  ,:,:,ivmix) = 0 ! south (need jstrV too (jstr)?)
+      Mdiag(istr-1:iend+1,jstr-1:jstr  ,:,:,ivmix) = 0 ! south (jstr-1 for u bry, jstr for v bry)
       Mdiag(istr-1:iend+1,jend+1       ,:,:,ivmix) = 0 ! north (jend+1=jendR=bry)
 
       do k=1,N
@@ -699,11 +723,6 @@
         enddo
       enddo
 
-      if(mynode==0) then
-      print*,' '
-      print*,'Mdiag(istr,jstr-1,1,1,ivmix)=',Mdiag(istr,jstr-1,1,1,ivmix)
-      endif
-
 !      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  ! debug only
 
       end subroutine set_diags_at_uv2_DC  !]
@@ -712,6 +731,8 @@
       subroutine set_diags_at_bc_u( istr, iend, jstr, jend )  ![
       ! set the diagnostics terms for boundary changes in u
       ! called from step3d_uv2.F right after call to u3dbc_im.F
+
+      ! boundary change is stored in ivmix diagnostic to save memory.
 
       implicit none
 
@@ -723,6 +744,10 @@
 
       ! currently this is not perfectly setup for openMP since we have ':' instead
       ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
+      ! Also, the 4 boundary corners of the global domain are computed twice, i.e. bottom
+      ! of west is the same as left of south. But since we have Mdiag(istr  ,:,:,1,ivmix) = ...
+      ! and not Mdiag(istr  ,:,:,1,ivmix) = Mdiag(istr  ,:,:,1,ivmix) + ... it doesn't matter.
+      ! Consider using jstrR instead of jstr-1 for cleanliness.
 
       if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
       if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
@@ -736,9 +761,6 @@
       enddo
       if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,ivmix) = ( uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1) )/dt
       if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,ivmix) = ( uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1) )/dt
-
-      if(mynode==0)
-     &print*,'Mdiag(istr,jstr-1,1,1,ivmix)=',Mdiag(istr,jstr-1,1,1,ivmix)
 
       end subroutine set_diags_at_bc_u  !]
 
@@ -802,11 +824,6 @@
           enddo
         enddo
       enddo
-
-      if(mynode==0) then
-      print*,'Mdiag(istr,jstrR,1,1,ivmix)=',Mdiag(istr,jstrR,1,1,ivmix)
-      print*,' '
-      endif
 
       end subroutine set_diags_at_uv2_FCu  !]
 
