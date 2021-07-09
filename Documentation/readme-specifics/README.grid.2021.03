@@ -143,7 +143,37 @@ Looping through node arrays:
 
 	istr, iend, jstr, jend
 	compute_tile_bounds.h
-	
+
+Boundary & interior:
+
+        Often in ROMS it is necessary to compute over only the global boundary of a sub-domain,
+        or just the interior of the sub-domain. However, we find that a u-point has one less grid point 
+        in xi than v/rho-points, whereas v has one less grid point in eta than u/rho points. 
+
+        The code has indices to help with this. 
+        The indices (istr, jstr, iend, jend) come from compute_tile_bounds.h.
+        The indices (istrR, istrU, jstrR, jstrV, iendR, jendR) come from either
+        compute_extended_bounds.h   -> when needing a 2 point computational margin, typically when updating forcing.
+        compute_auxiliary_bounds.h -> when only looping over the actual domain, typically in the equation system.
+        
+        Interms of using compute_auxiliary_bounds.h, the global domain boundary vs the interior grid points
+        are identified in the following tables:
+
+          !               |       WESTERN_EDGE            |        EASTERN_EDGE          |
+          !     variable  | west-bry     | interior-start |  interior-end |    east-bry  |
+          !  -------------|--------------|----------------|---------------|--------------|
+          !        u      | istr         | istr+1=istrU   | iend          | iend+1=iendR |
+          !        v      | istr-1=istrR | istr           | iend          | iend+1=iendR |
+          !       rho     | istr-1=istrR | istr           | iend          | iend+1=iendR |
+          !
+          !
+          !     variable  |      u       |      v         |     rho       |
+          !  -------------------------------------------------------------|
+          !  north-bry    | jend+1=jendR | jend+1=jendR   | jend+1=jendR  | <- NORTHERN_EDGE
+          !  interior-end | jend         | jend           | jend          |_______________
+          !  interior-str | jstr         | jstr+1=jstrV   | jstr          |
+          !  south-bry    | jstr-1=jstrR | jstr           | jstr-1=jstrR  | <- SOUTHERN_EDGE
+
 Global indices for node grid point:	
 
 	The original roms did not directly track global grid point numbers for each node.
