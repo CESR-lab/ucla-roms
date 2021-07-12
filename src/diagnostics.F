@@ -87,13 +87,14 @@
       ! than is steps 6) & 7) were addded to arrays of steps 1)-4) rather.
 
       ! TRACER evolution:
-      ! 1) dz*C - Horizontal advective fluxes                               - compute_horiz_tracer_fluxes.h
-      ! 2) dz*C - Vertical advective fluxes                                 - compute_vert_tracer_fluxes.h
+      ! 1) dz*C - h_adv - Horizontal advective fluxes                               - compute_horiz_tracer_fluxes.h
+      ! 2) dz*C - v_adv - Vertical advective fluxes                                 - compute_vert_tracer_fluxes.h
       ! -         Surface flux is done here
-      ! 3) dz*C - Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F (lmd_kpp)
-      ! 4)    C - Implicit time step for vertical diffusion                 - step3d_t_ISO.F
-      ! 5)    C - Boundary changes                                          - t3dbc_im.F
-      ! 6)    C - Horizontal Laplacian diffusion terms                      - t3dmix_GP.F
+      ! 3) dz*C - v_mix - Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F (lmd_kpp)
+      !                   currently only temp & salt. Chose to share v_mix array
+      ! 4)    C - v_mix - Implicit time step for vertical diffusion                 - step3d_t_ISO.F
+      ! 5)    C - bc    - Boundary changes                                          - t3dbc_im.F
+      ! 6)    C - h_mix - Horizontal Laplacian diffusion terms                      - t3dmix_GP.F
 
       ! As with u/v, the boundary change of tracers (step 5) is placed in step 2) for
       ! memory efficiency.
@@ -249,9 +250,6 @@
       ! Need to consider pipe and river sources. Budget should still close but should label which term receives river/pipe.
 
       integer, public, parameter                          :: ndt = 4   ! number of tracer diag terms
-#  ifdef LMD_KPP
-     &                                                           + 1
-#  endif
       real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! tracer diagnostic terms
       real,         allocatable, dimension(:, :, :)       :: Td_tmp    ! temporary array to calculate change in tracer diags
       real,         allocatable, dimension(:, :, :)       :: Hz_old    ! store previous Hz to calculate old dz*t. better than storing dz*t for each tracer. Better to recalculate it?
@@ -276,8 +274,8 @@
      &  it_v_adv    = 2,  ! Vertical advective fluxes   - compute_vert_tracer_fluxes.h
                           ! do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
      &  it_v_mix    = 3,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
-     &  it_h_mix    = 4,  ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
-     &  it_nonloc   = 5   ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
+     &  it_h_mix    = 4   ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
+      ! it_v_mix    <--   ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
       ! it_v_mix    <--   ! Boundary changes - t3dbc_im.F. Only at boundary so shared with v_mix (could be any other term but being consistent with u/v choice of v_mix.
 
       character (len=30),  allocatable, dimension(:) :: tdname
@@ -521,16 +519,12 @@
      &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h'
       tdname(it_v_mix)    = '_v_mix_and_BC'
       tlname(it_v_mix)    =
-     &  'Implicit time step for vertical diffusion and boundary ' / /
-     &  'change - step3d_t_ISO.F & t3dbc_im.F'
+     &  'Implicit vertical diffusion, nonlocal transport flux, '  / /
+     &  'and boundary change - step3d_t_ISO.F & t3dbc_im.F'
       tdname(it_h_mix)    = '_h_mix'
       tlname(it_h_mix)    =
-     &  'Horizontal (along geopotential surfaces) Laplacian ' / /
+     &  'Horizontal (along geopotential surfaces) Laplacian '     / /
      &  'diffusion terms (zero beyond sponge layer) - t3dmix_GP.F'
-      tdname(it_nonloc)   = '_non_local'
-      tlname(it_nonloc)   =
-     &  'Nonlocal transport flux for unstable (convective) ' / /
-     &  'forcing - step3d_t_ISO.F'
 
       do itrc=1,NT
         if (wrt_t_diag(itrc)) then
@@ -1396,7 +1390,7 @@
       integer, intent(in) :: istr, iend, jstr, jend
 
       ! local
-      integer             :: itrc, td, i, j, k, ierr, it_prev
+      integer             :: itrc, td, i, j, k, ierr
       character(len=30)   :: text
 
 ! Needed for istrU, istrR, etc
@@ -1441,27 +1435,7 @@
           text=trim(t_vname(itrc)) / / tdname(it_v_adv)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
-        it_prev=it_v_adv                                ! store index of previous diagnostic
 
-# ifdef LMD_KPP
-        ! nonlocal:
-        do k=1,N
-          do j=jstr,jend
-            do i=istr,iend
-              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_nonloc) - Tdiag(i,j,k,td,it_v_adv) )/dt
-              if (check_diag)
-     &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
-            enddo
-          enddo
-        enddo
-        if (diag_avg) then
-          call set_diags_t_avg_tile(istr, iend, jstr, jend, td, it_nonloc, itrc)
-        else
-          text=trim(t_vname(itrc)) / / tdname(it_nonloc)
-          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
-        endif
-        it_prev=it_nonloc ! store index of previous diagnostic if lmd_kpp
-# endif
 
         ! From here onwards 't' was no longer in dz*t units:
 
@@ -1486,7 +1460,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
-              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_prev) )/dt
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_v_adv) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
