@@ -853,6 +853,9 @@ c??         enddo
                   Tdiag(i,j,k+1,td,it_nonloc) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
                 enddo ! why have I not done Tdiag(i,j,1... as for temp?
               enddo
+              do i=istr,iend
+                Tdiag(i,j,1,td,it_nonloc) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
+              enddo
             endif
 # endif
 #  endif

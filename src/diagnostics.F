@@ -98,6 +98,11 @@
       ! As with u/v, the boundary change of tracers (step 5) is placed in step 2) for
       ! memory efficiency.
 
+      ! The budget closing on tracers looks unusual because the error in the sponge
+      ! layer is larger than in the interior beyond the sponge layer. E.g. error
+      ! in sponge layer might be e-13, but beyond the sponge layer it might be
+      ! between exactly 0 and e-17.
+
       ! W evolution:
       ! 1)    ? -                                       - prsgrd.F
       ! 2)    ? -                                       - compute_horiz_rhs_w_terms.h
@@ -659,7 +664,9 @@
       subroutine set_diags_at_visc3d( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
       ! set diagnostics for u or v in visc3d_GP.F
       ! interior points only (i.e. excluding bry)
-      ! Note this diagnostic is zero beyond the sponge layer (in the interior)
+      ! Note this diagnostic is zero beyond the sponge layer (in the interior),
+      ! but can be non-zero everywhere if model has non-zero background diffusion,
+      ! hence loop ranges over full interior.
 
       implicit none
 
@@ -670,8 +677,8 @@
       ! local
       integer :: i, j, k
 
-      do k=1,N           ! should limit ranges to that of sponge layer to be efficient
-        do j=jsA,jend    ! interior of subdomains, exludes global domain boundaries
+      do k=1,N
+        do j=jsA,jend
           do i=isA,iend
             Mdiag(  i,j,k,dim,ihmix) = (uv(i,j,k,nnew) - uv_prev(i,j,k,dim)) / dt  ! units already in dz*u
             uv_prev(i,j,k,dim)       =  uv(i,j,k,nnew)
