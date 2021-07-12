@@ -791,7 +791,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
           call set_diags_u_2d3d_cor(   istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
           call set_diags_v_2d3d_cor(   istrR, iendR, jstr,  jendR )
         endif
-        if (set_dz_old) call set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
+        if (set_dz_old) call set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
       endif
 #  ifdef NHMG
       if (calc_diag)  call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
