@@ -615,6 +615,7 @@
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
       ! Works for both u and v.
       ! Prsgrd and coriolis need to also be convert to dz * u/v units
+      ! Called from step3d_uv1.F
 
       implicit none
 
@@ -629,20 +630,7 @@
       ! local
       integer :: i, k
 
-      do i=istrA,iend                                                      ! / dt needed to get rate of change
-        Mdiag(i,j,N,dim,iprsgr) = Mdiag(i,j,N,dim,iprsgr) * DC(i,0) / dt   ! need to convert to dz*u now that we have DC
-        Mdiag(i,j,1,dim,iprsgr) = Mdiag(i,j,1,dim,iprsgr) * DC(i,0) / dt   ! consider taking this out of loop and doing seperately
-        Mdiag(i,j,N,dim,icori)  = Mdiag(i,j,N,dim,icori)  * DC(i,0) / dt   ! perhaps even in own subroutine to avoid clutter
-        Mdiag(i,j,1,dim,icori)  = Mdiag(i,j,1,dim,icori)  * DC(i,0) / dt
-        Mdiag(i,j,N,dim,iadv)   = ( DC(i,0)*ruv(i,j,N) + dt*suvstr(i,j) ) / dt  ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
-     &                           - ( Mdiag(i,j,N,dim,iprsgr) + Mdiag(i,j,N,dim,icori) ) ! subtract previous 2 terms included in total
-        uv_prev(i,j,N,dim)      = uv(i,j,N,nnew)                           ! store for next diag visc3d
-        Mdiag(i,j,1,dim,iadv)   = DC(i,0)*ruv(i,j,1) / dt
-     &                           - ( Mdiag(i,j,1,dim,iprsgr) + Mdiag(i,j,1,dim,icori) )
-        uv_prev(i,j,1,dim)      = uv(i,j,1,nnew)
-      enddo
-
-      do k=2,N-1
+      do k=1,N
         do i=istrA,iend
           Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0) / dt
           Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0) / dt
@@ -650,6 +638,11 @@
           Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k) / dt                ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
      &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
         enddo
+      enddo
+
+      ! Add surface stress to vertical mixing rather:
+      do i=istrA,iend
+        Mdiag(i,j,N,dim,ivmix) = suvstr(i,j)  ! * dt / dt cancels...
       enddo
 
       end subroutine set_diags_uv_advection  !]
@@ -701,26 +694,47 @@
       ! entire column of west  or east  boundary would use jstr-1:jend+1
       ! entire row    of south or north boundary would use istr-1:iend+1
 
-      Mdiag(istr-1:istr  ,jstr-1:jend+1,:,:,ivmix) = 0 ! west  (istr-1 for v bry, istr for u bry)
-      Mdiag(iend+1       ,jstr-1:jend+1,:,:,ivmix) = 0 ! east  (iend+1=iendR=bry)
+      if(WESTERN_EDGE)  Mdiag(istr-1       ,jstr-1:jend+1,:,2,ivmix) = 0 ! west  (istr-1 for v bry) Need split else surface stress over-written.
+      if(WESTERN_EDGE)  Mdiag(istr         ,jstr-1:jend+1,:,1,ivmix) = 0 ! west  (istr   for u bry)
+      if(EASTERN_EDGE)  Mdiag(iend+1       ,jstr-1:jend+1,:,:,ivmix) = 0 ! east  (iend+1=iendR=bry)
 
-      Mdiag(istr-1:iend+1,jstr-1:jstr  ,:,:,ivmix) = 0 ! south (jstr-1 for u bry, jstr for v bry)
-      Mdiag(istr-1:iend+1,jend+1       ,:,:,ivmix) = 0 ! north (jend+1=jendR=bry)
+      if(SOUTHERN_EDGE) Mdiag(istr-1:iend+1,jstr-1       ,:,1,ivmix) = 0 ! south (jstr-1 for u bry)
+      if(SOUTHERN_EDGE) Mdiag(istr-1:iend+1,jstr         ,:,2,ivmix) = 0 ! south (jstr   for v bry)
+      if(NORTHERN_EDGE) Mdiag(istr-1:iend+1,jend+1       ,:,:,ivmix) = 0 ! north (jend+1=jendR=bry)
 
-      do k=1,N
+      do k=1,N-1           ! N-1 as treat k=N differently below
         do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
           do i=istrU,iend
-            Mdtmp                  = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag( i,j,k,1,ivmix)  = (Mdtmp - uv_prev(i,j,k,1)) / dt                        ! avoids recomputing above
-            uv_prev(i,j,k,1)       =  Mdtmp
+            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
+            Mdiag( i,j,k,1,ivmix) = (Mdtmp - uv_prev(i,j,k,1)) / dt                        ! avoids recomputing above
+            uv_prev(i,j,k,1)      =  Mdtmp
           enddo
         enddo
         do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
           do i=istr,iend
-            Mdtmp                  = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-            Mdiag( i,j,k,2,ivmix)  = (Mdtmp - uv_prev(i,j,k,2)) / dt
-            uv_prev(i,j,k,2)       =  Mdtmp
+            Mdtmp                 = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+            Mdiag( i,j,k,2,ivmix) = (Mdtmp - uv_prev(i,j,k,2)) / dt
+            uv_prev(i,j,k,2)      =  Mdtmp
           enddo
+        enddo
+      enddo
+
+      ! Since ivmix also contains surface stress from set_diags_uv_advection we
+      ! need Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + ...
+      do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
+        do i=istrU,iend
+          Mdtmp                 = u(i,j,N,nnew) * (0.5*( Hz(i-1,j,N)+Hz(i,j,N) )) ! convert to dz*u
+          Mdiag( i,j,N,1,ivmix) = Mdiag( i,j,N,1,ivmix)
+     &                          + (Mdtmp - uv_prev(i,j,N,1)) / dt
+          uv_prev(i,j,N,1)      =  Mdtmp
+        enddo
+      enddo
+      do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
+        do i=istr,iend
+          Mdtmp                 = v(i,j,N,nnew) * (0.5*( Hz(i,j-1,N)+Hz(i,j,N) ))
+          Mdiag( i,j,N,2,ivmix) = Mdiag( i,j,N,2,ivmix)
+     &                          + (Mdtmp - uv_prev(i,j,N,2)) / dt
+          uv_prev(i,j,N,2)      =  Mdtmp
         enddo
       enddo
 
