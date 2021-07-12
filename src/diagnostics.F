@@ -344,14 +344,14 @@
       public set_diags_w_at_bc
 # endif /* NHMG */
 
-      public set_diags_at_compute_horiz
-      public set_diags_at_uv1
-      public set_diags_at_visc3d
-      public set_diags_at_uv2_DC
-      public set_diags_at_bc_u
-      public set_diags_at_bc_v
-      public set_diags_at_uv2_FCu
-      public set_diags_at_uv2_FCv
+      public set_diags_uv_coriolis
+      public set_diags_uv_advection
+      public set_diags_uv_h_mix
+      public set_diags_uv_v_mix
+      public set_diags_u_bc
+      public set_diags_v_bc
+      public set_diags_u_2d3d_cor
+      public set_diags_v_2d3d_cor
       public set_diags_dz_old
       public wrt_diagnostics !]
 
@@ -589,7 +589,7 @@
       end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_compute_horiz( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )   ![
+      subroutine set_diags_uv_coriolis( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )   ![
       ! compute coriolis term from compute_horiz_rhs_uv_terms.h
       ! diag_icori is the logical that prevents this calculation in pre_step3d,
       ! since only want during step3d_uv1.
@@ -614,10 +614,10 @@
         enddo
       enddo
 
-      end subroutine set_diags_at_compute_horiz  !]
+      end subroutine set_diags_uv_coriolis  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv1( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
+      subroutine set_diags_uv_advection( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
       ! Set the diagnostic terms for prsgrd, coriolis, and advection.
       ! Works for both u and v.
       ! Prsgrd and coriolis need to also be convert to dz * u/v units
@@ -658,10 +658,10 @@
         enddo
       enddo
 
-      end subroutine set_diags_at_uv1  !]
+      end subroutine set_diags_uv_advection  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_visc3d( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
+      subroutine set_diags_uv_h_mix( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
       ! set diagnostics for u or v in visc3d_GP.F
       ! interior points only (i.e. excluding bry)
       ! Note this diagnostic is zero beyond the sponge layer (in the interior),
@@ -686,13 +686,13 @@
         enddo
       enddo
 
-      end subroutine set_diags_at_visc3d  !]
+      end subroutine set_diags_uv_h_mix  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )  ![
+      subroutine set_diags_uv_v_mix( istr, iend, jstr, jend, istrU, jstrV )  ![
       ! set diagnostics for u or v in step3d_uv2.F
       ! interior points only (i.e. excluding bry)
-      ! the calc in step3d_uv2.F includes variable 'DC', hence name set_diags_at_uv2_DC
+      ! the calc in step3d_uv2.F includes variable 'DC', hence name set_diags_uv_v_mix
 
       implicit none
 
@@ -732,10 +732,10 @@
 
 !      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  ! debug only
 
-      end subroutine set_diags_at_uv2_DC  !]
+      end subroutine set_diags_uv_v_mix  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_bc_u( istr, iend, jstr, jend )  ![
+      subroutine set_diags_u_bc( istr, iend, jstr, jend )  ![
       ! set the diagnostics terms for boundary changes in u
       ! called from step3d_uv2.F right after call to u3dbc_im.F
 
@@ -769,10 +769,10 @@
       if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,ivmix) = ( uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1) )/dt
       if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,ivmix) = ( uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1) )/dt
 
-      end subroutine set_diags_at_bc_u  !]
+      end subroutine set_diags_u_bc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_bc_v( istr, iend, jstr, jend )  ![
+      subroutine set_diags_v_bc( istr, iend, jstr, jend )  ![
       ! set the diagnostics terms for boundary changes in v
       ! called from step3d_uv2.F right after call to v3dbc_im.F
 
@@ -799,10 +799,10 @@
       if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,ivmix) = ( uv_prev(:,jstr  ,:,2)-uvdz_old(:,jstr  ,:,2) )/dt
       if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,ivmix) = ( uv_prev(:,jend+1,:,2)-uvdz_old(:,jend+1,:,2) )/dt
 
-      end subroutine set_diags_at_bc_v  !]
+      end subroutine set_diags_v_bc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv2_FCu( istr, iendR, jstrR, jendR )  ![
+      subroutine set_diags_u_2d3d_cor( istr, iendR, jstrR, jendR )  ![
       ! Final 2D-3D correction, part 2 of step3d_uv2.F.
 
       ! NOTE: Already done 2D-3D correction in uv2_DC step, then we updated the boundary
@@ -832,10 +832,10 @@
         enddo
       enddo
 
-      end subroutine set_diags_at_uv2_FCu  !]
+      end subroutine set_diags_u_2d3d_cor  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_at_uv2_FCv( istrR, iendR, jstr, jendR )  ![
+      subroutine set_diags_v_2d3d_cor( istrR, iendR, jstr, jendR )  ![
       ! Final 2D-3D correction, part 2 of step3d_uv2.F.
 
       ! NOTE: Already done 2D-3D correction in uv2_DC step, then we updated the boundary
@@ -862,7 +862,7 @@
         enddo
       enddo
 
-      end subroutine set_diags_at_uv2_FCv  !]
+      end subroutine set_diags_v_2d3d_cor  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
