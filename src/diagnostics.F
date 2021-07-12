@@ -286,8 +286,8 @@
       character (len=20) :: tunits = ' * m/s   (dC/dt*dz)'
 
       public init_diags_trc
-      public set_diags_t_at_bc
-      public set_diags_t_at_t3dmix_GP
+      public set_diags_t_bc
+      public set_diags_t_h_mix
 
       ! Netcdf outputting:
       ! ------------------
@@ -352,7 +352,7 @@
       public set_diags_v_bc
       public set_diags_u_2d3d_cor
       public set_diags_v_2d3d_cor
-      public set_diags_dz_old
+      public set_diags_uv_dz_old
       public wrt_diagnostics !]
 
       contains
@@ -865,7 +865,7 @@
       end subroutine set_diags_v_2d3d_cor  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
+      subroutine set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
       ! Set dz*u or v at previous timestep to calculate gross change in
       ! u or v overtime step, and to calculate change at boundary.
       ! Called after everything else in step3d_uv2.F.
@@ -902,7 +902,7 @@
 
 !      if(mynode==0) print *, 'DZ_OLD  $$$$$$$$$$'  ! debug
 
-      end subroutine set_diags_dz_old  !]
+      end subroutine set_diags_uv_dz_old  !]
 
 ! ----------------------------------------------------------------------
 # ifdef NHMG
@@ -1052,7 +1052,7 @@
 # endif /* NHMG */
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_at_bc(istr, iend, jstr, jend, itrc, td)  ![
+      subroutine set_diags_t_bc(istr, iend, jstr, jend, itrc, td)  ![
       ! Set tracer boundary changes
 
       use tracers, only: t
@@ -1093,12 +1093,12 @@
      &                             - t(:,j,:,nstp,itrc) * Hz_old(:,j,:) ) /dt
       endif
 
-      end subroutine set_diags_t_at_bc  !]
+      end subroutine set_diags_t_bc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_at_t3dmix_GP(istr,iend,jstr,jend, itrc)  ![
-      ! from t3dmix_GP.F
-      ! zero in interior beyond sponge layer!
+      subroutine set_diags_t_h_mix(istr,iend,jstr,jend, itrc)  ![
+      ! Horizontal mixing from t3dmix_GP.F
+      ! zero in interior beyond sponge layer if zero background diffusion!
 
       use tracers, only: t
       implicit none
@@ -1118,7 +1118,7 @@
         enddo
       enddo
 
-      end subroutine set_diags_t_at_t3dmix_GP  !]
+      end subroutine set_diags_t_h_mix  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_tile(istr,iend,jstr,jend)  ![
