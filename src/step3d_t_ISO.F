@@ -810,18 +810,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
                 t(i,j,k  ,nnew,itemp)=t(i,j,k  ,nnew,itemp) +dt*cff
               enddo
             enddo
-# ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! might not want this in loop...
-              do k=N-1,1,-1
-                do i=istr,iend
-                  Tdiag(i,j,k+1,td,it_nonloc) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
-                enddo
-              enddo
-              do i=istr,iend
-                Tdiag(i,j,1,td,it_nonloc) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
-              enddo
-            endif
-# endif
 
 
 c?? WARNING: the above implies that light (if any) reaching all the
@@ -846,18 +834,6 @@ c??         enddo
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
               enddo
             enddo
-# ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
-              do k=N-1,1,-1
-                do i=istr,iend
-                  Tdiag(i,j,k+1,td,it_nonloc) = t(i,j,k+1,nnew,itrc) ! k+1 is last to change above as loop from N to 1, -1?
-                enddo ! why have I not done Tdiag(i,j,1... as for temp?
-              enddo
-              do i=istr,iend
-                Tdiag(i,j,1,td,it_nonloc) = t(i,j,1,nnew,itrc) ! accounts for loop above k+1 misses k=1...
-              enddo
-            endif
-# endif
 #  endif
           endif
 
