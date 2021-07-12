@@ -46,13 +46,16 @@
 # endif
           enddo
         enddo
-#endif
 
 # ifdef DIAGNOSTICS
         if (diag_uv .and. calc_diag .and. diag_icori) then ! diag_icori to prevent doing this twice from prestep...
-          call set_diags_at_compute_horiz( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )
+          call set_diags_uv_coriolis( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )
         endif
 # endif /* DIAGNOSTICS */
+
+#endif  /* UV_COR */
+
+
 
 #ifdef UV_ADV
 

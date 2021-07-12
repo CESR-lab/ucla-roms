@@ -381,7 +381,7 @@
       enddo      ! <-- j
 
 # ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) call set_diags_at_uv2_DC( istr, iend, jstr, jend, istrU, jstrV )
+      if (diag_uv .and. calc_diag) call set_diags_uv_v_mix( istr, iend, jstr, jend, istrU, jstrV )
 # endif
 
 ! Set PHYSICAL lateral boundary conditions.
@@ -391,8 +391,8 @@
 
 # ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
-        call set_diags_at_bc_u( istr, iend, jstr, jend )
-        call set_diags_at_bc_v( istr, iend, jstr, jend )
+        call set_diags_u_bc( istr, iend, jstr, jend )
+        call set_diags_v_bc( istr, iend, jstr, jend )
       endif
 # endif
 
@@ -788,8 +788,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # ifdef DIAGNOSTICS
       if (diag_uv) then
         if (calc_diag) then
-          call set_diags_at_uv2_FCu(   istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
-          call set_diags_at_uv2_FCv(   istrR, iendR, jstr,  jendR )
+          call set_diags_u_2d3d_cor(   istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
+          call set_diags_v_2d3d_cor(   istrR, iendR, jstr,  jendR )
         endif
         if (set_dz_old) call set_diags_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
       endif
