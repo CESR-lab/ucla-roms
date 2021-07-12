@@ -810,65 +810,116 @@
       end subroutine set_diags_v_bc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_u_2d3d_cor( istr, iendR, jstrR, jendR )  ![
+      subroutine set_diags_u_2d3d_cor( istr, iend, jstr, jend, istrU, iendR, jstrR, jendR )  ![
       ! Final 2D-3D correction, part 2 of step3d_uv2.F.
 
-      ! NOTE: Already done 2D-3D correction in uv2_DC step, then we updated the boundary
-      !       and then do another 2D-3D correction. Values over the interior will change
-      !       by such a small value, could just exclude interior for efficiency...
+      ! NOTE: Already done 2D-3D correction in v_mix step, then we updated the boundary
+      !       and then do another 2D-3D correction. Values over the interior only change
+      !       by e-17, so therefore exclude interior for efficiency.
+      !       The budget closing is not quite as accurate but we are talking about
+      !       e-16 difference.
+
+      ! We add 2D3D correction to v_mix diag term for memory efficiency
 
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iendR, jstrR, jendR
+      integer, intent(in) :: istr, iend, jstr, jend, istrU, iendR, jstrR, jendR  ! iend, jstr, jend needed for _EDGE's...
 
       ! local
       integer :: i, j, k
 
-      do k=1,N
-        do j=jstrR,jendR   ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
-          do i=istr,iendR  ! we add 2D3D correction to h_mix diag term for memory efficiency
-            Mdiag(i,j,k,1,ivmix) = Mdiag(i,j,k,1,ivmix) +
-     &                             ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) -  uv_prev(i,j,k,1) )/dt
+      if (WESTERN_EDGE) then  ! only do boundaries for efficiency
+        i=istr
+        Mdiag(i,:,:,1,ivmix) = Mdiag(i,:,:,1,ivmix) +
+     &    ( u(i,:,:,nnew) * (0.5*( Hz(i-1,:,:)+Hz(i,:,:) )) - uv_prev(i,:,:,1) )/dt
+      endif
+      if (EASTERN_EDGE) then
+        i=iendR
+        Mdiag(i,:,:,1,ivmix) = Mdiag(i,:,:,1,ivmix) +
+     &    ( u(i,:,:,nnew) * (0.5*( Hz(i-1,:,:)+Hz(i,:,:) )) - uv_prev(i,:,:,1) )/dt
+      endif
+      if (SOUTHERN_EDGE) then
+        j=jstrR
+        do i=istrU,iend       ! will cover full range, but avoid double counting SW and SE corner as already done for EAST or WEST above
+        Mdiag(i,j,:,1,ivmix) = Mdiag(i,j,:,1,ivmix) +
+     &    ( u(i,j,:,nnew) * (0.5*( Hz(i-1,j,:)+Hz(i,j,:) )) - uv_prev(i,j,:,1) )/dt
+        enddo
+      endif
+      if (NORTHERN_EDGE) then
+        j=jendR
+        do i=istrU,iend       ! will cover full range, but avoid double counting NW and NE corner as already done for EAST or WEST above
+        Mdiag(i,j,:,1,ivmix) = Mdiag(i,j,:,1,ivmix) +
+     &    ( u(i,j,:,nnew) * (0.5*( Hz(i-1,j,:)+Hz(i,j,:) )) - uv_prev(i,j,:,1) )/dt
+        enddo
+      endif
 
-            ! Full loop ranges since u-change over every point including bry.
-            ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            ! can't just do (u(nnew)-u(nstp)*Hz here because actual need the old Hz for u(nstp) as Hz has evolved.
-            if (check_diag .or. tot_change)  ! if with parameters
-     &        uv_dif(i,j,k, 1)    = ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k,1) )/dt ! do this here as units are correct
+      if (check_diag .or. tot_change) then
+        do k=1,N              ! Full loop ranges since u-change over every point including bry.
+          do j=jstrR,jendR    ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
+            do i=istr,iendR   ! can't just do (u(nnew)-u(nstp)*Hz here because actual need the old Hz for u(nstp) as Hz has evolved.
+              uv_dif(i,j,k, 1) = ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k,1) )/dt ! do this here as units are correct
+            enddo
           enddo
         enddo
-      enddo
+      endif
 
       end subroutine set_diags_u_2d3d_cor  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_v_2d3d_cor( istrR, iendR, jstr, jendR )  ![
+      subroutine set_diags_v_2d3d_cor( istr, iend, jstr, jend, istrR, iendR, jstrV, jendR )  ![
       ! Final 2D-3D correction, part 2 of step3d_uv2.F.
 
-      ! NOTE: Already done 2D-3D correction in uv2_DC step, then we updated the boundary
-      !       and then do another 2D-3D correction. Values over the interior will change
-      !       by such a small value, could just exclude interior for efficiency...
+      ! NOTE: Already done 2D-3D correction in v_mix step, then we updated the boundary
+      !       and then do another 2D-3D correction. Values over the interior only change
+      !       by e-17, so therefore exclude interior for efficiency.
+      !       The budget closing is not quite as accurate but we are talking about
+      !       e-16 difference.
+
+      ! We add 2D3D correction to v_mix diag term for memory efficiency
 
       implicit none
 
       ! inputs
-      integer, intent(in) :: istrR, iendR, jstr, jendR
+      integer, intent(in) :: istr, iend, jstr, jend, istrR, iendR, jstrV, jendR
 
       ! local
       integer :: i, j, k
 
-      do k=1,N
-        do j=jstr,jendR     ! since this section uv2FC uses IU_RANGE & J_RANGE which includes boundary
-          do i=istrR,iendR  ! we add 2D3D correction to h_mix diag term for memory efficiency
-            Mdiag(i,j,k,2,ivmix) = Mdiag(i,j,k,2,ivmix) +
-     &                             ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uv_prev(i,j,k,2) )/dt
+      if (WESTERN_EDGE) then  ! only do boundaries for efficiency
+        i=istrR
+        do j=jstrV,jend       ! will cover full range, but avoid double counting SW and NW corner as done for SOUTH/NORTH below
+        Mdiag(i,j,:,2,ivmix) = Mdiag(i,j,:,2,ivmix) +
+     &  ( v(i,j,:,nnew)*(0.5*( Hz(i,j-1,:)+Hz(i,j,:) ))-uv_prev(i,j,:,2) )/dt
+        enddo
+      endif
+      if (EASTERN_EDGE) then
+        i=iendR
+        do j=jstrV,jend       ! will cover full range, but avoid double counting SE and NE corner as done for SOUTH/NORTH below
+        Mdiag(i,j,:,2,ivmix) = Mdiag(i,j,:,2,ivmix) +
+     &  ( v(i,j,:,nnew)*(0.5*( Hz(i,j-1,:)+Hz(i,j,:) ))-uv_prev(i,j,:,2) )/dt
+        enddo
+      endif
+      if (SOUTHERN_EDGE) then
+        j=jstr
+        Mdiag(:,j,:,2,ivmix) = Mdiag(:,j,:,2,ivmix) +
+     &  ( v(:,j,:,nnew)*(0.5*( Hz(:,j-1,:)+Hz(:,j,:) ))-uv_prev(:,j,:,2) )/dt
+      endif
+      if (NORTHERN_EDGE) then
+        j=jendR
+        Mdiag(:,j,:,2,ivmix) = Mdiag(:,j,:,2,ivmix) +
+     &  ( v(:,j,:,nnew)*(0.5*( Hz(:,j-1,:)+Hz(:,j,:) ))-uv_prev(:,j,:,2) )/dt
+      endif
 
-            if (check_diag .or. tot_change)  ! if with compile time parameters
-     &        uv_dif(i,j,k, 2)   = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uvdz_old(i,j,k,2) )/dt ! do this here as units are correct
+      if (check_diag .or. tot_change) then
+        do k=1,N
+          do j=jstr,jendR
+            do i=istrR,iendR
+              uv_dif(i,j,k, 2) = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uvdz_old(i,j,k,2) )/dt ! do this here as units are correct
+            enddo
           enddo
         enddo
-      enddo
+      endif
 
       end subroutine set_diags_v_2d3d_cor  !]
 

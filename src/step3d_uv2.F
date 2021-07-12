@@ -788,8 +788,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # ifdef DIAGNOSTICS
       if (diag_uv) then
         if (calc_diag) then
-          call set_diags_u_2d3d_cor(   istr,  iendR, jstrR, jendR )  ! int+bry indices of domain
-          call set_diags_v_2d3d_cor(   istrR, iendR, jstr,  jendR )
+          call set_diags_u_2d3d_cor( istr, iend, jstr, jend, istrU, iendR, jstrR, jendR )  ! int+bry indices of domain
+          call set_diags_v_2d3d_cor( istr, iend, jstr, jend, istrR, iendR, jstrV, jendR )
         endif
         if (set_dz_old) call set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
       endif
