@@ -253,8 +253,8 @@ c--#define nf_def_var my_nf_def_var
         text=vname(2,indxTime)
 #endif
         ierr=nf90_inq_dimid(ncid, 'time', timedimid(1))
-        call nc_define_var(ncid, vname(1,indxTime),
-     &            text, vname(3,indxTime), timedimid,ierr)
+        call nc_define_var_double(ncid, vname(1,indxTime),    ! store ocean_time as double
+     &            text, vname(3,indxTime), timedimid, ierr )  ! need extra significant figs
 
 ! Free-surface and 2D barotropic velocity components
 

@@ -57,9 +57,10 @@
       end type ncvs
 
 
-      public find_new_record  ! public subroutines
-      public nc_define_var    ! find_new_record only public for WEC,
-      public nc_write_var     ! once WEC updated can remove.
+      public find_new_record       ! public subroutines
+      public nc_define_var         ! find_new_record only public for WEC,
+      public nc_define_var_double  ! once WEC updated can remove.
+      public nc_write_var
       public nc_read_var
       public nc_check_units
       public set_frc_var_tile
@@ -833,16 +834,16 @@ C$OMP BARRIER
       ! Time-step number and time-record indices: (history file only, this
       ! may be needed in the event when a history record is used to restart
       ! the current model run);
-      ierr=nf90_def_var (ncid, 'time_step', nf90_int,
+      ierr=nf90_def_var( ncid, 'time_step', nf90_int,
      &                          auxil, var_id_tmp )
 
       ! Set variable long name
-      ierr=nf90_put_att (ncid, var_id_tmp, 'long_name',
-     &             'time step and record numbers from initialization')
+      ierr=nf90_put_att( ncid, var_id_tmp, 'long_name',
+     &       'time step and record numbers from initialization')
 
       ! Define ocean_time variable
-      call nc_define_var(ncid, 'ocean_time',
-     &            'Time since initialization', 'second', timedim,ierr)
+      call nc_define_var_double( ncid, 'ocean_time',
+     &       'Time since initialization', 'second', timedim, ierr )
 
 
       end subroutine ncdf_create_file  !]
@@ -914,8 +915,8 @@ C$OMP BARRIER
       end subroutine ncdf_create_blank_file  !]
 
 !-----------------------------------------------------------------------
-      subroutine nc_define_var(ncid,var_name,var_long_name,var_units,  ![
-     &                              var_grd,ierr)
+      subroutine nc_define_var( ncid, var_name, var_long_name, var_units,  ![
+     &                                var_grd,  ierr )
 
       ![Define variables for output netcdf file
       ! Flow of function calls taken from old def_his.F
@@ -938,8 +939,7 @@ C$OMP BARRIER
       integer                           :: ierr
 
       ! local
-      integer var_id, lvar, lenstr
-
+      integer :: var_id, lvar, lenstr
 
 #ifdef MASK_LAND_DATA
 # ifdef HIS_DOUBLE
@@ -982,6 +982,60 @@ C$OMP BARRIER
 
 
       end subroutine nc_define_var  !]
+
+!-----------------------------------------------------------------------
+      subroutine nc_define_var_double( ncid, var_name, var_long_name, var_units,  ![
+     &                                 var_grd, ierr )
+
+      ! Define variables for output netcdf file (DOUBLE NOT FLOAT)
+      ! See nc_define_var for further notes.
+
+      implicit none
+
+      ! inputs
+      integer,               intent(in) :: ncid
+      character(len=*),      intent(in) :: var_name, var_long_name, var_units
+      integer, dimension(:), intent(in) :: var_grd                             ! dould be 2d or 3d grid
+      integer                           :: ierr
+
+      ! local
+      integer :: var_id, lvar, lenstr
+
+      real*8, parameter :: spv_set=1.D+33
+
+      lvar=lenstr(var_name)
+      ierr=nf90_def_var (ncid, var_name(1:lvar), nf90_double,
+     &                         var_grd, var_id,
+     &                         deflate_level=deflate_level, shuffle=shuffle)
+      if(ierr .ne. nf90_noerr) goto 2
+
+      ierr=nf90_put_att (ncid, var_id, 'long_name', var_long_name)  ! set variable long name
+      if(ierr .ne. nf90_noerr) goto 2
+
+      ierr=nf90_put_att (ncid, var_id, 'units', var_units)          ! set variable units
+      if(ierr .ne. nf90_noerr) goto 2
+
+#ifdef MASK_LAND_DATA
+      ierr=nf90_put_att (ncid, var_id, '_FillValue', spv_set)       ! set variable masking fill value
+      if(ierr .ne. nf90_noerr) goto 2
+#endif
+
+      ! Error handling
+  2   if (ierr .ne. nf90_noerr) then
+        write(*,*) 'netcdf ierr != 0 ', nf90_strerror(ierr)
+        write(*,1) var_name MYID
+        goto 99                                         !--> ERROR
+      endif
+
+      ! text format for '1' in write(*,1) above
+  1   format(/1x, '### ERROR: nc_define_var :: Cannot def. variable ''',
+     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+      goto 100 ! Skip 99
+  99  if (may_day_flag == 0) may_day_flag=3
+ 100  continue
+
+
+      end subroutine nc_define_var_double  !]
 
 ! ----------------------------------------------------------------------
       subroutine nc_write_var(ncid,var_array,nmax,var_name,  ![
