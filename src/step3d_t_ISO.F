@@ -159,6 +159,11 @@ c--#  define ntdf nrhs
 
 # include "compute_horiz_tracer_fluxes.h"
 
+# ifdef DIAGNOSTICS
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
+     &        call set_diags_t_4th_adv(istr, iend, jstr, jend, k, itrc) ! need 't' before it is updated below
+# endif
+
             do j=jstr,jend
               do i=istr,iend
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)
@@ -172,7 +177,7 @@ c--#  define ntdf nrhs
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
               do j=jstr,jend                                           ! only be for tracers of interest
                 do i=istr,iend
-                  Tdiag(i,j,k,td,it_h_adv) = t(i,j,k,nnew,itrc)
+                  Tdiag(i,j,k,td,it_h_disp) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
                 enddo
               enddo
             endif
