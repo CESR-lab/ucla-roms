@@ -201,6 +201,8 @@
       integer, public, parameter                          :: nmd = 5    ! number of momentum diag terms
 
       real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
+      real,         allocatable, dimension(:, : )         :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
+      real,         allocatable, dimension(:, :, :)       :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
       real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, allocatable, dimension(:, :, :, :)    :: uv_prev    ! store incremental u/v/w (nnew)
 
@@ -222,7 +224,8 @@
       integer, parameter, public ::
      &  iprsgr = 1, ! Hydrostatic pressure gradient    - internal loop ranges only (i.e. excluding domain boundary)
      &  icori  = 2, ! Coriolis & curvilinear coords    - internal loop ranges only
-     &  iadv   = 3, ! Advection                        - internal loop ranges only
+     &  iadv   = 3, ! UP3 purely advective fluxes      - internal loop ranges only
+    !&  idiss  = ......
      &  ihmix  = 4, ! Viscous terms (horiz mixing)     - internal loop ranges only
      &  ivmix  = 5  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
       ! ivmix  <--  ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior. Goes into ivmix array for memory efficiency.
@@ -249,9 +252,8 @@
       ! from the u,v,w implementation here currently.
       ! Need to consider pipe and river sources. Budget should still close but should label which term receives river/pipe.
 
-      integer, public, parameter                          :: ndt = 5   ! number of tracer diag terms
+      integer, public, parameter                          :: ndt = 6   ! number of tracer diag terms
       real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! tracer diagnostic terms
-      real,         allocatable, dimension(:, : )         :: FX4, FE4  ! 4th order advective fluxes to split UP3 = ADV + DISP. Called in k loop so only need 2D array for each k
       real,         allocatable, dimension(:, :, :)       :: Td_tmp    ! temporary array to calculate change in tracer diags
       real,         allocatable, dimension(:, :, :)       :: Hz_old    ! store previous Hz to calculate old dz*t. better than storing dz*t for each tracer. Better to recalculate it?
 
@@ -271,12 +273,13 @@
       integer, dimension(NT), public     :: diag_NT_2_td=-1  ! convert itrc=1,NT to index of tracer in Tdiag array. Set to bad value -1
 
       integer, parameter, public ::
-     &  it_h_adv   = 1,  ! Horizontal advective fluxes - compute_horiz_tracer_fluxes.h
-     &  it_h_disp  = 2,   ! Dissipative part of UP3 advection
-     &  it_v_adv   = 3,  ! Vertical advective fluxes   - compute_vert_tracer_fluxes.h
+     &  it_h_adv   = 1,  ! Horizontal UP3 purely advective fluxes - compute_horiz_tracer_fluxes.h
+     &  it_h_diss  = 2,  ! Dissipative part of UP3 hori. advection
+     &  it_v_adv   = 3,  ! Vertical   UP3 purely advective fluxes - compute_vert_tracer_fluxes.h
+     &  it_v_diss  = 4,  ! Dissipative part of UP3 vert. advection
                          ! do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
-     &  it_v_mix   = 4,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
-     &  it_h_mix   = 5   ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
+     &  it_v_mix   = 5,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
+     &  it_h_mix   = 6   ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
       ! it_v_mix   <--   ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
       ! it_v_mix   <--   ! Boundary changes - t3dbc_im.F. Only at boundary so shared with v_mix (could be any other term but being consistent with u/v choice of v_mix.
 
@@ -288,7 +291,8 @@
       public init_diags_trc
       public set_diags_t_bc
       public set_diags_t_h_mix
-      public set_diags_t_4th_adv
+      public set_diags_t_4th_h_adv
+      public set_diags_t_4th_v_adv
 
       ! Netcdf outputting:
       ! ------------------
@@ -494,6 +498,13 @@
      &    '(u_ever - u_diag_avg_ever)'
       endif
 
+      allocate( FX4( GLOBAL_2D_ARRAY ) )  ! 4th order advection arrays. Used both uv & tracer, so always needed.
+      allocate( FY4( GLOBAL_2D_ARRAY ) )  ! called within k loop so only need 2D slice per k
+      if (diag_uv)
+     &allocate( FZ4( GLOBAL_2D_ARRAY, 0:N ) )  ! only needed for u/v. use 3D z_w array for now.
+      FZ4(istrR:iendR,jstrR:jendR,0) = 0       ! bottom and surface always 0 for w-point advection
+      FZ4(istrR:iendR,jstrR:jendR,N) = 0
+
       if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
 
       end subroutine init_diags  !]
@@ -518,13 +529,18 @@
       tlname(it_h_adv)    =
      &  'Horizontal UP3 purely advective fluxes'                  / /
      &  ' - compute_horiz_tracer_fluxes.h'
-      tdname(it_h_disp)   = '_h_disp'
-      tlname(it_h_disp)   =
+      tdname(it_h_diss)   = '_h_diss'
+      tlname(it_h_diss)   =
      &  'Horizontal UP3 advection dissipative fluxes'             / /
      &  ' - compute_horiz_tracer_fluxes.h'
       tdname(it_v_adv)    = '_v_adv'
       tlname(it_v_adv)    =
-     &  'Vertical advective fluxes - compute_vert_tracer_fluxes.h'
+     &  'Vertical UP3 purely advective fluxes'                    / /
+     &  ' - compute_vert_tracer_fluxes.h'
+      tdname(it_v_diss)   = '_v_diss'
+      tlname(it_v_diss)   =
+     &  'Vertical UP3 advection dissipative fluxes'               / /
+     &  ' - compute_vert_tracer_fluxes.h'
       tdname(it_v_mix)    = '_v_mix_and_BC'
       tlname(it_v_mix)    =
      &  'Implicit vertical diffusion, nonlocal transport flux, '  / /
@@ -546,8 +562,6 @@
       allocate(  Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )  ! only for tracers we are interested in
       allocate( Td_tmp( GLOBAL_2D_ARRAY, N ) )               ! don't need to set to zero as written over in code
       allocate( Hz_old( GLOBAL_2D_ARRAY, N ) )               ! same for Hz_old
-      allocate(    FX4( GLOBAL_2D_ARRAY    ) )               ! called within k loop so only need 2D slice per k
-      allocate(    FE4( GLOBAL_2D_ARRAY    ) )
       Tdiag (istrR:iendR, jstrR:jendR, :, :, :) = 0
 
       allocate( diag_td_2_NT( nd_trc ) )                     ! to convert indices between 't' and 'Tdiag'
@@ -935,6 +949,79 @@
       end subroutine set_diags_v_2d3d_cor  !]
 
 ! ----------------------------------------------------------------------
+      subroutine set_diags_u_4th_adv( istr, iend, jstr, jend )  ![
+      ! compute the 4th order advection.
+      ! UP3 = adv_4th + dissipation
+      ! Hence can also calculate dissipative part = UP3 - adv_4th
+
+
+      ![ | u(i-1) | u(i)   | u(i+1) | u(i+2) |
+      !           ^        ^
+      !          UFX(i-1) UFX(i)
+      !
+      ! where UFX is at rho-points (faces of u-cell) and u is at u-points.
+      !
+      ! 4th order (centered) fluxes:
+      !
+      !   UFx(i) = 1/2*(FlxU(i)+FlxU(i+1)) * (-u(i-1)+7u(i)+7u(i+1)-u(i+2)) / 12
+      !
+      ! where FlxU is at u-points so need to average to get value at rho-point.
+      !
+      ! Hence divergence of the fluxes: (rho2u averaging)
+      !
+      !   u_adv_4th = dt*pm*pn*( TFX(i-1) - TFX(i)
+      !                         +TFE(i-1) - TFE(i) )
+      !]
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend
+
+      ! local
+      integer :: i, j, k
+
+      ! HORIZONTAL 4TH ORDER ADV:
+
+      do k=1,N
+        do j=jstr-1,jend+1   ! FX4 & FY4 are at rho points (faces of u-cells)
+          do i=istr-1,iend+1 ! need extra rho point beyond sub-domain for averaging below
+
+            FX4(i,j) = 0.0416666666666 * ( FlxU(i,j,k) + FlxU(i+1,j,k) )  ! 0.5 * 1/12 = 0.0416...
+     &                * (-u(i-1,j  ,k,nrhs) + 7*u(i  ,j  ,k,nrhs)
+     &                   -u(i+2,j  ,k,nrhs) + 7*u(i+1,j  ,k,nrhs) )
+
+            FY4(i,j) = 0.0416666666666 * ( FlxV(i,j,k) + FlxV(i,j+1,k) )
+     &                * (-u(i  ,j-1,k,nrhs) + 7*u(i  ,j  ,k,nrhs)
+     &                   -u(i  ,j+2,k,nrhs) + 7*u(i  ,j+1,k,nrhs) )
+
+          enddo
+        enddo
+        do j=jstr,jend    !
+          do i=istr,iend
+  !          Mdiag(i,j,k,1,i_xxxx) = -pm(i,j)*pn(i,j)*( FX4(i-1,j  )-FX4(i,j)   ! no *dt since rate of flux divergence
+  !     &                                              +FY4(i  ,j-1)-FY4(i,j) )
+          enddo
+        enddo
+      enddo  ! <-- k
+
+      ! VERTICAL 4TH ORDER ADV:
+
+      do k=3,N-2
+        if(k==2 .or. k==N-1) then  ! 2nd order advection due to surface/bottom contraints
+
+        else                       ! 4th order
+            FY4(i,j) = 0.0416666666666 * ( We(i,j,k) + We(i,j+1,k) ) ! or use Wi?
+     &                * (-u(i  ,j-1,k,nrhs) + 7*u(i  ,j  ,k,nrhs)    ! reusing FY4 forFZ4?
+     &                   -u(i  ,j+2,k,nrhs) + 7*u(i  ,j+1,k,nrhs) )
+        endif
+      enddo  ! <-- k
+
+
+
+      end subroutine set_diags_u_4th_adv  !]
+
+! ----------------------------------------------------------------------
       subroutine set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
       ! Set dz*u or v at previous timestep to calculate gross change in
       ! u or v overtime step, and to calculate change at boundary.
@@ -1191,8 +1278,8 @@
       end subroutine set_diags_t_h_mix  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_4th_adv( istr, iend, jstr, jend, k, itrc )  ![
-      ! compute the 4th order advection.
+      subroutine set_diags_t_4th_h_adv( istr, iend, jstr, jend, k, itrc )  ![
+      ! compute the horizontal 4th order advection.
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
 
@@ -1206,12 +1293,12 @@
       !
       ! 4th order (centered) fluxes:
       !
-      !   TFx(i) = UFx(i) * ( - T(i-2) + 7T(i-1) + 7T(i) - T(i+1) ) / 12
+      !   TFx(i) = FlxU(i) * ( - T(i-2) + 7T(i-1) + 7T(i) - T(i+1) ) / 12
       !
       ! Hence divergence of the fluxes:
       !
-      !   T_adv_4th = dt*pm*pn*( TFX(i+1) - TFX(i)
-      !                         +TFE(i+1) - TFE(i) )
+      !   T_adv_4th = -pm*pn*( TFX(i+1) - TFX(i)
+      !                       +TFE(i+1) - TFE(i) )
       !]
 
       implicit none
@@ -1223,14 +1310,14 @@
       integer :: i, j, td
 
       td=diag_NT_2_td(itrc)
-      do j=jstr,jend+1   ! +1 since u2rho averaging for Tdiag(it_h_disp) below
+      do j=jstr,jend+1   ! +1 since u2rho averaging for Tdiag(it_h_diss) below
         do i=istr,iend+1
 
-          FX4(i,j) = 0.0833333333333 * FlxU(i,j,k)  ! hoping it's fine to reuse FX4 for every tracer
+          FX4(i,j) = 0.0833333333333 * FlxU(i,j,k)
      &               * (-t(i-2,j  ,k,nrhs,itrc) + 7*t(i-1,j  ,k,nrhs,itrc)
      &                  -t(i+1,j  ,k,nrhs,itrc) + 7*t(i  ,j  ,k,nrhs,itrc) )
 
-          FE4(i,j) = 0.0833333333333 * FlxV(i,j,k)  ! hoping it's fine to reuse FX4 for every tracer
+          FY4(i,j) = 0.0833333333333 * FlxV(i,j,k)
      &               * (-t(i  ,j-2,k,nrhs,itrc)+7*t(i  ,j-1,k,nrhs,itrc)
      &                  -t(i  ,j+1,k,nrhs,itrc)+7*t(i  ,j  ,k,nrhs,itrc) )
 
@@ -1240,11 +1327,88 @@
       do j=jstr,jend
         do i=istr,iend
           Tdiag(i,j,k,td,it_h_adv) = -pm(i,j)*pn(i,j)*( FX4(i+1,j  )-FX4(i,j)   ! no *dt since rate of flux divergence
-     &                                                 +FE4(i  ,j+1)-FE4(i,j) )
+     &                                                 +FY4(i  ,j+1)-FY4(i,j) )
         enddo
       enddo
 
-      end subroutine set_diags_t_4th_adv  !]
+      end subroutine set_diags_t_4th_h_adv  !]
+
+      ! ----------------------------------------------------------------------
+      subroutine set_diags_t_4th_v_adv( istr, iend, jstr, jend, itrc )  ![
+      ! compute the vertical 4th order advection.
+      ! UP3 = adv_4th + dissipation
+      ! Hence can also calculate dissipative part = UP3 - adv_4th
+
+      ![
+      !  FlxW = We + Wi (explicit & implicit parts of 'w')
+      !
+      !  FZ4 is at w-points
+      !  Tdiag(it_v_adv) is at rho-point (T)
+      !
+      !  ---- w(i,j,N)   --- (surface)   here w=0
+      !
+      !       T(i,j,N)
+      !
+      !  ---- w(i,j,N-1)
+      !
+      !       .......
+      !
+      !  ---- w(i,j,1)
+      !
+      !       T(i,j,1)
+      !
+      !  ---- w(i,j,0)   --- (bottom)    here w=0
+      !
+      !]
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend, itrc
+
+      ! local
+      integer :: i, j, k, td
+
+      td=diag_NT_2_td(itrc)
+
+      ! SETUP FZ4 (for now 3D array but could be clever and do like 2 switching rows rather?)
+
+      ! 2nd order advection due to surface/bottom contraints
+
+      do k=1,N-1,N-2     ! i.e. do k=1 and k=N-1
+        do j=jstr,jend   ! FlxW on same vertical axis as tracer, so same loop range.
+          do i=istr,iend
+                                                                                 ! r-point z=N
+            FZ4(i,j,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                         ! w-point z=N-1  <- FZ4(i,j,N-1)
+     &                   * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )       ! r-point z=N-1
+
+          enddo
+        enddo
+      enddo
+
+      ! 4th order
+
+      do k=2,N-2
+        do j=jstr,jend   ! FlxW on same vertical axis as tracer, so same loop range.
+          do i=istr,iend
+                                                                                 ! r-point z=k+2
+            FZ4(i,j,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )             ! r-point z=k+1
+     &                   * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)       ! w-point z=k  <- FZ4(i,j,k)
+     &                      -t(i,j,k+2,nrhs,itrc) + 7*t(i,j,k+1,nrhs,itrc) )     ! r-point z=k
+                                                                                 ! r-point z=k-1
+          enddo
+        enddo
+      enddo
+
+      do k=1,N
+        do j=jstr,jend
+          do i=istr,iend
+            Tdiag(i,j,k,td,it_v_adv) = - pm(i,j)*pn(i,j)* ( FZ4(i,j,k) - FZ4(i,j,k-1) ) ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_t_4th_v_adv  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_tile( istr, iend, jstr, jend )  ![
@@ -1378,8 +1542,8 @@
 
       if (mod(tn,rec_rate)==0) then                ! timestep / rec_rate
 
-        if (check_avg .and. iTd==it_h_disp)
-     &    Td_a_sum(istrR:iendR,jstrR:jendR,:) = 0  ! reset for new tracer: iTd==it_h_disp as
+        if (check_avg .and. iTd==it_h_diss)
+     &    Td_a_sum(istrR:iendR,jstrR:jendR,:) = 0  ! reset for new tracer: iTd==it_h_diss as
                                                    ! must be first diag from wrt_tracer_diags_tile
         do k=1,N
           do j=jstrR,jendR                         ! here we divide the average
@@ -1537,12 +1701,12 @@
         if (check_diag) T_dsum(istrR:iendR,jstrR:jendR,:)=0   ! could just do boundaries as the rest can be overwritten in first below
         Td_tmp(istrR:iendR,jstrR:jendR,:)=0                   ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
 
-        ! h_disp:
+        ! h_diss:
         do k=1,N                                              ! first diagnostic calculated using previous step's value
           do j=jstr,jend
             do i=istr,iend
               ! DISP = UP3 - ADV_4th:
-              Td_tmp(i,j,k)=( Tdiag(i,j,k,td,it_h_disp) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k) )/dt
+              Td_tmp(i,j,k)=( Tdiag(i,j,k,td,it_h_diss) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k) )/dt
      &                      - Tdiag(i,j,k,td,it_h_adv)
               if (check_diag)
      &        T_dsum(i,j,k)=Td_tmp(i,j,k)+Tdiag(i,j,k,td,it_h_adv)  ! add to sum for budget check
@@ -1550,13 +1714,13 @@
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_h_disp, itrc)
+          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_h_diss, itrc)
         else
-          text=trim(t_vname(itrc)) / / tdname(it_h_disp)
+          text=trim(t_vname(itrc)) / / tdname(it_h_diss)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
-        ! h_adv: (already calculated in set_diags_t_4th_adv)
+        ! h_adv: (already calculated in set_diags_t_h_4th_adv)
         if (diag_avg) then
           call set_diags_t_avg_tile(Tdiag(:,:,:,td,it_h_adv), istr, iend, jstr, jend, td, it_h_adv, itrc)
         else
@@ -1564,23 +1728,31 @@
           call nc_write_var(ncid, Tdiag(:,:,:,td,it_h_adv), N, text, rp_var, output_rec, ierr)
         endif
 
-        ! v_adv:
+        ! v_diss:
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_adv) - Tdiag(i,j,k,td,it_h_disp) )/dt  ! UP3 stored in it_h_disp
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_diss) - Tdiag(i,j,k,td,it_h_diss) )/dt  ! UP3 stored in it_h_diss
+     &                      -  Tdiag(i,j,k,td,it_v_adv)
               if (check_diag)
-     &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
+     &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k)+Tdiag(i,j,k,td,it_v_adv) ! it_v_adv already calculated so add directly (share loop)
             enddo
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_v_adv, itrc)
+          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_v_diss, itrc)
         else
-          text=trim(t_vname(itrc)) / / tdname(it_v_adv)
+          text=trim(t_vname(itrc)) / / tdname(it_v_diss)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
+        ! v_adv: (already calculated in set_diags_t_h_4th_adv)
+        if (diag_avg) then
+          call set_diags_t_avg_tile(Tdiag(:,:,:,td,it_v_adv), istr, iend, jstr, jend, td, it_v_adv, itrc)
+        else
+          text=trim(t_vname(itrc)) / / tdname(it_v_adv)
+          call nc_write_var(ncid, Tdiag(:,:,:,td,it_v_adv), N, text, rp_var, output_rec, ierr)
+        endif
 
         ! From here onwards 't' was no longer in dz*t units:
 
@@ -1605,7 +1777,7 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
-              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_v_adv) )/dt
+              Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_v_diss) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo

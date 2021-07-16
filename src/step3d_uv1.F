@@ -147,6 +147,8 @@
 #  endif
 # endif 
 
+        ! CALL 4TH ADVECTION
+
         do i=istrU,iend
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
