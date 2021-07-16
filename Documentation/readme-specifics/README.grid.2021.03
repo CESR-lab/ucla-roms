@@ -204,3 +204,50 @@ Nodes computational margins:
 	requiring interpolation (such as upwinding) with neighbouring points.
 	These computational margin points are filled by exchanging values with neighbours. This is well
 	illustrated in the useful link: https://www.myroms.org/wiki/Parallelization
+
+
+u, v and rho points:
+
+        u-points, v-points and rho-points sit at different positions, and thus have their own indexing.
+
+        Averaging:
+
+          rho-2-u:   v_u  (i,j,k) = 1/2 * ( v_rho(i-1,j,k) + v_rho(i  ,j  ,k) )
+         
+          u-2-rho:   v_rho(i,j,k) = 1/2 * ( v_u  (i  ,j,k) + v_u  (i+1,j  ,k) )
+         
+
+        Hoizontal diagram:
+
+          u     r     u     r     u
+        (1,2) (1,2) (2,2) (2,2) (3,2)
+
+          x     v     x     v     x
+              (1,2)       (2,2)
+
+          u     r     u     r     u
+        (1,1) (1,1) (2,1) (2,1) (3,1)
+
+          x     v     x     v     x
+              (1,1)       (2,1)
+
+Vertical dimension:
+
+        The code stores the depth as follows:
+          z_r -> depth  at rho-point
+          z_w -> depth  at   w-point
+          Hz  -> height of rho-cell -> = z_w(i,j,k)-z_w(i,j,k-1)
+
+        Vertical diagram:
+
+          w   x   w  -> k=N    --> depth = z_w(i,j,N)
+
+          r   uv  r  -> k=N    --> depth = z_r(i,j,N)
+
+          ..........
+
+          w   x   w  -> k=1    --> depth = z_w(i,j,1)
+
+          r   uv  r  -> k=1    --> depth = z_r(i,j,1)
+
+          w   x   w  -> k=0    --> depth = z_w(i,j,0)

@@ -25,17 +25,17 @@ CSDISTRIBUTE_RESHAPE w(BLOCK_PATTERN,*,*) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE  FlxU(BLOCK_PATTERN,*) BLOCK_CLAUSE
       real FlxV(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE  FlxV(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      real We(GLOBAL_2D_ARRAY,0:N)
+      real We(GLOBAL_2D_ARRAY,0:N)  ! explicit
 CSDISTRIBUTE_RESHAPE We(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      real Wi(GLOBAL_2D_ARRAY,0:N)
+      real Wi(GLOBAL_2D_ARRAY,0:N)  ! implicit
 CSDISTRIBUTE_RESHAPE Wi(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /flx_FU/FlxU /flx_FV/FlxV /flx_We/We /flx_Wi/Wi
       
-      real Hz(GLOBAL_2D_ARRAY,N)
+      real Hz(GLOBAL_2D_ARRAY,N)    ! height of rho-cell
 CSDISTRIBUTE_RESHAPE Hz(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      real z_r(GLOBAL_2D_ARRAY,N)
+      real z_r(GLOBAL_2D_ARRAY,N)   ! depth at rho-points
 CSDISTRIBUTE_RESHAPE z_r(BLOCK_PATTERN,*) BLOCK_CLAUSE
-      real z_w(GLOBAL_2D_ARRAY,0:N)
+      real z_w(GLOBAL_2D_ARRAY,0:N) ! depth at   w-points
 CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /grid_zw/z_w /grid_zr/z_r /grid_Hz/Hz
 # if defined NHMG || defined NONTRAD_COR

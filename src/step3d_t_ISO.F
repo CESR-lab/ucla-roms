@@ -161,7 +161,7 @@ c--#  define ntdf nrhs
 
 # ifdef DIAGNOSTICS
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &        call set_diags_t_4th_adv(istr, iend, jstr, jend, k, itrc) ! need 't' before it is updated below
+     &        call set_diags_t_4th_h_adv(istr, iend, jstr, jend, k, itrc) ! need 't' before it is updated below
 # endif
 
             do j=jstr,jend
@@ -177,7 +177,7 @@ c--#  define ntdf nrhs
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
               do j=jstr,jend                                           ! only be for tracers of interest
                 do i=istr,iend
-                  Tdiag(i,j,k,td,it_h_disp) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
+                  Tdiag(i,j,k,td,it_h_diss) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
                 enddo
               enddo
             endif
@@ -763,6 +763,12 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 ! Compute and apply vertical advective fluxes.
 
+# ifdef DIAGNOSTICS
+        if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
+          call set_diags_t_4th_v_adv( istr, iend, jstr, jend, itrc )
+        endif
+# endif
+
         do j=jstr,jend
 
 # include "compute_vert_tracer_fluxes.h"
@@ -786,7 +792,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want this in loop...
             do k=1,N
               do i=istr,iend
-                Tdiag(i,j,k,td,it_v_adv) = t(i,j,k,nnew,itrc)
+                Tdiag(i,j,k,td,it_v_diss) = t(i,j,k,nnew,itrc)
               enddo
             enddo
           endif
@@ -941,7 +947,7 @@ c??         enddo
 
 # ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
-            do i=istr,iend
+            do i=istr,iend                                          ! don't know why I have 2 do's here? can make it one?
               Tdiag(i,j,N,td,it_v_mix) = t(i,j,N,nnew,itrc)         ! k+1 is last to change above as loop from N to 1, -1?
             enddo
             do k=N-1,1,-1
