@@ -182,6 +182,8 @@
       logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Select tracers in wrt_t_diag in tracers_defs.h
       logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
+
+      integer, parameter         :: prcsn         = 1       ! precision of output variables. 1=float, 2=double
       ! End of user inputs                                  ! may not want tot_change (wasteful) since it's just the sum of diagnostic terms.
       ! ***************************************************************
 
@@ -1958,28 +1960,28 @@ C$OMP MASTER
 
                 do diag=1,nmd                             ! diag terms
                   text  = uvw(dim) / / vnames(diag)       ! diag short name
-                  call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr, prcsn )
                 enddo
 
                 if (check_diag .or. tot_change) then      ! following to compare gross change in u/v and sum of diags.
                   text  = uvw(dim) / / check_vnm(1)       ! gross change in dz*u or dz*v over 1 timestep
-                  call nc_define_var(ncid, text, check_lnm(1), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, check_lnm(1), units, grdtyp3d(:,dim), ierr, prcsn )
                 endif
 
                 if (check_diag) then                      ! following to compare gross change in u/v and sum of diags.
                   text  = uvw(dim) / / check_vnm(2)       ! sum of all diag terms over 1 timestep
-                  call nc_define_var(ncid, text, check_lnm(2), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, check_lnm(2), units, grdtyp3d(:,dim), ierr, prcsn )
                   text  = uvw(dim) / / check_vnm(3)       ! compare gross change against sum of diags. Should be approx zero.
-                  call nc_define_var(ncid, text, check_lnm(3), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, check_lnm(3), units, grdtyp3d(:,dim), ierr, prcsn )
                 endif
 
                 if (check_avg) then
                   text  = uvw(dim) / / check_avnm(1)      ! gross change in u/v up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(1), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, check_alnm(1), units, grdtyp3d(:,dim), ierr, prcsn )
                   text  = uvw(dim) / / check_avnm(2)      ! total diag avg in u/v up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(2), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, check_alnm(2), units, grdtyp3d(:,dim), ierr, prcsn )
                   text  = uvw(dim) / / check_avnm(3)      ! total budget close until now since t0
-                  call nc_define_var(ncid, text, check_alnm(3), units, grdtyp3d(:,dim), ierr )
+                  call nc_define_var(ncid, text, check_alnm(3), units, grdtyp3d(:,dim), ierr, prcsn )
                 endif
 
               enddo ! <-- dim
@@ -1991,28 +1993,28 @@ C$OMP MASTER
                 utext = trim(t_units(itrc)) / / tunits
                 do idt=1,ndt                                    ! tracer diag terms
                   text  = trim(t_vname(itrc)) / / tdname(idt)
-                  call nc_define_var(ncid, text, tlname(idt), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text, tlname(idt), utext, r3dgrd, ierr, prcsn )
                 enddo
 
                 if (check_diag .or. tot_change) then
                   text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
-                  call nc_define_var(ncid, text,  check_lnm(1), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text,  check_lnm(1), utext, r3dgrd, ierr, prcsn )
                 endif
 
                 if (check_diag) then
                   text  = trim(t_vname(itrc)) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
-                  call nc_define_var(ncid, text,  check_lnm(2), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text,  check_lnm(2), utext, r3dgrd, ierr, prcsn )
                   text  = trim(t_vname(itrc)) / / check_vnm(3)  ! compare gross change against sum of diags. Should be approx zero.
-                  call nc_define_var(ncid, text,  check_lnm(3), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text,  check_lnm(3), utext, r3dgrd, ierr, prcsn )
                 endif
 
                 if (check_avg) then
                   text  = trim(t_vname(itrc)) / / check_avnm(1) ! gross change in t up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(1), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text, check_alnm(1), utext, r3dgrd, ierr, prcsn )
                   text  = trim(t_vname(itrc)) / / check_avnm(2) ! total diag avg in t up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(2), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text, check_alnm(2), utext, r3dgrd, ierr, prcsn )
                   text  = trim(t_vname(itrc)) / / check_avnm(3) ! total budget close until now since t0
-                  call nc_define_var(ncid, text, check_alnm(3), utext, r3dgrd, ierr )
+                  call nc_define_var(ncid, text, check_alnm(3), utext, r3dgrd, ierr, prcsn )
                 endif
 
               enddo  ! <-- td
