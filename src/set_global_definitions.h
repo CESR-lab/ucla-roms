@@ -475,3 +475,11 @@ c-# define TANH dtanh
 # define flush flush_
 # define etime etime_
 #endif
+
+/* 2021/07: Create single flag for closed boundary example. */
+
+#if !defined OBC_WEST  && !defined OBC_EAST \
+ && !defined OBC_SOUTH && !defined OBC_NORTH
+# define OBC_NONE
+#endif
+

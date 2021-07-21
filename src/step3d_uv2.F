@@ -389,6 +389,13 @@
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
 
+# ifdef OBC_CHECK
+      print *, 'u3dbc:'
+      print *, 'nnew=', nnew
+      print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
+      print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
+# endif
+
 # ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
         call set_diags_u_bc( istr, iend, jstr, jend )
@@ -688,6 +695,24 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         endif    !<-- j >= jstr
       enddo    ! <-- j
       
+# ifdef OBC_NONE
+      if(iic==ntstart) then                     ! catch closed boundary conditions
+        if(WESTERN_EDGE)  FlxU(istr  ,:,:)=0.0
+        if(EASTERN_EDGE)  FlxU(iend+1,:,:)=0.0
+        if(SOUTHERN_EDGE) FlxV(:,jstr  ,:)=0.0
+        if(NORTHERN_EDGE) FlxV(:,jend+1,:)=0.0
+      endif
+
+# endif
+
+# ifdef OBC_CHECK
+      print *, '2D3D Flx 0:'
+      print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
+      print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
+      print *, 'Flxu(istr  ,10,10)=', Flxu(istr,10,10)
+      print *, 'Flxu(iend+1,10,10)=', Flxu(iend+1,10,10)
+# endif
+
 # ifdef RIVER_SOURCE
       do j=jstr,jend
         do i=istr,iend
