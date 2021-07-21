@@ -915,6 +915,15 @@ c<<     &     +cff*iA_v(i,j)
 ! is also used as initial condition for "zeta" for fast-time stepping
 ! during the next 3D-step.
 
+# ifdef OBC_CHECK
+      if(iif == nfast) then
+        print *, 'step2d:'
+        print *, 'DU_avg_bak(istr,10)=',DU_avg_bak(istr,10)
+        print *, 'DU_avg1(istr,10)=',DU_avg1(istr,10)
+        print *, 'DU_avg2(istr,10)=',DU_avg2(istr,10)
+      endif
+# endif
+
 #ifdef SOLVE3D
       if (iif == nfast) then
         do j=jstrR,jendR

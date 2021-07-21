@@ -37,7 +37,7 @@ output_root_name:
      sample    
 
 history: LDEFHIS, NWRT, NRPFHIS
-            T      3    10
+            T      2    10
 
 averages: NTSAVG, NAVG, NRPFAVG
             1e4     1e4     1e4

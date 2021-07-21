@@ -59,36 +59,6 @@
               if (ierr /= nf_noerr) write(*,1) 'sclm_time',
      &                                         itrc, clm_file(1:lfnm)
 # endif
-# ifdef BIOLOGY
-            elseif (itrc == iNO3_) then
-              ierr=nf_inq_varid(ncidclm, 'no3_time', tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'no3_time',
-     &                                        itrc, clm_file(1:lfnm)
-            elseif (itrc == iNH4_) then
-              ierr=nf_inq_varid(ncidclm, 'nh4_time', tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'nh4_time',
-     &                                        itrc, clm_file(1:lfnm)
-            elseif (itrc == iChla) then
-              ierr=nf_inq_varid(ncidclm, 'chla_time',tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1)  'chla_time',
-     &                                        itrc, clm_file(1:lfnm)
-            elseif (itrc == iPhyt) then
-              ierr=nf_inq_varid(ncidclm,'phyto_time',tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'phyto_time',
-     &                                        itrc, clm_file(1:lfnm)
-            elseif (itrc == iZoo_) then
-              ierr=nf_inq_varid(ncidclm, 'zoo_time', tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'zoo_time',
-     &                                        itrc, clm_file(1:lfnm)
-            elseif (itrc == iSDet) then
-              ierr=nf_inq_varid(ncidclm, 'sdet_time',tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'sdet_time',
-     &                                        itrc, clm_file(1:lfnm)
-            elseif (itrc == iLDet) then
-              ierr=nf_inq_varid(ncidclm, 'ldet_time',tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'ldet_time',
-     &                                        itrc, clm_file(1:lfnm)
-# endif
             endif
             if (ierr == nf_noerr) then
               call find_record(      ncidclm, tclm_tid(itrc),

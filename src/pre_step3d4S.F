@@ -778,6 +778,13 @@
 
 # endif /* NHMG */
 
+# ifdef OBC_CHECK
+      print *, 'u3dbc: PRESTEP'
+      print *, 'nnew=', nnew
+      print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
+      print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
+# endif
+
       end
 
 !------------------------------------------------------------------------------------------

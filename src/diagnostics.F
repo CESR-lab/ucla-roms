@@ -252,6 +252,10 @@
       ! from the u,v,w implementation here currently.
       ! Need to consider pipe and river sources. Budget should still close but should label which term receives river/pipe.
 
+# ifdef OBC_CHECK
+      real sum_dbg ! debug sum check
+# endif
+
       integer, public, parameter                          :: ndt = 6   ! number of tracer diag terms
       real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! tracer diagnostic terms
       real,         allocatable, dimension(:, :, :)       :: Td_tmp    ! temporary array to calculate change in tracer diags
@@ -535,11 +539,11 @@
      &  ' - compute_horiz_tracer_fluxes.h'
       tdname(it_v_adv)    = '_v_adv'
       tlname(it_v_adv)    =
-     &  'Vertical UP3 purely advective fluxes'                    / /
+     &  'Vertical purely advective fluxes'                        / / ! spline in vertical
      &  ' - compute_vert_tracer_fluxes.h'
       tdname(it_v_diss)   = '_v_diss'
       tlname(it_v_diss)   =
-     &  'Vertical UP3 advection dissipative fluxes'               / /
+     &  'Vertical advection dissipative fluxes'                   / /
      &  ' - compute_vert_tracer_fluxes.h'
       tdname(it_v_mix)    = '_v_mix_and_BC'
       tlname(it_v_mix)    =
@@ -999,8 +1003,8 @@
         enddo
         do j=jstr,jend    !
           do i=istr,iend
-  !          Mdiag(i,j,k,1,i_xxxx) = -pm(i,j)*pn(i,j)*( FX4(i-1,j  )-FX4(i,j)   ! no *dt since rate of flux divergence
-  !     &                                              +FY4(i  ,j-1)-FY4(i,j) )
+  !          Mdiag(i,j,k,1,i_xxxx) = -pm(i,j)*pn(i,j)*( FX4(i,j)-FX4(i-1,j  )   ! no *dt since rate of flux divergence
+  !     &                                              +FY4(i,j)-FY4(i  ,j-1) ) ! rho2u conversion
           enddo
         enddo
       enddo  ! <-- k
@@ -1324,16 +1328,43 @@
         enddo
       enddo
 
+#ifdef OBC_CHECK
+      sum_dbg = 0 ! refresh sum
+#endif
       do j=jstr,jend
+!        sum_dbg = 0 ! refresh sum
         do i=istr,iend
+#if !defined OBC_CHECK
           Tdiag(i,j,k,td,it_h_adv) = -pm(i,j)*pn(i,j)*( FX4(i+1,j  )-FX4(i,j)   ! no *dt since rate of flux divergence
      &                                                 +FY4(i  ,j+1)-FY4(i,j) )
+#else
+          Tdiag(i,j,k,td,it_h_adv) = - ( FX4(i+1,j  )-FX4(i,j) ! pm(i,j)*pn(i,j)*  ! no *dt since rate of flux divergence
+     &                                                 +FY4(i  ,j+1)-FY4(i,j) )
+
+          sum_dbg=sum_dbg+Tdiag(i,j,k,td,it_h_adv)
+#endif
         enddo
+!        if(k==10) print *, 'k=',k,'j=',j,'h_adv sum_dbg = ',sum_dbg
+!        if(k==10) print *, 'FX4(istr,j)-(iend+1,j) = ',FX4(istr,j)-FX4(iend+1,j)
       enddo
+
+#ifdef OBC_CHECK
+      print *, 'k=',k,'h_adv sum_dbg = ',sum_dbg
+      if(k==10) then
+        print *, 'k==10'
+        print *, 'FlxU(istr  ,10,10)=', FlxU(istr  ,10,10)
+        print *, 'FlxU(iend+1,10,10)=', FlxU(iend+1,10,10)
+        print *, 'FX4(istr  ,10    )=', FX4(istr  ,10)
+        print *, 'FX4(istr+1,10    )=', FX4(istr+1,10)
+        print *, 'FX4(iend+1,10    )=', FX4(iend+1,10)
+        print *, 'FY4(10    ,jstr  )=', FY4(10,jstr  )
+        print *, 'FY4(10    ,jend+1)=', FY4(10,jend+1)
+      endif
+#endif
 
       end subroutine set_diags_t_4th_h_adv  !]
 
-      ! ----------------------------------------------------------------------
+! ----------------------------------------------------------------------
       subroutine set_diags_t_4th_v_adv( istr, iend, jstr, jend, itrc )  ![
       ! compute the vertical 4th order advection.
       ! UP3 = adv_4th + dissipation

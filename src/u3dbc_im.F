@@ -537,7 +537,7 @@ c            u(iend+1,j,k,nnew)=-ust(iend+1,j,k) ! no Lagrangian flux
         enddo
       enddo
 # endif
-      !return 
+
       end
 #else
       subroutine u3dbc_empty

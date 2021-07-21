@@ -8,7 +8,7 @@
       use wec_frc
 #endif
       implicit none
-      integer istr,iend,jstr,jend, i,j
+      integer istr,iend,jstr,jend, i,j, knew_old
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
      &                                     dft,dfx,dfy, zx,hx
       real, parameter :: eps=1.D-33
@@ -26,6 +26,13 @@
 #endif
 
 #include "compute_auxiliary_bounds.h"
+
+#ifdef OBC_NONE
+      if(iic==0) then  ! set closed boundary to zero for krhs=kstp index at beginning
+        knew_old=knew  ! since nnew not used at beginning
+        knew=kstp      ! previously closed boundaries not zero at beginning which makes
+      endif            ! conservation checks harder.
+#endif
 
 #ifdef OBC_FLUX_CORR
       uv_crss=ubar_xs*dtfast/tau_obc
@@ -591,6 +598,14 @@ c--#endif
         enddo
       enddo
 #endif
-      ! return     no return in new code (there was one in old code) 
+
+#ifdef OBC_NONE
+      if(iic==0) knew=knew_old     ! restore correct nnew value
+#endif
+
+# ifdef OBC_CHECK
+      if(iic==0) print *, 'v2dbc:'  ! restore correct nnew value
+# endif
+
       end
 
