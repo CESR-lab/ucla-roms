@@ -24,8 +24,8 @@
 #ifdef SOLVE3D
      &                                            , itrc
 #endif
-      real time_scale
-      integer init_type
+      real    :: time_scale
+      integer :: init_type, tile=0 ! set tile to zero for compute_tile_bounds.h below. Needed to fixed closed boundaries.
       integer, parameter :: init_run=1,  rst_run=2
 #ifdef EXACT_RESTART
      &                    , apprx_rst=3, exact_rst=4
@@ -54,6 +54,9 @@
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
 # include "bgc_ecosys_bec2.h"
 #endif
+
+! needed for istr, iend, etc in order ot fix closed boundaries to u(istr)=0, etc
+# include "compute_tile_bounds.h"
 
 c--#define VERBOSE
 #ifdef VERBOSE
@@ -713,6 +716,43 @@ c--#define VERBOSE
 #ifdef MPI_SILENT_MODE
       endif
 #endif
+
+      ! Here we catch an initial file that does not have the boundary values of u/v
+      ! set to zero, even though we prescribed a closed boundary. This is necessary
+      ! for conservation tests.
+#if !defined OBC_WEST
+      if(WESTERN_EDGE) then
+        if(mynode==0) write (*,'(6x,A)')        ! S&W bry always contained in start node (==0)
+     &  'get_init :: set closed west  boundary row to zero (u/ub/v/vb)'
+        u(   istr  ,:     ,:,tindx)=0.0         ! ensure closed boundary u on boundary is zero
+        ubar(istr  ,:     ,1)      =0.0         ! ubar read into index 1 above
+      endif
+#endif
+#if !defined OBC_EAST
+      if(EASTERN_EDGE) then
+        if(mynode==NNODES-1) write (*,'(6x,A)') ! N&E bry always contained in final node (==NNODES-1)
+     &  'get_init :: set closed east  boundary row to zero (u/ub/v/vb)'
+        u(   iend+1,:     ,:,tindx)=0.0
+        ubar(iend+1,:     ,1)      =0.0
+      endif
+#endif
+#if !defined OBC_SOUTH
+      if(SOUTHERN_EDGE) then
+        if(mynode==0) write (*,'(6x,A)')
+     &  'get_init :: set closed south boundary row to zero (u/ub/v/vb)'
+        v(   :     ,jstr  ,:,tindx)=0.0
+        vbar(:     ,jstr  ,1)      =0.0
+      endif
+#endif
+#if !defined OBC_NORTH
+      if(NORTHERN_EDGE) then
+        if(mynode==NNODES-1) write (*,'(6x,A)')
+     &  'get_init :: set closed north boundary row to zero (u/ub/v/vb)'
+        v(   :     ,jend+1,:,tindx)=0.0
+        vbar(:     ,jend+1,1)      =0.0
+      endif
+#endif
+
 #ifdef VERBOSE
       write(*,'(1x,3(1x,A,I6))') 'return from get_init, ntstart =',
      &                                                  ntstart

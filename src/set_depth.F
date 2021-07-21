@@ -37,14 +37,6 @@
 
 # include "compute_auxiliary_bounds.h"
 
-
-# ifdef OBC_NONE
-      if(iic==0) then
-        call    u2dbc_tile(istr,iend,jstr,jend, 0.0)  ! catch closed boundary conditions
-        call    v2dbc_tile(istr,iend,jstr,jend, 0.0)  ! send in arbitraty 0.0 as doesn't matter
-      endif
-# endif
-
                                        ! During initialization or
       if (iic == 0) then               ! restart compute barotropic
         do j=jstrR,jendR               ! fluxes and place them into
@@ -303,10 +295,6 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
      &                                 +ust2d(i,j)
 #  endif
           enddo
-# ifdef OBC_NONE
-          FC(istr ,0)=0.0  ! catch closed boundary conditions
-          FC(iendR,0)=0.0  ! u/v & FlxU/FlxV not zero initially, needed to that.
-# endif
 
 #  ifdef EXTRAP_BAR_FLUXES
 ! PAC23 verified setting with theoretical alpha_max=1.0877.
@@ -439,11 +427,6 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
      &                                   +vst2d(i,j)
 #  endif
             enddo
-
-#  ifdef OBC_NONE
-            if(j==jstr  ) FC(:,0)=0.0  ! catch closed boundary conditions at t=0
-            if(j==jend+1) FC(:,0)=0.0
-#  endif
 
 #  ifdef EXTRAP_BAR_FLUXES
           else

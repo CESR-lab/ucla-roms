@@ -1349,7 +1349,9 @@
       enddo
 
 #ifdef OBC_CHECK
-      print *, 'k=',k,'h_adv sum_dbg = ',sum_dbg
+      if(k>0 .and. k<=11) then
+        print *, 'k=',k,'h_adv sum_dbg = ',sum_dbg
+      endif
       if(k==10) then
         print *, 'k==10'
         print *, 'FlxU(istr  ,10,10)=', FlxU(istr  ,10,10)
