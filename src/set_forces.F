@@ -68,8 +68,9 @@
 ! two mutually exclusive mechanisms for each variable: either _BRY
 ! or climatological data. 
 
-#if defined T_FRC_BRY  || defined M2_FRC_BRY || \
-    defined M3_FRC_BRY || defined Z_FRC_BRY
+#if  !defined OBC_NONE &&                         \
+     (defined T_FRC_BRY  || defined M2_FRC_BRY || \
+      defined M3_FRC_BRY || defined Z_FRC_BRY )
 # ifdef ANA_BRY
 c***              no code here
 # else
