@@ -204,6 +204,7 @@
 
       real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
       real,         allocatable, dimension(:, : )         :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
+      real,         allocatable, dimension(:, : )         :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
       real,         allocatable, dimension(:, :, :)       :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
       real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, allocatable, dimension(:, :, :, :)    :: uv_prev    ! store incremental u/v/w (nnew)
@@ -513,6 +514,7 @@
       allocate( FZ4( GLOBAL_2D_ARRAY, 0:N ) )  ! both u/v/tracer. use 3D z_w array for now.
       FZ4(istrR:iendR,jstrR:jendR,0) = 0       ! bottom and surface always 0 for w-point advection
       FZ4(istrR:iendR,jstrR:jendR,N) = 0
+      allocate(cen2( GLOBAL_2D_ARRAY ) )
 
       if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
 
@@ -1407,6 +1409,32 @@
       !
       !   T_adv_4th(i,j) = -pm*pn*( TFX(i+1,j  ) - TFX(i,j)
       !                            +TFY(i  ,j+1) - TFY(i,j) )
+      !
+      ! However, need to catch boundary and interior masks. We use:
+      !
+      ! 2nd order centred (cen2(i,j))   = 1/2 ( T(i-1,j) + T(i,j) )
+      !
+      ! 4th order corrector (cor4(i,j)) = - T(i-2,j) + T(i-1,j) + T(i,j) - T(i+1,j)
+      !
+      ! thus:
+      !
+      ! 4th order approx.   = ( 12 cen2 + cor4 * rmask(i-2) * rmask(i+1) ) / 12
+      !
+      ! (region of no mask) = ( - T(i-2,j) + 7T(i-1,j) + 7T(i,j) - T(i+1,j) ) /12
+      !   4th order
+      !
+      ! (boundary or 1 cell = ( T(i-1,j) + T(i,j)) / 2
+      !  away from mask)
+      !   2nd order
+      !
+      !     i-2 i-1  i  i+1
+      !      ^   ^   ^   ^          ### = mask
+      ! a) |###|   |   |   |
+      !                             a) or b) then rmask(i-2) or rmask(i+1) = 0
+      ! b) |   |   |   |###|                 so 2nd order centred.
+      !
+      ! c) |   |###|   |   |
+      !                             c) or d) then FlxU(i,j) = 0, so TFx = 0
       !]
 
       implicit none
@@ -1421,13 +1449,23 @@
       do j=jstr,jend+1   ! +1 since u2rho averaging for Tdiag(it_h_diss) below
         do i=istr,iend+1
 
+          ! FX4:
+          cen2(i,j) = t(i-1,j  ,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)        ! 1/2 carried in FX4 calc
+
+          FX4(i,j) = -t(i-2,j  ,k,nrhs,itrc) + t(i-1,j  ,k,nrhs,itrc)        ! temp. use FX4 as cor4 array.
+     &               -t(i+1,j  ,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)
+
           FX4(i,j) = 0.0833333333333 * FlxU(i,j,k)
-     &               * (-t(i-2,j  ,k,nrhs,itrc) + 7*t(i-1,j  ,k,nrhs,itrc)
-     &                  -t(i+1,j  ,k,nrhs,itrc) + 7*t(i  ,j  ,k,nrhs,itrc) )
+     &             * ( 6 * cen2(i,j) + FX4(i,j)*rmask(i-2,j)*rmask(i+1,j) )  ! FX4 on RHS is cor4
+
+          ! FY4:
+          cen2(i,j) = t(i  ,j-1,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)
+
+          FY4(i,j) = -t(i  ,j-2,k,nrhs,itrc) + t(i  ,j-1,k,nrhs,itrc)        ! temp. use FY4 as cor4 array.
+     &               -t(i  ,j+1,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)
 
           FY4(i,j) = 0.0833333333333 * FlxV(i,j,k)
-     &               * (-t(i  ,j-2,k,nrhs,itrc) + 7*t(i  ,j-1,k,nrhs,itrc)
-     &                  -t(i  ,j+1,k,nrhs,itrc) + 7*t(i  ,j  ,k,nrhs,itrc) )
+     &             * ( 6 * cen2(i,j) + FY4(i,j)*rmask(i,j-2)*rmask(i,j+1) )  ! FY4 on RHS is cor4
 
         enddo
       enddo
