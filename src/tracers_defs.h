@@ -22,6 +22,8 @@
 ! t_vname   = Tracer short name
 ! t_units   = Tracer units (for outputing tracer)
 ! t_lname   = Tracer long name (for outputing tracer)
+! t_tname   = Name of time dimension that goes with tracer in forcing file.
+!             Not necessary for analytical model or no surface forcing for tracer.
 ! t_ana_frc = Whether surf flux is read in (0), or analytical (1)
 !             Could be extended 2,3,... depending on different types of
 !             analytical forcing, e.g. time variant/invariant, and further
