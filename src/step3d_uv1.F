@@ -127,6 +127,10 @@
       call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
 # endif
 
+# ifdef DIAGNOSTICS
+        if (diag_uv .and. calc_diag) call set_diags_u_4th_adv( istrU, iend, jstr, jend )
+# endif
+
       do j=jstr,jend
 
 # include "compute_vert_rhs_uv_terms.h"
@@ -146,8 +150,6 @@
         enddo
 #  endif
 # endif 
-
-        ! CALL 4TH ADVECTION
 
         do i=istrU,iend
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
@@ -175,7 +177,8 @@
           enddo
         enddo
 # ifdef DIAGNOSTICS
-        if (diag_uv .and. calc_diag) call set_diags_uv_advection(istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u)
+        if (diag_uv .and. calc_diag)
+     &    call set_diags_uv_dissipation(istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u)
 # endif
         if (j >= jstrV) then
           do i=istr,iend
@@ -203,7 +206,8 @@
             enddo
           enddo
 # ifdef DIAGNOSTICS
-          if (diag_uv .and. calc_diag) call set_diags_uv_advection(istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v)
+          if (diag_uv .and. calc_diag)
+     &      call set_diags_uv_dissipation(istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v)
 # endif
         endif  !<-- if j>=jstrV
 

@@ -176,8 +176,8 @@
       !     4) for an example try Examples/Diagnostics/
       !     5) averaging frequency = rec_rate * time_step
       logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
-      integer                    :: rec_rate      = 2       ! output record rate, move this to .in file rather?
-      integer                    :: recs_per_file = 20      ! total recs per file
+      integer, parameter         :: rec_rate      = 2       ! output record rate, move this to .in file rather?
+      integer, parameter         :: recs_per_file = 20      ! total recs per file
 
       logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Select tracers in wrt_t_diag in tracers_defs.h
@@ -200,7 +200,7 @@
       ! U & V MOMENTUM:
       ! ---------------
 
-      integer, public, parameter                          :: nmd = 5    ! number of momentum diag terms
+      integer, public, parameter                          :: nmd = 6    ! number of momentum diag terms
 
       real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
       real,         allocatable, dimension(:, : )         :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
@@ -226,10 +226,10 @@
       integer, parameter, public ::
      &  iprsgr = 1, ! Hydrostatic pressure gradient    - internal loop ranges only (i.e. excluding domain boundary)
      &  icori  = 2, ! Coriolis & curvilinear coords    - internal loop ranges only
-     &  iadv   = 3, ! UP3 purely advective fluxes      - internal loop ranges only
-    !&  idiss  = ......
-     &  ihmix  = 4, ! Viscous terms (horiz mixing)     - internal loop ranges only
-     &  ivmix  = 5  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
+     &  iadv   = 3, ! purely advective fluxes          - internal loop ranges only
+     &  idiss  = 4, ! dissipation from advection       - internal loop ranges only
+     &  ihmix  = 5, ! Viscous terms (horiz mixing)     - internal loop ranges only
+     &  ivmix  = 6  ! Vertical mixing & 2D/3D coupling - internal loop ranges only
       ! ivmix  <--  ! Boundary changes                 - bry only - should store 3dbc changes in 2D arrays not 3D, as just 0 in interior. Goes into ivmix array for memory efficiency.
       ! ivmix  <--  ! 2D-3D correction                 - internal + bry (full domain) loop ranges. Goes into ivmix array for memory efficiency.
 
@@ -356,7 +356,8 @@
 # endif /* NHMG */
 
       public set_diags_uv_coriolis
-      public set_diags_uv_advection
+      public set_diags_uv_dissipation
+      public set_diags_u_4th_adv
       public set_diags_uv_h_mix
       public set_diags_uv_v_mix
       public set_diags_u_bc
@@ -406,7 +407,10 @@
         lname (icori)  =
      &    'Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h'  ! if goes beyond 72 characters the text has big space, hence new line
         vnames(iadv)   = '_advection'
-        lname (iadv)   = 'Advection - step3d_uv1.F'
+        lname (iadv)   = 'Advection (horiz. & vert.) - step3d_uv1.F'
+        vnames(idiss)  = '_dissip'
+        lname (idiss)  =
+     &    'Dissipation from advection (horiz. & vert.) - step3d_uv1.F'
         vnames(ihmix)  = '_h_mix'
         lname (ihmix)  =
      &    'Horizontal mixing (zero beyond sponge layer) - visc3d_GP.F'
@@ -504,10 +508,9 @@
      &    '(u_ever - u_diag_avg_ever)'
       endif
 
-      allocate( FX4( GLOBAL_2D_ARRAY ) )  ! 4th order advection arrays. Used both uv & tracer, so always needed.
-      allocate( FY4( GLOBAL_2D_ARRAY ) )  ! called within k loop so only need 2D slice per k
-      if (diag_uv)
-     &allocate( FZ4( GLOBAL_2D_ARRAY, 0:N ) )  ! only needed for u/v. use 3D z_w array for now.
+      allocate( FX4( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
+      allocate( FY4( GLOBAL_2D_ARRAY ) )       ! called within k loop so only need 2D slice per k
+      allocate( FZ4( GLOBAL_2D_ARRAY, 0:N ) )  ! both u/v/tracer. use 3D z_w array for now.
       FZ4(istrR:iendR,jstrR:jendR,0) = 0       ! bottom and surface always 0 for w-point advection
       FZ4(istrR:iendR,jstrR:jendR,N) = 0
 
@@ -642,11 +645,181 @@
       end subroutine set_diags_uv_coriolis  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uv_advection( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
-      ! Set the diagnostic terms for prsgrd, coriolis, and advection.
+      subroutine set_diags_u_4th_adv( istrU, iend, jstr, jend )  ![
+      ! compute the 4th order advection.
+      ! UP3 = adv_4th + dissipation
+      ! Hence can also calculate dissipative part = UP3 - adv_4th
+
+
+      ![
+      !
+      ! See readme: Documentation/readme-specifics/README.grid.fluxes.2021.07
+      !             section 'U-POINT FLUXES'
+      !
+      ! HORIZONTAL ADV:
+      !
+      !  UFX4(xi_rho, eta_rho) is at r-points
+      !  UFY4(xi_u,   eta_v  ) is between v-points!
+      !
+      !               UFy(i,j+1)                         <---- eta_v
+      !                 ^
+      !  | u(i-1,j) | u(i,j)   | u(i+1,j) | u(i+2,j) |   <---- eta_rho
+      !             ^          ^
+      !            UFX(i-1)   UFX(i)
+      !
+      ! where UFX is at rho-points (faces of u-cell), and u & FlxU are at u-points.
+      !
+      ! 4th order (centered) fluxes:
+      !
+      ! (A) UFx(i) = 1/2*(FlxU(i)+FlxU(i+1)) * (-u(i-1)+7u(i)+7u(i+1)-u(i+2)) / 12
+      !
+      ! where FlxU is at u-points and hence need u2rho averaging.
+      ! To get from a volume flux to a flux per horizontal m^2, we divide by the
+      ! sub-domain length in x and y, which is the same as multiplying by pm & pn.
+      ! Since they are at rho-points, we need to average pm and pn to u-points:
+      !   1/2*(pm(i,j)+pm(i-1,j)) * 1/2*(pn(i,j)+pn(i-1,j))
+      !
+      ! Hence divergence of the fluxes: (rho2u averaging)
+      !
+      !   u_h_adv_4th = dt*pm*pn*( UFX(i,j) - UFX(i-1,j  )
+      !                           +UFY(i,j) - UFY(i  ,j-1) )
+      !
+      ! VERTICAL ADV:
+      !
+      ! vertical flux is at w points and thus needs to be averaged vertically to get
+      ! to rho points:
+      !
+      !   w   x   w  -> k=1    --> depth = z_w(i,j,1)
+      !
+      !   r   uv  r  -> k=1    --> depth = z_r(i,j,1)
+      !
+      !   w   x   w  -> k=0    --> depth = z_w(i,j,0)
+      !   ^   ^   ^
+      !  i=1 i=2 i=2
+      !
+      !  Hence FlxW at x(i) = 1/2 (w(i)+w(i+1)) and where w(i)=We(i)+Wi(i) in roms
+      !
+      !   UFZ(i,k) = 1/2*(FlxW(i-1)+FlxW(i)) * (-u(k-1)+7u(k)+7u(k+1)-u(k+2)) / 12
+      !
+      !     u(k+2) -z_r
+      !     u(k+1) -z_r
+      !   FZ4(k  ) -z_w
+      !     u(k  ) -z_r
+      !     u(k-1) -z_r
+      !
+      !]
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istrU, iend, jstr, jend
+
+      ! local
+      integer :: i, j, k
+
+      ! HORIZONTAL 4TH ORDER ADV:
+
+      ! at the interior points next to the boundary, there are not enough u/v/tracer
+      ! points beyond the boundary to use a 4th order scheme. As such we artificially
+      ! extend the boundary value into the array, which in effect gives us a 2nd order
+      ! scheme next to the boundary only.
+      ! confirmed u(iend+2,10  ,10,nrhs)=0 but u(iend+1,10  ,10,nrhs)!=0
+
+      if(mynode==0) then
+        print *, 'u(10,jend+3,10,nrhs)=',u(10,jend+3,10,nrhs)
+        print *, 'u(10,jend+2,10,nrhs)=',u(10,jend+2,10,nrhs)
+        print *, 'u(10,jend+1,10,nrhs)=',u(10,jend+1,10,nrhs)
+      endif
+
+      if(EASTERN_EDGE) u(iend+2,:,:,nrhs)=u(iend+1,:,:,nrhs) ! FX4 - transfer last u into buffer
+
+      ! try and avoid recomputeing 0.25*pm(i,j)+pm... as done with DC in step3d_uv1.F?
+      ! FX4 range needed is i=istrU-1,iend and j=jstr,jend
+      ! FY4 range needed is i=istrU  ,iend and j=jstr,jend+1
+      ! but share loop and extra calculation not used, rather than having if statements
+
+      do k=1,N
+        do j=jstr,jend+1     ! FY4 need extra point for v2rho averaging into Mdiag
+          do i=istrU-1,iend  ! FX4 need extra point fpr rho2u averaging into Mdiag
+
+            FX4(i,j) = 0.0416666666666 * ( FlxU(i  ,j,k) + FlxU(i+1,j,k) )  ! 0.5 * 1/12 = 0.0416...
+     &                * (-u(i-1,j  ,k,nrhs) + 7*u(i  ,j  ,k,nrhs)           ! Eqn(A) above
+     &                   -u(i+2,j  ,k,nrhs) + 7*u(i+1,j  ,k,nrhs) )         ! FlxU -> UFx (xi_u 2 xi_rho)
+
+            FY4(i,j) = 0.0416666666666 * ( FlxV(i-1,j,k) + FlxV(i  ,j,k) )  ! FlxV -> UFy (xi_rho 2 xi_u)
+     &                * (-u(i  ,j-2,k,nrhs) + 7*u(i  ,j-1,k,nrhs)
+     &                   -u(i  ,j+1,k,nrhs) + 7*u(i  ,j  ,k,nrhs) )
+
+          enddo
+        enddo
+        do j=jstr,jend
+          do i=istrU,iend
+            Mdiag(i,j,k,1,iadv) = -0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))  ! no *dt since rate of flux divergence
+     &                            *( FX4(i,j  )-FX4(i-1,j)   ! xi_rho 2 xi_u
+     &                              +FY4(i,j+1)-FY4(i  ,j) ) ! eta_v 2 eta_rho
+          enddo
+        enddo
+      enddo  ! <-- k
+
+      ! VERTICAL 4TH ORDER ADV:
+
+      ! Here FZ4 sits directly above u-points,
+      ! thus need to get FlxW by doing rho2u averaging
+
+      ! 2nd order advection due to surface/bottom contraints
+
+      ! might need istrU rather here?
+      do k=1,N-1,N-2         ! i.e. do k=1 and k=N-1
+        do j=jstr,jend
+          do i=istrU,iend    ! FlxW -> UFz (rho2u)
+                                                                        ! u-point z=N
+            FZ4(i,j,k) =              0.5* ( We(i-1,j,k)+Wi(i-1,j,k)
+     &                                      +We(i  ,j,k)+Wi(i  ,j,k) )  ! w-point z=N-1  <- FZ4(i,j,N-1)
+     &                  * 0.5 * ( u(i,j,k  ,nrhs) + u(i,j,k+1,nrhs) )   ! u-point z=N-1
+
+          enddo
+        enddo
+      enddo
+
+      ! 4th order
+
+      do k=2,N-2
+        do j=jstr,jend
+          do i=istrU,iend
+                                                                       ! r-point z=k+2
+            FZ4(i,j,k) = 0.0416666666666 * ( We(i-1,j,k)+Wi(i-1,j,k)   ! r-point z=k+1
+     &                                      +We(i  ,j,k)+Wi(i  ,j,k) )
+     &                   * (-u(i,j,k-1,nrhs) + 7*u(i,j,k  ,nrhs)       ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
+     &                      -u(i,j,k+2,nrhs) + 7*u(i,j,k+1,nrhs) )     ! r-point z=k
+                                                                       ! r-point z=k-1
+          enddo
+        enddo
+      enddo
+
+      do k=1,N
+        do j=jstr,jend
+          do i=istrU,iend
+            Mdiag(i,j,k,1,iadv) = Mdiag(i,j,k,1,iadv)                            ! already contains horizontal advection
+     &                           - 0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))  ! rho2u of pm & pn
+     &                             * ( FZ4(i,j,k) - FZ4(i,j,k-1) )               ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_u_4th_adv  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_uv_dissipation( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
+      ! Change name to dissipation!!!
+      ! Set the diagnostic terms for prsgrd, coriolis, and dissipation from advection.
       ! Works for both u and v.
       ! Prsgrd and coriolis need to also be convert to dz * u/v units
       ! Called from step3d_uv1.F
+      !
+      ! ADVECTIVE_SCHEME = PURE_ADV + DISSIPATION
+      ! DC(i,0)*ruv(i,j,k) / dt - (coriolis + prsgrd) = PURE_ADV + DISS
+      ! thus:
+      !   DISS = DC(i,0)*ruv(i,j,k) / dt - (coriolis + prsgrd) - PURE_ADV   (A)
 
       implicit none
 
@@ -666,8 +839,9 @@
           Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0) / dt
           Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0) / dt
           uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
-          Mdiag(i,j,k,dim,iadv)   = DC(i,0)*ruv(i,j,k) / dt                ! all advection - includes 2nd part of compute_horiz_uv & compute_vert_uv.
+          Mdiag(i,j,k,dim,idiss)  = DC(i,0)*ruv(i,j,k) / dt     ! total change in u/v (adv+cori+prsgrd)
      &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
+     &                            - Mdiag(i,j,k,dim,iadv)       ! see (A) above
         enddo
       enddo
 
@@ -676,7 +850,7 @@
         Mdiag(i,j,N,dim,ivmix) = suvstr(i,j)  ! * dt / dt cancels...
       enddo
 
-      end subroutine set_diags_uv_advection  !]
+      end subroutine set_diags_uv_dissipation  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_h_mix( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
@@ -750,7 +924,7 @@
         enddo
       enddo
 
-      ! Since ivmix also contains surface stress from set_diags_uv_advection we
+      ! Since ivmix also contains surface stress from set_diags_uv_dissipation we
       ! need Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + ...
       do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
         do i=istrU,iend
@@ -954,78 +1128,6 @@
 
       end subroutine set_diags_v_2d3d_cor  !]
 
-! ----------------------------------------------------------------------
-      subroutine set_diags_u_4th_adv( istr, iend, jstr, jend )  ![
-      ! compute the 4th order advection.
-      ! UP3 = adv_4th + dissipation
-      ! Hence can also calculate dissipative part = UP3 - adv_4th
-
-
-      ![ | u(i-1) | u(i)   | u(i+1) | u(i+2) |
-      !           ^        ^
-      !          UFX(i-1) UFX(i)
-      !
-      ! where UFX is at rho-points (faces of u-cell) and u is at u-points.
-      !
-      ! 4th order (centered) fluxes:
-      !
-      !   UFx(i) = 1/2*(FlxU(i)+FlxU(i+1)) * (-u(i-1)+7u(i)+7u(i+1)-u(i+2)) / 12
-      !
-      ! where FlxU is at u-points so need to average to get value at rho-point.
-      !
-      ! Hence divergence of the fluxes: (rho2u averaging)
-      !
-      !   u_adv_4th = dt*pm*pn*( TFX(i-1) - TFX(i)
-      !                         +TFE(i-1) - TFE(i) )
-      !]
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend
-
-      ! local
-      integer :: i, j, k
-
-      ! HORIZONTAL 4TH ORDER ADV:
-
-      do k=1,N
-        do j=jstr-1,jend+1   ! FX4 & FY4 are at rho points (faces of u-cells)
-          do i=istr-1,iend+1 ! need extra rho point beyond sub-domain for averaging below
-
-            FX4(i,j) = 0.0416666666666 * ( FlxU(i,j,k) + FlxU(i+1,j,k) )  ! 0.5 * 1/12 = 0.0416...
-     &                * (-u(i-1,j  ,k,nrhs) + 7*u(i  ,j  ,k,nrhs)
-     &                   -u(i+2,j  ,k,nrhs) + 7*u(i+1,j  ,k,nrhs) )
-
-            FY4(i,j) = 0.0416666666666 * ( FlxV(i,j,k) + FlxV(i,j+1,k) )
-     &                * (-u(i  ,j-1,k,nrhs) + 7*u(i  ,j  ,k,nrhs)
-     &                   -u(i  ,j+2,k,nrhs) + 7*u(i  ,j+1,k,nrhs) )
-
-          enddo
-        enddo
-        do j=jstr,jend    !
-          do i=istr,iend
-  !          Mdiag(i,j,k,1,i_xxxx) = -pm(i,j)*pn(i,j)*( FX4(i,j)-FX4(i-1,j  )   ! no *dt since rate of flux divergence
-  !     &                                              +FY4(i,j)-FY4(i  ,j-1) ) ! rho2u conversion
-          enddo
-        enddo
-      enddo  ! <-- k
-
-      ! VERTICAL 4TH ORDER ADV:
-
-      do k=3,N-2
-        if(k==2 .or. k==N-1) then  ! 2nd order advection due to surface/bottom contraints
-
-        else                       ! 4th order
-            FY4(i,j) = 0.0416666666666 * ( We(i,j,k) + We(i,j+1,k) ) ! or use Wi?
-     &                * (-u(i  ,j-1,k,nrhs) + 7*u(i  ,j  ,k,nrhs)    ! reusing FY4 forFZ4?
-     &                   -u(i  ,j+2,k,nrhs) + 7*u(i  ,j+1,k,nrhs) )
-        endif
-      enddo  ! <-- k
-
-
-
-      end subroutine set_diags_u_4th_adv  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
@@ -1292,7 +1394,7 @@
 
       ![ | T(i-2) | T(i-1) | T(i)   | T(i+1) |
       !                    ^        ^
-      !                   UFX(i)   UFX(i+1)
+      !                  FlxU(i)  FlxU(i+1)
       !                   TFX(i)   TFX(i+1)
       !
       ! where UFX and TFX are at u-points and T is at rho-points.
@@ -1301,10 +1403,10 @@
       !
       !   TFx(i) = FlxU(i) * ( - T(i-2) + 7T(i-1) + 7T(i) - T(i+1) ) / 12
       !
-      ! Hence divergence of the fluxes:
+      ! Hence divergence of the fluxes: (u2rho)
       !
-      !   T_adv_4th = -pm*pn*( TFX(i+1) - TFX(i)
-      !                       +TFE(i+1) - TFE(i) )
+      !   T_adv_4th(i,j) = -pm*pn*( TFX(i+1,j  ) - TFX(i,j)
+      !                            +TFY(i  ,j+1) - TFY(i,j) )
       !]
 
       implicit none
@@ -1324,8 +1426,8 @@
      &                  -t(i+1,j  ,k,nrhs,itrc) + 7*t(i  ,j  ,k,nrhs,itrc) )
 
           FY4(i,j) = 0.0833333333333 * FlxV(i,j,k)
-     &               * (-t(i  ,j-2,k,nrhs,itrc)+7*t(i  ,j-1,k,nrhs,itrc)
-     &                  -t(i  ,j+1,k,nrhs,itrc)+7*t(i  ,j  ,k,nrhs,itrc) )
+     &               * (-t(i  ,j-2,k,nrhs,itrc) + 7*t(i  ,j-1,k,nrhs,itrc)
+     &                  -t(i  ,j+1,k,nrhs,itrc) + 7*t(i  ,j  ,k,nrhs,itrc) )
 
         enddo
       enddo
@@ -1341,7 +1443,7 @@
      &                                                 +FY4(i  ,j+1)-FY4(i,j) )
 #else
           Tdiag(i,j,k,td,it_h_adv) = - ( FX4(i+1,j  )-FX4(i,j) ! pm(i,j)*pn(i,j)*  ! no *dt since rate of flux divergence
-     &                                                 +FY4(i  ,j+1)-FY4(i,j) )
+     &                                  +FY4(i  ,j+1)-FY4(i,j) )
 
           sum_dbg=sum_dbg+Tdiag(i,j,k,td,it_h_adv)
 #endif
