@@ -647,7 +647,7 @@
       end subroutine set_diags_uv_coriolis  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_u_4th_adv( istrU, iend, jstr, jend )  ![
+      subroutine set_diags_u_4th_adv( istrU, istr, iend, jstr, jend )  ![
       ! compute the 4th order advection.
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
@@ -657,6 +657,9 @@
       !
       ! See readme: Documentation/readme-specifics/README.grid.fluxes.2021.07
       !             section 'U-POINT FLUXES'
+      !
+      ! Also, see set_diags_t_4th_h_adv for explanation on why we treat the boundaries
+      ! differently. Note that masking is not needed since u is always zero in the mask.
       !
       ! HORIZONTAL ADV:
       !
@@ -714,7 +717,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istrU, iend, jstr, jend
+      integer, intent(in) :: istrU, istr, iend, jstr, jend
 
       ! local
       integer :: i, j, k
@@ -727,33 +730,57 @@
       ! scheme next to the boundary only.
       ! confirmed u(iend+2,10  ,10,nrhs)=0 but u(iend+1,10  ,10,nrhs)!=0
 
-      if(mynode==0) then
-        print *, 'u(10,jend+3,10,nrhs)=',u(10,jend+3,10,nrhs)
-        print *, 'u(10,jend+2,10,nrhs)=',u(10,jend+2,10,nrhs)
-        print *, 'u(10,jend+1,10,nrhs)=',u(10,jend+1,10,nrhs)
-      endif
-
-      if(EASTERN_EDGE) u(iend+2,:,:,nrhs)=u(iend+1,:,:,nrhs) ! FX4 - transfer last u into buffer
-
       ! try and avoid recomputeing 0.25*pm(i,j)+pm... as done with DC in step3d_uv1.F?
-      ! FX4 range needed is i=istrU-1,iend and j=jstr,jend
-      ! FY4 range needed is i=istrU  ,iend and j=jstr,jend+1
-      ! but share loop and extra calculation not used, rather than having if statements
 
       do k=1,N
-        do j=jstr,jend+1     ! FY4 need extra point for v2rho averaging into Mdiag
-          do i=istrU-1,iend  ! FX4 need extra point fpr rho2u averaging into Mdiag
 
+        ! interior - 4th order:
+        do j=jstr,jend
+          do i=istrU-1,iend  ! FX4 need extra point for rho2u averaging into Mdiag (i=istrU-1:iend)
             FX4(i,j) = 0.0416666666666 * ( FlxU(i  ,j,k) + FlxU(i+1,j,k) )  ! 0.5 * 1/12 = 0.0416...
      &                * (-u(i-1,j  ,k,nrhs) + 7*u(i  ,j  ,k,nrhs)           ! Eqn(A) above
      &                   -u(i+2,j  ,k,nrhs) + 7*u(i+1,j  ,k,nrhs) )         ! FlxU -> UFx (xi_u 2 xi_rho)
-
+          enddo
+        enddo
+        do j=jstr,jend+1     ! FY4 need extra point for v2rho averaging into Mdiag
+          do i=istrU,iend
             FY4(i,j) = 0.0416666666666 * ( FlxV(i-1,j,k) + FlxV(i  ,j,k) )  ! FlxV -> UFy (xi_rho 2 xi_u)
      &                * (-u(i  ,j-2,k,nrhs) + 7*u(i  ,j-1,k,nrhs)
      &                   -u(i  ,j+1,k,nrhs) + 7*u(i  ,j  ,k,nrhs) )
-
           enddo
         enddo
+
+        ! boundaries - 2nd order:
+        if(WESTERN_EDGE) then        ! we overwrite boundary edges since interior tiles
+          do j=jstr,jend             ! need the loop ranges above. Chose this rather than
+            i=istrU-1                ! imin and imax extra code in compute_horiz_rhs_uv_terms.h
+            FX4(i,j) = 0.25 * ( FlxU(i  ,j,k)      + FlxU(i+1,j,k) )
+     &                      * (    u(i  ,j,k,nrhs) +    u(i+1,j,k,nrhs) )  ! FlxU -> UFx (xi_u 2 xi_rho)
+          enddo
+        endif
+        if(EASTERN_EDGE) then
+          do j=jstr,jend
+            i=iend
+            FX4(i,j) = 0.25 * ( FlxU(i  ,j,k)      + FlxU(i+1,j,k) )
+     &                      * (    u(i  ,j,k,nrhs) +    u(i+1,j,k,nrhs) )  ! FlxU -> UFx (xi_u 2 xi_rho)
+          enddo
+        endif
+
+        if(SOUTHERN_EDGE) then
+          do i=istrU,iend
+            j=jstr
+            FY4(i,j) = 0.25 * ( FlxV(i-1,j  ,k)      + FlxV(i  ,j,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
+     &                      * (    u(i  ,j-1,k,nrhs) +    u(i  ,j,k,nrhs) )
+          enddo
+        endif
+        if(SOUTHERN_EDGE) then
+          do i=istrU,iend
+            j=jend+1
+            FY4(i,j) = 0.25 * ( FlxV(i-1,j  ,k)      + FlxV(i  ,j,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
+     &                      * (    u(i  ,j-1,k,nrhs) +    u(i  ,j,k,nrhs) )
+          enddo
+        endif
+
         do j=jstr,jend
           do i=istrU,iend
             Mdiag(i,j,k,1,iadv) = -0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))  ! no *dt since rate of flux divergence
@@ -1435,6 +1462,11 @@
       !
       ! c) |   |###|   |   |
       !                             c) or d) then FlxU(i,j) = 0, so TFx = 0
+      !
+      ! This relies on rmask set to 0 beyond the physical domain, in init_arrays.
+      !
+      ! Note: JM and I agreed 2nd order centered scheme at boundary and near mask is
+      ! adequate, even though it's possibly not quite what the code does.
       !]
 
       implicit none

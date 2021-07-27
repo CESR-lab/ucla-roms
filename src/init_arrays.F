@@ -98,6 +98,9 @@
       endif
 # endif
 #endif
+
+      rmask = 0.  ! ensures mask is set beyond physical domain, needed in diagnostics.F
+                  ! to achieve 2nd order centered scheme at boundary for advection.
       do j=jstrR,jendR               ! Initialize
         do i=istrR,iendR             ! 2-D primitive
           zeta(i,j,1)=0. ! init      ! variables.
