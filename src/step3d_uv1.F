@@ -128,8 +128,10 @@
 # endif
 
 # ifdef DIAGNOSTICS
-        if (diag_uv .and. calc_diag)
-     &    call set_diags_u_4th_adv( istrU, istr, iend, jstr, jend )
+        if (diag_uv .and. calc_diag) then
+          call set_diags_u_4th_adv( istrU, istr, iend, jstr, jend )
+          call set_diags_v_4th_adv( jstrV, istr, iend, jstr, jend )
+        endif
 # endif
 
       do j=jstr,jend

@@ -359,6 +359,7 @@
       public set_diags_uv_coriolis
       public set_diags_uv_dissipation
       public set_diags_u_4th_adv
+      public set_diags_v_4th_adv
       public set_diags_uv_h_mix
       public set_diags_uv_v_mix
       public set_diags_u_bc
@@ -724,12 +725,6 @@
 
       ! HORIZONTAL 4TH ORDER ADV:
 
-      ! at the interior points next to the boundary, there are not enough u/v/tracer
-      ! points beyond the boundary to use a 4th order scheme. As such we artificially
-      ! extend the boundary value into the array, which in effect gives us a 2nd order
-      ! scheme next to the boundary only.
-      ! confirmed u(iend+2,10  ,10,nrhs)=0 but u(iend+1,10  ,10,nrhs)!=0
-
       ! try and avoid recomputeing 0.25*pm(i,j)+pm... as done with DC in step3d_uv1.F?
 
       do k=1,N
@@ -773,7 +768,7 @@
      &                      * (    u(i  ,j-1,k,nrhs) +    u(i  ,j,k,nrhs) )
           enddo
         endif
-        if(SOUTHERN_EDGE) then
+        if(NORTHERN_EDGE) then
           do i=istrU,iend
             j=jend+1
             FY4(i,j) = 0.25 * ( FlxV(i-1,j  ,k)      + FlxV(i  ,j,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
@@ -797,7 +792,6 @@
 
       ! 2nd order advection due to surface/bottom contraints
 
-      ! might need istrU rather here?
       do k=1,N-1,N-2         ! i.e. do k=1 and k=N-1
         do j=jstr,jend
           do i=istrU,iend    ! FlxW -> UFz (rho2u)
@@ -836,6 +830,137 @@
       enddo
 
       end subroutine set_diags_u_4th_adv  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_v_4th_adv( jstrV, istr, iend, jstr, jend )  ![
+      ! compute the 4th order advection.
+      ! UP3 = adv_4th + dissipation
+      ! Hence can also calculate dissipative part = UP3 - adv_4th
+
+
+      ![
+      !
+      ! See readme: Documentation/readme-specifics/README.grid.fluxes.2021.07
+      !             section 'V-POINT FLUXES'
+      !
+      ! Also, see set_diags_t_4th_h_adv for explanation on why we treat the boundaries
+      ! differently. Note that masking is not needed since u is always zero in the mask.
+      ! And see set_diags_u_4th_adv for more detailed info.
+      !]
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: jstrV, istr, iend, jstr, jend
+
+      ! local
+      integer :: i, j, k
+
+      ! HORIZONTAL 4TH ORDER ADV:
+
+      do k=1,N
+
+        ! interior - 4th order:
+        do j=jstrV,jend
+          do i=istr,iend+1  ! FX4 need extra point for u2rho averaging into Mdiag (i=istr:iend+1)
+            FX4(i,j) = 0.0416666666666 * ( FlxU(i,j-1,k) + FlxU(i,j  ,k) )  ! 0.5 * 1/12 = 0.0416...
+     &                * (-v(i-2,j  ,k,nrhs) + 7*v(i-1,j  ,k,nrhs)
+     &                   -v(i+1,j  ,k,nrhs) + 7*v(i  ,j  ,k,nrhs) )         ! FlxU -> VFx (eta_rho 2 eta_v)
+          enddo
+        enddo
+        do j=jstrV-1,jend   ! FY4 need extra point for rho2v averaging into Mdiag
+          do i=istr,iend
+            FY4(i,j) = 0.0416666666666 * ( FlxV(i,j  ,k) + FlxV(i,j+1,k) )  ! FlxV -> VFy (eta_v 2 eta_rho)
+     &                * (-v(i  ,j-1,k,nrhs) + 7*v(i  ,j  ,k,nrhs)
+     &                   -v(i  ,j+2,k,nrhs) + 7*v(i  ,j+1,k,nrhs) )
+          enddo
+        enddo
+
+        ! boundaries only - 2nd order:
+        if(WESTERN_EDGE) then        ! we overwrite boundary edges since interior tiles
+          do j=jstrV,jend            ! need the loop ranges above. Chose this rather than
+            i=istr                   ! imin and imax extra code in compute_horiz_rhs_uv_terms.h
+            FX4(i,j) = 0.25 * ( FlxU(i  ,j-1,k)      + FlxU(i,j,k) )
+     &                      * (    v(i-1,j  ,k,nrhs) +    v(i,j,k,nrhs) )
+          enddo
+        endif
+        if(EASTERN_EDGE) then
+          do j=jstrV,jend
+            i=iend+1
+            FX4(i,j) = 0.25 * ( FlxU(i  ,j-1,k)      + FlxU(i,j,k) )
+     &                      * (    v(i-1,j  ,k,nrhs) +    v(i,j,k,nrhs) )
+          enddo
+        endif
+
+        if(SOUTHERN_EDGE) then
+          do i=istr,iend
+            j=jstrV-1
+            FY4(i,j) = 0.25 * ( FlxV(i,j,k)      + FlxV(i,j+1,k) )
+     &                      * (    v(i,j,k,nrhs) +    v(i,j+1,k,nrhs) )
+          enddo
+        endif
+        if(NORTHERN_EDGE) then
+          do i=istr,iend
+            j=jend
+            FY4(i,j) = 0.25 * ( FlxV(i,j,k)      + FlxV(i,j+1,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
+     &                      * (    v(i,j,k,nrhs) +    v(i,j+1,k,nrhs) )
+          enddo
+        endif
+
+        do j=jstrV,jend
+          do i=istr,iend
+            Mdiag(i,j,k,2,iadv) = -0.25*(pm(i,j-1)+pm(i,j))*(pn(i,j-1)+pn(i,j))  ! no *dt since rate of flux divergence
+     &                            *( FX4(i+1,j)-FX4(i,j  )   ! xi_u 2 xi_rho
+     &                              +FY4(i  ,j)-FY4(i,j-1) ) ! eta_rho 2 eta_v
+          enddo
+        enddo
+      enddo  ! <-- k
+
+      ! VERTICAL 4TH ORDER ADV:
+
+      ! Here FZ4 sits directly above v-points,
+      ! thus need to get FlxW by doing rho2v averaging
+
+      ! 2nd order advection due to surface/bottom contraints
+
+      do k=1,N-1,N-2        ! i.e. do k=1 and k=N-1
+        do j=jstrV,jend
+          do i=istr,iend    ! FlxW -> VFZ (rho2v)
+                                                                      ! u-point z=N
+            FZ4(i,j,k) =              0.5* ( We(i,j-1,k)+Wi(i,j-1,k)
+     &                                      +We(i,j  ,k)+Wi(i,j  ,k) )! w-point z=N-1  <- FZ4(i,j,N-1)
+     &                  * 0.5 * ( v(i,j,k,nrhs) + v(i,j,k+1,nrhs) )   ! u-point z=N-1
+
+          enddo
+        enddo
+      enddo
+
+      ! 4th order
+
+      do k=2,N-2
+        do j=jstrV,jend
+          do i=istr,iend
+                                                                       ! r-point z=k+2
+            FZ4(i,j,k) = 0.0416666666666 * ( We(i,j-1,k)+Wi(i,j-1,k)   ! r-point z=k+1
+     &                                      +We(i,j  ,k)+Wi(i,j  ,k) )
+     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)       ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
+     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )     ! r-point z=k
+                                                                       ! r-point z=k-1
+          enddo
+        enddo
+      enddo
+
+      do k=1,N
+        do j=jstrV,jend
+          do i=istr,iend
+            Mdiag(i,j,k,2,iadv) = Mdiag(i,j,k,2,iadv)                            ! already contains horizontal advection
+     &                           - 0.25*(pm(i,j-1)+pm(i,j))*(pn(i,j-1)+pn(i,j))  ! rho2u of pm & pn
+     &                             * ( FZ4(i,j,k) - FZ4(i,j,k-1) )               ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_v_4th_adv  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_dissipation( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
