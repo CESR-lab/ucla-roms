@@ -21,34 +21,21 @@
       ! scalars.h for 'FIRST_TIME_STEP' and nstp
 #include "scalars.h"
 
-      ! ****************************************************************
-      ! User inputs
+      ! 1) in order to specify tracer variable details, user must
+      ! set them in tracers.opt (NT still set in param.h for now).
 
-        ! 1) in order to specify tracer variable details, user must
-        ! set them in tracers_defs.h. (NT still set in param.h for now)
+      ! 2) tracer name in netcdf file for _bry.nc and _init.nc
+      ! must have same name as trace variable. ptrace1 -> ptrace1
+      ! However, in the surface flux forcing file, the name of the
+      ! variable must be appended with _flx. E.g. ptrace1 -> ptrace1_flx
 
-        ! 2) tracer name in netcdf file for _bry.nc and _init.nc
-        ! must have same name as trace variable. ptrace1 -> ptrace1
-        ! However, in the surface flux forcing file, the name of the
-        ! variable must be appended with _flx. E.g. ptrace1 -> ptrace1_flx
-
-        ! 3) Make sure tracer surface flux units are correct!
+      ! 3) Make sure tracer surface flux units are correct!
 
       !-- Tracer indices specific to each tracer
-      ! THIS SHOULD GO INTO TRACERS_DEFS.H AND JUST USE SAVE ATTRIBUTE SO
-      ! THAT THEY ARE RETAINED AFTER INITIALIZING
       ! Set to zero as possible means to avoid errors later? Might not be
       ! Necessary. itmp -> itemp, had to spell differently for now as
       ! itemp lives in param.h still (avoid clash). Same for islt -> isalt
       integer :: itmp=0, islt=0
-      ! Remaining passive/bgc tracer indices declared in tracers_defs_idx.h
-#include "tracers_defs_idx.h"
-
-      ! Interpolate forcing from coarser input grid (=1) or not (=0)
-      integer :: interp_t = 0 ! Factor 2 scaling only for now
-
-      ! End of user inputs
-      ! ****************************************************************
 
       !-- Array of tracers
       real, public :: t(GLOBAL_2D_ARRAY,N,3,NT)
@@ -75,6 +62,8 @@
       integer         :: itot=0     ! index counter to count total number of tracers.
                                     ! this term prevents the need to hardcode tracer indices.
 
+      integer         :: interp_t   ! interpolate forcing from coarser input grid (=1) or not (=0)
+
       ! 3 below currently in param.h as per old code
 !      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
       ! Number of 'base' bgc tracers, i.e. minimum number of bgc tracers without cocco
@@ -88,6 +77,11 @@
 
       integer, dimension(NT) :: NT_2_t_avg                        ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer, public        :: n_t_avg                           ! number of tracer averages to output <= NT
+#endif
+
+#ifdef BIOLOGY_BEC2
+! bgc needs public indexes as used in other files
+# include "bgc_tracers_indx.opt"
 #endif
 
       public set_surf_tracer_flx
@@ -370,10 +364,10 @@
       t_lname(islt)='salinity'
       iTandS = 2         ! if both temp and salt.
 #endif
-      itot = iTandS + 1  ! set next tracer index if more tracers
+      itot=iTandS        ! set up counting for additional tracers
 
       ! Additional passive tracers:
-#include "tracers_defs.h"
+#include "tracers.opt"
 
 #if defined AVERAGES
       ! Allocate memory for only the tracer averages required for output

@@ -2,15 +2,15 @@
 ROMS MODEL SETUP & CONFIGURATION
 --------------------------------
 
-Below are a few intructions that should assist in configuring the roms
+Below are a few instructions that should assist in configuring the roms
 executable to work for your simulation of interest:
-(Note, these intructions will assist users of the old roms code, but
+(Note, these instructions will assist users of the old roms code, but
 are likely insufficient for first time roms users)
 
 Running new simulations:
 
     When running a new simulation (i.e. new input files / grid ), it is best to do a very
-    short run first. E.g. only 5 time steps, with result outputting at everytime step, this
+    short run first. E.g. only 5 time steps, with result outputting at every time step, this
     should make iterating to get the model to run properly go faster, rather than waiting
     for your first desired output only to realize there's a netcdf output issue.
     
@@ -18,6 +18,35 @@ Running new simulations:
     to test if your code runs as you get setup (without long waits to run). Strongly encouraged.
     See Documentation/machine-specific/Job_submission_scrips/run_script_comet_debug_nodes.lsf
     for an example of a job submission script on the 2 debug nodes.
+
+roms.in:
+
+    See Examples/Tracers_passive/USWC_sample.in as a template. 
+    Note, we now use one root name, e.g. 'pacific', stored in 
+    variable 'output_root_name' for the output file names. 
+    So the history file will be pacific_his.*.nc,
+    and the averages file will be pacific_avg.*.nc
+
+
+cppdefs.h:
+
+    We have removed some cppflags, 'grep' search the code to see if they still
+    exist, or ask someone who might know :).
+    
+param.h:
+
+    Set your domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
+    Set number of tracers here.
+    
+*.opt:
+
+    The file extension .opt is used to designate files that may require the user
+    to edit to their needs. A module may have an accompanying .opt file, e.g.:
+    src/diagnostics.F has src/diagnostics.opt, in which the user defined changes
+    for the module are added.
+    The .opt files will have default values already.
+    FYI, .opt has no meaning other than an abbreviation of 'options', it is just
+    an include file like the .h files.
 
 Forcing file units:
 
@@ -40,25 +69,6 @@ Forcing file units:
       variable by 2)
     - change units: ncatted -a units,rain,m,c,'cm/day' sample_prec.nc (changes 
       name of units of 'rain' to 'cm/day')
-
-roms.in:
-
-    See Examples/Tracers_passive/USWC_sample.in as a template. 
-    Note, we now use one root name, e.g. 'pacific', stored in 
-    variable 'output_root_name' for the output file names. 
-    So the history file will be pacific_his.*.nc,
-    and the averages file will be pacific_avg.*.nc
-
-
-cppdefs.h:
-
-    We have removed some cppflags, 'grep' search the code to see if they still
-    exist, or ask someone who might know :).
-    
-param.h:
-
-    Set your domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
-    Set number of tracers here.    
 
 Passive tracers:
 

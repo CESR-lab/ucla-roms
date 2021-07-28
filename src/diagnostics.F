@@ -19,36 +19,7 @@
 ! scalars.h for timestep indices 'nnew', 'knew', etc
 #include "scalars.h"
 
-      ! ***************************************************************
-      ! User inputs:
-      !   Budget closing check:
-      !     when using for new simulation (especially if different cppflags) make sure
-      !     to do a very short simulation (i.e. 10 steps) with check_diag (and check_avg
-      !     if using averages) as .true. to ensure budget is closing correctly, e.g.
-      !     u_budget -> 0! Then set them as false for your production run as they are a
-      !     waste of resources.
-      !   Notes:
-      !     1) need DIAGNOSTICS flag in cppdefs.h
-      !     2) units are du/dt*dz - m^2/s^2 (or v/w/tracer) - i.e. vertically integerated over cell
-      !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
-      !     4) for an example try Examples/Diagnostics/
-      !     5) averaging frequency = rec_rate * time_step
-      logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
-      integer, parameter         :: rec_rate      = 2       ! output record rate, move this to .in file rather?
-      integer, parameter         :: recs_per_file = 20      ! total recs per file
-
-      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
-      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Select tracers in wrt_t_diag in tracers_defs.h
-      logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
-
-      integer, parameter         :: prcsn         = 1       ! precision of output variables. 1=float, 2=double
-      ! End of user inputs                                  ! may not want tot_change (wasteful) since it's just the sum of diagnostic terms.
-      ! ***************************************************************
-
-      ! Developer inputs - for budget close checks:
-      ! - need to have on diag_uv to use these flags: (not sure that flag still needed for this)
-      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
+#include "diagnostics.opt"
 
       ! INFO (Optional): ![
       ! Online diagnostics for ROMS simulation.
@@ -310,7 +281,7 @@
       integer            :: ncid=-1, prev_fill_mode
 
 
-      ! W MOMENTUM:
+      ! W MOMENTUM: (CURRENTLY NOT WORKING)
       ! -----------
 
       ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
@@ -391,6 +362,12 @@
         write(*,*) 'ERROR - diagnostics.F: check_avg must be false ',
      &  'if diag_avg is false!'
         error stop 'ERROR - diagnostics.F: check_avg!=F if diag_avg==F'
+      endif
+
+      if(diag_avg .and. rec_rate==1) then
+        write(*,*) 'ERROR - diagnostics.F: need rec_rate > 1 if ',
+     &  'using averages!'
+        error stop 'ERROR - diagnostics.F: diag_avg==T then rec_rate>1'
       endif
 
       if (diag_uv) then

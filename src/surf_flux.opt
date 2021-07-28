@@ -1,0 +1,26 @@
+
+      ! ****************************************************************
+      ! User inputs
+
+      ! Interpolate forcing from coarser input grid (=1) or not (=0)
+      integer :: interp_frc = 0 ! For SST and SSS correction
+
+      logical :: write_file    = .false. ! Whether to write a flux file or not
+      integer :: rec_rate      = 2       ! Output record rate,
+      integer :: recs_per_file = 3     ! total recs per file
+
+      logical :: wrt_sustr = .True. ! Output surface u-stress
+      logical :: wrt_svstr = .True. ! Output surface v-stress
+      logical :: wrt_shflx = .True. ! Output surface heat flux
+      logical :: wrt_ssflx = .True. ! Output surface salinity flux
+      !logical :: wrt_scflx = .true.! for instance all surface chemical fluxes
+
+      ! Writing averages to the main _avg.F file. Output averaging controlled
+      ! by roms.in, but T/F for printing variables is controlled here.
+      logical :: wrt_sustr_avg = .True. ! Output average surface u-stress
+      logical :: wrt_svstr_avg = .True. ! Output average surface v-stress
+      logical :: wrt_shflx_avg = .True. ! Output average surface heat flux
+      logical :: wrt_ssflx_avg = .True. ! Output average surface salinity flux
+
+      ! End of user inputs
+      ! *************************************************************

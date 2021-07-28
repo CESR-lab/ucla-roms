@@ -15,10 +15,11 @@
 
 all:
 	rsync -a $(ROMS_ROOT)/src/*.F $(ROMS_ROOT)/src/*.h  Compile
+	@rsync -a $(ROMS_ROOT)/src/*.opt Compile	
 	@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
 	@rsync -a $(ROMS_ROOT)/src/Makefile Compile
-	cp -p *.h *.F Makedefs.inc Compile 2>/dev/null || :
+	cp -p *.h *.F *.opt Makedefs.inc Compile 2>/dev/null || :
 	cd Compile; make depend 2>/dev/null || :
 	cd Compile; make mpc; make -j6; mv roms ..
 
