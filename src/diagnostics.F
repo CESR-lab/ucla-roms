@@ -3,12 +3,59 @@
       ! To compute diagnostics use DIAGNOSTICS flag in cppdefs.h.
       ! Also, set configuration at 'User input' section below.
 
-      ! JM: We are not properly accounting for the Udzeta/dt,Vdzeta/dt terms
-      ! These should only be a signicant error for coastal tidal flows.
+#include "cppdefs.h"
+#ifdef DIAGNOSTICS
+
+      use dimensions
+      use read_write
+      use netcdf
+      use tracers
+
+      implicit none
+      private
+
+#include "ocean2d.h"
+#include "ocean3d.h"
+! scalars.h for timestep indices 'nnew', 'knew', etc
+#include "scalars.h"
+
+      ! ***************************************************************
+      ! User inputs:
+      !   Budget closing check:
+      !     when using for new simulation (especially if different cppflags) make sure
+      !     to do a very short simulation (i.e. 10 steps) with check_diag (and check_avg
+      !     if using averages) as .true. to ensure budget is closing correctly, e.g.
+      !     u_budget -> 0! Then set them as false for your production run as they are a
+      !     waste of resources.
+      !   Notes:
+      !     1) need DIAGNOSTICS flag in cppdefs.h
+      !     2) units are du/dt*dz - m^2/s^2 (or v/w/tracer) - i.e. vertically integerated over cell
+      !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
+      !     4) for an example try Examples/Diagnostics/
+      !     5) averaging frequency = rec_rate * time_step
+      logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
+      integer, parameter         :: rec_rate      = 2       ! output record rate, move this to .in file rather?
+      integer, parameter         :: recs_per_file = 20      ! total recs per file
+
+      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
+      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Select tracers in wrt_t_diag in tracers_defs.h
+      logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
+
+      integer, parameter         :: prcsn         = 1       ! precision of output variables. 1=float, 2=double
+      ! End of user inputs                                  ! may not want tot_change (wasteful) since it's just the sum of diagnostic terms.
+      ! ***************************************************************
+
+      ! Developer inputs - for budget close checks:
+      ! - need to have on diag_uv to use these flags: (not sure that flag still needed for this)
+      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
+      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
 
       ! INFO (Optional): ![
       ! Online diagnostics for ROMS simulation.
       ! Initial coding DevinD and JeroenM - 2021/05
+
+      ! JM: We are not properly accounting for the Udzeta/dt,Vdzeta/dt terms
+      ! These should only be a signicant error for coastal tidal flows.
 
       ! HIS vs AVG:
       ! To chose between diagnostics at history timesteps or averages,
@@ -145,53 +192,6 @@
 
       !]
 
-#include "cppdefs.h"
-#ifdef DIAGNOSTICS
-
-      use dimensions
-      use read_write
-      use netcdf
-      use tracers
-
-      implicit none
-      private
-
-#include "ocean2d.h"
-#include "ocean3d.h"
-! scalars.h for timestep indices 'nnew', 'knew', etc
-#include "scalars.h"
-
-      ! ***************************************************************
-      ! User inputs:
-      !   Budget closing check:
-      !     when using for new simulation (especially if different cppflags) make sure
-      !     to do a very short simulation (i.e. 10 steps) with check_diag (and check_avg
-      !     if using averages) as .true. to ensure budget is closing correctly, e.g.
-      !     u_budget -> 0! Then set them as false for your production run as they are a
-      !     waste of resources.
-      !   Notes:
-      !     1) need DIAGNOSTICS flag in cppdefs.h
-      !     2) units are du/dt*dz - m^2/s^2 (or v/w/tracer) - i.e. vertically integerated over cell
-      !     3) if tracer diags required (diag_trc==T), select which tracers you want in wrt_t_diag array in tracers_defs.h
-      !     4) for an example try Examples/Diagnostics/
-      !     5) averaging frequency = rec_rate * time_step
-      logical, parameter         :: diag_avg      = .true.  ! compute history (F) or averages (T)
-      integer, parameter         :: rec_rate      = 2       ! output record rate, move this to .in file rather?
-      integer, parameter         :: recs_per_file = 20      ! total recs per file
-
-      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
-      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers. Select tracers in wrt_t_diag in tracers_defs.h
-      logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
-
-      integer, parameter         :: prcsn         = 1       ! precision of output variables. 1=float, 2=double
-      ! End of user inputs                                  ! may not want tot_change (wasteful) since it's just the sum of diagnostic terms.
-      ! ***************************************************************
-
-      ! Developer inputs - for budget close checks:
-      ! - need to have on diag_uv to use these flags: (not sure that flag still needed for this)
-      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v over entire simulation at time of writing
-
       ! Preamble:  ![
 
       logical, public            :: calc_diag               ! flag to calculate diagnostics in equation system.
@@ -203,9 +203,9 @@
       integer, public, parameter                          :: nmd = 6    ! number of momentum diag terms
 
       real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
-      real,         allocatable, dimension(:, : )         :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
-      real,         allocatable, dimension(:, : )         :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
-      real,         allocatable, dimension(:, :, :)       :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
+      real,         allocatable, dimension(:, :)          :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
+      real,         allocatable, dimension(:, :)          :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
+      real,         allocatable, dimension(:, :)          :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
       real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
       real, public, allocatable, dimension(:, :, :, :)    :: uv_prev    ! store incremental u/v/w (nnew)
 
@@ -512,9 +512,9 @@
 
       allocate( FX4( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FY4( GLOBAL_2D_ARRAY ) )       ! called within k loop so only need 2D slice per k
-      allocate( FZ4( GLOBAL_2D_ARRAY, 0:N ) )  ! both u/v/tracer. use 3D z_w array for now.
-      FZ4(istrR:iendR,jstrR:jendR,0) = 0       ! bottom and surface always 0 for w-point advection
-      FZ4(istrR:iendR,jstrR:jendR,N) = 0
+      allocate( FZ4( GLOBAL_1DX_ARRAY, 0:N ) ) ! both u/v/tracer. vertical flux at z_w level.
+      FZ4(istrR:iendR,0) = 0                   ! use 2D array (i & k) for memory savings.
+      FZ4(istrR:iendR,N) = 0                   ! bottom and surface always 0 for w-point advection.
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
       if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
@@ -788,46 +788,42 @@
       ! VERTICAL 4TH ORDER ADV:
 
       ! Here FZ4 sits directly above u-points,
-      ! thus need to get FlxW by doing rho2u averaging
+      ! thus need to get FlxW by doing rho2u averaging.
+      ! j outer loop to prevent need for 3D FZ4 array.
 
-      ! 2nd order advection due to surface/bottom contraints
+      do j=jstr,jend
 
-      do k=1,N-1,N-2         ! i.e. do k=1 and k=N-1
-        do j=jstr,jend
+        ! 2nd order: (due to surface/bottom constraints)
+        do k=1,N-1,N-2       ! i.e. do k=1 and k=N-1
           do i=istrU,iend    ! FlxW -> UFz (rho2u)
                                                                         ! u-point z=N
-            FZ4(i,j,k) =              0.5* ( We(i-1,j,k)+Wi(i-1,j,k)
-     &                                      +We(i  ,j,k)+Wi(i  ,j,k) )  ! w-point z=N-1  <- FZ4(i,j,N-1)
+            FZ4(i,k) =              0.5* ( We(i-1,j,k)+Wi(i-1,j,k)
+     &                                    +We(i  ,j,k)+Wi(i  ,j,k) )  ! w-point z=N-1  <- FZ4(i,j,N-1)
      &                  * 0.5 * ( u(i,j,k  ,nrhs) + u(i,j,k+1,nrhs) )   ! u-point z=N-1
 
           enddo
         enddo
-      enddo
 
-      ! 4th order
-
-      do k=2,N-2
-        do j=jstr,jend
+        ! 4th order:
+        do k=2,N-2
           do i=istrU,iend
                                                                        ! r-point z=k+2
-            FZ4(i,j,k) = 0.0416666666666 * ( We(i-1,j,k)+Wi(i-1,j,k)   ! r-point z=k+1
-     &                                      +We(i  ,j,k)+Wi(i  ,j,k) )
+            FZ4(i,k) = 0.0416666666666 * ( We(i-1,j,k)+Wi(i-1,j,k)   ! r-point z=k+1
+     &                                    +We(i  ,j,k)+Wi(i  ,j,k) )
      &                   * (-u(i,j,k-1,nrhs) + 7*u(i,j,k  ,nrhs)       ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
      &                      -u(i,j,k+2,nrhs) + 7*u(i,j,k+1,nrhs) )     ! r-point z=k
                                                                        ! r-point z=k-1
           enddo
         enddo
-      enddo
 
-      do k=1,N
-        do j=jstr,jend
+        do k=1,N
           do i=istrU,iend
             Mdiag(i,j,k,1,iadv) = Mdiag(i,j,k,1,iadv)                            ! already contains horizontal advection
      &                           - 0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))  ! rho2u of pm & pn
-     &                             * ( FZ4(i,j,k) - FZ4(i,j,k-1) )               ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+     &                             * ( FZ4(i,k) - FZ4(i,k-1) )               ! FZ4 is volume integrated, hence pm*pn to get t*dz?
           enddo
         enddo
-      enddo
+      enddo     ! <-- j
 
       end subroutine set_diags_u_4th_adv  !]
 
@@ -921,44 +917,40 @@
       ! Here FZ4 sits directly above v-points,
       ! thus need to get FlxW by doing rho2v averaging
 
-      ! 2nd order advection due to surface/bottom contraints
+      do j=jstrV,jend
 
-      do k=1,N-1,N-2        ! i.e. do k=1 and k=N-1
-        do j=jstrV,jend
+        ! 2nd order advection: (due to surface/bottom contraints)
+        do k=1,N-1,N-2      ! i.e. do k=1 and k=N-1
           do i=istr,iend    ! FlxW -> VFZ (rho2v)
                                                                       ! u-point z=N
-            FZ4(i,j,k) =              0.5* ( We(i,j-1,k)+Wi(i,j-1,k)
-     &                                      +We(i,j  ,k)+Wi(i,j  ,k) )! w-point z=N-1  <- FZ4(i,j,N-1)
+            FZ4(i,k) =              0.5* ( We(i,j-1,k)+Wi(i,j-1,k)
+     &                                    +We(i,j  ,k)+Wi(i,j  ,k) )  ! w-point z=N-1  <- FZ4(i,j,N-1)
      &                  * 0.5 * ( v(i,j,k,nrhs) + v(i,j,k+1,nrhs) )   ! u-point z=N-1
 
           enddo
         enddo
-      enddo
 
-      ! 4th order
-
-      do k=2,N-2
-        do j=jstrV,jend
+      ! 4th order:
+        do k=2,N-2
           do i=istr,iend
-                                                                       ! r-point z=k+2
-            FZ4(i,j,k) = 0.0416666666666 * ( We(i,j-1,k)+Wi(i,j-1,k)   ! r-point z=k+1
-     &                                      +We(i,j  ,k)+Wi(i,j  ,k) )
-     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)       ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
-     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )     ! r-point z=k
-                                                                       ! r-point z=k-1
+                                                                      ! r-point z=k+2
+            FZ4(i,k) = 0.0416666666666 * ( We(i,j-1,k)+Wi(i,j-1,k)    ! r-point z=k+1
+     &                                    +We(i,j  ,k)+Wi(i,j  ,k) )
+     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)      ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
+     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )    ! r-point z=k
+                                                                      ! r-point z=k-1
           enddo
         enddo
-      enddo
 
-      do k=1,N
-        do j=jstrV,jend
+        do k=1,N
           do i=istr,iend
-            Mdiag(i,j,k,2,iadv) = Mdiag(i,j,k,2,iadv)                            ! already contains horizontal advection
-     &                           - 0.25*(pm(i,j-1)+pm(i,j))*(pn(i,j-1)+pn(i,j))  ! rho2u of pm & pn
-     &                             * ( FZ4(i,j,k) - FZ4(i,j,k-1) )               ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+            Mdiag(i,j,k,2,iadv) = Mdiag(i,j,k,2,iadv)                             ! already contains horizontal advection
+     &                           - 0.25*( pm(i,j-1)+pm(i,j))*(pn(i,j-1)+pn(i,j) ) ! rho2u of pm & pn
+     &                             * ( FZ4(i,k) - FZ4(i,k-1) )                    ! FZ4 is volume integrated, hence pm*pn to get t*dz?
           enddo
         enddo
-      enddo
+
+      enddo      ! <-- j
 
       end subroutine set_diags_v_4th_adv  !]
 
@@ -1648,9 +1640,9 @@
       enddo
 
 #ifdef OBC_CHECK
-      if(k>0 .and. k<=11) then
+!      if(k>0 .and. k<=11) then
         print *, 'k=',k,'h_adv sum_dbg = ',sum_dbg
-      endif
+!      endif
       if(k==10) then
         print *, 'k==10'
         print *, 'FlxU(istr  ,10,10)=', FlxU(istr  ,10,10)
@@ -1703,42 +1695,36 @@
 
       td=diag_NT_2_td(itrc)
 
-      ! SETUP FZ4 (for now 3D array but could be clever and do like 2 switching rows rather?)
+      do j=jstr,jend   ! FlxW on same vertical axis as tracer, so same loop range.
 
-      ! 2nd order advection due to surface/bottom contraints
-
-      do k=1,N-1,N-2     ! i.e. do k=1 and k=N-1
-        do j=jstr,jend   ! FlxW on same vertical axis as tracer, so same loop range.
+        ! 2nd order: (due to surface/bottom contraints)
+        do k=1,N-1,N-2     ! i.e. do k=1 and k=N-1
           do i=istr,iend
-                                                                                 ! r-point z=N
-            FZ4(i,j,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                         ! w-point z=N-1  <- FZ4(i,j,N-1)
-     &                   * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )       ! r-point z=N-1
+                                                                               ! r-point z=N
+            FZ4(i,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                         ! w-point z=N-1  <- FZ4(i,j,N-1)
+     &                 * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )       ! r-point z=N-1
 
           enddo
         enddo
-      enddo
 
-      ! 4th order
-
-      do k=2,N-2
-        do j=jstr,jend   ! FlxW on same vertical axis as tracer, so same loop range.
+        ! 4th order:
+        do k=2,N-2
           do i=istr,iend
-                                                                                 ! r-point z=k+2
-            FZ4(i,j,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )             ! r-point z=k+1
-     &                   * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)       ! w-point z=k  <- FZ4(i,j,k)
-     &                      -t(i,j,k+2,nrhs,itrc) + 7*t(i,j,k+1,nrhs,itrc) )     ! r-point z=k
-                                                                                 ! r-point z=k-1
+                                                                               ! r-point z=k+2
+            FZ4(i,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )             ! r-point z=k+1
+     &                 * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)       ! w-point z=k  <- FZ4(i,j,k)
+     &                    -t(i,j,k+2,nrhs,itrc) + 7*t(i,j,k+1,nrhs,itrc) )     ! r-point z=k
+                                                                               ! r-point z=k-1
           enddo
         enddo
-      enddo
 
-      do k=1,N
-        do j=jstr,jend
+        do k=1,N
           do i=istr,iend
-            Tdiag(i,j,k,td,it_v_adv) = - pm(i,j)*pn(i,j)* ( FZ4(i,j,k) - FZ4(i,j,k-1) ) ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+            Tdiag(i,j,k,td,it_v_adv) = - pm(i,j)*pn(i,j)* ( FZ4(i,k) - FZ4(i,k-1) )  ! FZ4 is volume integrated, hence pm*pn to get t*dz?
           enddo
         enddo
-      enddo
+
+      enddo     ! <-- j
 
       end subroutine set_diags_t_4th_v_adv  !]
 
