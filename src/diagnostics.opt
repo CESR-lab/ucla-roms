@@ -3,7 +3,7 @@
       ! User inputs:
       !
       !   Momentum terms:
-      !     Pressure gradient; adv.; dissipation from adv.; h. mix.; and v. mix.
+      !     Pressure gradient; coriolis; adv.; dissipation from adv.; h. mix.; and v. mix.
       !
       !   Tracer terms:
       !     H. adv.; dissipation from h. adv.; v. adv.; dissipation from v. adv.; h. mix.; and v. mix.
