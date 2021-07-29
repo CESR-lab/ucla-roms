@@ -17,17 +17,7 @@
 #include "param.h"
       ! For iic, ntstart, deg2rad
 #include "scalars.h"
-
-      ! ****************************************************************
-      ! user inputs
-
-!** Ntides       Number of tidal components to consider.
-#if defined SSH_TIDES || defined UV_TIDES
-      integer, parameter, public :: Ntides=15
-#endif
-
-      ! end user inputs
-      ! ****************************************************************
+#include "tides.opt"
 
 
 !** Tperiod      Tidal period (s).
