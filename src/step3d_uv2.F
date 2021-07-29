@@ -446,7 +446,10 @@
 # else
 #  define J_RANGE jstrR,jendR
 # endif
-
+      ! DevinD & JM: seems un-necessary to 2D-3D couple the interior when only
+      ! the boundary has been update since the first 2D-3D correction above.
+      ! We only add the boundary changes to the diagnostics and our budget still closes,
+      ! as the interior correction is only in the order of e-17.
       do j=J_RANGE                  !--> XI-component
         do i=IU_RANGE
           DC(i,N)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))*dn_u(i,j)
