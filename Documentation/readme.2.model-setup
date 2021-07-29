@@ -72,15 +72,13 @@ Forcing file units:
 
 Passive tracers:
 
-    The setup for passive tracers is done in the module tracers.F. There are some 
-    instructions at the top of the file in the user inputs section. You need to create
-    an index variable there for each tracer you want beyond 'islt'. You will then need 
-    to insert all your details about your tracers in tracers_defs.h,  
-    there are instructions in the files.
+    Tracers are handled by the module tracers.F.
+    User inputs, such as the name of tracers, is done in the file tracers.opt, which
+    also contains further instructions.
     Set number of tracers 'NT' in param.h as before.
     I would suggest starting with no tracers or just 1 or 2 to ensure that you can get 
     it working, and then finally set it up with all of your tracers.
-    Selection of tracers for outputting is also done in tracers_defs.h.
+    Selection of tracers for outputting is also done in tracers.opt.
     No longer need PASSIVE_TRACER flag for this to work.
     
 tides:
@@ -100,9 +98,9 @@ Averages:
 Diagnostics:
 
     Diagnostics are calculated using the diagnostics module of src/diagnostics.F.
-    To use diagnostics you need the CPPFLAG 'DIAGNOSTICS'.
-    You then need to edit the user input section at the top of diagnostics.F and then compile ROMS.
-    Select the tracer variables for which you want diagnostics in tracers_defs.h in wrt_t_diag array.
+    To use diagnostics you need the cppflag 'DIAGNOSTICS'.
+    You then need to edit the user input section in diagnostics.opt and then compile ROMS.
+    Select the tracer variables for which you want diagnostics in tracers.opt in wrt_t_diag array.
     See the top of diagnostics.F for a more detailed description of the available diagnostics.
     For an example try Examples/Diagnostics/
     

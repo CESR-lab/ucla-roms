@@ -2,12 +2,18 @@
       ! ***************************************************************
       ! User inputs:
       !
+      !   Momentum terms:
+      !     Pressure gradient; adv.; dissipation from adv.; h. mix.; and v. mix.
+      !
+      !   Tracer terms:
+      !     H. adv.; dissipation from h. adv.; v. adv.; dissipation from v. adv.; h. mix.; and v. mix.
+      !
       !   Budget closing check:
       !     when using for a new simulation (especially with different cppflags), make 
       !     sure to do a very short simulation (i.e. 10 steps) with check_diag (and 
       !     check_avg if using averages) as .true. to ensure budget is closing correctly, 
       !     e.g. u_budget -> 0! 
-      !     Then set check_diag and check_avg them as false for your production run as
+      !     Then set check_diag and check_avg to .false. for your production run as
       !     they are a waste of resources.
       !
       !   Notes:
@@ -22,10 +28,10 @@
       integer, parameter         :: rec_rate      = 2       ! output record rate
       integer, parameter         :: recs_per_file = 20      ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .true.  ! calc+write diagnostics of u/v.
-      logical, parameter, public :: diag_trc      = .true.  ! calc+write diagnostics of selected tracers (wrt_t_diag in tracers.opt)
+      logical, parameter, public :: diag_uv       = .true.  ! calc+write diags of u/v.
+      logical, parameter, public :: diag_trc      = .true.  ! calc+write diags of selected tracers
       logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
-                                                            ! may not want tot_change (wasteful) since it's just the sum of diagnostic terms.
+                                                            ! may not want tot_change (wasteful), just the sum of diags.
       integer, parameter         :: prcsn         = 1       ! precision of output variables. 1=float, 2=double
       
       ! End of user inputs                                  
@@ -33,7 +39,8 @@
 
       ! Developer inputs - for budget close checks:
 
-      logical, parameter         :: check_diag    = .true.  ! confirm sum of diagnostic terms    = gross change in u/v/t per timestep. Useful to ensure diagnostics not broken by different cppdefs.h config.
-      logical, parameter         :: check_avg     = .true.  ! confirm sum of diagnostic avg*time = gross change in u/v/t over entire simulation at time of writing.
-      
+      logical, parameter         :: check_diag    = .true.  ! check sum of diag terms = change in u/v/t per timestep.
+      logical, parameter         :: check_avg     = .true.  ! check sum of diagnostic avg*time = gross change
+                                                            ! in u/v/t over entire simulation at time of writing.
+                                                            ! both Useful to ensure diagnostics not broken by different cppdefs.h config.
             

@@ -1,7 +1,7 @@
       module diagnostics
 
       ! To compute diagnostics use DIAGNOSTICS flag in cppdefs.h.
-      ! Also, set configuration at 'User input' section below.
+      ! Also, set user defiend configuration in diagnostics.opt.
 
 #include "cppdefs.h"
 #ifdef DIAGNOSTICS
