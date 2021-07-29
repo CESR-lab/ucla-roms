@@ -27,12 +27,7 @@
 
       private
 
-      ! ****************************************************************
-      ! START USER INPUT
-      integer :: deflate_level=1 ! Compression level for joined file
-      logical :: shuffle=.true.  ! Shuffle on for extra conmpression
-      ! END USER INPUT
-      ! ****************************************************************
+#include "read_write.opt"
 
 !      verbose = 1  !! remove this when added to dimensio
 

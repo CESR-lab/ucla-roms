@@ -22,17 +22,7 @@
 
       ! scalars.h needed for FIRST_TIME_STEP
 #include "scalars.h"
-
-      ! ****************************************************************
-      ! user inputs
-      integer,public,parameter :: nriv = 1 ! number of rivers
-#ifdef ANA_RIVER_FRC
-      logical :: analytical = .true.      ! analytical forcing 
-#else
-      logical :: analytical = .false.     ! forcing netcdf files
-#endif
-      ! end user inputs
-      ! ****************************************************************
+#include "river_frc.opt"
 
       ! Variables used for equation system calculations
       real,public, dimension(GLOBAL_2D_ARRAY) :: riv_uflx

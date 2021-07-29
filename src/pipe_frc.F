@@ -20,17 +20,7 @@
 
       ! scalars.h needed for FIRST_TIME_STEP
 #include "scalars.h"
-
-      ! ****************************************************************
-      ! user inputs
-      integer,public,parameter :: npip = 1 ! number of pipes
-#ifdef ANA_PIPE_FRC
-      logical :: analytical = .true.      ! analytical forcing 
-#else
-      logical :: analytical = .false.     ! forcing netcdf files
-#endif
-      ! end user inputs
-      ! ****************************************************************
+#include "pipe_frc.opt"
 
       ! Variables used in the evolution equations
       integer,public  :: pidx ! Pipe index for looping through pipes
