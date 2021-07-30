@@ -23,6 +23,9 @@
       !        select which tracers you want in wrt_t_diag array in tracers.opt
       !     4) for an example try Examples/Diagnostics/
       !     5) averaging frequency = rec_rate * time_step
+      !        averaging is expensive and will likely slow your simulation by 30-40%
+      !        with u, v, temp and salinity diagnostics.
+      !     6) history (snap-shot) diagnostics is relatively inexpensive.
       
       logical, parameter         :: diag_avg      = .true.  ! compute history (=F) or averages (=T)
       integer, parameter         :: rec_rate      = 2       ! output record rate

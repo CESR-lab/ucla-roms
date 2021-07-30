@@ -58,8 +58,8 @@ Forcing file units:
     For the names of the variable and variable time, either change the forcing 
     files to match: the variable name, the variable's time name, the value to 
     the correct units, and the name of the units. 
-    Alternatively, you can change the variable name and time name in bulk_frc.F
-    or flux_frc.F if you prefer (ensure character(len=?) matches length of new name. 
+    Alternatively, you can change the variable name and time name in bulk_frc.opt
+    or flux_frc.opt if you prefer (ensure character(len=?) matches length of new name. 
     Note, the units must be changed to match code.
     
     You can use scripts to edit netcdf files, or below is a command line example 
@@ -83,7 +83,7 @@ Passive tracers:
     
 tides:
 
-    Set the number of tidal contributions you are using in tides.F variable Ntides. 
+    Set the number of tidal contributions you are using in tides.opt variable Ntides. 
     
 Averages:
 
@@ -108,7 +108,7 @@ Netcdf output compression:
 
     The new roms code now uses netcdf-4 file outputting (previously netcdf-3). This allows
     for compression of output files. After testing, it was decided to set the default
-    compression level as "deflate_level=1" in read_write.F. There was not much difference
+    compression level as "deflate_level=1" in read_write.opt. There was not much difference
     between d1 and d5 compression, hence d1 was chosen.
     For a tile of only ocean (no land), we found a 30% reduction in output file sizes.
     For a tile of mostly land, a huge reduction in file size can be found (99% if almost
@@ -120,7 +120,7 @@ Netcdf output compression:
     output rates it is unlikely to make an impact.
     
     If you are outputting at every time-step for some reason, you may want to remove compression
-    by setting "deflate_level=0" in read_write.F.
+    by setting "deflate_level=0" in read_write.opt.
     The code currently uses default 'chunking' of netcdf variables. Depending on your simulation
     it is possible that compression might not work nicely. It is recommended you do a small test,
     e.g. 50 steps outputting every 25 steps (2 outputs), and confirm that the compression does
@@ -135,13 +135,13 @@ Netcdf output compression:
 Surface flux outputting:
     
     It is possible to output the resulting surface flux sustr, svstr, etc. The 
-    output frequency is controlled at the top of surf_flux.F, not the roms.in file.
+    output frequency is in surf_flux.opt, not the roms.in file.
     You need to activate the following cppflag: SURF_FLUX_OUTPUT_HIS 
     It will produce its own output file separate from the _his.F file.
     The averages (sustr_avg, etc) are activated using the cppflags: 
     SURF_FLUX_OUTPUT_AVG && AVERAGES
     The output will be placed in the normal _avg.F file.
-    The T/F to print the averages is controlled in surf_flux.F
+    The T/F to print the averages is controlled in surf_flux.opt
 
 Misc.:
 

@@ -92,7 +92,8 @@ INSTRUCTIONS: COMPILING ROMS
   8. Compile your specifc simulation:
 
      A. If you are running your own simulation, copy ONLY the files that you 
-        need to EDIT from src/ folder into the Work/ folder.         
+        need to EDIT from src/ folder into the Work/ folder.
+        This is likely only to be files with extension .opt for all user inputs.         
         If you are using an example then also copy relevant files from Examples/... 
         into Work/ (excluding the Makefile) 
         You can copy Makedefs.inc into work if you need to change compilation
@@ -170,20 +171,20 @@ Keeping code up to date:
      The repo is periodically updated (daily/weekly). This will mean source code 
      in the src/ folder can change. Also, additional examples may be added to Examples/.
      To update your code to the latest version use the command: 'git pull'.
-     (If git complains, try using 'git stash' then 'git pull')
+     (If git complains, try using 'git stash', then 'git pull')
      
      Since you are editing code in the Work/ directory, your edited files will not be
      effected. The Work/ directory is not 'tracked' by git, and therefore none of your files 
      in there risk being overwritten when you update you code in future.
      However, it is possibly that the file you have edited for your needs, e.g. 
-     bulk_frc.F, has been changed in the latest code update and hence in the src/ directory, 
-     such that your version of bulk_frc.F in Work/ is no longer compatible with the code.
-     
+     bulk_frc.opt, has been changed in the latest code update and hence in the src/ directory, 
+     such that your version of bulk_frc.opt in Work/ is no longer compatible with the code.
+          
      This is not something that will happen often, but it is somewhere to look if your code
-     suddenly doesn't work. It is worth periodically comparing your edited files in Work/
-     against the respective file in src/ using a difference viewer such as 'meld'.
-     You can use 'meld' to merge in the new code changes into your version in Work/, such as 
-     the names of your variables in bulk_frc.F, if that is something you needed to change.
+     suddenly doesn't work after updating. It is worth periodically comparing your edited files
+     in Work/ against the respective file in src/ using a difference viewer such as 'meld'.
+     You can use 'meld' to merge in the new code changes into your version in Work/, if you 
+     still need your code additions.
      
      Important updates to the code will be broadcasted to users in an email, but if you want 
      to you can also sign up on bitbucket.com to receive an email each time the code is updated.
