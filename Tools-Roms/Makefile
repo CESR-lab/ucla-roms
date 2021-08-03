@@ -1,6 +1,6 @@
 include ../src/Makedefs.inc
 
-ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z
+ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z zslice
 
 all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
 
@@ -19,12 +19,9 @@ chkindent: chkindent.f
 mreplace.f: mreplace.F
 	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace.F > mreplace.f
 	
-
-# Need to set up partit properly - previously in main roms makefile	
 partit: partit.o insert_node.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)	
 
-# Need to set up ncjoin properly - previously in main roms makefile
 ncjoin: ncjoin.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
 	
@@ -40,6 +37,12 @@ mpc: mpc.F Makefile
 	
 join_child_bry: ncjoin_mod.o join_child_bry.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o join_child_bry ncjoin_mod.o join_child_bry.o lenstr.o  $(LCDF)
+
+ ZSLICE = roms_read_write.o	zslice.o set_depth.o sigma_to_z_intr.o tiling.o\
+          read_add_write.o read_string.o lenstr.o
+          
+zslice: $(ZSLICE)
+	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
 
 clean:
 	/bin/rm -f *.f *.o *.a *.s *.trace
