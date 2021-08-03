@@ -71,6 +71,8 @@ To compile tools:
  		Will prodcue result.nc file containing joined results.
  		the -d flag will delete the individual files, e.g. .0. and .1.                
 
+zslice -        Produces slice across constant depth from your result files.
+                Can also be compiled as ipslice (for iso-pycnal).
 
 ! Online child boundary interpolation
 ! ===================================
