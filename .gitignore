@@ -25,10 +25,14 @@ setup_kwds.F
 check_switches1.F
 check_srcs.F
 Work/*
+
+# tools
 Tools-Roms/partit
 Tools-Roms/ncjoin
 Tools-Roms/ncjoin_mpi
 Tools-Roms/join_child_bry
+Tools-Roms/zslice
+
 # For Examples/code_check/:
 sample_wec_test_old.log
 river_ana_test_old.log
