@@ -1,0 +1,23 @@
+Code development discussions and strategy
+
+2021/08/03: Tiling, loop ranges and sub-domains (Jeroen & Devin)
+        
+    Would be nice to strip out to simplify code if it only adds limited speed improvement.
+    Hope loop ranges can become simpler variation of 1:nx (+/- 1 or 2).
+    Avoids: do tile=1,tile_range
+    Avoids: call set_forces, then again call set_forces_tile.
+            Can rather put work arrays in module and rename arrays using module variable renaming.
+    Loop ranges can be hard-coded as longest necessary range, and just do the extra work for simpler code.
+    
+    If we keep tiling then we should not have to versions of compute_extended_bounds and 
+    compute_auxiliary_bounds. E.g. have istrE and istrA rather than istrR for both.
+    
+    Removing tiling may not clean up loop ranges since may still need mechanism to handle sub-domain ranges
+    for boundary sub-domains.
+    
+    Believe arrays are same size for all sub-domains since code was original developed with common blocks,
+    where array size are needed at compile time and can't be allocated.
+    
+    To transition away from tiling and allocatable arrays, we would need to remove all common blocks first.
+    
+    init allocatable arrays called in own module, not from init_arrays.F.
