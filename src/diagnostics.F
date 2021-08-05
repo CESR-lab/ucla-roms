@@ -286,6 +286,7 @@
       real, allocatable, dimension(:, :, :) :: uf, vf, pf    ! filtered  u/v/pressure
       real, allocatable, dimension(:, :, :) :: up, vp, pp    ! perturbed u/v/p
       real, allocatable, dimension(:, :, :) :: up_pp, vp_pp  ! u'p' and v'p'
+      real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl  ! u and p baroclinic
 
       integer :: nprm = 3                  ! number of pressure flux diagnostic terms
       real    :: alpha                     ! filtering constant
@@ -526,7 +527,7 @@
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
       if (diag_trc) call init_diags_trc    (istrR, jstrR, iendR, jendR)
-      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR)
+      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)
 
       end subroutine init_diags  !]
 
@@ -629,11 +630,14 @@
       end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR)  ![
+      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)  ![
       implicit none
 
       ! inputs
-      integer, intent(in)    :: istrR, jstrR, iendR, jendR
+      integer, intent(in)    :: istrR, jstrR, iendR, jendR, iend, jend
+
+      ! local
+      integer :: i, j, k
 
       allocate( uf(GLOBAL_2D_ARRAY, N) )
       allocate( vf(GLOBAL_2D_ARRAY, N) )
@@ -641,13 +645,25 @@
       allocate( up(GLOBAL_2D_ARRAY, N) )
       allocate( vp(GLOBAL_2D_ARRAY, N) )
       allocate( pp(GLOBAL_2D_ARRAY, N) )
-      uf=u(:,:,:,nstp)  ! set to initial condition, to avoid ramp up
-      vf=v(:,:,:,nstp)  ! although model should ramp up still to get better average.
+
+      do k=1,N
+        do j=jstrR,jend+1    ! need +1 for u/v to rho averaging in uv_prime
+          do i=istrR,iend+1
+            uf(i,j,k) = u(i,j,k,nstp) - ubar(i,j,kstp)  ! set to initial condition, to avoid ramp up
+            vf(i,j,k) = v(i,j,k,nstp) - vbar(i,j,kstp)  ! although model should ramp up still to get better average.
+          enddo
+        enddo
+      enddo
+
       up=0; vp=0; pp=0
 
       allocate( up_pp(GLOBAL_2D_ARRAY, N) )
       allocate( vp_pp(GLOBAL_2D_ARRAY, N) )
       up_pp=0; vp_pp=0
+
+      allocate( u_bcl(GLOBAL_2D_ARRAY, N) )
+      allocate( p_bcl(GLOBAL_2D_ARRAY, N) )
+      u_bcl=0; p_bcl=0
 
       alpha = dt / timescale
       beta  = 1 - alpha
@@ -1797,27 +1813,51 @@
 !      if (mynode==0) print *, 'DIAGS CALC UV PRIME!'
 
       do k=1,N
+
         do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
           do i=istr,iend+1  ! for averaging of up_pp
             uf(i,j,k) = beta * uf(i,j,k) + alpha * ( u(i,j,k,nnew) - ubar(i,j,knew) )
-            up(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
           enddo
         enddo
         do j=jstr,jend+1    ! for averaging of vp_pp
           do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
             vf(i,j,k) = beta * vf(i,j,k) + alpha * ( v(i,j,k,nnew) - vbar(i,j,knew) )
-            vp(i,j,k) = ( v(i,j,k,nnew) - vbar(i,j,knew) ) - vf(i,j,k)
-          enddo
-        enddo
-
-        do j=jstr,jend
-          do i=istr,iend  ! interior only
-            up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k)
-            vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k)
           enddo
         enddo
 
       enddo     ! <-- k
+
+!      if(mynode==0) print *, 'uf'
+
+      if( mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
+
+!        if(mynode==0) print *, 'up'
+
+        do k=1,N
+
+          do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
+            do i=istr,iend+1  ! for averaging of up_pp
+              up(i,j,k)    = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
+              u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
+            enddo
+          enddo
+          do j=jstr,jend+1    ! for averaging of vp_pp
+            do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
+              vp(i,j,k) = ( v(i,j,k,nnew) - vbar(i,j,knew) ) - vf(i,j,k)
+            enddo
+          enddo
+
+          do j=jstr,jend
+            do i=istr,iend  ! interior only
+              up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k)
+              vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k)
+            enddo
+          enddo
+
+        enddo     ! <-- k
+
+      endif
+
 
       end subroutine set_diags_uv_prime  !]
 
@@ -1847,10 +1887,27 @@
         do j=jstr,jend    ! only need over interior
           do i=istr,iend
             pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
-            pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
+!            pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
+!            p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
           enddo
         enddo
       enddo
+
+!      if(mynode==0) print *, 'calc pf'
+
+      if( mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
+
+!        if(mynode==0) print *, 'calc pp and p_bcl'
+
+        do k=1,N
+          do j=jstr,jend    ! only need over interior
+            do i=istr,iend
+              pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
+              p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
+            enddo
+          enddo
+        enddo
+      endif
 
       end subroutine set_diags_prs_prime  !]
 
@@ -2436,6 +2493,11 @@ C$OMP MASTER
 
               call nc_define_var(ncid, ppnames(1), pplname(1), punits, r3dgrd, ierr, prcsn )
               call nc_define_var(ncid, ppnames(2), pplname(2), punits, r3dgrd, ierr, prcsn )
+
+              call nc_define_var(ncid, 'u_bcl', 'u baroclin', punits, grdtyp3d(:,1), ierr, prcsn )
+              call nc_define_var(ncid, 'p_bcl', 'p baroclin', punits, r3dgrd, ierr, prcsn )
+              call nc_define_var(ncid, 'uf', 'u filtered barc', punits, grdtyp3d(:,1), ierr, prcsn )
+              call nc_define_var(ncid, 'pf', 'p filtered barc', punits, r3dgrd, ierr, prcsn )
             endif    ! <-- prs_flx
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -2538,6 +2600,11 @@ C$OMP MASTER
 
             call nc_write_var(ncid, up_pp, N, ppnames(1), rp_var, output_rec, ierr)
             call nc_write_var(ncid, vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+
+            call nc_write_var(ncid, u_bcl, N, 'u_bcl', up_var, output_rec, ierr)
+            call nc_write_var(ncid, p_bcl, N, 'p_bcl', rp_var, output_rec, ierr)
+            call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
+            call nc_write_var(ncid, pf, N, 'pf', rp_var, output_rec, ierr)
           endif    ! <-- prs_flx
 
           if (diag_trc .and. .not. diag_avg)                             ! for averages this has been called already
