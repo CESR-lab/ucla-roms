@@ -81,6 +81,7 @@
         Mdiag(istrU:iend,jstr :jend,:,1,iprsgr)=ru(istrU:iend,jstr :jend,:)    ! ru is scratch size not global size
         Mdiag(istr :iend,jstrV:jend,:,2,iprsgr)=rv(istr :iend,jstrV:jend,:)    ! interior points not bry
         diag_icori = .true.  ! triggers diag calculation in compute_horiz_uv... as also called from pre_step3d, but only want this time.
+        pg_cor     = .false. ! ensure prs_flx not calculated in predictor step of prsgrd.
       endif
 #  ifdef NHMG
       if (calc_diag) then

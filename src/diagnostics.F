@@ -281,6 +281,28 @@
       integer            :: ncid=-1, prev_fill_mode
 
 
+      ! PRESSURE FLUX:
+      ! --------------
+      real, allocatable, dimension(:, :, :) :: uf, vf, pf    ! filtered  u/v/pressure
+      real, allocatable, dimension(:, :, :) :: up, vp, pp    ! perturbed u/v/p
+      real, allocatable, dimension(:, :, :) :: up_pp, vp_pp  ! u'p' and v'p'
+
+      integer :: nprm = 3                  ! number of pressure flux diagnostic terms
+      real    :: alpha                     ! filtering constant
+      real    :: beta                      ! filtering constant
+
+      logical, public :: pg_cor = .false.  ! calculate pressure on corrector step of prsgrd. false initially.
+
+      character (len=20),  allocatable, dimension(:) :: pnames
+      character (len=120), allocatable, dimension(:) :: plname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
+      character (len=20),  allocatable, dimension(:) :: ppnames
+      character (len=120), allocatable, dimension(:) :: pplname
+
+      character (len=7) :: punits = 'm^2/s^2'
+
+      public set_diags_uv_prime
+      public set_diags_prs_prime
+
       ! W MOMENTUM: (CURRENTLY NOT WORKING)
       ! -----------
 
@@ -368,6 +390,15 @@
         write(*,*) 'ERROR - diagnostics.F: need rec_rate > 1 if ',
      &  'using averages!'
         error stop 'ERROR - diagnostics.F: diag_avg==T then rec_rate>1'
+      endif
+
+      if( diag_trc == .true.  .and.               ! requesting tracer diags
+     &   .not. any( wrt_t_diag == .true.) ) then  ! but no tracers selected
+
+        write(*,*) 'ERROR - diagnostics.F: diag_trc==T but ',
+     &  'no tracers selected in wrt_t_diag'
+        error stop 'ERROR - diagnostics.F: diag_avg==T but wrt_t_diag=F'
+
       endif
 
       if (diag_uv) then
@@ -494,7 +525,8 @@
       FZ4(istrR:iendR,N) = 0                   ! bottom and surface always 0 for w-point advection.
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
-      if (diag_trc) call init_diags_trc(istrR, jstrR, iendR, jendR)
+      if (diag_trc) call init_diags_trc    (istrR, jstrR, iendR, jendR)
+      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR)
 
       end subroutine init_diags  !]
 
@@ -595,6 +627,48 @@
 !      if(mynode==0) print *, 'diag_td_2_NT(1)=',diag_td_2_NT(1)
 
       end subroutine init_diags_trc  !]
+
+! ----------------------------------------------------------------------
+      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR)  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in)    :: istrR, jstrR, iendR, jendR
+
+      allocate( uf(GLOBAL_2D_ARRAY, N) )
+      allocate( vf(GLOBAL_2D_ARRAY, N) )
+      allocate( pf(GLOBAL_2D_ARRAY, N) )
+      allocate( up(GLOBAL_2D_ARRAY, N) )
+      allocate( vp(GLOBAL_2D_ARRAY, N) )
+      allocate( pp(GLOBAL_2D_ARRAY, N) )
+      uf=u(:,:,:,nstp)  ! set to initial condition, to avoid ramp up
+      vf=v(:,:,:,nstp)  ! although model should ramp up still to get better average.
+      up=0; vp=0; pp=0
+
+      allocate( up_pp(GLOBAL_2D_ARRAY, N) )
+      allocate( vp_pp(GLOBAL_2D_ARRAY, N) )
+      up_pp=0; vp_pp=0
+
+      alpha = dt / timescale
+      beta  = 1 - alpha
+      if(mynode==0) print *, 'DIAGS: alpha=',alpha, 'beta=',beta
+
+      allocate( pnames(nprm), plname(nprm) )
+      pnames(1)    = 'uprm'
+      plname(1)    = "perturbation of u"
+      pnames(2)    = "vprm"
+      plname(2)    = "perturbation of v"
+      pnames(3)    = "pprm"
+      plname(3)    = "perturbation of pressure"
+
+      allocate( ppnames(2), pplname(2) )
+      ppnames(1)    = 'up'
+      pplname(1)    = "perturbation of u * perturbation of p"
+      ppnames(2)    = "vp"
+      pplname(2)    = "perturbation of v * perturbation of p"
+
+
+      end subroutine init_diags_prs_flx  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_coriolis( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )   ![
@@ -1706,6 +1780,75 @@
       end subroutine set_diags_t_4th_v_adv  !]
 
 ! ----------------------------------------------------------------------
+      subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, iendR, jstrR, jendR )  ![
+
+      ! uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
+      !
+      ! and set beta = 1-alpha
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend, istrR, iendR, jstrR, jendR
+
+      ! local
+      integer :: i, j, k
+
+!      if (mynode==0) print *, 'DIAGS CALC UV PRIME!'
+
+      do k=1,N
+        do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
+          do i=istr,iendR
+            uf(i,j,k) = beta * uf(i,j,k) + alpha * u(i,j,k,nnew)
+            up(i,j,k) = u(i,j,k,nnew) - uf(i,j,k)
+          enddo
+        enddo
+        do j=jstr,jendR
+          do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
+            vf(i,j,k) = beta * vf(i,j,k) + alpha * v(i,j,k,nnew)
+            vp(i,j,k) = v(i,j,k,nnew) - vf(i,j,k)
+          enddo
+        enddo
+
+        do j=jstr,jend
+          do i=istr,iend  ! interior only
+            up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k)
+            vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k)
+          enddo
+        enddo
+
+      enddo     ! <-- k
+
+      end subroutine set_diags_uv_prime  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_prs_prime( istr, iend, jstr, jend, P )  ![
+      implicit none
+
+      ! inputs
+      integer, intent(in)                                     :: istr, iend, jstr, jend
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P
+
+      ! local
+      integer :: i, j, k
+
+      if (FIRST_TIME_STEP) then
+!        if(mynode == 0) print *, 'FIRST STEP pf *******'
+        pf(istr:iend,jstr:jend,:)=P(istr:iend,jstr:jend,:)  ! set to avoid ramp up
+      endif                                                 ! unlike u/v first diff will be zero.
+                                                            ! as P computed online. don't have for t=0
+      do k=1,N
+        do j=jstr,jend    ! only need over interior
+          do i=istr,iend
+            pf(i,j,k) = beta * pf(i,j,k) + alpha * P(i,j,k)
+            pp(i,j,k) = P(i,j,k) - pf(i,j,k)
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_prs_prime  !]
+
+! ----------------------------------------------------------------------
       subroutine set_diags_avg_tile( istr, iend, jstr, jend )  ![
       ! set the averages of diagnostic variables
 
@@ -2162,7 +2305,7 @@
 #ifdef SOLVE3D
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
-      integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td
+      integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td, np
 
       character(len=64)       :: fname
       character(len=30)       :: text, utext
@@ -2280,6 +2423,15 @@ C$OMP MASTER
               enddo  ! <-- td
             endif    ! <-- diag_trc
 
+            if(prs_flx) then
+              call nc_define_var(ncid, pnames(1), plname(1), punits, grdtyp3d(:,1), ierr, prcsn )
+              call nc_define_var(ncid, pnames(2), plname(2), punits, grdtyp3d(:,2), ierr, prcsn )
+              call nc_define_var(ncid, pnames(3), plname(3), punits, r3dgrd, ierr, prcsn )
+
+              call nc_define_var(ncid, ppnames(1), pplname(1), punits, r3dgrd, ierr, prcsn )
+              call nc_define_var(ncid, ppnames(2), pplname(2), punits, r3dgrd, ierr, prcsn )
+            endif    ! <-- prs_flx
+
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
             if (mynode == 0) then
               write(*,'(6x,2A)')
@@ -2372,6 +2524,15 @@ C$OMP MASTER
 
             enddo  ! <-- dim
           endif    ! <-- diag_uv
+
+          if(prs_flx) then
+            call nc_write_var(ncid, up, N, pnames(1), up_var, output_rec, ierr)
+            call nc_write_var(ncid, vp, N, pnames(2), vp_var, output_rec, ierr)
+            call nc_write_var(ncid, pp, N, pnames(3), rp_var, output_rec, ierr)
+
+            call nc_write_var(ncid, up_pp, N, ppnames(1), rp_var, output_rec, ierr)
+            call nc_write_var(ncid, vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+          endif    ! <-- prs_flx
 
           if (diag_trc .and. .not. diag_avg)                             ! for averages this has been called already
      &      call wrt_tracer_diags_tile(istr, iend, jstr, jend)           ! we call it here non-averages to get the correct writing frequency
