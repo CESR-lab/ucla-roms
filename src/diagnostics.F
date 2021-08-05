@@ -1798,15 +1798,15 @@
 
       do k=1,N
         do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
-          do i=istr,iendR
-            uf(i,j,k) = beta * uf(i,j,k) + alpha * u(i,j,k,nnew)
-            up(i,j,k) = u(i,j,k,nnew) - uf(i,j,k)
+          do i=istr,iend+1  ! for averaging of up_pp
+            uf(i,j,k) = beta * uf(i,j,k) + alpha * ( u(i,j,k,nnew) - ubar(i,j,knew) )
+            up(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
           enddo
         enddo
-        do j=jstr,jendR
+        do j=jstr,jend+1    ! for averaging of vp_pp
           do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
-            vf(i,j,k) = beta * vf(i,j,k) + alpha * v(i,j,k,nnew)
-            vp(i,j,k) = v(i,j,k,nnew) - vf(i,j,k)
+            vf(i,j,k) = beta * vf(i,j,k) + alpha * ( v(i,j,k,nnew) - vbar(i,j,knew) )
+            vp(i,j,k) = ( v(i,j,k,nnew) - vbar(i,j,knew) ) - vf(i,j,k)
           enddo
         enddo
 
@@ -1834,14 +1834,20 @@
 
       if (FIRST_TIME_STEP) then
 !        if(mynode == 0) print *, 'FIRST STEP pf *******'
-        pf(istr:iend,jstr:jend,:)=P(istr:iend,jstr:jend,:)  ! set to avoid ramp up
+        do k=1,N
+          do j=jstr,jend    ! only need over interior
+            do i=istr,iend
+              pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N)  ! set to avoid ramp up
+            enddo
+          enddo
+        enddo
       endif                                                 ! unlike u/v first diff will be zero.
                                                             ! as P computed online. don't have for t=0
       do k=1,N
         do j=jstr,jend    ! only need over interior
           do i=istr,iend
-            pf(i,j,k) = beta * pf(i,j,k) + alpha * P(i,j,k)
-            pp(i,j,k) = P(i,j,k) - pf(i,j,k)
+            pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
+            pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
           enddo
         enddo
       enddo
