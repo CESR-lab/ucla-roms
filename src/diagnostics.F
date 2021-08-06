@@ -1888,16 +1888,6 @@
 
         enddo     ! <-- k
 
-        if (diag_avg) then
-          call set_diags_avg_prs_flx( istr, iend, jstr, jend, up_pp, aup_pp )  ! average up_pp into aup_pp
-          call set_diags_avg_prs_flx( istr, iend, jstr, jend, vp_pp, avp_pp )
-          if (check_prs) then
-            call set_diags_avg_prs_flx( istr, iend, jstr, jend, up, aup )
-            call set_diags_avg_prs_flx( istr, iend, jstr, jend, vp, avp )
-            call set_diags_avg_prs_flx( istr, iend, jstr, jend, pp, app )
-          endif
-        endif
-
       endif       ! <-- diag_avg or mod()
 
 
@@ -1937,15 +1927,15 @@
 
 !      if(mynode==0) print *, 'calc pf'
 
-      if( mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
 
 !        if(mynode==0) print *, 'calc pp and p_bcl'
 
         do k=1,N
           do j=jstr,jend    ! only need over interior
             do i=istr,iend
-              pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
-              if (check_prs)
+              pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)  ! NOTE: pp = 0 at first step
+              if (check_prs)                                        ! since pf = P - g*z_w above
      &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
             enddo
           enddo
@@ -1955,7 +1945,28 @@
       end subroutine set_diags_prs_prime  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend, var, Avar )  ![
+      subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
+
+      ! this should really be a utility wrapper from some module...
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend
+
+
+      call set_diags_avg_var( istr, iend, jstr, jend, up_pp, aup_pp )  ! average up_pp into aup_pp
+      call set_diags_avg_var( istr, iend, jstr, jend, vp_pp, avp_pp )
+      if (check_prs) then
+        call set_diags_avg_var( istr, iend, jstr, jend, up, aup )
+        call set_diags_avg_var( istr, iend, jstr, jend, vp, avp )
+        call set_diags_avg_var( istr, iend, jstr, jend, pp, app )
+      endif
+
+      end subroutine set_diags_avg_prs_flx  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_avg_var( istr, iend, jstr, jend, var, Avar )  ![
 
       ! this should really be a utility wrapper from some module...
 
@@ -2005,7 +2016,7 @@
 
       endif    ! <-- mod(tn  ,rec_rate)==0
 
-      end subroutine set_diags_avg_prs_flx  !]
+      end subroutine set_diags_avg_var  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_tile( istr, iend, jstr, jend )  ![
@@ -2593,13 +2604,13 @@ C$OMP MASTER
                 call nc_define_var(ncid, pnames(3), plname(3), punits, r3dgrd, ierr, prcsn )
                 ! these vars aren't averaged currently
 !                text='u baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text) ! catch averaging into long name
-                call nc_define_var(ncid, 'u_bcl', text, punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, 'u_bcl', 'u baroclin', punits, grdtyp3d(:,1), ierr, prcsn )
 !                text='p baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'p_bcl', text, punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, 'p_bcl', 'p baroclin', punits, r3dgrd, ierr, prcsn )
 !                text='u filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'uf',    text, punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, 'uf', 'u filtered barc', punits, grdtyp3d(:,1), ierr, prcsn )
 !                text='p filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'pf',    text, punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, 'pf', 'p filtered barc', punits, r3dgrd, ierr, prcsn )
               endif
             endif    ! <-- prs_flx
 
@@ -2633,6 +2644,7 @@ C$OMP BARRIER
         if (diag_avg) then                                                 ! see wrt_tracer_diags_tile for description of why if(mod(tn,rec_rate)) is split here.
           if (diag_uv)  call set_diags_avg_tile   (istr, iend, jstr, jend) ! avoid very first step because diags are only all set by the end of the
           if (diag_trc) call wrt_tracer_diags_tile(istr, iend, jstr, jend) ! first step, and then added to averages and/or output at the beginning of the next step.
+          if (prs_flx)  call set_diags_avg_prs_flx(istr, iend, jstr, jend)
         endif                                                              ! Need this after defined file as wrt_tracer will output averages so needs file created.
 
 ! Defining and writing netcdf variables only done by master thread:
