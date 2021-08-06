@@ -288,6 +288,9 @@
       real, allocatable, dimension(:, :, :) :: up_pp, vp_pp  ! u'p' and v'p'
       real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl  ! u and p baroclinic
 
+      real, allocatable, dimension(:, :, :) :: aup, avp, app   ! averaged perturbed u/v/p
+      real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp  ! averaged u'p' and v'p'
+
       integer :: nprm = 3                  ! number of pressure flux diagnostic terms
       real    :: alpha                     ! filtering constant
       real    :: beta                      ! filtering constant
@@ -642,8 +645,8 @@
       allocate( uf(GLOBAL_2D_ARRAY, N) )
       allocate( vf(GLOBAL_2D_ARRAY, N) )
       allocate( pf(GLOBAL_2D_ARRAY, N) )
-      allocate( up(GLOBAL_2D_ARRAY, N) )
-      allocate( vp(GLOBAL_2D_ARRAY, N) )
+      allocate( up(GLOBAL_2D_ARRAY, N) )  ! Don't necessaryily need up, vp and pp,
+      allocate( vp(GLOBAL_2D_ARRAY, N) )  ! or can perhaps reuse array, or 2D arrays.
       allocate( pp(GLOBAL_2D_ARRAY, N) )
 
       do k=1,N
@@ -661,9 +664,11 @@
       allocate( vp_pp(GLOBAL_2D_ARRAY, N) )
       up_pp=0; vp_pp=0
 
-      allocate( u_bcl(GLOBAL_2D_ARRAY, N) )
-      allocate( p_bcl(GLOBAL_2D_ARRAY, N) )
-      u_bcl=0; p_bcl=0
+      if (check_prs) then
+        allocate( u_bcl(GLOBAL_2D_ARRAY, N) )
+        allocate( p_bcl(GLOBAL_2D_ARRAY, N) )
+        u_bcl=0; p_bcl=0
+      endif
 
       alpha = dt / timescale
       beta  = 1 - alpha
@@ -1837,8 +1842,9 @@
 
           do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
             do i=istr,iend+1  ! for averaging of up_pp
-              up(i,j,k)    = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
-              u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
+              up(i,j,k)      = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
+              if (check_prs)  ! if with parameter
+     &          u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
             enddo
           enddo
           do j=jstr,jend+1    ! for averaging of vp_pp
@@ -1903,7 +1909,8 @@
           do j=jstr,jend    ! only need over interior
             do i=istr,iend
               pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
-              p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
+              if (check_prs)
+     &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
             enddo
           enddo
         enddo
@@ -2487,17 +2494,19 @@ C$OMP MASTER
             endif    ! <-- diag_trc
 
             if(prs_flx) then
-              call nc_define_var(ncid, pnames(1), plname(1), punits, grdtyp3d(:,1), ierr, prcsn )
-              call nc_define_var(ncid, pnames(2), plname(2), punits, grdtyp3d(:,2), ierr, prcsn )
-              call nc_define_var(ncid, pnames(3), plname(3), punits, r3dgrd, ierr, prcsn )
 
               call nc_define_var(ncid, ppnames(1), pplname(1), punits, r3dgrd, ierr, prcsn )
               call nc_define_var(ncid, ppnames(2), pplname(2), punits, r3dgrd, ierr, prcsn )
 
-              call nc_define_var(ncid, 'u_bcl', 'u baroclin', punits, grdtyp3d(:,1), ierr, prcsn )
-              call nc_define_var(ncid, 'p_bcl', 'p baroclin', punits, r3dgrd, ierr, prcsn )
-              call nc_define_var(ncid, 'uf', 'u filtered barc', punits, grdtyp3d(:,1), ierr, prcsn )
-              call nc_define_var(ncid, 'pf', 'p filtered barc', punits, r3dgrd, ierr, prcsn )
+              if (check_prs) then
+                call nc_define_var(ncid, pnames(1), plname(1), punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, pnames(2), plname(2), punits, grdtyp3d(:,2), ierr, prcsn )
+                call nc_define_var(ncid, pnames(3), plname(3), punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, 'u_bcl', 'u baroclin', punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, 'p_bcl', 'p baroclin', punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, 'uf', 'u filtered barc', punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, 'pf', 'p filtered barc', punits, r3dgrd, ierr, prcsn )
+              endif
             endif    ! <-- prs_flx
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -2594,17 +2603,19 @@ C$OMP MASTER
           endif    ! <-- diag_uv
 
           if(prs_flx) then
-            call nc_write_var(ncid, up, N, pnames(1), up_var, output_rec, ierr)
-            call nc_write_var(ncid, vp, N, pnames(2), vp_var, output_rec, ierr)
-            call nc_write_var(ncid, pp, N, pnames(3), rp_var, output_rec, ierr)
 
             call nc_write_var(ncid, up_pp, N, ppnames(1), rp_var, output_rec, ierr)
             call nc_write_var(ncid, vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
 
-            call nc_write_var(ncid, u_bcl, N, 'u_bcl', up_var, output_rec, ierr)
-            call nc_write_var(ncid, p_bcl, N, 'p_bcl', rp_var, output_rec, ierr)
-            call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
-            call nc_write_var(ncid, pf, N, 'pf', rp_var, output_rec, ierr)
+            if (check_prs) then
+              call nc_write_var(ncid, up, N, pnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid, vp, N, pnames(2), vp_var, output_rec, ierr)
+              call nc_write_var(ncid, pp, N, pnames(3), rp_var, output_rec, ierr)
+              call nc_write_var(ncid, u_bcl, N, 'u_bcl', up_var, output_rec, ierr)
+              call nc_write_var(ncid, p_bcl, N, 'p_bcl', rp_var, output_rec, ierr)
+              call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
+              call nc_write_var(ncid, pf, N, 'pf', rp_var, output_rec, ierr)
+            endif
           endif    ! <-- prs_flx
 
           if (diag_trc .and. .not. diag_avg)                             ! for averages this has been called already

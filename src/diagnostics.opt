@@ -28,7 +28,7 @@
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
       
       logical, parameter         :: diag_avg      = .false.  ! compute history (=F) or averages (=T)
-      integer, parameter         :: rec_rate      = 1       ! output record rate
+      integer, parameter         :: rec_rate      = 10       ! output record rate
       integer, parameter         :: recs_per_file = 20      ! total recs per file
 
       logical, parameter, public :: diag_uv       = .false.  ! calc+write diags of u/v.
@@ -50,4 +50,7 @@
       logical, parameter         :: check_avg     = .false.  ! check sum of diagnostic avg*time = gross change
                                                             ! in u/v/t over entire simulation at time of writing.
                                                             ! both Useful to ensure diagnostics not broken by different cppdefs.h config.
+      logical, parameter         :: check_prs     = .false.  ! output additional variables to analyse prs_flx components.
+
+                                                            
             
