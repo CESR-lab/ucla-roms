@@ -640,14 +640,11 @@
       integer, intent(in)    :: istrR, jstrR, iendR, jendR, iend, jend
 
       ! local
-      integer :: i, j, k
+      integer :: i, j, k, var
 
       allocate( uf(GLOBAL_2D_ARRAY, N) )
       allocate( vf(GLOBAL_2D_ARRAY, N) )
       allocate( pf(GLOBAL_2D_ARRAY, N) )
-      allocate( up(GLOBAL_2D_ARRAY, N) )  ! Don't necessaryily need up, vp and pp,
-      allocate( vp(GLOBAL_2D_ARRAY, N) )  ! or can perhaps reuse array, or 2D arrays.
-      allocate( pp(GLOBAL_2D_ARRAY, N) )
 
       do k=1,N
         do j=jstrR,jend+1    ! need +1 for u/v to rho averaging in uv_prime
@@ -658,6 +655,9 @@
         enddo
       enddo
 
+      allocate( up(GLOBAL_2D_ARRAY, N) )  ! Don't necessaryily need up, vp and pp,
+      allocate( vp(GLOBAL_2D_ARRAY, N) )  ! or can perhaps reuse array, or 2D arrays.
+      allocate( pp(GLOBAL_2D_ARRAY, N) )
       up=0; vp=0; pp=0
 
       allocate( up_pp(GLOBAL_2D_ARRAY, N) )
@@ -670,24 +670,48 @@
         u_bcl=0; p_bcl=0
       endif
 
-      alpha = dt / timescale
-      beta  = 1 - alpha
-      if(mynode==0) print *, 'DIAGS: alpha=',alpha, 'beta=',beta
+      if (diag_avg) then
+        allocate( aup_pp(GLOBAL_2D_ARRAY, N) )
+        allocate( avp_pp(GLOBAL_2D_ARRAY, N) )
+        aup_pp=0; avp_pp=0
 
-      allocate( pnames(nprm), plname(nprm) )
-      pnames(1)    = 'uprm'
-      plname(1)    = "perturbation of u"
-      pnames(2)    = "vprm"
-      plname(2)    = "perturbation of v"
-      pnames(3)    = "pprm"
-      plname(3)    = "perturbation of pressure"
+        if (check_prs) then
+          allocate( aup(GLOBAL_2D_ARRAY, N) )
+          allocate( avp(GLOBAL_2D_ARRAY, N) )
+          allocate( app(GLOBAL_2D_ARRAY, N) )
+          aup=0; avp=0; app=0
+        endif
+      endif
 
       allocate( ppnames(2), pplname(2) )
       ppnames(1)    = 'up'
       pplname(1)    = "perturbation of u * perturbation of p"
       ppnames(2)    = "vp"
       pplname(2)    = "perturbation of v * perturbation of p"
+      if (diag_avg) then
+        do var=1,2                                          ! loop through diag terms
+          pplname(var)  = 'Average ' / / trim(pplname(var))   ! and prepend 'Average'
+        enddo
+      endif
 
+      if (check_prs) then
+        allocate( pnames(nprm), plname(nprm) )
+        pnames(1)    = 'uprm'
+        plname(1)    = "perturbation of u"
+        pnames(2)    = "vprm"
+        plname(2)    = "perturbation of v"
+        pnames(3)    = "pprm"
+        plname(3)    = "perturbation of pressure"
+        if (diag_avg) then
+          do var=1,3                                          ! loop through diag terms
+            plname(var)  = 'Average ' / / trim(plname(var))   ! and prepend 'Average'
+          enddo
+        endif
+      endif
+
+      alpha = dt / timescale
+      beta  = 1 - alpha
+      if(mynode==0) print *, 'DIAGS: alpha=',alpha, 'beta=',beta
 
       end subroutine init_diags_prs_flx  !]
 
@@ -1806,6 +1830,8 @@
       ! uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
       !
       ! and set beta = 1-alpha
+      !
+      ! must be called every timestep for filtering of u & v.
 
       implicit none
 
@@ -1834,8 +1860,8 @@
 
 !      if(mynode==0) print *, 'uf'
 
-      if( mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
-
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
+                                                                  ! also done everytimestep if averaging
 !        if(mynode==0) print *, 'up'
 
         do k=1,N
@@ -1862,7 +1888,17 @@
 
         enddo     ! <-- k
 
-      endif
+        if (diag_avg) then
+          call set_diags_avg_prs_flx( istr, iend, jstr, jend, up_pp, aup_pp )  ! average up_pp into aup_pp
+          call set_diags_avg_prs_flx( istr, iend, jstr, jend, vp_pp, avp_pp )
+          if (check_prs) then
+            call set_diags_avg_prs_flx( istr, iend, jstr, jend, up, aup )
+            call set_diags_avg_prs_flx( istr, iend, jstr, jend, vp, avp )
+            call set_diags_avg_prs_flx( istr, iend, jstr, jend, pp, app )
+          endif
+        endif
+
+      endif       ! <-- diag_avg or mod()
 
 
       end subroutine set_diags_uv_prime  !]
@@ -1917,6 +1953,59 @@
       endif
 
       end subroutine set_diags_prs_prime  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend, var, Avar )  ![
+
+      ! this should really be a utility wrapper from some module...
+
+      implicit none
+
+      ! inputs
+      integer,                            intent(in)    :: istr, iend, jstr, jend
+      real, dimension(GLOBAL_2D_ARRAY,N), intent(in)    :: var
+      real, dimension(GLOBAL_2D_ARRAY,N), intent(inout) :: Avar
+
+      ! local
+      integer :: i, j, k
+
+      if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
+
+        do k=1,N                         ! here we divide the average by the averaging rate
+          do j=jstr,jend
+            do i=istr,iend
+              Avar(i,j,k) = ( Avar(i,j,k) + var(i,j,k) ) / rec_rate
+            enddo
+          enddo
+        enddo
+
+      else
+
+        if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
+
+          do k=1,N                        ! here we divide the average by the averaging rate
+            do j=jstr,jend
+              do i=istr,iend
+                Avar(i,j,k) = var(i,j,k)
+              enddo
+            enddo
+          enddo
+
+        else                              ! all other timesteps
+
+          do k=1,N                        ! here we divide the average by the averaging rate
+            do j=jstr,jend
+              do i=istr,iend
+                Avar(i,j,k) = Avar(i,j,k)+var(i,j,k)
+              enddo
+            enddo
+          enddo
+
+        endif  ! <-- mod(tn-1,rec_rate)==0
+
+      endif    ! <-- mod(tn  ,rec_rate)==0
+
+      end subroutine set_diags_avg_prs_flx  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_tile( istr, iend, jstr, jend )  ![
@@ -2502,10 +2591,15 @@ C$OMP MASTER
                 call nc_define_var(ncid, pnames(1), plname(1), punits, grdtyp3d(:,1), ierr, prcsn )
                 call nc_define_var(ncid, pnames(2), plname(2), punits, grdtyp3d(:,2), ierr, prcsn )
                 call nc_define_var(ncid, pnames(3), plname(3), punits, r3dgrd, ierr, prcsn )
-                call nc_define_var(ncid, 'u_bcl', 'u baroclin', punits, grdtyp3d(:,1), ierr, prcsn )
-                call nc_define_var(ncid, 'p_bcl', 'p baroclin', punits, r3dgrd, ierr, prcsn )
-                call nc_define_var(ncid, 'uf', 'u filtered barc', punits, grdtyp3d(:,1), ierr, prcsn )
-                call nc_define_var(ncid, 'pf', 'p filtered barc', punits, r3dgrd, ierr, prcsn )
+                ! these vars aren't averaged currently
+!                text='u baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text) ! catch averaging into long name
+                call nc_define_var(ncid, 'u_bcl', text, punits, grdtyp3d(:,1), ierr, prcsn )
+!                text='p baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text)
+                call nc_define_var(ncid, 'p_bcl', text, punits, r3dgrd, ierr, prcsn )
+!                text='u filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
+                call nc_define_var(ncid, 'uf',    text, punits, grdtyp3d(:,1), ierr, prcsn )
+!                text='p filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
+                call nc_define_var(ncid, 'pf',    text, punits, r3dgrd, ierr, prcsn )
               endif
             endif    ! <-- prs_flx
 
@@ -2604,13 +2698,26 @@ C$OMP MASTER
 
           if(prs_flx) then
 
-            call nc_write_var(ncid, up_pp, N, ppnames(1), rp_var, output_rec, ierr)
-            call nc_write_var(ncid, vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+            if (diag_avg) then
+              call nc_write_var(ncid, aup_pp, N, ppnames(1), rp_var, output_rec, ierr)
+              call nc_write_var(ncid, avp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+            else
+              call nc_write_var(ncid,  up_pp, N, ppnames(1), rp_var, output_rec, ierr)
+              call nc_write_var(ncid,  vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+            endif
 
             if (check_prs) then
-              call nc_write_var(ncid, up, N, pnames(1), up_var, output_rec, ierr)
-              call nc_write_var(ncid, vp, N, pnames(2), vp_var, output_rec, ierr)
-              call nc_write_var(ncid, pp, N, pnames(3), rp_var, output_rec, ierr)
+
+              if (diag_avg) then
+                call nc_write_var(ncid, aup, N, pnames(1), up_var, output_rec, ierr)
+                call nc_write_var(ncid, avp, N, pnames(2), vp_var, output_rec, ierr)
+                call nc_write_var(ncid, app, N, pnames(3), rp_var, output_rec, ierr)
+              else
+                call nc_write_var(ncid,  up, N, pnames(1), up_var, output_rec, ierr)
+                call nc_write_var(ncid,  vp, N, pnames(2), vp_var, output_rec, ierr)
+                call nc_write_var(ncid,  pp, N, pnames(3), rp_var, output_rec, ierr)
+              endif
+
               call nc_write_var(ncid, u_bcl, N, 'u_bcl', up_var, output_rec, ierr)
               call nc_write_var(ncid, p_bcl, N, 'p_bcl', rp_var, output_rec, ierr)
               call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
