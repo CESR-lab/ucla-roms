@@ -31,7 +31,7 @@
 
 !      verbose = 1  !! remove this when added to dimensio
 
-      character(len=26), public  :: output_root_name
+      character(len=99), public  :: output_root_name
       integer, parameter, public :: rp_var=0, up_var=1,  ! Labels for different grid types
      &                              vp_var=2, qp_var=3
       real                       :: cycle_length         ! Deal with cyclical forcing files
@@ -707,8 +707,8 @@ C$OMP BARRIER
       implicit none
 
       ! Inputs
-      character(len=32) :: keyword
-      integer kwlen ! Keyword length
+      character(len=*) :: keyword
+      integer          :: kwlen ! Keyword length
 
       ! Local
       integer :: ierr = nf90_noerr
@@ -750,7 +750,7 @@ C$OMP BARRIER
 
       ! inputs/outputs
       integer,           intent(out)   :: ncid
-      character(len=32), intent(inout) :: fname           ! desired netcdf file name
+      character(len=*),  intent(inout) :: fname           ! desired netcdf file name
       integer,           intent(inout) :: prev_fill_mode  ! Needed for nf90_set_fill
       integer,           intent(in)    :: rec_per_file    ! records per file
       integer,           intent(in)    :: total_rec       ! Total netcdf records so far for these variables
@@ -851,7 +851,7 @@ C$OMP BARRIER
       implicit none
 
       ! inputs/outputs
-      character(len=32), intent(inout) :: fname              ! desired netcdf file name
+      character(len=*), intent(inout) :: fname              ! desired netcdf file name
       integer,           intent(out)   :: ncid
       integer,           intent(inout) :: prev_fill_mode     ! needed for nf90_set_fill
       integer,           intent(in)    :: rec_per_file       ! records per file

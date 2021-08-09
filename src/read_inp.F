@@ -27,7 +27,7 @@
 # include "mpif.h"
 #endif
       integer, parameter :: input=15, testunit=40,
-     &                  max_fname=256, max_kwsize=32
+     &                  max_fname=256, max_kwsize=99
       character(len=max_fname)  :: fname
       character(len=max_kwsize) :: keyword
       character(len=3), parameter :: end_signal='end'
