@@ -277,7 +277,7 @@
       integer            :: output_rec = 0              ! record number of output. 0 indicates we need new file
       integer            :: total_output_rec = 0        ! total flux output recordings so far
       integer            :: tn                          ! roms timestep
-      character (len=60) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
+      character (len=99) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
 
 
@@ -2477,7 +2477,6 @@
 #endif
       integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td, np
 
-      character(len=64)       :: fname
       character(len=30)       :: text, utext
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to use in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing

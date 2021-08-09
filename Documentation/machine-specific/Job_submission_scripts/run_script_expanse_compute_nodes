@@ -18,8 +18,8 @@
 #       Memory: default is 1GB on all nodes. However, you can request 2GB per core on  
 #       shared/compute/debug or 15.5GB/core on large-shared at no extra cost.
 #       Charged on number of cores or fraction of total memory, whichever is greater.
-#       shared/compute/debug total mem=256G, large-shared total mem=2000G
-#            for total memory required use: #SBATCH --mem=256G
+#       shared/compute/debug total mem=248G, large-shared total mem=2000G
+#            for total memory required use: #SBATCH --mem=248G
 #         or for memory per cores      use: #SBATCH --mem-per-cpu=2G
 
 #       Max run time is 48 hours:
