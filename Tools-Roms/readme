@@ -74,6 +74,18 @@ To compile tools:
 zslice -        Produces slice across constant depth from your result files.
                 Can also be compiled as ipslice (for iso-pycnal).
 
+
+! Note on versions:
+! =================
+
+    Unfortunately the tools started out from the tools in an old version of ROMS,
+    rather than the updated version of the tools on maya in /home/alex/tools.
+    Partit has been upgraded to the newer version, but mpc, etc remain the old
+    version for now. ncjoin and ncjoin_mpi were doctored from the old version,
+    which is unfortunate, but would be a lot of work to start from the new version
+    now.
+    
+
 ! Online child boundary interpolation
 ! ===================================
 

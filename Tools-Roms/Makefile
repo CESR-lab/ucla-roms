@@ -1,5 +1,8 @@
 include ../src/Makedefs.inc
 
+# Can't use -ip optimization for tools (partit won't compile)
+	FFLAGS = -O3
+
 ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z zslice
 
 all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
@@ -20,7 +23,7 @@ mreplace.f: mreplace.F
 	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace.F > mreplace.f
 	
 partit: partit.o insert_node.o lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)	
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)
 
 ncjoin: ncjoin.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
