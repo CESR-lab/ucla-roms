@@ -851,7 +851,7 @@ C$OMP BARRIER
       implicit none
 
       ! inputs/outputs
-      character(len=*), intent(inout) :: fname              ! desired netcdf file name
+      character(len=*),  intent(inout) :: fname              ! desired netcdf file name
       integer,           intent(out)   :: ncid
       integer,           intent(inout) :: prev_fill_mode     ! needed for nf90_set_fill
       integer,           intent(in)    :: rec_per_file       ! records per file

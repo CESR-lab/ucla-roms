@@ -1,8 +1,11 @@
 Here are basic instructions on how to get ROMS running on Expanse.
 
 Expanse info:
-  Expanse is replacing the Comet cluster. Comet's 5-year life cycle ends on July 31, 2021. Expanse has newer, more powerful hardware. For the same ROMS 25km pacific run, I found Expanse to be around 40% faster than Comet.
-  Since the move from Comet to Expanse is unavoidable anyway, and I believe Comet allocations can be transferred to Expanse, the sooner you migrate the more burn for your buck you will get.
+  Expanse is replacing the Comet cluster. Comet's 5-year life cycle ends on July 31, 2021. 
+  Expanse has newer, more powerful hardware. 
+  For the same ROMS 25km pacific run, I found Expanse to be around 40% faster than Comet.
+  Since the move from Comet to Expanse is unavoidable anyway, and I believe Comet allocations can be
+  transferred to Expanse, the sooner you migrate the more burn for your buck you will get.
 
 Expanse instructions:
   My bashrc is found on the ROMS repo here:
@@ -16,22 +19,50 @@ Expanse instructions:
 
 Hardware, cost & run info:
   Expanse has 128 cores per node!
-  You should thus try to partition your ROMS simulation to the nearest multiple of 128 cores, to avoid being over charged.
-  For example, if you run ROMS using 200 cores, you must request 2 whole nodes. You will be charged for 128x2=256 cores, i.e. 56 'wasted' cores...
+  You should thus try to partition your ROMS simulation to the nearest multiple of 128 cores, 
+  to avoid being over charged.
+  For example, if you run ROMS using 200 cores, you must request 2 whole nodes. 
+  You will be charged for 128x2=256 cores, i.e. 56 'wasted' cores...
 
-  If you are frustrated by wait times on the compute nodes and are still just configuring your model, try running on the 'debug' nodes for (almost) instant access. Unfortunately, you'll only have access to a maximum of 2x128 cores for a maximum of 30 minutes, but it is useful for getting up and running.
-  If running ROMS for the first time on Expanse, don't forget to run the basic example first to ensure your bashrc is correct, as per step 7. of Documentation/readme.1.compile-ROMS.
+  If you are frustrated by wait times on the compute nodes and are still just configuring your model, 
+  try running on the 'debug' nodes for (almost) instant access. 
+  Unfortunately, you'll only have access to a maximum of 2x128 cores for a maximum of 30 minutes, 
+  but it is useful for getting up and running.
+  If running ROMS for the first time on Expanse, don't forget to run the basic example first to ensure 
+  your bashrc is correct, as per step 7. of Documentation/readme.1.compile-ROMS.
+
+Jobs charges:
+
+  Memory: 
+    default is 1GB on all nodes. However, you can request 2GB per core on  
+    shared/compute/debug or 15.5GB/core on large-shared at no extra cost.
+    Charged on number of cores or fraction of total memory, whichever is greater.
+    shared/compute/debug total mem=256G, large-shared total mem=2000G
+    
+  Large-shared nodes:
+    A full node run, whether it's using all the CPUs OR using maximum memory, will cost 512 SUs per hour.
+    
+  Compute nodes:
+    128 SU's per hour. Thus 4x cheaper than large-shared.
+    Memory is 2GB/core vs 16GB/core so if running serial program, better to use large-shared if needing
+    more than 8GB mem as will be using more than 4 cores worth of time on compute node, but still 1 on
+    large-shared (until 16GB mem).
 
 Transferring data:
-  If you have lots of heavy files to transfer between Expanse and Comet (or personal machine / campus server), consider using this web portal: globus.org.  You log in with your Xsede account, then it provides a useful webpage GUI to transfer all your files. 
+  If you have lots of heavy files to transfer between Expanse and Comet (or personal machine / campus server),
+  consider using this web portal: globus.org.  You log in with your Xsede account, then it provides a useful
+  webpage GUI to transfer all your files. 
   In the GUI use:
   Collection = XSEDE Expanse 
-  path = /expanse/home/$username$ (to get to your expanse home directory) The projects and scratch directory paths are the same as shown on expanse.
+  path = /expanse/home/$username$ (to get to your expanse home directory) 
+  The projects and scratch directory paths are the same as shown on expanse.
   Xsede prefers that you don't use 'scp' for transfers exceeding (I believe) 2GB.
   There are also other command line options to transfer files that Xsede recommends.
 
 New ROMS code:
-  If you still aren't using the new ROMS code, ask Jereon for access to the code's repo. Once you have access, the attachment 'ROMS_repo_bitbucket_cloning_instructions.pdf' gives instructions for cloning the code to Expanse, or whichever machine you use.
+  If you still aren't using the new ROMS code, ask Jereon for access to the code's repo. 
+  Once you have access, the attachment 'ROMS_repo_bitbucket_cloning_instructions.pdf' gives 
+  instructions for cloning the code to Expanse, or whichever machine you use.
 
 Links:
   Expanse user guide - https://portal.xsede.org/sdsc-expanse

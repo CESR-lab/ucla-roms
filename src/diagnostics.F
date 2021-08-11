@@ -302,7 +302,8 @@
       character (len=20),  allocatable, dimension(:) :: ppnames
       character (len=120), allocatable, dimension(:) :: pplname
 
-      character (len=7) :: punits = 'm^2/s^2'
+      character (len=3) :: punits = 'W/m'
+      character (len=3) :: pchunits = 'TBC'
 
       public set_diags_uv_prime
       public set_diags_prs_prime
@@ -1858,12 +1859,10 @@
 
       enddo     ! <-- k
 
-!      if(mynode==0) print *, 'uf'
+!      if(mynode==0) print *, 'uf(10,10,10)=',uf(10,10,10)
 
       if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
                                                                   ! also done everytimestep if averaging
-!        if(mynode==0) print *, 'up'
-
         do k=1,N
 
           do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
@@ -1881,12 +1880,15 @@
 
           do j=jstr,jend
             do i=istr,iend  ! interior only
-              up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k)
-              vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k)
+              up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k) * Hz(i,j,k)
+              vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k) * Hz(i,j,k)
             enddo
           enddo
 
         enddo     ! <-- k
+
+!        if(mynode==0) print *, 'up(10,10,10)=',up(10,10,10)
+!        if(mynode==0) print *, 'up_pp(10,10,10)=',up_pp(10,10,10)
 
       endif       ! <-- diag_avg or mod()
 
@@ -1929,8 +1931,6 @@
 
       if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
 
-!        if(mynode==0) print *, 'calc pp and p_bcl'
-
         do k=1,N
           do j=jstr,jend    ! only need over interior
             do i=istr,iend
@@ -1940,6 +1940,9 @@
             enddo
           enddo
         enddo
+
+!        if(mynode==0) print *, 'pp(10,10,10)=',pp(10,10,10)
+
       endif
 
       end subroutine set_diags_prs_prime  !]
@@ -1962,6 +1965,8 @@
         call set_diags_avg_var( istr, iend, jstr, jend, vp, avp )
         call set_diags_avg_var( istr, iend, jstr, jend, pp, app )
       endif
+
+!      if(mynode==0) print *, 'avg_up_pp(10,10,10)=',aup_pp(10,10,10)
 
       end subroutine set_diags_avg_prs_flx  !]
 
@@ -2598,18 +2603,18 @@ C$OMP MASTER
               call nc_define_var(ncid, ppnames(2), pplname(2), punits, r3dgrd, ierr, prcsn )
 
               if (check_prs) then
-                call nc_define_var(ncid, pnames(1), plname(1), punits, grdtyp3d(:,1), ierr, prcsn )
-                call nc_define_var(ncid, pnames(2), plname(2), punits, grdtyp3d(:,2), ierr, prcsn )
-                call nc_define_var(ncid, pnames(3), plname(3), punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, pnames(1), plname(1), pchunits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, pnames(2), plname(2), pchunits, grdtyp3d(:,2), ierr, prcsn )
+                call nc_define_var(ncid, pnames(3), plname(3), pchunits, r3dgrd, ierr, prcsn )
                 ! these vars aren't averaged currently
 !                text='u baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text) ! catch averaging into long name
-                call nc_define_var(ncid, 'u_bcl', 'u baroclin', punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, 'u_bcl', 'u baroclin', pchunits, grdtyp3d(:,1), ierr, prcsn )
 !                text='p baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'p_bcl', 'p baroclin', punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, 'p_bcl', 'p baroclin', pchunits, r3dgrd, ierr, prcsn )
 !                text='u filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'uf', 'u filtered barc', punits, grdtyp3d(:,1), ierr, prcsn )
+                call nc_define_var(ncid, 'uf', 'u filtered barc', pchunits, grdtyp3d(:,1), ierr, prcsn )
 !                text='p filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'pf', 'p filtered barc', punits, r3dgrd, ierr, prcsn )
+                call nc_define_var(ncid, 'pf', 'p filtered barc', pchunits, r3dgrd, ierr, prcsn )
               endif
             endif    ! <-- prs_flx
 
