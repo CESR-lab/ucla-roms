@@ -61,6 +61,9 @@
 
       subroutine set_tides(tile)
 
+      ! Computes current forcing for boundaries and surface tidal
+      ! potential
+
       ! DevinD created seperate step as can't have compute_tile_bounds
       ! and compute_auxilliary_bounds in the same subroutine as they both
       ! declare and compute. Fortan doesn't allow.
@@ -71,14 +74,12 @@
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
 
-      call set_tides_tile(istr,iend,jstr,jend,A2d(1,1),A2d(1,2),
-     &                                            A2d(1,3),A2d(1,4))
+      call set_tides_tile(istr,iend,jstr,jend)
 
       end subroutine set_tides
 !-----------------------------------------------------------------------
 
-      subroutine set_tides_tile(istr,iend,jstr,jend,Cangle,Sangle,
-     &                                                  Cphase,Sphase)
+      subroutine set_tides_tile(istr,iend,jstr,jend)
 
       implicit none
 
@@ -89,11 +90,9 @@
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: Cangle, Cphase,
-     &                                             Sangle, Sphase
       ! local
       integer tile, itide, i, j
-      real angle, phase, ramp, omega
+      real om
 
 #include "compute_auxiliary_bounds.h"
 
@@ -105,274 +104,121 @@
       ramp = 1.
 
 # if defined POT_TIDES
-      do j=jstrR-1,jendR
-        do i=istrR-1,iendR
-          Ptide(i,j)=0.
-        enddo
-      enddo
 # endif /* POT_TIDES */
 
       do itide=1,Ntides
-        if (Tperiod(itide) > 0.) then
 
-          omega=2.*pi*time/Tperiod(itide)
+        omega=2.*pi*time/Tperiod(itide)
 
-# if defined SSH_TIDES
-#  if defined OBC_WEST
-          if (WESTERN_EDGE) then
-            do j=jstrR,jendR
-#   ifdef Z_FRC_BRY
-              zeta_west(j) =zeta_west(j)
-#   else
-              ssh(istr-1,j)=ssh(istr-1,j)
-#   endif
-     &              +ramp*SSH_Tamp(istr-1,j,itide)
-     &       *cos(omega-SSH_Tphase(istr-1,j,itide))
-            enddo
-          endif
-#  endif
-#  if defined OBC_EAST
-          if (EASTERN_EDGE) then
-            do j=jstrR,jendR
-#   ifdef Z_FRC_BRY
-              zeta_east(j) =zeta_east(j)
-#   else
-              ssh(iend+1,j)=ssh(iend+1,j)
-#   endif
-     &                   +ramp*SSH_Tamp(iend+1,j,itide)
-     &            *cos(omega-SSH_Tphase(iend+1,j,itide))
-            enddo
-          endif
-#  endif
-#  if defined OBC_SOUTH
-          if (SOUTHERN_EDGE) then
-            do i=istrR,iendR
-#   ifdef Z_FRC_BRY
-              zeta_south(i)=zeta_south(i)
-#   else
-              ssh(i,jstr-1)=ssh(i,jstr-1)
-#   endif
-     &                   +ramp*SSH_Tamp(i,jstr-1,itide)
-     &            *cos(omega-SSH_Tphase(i,jstr-1,itide))
-            enddo
-          endif
-#  endif
-#  if defined OBC_NORTH
-          if (NORTHERN_EDGE) then
-            do i=istrR,iendR
-#   ifdef Z_FRC_BRY
-              zeta_north(i)=zeta_north(i)
-#   else
-              ssh(i,jend+1)=ssh(i,jend+1)
-#   endif
-     &                   +ramp*SSH_Tamp(i,jend+1,itide)
-     &            *cos(omega-SSH_Tphase(i,jend+1,itide))
-            enddo
-          endif
-#  endif
-# endif /* SSH_TIDES */
-# if defined UV_TIDES
+        if (bry_tides) then
+
 #  ifdef OBC_WEST
           if (WESTERN_EDGE) THEN
-            do i=istr-1,istr
-              do j=jstr-1,jendR
-                angle=UV_Tangle(i,j,itide)-angler(i,j)
-                phase=omega-UV_Tphase(i,j,itide)
-                Cangle(i,j)=cos(angle)
-                Cphase(i,j)=cos(phase)
-                Sangle(i,j)=sin(angle)
-                Sphase(i,j)=sin(phase)
-              enddo
-            enddo
+            i=istr-1
             do j=jstrR,jendR
-              i=istrU-1
-#   ifdef M2_FRC_BRY
-              ubar_west(j)=ubar_west(j)
-#   else
-              ubclm(i,j)=ubclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i-1,j,itide)+UV_Tmajor(i  ,j,itide))
-     &       *(Cangle(i-1,j)+Cangle(i,j))*(Cphase(i-1,j)+Cphase(i,j))
-
-     &               -(UV_Tminor(i-1,j,itide)+UV_Tminor(i  ,j,itide))
-     &       *(Sangle(i-1,j)+Sangle(i,j))*(Sphase(i-1,j)+Sphase(i,j))
-     &                                                              )
+              zeta_west(j) =zeta_west(j)
+     &        + ztide_r(i,j,itide)*cos(om) + ztide_i(i,j,itide)*sin(om)
             enddo
+            i=istrU-1
+            do j=jstrR,jendR
+              ubar_west(j)=ubar_west(j)
+     &        + utide_r(i,j,itide)*cos(om) + utide_i(i,j,itide)*sin(om)
+            enddo
+            i=istr-1
             do j=jstr,jendR
-              i=istr-1
-#   ifdef M2_FRC_BRY
               vbar_west(j)=vbar_west(j)
-#   else
-              vbclm(i,j)=vbclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i,j-1,itide)+UV_Tmajor(i,j  ,itide))
-     &       *(Sangle(i,j-1)+Sangle(i,j))*(Cphase(i,j-1)+Cphase(i,j))
-
-     &               +(UV_Tminor(i,j-1,itide)+UV_Tminor(i,j  ,itide))
-     &       *(Cangle(i,j-1)+Cangle(i,j))*(Sphase(i,j-1)+Sphase(i,j))
-     &                                                              )
+     &        + vtide_r(i,j,itide)*cos(om) + vtide_i(i,j,itide)*sin(om)
             enddo
           endif
 #  endif
 
 #  ifdef OBC_EAST
           if (EASTERN_EDGE) THEN
-            do i=iend,iend+1
-              do j=jstr-1,jendR
-                angle=UV_Tangle(i,j,itide)-angler(i,j)
-                phase=omega-UV_Tphase(i,j,itide)
-                Cangle(i,j)=cos(angle)
-                Cphase(i,j)=cos(phase)
-                Sangle(i,j)=sin(angle)
-                Sphase(i,j)=sin(phase)
-              enddo
+            i = iend+1
+            do j=jstrR,jendR
+              zeta_east(j) =zeta_east(j)
+     &        + ztide_r(i,j,itide)*cos(om) + ztide_i(i,j,itide)*sin(om)
             enddo
             do j=jstrR,jendR
-              i=iend+1
-#   ifdef M2_FRC_BRY
               ubar_east(j)=ubar_east(j)
-#   else
-              ubclm(i,j)=ubclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i-1,j,itide)+UV_Tmajor(i  ,j,itide))
-     &                                   *(Cangle(i-1,j)+Cangle(i,j))
-     &                                   *(Cphase(i-1,j)+Cphase(i,j))
-
-     &               -(UV_Tminor(i-1,j,itide)+UV_Tminor(i  ,j,itide))
-     &                                   *(Sangle(i-1,j)+Sangle(i,j))
-     &                                   *(Sphase(i-1,j)+Sphase(i,j))
-     &                                                              )
+     &        + utide_r(i,j,itide)*cos(om) + utide_i(i,j,itide)*sin(om)
             enddo
             do j=jstr,jendR
-              i=iend+1
-#   ifdef M2_FRC_BRY
               vbar_east(j)=vbar_east(j)
-#   else
-              vbclm(i,j)=vbclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i,j-1,itide)+UV_Tmajor(i,j  ,itide))
-     &       *(Sangle(i,j-1)+Sangle(i,j))*(Cphase(i,j-1)+Cphase(i,j))
-
-     &               +(UV_Tminor(i,j-1,itide)+UV_Tminor(i,j  ,itide))
-     &       *(Cangle(i,j-1)+Cangle(i,j))*(Sphase(i,j-1)+Sphase(i,j))
-     &                                                              )
+     &        + vtide_r(i,j,itide)*cos(om) + vtide_i(i,j,itide)*sin(om)
             enddo
           endif
 #  endif
 
 #  ifdef OBC_SOUTH
           if (SOUTHERN_EDGE) THEN
-            do j=jstr-1,jstr
-              do i=istr-1,iendR
-                angle=UV_Tangle(i,j,itide)-angler(i,j)
-                phase=omega-UV_Tphase(i,j,itide)
-                Cangle(i,j)=cos(angle)
-                Cphase(i,j)=cos(phase)
-                Sangle(i,j)=sin(angle)
-                Sphase(i,j)=sin(phase)
-              enddo
-            enddo
-            do i=istr,iendR
-              j=jstr-1
-#   ifdef M2_FRC_BRY
-              ubar_south(i)=ubar_south(i)
-#   else
-              ubclm(i,j)=ubclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i-1,j,itide)+UV_Tmajor(i  ,j,itide))
-     &       *(Cangle(i-1,j)+Cangle(i,j))*(Cphase(i-1,j)+Cphase(i,j))
-
-     &               -(UV_Tminor(i-1,j,itide)+UV_Tminor(i  ,j,itide))
-     &       *(Sangle(i-1,j)+Sangle(i,j))*(Sphase(i-1,j)+Sphase(i,j))
-     &                                                              )
-            enddo
+            j=jstr-1
             do i=istrR,iendR
-              j=jstrV-1
-#   ifdef M2_FRC_BRY
+              zeta_south(i)=zeta_south(i)
+     &        + ztide_r(i,j,itide)*cos(om) + ztide_i(i,j,itide)*sin(om)
+            enddo
+            j=jstr-1
+            do i=istr,iendR
+              ubar_south(i)=ubar_south(i)
+     &        + utide_r(i,j,itide)*cos(om) + utide_i(i,j,itide)*sin(om)
+            enddo
+            j=jstrV-1
+            do i=istrR,iendR
               vbar_south(i)=vbar_south(i)
-#   else
-              vbclm(i,j)=vbclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i,j-1,itide)+UV_Tmajor(i,j  ,itide))
-     &       *(Sangle(i,j-1)+Sangle(i,j))*(Cphase(i,j-1)+Cphase(i,j))
-
-     &               +(UV_Tminor(i,j-1,itide)+UV_Tminor(i,j  ,itide))
-     &       *(Cangle(i,j-1)+Cangle(i,j))*(Sphase(i,j-1)+Sphase(i,j))
-     &                                                              )
+     &        + vtide_r(i,j,itide)*cos(om) + vtide_i(i,j,itide)*sin(om)
             enddo
           endif
 #  endif
 #  ifdef OBC_NORTH
           if (NORTHERN_EDGE) THEN
-            do j=jend,jend+1
-              do i=istr-1,iendR
-                angle=UV_Tangle(i,j,itide)-angler(i,j)
-                phase=omega-UV_Tphase(i,j,itide)
-                Cangle(i,j)=cos(angle)
-                Cphase(i,j)=cos(phase)
-                Sangle(i,j)=sin(angle)
-                Sphase(i,j)=sin(phase)
-              enddo
+            j=jend+1
+            do i=istrR,iendR
+              zeta_north(i)=zeta_north(i)
+     &        + ztide_r(i,j,itide)*cos(om) + ztide_i(i,j,itide)*sin(om)
             enddo
             do i=istr,iendR
-              j=jend+1
-#   ifdef M2_FRC_BRY
               ubar_north(i)=ubar_north(i)
-#   else
-              ubclm(i,j)=ubclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i-1,j,itide)+UV_Tmajor(i  ,j,itide))
-     &       *(Cangle(i-1,j)+Cangle(i,j))*(Cphase(i-1,j)+Cphase(i,j))
-
-     &               -(UV_Tminor(i-1,j,itide)+UV_Tminor(i  ,j,itide))
-     &       *(Sangle(i-1,j)+Sangle(i,j))*(Sphase(i-1,j)+Sphase(i,j))
-     &                                                              )
+     &        + utide_r(i,j,itide)*cos(om) + utide_i(i,j,itide)*sin(om)
             enddo
-
             do i=istrR,iendR
-              j=jend+1
-#   ifdef M2_FRC_BRY
               vbar_north(i)=vbar_north(i)
-#   else
-              vbclm(i,j)=vbclm(i,j)
-#   endif
-     &  +ramp*0.125*( (UV_Tmajor(i,j-1,itide)+UV_Tmajor(i,j  ,itide))
-     &       *(Sangle(i,j-1)+Sangle(i,j))*(Cphase(i,j-1)+Cphase(i,j))
-
-     &               +(UV_Tminor(i,j-1,itide)+UV_Tminor(i,j  ,itide))
-     &       *(Cangle(i,j-1)+Cangle(i,j))*(Sphase(i,j-1)+Sphase(i,j))
-     &                                                              )
+     &        + vtide_r(i,j,itide)*cos(om) + vtide_i(i,j,itide)*sin(om)
             enddo
           endif
 #  endif
-# endif /* UV_TIDES */
+        endif  ! bry_tides
 
-# if defined POT_TIDES
+        if (pot_tides) then
 !-----------------------------------------------------------------------
 !  Compute tidal potential (m)
 !  -- > to be applied as a pressure-gradient force
 !       in prsgrd (if SOLVE3D) or step2d (if not SOLVE3D)
 !-----------------------------------------------------------------------
-!
-          do j=jstrR-1,jendR ! DevinD does jstrR-1 not go beyond computational margin?
-            do i=istrR-1,iendR
-              Ptide(i,j)=( Ptide(i,j)+
-     &                   ramp*POT_Tamp(i,j,itide)*
-     &                   cos(omega-POT_Tphase(i,j,itide)) )
-#  ifdef MASKING
-     &                   *rmask(i,j)
-#  endif
+          if (itide==1) then ! initialize at the first tidal component
+            do j=jstrR-1,jendR
+              do i=istrR-1,iendR
+                Ptide(i,j)=0.
+     &        + ptide_r(i,j,itide)*cos(om) + ptide_i(i,j,itide)*sin(om)
+              enddo
             enddo
-          enddo
-# endif /* POT_TIDES */
+          else
+            do j=jstrR-1,jendR ! DevinD does jstrR-1 not go beyond computational margin?
+              do i=istrR-1,iendR
+                Ptide(i,j)=( Ptide(i,j)+
+     &          + ptide_r(i,j,itide)*cos(om) + ptide_i(i,j,itide)*sin(om)
+              enddo
+            enddo
+          endif
 
-        endif  !<--- period > 0
-      enddo  !<-- itide
+        endif  ! bry_tides
+
+      enddo  !  itide=1,ntides
 
       end subroutine set_tides_tile
 !-----------------------------------------------------------------------
 
       subroutine read_tides(istr,iend,jstr,jend)
+      ! JM  shouldn't this be master only and so 
       ! Read tides from forcing file. Only read once at first timestep.
 
       use read_write
