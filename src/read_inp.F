@@ -9,6 +9,9 @@
 #if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
+#if defined QCORRECTION 
+      use surf_flux, only: dSSTdt
+#endif
       use tracers, only: wrt_t, t_vname, wrt_t_avg
 ! For root name of output files
       use read_write, only: read_output_root_name
@@ -364,7 +367,7 @@ c--      fname='roms.in.US_West'
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) dSSTdt
           mpi_master_only write(*,'(5x,A,ES10.3,2x,2A/38x,A)')
-     &   'dSSSdt =', dSSSdt, 'Sea-Surface Temperature correction ',
+     &   'dSSSdt =', dSSTdt, 'Sea-Surface Temperature correction ',
      &                       'coefficient expressed',
      &            'kinematically as "piston velocity" [cm/day]'
 
