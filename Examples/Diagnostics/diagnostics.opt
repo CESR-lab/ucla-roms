@@ -35,6 +35,10 @@
       logical, parameter, public :: diag_trc      = .true.  ! calc+write diags of selected tracers
       logical, parameter         :: tot_change    = .true.  ! write total rate of change in variable during timestep.
                                                             ! may not want tot_change (wasteful), just the sum of diags.
+
+      logical, parameter, public :: prs_flx       = .true.  ! calculate perturbations in u/v/p
+      real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering
+
       integer, parameter         :: prcsn         = 1       ! precision of output variables. 1=float, 2=double
       
       ! End of user inputs                                  
@@ -46,4 +50,7 @@
       logical, parameter         :: check_avg     = .true.  ! check sum of diagnostic avg*time = gross change
                                                             ! in u/v/t over entire simulation at time of writing.
                                                             ! both Useful to ensure diagnostics not broken by different cppdefs.h config.
+      logical, parameter         :: check_prs     = .true.  ! output additional variables to analyse prs_flx components.
+
+                                                            
             
