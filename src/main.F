@@ -340,9 +340,8 @@ C$OMP END MASTER
 #ifdef WEC
       use wec_frc, only: wec_forces
 #endif
-#if defined SSH_TIDES || defined UV_TIDES
+
       use tides, only: set_tides
-#endif
       use bry_extract_child
       use diagnostics
 
@@ -393,7 +392,7 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
 #ifdef SOLVE3D
       do tile=my_tile_range                 ! interpolate forcing
         call set_forces(tile)               ! data to model time and
-# if defined SSH_TIDES || defined UV_TIDES
+# if defined TIDES
         call set_tides(tile)            ! compute surface fluxes.
 # endif
         call    rho_eos(tile)
