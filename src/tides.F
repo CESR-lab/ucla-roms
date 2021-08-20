@@ -33,7 +33,7 @@
 !** UV_Tphase    Tidal current phase (degrees/360) at RHO-points.
 
 
-      real, public,dimension(:)    ,allocatable :: tperiod
+      real, public,dimension(:)    ,allocatable :: omega
       real, public,dimension(:,:,:),allocatable :: ztide_r,ztide_i
       real, public,dimension(:,:,:),allocatable :: utide_r,utide_i
       real, public,dimension(:,:,:),allocatable :: vtide_r,vtide_i
@@ -49,7 +49,7 @@
 
       implicit none
 
-      allocate(tperiod(ntides))
+      allocate(omega(ntides))
 
       if (bry_tides) then
         allocate(ztide_r(GLOBAL_2D_ARRAY,ntides))
@@ -107,13 +107,13 @@
 
 #include "compute_auxiliary_bounds.h"
 
-      if (.not.allocated(tperiod)) then 
+      if (.not.allocated(omega)) then 
         call init_tides
       endif
 
       do itide=1,ntides
 
-        om = 2.*pi*time/Tperiod(itide)
+        om = omega(itide)
 
         if (bry_tides) then
 
@@ -244,13 +244,14 @@
 
       ! Continue searching while tides not found & still more files to check
 
+
       !! search for forcing file with tidal information
       do while ((found_rec==0).and.(var_file_indx <= max_frc))
 
         ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
         if(ierr/=0) call handle_ierr(ierr,'tides::opening forcing file')
 
-        ierr=nf90_inq_varid(ncid, 'tide_period', var_id)
+        ierr=nf90_inq_varid(ncid, 'omega', var_id)
         if(ierr/=0) then 
           var_file_indx = var_file_indx +1
         else
@@ -264,50 +265,50 @@
 
       do itide = 1,ntides
 
-        ierr=nf90_inq_varid(ncid, 'tide_period', var_id)
-        ierr=nf90_get_var(ncid,var_id,Tperiod(itide),(/itide/))
-        if(ierr/=0) call handle_ierr(ierr,'tides::tide_period')
+        ierr=nf90_inq_varid(ncid, 'omega', var_id)
+        ierr=nf90_get_var(ncid,var_id,omega(itide),(/itide/))
+        if(ierr/=0) call handle_ierr(ierr,'tides::omega')
 
         if (bry_tides) then
 
           ! read tidal elevations
-          call nc_read_var(ncid,ztide_r(:,:,itide),1,'ssh_r',     
+          call nc_read_var(ncid,ztide_r(:,:,itide),1,'ssh_Re',     
      &                 r_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::ssh_r')
+          if(ierr/=0) call handle_ierr(ierr,'tides::ssh_Re')
 
-          call nc_read_var(ncid,ztide_i(:,:,itide),1,'ssh_i',     
+          call nc_read_var(ncid,ztide_i(:,:,itide),1,'ssh_Im',     
      &                 r_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::ssh_i')
+          if(ierr/=0) call handle_ierr(ierr,'tides::ssh_Im')
 
 
           ! Read tidal barotropic velocities. These currents must be on u,v-points
           ! and rotated to align with the grid
 
-          call nc_read_var(ncid,utide_r(:,:,itide),1,'u_r',     
+          call nc_read_var(ncid,utide_r(:,:,itide),1,'u_Re',     
      &                 u_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::u_r')
-          call nc_read_var(ncid,utide_i(:,:,itide),1,'u_i',     
+          if(ierr/=0) call handle_ierr(ierr,'tides::u_Re')
+          call nc_read_var(ncid,utide_i(:,:,itide),1,'u_Im',     
      &                 u_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::u_i')
+          if(ierr/=0) call handle_ierr(ierr,'tides::u_Im')
 
-          call nc_read_var(ncid,vtide_r(:,:,itide),1,'v_r',     
+          call nc_read_var(ncid,vtide_r(:,:,itide),1,'v_Re',     
      &                 v_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::v_r')
-          call nc_read_var(ncid,vtide_i(:,:,itide),1,'v_i',     
+          if(ierr/=0) call handle_ierr(ierr,'tides::v_Re')
+          call nc_read_var(ncid,vtide_i(:,:,itide),1,'v_Im',     
      &                 v_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::v_i')
+          if(ierr/=0) call handle_ierr(ierr,'tides::v_Im')
 
 
         endif !bry_tides
 
         if (pot_tides) then
 
-          call nc_read_var(ncid,ptide_r(:,:,itide),1,'pot_r',     
+          call nc_read_var(ncid,ptide_r(:,:,itide),1,'pot_Re',     
      &                 r_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::pot_r')
-          call nc_read_var(ncid,ptide_i(:,:,itide),1,'pot_i',     
+          if(ierr/=0) call handle_ierr(ierr,'tides::pot_Re')
+          call nc_read_var(ncid,ptide_i(:,:,itide),1,'pot_Im',     
      &                 r_var, itide, ierr)
-          if(ierr/=0) call handle_ierr(ierr,'tides::pot_i')
+          if(ierr/=0) call handle_ierr(ierr,'tides::pot_Im')
 
         endif !pot_tides
 

@@ -1104,7 +1104,7 @@ C$OMP BARRIER
 
 ! ----------------------------------------------------------------------
       subroutine nc_read_var(ncid, var_array, nmax, var_name,  ![
-     &                       var_type, record, ierr, coarse)
+     &                       var_type, record, ierr, coarse_in)
 
       ! Read one variable from input netcdf file
 
@@ -1123,14 +1123,17 @@ C$OMP BARRIER
       character(len=*), intent(in) :: var_name
       integer,          intent(in) :: var_type                        ! variable type: u-, v- or rho-point
       integer                      :: ierr                            ! track netcdf errors
-      integer, optional            :: coarse                          ! whether function is interpolated from coarse data
+      integer, optional            :: coarse_in                       ! whether function is interpolated from coarse data
 
       ! local
       integer var_id
+      integer :: coarse
 
 
-      if(.not. present(coarse))then  ! check if 'coarse' is available as optional arguement, if not set to 0
+      if(.not. present(coarse_in))then  ! check if 'coarse' is available as optional arguement, if not set to 0
         coarse=0
+      else
+        coarse = coarse_in
       endif
 
       ierr = nf90_inq_varid (ncid,var_name,var_id)  ! get variable ID
