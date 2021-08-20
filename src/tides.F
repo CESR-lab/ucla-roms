@@ -389,6 +389,7 @@
       ! local
       integer ierr, var_file_indx, ncid, var_id, itide, found_rec,ierr2,i,j
 
+
       found_rec = 0     ! Set found variable flag to not found
       var_file_indx = 1 ! Forcing file index number
       ! Since tides are only read once, don't need to store netcdf vars
@@ -397,7 +398,7 @@
       do while ((found_rec==0).and.(var_file_indx <= max_frc))
 
         ! Try to open force file
- 100    ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
+        ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
         do itide=1,Ntides
           ierr=nf90_inq_varid(ncid, 'tide_period', var_id)
           if(ierr==nf90_noerr) then
@@ -473,7 +474,7 @@
             found_rec=1 ! Set record to found to exit do while loop
           else
             var_file_indx=var_file_indx+1 ! Set forcing file index to next file
-            go to 100 ! Try next file
+            continue
           endif
 
         end do ! itide=1,Ntides
