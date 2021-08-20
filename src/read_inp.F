@@ -368,7 +368,7 @@ c--      fname='roms.in.US_West'
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) dSSTdt
           mpi_master_only write(*,'(5x,A,ES10.3,2x,2A/38x,A)')
-     &   'dSSSdt =', dSSSdt, 'Sea-Surface Temperature correction ',
+     &   'dSSTdt =', dSSTdt, 'Sea-Surface Temperature correction ',
      &                       'coefficient expressed',
      &            'kinematically as "piston velocity" [cm/day]'
 
