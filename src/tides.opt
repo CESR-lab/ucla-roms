@@ -3,8 +3,10 @@
       ! user inputs
 
       ! Ntides = Number of tidal components to consider.
-#if defined SSH_TIDES || defined UV_TIDES
-      integer, parameter, public :: Ntides=15
+#if defined SSH_TIDES || defined UV_TIDES || defined TIDES
+      integer, parameter, public :: ntides=10
+      logical,parameter, public :: bry_tides=.true.
+      logical,parameter, public :: pot_tides=.true.
 #endif
 
       ! end user inputs

@@ -9,6 +9,10 @@
 #if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
+#if defined QCORRECTION
+      use surf_flux, only: dSSTdt
+#endif
+
       use tracers, only: wrt_t, t_vname, wrt_t_avg
 ! For root name of output files
       use read_write, only: read_output_root_name
