@@ -16,6 +16,7 @@
       use bgc ! wrt_his_bgc_diag
       use read_write ! nc_write_var
       use netcdf ! for nf90_routines
+      use tides
 
       implicit none
 #include "param.h"
@@ -28,6 +29,7 @@
 #include "mixing.h"
 #include "netcdf.inc"
 
+      integer funit !! MJM debug
       integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
      &   , start(2), count(2), ibuff(iaux), ncdf_write
       character(len=18) tstring
@@ -79,6 +81,12 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
      &       'Cannot write variable ''time_step'' into history file, ',
      &       'rec =', record, nf90_strerror(ierr) MYID
         goto 99                                           !--> ERROR
+      endif
+
+
+      if (mynode<4) then
+        funit = 80+mynode
+        write(funit,*) mynode,time,ptides(20,20)
       endif
 
 ! Time: Note that (1) time is always double precision; and (2) which
