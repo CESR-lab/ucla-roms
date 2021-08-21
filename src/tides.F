@@ -397,15 +397,22 @@
       ! Continue searching while tides not found & still more files to check
       do while ((found_rec==0).and.(var_file_indx <= max_frc))
 
+        if (mynode==0) print *,'reading: ',frcfile(var_file_indx)
         ! Try to open force file
         ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
-        do itide=1,Ntides
-          ierr=nf90_inq_varid(ncid, 'tide_period', var_id)
-          if(ierr==nf90_noerr) then
+        ierr=nf90_inq_varid(ncid, 'tide_period', var_id)
+
+        if(ierr==nf90_noerr) then
+
+          found_rec=1 ! Set record to found to exit do while loop
+
+          do itide=1,Ntides
+            ierr=nf90_inq_varid(ncid, 'tide_period', var_id)
 
             ! Tperiod
             ierr=nf90_get_var(ncid,var_id,Tperiod(itide),(/itide/))
             if(ierr/=0) call handle_ierr(ierr,'tides::tide_period')
+
 #ifdef SSH_TIDES
             ! tidal elevation amplitude and phase.
             ierr =nf90_inq_varid(ncid,'tide_Eamp',var_id)
@@ -471,20 +478,20 @@
                 enddo
               enddo
 
-            found_rec=1 ! Set record to found to exit do while loop
-          else
-            var_file_indx=var_file_indx+1 ! Set forcing file index to next file
-            continue
-          endif
+          end do ! itide=1,Ntides
+        else
+          var_file_indx=var_file_indx+1 ! Set forcing file index to next file
+          continue
+        endif
 
-        end do ! itide=1,Ntides
       end do ! found_rec==0 && var_file_indx <= max_frc
 
-      if (found_rec==0 .and. var_file_indx==max_frc) then
-        error stop 'tides.F: tide input data not found'
+      if (found_rec==0 ) then
+        if (mynode==0) print *,'tides.F: tide input data not found'
+        error stop 
       endif
 
-      if(mynode==0) write(*,'(5x,A)')'tides:: read all tides'
+      if(mynode==0) write(*,'(5x,A)')'tides:: read all tides (old)'
 
       end subroutine read_tides
 !-----------------------------------------------------------------------
