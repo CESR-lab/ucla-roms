@@ -103,7 +103,7 @@
       integer,intent(in) :: istr,iend,jstr,jend
       ! local
       integer tile, itide, i, j
-      real om
+      real omT
 
 #include "compute_auxiliary_bounds.h"
 
@@ -113,7 +113,7 @@
 
       do itide=1,ntides
 
-        om = omega(itide)
+        omT = omega(itide)*time
 
         if (bry_tides) then
 
@@ -122,17 +122,17 @@
             i=istr-1
             do j=jstrR,jendR
               zeta_west(j) =zeta_west(j)
-     &        + ztide_r(i,j,itide)*cos(om) - ztide_i(i,j,itide)*sin(om)
+     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
             enddo
             i=istrU-1
             do j=jstrR,jendR
               ubar_west(j)=ubar_west(j)
-     &        + utide_r(i,j,itide)*cos(om) - utide_i(i,j,itide)*sin(om)
+     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
             enddo
             i=istr-1
             do j=jstr,jendR
               vbar_west(j)=vbar_west(j)
-     &        + vtide_r(i,j,itide)*cos(om) - vtide_i(i,j,itide)*sin(om)
+     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
             enddo
           endif
 #  endif
@@ -142,15 +142,15 @@
             i = iend+1
             do j=jstrR,jendR
               zeta_east(j) =zeta_east(j)
-     &        + ztide_r(i,j,itide)*cos(om) - ztide_i(i,j,itide)*sin(om)
+     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
             enddo
             do j=jstrR,jendR
               ubar_east(j)=ubar_east(j)
-     &        + utide_r(i,j,itide)*cos(om) - utide_i(i,j,itide)*sin(om)
+     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
             enddo
             do j=jstr,jendR
               vbar_east(j)=vbar_east(j)
-     &        + vtide_r(i,j,itide)*cos(om) - vtide_i(i,j,itide)*sin(om)
+     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
             enddo
           endif
 #  endif
@@ -160,17 +160,17 @@
             j=jstr-1
             do i=istrR,iendR
               zeta_south(i)=zeta_south(i)
-     &        + ztide_r(i,j,itide)*cos(om) - ztide_i(i,j,itide)*sin(om)
+     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
             enddo
             j=jstr-1
             do i=istr,iendR
               ubar_south(i)=ubar_south(i)
-     &        + utide_r(i,j,itide)*cos(om) - utide_i(i,j,itide)*sin(om)
+     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
             enddo
             j=jstrV-1
             do i=istrR,iendR
               vbar_south(i)=vbar_south(i)
-     &        + vtide_r(i,j,itide)*cos(om) - vtide_i(i,j,itide)*sin(om)
+     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
             enddo
           endif
 #  endif
@@ -179,15 +179,15 @@
             j=jend+1
             do i=istrR,iendR
               zeta_north(i)=zeta_north(i)
-     &        + ztide_r(i,j,itide)*cos(om) - ztide_i(i,j,itide)*sin(om)
+     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
             enddo
             do i=istr,iendR
               ubar_north(i)=ubar_north(i)
-     &        + utide_r(i,j,itide)*cos(om) - utide_i(i,j,itide)*sin(om)
+     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
             enddo
             do i=istrR,iendR
               vbar_north(i)=vbar_north(i)
-     &        + vtide_r(i,j,itide)*cos(om) - vtide_i(i,j,itide)*sin(om)
+     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
             enddo
           endif
 #  endif
@@ -203,14 +203,14 @@
             do j=jstrR-1,jendR
               do i=istrR-1,iendR
                 ptide(i,j)=
-     &        + ptide_r(i,j,itide)*cos(om) - ptide_i(i,j,itide)*sin(om)
+     &        + ptide_r(i,j,itide)*cos(omT)- ptide_i(i,j,itide)*sin(omT)
               enddo
             enddo
           else
             do j=jstrR-1,jendR ! DevinD does jstrR-1 not go beyond computational margin?
               do i=istrR-1,iendR
                 ptide(i,j)= ptide(i,j)+
-     &          + ptide_r(i,j,itide)*cos(om) - ptide_i(i,j,itide)*sin(om)
+     &          + ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
               enddo
             enddo
           endif
