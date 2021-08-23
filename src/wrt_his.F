@@ -16,6 +16,7 @@
       use bgc ! wrt_his_bgc_diag
       use read_write ! nc_write_var
       use netcdf ! for nf90_routines
+      use tides
 
       implicit none
 #include "param.h"
@@ -80,6 +81,7 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
      &       'rec =', record, nf90_strerror(ierr) MYID
         goto 99                                           !--> ERROR
       endif
+
 
 ! Time: Note that (1) time is always double precision; and (2) which
 ! one to write into the file, time or tdays, is decided by attribute
