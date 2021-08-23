@@ -14,10 +14,10 @@ Running new simulations:
     should make iterating to get the model to run properly go faster, rather than waiting
     for your first desired output only to realize there's a netcdf output issue.
     
-    Using comet (cluster): Comet  has 2 debug nodes per user that gives you instant access 
+    Using Expanse (cluster): Expanse has 2 debug nodes per user that gives you instant access 
     to test if your code runs as you get setup (without long waits to run). Strongly encouraged.
-    See Documentation/machine-specific/Job_submission_scrips/run_script_comet_debug_nodes.lsf
-    for an example of a job submission script on the 2 debug nodes.
+    See Documentation/machine-specific/Job_submission_scrips/run_script_expanse_debug_nodes
+    for an example of a job submission script on the debug nodes.
 
 roms.in:
 
