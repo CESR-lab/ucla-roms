@@ -12,19 +12,19 @@ INSTRUCTIONS: COMPILING ROMS
 
   2. Set up environment variables:
   
-     Edit your .bashrc file or .cshrc file depending on which shell you
+     Edit your ~/.bashrc file or ~/.cshrc file depending on which shell you
      are using ('echo $SHELL' will tell you your shell).
      Note, even users of old ROMS code must do this, as environment
      variable names have changed, e.g. MPI_ROOT -> MPIHOME.
-     See examples of .bashrc or .cshrc files in: 
+     See/copy examples of ~/.bashrc or ~/.cshrc files in: 
      Documentation/machine-specific/bashrc-cshrc-files
      For existing ROMS user's who might want to use a version pre 2020/12/01
      as well, then you should only need to add MPIHOME exactly as your
      existing MPI_ROOT, and same for NETCDFHOME as your NETCDF, in addition 
      to what you already have. Now both old version and new version of roms 
-     should work. MPIHOME & NETCDFHOME are set by default already on comet. 
+     should work. 
      
-     Load modules if on cluster such as Comet (through .bashrc).
+     Load modules if on cluster such as Expanse (through .bashrc).
      You will need to ensure any variables listed in Makedefs.inc 
      such as NETCDFHOME, ROMS_ROOT, MPIHOME, etc, have a path set.
      You can test this by typing e.g. 'echo $ROMS_ROOT' and it should
@@ -38,7 +38,7 @@ INSTRUCTIONS: COMPILING ROMS
      Depending on which cluster you are using, you might need to edit
      this file. If you have compiling issues, then see the folder in
      Documentation/machine-specific/Makedefs/ for examples that work on 
-     different clusters. Shouldn't need to change this for 'comet' & 'maya'.    
+     different clusters. Shouldn't need to change this for 'Expanse' & 'Maya'.    
 
   4. Compile NHMG library:
   
@@ -58,8 +58,9 @@ INSTRUCTIONS: COMPILING ROMS
      (much faster than ncjoin and recommended, also compresses data
       so no need to use nc3to4z anymore. Expanse only with run script!
       see Tools-Roms/readme for more info.)
+      
      Compile tools:
-     cd Tools-Roms
+     cd Tools-Roms/
      make
      (If not done in step 2, add 'export PATH=$PATH:$ROMS_ROOT/Tools-Roms'
       to your .bashrc file to have access to these tools from any dir.)
@@ -83,10 +84,11 @@ INSTRUCTIONS: COMPILING ROMS
       code for the first time...)
      
      A. cd Examples/Rivers_ana
-        make        (note this can be a bit slow on 'comet' machine)
+        make        (note this can be a bit slow on 'Expanse' machine)
      B. ./do_run.sh (after roms has successfully compiled)
-                    (if using Expanse then 'sbatch do_run_expanse.sh')
-     C. ./join.sh   (to view join & view results file)
+                    (if using Expanse then 'sbatch do_run_expanse.sh',
+                     you need to set --account= to your group's account)
+     C. ./join.sh   (to join & view results file)
         
      
   8. Compile your specifc simulation:
@@ -96,7 +98,7 @@ INSTRUCTIONS: COMPILING ROMS
         This is likely only to be files with extension .opt for all user inputs.         
         If you are using an example then also copy relevant files from Examples/... 
         into Work/ (excluding the Makefile) 
-        You can copy Makedefs.inc into work if you need to change compilation
+        You can copy Makedefs.inc into Work/ if you need to change compilation
         settings, but don't copy the Makefile from src/ to Work/.
      B. Open Work/ dir. Edit your files. See Documentation/readme.2.model-setup  
         for details on configuring roms for your simulation as per new code.
