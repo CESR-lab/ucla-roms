@@ -25,6 +25,9 @@
 #       Max run time is 48 hours:
 #SBATCH -t 12:00:00
 
+#       Receive email upon job completion by uncommenting and editing user-name:
+# #SBATCH --mail-user=user-name
+
 #       Note you can find out about job cpu/mem usage with 'seff job_number'.
 
 #-----------------------------------------------------------------
