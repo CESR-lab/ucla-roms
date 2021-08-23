@@ -29,7 +29,6 @@
 #include "mixing.h"
 #include "netcdf.inc"
 
-      integer funit !! MJM debug
       integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
      &   , start(2), count(2), ibuff(iaux), ncdf_write
       character(len=18) tstring
@@ -83,11 +82,6 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
         goto 99                                           !--> ERROR
       endif
 
-
-      if (mynode<4) then
-        funit = 80+mynode
-        write(funit,*) mynode,time,ptides(20,20)
-      endif
 
 ! Time: Note that (1) time is always double precision; and (2) which
 ! one to write into the file, time or tdays, is decided by attribute
