@@ -16,7 +16,6 @@
       use bgc ! wrt_his_bgc_diag
       use read_write ! nc_write_var
       use netcdf ! for nf90_routines
-      use tides
 
       implicit none
 #include "param.h"

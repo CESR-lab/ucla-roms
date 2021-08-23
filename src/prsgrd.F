@@ -32,7 +32,7 @@
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
-      use tides, only: Ptide
+      use tides
       use diagnostics
 
       implicit none
