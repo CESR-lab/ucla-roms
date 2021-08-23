@@ -314,7 +314,7 @@
 
       end do ! itide=1,ntides
 
-      if(mynode==0) write(*,'(5x,A)')'tides:: read all tides'
+      if(mynode==0) write(*,'(5x,A)')'tides:: read all tides (new)'
 
       end subroutine read_tides
 !-----------------------------------------------------------------------
