@@ -61,7 +61,7 @@
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      type (ncvs)  :: nc_sss  = ncvs( name='SSS', time_name='sss_time' )
+      type (ncvs)  :: nc_sss  = ncvs( name='sss', time_name='sss_time' )
       real, public :: sss(GLOBAL_2D_ARRAY)
       real, public :: dSSSdt                                             ! input units (cm/day)
 #endif
