@@ -3,9 +3,9 @@ ROMS basic usage:
 
 See Documentation/ directory, for further instructions:
 
-   README.1.compile-ROMS - Info on getting roms to compile on your machine.
+   readme.1.compile-ROMS - Info on getting roms to compile on your machine.
    
-   README.2.model-setup  - How to configure roms for your specific simulation.
+   readme.2.model-setup  - How to configure roms for your specific simulation.
 
 Directories:
 ------------
