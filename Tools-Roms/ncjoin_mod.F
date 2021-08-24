@@ -568,13 +568,13 @@ c--#define MPIVERBOSE
               write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
      &         'number of dimensions', ibuff(1), 'in netCDF file ''',
      &          ncname(node)(1:lncn),    '''',   'exceeds limit.  ',
-     &             'Increase parameter maxdims in file "ncjoin.F".'
+     &             'Increase parameter maxdims in file "ncjoin_mod.F".'
               mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
             elseif (ibuff(2) .gt. maxvars) then
               write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
      &         'number of variables',  ibuff(2), 'in netCDF file ''',
      &          ncname(node)(1:lncn),  '''',      'exceeds limit. ',
-     &             'Increase parameter maxvars in file "ncjoin.F".'
+     &             'Increase parameter maxvars in file "ncjoin_mod.F".'
               mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
             elseif (node.eq.0) then
               ndims=ibuff(1)
@@ -2268,10 +2268,10 @@ c**           endif
       implicit none
 
       ! local
-      integer               :: in_varid, len_dim
-      integer, dimension(3) :: child_start, child_count, dimids, startin, countin
+      integer                           :: in_varid, len_dim
+      integer, dimension(3)             :: child_start, child_count, dimids, startin, countin
       real, dimension(:,:), allocatable :: bry_data
-      character(len=12) :: dimname
+      character(len=12)                 :: dimname
 
 # ifdef TIMING
       nclk=3-nclk
@@ -2288,21 +2288,27 @@ c**           endif
       if (ncid(node).eq.-1)
      &  ierr=nf90_open (ncname(node), nf90_nowrite, ncid(node))
 
-      ierr = nf90_get_att(ncid(node), vid(i,node), 'start', child_start(1))  ! start position in global child bry
-      ierr = nf90_get_att(ncid(node), vid(i,node), 'count', child_count(1))  ! count of sub-domain entry in global child bry
+      if (vdims(i) >= 2) then  ! exclude time (1D vars)
+        ierr = nf90_get_att(ncid(node), vid(i,node), 'start', child_start(1))  ! start position in global child bry
+        ierr = nf90_get_att(ncid(node), vid(i,node), 'count', child_count(1))  ! count of sub-domain entry in global child bry
+      endif
 
-      if (child_count(1) /= 0) then  ! only write if parent has child boundary (0 if not)
+      if (child_count(1) /= 0) then                 ! only write if parent has child boundary (0 if not)
 
         countin(1:2)=(/ child_count(1), nmax(i) /)
-        if     (vdims(i) == 2) then                      ! handle 2D or 3D variable dimids
-          startin(2)     = rec   ! set recorded timestep for read in partial bry
-          child_start(2) = rec   ! set recorded timestep for written join bry
+        if     (vdims(i) == 1) then
+          startin(1)     = rec
+          child_start(1) = rec
+          countin(1)=1
+        elseif (vdims(i) == 2) then                 ! handle 2D or 3D variable dimids
+          startin(2)     = rec                      ! set recorded timestep for read in partial bry
+          child_start(2) = rec                      ! set recorded timestep for written join bry
         elseif (vdims(i) == 3) then
-          startin(3)     = rec   ! set recorded timestep for read in partial bry
-          child_start(3) = rec   ! set recorded timestep for written join bry
-          child_count(2) = s_rho ! should be nmax rather?
+          startin(3)     = rec                      ! set recorded timestep for read in partial bry
+          child_start(3) = rec                      ! set recorded timestep for written join bry
+          child_count(2) = s_rho                    ! should be nmax rather?
         else
-          error stop 'ERROR: dimensions!'
+          error stop 'ERROR: dimensions issue when writing!'
         endif
 
         ! read variable:
@@ -2313,10 +2319,6 @@ c**           endif
         ierr = nf90_get_var( ncid(node), vid(i,node), bry_data,
      &                      start=startin(1:vdims(i)), count=countin(1:vdims(i)) )
         if(ierr/=0) print *, 'read ierr=', nf90_strerror(ierr), 'node=', node
-        if(ierr/=0 .and. node==4) then
-          print *, 'str=',startin(1:vdims(i))  ! debug only
-          print *, 'cnt=',countin(1:vdims(i))
-        endif
 
 # ifdef TIMING
         net_read_size=net_read_size+size
@@ -2375,36 +2377,40 @@ c**           endif
 
             if (ierr .eq. nf_noerr) then
 
-              if     (vdims(i) == 2) then                         ! handle 2D or 3D variable dimids
+              if     (vdims(i) == 1) then
+                dimids(1,i) = dimid(4)
+                nmax(i)=1
+              elseif (vdims(i) == 2) then                         ! handle 2D or 3D variable dimids
                 dimids(2:vdims(i),i) = (/ dimid(4) /)             ! same for r/u/v vars
                 nmax(i)=1                                         ! record vertical levels of var
               elseif (vdims(i) == 3) then
                 dimids(2:vdims(i),i) = (/ dimid(3), dimid(4) /)
                 nmax(i)=s_rho
               else
-                error stop 'ERROR: dimensions!'
+                error stop 'ERROR: dimensions when creating file!'
               endif
 
+              if (vdims(i) >= 2) then                       ! not 1D time variable
+                lvar=lenstr(vname(i))
+                if (vname(i)(lvar-4:lvar)=='south'  .or.
+     &              vname(i)(lvar-4:lvar)=='north') then
 
-              lvar=lenstr(vname(i))
-              if (vname(i)(lvar-4:lvar)=='south'  .or.
-     &            vname(i)(lvar-4:lvar)=='north') then
+                  dimids(1,i) = dimid(1)                      ! xi_rho for rho and v points
+                  if (vname(i)(1:2)=='u_'     .or.
+     &                vname(i)(1:5)=='ubar_') then
+                    dimids(1,i) = dimid(5)                    ! xi_u for u points
+                  endif
 
-                dimids(1,i) = dimid(1)                      ! xi_rho for rho and v points
-                if (vname(i)(1:2)=='u_'     .or.
-     &              vname(i)(1:5)=='ubar_') then
-                  dimids(1,i) = dimid(5)                    ! xi_u for u points
+                else                                          ! else west or east bry
+
+                  dimids(1,i) = dimid(2)                      ! eta_rho for rho and u points
+                  if (vname(i)(1:2)=='v_'     .or.
+     &                vname(i)(1:5)=='vbar_') then
+                    dimids(1,i) = dimid(6)                    ! eta_v for v points
+                  endif
+
                 endif
-
-              else                                          ! else west or east bry
-
-                dimids(1,i) = dimid(2)                      ! eta_rho for rho and u points
-                if (vname(i)(1:2)=='v_'     .or.
-     &              vname(i)(1:5)=='vbar_') then
-                  dimids(1,i) = dimid(6)                    ! eta_v for v points
-                endif
-
-              endif
+              endif    ! <-- vdims >= 2
 
               ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),  ! add compression here if desired
      &                           dimids(1:vdims(i),i), varid(i))
