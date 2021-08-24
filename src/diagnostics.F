@@ -274,10 +274,10 @@
 
       ! Netcdf outputting:
       ! ------------------
-      integer            :: output_rec = 0              ! record number of output. 0 indicates we need new file
-      integer            :: total_output_rec = 0        ! total flux output recordings so far
-      integer            :: tn                          ! roms timestep
-      character (len=99) :: file_name = '_on_diags.nc'  ! suffix to append to simulation output rootname
+      integer            :: output_rec = 0            ! record number of output. 0 indicates we need new file
+      integer            :: total_output_rec = 0      ! total flux output recordings so far
+      integer            :: tn                        ! roms timestep
+      character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
 
 
@@ -2488,6 +2488,8 @@
 
 ! Needed for istrU, istrR, etc
 # include "compute_auxiliary_bounds.h"
+
+
 
       tn = iic-ntstart                                ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
