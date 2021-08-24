@@ -19,7 +19,7 @@ all:
 	@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
 	@rsync -a $(ROMS_ROOT)/src/Makefile Compile
-	@rm Compile/*.f	
+	@rm Compile/*.f	2>/dev/null || :
 	cp -p *.h *.F *.opt Makedefs.inc Compile 2>/dev/null || :
 	cd Compile; make depend 2>/dev/null || :
 	cd Compile; make mpc; make -j6; mv roms ..
