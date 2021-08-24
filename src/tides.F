@@ -6,7 +6,6 @@
 
       implicit none
 
-
       ! Make all variable private to this module unless public specified
       private
 
@@ -20,24 +19,11 @@
 #include "tides.opt"
 
 
-!** Tperiod      Tidal period (s).
-!** SSH_Tamp     Tidal elevation amplitude (m) at RHO-points.
-!** SSH_Tphase   Tidal elevation phase (degrees/360) at RHO-points.
-!** UV_Tangle    Tidal current angle (radians; counterclockwise
-!**                from EAST and rotated to curvilinear grid) at
-!**                RHO-points.
-!** UV_Tmajor    Maximum tidal current: tidal ellipse major axis
-!**                (m/s) at RHO-points.
-!** UV_Tminor    Minimum tidal current: tidal ellipse minor axis
-!**                (m/s) at RHO-points.
-!** UV_Tphase    Tidal current phase (degrees/360) at RHO-points.
-
-
-      real, public,dimension(:)    ,allocatable :: omega
-      real, public,dimension(:,:,:),allocatable :: ztide_r,ztide_i
-      real, public,dimension(:,:,:),allocatable :: utide_r,utide_i
-      real, public,dimension(:,:,:),allocatable :: vtide_r,vtide_i
-      real, public,dimension(:,:,:),allocatable :: ptide_r,ptide_i
+      real, dimension(:)    ,allocatable :: ftide
+      real, dimension(:,:,:),allocatable :: ztide_r,ztide_i
+      real, dimension(:,:,:),allocatable :: utide_r,utide_i
+      real, dimension(:,:,:),allocatable :: vtide_r,vtide_i
+      real, dimension(:,:,:),allocatable :: ptide_r,ptide_i
       real, public,dimension(:,:),  allocatable :: ptide
 
       public set_tides
@@ -49,7 +35,7 @@
 
       implicit none
 
-      allocate(omega(ntides))
+      allocate(ftide(ntides))
 
       if (bry_tides) then
         allocate(ztide_r(GLOBAL_2D_ARRAY,ntides))
@@ -107,13 +93,13 @@
 
 #include "compute_auxiliary_bounds.h"
 
-      if (.not.allocated(omega)) then 
+      if (.not.allocated(ftide)) then 
         call init_tides
       endif
 
       do itide=1,ntides
 
-        omT = omega(itide)*time
+        omT = ftide(itide)*time
 
         if (bry_tides) then
 
@@ -232,7 +218,6 @@
 
       ! For max_frc
 #include "ncvars.h"
-      ! scalars.h for deg2rad
 
       ! local
       integer i,j
@@ -266,7 +251,7 @@
       do itide = 1,ntides
 
         ierr=nf90_inq_varid(ncid, 'omega', var_id)
-        ierr=nf90_get_var(ncid,var_id,omega(itide),(/itide/))
+        ierr=nf90_get_var(ncid,var_id,ftide(itide),(/itide/))
         if(ierr/=0) call handle_ierr(ierr,'tides::omega')
 
         if (bry_tides) then
