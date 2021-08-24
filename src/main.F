@@ -341,7 +341,7 @@ C$OMP END MASTER
       use wec_frc, only: wec_forces
 #endif
 
-      use tides, only: set_tides
+      use tides
       use bry_extract_child
       use diagnostics
 
