@@ -21,7 +21,7 @@
       !    As such, all the book-keeping variables of interp coeffs, etc are stored
       !    for each variable type r, u & v as a derived type.
       !
-      !    The variables within a derived type are accessed using the $ symbol.
+      !    The variables within a derived type are accessed using the % symbol.
       !    E.g. r%tot, u%tot and v%tot access the boundary length totals (tot)
       !    for each variable.
       !    This avoids declaring 3 separate variables (e.g. rtot, utot & vtot)
@@ -303,7 +303,7 @@
       implicit none             !  Interpolate child boundary at desired intervals.
 
       ! local
-      integer :: itrc, c  ! tracer and child grid indices
+      integer :: itrc, c, time_id  ! tracer and child grid indices
 
       if (mod(iic-ntstart,rec_rate) == 0) then
         do c=1,nc_grds
@@ -323,6 +323,10 @@
           ierr=nf90_open(ncvars(c)%file_name, nf90_write, ncvars(c)%ncid_out)
           ncvars(c)%output_rec       = ncvars(c)%output_rec       + 1                                                   ! current file record
           ncvars(c)%total_output_rec = ncvars(c)%total_output_rec + 1                                       ! total number of recs written
+
+          ! time:
+          ierr=nf90_inq_varid(ncvars(c)%ncid_out, 'ocean_time', time_id)
+          ierr=nf90_put_var(ncvars(c)%ncid_out, time_id, time,(/ncvars(c)%output_rec/))
 
           ! zeta:
           call interpolate_child_bry(   zeta(:,:,knew), 1,  rp_vars(c)            )
@@ -1179,6 +1183,10 @@
       ierr=nf90_def_dim( ncv%ncid_out, 'eta_v_east',   max( vp%tot(4), 1 ), v_dimid_bry(4) )
       v_dimid_bry(5) = r_dimid_bry(5)  ! k dimension of v-point is same as rho
 
+      ! Define ocean_time variable
+      call nc_define_var( ncv%ncid_out, 'ocean_time',                             ! (/ /) dimid_t needs to be an array arguement
+     &       'Time since initialization', 'second', (/ ncv%dimid_t /), ierr, 2 )  ! 2 makes it a double
+
       ! 2D vars:
       call define_child_bry( indxZ,  rp%tot, rp%c_str, r_dimid_bry, 1, .false., ncv )
       call define_child_bry( indxUb, up%tot, up%c_str, u_dimid_bry, 1, .false., ncv )
@@ -1345,9 +1353,9 @@
 
         ierr=nf90_put_att(  ncv%ncid_out, varid, 'start',     sides_c_str( bry ))  ! add attribute with global child start value (i.e. south_c_str)
         ierr=nf90_put_att(  ncv%ncid_out, varid, 'count',     sides_tot(   bry ))  ! and its count (i.e. south_tot). This will make it easy for ncjoin.
-        ierr=nf90_put_att(  ncv%ncid_out, varid, 'child_bry', 'True')                        ! 'child_bry' for ncjoin to identify variable. 'True' just a filler.
-
-      enddo
+        ierr=nf90_put_att(  ncv%ncid_out, varid, 'child_bry', 'True')              ! 'child_bry' for ncjoin to identify variable. 'True' just a filler.
+                                                                                   ! think 'child_bry' was legacy from when I tried to add functionality to ncjoin
+      enddo                                                                        ! but in the end wrote join_child_bry tool.
 
       end subroutine define_child_bry  !]
 
