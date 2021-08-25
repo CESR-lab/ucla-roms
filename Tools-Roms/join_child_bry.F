@@ -19,7 +19,7 @@
       ! - PART X: Collectively (MPI-I/O) open all input and output files
       ! - PART X: Read/write partitioned variables   (bulk of work done here)
       ! - PART X: Close all files
-      ! - PART X: Ddisplay program timing summary
+      ! - PART X: Display program timing summary
 
 
 ![ CPP DEFS:
