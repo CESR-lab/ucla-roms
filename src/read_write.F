@@ -1911,6 +1911,11 @@ C$OMP BARRIER
       real, parameter :: c3_16 = 3./16. ! Decimal required to prevent integer division
       real, parameter :: c1_16 = 1./16.
 
+      ! computational margin is 2 for internal boundary but only 1 at
+      ! domain boundary. Need to catch loop.
+      integer :: comp_margin_str=2, comp_margin_end=2
+
+
 #include "compute_starts_counts.h"
 
 
@@ -2159,21 +2164,25 @@ C$OMP BARRIER
         ! Arbitrary negative number (-100) beyond loop range to prevent
         ! corner interpolation of 'c' point, since it is not an internal tile corner.
         corn_jmin = -100
+        comp_margin_str=1
       else
         corn_jmin = jmin
       endif
       if (NORTHERN_MPI_EDGE) then
         corn_jmax = -100
+        comp_margin_end=1
       else
         corn_jmax = jmax
       endif
       if (WESTERN_MPI_EDGE) then
         corn_imin = -100
+        comp_margin_str=1
       else
         corn_imin = imin
       endif
       if (EASTERN_MPI_EDGE) then
         corn_imax = -100
+        comp_margin_end=1
       else
         corn_imax = imax
       endif
@@ -2181,7 +2190,7 @@ C$OMP BARRIER
       ! Points 'x' (1D interpolation in xi-direction)
       ! ---------- (west + east sides of tile)
       ! Loop through entire tile range including margin
-      do j=imin-2,jmax+2
+      do j=imin-comp_margin_str,jmax+comp_margin_end
 
         ! Avoid overridding 'c' points. (Note, overhead of if statement)
         if(j/=corn_jmin-1 .and. j/=corn_jmin .and.
@@ -2206,7 +2215,7 @@ C$OMP BARRIER
 
       ! Points 'y' (1D interpolation in eta-direction)
       ! ---------- (north + south sides of tile)
-      do i=imin-2,imax+2
+      do i=imin-comp_margin_str,imax+comp_margin_end
 
         ! Avoid overridding 'c' points.
         if(i/=corn_imin-1 .and. i/=corn_imin .and.
