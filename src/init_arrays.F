@@ -1,8 +1,10 @@
 #include "cppdefs.h"
 
-      subroutine init_arrays(tile)
+      subroutine init_arrays(tile,my_first)
       implicit none
-      integer tile, i,j
+
+      integer, intent(in) :: tile, my_first
+      integer             :: i, j
 #include "param.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
@@ -24,10 +26,10 @@
         enddo
       enddo
 
-      call init_arrays_tile(istr,iend,jstr,jend)
+      call init_arrays_tile(istr,iend,jstr,jend,tile,my_first)
       end
 
-      subroutine init_arrays_tile (istr,iend,jstr,jend)
+      subroutine init_arrays_tile (istr,iend,jstr,jend,tile,my_first)
 
 ! This routine initialize "first-touches" model shared arrays. Most
 ! of them are assigned to zeros, vertical mixing coefficients are set
@@ -54,8 +56,9 @@
       use tracers ! iTandS, t, t_avg
 
       implicit none
-      integer         :: istr, iend, jstr, jend, i, j, k, itrc, itavg
-      real, parameter :: init=0.    !!!!  0xFFFA5A5A ==> NaN
+      integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
+      integer             :: i, j, k, itrc, itavg
+      real, parameter     :: init=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
 #include "param.h"
 #include "scalars.h"
@@ -99,8 +102,12 @@
 # endif
 #endif
 
-      rmask = 0.  ! ensures mask is set beyond physical domain, needed in diagnostics.F
-                  ! to achieve 2nd order centered scheme at boundary for advection.
+      if (tile==my_first) then       ! ensures mask is set beyond physical domain,
+        rmask = 0.                   ! needed in diagnostics.F to achieve 2nd order
+      endif                          ! centered scheme at boundary for advection.
+                                     ! first tile only to avoid over-writing in next tiles.
+                                     ! easiest with array statement to access empty points beyond buffer.
+
       do j=jstrR,jendR               ! Initialize
         do i=istrR,iendR             ! 2-D primitive
           zeta(i,j,1)=0. ! init      ! variables.

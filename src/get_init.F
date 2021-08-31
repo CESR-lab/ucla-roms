@@ -55,7 +55,7 @@
 # include "bgc_ecosys_bec2.h"
 #endif
 
-! needed for istr, iend, etc in order ot fix closed boundaries to u(istr)=0, etc
+! needed for istr, iend, etc in order to fix closed boundaries to u(istr)=0, etc
 # include "compute_tile_bounds.h"
 
 c--#define VERBOSE

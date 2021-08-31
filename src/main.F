@@ -125,9 +125,9 @@ C$OMP BARRIER
       my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
 #define my_tile_range my_first,my_last
 
-      do tile=my_tile_range            ! Initialize or "first touch"
-        call init_arrays(tile)         ! global arrays (most of them
-      enddo                            ! are just set to to zero).
+      do tile=my_tile_range              ! Initialize or "first touch"
+        call init_arrays(tile,my_first)  ! global arrays (most of them
+      enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
 #ifdef NHMG
