@@ -3,13 +3,13 @@
 
       subroutine set_avg (tile)
 
+      use param
 # ifdef WEC
       use wec_frc, only: wstokes_wec_tile, indxWST
 # endif
 
       implicit none
       integer tile
-# include "param.h"
 # ifdef SOLVE3D
 #  include "ncvars.h"
 #  include "work.h"
@@ -54,6 +54,7 @@
 ! when mod(iic-1,navg)>1; and (3) adding the last contribution and
 ! scaling.
 
+      use param
 # ifdef WEC
       use wec_frc, only: set_avg_wec_tile
 # endif
@@ -68,7 +69,6 @@
      &                       , itrc, k
 # endif
       real cff,cff1
-# include "param.h"
 # include "scalars.h"
 # include "ncvars.h"
 # include "grid.h"

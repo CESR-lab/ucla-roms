@@ -8,6 +8,7 @@
 #include "cppdefs.h"
 
       ! Modules needed:
+      use param
       use read_write, only: set_frc_var_tile, ncvs
       use tracers,    only: t
       use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
@@ -18,8 +19,6 @@
       private ! All variables private to module unless public specified
 
       ! Includes:
-      ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
-#include "param.h"
 #include "scalars.h"
 #include "flux_frc.opt"
 
@@ -198,7 +197,6 @@
       real Ampl, dtau, tau1,tau2
 # endif
 # define SWRAD_DATA
-!# include "param.h" ! Have in module preamble
 !# include "scalars.h"! Have in module preamble
 # include "grid.h"
 

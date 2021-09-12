@@ -2,14 +2,17 @@
 #ifdef BVF_MIXING
 
       subroutine bvf_mix (tile)
+
+      use param
+
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call bvf_mix_tile (istr,iend,jstr,jend)
       end
 
       subroutine bvf_mix_tile (istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real bvf_numin, bvf_numax, bvf_nu0c, bvf_nu0, cff
@@ -20,7 +23,6 @@
      &    bvf_nu0=1.0e-7)   ! Convective diffusion [m2/s] in
                             !                unstable regime.
 
-# include "param.h"
 # include "mixing.h"
 # include "scalars.h"
 

@@ -4,6 +4,8 @@
 
 ! Set lateral boundary conditions for the barotropic (i.e. vertically
 ! integrated) ETA-component velocity vbar(:,:,knew).
+
+      use param
 #ifdef WEC
       use wec_frc
 #endif
@@ -15,7 +17,6 @@
 #ifdef OBC_FLUX_CORR
       real uv_crss
 #endif
-#include "param.h"
 #include "scalars.h"
 #include "grid.h"
 #include "ocean2d.h"

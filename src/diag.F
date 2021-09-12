@@ -29,9 +29,9 @@ c--#define MAX_BY_VERT_CFL_ONLY
 
 
       subroutine diag(tile)
+      use param
       implicit none
       integer tile,   i,j
-#include "param.h"
 #include "scalars.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
@@ -55,9 +55,9 @@ c--#define MAX_BY_VERT_CFL_ONLY
      &                            , ke2b, ke3bc, kesrf, ub,vb
 #endif
      &                                                      )
+      use param
       implicit none
       integer istr,iend,jstr,jend
-#include "param.h"
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dVol, ke, pe
 #ifdef SOLVE3D
      &                             , ke2b, ke3bc, kesrf, ub, vb

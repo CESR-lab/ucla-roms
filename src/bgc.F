@@ -10,6 +10,8 @@
 #include "cppdefs.h"
 #ifdef BIOLOGY_BEC2
 
+      ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
+      use param
       use read_write  ! ncvs
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
 
@@ -18,8 +20,6 @@
       private ! Make all variable private to this module unless public specified
 
       ! Includes:
-      ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
-#include "param.h"
       ! ncvars.h for nchis, ncavg, ncrst
 #include "ncvars.h"
 #include "bgc_ecosys_bec2.h"

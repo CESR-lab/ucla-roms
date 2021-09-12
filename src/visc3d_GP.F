@@ -2,9 +2,9 @@
 #if defined SOLVE3D && defined UV_VIS2
 
       subroutine visc3d (tile)
+      use param
       implicit none
       integer tile
-#include "param.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
 
@@ -51,6 +51,7 @@
 !       eddy-permitting ocean models, Monthly Weather Rev.,v. 128,
 !       No. 8, pp. 2935-2946.
 
+      use param
       use diagnostics
 
       implicit none
@@ -63,7 +64,6 @@
       real cff, cff1,cff2,cff3,cff4, cff5,cff6,cff7,cff8,
      &                           dmUdz,dnUdz,dmVdz,dnVdz
 
-# include "param.h"
 # include "scalars.h"
 # include "grid.h"
 # include "ocean3d.h"

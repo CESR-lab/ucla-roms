@@ -2,8 +2,9 @@
 #ifdef ANA_GRID
                                   ! Sometimes it is convenient for post
       subroutine wrt_ana_grid     ! processing to save analytical grid
+      use param
       implicit none               ! into a separate netCDF file.
-# include "param.h"
+
 # include "ncvars.h"
 # include "netcdf.inc"
       character(len=32) fname
@@ -81,9 +82,9 @@
 !            r2dgrd  integer array of size 2, which contains NetCDF
 !                        IDs for dimensions 'xi_rho' and 'eta_rho'.
 
+      use param
       implicit none
       integer ncid, r2dgrd(2), nf_ftype, varid, ierr
-#include "param.h"
 #include "ncvars.h"
 #include "netcdf.inc"
 
@@ -214,10 +215,11 @@
 !            ncname  netCDF file name (used only in error messages)
 !            lncn    length of ncname
 
+      use param
       implicit none
       character(len=*) ncname
       integer ncid, lncn, varid, ierr, ncdf_write
-#include "param.h"
+
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"

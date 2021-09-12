@@ -7,10 +7,9 @@
 ! stepping algorithm [Sec. 2.3 from SM2005 starting with Eq. (2.49)]
 ! and perform fast-time averaging to interact with baroclinic mode.
 
-
+      use param
       implicit none
       integer tile
-#include "param.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
       call step2d_FB_tile( istr,iend,jstr,jend, A2d(1,1),  A2d(1,2),
@@ -23,6 +22,7 @@
      &                           rubar,rvbar, urhs,vrhs,  DUon,DVom,
      &                                       Drhs, UFx,UFe,VFx,VFe)
 
+      use param
       use river_frc
       use pipe_frc
 
@@ -35,7 +35,6 @@
 #endif
 
       implicit none
-#include "param.h"
       integer istr,iend,jstr,jend, i,j, kbak, kold
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: zeta_new, Dnew,
      &                         rubar,rvbar,  urhs,vrhs,  DUon,DVom,

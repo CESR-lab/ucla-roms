@@ -7,12 +7,12 @@
 ! global summation counters, model utility switches, i/o contlol, etc.
 ! Note that NONE of the model physical parameters is initialized here.
 
+      use param
       use bgc ! init_scalars_bec2
 
       implicit none
       integer ierr, i
 #define ALL_DATA
-#include "param.h"
 #include "scalars.h"
 #include "comm_vars.h"
 #include "sources.h"

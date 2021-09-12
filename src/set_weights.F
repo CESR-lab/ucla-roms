@@ -5,8 +5,8 @@ c--# define TEST_WEIGHTS
 
 
       subroutine set_weights
+      use param
       implicit none
-# include "param.h"
 # include "scalars.h"
 # include "coupling.h"
       integer i,j, iter
@@ -264,9 +264,9 @@ c**       weight(1,i)=1.                   !<-- FLAT
 
 #  ifdef FORW_BAK
       subroutine step2d_FB_imitator (zeta, DUon, Zt_av1, DU_av2)
+      use param
       implicit none
       real zeta(4), DUon, Zt_av1, DU_av2, cff1,cff2
-#   include "param.h"
 #   include "scalars.h"
 #   include "coupling.h"
 
@@ -286,11 +286,11 @@ c**       weight(1,i)=1.                   !<-- FLAT
 #  else
 
       subroutine step2d_LFAM3_imitator (zeta, DUon, Zt_av1, DU_av2)
+      use param
       implicit none
       logical PREDICTOR_2D_STEP
       integer krhs
       real zeta(3), DUon, Zt_av1, DU_av2
-#   include "param.h"
 #   include "scalars.h"
 #   include "coupling.h"
 

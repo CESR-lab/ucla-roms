@@ -51,8 +51,8 @@
 # elif NARGS == 4
       subroutine exchange2d_4_tile (istr,iend,jstr,jend, A,B,C,D)
 # endif
+      use param
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
@@ -284,8 +284,8 @@ CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN) BLOCK_CLAUSE
       subroutine exchange_4_tile(istr,iend,jstr,jend, A, nmaxA,
      &                            B, nmaxB, C, nmaxC, D, nmaxD)
 #  endif
+      use param
       implicit none
-#  include "param.h"
       integer istr,iend,jstr,jend, nmaxA
       real A(GLOBAL_2D_ARRAY,nmaxA)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -638,36 +638,36 @@ CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN,*) BLOCK_CLAUSE
 ! should not be activated.
 
       subroutine exchange_r2d_tile(istr,iend,jstr,jend, A) 
+      use param
       implicit none
-      integer istr,iend,jstr,jend 
-#   include "param.h"
+      integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
       subroutine exchange_u2d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
-      integer istr,iend,jstr,jend 
-#   include "param.h"
+      integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
       subroutine exchange_v2d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
-      integer istr,iend,jstr,jend 
-#   include "param.h"
+      integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
       subroutine exchange_p2d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
       integer istr,iend,jstr,jend
-#   include "param.h"
       real A(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
@@ -675,45 +675,45 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
 
 #   ifdef SOLVE3D
       subroutine exchange_r3d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
-      integer istr,iend,jstr,jend 
-#    include "param.h"
+      integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
       subroutine exchange_u3d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
       integer istr,iend,jstr,jend
-#    include "param.h"
       real A(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
       subroutine exchange_v3d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
       integer istr,iend,jstr,jend
-#    include "param.h"
       real A(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
       subroutine exchange_p3d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
       integer istr,iend,jstr,jend
-#    include "param.h"
       real A(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
       subroutine exchange_w3d_tile(istr,iend,jstr,jend, A)
+      use param
       implicit none
       integer istr,iend,jstr,jend
-#    include "param.h"
       real A(GLOBAL_2D_ARRAY,0:N)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N+1)

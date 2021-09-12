@@ -26,6 +26,7 @@
 
 c--#define nf_def_var my_nf_def_var
 
+      use param
 #ifdef WEC
       use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
 #endif
@@ -37,7 +38,6 @@ c--#define nf_def_var my_nf_def_var
 
       implicit none
       integer total_rec, ierr
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"

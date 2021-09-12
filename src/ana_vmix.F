@@ -2,9 +2,11 @@
 #if defined ANA_VMIX && defined SOLVE3D
 
       subroutine ana_vmix (tile)
+
+      use param
+
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call ana_vmix_tile (istr,iend,jstr,jend)
       end
@@ -14,11 +16,10 @@
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
 ! using analytical expressions.
-
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff
-# include "param.h"
 # include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"

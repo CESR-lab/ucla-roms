@@ -3,9 +3,9 @@
 #ifdef SOLVE3D
 
       subroutine step3d_uv2(tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call step3d_uv2_tile( istr,iend,jstr,jend, A2d(1,1), A2d(1,2),
@@ -13,6 +13,8 @@
       end
 
       subroutine step3d_uv2_tile(istr,iend,jstr,jend, WC,FC,CF,DC)
+
+      use param
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
@@ -24,7 +26,6 @@
       use diagnostics
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real cff !,dmax,div
@@ -850,9 +851,9 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 ! above.  It does not affect any model results, other than signature in
 ! global attribute "CPPS" in output netCDF files.
 
+      use param
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       integer lstr
       character(len=32) tmpstr

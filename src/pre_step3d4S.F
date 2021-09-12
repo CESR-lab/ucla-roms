@@ -2,9 +2,10 @@
 #ifdef SOLVE3D
                                     ! Note that arrays A2d(1,1:4) in
       subroutine pre_step3d (tile)  ! the call just below are repeated
+      use param
       implicit none                 ! within the list of agruments to
       integer tile                  ! use the same memory for vertical
-# include "param.h"              /* ! and horizontal scratch arrays. */
+                                    ! and horizontal scratch arrays.
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call pre_step3d_tile (istr,iend,jstr,jend,   A3d(1,1),A3d(1,2),
@@ -24,6 +25,8 @@
      &                                            ,rw
 # endif
      &                                                              )
+
+      use param
 # ifdef RIVER_SOURCE
       use river_frc
 # endif
@@ -40,7 +43,6 @@
       use diagnostics                     ! needed for compute_horiz_uv_terms.h below
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv,Hz_bak,
      &                                                      Hz_fwd
@@ -796,9 +798,9 @@
 ! not affect any model results, other than "CPPS" signature saved
 ! as a global attribute in output netCDF files.
 
+      use param
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+15

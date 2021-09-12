@@ -3,12 +3,12 @@
 
       subroutine get_grid         ! Read in grid data from NetCDF file.
 
+      use param
       use read_write, only: nc_check_units
 
       implicit none
       character*1 char1
       integer ierr, ncid, varid, lstr, lenstr, checkdims, ncdf_read
-# include "param.h"
 # include "scalars.h"
 # include "grid.h"
 # include "ncvars.h"

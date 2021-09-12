@@ -3,10 +3,11 @@
       subroutine wrt_rst      ! variables into restart
                               ! netCDF file.
 
+      use param
       use tracers, only: wrt_rst_trc
 
       implicit none
-#include "param.h"
+
 #include "ncvars.h"
       integer record, start(2), count(2), ibuff(iaux),
      &        i, ierr, lstr, lvar, lenstr, ncdf_write

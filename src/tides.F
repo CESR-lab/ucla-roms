@@ -4,6 +4,8 @@
 ! Empty module if TIDES not defined.
 #ifdef TIDES
 
+      use param
+
       implicit none
 
       ! Make all variable private to this module unless public specified
@@ -12,8 +14,6 @@
       ! Includes
       ! ========
 
-      ! param.h needed for GLOBAL_2D_Array to work.
-#include "param.h"
       ! For iic, ntstart, deg2rad
 #include "scalars.h"
 #include "tides.opt"

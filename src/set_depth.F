@@ -2,9 +2,11 @@
 #ifdef SOLVE3D
 
       subroutine set_depth(tile)
+
+      use param
+
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call set_depth_tile(istr,iend,jstr,jend)
@@ -16,6 +18,7 @@
 ! of vertical grid boxes "Hz" from fast-time-averaged free surface,
 ! topography h(i,j), and vertical coordinate transformation formula.
 
+      use param
 # ifdef WEC
       use wec_frc
 # endif
@@ -23,7 +26,7 @@
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff_r,cff1_r, cff_w,cff1_w, ds
-# include "param.h"
+
 # include "scoord.h"
 # include "scalars.h"
 
@@ -171,22 +174,24 @@
 
 
       subroutine set_HUV(tile)
+
+      use param
+
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call set_HUV_tile (istr,iend,jstr,jend)
       end
 
       subroutine set_HUV_tile (istr,iend,jstr,jend)
 
+      use param
 # ifdef WEC
       use wec_frc
 # endif
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "param.h"
 # include "grid.h"
 # include "ocean3d.h"
 # include "scalars.h"
@@ -234,21 +239,24 @@
 
 
       subroutine set_HUV1(tile)
+
+      use param
+
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call set_HUV1_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2))
       end
 
       subroutine set_HUV1_tile (istr,iend,jstr,jend, DC,FC)
+
+      use param
 # ifdef WEC
       use wec_frc
 # endif
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: DC,FC
 # include "grid.h"
@@ -511,9 +519,10 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 ! above.  It does not affect any model results, other than signature in
 ! global attribute "CPPS" in output netCDF files.
 
+      use param
+
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       integer lstr
       character(len=16) tmpstr

@@ -3,9 +3,9 @@
 # define SMOOTH_RIG  /* local Ri number smoothing */
 
       subroutine lmd_vmix (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call lmd_vmix_tile (istr,iend,jstr,jend,  A3d(1,1), A3d(1,2),
@@ -39,10 +39,11 @@
 !             A Review and model with a nonlocal boundary layer
 !             parameterization.  Reviews of Geophysics, 32,363-403.
 
+      use param
       use tracers, only: t
 
       implicit none
-# include "param.h"
+
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv,Kt,Ks, Rig
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE,FE1

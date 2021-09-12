@@ -6,11 +6,11 @@
 
       subroutine get_bry_all(ierr_ext)     ! Read side boundary forcing
 
+      use param
       use tracers, only: t_vname, set_bry_tracer_defaults
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
-# include "param.h"
 # include "scalars.h"
 # include "ncvars.h"
 # include "netcdf.inc"
@@ -743,6 +743,7 @@
 
 
       subroutine set_bry_all_tile (istr,iend,jstr,jend, ierr)
+      use param
       implicit none
       integer istr,iend,jstr,jend, ierr,
      &        imin,imax,jmin,jmax, it1,it2
@@ -758,7 +759,6 @@
 
       logical need_bry
       real tmid, cff,cff1,cff2
-# include "param.h"
 # include "scalars.h"
 # include  "boundary.h"
 

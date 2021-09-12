@@ -26,9 +26,10 @@
 ! Set initial bottom sediment grain diameter size [m]  and density
 ! used in the bottom boundary formulation [kg/m^3].
 
+      use param
+
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 # include "bblm.h"
 # include "grid.h"
 # include "scalars.h"
@@ -54,11 +55,10 @@
       subroutine ana_meanRHO_tile(istr,iend,jstr,jend)
 
 !  Set mean density anomaly [kg/m^3] using an analytical expression.
-
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff1, cff2 , cff3, cff4
-# include "param.h"
 # include "grid.h"
 # include "ocean3d.h"
 # include "scalars.h"
@@ -148,11 +148,10 @@
 
 #ifdef ANA_SMFLUX
       subroutine ana_smflux_tile(istr,iend,jstr,jend)
-
+      use param
       use surf_flux, only: sustr,svstr
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 # include "grid.h"
 # include "scalars.h"
       real TauX, TauY, cff
@@ -252,11 +251,10 @@ c          svstr(i,j)=-1.0d-4
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
-
+      use param
       use surf_flux, only: srflx
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 # include "grid.h"
 # include "scalars.h"
 
@@ -273,20 +271,20 @@ c          svstr(i,j)=-1.0d-4
 
 #if defined ANA_SSH
       subroutine ana_ssh(tile)            ! Set analytical sea-surface
+      use param
       implicit none                       ! height climatology [m]
       integer tile
-#include "param.h"
 #include "compute_tile_bounds.h"
       call ana_ssh_tile(istr,iend,jstr,jend)
       end
 
       subroutine ana_ssh_tile(istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
 #ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4
 #endif
-# include "param.h"
 # include "grid.h"
 # include "climat.h"
 # include "scalars.h"
@@ -325,11 +323,10 @@ c          svstr(i,j)=-1.0d-4
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
-
+      use param
       use surf_flux, only: stflx
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j
-#  include "param.h"
 #  include "grid.h"
 #  include "scalars.h"
 
@@ -370,20 +367,20 @@ c          svstr(i,j)=-1.0d-4
 
 # if defined ANA_TCLIMA && defined TCLIMATOLOGY
       subroutine ana_tclima(tile)
+      use param
       implicit none                   ! Set up analytical tracer
       integer tile                    ! climatology fields.
-# include "param.h"
 # include "compute_tile_bounds.h"
       call ana_tclima_tile(istr,iend,jstr,jend)
       end
 
       subroutine ana_tclima_tile(istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 #  ifdef JET
       real cff1, cff2, cff3
 #  endif
-#  include "param.h"
 #  include "climat.h"
 #  include "grid.h"
 #  include "ocean3d.h"
@@ -428,9 +425,9 @@ c          svstr(i,j)=-1.0d-4
 
 #if defined ANA_UCLIMA && defined UCLIMATOLOGY
       subroutine ana_uclima(tile)
+      use param
       implicit none
       integer tile
-#include "param.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
       call ana_uclima_tile   (istr,iend,jstr,jend)!,A2d(1,1),A2d(1,2))
@@ -441,14 +438,13 @@ c          svstr(i,j)=-1.0d-4
 !---------------------------------------------------------------------
 !  This routine sets analytical momentum climatology fields.
 !---------------------------------------------------------------------
-
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 # ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4, cff5
 # endif
-# include "param.h"
 # include "climat.h"
 # include "grid.h"
 # include "ocean3d.h"
@@ -567,10 +563,9 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 
 ! Set wind induced wave amplitude, direction and period for
 ! bottom boundary layer formulation.
-
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 # include "bblm.h"
 # include "grid.h"
 # include "scalars.h"
@@ -593,8 +588,8 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 #if defined PSOURCE && defined ANA_PSOURCE
                               ! Set analytical tracer and mass point
       subroutine ana_psource  ! sources and sinks. River runoff can
+      use param
       implicit none           ! be consider as a point source.
-# include "param.h"
 # include "scalars.h"
 # include "sources.h"
 !

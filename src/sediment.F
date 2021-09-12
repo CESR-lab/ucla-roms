@@ -3,9 +3,9 @@
 
 #ifdef SEDIMENT
       subroutine sediment (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call sediment_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2),
@@ -16,9 +16,11 @@
 
       subroutine sediment_tile (istr,iend,jstr,jend, FC, qc, qR,qL,
      &                      WR,WL, Hz_inv,Hz_inv2,Hz_inv3, ksource)
+
+      use param
+
       implicit none
       integer istr,iend,jstr,jend,   ised,indx, i,j,k,ks
-# include "param.h"
       real FC(PRIVATE_1D_SCRATCH_ARRAY,0:N),   cff,
      &       qc(PRIVATE_1D_SCRATCH_ARRAY,N),   cff1, cu,
      &       qR(PRIVATE_1D_SCRATCH_ARRAY,N),   cff2, cff3,

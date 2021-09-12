@@ -1,9 +1,10 @@
 #include "cppdefs.h"
                                            ! Checking compatibility of
       subroutine check_tiling (ierr)       ! dimensions of the grid and
+      use param
       implicit none                        ! partitioning parameters:
       integer ierr, tile                   ! logic of the code requires
-#include "param.h"
+
       do tile=0,NSUB_X*NSUB_E-1            ! all the tiles to be at
         call check_tile_bounds (tile,ierr) ! least two point wide.
       enddo                                ! Setting NSUB_X and NSUB_E
@@ -11,9 +12,9 @@
                                            ! smaller size.
 
       subroutine check_tile_bounds (tile, ierr)
+      use param
       implicit none
       integer tile, ierr, isize,jsize
-#include "param.h"
 #include "compute_tile_bounds.h"
 
       isize=iend-istr+1                    ! NOTE: run terminates, if
@@ -84,10 +85,10 @@
 ! Manually check mutual consistency of settings of CPP switches, report
 ! contradictions (if any), and raise errors flag to terminate the run.
 
+      use param
       implicit none
       integer ierr, nobc_west, nobc_east, nobc_south, nobc_north,
      &                                ncoupl, nAk, is,ie, lenstr
-#include "param.h"
 #include "strings.h"
 #include "scalars.h"
       ie=lenstr(cpps)

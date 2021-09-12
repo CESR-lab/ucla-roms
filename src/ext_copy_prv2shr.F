@@ -3,9 +3,9 @@
 ! extended range of indices.
 
       subroutine ext_copy_prv2shr_2d_tile (istr,iend,jstr,jend, A,B)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
-#include "param.h"
       real A(PRIVATE_2D_SCRATCH_ARRAY)
       real B(GLOBAL_2D_ARRAY)
 CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN) BLOCK_CLAUSE
@@ -20,9 +20,9 @@ CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN) BLOCK_CLAUSE
 
 #ifdef SOLVE3D
       subroutine ext_copy_prv2shr_tile (istr,iend,jstr,jend, A,B,nmax)
+      use param
       implicit none
       integer istr,iend,jstr,jend, nmax, i,j,k
-# include "param.h"
       real A(PRIVATE_2D_SCRATCH_ARRAY,nmax)
       real B(GLOBAL_2D_ARRAY,nmax)
 CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -39,8 +39,8 @@ CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 # define XI_ONLY
       subroutine ext_copy_prv2shr_1Dslb_tile (istr,iend,j, A,B,nmax)
+      use param
       implicit none
-# include "param.h"
       integer istr,iend, nmax, i,j,k
       real A(PRIVATE_1D_SCRATCH_ARRAY,nmax)
       real B(GLOBAL_2D_ARRAY,nmax)

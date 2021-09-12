@@ -3,6 +3,7 @@
 
 !!    program main               ! Open MP version of ROMS driver
 
+      use param
 #ifdef NHMG
       use nhmg
 #endif
@@ -10,7 +11,6 @@
 
       implicit none              ! with single parallel region using
       integer ierr               ! explicit barrier synchronization.
-# include "param.h"
 # ifdef MPI
       real*8 tstart, tend
 C$    integer level,req_lev
@@ -54,8 +54,8 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 
 
       subroutine roms_thread
+      use param
       implicit none
-# include "param.h"
 # include "scalars.h"
                                          ! Note: Because there is
       call start_timers()                ! a possibility of I/O error
@@ -76,7 +76,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
 
       subroutine roms_init
-
+      use param
 #ifdef NHMG
       use nhmg
 #endif
@@ -87,7 +87,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
 
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 
@@ -337,6 +336,7 @@ C$OMP END MASTER
 
       subroutine roms_step
 
+      use param
 #ifdef WEC
       use wec_frc, only: wec_forces
 #endif
@@ -347,7 +347,6 @@ C$OMP END MASTER
 
       implicit none
       integer trd, tile, my_first, my_last, range
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 

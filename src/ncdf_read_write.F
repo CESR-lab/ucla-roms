@@ -20,7 +20,7 @@
 ! stopping indices for the subarray (which are exactly the same for
 ! both read and write operations) the code has been unified to
 ! guarantee that both functions are exactly adjoint.
-
+      use param
       implicit none
 #ifndef WRITER
       integer ncdf_read
@@ -28,7 +28,6 @@
       integer ncdf_write
 #endif
       integer ncid, varid, record, horiz_type, nmax
-#include "param.h"
       real A(GLOBAL_2D_ARRAY,nmax)
 CSDISTRIBUTE_RESHAPE  A(BLOCK_PATTERN,nmax) BLOCK_CLAUSE
       logical mask_land_data

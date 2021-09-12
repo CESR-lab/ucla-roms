@@ -8,6 +8,7 @@
       !       previous timestep, other variables like 'rho', 'Akv', etc
       !       have only just been computed.
 
+      use param
 #ifdef WEC
       use wec_frc, only: wrt_his_wec
 #endif
@@ -18,7 +19,7 @@
       use netcdf ! for nf90_routines
 
       implicit none
-#include "param.h"
+
 #include "ncvars.h"
 #include "scalars.h"
 #include "grid.h"

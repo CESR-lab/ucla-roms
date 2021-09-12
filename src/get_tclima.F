@@ -4,9 +4,11 @@
 
                                        ! Read climatology fields for
       subroutine get_tclima(ierr)      ! tracers from climatological
+
+      use param
+
       implicit none                    ! file at appropriate time.
 # define TCLIMA_DATA
-# include "param.h"
 # include "scalars.h"
 # include "climat.h"
 # include "ncvars.h"
@@ -176,11 +178,11 @@
 
 ! Set-up tracer climatology for current tile.
 
+      use param
       implicit none
       integer istr,iend,jstr,jend, ierr, itrc,i,j,k, it1,it2
       real tmid, cff, cff1, cff2
 # define TCLIMA_DATA
-# include "param.h"
 # include "climat.h"
 # include "scalars.h"
 # include "ocean3d.h"

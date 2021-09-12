@@ -126,9 +126,11 @@
 !                     AND
 !                            (ii) an error occurs inside this
 !                                 routine itself.
+
+      use param
+
       implicit none
       integer ierr_ext
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 #ifdef SSH_DATA

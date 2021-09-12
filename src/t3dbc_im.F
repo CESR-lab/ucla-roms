@@ -5,6 +5,7 @@
 
 ! Set lateral boundary conditions for tracer field t(:,:,:,itrc)
 
+      use param
       use tracers, only: t
 
       implicit none
@@ -12,7 +13,6 @@
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd
 c-->     &                                           , dft,dfx,dfy
       real, parameter :: eps=1.E-33
-# include "param.h"
 # include "grid.h"
 # include "ocean3d.h"
 # include "climat.h"

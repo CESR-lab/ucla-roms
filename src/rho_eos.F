@@ -4,9 +4,9 @@
 
 
       subroutine rho_eos (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # ifdef NONLIN_EOS
 #  include "private_scratch.h"
 # endif
@@ -118,11 +118,11 @@
 ! interchangeable. >>
 !                                          John Wilkin, 29 July 92
 
+      use param
       use tracers, only: t
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "param.h"
 # ifdef NONLIN_EOS
       real Ts,Tt,sqrtTs, dr00, K0
 #  ifndef SPLIT_EOS

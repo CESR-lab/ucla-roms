@@ -3,10 +3,10 @@
 # define UPSTREAM_UV
 
       subroutine step3d_uv1(tile)
+      use param
       implicit none
       integer tile
 
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call step3d_uv1_tile( istr,iend,jstr,jend,    A3d(1,1),A3d(1,2),
@@ -26,6 +26,8 @@
      &                                            ,rw
 # endif
      &                                                              )
+
+      use param
 # ifdef NHMG
       use nhmg
       use mg_grids
@@ -38,7 +40,6 @@
       use surf_flux, only: sustr, svstr
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
@@ -399,9 +400,9 @@
 ! above.  It does not affect any model results, other than signature in
 ! global attribute "CPPS" in output netCDF files.
 
+      use param
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+13

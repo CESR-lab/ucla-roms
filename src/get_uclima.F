@@ -3,10 +3,12 @@
 
                                       ! Read momentum climatology
       subroutine get_uclima(ierr)     ! fields from netCDF file
+
+      use param
+
       implicit none
       integer ierr i, lstr,lvar,lenstr, ncdf_read
       real(kind=8) dtime
-# include "param.h"
 # include "scalars.h"
 # include "ncvars.h"
 # include "netcdf.inc"
@@ -160,10 +162,10 @@
 
 !  Set-up momentum climatology for current tile.
 
+      use param
       implicit none
       integer istr,iend,jstr,jend, ierr, i,j,k, it1,it2
       real cff, cff1, cff2
-# include "param.h"
 # include "climat.h"
 # include "scalars.h"
 

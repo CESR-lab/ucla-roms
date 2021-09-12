@@ -35,9 +35,11 @@
       subroutine mpi_exchange8_4_tile (istr,iend,jstr,jend, A, nmaxA,
      &                                  B, nmaxB, C, nmaxC, D, nmaxD)
 # endif
+
+      use param
+
       implicit none
 # include "mpif.h"
-# include "param.h"
 # include "mess_buffers.h"
 # include "hidden_mpi_vars.h"
       integer istr,iend,jstr,jend, nmaxA

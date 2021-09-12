@@ -2,9 +2,9 @@
 #ifdef SOLVE3D
 
       subroutine prsgrd(tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call prsgrd_tile(istr,iend,jstr,jend,  A3d(1,1),A3d(1,2),
@@ -29,6 +29,7 @@
 # endif
      &                                      dR,dZ, FC,dZx,rx,dRx)
 
+      use param
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
@@ -37,7 +38,6 @@
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
-# include "param.h"
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv, P
 # ifdef SPLIT_EOS
      &                                                    , rho

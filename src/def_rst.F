@@ -3,12 +3,12 @@
       subroutine def_rst(total_rec, ierr)  ! Create or open
                                            ! restart netCDF file.
 
+      use param
       use tracers,    only: t_vname, t_lname, t_units, wrt_t
       use read_write, only: output_root_name
 
       implicit none
       integer total_rec, ierr
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"

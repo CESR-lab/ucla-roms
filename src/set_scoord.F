@@ -2,8 +2,8 @@
 #ifdef SOLVE3D
                                          ! Setup S-coordinate system:
       subroutine set_scoord              ! input: theta_s, theta_b, hc
+      use param
       implicit none                      ! output: Cs_w(0:N), Cs_r(1:N)
-# include "param.h"
 # include "scoord.h"
 # include "scalars.h"
 # include "comm_vars.h"
@@ -147,9 +147,9 @@
 # endif
 
       subroutine check_scoord_switches(ierr)
+      use param
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+10

@@ -2,9 +2,11 @@
 #ifdef ANA_GRID
 
       subroutine ana_grid (tile)
+
+      use param
+
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
       end
@@ -25,10 +27,9 @@
 !                   XI- and ETA-directions, both are at RHO-points.
 ! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
-
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 
 ! Grid configuration parameters:
 !----- ------------- -----------

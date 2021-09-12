@@ -15,10 +15,10 @@
 ! Both are evaluated at the surface.  Adapted from original "rati"
 ! and "beta" routines.
 
+      use param
       use tracers, only: t
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: alpha,beta
 # include "grid.h"

@@ -23,6 +23,7 @@ c--# define MERGE_OVERLAP
      &                         Gm1,dGm1dS,  Gt1,dGt1dS,  Gs1,dGs1dS,
      &                                                   kbls, kmo)
 
+      use param
 # ifdef WEC
       use wec_frc
 # endif
@@ -30,7 +31,6 @@ c--# define MERGE_OVERLAP
                     ! flux_frc-> only: sustr, svstr, stflx, srflx
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv, Kt, Ks
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: ustar, Bo, Bosol
@@ -1036,9 +1036,10 @@ c      endif
 ! This routine does not affect model results, other than signature in
 ! global attribute "CPPS" in output netCDF files.
 
+      use param
+
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+10
