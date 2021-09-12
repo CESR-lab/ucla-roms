@@ -8,13 +8,13 @@
 
       use param
       use tracers, only: t_vname, set_bry_tracer_defaults
+      use boundary
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
 # include "scalars.h"
 # include "ncvars.h"
 # include "netcdf.inc"
-# include "boundary.h"
       real dtime
       integer ierr, ierr_all, itrc, lsrc, lenstr
 # if defined OBC_WEST  || defined OBC_EAST
@@ -744,6 +744,7 @@
 
       subroutine set_bry_all_tile (istr,iend,jstr,jend, ierr)
       use param
+      use boundary
       implicit none
       integer istr,iend,jstr,jend, ierr,
      &        imin,imax,jmin,jmax, it1,it2
@@ -760,7 +761,6 @@
       logical need_bry
       real tmid, cff,cff1,cff2
 # include "scalars.h"
-# include  "boundary.h"
 
       need_bry=.false.
                                   ! NOTE: Temporal interpolation of

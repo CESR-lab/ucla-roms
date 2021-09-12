@@ -5,6 +5,8 @@
 ! Set boundary conditions for free surface zeta_new
 
       use param
+      use boundary
+
       implicit none
       integer istr,iend,jstr,jend, i,j
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY), cx, cff,dft,dfx
@@ -12,7 +14,6 @@
 #include "grid.h"
 #include "ocean2d.h"
 #include "scalars.h"
-#include "boundary.h"
 #include "climat.h"
 
 #include "compute_auxiliary_bounds.h"

@@ -49,13 +49,12 @@
 #ifdef WEC
       use wec_frc
 #endif
-
 #ifdef BULK_FRC
       use bulk_frc !, only: srflx
 #endif
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
-
       use tracers ! iTandS, t, t_avg
+      use averages
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -68,7 +67,6 @@
 #include "ocean3d.h"
 #include "eos_vars.h"
 #include "coupling.h"
-#include "averages.h"
 #include "mixing.h"
 #include "climat.h"
 #undef ALL_DATA

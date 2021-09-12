@@ -21,6 +21,7 @@
       subroutine ana_init_tile (istr,iend,jstr,jend, AA)
       use param
       use tracers, only: t
+      use boundary
 
       implicit none
 
@@ -55,7 +56,7 @@
 # if defined OBC_WEST  || defined OBC_EAST ||\
      defined OBC_SOUTH || defined OBC_NORTH
 #  ifdef ANA_BRY
-#   include "boundary.h"
+!#   include "boundary.h"
 #  else
 #   include "climat.h"
 #  endif

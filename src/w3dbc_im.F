@@ -3,6 +3,7 @@
 
       subroutine w3dbc_tile (istr,iend,jstr,jend,grad)
       use param
+      use boundary
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd
@@ -12,7 +13,6 @@
 # include "ocean3d.h"
 # include "climat.h"
 # include "scalars.h"
-# include "boundary.h"
 
 # include "compute_auxiliary_bounds.h"
 

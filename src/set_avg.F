@@ -62,6 +62,7 @@
       use tracers, only: set_avg_trc
       use bgc ! set_avg_bgc_diag
       use surf_flux ! set_avg_surf_flux
+      use averages
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -76,7 +77,6 @@
 # include "ocean3d.h"
 # include "eos_vars.h"
 # include "mixing.h"
-# include "averages.h"
 # ifdef SOLVE3D
 #  include "work.h"
 # endif

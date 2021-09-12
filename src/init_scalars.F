@@ -9,6 +9,7 @@
 
       use param
       use bgc ! init_scalars_bec2
+      use boundary
 
       implicit none
       integer ierr, i
@@ -18,7 +19,6 @@
 #include "sources.h"
 #include "mixing.h"
 #include "ncvars.h"
-#include "boundary.h"
 
 c      integer size, kmp_get_stacksize_s
 c      size=kmp_get_stacksize_s()
