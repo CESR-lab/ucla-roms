@@ -8,14 +8,13 @@
 ! CPP flag BULK_FRC covering entire module, module empty if off
 #if defined BULK_FRC /* for whole module! */
 
+      ! param.h needed for GLOBAL_2D_array to work
+      use param
       use read_write, only: set_frc_var_tile, ncvs
 
       implicit none
 
       private  ! make all variable private to this module unless public specified
-
-      ! param.h needed for GLOBAL_2D_array to work
-#include "param.h"
 
 #include "bulk_frc.opt"
 

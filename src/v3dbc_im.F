@@ -6,6 +6,7 @@
 ! Set lateral boundary conditions for ETA-component velocity
 ! v(:,:,:,nnew)
 
+      use param
 # ifdef WEC
       use wec_frc 
 # endif
@@ -15,7 +16,7 @@
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
      &                                     dtfwd, dft,dfx,dfy
       real, parameter :: eps=1.E-33
-# include "param.h"
+
 # include "scalars.h"
 # include "grid.h"
 # include "ocean3d.h"

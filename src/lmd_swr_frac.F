@@ -2,9 +2,9 @@
 #ifdef LMD_KPP
 
       subroutine swr_frac (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call swr_frac_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2))
@@ -25,11 +25,13 @@
 !
 ! output: swr_frac (in "mixing.h")  shortwave radiation fraction
 !
+
+      use param
+
       implicit none
       integer istr,iend,jstr,jend,     i,j,k, Jwt
       real  swdk1(istr:iend), swdk2(istr:iend)
       real mu1(5),mu2(5), r1(5), attn1, attn2, xi1,xi2
-# include "param.h"
 # include "ocean3d.h"
 # include "mixing.h"
 

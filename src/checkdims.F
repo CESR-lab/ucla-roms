@@ -16,12 +16,13 @@
 !         max_rec   current size of unlimited dimension
 !                   [=0, if there is no unlimited dimension].
 
+      use param
+
       implicit none
       integer ncid, max_rec, ierr, icount, ndims, recdim,
      &                       dsize, id, ldim, lname, lenstr
       character(len=*) fname
       character(len=16) dname
-#include "param.h"
 #include "ncvars.h"
 #include "netcdf.inc"
 #ifdef SOLVE3D
@@ -130,13 +131,14 @@
 
 ! returned value    error status [=nf_noerr when no mismatches] 
 
+      use param
+
       implicit none
       integer ncid, varid, horiz_type, n3
       character(len=*) fname
       character(len=32) vname
       integer ierr, vtype, ndims, natts, dimid(8),
      &                size, i, lfnm, lvar, lenstr
-#include "param.h"
 #include "netcdf.inc"
 #define NO_RECORD_CHECK
 #include "compute_starts_counts.h"
@@ -204,10 +206,12 @@
 ! mismatch.
 
       integer function check_scoord(ncid, fname, what_to_check)
+
+      use param
+
       implicit none
       integer ncid, what_to_check
       character(len=*) fname
-# include "param.h"
 # include "scoord.h"
       real, parameter :: epsil=1.D-7
       real tst_val(N+1)
@@ -337,6 +341,8 @@
 !
 ! returned value  error status =0 means no error.
 
+      use param
+
       implicit none
       integer read_nc1dat, ncid, nlen
       character(len=*) fname, vname
@@ -345,8 +351,6 @@
       integer ndims, dimids(8), varid, vtype, size,
      &               i,j, ierr,  lvar, lfile, lenstr
 #include "netcdf.inc"
-! param.h for mynode==0 (mpi_master_only)
-#include "param.h"
 
       lvar=lenstr(vname) ; lfile=lenstr(fname)
 
@@ -426,12 +430,13 @@
 ! error handling code in the calling routine.
 
       function my_nf_def_dim(ncid, name, len, dimid)
+
+#ifdef MPI
+      use param
+#endif
       implicit none
       integer my_nf_def_dim, ncid, len, dimid, ierr
       character(len=*) name
-#ifdef MPI
-# include "param.h"       /* <-- needs "mynode" */
-#endif
 #include "netcdf.inc"
       ierr=nf_def_dim(ncid, name, len, dimid)
       if (ierr /= nf_noerr) then

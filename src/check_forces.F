@@ -27,8 +27,8 @@
 
 !!    program check_forces       ! Open MP version of ROMS driver
       implicit none              ! with single parallel region using
+      use param
       integer ierr               ! explicit barrier synchronization.
-#include "param.h"
 #ifdef MPI
       real*8 tstart, tend
 C$    integer level,req_lev
@@ -64,8 +64,8 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 
 
       subroutine roms_thread
+      use param
       implicit none
-#include "param.h"
 #include "scalars.h"
                                          ! Note: Because there is
       call start_timers()                ! a possibility of I/O error
@@ -86,10 +86,10 @@ C$OMP END MASTER                         ! is in uniform state]. This
 
 
       subroutine roms_init
+      use param
       implicit none
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
-#include "param.h"
 #include "scalars.h"
 
 #include "ncvars.h"
@@ -180,9 +180,9 @@ C$OMP BARRIER
 
 
       subroutine roms_step
+      use param
       implicit none
       integer trd, tile, my_first, my_last, range
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 
@@ -228,8 +228,8 @@ C$OMP BARRIER
 # define vid_srfx hisZ
 
       subroutine wrt_forces
+      use param
       implicit none
-#include "param.h"
 #include "ncvars.h"
 #include "scalars.h"
 #include "forces.h"
@@ -347,6 +347,7 @@ C$OMP BARRIER
 
 
       subroutine def_frc(total_rec, ierr)
+      use param
       implicit none
       logical create_new_file
       integer total_rec, ierr, rec,timedim, prev_fill_mode, lfnm, lvar
@@ -356,7 +357,6 @@ C$OMP BARRIER
       integer lenstr, checkdims
       character(len=64) text
 
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"

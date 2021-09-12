@@ -4,9 +4,9 @@
  
  
       subroutine visc_rescale (tile)
+      use param
       implicit none
       integer tile
-#include "param.h"
 #include "compute_tile_bounds.h"
       call visc_rescale_tile (istr,iend,jstr,jend)
       end
@@ -20,10 +20,10 @@
 ! "grdmax" is determined in setup_grid2 and is assumed known in this
 ! subroutine.
 
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,itrc
       real cff
-# include "param.h"
 # include "grid.h"
 # include "mixing.h"
 # include "scalars.h"

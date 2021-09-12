@@ -2,21 +2,21 @@
 #if defined SPONGE || defined TCLIMATOLOGY
 
       subroutine set_nudgcof (tile)  ! Set up nudging-to-climatology
+      use param
       implicit none                  ! inverse time-scale coeffcients
       integer tile                   ! (units [1/sec])
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call set_nudgcof_tile (istr,iend,jstr,jend, A2d(1,1))
       end
 
       subroutine set_nudgcof_tile (istr,iend,jstr,jend, wrk)
+      use param
       implicit none
       integer istr,iend,jstr,jend
       real wrk(PRIVATE_2D_SCRATCH_ARRAY)
       integer i,j, isp , I1,I0,I2,J1,J0,J2, ibnd,itrc
       real cff,cff1,cff2,cff3, frac, Tau
-# include "param.h"
 # include "grid.h"
 # include "climat.h"
 # include "mixing.h"

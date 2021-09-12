@@ -16,7 +16,6 @@
 
 #include "cppdefs.h"
 #define ALL_DATA
-#include "param.h"
 
 #include "averages.h"
 #include "boundary.h"

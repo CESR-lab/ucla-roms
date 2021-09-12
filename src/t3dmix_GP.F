@@ -2,9 +2,9 @@
 #if defined SOLVE3D && (defined TS_DIF2 || defined TS_DIF4 )
 
       subroutine t3dmix (tile)
+      use param
       implicit none
       integer tile, itrc
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       do itrc=1,NT
@@ -17,11 +17,11 @@
       subroutine t3dmix_tile (istr,iend,jstr,jend, itrc, LapT,FX,FE,
      &                               FSC,dTdz, dTdx,dTde,dZdx,dZde)
 
+      use param
       use tracers ! , only: t, wrt_t_diag
       use diagnostics
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, itrc, i,j,k,k1,k2
 # ifdef TS_DIF4
      &                           , imin,imax,jmin,jmax

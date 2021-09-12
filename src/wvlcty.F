@@ -2,8 +2,8 @@
 #ifdef SOLVE3D
 
       subroutine wvlcty (tile, Wvlc)
+      use param
       implicit none
-# include "param.h"
       integer tile
       real Wvlc(GLOBAL_2D_ARRAY,0:N)
 CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
@@ -23,8 +23,8 @@ CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
 ! purposes and does not have any feedback onto the model.
 ! Unlike W, absolute vertical velocity is defined at RHO-points.
 
+      use param
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
       real Wvlc(GLOBAL_2D_ARRAY,N)
 CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE

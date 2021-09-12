@@ -4,8 +4,8 @@
 #if GRID_LEVEL < MAX_GRID_LEVEL
 
       subroutine int_r3d_west (istr,iend,jstr,jend, ks, q,buff)
+      use param
       implicit none
-# include "param.h"
 # include "grid.h"
       integer istr,iend,jstr,jend, ks, jmin,jmax, i,j,k,jc
       real q(GLOBAL_2D_ARRAY,ks:N)
@@ -82,8 +82,8 @@
 
 
       subroutine int_r3d_east (istr,iend,jstr,jend, ks, q,buff)
+      use param
       implicit none
-# include "param.h"
 # include "grid.h"
       integer istr,iend,jstr,jend, ks, jmin,jmax, i,j,k,jc
       real q(GLOBAL_2D_ARRAY,ks:0)
@@ -160,8 +160,8 @@
 
 
       subroutine int_r3d_south (istr,iend,jstr,jend, ks, q,buff)
+      use param
       implicit none
-# include "param.h"
 # include "grid.h"
       integer istr,iend,jstr,jend, ks,  imin,imax, i,j,k, ic
       real q(GLOBAL_2D_ARRAY,ks:N)
@@ -238,8 +238,8 @@
 
 
       subroutine int_r3d_north (istr,iend,jstr,jend, ks, q,buff)
+      use param
       implicit none
-# include "param.h"
 # include "grid.h"
       integer istr,iend,jstr,jend, ks, imin,imax, i,j,k, ic
       real q(GLOBAL_2D_ARRAY,ks:N)

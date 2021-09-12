@@ -20,6 +20,7 @@
 ! the executable.
 #if defined WEC /* WEC for whole module! */
 
+      use param
       use read_write ! new roms netcdf functionality module
 
       implicit none
@@ -46,7 +47,6 @@
       ! INCLUDE FILES FOR COMMON VARIABLES AS PER OLD ROMS
       ! ==================================================
 
-#include "param.h"
 #include "grid.h"
 
 ! For netcdf variables

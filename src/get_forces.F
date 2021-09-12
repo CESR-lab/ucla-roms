@@ -12,9 +12,9 @@
 ! to heat flux dQdSST is in [Watts/(deg C * m^2)]; surface fresh
 ! water flux is in [mm/day].
 
+      use param
       implicit none
       integer ierr
-#include "param.h"
 #include "scalars.h"
 c--#define VERBOSE
 #ifdef VERBOSE

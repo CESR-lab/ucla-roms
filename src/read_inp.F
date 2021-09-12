@@ -3,16 +3,16 @@
       subroutine read_inp(ierr)         ! parameters from keyword-based
                                         ! startup file.
 
+      use param
 #ifdef WEC
       use wec_frc, only: read_inp_wec, read_inp_avg_wec
 #endif
       use surf_flux
       use tracers, only: wrt_t, t_vname, wrt_t_avg
-      use read_write, only: read_output_root_name
+      use read_write ! , only: read_output_root_name, expanse_scratch_env_var
 
       implicit none
       integer ierr
-#include "param.h"
 #include "scoord.h"
 #include "scalars.h"
 #include "ncvars.h"
@@ -453,6 +453,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
         elseif (keyword(1:kwlen) == 'grid') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,'(A)',err=95) fname
+#ifdef EXPANSE_TEST
+          call expanse_scratch_env_var( fname )
+#endif
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
           call insert_node(fname, lstr, mynode, NNODES, ierr)
@@ -475,6 +478,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           if (nrrec > 0) then
 #endif
             read(input,'(A)',err=95) fname
+#ifdef EXPANSE_TEST
+            call expanse_scratch_env_var( fname )
+#endif
             lstr=lenstr(fname)
 #if defined MPI && defined PARALLEL_FILES
             call insert_node(fname, lstr, mynode, NNODES, ierr)
@@ -505,6 +511,10 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
             if (lstr > 0) then
+#ifdef EXPANSE_TEST
+              call expanse_scratch_env_var( fname )
+              lstr=lenstr(fname)
+#endif
 # if defined MPI && defined PARALLEL_FILES
               call insert_node(fname, lstr, mynode, NNODES, ierr)
 # endif
@@ -552,6 +562,10 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
             if (lstr > 0) then
+#  ifdef EXPANSE_TEST
+              call expanse_scratch_env_var( fname )
+              lstr=lenstr(fname)
+#  endif
 #  if defined MPI && defined PARALLEL_FILES
               call insert_node(fname, lstr, mynode, NNODES, ierr)
 #  endif

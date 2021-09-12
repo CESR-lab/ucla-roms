@@ -1,18 +1,18 @@
 #include "cppdefs.h"
                                             ! Setting up curvilinear
       subroutine setup_grid1(tile)          ! grid: Compute various
+      use param
       implicit none                         ! combinations of metric
       integer tile                          ! terms.
-#include "param.h"
 #include "compute_tile_bounds.h"
       call setup_Corls_tile(istr,iend,jstr,jend)
       call setup_grid1_tile(istr,iend,jstr,jend)
       end
 
       subroutine setup_Corls_tile(istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
-#include "param.h"
 #include "scalars.h"
 #include "grid.h"
 #ifdef SPHERICAL
@@ -53,9 +53,9 @@
 
 
       subroutine setup_grid1_tile (istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
-#include "param.h"
 #include "scalars.h"
 #include "grid.h"
 #ifdef MASKING

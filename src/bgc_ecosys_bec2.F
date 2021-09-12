@@ -5,6 +5,7 @@
        subroutine ecosys_bec2_tile(Istr,Iend,Jstr,Jend)
        ! Taken from PDamien's ecosys_bec2_td2.F
 
+       use param
        use tracers, only: t ! DevinD added
        use surf_flux ! , only: sustr,sustr_r,svstr,svstr_r,srflx
 # ifdef BULK_FRC
@@ -16,7 +17,6 @@
 
        implicit none
 
-#include "param.h"  
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
@@ -632,8 +632,8 @@
 #endif               
      &  qa_dust_def,istr,iend,j,dt2,dust_flux)
 
+       use param
         implicit none
-#include "param.h"  
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
@@ -2280,9 +2280,8 @@
 
         SUBROUTINE init_particulate_terms(QA_dust_def,istr,
      &      iend,j,net_dust_in)
-
+      use param
         implicit none
-#include "param.h" 
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "scalars.h"
@@ -2414,9 +2413,8 @@
        subroutine compute_particulate_terms(k,QA_dust_def, TEMP, O2_loc, NO3_loc, 
      &        POC_prod,P_iron_prod,P_CaCO3_prod,P_SiO2_prod,SED_DENITRIF,
      &        OTHER_REMIN,istr,iend,j)
-
+      use param
        implicit none
-#include "param.h"
 #include "bgc_ecosys_bec2.h"
 #include "bgc_param_bec2.h"
 #include "ocean3d.h"
@@ -3028,10 +3026,12 @@
     !-------------------------------------------------------------------------
     !   result declaration
     !-------------------------------------------------------------------------
-        implicit none
 
 ! needed for scalars.h
-#include "param.h"  
+        use param
+
+        implicit none
+
 ! needed for rho0
 #include "scalars.h"       
         integer::istr,iend,jstr,jend

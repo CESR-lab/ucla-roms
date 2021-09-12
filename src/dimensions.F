@@ -5,12 +5,12 @@
       ! ========================================
 
       ! coded by Jeroen Molemaker
+      use param
 
       implicit none
 !      private
 
 #include "cppdefs.h"
-#include "param.h"
 #include "grid.h"
 #include "ncvars.h"
 

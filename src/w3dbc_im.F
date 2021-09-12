@@ -2,11 +2,12 @@
 #if defined SOLVE3D && defined NHMG
 
       subroutine w3dbc_tile (istr,iend,jstr,jend,grad)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd
       real, parameter :: eps=1.E-33
-# include "param.h"
+
 # include "grid.h"
 # include "ocean3d.h"
 # include "climat.h"

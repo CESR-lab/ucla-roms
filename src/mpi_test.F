@@ -1,9 +1,9 @@
 #include "cppdefs.h"
 
 !!    program main               ! Open MP version of ROMS driver
+      use param
       implicit none              ! with single parallel region using
       integer ierr               ! explicit barrier synchronization.
-#include "param.h"
 #ifdef MPI
       real*8 tstart, tend
 C$    integer level,req_lev
@@ -39,10 +39,10 @@ C$OMP END PARALLEL
 
 
       subroutine mpi_test_thread
+      use param
       implicit none
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
-#include "param.h"
 #include "scalars.h"
 
       numthreads=1
@@ -81,18 +81,18 @@ C$OMP BARRIER
       end
 
       subroutine mpi_test_init (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call mpi_test_init_tile (istr,iend,jstr,jend)
       call mpi_test_copy_tile (istr,iend,jstr,jend)
       end
 
       subroutine mpi_test_init_tile (istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k, iabs,jabs
-#include "param.h"
 #include "mpi_test_arr.h"
 #include "hidden_mpi_vars.h"
       real dx,dy, x,y
@@ -152,9 +152,9 @@ c     &               'istr,iend,jstr,jend =', istr,iend,jstr,jend
       end
 
       subroutine mpi_test_copy_tile (istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "param.h"
 # include "mpi_test_arr.h"
 
 # include "compute_auxiliary_bounds.h"
@@ -196,17 +196,17 @@ c     &                                               B2D,1, D2D,1)
 
 
       subroutine mpi_test_check (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call mpi_test_check_tile (istr,iend,jstr,jend)
       end
 
       subroutine mpi_test_check_tile (istr,iend,jstr,jend)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "param.h"
 # include "mpi_test_arr.h"
 
 # include "compute_extended_bounds.h"

@@ -25,9 +25,9 @@
 # endif
 
       subroutine start_timers
+      use param
       implicit none
       integer getpid, trd
-# include "param.h"
 # include "scalars.h"
 # include "comm_vars.h"
 # ifdef OMP_GET_WTIME
@@ -78,8 +78,8 @@ C$OMP END CRITICAL (start_timers_cr_rgn)
       end
 
       subroutine stop_timers()            ! Finalize timing
+      use param
       implicit none                       ! for all threads.
-# include "param.h"
 # include "scalars.h"
 # include "comm_vars.h"
 # ifdef OMP_GET_WTIME
@@ -151,9 +151,9 @@ C$OMP END CRITICAL (stop_timers_cr_rgn)
 ! "itest" computed below must always match "priv_count".
 
       subroutine sync_trap(ibarr)
+      use param
       implicit none
       integer ibarr, indx, itest
-# include "param.h"
 # include "scalars.h"
       indx=1+mod(ibarr-1,16)
       priv_count(indx)=priv_count(indx)+1
@@ -174,8 +174,8 @@ C$OMP END CRITICAL(trap_cr_rgn)
 #else
                                        ! These are stub-routines for
       subroutine start_timers          ! compatibility with compilers
+      use param
       implicit none                    ! without OpenMP support.
-# include "param.h"
 # include "scalars.h"
       mpi_master_only write(*,'(/2(1x,A,I3),4x,2(1x,A,I4)/)')
      &                        'BLOCKING:', NSUB_X, 'x', NSUB_E,

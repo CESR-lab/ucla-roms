@@ -7,6 +7,7 @@
 
 #include "cppdefs.h"
 
+      use param
       use read_write
 
       implicit none
@@ -14,8 +15,6 @@
       private
 
       ! Includes:
-      ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
-#include "param.h"
       ! ncvars.h for ncavg
 #include "ncvars.h"
 

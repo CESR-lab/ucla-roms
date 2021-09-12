@@ -2,9 +2,9 @@
 # if defined SOLVE3D && defined UV_VIS2
  
       subroutine visc3d (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call visc3d_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2),
@@ -22,8 +22,8 @@
 !            the anisotropic stress tensor for use in models of
 !            the large-scale ocean circulation, JCP, 105, 333-338.
 
+      use param
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, i,j,k, indx
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe
       real cff

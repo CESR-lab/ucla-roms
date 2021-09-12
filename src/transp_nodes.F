@@ -86,8 +86,9 @@
 
 #include "cppdefs.h"
 #ifdef MPI
+
+      use param
       implicit none
-# include "param.h"
       integer, parameter :: iin=11, iout=12
       character(len=14), parameter :: machinefile = 'machines.LINUX'
       character(len=10) fmt

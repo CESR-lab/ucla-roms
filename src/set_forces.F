@@ -32,6 +32,7 @@
 ! climatological data (e.g., salinity at surface) update tclima
 ! first.
 
+      use param
 # if defined BULK_FRC
       use bulk_frc,  only: set_bulk_frc_tile
 # endif
@@ -56,7 +57,6 @@
 
       real  tmid
       integer tile, ierr
-#include "param.h"
 #include "scalars.h"
 
 #include "compute_tile_bounds.h"

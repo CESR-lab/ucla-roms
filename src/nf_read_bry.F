@@ -11,8 +11,8 @@
 !            record  record number.
 !        horiz_type   RHO-, U, V, W, PSI etc.)
 
+      use param
       implicit none
-#include "param.h"
       integer read_bry_EW, ncid, varid, record, horiz_type, nmax
       real A(0:Mm+1,nmax)
       integer i,j,k, shft, ierr, lstr, lenstr
@@ -73,9 +73,9 @@
 
 
       function read_bry_NS(ncid, varid, record, horiz_type, A, nmax)
+      use param
       implicit none
       integer read_bry_NS, ncid, varid, record, horiz_type, nmax
-#include "param.h"
       real A(0:Lm+1,nmax)
       integer  i, k, shft, ierr, lstr, lenstr
       character(len=16) vname
@@ -144,8 +144,8 @@
 #if defined NS_PERIODIC || defined MPI
 
       subroutine exch_bry_EW_tile (jstr,jend, A, nmax)
+      use param
       implicit none
-# include "param.h"
       integer jstr,jend, nmax, k
       real A(0:Mm+1,nmax)
 # include "buffer.h"
@@ -224,8 +224,8 @@
 #if defined EW_PERIODIC || defined MPI
 
       subroutine exch_bry_NS_tile (istr,iend, A, nmax)
+      use param
       implicit none
-# include "param.h"
       integer istr,iend, nmax, k
       real A(0:Lm+1,nmax)
 # if defined MPI

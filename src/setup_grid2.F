@@ -2,9 +2,9 @@
 #define SUM_BY_PAIRS
 
       subroutine setup_grid2 (tile)
+      use param
       implicit none
       integer tile
-#include "param.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
       call setup_grid2_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,3))
@@ -19,6 +19,7 @@
 ! and local grid intervals); combined crossection of all open
 ! boundaries.
 
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j, nsub
       real(kind=QUAD), dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dA,dV
@@ -34,7 +35,6 @@
      &                    , inc
 # endif
 #endif
-#include "param.h"
 #include "scalars.h"
 #include "comm_vars.h"
 #include "grid.h"

@@ -61,8 +61,8 @@
      &  '!!!!!!', '!!!!!! independent program, or use',
      &                          'commands "make checkkwds"   !!!!!!',
      &  '!!!!!! or "make depend".',                         '!!!!!!'
-      write(iout,'(2(/6x,A), 5(/A) /6x,A /8x,A, 2(/6x,A))')
-     &  'implicit none', 'integer ierr, is,ie', '#include "param.h"',
+      write(iout,'(3(/6x,A), 4(/A) /6x,A /8x,A, 2(/6x,A))')
+     &  'use param', 'implicit none', 'integer ierr, is,ie', ! DevinD edited for param module '#include "param.h"',
      &  '#include "strings.h"', '#ifdef MPI','# include "scalars.h"',
      &  '#endif',   'do is=1,max_opt_size',  'kwds(is:is)='' ''',
      &  'enddo',    'is=1'

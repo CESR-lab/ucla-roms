@@ -1,9 +1,9 @@
 #include "cppdefs.h"
 
       subroutine closecdf       ! Close output netCDF files.
+      use param
       implicit none
       integer ierr
-#include "param.h"
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"

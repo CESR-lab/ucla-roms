@@ -2,13 +2,13 @@
 
       subroutine put_global_atts (ncid, ierr)
 
+      use param
 #if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
 
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr
-#include "param.h"
 #include "scoord.h"
 #include "scalars.h"
 #include "ncvars.h"

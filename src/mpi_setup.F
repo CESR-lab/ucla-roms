@@ -12,9 +12,9 @@ C$    end
 
 
       subroutine mpi_setup(ierr)
+      use param
       implicit none
       integer ierr
-# include "param.h"
 # include "hidden_mpi_vars.h"
 # include "ncvars.h"
 # include "mpif.h"

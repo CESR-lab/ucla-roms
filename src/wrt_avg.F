@@ -4,6 +4,7 @@
       subroutine wrt_avg             ! Write time-averaged fields
                                      ! into averages netCDF file.
 
+      use param
 # ifdef WEC
       use wec_frc, only: wrt_avg_wec
 # endif
@@ -20,7 +21,6 @@
      &             , itrc
 # endif
       character(len=18) tstring
-# include "param.h"
 # include "scalars.h"
 # include "averages.h"
 # include "ncvars.h"

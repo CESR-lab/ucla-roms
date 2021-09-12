@@ -4,11 +4,11 @@
 # if GRID_LEVEL > 1
 
       subroutine u2dbc_tile (istr,iend,jstr,jend, zeta_new,buff)
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j, jmin,jmax
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY),
      &         buff(PRIVATE_2D_SCRATCH_ARRAY)
-#  include "param.h"
 #  include "grid.h"
 #  include "scalars.h"
 #  include "ocean2d.h"
@@ -86,12 +86,12 @@
 # if GRID_LEVEL < MAX_GRID_LEVEL
 
       subroutine int_u2d_west (istr,iend,jstr,jend, buff)
+      use param
       implicit none
       integer istr,iend,jstr,jend, jmin,jmax, j,jf
       real buff(PRIVATE_2D_SCRATCH_ARRAY)
       real T1,T4,T5, crs,crsR,crsL, uctr,dltR,dltL, cff,cffR,cffL
       parameter (T1=1./27., T4=4./27., T5=5./27.)
-#  include "param.h"
 #  include "scalars.h"
 #  include "ocean2d.h"
 #  include "coupling.h"
@@ -136,12 +136,12 @@
       end
 
       subroutine int_u2d_east (istr,iend,jstr,jend, buff)
+      use param
       implicit none
       integer istr,iend,jstr,jend, jmin,jmax, j,jf
       real buff(PRIVATE_2D_SCRATCH_ARRAY)
       real T1,T4,T5, crs,crsR,crsL, uctr,dltR,dltL, cff,cffR,cffL
       parameter (T1=1./27., T4=4./27., T5=5./27.)
-#  include "param.h"
 #  include "scalars.h"
 #  include "ocean2d.h"
 #  include "coupling.h"

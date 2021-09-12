@@ -2,9 +2,9 @@
 #if defined SOLVE3D && ( defined TS_DIF2 || defined TS_DIF4 )
  
       subroutine t3dmix (tile)
+      use param
       implicit none
       integer tile, itrc
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       do itrc=1,NT
@@ -17,8 +17,8 @@
 
 ! Computes horizontal mixing of tracers along S-surfaces.
 
+      use param
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, itrc, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE, LapT
 # ifdef TS_DIF4

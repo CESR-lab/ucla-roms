@@ -4,6 +4,7 @@
 
 #include "cppdefs.h"
 
+      use param
       use read_write              ! set_frc_var_tile, nc_define_var, rp_var
       use surf_flux,  only: stflx ! surface tracer flux should possibly live in this module rather?
 
@@ -14,15 +15,13 @@
       ! Includes
       ! ========
 
-      ! param.h needed for GLOBAL_2D_array to work. NT = number tracer from param.h
-#include "param.h"
       ! ncvars.h for nchis and ncavg
 #include "ncvars.h"
       ! scalars.h for 'FIRST_TIME_STEP' and nstp
 #include "scalars.h"
 
       ! 1) in order to specify tracer variable details, user must
-      ! set them in tracers.opt (NT still set in param.h for now).
+      ! set them in tracers.opt (NT still set in param for now).
 
       ! 2) tracer name in netcdf file for _bry.nc and _init.nc
       ! must have same name as trace variable. ptrace1 -> ptrace1
@@ -34,7 +33,7 @@
       !-- Tracer indices specific to each tracer
       ! Set to zero as possible means to avoid errors later? Might not be
       ! Necessary. itmp -> itemp, had to spell differently for now as
-      ! itemp lives in param.h still (avoid clash). Same for islt -> isalt
+      ! itemp lives in param still (avoid clash). Same for islt -> isalt
       integer :: itmp=0, islt=0
 
       !-- Array of tracers
@@ -64,12 +63,12 @@
 
       integer         :: interp_t   ! interpolate forcing from coarser input grid (=1) or not (=0)
 
-      ! 3 below currently in param.h as per old code
+      ! 3 below currently in param as per old code
 !      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
       ! Number of 'base' bgc tracers, i.e. minimum number of bgc tracers without cocco
       ! and nitrogen cycle additions
 !      integer :: ntrc_bio_base
-!      integer :: ntrc_bio !  - from (param.h - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
+!      integer :: ntrc_bio !  - from (param - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
 
 #ifdef AVERAGES
       real, public, allocatable, dimension(:,:,:,:) :: t_avg      ! tracer averages. Memory only allocated for tracers of interest.
@@ -335,7 +334,7 @@
       ! Attempted to atleast here keep all variables together.
       ! Yes, still need to declare them in module preamble, however,
       ! they take no value there so order/value is not a worry.
-      ! Old code: index is set in param.h, and variable values in
+      ! Old code: index is set in param, and variable values in
       ! init_scalars.F.
       ! New method, both set here.
 
@@ -404,8 +403,8 @@
       ! conflicts when module is updated.
       ! Taken from Pierre's code get_bry_all.F
 
+      use param
       implicit none
-#  include "param.h"
       real t_bry_dt(0:LMmpp,N,2,NT), cff,cff1
       integer, intent(in):: LMmpp, itbry,itrc
       integer :: ij, k

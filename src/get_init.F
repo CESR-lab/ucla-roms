@@ -3,11 +3,11 @@
       subroutine get_init(req_rec, tindx)    ! Reads initial conditions
                                              ! from netCDF file.
 
+      use param
       use tracers, only: t_vname, t, iTandS
       use bgc ! get_init_bgc_diag
 
       implicit none
-#include "param.h"
 #include "ncvars.h"
 #include "scalars.h"
 #include "netcdf.inc"

@@ -1,3 +1,8 @@
+      module param
+
+      ! Master module containing key roms variables used throughout the code
+      ! and by other modules. Direct copy of param.h into module format.
+
 ! Dimensions of Physical Grid and array dimensions:
 !----------- -- -------- ---- --- ----- -----------
 ! LLm   Number of the internal points of the PHYSICAL grid in XI-
@@ -7,6 +12,9 @@
 ! Lm    Number of the internal points [see above] of array covering
 ! Mm    a single MPI-subdomain.  These are identical to LLm, MMm if
 !       there is no MPI-partitioning.
+
+! DevinD: normally this was above param.h in subroutines but since compiled alone need here
+#include "cppdefs.h"
 
       integer, parameter ::
 #if defined ANA_WEC_FRC
@@ -108,3 +116,4 @@ c     &      NP_XI=10, NP_ETA=5, NSUB_X=1, NSUB_E=1
 # endif
 #endif /* SOLVE3D */
 
+      end module

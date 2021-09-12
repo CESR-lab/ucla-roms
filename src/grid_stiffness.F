@@ -2,9 +2,9 @@
 #ifdef SOLVE3D
 
       subroutine grid_stiffness (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call grid_stiffness_tile (istr,iend,jstr,jend)
       return
@@ -22,6 +22,7 @@
 ! This is done for purely diagnostic purposes does not affect
 ! computations.
 
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j,k, NSUB
       real my_rx0, my_rx1
@@ -30,7 +31,6 @@
       real*8 buff(2)
       integer size, step, status(MPI_STATUS_SIZE), ierr
 # endif
-# include "param.h"
 # include "comm_vars.h"
 # include "ocean3d.h"
 # ifdef MASKING

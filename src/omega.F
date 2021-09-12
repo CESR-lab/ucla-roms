@@ -2,9 +2,9 @@
 #ifdef SOLVE3D
 
       subroutine omega (tile)
+      use param
       implicit none
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call omega_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2))
@@ -31,11 +31,11 @@
 ! below which vertical advection is fully explicit; "cu_max" is the
 ! maximum CN which the explicit component "We" is allowed to reach.
 
+      use param
       use pipe_frc
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "param.h"
       real CX(PRIVATE_1D_SCRATCH_ARRAY,0:N),  dtau, c2d,dh, cw, cff, 
      &    wrk(PRIVATE_1D_SCRATCH_ARRAY),      cw_min,cw_max,cw_max2
       real, parameter :: cu_min=0.6D0, cu_max=1.0D0,

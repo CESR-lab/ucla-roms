@@ -1,11 +1,12 @@
 #include "cppdefs.h"
 
       subroutine init_arrays(tile,my_first)
+
+      use param
       implicit none
 
       integer, intent(in) :: tile, my_first
       integer             :: i, j
-#include "param.h"
 #include "private_scratch.h"
 #include "compute_tile_bounds.h"
 
@@ -44,6 +45,7 @@
       ! Required modules
       ! ----------------
 
+      use param
 #ifdef WEC
       use wec_frc
 #endif
@@ -60,7 +62,6 @@
       integer             :: i, j, k, itrc, itavg
       real, parameter     :: init=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
-#include "param.h"
 #include "scalars.h"
 #include "grid.h"
 #include "ocean2d.h"

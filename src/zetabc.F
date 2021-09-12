@@ -4,11 +4,11 @@
 
 ! Set boundary conditions for free surface zeta_new
 
+      use param
       implicit none
       integer istr,iend,jstr,jend, i,j
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY), cx, cff,dft,dfx
       real, parameter :: eps=1.E-33
-#include "param.h"
 #include "grid.h"
 #include "ocean2d.h"
 #include "scalars.h"

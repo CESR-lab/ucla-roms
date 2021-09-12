@@ -2,9 +2,11 @@
 #ifdef ANA_INITIAL
                                   ! Set initial conditions for momentum
       subroutine ana_init (tile)  ! free surface, and tracer variables
+
+      use param
+
       implicit none               ! using analytical expressions.
       integer tile
-# include "param.h"
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call ana_init_tile( istr,iend,jstr,jend,
@@ -17,12 +19,11 @@
       end
 
       subroutine ana_init_tile (istr,iend,jstr,jend, AA)
-
+      use param
       use tracers, only: t
 
       implicit none
 
-# include "param.h"
 # include "scalars.h"
       integer istr,iend,jstr,jend, i,j,k, itrc, i0,j0
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: AA

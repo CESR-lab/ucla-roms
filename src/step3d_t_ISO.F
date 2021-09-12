@@ -18,10 +18,11 @@ c--# define CONST_TRACERS
 # endif
                                   ! Note that arrays A2d(1,1:4) within
       subroutine step3d_t(tile)   ! the list of agruments in call below
+      use param
       implicit none               ! are repeated to use the same memory
       integer tile                ! for vertical and horizontal scratch
                                   ! arrays.
-# include "param.h"
+
 # include "private_scratch.h"
 # include "compute_tile_bounds.h"
 
@@ -49,6 +50,7 @@ c--# define CONST_TRACERS
 # endif
      &                                                             )
 
+      use param
       use pipe_frc
       use river_frc
       use surf_flux, only: stflx, srflx
@@ -56,7 +58,6 @@ c--# define CONST_TRACERS
       use diagnostics
 
       implicit none
-# include "param.h"
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: FX,FE, wrk1
@@ -1001,9 +1002,9 @@ c??         enddo
 ! model results, other than signature in global attribute "CPPS" in
 ! the output netCDF files.
 
+      use param
       implicit none
       integer ierr, is,ie, lenstr
-# include "param.h"
 # include "strings.h"
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+15
