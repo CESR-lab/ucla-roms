@@ -167,6 +167,8 @@
 
       logical, public            :: calc_diag               ! flag to calculate diagnostics in equation system.
       logical, public            :: set_dz_old              ! set dz*u/v/w/t at previous timestep, needed for diag calculation when skipping steps if not averages.
+      logical                    :: init_done=.false.       ! flag to init diagnostics only once
+      logical                    :: p_init_done=.false.     ! flag to init pressure filter value only once
 
       ! U & V MOMENTUM:
       ! ---------------
@@ -532,6 +534,8 @@
 
       if (diag_trc) call init_diags_trc    (istrR, jstrR, iendR, jendR)
       if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)
+
+      init_done = .true.  ! ensure init is not triggered again
 
       end subroutine init_diags  !]
 
@@ -1906,7 +1910,7 @@
       ! local
       integer :: i, j, k
 
-      if (FIRST_TIME_STEP) then
+      if (.not. p_init_done) then
 !        if(mynode == 0) print *, 'FIRST STEP pf *******'
         do k=1,N
           do j=jstr,jend    ! only need over interior
@@ -1915,6 +1919,7 @@
             enddo
           enddo
         enddo
+        p_init_done = .true.
       endif                                                 ! unlike u/v first diff will be zero.
                                                             ! as P computed online. don't have for t=0
       do k=1,N
@@ -2505,7 +2510,7 @@
         set_dz_old=.false.
       endif
 
-      if (FIRST_TIME_STEP) call init_diags(istr, jstr, iend, jend)  ! called here as need set_dz_old set above
+      if (.not. init_done) call init_diags(istr, jstr, iend, jend)  ! called here as need set_dz_old set above
 
       diag_icori = .false.  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h. Won't compute during pre_step3d but will for step3d_uv1
 
