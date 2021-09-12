@@ -58,6 +58,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
 
       use param
       use comm_vars
+      use diag_vars
+      use eos_vars
 
       implicit none
       integer istr,iend,jstr,jend
@@ -78,12 +80,10 @@ c--#define MAX_BY_VERT_CFL_ONLY
 #include "grid.h"
 #ifdef SOLVE3D
 # include "ocean3d.h"
-# include "eos_vars.h"
 #else
 # include "ocean2d.h"
 #endif
 #include "scalars.h"
-#include "diag_vars.h"
 #include "ncvars.h"
 
       real cff, dA, v2, my_v2d_max

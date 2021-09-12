@@ -17,6 +17,7 @@
       use bgc ! wrt_his_bgc_diag
       use read_write ! nc_write_var
       use netcdf ! for nf90_routines
+      use eos_vars
 
       implicit none
 
@@ -25,7 +26,6 @@
 #include "grid.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
-#include "eos_vars.h"
 #include "mixing.h"
 #include "netcdf.inc"
 

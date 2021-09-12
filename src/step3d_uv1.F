@@ -39,6 +39,7 @@
       use diagnostics
       use surf_flux, only: sustr, svstr
       use coupling
+      use eos_vars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -64,9 +65,6 @@
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"
-# if defined ADV_ISONEUTRAL && defined EXCHANGE
-#  include "eos_vars.h"
-# endif
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
 ! but needs to be declared here in declarations section not in

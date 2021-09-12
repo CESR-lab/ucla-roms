@@ -8,20 +8,21 @@ buffer.o : buffer.F set_global_definitions.h cppdefs.h param.o
 climat.o : climat.F set_global_definitions.h cppdefs.h param.o 
 comm_vars.o : comm_vars.F set_global_definitions.h cppdefs.h param.o 
 coupling.o : coupling.F set_global_definitions.h cppdefs.h param.o 
+diag_vars.o : diag_vars.F set_global_definitions.h cppdefs.h 
 surf_flux.o : surf_flux.F scalars.h surf_flux.opt ncvars.h set_global_definitions.h cppdefs.h read_write.o param.o 
 bulk_frc.o : bulk_frc.F compute_extended_bounds.h ocean3d.h grid.h scalars.h bulk_frc.opt set_global_definitions.h cppdefs.h tracers.o surf_flux.o read_write.o param.o 
 flux_frc.o : flux_frc.F grid.h compute_extended_bounds.h flux_frc.opt scalars.h set_global_definitions.h cppdefs.h surf_flux.o tracers.o read_write.o param.o 
-wec_frc.o : wec_frc.F compute_extended_bounds.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h compute_auxiliary_bounds.h ocean3d.h ocean2d.h scalars.h ncvars.h grid.h set_global_definitions.h cppdefs.h read_write.o param.o 
+wec_frc.o : wec_frc.F compute_extended_bounds.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h compute_auxiliary_bounds.h ocean3d.h ocean2d.h scalars.h ncvars.h grid.h set_global_definitions.h cppdefs.h coupling.o read_write.o param.o 
 tides.o : tides.F ncvars.h compute_auxiliary_bounds.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h tides.opt scalars.h set_global_definitions.h cppdefs.h read_write.o boundary.o param.o 
 bgc.o : bgc.F compute_extended_bounds.h scalars.h bgc_forces.h bgc_bio_diag.h bgc_tracers.h bgc.opt bgc_ecosys_bec2.h ncvars.h set_global_definitions.h cppdefs.h comm_vars.o tracers.o read_write.o param.o 
 bry_extract_child.o : bry_extract_child.F set_global_definitions.h cppdefs.h 
 diagnostics.o : diagnostics.F set_global_definitions.h cppdefs.h 
-step2d_FB.o : step2d_FB.F compute_auxiliary_bounds.h sources.h scalars.h mixing.h ocean2d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h climat.o tides.o pipe_frc.o river_frc.o param.o 
+step2d_FB.o : step2d_FB.F compute_auxiliary_bounds.h sources.h scalars.h mixing.h ocean2d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o climat.o tides.o pipe_frc.o river_frc.o param.o 
 read_inp.o : read_inp.F strings.h ncvars.h scalars.h scoord.h set_global_definitions.h cppdefs.h boundary.o read_write.o tracers.o surf_flux.o param.o 
-set_weights.o : set_weights.F scalars.h set_global_definitions.h cppdefs.h param.o 
+set_weights.o : set_weights.F scalars.h set_global_definitions.h cppdefs.h coupling.o param.o 
 set_scoord.o : set_scoord.F strings.h scalars.h scoord.h set_global_definitions.h cppdefs.h comm_vars.o param.o 
 init_scalars.o : init_scalars.F ncvars.h mixing.h sources.h scalars.h set_global_definitions.h cppdefs.h comm_vars.o boundary.o bgc.o param.o 
-init_arrays.o : init_arrays.F compute_extended_bounds.h mixing.h eos_vars.h ocean3d.h ocean2d.h grid.h scalars.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h climat.o averages.o tracers.o surf_flux.o bulk_frc.o param.o 
+init_arrays.o : init_arrays.F compute_extended_bounds.h mixing.h ocean3d.h ocean2d.h grid.h scalars.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o climat.o averages.o tracers.o surf_flux.o bulk_frc.o param.o 
 ana_init.o : ana_init.F set_global_definitions.h cppdefs.h 
 setup_grid1.o : setup_grid1.F compute_auxiliary_bounds.h compute_extended_bounds.h grid.h scalars.h hidden_mpi_vars.h compute_tile_bounds.h set_global_definitions.h cppdefs.h param.o 
 setup_grid2.o : setup_grid2.F compute_auxiliary_bounds.h grid.h scalars.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h comm_vars.o param.o 
@@ -29,14 +30,14 @@ visc_rescale.o : visc_rescale.F compute_auxiliary_bounds.h scalars.h mixing.h gr
 set_nudgcof.o : set_nudgcof.F compute_extended_bounds.h scalars.h mixing.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h climat.o param.o 
 ana_grid.o : ana_grid.F set_global_definitions.h cppdefs.h 
 analytical.o : analytical.F sources.h private_scratch.h hidden_mpi_vars.h compute_tile_bounds.h ocean3d.h compute_extended_bounds.h scalars.h grid.h bblm.h set_global_definitions.h cppdefs.h climat.o surf_flux.o param.o 
-prsgrd.o : prsgrd.F compute_auxiliary_bounds.h scalars.h eos_vars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h diagnostics.o tides.o param.o 
-pre_step3d4S.o : pre_step3d4S.F track_advec_switches.h strings.h compute_vert_rhs_uv_terms.h compute_vert_tracer_fluxes.h compute_rd_bott_drag.h compute_horiz_rhs_uv_terms.h compute_horiz_tracer_fluxes.h compute_auxiliary_bounds.h sources.h scalars.h mixing.h ocean2d.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h diagnostics.o tracers.o surf_flux.o param.o 
-step3d_uv1.o : step3d_uv1.F track_advec_switches.h strings.h compute_vert_rhs_uv_terms.h compute_horiz_rhs_uv_terms.h compute_auxiliary_bounds.h eos_vars.h scalars.h mixing.h ocean3d.h grid.h ocean2d.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h surf_flux.o diagnostics.o param.o 
-step3d_uv2.o : step3d_uv2.F strings.h compute_auxiliary_bounds.h eos_vars.h mixing.h scalars.h ocean3d.h ocean2d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h diagnostics.o param.o 
-step3d_t_ISO.o : step3d_t_ISO.F track_advec_switches.h strings.h compute_vert_tracer_fluxes.h compute_horiz_tracer_fluxes.h compute_auxiliary_bounds.h eos_vars.h scalars.h mixing.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h climat.o diagnostics.o tracers.o surf_flux.o river_frc.o pipe_frc.o param.o 
-set_depth.o : set_depth.F strings.h compute_auxiliary_bounds.h ocean3d.h ocean2d.h grid.h scalars.h scoord.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h param.o 
+prsgrd.o : prsgrd.F compute_auxiliary_bounds.h scalars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h diagnostics.o tides.o param.o 
+pre_step3d4S.o : pre_step3d4S.F track_advec_switches.h strings.h compute_vert_rhs_uv_terms.h compute_vert_tracer_fluxes.h compute_rd_bott_drag.h compute_horiz_rhs_uv_terms.h compute_horiz_tracer_fluxes.h compute_auxiliary_bounds.h sources.h scalars.h mixing.h ocean2d.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o diagnostics.o tracers.o surf_flux.o param.o 
+step3d_uv1.o : step3d_uv1.F track_advec_switches.h strings.h compute_vert_rhs_uv_terms.h compute_horiz_rhs_uv_terms.h compute_auxiliary_bounds.h scalars.h mixing.h ocean3d.h grid.h ocean2d.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o surf_flux.o diagnostics.o param.o 
+step3d_uv2.o : step3d_uv2.F strings.h compute_auxiliary_bounds.h mixing.h scalars.h ocean3d.h ocean2d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o diagnostics.o param.o 
+step3d_t_ISO.o : step3d_t_ISO.F track_advec_switches.h strings.h compute_vert_tracer_fluxes.h compute_horiz_tracer_fluxes.h compute_auxiliary_bounds.h scalars.h mixing.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h climat.o diagnostics.o tracers.o surf_flux.o river_frc.o pipe_frc.o param.o 
+set_depth.o : set_depth.F strings.h compute_auxiliary_bounds.h ocean3d.h ocean2d.h grid.h scalars.h scoord.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o param.o 
 omega.o : omega.F compute_auxiliary_bounds.h scalars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h pipe_frc.o param.o 
-visc3d_GP.o : visc3d_GP.F compute_auxiliary_bounds.h mixing.h ocean3d.h grid.h scalars.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h diagnostics.o param.o 
+visc3d_GP.o : visc3d_GP.F compute_auxiliary_bounds.h mixing.h ocean3d.h grid.h scalars.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o diagnostics.o param.o 
 t3dmix_GP.o : t3dmix_GP.F compute_auxiliary_bounds.h scalars.h mixing.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h climat.o diagnostics.o tracers.o param.o 
 ana_vmix.o : ana_vmix.F compute_auxiliary_bounds.h scalars.h mixing.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h set_global_definitions.h cppdefs.h param.o 
 zetabc.o : zetabc.F compute_auxiliary_bounds.h scalars.h ocean2d.h grid.h set_global_definitions.h cppdefs.h climat.o boundary.o param.o 
@@ -46,13 +47,13 @@ u3dbc_im.o : u3dbc_im.F compute_auxiliary_bounds.h ocean3d.h grid.h scalars.h se
 v3dbc_im.o : v3dbc_im.F compute_auxiliary_bounds.h ocean3d.h grid.h scalars.h set_global_definitions.h cppdefs.h climat.o boundary.o param.o 
 w3dbc_im.o : w3dbc_im.F compute_auxiliary_bounds.h scalars.h ocean3d.h grid.h set_global_definitions.h cppdefs.h climat.o boundary.o param.o 
 t3dbc_im.o : t3dbc_im.F compute_auxiliary_bounds.h scalars.h ocean3d.h grid.h set_global_definitions.h cppdefs.h climat.o boundary.o tracers.o param.o 
-rho_eos.o : rho_eos.F compute_extended_bounds.h mixing.h scalars.h eos_vars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h tracers.o param.o 
+rho_eos.o : rho_eos.F compute_extended_bounds.h mixing.h scalars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h coupling.o tracers.o param.o 
 alfabeta.o : alfabeta.F scalars.h ocean3d.h grid.h set_global_definitions.h cppdefs.h tracers.o param.o 
 lmd_vmix.o : lmd_vmix.F scalars.h mixing.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h tracers.o param.o 
 lmd_kpp.o : lmd_kpp.F strings.h lmd_wscale_wm_and_ws.h lmd_kpp_smooth_hbl.h lmd_wscale_ws_only.h scalars.h mixing.h ocean3d.h grid.h set_global_definitions.h cppdefs.h surf_flux.o param.o 
 lmd_swr_frac.o : lmd_swr_frac.F mixing.h ocean3d.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h param.o 
 bvf_mix.o : bvf_mix.F set_global_definitions.h cppdefs.h 
-diag.o : diag.F ncvars.h diag_vars.h eos_vars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h scalars.h set_global_definitions.h cppdefs.h comm_vars.o param.o 
+diag.o : diag.F ncvars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h scalars.h set_global_definitions.h cppdefs.h diag_vars.o comm_vars.o param.o 
 timers.o : timers.F scalars.h set_global_definitions.h cppdefs.h comm_vars.o param.o 
 wvlcty.o : wvlcty.F compute_extended_bounds.h scalars.h ocean3d.h grid.h hidden_mpi_vars.h compute_tile_bounds.h private_scratch.h set_global_definitions.h cppdefs.h param.o 
 grid_stiffness.o : grid_stiffness.F compute_auxiliary_bounds.h grid.h ocean3d.h hidden_mpi_vars.h compute_tile_bounds.h set_global_definitions.h cppdefs.h comm_vars.o param.o 
@@ -76,13 +77,13 @@ find_record.o : find_record.F scalars.h set_global_definitions.h cppdefs.h param
 insert_node.o : insert_node.F insert_node.F 
 ncdf_read_write.o : ncdf_read_write.F ncdf_read_write.F compute_starts_counts.h grid.h set_global_definitions.h cppdefs.h buffer.o param.o 
 get_grid.o : get_grid.F ncvars.h grid.h scalars.h set_global_definitions.h cppdefs.h read_write.o param.o 
-get_init.o : get_init.F hidden_mpi_vars.h compute_tile_bounds.h bgc_ecosys_bec2.h mixing.h ocean3d.h ocean2d.h scalars.h ncvars.h set_global_definitions.h cppdefs.h bgc.o tracers.o param.o 
+get_init.o : get_init.F hidden_mpi_vars.h compute_tile_bounds.h bgc_ecosys_bec2.h mixing.h ocean3d.h ocean2d.h scalars.h ncvars.h set_global_definitions.h cppdefs.h coupling.o bgc.o tracers.o param.o 
 wrt_grid.o : wrt_grid.F grid.h scalars.h ncvars.h set_global_definitions.h cppdefs.h param.o 
 put_global_atts.o : put_global_atts.F strings.h ncvars.h scalars.h scoord.h set_global_definitions.h cppdefs.h surf_flux.o param.o 
 def_rst.o : def_rst.F ncvars.h scalars.h set_global_definitions.h cppdefs.h read_write.o tracers.o param.o 
-wrt_rst.o : wrt_rst.F mixing.h ocean3d.h ocean2d.h scalars.h ncvars.h set_global_definitions.h cppdefs.h tracers.o param.o 
+wrt_rst.o : wrt_rst.F mixing.h ocean3d.h ocean2d.h scalars.h ncvars.h set_global_definitions.h cppdefs.h coupling.o tracers.o param.o 
 def_his.o : def_his.F ncvars.h scalars.h set_global_definitions.h cppdefs.h surf_flux.o bgc.o read_write.o tracers.o param.o 
-wrt_his.o : wrt_his.F work.h mixing.h eos_vars.h ocean3d.h ocean2d.h grid.h scalars.h ncvars.h set_global_definitions.h cppdefs.h read_write.o bgc.o tracers.o param.o 
+wrt_his.o : wrt_his.F work.h mixing.h ocean3d.h ocean2d.h grid.h scalars.h ncvars.h set_global_definitions.h cppdefs.h read_write.o bgc.o tracers.o param.o 
 set_avg.o : set_avg.F set_global_definitions.h cppdefs.h 
 wrt_avg.o : wrt_avg.F set_global_definitions.h cppdefs.h 
 get_forces.o : get_forces.F scalars.h set_global_definitions.h cppdefs.h param.o 
