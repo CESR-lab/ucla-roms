@@ -6,11 +6,11 @@
       subroutine get_tclima(ierr)      ! tracers from climatological
 
       use param
+      use climat
 
       implicit none                    ! file at appropriate time.
 # define TCLIMA_DATA
 # include "scalars.h"
-# include "climat.h"
 # include "ncvars.h"
 # include "netcdf.inc"
       real(kind=8) dtime
@@ -179,11 +179,12 @@
 ! Set-up tracer climatology for current tile.
 
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, ierr, itrc,i,j,k, it1,it2
       real tmid, cff, cff1, cff2
 # define TCLIMA_DATA
-# include "climat.h"
 # include "scalars.h"
 # include "ocean3d.h"
 

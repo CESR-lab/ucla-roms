@@ -5,10 +5,12 @@ c--# define TEST_WEIGHTS
 
 
       subroutine set_weights
+
       use param
+      use coupling
+
       implicit none
 # include "scalars.h"
-# include "coupling.h"
       integer i,j, iter
 # ifdef POWER_FUNCTION
       real p,q,r, scale
@@ -264,11 +266,13 @@ c**       weight(1,i)=1.                   !<-- FLAT
 
 #  ifdef FORW_BAK
       subroutine step2d_FB_imitator (zeta, DUon, Zt_av1, DU_av2)
+
       use param
+      use coupling
+
       implicit none
       real zeta(4), DUon, Zt_av1, DU_av2, cff1,cff2
 #   include "scalars.h"
-#   include "coupling.h"
 
       zeta(knew)=zeta(kstp) + dtfast*DUon
 
@@ -286,13 +290,15 @@ c**       weight(1,i)=1.                   !<-- FLAT
 #  else
 
       subroutine step2d_LFAM3_imitator (zeta, DUon, Zt_av1, DU_av2)
+
       use param
+      use coupling
+
       implicit none
       logical PREDICTOR_2D_STEP
       integer krhs
       real zeta(3), DUon, Zt_av1, DU_av2
 #   include "scalars.h"
-#   include "coupling.h"
 
       if (knew==3) then
         krhs=kstp

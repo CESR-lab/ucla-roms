@@ -20,6 +20,7 @@
       use param
       use tracers ! , only: t, wrt_t_diag
       use diagnostics
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k,k1,k2
@@ -35,7 +36,6 @@
 # include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

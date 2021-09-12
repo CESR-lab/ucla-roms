@@ -55,7 +55,10 @@ c--#define MAX_BY_VERT_CFL_ONLY
      &                            , ke2b, ke3bc, kesrf, ub,vb
 #endif
      &                                                      )
+
       use param
+      use comm_vars
+
       implicit none
       integer istr,iend,jstr,jend
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dVol, ke, pe
@@ -80,7 +83,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
 # include "ocean2d.h"
 #endif
 #include "scalars.h"
-#include "comm_vars.h"
 #include "diag_vars.h"
 #include "ncvars.h"
 

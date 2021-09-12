@@ -4,7 +4,7 @@
 
 ! Read various forcing and climatological fields from their netCDF
 ! files and save them as globally accessible arrays in common blocks
-! "forces.h" and "climat.h". NOTE that NO EFFORT has been made to
+! "forces.h" and "climat.F". NOTE that NO EFFORT has been made to
 ! convert units of these fluxes at this stage (i.e., convert them
 ! into kinematic fluxes): typically data is assumed to have dynamical
 ! physical units, thus wind stress is in [Newton/m^2]; surface heat

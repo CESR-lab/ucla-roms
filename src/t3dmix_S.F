@@ -18,6 +18,8 @@
 ! Computes horizontal mixing of tracers along S-surfaces.
 
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE, LapT
@@ -28,7 +30,6 @@
 # include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

@@ -53,6 +53,7 @@
 
       use param
       use diagnostics
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, k1,k2, indx
@@ -67,7 +68,6 @@
 # include "scalars.h"
 # include "grid.h"
 # include "ocean3d.h"
-# include "coupling.h"
 # include "mixing.h"
 
 # include "compute_auxiliary_bounds.h"

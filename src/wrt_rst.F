@@ -5,6 +5,7 @@
 
       use param
       use tracers, only: wrt_rst_trc
+      use coupling
 
       implicit none
 
@@ -17,9 +18,6 @@
       character(len=18) tstring
 #include "scalars.h"
 #include "ocean2d.h"
-#ifdef EXACT_RESTART
-# include "coupling.h"
-#endif
 #include "ocean3d.h"
 #if defined LMD_KPP || defined LMD_BKPP
 # include "mixing.h"

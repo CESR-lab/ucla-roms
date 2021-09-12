@@ -41,6 +41,7 @@
       use surf_flux, only: sustr, svstr
       use tracers,   only: iTandS, t
       use diagnostics                     ! needed for compute_horiz_uv_terms.h below
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -68,7 +69,6 @@
 # include "grid.h"
 # include "ocean3d.h"
 # include "ocean2d.h"
-# include "coupling.h"
 # include "mixing.h"
 # include "scalars.h"
 # include "sources.h"

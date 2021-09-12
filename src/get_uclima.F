@@ -5,6 +5,7 @@
       subroutine get_uclima(ierr)     ! fields from netCDF file
 
       use param
+      use climat
 
       implicit none
       integer ierr i, lstr,lvar,lenstr, ncdf_read
@@ -12,7 +13,6 @@
 # include "scalars.h"
 # include "ncvars.h"
 # include "netcdf.inc"
-# include "climat.h"
 
 ! Initialization:  Check, whether climatological data file is already
 !----------------  opened, and if not, open it.  Find and save netCDF
@@ -163,10 +163,11 @@
 !  Set-up momentum climatology for current tile.
 
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, ierr, i,j,k, it1,it2
       real cff, cff1, cff2
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"

@@ -20,6 +20,8 @@
 ! boundaries.
 
       use param
+      use comm_vars
+
       implicit none
       integer istr,iend,jstr,jend, i,j, nsub
       real(kind=QUAD), dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dA,dV
@@ -36,7 +38,6 @@
 # endif
 #endif
 #include "scalars.h"
-#include "comm_vars.h"
 #include "grid.h"
 #ifdef MPI
 # include "mpif.h"

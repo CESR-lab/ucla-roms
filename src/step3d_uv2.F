@@ -24,6 +24,7 @@
 # endif
 
       use diagnostics
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -35,7 +36,6 @@
 # include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
-# include "coupling.h"
 # include "scalars.h"
 # if defined ADV_ISONEUTRAL || !defined IMPLICIT_BOTTOM_DRAG
 #  include "mixing.h"

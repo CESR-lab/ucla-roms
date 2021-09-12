@@ -55,6 +55,8 @@
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
       use tracers ! iTandS, t, t_avg
       use averages
+      use climat
+      use coupling
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -66,9 +68,7 @@
 #include "ocean2d.h"
 #include "ocean3d.h"
 #include "eos_vars.h"
-#include "coupling.h"
 #include "mixing.h"
-#include "climat.h"
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
 # ifdef MPI
@@ -238,7 +238,7 @@
         call init_arrays_wec_tile(istr,iend,jstr,jend)
 # endif
 
-! Initialize climatology arrays (see "climat.h").
+! Initialize climatology arrays (see "climat").
 
 #if defined M2NUDGING && !defined M2_FRC_BRY
       do j=jstrR,jendR

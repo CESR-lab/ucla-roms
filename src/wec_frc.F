@@ -2104,7 +2104,11 @@ C$OMP BARRIER
 !   Note that if wkb_wwave.F is used, all the dissipation terms are
 !   divided by wave frequency, sigma (2pi/T).
 !
+
+      use coupling
+
       implicit none
+
 !# include "param.h"
 !# include "grid.h"
 !# include "scalars.h"
@@ -2121,9 +2125,6 @@ C$OMP BARRIER
 !# ifdef WKB_WWAVE
 !#   include "wkb_wwave.h"
 !# endif
-# if defined BBL_S95 || defined BBL_F00 || defined BBL_QUAD2D
-#  include "coupling.h"
-# endif
 !----- Cigdem (Uorb => Uorb1)
       integer istr,iend,jstr,jend,i,j,imin,jmin
       real    cff,cff1,cff2,cff3,cff4,inv_g,khd,kh,umag,

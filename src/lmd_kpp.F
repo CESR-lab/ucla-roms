@@ -92,9 +92,6 @@ c--# define MERGE_OVERLAP
 # include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
-# ifdef LMD_BKPP
-c>>>#  include "coupling.h"    /* <-- needs "r_D"  */
-# endif
 # include "scalars.h"
 # define tind nstp
 

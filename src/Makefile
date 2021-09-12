@@ -14,7 +14,7 @@ include Makedefs.inc
 #   4) sea-water EOS routines;     8) model forcing routines;
 
 KRNSRC = 		param.F dimensions.F	read_write.F averages.F tracers.F\
-	boundary.F\
+	boundary.F buffer.F climat.F comm_vars.F coupling.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F\
 	bry_extract_child.F		diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\

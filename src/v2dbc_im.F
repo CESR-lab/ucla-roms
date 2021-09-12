@@ -10,6 +10,7 @@
       use wec_frc
 #endif
       use boundary
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -22,11 +23,6 @@
 #include "scalars.h"
 #include "grid.h"
 #include "ocean2d.h"
-#ifdef M2_FRC_BRY
-!# include "boundary.h"
-#else
-# include "climat.h"
-#endif
 
 #include "compute_auxiliary_bounds.h"
 

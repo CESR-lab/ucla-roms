@@ -22,6 +22,7 @@
 # ifdef WEC
       use wec_frc
 # endif
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -36,7 +37,6 @@
 # include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
-# include "coupling.h"
 
 # include "compute_auxiliary_bounds.h"
 
@@ -255,6 +255,7 @@
 # ifdef WEC
       use wec_frc
 # endif
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -266,7 +267,6 @@
 #  include "ocean2d.h"
 # endif
 # include "ocean3d.h"
-# include "coupling.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

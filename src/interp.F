@@ -86,7 +86,10 @@
 # if GRID_LEVEL < MAX_GRID_LEVEL
 
       subroutine int_u2d_west (istr,iend,jstr,jend, buff)
+
       use param
+      use coupling
+
       implicit none
       integer istr,iend,jstr,jend, jmin,jmax, j,jf
       real buff(PRIVATE_2D_SCRATCH_ARRAY)
@@ -94,7 +97,6 @@
       parameter (T1=1./27., T4=4./27., T5=5./27.)
 #  include "scalars.h"
 #  include "ocean2d.h"
-#  include "coupling.h"
 
       jmin=jmin_child+(jstr-1)/3
       jmax=jmin_child+(jend-1)/3
@@ -136,7 +138,10 @@
       end
 
       subroutine int_u2d_east (istr,iend,jstr,jend, buff)
+
       use param
+      use coupling
+
       implicit none
       integer istr,iend,jstr,jend, jmin,jmax, j,jf
       real buff(PRIVATE_2D_SCRATCH_ARRAY)
@@ -144,7 +149,6 @@
       parameter (T1=1./27., T4=4./27., T5=5./27.)
 #  include "scalars.h"
 #  include "ocean2d.h"
-#  include "coupling.h"
 
       jmin=jmin_child+(jstr-1)/3
       jmax=jmin_child+(jend-1)/3

@@ -20,7 +20,10 @@
 ! stopping indices for the subarray (which are exactly the same for
 ! both read and write operations) the code has been unified to
 ! guarantee that both functions are exactly adjoint.
+
       use param
+      use buffer
+
       implicit none
 #ifndef WRITER
       integer ncdf_read
@@ -36,7 +39,6 @@ CSDISTRIBUTE_RESHAPE  A(BLOCK_PATTERN,nmax) BLOCK_CLAUSE
       integer datatype, ndims, natts, dimid(8)
       character(len=16) vname
 #endif
-#include "buffer.h"
 #ifdef MASK_LAND_DATA
 # include "grid.h"
       real*8, parameter :: spv_set=1.D+33
