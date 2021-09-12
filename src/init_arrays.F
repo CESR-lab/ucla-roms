@@ -57,6 +57,7 @@
       use averages
       use climat
       use coupling
+      use eos_vars
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -67,7 +68,6 @@
 #include "grid.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
-#include "eos_vars.h"
 #include "mixing.h"
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES

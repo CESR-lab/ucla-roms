@@ -24,6 +24,7 @@
       use tracers, only: t
       use boundary
       use climat
+      use eos_vars
 
       implicit none
 
@@ -54,7 +55,6 @@
 # include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
-# include "eos_vars.h"
 
 # include "compute_auxiliary_bounds.h"
 

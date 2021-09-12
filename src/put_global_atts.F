@@ -6,6 +6,7 @@
 #if defined SFLX_CORR && defined SALINITY
       use surf_flux, only: dSSSdt
 #endif
+      use eos_vars
 
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr
@@ -14,9 +15,6 @@
 #include "ncvars.h"
 #include "netcdf.inc"
 #include "strings.h"
-#ifndef NONLIN_EOS
-# include "eos_vars.h"
-#endif
 
 #if defined MPI && defined PARALLEL_FILES
       integer*4 ibuff(4), npart

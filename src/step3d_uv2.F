@@ -25,6 +25,7 @@
 
       use diagnostics
       use coupling
+      use eos_vars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -41,7 +42,6 @@
 #  include "mixing.h"
 # endif
 # ifdef ADV_ISONEUTRAL
-#  include "eos_vars.h"
       real dRz,dRx_max, dpth, r0g, cfs,cfb
       real, parameter :: epsil=1.E-33
 #  define  ALPHA_MAX 4.

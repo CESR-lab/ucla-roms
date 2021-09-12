@@ -11,15 +11,13 @@
       use tracers, only: wrt_t, t_vname, wrt_t_avg
       use read_write ! , only: read_output_root_name, expanse_scratch_env_var
       use boundary
+      use eos_vars
 
       implicit none
       integer ierr
 #include "scoord.h"
 #include "scalars.h"
 #include "ncvars.h"
-#ifndef NONLIN_EOS
-# include "eos_vars.h"
-#endif
 #ifdef MPI
 # include "mpif.h"
 #endif

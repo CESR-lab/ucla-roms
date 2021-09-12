@@ -35,6 +35,7 @@
 #endif
       use tides
       use diagnostics
+      use eos_vars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -57,7 +58,6 @@
 # endif
 # include "grid.h"
 # include "ocean3d.h"
-# include "eos_vars.h"
 # include "scalars.h"
 
 ! A non-conservative Density-Jacobian scheme using cubic polynomial

@@ -17,6 +17,7 @@
 
       use param
       use tracers, only: t
+      use eos_vars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j
@@ -36,7 +37,7 @@
       real Ts, sqrtTs 
 #  endif
 # else
-#  include "eos_vars.h"
+!#  include "eos_vars"
 # endif
 # ifdef NONLIN_EOS
       cff=1./rho0

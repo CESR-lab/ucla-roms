@@ -63,6 +63,7 @@
       use bgc ! set_avg_bgc_diag
       use surf_flux ! set_avg_surf_flux
       use averages
+      use eos_vars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -75,7 +76,6 @@
 # include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
-# include "eos_vars.h"
 # include "mixing.h"
 # ifdef SOLVE3D
 #  include "work.h"
