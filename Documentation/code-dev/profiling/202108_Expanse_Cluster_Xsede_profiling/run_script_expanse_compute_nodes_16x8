@@ -1,0 +1,57 @@
+#!/bin/bash
+#SBATCH --job-name="roms"
+
+#       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
+#SBATCH --output="roms_log.%j.%N.out"
+
+#       Can only use a max of 32 nodes on 'compute' partition:
+#SBATCH --partition=compute
+#SBATCH --nodes=1
+
+#       Request number of cores: (Expanse has 128 cores per node)
+#       If using 'compute', you will be charged 128 x number of nodes requested! Regardless of ntasks=per-node,
+#       which is very important to understand to avoid being overcharged and wasting resources.
+#SBATCH --ntasks-per-node=128
+#SBATCH --cpus-per-task=1
+#SBATCH --account=cla119
+#SBATCH --export=ALL
+
+#       Memory: default is 1GB on all nodes. However, you can request 2GB per core on  
+#       shared/compute/debug or 15.5GB/core on large-shared at no extra cost.
+#       Charged on number of cores or fraction of total memory, whichever is greater.
+#       shared/compute/debug total mem=256G, large-shared total mem=2000G
+#            for total memory required use: #SBATCH --mem=256G
+#         or for memory per cores      use: #SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=2G
+
+#       Max run time is 48 hours:
+#SBATCH -t 00:30:00
+
+#       Note you can find out about job cpu/mem usage with 'seff job_number'.
+
+#-----------------------------------------------------------------
+
+# Flags needed for mvapich2:
+export MV2_USE_RDMA_CM=0
+export MV2_IBA_HCA=mlx5_2
+export MV2 DEFAULT PORT=1
+
+module purge
+module load slurm
+module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
+module load netcdf-c/4.7.4
+module load netcdf-fortran/4.5.3
+
+NP=128
+ROMS=./roms_16x8
+
+ROMSIN=pacbig_12km.in_projects_16x8
+
+echo "RUN 1:"
+srun --mpi=pmi2 -n $NP $ROMS $ROMSIN
+echo "RUN 2:"
+srun --mpi=pmi2 -n $NP $ROMS $ROMSIN
+echo "RUN 3:"
+srun --mpi=pmi2 -n $NP $ROMS $ROMSIN
+
+
