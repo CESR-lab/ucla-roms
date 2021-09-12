@@ -10,13 +10,13 @@
       use surf_flux
       use tracers, only: wrt_t, t_vname, wrt_t_avg
       use read_write ! , only: read_output_root_name, expanse_scratch_env_var
+      use boundary
 
       implicit none
       integer ierr
 #include "scoord.h"
 #include "scalars.h"
 #include "ncvars.h"
-#include "boundary.h"
 #ifndef NONLIN_EOS
 # include "eos_vars.h"
 #endif

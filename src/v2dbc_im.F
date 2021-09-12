@@ -9,6 +9,8 @@
 #ifdef WEC
       use wec_frc
 #endif
+      use boundary
+
       implicit none
       integer istr,iend,jstr,jend, i,j
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cext, cff,
@@ -21,7 +23,7 @@
 #include "grid.h"
 #include "ocean2d.h"
 #ifdef M2_FRC_BRY
-# include "boundary.h"
+!# include "boundary.h"
 #else
 # include "climat.h"
 #endif

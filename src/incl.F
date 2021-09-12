@@ -17,8 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "averages.h"
-#include "boundary.h"
 #include "buffer.h"
 #include "climat.h"
 #include "coupling.h"

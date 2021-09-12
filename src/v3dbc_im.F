@@ -10,6 +10,7 @@
 # ifdef WEC
       use wec_frc 
 # endif
+      use boundary
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -21,7 +22,7 @@
 # include "grid.h"
 # include "ocean3d.h"
 # ifdef M3_FRC_BRY
-#  include "boundary.h"
+!#  include "boundary.h"
 # else
 #  include "climat.h"
 # endif

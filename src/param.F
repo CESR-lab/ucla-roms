@@ -13,6 +13,8 @@
 ! Mm    a single MPI-subdomain.  These are identical to LLm, MMm if
 !       there is no MPI-partitioning.
 
+      implicit none
+
 ! DevinD: normally this was above param.h in subroutines but since compiled alone need here
 #include "cppdefs.h"
 

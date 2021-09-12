@@ -7,6 +7,7 @@
 
       use param
       use tracers, only: t
+      use boundary
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -17,7 +18,6 @@ c-->     &                                           , dft,dfx,dfy
 # include "ocean3d.h"
 # include "climat.h"
 # include "scalars.h"
-# include "boundary.h"
 
 # include "compute_auxiliary_bounds.h"
 
