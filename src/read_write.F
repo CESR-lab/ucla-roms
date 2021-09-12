@@ -20,6 +20,8 @@
 
       use dimensions  ! has dimensions, a list of forcing files, and rmask
       use netcdf
+      use buffer
+
       implicit none
 
 #include "cppdefs.h"
@@ -1252,7 +1254,6 @@ C$OMP BARRIER
       integer vid, i,j,k, shft, ierr
       integer datatype, ndims, natts, dimid(8)
       character(len=16) vname
-#include "buffer.h"
 #ifdef MASK_LAND_DATA
 # include "grid.h"
       real*8, parameter :: spv_set=1.D+33
@@ -1453,7 +1454,6 @@ C$OMP BARRIER
 
       logical mask_land_data
       integer vid, i,j,k, shft, ierr
-#include "buffer.h"
 #ifdef MASK_LAND_DATA
 # include "grid.h"
       real*8, parameter :: spv_set=1.D+33
@@ -1890,7 +1890,6 @@ C$OMP BARRIER
       ! -----
       logical mask_land_data
       integer vid, i,j,k, shft, ierr
-#include "buffer.h"
 #ifdef MASK_LAND_DATA
 # include "grid.h"
       real*8, parameter :: spv_set=1.D+33

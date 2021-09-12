@@ -2,8 +2,11 @@
 #if defined SOLVE3D && defined NHMG
 
       subroutine w3dbc_tile (istr,iend,jstr,jend,grad)
+
       use param
       use boundary
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd
@@ -11,7 +14,6 @@
 
 # include "grid.h"
 # include "ocean3d.h"
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

@@ -56,6 +56,7 @@ c--# define CONST_TRACERS
       use surf_flux, only: stflx, srflx
       use tracers, only: iTandS, t, wrt_t_diag
       use diagnostics
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
@@ -88,7 +89,6 @@ c--# define CONST_TRACERS
 # include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
-# include "climat.h"
 # include "scalars.h"
 # include "eos_vars.h"
 

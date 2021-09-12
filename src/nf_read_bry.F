@@ -12,12 +12,13 @@
 !        horiz_type   RHO-, U, V, W, PSI etc.)
 
       use param
+      use buffer
+
       implicit none
       integer read_bry_EW, ncid, varid, record, horiz_type, nmax
       real A(0:Mm+1,nmax)
       integer i,j,k, shft, ierr, lstr, lenstr
       character(len=16) vname
-#include "buffer.h"
 #include "netcdf.inc"
 
 #include "compute_starts_counts.h"
@@ -73,13 +74,15 @@
 
 
       function read_bry_NS(ncid, varid, record, horiz_type, A, nmax)
+
       use param
+      use buffer
+
       implicit none
       integer read_bry_NS, ncid, varid, record, horiz_type, nmax
       real A(0:Lm+1,nmax)
       integer  i, k, shft, ierr, lstr, lenstr
       character(len=16) vname
-#include "buffer.h"
 #include "netcdf.inc"
 
 #include "compute_starts_counts.h"
@@ -144,11 +147,13 @@
 #if defined NS_PERIODIC || defined MPI
 
       subroutine exch_bry_EW_tile (jstr,jend, A, nmax)
+
       use param
+      use buffer
+
       implicit none
       integer jstr,jend, nmax, k
       real A(0:Mm+1,nmax)
-# include "buffer.h"
 # if defined MPI
 #  include "mpif.h"
 #  include "hidden_mpi_vars.h"

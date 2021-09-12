@@ -25,14 +25,14 @@
       use param
       use river_frc
       use pipe_frc
-
 #ifdef WEC
       use wec_frc
 #endif
-
 #if defined POT_TIDES && !defined SOLVE3D
       use tides, only: Ptide
 #endif
+      use climat
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, i,j, kbak, kold
@@ -43,11 +43,7 @@
      &            cff,cff1,cff2, DUnew,DVnew
 #include "grid.h"
 #include "ocean2d.h"
-#ifdef SOLVE3D
-# include "coupling.h"
-#endif
 #include "mixing.h"
-#include "climat.h"
 #include "scalars.h"
 #include "sources.h"
 

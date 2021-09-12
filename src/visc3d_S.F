@@ -23,6 +23,8 @@
 !            the large-scale ocean circulation, JCP, 105, 333-338.
 
       use param
+      use coupling
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k, indx
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe
@@ -31,7 +33,6 @@
 # include "scalars.h"
 # include "grid.h"
 # include "ocean3d.h"
-# include "coupling.h"
 # include "mixing.h"
 
 # include "compute_auxiliary_bounds.h"

@@ -128,16 +128,14 @@
 !                                 routine itself.
 
       use param
+#ifdef SSH_DATA
+      use climat
+#endif
 
       implicit none
       integer ierr_ext
 #include "scalars.h"
 #include "ncvars.h"
-#ifdef SSH_DATA
-# include "climat.h"
-#else
-!# include "forces.h" ! DevinD commented out
-#endif
 #include "netcdf.inc"
       character(len=max_name_size) frcname
       integer ncid, ifrc, ierr, lfrc, lenstr, check_vardims, ncdf_read

@@ -5,6 +5,7 @@
       subroutine get_ssh(ierr_ext)    ! from climatological file.
 
       use param
+      use climat
 
       implicit none
       integer ierr_ext, ierr, lstr, lenstr, ncdf_read
@@ -13,7 +14,6 @@
 # include "scalars.h"
 # include "ncvars.h"
 # include "netcdf.inc"
-# include "climat.h"
 
 ! Initialization:  Check, whether climatology netCDF file is already
 !----------------  opened, an if not, open it. Find and save netCDF
@@ -112,12 +112,12 @@
 ! Set-up sea surface height climatology for current tile.
 
       use param
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, ierr, i,j, it1,it2
       real tmid, cff1,cff2, cff
 # define SSH_DATA
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"

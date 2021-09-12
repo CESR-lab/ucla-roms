@@ -6,6 +6,7 @@
       use param
       use tracers, only: t_vname, t, iTandS
       use bgc ! get_init_bgc_diag
+      use coupling
 
       implicit none
 #include "ncvars.h"
@@ -40,9 +41,6 @@
 # endif
 #endif
 #include "ocean2d.h"
-#ifdef EXACT_RESTART
-# include "coupling.h"
-#endif
 #include "ocean3d.h"
 #ifdef LMD_KPP
 # include "mixing.h"

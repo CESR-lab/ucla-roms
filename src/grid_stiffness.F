@@ -23,6 +23,8 @@
 ! computations.
 
       use param
+      use comm_vars
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k, NSUB
       real my_rx0, my_rx1
@@ -31,7 +33,6 @@
       real*8 buff(2)
       integer size, step, status(MPI_STATUS_SIZE), ierr
 # endif
-# include "comm_vars.h"
 # include "ocean3d.h"
 # ifdef MASKING
 #  include "grid.h"

@@ -279,14 +279,16 @@ c          svstr(i,j)=-1.0d-4
       end
 
       subroutine ana_ssh_tile(istr,iend,jstr,jend)
+
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, i,j
 #ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4
 #endif
 # include "grid.h"
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -375,13 +377,15 @@ c          svstr(i,j)=-1.0d-4
       end
 
       subroutine ana_tclima_tile(istr,iend,jstr,jend)
+
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 #  ifdef JET
       real cff1, cff2, cff3
 #  endif
-#  include "climat.h"
 #  include "grid.h"
 #  include "ocean3d.h"
 #  include "scalars.h"
@@ -438,14 +442,16 @@ c          svstr(i,j)=-1.0d-4
 !---------------------------------------------------------------------
 !  This routine sets analytical momentum climatology fields.
 !---------------------------------------------------------------------
+
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 # ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4, cff5
 # endif
-# include "climat.h"
 # include "grid.h"
 # include "ocean3d.h"
 # include "scalars.h"

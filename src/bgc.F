@@ -308,13 +308,14 @@
 ! Set initial values for  globally accessible (stored in common
 ! blocks) scalar variables of the BEC model.
 !
+      use comm_vars
+
       implicit none
       integer i,j, itrc ,lvar,lenstr ! ierr, DevinD removed ierr as arguement
       integer omp_get_num_threads
 !#include "param.h"
 #include "scalars.h"
 !#include "ncvars.h"
-#include "comm_vars.h"
 !#include "ncroms_bgcflux.h"
 
 ! CN: take this part out of the NEVER_DEF part

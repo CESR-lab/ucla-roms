@@ -8,6 +8,7 @@
       use param
       use tracers, only: t
       use boundary
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -16,7 +17,6 @@ c-->     &                                           , dft,dfx,dfy
       real, parameter :: eps=1.E-33
 # include "grid.h"
 # include "ocean3d.h"
-# include "climat.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

@@ -17,9 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "buffer.h"
-#include "climat.h"
-#include "coupling.h"
 #include "diagnostics.h"
 #include "floats.h"
 #include "forces.h"

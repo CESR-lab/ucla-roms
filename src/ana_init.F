@@ -19,9 +19,11 @@
       end
 
       subroutine ana_init_tile (istr,iend,jstr,jend, AA)
+
       use param
       use tracers, only: t
       use boundary
+      use climat
 
       implicit none
 
@@ -53,14 +55,6 @@
 # include "ocean2d.h"
 # include "ocean3d.h"
 # include "eos_vars.h"
-# if defined OBC_WEST  || defined OBC_EAST ||\
-     defined OBC_SOUTH || defined OBC_NORTH
-#  ifdef ANA_BRY
-!#   include "boundary.h"
-#  else
-#   include "climat.h"
-#  endif
-# endif
 
 # include "compute_auxiliary_bounds.h"
 

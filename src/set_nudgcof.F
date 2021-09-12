@@ -11,14 +11,16 @@
       end
 
       subroutine set_nudgcof_tile (istr,iend,jstr,jend, wrk)
+
       use param
+      use climat
+
       implicit none
       integer istr,iend,jstr,jend
       real wrk(PRIVATE_2D_SCRATCH_ARRAY)
       integer i,j, isp , I1,I0,I2,J1,J0,J2, ibnd,itrc
       real cff,cff1,cff2,cff3, frac, Tau
 # include "grid.h"
-# include "climat.h"
 # include "mixing.h"
 # include "scalars.h"
 

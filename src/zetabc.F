@@ -6,6 +6,7 @@
 
       use param
       use boundary
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -14,7 +15,6 @@
 #include "grid.h"
 #include "ocean2d.h"
 #include "scalars.h"
-#include "climat.h"
 
 #include "compute_auxiliary_bounds.h"
 

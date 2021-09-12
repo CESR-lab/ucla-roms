@@ -25,11 +25,13 @@
 # endif
 
       subroutine start_timers
+
       use param
+      use comm_vars
+
       implicit none
       integer getpid, trd
 # include "scalars.h"
-# include "comm_vars.h"
 # ifdef OMP_GET_WTIME
 C$    real*8 omp_get_wtime
 # endif
@@ -78,10 +80,12 @@ C$OMP END CRITICAL (start_timers_cr_rgn)
       end
 
       subroutine stop_timers()            ! Finalize timing
+
       use param
+      use comm_vars
+
       implicit none                       ! for all threads.
 # include "scalars.h"
-# include "comm_vars.h"
 # ifdef OMP_GET_WTIME
 C$    real*8 omp_get_wtime
 # endif

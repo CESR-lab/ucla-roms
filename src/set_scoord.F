@@ -2,11 +2,14 @@
 #ifdef SOLVE3D
                                          ! Setup S-coordinate system:
       subroutine set_scoord              ! input: theta_s, theta_b, hc
+
       use param
+      use comm_vars
+
       implicit none                      ! output: Cs_w(0:N), Cs_r(1:N)
 # include "scoord.h"
 # include "scalars.h"
-# include "comm_vars.h"
+
       integer k                          ! Compute vertical stretching
       real ds,sc, z1,zhc,z2,z3, CSF      ! curves at W- and RHO-points,
 

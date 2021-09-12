@@ -10,12 +10,12 @@
       use param
       use bgc ! init_scalars_bec2
       use boundary
+      use comm_vars
 
       implicit none
       integer ierr, i
 #define ALL_DATA
 #include "scalars.h"
-#include "comm_vars.h"
 #include "sources.h"
 #include "mixing.h"
 #include "ncvars.h"

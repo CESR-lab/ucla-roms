@@ -120,6 +120,7 @@
 
       use param
       use tracers, only: t
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -167,7 +168,6 @@
 # include "grid.h"
 # include "ocean3d.h"
 # include "eos_vars.h"
-# include "coupling.h"
 # include "scalars.h"
 # if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
   || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING

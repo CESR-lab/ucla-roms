@@ -11,6 +11,7 @@
       use wec_frc 
 # endif
       use boundary
+      use climat
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -21,11 +22,6 @@
 # include "scalars.h"
 # include "grid.h"
 # include "ocean3d.h"
-# ifdef M3_FRC_BRY
-!#  include "boundary.h"
-# else
-#  include "climat.h"
-# endif
 
 # include "compute_auxiliary_bounds.h"
 

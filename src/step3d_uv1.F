@@ -38,6 +38,7 @@
 # endif
       use diagnostics
       use surf_flux, only: sustr, svstr
+      use coupling
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -61,7 +62,6 @@
 #  include "ocean2d.h"
 # include "grid.h"
 # include "ocean3d.h"
-# include "coupling.h"
 # include "mixing.h"
 # include "scalars.h"
 # if defined ADV_ISONEUTRAL && defined EXCHANGE

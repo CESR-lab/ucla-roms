@@ -1,3 +1,10 @@
+      module comm_vars
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
 ! The following common block contains a set of globally accessible
 ! variables needed for data exchange between OpenMP threads working
 ! on different subdomains.
@@ -20,20 +27,15 @@
 ! cause violation of alignment.
 
       real*QUAD area, volume, bc_crss
-      common /comm_vars/ area, volume, bc_crss
 #ifdef OBC_VOLCONS
       real*QUAD bc_flux, ubar_xs
-      common /comm_vars/ bc_flux, ubar_xs
 #endif
 #if defined BIOLOGY || defined BIOLOGY_NPZDOC || defined BIOLOGY_BEC \
                     || defined BIOLOGY_BEC2
       real*QUAD global_sum(0:2*NT+1), global_srf_sum(0:NT)
-      common /comm_vars_bio/ global_sum, global_srf_sum
 #endif 
       real hmin,hmax, grdmin,grdmax, rx0,rx1, Cg_min,Cg_max, Cu_Cor
-      common /comm_vars/ hmin,hmax, grdmin,grdmax, rx0,rx1,
-     &                                        Cg_min,Cg_max, Cu_Cor
       real*4 cpu_all(2)
       integer trd_count, tile_count, bc_count, mcheck, first_time
-      common /comm_vars/ cpu_all, trd_count,
-     &                   tile_count, bc_count, mcheck, first_time
+
+      end module comm_vars
