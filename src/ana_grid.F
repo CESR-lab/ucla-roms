@@ -4,6 +4,7 @@
       subroutine ana_grid (tile)
 
       use param
+      use hidden_mpi_vars
 
       implicit none
       integer tile

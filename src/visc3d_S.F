@@ -2,7 +2,10 @@
 # if defined SOLVE3D && defined UV_VIS2
  
       subroutine visc3d (tile)
+
       use param
+      use hidden_mpi_vars
+
       implicit none
       integer tile
 # include "private_scratch.h"

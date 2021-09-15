@@ -51,6 +51,7 @@
       use wec_frc
 # endif
       use bgc ! , only: set_bgc_surf_frc
+      use hidden_mpi_vars
 
       implicit none
 

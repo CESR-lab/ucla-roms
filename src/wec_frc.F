@@ -1381,6 +1381,8 @@
       ! Vertical Stokes drift velocity at rho-point
       ! ===========================================
 
+      use hidden_mpi_vars
+
       implicit none
 ! # include "param.h" ! already included at top of module
       integer tile
@@ -2061,6 +2063,8 @@ C$OMP BARRIER
       subroutine wec_forces (tile)
 
       ! This is mrl_wci (tile) from mrl_wci.F in old code.
+
+      use hidden_mpi_vars
 
       implicit none
 

@@ -2,7 +2,10 @@
 #ifdef LMD_KPP
 
       subroutine swr_frac (tile)
+
       use param
+      use hidden_mpi_vars
+
       implicit none
       integer tile
 # include "private_scratch.h"

@@ -4,6 +4,7 @@
 
       subroutine step3d_uv2(tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 # include "private_scratch.h"

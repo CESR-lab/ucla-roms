@@ -30,6 +30,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
 
       subroutine diag(tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile,   i,j
 #include "scalars.h"

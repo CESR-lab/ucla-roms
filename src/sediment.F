@@ -6,6 +6,7 @@
 
       use param
       use grid
+      use hidden_mpi_vars
 
       implicit none
       integer tile

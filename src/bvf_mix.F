@@ -4,6 +4,7 @@
       subroutine bvf_mix (tile)
 
       use param
+      use hidden_mpi_vars
 
       implicit none
       integer tile

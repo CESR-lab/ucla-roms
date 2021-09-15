@@ -66,6 +66,8 @@
       ! and compute_auxilliary_bounds in the same subroutine as they both
       ! declare and compute. Fortan doesn't allow.
 
+      use hidden_mpi_vars
+
       implicit none
 
       integer tile

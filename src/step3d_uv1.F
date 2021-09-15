@@ -4,6 +4,7 @@
 
       subroutine step3d_uv1(tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 

@@ -3,6 +3,7 @@
                                     ! Note that arrays A2d(1,1:4) in
       subroutine pre_step3d (tile)  ! the call just below are repeated
       use param
+      use hidden_mpi_vars
       implicit none                 ! within the list of agruments to
       integer tile                  ! use the same memory for vertical
                                     ! and horizontal scratch arrays.

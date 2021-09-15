@@ -12,7 +12,6 @@
 
       integer istr,iend, jstr,jend, i_X,j_E
 #ifdef MPI
-# include "hidden_mpi_vars.h"
       integer size_X, margin_X, size_E, margin_E
 #else
       integer, parameter :: size_X=(Lm+NSUB_X-1)/NSUB_X,

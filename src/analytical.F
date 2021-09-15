@@ -279,6 +279,7 @@ c          svstr(i,j)=-1.0d-4
 #if defined ANA_SSH
       subroutine ana_ssh(tile)            ! Set analytical sea-surface
       use param
+      use hidden_mpi_vars
       implicit none                       ! height climatology [m]
       integer tile
 #include "compute_tile_bounds.h"
@@ -380,6 +381,7 @@ c          svstr(i,j)=-1.0d-4
 # if defined ANA_TCLIMA && defined TCLIMATOLOGY
       subroutine ana_tclima(tile)
       use param
+      use hidden_mpi_vars
       implicit none                   ! Set up analytical tracer
       integer tile                    ! climatology fields.
 # include "compute_tile_bounds.h"
@@ -441,6 +443,7 @@ c          svstr(i,j)=-1.0d-4
 #if defined ANA_UCLIMA && defined UCLIMATOLOGY
       subroutine ana_uclima(tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 #include "private_scratch.h"
