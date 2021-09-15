@@ -1,3 +1,10 @@
+      module mess_buffers
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
 ! Note: these buffers are designed to accommodate MPI computational
 ! margins for up to 4 full 3D arrays to be exchanged simultaneously.
 
@@ -11,7 +18,8 @@
      &     sn_SW(size_Z),   sendS(size_X),   sn_SE(size_Z),
      &     rv_SW(size_Z),   recvS(size_X),   rv_SE(size_Z)
 
-      common /mess_buffers/ sn_NW,rv_NW, sendN,recvN, sn_NE,rv_NE,
-     &                    sendW,recvW,                sendE,recvE,
-     &                     sn_SW,rv_SW, sendS,recvS, sn_SE,rv_SE
-C$OMP THREADPRIVATE(/mess_buffers/)
+C$OMP THREADPRIVATE(sn_NW,rv_NW, sendN,recvN, sn_NE,rv_NE)
+C$OMP THREADPRIVATE(sendW,recvW, sendE,recvE)
+C$OMP THREADPRIVATE(sn_SW,rv_SW, sendS,recvS, sn_SE,rv_SE)
+
+      end module mess_buffers

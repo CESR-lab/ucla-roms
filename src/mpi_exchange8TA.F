@@ -38,10 +38,10 @@
 
       use param
       use hidden_mpi_vars
+      use mess_buffers
 
       implicit none
 # include "mpif.h"
-# include "mess_buffers.h"
       integer istr,iend,jstr,jend, nmaxA
       real A(GLOBAL_2D_ARRAY,nmaxA)
 CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
