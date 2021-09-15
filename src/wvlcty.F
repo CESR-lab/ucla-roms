@@ -24,6 +24,8 @@ CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
 ! Unlike W, absolute vertical velocity is defined at RHO-points.
 
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
       real Wvlc(GLOBAL_2D_ARRAY,N)
@@ -31,7 +33,6 @@ CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: Wxi, Weta
 
-# include "grid.h"
 # include "ocean3d.h"
 # include "scalars.h"
 

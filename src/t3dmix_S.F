@@ -19,6 +19,7 @@
 
       use param
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -27,7 +28,6 @@
       integer imin,imax,jmin,jmax
 # endif
 
-# include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"

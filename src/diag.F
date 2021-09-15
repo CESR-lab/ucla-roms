@@ -60,6 +60,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use comm_vars
       use diag_vars
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend
@@ -77,7 +78,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       integer size, step, itag, status(MPI_STATUS_SIZE)
       real*QUAD buff(16)
 #endif
-#include "grid.h"
+
 #ifdef SOLVE3D
 # include "ocean3d.h"
 #else

@@ -25,6 +25,7 @@
       use boundary
       use climat
       use eos_vars
+      use grid
 
       implicit none
 
@@ -52,7 +53,7 @@
       integer jwake,mid_wake
       real AmpR,AmpU, cffS, Zthrm, dZthrm, xitm, alpha, csa,sna
 # endif
-# include "grid.h"
+
 # include "ocean2d.h"
 # include "ocean3d.h"
 

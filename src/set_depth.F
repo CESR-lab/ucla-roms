@@ -23,6 +23,7 @@
       use wec_frc
 # endif
       use coupling
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -34,7 +35,7 @@
 # ifndef VERT_COORD_TYPE_SM09
       real cff2_r,cff2_w, z_r0,z_w0
 # endif
-# include "grid.h"
+
 # include "ocean2d.h"
 # include "ocean3d.h"
 
@@ -189,10 +190,11 @@
 # ifdef WEC
       use wec_frc
 # endif
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "scalars.h"
 
@@ -256,11 +258,12 @@
       use wec_frc
 # endif
       use coupling
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: DC,FC
-# include "grid.h"
+
 # if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
       real cff
       integer kbak

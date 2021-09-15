@@ -14,6 +14,7 @@
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
        use bgc, only: srflx_dailyavg
 #endif
+      use grid
 
        implicit none
 
@@ -24,7 +25,6 @@
 ! bgc_forces.h, so including it directly here.
 #include "bgc_forces.h"
 #include "scalars.h"
-#include "grid.h"
 
        integer i,j,k,m
        integer Istr,Iend,Jstr,Jend
@@ -633,12 +633,13 @@
      &  qa_dust_def,istr,iend,j,dt2,dust_flux)
 
        use param
+       use grid
+
         implicit none
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "ocean3d.h"
 #include "scalars.h"
-#include "grid.h"
 
        integer istr,iend,i,j,k,n_loc,auto_ind,auto_ind2
        real dt2,tmp1,tmp2,tmp3,tmp4
@@ -2413,12 +2414,14 @@
        subroutine compute_particulate_terms(k,QA_dust_def, TEMP, O2_loc, NO3_loc, 
      &        POC_prod,P_iron_prod,P_CaCO3_prod,P_SiO2_prod,SED_DENITRIF,
      &        OTHER_REMIN,istr,iend,j)
+
       use param
+      use grid
+
        implicit none
 #include "bgc_ecosys_bec2.h"
 #include "bgc_param_bec2.h"
 #include "ocean3d.h"
-#include "grid.h"
 
        integer istr, iend, i, j, k, n_loc, iB
        real, dimension(istr:iend) ::

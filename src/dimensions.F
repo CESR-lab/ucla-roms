@@ -6,12 +6,12 @@
 
       ! coded by Jeroen Molemaker
       use param
+      use grid
 
       implicit none
 !      private
 
 #include "cppdefs.h"
-#include "grid.h"
 #include "ncvars.h"
 
 !      integer, public, parameter :: gnx = LLm

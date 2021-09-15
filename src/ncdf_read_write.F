@@ -23,6 +23,7 @@
 
       use param
       use buffer
+      use grid
 
       implicit none
 #ifndef WRITER
@@ -40,7 +41,6 @@ CSDISTRIBUTE_RESHAPE  A(BLOCK_PATTERN,nmax) BLOCK_CLAUSE
       character(len=16) vname
 #endif
 #ifdef MASK_LAND_DATA
-# include "grid.h"
       real*8, parameter :: spv_set=1.D+33
 #endif
 #include "netcdf.inc"

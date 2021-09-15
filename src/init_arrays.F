@@ -58,6 +58,7 @@
       use climat
       use coupling
       use eos_vars
+      use grid
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -65,7 +66,6 @@
       real, parameter     :: init=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
 #include "scalars.h"
-#include "grid.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
 #include "mixing.h"

@@ -7,12 +7,13 @@
       use param
       use boundary
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY), cx, cff,dft,dfx
       real, parameter :: eps=1.E-33
-#include "grid.h"
+
 #include "ocean2d.h"
 #include "scalars.h"
 

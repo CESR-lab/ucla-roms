@@ -11,10 +11,10 @@
 
       subroutine setup_Corls_tile(istr,iend,jstr,jend)
       use param
+      use grid
       implicit none
       integer istr,iend,jstr,jend, i,j
 #include "scalars.h"
-#include "grid.h"
 #ifdef SPHERICAL
       real cff1, cff2
 #endif
@@ -54,10 +54,10 @@
 
       subroutine setup_grid1_tile (istr,iend,jstr,jend)
       use param
+      use grid
       implicit none
       integer istr,iend,jstr,jend, i,j
 #include "scalars.h"
-#include "grid.h"
 #ifdef MASKING
       real cff1, cff2
 #endif

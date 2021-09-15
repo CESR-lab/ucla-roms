@@ -5,12 +5,12 @@
 
       use param
       use read_write, only: nc_check_units
+      use grid
 
       implicit none
       character*1 char1
       integer ierr, ncid, varid, lstr, lenstr, checkdims, ncdf_read
 # include "scalars.h"
-# include "grid.h"
 # include "ncvars.h"
 # include "netcdf.inc"
 

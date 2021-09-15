@@ -29,6 +29,7 @@ c--# define MERGE_OVERLAP
 # endif
       use surf_flux ! bulk_frc-> only: sustr_r, svstr_r, stflx, srflx
                     ! flux_frc-> only: sustr, svstr, stflx, srflx
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -88,8 +89,6 @@ c--# define MERGE_OVERLAP
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb
 # endif
 
-
-# include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"

@@ -16,11 +16,14 @@
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
 ! using analytical expressions.
+
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"

@@ -183,6 +183,8 @@
       subroutine set_srflux(istr,iend,jstr,jend)  ![
       ! set short-wave radiation flux
 
+      use grid
+
       implicit none
 
       ! input/outputs
@@ -197,8 +199,6 @@
       real Ampl, dtau, tau1,tau2
 # endif
 # define SWRAD_DATA
-!# include "scalars.h"! Have in module preamble
-# include "grid.h"
 
 #include "compute_extended_bounds.h"
 

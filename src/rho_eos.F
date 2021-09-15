@@ -122,6 +122,7 @@
       use tracers, only: t
       use coupling
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -166,7 +167,7 @@
 # ifdef SPLIT_EOS
       real dpth
 # endif
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "scalars.h"
 # if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \

@@ -40,6 +40,7 @@
       use surf_flux, only: sustr, svstr
       use coupling
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -61,7 +62,6 @@
 #endif
 
 #  include "ocean2d.h"
-# include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"

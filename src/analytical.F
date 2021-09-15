@@ -27,11 +27,11 @@
 ! used in the bottom boundary formulation [kg/m^3].
 
       use param
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j
 # include "bblm.h"
-# include "grid.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -56,10 +56,12 @@
 
 !  Set mean density anomaly [kg/m^3] using an analytical expression.
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff1, cff2 , cff3, cff4
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "scalars.h"
 
@@ -148,11 +150,14 @@
 
 #ifdef ANA_SMFLUX
       subroutine ana_smflux_tile(istr,iend,jstr,jend)
+
       use param
       use surf_flux, only: sustr,svstr
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "grid.h"
+
 # include "scalars.h"
       real TauX, TauY, cff
 
@@ -253,9 +258,11 @@ c          svstr(i,j)=-1.0d-4
 ! [degC m/s] using an analytical expression.
       use param
       use surf_flux, only: srflx
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "grid.h"
+
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -282,13 +289,14 @@ c          svstr(i,j)=-1.0d-4
 
       use param
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j
 #ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4
 #endif
-# include "grid.h"
+
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -327,9 +335,11 @@ c          svstr(i,j)=-1.0d-4
 ! units m/s) using analytical expressions.
       use param
       use surf_flux, only: stflx
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j
-#  include "grid.h"
+
 #  include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -380,13 +390,14 @@ c          svstr(i,j)=-1.0d-4
 
       use param
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 #  ifdef JET
       real cff1, cff2, cff3
 #  endif
-#  include "grid.h"
+
 #  include "ocean3d.h"
 #  include "scalars.h"
 
@@ -445,6 +456,7 @@ c          svstr(i,j)=-1.0d-4
 
       use param
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -452,7 +464,7 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 # ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4, cff5
 # endif
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "scalars.h"
 
@@ -570,10 +582,12 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 ! Set wind induced wave amplitude, direction and period for
 ! bottom boundary layer formulation.
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j
+
 # include "bblm.h"
-# include "grid.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"

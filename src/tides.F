@@ -79,11 +79,11 @@
       subroutine set_tides_tile(istr,iend,jstr,jend)
 
       use boundary
+      use grid
+
       implicit none
 
 ! scalars.h for iic and ntstart
-! grid.h for rmask
-# include "grid.h"
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
