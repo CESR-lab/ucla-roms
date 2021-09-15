@@ -13,6 +13,7 @@
 
       subroutine check_tile_bounds (tile, ierr)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile, ierr, isize,jsize
 #include "compute_tile_bounds.h"

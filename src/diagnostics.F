@@ -2458,6 +2458,9 @@
 
 ! ----------------------------------------------------------------------
       subroutine wrt_diagnostics( tile )  ![
+
+      use hidden_mpi_vars
+
       implicit none
 
       ! input

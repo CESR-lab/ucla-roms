@@ -3,6 +3,7 @@
  
       subroutine t3dmix (tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile, itrc
 # include "private_scratch.h"

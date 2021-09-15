@@ -8,6 +8,8 @@
 ! and perform fast-time averaging to interact with baroclinic mode.
 
       use param
+      use hidden_mpi_vars
+
       implicit none
       integer tile
 #include "private_scratch.h"

@@ -3,6 +3,7 @@
 
       subroutine setup_grid2 (tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 #include "private_scratch.h"

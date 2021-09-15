@@ -2,6 +2,7 @@
                                             ! Setting up curvilinear
       subroutine setup_grid1(tile)          ! grid: Compute various
       use param
+      use hidden_mpi_vars
       implicit none                         ! combinations of metric
       integer tile                          ! terms.
 #include "compute_tile_bounds.h"

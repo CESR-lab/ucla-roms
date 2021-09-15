@@ -4,6 +4,7 @@
       subroutine ana_init (tile)  ! free surface, and tracer variables
 
       use param
+      use hidden_mpi_vars
 
       implicit none               ! using analytical expressions.
       integer tile

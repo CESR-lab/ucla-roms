@@ -4,6 +4,7 @@
       subroutine set_depth(tile)
 
       use param
+      use hidden_mpi_vars
 
       implicit none
       integer tile
@@ -177,6 +178,7 @@
       subroutine set_HUV(tile)
 
       use param
+      use hidden_mpi_vars
 
       implicit none
       integer tile
@@ -243,6 +245,7 @@
       subroutine set_HUV1(tile)
 
       use param
+      use hidden_mpi_vars
 
       implicit none
       integer tile

@@ -3,6 +3,8 @@
       subroutine init_arrays(tile,my_first)
 
       use param
+      use hidden_mpi_vars
+
       implicit none
 
       integer, intent(in) :: tile, my_first

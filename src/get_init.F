@@ -8,6 +8,7 @@
       use bgc ! get_init_bgc_diag
       use coupling
       use grid
+      use hidden_mpi_vars
 
       implicit none
 #include "ncvars.h"

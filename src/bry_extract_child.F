@@ -674,10 +674,11 @@
       !
       !]
 
+      use hidden_mpi_vars  ! needed for inode & jnode to establish if boundary edge
+
       implicit none
 
-      ! hidden_mpi_vars.h needed for inode & jnode to establish if boundary edge
-# include "hidden_mpi_vars.h"
+
 
       ! input/output
       integer,                              intent(in)  :: bry_tot     ! total child bry points in parent

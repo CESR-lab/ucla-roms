@@ -5,6 +5,7 @@
 
       subroutine rho_eos (tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 # ifdef NONLIN_EOS

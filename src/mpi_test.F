@@ -82,6 +82,7 @@ C$OMP BARRIER
 
       subroutine mpi_test_init (tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 # include "compute_tile_bounds.h"
@@ -91,10 +92,10 @@ C$OMP BARRIER
 
       subroutine mpi_test_init_tile (istr,iend,jstr,jend)
       use param
+      use hidden_mpi_vars
       implicit none
       integer istr,iend,jstr,jend, i,j,k, iabs,jabs
 #include "mpi_test_arr.h"
-#include "hidden_mpi_vars.h"
       real dx,dy, x,y
 
 #include "compute_extended_bounds.h"
@@ -197,6 +198,7 @@ c     &                                               B2D,1, D2D,1)
 
       subroutine mpi_test_check (tile)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
 # include "compute_tile_bounds.h"

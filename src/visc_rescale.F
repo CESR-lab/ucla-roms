@@ -4,7 +4,10 @@
  
  
       subroutine visc_rescale (tile)
+
       use param
+      use hidden_mpi_vars
+
       implicit none
       integer tile
 #include "compute_tile_bounds.h"

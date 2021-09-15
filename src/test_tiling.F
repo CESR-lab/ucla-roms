@@ -7,6 +7,9 @@
       end
 
       subroutine check_tiling (tile)
+
+      use hidden_mpi_vars
+
       implicit none
       integer Lm,Mm, NSUB_X,NSUB_E, tile
       parameter (Lm=25, NSUB_X=4,     Mm=21, NSUB_E=5 )

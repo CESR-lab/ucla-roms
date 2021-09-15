@@ -3,6 +3,7 @@
 
       subroutine wvlcty (tile, Wvlc)
       use param
+      use hidden_mpi_vars
       implicit none
       integer tile
       real Wvlc(GLOBAL_2D_ARRAY,0:N)

@@ -7,6 +7,7 @@
 # ifdef WEC
       use wec_frc, only: wstokes_wec_tile, indxWST
 # endif
+      use hidden_mpi_vars
 
       implicit none
       integer tile

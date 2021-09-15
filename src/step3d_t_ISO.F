@@ -18,7 +18,10 @@ c--# define CONST_TRACERS
 # endif
                                   ! Note that arrays A2d(1,1:4) within
       subroutine step3d_t(tile)   ! the list of agruments in call below
+
       use param
+      use hidden_mpi_vars
+
       implicit none               ! are repeated to use the same memory
       integer tile                ! for vertical and horizontal scratch
                                   ! arrays.
