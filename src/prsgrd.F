@@ -36,6 +36,7 @@
       use tides
       use diagnostics
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -56,7 +57,7 @@
 # ifdef ADV_ISONEUTRAL
       real r0g
 # endif
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "scalars.h"
 

@@ -1232,6 +1232,8 @@ C$OMP BARRIER
       !            record  record number.
       !            type    type of the grid (RHO-, U, V, W, PSI etc.)
 
+      use grid
+
       implicit none
 
 
@@ -1255,7 +1257,6 @@ C$OMP BARRIER
       integer datatype, ndims, natts, dimid(8)
       character(len=16) vname
 #ifdef MASK_LAND_DATA
-# include "grid.h"
       real*8, parameter :: spv_set=1.D+33
 #endif
 #include "compute_starts_counts.h"
@@ -1434,6 +1435,8 @@ C$OMP BARRIER
       !            record  record number.
       !            type    type of the grid (RHO-, U, V, W, PSI etc.)
 
+      use grid
+
       implicit none
 
 
@@ -1455,7 +1458,6 @@ C$OMP BARRIER
       logical mask_land_data
       integer vid, i,j,k, shft, ierr
 #ifdef MASK_LAND_DATA
-# include "grid.h"
       real*8, parameter :: spv_set=1.D+33
 #endif
 #include "compute_starts_counts.h"
@@ -1873,6 +1875,8 @@ C$OMP BARRIER
 
       ! ----------------------------------------------------------------
 
+      use grid
+
       implicit none
 
       ! Output
@@ -1891,7 +1895,6 @@ C$OMP BARRIER
       logical mask_land_data
       integer vid, i,j,k, shft, ierr
 #ifdef MASK_LAND_DATA
-# include "grid.h"
       real*8, parameter :: spv_set=1.D+33
 #endif
 

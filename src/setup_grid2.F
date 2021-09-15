@@ -21,6 +21,7 @@
 
       use param
       use comm_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j, nsub
@@ -38,7 +39,6 @@
 # endif
 #endif
 #include "scalars.h"
-#include "grid.h"
 #ifdef MPI
 # include "mpif.h"
 # if QUAD==16

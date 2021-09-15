@@ -24,6 +24,7 @@
 
       use param
       use coupling
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, indx
@@ -31,7 +32,6 @@
       real cff
 
 # include "scalars.h"
-# include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
 

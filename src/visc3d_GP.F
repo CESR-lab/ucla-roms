@@ -54,6 +54,7 @@
       use param
       use diagnostics
       use coupling
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, k1,k2, indx
@@ -66,7 +67,6 @@
      &                           dmUdz,dnUdz,dmVdz,dnVdz
 
 # include "scalars.h"
-# include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
 

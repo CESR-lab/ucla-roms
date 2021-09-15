@@ -21,10 +21,12 @@
 ! subroutine.
 
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j,itrc
       real cff
-# include "grid.h"
+
 # include "mixing.h"
 # include "scalars.h"
 

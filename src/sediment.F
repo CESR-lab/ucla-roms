@@ -3,7 +3,10 @@
 
 #ifdef SEDIMENT
       subroutine sediment (tile)
+
       use param
+      use grid
+
       implicit none
       integer tile
 # include "private_scratch.h"
@@ -33,7 +36,6 @@
       integer ksource(PRIVATE_1D_SCRATCH_ARRAY,N)
 
 # include "scalars.h"
-# include "grid.h"
 # include "ocean3d.h"
 # include "forces.h"
 c# include "bbl.h"

@@ -6,12 +6,12 @@
       ! Taken from PDamien's ecosys_bec2_init_pacmed_0p25.F
 
       use param
+      use grid
 
       implicit none
 
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
-#include "grid.h"
 
       integer auto_ind
       ! Variables used for namelist parameter input:

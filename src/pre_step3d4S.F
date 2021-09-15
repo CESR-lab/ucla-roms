@@ -42,6 +42,7 @@
       use tracers,   only: iTandS, t
       use diagnostics                     ! needed for compute_horiz_uv_terms.h below
       use coupling
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -66,7 +67,6 @@
 # endif
       integer indx, itrc, iAkt
 
-# include "grid.h"
 # include "ocean3d.h"
 # include "ocean2d.h"
 # include "mixing.h"

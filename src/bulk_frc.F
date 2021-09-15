@@ -158,6 +158,7 @@
       ! ----------------
       use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his, srflx
       use tracers, only: t
+      use grid
 
       implicit none
 
@@ -166,7 +167,6 @@
 
 !# include "param.h" ! included at the top of the module
 # include "scalars.h"
-# include "grid.h"
 # include "ocean3d.h"
 
 # ifdef SEA_ICE_NOFLUX
@@ -328,7 +328,7 @@
 !# define SWRAD_DATA
 !# include "param.h"
 !# include "scalars.h"
-!# include "grid.h"
+!# include "grid"
 !
 !# include "compute_extended_bounds.h"
 !

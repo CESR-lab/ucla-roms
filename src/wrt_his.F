@@ -18,12 +18,12 @@
       use read_write ! nc_write_var
       use netcdf ! for nf90_routines
       use eos_vars
+      use grid
 
       implicit none
 
 #include "ncvars.h"
 #include "scalars.h"
-#include "grid.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
 #include "mixing.h"

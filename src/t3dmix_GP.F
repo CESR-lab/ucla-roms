@@ -21,6 +21,7 @@
       use tracers ! , only: t, wrt_t_diag
       use diagnostics
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k,k1,k2
@@ -33,7 +34,6 @@
      &                                    dTdx,dTde, dZdx,dZde
       real cff, cff1, cff2, cff3, cff4
 
-# include "grid.h"
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"

@@ -4,12 +4,15 @@
 # if GRID_LEVEL > 1
 
       subroutine u2dbc_tile (istr,iend,jstr,jend, zeta_new,buff)
+
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j, jmin,jmax
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY),
      &         buff(PRIVATE_2D_SCRATCH_ARRAY)
-#  include "grid.h"
+
 #  include "scalars.h"
 #  include "ocean2d.h"
                                 ! Preload broker array "buff" with

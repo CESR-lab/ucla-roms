@@ -18,11 +18,11 @@
       use param
       use tracers, only: t
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: alpha,beta
-# include "grid.h"
 # include "ocean3d.h"
 # include "scalars.h"
 # ifdef NONLIN_EOS

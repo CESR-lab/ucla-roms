@@ -33,6 +33,7 @@
 #endif
       use climat
       use coupling
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j, kbak, kold
@@ -41,7 +42,7 @@
      &                                       Drhs, UFx,UFe,VFx,VFe
       real fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
      &            cff,cff1,cff2, DUnew,DVnew
-#include "grid.h"
+
 #include "ocean2d.h"
 #include "mixing.h"
 #include "scalars.h"

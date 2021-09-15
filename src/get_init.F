@@ -7,17 +7,12 @@
       use tracers, only: t_vname, t, iTandS
       use bgc ! get_init_bgc_diag
       use coupling
+      use grid
 
       implicit none
 #include "ncvars.h"
 #include "scalars.h"
 #include "netcdf.inc"
-
-
-#ifdef NHMG
-#include "grid.h"
-#endif
-
 
       integer req_rec, tindx, max_rec, record, ncid, varid,
      &        ierr,  start(2), count(2), ibuff(iaux),

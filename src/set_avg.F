@@ -64,6 +64,7 @@
       use surf_flux ! set_avg_surf_flux
       use averages
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -73,7 +74,6 @@
       real cff,cff1
 # include "scalars.h"
 # include "ncvars.h"
-# include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
 # include "mixing.h"

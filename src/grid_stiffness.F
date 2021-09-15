@@ -24,6 +24,7 @@
 
       use param
       use comm_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, NSUB
@@ -34,9 +35,6 @@
       integer size, step, status(MPI_STATUS_SIZE), ierr
 # endif
 # include "ocean3d.h"
-# ifdef MASKING
-#  include "grid.h"
-# endif
 !
 # include "compute_auxiliary_bounds.h"
 !

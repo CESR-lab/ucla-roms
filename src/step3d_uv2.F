@@ -26,6 +26,7 @@
       use diagnostics
       use coupling
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -34,7 +35,6 @@
       real ub,ut
 !     integer ierr
 
-# include "grid.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
 # include "scalars.h"

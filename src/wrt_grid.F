@@ -216,6 +216,8 @@
 !            lncn    length of ncname
 
       use param
+      use grid
+
       implicit none
       character(len=*) ncname
       integer ncid, lncn, varid, ierr, ncdf_write
@@ -223,7 +225,6 @@
 #include "scalars.h"
 #include "ncvars.h"
 #include "netcdf.inc"
-#include "grid.h"
 
 #if defined MPI && !defined PARALLEL_FILES
       if (mynode == 0) then

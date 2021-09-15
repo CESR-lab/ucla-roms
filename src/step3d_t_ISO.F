@@ -58,6 +58,7 @@ c--# define CONST_TRACERS
       use diagnostics
       use climat
       use eos_vars
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
@@ -87,7 +88,7 @@ c--# define CONST_TRACERS
      &           cffE, s2_XLL,s2_XRL, s2_ELL,s2_ERL
 #  endif
 # endif
-# include "grid.h"
+
 # include "ocean3d.h"
 # include "mixing.h"
 # include "scalars.h"

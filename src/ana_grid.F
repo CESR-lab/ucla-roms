@@ -15,7 +15,7 @@
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
-! output: stored in common blocks, see files "scalars.h" "grid.h"
+! output: stored in common blocks, see files "scalars.h" "grid"
 
 ! xl,el      Physical dimensions of the computational domain [usually
 !                                                measured in  meters];
@@ -28,6 +28,8 @@
 ! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
       use param
+      use grid
+
       implicit none
       integer istr,iend,jstr,jend, i,j
 
@@ -52,7 +54,6 @@
      &  , dh, shelf, slope, land, riv_west, riv_east
 # endif
 
-# include "grid.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"

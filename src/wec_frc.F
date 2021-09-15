@@ -22,6 +22,7 @@
 
       use param
       use read_write ! new roms netcdf functionality module
+      use grid
 
       implicit none
 
@@ -46,8 +47,6 @@
       ! ==================================================
       ! INCLUDE FILES FOR COMMON VARIABLES AS PER OLD ROMS
       ! ==================================================
-
-#include "grid.h"
 
 ! For netcdf variables
 #include "ncvars.h"
@@ -1164,8 +1163,8 @@
 ! # include "scalars.h" - included in top of module
          ! get iSW_corn variable
 ! # include "param.h" - included in top of module
-         ! get pm coordinate transformer from grid.h
-! # include "grid.h" - included in top of module
+         ! get pm coordinate transformer from grid
+! # include "grid" - included in top of module
          ! note haven't included DH's forces.h as all wave parameters declared in WEC
 
          ! For PART 2 below: the include ocean.h files for mrl_wci part
@@ -1398,7 +1397,7 @@
 !! # include "param.h" ! already included at top of module
       integer istr,iend,jstr,jend, i,j,k
       real Wrk(0:N)
-!! # include "grid.h" ! already included at top of module
+!! # include "grid" ! already included at top of module
 !! # include "ocean3d.h" ! already included at top of module
 
       do j=jstr,jend
@@ -2109,8 +2108,8 @@ C$OMP BARRIER
 
       implicit none
 
-!# include "param.h"
-!# include "grid.h"
+!# include "param"
+!# include "grid"
 !# include "scalars.h"
 !# include "ocean2d.h"
 # ifdef SOLVE3D

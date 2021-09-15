@@ -12,6 +12,7 @@
 # endif
       use boundary
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -20,7 +21,6 @@
       real, parameter :: eps=1.E-33
 
 # include "scalars.h"
-# include "grid.h"
 # include "ocean3d.h"
 
 # include "compute_auxiliary_bounds.h"

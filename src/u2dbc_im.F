@@ -11,6 +11,7 @@
 #endif
       use boundary
       use climat
+      use grid
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -22,7 +23,6 @@
 #endif
 
 #include "scalars.h"
-#include "grid.h"
 #include "ocean2d.h"
 
 #include "compute_auxiliary_bounds.h"

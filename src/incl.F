@@ -17,10 +17,7 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "diagnostics.h"
 #include "floats.h"
-#include "forces.h"
-#include "grid.h"
 #include "init_floats.h"
 #include "mixing.h"
 #include "ncvars_floats.h"

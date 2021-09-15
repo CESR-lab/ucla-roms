@@ -82,6 +82,8 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
       use bry_extract_child
       use dimensions, only: set_global_ij_SW_NE_corners
+      use grid
+
       implicit none
 
       integer trd, tile, my_first, my_last, range
@@ -92,7 +94,6 @@ C$    integer omp_get_thread_num, omp_get_num_threads
 
 #ifdef NHMG
 #include "ocean3d.h"
-#include "grid.h"
 #endif 
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
