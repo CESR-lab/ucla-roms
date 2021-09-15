@@ -15,7 +15,7 @@ include Makedefs.inc
 
 KRNSRC = 		param.F dimensions.F	read_write.F averages.F tracers.F\
 	boundary.F buffer.F climat.F comm_vars.F coupling.F diag_vars.F\
-	eos_vars.F grid.F hidden_mpi_vars.F\
+	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F\
 	bry_extract_child.F		diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
