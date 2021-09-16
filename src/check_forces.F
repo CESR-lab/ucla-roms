@@ -86,13 +86,14 @@ C$OMP END MASTER                         ! is in uniform state]. This
 
 
       subroutine roms_init
+
       use param
+      use ncvars
+
       implicit none
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
 #include "scalars.h"
-
-#include "ncvars.h"
 
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
@@ -180,11 +181,13 @@ C$OMP BARRIER
 
 
       subroutine roms_step
+
       use param
+      use ncvars
+
       implicit none
       integer trd, tile, my_first, my_last, range
 #include "scalars.h"
-#include "ncvars.h"
 
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
@@ -228,9 +231,12 @@ C$OMP BARRIER
 # define vid_srfx hisZ
 
       subroutine wrt_forces
+
       use param
+      use ncvars
+
       implicit none
-#include "ncvars.h"
+
 #include "scalars.h"
 #include "forces.h"
       integer ierr,  record, i, lstr, lvar, lenstr
@@ -347,7 +353,10 @@ C$OMP BARRIER
 
 
       subroutine def_frc(total_rec, ierr)
+
       use param
+      use ncvars
+
       implicit none
       logical create_new_file
       integer total_rec, ierr, rec,timedim, prev_fill_mode, lfnm, lvar
@@ -358,7 +367,6 @@ C$OMP BARRIER
       character(len=64) text
 
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
 
 #ifdef MASK_LAND_DATA

@@ -14,14 +14,13 @@
       use param
       use read_write  ! ncvs
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use ncvars
 
       implicit none
 
       private ! Make all variable private to this module unless public specified
 
       ! Includes:
-      ! ncvars.h for nchis, ncavg, ncrst
-#include "ncvars.h"
 #include "bgc_ecosys_bec2.h"
 
 #include "bgc.opt"
@@ -32,7 +31,7 @@
 #endif
 
       ! Misc from porting ETH code:
-      character(len=40) tclm_name(NT) ! Taken from ETH code ncvars.h
+      character(len=40) tclm_name(NT) ! Taken from ETH code ncvars
 
       public set_bgc_surf_frc
 #ifdef BEC2_DIAG
@@ -315,7 +314,7 @@
       integer omp_get_num_threads
 !#include "param.h"
 #include "scalars.h"
-!#include "ncvars.h"
+!#include "ncvars"
 !#include "ncroms_bgcflux.h"
 
 ! CN: take this part out of the NEVER_DEF part

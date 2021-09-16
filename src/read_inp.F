@@ -12,12 +12,12 @@
       use read_write ! , only: read_output_root_name, expanse_scratch_env_var
       use boundary
       use eos_vars
+      use ncvars
 
       implicit none
       integer ierr
 #include "scoord.h"
 #include "scalars.h"
-#include "ncvars.h"
 #ifdef MPI
 # include "mpif.h"
 #endif
@@ -539,7 +539,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
                 mpi_master_only write(*,'(1x,2A/12x,2A/)')
      &          '### ERROR: read_inp :: Too many forcing files are ',
      &          'specified in input script.',  'Increase parameter ',
-     &                '''max_frc_files'' in ncvars.h and recompile.'
+     &                '''max_frc_files'' in ncvars and recompile.'
                 ierr=ierr+1
               endif
             endif
@@ -590,7 +590,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
                 mpi_master_only write(*,'(1x,2A/12x,2A/)')
      &         '### ERROR: read_inp :: Too many boundary files are ',
      &         'specified in input script.',   'Increase parameter ',
-     &                '''max_bry_files'' in ncvars.h and recompile.'
+     &                '''max_bry_files'' in ncvars and recompile.'
                 ierr=ierr+1
               endif
             endif

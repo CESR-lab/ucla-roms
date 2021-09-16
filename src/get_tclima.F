@@ -7,11 +7,11 @@
 
       use param
       use climat
+      use ncvars
 
       implicit none                    ! file at appropriate time.
 # define TCLIMA_DATA
 # include "scalars.h"
-# include "ncvars.h"
 # include "netcdf.inc"
       real(kind=8) dtime
       integer itrc, ierr, lfnm,lvar, lenstr, ncdf_read

@@ -3,9 +3,9 @@
                                   ! Sometimes it is convenient for post
       subroutine wrt_ana_grid     ! processing to save analytical grid
       use param
+      use ncvars
       implicit none               ! into a separate netCDF file.
 
-# include "ncvars.h"
 # include "netcdf.inc"
       character(len=32) fname
       integer ncid,ierr, r2dgrd(2), lncn, lenstr, my_nf_def_dim
@@ -83,9 +83,10 @@
 !                        IDs for dimensions 'xi_rho' and 'eta_rho'.
 
       use param
+      use ncvars
       implicit none
       integer ncid, r2dgrd(2), nf_ftype, varid, ierr
-#include "ncvars.h"
+
 #include "netcdf.inc"
 
 ! Decide about precision:
@@ -217,13 +218,13 @@
 
       use param
       use grid
+      use ncvars
 
       implicit none
       character(len=*) ncname
       integer ncid, lncn, varid, ierr, ncdf_write
 
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
 
 #if defined MPI && !defined PARALLEL_FILES

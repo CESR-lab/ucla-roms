@@ -62,6 +62,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use diag_vars
       use eos_vars
       use grid
+      use ncvars
 
       implicit none
       integer istr,iend,jstr,jend
@@ -86,7 +87,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
 # include "ocean2d.h"
 #endif
 #include "scalars.h"
-#include "ncvars.h"
 
       real cff, dA, v2, my_v2d_max
       real*QUAD my_avzeta, my_ke,   my_pe

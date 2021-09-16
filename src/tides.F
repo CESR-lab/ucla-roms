@@ -215,11 +215,9 @@
 
       use read_write
       use netcdf
+      use ncvars
 
       implicit none
-
-      ! For max_frc
-#include "ncvars.h"
 
       ! local
       integer i,j

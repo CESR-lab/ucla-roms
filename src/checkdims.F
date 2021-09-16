@@ -17,13 +17,14 @@
 !                   [=0, if there is no unlimited dimension].
 
       use param
+      use ncvars
 
       implicit none
       integer ncid, max_rec, ierr, icount, ndims, recdim,
      &                       dsize, id, ldim, lname, lenstr
       character(len=*) fname
       character(len=16) dname
-#include "ncvars.h"
+
 #include "netcdf.inc"
 #ifdef SOLVE3D
       integer check_scoord, chk_Cs_wr
@@ -125,7 +126,7 @@
 !        varid      variable ID
 !        horiz_type horizontal type defining placement of the variable
 !                   in staggered grid [=0,1,2,3 matching the definition
-!                       of one of the named parameters in "ncvars.h"]
+!                       of one of the named parameters in "ncvars"]
 !        n3         expected size of vertical dimension [=0 means do
 !                   not check this dimension]
 

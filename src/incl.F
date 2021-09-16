@@ -17,8 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "ncvars_floats.h"
-#include "ncvars.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
 #include "private_scratch.h"

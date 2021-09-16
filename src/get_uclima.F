@@ -6,12 +6,12 @@
 
       use param
       use climat
+      use ncvars
 
       implicit none
       integer ierr i, lstr,lvar,lenstr, ncdf_read
       real(kind=8) dtime
 # include "scalars.h"
-# include "ncvars.h"
 # include "netcdf.inc"
 
 ! Initialization:  Check, whether climatological data file is already

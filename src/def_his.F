@@ -35,11 +35,11 @@ c--#define nf_def_var my_nf_def_var
       use bgc ! def_his_bgc_diag, def_avg_bgc_diag
       use surf_flux ! set_avg_surf_flux
       use netcdf ! nf90_create()
+      use ncvars
 
       implicit none
       integer total_rec, ierr
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
       logical create_new_file
       integer lenstr, checkdims, my_nf_def_dim, timedimid(1), var_id_tmp

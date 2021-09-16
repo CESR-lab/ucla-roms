@@ -7,10 +7,10 @@
       use tracers, only: wrt_rst_trc
       use coupling
       use mixing
+      use ncvars
 
       implicit none
 
-#include "ncvars.h"
       integer record, start(2), count(2), ibuff(iaux),
      &        i, ierr, lstr, lvar, lenstr, ncdf_write
 #ifdef SOLVE3D

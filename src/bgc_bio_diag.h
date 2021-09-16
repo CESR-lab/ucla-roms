@@ -1,8 +1,8 @@
-! This file was called bio_diag.h in ETH code. Added bgc prefix for clarity.
+! This file was called bio_diag in ETH code. Added bgc prefix for clarity.
 
 !
 ! The macro LAST_I should always be set to the last used index number.
-! It must be define in ncvars.h and should be redefined accordingly
+! It must be define in ncvars and should be redefined accordingly
 ! at the end of this include file
 
 #ifdef BIOLOGY_BEC2

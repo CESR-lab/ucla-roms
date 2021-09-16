@@ -2,10 +2,10 @@
 
       subroutine closecdf       ! Close output netCDF files.
       use param
+      use ncvars
       implicit none
       integer ierr
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
 
       if (ncrst /= -1) ierr=nf_close(ncrst)

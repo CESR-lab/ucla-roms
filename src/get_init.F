@@ -10,9 +10,10 @@
       use grid
       use hidden_mpi_vars
       use mixing
+      use ncvars
 
       implicit none
-#include "ncvars.h"
+
 #include "scalars.h"
 #include "netcdf.inc"
 

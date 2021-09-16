@@ -8,11 +8,11 @@
       use wec_frc, only: wstokes_wec_tile, indxWST
 # endif
       use hidden_mpi_vars
+      use ncvars
 
       implicit none
       integer tile
 # ifdef SOLVE3D
-#  include "ncvars.h"
 #  include "work.h"
 #  include "private_scratch.h"
 # endif
@@ -67,6 +67,7 @@
       use eos_vars
       use grid
       use mixing
+      use ncvars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -75,7 +76,6 @@
 # endif
       real cff,cff1
 # include "scalars.h"
-# include "ncvars.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
 # ifdef SOLVE3D

@@ -7,6 +7,7 @@
       use param
       use read_write              ! set_frc_var_tile, nc_define_var, rp_var
       use surf_flux,  only: stflx ! surface tracer flux should possibly live in this module rather?
+      use ncvars
 
       implicit none
 
@@ -15,8 +16,6 @@
       ! Includes
       ! ========
 
-      ! ncvars.h for nchis and ncavg
-#include "ncvars.h"
       ! scalars.h for 'FIRST_TIME_STEP' and nstp
 #include "scalars.h"
 
@@ -345,12 +344,6 @@
 
       ! local
       integer :: cnt=0, itrc
-
-
-! Following is just to test using indxPO4, should delete after confirming not needed.
-#ifdef BIOLOGY_BEC2
-# include "ncvars.h"
-#endif
 
       ! Core tracers - temp and salt:
       itmp=1;

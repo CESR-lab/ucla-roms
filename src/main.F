@@ -83,6 +83,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use bry_extract_child
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
+      use ncvars
 
       implicit none
 
@@ -90,7 +91,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
 C$    integer omp_get_thread_num, omp_get_num_threads
 
 #include "scalars.h"
-#include "ncvars.h"
 
 #ifdef NHMG
 #include "ocean3d.h"
@@ -345,11 +345,11 @@ C$OMP END MASTER
       use tides
       use bry_extract_child
       use diagnostics
+      use ncvars
 
       implicit none
       integer trd, tile, my_first, my_last, range
 #include "scalars.h"
-#include "ncvars.h"
 
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads

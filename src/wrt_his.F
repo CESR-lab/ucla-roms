@@ -20,10 +20,10 @@
       use eos_vars
       use grid
       use mixing
+      use ncvars
 
       implicit none
 
-#include "ncvars.h"
 #include "scalars.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
