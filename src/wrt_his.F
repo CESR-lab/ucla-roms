@@ -19,6 +19,7 @@
       use netcdf ! for nf90_routines
       use eos_vars
       use grid
+      use mixing
 
       implicit none
 
@@ -26,7 +27,6 @@
 #include "scalars.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
-#include "mixing.h"
 #include "netcdf.inc"
 
       integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp

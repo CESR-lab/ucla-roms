@@ -36,6 +36,7 @@
       use climat
       use coupling
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, i,j, kbak, kold
@@ -46,7 +47,6 @@
      &            cff,cff1,cff2, DUnew,DVnew
 
 #include "ocean2d.h"
-#include "mixing.h"
 #include "scalars.h"
 #include "sources.h"
 

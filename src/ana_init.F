@@ -27,6 +27,7 @@
       use climat
       use eos_vars
       use grid
+      use mixing
 
       implicit none
 
@@ -46,7 +47,6 @@
 
 #  define VISC_TERM_WIND_BALANCE
 #  ifdef VISC_TERM_WIND_BALANCE
-#   include "mixing.h"
       real  b11,b12,b21,b22, det, TauX,TauY
       real, dimension(0:N) :: Av,FC, c11,c12,c21,c22, d1,d2
 #  endif

@@ -159,6 +159,7 @@
       use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his, srflx
       use tracers, only: t
       use grid
+      use mixing
 
       implicit none
 
@@ -171,7 +172,6 @@
 
 # ifdef SEA_ICE_NOFLUX
 #  ifdef LMD_KPP
-#   include "mixing.h"
 #  endif
 # endif
 

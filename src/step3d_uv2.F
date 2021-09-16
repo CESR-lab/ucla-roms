@@ -28,6 +28,7 @@
       use coupling
       use eos_vars
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -39,9 +40,6 @@
 # include "ocean2d.h"
 # include "ocean3d.h"
 # include "scalars.h"
-# if defined ADV_ISONEUTRAL || !defined IMPLICIT_BOTTOM_DRAG
-#  include "mixing.h"
-# endif
 # ifdef ADV_ISONEUTRAL
       real dRz,dRx_max, dpth, r0g, cfs,cfb
       real, parameter :: epsil=1.E-33

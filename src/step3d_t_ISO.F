@@ -62,6 +62,7 @@ c--# define CONST_TRACERS
       use climat
       use eos_vars
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
@@ -93,7 +94,6 @@ c--# define CONST_TRACERS
 # endif
 
 # include "ocean3d.h"
-# include "mixing.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

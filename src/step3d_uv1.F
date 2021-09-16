@@ -42,6 +42,7 @@
       use coupling
       use eos_vars
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -64,7 +65,6 @@
 
 #  include "ocean2d.h"
 # include "ocean3d.h"
-# include "mixing.h"
 # include "scalars.h"
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h

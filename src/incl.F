@@ -17,9 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "floats.h"
-#include "init_floats.h"
-#include "mixing.h"
 #include "ncvars_floats.h"
 #include "ncvars.h"
 #include "ocean2d.h"

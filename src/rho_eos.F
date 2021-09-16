@@ -124,6 +124,7 @@
       use coupling
       use eos_vars
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -171,10 +172,6 @@
 
 # include "ocean3d.h"
 # include "scalars.h"
-# if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-  || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
-#  include "mixing.h"
-# endif
 
 # include "compute_extended_bounds.h"
 

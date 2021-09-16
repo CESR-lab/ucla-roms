@@ -58,6 +58,7 @@
       use diagnostics
       use coupling
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, k1,k2, indx
@@ -71,7 +72,6 @@
 
 # include "scalars.h"
 # include "ocean3d.h"
-# include "mixing.h"
 
 # include "compute_auxiliary_bounds.h"
       indx=3-nstp    !--> time index for target arrays;

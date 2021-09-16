@@ -43,6 +43,7 @@
       use param
       use tracers, only: t
       use grid
+      use mixing
 
       implicit none
 
@@ -51,7 +52,6 @@
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE,FE1
 
 # include "ocean3d.h"
-# include "mixing.h"
 # include "scalars.h"
 
 

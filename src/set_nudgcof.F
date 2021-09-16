@@ -18,6 +18,7 @@
 
       use param
       use climat
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend
@@ -25,7 +26,6 @@
       integer i,j, isp , I1,I0,I2,J1,J0,J2, ibnd,itrc
       real cff,cff1,cff2,cff3, frac, Tau
 
-# include "mixing.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
