@@ -6,10 +6,11 @@
       use param
       use grid
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none                  ! inverse time-scale coeffcients
       integer tile                   ! (units [1/sec])
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call set_nudgcof_tile (istr,iend,jstr,jend, A2d(1,1))
       end

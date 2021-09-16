@@ -4,9 +4,10 @@
       subroutine t3dmix (tile)
       use param
       use hidden_mpi_vars
+      use private_scratch
       implicit none
       integer tile, itrc
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       do itrc=1,NT
         call t3dmix_tile (istr,iend,jstr,jend, itrc, A3d(1,1),A2d(1,1),

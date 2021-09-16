@@ -4,11 +4,10 @@
       subroutine wvlcty (tile, Wvlc)
       use param
       use hidden_mpi_vars
+      use private_scratch
       implicit none
       integer tile
       real Wvlc(GLOBAL_2D_ARRAY,0:N)
-CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
-# include "private_scratch.h"
 # include "compute_tile_bounds.h"
       call wvlcty_tile (istr,iend,jstr,jend, Wvlc, A2d(1,1), A2d(1,1),
      &                                                       A2d(1,2))

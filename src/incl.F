@@ -17,7 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "private_scratch.h"
 #include "scalars.h"
 #include "scoord.h"
 #include "sources.h"

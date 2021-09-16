@@ -1,4 +1,11 @@
-! Auxiliary module "private_scratch.h":   A set of tile-size arrays
+      module private_scratch
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
+! Auxiliary module "private_scratch":   A set of tile-size arrays
 !---------- ------ --------------------   to provide workspace for
 ! intermediate computations individually for each thread.  The arrays 
 ! passed as arguments to physical routines called by their drivers
@@ -24,9 +31,7 @@
 #ifdef SOLVE3D
       real A3d(N3d,6)
       integer iA2d(N2d,2)
-      common /prv_scrch/ A3d, A2d, iA2d
-#else
-      common /prv_scrch/ A2d
 #endif
-C$OMP THREADPRIVATE(/prv_scrch/)
+C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 
+      end module private_scratch

@@ -24,7 +24,7 @@
 /* Switch to allow mixed [tiled + single-block] execution in OpenMP.
  This switch enables special logical branch in "compute_tile_bounds.h"
  to recognize tile=NSUB_X*NSUB_E as covering the whole model grid, and
- increases sizes of scratch arrays declared in "private_scratch.h" to
+ increases sizes of scratch arrays declared in "private_scratch" to
  accommodate enough workspace accordingly.  Useful for debugging
  purposes only. Normally should be kept undefined. */
 

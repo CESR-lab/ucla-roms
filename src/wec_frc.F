@@ -1377,11 +1377,12 @@
       ! ===========================================
 
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none
-! # include "param.h" ! already included at top of module
+! # include "param" ! already included at top of module
       integer tile
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call wstokes_wec_tile(istr,iend,jstr,jend)
 
@@ -2060,12 +2061,12 @@ C$OMP BARRIER
       ! This is mrl_wci (tile) from mrl_wci.F in old code.
 
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none
 
       integer  tile
-!# include "param.h" ! DevinD - already included in top of module
-# include "private_scratch.h"
+!# include "param" ! DevinD - already included in top of module
 # include "compute_tile_bounds.h"
 
       call wec_forces_tile (istr,iend,jstr,jend,

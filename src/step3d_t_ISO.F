@@ -21,12 +21,12 @@ c--# define CONST_TRACERS
 
       use param
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none               ! are repeated to use the same memory
       integer tile                ! for vertical and horizontal scratch
                                   ! arrays.
 
-# include "private_scratch.h"
 # include "compute_tile_bounds.h"
 
       call step3d_t_iso_tile( istr,iend,jstr,jend,
