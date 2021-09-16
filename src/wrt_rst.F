@@ -6,6 +6,7 @@
       use param
       use tracers, only: wrt_rst_trc
       use coupling
+      use mixing
 
       implicit none
 
@@ -19,9 +20,6 @@
 #include "scalars.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
-#if defined LMD_KPP || defined LMD_BKPP
-# include "mixing.h"
-#endif
 
 #include "netcdf.inc"
 

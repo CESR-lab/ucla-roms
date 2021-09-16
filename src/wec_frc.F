@@ -2119,11 +2119,11 @@ C$OMP BARRIER
 # ifdef SOLVE3D
 !#   include "ocean3d.h"
 !#  if defined WAVE_FRICTION && defined BODY_FRICTION
-!#   include "mixing.h"
+!#   include "mixing"
 !#  endif
 # endif
 !# ifdef ANA_BRY
-!#   include "boundary.h"
+!#   include "boundary"
 !# endif
 !# ifdef WKB_WWAVE
 !#   include "wkb_wwave.h"

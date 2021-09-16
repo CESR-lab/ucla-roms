@@ -66,6 +66,7 @@
       use averages
       use eos_vars
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -77,7 +78,6 @@
 # include "ncvars.h"
 # include "ocean2d.h"
 # include "ocean3d.h"
-# include "mixing.h"
 # ifdef SOLVE3D
 #  include "work.h"
 # endif

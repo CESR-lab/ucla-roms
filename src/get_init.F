@@ -9,6 +9,7 @@
       use coupling
       use grid
       use hidden_mpi_vars
+      use mixing
 
       implicit none
 #include "ncvars.h"
@@ -38,9 +39,6 @@
 #endif
 #include "ocean2d.h"
 #include "ocean3d.h"
-#ifdef LMD_KPP
-# include "mixing.h"
-#endif
 #define time illegal
 #define tdays illegal
 #define nrrec illegal

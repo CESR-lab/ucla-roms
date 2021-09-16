@@ -44,6 +44,7 @@
       use diagnostics                     ! needed for compute_horiz_uv_terms.h below
       use coupling
       use grid
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -70,7 +71,6 @@
 
 # include "ocean3d.h"
 # include "ocean2d.h"
-# include "mixing.h"
 # include "scalars.h"
 # include "sources.h"
 

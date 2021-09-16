@@ -11,13 +11,13 @@
       use bgc ! init_scalars_bec2
       use boundary
       use comm_vars
+      use mixing
 
       implicit none
       integer ierr, i
 #define ALL_DATA
 #include "scalars.h"
 #include "sources.h"
-#include "mixing.h"
 #include "ncvars.h"
 
 c      integer size, kmp_get_stacksize_s

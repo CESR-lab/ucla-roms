@@ -1,4 +1,11 @@
-! This is include file "mixing.h"
+      module mixing
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
+! This is include file "mixing"
 !------ --- ----------------------
 #ifdef UV_VIS2
       real visc2_r(GLOBAL_2D_ARRAY)
@@ -94,3 +101,4 @@ CSDISTRIBUTE_RESHAPE hbbl(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
+      end module mixing

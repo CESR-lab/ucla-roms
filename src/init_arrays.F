@@ -61,6 +61,7 @@
       use coupling
       use eos_vars
       use grid
+      use mixing
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -70,7 +71,6 @@
 #include "scalars.h"
 #include "ocean2d.h"
 #include "ocean3d.h"
-#include "mixing.h"
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
 # ifdef MPI
@@ -308,7 +308,7 @@
 #endif
 
 ! Set variable horizontal viscosities and tracer diffusion
-! coefficients (see "mixing.h") to their background values.
+! coefficients (see "mixing") to their background values.
 
 #ifdef UV_VIS2
         do j=jstrR,jendR
@@ -329,7 +329,7 @@
         enddo
 # endif
 
-! Initialize vertical mixing coefficients (see "mixing.h") to their
+! Initialize vertical mixing coefficients (see "mixing") to their
 ! background values. If no vertical closure scheme is selected, the
 ! vertical mixing coefficients are those specified by the background
 ! values.

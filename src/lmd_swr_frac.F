@@ -26,17 +26,17 @@
 !
 ! This routine was adapted from Bill Large 1995 code.
 !
-! output: swr_frac (in "mixing.h")  shortwave radiation fraction
+! output: swr_frac (in "mixing")  shortwave radiation fraction
 !
 
       use param
+      use mixing
 
       implicit none
       integer istr,iend,jstr,jend,     i,j,k, Jwt
       real  swdk1(istr:iend), swdk2(istr:iend)
       real mu1(5),mu2(5), r1(5), attn1, attn2, xi1,xi2
 # include "ocean3d.h"
-# include "mixing.h"
 
       mu1(1)=0.35    ! reciprocal of the absorption coefficient
       mu1(2)=0.6     ! for each of the two solar wavelength bands
