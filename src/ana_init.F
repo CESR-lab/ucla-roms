@@ -5,10 +5,11 @@
 
       use param
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none               ! using analytical expressions.
       integer tile
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call ana_init_tile( istr,iend,jstr,jend,
 # ifdef SOLVE3D

@@ -4,10 +4,11 @@
       subroutine pre_step3d (tile)  ! the call just below are repeated
       use param
       use hidden_mpi_vars
+      use private_scratch
       implicit none                 ! within the list of agruments to
       integer tile                  ! use the same memory for vertical
                                     ! and horizontal scratch arrays.
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call pre_step3d_tile (istr,iend,jstr,jend,   A3d(1,1),A3d(1,2),
      &         A3d(1,3),A3d(1,4), A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),

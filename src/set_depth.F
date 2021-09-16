@@ -5,10 +5,11 @@
 
       use param
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none
       integer tile
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call set_depth_tile(istr,iend,jstr,jend)
       end
@@ -243,10 +244,11 @@
 
       use param
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none
       integer tile
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call set_HUV1_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2))
       end

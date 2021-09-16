@@ -4,12 +4,13 @@
 
       use param
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none
 
       integer, intent(in) :: tile, my_first
       integer             :: i, j
-#include "private_scratch.h"
+
 #include "compute_tile_bounds.h"
 
 #ifdef SOLVE3D

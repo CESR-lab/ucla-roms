@@ -6,11 +6,9 @@
       subroutine rho_eos (tile)
       use param
       use hidden_mpi_vars
+      use private_scratch
       implicit none
       integer tile
-# ifdef NONLIN_EOS
-#  include "private_scratch.h"
-# endif
 # include "compute_tile_bounds.h"
 # if defined NONLIN_EOS && !defined SPLIT_EOS 
       call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2))

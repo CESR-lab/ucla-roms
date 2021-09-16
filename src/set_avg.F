@@ -9,12 +9,12 @@
 # endif
       use hidden_mpi_vars
       use ncvars
+      use private_scratch
 
       implicit none
       integer tile
 # ifdef SOLVE3D
 #  include "work.h"
-#  include "private_scratch.h"
 # endif
 # include "compute_tile_bounds.h"
 # ifdef SOLVE3D

@@ -31,10 +31,10 @@ c--#define MAX_BY_VERT_CFL_ONLY
       subroutine diag(tile)
       use param
       use hidden_mpi_vars
+      use private_scratch
       implicit none
       integer tile,   i,j
 #include "scalars.h"
-#include "private_scratch.h"
 #include "compute_tile_bounds.h"
 
       j=min(iic,2*ninfo)-1             ! This introduces "logarithmic"
