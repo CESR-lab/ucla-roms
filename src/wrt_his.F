@@ -21,12 +21,12 @@
       use grid
       use mixing
       use ncvars
+      use ocean2d
+      use ocean3d
 
       implicit none
 
 #include "scalars.h"
-#include "ocean2d.h"
-#include "ocean3d.h"
 #include "netcdf.inc"
 
       integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp

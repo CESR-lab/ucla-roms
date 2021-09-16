@@ -50,7 +50,7 @@
       logical, dimension(nt), public      :: wrt_t_diag = .false. ! only with DIAGNOSTICS. T/F output tracer diagnostics (from diagnostics.F). Declare .false. so that doesn't need to be filled in tracers_defs.h if not used.
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
-      ! Final tracer concentrations live in 't' in ocean3d.h
+      ! Final tracer concentrations live in 't' in ocean3d
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
       type (ncvs)     :: nc_t( NT ) ! array of ncvs for each tracer
 
@@ -106,9 +106,6 @@
       ! local
       integer           :: itrc       ! tracer number for loop index
       character(len=46) :: t_flx_name ! Tracer time name
-
-      ! Need ocean3d.h for 't' tracer variables:
-#include "ocean3d.h"
 
       do itrc=iTandS+1,NT ! Instead of 3 use iTandS variable DevinD todo
 

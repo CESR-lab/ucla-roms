@@ -35,6 +35,7 @@
       use param
       use pipe_frc
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -44,7 +45,6 @@
      &  cmnx_ratio=cu_min/cu_max,  cutoff=2.D0-cmnx_ratio,
      &                      r4cmx=0.25D0/(1.D0-cmnx_ratio)
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

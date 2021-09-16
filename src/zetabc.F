@@ -8,13 +8,13 @@
       use boundary
       use climat
       use grid
+      use ocean2d
 
       implicit none
       integer istr,iend,jstr,jend, i,j
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY), cx, cff,dft,dfx
       real, parameter :: eps=1.E-33
 
-#include "ocean2d.h"
 #include "scalars.h"
 
 #include "compute_auxiliary_bounds.h"

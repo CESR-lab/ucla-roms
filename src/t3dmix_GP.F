@@ -24,6 +24,7 @@
       use climat
       use grid
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k,k1,k2
@@ -36,7 +37,6 @@
      &                                    dTdx,dTde, dZdx,dZde
       real cff, cff1, cff2, cff3, cff4
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

@@ -11,6 +11,8 @@
       use hidden_mpi_vars
       use mixing
       use ncvars
+      use ocean2d
+      use ocean3d
 
       implicit none
 
@@ -38,8 +40,6 @@
 !     integer i,j,k
 # endif
 #endif
-#include "ocean2d.h"
-#include "ocean3d.h"
 #define time illegal
 #define tdays illegal
 #define nrrec illegal

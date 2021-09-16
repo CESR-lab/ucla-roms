@@ -31,12 +31,12 @@
 
       use param
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend,     i,j,k, Jwt
       real  swdk1(istr:iend), swdk2(istr:iend)
       real mu1(5),mu2(5), r1(5), attn1, attn2, xi1,xi2
-# include "ocean3d.h"
 
       mu1(1)=0.35    ! reciprocal of the absorption coefficient
       mu1(2)=0.6     ! for each of the two solar wavelength bands

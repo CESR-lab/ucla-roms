@@ -63,6 +63,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use eos_vars
       use grid
       use ncvars
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend
@@ -81,11 +83,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
       real*QUAD buff(16)
 #endif
 
-#ifdef SOLVE3D
-# include "ocean3d.h"
-#else
-# include "ocean2d.h"
-#endif
 #include "scalars.h"
 
       real cff, dA, v2, my_v2d_max

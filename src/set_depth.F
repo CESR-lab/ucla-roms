@@ -25,6 +25,8 @@
 # endif
       use coupling
       use grid
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -36,9 +38,6 @@
 # ifndef VERT_COORD_TYPE_SM09
       real cff2_r,cff2_w, z_r0,z_w0
 # endif
-
-# include "ocean2d.h"
-# include "ocean3d.h"
 
 # include "compute_auxiliary_bounds.h"
 
@@ -189,15 +188,13 @@
       subroutine set_HUV_tile (istr,iend,jstr,jend)
 
       use param
-# ifdef WEC
       use wec_frc
-# endif
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
@@ -257,11 +254,11 @@
       subroutine set_HUV1_tile (istr,iend,jstr,jend, DC,FC)
 
       use param
-# ifdef WEC
       use wec_frc
-# endif
       use coupling
       use grid
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -270,9 +267,7 @@
 # if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
       real cff
       integer kbak
-#  include "ocean2d.h"
 # endif
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

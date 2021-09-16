@@ -31,6 +31,7 @@ c--# define MERGE_OVERLAP
                     ! flux_frc-> only: sustr, svstr, stflx, srflx
       use grid
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -90,7 +91,6 @@ c--# define MERGE_OVERLAP
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb
 # endif
 
-# include "ocean3d.h"
 # include "scalars.h"
 # define tind nstp
 

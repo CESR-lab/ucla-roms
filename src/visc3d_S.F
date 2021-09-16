@@ -29,6 +29,7 @@
       use coupling
       use grid
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, indx
@@ -36,7 +37,6 @@
       real cff
 
 # include "scalars.h"
-# include "ocean3d.h"
 
 # include "compute_auxiliary_bounds.h"
 

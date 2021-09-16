@@ -22,6 +22,7 @@
       use climat
       use grid
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -30,7 +31,6 @@
       integer imin,imax,jmin,jmax
 # endif
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

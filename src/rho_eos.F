@@ -125,6 +125,7 @@
       use eos_vars
       use grid
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -170,7 +171,6 @@
       real dpth
 # endif
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
