@@ -205,12 +205,12 @@
       use netcdf
       use mpi                                          ! debug temporary for mpi abort
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
+      use ocean2d
+      use ocean3d
 
       implicit none
       private
 
-#include "ocean2d.h"
-#include "ocean3d.h"
 ! scalars.h for 'knew' var
 #include "scalars.h"
 #include "bry_extract_child.opt"

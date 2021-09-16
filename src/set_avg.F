@@ -68,6 +68,8 @@
       use grid
       use mixing
       use ncvars
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -76,8 +78,6 @@
 # endif
       real cff,cff1
 # include "scalars.h"
-# include "ocean2d.h"
-# include "ocean3d.h"
 # ifdef SOLVE3D
 #  include "work.h"
 # endif

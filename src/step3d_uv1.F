@@ -43,6 +43,8 @@
       use eos_vars
       use grid
       use mixing
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -63,8 +65,6 @@
 !     integer :: ierr !,imx,jmx,kmx
 #endif
 
-#  include "ocean2d.h"
-# include "ocean3d.h"
 # include "scalars.h"
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h

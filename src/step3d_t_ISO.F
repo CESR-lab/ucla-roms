@@ -63,6 +63,7 @@ c--# define CONST_TRACERS
       use eos_vars
       use grid
       use mixing
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
@@ -93,7 +94,6 @@ c--# define CONST_TRACERS
 #  endif
 # endif
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

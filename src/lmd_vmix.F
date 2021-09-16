@@ -44,6 +44,7 @@
       use tracers, only: t
       use grid
       use mixing
+      use ocean3d
 
       implicit none
 
@@ -51,7 +52,6 @@
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv,Kt,Ks, Rig
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE,FE1
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 

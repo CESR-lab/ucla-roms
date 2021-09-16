@@ -62,6 +62,8 @@
       use eos_vars
       use grid
       use mixing
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -69,8 +71,6 @@
       real, parameter     :: init=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
 #include "scalars.h"
-#include "ocean2d.h"
-#include "ocean3d.h"
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
 # ifdef MPI

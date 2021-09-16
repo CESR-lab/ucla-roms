@@ -10,12 +10,12 @@
       use read_write
       use netcdf
       use tracers
+      use ocean2d
+      use ocean3d
 
       implicit none
       private
 
-#include "ocean2d.h"
-#include "ocean3d.h"
 ! scalars.h for timestep indices 'nnew', 'knew', etc
 #include "scalars.h"
 

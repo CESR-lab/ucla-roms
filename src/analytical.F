@@ -57,12 +57,12 @@
 !  Set mean density anomaly [kg/m^3] using an analytical expression.
       use param
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff1, cff2 , cff3, cff4
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"
@@ -393,6 +393,7 @@ c          svstr(i,j)=-1.0d-4
       use param
       use climat
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -400,7 +401,6 @@ c          svstr(i,j)=-1.0d-4
       real cff1, cff2, cff3
 #  endif
 
-#  include "ocean3d.h"
 #  include "scalars.h"
 
 #  include "compute_extended_bounds.h"
@@ -460,6 +460,7 @@ c          svstr(i,j)=-1.0d-4
       use param
       use climat
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -468,7 +469,6 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
       real TL0, TC0, cff1, cff2, cff3, cff4, cff5
 # endif
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_extended_bounds.h"

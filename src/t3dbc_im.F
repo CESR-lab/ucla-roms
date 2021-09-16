@@ -10,6 +10,7 @@
       use boundary
       use climat
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -17,7 +18,6 @@
 c-->     &                                           , dft,dfx,dfy
       real, parameter :: eps=1.E-33
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"

@@ -29,6 +29,8 @@
       use eos_vars
       use grid
       use mixing
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -37,8 +39,6 @@
       real ub,ut
 !     integer ierr
 
-# include "ocean2d.h"
-# include "ocean3d.h"
 # include "scalars.h"
 # ifdef ADV_ISONEUTRAL
       real dRz,dRx_max, dpth, r0g, cfs,cfb

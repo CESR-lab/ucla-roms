@@ -160,6 +160,7 @@
       use tracers, only: t
       use grid
       use mixing
+      use ocean3d
 
       implicit none
 
@@ -168,7 +169,6 @@
 
 !# include "param.h" ! included at the top of the module
 # include "scalars.h"
-# include "ocean3d.h"
 
 # ifdef SEA_ICE_NOFLUX
 #  ifdef LMD_KPP

@@ -84,6 +84,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
       use ncvars
+      use ocean3d
 
       implicit none
 
@@ -92,9 +93,6 @@ C$    integer omp_get_thread_num, omp_get_num_threads
 
 #include "scalars.h"
 
-#ifdef NHMG
-#include "ocean3d.h"
-#endif 
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
 C$    trd=omp_get_thread_num()

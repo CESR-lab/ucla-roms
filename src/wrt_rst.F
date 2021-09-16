@@ -8,6 +8,8 @@
       use coupling
       use mixing
       use ncvars
+      use ocean2d
+      use ocean3d
 
       implicit none
 
@@ -18,8 +20,6 @@
 #endif
       character(len=18) tstring
 #include "scalars.h"
-#include "ocean2d.h"
-#include "ocean3d.h"
 
 #include "netcdf.inc"
 

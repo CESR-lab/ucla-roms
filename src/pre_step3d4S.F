@@ -45,6 +45,8 @@
       use coupling
       use grid
       use mixing
+      use ocean2d
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -69,8 +71,6 @@
 # endif
       integer indx, itrc, iAkt
 
-# include "ocean3d.h"
-# include "ocean2d.h"
 # include "scalars.h"
 # include "sources.h"
 

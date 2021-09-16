@@ -26,6 +26,7 @@
       use param
       use comm_vars
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, NSUB
@@ -35,7 +36,6 @@
       real*8 buff(2)
       integer size, step, status(MPI_STATUS_SIZE), ierr
 # endif
-# include "ocean3d.h"
 !
 # include "compute_auxiliary_bounds.h"
 !

@@ -180,13 +180,13 @@
 
       use param
       use climat
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, ierr, itrc,i,j,k, it1,it2
       real tmid, cff, cff1, cff2
 # define TCLIMA_DATA
 # include "scalars.h"
-# include "ocean3d.h"
 
 # include "compute_extended_bounds.h"
 

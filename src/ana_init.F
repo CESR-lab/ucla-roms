@@ -28,6 +28,8 @@
       use eos_vars
       use grid
       use mixing
+      use ocean2d
+      use ocean3d
 
       implicit none
 
@@ -54,9 +56,6 @@
       integer jwake,mid_wake
       real AmpR,AmpU, cffS, Zthrm, dZthrm, xitm, alpha, csa,sna
 # endif
-
-# include "ocean2d.h"
-# include "ocean3d.h"
 
 # include "compute_auxiliary_bounds.h"
 

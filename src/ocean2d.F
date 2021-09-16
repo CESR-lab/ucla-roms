@@ -1,4 +1,11 @@
-! This is include file "ocean2d.h".
+      module ocean2d
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
+! This is include file "ocean2d".
 !---------------------------------------------------------
 ! zeta       Free surface elevation [m] and barotropic
 ! ubar,vbar  velocity components in XI- and ETA-directions
@@ -18,5 +25,5 @@ CSDISTRIBUTE_RESHAPE vbar(BLOCK_PATTERN,*) BLOCK_CLAUSE
       common /nh_wcor/nh_ubar,nh_vbar,nh_wcor
 #endif
 
-
+      end module ocean2d
  

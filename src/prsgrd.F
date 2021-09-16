@@ -38,6 +38,7 @@
       use diagnostics
       use eos_vars
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -59,7 +60,6 @@
       real r0g
 # endif
 
-# include "ocean3d.h"
 # include "scalars.h"
 
 ! A non-conservative Density-Jacobian scheme using cubic polynomial

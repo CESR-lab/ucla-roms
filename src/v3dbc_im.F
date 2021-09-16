@@ -7,12 +7,11 @@
 ! v(:,:,:,nnew)
 
       use param
-# ifdef WEC
-      use wec_frc 
-# endif
+      use wec_frc
       use boundary
       use climat
       use grid
+      use ocean3d
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -21,7 +20,6 @@
       real, parameter :: eps=1.E-33
 
 # include "scalars.h"
-# include "ocean3d.h"
 
 # include "compute_auxiliary_bounds.h"
 

@@ -14,13 +14,13 @@
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
        use bgc, only: srflx_dailyavg
 #endif
-      use grid
+       use grid
+       use ocean3d
 
        implicit none
 
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
-#include "ocean3d.h"
 !#include "forces.h" ! DevinD commented out. Contains dailypar_bec and
 ! bgc_forces.h, so including it directly here.
 #include "bgc_forces.h"
@@ -634,11 +634,11 @@
 
        use param
        use grid
+       use ocean3d
 
         implicit none
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
-#include "ocean3d.h"
 #include "scalars.h"
 
        integer istr,iend,i,j,k,n_loc,auto_ind,auto_ind2
@@ -2281,12 +2281,14 @@
 
         SUBROUTINE init_particulate_terms(QA_dust_def,istr,
      &      iend,j,net_dust_in)
-      use param
+
+        use param
+        use ocean3d
+
         implicit none
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
 #include "scalars.h"
-#include "ocean3d.h"
 
     !---------------------------------------------------------------------------
     !   Set incoming fluxes (put into outgoing flux for first level usage).
@@ -2415,13 +2417,13 @@
      &        POC_prod,P_iron_prod,P_CaCO3_prod,P_SiO2_prod,SED_DENITRIF,
      &        OTHER_REMIN,istr,iend,j)
 
-      use param
-      use grid
+       use param
+       use grid
+       use ocean3d
 
        implicit none
 #include "bgc_ecosys_bec2.h"
 #include "bgc_param_bec2.h"
-#include "ocean3d.h"
 
        integer istr, iend, i, j, k, n_loc, iB
        real, dimension(istr:iend) ::

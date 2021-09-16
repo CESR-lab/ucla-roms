@@ -17,8 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "ocean2d.h"
-#include "ocean3d.h"
 #include "private_scratch.h"
 #include "scalars.h"
 #include "scoord.h"
