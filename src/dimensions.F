@@ -7,12 +7,12 @@
       ! coded by Jeroen Molemaker
       use param
       use grid
+      use ncvars
 
       implicit none
 !      private
 
 #include "cppdefs.h"
-#include "ncvars.h"
 
 !      integer, public, parameter :: gnx = LLm
 !      integer, public, parameter :: gny = MMm

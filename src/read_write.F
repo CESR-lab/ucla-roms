@@ -12,7 +12,7 @@
       ! are appended with frame and node number and are limited to 32
 
       ! Horizontal Grid Type Codes =  0,1,2,3 (RHO-, U-, V-, PSI-points)
-      ! This clashes with dimensions which contains ncvars.h
+      ! This clashes with dimensions which contains ncvars
       ! where these variables live. But soon ncvars should be moved from
       ! dimensions and put into this module or another plan be made.
       ! for reading and writing to correct grid types
@@ -748,6 +748,8 @@ C$OMP BARRIER
       ! dimensions and time only
       ! ========================
 
+      use ncvars
+
       implicit none
 
       ! inputs/outputs
@@ -769,10 +771,6 @@ C$OMP BARRIER
       integer           :: timedim(1)  ! Made it (1). Can remain local as time defined here
 
       integer, external :: my_nf_def_dim  ! external function needed
-
-      ! Common
-      ! Need ncvars.h for xi_rho, xi_u, eta_rho, eta_v and iaux
-#include "ncvars.h"
 
       ! CREATE BLANK FILE WITH CORRECT NAME & GLOBAL ATTS ONLY:
       call ncdf_create_blank_file(fname, ncid,  prev_fill_mode, rec_per_file, total_rec )
@@ -1063,11 +1061,11 @@ C$OMP BARRIER
 
 
       ibuff(1)=iic-1 ; ibuff(2)=999999        ! time step and nrecrst=999999 DevinD hardcode
-      ibuff(4:6)=0   ; ibuff(3)=total_recs    ! record numbers. iaux = 6 in ncvars.h
+      ibuff(4:6)=0   ; ibuff(3)=total_recs    ! record numbers. iaux = 6 in ncvars
 !#ifdef AVERAGES
 !      ibuff(4)=nrecavg
 !#endif
-      start(1)=1      ; count(1)=6            ! iaux = 6 in ncvars.h
+      start(1)=1      ; count(1)=6            ! iaux = 6 in ncvars
       start(2)=record ; count(2)=1
 
       ierr=nf90_inq_varid(ncid, 'time_step', var_id_tmp)        ! get time step var_id

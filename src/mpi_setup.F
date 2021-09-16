@@ -14,10 +14,10 @@ C$    end
       subroutine mpi_setup(ierr)
       use param
       use hidden_mpi_vars
+      use ncvars
       implicit none
       integer ierr
 
-# include "ncvars.h"
 # include "mpif.h"
 C$    integer nthrds
       integer nsize, off_xi,off_eta, conv_ijnode_to_rank

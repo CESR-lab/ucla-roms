@@ -14,6 +14,7 @@
       use read_write ! nc_write_var, rp_var, etc
       use netcdf ! nf90 subroutines
       use averages
+      use ncvars
 
       implicit none
 
@@ -23,7 +24,6 @@
 # endif
       character(len=18) tstring
 # include "scalars.h"
-# include "ncvars.h"
 # include "netcdf.inc"
 # if defined MPI && !defined PARALLEL_FILES
 #  include "mpif.h"

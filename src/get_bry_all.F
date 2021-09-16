@@ -9,11 +9,11 @@
       use param
       use tracers, only: t_vname, set_bry_tracer_defaults
       use boundary
+      use ncvars
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
 # include "scalars.h"
-# include "ncvars.h"
 # include "netcdf.inc"
       real dtime
       integer ierr, ierr_all, itrc, lsrc, lenstr

@@ -7,12 +7,12 @@
       use surf_flux, only: dSSSdt
 #endif
       use eos_vars
+      use ncvars
 
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr
 #include "scoord.h"
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
 #include "strings.h"
 

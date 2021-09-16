@@ -23,6 +23,7 @@
       use param
       use read_write ! new roms netcdf functionality module
       use grid
+      use ncvars
 
       implicit none
 
@@ -47,9 +48,6 @@
       ! ==================================================
       ! INCLUDE FILES FOR COMMON VARIABLES AS PER OLD ROMS
       ! ==================================================
-
-! For netcdf variables
-#include "ncvars.h"
 
 ! get universal scalars, g and pi, model time and time in days
 # include "scalars.h"
@@ -352,8 +350,8 @@
       character(len=8) :: wec_tim_name = 'wwv_time'
 
 
-      ! Add netcdf WEC terms previously contained in ncvars.h
-      ! =====================================================
+      ! Add netcdf WEC terms previously contained in ncvars
+      ! ===================================================
 
       ! Array of bools for yes/no whether to output
       ! result variable to netcdf file
@@ -647,7 +645,7 @@
 
       ! Read in river variables are all from rho-points (r_var)
       ! integer,parameter :: r_var = 0 !! grid type of var (u_var=1,v_var=2,q_var=3)
-      ! comes from ncvars.h.
+      ! comes from ncvars.
 
       ! open the file (maybe check if the file is open already)
       ! =============

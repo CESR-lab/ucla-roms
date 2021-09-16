@@ -6,11 +6,11 @@
       use param
       use tracers,    only: t_vname, t_lname, t_units, wrt_t
       use read_write, only: output_root_name
+      use ncvars
 
       implicit none
       integer total_rec, ierr
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
       logical create_new_file
       integer lenstr, checkdims, my_nf_def_dim

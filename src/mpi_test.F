@@ -91,11 +91,12 @@ C$OMP BARRIER
       end
 
       subroutine mpi_test_init_tile (istr,iend,jstr,jend)
+
       use param
       use hidden_mpi_vars
+      use mpi_test_arr
       implicit none
       integer istr,iend,jstr,jend, i,j,k, iabs,jabs
-#include "mpi_test_arr.h"
       real dx,dy, x,y
 
 #include "compute_extended_bounds.h"
@@ -154,9 +155,9 @@ c     &               'istr,iend,jstr,jend =', istr,iend,jstr,jend
 
       subroutine mpi_test_copy_tile (istr,iend,jstr,jend)
       use param
+      use mpi_test_arr
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "mpi_test_arr.h"
 
 # include "compute_auxiliary_bounds.h"
 
@@ -207,9 +208,9 @@ c     &                                               B2D,1, D2D,1)
 
       subroutine mpi_test_check_tile (istr,iend,jstr,jend)
       use param
+      use mpi_test_arr
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-# include "mpi_test_arr.h"
 
 # include "compute_extended_bounds.h"
 

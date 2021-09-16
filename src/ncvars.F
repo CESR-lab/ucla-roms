@@ -1,4 +1,11 @@
-! This is "ncvars.h":   indices for character array "vname" to keep
+      module ncvars
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
+! This is "ncvars":   indices for character array "vname" to keep
 !----- -- -----------   names of netCDF variables and their attributes
 ! indxTime      time
 ! indxZ         free-surface
@@ -97,64 +104,44 @@
       integer, parameter :: max_frc_files=360
       integer max_frc, ncfrc(max_frc_files), nrst,  ncrst,   nrecrst,
      &      nrrec, nrpfrst, ncidclm, nwrt,  nchis, nrechis, nrpfhis
-      common /ncvars/       max_frc, ncfrc, nrst,  ncrst,   nrecrst,
-     &      nrrec, nrpfrst, ncidclm, nwrt,  nchis, nrechis, nrpfhis
 #ifdef AVERAGES
       integer ntsavg,  navg
-      common /ncvars/ ntsavg, navg
 #endif
 
 ! NetCFD IDs for model variables
 
       integer rstTime, rstTstep,  rstZ, rstUb, rstVb,
      &        hisTime, hisTstep,  hisZ, hisUb, hisVb
-      common /ncvars/
-     &        rstTime, rstTstep,  rstZ, rstUb, rstVb,
-     &        hisTime, hisTstep,  hisZ, hisUb, hisVb
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
       integer rst_DU_avg2,    rst_DV_avg2,
      &        rst_DU_avg_bak, rst_DV_avg_bak
-      common /ncvars/ rst_DU_avg2,    rst_DV_avg2,
-     &                rst_DU_avg_bak, rst_DV_avg_bak
 #  elif defined PRED_COUPLED_MODE
       integer rst_rufrc, rst_rvfrc
-      common /ncvars/ rst_rufrc, rst_rvfrc
 #  endif
 # endif
       integer rstU, rstV, rstT(NT+1), hisO,   hisW,   hisR,
      &        hisU, hisV, hisT(NT+1), hisAkv, hisAkt, hisAks
-      common /ncvars/
-     &        rstU, rstV, rstT,       hisO,   hisW,   hisR,
-     &        hisU, hisV, hisT,       hisAkv, hisAkt, hisAks
 
 # ifdef LMD_KPP
       integer rstHbls, hisHbls
-      common /ncvars/ rstHbls, hisHbls
 # endif
 # ifdef LMD_BKPP
       integer rstHbbl, hisHbbl
-      common /ncvars/ rstHbbl, hisHbbl
 # endif
 #endif
 
 #ifdef AVERAGES
       integer ncavg, nrecavg, nrpfavg,  avgTime, avgZ, avgUb, avgVb
-      common /ncvars/  ncavg, nrecavg,  nrpfavg,
-     &                                  avgTime, avgZ, avgUb, avgVb
 # ifdef SOLVE3D
       integer avgU,  avgV,  avgT(NT+1), avgR,    avgO,    avgW,
      &                                  avgAkv,  avgAkt,  avgAks
-      common /ncvars/ avgU, avgV, avgT, avgR,    avgO,    avgW,
-     &                                  avgAkv,  avgAkt,  avgAks
 #  ifdef LMD_KPP
       integer avgHbls
-      common /ncvars/ avgHbls
 #  endif
 #  ifdef LMD_BKPP
       integer avgHbbl
-      common /ncvars/ avgHbbl
 #  endif
 # endif
 #endif
@@ -169,10 +156,8 @@
 !# define NWRTHIS 14
 #endif
       logical ldefhis, wrthis(NWRTHIS)
-      common /ncvars/ ldefhis, wrthis
 #ifdef AVERAGES
       logical wrtavg(NWRTHIS)
-      common /ncvars/ wrtavg
 #endif
 
 
@@ -189,7 +174,6 @@
 
 #if defined MPI && defined PARALLEL_FILES
       integer xi_rho, xi_u, eta_rho, eta_v
-      common /ncvars/ xi_rho, xi_u, eta_rho, eta_v
 #else
       integer, parameter :: xi_rho=LLm+2, eta_rho=MMm+2,
      &                     xi_u=xi_rho-1, eta_v=eta_rho-1
@@ -199,23 +183,19 @@
       character date_str*44, title*80
       character(len=max_name_size) :: ininame, grdname, rstname,
      &                             hisname, frcfile(max_frc_files) ! DevinD hisname not needed due to output_root_name
-      common /cncvars/ date_str, title, ininame, grdname, rstname,
-     &                                           hisname, frcfile
 #ifdef AVERAGES
       character(len=max_name_size) avgname
-      common /cncvars/ avgname
 #endif
 #if (defined TCLIMATOLOGY && !defined ANA_TCLIMA) || !defined ANA_SSH
       character(len=max_name_size) clm_file
-      common /cncvars/ clm_file
 #endif
 #if defined T_FRC_BRY  || defined M2_FRC_BRY || \
     defined M3_FRC_BRY || defined Z_FRC_BRY
       integer, parameter :: max_bry_files=8
       character(len=max_name_size) bry_file(max_bry_files)
-      common /cncvars/ bry_file
 #endif
 
-      character*42  vname(3,
-     &                       180) ! DevinD 180 copied from old code only
-      common /cncvars/ vname
+      character*42  vname(3, 180) ! DevinD 180 copied from old code only
+
+
+      end module ncvars

@@ -131,11 +131,11 @@
 #ifdef SSH_DATA
       use climat
 #endif
+      use ncvars
 
       implicit none
       integer ierr_ext
 #include "scalars.h"
-#include "ncvars.h"
 #include "netcdf.inc"
       character(len=max_name_size) frcname
       integer ncid, ifrc, ierr, lfrc, lenstr, check_vardims, ncdf_read

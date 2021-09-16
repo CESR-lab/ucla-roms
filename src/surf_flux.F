@@ -9,14 +9,11 @@
 
       use param
       use read_write
+      use ncvars
 
       implicit none
 
       private
-
-      ! Includes:
-      ! ncvars.h for ncavg
-#include "ncvars.h"
 
 #include "surf_flux.opt"
 

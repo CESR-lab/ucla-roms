@@ -6,13 +6,13 @@
 
       use param
       use climat
+      use ncvars
 
       implicit none
       integer ierr_ext, ierr, lstr, lenstr, ncdf_read
       real(kind=8) dtime
 # define SSH_DATA
 # include "scalars.h"
-# include "ncvars.h"
 # include "netcdf.inc"
 
 ! Initialization:  Check, whether climatology netCDF file is already
