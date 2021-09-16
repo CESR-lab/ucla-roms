@@ -18,10 +18,6 @@
 #include "compute_auxiliary_bounds.h"
 
 
-c--#undef OBC_M2FLATHER
-c--#define OBC_Z2ORLANSKI
-
-
 #ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
 # if defined OBC_WEST && defined OBC_M2FLATHER
@@ -49,6 +45,10 @@ c--#define OBC_Z2ORLANSKI
      &                                 *rmask(istr-1,j)
 #  endif
         enddo
+# elif defined OBC_WEST && defined OBC_M2SPECIFIED
+        do j=jstrV-1,jend                
+          zeta_new(istr-1,j)=zeta_west(j)             ! specify zeta
+        enddo
 # else
         do j=jstrV-1,jend                              ! Western edge
           zeta_new(istr-1,j)=zeta_new(istr,j)          ! zero gradient BC
@@ -58,14 +58,6 @@ c--#define OBC_Z2ORLANSKI
         enddo
 # endif
       endif
-
-c*******
-c*******
-# ifdef ISWAKE_XXX
-c--#  define OBC_Z2ORLANSKI
-# endif
-c*******
-c*******
 
       if (EASTERN_EDGE) then
 # if defined OBC_EAST && defined OBC_M2FLATHER
@@ -115,6 +107,10 @@ c          if (cx < 0.) cx=0.
      &                                 *rmask(iend+1,j)
 #  endif
         enddo
+# elif defined OBC_EAST && defined OBC_M2SPECIFIED
+        do j=jstrV-1,jend                
+          zeta_new(iend+1,j)=zeta_east(j)             ! specify zeta
+        enddo
 # else
         do j=jstrV-1,jend                             ! Eastern edge
           zeta_new(iend+1,j)=zeta_new(iend,j)         ! gradient BC
@@ -156,6 +152,10 @@ c          if (cx < 0.) cx=0.
      &                                 *rmask(i,jstr-1)
 #  endif
         enddo
+# elif defined OBC_SOUTH && defined OBC_M2SPECIFIED
+        do i=istrU-1,iend                
+          zeta_new(i,jstr-1)=zeta_south(i)             ! specify zeta
+        enddo
 # else
         do i=istrU-1,iend                            ! Southern edge
           zeta_new(i,jstr-1)=zeta_new(i,jstr)        ! gradient BC
@@ -178,7 +178,7 @@ c          if (cx < 0.) cx=0.
 #  endif
         enddo
 
-# elif defined OBC_EAST && defined OBC_Z2ORLANSKI
+# elif defined OBC_NORTH && defined OBC_Z2ORLANSKI
         do i=istrU-1,iend                             ! Northern edge
           dft=zeta(i,jend,kstp)-zeta_new(i,jend)      ! Radiation BC
           dfx=zeta_new(i,jend)-zeta_new(i,jend-1)
@@ -193,7 +193,10 @@ c          if (cx < 0.) cx=0.
      &                                 *rmask(i,jend+1)
 #  endif
         enddo
-
+# elif defined OBC_NORTH && defined OBC_M2SPECIFIED
+        do i=istrU-1,iend                
+          zeta_new(i,jend+1)=zeta_north(i)          ! specify zeta
+        enddo
 # else
         do i=istrU-1,iend                           ! Northern edge
           zeta_new(i,jend+1)=zeta_new(i,jend)       ! gradient BC
