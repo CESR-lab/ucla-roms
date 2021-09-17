@@ -21,6 +21,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use work_mod
 
       implicit none
 
@@ -31,7 +32,6 @@
       character(len=18) tstring
 #ifdef SOLVE3D
       integer tile, itrc, j,k
-# include "work.h"
 #endif
 #if defined MPI && !defined PARALLEL_FILES
 # include "mpif.h"

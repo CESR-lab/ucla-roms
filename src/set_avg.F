@@ -4,18 +4,14 @@
       subroutine set_avg (tile)
 
       use param
-# ifdef WEC
-      use wec_frc, only: wstokes_wec_tile, indxWST
-# endif
+      use wec_frc          ! , only: wstokes_wec_tile, indxWST
       use hidden_mpi_vars
       use ncvars
       use private_scratch
+      use work_mod
 
       implicit none
       integer tile
-# ifdef SOLVE3D
-#  include "work.h"
-# endif
 # include "compute_tile_bounds.h"
 # ifdef SOLVE3D
       if (wrtavg(indxW)) then
@@ -71,6 +67,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use work_mod
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -78,10 +75,6 @@
      &                       , itrc, k
 # endif
       real cff,cff1
-
-# ifdef SOLVE3D
-#  include "work.h"
-# endif
 
 # include "compute_auxiliary_bounds.h"
 

@@ -5,14 +5,12 @@
                                      ! into averages netCDF file.
 
       use param
-# ifdef WEC
-      use wec_frc, only: wrt_avg_wec
-# endif
-      use bgc ! wrt_avg_bgc_diag
-      use tracers, only: wrt_avg_trc
-      use surf_flux ! wrt_avg_surf_flux
+      use wec_frc    ! , only: wrt_avg_wec
+      use bgc        ! wrt_avg_bgc_diag
+      use tracers    ! , only: wrt_avg_trc
+      use surf_flux  ! wrt_avg_surf_flux
       use read_write ! nc_write_var, rp_var, etc
-      use netcdf ! nf90 subroutines
+      use netcdf     ! nf90 subroutines
       use averages
       use ncvars
       use scalars
