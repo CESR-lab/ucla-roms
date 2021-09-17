@@ -161,14 +161,12 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
 
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
-
-!# include "param.h" ! included at the top of the module
-# include "scalars.h"
 
 # ifdef SEA_ICE_NOFLUX
 #  ifdef LMD_KPP
@@ -277,7 +275,7 @@
 !!!                                ! Joules/(kg*degC), where 4186.8 is
 !!!                                ! to convert from cal/g to Joules/kg
      &      cpi=1./Cp    ! inverse of specific heat for seawater
-                         ! [kg*degC/Joule], Cp is defined in "scalars.h"
+                         ! [kg*degC/Joule], Cp is defined in "scalars"
 
 !!!     &      cpaircpi=cpair*cpi ! ratio of specific heat for air
 !!!                               ! and seawater
@@ -327,7 +325,7 @@
 !# endif
 !# define SWRAD_DATA
 !# include "param.h"
-!# include "scalars.h"
+!# include "scalars"
 !# include "grid"
 !
 !# include "compute_extended_bounds.h"

@@ -26,12 +26,11 @@
       use param
       use grid
       use mixing
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,itrc
       real cff
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

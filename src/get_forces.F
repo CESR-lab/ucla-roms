@@ -13,9 +13,10 @@
 ! water flux is in [mm/day].
 
       use param
+      use scalars
       implicit none
       integer ierr
-#include "scalars.h"
+
 c--#define VERBOSE
 #ifdef VERBOSE
       write(*,*) 'entering get_forces' MYID

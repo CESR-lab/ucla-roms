@@ -9,24 +9,21 @@
       !       have only just been computed.
 
       use param
-#ifdef WEC
-      use wec_frc, only: wrt_his_wec
-#endif
-
-      use tracers, only: wrt_his_trc
-      use bgc ! wrt_his_bgc_diag
+      use wec_frc    !, only: wrt_his_wec
+      use tracers    !, only: wrt_his_trc
+      use bgc        ! wrt_his_bgc_diag
       use read_write ! nc_write_var
-      use netcdf ! for nf90_routines
+      use netcdf     ! for nf90_routines
       use eos_vars
       use grid
       use mixing
       use ncvars
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
 
-#include "scalars.h"
 #include "netcdf.inc"
 
       integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp

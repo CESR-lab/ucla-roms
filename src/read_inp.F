@@ -13,11 +13,11 @@
       use boundary
       use eos_vars
       use ncvars
+      use scalars
 
       implicit none
       integer ierr
 #include "scoord.h"
-#include "scalars.h"
 #ifdef MPI
 # include "mpif.h"
 #endif

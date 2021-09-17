@@ -26,6 +26,7 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k,k1,k2
@@ -37,8 +38,6 @@
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,2) ::  FSC,dTdz,
      &                                    dTdx,dTde, dZdx,dZde
       real cff, cff1, cff2, cff3, cff4
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

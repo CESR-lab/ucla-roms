@@ -32,6 +32,7 @@ c--# define MERGE_OVERLAP
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -91,7 +92,6 @@ c--# define MERGE_OVERLAP
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb
 # endif
 
-# include "scalars.h"
 # define tind nstp
 
 # ifdef SMOOTH_HBL

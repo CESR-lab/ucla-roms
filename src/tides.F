@@ -5,17 +5,13 @@
 #ifdef TIDES
 
       use param
+      use scalars ! For iic, ntstart, deg2rad
 
       implicit none
 
       ! Make all variable private to this module unless public specified
       private
 
-      ! Includes
-      ! ========
-
-      ! For iic, ntstart, deg2rad
-#include "scalars.h"
 #include "tides.opt"
 
 
@@ -85,8 +81,6 @@
       use grid
 
       implicit none
-
-! scalars.h for iic and ntstart
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend

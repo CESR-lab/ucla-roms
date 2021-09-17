@@ -15,6 +15,7 @@
       use netcdf ! nf90 subroutines
       use averages
       use ncvars
+      use scalars
 
       implicit none
 
@@ -23,7 +24,7 @@
      &             , itrc
 # endif
       character(len=18) tstring
-# include "scalars.h"
+
 # include "netcdf.inc"
 # if defined MPI && !defined PARALLEL_FILES
 #  include "mpif.h"

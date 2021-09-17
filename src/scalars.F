@@ -1,4 +1,11 @@
-! This is include file "scalars.h"
+      module scalars
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
+! This is include file "scalars"
 !----- -- ------- ---- -----------
 ! The following common block contains time variables and indices for
 ! 2D (k-indices) and 3D (n-indices) computational engines.  Since they
@@ -28,14 +35,12 @@
 #endif
      &                           , priv_count(16)
       logical synchro_flag, diag_sync
-      common /priv_scalars/ WallClock, cpu_init, cpu_net,
-     &   proc, time, tdays, numthreads, iic,  kstp, knew
+C$OMP THREADPRIVATE( WallClock, cpu_init, cpu_net )
+C$OMP THREADPRIVATE( proc, time, tdays, numthreads, iic,  kstp, knew )
+C$OMP THREADPRIVATE( priv_count, synchro_flag, diag_sync )
 #ifdef SOLVE3D
-     &                           , iif, nstp, nnew, nrhs
+C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 #endif
-     &       , priv_count, synchro_flag, diag_sync
-C$OMP THREADPRIVATE(/priv_scalars/)
-
 ! Slowly changing variables: these are typically set in the beginning
 ! of the run and either remain unchanged, or are changing only in
 ! association with the I/0.
@@ -73,32 +78,25 @@ C$OMP THREADPRIVATE(/priv_scalars/)
 
       real(kind=8) start_time, dt, dtfast, time_avg
       real xl,el, rdrg,rdrg2,Zob, visc2,gamma2
-      common /scalars_main/ start_time, dt, dtfast, time_avg,
-     &                   xl,el, rdrg,rdrg2,Zob, visc2,gamma2
 
 #ifdef SOLVE3D
       real rho0, tnu2(NT)
-      common /scalars_main/ rho0, tnu2
 
 # if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
                          && !defined MY2_MIXING && !defined MY25_MIXING
       real Akv_bak, Akt_bak(NT)
-      common /scalars_main/ Akv_bak, Akt_bak
 # endif
 # ifdef MY25_MIXING
       real Akq_bak,   q2nu2,   q2nu4
-      common /scalars_main/ Akq_bak, q2nu2, q2nu4
 # endif
 #endif
 #ifdef SPONGE
       real v_sponge
-      common /scalars_main/ v_sponge
 #endif
 
 # if defined OBC_M2ORLANSKI && ( defined M2_FRC_BRY \
                                || defined M2NUDGING )
       real attnM2
-      common /scalars_main/ attnM2
 # endif
 
 
@@ -107,26 +105,20 @@ C$OMP THREADPRIVATE(/priv_scalars/)
   || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
                                              || defined M3NUDGING
       real ubind
-      common /scalars_main/ ubind
 
 
 /* --> OBSOLETE
       real tauM2_in, tauM2_out
-      common /scalars_main/ tauM2_in, tauM2_out
 # ifdef SOLVE3D
       real tauM3_in, tauM3_out,  tauT_in, tauT_out
-      common /scalars_main/ tauM3_in,tauM3_out, tauT_in,tauT_out
 # endif
 */
 #endif
 
       integer ntstart, ntimes, ndtfast, nfast, ninfo, may_day_flag,
      &                                                barr_count(16)
-      common /scalars_main/ ntstart, ntimes, ndtfast, nfast, ninfo,
-     &                               may_day_flag,    barr_count
 #ifdef EXACT_RESTART
       integer forw_start
-      common /scalars_main/ forw_start
 #endif
 
 ! Physical constants:  Earth radius [m]; Aceleration of gravity
@@ -147,3 +139,5 @@ C$OMP THREADPRIVATE(/priv_scalars/)
       real nmol_cm2_to_mmol_m2
       parameter (nmol_cm2_to_mmol_m2 = 0.01)
 #endif
+
+      end module scalars

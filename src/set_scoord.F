@@ -5,10 +5,10 @@
 
       use param
       use comm_vars
+      use scalars
 
       implicit none                      ! output: Cs_w(0:N), Cs_r(1:N)
 # include "scoord.h"
-# include "scalars.h"
 
       integer k                          ! Compute vertical stretching
       real ds,sc, z1,zhc,z2,z3, CSF      ! curves at W- and RHO-points,

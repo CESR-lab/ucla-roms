@@ -12,6 +12,7 @@
       use read_write, only: set_frc_var_tile, ncvs
       use tracers,    only: t
       use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
+      use scalars
 
 
       implicit none
@@ -19,7 +20,6 @@
       private ! All variables private to module unless public specified
 
       ! Includes:
-#include "scalars.h"
 #include "flux_frc.opt"
 
 
@@ -38,7 +38,7 @@
       ! local
       integer :: i, j
 
-! scalars.h for rho0
+! scalars for rho0
 ! index bounds for do loop division by rho0
 #include "compute_extended_bounds.h"
 

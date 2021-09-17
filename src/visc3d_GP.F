@@ -61,6 +61,7 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, k1,k2, indx
@@ -71,8 +72,6 @@
 
       real cff, cff1,cff2,cff3,cff4, cff5,cff6,cff7,cff8,
      &                           dmUdz,dnUdz,dmVdz,dnVdz
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
       indx=3-nstp    !--> time index for target arrays;

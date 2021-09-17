@@ -21,11 +21,11 @@
       use dimensions  ! has dimensions, a list of forcing files, and rmask
       use netcdf
       use buffer
+      use scalars     ! for mayday flag
 
       implicit none
 
 #include "cppdefs.h"
-#include "scalars.h"  /* for may_day_flag */
 
       private
 

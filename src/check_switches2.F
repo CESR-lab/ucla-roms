@@ -87,11 +87,11 @@
 ! contradictions (if any), and raise errors flag to terminate the run.
 
       use param
+      use scalars
       implicit none
       integer ierr, nobc_west, nobc_east, nobc_south, nobc_north,
      &                                ncoupl, nAk, is,ie, lenstr
 #include "strings.h"
-#include "scalars.h"
       ie=lenstr(cpps)
 
 ! Track settings in "set_global_definitions.h". The following

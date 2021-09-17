@@ -28,9 +28,7 @@
       use param
       use river_frc
       use pipe_frc
-#ifdef WEC
       use wec_frc
-#endif
 #if defined POT_TIDES && !defined SOLVE3D
       use tides, only: Ptide
 #endif
@@ -39,6 +37,7 @@
       use grid
       use mixing
       use ocean2d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j, kbak, kold
@@ -48,7 +47,6 @@
       real fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
      &            cff,cff1,cff2, DUnew,DVnew
 
-#include "scalars.h"
 #include "sources.h"
 
 #include "compute_auxiliary_bounds.h"

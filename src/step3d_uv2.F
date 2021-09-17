@@ -32,6 +32,7 @@
       use mixing
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -40,7 +41,6 @@
       real ub,ut
 !     integer ierr
 
-# include "scalars.h"
 # ifdef ADV_ISONEUTRAL
       real dRz,dRx_max, dpth, r0g, cfs,cfb
       real, parameter :: epsil=1.E-33

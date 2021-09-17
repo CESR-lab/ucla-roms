@@ -11,14 +11,13 @@
       use climat
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
       real grad(PRIVATE_2D_SCRATCH_ARRAY), cx,cy, cff, cext, dtfwd
 c-->     &                                           , dft,dfx,dfy
       real, parameter :: eps=1.E-33
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

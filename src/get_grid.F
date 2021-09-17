@@ -7,11 +7,12 @@
       use read_write, only: nc_check_units
       use grid
       use ncvars
+      use scalars
 
       implicit none
       character*1 char1
       integer ierr, ncid, varid, lstr, lenstr, checkdims, ncdf_read
-# include "scalars.h"
+
 # include "netcdf.inc"
 
 ! Open grid netCDF file for reading. Check that dimensions in the file

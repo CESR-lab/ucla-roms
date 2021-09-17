@@ -33,32 +33,25 @@
 ! first.
 
       use param
-# if defined BULK_FRC
-      use bulk_frc,  only: set_bulk_frc_tile
-# endif
+      use bulk_frc  ! ,  only: set_bulk_frc_tile
 ! Can't have #else here because makedepf90 doesn't pick up flux_frc for set_forces
 # if !defined BULK_FRC
       use flux_frc
 # endif
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
-
-# ifdef RIVER_SOURCE
       use river_frc
-# endif
       use pipe_frc
-# ifdef WEC
       use wec_frc
-# endif
       use bgc ! , only: set_bgc_surf_frc
       use hidden_mpi_vars
+      use scalars
 
       implicit none
 
 
       real  tmid
       integer tile, ierr
-#include "scalars.h"
 
 #include "compute_tile_bounds.h"
 

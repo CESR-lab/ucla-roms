@@ -254,11 +254,11 @@ c**         enddo
       write(iout,'(A,20x,I3,1x,A/A,23x,I3,1x,A)')
      &  '!!!!!! Number of Configuration Choices:',nexample, '!!!!!!',
      &  '!!!!!! Total number of CPP-switches:', nswtchs,  '!!!!!!'
-      write(iout,'(3(/6x,A),4(/A),4(/6x,A))')
-     &  'use param', 'implicit none', 'integer ierr, is,ie, iexample',
+      write(iout,'(4(/6x,A),1(/A),4(/6x,A))')
+     &  'use param', 'use scalars', 'implicit none',
+     &  'integer ierr, is,ie, iexample',
 !     &  '#include "param.h"',   '#include "strings.h"',
      &  '#include "strings.h"',
-     &  '#ifdef MPI',           '# include "scalars.h"', '#endif',
      &  'do is=1,max_opt_size', '  cpps(is:is)='' ''',   'enddo',
      &                          'iexample=0'
 

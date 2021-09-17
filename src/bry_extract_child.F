@@ -207,12 +207,11 @@
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       private
 
-! scalars.h for 'knew' var
-#include "scalars.h"
 #include "bry_extract_child.opt"
 
       ! DECLARE VARIABLES: ![

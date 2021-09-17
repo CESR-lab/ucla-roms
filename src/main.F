@@ -55,8 +55,9 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 
       subroutine roms_thread
       use param
+      use scalars
       implicit none
-# include "scalars.h"
+
                                          ! Note: Because there is
       call start_timers()                ! a possibility of I/O error
       call roms_init                     ! occurring on some MPI nodes,
@@ -85,13 +86,12 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use grid
       use ncvars
       use ocean3d
+      use scalars
 
       implicit none
 
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
-
-#include "scalars.h"
 
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
@@ -336,18 +336,15 @@ C$OMP END MASTER
       subroutine roms_step
 
       use param
-#ifdef WEC
-      use wec_frc, only: wec_forces
-#endif
-
+      use wec_frc
       use tides
       use bry_extract_child
       use diagnostics
       use ncvars
+      use scalars
 
       implicit none
       integer trd, tile, my_first, my_last, range
-#include "scalars.h"
 
       trd=proc(2)
       range=(NSUB_X*NSUB_E+numthreads-1)/numthreads

@@ -10,10 +10,11 @@
       use tracers, only: t_vname, set_bry_tracer_defaults
       use boundary
       use ncvars
+      use scalars
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
-# include "scalars.h"
+
 # include "netcdf.inc"
       real dtime
       integer ierr, ierr_all, itrc, lsrc, lenstr
@@ -744,6 +745,7 @@
 
       subroutine set_bry_all_tile (istr,iend,jstr,jend, ierr)
       use param
+      use scalars
       use boundary
       implicit none
       integer istr,iend,jstr,jend, ierr,
@@ -760,7 +762,6 @@
 
       logical need_bry
       real tmid, cff,cff1,cff2
-# include "scalars.h"
 
       need_bry=.false.
                                   ! NOTE: Temporal interpolation of

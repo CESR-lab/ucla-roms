@@ -20,14 +20,13 @@
       use param
       use climat
       use mixing
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend
       real wrk(PRIVATE_2D_SCRATCH_ARRAY)
       integer i,j, isp , I1,I0,I2,J1,J0,J2, ibnd,itrc
       real cff,cff1,cff2,cff3, frac, Tau
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 

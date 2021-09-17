@@ -8,9 +8,10 @@ c--# define TEST_WEIGHTS
 
       use param
       use coupling
+      use scalars
 
       implicit none
-# include "scalars.h"
+
       integer i,j, iter
 # ifdef POWER_FUNCTION
       real p,q,r, scale
@@ -269,10 +270,10 @@ c**       weight(1,i)=1.                   !<-- FLAT
 
       use param
       use coupling
+      use scalars
 
       implicit none
       real zeta(4), DUon, Zt_av1, DU_av2, cff1,cff2
-#   include "scalars.h"
 
       zeta(knew)=zeta(kstp) + dtfast*DUon
 
@@ -298,7 +299,6 @@ c**       weight(1,i)=1.                   !<-- FLAT
       logical PREDICTOR_2D_STEP
       integer krhs
       real zeta(3), DUon, Zt_av1, DU_av2
-#   include "scalars.h"
 
       if (knew==3) then
         krhs=kstp

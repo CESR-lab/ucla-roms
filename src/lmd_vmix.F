@@ -46,15 +46,13 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
 
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv,Kt,Ks, Rig
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE,FE1
-
-# include "scalars.h"
-
 
       real nu_sx, cff,cff1, dudz,dvdz
       real, parameter ::     ! Critical gradient Richardson number

@@ -216,11 +216,11 @@
       use netcdf ! for nf90_routines
       use read_write !, only: ncdf_create_file, nc_define_var, nc_write_var
                      !&   , nc_write_time, output_root_name, rp_var, up_var, vp_var
+      use scalars
 
       implicit none
 
       ! local
-#include "scalars.h"
       integer :: lenstr, my_nf_def_dim
       integer :: lfnm, lvar, prev_fill_mode,
      &           r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)

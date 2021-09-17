@@ -6,6 +6,7 @@
       use param
       use hidden_mpi_vars
       use mixing
+      use scalars
 
       implicit none
       integer tile
@@ -24,8 +25,6 @@
      &    bvf_nu0c=1.,      ! Proportionality constant, [m2/s2];
      &    bvf_nu0=1.0e-7)   ! Convective diffusion [m2/s] in
                             !                unstable regime.
-
-# include "scalars.h"
 
 ! Compute diffusivities using Brunt-Vaisala frequency based vertical
 ! mixing scheme.  Set viscosity to its background value. If static

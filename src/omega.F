@@ -39,6 +39,7 @@
       use pipe_frc
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -47,8 +48,6 @@
       real, parameter :: cu_min=0.6D0, cu_max=1.0D0,
      &  cmnx_ratio=cu_min/cu_max,  cutoff=2.D0-cmnx_ratio,
      &                      r4cmx=0.25D0/(1.D0-cmnx_ratio)
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

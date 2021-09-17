@@ -13,6 +13,7 @@
       use climat
       use grid
       use ocean2d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -22,7 +23,6 @@
 #ifdef OBC_FLUX_CORR
       real uv_crss
 #endif
-#include "scalars.h"
 
 #include "compute_auxiliary_bounds.h"
 

@@ -26,6 +26,7 @@
       use ncvars
       use ocean2d
       use ocean3d
+      use scalars  ! universal scalars, g and pi, model time and time in days
 
       implicit none
 
@@ -43,17 +44,7 @@
       ! Make all variable private to this module unless public specified
       private
 
-      ! save -> Make all public variables global
-      ! (might not be needed depending on compiler)
-      save
-
-      ! ==================================================
-      ! INCLUDE FILES FOR COMMON VARIABLES AS PER OLD ROMS
-      ! ==================================================
-
-! get universal scalars, g and pi, model time and time in days
-# include "scalars.h"
-
+      save     ! save -> Make all public variables global (might not be needed depending on compiler)
 
       ! =========================
       ! DECLARE ALL WEC VARIABLES
@@ -1155,7 +1146,7 @@
 
 
          ! get universal scalars, g and pi
-! # include "scalars.h" - included in top of module
+! # include "scalars" - included in top of module
          ! get iSW_corn variable
 ! # include "param.h" - included in top of module
          ! get pm coordinate transformer from grid
@@ -2110,7 +2101,7 @@ C$OMP BARRIER
 
 !# include "param"
 !# include "grid"
-!# include "scalars.h"
+!# include "scalars"
 !# include "ocean2d"
 # ifdef SOLVE3D
 !#   include "ocean3d"

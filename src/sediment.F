@@ -24,6 +24,7 @@
 
       use param
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend,   ised,indx, i,j,k,ks
@@ -38,7 +39,6 @@
      &  Hz_inv3(PRIVATE_1D_SCRATCH_ARRAY,N),   ero_flux
       integer ksource(PRIVATE_1D_SCRATCH_ARRAY,N)
 
-# include "scalars.h"
 # include "forces.h"
 c# include "bbl.h"
 c# include "sediment.h"

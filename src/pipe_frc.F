@@ -13,13 +13,12 @@
   
       use dimensions !! has dimensions, a list of forcing files, and rmask
       use read_write
+      use scalars
 
       implicit none
 
       private
 
-      ! scalars.h needed for FIRST_TIME_STEP
-#include "scalars.h"
 #include "pipe_frc.opt"
 
       ! Variables used in the evolution equations

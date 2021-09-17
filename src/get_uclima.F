@@ -7,11 +7,12 @@
       use param
       use climat
       use ncvars
+      use scalars
 
       implicit none
       integer ierr i, lstr,lvar,lenstr, ncdf_read
       real(kind=8) dtime
-# include "scalars.h"
+
 # include "netcdf.inc"
 
 ! Initialization:  Check, whether climatological data file is already
@@ -164,11 +165,11 @@
 
       use param
       use climat
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, ierr, i,j,k, it1,it2
       real cff, cff1, cff2
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
