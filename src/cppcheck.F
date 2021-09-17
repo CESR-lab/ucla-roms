@@ -254,11 +254,9 @@ c**         enddo
       write(iout,'(A,20x,I3,1x,A/A,23x,I3,1x,A)')
      &  '!!!!!! Number of Configuration Choices:',nexample, '!!!!!!',
      &  '!!!!!! Total number of CPP-switches:', nswtchs,  '!!!!!!'
-      write(iout,'(4(/6x,A),1(/A),4(/6x,A))')
-     &  'use param', 'use scalars', 'implicit none',
+      write(iout,'(9(/6x,A))')
+     &  'use param', 'use scalars', 'use strings', 'implicit none',
      &  'integer ierr, is,ie, iexample',
-!     &  '#include "param.h"',   '#include "strings.h"',
-     &  '#include "strings.h"',
      &  'do is=1,max_opt_size', '  cpps(is:is)='' ''',   'enddo',
      &                          'iexample=0'
 
@@ -325,7 +323,7 @@ c**  &                              '''<', fname(ifile)(1:ln), '>'''
       write(iout,'(2x,A/5x,A1,2x,A,1x,A/5x,A1,2x,A,1x,A)')
      &      '99  mpi_master_only write(*,''(/1x,2A/14x,A)'')',  '&',
      &      '''### ERROR: checkdefs :: Insufficient size of string',
-     &      '"cpps" '',', '&', '''in file "strings.h".'',',
+     &      '"cpps" '',', '&', '''in file "strings".'',',
      &                    '''Increase the size it and recompile.'''
       write(iout,'(6x,A,2(/6x,A))') 'ierr=ierr+1', 'return', 'end'
       close(unit=iout)

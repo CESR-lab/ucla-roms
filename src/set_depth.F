@@ -21,20 +21,17 @@
 ! topography h(i,j), and vertical coordinate transformation formula.
 
       use param
-# ifdef WEC
       use wec_frc
-# endif
       use coupling
       use grid
       use ocean2d
       use ocean3d
       use scalars
+      use scoord
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff_r,cff1_r, cff_w,cff1_w, ds
-
-# include "scoord.h"
 
 # ifndef VERT_COORD_TYPE_SM09
       real cff2_r,cff2_w, z_r0,z_w0
@@ -522,10 +519,11 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 ! global attribute "CPPS" in output netCDF files.
 
       use param
+      use strings
 
       implicit none
       integer ierr, is,ie, lenstr
-# include "strings.h"
+
       integer lstr
       character(len=16) tmpstr
       ie=lenstr(cpps)
@@ -574,7 +572,7 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 # endif
       return
   99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings.h".',
+     &  'Insufficient length of string "cpps" in file "strings".',
      &        'Increase parameter "max_opt_size" it and recompile.'
       ierr=ierr+1
       end

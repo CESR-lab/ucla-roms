@@ -29,12 +29,8 @@
      &                                                              )
 
       use param
-# ifdef RIVER_SOURCE
       use river_frc
-# endif
-# ifdef WEC
       use wec_frc
-# endif
 #ifdef NHMG
       use nhmg
       use mg_grids
@@ -72,8 +68,6 @@
      &                 , gamma=0.3333333333333333 !! gamma=0.25
 # endif
       integer indx, itrc, iAkt
-
-# include "sources.h"
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
 ! but needs to be declared here in declarations section not in
@@ -546,30 +540,6 @@
         enddo
       enddo
 # endif
-# ifdef PSOURCE
-      do is=1,Nsrc           ! Apply point mass sources associated
-        i=Isrc(is)           ! with river runoff simulations.
-        j=Jsrc(is)
-        if ( istrR <= i .and. i <= iendR .and.
-     &       jstrR <= j .and. j <= jendR ) then
-          if (Dsrc(is) == 0) then
-            do k=1,N
-              u(i,j,k,nnew)=2.*Qsrc(is,k)/( dn_u(i,j)*(
-     &                       z_w(i-1,j,k)-z_w(i-1,j,k-1)
-     &                      +z_w(i  ,j,k)-z_w(i  ,j,k-1)
-     &                                                ))
-            enddo
-          else
-            do k=1,N
-              v(i,j,k,nnew)=2.*Qsrc(is,k)/( dm_v(i,j)*(
-     &                       z_w(i,j-1,k)-z_w(i,j-1,k-1)
-     &                      +z_w(i,j  ,k)-z_w(i,j  ,k-1)
-     &                                                ))
-            enddo
-          endif
-        endif
-      enddo
-# endif
 
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
@@ -801,9 +771,10 @@
 ! as a global attribute in output netCDF files.
 
       use param
+      use strings
       implicit none
       integer ierr, is,ie, lenstr
-# include "strings.h"
+
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+15
       if (ie>max_opt_size) goto 99
@@ -813,7 +784,7 @@
 
       return
   99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings.h".',
+     &  'Insufficient length of string "cpps" in file "strings".',
      &        'Increase parameter "max_opt_size" it and recompile.'
       ierr=ierr+1
       return

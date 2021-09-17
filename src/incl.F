@@ -17,9 +17,6 @@
 #include "cppdefs.h"
 #define ALL_DATA
 
-#include "scoord.h"
-#include "sources.h"
-#include "strings.h"
 #include "tides.h"
 #include "work.h"
       end

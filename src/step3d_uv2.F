@@ -17,14 +17,8 @@
       subroutine step3d_uv2_tile(istr,iend,jstr,jend, WC,FC,CF,DC)
 
       use param
-# ifdef RIVER_SOURCE
       use river_frc
-# endif
-
-# ifdef WEC
-      use wec_frc, only: ust2d, vst2d, ust, vst
-# endif
-
+      use wec_frc      ! , only: ust2d, vst2d, ust, vst
       use diagnostics
       use coupling
       use eos_vars
@@ -852,9 +846,11 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 ! global attribute "CPPS" in output netCDF files.
 
       use param
+      use strings
+
       implicit none
       integer ierr, is,ie, lenstr
-# include "strings.h"
+
       integer lstr
       character(len=32) tmpstr
       ie=lenstr(cpps)
@@ -900,7 +896,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif
       return
   99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings.h".',
+     &  'Insufficient length of string "cpps" in file "strings".',
      &        'Increase parameter "max_opt_size" it and recompile.'
       ierr=ierr+1
       end

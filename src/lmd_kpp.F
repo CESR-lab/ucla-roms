@@ -24,12 +24,9 @@ c--# define MERGE_OVERLAP
      &                                                   kbls, kmo)
 
       use param
-# ifdef WEC
       use wec_frc
-# endif
       use surf_flux ! bulk_frc-> only: sustr_r, svstr_r, stflx, srflx
-                    ! flux_frc-> only: sustr, svstr, stflx, srflx
-      use grid
+      use grid      ! flux_frc-> only: sustr, svstr, stflx, srflx
       use mixing
       use ocean3d
       use scalars
@@ -1033,10 +1030,11 @@ c      endif
 ! global attribute "CPPS" in output netCDF files.
 
       use param
+      use strings
 
       implicit none
       integer ierr, is,ie, lenstr
-# include "strings.h"
+
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+10
       if (ie > max_opt_size) goto 99
@@ -1083,7 +1081,7 @@ c      endif
 # endif
       return
   99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings.h".',
+     &  'Insufficient length of string "cpps" in file "strings".',
      &        'Increase parameter "max_opt_size" it and recompile.'
       ierr=ierr+1
       end
