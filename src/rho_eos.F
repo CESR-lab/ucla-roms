@@ -124,6 +124,7 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -168,8 +169,6 @@
 # ifdef SPLIT_EOS
       real dpth
 # endif
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 

@@ -40,6 +40,7 @@
       use eos_vars
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -60,8 +61,6 @@
 # ifdef ADV_ISONEUTRAL
       real r0g
 # endif
-
-# include "scalars.h"
 
 ! A non-conservative Density-Jacobian scheme using cubic polynomial
 ! fits for rho and z_r as functions of nondimensional coordinates xi,

@@ -28,10 +28,11 @@
 
       use param
       use comm_vars
+      use scalars
 
       implicit none
       integer getpid, trd
-# include "scalars.h"
+
 # ifdef OMP_GET_WTIME
 C$    real*8 omp_get_wtime
 # endif
@@ -83,9 +84,10 @@ C$OMP END CRITICAL (start_timers_cr_rgn)
 
       use param
       use comm_vars
+      use scalars
 
       implicit none                       ! for all threads.
-# include "scalars.h"
+
 # ifdef OMP_GET_WTIME
 C$    real*8 omp_get_wtime
 # endif
@@ -156,9 +158,10 @@ C$OMP END CRITICAL (stop_timers_cr_rgn)
 
       subroutine sync_trap(ibarr)
       use param
+      use scalars
       implicit none
       integer ibarr, indx, itest
-# include "scalars.h"
+
       indx=1+mod(ibarr-1,16)
       priv_count(indx)=priv_count(indx)+1
 C$OMP CRITICAL(trap_cr_rgn)
@@ -179,8 +182,9 @@ C$OMP END CRITICAL(trap_cr_rgn)
                                        ! These are stub-routines for
       subroutine start_timers          ! compatibility with compilers
       use param
+      use scalars
       implicit none                    ! without OpenMP support.
-# include "scalars.h"
+
       mpi_master_only write(*,'(/2(1x,A,I3),4x,2(1x,A,I4)/)')
      &                        'BLOCKING:', NSUB_X, 'x', NSUB_E,
      &                        'HORIZ. GRID SIZE:', Lm, 'x', Mm

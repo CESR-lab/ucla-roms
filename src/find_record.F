@@ -50,11 +50,11 @@ c--#define VERBOSE
 !                          and there are no more files to try next:
 !                          ierr=-999 (irec=1, but it does not matter)
       use param
+      use scalars
       implicit none
       integer ncid, varid, irec, ntime, icycle, ifile, max_files, ierr
       real(kind=8) cycle_length
 
-#include "scalars.h"
 #include "netcdf.inc"
 
       integer nvdims, nvatts, vartype, vdims(8),

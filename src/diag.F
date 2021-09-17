@@ -32,9 +32,10 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use param
       use hidden_mpi_vars
       use private_scratch
+      use scalars
       implicit none
       integer tile,   i,j
-#include "scalars.h"
+
 #include "compute_tile_bounds.h"
 
       j=min(iic,2*ninfo)-1             ! This introduces "logarithmic"
@@ -65,6 +66,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use ncvars
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend
@@ -82,8 +84,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
       integer size, step, itag, status(MPI_STATUS_SIZE)
       real*QUAD buff(16)
 #endif
-
-#include "scalars.h"
 
       real cff, dA, v2, my_v2d_max
       real*QUAD my_avzeta, my_ke,   my_pe

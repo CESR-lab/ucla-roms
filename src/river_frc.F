@@ -15,13 +15,12 @@
   
       use dimensions !! has dimensions, a list of forcing files, and rmask
       use read_write
+      use scalars    ! for FIRST_STEP
 
       implicit none
 
       private
 
-      ! scalars.h needed for FIRST_TIME_STEP
-#include "scalars.h"
 #include "river_frc.opt"
 
       ! Variables used for equation system calculations

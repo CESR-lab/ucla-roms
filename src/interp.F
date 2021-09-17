@@ -8,13 +8,13 @@
       use param
       use grid
       use ocean2d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j, jmin,jmax
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY),
      &         buff(PRIVATE_2D_SCRATCH_ARRAY)
 
-#  include "scalars.h"
                                 ! Preload broker array "buff" with
       if (SOUTHERN_EDGE) then   ! masked cross-sections of the fine-
         jmin=jstr-1             ! grid elements, accross which normal
@@ -93,13 +93,13 @@
       use param
       use coupling
       use ocean2d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, jmin,jmax, j,jf
       real buff(PRIVATE_2D_SCRATCH_ARRAY)
       real T1,T4,T5, crs,crsR,crsL, uctr,dltR,dltL, cff,cffR,cffL
       parameter (T1=1./27., T4=4./27., T5=5./27.)
-#  include "scalars.h"
 
       jmin=jmin_child+(jstr-1)/3
       jmax=jmin_child+(jend-1)/3
@@ -145,13 +145,13 @@
       use param
       use coupling
       use ocean2d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, jmin,jmax, j,jf
       real buff(PRIVATE_2D_SCRATCH_ARRAY)
       real T1,T4,T5, crs,crsR,crsL, uctr,dltR,dltL, cff,cffR,cffL
       parameter (T1=1./27., T4=4./27., T5=5./27.)
-#  include "scalars.h"
 
       jmin=jmin_child+(jstr-1)/3
       jmax=jmin_child+(jend-1)/3

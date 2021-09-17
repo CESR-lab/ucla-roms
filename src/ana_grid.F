@@ -16,7 +16,7 @@
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
-! output: stored in common blocks, see files "scalars.h" "grid"
+! output: stored in common blocks, see files "scalars" "grid"
 
 ! xl,el      Physical dimensions of the computational domain [usually
 !                                                measured in  meters];
@@ -30,6 +30,7 @@
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
       use param
       use grid
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -54,8 +55,6 @@
 # ifdef ANA_RIVER_USWC
      &  , dh, shelf, slope, land, riv_west, riv_east
 # endif
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 

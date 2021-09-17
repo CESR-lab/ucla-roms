@@ -219,12 +219,12 @@
       use param
       use grid
       use ncvars
+      use scalars
 
       implicit none
       character(len=*) ncname
       integer ncid, lncn, varid, ierr, ncdf_write
 
-#include "scalars.h"
 #include "netcdf.inc"
 
 #if defined MPI && !defined PARALLEL_FILES

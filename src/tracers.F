@@ -8,16 +8,11 @@
       use read_write              ! set_frc_var_tile, nc_define_var, rp_var
       use surf_flux,  only: stflx ! surface tracer flux should possibly live in this module rather?
       use ncvars
+      use scalars  ! for 'FIRST_TIME_STEP' and nstp
 
       implicit none
 
       private ! All variables private to module unless public specified
-
-      ! Includes
-      ! ========
-
-      ! scalars.h for 'FIRST_TIME_STEP' and nstp
-#include "scalars.h"
 
       ! 1) in order to specify tracer variable details, user must
       ! set them in tracers.opt (NT still set in param for now).

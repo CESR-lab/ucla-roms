@@ -64,6 +64,7 @@ c--# define CONST_TRACERS
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
@@ -93,8 +94,6 @@ c--# define CONST_TRACERS
      &           cffE, s2_XLL,s2_XRL, s2_ELL,s2_ERL
 #  endif
 # endif
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

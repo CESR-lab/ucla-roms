@@ -40,10 +40,10 @@ C$OMP END PARALLEL
 
       subroutine mpi_test_thread
       use param
+      use scalars
       implicit none
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
-#include "scalars.h"
 
       numthreads=1
 C$    numthreads=omp_get_num_threads()

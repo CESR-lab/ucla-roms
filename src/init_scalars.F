@@ -13,11 +13,11 @@
       use comm_vars
       use mixing
       use ncvars
+      use scalars
 
       implicit none
       integer ierr, i
 #define ALL_DATA
-#include "scalars.h"
 #include "sources.h"
 
 c      integer size, kmp_get_stacksize_s

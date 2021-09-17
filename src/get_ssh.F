@@ -7,12 +7,12 @@
       use param
       use climat
       use ncvars
+      use scalars
 
       implicit none
       integer ierr_ext, ierr, lstr, lenstr, ncdf_read
       real(kind=8) dtime
 # define SSH_DATA
-# include "scalars.h"
 # include "netcdf.inc"
 
 ! Initialization:  Check, whether climatology netCDF file is already
@@ -113,12 +113,12 @@
 
       use param
       use climat
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, ierr, i,j, it1,it2
       real tmid, cff1,cff2, cff
 # define SSH_DATA
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 

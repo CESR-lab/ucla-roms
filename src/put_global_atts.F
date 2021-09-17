@@ -8,11 +8,11 @@
 #endif
       use eos_vars
       use ncvars
+      use scalars
 
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr
 #include "scoord.h"
-#include "scalars.h"
 #include "netcdf.inc"
 #include "strings.h"
 

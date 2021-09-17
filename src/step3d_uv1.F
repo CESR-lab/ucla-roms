@@ -45,6 +45,7 @@
       use mixing
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -64,8 +65,6 @@
       real  div,dmax
 !     integer :: ierr !,imx,jmx,kmx
 #endif
-
-# include "scalars.h"
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
 ! but needs to be declared here in declarations section not in

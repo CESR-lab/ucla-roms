@@ -59,6 +59,7 @@
       ! this routine is called by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
       use read_write, only: set_frc_var_tile, ncvs
+      use scalars
 
       implicit none
 
@@ -72,7 +73,6 @@
       integer :: i, j
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-# include "scalars.h"
 # include "compute_extended_bounds.h"
 #endif
 
@@ -308,12 +308,12 @@
 ! blocks) scalar variables of the BEC model.
 !
       use comm_vars
+      use scalars
 
       implicit none
       integer i,j, itrc ,lvar,lenstr ! ierr, DevinD removed ierr as arguement
       integer omp_get_num_threads
 !#include "param.h"
-#include "scalars.h"
 !#include "ncvars"
 !#include "ncroms_bgcflux.h"
 

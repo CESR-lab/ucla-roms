@@ -13,10 +13,10 @@
       use ncvars
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
 
-#include "scalars.h"
 #include "netcdf.inc"
 
       integer req_rec, tindx, max_rec, record, ncid, varid,

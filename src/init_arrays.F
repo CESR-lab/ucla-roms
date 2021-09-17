@@ -49,14 +49,10 @@
       ! ----------------
 
       use param
-#ifdef WEC
       use wec_frc
-#endif
-#ifdef BULK_FRC
-      use bulk_frc !, only: srflx
-#endif
+      use bulk_frc  !, only: srflx
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
-      use tracers ! iTandS, t, t_avg
+      use tracers   ! iTandS, t, t_avg
       use averages
       use climat
       use coupling
@@ -65,13 +61,13 @@
       use mixing
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
       integer             :: i, j, k, itrc, itavg
       real, parameter     :: init=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
-#include "scalars.h"
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
 # ifdef MPI

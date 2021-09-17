@@ -28,11 +28,11 @@
 
       use param
       use grid
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
 # include "bblm.h"
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -58,12 +58,11 @@
       use param
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff1, cff2 , cff3, cff4
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -154,11 +153,10 @@
       use param
       use surf_flux, only: sustr,svstr
       use grid
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
-
-# include "scalars.h"
       real TauX, TauY, cff
 
 # include "compute_extended_bounds.h"
@@ -259,11 +257,10 @@ c          svstr(i,j)=-1.0d-4
       use param
       use surf_flux, only: srflx
       use grid
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -291,14 +288,13 @@ c          svstr(i,j)=-1.0d-4
       use param
       use climat
       use grid
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
 #ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4
 #endif
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -337,11 +333,10 @@ c          svstr(i,j)=-1.0d-4
       use param
       use surf_flux, only: stflx
       use grid
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j
-
-#  include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -394,14 +389,13 @@ c          svstr(i,j)=-1.0d-4
       use climat
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
 #  ifdef JET
       real cff1, cff2, cff3
 #  endif
-
-#  include "scalars.h"
 
 #  include "compute_extended_bounds.h"
 
@@ -469,8 +463,6 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 # ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4, cff5
 # endif
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -592,7 +584,6 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
       integer istr,iend,jstr,jend, i,j
 
 # include "bblm.h"
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -613,8 +604,9 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
                               ! Set analytical tracer and mass point
       subroutine ana_psource  ! sources and sinks. River runoff can
       use param
+      use scalars
       implicit none           ! be consider as a point source.
-# include "scalars.h"
+
 # include "sources.h"
 !
       integer is, k

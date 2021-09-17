@@ -27,19 +27,18 @@
 c--#define nf_def_var my_nf_def_var
 
       use param
-#ifdef WEC
-      use wec_frc, only: def_his_def_var_wec, def_avg_def_var_wec
-#endif
+      use wec_frc
       use tracers ! def_his_trc, def_avg_trc
       use read_write ! , only: output_root_name, nc_define_var, nc_create_file
       use bgc ! def_his_bgc_diag, def_avg_bgc_diag
       use surf_flux ! set_avg_surf_flux
       use netcdf ! nf90_create()
       use ncvars
+      use scalars
 
       implicit none
       integer total_rec, ierr
-#include "scalars.h"
+
 #include "netcdf.inc"
       logical create_new_file
       integer lenstr, checkdims, my_nf_def_dim, timedimid(1), var_id_tmp

@@ -12,12 +12,10 @@
       use tracers
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       private
-
-! scalars.h for timestep indices 'nnew', 'knew', etc
-#include "scalars.h"
 
 #include "diagnostics.opt"
 

@@ -28,13 +28,13 @@
       use grid
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff_r,cff1_r, cff_w,cff1_w, ds
 
 # include "scoord.h"
-# include "scalars.h"
 
 # ifndef VERT_COORD_TYPE_SM09
       real cff2_r,cff2_w, z_r0,z_w0
@@ -192,11 +192,10 @@
       use wec_frc
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 
@@ -261,6 +260,7 @@
       use grid
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -270,7 +270,6 @@
       real cff
       integer kbak
 # endif
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

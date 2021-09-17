@@ -16,6 +16,7 @@
 #endif
        use grid
        use ocean3d
+       use scalars
 
        implicit none
 
@@ -24,7 +25,6 @@
 !#include "forces.h" ! DevinD commented out. Contains dailypar_bec and
 ! bgc_forces.h, so including it directly here.
 #include "bgc_forces.h"
-#include "scalars.h"
 
        integer i,j,k,m
        integer Istr,Iend,Jstr,Jend
@@ -635,11 +635,11 @@
        use param
        use grid
        use ocean3d
+       use scalars
 
         implicit none
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
-#include "scalars.h"
 
        integer istr,iend,i,j,k,n_loc,auto_ind,auto_ind2
        real dt2,tmp1,tmp2,tmp3,tmp4
@@ -2284,11 +2284,11 @@
 
         use param
         use ocean3d
+        use scalars
 
         implicit none
 #include "bgc_param_bec2.h"
 #include "bgc_ecosys_bec2.h"
-#include "scalars.h"
 
     !---------------------------------------------------------------------------
     !   Set incoming fluxes (put into outgoing flux for first level usage).
@@ -3032,13 +3032,13 @@
     !   result declaration
     !-------------------------------------------------------------------------
 
-! needed for scalars.h
+! needed for scalars
         use param
+        use scalars
 
         implicit none
 
 ! needed for rho0
-#include "scalars.h"       
         integer::istr,iend,jstr,jend
         REAL, DIMENSION(istr:iend,jstr:jend), INTENT(OUT)  :: WORK ! 10m windspeed (m/s)
 

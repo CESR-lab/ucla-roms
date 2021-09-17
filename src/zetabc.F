@@ -9,13 +9,12 @@
       use climat
       use grid
       use ocean2d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
       real zeta_new(PRIVATE_2D_SCRATCH_ARRAY), cx, cff,dft,dfx
       real, parameter :: eps=1.E-33
-
-#include "scalars.h"
 
 #include "compute_auxiliary_bounds.h"
 

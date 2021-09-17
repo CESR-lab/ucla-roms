@@ -31,10 +31,10 @@
       use mixing
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
 
-# include "scalars.h"
       integer istr,iend,jstr,jend, i,j,k, itrc, i0,j0
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: AA
 

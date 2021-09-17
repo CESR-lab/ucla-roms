@@ -8,10 +8,10 @@
       use param
       use climat
       use ncvars
+      use scalars
 
       implicit none                    ! file at appropriate time.
 # define TCLIMA_DATA
-# include "scalars.h"
 # include "netcdf.inc"
       real(kind=8) dtime
       integer itrc, ierr, lfnm,lvar, lenstr, ncdf_read
@@ -181,12 +181,12 @@
       use param
       use climat
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, ierr, itrc,i,j,k, it1,it2
       real tmid, cff, cff1, cff2
 # define TCLIMA_DATA
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 

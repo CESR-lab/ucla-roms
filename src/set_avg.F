@@ -70,6 +70,7 @@
       use ncvars
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j
@@ -77,7 +78,7 @@
      &                       , itrc, k
 # endif
       real cff,cff1
-# include "scalars.h"
+
 # ifdef SOLVE3D
 #  include "work.h"
 # endif

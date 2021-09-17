@@ -22,12 +22,11 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
       real cff
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

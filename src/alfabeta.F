@@ -20,12 +20,12 @@
       use eos_vars
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: alpha,beta
 
-# include "scalars.h"
 # ifdef NONLIN_EOS
       real Tt, cff
       real, parameter ::      r01=6.793952E-2,  r02=-9.095290E-3,

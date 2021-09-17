@@ -31,13 +31,12 @@
       use grid
       use mixing
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, indx
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe
       real cff
-
-# include "scalars.h"
 
 # include "compute_auxiliary_bounds.h"
 

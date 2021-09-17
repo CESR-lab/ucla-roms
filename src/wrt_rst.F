@@ -10,6 +10,7 @@
       use ncvars
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
 
@@ -19,7 +20,6 @@
      &      , itrc
 #endif
       character(len=18) tstring
-#include "scalars.h"
 
 #include "netcdf.inc"
 

@@ -48,6 +48,7 @@
       use mixing
       use ocean2d
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -72,7 +73,6 @@
 # endif
       integer indx, itrc, iAkt
 
-# include "scalars.h"
 # include "sources.h"
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h

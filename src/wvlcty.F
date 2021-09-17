@@ -26,6 +26,7 @@
       use param
       use grid
       use ocean3d
+      use scalars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -33,8 +34,6 @@
 CSDISTRIBUTE_RESHAPE z_w(BLOCK_PATTERN,*) BLOCK_CLAUSE
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: Wxi, Weta
-
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
