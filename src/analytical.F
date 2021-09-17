@@ -32,7 +32,6 @@
 
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "bblm.h"
 
 # include "compute_extended_bounds.h"
 
@@ -582,8 +581,6 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
 
       implicit none
       integer istr,iend,jstr,jend, i,j
-
-# include "bblm.h"
 
 # include "compute_extended_bounds.h"
 
