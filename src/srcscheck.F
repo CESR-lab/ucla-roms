@@ -8,8 +8,9 @@
 ! document  the model configuration (that is composition of names of
 ! source files at the moment when model was compiled).
 
+      use strings
       implicit none
-#include "strings.h"
+
       integer, parameter :: iin=11, iout=12, max_string=128
       character tab*1, backslash*1, string*128
       integer lstr, i, is,ie, indx, iocheck
@@ -33,8 +34,8 @@
      &     '!!!!!! were introduced into or deleted from',
      &                              'the list of source !!!!!!',
      &     '!!!!!! codes SRCS in the Makefile.',       '!!!!!!'
-      write(iout,'(6x,A/6x,A/A/6x,A/8x,A/6x,A)')
-     &     'implicit none', 'integer i', '#include "strings.h"',
+      write(iout,'(4(/6x,A)/8x,A/6x,A)')
+     &     'use strings', 'implicit none', 'integer i',
      &     'do i=1,max_opt_size',  'srcs(i:i)='' ''',   'enddo'
 
       indx=1
@@ -96,7 +97,7 @@
           endif
           if (indx>max_opt_size) then
             write(iout,'(A/2(A,1x,A/),A)') '*****', '*****   ERROR:',
-     &           'parameter max_opt_size in file "strings.h" is not',
+     &           'parameter max_opt_size in file "strings" is not',
      &           '*****          sufficient to accomodate SCRS list',
      &           'from Makefile.', '*****'
             goto 99

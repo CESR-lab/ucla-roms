@@ -18,7 +18,6 @@
       implicit none
       integer ierr, i
 #define ALL_DATA
-#include "sources.h"
 
 c      integer size, kmp_get_stacksize_s
 c      size=kmp_get_stacksize_s()

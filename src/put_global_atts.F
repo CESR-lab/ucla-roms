@@ -9,12 +9,13 @@
       use eos_vars
       use ncvars
       use scalars
+      use scoord
+      use strings
 
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr
-#include "scoord.h"
+
 #include "netcdf.inc"
-#include "strings.h"
 
 #if defined MPI && defined PARALLEL_FILES
       integer*4 ibuff(4), npart

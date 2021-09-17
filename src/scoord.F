@@ -1,3 +1,10 @@
+      module scoord
+
+#include "cppdefs.h"
+
+      use param
+      implicit none
+
 ! Control parameters for vertical coordinate transform: "theta_s" and
 ! "theta_b" are surface and bottom refinement coefficients for Cs=Cs(s)
 ! curves; "hc" is critical depth [meters] above which the vertical grid
@@ -29,11 +36,8 @@
 ! is sigma-coordinate, -1 < s < 0, while "_w" and "_r" stand for
 ! vertical W- and RHO-point locations. 
 
-
-
-#define VERT_COORD_TYPE_SM09
-
 #ifdef SOLVE3D
       real theta_s,theta_b, hc, Cs_w(0:N), Cs_r(N)
-      common /scoord_vars/ theta_s,theta_b, hc, Cs_w,Cs_r
 #endif
+
+      end module scoord

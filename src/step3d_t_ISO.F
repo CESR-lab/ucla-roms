@@ -1006,9 +1006,11 @@ c??         enddo
 ! the output netCDF files.
 
       use param
+      use strings
+
       implicit none
       integer ierr, is,ie, lenstr
-# include "strings.h"
+
       ie=lenstr(cpps)
       is=ie+2 ; ie=is+15
       if (ie > max_opt_size) goto 99
@@ -1018,7 +1020,7 @@ c??         enddo
 
       return
   99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings.h".',
+     &  'Insufficient length of string "cpps" in file "strings".',
      &        'Increase parameter "max_opt_size" it and recompile.'
       ierr=ierr+1
       end

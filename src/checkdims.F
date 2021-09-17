@@ -209,11 +209,11 @@
       integer function check_scoord(ncid, fname, what_to_check)
 
       use param
+      use scoord
 
       implicit none
       integer ncid, what_to_check
       character(len=*) fname
-# include "scoord.h"
       real, parameter :: epsil=1.D-7
       real tst_val(N+1)
       integer ierr, k, icount, lfile, lenstr, read_nc1dat

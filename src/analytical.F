@@ -606,8 +606,6 @@ c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
       use param
       use scalars
       implicit none           ! be consider as a point source.
-
-# include "sources.h"
 !
       integer is, k
       real cff, fac

@@ -43,11 +43,11 @@
 ! starting with "check_switches1".    This routine is merely for
 ! reporting, and it does not perform any checks, nor does it raise
 ! the error flag.
-
+      use strings
       implicit none
       character(len=32) bffr(3)
       integer is,ie, i,nwd, lbffr(3)
-#include "strings.h"
+
       write(*,'(/1x,A)') 'Activated CPP configuration switches:'
       nwd=0
       is=1
@@ -88,10 +88,11 @@
 
       use param
       use scalars
+      use strings
       implicit none
       integer ierr, nobc_west, nobc_east, nobc_south, nobc_north,
      &                                ncoupl, nAk, is,ie, lenstr
-#include "strings.h"
+
       ie=lenstr(cpps)
 
 ! Track settings in "set_global_definitions.h". The following
@@ -277,7 +278,7 @@
       return
   99  mpi_master_only write(*,'(/1x,2A/14x,A)')
      &  '### ERROR: checkdefs :: Insufficient size of string "cpps" ',
-     &  'in file "strings.h".', 'Increase the size it and recompile.'
+     &  'in file "strings".', 'Increase the size it and recompile.'
       ierr=ierr+1
       return
       end

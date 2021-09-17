@@ -483,3 +483,5 @@ c-# define TANH dtanh
 # define OBC_NONE
 #endif
 
+/* 2021/09: moved from scoord. h */
+#define VERT_COORD_TYPE_SM09

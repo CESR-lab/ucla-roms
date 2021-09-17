@@ -61,10 +61,9 @@
      &  '!!!!!!', '!!!!!! independent program, or use',
      &                          'commands "make checkkwds"   !!!!!!',
      &  '!!!!!! or "make depend".',                         '!!!!!!'
-      write(iout,'(4(/6x,A), 1(/A) /6x,A /8x,A, 2(/6x,A))')
-     &  'use param', 'use scalars',
+      write(iout,'(5(/6x,A), /6x,A /8x,A, 2(/6x,A))')
+     &  'use param', 'use scalars', 'use strings',
      &  'implicit none', 'integer ierr, is,ie', ! DevinD edited for param module '#include "param.h"',
-     &  '#include "strings.h"',
      &  'do is=1,max_opt_size',  'kwds(is:is)='' ''',
      &  'enddo',    'is=1'
 
@@ -173,7 +172,7 @@
       write(iout,'(2x,A/5x,A,2x,2A/5x,A,2x,A,2x,A)')
      &     '99  mpi_master_only write(*,''(/1x,2A/25x,A/)'')', '&',
      &          '''### ERROR: setup_kwds :: Insufficient size of ',
-     &        'str "kwds" '',', '&','''in file "strings.h".'',',
+     &        'str "kwds" '',', '&','''in file "strings".'',',
      &                   '''Increase the size it and recompile.'''
       write(iout,'(6x,A,2(/6x,A))') 'ierr=ierr+1', 'return', 'end'
       close(iout)

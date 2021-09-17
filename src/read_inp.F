@@ -4,9 +4,7 @@
                                         ! startup file.
 
       use param
-#ifdef WEC
-      use wec_frc, only: read_inp_wec, read_inp_avg_wec
-#endif
+      use wec_frc    ! , only: read_inp_wec, read_inp_avg_wec
       use surf_flux
       use tracers, only: wrt_t, t_vname, wrt_t_avg
       use read_write ! , only: read_output_root_name, expanse_scratch_env_var
@@ -14,10 +12,11 @@
       use eos_vars
       use ncvars
       use scalars
+      use scoord
 
       implicit none
       integer ierr
-#include "scoord.h"
+
 #ifdef MPI
 # include "mpif.h"
 #endif
@@ -869,8 +868,9 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 
                                             ! Find place in the string
       subroutine cancel_kwd(keyword, ierr)  ! kwds(1:max_opt_size)
+      use strings
       implicit none                         ! which matches the input
-#include "strings.h"
+
       character(len=*) keyword              ! keyword name and turn it
       integer ierr, is,i,ie, lenkw,lenstr   ! into blank. Complain
       lenkw=lenstr(keyword)                 ! about error if not found.
@@ -906,8 +906,9 @@ c**       write(*,'(1x,A,1x,A)') 'Recognized: ', kwds(is:ie-1)
 
                                       ! Check that keyword string is
       subroutine check_kwds (ierr)    ! empty, and if it is not print
+      use strings
       implicit none                   ! out remaining keyword(s) as
-#include "strings.h"
+
       integer ierr, is,ie             ! an error message and increase
       is=1                            ! error counter ierr.
       do while (is<max_opt_size)

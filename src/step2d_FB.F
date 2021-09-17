@@ -47,8 +47,6 @@
       real fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
      &            cff,cff1,cff2, DUnew,DVnew
 
-#include "sources.h"
-
 #include "compute_auxiliary_bounds.h"
 
 ! Set coefficients for AB3-AM4 forward-backward algorithm.
