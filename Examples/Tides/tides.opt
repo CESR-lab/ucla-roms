@@ -1,0 +1,10 @@
+
+      ! ****************************************************************
+      ! user inputs
+
+      integer, parameter, public :: ntides=15 ! Number of tidal components to consider.
+      logical, parameter, public :: bry_tides = .true.
+      logical, parameter, public :: pot_tides = .true.
+
+      ! end user inputs
+      ! ****************************************************************
