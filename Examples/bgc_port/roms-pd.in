@@ -1,0 +1,111 @@
+title:
+          pacmed_0p25, 0.25 degree resolution
+
+time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
+                 1       1200      45       1
+
+S-coord: THETA_S,   THETA_B,    TCLINE (m)
+           6.5d0      1.5d0       250.d0
+
+grid:  filename
+       pacmed_0p25_grd_corrected.nc
+
+forcing: filename
+       pacmed_0p25riverdis_corrected_Y2000M01_frc.nc
+       pacmed_0p25_tides_Y1980M01D01.nc
+
+initial: NRREC  filename
+        1
+       pacmed_0p25_ini2000_5daysAVGsoda.nc
+
+!climatology:
+!2
+!         Input/SAWC_clm.nc 
+!         Input/SAWC_clm2.nc
+
+boundary: filename
+       pacmed_0p25_bry_2000.nc
+
+restart:          NRST,  NRPFRST / filename
+                  2232  2 
+rst/rst_for_Y2000M02.nc
+
+
+history: LDEFHIS, NWRT, NRPFHIS / filename  
+            T     1     40
+      pac_his.nc
+
+averages: NTSAVG, NAVG, NRPFAVG / filename
+            100000     100000  5 
+
+slice_averages: K2D, NTSSLAVG, NSLAVG, NRPFSLAVG / filename
+                 42      1     72    0
+slavg/slavg_2000.nc
+
+output_root_name:
+     pac
+
+!Variable Names:                                  T S PO4 NO3 SiO3 NH4 Fe O2 DIC ALK DOC DON DOFe DOP DOPr DONr ZooC SPChl SPC SPFe SPCaCO3 DiatChl DiatC DiatFe DiatSi DiazChl DiazC DiazFe NO2 N2O_AO1 N2O_AO2 N2O_SIDEN N2O_SODEN N2 N2O_ATM N2O N2_SED N2O_NEV
+primary_history_fields:    zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
+                             T    T    T   T  T   T T   T  T   T    T   T  T  T   T   T   T   T    T   T    T    T    T     T   T    T       T       T     T      T      T       T     T      T   T    T     T      T      T       T     T     T   T    T      T
+
+auxiliary_history_fields:  rho Omega  W  Akv  Akt  Aks  HBL
+                            F   F     F   F    F    F    T   T    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F       F       F     F      F      F       F     F     F   F    F      F
+
+primary_averages:          zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
+                             T    T    T   T  T   T T T   T   F    T   F  T  T   T   T   F   F    T   F    F    T    T     T   F    T       T       T     F      F      T       T     F      T       F     F      F       F      F      F    F   F   F       F
+
+primary_slice_avg:         zeta UBAR VBAR  U  V   wrtT(1:NT)                     wrtTsed(1:NT_sed)
+                             T    F    F   T  T   T T T   T   F    T   F  T  T   T   T   T   F    T   T    T    T    T     T   F    T       T       T     F      T      T       T     F      F       F     F      F      F       F     F     F   F    F      F
+
+auxiliary_averages: rho Omega  W  Akv  Akt   Aks  HBL
+                     F   F     T   F    T     F    T  F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F
+
+auxiliary_slice_avg: rho Omega  W  Akv  Akt  Aks  HBL
+                     F   F     F   F    F    F    T  F    F   F  F  F   F   F   F   F    F   F    F    F    F     F   F    F       F       F     F      F      F       F     F
+
+!bgc_flux_histories: newfile, nwrt, nrpfhis / filename
+!                      T      2635200     0
+!bgc_flux/bgc_flux_his_2000.nc
+
+!bgc_flux_averages:  newfile, ntsavg, navg, nrpfavg / filename
+!                      T       1      2196   0
+!bgc_flux/bgc_flux_avg_2000.nc
+
+!phys_flux_histories: newfile, nwrt, nrpfhis / filename
+!                      T      2635200     0
+!phys_flux/phys_flux_his_2000.nc
+
+!phys_flux_averages:  newfile, ntsavg, navg, nrpfavg / filename
+!                      T       1      2635200   0
+!phys_flux/phys_flux_avg_2000.nc
+
+rho0:
+       1000.0d0
+
+lateral_visc:   VISC2,   
+                 0.     
+
+tracer_diff2: TNU2(1:NT)           [m^2/sec for all]
+              0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
+
+bottom_drag:     RDRG [m/s],  RDRG2,  Zob [m],  Cdb_min, Cdb_max
+                 3.0E-04      0.d0     2.0E-2     1.E-4    1.E-2
+
+gamma2:
+                 1.d0
+
+sponge:          N_SPONGE [grid points], V_SPONGE [m^2/sec]
+                  12                      200.
+
+nudg_cof: TauM2_in/out  attnM2   TauM3_in/out  TauT_in/out [days for all]
+             3  360    0.0      3. 360.      1.  360.
+
+ubind:  binding velocity [m/s]
+            0.5 
+
+SSS_correction:   dSSSdt [m/day]
+                   0.07777
+
+
+
