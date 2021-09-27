@@ -107,7 +107,7 @@ c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
      /* Output */
-#define AVERAGES
+c#define AVERAGES
 
 #define ADV_ISONEUTRAL
 

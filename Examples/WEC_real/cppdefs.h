@@ -81,7 +81,7 @@ c--#endif
 #  define NONLIN_EOS
 #  define SPLIT_EOS
 
-#  define AVERAGES
+c#  define AVERAGES
 c# define EXACT_RESTART
 #  define NEW_S_COORD
 c# define IMPLICIT_BOTTOM_DRAG

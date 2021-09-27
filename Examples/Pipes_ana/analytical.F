@@ -24,12 +24,13 @@
 #ifdef ANA_SMFLUX
       subroutine ana_smflux_tile(istr,iend,jstr,jend)
 
+      use param
       use surf_flux, only: sustr,svstr
+      use grid
+      use scalars
+
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
-# include "grid.h"
-# include "scalars.h"
       real TauX, TauY, cff
 
 # include "compute_extended_bounds.h"
@@ -52,13 +53,13 @@
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
-
+      use param
       use surf_flux, only: srflx
+      use grid
+      use scalars
+
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
-# include "grid.h"
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -73,23 +74,26 @@
 
 #if defined ANA_SSH
       subroutine ana_ssh(tile)            ! Set analytical sea-surface
+      use param
+      use hidden_mpi_vars
       implicit none                       ! height climatology [m]
       integer tile
-#include "param.h"
 #include "compute_tile_bounds.h"
       call ana_ssh_tile(istr,iend,jstr,jend)
       end
 
       subroutine ana_ssh_tile(istr,iend,jstr,jend)
+
+      use param
+      use climat
+      use grid
+      use scalars
+
       implicit none
       integer istr,iend,jstr,jend, i,j
 #ifdef JET
       real TL0, TC0, cff1, cff2, cff3, cff4
 #endif
-# include "param.h"
-# include "grid.h"
-# include "climat.h"
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
@@ -104,13 +108,13 @@
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
-
+      use param
       use surf_flux, only: stflx
+      use grid
+      use scalars
+
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j
-#  include "param.h"
-#  include "grid.h"
-#  include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
