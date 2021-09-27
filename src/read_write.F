@@ -1658,7 +1658,14 @@ C$OMP BARRIER
       ! =========================
 
       ![INFO:
-
+      !
+      ! /* JM & DPD Update 2021/09/20:
+      !      To easily extend interpolation sizes, and for code clarity
+      !      it would be better write a coarse grid mpi exchange routine,
+      !      then the interpolation could simply be done in one line...
+      !      Also, rather than a 1D buff array, use a 2D/3D array.
+      ! */
+      !
       ! Routine is tailored to account for MPI tile size differences
       ! and boundary nodes.
       ! Routine is tailored from ncdf_read_mod.

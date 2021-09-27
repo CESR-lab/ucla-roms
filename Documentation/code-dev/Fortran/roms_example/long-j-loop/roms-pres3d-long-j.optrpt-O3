@@ -1,0 +1,650 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+Intel(R) Fortran Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 19.1.2.254 Build 20200623
+
+Compiler options: -O3 -g -debug inline-debug-info -parallel-source-info=2 -qopt-report=3 -o long-j
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: MAIN
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (MAIN) [1] roms-pres3d-long-j.f90(2,9)
+  -> EXTERN: (2,9) for_set_reentrancy
+  -> EXTERN: (20,5) for_alloc_allocatable
+  -> EXTERN: (22,5) for_alloc_allocatable
+  -> EXTERN: (22,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (25,5) for_alloc_allocatable
+  -> EXTERN: (25,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (27,5) for_alloc_allocatable
+  -> EXTERN: (27,5) for_alloc_allocatable
+  -> EXTERN: (28,5) for_alloc_allocatable
+  -> EXTERN: (28,5) for_alloc_allocatable
+  -> EXTERN: (30,5) for_alloc_allocatable
+  -> EXTERN: (46,10) for_system_clock_count
+  -> EXTERN: (48,5) for_write_seq_lis
+  -> EXTERN: (50,10) for_cpusec_t
+  -> INLINE: (55,12) PRESTEP3D_LOOP
+  -> EXTERN: (59,10) for_cpusec_t
+  -> EXTERN: (60,5) for_write_seq_fmt_xmit
+  -> EXTERN: (60,5) for_write_seq_fmt
+  -> EXTERN: (64,10) for_system_clock_rate
+  -> EXTERN: (64,10) for_system_clock_count
+  -> EXTERN: (66,5) for_write_seq_fmt
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at roms-pres3d-long-j.f90(33,5)
+   remark #25045: Fused Loops: ( 33 34 )
+
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(33,5)
+   <Peeled loop for vectorization>
+      remark #25015: Estimate of max trip count of loop=1
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(33,5)
+      remark #25045: Fused Loops: ( 33 34 )
+
+      remark #15301: FUSED LOOP WAS VECTORIZED
+      remark #15449: unmasked aligned unit stride stores: 2 
+      remark #15475: --- begin vector cost summary ---
+      remark #15476: scalar cost: 7 
+      remark #15477: vector cost: 3.000 
+      remark #15478: estimated potential speedup: 2.140 
+      remark #15488: --- end vector cost summary ---
+      remark #25015: Estimate of max trip count of loop=10
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(34,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(33,5)
+   <Remainder loop for vectorization>
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #15448: unmasked aligned unit stride loads: 1 
+      remark #15449: unmasked aligned unit stride stores: 1 
+      remark #15450: unmasked unaligned unit stride loads: 2 
+      remark #15475: --- begin vector cost summary ---
+      remark #15476: scalar cost: 11 
+      remark #15477: vector cost: 6.500 
+      remark #15478: estimated potential speedup: 1.530 
+      remark #15488: --- end vector cost summary ---
+   LOOP END
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(34,5)
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(35,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25045: Fused Loops: ( 35 36 37 38 39 40 41 42 )
+
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(35,5)
+      remark #25045: Fused Loops: ( 35 36 37 38 39 40 41 42 )
+
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(35,5)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(35,5)
+         remark #25045: Fused Loops: ( 35 36 37 38 39 40 41 42 )
+
+         remark #15301: FUSED LOOP WAS VECTORIZED
+         remark #15449: unmasked aligned unit stride stores: 8 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 29 
+         remark #15477: vector cost: 12.000 
+         remark #15478: estimated potential speedup: 2.350 
+         remark #15488: --- end vector cost summary ---
+         remark #25015: Estimate of max trip count of loop=41
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(36,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(37,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(38,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(39,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(40,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(41,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(42,5)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(35,5)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(36,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(37,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(38,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(39,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(40,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(41,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(42,5)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(36,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(37,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(38,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(39,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(40,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(41,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(42,5)
+   remark #25101: Loop Interchange not done due to: Original Order seems proper
+   remark #25452: Original Order found to be proper, but by a close margin
+   remark #25046: Loop lost in Fusion 
+LOOP END
+
+LOOP BEGIN at roms-pres3d-long-j.f90(106,30) inlined into roms-pres3d-long-j.f90(55,12)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(105,13) inlined into roms-pres3d-long-j.f90(55,12)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(98,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15450: unmasked unaligned unit stride loads: 2 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 9 
+         remark #15477: vector cost: 5.500 
+         remark #15478: estimated potential speedup: 1.600 
+         remark #15488: --- end vector cost summary ---
+         remark #25015: Estimate of max trip count of loop=10
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(103,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #15542: loop was not vectorized: inner loop was already vectorized
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(104,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Peeled loop for vectorization>
+            remark #25015: Estimate of max trip count of loop=1
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(104,11) inlined into roms-pres3d-long-j.f90(55,12)
+            remark #15300: LOOP WAS VECTORIZED
+            remark #15448: unmasked aligned unit stride loads: 5 
+            remark #15449: unmasked aligned unit stride stores: 1 
+            remark #15450: unmasked unaligned unit stride loads: 4 
+            remark #15451: unmasked unaligned unit stride stores: 1 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 41 
+            remark #15477: vector cost: 20.500 
+            remark #15478: estimated potential speedup: 1.920 
+            remark #15488: --- end vector cost summary ---
+            remark #25015: Estimate of max trip count of loop=40
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(104,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Alternate Alignment Vectorized Loop>
+            remark #25015: Estimate of max trip count of loop=40
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(104,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Remainder loop for vectorization>
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(116,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #25045: Fused Loops: ( 116 126 )
+
+         remark #25427: Loop Statements Reordered
+         remark #15301: FUSED LOOP WAS VECTORIZED
+         remark #15448: unmasked aligned unit stride loads: 3 
+         remark #15449: unmasked aligned unit stride stores: 2 
+         remark #15450: unmasked unaligned unit stride loads: 15 
+         remark #15451: unmasked unaligned unit stride stores: 4 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 176 
+         remark #15477: vector cost: 109.000 
+         remark #15478: estimated potential speedup: 1.600 
+         remark #15486: divides: 3 
+         remark #15488: --- end vector cost summary ---
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 6
+         remark #25015: Estimate of max trip count of loop=40
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(126,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #25046: Loop lost in Fusion 
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(139,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #15542: loop was not vectorized: inner loop was already vectorized
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(140,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Peeled loop for vectorization>
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 5
+            remark #25015: Estimate of max trip count of loop=1
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(140,11) inlined into roms-pres3d-long-j.f90(55,12)
+            remark #25427: Loop Statements Reordered
+            remark #15300: LOOP WAS VECTORIZED
+            remark #15448: unmasked aligned unit stride loads: 4 
+            remark #15449: unmasked aligned unit stride stores: 3 
+            remark #15450: unmasked unaligned unit stride loads: 14 
+            remark #15451: unmasked unaligned unit stride stores: 1 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 163 
+            remark #15477: vector cost: 109.500 
+            remark #15478: estimated potential speedup: 1.460 
+            remark #15486: divides: 2 
+            remark #15488: --- end vector cost summary ---
+            remark #25456: Number of Array Refs Scalar Replaced In Loop: 5
+            remark #25015: Estimate of max trip count of loop=40
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(140,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Remainder loop for vectorization>
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(157,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #25427: Loop Statements Reordered
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15448: unmasked aligned unit stride loads: 4 
+         remark #15449: unmasked aligned unit stride stores: 2 
+         remark #15450: unmasked unaligned unit stride loads: 13 
+         remark #15451: unmasked unaligned unit stride stores: 1 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 140 
+         remark #15477: vector cost: 93.500 
+         remark #15478: estimated potential speedup: 1.490 
+         remark #15486: divides: 2 
+         remark #15488: --- end vector cost summary ---
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 3
+         remark #25015: Estimate of max trip count of loop=40
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(170,9) inlined into roms-pres3d-long-j.f90(55,12)
+         remark #15542: loop was not vectorized: inner loop was already vectorized
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(171,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Peeled loop for vectorization>
+            remark #25015: Estimate of max trip count of loop=1
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(171,11) inlined into roms-pres3d-long-j.f90(55,12)
+            remark #15300: LOOP WAS VECTORIZED
+            remark #15448: unmasked aligned unit stride loads: 1 
+            remark #15449: unmasked aligned unit stride stores: 1 
+            remark #15450: unmasked unaligned unit stride loads: 2 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 11 
+            remark #15477: vector cost: 6.500 
+            remark #15478: estimated potential speedup: 1.530 
+            remark #15488: --- end vector cost summary ---
+            remark #25015: Estimate of max trip count of loop=10
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(171,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Alternate Alignment Vectorized Loop>
+            remark #25015: Estimate of max trip count of loop=10
+         LOOP END
+
+         LOOP BEGIN at roms-pres3d-long-j.f90(171,11) inlined into roms-pres3d-long-j.f90(55,12)
+         <Remainder loop for vectorization>
+            remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+            remark #15448: unmasked aligned unit stride loads: 1 
+            remark #15449: unmasked aligned unit stride stores: 1 
+            remark #15450: unmasked unaligned unit stride loads: 2 
+            remark #15475: --- begin vector cost summary ---
+            remark #15476: scalar cost: 11 
+            remark #15477: vector cost: 6.500 
+            remark #15478: estimated potential speedup: 1.530 
+            remark #15488: --- end vector cost summary ---
+         LOOP END
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+roms-pres3d-long-j.f90(2,9):remark #34051: REGISTER ALLOCATION : [MAIN__] roms-pres3d-long-j.f90:2
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     947
+            Global    :     166
+            Local     :     781
+        Regenerable   :     129
+        Spilled       :      51
+        
+    Routine stack
+        Variables     :     124 bytes*
+            Reads     :       4 [3.69e-10 ~ 0.0%]
+            Writes    :      10 [9.23e-10 ~ 0.0%]
+        Spills        :     392 bytes*
+            Reads     :      80 [8.89e-02 ~ 0.1%]
+            Writes    :      53 [1.05e-02 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: PRESTEP3D_LOOP
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (PRESTEP3D_LOOP) [2] roms-pres3d-long-j.f90(73,12)
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at roms-pres3d-long-j.f90(106,30)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(98,9)
+   <Peeled loop for vectorization>
+      remark #25015: Estimate of max trip count of loop=1
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(98,9)
+      remark #15300: LOOP WAS VECTORIZED
+      remark #15442: entire loop may be executed in remainder
+      remark #15448: unmasked aligned unit stride loads: 1 
+      remark #15449: unmasked aligned unit stride stores: 1 
+      remark #15450: unmasked unaligned unit stride loads: 1 
+      remark #15475: --- begin vector cost summary ---
+      remark #15476: scalar cost: 9 
+      remark #15477: vector cost: 5.000 
+      remark #15478: estimated potential speedup: 1.590 
+      remark #15488: --- end vector cost summary ---
+      remark #25015: Estimate of max trip count of loop=10
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(98,9)
+   <Alternate Alignment Vectorized Loop>
+      remark #25015: Estimate of max trip count of loop=10
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(98,9)
+   <Remainder loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(103,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(104,11)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(104,11)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15448: unmasked aligned unit stride loads: 1 
+         remark #15449: unmasked aligned unit stride stores: 2 
+         remark #15450: unmasked unaligned unit stride loads: 7 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 41 
+         remark #15477: vector cost: 21.000 
+         remark #15478: estimated potential speedup: 1.860 
+         remark #15488: --- end vector cost summary ---
+         remark #25015: Estimate of max trip count of loop=40
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(104,11)
+      <Alternate Alignment Vectorized Loop>
+         remark #25015: Estimate of max trip count of loop=40
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(104,11)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(116,9)
+   <Peeled loop for vectorization>
+      remark #25456: Number of Array Refs Scalar Replaced In Loop: 6
+      remark #25015: Estimate of max trip count of loop=1
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(116,9)
+      remark #25045: Fused Loops: ( 116 126 )
+
+      remark #25427: Loop Statements Reordered
+      remark #15301: FUSED LOOP WAS VECTORIZED
+      remark #15442: entire loop may be executed in remainder
+      remark #15448: unmasked aligned unit stride loads: 2 
+      remark #15449: unmasked aligned unit stride stores: 2 
+      remark #15450: unmasked unaligned unit stride loads: 12 
+      remark #15451: unmasked unaligned unit stride stores: 4 
+      remark #15475: --- begin vector cost summary ---
+      remark #15476: scalar cost: 176 
+      remark #15477: vector cost: 107.500 
+      remark #15478: estimated potential speedup: 1.590 
+      remark #15486: divides: 3 
+      remark #15488: --- end vector cost summary ---
+      remark #25456: Number of Array Refs Scalar Replaced In Loop: 6
+      remark #25015: Estimate of max trip count of loop=40
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(126,9)
+      remark #25046: Loop lost in Fusion 
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(116,9)
+   <Remainder loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(139,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(140,11)
+      <Peeled loop for vectorization>
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 5
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(140,11)
+         remark #25427: Loop Statements Reordered
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15448: unmasked aligned unit stride loads: 1 
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15450: unmasked unaligned unit stride loads: 13 
+         remark #15451: unmasked unaligned unit stride stores: 3 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 163 
+         remark #15477: vector cost: 111.000 
+         remark #15478: estimated potential speedup: 1.440 
+         remark #15486: divides: 2 
+         remark #15488: --- end vector cost summary ---
+         remark #25456: Number of Array Refs Scalar Replaced In Loop: 5
+         remark #25015: Estimate of max trip count of loop=40
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(140,11)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(157,9)
+      remark #25427: Loop Statements Reordered
+      remark #15300: LOOP WAS VECTORIZED
+      remark #15450: unmasked unaligned unit stride loads: 14 
+      remark #15451: unmasked unaligned unit stride stores: 3 
+      remark #15475: --- begin vector cost summary ---
+      remark #15476: scalar cost: 140 
+      remark #15477: vector cost: 96.000 
+      remark #15478: estimated potential speedup: 1.440 
+      remark #15486: divides: 2 
+      remark #15488: --- end vector cost summary ---
+      remark #25456: Number of Array Refs Scalar Replaced In Loop: 3
+      remark #25015: Estimate of max trip count of loop=40
+   LOOP END
+
+   LOOP BEGIN at roms-pres3d-long-j.f90(170,9)
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(171,11)
+      <Peeled loop for vectorization>
+         remark #25015: Estimate of max trip count of loop=1
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(171,11)
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15442: entire loop may be executed in remainder
+         remark #15448: unmasked aligned unit stride loads: 1 
+         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15450: unmasked unaligned unit stride loads: 2 
+         remark #15475: --- begin vector cost summary ---
+         remark #15476: scalar cost: 11 
+         remark #15477: vector cost: 6.500 
+         remark #15478: estimated potential speedup: 1.530 
+         remark #15488: --- end vector cost summary ---
+         remark #25015: Estimate of max trip count of loop=10
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(171,11)
+      <Alternate Alignment Vectorized Loop>
+         remark #25015: Estimate of max trip count of loop=10
+      LOOP END
+
+      LOOP BEGIN at roms-pres3d-long-j.f90(171,11)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+    Report from: Code generation optimizations [cg]
+
+roms-pres3d-long-j.f90(73,12):remark #34051: REGISTER ALLOCATION : [prestep3d_loop_] roms-pres3d-long-j.f90:73
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   31[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     588
+            Global    :     129
+            Local     :     459
+        Regenerable   :      15
+        Spilled       :      46
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :     360 bytes*
+            Reads     :     100 [1.58e-01 ~ 0.2%]
+            Writes    :      58 [5.75e-02 ~ 0.1%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================

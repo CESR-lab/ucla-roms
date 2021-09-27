@@ -1,0 +1,133 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+Intel(R) Fortran Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 19.1.2.254 Build 20200623
+
+Compiler options: -O1 -g -debug inline-debug-info -parallel-source-info=2 -qopt-report=3 -o long-j
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+
+Begin optimization report for: MAIN
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (MAIN) [1] roms-pres3d-long-j.f90(2,9)
+  -> EXTERN: (2,9) for_set_reentrancy
+  -> EXTERN: (20,5) for_alloc_allocatable
+  -> EXTERN: (22,5) for_alloc_allocatable
+  -> EXTERN: (22,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (23,5) for_alloc_allocatable
+  -> EXTERN: (25,5) for_alloc_allocatable
+  -> EXTERN: (25,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (26,5) for_alloc_allocatable
+  -> EXTERN: (27,5) for_alloc_allocatable
+  -> EXTERN: (27,5) for_alloc_allocatable
+  -> EXTERN: (28,5) for_alloc_allocatable
+  -> EXTERN: (28,5) for_alloc_allocatable
+  -> EXTERN: (30,5) for_alloc_allocatable
+  -> EXTERN: (46,10) for_system_clock_count
+  -> EXTERN: (48,5) for_write_seq_lis
+  -> EXTERN: (50,10) for_cpusec_t
+  -> (55,12) PRESTEP3D_LOOP
+  -> EXTERN: (59,10) for_cpusec_t
+  -> EXTERN: (60,5) for_write_seq_fmt_xmit
+  -> EXTERN: (60,5) for_write_seq_fmt
+  -> EXTERN: (64,10) for_system_clock_rate
+  -> EXTERN: (64,10) for_system_clock_count
+  -> EXTERN: (66,5) for_write_seq_fmt
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+remark #15320: routine skipped: loop optimizations disabled
+
+    Report from: Code generation optimizations [cg]
+
+roms-pres3d-long-j.f90(2,9):remark #34051: REGISTER ALLOCATION : [MAIN__] roms-pres3d-long-j.f90:2
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   17[ rax rdx rcx rbx rbp rsi rdi r8-r15 zmm0-zmm1]
+        
+    Routine temporaries
+        Total         :     562
+            Global    :     131
+            Local     :     431
+        Regenerable   :     130
+        Spilled       :      20
+        
+    Routine stack
+        Variables     :     124 bytes*
+            Reads     :       4 [1.12e-03 ~ 0.0%]
+            Writes    :      10 [2.80e-03 ~ 0.0%]
+        Spills        :     112 bytes*
+            Reads     :      14 [3.64e+01 ~ 36.4%]
+            Writes    :      14 [3.92e-03 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
+
+Begin optimization report for: PRESTEP3D_LOOP
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (PRESTEP3D_LOOP) [2] roms-pres3d-long-j.f90(73,12)
+
+
+    Report from: Offload optimizations [offload]
+
+remark #15320: routine skipped: loop optimizations disabled
+
+    Report from: Code generation optimizations [cg]
+
+roms-pres3d-long-j.f90(73,12):remark #34051: REGISTER ALLOCATION : [prestep3d_loop_] roms-pres3d-long-j.f90:73
+
+    Hardware registers
+        Reserved     :    2[ rsp rip]
+        Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
+        Callee-save  :    6[ rbx rbp r12-r15]
+        Assigned     :   30[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm15]
+        
+    Routine temporaries
+        Total         :     207
+            Global    :      74
+            Local     :     133
+        Regenerable   :      16
+        Spilled       :      13
+        
+    Routine stack
+        Variables     :       0 bytes*
+            Reads     :       0 [0.00e+00 ~ 0.0%]
+            Writes    :       0 [0.00e+00 ~ 0.0%]
+        Spills        :      64 bytes*
+            Reads     :      18 [2.08e-01 ~ 0.2%]
+            Writes    :      11 [1.59e-02 ~ 0.0%]
+    
+    Notes
+    
+        *Non-overlapping variables and spills may share stack space,
+         so the total stack size might be less than this.
+    
+
+===========================================================================
