@@ -5,7 +5,7 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
+#define USWC_sample
 
 /*
     Embedded (nested) grid configuration segment
@@ -20,11 +20,12 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
+#if defined USWC_sample
+/* PierreD's pacific coast model */
 
-#if defined PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
 
 /* Include standard CPP switches for UP ETH Zurich */
-!#include "cppdefs_UP.h"
+c-dd#include "cppdefs_UP.h"
 
 /*
    Standard UP ETH Zurich Settings for Regional and Basin Configurations
@@ -39,10 +40,10 @@ c--#endif
 #define NONLIN_EOS
 #define SPLIT_EOS
 #define SALINITY
-#define SFLX_CORR    /* DevinD turned off for bulk_frc.F to compile */
+c-dd#define SFLX_CORR    /* DevinD turned off as new 25km input wrong for sss */
                      /*  Forcing */
                      /*         - surface */
-#define DIURNAL_SRFLUX
+#define DIURNAL_SRFLUX /* Note this is 'undef'ed' below */
 c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
                      /*         - lateral */
 #define T_FRC_BRY
@@ -104,38 +105,21 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
 #undef VFLX_CORR
 #undef QCORRECTION
-c-dd#define DQDT_DATA ! DevinD not entirely sure but dont think I need it
-#define TAU_CORRECTION
+c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
      /* Output */
 #define AVERAGES
 #undef SLICE_AVG
-/* DPD CALENDER is in def_his.F of Pierre's code but not mine  */
-c-dd#define CALENDAR '365_day'     /* netCDF CF-convention CALENDAR attribute default: '360_day' */
-c-dd#define STARTDATE '1980-01-01' /* Ana's Hindcast - DPD: only in init_scalars.F seemingly for netcdf stamp */
 
 #define ADV_ISONEUTRAL
 
      /* Biology */
 c-dd#define BIOLOGY_BEC2
 
-#define BULK_FLUX
-c-dd#define BULK_SM_UPDATE ! DEVIND - REMOVED AS ALWAYS NEEDED
-c-dd#define WIND_AT_RHO_POINTS  ! DEVIND - DEPRECATED IN NEW CODE
-#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
+c-dd#define BULK_FRC
+c-dd#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
 
-    /* Flux Analysis */
-c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
-
-    /* Tides */
-# define TIDES
-# ifdef TIDES
-#  define POT_TIDES
-#  define SSH_TIDES
-#  define UV_TIDES
-c-dd-gone#  define TIDERAMP ! No longer using tideramp
-# endif
 
 #endif
 
