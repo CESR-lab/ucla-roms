@@ -27,7 +27,22 @@ module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
 module load netcdf-c/4.7.4
 module load netcdf-fortran/4.5.3
 
+echo "run model..."
+
+cd ../Flux_frc
+make
 srun --mpi=pmi2 -n 6 roms sample.in
+../Lmd_kpp_old/join.sh
+
+cd ../Lmd_kpp_old
+make
+srun --mpi=pmi2 -n 6 roms sample.in
+./join.sh
+
+ncdiff sample_his.0000.nc ../Flux_frc/sample_his.0000.nc diff.nc
+ncview diff.nc
+
+echo "complete!"
 
 
 

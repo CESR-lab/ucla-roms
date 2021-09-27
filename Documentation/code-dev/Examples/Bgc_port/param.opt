@@ -1,0 +1,55 @@
+! Parameter options file
+
+! Dimensions of Physical Grid and array dimensions:
+!----------- -- -------- ---- --- ----- -----------
+! LLm   Number of the internal points of the PHYSICAL grid in XI-
+! MMm   and ETA-directions, excluding physical side boundary points,
+!       peroodic ghost points, and MPI-margins (if any).
+!
+! Domain subdivision parameters:
+!------- ----------- -----------
+! NP_XI,  NP_ETA     number of MPI subdomains in XI-, ETA-directions;
+! NSUB_X, NSUB_E     number of shared memory subdomains (tiles) in XI- and ETA-directions;
+
+! Number of tracers
+!------- -----------
+! nt  must be 2 or more if Salinity is defined
+
+      integer, parameter :: LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
+c     &                     LLm=930, MMm=480, N=60    ! Incorrect grid     
+c     &                     LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
+
+      integer, parameter :: NP_XI=16, NP_ETA=8
+      integer, parameter :: NSUB_X=1, NSUB_E=1
+      
+      integer, parameter :: 
+#ifdef SOLVE3D
+#  if defined BIOLOGY_BEC2
+     &       , ntrc_pas=0
+     &       , ntrc_salt=1
+     &       , itrc_bio=isalt+1  ! itemp+ntrc_salt+ntrc_pas+1
+     &       , ntrc_bio_base=26
+
+     &       , ntrc_bio_ncycle=
+#   ifdef Ncycle_SY
+     &  3
+#    ifdef N2O_TRACER_DECOMP
+     & +5
+#    endif /* N2O_TRACER_DECOMP */
+#    ifdef N2O_NEV
+     & +1
+#    endif /* N2O_NEV*/
+
+#   elif defined N2O_NEV
+     &  1
+#   else /* not Ncycle_SY */
+     &  0
+#   endif /* Ncycle_SY */
+
+     &       , ntrc_bio=ntrc_bio_base+ntrc_bio_ncycle	 ! +ntrc_bio_cocco
+     &       , NT=isalt+ntrc_pas+ntrc_bio
+#  else /* not BIOLOGY_BEC2 */
+     &       , NT=2
+#  endif /* BIOLOGY_BEC2 */
+#endif /* SOLVE3D */
+
