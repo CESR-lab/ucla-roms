@@ -2,10 +2,14 @@
 #ifdef ANA_INITIAL
                                   ! Set initial conditions for momentum
       subroutine ana_init (tile)  ! free surface, and tracer variables
+
+      use param
+      use hidden_mpi_vars
+      use private_scratch
+
       implicit none               ! using analytical expressions.
       integer tile
-# include "param.h"
-# include "private_scratch.h"
+
 # include "compute_tile_bounds.h"
       call ana_init_tile( istr,iend,jstr,jend,
 # ifdef SOLVE3D
@@ -18,12 +22,19 @@
 
       subroutine ana_init_tile (istr,iend,jstr,jend, AA)
 
+      use param
       use tracers, only: t
+      use boundary
+      use climat
+      use eos_vars
+      use grid
+      use mixing
+      use ocean2d
+      use ocean3d
+      use scalars
 
       implicit none
 
-# include "param.h"
-# include "scalars.h"
       integer istr,iend,jstr,jend, i,j,k, itrc, i0,j0
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: AA
 
@@ -39,25 +50,12 @@
 
 #  define VISC_TERM_WIND_BALANCE
 #  ifdef VISC_TERM_WIND_BALANCE
-#   include "mixing.h"
       real  b11,b12,b21,b22, det, TauX,TauY
       real, dimension(0:N) :: Av,FC, c11,c12,c21,c22, d1,d2
 #  endif
 # elif defined ISWAKE
       integer jwake,mid_wake
       real AmpR,AmpU, cffS, Zthrm, dZthrm, xitm, alpha, csa,sna
-# endif
-# include "grid.h"
-# include "ocean2d.h"
-# include "ocean3d.h"
-# include "eos_vars.h"
-# if defined OBC_WEST  || defined OBC_EAST ||\
-     defined OBC_SOUTH || defined OBC_NORTH
-#  ifdef ANA_BRY
-#   include "boundary.h"
-#  else
-#   include "climat.h"
-#  endif
 # endif
 
 # include "compute_auxiliary_bounds.h"

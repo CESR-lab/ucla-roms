@@ -1,0 +1,25 @@
+! Parameter options file
+
+! Dimensions of Physical Grid and array dimensions:
+!----------- -- -------- ---- --- ----- -----------
+! LLm   Number of the internal points of the PHYSICAL grid in XI-
+! MMm   and ETA-directions, excluding physical side boundary points,
+!       peroodic ghost points, and MPI-margins (if any).
+!
+! Domain subdivision parameters:
+!------- ----------- -----------
+! NP_XI,  NP_ETA     number of MPI subdomains in XI-, ETA-directions;
+! NSUB_X, NSUB_E     number of shared memory subdomains (tiles) in XI- and ETA-directions;
+
+! Number of tracers
+!------- -----------
+! nt  must be 2 or more if Salinity is defined
+
+      integer, parameter :: LLm=199, MMm=99, N=50       ! WEC Example sample grid
+
+      integer, parameter :: NP_XI =  3, NP_ETA = 2
+      integer, parameter :: NSUB_X = 1, NSUB_E = 1
+
+      integer, parameter :: nt = 2 
+
+

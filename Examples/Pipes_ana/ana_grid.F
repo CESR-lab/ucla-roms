@@ -1,14 +1,16 @@
 ! This is an example of analytical grid definition
-! It is part of the rivers_ana example and defines
-! topography h, coriolis f,  mask, and river flux location rflx
+! It defines topography h, coriolis f,  mask, etc
 !
 #include "cppdefs.h"
 #ifdef ANA_GRID
 
       subroutine ana_grid (tile)
+
+      use param
+      use hidden_mpi_vars
+
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
       end
@@ -17,7 +19,7 @@
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
-! output: stored in common blocks, see files "scalars.h" "grid.h"
+! output: stored in common blocks, see files "scalars" "grid"
 
 ! xl,el      Physical dimensions of the computational domain [usually
 !                                                measured in  meters];
@@ -29,11 +31,13 @@
 !                   XI- and ETA-directions, both are at RHO-points.
 ! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
+      use param
+      use grid
+      use scalars
 
       use pipe_frc
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 
 ! Grid configuration parameters:
 !----- ------------- -----------
@@ -51,9 +55,6 @@
       real dh, shelf, slope, land, coast
       real riv_west, riv_east,riv_cells
       real psz,px,py,pipe_cells
-
-# include "grid.h"
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 
