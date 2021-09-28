@@ -76,11 +76,11 @@ c--#define VERBOSE
 
       ierr=nf_inq_var(ncid, varid, varname, vartype,
      &                      nvdims,  vdims,  nvatts)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         lvar=lenstr(varname)
         if (nvdims == 1) then
           ierr=nf_inq_dim(ncid, vdims, dimname, size)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ldim=lenstr(dimname)
             ntime=size
             if (ntime > 1) then
@@ -93,7 +93,7 @@ c--#define VERBOSE
 ! Read the last record of time variable perform one of the two checks:
 
               ierr=nf_get_var1_double(ncid, varid, ntime, tend)
-              if (ierr == nf_noerr) then
+              if (ierr == nf90_noerr) then
 
 ! either, (1) in the case of cycling, check whether all time records
 ! lie within the declared cycling interval, i.e.,
@@ -109,10 +109,10 @@ c--#define VERBOSE
                 if (cycle_length > 0.) then
                   i=ntime
                   do while(tend > cycle_length .and. i > 1 .and.
-     &                                          ierr == nf_noerr)
+     &                                          ierr == nf90_noerr)
                     i=i-1
                     ierr=nf_get_var1_double(ncid, varid, i, tend)
-                    if (ierr /= nf_noerr) write(*,1)
+                    if (ierr /= nf90_noerr) write(*,1)
      &                      varname(1:lvar), i, nf_strerror(ierr)
                   enddo
 
@@ -174,7 +174,7 @@ c--#define VERBOSE
      &               ':: Cannot make general inquiry about variable #',
      &                     varid, 'in netCDF file.', nf_strerror(ierr)
       endif
-      if (ntime == 1 .or. ierr /= nf_noerr) return
+      if (ntime == 1 .or. ierr /= nf90_noerr) return
 
 
 !> Search for the minimum possible record number which has its time
@@ -245,7 +245,7 @@ c--#define VERBOSE
       cycle_length=cycle_length*day2sec ! days to seconds.
 
       ierr=nf_get_var1_double(ncid, varid, irec, tstart)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         tstart=tstart*day2sec
         if (cycle_length > 0.) then
           icycle=int((time-tstart)/cycle_length)
@@ -260,10 +260,10 @@ c--#define VERBOSE
 
         elseif (tstart <= time .and. time < tend) then  !--> 2-sided
           it1=1 ; t1=tstart ; it2=ntime ; t2=tend       !    bounding
-          do while(it1+1 < it2 .and. ierr == nf_noerr)
+          do while(it1+1 < it2 .and. ierr == nf90_noerr)
             i=(it1+it2)/2                                 ! Search
             ierr=nf_get_var1_double(ncid, varid, i, test) ! algorithm
-            if (ierr == nf_noerr) then                    ! by division
+            if (ierr == nf90_noerr) then                    ! by division
               test=test*day2sec+icycle*cycle_length       ! in halves.
               if (time < test) then
                 it2=i ; t2=test

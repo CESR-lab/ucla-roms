@@ -93,9 +93,9 @@
   10  if (create_new_file) then
         ierr=nf_create(rstname(1:lrst), nf_clobber+nf_64bit_offset,
      &                                                        ncrst)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
      &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
      &         MYID
@@ -394,9 +394,9 @@
 
       elseif (ncrst == -1) then
         ierr=nf_open(rstname(1:lrst), nf_write, ncrst)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
      &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
      &         MYID
@@ -404,7 +404,7 @@
           endif
 
           ierr=checkdims(ncrst, rstname, rec)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             if (nrpfrst==0) then
               ierr=rec+1 - nrecrst
             else
@@ -425,11 +425,11 @@
               if (mynode > 0) total_rec=total_rec-1
 #endif
             endif
-            ierr=nf_noerr
+            ierr=nf90_noerr
           endif
         endif
 
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
 #if defined MPI && !defined PARALLEL_FILES
           if (mynode==0) then
             create_new_file=.true.
@@ -452,28 +452,28 @@
 ! Time step indices and time:
 
         ierr=nf_inq_varid(ncrst, 'time_step', rstTstep)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           lvar=lenstr(vname(1,indxTime))
           ierr=nf_inq_varid(ncrst, vname(1,indxTime)(1:lvar), rstTime)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,1) vname(1,indxTime)(1:lvar), rstname(1:lrst)
           endif
         else
           write(*,1) 'time_step', rstname(1:lrst)
         endif
-        if (ierr /= nf_noerr) goto 99                     !--> ERROR
+        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
 
 ! Free-surface and 2D momenta in XI- and ETA-directions
 
         lvar=lenstr(vname(1,indxZ))
         ierr=nf_inq_varid(ncrst, vname(1,indxZ)(1:lvar), rstZ)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           lvar=lenstr(vname(1,indxUb))
           ierr=nf_inq_varid(ncrst, vname(1,indxUb)(1:lvar), rstUb)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             lvar=lenstr(vname(1,indxVb))
             ierr=nf_inq_varid(ncrst, vname(1,indxVb)(1:lvar), rstVb)
-            if (ierr /= nf_noerr) then
+            if (ierr /= nf90_noerr) then
               write(*,1) vname(1,indxVb)(1:lvar), rstname(1:lrst)
             endif
           else
@@ -482,19 +482,19 @@
         else
           write(*,1) vname(1,indxZ)(1:lvar),  rstname(1:lrst)
         endif
-        if (ierr /= nf_noerr) goto 99                     !--> ERROR
+        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
 
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
         ierr=nf_inq_varid(ncrst,   'DU_avg2',   rst_DU_avg2)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_inq_varid(ncrst,  'DV_avg2',     rst_DV_avg2)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ierr=nf_inq_varid(ncrst, 'DU_avg_bak', rst_DU_avg_bak)
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               ierr=nf_inq_varid(ncrst, 'DV_avg_bak', rst_DV_avg_bak)
-              if (ierr /= nf_noerr) then
+              if (ierr /= nf90_noerr) then
                 write(*,1) 'DV_avg_bak', rstname(1:lrst)
               endif
             else
@@ -508,32 +508,32 @@
         endif
 #  elif defined PRED_COUPLED_MODE
         ierr=nf_inq_varid(ncrst, 'rufrc_bak', rst_rufrc)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_inq_varid(ncrst, 'rvfrc_bak', rst_rvfrc)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,1) 'rvfrc_bak', rstname(1:lrst)
           endif
         else
           write(*,1) 'rufrc_bak', rstname(1:lrst)
         endif
 #  endif
-        if (ierr /= nf_noerr) goto 99                     !--> ERROR
+        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
 # endif
 
 ! 3D momenta n XI- and ETA-directions.
 
         lvar=lenstr(vname(1,indxU))
         ierr=nf_inq_varid (ncrst, vname(1,indxU)(1:lvar), rstU)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           lvar=lenstr(vname(1,indxV))
           ierr=nf_inq_varid (ncrst, vname(1,indxV)(1:lvar), rstV)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,1) vname(1,indxV)(1:lvar), rstname(1:lrst)
           endif
         else
           write(*,1) vname(1,indxU)(1:lvar), rstname(1:lrst)
         endif
-        if (ierr /= nf_noerr) goto 99                     !--> ERROR
+        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
 
 ! Tracer variables.
 
@@ -541,7 +541,7 @@
           lvar=lenstr(vname(1,indxT+itrc-1))
           ierr=nf_inq_varid(ncrst, vname(1,indxT+itrc-1)(1:lvar),
      &                                                  rstT(itrc))
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,1) vname(1,indxT+itrc-1)(1:lvar), rstname(1:lrst)
             goto 99                                       !--> ERROR
           endif
@@ -552,7 +552,7 @@
 
         lvar=lenstr(vname(1,indxHbls))
         ierr=nf_inq_varid(ncrst, vname(1,indxHbls)(1:lvar), rstHbls)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,1) vname(1,indxHbls)(1:lvar), rstname(1:lrst)
           goto 99                                        !--> ERROR
         endif
@@ -562,7 +562,7 @@
 
         lvar=lenstr(vname(1,indxHbbl))
         ierr=nf_inq_varid(ncrst, vname(1,indxHbbl)(1:lvar), rstHbbl)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
         write(*,1) vname(1,indxHbbl)(1:lvar), rstname(1:lrst)
           goto 99                                       !--> ERROR
         endif
@@ -581,9 +581,9 @@
 #if defined MPI && !defined PARALLEL_FILES
       else
         ierr=nf_open(rstname(1:lrst), nf_write, ncrst)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
 # ifndef MPI_SILENT_MODE
             write(*,'(7x,4A,I4)') 'def_rst :: reopen existing file ''',
      &              rstname(1:lrst), '''.' MYID

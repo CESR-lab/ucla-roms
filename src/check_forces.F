@@ -257,7 +257,7 @@ C$OMP BARRIER
 ! Create/open history file; write grid arrays, if so needed.
 
       call def_frc(nrechis, ierr)
-      if (ierr /= nf_noerr) goto 99
+      if (ierr /= nf90_noerr) goto 99
       lstr=lenstr(hisname)
 
                                         !!! WARNING: Once time
@@ -276,7 +276,7 @@ C$OMP BARRIER
       start(2)=record ; count(2)=1
 
       ierr=nf_put_vara_int (nchis, hisTstep, start, count, ibuff)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_frc :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
      &       'rec =', record, nf_strerror(ierr) MYID
@@ -286,7 +286,7 @@ C$OMP BARRIER
 ! Time
 
       ierr=nf_put_var1_FTYPE (nchis, hisTime, record, time)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxTime))
         write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_frc :: ',
      &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
@@ -298,7 +298,7 @@ C$OMP BARRIER
 ! Short wave radiation flux
 
       ierr=ncdf_write(nchis, vid_srfx,  record,  r_var, srflx, 1)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         write(*,1) 'srflx', record MYID
         goto 99                                         !--> ERROR
       endif
@@ -321,10 +321,10 @@ C$OMP BARRIER
         ierr=nf_close (nchis)
         nchis=-1
       else
-        ierr=nf_sync(nchis)
+        ierr=nf90_sync(nchis)
       endif
 #endif
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
         if (mynode == 0) then
 #endif
@@ -400,9 +400,9 @@ C$OMP BARRIER
   10  if (create_new_file) then
         ierr=nf_create(hisname(1:lfnm), nf_clobber+nf_64bit_offset,
      &                                                     nchis)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(nchis, nf_nofill, prev_fill_mode)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_frc :: Cannot ',
      &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
      &         MYID
@@ -471,7 +471,7 @@ C$OMP BARRIER
 #ifdef MASK_LAND_DATA
         ierr=nf_put_att_FOUT (nchis, vid_srfx, '_FillValue', NF_FOUT,
      &                                                 1, spv_set)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
            write(*,*)  'nf_put_att_XXX:', nf_strerror(ierr)
         endif
 #endif
@@ -488,9 +488,9 @@ C$OMP BARRIER
 
       elseif (nchis == -1) then  !--> alt. to "create_new_file"
         ierr=nf_open(hisname(1:lfnm), nf_write, nchis)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(nchis, nf_nofill, prev_fill_mode)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             mpi_master_only write(*,'(7x,5A,I4)') 'def_frc :: ',
      &                 'open existing file ''', hisname(1:lfnm),
      &              '''.' MYID
@@ -502,7 +502,7 @@ C$OMP BARRIER
           endif
 
           ierr=checkdims(nchis, hisname, rec)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             if (nrpfhis == 0) then
               ierr=rec+1 - total_rec
             else
@@ -523,11 +523,11 @@ C$OMP BARRIER
               if (mynode > 0) total_rec=total_rec-1
 #endif
             endif
-            ierr=nf_noerr
+            ierr=nf90_noerr
           endif
         endif
 
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
 #if defined MPI && !defined PARALLEL_FILES
           if (mynode == 0) then
             create_new_file=.true.
@@ -546,20 +546,20 @@ C$OMP BARRIER
 ! Find netCDF IDs of evolving model variables:
 ! ---- ------ --- -- -------- ----- ----------
         ierr=nf_inq_varid (nchis, 'time_step', hisTstep)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,1) 'time_step', hisname(1:lfnm)
           goto 99                                         !--> ERROR
         endif
 
         lvar=lenstr(vname(1,indxTime))
         ierr=nf_inq_varid (nchis,vname(1,indxTime)(1:lvar),hisTime)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,1) vname(1,indxTime)(1:lvar), hisname(1:lfnm)
           goto 99                                         !--> ERROR
         endif
 
         ierr=nf_inq_varid(nchis, 'srflx', vid_srfx)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,1) vname(1,indxZ)(1:lvar), hisname(1:lfnm)
           goto 99                                       !--> ERROR
         endif
@@ -571,7 +571,7 @@ C$OMP BARRIER
 #if defined MPI && !defined PARALLEL_FILES
       else
         ierr=nf_open(hisname(1:lfnm), nf_write, nchis)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
 # ifndef MPI_SILENT_MODE
           write(*,'(7x,5A,I4)')   'def_frc :: reopen existing ',
      &            'file ''', hisname(1:lfnm), '''.' MYID

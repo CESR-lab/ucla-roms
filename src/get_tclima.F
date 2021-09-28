@@ -34,42 +34,42 @@
         enddo
       endif
 
-      ierr=nf_noerr
+      ierr=nf90_noerr
       lfnm=lenstr(clm_file)
 
       if (iic == ntstart) then
         if (ncidclm == -1) then
           ierr=nf_open(clm_file(1:lfnm), nf_nowrite, ncidclm)
-          if (ierr /= nf_noerr) write(*,'(/1x,4A/)')  '### ERROR: ',
+          if (ierr /= nf90_noerr) write(*,'(/1x,4A/)')  '### ERROR: ',
      &                         'get_tclima :: can not open file ''',
      &                                    clm_file(1:lfnm),   '''.'
         endif
 
         itrc=0
-        do while(itrc < NT .and. ierr == nf_noerr)
+        do while(itrc < NT .and. ierr == nf90_noerr)
           itrc=itrc+1
           lvar=lenstr(vname(1,indxT+itrc-1))
           ierr=nf_inq_varid(ncidclm, vname(1,indxT+itrc-1)(1:lvar),
      &                                               tclm_id(itrc))
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             if (itrc == itemp) then
               ierr=nf_inq_varid(ncidclm, 'tclm_time', tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'tclm_time',
+              if (ierr /= nf90_noerr) write(*,1) 'tclm_time',
      &                                         itrc, clm_file(1:lfnm)
 # ifdef SALINITY
             elseif (itrc == isalt) then
               ierr=nf_inq_varid(ncidclm, 'sclm_time', tclm_tid(itrc))
-              if (ierr /= nf_noerr) write(*,1) 'sclm_time',
+              if (ierr /= nf90_noerr) write(*,1) 'sclm_time',
      &                                         itrc, clm_file(1:lfnm)
 # endif
             endif
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               call find_record(      ncidclm, tclm_tid(itrc),
      &                        tclm_rec(itrc), nttclm(itrc),
      &                     tclm_ncycle(itrc), tclm_cycle(itrc),
      &                                     1, 1,         ierr)
 
-              if (ierr == nf_noerr) then
+              if (ierr == nf90_noerr) then
 # ifdef MPI_SILENT_MODE
                 if (mynode == 0) then
 # endif
@@ -102,7 +102,7 @@
 ! logical condition to do analytical input instead of time
 ! interpolation.
 
-        if (ierr /= nf_noerr .and. itrc >= iNO3_) ierr=nf_noerr
+        if (ierr /= nf90_noerr .and. itrc >= iNO3_) ierr=nf90_noerr
 # endif
       endif !<-- iic == ntstart
 
@@ -122,16 +122,16 @@
       do itrc=1,NT
         if (tclm_id(itrc) > 0) then
           do while (tclm_time(ittclm(itrc),itrc) < time+0.5*dt
-     &                                  .and. ierr == nf_noerr)
+     &                                  .and. ierr == nf90_noerr)
 
             call advance_record( tclm_rec(itrc), nttclm(itrc),
      &                        tclm_ncycle(itrc), tclm_cycle(itrc),
      &                                        1, 1,  ierr )
 
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               ierr=nf_get_var1_double(ncidclm, tclm_tid(itrc),
      &                                 tclm_rec(itrc), dtime)
-              if (ierr == nf_noerr) then
+              if (ierr == nf90_noerr) then
                 ittclm(itrc)=min(3-ittclm(itrc),nttclm(itrc))
                 tclm_time(ittclm(itrc),itrc)=dtime*day2sec
      &                 + tclm_cycle(itrc)*tclm_ncycle(itrc)
@@ -139,7 +139,7 @@
                 ierr=ncdf_read(ncidclm, tclm_id(itrc), tclm_rec(itrc),
      &           r_var, tclima(START_2D_ARRAY,1,ittclm(itrc),itrc), N)
 
-                if (ierr == nf_noerr) then
+                if (ierr == nf90_noerr) then
 # ifdef MPI_SILENT_MODE
                   if (mynode == 0) then
 # endif

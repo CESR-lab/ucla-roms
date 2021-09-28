@@ -39,7 +39,7 @@
 !===== ===== ==== === =====
 
       ierr=nf_get_vara_FTYPE (ncid, varid, start, count, buff)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         do k=1,nmax
           shft=1-jmin + (k-1)*count(1)
           do j=jmin,jmax
@@ -53,7 +53,7 @@
 #endif
       else
         ierr=nf_inq_varname(ncid, varid, vname)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           lstr=lenstr(vname)
           write(*,'(1x,2A,I6,1x,3A,2x,A,2x,A,I4)')  '### ERROR: ',
      &            'read_bry_EW :: Cannot read rec =',   record,
@@ -102,7 +102,7 @@
 !===== ===== ==== === =====
 
       ierr=nf_get_vara_FTYPE(ncid, varid, start, count, buff)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         do k=1,nmax
           shft=1-imin + (k-1)*count(1)
           do i=imin,imax
@@ -116,7 +116,7 @@
 #endif
       else
         ierr=nf_inq_varname (ncid, varid, vname)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           lstr=lenstr(vname)
           write(*,'(1x,2A,I6,1x,3A,2x,A,2x,A,I4)')  '### ERROR: ',
      &            'read_bry_NS :: Cannot read rec =',   record,

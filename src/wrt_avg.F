@@ -38,7 +38,7 @@
 
       call def_avg (nrecavg, ierr)
       lstr=lenstr(avgname)
-      if (ierr /= nf_noerr) goto 99         !!! WARNING: Here it is
+      if (ierr /= nf90_noerr) goto 99         !!! WARNING: Here it is
       nrecavg=max(nrecavg,1)                !!! assumed that global
       if (nrpfavg == 0) then                !!! averages record index
         record=nrecavg                      !!! "nrecavg" is already
@@ -57,17 +57,17 @@
 ! Barotropic mode variables: free-surface and 2D momentum components
 ! in XI-,ETA-directions.
 
-      if (wrtavg(indxZ) .and. ierr == nf_noerr) then
+      if (wrtavg(indxZ) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, zeta_avg, 1, vname(1,indxZ), rp_var,
      &                    record, ierr)
       endif
 
-      if (wrtavg(indxUb) .and. ierr == nf_noerr) then
+      if (wrtavg(indxUb) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, ubar_avg, 1, vname(1,indxUb), up_var,
      &                    record, ierr)
       endif
 
-      if (wrtavg(indxVb) .and. ierr == nf_noerr) then
+      if (wrtavg(indxVb) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, vbar_avg, 1, vname(1,indxVb), vp_var,
      &                    record, ierr)
       endif
@@ -75,12 +75,12 @@
 
 ! 3D momentum components in XI- and ETA-directions.
 
-      if (wrtavg(indxU) .and. ierr == nf_noerr) then
+      if (wrtavg(indxU) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, u_avg, N, vname(1,indxU), up_var,
      &                    record, ierr)
       endif
 
-      if (wrtavg(indxV) .and. ierr == nf_noerr) then
+      if (wrtavg(indxV) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, v_avg, N, vname(1,indxV), vp_var,
      &                    record, ierr)
       endif
@@ -91,35 +91,35 @@
 
 ! Density anomaly.
 
-      if (wrtavg(indxR) .and. ierr == nf_noerr) then
+      if (wrtavg(indxR) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, rho_avg, N, vname(1,indxR), rp_var,
      &                    record, ierr)
       endif
 
 ! S-coordinate omega vertical velocity (m/s).
 
-      if (wrtavg(indxO) .and. ierr == nf_noerr) then
+      if (wrtavg(indxO) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, w_avg, N+1, vname(1,indxO), rp_var,
      &                    record, ierr)
       endif
 
 ! True vertical velocity (m/s).
 
-      if (wrtavg(indxW) .and. ierr == nf_noerr) then
+      if (wrtavg(indxW) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, wvl_avg, N, vname(1,indxW), rp_var,
      &                    record, ierr)
       endif
 
 ! Vertical eddy viscosity coefficient for momentum.
 
-      if (wrtavg(indxAkv) .and. ierr == nf_noerr) then
+      if (wrtavg(indxAkv) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, akv_avg(START_2D_ARRAY,0), N+1,
      &                    vname(1,indxAkv), rp_var, record, ierr)
       endif
 
 ! Vertical heat conductivity
 
-      if (wrtavg(indxAkt) .and. ierr == nf_noerr) then
+      if (wrtavg(indxAkt) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, akt_avg(START_2D_ARRAY,0), N+1,
      &                    vname(1,indxAkt), rp_var, record, ierr)
       endif
@@ -127,7 +127,7 @@
 
 ! Vertical diffusion coefficient for salinity.
 
-      if (wrtavg(indxAks) .and. ierr == nf_noerr) then
+      if (wrtavg(indxAks) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, Aks_avg(START_2D_ARRAY,0), N+1,
      &                    vname(1,indxAks), rp_var, record, ierr)
       endif
@@ -136,7 +136,7 @@
 
 ! Depth of planetary boundary layer [m].
 
-      if (wrtavg(indxHbls) .and. ierr == nf_noerr) then
+      if (wrtavg(indxHbls) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, hbl_avg, 1, vname(1,indxHbls), rp_var,
      &                    record, ierr)
       endif
@@ -145,7 +145,7 @@
 
 ! Thickness of KPP bottom boundary layer [m].
 
-      if (wrtavg(indxHbbl) .and. ierr == nf_noerr) then
+      if (wrtavg(indxHbbl) .and. ierr == nf90_noerr) then
         call nc_write_var(ncavg, hbbl_avg, 1, vname(1,indxHbbl), rp_var,
      &                    record, ierr)
       endif
@@ -182,10 +182,10 @@
         ierr=nf_close(ncavg)
         ncavg=-1
       else
-        ierr=nf_sync(ncavg)
+        ierr=nf90_sync(ncavg)
       endif
 # endif
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
 # ifdef MPI_SILENT_MODE
         if (mynode==0) then
 # endif
