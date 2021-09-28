@@ -14,6 +14,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use netcdf
 
       implicit none
 

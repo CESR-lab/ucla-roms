@@ -14,6 +14,7 @@
       use averages
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
 

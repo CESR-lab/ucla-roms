@@ -12,6 +12,7 @@
       use ocean3d
       use scalars
       use mpi
+      use netcdf
 
       implicit none
 

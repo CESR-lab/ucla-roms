@@ -237,6 +237,7 @@ C$OMP BARRIER
       use ncvars
       use scalars
       use mpi
+      use netcdf
 
       implicit none
 
@@ -358,6 +359,7 @@ C$OMP BARRIER
       use param
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
       logical create_new_file

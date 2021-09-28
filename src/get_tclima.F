@@ -9,6 +9,7 @@
       use climat
       use ncvars
       use scalars
+      use netcdf
 
       implicit none                    ! file at appropriate time.
 # define TCLIMA_DATA

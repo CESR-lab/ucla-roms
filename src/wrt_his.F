@@ -23,6 +23,7 @@
       use scalars
       use work_mod
       use mpi
+      use netcdf
 
       implicit none
 

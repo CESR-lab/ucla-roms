@@ -8,6 +8,7 @@
       use climat
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
       integer ierr i, lstr,lvar,lenstr, ncdf_read

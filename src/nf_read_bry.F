@@ -13,6 +13,7 @@
 
       use param
       use buffer
+      use netcdf
 
       implicit none
       integer read_bry_EW, ncid, varid, record, horiz_type, nmax
@@ -77,6 +78,7 @@
 
       use param
       use buffer
+      use netcdf
 
       implicit none
       integer read_bry_NS, ncid, varid, record, horiz_type, nmax

@@ -11,6 +11,7 @@
       use boundary
       use ncvars
       use scalars
+      use netcdf
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
