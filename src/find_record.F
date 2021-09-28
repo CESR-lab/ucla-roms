@@ -113,7 +113,7 @@ c--#define VERBOSE
                     i=i-1
                     ierr=nf_get_var1_double(ncid, varid, i, tend)
                     if (ierr /= nf90_noerr) write(*,1)
-     &                      varname(1:lvar), i, nf_strerror(ierr)
+     &                      varname(1:lvar), i, nf90_strerror(ierr)
                   enddo
 
                   if (i < ntime) then
@@ -144,7 +144,7 @@ c--#define VERBOSE
                   endif
                 endif
               else
-                write(*,1) varname(1:lvar), ntime, nf_strerror(ierr)
+                write(*,1) varname(1:lvar), ntime, nf90_strerror(ierr)
               endif
             endif  !<-- ntime > 1
 #ifdef VERBOSE
@@ -161,7 +161,7 @@ c--#define VERBOSE
           else
             write(*,'(/1x,4A/12x,A/)')    '### ERROR: find_record :: ',
      &           'Cannot make inquiry about dimension for variable ''',
-     &                      varname(1:lvar), '''.', nf_strerror(ierr)
+     &                      varname(1:lvar), '''.', nf90_strerror(ierr)
           endif
         else
           write(*,'(1x,4A,I3,A)')    '### ERROR: find_record :: ',
@@ -172,7 +172,7 @@ c--#define VERBOSE
       else
         write(*,'(/1x,2A,I4,1x,A/12x,A/)')   '### ERROR: find_record ',
      &               ':: Cannot make general inquiry about variable #',
-     &                     varid, 'in netCDF file.', nf_strerror(ierr)
+     &                     varid, 'in netCDF file.', nf90_strerror(ierr)
       endif
       if (ntime == 1 .or. ierr /= nf90_noerr) return
 
@@ -271,7 +271,7 @@ c--#define VERBOSE
                 it1=i ; t1=test
               endif
             else
-              write(*,1) varname(1:lvar), i, nf_strerror(ierr)
+              write(*,1) varname(1:lvar), i, nf90_strerror(ierr)
             endif
           enddo
           irec=it2  !<-- initially set to future record, then step back
@@ -306,7 +306,7 @@ c**         irec=-2                      !--> proceed to previous file
         if (iic == ntstart) irec=irec-1
 
       else
-        write(*,1) varname(1:lvar), irec, nf_strerror(ierr)
+        write(*,1) varname(1:lvar), irec, nf90_strerror(ierr)
       endif
 
   1   format(/1x, '### ERROR: find_record :: Cannot read variable ''',

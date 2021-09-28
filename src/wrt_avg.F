@@ -175,11 +175,11 @@
 ! processes to access data immediately after it is written.
 
 # if defined MPI && !defined PARALLEL_FILES
-      ierr=nf_close(ncavg)
+      ierr=nf90_close(ncavg)
       if (nrpfavg>0 .and. record>=nrpfavg) ncavg=-1
 # else
       if (nrpfavg>0 .and. record>=nrpfavg) then
-        ierr=nf_close(ncavg)
+        ierr=nf90_close(ncavg)
         ncavg=-1
       else
         ierr=nf90_sync(ncavg)

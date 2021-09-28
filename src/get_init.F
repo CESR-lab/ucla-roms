@@ -102,7 +102,7 @@ c--#define VERBOSE
       else
         write(*,'(/1x,4A/12x,A/)')  '### ERROR: get_init :: Cannot ',
      &                'open netCDF file ''', ininame(1:linit), '''.',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
       endif
       if (ierr /= nf90_noerr) goto 99                     !--> ERROR
 
@@ -229,7 +229,7 @@ c--#define VERBOSE
                   endif
                 else
                   write(*,2) vname(1,indxTime)(1:lvar), record,
-     &                       ininame(1:linit), nf_strerror(ierr)
+     &                       ininame(1:linit), nf90_strerror(ierr)
                   goto 99
                 endif
               else
@@ -246,15 +246,15 @@ c--#define VERBOSE
             write(*,'(/1x,4A/12x,3A/12x,A/)')  '### ERROR: get_init ',
      &           ':: Cannot read attribute ''units'' for variable ''',
      &         vname(1,indxTime)(1:lvar), '''', 'from netCDF file ''',
-     &                  ininame(1:linit),  '''.', nf_strerror(ierr)
+     &                  ininame(1:linit),  '''.', nf90_strerror(ierr)
           endif
         else
           write(*,2) vname(1,indxTime)(1:lvar), record,
-     &               ininame(1:linit), nf_strerror(ierr)
+     &               ininame(1:linit), nf90_strerror(ierr)
         endif
       else
         write(*,1) vname(1,indxTime)(1:lvar), ininame(1:linit),
-     &                                      nf_strerror(ierr)
+     &                                      nf90_strerror(ierr)
       endif
       if (ierr /= nf90_noerr)  goto 99                    !--> ERROR
 
@@ -302,7 +302,7 @@ c--#define VERBOSE
                   endif
                 else
                   write(*,2) 'time_step', record, ininame(1:linit),
-     &                                           nf_strerror(ierr)
+     &                                           nf90_strerror(ierr)
                 endif
               elseif (tindx == 1) then
                 if (forw_start == 1) then
@@ -316,17 +316,17 @@ c--#define VERBOSE
 #endif
             else
               write(*,2)  'time_step',  record,  ininame(1:linit),
-     &                                           nf_strerror(ierr)
+     &                                           nf90_strerror(ierr)
             endif
           else
              write(*,'(/1x,3A/16x,A/)')     '### ERROR: get_init :: ',
      &            'Cannot determine size of the first dimension for ',
-     &                  'variable ''time_step'':', nf_strerror(ierr)
+     &                  'variable ''time_step'':', nf90_strerror(ierr)
           endif
         else
           write(*,'(/1x,3A/16x,A/)') '### ERROR: get_init :: Cannot ',
      &      'determine dimensions for netCDF variable ''time_step'':',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
         endif
         if (ierr /= nf90_noerr)  goto 99                  !--> ERROR
       else
@@ -380,27 +380,27 @@ c--#define VERBOSE
      &                          vbar(START_2D_ARRAY,1), 1)
                 if (ierr /= nf90_noerr) then
                   write(*,2) vname(1,indxVb)(1:lvar),   record,
-     &                       ininame(1:linit), nf_strerror(ierr)
+     &                       ininame(1:linit), nf90_strerror(ierr)
                 endif
               else
                 write(*,1) vname(1,indxVb)(1:lvar), ininame(1:linit),
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
               endif
             else
               write(*,2) vname(1,indxUb)(1:lvar),    record,
-     &                   ininame(1:linit), nf_strerror(ierr)
+     &                   ininame(1:linit), nf90_strerror(ierr)
             endif
           else
             write(*,1) vname(1,indxUb)(1:lvar), ininame(1:linit),
-     &                                         nf_strerror(ierr)
+     &                                         nf90_strerror(ierr)
           endif
         else
           write(*,2) vname(1,indxZ)(1:lvar),    record,
-     &               ininame(1:linit), nf_strerror(ierr)
+     &               ininame(1:linit), nf90_strerror(ierr)
         endif
       else
         write(*,1) vname(1,indxZ)(1:lvar), ininame(1:linit),
-     &                                    nf_strerror(ierr)
+     &                                    nf90_strerror(ierr)
       endif
       if (ierr /= nf90_noerr) goto 99               !--> ERROR
 
@@ -433,19 +433,19 @@ c--#define VERBOSE
      &                                                  DV_avg_bak, 1)
                     if (ierr /= nf90_noerr) then
                       write(*,2) 'DV_avg_bak', record,ininame(1:linit),
-     &                                               nf_strerror(ierr)
+     &                                               nf90_strerror(ierr)
                     endif
                   else
                     write(*,2)  'DU_avg_bak', record, ininame(1:linit),
-     &                                               nf_strerror(ierr)
+     &                                               nf90_strerror(ierr)
                   endif
                 else
                   write(*,2) 'DV_avg2',  record, ininame(1:linit),
-     &                                          nf_strerror(ierr)
+     &                                          nf90_strerror(ierr)
                 endif
               else
                 write(*,2)   'DU_avg2',  record, ininame(1:linit),
-     &                                          nf_strerror(ierr)
+     &                                          nf90_strerror(ierr)
               endif
               if (ierr /= nf90_noerr) goto 99                  !--> ERROR
             else
@@ -473,11 +473,11 @@ c--#define VERBOSE
      &                     rvfrc_bak(START_2D_ARRAY,tindx), 1)
             if (ierr /= nf90_noerr) then
               write(*,2) 'rvfrc_bak', record, ininame(1:linit),
-     &                                       nf_strerror(ierr)
+     &                                       nf90_strerror(ierr)
             endif
           else
             write(*,2)   'rufrc_bak', record, ininame(1:linit),
-     &                                       nf_strerror(ierr)
+     &                                       nf90_strerror(ierr)
           endif
           if (ierr /= nf90_noerr) goto 99                     !--> ERROR
         else
@@ -504,19 +504,19 @@ c--#define VERBOSE
      &                      v(START_2D_ARRAY,1,tindx), N)
             if (ierr /= nf90_noerr) then
               write(*,2) vname(1,indxV)(1:lvar),    record,
-     &                   ininame(1:linit), nf_strerror(ierr)
+     &                   ininame(1:linit), nf90_strerror(ierr)
             endif
           else
             write(*,1) vname(1,indxV)(1:lvar), ininame(1:linit),
-     &                                       nf_strerror(ierr)
+     &                                       nf90_strerror(ierr)
           endif
         else
           write(*,2) vname(1,indxU)(1:lvar),    record,
-     &               ininame(1:linit), nf_strerror(ierr)
+     &               ininame(1:linit), nf90_strerror(ierr)
         endif
       else
         write(*,1) vname(1,indxU)(1:lvar), ininame(1:linit),
-     &                                   nf_strerror(ierr)
+     &                                   nf90_strerror(ierr)
       endif
       if (ierr /= nf90_noerr) goto 99                        !--> ERROR
 
@@ -561,7 +561,7 @@ c--#define VERBOSE
      &                    t(START_2D_ARRAY,1,tindx,itrc), N)
           if (ierr /= nf90_noerr) then
             write(*,2) t_vname(itrc)(1:lvar), record,
-     &                     ininame(1:linit), nf_strerror(ierr)
+     &                     ininame(1:linit), nf90_strerror(ierr)
             goto 99                                       !--> ERROR
           endif
         else
@@ -569,7 +569,7 @@ c--#define VERBOSE
 # if defined BIOLOGY_BEC2
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
             write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
-     &                                            nf_strerror(ierr)
+     &                                            nf90_strerror(ierr)
             goto 99                                         !--> ERROR
           else
             ! Set like this in ETH code, might be better to have as i,j loop = 0.0?
@@ -582,7 +582,7 @@ c--#define VERBOSE
 # else /* .not. defined BIOLOGY_BEC2 */
 
           write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
-     &                                            nf_strerror(ierr)
+     &                                            nf90_strerror(ierr)
           goto 99                                         !--> ERROR
 # endif /* BIOLOGY_BEC2 */
 
@@ -596,7 +596,7 @@ c--#define VERBOSE
      &                  hbls(START_2D_ARRAY,tindx), 1)
         if (ierr /= nf90_noerr) then
           write(*,2) vname(1,indxHbls)(1:lvar), record,
-     &               ininame(1:linit), nf_strerror(ierr)
+     &               ininame(1:linit), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -615,7 +615,7 @@ c--#define VERBOSE
      &                  hbbl(START_2D_ARRAY,tindx),1)
         if (ierr /= nf90_noerr) then
           write(*,2) vname(1,indxHbbl)(1:lvar), record,
-     &               ininame(1:linit), nf_strerror(ierr)
+     &               ininame(1:linit), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -678,7 +678,7 @@ c--#define VERBOSE
 ! Close input NetCDF file and  write greeting message depending
 ! on the the type of initial/restart procedure performed above.
 
-      ierr=nf_close(ncid)
+      ierr=nf90_close(ncid)
 #ifdef MPI_SILENT_MODE
       if (mynode == 0) then
 #endif

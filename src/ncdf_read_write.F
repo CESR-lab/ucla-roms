@@ -61,7 +61,7 @@
       ierr=nf_get_vara_FTYPE(ncid, vid, start,count, buff)
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,2A,3x,A,I4/)') '### ERROR: ncdf_read :: ',
-     &             nf_strerror(ierr) MYID
+     &             nf90_strerror(ierr) MYID
       else
 #endif
 
@@ -183,7 +183,7 @@
         ierr=nf_put_vara_FTYPE(ncid, vid, start, count, buff)
         if (ierr /= nf90_noerr) then
           write(*,'(/1x,2A,3x,A,I4/)')  '### ERROR: ncdf_write :: ',
-     &             nf_strerror(ierr) MYID
+     &             nf90_strerror(ierr) MYID
           write(*,'(12x,A,I7,3x,A,I7/12x,A,I3,7I6)') 'ncid =', ncid,
      &   'varid =', vid, 'start,count =', (start(i),count(i), i=1,4)
 

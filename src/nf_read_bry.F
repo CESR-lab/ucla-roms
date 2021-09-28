@@ -58,12 +58,12 @@
           write(*,'(1x,2A,I6,1x,3A,2x,A,2x,A,I4)')  '### ERROR: ',
      &            'read_bry_EW :: Cannot read rec =',   record,
      &            'of variable ''',  vname(1:lstr),  '''.',
-     &             nf_strerror(ierr) MYID
+     &             nf90_strerror(ierr) MYID
         else
           write(*,'(1x,2A,I6,1x,A,I4,2x,A,2x,A,I4)') '### ERROR: ',
      &            'read_bry_EW :: Cannot read rec =',   record,
      &            'of variable with netCDF ID =',  varid,
-     &             nf_strerror(ierr) MYID
+     &             nf90_strerror(ierr) MYID
         endif
       endif
 
@@ -121,12 +121,12 @@
           write(*,'(1x,2A,I6,1x,3A,2x,A,2x,A,I4)')  '### ERROR: ',
      &            'read_bry_NS :: Cannot read rec =',   record,
      &            'of variable ''',  vname(1:lstr),  '''.',
-     &             nf_strerror(ierr) MYID
+     &             nf90_strerror(ierr) MYID
         else
           write(*,'(1x,2A,I6,1x,A,I4,2x,A,2x,A,I4)') '### ERROR: ',
      &            'read_bry_NS :: Cannot read rec =',   record,
      &            'of variable with netCDF ID =',  varid,
-     &             nf_strerror(ierr) MYID
+     &             nf90_strerror(ierr) MYID
         endif
       endif
 

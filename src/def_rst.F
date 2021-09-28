@@ -97,14 +97,14 @@
           ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
           if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &         MYID
             goto 99
           endif
         else
           write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_rst :: Cannot ',
      &               'create restart NetCDF file ''', rstname(1:lrst),
-     &                                       '''',  nf_strerror(ierr)
+     &                                       '''',  nf90_strerror(ierr)
           goto 99              !--> ERROR
         endif
 
@@ -398,7 +398,7 @@
           ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
           if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &         MYID
             goto 99
           endif
@@ -590,7 +590,7 @@
 # endif
           else
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &         MYID
             goto 99
           endif

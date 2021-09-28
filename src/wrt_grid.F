@@ -39,7 +39,7 @@
         else
           write(*,'(/1x,4A/12x,A/)')     '### ERROR: wrt_ana_grid :: ',
      &            'Cannot create netCDF file ''', fname(1:lncn), ''',',
-     &                                              nf_strerror(ierr)
+     &                                              nf90_strerror(ierr)
         endif
 # if defined MPI && !defined PARALLEL_FILES
       else
@@ -47,18 +47,18 @@
         if (ierr/=nf90_noerr) then
           write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
      &             'Cannot open netCDF file ''', fname(1:lncn), ''',',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
         endif
       endif
 # endif
 
       if (ierr == nf90_noerr) then
         call wrt_grid(ncid, fname, lncn)
-        ierr=nf_close(ncid)
+        ierr=nf90_close(ncid)
         if (ierr /= nf90_noerr) then
            write(*,'(/1x,4A/12x,A/)')   '### ERROR: wrt_ana_grid :: ',
      &            'Cannot close netCDF file ''', fname(1:lncn), ''',',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
         endif
       endif
 

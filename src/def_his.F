@@ -161,7 +161,7 @@ c--#define nf_def_var my_nf_def_var
 # else
             write(*,'(1x,4A,I4)') '### ERROR: def_his :: Cannot ',
 # endif
-     &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &         MYID
           endif
 
@@ -173,7 +173,7 @@ c--#define nf_def_var my_nf_def_var
           write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_his :: ',
 #endif
      &                'Cannot create ''', fname(1:lfnm), '''.',
-     &                                       nf_strerror(ierr)
+     &                                       nf90_strerror(ierr)
         endif
         if (ierr /= nf90_noerr) goto 99
         if (rec_per_file == 0) total_rec=0
@@ -516,7 +516,7 @@ c--#define nf_def_var my_nf_def_var
 # else
             write(*,'(1x,4A,I4)') '### ERROR: def_his :: Cannot ',
 # endif
-     &         'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &         'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &          MYID
             goto 99
           endif
@@ -615,7 +615,7 @@ c--#define nf_def_var my_nf_def_var
 # else
             write(*,'(1x,4A,I4)')  '### ERROR: def_his :: Cannot ',
 # endif
-     &         'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &         'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &          MYID
           endif
         else
@@ -625,7 +625,7 @@ c--#define nf_def_var my_nf_def_var
           write(*,'(/1x,6A,I4/)')  '### ERROR: def_his :: Cannot ',
 # endif
      &                      'reopen file ''', fname(1:lfnm), '''.',
-     &                       nf_strerror(ierr) MYID
+     &                       nf90_strerror(ierr) MYID
         endif
 #endif
       endif             !<--  create_new_file
