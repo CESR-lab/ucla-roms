@@ -20,7 +20,7 @@
 ! are consistent with the model, then read all necessary variables.
 
       lstr=lenstr(grdname)
-      ierr=nf_open(grdname(1:lstr), nf_nowrite, ncid)
+      ierr=nf90_open(grdname(1:lstr), nf_nowrite, ncid)
       if (ierr == nf90_noerr) then
         ierr=checkdims (ncid, grdname, varid)
         if (ierr. ne. nf90_noerr) goto 99
@@ -33,7 +33,7 @@
 
 ! Logical switch for spherical grid configuration:
 
-      ierr=nf_inq_varid (ncid, 'spherical', varid)
+      ierr=nf90_inq_varid (ncid, 'spherical', varid)
       if (ierr == nf90_noerr) then
         ierr=nf_get_var1_text (ncid, varid, 1, char1)
         if (ierr /= nf90_noerr) then
@@ -58,7 +58,7 @@
 
 ! Physical dimensions of the basin in XI- and ETA-directions:
 
-        ierr=nf_inq_varid (ncid, 'xl', varid)
+        ierr=nf90_inq_varid (ncid, 'xl', varid)
         if (ierr == nf90_noerr) then
           ierr=nf_get_var1_FTYPE (ncid, varid, 1, xl)
           if (ierr /= nf90_noerr) then
@@ -70,7 +70,7 @@
           goto 99                                        !--> ERROR
         endif
 
-        ierr=nf_inq_varid (ncid, 'el', varid)
+        ierr=nf90_inq_varid (ncid, 'el', varid)
         if (ierr == nf90_noerr) then
           ierr=nf_get_var1_FTYPE (ncid, varid, 1, el)
           if (ierr /= nf90_noerr) then
@@ -87,7 +87,7 @@
 !===== == ==== =======
 ! Bathymetry:
 
-      ierr=nf_inq_varid (ncid, 'h', varid)
+      ierr=nf90_inq_varid (ncid, 'h', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, h(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -101,7 +101,7 @@
 
 ! Coriolis parameter.
 
-      ierr=nf_inq_varid (ncid, 'f', varid)
+      ierr=nf90_inq_varid (ncid, 'f', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, f(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -116,7 +116,7 @@
 ! Coordinate transfomation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 
-      ierr=nf_inq_varid (ncid, 'pm', varid)
+      ierr=nf90_inq_varid (ncid, 'pm', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, pm(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -128,7 +128,7 @@
         goto 99                                          !--> ERROR
       endif
 
-      ierr=nf_inq_varid (ncid, 'pn', varid)
+      ierr=nf90_inq_varid (ncid, 'pn', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, pn(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -143,7 +143,7 @@
 ! Coordinates (lon,lat [degrees]) or (x,y [meters]) at RHO-points.
 
 # ifdef SPHERICAL
-      ierr=nf_inq_varid (ncid, 'lon_rho', varid)
+      ierr=nf90_inq_varid (ncid, 'lon_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, lonr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -155,7 +155,7 @@
         goto 99                                          !--> ERROR
       endif
 
-      ierr=nf_inq_varid (ncid, 'lat_rho', varid)
+      ierr=nf90_inq_varid (ncid, 'lat_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, latr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -167,7 +167,7 @@
         goto 99                                          !--> ERROR
       endif
 # else
-      ierr=nf_inq_varid (ncid, 'x_rho', varid)
+      ierr=nf90_inq_varid (ncid, 'x_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, xr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -179,7 +179,7 @@
         goto 99                                          !--> ERROR
       endif
 
-      ierr=nf_inq_varid (ncid, 'y_rho', varid)
+      ierr=nf90_inq_varid (ncid, 'y_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, yr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -195,7 +195,7 @@
 
 ! Angle (radians) between XI-axis and EAST at RHO-points.
 
-      ierr=nf_inq_varid (ncid, 'angle', varid)
+      ierr=nf90_inq_varid (ncid, 'angle', varid)
       if (ierr == nf90_noerr) then
         call nc_check_units( ncid, 'angle', 'radians' )                  ! must be in radians, abort if not
         ierr=ncdf_read(ncid, varid, 0, r_var, angler(START_2D_ARRAY), 1)
@@ -212,7 +212,7 @@
 
 ! Mask at RHO-points.
 
-      ierr=nf_inq_varid (ncid, 'mask_rho', varid)
+      ierr=nf90_inq_varid (ncid, 'mask_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, rmask(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then

@@ -36,17 +36,17 @@
 
         lstr=lenstr(clm_file)
         if (ncidclm == -1) then
-          ierr=nf_open(clm_file(1:lstr), nf_nowrite, ncidclm)
+          ierr=nf90_open(clm_file(1:lstr), nf_nowrite, ncidclm)
           if (ierr /= nf90_noerr) write(*,'(/1x,4A/)') '### ERROR: ',
      &                    'get_ssh :: can not open netCDF file ''',
      &                                     clm_file(1:lstr), '''.'
         endif
         if (ierr == nf90_noerr) then
-          ierr=nf_inq_varid(ncidclm, 'ssh_time', ssh_tid)
+          ierr=nf90_inq_varid(ncidclm, 'ssh_time', ssh_tid)
           if (ierr == nf90_noerr) then
-            ierr=nf_inq_varid(ncidclm, 'zeta', ssh_id)
+            ierr=nf90_inq_varid(ncidclm, 'zeta', ssh_id)
             if (ierr /= nf90_noerr) then
-              ierr=nf_inq_varid(ncidclm, 'SSH', ssh_id)
+              ierr=nf90_inq_varid(ncidclm, 'SSH', ssh_id)
             endif
             if (ierr == nf90_noerr) then
               call find_record(ncidclm, ssh_tid,  ssh_rec, ntssh,

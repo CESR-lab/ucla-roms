@@ -370,7 +370,7 @@
         endif
       else
         size=1
-        ierr=nf_inq_varid(ncid, vname, varid)
+        ierr=nf90_inq_varid(ncid, vname, varid)
         if (ierr == nf90_noerr) then
           ierr=nf_inq_varndims(ncid, varid, ndims)
           if (ierr == nf90_noerr) then

@@ -39,7 +39,7 @@
 
       if (iic == ntstart) then
         if (ncidclm == -1) then
-          ierr=nf_open(clm_file(1:lfnm), nf_nowrite, ncidclm)
+          ierr=nf90_open(clm_file(1:lfnm), nf_nowrite, ncidclm)
           if (ierr /= nf90_noerr) write(*,'(/1x,4A/)')  '### ERROR: ',
      &                         'get_tclima :: can not open file ''',
      &                                    clm_file(1:lfnm),   '''.'
@@ -49,16 +49,16 @@
         do while(itrc < NT .and. ierr == nf90_noerr)
           itrc=itrc+1
           lvar=lenstr(vname(1,indxT+itrc-1))
-          ierr=nf_inq_varid(ncidclm, vname(1,indxT+itrc-1)(1:lvar),
+          ierr=nf90_inq_varid(ncidclm, vname(1,indxT+itrc-1)(1:lvar),
      &                                               tclm_id(itrc))
           if (ierr == nf90_noerr) then
             if (itrc == itemp) then
-              ierr=nf_inq_varid(ncidclm, 'tclm_time', tclm_tid(itrc))
+              ierr=nf90_inq_varid(ncidclm, 'tclm_time', tclm_tid(itrc))
               if (ierr /= nf90_noerr) write(*,1) 'tclm_time',
      &                                         itrc, clm_file(1:lfnm)
 # ifdef SALINITY
             elseif (itrc == isalt) then
-              ierr=nf_inq_varid(ncidclm, 'sclm_time', tclm_tid(itrc))
+              ierr=nf90_inq_varid(ncidclm, 'sclm_time', tclm_tid(itrc))
               if (ierr /= nf90_noerr) write(*,1) 'sclm_time',
      &                                         itrc, clm_file(1:lfnm)
 # endif

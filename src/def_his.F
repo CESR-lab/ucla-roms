@@ -494,7 +494,7 @@ c--#define nf_def_var my_nf_def_var
 ! their netCDF IDs.
 
       elseif (ncid == -1) then  !--> alt. to "create_new_file"
-        ierr=nf_open(fname(1:lfnm), nf_write, ncid)
+        ierr=nf90_open(fname(1:lfnm), nf_write, ncid)
         if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
           if (ierr == nf90_noerr) then
@@ -597,7 +597,7 @@ c--#define nf_def_var my_nf_def_var
 
 #if defined MPI && !defined PARALLEL_FILES
       else
-        ierr=nf_open(fname(1:lfnm), nf_write, ncid)
+        ierr=nf90_open(fname(1:lfnm), nf_write, ncid)
         if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
           if (ierr == nf90_noerr) then
