@@ -77,7 +77,7 @@ c--#define VERBOSE
 !             (2b) nrrec < 0, THE LAST available record is used.
 
       init_type=0 ; linit=lenstr(ininame)
-      ierr=nf_open(ininame(1:linit), nf_nowrite, ncid)
+      ierr=nf90_open(ininame(1:linit), nf_nowrite, ncid)
       if (ierr == nf90_noerr) then
         ierr=checkdims (ncid, ininame, max_rec)
         if (ierr == nf90_noerr) then
@@ -168,17 +168,17 @@ c--#define VERBOSE
 ! EXACT_RESTART.
 
       lvar=lenstr(vname(1,indxTime))
-      ierr=nf_inq_varid(ncid, vname(1,indxTime)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxTime)(1:lvar), varid)
 
 ! The following is done for backward compatibility: normally time
 ! variable is named "ocean_time", but legacy startup files may name
 ! it either "roms_time" or "scrum_time".
 
       if (ierr /= nf90_noerr) then
-        ierr=nf_inq_varid(ncid, 'roms_time', varid)
+        ierr=nf90_inq_varid(ncid, 'roms_time', varid)
       endif
       if (ierr /= nf90_noerr) then
-        ierr=nf_inq_varid(ncid, 'scrum_time', varid)
+        ierr=nf90_inq_varid(ncid, 'scrum_time', varid)
       endif
 
       if (ierr == nf90_noerr) then
@@ -265,7 +265,7 @@ c--#define VERBOSE
 ! counters (i.e., technically  this is "restart" as opposite to
 ! "initial run");  otherwise initialise all the counters to zeroes.
 
-      ierr=nf_inq_varid(ncid, 'time_step', varid)
+      ierr=nf90_inq_varid(ncid, 'time_step', varid)
       if (ierr == nf90_noerr) then
         ierr=nf_inq_vardimid(ncid, varid, ibuff)
         if (ierr == nf90_noerr) then
@@ -362,19 +362,19 @@ c--#define VERBOSE
 ! Free-surface and barotropic 2D momentuma, XI- and ETA-components
 
       lvar=lenstr(vname(1,indxZ))
-      ierr=nf_inq_varid(ncid, vname(1,indxZ)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxZ)(1:lvar), varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read( ncid, varid, record, r_var,
      &                  zeta(START_2D_ARRAY,1), 1)
         if (ierr == nf90_noerr) then
           lvar=lenstr(vname(1,indxUb))
-          ierr=nf_inq_varid(ncid, vname(1,indxUb)(1:lvar), varid)
+          ierr=nf90_inq_varid(ncid, vname(1,indxUb)(1:lvar), varid)
           if (ierr == nf90_noerr) then
             ierr=ncdf_read( ncid, varid, record, u_var,
      &                      ubar(START_2D_ARRAY,1), 1)
             if (ierr == nf90_noerr) then
               lvar=lenstr(vname(1,indxVb))
-              ierr=nf_inq_varid(ncid, vname(1,indxVb)(1:lvar), varid)
+              ierr=nf90_inq_varid(ncid, vname(1,indxVb)(1:lvar), varid)
               if (ierr == nf90_noerr) then
                 ierr=ncdf_read( ncid, varid, record, v_var,
      &                          vbar(START_2D_ARRAY,1), 1)
@@ -414,13 +414,13 @@ c--#define VERBOSE
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-      ierr=nf_inq_varid(ncid, 'DU_avg2', vid_DU)
+      ierr=nf90_inq_varid(ncid, 'DU_avg2', vid_DU)
       if (ierr == nf90_noerr) then
-        ierr=nf_inq_varid(ncid, 'DV_avg2', vid_DV)
+        ierr=nf90_inq_varid(ncid, 'DV_avg2', vid_DV)
         if (ierr == nf90_noerr) then
-          ierr=nf_inq_varid(ncid, 'DU_avg_bak', vid_DU_bak)
+          ierr=nf90_inq_varid(ncid, 'DU_avg_bak', vid_DU_bak)
           if (ierr == nf90_noerr) then
-            ierr=nf_inq_varid(ncid, 'DV_avg_bak', vid_DV_bak)
+            ierr=nf90_inq_varid(ncid, 'DV_avg_bak', vid_DV_bak)
             if (ierr == nf90_noerr) then
               ierr=ncdf_read(ncid, vid_DU, record, u_var, DU_avg2, 1)
               if (ierr == nf90_noerr) then
@@ -462,9 +462,9 @@ c--#define VERBOSE
       endif
 
 #  elif defined PRED_COUPLED_MODE
-      ierr=nf_inq_varid(ncid, 'rufrc_bak', vid_rufrc)
+      ierr=nf90_inq_varid(ncid, 'rufrc_bak', vid_rufrc)
       if (ierr == nf90_noerr) then
-        ierr=nf_inq_varid(ncid,  'rvfrc_bak',  vid_rvfrc)
+        ierr=nf90_inq_varid(ncid,  'rvfrc_bak',  vid_rvfrc)
         if (ierr == nf90_noerr) then
           ierr=ncdf_read( ncid,  vid_rufrc,  record,  u_var,
      &                     rufrc_bak(START_2D_ARRAY,tindx), 1)
@@ -492,13 +492,13 @@ c--#define VERBOSE
 ! 3D momentum components in XI- and ETA-directions
 
       lvar=lenstr(vname(1,indxU))
-      ierr=nf_inq_varid(ncid, vname(1,indxU)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxU)(1:lvar), varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read( ncid,  varid,  record,  u_var,
      &                  u(START_2D_ARRAY,1,tindx), N)
         if (ierr == nf90_noerr) then
           lvar=lenstr(vname(1,indxV))
-          ierr=nf_inq_varid(ncid, vname(1,indxV)(1:lvar), varid)
+          ierr=nf90_inq_varid(ncid, vname(1,indxV)(1:lvar), varid)
           if (ierr == nf90_noerr) then
             ierr=ncdf_read( ncid,  varid,  record,  v_var,
      &                      v(START_2D_ARRAY,1,tindx), N)
@@ -555,7 +555,7 @@ c--#define VERBOSE
 
 !        lvar=lenstr(vname(1,indxT+itrc-1))
         lvar=lenstr(t_vname(itrc))
-        ierr=nf_inq_varid(ncid, t_vname(itrc)(1:lvar), varid)
+        ierr=nf90_inq_varid(ncid, t_vname(itrc)(1:lvar), varid)
         if (ierr == nf90_noerr) then
           ierr=ncdf_read( ncid,   varid,   record,   r_var,
      &                    t(START_2D_ARRAY,1,tindx,itrc), N)
@@ -590,7 +590,7 @@ c--#define VERBOSE
       enddo
 # ifdef LMD_KPP
       lvar=lenstr(vname(1,indxHbls))
-      ierr=nf_inq_varid(ncid, vname(1,indxHbls)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxHbls)(1:lvar), varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read( ncid,  varid,  record,  r_var,
      &                  hbls(START_2D_ARRAY,tindx), 1)
@@ -609,7 +609,7 @@ c--#define VERBOSE
 # endif
 # ifdef LMD_BKPP
       lvar=lenstr(vname(1,indxHbbl))
-      ierr=nf_inq_varid(ncid, vname(1,indxHbbl)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxHbbl)(1:lvar), varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_read( ncid,  varid,  record, r_var,
      &                  hbbl(START_2D_ARRAY,tindx),1)
@@ -632,7 +632,7 @@ c--#define VERBOSE
 
       do itrc=1,nr_bec2_diag_2d
          lvar=lenstr(vname_bec2_diag_2d(1,itrc))
-         ierr=nf_inq_varid (ncid, vname_bec2_diag_2d(1,itrc)(1:lvar), varid)
+         ierr=nf90_inq_varid (ncid, vname_bec2_diag_2d(1,itrc)(1:lvar), varid)
          if (ierr .eq. nf90_noerr) then
             ierr=ncdf_read (ncid,  varid, record, r_var
      &                     , bec2_diag_2d(START_2D_ARRAY,itrc), 1)
@@ -654,7 +654,7 @@ c--#define VERBOSE
       ! Read in 3d diagnostic variables:
       do itrc=1,nr_bec2_diag_3d
          lvar=lenstr(vname_bec2_diag_3d(1,itrc))
-         ierr=nf_inq_varid (ncid, vname_bec2_diag_3d(1,itrc)(1:lvar), varid)
+         ierr=nf90_inq_varid (ncid, vname_bec2_diag_3d(1,itrc)(1:lvar), varid)
          if (ierr == nf90_noerr) then
             ierr=ncdf_read (ncid,  varid, record, r_var
      &                    , bec2_diag_3d(START_2D_ARRAY,1,itrc), N)

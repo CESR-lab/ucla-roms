@@ -487,7 +487,7 @@ C$OMP BARRIER
 ! ==== ======== ==== === ======= === ========= ====
 
       elseif (nchis == -1) then  !--> alt. to "create_new_file"
-        ierr=nf_open(hisname(1:lfnm), nf_write, nchis)
+        ierr=nf90_open(hisname(1:lfnm), nf_write, nchis)
         if (ierr == nf90_noerr) then
           ierr=nf_set_fill(nchis, nf_nofill, prev_fill_mode)
           if (ierr == nf90_noerr) then
@@ -545,20 +545,20 @@ C$OMP BARRIER
 
 ! Find netCDF IDs of evolving model variables:
 ! ---- ------ --- -- -------- ----- ----------
-        ierr=nf_inq_varid (nchis, 'time_step', hisTstep)
+        ierr=nf90_inq_varid (nchis, 'time_step', hisTstep)
         if (ierr /= nf90_noerr) then
           write(*,1) 'time_step', hisname(1:lfnm)
           goto 99                                         !--> ERROR
         endif
 
         lvar=lenstr(vname(1,indxTime))
-        ierr=nf_inq_varid (nchis,vname(1,indxTime)(1:lvar),hisTime)
+        ierr=nf90_inq_varid (nchis,vname(1,indxTime)(1:lvar),hisTime)
         if (ierr /= nf90_noerr) then
           write(*,1) vname(1,indxTime)(1:lvar), hisname(1:lfnm)
           goto 99                                         !--> ERROR
         endif
 
-        ierr=nf_inq_varid(nchis, 'srflx', vid_srfx)
+        ierr=nf90_inq_varid(nchis, 'srflx', vid_srfx)
         if (ierr /= nf90_noerr) then
           write(*,1) vname(1,indxZ)(1:lvar), hisname(1:lfnm)
           goto 99                                       !--> ERROR
@@ -570,7 +570,7 @@ C$OMP BARRIER
 
 #if defined MPI && !defined PARALLEL_FILES
       else
-        ierr=nf_open(hisname(1:lfnm), nf_write, nchis)
+        ierr=nf90_open(hisname(1:lfnm), nf_write, nchis)
         if (ierr == nf90_noerr) then
 # ifndef MPI_SILENT_MODE
           write(*,'(7x,5A,I4)')   'def_frc :: reopen existing ',

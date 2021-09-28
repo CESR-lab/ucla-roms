@@ -43,7 +43,7 @@
         endif
 # if defined MPI && !defined PARALLEL_FILES
       else
-        ierr=nf_open(fname, nf_write, ncid)
+        ierr=nf90_open(fname, nf_write, ncid)
         if (ierr/=nf90_noerr) then
           write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
      &             'Cannot open netCDF file ''', fname(1:lncn), ''',',
@@ -236,7 +236,7 @@
 
 ! Grid type switch: Spherical or Cartesian.
 
-        ierr=nf_inq_varid(ncid, 'spherical', varid)
+        ierr=nf90_inq_varid(ncid, 'spherical', varid)
         if (ierr == nf90_noerr) then
           ierr=nf_put_var1_text(ncid, varid, 1,
 #ifdef SPHERICAL
@@ -255,7 +255,7 @@
 #ifndef SPHERICAL
 ! Physical Dimensions of Model Domain, xl,el (Cartesian grid only).
 
-        ierr=nf_inq_varid(ncid, 'xl', varid)
+        ierr=nf90_inq_varid(ncid, 'xl', varid)
         if (ierr == nf90_noerr) then
           ierr=nf_put_var1_FTYPE(ncid, varid, 1, xl)
           if (ierr /= nf90_noerr) then
@@ -266,7 +266,7 @@
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 
-        ierr=nf_inq_varid(ncid, 'el', varid)
+        ierr=nf90_inq_varid(ncid, 'el', varid)
         if (ierr == nf90_noerr) then
           ierr=nf_put_var1_FTYPE(ncid, varid, 1, el)
           if (ierr /= nf90_noerr) then
@@ -291,7 +291,7 @@
 
 ! Bathymetry.
 
-      ierr=nf_inq_varid(ncid, 'h', varid)
+      ierr=nf90_inq_varid(ncid, 'h', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0, r_var, h(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -304,7 +304,7 @@
 
 ! Coriolis parameter.
 
-      ierr=nf_inq_varid(ncid, 'f', varid)
+      ierr=nf90_inq_varid(ncid, 'f', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, f(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -317,7 +317,7 @@
 
 ! Curvilinear transformation metrics.
 
-      ierr=nf_inq_varid(ncid, 'pm', varid)
+      ierr=nf90_inq_varid(ncid, 'pm', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, pm(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -328,7 +328,7 @@
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
-      ierr=nf_inq_varid(ncid, 'pn', varid)
+      ierr=nf90_inq_varid(ncid, 'pn', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0, r_var, pn(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -342,7 +342,7 @@
 ! Longitude-latitude or cartezian coordinates of RHO-points
 
 #ifdef SPHERICAL
-      ierr=nf_inq_varid(ncid, 'lon_rho', varid)
+      ierr=nf90_inq_varid(ncid, 'lon_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write( ncid, -varid, 0,r_var, lonr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -353,7 +353,7 @@
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
-      ierr=nf_inq_varid(ncid, 'lat_rho', varid)
+      ierr=nf90_inq_varid(ncid, 'lat_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, latr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -364,7 +364,7 @@
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 #else
-      ierr=nf_inq_varid(ncid, 'x_rho', varid)
+      ierr=nf90_inq_varid(ncid, 'x_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, xr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -375,7 +375,7 @@
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
-      ierr=nf_inq_varid(ncid, 'y_rho', varid)
+      ierr=nf90_inq_varid(ncid, 'y_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, yr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
@@ -389,7 +389,7 @@
 #ifdef CURVGRID
 ! Angle between XI-axis and EAST at RHO-points
 
-      ierr=nf_inq_varid(ncid, 'angle', varid)
+      ierr=nf90_inq_varid(ncid, 'angle', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, angler(START_2D_ARRAY),1)
         if (ierr /= nf90_noerr) then
@@ -404,7 +404,7 @@
 #ifdef MASKING
 ! Masking fields at RHO-points.
 
-      ierr=nf_inq_varid(ncid, 'mask_rho', varid)
+      ierr=nf90_inq_varid(ncid, 'mask_rho', varid)
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, rmask(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then

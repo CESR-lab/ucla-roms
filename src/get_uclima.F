@@ -33,29 +33,29 @@
         uclm_time(2)=-1.E+20
 
         if (ncidclm==-1) then
-          ierr=nf_open (clm_file(1:lstr), nf_nowrite, ncidclm)
+          ierr=nf90_open (clm_file(1:lstr), nf_nowrite, ncidclm)
           if (ierr /= nf90_noerr) write(*,'(/1x,4A/)') '### ERROR: ',
      &                    'get_uclima :: Cannot open netCDF file ''',
      &                                     clm_file(1:lstr),   '''.'
         endif
         if (ierr==nf90_noerr) then
-          ierr=nf_inq_varid (ncidclm, 'uclm_time', uclm_tid)
+          ierr=nf90_inq_varid (ncidclm, 'uclm_time', uclm_tid)
           if (ierr==nf90_noerr) then
             lvar=lenstr(vname(1,indxUb))
-            ierr=nf_inq_varid (ncidclm, vname(1,indxUb)(1:lvar),
+            ierr=nf90_inq_varid (ncidclm, vname(1,indxUb)(1:lvar),
      &                                                 ubclm_id)
             if (ierr==nf90_noerr) then
               lvar=lenstr(vname(1,indxVb))
-              ierr=nf_inq_varid (ncidclm, vname(1,indxVb)(1:lvar),
+              ierr=nf90_inq_varid (ncidclm, vname(1,indxVb)(1:lvar),
      &                                                  vbclm_id)
               if (ierr==nf90_noerr) then
 # ifdef SOLVE3D
                 lvar=lenstr(vname(1,indxU))
-                ierr=nf_inq_varid (ncidclm, vname(1,indxU)(1:lvar),
+                ierr=nf90_inq_varid (ncidclm, vname(1,indxU)(1:lvar),
      &                                                     uclm_id)
                 if (ierr==nf90_noerr) then
                   lvar=lenstr(vname(1,indxV))
-                  ierr=nf_inq_varid (ncidclm, vname(1,indxV)(1:lvar),
+                  ierr=nf90_inq_varid (ncidclm, vname(1,indxV)(1:lvar),
      &                                                      vclm_id)
                   if (ierr==nf90_noerr) then
 # endif

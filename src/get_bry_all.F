@@ -118,7 +118,7 @@
 
       if (bry_rec < 0) then  !<-- initialization or file switch
         if (bry_id == -1) then
-          ierr=nf_open(bry_file(ibry)(1:lsrc), nf_nowrite, bry_id)
+          ierr=nf90_open(bry_file(ibry)(1:lsrc), nf_nowrite, bry_id)
           if (ierr /= nf90_noerr) write(*,'(/1x,4A/12x,A/)')
      &          '### ERROR: get_bry_all :: Cannot open file ''',
      &              bry_file(ibry)(1:lsrc),   ''' for reading.',
@@ -126,7 +126,7 @@
 
         endif
         if (ierr == nf90_noerr) then
-          ierr=nf_inq_varid(bry_id, 'bry_time',  bry_time_id)
+          ierr=nf90_inq_varid(bry_id, 'bry_time',  bry_time_id)
           if (ierr == nf90_noerr) then
             call find_record(bry_id, bry_time_id,  bry_rec, ntbry,
      &              bry_ncycle, bry_cycle,  ibry, max_bry,  ierr)
@@ -146,20 +146,20 @@
 # ifdef OBC_WEST
           if (west_bry_active) then
 #  ifdef Z_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'zeta_west', zeta_west_id)
+            ierr=nf90_inq_varid(bry_id, 'zeta_west', zeta_west_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'zeta_west', bry_file(ibry)(1:lsrc)
             endif
 #  endif
 #  ifdef M2_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'ubar_west', ubar_west_id)
+            ierr=nf90_inq_varid(bry_id, 'ubar_west', ubar_west_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'ubar_west', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id, 'vbar_west', vbar_west_id)
+            ierr=nf90_inq_varid(bry_id, 'vbar_west', vbar_west_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'vbar_west', bry_file(ibry)(1:lsrc)
@@ -167,19 +167,19 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-            ierr=nf_inq_varid(bry_id,    'u_west', u_west_id)
+            ierr=nf90_inq_varid(bry_id,    'u_west', u_west_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'u_west', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id,    'v_west', v_west_id)
+            ierr=nf90_inq_varid(bry_id,    'v_west', v_west_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'v_west', bry_file(ibry)(1:lsrc)
             endif
 #    ifdef NHMG
-            ierr=nf_inq_varid(bry_id,    'w_west', w_west_id)
+            ierr=nf90_inq_varid(bry_id,    'w_west', w_west_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'w_west', bry_file(ibry)(1:lsrc)
@@ -187,13 +187,13 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-!            ierr=nf_inq_varid(bry_id,'temp_west', t_west_id(itemp))
+!            ierr=nf90_inq_varid(bry_id,'temp_west', t_west_id(itemp))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'temp_west', bry_file(ibry)(1:lsrc)
 !            endif
 !#    ifdef SALINITY
-!            ierr=nf_inq_varid(bry_id, 'salt_west', t_west_id(isalt))
+!            ierr=nf90_inq_varid(bry_id, 'salt_west', t_west_id(isalt))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'salt_west', bry_file(ibry)(1:lsrc)
@@ -202,7 +202,7 @@
 
             do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
               v_name = trim(t_vname(itrc)) / / '_west'
-              ierr=nf_inq_varid(bry_id,v_name, t_west_id(itrc))
+              ierr=nf90_inq_varid(bry_id,v_name, t_west_id(itrc))
               if (ierr /= nf90_noerr) then
 #    ifdef DEFAULT_BRY_VALUES
                 if(mynode==0) write(*,11) t_vname(itrc),
@@ -225,20 +225,20 @@
 # ifdef OBC_EAST
           if (east_bry_active) then
 #  ifdef Z_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'zeta_east', zeta_east_id)
+            ierr=nf90_inq_varid(bry_id, 'zeta_east', zeta_east_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'zeta_east', bry_file(ibry)(1:lsrc)
             endif
 #  endif
 #  ifdef M2_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'ubar_east', ubar_east_id)
+            ierr=nf90_inq_varid(bry_id, 'ubar_east', ubar_east_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'ubar_east', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid (bry_id, 'vbar_east', vbar_east_id)
+            ierr=nf90_inq_varid (bry_id, 'vbar_east', vbar_east_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'vbar_east', bry_file(ibry)(1:lsrc)
@@ -246,19 +246,19 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-            ierr=nf_inq_varid(bry_id,    'u_east',   u_east_id)
+            ierr=nf90_inq_varid(bry_id,    'u_east',   u_east_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1)   'u_east', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id,    'v_east',   v_east_id)
+            ierr=nf90_inq_varid(bry_id,    'v_east',   v_east_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1)   'v_east', bry_file(ibry)(1:lsrc)
             endif
 #    ifdef NHMG
-            ierr=nf_inq_varid(bry_id,    'w_east', w_east_id)
+            ierr=nf90_inq_varid(bry_id,    'w_east', w_east_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'w_east', bry_file(ibry)(1:lsrc)
@@ -266,13 +266,13 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-!            ierr=nf_inq_varid(bry_id, 'temp_east', t_east_id(itemp))
+!            ierr=nf90_inq_varid(bry_id, 'temp_east', t_east_id(itemp))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'temp_east', bry_file(ibry)(1:lsrc)
 !            endif
 !#    ifdef SALINITY
-!            ierr=nf_inq_varid(bry_id, 'salt_east', t_east_id(isalt))
+!            ierr=nf90_inq_varid(bry_id, 'salt_east', t_east_id(isalt))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'salt_east', bry_file(ibry)(1:lsrc)
@@ -280,7 +280,7 @@
 !#    endif
             do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
               v_name = trim(t_vname(itrc)) / / '_east'
-              ierr=nf_inq_varid(bry_id,v_name, t_east_id(itrc))
+              ierr=nf90_inq_varid(bry_id,v_name, t_east_id(itrc))
               if (ierr /= nf90_noerr) then
 #    ifdef DEFAULT_BRY_VALUES
                 if(mynode==0) write(*,11) t_vname(itrc),
@@ -302,20 +302,20 @@
 # ifdef OBC_SOUTH
           if (south_bry_active) then
 #  ifdef Z_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'zeta_south', zeta_south_id)
+            ierr=nf90_inq_varid(bry_id, 'zeta_south', zeta_south_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'zeta_south', bry_file(ibry)(1:lsrc)
             endif
 #  endif
 #  ifdef M2_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'ubar_south', ubar_south_id)
+            ierr=nf90_inq_varid(bry_id, 'ubar_south', ubar_south_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'ubar_south', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id, 'vbar_south', vbar_south_id)
+            ierr=nf90_inq_varid(bry_id, 'vbar_south', vbar_south_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'vbar_south', bry_file(ibry)(1:lsrc)
@@ -323,19 +323,19 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-            ierr=nf_inq_varid(bry_id,    'u_south',  u_south_id)
+            ierr=nf90_inq_varid(bry_id,    'u_south',  u_south_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1)    'u_south', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id,    'v_south',  v_south_id)
+            ierr=nf90_inq_varid(bry_id,    'v_south',  v_south_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1)    'v_south', bry_file(ibry)(1:lsrc)
             endif
 #    ifdef NHMG
-            ierr=nf_inq_varid(bry_id,    'w_south', w_south_id)
+            ierr=nf90_inq_varid(bry_id,    'w_south', w_south_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'w_south', bry_file(ibry)(1:lsrc)
@@ -343,13 +343,13 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-!            ierr=nf_inq_varid(bry_id,'temp_south',t_south_id(itemp))
+!            ierr=nf90_inq_varid(bry_id,'temp_south',t_south_id(itemp))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'temp_south', bry_file(ibry)(1:lsrc)
 !            endif
 !#    ifdef SALINITY
-!            ierr=nf_inq_varid(bry_id,'salt_south', t_south_id(isalt))
+!            ierr=nf90_inq_varid(bry_id,'salt_south', t_south_id(isalt))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'salt_south', bry_file(ibry)(1:lsrc)
@@ -357,7 +357,7 @@
 !#    endif
             do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
               v_name = trim(t_vname(itrc)) / / '_south'
-              ierr=nf_inq_varid(bry_id,v_name, t_south_id(itrc))
+              ierr=nf90_inq_varid(bry_id,v_name, t_south_id(itrc))
               if (ierr /= nf90_noerr) then
 #    ifdef DEFAULT_BRY_VALUES
                 if(mynode==0) write(*,11) t_vname(itrc),
@@ -379,20 +379,20 @@
 # ifdef OBC_NORTH
           if (north_bry_active) then
 #  ifdef Z_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'zeta_north', zeta_north_id)
+            ierr=nf90_inq_varid(bry_id, 'zeta_north', zeta_north_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'zeta_north', bry_file(ibry)(1:lsrc)
             endif
 #  endif
 #  ifdef M2_FRC_BRY
-            ierr=nf_inq_varid(bry_id, 'ubar_north', ubar_north_id)
+            ierr=nf90_inq_varid(bry_id, 'ubar_north', ubar_north_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'ubar_north', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id, 'vbar_north', vbar_north_id)
+            ierr=nf90_inq_varid(bry_id, 'vbar_north', vbar_north_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'vbar_north', bry_file(ibry)(1:lsrc)
@@ -400,19 +400,19 @@
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-            ierr=nf_inq_varid(bry_id,    'u_north',  u_north_id)
+            ierr=nf90_inq_varid(bry_id,    'u_north',  u_north_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1)    'u_north', bry_file(ibry)(1:lsrc)
             endif
 
-            ierr=nf_inq_varid(bry_id,    'v_north',  v_north_id)
+            ierr=nf90_inq_varid(bry_id,    'v_north',  v_north_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1)  'v_north', bry_file(ibry)(1:lsrc)
             endif
 #    ifdef NHMG
-            ierr=nf_inq_varid(bry_id,    'w_north', w_north_id)
+            ierr=nf90_inq_varid(bry_id,    'w_north', w_north_id)
             if (ierr /= nf90_noerr) then
               if (ierr_all == nf90_noerr) ierr_all=ierr
               write(*,1) 'w_north', bry_file(ibry)(1:lsrc)
@@ -420,13 +420,13 @@
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-!            ierr=nf_inq_varid(bry_id,'temp_north', t_north_id(itemp))
+!            ierr=nf90_inq_varid(bry_id,'temp_north', t_north_id(itemp))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'temp_north', bry_file(ibry)(1:lsrc)
 !            endif
 !#    ifdef SALINITY
-!            ierr=nf_inq_varid(bry_id,'salt_north', t_north_id(isalt))
+!            ierr=nf90_inq_varid(bry_id,'salt_north', t_north_id(isalt))
 !            if (ierr /= nf90_noerr) then
 !              if (ierr_all == nf90_noerr) ierr_all=ierr
 !              write(*,1) 'salt_north', bry_file(ibry)(1:lsrc)
@@ -434,7 +434,7 @@
 !#    endif
             do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
               v_name = trim(t_vname(itrc)) / / '_north'
-              ierr=nf_inq_varid(bry_id,v_name, t_north_id(itrc))
+              ierr=nf90_inq_varid(bry_id,v_name, t_north_id(itrc))
               if (ierr /= nf90_noerr) then
 #    ifdef DEFAULT_BRY_VALUES
                 if(mynode==0) write(*,11) t_vname(itrc),
