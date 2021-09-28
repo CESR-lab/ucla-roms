@@ -149,13 +149,13 @@ c--#define nf_def_var my_nf_def_var
 
         ierr=nf90_create(fname(1:lfnm), NF90_NETCDF4,
      &                                                     ncid)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
 
           ! Set fill value handling
           ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
           ! Error handling
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
 # ifdef AVRH
             write(*,'(1x,4A,I4)') '### ERROR: def_avg :: Cannot ',
 # else
@@ -175,7 +175,7 @@ c--#define nf_def_var my_nf_def_var
      &                'Cannot create ''', fname(1:lfnm), '''.',
      &                                       nf_strerror(ierr)
         endif
-        if (ierr /= nf_noerr) goto 99
+        if (ierr /= nf90_noerr) goto 99
         if (rec_per_file == 0) total_rec=0
 
 ! Put global attributes:
@@ -258,7 +258,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! Free-surface and 2D barotropic velocity components
 
-        if (wrt(indxZ) .and. ierr == nf_noerr) then
+        if (wrt(indxZ) .and. ierr == nf90_noerr) then
 #ifdef AVRH
           text='averaged '/ /vname(2,indxZ)
 #else
@@ -268,7 +268,7 @@ c--#define nf_def_var my_nf_def_var
      &           text,vname(3,indxZ), r2dgrd, ierr )
         endif
 
-        if (wrt(indxUb) .and. ierr == nf_noerr) then
+        if (wrt(indxUb) .and. ierr == nf90_noerr) then
 #ifdef AVRH
           text='averaged '/ /vname(2,indxUb)
 #else
@@ -278,7 +278,7 @@ c--#define nf_def_var my_nf_def_var
      &           text,vname(3,indxUb), u2dgrd, ierr )
         endif
 
-        if (wrt(indxVb) .and. ierr == nf_noerr) then
+        if (wrt(indxVb) .and. ierr == nf90_noerr) then
 #ifdef AVRH
           text='averaged '/ /vname(2,indxVb)
 #else
@@ -291,7 +291,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! 3D momenta in XI- and ETA-directions.
 
-        if (wrt(indxU) .and. ierr == nf_noerr) then
+        if (wrt(indxU) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxU)
 # else
@@ -301,7 +301,7 @@ c--#define nf_def_var my_nf_def_var
      &           text,vname(3,indxU), u3dgrd, ierr )
         endif
 
-        if (wrt(indxV) .and. ierr == nf_noerr) then
+        if (wrt(indxV) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxV)
 # else
@@ -323,7 +323,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! Density anomaly.
 
-        if (wrt(indxR) .and. ierr == nf_noerr) then
+        if (wrt(indxR) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxR)
 # else
@@ -335,7 +335,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! S-coordinate "omega" vertical velocity.
 
-        if (wrt(indxO) .and. ierr == nf_noerr) then
+        if (wrt(indxO) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxO)
 # else
@@ -347,7 +347,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! True W-vertical velocity.
 
-        if (wrt(indxW) .and. ierr == nf_noerr) then
+        if (wrt(indxW) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxW)
 # else
@@ -359,7 +359,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! Vertical viscosity coefficient.
 
-        if (wrt(indxAkv) .and. ierr == nf_noerr) then
+        if (wrt(indxAkv) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxAkv)
 # else
@@ -371,7 +371,7 @@ c--#define nf_def_var my_nf_def_var
 
 ! Vertical thermal conductivity coefficient.
 
-        if (wrt(indxAkt) .and. ierr == nf_noerr) then
+        if (wrt(indxAkt) .and. ierr == nf90_noerr) then
 # ifdef AVRH
           text='averaged '/ /vname(2,indxAkt)
 # else
@@ -383,7 +383,7 @@ c--#define nf_def_var my_nf_def_var
 # ifdef SALINITY
 ! Vertical diffusion coefficient for salinity.
 
-        if (wrt(indxAks) .and. ierr == nf_noerr) then
+        if (wrt(indxAks) .and. ierr == nf90_noerr) then
 #  ifdef AVRH
           text='averaged '/ /vname(2,indxAks)
 #  else
@@ -396,7 +396,7 @@ c--#define nf_def_var my_nf_def_var
 # ifdef LMD_KPP
 ! Depth of surface planetary boundary layer.
 
-        if (wrt(indxHbls) .and. ierr == nf_noerr) then
+        if (wrt(indxHbls) .and. ierr == nf90_noerr) then
 #  ifdef AVRH
           text='averaged '/ /vname(2,indxHbls)
 #  else
@@ -409,7 +409,7 @@ c--#define nf_def_var my_nf_def_var
 # ifdef LMD_BKPP
 ! Thickness of bottom boundary layer.
 
-        if (wrt(indxHbbl) .and. ierr == nf_noerr) then
+        if (wrt(indxHbbl) .and. ierr == nf90_noerr) then
 #  ifdef AVRH
           text='averaged '/ /vname(2,indxHbbl)
 #  else
@@ -495,9 +495,9 @@ c--#define nf_def_var my_nf_def_var
 
       elseif (ncid == -1) then  !--> alt. to "create_new_file"
         ierr=nf_open(fname(1:lfnm), nf_write, ncid)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
             if (mynode == 0) then
 #endif
@@ -522,7 +522,7 @@ c--#define nf_def_var my_nf_def_var
           endif
 
           ierr=checkdims(ncid, fname, rec)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             if (rec_per_file == 0) then
               ierr=rec+1 - total_rec
             else
@@ -547,11 +547,11 @@ c--#define nf_def_var my_nf_def_var
               if (mynode > 0) total_rec=total_rec-1
 #endif
             endif
-            ierr=nf_noerr
+            ierr=nf90_noerr
           endif
         endif
 
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
 #if defined MPI && !defined PARALLEL_FILES
           if (mynode == 0) then
             create_new_file=.true. ; goto 10 !--> reject and create new
@@ -579,7 +579,7 @@ c--#define nf_def_var my_nf_def_var
 ! Leave definition mode
 ! ---------------------
 
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
           if (mynode == 0) then
 #endif
@@ -598,9 +598,9 @@ c--#define nf_def_var my_nf_def_var
 #if defined MPI && !defined PARALLEL_FILES
       else
         ierr=nf_open(fname(1:lfnm), nf_write, ncid)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
 # ifndef MPI_SILENT_MODE
 #  ifdef AVRH
             write(*,'(7x,5A,I4)')    'def_avg :: reopen existing ',
@@ -629,7 +629,7 @@ c--#define nf_def_var my_nf_def_var
         endif
 #endif
       endif             !<--  create_new_file
-      if (ierr /= nf_noerr) goto 99
+      if (ierr /= nf90_noerr) goto 99
 
 #if (defined PUT_GRID_INTO_HISTORY && !defined AVRH)\
  || (defined PUT_GRID_INTO_AVERAGES && defined AVRH)

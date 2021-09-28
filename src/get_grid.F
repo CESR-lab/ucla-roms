@@ -21,9 +21,9 @@
 
       lstr=lenstr(grdname)
       ierr=nf_open(grdname(1:lstr), nf_nowrite, ncid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=checkdims (ncid, grdname, varid)
-        if (ierr. ne. nf_noerr) goto 99
+        if (ierr. ne. nf90_noerr) goto 99
       else
         write(*,'(/1x,4A/12x,A)')  '### ERROR: get_grid :: Cannot ',
      &          'open input NetCDF file ''', grdname(1:lstr), '''.',
@@ -34,9 +34,9 @@
 ! Logical switch for spherical grid configuration:
 
       ierr=nf_inq_varid (ncid, 'spherical', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=nf_get_var1_text (ncid, varid, 1, char1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'spherical', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -59,9 +59,9 @@
 ! Physical dimensions of the basin in XI- and ETA-directions:
 
         ierr=nf_inq_varid (ncid, 'xl', varid)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_get_var1_FTYPE (ncid, varid, 1, xl)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,2) 'xl', grdname(1:lstr), nf_strerror(ierr)
             goto 99                                      !--> ERROR
           endif
@@ -71,9 +71,9 @@
         endif
 
         ierr=nf_inq_varid (ncid, 'el', varid)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_get_var1_FTYPE (ncid, varid, 1, el)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,2) 'el', grdname(1:lstr), nf_strerror(ierr)
             goto 99                                      !--> ERROR
           endif
@@ -88,9 +88,9 @@
 ! Bathymetry:
 
       ierr=nf_inq_varid (ncid, 'h', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, h(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'h', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -102,9 +102,9 @@
 ! Coriolis parameter.
 
       ierr=nf_inq_varid (ncid, 'f', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, f(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'f', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -117,9 +117,9 @@
 ! differential distances in XI- and ETA-directions.
 
       ierr=nf_inq_varid (ncid, 'pm', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, pm(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'pm', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -129,9 +129,9 @@
       endif
 
       ierr=nf_inq_varid (ncid, 'pn', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, pn(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'pn', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -144,9 +144,9 @@
 
 # ifdef SPHERICAL
       ierr=nf_inq_varid (ncid, 'lon_rho', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, lonr(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'lon_rho', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -156,9 +156,9 @@
       endif
 
       ierr=nf_inq_varid (ncid, 'lat_rho', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, latr(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'lat_rho', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -168,9 +168,9 @@
       endif
 # else
       ierr=nf_inq_varid (ncid, 'x_rho', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, xr(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'x_rho', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -180,9 +180,9 @@
       endif
 
       ierr=nf_inq_varid (ncid, 'y_rho', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, yr(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'y_rho', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -196,10 +196,10 @@
 ! Angle (radians) between XI-axis and EAST at RHO-points.
 
       ierr=nf_inq_varid (ncid, 'angle', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         call nc_check_units( ncid, 'angle', 'radians' )                  ! must be in radians, abort if not
         ierr=ncdf_read(ncid, varid, 0, r_var, angler(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'angle', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -213,9 +213,9 @@
 ! Mask at RHO-points.
 
       ierr=nf_inq_varid (ncid, 'mask_rho', varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, rmask(START_2D_ARRAY), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,2) 'mask_rho', grdname(1:lstr), nf_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
@@ -225,7 +225,7 @@
       endif
 # endif
       ierr=nf_close(ncid)
-      if (ierr==nf_noerr) then
+      if (ierr==nf90_noerr) then
 #ifdef MPI_SILENT_MODE
         if (mynode==0) then
 #endif

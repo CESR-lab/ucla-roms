@@ -25,7 +25,7 @@
 ! artificial values, so that it will trigger the logic in reading
 ! part below.
 
-      ierr=nf_noerr
+      ierr=nf90_noerr
       lstr=lenstr(clm_file)
       if (iic==ntstart) then
         ituclm=1
@@ -34,30 +34,30 @@
 
         if (ncidclm==-1) then
           ierr=nf_open (clm_file(1:lstr), nf_nowrite, ncidclm)
-          if (ierr /= nf_noerr) write(*,'(/1x,4A/)') '### ERROR: ',
+          if (ierr /= nf90_noerr) write(*,'(/1x,4A/)') '### ERROR: ',
      &                    'get_uclima :: Cannot open netCDF file ''',
      &                                     clm_file(1:lstr),   '''.'
         endif
-        if (ierr==nf_noerr) then
+        if (ierr==nf90_noerr) then
           ierr=nf_inq_varid (ncidclm, 'uclm_time', uclm_tid)
-          if (ierr==nf_noerr) then
+          if (ierr==nf90_noerr) then
             lvar=lenstr(vname(1,indxUb))
             ierr=nf_inq_varid (ncidclm, vname(1,indxUb)(1:lvar),
      &                                                 ubclm_id)
-            if (ierr==nf_noerr) then
+            if (ierr==nf90_noerr) then
               lvar=lenstr(vname(1,indxVb))
               ierr=nf_inq_varid (ncidclm, vname(1,indxVb)(1:lvar),
      &                                                  vbclm_id)
-              if (ierr==nf_noerr) then
+              if (ierr==nf90_noerr) then
 # ifdef SOLVE3D
                 lvar=lenstr(vname(1,indxU))
                 ierr=nf_inq_varid (ncidclm, vname(1,indxU)(1:lvar),
      &                                                     uclm_id)
-                if (ierr==nf_noerr) then
+                if (ierr==nf90_noerr) then
                   lvar=lenstr(vname(1,indxV))
                   ierr=nf_inq_varid (ncidclm, vname(1,indxV)(1:lvar),
      &                                                      vclm_id)
-                  if (ierr==nf_noerr) then
+                  if (ierr==nf90_noerr) then
 # endif
                     call find_record(ncidclm,uclm_tid, uclm_rec,ntuclm,
      &                             uclm_ncycle,uclm_cycle,  1,1, ierr)
@@ -92,28 +92,28 @@
 ! record and cycling indices, flip time index and read a new portion of
 ! the data. Repeat until model time falls between the two data times.
 
-      do while(uclm_time(ituclm) < time+0.5*dt .and. ierr == nf_noerr)
+      do while(uclm_time(ituclm) < time+0.5*dt .and. ierr == nf90_noerr)
         call advance_record(uclm_rec,ntuclm, uclm_ncycle,uclm_cycle,
      &                                                    1,1, ierr)
 
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_get_var1_double(ncidclm, uclm_tid, uclm_rec, cff)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ituclm=min(3-ituclm,ntuclm)
             uclm_time(ituclm)=cff*day2sec + uclm_cycle*uclm_ncycle
             ierr=ncdf_read(ncidclm, ubclm_id, uclm_rec, u_var,
      &                     ubclima(START_2D_ARRAY,ituclm), 1)
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               ierr=ncdf_read(ncidclm, vbclm_id, uclm_rec, v_var,
      &                       vbclima(START_2D_ARRAY,ituclm), 1)
-              if (ierr == nf_noerr) then
+              if (ierr == nf90_noerr) then
 # ifdef SOLVE3D
                 ierr=ncdf_read(ncidclm, uclm_id,  uclm_rec,  u_var,
      &                         uclima(START_2D_ARRAY,1,ituclm), N)
-                if (ierr == nf_noerr) then
+                if (ierr == nf90_noerr) then
                   ierr=ncdf_read(ncidclm, vclm_id,  uclm_rec,  v_var,
      &                           vclima(START_2D_ARRAY,1,ituclm), N)
-                  if (ierr == nf_noerr) then
+                  if (ierr == nf90_noerr) then
 # endif
 #ifdef MPI_SILENT_MODE
                     if (mynode == 0) then

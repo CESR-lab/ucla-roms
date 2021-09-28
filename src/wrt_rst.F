@@ -34,7 +34,7 @@
 ! Create/open restart and set record index within the file.
 
       call def_rst(nrecrst, ierr)
-      if (ierr /= nf_noerr) goto 99
+      if (ierr /= nf90_noerr) goto 99
       lstr=lenstr(rstname)
       nrecrst=max(nrecrst,1)                  !!! WARNING: Here it
       if (nrpfrst == 0) then                  !!! is assumed that
@@ -55,7 +55,7 @@
       start(2)=record ; count(2)=1
 
       ierr=nf_put_vara_int (ncrst, rstTstep, start, count, ibuff)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
      &       'Cannot write variable ''time_step'' into restart file, ',
      &       'rec =', record, nf_strerror(ierr) MYID
@@ -75,7 +75,7 @@
       else
         ierr=nf_put_var1_double(ncrst, rstTime, record, tdays)
       endif
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxTime))
         write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
      &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
@@ -88,13 +88,13 @@
 
       ierr=ncdf_write(ncrst,  rstZ,  record,  r_var,
      &                zeta(START_2D_ARRAY,knew), 1)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncrst,  rstUb,  record, u_var,
      &                  ubar(START_2D_ARRAY,knew), 1)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=ncdf_write(ncrst,  rstVb,  record, v_var,
      &                    vbar(START_2D_ARRAY,knew), 1)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             lvar=lenstr(vname(1,indxVb))
             write(*,1) vname(1,indxVb)(1:lvar), record MYID
           endif
@@ -106,21 +106,21 @@
         lvar=lenstr(vname(1,indxZ))
         write(*,1) vname(1,indxZ)(1:lvar), record MYID
       endif
-      if (ierr /= nf_noerr) goto 99                !--> ERROR
+      if (ierr /= nf90_noerr) goto 99                !--> ERROR
 
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
       ierr=ncdf_write(ncrst, rst_DU_avg2, record, u_var, DU_avg2, 1)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncrst, rst_DV_avg2, record, v_var, DV_avg2, 1)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=ncdf_write(ncrst, rst_DU_avg_bak, record, u_var,
      &                                                  DU_avg_bak, 1)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ierr=ncdf_write(ncrst, rst_DV_avg_bak, record, v_var,
      &                                                  DV_avg_bak, 1)
-            if (ierr /= nf_noerr) then
+            if (ierr /= nf90_noerr) then
               write(*,1) 'DV_avg_bak', record MYID
             endif
           else
@@ -135,27 +135,27 @@
 #  elif defined PRED_COUPLED_MODE
       ierr=ncdf_write(ncrst,   rst_rufrc,  record,  u_var,
      &                  rufrc_bak(START_2D_ARRAY,nstp), 1)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncrst, rst_rvfrc,  record,  v_var,
      &                  rvfrc_bak(START_2D_ARRAY,nstp), 1)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,1) 'rvfrc_bak', record MYID
         endif
       else
         write(*,1) 'rufrc_bak', record MYID
       endif
 #  endif
-      if (ierr /= nf_noerr) goto 99                !--> ERROR
+      if (ierr /= nf90_noerr) goto 99                !--> ERROR
 # endif
 
 ! 3D momentum components in XI- and ETA-directions.
 
       ierr=ncdf_write(ncrst, rstU,  record,  u_var,
      &                 u(START_2D_ARRAY,1,nstp), N)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncrst, rstV, record, v_var,
      &                 v(START_2D_ARRAY,1,nstp), N)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           lvar=lenstr(vname(1,indxV))
           write(*,1) vname(1,indxV)(1:lvar), record MYID
         endif
@@ -163,7 +163,7 @@
         lvar=lenstr(vname(1,indxU))
         write(*,1) vname(1,indxU)(1:lvar), record MYID
       endif
-      if (ierr /= nf_noerr) goto 99                !--> ERROR
+      if (ierr /= nf90_noerr) goto 99                !--> ERROR
 
 ! Tracer variables.
 
@@ -174,7 +174,7 @@
 
       ierr=ncdf_write(ncrst, rstHbls, record, r_var,
      &                hbls(START_2D_ARRAY,nstp), 1)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxHbls))
         write(*,1) vname(1,indxHbls)(1:lvar), record MYID
         goto 99                                         !--> ERROR
@@ -185,7 +185,7 @@
 
       ierr=ncdf_write(ncrst, rstHbbl, record, r_var,
      &                hbbl(START_2D_ARRAY,nstp), 1)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxHbbl))
         write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
         goto 99                                         !--> ERROR
@@ -211,10 +211,10 @@
         ierr=nf_close (ncrst)
         ncrst=-1
       else
-        ierr=nf_sync(ncrst)
+        ierr=nf90_sync(ncrst)
       endif
 #endif
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
         if (mynode == 0) then
 #endif

@@ -11,7 +11,7 @@
 !                  however fname is used only to write error
 !                  messages something goes wrong.]
 !
-! output: checkdims (returned value) error status [=nf_noerr=0,
+! output: checkdims (returned value) error status [=nf90_noerr=0,
 !                                            if no error occurs]
 !         max_rec   current size of unlimited dimension
 !                   [=0, if there is no unlimited dimension].
@@ -38,15 +38,15 @@
       max_rec=0     ! current size unlimited dimension (if exists).
 
       ierr=nf_inq_ndims (ncid, ndims)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         ierr=nf_inq_unlimdim (ncid, recdim)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,'(/1x,4A/)')        'WARNING: No unlimited ',
      &          'dimension found in ''', fname(1:lname), '''.'
         endif
         do id=1,ndims
           ierr=nf_inq_dim (ncid, id, dname, dsize)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ldim=lenstr(dname)
             if ( (ldim == 6 .and. dname(1:ldim) == 'xi_rho') .or.
      &           (ldim == 4 .and. dname(1:ldim) == 'xi_v' ) ) then
@@ -131,7 +131,7 @@
 !        n3         expected size of vertical dimension [=0 means do
 !                   not check this dimension]
 
-! returned value    error status [=nf_noerr when no mismatches] 
+! returned value    error status [=nf90_noerr when no mismatches] 
 
       use param
       use netcdf
@@ -152,19 +152,19 @@
 
       lfnm=lenstr(fname)
       ierr=nf_inq_var(ncid, varid, vname, vtype, ndims, dimid, natts)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         lvar=lenstr(vname)
         do i=1,2 
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ierr=nf_inq_dimlen(ncid, dimid(i), size)
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               if (count(i) /= size) then
                 write(*,'(/2A,I3,1x,5A,2(I5,1x,A)/)')   '### ERROR: ',
      &                    'checkvardims :: mismatch in dimension #', i,
      &                    'for variable ''', vname(1:lvar), ''' in ''',
      &                     fname(1:lfnm),  ''': expecting',   count(i),
      &                              'instead of', size, 'in the file.'
-                ierr=nf_noerr-1
+                ierr=nf90_noerr-1
               endif
             else
               write(*,'(/1x,2A,I3,1x,6A/)') '### ERROR: checkvardims ',
@@ -175,15 +175,15 @@
           endif
         enddo
 
-        if (n3 > 0 .and. ierr == nf_noerr) then
+        if (n3 > 0 .and. ierr == nf90_noerr) then
           ierr=nf_inq_dimlen(ncid, dimid(3), size)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             if (n3 /= size) then
               write(*,'(/6A,2(I4,1x,A)/)')  '### ERROR: checkvardims ',
      &                    ':: mismatch in dimension #3 of variable ''',
      &                        vname(1:lvar), ''' in ''', fname(1:lfnm),
      &         ''': expecting', n3, 'instead of', size, 'in the file.'
-              ierr=nf_noerr-1
+              ierr=nf90_noerr-1
             endif
           else
             write(*,'(/1x,7A/)')  '### ERROR: checkvardims :: Cannot ',
@@ -359,10 +359,10 @@
       lvar=lenstr(vname) ; lfile=lenstr(fname)
 
       ierr=nf_inq_att(ncid, nf_global, vname, vtype, size)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         if (size == nlen) then
           ierr=nf_get_att_FTYPE(ncid, nf_global, vname(1:lvar), value)
-          if (ierr /= nf_noerr) then
+          if (ierr /= nf90_noerr) then
             write(*,'(/1x,6A/12x,A/)')    '### ERROR: read_nc1dat :: ',
      &          'Cannot retrieve global attribute ''',   vname(1:lvar),
      &          ''' from ''', fname(1:lfile), '''.', nf_strerror(ierr)
@@ -371,21 +371,21 @@
       else
         size=1
         ierr=nf_inq_varid(ncid, vname, varid)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_inq_varndims(ncid, varid, ndims)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             if (ndims > 0) then
               ierr=nf_inq_vardimid(ncid, varid, dimids)
-              if (ierr == nf_noerr) then
+              if (ierr == nf90_noerr) then
                 i=0
-                do while (i<ndims .and. ierr==nf_noerr)
+                do while (i<ndims .and. ierr==nf90_noerr)
                   i=i+1
                   ierr=nf_inq_dimlen(ncid, dimids(i), j)
-                  if (ierr == nf_noerr) then
+                  if (ierr == nf90_noerr) then
                     size=size*j
                   endif
                 enddo
-                if (ierr /= nf_noerr) then
+                if (ierr /= nf90_noerr) then
                   write(*,'(/1x,2A,I3,1x,3A/12x,A/)')    '### ERROR: ',
      &                'read_nc1dat :: Cannot find size of dimension #',
      &                 dimids(i),  'in file ''', fname(1:lfile), '''.',
@@ -402,9 +402,9 @@
      &   'Cannot determine number of dimensions for ''', vname(1:lvar),
      &      ''' in file ''',  fname(1:lfile), '''.', nf_strerror(ierr)
           endif
-          if (size == nlen .and. ierr == nf_noerr) then
+          if (size == nlen .and. ierr == nf90_noerr) then
             ierr=nf_get_var_FTYPE (ncid, varid, value)
-            if (ierr/=nf_noerr) then
+            if (ierr/=nf90_noerr) then
               write(*,'(/1x,6A/12x,A/)')  '### ERROR: read_nc1dat :: ',
      &                       'Cannot read variable ''',  vname(1:lvar),
      &     ''' from file ''', fname(1:lfile), '''.', nf_strerror(ierr)
@@ -417,7 +417,7 @@
      &      ''' in file ''', fname(1:lfile), '''.', nf_strerror(ierr)
         endif
       endif
-      if (size /= nlen .and. ierr == nf_noerr) then
+      if (size /= nlen .and. ierr == nf90_noerr) then
         write(*,'(/1x,6A/12x,A,I7,1x,A,I7/)')    '### ERROR: ',
      &   'read_nc1dat :: Unexpected size of ''', vname(1:lvar),
      &   ''' in file ''',  fname(1:lfile),  ''':', 'should be',
@@ -445,7 +445,7 @@
       character(len=*) name
 #include "netcdf.inc"
       ierr=nf_def_dim(ncid, name, len, dimid)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         write(*,'(/1x,2A,I3,3A,I4,A,I10/12x,2A,I3/)')   '#### ERROR: ',
      &   'my_nf_def_dim: ncid =', ncid, ' name = ''', name, ''' len =',
      &           len, ' dimid =', dimid, nf_strerror(ierr) MYID
@@ -461,7 +461,7 @@
       character(len=*) name
 #include "netcdf.inc"
       ierr=nf_def_var(ncid, name, type, ndims, dimids, varid)
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
         write(*,*) 'created variable ', name, ' varid =', varid
       else
         write(*,'(/1x,A,I4,1x,A,I7,1x,2A,1x,A,I4,1x,A,4I3)')

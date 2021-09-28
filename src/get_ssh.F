@@ -22,13 +22,13 @@
 ! reuse the input data and find cycling period "ssh_cycle", set
 ! initial cycling index "ssh_ncycle" and record index "ssh_rec".
 
-      ierr=nf_noerr
+      ierr=nf90_noerr
       if (iic == ntstart) then
 
 ! Note that these three must be initialized here no matter what: not
 ! doing it causes segmentation fault and uninitialized variable errors
 ! in do while(ssh_time(itssh),...)  below if something goes wrong with
-! reading data, even thought the .and.ierr==nf_noerr  logic should
+! reading data, even thought the .and.ierr==nf90_noerr  logic should
 ! prevent execution of this while. Set both bounding times to
 ! unrealistacally large negative values to trigger the while-loop.
 
@@ -37,18 +37,18 @@
         lstr=lenstr(clm_file)
         if (ncidclm == -1) then
           ierr=nf_open(clm_file(1:lstr), nf_nowrite, ncidclm)
-          if (ierr /= nf_noerr) write(*,'(/1x,4A/)') '### ERROR: ',
+          if (ierr /= nf90_noerr) write(*,'(/1x,4A/)') '### ERROR: ',
      &                    'get_ssh :: can not open netCDF file ''',
      &                                     clm_file(1:lstr), '''.'
         endif
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_inq_varid(ncidclm, 'ssh_time', ssh_tid)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             ierr=nf_inq_varid(ncidclm, 'zeta', ssh_id)
-            if (ierr /= nf_noerr) then
+            if (ierr /= nf90_noerr) then
               ierr=nf_inq_varid(ncidclm, 'SSH', ssh_id)
             endif
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               call find_record(ncidclm, ssh_tid,  ssh_rec, ntssh,
      &                         ssh_ncycle, ssh_cycle,  1,1, ierr)
 
@@ -70,17 +70,17 @@
 ! record and cycling indices, flip time index and read a new portion of
 ! data. Repeat until model time falls between the two data times.
 
-      do while(ssh_time(itssh) < time+0.5*dt .and.ierr == nf_noerr)
+      do while(ssh_time(itssh) < time+0.5*dt .and.ierr == nf90_noerr)
         call advance_record(ssh_rec, ntssh,  ssh_ncycle, ssh_cycle,
      &                                                   1,1, ierr)
-        if (ierr == nf_noerr) then
+        if (ierr == nf90_noerr) then
           ierr=nf_get_var1_double(ncidclm, ssh_tid, ssh_rec, dtime)
-          if (ierr == nf_noerr) then
+          if (ierr == nf90_noerr) then
             itssh=min(3-itssh,ntssh)
             ssh_time(itssh)=dtime*day2sec+ssh_cycle*ssh_ncycle
             ierr=ncdf_read(ncidclm, ssh_id, ssh_rec, r_var,
      &                     sshg(START_2D_ARRAY,itssh), 1)
-            if (ierr == nf_noerr) then
+            if (ierr == nf90_noerr) then
               mpi_nonexit_warn write(*,'(7x,A,27x,A,F12.4,2(1x,A,I4))')
      &               'get_ssh :: read SSH', 'ssh_time =', dtime,
      &               'rec =', ssh_rec MYID
@@ -100,7 +100,7 @@
      &                                    ssh_time(itssh)*sec2day
         endif
       enddo
-      if (ierr_ext == nf_noerr) ierr_ext=ierr
+      if (ierr_ext == nf90_noerr) ierr_ext=ierr
 
   2   format(/1x,'### ERROR: get_ssh :: Cannot read variable ''',
      &                              A, ''' for rec =', I4/12x,A)

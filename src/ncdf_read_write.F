@@ -59,7 +59,7 @@
 
 #ifndef WRITER
       ierr=nf_get_vara_FTYPE(ncid, vid, start,count, buff)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         write(*,'(/1x,2A,3x,A,I4/)') '### ERROR: ncdf_read :: ',
      &             nf_strerror(ierr) MYID
       else
@@ -181,20 +181,20 @@
 
 #ifdef WRITER
         ierr=nf_put_vara_FTYPE(ncid, vid, start, count, buff)
-        if (ierr /= nf_noerr) then
+        if (ierr /= nf90_noerr) then
           write(*,'(/1x,2A,3x,A,I4/)')  '### ERROR: ncdf_write :: ',
      &             nf_strerror(ierr) MYID
           write(*,'(12x,A,I7,3x,A,I7/12x,A,I3,7I6)') 'ncid =', ncid,
      &   'varid =', vid, 'start,count =', (start(i),count(i), i=1,4)
 
           i=nf_inq_var(ncid, vid,vname, datatype, ndims,dimid,natts)
-          if (i == nf_noerr) then
+          if (i == nf90_noerr) then
             write(*,'(1x,2A,1x,A,I2,2x,A,I3,2x,A,8I3)') 'vname = ',
      &             vname, 'datatype =', datatype, 'ndims =', ndims,
      &                             'dimid =', (dimid(i), i=1,ndims)
             do i=1,ndims
               j=nf_inq_dim(ncid, dimid(i), vname, k)
-              if (j == nf_noerr) write(*,'(29x,2A,I5)') vname,' =',k
+              if (j == nf90_noerr) write(*,'(29x,2A,I5)') vname,' =',k
             enddo
           endif
 #endif

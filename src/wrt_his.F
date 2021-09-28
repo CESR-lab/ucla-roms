@@ -45,7 +45,7 @@
 ! Create/open history and set record index within the file.
 
       call def_his(nrechis, ierr)
-      if (ierr /= nf_noerr) goto 99
+      if (ierr /= nf90_noerr) goto 99
       lstr=lenstr(hisname)
       nrechis=max(nrechis,1)              !!! WARNING: Once time
       if (nrpfhis == 0) then              !!! stepping has been
@@ -73,7 +73,7 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
       ! --------------------------------------------
       ierr=nf90_inq_varid(nchis, 'time_step', var_id_tmp)
       ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start, count)
-      if (ierr /= nf_noerr) then
+      if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
      &       'rec =', record, nf90_strerror(ierr) MYID
@@ -230,10 +230,10 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
         ierr=nf_close (nchis)
         nchis=-1
       else
-        ierr=nf_sync(nchis)
+        ierr=nf90_sync(nchis)
       endif
 #endif
-      if (ierr == nf_noerr) then
+      if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
         if (mynode == 0) then
 #endif
