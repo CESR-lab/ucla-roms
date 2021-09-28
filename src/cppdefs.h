@@ -26,7 +26,7 @@ c--#endif
 
 c-dd# define RIVER_SOURCE
 c-dd# define PIPE_SOURCE
-#define BIOLOGY_BEC2
+c-dd#define BIOLOGY_BEC2
 
 c-dd# define WEC
 # ifdef WEC

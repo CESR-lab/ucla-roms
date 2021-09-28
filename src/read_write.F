@@ -1245,7 +1245,6 @@ C$OMP BARRIER
 !#include "param.h"
       ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
       real A(GLOBAL_2D_ARRAY,nmax)
-      ! commented: CSDISTRIBUTE_RESHAPE  A...
 
       ! Local
       ! -----
@@ -1448,7 +1447,6 @@ C$OMP BARRIER
 !#include "param.h"
       ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
       real A(GLOBAL_2D_ARRAY,nmax)
-      ! commented: CSDISTRIBUTE_RESHAPE  A...
 
       ! Local
       ! -----

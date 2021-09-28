@@ -33,7 +33,6 @@
 #endif
       integer ncid, varid, record, horiz_type, nmax
       real A(GLOBAL_2D_ARRAY,nmax)
-CSDISTRIBUTE_RESHAPE  A(BLOCK_PATTERN,nmax) BLOCK_CLAUSE
       logical mask_land_data
       integer vid, i,j,k, shft, ierr
 #ifdef WRITER

@@ -55,18 +55,14 @@
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
 # if NARGS > 1
       real B(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN) BLOCK_CLAUSE
 # endif
 # if NARGS > 2
       real C(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE C(BLOCK_PATTERN) BLOCK_CLAUSE
 # endif
 # if NARGS > 3
       real D(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN) BLOCK_CLAUSE
 # endif
 # ifdef EW_PERIODIC
       integer j
@@ -288,21 +284,17 @@ CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend, nmaxA
       real A(GLOBAL_2D_ARRAY,nmaxA)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
 #  if NARGS > 1
       integer nmaxB
       real B(GLOBAL_2D_ARRAY,nmaxB)
-CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
 #  endif
 #  if NARGS > 2
       integer nmaxC
       real C(GLOBAL_2D_ARRAY,nmaxC)
-CSDISTRIBUTE_RESHAPE C(BLOCK_PATTERN,*) BLOCK_CLAUSE
 #  endif
 #  if NARGS > 3
       integer nmaxD
       real D(GLOBAL_2D_ARRAY,nmaxD)
-CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN,*) BLOCK_CLAUSE
 #  endif
 #  if defined EW_PERIODIC || defined NS_PERIODIC
       integer k
@@ -642,7 +634,6 @@ CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN,*) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
@@ -651,7 +642,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
@@ -660,7 +650,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
@@ -669,7 +658,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       call exchange2d_tile(istr,iend,jstr,jend, A)
       end
 
@@ -679,7 +667,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY,N)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
@@ -688,7 +675,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY,N)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
@@ -697,7 +683,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY,N)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
@@ -706,7 +691,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY,N)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N)
       end
 
@@ -715,7 +699,6 @@ CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       implicit none
       integer istr,iend,jstr,jend
       real A(GLOBAL_2D_ARRAY,0:N)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
       call exchange_tile(istr,iend,jstr,jend, A,N+1)
       end
 

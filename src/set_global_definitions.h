@@ -446,29 +446,6 @@ c-# define TANH dtanh
 # define NF_FOUT nf_float
 #endif
 
-/* The following definitions are machine dependent macros, compiler
- directives, etc. A proper set of definitions is activated by a proper
- choice C-preprocessor flag, i.e. -DSGI for an SGI computer or -DCRAY
- for a Cray shared memory architecture (Y-MP, C-90, J-90).  Definitions
- for other shared memory platforms may be appended here.
-*/
-#if defined SGI || defined sgi
-# define CSDISTRIBUTE_RESHAPE !!
-/* # define CSDISTRIBUTE_RESHAPE c$sgi distribute         */
-/* # define CSDISTRIBUTE_RESHAPE c$sgi distribute_reshape */
-# define BLOCK_PATTERN block,block
-# define BLOCK_CLAUSE !! onto(2,*)
-# define CVECTOR CDIR$ IVDEP
-# define CSDOACROSS C$DOACROSS
-# define CAND C$&
-#elif defined CRAY || defined cray
-# define CVECTOR CDIR$ IVDEP
-# define CSDOACROSS CMIC$ DO ALL
-# define CAND CMIC$&
-# define SHARE SHARED
-# define LOCAL PRIVATE
-#endif
-
 /* Specific to IBM XLF operating system. */
 
 #ifdef XLF
