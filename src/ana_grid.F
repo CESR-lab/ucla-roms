@@ -1,3 +1,6 @@
+! This is an example of analytical grid definition
+! It defines topography h, coriolis f,  mask, etc
+!
 #include "cppdefs.h"
 #ifdef ANA_GRID
 

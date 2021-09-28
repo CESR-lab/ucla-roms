@@ -44,21 +44,17 @@
 # include "mpif.h"
       integer istr,iend,jstr,jend, nmaxA
       real A(GLOBAL_2D_ARRAY,nmaxA)
-CSDISTRIBUTE_RESHAPE A(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # if NARGS > 1
       integer nmaxB, offset
       real B(GLOBAL_2D_ARRAY,nmaxB)
-CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
 # if NARGS > 2
       integer nmaxC
       real C(GLOBAL_2D_ARRAY,nmaxC)
-CSDISTRIBUTE_RESHAPE C(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
 # if NARGS > 3
       integer nmaxD
       real D(GLOBAL_2D_ARRAY,nmaxD)
-CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
       integer i,j,k, kshft, ierr, mess_count, comm(16), req(16),
      &                                  status(MPI_STATUS_SIZE)

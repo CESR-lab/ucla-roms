@@ -8,7 +8,7 @@
       integer istr,iend,jstr,jend, i,j
       real A(PRIVATE_2D_SCRATCH_ARRAY)
       real B(GLOBAL_2D_ARRAY)
-CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN) BLOCK_CLAUSE
+
 #include "compute_extended_bounds.h"
 
       do j=jstrR,jendR
@@ -25,7 +25,7 @@ CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN) BLOCK_CLAUSE
       integer istr,iend,jstr,jend, nmax, i,j,k
       real A(PRIVATE_2D_SCRATCH_ARRAY,nmax)
       real B(GLOBAL_2D_ARRAY,nmax)
-CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
+
 # include "compute_extended_bounds.h"
 
       do k=1,nmax
@@ -44,7 +44,7 @@ CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
       integer istr,iend, nmax, i,j,k
       real A(PRIVATE_1D_SCRATCH_ARRAY,nmax)
       real B(GLOBAL_2D_ARRAY,nmax)
-CSDISTRIBUTE_RESHAPE B(BLOCK_PATTERN,*) BLOCK_CLAUSE
+
 # include "compute_extended_bounds.h"
 
       do k=1,nmax
