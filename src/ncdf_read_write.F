@@ -24,6 +24,7 @@
       use param
       use buffer
       use grid
+      use netcdf
 
       implicit none
 #ifndef WRITER

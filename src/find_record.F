@@ -51,6 +51,7 @@ c--#define VERBOSE
 !                          ierr=-999 (irec=1, but it does not matter)
       use param
       use scalars
+      use netcdf
       implicit none
       integer ncid, varid, irec, ntime, icycle, ifile, max_files, ierr
       real(kind=8) cycle_length

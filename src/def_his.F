@@ -35,6 +35,7 @@ c--#define nf_def_var my_nf_def_var
       use netcdf ! nf90_create()
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
       integer total_rec, ierr

@@ -5,6 +5,7 @@
       use param
       use ncvars
       use mpi
+      use netcdf
       implicit none               ! into a separate netCDF file.
 
 # include "netcdf.inc"
@@ -84,6 +85,7 @@
 
       use param
       use ncvars
+      use netcdf
       implicit none
       integer ncid, r2dgrd(2), nf_ftype, varid, ierr
 
@@ -220,6 +222,7 @@
       use grid
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
       character(len=*) ncname

@@ -11,6 +11,7 @@
       use scalars
       use scoord
       use strings
+      use netcdf
 
       implicit none
       integer ncid, ierr, nf_ftype, lvar,lenstr

@@ -8,6 +8,7 @@
       use grid
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
       character*1 char1

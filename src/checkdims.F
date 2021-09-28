@@ -18,6 +18,7 @@
 
       use param
       use ncvars
+      use netcdf
 
       implicit none
       integer ncid, max_rec, ierr, icount, ndims, recdim,
@@ -133,6 +134,7 @@
 ! returned value    error status [=nf_noerr when no mismatches] 
 
       use param
+      use netcdf
 
       implicit none
       integer ncid, varid, horiz_type, n3
@@ -343,6 +345,7 @@
 ! returned value  error status =0 means no error.
 
       use param
+      use netcdf
 
       implicit none
       integer read_nc1dat, ncid, nlen
@@ -435,6 +438,8 @@
 #ifdef MPI
       use param
 #endif
+      use netcdf
+
       implicit none
       integer my_nf_def_dim, ncid, len, dimid, ierr
       character(len=*) name
@@ -449,6 +454,7 @@
       end
 
       function my_nf_def_var(ncid, name, type, ndims, dimids, varid)
+      use netcdf
       implicit none
       integer my_nf_def_var, ncid, type, ndims, dimids(ndims), varid
      &      , ierr, i

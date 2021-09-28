@@ -8,6 +8,7 @@
       use read_write, only: output_root_name
       use ncvars
       use scalars
+      use netcdf
 
       implicit none
       integer total_rec, ierr

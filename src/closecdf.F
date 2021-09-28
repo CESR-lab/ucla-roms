@@ -4,6 +4,7 @@
       use param
       use ncvars
       use scalars
+      use netcdf
       implicit none
       integer ierr
 
