@@ -39,9 +39,10 @@
       use param
       use hidden_mpi_vars
       use mess_buffers
+      use mpi
 
       implicit none
-# include "mpif.h"
+
       integer istr,iend,jstr,jend, nmaxA
       real A(GLOBAL_2D_ARRAY,nmaxA)
 # if NARGS > 1
