@@ -23,3 +23,6 @@ The netcdf check is not machine dependant so nothing needs to be changed.
 It is a somewhat crude as it just confirms that the number of records written
 is what it should be, the other tests of diagnostic values should confirm
 values haven't changed in netcdf files.
+
+WEC requires AVERAGES turned on, in order for line positions to work when reading 
+the log file.
