@@ -27,12 +27,12 @@
       use comm_vars
       use grid
       use ocean3d
+      use mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, NSUB
       real my_rx0, my_rx1
 # ifdef MPI
-#  include "mpif.h"
       real*8 buff(2)
       integer size, step, status(MPI_STATUS_SIZE), ierr
 # endif

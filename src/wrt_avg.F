@@ -25,7 +25,6 @@
 
 # include "netcdf.inc"
 # if defined MPI && !defined PARALLEL_FILES
-#  include "mpif.h"
       integer status(MPI_STATUS_SIZE), blank
       if (mynode > 0) then
         call MPI_Recv (blank, 1, MPI_INTEGER, mynode-1,  3,

@@ -2,12 +2,13 @@
 
 !!    program main               ! Open MP version of ROMS driver
       use param
+      use mpi
       implicit none              ! with single parallel region using
       integer ierr               ! explicit barrier synchronization.
 #ifdef MPI
       real*8 tstart, tend
 C$    integer level,req_lev
-#  include "mpif.h"
+
       call system('uname -nmr')
       ierr=1
 C$    req_lev=MPI_THREAD_MULTIPLE

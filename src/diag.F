@@ -67,6 +67,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use ocean2d
       use ocean3d
       use scalars
+      use mpi
 
       implicit none
       integer istr,iend,jstr,jend
@@ -75,7 +76,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
      &                             , ke2b, ke3bc, kesrf, ub, vb
 #endif
 #ifdef MPI
-# include "mpif.h"
 # if QUAD==16
 #  define MPI_BUFF_TYPE MPI_REAL16
 # else
