@@ -10,10 +10,10 @@
 
 #include "netcdf.inc"
 
-      if (ncrst /= -1) ierr=nf_close(ncrst)
-      if (nchis /= -1) ierr=nf_close(nchis)
+      if (ncrst /= -1) ierr=nf90_close(ncrst)
+      if (nchis /= -1) ierr=nf90_close(nchis)
 #ifdef AVERAGES
-      if (ncavg /= -1) ierr=nf_close(ncavg)
+      if (ncavg /= -1) ierr=nf90_close(ncavg)
 #endif
 # ifdef MPI_SILENT_MODE
       if (mynode == 0) then

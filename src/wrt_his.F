@@ -223,11 +223,11 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 ! processes to access data immediately after it is written.
 
 #if defined MPI && !defined PARALLEL_FILES
-      ierr=nf_close (nchis)
+      ierr=nf90_close (nchis)
       if (nrpfhis > 0 .and. record >= nrpfhis) nchis=-1
 #else
       if (nrpfhis > 0 .and. record >= nrpfhis) then
-        ierr=nf_close (nchis)
+        ierr=nf90_close (nchis)
         nchis=-1
       else
         ierr=nf90_sync(nchis)

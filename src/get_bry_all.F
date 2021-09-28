@@ -122,7 +122,7 @@
           if (ierr /= nf90_noerr) write(*,'(/1x,4A/12x,A/)')
      &          '### ERROR: get_bry_all :: Cannot open file ''',
      &              bry_file(ibry)(1:lsrc),   ''' for reading.',
-     &                                      nf_strerror(ierr)
+     &                                      nf90_strerror(ierr)
 
         endif
         if (ierr == nf90_noerr) then
@@ -132,7 +132,7 @@
      &              bry_ncycle, bry_cycle,  ibry, max_bry,  ierr)
 
             if (bry_rec < 0) then
-              ierr=nf_close(bry_id) ; bry_id=-1
+              ierr=nf90_close(bry_id) ; bry_id=-1
               ibry=ibry+1 ;  goto 100  !--> proceed to the next file
             endif
 
@@ -472,7 +472,7 @@
         call advance_record(bry_rec, ntbry,  bry_ncycle, bry_cycle,
      &                                       ibry, max_bry,  ierr)
         if (bry_rec < 0) then
-          ierr=nf_close(bry_id) ; bry_id=-1
+          ierr=nf90_close(bry_id) ; bry_id=-1
           ibry=ibry+1 ;  goto 100  !--> proceed to the next file
         elseif (ierr /= nf90_noerr) then
           if (ierr_all == nf90_noerr) ierr_all=ierr

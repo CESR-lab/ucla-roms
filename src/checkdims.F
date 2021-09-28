@@ -93,14 +93,14 @@
             write(*,'(/1x,2A,I3/12x,3A/12x,A/)')      '### ERROR: ',
      &            'checkdims :: Cannot get size of dimension #', id,
      &            'from netCDF file ''',    fname(1:lname),   '''.',
-     &                                           nf_strerror(ierr)
+     &                                           nf90_strerror(ierr)
             icount=icount+1
           endif
         enddo
       else
         write(*,'(/1x,4A/12x,A/)')       '### ERROR: checkdims :: ',
      &          'Cannot get number of dimensions in netCDF file ''',
-     &                     fname(1:lname), '''.', nf_strerror(ierr)
+     &                     fname(1:lname), '''.', nf90_strerror(ierr)
         icount=icount+1
       endif
 #ifdef SOLVE3D
@@ -170,7 +170,7 @@
               write(*,'(/1x,2A,I3,1x,6A/)') '### ERROR: checkvardims ',
      &                    ':: Cannot determine size of dimension #', i,
      &                    'for variable ''', vname(1:lvar), ''' in ''',
-     &                       fname(1:lfnm), ''', ', nf_strerror(ierr)
+     &                       fname(1:lfnm), ''', ', nf90_strerror(ierr)
             endif
           endif
         enddo
@@ -189,13 +189,13 @@
             write(*,'(/1x,7A/)')  '### ERROR: checkvardims :: Cannot ',
      &                'determine size of dimension #3 for variable ''',
      &                vname(1:lvar), ''' in ''', fname(1:lfnm), ''', ',
-     &                                               nf_strerror(ierr)
+     &                                               nf90_strerror(ierr)
           endif
         endif ! <-- n3 > 0
       else
         write(*,'(/1x,2A,I3,1x,4A/)')    '### ERROR: checkvardims :: ',
      &      'Cannot make inquiry for variable varid =', varid, 'in ''',
-     &                       fname(1:lfnm), ''', ', nf_strerror(ierr)
+     &                       fname(1:lfnm), ''', ', nf90_strerror(ierr)
       endif
       check_vardims=ierr
       end
@@ -365,7 +365,7 @@
           if (ierr /= nf90_noerr) then
             write(*,'(/1x,6A/12x,A/)')    '### ERROR: read_nc1dat :: ',
      &          'Cannot retrieve global attribute ''',   vname(1:lvar),
-     &          ''' from ''', fname(1:lfile), '''.', nf_strerror(ierr)
+     &          ''' from ''', fname(1:lfile), '''.', nf90_strerror(ierr)
           endif
         endif
       else
@@ -389,32 +389,32 @@
                   write(*,'(/1x,2A,I3,1x,3A/12x,A/)')    '### ERROR: ',
      &                'read_nc1dat :: Cannot find size of dimension #',
      &                 dimids(i),  'in file ''', fname(1:lfile), '''.',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
                 endif
               else
                 write(*,'(/1x,6A/12x,A/)')   '### ERROR: read_nc1dat ',
      &       ':: Cannot determine dimension IDs for ''', vname(1:lvar),
-     &       ''' in file ''', fname(1:lfile), '''.', nf_strerror(ierr)
+     &       ''' in file ''', fname(1:lfile), '''.', nf90_strerror(ierr)
               endif
             endif
           else
             write(*,'(/1x,6A/12x,A/)')    '### ERROR: read_nc1dat :: ',
      &   'Cannot determine number of dimensions for ''', vname(1:lvar),
-     &      ''' in file ''',  fname(1:lfile), '''.', nf_strerror(ierr)
+     &      ''' in file ''',  fname(1:lfile), '''.', nf90_strerror(ierr)
           endif
           if (size == nlen .and. ierr == nf90_noerr) then
             ierr=nf_get_var_FTYPE (ncid, varid, value)
             if (ierr/=nf90_noerr) then
               write(*,'(/1x,6A/12x,A/)')  '### ERROR: read_nc1dat :: ',
      &                       'Cannot read variable ''',  vname(1:lvar),
-     &     ''' from file ''', fname(1:lfile), '''.', nf_strerror(ierr)
+     &     ''' from file ''', fname(1:lfile), '''.', nf90_strerror(ierr)
             endif
           endif
         else
           mpi_master_only write(*,'(/1x,6A/14x,A/)')
      &             '### WARNING: read_nc1dat :: ',
      &            'Cannot determine netCDF ID for ''',  vname(1:lvar),
-     &      ''' in file ''', fname(1:lfile), '''.', nf_strerror(ierr)
+     &      ''' in file ''', fname(1:lfile), '''.', nf90_strerror(ierr)
         endif
       endif
       if (size /= nlen .and. ierr == nf90_noerr) then
@@ -448,7 +448,7 @@
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,2A,I3,3A,I4,A,I10/12x,2A,I3/)')   '#### ERROR: ',
      &   'my_nf_def_dim: ncid =', ncid, ' name = ''', name, ''' len =',
-     &           len, ' dimid =', dimid, nf_strerror(ierr) MYID
+     &           len, ' dimid =', dimid, nf90_strerror(ierr) MYID
       endif
       my_nf_def_dim=ierr
       end
@@ -468,7 +468,7 @@
      &  '#### ERROR: my_nf_def_var :: ierr =', ierr, 'ncid =', ncid,
      &                            'name = ', name, 'ndims =', ndims,
      &                            'dimids =', (dimids(i), i=1,ndims)
-        write(*,'(1x,A)') nf_strerror(ierr)
+        write(*,'(1x,A)') nf90_strerror(ierr)
       endif
       my_nf_def_var=ierr
       end

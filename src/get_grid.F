@@ -27,7 +27,7 @@
       else
         write(*,'(/1x,4A/12x,A)')  '### ERROR: get_grid :: Cannot ',
      &          'open input NetCDF file ''', grdname(1:lstr), '''.',
-     &                                            nf_strerror(ierr)
+     &                                            nf90_strerror(ierr)
         goto 99                                          !--> ERROR
       endif
 
@@ -37,7 +37,7 @@
       if (ierr == nf90_noerr) then
         ierr=nf_get_var1_text (ncid, varid, 1, char1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'spherical', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'spherical', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -62,7 +62,7 @@
         if (ierr == nf90_noerr) then
           ierr=nf_get_var1_FTYPE (ncid, varid, 1, xl)
           if (ierr /= nf90_noerr) then
-            write(*,2) 'xl', grdname(1:lstr), nf_strerror(ierr)
+            write(*,2) 'xl', grdname(1:lstr), nf90_strerror(ierr)
             goto 99                                      !--> ERROR
           endif
         else
@@ -74,7 +74,7 @@
         if (ierr == nf90_noerr) then
           ierr=nf_get_var1_FTYPE (ncid, varid, 1, el)
           if (ierr /= nf90_noerr) then
-            write(*,2) 'el', grdname(1:lstr), nf_strerror(ierr)
+            write(*,2) 'el', grdname(1:lstr), nf90_strerror(ierr)
             goto 99                                      !--> ERROR
           endif
         else
@@ -91,7 +91,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, h(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'h', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'h', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -105,7 +105,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, f(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'f', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'f', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -120,7 +120,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, pm(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'pm', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'pm', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -132,7 +132,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, pn(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'pn', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'pn', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -147,7 +147,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, lonr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'lon_rho', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'lon_rho', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -159,7 +159,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, latr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'lat_rho', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'lat_rho', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -171,7 +171,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, xr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'x_rho', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'x_rho', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -183,7 +183,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, yr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'y_rho', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'y_rho', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -200,7 +200,7 @@
         call nc_check_units( ncid, 'angle', 'radians' )                  ! must be in radians, abort if not
         ierr=ncdf_read(ncid, varid, 0, r_var, angler(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'angle', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'angle', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -216,7 +216,7 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_read(ncid, varid, 0, r_var, rmask(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'mask_rho', grdname(1:lstr), nf_strerror(ierr)
+          write(*,2) 'mask_rho', grdname(1:lstr), nf90_strerror(ierr)
           goto 99                                        !--> ERROR
         endif
       else
@@ -224,7 +224,7 @@
         goto 99                                          !--> ERROR
       endif
 # endif
-      ierr=nf_close(ncid)
+      ierr=nf90_close(ncid)
       if (ierr==nf90_noerr) then
 #ifdef MPI_SILENT_MODE
         if (mynode==0) then
@@ -237,7 +237,7 @@
       else
         write(*,'(1x,4A/12x,A,1x,A,I4)')   '### ERROR: get_grid :: ',
      &                'Cannot close file ''', grdname(1:lstr), '''.',
-     &                 nf_strerror(ierr) MYID
+     &                 nf90_strerror(ierr) MYID
         goto 99
       endif
       return                                     !--> NORMAL RETURN

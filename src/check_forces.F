@@ -279,7 +279,7 @@ C$OMP BARRIER
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_frc :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
-     &       'rec =', record, nf_strerror(ierr) MYID
+     &       'rec =', record, nf90_strerror(ierr) MYID
         goto 99                                           !--> ERROR
       endif
 
@@ -290,7 +290,7 @@ C$OMP BARRIER
         lvar=lenstr(vname(1,indxTime))
         write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_frc :: ',
      &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
-     &        ''' into history file, rec =', record, nf_strerror(ierr)
+     &        ''' into history file, rec =', record, nf90_strerror(ierr)
      &            MYID
         goto 99                                           !--> ERROR
       endif
@@ -314,11 +314,11 @@ C$OMP BARRIER
 ! processes to access data immediately after it is written.
 
 #if defined MPI && !defined PARALLEL_FILES
-      ierr=nf_close (nchis)
+      ierr=nf90_close (nchis)
       if (nrpfhis > 0 .and. record >= nrpfhis) nchis=-1
 #else
       if (nrpfhis > 0 .and. record >= nrpfhis) then
-        ierr=nf_close (nchis)
+        ierr=nf90_close (nchis)
         nchis=-1
       else
         ierr=nf90_sync(nchis)
@@ -404,14 +404,14 @@ C$OMP BARRIER
           ierr=nf_set_fill(nchis, nf_nofill, prev_fill_mode)
           if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_frc :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &         MYID
             goto 99
           endif
         else
           write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_frc :: ',
      &          'Cannot create netCDF file ''', hisname(1:lfnm),
-     &                              '''.',   nf_strerror(ierr)
+     &                              '''.',   nf90_strerror(ierr)
           goto 99
         endif
         if (nrpfhis == 0) total_rec=0
@@ -472,7 +472,7 @@ C$OMP BARRIER
         ierr=nf_put_att_FOUT (nchis, vid_srfx, '_FillValue', NF_FOUT,
      &                                                 1, spv_set)
         if (ierr /= nf90_noerr) then
-           write(*,*)  'nf_put_att_XXX:', nf_strerror(ierr)
+           write(*,*)  'nf_put_att_XXX:', nf90_strerror(ierr)
         endif
 #endif
 
@@ -496,7 +496,7 @@ C$OMP BARRIER
      &              '''.' MYID
           else
             write(*,'(1x,4A,I4)') '### ERROR: def_frc :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf_strerror(ierr)
+     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
      &         MYID
             goto 99
           endif
@@ -579,7 +579,7 @@ C$OMP BARRIER
         else
           write(*,'(/1x,6A,I4/)')  '### ERROR: def_frc :: Cannot ',
      &                       'open file ''', hisname(1:lfnm), '''.',
-     &                        nf_strerror(ierr) MYID
+     &                        nf90_strerror(ierr) MYID
           goto 99                                   !--> ERROR
         endif
 #endif

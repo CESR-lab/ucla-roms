@@ -58,7 +58,7 @@
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
      &       'Cannot write variable ''time_step'' into restart file, ',
-     &       'rec =', record, nf_strerror(ierr) MYID
+     &       'rec =', record, nf90_strerror(ierr) MYID
         goto 99                                           !--> ERROR
       endif
 
@@ -79,7 +79,7 @@
         lvar=lenstr(vname(1,indxTime))
         write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
      &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
-     &        ''' into restart file, rec =', record, nf_strerror(ierr)
+     &        ''' into restart file, rec =', record, nf90_strerror(ierr)
      &            MYID
         goto 99                                           !--> ERROR
       endif
@@ -204,11 +204,11 @@
 ! processes to access data immediately after it is written.
 
 #if defined MPI && !defined PARALLEL_FILES
-      ierr=nf_close (ncrst)
+      ierr=nf90_close (ncrst)
       if (nrpfrst > 0 .and. record >= nrpfrst) ncrst=-1
 #else
       if (nrpfrst > 0 .and. record >= nrpfrst) then
-        ierr=nf_close (ncrst)
+        ierr=nf90_close (ncrst)
         ncrst=-1
       else
         ierr=nf90_sync(ncrst)
