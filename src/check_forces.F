@@ -28,11 +28,12 @@
 !!    program check_forces       ! Open MP version of ROMS driver
       implicit none              ! with single parallel region using
       use param
+      use mpi
       integer ierr               ! explicit barrier synchronization.
 #ifdef MPI
       real*8 tstart, tend
 C$    integer level,req_lev
-# include "mpif.h"
+
 c**   call system('uname -nmr')
       ierr=1
 C$    req_lev=MPI_THREAD_MULTIPLE
@@ -235,6 +236,7 @@ C$OMP BARRIER
       use param
       use ncvars
       use scalars
+      use mpi
 
       implicit none
 
@@ -246,7 +248,6 @@ C$OMP BARRIER
 #include "netcdf.inc"
 
 #if defined MPI && !defined PARALLEL_FILES
-# include "mpif.h"
       integer status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
      &            mynode-1, 2, ocean_grid_comm, status, ierr)

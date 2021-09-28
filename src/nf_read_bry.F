@@ -151,12 +151,12 @@
       use param
       use buffer
       use hidden_mpi_vars
+      use mpi
 
       implicit none
       integer jstr,jend, nmax, k
       real A(0:Mm+1,nmax)
 # if defined MPI
-#  include "mpif.h"
       integer, parameter :: ibss=100000
       integer req(2), status(MPI_STATUS_SIZE,2), ierr
       real, dimension(N+1) :: bffr_rsv_S, bffr_snd_S,
@@ -231,11 +231,11 @@
       subroutine exch_bry_NS_tile (istr,iend, A, nmax)
       use param
       use hidden_mpi_vars
+      use mpi
       implicit none
       integer istr,iend, nmax, k
       real A(0:Lm+1,nmax)
 # if defined MPI
-#  include "mpif.h"
       integer, parameter :: ibss=100000
       integer req(2), status(MPI_STATUS_SIZE,2), ierr
       real, dimension(N+1) :: bffr_rsv_W, bffr_rsv_E,

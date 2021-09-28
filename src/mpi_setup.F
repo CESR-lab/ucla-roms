@@ -15,10 +15,10 @@ C$    end
       use param
       use hidden_mpi_vars
       use ncvars
+      use mpi
       implicit none
       integer ierr
 
-# include "mpif.h"
 C$    integer nthrds
       integer nsize, off_xi,off_eta, conv_ijnode_to_rank
 # ifdef PRINT_HOSTNAME

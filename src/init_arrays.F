@@ -62,6 +62,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use mpi
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -71,7 +72,6 @@
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
 # ifdef MPI
-#  include "mpif.h"
       integer status(MPI_STATUS_SIZE), blank, ierr
 # endif
 #endif

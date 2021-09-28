@@ -4,6 +4,7 @@
       subroutine wrt_ana_grid     ! processing to save analytical grid
       use param
       use ncvars
+      use mpi
       implicit none               ! into a separate netCDF file.
 
 # include "netcdf.inc"
@@ -11,7 +12,6 @@
       integer ncid,ierr, r2dgrd(2), lncn, lenstr, my_nf_def_dim
 
 # if defined MPI && !defined PARALLEL_FILES
-#  include "mpif.h"
       integer status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv(blank, 1, MPI_INTEGER,
      &        mynode-1, 1, ocean_grid_comm, status, ierr)

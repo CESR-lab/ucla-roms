@@ -25,6 +25,7 @@
       use comm_vars
       use grid
       use scalars
+      use mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j, nsub
@@ -42,7 +43,6 @@
 # endif
 #endif
 #ifdef MPI
-# include "mpif.h"
 # if QUAD==16
 #  define MPI_BUFF_TYPE MPI_REAL16
 # else

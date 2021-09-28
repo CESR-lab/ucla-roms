@@ -11,6 +11,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use mpi
 
       implicit none
 
@@ -24,7 +25,6 @@
 #include "netcdf.inc"
 
 #if defined MPI && !defined PARALLEL_FILES
-# include "mpif.h"
       integer status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
      &            mynode-1, 1, ocean_grid_comm, status, ierr)
