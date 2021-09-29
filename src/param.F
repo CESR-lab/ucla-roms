@@ -5,12 +5,21 @@
 
       implicit none
 
-! DevinD: normally this was above param.h in subroutines but since compiled alone need here
+! DevinD: normally this was above param.opt in subroutines but since compiled alone need it here
 #include "cppdefs.opt"
+
+! Need this here above param.opt for BGC to work:
+      integer, parameter ::
+#ifdef SOLVE3D
+     &         itemp=1
+# ifdef SALINITY
+     &       , isalt=2
+# endif
+#endif
 
 #include "param.opt"
 
-! Array dimensions and bounds of the used portions of sub-arrays
+! Array dimensions and bounds of the used portions of sub-arrays:
 
 #ifdef MPI
       integer, parameter :: NNODES=NP_XI*NP_ETA,
@@ -33,11 +42,5 @@
 
       integer, parameter :: padd_X=(Lm+2)/2-(Lm+1)/2,
      &                      padd_E=(Mm+2)/2-(Mm+1)/2
-#ifdef SOLVE3D
-     &       , itemp=1
-# ifdef SALINITY
-     &       , isalt=2
-# endif
-#endif /* SOLVE3D */
 
       end module
