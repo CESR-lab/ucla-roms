@@ -134,7 +134,7 @@
      &      , rstTstepFA
 # endif
 
-      common /ncvars/ rstPH, rstPCO2, rstPCO2air, rstPAR
+      common /ncvars_common/ rstPH, rstPCO2, rstPCO2air, rstPAR
      &      , hisPH, hisPCO2, hisPCO2air, hisPARinc, hisPAR
 # ifdef AVERAGES
      &      , avgPH, avgPCO2, avgPCO2air, avgPARinc, avgPAR
