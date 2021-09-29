@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && defined UV_VIS2
 
       subroutine visc3d (tile)

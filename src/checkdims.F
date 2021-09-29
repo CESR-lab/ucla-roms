@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       integer function checkdims(ncid, fname, max_rec)
 

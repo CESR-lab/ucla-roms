@@ -1,6 +1,6 @@
 #define GRID_LEVEL 1
 #define MAX_GRID_LEVEL 2
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if GRID_LEVEL < MAX_GRID_LEVEL
 
       subroutine int_r3d_west (istr,iend,jstr,jend, ks, q,buff)

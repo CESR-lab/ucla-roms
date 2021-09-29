@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
                               ! Write model prognostic
       subroutine wrt_rst      ! variables into restart
                               ! netCDF file.

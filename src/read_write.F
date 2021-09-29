@@ -25,7 +25,7 @@
 
       implicit none
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       private
 
@@ -1243,7 +1243,7 @@ C$OMP BARRIER
       ! ------
       integer ncid, varid, record, horiz_type, nmax
 !#include "param.h"
-      ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
+      ! param.h & cppdefs.opt needed for A for GLOBAL_2D_ARRAY
       real A(GLOBAL_2D_ARRAY,nmax)
 
       ! Local
@@ -1445,7 +1445,7 @@ C$OMP BARRIER
       ! ------
       integer ncid, varid, record, horiz_type, nmax
 !#include "param.h"
-      ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
+      ! param.h & cppdefs.opt needed for A for GLOBAL_2D_ARRAY
       real A(GLOBAL_2D_ARRAY,nmax)
 
       ! Local
@@ -1889,7 +1889,7 @@ C$OMP BARRIER
       ! Inputs
       ! ------
       integer ncid, varid, record, horiz_type, nmax
-      ! param.h & cppdefs.h needed for A for GLOBAL_2D_ARRAY
+      ! param.h & cppdefs.opt needed for A for GLOBAL_2D_ARRAY
       ! 'A' represents variable used within simulation (refined grid)
       real A(GLOBAL_2D_ARRAY,nmax)
 

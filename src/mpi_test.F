@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 !!    program main               ! Open MP version of ROMS driver
       use param

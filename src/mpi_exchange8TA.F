@@ -17,7 +17,7 @@
  affect performance.  */
 
 #ifndef NARGS
-# include "cppdefs.h"
+# include "cppdefs.opt"
 # define NONBLK_SEND
 # define ALT_SEND_ORD
 #endif

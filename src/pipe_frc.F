@@ -8,7 +8,7 @@
 
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined PIPE_SOURCE
   
       use dimensions !! has dimensions, a list of forcing files, and rmask

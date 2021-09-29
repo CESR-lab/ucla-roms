@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && (defined LMD_KPP || defined LMD_BKPP)
 c--#define BULK_DIFFERENCE
 c--#define INT_AT_W_POINTS

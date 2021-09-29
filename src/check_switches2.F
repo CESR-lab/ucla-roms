@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
                                            ! Checking compatibility of
       subroutine check_tiling (ierr)       ! dimensions of the grid and
       use param
@@ -191,12 +191,12 @@
       nobc_east=nobc_east+1
 #endif
       if (nobc_west>1) then
-        write(*,'(1x,2A)') '### ERROR in "cppdefs.h": more than one ',
+        write(*,'(1x,2A)') '### ERROR in "cppdefs.opt": more than one ',
      &          'boundary condition is chosen on the WESTERN EDGE.'
         ierr=ierr+1
       endif
       if (nobc_east>1) then
-        write(*,'(1x,2A)') '### ERROR in "cppdefs.h": more than one ',
+        write(*,'(1x,2A)') '### ERROR in "cppdefs.opt": more than one ',
      &          'boundary condition is chosen on the EASTERN EDGE.'
         ierr=ierr+1
       endif
@@ -215,12 +215,12 @@
       nobc_north=nobc_north+1
 #endif
       if (nobc_south>1) then
-        write(*,'(1x,2A)') '### ERROR in "cppdefs.h": more than one ',
+        write(*,'(1x,2A)') '### ERROR in "cppdefs.opt": more than one ',
      &          'boundary condition is chosen on the SOUTHERN EDGE.'
         ierr=ierr+1
       endif
       if (nobc_north>1) then
-        write(*,'(1x,2A)') '### ERROR in "cppdefs.h": more than one ',
+        write(*,'(1x,2A)') '### ERROR in "cppdefs.opt": more than one ',
      &          'boundary condition is chosen on the NORTHERN EDGE.'
         ierr=ierr+1
       endif
@@ -247,7 +247,7 @@
       nAk=nAk+1
 #endif
       if (nAk>1) then
-        write(*,'(1x,2A)') '### ERROR in "cppdefs.h": more than ',
+        write(*,'(1x,2A)') '### ERROR in "cppdefs.opt": more than ',
      &                     'one vertical mixing scheme is chosen.'
         ierr=ierr+1
       endif
@@ -255,7 +255,7 @@
 /*
 #ifdef SPLIT_EOS
 # ifndef NONLIN_EOS
-      write(*,'(1x,2A/12x,A)') '### ERROR in "cppdefs.h": ',
+      write(*,'(1x,2A/12x,A)') '### ERROR in "cppdefs.opt": ',
      &        'illegal combination of CPP-switches: ',
      &        'SPLIT_EOS is defined, but NONLIN_EOS is not.'
       ierr=ierr+1

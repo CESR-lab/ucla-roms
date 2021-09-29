@@ -2,7 +2,7 @@
 
       ! Move to rho_eos when complete?
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

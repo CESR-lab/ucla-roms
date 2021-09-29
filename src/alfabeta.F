@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && defined LMD_KPP
 
       subroutine alfabeta_tile(istr,iend,jstr,jend,

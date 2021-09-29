@@ -16,7 +16,7 @@
 ! bry_time_id - netCDF variable ID for time variable;
 ! All others are netCDF variable IDs for the corresponding variables.
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

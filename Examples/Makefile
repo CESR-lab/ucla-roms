@@ -28,7 +28,7 @@ all:
 #       stop if no .h or .F files in current directory.
 #       Also, makedepf90 in make depend can throw out strange
 #       errors for .h files for inexplicable changes made to
-#       cppdefs.h.
+#       cppdefs.opt.
 
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :

@@ -14,7 +14,7 @@
 
       ! Original WEC theory and code is courtesy of Leonel Romero.
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 ! CPP flag WEC covering entire module so that the module is empty if
 ! WEC is unused, and thus module will not take up unnecessary size in
 ! the executable.

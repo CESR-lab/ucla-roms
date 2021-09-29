@@ -1,5 +1,5 @@
 #define GRID_LEVEL 2
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef GRID_LEVEL
 # if GRID_LEVEL > 1
 

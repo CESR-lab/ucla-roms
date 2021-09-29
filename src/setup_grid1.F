@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
                                             ! Setting up curvilinear
       subroutine setup_grid1(tile)          ! grid: Compute various
       use param

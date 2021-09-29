@@ -5,7 +5,7 @@
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020 Oct)
       ! (only refactoring old code's get/set _st/sm/srflux into module)
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       ! Modules needed:
       use param

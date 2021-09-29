@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 ! Compute and report various diagnostics: volume-averaged kinetic and
 ! potential energy, horizontally averaged free-surface perturbation;

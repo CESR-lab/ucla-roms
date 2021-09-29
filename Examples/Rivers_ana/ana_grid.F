@@ -2,7 +2,7 @@
 ! It is part of the rivers_ana example and defines
 ! topography h, coriolis f,  mask, and river flux location rflx
 !
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef ANA_GRID
 
       subroutine ana_grid (tile)

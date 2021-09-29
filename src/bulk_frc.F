@@ -4,7 +4,7 @@
 
       ! initial coding: Devin Dollery,Jeroen Molemaker & Pierre Damien (2020)
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 ! CPP flag BULK_FRC covering entire module, module empty if off
 #if defined BULK_FRC /* for whole module! */
 
@@ -18,19 +18,17 @@
 
 #include "bulk_frc.opt"
 
-      real ::  uwnd(GLOBAL_2D_ARRAY) ! time interpolated u-wind
-      real ::  vwnd(GLOBAL_2D_ARRAY)
-      real ::  tair(GLOBAL_2D_ARRAY) ! air temp
-      real ::     Q(GLOBAL_2D_ARRAY) ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
-      real :: prate(GLOBAL_2D_ARRAY) ! prate (precipitation rate) - 'rain' variable in old code
-      real :: lwrad(GLOBAL_2D_ARRAY) ! ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
-      !real:: srflx(GLOBAL_2D_ARRAY) ! short wave radiation: srflx stored in surf_flux.F module as used in flux_frc too
+      real ::  uwnd(GLOBAL_2D_ARRAY)              ! time interpolated u-wind
+      real ::  vwnd(GLOBAL_2D_ARRAY)              ! time interpolated v-wind
+      real ::  tair(GLOBAL_2D_ARRAY)              ! air temp
+      real ::     Q(GLOBAL_2D_ARRAY)              ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
+      real :: prate(GLOBAL_2D_ARRAY)              ! prate (precipitation rate) - 'rain' variable in old code
+      real :: lwrad(GLOBAL_2D_ARRAY)              ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
+      !real:: srflx(GLOBAL_2D_ARRAY)              ! short wave radiation: srflx stored in surf_flux.F module as used in flux_frc too
 
 #if defined TAU_CORRECTION
-      type (ncvs)  :: nc_taux = ncvs( name='TauX_corr',  time_name='Taucorr_time'  )  ! The TAU_CORRECTION flag is used to active a correction term to
-      real         :: taux(GLOBAL_2D_ARRAY)                                           ! bring bulk force field closer to that of the measured data.
-      type (ncvs)  :: nc_tauy = ncvs( name='TauY_corr',  time_name='Taucorr_time'  )
-      real         :: tauy(GLOBAL_2D_ARRAY)
+      real         :: taux(GLOBAL_2D_ARRAY)       ! The TAU_CORRECTION flag is used to active a correction term to
+      real         :: tauy(GLOBAL_2D_ARRAY)       ! bring bulk force field closer to that of the measured data.
 #endif
 
       real, public :: wspd_used(GLOBAL_2D_ARRAY)  ! wind speed at rho point (also used in BGC routines)

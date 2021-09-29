@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && ( defined TCLIMATOLOGY || ( defined TNUDGING &&\
                          defined T_FRC_BRY  )) && !defined ANA_TCLIMA
 

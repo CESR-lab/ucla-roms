@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef SOLVE3D
 
       subroutine u3dbc_tile (istr,iend,jstr,jend, grad)

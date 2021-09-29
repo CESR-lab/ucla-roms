@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef SOLVE3D
 # define POWER_FUNCTION
 c--# define TEST_WEIGHTS

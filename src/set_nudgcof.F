@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SPONGE || defined TCLIMATOLOGY
 
       subroutine set_nudgcof (tile)  ! Set up nudging-to-climatology

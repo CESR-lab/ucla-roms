@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       subroutine get_init(req_rec, tindx)    ! Reads initial conditions
                                              ! from netCDF file.

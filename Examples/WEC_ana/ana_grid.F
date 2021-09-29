@@ -1,10 +1,13 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef ANA_GRID
 
       subroutine ana_grid (tile)
+
+      use param
+      use hidden_mpi_vars
+
       implicit none
       integer tile
-# include "param.h"
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
       end
@@ -13,7 +16,7 @@
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
-! output: stored in common blocks, see files "scalars.h" "grid.h"
+! output: stored in common blocks, see files "scalars" "grid"
 
 ! xl,el      Physical dimensions of the computational domain [usually
 !                                                measured in  meters];
@@ -26,9 +29,12 @@
 ! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
 
+      use param
+      use grid
+      use scalars
+
       implicit none
       integer istr,iend,jstr,jend, i,j
-# include "param.h"
 
 ! Grid configuration parameters:
 !----- ------------- -----------
@@ -46,9 +52,6 @@
 # endif
 
       real cff,y, x0,y0,dx,dy
-
-# include "grid.h"
-# include "scalars.h"
 
 # include "compute_extended_bounds.h"
 

@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef ANA_INITIAL
                                   ! Set initial conditions for momentum
       subroutine ana_init (tile)  ! free surface, and tracer variables

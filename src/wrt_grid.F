@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef ANA_GRID
                                   ! Sometimes it is convenient for post
       subroutine wrt_ana_grid     ! processing to save analytical grid

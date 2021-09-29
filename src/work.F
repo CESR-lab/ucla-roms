@@ -1,6 +1,6 @@
       module work_mod  ! was work .h but changed to work_mod for name clash with work array
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

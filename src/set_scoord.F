@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef SOLVE3D
                                          ! Setup S-coordinate system:
       subroutine set_scoord              ! input: theta_s, theta_b, hc

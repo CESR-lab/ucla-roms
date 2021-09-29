@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef MPI
 c--# define TRANSPOSED_MPI_NODE_ORDER
 c--# define PRINT_HOSTNAME

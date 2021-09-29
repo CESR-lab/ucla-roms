@@ -197,7 +197,7 @@
       !     wrt_child_bry()       rp%south              writes out interpolated value to file.
       !]
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef BRY_EXTRACT_CHILD
 
       use dimensions                                   ! has dimensions, a list of forcing files, and rmask, glob_istr, etc

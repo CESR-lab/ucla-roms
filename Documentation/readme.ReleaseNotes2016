@@ -459,11 +459,11 @@ strings, SRCS and CPPS, which are automatically saved as global attributes
 into all netCDF files created by the code.  Later, if a question arise, it is
 always possible to reconstruct the conditions of the specific run by looking
 at these signatures.  The automatic tracking mechanism involves a special
-programs which reads "cppdefs.h", identifies and catalogs all CPP switches
+programs which reads "cppdefs.opt", identifies and catalogs all CPP switches
 (both defined and used) and creates a subroutine (source code file) to track
 them, which is then compiled in into ROMS executable. This way, if a user
 wants to create brand-new, previously unknown switches, they also will be
-tracked automatically as long as they appear in "cppdefs.h". Another program
+tracked automatically as long as they appear in "cppdefs.opt". Another program
 reads Makefile and created another subroutine to track the source code file
 list. This subroutine is also compiled in into the executable.  Should user
 create his own source files (previously unknown) and add them into Makefile,
@@ -476,10 +476,10 @@ are needed, and making then invisible to the rest of the code.  Say,defining
 a main switch LMD_KPP enables compilation of the relevant routine as a whole
 (otherwise a trivial sub routine is created), while dependent CPP-switches
 relevant only to KPP routine are controlled/defined/used privately within
-the file where they have effect, rather than globally in "cppdefs.h".
+the file where they have effect, rather than globally in "cppdefs.opt".
 This, however, circumvents the tracking mechanism described above, but, as
 just stated, it is undesirable to move definition of these switches into
-"cppdefs.h" and/or "set_global_definitions.h". So to keep track of them, every
+"cppdefs.opt" and/or "set_global_definitions.h". So to keep track of them, every
 file which contains privately-defined CPPs is supplemented by a subroutine to
 track their status. The format of CPPS signature is therefore updated into
 CPPS="<filename1> SWCH1 SWCH2 SWCH3 <filename2> SWCH5 SWCH6 SWCH7 ..."

@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined M2NUDGING && !defined M2_FRC_BRY && !defined ANA_SSH
 
                                       ! Read Sea Surface Height (SSH)

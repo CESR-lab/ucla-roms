@@ -1,4 +1,4 @@
-/* This is "cppdefs.h": MODEL CONFIGURATION FILE
+/* This is "cppdefs.opt": MODEL CONFIGURATION FILE
    ==== == ============ ===== ============= ==== */
 
 /*
@@ -22,15 +22,15 @@ c--#endif
 
 #if defined USWC_sample
 
-# define RIVER_SOURCE
+# define PIPE_SOURCE
 
 /* Include standard CPP switches for UP ETH Zurich */
 c-dd#include "cppdefs_UP.h"
 
 /*
    Standard UP ETH Zurich Settings for Regional and Basin Configurations
-   #### PLEASE do not change but use undef in cppdefs.h to undefine
-   #### what as needed e.g., put #undef SPONGE in your personal cppdefs.h
+   #### PLEASE do not change but use undef in cppdefs.opt to undefine
+   #### what as needed e.g., put #undef SPONGE in your personal cppdefs.opt
 */
                      /* Basics */
 #define SOLVE3D

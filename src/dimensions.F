@@ -12,7 +12,7 @@
       implicit none
 !      private
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 !      integer, public, parameter :: gnx = LLm
 !      integer, public, parameter :: gny = MMm

@@ -1,6 +1,6 @@
       module tides
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 ! Empty module if TIDES not defined.
 #ifdef TIDES
 

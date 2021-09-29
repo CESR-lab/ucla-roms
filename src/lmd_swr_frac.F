@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef LMD_KPP
 
       subroutine swr_frac (tile)

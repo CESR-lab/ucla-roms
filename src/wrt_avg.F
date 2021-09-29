@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef AVERAGES
 
       subroutine wrt_avg             ! Write time-averaged fields

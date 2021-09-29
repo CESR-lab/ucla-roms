@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 ! Copy the content of a private array into a shared array over
 ! extended range of indices.
 

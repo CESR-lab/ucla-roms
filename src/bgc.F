@@ -7,7 +7,7 @@
       ! Refactoring of ETH Zurich roms code with BEC2, code which has been used
       ! by Pierre Damien to run full pacific models.
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef BIOLOGY_BEC2
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
