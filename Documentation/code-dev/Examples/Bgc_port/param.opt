@@ -15,17 +15,16 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm=920, MMm=480, N=60    ! Pacific model PierreD 25km
-c     &                     LLm=930, MMm=480, N=60    ! Incorrect grid     
-c     &                     LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12.5km
+      integer, parameter :: LLm=930, MMm=480, N=60    ! Pacific 25km grid
 
-      integer, parameter :: NP_XI=16, NP_ETA=8
-      integer, parameter :: NSUB_X=1, NSUB_E=1
-      
-      integer, parameter :: 
+      integer, parameter :: NP_XI = 4, NP_ETA = 12
+      integer, parameter :: NSUB_X = 1, NSUB_E = 1
+
+      integer, parameter ::  
 #ifdef SOLVE3D
+# ifdef SALINITY
 #  if defined BIOLOGY_BEC2
-     &       , ntrc_pas=0
+     &         ntrc_pas=0
      &       , ntrc_salt=1
      &       , itrc_bio=isalt+1  ! itemp+ntrc_salt+ntrc_pas+1
      &       , ntrc_bio_base=26
@@ -46,10 +45,14 @@ c     &                     LLm=1840, MMm=960, N=100  ! Pacific model PierreD 12
      &  0
 #   endif /* Ncycle_SY */
 
-     &       , ntrc_bio=ntrc_bio_base+ntrc_bio_ncycle	 ! +ntrc_bio_cocco
+     &       , ntrc_bio=ntrc_bio_base+ntrc_bio_ncycle    ! +ntrc_bio_cocco
      &       , NT=isalt+ntrc_pas+ntrc_bio
 #  else /* not BIOLOGY_BEC2 */
-     &       , NT=2
+     &        NT=2
 #  endif /* BIOLOGY_BEC2 */
+
+# else /* SALINITY */
+     &       , NT=1
+# endif
 #endif /* SOLVE3D */
 
