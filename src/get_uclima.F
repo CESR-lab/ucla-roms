@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined UCLIMATOLOGY && !defined ANA_UCLIMA
 
                                       ! Read momentum climatology

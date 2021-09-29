@@ -1,11 +1,11 @@
-/* This is "cppdefs.h": MODEL CONFIGURATION FILE
+/* This is "cppdefs.opt": MODEL CONFIGURATION FILE
    ==== == ============ ===== ============= ==== */
 
 /*
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define WECAGE /* Wave Effect on Current model */
+#define WEC /* Wave Effect on Current model */
 
 
 /*
@@ -21,13 +21,13 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
-#if defined WECAGE
+#if defined WEC
 
 /* WEC */
 
 # undef ANA_WEC_FRC /* DEFINE FOR ANALYTICAL WEC */
 
-/* DevinD - from DH's analytical wave_packet cppdefs.h */
+/* DevinD - from DH's analytical wave_packet cppdefs.opt */
 
 # ifdef ANA_WEC_FRC
 #  undef VERBOSE
@@ -68,7 +68,6 @@ c--#endif
 
 # if defined USWC_WEC
 
-#  define BRY_EXTRACT_CHILD
 #  undef GRID_ANG_DEG
 #  define SOLVE3D
 #  define UV_COR
@@ -112,8 +111,6 @@ c# define IMPLICIT_BOTTOM_DRAG
 #  define M3_FRC_BRY
 #  define T_FRC_BRY
 #  define SPONGE
-
-#  undef WEC
 
 #  ifdef WEC
 #    define BRK0

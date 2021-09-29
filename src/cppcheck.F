@@ -1,12 +1,12 @@
       program cppcheck
 
-! PURPOSE: Scan all existing CPP-switches in file "cppdefs.h" and
+! PURPOSE: Scan all existing CPP-switches in file "cppdefs.opt" and
 ! automatically generate file "check_switches1.F" which contains
 ! subroutine "check_switches1". When later this file is compiled and
 ! executed as a part of ROMS code, it creates log of activated
 ! CPP-switches.
 !
-! Algorithm: this program reads line-by-line file "cppdefs.h" and
+! Algorithm: this program reads line-by-line file "cppdefs.opt" and
 ! creates catalog of CPP-switches found there.  It does not matter,
 ! whether switches are in defined or undefined status, either way
 ! they are put into catalog. For the purpose of this algorithm
@@ -235,16 +235,16 @@ c**         enddo
 ! Generate CPP-checking subroutine.
 
       open (unit=iout,file='check_switches1.F',form='formatted')
-      write(iout,'(A/)')  '#include "cppdefs.h"'
+      write(iout,'(A/)')  '#include "cppdefs.opt"'
       write(iout,'(/6x,A/)') 'subroutine check_switches1(ierr)'
       write(iout,'(4(A,1x,A/),A,14x,A/A,1x,A,3x,A/A,14x,A/A,22x,A)')
      &  '!!!!!! WARNING: THIS IS A MACHINE GENERATED',
      &                                   'CODE, DO NOT EDIT! !!!!!!',
      &  '!!!!!! This file needs to be updated only if',
      &                                    'new CPP-switches  !!!!!!',
-     &  '!!!!!! were introduced into "cppdefs.h".',
+     &  '!!!!!! were introduced into "cppdefs.opt".',
      &                                ' NO ACTION IS NEEDED  !!!!!!',
-     &  '!!!!!! if changes in "cppdefs.h" are limited',
+     &  '!!!!!! if changes in "cppdefs.opt" are limited',
      &                                    'to activation or  !!!!!!',
      &  '!!!!!! deactivation of previously known switches.','!!!!!!',
      &  '!!!!!! To refresh this file compile and execute',
@@ -313,12 +313,12 @@ c**  &                              '''<', fname(ifile)(1:ln), '>'''
       write(iout,'(6x,A/8x,A/5x,A1,1x,A/8x,A/6x,A)')
      &      'if (iexample == 0) then',
      &      'mpi_master_only write(*,''(/1x,A)'')', '&',
-     & '''### ERROR in "cppdefs.h": no configuration is specified.''',
+     & '''### ERROR in "cppdefs.opt": no configuration is specified.''',
      &      'ierr=ierr+1',  'elseif (iexample > 1) then'
       write(iout,'(8x,A/5x,A1,2x,A/5x,A1,13x,A/8x,A/6x,A/6x,A)')
      &      'mpi_master_only write(*,''(/1x,2A/)'')', '&',
      &      '''### ERROR: More than one main configuration '',', '&',
-     &      '''switch is defined in "cppdefs.h".''',   'ierr=ierr+1',
+     &      '''switch is defined in "cppdefs.opt".''',   'ierr=ierr+1',
      &                                             'endif', 'return'
       write(iout,'(2x,A/5x,A1,2x,A,1x,A/5x,A1,2x,A,1x,A)')
      &      '99  mpi_master_only write(*,''(/1x,2A/14x,A)'')',  '&',

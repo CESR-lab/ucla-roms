@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       function read_bry_EW(ncid, varid, record, horiz_type, A, nmax)
 

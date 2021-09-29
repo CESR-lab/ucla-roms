@@ -2,7 +2,7 @@
 
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020 Oct)
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       use read_write              ! set_frc_var_tile, nc_define_var, rp_var

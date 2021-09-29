@@ -1,5 +1,5 @@
 ! SY : March 4, decrease Zumax on diatoms
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef BIOLOGY_BEC2
       subroutine ecosys2_init()
 

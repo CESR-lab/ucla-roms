@@ -1,6 +1,6 @@
       module diag_vars
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       implicit none
 

@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       subroutine def_rst(total_rec, ierr)  ! Create or open
                                            ! restart netCDF file.

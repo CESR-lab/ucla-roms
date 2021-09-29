@@ -5,7 +5,7 @@
 
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined RIVER_SOURCE
 
       ! Contains all the necessary components to produce the riv_uflx,riv_vflx

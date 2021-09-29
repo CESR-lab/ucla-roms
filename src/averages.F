@@ -1,7 +1,7 @@
       module averages
       ! time-averaged fields for output purposes
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

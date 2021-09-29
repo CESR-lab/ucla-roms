@@ -1,6 +1,6 @@
       module private_scratch
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

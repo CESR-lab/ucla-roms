@@ -1,6 +1,6 @@
       module comm_vars
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

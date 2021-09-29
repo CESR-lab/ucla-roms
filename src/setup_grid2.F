@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #define SUM_BY_PAIRS
 
       subroutine setup_grid2 (tile)

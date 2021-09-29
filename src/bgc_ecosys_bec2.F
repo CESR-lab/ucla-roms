@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 #ifdef BIOLOGY_BEC2
 

@@ -28,12 +28,12 @@ roms.in:
     and the averages file will be pacific_avg.*.nc
 
 
-cppdefs.h:
+cppdefs.opt:
 
     We have removed some cppflags, 'grep' search the code to see if they still
     exist, or ask someone who might know :).
     
-param.h:
+param.opt:
 
     Set your domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
     Set number of tracers here.
@@ -75,7 +75,7 @@ Passive tracers:
     Tracers are handled by the module tracers.F.
     User inputs, such as the name of tracers, is done in the file tracers.opt, which
     also contains further instructions.
-    Set number of tracers 'NT' in param.h as before.
+    Set number of tracers 'NT' in param.opt as before.
     I would suggest starting with no tracers or just 1 or 2 to ensure that you can get 
     it working, and then finally set it up with all of your tracers.
     Selection of tracers for outputting is also done in tracers.opt.

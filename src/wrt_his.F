@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
                                ! Writes requested model
       subroutine wrt_his       ! fields at requested levels
                                ! into history netCDF file.

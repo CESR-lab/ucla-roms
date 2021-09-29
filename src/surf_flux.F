@@ -5,7 +5,7 @@
 
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020)
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       use read_write
@@ -48,18 +48,16 @@
       ! SST and SSS are needed to do flux-correction which is basically
       ! a restoring terms towards a climatological SST/SSS field.
       ! ----------------------------------------------------------------
-      ! sea-surface temperature (SST) data
 #if defined QCORRECTION && !defined ANA_SST
-      type (ncvs)  :: nc_sst  = ncvs( name='sst', time_name='sst_time' )
+      ! sea-surface temperature (SST) data
       real, public :: sst(GLOBAL_2D_ARRAY)
       real, public :: dSSTdt
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      type (ncvs)  :: nc_sss  = ncvs( name='sss', time_name='sss_time' )
       real, public :: sss(GLOBAL_2D_ARRAY)
-      real, public :: dSSSdt                                             ! input units (cm/day)
+      real, public :: dSSSdt                  ! input units (cm/day)
 #endif
 
 

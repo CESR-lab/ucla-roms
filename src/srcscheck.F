@@ -26,7 +26,7 @@
 
       open (unit=iout,file='check_srcs.F',form='formatted')
       write(iout,'(A/, /6x,A/, /3(A,1x,A/),A,29x,A/)')
-     &     '#include "cppdefs.h"',    'subroutine check_srcs',
+     &     '#include "cppdefs.opt"',    'subroutine check_srcs',
      &     '!!!!!! WARNING: THIS IS A MACHINE GENERATED',
      &                              'CODE, DO NOT EDIT! !!!!!!',
      &     '!!!!!! This file needs to be updated only if',

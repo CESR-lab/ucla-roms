@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if !defined GRID_LEVEL || GRID_LEVEL == 1
 
 !!    program main               ! Open MP version of ROMS driver

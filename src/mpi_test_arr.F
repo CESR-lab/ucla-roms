@@ -1,6 +1,6 @@
       module mpi_test_arr
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

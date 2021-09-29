@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if !defined ANA_BRY && ( defined OBC_WEST   || defined OBC_EAST  || \
                           defined OBC_SOUTH  || defined OBC_NORTH )  \
                      && ( defined M2_FRC_BRY || defined Z_FRC_BRY || \

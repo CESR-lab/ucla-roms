@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 c--#define VERBOSE
 
       subroutine find_record(ncid, varid,  irec, ntime,  icycle,

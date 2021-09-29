@@ -120,7 +120,7 @@ Recompiling roms:
      Only the necessary files will recompile, so it will be faster than a
      full compile.
   
-  B. If cppdefs.h is changed, then with the new dependency generator, you
+  B. If cppdefs.opt is changed, then with the new dependency generator, you
      are required to update the dependency list with 'make depend', as it 
      is effected by cppflags. 
      This will be done automatically using the Work/ or Examples/ directory.

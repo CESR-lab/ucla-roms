@@ -1,6 +1,6 @@
       module ocean3d
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

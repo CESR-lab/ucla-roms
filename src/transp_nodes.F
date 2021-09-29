@@ -84,7 +84,7 @@
 #define VERBOSE
 #define VISUALIZE
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef MPI
 
       use param

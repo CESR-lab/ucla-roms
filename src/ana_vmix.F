@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined ANA_VMIX && defined SOLVE3D
 
       subroutine ana_vmix (tile)

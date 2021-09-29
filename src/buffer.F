@@ -1,6 +1,6 @@
       module buffer
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

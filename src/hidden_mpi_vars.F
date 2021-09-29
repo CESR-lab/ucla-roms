@@ -9,7 +9,7 @@
 ! west_msg_exch,...,north_msg_exch -- logical switch to send/receive
 !                MPI messages to/from the corresponding directions
 
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       use param
       implicit none

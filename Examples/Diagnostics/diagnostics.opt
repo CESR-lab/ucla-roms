@@ -17,7 +17,7 @@
       !     they are a waste of resources.
       !
       !   Notes:
-      !     1) need DIAGNOSTICS flag in cppdefs.h
+      !     1) need DIAGNOSTICS flag in cppdefs.opt
       !     2) units are du/dt*dz - m^2/s^2 (or v/w/tracer) - i.e. vertically integrated in cell
       !     3) if tracer diagnostics required set diag_trc==T, 
       !        select which tracers you want in wrt_t_diag array in tracers.opt
@@ -49,7 +49,7 @@
       logical, parameter         :: check_diag    = .true.  ! check sum of diag terms = change in u/v/t per timestep.
       logical, parameter         :: check_avg     = .true.  ! check sum of diagnostic avg*time = gross change
                                                             ! in u/v/t over entire simulation at time of writing.
-                                                            ! both Useful to ensure diagnostics not broken by different cppdefs.h config.
+                                                            ! both Useful to ensure diagnostics not broken by different cppdefs.opt config.
       logical, parameter         :: check_prs     = .true.  ! output additional variables to analyse prs_flx components.
 
                                                             

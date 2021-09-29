@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       subroutine put_global_atts (ncid, ierr)
 

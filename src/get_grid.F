@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifndef ANA_GRID
 
       subroutine get_grid         ! Read in grid data from NetCDF file.

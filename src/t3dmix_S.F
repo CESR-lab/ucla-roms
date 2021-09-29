@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && ( defined TS_DIF2 || defined TS_DIF4 )
  
       subroutine t3dmix (tile)

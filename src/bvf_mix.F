@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef BVF_MIXING
 
       subroutine bvf_mix (tile)

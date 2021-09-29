@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && defined LMD_MIXING
 # define SMOOTH_RIG  /* local Ri number smoothing */
 

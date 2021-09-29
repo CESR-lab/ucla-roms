@@ -144,8 +144,8 @@ redefs: redefs.o
 
 checkdefs: check_switches1.F setup_kwds.F
 
-check_switches1.F: cppcheck cppdefs.h
-	./cppcheck cppdefs.h
+check_switches1.F: cppcheck cppdefs.opt
+	./cppcheck cppdefs.opt
 check_srcs.F: srcscheck Makefile
 	./srcscheck
 setup_kwds.F: checkkwds read_inp.F

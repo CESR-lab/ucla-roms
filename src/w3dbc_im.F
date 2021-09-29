@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #if defined SOLVE3D && defined NHMG
 
       subroutine w3dbc_tile (istr,iend,jstr,jend,grad)

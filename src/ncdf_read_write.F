@@ -1,5 +1,5 @@
 #ifndef WRITER
-# include "cppdefs.h"
+# include "cppdefs.opt"
 
       function ncdf_read(ncid, varid, record, horiz_type, A, nmax)
 #else

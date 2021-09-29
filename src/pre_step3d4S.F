@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 #ifdef SOLVE3D
                                     ! Note that arrays A2d(1,1:4) in
       subroutine pre_step3d (tile)  ! the call just below are repeated

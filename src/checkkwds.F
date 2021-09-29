@@ -50,7 +50,7 @@
      &                         'new version of "setup_kwds.F".'
       open(iout,file='setup_kwds.F', form='formatted')
       write(iout,'(A/,/6x,A/3(/A,1x,A)/A,8x,A/A,1x,A/A,39x,A)')
-     &  '#include "cppdefs.h"',    'subroutine setup_kwds (ierr)',
+     &  '#include "cppdefs.opt"',    'subroutine setup_kwds (ierr)',
      &  '!!!!!! WARNING: THIS IS A MACHINE GENERATED',
      &                                   'CODE, DO NOT EDIT! !!!!!!',
      &  '!!!!!! This file needs to be updated only if',

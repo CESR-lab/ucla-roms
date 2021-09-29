@@ -1,5 +1,5 @@
 #ifndef AVRH
-# include "cppdefs.h"
+# include "cppdefs.opt"
 
       subroutine def_his(total_rec, ierr)
 #else

@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
       subroutine zetabc_tile (istr,iend,jstr,jend, zeta_new)
 

@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 ! Check diurnal cycle (short-wave radiation flux) as it is read from
 ! forcing files, interpolated in time, and modulated by an analytical

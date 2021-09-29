@@ -22,7 +22,7 @@
  one at at time. Normally this switch should be undefined.   */
 
 #ifndef NARGS
-# include "cppdefs.h"
+# include "cppdefs.opt"
 !--># define BAKWD_COMPAT
 
 

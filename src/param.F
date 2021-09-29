@@ -6,7 +6,7 @@
       implicit none
 
 ! DevinD: normally this was above param.h in subroutines but since compiled alone need here
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 #include "param.opt"
 

@@ -1,4 +1,4 @@
-#include "cppdefs.h"
+#include "cppdefs.opt"
 
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
