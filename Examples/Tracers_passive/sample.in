@@ -41,14 +41,14 @@ averages: NTSAVG, NAVG, NRPFAVG / filename
             0     999999    8
      usw3_avg.nc
      
-primary_history_fields: zeta U,VBAR  U,V  (tracer output in tracers_defs.h)
-                          T   T T    T T   
+primary_history_fields: zeta Ubar Vbar U V  
+                         T    T    T   T T  
 
 auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
                            F   F     F   F    F    F    F    F
 
-primary_averages: zeta U,VBAR  U,V 
-                    T    T T   T T 
+primary_averages: zeta Ubar Vbar U V  
+                   T    T    T   T T
 
 auxiliary_averages: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
                      F    T    T   T    F    F    T    T
