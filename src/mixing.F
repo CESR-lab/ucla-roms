@@ -72,4 +72,6 @@
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
+      integer :: sponge_size  ! number of grid point of sponge layer
+
       end module mixing

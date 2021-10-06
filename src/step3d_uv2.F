@@ -829,7 +829,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         if (set_dz_old) call set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
       endif
       if (prs_flx)
-     &  call set_diags_uv_prime  ( istr, iend, jstr, jend, istrR, iendR, jstrR, jendR )
+     &  call set_diags_uv_prime  ( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
 #  ifdef NHMG
       if (calc_diag)  call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
 #  endif
