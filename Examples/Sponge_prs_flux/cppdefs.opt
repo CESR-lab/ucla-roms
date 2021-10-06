@@ -98,7 +98,7 @@ c#    define BBL_F00
 #  else
 #   define LOG_BDRAG
 #  endif
-#  define BULK_FRC
+c-#  define BULK_FRC
 #  ifdef BULK_FRC
 #   define SURF_FLUX_OUTPUT_HIS /* DevinD output flux variables */
 #   define SURF_FLUX_OUTPUT_AVG /* DevinD output flux variables as averages */
