@@ -13,6 +13,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use mixing  ! visc2_r
 
       implicit none
       private
@@ -283,17 +284,25 @@
 
       ! PRESSURE FLUX:
       ! --------------
-      real, allocatable, dimension(:, :, :) :: uf, vf, pf    ! filtered  u/v/pressure
-      real, allocatable, dimension(:, :, :) :: up, vp, pp    ! perturbed u/v/p
-      real, allocatable, dimension(:, :, :) :: up_pp, vp_pp  ! u'p' and v'p'
-      real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl  ! u and p baroclinic
+      real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
+      real, allocatable, dimension(:, :, :) :: up, vp, pp           ! perturbed u/v/p
+      real, allocatable, dimension(:, :, :) :: up_pp, vp_pp         ! u'p' and v'p'
+      real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl         ! u and p baroclinic
 
-      real, allocatable, dimension(:, :, :) :: aup, avp, app   ! averaged perturbed u/v/p
-      real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp  ! averaged u'p' and v'p'
+      real, allocatable, dimension(:, :, :) :: aup, avp, app        ! averaged perturbed u/v/p
+      real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp       ! averaged u'p' and v'p'
+
+      real, allocatable, dimension(:)       :: mup_ppzw,  mup_ppze  ! mean of up_ppz along orthogonal sponge from west/est boundary
+      real, allocatable, dimension(:)       :: mvp_ppzs,  mvp_ppzn  ! mean of up_ppz along orthogonal sponge from south/north boundary
+      real, allocatable, dimension(:)       :: mup_ppzwf, mup_ppzef ! time filtered mean of up_ppz along orthogonal sponge from west/est boundary
+      real, allocatable, dimension(:)       :: mvp_ppzsf, mvp_ppznf ! mean of up_ppz along orthogonal sponge from south/north boundary
+      real, allocatable, dimension(:, :)    :: visc2_r0             ! Initial sponges
+      real, allocatable, dimension(:, :, :) :: diff20               ! Initial tracer sponge
 
       integer :: nprm = 3                  ! number of pressure flux diagnostic terms
       real    :: alpha                     ! filtering constant
       real    :: beta                      ! filtering constant
+      integer :: sponge_loop              ! For looping through sponge layer
 
       logical, public :: pg_cor = .false.  ! calculate pressure on corrector step of prsgrd. false initially.
 
@@ -531,7 +540,7 @@
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
       if (diag_trc) call init_diags_trc    (istrR, jstrR, iendR, jendR)
-      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)
+      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, istr, jstr, iend, jend)
 
       init_done = .true.  ! ensure init is not triggered again
 
@@ -636,11 +645,11 @@
       end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)  ![
+      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR, istr, jstr, iend, jend)  ![
       implicit none
 
       ! inputs
-      integer, intent(in)    :: istrR, jstrR, iendR, jendR, iend, jend
+      integer, intent(in)    :: istrR, jstrR, iendR, jendR, istr, jstr, iend, jend
 
       ! local
       integer :: i, j, k, var
@@ -692,10 +701,43 @@
       ppnames(2)    = "vp"
       pplname(2)    = "perturbation of v * perturbation of p"
       if (diag_avg) then
-        do var=1,2                                          ! loop through diag terms
+        do var=1,2                                            ! loop through diag terms
           pplname(var)  = 'Average ' / / trim(pplname(var))   ! and prepend 'Average'
         enddo
       endif
+
+      if (p_sponge) then  ! define only if contains domain boundary sponge layer
+
+        ! At some point up_pp could be integrated directly into mup_ppzw, skipping the need for up_ppwz
+        if (WESTERN_EDGE)  then
+          allocate( mup_ppzw (GLOBAL_1DY_ARRAY             ) )
+          allocate( mup_ppzwf(GLOBAL_1DY_ARRAY             ) )
+          mup_ppzw=0; mup_ppzwf=0.5                           ! set time filtered initial to mid point?
+        endif
+        if (EASTERN_EDGE)  then
+          allocate( mup_ppze (GLOBAL_1DY_ARRAY             ) )
+          allocate( mup_ppzef(GLOBAL_1DY_ARRAY             ) )
+          mup_ppze=0; mup_ppzef=0.5                           ! set time filtered initial to mid point?
+        endif
+
+        if (SOUTHERN_EDGE) then
+          allocate( mvp_ppzs (GLOBAL_1DX_ARRAY             ) )
+          allocate( mvp_ppzsf(GLOBAL_1DX_ARRAY             ) )
+          mvp_ppzs=0; mvp_ppzsf=0.5                           ! set time filtered initial to mid point?
+        endif
+        if (NORTHERN_EDGE) then
+          allocate( mvp_ppzn (GLOBAL_1DX_ARRAY             ) )
+          allocate( mvp_ppznf(GLOBAL_1DX_ARRAY             ) )
+          mvp_ppzn=0; mvp_ppznf=0.5                           ! set time filtered initial to mid point?
+        endif
+
+        allocate( visc2_r0(GLOBAL_2D_ARRAY    ) )
+        visc2_r0 = visc2_r                         ! Store initial sponge values
+        allocate( diff20  (GLOBAL_2D_ARRAY, NT) )
+        diff20   = diff2                           ! consider dropping NT since all the same, though this may change in future
+
+        sponge_loop=sponge_size-1                  ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
+      endif  ! <-- p_sponge
 
       if (check_prs) then
         allocate( pnames(nprm), plname(nprm) )
@@ -714,7 +756,9 @@
 
       alpha = dt / timescale
       beta  = 1 - alpha
-      if(mynode==0) print *, 'DIAGS: alpha=',alpha, 'beta=',beta
+      if(mynode==0) write(*,'(1x,A,F8.6,A,F8.6/)')
+     &  'Diagnostics: prs_flx filtering coefficients alpha=',
+     &   alpha,', beta=',beta
 
       end subroutine init_diags_prs_flx  !]
 
@@ -1828,7 +1872,7 @@
       end subroutine set_diags_t_4th_v_adv  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, iendR, jstrR, jendR )  ![
+      subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
 
       ! uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
       !
@@ -1839,7 +1883,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrR, iendR, jstrR, jendR
+      integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
 
       ! local
       integer :: i, j, k
@@ -1847,7 +1891,6 @@
 !      if (mynode==0) print *, 'DIAGS CALC UV PRIME!'
 
       do k=1,N
-
         do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
           do i=istr,iend+1  ! for averaging of up_pp
             uf(i,j,k) = beta * uf(i,j,k) + alpha * ( u(i,j,k,nnew) - ubar(i,j,knew) )
@@ -1858,13 +1901,13 @@
             vf(i,j,k) = beta * vf(i,j,k) + alpha * ( v(i,j,k,nnew) - vbar(i,j,knew) )
           enddo
         enddo
-
-      enddo     ! <-- k
+      enddo
 
 !      if(mynode==0) print *, 'uf(10,10,10)=',uf(10,10,10)
 
-      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
-                                                                  ! also done everytimestep if averaging
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
+     &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
+                                                                  ! p_sponge needs up_pp at everystep
         do k=1,N
 
           do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
@@ -1881,11 +1924,14 @@
           enddo
 
           do j=jstr,jend
-            do i=istr,iend  ! interior only
+            do i=istr,iend    ! interior only
               up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k) * Hz(i,j,k)
               vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k) * Hz(i,j,k)
             enddo
           enddo
+
+          if(p_sponge)
+     &      call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
 
         enddo     ! <-- k
 
@@ -1902,7 +1948,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in)                                     :: istr, iend, jstr, jend
+      integer,                                     intent(in) :: istr, iend, jstr, jend
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P
 
       ! local
@@ -1932,7 +1978,9 @@
 
 !      if(mynode==0) print *, 'calc pf'
 
-      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
+     &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
+                                                                  ! p_sponge needs up_pp at everystep
 
         do k=1,N
           do j=jstr,jend    ! only need over interior
@@ -1949,6 +1997,229 @@
       endif
 
       end subroutine set_diags_prs_prime  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
+      ! set the sponge layer dynamically at each timestep based on
+      ! pressure flux in or out of domain.
+      ! only needed for s/w/n/e domain boundaries.
+
+      ! The 3 sponge variables are visc2_r (rho-point), diff2 (rho-point) and visc2_p (psi-point).
+      ! Since we already chose to put u'p' (up_pp) and v'p' at rho-points (averaged the u),
+      ! we directly have the sponge switch at the same point as visc2_r and diff2.
+      !
+      ! visc2_r includes the buffer point, but we ignore the buffer when filtering u'p' since it's not relevant
+      ! and we can't average u' to the buffer, so use first interior point.
+
+      ! Example: visc2_r has isp = 4 (0-3) (incl buffer), sponge_size = 3 (1-3).
+      !
+      !     |
+      !  r  u  r  u  r  u  r
+      !     |
+      !  0  1  1  2  2  3  3
+      !
+      ! And since up_pp and vp_pp are at rho-point, all our loops are relative to rho-points, starting
+      ! from the first interior rho-point (istr) with a count of sponge_size-1=sponge_loop,
+      ! the -1 since the istr is included in the count.
+      !
+      ! Method:
+      ! 1) Vertically integrate u'p' (up_pp) along boundary and
+      !    calculate the mean along the sponge orthongonal to the boundary
+      !    sum in i and k (up_pp(i,j,k)) -> mup_ppzw(j)
+      !    e.g. west -> mup_ppzw, south -> mvp_ppzs
+      !    (note up_pp is already multiplied by Hz in set_diags_uv_prime).
+      ! 2) Use mean to determine is net flux is in or out of domain, and overwrite
+      !    mup_ppzw to be either 1 (out) or 0 (in).
+      ! 3) Time filter mu_ppzw -> mu_ppzwf
+      ! 4) Update sponge value with time filtered mu_ppzwf. USe orginal sponge values
+      !    from set_nudgcof.F, which are stored here (e.g. visc2_r(t=0)=visc2_r0).
+      ! 5) Fix corner regions using average of u (mu_ppzwf) and v (mv_ppzsf) filtered values
+      !    since sponge impacts both u and v signal.
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
+
+      ! local
+      integer :: i, j, k
+      real    :: avg     ! temporary average coefficient
+
+      if (WESTERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mup_ppzw=0.0                                         ! reset mean orthongal to boundary
+        do j=jstr,jend
+          do k=1,N                                           ! loop order not contiguous but makes code easier
+            do i=istr, istr+sponge_loop                      ! i range already not continguous too
+              mup_ppzw(j) = mup_ppzw(j) + up_pp(i,j,k)
+            enddo
+          enddo
+          mup_ppzw(j) = mup_ppzw(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+          if(mup_ppzw(j) < 0.0) then                         ! over-write mean with binary in or out of domain
+            mup_ppzw(j) = 1.0                                ! flux out (W) - sponge
+          else
+            mup_ppzw(j) = 0.0                                ! flux in  (E)
+          endif
+        enddo ! <-- j
+        ! time filter:
+        do j=jstr,jend  ! combine with loop above
+          mup_ppzwf(j) = beta * mup_ppzwf(j) + alpha * mup_ppzw(j)
+        enddo
+        mup_ppzwf(jstrR)=mup_ppzwf(jstr )                    ! extend values into buffer for sponge
+        mup_ppzwf(jendR)=mup_ppzwf(jend )                    ! update next.
+        ! update sponges:
+        do j=jstrR,jendR                                     ! some repeated work in corner with south & north boundary
+          do i=istrR, istrR+(sponge_loop+1)                  ! here include buffers (i/j/strR) since visc2_r includes buffer
+            visc2_r(i,j) = visc2_r0(i,j) * mup_ppzwf(j)      ! Doesn't matter that mup_ppzwf was calculated without buffer or bry.
+            diff2(i,j,:) = diff20(i,j,:) * mup_ppzwf(j)
+          enddo                                              ! up_pp is at rho-points, so this works
+        enddo                                                ! sponge_loop+1 for extra buffer point
+      endif  ! < -- western_edge
+
+      if (EASTERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mup_ppze=0.0                                         ! reset mean orthongal to boundary
+        do j=jstr,jend
+          do k=1,N
+            do i=iend-sponge_loop,iend
+              mup_ppze(j) = mup_ppze(j) + up_pp(i,j,k)
+            enddo
+          enddo
+          mup_ppze(j) = mup_ppze(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+          if(mup_ppze(j) > 0.0) then                         ! over-write mean with binary in or out of domain
+            mup_ppze(j) = 1.0                                ! flux out (W) - sponge
+          else
+            mup_ppze(j) = 0.0                                ! flux in  (E)
+          endif
+        enddo ! <-- j
+        ! time filter:
+        do j=jstr,jend  ! combine with loop above
+          mup_ppzef(j) = beta * mup_ppzef(j) + alpha * mup_ppze(j)
+        enddo
+        mup_ppzef(jstrR)=mup_ppzef(jstr )                    ! extend values into buffer for sponge
+        mup_ppzef(jendR)=mup_ppzef(jend )                    ! update next.
+        ! update sponges:
+        do j=jstrR,jendR
+          do i=iendR-(sponge_loop+1), iendR                  ! Here include buffer (istrR) since visc2_r includes buffer
+            visc2_r(i,j) = visc2_r0(i,j) * mup_ppzef(j)      ! up_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * mup_ppzef(j)
+          enddo                                              ! sponge_loop+1 for extra buffer point
+        enddo
+      endif  ! < -- eastern_edge
+
+      if (SOUTHERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mvp_ppzs=0.0                                         ! reset mean orthongal to boundary
+        do i=istr, iend  ! not contiguous loop order but works for algo?
+          do k=1,N
+            do j=jstr,jstr+sponge_loop
+              mvp_ppzs(i) = mvp_ppzs(i) + vp_pp(i,j,k)
+            enddo
+          enddo
+          mvp_ppzs(i) = mvp_ppzs(i) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+          if(mvp_ppzs(i) < 0.0) then                         ! over-write mean with binary in or out of domain
+            mvp_ppzs(i) = 1.0                                ! flux out (W) - sponge
+          else
+            mvp_ppzs(i) = 0.0                                ! flux in  (E)
+          endif
+        enddo ! <-- i
+        ! time filter:
+        do i=istr,iend
+          mvp_ppzsf(i) = beta * mvp_ppzsf(i) + alpha * mvp_ppzs(i)
+        enddo
+        mvp_ppzsf(istrR)=mvp_ppzsf(istr )                    ! extend values into buffer for sponge
+        mvp_ppzsf(iendR)=mvp_ppzsf(iend )                    ! update next.
+        ! update sponges:
+        do j=jstrR, istrR+(sponge_loop+1)
+          do i=istrR,iendR
+            visc2_r(i,j) = visc2_r0(i,j) * mvp_ppzsf(i)      ! vp_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * mvp_ppzsf(i)
+          enddo                                              ! sponge_loop+1 for extra buffer point
+        enddo
+      endif  ! < -- southern_edge
+
+      if (NORTHERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mvp_ppzn=0.0                                         ! reset mean orthongal to boundary
+        do i=istr, iend  ! not contiguous loop order but works for algo?
+          do k=1,N
+            do j=jend-sponge_loop,jend
+              mvp_ppzn(i) = mvp_ppzn(i) + vp_pp(i,j,k)
+            enddo
+          enddo
+          mvp_ppzn(i) = mvp_ppzn(i) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+          if(mvp_ppzn(i) > 0.0) then                         ! over-write mean with binary in or out of domain
+            mvp_ppzn(i) = 1.0                                ! flux out (W) - sponge
+          else
+            mvp_ppzn(i) = 0.0                                ! flux in  (E)
+          endif
+        enddo ! <-- i
+        ! time filter:
+        do i=istr,iend
+          mvp_ppznf(i) = beta * mvp_ppznf(i) + alpha * mvp_ppzn(i)
+        enddo
+        mvp_ppznf(istrR)=mvp_ppznf(istr )                    ! extend values into buffer for sponge
+        mvp_ppznf(iendR)=mvp_ppznf(iend )                    ! update next.
+        ! update sponges:
+        do j=jendR-(sponge_loop+1), jendR
+          do i=istrR,iendR
+            visc2_r(i,j) = visc2_r0(i,j) * mvp_ppznf(i)      ! vp_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * mvp_ppznf(i)
+          enddo                                              ! sponge_loop+1 for extra buffer point
+        enddo
+      endif  ! < -- northern_edge
+
+      ! handle corners of full domain:
+      ! ------------------------------
+
+      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
+        do j=jstrR,   jstrR+(sponge_loop+1)                  ! overwrite corners
+          do i=istrR, istrR+(sponge_loop+1)
+            avg = (mup_ppzwf(j)+mvp_ppzsf(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg                ! use average of the filtered values for u and v
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
+        do j=jendR-(sponge_loop+1), jendR
+          do i=istrR, istrR+(sponge_loop+1)
+            avg = (mup_ppzwf(j)+mvp_ppznf(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
+        do j=jstrR,   jstrR+(sponge_loop+1)
+          do i=iendR-(sponge_loop+1), iendR
+            avg = (mup_ppzef(j)+mvp_ppzsf(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
+        do j=jendR-(sponge_loop+1), jendR
+          do i=iendR-(sponge_loop+1), iendR
+            avg = (mup_ppzef(j)+mvp_ppznf(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+
+      ! update visc2_p interpolating from visc2_r:
+      visc2_p(i,j)=0.0       ! reset for sum
+      do j=jstr,jendR        ! viscosity at psi points
+        do i=istr,iendR
+          visc2_p(i,j)=visc2_p(i,j) +                          ! equation taken from set_nudgcof.F
+     &                 (  visc2_r(i,j)   + visc2_r(i-1,j)      ! where v_ponge*wrk(i,j)=visc2_r(i,j)
+     &                  + visc2_r(i,j-1) + visc2_r(i-1,j-1) )
+        enddo
+      enddo
+
+      end subroutine set_diags_p_sponge  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
@@ -2624,6 +2895,15 @@ C$OMP MASTER
 !                text='p filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
                 call nc_define_var(ncid, 'pf', 'p filtered barc', pchunits, r3dgrd, ierr, prcsn )
               endif
+
+              if (p_sponge) then
+                if (check_sponge) then
+                  call nc_define_var(ncid, 'visc2_r0', 'visc2_r0', 'visc2_r0', r2dgrd, ierr, prcsn )
+                  call nc_define_var(ncid, 'visc2_r',  'visc2_r' , 'visc2_r',  r2dgrd, ierr, prcsn )
+                  call nc_define_var(ncid, 'diff2',    'diff2' ,   'diff2',    r2dgrd, ierr, prcsn )
+                endif
+              endif  ! <-- p_sponge
+
             endif    ! <-- prs_flx
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -2747,6 +3027,15 @@ C$OMP MASTER
               call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
               call nc_write_var(ncid, pf, N, 'pf', rp_var, output_rec, ierr)
             endif
+
+            if (p_sponge) then
+              if (check_sponge) then
+                call nc_write_var( ncid, visc2_r0,     1, 'visc2_r0', rp_var, output_rec, ierr )
+                call nc_write_var( ncid, visc2_r,      1, 'visc2_r',  rp_var, output_rec, ierr )
+                call nc_write_var( ncid, diff2(:,:,1), 1, 'diff2',    rp_var, output_rec, ierr )
+              endif
+            endif  ! <-- p_sponge
+
           endif    ! <-- prs_flx
 
           if (diag_trc .and. .not. diag_avg)                             ! for averages this has been called already

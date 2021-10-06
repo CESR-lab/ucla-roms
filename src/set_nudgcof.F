@@ -123,19 +123,12 @@ c      enddo
 ! constant-slope, "flat-top" roof shaped nudging and sponge bands
 ! along open boundaries, if any. Adopted from Pierrick Penven.
 !
-#  if defined BENGUELA
-      isp=8              ! number of points in sponge layer
-#  elif defined PACIFIC
-      isp=(LLm+1)/30
-#  elif defined SMSC || defined SMSC_SUB
-      isp=(LLm+1)/16
-#  elif defined NWPAC
-      isp=(LLm+1)/16
-#  elif defined USWC
-      isp=(LLm+1)/40
-#  else
-      isp=(LLm+1)/12
-#  endif
+      sponge_size = 15                      ! number of interior points in sponge layer (excludes buffer)
+      isp = sponge_size+1                   ! ROMS uses isp which includes buffer point
+
+      if (mynode==0) write(*,'(/1x,A,I3,A)')
+     &  'Sponge layer = ',sponge_size,' interior grid points.'
+
                                             ! Note that i+iSW_corn and
       do j=max(-1,jstrR-1),jendR            ! j+jSW_corn are indices on
         do i=max(-1,istrR-1),iendR          ! the physical grid (a.k.a.
@@ -170,7 +163,7 @@ c      enddo
 #  ifdef PACIFIC
           wrk(i,j)=0.5 + 0.5*cos(pi*float(ibnd)/float(isp))
 #  else
-          wrk(i,j)=float(isp-ibnd)/float(isp)
+          wrk(i,j)=float(isp-ibnd)/float(isp)  ! 1 in interior, <1 within sponge
 #  endif
         enddo
       enddo
@@ -231,7 +224,7 @@ c        endif
       do itrc=2,NT           ! diffusivity for the other tracers
         do j=jstrR,jendR
           do i=istrR,iendR
-            diff2(i,j,itrc)=diff2(i,j,itemp)
+            diff2(i,j,itrc)=diff2(i,j,itemp)  ! Waste of space to have this 2D array copied...
           enddo
         enddo
       enddo

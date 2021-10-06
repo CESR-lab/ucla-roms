@@ -203,7 +203,7 @@ c        enddo
 ! geopotential surfaces in the XI- and ETA-directions.
 
         if (k>0) then
-          do j=jstrV-1,jend
+          do j=jstrV-1,jend   ! UFx at rho-points hence this covers interior (non-boundary)
             do i=istrU-1,iend
               cff=visc2_r(i,j)*Hz(i,j,k)*(
      &         dn_r(i,j)*( dnUdx(i,j,k1) - 0.5*pn(i,j)*(
