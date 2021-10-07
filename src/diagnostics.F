@@ -296,7 +296,7 @@
       real, allocatable, dimension(:)       :: mvp_ppzs,  mvp_ppzn  ! mean of up_ppz along orthogonal sponge from south/north boundary
       real, allocatable, dimension(:)       :: mup_ppzwf, mup_ppzef ! time filtered mean of up_ppz along orthogonal sponge from west/est boundary
       real, allocatable, dimension(:)       :: mvp_ppzsf, mvp_ppznf ! mean of up_ppz along orthogonal sponge from south/north boundary
-      real, allocatable, dimension(:, :)    :: visc2_r0             ! Initial sponges
+      real, allocatable, dimension(:, :)    :: visc2_r0,  visc2_p0  ! Initial sponges
       real, allocatable, dimension(:, :, :) :: diff20               ! Initial tracer sponge
 
       integer :: nprm = 3                  ! number of pressure flux diagnostic terms
@@ -712,29 +712,36 @@
         if (WESTERN_EDGE)  then
           allocate( mup_ppzw (GLOBAL_1DY_ARRAY             ) )
           allocate( mup_ppzwf(GLOBAL_1DY_ARRAY             ) )
-          mup_ppzw=0; mup_ppzwf=0.5                           ! set time filtered initial to mid point?
+          mup_ppzw=0; mup_ppzwf=init_sponge                    ! set time filtered initial to mid point?
         endif
         if (EASTERN_EDGE)  then
           allocate( mup_ppze (GLOBAL_1DY_ARRAY             ) )
           allocate( mup_ppzef(GLOBAL_1DY_ARRAY             ) )
-          mup_ppze=0; mup_ppzef=0.5                           ! set time filtered initial to mid point?
+          mup_ppze=0; mup_ppzef=init_sponge                    ! set time filtered initial to mid point?
         endif
 
         if (SOUTHERN_EDGE) then
           allocate( mvp_ppzs (GLOBAL_1DX_ARRAY             ) )
           allocate( mvp_ppzsf(GLOBAL_1DX_ARRAY             ) )
-          mvp_ppzs=0; mvp_ppzsf=0.5                           ! set time filtered initial to mid point?
+          mvp_ppzs=0; mvp_ppzsf=init_sponge                    ! set time filtered initial to mid point?
         endif
         if (NORTHERN_EDGE) then
           allocate( mvp_ppzn (GLOBAL_1DX_ARRAY             ) )
           allocate( mvp_ppznf(GLOBAL_1DX_ARRAY             ) )
-          mvp_ppzn=0; mvp_ppznf=0.5                           ! set time filtered initial to mid point?
+          mvp_ppzn=0; mvp_ppznf=init_sponge                    ! set time filtered initial to mid point?
         endif
 
         allocate( visc2_r0(GLOBAL_2D_ARRAY    ) )
         visc2_r0 = visc2_r                         ! Store initial sponge values
+        visc2_r  = visc2_r * init_sponge           ! since sponge will kick in at 0.5*sponge0 after step 1, set initial to this
+        allocate( visc2_p0(GLOBAL_2D_ARRAY    ) )  ! Don't need this unless wanting to output initial value
+        visc2_p0 = visc2_p                         ! Store initial sponge values
+        visc2_p  = visc2_p * init_sponge
         allocate( diff20  (GLOBAL_2D_ARRAY, NT) )
         diff20   = diff2                           ! consider dropping NT since all the same, though this may change in future
+        diff2    = diff2   * init_sponge
+
+        ! NEED TO PRINT VISC2_P0 TO SEE WHAT'S GOING ON??? wHY 800??
 
         sponge_loop=sponge_size-1                  ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
       endif  ! <-- p_sponge
@@ -2005,11 +2012,11 @@
       ! only needed for s/w/n/e domain boundaries.
 
       ! The 3 sponge variables are visc2_r (rho-point), diff2 (rho-point) and visc2_p (psi-point).
-      ! Since we already chose to put u'p' (up_pp) and v'p' at rho-points (averaged the u),
+      ! Since we already chose to put u'p' (up_pp) and v'p' at rho-points (averaged the u/v),
       ! we directly have the sponge switch at the same point as visc2_r and diff2.
       !
       ! visc2_r includes the buffer point, but we ignore the buffer when filtering u'p' since it's not relevant
-      ! and we can't average u' to the buffer, so use first interior point.
+      ! and we can't average u' into the buffer, so start at first interior point.
 
       ! Example: visc2_r has isp = 4 (0-3) (incl buffer), sponge_size = 3 (1-3).
       !
@@ -2020,21 +2027,23 @@
       !
       ! And since up_pp and vp_pp are at rho-point, all our loops are relative to rho-points, starting
       ! from the first interior rho-point (istr) with a count of sponge_size-1=sponge_loop,
-      ! the -1 since the istr is included in the count.
+      ! need the -1 since the istr is included in the count.
       !
       ! Method:
       ! 1) Vertically integrate u'p' (up_pp) along boundary and
       !    calculate the mean along the sponge orthongonal to the boundary
       !    sum in i and k (up_pp(i,j,k)) -> mup_ppzw(j)
-      !    e.g. west -> mup_ppzw, south -> mvp_ppzs
+      !    e.g. west -> mup_ppzw, south -> mvp_ppzs, where m=mean and z=vertically integrated.
       !    (note up_pp is already multiplied by Hz in set_diags_uv_prime).
-      ! 2) Use mean to determine is net flux is in or out of domain, and overwrite
+      ! 2) Use mean to determine if net flux is in or out of domain, and overwrite
       !    mup_ppzw to be either 1 (out) or 0 (in).
-      ! 3) Time filter mu_ppzw -> mu_ppzwf
+      ! 3) Time filter mu_ppzw -> mu_ppzwf, where f=filtered
       ! 4) Update sponge value with time filtered mu_ppzwf. USe orginal sponge values
       !    from set_nudgcof.F, which are stored here (e.g. visc2_r(t=0)=visc2_r0).
+      !    Need to use original sponge otherwise could never increase again after decreasing.
       ! 5) Fix corner regions using average of u (mu_ppzwf) and v (mv_ppzsf) filtered values
       !    since sponge impacts both u and v signal.
+      !    Current choice is to average the mean flux of u and v in the corners.
 
       implicit none
 
@@ -2065,8 +2074,8 @@
         do j=jstr,jend  ! combine with loop above
           mup_ppzwf(j) = beta * mup_ppzwf(j) + alpha * mup_ppzw(j)
         enddo
-        mup_ppzwf(jstrR)=mup_ppzwf(jstr )                    ! extend values into buffer for sponge
-        mup_ppzwf(jendR)=mup_ppzwf(jend )                    ! update next.
+        mup_ppzwf(jstrR)=mup_ppzwf(jstr )                    ! extend values into buffer for sponges
+        mup_ppzwf(jendR)=mup_ppzwf(jend )                    ! to update next.
         ! update sponges:
         do j=jstrR,jendR                                     ! some repeated work in corner with south & north boundary
           do i=istrR, istrR+(sponge_loop+1)                  ! here include buffers (i/j/strR) since visc2_r includes buffer
@@ -2141,7 +2150,7 @@
       if (NORTHERN_EDGE) then
         ! vertical integral and mean along sponge into domain:
         mvp_ppzn=0.0                                         ! reset mean orthongal to boundary
-        do i=istr, iend  ! not contiguous loop order but works for algo?
+        do i=istr, iend
           do k=1,N
             do j=jend-sponge_loop,jend
               mvp_ppzn(i) = mvp_ppzn(i) + vp_pp(i,j,k)
@@ -2210,12 +2219,12 @@
       endif
 
       ! update visc2_p interpolating from visc2_r:
-      visc2_p(i,j)=0.0       ! reset for sum
+      visc2_p=0.0            ! reset for sum
       do j=jstr,jendR        ! viscosity at psi points
         do i=istr,iendR
-          visc2_p(i,j)=visc2_p(i,j) +                          ! equation taken from set_nudgcof.F
+          visc2_p(i,j)=visc2_p(i,j) +  0.25 *                  ! equation taken from set_nudgcof.F
      &                 (  visc2_r(i,j)   + visc2_r(i-1,j)      ! where v_ponge*wrk(i,j)=visc2_r(i,j)
-     &                  + visc2_r(i,j-1) + visc2_r(i-1,j-1) )
+     &                  + visc2_r(i,j-1) + visc2_r(i-1,j-1) )  ! simple rho to psi conversion.
         enddo
       enddo
 
@@ -2757,6 +2766,7 @@
 #ifdef SOLVE3D
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
+     &                         , p2dgrd(3)
       integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td, np
 
       character(len=30)       :: text, utext
@@ -2808,6 +2818,10 @@ C$OMP MASTER
 #endif
      &                    ,r2dgrd, u2dgrd, v2dgrd )                      ! 2D grid dimensions
 
+            ! create psi dimensions:
+            p2dgrd(1)=u2dgrd(1) ! xi_u
+            p2dgrd(2)=v2dgrd(2) ! eta_v
+            p2dgrd(3)=v2dgrd(3) ! time dim
 
             ! Define remaining variables:
 
@@ -2901,6 +2915,8 @@ C$OMP MASTER
                   call nc_define_var(ncid, 'visc2_r0', 'visc2_r0', 'visc2_r0', r2dgrd, ierr, prcsn )
                   call nc_define_var(ncid, 'visc2_r',  'visc2_r' , 'visc2_r',  r2dgrd, ierr, prcsn )
                   call nc_define_var(ncid, 'diff2',    'diff2' ,   'diff2',    r2dgrd, ierr, prcsn )
+                  call nc_define_var(ncid, 'visc2_p',  'visc2_p' , 'visc2_p',  p2dgrd, ierr, prcsn )
+!                  call nc_define_var(ncid, 'visc2_p0', 'visc2_p0', 'visc2_p0', p2dgrd, ierr, prcsn )
                 endif
               endif  ! <-- p_sponge
 
@@ -3033,6 +3049,8 @@ C$OMP MASTER
                 call nc_write_var( ncid, visc2_r0,     1, 'visc2_r0', rp_var, output_rec, ierr )
                 call nc_write_var( ncid, visc2_r,      1, 'visc2_r',  rp_var, output_rec, ierr )
                 call nc_write_var( ncid, diff2(:,:,1), 1, 'diff2',    rp_var, output_rec, ierr )
+                call nc_write_var( ncid, visc2_p,      1, 'visc2_p',  qp_var, output_rec, ierr )
+!                call nc_write_var( ncid, visc2_p0,     1, 'visc2_p0', qp_var, output_rec, ierr )
               endif
             endif  ! <-- p_sponge
 
