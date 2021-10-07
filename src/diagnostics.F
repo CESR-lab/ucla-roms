@@ -741,8 +741,6 @@
         diff20   = diff2                           ! consider dropping NT since all the same, though this may change in future
         diff2    = diff2   * init_sponge
 
-        ! NEED TO PRINT VISC2_P0 TO SEE WHAT'S GOING ON??? wHY 800??
-
         sponge_loop=sponge_size-1                  ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
       endif  ! <-- p_sponge
 
@@ -1937,13 +1935,10 @@
             enddo
           enddo
 
-          if(p_sponge)
-     &      call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
-
         enddo     ! <-- k
 
-!        if(mynode==0) print *, 'up(10,10,10)=',up(10,10,10)
-!        if(mynode==0) print *, 'up_pp(10,10,10)=',up_pp(10,10,10)
+        if(p_sponge)
+     &    call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
 
       endif       ! <-- diag_avg or mod()
 
