@@ -294,17 +294,22 @@
 
       real, allocatable, dimension(:)       :: mup_ppzw,  mup_ppze  ! mean of up_ppz along orthogonal sponge from west/est boundary
       real, allocatable, dimension(:)       :: mvp_ppzs,  mvp_ppzn  ! mean of up_ppz along orthogonal sponge from south/north boundary
-      real, allocatable, dimension(:)       :: mup_ppzwf, mup_ppzef ! time filtered mean of up_ppz along orthogonal sponge from west/est boundary
-      real, allocatable, dimension(:)       :: mvp_ppzsf, mvp_ppznf ! mean of up_ppz along orthogonal sponge from south/north boundary
+      real, allocatable, dimension(:)       :: box_mup_ppzw,  box_mup_ppze  ! box average
+      real, allocatable, dimension(:)       :: box_mvp_ppzs,  box_mvp_ppzn
+      real, allocatable, dimension(:)       :: fbox_mup_ppzw, fbox_mup_ppze ! filtered box average
+      real, allocatable, dimension(:)       :: fbox_mvp_ppzs, fbox_mvp_ppzn
+      real, allocatable, dimension(:)       :: sponge_fuw,    sponge_fue    ! time filtered mean of up_ppz along orthogonal sponge from west/est boundary
+      real, allocatable, dimension(:)       :: sponge_fvs,    sponge_fvn
       real, allocatable, dimension(:, :)    :: visc2_r0,  visc2_p0  ! Initial sponges
       real, allocatable, dimension(:, :, :) :: diff20               ! Initial tracer sponge
 
-      integer :: nprm = 3                  ! number of pressure flux diagnostic terms
-      real    :: alpha                     ! filtering constant
-      real    :: beta                      ! filtering constant
-      integer :: sponge_loop              ! For looping through sponge layer
+      integer :: nprm = 3                      ! number of pressure flux diagnostic terms
+      real    :: alpha                         ! filtering constant
+      real    :: beta                          ! filtering constant
+      integer :: sponge_loop                   ! for looping through sponge layer
+      integer :: hbox_size = (box_size-1) / 2  ! half the box size. -1 since averaging point in middle, loop range either side
 
-      logical, public :: pg_cor = .false.  ! calculate pressure on corrector step of prsgrd. false initially.
+      logical, public :: pg_cor = .false.      ! calculate pressure on corrector step of prsgrd. false initially.
 
       character (len=20),  allocatable, dimension(:) :: pnames
       character (len=120), allocatable, dimension(:) :: plname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
@@ -710,38 +715,46 @@
 
         ! At some point up_pp could be integrated directly into mup_ppzw, skipping the need for up_ppwz
         if (WESTERN_EDGE)  then
-          allocate( mup_ppzw (GLOBAL_1DY_ARRAY             ) )
-          allocate( mup_ppzwf(GLOBAL_1DY_ARRAY             ) )
-          mup_ppzw=0; mup_ppzwf=init_sponge                    ! set time filtered initial to mid point?
+          allocate( mup_ppzw (GLOBAL_1DY_ARRAY     ) )
+          allocate( sponge_fuw(GLOBAL_1DY_ARRAY    ) )
+          allocate( box_mup_ppzw(GLOBAL_1DY_ARRAY  ) )   ! reset to zero each step
+!          allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY ) )   ! initialized later
+          mup_ppzw=0; sponge_fuw=init_sponge             ! set time filtered initial to mid point?
         endif
         if (EASTERN_EDGE)  then
-          allocate( mup_ppze (GLOBAL_1DY_ARRAY             ) )
-          allocate( mup_ppzef(GLOBAL_1DY_ARRAY             ) )
-          mup_ppze=0; mup_ppzef=init_sponge                    ! set time filtered initial to mid point?
+          allocate( mup_ppze (GLOBAL_1DY_ARRAY     ) )
+          allocate( sponge_fue(GLOBAL_1DY_ARRAY     ) )
+          allocate( box_mup_ppze(GLOBAL_1DY_ARRAY  ) )
+!          allocate( fbox_mup_ppze(GLOBAL_1DY_ARRAY ) )
+          mup_ppze=0; sponge_fue=init_sponge
         endif
 
         if (SOUTHERN_EDGE) then
-          allocate( mvp_ppzs (GLOBAL_1DX_ARRAY             ) )
-          allocate( mvp_ppzsf(GLOBAL_1DX_ARRAY             ) )
-          mvp_ppzs=0; mvp_ppzsf=init_sponge                    ! set time filtered initial to mid point?
+          allocate( mvp_ppzs (GLOBAL_1DX_ARRAY     ) )
+          allocate( sponge_fvs(GLOBAL_1DX_ARRAY     ) )
+          allocate( box_mvp_ppzs(GLOBAL_1DX_ARRAY  ) )
+          mvp_ppzs=0; sponge_fvs=init_sponge
         endif
         if (NORTHERN_EDGE) then
-          allocate( mvp_ppzn (GLOBAL_1DX_ARRAY             ) )
-          allocate( mvp_ppznf(GLOBAL_1DX_ARRAY             ) )
-          mvp_ppzn=0; mvp_ppznf=init_sponge                    ! set time filtered initial to mid point?
+          allocate( mvp_ppzn (GLOBAL_1DX_ARRAY     ) )
+          allocate( sponge_fvn(GLOBAL_1DX_ARRAY     ) )
+          allocate( box_mvp_ppzn(GLOBAL_1DX_ARRAY  ) )
+          mvp_ppzn=0; sponge_fvn=init_sponge
         endif
 
         allocate( visc2_r0(GLOBAL_2D_ARRAY    ) )
-        visc2_r0 = visc2_r                         ! Store initial sponge values
-        visc2_r  = visc2_r * init_sponge           ! since sponge will kick in at 0.5*sponge0 after step 1, set initial to this
-        allocate( visc2_p0(GLOBAL_2D_ARRAY    ) )  ! Don't need this unless wanting to output initial value
-        visc2_p0 = visc2_p                         ! Store initial sponge values
+        visc2_r0 = visc2_r                               ! store initial sponge values
+        visc2_r  = visc2_r * init_sponge                 ! since sponge will kick in at 0.5*sponge0 after step 1, set initial to this
+        allocate( visc2_p0(GLOBAL_2D_ARRAY    ) )        ! don't need this unless wanting to output initial value
+        visc2_p0 = visc2_p                               ! store initial sponge values
         visc2_p  = visc2_p * init_sponge
         allocate( diff20  (GLOBAL_2D_ARRAY, NT) )
-        diff20   = diff2                           ! consider dropping NT since all the same, though this may change in future
+        diff20   = diff2                                 ! consider dropping NT since all the same, though this may change in future
         diff2    = diff2   * init_sponge
 
-        sponge_loop=sponge_size-1                  ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
+        sponge_loop=sponge_size-1                        ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
+
+        ! check box_size is odd number, since including current point in middle:
       endif  ! <-- p_sponge
 
       if (check_prs) then
@@ -2013,7 +2026,7 @@
       ! visc2_r includes the buffer point, but we ignore the buffer when filtering u'p' since it's not relevant
       ! and we can't average u' into the buffer, so start at first interior point.
 
-      ! Example: visc2_r has isp = 4 (0-3) (incl buffer), sponge_size = 3 (1-3).
+      ! Example: visc2_r has (set_nudgcof.F) isp = 4 (0-3) (incl buffer), sponge_size = 3 (1-3).
       !
       !     |
       !  r  u  r  u  r  u  r
@@ -2025,18 +2038,28 @@
       ! need the -1 since the istr is included in the count.
       !
       ! Method:
-      ! 1) Vertically integrate u'p' (up_pp) along boundary and
-      !    calculate the mean along the sponge orthongonal to the boundary
-      !    sum in i and k (up_pp(i,j,k)) -> mup_ppzw(j)
-      !    e.g. west -> mup_ppzw, south -> mvp_ppzs, where m=mean and z=vertically integrated.
-      !    (note up_pp is already multiplied by Hz in set_diags_uv_prime).
-      ! 2) Use mean to determine if net flux is in or out of domain, and overwrite
-      !    mup_ppzw to be either 1 (out) or 0 (in).
-      ! 3) Time filter mu_ppzw -> mu_ppzwf, where f=filtered
-      ! 4) Update sponge value with time filtered mu_ppzwf. USe orginal sponge values
+      ! 1) For each sponge width along boundary:               West Boundary:
+      !    Vertically integrate u'p' (up_pp)                    up_pp(i,j,k)       (i.e. u'p')
+      !    and get mean across sponge width                         |
+      !    (orthongonal to the boundary)                        sum in i and k
+      !    (note up_pp is already multiplied                        |
+      !     by Hz in set_diags_uv_prime).                       mup_ppzw(j)        (m=mean, z=vertical integral, w=west)
+      !
+      ! 2) Do spatial smoothing with (box) average with adjacent points along the boundary.
+      !    box_size controls the size of the box. If box_size=1 then no spatial smoothing.
+      !    e.g. sum in box of mup_ppzw(j) -> box_mup_ppzw(j)
+      ! 3) Time filter result to smooth over random fluctuation to try capture prevailing flux direction
+      !    rather than instantaneous direction.
+      !    e.g. box_mup_ppzw(j) -> fbox_mup_ppzw(j)
+      ! 4) Use fbox_mup_ppzw to determine if net flux is in or out of domain, and use binary in or out
+      !    value (on_off scalar) to be either 1 (out) or 0 (in).
+      !    Note, this step probably puts a hard jump in the signal.
+      ! 5) Time filter the in=1 or out=0 into the final sponge multiplier
+      !    e.g. fbox_mup_ppzw -> on_off? -> sponge_fuw
+      ! 6) Update sponge value with the time filtered sponge_multiplier sponge_fuw. Use orginal sponge values
       !    from set_nudgcof.F, which are stored here (e.g. visc2_r(t=0)=visc2_r0).
       !    Need to use original sponge otherwise could never increase again after decreasing.
-      ! 5) Fix corner regions using average of u (mu_ppzwf) and v (mv_ppzsf) filtered values
+      ! 7) Fix corner regions using average of u (sponge_fuw) and v (sponge_fvs) filtered values
       !    since sponge impacts both u and v signal.
       !    Current choice is to average the mean flux of u and v in the corners.
 
@@ -2046,8 +2069,10 @@
       integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
 
       ! local
-      integer :: i, j, k
-      real    :: avg     ! temporary average coefficient
+      integer :: i, j, k, b                   ! loop index along size of box averaging
+      real    :: avg                          ! temporary average coefficient
+      integer :: box_low, box_high            ! upper and lower loop ranges for box (to handle edges where box is smaller)
+      real    :: on_off                       ! is flux in or out and hence sponge on or off
 
       if (WESTERN_EDGE) then
         ! vertical integral and mean along sponge into domain:
@@ -2059,23 +2084,42 @@
             enddo
           enddo
           mup_ppzw(j) = mup_ppzw(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
-          if(mup_ppzw(j) < 0.0) then                         ! over-write mean with binary in or out of domain
-            mup_ppzw(j) = 1.0                                ! flux out (W) - sponge
-          else
-            mup_ppzw(j) = 0.0                                ! flux in  (E)
+        enddo ! <-- j                                        ! finish entire boundary first for box cart average next
+
+        ! Box cart average and time filter:
+        do j=jstr,jend                                       ! set low and high end of loop for box average
+          call set_diags_p_box_range_lowhigh(j, jstr, jend, box_low, box_high)
+          box_mup_ppzw(j) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mup_ppzw(j) = box_mup_ppzw(j) + mup_ppzw(b)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mup_ppzw(j) = box_mup_ppzw(j) / box_size       ! divide for mean
+
+          if (.not. allocated(fbox_mup_ppzw)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mup_ppzw = 0.0                              ! Move this to _init. Fix for tiling later
           endif
+          fbox_mup_ppzw(j) =   beta * fbox_mup_ppzw(j)
+     &                      + alpha *  box_mup_ppzw(j)
+        enddo   ! <-- j
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do j=jstr,jend
+          if(fbox_mup_ppzw(j) < 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (W) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (E)
+          endif
+          sponge_fuw(j) = beta*sponge_fuw(j) + alpha*on_off  ! time filter
         enddo ! <-- j
-        ! time filter:
-        do j=jstr,jend  ! combine with loop above
-          mup_ppzwf(j) = beta * mup_ppzwf(j) + alpha * mup_ppzw(j)
-        enddo
-        mup_ppzwf(jstrR)=mup_ppzwf(jstr )                    ! extend values into buffer for sponges
-        mup_ppzwf(jendR)=mup_ppzwf(jend )                    ! to update next.
+        sponge_fuw(jstrR)=sponge_fuw(jstr )                  ! extend values into buffer for sponges
+        sponge_fuw(jendR)=sponge_fuw(jend )                  ! to update next.
         ! update sponges:
         do j=jstrR,jendR                                     ! some repeated work in corner with south & north boundary
           do i=istrR, istrR+(sponge_loop+1)                  ! here include buffers (i/j/strR) since visc2_r includes buffer
-            visc2_r(i,j) = visc2_r0(i,j) * mup_ppzwf(j)      ! Doesn't matter that mup_ppzwf was calculated without buffer or bry.
-            diff2(i,j,:) = diff20(i,j,:) * mup_ppzwf(j)
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fuw(j)      ! Doesn't matter that sponge_fuw was calculated without buffer or bry.
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fuw(j)
           enddo                                              ! up_pp is at rho-points, so this works
         enddo                                                ! sponge_loop+1 for extra buffer point
       endif  ! < -- western_edge
@@ -2090,23 +2134,42 @@
             enddo
           enddo
           mup_ppze(j) = mup_ppze(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
-          if(mup_ppze(j) > 0.0) then                         ! over-write mean with binary in or out of domain
-            mup_ppze(j) = 1.0                                ! flux out (W) - sponge
-          else
-            mup_ppze(j) = 0.0                                ! flux in  (E)
-          endif
         enddo ! <-- j
-        ! time filter:
-        do j=jstr,jend  ! combine with loop above
-          mup_ppzef(j) = beta * mup_ppzef(j) + alpha * mup_ppze(j)
-        enddo
-        mup_ppzef(jstrR)=mup_ppzef(jstr )                    ! extend values into buffer for sponge
-        mup_ppzef(jendR)=mup_ppzef(jend )                    ! update next.
+
+        ! Box cart average and time filter:
+        do j=jstr,jend
+          call set_diags_p_box_range_lowhigh(j, jstr, jend, box_low, box_high)
+          box_mup_ppze(j) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mup_ppze(j) = box_mup_ppze(j) + mup_ppze(b)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mup_ppze(j) = box_mup_ppze(j) / box_size
+
+          if (.not. allocated(fbox_mup_ppze)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mup_ppze(GLOBAL_1DY_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mup_ppze = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mup_ppze(j) =   beta * fbox_mup_ppze(j)
+     &                      + alpha *  box_mup_ppze(j)
+        enddo   ! <-- j
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do j=jstr,jend
+          if(fbox_mup_ppze(j) > 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (E) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (W)
+          endif
+          sponge_fue(j) = beta*sponge_fue(j) + alpha*on_off  ! time filter
+        enddo ! <-- j
+        sponge_fue(jstrR)=sponge_fue(jstr )                  ! extend values into buffer for sponge
+        sponge_fue(jendR)=sponge_fue(jend )                  ! update next.
         ! update sponges:
         do j=jstrR,jendR
           do i=iendR-(sponge_loop+1), iendR                  ! Here include buffer (istrR) since visc2_r includes buffer
-            visc2_r(i,j) = visc2_r0(i,j) * mup_ppzef(j)      ! up_pp is at rho-points, so this works
-            diff2(i,j,:) = diff20(i,j,:) * mup_ppzef(j)
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fue(j)     ! up_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fue(j)
           enddo                                              ! sponge_loop+1 for extra buffer point
         enddo
       endif  ! < -- eastern_edge
@@ -2114,30 +2177,49 @@
       if (SOUTHERN_EDGE) then
         ! vertical integral and mean along sponge into domain:
         mvp_ppzs=0.0                                         ! reset mean orthongal to boundary
-        do i=istr, iend  ! not contiguous loop order but works for algo?
+        do i=istr,iend                                       ! not contiguous loop order but works for algo.
           do k=1,N
             do j=jstr,jstr+sponge_loop
               mvp_ppzs(i) = mvp_ppzs(i) + vp_pp(i,j,k)
             enddo
           enddo
           mvp_ppzs(i) = mvp_ppzs(i) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
-          if(mvp_ppzs(i) < 0.0) then                         ! over-write mean with binary in or out of domain
-            mvp_ppzs(i) = 1.0                                ! flux out (W) - sponge
-          else
-            mvp_ppzs(i) = 0.0                                ! flux in  (E)
-          endif
         enddo ! <-- i
-        ! time filter:
+
+        ! Box cart average and time filter:
         do i=istr,iend
-          mvp_ppzsf(i) = beta * mvp_ppzsf(i) + alpha * mvp_ppzs(i)
-        enddo
-        mvp_ppzsf(istrR)=mvp_ppzsf(istr )                    ! extend values into buffer for sponge
-        mvp_ppzsf(iendR)=mvp_ppzsf(iend )                    ! update next.
+          call set_diags_p_box_range_lowhigh(i, istr, iend, box_low, box_high)
+          box_mvp_ppzs(i) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mvp_ppzs(i) = box_mvp_ppzs(i) + mvp_ppzs(i)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mvp_ppzs(i) = box_mvp_ppzs(i) / box_size
+
+          if (.not. allocated(fbox_mvp_ppzs)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mvp_ppzs(GLOBAL_1DX_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mvp_ppzs = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mvp_ppzs(i) =   beta * fbox_mvp_ppzs(i)
+     &                      + alpha *  box_mvp_ppzs(i)
+        enddo   ! <-- i
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do i=istr,iend
+          if(fbox_mvp_ppzs(i) < 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (S) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (N)
+          endif
+          sponge_fvs(i) = beta*sponge_fvs(i) + alpha*on_off  ! time filter
+        enddo ! <-- i
+        sponge_fvs(istrR)=sponge_fvs(istr )                  ! extend values into buffer for sponge
+        sponge_fvs(iendR)=sponge_fvs(iend )                  ! update next.
         ! update sponges:
         do j=jstrR, istrR+(sponge_loop+1)
           do i=istrR,iendR
-            visc2_r(i,j) = visc2_r0(i,j) * mvp_ppzsf(i)      ! vp_pp is at rho-points, so this works
-            diff2(i,j,:) = diff20(i,j,:) * mvp_ppzsf(i)
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fvs(i)     ! vp_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fvs(i)
           enddo                                              ! sponge_loop+1 for extra buffer point
         enddo
       endif  ! < -- southern_edge
@@ -2152,23 +2234,42 @@
             enddo
           enddo
           mvp_ppzn(i) = mvp_ppzn(i) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
-          if(mvp_ppzn(i) > 0.0) then                         ! over-write mean with binary in or out of domain
-            mvp_ppzn(i) = 1.0                                ! flux out (W) - sponge
-          else
-            mvp_ppzn(i) = 0.0                                ! flux in  (E)
-          endif
-        enddo ! <-- i
-        ! time filter:
+        enddo  !<-- i
+
+        ! Box cart average and time filter:
         do i=istr,iend
-          mvp_ppznf(i) = beta * mvp_ppznf(i) + alpha * mvp_ppzn(i)
+          call set_diags_p_box_range_lowhigh(i, istr, iend, box_low, box_high)
+          box_mvp_ppzn(i) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mvp_ppzn(i) = box_mvp_ppzn(i) + mvp_ppzn(i)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mvp_ppzn(i) = box_mvp_ppzn(i) / box_size
+
+          if (.not. allocated(fbox_mvp_ppzn)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mvp_ppzn(GLOBAL_1DX_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mvp_ppzn = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mvp_ppzn(i) =   beta * fbox_mvp_ppzn(i)
+     &                      + alpha *  box_mvp_ppzn(i)
+        enddo   ! <-- i
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do i=istr,iend
+          if(fbox_mvp_ppzn(i) > 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (N) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (S)
+          endif
+          sponge_fvn(i) = beta*sponge_fvn(i) + alpha*on_off  ! time filter
         enddo
-        mvp_ppznf(istrR)=mvp_ppznf(istr )                    ! extend values into buffer for sponge
-        mvp_ppznf(iendR)=mvp_ppznf(iend )                    ! update next.
+        sponge_fvn(istrR)=sponge_fvn(istr )                  ! extend values into buffer for sponge
+        sponge_fvn(iendR)=sponge_fvn(iend )                  ! update next.
         ! update sponges:
         do j=jendR-(sponge_loop+1), jendR
           do i=istrR,iendR
-            visc2_r(i,j) = visc2_r0(i,j) * mvp_ppznf(i)      ! vp_pp is at rho-points, so this works
-            diff2(i,j,:) = diff20(i,j,:) * mvp_ppznf(i)
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fvn(i)     ! vp_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fvn(i)
           enddo                                              ! sponge_loop+1 for extra buffer point
         enddo
       endif  ! < -- northern_edge
@@ -2179,7 +2280,7 @@
       if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
         do j=jstrR,   jstrR+(sponge_loop+1)                  ! overwrite corners
           do i=istrR, istrR+(sponge_loop+1)
-            avg = (mup_ppzwf(j)+mvp_ppzsf(i)) /2
+            avg = (sponge_fuw(j)+sponge_fvs(i)) /2
             visc2_r(i,j)= visc2_r0(i,j) * avg                ! use average of the filtered values for u and v
             diff2(i,j,:)= diff20(i,j,:) * avg
           enddo
@@ -2188,7 +2289,7 @@
       if (WESTERN_EDGE .and. NORTHERN_EDGE) then
         do j=jendR-(sponge_loop+1), jendR
           do i=istrR, istrR+(sponge_loop+1)
-            avg = (mup_ppzwf(j)+mvp_ppznf(i)) /2
+            avg = (sponge_fuw(j)+sponge_fvn(i)) /2
             visc2_r(i,j)= visc2_r0(i,j) * avg
             diff2(i,j,:)= diff20(i,j,:) * avg
           enddo
@@ -2197,7 +2298,7 @@
       if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
         do j=jstrR,   jstrR+(sponge_loop+1)
           do i=iendR-(sponge_loop+1), iendR
-            avg = (mup_ppzef(j)+mvp_ppzsf(i)) /2
+            avg = (sponge_fue(j)+sponge_fvs(i)) /2
             visc2_r(i,j)= visc2_r0(i,j) * avg
             diff2(i,j,:)= diff20(i,j,:) * avg
           enddo
@@ -2206,7 +2307,7 @@
       if (EASTERN_EDGE .and. NORTHERN_EDGE) then
         do j=jendR-(sponge_loop+1), jendR
           do i=iendR-(sponge_loop+1), iendR
-            avg = (mup_ppzef(j)+mvp_ppznf(i)) /2
+            avg = (sponge_fue(j)+sponge_fvn(i)) /2
             visc2_r(i,j)= visc2_r0(i,j) * avg
             diff2(i,j,:)= diff20(i,j,:) * avg
           enddo
@@ -2225,6 +2326,28 @@
 
       end subroutine set_diags_p_sponge  !]
 
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_box_range_lowhigh( d, dstr, dend, box_low, box_high)  ![
+      ! set the box averaging along sponge boundary, to handle shortened ends
+
+      implicit none
+
+      integer, intent(in)  :: d, dstr, dend      ! d for dimension, e.g. i, istr, iend or for j
+      integer, intent(out) :: box_low, box_high  ! loop range below and above averaging point
+
+      if (d-dstr < hbox_size) then  ! handle corners with smaller box averaging
+        box_low  = dstr
+      else
+        box_low  = d-hbox_size
+      endif
+      if (dend-d < hbox_size) then
+        box_high = dend
+      else
+        box_high = d+hbox_size
+      endif
+!       if(mynode==0) print *, 'd(j)=',d,' low=',box_low,' high=',box_high
+
+      end subroutine set_diags_p_box_range_lowhigh  !]
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
 
