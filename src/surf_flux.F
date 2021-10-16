@@ -83,9 +83,6 @@
       subroutine set_surf_field_corr(istr,iend,jstr,jend)
       ! Set surface fields that will be restored towards
 
-      use read_write, only: set_frc_var_tile
-     &  , ncdf_read_coarser_grid ! coarser only for ddevin debug
-
       implicit none
 
       ! input/outputs
