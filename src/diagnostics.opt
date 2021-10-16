@@ -40,7 +40,8 @@
       real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering
       logical, parameter         :: p_sponge      = .true.    ! online sponge control
       real,    parameter         :: init_sponge   = 0.5       ! initial sponge scaling (between 0 & 1)
-
+      integer, parameter         :: box_size      = 11        ! total number of points for spatial mean for sponge
+                                                              ! filter, includes central point use odd number!
 
       integer, parameter         :: prcsn         = 1         ! precision of output variables. 1=float, 2=double
       
