@@ -659,6 +659,12 @@
       ! local
       integer :: i, j, k, var
 
+      alpha = dt / timescale
+      beta  = 1 - alpha
+      if(mynode==0) write(*,'(1x,A,F8.6,A,F8.6/)')
+     &  'Diagnostics: - prs_flx filtering coefficients alpha=',
+     &   alpha,', beta=',beta
+
       allocate( uf(GLOBAL_2D_ARRAY, N) )
       allocate( vf(GLOBAL_2D_ARRAY, N) )
       allocate( pf(GLOBAL_2D_ARRAY, N) )
@@ -715,14 +721,14 @@
 
         ! At some point up_pp could be integrated directly into mup_ppzw, skipping the need for up_ppwz
         if (WESTERN_EDGE)  then
-          allocate( mup_ppzw (GLOBAL_1DY_ARRAY     ) )
-          allocate( sponge_fuw(GLOBAL_1DY_ARRAY    ) )
+          allocate( mup_ppzw (-hbox_size GLOBAL_1DY_ARRAY + hbox_size ) )  ! space on either side for MPI_exchange
+          allocate( sponge_fuw(GLOBAL_1DY_ARRAY    ) )                     ! to boundary neighbours
           allocate( box_mup_ppzw(GLOBAL_1DY_ARRAY  ) )   ! reset to zero each step
 !          allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY ) )   ! initialized later
           mup_ppzw=0; sponge_fuw=init_sponge             ! set time filtered initial to mid point?
         endif
         if (EASTERN_EDGE)  then
-          allocate( mup_ppze (GLOBAL_1DY_ARRAY     ) )
+          allocate( mup_ppze (-hbox_size GLOBAL_1DY_ARRAY + hbox_size ) )
           allocate( sponge_fue(GLOBAL_1DY_ARRAY     ) )
           allocate( box_mup_ppze(GLOBAL_1DY_ARRAY  ) )
 !          allocate( fbox_mup_ppze(GLOBAL_1DY_ARRAY ) )
@@ -730,13 +736,13 @@
         endif
 
         if (SOUTHERN_EDGE) then
-          allocate( mvp_ppzs (GLOBAL_1DX_ARRAY     ) )
+          allocate( mvp_ppzs (-hbox_size GLOBAL_1DX_ARRAY + hbox_size ) )
           allocate( sponge_fvs(GLOBAL_1DX_ARRAY     ) )
           allocate( box_mvp_ppzs(GLOBAL_1DX_ARRAY  ) )
           mvp_ppzs=0; sponge_fvs=init_sponge
         endif
         if (NORTHERN_EDGE) then
-          allocate( mvp_ppzn (GLOBAL_1DX_ARRAY     ) )
+          allocate( mvp_ppzn (-hbox_size GLOBAL_1DX_ARRAY + hbox_size ) )
           allocate( sponge_fvn(GLOBAL_1DX_ARRAY     ) )
           allocate( box_mvp_ppzn(GLOBAL_1DX_ARRAY  ) )
           mvp_ppzn=0; sponge_fvn=init_sponge
@@ -755,6 +761,14 @@
         sponge_loop=sponge_size-1                        ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
 
         ! check box_size is odd number, since including current point in middle:
+
+        if(mynode==0) write(*,'(14x,A,I2/)')
+     &    '- dynamic sponge spatial averaging box_size =',box_size
+
+        if(mod(box_size,2)==0)
+     &    error stop 'diags: box_size must be odd number!'
+
+
       endif  ! <-- p_sponge
 
       if (check_prs) then
@@ -772,11 +786,7 @@
         endif
       endif
 
-      alpha = dt / timescale
-      beta  = 1 - alpha
-      if(mynode==0) write(*,'(1x,A,F8.6,A,F8.6/)')
-     &  'Diagnostics: prs_flx filtering coefficients alpha=',
-     &   alpha,', beta=',beta
+
 
       end subroutine init_diags_prs_flx  !]
 
@@ -1435,7 +1445,6 @@
 
       end subroutine set_diags_v_2d3d_cor  !]
 
-
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
       ! Set dz*u or v at previous timestep to calculate gross change in
@@ -1950,6 +1959,12 @@
 
         enddo     ! <-- k
 
+!        if(mynode==5) then
+!        print *, 'rmask(iend,46)',rmask(iend,46),'up_pp(iend,46,10)',up_pp(iend,46,10)
+!        print *, 'rmask(iend,45)',rmask(iend,45),'up_pp(iend,45,10)',up_pp(iend,45,10)
+!        print *, 'rmask(iend,44)',rmask(iend,44),'up_pp(iend,44,10)',up_pp(iend,44,10)
+!        endif
+
         if(p_sponge)
      &    call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
 
@@ -2019,7 +2034,7 @@
       ! pressure flux in or out of domain.
       ! only needed for s/w/n/e domain boundaries.
 
-      ! The 3 sponge variables are visc2_r (rho-point), diff2 (rho-point) and visc2_p (psi-point).
+      ![The 3 sponge variables are visc2_r (rho-point), diff2 (rho-point) and visc2_p (psi-point).
       ! Since we already chose to put u'p' (up_pp) and v'p' at rho-points (averaged the u/v),
       ! we directly have the sponge switch at the same point as visc2_r and diff2.
       !
@@ -2037,6 +2052,10 @@
       ! from the first interior rho-point (istr) with a count of sponge_size-1=sponge_loop,
       ! need the -1 since the istr is included in the count.
       !
+      ! For now, ignore masking as a constant value. This will affact the magnitude of fbox_mup_ppzw
+      ! so if we move from binary on_off to something more nuansted based on magnitude and sign, then
+      ! will probably need to start handling the mask.
+      !
       ! Method:
       ! 1) For each sponge width along boundary:               West Boundary:
       !    Vertically integrate u'p' (up_pp)                    up_pp(i,j,k)       (i.e. u'p')
@@ -2045,23 +2064,37 @@
       !    (note up_pp is already multiplied                        |
       !     by Hz in set_diags_uv_prime).                       mup_ppzw(j)        (m=mean, z=vertical integral, w=west)
       !
-      ! 2) Do spatial smoothing with (box) average with adjacent points along the boundary.
-      !    box_size controls the size of the box. If box_size=1 then no spatial smoothing.
-      !    e.g. sum in box of mup_ppzw(j) -> box_mup_ppzw(j)
-      ! 3) Time filter result to smooth over random fluctuation to try capture prevailing flux direction
-      !    rather than instantaneous direction.
-      !    e.g. box_mup_ppzw(j) -> fbox_mup_ppzw(j)
-      ! 4) Use fbox_mup_ppzw to determine if net flux is in or out of domain, and use binary in or out
-      !    value (on_off scalar) to be either 1 (out) or 0 (in).
-      !    Note, this step probably puts a hard jump in the signal.
-      ! 5) Time filter the in=1 or out=0 into the final sponge multiplier
+      ! 2) Do spatial smoothing with (box) average with             |
+      !    adjacent points along the boundary.                      |
+      !    box_size controls the size of the box.               box_mup_ppzw(j)    (box average)
+      !    If box_size=1 then no spatial smoothing.
+      !
+      ! 3) Time filter result to smooth over random                 |
+      !    fluctuation to try capture prevailing flux           fbox_mup_ppzw(j)   (time filter)
+      !    direction rather than instantaneous direction.
+      !
+      ! 4) Use fbox_mup_ppzw to determine if net flux is
+      !    in or out of domain, and use binary in or out            |
+      !    value (on_off scalar) to be either 1 (out) or        on_off             (binary in or out)
+      !    0 (in). Note, this step probably puts a hard
+      !    jump in the signal.
+      !
+      ! 5) Time filter the in=1 or out=0 into the final             |              (sponge multiplier)
+      !    sponge multiplier (sponge_fuw).                      sponge_fuw         (f=filtered,u=u,w=west)
       !    e.g. fbox_mup_ppzw -> on_off? -> sponge_fuw
-      ! 6) Update sponge value with the time filtered sponge_multiplier sponge_fuw. Use orginal sponge values
-      !    from set_nudgcof.F, which are stored here (e.g. visc2_r(t=0)=visc2_r0).
-      !    Need to use original sponge otherwise could never increase again after decreasing.
-      ! 7) Fix corner regions using average of u (sponge_fuw) and v (sponge_fvs) filtered values
-      !    since sponge impacts both u and v signal.
-      !    Current choice is to average the mean flux of u and v in the corners.
+      !
+      ! 6) Update sponge value with the time filtered
+      !    sponge multiplier sponge_fuw. Use orginal sponge
+      !    values from set_nudgcof.F, which are stored here     visc2_r=visc2_r0*sponge_fuw
+      !    (e.g. visc2_r(t=0)=visc2_r0).
+      !    Need to use original sponge otherwise could never
+      !    increase again after decreasing.
+      !
+      ! 7) Fix corner regions using average of u (sponge_fuw)
+      !    and v (sponge_fvs) filtered values since sponge
+      !    impacts both u and v signal. Current choice is to
+      !    average the mean flux of u and v in the corners.
+      !]
 
       implicit none
 
@@ -2087,14 +2120,15 @@
         enddo ! <-- j                                        ! finish entire boundary first for box cart average next
 
         ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppzw)     ! exchange between partitions to allow for across bry avg
         do j=jstr,jend                                       ! set low and high end of loop for box average
-          call set_diags_p_box_range_lowhigh(j, jstr, jend, box_low, box_high)
+          call set_diags_p_box_range_corners_j( j, jstr, jend, box_low, box_high)
           box_mup_ppzw(j) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
             box_mup_ppzw(j) = box_mup_ppzw(j) + mup_ppzw(b)  ! calculate box cart average of vertically integrated and orthongal mean
           enddo
-          box_mup_ppzw(j) = box_mup_ppzw(j) / box_size       ! divide for mean
-
+          box_mup_ppzw(j) = box_mup_ppzw(j) /
+     &                     (box_high-box_low+1)              ! divide for mean
           if (.not. allocated(fbox_mup_ppzw)) then           ! set filter value to box cart average at first step,
             allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
             fbox_mup_ppzw = 0.0                              ! Move this to _init. Fix for tiling later
@@ -2137,14 +2171,15 @@
         enddo ! <-- j
 
         ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppze)     ! exchange between partitions to allow for across bry avg
         do j=jstr,jend
-          call set_diags_p_box_range_lowhigh(j, jstr, jend, box_low, box_high)
+          call set_diags_p_box_range_corners_j(j, jstr, jend, box_low, box_high)
           box_mup_ppze(j) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
             box_mup_ppze(j) = box_mup_ppze(j) + mup_ppze(b)  ! calculate box cart average of vertically integrated and orthongal mean
           enddo
-          box_mup_ppze(j) = box_mup_ppze(j) / box_size
-
+          box_mup_ppze(j) = box_mup_ppze(j) /
+     &                     (box_high-box_low+1)
           if (.not. allocated(fbox_mup_ppze)) then           ! set filter value to box cart average at first step,
             allocate( fbox_mup_ppze(GLOBAL_1DY_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
             fbox_mup_ppze = 0.0                              ! Move this to _init. Fix for tiling later
@@ -2187,14 +2222,15 @@
         enddo ! <-- i
 
         ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzs)
         do i=istr,iend
-          call set_diags_p_box_range_lowhigh(i, istr, iend, box_low, box_high)
+          call set_diags_p_box_range_corners_i(i, istr, iend, box_low, box_high)
           box_mvp_ppzs(i) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
-            box_mvp_ppzs(i) = box_mvp_ppzs(i) + mvp_ppzs(i)  ! calculate box cart average of vertically integrated and orthongal mean
+            box_mvp_ppzs(i) = box_mvp_ppzs(i) + mvp_ppzs(b)  ! calculate box cart average of vertically integrated and orthongal mean
           enddo
-          box_mvp_ppzs(i) = box_mvp_ppzs(i) / box_size
-
+          box_mvp_ppzs(i) = box_mvp_ppzs(i) /
+     &                     (box_high-box_low+1)
           if (.not. allocated(fbox_mvp_ppzs)) then           ! set filter value to box cart average at first step,
             allocate( fbox_mvp_ppzs(GLOBAL_1DX_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
             fbox_mvp_ppzs = 0.0                              ! Move this to _init. Fix for tiling later
@@ -2237,14 +2273,15 @@
         enddo  !<-- i
 
         ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzn)
         do i=istr,iend
-          call set_diags_p_box_range_lowhigh(i, istr, iend, box_low, box_high)
+          call set_diags_p_box_range_corners_i(i, istr, iend, box_low, box_high)
           box_mvp_ppzn(i) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
-            box_mvp_ppzn(i) = box_mvp_ppzn(i) + mvp_ppzn(i)  ! calculate box cart average of vertically integrated and orthongal mean
+            box_mvp_ppzn(i) = box_mvp_ppzn(i) + mvp_ppzn(b)  ! calculate box cart average of vertically integrated and orthongal mean
           enddo
-          box_mvp_ppzn(i) = box_mvp_ppzn(i) / box_size
-
+          box_mvp_ppzn(i) = box_mvp_ppzn(i) /
+     &                     (box_high-box_low+1)
           if (.not. allocated(fbox_mvp_ppzn)) then           ! set filter value to box cart average at first step,
             allocate( fbox_mvp_ppzn(GLOBAL_1DX_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
             fbox_mvp_ppzn = 0.0                              ! Move this to _init. Fix for tiling later
@@ -2327,27 +2364,224 @@
       end subroutine set_diags_p_sponge  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_p_box_range_lowhigh( d, dstr, dend, box_low, box_high)  ![
-      ! set the box averaging along sponge boundary, to handle shortened ends
+      subroutine set_diags_p_box_range_corners_j( j, jstr, jend, box_low, box_high)  ![
+      ! set the box averaging along sponge boundary, to handle shortened ends at domain corners
 
       implicit none
 
-      integer, intent(in)  :: d, dstr, dend      ! d for dimension, e.g. i, istr, iend or for j
-      integer, intent(out) :: box_low, box_high  ! loop range below and above averaging point
+      integer, intent(in)  :: j, jstr, jend
+      integer, intent(out) :: box_low, box_high   ! loop range below and above averaging point
 
-      if (d-dstr < hbox_size) then  ! handle corners with smaller box averaging
-        box_low  = dstr
-      else
-        box_low  = d-hbox_size
+      box_low  = j-hbox_size
+      box_high = j+hbox_size
+      if (SOUTHERN_EDGE) then
+        if (j-jstr < hbox_size) box_low  = jstr   ! handle corners with smaller box averaging
       endif
-      if (dend-d < hbox_size) then
-        box_high = dend
-      else
-        box_high = d+hbox_size
+      if (NORTHERN_EDGE) then
+        if (jend-j < hbox_size) box_high = jend
       endif
-!       if(mynode==0) print *, 'd(j)=',d,' low=',box_low,' high=',box_high
+!      if(mynode==0) print *, 'j=',j,' low=',box_low,' high=',box_high
 
-      end subroutine set_diags_p_box_range_lowhigh  !]
+      end subroutine set_diags_p_box_range_corners_j  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_box_range_corners_i( i, istr, iend, box_low, box_high)  ![
+      ! set the box averaging along sponge boundary, to handle shortened ends at domain corners
+
+      implicit none
+
+      integer, intent(in)  :: i, istr, iend
+      integer, intent(out) :: box_low, box_high   ! loop range below and above averaging point
+
+      box_low  = i-hbox_size
+      box_high = i+hbox_size
+      if (WESTERN_EDGE) then
+        if (i-istr < hbox_size) box_low  = istr   ! handle corners with smaller box averaging
+      endif
+      if (EASTERN_EDGE) then
+        if (iend-i < hbox_size) box_high = iend
+      endif
+!      if(mynode==2) print *, 'i=',i,' low=',box_low,' high=',box_high,mynode
+
+      end subroutine set_diags_p_box_range_corners_i  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppzew)  ![
+      ! exchange u'p' integrated and averaged across sponge
+      ! to neighbouring MPI sub-domains north and south on domain E and W boundaries only.
+
+      ![use non-blocking communication.
+      ! best practice is to start receiving before sending.
+      !
+      ! can't use MPI_Waitall because some do left right, corners do both.
+      ! from internet found MPI 3.0 standard has some grid halo exchange functions
+      ! already. This would be good for ROMS but a pain to change over.
+      ! didn't find function for boundaries only (i.e. not all neighbours),
+      ! so using same scheme Sacha wrote in MPI_exchange8TA.F, which uses MPI_test
+      ! and 'comm' variable to confirm all non-blocking communications are complete.
+      !
+      ! sending index starts from jstr/jend, receiving index starts from jstr-1/jend+1
+      ! e.g. send east to west:
+      !
+      !    jend-1  jend |    x       x      (west)     (before)
+      !      x       x  |  jstr    jstr+1   (east)
+      !                      |       |
+      !    jend-1  jend |  jend+1  jend+2   (west)     (after)
+      !
+      !]
+
+      use mpi
+      use hidden_mpi_vars
+      implicit none
+
+      ! inputs
+      integer,                                                    intent(in)    :: jstr, jend
+      real, dimension( -hbox_size GLOBAL_1DY_ARRAY + hbox_size ), intent(inout) :: mup_ppzew   ! west or east
+
+      ! local
+      integer, parameter            :: comm_size=4                                             ! no. of potential communcations
+      integer                       :: ierr, status(MPI_STATUS_SIZE), mess_count, c
+      integer, dimension(comm_size) :: req                                                     ! communication request handle
+      integer, dimension(comm_size) :: comm
+      logical                       :: flag
+
+                        ! tags for receive      for send       tags match send to receive (e.g. 1 --> 1)
+      do c=1,comm_size  !         x  1  x        x  2  x       up to 4 communications
+        comm(c)=0       !         x     x        x     x       send up+down, and receive up+down
+      enddo             !         x  2  x        x  1  x       corners only send 1 receive 1 per direction
+
+      if (NORTH_MSG_EXCH) then
+        !print *, 'South_recvb4 mup_ppzew(jend+hb) ',mup_ppzew(jend+hbox_size), mynode
+        call MPI_Irecv(mup_ppzew(jend+1)        , hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_N, 1, ocean_grid_comm, req(1), ierr)                        ! --> 1 (receive from S)
+        comm(1)=1
+      endif
+      if (SOUTH_MSG_EXCH) then
+        !print *, 'North_recvb4 mup_ppzew(jstr-hb)',mup_ppzew(jstr-hbox_size), mynode
+        call MPI_Irecv(mup_ppzew(jstr-hbox_size), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_S, 2, ocean_grid_comm, req(2), ierr)                        ! --> 2 (receive from N)
+        comm(2)=2
+      endif
+      if (SOUTH_MSG_EXCH) then
+        !print *, 'South_send   mup_ppzew(jstr+hb-1)',mup_ppzew(jstr+(hbox_size-1)),mynode
+        call MPI_Isend(mup_ppzew(jstr), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_S, 1, ocean_grid_comm, req(3), ierr)                        ! <-- 1 (send from S)
+        comm(3)=3
+      endif
+      if (NORTH_MSG_EXCH) then
+        !print *, 'North_send   mup_ppzew(jend-hb)  ',mup_ppzew(jend-(hbox_size-1)),mynode
+        call MPI_Isend(mup_ppzew(jend-(hbox_size-1)), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_N, 2, ocean_grid_comm, req(4), ierr)                        ! <-- 2 (send from N)
+        comm(4)=4
+      endif
+
+      mess_count=0
+      do c=1,comm_size
+        if (comm(c) > 0) mess_count=mess_count+1         ! since only exchanging 1D array, exchange was already done
+      enddo                                              ! into final array, so don't need to unpack receives like in
+                                                         ! mpi_exchange8TA.F. Just use while loop to confirm all complete.
+      do while (mess_count>0)
+        do c=1,comm_size
+          if (comm(c) > 0) then
+            call MPI_Test (req(c), flag, status, ierr)   ! make sure all sent messages have been received elsewhere
+            if (flag) then                               ! before moving on
+               mess_count=mess_count-1 ; comm(c)=0
+!               print *, 'done comm & node ',c,mynode
+!               if (NORTH_MSG_EXCH .and. c==1) then
+!                 print *, 'South_recvA mup_ppzew(jend+hb)',mup_ppzew(jend+hbox_size),mynode  ! debug
+!               endif
+!               if (SOUTH_MSG_EXCH .and. c==2) then
+!                 print *, 'North_recvA mup_ppzew(jstr-hb)',mup_ppzew(jstr-hbox_size),mynode  ! debug
+!               endif
+            endif
+          endif
+        enddo
+      enddo  ! <-- while
+
+!      if(mynode==2) print*, mynode, 'v(jend-hb-1:jend+hb)    ',mup_ppzew(jend-(hbox_size-1):jend+hbox_size)
+!      if(mynode==5) print*, mynode, 'v(jstr-(hb):jstr+(hb-1))',mup_ppzew(jstr-hbox_size:jstr+(hbox_size-1))
+
+      end subroutine set_diags_p_bry_mpi_exchange_n2s  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzns)  ![
+      ! exchange v'p' integrated and averaged across sponge
+      ! to neighbouring MPI sub-domains to the east and west on N and S domain boundaries only.
+      ! see description of _n2s version for details on implementation.
+
+      use mpi
+      use hidden_mpi_vars
+      implicit none
+
+      ! inputs
+      integer,                                                    intent(in)    :: istr, iend
+      real, dimension( -hbox_size GLOBAL_1DX_ARRAY + hbox_size ), intent(inout) :: mvp_ppzns   ! west or east
+
+      ! local
+      integer, parameter            :: comm_size=4                                             ! no. of potential communcations
+      integer                       :: ierr, status(MPI_STATUS_SIZE), mess_count, c
+      integer, dimension(comm_size) :: req                                                     ! communication request handle
+      integer, dimension(comm_size) :: comm
+      logical                       :: flag
+
+                        ! tags for receive      for send       tags match send to receive (e.g. 1 --> 1)
+      do c=1,comm_size  !         x  x  x        x  x  x       up to 4 communications
+        comm(c)=0       !         2     1        1     2       send up+down, and receive up+down
+      enddo             !         x  x  x        x  x  x       corners only send 1 receive 1 per direction
+
+      if (EAST_MSG_EXCH) then
+        !print *, 'west_recvb4 mvp_ppzns(iend+hb) ',mvp_ppzns(iend+hbox_size), mynode
+        call MPI_Irecv(mvp_ppzns(iend+1)        , hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_E, 1, ocean_grid_comm, req(1), ierr)                        ! --> 1 (receive from S)
+        comm(1)=1
+      endif
+      if (WEST_MSG_EXCH) then
+        !print *, 'east_recvb4 mvp_ppzns(istr-hb)',mvp_ppzns(istr-hbox_size), mynode
+        call MPI_Irecv(mvp_ppzns(istr-hbox_size), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_W, 2, ocean_grid_comm, req(2), ierr)                        ! --> 2 (receive from N)
+        comm(2)=2
+      endif
+      if (WEST_MSG_EXCH) then
+        !print *, 'west_send   mvp_ppzns(istr+hb-1)',mvp_ppzns(istr+(hbox_size-1)),mynode
+        call MPI_Isend(mvp_ppzns(istr), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_W, 1, ocean_grid_comm, req(3), ierr)                        ! <-- 1 (send from S)
+        comm(3)=3
+      endif
+      if (EAST_MSG_EXCH) then
+        !print *, 'east_send   mvp_ppzns(iend-hb)  ',mvp_ppzns(iend-(hbox_size-1)),mynode
+        call MPI_Isend(mvp_ppzns(iend-(hbox_size-1)), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_E, 2, ocean_grid_comm, req(4), ierr)                        ! <-- 2 (send from N)
+        comm(4)=4
+      endif
+
+      mess_count=0
+      do c=1,comm_size
+        if (comm(c) > 0) mess_count=mess_count+1         ! since only exchanging 1D array, exchange was already done
+      enddo                                              ! into final array, so don't need to unpack receives like in
+                                                         ! mpi_exchange8TA.F. Just use while loop to confirm all complete.
+      do while (mess_count>0)
+        do c=1,comm_size
+          if (comm(c) > 0) then
+            call MPI_Test (req(c), flag, status, ierr)   ! make sure all sent messages have been received elsewhere
+            if (flag) then                               ! before moving on
+               mess_count=mess_count-1 ; comm(c)=0
+!               print *, 'done comm & node ',c,mynode
+!               if (EAST_MSG_EXCH .and. c==1) then
+!                 print *, 'west_recvA mvp_ppzns(iend+hb)',mvp_ppzns(iend+hbox_size),mynode  ! debug
+!               endif
+!               if (WEST_MSG_EXCH .and. c==2) then
+!                 print *, 'east_recvA mvp_ppzns(istr-hb)',mvp_ppzns(istr-hbox_size),mynode  ! debug
+!               endif
+            endif
+          endif
+        enddo
+      enddo  ! <-- while
+
+!      if(mynode==1) print*, mynode, 'mvp_ppzns(iend-hb-1:iend+hb)    ',mvp_ppzns(iend-(hbox_size-1):iend+hbox_size)
+!      if(mynode==2) print*, mynode, 'mvp_ppzns(istr-(hb):istr+(hb-1))',mvp_ppzns(istr-hbox_size:istr+(hbox_size-1))
+
+      end subroutine set_diags_p_bry_mpi_exchange_e2w  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
 

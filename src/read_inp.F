@@ -732,7 +732,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
         elseif (keyword(1:kwlen) == 'averages') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) ntsavg, navg, nrpfavg
-          mpi_master_only write(*,'(/1x,A,I5,2x,A,I5,2x,A,I4)')
+          mpi_master_only write(*,'(/1x,A,I5,2x,A,I5,2x,A,I5)')
      &       'averages :: ntsavg = ', ntsavg,      'navg =', navg,
      &       'rec/file =', nrpfavg
 # ifndef SOLVE3D
