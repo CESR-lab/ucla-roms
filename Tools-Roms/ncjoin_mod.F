@@ -107,10 +107,12 @@ c--#define MPIVERBOSE
 
       integer, external :: lenstr    ! 0325 addition
 
-      character(len=8) sffx, sffx_bak
-      character(len=32) vname(maxvars), dimname(maxdims) ! Variable and dimension names
-      character(len=64) nctestname, nctargname, root, root_bak, string
-      character(len=64), dimension(:), allocatable :: ncname
+      character(len=8)          :: sffx, sffx_bak
+      integer, parameter        :: vname_size=32                    ! need for MPI exchange size
+      integer, parameter        :: fname_size=128
+      character(len=vname_size) :: vname(maxvars), dimname(maxdims) ! variable and dimension names
+      character(len=fname_size) :: nctestname, nctargname, root, root_bak, string
+      character(len=fname_size), dimension(:), allocatable :: ncname
 
       integer, dimension(:),   allocatable :: ncid, xi_start, eta_start
       integer, dimension(:,:), allocatable :: vid, dimsize
@@ -1370,11 +1372,11 @@ c**           endif
       call MPI_BCAST(vdims,              maxvars, MPI_INT, 0, MPI_COMM_WORLD, ierr)
       if(ierr/=0) print *, 'POOR MPI EXCHANGE'
 
-      call MPI_BCAST(vname, maxvars*32, MPI_CHAR, 0, MPI_COMM_WORLD, ierr)
+      call MPI_BCAST(vname, maxvars*vname_size, MPI_CHAR, 0, MPI_COMM_WORLD, ierr)
       if(ierr/=0) print *, 'POOR MPI EXCHANGE'
-      call MPI_BCAST(nctargname,    64, MPI_CHAR, 0, MPI_COMM_WORLD, ierr)
+      call MPI_BCAST(nctargname, fname_size, MPI_CHAR, 0, MPI_COMM_WORLD, ierr)
       if(ierr/=0) print *, 'POOR MPI EXCHANGE'
-      call MPI_BCAST(ncname, nnodes*64, MPI_CHAR, 0, MPI_COMM_WORLD, ierr)
+      call MPI_BCAST(ncname, nnodes*fname_size, MPI_CHAR, 0, MPI_COMM_WORLD, ierr)
       if(ierr/=0) print *, 'POOR MPI EXCHANGE'
 
       call MPI_BCAST(western_edge,  nnodes, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
@@ -1422,7 +1424,7 @@ c**           endif
 !     &                  IOR(NF90_NETCDF4, NF90_MPIIO), nctarg,
      &                  IOR(NF90_WRITE, NF90_MPIIO), nctarg,
      &                  comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
-        if(ierr/=0) print *, 'BAD OPEN OF OUTFILE'
+        if(ierr/=0) print *, 'BAD OPEN OF OUTFILE', nf90_strerror(ierr)
         ! Set variables for parllel I/O 'collective' mode, this apparently
         ! allows for best optimization by underlying MPI_IO library.
         ! Would like to try in default (independent) mode, but couldn't get working
@@ -1448,7 +1450,7 @@ c**           endif
 !     &                    IOR(NF90_NETCDF4, NF90_MPIIO), ncid(node), ! not sure if I need nf_nowrite in here somehow
      &                    IOR(NF90_NOWRITE, NF90_MPIIO), ncid(node),  ! nowrite is faster for read only.
      &                    comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
-          if(ierr/=0) print *, 'BAD OPEN OF INFILE'
+          if(ierr/=0) print *, 'BAD OPEN OF INFILE', nf90_strerror(ierr)
 !          ierr=nf90_inquire_variable(ncid(node), vid(1,node), var_name_debug)
 !          if(ierr/=0) print *, 'BAD INQUIRE VAR'
 !          if(my_rank==3) print *, 'var name from vid: ', var_name_debug
@@ -1968,7 +1970,8 @@ c**           endif
 
                       if (vartype(i) .eq. nf_char) then
 
-                      elseif (vartype(i) .eq. nf_float) then
+                      elseif (vartype(i) == nf90_float  .or.
+     &                        vartype(i) == nf90_double      ) then
 
                         ierr=nf90_get_var(ncid(node), vid(i,node),
      &                     data(data_x_in_str(in2p):data_x_in_end(in2p),
@@ -1976,10 +1979,6 @@ c**           endif
      &                          start_in(:,in2p), count_in(:,in2p) )
                         if(ierr/=0) print *, 'BAD READ', nf90_strerror(ierr),
      &                                        'my_rank', my_rank
-
-                      elseif (vartype(i) .eq. nf_double) then
-!                        ierr=nf_get_vara_double(ncid(node),vid(i,node),
-!     &                                             start, count, buff)
                       endif
 # ifdef TIMING
                       if (ierr.eq.nf_noerr) then

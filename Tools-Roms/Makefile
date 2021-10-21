@@ -2,6 +2,8 @@ include ../src/Makedefs.inc
 
 # Can't use -ip optimization for tools (partit won't compile)
 	FFLAGS = -O3
+# - uncomment for debugging:
+#	FFLAGS = -g -traceback -check all -CA -CB -CS
 
 ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z zslice
 
@@ -28,7 +30,7 @@ partit: partit.o insert_node.o lenstr.o
 ncjoin: ncjoin.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
 	
-ncjoin_mpi: ncjoin_mod.o ncjoin_mpi.o lenstr.o
+ncjoin_mpi: ncjoin_mpi.opt ncjoin_mod.o ncjoin_mpi.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi ncjoin_mod.o ncjoin_mpi.o lenstr.o $(LCDF)
 	
 nc3to4z: nc3to4z.o lenstr.o read_string.o
@@ -48,7 +50,7 @@ zslice: $(ZSLICE)
 	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
 
 clean:
-	/bin/rm -f *.f *.o *.a *.s *.trace
+	/bin/rm -f *.f *.o *.a *.s *.trace *.mod
 
 clobber: clean
 	/bin/rm -f $(ALL) *.bak

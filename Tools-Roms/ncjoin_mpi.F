@@ -323,15 +323,7 @@ c--#define MPIVERBOSE
       ! Change this to 'use mpi' for module rather... as per 'simple_xy_par_wr2.f90'
 !#include "mpif.h" ! added use mpi to ncjoin_mod
 
-      ! ***************************************************************
-      ! START USER INPUT          ! mostly you will use the default values!
-      deflate_level=1             ! compression level for joined file. For no compression 'deflate_level = 0'.
-      shuffle=.true.              ! shuffle on for extra compression (nc3to4z had this).
-                                  ! in tests shuffle gave an extra ~10% compression over just d1 compression.
-      guess_nnodes=16             ! guessed number of input nodes (files) linked to mpi proc for storage array size
-                                  ! Must have guess_nnodes > nnodes_in_proc! But try to keep this number low for good memory management.
-      !   END USER INPUT          ! ncjoin_mpi will tell you at run time if number is too low (i.e. guess_nnodes < nnodes_in_proc).
-      ! ***************************************************************
+#include "ncjoin_mpi.opt"
 
 
       call init_timing_and_vars

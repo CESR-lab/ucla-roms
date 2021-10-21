@@ -94,8 +94,8 @@ c--#define VERBOSE
 
       character(len=8) sffx, sffx_bak
       character(len=32) vname(maxvars), dimname(maxdims) 
-      character(len=64) nctestname, nctargname, root, root_bak, string
-      character(len=64), dimension(:), allocatable :: ncname
+      character(len=128) :: nctestname, nctargname, root, root_bak, string
+      character(len=128), dimension(:), allocatable :: ncname
       character(len=1) :: buff_char ! DevinD added as Expanse complained about putting
                                     ! spherical character in numerical 'buff' array...
 
