@@ -8,5 +8,6 @@
      &                                                'cgrd_input/sample_child_ij_bry_2nd.nc' /)    ! child boundary input file
       character(len=60)  :: file_names(nc_grds)  = (/ '_child_bry.nc',
      &                                                '_child_bry_2.nc' /)               ! suffix to append to simulation output rootname
+      logical, parameter :: prs_flx_bry = .true.                                         ! prs_flx u'p'/v'p' output included (used with diagnostics module)
       ! END USER INPUTS
       ! ****************************************************************

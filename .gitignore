@@ -43,3 +43,4 @@ wec_netcdf_test_old.log
 .settings
 .project
 .cproject
+.pydevproject

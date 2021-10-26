@@ -359,9 +359,9 @@
           enddo
 
           if (prs_flx_bry) then
-            call interpolate_child_bry( up, N, rp_vars(c) )
+            call interpolate_child_bry( up_pp, N, rp_vars(c) )
             call wrt_child_bry( 1,  N, 2, rp_vars(c), ncvars(c) )
-            call interpolate_child_bry( vp, N, rp_vars(c) )
+            call interpolate_child_bry( vp_pp, N, rp_vars(c) )
             call wrt_child_bry( 2,  N, 2, rp_vars(c), ncvars(c) )
           endif
 

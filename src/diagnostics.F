@@ -284,10 +284,11 @@
 
       ! PRESSURE FLUX:
       ! --------------
-      real, allocatable, dimension(:, :, :), public :: up, vp       ! perturbed u/v/
+      real, allocatable, dimension(:, :, :), public :: up_pp, vp_pp ! u'p' and v'p'
+      real, allocatable, dimension(:, :, :) :: up, vp               ! perturbed u/v/
       real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
       real, allocatable, dimension(:, :, :) :: pp                   ! perturbed p
-      real, allocatable, dimension(:, :, :) :: up_pp, vp_pp         ! u'p' and v'p'
+
       real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl         ! u and p baroclinic
 
       real, allocatable, dimension(:, :, :) :: aup, avp, app        ! averaged perturbed u/v/p
@@ -2582,6 +2583,16 @@
 !      if(mynode==2) print*, mynode, 'mvp_ppzns(istr-(hb):istr+(hb-1))',mvp_ppzns(istr-hbox_size:istr+(hbox_size-1))
 
       end subroutine set_diags_p_bry_mpi_exchange_e2w  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_conversion  ![
+      ! C(z) = Div( u'p' ) + Dissipation
+
+      implicit none
+
+
+
+      end subroutine set_diags_p_conversion  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
