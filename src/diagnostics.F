@@ -284,8 +284,9 @@
 
       ! PRESSURE FLUX:
       ! --------------
+      real, allocatable, dimension(:, :, :), public :: up, vp       ! perturbed u/v/
       real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
-      real, allocatable, dimension(:, :, :) :: up, vp, pp           ! perturbed u/v/p
+      real, allocatable, dimension(:, :, :) :: pp                   ! perturbed p
       real, allocatable, dimension(:, :, :) :: up_pp, vp_pp         ! u'p' and v'p'
       real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl         ! u and p baroclinic
 
@@ -313,10 +314,10 @@
 
       character (len=20),  allocatable, dimension(:) :: pnames
       character (len=120), allocatable, dimension(:) :: plname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
-      character (len=20),  allocatable, dimension(:) :: ppnames
-      character (len=120), allocatable, dimension(:) :: pplname
+      character (len=20),  allocatable, dimension(:), public :: ppnames
+      character (len=120), allocatable, dimension(:), public :: pplname
 
-      character (len=3) :: punits = 'W/m'
+      character (len=3), public :: punits = 'W/m'
       character (len=3) :: pchunits = 'TBC'
 
       public set_diags_uv_prime

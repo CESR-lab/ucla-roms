@@ -299,6 +299,8 @@
 
 ! ----------------------------------------------------------------------
       subroutine set_child_bry  ![
+
+      use diagnostics
       implicit none             !  Interpolate child boundary at desired intervals.
 
       ! local
@@ -329,32 +331,39 @@
 
           ! zeta:
           call interpolate_child_bry(   zeta(:,:,knew), 1,  rp_vars(c)            )
-          call wrt_child_bry(           indxZ,  1, .false., rp_vars(c), ncvars(c) )
+          call wrt_child_bry(           indxZ,  1, 0, rp_vars(c), ncvars(c) )
 
           ! ubar:
           call interpolate_u_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1, up_vars(c) )
-          call wrt_child_bry(           indxUb, 1, .false., up_vars(c),     ncvars(c) )
+          call wrt_child_bry(           indxUb, 1, 0, up_vars(c),     ncvars(c) )
 
           ! vbar:
           call interpolate_v_child_bry( ubar(:,:,knew), vbar(:,:,knew), 1, vp_vars(c) )
-          call wrt_child_bry(           indxVb, 1, .false., vp_vars(c),     ncvars(c) )
+          call wrt_child_bry(           indxVb, 1, 0, vp_vars(c),     ncvars(c) )
 
           ! u:
           call interpolate_u_child_bry( u(START_2D_ARRAY,1,nstp),
      &                                  v(START_2D_ARRAY,1,nstp), N,    up_vars(c) )
-          call wrt_child_bry(           indxU,  N, .false., up_vars(c),  ncvars(c) )
+          call wrt_child_bry(           indxU,  N, 0, up_vars(c),  ncvars(c) )
 
           ! v:
           call interpolate_v_child_bry( u(START_2D_ARRAY,1,nstp),
      &                                  v(START_2D_ARRAY,1,nstp), N, vp_vars(c) )
-          call wrt_child_bry( indxV,  N, .false., vp_vars(c),         ncvars(c) )
+          call wrt_child_bry(           indxV,  N, 0, vp_vars(c),  ncvars(c) )
 
 
           ! tracers:
           do itrc=1,NT
             call interpolate_child_bry( t(START_2D_ARRAY,1,nstp,itrc), N, rp_vars(c) )
-            call wrt_child_bry(         itrc, N, .true., rp_vars(c),       ncvars(c) )
+            call wrt_child_bry(         itrc, N, 1, rp_vars(c),       ncvars(c) )
           enddo
+
+          if (prs_flx_bry) then
+            call interpolate_child_bry( up, N, rp_vars(c) )
+            call wrt_child_bry( 1,  N, 2, rp_vars(c), ncvars(c) )
+            call interpolate_child_bry( vp, N, rp_vars(c) )
+            call wrt_child_bry( 2,  N, 2, rp_vars(c), ncvars(c) )
+          endif
 
           if (mynode == 0) then
             write(*,'(9x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
@@ -1188,19 +1197,23 @@
      &       'Time since initialization', 'second', (/ ncv%dimid_t /), ierr, 2 )  ! 2 makes it a double
 
       ! 2D vars:
-      call define_child_bry( indxZ,  rp%tot, rp%c_str, r_dimid_bry, 1, .false., ncv )
-      call define_child_bry( indxUb, up%tot, up%c_str, u_dimid_bry, 1, .false., ncv )
-      call define_child_bry( indxVb, vp%tot, vp%c_str, v_dimid_bry, 1, .false., ncv )
+      call define_child_bry( indxZ,  rp%tot, rp%c_str, r_dimid_bry, 1, 0, ncv )
+      call define_child_bry( indxUb, up%tot, up%c_str, u_dimid_bry, 1, 0, ncv )
+      call define_child_bry( indxVb, vp%tot, vp%c_str, v_dimid_bry, 1, 0, ncv )
 
       ! 3D vars:
-      call define_child_bry( indxU,  up%tot, up%c_str, u_dimid_bry, N, .false., ncv )
-      call define_child_bry( indxV,  vp%tot, vp%c_str, v_dimid_bry, N, .false., ncv )
+      call define_child_bry( indxU,  up%tot, up%c_str, u_dimid_bry, N, 0, ncv )
+      call define_child_bry( indxV,  vp%tot, vp%c_str, v_dimid_bry, N, 0, ncv )
 
       ! tracers:
       do itrc=1,NT
-        call define_child_bry( itrc, rp%tot, rp%c_str, r_dimid_bry, N, .true. , ncv )
+        call define_child_bry( itrc, rp%tot, rp%c_str, r_dimid_bry, N, 1, ncv )
       enddo
 
+      if (prs_flx_bry) then
+        call define_child_bry( 1,    rp%tot, rp%c_str, r_dimid_bry, N, 2, ncv )  ! u'p' at rho points
+        call define_child_bry( 2,    rp%tot, rp%c_str, r_dimid_bry, N, 2, ncv )
+      endif
 
       ierr=nf90_enddef(ncv%ncid_out)  ! end definition to write changes to disk
       if (mynode == 0) then
@@ -1216,12 +1229,13 @@
       ! Each sub-domain writes out its portion of child boundary if applicable.
       ! all procs, make child bc netcdf file, only relevant procs define bc variables (east, north, etc)
 
+      use diagnostics
       implicit none
 
       ! inputs
       integer,              intent(in) :: indx_v    ! index of primary var or itrc
       integer,              intent(in) :: nmax      ! vertical levels
-      logical,              intent(in) :: trc_yn    ! is variable a tracer y/n
+      integer,              intent(in) :: trc_yn    ! 0=not, 1=trc, 2=prs_flx
       type(grid_type_vars), intent(in) :: ap        ! any variable type
       type(nc_vars)                    :: ncv
 
@@ -1230,11 +1244,14 @@
       integer, dimension(3) :: start_out, count_out, count_dummy=1
       character(len=40)     :: bname, rname
 
-
-      if (trc_yn) then                              ! handle primary variable or tracers name
+      if     (trc_yn==1) then                                   ! handle primary variable or tracers name
         rname=t_vname(indx_v)
-      else
+      elseif (trc_yn==0) then
         rname=vname(1,indx_v)
+      elseif (trc_yn==2) then
+        rname=ppnames(indx_v)
+      else
+        error stop 'Write child bry issue!'
       endif
 
       if (nmax == 1) then                           ! handle 2D or 3D variable dimids
@@ -1304,6 +1321,8 @@
 
       ! Define child bry variable in output netCDF file.
 
+      use diagnostics
+
       implicit none
 
       ! input/outputs
@@ -1312,7 +1331,7 @@
       integer, dimension(4), intent(in) :: sides_c_str
       integer, dimension(5), intent(in) :: dimid_bry     ! dimension ID for boundaries
       integer,               intent(in) :: nmax
-      logical,               intent(in) :: trc_yn
+      integer,               intent(in) :: trc_yn        ! 0=not, 1=trc, 2=prs_flx
       type(nc_vars)                     :: ncv           ! netcdf variables for child
 
       ! local
@@ -1322,14 +1341,20 @@
       integer, dimension(3) :: vdimids
 
 
-      if (trc_yn) then                                   ! handle primary variable or tracers name
+      if     (trc_yn==1) then                                   ! handle primary variable or tracers name
         rname=t_vname(indx_v)
         lname=t_lname(indx_v)
         uname=t_units(indx_v)
-      else
+      elseif (trc_yn==0) then
         rname=vname(1,indx_v)
         lname=vname(2,indx_v)
         uname=vname(3,indx_v)
+      elseif (trc_yn==2) then
+        rname=ppnames(indx_v)
+        lname=pplname(indx_v)
+        uname=punits
+      else
+        error stop 'Define child bry issue!'
       endif
 
       do bry=1,4                                         ! loop through 4 boundaries:

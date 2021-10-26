@@ -69,6 +69,9 @@ c--#endif
 # if defined USWC_WEC
 
 #  define BRY_EXTRACT_CHILD
+
+#  define DIAGNOSTICS
+
 #  undef GRID_ANG_DEG
 #  define SOLVE3D
 #  define UV_COR
