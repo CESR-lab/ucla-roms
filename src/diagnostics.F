@@ -162,6 +162,12 @@
 
       !]
 
+      ![ Potential issues:
+      !  - Since we don't have pressure in the boundary buffer, we can't get u'p' at the bry.
+      !    We therefore just use the first internal pressure point instead, which introduces
+      !    a dx/2 error.
+      !]
+
       ! Preamble:  ![
 
       logical, public            :: calc_diag               ! flag to calculate diagnostics in equation system.
@@ -284,7 +290,7 @@
 
       ! PRESSURE FLUX:
       ! --------------
-      real, allocatable, dimension(:, :, :), public :: up_pp, vp_pp ! u'p' and v'p'
+      real, allocatable, dimension(:, :, :), public :: up_pp, vp_pp ! u'p' (at upoint) and v'p' (at v_point) - makes it easier to use in child bry.
       real, allocatable, dimension(:, :, :) :: up, vp               ! perturbed u/v/
       real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
       real, allocatable, dimension(:, :, :) :: pp                   ! perturbed p
@@ -306,8 +312,7 @@
       real, allocatable, dimension(:, :, :) :: diff20               ! Initial tracer sponge
 
       integer :: nprm = 3                      ! number of pressure flux diagnostic terms
-      real    :: alpha                         ! filtering constant
-      real    :: beta                          ! filtering constant
+      real, public :: alpha, beta              ! filtering constants (needed for child bry)
       integer :: sponge_loop                   ! for looping through sponge layer
       integer :: hbox_size = (box_size-1) / 2  ! half the box size. -1 since averaging point in middle, loop range either side
 
@@ -1921,11 +1926,11 @@
 
       do k=1,N
         do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
-          do i=istr,iend+1  ! for averaging of up_pp
+          do i=istr,iend+1  ! include boundary for up_pp
             uf(i,j,k) = beta * uf(i,j,k) + alpha * ( u(i,j,k,nnew) - ubar(i,j,knew) )
           enddo
         enddo
-        do j=jstr,jend+1    ! for averaging of vp_pp
+        do j=jstr,jend+1    ! include boundary for vp_pp
           do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
             vf(i,j,k) = beta * vf(i,j,k) + alpha * ( v(i,j,k,nnew) - vbar(i,j,knew) )
           enddo
@@ -1939,23 +1944,25 @@
                                                                   ! p_sponge needs up_pp at everystep
         do k=1,N
 
-          do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
-            do i=istr,iend+1  ! for averaging of up_pp
+          do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway?
+            do i=istr,iend+1  ! include boundary for up_pp
               up(i,j,k)      = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
               if (check_prs)  ! if with parameter
      &          u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
             enddo
           enddo
-          do j=jstr,jend+1    ! for averaging of vp_pp
+          do j=jstr,jend+1    ! include boundary for averaging of vp_pp
             do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
               vp(i,j,k) = ( v(i,j,k,nnew) - vbar(i,j,knew) ) - vf(i,j,k)
             enddo
           enddo
 
-          do j=jstr,jend
-            do i=istr,iend    ! interior only
-              up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k) * Hz(i,j,k)
-              vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k) * Hz(i,j,k)
+          do j=jstr,jend+1    ! include boundaries
+            do i=istr,iend+1
+              up_pp(i,j,k) = up(i,j,k) * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )  ! p and Hz from rho to u
+     &                                        * ( Hz(i-1,j,k) + Hz(i,j,k) )
+              vp_pp(i,j,k) = vp(i,j,k) * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
+     &                                        * ( Hz(i,j-1,k) + Hz(i,j,k) )  ! p and Hz from rho to v
             enddo
           enddo
 
@@ -2024,6 +2031,10 @@
           enddo
         enddo
 
+        if(WESTERN_EDGE)  pp(istr-1,:,:)=pp(istr,:,:)               ! copy into buffer for averaging u'p' at boundary
+        if(EASTERN_EDGE)  pp(iend+1,:,:)=pp(iend,:,:)               ! TILING broken
+        if(SOUTHERN_EDGE) pp(:,jstr-1,:)=pp(:,jstr,:)
+        if(NORTHERN_EDGE) pp(:,jend+1,:)=pp(:,jend,:)
 !        if(mynode==0) print *, 'pp(10,10,10)=',pp(10,10,10)
 
       endif
@@ -2062,7 +2073,7 @@
       ! 1) For each sponge width along boundary:               West Boundary:
       !    Vertically integrate u'p' (up_pp)                    up_pp(i,j,k)       (i.e. u'p')
       !    and get mean across sponge width                         |
-      !    (orthongonal to the boundary)                        sum in i and k
+      !    (orthongonal to the boundary)                        sum in i and k     (u'p' already contains Hz)
       !    (note up_pp is already multiplied                        |
       !     by Hz in set_diags_uv_prime).                       mup_ppzw(j)        (m=mean, z=vertical integral, w=west)
       !
@@ -2104,7 +2115,7 @@
       integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
 
       ! local
-      integer :: i, j, k, b                   ! loop index along size of box averaging
+      integer :: i, j, k, b                   ! b = loop index along size of box averaging
       real    :: avg                          ! temporary average coefficient
       integer :: box_low, box_high            ! upper and lower loop ranges for box (to handle edges where box is smaller)
       real    :: on_off                       ! is flux in or out and hence sponge on or off
@@ -2115,7 +2126,7 @@
         do j=jstr,jend
           do k=1,N                                           ! loop order not contiguous but makes code easier
             do i=istr, istr+sponge_loop                      ! i range already not continguous too
-              mup_ppzw(j) = mup_ppzw(j) + up_pp(i,j,k)
+              mup_ppzw(j) = mup_ppzw(j) + up_pp(i,j,k)       ! up_pp already multiplied by Hz in set_diags_uv_prime
             enddo
           enddo
           mup_ppzw(j) = mup_ppzw(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
@@ -3256,8 +3267,8 @@ C$OMP MASTER
 
             if(prs_flx) then
 
-              call nc_define_var(ncid, ppnames(1), pplname(1), punits, r3dgrd, ierr, prcsn )
-              call nc_define_var(ncid, ppnames(2), pplname(2), punits, r3dgrd, ierr, prcsn )
+              call nc_define_var(ncid, ppnames(1), pplname(1), punits, grdtyp3d(:,1), ierr, prcsn )
+              call nc_define_var(ncid, ppnames(2), pplname(2), punits, grdtyp3d(:,2), ierr, prcsn )
 
               if (check_prs) then
                 call nc_define_var(ncid, pnames(1), plname(1), pchunits, grdtyp3d(:,1), ierr, prcsn )
@@ -3383,11 +3394,11 @@ C$OMP MASTER
           if(prs_flx) then
 
             if (diag_avg) then
-              call nc_write_var(ncid, aup_pp, N, ppnames(1), rp_var, output_rec, ierr)
-              call nc_write_var(ncid, avp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+              call nc_write_var(ncid, aup_pp, N, ppnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid, avp_pp, N, ppnames(2), vp_var, output_rec, ierr)
             else
-              call nc_write_var(ncid,  up_pp, N, ppnames(1), rp_var, output_rec, ierr)
-              call nc_write_var(ncid,  vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+              call nc_write_var(ncid,  up_pp, N, ppnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid,  vp_pp, N, ppnames(2), vp_var, output_rec, ierr)
             endif
 
             if (check_prs) then
