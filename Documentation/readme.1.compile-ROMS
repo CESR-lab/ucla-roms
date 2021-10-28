@@ -86,7 +86,7 @@ INSTRUCTIONS: COMPILING ROMS
      A. cd Examples/Rivers_ana
         make        (note this can be a bit slow on 'Expanse' machine)
      B. ./do_run.sh (after roms has successfully compiled)
-                    (if using Expanse then 'sbatch do_run_expanse.sh',
+                    (if using Expanse then 'sbatch do_roms_expanse.sh',
                      you need to set --account= to your group's account)
      C. ./join.sh   (to join & view results file)
         
