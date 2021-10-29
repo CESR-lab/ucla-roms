@@ -1142,8 +1142,10 @@ C$OMP BARRIER
 
       if(coarse==1) then ! INTERPOLATED CASE: read forcing from coarse grid
 
+#if !defined EW_PERIODIC && !defined NS_PERIODIC
         ierr = ncdf_read_coarser_grid(ncid, var_id, record,
      &                           var_type, var_array, nmax)
+#endif
 
       else               ! NORMAL CASE: read forcing from same sized grid
 

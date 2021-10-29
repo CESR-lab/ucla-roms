@@ -28,19 +28,19 @@
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
       
       logical, parameter         :: diag_avg      = .true.    ! compute history (=F) or averages (=T)
-      integer, parameter         :: rec_rate      = 2         ! output record rate
+      integer, parameter         :: rec_rate      = 100       ! output record rate
       integer, parameter         :: recs_per_file = 20        ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .true.    ! calc+write diags of u/v.
-      logical, parameter, public :: diag_trc      = .true.    ! calc+write diags of selected tracers
-      logical, parameter         :: tot_change    = .true.    ! write total rate of change in variable during timestep.
+      logical, parameter, public :: diag_uv       = .false.    ! calc+write diags of u/v.
+      logical, parameter, public :: diag_trc      = .false.    ! calc+write diags of selected tracers
+      logical, parameter         :: tot_change    = .false.    ! write total rate of change in variable during timestep.
                                                               ! may not want tot_change (wasteful), just the sum of diags.
 
       logical, parameter, public :: prs_flx       = .true.    ! calculate perturbations in u/v/p
       real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering
       logical, parameter         :: p_sponge      = .true.    ! online sponge control
       real,    parameter         :: init_sponge   = 0.5       ! initial sponge scaling (between 0 & 1)
-      integer, parameter         :: box_size      = 11        ! total number of points for spatial mean for sponge
+      integer, parameter         :: box_size      = 1         ! total number of points for spatial mean for sponge
                                                               ! filter, includes central point use odd number!
 
       integer, parameter         :: prcsn         = 1         ! precision of output variables. 1=float, 2=double
@@ -50,11 +50,11 @@
 
       ! Developer inputs - for budget close checks:
 
-      logical, parameter         :: check_diag    = .true.    ! check sum of diag terms = change in u/v/t per timestep.
-      logical, parameter         :: check_avg     = .true.    ! check sum of diagnostic avg*time = gross change
+      logical, parameter         :: check_diag    = .false.    ! check sum of diag terms = change in u/v/t per timestep.
+      logical, parameter         :: check_avg     = .false.    ! check sum of diagnostic avg*time = gross change
                                                               ! in u/v/t over entire simulation at time of writing.
                                                               ! both Useful to ensure diagnostics not broken by different cppdefs.opt config.
-      logical, parameter         :: check_prs     = .true.    ! output additional variables to analyse prs_flx components.
-      logical, parameter         :: check_sponge  = .true.    ! check mean and time filtered mean of flux in the sponge layer
+      logical, parameter         :: check_prs     = .false.    ! output additional variables to analyse prs_flx components.
+      logical, parameter         :: check_sponge  = .false.    ! check mean and time filtered mean of flux in the sponge layer
                                                             
             

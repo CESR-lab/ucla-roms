@@ -1,3 +1,5 @@
+Added sponge layer output which will break this script!
+
 Scripts to confirm simulation results still match benchmark results,
 and that netcdf outputting works for his, avg and rst files.
 This should ensure bugs have not been added to the code.
