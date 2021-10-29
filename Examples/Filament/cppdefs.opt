@@ -1,0 +1,71 @@
+/* This is "cppdefs.opt": MODEL CONFIGURATION FILE
+   ==== == ============ ===== ============= ==== */
+
+/*
+ * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
+ */
+
+#define L4_IDEAL
+
+/*
+    Embedded (nested) grid configuration segment
+*/
+
+c--#ifndef MAX_GRID_LEVEL
+c--# define MAX_GRID_LEVEL 2
+c--# include "redefs.X"
+c--#endif
+
+/*
+   Main switch starts here: model configuration choice.
+*/
+
+#if defined L4_IDEAL
+
+c# define ANA_GRID
+c# define ANA_INITIAL
+# define ANA_SMFLUX
+# define ANA_SRFLUX
+# define ANA_STFLUX
+# define ANA_SSFLUX
+
+        /* Basics */
+# define SOLVE3D
+# define UV_ADV
+# define UV_COR
+        /* Equation of State */
+# define NONLIN_EOS
+# define SPLIT_EOS
+# define SALINITY
+        /* Mixing */
+        /*        - lateral */
+# define UV_VIS2
+# define TS_DIF2
+        /*        - vertical */
+c#define ANA_VMIX
+# define LMD_MIXING
+# define LMD_KPP
+# define LMD_NONLOCAL
+# define LMD_RIMIX
+# define LMD_CONVEC
+# define LMD_BKPP
+        /* Grid Configuration */
+c-dd# define CURVGRID
+c-dd# define SPHERICAL
+# define MASKING
+        /* Output Options */
+# define MASK_LAND_DATA
+
+        /* Open Boundaries */
+# define NS_PERIODIC
+# define EW_PERIODIC
+
+#elif defined DUMMY_CASE
+
+#  define AVERAGES
+
+#endif
+
+
+#include "set_global_definitions.h"
+
