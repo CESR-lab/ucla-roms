@@ -8,8 +8,8 @@
 ! Note: these buffers are designed to accommodate MPI computational
 ! margins for up to 4 full 3D arrays to be exchanged simultaneously.
 
-      integer, parameter :: size_Z=16*(N+1), size_X=8*(N+1)*(Lm+4),
-     &                                       size_E=8*(N+1)*(Mm+4)
+      integer, parameter :: size_Z=16*(N+1), size_X=8*(N+1)*(Lm+4),  ! DevinD 8=2x4= 2 for margin, 4 different arrays
+     &                                       size_E=8*(N+1)*(Mm+4)   ! size_Z = 4 in corner, 4 different arrays
 
       real sn_NW(size_Z),   sendN(size_X),   sn_NE(size_Z),
      &     rv_NW(size_Z),   recvN(size_X),   rv_NE(size_Z),

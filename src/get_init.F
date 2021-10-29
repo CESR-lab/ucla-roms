@@ -714,7 +714,7 @@ c--#define VERBOSE
       ! Here we catch an initial file that does not have the boundary values of u/v
       ! set to zero, even though we prescribed a closed boundary. This is necessary
       ! for conservation tests.
-#if !defined OBC_WEST
+#if !defined OBC_WEST && !defined EW_PERIODIC
       if(WESTERN_EDGE) then
         if(mynode==0) write (*,'(6x,A)')        ! S&W bry always contained in start node (==0)
      &  'get_init :: set closed west  boundary row to zero (u/ub/v/vb)'
@@ -722,7 +722,7 @@ c--#define VERBOSE
         ubar(istr  ,:     ,1)      =0.0         ! ubar read into index 1 above
       endif
 #endif
-#if !defined OBC_EAST
+#if !defined OBC_EAST && !defined EW_PERIODIC
       if(EASTERN_EDGE) then
         if(mynode==NNODES-1) write (*,'(6x,A)') ! N&E bry always contained in final node (==NNODES-1)
      &  'get_init :: set closed east  boundary row to zero (u/ub/v/vb)'
@@ -730,7 +730,7 @@ c--#define VERBOSE
         ubar(iend+1,:     ,1)      =0.0
       endif
 #endif
-#if !defined OBC_SOUTH
+#if !defined OBC_SOUTH && !defined NS_PERIODIC
       if(SOUTHERN_EDGE) then
         if(mynode==0) write (*,'(6x,A)')
      &  'get_init :: set closed south boundary row to zero (u/ub/v/vb)'
@@ -738,7 +738,7 @@ c--#define VERBOSE
         vbar(:     ,jstr  ,1)      =0.0
       endif
 #endif
-#if !defined OBC_NORTH
+#if !defined OBC_NORTH && !defined NS_PERIODIC
       if(NORTHERN_EDGE) then
         if(mynode==NNODES-1) write (*,'(6x,A)')
      &  'get_init :: set closed north boundary row to zero (u/ub/v/vb)'

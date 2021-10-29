@@ -13,6 +13,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use mixing  ! visc2_r
 
       implicit none
       private
@@ -161,6 +162,12 @@
 
       !]
 
+      ![ Potential issues:
+      !  - Since we don't have pressure in the boundary buffer, we can't get u'p' at the bry.
+      !    We therefore just use the first internal pressure point instead, which introduces
+      !    a dx/2 error.
+      !]
+
       ! Preamble:  ![
 
       logical, public            :: calc_diag               ! flag to calculate diagnostics in equation system.
@@ -208,7 +215,7 @@
       character (len=20),  allocatable, dimension(:) :: vnames
       character (len=120), allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
 
-      character (len=26) :: units = 'm^2/s^2    (e.g. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
+      character (len=26) :: units = 'm^2/s^2    (i.e. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
       character (len=1),   dimension(3) :: uvw = (/ 'u', 'v', 'w' /)    ! prefix for u/v/w outputs
 
       character (len=120), dimension(:), allocatable :: check_lnm       ! long name for outputs checking diagnostics
@@ -264,7 +271,7 @@
       character (len=30),  allocatable, dimension(:) :: tdname
       character (len=120), allocatable, dimension(:) :: tlname  ! extra 10 characters for 'Averaged...'
 
-      character (len=20) :: tunits = ' * m/s   (dC/dt*dz)'
+      character (len=20) :: tunits = ' * m/s   (i.e. dC/dt*dz)'
 
       public init_diags_trc
       public set_diags_t_bc
@@ -283,26 +290,40 @@
 
       ! PRESSURE FLUX:
       ! --------------
-      real, allocatable, dimension(:, :, :) :: uf, vf, pf    ! filtered  u/v/pressure
-      real, allocatable, dimension(:, :, :) :: up, vp, pp    ! perturbed u/v/p
-      real, allocatable, dimension(:, :, :) :: up_pp, vp_pp  ! u'p' and v'p'
-      real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl  ! u and p baroclinic
+      real, allocatable, dimension(:, :, :), public :: up_pp, vp_pp ! u'p' (at upoint) and v'p' (at v_point) - makes it easier to use in child bry.
+      real, allocatable, dimension(:, :, :) :: up, vp               ! perturbed u/v/
+      real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
+      real, allocatable, dimension(:, :, :) :: pp                   ! perturbed p
 
-      real, allocatable, dimension(:, :, :) :: aup, avp, app   ! averaged perturbed u/v/p
-      real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp  ! averaged u'p' and v'p'
+      real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl         ! u and p baroclinic
 
-      integer :: nprm = 3                  ! number of pressure flux diagnostic terms
-      real    :: alpha                     ! filtering constant
-      real    :: beta                      ! filtering constant
+      real, allocatable, dimension(:, :, :) :: aup, avp, app        ! averaged perturbed u/v/p
+      real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp       ! averaged u'p' and v'p'
 
-      logical, public :: pg_cor = .false.  ! calculate pressure on corrector step of prsgrd. false initially.
+      real, allocatable, dimension(:)       :: mup_ppzw,  mup_ppze  ! mean of up_ppz along orthogonal sponge from west/est boundary
+      real, allocatable, dimension(:)       :: mvp_ppzs,  mvp_ppzn  ! mean of up_ppz along orthogonal sponge from south/north boundary
+      real, allocatable, dimension(:)       :: box_mup_ppzw,  box_mup_ppze  ! box average
+      real, allocatable, dimension(:)       :: box_mvp_ppzs,  box_mvp_ppzn
+      real, allocatable, dimension(:)       :: fbox_mup_ppzw, fbox_mup_ppze ! filtered box average
+      real, allocatable, dimension(:)       :: fbox_mvp_ppzs, fbox_mvp_ppzn
+      real, allocatable, dimension(:)       :: sponge_fuw,    sponge_fue    ! time filtered mean of up_ppz along orthogonal sponge from west/est boundary
+      real, allocatable, dimension(:)       :: sponge_fvs,    sponge_fvn
+      real, allocatable, dimension(:, :)    :: visc2_r0,  visc2_p0  ! Initial sponges
+      real, allocatable, dimension(:, :, :) :: diff20               ! Initial tracer sponge
+
+      integer :: nprm = 3                      ! number of pressure flux diagnostic terms
+      real, public :: alpha, beta              ! filtering constants (needed for child bry)
+      integer :: sponge_loop                   ! for looping through sponge layer
+      integer :: hbox_size = (box_size-1) / 2  ! half the box size. -1 since averaging point in middle, loop range either side
+
+      logical, public :: pg_cor = .false.      ! calculate pressure on corrector step of prsgrd. false initially.
 
       character (len=20),  allocatable, dimension(:) :: pnames
       character (len=120), allocatable, dimension(:) :: plname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
-      character (len=20),  allocatable, dimension(:) :: ppnames
-      character (len=120), allocatable, dimension(:) :: pplname
+      character (len=20),  allocatable, dimension(:), public :: ppnames
+      character (len=120), allocatable, dimension(:), public :: pplname
 
-      character (len=3) :: punits = 'W/m'
+      character (len=3), public :: punits = 'W/m  (i.e. up*dz)'
       character (len=3) :: pchunits = 'TBC'
 
       public set_diags_uv_prime
@@ -531,7 +552,7 @@
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
       if (diag_trc) call init_diags_trc    (istrR, jstrR, iendR, jendR)
-      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)
+      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, istr, jstr, iend, jend)
 
       init_done = .true.  ! ensure init is not triggered again
 
@@ -636,14 +657,20 @@
       end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR, iend, jend)  ![
+      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR, istr, jstr, iend, jend)  ![
       implicit none
 
       ! inputs
-      integer, intent(in)    :: istrR, jstrR, iendR, jendR, iend, jend
+      integer, intent(in)    :: istrR, jstrR, iendR, jendR, istr, jstr, iend, jend
 
       ! local
       integer :: i, j, k, var
+
+      alpha = dt / timescale
+      beta  = 1 - alpha
+      if(mynode==0) write(*,'(1x,A,F8.6,A,F8.6/)')
+     &  'Diagnostics: - prs_flx filtering coefficients alpha=',
+     &   alpha,', beta=',beta
 
       allocate( uf(GLOBAL_2D_ARRAY, N) )
       allocate( vf(GLOBAL_2D_ARRAY, N) )
@@ -692,10 +719,64 @@
       ppnames(2)    = "vp"
       pplname(2)    = "perturbation of v * perturbation of p"
       if (diag_avg) then
-        do var=1,2                                          ! loop through diag terms
+        do var=1,2                                            ! loop through diag terms
           pplname(var)  = 'Average ' / / trim(pplname(var))   ! and prepend 'Average'
         enddo
       endif
+
+      if (p_sponge) then  ! define only if contains domain boundary sponge layer
+
+        ! At some point up_pp could be integrated directly into mup_ppzw, skipping the need for up_ppwz
+        if (WESTERN_EDGE)  then
+          allocate( mup_ppzw (-hbox_size GLOBAL_1DY_ARRAY + hbox_size ) )  ! space on either side for MPI_exchange
+          allocate( sponge_fuw(GLOBAL_1DY_ARRAY    ) )                     ! to boundary neighbours
+          allocate( box_mup_ppzw(GLOBAL_1DY_ARRAY  ) )   ! reset to zero each step
+!          allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY ) )   ! initialized later
+          mup_ppzw=0; sponge_fuw=init_sponge             ! set time filtered initial to mid point?
+        endif
+        if (EASTERN_EDGE)  then
+          allocate( mup_ppze (-hbox_size GLOBAL_1DY_ARRAY + hbox_size ) )
+          allocate( sponge_fue(GLOBAL_1DY_ARRAY     ) )
+          allocate( box_mup_ppze(GLOBAL_1DY_ARRAY  ) )
+!          allocate( fbox_mup_ppze(GLOBAL_1DY_ARRAY ) )
+          mup_ppze=0; sponge_fue=init_sponge
+        endif
+
+        if (SOUTHERN_EDGE) then
+          allocate( mvp_ppzs (-hbox_size GLOBAL_1DX_ARRAY + hbox_size ) )
+          allocate( sponge_fvs(GLOBAL_1DX_ARRAY     ) )
+          allocate( box_mvp_ppzs(GLOBAL_1DX_ARRAY  ) )
+          mvp_ppzs=0; sponge_fvs=init_sponge
+        endif
+        if (NORTHERN_EDGE) then
+          allocate( mvp_ppzn (-hbox_size GLOBAL_1DX_ARRAY + hbox_size ) )
+          allocate( sponge_fvn(GLOBAL_1DX_ARRAY     ) )
+          allocate( box_mvp_ppzn(GLOBAL_1DX_ARRAY  ) )
+          mvp_ppzn=0; sponge_fvn=init_sponge
+        endif
+
+        allocate( visc2_r0(GLOBAL_2D_ARRAY    ) )
+        visc2_r0 = visc2_r                               ! store initial sponge values
+        visc2_r  = visc2_r * init_sponge                 ! since sponge will kick in at 0.5*sponge0 after step 1, set initial to this
+        allocate( visc2_p0(GLOBAL_2D_ARRAY    ) )        ! don't need this unless wanting to output initial value
+        visc2_p0 = visc2_p                               ! store initial sponge values
+        visc2_p  = visc2_p * init_sponge
+        allocate( diff20  (GLOBAL_2D_ARRAY, NT) )
+        diff20   = diff2                                 ! consider dropping NT since all the same, though this may change in future
+        diff2    = diff2   * init_sponge
+
+        sponge_loop=sponge_size-1                        ! sponge loop size, -1 since e.g. 10 sponge = 1 + 9 iterations
+
+        ! check box_size is odd number, since including current point in middle:
+
+        if(mynode==0) write(*,'(14x,A,I2/)')
+     &    '- dynamic sponge spatial averaging box_size =',box_size
+
+        if(mod(box_size,2)==0)
+     &    error stop 'diags: box_size must be odd number!'
+
+
+      endif  ! <-- p_sponge
 
       if (check_prs) then
         allocate( pnames(nprm), plname(nprm) )
@@ -712,9 +793,7 @@
         endif
       endif
 
-      alpha = dt / timescale
-      beta  = 1 - alpha
-      if(mynode==0) print *, 'DIAGS: alpha=',alpha, 'beta=',beta
+
 
       end subroutine init_diags_prs_flx  !]
 
@@ -1373,7 +1452,6 @@
 
       end subroutine set_diags_v_2d3d_cor  !]
 
-
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
       ! Set dz*u or v at previous timestep to calculate gross change in
@@ -1828,7 +1906,7 @@
       end subroutine set_diags_t_4th_v_adv  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, iendR, jstrR, jendR )  ![
+      subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
 
       ! uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
       !
@@ -1839,7 +1917,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrR, iendR, jstrR, jendR
+      integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
 
       ! local
       integer :: i, j, k
@@ -1847,50 +1925,57 @@
 !      if (mynode==0) print *, 'DIAGS CALC UV PRIME!'
 
       do k=1,N
-
         do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
-          do i=istr,iend+1  ! for averaging of up_pp
+          do i=istr,iend+1  ! include boundary for up_pp
             uf(i,j,k) = beta * uf(i,j,k) + alpha * ( u(i,j,k,nnew) - ubar(i,j,knew) )
           enddo
         enddo
-        do j=jstr,jend+1    ! for averaging of vp_pp
+        do j=jstr,jend+1    ! include boundary for vp_pp
           do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
             vf(i,j,k) = beta * vf(i,j,k) + alpha * ( v(i,j,k,nnew) - vbar(i,j,knew) )
           enddo
         enddo
-
-      enddo     ! <-- k
+      enddo
 
 !      if(mynode==0) print *, 'uf(10,10,10)=',uf(10,10,10)
 
-      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
-                                                                  ! also done everytimestep if averaging
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
+     &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
+                                                                  ! p_sponge needs up_pp at everystep
         do k=1,N
 
-          do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
-            do i=istr,iend+1  ! for averaging of up_pp
+          do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway?
+            do i=istr,iend+1  ! include boundary for up_pp
               up(i,j,k)      = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
               if (check_prs)  ! if with parameter
      &          u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
             enddo
           enddo
-          do j=jstr,jend+1    ! for averaging of vp_pp
+          do j=jstr,jend+1    ! include boundary for averaging of vp_pp
             do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
               vp(i,j,k) = ( v(i,j,k,nnew) - vbar(i,j,knew) ) - vf(i,j,k)
             enddo
           enddo
 
-          do j=jstr,jend
-            do i=istr,iend  ! interior only
-              up_pp(i,j,k) = 0.5*( up(i,j,k)+up(i+1,j  ,k)) * pp(i,j,k) * Hz(i,j,k)
-              vp_pp(i,j,k) = 0.5*( vp(i,j,k)+vp(i  ,j+1,k)) * pp(i,j,k) * Hz(i,j,k)
+          do j=jstr,jend+1    ! include boundaries
+            do i=istr,iend+1
+              up_pp(i,j,k) = up(i,j,k) * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )  ! p and Hz from rho to u
+     &                                        * ( Hz(i-1,j,k) + Hz(i,j,k) )
+              vp_pp(i,j,k) = vp(i,j,k) * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
+     &                                        * ( Hz(i,j-1,k) + Hz(i,j,k) )  ! p and Hz from rho to v
             enddo
           enddo
 
         enddo     ! <-- k
 
-!        if(mynode==0) print *, 'up(10,10,10)=',up(10,10,10)
-!        if(mynode==0) print *, 'up_pp(10,10,10)=',up_pp(10,10,10)
+!        if(mynode==5) then
+!        print *, 'rmask(iend,46)',rmask(iend,46),'up_pp(iend,46,10)',up_pp(iend,46,10)
+!        print *, 'rmask(iend,45)',rmask(iend,45),'up_pp(iend,45,10)',up_pp(iend,45,10)
+!        print *, 'rmask(iend,44)',rmask(iend,44),'up_pp(iend,44,10)',up_pp(iend,44,10)
+!        endif
+
+        if(p_sponge)
+     &    call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
 
       endif       ! <-- diag_avg or mod()
 
@@ -1902,7 +1987,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in)                                     :: istr, iend, jstr, jend
+      integer,                                     intent(in) :: istr, iend, jstr, jend
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P
 
       ! local
@@ -1932,7 +2017,9 @@
 
 !      if(mynode==0) print *, 'calc pf'
 
-      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0 ) then ! +1 since done in step before writing
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
+     &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
+                                                                  ! p_sponge needs up_pp at everystep
 
         do k=1,N
           do j=jstr,jend    ! only need over interior
@@ -1944,11 +2031,579 @@
           enddo
         enddo
 
+        if(WESTERN_EDGE)  pp(istr-1,:,:)=pp(istr,:,:)               ! copy into buffer for averaging u'p' at boundary
+        if(EASTERN_EDGE)  pp(iend+1,:,:)=pp(iend,:,:)               ! TILING broken
+        if(SOUTHERN_EDGE) pp(:,jstr-1,:)=pp(:,jstr,:)
+        if(NORTHERN_EDGE) pp(:,jend+1,:)=pp(:,jend,:)
 !        if(mynode==0) print *, 'pp(10,10,10)=',pp(10,10,10)
 
       endif
 
       end subroutine set_diags_prs_prime  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
+      ! set the sponge layer dynamically at each timestep based on
+      ! pressure flux in or out of domain.
+      ! only needed for s/w/n/e domain boundaries.
+
+      ![The 3 sponge variables are visc2_r (rho-point), diff2 (rho-point) and visc2_p (psi-point).
+      ! Since we already chose to put u'p' (up_pp) and v'p' at rho-points (averaged the u/v),
+      ! we directly have the sponge switch at the same point as visc2_r and diff2.
+      !
+      ! visc2_r includes the buffer point, but we ignore the buffer when filtering u'p' since it's not relevant
+      ! and we can't average u' into the buffer, so start at first interior point.
+
+      ! Example: visc2_r has (set_nudgcof.F) isp = 4 (0-3) (incl buffer), sponge_size = 3 (1-3).
+      !
+      !     |
+      !  r  u  r  u  r  u  r
+      !     |
+      !  0  1  1  2  2  3  3
+      !
+      ! And since up_pp and vp_pp are at rho-point, all our loops are relative to rho-points, starting
+      ! from the first interior rho-point (istr) with a count of sponge_size-1=sponge_loop,
+      ! need the -1 since the istr is included in the count.
+      !
+      ! For now, ignore masking as a constant value. This will affact the magnitude of fbox_mup_ppzw
+      ! so if we move from binary on_off to something more nuansted based on magnitude and sign, then
+      ! will probably need to start handling the mask.
+      !
+      ! Method:
+      ! 1) For each sponge width along boundary:               West Boundary:
+      !    Vertically integrate u'p' (up_pp)                    up_pp(i,j,k)       (i.e. u'p')
+      !    and get mean across sponge width                         |
+      !    (orthongonal to the boundary)                        sum in i and k     (u'p' already contains Hz)
+      !    (note up_pp is already multiplied                        |
+      !     by Hz in set_diags_uv_prime).                       mup_ppzw(j)        (m=mean, z=vertical integral, w=west)
+      !
+      ! 2) Do spatial smoothing with (box) average with             |
+      !    adjacent points along the boundary.                      |
+      !    box_size controls the size of the box.               box_mup_ppzw(j)    (box average)
+      !    If box_size=1 then no spatial smoothing.
+      !
+      ! 3) Time filter result to smooth over random                 |
+      !    fluctuation to try capture prevailing flux           fbox_mup_ppzw(j)   (time filter)
+      !    direction rather than instantaneous direction.
+      !
+      ! 4) Use fbox_mup_ppzw to determine if net flux is
+      !    in or out of domain, and use binary in or out            |
+      !    value (on_off scalar) to be either 1 (out) or        on_off             (binary in or out)
+      !    0 (in). Note, this step probably puts a hard
+      !    jump in the signal.
+      !
+      ! 5) Time filter the in=1 or out=0 into the final             |              (sponge multiplier)
+      !    sponge multiplier (sponge_fuw).                      sponge_fuw         (f=filtered,u=u,w=west)
+      !    e.g. fbox_mup_ppzw -> on_off? -> sponge_fuw
+      !
+      ! 6) Update sponge value with the time filtered
+      !    sponge multiplier sponge_fuw. Use orginal sponge
+      !    values from set_nudgcof.F, which are stored here     visc2_r=visc2_r0*sponge_fuw
+      !    (e.g. visc2_r(t=0)=visc2_r0).
+      !    Need to use original sponge otherwise could never
+      !    increase again after decreasing.
+      !
+      ! 7) Fix corner regions using average of u (sponge_fuw)
+      !    and v (sponge_fvs) filtered values since sponge
+      !    impacts both u and v signal. Current choice is to
+      !    average the mean flux of u and v in the corners.
+      !]
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
+
+      ! local
+      integer :: i, j, k, b                   ! b = loop index along size of box averaging
+      real    :: avg                          ! temporary average coefficient
+      integer :: box_low, box_high            ! upper and lower loop ranges for box (to handle edges where box is smaller)
+      real    :: on_off                       ! is flux in or out and hence sponge on or off
+
+      if (WESTERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mup_ppzw=0.0                                         ! reset mean orthongal to boundary
+        do j=jstr,jend
+          do k=1,N                                           ! loop order not contiguous but makes code easier
+            do i=istr, istr+sponge_loop                      ! i range already not continguous too
+              mup_ppzw(j) = mup_ppzw(j) + up_pp(i,j,k)       ! up_pp already multiplied by Hz in set_diags_uv_prime
+            enddo
+          enddo
+          mup_ppzw(j) = mup_ppzw(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+        enddo ! <-- j                                        ! finish entire boundary first for box cart average next
+
+        ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppzw)     ! exchange between partitions to allow for across bry avg
+        do j=jstr,jend                                       ! set low and high end of loop for box average
+          call set_diags_p_box_range_corners_j( j, jstr, jend, box_low, box_high)
+          box_mup_ppzw(j) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mup_ppzw(j) = box_mup_ppzw(j) + mup_ppzw(b)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mup_ppzw(j) = box_mup_ppzw(j) /
+     &                     (box_high-box_low+1)              ! divide for mean
+          if (.not. allocated(fbox_mup_ppzw)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mup_ppzw = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mup_ppzw(j) =   beta * fbox_mup_ppzw(j)
+     &                      + alpha *  box_mup_ppzw(j)
+        enddo   ! <-- j
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do j=jstr,jend
+          if(fbox_mup_ppzw(j) < 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (W) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (E)
+          endif
+          sponge_fuw(j) = beta*sponge_fuw(j) + alpha*on_off  ! time filter
+        enddo ! <-- j
+        sponge_fuw(jstrR)=sponge_fuw(jstr )                  ! extend values into buffer for sponges
+        sponge_fuw(jendR)=sponge_fuw(jend )                  ! to update next.
+        ! update sponges:
+        do j=jstrR,jendR                                     ! some repeated work in corner with south & north boundary
+          do i=istrR, istrR+(sponge_loop+1)                  ! here include buffers (i/j/strR) since visc2_r includes buffer
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fuw(j)      ! Doesn't matter that sponge_fuw was calculated without buffer or bry.
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fuw(j)
+          enddo                                              ! up_pp is at rho-points, so this works
+        enddo                                                ! sponge_loop+1 for extra buffer point
+      endif  ! < -- western_edge
+
+      if (EASTERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mup_ppze=0.0                                         ! reset mean orthongal to boundary
+        do j=jstr,jend
+          do k=1,N
+            do i=iend-sponge_loop,iend
+              mup_ppze(j) = mup_ppze(j) + up_pp(i,j,k)
+            enddo
+          enddo
+          mup_ppze(j) = mup_ppze(j) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+        enddo ! <-- j
+
+        ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppze)     ! exchange between partitions to allow for across bry avg
+        do j=jstr,jend
+          call set_diags_p_box_range_corners_j(j, jstr, jend, box_low, box_high)
+          box_mup_ppze(j) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mup_ppze(j) = box_mup_ppze(j) + mup_ppze(b)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mup_ppze(j) = box_mup_ppze(j) /
+     &                     (box_high-box_low+1)
+          if (.not. allocated(fbox_mup_ppze)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mup_ppze(GLOBAL_1DY_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mup_ppze = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mup_ppze(j) =   beta * fbox_mup_ppze(j)
+     &                      + alpha *  box_mup_ppze(j)
+        enddo   ! <-- j
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do j=jstr,jend
+          if(fbox_mup_ppze(j) > 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (E) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (W)
+          endif
+          sponge_fue(j) = beta*sponge_fue(j) + alpha*on_off  ! time filter
+        enddo ! <-- j
+        sponge_fue(jstrR)=sponge_fue(jstr )                  ! extend values into buffer for sponge
+        sponge_fue(jendR)=sponge_fue(jend )                  ! update next.
+        ! update sponges:
+        do j=jstrR,jendR
+          do i=iendR-(sponge_loop+1), iendR                  ! Here include buffer (istrR) since visc2_r includes buffer
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fue(j)     ! up_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fue(j)
+          enddo                                              ! sponge_loop+1 for extra buffer point
+        enddo
+      endif  ! < -- eastern_edge
+
+      if (SOUTHERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mvp_ppzs=0.0                                         ! reset mean orthongal to boundary
+        do i=istr,iend                                       ! not contiguous loop order but works for algo.
+          do k=1,N
+            do j=jstr,jstr+sponge_loop
+              mvp_ppzs(i) = mvp_ppzs(i) + vp_pp(i,j,k)
+            enddo
+          enddo
+          mvp_ppzs(i) = mvp_ppzs(i) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+        enddo ! <-- i
+
+        ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzs)
+        do i=istr,iend
+          call set_diags_p_box_range_corners_i(i, istr, iend, box_low, box_high)
+          box_mvp_ppzs(i) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mvp_ppzs(i) = box_mvp_ppzs(i) + mvp_ppzs(b)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mvp_ppzs(i) = box_mvp_ppzs(i) /
+     &                     (box_high-box_low+1)
+          if (.not. allocated(fbox_mvp_ppzs)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mvp_ppzs(GLOBAL_1DX_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mvp_ppzs = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mvp_ppzs(i) =   beta * fbox_mvp_ppzs(i)
+     &                      + alpha *  box_mvp_ppzs(i)
+        enddo   ! <-- i
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do i=istr,iend
+          if(fbox_mvp_ppzs(i) < 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (S) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (N)
+          endif
+          sponge_fvs(i) = beta*sponge_fvs(i) + alpha*on_off  ! time filter
+        enddo ! <-- i
+        sponge_fvs(istrR)=sponge_fvs(istr )                  ! extend values into buffer for sponge
+        sponge_fvs(iendR)=sponge_fvs(iend )                  ! update next.
+        ! update sponges:
+        do j=jstrR, istrR+(sponge_loop+1)
+          do i=istrR,iendR
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fvs(i)     ! vp_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fvs(i)
+          enddo                                              ! sponge_loop+1 for extra buffer point
+        enddo
+      endif  ! < -- southern_edge
+
+      if (NORTHERN_EDGE) then
+        ! vertical integral and mean along sponge into domain:
+        mvp_ppzn=0.0                                         ! reset mean orthongal to boundary
+        do i=istr, iend
+          do k=1,N
+            do j=jend-sponge_loop,jend
+              mvp_ppzn(i) = mvp_ppzn(i) + vp_pp(i,j,k)
+            enddo
+          enddo
+          mvp_ppzn(i) = mvp_ppzn(i) / sponge_size            ! mean value, but really not necessary since sign won't change as per below
+        enddo  !<-- i
+
+        ! Box cart average and time filter:
+        call set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzn)
+        do i=istr,iend
+          call set_diags_p_box_range_corners_i(i, istr, iend, box_low, box_high)
+          box_mvp_ppzn(i) = 0                                ! reset box mean (don't need array here could use scalar?)
+          do b=box_low, box_high
+            box_mvp_ppzn(i) = box_mvp_ppzn(i) + mvp_ppzn(b)  ! calculate box cart average of vertically integrated and orthongal mean
+          enddo
+          box_mvp_ppzn(i) = box_mvp_ppzn(i) /
+     &                     (box_high-box_low+1)
+          if (.not. allocated(fbox_mvp_ppzn)) then           ! set filter value to box cart average at first step,
+            allocate( fbox_mvp_ppzn(GLOBAL_1DX_ARRAY) )      ! as can't predict this value. No, since only uses sign below just start at zero.
+            fbox_mvp_ppzn = 0.0                              ! Move this to _init. Fix for tiling later
+          endif
+          fbox_mvp_ppzn(i) =   beta * fbox_mvp_ppzn(i)
+     &                      + alpha *  box_mvp_ppzn(i)
+        enddo   ! <-- i
+
+        ! Use box average filter value to determine sponge on or off, then time filter:
+        ! Signal is altered here as net value is turned into binary 1 or 0.
+        do i=istr,iend
+          if(fbox_mvp_ppzn(i) > 0.0) then                    ! over-write mean with binary in or out of domain
+            on_off = 1.0                                     ! flux out (N) - sponge
+          else
+            on_off = 0.0                                     ! flux in  (S)
+          endif
+          sponge_fvn(i) = beta*sponge_fvn(i) + alpha*on_off  ! time filter
+        enddo
+        sponge_fvn(istrR)=sponge_fvn(istr )                  ! extend values into buffer for sponge
+        sponge_fvn(iendR)=sponge_fvn(iend )                  ! update next.
+        ! update sponges:
+        do j=jendR-(sponge_loop+1), jendR
+          do i=istrR,iendR
+            visc2_r(i,j) = visc2_r0(i,j) * sponge_fvn(i)     ! vp_pp is at rho-points, so this works
+            diff2(i,j,:) = diff20(i,j,:) * sponge_fvn(i)
+          enddo                                              ! sponge_loop+1 for extra buffer point
+        enddo
+      endif  ! < -- northern_edge
+
+      ! handle corners of full domain:
+      ! ------------------------------
+
+      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
+        do j=jstrR,   jstrR+(sponge_loop+1)                  ! overwrite corners
+          do i=istrR, istrR+(sponge_loop+1)
+            avg = (sponge_fuw(j)+sponge_fvs(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg                ! use average of the filtered values for u and v
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
+        do j=jendR-(sponge_loop+1), jendR
+          do i=istrR, istrR+(sponge_loop+1)
+            avg = (sponge_fuw(j)+sponge_fvn(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
+        do j=jstrR,   jstrR+(sponge_loop+1)
+          do i=iendR-(sponge_loop+1), iendR
+            avg = (sponge_fue(j)+sponge_fvs(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
+        do j=jendR-(sponge_loop+1), jendR
+          do i=iendR-(sponge_loop+1), iendR
+            avg = (sponge_fue(j)+sponge_fvn(i)) /2
+            visc2_r(i,j)= visc2_r0(i,j) * avg
+            diff2(i,j,:)= diff20(i,j,:) * avg
+          enddo
+        enddo
+      endif
+
+      ! update visc2_p interpolating from visc2_r:
+      visc2_p=0.0            ! reset for sum
+      do j=jstr,jendR        ! viscosity at psi points
+        do i=istr,iendR
+          visc2_p(i,j)=visc2_p(i,j) +  0.25 *                  ! equation taken from set_nudgcof.F
+     &                 (  visc2_r(i,j)   + visc2_r(i-1,j)      ! where v_ponge*wrk(i,j)=visc2_r(i,j)
+     &                  + visc2_r(i,j-1) + visc2_r(i-1,j-1) )  ! simple rho to psi conversion.
+        enddo
+      enddo
+
+      end subroutine set_diags_p_sponge  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_box_range_corners_j( j, jstr, jend, box_low, box_high)  ![
+      ! set the box averaging along sponge boundary, to handle shortened ends at domain corners
+
+      implicit none
+
+      integer, intent(in)  :: j, jstr, jend
+      integer, intent(out) :: box_low, box_high   ! loop range below and above averaging point
+
+      box_low  = j-hbox_size
+      box_high = j+hbox_size
+      if (SOUTHERN_EDGE) then
+        if (j-jstr < hbox_size) box_low  = jstr   ! handle corners with smaller box averaging
+      endif
+      if (NORTHERN_EDGE) then
+        if (jend-j < hbox_size) box_high = jend
+      endif
+!      if(mynode==0) print *, 'j=',j,' low=',box_low,' high=',box_high
+
+      end subroutine set_diags_p_box_range_corners_j  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_box_range_corners_i( i, istr, iend, box_low, box_high)  ![
+      ! set the box averaging along sponge boundary, to handle shortened ends at domain corners
+
+      implicit none
+
+      integer, intent(in)  :: i, istr, iend
+      integer, intent(out) :: box_low, box_high   ! loop range below and above averaging point
+
+      box_low  = i-hbox_size
+      box_high = i+hbox_size
+      if (WESTERN_EDGE) then
+        if (i-istr < hbox_size) box_low  = istr   ! handle corners with smaller box averaging
+      endif
+      if (EASTERN_EDGE) then
+        if (iend-i < hbox_size) box_high = iend
+      endif
+!      if(mynode==2) print *, 'i=',i,' low=',box_low,' high=',box_high,mynode
+
+      end subroutine set_diags_p_box_range_corners_i  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppzew)  ![
+      ! exchange u'p' integrated and averaged across sponge
+      ! to neighbouring MPI sub-domains north and south on domain E and W boundaries only.
+
+      ![use non-blocking communication.
+      ! best practice is to start receiving before sending.
+      !
+      ! can't use MPI_Waitall because some do left right, corners do both.
+      ! from internet found MPI 3.0 standard has some grid halo exchange functions
+      ! already. This would be good for ROMS but a pain to change over.
+      ! didn't find function for boundaries only (i.e. not all neighbours),
+      ! so using same scheme Sacha wrote in MPI_exchange8TA.F, which uses MPI_test
+      ! and 'comm' variable to confirm all non-blocking communications are complete.
+      !
+      ! sending index starts from jstr/jend, receiving index starts from jstr-1/jend+1
+      ! e.g. send east to west:
+      !
+      !    jend-1  jend |    x       x      (west)     (before)
+      !      x       x  |  jstr    jstr+1   (east)
+      !                      |       |
+      !    jend-1  jend |  jend+1  jend+2   (west)     (after)
+      !
+      !]
+
+      use mpi
+      use hidden_mpi_vars
+      implicit none
+
+      ! inputs
+      integer,                                                    intent(in)    :: jstr, jend
+      real, dimension( -hbox_size GLOBAL_1DY_ARRAY + hbox_size ), intent(inout) :: mup_ppzew   ! west or east
+
+      ! local
+      integer, parameter            :: comm_size=4                                             ! no. of potential communcations
+      integer                       :: ierr, status(MPI_STATUS_SIZE), mess_count, c
+      integer, dimension(comm_size) :: req                                                     ! communication request handle
+      integer, dimension(comm_size) :: comm
+      logical                       :: flag
+
+                        ! tags for receive      for send       tags match send to receive (e.g. 1 --> 1)
+      do c=1,comm_size  !         x  1  x        x  2  x       up to 4 communications
+        comm(c)=0       !         x     x        x     x       send up+down, and receive up+down
+      enddo             !         x  2  x        x  1  x       corners only send 1 receive 1 per direction
+
+      if (NORTH_MSG_EXCH) then
+        !print *, 'South_recvb4 mup_ppzew(jend+hb) ',mup_ppzew(jend+hbox_size), mynode
+        call MPI_Irecv(mup_ppzew(jend+1)        , hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_N, 1, ocean_grid_comm, req(1), ierr)                        ! --> 1 (receive from S)
+        comm(1)=1
+      endif
+      if (SOUTH_MSG_EXCH) then
+        !print *, 'North_recvb4 mup_ppzew(jstr-hb)',mup_ppzew(jstr-hbox_size), mynode
+        call MPI_Irecv(mup_ppzew(jstr-hbox_size), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_S, 2, ocean_grid_comm, req(2), ierr)                        ! --> 2 (receive from N)
+        comm(2)=2
+      endif
+      if (SOUTH_MSG_EXCH) then
+        !print *, 'South_send   mup_ppzew(jstr+hb-1)',mup_ppzew(jstr+(hbox_size-1)),mynode
+        call MPI_Isend(mup_ppzew(jstr), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_S, 1, ocean_grid_comm, req(3), ierr)                        ! <-- 1 (send from S)
+        comm(3)=3
+      endif
+      if (NORTH_MSG_EXCH) then
+        !print *, 'North_send   mup_ppzew(jend-hb)  ',mup_ppzew(jend-(hbox_size-1)),mynode
+        call MPI_Isend(mup_ppzew(jend-(hbox_size-1)), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_N, 2, ocean_grid_comm, req(4), ierr)                        ! <-- 2 (send from N)
+        comm(4)=4
+      endif
+
+      mess_count=0
+      do c=1,comm_size
+        if (comm(c) > 0) mess_count=mess_count+1         ! since only exchanging 1D array, exchange was already done
+      enddo                                              ! into final array, so don't need to unpack receives like in
+                                                         ! mpi_exchange8TA.F. Just use while loop to confirm all complete.
+      do while (mess_count>0)
+        do c=1,comm_size
+          if (comm(c) > 0) then
+            call MPI_Test (req(c), flag, status, ierr)   ! make sure all sent messages have been received elsewhere
+            if (flag) then                               ! before moving on
+               mess_count=mess_count-1 ; comm(c)=0
+!               print *, 'done comm & node ',c,mynode
+!               if (NORTH_MSG_EXCH .and. c==1) then
+!                 print *, 'South_recvA mup_ppzew(jend+hb)',mup_ppzew(jend+hbox_size),mynode  ! debug
+!               endif
+!               if (SOUTH_MSG_EXCH .and. c==2) then
+!                 print *, 'North_recvA mup_ppzew(jstr-hb)',mup_ppzew(jstr-hbox_size),mynode  ! debug
+!               endif
+            endif
+          endif
+        enddo
+      enddo  ! <-- while
+
+!      if(mynode==2) print*, mynode, 'v(jend-hb-1:jend+hb)    ',mup_ppzew(jend-(hbox_size-1):jend+hbox_size)
+!      if(mynode==5) print*, mynode, 'v(jstr-(hb):jstr+(hb-1))',mup_ppzew(jstr-hbox_size:jstr+(hbox_size-1))
+
+      end subroutine set_diags_p_bry_mpi_exchange_n2s  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzns)  ![
+      ! exchange v'p' integrated and averaged across sponge
+      ! to neighbouring MPI sub-domains to the east and west on N and S domain boundaries only.
+      ! see description of _n2s version for details on implementation.
+
+      use mpi
+      use hidden_mpi_vars
+      implicit none
+
+      ! inputs
+      integer,                                                    intent(in)    :: istr, iend
+      real, dimension( -hbox_size GLOBAL_1DX_ARRAY + hbox_size ), intent(inout) :: mvp_ppzns   ! west or east
+
+      ! local
+      integer, parameter            :: comm_size=4                                             ! no. of potential communcations
+      integer                       :: ierr, status(MPI_STATUS_SIZE), mess_count, c
+      integer, dimension(comm_size) :: req                                                     ! communication request handle
+      integer, dimension(comm_size) :: comm
+      logical                       :: flag
+
+                        ! tags for receive      for send       tags match send to receive (e.g. 1 --> 1)
+      do c=1,comm_size  !         x  x  x        x  x  x       up to 4 communications
+        comm(c)=0       !         2     1        1     2       send up+down, and receive up+down
+      enddo             !         x  x  x        x  x  x       corners only send 1 receive 1 per direction
+
+      if (EAST_MSG_EXCH) then
+        !print *, 'west_recvb4 mvp_ppzns(iend+hb) ',mvp_ppzns(iend+hbox_size), mynode
+        call MPI_Irecv(mvp_ppzns(iend+1)        , hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_E, 1, ocean_grid_comm, req(1), ierr)                        ! --> 1 (receive from S)
+        comm(1)=1
+      endif
+      if (WEST_MSG_EXCH) then
+        !print *, 'east_recvb4 mvp_ppzns(istr-hb)',mvp_ppzns(istr-hbox_size), mynode
+        call MPI_Irecv(mvp_ppzns(istr-hbox_size), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_W, 2, ocean_grid_comm, req(2), ierr)                        ! --> 2 (receive from N)
+        comm(2)=2
+      endif
+      if (WEST_MSG_EXCH) then
+        !print *, 'west_send   mvp_ppzns(istr+hb-1)',mvp_ppzns(istr+(hbox_size-1)),mynode
+        call MPI_Isend(mvp_ppzns(istr), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_W, 1, ocean_grid_comm, req(3), ierr)                        ! <-- 1 (send from S)
+        comm(3)=3
+      endif
+      if (EAST_MSG_EXCH) then
+        !print *, 'east_send   mvp_ppzns(iend-hb)  ',mvp_ppzns(iend-(hbox_size-1)),mynode
+        call MPI_Isend(mvp_ppzns(iend-(hbox_size-1)), hbox_size, MPI_DOUBLE_PRECISION,
+     &                 p_E, 2, ocean_grid_comm, req(4), ierr)                        ! <-- 2 (send from N)
+        comm(4)=4
+      endif
+
+      mess_count=0
+      do c=1,comm_size
+        if (comm(c) > 0) mess_count=mess_count+1         ! since only exchanging 1D array, exchange was already done
+      enddo                                              ! into final array, so don't need to unpack receives like in
+                                                         ! mpi_exchange8TA.F. Just use while loop to confirm all complete.
+      do while (mess_count>0)
+        do c=1,comm_size
+          if (comm(c) > 0) then
+            call MPI_Test (req(c), flag, status, ierr)   ! make sure all sent messages have been received elsewhere
+            if (flag) then                               ! before moving on
+               mess_count=mess_count-1 ; comm(c)=0
+!               print *, 'done comm & node ',c,mynode
+!               if (EAST_MSG_EXCH .and. c==1) then
+!                 print *, 'west_recvA mvp_ppzns(iend+hb)',mvp_ppzns(iend+hbox_size),mynode  ! debug
+!               endif
+!               if (WEST_MSG_EXCH .and. c==2) then
+!                 print *, 'east_recvA mvp_ppzns(istr-hb)',mvp_ppzns(istr-hbox_size),mynode  ! debug
+!               endif
+            endif
+          endif
+        enddo
+      enddo  ! <-- while
+
+!      if(mynode==1) print*, mynode, 'mvp_ppzns(iend-hb-1:iend+hb)    ',mvp_ppzns(iend-(hbox_size-1):iend+hbox_size)
+!      if(mynode==2) print*, mynode, 'mvp_ppzns(istr-(hb):istr+(hb-1))',mvp_ppzns(istr-hbox_size:istr+(hbox_size-1))
+
+      end subroutine set_diags_p_bry_mpi_exchange_e2w  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_conversion  ![
+      ! C(z) = Div( u'p' ) + Dissipation
+
+      implicit none
+
+
+
+      end subroutine set_diags_p_conversion  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
@@ -2486,6 +3141,7 @@
 #ifdef SOLVE3D
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
+     &                         , p2dgrd(3)
       integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td, np
 
       character(len=30)       :: text, utext
@@ -2537,6 +3193,10 @@ C$OMP MASTER
 #endif
      &                    ,r2dgrd, u2dgrd, v2dgrd )                      ! 2D grid dimensions
 
+            ! create psi dimensions:
+            p2dgrd(1)=u2dgrd(1) ! xi_u
+            p2dgrd(2)=v2dgrd(2) ! eta_v
+            p2dgrd(3)=v2dgrd(3) ! time dim
 
             ! Define remaining variables:
 
@@ -2607,8 +3267,8 @@ C$OMP MASTER
 
             if(prs_flx) then
 
-              call nc_define_var(ncid, ppnames(1), pplname(1), punits, r3dgrd, ierr, prcsn )
-              call nc_define_var(ncid, ppnames(2), pplname(2), punits, r3dgrd, ierr, prcsn )
+              call nc_define_var(ncid, ppnames(1), pplname(1), punits, grdtyp3d(:,1), ierr, prcsn )
+              call nc_define_var(ncid, ppnames(2), pplname(2), punits, grdtyp3d(:,2), ierr, prcsn )
 
               if (check_prs) then
                 call nc_define_var(ncid, pnames(1), plname(1), pchunits, grdtyp3d(:,1), ierr, prcsn )
@@ -2624,6 +3284,17 @@ C$OMP MASTER
 !                text='p filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
                 call nc_define_var(ncid, 'pf', 'p filtered barc', pchunits, r3dgrd, ierr, prcsn )
               endif
+
+              if (p_sponge) then
+                if (check_sponge) then
+                  call nc_define_var(ncid, 'visc2_r0', 'visc2_r0', 'visc2_r0', r2dgrd, ierr, prcsn )
+                  call nc_define_var(ncid, 'visc2_r',  'visc2_r' , 'visc2_r',  r2dgrd, ierr, prcsn )
+                  call nc_define_var(ncid, 'diff2',    'diff2' ,   'diff2',    r2dgrd, ierr, prcsn )
+                  call nc_define_var(ncid, 'visc2_p',  'visc2_p' , 'visc2_p',  p2dgrd, ierr, prcsn )
+!                  call nc_define_var(ncid, 'visc2_p0', 'visc2_p0', 'visc2_p0', p2dgrd, ierr, prcsn )
+                endif
+              endif  ! <-- p_sponge
+
             endif    ! <-- prs_flx
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -2723,11 +3394,11 @@ C$OMP MASTER
           if(prs_flx) then
 
             if (diag_avg) then
-              call nc_write_var(ncid, aup_pp, N, ppnames(1), rp_var, output_rec, ierr)
-              call nc_write_var(ncid, avp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+              call nc_write_var(ncid, aup_pp, N, ppnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid, avp_pp, N, ppnames(2), vp_var, output_rec, ierr)
             else
-              call nc_write_var(ncid,  up_pp, N, ppnames(1), rp_var, output_rec, ierr)
-              call nc_write_var(ncid,  vp_pp, N, ppnames(2), rp_var, output_rec, ierr)
+              call nc_write_var(ncid,  up_pp, N, ppnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid,  vp_pp, N, ppnames(2), vp_var, output_rec, ierr)
             endif
 
             if (check_prs) then
@@ -2747,6 +3418,17 @@ C$OMP MASTER
               call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
               call nc_write_var(ncid, pf, N, 'pf', rp_var, output_rec, ierr)
             endif
+
+            if (p_sponge) then
+              if (check_sponge) then
+                call nc_write_var( ncid, visc2_r0,     1, 'visc2_r0', rp_var, output_rec, ierr )
+                call nc_write_var( ncid, visc2_r,      1, 'visc2_r',  rp_var, output_rec, ierr )
+                call nc_write_var( ncid, diff2(:,:,1), 1, 'diff2',    rp_var, output_rec, ierr )
+                call nc_write_var( ncid, visc2_p,      1, 'visc2_p',  qp_var, output_rec, ierr )
+!                call nc_write_var( ncid, visc2_p0,     1, 'visc2_p0', qp_var, output_rec, ierr )
+              endif
+            endif  ! <-- p_sponge
+
           endif    ! <-- prs_flx
 
           if (diag_trc .and. .not. diag_avg)                             ! for averages this has been called already
