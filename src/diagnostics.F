@@ -215,7 +215,7 @@
       character (len=20),  allocatable, dimension(:) :: vnames
       character (len=120), allocatable, dimension(:) :: lname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
 
-      character (len=26) :: units = 'm^2/s^2    (e.g. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
+      character (len=26) :: units = 'm^2/s^2    (i.e. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
       character (len=1),   dimension(3) :: uvw = (/ 'u', 'v', 'w' /)    ! prefix for u/v/w outputs
 
       character (len=120), dimension(:), allocatable :: check_lnm       ! long name for outputs checking diagnostics
@@ -271,7 +271,7 @@
       character (len=30),  allocatable, dimension(:) :: tdname
       character (len=120), allocatable, dimension(:) :: tlname  ! extra 10 characters for 'Averaged...'
 
-      character (len=20) :: tunits = ' * m/s   (dC/dt*dz)'
+      character (len=20) :: tunits = ' * m/s   (i.e. dC/dt*dz)'
 
       public init_diags_trc
       public set_diags_t_bc
@@ -323,7 +323,7 @@
       character (len=20),  allocatable, dimension(:), public :: ppnames
       character (len=120), allocatable, dimension(:), public :: pplname
 
-      character (len=3), public :: punits = 'W/m'
+      character (len=3), public :: punits = 'W/m  (i.e. up*dz)'
       character (len=3) :: pchunits = 'TBC'
 
       public set_diags_uv_prime
