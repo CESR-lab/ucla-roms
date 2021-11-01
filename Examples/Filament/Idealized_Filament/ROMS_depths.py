@@ -314,7 +314,7 @@ def set_depth( Vtr, Vstr, thts, thtb, hc, N, igrid, h, zeta ):
                     C(s), 1D array, [-1 <= C(s) <= 0]
 
 """
-import pylab as pl
+#import pylab as pl
 
 def stretching(Vstr, thts, thtb, hc, N, kgrid):
     s=[]
