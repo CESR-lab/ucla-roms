@@ -46,13 +46,13 @@ primary_averages: zeta Ubar Vbar U V
                    T    T    T   T T
 
 auxiliary_averages: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
-!                     F    T    T   T    F    F    T    T
+                     F    T    T   T    F    F    T    T
 
 wci_history_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
-!                     T    T     T    T   T   T   T    T    T   T     T
+                     T    T     T    T   T   T   T    T    T   T     T
 
 wci_average_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
-!                     F    F     F    F   F   F   F    F    F   F     F
+                     F    F     F    F   F   F   F    F    F   F     F
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

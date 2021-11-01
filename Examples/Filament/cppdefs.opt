@@ -60,6 +60,14 @@ c-dd# define SPHERICAL
 # define NS_PERIODIC
 # define EW_PERIODIC
 
+        /* Waves Effect on Current */
+# define WEC
+# ifdef WEC
+#  define ANA_WEC_FRC
+#  define WAVE_OFFLINE /* DPD: for ust_r */
+#  define WAVE_DIFF_FROM_LM
+# endif
+
 #elif defined DUMMY_CASE
 
 #  define AVERAGES
