@@ -32,8 +32,8 @@ def solve_ttw_momentum_sig(px,py,AKv,sustr,svstr,Tbx,Tby,f,z_r,z_w,bot_stress,ti
     
     
     OUTPUTS:
-    u,v --> TTW velocities (at vertical rho-levels)
-    ug,vg --> geostrophic velocities (at vertical rho-levels)
+    u,v --> TTW velocities (at vertical rho-levels)           # DPD and what horizontal points?
+    ug,vg --> geostrophic velocities (at vertical rho-levels) # DPD and what horizontal points?
 
 
     THE TTW SYSTEM IS SOLVED USING A TRIDIAGONAL MATRIX FOR A COUPLED (u,v) system
