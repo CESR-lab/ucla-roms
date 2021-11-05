@@ -1922,8 +1922,6 @@
       ! local
       integer :: i, j, k
 
-!      if (mynode==0) print *, 'DIAGS CALC UV PRIME!'
-
       do k=1,N
         do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
           do i=istr,iend+1  ! include boundary for up_pp
@@ -1936,8 +1934,6 @@
           enddo
         enddo
       enddo
-
-!      if(mynode==0) print *, 'uf(10,10,10)=',uf(10,10,10)
 
       if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
      &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
@@ -1968,12 +1964,6 @@
 
         enddo     ! <-- k
 
-!        if(mynode==5) then
-!        print *, 'rmask(iend,46)',rmask(iend,46),'up_pp(iend,46,10)',up_pp(iend,46,10)
-!        print *, 'rmask(iend,45)',rmask(iend,45),'up_pp(iend,45,10)',up_pp(iend,45,10)
-!        print *, 'rmask(iend,44)',rmask(iend,44),'up_pp(iend,44,10)',up_pp(iend,44,10)
-!        endif
-
         if(p_sponge)
      &    call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
 
@@ -1983,22 +1973,29 @@
       end subroutine set_diags_uv_prime  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_prs_prime( istr, iend, jstr, jend, P )  ![
+      subroutine set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P )  ![
+      ! set p' (the pressure perturbation)
+
+      ! Note, pressure (P) is calculated in prsgrd.F. The loop ranges there
+      ! are i=istrU-1,iend and j=jstrV-1,iend
+      ! This allows for averaging from rho to u or v.
+      ! in a sub-domain, u and v points are the first (starting) points
+      ! but rho are the end points, hence the -1 only for the start index.
+
       implicit none
 
       ! inputs
-      integer,                                     intent(in) :: istr, iend, jstr, jend
+      integer,                                     intent(in) :: istr, iend, jstr, jend, istrU, jstrV
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P
 
       ! local
       integer :: i, j, k
 
       if (.not. p_init_done) then
-!        if(mynode == 0) print *, 'FIRST STEP pf *******'
         do k=1,N
-          do j=jstr,jend    ! only need over interior
-            do i=istr,iend
-              pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N)  ! set to avoid ramp up
+          do j=jstrV-1,jend                                 ! allows for rho to u averaging later
+            do i=istrU-1,iend
+              pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N)             ! set to avoid ramp up
             enddo
           enddo
         enddo
@@ -2006,36 +2003,31 @@
       endif                                                 ! unlike u/v first diff will be zero.
                                                             ! as P computed online. don't have for t=0
       do k=1,N
-        do j=jstr,jend    ! only need over interior
-          do i=istr,iend
+        do j=jstrV-1,jend
+          do i=istrU-1,iend
             pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
-!            pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
-!            p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
           enddo
         enddo
       enddo
 
-!      if(mynode==0) print *, 'calc pf'
-
-      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
-     &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
-                                                                  ! p_sponge needs up_pp at everystep
+      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0            ! +1 since done in step before writing
+     &    .or. p_sponge                                    ) then     ! also done everytimestep if averaging
+                                                                      ! p_sponge needs up_pp at everystep
 
         do k=1,N
-          do j=jstr,jend    ! only need over interior
-            do i=istr,iend
-              pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)  ! NOTE: pp = 0 at first step
-              if (check_prs)                                        ! since pf = P - g*z_w above
+          do j=jstrV-1,jend    ! only need over interior
+            do i=istrU-1,iend
+              pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)    ! NOTE: pp = 0 at first step
+              if (check_prs)                                          ! since pf = P - g*z_w above
      &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
             enddo
           enddo
         enddo
 
-        if(WESTERN_EDGE)  pp(istr-1,:,:)=pp(istr,:,:)               ! copy into buffer for averaging u'p' at boundary
-        if(EASTERN_EDGE)  pp(iend+1,:,:)=pp(iend,:,:)               ! TILING broken
+        if(WESTERN_EDGE)  pp(istr-1,:,:)=pp(istr,:,:)                 ! copy into buffer for averaging u'p' at boundary
+        if(EASTERN_EDGE)  pp(iend+1,:,:)=pp(iend,:,:)                 ! TILING broken
         if(SOUTHERN_EDGE) pp(:,jstr-1,:)=pp(:,jstr,:)
         if(NORTHERN_EDGE) pp(:,jend+1,:)=pp(:,jend,:)
-!        if(mynode==0) print *, 'pp(10,10,10)=',pp(10,10,10)
 
       endif
 
