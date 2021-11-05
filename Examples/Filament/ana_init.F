@@ -40,16 +40,13 @@
       integer :: istr,iend,jstr,jend, i,j,k, itrc, i0,j0
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: AA
 
-      real :: Ampl, fac, x,y, x0,y0, cff, cff0,cff1,cff2,cff3
+      real :: Ampl, fac, x,y, x0,y0, cff0,cff1,cff2,cff3
 
       ! Devin added:
-!      real, dimension(GLOBAL_1DX_ARRAY)   :: bs, h2d                 ! h -> h2d
-      real               :: imp, ksi, FF, cff_avg   ! F -> FF
-      integer            :: ncid, varid, ierr
-      logical, parameter :: read_inputs = .false.
+      real :: cff_avg
       real, dimension(GLOBAL_2D_ARRAY)    :: h_sbl
-      real, dimension(GLOBAL_2D_ARRAY, N) :: dbdx_xr
-      real, allocatable, dimension(:,:,:) :: b, a1, a2, a3  ! db/dx at xi_rho, s_rho. v sits at xi_rho, and constant in y
+      real, dimension(GLOBAL_2D_ARRAY, N) :: dbdx_xr    ! db/dx at xi_rho, s_rho. v sits at xi_rho, and constant in y
+      real, allocatable, dimension(:,:,:) :: b, a1, a2
 
 
       ! Daniel values:
@@ -72,76 +69,34 @@
       allocate(  b(GLOBAL_2D_ARRAY, N) )
       allocate( a1(GLOBAL_2D_ARRAY, N) )
       allocate( a2(GLOBAL_2D_ARRAY, N) )
-      allocate( a3(GLOBAL_2D_ARRAY, N) )
-
-      if (read_inputs) then  ! read in data from input file
-        ! Read in initial conditions from python TTW script:
-        ierr=nf90_open('python/input_ideal.nc', nf90_nowrite, ncid)
-        call nc_read_var(ncid, ubar(:,:,1), 1, 'ubar', up_var, 0, ierr)
-        if(ierr/=0) call handle_ierr(ierr,'ana_init:: error reading!')
-        call nc_read_var(ncid, vbar(:,:,1), 1, 'vbar', vp_var, 0, ierr)
-        if(ierr/=0) call handle_ierr(ierr,'ana_init:: error reading!')
-        call nc_read_var(ncid, u(:,:,:,1),  N, 'u',    up_var, 0, ierr)
-        if(ierr/=0) call handle_ierr(ierr,'ana_init:: error reading!')
-        call nc_read_var(ncid, v(:,:,:,1),  N, 'v',    vp_var, 0, ierr)
-        if(ierr/=0) call handle_ierr(ierr,'ana_init:: error reading!')
-      endif
-
 
       ! Can also just read this in...
       b=0.0
-      do j=jstrR,jendR         ! j is length of filament
+      do j=jstrR-1,jendR+1     ! j is length of filament. Go beyond buffer for averaging to v.
         do i=istrR-1,iendR+1   ! go beyond buffer to allow for averaging later. Since analytical, doesn't matter.
 
-!          bs(i)  = bs0 - (db0 * exp(-(( xr(i,j)/1000 /L)**2)))  ! DH uses KM
-!          h2d(i) = h0  + (dh0 * exp(-(( xr(i,j)/1000 /L)**2)))
           h_sbl(i,j) = h0  + (dh0 * exp(-(( xr(i,j) /L )**2)))
-!          h_sbl(i,j) = h0  - (dh0 * exp(-(( xr(i,j) /L )**2)))
-
-
-
-          ! finding a
-!          imp=N02*(h3-h2d(i))/(bs(i)-b3)
-!          aa_cff=x1
-!          do while ( mu*aa_cff / ( exp( aa_cff )-1.0 ) > imp )
-!            aa_cff = aa_cff + 0.01 ! precision (maybe use 10 (1000x 0.01)
-!          enddo
-          !if(mynode==0 .and. j==1) print *, 'Final aa_cff=', aa_cff
 
           do k=1,N
 
             a1(i,j,k) = Nb * (z_r(i,j,k) + HD)
             a2(i,j,k) = (0.5 * N0) * ( (1+ B_cff) * z_r(i,j,k) - ( 1- B_cff)
      &          *( h_sbl(i,j) + lambda_inv * log(cosh((1./lambda_inv) *(z_r(i,j,k) + h_sbl(i,j))))))
-!            a3(i,j,k) = (0.5 * N2) * ( (1+ B_cff) * z_r(i,j,k) - ( 1- B_cff)
-!     &          *( h_sbl(i,j) + dh2 + lambda_inv2 * log(cosh((1./lambda_inv2) *(z_r(i,j,k) + h_sbl(i,j) + dh2)))))
-            b(i,j,k) = bs0 + a1(i,j,k) + a2(i,j,k) ! - a3(i,j,k)
+
+            b(i,j,k) = bs0 + a1(i,j,k) + a2(i,j,k)
 
             ! buoyancy do as temperature:
             t(i,j,k,1,itemp) = b(i,j,k) / (2.0e-4 * 9.81)
-
-!            if     ( z_r(i,j,k) > -h2d(i) ) then                   ! first layer by surface
-!              t(i,j,k,1,itemp)=bs(i)*1000.0
-!            elseif ( z_r(i,j,k) < -h3     ) then                   ! background / bottom depth
-!              t(i,j,k,1,itemp)=N02*( HD + z_r(i,j,k) ) *1000.0
-!            else                                                   ! middle layer
-!              ksi=(-z_r(i,j,k)-h2d(i)) / (h3-h2d(i))
-!              FF=( exp(aa_cff*(1.-(ksi**mu)))-1.) / ( exp(aa_cff)-1.)
-!              t(i,j,k,1,itemp)= ( ((bs(i)-b3)*FF) + b3 ) *1000.0
-!              !if(j==1 .and. k==100) print *, 'FF=', FF
-!            endif
 
           enddo
         enddo
       enddo
 
-!      error stop 'STOP HERE!!!'
 
       do k=1,N
         do j=jstrR,jendR
           do i=istrR,iendR
 !            t(i,j,k,1,itemp)=20.0
-!            t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
             t(i,j,k,1,isalt)=36.
             t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
             t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
@@ -153,30 +108,38 @@
       dbdx_xr=0.0
       v(:,:,:,1)=0.0
       vbar(:,:,1)=0.0
-      cff_avg = 1.0/N
       do k=1,N
-        do j=jstrR,jendR              ! pn * 0.5 = / 2 * dx
-          do i=istrR,iendR            ! loop ranges too long because of averaging but leave for now
-            dbdx_xr(i,j,k) = ( t(i+1,j,k,1,itemp) - t(i-1,j,k,1,itemp) ) * pm(i,j) *0.5 * 0.001 ! divide by 1000 for scale
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            dbdx_xr(i,j,k) = ( b(i+1,j,k) - b(i-1,j,k) ) * pm(i,j) * 0.5      ! pm * 0.5 = / 2 * dx
             if(k==1) then
               v(i,j,k,1)= dbdx_xr(i,j,k) * Hz(i,j,k) / f(i,j)
             else
               v(i,j,k,1)= v(i,j,k-1,1) + dbdx_xr(i,j,k) * Hz(i,j,k) / f(i,j)
             endif
-            vbar(i,j,1)=vbar(i,j,1)+v(i,j,k,1) * cff_avg
+            vbar(i,j,1)=vbar(i,j,1)+v(i,j,k,1) * Hz(i,j,k)! remove as wrong
           enddo
         enddo
       enddo
+      vbar(:,:,1) = vbar(:,:,1) / HD  ! average vertical integral over depth
+                                      ! excludes zeta since 'v' was calculated without it, but should be there
 
+      ! zeta needed for vbar calculation:
       zeta(:,:,1)=0.
       do j=jstrR,jendR
-        do i=istrR,iendR
-          zeta(i,j,1)=zeta(i-1,j,1) + f(i,j) * v(i,j,N,1) * dm_r(i,j) / g
-!          zeta(i,j,1)=zeta(i-1,j,1) + f(i,j) * vbar(i,j,1) * dm_r(i,j) / g
-          ubar(i,j,1)=0.           ! non-trivial initialization required.
-          !vbar(i,j,1)=0.          ! Note: A code to initialize T [and S]
-        enddo                      ! must always be supplied for 3D
-      enddo                        ! applications.
+        do i=istrR,iendR                                              ! N.B.!! actually need v at surface!
+
+          !zeta(i,j,1)=zeta(i-1,j,1) + f(i,j) * v(i,j,N,1) * dm_r(i,j) / g
+
+          ! rather use trapezoidal rule for integration.
+          ! but since v and z both at xi_rho need to use 0.25 (1+2+1)
+          zeta(i,j,1)=zeta(i-1,j,1) + 0.25 * f(i,j) * dm_r(i,j) / g   ! so should be extrapolating
+     &               * ( v(i-1,j,N,1) + 2*v(i,j,N,1) + v(i+1,j,N,1) ) ! missing i-1 beyond buffer
+                                                                      ! only e-6 difference in zeta with trapezoidal rule.
+          ubar(i,j,1)=0.
+          !vbar(i,j,2)=vbar(i,j,1)  ! DevinD experiment, made no difference
+        enddo
+      enddo
 
       do k=1,N
         do j=jstrR,jendR
@@ -185,10 +148,12 @@
 !            v(i,j,k,1)=0.
             u(i,j,k,2)=u(i,j,k,1)  ! copy from reading above
             v(i,j,k,2)=v(i,j,k,1)
+!            zeta(i,j,2)=zeta(i,j,1)  ! DevinD added, made no difference
           enddo
         enddo
       enddo
 
+      ! DevinD: need to exchange any extra variables I might configure here!
 
 ! The rest of the code is independent of the specific configuration.
 
@@ -330,9 +295,6 @@
 #   endif /* SOLVE3D */
 #  endif /* ANA_BRY */
 # endif /* at least one of OBC_XXXXX */
-
-
-
 
 
 # ifdef EXCHANGE

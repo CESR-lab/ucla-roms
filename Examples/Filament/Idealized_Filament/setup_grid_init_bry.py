@@ -233,14 +233,14 @@ import scipy.integrate as integrate
 bx_w = RT.rho2w(bx.T,zr_swap.T,zw_swap.T)
 zw_in=np.swapaxes(z_w,0,1)
 #Along-filament geostrophic velocity
-vg = (integrate.cumtrapz(bx_w,zw_in,axis=2).T/f0).T
+vg = (integrate.cumtrapz(bx_w,zw_in,axis=2).T/f0).T  # DPD to me v_g is at w points?
 vg_kji = np.swapaxes(vg,0,2)
 #Compute zeta from this
 #import matplotlib.pyplot as plt
 #Integrate vg(z=0) in x to get free-surface
 zeta_g = np.zeros([ny,nx])
-for i in range(1,nx):
-    cff = f0*dx / 9.81
+for i in range(1,nx):       # DPD vg and zeta_g at the same horizontal coordinate, so i and i-1 create an
+    cff = f0*dx / 9.81      # erroneous 1/2 grid cell shift
     zeta_g[:,i] = zeta_g[:,i-1] + (0.5 * (cff * vg_kji[-1,:,i] + cff * vg_kji[-1,:,i-1]) )
     #(f0 * vg_kji[-1,:,i] * dx/9.81)
      
@@ -356,7 +356,7 @@ u_nc[:,:,:] = u_init
 ubar_nc = init_nc.createVariable('ubar','f4', ('eta_rho', 'xi_u'))
 setattr(ubar_nc, 'long_name', 'barotropic XI-velocity component')
 setattr(ubar_nc, 'units', 'm/s')
-ubar_nc[:,:] = np.nanmean(u_init,axis=0)
+ubar_nc[:,:] = np.nanmean(u_init,axis=0)  # DPD this looks wrong, can't just mean since vertical grid non-uniform
 
 v_nc = init_nc.createVariable('v','f4', ('s_rho','eta_v', 'xi_rho'))
 setattr(v_nc, 'long_name', 'ETA-velocity component')
@@ -366,7 +366,7 @@ v_nc[:,:,:] = v_init
 vbar_nc = init_nc.createVariable('vbar','f4', ('eta_v', 'xi_rho'))
 setattr(vbar_nc, 'long_name', 'barotropic ETA-velocity component')
 setattr(vbar_nc, 'units', 'm/s')
-vbar_nc[:,:] = np.nanmean(v_init,axis=0)
+vbar_nc[:,:] = np.nanmean(v_init,axis=0)  # DPD this looks wrong, can't just mean since vertical grid non-uniform
 
 
 zeta_nc = init_nc.createVariable('zeta','f4', ('eta_rho', 'xi_rho'))
