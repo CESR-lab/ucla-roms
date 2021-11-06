@@ -295,6 +295,13 @@ u_init = RT.rho2u(np.swapaxes(u_in,0,2))
 #Put v at horizontal v-points
 v_init = RT.rho2v(np.swapaxes(v_in,0,2))
 
+# Calculate ubar and vbar
+z_r_u = RT.rho2u(np.swapaxes(zr_in,0,2))
+z_r_v = RT.rho2v(np.swapaxes(zr_in,0,2))
+ubar_init = - np.trapz(z_r_u,u_init,axis=0) / H  # Divide by depth, need negative as z_r_u is negative (cancels)
+vbar_init = - np.trapz(z_r_v,v_init,axis=0) / H  # Really this depth should include zeta, 
+                                                 # but v was calculated without zet
+
 
 ##########################
 #Write Variables
@@ -356,7 +363,8 @@ u_nc[:,:,:] = u_init
 ubar_nc = init_nc.createVariable('ubar','f4', ('eta_rho', 'xi_u'))
 setattr(ubar_nc, 'long_name', 'barotropic XI-velocity component')
 setattr(ubar_nc, 'units', 'm/s')
-ubar_nc[:,:] = np.nanmean(u_init,axis=0)  # DPD this looks wrong, can't just mean since vertical grid non-uniform
+#ubar_nc[:,:] = np.nanmean(u_init,axis=0)  # DPD this looks wrong, can't just mean since vertical grid non-uniform
+ubar_nc[:,:] = ubar_init
 
 v_nc = init_nc.createVariable('v','f4', ('s_rho','eta_v', 'xi_rho'))
 setattr(v_nc, 'long_name', 'ETA-velocity component')
@@ -366,8 +374,8 @@ v_nc[:,:,:] = v_init
 vbar_nc = init_nc.createVariable('vbar','f4', ('eta_v', 'xi_rho'))
 setattr(vbar_nc, 'long_name', 'barotropic ETA-velocity component')
 setattr(vbar_nc, 'units', 'm/s')
-vbar_nc[:,:] = np.nanmean(v_init,axis=0)  # DPD this looks wrong, can't just mean since vertical grid non-uniform
-
+#vbar_nc[:,:] = np.nanmean(v_init,axis=0)  # DPD this looks wrong, can't just mean since vertical grid non-uniform
+vbar_nc[:,:] = vbar_init
 
 zeta_nc = init_nc.createVariable('zeta','f4', ('eta_rho', 'xi_rho'))
 setattr(zeta_nc, 'long_name', 'free-surface elevation')

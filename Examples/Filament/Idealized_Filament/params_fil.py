@@ -72,7 +72,7 @@ dh = 15
 #Vertical Mixing Formulation
 sig0 = 5e-3
 K0 = 0.01
-K_bak = 1e-6 #background diffusivity
+K_bak = 1e-4 #background diffusivity
 
 
 #Constant Salinity
