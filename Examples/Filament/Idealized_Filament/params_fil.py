@@ -28,6 +28,10 @@ hmin = 2. #minimum depth
 f0 = 7.81e-5 #coriolis parameters
 grid_ang = 0. #grid rotation (default=0-->xi=east)
 
+# surface stress
+sustr0 = 0.0    # 5e-6 produces 0.01 surface u current...
+svstr0 = 0.0
+
 
 ####################################
 #Initial Condition Parameters
@@ -68,12 +72,10 @@ h0 = 60
 #deviation of surface boundary layer at front or filament (m)
 dh = 15
 
-
 #Vertical Mixing Formulation
 sig0 = 5e-3
 K0 = 0.01
 K_bak = 1e-4 #background diffusivity
-
 
 #Constant Salinity
 S0 = 32

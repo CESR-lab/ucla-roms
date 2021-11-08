@@ -21,7 +21,7 @@ from scipy import special
 
 param_file = sys.argv[1]
 #execfile('./'+param_file)
-exec(open('./'+param_file).read())  # python3 version
+exec(open('./'+param_file).read())  # DPD python3 version
 
 
 ################
@@ -149,11 +149,13 @@ Create approximate sigma level
 grid to mimic ROMS functionality
 '''
 ####################
-zeta = np.zeros([ny,nx])
-Vtrans = 2
-Vstret = 4
-z_r = RD.set_depth(Vtrans,Vstret,theta_s,theta_b,hc,N,1,h,zeta)
-z_w = RD.set_depth(Vtrans,Vstret,theta_s,theta_b,hc,N,5,h,zeta)
+zeta = np.zeros([ny,nx])  # transposing of indices: when python reads in roms data, it reads them in
+                          # as time,k,j,i. Hence to be consitent with that we do the same.
+                          # However, TTW routines are written with ijk order, hence transposing is done.
+Vtrans = 2  # ROMS_depth.py -> Vtransform  = 2,  new transformation
+Vstret = 4  # ROMS_depth.py -> Vstretching = 4,  A. Shchepetkin (UCLA-ROMS, 2010)
+z_r = RD.set_depth(Vtrans,Vstret,theta_s,theta_b,hc,N,1,h,zeta)  # 1=rho-points
+z_w = RD.set_depth(Vtrans,Vstret,theta_s,theta_b,hc,N,5,h,zeta)  # 5=  w-points
 s,Cs_r = RD.stretching(Vstret,theta_s, theta_b, hc,N,0)
 s,Cs_w = RD.stretching(Vstret,theta_s, theta_b, hc,N,1)
 #Cs_r = Cs_r_temp[0:N]
@@ -178,7 +180,7 @@ for i in range(nx):
 ###################
 #Make initial AKv
 ##################
-Kv = np.zeros([N+1,ny,nx])
+Kv = np.zeros([N+1,ny,nx])  # at w-points
 #Set background first
 Kv[:,:,:] = K_bak
 
@@ -192,7 +194,7 @@ ff = 4./27 * (1 + sig0)**2
 for i in range(nx):
     for j in range(ny):
         for k in range(1,N):
-            sig = -z_r[j,i,k] / h_sbl[j,i]
+            sig = -z_r[j,i,k] / h_sbl[j,i]  # DPD this should be z_w not z_r?
             if sig<=1:
                Kv[k,j,i] = Kv[k,j,i] + Km[j,i] * (sig + sig0) * (1-sig)**2/ff
 
@@ -223,7 +225,7 @@ zeta = np.zeros([ny,nx])
 ###################################
 #Compute db/dx, db/dy on w-levels
 #bx = np.gradient(b,axis=
-bx = np.gradient(b,axis=2) / dx
+bx = np.gradient(b,axis=2) / dx  # DPD this gradient function works because of uniform dx? 
 by = np.gradient(b,axis=1) / dy
 zr_swap = np.swapaxes(z_r.T,1,2)
 zw_swap = np.swapaxes(z_w.T,1,2)
@@ -269,8 +271,8 @@ dphidy = np.gradient(phi,axis=1) / dy
 #TTW solver takes conventions [i,j,k]
 f_ij = np.zeros([nx,ny])
 f_ij[:,:] = f0
-sustr = np.zeros([nx,ny])
-svstr = np.zeros([nx,ny])
+sustr = np.zeros([nx,ny]) + sustr0
+svstr = np.zeros([nx,ny]) + svstr0
 Kv_swap =np.swapaxes(Kv,0,2) 
 zw_in=np.swapaxes(z_w,0,1)
 zr_in = np.swapaxes(z_r,0,1)
