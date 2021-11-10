@@ -442,15 +442,16 @@ c--#define MPIVERBOSE
             if (rec.eq.1 .or. series(i)) then
 
               if (part_type(i).eq.0 .and. .not.series(i)) then
-
-                call read_write_scalar_var                             ! PART 7: SHOULD BE MASTER ONLY, ISN'T YET
+                                                                       ! PART 7: ONLY DONE BY MASTER
+                if (my_rank==0) call read_write_1D_var                 ! all procs needs to know if 'mayday' activated
+                call MPI_BCAST(mayday, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
                 if (mayday) goto 97
 
 
               elseif (part_type(i).eq.0) then
-
-                if (my_rank==0) call read_write_non_partitioned_var    ! PART 8: ONLY DONE BY MASTER
-                call MPI_BCAST(mayday, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)  ! all procs needs to know if 'mayday' activated
+                                                                       ! PART 8:
+                if (my_rank==0) call read_write_non_partitioned_var    ! all procs needs to know if 'mayday' activated
+                call MPI_BCAST(mayday, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
                 if (mayday) goto 97
 
 
