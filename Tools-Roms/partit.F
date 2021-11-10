@@ -62,9 +62,13 @@ c--#define AUTORENICE
 #define TIMING
 c--#define VERBOSE
 
+      use netcdf
 
       implicit none
 #include "netcdf.inc"
+! user controlled compression settings:
+#include "partit.opt"
+
       character(len=128) src_name, string
       integer nargs, nnodes, NP_XI,  xi_rho,  id_xi_rho,  id_xi_psi,
      &        arg,   node,   NP_ETA, eta_rho, id_eta_rho, id_eta_psi,
@@ -366,8 +370,9 @@ c--#define VERBOSE
           call insert_node(fname(node), lfnm, node, nnodes, ierr)
 
           if (ierr == 0) then
-            ierr=nf_create(fname(node)(1:lfnm),  nf_clobber +
-     &                           nf_64bit_offset, ncid(node))
+!            ierr=nf_create(fname(node)(1:lfnm),  nf_clobber +
+!     &                           nf_64bit_offset, ncid(node))  ! old version
+            ierr=nf90_create(fname(node)(1:lfnm), NF90_NETCDF4, ncid(node))
             if (ierr == nf_noerr) then
               if ( node < 16 .or. ( nnodes > 16 .and.
      &                              node == nnodes-1 )) then
@@ -587,8 +592,12 @@ c**         write(*,*) 'new_dimids:',    (start(j),j=1,vdims(i))
      &              .not.northern_edge(node)) vid(i,node)=-1000
               endif
               if (vid(i,node) == 0) then
-                ierr=nf_def_var(ncid(node), vname(i)(1:lvar), vtype(i),
-     &                                   vdims(i), start, vid(i,node))
+!                ierr=nf_def_var(ncid(node), vname(i)(1:lvar), vtype(i),  ! old version, no compression
+!     &                                   vdims(i), start, vid(i,node))
+                ierr=nf90_def_var (ncid(node), vname(i)(1:lvar),vtype(i),
+     &                             start(1:vdims(i)), vid(i,node),           ! start is used for dimids
+!     &                             chunksizes=set_req_chunk_sizes(1:vdims(i)),
+     &                             deflate_level=deflate_level, shuffle=shuffle)
                 if (ierr /= nf_noerr) then
                   write(*,'(/1x,4A,I4/12x,A/)') '### ERROR: Cannot ',
      &                    'create variable ''',   vname(i)(1:lvar),

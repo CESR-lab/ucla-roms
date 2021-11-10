@@ -1,0 +1,10 @@
+      ! ***************************************************************
+      ! START USER INPUT          ! mostly you will use the default values!
+      
+      integer :: deflate_level=1  ! compression level for joined file. For no compression 'deflate_level = 0'.
+      
+      logical :: shuffle=.true.   ! shuffle on for extra compression (nc3to4z had this).
+                                  ! in tests shuffle gave an extra ~10% compression over just d1 compression.
+                                        
+      !   END USER INPUT          
+      ! ***************************************************************
