@@ -81,14 +81,14 @@ c--#define MPIVERBOSE
       integer           :: v_dimsize      ! Size of current dimension length
       character(len=1)  :: char_in        ! Text read in. I.e. scalar 'spherical' variable
       character(len=15) :: var_name_debug ! debug. should delete when confirmed collective/independent I/O
-      integer           :: scalar_int     ! variable for joining scalar integers
-      real              :: scalar_real    ! variable for joining scalar reals (float or double)
       logical           :: mayday         ! flag to break out of subroutine with error
       integer           :: guess_nnodes   ! guessed number of input nodes (files) linked to mpi proc for storage array size
       integer           :: deflate_level  ! compression level for joined file
       logical           :: shuffle        ! shuffle on for extra compression (nc3to4z had this).
       integer           :: s_rho          ! vertical rho levels
-      integer           :: nmax(maxvars)           ! vertical levels of current variable
+      integer           :: nmax(maxvars)  ! vertical levels of current variable
+      integer, dimension(:), allocatable :: int_1D   ! variable for joining 1D integers
+      real,    dimension(:), allocatable :: real_1D  ! variable for joining 1D reals (float or double)
 
       ! ------ CHILD_BRY VARS -------------
       integer :: global_south_bry_size    ! size of join dimension in child boundary file
@@ -1744,21 +1744,31 @@ c**           endif
       end subroutine assign_read_in_partial_files_to_mpi_proc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine read_write_scalar_var  ![
+      subroutine read_write_1D_var  ![
+      ! read & write 1D variable only once (no time dim)
+
       implicit none
+
+      integer, dimension(1) :: start_1D, count_1D
+
+      start_1D(1) = 1
+      count_1D(1) = dimsize(dimids(1,i),0)  ! 1 since only one dimension for 1D variable
 
                 lvar=lenstr(vname(i))
                 if(my_rank==0) write(*,'(16x,3A)')
-     &            'Copy scalar variable: ''',vname(i)(1:lvar),'''...'
+     &            'Copy 1D variable: ''',vname(i)(1:lvar),'''...'
 
                 if (vartype(i) .eq. nf_char)       then
                   ierr=nf90_get_var(ncid(0), vid(i,0), char_in)
                 elseif (vartype(i) .eq. nf_int)    then
-                  ierr=nf90_get_var(ncid(0), vid(i,0), scalar_int)
-                elseif (vartype(i) .eq. nf_float)  then
-                  ierr=nf90_get_var(ncid(0), vid(i,0), scalar_real) ! Hoping double precision variable works fine here.
-                elseif (vartype(i) .eq. nf_double) then             ! Compiler default for real is double.
-                  ierr=nf90_get_var(ncid(0), vid(i,0), scalar_real)
+                  if( allocated(int_1D) ) deallocate(int_1D)
+                  allocate( int_1D (count_1D(1)) )
+                  ierr=nf90_get_var(ncid(0), vid(i,0), int_1D)
+                elseif (vartype(i) .eq. nf_float
+     &             .or. vartype(i) .eq. nf_double) then             ! Compiler default for real is double.
+                  if( allocated(real_1D) ) deallocate(real_1D)
+                  allocate( real_1D (count_1D(1)) )
+                  ierr=nf90_get_var(ncid(0), vid(i,0), real_1D)
                 else
                   lvar=lenstr(vname(i))
                   write(*,'(/8x,4A/)') '### ERROR: scalar variable ',
@@ -1769,11 +1779,10 @@ c**           endif
                   if (vartype(i) .eq. nf_char)       then
                     ierr=nf90_put_var(nctarg ,varid(i),char_in)
                   elseif (vartype(i) .eq. nf_int)    then
-                    ierr=nf90_put_var(nctarg, varid(i), scalar_int)
-                  elseif (vartype(i) .eq. nf_float)  then
-                    ierr=nf90_put_var(nctarg ,varid(i), scalar_real)
-                  elseif (vartype(i) .eq. nf_double) then
-                    ierr=nf90_put_var(nctarg, varid(i), scalar_real)
+                    ierr=nf90_put_var(nctarg, varid(i), int_1D)
+                  elseif (vartype(i) .eq. nf90_float
+     &               .or. vartype(i) .eq. nf90_double) then
+                    ierr=nf90_put_var(nctarg, varid(i), real_1D)
                   endif
                   if (ierr .ne. nf_noerr) then
                     lvar=lenstr(vname(i))
@@ -1792,7 +1801,7 @@ c**           endif
                   mayday=.true.; return ! goto 97
                 endif
 
-      end subroutine read_write_scalar_var  !]
+      end subroutine read_write_1D_var  !]
 
 ! ----------------------------------------------------------------------
       subroutine read_write_non_partitioned_var  ![
