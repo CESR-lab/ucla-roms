@@ -10,6 +10,9 @@
       !  ncjoin_mpi with too many catches for joining child bry. Can still use several
       !  of the same routines from ncjoin_mod module.
       !
+      !  Added cbry_ to beginning of routines that are specifically for child boundary,
+      !  not ncjoin_mpi.
+      !
       !]
 
       ! PROGRAM SECTIONS:
@@ -45,7 +48,7 @@ c--#define VERBOSE
 
       my_rank=0                      ! allows easy use of ncjoin_mpi routines
 
-      call check_args_join_child_bry
+      call cbry_check_args
 
       do while (arg .lt. nargs)
 
@@ -60,6 +63,7 @@ c--#define VERBOSE
         call check_partial_file_set  ! PART 1: CHECK ALL INPUT PARTIAL FILES ARE CORRECT
         if (mayday) goto 23          ! Using goto the break from if(my_rank==0)
                                      ! Only other idea I can think of is using select case (my_rank) case (0) ... as I can use exit with this but not for if.
+
 
       ![ PART 2: VERIFY ALL VARIABLES & DIMENSIONS:
 
@@ -79,6 +83,15 @@ c--#define VERBOSE
             call check_ndims_nvars_natts(node)
             if (mayday) goto 23
 
+            ! use check_ndims... above to get number of variables etc.
+            ! make a list of nodes that actually contain child bry
+            ! this speeds up program to avoid reading empty nodes every time
+            ! once roms is corrected to only produce files at specific partitions
+            ! then remove this routine. The buff(2) partition attribute will need
+            ! to be fixed to match only number of parents with children.
+            call cbry_find_relevant_parent_nodes
+
+            ! ONLY DO THIS CATALOGUE for relevant nodes!
             call create_catalog_of_var_names_IDs_ranks(node)
             if (mayday) goto 23
 
@@ -107,7 +120,7 @@ c--#define VERBOSE
         endif
 #endif
 
-        call determine_global_child_bry_dims
+        call cbry_determine_global_dims
 
 !        call determine_joined_file_dim_sizes
 !        if (mayday) goto 97
@@ -116,7 +129,7 @@ c--#define VERBOSE
 
       !] END PART 2: VERIFY ALL VARIABLES & DIMENSIONS
 
-        call create_joined_child_file                                  ! PART 3:
+        call cbry_create_joined_file                                  ! PART 3:
         if (mayday) goto 23
 
   23    if(my_rank==0) write(*,'(/1x,A/)')
@@ -131,24 +144,33 @@ c--#define VERBOSE
 
 !      call collectively_open_input_output_files                        ! PART 5:
 
-        do i=1,nvars ! LOOP THROUGH VARIABLES & WRITE EACH ONE
+        if(my_rank==0) write(*,'(16x,A)')
+     &    'Assembly of ocean_time'
+        node=0; i=1                                                     ! set variable to ocean_time (should be 1)
+        do rec=1, tsize
+          call cbry_read_write                                          ! write ocean_time from 1 node only
+        enddo
 
-          lvar=lenstr(vname(i))
-          if(my_rank==0) write(*,'(16x,3A)')
-     &      'Assembly of array name = ''', vname(i)(1:lvar), ''''
+        do nd=1,tot_pwithc                                              ! loop total parents with child brys
+          node = pwithc_nodes(nd)                                       ! set parent node number from stored list.
 
-          do rec=1, tsize ! LOOP THROUGH TIMESTEPS OF CURRENT VAR
+          if(my_rank==0) write(*,'(16x,A,I4)')
+     &      'Assembly of bry vars in node =', node
+          if(my_rank==0) write(*,'(18x,A,I4)')
+     &      'bry vars to copy =', tot_cvars_p(nd)
 
-            if(my_rank==0) write(*,'(4x,A,I8,1x,A,I8,1x,A)')
-     &       'Processing record', rec, 'out of', tsize,  '...'
+          do vr=1,tot_cvars_p(nd) ! LOOP THROUGH VARIABLES & WRITE EACH ONE (only the variables within parent)
+            i = cvars_p(nd,vr)    ! set actual variable number in terms of all variables
+            new_var = .true.
 
-            do node=0,nnodes-1
-              call read_write_child_bry                                 ! PART X:
-            enddo  !<-- nodes
+            do rec=1, tsize                                              ! LOOP THROUGH TIMESTEPS OF CURRENT VAR
 
-          enddo    !<-- rec, loop over records
+              call cbry_read_write                                 ! PART X:
 
-        enddo      !<-- i=1,nvars, loop over variables
+            enddo    !<-- rec, loop over records
+          enddo      !<-- i=1,nvars, loop over variables
+
+        enddo  !<-- nodes
 
         if (ierr.eq.nf_noerr) then
           clean_set=.true.

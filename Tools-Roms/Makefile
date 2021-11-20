@@ -1,9 +1,16 @@
 include ../src/Makedefs.inc
 
-# Can't use -ip optimization for tools (partit won't compile)
+# NEED TO OVERRIDE SOME OF MAKEDEFS.INC:
+
+# - Can't use -ip optimization for tools (partit won't compile)
 	FFLAGS = -O3
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
+# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
+#	FFLAGS = -O3 -pg
+
+# --------------------------------------------------------------------
+
 
 ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z zslice
 

@@ -91,9 +91,20 @@ c--#define MPIVERBOSE
       real,    dimension(:), allocatable :: real_1D  ! variable for joining 1D reals (float or double)
 
       ! ------ CHILD_BRY VARS -------------
+      !  Added cbry_ to beginning of routines that are specifically for child boundary,
+      !  not ncjoin_mpi.
       integer :: global_south_bry_size    ! size of join dimension in child boundary file
       integer :: global_west_bry_size
+      integer :: tot_pwithc               ! total parent domains with child bry
+      integer :: max_cvars_p              ! max number of child variables contained in sub-domain
+      integer :: nd, vr                   ! loop index
+      logical :: new_var = .true.         ! trigger reading start and count for new variable
       integer, dimension(4) :: vid_out    ! variable ID's in joined output file
+      integer, dimension(3) :: child_start, child_count, startin, countin  ! start+counts for read/write
+      integer, dimension(:),   allocatable :: tot_cvars_p_all, tot_cvars_p ! child vars in parent (all nodes and actual)
+      integer, dimension(:),   allocatable :: pwithc_nodes                 ! list of whether parent contains child
+      integer, dimension(:,:), allocatable :: cvars_p_all, cvars_p         ! each child var number in parent
+      real,    dimension(:,:), allocatable :: bry_data
 
       ! ------ ORIGINAL NCJOIN VARS -------
 
@@ -560,7 +571,7 @@ c--#define MPIVERBOSE
       integer, intent(in) :: node
 
             ierr=nf_inq (ncid(node), ibuff(1), ibuff(2),  ! returns: 1-ndims,  2-nvars
-     &                               ibuff(3), ibuff(4))  !          2-ngatts, 4-unlimid
+     &                               ibuff(3), ibuff(4))  !          3-ngatts, 4-unlimid
             if (ierr .ne. nf_noerr) then
               write(*,'(/1x,4A/12x,A/)')  '### ERROR: Cannot make ',
      &                        'general inquiry into netCDF file ''',
@@ -2178,7 +2189,7 @@ c**           endif
 ! ----------------------------------------------------------------------
 ! JOIN_CHILD_BRY ROUTINES:
 ! ----------------------------------------------------------------------
-      subroutine check_args_join_child_bry  ![
+      subroutine cbry_check_args  ![
 
       ! Ensure reasonable number of arguements used,
       ! if not give usage instructions.
@@ -2199,10 +2210,10 @@ c**           endif
         error stop
       endif
 
-      end subroutine check_args_join_child_bry
+      end subroutine cbry_check_args
 
 ! ----------------------------------------------------------------------
-      subroutine determine_global_child_bry_dims      ![
+      subroutine cbry_determine_global_dims      ![
 
       ! Determine the size of global child dimensions
       ! in order to create joined child file
@@ -2218,11 +2229,11 @@ c**           endif
       ierr=nf90_inq_dimid( ncid(0), 's_rho', dimid)  ! get s_rho veritcal levels
       ierr=nf90_inquire_dimension(ncid(0), dimid, len=s_rho)
 
-      end subroutine determine_global_child_bry_dims  !]
+      end subroutine cbry_determine_global_dims  !]
 
 ! ----------------------------------------------------------------------
-      subroutine create_joined_child_file  ![
-      implicit none
+      subroutine cbry_create_joined_file  ![
+      implicit none  ! create joined child bry file
 
       call create_joined_empty_file
       if(mayday) return
@@ -2248,7 +2259,7 @@ c**           endif
 
       ! Define variables & atts
 
-      call copy_vars_atts
+      call cbry_copy_vars_atts
 
       ! Leave definition mode
 
@@ -2269,17 +2280,13 @@ c**           endif
       net_fcrt_clk=net_fcrt_clk+inc_clk  ! Timing for file creation
 #endif
 
-      end subroutine create_joined_child_file  !]
+      end subroutine cbry_create_joined_file  !]
 
 ! ----------------------------------------------------------------------
-      subroutine read_write_child_bry  ![
+      subroutine cbry_read_write  ![
+      ! due to cbry_find_relevant_parent routine, we know this
+      ! variable is contained in parent and msut be written
       implicit none
-
-      ! local
-      integer                           :: in_varid, len_dim
-      integer, dimension(3)             :: child_start, child_count, dimids, startin, countin
-      real, dimension(:,:), allocatable :: bry_data
-      character(len=12)                 :: dimname
 
 # ifdef TIMING
       nclk=3-nclk
@@ -2288,85 +2295,92 @@ c**           endif
       net_gray_clk=net_gray_clk+inc_clk
 # endif
 
-      startin=1
-      countin=1
-      child_start=1
-      child_count=1
 
-      if (ncid(node).eq.-1)
-     &  ierr=nf90_open (ncname(node), nf90_nowrite, ncid(node))
+      if (new_var) then                                                          ! once per variable
+        startin=1; countin=1; child_start=1; child_count=1
 
-      if (vdims(i) >= 2) then  ! exclude time (1D vars)
-        ierr = nf90_get_att(ncid(node), vid(i,node), 'start', child_start(1))  ! start position in global child bry
-        ierr = nf90_get_att(ncid(node), vid(i,node), 'count', child_count(1))  ! count of sub-domain entry in global child bry
+        if (ncid(node).eq.-1)
+     &    ierr=nf90_open (ncname(node), nf90_nowrite, ncid(node))
+
+        if (vdims(i) >= 2) then  ! exclude time (1D vars)
+          ierr = nf90_get_att(ncid(node), vid(i,node), 'start', child_start(1))  ! start position in global child bry
+          ierr = nf90_get_att(ncid(node), vid(i,node), 'count', child_count(1))  ! count of sub-domain entry in global child bry
+        endif
+        countin(1:2)=(/ child_count(1), nmax(i) /)
+
+!        print *, 'ALLLLLOC BRY_DATA'
+        if (allocated(bry_data)) deallocate (bry_data)                           ! variable for reading data
+        allocate ( bry_data( child_count(1), nmax(i) ) )
+        new_var = .false.
+!        print *, 'DONE ALLLLLOC'
+!        print *, 'child_count(1)',child_count(1)
+!        print *, 'nmax(i)',nmax(i)
+      endif  !<-- new_var
+
+      if     (vdims(i) == 1) then                 ! set new record
+        startin(1)     = rec
+        child_start(1) = rec
+        countin(1)=1
+      elseif (vdims(i) == 2) then                 ! handle 2D or 3D variable dims
+        startin(2)     = rec                      ! set recorded timestep for read in partial bry
+        child_start(2) = rec                      ! set recorded timestep for written join bry
+      elseif (vdims(i) == 3) then
+        startin(3)     = rec                      ! set recorded timestep for read in partial bry
+        child_start(3) = rec                      ! set recorded timestep for written join bry
+        child_count(2) = s_rho                    ! should be nmax rather?
+      else
+        error stop 'ERROR: dimensions issue when writing!'
       endif
 
-      if (child_count(1) /= 0) then                 ! only write if parent has child boundary (0 if not)
+      ! read variable:
 
-        countin(1:2)=(/ child_count(1), nmax(i) /)
-        if     (vdims(i) == 1) then
-          startin(1)     = rec
-          child_start(1) = rec
-          countin(1)=1
-        elseif (vdims(i) == 2) then                 ! handle 2D or 3D variable dimids
-          startin(2)     = rec                      ! set recorded timestep for read in partial bry
-          child_start(2) = rec                      ! set recorded timestep for written join bry
-        elseif (vdims(i) == 3) then
-          startin(3)     = rec                      ! set recorded timestep for read in partial bry
-          child_start(3) = rec                      ! set recorded timestep for written join bry
-          child_count(2) = s_rho                    ! should be nmax rather?
-        else
-          error stop 'ERROR: dimensions issue when writing!'
-        endif
-
-        ! read variable:
-
-        if (allocated(bry_data)) deallocate (bry_data)
-        allocate ( bry_data( child_count(1), nmax(i) ) )
-
-        ierr = nf90_get_var( ncid(node), vid(i,node), bry_data,
-     &                      start=startin(1:vdims(i)), count=countin(1:vdims(i)) )
-        if(ierr/=0) print *, 'read ierr=', nf90_strerror(ierr), 'node=', node
+      ierr = nf90_get_var( ncid(node), vid(i,node), bry_data,
+     &                     start=startin(1:vdims(i)), count=countin(1:vdims(i)) )
+      if(ierr/=0) then
+        print *, 'read ierr=', nf90_strerror(ierr), 'node=', node
+        error stop 'READING ERROR'
+      endif
 
 # ifdef TIMING
-        net_read_size=net_read_size+size
-        nclk=3-nclk
-        call system_clock (iclk(nclk),clk_rate,clk_max)
-        inc_clk=iclk(nclk)-iclk(3-nclk)
-        net_read_clk=net_read_clk+inc_clk
+      net_read_size=net_read_size+size
+      nclk=3-nclk
+      call system_clock (iclk(nclk),clk_rate,clk_max)
+      inc_clk=iclk(nclk)-iclk(3-nclk)
+      net_read_clk=net_read_clk+inc_clk
 
-        nclk=3-nclk  ! DevinD moved here
-        call system_clock (iclk(nclk), clk_rate, clk_max)
-        inc_clk=iclk(nclk)-iclk(3-nclk)
-        net_gray_clk=net_gray_clk+inc_clk
+!        nclk=3-nclk  ! DevinD moved here
+!        call system_clock (iclk(nclk), clk_rate, clk_max)
+!        inc_clk=iclk(nclk)-iclk(3-nclk)
+!        net_gray_clk=net_gray_clk+inc_clk
 # endif
 
-        ! write variable:
+      ! write variable:
 
-        ierr = nf90_put_var( nctarg, varid(i), bry_data,
-     &                       start=child_start(1:vdims(i)), count=child_count(1:vdims(i)) )
-        if(ierr/=0) print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
-
-#ifdef TIMING
-        net_wrt_size=net_wrt_size+size
-        nclk=3-nclk
-        call system_clock(iclk(nclk), clk_rate,clk_max)
-        inc_clk=iclk(nclk)-iclk(3-nclk)
-        net_wrt_clk=net_wrt_clk+inc_clk
-#endif
-
+      ierr = nf90_put_var( nctarg, varid(i), bry_data,
+     &                     start=child_start(1:vdims(i)), count=child_count(1:vdims(i)) )
+      if(ierr/=0) then
+        print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
+        error stop 'WRITING ERROR'
       endif
 
-      ! Need to close and sync for time being.
-      ierr=nf90_sync (nctarg) ! debug only
+#ifdef TIMING
+      net_wrt_size=net_wrt_size+size
+      nclk=3-nclk
+      call system_clock(iclk(nclk), clk_rate,clk_max)
+      inc_clk=iclk(nclk)-iclk(3-nclk)
+      net_wrt_clk=net_wrt_clk+inc_clk
+#endif
 
-      end subroutine read_write_child_bry  !]
+      ! Need to close and sync for time being.
+!      ierr=nf90_sync (nctarg) ! debug only
+
+      end subroutine cbry_read_write  !]
 
 ! ----------------------------------------------------------------------
-      subroutine copy_vars_atts  ![
-      implicit none              !  copy the variables and attributes for join_child_bry.
-                                 !  can't use ncjoin_mpi routine because of chunking and dimension issues,
-                                 !  since child bry sizes are different on east and west as orientation different from parent.
+      subroutine cbry_copy_vars_atts  ![
+      implicit none                   !  copy the variables and attributes for join_child_bry.
+                                      !  can't use ncjoin_mpi routine because of chunking and dimension issues,
+                                      !  since child bry sizes are different on east and west as orientation different from parent.
 
 #ifdef VERBOSE
         if(my_rank==0) write(*,'(1x,2A)') 'Variables, their dimensions and ',
@@ -2514,7 +2528,92 @@ c**           endif
           endif
         enddo
 
-      end subroutine copy_vars_atts  !]
+      end subroutine cbry_copy_vars_atts  !]
+
+! ----------------------------------------------------------------------
+      subroutine cbry_find_relevant_parent_nodes  ![
+      ! find all parent nodes that actually contain child boundaries
+      ! to limit loops to only nodes containing child data
+
+      ! If count>=1 for any variable, then exit loop, bool true, add node number to array.
+      !
+
+      implicit none
+
+      integer :: c, nd, vrs
+      logical :: vfirst
+
+      if (node==0) then
+        allocate( tot_cvars_p_all( 0:nnodes-1) )           ! number of child variables in parent
+        allocate(     cvars_p_all( 0:nnodes-1, ibuff(2) )) ! each child var number in parent, ibuff(2) is total vars
+        tot_cvars_p_all=0
+        cvars_p_all=0
+      endif
+
+      vfirst = .true.
+      vrs=0                                                ! reset
+      do i=1,ibuff(2)                                      ! nvars, which also equates to all the variable ID's (clearly range 1:nvars)
+        c=0
+        ierr = nf90_get_att(ncid(node), i, 'count', c)     ! count of sub-domain entry in global child bry
+        if (ierr /= 0) c=0                                 ! if didn't read correctly, had issues so reset c
+        if (c>0) then                                      ! var contains child bry
+          if(vfirst) then
+            tot_pwithc = tot_pwithc+1                      ! count total number of parent with child
+            vfirst = .false.
+          endif
+          vrs = vrs+1
+          cvars_p_all(node,i) = i                          ! store child var number to pnode
+        endif
+      enddo  !<-- nvars
+
+      tot_cvars_p_all(node) = vrs
+      if (vrs > max_cvars_p) max_cvars_p = vrs             ! need to establish parent with most child vars for array
+
+      if (node==nnodes-1) then                             ! consolodate array list of parents containing child
+        allocate( pwithc_nodes( tot_pwithc ))
+        allocate(  tot_cvars_p( tot_pwithc ))
+        allocate( cvars_p( tot_pwithc, max_cvars_p ))      ! has to be as long as the parent with most
+        c=0                                                ! child vars to share array
+        do nd=0,nnodes-1                                   ! all nodes to add to final node list, only know size now
+          if (tot_cvars_p_all( nd )>0) then
+            c=c+1
+            pwithc_nodes(c) = nd
+            tot_cvars_p(c) = tot_cvars_p_all(nd)
+            vrs=0
+            do i=1,ibuff(2)
+              if (cvars_p_all(nd,i) > 0) then              ! parent contains child var
+                vrs=vrs+1
+                cvars_p( c, vrs ) = i                      ! store variable number
+              endif
+            enddo
+          endif
+        enddo    !<-- nodes
+
+!        print *, 'pwithc_nodes=', pwithc_nodes
+!        print *, 'tot_cvars_p=', tot_cvars_p
+!        do nd=1,tot_pwithc
+!          print *, 'cvars_p(nd)=', cvars_p(nd,:)
+!        enddo
+
+        deallocate( tot_cvars_p_all )
+        deallocate( cvars_p_all     )
+
+      endif
+
+      end subroutine cbry_find_relevant_parent_nodes  !]
+
+! ----------------------------------------------------------------------
+!      subroutine cbry_read_write_ocean_time  ![
+!      ! write ocean_time outside node loop, nice all nodes contain ocean_time and
+!      ! easier to have own routine than put catches in the main cbry_read_write routine
+!
+!      implicit none
+!
+!
+!      ! check first variable is called ocean_time
+!
+!      end subroutine cbry_read_write_ocean_time  !]
+
 ! ----------------------------------------------------------------------
 
       end module ncjoin_mod
