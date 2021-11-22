@@ -5,7 +5,7 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define L4_IDEAL
+#define FILAMENT_IDEAL
 
 /*
     Embedded (nested) grid configuration segment
@@ -20,7 +20,7 @@ c--#endif
    Main switch starts here: model configuration choice.
 */
 
-#if defined L4_IDEAL
+#if defined FILAMENT_IDEAL
 
 # define ANA_GRID
 # define ANA_INITIAL
