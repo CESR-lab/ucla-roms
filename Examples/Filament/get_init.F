@@ -491,7 +491,7 @@ c--#define VERBOSE
 
 ! 3D momentum components in XI- and ETA-directions
 
-# ifdef L4_IDEAL
+# ifdef FILAMENT_IDEAL
       lvar=lenstr('AKv')
       ierr=nf90_inq_varid(ncid, 'AKv', varid)
       if (ierr == nf90_noerr) then
