@@ -1,4 +1,18 @@
+      module analytical
+
+      ! all analytical routines contained in this module
+
 #include "cppdefs.opt"
+
+      use param
+      use ocean2d
+      use ocean3d
+      use grid
+      use scalars
+      use tracers
+
+      implicit none
+      private
 
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
@@ -20,12 +34,71 @@
 ! ana_wwave_tile    Analytical wind induced wave amplitude,
 !                         direction and period.
 
-#if defined ANA_BSEDIM && defined SG_BBL96
-      subroutine ana_bsedim_tile(istr,iend,jstr,jend)
+      ! user input:
+      logical, parameter :: restore = .false.
 
-! Set initial bottom sediment grain diameter size [m]  and density
-! used in the bottom boundary formulation [kg/m^3].
+! REMOVE ALL FLAGS LATER
+#ifdef ANA_GRID
+      public ana_grid
+#endif
+#ifdef ANA_INITIAL
+      public ana_init
+#endif
+#ifdef ANA_VMIX
+      public ana_vmix
+#endif
 
+#ifdef ANA_SMFLUX
+      public ana_smflux_tile
+#endif
+#if defined ANA_SRFLUX && defined SOLVE3D
+      public ana_srflux_tile
+#endif
+#if defined ANA_SSH
+      public ana_ssh_tile
+#endif
+#ifdef SOLVE3D
+# if defined ANA_STFLUX || defined ANA_SSFLUX
+      public ana_stflux_tile
+# endif
+#endif
+
+      ! Non-typical analytical vars:
+
+
+      contains
+
+! ----------------------------------------------------------------------
+#ifdef ANA_GRID
+      subroutine ana_grid (tile)
+
+      use param
+      use hidden_mpi_vars
+
+      implicit none
+      integer tile
+# include "compute_tile_bounds.h"
+      call ana_grid_tile (istr,iend,jstr,jend)
+
+      end subroutine ana_grid
+
+! ----------------------------------------------------------------------
+      subroutine ana_grid_tile (istr,iend,jstr,jend)
+
+! Set up model grid using analytical expressions:
+!---- -- ----- ---- ----- ---------- ------------
+! output: stored in common blocks, see files "scalars" "grid"
+
+! xl,el      Physical dimensions of the computational domain [usually
+!                                                measured in  meters];
+! h          Model bathymetry [meters, positive] at RHO-points.
+! hmin,hmax  Minimum and maximum values of depth of bathymetry [m].
+! f          Coriolis parameter (1/seconds) at RHO-points.
+! pm,pn      Coordinate transformation metric "m" [1/meters]
+!                   associated with the differential distances in
+!                   XI- and ETA-directions, both are at RHO-points.
+! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
+! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
       use param
       use grid
       use scalars
@@ -33,124 +106,463 @@
       implicit none
       integer istr,iend,jstr,jend, i,j
 
+! Grid configuration parameters:
+!----- ------------- -----------
+! Size_XI, Size_ETA  are the physical dimensions of the computational
+!                                domain [usually measured in  meters];
+! depth      the maximum depth [meters, positive];
+! f0,beta    Coriolis parameters to setup a beta-plane [1/s, 1/(m*s)].
+
+      real cff,y, x0,y0,dx,dy
+      real dh, shelf, slope, land, coast
+
+      real, parameter ::
+     &       depth = HD       ! H set in param.opt
+
+
 # include "compute_extended_bounds.h"
+
+      dx=100.0                         ! Set grid spacings for
+      dy=100.0                         ! Cartesian rectangular grid
+
+C$OMP MASTER                           ! Copy physical dimensions of
+      xl=dx*dble(LLm)
+      el=dy*dble(MMm)                  ! the grid into glabally vizible
+C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
+
+# ifdef MPI
+      x0=dx*dble(iSW_corn) - xl/2  ! Coordinates of south-west
+      y0=dy*dble(jSW_corn)             ! corner of MPI subdomain
+                                       ! -xl/2 to centre over axis
+# else
+      x0=0. ; y0=0.
+# endif
+
+      do j=jstrR,jendR                  ! Setup Cartezian grid
+        do i=istrR,iendR                ! (XI,ETA) at PSI- and RHO-
+          xp(i,j)=x0+dx* dble(i-1)      ! points and compute metric
+          xr(i,j)=x0+dx*(dble(i)-0.5D0) ! transformation coefficients
+          yp(i,j)=y0+dy* dble(j-1)      ! pm and pn, which are
+          yr(i,j)=y0+dy*(dble(j)-0.5D0) ! uniform in this case.
+
+          pm(i,j)=1./dx
+          pn(i,j)=1./dy
+        enddo
+      enddo
+
+! Set Coriolis parameter [1/s] at RHO-points.
+
+      x0=xl/2.
+      y0=el/2.
+      do j=jstrR,jendR
+        do i=istrR,iendR
+!          f(i,j)=f0+beta*( yr(i,j)-y0 )
+          f(i,j)=f0
+        enddo
+      enddo
 
       do j=jstrR,jendR
         do i=istrR,iendR
-          Ssize(i,j)=???
-          Sdens(i,j)=???
+          h(i,j)=depth ! constant depth
         enddo
       enddo
-      end
-#endif /* ANA_BSEDIM && SG_BBL96 */
+
+      ! Set up land masking
+
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          rmask(i,j) = 1
+        enddo
+      enddo
+
+      end subroutine ana_grid_tile
+#endif /* ANA_GRID */
+
+! ----------------------------------------------------------------------
+#ifdef ANA_INITIAL
+      subroutine ana_init (tile)  ! Set initial conditions for momentum
+                                  ! free surface, and tracer variables
+      use param
+      use hidden_mpi_vars
+      use private_scratch
+
+      implicit none               ! using analytical expressions.
+      integer tile
+
+# include "compute_tile_bounds.h"
+
+      call ana_init_tile( istr,iend,jstr,jend )
+
+      end subroutine ana_init
+
+! ----------------------------------------------------------------------
+      subroutine ana_init_tile (istr,iend,jstr,jend)
+
+      use param
+      use boundary
+      use climat
+      use eos_vars
+      use mixing
+      use read_write
+      use netcdf
+
+      implicit none
+
+      integer :: istr,iend,jstr,jend, i,j,k, itrc
+
+# include "compute_auxiliary_bounds.h"
+
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            t(i,j,k,1,itemp)=20.0
+            t(i,j,k,1,isalt)=36.
+            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
+            t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
+          enddo
+        enddo
+      enddo
+
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          ubar(i,j,1)=0.
+          vbar(i,j,1)=0.
+          zeta(i,j,1)=0.
+          do k=1,N
+            u(i,j,k,1)=0.
+            v(i,j,k,1)=0.
+            u(i,j,k,2)=u(i,j,k,1)
+            v(i,j,k,2)=v(i,j,k,1)
+          enddo
+        enddo
+      enddo
+
+! The rest of the code is independent of the specific configuration.
+
+! Analytical problems with open boundaries may require external forcing
+! data to be applied at inflow side.  For the problems of with time
+! independent inflow conditions it is sufficient to save initial
+! condition values at the boundary point into boundary forcing arrays,
+! which will remain constant thereafter and be used as the source of
+! forcing data.  Note that this automatically guarantees consistency
+! between the initial state and side boundary conditions.
 
 
+# if defined OBC_WEST  || defined OBC_EAST ||\
+     defined OBC_SOUTH || defined OBC_NORTH
+#  ifdef ANA_BRY
+#   ifdef OBC_WEST
+      if (WESTERN_EDGE) then
+#    ifdef M2_FRC_BRY
+        do j=jstrR,jendR                     ! Save perimeter values
+          zeta_west(j)=zeta(istr-1,j,1)      ! of the initial fields
+          ubar_west(j)=ubar(istr  ,j,1)      ! to be used as external
+          vbar_west(j)=vbar(istr-1,j,1)      ! forcing data for side
+        enddo                                ! boundaries.
+#    endif
+#    ifdef SOLVE3D
+        do k=1,N
+          do j=jstrR,jendR
+#     ifdef M3_FRC_BRY
+            u_west(j,k)=u(istr  ,j,k,1)
+            v_west(j,k)=v(istr-1,j,k,1)
+#     endif
+#     ifdef T_FRC_BRY
+            t_west(j,k,itemp)=t(istr-1,j,k,1,itemp)
+#     endif
+          enddo
+        enddo
+#    endif
+      endif
+#   endif
+
+#   ifdef OBC_EAST
+      if (EASTERN_EDGE) then
+#    ifdef M2_FRC_BRY
+        do j=jstrR,jendR
+          zeta_east(j)=zeta(iend+1,j,1)
+          ubar_east(j)=ubar(iend+1,j,1)
+          vbar_east(j)=vbar(iend+1,j,1)
+        enddo
+#    endif
+#    ifdef SOLVE3D
+        do k=1,N
+          do j=jstrR,jendR
+#     ifdef M3_FRC_BRY
+            u_east(j,k)=u(iend+1,j,k,1)
+            v_east(j,k)=v(iend+1,j,k,1)
+#     endif
+#     ifdef T_FRC_BRY
+            t_east(j,k,itemp)=t(iend+1,j,k,1,itemp)
+#     endif
+          enddo
+        enddo
+#    endif
+      endif
+#   endif
 
 
+#   ifdef OBC_SOUTH
+      if (SOUTHERN_EDGE) then
+#    ifdef M2_FRC_BRY
+        do i=istrR,iendR
+          zeta_south(i)=zeta(i,jstr-1,1)
+          ubar_south(i)=ubar(i,jstr-1,1)
+          vbar_south(i)=vbar(i,jstr  ,1)
+        enddo
+#    endif
+#    ifdef SOLVE3D
+        do k=1,N
+          do i=istrR,iendR
+#     ifdef M3_FRC_BRY
+            u_south(i,k)=u(i,jstr-1,k,1)
+            v_south(i,k)=v(i,jstr  ,k,1)
+#     endif
+#     ifdef T_FRC_BRY
+            t_south(i,k,itemp)=t(i,jstr-1,k,1,itemp)
+#     endif
+          enddo
+        enddo
+#    endif
+      endif
+#   endif
+
+#   ifdef OBC_NORTH
+      if (NORTHERN_EDGE) then
+#    ifdef M2_FRC_BRY
+        do i=istrR,iendR
+          zeta_north(i)=zeta(i,jend+1,1)
+          ubar_north(i)=ubar(i,jend+1,1)
+          vbar_north(i)=vbar(i,jend+1,1)
+        enddo
+#    endif
+#    ifdef SOLVE3D
+        do k=1,N
+          do i=istrR,iendR
+#     ifdef M3_FRC_BRY
+            u_north(i,k)=u(i,jend+1,k,1)
+            v_north(i,k)=v(i,jend+1,k,1)
+#     endif
+#     ifdef T_FRC_BRY
+            t_north(i,k,itemp)=t(i,jend+1,k,1,itemp)
+#     endif
+          enddo
+        enddo
+#    endif
+      endif
+#   endif
+#  else /* alternative to ANA_BRY */
+#   ifdef UCLIMATOLOGY
+      do j=jstrR,jendR                   ! Save initial data into
+        do i=istrR,iendR                 ! climatology for the
+          ubclm(i,j)=ubar(i,j,1)         ! subsequent use as inflow
+          vbclm(i,j)=vbar(i,j,1)         ! boundary conditions
+        enddo
+      enddo
+#   endif
+#   ifdef SOLVE3D
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+#    ifdef UCLIMATOLOGY
+            uclm(i,j,k)=u(i,j,k,1)
+            vclm(i,j,k)=v(i,j,k,1)
+#    endif
+#    ifdef TCLIMATOLOGY
+            tclm(i,j,k,itemp)=t(i,j,k,1,itemp)
+#    endif
+          enddo
+        enddo
+      enddo
+#   endif /* SOLVE3D */
+#  endif /* ANA_BRY */
+# endif /* at least one of OBC_XXXXX */
 
 
+# ifdef EXCHANGE
+      call exchange2d_3_tile(istr,iend,jstr,jend,
+     &                       zeta(START_2D_ARRAY,1),
+     &                       ubar(START_2D_ARRAY,1),
+     &                       vbar(START_2D_ARRAY,1))
+#  ifdef SOLVE3D
+      call exchange_2_tile(istr,iend,jstr,jend,
+     &                     u(START_2D_ARRAY,1,1), N,
+     &                     v(START_2D_ARRAY,1,1), N)
+      do itrc=1,NT
+        call exchange_tile(istr,iend,jstr,jend,
+     &                t(START_2D_ARRAY,1,1,itrc), N)
+      enddo
+#  endif
+#  ifdef ISWAKE
+#   ifdef UCLIMATOLOGY
+      call exchange2d_2_tile(istr,iend,jstr,jend, ubclm,vbclm)
+#   endif
+#   ifdef SOLVE3D
+#    ifdef UCLIMATOLOGY
+      call exchange_2_tile(istr,iend,jstr,jend, uclm,N, vclm,N)
+#    endif
+#    ifdef TCLIMATOLOGY
+      call exchange_tile(istr,iend,jstr,jend,
+     &                    tclm(START_2D_ARRAY,1,itemp), N)
+#    endif
+#   endif
+#  elif defined COLD_FILAMENT
+      call exchange_tile(istr,iend,jstr,jend, Akv,N+1)
 
-#if defined SOLVE3D && defined ANA_MEANRHO
-      subroutine ana_meanRHO_tile(istr,iend,jstr,jend)
+#  endif
+# endif  /* EXCHANGE */
 
-!  Set mean density anomaly [kg/m^3] using an analytical expression.
+
+# if defined OBC_WEST && (defined NS_PERIODIC || defined MPI)
+      if (WESTERN_EDGE) then
+#  ifdef M2_FRC_BRY
+        call exch_bry_EW_tile (jstr,jend, zeta_west,1)
+        call exch_bry_EW_tile (jstr,jend, ubar_west,1)
+        call exch_bry_EW_tile (jstr,jend, vbar_west,1)
+#  endif
+#  ifdef M3_FRC_BRY
+        call exch_bry_EW_tile (jstr,jend, u_west,N)
+        call exch_bry_EW_tile (jstr,jend, v_west,N)
+#  endif
+#  ifdef T_FRC_BRY
+        do itrc=1,NT
+          call exch_bry_EW_tile (jstr,jend, t_west(0,1,itrc),N)
+        enddo
+#  endif
+      endif
+# endif
+
+# if defined OBC_EAST && (defined NS_PERIODIC || defined MPI)
+      if (EASTERN_EDGE) then
+#  ifdef M2_FRC_BRY
+        call exch_bry_EW_tile (jstr,jend, zeta_east,1)
+        call exch_bry_EW_tile (jstr,jend, ubar_east,1)
+        call exch_bry_EW_tile (jstr,jend, vbar_east,1)
+#  endif
+#  ifdef M3_FRC_BRY
+        call exch_bry_EW_tile (jstr,jend, u_east,N)
+        call exch_bry_EW_tile (jstr,jend, v_east,N)
+#  endif
+#  ifdef T_FRC_BRY
+        do itrc=1,NT
+          call exch_bry_EW_tile (jstr,jend, t_east(0,1,itrc),N)
+        enddo
+#  endif
+      endif
+# endif
+
+# if defined OBC_SOUTH && (defined EW_PERIODIC || defined MPI)
+      if (SOUTHERN_EDGE) then
+#  ifdef M2_FRC_BRY
+        call exch_bry_NS_tile (istr,iend, zeta_south,1)
+        call exch_bry_NS_tile (istr,iend, ubar_south,1)
+        call exch_bry_NS_tile (istr,iend, vbar_south,1)
+#  endif
+#  ifdef M3_FRC_BRY
+        call exch_bry_NS_tile (istr,iend, u_south,N)
+        call exch_bry_NS_tile (istr,iend, v_south,N)
+#  endif
+#  ifdef T_FRC_BRY
+        do itrc=1,NT
+          call exch_bry_NS_tile (istr,iend, t_south(0,1,itrc),N)
+        enddo
+#  endif
+      endif
+# endif
+
+# if defined OBC_NORTH && (defined EW_PERIODIC || defined MPI)
+      if (NORTHERN_EDGE) then
+#  ifdef M2_FRC_BRY
+        call exch_bry_NS_tile (istr,iend, zeta_north,1)
+        call exch_bry_NS_tile (istr,iend, ubar_north,1)
+        call exch_bry_NS_tile (istr,iend, vbar_north,1)
+#  endif
+#  ifdef M3_FRC_BRY
+        call exch_bry_NS_tile (istr,iend, u_north,N)
+        call exch_bry_NS_tile (istr,iend, v_north,N)
+#  endif
+#  ifdef T_FRC_BRY
+        do itrc=1,NT
+          call exch_bry_NS_tile (istr,iend, t_north(0,1,itrc),N)
+        enddo
+#  endif
+      endif
+# endif
+
+      end subroutine ana_init_tile
+#endif /* ANA_INITIAL */
+
+! ----------------------------------------------------------------------
+#if defined ANA_VMIX && defined SOLVE3D
+
+      subroutine ana_vmix (tile)
+
+      use param
+      use hidden_mpi_vars
+
+      implicit none
+      integer tile
+# include "compute_tile_bounds.h"
+      call ana_vmix_tile (istr,iend,jstr,jend)
+      end subroutine ana_vmix
+
+! ----------------------------------------------------------------------
+      subroutine ana_vmix_tile (istr,iend,jstr,jend)
+
+! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
+! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
+! using analytical expressions.
+
       use param
       use grid
+      use mixing
       use ocean3d
       use scalars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-      real cff1, cff2 , cff3, cff4
+      real cff
 
-# include "compute_extended_bounds.h"
+# include "compute_auxiliary_bounds.h"
 
-!  Set mean density anomaly (kg/m^3) at horizontal and vertical
-!  RHO-points.
+      if (FIRST_TIME_STEP) then
+        do k=0,N
+          do j=jstr,jend
+            do i=istr,iend
+             Akv(i,j,k)=0.0
 
-# if defined CANYON_A || defined GRAV_ADJ || defined OVERFLOW
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=R0
+             Akt(i,j,k,itemp)=0.
+#  ifdef SALINITY
+              Akt(i,j,k,isalt)=Akt_bak(isalt)
+#  endif
+            enddo
           enddo
         enddo
-      enddo
-# elif defined CANYON_B
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=R0-3.488*exp(z_w(i,j,k)/800.)*
-     &                  (1.-(2./3.)*tanh(z_r(i,j,k)/800.))
-          enddo
-        enddo
-      enddo
-# elif defined SEAMOUNT
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=28.-2.*exp(z_r(i,j,k)/1000.)
-          enddo
-        enddo
-      enddo
-# elif defined SHELFRONT
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=R0
-          enddo
-        enddo
-      enddo
-# elif defined UPWELLING
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=26.459472-2.24*exp(z_r(i,j,k)/50.)
-          enddo
-        enddo
-      enddo
-# elif defined JET
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-           cff1=TL1 + TL2*z_r(i,j,k) + TL3*exp(z_r(i,j,k)/ZL1)
-           cff2=TC1 + TC2*z_r(i,j,k) + TC3*exp((z_r(i,j,k)-ZC1)/ZC2)
-           cff3=YC1 +YC2* tanh(YC3*xr(i,j)+YC4)
+      endif
 
-!          cff4=0.5*( cff2*(1+tanh((cff3-yr(i,j))/LCUR))
-!                    +cff1*(1+tanh((yr(i,j)-cff3)/LCUR)))
-           cff4=cff1
-            rhobar(i,j,k)=R0+Tcoef*cff4
-          enddo
-        enddo
-      enddo
-# else
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=???
-          enddo
-        enddo
-      enddo
+
+# ifdef EXCHANGE
+      call exchange_2_tile (istr,iend,jstr,jend,  Akv, N+1,
+     &                    Akt(START_2D_ARRAY,0,itemp), N+1)
+#  ifdef SALINITY
+      call exchange_tile (istr,iend,jstr,jend,
+     &                    Akt(START_2D_ARRAY,0,isalt), N+1)
+#  endif
 # endif
-# ifdef MASKING
-      do k=1,N                  ! Apply Land/Sea mask.
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            rhobar(i,j,k)=rhobar(i,j,k)*rmask(i,j)
-          enddo
-        enddo
-      enddo
-# endif
-      end
-#endif /* ANA_MEANRHO && SOLVE3D */
 
+      end subroutine ana_vmix_tile
+#endif /* ANA_VMIX */
 
+! ----------------------------------------------------------------------
+
+! ONLY THE _TILE ROUTINES ARE USED in set_forces! GET RID OF THE NON-TILE VERSIONS
+
+! ----------------------------------------------------------------------
 #ifdef ANA_SMFLUX
       subroutine ana_smflux_tile(istr,iend,jstr,jend)
 
       use param
-      use surf_flux, only: sustr,svstr
+      use surf_flux !, only: sustr,svstr
       use grid
       use scalars
 
@@ -169,86 +581,11 @@
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-# ifdef DOUBLE_GYRE
-      if (FIRST_TIME_STEP) then    ! Wind is constant in time, so
-        TauX=(0.1/1000.)           ! initialize it during the first
-        cff=2.*pi/el               ! time step, and use thereafter. 
-        do j=jstrR,jendR
-          sustr(istr,j)=TauX*(1.-cos(cff*yr(istr,j)))
-          do i=istr+1,iendR
-            sustr(i,j)=sustr(istr,j)
-          enddo
-        enddo
-      endif
-# elif defined CANYON_A || defined CANYON_B
-      do j=jstrR,jendR
-        do i=istr,iendR
-          sustr(i,j)=0.0001*0.5*sin(2.*pi*tdays/10.)*(
-     &               1.-tanh((yr(i,j)-0.5*el)/10000.) )
-        enddo
-      enddo
-# elif defined EKMAN_SPIRAL
-      TauX=0.1/rho0
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=TauX
-        enddo
-      enddo
-
-# elif defined COLD_FILAMENT
-      TauY=0.1/rho0   ;  TauX=-1.0*TauY ! This setup allows rotating
-      cff=TauY/sqrt(TauY**2+TauX**2)    ! wind direction by setting the
-      TauX=cff*TauX   ;  TauY=cff*TauY  ! initial value of TauX, then
-      do j=jstrR,jendR                  ! adjacting both components to
-        do i=istrR,iendR                ! kee the overall amplitute as
-          sustr(i,j)=TauX               ! initially specified by TauY.
-          svstr(i,j)=TauY
-        enddo
-      enddo
-
-# elif defined UPWELLING
-      if (tdays < 2.) then
-        TauX=+0.1*sin(pi*tdays/4.)/rho0
-      else
-        TauX=+0.1/rho0
-      endif
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=TauX
-c?        svstr(i,j)=0.2*TauX !<-- to make it ETALON_CHECK sensitive
-        enddo
-      enddo
-# elif defined BALTIC
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=0.1/rho0  ! Wind blowing West --> East
-        enddo
-      enddo
-
-
-# elif defined USWEST
-      do j=jstrR,jendR
-        do i=istr,iendR
-c         cff1=(latr(i,j)-latr(Lm/2,Mm/2))/20.
-c         sustr(i,j)=1.d-4.*cff1
-c         sustr(i,j)=-1.d-4
-          sustr(i,j)=0.
-        enddo
-      enddo
-      do j=jstr,jendR
-        do i=istrR,iendR
-c          svstr(i,j)=-1.0d-4
-          svstr(i,j)=0.
-        enddo
-      enddo
-# endif
       end
 #endif /* ANA_SMFLUX */
 
+! ----------------------------------------------------------------------
 #if defined ANA_SRFLUX && defined SOLVE3D
-
       subroutine ana_srflux_tile(istr,iend,jstr,jend)
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
@@ -271,7 +608,7 @@ c          svstr(i,j)=-1.0d-4
       end
 #endif /* ANA_SRFLUX */
 
-
+! ----------------------------------------------------------------------
 #if defined ANA_SSH
       subroutine ana_ssh(tile)            ! Set analytical sea-surface
       use param
@@ -282,6 +619,7 @@ c          svstr(i,j)=-1.0d-4
       call ana_ssh_tile(istr,iend,jstr,jend)
       end
 
+! ----------------------------------------------------------------------
       subroutine ana_ssh_tile(istr,iend,jstr,jend)
 
       use param
@@ -291,38 +629,13 @@ c          svstr(i,j)=-1.0d-4
 
       implicit none
       integer istr,iend,jstr,jend, i,j
-#ifdef JET
-      real TL0, TC0, cff1, cff2, cff3, cff4
-#endif
 
 # include "compute_extended_bounds.h"
 
-# if defined JET
-      TL0=-TL1 - 0.5*TL2*ZREF**2 - ZL1*TL3*exp(ZREF/ZL1)
-      TC0=-TC1 - 0.5*TC2*ZREF**2 - ZC2*TC3*exp((ZREF-ZC1)/ZC2)
-      do j=jstrR,jendR
-        do i=istrR,iendR
-         cff1=YC1+YC2*tanh(YC3*xr(i,j)+YC4)
-         cff2=TL0+ZL1*TL3
-         cff3=TC0+ZC2*TC3*exp(-ZC1/ZC2)
-         cff4=-0.5*g*Tcoef*(cff2+cff3)
-         ssh(i,j)=cff4/(rho0*g)
-                +Tcoef*cff2*(1+tanh((cff1-yr(i,j))/LCUR))/(2*rho0)
-                +Tcoef*cff3*(1+tanh((yr(i,j)-cff1)/LCUR))/(2*rho0)
-        enddo
-      enddo
-# else
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ssh(i,j)=???
-        enddo
-      enddo
-#endif /* JET */
       end
 #endif
 
-
-
+! ----------------------------------------------------------------------
 #ifdef SOLVE3D
 # if defined ANA_STFLUX || defined ANA_SSFLUX
       subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)
@@ -370,382 +683,36 @@ c          svstr(i,j)=-1.0d-4
       end
 # endif /* ANA_STFLUX || ANA_SSFLUX */
 
-
-
-# if defined ANA_TCLIMA && defined TCLIMATOLOGY
-      subroutine ana_tclima(tile)
-      use param
-      use hidden_mpi_vars
-      implicit none                   ! Set up analytical tracer
-      integer tile                    ! climatology fields.
-# include "compute_tile_bounds.h"
-      call ana_tclima_tile(istr,iend,jstr,jend)
-      end
-
-      subroutine ana_tclima_tile(istr,iend,jstr,jend)
-
-      use param
-      use climat
-      use grid
-      use ocean3d
-      use scalars
-
-      implicit none
-      integer istr,iend,jstr,jend, i,j,k
-#  ifdef JET
-      real cff1, cff2, cff3
-#  endif
-
-#  include "compute_extended_bounds.h"
-
-#  if defined JET
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-           cff1=TL1+ TL2*z_r(i,j,k) +TL3*exp(z_r(i,j,k)/ZL1)
-           cff2=TC1+ TC2*z_r(i,j,k) +TC3*exp((z_r(i,j,k)-ZC1)/ZC2)
-           cff3=YC1+YC2*tanh(YC3*xr(i,j)+YC4)
-           tclm(i,j,k,itemp)=0.5*(cff2*(1+tanh((cff3-yr(i,j))/LCUR))
-     &                           +cff1*(1+tanh((yr(i,j)-cff3)/LCUR)))
-          enddo
-        enddo
-      enddo
-
-#  elif defined ISWAKE
-
-! There is no code here because for this case climatological data is
-! saved from the initial conditions and thereafter remaines unchanged.
-
-#  else
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            tclm(i,j,k,itemp)=???
-#   ifdef SALINITY
-            tclm(i,j,k,isalt)=???
-#   endif
-          enddo
-        enddo
-      enddo
-#  endif
-      end
-# endif /* ANA_TCLIMA && TCLIMATOLOGY */
 #endif /* SOLVE3D */
 
+! ----------------------------------------------------------------------
+#ifdef FILAMENT_RESTORE
+      subroutine ana_restore_zeta( istr,iend,jstr,jend,knew)
 
-#if defined ANA_UCLIMA && defined UCLIMATOLOGY
-      subroutine ana_uclima(tile)
-      use param
-      use hidden_mpi_vars
-      use private_scratch
-      implicit none
-      integer tile
-
-#include "compute_tile_bounds.h"
-      call ana_uclima_tile   (istr,iend,jstr,jend)!,A2d(1,1),A2d(1,2))
-      end
-
-      subroutine ana_uclima_tile(istr,iend,jstr,jend)!, wrk1,wrk2)
-
-!---------------------------------------------------------------------
-!  This routine sets analytical momentum climatology fields.
-!---------------------------------------------------------------------
-
-      use param
-      use climat
-      use grid
+      use ocean2d
       use ocean3d
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
-c      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: wrk1, wrk2
-# ifdef JET
-      real TL0, TC0, cff1, cff2, cff3, cff4, cff5
-# endif
 
-# include "compute_extended_bounds.h"
+      integer, intent(in) :: istr,iend,jstr,jend, knew
 
-! Set climatology fields for tracer type variables.
-!---- ----------- ------ --- ------ ---- ----------
+      ! local
+      integer :: i,j
 
-# if defined USWEST
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ubclm(i,j)=0.
-          vbclm(i,j)=0.
-        enddo
-      enddo
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            uclm(i,j,k)=0.
-            vclm(i,j,k)=0.
-          enddo
-        enddo
-      enddo
-#  endif
-# elif defined JET
-      TL0=-TL1 - 0.5*TL2*ZREF**2 - ZL1*TL3*exp(ZREF/ZL1)
-      TC0=-TC1 - 0.5*TC2*ZREF**2 - ZC2*TC3*exp((ZREF-ZC1)/ZC2)
-      do j=jstr-1,jend+1
-        do i=istr-1,iend+1
-          cff1=TL0*h(i,j) - 0.5*TL1*h(i,j)**2 + TL2*(h(i,j)**3)/6.
-     &                         - (ZL1**2)*TL3*(1-exp(-h(i,j)/ZL1))
-          cff2=TC0*h(i,j) - 0.5*TC1*h(i,j)**2 + TC2*(h(i,j)**3)/6.
-     &           - (ZC2**2)*TC3*exp(-ZC1/ZC2)*(1-exp(-h(i,j)/ZC2))
-          cff3=YC1+YC2*tanh(YC3*xr(i,j)+YC4)
-          cff4=-g*Tcoef*(1-(tanh((cff3-yr(i,j))/LCUR))**2)
-     &                       /(2*rho0*f(i,j)*LCUR*h(i,j))
-! ubar
-          wrk1(i,j)=cff4*(cff1-cff2)
-! vbar
-          cff5=YC2*YC3*(1-(tanh(YC3*xr(i,j)+YC4))**2)
-          wrk2(i,j)=cff4*cff5*(cff1-cff2)
-        enddo
-      enddo
-      do j=jstrR,jendR
-        do i=istr,iendR
-          ubclm(i,j)=0.5*(wrk1(i,j)+wrk1(i-1,j))
-        enddo
-      enddo
-      do j=jstr,jendR
-        do i=istrR,iendR
-          vbclm(i,j)=0.5*(wrk2(i,j)+wrk2(i,j-1))
-        enddo
-      enddo
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstr-1,jend+1
-          do i=istr-1,iend+1
-            cff1=TL0 + TL1*z_r(i,j,k) + 0.5*TL2*(z_r(i,j,k)**2)
-     &                            + ZL1*TL3*exp(z_r(i,j,k)/ZL1)
+# include "compute_auxiliary_bounds.h"
 
-            cff2=TC0 + TC1*z_r(i,j,k) + 0.5*TC2*(z_r(i,j,k)**2)
-     &                      + ZC2*TC3*exp((z_r(i,j,k)-ZC1)/ZC2)
-            cff3=YC1 + YC2*tanh(YC3*xr(i,j)+YC4)
-            cff4=g*Tcoef*(1.-(tanh((cff3-yr(i,j))/LCUR))**2)
-     &                                 /(2*rho0*f(i,j)*LCUR)
-! u
-            wrk1(i,j)=cff4*(cff1-cff2)
-! v
-            cff5=YC2*YC3*(1.-(tanh(YC3*xr(i,j)+YC4))**2)
-            wrk2(i,j)=cff4*cff5*(cff1-cff2)
-          enddo
-        enddo
-        do j=jstrR,jendR
-          do i=istr,iendR
-            uclm(i,j,k)=0.5*(wrk1(i,j)+wrk1(i-1,j))
-          enddo
-        enddo
-        do j=jstr,jendR
-          do i=istrR,iendR
-            vclm(i,j,k)=0.5*(wrk2(i,j)+wrk2(i,j-1))
-          enddo
-        enddo
-      enddo
-#  endif
-# elif defined ISWAKE
-
-! There is no code here because for this case climatological data is
-! saved from the initial conditions and thereafter remaines unchanged.
-
-# else
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ubclm(i,j)=???
-          vbclm(i,j)=???
-        enddo
-      enddo
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            uclm(i,j,k)=???
-            vclm(i,j,k)=???
-          enddo
-        enddo
-      enddo
-#  endif
-# endif
-      end
-#endif /* ANA_UCLIMA && UCLIMATOLOGY */
-!
-#if defined ANA_WWAVE && defined SG_BBL96
-      subroutine ana_wwave_tile(istr,iend,jstr,jend)
-
-! Set wind induced wave amplitude, direction and period for
-! bottom boundary layer formulation.
-      use param
-      use grid
-
-      implicit none
-      integer istr,iend,jstr,jend, i,j
-
-# include "compute_extended_bounds.h"
-
-!  Set wind induced wave amplitude (m), direction (radians) and
-!  period (s) at RHO-points.
+!      print *, 'Restoring zeta!'
 
       do j=jstrR,jendR
         do i=istrR,iendR
-          Awave(i,j)=???
-          Dwave(i,j)=???
-          Pwave(i,j)=???
+          zeta(i,j,knew)      = zeta0(i,j)
+!          t(i,j,:,nnew,itemp) = t0(i,j,:)
         enddo
       enddo
-      end
-#endif /* ANA_WWAVE && SG_BBL96 */
 
-#if defined PSOURCE && defined ANA_PSOURCE
-                              ! Set analytical tracer and mass point
-      subroutine ana_psource  ! sources and sinks. River runoff can
-      use param
-      use scalars
-      implicit none           ! be consider as a point source.
-!
-      integer is, k
-      real cff, fac
-
-! Set-up point Sources/Sink number (Nsrc), direction (Dsrc), I- and
-! J-grid locations (Isrc,Jsrc).  Currently, the direction can be along
-! XI- (Dsrc = 0) or along ETA-direction (Dsrc > 0).  The mass sources
-! are located at U- or V-points so the grid locations should range
-! from 1 =< Isrc =< L  and  1 =< Jsrc =< M.
-
-      if (FIRST_TIME_STEP) then
-# if defined IBERIA
-        Nsrc=4
-        Dsrc(1)=1            ! Minho
-        Isrc(1)=109
-        Jsrc(1)=137
-
-        Dsrc(2)=1            ! Douro
-        Isrc(2)=116
-        Jsrc(2)=114
-
-        Dsrc(3)=1            ! Mondego
-        Isrc(3)=107
-        Jsrc(3)=78
-
-        Dsrc(4)=1            ! TEJO
-        Isrc(4)=102
-        Jsrc(4)=36
-#  ifdef SOLVE3D
-        do is=1,Nsrc                   ! Set-up nondimensional shape
-          do k=1,9                     ! function to distribute mass
-            Qshape(is,k)=0.1           ! point sources/sinks
-          enddo                        ! vertically.
-          Qshape(is,10)=0.06           ! These most add up to unity!
-          Qshape(is,11)=0.03
-          Qshape(is,12)=0.01
-          do k=13,19
-            Qshape(is,k)=0.0
-          enddo
-        enddo
-#  endif
-
-# elif defined RIVER
-        Nsrc=3
-        do is=1,Nsrc
-          Dsrc(is)=0
-          Isrc(is)=1
-          Jsrc(is)=3*MMm/4 +is-1
-        enddo
-#  ifdef SOLVE3D
-        cff=1./float(N)
-        do k=1,N                         ! Uniform vertical
-          do is=1,Nsrc                   ! distribution
-            Qshape(is,k)=cff
-          enddo
-        enddo
-#  endif
-# else
-#  error  "### ERROR:  CPP-key 'ANA_PSOURCE' is defined, but no code"
-#  error  "### ERROR:  is provided to set up Dsrc, Isrc, Jsrc"
-           xxx <-- to stop compilation here
-# endif
-      endif
-!
-! Set-up vertically integrated mass transport [m3/s] of point
-! sources (these may time-dependent; positive in the positive U-
-! or V-direction and vice-versa) and vertically distribute them
-! according to mass transport profile chosen above.
-!
-# ifdef SOLVE3D
-#  ifdef IBERIA
-!     if (tdays<0.5) then
-!       fac=1.0+TANH((time-43200.)/43200.)
-!     else
-!       fac=0.5 + 0.5*sin(tdays*pi/180. +45.)
-!     endif
-!     do is=1,Nsrc
-!       Qbar(is)=fac*400.
-!       Qbar(is)=400.
-!     enddo
-!
-      Qbar(1)=300.
-      Qbar(2)=600.
-      Qbar(3)=200.
-      Qbar(4)=800.
-#  elif defined RIVER
-!     if (tdays-dstart < 0.5) then
-      if (tdays<0.5) then
-        fac=1.0+TANH((time-43200.)/43200.)
-      else
-        fac=1.0
-      endif
-      do is=1,Nsrc
-        if (is==2) then
-          cff=13.
-        else
-          cff=7.
-        endif
-        Qbar(is)=fac*1500. * cff/27.
-      enddo
-#  else
-#   error "### ERROR:  CPP-key 'ANA_PSOURCE' is defined, but no code"
-#   error "### ERROR:  is provided to set up Qbar(is) analytically."
-           xxx <-- to stop compilation here
-#  endif
-      do is=1,Nsrc
-        do k=1,N
-          Qsrc(is,k)=Qbar(is)*Qshape(is,k)
-        enddo
-      enddo
-# endif /* SOLVE3D */
-# if defined PSOURCE && defined SOLVE3D
-!
-!  Set-up tracer (tracer units) point Sources/Sinks.
-!
-#  ifdef IBERIA
-      do k=1,N
-!       do is=1,Nsrc
-          Tsrc(1,k,itemp)=13.0
-          Tsrc(1,k,isalt)=10.0
-          Tsrc(2,k,itemp)=13.0
-          Tsrc(2,k,isalt)=10.0
-          Tsrc(3,k,itemp)=14.0
-          Tsrc(3,k,isalt)=10.0
-          Tsrc(4,k,itemp)=14.0
-          Tsrc(4,k,isalt)=10.0
-!       enddo
-      enddo
-#  elif defined RIVER
-      do k=1,N
-        do is=1,Nsrc
-          Tsrc(is,k,itemp)=13.0
-          Tsrc(is,k,isalt)=0.0
-        enddo
-      enddo
-#  else
-#   error "### ERROR:  CPP-key 'ANA_PSOURCE' is defined, but no code"
-#   error "### ERROR:  is provided to set up Tsrc(is) analytically."
-           xxx <-- to stop compilation here
-#  endif
-# endif
-      end
+      end subroutine ana_restore_zeta
 #endif
 
-      subroutine ana_empty
-      end
+! ----------------------------------------------------------------------
+
+      end module analytical

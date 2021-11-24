@@ -22,8 +22,8 @@ c--#endif
 
 #if defined FILAMENT_IDEAL
 
-c# define ANA_GRID
-c# define ANA_INITIAL
+# define ANA_GRID
+# define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_SRFLUX
 # define ANA_STFLUX
@@ -42,13 +42,15 @@ c# define ANA_INITIAL
 # define UV_VIS2
 # define TS_DIF2
         /*        - vertical */
-c#define ANA_VMIX
-# define LMD_MIXING
-# define LMD_KPP
-# define LMD_NONLOCAL
-# define LMD_RIMIX
-# define LMD_CONVEC
-# define LMD_BKPP
+# define ANA_VMIX
+# ifndef ANA_VMIX
+#  define LMD_MIXING
+#  define LMD_KPP
+#  define LMD_NONLOCAL
+#  define LMD_RIMIX
+#  define LMD_CONVEC
+#  define LMD_BKPP
+# endif
         /* Grid Configuration */
 c-dd# define CURVGRID
 c-dd# define SPHERICAL
@@ -61,7 +63,7 @@ c-dd# define SPHERICAL
 # define EW_PERIODIC
 
         /* Waves Effect on Current */
-# define WEC
+c# define WEC
 # ifdef WEC
 #  define ANA_WEC_FRC
 #  define WAVE_OFFLINE /* DPD: for ust_r */
