@@ -88,6 +88,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use ncvars
       use ocean3d
       use scalars
+      use analytical
 
       implicit none
 
@@ -343,6 +344,7 @@ C$OMP END MASTER
       use diagnostics
       use ncvars
       use scalars
+      use analytical
 
       implicit none
       integer trd, tile, my_first, my_last, range

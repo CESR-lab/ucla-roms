@@ -46,6 +46,7 @@
       use bgc ! , only: set_bgc_surf_frc
       use hidden_mpi_vars
       use scalars
+      use analytical
 
       implicit none
 

@@ -51,8 +51,8 @@
       public set_pipe_frc_tile
 
       contains
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
       subroutine set_pipe_frc_tile(istr,iend,jstr,jend)
 
       ! SET PIPE FORCES (REALISTIC OR ANALYTICAL FORCING):
@@ -72,11 +72,11 @@
       if(FIRST_TIME_STEP) call init_pipe_frc(istr,iend,jstr,jend)
 
       ! Set pipe flux volumes and tracer data
-      if(analytical) then
+      if(p_analytical) then
 !       if(mynode==0) print*, 'pipes: going to set_ana_pipe_frc'
-#ifdef ANA_PIPE_FRC
-        call set_ana_pipe_frc ! cppflags needed else won't link without the analytical.F
-#endif
+
+        call set_ana_pipe_frc(istr,iend,jstr,jend)
+
         ! pipe vertical profile (pipe_prf) is currently set in analytical.F
         
       else
@@ -136,9 +136,9 @@
       integer :: ierr,ncid,v_id,i,j
 
       ! Should put this in wrapper in read_write.F as 'nc_read_once'
-      if (analytical) then
+      if (p_analytical) then
 
-        ! pipe_flx is defined in ana_grid.F
+        ! pipe_flx is defined in ana_grid()
 
       else
 
@@ -187,6 +187,17 @@
       enddo
 
       end subroutine set_pipe_vert_prf
+
+! ----------------------------------------------------------------------
+# if defined PIPE_SOURCE
+      subroutine set_ana_pipe_frc(istr,iend,jstr,jend)
+      ! Analytical pipe forcing volume and tracer data
+      ! Put here to avoid circular reference if in analytical.F
+
+#include "pipe_frc_ana.opt"
+
+      end subroutine set_ana_pipe_frc
+#endif /* PIPE_SOURCE */
 ! ----------------------------------------------------------------------
 
 # endif /* ifdef PIPE_SOURCE */

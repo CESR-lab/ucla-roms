@@ -3,9 +3,9 @@
       ! user inputs
       integer,public,parameter :: npip = 1 ! number of pipes
 #ifdef ANA_PIPE_FRC
-      logical :: analytical = .true.       ! analytical forcing 
+      logical :: p_analytical = .true.       ! analytical forcing 
 #else
-      logical :: analytical = .false.      ! forcing netcdf files
+      logical :: p_analytical = .false.      ! forcing netcdf files
 #endif
       ! end user inputs
       ! ****************************************************************

@@ -53,8 +53,8 @@
       public set_river_frc_tile
 
       contains
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
       subroutine set_river_frc_tile(istr,iend,jstr,jend)
 
       ! SET RIVER FORCES (REALISTIC OR ANALYTICAL FORCING):
@@ -74,9 +74,8 @@
       ! Set river flux volumes and tracer data
       if(analytical) then
 !       if(mynode==0) print*, 'rivers: going to set_ana'
-#ifdef ANA_RIVER_FRC
+
         call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
-#endif
 
       else
 
@@ -106,8 +105,8 @@
       endif
 
       end subroutine set_river_frc_tile
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
       subroutine init_river_frc(istr,iend,jstr,jend)
 
       ! Initialize river forcing:
@@ -183,6 +182,15 @@
       enddo
 
       end subroutine calc_river_flux
+
+! ----------------------------------------------------------------------
+      subroutine set_ana_river_frc
+      ! Analytical river forcing volume and tracer data
+
+#include "river_frc_ana.opt"
+
+      end subroutine set_ana_river_frc
+
 ! ----------------------------------------------------------------------
 
 # endif /* ifdef RIVER_SOURCE */
