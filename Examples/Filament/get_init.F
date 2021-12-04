@@ -15,6 +15,7 @@
       use ocean3d
       use scalars
       use netcdf
+      use analytical
 
       implicit none
 
@@ -497,6 +498,9 @@ c--#define VERBOSE
       if (ierr == nf90_noerr) then
         ierr=ncdf_read( ncid,  varid,  record,  r_var,
      &                  Akv, N+1)
+#  ifdef ANA_AKV_RESTORE
+        Akv0=Akv
+#  endif
         if (ierr /= nf90_noerr)
      &    print *, 'error reading Akv?!', nf_strerror(ierr)
       else
