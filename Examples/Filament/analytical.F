@@ -10,6 +10,7 @@
       use grid
       use scalars
       use tracers
+      use mixing
 
       implicit none
       private
@@ -35,7 +36,7 @@
 !                         direction and period.
 
       ! user input:
-      logical, parameter :: restore = .false.
+      logical, parameter :: restore = .true.
 
 ! REMOVE ALL FLAGS LATER
 #ifdef ANA_GRID
@@ -68,8 +69,14 @@
 #ifdef FILAMENT_RESTORE
       public ana_restore_zeta
 !      public ana_restore_temp
-      real, dimension(GLOBAL_2D_ARRAY, N) :: t0     ! original temp and zeta to restore
+      real, dimension(GLOBAL_2D_ARRAY, N) :: t0        ! original temp and zeta to restore
       real, dimension(GLOBAL_2D_ARRAY)    :: zeta0
+      real, public :: alpha_fil                        ! restoring timescale
+#endif
+#ifdef ANA_AKV_RESTORE
+      real, public, dimension(GLOBAL_2D_ARRAY, 0:N) :: Akv0
+!      logical :: first_akv = .true.
+      public ana_restore_akv
 #endif
 
       contains
@@ -235,6 +242,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       real :: bs0         = 8.51e-3  ! ms-2
 
 # include "compute_auxiliary_bounds.h"
+
+#ifdef FILAMENT_RESTORE
+      alpha_fil = dt / ( 3600 )  ! set restoring coeff
+#endif
 
       allocate(  b(GLOBAL_2D_ARRAY, N) )
       allocate( a1(GLOBAL_2D_ARRAY, N) )
@@ -853,10 +864,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 ! ----------------------------------------------------------------------
 #ifdef FILAMENT_RESTORE
       subroutine ana_restore_zeta( istr,iend,jstr,jend,knew)
-
-      use ocean2d
-      use ocean3d
-
       implicit none
 
       integer, intent(in) :: istr,iend,jstr,jend, knew
@@ -870,14 +877,66 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       do j=jstrR,jendR
         do i=istrR,iendR
-          zeta(i,j,knew)      = zeta0(i,j)
-!          t(i,j,:,nnew,itemp) = t0(i,j,:)
+          zeta(i,j,knew) = zeta(i,j,knew) - (zeta(i,j,knew) - zeta0(i,j)) * alpha_fil
         enddo
       enddo
 
       end subroutine ana_restore_zeta
-#endif
 
 ! ----------------------------------------------------------------------
+!      subroutine ana_restore_u( istr,iend,jstr,jend)
+!      implicit none
+!
+!      integer, intent(in) :: istr,iend,jstr,jend
+!
+!      ! local
+!      integer :: i,j
+!
+!# include "compute_auxiliary_bounds.h"
+!
+!!      print *, 'Restoring zeta!'
+!
+!      do j=jstrR,jendR
+!        do i=istrR,iendR
+!!          u(i,j,:,nnew) = u(i,j,:,nnew) - u(i,j,:,nnew) * alpha_fil
+!          ubar(i,j,knew) = ubar(i,j,knew) - ubar(i,j,knew) * alpha_fil
+!        enddo
+!      enddo
+!
+!      end subroutine ana_restore_u
+
+
+#endif /* FILAMENT_RESTORE */
+
+! ----------------------------------------------------------------------
+#ifdef ANA_AKV_RESTORE
+      subroutine ana_restore_akv( istr,iend,jstr,jend )
+      implicit none
+
+      integer, intent(in) :: istr,iend,jstr,jend
+
+      ! local
+      integer :: i,j
+
+# include "compute_auxiliary_bounds.h"
+
+      if (mynode==0) print *, 'Restoring Akv!'
+
+!      if (first_akv) then
+!        first_akv=.false.
+!        Akv0 = Akv
+!      endif
+
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          Akv = Akv0
+        enddo
+      enddo
+
+      end subroutine ana_restore_akv
+#endif /* ANA_AKV_RESTORE */
+
+! ----------------------------------------------------------------------
+
 
       end module analytical

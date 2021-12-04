@@ -40,13 +40,13 @@ primary_history_fields: zeta Ubar Vbar U V
                          T    T    T   T T
 
 auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
-                           T   F     F   T    F    F    F    F
+                           T   F     F   T    T    T    T    T
 
 primary_averages: zeta Ubar Vbar U V  
                    T    T    T   T T
 
 auxiliary_averages: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
-                     F    T    T   T    F    F    T    T
+                     F    T    T   T    T    T    T    T
 
 wci_history_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
                      T    T     T    T   T   T   T    T    T   T     T
