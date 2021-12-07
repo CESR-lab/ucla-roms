@@ -273,13 +273,15 @@ f_ij = np.zeros([nx,ny])
 f_ij[:,:] = f0
 sustr = np.zeros([nx,ny]) + sustr0
 svstr = np.zeros([nx,ny]) + svstr0
+Tbx   = np.zeros([nx,ny])
+Tby   = np.zeros([nx,ny])
 Kv_swap =np.swapaxes(Kv,0,2) 
 zw_in=np.swapaxes(z_w,0,1)
 zr_in = np.swapaxes(z_r,0,1)
 bot_stress_opt = -1 #no bottom stress
 
 #Solve TTW system and also get geostrophic velocities
-ut,vt,ug,vg = TTW_mom.solve_ttw_momentum_sig(dphidx.T,dphidy.T,Kv_swap,sustr,svstr,sustr,svstr,f_ij,zr_in,zw_in,bot_stress_opt)
+ut,vt,ug,vg = TTW_mom.solve_ttw_momentum_sig(dphidx.T,dphidy.T,Kv_swap,sustr,svstr,Tbx,Tby,f_ij,zr_in,zw_in,bot_stress_opt)
 
 #Put u at horizontal u-points
 if flow =='TTW':
