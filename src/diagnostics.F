@@ -1930,7 +1930,9 @@
       !  In the notation below u', uf, p' and pf actually have the barotropic mode removed.
       !  E.g. uf + u' = u - ubar
       !
-      !  We want term up_hf = u'p' + uf p' + u' pf  ( where uf/pf is low frequency (filtered) value )
+      !  We want high-frequency terms, this should be called up_hf, but currently variable is up_pp.
+      !
+      !    up_hf = u'p' + uf p' + u' pf  ( where uf/pf is low frequency (filtered) value )
       !
       !  However, pf (p low frequency) is a difficult to get. It's large and affected by breathing grid.
       !  Thus we just use:
@@ -2117,9 +2119,11 @@
       !
       !    div_up = u' dpdx_f + uf dpdx' + u' dpdx' = u' dpdx_f + ( uf + u') dpdx'
       !
+      !    we have exclude the lower frequency product of uf dpdx_f
+      !
       !    div_uvp = div_up + div_vp
       !
-      ! div_uvp is at rho-points since contains both u and v (easiest)
+      !  div_uvp is at rho-points since contains both u and v (easiest)
       !]
 
       implicit none
@@ -2132,15 +2136,15 @@
         do j=jstr,jend      ! rho-point interior. u and v terms include boundary already so averaging is fine
           do i=istr,iend
 
-            div_uvp(i,j,k) =  0.5 * ( up(i,j,k) + up(i+1,j,k) )   * dpdx_f(i,j,k)   ! dpdx_f already contains Hz?
+            div_uvp(i,j,k) = 0.5 * ( ( up(i,j,k) + up(i+1,j,k) )   * dpdx_f(i,j,k)   ! dpdx_f already contains Hz?
+                                                                                     ! 0.5 for all the u2rho averaging
+     &                             + ( uf(i,j,k) + uf(i+1,j,k) +
+     &                                 up(i,j,k) + up(i+1,j,k)   ) * dpdx_p(i,j,k)
 
-     &                     + 0.25 * ( uf(i,j,k) + uf(i+1,j,k) +
-     &                                up(i,j,k) + up(i+1,j,k)   ) * dpdx_p(i,j,k)
+     &                             + ( vp(i,j,k) + vp(i,j+1,k) )   * dpdy_f(i,j,k)   ! dpdx_f already contains Hz?
 
-     &                     +  0.5 * ( vp(i,j,k) + vp(i,j+1,k) )   * dpdy_f(i,j,k)   ! dpdx_f already contains Hz?
-
-     &                     + 0.25 * ( vf(i,j,k) + vf(i,j+1,k) +
-     &                                vp(i,j,k) + vp(i,j+1,k)   ) * dpdy_p(i,j,k)
+     &                             + ( vf(i,j,k) + vf(i,j+1,k) +
+     &                                 vp(i,j,k) + vp(i,j+1,k)   ) * dpdy_p(i,j,k) )
 
           enddo
         enddo
