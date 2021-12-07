@@ -440,7 +440,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 # ifdef DIAGNOSTICS
 !      if(mynode==0) print *, 'PRSGRD: pg_cor =', pg_cor
       if (prs_flx .and. pg_cor) ! diag_icori for second (corrector) call of prsgrd
-     &  call set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P )
+     &  call set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P, ru, rv )
       pg_cor = .true. ! trigger call above for corrector step. Will be set to false in step3d_uv1 for next predictor step.
 # endif
 

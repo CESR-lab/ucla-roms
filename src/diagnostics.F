@@ -294,12 +294,16 @@
       real, allocatable, dimension(:, :, :) :: up, vp               ! perturbed u/v/
       real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
       real, allocatable, dimension(:, :, :) :: pp                   ! perturbed p
-
       real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl         ! u and p baroclinic
-
       real, allocatable, dimension(:, :, :) :: aup, avp, app        ! averaged perturbed u/v/p
       real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp       ! averaged u'p' and v'p'
 
+      ! -- divergence terms
+      real, allocatable, dimension(:, :, :) :: dpdx_f, dpdx_p       ! dP/dx filtered and prime
+      real, allocatable, dimension(:, :, :) :: dpdy_f, dpdy_p       ! dP/dy filtered and prime
+      real, allocatable, dimension(:, :, :) :: div_uvp, adiv_uvp    ! divergence u'p' + v'p' (and average)
+
+      ! -- sponge terms:
       real, allocatable, dimension(:)       :: mup_ppzw,  mup_ppze  ! mean of up_ppz along orthogonal sponge from west/est boundary
       real, allocatable, dimension(:)       :: mvp_ppzs,  mvp_ppzn  ! mean of up_ppz along orthogonal sponge from south/north boundary
       real, allocatable, dimension(:)       :: box_mup_ppzw,  box_mup_ppze  ! box average
@@ -661,7 +665,7 @@
       implicit none
 
       ! inputs
-      integer, intent(in)    :: istrR, jstrR, iendR, jendR, istr, jstr, iend, jend
+      integer, intent(in) :: istrR, jstrR, iendR, jendR, istr, jstr, iend, jend
 
       ! local
       integer :: i, j, k, var
@@ -688,11 +692,18 @@
       allocate( up(GLOBAL_2D_ARRAY, N) )  ! Don't necessaryily need up, vp and pp,
       allocate( vp(GLOBAL_2D_ARRAY, N) )  ! or can perhaps reuse array, or 2D arrays.
       allocate( pp(GLOBAL_2D_ARRAY, N) )
-      up=0; vp=0; pp=0
-
       allocate( up_pp(GLOBAL_2D_ARRAY, N) )
       allocate( vp_pp(GLOBAL_2D_ARRAY, N) )
+      up=0; vp=0; pp=0
       up_pp=0; vp_pp=0
+
+      allocate( dpdx_f(GLOBAL_2D_ARRAY, N) )
+      allocate( dpdx_p(GLOBAL_2D_ARRAY, N) )
+      allocate( dpdy_f(GLOBAL_2D_ARRAY, N) )
+      allocate( dpdy_p(GLOBAL_2D_ARRAY, N) )
+      allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
+      dpdx_f=0; dpdx_p=0; dpdy_f=0; dpdy_p=0
+      div_uvp=0;
 
       if (check_prs) then
         allocate( u_bcl(GLOBAL_2D_ARRAY, N) )
@@ -703,7 +714,8 @@
       if (diag_avg) then
         allocate( aup_pp(GLOBAL_2D_ARRAY, N) )
         allocate( avp_pp(GLOBAL_2D_ARRAY, N) )
-        aup_pp=0; avp_pp=0
+        allocate( adiv_uvp(GLOBAL_2D_ARRAY, N) )
+        aup_pp=0; avp_pp=0; adiv_uvp=0
 
         if (check_prs) then
           allocate( aup(GLOBAL_2D_ARRAY, N) )
@@ -713,13 +725,15 @@
         endif
       endif
 
-      allocate( ppnames(2), pplname(2) )
-      ppnames(1)    = 'up'
-      pplname(1)    = "perturbation of u * perturbation of p"
+      allocate( ppnames(3), pplname(3) )
+      ppnames(1)    = 'up'  ! change the name here!!!
+      pplname(1)    = "high frequency terms from u dot P"
       ppnames(2)    = "vp"
-      pplname(2)    = "perturbation of v * perturbation of p"
+      pplname(2)    = "high frequency terms from v dot P"
+      ppnames(3)    = "div_uvp"
+      pplname(3)    = "high frequency divergence terms from prsgrd & u/v product"
       if (diag_avg) then
-        do var=1,2                                            ! loop through diag terms
+        do var=1,3                                            ! loop through diag terms
           pplname(var)  = 'Average ' / / trim(pplname(var))   ! and prepend 'Average'
         enddo
       endif
@@ -1908,11 +1922,24 @@
 ! ----------------------------------------------------------------------
       subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
 
-      ! uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
+      ![ uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
       !
-      ! and set beta = 1-alpha
+      !  and set beta = 1-alpha
       !
-      ! must be called every timestep for filtering of u & v.
+      !  must be called every timestep for filtering of u & v.
+      !  In the notation below u', uf, p' and pf actually have the barotropic mode removed.
+      !  E.g. uf + u' = u - ubar
+      !
+      !  We want term up_hf = u'p' + uf p' + u' pf  ( where uf/pf is low frequency (filtered) value )
+      !
+      !  However, pf (p low frequency) is a difficult to get. It's large and affected by breathing grid.
+      !  Thus we just use:
+      !
+      !  up_hf = u'p' + uf p' = ( u' + uf ) p'
+      !
+      !  since u = u' + uf we can simply get term u'p' = ( u - ubar) p'
+      !
+      !]
 
       implicit none
 
@@ -1942,7 +1969,7 @@
 
           do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway?
             do i=istr,iend+1  ! include boundary for up_pp
-              up(i,j,k)      = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)
+              up(i,j,k)      = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)  ! need up for div_uvp term
               if (check_prs)  ! if with parameter
      &          u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
             enddo
@@ -1955,14 +1982,25 @@
 
           do j=jstr,jend+1    ! include boundaries
             do i=istr,iend+1
-              up_pp(i,j,k) = up(i,j,k) * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )  ! p and Hz from rho to u
-     &                                        * ( Hz(i-1,j,k) + Hz(i,j,k) )
-              vp_pp(i,j,k) = vp(i,j,k) * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
-     &                                        * ( Hz(i,j-1,k) + Hz(i,j,k) )  ! p and Hz from rho to v
+              up_pp(i,j,k) =          ( u(i,j,k,nnew) - ubar(i,j,knew) )
+     &                       * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )               ! p and Hz from rho to u
+     &                              * ( Hz(i-1,j,k) + Hz(i,j,k) )
+
+              vp_pp(i,j,k) =          ( v(i,j,k,nnew) - vbar(i,j,knew) )
+     &                       * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
+     &                              * ( Hz(i,j-1,k) + Hz(i,j,k) )               ! p and Hz from rho to v
+
+!              up_pp(i,j,k) = up(i,j,k) * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )  ! p and Hz from rho to u
+!     &                                        * ( Hz(i-1,j,k) + Hz(i,j,k) )
+!              vp_pp(i,j,k) = vp(i,j,k) * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
+!     &                                        * ( Hz(i,j-1,k) + Hz(i,j,k) )  ! p and Hz from rho to v
+
             enddo
           enddo
 
         enddo     ! <-- k
+
+        call set_diags_div_uvp( istr, iend, jstr, jend )
 
         if(p_sponge)
      &    call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
@@ -1973,20 +2011,23 @@
       end subroutine set_diags_uv_prime  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P )  ![
+      subroutine set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P, ru, rv )  ![
       ! set p' (the pressure perturbation)
-
+      !
       ! Note, pressure (P) is calculated in prsgrd.F. The loop ranges there
       ! are i=istrU-1,iend and j=jstrV-1,iend
       ! This allows for averaging from rho to u or v.
       ! in a sub-domain, u and v points are the first (starting) points
       ! but rho are the end points, hence the -1 only for the start index.
+      !
+      ! ru = dP/dx * Hz
+      ! rv = dP/dy * Hz
 
       implicit none
 
       ! inputs
       integer,                                     intent(in) :: istr, iend, jstr, jend, istrU, jstrV
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P, ru, rv
 
       ! local
       integer :: i, j, k
@@ -1996,6 +2037,9 @@
           do j=jstrV-1,jend                                 ! allows for rho to u averaging later
             do i=istrU-1,iend
               pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N)             ! set to avoid ramp up
+
+              dpdx_f(i,j,k) = ru(i,j,k)
+              dpdy_f(i,j,k) = rv(i,j,k)
             enddo
           enddo
         enddo
@@ -2006,6 +2050,9 @@
         do j=jstrV-1,jend
           do i=istrU-1,iend
             pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
+
+            dpdx_f(i,j,k) = beta * dpdx_f(i,j,k) + alpha * ru(i,j,k)
+            dpdy_f(i,j,k) = beta * dpdy_f(i,j,k) + alpha * rv(i,j,k)
           enddo
         enddo
       enddo
@@ -2020,18 +2067,86 @@
               pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)    ! NOTE: pp = 0 at first step
               if (check_prs)                                          ! since pf = P - g*z_w above
      &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
+
+              dpdx_p(i,j,k) = ru(i,j,k) - dpdx_f(i,j,k)
+              dpdy_p(i,j,k) = rv(i,j,k) - dpdy_f(i,j,k)
             enddo
           enddo
         enddo
 
-        if(WESTERN_EDGE)  pp(istr-1,:,:)=pp(istr,:,:)                 ! copy into buffer for averaging u'p' at boundary
-        if(EASTERN_EDGE)  pp(iend+1,:,:)=pp(iend,:,:)                 ! TILING broken
-        if(SOUTHERN_EDGE) pp(:,jstr-1,:)=pp(:,jstr,:)
-        if(NORTHERN_EDGE) pp(:,jend+1,:)=pp(:,jend,:)
+        call set_diags_copy_to_buffer( istr, iend, jstr, jend, pp )
+!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdx_f )  ! don't need to copy since keep at rho points
+!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdx_p )
+!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdy_f )
+!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdy_p )
 
       endif
 
       end subroutine set_diags_prs_prime  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_copy_to_buffer( istr, iend, jstr, jend, var )  ![
+
+      implicit none
+
+      integer,                            intent(in)    :: istr, iend, jstr, jend
+      real, dimension(GLOBAL_2D_ARRAY,N), intent(inout) :: var
+
+      if(WESTERN_EDGE)  var(istr-1,:,:)=var(istr,:,:)                 ! copy into buffer for averaging u'p' at boundary
+      if(EASTERN_EDGE)  var(iend+1,:,:)=var(iend,:,:)                 ! TILING broken
+      if(SOUTHERN_EDGE) var(:,jstr-1,:)=var(:,jstr,:)
+      if(NORTHERN_EDGE) var(:,jend+1,:)=var(:,jend,:)
+
+      end subroutine set_diags_copy_to_buffer  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_diags_div_uvp( istr, iend, jstr, jend )  ![
+
+      ![
+      !  We are also want the high frequency divergence term in both u and v (div_uvp):
+      !
+      !  we use the pressure gradient in high and low frequency components:
+      !
+      !    dpdx = dpdx_f + dpdx'
+      !
+      !    where dpdx is 'ru' in prsgrd.F
+      !
+      !  Using u as an example:
+      !
+      !    u /dot dP/dx = (uf + u') * (dpdx_f + dpdx')
+      !
+      !    div_up = u' dpdx_f + uf dpdx' + u' dpdx' = u' dpdx_f + ( uf + u') dpdx'
+      !
+      !    div_uvp = div_up + div_vp
+      !
+      ! div_uvp is at rho-points since contains both u and v (easiest)
+      !]
+
+      implicit none
+
+      integer, intent(in)    :: istr, iend, jstr, jend
+
+      integer :: i, j, k
+
+      do k=1,N
+        do j=jstr,jend      ! rho-point interior. u and v terms include boundary already so averaging is fine
+          do i=istr,iend
+
+            div_uvp(i,j,k) =  0.5 * ( up(i,j,k) + up(i+1,j,k) )   * dpdx_f(i,j,k)   ! dpdx_f already contains Hz?
+
+     &                     + 0.25 * ( uf(i,j,k) + uf(i+1,j,k) +
+     &                                up(i,j,k) + up(i+1,j,k)   ) * dpdx_p(i,j,k)
+
+     &                     +  0.5 * ( vp(i,j,k) + vp(i,j+1,k) )   * dpdy_f(i,j,k)   ! dpdx_f already contains Hz?
+
+     &                     + 0.25 * ( vf(i,j,k) + vf(i,j+1,k) +
+     &                                vp(i,j,k) + vp(i,j+1,k)   ) * dpdy_p(i,j,k)
+
+          enddo
+        enddo
+      enddo
+
+      end subroutine set_diags_div_uvp  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
@@ -2610,6 +2725,8 @@
 
       call set_diags_avg_var( istr, iend, jstr, jend, up_pp, aup_pp )  ! average up_pp into aup_pp
       call set_diags_avg_var( istr, iend, jstr, jend, vp_pp, avp_pp )
+      call set_diags_avg_var( istr, iend, jstr, jend, div_uvp, adiv_uvp )
+
       if (check_prs) then
         call set_diags_avg_var( istr, iend, jstr, jend, up, aup )
         call set_diags_avg_var( istr, iend, jstr, jend, vp, avp )
@@ -3261,6 +3378,7 @@ C$OMP MASTER
 
               call nc_define_var(ncid, ppnames(1), pplname(1), punits, grdtyp3d(:,1), ierr, prcsn )
               call nc_define_var(ncid, ppnames(2), pplname(2), punits, grdtyp3d(:,2), ierr, prcsn )
+              call nc_define_var(ncid, ppnames(3), pplname(3), punits, r3dgrd,        ierr, prcsn )
 
               if (check_prs) then
                 call nc_define_var(ncid, pnames(1), plname(1), pchunits, grdtyp3d(:,1), ierr, prcsn )
@@ -3386,11 +3504,13 @@ C$OMP MASTER
           if(prs_flx) then
 
             if (diag_avg) then
-              call nc_write_var(ncid, aup_pp, N, ppnames(1), up_var, output_rec, ierr)
-              call nc_write_var(ncid, avp_pp, N, ppnames(2), vp_var, output_rec, ierr)
+              call nc_write_var(ncid, aup_pp,   N, ppnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid, avp_pp,   N, ppnames(2), vp_var, output_rec, ierr)
+              call nc_write_var(ncid, adiv_uvp, N, ppnames(3), rp_var, output_rec, ierr)
             else
-              call nc_write_var(ncid,  up_pp, N, ppnames(1), up_var, output_rec, ierr)
-              call nc_write_var(ncid,  vp_pp, N, ppnames(2), vp_var, output_rec, ierr)
+              call nc_write_var(ncid, up_pp,    N, ppnames(1), up_var, output_rec, ierr)
+              call nc_write_var(ncid, vp_pp,    N, ppnames(2), vp_var, output_rec, ierr)
+              call nc_write_var(ncid, div_uvp,  N, ppnames(3), rp_var, output_rec, ierr)
             endif
 
             if (check_prs) then
