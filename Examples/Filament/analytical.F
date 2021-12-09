@@ -36,7 +36,7 @@
 !                         direction and period.
 
       ! user input:
-      logical, parameter :: restore = .true.
+      logical, parameter :: restore = .false.
 
 ! REMOVE ALL FLAGS LATER
 #ifdef ANA_GRID

@@ -22,8 +22,8 @@ c--#endif
 
 #if defined FILAMENT_IDEAL
 
-# define ANA_GRID
-# define ANA_INITIAL
+c# define ANA_GRID
+c# define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_SRFLUX
 # define ANA_STFLUX
@@ -60,7 +60,18 @@ c-dd# define SPHERICAL
 
         /* Open Boundaries */
 # define NS_PERIODIC
-# define EW_PERIODIC
+c# define EW_PERIODIC
+
+#  define OBC_WEST
+#  define OBC_EAST
+#  define OBC_M2FLATHER
+#  define OBC_M3ORLANSKI
+#  define OBC_TORLANSKI
+
+#  define Z_FRC_BRY
+#  define M2_FRC_BRY
+#  define M3_FRC_BRY
+#  define T_FRC_BRY
 
         /* Waves Effect on Current */
 c# define WEC
