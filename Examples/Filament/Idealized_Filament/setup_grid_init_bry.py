@@ -396,3 +396,100 @@ hbls_nc[:,:] = h_sbl
 init_nc.close()
 ###############################################
 
+##########################
+#Write BOUNDARY Variables
+#########################
+bry_nc = netcdf(sim_name + '_bry.nc', 'w')
+print ('')
+print ('Creating boundary condition: ' + sim_name + '_bry.nc')
+print ('')
+
+
+# SET GLOBAL ATTRIBUTES
+bry_nc.title = 'ROMS boundary conditon produced by setup_grid_init_bry.py'
+bry_nc.date = date.today().strftime("%B %d, %Y")
+bry_nc.VertCoordType='SM09'
+bry_nc.theta_s = theta_s
+bry_nc.theta_b = theta_b
+bry_nc.hc = hc
+bry_nc.Cs_r = Cs_r
+bry_nc.Cs_w = Cs_w
+
+#SET DIMENSIONS
+bry_nc.createDimension('xi_rho', nx)
+bry_nc.createDimension('xi_u', nx-1)
+bry_nc.createDimension('eta_rho', ny)
+bry_nc.createDimension('eta_v', ny-1)
+bry_nc.createDimension('s_rho', N)
+bry_nc.createDimension('bry_time', None)
+
+
+time_nc= bry_nc.createVariable('bry_time','d', ('bry_time' ))
+setattr(time_nc, 'units', 'days')
+tvec = np.array([-1e5, 1e5])
+time_nc[:] = tvec
+
+zeta_west_nc= bry_nc.createVariable('zeta_west','f4', ('bry_time','eta_rho' ), fill_value=1e33)
+setattr(zeta_west_nc, 'units', 'deg C')
+zeta_west_nc[:,:] = 0. 
+
+temp_west_nc= bry_nc.createVariable('temp_west','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
+setattr(temp_west_nc, 'units', 'deg C')
+for t in range( np.size(tvec) ):
+    temp_west_nc[t,:,:] = temp[:,:,1] #CHANGE TO BOUNDARY VALUE
+
+salt_west_nc= bry_nc.createVariable('salt_west','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
+setattr(salt_west_nc, 'units', 'psu')
+salt_west_nc[:,:,:] = S0 #CHANGE TO BOUNDARY VALUE 
+
+
+u_west_nc= bry_nc.createVariable('u_west','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
+setattr(u_west_nc, 'units', 'm/s')
+u_west_nc[:,:,:] = 0.
+
+ubar_west_nc= bry_nc.createVariable('ubar_west','f4', ('bry_time', 'eta_rho' ),fill_value=1e33)
+setattr(ubar_west_nc, 'units', 'm/s')
+ubar_west_nc[:,:] = 0.
+
+v_west_nc= bry_nc.createVariable('v_west','f4', ('bry_time', 's_rho','eta_v' ),fill_value=1e33)
+setattr(v_west_nc, 'units', 'm/s')
+v_west_nc[:,:,:] = 0.
+
+vbar_west_nc= bry_nc.createVariable('vbar_west','f4', ('bry_time', 'eta_v' ),fill_value=1e33)
+setattr(vbar_west_nc, 'units', 'm/s')
+vbar_west_nc[:,:] = 0.
+
+
+zeta_east_nc= bry_nc.createVariable('zeta_east','f4', ('bry_time','eta_rho' ), fill_value=1e33)
+setattr(zeta_east_nc, 'units', 'deg C')
+zeta_east_nc[:,:] = 0. 
+
+temp_east_nc= bry_nc.createVariable('temp_east','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
+setattr(temp_east_nc, 'units', 'deg C')
+for t in range( np.size(tvec) ):
+    temp_east_nc[t,:,:] = temp[:,:,-1] #CHANGE TO BOUNDARY VALUE
+
+salt_east_nc= bry_nc.createVariable('salt_east','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
+setattr(salt_east_nc, 'units', 'psu')
+salt_east_nc[:,:,:] = S0 #CHANGE TO BOUNDARY VALUE 
+
+
+u_east_nc= bry_nc.createVariable('u_east','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
+setattr(u_east_nc, 'units', 'm/s')
+u_east_nc[:,:,:] = 0.
+
+ubar_east_nc= bry_nc.createVariable('ubar_east','f4', ('bry_time', 'eta_rho' ),fill_value=1e33)
+setattr(ubar_east_nc, 'units', 'm/s')
+ubar_east_nc[:,:] = 0.
+
+v_east_nc= bry_nc.createVariable('v_east','f4', ('bry_time', 's_rho','eta_v' ),fill_value=1e33)
+setattr(v_east_nc, 'units', 'm/s')
+v_east_nc[:,:,:] = 0.
+
+vbar_east_nc= bry_nc.createVariable('vbar_east','f4', ('bry_time', 'eta_v' ),fill_value=1e33)
+setattr(vbar_east_nc, 'units', 'm/s')
+vbar_east_nc[:,:] = 0.
+
+
+bry_nc.close()
+
