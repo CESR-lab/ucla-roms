@@ -942,6 +942,10 @@ c<<     &     +cff*iA_v(i,j)
         call ana_restore_zeta( istr,iend,jstr,jend,knew)
 # endif
 
+# ifdef FILAMENT_SPINUP
+        call filament_spinup2d
+# endif
+
         call set_depth_tile(istr,iend,jstr,jend)
       endif
 #else

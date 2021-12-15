@@ -20,7 +20,7 @@
       integer, parameter :: NP_XI  = 1, NP_ETA = 1
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      integer, parameter :: nt = 2 
+      integer, parameter :: nt = 1 
       
 ! Additional params for L4
       real,    parameter :: 

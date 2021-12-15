@@ -129,10 +129,12 @@
               shflx_avg(i,j)=cff1*shflx_avg(i,j)
      &                      + cff*stflx(i,j,itemp)
           endif
+# ifdef SALINITY
           if (wrt_ssflx_avg) then
               ssflx_avg(i,j)=cff1*ssflx_avg(i,j)
      &                      + cff*stflx(i,j,isalt)
           endif
+# endif
         enddo
       enddo
 
@@ -327,10 +329,12 @@
           call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,itemp), 1,
      &                      shflx_name, rp_var, output_rec, ierr)
         endif
+#ifdef SALINITY
         if (wrt_ssflx) then
           call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,isalt), 1,
      &                      ssflx_name, rp_var, output_rec, ierr)
         endif
+#endif
 !          ! Output of sustr_rho and svstr_rho
 !          call nc_write_var(ncid, sustr_r, 1, 'sustr_r', rp_var, output_rec, ierr)
 !          call nc_write_var(ncid, svstr_r, 1, 'svstr_r', rp_var, output_rec, ierr)
