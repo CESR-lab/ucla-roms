@@ -771,6 +771,11 @@ c--#define VERBOSE
      &                              ,   'forw_start =', forw_start
 # endif
 #endif
+
+#ifdef FILAMENT_SPINUP
+      call filament_init_spinup
+#endif
+
       return
   99  may_day_flag=2
       return

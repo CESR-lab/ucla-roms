@@ -22,8 +22,13 @@ c--#endif
 
 #if defined FILAMENT_IDEAL
 
-c# define ANA_GRID
-c# define ANA_INITIAL
+c# define FILAMENT_SPINUP
+
+c# define DIAGNOSTICS
+c# define ANA_BRY
+
+# define ANA_GRID
+# define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_SRFLUX
 # define ANA_STFLUX
@@ -33,14 +38,17 @@ c# define ANA_INITIAL
 # define SOLVE3D
 # define UV_ADV
 # define UV_COR
+
         /* Equation of State */
-# define NONLIN_EOS
+c# define NONLIN_EOS
 # define SPLIT_EOS
-# define SALINITY
+c# define SALINITY
+
         /* Mixing */
         /*        - lateral */
 # define UV_VIS2
 # define TS_DIF2
+
         /*        - vertical */
 # define ANA_VMIX
 # ifndef ANA_VMIX
@@ -51,19 +59,30 @@ c# define ANA_INITIAL
 #  define LMD_CONVEC
 #  define LMD_BKPP
 # endif
+
         /* Grid Configuration */
 c-dd# define CURVGRID
 c-dd# define SPHERICAL
 # define MASKING
+
         /* Output Options */
 # define MASK_LAND_DATA
 
         /* Open Boundaries */
 # define NS_PERIODIC
-c# define EW_PERIODIC
+# define EW_PERIODIC
 
+# if !defined EW_PERIODIC
 #  define OBC_WEST
 #  define OBC_EAST
+# endif
+
+# if !defined NS_PERIODIC
+#  define OBC_NORTH
+#  define OBC_SOUTH
+# endif
+
+# if !defined EW_PERIODIC || !defined NS_PERIODIC
 #  define OBC_M2FLATHER
 #  define OBC_M3ORLANSKI
 #  define OBC_TORLANSKI
@@ -72,6 +91,7 @@ c# define EW_PERIODIC
 #  define M2_FRC_BRY
 #  define M3_FRC_BRY
 #  define T_FRC_BRY
+# endif
 
         /* Waves Effect on Current */
 c# define WEC
