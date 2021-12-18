@@ -1006,11 +1006,12 @@
         endif
 # endif
         if (cff1 < 0. .or. cff2 < 0.) then
-           write(*,'(/3A/3(1x,A,F16.10)/)')            '### WARNING: ',
+           write(*,'(/3A/3(1x,A,F16.10)/)')            '### ERROR: ',
      &      'set_bry_all_tile :: current model time is out of bounds ',
      &      'of ''bry_time''.', 'bry_tstart =', bry_time(it1)*sec2day,
      &      'tdays =',  tdays,  'bry_tend =',   bry_time(it2)*sec2day
           ierr=ierr+1
+          error stop
         endif
       endif  ! <-- need_bry
       end

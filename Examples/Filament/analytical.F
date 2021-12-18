@@ -66,30 +66,6 @@
 
       ! Non-typical analytical vars:
 
-#ifdef FILAMENT_RESTORE
-      public ana_restore_zeta
-!      public ana_restore_temp
-      real, dimension(GLOBAL_2D_ARRAY, N) :: t0        ! original temp and zeta to restore
-      real, dimension(GLOBAL_2D_ARRAY)    :: zeta0
-      real, public :: alpha_fil                        ! restoring timescale
-#endif
-#ifdef ANA_AKV_RESTORE
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N) :: Akv0
-!      logical :: first_akv = .true.
-      public ana_restore_akv
-#endif
-
-! Dec 10th - Spin up as described by Daniel
-#ifdef FILAMENT_SPINUP
-      real, dimension(GLOBAL_2D_ARRAY, N) :: t0, v0       ! t=0 values
-      real, dimension(GLOBAL_2D_ARRAY)    :: zeta0, vb0
-      public filament_init_spinup
-      public filament_spinup3d
-      public filament_spinup2d
-      integer :: spinup_steps = 10
-      real    :: c_spinup = 1.0 / 10
-#endif
-
       contains
 
 ! ----------------------------------------------------------------------
@@ -229,13 +205,18 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       use mixing
       use read_write
       use netcdf
+      use mpi
 
       implicit none
 
-      integer :: istr,iend,jstr,jend, i,j,k, itrc
+      integer :: istr,iend,jstr,jend, i,j,k, itrc, ierr
 
       real, dimension(GLOBAL_2D_ARRAY)    :: h_sbl
       real, allocatable, dimension(:,:,:) :: b, a1, a2
+
+      real, dimension(GLOBAL_2D_ARRAY, N) :: dbdx_xr    ! db/dx at xi_rho, s_rho. v sits at xi_rho, and constant in y
+      real, dimension(GLOBAL_2D_ARRAY, N) :: rho_loc    ! local rho
+      real :: zeta_edge
 
       ! Daniel values:
       ! - SMC Density Initial Condition:
@@ -285,18 +266,97 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+!            t(i,j,k,1,itemp)=20.0
+            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
+# ifdef SALINITY
+            t(i,j,k,1,isalt)=36.
+            t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
+# endif
+          enddo
+        enddo
+      enddo
+
+      ! Set geostrophic flow in u-direction based on temperature as proxy for buoyancy:
+      dbdx_xr=0.0
+      v(:,:,:,1)=0.0
+      vbar(:,:,1)=0.0
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            dbdx_xr(i,j,k) = ( b(i+1,j,k) - b(i-1,j,k) ) * pm(i,j) * 0.5      ! pm * 0.5 = / 2 * dx
+            if(k==1) then
+              v(i,j,k,1)= 0  ! since pressure gradient is zero can set directly
+            else
+              v(i,j,k,1)= v(i,j,k-1,1) + 0.25 * ( dbdx_xr(i,j,k-1) + dbdx_xr(i,j,k) )
+     &                                        * (      Hz(i,j,k-1) +      Hz(i,j,k) ) / f(i,j)
+            endif
+            vbar(i,j,1)=vbar(i,j,1)+v(i,j,k,1) * Hz(i,j,k)
+          enddo
+        enddo
+      enddo
+      vbar(:,:,1) = vbar(:,:,1) / HD  ! average vertical integral over depth
+                                      ! excludes zeta since 'v' was calculated without it, but should be there
+
+      ! zeta needed for vbar calculation:
+      zeta(:,:,1)=0.
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          do k=1,N
+            rho_loc(i,j,k)=Tcoef*T0 - Tcoef*t(i,j,k,1,itemp)  ! rho as per LIN_EOS in rho_eos.F
+          enddo
+          do k=1,N
+            zeta(i,j,1) = zeta(i,j,1) - rho_loc(i,j,k)  * Hz(i,j,k) / rho0
+          enddo
+        enddo
+      enddo
+
+      ! remove average zeta
+      if (mynode==0) zeta_edge = zeta(1,5,1)  ! get zeta level at western_edge and communicate to all other domains
+      call MPI_Barrier(MPI_COMM_WORLD, ierr)
+      call MPI_BCAST(zeta_edge, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD, ierr)  ! exchange zeta to all other sub-domains.
+
+      zeta(:,:,1) = zeta(:,:,1) - zeta_edge
+
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          ubar(i,j,1)=0.
+          vbar(i,j,2)=vbar(i,j,1)  ! DevinD experiment, made no difference
+          zeta(i,j,2)=zeta(i,j,1)  ! DevinD added, made no difference
+          do k=1,N
+            u(i,j,k,1)=0.
+!            v(i,j,k,1)=0.
+            u(i,j,k,2)=u(i,j,k,1)
+            v(i,j,k,2)=v(i,j,k,1)
+          enddo
+        enddo
+      enddo
 
 
-      if (restore) then
-        call ana_init_temp_zeta_only(istr,iend,jstr,jend)
-      else
-        call ana_init_all_vars(istr,iend,jstr,jend,b)
-      endif
 
+      ! The rest of the code is independent of the specific configuration:
 
-      ! DevinD: need to exchange any extra variables I might configure here!
+      call ana_init_generic(istr,iend,jstr,jend)
 
-! The rest of the code is independent of the specific configuration.
+      end subroutine ana_init_tile
+
+! ----------------------------------------------------------------------
+      subroutine ana_init_generic(istr,iend,jstr,jend)
+
+      use param
+      use boundary
+      use climat
+      implicit none
+
+      ! input
+      integer, intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer :: i,j,k, itrc
+
+# include "compute_auxiliary_bounds.h"
+
 
 ! Analytical problems with open boundaries may require external forcing
 ! data to be applied at inflow side.  For the problems of with time
@@ -548,155 +608,11 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
 # endif
 
-      end subroutine ana_init_tile
+      end subroutine ana_init_generic
 #endif /* ANA_INITIAL */
 
 ! ----------------------------------------------------------------------
-      subroutine ana_init_all_vars(istr,iend,jstr,jend,b)
-      ! initialize t,v,u and zeta
-
-      implicit none
-
-      integer, intent(in) :: istr,iend,jstr,jend
-      real, allocatable, dimension(:,:,:), intent(in) :: b
-
-      ! local
-      integer :: i,j,k
-
-      real, dimension(GLOBAL_2D_ARRAY, N) :: dbdx_xr    ! db/dx at xi_rho, s_rho. v sits at xi_rho, and constant in y
-
-
-# include "compute_auxiliary_bounds.h"
-
-
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-!            t(i,j,k,1,itemp)=20.0
-            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
-# ifdef SALINITY
-            t(i,j,k,1,isalt)=36.
-            t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
-# endif
-          enddo
-        enddo
-      enddo
-
-      ! Set geostrophic flow in u-direction based on temperature as proxy for buoyancy:
-      dbdx_xr=0.0
-      v(:,:,:,1)=0.0
-      vbar(:,:,1)=0.0
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            dbdx_xr(i,j,k) = ( b(i+1,j,k) - b(i-1,j,k) ) * pm(i,j) * 0.5      ! pm * 0.5 = / 2 * dx
-            if(k==1) then
-              v(i,j,k,1)= 0  ! since pressure gradient is zero can set directly
-            else
-              v(i,j,k,1)= v(i,j,k-1,1) + 0.25 * ( dbdx_xr(i,j,k-1) + dbdx_xr(i,j,k) )
-     &                                        * (      Hz(i,j,k-1) +      Hz(i,j,k) ) / f(i,j)
-            endif
-            vbar(i,j,1)=vbar(i,j,1)+v(i,j,k,1) * Hz(i,j,k)
-          enddo
-        enddo
-      enddo
-      vbar(:,:,1) = vbar(:,:,1) / HD  ! average vertical integral over depth
-                                      ! excludes zeta since 'v' was calculated without it, but should be there
-
-      ! zeta needed for vbar calculation:
-      zeta(:,:,1)=0.
-      do j=jstrR,jendR
-        do i=istrR,iendR
-
-          ! z-integral approach from bouyancy for now. Use rho_eos rho' ideally to be exact.
-          ! Was wrong for some reason?
-!          do k=1,N
-!            zeta(i,j,1) = zeta(i,j,1) - g * rho0 * b(i,j,k) * Hz(i,j,k)
-!          enddo
-
-!          zeta(i,j,1) = - b(i,j,N) * ( z_w(i,j,k) - z_r(i,j,k) )
-!          do k=N-1,1,-1
-!            zeta(i,j,1) = zeta(i,j,1) - 0.5 * ( b(i,j,k) + b(i,j,k+1) ) * ( z_r(i,j,k+1) - z_r(i,j,k) )
-!          enddo
-
-          ! x-integral approach from v_surface:
-          zeta(i,j,1)= zeta(i-1,j,1) + f(i,j) * v(i,j,N,1) * dm_r(i,j) / g  ! N.B.!! actually need v at surface!
-          ! rather use trapezoidal rule for integration.
-          ! but since v and z both at xi_rho need to use 0.25 (1+2+1)
-!          zeta(i,j,1)=zeta(i-1,j,1) + 0.25 * f(i,j) * dm_r(i,j) / g   ! so should be extrapolating
-!     &               * ( v(i-1,j,N,1) + 2*v(i,j,N,1) + v(i+1,j,N,1) ) ! missing i-1 beyond buffer
-                                                                      ! only e-6 difference in zeta with trapezoidal rule.
-        enddo
-      enddo
-
-!      zeta(:,:,1) = zeta(:,:,1) / rho0
-!      zeta(:,:,1) = zeta(:,:,1) - zeta(1,5,1)
-
-      ! scaling zeta to what model settles on:
-!      zeta(:,:,1)= 0.55 * zeta(:,:,1)
-!      zeta(:,:,1)= 0.0
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ubar(i,j,1)=0.
-          vbar(i,j,2)=vbar(i,j,1)  ! DevinD experiment, made no difference
-          zeta(i,j,2)=zeta(i,j,1)  ! DevinD added, made no difference
-          do k=1,N
-            u(i,j,k,1)=0.
-!            v(i,j,k,1)=0.
-            u(i,j,k,2)=u(i,j,k,1)
-            v(i,j,k,2)=v(i,j,k,1)
-          enddo
-        enddo
-      enddo
-
-      end subroutine ana_init_all_vars
-
-! ----------------------------------------------------------------------
-      subroutine ana_init_temp_zeta_only (istr,iend,jstr,jend)
-      ! initialize temp and zeta only
-
-      implicit none
-
-      integer, intent(in) :: istr,iend,jstr,jend
-
-      ! local
-      integer :: i,j,k
-
-# include "compute_auxiliary_bounds.h"
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-
-          ! set zeta, temp was already set.
-          zeta(i,j,1) = 0.01 * (-1 + ( cos( (xr(i,j)+xl/2) * pi / (xl/2) ) ) ) ! -1 so highest is at zeta=0.
-                                                                        ! 0.01 to scale smaller
-
-          ! remaining vars to zero:
-          ubar(i,j,1)=0.
-          vbar(i,j,1)=0.
-          u(i,j,:,1)=0.
-          v(i,j,:,1)=0.
-          u(i,j,:,2)=u(i,j,:,1)
-          v(i,j,:,2)=v(i,j,:,1)
-          t(i,j,:,2,itemp)=t(i,j,:,1,itemp)
-# ifdef SALINITY
-          t(i,j,k,1,isalt)=36.
-          t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
-# endif
-        enddo
-      enddo
-
-#ifdef FILAMENT_RESTORE
-      zeta0 = zeta(:,:,1)
-      t0 = t(:,:,:,1,itemp)
-#endif
-
-      end subroutine ana_init_temp_zeta_only
-
-! ----------------------------------------------------------------------
 #if defined ANA_VMIX && defined SOLVE3D
-
       subroutine ana_vmix (tile)
 
       use param
@@ -904,148 +820,8 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
       end
 # endif /* ANA_STFLUX || ANA_SSFLUX */
-
 #endif /* SOLVE3D */
 
 ! ----------------------------------------------------------------------
-#ifdef FILAMENT_RESTORE
-      subroutine ana_restore_zeta( istr,iend,jstr,jend,knew)
-      implicit none
-
-      integer, intent(in) :: istr,iend,jstr,jend, knew
-
-      ! local
-      integer :: i,j
-
-# include "compute_auxiliary_bounds.h"
-
-!      print *, 'Restoring zeta!'
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          zeta(i,j,knew) = zeta(i,j,knew) - (zeta(i,j,knew) - zeta0(i,j)) * alpha_fil
-        enddo
-      enddo
-
-      end subroutine ana_restore_zeta
-
-! ----------------------------------------------------------------------
-!      subroutine ana_restore_u( istr,iend,jstr,jend)
-!      implicit none
-!
-!      integer, intent(in) :: istr,iend,jstr,jend
-!
-!      ! local
-!      integer :: i,j
-!
-!# include "compute_auxiliary_bounds.h"
-!
-!!      print *, 'Restoring zeta!'
-!
-!      do j=jstrR,jendR
-!        do i=istrR,iendR
-!!          u(i,j,:,nnew) = u(i,j,:,nnew) - u(i,j,:,nnew) * alpha_fil
-!          ubar(i,j,knew) = ubar(i,j,knew) - ubar(i,j,knew) * alpha_fil
-!        enddo
-!      enddo
-!
-!      end subroutine ana_restore_u
-
-
-#endif /* FILAMENT_RESTORE */
-
-! ----------------------------------------------------------------------
-#ifdef ANA_AKV_RESTORE
-      subroutine ana_restore_akv( istr,iend,jstr,jend )
-      implicit none
-
-      integer, intent(in) :: istr,iend,jstr,jend
-
-      ! local
-      integer :: i,j
-
-# include "compute_auxiliary_bounds.h"
-
-      if (mynode==0) print *, 'Restoring Akv!'
-
-!      if (first_akv) then
-!        first_akv=.false.
-!        Akv0 = Akv
-!      endif
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          Akv = Akv0
-        enddo
-      enddo
-
-      end subroutine ana_restore_akv
-#endif /* ANA_AKV_RESTORE */
-
-! ----------------------------------------------------------------------
-#ifdef FILAMENT_SPINUP
-      subroutine filament_init_spinup  ![
-
-      implicit none
-
-      zeta0 = zeta(:,:,1)
-      t0 = t(:,:,:,1,itemp)
-      v0 = v(:,:,:,1)
-      vb0 = vbar(:,:,1)
-      u = 0.0
-      ubar = 0.0
-
-
-      end subroutine filament_init_spinup  !]
-
-! ----------------------------------------------------------------------
-      subroutine filament_spinup3d  ![
-
-      implicit none
-      integer :: tsp
-
-      if (iic < spinup_steps) then
-
-        if (mynode==0) print *, 'SPINUP 3D'
-
-        do tsp=1,3            ! not sure if need to do all values do looping through all the timesteps
-          t(:,:,:,tsp,itemp) = t0
-          v(:,:,:,tsp)       = v0
-          u(:,:,:,tsp)       = 0.0
-        enddo
-
-        do tsp=1,4
-          vbar(:,:,tsp) = vb0  ! updated again in step3d_uv2 so doing it here too
-          ubar(:,:,tsp) = 0.0
-        enddo
-      endif
-
-      if (mynode==0) print *, 'UNLOCK 3D'
-
-      end subroutine filament_spinup3d  !]
-
-! ----------------------------------------------------------------------
-      subroutine filament_spinup2d  ![
-
-      implicit none
-      integer :: tsp
-
-      if (iic < spinup_steps) then
-
-        if (mynode==0) print *, 'SPINUP 2D'
-
-        do tsp=1,4            ! not sure if need to do all values do looping through all the timesteps
-          zeta(:,:,tsp) = zeta0  ! Since zeta is wrong this might not be great
-          vbar(:,:,tsp) = vb0
-          ubar(:,:,tsp) = 0.0
-        enddo
-      endif
-
-      if (mynode==0) print *, 'UNLOCK 2D'
-
-
-      end subroutine filament_spinup2d  !]
-! ----------------------------------------------------------------------
-#endif /* FILAMENT_SPINUP */
 
       end module analytical
