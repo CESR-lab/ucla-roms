@@ -429,6 +429,7 @@ setattr(time_nc, 'units', 'days')
 tvec = np.array([-1e5, 1e5])
 time_nc[:] = tvec
 
+# WEST BRY
 zeta_west_nc= bry_nc.createVariable('zeta_west','f4', ('bry_time','eta_rho' ), fill_value=1e33)
 setattr(zeta_west_nc, 'units', 'deg C')
 zeta_west_nc[:,:] = 0. 
@@ -441,7 +442,6 @@ for t in range( np.size(tvec) ):
 salt_west_nc= bry_nc.createVariable('salt_west','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
 setattr(salt_west_nc, 'units', 'psu')
 salt_west_nc[:,:,:] = S0 #CHANGE TO BOUNDARY VALUE 
-
 
 u_west_nc= bry_nc.createVariable('u_west','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
 setattr(u_west_nc, 'units', 'm/s')
@@ -459,7 +459,7 @@ vbar_west_nc= bry_nc.createVariable('vbar_west','f4', ('bry_time', 'eta_v' ),fil
 setattr(vbar_west_nc, 'units', 'm/s')
 vbar_west_nc[:,:] = 0.
 
-
+# EAST BRY
 zeta_east_nc= bry_nc.createVariable('zeta_east','f4', ('bry_time','eta_rho' ), fill_value=1e33)
 setattr(zeta_east_nc, 'units', 'deg C')
 zeta_east_nc[:,:] = 0. 
@@ -472,7 +472,6 @@ for t in range( np.size(tvec) ):
 salt_east_nc= bry_nc.createVariable('salt_east','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
 setattr(salt_east_nc, 'units', 'psu')
 salt_east_nc[:,:,:] = S0 #CHANGE TO BOUNDARY VALUE 
-
 
 u_east_nc= bry_nc.createVariable('u_east','f4', ('bry_time', 's_rho','eta_rho' ), fill_value=1e33)
 setattr(u_east_nc, 'units', 'm/s')
@@ -490,6 +489,65 @@ vbar_east_nc= bry_nc.createVariable('vbar_east','f4', ('bry_time', 'eta_v' ),fil
 setattr(vbar_east_nc, 'units', 'm/s')
 vbar_east_nc[:,:] = 0.
 
+# SOUTH BRY
+zeta_south_nc= bry_nc.createVariable('zeta_south','f4', ('bry_time','xi_rho' ), fill_value=1e33)
+setattr(zeta_south_nc, 'units', 'deg C')
+zeta_south_nc[:,:] = 0. 
+
+temp_south_nc= bry_nc.createVariable('temp_south','f4', ('bry_time', 's_rho','xi_rho' ), fill_value=1e33)
+setattr(temp_south_nc, 'units', 'deg C')
+for t in range( np.size(tvec) ):
+    temp_south_nc[t,:,:] = temp[:,1,:] #CHANGE TO BOUNDARY VALUE
+
+salt_south_nc= bry_nc.createVariable('salt_south','f4', ('bry_time', 's_rho','xi_rho' ), fill_value=1e33)
+setattr(salt_south_nc, 'units', 'psu')
+salt_south_nc[:,:,:] = S0 #CHANGE TO BOUNDARY VALUE 
+
+u_south_nc= bry_nc.createVariable('u_south','f4', ('bry_time', 's_rho','xi_u' ), fill_value=1e33)
+setattr(u_south_nc, 'units', 'm/s')
+u_south_nc[:,:,:] = 0.
+
+ubar_south_nc= bry_nc.createVariable('ubar_south','f4', ('bry_time', 'xi_u' ),fill_value=1e33)
+setattr(ubar_south_nc, 'units', 'm/s')
+ubar_south_nc[:,:] = 0.
+
+v_south_nc= bry_nc.createVariable('v_south','f4', ('bry_time', 's_rho','xi_rho' ),fill_value=1e33)
+setattr(v_south_nc, 'units', 'm/s')
+v_south_nc[:,:,:] = 0.
+
+vbar_south_nc= bry_nc.createVariable('vbar_south','f4', ('bry_time', 'xi_rho' ),fill_value=1e33)
+setattr(vbar_south_nc, 'units', 'm/s')
+vbar_south_nc[:,:] = 0.
+
+# NORTH BRY
+zeta_north_nc= bry_nc.createVariable('zeta_north','f4', ('bry_time','xi_rho' ), fill_value=1e33)
+setattr(zeta_north_nc, 'units', 'deg C')
+zeta_north_nc[:,:] = 0. 
+
+temp_north_nc= bry_nc.createVariable('temp_north','f4', ('bry_time', 's_rho','xi_rho' ), fill_value=1e33)
+setattr(temp_north_nc, 'units', 'deg C')
+for t in range( np.size(tvec) ):
+    temp_north_nc[t,:,:] = temp[:,1,:] #CHANGE TO BOUNDARY VALUE
+
+salt_north_nc= bry_nc.createVariable('salt_north','f4', ('bry_time', 's_rho','xi_rho' ), fill_value=1e33)
+setattr(salt_north_nc, 'units', 'psu')
+salt_north_nc[:,:,:] = S0 #CHANGE TO BOUNDARY VALUE 
+
+u_north_nc= bry_nc.createVariable('u_north','f4', ('bry_time', 's_rho','xi_u' ), fill_value=1e33)
+setattr(u_north_nc, 'units', 'm/s')
+u_north_nc[:,:,:] = 0.
+
+ubar_north_nc= bry_nc.createVariable('ubar_north','f4', ('bry_time', 'xi_u' ),fill_value=1e33)
+setattr(ubar_north_nc, 'units', 'm/s')
+ubar_north_nc[:,:] = 0.
+
+v_north_nc= bry_nc.createVariable('v_north','f4', ('bry_time', 's_rho','xi_rho' ),fill_value=1e33)
+setattr(v_north_nc, 'units', 'm/s')
+v_north_nc[:,:,:] = 0.
+
+vbar_north_nc= bry_nc.createVariable('vbar_north','f4', ('bry_time', 'xi_rho' ),fill_value=1e33)
+setattr(vbar_north_nc, 'units', 'm/s')
+vbar_north_nc[:,:] = 0.
 
 bry_nc.close()
 

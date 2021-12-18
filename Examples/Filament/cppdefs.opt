@@ -41,7 +41,7 @@ c# define ANA_BRY
 
         /* Equation of State */
 c# define NONLIN_EOS
-# define SPLIT_EOS
+c# define SPLIT_EOS
 c# define SALINITY
 
         /* Mixing */
@@ -50,7 +50,7 @@ c# define SALINITY
 # define TS_DIF2
 
         /*        - vertical */
-# define ANA_VMIX
+c# define ANA_VMIX
 # ifndef ANA_VMIX
 #  define LMD_MIXING
 #  define LMD_KPP

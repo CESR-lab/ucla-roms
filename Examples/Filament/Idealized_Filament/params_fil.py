@@ -29,7 +29,7 @@ f0 = 7.81e-5 #coriolis parameters
 grid_ang = 0. #grid rotation (default=0-->xi=east)
 
 # surface stress
-sustr0 = 5.0e-6    # 5e-6 produces 0.01 surface u current...
+sustr0 = 0.0    # 5e-6 produces 0.01 surface u current...
 svstr0 = 0.0
 
 

@@ -1014,7 +1014,7 @@ c      endif
      &                   Akt(START_2D_ARRAY,0,itemp), N+1,
      &                   Akt(START_2D_ARRAY,0,isalt), N+1)
 #  else
-     call exchange_tile( istr,iend,jstr,jend,
+      call exchange_tile( istr,iend,jstr,jend,
      &                   Akt(START_2D_ARRAY,0,itemp), N+1)
 #  endif
 # endif
