@@ -122,8 +122,8 @@
 
 # include "compute_extended_bounds.h"
 
-      dx=100.0                         ! Set grid spacings for
-      dy=100.0                         ! Cartesian rectangular grid
+      dx=200.0                         ! Set grid spacings for
+      dy=200.0                         ! Cartesian rectangular grid
 
 C$OMP MASTER                           ! Copy physical dimensions of
       xl=dx*dble(LLm)
@@ -230,7 +230,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       real :: dh2         = 10.0     ! m. Buffer between pycnocline and deeper stratification.
       real :: N2          = 1.5e-4   ! Daniel said try 0
       real :: h2          = 70.0     !
-      real :: L           = 2000.0     ! m
+      real :: L           = 4000.0     ! m
       real :: bs0         = 8.51e-3  ! ms-2
 
 # include "compute_auxiliary_bounds.h"

@@ -22,8 +22,6 @@ c--#endif
 
 #if defined FILAMENT_IDEAL
 
-c# define FILAMENT_SPINUP
-
 c# define DIAGNOSTICS
 c# define ANA_BRY
 
