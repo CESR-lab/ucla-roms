@@ -26,7 +26,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F averages.F tracers.F\
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
-	visc3d_GP.F	t3dmix_GP.F\
+	visc3d_S.F	t3dmix_S.F\
 \
 	zetabc.F	u2dbc_im.F	v2dbc_im.F\
 	u3dbc_im.F	v3dbc_im.F	w3dbc_im.F	t3dbc_im.F\
