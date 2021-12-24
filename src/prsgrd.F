@@ -438,10 +438,19 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       enddo   !<-- k
 
 # ifdef DIAGNOSTICS
-!      if(mynode==0) print *, 'PRSGRD: pg_cor =', pg_cor
-      if (prs_flx .and. pg_cor) ! diag_icori for second (corrector) call of prsgrd
-     &  call set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P, ru, rv )
-      pg_cor = .true. ! trigger call above for corrector step. Will be set to false in step3d_uv1 for next predictor step.
+      if (CORR_STAGE) then
+        if (diag_uv .and.calc_diag) then
+          do k=1:nz
+            Mdiag(1:nx,1:ny,k,1,iprsgr) = ru(1:nx,1:ny,k)*dxdyi_u
+            Mdiag(1:nx,1:ny,k,2,iprsgr) = rv(1:nx,1:ny,k)*dxdyi_v
+          enddo
+        endif
+
+        if (prs_flx) then
+        call set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P, ru, rv )
+        call save_diags_vars( P, ru, rv )
+        endif
+      endif
 # endif
 
 # ifdef NHMG
@@ -475,6 +484,11 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
          enddo
       enddo
+#  ifdef DIAGNOSTICS
+      if (diag_uv.and.calc_diag) then
+        Wdiag(:,:,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
+      endif
+#  endif
 # endif /* NHMG */
 
 

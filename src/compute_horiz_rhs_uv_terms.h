@@ -48,8 +48,11 @@
         enddo
 
 # ifdef DIAGNOSTICS
-        if (diag_uv .and. calc_diag .and. diag_icori) then ! diag_icori to prevent doing this twice from prestep...
-          call set_diags_uv_coriolis( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )
+	! diag_icori to prevent doing this twice from prestep...
+	! JM: check these logicals
+        if (diag_uv.and.calc_diag.and.diag_icori) then 
+	  Mdiag(:,:,:,1,icori) = ru - Mdiag(:,:,:,1,iprsgr)
+	  Mdiag(:,:,:,2,icori) = rv - Mdiag(:,:,:,2,iprsgr)
         endif
 # endif /* DIAGNOSTICS */
 

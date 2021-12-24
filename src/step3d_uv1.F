@@ -76,15 +76,9 @@
 # include "compute_auxiliary_bounds.h"
 
 # ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) then                                                      ! called here not in prsgrd as prsgrd is called twice from main.
-        Mdiag(istrU:iend,jstr :jend,:,1,iprsgr)=ru(istrU:iend,jstr :jend,:)    ! ru is scratch size not global size
-        Mdiag(istr :iend,jstrV:jend,:,2,iprsgr)=rv(istr :iend,jstrV:jend,:)    ! interior points not bry
-        diag_icori = .true.  ! triggers diag calculation in compute_horiz_uv... as also called from pre_step3d, but only want this time.
-      endif
-      if (prs_flx) pg_cor = .false. ! ensure prs_flx not calculated in predictor step of prsgrd.
 #  ifdef NHMG
-      if (calc_diag) then
-        Wdiag(istr:iend,jstr:jend,1:N,iwprsgr) =rw(istr :iend,jstr :jend,1:N)  ! Note 1:N
+      if (diag_uv.and.calc_diag) then
+        Wdiag(istr:iend,jstr:jend,:,iwprsgr) =rw(istr:iend,jstr:jend,:)
       endif
 #  endif
 # endif
@@ -129,8 +123,8 @@
 
 # ifdef DIAGNOSTICS
         if (diag_uv .and. calc_diag) then
-          call set_diags_u_4th_adv( istrU, istr, iend, jstr, jend )
-          call set_diags_v_4th_adv( jstrV, istr, iend, jstr, jend )
+          call set_diags_u_4th_adv
+          call set_diags_v_4th_adv
         endif
 # endif
 
@@ -180,8 +174,18 @@
           enddo
         enddo
 # ifdef DIAGNOSTICS
-        if (diag_uv .and. calc_diag)
-     &    call set_diags_uv_dissipation(istr, iend, jstr, jend, istrU, j, 1, DC, ru, sustr, u)
+        if (diag_uv.and.calc_diag) then
+          u_prev(:,j,:) = u(1:nx,j,:,nnew)
+          do k=1,nz
+            Udiag(:,j,k,idiss) = ru(1:nx+1,j,k)*dxdyi_u(:,j)
+     &          - Udiag(:,j,k,iprsgr)
+     &          - Udiag(:,j,k,icori)
+     &          - Udiag(:,j,k,iadv)
+!           Vdiag(1:nx,j,:,idiss) = rv(1:nx,j,:)*dxdyi_v(1:nx,j)
+          enddo
+          Udiag(:,j,:,idiss) = ru(1:nx,j,:)*dxdyi_u(1:nx,j)
+          Udiag(:,j,k,ivmix) = sustr(1:nx+1,j)
+        endif
 # endif
         if (j >= jstrV) then
           do i=istr,iend
@@ -209,8 +213,17 @@
             enddo
           enddo
 # ifdef DIAGNOSTICS
-          if (diag_uv .and. calc_diag)
-     &      call set_diags_uv_dissipation(istr, iend, jstr, jend, istr, j, 2, DC, rv, svstr, v)
+        if (diag_uv.and.calc_diag) then
+          v_prev(:,j,:) = v(1:nx,j,:,nnew)
+          do k=1,nz
+            Vdiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_v(:,j)
+     &          - Vdiag(:,j,k,iprsgr)
+     &          - Vdiag(:,j,k,icori)
+     &          - Vdiag(:,j,k,iadv)
+          enddo
+          Vdiag(:,j,:,idiss) = rv(1:nx,j,:)*dxdyi_v(:,j)
+          Vdiag(:,j,k,ivmix) = svstr(1:nx,j)
+
 # endif
         endif  !<-- if j>=jstrV
 

@@ -20,11 +20,11 @@
 !      integer, public, parameter ::  ny = Mm
 !      integer, public, parameter ::  nz = N
 
-      integer, parameter :: gnx = LLm
-      integer, parameter :: gny = MMm
-      integer, parameter ::  nx = Lm
-      integer, parameter ::  ny = Mm
-      integer, parameter ::  nz = N
+      integer, public,parameter :: gnx = LLm
+      integer, public,parameter :: gny = MMm
+      integer, public,parameter ::  nx = Lm
+      integer, public,parameter ::  ny = Mm
+      integer, public,parameter ::  nz = N
 
       ! DevinD: store global index ranges for each node for bry_extract_child.F
       integer :: glob_istr, glob_iend, glob_jstr, glob_jend

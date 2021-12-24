@@ -697,14 +697,6 @@
       up=0; vp=0; pp=0
       up_pp=0; vp_pp=0
 
-      allocate( dpdx_f(GLOBAL_2D_ARRAY, N) )
-      allocate( dpdx_p(GLOBAL_2D_ARRAY, N) )
-      allocate( dpdy_f(GLOBAL_2D_ARRAY, N) )
-      allocate( dpdy_p(GLOBAL_2D_ARRAY, N) )
-      allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
-      dpdx_f=0; dpdx_p=0; dpdy_f=0; dpdy_p=0
-      div_uvp=0;
-
       if (check_prs) then
         allocate( u_bcl(GLOBAL_2D_ARRAY, N) )
         allocate( p_bcl(GLOBAL_2D_ARRAY, N) )
@@ -2013,7 +2005,7 @@
       end subroutine set_diags_uv_prime  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P, ru, rv )  ![
+      subroutine set_diags_prs_prime(P,ru,rv)  ![
       ! set p' (the pressure perturbation)
       !
       ! Note, pressure (P) is calculated in prsgrd.F. The loop ranges there
@@ -2028,34 +2020,81 @@
       implicit none
 
       ! inputs
-      integer,                                     intent(in) :: istr, iend, jstr, jend, istrU, jstrV
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P, ru, rv
 
       ! local
       integer :: i, j, k
 
       if (.not. p_init_done) then
-        do k=1,N
-          do j=jstrV-1,jend                                 ! allows for rho to u averaging later
-            do i=istrU-1,iend
-              pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N)             ! set to avoid ramp up
 
-              dpdx_f(i,j,k) = ru(i,j,k)
-              dpdy_f(i,j,k) = rv(i,j,k)
+        allocate( dpdx_f(GLOBAL_2D_ARRAY, N) )
+        allocate( dpdy_f(GLOBAL_2D_ARRAY, N) )
+
+        !!! figure out how to use work space for these
+        allocate( dpdx_p(GLOBAL_2D_ARRAY, N) )
+        allocate( dpdy_p(GLOBAL_2D_ARRAY, N) )
+
+        allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
+
+
+        do j=1,ny
+          do i=1,nx
+            dxdyi_u(i,j) = 0.5*(pn(i,j)+pn(i-1,j)*pm(i,j)+pm(i-1,j))
+            dxdyi_v(i,j) = 0.5*(pn(i,j)+pn(i,j-1)*pm(i,j)+pm(i,j-1))
+          enddo
+        enddo
+
+        ! Initialize all filtered variables
+        do k=1,nz
+          ! We need to start at zero to allow rho2u averaging later on
+          do j=0,ny 
+            do i=0,nx
+              pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N) 
+            enddo
+          enddo
+
+          ! Divide by dx,dy to get dz*px because ru,rv are volume integrated 
+          do j= 1,ny 
+            do i= 1,nx
+              dpdx_f(i,j,k) = ru(i,j,k)*dxdyi_u(i,j)
+              dpdy_f(i,j,k) = rv(i,j,k)*dxdyi_v(i,j)
             enddo
           enddo
         enddo
+
+        ! udh is u.grad(h), and dzt is dzeta/dt
+        do j = 1,ny
+          do i= 1,nx
+            udh_f(i,j) = 
+     &       0.5*pm(i,j)*(ubar(i,j)*(h(i,j)-h(i-1,j))+ubar(i+1,j)*(h(i+1,j)-h(i,j)))
+     &      +0.5*pn(i,j)*(vbar(i,j)*(h(i,j)-h(i,j-1))+vbar(i,j+1)*(h(i,j+1)-h(i,j)))
+
+            dzt_f(i,j) = pm(i,j)*pn(i,j)*(
+     &                   ubar(i+1,j)*Du(i+1,j)-ubar(i,j)*Du(i,j)
+     &                   vbar(i,j+1)*Dv(i,j+1)-vbar(i,j)*Dv(i,j) )
+          enddo
+        enddo
         p_init_done = .true.
-      endif                                                 ! unlike u/v first diff will be zero.
-                                                            ! as P computed online. don't have for t=0
+      endif   
+
       do k=1,N
         do j=jstrV-1,jend
           do i=istrU-1,iend
             pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
 
-            dpdx_f(i,j,k) = beta * dpdx_f(i,j,k) + alpha * ru(i,j,k)
-            dpdy_f(i,j,k) = beta * dpdy_f(i,j,k) + alpha * rv(i,j,k)
+            dpdx_f(i,j,k) = beta*dpdx_f(i,j,k) + alpha*ru(i,j,k)*dxdyi_u(i,j)
+            dpdy_f(i,j,k) = beta*dpdy_f(i,j,k) + alpha*rv(i,j,k)*dxdyi_u(i,j)
           enddo
+        enddo
+      enddo
+      do j=1,ny
+        do i=1,nx
+          udh_f(i,j) =  beta*udh_f(i,j) + alpha*(
+     &       0.5*pm(i,j)*(ubar(i,j)*(h(i,j)-h(i-1,j))+ubar(i+1,j)*(h(i+1,j)-h(i,j)))
+     &      +0.5*pn(i,j)*(vbar(i,j)*(h(i,j)-h(i,j-1))+vbar(i,j+1)*(h(i,j+1)-h(i,j))))
+          dzt_f(i,j) = pm(i,j)*pn(i,j)*(
+     &                   ubar(i+1,j)*Du(i+1,j)-ubar(i,j)*Du(i,j)
+     &                   vbar(i,j+1)*Dv(i,j+1)-vbar(i,j)*Dv(i,j) )
         enddo
       enddo
 
@@ -2102,55 +2141,54 @@
       end subroutine set_diags_copy_to_buffer  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_div_uvp( istr, iend, jstr, jend )  ![
-
-      ![
-      !  We are also want the high frequency divergence term in both u and v (div_uvp):
-      !
-      !  we use the pressure gradient in high and low frequency components:
-      !
-      !    dpdx = dpdx_f + dpdx'
-      !
-      !    where dpdx is 'ru' in prsgrd.F
-      !
-      !  Using u as an example:
-      !
-      !    u /dot dP/dx = (uf + u') * (dpdx_f + dpdx')
-      !
-      !    div_up = u' dpdx_f + uf dpdx' + u' dpdx' = u' dpdx_f + ( uf + u') dpdx'
-      !
-      !    we have exclude the lower frequency product of uf dpdx_f
-      !
-      !    div_uvp = div_up + div_vp
-      !
-      !  div_uvp is at rho-points since contains both u and v (easiest)
-      !]
-
+      subroutine E_baroclinic  ![
       implicit none
 
-      integer, intent(in)    :: istr, iend, jstr, jend
+      ! Local
+      integer :: i,j,k
+      real    :: Wbt_f,Wbt_p
 
-      integer :: i, j, k
+      ! Since the exponential smoother is not a great orthogonal
+      ! decomposition, we need 3 terms for the hf components:
+      !  hf*hf + lf*hf + hf*lf  
+      ! lf-> _f, hf -> _p
 
-      do k=1,N
-        do j=jstr,jend      ! rho-point interior. u and v terms include boundary already so averaging is fine
-          do i=istr,iend
+      ! Barotropic to baroclinic energy flux: Wbt*b
+      ! Wbt is the vertical velocity of the barotropic mode
+      ! alp = ubar*hx + vbar*hy
+      ! bet = z_t + ubar*zx + vbar*zy
+      ! Wbt = alp + (zr + h)* (bet - alp)/(zeta + h)
+      ! bt2bc = Wbt*b
+      bt2bc = 0
+      do k=1,nz
+        do j=1,nx
+          do i=1,ny
+            Wbt_f = alp_f + (zr(i,j,k)+h(i,j))*(bet_f-alp_f)/(zeta(i,j) + h(i,j))
+            Wbt_p = alp_p + (zr(i,j,k)+h(i,j))*(bet_p-alp_p)/(zeta(i,j) + h(i,j))
+            bt2bc(i,j) = bt2bc(i,j) 
+     &                 + (Wbt_p*rho1(i,j,k) + Wbt_p*rho1_p(i,j,k)*Hz(i,j,k)
+          enddo
+        enddo
+      enddo
+      ! Divergence of pressure flux work: u*px + v*py
+      divup = 0
+      do k=1,nz
+        do j=1,ny   
+          do i=1,nx
+               ! dpdx already contains Hz
+               ! u needs removal of ubar
+            divup(i,j) = divup(i,j) + 0.5*(
+     &              up(i,j,k)*dpdx_p(i,j,k)+up(i+1,j,k)*dpdx_p(i+1,j,k) 
+     &              up(i,j,k)*dpdx_f(i,j,k)+up(i+1,j,k)*dpdx_f(i+1,j,k) 
+     &              uf(i,j,k)*dpdx_p(i,j,k)+uf(i+1,j,k)*dpdx_p(i+1,j,k) 
 
-            div_uvp(i,j,k) = 0.5 * ( ( up(i,j,k) + up(i+1,j,k) )   * dpdx_f(i,j,k)   ! dpdx_f already contains Hz?
-                                                                                     ! 0.5 for all the u2rho averaging
-     &                             + ( uf(i,j,k) + uf(i+1,j,k) +
-     &                                 up(i,j,k) + up(i+1,j,k)   ) * dpdx_p(i,j,k)
-
-     &                             + ( vp(i,j,k) + vp(i,j+1,k) )   * dpdy_f(i,j,k)   ! dpdx_f already contains Hz?
-
-     &                             + ( vf(i,j,k) + vf(i,j+1,k) +
-     &                                 vp(i,j,k) + vp(i,j+1,k)   ) * dpdy_p(i,j,k) )
-
+                  + vp(i,j,k)*dpdy_f(i,j,k)+vp(i,j+1,k)*dpdy_f(i,j+1,k) 
+     &            +  v(i,j,k)*dpdy_p(i,j,k)+ v(i,j+1,k)*dpdy_p(i,j+1,k) )
           enddo
         enddo
       enddo
 
-      end subroutine set_diags_div_uvp  !]
+      end subroutine E_baroclinic !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
