@@ -28,6 +28,7 @@
 # endif
      &                                                              )
 
+      use dimensions
       use param
       use river_frc
       use wec_frc

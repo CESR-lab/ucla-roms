@@ -38,6 +38,7 @@
       use wec_frc
 # endif
       use diagnostics
+      use dimensions
       use surf_flux, only: sustr, svstr
       use coupling
       use eos_vars
@@ -177,14 +178,11 @@
         if (diag_uv.and.calc_diag) then
           u_prev(:,j,:) = u(1:nx,j,:,nnew)
           do k=1,nz
-            Udiag(:,j,k,idiss) = ru(1:nx+1,j,k)*dxdyi_u(:,j)
+            Udiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_u(:,j)
      &          - Udiag(:,j,k,iprsgr)
      &          - Udiag(:,j,k,icori)
      &          - Udiag(:,j,k,iadv)
-!           Vdiag(1:nx,j,:,idiss) = rv(1:nx,j,:)*dxdyi_v(1:nx,j)
           enddo
-          Udiag(:,j,:,idiss) = ru(1:nx,j,:)*dxdyi_u(1:nx,j)
-          Udiag(:,j,k,ivmix) = sustr(1:nx+1,j)
         endif
 # endif
         if (j >= jstrV) then
@@ -216,14 +214,12 @@
         if (diag_uv.and.calc_diag) then
           v_prev(:,j,:) = v(1:nx,j,:,nnew)
           do k=1,nz
-            Vdiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_v(:,j)
+            Vdiag(:,j,k,idiss) = rv(1:nx,j,k)*dxdyi_v(:,j)
      &          - Vdiag(:,j,k,iprsgr)
      &          - Vdiag(:,j,k,icori)
      &          - Vdiag(:,j,k,iadv)
           enddo
-          Vdiag(:,j,:,idiss) = rv(1:nx,j,:)*dxdyi_v(:,j)
-          Vdiag(:,j,k,ivmix) = svstr(1:nx,j)
-
+        endif
 # endif
         endif  !<-- if j>=jstrV
 

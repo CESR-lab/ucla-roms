@@ -26,7 +26,9 @@
 !            the anisotropic stress tensor for use in models of
 !            the large-scale ocean circulation, JCP, 105, 333-338.
 
+      use dimensions
       use param
+      use diagnostics
       use coupling
       use grid
       use mixing
@@ -114,6 +116,15 @@
 !   Do things
 # endif
       enddo ! k loop
+
+# ifdef DIAGNOSTICS
+      if (diag_uv .and. calc_diag) then
+        Udiag(:,:,:,ihmix) = (u(1:nx+1,1:ny,:,indx)-u_prev)/ dt
+        Vdiag(:,:,:,ihmix) = (v(1:nx,1:ny+1,:,indx)-v_prev)/ dt
+        u_prev = u(1:nx+1,1:ny,:,indx)
+        v_prev = v(1:nx,1:ny+1,:,indx)
+      endif
+# endif
       end
 
 #else

@@ -48,11 +48,11 @@
         enddo
 
 # ifdef DIAGNOSTICS
-	! diag_icori to prevent doing this twice from prestep...
-	! JM: check these logicals
-        if (diag_uv.and.calc_diag.and.diag_icori) then 
-	  Mdiag(:,:,:,1,icori) = ru - Mdiag(:,:,:,1,iprsgr)
-	  Mdiag(:,:,:,2,icori) = rv - Mdiag(:,:,:,2,iprsgr)
+        if (CORR_STAGE) then
+          if (diag_uv) then
+            Udiag(:,:,:,icori) = ru(1:nx,1:ny,:) - Udiag(:,:,:,iprsgr)
+            Vdiag(:,:,:,icori) = rv(1:nx,1:ny,:) - Vdiag(:,:,:,iprsgr)
+          endif
         endif
 # endif /* DIAGNOSTICS */
 
