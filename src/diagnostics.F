@@ -14,6 +14,7 @@
       use ocean3d
       use scalars
       use mixing  ! visc2_r
+      use hidden_mpi_vars
 
       implicit none
       private
@@ -38,13 +39,13 @@
       ! beginning of main.F in order to record the diagnostics of 'nnew' index,
       ! which was t=n+1 for the previous timestep, and is now t=n since roms_step
       ! has moved onto the next timestep. I.e. 'nnew' will become 'nstp' in next timestep.
-      ! But wrt_diagnostics_tile is called before nnew and nstp indicies change in main.F.
+      ! But wrt_diagnostics is called before nnew and nstp indicies change in main.F.
 
       ! If you are needing averages then the diagnotics need to be computed at everytimestep.
       ! If you just need snapshots then the diagnostics only need to be calculated at
       ! your output frequency.
       ! Both of these are controlled by the logical 'calc_diag', which is set in
-      ! wrt_diagnostics_tile at the beginning of a timestep, and then that logical is
+      ! wrt_diagnostics at the beginning of a timestep, and then that logical is
       ! used in the equation system to trigger a calculation of diagnostics.
 
       ! TRACERS:
@@ -74,7 +75,7 @@
       ! During a roms_step in main.F, the values of u/v at t=n+1/2 is calculated
       ! in pre_step3d4s.F. Since we are interested in the change from t=n to t=n+1,
       ! we do not track any diagnostics in pre_step3d.
-      ! The order of evolution of u/v (showns as u) and its units is as follows:
+      ! The order of evolution of u/v (shown as u) and its units is as follows:
       ! 1) dz*u - Hydrostatic pressure gradient - prsgrd.F
       ! 2) dz*u - Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h (2nd time round i.e. not during pre_step3d)
       ! 3) dz*u - Advection                     - step3d_uv1.F & compute_horiz/vert_rhs_uv_term.h
@@ -138,28 +139,6 @@
       ! due to the cost of the if statment at every index iteration. This has still
       ! mostly been avoided anyway.
 
-      ! INTERIOR VS BOUNDARY GRID POINTS:
-      ! Most diagnostic terms only act on the interior of the domain and exclude the
-      ! boundary. The boundary term obviously only updates the boundary, whereas the
-      ! 2D/3D correction updates the interior and boundary. This means that indices
-      ! for loops and array statements are important. Here is a quick refresher of loop
-      ! ranges (u has one less point in xi, v has one less point in eta):
-      !
-      !               |       WESTERN_EDGE            |        EASTERN_EDGE          |
-      !     variable  | west-bry     | interior-start |  interior-end |    east-bry  |
-      !  -------------|--------------|----------------|---------------|--------------|
-      !        u      | istr         | istr+1=istrU   | iend          | iend+1=iendR |
-      !        v      | istr-1=istrR | istr           | iend          | iend+1=iendR |
-      !       rho     | istr-1=istrR | istr           | iend          | iend+1=iendR |
-      !
-      !
-      !     variable  |      u       |      v         |     rho       |
-      !  -------------------------------------------------------------|
-      !  north-bry    | jend+1=jendR | jend+1=jendR   | jend+1=jendR  | <- NORTHERN_EDGE
-      !  interior-end | jend         | jend           | jend          |_______________
-      !  interior-str | jstr         | jstr+1=jstrV   | jstr          |
-      !  south-bry    | jstr-1=jstrR | jstr           | jstr-1=jstrR  | <- SOUTHERN_EDGE
-
       !]
 
       ![ Potential issues:
@@ -177,28 +156,23 @@
 
       ! U & V MOMENTUM:
       ! ---------------
+      real,dimension(:,:),pointer :: wrk_xy1,wrk_xy2
 
       integer, public, parameter                          :: nmd = 6    ! number of momentum diag terms
 
-      real, public, allocatable, dimension(:, :, :, :, :) :: Mdiag      ! 2 for u & v
-      real,         allocatable, dimension(:, :)          :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
-      real,         allocatable, dimension(:, :)          :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
-      real,         allocatable, dimension(:, :)          :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
-      real, public, allocatable, dimension(:, :, :, :)    :: uvdz_old   ! dz*u or v from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, allocatable, dimension(:, :, :, :)    :: uv_prev    ! store incremental u/v/w (nnew)
+      real, public, allocatable, dimension(:,:,:,:) :: Udiag 
+      real, public, allocatable, dimension(:,:,:,:) :: Vdiag
+      real, public, allocatable, dimension(:,:,:)   :: udz_old ! dz*u
+      real, public, allocatable, dimension(:,:,:)   :: vdz_old ! dz*v
+      real, public, allocatable, dimension(:,:,:)   :: u_prev
+      real, public, allocatable, dimension(:,:,:)   :: v_prev
+      real,         allocatable, dimension(:, :)  :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
+      real,         allocatable, dimension(:, :)  :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
+      real,         allocatable, dimension(:, :)  :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
 
       ! if diag_avg - for averaging of diagnostics
-      real, allocatable, dimension(:, :, :, :, :)         :: Md_avg     ! averages of diagnostics. Allocatabled (in subroutine) hence memory only if diag_avg is true.
-
-      ! if check_diag - check that diagnostics match gross change in variable
-      real, allocatable, dimension(:, :, :, :)            :: uv_dif     ! gross u/v difference between current vs previous timestep u/v
-      real, allocatable, dimension(:, :, :)               :: Mdsum      ! sum of Mdiag
-
-      ! if check_avg - could share for u & v for less memory?
-      real, allocatable, dimension(:, :, :, :)            :: uvdz_t0    ! original dz*u/v to compare total change in u/v over simulation.
-      real, allocatable, dimension(:, :, :, :)            :: uvdz_ever  ! total change in dz*u/v over simulation.
-      real, allocatable, dimension(:, :, :, :)            :: Md_a_sum   ! sum of diag averages at timestep
-      real, allocatable, dimension(:, :, :, :)            :: Md_a_ever  ! total of all diag averages for entire simulation. Should add up to change in u/v/t over simulation...
+      real, allocatable, dimension(:,:,:,:) :: Udiag_avg ! Averages of diagnostics
+      real, allocatable, dimension(:,:,:,:) :: Vdiag_avg ! Averages of diagnostics
 
       real, public                                        :: Mdtmp      ! temporary scalar for calculations of Mdiag
 
@@ -292,16 +266,21 @@
       ! --------------
       real, allocatable, dimension(:, :, :), public :: up_pp, vp_pp ! u'p' (at upoint) and v'p' (at v_point) - makes it easier to use in child bry.
       real, allocatable, dimension(:, :, :) :: up, vp               ! perturbed u/v/
-      real, allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
+      real, public,allocatable, dimension(:, :, :) :: uf, vf, pf           ! filtered  u/v/pressure
       real, allocatable, dimension(:, :, :) :: pp                   ! perturbed p
       real, allocatable, dimension(:, :, :) :: u_bcl, p_bcl         ! u and p baroclinic
       real, allocatable, dimension(:, :, :) :: aup, avp, app        ! averaged perturbed u/v/p
       real, allocatable, dimension(:, :, :) :: aup_pp, avp_pp       ! averaged u'p' and v'p'
 
       ! -- divergence terms
-      real, allocatable, dimension(:, :, :) :: dpdx_f, dpdx_p       ! dP/dx filtered and prime
-      real, allocatable, dimension(:, :, :) :: dpdy_f, dpdy_p       ! dP/dy filtered and prime
-      real, allocatable, dimension(:, :, :) :: div_uvp, adiv_uvp    ! divergence u'p' + v'p' (and average)
+      real, public,allocatable, dimension(:,:) :: dxdyi_u, dxdyi_v,dxdyi ! 1/ surface of cells
+      real, public,allocatable, dimension(:,:,:) :: pxf, pxp       ! dP/dx filtered and prime
+      real, public,allocatable, dimension(:,:,:) :: pyf, pyp       ! dP/dy filtered and prime
+      real, allocatable, dimension(:,:) :: bt2bc    ! Barotropic to baroclinic conversion
+      real, allocatable, dimension(:,:) :: divup    ! Divergence of up flux
+      real, public,allocatable, dimension(:,:) :: udh_f, udh_p           ! ubar.grad(h), filtered and prime
+      real, public,allocatable, dimension(:,:) :: dzt_f, dzt_p           ! dzeta/dt, filtered and prime
+      real, allocatable, dimension(:,:,:) :: div_uvp, adiv_uvp    ! divergence u'p' + v'p' (and average)
 
       ! -- sponge terms:
       real, allocatable, dimension(:)       :: mup_ppzw,  mup_ppze  ! mean of up_ppz along orthogonal sponge from west/est boundary
@@ -331,7 +310,7 @@
       character (len=3) :: pchunits = 'TBC'
 
       public set_diags_uv_prime
-      public set_diags_prs_prime
+!     public set_diags_prs_prime
 
       ! W MOMENTUM: (CURRENTLY NOT WORKING)
       ! -----------
@@ -379,37 +358,23 @@
       public set_diags_w_at_bc
 # endif /* NHMG */
 
-      public set_diags_uv_coriolis
-      public set_diags_uv_dissipation
       public set_diags_u_4th_adv
       public set_diags_v_4th_adv
-      public set_diags_uv_h_mix
-      public set_diags_uv_v_mix
-      public set_diags_u_bc
-      public set_diags_v_bc
-      public set_diags_u_2d3d_cor
-      public set_diags_v_2d3d_cor
       public set_diags_uv_dz_old
       public wrt_diagnostics !]
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags(istr, jstr, iend, jend)  ![
-      ! Initilialize allocatable diagnostic arrays.
-      ! Set original dz*u/v/w/t for initial timestep, hence only called once.
-
+      subroutine init_diagnostics ![
+      ! Allocatable and initialize diagnostic arrays.
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, jstr, iend, jend
 
       ! local
-      integer :: i, j, k, diag
+      integer :: i,j,k,diag
 
-! Needed for istrU, istrR, etc
-# include "compute_auxiliary_bounds.h"
-
+      ! Do some consistency checking
       if(check_avg .and. .not. diag_avg) then                           ! catch bad config
         write(*,*) 'ERROR - diagnostics.F: check_avg must be false ',
      &  'if diag_avg is false!'
@@ -431,84 +396,77 @@
 
       endif
 
+      if (prs_flx) then
+        allocate( udh_f(nx,ny) )
+        allocate( dzt_f(nx,ny) )
+
+        allocate( pxf(nx,ny,nz) )
+        allocate( pyf(nx,ny,nz) )
+        
+        !!! JM this is a test for reusable space
+        allocate(wrk_xy1(nx,ny))
+        allocate(wrk_xy2(nx,ny))
+
+        allocate( dxdyi_u(nx,ny) )
+        allocate( dxdyi_v(nx,ny) )
+        allocate( dxdyi(nx,ny) )
+        dxdyi_u = 0.25*( pn(0:nx-1,1:ny)+pn(1:nx,1:ny) )
+     &                *( pm(0:nx-1,1:ny)+pm(1:nx,1:ny) )
+        dxdyi_v = 0.25*( pn(1:nx,0:ny-1)+pn(1:nx,1:ny) )
+     &                *( pm(1:nx,0:ny-1)+pm(1:nx,1:ny) )
+        dxdyi = pn(1:nx,1:ny)*pm(1:nx,1:ny)
+      endif
+
       if (diag_uv) then
 
-        allocate(    Mdiag(GLOBAL_2D_ARRAY, N, 2, nmd) )
-        allocate( uvdz_old(GLOBAL_2D_ARRAY, N, 2)      )
-        allocate(  uv_prev(GLOBAL_2D_ARRAY, N, 2)      )
-        Mdiag    (istrR:iendR,jstrR:jendR,:,:,:) = 0
-        uvdz_old (istrR:iendR,jstrR:jendR,:,:)   = 0
-        uv_prev  (istrR:iendR,jstrR:jendR,:,:)   = 0
+        allocate(Udiag(nx,ny,nz,nmd) )
+        allocate(Vdiag(nx,ny,nz,nmd) )
+        allocate(udz_old(nx,ny,nz))
+        allocate(vdz_old(nx,ny,nz))
+        allocate(u_prev(nx,ny,nz) )
+        allocate(v_prev(nx,ny,nz) )
 
         allocate( vnames(nmd), lname(nmd) )
-        vnames(iprsgr) = '_prsgrd'
-        lname (iprsgr) = 'Hydrostatic pressure gradient - prsgrd.F'
-        vnames(icori)  = '_coriolis'
-        lname (icori)  =
-     &    'Coriolis & curvilinear coords - compute_horiz_rhs_uv_term.h'  ! if goes beyond 72 characters the text has big space, hence new line
-        vnames(iadv)   = '_advection'
-        lname (iadv)   = 'Advection (horiz. & vert.) - step3d_uv1.F'
-        vnames(idiss)  = '_dissip'
-        lname (idiss)  =
-     &    'Dissipation from advection (horiz. & vert.) - step3d_uv1.F'
-        vnames(ihmix)  = '_h_mix'
-        lname (ihmix)  =
-     &    'Horizontal mixing (zero beyond sponge layer) - visc3d_GP.F'
-        vnames(ivmix) = '_v_mix_and_BC'
-        lname (ivmix) = 'Vertical mixing (interior), boundary ' / /
-     &    'changes (bry), and 2D/3D coupling (int+bry) - '      / /
-     &    'step3d_uv2.F part 1 & u/v3dbc_im.F'
+        vnames(1) = '_pgr'
+        lname (1) = 'Hydrostatic pressure gradient'
+        vnames(2) = '_cor'
+        lname (2) = 'Coriolis & curvilinear'
+        vnames(3) = '_adv'
+        lname (3) = 'Advection (horiz. & vert.)'
+        vnames(4) = '_dis'
+        lname (4) = 'Dissipation from advection (horiz. & vert.)'
+        vnames(5) = '_h_mix'
+        lname (5) = 'Explicit Horizontal mixing'
+        vnames(6) = '_v_mix_and_BC'
+        lname (6) = 'Vertical mixing plus 2D/3D coupling'
 
-        if (diag_avg) then                                       ! only if diag averaging and only done once
-          allocate( Md_avg(GLOBAL_2D_ARRAY, N, 2, nmd) )         ! allocate memory for diag averages
-          Md_avg(istrR:iendR,jstrR:jendR,:,:,:) = 0
-          do diag=1,nmd                                          ! loop through diag terms
-            lname(diag)  = 'Average ' / / trim(lname(diag))      ! and prepend 'Average'
+        if (diag_avg) then   
+          allocate(Udiag_avg(nx,ny,nz,nmd))
+          allocate(Vdiag_avg(nx,ny,nz,nmd))
+          do diag=1,nmd                                   
+            lname(diag)  = 'Ave ' / / trim(lname(diag))   ! prepend 'Ave'
           enddo
-        endif
-
-        if (check_diag .or. tot_change) then
-          allocate( uv_dif(GLOBAL_2D_ARRAY, N, 2) )
-          uv_dif(istrR:iendR,jstrR:jendR,:,:) = 0
-        endif
-
-        if (check_diag) then
-          allocate(  Mdsum(GLOBAL_2D_ARRAY, N)    )
-          Mdsum (istrR:iendR,jstrR:jendR,:)   = 0
         endif
 
         if (set_dz_old) then
-          do k=1,N
-            do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-              do i=istr,iendR  ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-                uvdz_old(i,j,k, 1) = u(i,j,k,nstp) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-              enddo
-            enddo
-            do j=jstr,jendR    ! Full loop ranges since u-change over every point including bry.
-              do i=istrR,iendR ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-                uvdz_old(i,j,k, 2) = v(i,j,k,nstp) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+          do k=1,nz
+            do j=1,ny  
+              do i=1,nx
+                udz_old(i,j,k) = u(i,j,k,nstp)*0.5*( Hz(i-1,j,k)+Hz(i,j,k) )
+                vdz_old(i,j,k) = v(i,j,k,nstp)*0.5*( Hz(i,j-1,k)+Hz(i,j,k) )
               enddo
             enddo
           enddo
-        endif
-
-        if (check_avg) then                                    ! needs to come after if (set_dz_old) as uses uvdz_old
-          allocate(  Md_a_sum(GLOBAL_2D_ARRAY, N, 2) )         ! sum of diag averages at timestep
-          allocate( Md_a_ever(GLOBAL_2D_ARRAY, N, 2) )         ! continuing total of sum of averages Md_a_ever += Md_a_sum
-          allocate(   uvdz_t0(GLOBAL_2D_ARRAY, N, 2) )
-          allocate( uvdz_ever(GLOBAL_2D_ARRAY, N, 2) )
-          Md_a_ever(istrR:iendR,jstrR:jendR,:,:) = 0           ! Md_a_sum set to 0 elsewhere, so not needed here
-          uvdz_t0 = uvdz_old                                   ! store the initial condition for budget confirmation at simulation end
         endif
 
       endif  ! <-- diag_uv
 
 # ifdef NHMG
       if (set_dz_old) then
-        do k=1,N             ! 0 is always 0?
-          do j=jstrR,jendR   ! Full loop ranges since u-change over every point including bry.
-            do i=istrR,iendR
-              if(k==N) then
+        do k=1,nz
+          do j=1,ny      ! Full loop ranges since u-change over every point including bry.
+            do i=1,nx
+              if(k==nz) then
                 wdz_old(i,j,k) = w(i,j,k,nstp) * Hz(i,j,k)
               else
                 wdz_old(i,j,k) = w(i,j,k,nstp) * (0.5*( Hz(i,j,k+1)+Hz(i,j,k) ))
@@ -551,26 +509,23 @@
       allocate( FX4( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FY4( GLOBAL_2D_ARRAY ) )       ! called within k loop so only need 2D slice per k
       allocate( FZ4( GLOBAL_1DX_ARRAY, 0:N ) ) ! both u/v/tracer. vertical flux at z_w level.
-      FZ4(istrR:iendR,0) = 0                   ! use 2D array (i & k) for memory savings.
-      FZ4(istrR:iendR,N) = 0                   ! bottom and surface always 0 for w-point advection.
+      FZ4(:,0) = 0  ! top and bottom vertical fluxes are always zero
+      FZ4(:,nz)= 0
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
-      if (diag_trc) call init_diags_trc    (istrR, jstrR, iendR, jendR)
-      if (prs_flx ) call init_diags_prs_flx(istrR, jstrR, iendR, jendR, istr, jstr, iend, jend)
+      if (diag_trc) call init_diags_trc  
+      if (prs_flx ) call init_diags_prs_flx
 
       init_done = .true.  ! ensure init is not triggered again
 
-      end subroutine init_diags  !]
+      end subroutine init_diagnostics  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_trc(istrR, jstrR, iendR, jendR)  ![
+      subroutine init_diags_trc ![
       ! setup tracer arrays only for desired tracers,
       ! since can be memory intensive if all tracers.
 
       implicit none
-
-      ! inputs
-      integer, intent(in)    :: istrR, jstrR, iendR, jendR
 
       ! local
       integer                :: itrc, cnt=0, diag, td, i, j, k
@@ -615,7 +570,6 @@
       allocate(  Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )  ! only for tracers we are interested in
       allocate( Td_tmp( GLOBAL_2D_ARRAY, N ) )               ! don't need to set to zero as written over in code
       allocate( Hz_old( GLOBAL_2D_ARRAY, N ) )               ! same for Hz_old
-      Tdiag (istrR:iendR, jstrR:jendR, :, :, :) = 0
 
       allocate( diag_td_2_NT( nd_trc ) )                     ! to convert indices between 't' and 'Tdiag'
       diag_td_2_NT = -1                                      ! set to bad number (<1) as safeguard
@@ -632,11 +586,9 @@
         allocate( T_dsum( GLOBAL_2D_ARRAY, N ) )             ! don't need to set to zero as done later in code
       endif
 
-      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)  ! this should have a set_dz_old flag
 
       if (diag_avg) then
         allocate(  Td_avg( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )
-        Td_avg (istrR:iendR, jstrR:jendR, :, :, :) = 0
         do diag=1,ndt
           tlname(diag)  = 'Average ' / / trim(tlname(diag))              ! and prepend 'Average'
         enddo
@@ -649,9 +601,7 @@
 
         do td=1,nd_trc
           itrc=diag_td_2_NT(td)
-          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
-            Tdz_t0(i,j,k,td) = t(i,j,k,nstp,itrc) * Hz(i,j,k)  ! Set t*dz at t=0 for overall budget check of averages
-          enddo; enddo; enddo
+            Tdz_t0(:,:,:,td) = t(:,:,:,nstp,itrc) * Hz(:,:,:)  ! Set t*dz at t=0 for overall budget check of averages
         enddo
       endif
 
@@ -661,28 +611,25 @@
       end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_prs_flx(istrR, jstrR, iendR, jendR, istr, jstr, iend, jend)  ![
+      subroutine init_diags_prs_flx
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istrR, jstrR, iendR, jendR, istr, jstr, iend, jend
-
       ! local
-      integer :: i, j, k, var
+      integer :: i,j,k,var
 
       alpha = dt / timescale
       beta  = 1 - alpha
-      if(mynode==0) write(*,'(1x,A,F8.6,A,F8.6/)')
+      if(mynode==0) write(*,'(1x,A,F9.6,A,F9.6/)')
      &  'Diagnostics: - prs_flx filtering coefficients alpha=',
      &   alpha,', beta=',beta
 
-      allocate( uf(GLOBAL_2D_ARRAY, N) )
-      allocate( vf(GLOBAL_2D_ARRAY, N) )
-      allocate( pf(GLOBAL_2D_ARRAY, N) )
+      allocate( uf(nx+1,ny,nz) )
+      allocate( vf(nx,ny+1,nz) )
+      allocate( pf(0:nx,0:ny,nz) ) !! Need buffer values for rho2u/v
 
-      do k=1,N
-        do j=jstrR,jend+1    ! need +1 for u/v to rho averaging in uv_prime
-          do i=istrR,iend+1
+      do k=1,nz
+        do j=1,ny
+          do i=1,nx
             uf(i,j,k) = u(i,j,k,nstp) - ubar(i,j,kstp)  ! set to initial condition, to avoid ramp up
             vf(i,j,k) = v(i,j,k,nstp) - vbar(i,j,kstp)  ! although model should ramp up still to get better average.
           enddo
@@ -694,6 +641,7 @@
       allocate( pp(GLOBAL_2D_ARRAY, N) )
       allocate( up_pp(GLOBAL_2D_ARRAY, N) )
       allocate( vp_pp(GLOBAL_2D_ARRAY, N) )
+      allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
       up=0; vp=0; pp=0
       up_pp=0; vp_pp=0
 
@@ -723,7 +671,7 @@
       ppnames(2)    = "vp"
       pplname(2)    = "high frequency terms from v dot P"
       ppnames(3)    = "div_uvp"
-      pplname(3)    = "high frequency divergence terms from prsgrd & u/v product"
+      pplname(3)    = "high frequency div(up)"
       if (diag_avg) then
         do var=1,3                                            ! loop through diag terms
           pplname(var)  = 'Average ' / / trim(pplname(var))   ! and prepend 'Average'
@@ -733,14 +681,13 @@
       if (p_sponge) then  ! define only if contains domain boundary sponge layer
 
         ! At some point up_pp could be integrated directly into mup_ppzw, skipping the need for up_ppwz
-        if (WESTERN_EDGE)  then
+        if (.not.west_msg_exch)  then
           allocate( mup_ppzw (-hbox_size GLOBAL_1DY_ARRAY + hbox_size ) )  ! space on either side for MPI_exchange
           allocate( sponge_fuw(GLOBAL_1DY_ARRAY    ) )                     ! to boundary neighbours
           allocate( box_mup_ppzw(GLOBAL_1DY_ARRAY  ) )   ! reset to zero each step
-!          allocate( fbox_mup_ppzw(GLOBAL_1DY_ARRAY ) )   ! initialized later
           mup_ppzw=0; sponge_fuw=init_sponge             ! set time filtered initial to mid point?
         endif
-        if (EASTERN_EDGE)  then
+        if (.not.east_msg_exch)  then
           allocate( mup_ppze (-hbox_size GLOBAL_1DY_ARRAY + hbox_size ) )
           allocate( sponge_fue(GLOBAL_1DY_ARRAY     ) )
           allocate( box_mup_ppze(GLOBAL_1DY_ARRAY  ) )
@@ -748,13 +695,13 @@
           mup_ppze=0; sponge_fue=init_sponge
         endif
 
-        if (SOUTHERN_EDGE) then
+        if (.not.south_msg_exch)  then
           allocate( mvp_ppzs (-hbox_size GLOBAL_1DX_ARRAY + hbox_size ) )
           allocate( sponge_fvs(GLOBAL_1DX_ARRAY     ) )
           allocate( box_mvp_ppzs(GLOBAL_1DX_ARRAY  ) )
           mvp_ppzs=0; sponge_fvs=init_sponge
         endif
-        if (NORTHERN_EDGE) then
+        if (.not.north_msg_exch)  then
           allocate( mvp_ppzn (-hbox_size GLOBAL_1DX_ARRAY + hbox_size ) )
           allocate( sponge_fvn(GLOBAL_1DX_ARRAY     ) )
           allocate( box_mvp_ppzn(GLOBAL_1DX_ARRAY  ) )
@@ -802,43 +749,13 @@
 
 
       end subroutine init_diags_prs_flx  !]
-
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uv_coriolis( istr, iend, jstr, jend, istrU, jstrV, k, ru, rv )   ![
-      ! compute coriolis term from compute_horiz_rhs_uv_terms.h
-      ! diag_icori is the logical that prevents this calculation in pre_step3d,
-      ! since only want during step3d_uv1.
-
-      implicit none
-
-      ! inputs
-      integer,                                       intent(in) :: istr, iend, jstr, jend, istrU, jstrV, k
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N),   intent(in) :: ru, rv
-
-      ! local
-      integer :: i, j
-
-      do j=jstr,jend                                           ! chose to have 2 loops rather than an if i>=istrU and j> as possible more efficient?
-        do i=istrU,iend
-          Mdiag(i,j,k,1,icori)=ru(i,j,k)-Mdiag(i,j,k,1,iprsgr) ! correolis & curvilinear coords
-        enddo
-      enddo
-      do j=jstrV,jend
-        do i=istr,iend
-          Mdiag(i,j,k,2,icori)=rv(i,j,k)-Mdiag(i,j,k,2,iprsgr) ! correolis & curvilinear coords
-        enddo
-      enddo
-
-      end subroutine set_diags_uv_coriolis  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_u_4th_adv( istrU, istr, iend, jstr, jend )  ![
-      ! compute the 4th order advection.
+      subroutine set_diags_u_4th_adv  ![
+      ! Computes 4th order advection of u
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
 
 
-      ![
       !
       ! See readme: Documentation/readme-specifics/README.grid.fluxes.2021.07
       !             section 'U-POINT FLUXES'
@@ -901,236 +818,197 @@
 
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istrU, istr, iend, jstr, jend
-
       ! local
-      integer :: i, j, k
+      integer :: i,j,k,inv24
 
-      ! HORIZONTAL 4TH ORDER ADV:
+      inv24 = 1./24.  ! 0.5*1/12
+      do k=1,nz
 
-      ! try and avoid recomputeing 0.25*pm(i,j)+pm... as done with DC in step3d_uv1.F?
-
-      do k=1,N
-
-        ! interior - 4th order:
-        do j=jstr,jend
-          do i=istrU-1,iend  ! FX4 need extra point for rho2u averaging into Mdiag (i=istrU-1:iend)
-            FX4(i,j) = 0.0416666666666 * ( FlxU(i  ,j,k) + FlxU(i+1,j,k) )  ! 0.5 * 1/12 = 0.0416...
-     &                * (-u(i-1,j  ,k,nrhs) + 7*u(i  ,j  ,k,nrhs)           ! Eqn(A) above
-     &                   -u(i+2,j  ,k,nrhs) + 7*u(i+1,j  ,k,nrhs) )         ! FlxU -> UFx (xi_u 2 xi_rho)
+        ! The Uu flux is to the east of u(i,j)
+        do j=1,ny
+          do i=0,nx
+            FX4(i,j) = inv24*( FlxU(i,j,k) + FlxU(i+1,j,k) ) 
+     &                * (-u(i-1,j,k,nrhs) + 7*u(i  ,j,k,nrhs)
+     &                   -u(i+2,j,k,nrhs) + 7*u(i+1,j,k,nrhs) )
           enddo
         enddo
-        do j=jstr,jend+1     ! FY4 need extra point for v2rho averaging into Mdiag
-          do i=istrU,iend
-            FY4(i,j) = 0.0416666666666 * ( FlxV(i-1,j,k) + FlxV(i  ,j,k) )  ! FlxV -> UFy (xi_rho 2 xi_u)
+        ! The Vu flux is to the south of u(i,j)
+        do j=1,ny+1
+          do i=1,nx
+            FY4(i,j) = inv24*( FlxV(i-1,j,k) + FlxV(i,j,k) ) 
      &                * (-u(i  ,j-2,k,nrhs) + 7*u(i  ,j-1,k,nrhs)
      &                   -u(i  ,j+1,k,nrhs) + 7*u(i  ,j  ,k,nrhs) )
           enddo
         enddo
 
-        ! boundaries - 2nd order:
-        if(WESTERN_EDGE) then        ! we overwrite boundary edges since interior tiles
-          do j=jstr,jend             ! need the loop ranges above. Chose this rather than
-            i=istrU-1                ! imin and imax extra code in compute_horiz_rhs_uv_terms.h
-            FX4(i,j) = 0.25 * ( FlxU(i  ,j,k)      + FlxU(i+1,j,k) )
-     &                      * (    u(i  ,j,k,nrhs) +    u(i+1,j,k,nrhs) )  ! FlxU -> UFx (xi_u 2 xi_rho)
+        ! The first/last interior flux can only be 2nd order 
+        if (.not.west_msg_exch) then 
+          i=1
+          do j=1,ny
+            FX4(i,j) = 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
+     &                     *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) ) 
           enddo
         endif
-        if(EASTERN_EDGE) then
-          do j=jstr,jend
-            i=iend
-            FX4(i,j) = 0.25 * ( FlxU(i  ,j,k)      + FlxU(i+1,j,k) )
-     &                      * (    u(i  ,j,k,nrhs) +    u(i+1,j,k,nrhs) )  ! FlxU -> UFx (xi_u 2 xi_rho)
+        if(.not.east_msg_exch) then
+          i=nx
+          do j=1,ny
+            FX4(i,j)= 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
+     &                    *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) )
+          enddo
+        endif
+        if(.not.south_msg_exch) then
+          j=1
+          do i=1,nx
+            FY4(i,j) = 0.25*( FlxV(i-1,j,k) + FlxV(i,j,k) )    
+     &                     *( u(i,j,k,nrhs) + u(i,j-1,k,nrhs) )
+          enddo
+        endif
+        if(.not.north_msg_exch) then
+          j=ny+1
+          do i=1,nx
+            FY4(i,j) = 0.25*( FlxV(i-1,j,k) + FlxV(i,j,k) )
+     &                     *( u(i,j,k,nrhs) + u(i,j-1,k,nrhs) )
           enddo
         endif
 
-        if(SOUTHERN_EDGE) then
-          do i=istrU,iend
-            j=jstr
-            FY4(i,j) = 0.25 * ( FlxV(i-1,j  ,k)      + FlxV(i  ,j,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
-     &                      * (    u(i  ,j-1,k,nrhs) +    u(i  ,j,k,nrhs) )
-          enddo
-        endif
-        if(NORTHERN_EDGE) then
-          do i=istrU,iend
-            j=jend+1
-            FY4(i,j) = 0.25 * ( FlxV(i-1,j  ,k)      + FlxV(i  ,j,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
-     &                      * (    u(i  ,j-1,k,nrhs) +    u(i  ,j,k,nrhs) )
-          enddo
-        endif
-
-        do j=jstr,jend
-          do i=istrU,iend
-            Mdiag(i,j,k,1,iadv) = -0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))  ! no *dt since rate of flux divergence
-     &                            *( FX4(i,j  )-FX4(i-1,j)   ! xi_rho 2 xi_u
-     &                              +FY4(i,j+1)-FY4(i  ,j) ) ! eta_v 2 eta_rho
+        do j=1,ny
+          do i=1,nx
+            Udiag(i,j,k,iadv) = -dxdyi_u(i,j)
+     &                    *( FX4(i,j)-FX4(i-1,j)+FY4(i,j+1)-FY4(i,j) )
           enddo
         enddo
-      enddo  ! <-- k
+      enddo  ! <-- end k-loop
 
-      ! VERTICAL 4TH ORDER ADV:
+      ! Vertical 4th order advection
+      ! The Wu flux is above of u(i,j,k), Wu(0) and Wu(nz) are always zero
 
-      ! Here FZ4 sits directly above u-points,
-      ! thus need to get FlxW by doing rho2u averaging.
-      ! j outer loop to prevent need for 3D FZ4 array.
+      do j=1,ny
 
-      do j=jstr,jend
-
-        ! 2nd order: (due to surface/bottom constraints)
-        do k=1,N-1,N-2       ! i.e. do k=1 and k=N-1
-          do i=istrU,iend    ! FlxW -> UFz (rho2u)
-                                                                        ! u-point z=N
-            FZ4(i,k) =              0.5* ( We(i-1,j,k)+Wi(i-1,j,k)
-     &                                    +We(i  ,j,k)+Wi(i  ,j,k) )  ! w-point z=N-1  <- FZ4(i,j,N-1)
-     &                  * 0.5 * ( u(i,j,k  ,nrhs) + u(i,j,k+1,nrhs) )   ! u-point z=N-1
-
+        do k=2,nz-2
+          do i=1,nx
+            FZ4(i,k) = inv24*( We(i-1,j,k)+We(i,j,k)+Wi(i-1,j,k)+Wi(i,j,k) )
+     &                   * (-u(i,j,k-1,nrhs) + 7*u(i,j,k  ,nrhs)  
+     &                      -u(i,j,k+2,nrhs) + 7*u(i,j,k+1,nrhs) )
           enddo
         enddo
 
-        ! 4th order:
-        do k=2,N-2
-          do i=istrU,iend
-                                                                       ! r-point z=k+2
-            FZ4(i,k) = 0.0416666666666 * ( We(i-1,j,k)+Wi(i-1,j,k)   ! r-point z=k+1
-     &                                    +We(i  ,j,k)+Wi(i  ,j,k) )
-     &                   * (-u(i,j,k-1,nrhs) + 7*u(i,j,k  ,nrhs)       ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
-     &                      -u(i,j,k+2,nrhs) + 7*u(i,j,k+1,nrhs) )     ! r-point z=k
-                                                                       ! r-point z=k-1
+        ! Only 2nd order for first/last interior flux
+        do k=1,nz-1,nz-2
+          do i=1,nx
+            FZ4(i,k)= 0.25*( We(i-1,j,k)+We(i,j,k)+Wi(i-1,j,k)+Wi(i,j,k) )
+     &                     *( u(i,j,k,nrhs)+u(i,j,k+1,nrhs) ) 
           enddo
         enddo
 
-        do k=1,N
-          do i=istrU,iend
-            Mdiag(i,j,k,1,iadv) = Mdiag(i,j,k,1,iadv)                            ! already contains horizontal advection
-     &                           - 0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))  ! rho2u of pm & pn
-     &                             * ( FZ4(i,k) - FZ4(i,k-1) )               ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+        do k=1,nz
+          do i=1,nx
+            Udiag(i,j,k,iadv) = Udiag(i,j,k,iadv) 
+     &                        - dxdyi_u(i,j)*( FZ4(i,k)-FZ4(i,k-1) )
           enddo
         enddo
-      enddo     ! <-- j
+      enddo  ! <--end j-loop
 
       end subroutine set_diags_u_4th_adv  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_v_4th_adv( jstrV, istr, iend, jstr, jend )  ![
-      ! compute the 4th order advection.
+      subroutine set_diags_v_4th_adv  ![
+      ! Compute the 4th order advection terms for v
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
-
-
-      ![
-      !
-      ! See readme: Documentation/readme-specifics/README.grid.fluxes.2021.07
-      !             section 'V-POINT FLUXES'
-      !
-      ! Also, see set_diags_t_4th_h_adv for explanation on why we treat the boundaries
-      ! differently. Note that masking is not needed since u is always zero in the mask.
-      ! And see set_diags_u_4th_adv for more detailed info.
-      !]
-
       implicit none
 
-      ! inputs
-      integer, intent(in) :: jstrV, istr, iend, jstr, jend
-
       ! local
-      integer :: i, j, k
+      integer :: i,j,k,inv24
+      real   ,dimension(:,:),pointer :: Uv,Vv
 
-      ! HORIZONTAL 4TH ORDER ADV:
+      Uv => wrk_xy1
+      Vv => wrk_xy2
 
-      do k=1,N
+      inv24 = 1./24.  ! 0.5*1/12
+      do k=1,nz
 
-        ! interior - 4th order:
-        do j=jstrV,jend
-          do i=istr,iend+1  ! FX4 need extra point for u2rho averaging into Mdiag (i=istr:iend+1)
-            FX4(i,j) = 0.0416666666666 * ( FlxU(i,j-1,k) + FlxU(i,j  ,k) )  ! 0.5 * 1/12 = 0.0416...
-     &                * (-v(i-2,j  ,k,nrhs) + 7*v(i-1,j  ,k,nrhs)
-     &                   -v(i+1,j  ,k,nrhs) + 7*v(i  ,j  ,k,nrhs) )         ! FlxU -> VFx (eta_rho 2 eta_v)
+        ! the Uv flux is to the west of v(i,j)
+        do j=1,ny
+          do i=1,nx+1 
+            FX4(i,j) = inv24*( FlxU(i,j-1,k)+FlxU(i,j,k) )
+     &                * (-v(i-2,j,k,nrhs) + 7*v(i-1,j,k,nrhs)
+     &                   -v(i+1,j,k,nrhs) + 7*v(i  ,j,k,nrhs) )
           enddo
         enddo
-        do j=jstrV-1,jend   ! FY4 need extra point for rho2v averaging into Mdiag
-          do i=istr,iend
-            FY4(i,j) = 0.0416666666666 * ( FlxV(i,j  ,k) + FlxV(i,j+1,k) )  ! FlxV -> VFy (eta_v 2 eta_rho)
-     &                * (-v(i  ,j-1,k,nrhs) + 7*v(i  ,j  ,k,nrhs)
-     &                   -v(i  ,j+2,k,nrhs) + 7*v(i  ,j+1,k,nrhs) )
+        ! the Vv flux is to the north of v(i,j)
+        do j=0,ny 
+          do i=1,nx
+            FY4(i,j) = inv24*( FlxV(i,j,k) + FlxV(i,j+1,k) )
+     &                * (-v(i,j-1,k,nrhs) + 7*v(i,j  ,k,nrhs)
+     &                   -v(i,j+2,k,nrhs) + 7*v(i,j+1,k,nrhs) )
           enddo
         enddo
 
-        ! boundaries only - 2nd order:
-        if(WESTERN_EDGE) then        ! we overwrite boundary edges since interior tiles
-          do j=jstrV,jend            ! need the loop ranges above. Chose this rather than
-            i=istr                   ! imin and imax extra code in compute_horiz_rhs_uv_terms.h
-            FX4(i,j) = 0.25 * ( FlxU(i  ,j-1,k)      + FlxU(i,j,k) )
-     &                      * (    v(i-1,j  ,k,nrhs) +    v(i,j,k,nrhs) )
+        ! The first/last interior flux can only be 2nd order 
+        if (.not.west_msg_exch) then 
+          do j=1,ny
+            i=1
+            FX4(i,j) = 0.25*( FlxU(i,j-1,k)+FlxU(i,j,k) )
+     &                     *( v(i-1,j,k,nrhs)+v(i,j,k,nrhs) )
           enddo
         endif
-        if(EASTERN_EDGE) then
-          do j=jstrV,jend
-            i=iend+1
-            FX4(i,j) = 0.25 * ( FlxU(i  ,j-1,k)      + FlxU(i,j,k) )
-     &                      * (    v(i-1,j  ,k,nrhs) +    v(i,j,k,nrhs) )
-          enddo
-        endif
-
-        if(SOUTHERN_EDGE) then
-          do i=istr,iend
-            j=jstrV-1
-            FY4(i,j) = 0.25 * ( FlxV(i,j,k)      + FlxV(i,j+1,k) )
-     &                      * (    v(i,j,k,nrhs) +    v(i,j+1,k,nrhs) )
-          enddo
-        endif
-        if(NORTHERN_EDGE) then
-          do i=istr,iend
-            j=jend
-            FY4(i,j) = 0.25 * ( FlxV(i,j,k)      + FlxV(i,j+1,k) )     ! FlxV -> UFy (xi_rho 2 xi_u)
-     &                      * (    v(i,j,k,nrhs) +    v(i,j+1,k,nrhs) )
+        if(.not.east_msg_exch) then
+          i=nx+1
+          do j=1,ny
+            FX4(i,j) = 0.25*( FlxU(i,j-1,k)+FlxU(i,j,k) )
+     &                     *( v(i-1,j,k,nrhs)+ v(i,j,k,nrhs) )
           enddo
         endif
 
-        do j=jstrV,jend
-          do i=istr,iend
-            Mdiag(i,j,k,2,iadv) = -0.25*(pm(i,j-1)+pm(i,j))*(pn(i,j-1)+pn(i,j))  ! no *dt since rate of flux divergence
-     &                            *( FX4(i+1,j)-FX4(i,j  )   ! xi_u 2 xi_rho
-     &                              +FY4(i  ,j)-FY4(i,j-1) ) ! eta_rho 2 eta_v
+        if(.not.south_msg_exch) then
+          j=1
+          do i=1,nx
+            FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) )
+     &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
+          enddo
+        endif
+        if(.not.north_msg_exch) then
+          j=ny
+          do i=1,nx
+            FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) ) 
+     &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
+          enddo
+        endif
+
+        do j=1,ny
+          do i=1,nx
+            Vdiag(i,j,k,iadv) = -dxdyi_v(i,j)
+     &                    *( FX4(i+1,j)-FX4(i,j)+FY4(i,j)-FY4(i,j-1) ) 
           enddo
         enddo
       enddo  ! <-- k
 
-      ! VERTICAL 4TH ORDER ADV:
+      ! Vertical 4th order advection
+      ! The Wu flux is above of u(i,j,k), Wu(0) and Wu(nz) are always zero
 
-      ! Here FZ4 sits directly above v-points,
-      ! thus need to get FlxW by doing rho2v averaging
+      do j=1,ny
 
-      do j=jstrV,jend
+        do k=2,nz-2
+          do i=1,nx
+            FZ4(i,k) = inv24*( We(i,j-1,k)+Wi(i,j-1,k)+We(i,j,k)+Wi(i,j,k) )
+     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)    
+     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )  
+          enddo
+        enddo
 
-        ! 2nd order advection: (due to surface/bottom contraints)
-        do k=1,N-1,N-2      ! i.e. do k=1 and k=N-1
-          do i=istr,iend    ! FlxW -> VFZ (rho2v)
-                                                                      ! u-point z=N
-            FZ4(i,k) =              0.5* ( We(i,j-1,k)+Wi(i,j-1,k)
-     &                                    +We(i,j  ,k)+Wi(i,j  ,k) )  ! w-point z=N-1  <- FZ4(i,j,N-1)
-     &                  * 0.5 * ( v(i,j,k,nrhs) + v(i,j,k+1,nrhs) )   ! u-point z=N-1
+        ! Only 2nd order for first/last interior flux
+        do k=1,nz-1,nz-2 ! do k=1 and k=nz-1
+          do i=1,nx
+            FZ4(i,k) = 0.25*( We(i,j-1,k)+Wi(i,j-1,k)+We(i,j,k)+Wi(i,j,k) )
+     &                      *( v(i,j,k,nrhs)+v(i,j,k+1,nrhs) )
 
           enddo
         enddo
 
-      ! 4th order:
-        do k=2,N-2
-          do i=istr,iend
-                                                                      ! r-point z=k+2
-            FZ4(i,k) = 0.0416666666666 * ( We(i,j-1,k)+Wi(i,j-1,k)    ! r-point z=k+1
-     &                                    +We(i,j  ,k)+Wi(i,j  ,k) )
-     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)      ! w-point z=k  <- FZ4(i,j,k) (sits above u at w level)
-     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )    ! r-point z=k
-                                                                      ! r-point z=k-1
-          enddo
-        enddo
-
-        do k=1,N
-          do i=istr,iend
-            Mdiag(i,j,k,2,iadv) = Mdiag(i,j,k,2,iadv)                             ! already contains horizontal advection
-     &                           - 0.25*( pm(i,j-1)+pm(i,j))*(pn(i,j-1)+pn(i,j) ) ! rho2u of pm & pn
-     &                             * ( FZ4(i,k) - FZ4(i,k-1) )                    ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+        do k=1,nz
+          do i=1,nx
+            Vdiag(i,j,k,iadv) = Vdiag(i,j,k,iadv)         
+     &                        - dxdyi(i,j)*( FZ4(i,k)-FZ4(i,k-1) )
           enddo
         enddo
 
@@ -1139,362 +1017,30 @@
       end subroutine set_diags_v_4th_adv  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uv_dissipation( istr, iend, jstr, jend, istrA, j, dim, DC, ruv, suvstr, uv )  ![
-      ! Change name to dissipation!!!
-      ! Set the diagnostic terms for prsgrd, coriolis, and dissipation from advection.
-      ! Works for both u and v.
-      ! Prsgrd and coriolis need to also be convert to dz * u/v units
-      ! Called from step3d_uv1.F
-      !
-      ! ADVECTIVE_SCHEME = PURE_ADV + DISSIPATION
-      ! DC(i,0)*ruv(i,j,k) / dt - (coriolis + prsgrd) = PURE_ADV + DISS
-      ! thus:
-      !   DISS = DC(i,0)*ruv(i,j,k) / dt - (coriolis + prsgrd) - PURE_ADV   (A)
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrA, j, dim         ! 'istrA' for any as depends on inputs, which 'dim' dimension.
-                                                                           ! istr, jstr, etc needed for GLOBAL_2D...
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N),   intent(in) :: ruv     ! ru or rv
-      real, dimension(GLOBAL_2D_ARRAY),              intent(in) :: suvstr  ! sustr or svstr
-      real, dimension(GLOBAL_2D_ARRAY,N,3),          intent(in) :: uv      ! u or v
-
-      ! local
-      integer :: i, k
-
-      do k=1,N
-        do i=istrA,iend
-          Mdiag(i,j,k,dim,iprsgr) = Mdiag(i,j,k,dim,iprsgr) * DC(i,0) / dt
-          Mdiag(i,j,k,dim,icori)  = Mdiag(i,j,k,dim,icori)  * DC(i,0) / dt
-          uv_prev(i,j,k,dim)      = uv(i,j,k,nnew)
-          Mdiag(i,j,k,dim,idiss)  = DC(i,0)*ruv(i,j,k) / dt     ! total change in u/v (adv+cori+prsgrd)
-     &                            - ( Mdiag(i,j,k,dim,iprsgr) + Mdiag(i,j,k,dim,icori) )
-     &                            - Mdiag(i,j,k,dim,iadv)       ! see (A) above
-        enddo
-      enddo
-
-      ! Add surface stress to vertical mixing rather:
-      do i=istrA,iend
-        Mdiag(i,j,N,dim,ivmix) = suvstr(i,j)  ! * dt / dt cancels...
-      enddo
-
-      end subroutine set_diags_uv_dissipation  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_uv_h_mix( istr, iend, jstr, jend, isA, jsA, dim, uv )  ![
-      ! set diagnostics for u or v in visc3d_GP.F
-      ! interior points only (i.e. excluding bry)
-      ! Note this diagnostic is zero beyond the sponge layer (in the interior),
-      ! but can be non-zero everywhere if model has non-zero background diffusion,
-      ! hence loop ranges over full interior.
-
-      implicit none
-
-      ! inputs
-      integer,                              intent(in) :: istr, iend, jstr, jend, isA, jsA, dim  ! isA jsA are starts depending on u or v variable
-      real, dimension(GLOBAL_2D_ARRAY,N,3), intent(in) :: uv  ! u or v
-
-      ! local
-      integer :: i, j, k
-
-      do k=1,N
-        do j=jsA,jend
-          do i=isA,iend
-            Mdiag(  i,j,k,dim,ihmix) = (uv(i,j,k,nnew) - uv_prev(i,j,k,dim)) / dt  ! units already in dz*u
-            uv_prev(i,j,k,dim)       =  uv(i,j,k,nnew)
-          enddo
-        enddo
-      enddo
-
-      end subroutine set_diags_uv_h_mix  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_uv_v_mix( istr, iend, jstr, jend, istrU, jstrV )  ![
-      ! set diagnostics for u or v in step3d_uv2.F
-      ! interior points only (i.e. excluding bry)
-      ! the calc in step3d_uv2.F includes variable 'DC', hence name set_diags_uv_v_mix
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrU, jstrV
-
-      ! local
-      integer :: i, j, k
-
-      ! Since this term includes 2D3D & boundary, need to set boundary to zero to
-      ! allow for Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + .... later on.
-      ! entire column of west  or east  boundary would use jstr-1:jend+1
-      ! entire row    of south or north boundary would use istr-1:iend+1
-
-      if(WESTERN_EDGE)  Mdiag(istr-1       ,jstr-1:jend+1,:,2,ivmix) = 0 ! west  (istr-1 for v bry) Need split else surface stress over-written.
-      if(WESTERN_EDGE)  Mdiag(istr         ,jstr-1:jend+1,:,1,ivmix) = 0 ! west  (istr   for u bry)
-      if(EASTERN_EDGE)  Mdiag(iend+1       ,jstr-1:jend+1,:,:,ivmix) = 0 ! east  (iend+1=iendR=bry)
-
-      if(SOUTHERN_EDGE) Mdiag(istr-1:iend+1,jstr-1       ,:,1,ivmix) = 0 ! south (jstr-1 for u bry)
-      if(SOUTHERN_EDGE) Mdiag(istr-1:iend+1,jstr         ,:,2,ivmix) = 0 ! south (jstr   for v bry)
-      if(NORTHERN_EDGE) Mdiag(istr-1:iend+1,jend+1       ,:,:,ivmix) = 0 ! north (jend+1=jendR=bry)
-
-      do k=1,N-1           ! N-1 as treat k=N differently below
-        do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
-          do i=istrU,iend
-            Mdtmp                 = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) ! convert to dz*u
-            Mdiag( i,j,k,1,ivmix) = (Mdtmp - uv_prev(i,j,k,1)) / dt                        ! avoids recomputing above
-            uv_prev(i,j,k,1)      =  Mdtmp
-          enddo
-        enddo
-        do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
-          do i=istr,iend
-            Mdtmp                 = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-            Mdiag( i,j,k,2,ivmix) = (Mdtmp - uv_prev(i,j,k,2)) / dt
-            uv_prev(i,j,k,2)      =  Mdtmp
-          enddo
-        enddo
-      enddo
-
-      ! Since ivmix also contains surface stress from set_diags_uv_dissipation we
-      ! need Mdiag( i,j,k,1,ivmix) = Mdiag( i,j,k,1,ivmix) + ...
-      do j=jstr,jend     ! interior of subdomains, exludes global domain boundaries
-        do i=istrU,iend
-          Mdtmp                 = u(i,j,N,nnew) * (0.5*( Hz(i-1,j,N)+Hz(i,j,N) )) ! convert to dz*u
-          Mdiag( i,j,N,1,ivmix) = Mdiag( i,j,N,1,ivmix)
-     &                          + (Mdtmp - uv_prev(i,j,N,1)) / dt
-          uv_prev(i,j,N,1)      =  Mdtmp
-        enddo
-      enddo
-      do j=jstrV,jend    ! interior of subdomains, exludes global domain boundaries
-        do i=istr,iend
-          Mdtmp                 = v(i,j,N,nnew) * (0.5*( Hz(i,j-1,N)+Hz(i,j,N) ))
-          Mdiag( i,j,N,2,ivmix) = Mdiag( i,j,N,2,ivmix)
-     &                          + (Mdtmp - uv_prev(i,j,N,2)) / dt
-          uv_prev(i,j,N,2)      =  Mdtmp
-        enddo
-      enddo
-
-!      if(mynode==0) print *, 'uv2DC!!!!!!!!!'  ! debug only
-
-      end subroutine set_diags_uv_v_mix  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_u_bc( istr, iend, jstr, jend )  ![
-      ! set the diagnostics terms for boundary changes in u
-      ! called from step3d_uv2.F right after call to u3dbc_im.F
-
-      ! boundary change is stored in ivmix diagnostic to save memory.
-
-      implicit none
-
-      ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend
-
-      ! local
-      integer :: i
-
-      ! currently this is not perfectly setup for openMP since we have ':' instead
-      ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
-      ! Also, the 4 boundary corners of the global domain are computed twice, i.e. bottom
-      ! of west is the same as left of south. But since we have Mdiag(istr  ,:,:,1,ivmix) = ...
-      ! and not Mdiag(istr  ,:,:,1,ivmix) = Mdiag(istr  ,:,:,1,ivmix) + ... it doesn't matter.
-      ! Consider using jstrR instead of jstr-1 for cleanliness.
-
-      if (WESTERN_EDGE)  uv_prev(istr  ,:,:,1) = u(istr  ,:,:,nnew) * 0.5*(Hz(istr-1,:,:)+Hz(istr  ,:,:))
-      if (EASTERN_EDGE)  uv_prev(iend+1,:,:,1) = u(iend+1,:,:,nnew) * 0.5*(Hz(iend  ,:,:)+Hz(iend+1,:,:))
-
-      if (WESTERN_EDGE)  Mdiag(istr  ,:,:,1,ivmix) = ( uv_prev(istr  ,:,:,1) - uvdz_old(istr  ,:,:, 1) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,1,ivmix) = ( uv_prev(iend+1,:,:,1) - uvdz_old(iend+1,:,:, 1) )/dt
-
-      do i=istr,iend+1 ! use loop here else indexing would be even messier
-        if (SOUTHERN_EDGE) uv_prev(i,jstr-1,:,1)=u(i,jstr-1,:,nnew)*0.5*(Hz(i-1,jstr-1,:)+Hz(i,jstr-1,:))
-        if (NORTHERN_EDGE) uv_prev(i,jend+1,:,1)=u(i,jend+1,:,nnew)*0.5*(Hz(i-1,jend+1,:)+Hz(i,jend+1,:))
-      enddo
-      if (SOUTHERN_EDGE) Mdiag(:,jstr-1,:,1,ivmix) = ( uv_prev(:,jstr-1,:,1) - uvdz_old(:,jstr-1,:, 1) )/dt
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,1,ivmix) = ( uv_prev(:,jend+1,:,1) - uvdz_old(:,jend+1,:, 1) )/dt
-
-      end subroutine set_diags_u_bc  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_v_bc( istr, iend, jstr, jend )  ![
-      ! set the diagnostics terms for boundary changes in v
-      ! called from step3d_uv2.F right after call to v3dbc_im.F
-
-      implicit none
-
-      ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend
-
-      ! local
-      integer :: j
-
-      ! currently this is not perfectly setup for openMP since we have ':' instead
-      ! of istr:iend, etc. However, since it is just a 2D operation at bry, it is ok? for now.
-
-      do j=jstr,jend+1 ! use loop here else indexing would be even messier
-        if (WESTERN_EDGE)  uv_prev(istr-1,j,:,2) = u(istr-1,j,:,nnew) * 0.5*(Hz(istr-1,j-1,:)+Hz(istr-1,j,:))
-        if (EASTERN_EDGE)  uv_prev(iend+1,j,:,2) = u(iend+1,j,:,nnew) * 0.5*(Hz(iend+1,j-1,:)+Hz(iend+1,j,:))
-      enddo
-      if (WESTERN_EDGE)  Mdiag(istr-1,:,:,2,ivmix) = ( uv_prev(istr-1,:,:,2)-uvdz_old(istr-1,:,:,2) )/dt ! uv_prev is already u_current, can do this because have uvdz_old already
-      if (EASTERN_EDGE)  Mdiag(iend+1,:,:,2,ivmix) = ( uv_prev(iend+1,:,:,2)-uvdz_old(iend+1,:,:,2) )/dt
-
-      if (SOUTHERN_EDGE) uv_prev(:,jstr  ,:,2)=u(:,jstr  ,:,nnew)*0.5*(Hz(:,jstr-1,:)+Hz(:,jstr  ,:))
-      if (NORTHERN_EDGE) uv_prev(:,jend+1,:,2)=u(:,jend+1,:,nnew)*0.5*(Hz(:,jend  ,:)+Hz(:,jend+1,:))
-      if (SOUTHERN_EDGE) Mdiag(:,jstr  ,:,2,ivmix) = ( uv_prev(:,jstr  ,:,2)-uvdz_old(:,jstr  ,:,2) )/dt
-      if (NORTHERN_EDGE) Mdiag(:,jend+1,:,2,ivmix) = ( uv_prev(:,jend+1,:,2)-uvdz_old(:,jend+1,:,2) )/dt
-
-      end subroutine set_diags_v_bc  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_u_2d3d_cor( istr, iend, jstr, jend, istrU, iendR, jstrR, jendR )  ![
-      ! Final 2D-3D correction, part 2 of step3d_uv2.F.
-
-      ! NOTE: Already done 2D-3D correction in v_mix step, then we updated the boundary
-      !       and then do another 2D-3D correction. Values over the interior only change
-      !       by e-17, so therefore exclude interior for efficiency.
-      !       The budget closing is not quite as accurate but we are talking about
-      !       e-16 difference.
-
-      ! We add 2D3D correction to v_mix diag term for memory efficiency
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrU, iendR, jstrR, jendR  ! iend, jstr, jend needed for _EDGE's...
-
-      ! local
-      integer :: i, j, k
-
-      if (WESTERN_EDGE) then  ! only do boundaries for efficiency
-        i=istr
-        Mdiag(i,:,:,1,ivmix) = Mdiag(i,:,:,1,ivmix) +
-     &    ( u(i,:,:,nnew) * (0.5*( Hz(i-1,:,:)+Hz(i,:,:) )) - uv_prev(i,:,:,1) )/dt
-      endif
-      if (EASTERN_EDGE) then
-        i=iendR
-        Mdiag(i,:,:,1,ivmix) = Mdiag(i,:,:,1,ivmix) +
-     &    ( u(i,:,:,nnew) * (0.5*( Hz(i-1,:,:)+Hz(i,:,:) )) - uv_prev(i,:,:,1) )/dt
-      endif
-      if (SOUTHERN_EDGE) then
-        j=jstrR
-        do i=istrU,iend       ! will cover full range, but avoid double counting SW and SE corner as already done for EAST or WEST above
-        Mdiag(i,j,:,1,ivmix) = Mdiag(i,j,:,1,ivmix) +
-     &    ( u(i,j,:,nnew) * (0.5*( Hz(i-1,j,:)+Hz(i,j,:) )) - uv_prev(i,j,:,1) )/dt
-        enddo
-      endif
-      if (NORTHERN_EDGE) then
-        j=jendR
-        do i=istrU,iend       ! will cover full range, but avoid double counting NW and NE corner as already done for EAST or WEST above
-        Mdiag(i,j,:,1,ivmix) = Mdiag(i,j,:,1,ivmix) +
-     &    ( u(i,j,:,nnew) * (0.5*( Hz(i-1,j,:)+Hz(i,j,:) )) - uv_prev(i,j,:,1) )/dt
-        enddo
-      endif
-
-      if (check_diag .or. tot_change) then
-        do k=1,N              ! Full loop ranges since u-change over every point including bry.
-          do j=jstrR,jendR    ! istr is the west boundary for u-points, istrR=E, jstrR=S, jendR=N
-            do i=istr,iendR   ! can't just do (u(nnew)-u(nstp)*Hz here because actual need the old Hz for u(nstp) as Hz has evolved.
-              uv_dif(i,j,k, 1) = ( u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) )) - uvdz_old(i,j,k,1) )/dt ! do this here as units are correct
-            enddo
-          enddo
-        enddo
-      endif
-
-      end subroutine set_diags_u_2d3d_cor  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_v_2d3d_cor( istr, iend, jstr, jend, istrR, iendR, jstrV, jendR )  ![
-      ! Final 2D-3D correction, part 2 of step3d_uv2.F.
-
-      ! NOTE: Already done 2D-3D correction in v_mix step, then we updated the boundary
-      !       and then do another 2D-3D correction. Values over the interior only change
-      !       by e-17, so therefore exclude interior for efficiency.
-      !       The budget closing is not quite as accurate but we are talking about
-      !       e-16 difference.
-
-      ! We add 2D3D correction to v_mix diag term for memory efficiency
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrR, iendR, jstrV, jendR
-
-      ! local
-      integer :: i, j, k
-
-      if (WESTERN_EDGE) then  ! only do boundaries for efficiency
-        i=istrR
-        do j=jstrV,jend       ! will cover full range, but avoid double counting SW and NW corner as done for SOUTH/NORTH below
-        Mdiag(i,j,:,2,ivmix) = Mdiag(i,j,:,2,ivmix) +
-     &  ( v(i,j,:,nnew)*(0.5*( Hz(i,j-1,:)+Hz(i,j,:) ))-uv_prev(i,j,:,2) )/dt
-        enddo
-      endif
-      if (EASTERN_EDGE) then
-        i=iendR
-        do j=jstrV,jend       ! will cover full range, but avoid double counting SE and NE corner as done for SOUTH/NORTH below
-        Mdiag(i,j,:,2,ivmix) = Mdiag(i,j,:,2,ivmix) +
-     &  ( v(i,j,:,nnew)*(0.5*( Hz(i,j-1,:)+Hz(i,j,:) ))-uv_prev(i,j,:,2) )/dt
-        enddo
-      endif
-      if (SOUTHERN_EDGE) then
-        j=jstr
-        Mdiag(:,j,:,2,ivmix) = Mdiag(:,j,:,2,ivmix) +
-     &  ( v(:,j,:,nnew)*(0.5*( Hz(:,j-1,:)+Hz(:,j,:) ))-uv_prev(:,j,:,2) )/dt
-      endif
-      if (NORTHERN_EDGE) then
-        j=jendR
-        Mdiag(:,j,:,2,ivmix) = Mdiag(:,j,:,2,ivmix) +
-     &  ( v(:,j,:,nnew)*(0.5*( Hz(:,j-1,:)+Hz(:,j,:) ))-uv_prev(:,j,:,2) )/dt
-      endif
-
-      if (check_diag .or. tot_change) then
-        do k=1,N
-          do j=jstr,jendR
-            do i=istrR,iendR
-              uv_dif(i,j,k, 2) = ( v(i,j,k,nnew)*(0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))-uvdz_old(i,j,k,2) )/dt ! do this here as units are correct
-            enddo
-          enddo
-        enddo
-      endif
-
-      end subroutine set_diags_v_2d3d_cor  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)  ![
+      subroutine set_diags_uv_dz_old  ![
       ! Set dz*u or v at previous timestep to calculate gross change in
-      ! u or v overtime step, and to calculate change at boundary.
+      ! u or v over time step, and to calculate change at boundary.
       ! Called after everything else in step3d_uv2.F.
 
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, jstr, istrR, iendR, jstrR, jendR
-
       ! local
-      integer :: i, j, k
+      integer :: i,j,k
 
       ! This is currently used for bry calculation so is also needed for averaging.
       ! Also for 'u_diff', but that's not needed for averaging.
       ! Should put an if statement here for diags_avg and only compute bry if averages...
 
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istr,iendR
-            uvdz_old(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-          enddo
-        enddo
-      enddo
-
-      do k=1,N
-        do j=jstr,jendR
-          do i=istrR,iendR
-            uvdz_old(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
+      do k=1,nz
+        do j=1,ny
+          do i=1,nx
+            udz_old(i,j,k) = u(i,j,k,nnew)*0.5*( Hz(i-1,j,k)+Hz(i,j,k) )
+            vdz_old(i,j,k) = v(i,j,k,nnew)*0.5*( Hz(i,j-1,k)+Hz(i,j,k) )
           enddo
         enddo
       enddo
 
       ! Don't forget 'w' here.
-
-!      if(mynode==0) print *, 'DZ_OLD  $$$$$$$$$$'  ! debug
 
       end subroutine set_diags_uv_dz_old  !]
 
@@ -1912,7 +1458,7 @@
       end subroutine set_diags_t_4th_v_adv  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uv_prime( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
+      subroutine set_diags_uv_prime  ![
 
       ![ uf(n+1) = (1-alpha) * uf(n) + alpha * u(n+1)
       !
@@ -1937,20 +1483,17 @@
 
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
-
       ! local
       integer :: i, j, k
 
-      do k=1,N
-        do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway
-          do i=istr,iend+1  ! include boundary for up_pp
+      do k=1,nz
+        do j=1,ny
+          do i=1,nx
             uf(i,j,k) = beta * uf(i,j,k) + alpha * ( u(i,j,k,nnew) - ubar(i,j,knew) )
           enddo
         enddo
-        do j=jstr,jend+1    ! include boundary for vp_pp
-          do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
+        do j=1,ny
+          do i=1,nx
             vf(i,j,k) = beta * vf(i,j,k) + alpha * ( v(i,j,k,nnew) - vbar(i,j,knew) )
           enddo
         enddo
@@ -1959,23 +1502,23 @@
       if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0        ! +1 since done in step before writing
      &    .or. p_sponge                                    ) then ! also done everytimestep if averaging
                                                                   ! p_sponge needs up_pp at everystep
-        do k=1,N
+        do k=1,nz
 
-          do j=jstrR,jendR    ! don't need to do N/S buffer but doing it anyway?
-            do i=istr,iend+1  ! include boundary for up_pp
+          do j=1,ny
+            do i=1,nx
               up(i,j,k)      = ( u(i,j,k,nnew) - ubar(i,j,knew) ) - uf(i,j,k)  ! need up for div_uvp term
               if (check_prs)  ! if with parameter
      &          u_bcl(i,j,k) = ( u(i,j,k,nnew) - ubar(i,j,knew) )
             enddo
           enddo
-          do j=jstr,jend+1    ! include boundary for averaging of vp_pp
-            do i=istrR,iendR  ! don't need to do W/E buffer but doing it anyway
+          do j=1,ny
+            do i=1,nx
               vp(i,j,k) = ( v(i,j,k,nnew) - vbar(i,j,knew) ) - vf(i,j,k)
             enddo
           enddo
 
-          do j=jstr,jend+1    ! include boundaries
-            do i=istr,iend+1
+          do j=1,ny
+            do i=1,nx
               up_pp(i,j,k) =          ( u(i,j,k,nnew) - ubar(i,j,knew) )
      &                       * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )               ! p and Hz from rho to u
      &                              * ( Hz(i-1,j,k) + Hz(i,j,k) )
@@ -1984,20 +1527,15 @@
      &                       * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
      &                              * ( Hz(i,j-1,k) + Hz(i,j,k) )               ! p and Hz from rho to v
 
-!              up_pp(i,j,k) = up(i,j,k) * 0.25 * ( pp(i-1,j,k) + pp(i,j,k) )  ! p and Hz from rho to u
-!     &                                        * ( Hz(i-1,j,k) + Hz(i,j,k) )
-!              vp_pp(i,j,k) = vp(i,j,k) * 0.25 * ( pp(i,j-1,k) + pp(i,j,k) )
-!     &                                        * ( Hz(i,j-1,k) + Hz(i,j,k) )  ! p and Hz from rho to v
-
             enddo
           enddo
 
         enddo     ! <-- k
 
-        call set_diags_div_uvp( istr, iend, jstr, jend )
+!       call set_diags_div_uvp
 
         if(p_sponge)
-     &    call set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
+     &    call set_diags_p_sponge
 
       endif       ! <-- diag_avg or mod()
 
@@ -2005,125 +1543,102 @@
       end subroutine set_diags_uv_prime  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_prs_prime(P,ru,rv)  ![
-      ! set p' (the pressure perturbation)
-      !
-      ! Note, pressure (P) is calculated in prsgrd.F. The loop ranges there
-      ! are i=istrU-1,iend and j=jstrV-1,iend
-      ! This allows for averaging from rho to u or v.
-      ! in a sub-domain, u and v points are the first (starting) points
-      ! but rho are the end points, hence the -1 only for the start index.
-      !
-      ! ru = dP/dx * Hz
-      ! rv = dP/dy * Hz
+!     subroutine set_diags_prs_prime(P,ru,rv)  ![
+!     ! set p' (the pressure perturbation)
+!     !
+!     ! Note, pressure (P) is calculated in prsgrd.F. The loop ranges there
+!     ! are i=istrU-1,iend and j=jstrV-1,iend
+!     ! This allows for averaging from rho to u or v.
+!     ! in a sub-domain, u and v points are the first (starting) points
+!     ! but rho are the end points, hence the -1 only for the start index.
+!     !
+!     ! ru = dP/dx * Hz
+!     ! rv = dP/dy * Hz
 
-      implicit none
+!     use coupling
+!     implicit none
 
-      ! inputs
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P, ru, rv
+!     ! inputs
+!     !!!! There is a problem here since istr,iend arent' known
+!     real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P, ru, rv
 
-      ! local
-      integer :: i, j, k
+!     ! local
+!     integer :: i, j, k
 
-      if (.not. p_init_done) then
+!     if (.not. p_init_done) then
 
-        allocate( dpdx_f(GLOBAL_2D_ARRAY, N) )
-        allocate( dpdy_f(GLOBAL_2D_ARRAY, N) )
+!     !!! JM; the filtered vars need to have permanence
+!     !!! JM; the primes should be able to use scratch space
 
-        !!! figure out how to use work space for these
-        allocate( dpdx_p(GLOBAL_2D_ARRAY, N) )
-        allocate( dpdy_p(GLOBAL_2D_ARRAY, N) )
+!       !!! figure out how to use work space for these
+!       allocate( pxp(GLOBAL_2D_ARRAY, N) )
+!       allocate( pyp(GLOBAL_2D_ARRAY, N) )
 
-        allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
+!       allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
 
 
-        do j=1,ny
-          do i=1,nx
-            dxdyi_u(i,j) = 0.5*(pn(i,j)+pn(i-1,j)*pm(i,j)+pm(i-1,j))
-            dxdyi_v(i,j) = 0.5*(pn(i,j)+pn(i,j-1)*pm(i,j)+pm(i,j-1))
-          enddo
-        enddo
 
-        ! Initialize all filtered variables
-        do k=1,nz
-          ! We need to start at zero to allow rho2u averaging later on
-          do j=0,ny 
-            do i=0,nx
-              pf(i,j,k)=P(i,j,k) - g*z_w(i,j,N) 
-            enddo
-          enddo
+!     if (.not.p_init_done) then
+!       p_init_done = .true.
+!     endif   
 
-          ! Divide by dx,dy to get dz*px because ru,rv are volume integrated 
-          do j= 1,ny 
-            do i= 1,nx
-              dpdx_f(i,j,k) = ru(i,j,k)*dxdyi_u(i,j)
-              dpdy_f(i,j,k) = rv(i,j,k)*dxdyi_v(i,j)
-            enddo
-          enddo
-        enddo
+!     !! This needs to run every time-step for proper exponential filtering
+!     do k=1,nz
+!       do j=0,ny
+!         do i=0,nx
+!           pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
+!         enddo
+!       enddo
+!       do j=1,ny
+!         do i=1,nx
+!           pxf(i,j,k) = beta*pxf(i,j,k) + alpha*ru(i,j,k)*dxdyi_u(i,j)
+!           pyf(i,j,k) = beta*pyf(i,j,k) + alpha*rv(i,j,k)*dxdyi_u(i,j)
+!         enddo
+!       enddo
+!     enddo
+!     do j=1,ny
+!       do i=1,nx
+!         udh_f(i,j) =  beta*udh_f(i,j) + alpha*(
+!    &       0.5*pm(i,j)*( ubar(i  ,j,kstp)*(h(i,j)-h(i-1,j))
+!    &                   + ubar(i+1,j,kstp)*(h(i+1,j)-h(i,j)) )
+!    &      +0.5*pn(i,j)*( vbar(i,j  ,kstp)*(h(i,j)-h(i,j-1))
+!    &                   + vbar(i,j+1,kstp)*(h(i,j+1)-h(i,j)) ))
+!         dzt_f(i,j) = beta*dzt_f(i,j)  + alpha*pm(i,j)*pn(i,j)*(
+!    &                dm_u(i+1,j)*ubar(i+1,j,kstp)*Du_avg1(i+1,j)
+!    &              - dm_u(i  ,j)*ubar(i  ,j,kstp)*Du_avg1(i  ,j)
+!    &              + dn_v(i,j+1)*vbar(i,j+1,kstp)*Dv_avg1(i,j+1)
+!    &              - dn_v(i,j  )*vbar(i,j  ,kstp)*Dv_avg1(i,j  ) )
+!       enddo
+!     enddo
 
-        ! udh is u.grad(h), and dzt is dzeta/dt
-        do j = 1,ny
-          do i= 1,nx
-            udh_f(i,j) = 
-     &       0.5*pm(i,j)*(ubar(i,j)*(h(i,j)-h(i-1,j))+ubar(i+1,j)*(h(i+1,j)-h(i,j)))
-     &      +0.5*pn(i,j)*(vbar(i,j)*(h(i,j)-h(i,j-1))+vbar(i,j+1)*(h(i,j+1)-h(i,j)))
+!     !! Can we replace the mod statement with a 'time_for_his' logical?
+!     if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0            ! +1 since done in step before writing
+!    &    .or. p_sponge                                    ) then     ! also done everytimestep if averaging
+!                                                                     ! p_sponge needs up_pp at everystep
 
-            dzt_f(i,j) = pm(i,j)*pn(i,j)*(
-     &                   ubar(i+1,j)*Du(i+1,j)-ubar(i,j)*Du(i,j)
-     &                   vbar(i,j+1)*Dv(i,j+1)-vbar(i,j)*Dv(i,j) )
-          enddo
-        enddo
-        p_init_done = .true.
-      endif   
+!       do k=1,nz
+!         do j=0,ny ! Need to start at 0 to allow rho2u averaging 
+!           do i=0,nx
+!             pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
+!             if (check_prs)                                      
+!    &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
+!           enddo
+!         enddo
 
-      do k=1,N
-        do j=jstrV-1,jend
-          do i=istrU-1,iend
-            pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
+!         do j=1,ny 
+!           do i=1,nx
+!             pxp(i,j,k) = ru(i,j,k) - pxf(i,j,k)
+!             pyp(i,j,k) = rv(i,j,k) - pyf(i,j,k)
+!           enddo
+!         enddo
+!       enddo
 
-            dpdx_f(i,j,k) = beta*dpdx_f(i,j,k) + alpha*ru(i,j,k)*dxdyi_u(i,j)
-            dpdy_f(i,j,k) = beta*dpdy_f(i,j,k) + alpha*rv(i,j,k)*dxdyi_u(i,j)
-          enddo
-        enddo
-      enddo
-      do j=1,ny
-        do i=1,nx
-          udh_f(i,j) =  beta*udh_f(i,j) + alpha*(
-     &       0.5*pm(i,j)*(ubar(i,j)*(h(i,j)-h(i-1,j))+ubar(i+1,j)*(h(i+1,j)-h(i,j)))
-     &      +0.5*pn(i,j)*(vbar(i,j)*(h(i,j)-h(i,j-1))+vbar(i,j+1)*(h(i,j+1)-h(i,j))))
-          dzt_f(i,j) = pm(i,j)*pn(i,j)*(
-     &                   ubar(i+1,j)*Du(i+1,j)-ubar(i,j)*Du(i,j)
-     &                   vbar(i,j+1)*Dv(i,j+1)-vbar(i,j)*Dv(i,j) )
-        enddo
-      enddo
+!       !! JM: Pretty sure that this is not neccessary 
+!       call set_diags_copy_to_buffer( istr, iend, jstr, jend, pp )
 
-      if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0            ! +1 since done in step before writing
-     &    .or. p_sponge                                    ) then     ! also done everytimestep if averaging
-                                                                      ! p_sponge needs up_pp at everystep
+!     endif
 
-        do k=1,N
-          do j=jstrV-1,jend    ! only need over interior
-            do i=istrU-1,iend
-              pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)    ! NOTE: pp = 0 at first step
-              if (check_prs)                                          ! since pf = P - g*z_w above
-     &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
-
-              dpdx_p(i,j,k) = ru(i,j,k) - dpdx_f(i,j,k)
-              dpdy_p(i,j,k) = rv(i,j,k) - dpdy_f(i,j,k)
-            enddo
-          enddo
-        enddo
-
-        call set_diags_copy_to_buffer( istr, iend, jstr, jend, pp )
-!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdx_f )  ! don't need to copy since keep at rho points
-!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdx_p )
-!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdy_f )
-!        call set_diags_copy_to_buffer( istr, iend, jstr, jend, dpdy_p )
-
-      endif
-
-      end subroutine set_diags_prs_prime  !]
+!     end subroutine set_diags_prs_prime  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_copy_to_buffer( istr, iend, jstr, jend, var )  ![
@@ -2159,14 +1674,18 @@
       ! bet = z_t + ubar*zx + vbar*zy
       ! Wbt = alp + (zr + h)* (bet - alp)/(zeta + h)
       ! bt2bc = Wbt*b
+      if (.not.allocated(bt2bc)) allocate(bt2bc(nx,ny))
+      if (.not.allocated(divup)) allocate(divup(nx,ny))
+
       bt2bc = 0
       do k=1,nz
         do j=1,nx
           do i=1,ny
-            Wbt_f = alp_f + (zr(i,j,k)+h(i,j))*(bet_f-alp_f)/(zeta(i,j) + h(i,j))
-            Wbt_p = alp_p + (zr(i,j,k)+h(i,j))*(bet_p-alp_p)/(zeta(i,j) + h(i,j))
-            bt2bc(i,j) = bt2bc(i,j) 
-     &                 + (Wbt_p*rho1(i,j,k) + Wbt_p*rho1_p(i,j,k)*Hz(i,j,k)
+!           Wbt_f(i,j) = udh_f(i,j) +
+!    &       (z_r(i,j,k)+h(i,j))*(dzt_f(i,j)-udh_f(i,j))/(zeta(i,j,knew) + h(i,j))
+            Wbt_p = udh_p(i,j) +
+     &       (z_r(i,j,k)+h(i,j))*(dzt_p(i,j)-udh_p(i,j))/(zeta(i,j,knew) + h(i,j))
+!           bt2bc(i,j) = bt2bc(i,j) + Wbt_p*rho1(i,j,k)*Hz(i,j,k)
           enddo
         enddo
       enddo
@@ -2175,15 +1694,13 @@
       do k=1,nz
         do j=1,ny   
           do i=1,nx
-               ! dpdx already contains Hz
-               ! u needs removal of ubar
             divup(i,j) = divup(i,j) + 0.5*(
-     &              up(i,j,k)*dpdx_p(i,j,k)+up(i+1,j,k)*dpdx_p(i+1,j,k) 
-     &              up(i,j,k)*dpdx_f(i,j,k)+up(i+1,j,k)*dpdx_f(i+1,j,k) 
-     &              uf(i,j,k)*dpdx_p(i,j,k)+uf(i+1,j,k)*dpdx_p(i+1,j,k) 
-
-                  + vp(i,j,k)*dpdy_f(i,j,k)+vp(i,j+1,k)*dpdy_f(i,j+1,k) 
-     &            +  v(i,j,k)*dpdy_p(i,j,k)+ v(i,j+1,k)*dpdy_p(i,j+1,k) )
+     &              up(i,j,k)*pxp(i,j,k)+up(i+1,j,k)*pxp(i+1,j,k) 
+     &            + up(i,j,k)*pxf(i,j,k)+up(i+1,j,k)*pxf(i+1,j,k) 
+     &            + uf(i,j,k)*pxp(i,j,k)+uf(i+1,j,k)*pxp(i+1,j,k) 
+     &            + vp(i,j,k)*pyp(i,j,k)+vp(i,j+1,k)*pyp(i,j+1,k) 
+     &            + vp(i,j,k)*pyf(i,j,k)+vp(i,j+1,k)*pyf(i,j+1,k) 
+     &            + vf(i,j,k)*pyp(i,j,k)+vf(i,j+1,k)*pyp(i,j+1,k))
           enddo
         enddo
       enddo
@@ -2191,7 +1708,7 @@
       end subroutine E_baroclinic !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_p_sponge( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )  ![
+      subroutine set_diags_p_sponge  ![
       ! set the sponge layer dynamically at each timestep based on
       ! pressure flux in or out of domain.
       ! only needed for s/w/n/e domain boundaries.
@@ -2260,21 +1777,18 @@
 
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR
-
       ! local
       integer :: i, j, k, b                   ! b = loop index along size of box averaging
       real    :: avg                          ! temporary average coefficient
       integer :: box_low, box_high            ! upper and lower loop ranges for box (to handle edges where box is smaller)
       real    :: on_off                       ! is flux in or out and hence sponge on or off
 
-      if (WESTERN_EDGE) then
+      if (.not.west_exchng) then
         ! vertical integral and mean along sponge into domain:
         mup_ppzw=0.0                                         ! reset mean orthongal to boundary
-        do j=jstr,jend
-          do k=1,N                                           ! loop order not contiguous but makes code easier
-            do i=istr, istr+sponge_loop                      ! i range already not continguous too
+        do j=1,ny
+          do k=1,nz                                           ! loop order not contiguous but makes code easier
+            do i=1, 1+sponge_loop                       ! i range already not continguous too
               mup_ppzw(j) = mup_ppzw(j) + up_pp(i,j,k)       ! up_pp already multiplied by Hz in set_diags_uv_prime
             enddo
           enddo
@@ -2282,9 +1796,9 @@
         enddo ! <-- j                                        ! finish entire boundary first for box cart average next
 
         ! Box cart average and time filter:
-        call set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppzw)     ! exchange between partitions to allow for across bry avg
-        do j=jstr,jend                                       ! set low and high end of loop for box average
-          call set_diags_p_box_range_corners_j( j, jstr, jend, box_low, box_high)
+        call set_diags_p_bry_mpi_exchange_n2s(1,ny, mup_ppzw)     ! exchange between partitions to allow for across bry avg
+        do j=1,ny                                         ! set low and high end of loop for box average
+          call set_diags_p_box_range_corners_j( j, 1,ny, box_low, box_high)
           box_mup_ppzw(j) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
             box_mup_ppzw(j) = box_mup_ppzw(j) + mup_ppzw(b)  ! calculate box cart average of vertically integrated and orthongal mean
@@ -2301,7 +1815,7 @@
 
         ! Use box average filter value to determine sponge on or off, then time filter:
         ! Signal is altered here as net value is turned into binary 1 or 0.
-        do j=jstr,jend
+        do j=1,ny
           if(fbox_mup_ppzw(j) < 0.0) then                    ! over-write mean with binary in or out of domain
             on_off = 1.0                                     ! flux out (W) - sponge
           else
@@ -2309,23 +1823,23 @@
           endif
           sponge_fuw(j) = beta*sponge_fuw(j) + alpha*on_off  ! time filter
         enddo ! <-- j
-        sponge_fuw(jstrR)=sponge_fuw(jstr )                  ! extend values into buffer for sponges
-        sponge_fuw(jendR)=sponge_fuw(jend )                  ! to update next.
+        sponge_fuw(0)   =sponge_fuw(1 )                  ! extend values into buffer for sponges
+        sponge_fuw(ny+1)=sponge_fuw(ny)                  ! to update next.
         ! update sponges:
-        do j=jstrR,jendR                                     ! some repeated work in corner with south & north boundary
-          do i=istrR, istrR+(sponge_loop+1)                  ! here include buffers (i/j/strR) since visc2_r includes buffer
+        do j=1,ny
+          do i=1,1+(sponge_loop+1)                  ! here include buffers (i/j/strR) since visc2_r includes buffer
             visc2_r(i,j) = visc2_r0(i,j) * sponge_fuw(j)      ! Doesn't matter that sponge_fuw was calculated without buffer or bry.
             diff2(i,j,:) = diff20(i,j,:) * sponge_fuw(j)
           enddo                                              ! up_pp is at rho-points, so this works
         enddo                                                ! sponge_loop+1 for extra buffer point
       endif  ! < -- western_edge
 
-      if (EASTERN_EDGE) then
+      if (.not.east_exchng) then
         ! vertical integral and mean along sponge into domain:
         mup_ppze=0.0                                         ! reset mean orthongal to boundary
-        do j=jstr,jend
-          do k=1,N
-            do i=iend-sponge_loop,iend
+        do j=1,ny
+          do k=1,nz
+            do i=nx-sponge_loop,nx
               mup_ppze(j) = mup_ppze(j) + up_pp(i,j,k)
             enddo
           enddo
@@ -2333,9 +1847,9 @@
         enddo ! <-- j
 
         ! Box cart average and time filter:
-        call set_diags_p_bry_mpi_exchange_n2s(jstr, jend, mup_ppze)     ! exchange between partitions to allow for across bry avg
-        do j=jstr,jend
-          call set_diags_p_box_range_corners_j(j, jstr, jend, box_low, box_high)
+        call set_diags_p_bry_mpi_exchange_n2s(1,ny, mup_ppze)     ! exchange between partitions to allow for across bry avg
+        do j=1,ny
+          call set_diags_p_box_range_corners_j(j, 1,ny, box_low, box_high)
           box_mup_ppze(j) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
             box_mup_ppze(j) = box_mup_ppze(j) + mup_ppze(b)  ! calculate box cart average of vertically integrated and orthongal mean
@@ -2352,7 +1866,7 @@
 
         ! Use box average filter value to determine sponge on or off, then time filter:
         ! Signal is altered here as net value is turned into binary 1 or 0.
-        do j=jstr,jend
+        do j=1,ny
           if(fbox_mup_ppze(j) > 0.0) then                    ! over-write mean with binary in or out of domain
             on_off = 1.0                                     ! flux out (E) - sponge
           else
@@ -2360,23 +1874,23 @@
           endif
           sponge_fue(j) = beta*sponge_fue(j) + alpha*on_off  ! time filter
         enddo ! <-- j
-        sponge_fue(jstrR)=sponge_fue(jstr )                  ! extend values into buffer for sponge
-        sponge_fue(jendR)=sponge_fue(jend )                  ! update next.
+        sponge_fue(1   )=sponge_fue(1 )                  ! extend values into buffer for sponge
+        sponge_fue(ny+1)=sponge_fue(ny)                  ! update next.
         ! update sponges:
-        do j=jstrR,jendR
-          do i=iendR-(sponge_loop+1), iendR                  ! Here include buffer (istrR) since visc2_r includes buffer
+        do j=1,ny
+          do i=nx-(sponge_loop+1), nx                  ! Here include buffer (istrR) since visc2_r includes buffer
             visc2_r(i,j) = visc2_r0(i,j) * sponge_fue(j)     ! up_pp is at rho-points, so this works
             diff2(i,j,:) = diff20(i,j,:) * sponge_fue(j)
           enddo                                              ! sponge_loop+1 for extra buffer point
         enddo
       endif  ! < -- eastern_edge
 
-      if (SOUTHERN_EDGE) then
+      if (.not.south_exchng) then
         ! vertical integral and mean along sponge into domain:
         mvp_ppzs=0.0                                         ! reset mean orthongal to boundary
-        do i=istr,iend                                       ! not contiguous loop order but works for algo.
-          do k=1,N
-            do j=jstr,jstr+sponge_loop
+        do i=1,nx                                            ! not contiguous loop order but works for algo.
+          do k=1,nz
+            do j=1,1+sponge_loop
               mvp_ppzs(i) = mvp_ppzs(i) + vp_pp(i,j,k)
             enddo
           enddo
@@ -2384,9 +1898,9 @@
         enddo ! <-- i
 
         ! Box cart average and time filter:
-        call set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzs)
-        do i=istr,iend
-          call set_diags_p_box_range_corners_i(i, istr, iend, box_low, box_high)
+        call set_diags_p_bry_mpi_exchange_e2w(1,nx, mvp_ppzs)
+        do i=1,nx
+          call set_diags_p_box_range_corners_i(i, 1,nx, box_low, box_high)
           box_mvp_ppzs(i) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
             box_mvp_ppzs(i) = box_mvp_ppzs(i) + mvp_ppzs(b)  ! calculate box cart average of vertically integrated and orthongal mean
@@ -2403,7 +1917,7 @@
 
         ! Use box average filter value to determine sponge on or off, then time filter:
         ! Signal is altered here as net value is turned into binary 1 or 0.
-        do i=istr,iend
+        do i=1,nx
           if(fbox_mvp_ppzs(i) < 0.0) then                    ! over-write mean with binary in or out of domain
             on_off = 1.0                                     ! flux out (S) - sponge
           else
@@ -2411,23 +1925,23 @@
           endif
           sponge_fvs(i) = beta*sponge_fvs(i) + alpha*on_off  ! time filter
         enddo ! <-- i
-        sponge_fvs(istrR)=sponge_fvs(istr )                  ! extend values into buffer for sponge
-        sponge_fvs(iendR)=sponge_fvs(iend )                  ! update next.
+        sponge_fvs(0) =sponge_fvs(1)                  ! extend values into buffer for sponge
+        sponge_fvs(nx+1)=sponge_fvs(nx)                  ! update next.
         ! update sponges:
-        do j=jstrR, istrR+(sponge_loop+1)
-          do i=istrR,iendR
+        do j=1,1+(sponge_loop+1)
+          do i=1,nx
             visc2_r(i,j) = visc2_r0(i,j) * sponge_fvs(i)     ! vp_pp is at rho-points, so this works
             diff2(i,j,:) = diff20(i,j,:) * sponge_fvs(i)
           enddo                                              ! sponge_loop+1 for extra buffer point
         enddo
       endif  ! < -- southern_edge
 
-      if (NORTHERN_EDGE) then
+      if (.not.north_exchng) then
         ! vertical integral and mean along sponge into domain:
         mvp_ppzn=0.0                                         ! reset mean orthongal to boundary
-        do i=istr, iend
-          do k=1,N
-            do j=jend-sponge_loop,jend
+        do i=1,nx
+          do k=1,nz
+            do j=ny-sponge_loop,ny
               mvp_ppzn(i) = mvp_ppzn(i) + vp_pp(i,j,k)
             enddo
           enddo
@@ -2435,9 +1949,9 @@
         enddo  !<-- i
 
         ! Box cart average and time filter:
-        call set_diags_p_bry_mpi_exchange_e2w(istr, iend, mvp_ppzn)
-        do i=istr,iend
-          call set_diags_p_box_range_corners_i(i, istr, iend, box_low, box_high)
+        call set_diags_p_bry_mpi_exchange_e2w(1,nx, mvp_ppzn)
+        do i=1,nx
+          call set_diags_p_box_range_corners_i(i, 1,nx, box_low, box_high)
           box_mvp_ppzn(i) = 0                                ! reset box mean (don't need array here could use scalar?)
           do b=box_low, box_high
             box_mvp_ppzn(i) = box_mvp_ppzn(i) + mvp_ppzn(b)  ! calculate box cart average of vertically integrated and orthongal mean
@@ -2454,7 +1968,7 @@
 
         ! Use box average filter value to determine sponge on or off, then time filter:
         ! Signal is altered here as net value is turned into binary 1 or 0.
-        do i=istr,iend
+        do i=1,nx
           if(fbox_mvp_ppzn(i) > 0.0) then                    ! over-write mean with binary in or out of domain
             on_off = 1.0                                     ! flux out (N) - sponge
           else
@@ -2462,61 +1976,21 @@
           endif
           sponge_fvn(i) = beta*sponge_fvn(i) + alpha*on_off  ! time filter
         enddo
-        sponge_fvn(istrR)=sponge_fvn(istr )                  ! extend values into buffer for sponge
-        sponge_fvn(iendR)=sponge_fvn(iend )                  ! update next.
+        sponge_fvn(0)=sponge_fvn(1 )                  ! extend values into buffer for sponge
+        sponge_fvn(nx+1)=sponge_fvn(nx )                  ! update next.
         ! update sponges:
-        do j=jendR-(sponge_loop+1), jendR
-          do i=istrR,iendR
+        do j=ny-(sponge_loop+1),ny+1
+          do i=1,nx
             visc2_r(i,j) = visc2_r0(i,j) * sponge_fvn(i)     ! vp_pp is at rho-points, so this works
             diff2(i,j,:) = diff20(i,j,:) * sponge_fvn(i)
           enddo                                              ! sponge_loop+1 for extra buffer point
         enddo
       endif  ! < -- northern_edge
 
-      ! handle corners of full domain:
-      ! ------------------------------
-
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        do j=jstrR,   jstrR+(sponge_loop+1)                  ! overwrite corners
-          do i=istrR, istrR+(sponge_loop+1)
-            avg = (sponge_fuw(j)+sponge_fvs(i)) /2
-            visc2_r(i,j)= visc2_r0(i,j) * avg                ! use average of the filtered values for u and v
-            diff2(i,j,:)= diff20(i,j,:) * avg
-          enddo
-        enddo
-      endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        do j=jendR-(sponge_loop+1), jendR
-          do i=istrR, istrR+(sponge_loop+1)
-            avg = (sponge_fuw(j)+sponge_fvn(i)) /2
-            visc2_r(i,j)= visc2_r0(i,j) * avg
-            diff2(i,j,:)= diff20(i,j,:) * avg
-          enddo
-        enddo
-      endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        do j=jstrR,   jstrR+(sponge_loop+1)
-          do i=iendR-(sponge_loop+1), iendR
-            avg = (sponge_fue(j)+sponge_fvs(i)) /2
-            visc2_r(i,j)= visc2_r0(i,j) * avg
-            diff2(i,j,:)= diff20(i,j,:) * avg
-          enddo
-        enddo
-      endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        do j=jendR-(sponge_loop+1), jendR
-          do i=iendR-(sponge_loop+1), iendR
-            avg = (sponge_fue(j)+sponge_fvn(i)) /2
-            visc2_r(i,j)= visc2_r0(i,j) * avg
-            diff2(i,j,:)= diff20(i,j,:) * avg
-          enddo
-        enddo
-      endif
-
       ! update visc2_p interpolating from visc2_r:
-      visc2_p=0.0            ! reset for sum
-      do j=jstr,jendR        ! viscosity at psi points
-        do i=istr,iendR
+      visc2_p=0.0         ! reset for sum
+      do j=1,ny           ! viscosity at psi points
+        do i=1,nx
           visc2_p(i,j)=visc2_p(i,j) +  0.25 *                  ! equation taken from set_nudgcof.F
      &                 (  visc2_r(i,j)   + visc2_r(i-1,j)      ! where v_ponge*wrk(i,j)=visc2_r(i,j)
      &                  + visc2_r(i,j-1) + visc2_r(i-1,j-1) )  ! simple rho to psi conversion.
@@ -2751,196 +2225,74 @@
       implicit none
 
 
-
       end subroutine set_diags_p_conversion  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_avg_prs_flx( istr, iend, jstr, jend )  ![
-
-      ! this should really be a utility wrapper from some module...
-
+      subroutine set_diags_avg_prs_flx ![
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend
-
-
-      call set_diags_avg_var( istr, iend, jstr, jend, up_pp, aup_pp )  ! average up_pp into aup_pp
-      call set_diags_avg_var( istr, iend, jstr, jend, vp_pp, avp_pp )
-      call set_diags_avg_var( istr, iend, jstr, jend, div_uvp, adiv_uvp )
+      if (mynode==0) print *, 'avg_prs_flx: ',mynode
+      call set_diags_avg_var(up_pp, aup_pp )  ! average up_pp into aup_pp
+      call set_diags_avg_var(vp_pp, avp_pp )
+      call set_diags_avg_var(div_uvp, adiv_uvp )
 
       if (check_prs) then
-        call set_diags_avg_var( istr, iend, jstr, jend, up, aup )
-        call set_diags_avg_var( istr, iend, jstr, jend, vp, avp )
-        call set_diags_avg_var( istr, iend, jstr, jend, pp, app )
+        call set_diags_avg_var(up, aup )
+        call set_diags_avg_var(vp, avp )
+        call set_diags_avg_var(pp, app )
       endif
 
-!      if(mynode==0) print *, 'avg_up_pp(10,10,10)=',aup_pp(10,10,10)
 
       end subroutine set_diags_avg_prs_flx  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_avg_var( istr, iend, jstr, jend, var, Avar )  ![
-
-      ! this should really be a utility wrapper from some module...
-
+      subroutine set_diags_avg_var(var, Avar )  ![
       implicit none
 
       ! inputs
-      integer,                            intent(in)    :: istr, iend, jstr, jend
-      real, dimension(GLOBAL_2D_ARRAY,N), intent(in)    :: var
-      real, dimension(GLOBAL_2D_ARRAY,N), intent(inout) :: Avar
+      real, dimension(:,:,:), intent(in)    :: var
+      real, dimension(:,:,:), intent(inout) :: Avar
 
-      ! local
-      integer :: i, j, k
 
       if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
 
-        do k=1,N                         ! here we divide the average by the averaging rate
-          do j=jstr,jend
-            do i=istr,iend
-              Avar(i,j,k) = ( Avar(i,j,k) + var(i,j,k) ) / rec_rate
-            enddo
-          enddo
-        enddo
-
-      else
-
-        if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
-
-          do k=1,N                        ! here we divide the average by the averaging rate
-            do j=jstr,jend
-              do i=istr,iend
-                Avar(i,j,k) = var(i,j,k)
-              enddo
-            enddo
-          enddo
-
-        else                              ! all other timesteps
-
-          do k=1,N                        ! here we divide the average by the averaging rate
-            do j=jstr,jend
-              do i=istr,iend
-                Avar(i,j,k) = Avar(i,j,k)+var(i,j,k)
-              enddo
-            enddo
-          enddo
-
-        endif  ! <-- mod(tn-1,rec_rate)==0
-
-      endif    ! <-- mod(tn  ,rec_rate)==0
+        Avar = (Avar + var ) / rec_rate
+         
+      elseif (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
+               
+        Avar = var
+         
+      else                              ! all other timesteps
+               
+        Avar = Avar + var
+         
+      endif   
 
       end subroutine set_diags_avg_var  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_avg_tile( istr, iend, jstr, jend )  ![
-      ! set the averages of diagnostic variables
-
-      ! INFO: ![
-      ! This method is arguably more efficient than set_avg.F, however, it requires more
-      ! lines of code. Since diagnostic averaging will be heavy, more efficient code is argueably
-      ! more important.
-
-      ! Averaging rate is dictated by rec_rate.
-      ! 'Md_avg' stores a running total of diag terms 'Mdiag' until the rec_rate
-      ! is reached, at which point Md_avg is divided by the rec_rate to give the
-      ! the average of the diagnostics terms.
-      ! Md_avg is then refreshed for the next averaging period with Md_avg = Mdiag
-
-      ! 'check_avg' is used to do a complete budget close since model start until current
-      ! timestep using the averages of the diag terms.
-      ! 'Md_a_sum' is the sum of the diag averages during that rec_rate interval.
-      ! 'Md_a_ever' contains the continuous tally of diag averages since model start
-      ! multiplied by rec_rate * dt, this equal the total change in the variable
-      ! since model start and hence serve to check the overall budget.
-      ! Since Md_a_sum is the average rate per second of the diagnostics, multiplying by
-      ! rec_rate (i.e. timesteps in averaging period) * dt, gives the total change in the
-      ! variable over the averaging period, added to Md_a_ever maintains the change since
-      ! model start.
-
-      ! do iMd=1,ivmix                  ! all diagnostic terms with internal loop ranges
-      ! for greatest efficiency should only do the loop ranges (internal or full) of the diag terms, but doing full
-      ! ranges for now just to get working.
-      !]
-
+      subroutine set_diags_avg ![
+      ! Update diagnostics averages
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend
+      if (mod(tn-1,rec_rate)==0) then
+      ! This is the first step in an averaging cycle
+        Udiag_avg = Udiag
+        Vdiag_avg = Vdiag
+      else
+        Udiag_avg = Udiag_avg + Udiag
+        Vdiag_avg = Vdiag_avg + Vdiag
+      endif
 
-      ! local
-      integer :: i, j, k, iMd, dim
+      if (mod(tn,rec_rate)==0) then   ! timestep / rec_rate
+        Udiag = Udiag/rec_rate
+        Vdiag = Vdiag/rec_rate
+      endif
 
-! Needed for istrU, istrR, etc
-# include "compute_auxiliary_bounds.h"
-
-!      if(mynode==0) print *, '--- SETTING DIAGS AVERAGES' ! debug only
-
-      do dim=1,2
-
-        if (mod(tn,rec_rate)==0) then      ! timestep / rec_rate
-
-          if (check_avg) Md_a_sum(istrR:iendR,jstrR:jendR,:,dim) = 0
-
-          do iMd=1,nmd                     ! all diagnostic terms with internal loop ranges
-            do k=1,N                       ! here we divide the average by the averaging rate
-              do j=jstrR,jendR
-                do i=istrR,iendR
-                  Md_avg(i,j,k,dim,iMd) = ( Md_avg(i,j,k,dim,iMd)+Mdiag(i,j,k,dim,iMd) ) / rec_rate
-                  if (check_avg)
-     &              Md_a_sum(i,j,k,dim) = Md_a_sum(i,j,k,dim) + Md_avg(i,j,k,dim,iMd)  ! if with compile time parameter
-                enddo
-              enddo
-            enddo
-          enddo
-
-          if (check_avg) then                                                   ! see top of subroutine for more info
-            do k=1,N; do j=jstrR,jendR; do i=istrR,iendR                        ! Md_a_ever, could write it now then wouldn't need
-              Md_a_ever(i,j,k,dim) = Md_a_ever(i,j,k,dim)                       ! for both u and v? Same for Md_a_sum
-     &                             +  Md_a_sum(i,j,k,dim) * rec_rate * dt       ! keep an endless running total for budget closing
-            enddo; enddo; enddo                                                 ! * rec_rate since tot = avg * t
-            call set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR )
-          endif
-
-!          if(mynode==0 .and. dim==1) print *, '----> DIVIDE FOR AVERAGE'
-
-        else
-
-          if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
-
-            ! or could have Md_avg = 0 at the top of routine but this is more efficient but more code?
-            do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
-              do k=1,N                      ! here we divide the average by the averaging rate
-                do j=jstrR,jendR
-                  do i=istrR,iendR
-                    Md_avg(i,j,k,dim,iMD) = Mdiag(i,j,k,dim,iMD)
-                  enddo
-                enddo
-              enddo
-            enddo
-
-          else                              ! all other timesteps
-
-            do iMd=1,nmd                    ! all diagnostic terms with internal loop ranges
-              do k=1,N                      ! here we divide the average by the averaging rate
-                do j=jstrR,jendR
-                  do i=istrR,iendR
-                    Md_avg(i,j,k,dim,iMD) = Md_avg(i,j,k,dim,iMD)+Mdiag(i,j,k,dim,iMD)
-                  enddo
-                enddo
-              enddo
-            enddo
-
-          endif  ! <-- mod(tn-1,rec_rate)==0
-
-        endif    ! <-- mod(tn  ,rec_rate)==0
-
-      enddo    ! <-- dim
-
-      end subroutine set_diags_avg_tile  !]
+      end subroutine set_diags_avg !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_avg_tile(diagT, istr, iend, jstr, jend, td, iTd, itrc)  ![
+      subroutine set_diags_t_avg(diagT, td, iTd, itrc)  ![
       ! set the averages of tracer diagnostic variables
 
       ! NOTE: this won't work for rec_rate=1 because average will never refresh,
@@ -2951,62 +2303,34 @@
       ! inputs
       real, dimension(GLOBAL_2D_ARRAY,N), intent(in) :: diagT      ! 3D part of Tdiag for individual tracer
 
-      integer, intent(in) :: istr, iend, jstr, jend, td, iTd, itrc ! tn  = timestep
+      integer, intent(in) :: td, iTd, itrc                         ! tn  = timestep
                                                                    ! td  = tracer (local diag index)
       ! local                                                      ! iTd = diagnostic term
       integer           :: i, j, k, ierr                           ! itrc = tracer index as per 't' array
       character(len=30) :: text
 
-! Needed for istrU, istrR, etc
-# include "compute_auxiliary_bounds.h"
-
-!      if(mynode==0) print *, '^^^ SETTING TRC DIAGS AVERAGES' ! debug only
 
       if (mod(tn,rec_rate)==0) then                ! timestep / rec_rate
 
-        if (check_avg .and. iTd==it_h_diss)
-     &    Td_a_sum(istrR:iendR,jstrR:jendR,:) = 0  ! reset for new tracer: iTd==it_h_diss as
-                                                   ! must be first diag from wrt_tracer_diags_tile
-        do k=1,N
-          do j=jstrR,jendR                         ! here we divide the average
-            do i=istrR,iendR                       ! by the averaging rate
+        do k=1,nz
+          do j=1,ny                                ! here we divide the average
+            do i=1,nx                              ! by the averaging rate
               Td_avg(i,j,k,td,iTd) = ( Td_avg(i,j,k,td,iTd)+diagT(i,j,k) ) / rec_rate
-              if (check_avg)
-     &          Td_a_sum(i,j,k) = Td_a_sum(i,j,k) + Td_avg(i,j,k,td,iTd)     ! if with parameter
             enddo
           enddo
         enddo
 
         text=trim(t_vname(itrc)) / / tdname(iTd)
-        call nc_write_var(ncid, Td_avg(:,:,:,td,iTd), N, text, rp_var, output_rec, ierr)
+        call nc_write_var(ncid, Td_avg(:,:,:,td,iTd), nz, text, rp_var, output_rec, ierr)
 
-        if (check_avg .and. iTd==it_v_mix) then                                       ! budget check done after final diag term from wrt_tracer_diags_tile (iTd==it_v_mix)
-          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR
-            Td_a_ever(i,j,k,td) = Td_a_ever(i,j,k,td) + Td_a_sum(i,j,k) *rec_rate*dt  ! keep an endless running total for budget closing
-          enddo; enddo; enddo                                                         ! * rec_rate * dt since total change = avg * time (where time = rec_rate*dt)
-          text=trim(t_vname(itrc)) / / check_avnm(2)
-          call nc_write_var(ncid, Td_a_ever(:,:,:,td), N, text, rp_var, output_rec, ierr)
-
-          call set_diags_tdz_ever( istrR, iendR, jstrR, jendR, td, itrc )             ! calc total change in tracer since model start.
-          text=trim(t_vname(itrc)) / / check_avnm(1)
-          call nc_write_var(ncid, Td_a_sum(:,:,:), N, text, rp_var, output_rec, ierr)
-
-          do k=1,N; do j=jstrR,jendR; do i=istrR,iendR                                ! check budget still closing since model start
-            Td_a_sum(i,j,k) = Td_a_sum(i,j,k) - Td_a_ever(i,j,k,td)                   ! Td_a_sum on RHS is tdz_ever array as a difference array
-          enddo; enddo; enddo                                                         ! Td_a_sum on LHS is re-used as a difference array for budget close.
-          text=trim(t_vname(itrc)) / / check_avnm(3)
-          call nc_write_var(ncid, Td_a_sum(:,:,:), N, text, rp_var, output_rec, ierr)
-        endif
-
-!        if(mynode==0) print *, '----> TRACER DIVIDE FOR AVERAGE'
 
       else
 
         if (mod(tn-1,rec_rate)==0) then   ! this is next step after we have averaged.
 
-          do k=1,N
-            do j=jstrR,jendR
-              do i=istrR,iendR
+          do k=1,nz
+            do j=1,ny
+              do i=1,nx
                 Td_avg(i,j,k,td,iTd) = diagT(i,j,k)
               enddo
             enddo
@@ -3015,8 +2339,8 @@
         else                              ! all other timesteps
 
           do k=1,N
-            do j=jstrR,jendR
-              do i=istrR,iendR
+            do j=1,ny
+              do i=1,nx
                 Td_avg(i,j,k,td,iTd) = Td_avg(i,j,k,td,iTd) + diagT(i,j,k)
               enddo
             enddo
@@ -3026,67 +2350,10 @@
 
       endif    ! <-- mod(tn  ,rec_rate)==0
 
-      end subroutine set_diags_t_avg_tile  !]
+      end subroutine set_diags_t_avg  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_uvdz_ever( istr, jstr, istrR, iendR, jstrR, jendR )  ![
-      ! need current dz*u/v to compare gross changes in u with sum of averages
-      ! used only with 'check_avg' logical
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, jstr, istrR, iendR, jstrR, jendR
-
-      ! local
-      integer :: i, j, k
-
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istr,iendR
-            uvdz_ever(i,j,k, 1) = u(i,j,k,nnew) * (0.5*( Hz(i-1,j,k)+Hz(i,j,k) ))
-     &                          - uvdz_t0(i,j,k,1)
-          enddo
-        enddo
-      enddo
-
-      do k=1,N
-        do j=jstr,jendR
-          do i=istrR,iendR
-            uvdz_ever(i,j,k, 2) = v(i,j,k,nnew) * (0.5*( Hz(i,j-1,k)+Hz(i,j,k) ))
-     &                          - uvdz_t0(i,j,k,2)
-          enddo
-        enddo
-      enddo
-
-      end subroutine set_diags_uvdz_ever  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_tdz_ever( istrR, iendR, jstrR, jendR, td, itrc )  ![
-      ! need current dz*t to compare gross changes in t with sum of averages
-      ! used only with 'check_avg' logical
-
-      implicit none
-
-      ! inputs
-      integer, intent(in) :: istrR, iendR, jstrR, jendR, td, itrc
-
-      ! local
-      integer :: i, j, k
-
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            Td_a_sum(i,j,k) = t(i,j,k,nnew,itrc) * Hz(i,j,k)  ! re-use Td_a_sum instead of having Tdz_ever array
-     &                       - tdz_t0(i,j,k,td)
-          enddo
-        enddo
-      enddo
-
-      end subroutine set_diags_tdz_ever  !]
-
-! ----------------------------------------------------------------------
-      subroutine wrt_tracer_diags_tile(istr,iend,jstr,jend)  ![
+      subroutine wrt_tracer_diags  ![
       ! since the value of the tracer has been stored as dz*t, we still need to
       ! compute the differences for the contribution of each diagnostic term
 
@@ -3095,7 +2362,7 @@
       ! Also, since the value of 't' is kept in Tdiag and not the change in 't',
       ! we use Td_tmp to store the change, and for memory management it is only
       ! one array, and thus needs to be written to file immediately, or added to averges.
-      ! In wrt_diagnostics_tile the if(mod(tn,rec_rate)) is split where it is so that the file can
+      ! In wrt_diagnostics the if(mod(tn,rec_rate)) is split where it is so that the file can
       ! be opened and 'ocean_time' written before writing averages if applicable.
 
       ! Since the units of 't' change from 'Conc.' to 'dz*Conc.', the diagnostics
@@ -3107,26 +2374,19 @@
       use tracers, only: t
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend
-
       ! local
       integer             :: itrc, td, i, j, k, ierr
       character(len=30)   :: text
 
-! Needed for istrU, istrR, etc
-# include "compute_auxiliary_bounds.h"
-
       do td=1,nd_trc                                          ! only selected tracers from wrt_t_diag array
         itrc=diag_td_2_NT(td)                                 ! set the actual tracer index in 't'
 
-        if (check_diag) T_dsum(istrR:iendR,jstrR:jendR,:)=0   ! could just do boundaries as the rest can be overwritten in first below
-        Td_tmp(istrR:iendR,jstrR:jendR,:)=0                   ! do more efficient reset of boundaries here. Above changes bry values but below doesn't use them but can be seen in output if not set to 0 again.
+        Td_tmp = 0 
 
         ! h_diss:
-        do k=1,N                                              ! first diagnostic calculated using previous step's value
-          do j=jstr,jend
-            do i=istr,iend
+        do k=1,nz                                             ! first diagnostic calculated using previous step's value
+          do j=1,ny
+            do i=1,nx
               ! DISP = UP3 - ADV_4th:
               Td_tmp(i,j,k)=( Tdiag(i,j,k,td,it_h_diss) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k) )/dt
      &                      - Tdiag(i,j,k,td,it_h_adv)
@@ -3136,7 +2396,7 @@
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_h_diss, itrc)
+          call set_diags_t_avg(Td_tmp, td, it_h_diss, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_h_diss)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
@@ -3144,7 +2404,7 @@
 
         ! h_adv: (already calculated in set_diags_t_h_4th_adv)
         if (diag_avg) then
-          call set_diags_t_avg_tile(Tdiag(:,:,:,td,it_h_adv), istr, iend, jstr, jend, td, it_h_adv, itrc)
+          call set_diags_t_avg(Tdiag(:,:,:,td,it_h_adv), td, it_h_adv, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_h_adv)
           call nc_write_var(ncid, Tdiag(:,:,:,td,it_h_adv), N, text, rp_var, output_rec, ierr)
@@ -3152,8 +2412,8 @@
 
         ! v_diss:
         do k=1,N
-          do j=jstr,jend
-            do i=istr,iend
+          do j=1,ny
+            do i=1,nx
               Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_diss) - Tdiag(i,j,k,td,it_h_diss) )/dt  ! UP3 stored in it_h_diss
      &                      -  Tdiag(i,j,k,td,it_v_adv)
               if (check_diag)
@@ -3162,7 +2422,7 @@
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_v_diss, itrc)
+          call set_diags_t_avg(Td_tmp, td, it_v_diss, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_v_diss)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
@@ -3170,7 +2430,7 @@
 
         ! v_adv: (already calculated in set_diags_t_h_4th_adv)
         if (diag_avg) then
-          call set_diags_t_avg_tile(Tdiag(:,:,:,td,it_v_adv), istr, iend, jstr, jend, td, it_v_adv, itrc)
+          call set_diags_t_avg(Tdiag(:,:,:,td,it_v_adv),td, it_v_adv, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_v_adv)
           call nc_write_var(ncid, Tdiag(:,:,:,td,it_v_adv), N, text, rp_var, output_rec, ierr)
@@ -3179,9 +2439,9 @@
         ! From here onwards 't' was no longer in dz*t units:
 
         ! h_mix:
-        do k=1,N
-          do j=jstr,jend
-            do i=istr,iend  ! both in dz*t units and Hz is at the same timestep
+        do k=1,nz
+          do j=1,ny
+            do i=1,nx  ! both in dz*t units and Hz is at the same timestep
               Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_h_mix)-Tdiag(i,j,k,td,it_v_mix) )*Hz(i,j,k) /dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
@@ -3189,103 +2449,61 @@
           enddo
         enddo
         if (diag_avg) then
-          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_h_mix, itrc)
+          call set_diags_t_avg(Td_tmp,td, it_h_mix, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_h_mix)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
         ! v_mix and boundary: (swapped order (vmix before hmix in step3d_t) so don't need to reset boundaries of Td_tmp)
-        do k=1,N
-          do j=jstr,jend
-            do i=istr,iend  ! it_v_mix in 't' units, but it_prev in dz*t units
+        do k=1,nz
+          do j=1,ny
+            do i=1,nx  ! it_v_mix in 't' units, but it_prev in dz*t units
               Td_tmp(i,j,k)= ( Tdiag(i,j,k,td,it_v_mix)*Hz(i,j,k) - Tdiag(i,j,k,td,it_v_diss) )/dt
               if (check_diag)
      &        T_dsum(i,j,k)=T_dsum(i,j,k)+Td_tmp(i,j,k) ! add to total
             enddo
           enddo
         enddo
-        if (WESTERN_EDGE) then                      ! v_mix array also includes boundary update
-          i=istr-1                                  ! for memory savings. The boundary term is
+        if (.not.west_exchng) then                      ! v_mix array also includes boundary update
+          i=0
           Td_tmp(i,:,:) = Tdiag(i,:,:,td,it_v_mix)  ! already the difference, so can add it
           T_dsum(i,:,:) = Tdiag(i,:,:,td,it_v_mix)  ! directly to Td_tmp. Only boundary term
         endif                                       ! contributes to sum at the boundary.
-        if (EASTERN_EDGE) then
-          i=iend+1
+        if (.not.east_exchng) then   
+          i=nx+1
           Td_tmp(i,:,:) = Tdiag(i,:,:,td,it_v_mix)
           T_dsum(i,:,:) = Tdiag(i,:,:,td,it_v_mix)
         endif
-        if (SOUTHERN_EDGE) then
-          j=jstr-1
+        if (.not.south_exchng) then   
+          j=0
           Td_tmp(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
           T_dsum(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
         endif
-        if (NORTHERN_EDGE) then
-          j=jend+1
+        if (.not.north_exchng) then   
+          j=ny+1
           Td_tmp(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
           T_dsum(:,j,:) = Tdiag(:,j,:,td,it_v_mix)
         endif
         if (diag_avg) then
-          call set_diags_t_avg_tile(Td_tmp, istr, iend, jstr, jend, td, it_v_mix, itrc)
+          call set_diags_t_avg(Td_tmp, td, it_v_mix, itrc)
         else
           text=trim(t_vname(itrc)) / / tdname(it_v_mix)
           call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
         endif
 
-        ! need rec_rate check here as not an average
-        if ( (check_diag .or. tot_change) .and. mod(tn,rec_rate) == 0) then
-          do k=1,N                    ! write gross difference: don't need to set Td_sum to zero as covering full loop ranges.
-            do j=jstrR,jendR          ! first diagnostic calculated using previous step's value
-              do i=istrR,iendR        ! Full domain loop range incl. bry.
-                Td_tmp(i,j,k)= ( t(i,j,k,nnew,itrc)*Hz(i,j,k) - t(i,j,k,nstp,itrc)*Hz_old(i,j,k) )/dt
-              enddo
-            enddo
-          enddo
-          text=trim(t_vname(itrc)) / / check_vnm(1)
-          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
-        endif
-
-        if (check_diag .and. mod(tn,rec_rate) == 0) then                       ! need rec_rate check here as not an average
-          text=trim(t_vname(itrc)) / / check_vnm(2)                            ! following to compare gross change in u/v and sum of diags.
-          call nc_write_var(ncid, T_dsum, N, text, rp_var, output_rec, ierr)
-
-          Td_tmp(istrR:iendR,jstrR:jendR,:)=Td_tmp(istrR:iendR,jstrR:jendR,:)
-     &                                     -T_dsum(istrR:iendR,jstrR:jendR,:)  ! difference between gross change and sum of diags.
-          text=trim(t_vname(itrc)) / / check_vnm(3)
-          call nc_write_var(ncid, Td_tmp, N, text, rp_var, output_rec, ierr)
-        endif  ! <-- check_diag
       enddo    ! <-- itrc=1,NT
 
-      Hz_old(istrR:iendR,jstrR:jendR,:) = Hz(istrR:iendR,jstrR:jendR,:)        ! update Hz_old
+      Hz_old = Hz
 
-      end subroutine wrt_tracer_diags_tile  !]
-
-! ----------------------------------------------------------------------
-      subroutine wrt_diagnostics( tile )  ![
-
-      use hidden_mpi_vars
-
-      implicit none
-
-      ! input
-      integer, intent(in) :: tile
-
-# include "compute_tile_bounds.h"
-
-      call wrt_diagnostics_tile(istr, iend, jstr, jend)
-
-      end subroutine wrt_diagnostics  !]
+      end subroutine wrt_tracer_diags  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_diagnostics_tile(istr, iend, jstr, jend)  ![
-      ! Main subroutine to write online diagnostics
-      ! Unlike wrt_surface_flux_his, no need for write_file since
-      ! if you want diagnostics you will want a results file to see them.
+      subroutine wrt_diagnostics  ![
+      ! Write online diagnostics
 
+      use nc_read_write
       implicit none
-
-      ! inputs
-      integer, intent(in)     :: istr, iend, jstr, jend
 
       ! local
       integer                 :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)   ! 2D grid types
@@ -3293,17 +2511,15 @@
      &                         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)  ! 3D grid types
 #endif
      &                         , p2dgrd(3)
-      integer                 :: ierr = 0, dim, diag, i, j, k, tile, idt, itrc, td, np
+      integer                 :: ierr = 0, imd, i, j, k, tile, idt, itrc, td, np
 
       character(len=30)       :: text, utext
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to use in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
-
-! Needed for istrU, istrR, etc
-# include "compute_auxiliary_bounds.h"
+      integer :: dim,diag
 
 
-
+      if (mynode==0) print *,'wrt_diag 1',mynode
       tn = iic-ntstart                                ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
                                                       ! Trigger calculation of diags if required:
@@ -3318,14 +2534,13 @@
         set_dz_old=.false.
       endif
 
-      if (.not. init_done) call init_diags(istr, jstr, iend, jend)  ! called here as need set_dz_old set above
+      if (.not. init_done) call init_diagnostics  ! called here as need set_dz_old set above
+
+!     if (mynode==0) print *,'wrt_diag 2',mynode
 
       diag_icori = .false.  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h. Won't compute during pre_step3d but will for step3d_uv1
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
-
-! Defining and writing netcdf variables only done by master thread:
-C$OMP MASTER
 
         if ( mod(tn,rec_rate) == 0 ) then
 
@@ -3457,6 +2672,8 @@ C$OMP MASTER
 
           endif ! <-- (output_rec == 0; needed to create a file)
 
+          print *,'hoi: ',mynode
+
           ! WRITE VARIABLES TO FILE
           ! =======================
 
@@ -3476,71 +2693,36 @@ C$OMP MASTER
 C$OMP END MASTER
 C$OMP BARRIER
 
-        if (diag_avg) then                                                 ! see wrt_tracer_diags_tile for description of why if(mod(tn,rec_rate)) is split here.
-          if (diag_uv)  call set_diags_avg_tile   (istr, iend, jstr, jend) ! avoid very first step because diags are only all set by the end of the
-          if (diag_trc) call wrt_tracer_diags_tile(istr, iend, jstr, jend) ! first step, and then added to averages and/or output at the beginning of the next step.
-          if (prs_flx)  call set_diags_avg_prs_flx(istr, iend, jstr, jend)
+        if (diag_avg) then                                                 ! see wrt_tracer_diags for description of why if(mod(tn,rec_rate)) is split here.
+          if (diag_uv)  call set_diags_avg
+          if (diag_trc) call wrt_tracer_diags
+          if (prs_flx)  call set_diags_avg_prs_flx
         endif                                                              ! Need this after defined file as wrt_tracer will output averages so needs file created.
 
-! Defining and writing netcdf variables only done by master thread:
-C$OMP MASTER
-
-        if ( mod(tn,rec_rate) == 0 ) then
+        if ( mod(tn,rec_rate) == 0 ) then !! Time for an output
 
           if (diag_uv) then
-            do dim=1,2                            ! over dims u/v
 
-              do diag=1,nmd                       ! over diag terms
-                text = uvw(dim) / / vnames(diag)
-                if (diag_avg) then
-                  call nc_write_var(ncid, Md_avg(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-                else
-                  call nc_write_var(ncid,  Mdiag(:,:,:,dim,diag), N, text, gt_wrt(dim), output_rec, ierr)
-                endif
-              enddo
+            do imd=1,nmd        
+              if (diag_avg) then
+                text = uvw(1) / / vnames(imd)
+                call ncwrite(ncid,text,Udiag_avg(:,:,:,imd),output_rec)
+                text = uvw(2) / / vnames(imd)
+                call ncwrite(ncid,text,Vdiag_avg(:,:,:,imd),output_rec)
 
-              if (check_diag .or. tot_change) then
-                ! do uv_dif calculation at end of step3d_uv2.F as have istr, iend there already.
-                ! but use 'nnew' there as still in previous timestep!
-                text = uvw(dim) / / check_vnm(1)                           ! gross change in dz*u or dz*v over 1 timestep
-                call nc_write_var(ncid, uv_dif(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
+!               call nc_write_var(ncid,Udiag_avg(:,:,:,imd),nz,text, gt_wrt(dim), output_rec, ierr)
+!               call nc_write_var(ncid,Vdiag_avg(:,:,:,imd),nz,text, gt_wrt(dim), output_rec, ierr)
+              else
+                text = 'u' // vnames(imd)
+                call ncwrite(ncid,text,Udiag(:,:,:,imd),output_rec)
+                text = 'v' / / vnames(imd)
+                call ncwrite(ncid,text,Vdiag(:,:,:,imd),output_rec)
+
+!               call nc_write_var(ncid,Udiag(:,:,:,imd),nz, text, gt_wrt(dim), output_rec, ierr)
+!               call nc_write_var(ncid,Vdiag(:,:,:,imd),nz, text, gt_wrt(dim), output_rec, ierr)
               endif
+            enddo
 
-              if (check_diag) then
-
-                Mdsum(istrR:iendR,jstrR:jendR,:) = 0                       ! refresh for this step
-                do diag=1,nmd
-                  do j=jstrR,jendR
-                    do i=istrR,iendR
-                      Mdsum(i,j,:) = Mdsum(i,j,:) + Mdiag(i,j,:,dim,diag)  ! should make the ranges more efficient (e.g. bry term don't need interior points)
-                    enddo
-                  enddo
-                enddo
-                text = uvw(dim) / / check_vnm(2)                           ! sum of diag terms over 1 timestep
-                call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
-
-                do j=jstrR,jendR
-                    do i=istrR,iendR
-                      Mdsum(i,j,:) = uv_dif(i,j,:,dim)-Mdsum(i,j,:)        ! difference between gross dz*u (or v) change and sum of diags of dz*u
-                  enddo
-                enddo
-                text = uvw(dim) / / check_vnm(3)
-                call nc_write_var(ncid, Mdsum, N, text, gt_wrt(dim), output_rec, ierr)
-              endif
-
-              if (check_avg) then
-                text  = uvw(dim) / / check_avnm(1)                         ! gross change in u/v up until now since t0
-                call nc_write_var(ncid, uvdz_ever(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
-                text  = uvw(dim) / / check_avnm(2)                         ! total diag avg in u/v up until now since t0
-                call nc_write_var(ncid, Md_a_ever(:,:,:,dim), N, text, gt_wrt(dim), output_rec, ierr)
-                do j=jstrR,jendR; do i=istrR,iendR
-                  Mdsum(i,j,:) = uvdz_ever(i,j,:,dim)-Md_a_ever(i,j,:,dim) ! repurpose Mdsum array
-                enddo; enddo
-                text  = uvw(dim) / / check_avnm(3)
-                call nc_write_var(ncid,     Mdsum(:,:,:),     N, text, gt_wrt(dim), output_rec, ierr)
-              endif
-
-            enddo  ! <-- dim
           endif    ! <-- diag_uv
 
           if(prs_flx) then
@@ -3586,7 +2768,7 @@ C$OMP MASTER
           endif    ! <-- prs_flx
 
           if (diag_trc .and. .not. diag_avg)                             ! for averages this has been called already
-     &      call wrt_tracer_diags_tile(istr, iend, jstr, jend)           ! we call it here non-averages to get the correct writing frequency
+     &      call wrt_tracer_diags                     ! we call it here non-averages to get the correct writing frequency
 
           ierr=nf90_close (ncid)                                         ! close netcdf file
 
@@ -3603,12 +2785,9 @@ C$OMP MASTER
 
         endif ! <-- mod(tn,rec_rate)
 
-C$OMP END MASTER
-C$OMP BARRIER
-
       endif   ! <-- icc>ntstart
 
-      end subroutine wrt_diagnostics_tile  !]
+      end subroutine wrt_diagnostics  !]
 
 ! ----------------------------------------------------------------------
 

@@ -19,6 +19,7 @@
       use param
       use river_frc
       use wec_frc      ! , only: ust2d, vst2d, ust, vst
+      use dimensions
       use diagnostics
       use coupling
       use eos_vars
@@ -376,7 +377,18 @@
       enddo      ! <-- j
 
 # ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) call set_diags_uv_v_mix( istr, iend, jstr, jend, istrU, jstrV )
+      if (diag_uv .and. calc_diag) then
+        Udiag(:,:,:,ivmix) = ( u(1:nx,1:ny,:,nnew)*
+     &    0.5*( Hz(0:nx-1,1:ny,:)+Hz(1:nx,1:ny,:) )-u_prev ) / dt  
+        Vdiag(:,:,:,ivmix) = ( v(1:nx,1:ny,:,nnew)*
+     &    0.5*( Hz(1:nx,0:ny-1,:)+Hz(1:nx,1:ny,:) )-v_prev ) / dt  
+
+        Udiag(:,:,nz,ivmix) = Udiag(:,:,nz,ivmix)!+sustr(1:nx,1:ny)
+        Vdiag(:,:,nz,ivmix) = Vdiag(:,:,nz,ivmix)!+svstr(1:nx,1:ny)
+
+        u_prev = u(1:nx,1:ny,:,nnew)*0.5*(Hz(0:nx-1,1:ny,:)+Hz(1:nx,1:ny,:) )
+        v_prev = v(1:nx,1:ny,:,nnew)*0.5*(Hz(1:nx,0:ny-1,:)+Hz(1:nx,1:ny,:) )
+      endif
 # endif
 
 ! Set PHYSICAL lateral boundary conditions.
@@ -393,8 +405,8 @@
 
 # ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
-        call set_diags_u_bc( istr, iend, jstr, jend )
-        call set_diags_v_bc( istr, iend, jstr, jend )
+!       call set_diags_u_bc
+!       call set_diags_v_bc
       endif
 # endif
 
@@ -823,15 +835,15 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # ifdef DIAGNOSTICS
       if (diag_uv) then
         if (calc_diag) then
-          call set_diags_u_2d3d_cor( istr, iend, jstr, jend, istrU, iendR, jstrR, jendR )  ! int+bry indices of domain
-          call set_diags_v_2d3d_cor( istr, iend, jstr, jend, istrR, iendR, jstrV, jendR )
+!         call set_diags_u_2d3d_cor
+!         call set_diags_v_2d3d_cor
         endif
-        if (set_dz_old) call set_diags_uv_dz_old(istr, jstr, istrR, iendR, jstrR, jendR)
+        if (set_dz_old) call set_diags_uv_dz_old
       endif
       if (prs_flx)
-     &  call set_diags_uv_prime  ( istr, iend, jstr, jend, istrR, istrU, iendR, jstrR, jstrV, jendR )
+     &  call set_diags_uv_prime
 #  ifdef NHMG
-      if (calc_diag)  call set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR )
+      if (calc_diag)  call set_diags_w_at_uv2_end
 #  endif
 # endif
 
