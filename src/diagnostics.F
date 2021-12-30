@@ -407,15 +407,17 @@
         allocate(wrk_xy1(nx,ny))
         allocate(wrk_xy2(nx,ny))
 
-        allocate( dxdyi_u(nx,ny) )
-        allocate( dxdyi_v(nx,ny) )
-        allocate( dxdyi(nx,ny) )
-        dxdyi_u = 0.25*( pn(0:nx-1,1:ny)+pn(1:nx,1:ny) )
-     &                *( pm(0:nx-1,1:ny)+pm(1:nx,1:ny) )
-        dxdyi_v = 0.25*( pn(1:nx,0:ny-1)+pn(1:nx,1:ny) )
-     &                *( pm(1:nx,0:ny-1)+pm(1:nx,1:ny) )
-        dxdyi = pn(1:nx,1:ny)*pm(1:nx,1:ny)
       endif
+
+      !JM: Needed for both diag_uv and prs_flx
+      allocate( dxdyi_u(nx,ny) )
+      allocate( dxdyi_v(nx,ny) )
+      allocate( dxdyi(nx,ny) )
+      dxdyi_u = 0.25*( pn(0:nx-1,1:ny)+pn(1:nx,1:ny) )
+     &              *( pm(0:nx-1,1:ny)+pm(1:nx,1:ny) )
+      dxdyi_v = 0.25*( pn(1:nx,0:ny-1)+pn(1:nx,1:ny) )
+     &              *( pm(1:nx,0:ny-1)+pm(1:nx,1:ny) )
+      dxdyi = pn(1:nx,1:ny)*pm(1:nx,1:ny)
 
       if (diag_uv) then
 
@@ -611,7 +613,7 @@
       end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_diags_prs_flx
+      subroutine init_diags_prs_flx ![
       implicit none
 
       ! local
@@ -751,7 +753,7 @@
       end subroutine init_diags_prs_flx  !]
 ! ----------------------------------------------------------------------
       subroutine set_diags_u_4th_adv  ![
-      ! Computes 4th order advection of u
+      ! Computes 4th order advection of u ![
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
 
@@ -2275,19 +2277,17 @@
       ! Update diagnostics averages
       implicit none
 
-      if (mod(tn-1,rec_rate)==0) then
-      ! This is the first step in an averaging cycle
+      if (mod(tn-1,rec_rate)==0) then   ! First step in averaging cycle
         Udiag_avg = Udiag
         Vdiag_avg = Vdiag
+      elseif (mod(tn,rec_rate)==0) then ! Last step in averaging cycle
+        Udiag_avg = (Udiag_avg + Udiag)/rec_rate
+        Vdiag_avg = (Vdiag_avg + Vdiag)/rec_rate
       else
         Udiag_avg = Udiag_avg + Udiag
         Vdiag_avg = Vdiag_avg + Vdiag
       endif
 
-      if (mod(tn,rec_rate)==0) then   ! timestep / rec_rate
-        Udiag = Udiag/rec_rate
-        Vdiag = Vdiag/rec_rate
-      endif
 
       end subroutine set_diags_avg !]
 
@@ -2501,7 +2501,9 @@
 ! ----------------------------------------------------------------------
       subroutine wrt_diagnostics  ![
       ! Write online diagnostics
+      !!! JM: Redefine dimensions of diags netcdf file to exclude buffer !cells
 
+      use param
       use nc_read_write
       implicit none
 
@@ -2517,6 +2519,10 @@
       integer, dimension(4,2) :: grdtyp3d                      ! u and v type to use in loop
       integer, dimension(2)   :: gt_wrt = (/ up_var, vp_var /) ! grid type for writing
       integer :: dim,diag
+      integer :: i0,i1,j0,j1
+      integer :: bfx,bfy
+
+      integer,          dimension(4) :: start    ! start vector for writing
 
 
       if (mynode==0) print *,'wrt_diag 1',mynode
@@ -2564,39 +2570,8 @@
             p2dgrd(2)=v2dgrd(2) ! eta_v
             p2dgrd(3)=v2dgrd(3) ! time dim
 
-            ! Define remaining variables:
+            call create_diagvars(ncid)
 
-            if (diag_uv) then
-              do dim=1,2                                  ! u,v dims
-
-                do diag=1,nmd                             ! diag terms
-                  text  = uvw(dim) / / vnames(diag)       ! diag short name
-                  call nc_define_var(ncid, text, lname(diag), units, grdtyp3d(:,dim), ierr, prcsn )
-                enddo
-
-                if (check_diag .or. tot_change) then      ! following to compare gross change in u/v and sum of diags.
-                  text  = uvw(dim) / / check_vnm(1)       ! gross change in dz*u or dz*v over 1 timestep
-                  call nc_define_var(ncid, text, check_lnm(1), units, grdtyp3d(:,dim), ierr, prcsn )
-                endif
-
-                if (check_diag) then                      ! following to compare gross change in u/v and sum of diags.
-                  text  = uvw(dim) / / check_vnm(2)       ! sum of all diag terms over 1 timestep
-                  call nc_define_var(ncid, text, check_lnm(2), units, grdtyp3d(:,dim), ierr, prcsn )
-                  text  = uvw(dim) / / check_vnm(3)       ! compare gross change against sum of diags. Should be approx zero.
-                  call nc_define_var(ncid, text, check_lnm(3), units, grdtyp3d(:,dim), ierr, prcsn )
-                endif
-
-                if (check_avg) then
-                  text  = uvw(dim) / / check_avnm(1)      ! gross change in u/v up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(1), units, grdtyp3d(:,dim), ierr, prcsn )
-                  text  = uvw(dim) / / check_avnm(2)      ! total diag avg in u/v up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(2), units, grdtyp3d(:,dim), ierr, prcsn )
-                  text  = uvw(dim) / / check_avnm(3)      ! total budget close until now since t0
-                  call nc_define_var(ncid, text, check_alnm(3), units, grdtyp3d(:,dim), ierr, prcsn )
-                endif
-
-              enddo ! <-- dim
-            endif   ! <-- diag_uv
 
             if (diag_trc) then
               do td=1,nd_trc                                    ! only tracers of interest
@@ -2672,7 +2647,6 @@
 
           endif ! <-- (output_rec == 0; needed to create a file)
 
-          print *,'hoi: ',mynode
 
           ! WRITE VARIABLES TO FILE
           ! =======================
@@ -2702,26 +2676,42 @@ C$OMP BARRIER
         if ( mod(tn,rec_rate) == 0 ) then !! Time for an output
 
           if (diag_uv) then
+            if (mynode==0) print *,'wrt_diag'
+            if (mynode==0) print *,'px,py: ',Udiag_avg(10,10,10,1),Vdiag_avg(10,10,10,1)
+            !!! JM showing the new netcdf functionality
+            !! first and last domains might be smaller
+            i0 = iwest
+            i1 = ieast
+            j0 = jsouth
+            j1 = jnorth
+            bfx = 1
+            bfy = 1
+            if (.not.west_exchng)  bfx = 2
+            if (.not.south_exchng) bfy = 2
 
-            do imd=1,nmd        
-              if (diag_avg) then
-                text = uvw(1) / / vnames(imd)
-                call ncwrite(ncid,text,Udiag_avg(:,:,:,imd),output_rec)
-                text = uvw(2) / / vnames(imd)
-                call ncwrite(ncid,text,Vdiag_avg(:,:,:,imd),output_rec)
-
-!               call nc_write_var(ncid,Udiag_avg(:,:,:,imd),nz,text, gt_wrt(dim), output_rec, ierr)
-!               call nc_write_var(ncid,Vdiag_avg(:,:,:,imd),nz,text, gt_wrt(dim), output_rec, ierr)
-              else
+            if (diag_avg) then
+              start = (/1, bfy, 1, output_rec/)
+              call ncwrite(ncid,'u_pgr',Udiag_avg(i0:i1,j0:j1,:,1),start)
+              call ncwrite(ncid,'u_cor',Udiag_avg(i0:i1,j0:j1,:,2),start)
+              call ncwrite(ncid,'u_adv',Udiag_avg(i0:i1,j0:j1,:,3),start)
+              call ncwrite(ncid,'u_dis',Udiag_avg(i0:i1,j0:j1,:,4),start)
+                
+              start = (/bfx, 1, 1, output_rec/)
+              call ncwrite(ncid,'v_prg',Vdiag_avg(i0:i1,j0:j1,:,1),start)
+              call ncwrite(ncid,'v_cor',Vdiag_avg(i0:i1,j0:j1,:,2),start)
+              call ncwrite(ncid,'v_adv',Vdiag_avg(i0:i1,j0:j1,:,3),start)
+              call ncwrite(ncid,'v_dis',Vdiag_avg(i0:i1,j0:j1,:,4),start)
+            else
                 text = 'u' // vnames(imd)
-                call ncwrite(ncid,text,Udiag(:,:,:,imd),output_rec)
+                start = (/1, bfy, 1, output_rec/)
+                call ncwrite(ncid,text,Udiag(i0:i1,j0:j1,:,imd),start)
+                start = (/bfx, 1, 1, output_rec/)
                 text = 'v' / / vnames(imd)
-                call ncwrite(ncid,text,Vdiag(:,:,:,imd),output_rec)
+                call ncwrite(ncid,text,Vdiag(i0:i1,j0:j1,:,imd),start)
 
 !               call nc_write_var(ncid,Udiag(:,:,:,imd),nz, text, gt_wrt(dim), output_rec, ierr)
 !               call nc_write_var(ncid,Vdiag(:,:,:,imd),nz, text, gt_wrt(dim), output_rec, ierr)
-              endif
-            enddo
+            endif
 
           endif    ! <-- diag_uv
 
@@ -2789,6 +2779,74 @@ C$OMP BARRIER
 
       end subroutine wrt_diagnostics  !]
 
+! ----------------------------------------------------------------------
+      subroutine create_diagvars(ncid)  ![
+      ! Add diagnostics variables to an opened netcdf file
+
+      use nc_read_write
+      implicit none
+
+      !import/export
+      integer, intent(in) :: ncid
+
+      !local
+      character(len=10),dimension(4) :: dimnames ! dimension names
+      integer,          dimension(4) :: dimsizes ! dim lengths
+      integer                        :: varid,ierr
+
+      !! since the dimnames already exist, the dimsizes are not used
+      !! We'll retire the old method and start using them here
+
+      dimsizes = (/ 1,1,1,0/)
+
+      if (diag_uv) then
+        dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
+
+        varid = nccreate(ncid,'u_pgr',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                                ,'Hydrostatic Presssure Gradient')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'u_cor',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                                ,'Coriolis and Curvilinear')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'u_adv',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                                ,'Advection (Hor. and Vert.')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'u_dis',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Numerical dissipation')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
+
+        varid = nccreate(ncid,'v_pgr',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                                ,'Hydrostatic Presssure Gradient')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'v_cor',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                                ,'Coriolis and Curvilinear')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'v_adv',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                                ,'Advection (Hor. and Vert.')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'v_dis',dimnames,dimsizes,nf90_float)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Numerical dissipation')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+      endif
+
+
+      end subroutine create_diagvars  !]
 ! ----------------------------------------------------------------------
 
 #endif /* DIAGNOSTICS */
