@@ -48,10 +48,11 @@
         enddo
 
 # ifdef DIAGNOSTICS
+	! JM It would be better to not do the u,v boundary points
         if (CORR_STAGE) then
           if (diag_uv) then
-            Udiag(:,:,:,icori) = ru(1:nx,1:ny,:) - Udiag(:,:,:,iprsgr)
-            Vdiag(:,:,:,icori) = rv(1:nx,1:ny,:) - Vdiag(:,:,:,iprsgr)
+            Udiag(:,:,k,icori) = 0.5*(UFx(1:nx,1:ny)+UFx(0:nx-1,1:ny))*dxdyi_u
+            Vdiag(:,:,k,icori) =-0.5*(VFe(1:nx,1:ny)+VFe(1:nx,0:ny-1))*dxdyi_v
           endif
         endif
 # endif /* DIAGNOSTICS */
