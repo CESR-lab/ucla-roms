@@ -2572,7 +2572,6 @@
 
             call create_diagvars(ncid)
 
-
             if (diag_trc) then
               do td=1,nd_trc                                    ! only tracers of interest
                 itrc=diag_td_2_NT(td)                           ! set the actual tracer index in 't'
@@ -2581,27 +2580,6 @@
                   text  = trim(t_vname(itrc)) / / tdname(idt)
                   call nc_define_var(ncid, text, tlname(idt), utext, r3dgrd, ierr, prcsn )
                 enddo
-
-                if (check_diag .or. tot_change) then
-                  text  = trim(t_vname(itrc)) / / check_vnm(1)  ! gross change in dz*t over 1 timestep
-                  call nc_define_var(ncid, text,  check_lnm(1), utext, r3dgrd, ierr, prcsn )
-                endif
-
-                if (check_diag) then
-                  text  = trim(t_vname(itrc)) / / check_vnm(2)  ! sum of all diag terms over 1 timestep
-                  call nc_define_var(ncid, text,  check_lnm(2), utext, r3dgrd, ierr, prcsn )
-                  text  = trim(t_vname(itrc)) / / check_vnm(3)  ! compare gross change against sum of diags. Should be approx zero.
-                  call nc_define_var(ncid, text,  check_lnm(3), utext, r3dgrd, ierr, prcsn )
-                endif
-
-                if (check_avg) then
-                  text  = trim(t_vname(itrc)) / / check_avnm(1) ! gross change in t up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(1), utext, r3dgrd, ierr, prcsn )
-                  text  = trim(t_vname(itrc)) / / check_avnm(2) ! total diag avg in t up until now since t0
-                  call nc_define_var(ncid, text, check_alnm(2), utext, r3dgrd, ierr, prcsn )
-                  text  = trim(t_vname(itrc)) / / check_avnm(3) ! total budget close until now since t0
-                  call nc_define_var(ncid, text, check_alnm(3), utext, r3dgrd, ierr, prcsn )
-                endif
 
               enddo  ! <-- td
             endif    ! <-- diag_trc
@@ -2678,6 +2656,7 @@ C$OMP BARRIER
           if (diag_uv) then
             if (mynode==0) print *,'wrt_diag'
             if (mynode==0) print *,'px,py: ',Udiag_avg(10,10,10,1),Vdiag_avg(10,10,10,1)
+            if (mynode==0) print *,'cor:   ',Udiag_avg(10,10,10,2),Vdiag_avg(10,10,10,2)
             !!! JM showing the new netcdf functionality
             !! first and last domains might be smaller
             i0 = iwest
@@ -2689,13 +2668,19 @@ C$OMP BARRIER
             if (.not.west_exchng)  bfx = 2
             if (.not.south_exchng) bfy = 2
 
+
             if (diag_avg) then
+              if (.not.west_exchng) Udiag_avg(i0,:,:,:) = 0
+              if (.not.east_exchng) Udiag_avg(i1,:,:,:) = 0
+
               start = (/1, bfy, 1, output_rec/)
               call ncwrite(ncid,'u_pgr',Udiag_avg(i0:i1,j0:j1,:,1),start)
               call ncwrite(ncid,'u_cor',Udiag_avg(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'u_adv',Udiag_avg(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'u_dis',Udiag_avg(i0:i1,j0:j1,:,4),start)
                 
+              if (.not.south_exchng) Vdiag_avg(:,j0,:,:) = 0
+              if (.not.north_exchng) Vdiag_avg(:,j1,:,:) = 0
               start = (/bfx, 1, 1, output_rec/)
               call ncwrite(ncid,'v_prg',Vdiag_avg(i0:i1,j0:j1,:,1),start)
               call ncwrite(ncid,'v_cor',Vdiag_avg(i0:i1,j0:j1,:,2),start)
