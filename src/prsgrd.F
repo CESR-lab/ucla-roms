@@ -450,7 +450,6 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             Udiag(:,:,k,iprsgr) = ru(1:nx,1:ny,k)*dxdyi_u
             Vdiag(:,:,k,iprsgr) = rv(1:nx,1:ny,k)*dxdyi_v
           enddo
-          if (mynode==0) print *,'px,py: ',Udiag(10,10,10,1),Vdiag(10,10,10,1)
         endif
 
         !! Think of initializing the filtered vars

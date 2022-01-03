@@ -1,7 +1,7 @@
       module diagnostics
 
-      ! To compute diagnostics use DIAGNOSTICS flag in cppdefs.opt.
-      ! Also, set user defiend configuration in diagnostics.opt.
+      ! Set DIAGNOSTICS flag in cppdefs.opt to activate diagnostics.
+      ! Define options in diagnostics.opt
 
 #include "cppdefs.opt"
 #ifdef DIAGNOSTICS
@@ -310,7 +310,6 @@
       character (len=3) :: pchunits = 'TBC'
 
       public set_diags_uv_prime
-!     public set_diags_prs_prime
 
       ! W MOMENTUM: (CURRENTLY NOT WORKING)
       ! -----------
@@ -821,7 +820,8 @@
       implicit none
 
       ! local
-      integer :: i,j,k,inv24
+      integer :: i,j,k
+      real    :: inv24
 
       inv24 = 1./24.  ! 0.5*1/12
       do k=1,nz
@@ -844,33 +844,41 @@
         enddo
 
         ! The first/last interior flux can only be 2nd order 
+        ! JM for now, the first and last domain may start/end
+        ! JM at something differend than 1 or nx/ny.
         if (.not.west_msg_exch) then 
-          i=1
+          i=iwest
           do j=1,ny
             FX4(i,j) = 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
      &                     *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) ) 
           enddo
         endif
         if(.not.east_msg_exch) then
-          i=nx
+          i=ieast
           do j=1,ny
             FX4(i,j)= 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
      &                    *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) )
           enddo
+          if (k==10) then
+            print *,'FX4_u: ',mynode,FX4(i,10),i
+          endif
         endif
         if(.not.south_msg_exch) then
-          j=1
+          j=jsouth
           do i=1,nx
             FY4(i,j) = 0.25*( FlxV(i-1,j,k) + FlxV(i,j,k) )    
      &                     *( u(i,j,k,nrhs) + u(i,j-1,k,nrhs) )
           enddo
         endif
         if(.not.north_msg_exch) then
-          j=ny+1
+          j=jnorth+1
           do i=1,nx
             FY4(i,j) = 0.25*( FlxV(i-1,j,k) + FlxV(i,j,k) )
      &                     *( u(i,j,k,nrhs) + u(i,j-1,k,nrhs) )
           enddo
+!         if (k==10) then
+!           print *,'FY4_u: ',mynode,FX4(10,j),j
+!         endif
         endif
 
         do j=1,ny
@@ -920,7 +928,8 @@
       implicit none
 
       ! local
-      integer :: i,j,k,inv24
+      integer :: i,j,k
+      real    :: inv24
       real   ,dimension(:,:),pointer :: Uv,Vv
 
       Uv => wrk_xy1
@@ -1543,104 +1552,6 @@
 
 
       end subroutine set_diags_uv_prime  !]
-
-! ----------------------------------------------------------------------
-!     subroutine set_diags_prs_prime(P,ru,rv)  ![
-!     ! set p' (the pressure perturbation)
-!     !
-!     ! Note, pressure (P) is calculated in prsgrd.F. The loop ranges there
-!     ! are i=istrU-1,iend and j=jstrV-1,iend
-!     ! This allows for averaging from rho to u or v.
-!     ! in a sub-domain, u and v points are the first (starting) points
-!     ! but rho are the end points, hence the -1 only for the start index.
-!     !
-!     ! ru = dP/dx * Hz
-!     ! rv = dP/dy * Hz
-
-!     use coupling
-!     implicit none
-
-!     ! inputs
-!     !!!! There is a problem here since istr,iend arent' known
-!     real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N), intent(in) :: P, ru, rv
-
-!     ! local
-!     integer :: i, j, k
-
-!     if (.not. p_init_done) then
-
-!     !!! JM; the filtered vars need to have permanence
-!     !!! JM; the primes should be able to use scratch space
-
-!       !!! figure out how to use work space for these
-!       allocate( pxp(GLOBAL_2D_ARRAY, N) )
-!       allocate( pyp(GLOBAL_2D_ARRAY, N) )
-
-!       allocate( div_uvp(GLOBAL_2D_ARRAY, N) )
-
-
-
-!     if (.not.p_init_done) then
-!       p_init_done = .true.
-!     endif   
-
-!     !! This needs to run every time-step for proper exponential filtering
-!     do k=1,nz
-!       do j=0,ny
-!         do i=0,nx
-!           pf(i,j,k) = beta * pf(i,j,k) + alpha * ( P(i,j,k)  - g*z_w(i,j,N) )
-!         enddo
-!       enddo
-!       do j=1,ny
-!         do i=1,nx
-!           pxf(i,j,k) = beta*pxf(i,j,k) + alpha*ru(i,j,k)*dxdyi_u(i,j)
-!           pyf(i,j,k) = beta*pyf(i,j,k) + alpha*rv(i,j,k)*dxdyi_u(i,j)
-!         enddo
-!       enddo
-!     enddo
-!     do j=1,ny
-!       do i=1,nx
-!         udh_f(i,j) =  beta*udh_f(i,j) + alpha*(
-!    &       0.5*pm(i,j)*( ubar(i  ,j,kstp)*(h(i,j)-h(i-1,j))
-!    &                   + ubar(i+1,j,kstp)*(h(i+1,j)-h(i,j)) )
-!    &      +0.5*pn(i,j)*( vbar(i,j  ,kstp)*(h(i,j)-h(i,j-1))
-!    &                   + vbar(i,j+1,kstp)*(h(i,j+1)-h(i,j)) ))
-!         dzt_f(i,j) = beta*dzt_f(i,j)  + alpha*pm(i,j)*pn(i,j)*(
-!    &                dm_u(i+1,j)*ubar(i+1,j,kstp)*Du_avg1(i+1,j)
-!    &              - dm_u(i  ,j)*ubar(i  ,j,kstp)*Du_avg1(i  ,j)
-!    &              + dn_v(i,j+1)*vbar(i,j+1,kstp)*Dv_avg1(i,j+1)
-!    &              - dn_v(i,j  )*vbar(i,j  ,kstp)*Dv_avg1(i,j  ) )
-!       enddo
-!     enddo
-
-!     !! Can we replace the mod statement with a 'time_for_his' logical?
-!     if( diag_avg .or. mod( iic-ntstart+1 ,rec_rate) == 0            ! +1 since done in step before writing
-!    &    .or. p_sponge                                    ) then     ! also done everytimestep if averaging
-!                                                                     ! p_sponge needs up_pp at everystep
-
-!       do k=1,nz
-!         do j=0,ny ! Need to start at 0 to allow rho2u averaging 
-!           do i=0,nx
-!             pp(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) ) - pf(i,j,k)
-!             if (check_prs)                                      
-!    &          p_bcl(i,j,k) = ( P(i,j,k)  - g*z_w(i,j,N) )
-!           enddo
-!         enddo
-
-!         do j=1,ny 
-!           do i=1,nx
-!             pxp(i,j,k) = ru(i,j,k) - pxf(i,j,k)
-!             pyp(i,j,k) = rv(i,j,k) - pyf(i,j,k)
-!           enddo
-!         enddo
-!       enddo
-
-!       !! JM: Pretty sure that this is not neccessary 
-!       call set_diags_copy_to_buffer( istr, iend, jstr, jend, pp )
-
-!     endif
-
-!     end subroutine set_diags_prs_prime  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_copy_to_buffer( istr, iend, jstr, jend, var )  ![
@@ -2501,7 +2412,6 @@
 ! ----------------------------------------------------------------------
       subroutine wrt_diagnostics  ![
       ! Write online diagnostics
-      !!! JM: Redefine dimensions of diags netcdf file to exclude buffer !cells
 
       use param
       use nc_read_write
@@ -2525,7 +2435,6 @@
       integer,          dimension(4) :: start    ! start vector for writing
 
 
-      if (mynode==0) print *,'wrt_diag 1',mynode
       tn = iic-ntstart                                ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
                                                       ! Trigger calculation of diags if required:
@@ -2589,32 +2498,6 @@
               call nc_define_var(ncid, ppnames(1), pplname(1), punits, grdtyp3d(:,1), ierr, prcsn )
               call nc_define_var(ncid, ppnames(2), pplname(2), punits, grdtyp3d(:,2), ierr, prcsn )
               call nc_define_var(ncid, ppnames(3), pplname(3), punits, r3dgrd,        ierr, prcsn )
-
-              if (check_prs) then
-                call nc_define_var(ncid, pnames(1), plname(1), pchunits, grdtyp3d(:,1), ierr, prcsn )
-                call nc_define_var(ncid, pnames(2), plname(2), pchunits, grdtyp3d(:,2), ierr, prcsn )
-                call nc_define_var(ncid, pnames(3), plname(3), pchunits, r3dgrd, ierr, prcsn )
-                ! these vars aren't averaged currently
-!                text='u baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text) ! catch averaging into long name
-                call nc_define_var(ncid, 'u_bcl', 'u baroclin', pchunits, grdtyp3d(:,1), ierr, prcsn )
-!                text='p baroclin';      if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'p_bcl', 'p baroclin', pchunits, r3dgrd, ierr, prcsn )
-!                text='u filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'uf', 'u filtered barc', pchunits, grdtyp3d(:,1), ierr, prcsn )
-!                text='p filtered barc'; if(diag_avg) text= 'Averaged ' / / trim(text)
-                call nc_define_var(ncid, 'pf', 'p filtered barc', pchunits, r3dgrd, ierr, prcsn )
-              endif
-
-              if (p_sponge) then
-                if (check_sponge) then
-                  call nc_define_var(ncid, 'visc2_r0', 'visc2_r0', 'visc2_r0', r2dgrd, ierr, prcsn )
-                  call nc_define_var(ncid, 'visc2_r',  'visc2_r' , 'visc2_r',  r2dgrd, ierr, prcsn )
-                  call nc_define_var(ncid, 'diff2',    'diff2' ,   'diff2',    r2dgrd, ierr, prcsn )
-                  call nc_define_var(ncid, 'visc2_p',  'visc2_p' , 'visc2_p',  p2dgrd, ierr, prcsn )
-!                  call nc_define_var(ncid, 'visc2_p0', 'visc2_p0', 'visc2_p0', p2dgrd, ierr, prcsn )
-                endif
-              endif  ! <-- p_sponge
-
             endif    ! <-- prs_flx
 
             ierr=nf90_enddef(ncid) ! end definition to write changes to disk
@@ -2654,50 +2537,60 @@ C$OMP BARRIER
         if ( mod(tn,rec_rate) == 0 ) then !! Time for an output
 
           if (diag_uv) then
-            if (mynode==0) print *,'wrt_diag'
-            if (mynode==0) print *,'px,py: ',Udiag_avg(10,10,10,1),Vdiag_avg(10,10,10,1)
-            if (mynode==0) print *,'cor:   ',Udiag_avg(10,10,10,2),Vdiag_avg(10,10,10,2)
-            !!! JM showing the new netcdf functionality
-            !! first and last domains might be smaller
+            !! JM showing the new netcdf functionality
+            !! JM first and last domains might be smaller
+            !! JM i0,i1 etc deals with that for now. 
+            !! JM bfx,bfy deals with the fact that only the 
+            !! JM boundary have buffers
             i0 = iwest
             i1 = ieast
             j0 = jsouth
             j1 = jnorth
+            !! JM The diagnostics now exclude the buffers
             bfx = 1
             bfy = 1
             if (.not.west_exchng)  bfx = 2
             if (.not.south_exchng) bfy = 2
 
+            if (mynode==2) print *,'wrt_diag',i1
+            if (mynode==2) print *,'pgr:   ',Udiag_avg(i1,10,10,1),Vdiag_avg(i1,10,10,1)
+            if (mynode==2) print *,'cor:   ',Udiag_avg(i1,10,10,2),Vdiag_avg(i1,10,10,2)
+            if (mynode==2) print *,'adv:   ',Udiag_avg(i1,10,10,3),Vdiag_avg(i1,10,10,3)
+            if (mynode==2) print *,'dis:   ',Udiag_avg(i1,10,10,4),Vdiag_avg(i1,10,10,4)
 
             if (diag_avg) then
               if (.not.west_exchng) Udiag_avg(i0,:,:,:) = 0
-              if (.not.east_exchng) Udiag_avg(i1,:,:,:) = 0
-
               start = (/1, bfy, 1, output_rec/)
+
               call ncwrite(ncid,'u_pgr',Udiag_avg(i0:i1,j0:j1,:,1),start)
               call ncwrite(ncid,'u_cor',Udiag_avg(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'u_adv',Udiag_avg(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'u_dis',Udiag_avg(i0:i1,j0:j1,:,4),start)
                 
               if (.not.south_exchng) Vdiag_avg(:,j0,:,:) = 0
-              if (.not.north_exchng) Vdiag_avg(:,j1,:,:) = 0
               start = (/bfx, 1, 1, output_rec/)
-              call ncwrite(ncid,'v_prg',Vdiag_avg(i0:i1,j0:j1,:,1),start)
+
+              call ncwrite(ncid,'v_pgr',Vdiag_avg(i0:i1,j0:j1,:,1),start)
               call ncwrite(ncid,'v_cor',Vdiag_avg(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'v_adv',Vdiag_avg(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'v_dis',Vdiag_avg(i0:i1,j0:j1,:,4),start)
             else
-                text = 'u' // vnames(imd)
-                start = (/1, bfy, 1, output_rec/)
-                call ncwrite(ncid,text,Udiag(i0:i1,j0:j1,:,imd),start)
-                start = (/bfx, 1, 1, output_rec/)
-                text = 'v' / / vnames(imd)
-                call ncwrite(ncid,text,Vdiag(i0:i1,j0:j1,:,imd),start)
+              if (.not.west_exchng) Udiag(i0,:,:,:) = 0
+              start = (/1, bfy, 1, output_rec/)
 
-!               call nc_write_var(ncid,Udiag(:,:,:,imd),nz, text, gt_wrt(dim), output_rec, ierr)
-!               call nc_write_var(ncid,Vdiag(:,:,:,imd),nz, text, gt_wrt(dim), output_rec, ierr)
+              call ncwrite(ncid,'u_pgr',Udiag(i0:i1,j0:j1,:,1),start)
+              call ncwrite(ncid,'u_cor',Udiag(i0:i1,j0:j1,:,2),start)
+              call ncwrite(ncid,'u_adv',Udiag(i0:i1,j0:j1,:,3),start)
+              call ncwrite(ncid,'u_dis',Udiag(i0:i1,j0:j1,:,4),start)
+
+              if (.not.south_exchng) Vdiag(:,j0,:,:) = 0
+              start = (/bfx, 1, 1, output_rec/)
+
+              call ncwrite(ncid,'v_pgr',Vdiag(i0:i1,j0:j1,:,1),start)
+              call ncwrite(ncid,'v_cor',Vdiag(i0:i1,j0:j1,:,2),start)
+              call ncwrite(ncid,'v_adv',Vdiag(i0:i1,j0:j1,:,3),start)
+              call ncwrite(ncid,'v_dis',Vdiag(i0:i1,j0:j1,:,4),start)
             endif
-
           endif    ! <-- diag_uv
 
           if(prs_flx) then
