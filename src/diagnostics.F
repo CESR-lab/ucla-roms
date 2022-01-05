@@ -158,14 +158,12 @@
       ! ---------------
       real,dimension(:,:),pointer :: wrk_xy1,wrk_xy2
 
-      integer, public, parameter                          :: nmd = 6    ! number of momentum diag terms
+      integer, public, parameter                 :: nmd = 6    ! number of momentum diag terms
 
       real, public, allocatable, dimension(:,:,:,:) :: Udiag 
       real, public, allocatable, dimension(:,:,:,:) :: Vdiag
-      real, public, allocatable, dimension(:,:,:)   :: udz_old ! dz*u
-      real, public, allocatable, dimension(:,:,:)   :: vdz_old ! dz*v
-      real, public, allocatable, dimension(:,:,:)   :: u_prev
-      real, public, allocatable, dimension(:,:,:)   :: v_prev
+      real, public, allocatable, dimension(:,:)   :: u_prev
+      real, public, allocatable, dimension(:,:)   :: v_prev
       real,         allocatable, dimension(:, :)  :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
       real,         allocatable, dimension(:, :)  :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
       real,         allocatable, dimension(:, :)  :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
@@ -191,11 +189,6 @@
 
       character (len=26) :: units = 'm^2/s^2    (i.e. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
       character (len=1),   dimension(3) :: uvw = (/ 'u', 'v', 'w' /)    ! prefix for u/v/w outputs
-
-      character (len=120), dimension(:), allocatable :: check_lnm       ! long name for outputs checking diagnostics
-      character (len=20),  dimension(:), allocatable :: check_vnm       ! short name ...
-      character (len=160), dimension(:), allocatable :: check_alnm      ! long name for outputs checking diagnostics averages
-      character (len=30),  dimension(:), allocatable :: check_avnm      ! short name ...
 
       logical, public :: diag_icori  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h
 
@@ -359,7 +352,6 @@
 
       public set_diags_u_4th_adv
       public set_diags_v_4th_adv
-      public set_diags_uv_dz_old
       public wrt_diagnostics !]
 
       contains
@@ -422,42 +414,12 @@
 
         allocate(Udiag(nx,ny,nz,nmd) )
         allocate(Vdiag(nx,ny,nz,nmd) )
-        allocate(udz_old(nx,ny,nz))
-        allocate(vdz_old(nx,ny,nz))
-        allocate(u_prev(nx,ny,nz) )
-        allocate(v_prev(nx,ny,nz) )
-
-        allocate( vnames(nmd), lname(nmd) )
-        vnames(1) = '_pgr'
-        lname (1) = 'Hydrostatic pressure gradient'
-        vnames(2) = '_cor'
-        lname (2) = 'Coriolis & curvilinear'
-        vnames(3) = '_adv'
-        lname (3) = 'Advection (horiz. & vert.)'
-        vnames(4) = '_dis'
-        lname (4) = 'Dissipation from advection (horiz. & vert.)'
-        vnames(5) = '_h_mix'
-        lname (5) = 'Explicit Horizontal mixing'
-        vnames(6) = '_v_mix_and_BC'
-        lname (6) = 'Vertical mixing plus 2D/3D coupling'
+        allocate(u_prev(nx,nz) )
+        allocate(v_prev(nx,nz) )
 
         if (diag_avg) then   
           allocate(Udiag_avg(nx,ny,nz,nmd))
           allocate(Vdiag_avg(nx,ny,nz,nmd))
-          do diag=1,nmd                                   
-            lname(diag)  = 'Ave ' / / trim(lname(diag))   ! prepend 'Ave'
-          enddo
-        endif
-
-        if (set_dz_old) then
-          do k=1,nz
-            do j=1,ny  
-              do i=1,nx
-                udz_old(i,j,k) = u(i,j,k,nstp)*0.5*( Hz(i-1,j,k)+Hz(i,j,k) )
-                vdz_old(i,j,k) = v(i,j,k,nstp)*0.5*( Hz(i,j-1,k)+Hz(i,j,k) )
-              enddo
-            enddo
-          enddo
         endif
 
       endif  ! <-- diag_uv
@@ -478,34 +440,6 @@
       endif  ! <-- set_dz_old
 # endif /* NHMG */
 
-      if (check_diag .or. tot_change) then                           ! used for both uv and tracer
-        allocate( check_lnm(3), check_vnm(3)    )
-        check_vnm(1) = '_actual'
-        check_lnm(1) = 'Actual rate of change in variable during ' / /
-     &                 'timestep - e.g. (u_n*dz_n - u_n-1*dz_n-1) / dt'
-        check_vnm(2) = '_diag_sum'
-        check_lnm(2) = 'Sum of rate of diagnostics terms during '  / /
-     &                 'timestep.'
-        check_vnm(3) = '_budget'
-        check_lnm(3) = 'Diff. of rate of change in variable vs '   / /
-     &                 'sum of diags during timestep (budget '     / /
-     &                 'close) - e.g. (u_actual-u_diag_sum)'
-      endif
-
-      if (check_avg) then                                             ! used for both uv and tracer
-        allocate( check_alnm(3), check_avnm(3)     )
-        check_avnm(1) = '_ever'
-        check_alnm(1) = 'Total change in variable since start of ' / /
-     &                  'run - e.g. (u_n*dz_n - u_0*dz_0)'
-        check_avnm(2) = '_diag_avg_ever'
-        check_alnm(2) = 'Sum of diagnostic averages multiplied '   / /
-     &    'by averaging freq. for total time since start of run.'  / /
-     &    ' Should match total change in var since model start.'
-        check_avnm(3) = '_budget_ever'
-        check_alnm(3) = 'Complete budget close using averages '    / /
-     &    'since model start until current timestep  - e.g. '      / /
-     &    '(u_ever - u_diag_avg_ever)'
-      endif
 
       allocate( FX4( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FY4( GLOBAL_2D_ARRAY ) )       ! called within k loop so only need 2D slice per k
@@ -958,13 +892,13 @@
         ! The first/last interior flux can only be 2nd order 
         if (.not.west_msg_exch) then 
           do j=1,ny
-            i=1
+            i=iwest
             FX4(i,j) = 0.25*( FlxU(i,j-1,k)+FlxU(i,j,k) )
      &                     *( v(i-1,j,k,nrhs)+v(i,j,k,nrhs) )
           enddo
         endif
         if(.not.east_msg_exch) then
-          i=nx+1
+          i=ieast+1
           do j=1,ny
             FX4(i,j) = 0.25*( FlxU(i,j-1,k)+FlxU(i,j,k) )
      &                     *( v(i-1,j,k,nrhs)+ v(i,j,k,nrhs) )
@@ -972,14 +906,14 @@
         endif
 
         if(.not.south_msg_exch) then
-          j=1
+          j=jsouth
           do i=1,nx
             FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) )
      &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
           enddo
         endif
         if(.not.north_msg_exch) then
-          j=ny
+          j=jnorth
           do i=1,nx
             FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) ) 
      &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
@@ -1019,41 +953,13 @@
         do k=1,nz
           do i=1,nx
             Vdiag(i,j,k,iadv) = Vdiag(i,j,k,iadv)         
-     &                        - dxdyi(i,j)*( FZ4(i,k)-FZ4(i,k-1) )
+     &                        - dxdyi_v(i,j)*( FZ4(i,k)-FZ4(i,k-1) )
           enddo
         enddo
 
       enddo      ! <-- j
 
       end subroutine set_diags_v_4th_adv  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_uv_dz_old  ![
-      ! Set dz*u or v at previous timestep to calculate gross change in
-      ! u or v over time step, and to calculate change at boundary.
-      ! Called after everything else in step3d_uv2.F.
-
-      implicit none
-
-      ! local
-      integer :: i,j,k
-
-      ! This is currently used for bry calculation so is also needed for averaging.
-      ! Also for 'u_diff', but that's not needed for averaging.
-      ! Should put an if statement here for diags_avg and only compute bry if averages...
-
-      do k=1,nz
-        do j=1,ny
-          do i=1,nx
-            udz_old(i,j,k) = u(i,j,k,nnew)*0.5*( Hz(i-1,j,k)+Hz(i,j,k) )
-            vdz_old(i,j,k) = v(i,j,k,nnew)*0.5*( Hz(i,j-1,k)+Hz(i,j,k) )
-          enddo
-        enddo
-      enddo
-
-      ! Don't forget 'w' here.
-
-      end subroutine set_diags_uv_dz_old  !]
 
 ! ----------------------------------------------------------------------
 # ifdef NHMG
@@ -1552,21 +1458,6 @@
 
 
       end subroutine set_diags_uv_prime  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_diags_copy_to_buffer( istr, iend, jstr, jend, var )  ![
-
-      implicit none
-
-      integer,                            intent(in)    :: istr, iend, jstr, jend
-      real, dimension(GLOBAL_2D_ARRAY,N), intent(inout) :: var
-
-      if(WESTERN_EDGE)  var(istr-1,:,:)=var(istr,:,:)                 ! copy into buffer for averaging u'p' at boundary
-      if(EASTERN_EDGE)  var(iend+1,:,:)=var(iend,:,:)                 ! TILING broken
-      if(SOUTHERN_EDGE) var(:,jstr-1,:)=var(:,jstr,:)
-      if(NORTHERN_EDGE) var(:,jend+1,:)=var(:,jend,:)
-
-      end subroutine set_diags_copy_to_buffer  !]
 
 ! ----------------------------------------------------------------------
       subroutine E_baroclinic  ![
@@ -2557,6 +2448,8 @@ C$OMP BARRIER
             if (mynode==2) print *,'cor:   ',Udiag_avg(i1,10,10,2),Vdiag_avg(i1,10,10,2)
             if (mynode==2) print *,'adv:   ',Udiag_avg(i1,10,10,3),Vdiag_avg(i1,10,10,3)
             if (mynode==2) print *,'dis:   ',Udiag_avg(i1,10,10,4),Vdiag_avg(i1,10,10,4)
+            if (mynode==2) print *,'hmx:   ',Udiag_avg(i1,10,10,5),Vdiag_avg(i1,10,10,5)
+            if (mynode==2) print *,'vmx:   ',Udiag_avg(i1,10,10,6),Vdiag_avg(i1,10,10,6)
 
             if (diag_avg) then
               if (.not.west_exchng) Udiag_avg(i0,:,:,:) = 0
@@ -2566,6 +2459,8 @@ C$OMP BARRIER
               call ncwrite(ncid,'u_cor',Udiag_avg(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'u_adv',Udiag_avg(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'u_dis',Udiag_avg(i0:i1,j0:j1,:,4),start)
+              call ncwrite(ncid,'u_hmx',Udiag_avg(i0:i1,j0:j1,:,5),start)
+              call ncwrite(ncid,'u_vmx',Udiag_avg(i0:i1,j0:j1,:,6),start)
                 
               if (.not.south_exchng) Vdiag_avg(:,j0,:,:) = 0
               start = (/bfx, 1, 1, output_rec/)
@@ -2574,6 +2469,8 @@ C$OMP BARRIER
               call ncwrite(ncid,'v_cor',Vdiag_avg(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'v_adv',Vdiag_avg(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'v_dis',Vdiag_avg(i0:i1,j0:j1,:,4),start)
+              call ncwrite(ncid,'v_hmx',Vdiag_avg(i0:i1,j0:j1,:,5),start)
+              call ncwrite(ncid,'v_vmx',Vdiag_avg(i0:i1,j0:j1,:,6),start)
             else
               if (.not.west_exchng) Udiag(i0,:,:,:) = 0
               start = (/1, bfy, 1, output_rec/)
@@ -2680,47 +2577,68 @@ C$OMP BARRIER
       if (diag_uv) then
         dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
 
-        varid = nccreate(ncid,'u_pgr',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'u_pgr',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Hydrostatic Presssure Gradient')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        varid = nccreate(ncid,'u_cor',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'u_cor',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Coriolis and Curvilinear')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        varid = nccreate(ncid,'u_adv',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'u_adv',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Advection (Hor. and Vert.')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        varid = nccreate(ncid,'u_dis',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'u_dis',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'Numerical dissipation')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'u_hmx',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Horizontal mixing')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'u_vmx',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Vertical mixing')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
         dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
 
-        varid = nccreate(ncid,'v_pgr',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'v_pgr',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Hydrostatic Presssure Gradient')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        varid = nccreate(ncid,'v_cor',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'v_cor',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Coriolis and Curvilinear')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        varid = nccreate(ncid,'v_adv',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'v_adv',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Advection (Hor. and Vert.')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        varid = nccreate(ncid,'v_dis',dimnames,dimsizes,nf90_float)
+        varid = nccreate(ncid,'v_dis',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'Numerical dissipation')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'v_hmx',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Horizontal mixing')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'v_vmx',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Vertical mixing')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
       endif
 
 
