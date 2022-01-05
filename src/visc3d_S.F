@@ -115,16 +115,22 @@
 # if defined NHMG
 !   Do things
 # endif
-      enddo ! k loop
-
 # ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
-        Udiag(:,:,:,ihmix) = (u(1:nx+1,1:ny,:,indx)-u_prev)/ dt
-        Vdiag(:,:,:,ihmix) = (v(1:nx,1:ny+1,:,indx)-v_prev)/ dt
-        u_prev = u(1:nx+1,1:ny,:,indx)
-        v_prev = v(1:nx,1:ny+1,:,indx)
+        do j=1,ny
+          do i=1,nx
+            Udiag(i,j,k,ihmix) = 0.5*dxdyi_u(i,j)*
+     &              ( (pn(i-1,j)+pn(i,j))*(UFx(i,j)-UFx(i-1,j))
+     &               +(pm(i-1,j)+pm(i,j))*(UFe(i,j+1)-UFe(i,j)) )
+            Vdiag(i,j,k,ihmix) = 0.5*dxdyi_v(i,j)*
+     &              ( (pn(i,j-1)+pn(i,j))*(VFx(i+1,j)-VFx(i,j))
+     &               +(pm(i,j-1)+pm(i,j))*(VFe(i,j)-VFe(i,j-1)) )
+          enddo
+        enddo
       endif
 # endif
+      enddo ! k loop
+
       end
 
 #else
