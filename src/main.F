@@ -104,6 +104,7 @@ C$    trd=omp_get_thread_num()
 C$OMP MASTER
         mpi_master_only write(*,'(/3(1x,A,I3),A/)')
      &    '### ERROR: Wrong choice of numthreads =', numthreads,
+c        endif
      &         'while NSUB_X =', NSUB_X, 'NSUB_E =', NSUB_E,'.'
         may_day_flag=8
 C$OMP END MASTER
@@ -559,6 +560,10 @@ C$OMP BARRIER                            ! time step for momenta
       enddo
 C$OMP BARRIER
 #endif /* SOLVE3D */
+
+#ifdef SPONGE_TUNE
+      call adjust_sponge
+#endif
 
 
   99  return

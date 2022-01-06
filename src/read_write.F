@@ -843,12 +843,35 @@ C$OMP BARRIER
       end subroutine ncdf_create_file  !]
 
 ! ----------------------------------------------------------------------
+      subroutine create_filename(fname,total_rec)
+      ! takes a filename for output and inserts the mpi node number 
+      ! (if appropriate), and the label that matches the current record
+      ! number
+      implicit none
+
+      ! input/output
+      character(len=*),  intent(inout) :: fname              ! desired netcdf file name
+      integer,           intent(in)    :: total_rec          ! total netcdf records so far for these variables
+
+      ! local
+      integer           :: lfnm, lvar, lenstr, lstr, ierr=0
+      character(len=64) :: fname_tmp                         ! taken from read_inp.F
+
+      fname_tmp=fname
+      lstr=lenstr(fname_tmp)
+#if defined MPI && defined PARALLEL_FILES
+      call insert_node(fname_tmp, lstr, mynode, NNODES, ierr)  ! insert MPI node numbers to file name
+#endif
+      fname = fname_tmp(1:lstr)
+      call insert_time_index(fname,lstr,total_rec,ierr)     ! insert time index to file name
+
+      end subroutine create_filename
+! ----------------------------------------------------------------------
       subroutine ncdf_create_blank_file( fname, ncid,  prev_fill_mode,   ![
      &                                   rec_per_file, total_rec       )
       ! Create an empty netcdf result file without any dimensions
       ! It will take in file name and add node number.
 
-      implicit none
 
       ! inputs/outputs
       character(len=*),  intent(inout) :: fname              ! desired netcdf file name

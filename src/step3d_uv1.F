@@ -176,10 +176,9 @@
         enddo
 # ifdef DIAGNOSTICS
         if (diag_uv.and.calc_diag) then
-!         u_prev(:,j,:) = u(1:nx,j,:,nnew)
           do k=1,nz
             Udiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_u(:,j)
-     &          - Udiag(:,j,k,iprsgr)
+     &          - Udiag(:,j,k,ipgr)
      &          - Udiag(:,j,k,icori)
      &          - Udiag(:,j,k,iadv)
           enddo
@@ -212,10 +211,9 @@
           enddo
 # ifdef DIAGNOSTICS
         if (diag_uv.and.calc_diag) then
-!         v_prev(:,j,:) = v(1:nx,j,:,nnew)
           do k=1,nz
             Vdiag(:,j,k,idiss) = rv(1:nx,j,k)*dxdyi_v(:,j)
-     &          - Vdiag(:,j,k,iprsgr)
+     &          - Vdiag(:,j,k,ipgr)
      &          - Vdiag(:,j,k,icori)
      &          - Vdiag(:,j,k,iadv)
           enddo
