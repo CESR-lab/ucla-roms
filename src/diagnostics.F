@@ -158,12 +158,13 @@
       ! ---------------
       real,dimension(:,:),pointer :: wrk_xy1,wrk_xy2
 
-      integer, public, parameter                 :: nmd = 6    ! number of momentum diag terms
+      integer,parameter :: nmd = 6    ! number of momentum diag terms
 
       real, public, allocatable, dimension(:,:,:,:) :: Udiag 
       real, public, allocatable, dimension(:,:,:,:) :: Vdiag
       real, public, allocatable, dimension(:,:)   :: u_prev
       real, public, allocatable, dimension(:,:)   :: v_prev
+
       real,         allocatable, dimension(:, :)  :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
       real,         allocatable, dimension(:, :)  :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
       real,         allocatable, dimension(:, :)  :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
@@ -172,10 +173,8 @@
       real, allocatable, dimension(:,:,:,:) :: Udiag_avg ! Averages of diagnostics
       real, allocatable, dimension(:,:,:,:) :: Vdiag_avg ! Averages of diagnostics
 
-      real, public                                        :: Mdtmp      ! temporary scalar for calculations of Mdiag
-
       integer, parameter, public ::
-     &  iprsgr = 1, ! Hydrostatic pressure gradient    - internal loop ranges only (i.e. excluding domain boundary)
+     &  ipgr   = 1, ! Hydrostatic pressure gradient    
      &  icori  = 2, ! Coriolis & curvilinear coords    - internal loop ranges only
      &  iadv   = 3, ! purely advective fluxes          - internal loop ranges only
      &  idiss  = 4, ! dissipation from advection       - internal loop ranges only
@@ -190,7 +189,6 @@
       character (len=26) :: units = 'm^2/s^2    (i.e. du/dt*dz)'        ! Don't go beyond 72nd character else space in units
       character (len=1),   dimension(3) :: uvw = (/ 'u', 'v', 'w' /)    ! prefix for u/v/w outputs
 
-      logical, public :: diag_icori  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h
 
       ! TRACERS:
       ! --------
@@ -1793,8 +1791,8 @@
 
       ! update visc2_p interpolating from visc2_r:
       visc2_p=0.0         ! reset for sum
-      do j=1,ny           ! viscosity at psi points
-        do i=1,nx
+      do j=2,ny           ! viscosity at psi points
+        do i=2,nx
           visc2_p(i,j)=visc2_p(i,j) +  0.25 *                  ! equation taken from set_nudgcof.F
      &                 (  visc2_r(i,j)   + visc2_r(i-1,j)      ! where v_ponge*wrk(i,j)=visc2_r(i,j)
      &                  + visc2_r(i,j-1) + visc2_r(i-1,j-1) )  ! simple rho to psi conversion.
@@ -2342,9 +2340,6 @@
 
       if (.not. init_done) call init_diagnostics  ! called here as need set_dz_old set above
 
-!     if (mynode==0) print *,'wrt_diag 2',mynode
-
-      diag_icori = .false.  ! flag to avoid computing 'icori' diagnostic twice in compute_horiz_uv_terms.h. Won't compute during pre_step3d but will for step3d_uv1
 
       if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
 
@@ -2479,6 +2474,8 @@ C$OMP BARRIER
               call ncwrite(ncid,'u_cor',Udiag(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'u_adv',Udiag(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'u_dis',Udiag(i0:i1,j0:j1,:,4),start)
+              call ncwrite(ncid,'u_hmx',Udiag(i0:i1,j0:j1,:,5),start)
+              call ncwrite(ncid,'u_vmx',Udiag(i0:i1,j0:j1,:,6),start)
 
               if (.not.south_exchng) Vdiag(:,j0,:,:) = 0
               start = (/bfx, 1, 1, output_rec/)
@@ -2487,10 +2484,12 @@ C$OMP BARRIER
               call ncwrite(ncid,'v_cor',Vdiag(i0:i1,j0:j1,:,2),start)
               call ncwrite(ncid,'v_adv',Vdiag(i0:i1,j0:j1,:,3),start)
               call ncwrite(ncid,'v_dis',Vdiag(i0:i1,j0:j1,:,4),start)
+              call ncwrite(ncid,'v_hmx',Vdiag(i0:i1,j0:j1,:,5),start)
+              call ncwrite(ncid,'v_vmx',Vdiag(i0:i1,j0:j1,:,6),start)
             endif
           endif    ! <-- diag_uv
 
-          if(prs_flx) then
+          if (prs_flx) then
 
             if (diag_avg) then
               call nc_write_var(ncid, aup_pp,   N, ppnames(1), up_var, output_rec, ierr)
@@ -2501,34 +2500,6 @@ C$OMP BARRIER
               call nc_write_var(ncid, vp_pp,    N, ppnames(2), vp_var, output_rec, ierr)
               call nc_write_var(ncid, div_uvp,  N, ppnames(3), rp_var, output_rec, ierr)
             endif
-
-            if (check_prs) then
-
-              if (diag_avg) then
-                call nc_write_var(ncid, aup, N, pnames(1), up_var, output_rec, ierr)
-                call nc_write_var(ncid, avp, N, pnames(2), vp_var, output_rec, ierr)
-                call nc_write_var(ncid, app, N, pnames(3), rp_var, output_rec, ierr)
-              else
-                call nc_write_var(ncid,  up, N, pnames(1), up_var, output_rec, ierr)
-                call nc_write_var(ncid,  vp, N, pnames(2), vp_var, output_rec, ierr)
-                call nc_write_var(ncid,  pp, N, pnames(3), rp_var, output_rec, ierr)
-              endif
-
-              call nc_write_var(ncid, u_bcl, N, 'u_bcl', up_var, output_rec, ierr)
-              call nc_write_var(ncid, p_bcl, N, 'p_bcl', rp_var, output_rec, ierr)
-              call nc_write_var(ncid, uf, N, 'uf', up_var, output_rec, ierr)
-              call nc_write_var(ncid, pf, N, 'pf', rp_var, output_rec, ierr)
-            endif
-
-            if (p_sponge) then
-              if (check_sponge) then
-                call nc_write_var( ncid, visc2_r0,     1, 'visc2_r0', rp_var, output_rec, ierr )
-                call nc_write_var( ncid, visc2_r,      1, 'visc2_r',  rp_var, output_rec, ierr )
-                call nc_write_var( ncid, diff2(:,:,1), 1, 'diff2',    rp_var, output_rec, ierr )
-                call nc_write_var( ncid, visc2_p,      1, 'visc2_p',  qp_var, output_rec, ierr )
-!                call nc_write_var( ncid, visc2_p0,     1, 'visc2_p0', qp_var, output_rec, ierr )
-              endif
-            endif  ! <-- p_sponge
 
           endif    ! <-- prs_flx
 

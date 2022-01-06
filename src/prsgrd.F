@@ -447,8 +447,8 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       if (CORR_STAGE) then
         if (diag_uv .and.calc_diag) then
           do k=1,nz
-            Udiag(:,:,k,iprsgr) = ru(1:nx,1:ny,k)*dxdyi_u
-            Vdiag(:,:,k,iprsgr) = rv(1:nx,1:ny,k)*dxdyi_v
+            Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u
+            Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v
           enddo
         endif
 
