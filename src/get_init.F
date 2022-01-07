@@ -77,7 +77,7 @@ c--#define VERBOSE
 !             (2b) nrrec < 0, THE LAST available record is used.
 
       init_type=0 ; linit=lenstr(ininame)
-      ierr=nf90_open(ininame(1:linit), nf_nowrite, ncid)
+      ierr=nf90_open(ininame(1:linit), nf90_nowrite, ncid)
       if (ierr == nf90_noerr) then
         ierr=checkdims (ncid, ininame, max_rec)
         if (ierr == nf90_noerr) then
