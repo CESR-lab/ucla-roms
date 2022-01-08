@@ -2,7 +2,7 @@ title:
    2021/10 - idealized filament
 
 time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
-                5       30       30     50
+                1000       30       30     50
 
 S-coord: THETA_S,   THETA_B,    hc (m)
           1.0D0        1.0D0    1.0e4
@@ -31,7 +31,7 @@ output_root_name:
       ideal     
 
 history: LDEFHIS, NWRT, NRPFHIS / filename
-            T      1      48
+            T      200      48
 
 averages: NTSAVG, NAVG, NRPFAVG / filename
             0     999999    8
