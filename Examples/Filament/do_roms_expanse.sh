@@ -9,12 +9,13 @@
 #SBATCH --nodes=1
 
 # Expanse has 128 cores per node:
-#SBATCH --ntasks-per-node=6
+#SBATCH --ntasks-per-node=16
 #SBATCH --account=cla119
 #SBATCH --export=ALL
+#SBATCH --mem-per-cpu=2G
 
 # Max run time on 'debug' is 30 minutes:
-#SBATCH -t 00:02:00
+#SBATCH -t 00:30:00
 
 # Flags needed for mvapich2:
 export MV2_USE_RDMA_CM=0
@@ -27,7 +28,7 @@ module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
 module load netcdf-c/4.7.4
 module load netcdf-fortran/4.5.3
 
-srun --mpi=pmi2 -n 1 roms roms.in
+srun --mpi=pmi2 -n 16 roms roms.in
 
 
 
