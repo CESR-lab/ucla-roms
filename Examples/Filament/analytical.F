@@ -122,8 +122,8 @@
 
 # include "compute_extended_bounds.h"
 
-      dx=200.0                         ! Set grid spacings for
-      dy=200.0                         ! Cartesian rectangular grid
+      dx=1000.0                         ! Set grid spacings for
+      dy=1000.0                         ! Cartesian rectangular grid
 
 C$OMP MASTER                           ! Copy physical dimensions of
       xl=dx*dble(LLm)
@@ -257,7 +257,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
             a2(i,j,k) = (0.5 * N0) * ( (1+ B_cff) * z_r(i,j,k) - ( 1- B_cff)
      &          *( h_sbl(i,j) + lambda_inv * log(cosh((1./lambda_inv) *(z_r(i,j,k) + h_sbl(i,j))))))
 
-            b(i,j,k) = bs0 + a1(i,j,k) + a2(i,j,k)
+            b(i,j,k) = ( bs0 + a1(i,j,k) + a2(i,j,k) ) * 4.0
 
             ! buoyancy do as temperature (got this from Daniel's script?):
             t(i,j,k,1,itemp) = b(i,j,k) / (2.0e-4 * 9.81)
@@ -719,29 +719,11 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 # include "compute_extended_bounds.h"
 
 
-#ifdef FILAMENT_SPINUP
-      if (iic < spinup_steps) then
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            srflx(i,j)=1.2e-5 * iic * c_spinup
-          enddo
-        enddo
-        if(mynode==0) print *, 'srflx spin up'
-      else
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            srflx(i,j)=1.2e-5
-          enddo
-        enddo
-      endif
-      if(mynode==0) print *, 'srflx(10,10)=', srflx(10,10)
-#else
       do j=jstrR,jendR
         do i=istrR,iendR
-          srflx(i,j)=0.0
+          srflx(i,j)=2.4e-5
         enddo
       enddo
-#endif
 
       end
 #endif /* ANA_SRFLUX */
