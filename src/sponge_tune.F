@@ -9,6 +9,7 @@
       use scalars
       use dimensions
       use diagnostics
+      use roms_read_write
 
       implicit none
       private
@@ -31,7 +32,7 @@
 
       public adjust_sponge
 
-c----#include "sponge_tune.opt"
+#include "sponge_tune.opt"
       contains
 
 ! ----------------------------------------------------------------------
@@ -105,9 +106,13 @@ c----#include "sponge_tune.opt"
       end subroutine init_sponge_tune
   
 ! ----------------------------------------------------------------------
-      subroutine read_pflx
-      ! Read parent grid baroclinic pressure fluxes
+      subroutine set_pflx
+      ! Read parent grid baroclinic pressure fluxes from bry file
+      ! and interpolate to the correct time
 
+      if (obc_west.and.(.not.west_exchng)) then
+        set_bry_data(nc_pflx_w,pflx_west)
+      endif
 !     ncread
 
       end subroutine read_pflx

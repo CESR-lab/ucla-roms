@@ -10,32 +10,91 @@
         module procedure  ncwrite_1D, ncwrite_2D, ncwrite_3D
       end interface
 
+      interface ncread
+        module procedure  ncread_1D, ncread_2D
+      end interface
+
       public :: ncwrite
       public :: nccreate
 
       contains
 
 !----------------------------------------------------------
-      subroutine ncwrite_1D(ncid,vname,dat,record)
+      subroutine ncread_1D(ncid,vname,dat,start)
         implicit none
 
         ! Input
-        integer          :: ncid
-        character(len=*) :: vname
-        integer,optional :: record
+        integer           :: ncid
+        character(len=*)  :: vname
+        integer,dimension(:),optional :: start
 
         real,dimension(:) :: dat
 
         ! local
         integer              :: varid,ierr
         integer,dimension(1) :: dims
-        integer,dimension(2) :: start,sizes
+        integer,dimension(2) :: sizes
 
         dims = shape(dat)
         ierr = nf90_inq_varid(ncid,vname,varid)
 
-        if (present(record)) then
-          start = (/1,record/)
+        if (present(start)) then
+          sizes = (/dims, 1/)
+          ierr = nf90_get_var(ncid,varid,dat,start,sizes) 
+        else
+          ierr = nf90_get_var(ncid,varid,dat)
+        endif
+
+      end subroutine ncread_1D
+
+!----------------------------------------------------------
+      subroutine ncread_2D(ncid,vname,dat,start)
+        implicit none
+
+        ! Input
+        integer           :: ncid
+        character(len=*)  :: vname
+        integer,dimension(:),optional :: start
+
+        real,dimension(:,:) :: dat
+
+        ! local
+        integer              :: varid,ierr
+        integer,dimension(2) :: dims
+        integer,dimension(3) :: sizes
+
+        dims = shape(dat)
+        ierr = nf90_inq_varid(ncid,vname,varid)
+
+        if (present(start)) then
+          sizes = (/dims, 1/)
+          ierr = nf90_get_var(ncid,varid,dat,start,sizes) 
+        else
+          ierr = nf90_get_var(ncid,varid,dat)
+        endif
+
+      end subroutine ncread_2D
+
+!----------------------------------------------------------
+      subroutine ncwrite_1D(ncid,vname,dat,start)
+        implicit none
+
+        ! Input
+        integer          :: ncid
+        character(len=*) :: vname
+        integer,dimension(:),optional :: start
+
+        real,dimension(:) :: dat
+
+        ! local
+        integer              :: varid,ierr
+        integer,dimension(1) :: dims
+        integer,dimension(2) :: sizes
+
+        dims = shape(dat)
+        ierr = nf90_inq_varid(ncid,vname,varid)
+
+        if (present(start)) then
           sizes = (/dims, 1/)
           ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
         else

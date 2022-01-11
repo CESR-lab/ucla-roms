@@ -22,7 +22,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F averages.F tracers.F\
 	diagnostics.F	bry_extract_child.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	setup_grid1.F	setup_grid2.F	visc_rescale.F\
-	set_nudgcof.F  sponge_tune.F\
+	set_nudgcof.F  sponge_tune.F roms_read_write.F\
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
