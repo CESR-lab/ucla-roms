@@ -804,8 +804,10 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
+          !! JM add line for bottom tracer flux
           do i=istr,iend
             t(i,j,N,nnew,itrc)=t(i,j,N,nnew,itrc)+dt*stflx(i,j,itrc)
+!           t(i,j,1,nnew,itrc)=t(i,j,1,nnew,itrc)+dt*btflx(i,j,itrc)
           enddo
 
 # ifdef LMD_KPP
