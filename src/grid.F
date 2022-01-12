@@ -36,58 +36,130 @@
 ! pmask, vmask      (rmask,umask,vmask) = (0=Land, 1=Sea);
 !                    pmask = (0=Land, 1=Sea, 1-gamma2 =boundary).
 !
-      real h(GLOBAL_2D_ARRAY)
-      real hinv(GLOBAL_2D_ARRAY)
-      real f(GLOBAL_2D_ARRAY)
-      real fomn(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: h
+      real,allocatable,dimension(:,:) :: hinv
+      real,allocatable,dimension(:,:) :: f
+      real,allocatable,dimension(:,:) :: fomn
 # ifdef NON_TRADITIONAL
-      real f_XI(GLOBAL_2D_ARRAY)
-      real f_ETA(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: f_XI
+      real,allocatable,dimension(:,:) :: f_ETA
+# endif
+
+# ifdef CURVGRID
+      real,allocatable,dimension(:,:) :: angler
+# endif
+
+#ifdef SPHERICAL
+      real,allocatable,dimension(:,:) :: latr
+      real,allocatable,dimension(:,:) :: lonr
+#else
+      real,allocatable,dimension(:,:) :: xp
+      real,allocatable,dimension(:,:) :: xr
+      real,allocatable,dimension(:,:) :: yp
+      real,allocatable,dimension(:,:) :: yr
+#endif
+
+      real,allocatable,dimension(:,:) :: pm
+      real,allocatable,dimension(:,:) :: pn
+      real,allocatable,dimension(:,:) :: dm_r
+      real,allocatable,dimension(:,:) :: dn_r
+      real,allocatable,dimension(:,:) :: pn_u
+      real,allocatable,dimension(:,:) :: dm_u
+      real,allocatable,dimension(:,:) :: dn_u
+      real,allocatable,dimension(:,:) :: dm_v
+      real,allocatable,dimension(:,:) :: pm_v
+      real,allocatable,dimension(:,:) :: dn_v
+      real,allocatable,dimension(:,:) :: dm_p
+      real,allocatable,dimension(:,:) :: dn_p
+
+      real,allocatable,dimension(:,:) :: iA_u
+      real,allocatable,dimension(:,:) :: iA_v
+
+#if (defined CURVGRID && defined UV_ADV)
+      real,allocatable,dimension(:,:) :: dmde
+      real,allocatable,dimension(:,:) :: dndx
+#endif
+      real,allocatable,dimension(:,:) :: pmon_u
+      real,allocatable,dimension(:,:) :: pnom_v
+      real,allocatable,dimension(:,:) :: grdscl
+
+#ifdef MASKING
+      real,allocatable,dimension(:,:) :: rmask
+      real,allocatable,dimension(:,:) :: pmask
+      real,allocatable,dimension(:,:) :: umask
+      real,allocatable,dimension(:,:) :: vmask
+#endif
+
+      contains
+
+      !----------------------------------------------------------------
+      subroutine init_arrays_grid  ![
+      implicit none
+
+      allocate( h(GLOBAL_2D_ARRAY) )     ! Potential first touch issue. Before only rmask was set in init_arrays...
+      allocate( hinv(GLOBAL_2D_ARRAY) )
+      allocate( f(GLOBAL_2D_ARRAY) )
+      allocate( fomn(GLOBAL_2D_ARRAY) )
+# ifdef NON_TRADITIONAL
+      allocate( f_XI(GLOBAL_2D_ARRAY) )
+      allocate( f_ETA(GLOBAL_2D_ARRAY) )
 # endif
  
 # ifdef CURVGRID
-      real angler(GLOBAL_2D_ARRAY)
+      allocate( angler(GLOBAL_2D_ARRAY) )
 # endif
  
 #ifdef SPHERICAL
-      real latr(GLOBAL_2D_ARRAY)
-      real lonr(GLOBAL_2D_ARRAY)
+      allocate( latr(GLOBAL_2D_ARRAY) )
+      allocate( lonr(GLOBAL_2D_ARRAY) )
 #else
-      real xp(GLOBAL_2D_ARRAY)
-      real xr(GLOBAL_2D_ARRAY)
-      real yp(GLOBAL_2D_ARRAY)
-      real yr(GLOBAL_2D_ARRAY)
+      allocate( xp(GLOBAL_2D_ARRAY) )
+      allocate( xr(GLOBAL_2D_ARRAY) )
+      allocate( yp(GLOBAL_2D_ARRAY) )
+      allocate( yr(GLOBAL_2D_ARRAY) )
 #endif
  
-      real pm(GLOBAL_2D_ARRAY)
-      real pn(GLOBAL_2D_ARRAY)
-      real dm_r(GLOBAL_2D_ARRAY)
-      real dn_r(GLOBAL_2D_ARRAY)
-      real pn_u(GLOBAL_2D_ARRAY)
-      real dm_u(GLOBAL_2D_ARRAY)
-      real dn_u(GLOBAL_2D_ARRAY)
-      real dm_v(GLOBAL_2D_ARRAY)
-      real pm_v(GLOBAL_2D_ARRAY)
-      real dn_v(GLOBAL_2D_ARRAY)
-      real dm_p(GLOBAL_2D_ARRAY)
-      real dn_p(GLOBAL_2D_ARRAY)
+      allocate( pm(GLOBAL_2D_ARRAY) )
+      allocate( pn(GLOBAL_2D_ARRAY) )
+      allocate( dm_r(GLOBAL_2D_ARRAY) )
+      allocate( dn_r(GLOBAL_2D_ARRAY) )
+      allocate( pn_u(GLOBAL_2D_ARRAY) )
+      allocate( dm_u(GLOBAL_2D_ARRAY) )
+      allocate( dn_u(GLOBAL_2D_ARRAY) )
+      allocate( dm_v(GLOBAL_2D_ARRAY) )
+      allocate( pm_v(GLOBAL_2D_ARRAY) )
+      allocate( dn_v(GLOBAL_2D_ARRAY) )
+      allocate( dm_p(GLOBAL_2D_ARRAY) )
+      allocate( dn_p(GLOBAL_2D_ARRAY) )
 
-      real iA_u(GLOBAL_2D_ARRAY)
-      real iA_v(GLOBAL_2D_ARRAY)
+      allocate( iA_u(GLOBAL_2D_ARRAY) )
+      allocate( iA_v(GLOBAL_2D_ARRAY) )
  
 #if (defined CURVGRID && defined UV_ADV)
-      real dmde(GLOBAL_2D_ARRAY)
-      real dndx(GLOBAL_2D_ARRAY)
+      allocate( dmde(GLOBAL_2D_ARRAY) )
+      allocate( dndx(GLOBAL_2D_ARRAY) )
 #endif
-      real pmon_u(GLOBAL_2D_ARRAY)
-      real pnom_v(GLOBAL_2D_ARRAY)
-      real grdscl(GLOBAL_2D_ARRAY)
+      allocate( pmon_u(GLOBAL_2D_ARRAY) )
+      allocate( pnom_v(GLOBAL_2D_ARRAY) )
+      allocate( grdscl(GLOBAL_2D_ARRAY) )
  
 #ifdef MASKING
-      real rmask(GLOBAL_2D_ARRAY)
-      real pmask(GLOBAL_2D_ARRAY)
-      real umask(GLOBAL_2D_ARRAY)
-      real vmask(GLOBAL_2D_ARRAY)
+      allocate( rmask(GLOBAL_2D_ARRAY) )
+      allocate( pmask(GLOBAL_2D_ARRAY) )
+      allocate( umask(GLOBAL_2D_ARRAY) )
+      allocate( vmask(GLOBAL_2D_ARRAY) )
 #endif
+
+      ! WARNING: "rmask" MUST BE initialized to all-one state in order to
+      ! read grid variables (coordinates, metric, topography), which should
+      ! not be masked.
+
+#ifdef MASKING
+      rmask=1.
+#endif
+
+      end subroutine init_arrays_grid  !]
+
+      !----------------------------------------------------------------
 
       end module grid

@@ -147,9 +147,8 @@ c--#define nf_def_var my_nf_def_var
 !#endif
 !     &                  ,r2dgrd, u2dgrd, v2dgrd )        ! 2D grid dimensions
 
-
-        ierr=nf90_create(fname(1:lfnm), NF90_NETCDF4, ncid)
-
+        ierr=nf90_create(fname(1:lfnm), NF90_NETCDF4,
+     &                                                     ncid)
         if (ierr == nf90_noerr) then
 
           ! Set fill value handling
@@ -494,10 +493,10 @@ c--#define nf_def_var my_nf_def_var
 ! that all necessary variables are already defined, find and save
 ! their netCDF IDs.
 
-      else  ! if (ncid == -1) then  !--> alt. to "create_new_file"
-        ierr=nf90_open(fname(1:lfnm), nf90_write, ncid)
+      elseif (ncid == -1) then  !--> alt. to "create_new_file"
+        ierr=nf90_open(fname(1:lfnm), nf_write, ncid)
         if (ierr == nf90_noerr) then
-          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+          ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
           if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
             if (mynode == 0) then

@@ -24,8 +24,21 @@
 
 
       public set_flux_frc
+      public init_arrays_flux_frc
 
       contains
+
+! ----------------------------------------------------------------------
+      subroutine init_arrays_flux_frc  ![
+      implicit none
+
+      allocate( nc_sustr%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_svstr%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_shflx%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swflux%data(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad%data( GLOBAL_2D_ARRAY,2) )
+
+      end subroutine init_arrays_flux_frc  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_flux_frc(istr,iend,jstr,jend)  ![

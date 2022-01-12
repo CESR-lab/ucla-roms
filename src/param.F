@@ -22,7 +22,11 @@
 ! Array dimensions and bounds of the used portions of sub-arrays:
 
 #ifdef MPI
-      integer, parameter :: NNODES=NP_XI*NP_ETA,
+      integer, parameter :: NNODES=NP_XI*NP_ETA
+      integer, parameter ::
+     &    Lm_old=(LLm+NP_XI-1)/NP_XI, Mm_old=(MMm+NP_ETA-1)/NP_ETA
+
+      integer ::
      &    Lm=(LLm+NP_XI-1)/NP_XI, Mm=(MMm+NP_ETA-1)/NP_ETA
 
       integer ocean_grid_comm, mynode,  iSW_corn, jSW_corn,
@@ -40,7 +44,7 @@
 ! Derived dimension parameters, number of tracers and tracer
 ! identification indices:
 
-      integer, parameter :: padd_X=(Lm+2)/2-(Lm+1)/2,
-     &                      padd_E=(Mm+2)/2-(Mm+1)/2
+      integer, parameter :: padd_X=(Lm_old+2)/2-(Lm_old+1)/2,
+     &                      padd_E=(Mm_old+2)/2-(Mm_old+1)/2
 
       end module
