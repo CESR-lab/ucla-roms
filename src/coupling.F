@@ -16,26 +16,69 @@
 #ifdef SOLVE3D
       real weight(2,288)
 
-      real rufrc(GLOBAL_2D_ARRAY)
-      real rvfrc(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: rufrc
+      real,allocatable,dimension(:,:) :: rvfrc
 
 # ifdef VAR_RHO_2D
-      real rhoA(GLOBAL_2D_ARRAY)
-      real rhoS(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: rhoA
+      real,allocatable,dimension(:,:) :: rhoS
 # endif
 
-      real r_D(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: r_D
 
-      real Zt_avg1(GLOBAL_2D_ARRAY)
-      real DU_avg1(GLOBAL_2D_ARRAY)
-      real DV_avg1(GLOBAL_2D_ARRAY)
-      real DU_avg2(GLOBAL_2D_ARRAY)
-      real DV_avg2(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: Zt_avg1
+      real,allocatable,dimension(:,:) :: DU_avg1
+      real,allocatable,dimension(:,:) :: DV_avg1
+      real,allocatable,dimension(:,:) :: DU_avg2
+      real,allocatable,dimension(:,:) :: DV_avg2
 
 # ifdef EXTRAP_BAR_FLUXES
-      real DU_avg_bak(GLOBAL_2D_ARRAY)
-      real DV_avg_bak(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: DU_avg_bak
+      real,allocatable,dimension(:,:) :: DV_avg_bak
 # endif
-#endif /* SOLVE3D */ 
+#endif /* SOLVE3D */
+
+      contains
+
+      !----------------------------------------------------------------
+      subroutine init_arrays_coupling  ![
+      implicit none
+
+#ifdef SOLVE3D
+      allocate( rufrc(GLOBAL_2D_ARRAY) )
+      allocate( rvfrc(GLOBAL_2D_ARRAY) )
+# ifdef VAR_RHO_2D
+      allocate( rhoA(GLOBAL_2D_ARRAY) )
+      allocate( rhoS(GLOBAL_2D_ARRAY) )
+# endif
+      allocate( r_D(GLOBAL_2D_ARRAY) )
+      allocate( Zt_avg1(GLOBAL_2D_ARRAY) )
+      allocate( DU_avg1(GLOBAL_2D_ARRAY) )
+      allocate( DV_avg1(GLOBAL_2D_ARRAY) )
+      allocate( DU_avg2(GLOBAL_2D_ARRAY) )
+      allocate( DV_avg2(GLOBAL_2D_ARRAY) )
+# ifdef EXTRAP_BAR_FLUXES
+      allocate( DU_avg_bak(GLOBAL_2D_ARRAY) )
+      allocate( DV_avg_bak(GLOBAL_2D_ARRAY) )
+# endif
+#endif /* SOLVE3D */
+
+#ifdef SOLVE3D
+      rufrc=0.
+      rvfrc=0.
+# ifdef VAR_RHO_2D
+      rhoA=0.
+      rhoS=0.
+# endif
+      Zt_avg1=0.
+      DU_avg1=0.
+      DV_avg1=0.
+      DU_avg2=0.
+      DV_avg2=0.
+#endif /* SOLVE3D */
+
+      end subroutine init_arrays_coupling  !]
+
+      !----------------------------------------------------------------
 
       end module coupling

@@ -19,12 +19,12 @@
 
       ! Surface momemtum flux [m^2/s^2] units as per Eq.Sys. m^2/s^2 not N/m^2
       ! possibly make sustr_r,svstr_r private to bulk_frc, and add here ustar instead
-      real, public :: sustr(GLOBAL_2D_ARRAY)    ! stress u-point: used in Eq.System
-      real, public :: sustr_r(GLOBAL_2D_ARRAY)  ! rho-point, only used in lmd_kpp to get ustar
-      real, public :: svstr(GLOBAL_2D_ARRAY)    ! v-point: used in Eq.System
-      real, public :: svstr_r(GLOBAL_2D_ARRAY)  ! rho-point, only used in lmd_kpp to get ustar
-      real, public :: stflx(GLOBAL_2D_ARRAY,NT) ! Surface fluxes of tracer type variables (rho-points)
-      real, public :: srflx(GLOBAL_2D_ARRAY)    ! Short-wave radiation surface flux
+      real,public,allocatable,dimension(:,:)   :: sustr    ! stress u-point: used in Eq.System
+      real,public,allocatable,dimension(:,:)   :: sustr_r  ! rho-point, only used in lmd_kpp to get ustar
+      real,public,allocatable,dimension(:,:)   :: svstr    ! v-point: used in Eq.System
+      real,public,allocatable,dimension(:,:)   :: svstr_r  ! rho-point, only used in lmd_kpp to get ustar
+      real,public,allocatable,dimension(:,:,:) :: stflx    ! Surface fluxes of tracer type variables (rho-points)
+      real,public,allocatable,dimension(:,:)   :: srflx    ! Short-wave radiation surface flux
       character(len=5) :: sustr_name = 'sustr'
       character(len=5) :: svstr_name = 'svstr'
       character(len=5) :: shflx_name = 'shflx'
@@ -68,6 +68,7 @@
       character (len=60) :: file_name = '_surf_flux.nc'  ! suffix to append to simulation output rootname
 
       ! Public functions
+      public init_arrays_surf_flx
       public set_surf_field_corr
       public wrt_surface_flux_his
 #if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
@@ -76,11 +77,28 @@
       public wrt_avg_surf_flux
 #endif
 
-
       contains
-! ----------------------------------------------------------------------
 
-      subroutine set_surf_field_corr(istr,iend,jstr,jend)
+! ----------------------------------------------------------------------
+      subroutine init_arrays_surf_flx  ![
+      implicit none
+
+      allocate( sustr  (GLOBAL_2D_ARRAY)    )
+      allocate( sustr_r(GLOBAL_2D_ARRAY)    )
+      allocate( svstr  (GLOBAL_2D_ARRAY)    )
+      allocate( svstr_r(GLOBAL_2D_ARRAY)    )
+      allocate( stflx  (GLOBAL_2D_ARRAY,NT) )
+      allocate( srflx  (GLOBAL_2D_ARRAY)    )
+      sustr=0.
+      svstr=0.
+#ifdef SOLVE3D
+      stflx=0.
+      srflx=0.
+#endif /* SOLVE3D */
+
+      end subroutine init_arrays_surf_flx  !]
+! ----------------------------------------------------------------------
+      subroutine set_surf_field_corr(istr,iend,jstr,jend)  ![
       ! Set surface fields that will be restored towards
 
       implicit none
@@ -100,9 +118,9 @@
 #endif
 
 
-      end subroutine set_surf_field_corr
-!-----------------------------------------------------------------------
+      end subroutine set_surf_field_corr  !]
 
+!-----------------------------------------------------------------------
 #if defined AVERAGES && defined SURF_FLUX_OUTPUT_AVG
       subroutine set_avg_surf_flux(istrR,iendR,jstrR,jendR,cff,cff1)
       ! Set surface flux averages

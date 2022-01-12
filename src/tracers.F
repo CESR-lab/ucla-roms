@@ -31,7 +31,7 @@
       integer :: itmp=0, islt=0
 
       !-- Array of tracers
-      real, public :: t(GLOBAL_2D_ARRAY,N,3,NT)
+      real,public,allocatable,dimension(:,:,:,:,:) :: t
 
       !-- Tracer variables (user input required in init_tracers)
       character*42, dimension(nt), public :: t_vname   ! Short name
@@ -353,6 +353,9 @@
       ! Additional passive tracers:
 #include "tracers.opt"
 
+      allocate( t(GLOBAL_2D_ARRAY,N,3,NT) )
+      t=0.
+
 #if defined AVERAGES
       ! Allocate memory for only the tracer averages required for output
       do itrc=1,NT
@@ -364,6 +367,7 @@
 
       n_t_avg = cnt                                    ! number of tracers of interest
       allocate( t_avg( GLOBAL_2D_ARRAY, N, n_t_avg) )  ! only for tracers we are interested in
+      t_avg=0.
 
       allocate( t_avg_2_NT( n_t_avg ) )                ! to convert indices between t_avg(itavg) and t(itrc)
       t_avg_2_NT = -1                                  ! set to bad number (<1) as safeguard
@@ -397,7 +401,7 @@
 #  define SiO4 cff1
 
       if (itrc == itemp) then
-        t_bry_dt(:,:,itbry,itrc) = 5.0 ! default temperature
+        t_bry_dt(:,:,itbry,itrc) = 5.0 ! default temperature (only used if temp not in boundary file
 #  ifdef SALINITY
       else if (itrc == isalt) then
         t_bry_dt(:,:,itbry,itrc) = 35.0 ! default salinity

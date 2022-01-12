@@ -13,22 +13,13 @@
 
 #include "compute_tile_bounds.h"
 
+      call init_arrays_private_scratch
 #ifdef SOLVE3D
-      do j=1,6           ! Initialize (first touch) private
-        do i=1,N3d       ! scratch arrays in parallel by each
-          A3d(i,j)=0.    ! thread.
-        enddo
-      enddo
       do i=1,N2d
         iA2d(i,1)=0
         iA2d(i,2)=0
       enddo
 #endif
-      do j=1,32
-        do i=1,N2d
-          A2d(i,j)=0.
-        enddo
-      enddo
 
       call init_arrays_tile(istr,iend,jstr,jend,tile,my_first)
       end
@@ -63,6 +54,12 @@
       use ocean3d
       use scalars
       use mpi
+      use work_mod
+      use boundary
+      use buffer
+      use mess_buffers
+      use dimensions
+      use flux_frc
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -100,77 +97,29 @@
 # endif
 #endif
 
-      if (tile==my_first) then       ! ensures mask is set beyond physical domain,
-        rmask = 0.                   ! needed in diagnostics.F to achieve 2nd order
-      endif                          ! centered scheme at boundary for advection.
-                                     ! first tile only to avoid over-writing in next tiles.
-                                     ! easiest with array statement to access empty points beyond buffer.
+      call init_arrays_ocean2d
 
-      do j=jstrR,jendR               ! Initialize
-        do i=istrR,iendR             ! 2-D primitive
-          zeta(i,j,1)=0. ! init      ! variables.
-          zeta(i,j,2)=init
-          zeta(i,j,3)=init
+      call init_arrays_coupling
 
-          ubar(i,j,1)=init
-          ubar(i,j,2)=init
-          ubar(i,j,3)=init
+      call init_arrays_grid     ! lots of extra arrays here initialized which might negatively affect first touch principle.
+                                ! before only rmask was first-touched here...
+      call init_arrays_ocean3d
 
-          vbar(i,j,1)=init
-          vbar(i,j,2)=init
-          vbar(i,j,3)=init
-#ifdef AVERAGES
-          zeta_avg(i,j)=init
-          ubar_avg(i,j)=init
-          vbar_avg(i,j)=init
-#endif
-#ifdef SOLVE3D
-          rufrc(i,j)=init
-          rufrc(i,j)=init
-# ifdef VAR_RHO_2D
-          rhoA(i,j)=0.
-          rhoS(i,j)=0.
-# endif
-          Zt_avg1(i,j)=0. !init
-          DU_avg1(i,j)=0. !init
-          DV_avg1(i,j)=0. !init
-          DU_avg2(i,j)=0. !init
-          DV_avg2(i,j)=0. !init
-#endif
+      call init_arrays_mess_buffers  ! DevinD placed here. Assumed used often for higher up first touch
 
-! WARNING: "rmask" MUST BE initialized to all-one state in order to
-! read grid variables (coordinates, metric, topography), which should
-! not be masked.
-
-#ifdef MASKING
-          rmask(i,j)=1.
-#endif
-        enddo
-      enddo
 #ifdef SOLVE3D
       do k=1,N                       ! Initialize
         do j=jstrR,jendR             ! 3-D primitive
-          do i=istrR,iendR           ! variables.
-            u(i,j,k,1)=init
-            u(i,j,k,2)=init
-
-            v(i,j,k,1)=init
-            v(i,j,k,2)=init
-
-# ifdef SPLIT_EOS
-            rho1(i,j,k)=init
-            qp1(i,j,k)=init
-# else
-            rho(i,j,k)=init
-# endif
+          do i=istrR,iendR
 # ifdef AVERAGES
             rho_avg(i,j,k)=init
-            u_avg(i,j,k)=init
-            v_avg(i,j,k)=init
 # endif
           enddo
         enddo
       enddo
+
+      call init_arrays_eos_vars
+
       do k=0,N
         do j=jstrR,jendR
           do i=istrR,iendR
@@ -187,54 +136,15 @@
           enddo
         enddo
       enddo
-      do itrc=1,NT
-        do k=1,N
-          do j=jstrR,jendR
-            do i=istrR,iendR
-              t(i,j,k,1,itrc)=init
-              t(i,j,k,2,itrc)=init
-            enddo
-          enddo
-        enddo
-      enddo
-# if defined AVERAGES
-      do itavg=1,n_t_avg              ! only the select tracers to average
-        do k=1,N
-          do j=jstrR,jendR
-            do i=istrR,iendR
-              t_avg(i,j,k,itavg)=init
-            enddo
-          enddo
-        enddo
-      enddo
-# endif
+
 #endif /* SOLVE3D */
 
 ! Initialize forcing arrays.
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=init
-          svstr(i,j)=init
-        enddo
-      enddo
-#ifdef SOLVE3D
-      do itrc=1,NT
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            stflx(i,j,itrc)=init
-          enddo
-        enddo
-      enddo
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          srflx(i,j)=init
-        enddo
-      enddo
-#endif /* SOLVE3D */
+      call init_arrays_surf_flx
 
 # ifdef WEC
-        call init_arrays_wec_tile(istr,iend,jstr,jend)
+      call init_arrays_wec_tile(istr,iend,jstr,jend)
 # endif
 
 ! Initialize climatology arrays (see "climat").
@@ -307,104 +217,14 @@
 ! Set variable horizontal viscosities and tracer diffusion
 ! coefficients (see "mixing") to their background values.
 
-#ifdef UV_VIS2
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            visc2_r(i,j)=visc2
-            visc2_p(i,j)=visc2
-          enddo
-        enddo
+      call init_arrays_mixing
+      call init_arrays_dimensions ! DevinD added this here to allocate
+      call init_arrays_work_mod   ! DevinD added this here to allocate
+      call init_arrays_boundary
+      call init_arrays_buffer     ! DevinD added this here to allocate
+
+#ifndef BULK_FRC
+      call init_arrays_flux_frc   ! DevinD added this here to allocate
 #endif
-#ifdef SOLVE3D
-# ifdef TS_DIF2
-        do itrc=1,NT
-          do j=jstrR,jendR
-            do i=istrR,iendR
-              diff2(i,j,itrc)=tnu2(itrc)
-            enddo
-          enddo
-        enddo
-# endif
 
-! Initialize vertical mixing coefficients (see "mixing") to their
-! background values. If no vertical closure scheme is selected, the
-! vertical mixing coefficients are those specified by the background
-! values.
-
-      do k=0,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
-
-            Akv(i,j,k)=Akv_bak
-# else
-            Akv(i,j,k)=0.
-# endif
-# ifdef AVERAGES
-            akv_avg(i,j,k)=init
-# endif
-# if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-  || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING \
-  || defined LMD_BKPP
-            bvf(i,j,k)=init
-# endif
-          enddo
-        enddo
-        do itrc=1,iTandS
-          do j=jstrR,jendR
-            do i=istrR,iendR
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
-              Akt(i,j,k,itrc)=Akt_bak(itrc)
-# else
-              Akt(i,j,k,itrc)=0.
-# endif
-# ifdef AVERAGES
-              akt_avg(i,j,k)=init
-#  ifdef SALINITY
-              aks_avg(i,j,k)=init
-#  endif
-# endif
-            enddo
-          enddo
-        enddo
-      enddo
-
-# if defined LMD_KPP && defined LMD_NONLOCAL
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            ghat(i,j,k)=init
-          enddo
-        enddo
-      enddo
-# endif
-# ifdef LMD_KPP
-! Depth of surface planetary boundary layer.
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          hbls(i,j,1)=0.  ! init
-          hbls(i,j,2)=0.
-#  ifdef AVERAGES
-          hbl_avg(i,j)=init
-#  endif
-        enddo
-      enddo
-# endif
-# ifdef LMD_BKPP
-! Thickness of bottom boundary layer.
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          hbbl(i,j,1)=0.  ! init
-          hbbl(i,j,2)=0.
-#  ifdef AVERAGES
-          hbbl_avg(i,j)=init
-#  endif
-        enddo
-      enddo
-# endif
-#endif /* SOLVE3D */
       end
