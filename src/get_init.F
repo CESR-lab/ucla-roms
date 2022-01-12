@@ -566,25 +566,17 @@ c--#define VERBOSE
           endif
         else
 
-# if defined BIOLOGY_BEC2
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
             write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
      &                                            nf90_strerror(ierr)
             goto 99                                         !--> ERROR
           else
-            ! Set like this in ETH code, might be better to have as i,j loop = 0.0?
             t(GLOBAL_2D_ARRAY,1,tindx,itrc) = 0.0
             if(mynode==0) write(*,*) ' --- WARNING: '
      &         , t_vname(itrc)(1:lvar)
      &         , ' not in initial file.  Initialized to 0.0'
             ierr=nf90_noerr
           endif
-# else /* .not. defined BIOLOGY_BEC2 */
-
-          write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
-     &                                            nf90_strerror(ierr)
-          goto 99                                         !--> ERROR
-# endif /* BIOLOGY_BEC2 */
 
         endif
       enddo
