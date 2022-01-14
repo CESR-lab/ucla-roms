@@ -791,9 +791,9 @@
             FX4(i,j)= 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
      &                    *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) )
           enddo
-          if (k==10) then
-            print *,'FX4_u: ',mynode,FX4(i,10),i
-          endif
+!         if (k==10) then
+!           print *,'FX4_u: ',mynode,FX4(i,10),i
+!         endif
         endif
         if(.not.south_msg_exch) then
           j=jsouth
@@ -1502,7 +1502,7 @@
      &            + uf(i,j,k)*pxp(i,j,k)+uf(i+1,j,k)*pxp(i+1,j,k) 
      &            + vp(i,j,k)*pyp(i,j,k)+vp(i,j+1,k)*pyp(i,j+1,k) 
      &            + vp(i,j,k)*pyf(i,j,k)+vp(i,j+1,k)*pyf(i,j+1,k) 
-     &            + vf(i,j,k)*pyp(i,j,k)+vf(i,j+1,k)*pyp(i,j+1,k))
+     &            + vf(i,j,k)*pyp(i,j,k)+vf(i,j+1,k)*pyp(i,j+1,k) )
           enddo
         enddo
       enddo

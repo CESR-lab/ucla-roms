@@ -38,7 +38,6 @@
 # endif
 
 # include "compute_auxiliary_bounds.h"
-
                                        ! During initialization or
       if (iic == 0) then               ! restart compute barotropic
         do j=jstrR,jendR               ! fluxes and place them into
