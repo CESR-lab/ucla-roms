@@ -14,6 +14,7 @@
         module procedure  ncread_1D, ncread_2D
       end interface
 
+      public :: ncread
       public :: ncwrite
       public :: nccreate
 

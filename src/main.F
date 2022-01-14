@@ -346,6 +346,7 @@ C$OMP END MASTER
       use ncvars
       use scalars
       use analytical
+      use sponge_tune
 
       implicit none
       integer trd, tile, my_first, my_last, range
