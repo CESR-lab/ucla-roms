@@ -357,10 +357,7 @@ C$OMP END MASTER
       my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
 
 #ifdef DIAGNOSTICS
-!     print *,'going wrt_diag'
-      call wrt_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
-!     print *,'back from wrt_diag'
-!     stop
+      call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
 #endif
 
 ! Increment time-step index and set model clock. Note that "time" set

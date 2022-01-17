@@ -441,38 +441,15 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       enddo   !<-- k
 
 # ifdef DIAGNOSTICS
-      !! Instead of these explicit lines we could use
-      !! functions and global vars but need to think about
-      !! scratch vs permanent arrays
       if (CORR_STAGE) then
-        if (diag_uv .and.calc_diag) then
+        if ((calc_diag.and.diag_uv).or.(diag_Ebcln)) then
           do k=1,nz
             Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u
             Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v
           enddo
         endif
-
-        !! Think of initializing the filtered vars
-        if (prs_flx) then
-          pf = beta*pf  + alpha*P(0:nx,0:ny,:)
-          do k=1,nz
-            pxf(:,:,k) = beta*pxf(:,:,k) + alpha*ru(1:nx,1:ny,k)*dxdyi_u
-            pyf(:,:,k) = beta*pyf(:,:,k) + alpha*rv(1:nx,1:ny,k)*dxdyi_v
-          enddo
-          do j=1,ny
-            do i=1,nx
-              udh_f(i,j) =  beta*udh_f(i,j) + alpha*(
-     &         0.5*pm(i,j)*( ubar(i  ,j,kstp)*(h(i,j)-h(i-1,j))
-     &                     + ubar(i+1,j,kstp)*(h(i+1,j)-h(i,j)) )
-     &        +0.5*pn(i,j)*( vbar(i,j  ,kstp)*(h(i,j)-h(i,j-1))
-     &                   + vbar(i,j+1,kstp)*(h(i,j+1)-h(i,j)) ))
-              dzt_f(i,j) = beta*dzt_f(i,j)  + alpha*dxdyi(i,j)*(
-     &                dm_u(i+1,j)*ubar(i+1,j,kstp)*Du_avg1(i+1,j)
-     &              - dm_u(i  ,j)*ubar(i  ,j,kstp)*Du_avg1(i  ,j)
-     &              + dn_v(i,j+1)*vbar(i,j+1,kstp)*Dv_avg1(i,j+1)
-     &              - dn_v(i,j  )*vbar(i,j  ,kstp)*Dv_avg1(i,j  ) )
-            enddo
-          enddo
+        if (diag_pflx) then
+          call calc_diag_pflux(p)
         endif
       endif
 # endif

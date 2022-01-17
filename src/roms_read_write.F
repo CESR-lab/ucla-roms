@@ -8,6 +8,9 @@
 !     use param
 
       implicit none
+
+#include "cppdefs.opt"
+
       private
 
       ! Type ncbry contains all required netcdf variables and input data array for frc variable.
@@ -31,7 +34,7 @@
 !       module procedure  set_frc_data_2D
 !     end interface
 
-      public :: set_frc_data
+      public :: set_frc_data,create_filename
 
       contains
 
@@ -372,8 +375,6 @@
 
       end subroutine handle_ierr  !]
 ! ----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
       subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![
       implicit none   
         
@@ -387,7 +388,30 @@
      &  'rec =',               var_irec
 
       end subroutine display_read_time_to_log  !]
-      
+! ----------------------------------------------------------------------
+      subroutine create_filename(fname,total_rec)  ![
+      ! takes a filename for output and inserts the mpi node number 
+      ! (if appropriate), and the label that matches the current record
+      ! number
+      implicit none
+
+      ! input/output
+      character(len=*),  intent(inout) :: fname              ! desired netcdf file name
+      integer,           intent(in)    :: total_rec          ! total netcdf records so far for these variables
+
+      ! local
+      integer           :: lfnm, lvar, lenstr, lstr, ierr=0
+      character(len=64) :: fname_tmp                         ! taken from read_inp.F
+
+      fname_tmp=fname
+      lstr=lenstr(fname_tmp)
+#if defined MPI && defined PARALLEL_FILES
+      call insert_node(fname_tmp, lstr, mynode, NNODES, ierr)  ! insert MPI node numbers to file name
+#endif
+      fname = fname_tmp(1:lstr)
+      call insert_time_index(fname,lstr,total_rec,ierr)     ! insert time index to file name
+
+      end subroutine create_filename !]
 ! ----------------------------------------------------------------------
 
       end module roms_read_write

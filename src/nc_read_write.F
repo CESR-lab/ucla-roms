@@ -6,6 +6,13 @@
       implicit none
       private
 
+      ! ****************************************************************
+      ! START USER INPUT
+      integer :: deflate_level=1 ! Compression level for joined file
+      logical :: shuffle=.true.  ! Shuffle on for extra conmpression
+      ! END USER INPUT
+      ! ****************************************************************
+
       interface ncwrite
         module procedure  ncwrite_1D, ncwrite_2D, ncwrite_3D
       end interface
@@ -78,102 +85,99 @@
 
 !----------------------------------------------------------
       subroutine ncwrite_1D(ncid,vname,dat,start)
-        implicit none
+      implicit none
 
-        ! Input
-        integer          :: ncid
-        character(len=*) :: vname
-        integer,dimension(:),optional :: start
+      ! Input
+      integer          :: ncid
+      character(len=*) :: vname
+      integer,dimension(:),optional :: start
 
-        real,dimension(:) :: dat
+      real,dimension(:) :: dat
 
-        ! local
-        integer              :: varid,ierr
-        integer,dimension(1) :: dims
-        integer,dimension(2) :: sizes
+      ! local
+      integer              :: varid,ierr
+      integer,dimension(1) :: dims
+      integer,dimension(2) :: sizes
 
-        dims = shape(dat)
-        ierr = nf90_inq_varid(ncid,vname,varid)
+      dims = shape(dat)
+      ierr = nf90_inq_varid(ncid,vname,varid)
+      if (ierr/=nf90_noerr) call handle_err(ierr)
 
-        if (present(start)) then
-          sizes = (/dims, 1/)
-          ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
-        else
-          ierr = nf90_put_var(ncid,varid,dat)
-        endif
+      if (present(start)) then
+        sizes = (/dims, 1/)
+        ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
+      else
+        ierr = nf90_put_var(ncid,varid,dat)
+      endif
+      if (ierr/=nf90_noerr) call handle_err(ierr)
 
       end subroutine ncwrite_1D
 
 !----------------------------------------------------------
       subroutine ncwrite_2D(ncid,vname,dat,start)
-        implicit none
+      implicit none
 
-        ! Input
-        integer          :: ncid
-        character(len=*) :: vname
-        integer,dimension(:),optional :: start
+      ! Input
+      integer          :: ncid
+      character(len=*) :: vname
+      integer,dimension(:),optional :: start
 
-        real,dimension(:,:) :: dat
+      real,dimension(:,:) :: dat
 
 
-        ! local
-        integer              :: varid,ierr
-        integer,dimension(2) :: dims
-        integer,dimension(3) :: sizes
+      ! local
+      integer              :: varid,ierr
+      integer,dimension(2) :: dims
+      integer,dimension(3) :: sizes
 
-        dims = shape(dat)
-        ierr = nf90_inq_varid(ncid,vname,varid)
-        if (ierr.ne.nf90_noerr) then
-          print *, trim(nf90_strerror(ierr))
-          stop
-        endif
+      dims = shape(dat)
+      ierr = nf90_inq_varid(ncid,vname,varid)
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite: '/ /vname)
+      endif
 
-        if (present(start)) then
-          sizes = (/dims, 1/)
-          ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
-        else
-          ierr = nf90_put_var(ncid,varid,dat)
-        endif
-        if (ierr.ne.nf90_noerr) then
-          print *, trim(nf90_strerror(ierr))
-          stop
-        endif
+      if (present(start)) then
+        sizes = (/dims, 1/)
+        ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
+      else
+        ierr = nf90_put_var(ncid,varid,dat)
+      endif
+      if (ierr/=nf90_noerr) call handle_err(ierr)
 
       end subroutine ncwrite_2D
 
 !----------------------------------------------------------
       subroutine ncwrite_3D(ncid,vname,dat,start)
-        implicit none
+      implicit none
 
-        ! Input
-        integer          :: ncid
-        character(len=*) :: vname
-        integer,dimension(:),optional :: start
+      ! Input
+      integer          :: ncid
+      character(len=*) :: vname
+      integer,dimension(:),optional :: start
 
-        real,dimension(:,:,:) :: dat
+      real,dimension(:,:,:) :: dat
 
-        ! local
-        integer              :: varid,ierr
-        integer,dimension(3) :: dims
-        integer,dimension(4) :: sizes
+      ! local
+      integer              :: varid,ierr
+      integer,dimension(3) :: dims
+      integer,dimension(4) :: sizes
 
-        dims = shape(dat)
-        ierr = nf90_inq_varid(ncid,vname,varid)
-        if (ierr.ne.nf90_noerr) then
-          print *, trim(nf90_strerror(ierr))
-          stop
-        endif
+      dims = shape(dat)
+      ierr = nf90_inq_varid(ncid,vname,varid)
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite :: '/ /vname)
+      endif
 
-        if (present(start)) then
-          sizes = (/dims, 1/)
-          ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
-        else
-          ierr = nf90_put_var(ncid,varid,dat)
-        endif
-        if (ierr.ne.nf90_noerr) then
-          print *, trim(nf90_strerror(ierr))
-          stop
-        endif
+      if (present(start)) then
+        sizes = (/dims, 1/)
+        ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
+      else
+        ierr = nf90_put_var(ncid,varid,dat)
+      endif
+
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite :: '/ /vname)
+      endif
 
       end subroutine ncwrite_3D
 
@@ -211,14 +215,28 @@
         dimid(i) = did
       enddo
       ierr=nf90_def_var(ncid,varname,vartype,dimid,varid)
-        if (ierr>0) then
-          print *, 'ierr:',ierr
-          stop
-        endif
+      if (ierr/=nf90_noerr) call handle_err(ierr)
 
       nccreate = varid
 
       end function nccreate
+
+!-------------------------------------------
+      subroutine handle_err(status,txt)
+      implicit none
+      integer,         intent(in)          :: status
+      character(len=*),intent(in),optional :: txt
+
+
+      if(status /= nf90_noerr) then
+        if (present(txt)) then
+         print *, txt,', ',trim(nf90_strerror(status))
+        else
+         print *, trim(nf90_strerror(status))
+        endif
+         stop "Stopped"
+      end if
+      end subroutine handle_err
 
 
       end module nc_read_write
