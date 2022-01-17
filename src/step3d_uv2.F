@@ -390,9 +390,6 @@
 
         Udiag(:,j,nz,ivmix) = Udiag(:,j,nz,ivmix)+sustr(1:nx,j)
         Vdiag(:,j,nz,ivmix) = Vdiag(:,j,nz,ivmix)+svstr(1:nx,j)
-
-!       u_prev = u(1:nx,1:ny,:,nnew)*0.5*(Hz(0:nx-1,1:ny,:)+Hz(1:nx,1:ny,:) )
-!       v_prev = v(1:nx,1:ny,:,nnew)*0.5*(Hz(1:nx,0:ny-1,:)+Hz(1:nx,1:ny,:) )
       endif
 # endif
 
@@ -840,14 +837,10 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-      if (diag_uv) then
-        if (calc_diag) then
-!         call set_diags_u_2d3d_cor
-!         call set_diags_v_2d3d_cor
-        endif
+      if (diag_Ebcln) then
+        u_slow = beta*u_slow + alpha*u(1:nx,1:ny,:,nnew)
+        v_slow = beta*v_slow + alpha*v(1:nx,1:ny,:,nnew)
       endif
-      if (prs_flx)
-     &  call set_diags_uv_prime
 #  ifdef NHMG
       if (calc_diag)  call set_diags_w_at_uv2_end
 #  endif

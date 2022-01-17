@@ -289,6 +289,9 @@
           enddo
         enddo
 
+        !! JM: DC(i,0) => Hu (Water Column at u)
+        !! JM: FC(i,0) => Uflx (Barotropic Transport)
+
 c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 
 # ifdef CORR_COUPLED_MODE
@@ -301,6 +304,7 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
      &                                 +ust2d(i,j)
 #  endif
           enddo
+          !! JM: Very first time step only
 
 #  ifdef EXTRAP_BAR_FLUXES
 ! PAC23 verified setting with theoretical alpha_max=1.0877.
@@ -313,31 +317,6 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 #   define BAK 2.05D0
 
 
-
-/*
-#   define CURV 2.80D0
-#   define NOW (1.515D0+CURV)
-#   define MID (2.D0*CURV)
-#   define BAK (CURV-0.515D0)
-*/
-
-/*
-#   define NOW 4.D0
-#   define MID 5.D0
-#   define BAK 2.D0
-*/
-
-/*
-#   define NOW 3.75D0
-#   define MID 4.375D0
-#   define BAK 1.5D0
-*/
-
-/*
-#   define NOW 2.D0
-#   define MID 1.D0
-#   define BAK 0.D0
-*/
 
 !  DC(i,0) is the barotropic surface H*dy = dy*integral(Hz)
 !  FC(i,0) is the barotropic flux dy*integral(Hz*u)
@@ -360,7 +339,7 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
           enddo
         endif
 #  endif
-  !! now FC(i,0) = ubar
+     !! now FC(i,0) => mismatch between  int(U*dz)/int(dz) and ubar
 # else 
         do i=istr,iendR
           FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0) !! 2 corrector of ubar? JM
@@ -385,7 +364,7 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
         do k=1,N
           do i=istr,iendR
 !!JM make sure that ust, vst is masked in wec_frc and fix this!!
-            u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0)) !! removing ubar from u
+            u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0)) !! removing ubar mismatch from u
 # ifdef MASKING
      &                                *umask(i,j)
 #  ifdef WEC

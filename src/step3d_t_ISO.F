@@ -975,8 +975,8 @@ c??         enddo
 
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 # ifdef DIAGNOSTICS
-        if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &    call set_diags_t_bc(istr,iend,jstr,jend,itrc,td)
+!       if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
+!    &    call set_diags_t_bc(istr,iend,jstr,jend,itrc,td)
 # endif
 
       enddo     !<-- itrc
