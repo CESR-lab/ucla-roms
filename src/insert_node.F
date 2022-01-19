@@ -51,7 +51,7 @@ c--#define TEST_INSERT  ! <-- self testing
      &                                , power
       character(len=16) sffx
 #endif
-      integer, parameter :: digits=4
+      integer, parameter :: digits=5
       logical leading_dots
 
       ndots=0                              ! Determine how many dots
