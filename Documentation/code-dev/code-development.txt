@@ -21,3 +21,16 @@ Code development discussions and strategy
     To transition away from tiling and allocatable arrays, we would need to remove all common blocks first.
     
     init allocatable arrays called in own module, not from init_arrays.F.
+    
+    
+2022/01/20: CPPFLAGS
+
+    We discussed how, using logical parameters, we can move the code completely away from CPPFLAGS.
+    We think ultimately this would be a nice change.
+    All logicals will live in param.opt, with default being false.
+    This is less risky than the current system that relies on spelling CPPFLAGS correctly, or even
+    knowing that they are there in the first place. (Here is would see it exists and the default value).
+    
+    Init_arrays:
+    Modules can perform their own init routine, as we've been doing. Unless arrays are littered around the
+    code and it is easier to initialize arrays through the init_arrays.F routine.
