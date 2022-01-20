@@ -13,6 +13,13 @@
       !  Added cbry_ to beginning of routines that are specifically for child boundary,
       !  not ncjoin_mpi.
       !
+      !  Long term fixes:
+      !  - really online bry shouldn't write empty files, and therefore this shouldn't
+      !    need to deal with empty files.
+      !    Online files should contain list of node numbers to join, and use that rather
+      !    than pre-process.
+      !  - Could parallelize in future.
+      !
       !]
 
       ! PROGRAM SECTIONS:
