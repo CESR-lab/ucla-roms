@@ -781,14 +781,16 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             do i=istr,iend
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)*pn(i,j)
      &                                              *(FC(i,k)-FC(i,k-1))
-# ifdef PIPE_SOURCE
-              if (pipe_idx(i,j)>0) then
-                pidx = pipe_idx(i,j)
+
+              if (pipe_source) then
+                if (pipe_idx(i,j)>0.) then                           ! pipe_source parameter will
+                pidx = pipe_idx(i,j)                                 ! remove branching if false
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            +dt*pm(i,j)*pn(i,j)*
      &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
+                endif
               endif
-# endif
+
             enddo
           enddo
 

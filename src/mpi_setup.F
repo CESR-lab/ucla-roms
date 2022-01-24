@@ -154,8 +154,6 @@ C$    endif
         jsouth = 1
         jnorth = Mm
 
-        print *, 'mynode=',mynode,'Lm',Lm,'Mm',Mm
-
 #ifdef VERBOSE
       write(*,'(A,7I5,1x,A,I4)') 'XI:', LLm, off_xi, iSW_corn, Lm,
      & ieast-iwest+1, iwest+iSW_corn,ieast+iSW_corn, 'node=', mynode
@@ -174,7 +172,6 @@ C$    endif
          else
            xi_u=xi_rho
          endif
-         if (mynode==0) print *, 'mynode=',mynode,'iwest',iwest,'ieast',ieast,'Lm',Lm,'xi_rho',xi_rho
 
          eta_rho=jnorth-jsouth+1
          if (NORTHERN_MPI_EDGE) then

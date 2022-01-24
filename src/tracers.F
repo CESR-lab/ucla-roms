@@ -102,19 +102,9 @@
       integer           :: itrc       ! tracer number for loop index
       character(len=46) :: t_flx_name ! Tracer time name
 
-      do itrc=iTandS+1,NT ! Instead of 3 use iTandS variable DevinD todo
+      do itrc=iTandS+1,NT
 
         if (t_ana_frc(itrc)==0) then ! Read in forcing data (not analytical)
-
-          ! For now set up variable _flx name here but might be better to
-          ! create in init_tracers function where this is done once and
-          ! storedin an array for speed.
-
-          ! set nc_v%name and nc_t%time_name only once: currently set in t_vname & t_tname,
-          ! left it like this so people don't need to change their files.
-
-          nc_t(itrc)%name      = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
-          nc_t(itrc)%time_name = t_tname(itrc)
 
           call set_frc_var_tile( istr, iend, jstr, jend, nc_t(itrc), stflx(:,:,itrc), interp_t )
 
@@ -381,6 +371,21 @@
       enddo
 
 #endif  /* AVERAGES */
+
+      ! initialize read in forcing data arrays
+      do itrc=iTandS+1,NT
+        if (t_ana_frc(itrc)==0) then
+
+          allocate( nc_t(itrc)%data( GLOBAL_2D_ARRAY,2) )
+
+          ! set nc_v%name and nc_t%time_name only once: currently set in t_vname & t_tname,
+          ! left it like this so people don't need to change their tracers.opt files.
+
+          nc_t(itrc)%name      = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
+          nc_t(itrc)%time_name = t_tname(itrc)
+
+        endif
+      enddo
 
       end subroutine init_tracers  !]
 

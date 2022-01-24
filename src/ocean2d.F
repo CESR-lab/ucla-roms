@@ -14,6 +14,10 @@
       real,allocatable,dimension(:,:,:) :: ubar
       real,allocatable,dimension(:,:,:) :: vbar
 
+      real,allocatable,dimension(:,:) :: zeta_avg
+      real,allocatable,dimension(:,:) :: ubar_avg
+      real,allocatable,dimension(:,:) :: vbar_avg
+
 #ifdef NHMG
       real,allocatable,dimension(:,:) :: nh_ubar
       real,allocatable,dimension(:,:) :: nh_vbar
@@ -24,11 +28,16 @@
 
       !----------------------------------------------------------------
       subroutine init_arrays_ocean2d  ![
+      use ncvars
       implicit none
 
       allocate( zeta(GLOBAL_2D_ARRAY,4) )
       allocate( ubar(GLOBAL_2D_ARRAY,4) )
       allocate( vbar(GLOBAL_2D_ARRAY,4) )
+
+      if (wrtavg(indxZ))   allocate( zeta_avg(GLOBAL_2D_ARRAY) )
+      if (wrtavg(indxUb))  allocate( ubar_avg(GLOBAL_2D_ARRAY) )
+      if (wrtavg(indxVb))  allocate( vbar_avg(GLOBAL_2D_ARRAY) )
 
 #ifdef NHMG
       allocate( nh_ubar(GLOBAL_2D_ARRAY) )
@@ -39,10 +48,11 @@
       zeta=0.
       ubar=0.
       vbar=0.
+
 #ifdef AVERAGES
-      zeta_avg=0.
-      ubar_avg=0.
-      vbar_avg=v
+      if (wrtavg(indxZ))  zeta_avg=0.
+      if (wrtavg(indxUb)) ubar_avg=0.
+      if (wrtavg(indxVb)) vbar_avg=0.
 #endif
 
       end subroutine init_arrays_ocean2d  !]

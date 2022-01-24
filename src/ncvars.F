@@ -155,11 +155,9 @@
 # define NWRTHIS 24
 !# define NWRTHIS 14
 #endif
-      logical ldefhis, wrthis(NWRTHIS)
-#ifdef AVERAGES
-      logical wrtavg(NWRTHIS)
-#endif
-
+      logical :: ldefhis, wrthis(NWRTHIS)
+      logical :: wrtavg(NWRTHIS) = .false.  ! set to false so don't need averages cpp flag
+                                            ! everywhere as won't do the work if all vars are false
 
 ! Horizontal Grid Type Codes =  0,1,2,3 for RHO-, U-, V-, PSI-points
 

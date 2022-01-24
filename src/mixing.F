@@ -72,6 +72,20 @@
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
+# ifdef SOLVE3D
+      real,allocatable,dimension(:,:,:) :: akv_avg
+      real,allocatable,dimension(:,:,:) :: akt_avg
+#  ifdef SALINITY
+      real,allocatable,dimension(:,:,:) :: aks_avg
+#  endif
+#  ifdef LMD_KPP
+      real,allocatable,dimension(:,:) :: hbl_avg
+#  endif
+#  ifdef LMD_BKPP
+      real,allocatable,dimension(:,:) :: hbbl_avg
+#  endif
+# endif
+
       integer :: sponge_size  ! number of grid point of sponge layer
 
       contains
@@ -80,6 +94,7 @@
       subroutine init_arrays_mixing  ![
       use scalars
       use tracers
+      use ncvars
       implicit none
 
       integer :: itrc
@@ -172,9 +187,6 @@
 # else
       Akv=0.
 # endif
-# ifdef AVERAGES
-      akv_avg=0.
-# endif
 # if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
   || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING \
   || defined LMD_BKPP
@@ -189,12 +201,6 @@
         Akt(:,:,:,itrc)=0.
 # endif
       enddo
-# ifdef AVERAGES
-      akt_avg=0.
-#  ifdef SALINITY
-      aks_avg=0.
-#  endif
-# endif
 
 # if defined LMD_KPP && defined LMD_NONLOCAL
       ghat=0.
@@ -203,17 +209,23 @@
 ! Depth of surface planetary boundary layer.
 
       hbls=0.
-#  ifdef AVERAGES
-      hbl_avg=0.
-#  endif
 # endif
 # ifdef LMD_BKPP
 ! Thickness of bottom boundary layer.
 
       hbbl=0.
-#  ifdef AVERAGES
-      hbbl_avg=0.
-#  endif
+# endif
+
+      if (wrtavg(indxAkv)) allocate( akv_avg(GLOBAL_2D_ARRAY,0:N) )
+      if (wrtavg(indxAkt)) allocate( akt_avg(GLOBAL_2D_ARRAY,0:N) )
+# ifdef SALINITY
+      if (wrtavg(indxAks)) allocate( aks_avg(GLOBAL_2D_ARRAY,0:N) )
+# endif
+# ifdef LMD_KPP
+      if (wrtavg(indxHbls))allocate( hbl_avg(GLOBAL_2D_ARRAY) )
+# endif
+# ifdef LMD_BKPP
+      if (wrtavg(indxHbbl))allocate( hbbl_avg(GLOBAL_2D_ARRAY) )
 # endif
 #endif /* SOLVE3D */
 

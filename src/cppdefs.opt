@@ -140,8 +140,6 @@ c-dd# undef define NOX_FORCING        /* under construction */
 #endif /* BIOLOGY_BEC2 */
 
 #define BULK_FRC
-c#define SURF_FLUX_OUTPUT_HIS /* output flux variables -> control in surf_flux.F */
-c#define SURF_FLUX_OUTPUT_AVG /* output flux variables as averages -> control in surf_flux.F */
 
     /* Flux Analysis */
 c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */

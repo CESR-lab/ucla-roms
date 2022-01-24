@@ -21,5 +21,8 @@
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
       integer, parameter :: nt = 2 
+      
+      ! All logicals listed here:
+   
 
 
