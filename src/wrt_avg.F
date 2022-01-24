@@ -8,10 +8,12 @@
       use wec_frc    ! , only: wrt_avg_wec
       use bgc        ! wrt_avg_bgc_diag
       use tracers    ! , only: wrt_avg_trc
-      use surf_flux  ! wrt_avg_surf_flux
       use read_write ! nc_write_var, rp_var, etc
       use netcdf     ! nf90 subroutines
-      use averages
+      use ocean2d
+      use ocean3d
+      use eos_vars
+      use mixing
       use ncvars
       use scalars
       use netcdf
@@ -158,11 +160,6 @@
 
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
       call wrt_avg_bgc_diag(record, ierr)
-#endif
-
-      ! Write surface flux averages (sustr_avg, etc)
-#ifdef SURF_FLUX_OUTPUT_AVG
-      call wrt_avg_surf_flux(record, ierr)
 #endif
 
   1   format(/1x, '### ERROR: wrt_avg :: Cannot write variable ''',

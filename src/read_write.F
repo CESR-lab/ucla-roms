@@ -1555,18 +1555,6 @@ C$OMP BARRIER
                 enddo
               enddo
             enddo
-          ! No masking for river locations as on land cells only
-          elseif (horiz_type == 100) then
-            do k=1,nmax
-              do j=jmin,jmax
-                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
-                do i=imin,imax
-
-                    A(i,j,k)=buff(i+shft)
-
-                enddo
-              enddo
-            enddo
           else
             error stop 'ncdf_read_mod: horiz_type not supported'
           endif  !<-- horiz_type == 0,1,2,3,100

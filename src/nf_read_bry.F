@@ -160,7 +160,7 @@
       real A(0:Mm+1,nmax)
 # if defined MPI
       integer, parameter :: ibss=100000
-      integer req(2), status(MPI_STATUS_SIZE,2), ierr
+      integer req(2), status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE), ierr
       real, dimension(N+1) :: bffr_rsv_S, bffr_snd_S,
      &                        bffr_rsv_N, bffr_snd_N
 # endif
@@ -210,13 +210,13 @@
      &                   p_N, ibss+1, ocean_grid_comm,    ierr)
         endif
         if (SOUTH_MSG_EXCH) then
-          call MPI_Wait (req(1),status(1,1),ierr)
+          call MPI_Wait (req(1),status1,ierr)
           do k=1,nmax
             A(jstr-1,k)=bffr_rsv_S(k)
           enddo
         endif
         if (NORTH_MSG_EXCH) then
-          call MPI_Wait (req(2),status(1,2),ierr)
+          call MPI_Wait (req(2),status2,ierr)
           do k=1,nmax
             A(jend+1,k)=bffr_rsv_N(k)
           enddo
@@ -239,7 +239,7 @@
       real A(0:Lm+1,nmax)
 # if defined MPI
       integer, parameter :: ibss=100000
-      integer req(2), status(MPI_STATUS_SIZE,2), ierr
+      integer req(2), status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE), ierr
       real, dimension(N+1) :: bffr_rsv_W, bffr_rsv_E,
      &                        bffr_snd_W, bffr_snd_E
 # endif
@@ -291,13 +291,13 @@
         endif
 
         if (WEST_MSG_EXCH) then
-          call MPI_Wait (req(1),status(1,1),ierr)
+          call MPI_Wait (req(1),status1,ierr)
           do k=1,nmax
             A(istr-1,k)=bffr_rsv_W(k)
           enddo
         endif
         if (EAST_MSG_EXCH) then
-          call MPI_Wait (req(2),status(1,2),ierr)
+          call MPI_Wait (req(2),status2,ierr)
           do k=1,nmax
             A(iend+1,k)=bffr_rsv_E(k)
           enddo

@@ -34,10 +34,7 @@
 
       use param
       use bulk_frc  ! ,  only: set_bulk_frc_tile
-! Can't have #else here because makedepf90 doesn't pick up flux_frc for set_forces
-# if !defined BULK_FRC
       use flux_frc
-# endif
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
       use river_frc
@@ -149,8 +146,6 @@ c***              no code here
 #  endif
 # endif
 
-      ! DevinD, this would probably be faster if using CPPFLAG instead,
-      ! e.g. PASSIVE_TRACERS for now just use number of tracers to decide:
       if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
 
       ! BGC surface flux:
@@ -162,9 +157,7 @@ c***              no code here
       call set_river_frc_tile(istr,iend,jstr,jend)
 #  endif
 
-# ifdef PIPE_SOURCE
-      call set_pipe_frc_tile(istr,iend,jstr,jend)
-#  endif
+      if (pipe_source) call set_pipe_frc_tile(istr,iend,jstr,jend)
 
 # ifdef WEC
       call set_wec_frc_tile(istr,iend,jstr,jend,ierr)

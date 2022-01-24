@@ -41,10 +41,9 @@
 
       use param
       use wec_frc
-      use bulk_frc  !, only: srflx
+      use bulk_frc
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
       use tracers   ! iTandS, t, t_avg
-      use averages
       use climat
       use coupling
       use eos_vars
@@ -60,6 +59,7 @@
       use mess_buffers
       use dimensions
       use flux_frc
+      use pipe_frc
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -107,19 +107,9 @@
 
       call init_arrays_mess_buffers  ! DevinD placed here. Assumed used often for higher up first touch
 
-#ifdef SOLVE3D
-      do k=1,N                       ! Initialize
-        do j=jstrR,jendR             ! 3-D primitive
-          do i=istrR,iendR
-# ifdef AVERAGES
-            rho_avg(i,j,k)=init
-# endif
-          enddo
-        enddo
-      enddo
-
       call init_arrays_eos_vars
 
+#ifdef SOLVE3D
       do k=0,N
         do j=jstrR,jendR
           do i=istrR,iendR
@@ -143,11 +133,17 @@
 
       call init_arrays_surf_flx
 
+#ifdef BULK_FRC
+      call init_arrays_bulk_frc
+#endif
+
 # ifdef WEC
       call init_arrays_wec_tile(istr,iend,jstr,jend)
 # endif
 
 ! Initialize climatology arrays (see "climat").
+
+      call init_arrays_climat  ! DevinD added
 
 #if defined M2NUDGING && !defined M2_FRC_BRY
       do j=jstrR,jendR
@@ -226,5 +222,7 @@
 #ifndef BULK_FRC
       call init_arrays_flux_frc   ! DevinD added this here to allocate
 #endif
+
+      if (pipe_source) call init_arrays_pipes
 
       end

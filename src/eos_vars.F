@@ -25,6 +25,7 @@
 # else
       real,allocatable,dimension(:,:,:) :: rho
 # endif
+      real,allocatable,dimension(:,:,:) :: rho_avg
 # ifdef ADV_ISONEUTRAL
       real,allocatable,dimension(:,:,:) :: dRdx
       real,allocatable,dimension(:,:,:) :: dRde
@@ -34,8 +35,9 @@
 
       contains
 
-      !----------------------------------------------------------------
+!----------------------------------------------------------------------
       subroutine init_arrays_eos_vars  ![
+      use ncvars
       implicit none
 
 #ifdef SOLVE3D
@@ -59,9 +61,14 @@
       rho=0.
 # endif
 
+      if (wrtavg(indxR)) then
+        allocate( rho_avg(GLOBAL_2D_ARRAY,N) )
+        rho_avg=0.  ! this was in original init_arrays
+      endif
+
       end subroutine  !]
 
-      !----------------------------------------------------------------
+!----------------------------------------------------------------------
 
       end module eos_vars
 

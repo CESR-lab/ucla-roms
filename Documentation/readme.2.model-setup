@@ -80,6 +80,7 @@ Passive tracers:
     it working, and then finally set it up with all of your tracers.
     Selection of tracers for outputting is also done in tracers.opt.
     No longer need PASSIVE_TRACER flag for this to work.
+    Default_bry_values.
     
 tides:
 
@@ -134,14 +135,10 @@ Netcdf output compression:
 
 Surface flux outputting:
     
-    It is possible to output the resulting surface flux sustr, svstr, etc. The 
-    output frequency is in surf_flux.opt, not the roms.in file.
-    You need to activate the following cppflag: SURF_FLUX_OUTPUT_HIS 
-    It will produce its own output file separate from the _his.F file.
-    The averages (sustr_avg, etc) are activated using the cppflags: 
-    SURF_FLUX_OUTPUT_AVG && AVERAGES
-    The output will be placed in the normal _avg.F file.
-    The T/F to print the averages is controlled in surf_flux.opt
+    It is possible to output the bulk force resulting surface flux sustr, svstr, etc. 
+    The output frequency is in surf_flux.opt, not the roms.in file. 
+    It will produce its own output file separate from the _his.nc file.
+    The averages (sustr_avg, etc) are also controlled in surf_flux.opt.
 
 Misc.:
 

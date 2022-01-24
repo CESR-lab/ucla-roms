@@ -13,10 +13,10 @@ include Makedefs.inc
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = 		param.F dimensions.F	read_write.F averages.F tracers.F\
+KRNSRC = 		param.F dimensions.F	read_write.F tracers.F\
 	boundary.F buffer.F climat.F comm_vars.F coupling.F diag_vars.F\
 	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
-	mpi_test_arr.F ncvars.F ocean2d.F ocean3d.F private_scratch.F\
+	mpi_test_arr.F ncvars.F ocean3d.F ocean2d.F private_scratch.F\
 	scalars.F scoord.F strings.F work.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
 	diagnostics.F	bry_extract_child.F	step2d_FB.F	read_inp.F\
