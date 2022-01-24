@@ -17,11 +17,11 @@ forcing: filename
      ../USWC_model/input_data/sample_rad_units_DPD.nc
      ../USWC_model/input_data/sample_tracers.nc
      ../USWC_model/input_data/sample_wwv_riv.nc
-     
+     ../USWC_model/input_data/roms_bry_trace.nc
 
 initial: NRREC  filename
           1
-     sample_his.0000.nc
+     ../USWC_model/input_data/roms_init_trace.nc
 
 climatology: filename
           none
@@ -37,7 +37,7 @@ output_root_name:
      sample    
 
 history: LDEFHIS, NWRT, NRPFHIS
-            F      2    10
+            T      2    10
 
 averages: NTSAVG, NAVG, NRPFAVG
             1e4     1e4     1e4

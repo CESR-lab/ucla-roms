@@ -34,7 +34,8 @@ c--#endif
 # if defined USWC_WEC
 
 #  define DIAGNOSTICS
-#  define SPONGE_TUNE
+#  define HIS_DOUBLE
+c--#  define SPONGE_TUNE
 
 c--#  define BRY_EXTRACT_CHILD  /* required for online child bry interp */
 #  undef GRID_ANG_DEG
