@@ -121,10 +121,6 @@
             w(i,j,k,1)=init
             w(i,j,k,2)=init
 # endif
-# ifdef AVERAGES
-            w_avg(i,j,k)=init
-            wvl_avg(i,j,k)=init
-# endif
           enddo
         enddo
       enddo
