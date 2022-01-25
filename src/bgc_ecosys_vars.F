@@ -1,21 +1,30 @@
-!
-!  tracer: values passed to biological model by ROMS
-!  DTRACER_MODULE: stores the tendencies of the biological tracers
-!
-      real tracer(GLOBAL_2D_ARRAY,N,ntrc_bio)
-      real DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio)
-      ! DevinD changed /tracers/ as clashes with module name 'tracers'
-      common /tracers_com/ tracer, DTRACER_MODULE
+      module bgc_ecosys_vars
+      ! formerly bgc_ecosys_bec2.h
 
-      integer counter_no3(288),counter_coccochl(288)      
-      common /counter_neg/ counter_no3, counter_coccochl
+#include "cppdefs.opt"
+#ifdef BIOLOGY_BEC2
+
+      use param
+      implicit none
+
+      ! tracer: values passed to biological model by ROMS
+      ! DTRACER_MODULE: stores the tendencies of the biological tracers
+      ! in the long run this should be removed, no need to copy arrays?
+      ! local copies are made in ecosys_set_interior already anyway?
+      real,allocatable,dimension(:,:,:,:) :: tracer
+      real,allocatable,dimension(:,:,:,:) :: DTRACER_MODULE
+      ! DevinD changed /tracers/ as clashes with module name 'tracers'
+!      common /tracers_com/ tracer, DTRACER_MODULE
+
+      integer :: counter_no3(288),counter_coccochl(288)
+!      common /counter_neg/ counter_no3, counter_coccochl
 
 #ifdef BEC2_DIAG
 !
 ! Diagnostic variables appearing in average and history files:
 !
-      integer nr_bec2_diag_2d, nr_bec2_diag_3d, nr_bec2_diag
-      integer nr_cchem_mocsy_2d, nr_cchem_mocsy_3d
+      integer :: nr_bec2_diag_2d, nr_bec2_diag_3d, nr_bec2_diag
+      integer :: nr_cchem_mocsy_2d, nr_cchem_mocsy_3d
       parameter( nr_cchem_mocsy_2d=0, nr_cchem_mocsy_3d=0 )
 
 /* Still in BEC2 Diag now start counting for nr_bec2_diag_3d */
@@ -27,16 +36,16 @@
 # ifdef BEC_COCCO
      &  +18
 #endif
-     & , nr_bec2_diag_2d=29+nr_cchem_mocsy_2d 
+     & , nr_bec2_diag_2d=29+nr_cchem_mocsy_2d
 # ifdef Ncycle_SY
      &  +8
 #endif
      &  )
       parameter( nr_bec2_diag=nr_bec2_diag_2d+nr_bec2_diag_3d )
-      real bec2_diag_3d(GLOBAL_2D_ARRAY,N,nr_bec2_diag_3d)
-      real bec2_diag_2d(GLOBAL_2D_ARRAY,nr_bec2_diag_2d)
+      real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d
+      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d
 
-      common /bec2_diag1/ bec2_diag_2d, bec2_diag_3d
+!      common /bec2_diag1/ bec2_diag_2d, bec2_diag_3d
 
       ! Indices to be used in bec2_diag_2d or bec2_diag_3d: these are 3d in space if
       ! MOCSY is selected and the C chemistry is computed at depth. Otherwise they are
@@ -44,10 +53,10 @@
 !      integer ph_idx_t, pco2oc_idx_t, co2star_idx_t
 
   ! MF: Control BEC2_DIAG Output vars
-      logical wrtavg_bec2_diag_2d(nr_bec2_diag_2d)
-      logical wrtavg_bec2_diag_3d(nr_bec2_diag_3d)
+      logical :: wrtavg_bec2_diag_2d(nr_bec2_diag_2d)
+      logical :: wrtavg_bec2_diag_3d(nr_bec2_diag_3d)
 
-      common wrtavg_bec2_diag_2d, wrtavg_bec2_diag_3d
+!      common wrtavg_bec2_diag_2d, wrtavg_bec2_diag_3d
 
       ! Indices to be used in bec2_diag_3d only:
       integer, parameter :: par_idx_t=1,pocfluxin_idx_t=par_idx_t+1,
@@ -99,7 +108,7 @@
      &   coccoplim_idx_t=LAST_I+18
 #  undef LAST_I
 #  define LAST_I coccoplim_idx_t
-# endif        
+# endif
 
 # ifdef Ncycle_SY
       integer, parameter :: ammox_idx_t=LAST_I+1,nitrox_idx_t=LAST_I+2,
@@ -123,7 +132,7 @@
 # define LAST_I dco2star_idx_t
 #ifdef Ncycle_SY
      &   ,schmidt_n2o_idx_t=LAST_I+1, pvn2o_idx_t=LAST_I+2, n2osat_idx_t=LAST_I+3,
-     &    fgn2o_idx_t=LAST_I+4, schmidt_n2_idx_t=LAST_I+5, pvn2_idx_t=LAST_I+6, 
+     &    fgn2o_idx_t=LAST_I+4, schmidt_n2_idx_t=LAST_I+5, pvn2_idx_t=LAST_I+6,
      &    fgn2_idx_t=LAST_I+7, n2sat_idx_t=LAST_I+8
 # undef LAST_I
 # define LAST_I n2sat_idx_t
@@ -132,48 +141,47 @@
      &   fluxtosed_idx_t=LAST_I+2,caco3fluxtosed_idx_t=LAST_I+3,
      &   sio2fluxtosed_idx_t=LAST_I+4,pironfluxtosed_idx_t=LAST_I+5,dustfluxtosed_idx_t=LAST_I+6,
      &   pocsedloss_idx_t=LAST_I+7,otherremin_idx_t=LAST_I+8,caco3sedloss_idx_t=LAST_I+9,
-     &   sio2sedloss_idx_t=LAST_I+10 
+     &   sio2sedloss_idx_t=LAST_I+10
 
       ! Array for storing the Netcdf variable IDs of the diagnostics:
       ! The IDs of the 2d vars are first, the those of the 3d.
-      integer hisT_bec2_diag(nr_bec2_diag), avgT_bec2_diag(nr_bec2_diag), slavgT_bec2_diag(nr_bec2_diag),
+      integer :: hisT_bec2_diag(nr_bec2_diag), avgT_bec2_diag(nr_bec2_diag), slavgT_bec2_diag(nr_bec2_diag),
      &        rstT_bec2_diag(nr_bec2_diag)
 
       ! Arrays storing information (name, unit, fill value) about each diagnostic variable:
-      character*72  vname_bec2_diag_2d(4,nr_bec2_diag_2d)
-      character*72  vname_bec2_diag_3d(4,nr_bec2_diag_3d)
+      character*72 ::  vname_bec2_diag_2d(4,nr_bec2_diag_2d)
+      character*72 ::  vname_bec2_diag_3d(4,nr_bec2_diag_3d)
 
-      common /bec2_diag2/ hisT_bec2_diag, avgT_bec2_diag, slavgT_bec2_diag, rstT_bec2_diag,
-     &   vname_bec2_diag_2d, vname_bec2_diag_3d
+!      common /bec2_diag2/ hisT_bec2_diag, avgT_bec2_diag, slavgT_bec2_diag, rstT_bec2_diag,
+!     &   vname_bec2_diag_2d, vname_bec2_diag_3d
 
 #  ifdef AVERAGES
-      real bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_diag_3d)
-      real bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_diag_2d)
+      real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_avg
+      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_avg
 #   ifdef SLICE_AVG
-      real bec2_diag_3d_slavg(GLOBAL_2D_ARRAY,nr_bec2_diag_3d)
-      real bec2_diag_2d_slavg(GLOBAL_2D_ARRAY,nr_bec2_diag_2d)
+      real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_slavg
+      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_slavg
 #   endif
 #  endif /* AVERAGES */
-# ifdef AVERAGES
-      common /bec2_diag3/ bec2_diag_3d_avg, bec2_diag_2d_avg
-#  ifdef SLICE_AVG
-     &    , bec2_diag_3d_slavg, bec2_diag_2d_slavg
-#  endif
-# endif /* AVERAGES */
+!# ifdef AVERAGES
+!      common /bec2_diag3/ bec2_diag_3d_avg, bec2_diag_2d_avg
+!#  ifdef SLICE_AVG
+!     &    , bec2_diag_3d_slavg, bec2_diag_2d_slavg
+!#  endif
+!# endif /* AVERAGES */
 
 #endif /* BEC2_DIAG */
 
 !     IFRAC  sea ice fraction (non-dimensional)
 !     PRESS  sea level atmospheric pressure (Pascals)
-      real ifrac(GLOBAL_2D_ARRAY),
-     &   press(GLOBAL_2D_ARRAY)
-      common /fic_ap/ ifrac,press
+      real,allocatable,dimension(:,:) :: ifrac, press
+!      common /fic_ap/ ifrac,press
 
-      logical landmask(GLOBAL_2D_ARRAY)
-      common /calcation/landmask
+      logical,allocatable,dimension(:,:) :: landmask
+!      common /calcation/landmask
 
-      logical lsource_sink,lflux_gas_o2, lflux_gas_co2
-#if defined Ncycle_SY      
+      logical :: lsource_sink,lflux_gas_o2, lflux_gas_co2
+#if defined Ncycle_SY
      &  ,lflux_gas_n2o
 #endif
 #ifdef Ncycle_SY
@@ -189,22 +197,22 @@
 #ifdef RIVER_LOAD_ALK_DIC_SI
      &  ,lriver_load_alk,lriver_load_dic,lriver_load_si
 #endif
-      common /ecoflag/lsource_sink,lflux_gas_o2,lflux_gas_co2,
-     &   liron_flux,ldust_flux
-#ifdef RIVER_LOAD_N
-     &  ,lriver_load_n
-#endif
-#ifdef RIVER_LOAD_P
-     &  ,lriver_load_p
-#endif
-#ifdef RIVER_LOAD_ALK_DIC_SI
-     &  , lriver_load_alk,lriver_load_dic,lriver_load_si
-#endif
+!      common /ecoflag/lsource_sink,lflux_gas_o2,lflux_gas_co2,
+!     &   liron_flux,ldust_flux
+!#ifdef RIVER_LOAD_N
+!     &  ,lriver_load_n
+!#endif
+!#ifdef RIVER_LOAD_P
+!     &  ,lriver_load_p
+!#endif
+!#ifdef RIVER_LOAD_ALK_DIC_SI
+!     &  , lriver_load_alk,lriver_load_dic,lriver_load_si
+!#endif
 
 !
 ! Relative tracer indices for prognostic variables:
 !
-      integer po4_ind_t, no3_ind_t, sio3_ind_t, nh4_ind_t, fe_ind_t, dic_ind_t, alk_ind_t,
+      integer :: po4_ind_t, no3_ind_t, sio3_ind_t, nh4_ind_t, fe_ind_t, dic_ind_t, alk_ind_t,
      &        o2_ind_t, doc_ind_t, don_ind_t, dofe_ind_t, dop_ind_t, dopr_ind_t, donr_ind_t,
      &        zooc_ind_t, spchl_ind_t, spc_ind_t, spfe_ind_t, spcaco3_ind_t, diatchl_ind_t,
      &        diatc_ind_t, diatfe_ind_t, diatsi_ind_t, diazchl_ind_t, diazc_ind_t, diazfe_ind_t
@@ -233,7 +241,7 @@
 ! Parameters related to sinking particles:
 !
 
-      real 
+      real ::
      &   POC_diss,       ! diss. length (m), modified by TEMP
      &   POC_mass,       ! molecular weight of POC
      &   P_CaCO3_diss,   ! diss. length (m)
@@ -252,14 +260,14 @@
      &   POC_gamma       ! prod frac -> hard subclass
 
 
-      common /sinking_particles1/ POC_diss,POC_mass,P_CaCO3_diss,
-     &   P_CaCO3_mass,P_CaCO3_rho,P_SiO2_diss,P_SiO2_mass,P_SiO2_rho,
-     &   dust_diss,dust_mass,dust_rho
+!      common /sinking_particles1/ POC_diss,POC_mass,P_CaCO3_diss,
+!     &   P_CaCO3_mass,P_CaCO3_rho,P_SiO2_diss,P_SiO2_mass,P_SiO2_rho,
+!     &   dust_diss,dust_mass,dust_rho
 
       ! The gamma parameters are set init_particulate_terms and so they
       ! need to be in a common block:
-      common /sinking_particles1/ POC_gamma, P_CaCO3_gamma, P_SiO2_gamma,
-     &   dust_gamma, P_iron_gamma
+!      common /sinking_particles1/ POC_gamma, P_CaCO3_gamma, P_SiO2_gamma,
+!     &   dust_gamma, P_iron_gamma
 !
 ! Arrays related to sinking particles:
 !
@@ -270,72 +278,137 @@
 !  *_sed_loss: loss to sediments (base units/m^2/sec)
 !  *_remin: remineralization term (base units/m^3/sec)
 
-      real, dimension(GLOBAL_2D_ARRAY) ::
-     &   P_CaCO3_sflux_out, P_CaCO3_hflux_out,
-     &   P_SiO2_sflux_out, P_SiO2_hflux_out,
-     &   dust_sflux_out, dust_hflux_out,
-     &   P_iron_sflux_out, P_iron_hflux_out,
-     &   POC_sflux_out, POC_hflux_out, 
-     &   P_CaCO3_sflux_in, P_CaCO3_hflux_in,
-     &   P_SiO2_sflux_in, P_SiO2_hflux_in, 
-     &   dust_sflux_in, dust_hflux_in,
-     &   P_iron_sflux_in, P_iron_hflux_in,
-     &   POC_sflux_in, POC_hflux_in,
-     &   P_CaCO3_sed_loss, P_SiO2_sed_loss, 
-     &   P_iron_sed_loss,POC_sed_loss,
-     &   dust_sed_loss,
-     &   DOP_remin, DOPr_remin
-
-      real, dimension(GLOBAL_2D_ARRAY) ::
-     &   POC_remin, P_iron_remin, P_SiO2_remin, P_CaCO3_remin
-
-      common /sinking_particles2/
+      real,allocatable,dimension(:,:) ::
      &   P_CaCO3_sflux_out, P_CaCO3_hflux_out,
      &   P_SiO2_sflux_out, P_SiO2_hflux_out,
      &   dust_sflux_out, dust_hflux_out,
      &   P_iron_sflux_out, P_iron_hflux_out,
      &   POC_sflux_out, POC_hflux_out,
      &   P_CaCO3_sflux_in, P_CaCO3_hflux_in,
-     &   P_SiO2_sflux_in, P_SiO2_hflux_in, 
+     &   P_SiO2_sflux_in, P_SiO2_hflux_in,
      &   dust_sflux_in, dust_hflux_in,
      &   P_iron_sflux_in, P_iron_hflux_in,
      &   POC_sflux_in, POC_hflux_in,
-     &   P_CaCO3_sed_loss, P_SiO2_sed_loss, 
+     &   P_CaCO3_sed_loss, P_SiO2_sed_loss,
      &   P_iron_sed_loss,POC_sed_loss,
      &   dust_sed_loss,
-     &   DOP_remin, DOPr_remin,
+     &   DOP_remin, DOPr_remin
+
+      real,allocatable,dimension(:,:) ::
      &   POC_remin, P_iron_remin, P_SiO2_remin, P_CaCO3_remin
+
+!      common /sinking_particles2/
+!     &   P_CaCO3_sflux_out, P_CaCO3_hflux_out,
+!     &   P_SiO2_sflux_out, P_SiO2_hflux_out,
+!     &   dust_sflux_out, dust_hflux_out,
+!     &   P_iron_sflux_out, P_iron_hflux_out,
+!     &   POC_sflux_out, POC_hflux_out,
+!     &   P_CaCO3_sflux_in, P_CaCO3_hflux_in,
+!     &   P_SiO2_sflux_in, P_SiO2_hflux_in,
+!     &   dust_sflux_in, dust_hflux_in,
+!     &   P_iron_sflux_in, P_iron_hflux_in,
+!     &   POC_sflux_in, POC_hflux_in,
+!     &   P_CaCO3_sed_loss, P_SiO2_sed_loss,
+!     &   P_iron_sed_loss,POC_sed_loss,
+!     &   dust_sed_loss,
+!     &   DOP_remin, DOPr_remin,
+!     &   POC_remin, P_iron_remin, P_SiO2_remin, P_CaCO3_remin
 
 !
 ! Arrays related to carbon chemistry: these are in bec2_diag_2d or
 ! bec2_diag_3d if BEC2_DIAG is defined
 !
 #ifndef BEC2_DIAG
-      real, dimension(GLOBAL_2D_ARRAY) ::
-     &   ph_hist, pCO2sw, PARinc
-      real, dimension(GLOBAL_2D_ARRAY,N) ::
-     &   PAR
-      common /c_chem/ ph_hist, pCO2sw, PARinc, PAR
+      real,allocatable,dimension(:,:)   :: ph_hist, pCO2sw, PARinc
+      real,allocatable,dimension(:,:,:) :: PAR
+!      common /c_chem/ ph_hist, pCO2sw, PARinc, PAR
 # ifndef PCO2AIR_FORCING
 !     otherwise defined in bgc_forces.h
-      real pco2air
-      common /c_chem/pco2air
+      real :: pco2air
+!      common /c_chem/pco2air
 # endif
 
-      real, dimension(GLOBAL_2D_ARRAY) ::
-     &   ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg
-      real, dimension(GLOBAL_2D_ARRAY,N) ::
-     &   PAR_avg
-      common /time_avg1/ PAR_avg, PARinc_avg, 
-     &        pco2_avg, pCO2air_avg, pH_avg
+      real,allocatable,dimension(:,:) :: ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg
+      real,allocatable,dimension(:,:,:) :: PAR_avg
+!      common /time_avg1/ PAR_avg, PARinc_avg,
+!     &        pco2_avg, pCO2air_avg, pH_avg
 # ifdef SLICE_AVG
-      real PAR_slavg(GLOBAL_2D_ARRAY)
-      real PARinc_slavg(GLOBAL_2D_ARRAY)
-      real pco2_slavg(GLOBAL_2D_ARRAY)
-      real pCO2air_slavg(GLOBAL_2D_ARRAY)
-      real pH_slavg(GLOBAL_2D_ARRAY)
-      common /time_slavg1/ PAR_slavg, PARinc_slavg, 
-     &        pco2_slavg, pCO2air_slavg, pH_slavg
+      real,allocatable,dimension(:,:) :: PAR_slavg
+      real,allocatable,dimension(:,:) :: PARinc_slavg
+      real,allocatable,dimension(:,:) :: pco2_slavg
+      real,allocatable,dimension(:,:) :: pCO2air_slavg
+      real,allocatable,dimension(:,:) :: pH_slavg
+!      common /time_slavg1/ PAR_slavg, PARinc_slavg,
+!     &        pco2_slavg, pCO2air_slavg, pH_slavg
 # endif /* SLICE_AVG */
 #endif /* !BEC2_DIAG */
 
+      contains
+
+!----------------------------------------------------------------------
+      subroutine init_arrays_bgc_ecosys_vars  ![
+      implicit none
+
+      allocate( tracer(GLOBAL_2D_ARRAY,N,ntrc_bio) )
+      allocate( DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio) )
+
+#ifdef BEC2_DIAG
+      allocate( bec2_diag_3d(GLOBAL_2D_ARRAY,N,nr_bec2_diag_3d) )
+      allocate( bec2_diag_2d(GLOBAL_2D_ARRAY,nr_bec2_diag_2d) )
+
+#  ifdef AVERAGES
+      allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_diag_3d) )
+      allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_diag_2d) )
+#   ifdef SLICE_AVG
+      allocate( bec2_diag_3d_slavg(GLOBAL_2D_ARRAY,nr_bec2_diag_3d) )
+      allocate( bec2_diag_2d_slavg(GLOBAL_2D_ARRAY,nr_bec2_diag_2d) )
+#   endif
+#  endif /* AVERAGES */
+
+#endif /* BEC2_DIAG */
+
+      allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
+
+      allocate( landmask(GLOBAL_2D_ARRAY) )
+
+      allocate(
+     &   P_CaCO3_sflux_out, P_CaCO3_hflux_out,
+     &   P_SiO2_sflux_out, P_SiO2_hflux_out,
+     &   dust_sflux_out, dust_hflux_out,
+     &   P_iron_sflux_out, P_iron_hflux_out,
+     &   POC_sflux_out, POC_hflux_out,
+     &   P_CaCO3_sflux_in, P_CaCO3_hflux_in,
+     &   P_SiO2_sflux_in, P_SiO2_hflux_in,
+     &   dust_sflux_in, dust_hflux_in,
+     &   P_iron_sflux_in, P_iron_hflux_in,
+     &   POC_sflux_in, POC_hflux_in,
+     &   P_CaCO3_sed_loss, P_SiO2_sed_loss,
+     &   P_iron_sed_loss,POC_sed_loss,
+     &   dust_sed_loss,
+     &   DOP_remin, DOPr_remin,
+     &   mold=ifrac )                           ! DevinD added mold statement, to avoid
+                                                ! repeated GLOBAL.. for every array
+      allocate( POC_remin, P_iron_remin, P_SiO2_remin, P_CaCO3_remin, mold=ifrac )
+
+#ifndef BEC2_DIAG
+      allocate( ph_hist, pCO2sw, PARinc, mold=ifrac )
+      allocate( PAR(GLOBAL_2D_ARRAY,N) )
+
+      allocate( ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg, mold=ifrac )
+      allocate( PAR_avg(GLOBAL_2D_ARRAY,N) )
+# ifdef SLICE_AVG
+      allocate( PAR_slavg(GLOBAL_2D_ARRAY) )
+      allocate( PARinc_slavg(GLOBAL_2D_ARRAY) )
+      allocate( pco2_slavg(GLOBAL_2D_ARRAY) )
+      allocate( pCO2air_slavg(GLOBAL_2D_ARRAY) )
+      allocate( pH_slavg(GLOBAL_2D_ARRAY) )
+# endif /* SLICE_AVG */
+#endif /* !BEC2_DIAG */
+
+      end subroutine init_arrays_bgc_ecosys_vars  !]
+
+!----------------------------------------------------------------------
+
+#endif /* BIOLOGY_BEC2 */
+
+      end module bgc_ecosys_vars

@@ -17,14 +17,16 @@
        use grid
        use ocean3d
        use scalars
+       use bgc_ecosys_vars
+       use bgc_forces
 
        implicit none
 
 #include "bgc_param_bec2.h"
-#include "bgc_ecosys_bec2.h"
+!#include "bgc_ecosys_bec2.h"
 !#include "forces.h" ! DevinD commented out. Contains dailypar_bec and
 ! bgc_forces.h, so including it directly here.
-#include "bgc_forces.h"
+!#include "bgc_forces.h"
 
        integer i,j,k,m
        integer Istr,Iend,Jstr,Jend
@@ -133,6 +135,8 @@
 
       ! DevinD - surely this is avoidable just by using iPO4, etc rather
       ! than po4_ind_t?
+      ! also should be using 't' array directly to save memory?
+      ! tracer array as a copy is a massive memory burden
        do m=1,ntrc_bio
           do k=1,N
              tracer(istr:iend,jstr:jend,k,m) =
@@ -636,10 +640,11 @@
        use grid
        use ocean3d
        use scalars
+       use bgc_ecosys_vars
 
         implicit none
 #include "bgc_param_bec2.h"
-#include "bgc_ecosys_bec2.h"
+!#include "bgc_ecosys_bec2.h"
 
        integer istr,iend,i,j,k,n_loc,auto_ind,auto_ind2
        real dt2,tmp1,tmp2,tmp3,tmp4
@@ -2285,10 +2290,11 @@
         use param
         use ocean3d
         use scalars
+        use bgc_ecosys_vars
 
         implicit none
 #include "bgc_param_bec2.h"
-#include "bgc_ecosys_bec2.h"
+!#include "bgc_ecosys_bec2.h"
 
     !---------------------------------------------------------------------------
     !   Set incoming fluxes (put into outgoing flux for first level usage).
@@ -2420,9 +2426,10 @@
        use param
        use grid
        use ocean3d
+       use bgc_ecosys_vars
 
        implicit none
-#include "bgc_ecosys_bec2.h"
+!#include "bgc_ecosys_bec2.h"
 #include "bgc_param_bec2.h"
 
        integer istr, iend, i, j, k, n_loc, iB

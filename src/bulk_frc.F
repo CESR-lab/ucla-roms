@@ -18,25 +18,56 @@
 
 #include "bulk_frc.opt"
 
-      real ::  uwnd(GLOBAL_2D_ARRAY)              ! time interpolated u-wind
-      real ::  vwnd(GLOBAL_2D_ARRAY)              ! time interpolated v-wind
-      real ::  tair(GLOBAL_2D_ARRAY)              ! air temp
-      real ::     Q(GLOBAL_2D_ARRAY)              ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
-      real :: prate(GLOBAL_2D_ARRAY)              ! prate (precipitation rate) - 'rain' variable in old code
-      real :: lwrad(GLOBAL_2D_ARRAY)              ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
-      !real:: srflx(GLOBAL_2D_ARRAY)              ! short wave radiation: srflx stored in surf_flux.F module as used in flux_frc too
+      real,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
+      real,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind
+      real,allocatable,dimension(:,:) ::  tair             ! air temp
+      real,allocatable,dimension(:,:) ::     Q             ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
+      real,allocatable,dimension(:,:) :: prate             ! prate (precipitation rate) - 'rain' variable in old code
+      real,allocatable,dimension(:,:) :: lwrad             ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
+      !real:: srflx(GLOBAL_2D_ARRAY)                       ! short wave radiation: srflx stored in surf_flux.F module as used in flux_frc too
 
 #if defined TAU_CORRECTION
-      real         :: taux(GLOBAL_2D_ARRAY)       ! The TAU_CORRECTION flag is used to active a correction term to
-      real         :: tauy(GLOBAL_2D_ARRAY)       ! bring bulk force field closer to that of the measured data.
+      real,allocatable,dimension(:,:) :: taux              ! The TAU_CORRECTION flag is used to active a correction term to
+      real,allocatable,dimension(:,:) :: tauy              ! bring bulk force field closer to that of the measured data.
 #endif
 
-      real, public :: wspd_used(GLOBAL_2D_ARRAY)  ! wind speed at rho point (also used in BGC routines)
+      real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
-
+      public init_arrays_bulk_frc
       public set_bulk_frc_tile
 
       contains
+
+! ----------------------------------------------------------------------
+      subroutine init_arrays_bulk_frc  ![
+      implicit none
+
+      allocate(  uwnd(GLOBAL_2D_ARRAY) )
+      allocate(  vwnd(GLOBAL_2D_ARRAY) )
+      allocate(  tair(GLOBAL_2D_ARRAY) )
+      allocate(     Q(GLOBAL_2D_ARRAY) )
+      allocate( prate(GLOBAL_2D_ARRAY) )
+      allocate( lwrad(GLOBAL_2D_ARRAY) )
+
+      allocate( wspd_used(GLOBAL_2D_ARRAY) )
+
+      allocate( nc_uwnd%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_vwnd%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_tair%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_Q%data(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_prate%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_lwrad%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad%data( GLOBAL_2D_ARRAY,2) )
+
+#if defined TAU_CORRECTION
+      allocate( taux(GLOBAL_2D_ARRAY) )
+      allocate( tauy(GLOBAL_2D_ARRAY) )
+      allocate( nc_taux%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_tauy%data( GLOBAL_2D_ARRAY,2) )
+#endif
+
+
+      end subroutine init_arrays_bulk_frc  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
@@ -1018,18 +1049,10 @@
      &                    *vmask(i,j)
 # endif
           end if
-
         enddo
       enddo
 
-
-# ifdef SURF_FLUX_OUTPUT_HIS
-C$OMP MASTER
-      call wrt_surface_flux_his ! write flux variables to flux output file
-C$OMP END MASTER
-C$OMP BARRIER
-# endif
-
+      if (wrt_surf_flx_file) call wrt_surface_flux_his ! write flux variables to flux output file
 
       end subroutine calc_all_bulk_forces  !]
 

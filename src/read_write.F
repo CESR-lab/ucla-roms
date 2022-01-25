@@ -45,7 +45,7 @@
       type, public :: ncvs
         character(len=20)     :: name                          ! name of variable in input file
         character(len=20)     :: time_name                     ! time variable name for variable
-        real                  :: data(GLOBAL_2D_ARRAY,2)=0     ! need=0 to initilise all vars other than name and time_name. Slightly inefficient to set=0 though. stores raw input data for 2 times: time_A < model_time < time_B
+        real,allocatable,dimension(:,:,:) :: data              ! need=0 to initilise all vars other than name and time_name. Slightly inefficient to set=0 though. stores raw input data for 2 times: time_A < model_time < time_B
         integer               :: grd_type  = 0                 ! rho=0 (default), u=1 or v=2 type
         integer               :: file_indx = 0                 ! correct file in forcing filename list
         integer               :: irec      = 0                 ! record required from input file
@@ -1552,18 +1552,6 @@ C$OMP BARRIER
                     A(i,j,k)=0.D0
 
                   endif
-                enddo
-              enddo
-            enddo
-          ! No masking for river locations as on land cells only
-          elseif (horiz_type == 100) then
-            do k=1,nmax
-              do j=jmin,jmax
-                shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
-                do i=imin,imax
-
-                    A(i,j,k)=buff(i+shft)
-
                 enddo
               enddo
             enddo

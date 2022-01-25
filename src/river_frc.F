@@ -24,11 +24,11 @@
 #include "river_frc.opt"
 
       ! Variables used for equation system calculations
-      real,public, dimension(GLOBAL_2D_ARRAY) :: riv_uflx
-      real,public, dimension(GLOBAL_2D_ARRAY) :: riv_vflx
-      real,public, dimension(nriv)    :: riv_vol      ! River volume
-      real,public, dimension(nriv,nt) :: riv_trc      ! River tracer conc.
-      real,public, dimension(GLOBAL_2D_ARRAY) :: rflx ! River locations
+      real,public,allocatable,dimension(:,:) :: riv_uflx
+      real,public,allocatable,dimension(:,:) :: riv_vflx
+      real,public,allocatable,dimension(:,:) :: rflx         ! River locations
+      real,public,dimension(nriv)    :: riv_vol              ! River volume
+      real,public,dimension(nriv,nt) :: riv_trc              ! River tracer conc.
 
       integer,public :: iriver            ! River index for looping through rivers
       real,   public :: riv_depth
@@ -50,7 +50,11 @@
       integer, dimension(2) :: r_it1 = 1, r_it2 = 2
       real, dimension(2,2)  :: r_times = -99 ! [-99,-99]
 
+      ! Misc:
+      logical, public :: init_riv_done = .false.  ! if river variables have been initialized yet
+
       public set_river_frc_tile
+      public init_river_frc
 
       contains
 
@@ -68,8 +72,7 @@
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
 
-      ! Initialize river flux locations (One time only)
-      if(FIRST_TIME_STEP) call init_river_frc(istr,iend,jstr,jend)
+      if(.not. init_riv_done) call init_river_frc(istr,iend,jstr,jend) ! initialize once river flux locations & arrays
 
       ! Set river flux volumes and tracer data
       if(analytical) then
@@ -121,6 +124,13 @@
       ! local
       integer :: ierr,ncid,v_id
 
+      allocate( riv_uflx(GLOBAL_2D_ARRAY) )
+      allocate( riv_vflx(GLOBAL_2D_ARRAY) )
+      if(.not. allocated(rflx))                  ! for analytical it is already allocated.
+     &  allocate( rflx(GLOBAL_2D_ARRAY) )
+      riv_uflx = 0.; riv_vflx = 0.
+!      rflx = 0.
+
       ! Should put this in wrapper in read_write.F as 'nc_read_once'
       if (analytical) then
 
@@ -129,15 +139,16 @@
       else ! Read 'river_flux' from grid file (River mouth locations)
         ierr=nf90_open(grdname, nf90_nowrite, ncid)
         ierr=nf90_inq_varid(ncid, riv_flx_name, v_id)
-        ! 0 for only one record, 100 to prevent land masking in ncdf_read_mod as rivers
-        ! defined on land cells only.
-        ierr=ncdf_read_mod(ncid, v_id, 0, 100, rflx(START_2D_ARRAY), 1)
+        v_id = -v_id  ! set v_id to negative so that ncdf_read_mod knows not to mask!
+        ierr=ncdf_read_mod(ncid, v_id, 0, 0, rflx(START_2D_ARRAY), 1)
         if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
 
       endif
 
       ! Compute uflx,vflx from rflx
       call calc_river_flux(istr,iend,jstr,jend)
+
+      init_riv_done = .true.
 
       if(mynode==0) print*, 'rivers: init river locations'
           

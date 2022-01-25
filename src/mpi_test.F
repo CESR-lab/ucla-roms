@@ -102,6 +102,8 @@ C$OMP BARRIER
 
 #include "compute_extended_bounds.h"
 
+      call init_arrays_mpi_test_arr  ! DevinD added for allocatable array changes
+
 #ifdef MPI
 c      write(*,'(2(1x,A,2I5),1x,A,4I5)') 'i,j node =', inode,jnode,
 c     &                         'i,j SW_corn =', iSW_corn,jSW_corn,

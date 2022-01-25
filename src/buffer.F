@@ -23,7 +23,19 @@
       !   V-,RHO-     v3dvar   V-type      (0:Lm+1,1:Mm+1,  N)
       !   RHO-,W-     w3dvar   W-type      (0:Lm+1,0:Mm+1,0:N)
 
-      real buff((Lm+5)*(Mm+5)*(N+1))
+      real,allocatable,dimension(:) :: buff
+
+      contains
+
+      !----------------------------------------------------------------
+      subroutine init_arrays_buffer  ![
+      implicit none
+
+      allocate( buff((Lm+5)*(Mm+5)*(N+1)) )
+
+      end subroutine init_arrays_buffer  !]
+
+      !----------------------------------------------------------------
 
       end module buffer
  
