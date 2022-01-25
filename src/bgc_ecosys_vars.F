@@ -157,10 +157,10 @@
 
 #  ifdef AVERAGES
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_avg
-      real,allocatable,dimension(:,:,:) :: bec2_diag_2d_avg
+      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_avg
 #   ifdef SLICE_AVG
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_slavg
-      real,allocatable,dimension(:,:,:) :: bec2_diag_2d_slavg
+      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_slavg
 #   endif
 #  endif /* AVERAGES */
 !# ifdef AVERAGES
@@ -329,7 +329,7 @@
 # endif
 
       real,allocatable,dimension(:,:) :: ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg
-      real,allocatable,dimension(:,:) :: PAR_avg
+      real,allocatable,dimension(:,:,:) :: PAR_avg
 !      common /time_avg1/ PAR_avg, PARinc_avg,
 !     &        pco2_avg, pCO2air_avg, pH_avg
 # ifdef SLICE_AVG
