@@ -60,6 +60,8 @@
       use dimensions
       use flux_frc
       use pipe_frc
+      use bgc_ecosys_vars
+      use bgc_forces
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -224,5 +226,10 @@
 #endif
 
       if (pipe_source) call init_arrays_pipes
+
+#ifdef BIOLOGY_BEC2
+      call init_arrays_bgc_ecosys_vars
+      call init_arrays_bgc_forces
+#endif
 
       end

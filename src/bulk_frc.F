@@ -31,7 +31,7 @@
       real,allocatable,dimension(:,:) :: tauy              ! bring bulk force field closer to that of the measured data.
 #endif
 
-      real,allocatable,dimension(:,:) :: wspd_used         ! wind speed at rho point (also used in BGC routines)
+      real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
       public init_arrays_bulk_frc
       public set_bulk_frc_tile
