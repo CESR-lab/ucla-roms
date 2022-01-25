@@ -15,13 +15,14 @@
       use read_write  ! ncvs
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use ncvars
+      use bgc_ecosys_vars
 
       implicit none
 
       private ! Make all variable private to this module unless public specified
 
       ! Includes:
-#include "bgc_ecosys_bec2.h"
+!#include "bgc_ecosys_bec2.h"
 
 #include "bgc.opt"
 
@@ -60,11 +61,12 @@
 
       use read_write, only: set_frc_var_tile, ncvs
       use scalars
+      use bgc_forces
 
       implicit none
 
 ! Needed for iron and dust variables, not yet ported to this module. Should do.
-#include "bgc_forces.h"
+!#include "bgc_forces.h"
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend

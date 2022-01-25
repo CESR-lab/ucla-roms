@@ -27,56 +27,48 @@ c--#endif
 c-dd# define RIVER_SOURCE
 c-dd# define PIPE_SOURCE
 c-dd#define BIOLOGY_BEC2
-
 c-dd# define WEC
-# ifdef WEC
-#    define BRK0
-#    define SURFACE_BREAK
-#    undef SPEC_DD
-#    undef LOG_BDRAG
-#    undef WKB_WWAVE
-#    undef BBL
-#    define WAVE_OFFLINE
-#    define WAVE_FRICTION
-#    define BBL_S95
-c#    define BBL_F00
-#    define SUP_OFF
-#    define WAVE_DIFF_FROM_LM
-# endif /* WEC */
 
-/* Include standard CPP switches for UP ETH Zurich */
-c-dd#include "cppdefs_UP.h"
-
-/*
-   Standard UP ETH Zurich Settings for Regional and Basin Configurations
-   #### PLEASE do not change but use undef in cppdefs.opt to undefine
-   #### what as needed e.g., put #undef SPONGE in your personal cppdefs.opt
-*/
-                     /* Basics */
+/* Basics */
 #define SOLVE3D
 #define UV_ADV
 #define UV_COR
-                     /*  Equation of State */
+#define ADV_ISONEUTRAL
+
+/* Equation of State */
 #define NONLIN_EOS
 #define SPLIT_EOS
 #define SALINITY
+
+/*  Forcing */
+
+/*   - surface */
+#define BULK_FRC         /* comment out for default flux forcing */
+#define DIURNAL_SRFLUX   /* Note this is 'undef'ed' below */
+c-dd#define QCORRECTION  /* DevinD no longer used for bulk force */
 c-dd#define SFLX_CORR    /* DevinD turned off as new 25km input wrong for sss */
-                     /*  Forcing */
-                     /*         - surface */
-#define DIURNAL_SRFLUX /* Note this is 'undef'ed' below */
-c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
-                     /*         - lateral */
+
+/*   - switches required for flux correction */
+#undef VFLX_CORR
+#undef QCORRECTION
+c-dd#define TAU_CORRECTION
+#undef DIURNAL_SRFLUX
+
+/*   - lateral */
 #define T_FRC_BRY
 #define Z_FRC_BRY
 #define M3_FRC_BRY
 #define M2_FRC_BRY
 #define SPONGE
 #define SPONGE_WIDTH /* # of sponge points is input parameter */
-                     /* Mixing */
-                     /*        - lateral */
+
+/* Mixing */
+
+/*  - lateral */
 #define UV_VIS2
 #define TS_DIF2
-                     /*        - vertical */
+
+/*  - vertical */
 #define LMD_MIXING
 #define LMD_KPP
 #define LMD_NONLOCAL
@@ -84,24 +76,22 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 #define LMD_CONVEC
 #define LMD_BKPP
 
-                      /* Grid Configuration */
+/* Grid Configuration */
 #define CURVGRID
 #define SPHERICAL
 #define MASKING
 
-                      /* Output Options */
+/* Output Options */
 #define MASK_LAND_DATA
 
-                      /* Restart */
-!--> #define EXACT_RESTART
+/* Restart */
+c#define EXACT_RESTART
 
-                      /* Open Boundary Conditions */
+/* Open Boundary Conditions */
 #define OBC_M2FLATHER  /* Barotop. BC: OBC_M2FLATHER, OBC_M2ORLANSKI, OBC_M2SPECIFIED */
 #define OBC_M3ORLANSKI /* Baroclin. BC: OBC_M3ORLANSKI, OBC_M3SPECIFIED */
 #define OBC_TORLANSKI  /* Tracer BC: OBC_TORLANSKI, OBC_TSPECIFIED */
 
-
-/* End of UP ETH Standard Settings */
 
 /* Open Boundaries */
 #define OBC_WEST /* Open boundary in the west (in order: SO out, SO in, Ind. throughflow) */
@@ -109,16 +99,6 @@ c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
 #define OBC_EAST
 #define OBC_SOUTH
 #undef SPONGE /* DevinD - defined in cppdefs_UP.h */
-
-/* Switches required for Flux correction */
-c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
-#undef VFLX_CORR
-#undef QCORRECTION
-c-dd#define TAU_CORRECTION
-#undef DIURNAL_SRFLUX
-
-
-#define ADV_ISONEUTRAL
 
 /* Biology Settings */
 #ifdef BIOLOGY_BEC2
@@ -139,26 +119,35 @@ c-dd# undef define NOX_FORCING        /* under construction */
 # undef DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
 #endif /* BIOLOGY_BEC2 */
 
-#define BULK_FRC
-
-    /* Flux Analysis */
-c-dd# define WRITE_DEPTHS /* For Budget Analysis Closure */
-
-    /* Tides */
+/* Tides */
 #ifdef PACIFIC_PD
 # define TIDES
 #endif
-# ifdef TIDES
-#  define POT_TIDES
-#  define SSH_TIDES
-#  define UV_TIDES
+#ifdef TIDES
+# define POT_TIDES
+# define SSH_TIDES
+# define UV_TIDES
 c-dd-gone#  define TIDERAMP ! No longer using tideramp
-# endif
+#endif
 
+#ifdef WEC
+# define BRK0
+# define SURFACE_BREAK
+# undef SPEC_DD
+# undef LOG_BDRAG
+# undef WKB_WWAVE
+# undef BBL
+# define WAVE_OFFLINE
+# define WAVE_FRICTION
+# define BBL_S95
+c# define BBL_F00
+# define SUP_OFF
+# define WAVE_DIFF_FROM_LM
+#endif /* WEC */
 
 #elif defined DUMMY_CASE
 
-#  define MASKING
+# define MASKING
 
 #endif
 
