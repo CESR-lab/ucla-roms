@@ -9,7 +9,9 @@
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
 
 #include "cppdefs.opt"
-#if defined PIPE_SOURCE
+! we have no PIPE_SOURCE flag here anymore, since we are moving away from cpp flags.
+! Variables still need to be visible within code even when pipes are not used.
+
   
       use dimensions !! has dimensions, a list of forcing files, and rmask
       use read_write
@@ -23,14 +25,12 @@
 
       ! Variables used in the evolution equations
       integer,public  :: pidx ! Pipe index for looping through pipes
-      integer,public, dimension(GLOBAL_2D_ARRAY) :: pipe_idx  ! pipe indices at grid points
-      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_fraction ! pipe fractional flux at grid points
-
-      real   ,public, dimension(GLOBAL_2D_ARRAY) :: pipe_flx  ! pipe flux
-      real   ,public, dimension(npip,N)          :: pipe_prf  ! Pipe vertical profile
-      real   ,public, dimension(npip,nt)         :: pipe_trc  ! Pipe tracer conc.
-
-      real   ,public, dimension(npip)            :: pipe_vol  ! Pipe volume
+      integer,public,allocatable,dimension(:,:) :: pipe_idx      ! pipe indices at grid points
+      real   ,public,allocatable,dimension(:,:) :: pipe_fraction ! pipe fractional flux at grid points
+      real   ,public,allocatable,dimension(:,:) :: pipe_flx      ! pipe flux
+      real   ,public, dimension(npip,N)         :: pipe_prf      ! Pipe vertical profile
+      real   ,public, dimension(npip,nt)        :: pipe_trc      ! Pipe tracer conc.
+      real   ,public, dimension(npip)           :: pipe_vol      ! Pipe volume
 
      ! Netcdf names
       character(len=9)  :: pipe_flx_name = 'pipe_flux'  !! stored in the grid file
@@ -47,13 +47,15 @@
       integer, dimension(2) :: p_it1 = 1, p_it2 = 2
       real, dimension(2,2)  :: p_times = -99 ! [-99,-99]
 
+      logical :: init_pipe_done = .false.
 
       public set_pipe_frc_tile
+      public init_arrays_pipes
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_pipe_frc_tile(istr,iend,jstr,jend)
+      subroutine set_pipe_frc_tile(istr,iend,jstr,jend)  ![
 
       ! SET PIPE FORCES (REALISTIC OR ANALYTICAL FORCING):
       ! - read and interpolation all pipe forcing.
@@ -69,7 +71,7 @@
       integer :: i, j
 
       ! Initialize pipe flux locations (One time only)
-      if(FIRST_TIME_STEP) call init_pipe_frc(istr,iend,jstr,jend)
+      if(.not. init_pipe_done) call init_pipe_frc(istr,iend,jstr,jend)
 
       ! Set pipe flux volumes and tracer data
       if(p_analytical) then
@@ -110,16 +112,18 @@
         ! Now calculated fluxes with time interpolated volumes and conc.:
         do j = jstr,jend
           do i = istr,iend
-            pipe_flx(i,j)=pipe_fraction(i,j)*pipe_vol( pipe_idx(i,j) )
+            if (pipe_idx(i,j) > 0.) then
+              pipe_flx(i,j)=pipe_fraction(i,j)*pipe_vol( pipe_idx(i,j) )
+            endif
           enddo
         enddo
 
       endif
 
-      end subroutine set_pipe_frc_tile
-! ----------------------------------------------------------------------
+      end subroutine set_pipe_frc_tile  !]
 
-      subroutine init_pipe_frc(istr,iend,jstr,jend)
+! ----------------------------------------------------------------------
+      subroutine init_pipe_frc(istr,iend,jstr,jend)  ![
 
       ! Initialize pipe forcing:
       ! Read in a grid file with locations of pipes and flux contribution per cell.
@@ -161,13 +165,23 @@
 
       endif
 
+      init_pipe_done = .true.
       if(mynode==0) print*, 'pipes: init pipe locations'
           
-      end subroutine init_pipe_frc
+      end subroutine init_pipe_frc  !]
 
 ! ----------------------------------------------------------------------
+      subroutine init_arrays_pipes  ![
+      implicit none
 
-      subroutine set_pipe_vert_prf
+      allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
+      allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
+      allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
+
+      end subroutine init_arrays_pipes  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_pipe_vert_prf  ![
       ! set vertical discharge profile of pipes
 
       ! This is a time-independent equation for now, but
@@ -186,19 +200,17 @@
         pipe_prf(ipipe,2)= 0.5  ! Dispersion profile 2nd from bottom cell
       enddo
 
-      end subroutine set_pipe_vert_prf
+      end subroutine set_pipe_vert_prf  !]
 
 ! ----------------------------------------------------------------------
-# if defined PIPE_SOURCE
-      subroutine set_ana_pipe_frc(istr,iend,jstr,jend)
+      subroutine set_ana_pipe_frc(istr,iend,jstr,jend)  ![
       ! Analytical pipe forcing volume and tracer data
       ! Put here to avoid circular reference if in analytical.F
 
 #include "pipe_frc_ana.opt"
 
-      end subroutine set_ana_pipe_frc
-#endif /* PIPE_SOURCE */
+      end subroutine set_ana_pipe_frc  !]
+
 ! ----------------------------------------------------------------------
 
-# endif /* ifdef PIPE_SOURCE */
       end module pipe_frc

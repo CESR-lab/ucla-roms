@@ -126,6 +126,10 @@
 
 # include "compute_extended_bounds.h"
 
+      ! need to initialize arrays for river. Normally done through set_river_frc,
+      ! but analytical calls come before that so need this here.
+      allocate( rflx(GLOBAL_2D_ARRAY) )
+
 C$OMP MASTER                           ! Copy physical dimensions of
       xl=Size_XI ; el=Size_ETA         ! the grid into glabally visible
 C$OMP END MASTER                       ! variables (ONE THREAD ONLY).

@@ -18,20 +18,55 @@
 ! without using "max" function inside parameter statement.
   
 #ifdef ALLOW_SINGLE_BLOCK_MODE
-      integer, parameter :: size_XI=6+Lm, size_ETA=6+Mm,
+      integer :: size_XI, size_ETA
 #else
-      integer, parameter :: size_XI=7+(Lm+NSUB_X-1)/NSUB_X,
-     &                      size_ETA=7+(Mm+NSUB_E-1)/NSUB_E,
+      integer :: size_XI,
+     &           size_ETA,
 #endif
-     &         sse=size_ETA/(N+1),  ssz=(N+1)/size_ETA,
-     &         N2d=size_XI*(sse*size_ETA+ssz*(N+1))/(sse+ssz),
-     &         N3d=size_XI*size_ETA*(N+1)
+     &         sse, ssz,
+     &         N2d,
+     &         N3d
 
-      real A2d(N2d,32)
+
+      real,allocatable,dimension(:,:) :: A2d
 #ifdef SOLVE3D
-      real A3d(N3d,6)
-      integer iA2d(N2d,2)
+      real,allocatable,dimension(:,:) :: A3d
+      integer,allocatable,dimension(:,:) :: iA2d
 #endif
 C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
+
+      contains
+
+!----------------------------------------------------------------------
+      subroutine init_arrays_private_scratch  ![
+      implicit none
+
+#ifdef ALLOW_SINGLE_BLOCK_MODE
+      size_XI=6+Lm; size_ETA=6+Mm
+#else
+      size_XI=7+(Lm+NSUB_X-1)/NSUB_X
+      size_ETA=7+(Mm+NSUB_E-1)/NSUB_E
+#endif
+      sse=size_ETA/(N+1);  ssz=(N+1)/size_ETA
+      N2d=size_XI*(sse*size_ETA+ssz*(N+1))/(sse+ssz)
+      N3d=size_XI*size_ETA*(N+1)
+
+
+      allocate( A2d(N2d,32) )
+#ifdef SOLVE3D
+      allocate( A3d(N3d,6)  )
+      allocate( iA2d(N2d,2) )
+#endif
+
+#ifdef SOLVE3D
+      ! Initialize (first touch) private
+      ! scratch arrays in parallel by each thread.
+      A3d=0.
+#endif
+      A2d=0.
+
+      end subroutine init_arrays_private_scratch  !]
+
+      !----------------------------------------------------------------
 
       end module private_scratch

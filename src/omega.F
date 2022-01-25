@@ -69,13 +69,13 @@ c**     dtau=(1.-1./6.)*dt
           do i=istr,iend
             Wi(i,j,k)=Wi(i,j,k-1) -FlxU(i+1,j,k) +FlxU(i,j,k)
      &                            -FlxV(i,j+1,k) +FlxV(i,j,k)
-#ifdef PIPE_SOURCE
-            if (pipe_idx(i,j)>0) then
-              pidx = pipe_idx(i,j)
-              Wi(i,j,k)=Wi(i,j,k)
-     &             + pipe_flx(i,j)*pipe_prf(pidx,k)
+            if (pipe_source) then
+              if (pipe_idx(i,j)>0) then         ! pipe_source removes branching because it's a parameter
+                pidx = pipe_idx(i,j)
+                Wi(i,j,k)=Wi(i,j,k)
+     &                   + pipe_flx(i,j)*pipe_prf(pidx,k)
+              endif
             endif
-#endif
 
             CX(i,k)=max(FlxU(i+1,j,k),0.)-min(FlxU(i,j,k),0.)
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)

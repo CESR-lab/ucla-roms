@@ -153,9 +153,12 @@
         do i=istrU-1,iend
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
-#ifdef PIPE_SOURCE
-          zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
-#endif
+          if (pipe_source) then
+            if (pipe_idx(i,j) > 0.) then                                         ! pipe_source parameter will
+              zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j) ! remove branch if false
+            endif
+          endif
+
 #ifdef MASKING
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed
 #endif

@@ -15,13 +15,14 @@
       use read_write  ! ncvs
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use ncvars
+      use bgc_ecosys_vars
 
       implicit none
 
       private ! Make all variable private to this module unless public specified
 
       ! Includes:
-#include "bgc_ecosys_bec2.h"
+!#include "bgc_ecosys_bec2.h"
 
 #include "bgc.opt"
 
@@ -43,6 +44,7 @@
       public set_avg_bgc_diag
 # endif
 #endif
+      public init_arrays_bgc_frc
       public init_scalars_bec2
 
       contains
@@ -60,11 +62,12 @@
 
       use read_write, only: set_frc_var_tile, ncvs
       use scalars
+      use bgc_forces
 
       implicit none
 
 ! Needed for iron and dust variables, not yet ported to this module. Should do.
-#include "bgc_forces.h"
+!#include "bgc_forces.h"
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
@@ -300,6 +303,23 @@
       end subroutine set_avg_bgc_diag  !]
 #endif /* BEC2_DIAG */
 #endif /* AVERAGES */
+
+! ----------------------------------------------------------------------
+      subroutine init_arrays_bgc_frc  ![
+      implicit none
+
+      allocate( nc_dust%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_iron%data( GLOBAL_2D_ARRAY,2) )
+
+#ifdef PCO2AIR_FORCING
+      allocate( nc_pco2air%data( GLOBAL_2D_ARRAY,2) )
+#endif
+
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+      allocate( nc_swrad_avg%data( GLOBAL_2D_ARRAY,2) )
+#endif
+
+      end subroutine  !]
 
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![

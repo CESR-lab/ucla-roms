@@ -7,7 +7,18 @@
 
 ! This is "work": declaration of utility work array.
 !
-      real work(GLOBAL_2D_ARRAY,0:N)
+      real,allocatable,dimension(:,:,:) :: work
+
+      contains
+
+      !----------------------------------------------------------------
+      subroutine init_arrays_work_mod  ![
+      implicit none
+
+      allocate( work(GLOBAL_2D_ARRAY,0:N) )
+
+      end subroutine init_arrays_work_mod  !]
+      !----------------------------------------------------------------
 
       end module work_mod
  

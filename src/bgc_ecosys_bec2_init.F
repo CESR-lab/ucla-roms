@@ -7,11 +7,11 @@
 
       use param
       use grid
+      use bgc_ecosys_vars
 
       implicit none
 
 #include "bgc_param_bec2.h"
-#include "bgc_ecosys_bec2.h"
 
       integer auto_ind
       ! Variables used for namelist parameter input:

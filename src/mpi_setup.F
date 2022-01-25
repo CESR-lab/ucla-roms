@@ -102,30 +102,57 @@ C$    endif
 ! Determine bounds of the usable portion of model arrays:
 
         off_xi=NP_XI*Lm-LLm
-        iSW_corn=inode*Lm-off_xi/2
+!        iSW_corn=inode*Lm-off_xi/2
+!        if (inode == 0) then
+!          iwest=1+off_xi/2
+!        else
+!          iwest=1
+!        endif
+!        if (inode < NP_XI-1) then
+!          ieast=Lm
+!        else
+!          ieast=Lm -(off_xi+1)/2
+!        endif
+        if (inode == 0) then               ! DevinD added
+          iSW_corn = 0                     ! need to fix iSW_corn as used to determine WESTERN_EDGE
+        else
+          iSW_corn = inode*Lm - off_xi/2   ! add length of western domain.
+        endif
         if (inode == 0) then
-          iwest=1+off_xi/2
-        else
-          iwest=1
+          Lm = Lm - off_xi/2
         endif
-        if (inode < NP_XI-1) then
-          ieast=Lm
-        else
-          ieast=Lm -(off_xi+1)/2
+        if (inode == NP_XI-1) then
+          Lm = Lm -(off_xi+1)/2
         endif
+        iwest = 1
+        ieast = Lm                               ! all sub-domains (Lm same for all interior,
+                                                 ! possibly different E & W edges
 
         off_eta=NP_ETA*Mm-MMm
         jSW_corn=jnode*Mm-off_eta/2
+!        if (jnode == 0) then
+!          jsouth=1+off_eta/2
+!        else
+!          jsouth=1
+!        endif
+!        if (jnode < NP_ETA-1) then
+!          jnorth=Mm
+!        else
+!          jnorth=Mm -(off_eta+1)/2
+!        endif
+        if (jnode == 0) then                ! DevinD added
+          jSW_corn = 0                      ! need to fix iSW_corn as used to determine WESTERN_EDGE
+        else
+          jSW_corn = jnode*Mm - off_eta/2   ! add length of western domain.
+        endif
         if (jnode == 0) then
-          jsouth=1+off_eta/2
-        else
-          jsouth=1
+          Mm = Mm - off_eta/2
         endif
-        if (jnode < NP_ETA-1) then
-          jnorth=Mm
-        else
-          jnorth=Mm -(off_eta+1)/2
+        if (jnode == NP_ETA-1) then
+          Mm = Mm -(off_eta+1)/2
         endif
+        jsouth = 1
+        jnorth = Mm
 
 #ifdef VERBOSE
       write(*,'(A,7I5,1x,A,I4)') 'XI:', LLm, off_xi, iSW_corn, Lm,

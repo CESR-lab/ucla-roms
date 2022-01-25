@@ -22,9 +22,10 @@
 
       integer, parameter :: gnx = LLm
       integer, parameter :: gny = MMm
-      integer, parameter ::  nx = Lm
-      integer, parameter ::  ny = Mm
       integer, parameter ::  nz = N
+
+      integer            :: nx         ! different four boundary tiles hence not compile time parameter
+      integer            :: ny
 
       ! DevinD: store global index ranges for each node for bry_extract_child.F
       integer :: glob_istr, glob_iend, glob_jstr, glob_jend
@@ -79,6 +80,16 @@
 !      print *, mynode,glob_istr,glob_iend,glob_jstr,glob_jend
 
       end subroutine set_global_ij_SW_NE_corners
+
+! ----------------------------------------------------------------------
+      subroutine init_arrays_dimensions  ![
+      implicit none
+      ! need to do this here because Lm, Mm change in mpi_setup and are not known at compile time.
+
+      nx = Lm
+      ny = Mm
+
+      end subroutine init_arrays_dimensions  !]
 
 ! ----------------------------------------------------------------------
 

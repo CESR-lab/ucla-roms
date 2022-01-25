@@ -9,3 +9,8 @@
 #endif
       ! end user inputs
       ! ****************************************************************
+#ifdef PIPE_SOURCE
+      logical,parameter,public :: pipe_source = .true.
+#else
+      logical,parameter,public :: pipe_source = .false.
+#endif
