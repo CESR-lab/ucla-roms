@@ -62,6 +62,7 @@
       use pipe_frc
       use bgc_ecosys_vars
       use bgc_forces
+      use bgc
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
@@ -226,6 +227,7 @@
 #ifdef BIOLOGY_BEC2
       call init_arrays_bgc_ecosys_vars
       call init_arrays_bgc_forces
+      call init_arrays_bgc_frc
 #endif
 
       end

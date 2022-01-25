@@ -44,6 +44,7 @@
       public set_avg_bgc_diag
 # endif
 #endif
+      public init_arrays_bgc_frc
       public init_scalars_bec2
 
       contains
@@ -302,6 +303,23 @@
       end subroutine set_avg_bgc_diag  !]
 #endif /* BEC2_DIAG */
 #endif /* AVERAGES */
+
+! ----------------------------------------------------------------------
+      subroutine init_arrays_bgc_frc  ![
+      implicit none
+
+      allocate( nc_dust%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_iron%data( GLOBAL_2D_ARRAY,2) )
+
+#ifdef PCO2AIR_FORCING
+      allocate( nc_pco2air%data( GLOBAL_2D_ARRAY,2) )
+#endif
+
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+      allocate( nc_swrad_avg%data( GLOBAL_2D_ARRAY,2) )
+#endif
+
+      end subroutine  !]
 
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![
