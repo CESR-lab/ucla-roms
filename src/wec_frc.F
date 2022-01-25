@@ -68,23 +68,23 @@
 !--------------------------------------------------------------------
 
 #if defined BBL || defined WEC
-      real wfrq(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: wfrq
 #endif
 
 #ifdef BBL
-      real uorb(GLOBAL_2D_ARRAY)
-      real vorb(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: uorb
+      real,allocatable,dimension(:,:) :: vorb
 #endif   /* BBL */
 
 
-      real whrm(GLOBAL_2D_ARRAY)
-      real wdsp(GLOBAL_2D_ARRAY)
-      real wdrg(GLOBAL_2D_ARRAY)
-      real wbst(GLOBAL_2D_ARRAY)
-      real wdrx(GLOBAL_2D_ARRAY)
-      real wdre(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: whrm
+      real,allocatable,dimension(:,:) :: wdsp
+      real,allocatable,dimension(:,:) :: wdrg
+      real,allocatable,dimension(:,:) :: wbst
+      real,allocatable,dimension(:,:) :: wdrx
+      real,allocatable,dimension(:,:) :: wdre
 # ifdef SURFACE_ROLLER
-      real rdsp(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:) :: rdsp
 # endif
 
 !--------------------------------------------------------------------
@@ -118,36 +118,36 @@
 !  3D  |  frc3de   |  eta-direction 3D frictional dissipation (rho)
 !--------------------------------------------------------------------
 
-      real, public :: brk2dx(GLOBAL_2D_ARRAY)
-      real, public :: brk2de(GLOBAL_2D_ARRAY)
-      real, public :: ust2d(GLOBAL_2D_ARRAY)
-      real, public :: vst2d(GLOBAL_2D_ARRAY)
-      real         :: ustr2d(GLOBAL_2D_ARRAY) ! At rho point
-      real         :: vstr2d(GLOBAL_2D_ARRAY) ! At rho point
-      real         :: ustr0(GLOBAL_2D_ARRAY)
-      real         :: vstr0(GLOBAL_2D_ARRAY)
-      real         :: llmm(GLOBAL_2D_ARRAY)
-      real, public :: frc2dx(GLOBAL_2D_ARRAY) ! used in prestep, step2d, step3d
-      real, public :: frc2de(GLOBAL_2D_ARRAY) ! used in prestep, step2d, step3d
-      real, public :: sup(GLOBAL_2D_ARRAY) ! used in step2d
+      real,allocatable,dimension(:,:),public :: brk2dx
+      real,allocatable,dimension(:,:),public :: brk2de
+      real,allocatable,dimension(:,:),public :: ust2d
+      real,allocatable,dimension(:,:),public :: vst2d
+      real,allocatable,dimension(:,:)        :: ustr2d ! At rho point
+      real,allocatable,dimension(:,:)        :: vstr2d ! At rho point
+      real,allocatable,dimension(:,:)        :: ustr0
+      real,allocatable,dimension(:,:)        :: vstr0
+      real,allocatable,dimension(:,:)        :: llmm
+      real,allocatable,dimension(:,:),public :: frc2dx ! used in prestep, step2d, step3d
+      real,allocatable,dimension(:,:),public :: frc2de ! used in prestep, step2d, step3d
+      real,allocatable,dimension(:,:),public :: sup    ! used in step2d
 # ifdef SOLVE3D
-      real, public :: calP(GLOBAL_2D_ARRAY) ! used in prsgrd32AC1.F
-      real, public :: Kapsrf(GLOBAL_2D_ARRAY) ! used in prsgrd32AC1.F
+      real,allocatable,dimension(:,:),public :: calP   ! used in prsgrd32AC1.F
+      real,allocatable,dimension(:,:),public :: Kapsrf ! used in prsgrd32AC1.F
 #  ifndef SURFACE_BREAK
-      real         :: brk3dx(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
-      real         :: brk3de(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
+      real         :: brk3dx ! used in momentum eqn in wec_frc.F
+      real         :: brk3de ! used in momentum eqn in wec_frc.F
 #  endif
 #  ifdef BODY_FRICTION
-      real         :: frc3dx(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
-      real         :: frc3de(GLOBAL_2D_ARRAY,N) ! used in momentum eqn in wec_frc.F
+      real         :: frc3dx ! used in momentum eqn in wec_frc.F
+      real         :: frc3de ! used in momentum eqn in wec_frc.F
 #  endif
-      real, public :: ust(GLOBAL_2D_ARRAY,N)
-      real, public :: vst(GLOBAL_2D_ARRAY,N)
-      real, public :: wst(GLOBAL_2D_ARRAY,N) ! used in set_avg.F
-      real, public :: kvf(GLOBAL_2D_ARRAY,N) ! used in prsgrd32AC1.F
-      real, public :: Akb(GLOBAL_2D_ARRAY,0:N) ! used in lmd_kpp.F
-      real, public :: Akw(GLOBAL_2D_ARRAY,0:N) ! used in lmd_kpp.F
-      real         :: E_pre(GLOBAL_2D_ARRAY,0:N)
+      real,allocatable,dimension(:,:,:),public :: ust
+      real,allocatable,dimension(:,:,:),public :: vst
+      real,allocatable,dimension(:,:,:),public :: wst    ! used in set_avg.F
+      real,allocatable,dimension(:,:,:),public :: kvf    ! used in prsgrd32AC1.F
+      real,allocatable,dimension(:,:,:),public :: Akb    ! used in lmd_kpp.F
+      real,allocatable,dimension(:,:,:),public :: Akw    ! used in lmd_kpp.F
+      real,allocatable,dimension(:,:,:)        :: E_pre
 # endif  /* SOLVE3D */
 
       ! REALISTIC WEC VARIABLES (FROM READ IN NETCDF FILE)
@@ -180,38 +180,38 @@
 !  wvqb  |  step              | fraction of breaking waves [ND]
 !--------------------------------------------------------------------
 
-      real         :: wwag(GLOBAL_2D_ARRAY,2)
-      real         :: wwdg(GLOBAL_2D_ARRAY,2)
-      real         :: wwpg(GLOBAL_2D_ARRAY,2)
+      real,allocatable,dimension(:,:,:)        :: wwag
+      real,allocatable,dimension(:,:,:)        :: wwdg
+      real,allocatable,dimension(:,:,:)        :: wwpg
 #  ifdef BBL
-      real         :: wwub(GLOBAL_2D_ARRAY,2)
-      real         :: wwuob(GLOBAL_2D_ARRAY,2)
-      real         :: wwvob(GLOBAL_2D_ARRAY,2)
+      real,allocatable,dimension(:,:,:)        :: wwub
+      real,allocatable,dimension(:,:,:)        :: wwuob
+      real,allocatable,dimension(:,:,:)        :: wwvob
 #  endif
-      real         :: wwdrx(GLOBAL_2D_ARRAY,2)
-      real         :: wwdre(GLOBAL_2D_ARRAY,2)
-      real         :: wweb(GLOBAL_2D_ARRAY,2)
-      real, public :: wveb(GLOBAL_2D_ARRAY)
-      real, public :: wved(GLOBAL_2D_ARRAY)
-      real         :: wwed(GLOBAL_2D_ARRAY,2)
-      real         :: wwUSg(GLOBAL_2D_ARRAY,2)
-      real         :: wwVSg(GLOBAL_2D_ARRAY,2)
-      real         :: wwus0g(GLOBAL_2D_ARRAY,2)
-      real         :: wwvs0g(GLOBAL_2D_ARRAY,2)
+      real,allocatable,dimension(:,:,:)        :: wwdrx
+      real,allocatable,dimension(:,:,:)        :: wwdre
+      real,allocatable,dimension(:,:,:)        :: wweb
+      real,allocatable,dimension(:,:),public   :: wveb
+      real,allocatable,dimension(:,:),public   :: wved
+      real,allocatable,dimension(:,:,:)        :: wwed
+      real,allocatable,dimension(:,:,:)        :: wwUSg
+      real,allocatable,dimension(:,:,:)        :: wwVSg
+      real,allocatable,dimension(:,:,:)        :: wwus0g
+      real,allocatable,dimension(:,:,:)        :: wwvs0g
 #   if defined WAVE_OFFLINE && defined SURFACE_ROLLER
-      real, public :: wvqb(GLOBAL_2D_ARRAY)
-      real         :: wwqb(GLOBAL_2D_ARRAY,2)
+      real,allocatable,dimension(:,:),public   :: wvqb
+      real,allocatable,dimension(:,:,:)        :: wwqb
 #   endif
 #   if defined WAVE_OFFLINE && defined SUP_OFF
-      real         :: wwsup(GLOBAL_2D_ARRAY,2)
+      real,allocatable,dimension(:,:,:)        :: wwsup
 #  endif
 #   if defined WAVE_OFFLINE && defined WAVE_DIFF_FROM_LM
-      real, public :: wwlm(GLOBAL_2D_ARRAY,2)
+      real,allocatable,dimension(:,:,:),public :: wwlm
 #   endif
 
       ! Grid rotation angles
-      real         :: angler_cos(GLOBAL_2D_ARRAY)
-      real         :: angler_sin(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:)          :: angler_cos
+      real,allocatable,dimension(:,:)          :: angler_sin
 
 !# elif defined ANA_WEC_FRC && defined WEC
 !      real, public :: wveb(GLOBAL_2D_ARRAY)
@@ -228,18 +228,18 @@
 
       ! from averages.h in MRL_WCI old roms code
 #ifdef AVERAGES
-      real sup_avg(GLOBAL_2D_ARRAY)
-      real ust2d_avg(GLOBAL_2D_ARRAY)
-      real vst2d_avg(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:)   :: sup_avg
+      real,allocatable,dimension(:,:)   :: ust2d_avg
+      real,allocatable,dimension(:,:)   :: vst2d_avg
 #  ifdef SOLVE3D
-      real ust_avg(GLOBAL_2D_ARRAY,N)
-      real vst_avg(GLOBAL_2D_ARRAY,N)
-      real wst_avg(GLOBAL_2D_ARRAY,N)
-      real akb_avg(GLOBAL_2D_ARRAY,0:N)
-      real akw_avg(GLOBAL_2D_ARRAY,0:N)
-      real kvf_avg(GLOBAL_2D_ARRAY,N)
-      real calp_avg(GLOBAL_2D_ARRAY)
-      real kapsrf_avg(GLOBAL_2D_ARRAY)
+      real,allocatable,dimension(:,:,:) :: ust_avg
+      real,allocatable,dimension(:,:,:) :: vst_avg
+      real,allocatable,dimension(:,:,:) :: wst_avg
+      real,allocatable,dimension(:,:,:) :: akb_avg
+      real,allocatable,dimension(:,:,:) :: akw_avg
+      real,allocatable,dimension(:,:,:) :: kvf_avg
+      real,allocatable,dimension(:,:)   :: calp_avg
+      real,allocatable,dimension(:,:)   :: kapsrf_avg
 #  endif  /* SOLVE3D */
 #endif /* AVERAGES */
 
@@ -439,7 +439,7 @@
       ! NETCDF SUBROUTINES
       ! ##################
 
-      subroutine read_inp_wec (keyword, ierr, kwlen)
+      subroutine read_inp_wec (keyword, ierr, kwlen)  ![
 
       ! ========================================
       ! Read from input file which WEC variables
@@ -517,11 +517,11 @@
 
  100  continue
 
-      end subroutine read_inp_wec
-! ----------------------------------------------------------------------
+      end subroutine read_inp_wec  !]
 
+! ----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine read_inp_avg_wec (keyword, ierr, kwlen)
+      subroutine read_inp_avg_wec (keyword, ierr, kwlen)  ![
 
       ! ========================================
       ! Read from input file which WEC variables
@@ -600,12 +600,12 @@
 
  100  continue
 
-      end subroutine read_inp_avg_wec
+      end subroutine read_inp_avg_wec  !]
 #endif /* AVERAGES */
-!-----------------------------------------------------------------------
 
+!-----------------------------------------------------------------------
 #ifndef ANA_WEC_FRC
-      subroutine read_wec_frc(fname,irec,idx,wec_in_time)
+      subroutine read_wec_frc(fname,irec,idx,wec_in_time)  ![
 
       ! =========================================
       ! READ WEC VARIABLES FROM INPUT NETCDF FILE
@@ -694,15 +694,15 @@
       call nc_read_var(ncid,wwsup(START_2D_ARRAY,idx),1,
      &                       sup_name,r_var,irec,ierr,coarse)
 
-      end subroutine read_wec_frc
+      end subroutine read_wec_frc  !]
 #endif /* !ANA_WEC_FRC */
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
       subroutine def_his_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
 #ifdef SOLVE3D
      &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
 #endif
-     &                                                             )
+     &                                                             )  ![
 
       ! =================================
       ! Define output variable attributes
@@ -791,9 +791,9 @@
 
 # endif  /* SOLVE3D */
 
-      end subroutine def_his_def_var_wec
-!-----------------------------------------------------------------------
+      end subroutine def_his_def_var_wec  !]
 
+!-----------------------------------------------------------------------
 #ifdef AVERAGES
       subroutine def_avg_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
 # ifdef SOLVE3D
@@ -1257,6 +1257,131 @@
       ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
       ! This had to declared last else won't compile
 #include "compute_auxiliary_bounds.h"
+
+
+
+#if defined BBL || defined WEC
+      allocate( wfrq(GLOBAL_2D_ARRAY) )
+#endif
+
+#ifdef BBL
+      allocate( uorb(GLOBAL_2D_ARRAY) )
+      allocate( vorb(GLOBAL_2D_ARRAY) )
+#endif   /* BBL */
+
+
+      allocate( whrm(GLOBAL_2D_ARRAY) )
+      allocate( wdsp(GLOBAL_2D_ARRAY) )
+      allocate( wdrg(GLOBAL_2D_ARRAY) )
+      allocate( wbst(GLOBAL_2D_ARRAY) )
+      allocate( wdrx(GLOBAL_2D_ARRAY) )
+      allocate( wdre(GLOBAL_2D_ARRAY) )
+# ifdef SURFACE_ROLLER
+      allocate( rdsp(GLOBAL_2D_ARRAY) )
+# endif
+
+      allocate( brk2dx(GLOBAL_2D_ARRAY) )
+      allocate( brk2de(GLOBAL_2D_ARRAY) )
+      allocate( ust2d(GLOBAL_2D_ARRAY) )
+      allocate( vst2d(GLOBAL_2D_ARRAY) )
+      allocate( ustr2d(GLOBAL_2D_ARRAY) ) ! At rho point
+      allocate( vstr2d(GLOBAL_2D_ARRAY) ) ! At rho point
+      allocate( ustr0(GLOBAL_2D_ARRAY) )
+      allocate( vstr0(GLOBAL_2D_ARRAY) )
+      allocate( llmm(GLOBAL_2D_ARRAY) )
+      allocate( frc2dx(GLOBAL_2D_ARRAY) ) ! used in prestep, step2d, step3d
+      allocate( frc2de(GLOBAL_2D_ARRAY) ) ! used in prestep, step2d, step3d
+      allocate( sup(GLOBAL_2D_ARRAY) ) ! used in step2d
+# ifdef SOLVE3D
+      allocate( calP(GLOBAL_2D_ARRAY) ) ! used in prsgrd32AC1.F
+      allocate( Kapsrf(GLOBAL_2D_ARRAY) ) ! used in prsgrd32AC1.F
+#  ifndef SURFACE_BREAK
+      allocate( brk3dx(GLOBAL_2D_ARRAY,N) ) ! used in momentum eqn in wec_frc.F
+      allocate( brk3de(GLOBAL_2D_ARRAY,N) ) ! used in momentum eqn in wec_frc.F
+#  endif
+#  ifdef BODY_FRICTION
+      allocate( frc3dx(GLOBAL_2D_ARRAY,N) ) ! used in momentum eqn in wec_frc.F
+      allocate( frc3de(GLOBAL_2D_ARRAY,N) ) ! used in momentum eqn in wec_frc.F
+#  endif
+      allocate( ust(GLOBAL_2D_ARRAY,N) )
+      allocate( vst(GLOBAL_2D_ARRAY,N) )
+      allocate( wst(GLOBAL_2D_ARRAY,N) ) ! used in set_avg.F
+      allocate( kvf(GLOBAL_2D_ARRAY,N) ) ! used in prsgrd32AC1.F
+      allocate( Akb(GLOBAL_2D_ARRAY,0:N) ) ! used in lmd_kpp.F
+      allocate( Akw(GLOBAL_2D_ARRAY,0:N) ) ! used in lmd_kpp.F
+      allocate( E_pre(GLOBAL_2D_ARRAY,0:N) )
+# endif  /* SOLVE3D */
+
+      ! REALISTIC WEC VARIABLES (FROM READ IN NETCDF FILE)
+      ! =======================
+
+#if defined BBL || defined WEC
+# if !defined ANA_WEC_FRC && !defined WKB_WWAVE
+
+      allocate( wwag(GLOBAL_2D_ARRAY,2) )
+      allocate( wwdg(GLOBAL_2D_ARRAY,2) )
+      allocate( wwpg(GLOBAL_2D_ARRAY,2) )
+#  ifdef BBL
+      allocate( wwub(GLOBAL_2D_ARRAY,2) )
+      allocate( wwuob(GLOBAL_2D_ARRAY,2) )
+      allocate( wwvob(GLOBAL_2D_ARRAY,2) )
+#  endif
+      allocate( wwdrx(GLOBAL_2D_ARRAY,2) )
+      allocate( wwdre(GLOBAL_2D_ARRAY,2) )
+      allocate( wweb(GLOBAL_2D_ARRAY,2) )
+      allocate( wveb(GLOBAL_2D_ARRAY) )
+      allocate( wved(GLOBAL_2D_ARRAY) )
+      allocate( wwed(GLOBAL_2D_ARRAY,2) )
+      allocate( wwUSg(GLOBAL_2D_ARRAY,2) )
+      allocate( wwVSg(GLOBAL_2D_ARRAY,2) )
+      allocate( wwus0g(GLOBAL_2D_ARRAY,2) )
+      allocate( wwvs0g(GLOBAL_2D_ARRAY,2) )
+#   if defined WAVE_OFFLINE && defined SURFACE_ROLLER
+      allocate( wvqb(GLOBAL_2D_ARRAY) )
+      allocate( wwqb(GLOBAL_2D_ARRAY,2) )
+#   endif
+#   if defined WAVE_OFFLINE && defined SUP_OFF
+      allocate( wwsup(GLOBAL_2D_ARRAY,2) )
+#  endif
+#   if defined WAVE_OFFLINE && defined WAVE_DIFF_FROM_LM
+      allocate( wwlm(GLOBAL_2D_ARRAY,2) )
+#   endif
+
+      ! Grid rotation angles
+      allocate( angler_cos(GLOBAL_2D_ARRAY) )
+      allocate( angler_sin(GLOBAL_2D_ARRAY) )
+
+!# elif defined ANA_WEC_FRC && defined WEC
+!      real, public :: wveb(GLOBAL_2D_ARRAY)
+!      real, public :: wved(GLOBAL_2D_ARRAY)
+
+# endif /* !ANA_WEC_FRC && !WKB_WWAVE */
+#endif /* BBL || WEC */
+
+
+      !#### end variables added as per forces.h #####
+
+      ! AVERAGED VARIABLES
+      ! ==================
+
+      ! from averages.h in MRL_WCI old roms code
+#ifdef AVERAGES
+      allocate( sup_avg(GLOBAL_2D_ARRAY) )
+      allocate( ust2d_avg(GLOBAL_2D_ARRAY) )
+      allocate( vst2d_avg(GLOBAL_2D_ARRAY) )
+#  ifdef SOLVE3D
+      allocate( ust_avg(GLOBAL_2D_ARRAY,N) )
+      allocate( vst_avg(GLOBAL_2D_ARRAY,N) )
+      allocate( wst_avg(GLOBAL_2D_ARRAY,N) )
+      allocate( akb_avg(GLOBAL_2D_ARRAY,0:N) )
+      allocate( akw_avg(GLOBAL_2D_ARRAY,0:N) )
+      allocate( kvf_avg(GLOBAL_2D_ARRAY,N) )
+      allocate( calp_avg(GLOBAL_2D_ARRAY) )
+      allocate( kapsrf_avg(GLOBAL_2D_ARRAY) )
+#  endif  /* SOLVE3D */
+#endif /* AVERAGES */
+
+
 
       ! This section of code is taken from DH's WAVE_PACKET init_arrays.F
 
