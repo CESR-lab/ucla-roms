@@ -157,10 +157,10 @@
 
 #  ifdef AVERAGES
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_avg
-      real,allocatable,dimension(:,:,:,:) :: bec2_diag_2d_avg
+      real,allocatable,dimension(:,:,:) :: bec2_diag_2d_avg
 #   ifdef SLICE_AVG
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_slavg
-      real,allocatable,dimension(:,:,:,:) :: bec2_diag_2d_slavg
+      real,allocatable,dimension(:,:,:) :: bec2_diag_2d_slavg
 #   endif
 #  endif /* AVERAGES */
 !# ifdef AVERAGES
