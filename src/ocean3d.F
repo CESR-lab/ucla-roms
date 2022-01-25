@@ -64,8 +64,15 @@
       allocate( We(GLOBAL_2D_ARRAY,0:N) )  ! explicit
       allocate( Wi(GLOBAL_2D_ARRAY,0:N) )  ! implicit
 
-      if (wrtavg(indxO)) allocate( w_avg(GLOBAL_2D_ARRAY,0:N) )
-      if (wrtavg(indxW)) allocate( wvl_avg(GLOBAL_2D_ARRAY,0:N) )
+      if (wrtavg(indxO)) then
+        allocate( w_avg(GLOBAL_2D_ARRAY,0:N) )
+        w_avg = 0.
+      endif
+      if (wrtavg(indxW)) then
+        allocate( wvl_avg(GLOBAL_2D_ARRAY,0:N) )
+        wvl_avg = 0.
+      endif
+
 
       allocate( Hz(GLOBAL_2D_ARRAY,N) )    ! height of rho-cell
       allocate( z_r(GLOBAL_2D_ARRAY,N) )   ! depth at rho-points
