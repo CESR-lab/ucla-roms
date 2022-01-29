@@ -29,9 +29,7 @@
       use river_frc
       use pipe_frc
       use wec_frc
-#if defined POT_TIDES && !defined SOLVE3D
-      use tides, only: Ptide
-#endif
+      use tides
       use climat
       use coupling
       use grid

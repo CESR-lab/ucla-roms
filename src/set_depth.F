@@ -257,6 +257,8 @@
       use ocean2d
       use ocean3d
       use scalars
+      use dimensions
+      use diagnostics
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -292,7 +294,6 @@
         !! JM: DC(i,0) => Hu (Water Column at u)
         !! JM: FC(i,0) => Uflx (Barotropic Transport)
 
-c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
 
 # ifdef CORR_COUPLED_MODE
 #  ifdef EXTRAP_BAR_FLUXES
@@ -349,18 +350,6 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
         enddo
 # endif
 
-# ifdef OBC_CHECK
-        if(j==10) then
-          print *, 'set_HUV1: start'
-          print *, 'nnew=', nnew
-          print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
-          print *, '   FC(istr,0)=', FC(istr,0)
-          print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
-          print *, '   FC(iend+1,0)=', FC(iend+1,0)
-          print *, '   ubar(istr,10,kbak)=',ubar(istr,10,kbak)
-        endif ! debug
-# endif
-
         do k=1,N
           do i=istr,iendR
 !!JM make sure that ust, vst is masked in wec_frc and fix this!!
@@ -379,16 +368,6 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
           enddo
         enddo
 
-# ifdef OBC_CHECK
-        if(j==10) then
-          print *, 'set_HUV1: end'
-          print *, 'nnew=', nnew
-          print *, 'FlxU(istr  ,10,10)=', FlxU(istr,10,10)
-          print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
-          print *, 'FlxU(iend+1,10,10)=', FlxU(iend+1,10,10)
-          print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
-        endif ! debug
-# endif
         if (j >= jstr) then
           do i=istrR,iendR
             DC(i,N)=0.5*(Hz(i,j,N)+Hz(i,j-1,N))*dm_v(i,j)
@@ -463,13 +442,6 @@ c-->#undef EXTRAP_BAR_FLUXES  /* <-- for testing purposes only */
           enddo
         endif
       enddo  ! <-- j-loop
-
-# ifdef OBC_CHECK
-      print *, 'FlxV(10,jstr,10)=', FlxV(10,jstr,10)
-      print *, '   v(10,jstr,10,nnew)=', v(10,jstr,10,nnew)
-      print *, 'FlxV(10,jend+1,10)=', FlxV(10,jend+1,10)
-      print *, '   v(10,jend+1,10,nnew)=', v(10,jend+1,10,nnew)
-# endif
 
 # ifdef EXCHANGE
 #  if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS

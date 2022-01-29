@@ -31,11 +31,9 @@
 
       logical, public            :: calc_diag=.true.        ! flag to calculate diagnostics in equation system.
       logical                    :: init_done=.false.       ! flag to init diagnostics only once
-      logical                    :: p_init_done=.false.     ! flag to init pressure filter value only once
       integer                    :: navg_diag = 0           ! number of samples in average
 
-
-      real,dimension(:,:),pointer :: wrku_xy1,wrkv_xy1
+      real,dimension(:,:,:),pointer :: wrk_xy
       real                        :: diag_time_avg  ! Averages of time
 
       ! u and v momentum:
@@ -55,6 +53,7 @@
       real,allocatable,dimension(:,:,:,:)        :: Vdiag_avg ! Averages of diagnostics
       real, public, allocatable, dimension(:,:)  :: u_prev
       real, public, allocatable, dimension(:,:)  :: v_prev
+
 
       real,         allocatable, dimension(:,:)  :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
       real,         allocatable, dimension(:,:)  :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
@@ -100,8 +99,7 @@
       ! Netcdf outputting:
       ! ------------------
       integer            :: output_rec = 0            ! record number of output. 0 indicates we need new file
-      integer            :: total_rec_diag = 0      ! total flux output recordings so far
-      integer            :: nrpf_diag = 20   ! number of records per file
+      integer            :: total_rec_diag = 0        ! total flux output recordings so far
       integer            :: tn                        ! roms timestep
       character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
@@ -110,26 +108,39 @@
 
       ! Pressure flux terms
       ! --------------
-      real,public,allocatable,dimension(:,:,:) :: up,vp ! u'p' (at upoint) and v'p' (at v_point) - makes it easier to use in child bry.
-      real,       allocatable,dimension(:,:,:) :: p_slow ! filtered pressure 
-      real,       allocatable,dimension(:,:)   :: p_fast ! perturbation pressure
+      real,allocatable,dimension(:,:)    :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
+      real,allocatable,dimension(:,:)    :: up_avg,vp_avg ! averaged u'p' and v'p'
+      real,allocatable,dimension(:,:,:)  :: p_slow        ! filtered pressure 
 
-      real, allocatable, dimension(:, :, :) :: up_avg,vp_avg  ! averaged u'p' and v'p'
-      logical                               :: p_slow_init = .true.
+
+      real, allocatable, dimension(:,:)  :: p_fast,u_fast,v_fast
 
       ! Baroclinic energy term
       ! --------------
       real, public,allocatable, dimension(:,:,:) :: u_slow,v_slow
-      real, public,allocatable, dimension(:,:,:) :: u_fast,v_fast
       real, public,allocatable, dimension(:,:,:) :: px_slow,py_slow
-      real, public,allocatable, dimension(:,:,:) :: px_fast,py_fast
+      real, public,allocatable, dimension(:,:)   :: px_fast,py_fast
 
-      real, allocatable, dimension(:,:) :: bt2bc    ! Barotropic to baroclinic conversion
-      real, allocatable, dimension(:,:) :: divup    ! Divergence of up flux
-      real, public,allocatable, dimension(:,:) :: udh_f, udh_p           ! ubar.grad(h), filtered and prime
-      real, public,allocatable, dimension(:,:) :: dzt_f, dzt_p           ! dzeta/dt, filtered and prime
-      real, allocatable, dimension(:,:,:) :: div_uvp, adiv_uvp    ! divergence u'p' + v'p' (and average)
+      real, allocatable,dimension(:,:) :: upx      ! Divergence of up flux (upx)
+      real, allocatable,dimension(:,:) :: vpy      ! Divergence of vp flux 
+      real, allocatable,dimension(:,:) :: upx_avg  ! Divergence of up flux
+      real, allocatable,dimension(:,:) :: vpy_avg  ! Divergence of up flux
 
+      real, allocatable,dimension(:,:) :: bt2bc    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bt2bc_avg! Barotropic to baroclinic conversion
+
+      real, allocatable,dimension(:,:,:) :: Wvel   ! Vertical velocity
+      real, allocatable,dimension(:,:,:) :: Wvl_slow   ! Vertical velocity
+      real, allocatable,dimension(:,:) :: Wvl_fast  ! Vertical velocity
+      real, allocatable,dimension(:,:) :: bc2bc    ! Baroclinic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bc2bc_avg! Baroclinic to baroclinic conversion
+
+      real, public,allocatable, dimension(:,:) :: udh,udh_slow,udh_fast ! ubar.grad(h), filtered and prime
+      real, public,allocatable, dimension(:,:) :: dzt,dzt_slow,dzt_fast ! dzeta/dt, filtered and prime
+      real, public,allocatable, dimension(:,:) :: Uflx,Vflx
+      real, public,allocatable, dimension(:,:) :: uhx, vhy
+      real, allocatable,dimension(:,:,:) :: rho_slow
+      real, allocatable,dimension(:,:) :: rho_fast
 
       integer :: nprm = 3                      ! number of pressure flux diagnostic terms
       real, public :: alpha, beta              ! filtering constants (needed for child bry)
@@ -215,28 +226,83 @@
         if (diag_avg) then   
           allocate(Udiag_avg(nx,ny,nz,nmd))
           allocate(Vdiag_avg(nx,ny,nz,nmd))
+          Udiag_avg = 0
+          Vdiag_avg = 0
         endif
       endif
 
       if (diag_pflx) then
-        allocate( p_slow(0:nx,0:ny,nz) )
-        allocate( p_fast(0:nx,0:ny) )
-        allocate( up(nx,ny,nz) )
-        allocate( vp(nx,ny,nz) )
+        if (mynode==0) print *,'allocating pflux vars'
+        allocate(p_slow(0:nx,0:ny,nz) )
+        p_slow = 0
+        allocate(p_fast(0:nx,0:ny) )
+
+!       allocate( up(nx,ny,nz) )
+!       allocate( vp(nx,ny,nz) )
+        allocate( up(nx,ny) )
+        allocate( vp(nx,ny) )
         ! we will always use averaged outputs for the prs fluxes
-        allocate( up_avg(nx,ny,nz) )
-        allocate( vp_avg(nx,ny,nz) )
+!       allocate( up_avg(nx,ny,nz) )
+!       allocate( vp_avg(nx,ny,nz) )
+        allocate( up_avg(nx,ny) )
+        allocate( vp_avg(nx,ny) )
+        up_avg = 0
+        vp_avg = 0
+      endif
+
+      if (diag_pflx.or.diag_Ebcln) then
+        allocate(u_slow(nx,ny,nz) )
+        allocate(v_slow(nx,ny,nz) )
+        u_slow = 0
+        v_slow = 0
+        allocate(u_fast(nx,ny) )
+        allocate(v_fast(nx,ny) )
       endif
 
       if (diag_Ebcln) then
-        allocate( u_slow(nx,ny,nz) )
-        allocate( v_slow(nx,ny,nz) )
+
         allocate( px_slow(nx,ny,nz) )
         allocate( py_slow(nx,ny,nz) )
-        allocate( div_uvp(nx,ny,nz) )
+        px_slow = 0
+        py_slow = 0
+        allocate( px_fast(nx,ny) )
+        allocate( py_fast(nx,ny) )
+        allocate( upx(nx,ny) )
+        allocate( vpy(nx,ny) )
+        allocate( upx_avg(nx,ny) )
+        allocate( vpy_avg(nx,ny) )
+        upx_avg = 0
+        vpy_avg = 0
 
-        allocate( udh_f(nx,ny) )
-        allocate( dzt_f(nx,ny) )
+        allocate( uhx(nx+1,ny) )
+        allocate( vhy(nx,ny+1) )
+        allocate( udh(nx,ny) )
+        allocate( udh_slow(nx,ny) )
+        udh_slow=0
+        allocate( udh_fast(nx,ny) )
+        allocate( dzt(nx,ny) )
+        allocate( dzt_slow(nx,ny) )
+        dzt_slow = 0
+        allocate( dzt_fast(nx,ny) )
+        allocate( Uflx(nx+1,ny) )
+        allocate( Vflx(nx,ny+1) )
+
+        allocate( bt2bc(nx,ny) )
+        allocate( bt2bc_avg(nx,ny) )
+        bt2bc_avg = 0
+
+        allocate( rho_slow(nx,ny,nz))
+        rho_slow = 0
+        allocate( rho_fast(nx,ny))
+        allocate( Wvel(GLOBAL_2D_ARRAY,nz))
+        allocate( Wvl_slow(nx,ny,nz))
+        Wvl_slow = 0;
+        allocate( Wvl_fast(nx,ny))
+
+        allocate( bc2bc(nx,ny) )
+        allocate( bc2bc_avg(nx,ny) )
+        bc2bc_avg = 0
+
         if (.not.diag_uv) then 
           ! We use them for px/py
           allocate(Udiag(nx,ny,nz,1) )
@@ -245,8 +311,7 @@
       endif
 
       !!! JM this is a test for reusable space
-      allocate(wrku_xy1(nx+1,ny))
-      allocate(wrkv_xy1(nx,ny+1))
+      allocate(wrk_xy(nx,ny,4))
 
 
       !JM: Needed for both diag_uv and diag_pflx
@@ -457,10 +522,6 @@
       ! local
       integer :: i,j,k
       real    :: inv24
-!     real   ,dimension(:,:),pointer :: Uv,Vv
-
-      Uv => wrk_xy1
-      Vv => wrk_xy2
 
       inv24 = 1./24.  ! 0.5*1/12
       do k=1,nz
@@ -928,109 +989,136 @@
       use coupling
       use param
       use ocean3d
+      use eos_vars
       implicit none
+      !! W => kg m2 s-3
+      !!  p dz => m3 s-2, u*p*dz => m4 s-3, rho0*u*p*dz=> kg m s-3 = W/m
+      !! rho u p dz
 
       !import/export
       real,dimension(iwest-2:ieast+2,jsouth-2:jnorth+2,nz) :: p
 
       !local
       integer :: i,j,k
-      real   ,dimension(:,:),pointer :: u_fast,v_fast
+!     real   ,dimension(:,:),pointer :: u_fast,v_fast,p_fast
+!     real   ,dimension(:,:),pointer :: px_fast,py_fast
 
-      u_fast => wrk_xy1
-      v_fast => wrk_xy1
+# if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
+      integer :: kbak
 
-      ! the domain buffers don't have real pressure values
-      if (p_slow_init) then
-        do k=1,nz
-          p_slow(:,:,k) = p(0:nx,0:ny,k) - g*z_w(0:nx,0:ny,nz) 
-        enddo
-!       p_slow = 0.0
-        p_slow_init = .false.
-      endif
+      kbak=knew-1
+      if (kbak < 1) kbak=4
+# endif
 
       if (diag_pflx) then
-        do k=1,nz
-          p_slow(:,:,k) = beta*p_slow(:,:,k)
-     &        + alpha*( p(0:nx,0:ny,k)-g*z_w(0:nx,0:ny,nz) )
-        enddo
 
-        ! prs fluxes should always be averaged, so always compute
-        ! We think that during the corrector step prsgrd, nrhs points to
-        ! the velocities at n+1/2, and they're not multiplied by dz.
+        !! JM: maybe a problem because p_fast is 0:nx,0:ny
+!       p_fast => wrk_xy(:,:,1)
+!       u_fast => wrk_xy(:,:,2)
+!       v_fast => wrk_xy(:,:,3)
 
-        ! There are computations of ubar,vbar, FlxU and FlxV in set_HUV1 plus a
-        ! coupling with the barotropic mode. Use those things!!
+        up = 0
+        vp = 0
         do k=1,nz
-          p_fast = p(0:nx,0:ny,k)-g*z_w(0:nx,0:ny,nz) - p_slow(:,:,k)
+          do j=0,ny
+            do i=0,nx
+              p_slow(i,j,k) = beta*p_slow(i,j,k)
+     &            + alpha*( p(i,j,k)-g*z_w(i,j,nz) )
+              p_fast(i,j) = p(i,j,k)-g*z_w(i,j,nz)-p_slow(i,j,k)
+            enddo
+          enddo
           do j=1,ny
             do i=1,nx
-            up(i,j,k) = ( u(i,j,k,nrhs) - ubar(i,j,knew) )
+              u_fast(i,j) = u(i,j,k,nrhs)-ubar(i,j,kbak)- u_slow(i,j,k)
+              v_fast(i,j) = v(i,j,k,nrhs)-vbar(i,j,kbak)- v_slow(i,j,k)
+            enddo
+          enddo
+!         p_fast = p(0:nx,0:ny,k)-g*z_w(0:nx,0:ny,nz)      - p_slow(:,:,k)
+!         u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)- u_slow(:,:,k)
+!         v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)- v_slow(:,:,k)
+
+!         up(:,:) = up + 0.25*u_fast*(p_fast(0:nx-1,1:ny) + p_fast(1:nx,1:ny) )*
+!    &                     (Hz(0:nx-1,1:ny,k)+ Hz(1:nx,1:ny,k) )
+!         vp(:,:) = vp(i,j) + v_fast(i,j)
+!    &           * 0.25*( p_fast(i,j-1)+p_fast(i,j) )*( Hz(i,j-1,k)+Hz(i,j,k) )
+          do j=1,ny
+            do i=1,nx
+            up(i,j) = up(i,j) + u_fast(i,j)
      &           * 0.25*( p_fast(i-1,j)+p_fast(i,j) )*( Hz(i-1,j,k)+Hz(i,j,k) )
-            vp(i,j,k) = ( v(i,j,k,nrhs) - vbar(i,j,knew) )
+            vp(i,j) = vp(i,j) + v_fast(i,j)
      &           * 0.25*( p_fast(i,j-1)+p_fast(i,j) )*( Hz(i,j-1,k)+Hz(i,j,k) )
+!           up(i,j) = up(i,j) + ( u(i,j,k,nrhs) - ubar(i,j,kbak) )
+!    &           * 0.25*( p_fast(i-1,j)+p_fast(i,j) )*( Hz(i-1,j,k)+Hz(i,j,k) )
+!           vp(i,j) = vp(i,j) + ( v(i,j,k,nrhs) - vbar(i,j,kbak) )
+!    &           * 0.25*( p_fast(i,j-1)+p_fast(i,j) )*( Hz(i,j-1,k)+Hz(i,j,k) )
             enddo
           enddo
         enddo
       endif
-      if (mynode==0) print *,'calc up:  ',up(24,5:7,1)
-
 
       if (diag_Ebcln) then
-        
-        do k=1,nz
-          u_slow(:,:,k)  = beta*u_slow(:,:,k) + 
-     &                alpha*( u(1:nx+1,1:ny,k,nrhs)-ubar(1:nx+1,1:ny,knew) )
-          v_slow(:,:,k)  = beta*v_slow(:,:,k) +
-     &                alpha*( v(1:nx,1:ny+1,k,nrhs)-vbar(1:nx,1:ny+1,knew) )
-        enddo
+
         px_slow = beta*px_slow + alpha*Udiag(:,:,:,ipgr)
         py_slow = beta*py_slow + alpha*Vdiag(:,:,:,ipgr)
 
         ! Divergence of pressure flux work: u*px + v*py
-        if (calc_diag) then
-          divup_u = 0
-          divup_v = 0
-          do k=1,nz
-            u_fast = u(1:nx+1,1:ny,k,nnew)-ubar(1:nx+1,1:ny)-u_slow(:,:,k)
-            v_fast = v(1:nx,1:ny+1,k,nnew)-vbar(1:nx,1:ny+1)-v_slow(:,:,k)
-            px_fast = Udiag(:,:,k,ipgs) - px_slow(:,:,k)
-            py_fast = Vdiag(:,:,k,ipgs) - py_slow(:,:,k)
+        upx = 0
+        vpy = 0
+        do k=1,nz
+          u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)-u_slow(:,:,k)
+          v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)-v_slow(:,:,k)
+          px_fast = Udiag(:,:,k,ipgr) - px_slow(:,:,k)
+          py_fast = Vdiag(:,:,k,ipgr) - py_slow(:,:,k)
 
-            divup_u = divup_u + u_fast*px_fast +
-     &                u_fast*px_slow(:,:,k)+u_slow(:,:,k)*px_fast
-            divup_v = divup_v + v_fast*py_fast +
-     &                v_fast*py_slow(:,:,k)+v_slow(:,:,k)*py_fast
-          enddo
-          divup = 0.5*( divup_u(1:nx,:) + divup_u(2:nx+1,:)
-     &                  divup_v(:,1:ny) + divup_v(:,2:ny+1) )
-        endif
+          upx = upx + u_fast*px_fast
+          vpy = vpy + v_fast*py_fast
+!         upx = upx + u_fast*px_fast +
+!    &                u_fast*px_slow(:,:,k)+u_slow(:,:,k)*px_fast
+!         vpy = vpy + v_fast*py_fast +
+!    &                v_fast*py_slow(:,:,k)+v_slow(:,:,k)*py_fast
 
-        do j=1,ny
-          do i=1,nx
-!           udh_f(i,j) =  beta*udh_f(i,j) + alpha*(
-!    &       0.5*pm(i,j)*( ubar(i  ,j,kstp)*(h(i,j)-h(i-1,j))
-!    &                     + ubar(i+1,j,kstp)*(h(i+1,j)-h(i,j)) )
-!    &        +0.5*pn(i,j)*( vbar(i,j  ,kstp)*(h(i,j)-h(i,j-1))
-!    &                   + vbar(i,j+1,kstp)*(h(i,j+1)-h(i,j)) ))
-!             dzt_f(i,j) = beta*dzt_f(i,j)  + alpha*dxdyi(i,j)*(
-!    &                dm_u(i+1,j)*ubar(i+1,j,kstp)*Du_avg1(i+1,j)
-!    &              - dm_u(i  ,j)*ubar(i  ,j,kstp)*Du_avg1(i  ,j)
-!    &              + dn_v(i,j+1)*vbar(i,j+1,kstp)*Dv_avg1(i,j+1)
-!    &              - dn_v(i,j  )*vbar(i,j  ,kstp)*Dv_avg1(i,j  ) )
-          enddo
+!         upx = upx +
+!    &      (u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak))*Udiag(:,:,k,ipgr)
+!         vpy = vpy +
+!    &      (v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak))*Vdiag(:,:,k,ipgr)
         enddo
+
+        uhx = ubar(1:nx+1,1:ny,kbak)*(h(1:nx+1,1:ny)-h(0:nx,1:ny))*
+     &        0.5*(pm(1:nx+1,1:ny)+pm(0:nx,1:ny))
+        vhy = vbar(1:nx,1:ny+1,kbak)*(h(1:nx,1:ny+1)-h(1:nx,0:ny))*
+     &        0.5*(pn(1:nx,1:ny+1)+pn(1:nx,0:ny))
+        udh = 0.5*(uhx(1:nx,:)+uhx(2:nx+1,:) +
+     &             vhy(:,1:ny)+vhy(:,2:ny+1) )
+
+        Uflx =  sum(Flxu(1:nx+1,1:ny,:),dim=3)
+        Vflx =  sum(Flxv(1:nx,1:ny+1,:),dim=3)
+        dzt  = -dxdyi*( Uflx(2:nx+1,:)-Uflx(1:nx,:) +
+     &                  Vflx(:,2:ny+1)-Uflx(:,1:ny) )
+
+        dzt_slow = beta*dzt_slow + alpha*dzt
+        udh_slow = beta*udh_slow + alpha*udh
+        rho_slow = beta*rho_slow + alpha*rho1(1:nx,1:ny,:)
+        call wvlcty (0,Wvel)
+        Wvl_slow = beta*Wvl_slow + alpha*Wvel(1:nx,1:ny,:)
+
+        call E_baroclinic
       endif
 
       end subroutine calc_diag_pflux  !]
 
 ! ----------------------------------------------------------------------
       subroutine E_baroclinic  ![
+      use param
+      use eos_vars
       implicit none
 
       ! Local
       integer :: i,j,k
-      real    :: Wbt_f,Wbt_p
+      real    :: Wbt,Wbc
+      integer :: kbak
+
+      kbak=knew-1
+      if (kbak < 1) kbak=4
 
       ! Since the exponential smoother is not a great orthogonal
       ! decomposition, we need 3 terms for the hf components:
@@ -1043,40 +1131,33 @@
       ! bet = z_t + ubar*zx + vbar*zy
       ! Wbt = alp + (zr + h)* (bet - alp)/(zeta + h)
       ! bt2bc = Wbt*b
-      if (.not.allocated(bt2bc)) allocate(bt2bc(nx,ny))
-      if (.not.allocated(divup)) allocate(divup(nx,ny))
+
 
       bt2bc = 0
+      bc2bc = 0
+
+      udh_fast = udh - udh_slow
+      dzt_fast = dzt - dzt_slow
       do k=1,nz
-        do j=1,nx
-          do i=1,ny
-!           Wbt_f(i,j) = udh_f(i,j) +
-!    &       (z_r(i,j,k)+h(i,j))*(dzt_f(i,j)-udh_f(i,j))/(zeta(i,j,knew) + h(i,j))
-            Wbt_p = udh_p(i,j) +
-     &       (z_r(i,j,k)+h(i,j))*(dzt_p(i,j)-udh_p(i,j))/(zeta(i,j,knew) + h(i,j))
-!           bt2bc(i,j) = bt2bc(i,j) + Wbt_p*rho1(i,j,k)*Hz(i,j,k)
-          enddo
-        enddo
-      enddo
-      ! Divergence of pressure flux work: u*px + v*py
-      divup = 0
-      do k=1,nz
-        do j=1,ny   
+        rho_fast = rho1(1:nx,1:ny,k) - rho_slow(:,:,k)
+        Wvl_fast = Wvel(1:nx,1:ny,k) - Wvl_slow(:,:,k)
+        do j=1,ny
           do i=1,nx
-            divup(i,j) = divup(i,j) + 0.5*(
-     &        u_fast(i,j,k)*px_fast(i,j,k)+u_fast(i+1,j,k)*px_fast(i+1,j,k) 
-     &      + u_fast(i,j,k)*px_slow(i,j,k)+u_fast(i+1,j,k)*px_slow(i+1,j,k) 
-     &      + u_slow(i,j,k)*px_fast(i,j,k)+u_slow(i+1,j,k)*px_fast(i+1,j,k) 
-     &      + v_fast(i,j,k)*py_fast(i,j,k)+v_fast(i,j+1,k)*py_fast(i,j+1,k) 
-     &      + v_fast(i,j,k)*py_slow(i,j,k)+v_fast(i,j+1,k)*py_slow(i,j+1,k) 
-     &      + v_slow(i,j,k)*py_fast(i,j,k)+v_slow(i,j+1,k)*py_fast(i,j+1,k) )
+!           Wbt = udh_fast(i,j) +
+!    &       (z_r(i,j,k)+h(i,j))*(dzt_fast(i,j)-udh_fast(i,j))/(zeta(i,j,kbak) + h(i,j))
+!           bt2bc(i,j) = bt2bc(i,j) + g*Wbt*rho_fast(i,j)*Hz(i,j,k)
+!           Wbc = Wvl_fast(i,j) - Wbt
+!           bc2bc(i,j) = bc2bc(i,j) + g*Wbc*rho_fast(i,j)*Hz(i,j,k)
+            Wbt = udh(i,j) +
+     &       (z_r(i,j,k)+h(i,j))*(dzt(i,j)-udh(i,j))/(zeta(i,j,kbak) + h(i,j))
+            bt2bc(i,j) = bt2bc(i,j) + g*Wbt*rho1(i,j,k)*Hz(i,j,k)
+            Wbc = Wvel(i,j,k) - Wbt
+            bc2bc(i,j) = bc2bc(i,j) + g*Wbc*rho1(i,j,k)*Hz(i,j,k)
           enddo
         enddo
       enddo
 
       end subroutine E_baroclinic !]
-
-
 ! ----------------------------------------------------------------------
       subroutine set_diags_p_conversion  ![
       ! C(z) = Div( u'p' ) + Dissipation
@@ -1085,12 +1166,12 @@
 
 
       end subroutine set_diags_p_conversion  !]
-
 ! ----------------------------------------------------------------------
       subroutine calc_diag_avg ![
       ! Update diagnostics averages
       ! The average is always scaled properly throughout
       ! reset navg_diag=0 after an output of the average
+      use param
       implicit none
 
       ! local
@@ -1100,7 +1181,7 @@
 
       coef = 1./navg_diag
 
-      if (mynode==0) print *, 'set_avg :: ',navg_diag,coef
+!     if (mynode==0) print *, 'set_avg :: ',navg_diag,coef
 
       diag_time_avg = diag_time_avg*(1-coef) + time*coef
 
@@ -1119,8 +1200,14 @@
         vp_avg = vp_avg*(1-coef) + vp*coef
       endif
 
-      end subroutine calc_diag_avg !]
+      if (diag_Ebcln) then
+        upx_avg = upx_avg*(1-coef) + upx*coef
+        vpy_avg = vpy_avg*(1-coef) + vpy*coef
+        bt2bc_avg = bt2bc_avg*(1-coef) + bt2bc*coef
+        bc2bc_avg = bc2bc_avg*(1-coef) + bc2bc*coef
+      endif
 
+      end subroutine calc_diag_avg !]
 ! ----------------------------------------------------------------------
       subroutine do_diagnostics  ![
       ! Write diagnostics to file
@@ -1132,7 +1219,7 @@
       integer                 :: ierr = 0, imd, i, j, k, tile, idt, itrc, td, np
 
       integer :: dim,diag, prev_fill_mode
-      character(len=99)  :: fname
+      character(len=99),save  :: fname
       integer,save  :: record
 
 
@@ -1160,14 +1247,15 @@
 !         call ncwrite(ncid,'ocean_time',(/diag_time_avg/),(/record/))
           call ncwrite(ncid,'ocean_time',(/time/),(/record/))
           if (diag_avg) then
-            if (diag_uv)  call write_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
-            if (diag_trc) call write_diags_trc(ncid,record,Tdiag_avg)
+            if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
+!           if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag_avg)
           else
-            if (diag_uv)  call write_diag_uv(ncid,record,Udiag,Vdiag)
-            if (diag_trc) call write_diags_trc(ncid,record,Tdiag)
+            if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
+!           if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag)
           endif
 
-          if (diag_pflx) call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
+          if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
+          if (diag_Ebcln) call wrt_diag_Ebcln(ncid,record,upx_avg,vpy_avg,bt2bc_avg)
 
           navg_diag = 0
 
@@ -1199,6 +1287,8 @@
       character(len=20)              :: vname
       character(len=10),dimension(4) :: dimnames ! dimension names
       integer,          dimension(4) :: dimsizes ! dim lengths
+      character(len=10),dimension(3) :: dimnames3 ! dimension names
+      integer,          dimension(3) :: dimsizes3 ! dim lengths
       integer                        :: varid,ierr
       integer                        :: it
 
@@ -1300,23 +1390,60 @@
       endif
 
       if (diag_pflx) then
-        dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
-        dimsizes = (/ xi_u,  eta_rho,  nz,    0/)
-        varid = nccreate(ncid,'up',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','prsflux in x-dir')
+!       dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
+!       dimsizes = (/ xi_u,  eta_rho,  nz,    0/)
+!       varid = nccreate(ncid,'up',dimnames,dimsizes,diag_prec)
+!       ierr = nf90_put_att(ncid,varid,'long_name','prsflux in x-dir')
+!       ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+
+!       dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
+!       dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
+!       varid = nccreate(ncid,'vp',dimnames,dimsizes,diag_prec)
+!       ierr = nf90_put_att(ncid,varid,'long_name','prsflux in y-dir')
+!       ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_u,  eta_rho,   0/)
+        varid = nccreate(ncid,'up',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','prsflux xdir')
         ierr = nf90_put_att(ncid,varid,'units','W/m^2')
 
-        dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
-        dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
-        varid = nccreate(ncid,'vp',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','prsflux in y-dir')
+        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_v,  0/)
+        varid = nccreate(ncid,'vp',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','prsflux ydir')
         ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+      endif
+
+      if (diag_Ebcln) then
+        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_u,  eta_rho,   0/)
+        varid = nccreate(ncid,'upx',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','u times dpdx')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_v,  0/)
+        varid = nccreate(ncid,'vpy',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','v times dpdy')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bt2bc',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bc2bc',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
       endif
 
 
       end subroutine create_diagvars  !]
 ! ----------------------------------------------------------------------
-      subroutine write_diag_uv(ncid,record,ud,vd)  ![
+      subroutine wrt_diag_uv(ncid,record,ud,vd)  ![
       ! Write uv diagnostic vars to file
 
       use param
@@ -1347,13 +1474,13 @@
       if (.not.west_exchng)  bfx = 2
       if (.not.south_exchng) bfy = 2
  
-      if (mynode==2) print *,'wrt_diag',i1
-      if (mynode==2) print *,'pgr:   ',Ud(i1,10,10,1),Vd(i1,10,10,1)
-      if (mynode==2) print *,'cor:   ',Ud(i1,10,10,2),Vd(i1,10,10,2)
-      if (mynode==2) print *,'adv:   ',Ud(i1,10,10,3),Vd(i1,10,10,3)
-      if (mynode==2) print *,'dis:   ',Ud(i1,10,10,4),Vd(i1,10,10,4)
-      if (mynode==2) print *,'hmx:   ',Ud(i1,10,10,5),Vd(i1,10,10,5)
-      if (mynode==2) print *,'vmx:   ',Ud(i1,10,10,6),Vd(i1,10,10,6)
+!     if (mynode==2) print *,'wrt_diag',i1
+!     if (mynode==2) print *,'pgr:   ',Ud(i1,10,10,1),Vd(i1,10,10,1)
+!     if (mynode==2) print *,'cor:   ',Ud(i1,10,10,2),Vd(i1,10,10,2)
+!     if (mynode==2) print *,'adv:   ',Ud(i1,10,10,3),Vd(i1,10,10,3)
+!     if (mynode==2) print *,'dis:   ',Ud(i1,10,10,4),Vd(i1,10,10,4)
+!     if (mynode==2) print *,'hmx:   ',Ud(i1,10,10,5),Vd(i1,10,10,5)
+!     if (mynode==2) print *,'vmx:   ',Ud(i1,10,10,6),Vd(i1,10,10,6)
 
         if (.not.west_exchng) ud(i0,:,:,:) = 0
         start = (/1, bfy, 1, record/)
@@ -1376,7 +1503,7 @@
         call ncwrite(ncid,'v_vmx',Vd(i0:i1,j0:j1,:,6),start)
 
 
-      end subroutine write_diag_uv  !]
+      end subroutine wrt_diag_uv  !]
 ! ----------------------------------------------------------------------
       subroutine wrt_diag_pflx(ncid,record,up,vp)  ![
       ! Write pressure fluxes
@@ -1388,12 +1515,14 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(:,:,:),intent(inout) :: up,vp
+      real, dimension(:,:),intent(inout) :: up,vp
+!     real, dimension(:,:,:),intent(inout) :: up,vp
 
       !local
+!     integer,   dimension(4) :: start    ! start vector for writing
+      integer,   dimension(3) :: start    ! start vector for writing
+      integer :: i,j
       integer :: i0,i1,j0,j1,bfx,bfy
-      integer,   dimension(4) :: start    ! start vector for writing
-      integer :: ubnd,vbnd
 
       i0 = iwest
       i1 = ieast
@@ -1405,19 +1534,70 @@
       if (.not.west_exchng)  bfx = 2
       if (.not.south_exchng) bfy = 2
 
-      !! write the boundary data for u(v) in the east(north)
-      ubnd = 0
-      vbnd = 0
-      if (.not.east_exchng)  ubnd = 1
-      if (.not.north_exchng) vbnd = 1
-
-      start = (/1, bfy, 1, record/)
-      call ncwrite(ncid,'up',up(i0:i1+ubnd,j0:j1,:),start)
+!     start = (/bfx, bfy, 1, record/)
+!     call ncwrite(ncid,'up',up(i0+bfx-1:i1,j0:j1,:),start)
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'up',up(i0+bfx-1:i1,j0:j1),start)
           
-      start = (/bfx, 1, 1, record/)
-      call ncwrite(ncid,'vp',vp(i0:i1,j0:j1+vbnd,:),start)
+!     start = (/bfx, bfy, 1, record/)
+!     call ncwrite(ncid,'vp',vp(i0:i1,j0+bfy-1:j1,:),start)
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'vp',vp(i0:i1,j0+bfy-1:j1),start)
+
+!     do j=j0,j1
+!       do i=i0,i1
+!         if (isnan(vp(i,j))) then
+!           print *,'node: ',mynode
+!           print *,i,j,vp(i,j)
+!           stop
+!         endif
+!       enddo
+!     enddo
 
       end subroutine wrt_diag_pflx  !]
+! ----------------------------------------------------------------------
+      subroutine wrt_diag_Ebcln(ncid,record,upx,vpy,bt2bc)  ![
+      ! Write pressure fluxes
+
+      use param
+      use nc_read_write
+      implicit none
+
+      !import/export
+      integer, intent(in) :: ncid
+      integer, intent(in) :: record
+      real, dimension(:,:),intent(inout) :: upx,vpy,bt2bc
+
+      !local
+      integer :: i0,i1,j0,j1,bfx,bfy
+      integer,   dimension(3) :: start    ! start vector for writing
+
+      i0 = iwest
+      i1 = ieast
+      j0 = jsouth
+      j1 = jnorth
+      !! JM The diagnostics exclude the buffers
+      bfx = 1
+      bfy = 1
+      if (.not.west_exchng)  bfx = 2
+      if (.not.south_exchng) bfy = 2
+!     if (.not.west_exchng)  upx(i0,:) = 0
+!     if (.not.south_exchng) vpy(:,j0) = 0
+
+
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'upx',upx(i0+bfx-1:i1,j0:j1),start)
+          
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'vpy',vpy(i0:i1,j0+bfy-1:j1),start)
+
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'bt2bc',bt2bc(i0:i1,j0:j1),start)
+
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'bc2bc',bc2bc(i0:i1,j0:j1),start)
+
+      end subroutine wrt_diag_Ebcln !]
 ! ----------------------------------------------------------------------
       subroutine create_diagnostics_file(total_rec,fname) ![
       use roms_read_write
@@ -1433,6 +1613,11 @@
       integer :: prec ! precision of output
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes 
+      character(len=5) :: diag_avg_str = 'False'
+      character(len=5) :: diag_uv_str = 'False'
+      character(len=5) :: diag_trc_str = 'False'
+      character(len=5) :: diag_pflx_str = 'False'
+      character(len=5) :: diag_Ebcln_str = 'False'
 
       fname=trim(output_root_name) / / '_dia.nc'
       call create_filename(fname,total_rec)
@@ -1447,9 +1632,24 @@
 
       call put_global_atts(ncid, ierr)  ! put global attributes in file
 
-      if (diag_uv) then
-        call create_diagvars(ncid)
-      endif
+      ! Diagnostics options
+      ierr = nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
+      ierr = nf90_put_att(ncid,nf90_global,'output_record_rate',rec_rate)
+      ierr = nf90_put_att(ncid,nf90_global,'records_per_file',nrpf_diag)
+
+      if (diag_avg) diag_avg_str = 'True'
+      if (diag_uv) diag_uv_str   = 'True'
+      if (diag_trc) diag_trc_str = 'True'
+      if (diag_pflx) diag_pflx_str = 'True'
+      if (diag_Ebcln) diag_Ebcln_str = 'True'
+      ierr = nf90_put_att(ncid,nf90_global,'diagnostic_averaging',diag_avg_str)
+      ierr = nf90_put_att(ncid,nf90_global,'momentum_diagnostics',diag_uv_str)
+      ierr = nf90_put_att(ncid,nf90_global,'tracer_diagnostics',diag_trc_str)
+      ierr = nf90_put_att(ncid,nf90_global,'pressure_fluxes' ,diag_pflx_str)
+      ierr = nf90_put_att(ncid,nf90_global,'Barotropic_conversion',diag_Ebcln_str)
+
+
+      call create_diagvars(ncid)
 
       ierr = nf90_enddef(ncid)
 
@@ -1457,6 +1657,8 @@
       if (mynode==0) print *,'diagnostics :: created new netCDF file: ',fname
 
       end subroutine create_diagnostics_file !]
+
+
 
 #endif /* DIAGNOSTICS */
 
