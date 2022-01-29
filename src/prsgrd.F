@@ -448,7 +448,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v
           enddo
         endif
-        if (diag_pflx) then
+        if (diag_pflx.or.diag_Ebcln) then
           call calc_diag_pflux(p)
         endif
       endif

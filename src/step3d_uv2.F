@@ -49,8 +49,10 @@
       do j=jstr,jend
 
 # ifdef DIAGNOSTICS
-         u_prev = u(1:nx,j,:,nnew)
-         v_prev = v(1:nx,j,:,nnew)
+        if (diag_uv) then
+          u_prev = u(1:nx,j,:,nnew)
+          v_prev = v(1:nx,j,:,nnew)
+        endif
 # endif
 
 # ifndef IMPLICIT_BOTTOM_DRAG
@@ -837,12 +839,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-      if (diag_Ebcln) then
-        u_slow = beta*u_slow + alpha*u(1:nx,1:ny,:,nnew)
-        v_slow = beta*v_slow + alpha*v(1:nx,1:ny,:,nnew)
-      endif
 #  ifdef NHMG
-      if (calc_diag)  call set_diags_w_at_uv2_end
+      if (calc_diag.and.diag_uv))  call set_diags_w_at_uv2_end
 #  endif
 # endif
 
