@@ -96,58 +96,58 @@
       subroutine init_arrays_grid  ![
       implicit none
 
-      allocate( h(GLOBAL_2D_ARRAY) )     ! Potential first touch issue. Before only rmask was set in init_arrays...
-      allocate( hinv(GLOBAL_2D_ARRAY) )
-      allocate( f(GLOBAL_2D_ARRAY) )
-      allocate( fomn(GLOBAL_2D_ARRAY) )
+      allocate( h(GLOBAL_2D_ARRAY) )    ; h=0.    ! Potential first touch issue. Before only rmask was set in init_arrays...
+      allocate( hinv(GLOBAL_2D_ARRAY) ) ; hinv=0.
+      allocate( f(GLOBAL_2D_ARRAY) )    ; f=0.
+      allocate( fomn(GLOBAL_2D_ARRAY) ) ; fomn=0.
 # ifdef NON_TRADITIONAL
-      allocate( f_XI(GLOBAL_2D_ARRAY) )
-      allocate( f_ETA(GLOBAL_2D_ARRAY) )
+      allocate( f_XI(GLOBAL_2D_ARRAY) )  ; f_XI=0.
+      allocate( f_ETA(GLOBAL_2D_ARRAY) ) ; f_ETA=0.
 # endif
  
 # ifdef CURVGRID
-      allocate( angler(GLOBAL_2D_ARRAY) )
+      allocate( angler(GLOBAL_2D_ARRAY) ) ;angler =0.
 # endif
  
 #ifdef SPHERICAL
-      allocate( latr(GLOBAL_2D_ARRAY) )
-      allocate( lonr(GLOBAL_2D_ARRAY) )
+      allocate( latr(GLOBAL_2D_ARRAY) ) ; latr=0.
+      allocate( lonr(GLOBAL_2D_ARRAY) ) ; lonr=0.
 #else
-      allocate( xp(GLOBAL_2D_ARRAY) )
-      allocate( xr(GLOBAL_2D_ARRAY) )
-      allocate( yp(GLOBAL_2D_ARRAY) )
-      allocate( yr(GLOBAL_2D_ARRAY) )
+      allocate( xp(GLOBAL_2D_ARRAY) ) ; xp=0.
+      allocate( xr(GLOBAL_2D_ARRAY) ) ; xr=0.
+      allocate( yp(GLOBAL_2D_ARRAY) ) ; yp=0.
+      allocate( yr(GLOBAL_2D_ARRAY) ) ; yr=0.
 #endif
  
-      allocate( pm(GLOBAL_2D_ARRAY) )
-      allocate( pn(GLOBAL_2D_ARRAY) )
-      allocate( dm_r(GLOBAL_2D_ARRAY) )
-      allocate( dn_r(GLOBAL_2D_ARRAY) )
-      allocate( pn_u(GLOBAL_2D_ARRAY) )
-      allocate( dm_u(GLOBAL_2D_ARRAY) )
-      allocate( dn_u(GLOBAL_2D_ARRAY) )
-      allocate( dm_v(GLOBAL_2D_ARRAY) )
-      allocate( pm_v(GLOBAL_2D_ARRAY) )
-      allocate( dn_v(GLOBAL_2D_ARRAY) )
-      allocate( dm_p(GLOBAL_2D_ARRAY) )
-      allocate( dn_p(GLOBAL_2D_ARRAY) )
+      allocate( pm(GLOBAL_2D_ARRAY) )   ; pm=0.
+      allocate( pn(GLOBAL_2D_ARRAY) )   ; pn=0.
+      allocate( dm_r(GLOBAL_2D_ARRAY) ) ; dm_r=0.
+      allocate( dn_r(GLOBAL_2D_ARRAY) ) ; dn_r=0.
+      allocate( pn_u(GLOBAL_2D_ARRAY) ) ; pn_u=0.
+      allocate( dm_u(GLOBAL_2D_ARRAY) ) ; dm_u=0.
+      allocate( dn_u(GLOBAL_2D_ARRAY) ) ; dn_u=0.
+      allocate( dm_v(GLOBAL_2D_ARRAY) ) ; dm_v=0.
+      allocate( pm_v(GLOBAL_2D_ARRAY) ) ; pm_v=0.
+      allocate( dn_v(GLOBAL_2D_ARRAY) ) ; dn_v=0.
+      allocate( dm_p(GLOBAL_2D_ARRAY) ) ; dm_p=0.
+      allocate( dn_p(GLOBAL_2D_ARRAY) ) ; dn_p=0.
 
-      allocate( iA_u(GLOBAL_2D_ARRAY) )
-      allocate( iA_v(GLOBAL_2D_ARRAY) )
+      allocate( iA_u(GLOBAL_2D_ARRAY) ) ; iA_u=0.
+      allocate( iA_v(GLOBAL_2D_ARRAY) ) ; iA_v=0.
  
 #if (defined CURVGRID && defined UV_ADV)
-      allocate( dmde(GLOBAL_2D_ARRAY) )
-      allocate( dndx(GLOBAL_2D_ARRAY) )
+      allocate( dmde(GLOBAL_2D_ARRAY) ) ; dmde=0.
+      allocate( dndx(GLOBAL_2D_ARRAY) ) ; dndx=0.
 #endif
-      allocate( pmon_u(GLOBAL_2D_ARRAY) )
-      allocate( pnom_v(GLOBAL_2D_ARRAY) )
-      allocate( grdscl(GLOBAL_2D_ARRAY) )
+      allocate( pmon_u(GLOBAL_2D_ARRAY) ) ; pmon_u=0.
+      allocate( pnom_v(GLOBAL_2D_ARRAY) ) ; pnom_v=0.
+      allocate( grdscl(GLOBAL_2D_ARRAY) ) ; grdscl=0.
  
 #ifdef MASKING
-      allocate( rmask(GLOBAL_2D_ARRAY) )
-      allocate( pmask(GLOBAL_2D_ARRAY) )
-      allocate( umask(GLOBAL_2D_ARRAY) )
-      allocate( vmask(GLOBAL_2D_ARRAY) )
+      allocate( rmask(GLOBAL_2D_ARRAY) ) ; rmask=0.
+      allocate( pmask(GLOBAL_2D_ARRAY) ) ; pmask=0.
+      allocate( umask(GLOBAL_2D_ARRAY) ) ; umask=0.
+      allocate( vmask(GLOBAL_2D_ARRAY) ) ; vmask=0.
 #endif
 
       ! WARNING: "rmask" MUST BE initialized to all-one state in order to

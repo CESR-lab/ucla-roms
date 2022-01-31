@@ -45,36 +45,22 @@
       implicit none
 
 #ifdef SOLVE3D
-      allocate( rufrc(GLOBAL_2D_ARRAY) )
-      allocate( rvfrc(GLOBAL_2D_ARRAY) )
+      allocate( rufrc(GLOBAL_2D_ARRAY) ) ; rufrc=0.
+      allocate( rvfrc(GLOBAL_2D_ARRAY) ) ; rvfrc=0.
 # ifdef VAR_RHO_2D
-      allocate( rhoA(GLOBAL_2D_ARRAY) )
-      allocate( rhoS(GLOBAL_2D_ARRAY) )
+      allocate( rhoA(GLOBAL_2D_ARRAY) ) ; rhoA=0.
+      allocate( rhoS(GLOBAL_2D_ARRAY) ) ; rhoS=0.
 # endif
-      allocate( r_D(GLOBAL_2D_ARRAY) )
-      allocate( Zt_avg1(GLOBAL_2D_ARRAY) )
-      allocate( DU_avg1(GLOBAL_2D_ARRAY) )
-      allocate( DV_avg1(GLOBAL_2D_ARRAY) )
-      allocate( DU_avg2(GLOBAL_2D_ARRAY) )
-      allocate( DV_avg2(GLOBAL_2D_ARRAY) )
+      allocate( r_D(GLOBAL_2D_ARRAY) ) ; r_D = 0.
+      allocate( Zt_avg1(GLOBAL_2D_ARRAY) ) ; Zt_avg1=0.
+      allocate( DU_avg1(GLOBAL_2D_ARRAY) ) ; DU_avg1=0.
+      allocate( DV_avg1(GLOBAL_2D_ARRAY) ) ; DV_avg1=0.
+      allocate( DU_avg2(GLOBAL_2D_ARRAY) ) ; DU_avg2=0.
+      allocate( DV_avg2(GLOBAL_2D_ARRAY) ) ; DV_avg2=0.
 # ifdef EXTRAP_BAR_FLUXES
-      allocate( DU_avg_bak(GLOBAL_2D_ARRAY) )
-      allocate( DV_avg_bak(GLOBAL_2D_ARRAY) )
+      allocate( DU_avg_bak(GLOBAL_2D_ARRAY) ) ; DU_avg_bak=0.
+      allocate( DV_avg_bak(GLOBAL_2D_ARRAY) ) ; DV_avg_bak=0.
 # endif
-#endif /* SOLVE3D */
-
-#ifdef SOLVE3D
-      rufrc=0.
-      rvfrc=0.
-# ifdef VAR_RHO_2D
-      rhoA=0.
-      rhoS=0.
-# endif
-      Zt_avg1=0.
-      DU_avg1=0.
-      DV_avg1=0.
-      DU_avg2=0.
-      DV_avg2=0.
 #endif /* SOLVE3D */
 
       end subroutine init_arrays_coupling  !]
