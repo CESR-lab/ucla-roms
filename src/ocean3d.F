@@ -46,11 +46,11 @@
       ! DevinD - again lots of extra first touched variables that weren't in init_arrays originally?
 
 #ifdef SOLVE3D
-      allocate( u(GLOBAL_2D_ARRAY,N,3) )
-      allocate( v(GLOBAL_2D_ARRAY,N,3) )
+      allocate( u(GLOBAL_2D_ARRAY,N,3) ) ; u=0.
+      allocate( v(GLOBAL_2D_ARRAY,N,3) ) ; v=0.
 
-      if (wrtavg(indxU)) allocate( u_avg(GLOBAL_2D_ARRAY,N) )
-      if (wrtavg(indxV)) allocate( v_avg(GLOBAL_2D_ARRAY,N) )
+      if (wrtavg(indxU)) allocate( u_avg(GLOBAL_2D_ARRAY,N) ) ;u_avg =0.
+      if (wrtavg(indxV)) allocate( v_avg(GLOBAL_2D_ARRAY,N) ) ;v_avg =0.
 
 # if defined NHMG
       allocate( w(GLOBAL_2D_ARRAY,0:N,3) )
@@ -59,10 +59,10 @@
       allocate( nhdw(GLOBAL_2D_ARRAY,0:N,2) )
 # endif
 
-      allocate( FlxU(GLOBAL_2D_ARRAY,N) )
-      allocate( FlxV(GLOBAL_2D_ARRAY,N) )
-      allocate( We(GLOBAL_2D_ARRAY,0:N) )  ! explicit
-      allocate( Wi(GLOBAL_2D_ARRAY,0:N) )  ! implicit
+      allocate( FlxU(GLOBAL_2D_ARRAY,N) ) ; FlxU=0.
+      allocate( FlxV(GLOBAL_2D_ARRAY,N) ) ; FlxV =0.
+      allocate( We(GLOBAL_2D_ARRAY,0:N) ) ; We =0.         ! explicit
+      allocate( Wi(GLOBAL_2D_ARRAY,0:N) ) ; Wi=0.          ! implicit
 
       if (wrtavg(indxO)) then
         allocate( w_avg(GLOBAL_2D_ARRAY,0:N) )
@@ -74,9 +74,9 @@
       endif
 
 
-      allocate( Hz(GLOBAL_2D_ARRAY,N) )    ! height of rho-cell
-      allocate( z_r(GLOBAL_2D_ARRAY,N) )   ! depth at rho-points
-      allocate( z_w(GLOBAL_2D_ARRAY,0:N) ) ! depth at   w-points
+      allocate( Hz(GLOBAL_2D_ARRAY,N) )    ; Hz =0.        ! height of rho-cell
+      allocate( z_r(GLOBAL_2D_ARRAY,N) )   ; z_r=0.        ! depth at rho-points
+      allocate( z_w(GLOBAL_2D_ARRAY,0:N) ) ; z_w=0.        ! depth at   w-points
 # if defined NHMG || defined NONTRAD_COR
       allocate( dzdxi(GLOBAL_2D_ARRAY,1:N)  )
       allocate( dzdeta(GLOBAL_2D_ARRAY,1:N) )
@@ -84,8 +84,6 @@
 #endif  /* SOLVE3D */
 
 #ifdef SOLVE3D
-      u=0.
-      v=0.
       if (wrtavg(indxU)) u_avg=0.
       if (wrtavg(indxV)) v_avg=0.
 #endif /* SOLVE3D */

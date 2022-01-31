@@ -32,12 +32,13 @@ Tools-Roms/ncjoin_mpi
 Tools-Roms/join_child_bry
 Tools-Roms/zslice
 Tools-Roms/nc3to4z
+Tools-Roms/r2r_bry
+Tools-Roms/r2r_init
+Tools-Roms/r2r_match_topo
 
-# For Examples/code_check/:
-sample_wec_test_old.log
-river_ana_test_old.log
-code_check.log
-wec_netcdf_test_old.log
+# For Examples/code_check/
+# and Expanse run logs:
+*.log
 
 # DevinD related ignores:
 .settings
