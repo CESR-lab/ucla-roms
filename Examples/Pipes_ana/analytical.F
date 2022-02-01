@@ -14,28 +14,22 @@
       implicit none
       private
 
+      ![ Preamble:
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
 !
-! ana_bsedim_tile   Analytical bottom sediment grain size
-!                          and density.
+! ana_bsedim_tile   Analytical bottom sediment grain size and density.
 ! ana_meanRHO_tile  Analytical mean density anomaly.
-! ana_smflux_tile   Analytical kinematic surface momentum flux
-!                          (wind stress).
-! ana_srflux_tile   Analytical kinematic surface shortwave
-!                          radiation.
+! ana_smflux_tile   Analytical kinematic surface momentum flux (wind stress).
+! ana_srflux_tile   Analytical kinematic surface shortwave radiation.
 ! ana_ssh_tile      Analytical sea surface height climatology.
 ! ana_sst_tile      Analytical sea surface temperature and dQdSST
 !                         which are used during heat flux correction.
-! ana_stflux_tile   Analytical kinematic surface flux of tracer type
-!                          variables.
+! ana_stflux_tile   Analytical kinematic surface flux of tracer type variables.
 ! ana_tclima_tile   Analytical tracer climatology fields.
 ! ana_uclima_tile   Analytical tracer climatology fields.
-! ana_wwave_tile    Analytical wind induced wave amplitude,
-!                         direction and period.
+! ana_wwave_tile    Analytical wind induced wave amplitude, direction and period.
 
-      ! user input:
-      logical, parameter :: restore = .true.
 
 ! REMOVE ALL FLAGS LATER
 #ifdef ANA_GRID
@@ -64,13 +58,13 @@
 #endif
 
       ! Non-typical analytical vars:
-      ! ----------------------------
+      !]----------------------------
 
       contains
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_GRID
-      subroutine ana_grid (tile)
+      subroutine ana_grid (tile)  ![
 
       use param
       use hidden_mpi_vars
@@ -80,10 +74,10 @@
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
 
-      end subroutine ana_grid
+      end subroutine ana_grid  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_grid_tile (istr,iend,jstr,jend)
+      subroutine ana_grid_tile (istr,iend,jstr,jend)  ![
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
@@ -200,7 +194,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-#if defined PIPE_SOURCE
       psz = xl*0.02 ! Width of the pipe
       px  = xl*.5  ! x location pipe 
       py  = el*.5  ! y location pipe 
@@ -217,29 +210,29 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           endif
         enddo
       enddo
-#endif
-      end subroutine ana_grid_tile
+
+      end subroutine ana_grid_tile  !]
 #endif /* ANA_GRID */
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_INITIAL
-      subroutine ana_init (tile)  ! Set initial conditions for momentum
-                                  ! free surface, and tracer variables
+      subroutine ana_init (tile)  ![ Set initial conditions for momentum
+                                  !  free surface, and tracer variables
       use param
       use hidden_mpi_vars
       use private_scratch
 
-      implicit none               ! using analytical expressions.
+      implicit none               !  using analytical expressions.
       integer tile
 
 # include "compute_tile_bounds.h"
 
       call ana_init_tile( istr,iend,jstr,jend )
 
-      end subroutine ana_init
+      end subroutine ana_init  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_init_tile (istr,iend,jstr,jend)
+      subroutine ana_init_tile (istr,iend,jstr,jend)  ![
 
       use param
       use tracers, only: t
@@ -254,29 +247,15 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       implicit none
 
-      integer istr,iend,jstr,jend, i,j,k, itrc, i0,j0
-
-      real Ampl, fac, x,y, x0,y0, cff, cff0,cff1,cff2,cff3
-# if defined COLD_FILAMENT
-
-      real, parameter :: f0=0.8E-4,              ! Coriolis parameter
-     &     h_0=60., dh=100.,  wdth=5.e+3,
-     &     b_0=7.3e-3, N_0=6.3e-3, B=0.02, lam=1./50.
-
-      real xx,zz, hbl, sgm
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: hq
-
-#  define VISC_TERM_WIND_BALANCE
-#  ifdef VISC_TERM_WIND_BALANCE
-      real  b11,b12,b21,b22, det, TauX,TauY
-      real, dimension(0:N) :: Av,FC, c11,c12,c21,c22, d1,d2
-#  endif
-# elif defined ISWAKE
-      integer jwake,mid_wake
-      real AmpR,AmpU, cffS, Zthrm, dZthrm, xitm, alpha, csa,sna
-# endif
+      integer :: istr, iend, jstr, jend, i, j, k, itrc
 
 # include "compute_auxiliary_bounds.h"
+
+      ! necessary for FIRST_TIME_STEP flag to work, as per set_global_definitions.h
+      ! this had no value for analytical examples previously.
+#ifdef EXACT_RESTART
+      forw_start=ntstart
+#endif
 
       do j=jstrR,jendR         ! Set everything (except temperature
         do i=istrR,iendR       ! and salinity) to all-zero state, then
@@ -318,7 +297,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       do k=1,N
         do j=jstrR,jendR
           do i=istrR,iendR
-            t(i,j,k,1,itemp)=???
+            t(i,j,k,1,itemp)=???  ! safety catch
             t(i,j,k,2,itemp)=???
             t(i,j,k,1,isalt)=???
             t(i,j,k,2,isalt)=???
@@ -327,6 +306,17 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 #  endif
 # endif  /* end of configuration selection switch */
+
+      call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
+
+      end subroutine ana_init_tile  !]
+
+! ---------------------------------------------------------------------
+      subroutine ana_init_generic( istr, iend, jstr, jend )  ![
+      ! mpi exchanges, etc, required for all analytical initial conditions
+      implicit none
+
+      integer :: istr, iend, jstr, jend, i, j, k, itrc
 
 ! The rest of the code is independent of the specific configuration.
 
@@ -580,13 +570,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
 # endif
 
-      end subroutine ana_init_tile
+      end subroutine ana_init_generic  !]
 #endif /* ANA_INITIAL */
 
-! ----------------------------------------------------------------------
+! ---------------------------------------------------------------------
 #if defined ANA_VMIX && defined SOLVE3D
-
-      subroutine ana_vmix (tile)
+      subroutine ana_vmix (tile)  ![
 
       use param
       use hidden_mpi_vars
@@ -595,10 +584,11 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       integer tile
 # include "compute_tile_bounds.h"
       call ana_vmix_tile (istr,iend,jstr,jend)
-      end subroutine ana_vmix
+
+      end subroutine ana_vmix  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_vmix_tile (istr,iend,jstr,jend)
+      subroutine ana_vmix_tile (istr,iend,jstr,jend)  ![
 
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
@@ -641,7 +631,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 #  endif
 # endif
 
-      end subroutine ana_vmix_tile
+      end subroutine ana_vmix_tile  !]
 #endif /* ANA_VMIX */
 
 ! ----------------------------------------------------------------------
@@ -650,7 +640,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_SMFLUX
-      subroutine ana_smflux_tile(istr,iend,jstr,jend)
+      subroutine ana_smflux_tile(istr,iend,jstr,jend)  ![
 
       use param
       use surf_flux !, only: sustr,svstr
@@ -672,12 +662,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-      end
+      end subroutine ana_smflux_tile  !]
 #endif /* ANA_SMFLUX */
 
 ! ----------------------------------------------------------------------
 #if defined ANA_SRFLUX && defined SOLVE3D
-      subroutine ana_srflux_tile(istr,iend,jstr,jend)
+      subroutine ana_srflux_tile(istr,iend,jstr,jend)  ![
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
@@ -696,22 +686,23 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           srflx(i,j)=0.
         enddo
       enddo
-      end
+      end subroutine ana_srflux_tile  !]
 #endif /* ANA_SRFLUX */
 
 ! ----------------------------------------------------------------------
 #if defined ANA_SSH
-      subroutine ana_ssh(tile)            ! Set analytical sea-surface
+      subroutine ana_ssh(tile) ![ set analytical sea-surface
       use param
       use hidden_mpi_vars
-      implicit none                       ! height climatology [m]
+      implicit none            !  height climatology [m]
       integer tile
 #include "compute_tile_bounds.h"
       call ana_ssh_tile(istr,iend,jstr,jend)
-      end
+
+      end subroutine ana_ssh  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_ssh_tile(istr,iend,jstr,jend)
+      subroutine ana_ssh_tile(istr,iend,jstr,jend)  ![
 
       use param
       use climat
@@ -723,13 +714,13 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 # include "compute_extended_bounds.h"
 
-      end
+      end subroutine ana_ssh_tile  !]
 #endif
 
 ! ----------------------------------------------------------------------
 #ifdef SOLVE3D
 # if defined ANA_STFLUX || defined ANA_SSFLUX
-      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)
+      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)  ![
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
@@ -771,7 +762,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 !  Set kinematic surface flux of additional tracers, if any.
 
       endif
-      end
+      end subroutine ana_stflux_tile  !]
 # endif /* ANA_STFLUX || ANA_SSFLUX */
 #endif /* SOLVE3D */
 
