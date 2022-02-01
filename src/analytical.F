@@ -14,28 +14,21 @@
       implicit none
       private
 
+      ![ Preamble:
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
 !
-! ana_bsedim_tile   Analytical bottom sediment grain size
-!                          and density.
+! ana_bsedim_tile   Analytical bottom sediment grain size and density.
 ! ana_meanRHO_tile  Analytical mean density anomaly.
-! ana_smflux_tile   Analytical kinematic surface momentum flux
-!                          (wind stress).
-! ana_srflux_tile   Analytical kinematic surface shortwave
-!                          radiation.
+! ana_smflux_tile   Analytical kinematic surface momentum flux (wind stress).
+! ana_srflux_tile   Analytical kinematic surface shortwave radiation.
 ! ana_ssh_tile      Analytical sea surface height climatology.
 ! ana_sst_tile      Analytical sea surface temperature and dQdSST
 !                         which are used during heat flux correction.
-! ana_stflux_tile   Analytical kinematic surface flux of tracer type
-!                          variables.
+! ana_stflux_tile   Analytical kinematic surface flux of tracer type variables.
 ! ana_tclima_tile   Analytical tracer climatology fields.
 ! ana_uclima_tile   Analytical tracer climatology fields.
-! ana_wwave_tile    Analytical wind induced wave amplitude,
-!                         direction and period.
-
-      ! user input:
-      logical, parameter :: restore = .false.
+! ana_wwave_tile    Analytical wind induced wave amplitude, direction and period.
 
 ! REMOVE ALL FLAGS LATER
 #ifdef ANA_GRID
@@ -64,13 +57,13 @@
 #endif
 
       ! Non-typical analytical vars:
-
+      !]----------------------------
 
       contains
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_GRID
-      subroutine ana_grid (tile)
+      subroutine ana_grid (tile)  ![
 
       use param
       use hidden_mpi_vars
@@ -80,10 +73,10 @@
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
 
-      end subroutine ana_grid
+      end subroutine ana_grid  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_grid_tile (istr,iend,jstr,jend)
+      subroutine ana_grid_tile (istr,iend,jstr,jend)  ![
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
@@ -103,6 +96,7 @@
       use grid
       use scalars
 
+      use river_frc
       implicit none
       integer istr,iend,jstr,jend, i,j
 
@@ -113,27 +107,31 @@
 ! depth      the maximum depth [meters, positive];
 ! f0,beta    Coriolis parameters to setup a beta-plane [1/s, 1/(m*s)].
 
+      real, parameter ::
+     &       Size_XI = 1.0e4,   Size_ETA= 1.0e4,
+     &       depth=5.,          max_depth=100.0,
+     &       f0=0.0e-4,            beta=0.
+
       real cff,y, x0,y0,dx,dy
       real dh, shelf, slope, land, coast
-
-      real, parameter ::
-     &       depth = HD       ! H set in param.opt
-
+      real riv_west, riv_east,riv_cells
+      real psz,px,py,pipe_cells
 
 # include "compute_extended_bounds.h"
 
-      dx=100.0                         ! Set grid spacings for
-      dy=100.0                         ! Cartesian rectangular grid
+      ! need to initialize arrays for river. Normally done through set_river_frc,
+      ! but analytical calls come before that so need this here.
+      allocate( rflx(GLOBAL_2D_ARRAY) )
 
 C$OMP MASTER                           ! Copy physical dimensions of
-      xl=dx*dble(LLm)
-      el=dy*dble(MMm)                  ! the grid into glabally vizible
+      xl=Size_XI ; el=Size_ETA         ! the grid into glabally visible
 C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
+      dx=Size_XI/dble(LLm)             ! Set grid spacings for
+      dy=Size_ETA/dble(MMm)            ! Cartesian rectangular grid
 # ifdef MPI
-      x0=dx*dble(iSW_corn) - xl/2  ! Coordinates of south-west
+      x0=dx*dble(iSW_corn)             ! Coordinates of south-west
       y0=dy*dble(jSW_corn)             ! corner of MPI subdomain
-                                       ! -xl/2 to centre over axis
 # else
       x0=0. ; y0=0.
 # endif
@@ -152,90 +150,178 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 ! Set Coriolis parameter [1/s] at RHO-points.
 
-      x0=xl/2.
-      y0=el/2.
+      x0=Size_XI/2.
+      y0=Size_ETA/2.
       do j=jstrR,jendR
         do i=istrR,iendR
-!          f(i,j)=f0+beta*( yr(i,j)-y0 )
-          f(i,j)=f0
+          f(i,j)=f0+beta*( yr(i,j)-y0 )
+# if defined NONTRAD_COR
+!         feta(i,j) = f0*cos(pi/4)
+!         fxi(i,j)  = f0*sin(pi/4)
+# endif
         enddo
       enddo
 
+      shelf=size_eta/5 ! shelf location in meters from south
+      slope=(max_depth-depth)/(size_eta*4/5) ! Similar triangles o/a=dh/pm=(max_depth-depth)/(MMm*4/5)
       do j=jstrR,jendR
         do i=istrR,iendR
-          h(i,j)=depth ! constant depth
+
+          if(yr(i,j)<shelf .and. SOUTHERN_EDGE) then
+            ! Constant shallow region 20% of domain in south.
+            h(i,j)=depth
+          else
+            ! Uniform gradient from south (shallow) to north (deep).
+            dh=(yr(i,j)-shelf)*slope
+            h(i,j)=depth+dh
+          endif
+
         enddo
       enddo
 
-      ! Set up land masking
+      ! Set up land masking for river channel
+      land  = el*0.1  ! Land extends 10% of domain from south
+      coast = el*0.02 ! Coast is not as far
+      riv_west=xl*0.4 ! River west bank at 40% from west
+      riv_east=xl*0.6 ! River west bank at 60% from west
 
       do j=jstrR,jendR
         do i=istrR,iendR
+          ! default is water
           rmask(i,j) = 1
+
+          if(yr(i,j)<land) then
+            if (xr(i,j)<riv_west .or. xr(i,j)>riv_east) then
+              rmask(i,j)=0.0
+            endif
+          endif
+          if(yr(i,j)<coast) then !! All land in the far south
+            rmask(i,j) = 0.0
+          endif
         enddo
       enddo
 
-      end subroutine ana_grid_tile
+#if defined RIVER_SOURCE
+      riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
+      do j=jstrR,jendR
+        do i=istrR,iendR
+          if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
+            ! find 'coastline' masked cells
+            if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
+              rflx(i,j) = 1.0+1.0/riv_cells
+            endif
+          endif
+        enddo
+      enddo
+#endif
+
+      end subroutine ana_grid_tile  !]
 #endif /* ANA_GRID */
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_INITIAL
-      subroutine ana_init (tile)  ! Set initial conditions for momentum
-                                  ! free surface, and tracer variables
+      subroutine ana_init (tile)  ![ Set initial conditions for momentum
+                                  !  free surface, and tracer variables
       use param
       use hidden_mpi_vars
       use private_scratch
 
-      implicit none               ! using analytical expressions.
+      implicit none               !  using analytical expressions.
       integer tile
 
 # include "compute_tile_bounds.h"
 
       call ana_init_tile( istr,iend,jstr,jend )
 
-      end subroutine ana_init
+      end subroutine ana_init  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_init_tile (istr,iend,jstr,jend)
+      subroutine ana_init_tile (istr,iend,jstr,jend)  ![
 
       use param
+      use tracers, only: t
       use boundary
       use climat
       use eos_vars
+      use grid
       use mixing
-      use read_write
-      use netcdf
+      use ocean2d
+      use ocean3d
+      use scalars
 
       implicit none
 
-      integer :: istr,iend,jstr,jend, i,j,k, itrc
+      integer istr,iend,jstr,jend, i,j,k, itrc
 
 # include "compute_auxiliary_bounds.h"
 
+      ! necessary for FIRST_TIME_STEP flag to work, as per set_global_definitions.h
+      ! this had no value for analytical examples previously.
+#ifdef EXACT_RESTART
+      forw_start=ntstart
+#endif
+
+
+      do j=jstrR,jendR         ! Set everything (except temperature
+        do i=istrR,iendR       ! and salinity) to all-zero state, then
+          zeta(i,j,1)=0.       ! modify some of the variables, if a
+          ubar(i,j,1)=0.       ! non-trivial initialization required.
+          vbar(i,j,1)=0.       ! Note: A code to initialize T [and S]
+        enddo                  ! must always be supplied for 3D
+      enddo                    ! applications.
+# ifdef SOLVE3D
       do k=1,N
         do j=jstrR,jendR
           do i=istrR,iendR
-            t(i,j,k,1,itemp)=20.0
+            u(i,j,k,1)=0.
+            u(i,j,k,2)=0.
+            v(i,j,k,1)=0.
+            v(i,j,k,2)=0.
+          enddo
+        enddo
+      enddo
+# endif
+
+# if defined RIVER_SOURCE
+#  ifdef SOLVE3D
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+!           t(i,j,k,1,itemp)=24.0
+            t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
             t(i,j,k,1,isalt)=36.
             t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
             t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
           enddo
         enddo
       enddo
+#  endif
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ubar(i,j,1)=0.
-          vbar(i,j,1)=0.
-          zeta(i,j,1)=0.
-          do k=1,N
-            u(i,j,k,1)=0.
-            v(i,j,k,1)=0.
-            u(i,j,k,2)=u(i,j,k,1)
-            v(i,j,k,2)=v(i,j,k,1)
+# else
+#  ifdef SOLVE3D
+      do k=1,N
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            t(i,j,k,1,itemp)=???
+            t(i,j,k,2,itemp)=???
+            t(i,j,k,1,isalt)=???
+            t(i,j,k,2,isalt)=???
           enddo
         enddo
       enddo
+#  endif
+# endif  /* end of configuration selection switch */
+
+      call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
+
+      end subroutine ana_init_tile  !]
+
+! ---------------------------------------------------------------------
+      subroutine ana_init_generic( istr, iend, jstr, jend )  ![
+      ! mpi exchanges, etc, required for all analytical initial conditions
+      implicit none
+
+      integer :: istr, iend, jstr, jend, i, j, k, itrc
 
 ! The rest of the code is independent of the specific configuration.
 
@@ -489,13 +575,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
 # endif
 
-      end subroutine ana_init_tile
+      end subroutine ana_init_generic  !]
 #endif /* ANA_INITIAL */
 
-! ----------------------------------------------------------------------
+! ---------------------------------------------------------------------
 #if defined ANA_VMIX && defined SOLVE3D
-
-      subroutine ana_vmix (tile)
+      subroutine ana_vmix (tile)  ![
 
       use param
       use hidden_mpi_vars
@@ -504,10 +589,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       integer tile
 # include "compute_tile_bounds.h"
       call ana_vmix_tile (istr,iend,jstr,jend)
-      end subroutine ana_vmix
+      end subroutine ana_vmix  !]
 
-! ----------------------------------------------------------------------
-      subroutine ana_vmix_tile (istr,iend,jstr,jend)
+! ---------------------------------------------------------------------
+      subroutine ana_vmix_tile (istr,iend,jstr,jend)  ![
 
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
@@ -550,16 +635,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 #  endif
 # endif
 
-      end subroutine ana_vmix_tile
+      end subroutine ana_vmix_tile  !]
 #endif /* ANA_VMIX */
 
 ! ----------------------------------------------------------------------
-
-! ONLY THE _TILE ROUTINES ARE USED in set_forces! GET RID OF THE NON-TILE VERSIONS
-
-! ----------------------------------------------------------------------
 #ifdef ANA_SMFLUX
-      subroutine ana_smflux_tile(istr,iend,jstr,jend)
+      subroutine ana_smflux_tile(istr,iend,jstr,jend)  ![
 
       use param
       use surf_flux !, only: sustr,svstr
@@ -581,12 +662,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-      end
+      end subroutine ana_smflux_tile  !]
 #endif /* ANA_SMFLUX */
 
 ! ----------------------------------------------------------------------
 #if defined ANA_SRFLUX && defined SOLVE3D
-      subroutine ana_srflux_tile(istr,iend,jstr,jend)
+      subroutine ana_srflux_tile(istr,iend,jstr,jend)  ![
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
@@ -605,22 +686,22 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           srflx(i,j)=0.
         enddo
       enddo
-      end
+      end subroutine ana_srflux_tile  !]
 #endif /* ANA_SRFLUX */
 
 ! ----------------------------------------------------------------------
 #if defined ANA_SSH
-      subroutine ana_ssh(tile)            ! Set analytical sea-surface
+      subroutine ana_ssh(tile)            ![ Set analytical sea-surface
       use param
       use hidden_mpi_vars
-      implicit none                       ! height climatology [m]
+      implicit none                       !  height climatology [m]
       integer tile
 #include "compute_tile_bounds.h"
       call ana_ssh_tile(istr,iend,jstr,jend)
-      end
+      end subroutine ana_ssh  !]
 
 ! ----------------------------------------------------------------------
-      subroutine ana_ssh_tile(istr,iend,jstr,jend)
+      subroutine ana_ssh_tile(istr,iend,jstr,jend)  ![
 
       use param
       use climat
@@ -632,13 +713,13 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 # include "compute_extended_bounds.h"
 
-      end
+      end subroutine ana_ssh_tile  !]
 #endif
 
 ! ----------------------------------------------------------------------
 #ifdef SOLVE3D
 # if defined ANA_STFLUX || defined ANA_SSFLUX
-      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)
+      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)  ![
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
@@ -680,39 +761,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 !  Set kinematic surface flux of additional tracers, if any.
 
       endif
-      end
+      end subroutine ana_stflux_tile  !]
 # endif /* ANA_STFLUX || ANA_SSFLUX */
-
 #endif /* SOLVE3D */
 
-! ----------------------------------------------------------------------
-#ifdef FILAMENT_RESTORE
-      subroutine ana_restore_zeta( istr,iend,jstr,jend,knew)
-
-      use ocean2d
-      use ocean3d
-
-      implicit none
-
-      integer, intent(in) :: istr,iend,jstr,jend, knew
-
-      ! local
-      integer :: i,j
-
-# include "compute_auxiliary_bounds.h"
-
-!      print *, 'Restoring zeta!'
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          zeta(i,j,knew)      = zeta0(i,j)
-!          t(i,j,:,nnew,itemp) = t0(i,j,:)
-        enddo
-      enddo
-
-      end subroutine ana_restore_zeta
-#endif
-
-! ----------------------------------------------------------------------
+! ---------------------------------------------------------------------
 
       end module analytical

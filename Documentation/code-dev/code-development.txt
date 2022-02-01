@@ -28,9 +28,29 @@ Code development discussions and strategy
     We discussed how, using logical parameters, we can move the code completely away from CPPFLAGS.
     We think ultimately this would be a nice change.
     All logicals will live in param.opt, with default being false.
+    For now keep logicals in own module .opt file to prevent people's existing setups to need additions to
+    param.opt.
     This is less risky than the current system that relies on spelling CPPFLAGS correctly, or even
     knowing that they are there in the first place. (Here is would see it exists and the default value).
+    Since arrays are now all allocatable there is minimal memory impact to not having empty modules.
+    Compile time of ROMS is not prohibitive, so even now having to compile modules that were empty before
+    due to CPPKEY turned off, this should be a reasonable price to pay for cleaner code.
     
     Init_arrays:
     Modules can perform their own init routine, as we've been doing. Unless arrays are littered around the
     code and it is easier to initialize arrays through the init_arrays.F routine.
+    
+    
+2022/02/01: Allocatable arrays  
+
+    When moving the code from common blocks to allocatable arrays, we noticed some issues. Common block variables
+    appeared to automatically be set to zero. However, allocated arrays can have garbage values in them. There
+    were a few bugs that appeared because some routines required arrays to be zero but weren't actually set to 0.
+    
+    We discussed how setting arrays at allocation to a NaN value would help catch bugs in future.
+    For example there was a tricky bug with DU_avg_bak that would have been more easily caught if it had NaN values.  
+    
+    
+    
+    
+    
