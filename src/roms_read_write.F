@@ -22,10 +22,11 @@
         character(len=20)                 :: tname     ! time variable name for variable
         real,dimension(:,:,:),allocatable :: vdata     ! need=0 to initialize all vars other than name and time_name. Slightly inefficient to set=0 though. stores raw input data for 2 times: time_A < mode
         integer                           :: coarse=0  ! Flag to indicate interpolation of the input data
+        real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
         integer                           :: ifile=0   ! Index to file in list of filenames
         integer                           :: irec =0   ! Record number in file
         integer         :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
-        real,   dimension(2)        :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
+        real,   dimension(2)              :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
       end type ncbry
 
       integer, target :: test_var
@@ -321,6 +322,7 @@
         stop
 !       cdata => nc_var%cdata
 !       ncread(ncid,vname,cdata,(/1,1,irec/))
+!       call exchange_2d
 !       call coarse2fine(cdata,vdata(:,:,it))
       else
         !! Allocate vdata to be the right size for the
@@ -413,5 +415,41 @@
 
       end subroutine create_filename !]
 ! ----------------------------------------------------------------------
+      subroutine coarse2fine(cdata,fdata)
+      ! interpolates from (possibly partitioned) coarse to fine surface forcing data
+      implicit none
+
+
+      ! input/output
+      real,dimension(:,:),intent(in) :: cdata   ! coarse data
+      real,dimension(:,:),intent(out):: fdata   ! fine data
+
+      ! local
+      integer :: nx,ny
+      integer :: i,j
+      integer :: ic,jc
+      real  :: a,b
+
+      a = 0.75
+      b = 0.25
+
+
+!     call exchange_2d(cdata)
+
+      do j=1,ny,2
+        do i=1,nx,2
+          fdata(i  ,j  ) = a*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
+     &                   + b*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
+          fdata(i+1,j  ) = a*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
+     &                   + b*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+          fdata(i  ,j+1) = b*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
+     &                   + a*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
+          fdata(i+1,j+1) = b*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
+     &                   + a*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+        enddo
+      enddo
+
+
+      end subroutine coarse2fine
 
       end module roms_read_write

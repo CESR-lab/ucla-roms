@@ -511,7 +511,7 @@ c**  &                                                             )
 
 # ifdef DIAGNOSTICS
       if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &  call set_diags_t_h_mix(istr,iend,jstr,jend,itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
+     &  call set_diags_t_h_mix(itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
 # endif
 
 # ifdef EXCHANGE
