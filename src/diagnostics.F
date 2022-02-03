@@ -13,7 +13,6 @@
       use ocean2d
       use ocean3d
       use scalars
-      use mixing  ! visc2_r
       use hidden_mpi_vars
 
       implicit none
@@ -29,12 +28,11 @@
 
       ! Preamble:  ![
 
-      logical, public            :: calc_diag=.true.        ! flag to calculate diagnostics in equation system.
-      logical                    :: init_done=.false.       ! flag to init diagnostics only once
-      integer                    :: navg_diag = 0           ! number of samples in average
+      logical, public            :: calc_diag=.true.      ! flag to calculate diagnostics in equation system.
+      logical                    :: init_done=.false.     ! flag to init diagnostics only once
+      integer                    :: navg_diag = 0         ! number of samples in average
 
       real,dimension(:,:,:),pointer :: wrk_xy
-      real                        :: diag_time_avg  ! Averages of time
 
       ! u and v momentum:
       ! ---------------
@@ -62,36 +60,27 @@
       ! Tracers: 
       ! --------
 
-      integer, public, parameter                          :: ndt = 6   ! number of tracer diag terms
-      real, public, allocatable, dimension(:, :, :, :, :) :: Tdiag     ! tracer diagnostic terms
-      real,         allocatable, dimension(:, :, :)       :: Td_tmp    ! temporary array to calculate change in tracer diags
+      integer,parameter :: ntd = 6   ! number of tracer diag terms
+      integer,parameter, public ::
+     &  tadvx = 1, ! Advection in x-direction
+     &  tadvy = 2, ! Advection in y-direction
+     &  tadvz = 3, ! Advection in z-direction
+     &  tmixx = 4, ! Mixing in x-direction
+     &  tmixy = 5, ! Mixing in y-direction
+     &  tmixz = 6  ! Mixing in z-direction
 
-      ! if diag_avg
-      real,         allocatable, dimension(:, :, :, :, :) :: Tdiag_avg ! averages of tracer diagnostic terms
+      real,public,allocatable,dimension(:,:,:,:,:) :: Tdiag     ! tracer diagnostic terms
+      real,allocatable,dimension(:,:,:,:,:) :: Tdiag_avg ! averages of tracer diagnostic terms
+      integer                               :: ntdia     ! number of tracers for which to do diagnostics
+      integer, dimension(nt)  :: diag_tidx = -1  ! index of tracer of selected tracers only
+      integer,public,dimension(nt)  :: itrc2idia = -1  ! inverse translation from itrc to idia
 
-      integer                            :: nd_trc           ! number of tracers selected tracers of interest (from wrt_t_diag array)
-      integer, dimension(:), allocatable :: diag_td_2_NT     ! index of tracer of selected tracers only
-      integer, dimension(NT), public     :: diag_NT_2_td=-1  ! convert itrc=1,NT to index of tracer in Tdiag array. Set to bad value -1
-      logical, allocatable,dimension(:)  :: idia             ! index to tracer for which to do diagnostics
-      integer                            :: ntdiag           ! number of tracers for which to do diagnostics
-
-      integer, parameter, public ::
-     &  it_h_adv   = 1,  ! Horizontal UP3 purely advective fluxes - compute_horiz_tracer_fluxes.h
-     &  it_h_diss  = 2,  ! Dissipative part of UP3 hori. advection
-     &  it_v_adv   = 3,  ! Vertical   UP3 purely advective fluxes - compute_vert_tracer_fluxes.h
-     &  it_v_diss  = 4,  ! Dissipative part of UP3 vert. advection
-                         ! do we need surface forcing flux as a vertical? Shouldn't be a 3D array anyway
-     &  it_v_mix   = 5,  ! Implicit time step for vertical diffusion - step3d_t_ISO.F
-     &  it_h_mix   = 6   ! Horizontal (along geopotential surfaces) Laplacian diffusion terms - t3dmix_GP.F
-      ! it_v_mix   <--   ! Nonlocal transport flux for unstable (convective) forcing - step3d_t_ISO.F. not used if no LMD_KPP flag, hence at the end. ! step3d_t_ISO.F. This only change T & S so shouldn't be 'NT' in size, a waste.
-      ! it_v_mix   <--   ! Boundary changes - t3dbc_im.F. Only at boundary so shared with v_mix (could be any other term but being consistent with u/v choice of v_mix.
 
       character (len=30),  allocatable, dimension(:) :: tdname
       character (len=120), allocatable, dimension(:) :: tlname  ! extra 10 characters for 'Averaged...'
 
       character (len=20) :: tunits = ' * m/s   (i.e. dC/dt*dz)'
 
-      public init_diags_trc
       public set_diags_t_h_mix
       public set_diags_t_4th_h_adv
       public set_diags_t_4th_v_adv
@@ -108,7 +97,7 @@
 
       ! Pressure flux terms
       ! --------------
-      real,allocatable,dimension(:,:)    :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
+      real,allocatable,dimension(:,:),public :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
       real,allocatable,dimension(:,:)    :: up_avg,vp_avg ! averaged u'p' and v'p'
       real,allocatable,dimension(:,:,:)  :: p_slow        ! filtered pressure 
 
@@ -214,6 +203,9 @@
       ! Allocate and initialize diagnostic arrays.
       implicit none
 
+      ! local
+      integer :: itrc
+
       ! Coefficients for exponential smoothing
       alpha = dt / timescale
       beta  = 1 - alpha
@@ -228,6 +220,21 @@
           allocate(Vdiag_avg(nx,ny,nz,nmd))
           Udiag_avg = 0
           Vdiag_avg = 0
+        endif
+      endif
+
+      if (diag_trc) then
+        do itrc=1,nt
+          ntdia = 0
+          if (trc_diag(itrc)) then
+            ntdia = ntdia+1           
+            diag_tidx(ntdia)= itrc
+            itrc2idia(itrc) = ntdia
+          endif
+        enddo
+        allocate(Tdiag(nx,ny,nz,ntd,ntdia) )
+        if (diag_avg) then   
+          allocate(Tdiag_avg(nx,ny,nz,ntd,ntdia) )
         endif
       endif
 
@@ -333,82 +340,10 @@
       FZ4(:,nz)= 0
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
-      if (diag_trc) call init_diags_trc  
 
       init_done = .true.  ! ensure init is not triggered again
 
       end subroutine init_diagnostics  !]
-
-! ----------------------------------------------------------------------
-      subroutine init_diags_trc ![
-      ! setup tracer arrays only for desired tracers,
-      ! since can be memory intensive if all tracers.
-
-      implicit none
-
-      ! local
-      integer                :: itrc, cnt=0, diag, td, i, j, k
-      integer, dimension(NT) :: temp_t_indx
-
-
-      allocate( tdname(ndt), tlname(ndt) )
-      tdname(it_h_adv)    = '_h_adv'
-      tlname(it_h_adv)    =
-     &  'Horizontal UP3 purely advective fluxes'                  / /
-     &  ' - compute_horiz_tracer_fluxes.h'
-      tdname(it_h_diss)   = '_h_diss'
-      tlname(it_h_diss)   =
-     &  'Horizontal UP3 advection dissipative fluxes'             / /
-     &  ' - compute_horiz_tracer_fluxes.h'
-      tdname(it_v_adv)    = '_v_adv'
-      tlname(it_v_adv)    =
-     &  'Vertical purely advective fluxes'                        / / ! spline in vertical
-     &  ' - compute_vert_tracer_fluxes.h'
-      tdname(it_v_diss)   = '_v_diss'
-      tlname(it_v_diss)   =
-     &  'Vertical advection dissipative fluxes'                   / /
-     &  ' - compute_vert_tracer_fluxes.h'
-      tdname(it_v_mix)    = '_v_mix_and_BC'
-      tlname(it_v_mix)    =
-     &  'Implicit vertical diffusion, nonlocal transport flux, '  / /
-     &  'and boundary change - step3d_t_ISO.F & t3dbc_im.F'
-      tdname(it_h_mix)    = '_h_mix'
-      tlname(it_h_mix)    =
-     &  'Horizontal (along geopotential surfaces) Laplacian '     / /
-     &  'diffusion terms (zero beyond sponge layer) - t3dmix_GP.F'
-
-
-      do itrc=1,NT
-        if (wrt_t_diag(itrc)) then
-          cnt=cnt+1                                          ! count tracers we want to calc+write
-          diag_NT_2_td(itrc)=cnt                             ! t(itrc) = Tdiag(cnt) - to convert between index scheme
-        endif
-      enddo
-
-      nd_trc = cnt                                           ! number of tracers of interest
-      allocate(  Tdiag( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )  ! only for tracers we are interested in
-      allocate( Td_tmp( GLOBAL_2D_ARRAY, N ) )               ! don't need to set to zero as written over in code
-
-      allocate( diag_td_2_NT( nd_trc ) )                     ! to convert indices between 't' and 'Tdiag'
-      diag_td_2_NT = -1                                      ! set to bad number (<1) as safeguard
-
-      cnt=0
-      do itrc=1,NT
-        if (wrt_t_diag(itrc)) then
-          cnt=cnt+1
-          diag_td_2_NT(cnt)=itrc                             ! store the actual tracer index of 't' array
-        endif                                                ! since t(NT) but Tdiag(nd_trc). NT >= nd_trc...
-      enddo
-
-
-      if (diag_avg) then
-        allocate(  Tdiag_avg( GLOBAL_2D_ARRAY, N, nd_trc, ndt ) )
-        do diag=1,ndt
-          tlname(diag)  = 'Average ' / / trim(tlname(diag))              ! and prepend 'Average'
-        enddo
-      endif
-
-      end subroutine init_diags_trc  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_u_4th_adv  ![
@@ -763,7 +698,7 @@
 # endif /* NHMG */
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_h_mix(istr,iend,jstr,jend, itrc)  ![
+      subroutine set_diags_t_h_mix(itrc)  ![
       ! Horizontal mixing from t3dmix_GP.F
       ! zero in interior beyond sponge layer if zero background diffusion!
 
@@ -771,16 +706,16 @@
       implicit none
 
       ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend, itrc
+      integer, intent(in) :: itrc
 
       ! local
-      integer :: i, j, k, td
+      integer :: i,j,k,td
 
-      td=diag_NT_2_td(itrc)
+      td=itrc2idia(itrc)
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend
-            Tdiag(i,j,k,td,it_h_mix) = t(i,j,k,nnew,itrc)
+        do j=1,ny
+          do i=1,nx
+            Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)
           enddo
         enddo
       enddo
@@ -788,7 +723,7 @@
       end subroutine set_diags_t_h_mix  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_4th_h_adv( istr, iend, jstr, jend, k, itrc )  ![
+      subroutine set_diags_t_4th_h_adv(k,itrc )  ![
       ! compute the horizontal 4th order advection.
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
@@ -845,14 +780,14 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, k, itrc
+      integer, intent(in) :: k, itrc
 
       ! local
       integer :: i, j, td
 
-      td=diag_NT_2_td(itrc)
-      do j=jstr,jend+1   ! +1 since u2rho averaging for Tdiag(it_h_diss) below
-        do i=istr,iend+1
+      td=itrc2idia(itrc)
+      do j= 1,ny+1   ! +1 since u2rho averaging for Tdiag(it_h_diss) below
+        do i= 1,nx+1
 
           ! FX4:
           cen2(i,j) = t(i-1,j  ,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)        ! 1/2 carried in FX4 calc
@@ -875,46 +810,18 @@
         enddo
       enddo
 
-#ifdef OBC_CHECK
-      sum_dbg = 0 ! refresh sum
-#endif
-      do j=jstr,jend
-!        sum_dbg = 0 ! refresh sum
-        do i=istr,iend
-#if !defined OBC_CHECK
-          Tdiag(i,j,k,td,it_h_adv) = -pm(i,j)*pn(i,j)*( FX4(i+1,j  )-FX4(i,j)   ! no *dt since rate of flux divergence
-     &                                                 +FY4(i  ,j+1)-FY4(i,j) )
-#else
-          Tdiag(i,j,k,td,it_h_adv) = - ( FX4(i+1,j  )-FX4(i,j) ! pm(i,j)*pn(i,j)*  ! no *dt since rate of flux divergence
+      do j= 1,ny
+        do i= 1,nx
+          Tdiag(i,j,k,tadvx,td) = - ( FX4(i+1,j  )-FX4(i,j) ! pm(i,j)*pn(i,j)*  ! no *dt since rate of flux divergence
      &                                  +FY4(i  ,j+1)-FY4(i,j) )
 
-          sum_dbg=sum_dbg+Tdiag(i,j,k,td,it_h_adv)
-#endif
         enddo
-!        if(k==10) print *, 'k=',k,'j=',j,'h_adv sum_dbg = ',sum_dbg
-!        if(k==10) print *, 'FX4(istr,j)-(iend+1,j) = ',FX4(istr,j)-FX4(iend+1,j)
       enddo
-
-#ifdef OBC_CHECK
-!      if(k>0 .and. k<=11) then
-        print *, 'k=',k,'h_adv sum_dbg = ',sum_dbg
-!      endif
-      if(k==10) then
-        print *, 'k==10'
-        print *, 'FlxU(istr  ,10,10)=', FlxU(istr  ,10,10)
-        print *, 'FlxU(iend+1,10,10)=', FlxU(iend+1,10,10)
-        print *, 'FX4(istr  ,10    )=', FX4(istr  ,10)
-        print *, 'FX4(istr+1,10    )=', FX4(istr+1,10)
-        print *, 'FX4(iend+1,10    )=', FX4(iend+1,10)
-        print *, 'FY4(10    ,jstr  )=', FY4(10,jstr  )
-        print *, 'FY4(10    ,jend+1)=', FY4(10,jend+1)
-      endif
-#endif
 
       end subroutine set_diags_t_4th_h_adv  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_4th_v_adv( istr, iend, jstr, jend, itrc )  ![
+      subroutine set_diags_t_4th_v_adv(itrc )  ![
       ! compute the vertical 4th order advection.
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
@@ -944,18 +851,18 @@
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend, itrc
+      integer, intent(in) :: itrc
 
       ! local
-      integer :: i, j, k, td
+      integer :: i, j, k, idia
 
-      td=diag_NT_2_td(itrc)
+      idia = itrc2idia(itrc)
 
-      do j=jstr,jend   ! FlxW on same vertical axis as tracer, so same loop range.
+      do j= 1,ny   ! FlxW on same vertical axis as tracer, so same loop range.
 
         ! 2nd order: (due to surface/bottom contraints)
         do k=1,N-1,N-2     ! i.e. do k=1 and k=N-1
-          do i=istr,iend
+          do i= 1,nx
                                                                                ! r-point z=N
             FZ4(i,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                         ! w-point z=N-1  <- FZ4(i,j,N-1)
      &                 * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )       ! r-point z=N-1
@@ -965,7 +872,7 @@
 
         ! 4th order:
         do k=2,N-2
-          do i=istr,iend
+          do i= 1,nx
                                                                                ! r-point z=k+2
             FZ4(i,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )             ! r-point z=k+1
      &                 * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)       ! w-point z=k  <- FZ4(i,j,k)
@@ -974,9 +881,9 @@
           enddo
         enddo
 
-        do k=1,N
-          do i=istr,iend
-            Tdiag(i,j,k,td,it_v_adv) = - pm(i,j)*pn(i,j)* ( FZ4(i,k) - FZ4(i,k-1) )  ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+        do k=1,nz
+          do i= 1,nx
+            Tdiag(i,j,k,tadvz,idia) = - pm(i,j)*pn(i,j)* ( FZ4(i,k) - FZ4(i,k-1) )  ! FZ4 is volume integrated, hence pm*pn to get t*dz?
           enddo
         enddo
 
@@ -1181,9 +1088,6 @@
 
       coef = 1./navg_diag
 
-!     if (mynode==0) print *, 'set_avg :: ',navg_diag,coef
-
-      diag_time_avg = diag_time_avg*(1-coef) + time*coef
 
       if (diag_avg) then
         if (diag_uv) then
@@ -1244,7 +1148,6 @@
           ierr=nf90_open(fname,nf90_write,ncid)
           ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
 
-!         call ncwrite(ncid,'ocean_time',(/diag_time_avg/),(/record/))
           call ncwrite(ncid,'ocean_time',(/time/),(/record/))
           if (diag_avg) then
             if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
@@ -1364,28 +1267,31 @@
       if (diag_trc) then
         dimnames = (/'xi_rho','eta_rho','s_rho', 'time'/)
         dimsizes = (/ xi_rho,  eta_rho,  nz,    0/)
-        do it=1,ntdiag
-          vname = t_vname(idia(it)) / / '_advx'
+        do it=1,ntdia
+          vname = t_vname(diag_tidx(it)) / / '_advx'
           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
           ierr = nf90_put_att(ncid,varid,'long_name','x-advection')
           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(idia(it)) / / '_advy'
+          vname = t_vname(diag_tidx(it)) / / '_advy'
           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
           ierr = nf90_put_att(ncid,varid,'long_name','y-advection')
           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(idia(it)) / / '_advz'
+          vname = t_vname(diag_tidx(it)) / / '_advz'
           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
           ierr = nf90_put_att(ncid,varid,'long_name','z-advection')
           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(idia(it)) / / '_mixx'
+          vname = t_vname(diag_tidx(it)) / / '_mixx'
           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
           ierr = nf90_put_att(ncid,varid,'long_name','x-mixing')
           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(idia(it)) / / '_mixy'
+          vname = t_vname(diag_tidx(it)) / / '_mixy'
           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','x-mixing')
+          ierr = nf90_put_att(ncid,varid,'long_name','y-mixing')
           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-            
+          vname = t_vname(diag_tidx(it)) / / '_mixz'
+          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+          ierr = nf90_put_att(ncid,varid,'long_name','z-mixing')
+          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
         enddo
       endif
 

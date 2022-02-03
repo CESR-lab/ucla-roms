@@ -58,6 +58,11 @@
       ! local
       integer :: ierr,i
 
+      if (.not.diag_pflx) then
+        if(mynode==0) print *,'For sponge tuning,'
+        if(mynode==0) print *,'pflx diagnostics must be turned on!'
+        stop
+      endif
       allocate(wrk(nx,ny))
       allocate(sp_mult(isp))
       do i=1,isp
@@ -84,8 +89,10 @@
 
       if (obc_west.and.(.not.west_exchng)) then
         if (nx<isp) ierr = 1
-        allocate(nc_pflx_w%vdata(ny,1,2))
-        allocate(pflx_west(ny))
+        if (.not.onoff) then
+          allocate(nc_pflx_w%vdata(ny,1,2))
+          allocate(pflx_west(ny))
+        endif
         allocate(cflx_west(ny))
         allocate(sp_west(ny))
         sp_west = v_sponge
@@ -93,8 +100,10 @@
       endif
       if (obc_east.and.(.not.east_exchng)) then
         if (nx<isp) ierr = 1
-        allocate(nc_pflx_e%vdata(ny,1,2))
-        allocate(pflx_east(ny))
+        if (.not.onoff) then
+          allocate(nc_pflx_e%vdata(ny,1,2))
+          allocate(pflx_east(ny))
+        endif
         allocate(cflx_east(ny))
         allocate(sp_east(ny))
         sp_east = v_sponge
@@ -102,8 +111,10 @@
       endif
       if (obc_north.and.(.not.north_exchng)) then
         if (ny<isp) ierr = 1
-        allocate(nc_pflx_n%vdata(nx,1,2))
-        allocate(pflx_north(nx))
+        if (.not.onoff) then
+          allocate(nc_pflx_n%vdata(nx,1,2))
+          allocate(pflx_north(nx))
+        endif
         allocate(cflx_north(nx))
         allocate(sp_north(nx))
         sp_north = v_sponge
@@ -111,8 +122,10 @@
       endif
       if (obc_south.and.(.not.south_exchng)) then
         if (ny<isp) ierr = 1
-        allocate(nc_pflx_s%vdata(nx,1,2))
-        allocate(pflx_south(nx))
+        if (.not.onoff) then
+          allocate(nc_pflx_s%vdata(nx,1,2))
+          allocate(pflx_south(nx))
+        endif
         allocate(cflx_south(nx))
         allocate(sp_south(nx))
         sp_south = v_sponge
@@ -155,24 +168,28 @@
       ! The fluxes are all into the domain!!
 
       if (obc_west.and.(.not.west_exchng)) then
-        wrk(1:isp,:) = sum(up_pp(1:isp,1:ny,:),dim=3)
+!       wrk(1:isp,:) = sum(up_pp(1:isp,1:ny,:),dim=3)
+        wrk(1:isp,:) = up(1:isp,1:ny)  !! up is now already integrated
         cflx_west = cflx_west*beta + 
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
       if (obc_east.and.(.not.east_exchng)) then
-        wrk(1:isp,:) = sum(up_pp(nx-isp+1:nx,1:ny,:),dim=3)
+!       wrk(1:isp,:) = sum(up_pp(nx-isp+1:nx,1:ny,:),dim=3)
+        wrk(1:isp,:) = up(nx-isp+1:nx,1:ny)
         cflx_east = cflx_east*beta -
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
 
       if (obc_south.and.(.not.south_exchng)) then
-        wrk(:,1:isp) = sum(vp_pp(1:nx,1:isp,:),dim=3)
+!       wrk(:,1:isp) = sum(vp_pp(1:nx,1:isp,:),dim=3)
+        wrk(:,1:isp) = vp(1:nx,1:isp)
         cflx_south = cflx_south*beta + 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
-        print *,'comp_cflx: ', sum(cflx_south)/nx
+!       print *,'comp_cflx: ', sum(cflx_south)/nx
       endif
       if (obc_north.and.(.not.north_exchng)) then
-        wrk(:,1:isp) = sum(vp_pp(1:nx,ny+1-isp:ny,:),dim=3)
+!       wrk(:,1:isp) = sum(vp_pp(1:nx,ny+1-isp:ny,:),dim=3)
+        wrk(:,1:isp) = vp(1:nx,ny+1-isp:ny)
         cflx_south = cflx_south*beta - 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
       endif
@@ -200,6 +217,8 @@
       endif
 
       if (tune_init) call init_sponge_tune
+
+      if (.not.onoff) call set_pflx
 
       call comp_cflx
 
