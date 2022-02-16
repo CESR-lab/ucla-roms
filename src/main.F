@@ -342,6 +342,7 @@ C$OMP END MASTER
       use wec_frc
       use tides
       use bry_extract_child
+      use extract_data
       use diagnostics
       use ncvars
       use scalars
@@ -458,6 +459,7 @@ C$OMP BARRIER
 !======= ====== ===== =============== ======
 
 #ifdef BRY_EXTRACT_CHILD
+!     call read_extraction_objects
       call set_child_bry  ! frequency flag handled within routine
 #endif
 

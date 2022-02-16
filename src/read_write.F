@@ -2019,7 +2019,7 @@ C$OMP BARRIER
       if (ierr /= nf90_noerr) then ! Error termination
         print *,'In ncdf_read_coarser_grid:'; call handle_ierr(ierr)
       endif
-      if(mynode==0) print*, 'Interp-var' ! Confirm interpolating to terminal output
+!     if(mynode==0) print*, 'Interp-var' ! Confirm interpolating to terminal output
 
       ! Note: unlike ncdf_read_mod, masking has been removed as should
       !       be done in force calculation

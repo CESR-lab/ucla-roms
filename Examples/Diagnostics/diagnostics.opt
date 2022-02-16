@@ -23,7 +23,7 @@
       integer, parameter         :: rec_rate      = 20        ! output record rate
       integer, parameter         :: nrpf_diag     = 10        ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .true.    ! Momentum diagnostics
+      logical, parameter, public :: diag_uv       = .false.   ! Momentum diagnostics
       logical, parameter, public :: diag_trc      = .false.   ! Selected tracers diagnostics
       logical, parameter, public :: diag_pflx     = .true.    ! Baroclinic pressure fluxes
       logical, parameter, public :: diag_Ebcln    = .true.    ! Baroclinic energy budget

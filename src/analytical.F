@@ -605,7 +605,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           srflx(i,j)=0.
         enddo
       enddo
-      end
+      end subroutine ana_srflux_tile
 #endif /* ANA_SRFLUX */
 
 ! ----------------------------------------------------------------------
@@ -617,7 +617,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       integer tile
 #include "compute_tile_bounds.h"
       call ana_ssh_tile(istr,iend,jstr,jend)
-      end
+      end subroutine ana_ssh
 
 ! ----------------------------------------------------------------------
       subroutine ana_ssh_tile(istr,iend,jstr,jend)
@@ -632,7 +632,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 # include "compute_extended_bounds.h"
 
-      end
+      end subroutine ana_ssh_tile
 #endif
 
 ! ----------------------------------------------------------------------
@@ -680,7 +680,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 !  Set kinematic surface flux of additional tracers, if any.
 
       endif
-      end
+      end subroutine ana_stflux_tile
 # endif /* ANA_STFLUX || ANA_SSFLUX */
 
 #endif /* SOLVE3D */

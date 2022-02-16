@@ -13,11 +13,11 @@
 
       private
 
-      ! Type ncbry contains all required netcdf variables and input data array for frc variable.
+      ! Type ncfrc contains all required netcdf variables and input data array for frc variable.
       ! Set the name and time_name of variable to match what is in the input forcing files.
       ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
       ! type (ncvs) :: nc_uwnd  = ncvs( name='uwnd',       time_name='wnd_time'  )
-      type,public  :: ncbry
+      type,public  :: ncfrc
         character(len=20)                 :: vname     ! name of variable in input file
         character(len=20)                 :: tname     ! time variable name for variable
         real,dimension(:,:,:),allocatable :: vdata     ! need=0 to initialize all vars other than name and time_name. Slightly inefficient to set=0 though. stores raw input data for 2 times: time_A < mode
@@ -27,7 +27,7 @@
         integer                           :: irec =0   ! Record number in file
         integer         :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
         real,   dimension(2)              :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
-      end type ncbry
+      end type ncfrc
 
       integer, target :: test_var
 
@@ -44,7 +44,7 @@
       implicit none
 
       ! input/outputs
-      type(ncbry)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
+      type(ncfrc)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
       real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
       real,dimension(:)  ,optional,intent(out)   :: var1d  ! time interpolated forcing data
 
@@ -53,7 +53,6 @@
       real    :: modtime    ! model time
       logical :: d1
 
-      ! unpack ncbry derived type
       integer           :: it1,it2
       real,dimension(2) :: vtimes
 
@@ -295,7 +294,7 @@
       implicit none
 
       ! input/outputs
-      type(ncbry)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
+      type(ncfrc)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
       real               ,intent(in)    :: modtime
       integer            ,intent(in)    :: it
       logical            ,intent(in)    :: d1  ! 1 or 2 dimensional forcing data
@@ -303,7 +302,6 @@
       ! local
       integer :: ierr,ncid
 
-      ! unpacking derived type ncbry
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
       integer            :: irec,ifile
