@@ -214,6 +214,7 @@
         endif
         dimid(i) = did
       enddo
+      ! Add compression and shuffle
       ierr=nf90_def_var(ncid,varname,vartype,dimid,varid)
       if (ierr/=nf90_noerr) call handle_err(ierr)
 

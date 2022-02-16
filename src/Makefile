@@ -22,11 +22,11 @@ KRNSRC = 		param.F dimensions.F	read_write.F averages.F tracers.F\
 	diagnostics.F	bry_extract_child.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	setup_grid1.F	setup_grid2.F	visc_rescale.F\
-	set_nudgcof.F  sponge_tune.F roms_read_write.F\
+	set_nudgcof.F  sponge_tune.F roms_read_write.F extract_data.F \
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
-	visc3d_S.F	t3dmix_GP.F\
+	visc3d_S.F	t3dmix_S.F\
 \
 	zetabc.F	u2dbc_im.F	v2dbc_im.F\
 	u3dbc_im.F	v3dbc_im.F	w3dbc_im.F	t3dbc_im.F\

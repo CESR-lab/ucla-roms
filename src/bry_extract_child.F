@@ -1,6 +1,8 @@
       module bry_extract_child   ! Interpolate and extract online the boundary files
                                  ! needed to run child (nested) simulation
 
+      ! We're retooling this to be more generally a way to output a
+      ! variety of things at a range of locations at various frequencies
       ! Auxiliary tools required:
       ! - Tools-Roms/bry_child_input_gen.m   -> creates input file of child bry i/j values used here
       ! - Tools-Roms/join_child_bry.F        -> joins partial files created here
@@ -364,11 +366,11 @@
           enddo
 
           if (prs_flx_bry) then
-            call interpolate_u_child_bry(  up_pp, vp_pp, N, up_vars(c), .true. )         ! u'p' -> up_vars%west
+            call interpolate_u_child_bry(  up, vp, N, up_vars(c), .true. )         ! u'p' -> up_vars%west
             call prs_flx_integrate_filter( up_vars(c), pflx_u(c), .true.  )              ! up_vars%west -> pflx_u%west (true=E/W)
             call wrt_child_bry( 1,  1, 2,  pflx_u(c), ncvars(c) )                        ! wrt bry u'p' (pflx_u%west
 
-            call interpolate_v_child_bry(  up_pp, vp_pp, N, vp_vars(c), .true. )         ! v'p'
+            call interpolate_v_child_bry(  up, vp, N, vp_vars(c), .true. )         ! v'p'
             call prs_flx_integrate_filter( vp_vars(c), pflx_v(c), .false. )              ! false=N/S
             call wrt_child_bry( 2,  1, 2,  pflx_v(c), ncvars(c) )
           endif
@@ -818,7 +820,6 @@
       else
         write (*,'(/1x,3A)') 'ERROR: No child boundary in parent ',    ! angle not contained but should be because
      &                       'domain for: ', vname                     ! side has been found already
-        error stop
       endif
 
 
@@ -1274,7 +1275,7 @@
       call define_child_bry( indxV,  vp%tot, vp%c_str, v_dimid_bry, N, 0, ncv )
 
       ! tracers:
-      do itrc=1,NT
+      do itrc=1,nt
         call define_child_bry( itrc, rp%tot, rp%c_str, r_dimid_bry, N, 1, ncv )
       enddo
 
@@ -1317,7 +1318,9 @@
       elseif (vtype==0) then
         rname=vname(1,indx_v)
       elseif (vtype==2) then
-        rname=ppnames(indx_v)
+        if (indx_v==1) rname = 'up'
+        if (indx_v==2) rname = 'vp'
+!       rname=ppnames(indx_v)
       else
         error stop 'Write child bry issue!'
       endif
@@ -1341,6 +1344,7 @@
           ierr=nf90_put_var( ncv%ncid_out, varid, ap%south(:,:),
      &                       start=start_out(1:ndims), count=count_out(1:ndims) )
           if(ierr/=0) write(*,*) 'wrts_bry ierr= ',nf90_strerror(ierr), mynode
+          if(ierr/=0) write(*,*) 'wrts_bry ierr= ',bname,mynode
         else
           ierr=nf90_put_var( ncv%ncid_out, varid, (/1.0/),                           ! put dummy value so ncjoin doesn't complain
      &                       start=start_out(1:ndims), count=count_dummy(1:ndims) )
@@ -1427,18 +1431,25 @@
         lname=vname(2,indx_v)
         uname=vname(3,indx_v)
       elseif (vtype==2) then
-        rname=ppnames(indx_v)
-        lname=pplname(indx_v)
+        if (indx_v==1) rname = 'up'
+        if (indx_v==2) rname = 'vp'
+!       rname=ppnames(indx_v)
+!       lname=pplname(indx_v)
+        lname = 'Vertical integral of pressure flux'
         uname=punits
         inc=2                                            ! loop skip 2 (for E+W or N+S)
         if     (indx_v==1) then
           lstr=2; lend=4                                 ! u'p' dims W=2, E=4
-        elseif (indx_v==1) then
+         !! JM Possible bug?
+        elseif (indx_v==2) then
           lstr=1; lend=3                                 ! v'p' dims S=1, N=3
         endif
       else
         error stop 'Define child bry issue!'
       endif
+
+!     if (mynode==0) print *, 'define child bry'
+!     if (mynode==0) print *, rname
 
       do bry=lstr,lend,inc                               ! loop through 2 or 4 boundaries:
 

@@ -5,39 +5,21 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define WECAGE /* Wave Effect on Current model */
 
 
-/*
-    Embedded (nested) grid configuration segment
-*/
-
-c--#ifndef MAX_GRID_LEVEL
-c--# define MAX_GRID_LEVEL 2
-c--# include "redefs.X"
-c--#endif
-
-/*
-   Main switch starts here: model configuration choice.
-*/
-
-#if defined WECAGE
-
-/* WEC */
-
-/* DevinD - start DH's non-analytical WEC */
-
-# define USWC_WEC /* DEFINE FOR NON-ANALYTICAL WEC - US West Coast with WEC */
+# define MAIN_SWITCH /* 
 
 /* -------------------------------------------------------  */
 
-# if defined USWC_WEC
+# if defined MAIN_SWITCH
 
+#  define BRY_EXTRACT_CHILD
 #  define DIAGNOSTICS
 #  define HIS_DOUBLE
-c--#  define SPONGE_TUNE
+#  define SPONGE_TUNE
 
 c--#  define BRY_EXTRACT_CHILD  /* required for online child bry interp */
+
 #  undef GRID_ANG_DEG
 #  define SOLVE3D
 #  define UV_COR
@@ -106,7 +88,7 @@ c#    define BBL_F00
 #   define SURF_FLUX_OUTPUT_AVG /* DevinD output flux variables as averages */
 #  endif
 
-# endif
+c--# endif
 
 /* DevinD - end DH's non-analytical WEC */
 

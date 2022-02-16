@@ -21,12 +21,6 @@
 
 #include "sponge_tune.opt"
 
-      integer,parameter :: isp   = 15  !! width of the sponge region in grid points
-      logical,parameter :: onoff = .true.
-      real,   parameter :: sp_timscale = 24*3600
-      real,   parameter :: pflux_norm = 1e-2 ! typical pflux scale
-      integer,parameter :: nspt = 10   ! number of records per file
-      real   ,parameter :: output_period = 20
       logical           :: tune_init = .true.
 
       integer           :: total_rec=0       ! in the future, read in from restart file
@@ -330,6 +324,8 @@
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'write sponge_tune: ',fname)
 
+      call ncwrite(ncid,'ocean_time',(/time/),(/record/))
+
       !! JM Simplify when submains can be unequal in size
       !! JM Already, we could move this to mpi_setup
       i0 = iwest
@@ -361,6 +357,8 @@
       integer :: prec ! precision of output
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes 
+      character(len=10),dimension(1) :: dimname
+      integer,          dimension(1) :: dimsize
 
       fname=trim(output_root_name) / / '_spn.nc'
       call create_filename(fname,total_rec)
@@ -369,6 +367,13 @@
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'create_sp_tune_file: ')
+
+      !! Add needed dimensions: xi_rho,eta_rho,xi_u,eta_v
+      ! just use nf90_def_dimension!!!
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
 
       call put_global_atts(ncid, ierr)  ! put global attributes in file
 
@@ -380,6 +385,15 @@
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'horizontal mixing rate')
       ierr = nf90_put_att(ncid,varid,'units','m^2/s' )
+
+
+      ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
+      dimname = (/'xi_u' /)
+      dimsize = (/ xi_u  /)
+      varid = nccreate(ncid,'dimu_dummy',dimname,dimsize,prec)
+      dimname = (/'eta_v'/)
+      dimsize = (/ eta_v /)
+      varid = nccreate(ncid,'dimv_dummy',dimname,dimsize,prec)
 
       ierr = nf90_enddef(ncid)
 
