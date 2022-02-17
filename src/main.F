@@ -348,6 +348,7 @@ C$OMP END MASTER
       use scalars
       use analytical
       use sponge_tune
+      use particles
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -458,6 +459,10 @@ C$OMP BARRIER
 ! Output block: write restart/history files.
 !======= ====== ===== =============== ======
 
+#ifdef PARTICLES
+      if (mynode==0) print *, 'do_particles'
+      call do_particles
+#endif
 #ifdef BRY_EXTRACT_CHILD
 !     call read_extraction_objects
       call set_child_bry  ! frequency flag handled within routine

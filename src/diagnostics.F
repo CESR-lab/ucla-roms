@@ -1435,52 +1435,38 @@
       real, dimension(:,:,:,:),intent(inout) :: ud,vd
 
       !local
-      integer :: i0,i1,j0,j1,bfx,bfy
+      integer :: bfx,bfy
       integer,   dimension(4) :: start    ! start vector for writing
 
-      !! JM showing the new netcdf functionality
-      !! JM first and last domains might be smaller
-      !! JM i0,i1 etc deals with that for now. 
-      !! JM bfx,bfy deals with the fact that only the 
-      !! JM boundary have buffers
-      i0 = iwest
-      i1 = ieast
-      j0 = jsouth
-      j1 = jnorth
-      !! JM The diagnostics exclude the buffers
+      ! The diagnostics exclude the domain buffers
+      ! Since the diagnostic arrays are (nx,ny), the
+      ! boundary domains don't write their first row/column
+      ! Technically, we shouldn't write ud(1,:,:.., and vd(:,1,:....
+      ! either)
       bfx = 1
       bfy = 1
       if (.not.west_exchng)  bfx = 2
       if (.not.south_exchng) bfy = 2
  
-!     if (mynode==2) print *,'wrt_diag',i1
-!     if (mynode==2) print *,'pgr:   ',Ud(i1,10,10,1),Vd(i1,10,10,1)
-!     if (mynode==2) print *,'cor:   ',Ud(i1,10,10,2),Vd(i1,10,10,2)
-!     if (mynode==2) print *,'adv:   ',Ud(i1,10,10,3),Vd(i1,10,10,3)
-!     if (mynode==2) print *,'dis:   ',Ud(i1,10,10,4),Vd(i1,10,10,4)
-!     if (mynode==2) print *,'hmx:   ',Ud(i1,10,10,5),Vd(i1,10,10,5)
-!     if (mynode==2) print *,'vmx:   ',Ud(i1,10,10,6),Vd(i1,10,10,6)
-
-        if (.not.west_exchng) ud(i0,:,:,:) = 0
+        if (.not.west_exchng) ud(1,:,:,:) = 0
         start = (/1, bfy, 1, record/)
 
-        call ncwrite(ncid,'u_pgr',Ud(i0:i1,j0:j1,:,1),start)
-        call ncwrite(ncid,'u_cor',Ud(i0:i1,j0:j1,:,2),start)
-        call ncwrite(ncid,'u_adv',Ud(i0:i1,j0:j1,:,3),start)
-        call ncwrite(ncid,'u_dis',Ud(i0:i1,j0:j1,:,4),start)
-        call ncwrite(ncid,'u_hmx',Ud(i0:i1,j0:j1,:,5),start)
-        call ncwrite(ncid,'u_vmx',Ud(i0:i1,j0:j1,:,6),start)
+        call ncwrite(ncid,'u_pgr',ud(:,:,:,1),start)
+        call ncwrite(ncid,'u_cor',ud(:,:,:,2),start)
+        call ncwrite(ncid,'u_adv',ud(:,:,:,3),start)
+        call ncwrite(ncid,'u_dis',ud(:,:,:,4),start)
+        call ncwrite(ncid,'u_hmx',ud(:,:,:,5),start)
+        call ncwrite(ncid,'u_vmx',ud(:,:,:,6),start)
           
-        if (.not.south_exchng) Vdiag_avg(:,j0,:,:) = 0
+        if (.not.south_exchng) vd(:,1,:,:) = 0
         start = (/bfx, 1, 1, record/)
 
-        call ncwrite(ncid,'v_pgr',Vd(i0:i1,j0:j1,:,1),start)
-        call ncwrite(ncid,'v_cor',Vd(i0:i1,j0:j1,:,2),start)
-        call ncwrite(ncid,'v_adv',Vd(i0:i1,j0:j1,:,3),start)
-        call ncwrite(ncid,'v_dis',Vd(i0:i1,j0:j1,:,4),start)
-        call ncwrite(ncid,'v_hmx',Vd(i0:i1,j0:j1,:,5),start)
-        call ncwrite(ncid,'v_vmx',Vd(i0:i1,j0:j1,:,6),start)
-
+        call ncwrite(ncid,'v_pgr',vd(:,:,:,1),start)
+        call ncwrite(ncid,'v_cor',vd(:,:,:,2),start)
+        call ncwrite(ncid,'v_adv',vd(:,:,:,3),start)
+        call ncwrite(ncid,'v_dis',vd(:,:,:,4),start)
+        call ncwrite(ncid,'v_hmx',vd(:,:,:,5),start)
+        call ncwrite(ncid,'v_vmx',vd(:,:,:,6),start)
 
       end subroutine wrt_diag_uv  !]
 ! ----------------------------------------------------------------------

@@ -2,10 +2,10 @@
       ! ****************************************************************
       ! User inputs
 
-      type (ncbry) :: nc_pflx_w = ncbry( vname='pflx_west', tname='bry_time')
-      type (ncbry) :: nc_pflx_e = ncbry( vname='pflx_east', tname='bry_time')
-      type (ncbry) :: nc_pflx_s = ncbry( vname='pflx_south',tname='bry_time')
-      type (ncbry) :: nc_pflx_n = ncbry( vname='pflx_north',tname='bry_time')
+      type (ncforce) :: nc_pflx_w = ncforce( vname='pflx_west', tname='bry_time')
+      type (ncforce) :: nc_pflx_e = ncforce( vname='pflx_east', tname='bry_time')
+      type (ncforce) :: nc_pflx_s = ncforce( vname='pflx_south',tname='bry_time')
+      type (ncforce) :: nc_pflx_n = ncforce( vname='pflx_north',tname='bry_time')
 
       integer,parameter :: isp   = 15            ! width of the sponge region in grid points
       logical,parameter :: onoff = .true.        ! on/off or tunable
