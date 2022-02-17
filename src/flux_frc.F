@@ -119,11 +119,14 @@
 
 
       call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, stflx(:,:,itemp), interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, btflx(:,:,itemp), interp_frc )
+
 
       rho0cp=rho0*Cp ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
         do i=istrR,iendR
           stflx(i,j,itemp)=stflx(i,j,itemp)/rho0cp
+!         btflx(i,j,itemp)=stflx(i,j,itemp)/rho0cp
 
 # if defined QCORRECTION && !defined ANA_SST
      &         -dSSTdt*(t(i,j,N,nrhs,itemp) - sst(i,j))
@@ -144,11 +147,6 @@
 
         enddo
       enddo
-
-      ! DevinD debug
-!      if(mynode==0) then
-!        print *, 'stflx(20,20,itemp)= ', stflx(20,20,itemp)
-!      endif
 
       end subroutine set_shflux  !]
 

@@ -143,7 +143,7 @@ c--#  define ntdf nrhs
       do itrc=1,nt
 
 # ifdef DIAGNOSTICS
-        if (diag_trc) td=diag_NT_2_td(itrc) ! get index of tracer in Tdiag (diagnostics)
+        if (diag_trc) td=itrc2idia(itrc) ! get index of tracer in Tdiag (diagnostics)
 # endif
 
 # ifdef ADV_ISONEUTRAL
@@ -165,7 +165,7 @@ c--#  define ntdf nrhs
 
 # ifdef DIAGNOSTICS
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &        call set_diags_t_4th_h_adv(istr, iend, jstr, jend, k, itrc) ! need 't' before it is updated below
+     &        call set_diags_t_4th_h_adv(k, itrc) ! need 't' before it is updated below
 # endif
 
             do j=jstr,jend
@@ -181,7 +181,7 @@ c--#  define ntdf nrhs
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
               do j=jstr,jend                                           ! only be for tracers of interest
                 do i=istr,iend
-                  Tdiag(i,j,k,td,it_h_diss) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
+                  Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
                 enddo
               enddo
             endif
@@ -769,7 +769,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 # ifdef DIAGNOSTICS
         if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
-          call set_diags_t_4th_v_adv( istr, iend, jstr, jend, itrc )
+          call set_diags_t_4th_v_adv(itrc )
         endif
 # endif
 
@@ -798,7 +798,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want this in loop...
             do k=1,N
               do i=istr,iend
-                Tdiag(i,j,k,td,it_v_diss) = t(i,j,k,nnew,itrc)
+                Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)
               enddo
             enddo
           endif
@@ -806,8 +806,10 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
+          !! JM add line for bottom tracer flux
           do i=istr,iend
             t(i,j,N,nnew,itrc)=t(i,j,N,nnew,itrc)+dt*stflx(i,j,itrc)
+!           t(i,j,1,nnew,itrc)=t(i,j,1,nnew,itrc)+dt*btflx(i,j,itrc)
           enddo
 
 # ifdef LMD_KPP
@@ -954,11 +956,11 @@ c??         enddo
 # ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
             do i=istr,iend                                          ! don't know why I have 2 do's here? can make it one?
-              Tdiag(i,j,N,td,it_v_mix) = t(i,j,N,nnew,itrc)         ! k+1 is last to change above as loop from N to 1, -1?
+              Tdiag(i,j,N,tmixz,td) = t(i,j,N,nnew,itrc)         ! k+1 is last to change above as loop from N to 1, -1?
             enddo
             do k=N-1,1,-1
               do i=istr,iend
-                Tdiag(i,j,k,td,it_v_mix) = t(i,j,k,nnew,itrc)       ! k+1 is last to change above as loop from N to 1, -1?
+                Tdiag(i,j,k,tmixz,td) = t(i,j,k,nnew,itrc)       ! k+1 is last to change above as loop from N to 1, -1?
               enddo
             enddo
           endif
@@ -975,8 +977,8 @@ c??         enddo
 
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 # ifdef DIAGNOSTICS
-        if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &    call set_diags_t_bc(istr,iend,jstr,jend,itrc,td)
+!       if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
+!    &    call set_diags_t_bc(itrc,td)
 # endif
 
       enddo     !<-- itrc

@@ -1,0 +1,18 @@
+
+      ! ****************************************************************
+      ! User inputs
+
+      type (ncbry) :: nc_pflx_w = ncbry( vname='pflx_west', tname='bry_time')
+      type (ncbry) :: nc_pflx_e = ncbry( vname='pflx_east', tname='bry_time')
+      type (ncbry) :: nc_pflx_s = ncbry( vname='pflx_south',tname='bry_time')
+      type (ncbry) :: nc_pflx_n = ncbry( vname='pflx_north',tname='bry_time')
+
+      integer,parameter :: isp   = 15            ! width of the sponge region in grid points
+      logical,parameter :: onoff = .true.        ! on/off or tunable
+      real,   parameter :: sp_timscale = 24*3600 ! filtering time scale
+      real,   parameter :: pflux_norm = 1e-2     ! typical pflux scale
+      integer,parameter :: nspt = 10             ! Number of records per file
+      real   ,parameter :: output_period = 1800  ! time between outputs in seconds
+
+      ! End of user inputs
+      ! ****************************************************************

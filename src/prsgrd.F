@@ -35,8 +35,11 @@
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
+      use dimensions
       use tides
       use diagnostics
+      use coupling
+      use ocean2d
       use eos_vars
       use grid
       use ocean3d
@@ -438,10 +441,17 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       enddo   !<-- k
 
 # ifdef DIAGNOSTICS
-!      if(mynode==0) print *, 'PRSGRD: pg_cor =', pg_cor
-      if (prs_flx .and. pg_cor) ! diag_icori for second (corrector) call of prsgrd
-     &  call set_diags_prs_prime( istr, iend, jstr, jend, istrU, jstrV, P )
-      pg_cor = .true. ! trigger call above for corrector step. Will be set to false in step3d_uv1 for next predictor step.
+      if (CORR_STAGE) then
+        if ((calc_diag.and.diag_uv).or.(diag_Ebcln)) then
+          do k=1,nz
+            Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u
+            Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v
+          enddo
+        endif
+        if (diag_pflx.or.diag_Ebcln) then
+          call calc_diag_pflux(p)
+        endif
+      endif
 # endif
 
 # ifdef NHMG
@@ -475,6 +485,11 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
          enddo
       enddo
+#  ifdef DIAGNOSTICS
+      if (diag_uv.and.calc_diag) then
+        Wdiag(:,:,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
+      endif
+#  endif
 # endif /* NHMG */
 
 

@@ -104,6 +104,7 @@ C$    trd=omp_get_thread_num()
 C$OMP MASTER
         mpi_master_only write(*,'(/3(1x,A,I3),A/)')
      &    '### ERROR: Wrong choice of numthreads =', numthreads,
+c        endif
      &         'while NSUB_X =', NSUB_X, 'NSUB_E =', NSUB_E,'.'
         may_day_flag=8
 C$OMP END MASTER
@@ -341,10 +342,12 @@ C$OMP END MASTER
       use wec_frc
       use tides
       use bry_extract_child
+      use extract_data
       use diagnostics
       use ncvars
       use scalars
       use analytical
+      use sponge_tune
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -355,9 +358,7 @@ C$OMP END MASTER
       my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
 
 #ifdef DIAGNOSTICS
-      do tile=my_tile_range
-        call wrt_diagnostics(tile)  ! call before nnew and nstp have swapped indices (as if previous timestep)
-      enddo
+      call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
 #endif
 
 ! Increment time-step index and set model clock. Note that "time" set
@@ -458,6 +459,7 @@ C$OMP BARRIER
 !======= ====== ===== =============== ======
 
 #ifdef BRY_EXTRACT_CHILD
+!     call read_extraction_objects
       call set_child_bry  ! frequency flag handled within routine
 #endif
 
@@ -558,6 +560,10 @@ C$OMP BARRIER                            ! time step for momenta
       enddo
 C$OMP BARRIER
 #endif /* SOLVE3D */
+
+#ifdef SPONGE_TUNE
+      call adjust_sponge
+#endif
 
 
   99  return

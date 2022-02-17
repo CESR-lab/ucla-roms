@@ -1,0 +1,2 @@
+Execute make_frc_tides to make a tidal forcing file for ROMS
+You will need the tpxo9.2va.nc file with tidal data.
