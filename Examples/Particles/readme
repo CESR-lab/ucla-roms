@@ -1,0 +1,13 @@
+This example tests the online diagnostics in ROMS.
+See diagnostics.F_orig in this directory for the original User input configuration for a rec_rate=3
+with everything turned on, including Developer checks for closing budgets.
+
+Note the example will still be compiled with src/diagnostics.F version so copy that file here
+and edit User inputs section to match diagnsotic.F_orig.
+
+u_check should be numerically zero, which confirms the sum of the diagnostics of 'u' equals the
+change in 'u' over one timestep 'u_1step'.
+
+u_dz_ever (total change in 'u' since t=0) and u_avg_ever (sum of averages of diagnostics) should be identical and thus confirm budget closing for averages, too.
+
+See long names of variables to understand them better.
