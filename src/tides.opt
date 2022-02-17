@@ -2,12 +2,9 @@
       ! ****************************************************************
       ! user inputs
 
-      ! Ntides = Number of tidal components to consider.
-#if defined SSH_TIDES || defined UV_TIDES || defined TIDES
-      integer, parameter, public :: ntides=10
-      logical,parameter, public :: bry_tides=.true.
-      logical,parameter, public :: pot_tides=.true.
-#endif
+      integer,parameter :: ntides=10        ! Number of tidal components to consider.
+      logical,parameter :: bry_tides=.true. ! Barotropic tides at the boundary from TPXO
+      logical,parameter :: pot_tides=.true. ! Surface tidal potential
 
       ! end user inputs
       ! ****************************************************************

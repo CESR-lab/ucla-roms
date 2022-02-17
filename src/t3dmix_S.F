@@ -25,6 +25,7 @@
       use mixing
       use ocean3d
       use scalars
+      use tracers
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k

@@ -26,7 +26,9 @@
 !            the anisotropic stress tensor for use in models of
 !            the large-scale ocean circulation, JCP, 105, 333-338.
 
+      use dimensions
       use param
+      use diagnostics
       use coupling
       use grid
       use mixing
@@ -113,7 +115,22 @@
 # if defined NHMG
 !   Do things
 # endif
+# ifdef DIAGNOSTICS
+      if (diag_uv .and. calc_diag) then
+        do j=1,ny
+          do i=1,nx
+            Udiag(i,j,k,ihmix) = 0.5*dxdyi_u(i,j)*
+     &              ( (pn(i-1,j)+pn(i,j))*(UFx(i,j)-UFx(i-1,j))
+     &               +(pm(i-1,j)+pm(i,j))*(UFe(i,j+1)-UFe(i,j)) )
+            Vdiag(i,j,k,ihmix) = 0.5*dxdyi_v(i,j)*
+     &              ( (pn(i,j-1)+pn(i,j))*(VFx(i+1,j)-VFx(i,j))
+     &               +(pm(i,j-1)+pm(i,j))*(VFe(i,j)-VFe(i,j-1)) )
+          enddo
+        enddo
+      endif
+# endif
       enddo ! k loop
+
       end
 
 #else
