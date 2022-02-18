@@ -49,8 +49,14 @@
       allocate( u(GLOBAL_2D_ARRAY,N,3) ) ; u=0.
       allocate( v(GLOBAL_2D_ARRAY,N,3) ) ; v=0.
 
-      if (wrtavg(indxU)) allocate( u_avg(GLOBAL_2D_ARRAY,N) ) ;u_avg =0.
-      if (wrtavg(indxV)) allocate( v_avg(GLOBAL_2D_ARRAY,N) ) ;v_avg =0.
+      if (wrtavg(indxU)) then
+        allocate( u_avg(GLOBAL_2D_ARRAY,N) )
+        u_avg =0.
+      endif
+      if (wrtavg(indxV)) then 
+        allocate( v_avg(GLOBAL_2D_ARRAY,N) )
+        v_avg =0.
+      endif
 
 # if defined NHMG
       allocate( w(GLOBAL_2D_ARRAY,0:N,3) )

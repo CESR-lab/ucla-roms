@@ -68,7 +68,7 @@
 
       real                  :: output_time = 0
       integer               :: total_rec = 0
-      real                  :: output_period = 1
+      real                  :: output_period = 200
       integer               :: nrpf = 10
 
       interface interp
@@ -134,7 +134,7 @@
 !        ip = ip + lnp
 !      enddo
 !     enddo
-      allocate(Wp(nx,ny,0:nz)) ! total vertical flux in m/s
+      allocate(Wp(0:nx+1,0:ny+1,0:nz)) ! total vertical flux in m/s
 
 
       np = 100
@@ -294,11 +294,12 @@
       prz   => part(:,iprz)
 
       do k=0,nz
-        Wp(:,:,k) = (We(1:nx,1:ny,k)+Wi(1:nx,1:ny,k))*pm(1:nx,1:ny)*pn(1:nx,1:ny)
+        Wp(:,:,k) = (We(0:nx+1,0:ny+1,k)+Wi(0:nx+1,0:ny+1,k))
+     &                *pm(0:nx+1,0:ny+1)*pn(0:nx+1,0:ny+1)
       enddo
       ! first data at first rho-point, assume no gradient below that
       do ip = 1,np
-        if (pz(ip)< 10*nz) then
+        if (pz(ip)< 2*nz) then
 
           i = floor(px(ip)+0.5)
           j = floor(py(ip)+0.5)
@@ -317,19 +318,26 @@
           zw=  pz(ip)-kw
 
           if (px(ip)<0..or.px(ip)>nx) then
-            print *,'x: ', px(ip), mynode
-            stop
+            pz(ip) = 10*nz
+            continue
+!           print *,'x: ', px(ip), mynode
+!           stop
           endif
           if (py(ip)<0..or.py(ip)>ny) then
-            print *,'y: ', py(ip), mynode
-            stop
+            pz(ip) = 10*nz
+            continue
+!           print *,'y: ', py(ip), mynode
+!           stop
           endif
           if (pz(ip)<0..or.pz(ip)>nz) then
-            print *,'z: ', pz(ip), mynode
-            stop
+            pz(ip) = 10*nz
+            continue
+!           print *,'z: ', pz(ip), mynode
+!           stop
           endif
 
           if (k<1..or.k>nz-1) then
+            pz(ip) = 10*nz
             print *,'k: ', k, mynode
             stop
           endif
@@ -338,6 +346,7 @@
             stop
           endif
 
+          if (pz(ip)<nz) then
           call interp(pu(ip),u(iu:iu+1,j:j+1,k:k+1,nnew),xu,y,z)
           call interp(pv(ip),v(i:i+1,jv:jv+1,k:k+1,nnew),x,yv,z)
           call interp(pw(ip),Wp(i:i+1,j:j+1,kw:kw+1),x,y,zw)
@@ -347,13 +356,14 @@
           call interp(pdyi,pn(i:i+1,j:j+1),x,y)
           call interp(pdz,Hz(i:i+1,j:j+1,k:k+1),x,y,z)
 
-          prx(ip) = pu(ip)*pdxi ! del i
-          pry(ip) = pv(ip)*pdyi ! del j
+          prx(ip) = dt*pu(ip)*pdxi ! del i
+          pry(ip) = dt*pv(ip)*pdyi ! del j
 !         if (terminal_vel) then
 !           prz(ip) = (pw(ip)+ pwt(ip))/pdz
 !         else
-            prz(ip) = pw(ip)/pdz
+            prz(ip) = dt*pw(ip)/pdz
 !         endif
+          endif
         endif
       enddo
 

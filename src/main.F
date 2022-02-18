@@ -460,7 +460,6 @@ C$OMP BARRIER
 !======= ====== ===== =============== ======
 
 #ifdef PARTICLES
-      if (mynode==0) print *, 'do_particles'
       call do_particles
 #endif
 #ifdef BRY_EXTRACT_CHILD
