@@ -47,4 +47,27 @@
       integer, parameter :: padd_X=(Lm_old+2)/2-(Lm_old+1)/2,
      &                      padd_E=(Mm_old+2)/2-(Mm_old+1)/2
 
+
+# ifdef OBC_WEST
+      logical,parameter :: obc_west =.true.
+# else
+      logical,parameter :: obc_west =.false.
+# endif
+# ifdef OBC_EAST
+      logical,parameter :: obc_east =.true.
+# else
+      logical,parameter :: obc_east =.false.
+# endif
+# ifdef OBC_NORTH
+      logical,parameter :: obc_north=.true.
+# else
+      logical,parameter :: obc_north=.false.
+# endif
+# ifdef OBC_SOUTH
+      logical,parameter :: obc_south=.true.
+# else
+      logical,parameter :: obc_south=.false.
+# endif
+
+
       end module
