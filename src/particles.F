@@ -58,16 +58,17 @@
       logical :: part_first = .true.             ! First time step for particles
       logical :: terminal_vel= .true.            ! terminal velocities on particles
       real,dimension(:,:),allocatable,target :: part    ! particles
-      integer,dimension(:),allocatable :: val,idx ! needed for sorting
+      real   ,dimension(:),allocatable :: val ! needed for sorting
+      integer,dimension(:),allocatable :: idx ! needed for sorting
       real,dimension(:),allocatable :: ptmp  ! needed for sorting
       real,dimension(:,:,:),allocatable :: Wp    ! total vertical flux
       real,dimension(:) ,allocatable :: nbp_east,nbp_west ! for reseeding near open boundaries
       real,dimension(:) ,allocatable :: nbp_north,nbp_south
 
-
       real                  :: output_time = 0
       integer               :: total_rec = 0
-      logical :: full_seed = .true.            ! seed with constant density
+      integer ::  npmx ! allocated space for particle array
+      logical :: full_seed = .false.           ! seed with constant density
       integer :: big_number= 100000000      ! added to particles tags 
                                             ! to get unique numbers for all subdomains
 
@@ -109,7 +110,6 @@
 
 
       end subroutine do_particles !]
-      
 !-------------------------------------------------
       subroutine init_particles![
       use mpi
@@ -128,10 +128,8 @@
         dy_mn= 1./(sum(pn(1:nx,1:ny))/(nx*ny))
         np = h_mn*dx_mn*dy_mn*ppm3
         npmx = np*extra_space_fac
-
-        allocate(part(npmx,npv)
+        allocate(part(npmx,npv))
         if (mynode==0) print *,'Seeding ',np,' particles'
-
 
         np = 0;
         do j=1,ny
@@ -341,7 +339,6 @@
       endif
 
       end subroutine wrt_particles !]
-      
 !-------------------------------------------------
       subroutine create_particles_file(total_rec,fname)![
       use roms_read_write
@@ -381,7 +378,6 @@
       if (mynode==0) print *,'particles :: created new netCDF file: ',fname
 
       end subroutine create_particles_file !]
-      
 !-------------------------------------------------
       subroutine rhs_particles![
       implicit none
@@ -693,7 +689,7 @@
       implicit none
       !import/export
       integer                      ,intent(in)    :: val_mx
-      integer,dimension(:)         ,intent(inout) :: val
+      real   ,dimension(:)         ,intent(inout) :: val
       integer,dimension(:),optional,intent(inout) :: idx
       !local
       integer :: nval,i,i2
@@ -980,6 +976,7 @@
 
       !local
       integer :: szx,szy,szc
+      integer :: init=0
 
       ! assume max particle transfer is proportional to length of boundary:
 
@@ -995,15 +992,13 @@
      &          sn_sw(szc,npv),   sn_s(szx,npv),   sn_se(szc,npv),
      &          rv_sw(szc,npv),   rv_s(szx,npv),   rv_SE(szc,npv)  )
 
-      sn_nw=init ;   sn_n=init ;   sn_ne=init
-      rv_nw=init ;   rv_n=init ;   rv_ne=init
-      sn_w=init ;                  sn_e=init
-      rv_w=init ;                  rv_e=init
-      sn_sw=init ;   sn_s=init ;   sn_se=init
-      rv_sw=init ;   rv_s=init ;   rv_SE=init
+!     sn_nw=init ;   sn_n=init ;   sn_ne=init
+!     rv_nw=init ;   rv_n=init ;   rv_ne=init
+!     sn_w=init ;                  sn_e=init
+!     rv_w=init ;                  rv_e=init
+!     sn_sw=init ;   sn_s=init ;   sn_se=init
+!     rv_sw=init ;   rv_s=init ;   rv_SE=init
       
-      print *, 'INIT P MPI BUFFERS'
-
       end subroutine init_arrays_mpi_roms  !]
 
 ! ---------------------------------------------------------------------
@@ -1051,11 +1046,12 @@
       implicit none
 
       ! inputs
-      real ::  a(:), d(:)
+      real   ,dimension(:)         ,intent(inout) :: a
+      integer,dimension(:),optional,intent(inout) :: d
+      integer :: first, last
 
       ! local
       real :: x, t, s
-      integer :: first, last
       integer :: i, j
 
       x = a( (first+last) / 2 )
@@ -1070,7 +1066,9 @@
          end do
          if (i >= j) exit
          t = a(i);  a(i) = a(j);  a(j) = t
-         t = d(i);  d(i) = d(j);  d(j) = t
+         if (present(d)) then
+           t = d(i);  d(i) = d(j);  d(j) = t
+         endif
          i=i+1
          j=j-1
       end do
@@ -1086,12 +1084,14 @@
       real,dimension(:),intent(in)   :: zw
       real,dimension(:),intent(out)  :: kidx
       ! local
-      integer :: i,k,nt
+      integer :: i,k,npz
 
-      call qsort(zlev)
-      nt = size(zlev)
+      npz = size(zlev)
+
+      call qsort(zlev,first=1,last=nt)
+
       k = 0;
-      do i = 1,nt
+      do i = 1,npz
         do while (zw(k+1)<zlev(i))
           k = k+1;
         enddo
