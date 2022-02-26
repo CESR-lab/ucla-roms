@@ -7,7 +7,7 @@ FC = ifort
 #FC = mpiifort
 
 # Normal options for the compiler
-FFLAGS =  -O3 -fp-model source
+FFLAGS =  -O3 -fp-model source $(LCDF)
 
 # Debugging options for the compiler
 #FFLAGS =  -g -check -warn
