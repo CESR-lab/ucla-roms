@@ -2,21 +2,22 @@
 # ----------------------------------------------------
 
 # Compilation rules for file types:
+#   (used for every file until the final linking step)
 
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
 	@$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
 .F.f:
 	$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
 .f.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
 
 .f90.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f90
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f90 $(LCDF)
 .F:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 .f:
@@ -43,11 +44,11 @@
 
 # Path names (non-hydrostatic & NetCDF libraries):
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_LIB  = $(NHMG_ROOT)/lib
+	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
 	NHMG_INC  = $(NHMG_ROOT)/include
 
-	VPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${NHMG_INC}
-	CPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${NHMG_INC}
+	VPATH = ${MPIHOME}/include:${NHMG_INC}
+	CPATH = ${MPIHOME}/include:${NHMG_INC}
 
 # COMPILER SETTINGS:
 
@@ -64,10 +65,16 @@
 	CFTFLAGS = -pc64 -auto
 
 # Fortran compiler name and options:
-	CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	- using intel MPI:
+	CFT =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	- using intel MPI:
+#	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran loader name and options: (mpifort has replaced legacy mpif90)
-	LDR = mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	- using intel MPI:
+	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	- using intel MPI:
+#	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
@@ -79,9 +86,8 @@
 # - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -ip -pg
 
-# Name/path to libraries (NetCDF, etc):
-	LCDF = -L$(NETCDFHOME)/lib/ -lnetcdff -L$(NHMG_LIB) -lnhmg
-
+# Options to link to libraries & modules (NetCDF, etc):
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
 
 # -------------------------------------------------------------
 
@@ -126,4 +132,13 @@
 #	-shared-intel: Causes Intel-provided libraries to be linked in
 #	dynamically. This is the default for -mcmodel=medium or -mcmodel=large
 #	(-shared-intel was previously -i-dynamic, now depracated)
+
+#	LIBRARY & MODULE LINKING:
+#	Had issues compiling ROMS to the Israeli cluster. This was because previously
+#	LCDF was only including in the linking stage in Makefile. Now that we 'use' modules,
+#	the compiler needs to find the module while compiling each file, otherwise it will
+#	not know if those vars/subroutines used actually exist.
+#	This was not an issue before with #include netcdf.inc because the external function
+#	is declared within the source code, so it only needs to be linked at the end.
+#	The order of $(NETCDFF_LIB) $(NETCDFC_LIB) was important, I am not sure why.
 

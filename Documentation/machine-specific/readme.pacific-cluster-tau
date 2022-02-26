@@ -1,0 +1,10 @@
+Additional instructions for ROMS to compile on Pacific cluster at TAU.
+
+1) Use the bashrc file stored on the repo. Edit the line for your ROMS_ROOT. (don't forget to 'source ~/.bashrc' afterwards):
+Documentation/machine-specific/bashrc-cshrc-files/bashrc-pacific-tau-202202
+
+2) Edit NHMG/src/Makefile - uncomment line: FC = mpiifort.
+
+3) Uncomment the two mpiifort lines in src/Makedefs.inc.
+
+4) Follow all the usual compile steps in the readme's.
