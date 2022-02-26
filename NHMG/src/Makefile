@@ -3,6 +3,8 @@
 
 # Fortran Compiler
 FC = ifort
+# - for pacific cluster uncomment:
+#FC = mpiifort
 
 # Normal options for the compiler
 FFLAGS =  -O3 -fp-model source
