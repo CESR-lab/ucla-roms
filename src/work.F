@@ -13,9 +13,10 @@
 
       !----------------------------------------------------------------
       subroutine init_arrays_work_mod  ![
+      use scalars
       implicit none
 
-      allocate( work(GLOBAL_2D_ARRAY,0:N) )
+      allocate( work(GLOBAL_2D_ARRAY,0:N) ); work=init
 
       end subroutine init_arrays_work_mod  !]
       !----------------------------------------------------------------

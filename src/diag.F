@@ -531,7 +531,7 @@ c**     write(*,*) 'received avke =', buff(3)/volume
 # if defined MAX_ADV_CFL
           if (first_time==0) then
             first_time=1
-            write(*,1)   'STEP', 'time[DAYS]',  'KINETIC_ENRG',
+            write(*,1)   'STEP', 'time[DAYS]',  'KINETIC_ENRG',      ! currently using this one
      &                'BAROTR_KE', 'MAX_ADV_CFL', 'MAX_VERT_CFL',
      &                                     'i_cx', 'j_cx', 'k_c'
 C$   &                                                   , 'trd'

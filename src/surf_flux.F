@@ -81,20 +81,15 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_arrays_surf_flx  ![
+      use scalars
       implicit none
 
-      allocate( sustr  (GLOBAL_2D_ARRAY)    )
-      allocate( sustr_r(GLOBAL_2D_ARRAY)    )
-      allocate( svstr  (GLOBAL_2D_ARRAY)    )
-      allocate( svstr_r(GLOBAL_2D_ARRAY)    )
-      allocate( stflx  (GLOBAL_2D_ARRAY,NT) )
-      allocate( srflx  (GLOBAL_2D_ARRAY)    )
-      sustr=0.
-      svstr=0.
-#ifdef SOLVE3D
-      stflx=0.
-      srflx=0.
-#endif /* SOLVE3D */
+      allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
+      allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
+      allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
+      allocate( svstr_r(GLOBAL_2D_ARRAY)    ); svstr_r=init
+      allocate( stflx  (GLOBAL_2D_ARRAY,NT) ); stflx=init
+      allocate( srflx  (GLOBAL_2D_ARRAY)    ); srflx=init
 
       if (wrt_surf_flx_avg) then
         allocate( sustr_avg(GLOBAL_2D_ARRAY) )

@@ -1,5 +1,9 @@
 #include "cppdefs.opt"
 
+      ! DevinD notes: subroutines that take in a slice of arguements, e.g. landmask in cschmidt_n20
+      ! is not good because it makes a local copy everytime the routine is called.
+      ! Better to send in full array. Same for O2satu routine.
+
 #ifdef BIOLOGY_BEC2
 
        subroutine ecosys_bec2_tile(Istr,Iend,Jstr,Jend)
@@ -3153,8 +3157,8 @@
 !#include "param_bec2.h"
         
        integer::istr,iend,jstr,jend
-         LOGICAL,DIMENSION(istr:iend,jstr:jend) :: landmask
-
+         LOGICAL,DIMENSION(istr:iend,jstr:jend) :: landmask  ! DevinD slicing the array makes a local copy.
+                                                             ! should just send through full array
      !---------------------------------------------------------------------------
      !   Compute Schmidt number of N2O in seawater as function of SST
      !   where LAND_MASK is true. Give zero where LAND_MASK is false.
