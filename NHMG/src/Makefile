@@ -1,13 +1,13 @@
 # This line de-activates all implicit rules
 .SUFFIXES:
 
+# Set machine dependent definitions and rules.
+include ../../src/Makedefs.inc
+
 # Fortran Compiler
 FC = ifort
 # - for pacific cluster uncomment:
 #FC = mpiifort
-
-# Options to link to libraries & modules (NetCDF, etc):
-LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
 
 # Normal options for the compiler
 FFLAGS =  -O3 -fp-model source $(LCDF)
