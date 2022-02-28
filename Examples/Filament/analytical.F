@@ -122,8 +122,8 @@
 
 # include "compute_extended_bounds.h"
 
-      dx=1000.0                         ! Set grid spacings for
-      dy=1000.0                         ! Cartesian rectangular grid
+      dx=200.0                         ! Set grid spacings for
+      dy=200.0                         ! Cartesian rectangular grid
 
 C$OMP MASTER                           ! Copy physical dimensions of
       xl=dx*dble(LLm)
@@ -230,10 +230,17 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       real :: dh2         = 10.0     ! m. Buffer between pycnocline and deeper stratification.
       real :: N2          = 1.5e-4   ! Daniel said try 0
       real :: h2          = 70.0     !
-      real :: L           = 20000.0     ! m
+      real :: L           = 4000.0     ! m
       real :: bs0         = 8.51e-3  ! ms-2
 
 # include "compute_auxiliary_bounds.h"
+
+      ! necessary for FIRST_TIME_STEP flag to work, as per set_global_definitions.h
+      ! this had no value for analytical examples previously.
+#ifdef EXACT_RESTART
+      forw_start=ntstart
+#endif
+
 
 #ifdef FILAMENT_RESTORE
       alpha_fil = dt / ( 3600 )  ! set restoring coeff
@@ -257,7 +264,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
             a2(i,j,k) = (0.5 * N0) * ( (1+ B_cff) * z_r(i,j,k) - ( 1- B_cff)
      &          *( h_sbl(i,j) + lambda_inv * log(cosh((1./lambda_inv) *(z_r(i,j,k) + h_sbl(i,j))))))
 
-            b(i,j,k) = ( bs0 + a1(i,j,k) + a2(i,j,k) ) * 4.0
+            b(i,j,k) = bs0 + a1(i,j,k) + a2(i,j,k)
 
             ! buoyancy do as temperature (got this from Daniel's script?):
             t(i,j,k,1,itemp) = b(i,j,k) / (2.0e-4 * 9.81)
@@ -694,7 +701,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
           do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
             sustr(i,j)=0.        ! at horizontal U- and V-points.
-            svstr(i,j)=0.        ! For code compactness, both are set
+            svstr(i,j)=1.0e-5    ! For code compactness, both are set
           enddo                  ! to zero at first (default values),
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
@@ -717,7 +724,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       integer istr,iend,jstr,jend, i,j
 
 # include "compute_extended_bounds.h"
-
 
       do j=jstrR,jendR
         do i=istrR,iendR
