@@ -72,38 +72,43 @@ for test in range(ntests):
 	print(text)
 	file_diag.write('\n'+text) # write("\n"+text)
 	# -- read number of timesteps
-	line_num = search_string_in_file(filenames[test,0],'ntimes')
+	line_num = search_string_in_file(filenames[test,0],'ntimes')   # find line number of ntimes in text
 	line = open(filenames[test,0], 'r').readlines()[line_num[0]-1] # -1 for 0 counting
 	nstps = int(line[18:23]) + 1 # use +1 as diagnostics start from step 0
-	#print('nstps='+nstps)
-	# -- find line where diagnostics start
-	lstart = search_string_in_file(filenames[test,0],'STEP')
+	#print('nstps=',nstps)
 
-	# Loop through BM values and new values
+	# Loop through BM log values and new log values
 	for m in range(2):
-
+	
+		# -- find line where diagnostics start (within loop in-case terminal output changes between commits)
+		lstart = search_string_in_file(filenames[test,m],'STEP')
+		#print('lstart=',lstart)   # debug
+	
+		#print('m=',m)   # debug
 		# Loop through time steps & sum diagnostics
 		for t in range(nstps):
-
+			#print('t=',t)   # debug
 			# read timestep line
-			line = open(filenames[test,m], 'r').readlines()[lstart[0]+t]
+			line = open(filenames[test,m], 'r').readlines()[lstart[0]+t]  # need the [0] even though scalar
 			# read KINETIC_ENRG
 			val = line[18:34]
+			#print('kin_en'+val)
 			# For some reason that I could not solve some, the .log numbers in scientific 
 			# notation are missing the 'E' exponent, and hence python does not recognize 
 			# the number. Numbers are written in Diag.F. Hence need to add the 'E'.
+            # diag.F there is "Suppress floating-point "E"s in order to shorten". That's why.
 			diags[test,m,0] += float(val[:13] + "E" + val[13:])
-			#print('diags[0]',diags[0])    
+			#print('diags[test,m,0]',diags[test,m,0])    
 			# read BAROTR_KE
 			val = line[35:50]
 			diags[test,m,1] += float(val[:12] + "E" + val[12:])
-			#print('diags[1]',diags[1])
+			#print('diags[test,m,1]',diags[test,m,1])
 			# read MAX_ADV_CFL
 			diags[test,m,2] += float(line[52:66])
-			#print('diags[2]',diags[2])
+			#print('diags[test,m,2]',diags[test,m,2])
 			# read MAX_VERT_CFL
 			diags[test,m,3] += float(line[68:82])
-			#print('diags[3]',diags[3])
+			#print('diags[test,m,3]',diags[test,m,3])
 			
 			# Sanity check to confirm correct read of values as totals only
 			# are hard to spot check
