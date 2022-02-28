@@ -27,12 +27,7 @@ export ROMS_ROOT="/home/devin/repos/ucla-roms"
 
 
 # - adds roms tools to path (you still need to build them first)
-#export PATH=$PATH:$ROMS_ROOT/Tools-Roms
-
-export NETCDFF_INC=$(nf-config --fflags)
-export NETCDFF_LIB=$(nf-config --flibs)
-export NETCDFC_INC=$(nc-config --cflags)
-export NETCDFC_LIB=$(nc-config --libs)
+export PATH=$PATH:$ROMS_ROOT/Tools-Roms
 
 # - I believe this is not needed since intel MPI paths loaded automatically with intel module
 export MPIHOME="/home/apps/intel/2020.4/compilers_and_libraries/linux/mpi/intel64"

@@ -18,6 +18,13 @@ INSTRUCTIONS: COMPILING ROMS
      variable names have changed, e.g. MPI_ROOT -> MPIHOME.
      See/copy examples of ~/.bashrc or ~/.cshrc files in: 
      Documentation/machine-specific/bashrc-cshrc-files
+     
+     For Expanse users it is 'safest' to just use the exact same .bashrc file:
+     Documentation/machine-specific/bashrc-cshrc-files/bashrc-expanse-202103
+     Once you have all the following steps working then you can edit your old
+     .bashrc as necessary if you would prefer.
+     Same applies for Maya users: cshrc-maya-202011 (for c-shell)
+     
      For existing ROMS user's who might want to use a version pre 2020/12/01
      as well, then you should only need to add MPIHOME exactly as your
      existing MPI_ROOT, and same for NETCDFHOME as your NETCDF, in addition 

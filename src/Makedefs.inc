@@ -65,13 +65,13 @@
 	CFTFLAGS = -pc64 -auto
 
 # Fortran compiler name and options:
-#	- using intel MPI:
+#	- using non-intel MPI:
 	CFT =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
 #	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran loader name and options: (mpifort has replaced legacy mpif90)
-#	- using intel MPI:
+#	- using non-intel MPI:
 	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
 #	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
