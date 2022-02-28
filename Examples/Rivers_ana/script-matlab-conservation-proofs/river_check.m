@@ -1,7 +1,8 @@
+% clc; clear
+
 %% Checking integrals of water input and T, and S conservation
 
-fname = 'ptest_his.0000.nc';
-fname = 'uswc_his.0000.nc';
+fname = '../river_ana_his.00000.nc';
 
 nx = 100;
 ny = 100;
@@ -47,6 +48,6 @@ for it = 1:nt
   s_int(it) = dx*dy*nansum(salt(:).*dz(:));
 end
 
-dt = gradient(t_int,600);
-ds = gradient(s_int,600);
-dv = gradient(vol,600);
+dt = gradient(t_int,1200);
+ds = gradient(s_int,1200);
+dv = gradient(vol,1200);

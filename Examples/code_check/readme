@@ -1,11 +1,9 @@
-Added sponge layer output which will break this script!
-
 Scripts to confirm simulation results still match benchmark results,
 and that netcdf outputting works for his, avg and rst files.
 This should ensure bugs have not been added to the code.
 
-The script can be run directly on Maya with ./test_roms.sh, but needs 
-to be run on 'comet' using the job submission: qsub run_tests_comet.lsf,
+The script can be run directly on Maya with ./test_roms.sh
+Obsolete: but needs to be run on 'comet' using the job submission: qsub run_tests_comet.lsf,
 which needs to be edit to your comet user name.
 
 Script requires a benchmark to have already been run and saved 
