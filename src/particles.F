@@ -18,18 +18,21 @@
 
 
       ! user inputs:
-      integer :: np=50                     ! local number of particles
-      real    :: extra_space_fac = 1.5     ! buffer space to receive extra exchanged particles 
-      real    :: exchange_facx = 0.1       ! maximum number of particles expected to transfer in NS
-      real    :: exchange_facy = 0.1       ! maximum number of particles expected to transfer in EW
-      real    :: exchange_facc = 0.01      ! maximum number of particles expected to transfer in corners    
+      integer :: np=50                   ! local number of particles
+      real    :: extra_space_fac = 1.5   ! buffer space to receive extra exchanged particles 
+      real    :: exchange_facx = 0.1     ! maximum number of particles for transfer in NS
+      real    :: exchange_facy = 0.1     ! maximum number of particles for transfer in EW
+      real    :: exchange_facc = 0.01    ! maximum number of particles for transfer in corners    
 
       
+      logical :: full_seed = .true.           ! seed with constant density
       real    :: output_period = 400
       integer :: nrpf = 100
-      real    :: ppm3 = 1e-6     ! target particles per cubic meter
+      real    :: ppm3 = 1e-5          ! target particles per cubic meter
 
       ! end user inputs
+
+      logical :: terminal_vel= .false. ! terminal velocities on particles (not yet implemented)
 
       ! We choose not to define a derived particle type that has all the
       ! information for a particles because the memory storage would be 
@@ -53,22 +56,24 @@
       integer,parameter :: iprzm= 13  ! previous dz-velocity (index space)
       integer           :: npv  = 13  ! total particle vars
 
-      integer           :: ntag                  ! current max tag (lifetime particles)
+      integer     :: ntag                  ! current max tag (lifetime particles)
       logical :: do_init = .true.
       logical :: part_first = .true.             ! First time step for particles
-      logical :: terminal_vel= .true.            ! terminal velocities on particles
+
       real,dimension(:,:),allocatable,target :: part    ! particles
       real   ,dimension(:),allocatable :: val ! needed for sorting
       integer,dimension(:),allocatable :: idx ! needed for sorting
       real,dimension(:),allocatable :: ptmp  ! needed for sorting
       real,dimension(:,:,:),allocatable :: Wp    ! total vertical flux
+      real,dimension(:),allocatable :: zw
       real,dimension(:) ,allocatable :: nbp_east,nbp_west ! for reseeding near open boundaries
       real,dimension(:) ,allocatable :: nbp_north,nbp_south
+
+      integer :: szx,szy,szc   !! size of mpi buffers for particle exchanges
 
       real                  :: output_time = 0
       integer               :: total_rec = 0
       integer ::  npmx ! allocated space for particle array
-      logical :: full_seed = .false.           ! seed with constant density
       integer :: big_number= 100000000      ! added to particles tags 
                                             ! to get unique numbers for all subdomains
 
@@ -76,13 +81,13 @@
         module procedure  interp_2D, interp_3D
       end interface
 
-
-      real,allocatable,dimension(:,:) :: sn_nw, sn_n, sn_ne, rv_nw, rv_n, rv_ne,
-     &                                   sn_w, sn_e, rv_w, rv_e, sn_sw, sn_s,
-     &                                   sn_se, rv_sw, rv_s, rv_SE
-      integer :: is_e,is_w,is_n,is_s,is_ne,is_nw,is_sw,is_se     ! exchange count
-      integer :: rn_s,  rn_w,  rn_n,  rn_e                                     ! received msg buffer size
-      integer :: rn_sw, rn_se, rn_nw, rn_ne
+      real,allocatable,dimension(:) :: sn_nw, sn_n, sn_ne, rv_nw, rv_n, rv_ne,
+     &                                 sn_w, sn_e, rv_w, rv_e, sn_sw, sn_s,
+     &                                 sn_se, rv_sw, rv_s, rv_SE
+      integer :: is_s, is_w, is_n, is_e
+      integer :: is_sw,is_se,is_nw,is_ne
+      integer :: rn_s, rn_w, rn_n, rn_e                       ! received msg buffer size
+      integer :: rn_sw,rn_se,rn_nw,rn_ne
 
       public do_particles
 
@@ -99,7 +104,15 @@
       ! possibly not every eulerian time-step
       ! or... with sub step (for when working offline)
       call advance_particles
+!     print *, 'max pz: ',maxval(part(1:np,ipz)),mynode
+!     print *, 'min pz: ',minval(part(1:np,ipz)),mynode
+!     print *, 'max px: ',maxval(part(1:np,ipx)),mynode
+!     print *, 'min px: ',minval(part(1:np,ipx)),mynode
+!     print *, 'max py: ',maxval(part(1:np,ipy)),mynode
+!     print *, 'min py: ',minval(part(1:np,ipy)),mynode
+
       call exchange_particles
+      stop
 
       call sort_particles
 
@@ -121,21 +134,24 @@
 
 
       allocate(Wp(0:nx+1,0:ny+1,0:nz)) ! total vertical flux in m/s
+      allocate(zw(0:nz));
 
       if (full_seed) then ! seed for constant particle density
         h_mn = sum(h(1:nx,1:ny))/(nx*ny)
         dx_mn= 1./(sum(pm(1:nx,1:ny))/(nx*ny))
         dy_mn= 1./(sum(pn(1:nx,1:ny))/(nx*ny))
-        np = h_mn*dx_mn*dy_mn*ppm3
+        np = h_mn*dx_mn*dy_mn*ppm3*nx*ny
         npmx = np*extra_space_fac
         allocate(part(npmx,npv))
-        if (mynode==0) print *,'Seeding ',np,' particles'
+!       print *,'Seeding ',np,' particles ',mynode
 
         np = 0;
         do j=1,ny
          do i=1,nx
+           zw = z_w(i,j,:)
            hvol = h(i,j)/(pm(i,j)*pn(i,j))
-           call seed_particles(hvol,z_w(i,j,:),i,j)
+           call seed_particles(hvol,zw,i,j)
+!          call seed_particles(hvol,z_w(i,j,:),i,j)
          enddo
         enddo
       else
@@ -160,11 +176,16 @@
       
       call init_arrays_mpi_roms
 
+!     print *,'init particles done'
+
       end subroutine init_particles !]
 !-------------------------------------------------
       subroutine advance_particles![
       ! using AB2 time stepping
       implicit none
+      ! we can reduce permanent particle storage
+      ! For AB2, we only need px,py,pz, and pdxm, etc...
+      ! For RK like stepping, only positions are permanent
 
       ! local
       real,dimension(:),pointer:: px,py,pz
@@ -292,7 +313,8 @@
       endif
       if (lnp>0) then
         allocate(z(lnp))
-        call random_number(z); z = z*(zw(nz)-zw(0))
+        call random_number(z); 
+        z = z*(zw(nz)-zw(0)) + zw(0)
         call zlev2kidx(z,part(np+1:np+lnp,ipz),zw(:))
         call random_number(part(np+1:np+lnp,ipx))
         call random_number(part(np+1:np+lnp,ipy))
@@ -393,15 +415,15 @@
       real, dimension(2,2)   :: tmp2d   ! DPD temp to remove debug warnings
       real, dimension(2,2,2) :: tmp3d
 
-      px   => part(1:np,ipx)
-      py   => part(1:np,ipy)
-      pz   => part(1:np,ipz)
-      pu   => part(1:np,ipu)
-      pv   => part(1:np,ipv)
-      pw   => part(1:np,ipw)
-      prx   => part(1:np,iprx)
-      pry   => part(1:np,ipry)
-      prz   => part(1:np,iprz)
+      px  => part(1:np,ipx)
+      py  => part(1:np,ipy)
+      pz  => part(1:np,ipz)
+      pu  => part(1:np,ipu)
+      pv  => part(1:np,ipv)
+      pw  => part(1:np,ipw)
+      prx => part(1:np,iprx)
+      pry => part(1:np,ipry)
+      prz => part(1:np,iprz)
 
       do k=0,nz
         Wp(:,:,k) = (We(0:nx+1,0:ny+1,k)+Wi(0:nx+1,0:ny+1,k))
@@ -411,14 +433,17 @@
       do ip = 1,np
         if (pz(ip)< 2*nz) then
 
+!         pz(ip) = min(pz(ip),nz-0.1)
+
           i = floor(px(ip)+0.5)
           j = floor(py(ip)+0.5)
           k = floor(pz(ip)+0.5)
           k = max(k,1)
+          k = min(k,nz-1)
           iu= floor(px(ip)+1.0)
           jv= floor(py(ip)+1.0)
           kw= floor(pz(ip))
-          kw= min(kw,nz-1)
+!         kw= min(kw,nz-1)
 
           x =  px(ip)-i +0.5
           y =  py(ip)-j +0.5
@@ -427,32 +452,9 @@
           yv=  py(ip)-jv+1.0
           zw=  pz(ip)-kw
 
-          if (px(ip)<0..or.px(ip)>nx) then
-            pz(ip) = 10*nz
-            cycle
-!           print *,'x: ', px(ip), mynode
-!           stop
-          endif
-          if (py(ip)<0..or.py(ip)>ny) then
-            pz(ip) = 10*nz
-            cycle
-!           print *,'y: ', py(ip), mynode
-!           stop
-          endif
-          if (pz(ip)<0..or.pz(ip)>nz) then
-            pz(ip) = 10*nz
-            cycle
-!           print *,'z: ', pz(ip), mynode
-!           stop
-          endif
 
-          if (k<1..or.k>nz-1) then
-            pz(ip) = 10*nz
-            print *,'k: ', k, mynode
-            stop
-          endif
           if (kw<0..or.kw>nz-1) then
-            print *,'kw: ', kw, mynode
+            print *,'kw: ', kw,pz(ip),mynode
             stop
           endif
 
@@ -489,7 +491,6 @@
       enddo
 
       end subroutine rhs_particles !]
-      
 !-------------------------------------------------
        subroutine interp_2D(fi,f,x,y) ![
        ! 2D Linear interpolation
@@ -530,7 +531,6 @@
 !      print *,'int_lin_3d: ', sum(wt)
        fi   = sum(f*wt)
        end subroutine interp_3D !]
-       
 !------------------------------------------
       subroutine exchange_particles![
       ! Deal with particles entering/leaving the domain.
@@ -539,131 +539,147 @@
       implicit none
 
       ! local
-      integer :: ip
+      integer :: i,ip,ierr
 
       is_e = 0;is_w = 0;is_n= 0;is_s= 0
       is_ne= 0;is_nw= 0;is_sw= 0;is_se = 0
 
       ! remove nx,ny when sending to e,n
       do ip = 1,np
-        if (part(ip,ipx)>nx) then
-          if (part(ip,ipy)>ny) then
+        if (part(ip,ipx)>nx.and.east_exchng) then
+          if (part(ip,ipy)>ny.and.north_exchng) then
             part(ip,ipx) = part(ip,ipx) - nx
             part(ip,ipy) = part(ip,ipy) - ny
-            is_ne = is_ne+1
-            sn_ne(is_ne,:) = part(ip,:)
-          elseif (part(ip,ipy)<0) then
-            part(ip,ipy) = part(ip,ipy) - ny
-            is_se = is_se+1
-            sn_se(is_se,:) = part(ip,:)
+            sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
+            is_ne = is_ne+npv
+          elseif (part(ip,ipy)<0.and.south_exchng) then
+            part(ip,ipx) = part(ip,ipx) - nx
+            sn_se(is_se+1:is_se+npv) = part(ip,:)
+            is_se = is_se+npv
           else
-            part(ip,ipy) = part(ip,ipy) - ny
-            is_e = is_e+1
-            sn_e(is_e,:) = part(ip,:)
+            part(ip,ipx) = part(ip,ipx) - nx
+            sn_e(is_e+1:is_e+npv) = part(ip,:)
+            is_e = is_e+npv
           endif
           part(ip,ipz) = 10*nz                   ! indicate particle no longer in domain
-        elseif (part(ip,ipx)< 0.0) then
+        elseif (part(ip,ipx)< 0.0.and.west_exchng) then
           if (part(ip,ipy)>ny) then
-            part(ip,ipx) = part(ip,ipx) - nx
-            is_nw = is_nw+1
-            sn_nw(is_nw,:) = part(ip,:)
+            part(ip,ipy) = part(ip,ipy) - ny
+            sn_nw(is_nw+1:is_nw+npv) = part(ip,:)
+            is_nw = is_nw+npv
           elseif (part(ip,ipy)<0) then
-            is_sw = is_sw+1
-            sn_sw(is_sw,:) = part(ip,:)
+            sn_sw(is_sw+1:is_sw+npv) = part(ip,:)
+            is_sw = is_sw+npv
           else
-            is_w = is_w+1
-            sn_w(is_w,:) = part(ip,:)
+            sn_w(is_w+1:is_w+npv) = part(ip,:)
+            is_w = is_w+npv
           endif
           part(ip,ipz) = 10*nz
-        elseif (part(ip,ipy)>ny) then            ! corners already accounted for so only if north
-          part(ip,ipx) = part(ip,ipx) - nx
-          is_n = is_n+1
-          sn_n(is_n,:) = part(ip,:)
+        elseif (part(ip,ipy)>ny.and.north_exchng) then            ! corners already accounted for so only if north
+          part(ip,ipy) = part(ip,ipy) - ny
+          sn_n(is_n+1:is_n+npv) = part(ip,:)
+          is_n = is_n+npv
           part(ip,ipz) = 10*nz
-        elseif (part(ip,ipy)< 0.0) then
-          is_s = is_s+1
-          sn_S(is_s,:) = part(ip,:)
+        elseif (part(ip,ipy)< 0.0.and.south_exchng) then
+          sn_s(is_s+1:is_s+npv) = part(ip,:)
+          is_s = is_s+npv
           part(ip,ipz) = 10*nz
         endif
       enddo
       
-      if (inode<2) then
-        if (is_e > 0) print *, 'EXCH E!',mynode
-      endif
-      if (inode>0) then
-        if (is_w > 0) print *, 'EXCH W!',mynode
-      endif
-      if (jnode>0) then
-        if (is_s > 0) print *, 'EXCH S!',mynode 
-      endif
-      if (jnode<1) then
-        if (is_n > 0) print *, 'EXCH N!',mynode
-      endif
-      if (is_sw > 0) print *, 'EXCH SW!',mynode
-      if (is_se > 0) print *, 'EXCH SE!',mynode
-      if (is_nw > 0) print *, 'EXCH NW!',mynode
-      if (is_ne > 0) print *, 'EXCH NE!',mynode
-
       call exchange_data
+      call mpi_barrier(ocean_grid_comm, ierr)
+      stop
 
       ! add nx,ny when receiving from the e,n 
       ! We order this in sw,s,se,w,e,nw,n,ne to match the desired sorting of the particle array
       if (rn_sw>0) then         ! divide buffer size by npv to get particle count  
         rn_sw = rn_sw/npv     
-        part(np+1:np+rn_sw,:) = rv_sw(1:rn_sw,:)
+        do ip = 1,rn_sw
+          do i = 1,npv
+            part(np+ip,i) = rv_sw(i+(ip-1)*npv)
+          enddo
+        enddo
         np = np+rn_sw
       endif
 
       if (rn_s>0) then
-        rn_s = rn_s/npv     
-        part(np+1:np+rn_s,:) = rv_s(1:rn_s,:)
+        rn_s = rn_s/npv 
+        do ip = 1,rn_s
+          do i = 1,npv
+            part(np+ip,i) = rv_s(i+(ip-1)*npv)
+          enddo
+        enddo
         np = np+rn_s
       endif
 
       if (rn_se>0) then
         rn_se = rn_se/npv     
-        part(np+1:np+rn_se,:) = rv_SE(1:rn_se,:)
-        part(np+1:np+rn_se,ipx) = part(np+1:np+rn_se,ipx) + nx
+        do ip = 1,rn_se
+          do i = 1,npv
+            part(np+ip,i) = rv_se(i+(ip-1)*npv)
+          enddo
+          part(np+ip,ipx) = part(np+ip,ipx)+nx
+        enddo
         np = np+rn_se
       endif
 
       if (rn_w>0) then
         rn_w = rn_w/npv 
-        part(np+1:np+rn_w,:) = rv_w(1:rn_w,:)
+        do ip = 1,rn_s
+          do i = 1,npv
+            part(np+ip,i) = rv_w(i+(ip-1)*npv)
+          enddo
+        enddo
         np = np+rn_w
       endif
 
       if (rn_e>0) then
         rn_e = rn_e/npv     
-        part(np+1:np+rn_e,:) = rv_e(1:rn_e,:)
-        part(np+1:np+rn_e,ipx) = part(np+1:np+rn_e,ipx) + nx
+        do ip = 1,rn_e
+          do i = 1,npv
+            part(np+ip,i) = rv_e(i+(ip-1)*npv)
+          enddo
+          part(np+ip,ipx) = part(np+ip,ipx)+nx
+        enddo
         np = np+rn_e
       endif
 
       if (rn_nw>0) then
         rn_nw = rn_nw/npv     
-        part(np+1:np+rn_nw,:) = rv_nw(1:rn_nw,:)
-        part(np+1:np+rn_nw,ipy) = part(np+1:np+rn_nw,ipy) + ny
+        do ip = 1,rn_nw
+          do i = 1,npv
+            part(np+ip,i) = rv_nw(i+(ip-1)*npv)
+          enddo
+          part(np+ip,ipy) = part(np+ip,ipy)+ny
+        enddo
         np = np+rn_nw
       endif
 
       if (rn_n>0) then
         rn_n = rn_n/npv     
-        part(np+1:np+rn_n,:) = rv_n(1:rn_n,:)
-        part(np+1:np+rn_n,ipy) = part(np+1:np+rn_n,ipy) + ny
+        do ip = 1,rn_n
+          do i = 1,npv
+            part(np+ip,i) = rv_n(i+(ip-1)*npv)
+          enddo
+          part(np+ip,ipy) = part(np+ip,ipy)+ny
+        enddo
         np = np+rn_n
       endif
 
       if (rn_ne>0) then
         rn_ne = rn_ne/npv     
-        part(np+1:np+rn_ne,:) = rv_ne(1:rn_ne,:)
-        part(np+1:np+rn_ne,ipx) = part(np+1:np+rn_ne,ipx) + nx
-        part(np+1:np+rn_ne,ipy) = part(np+1:np+rn_ne,ipy) + ny
+        do ip = 1,rn_ne
+          do i = 1,npv
+            part(np+ip,i) = rv_ne(i+(ip-1)*npv)
+          enddo
+          part(np+ip,ipx) = part(np+ip,ipx)+nx
+          part(np+ip,ipy) = part(np+ip,ipy)+ny
+        enddo
         np = np+rn_ne
       endif
 
       end subroutine exchange_particles !]
-      
 !------------------------------------------
       subroutine extend_size_particles![
       implicit none
@@ -683,7 +699,6 @@
       print *,'extended particles array'
 
       end subroutine extend_size_particles !]
-
 !------------------------------------------
       subroutine remsort(val,idx,val_mx) ![
       implicit none
@@ -743,7 +758,6 @@
 
 
       end subroutine sort_particles !]
-
 ! ---------------------------------------------------------------------
       subroutine exchange_data  ![
       ! orginally to exchange particles
@@ -761,10 +775,24 @@
       logical :: flag
       integer :: ssize, wsize, nsize, esize, swsize, sesize, nwsize, nesize    ! size of buffer to send
 
-      ssize=is_s*npv; wsize=is_w*npv      ! size of buffers to send
-      nsize=is_n*npv; esize=is_e*npv      ! inline this later below so only done if necessary
-      swsize=is_sw*npv;   sesize=is_se*npv
-      nwsize=is_nw*npv;   nesize=is_ne*npv
+      ssize = is_s*npv;   wsize = is_w*npv          ! size of buffers to send
+      nsize = is_n*npv;   esize = is_e*npv
+      swsize= is_sw*npv;  sesize= is_se*npv
+      nwsize= is_nw*npv;  nesize= is_ne*npv
+      
+!     if (mynode==0) then
+        print *, 'ssize',ssize,mynode
+        print *, 'nsize',nsize,mynode
+        print *, 'wsize',wsize,mynode
+        print *, 'esize',esize,mynode
+        print *, 'swsize',swsize,mynode
+        print *, 'sesize',sesize,mynode
+        print *, 'nwsize',nwsize,mynode
+        print *, 'nesize',nesize,mynode
+!     endif
+      call MPI_Barrier (ocean_grid_comm, ierr)
+!     stop
+      
 
       ! SEND EVERYTHING:
                      ! tags for receive      for send
@@ -776,25 +804,25 @@
       ! as the receiver does not know this.
 
       if (west_msg_exch) then
-        call MPI_Irecv (rv_w, rn_w, MPI_DOUBLE_PRECISION,   ! rv_w is array to store incoming data
-     &          p_W, 8, ocean_grid_comm, req(1), ierr)       ! rn_w is amount of data to receive of (up to 4 arrays - compute_message_bounds.h)
-        comm(1)=1                                            ! p_W   is mpi_rank of sub-domain to the west
-      endif                                                  ! jtg   is used to define tile location. No tiling jtg=0
-                                                             ! ocean_grid_comm = MPI_COMM_WORLD is the group of all mpi procs in ROMS run
-      if (east_msg_exch) then                                ! req() stores the mpi request handle to later use
-        call MPI_Irecv (rv_e, rn_e, MPI_DOUBLE_PRECISION,  !       mpi_test to see if it has been completed.
+        call MPI_Irecv (rv_w, szy, MPI_DOUBLE_PRECISION,   ! rv_w is array to store incoming data and 
+     &          p_W, 8, ocean_grid_comm, req(1), ierr)     !  szy is its size
+        comm(1)=1                                          ! p_W   is mpi_rank of sub-domain to the west
+      endif
+                                                           ! ocean_grid_comm = MPI_COMM_WORLD is the group of all mpi procs in ROMS run
+      if (east_msg_exch) then                              ! req() stores the mpi request handle to later use
+        call MPI_Irecv (rv_e, szy, MPI_DOUBLE_PRECISION,   ! mpi_test to see if it has been completed.
      &          p_E, 7, ocean_grid_comm, req(2), ierr)
         comm(2)=2
       endif
 
       if (south_msg_exch) then
-        call MPI_Irecv (rv_s, rn_s, MPI_DOUBLE_PRECISION,
+        call MPI_Irecv (rv_s, szx, MPI_DOUBLE_PRECISION,
      &          p_S, 6, ocean_grid_comm, req(3), ierr)
         comm(3)=3
       endif
 
       if (north_msg_exch) then
-        call MPI_Irecv (rv_n, rn_n, MPI_DOUBLE_PRECISION,
+        call MPI_Irecv (rv_n, szx, MPI_DOUBLE_PRECISION,
      &          p_N, 5, ocean_grid_comm, req(4), ierr)
         comm(4)=4
       endif
@@ -802,25 +830,25 @@
 ! corners ...
 
       if (west_msg_exch .and. south_msg_exch) then
-        call MPI_Irecv (rv_sw, rn_sw, MPI_DOUBLE_PRECISION,
+        call MPI_Irecv (rv_sw, szc, MPI_DOUBLE_PRECISION,
      &            p_SW, 2, ocean_grid_comm, req(5), ierr)
         comm(5)=5
       endif
 
       if (east_msg_exch .and. north_msg_exch) then
-        call MPI_Irecv (rv_ne, rn_ne, MPI_DOUBLE_PRECISION,
+        call MPI_Irecv (rv_ne, szc, MPI_DOUBLE_PRECISION,
      &            p_NE, 1, ocean_grid_comm, req(6), ierr)
         comm(6)=6
       endif
 
       if (east_msg_exch .and. south_msg_exch) then
-        call MPI_Irecv (rv_SE, rn_se, MPI_DOUBLE_PRECISION,
+        call MPI_Irecv (rv_se, szc, MPI_DOUBLE_PRECISION,
      &            p_SE, 4, ocean_grid_comm, req(7), ierr)
         comm(7)=7
       endif
 
       if (west_msg_exch .and. north_msg_exch) then
-        call MPI_Irecv (rv_nw, rn_nw, MPI_DOUBLE_PRECISION,
+        call MPI_Irecv (rv_nw, szc, MPI_DOUBLE_PRECISION,
      &            p_NW, 3, ocean_grid_comm, req(8), ierr)
         comm(8)=8
       endif
@@ -833,13 +861,14 @@
 !      do ipass=0,1
 !        if (mod(inode+ipass,2)==0) then
           if (west_msg_exch) then
-            call MPI_Isend (sn_w, wsize, MPI_DOUBLE_PRECISION,
+            if (mynode==1) print *, 'sending w: ',wsize, mynode
+            call MPI_Isend (sn_w(1:is_w), is_w, MPI_DOUBLE_PRECISION,
      &              p_W, 7, ocean_grid_comm, req(9), ierr)
             comm(9)=9
           endif
 !        else
           if (east_msg_exch) then
-            call MPI_Isend (sn_e, esize, MPI_DOUBLE_PRECISION,
+            call MPI_Isend (sn_e(1:is_e), is_e, MPI_DOUBLE_PRECISION,
      &             p_E, 8, ocean_grid_comm, req(10), ierr)
             comm(10)=10
           endif
@@ -849,13 +878,13 @@
 !      do ipass=0,1
 !        if (mod(jnode+ipass,2)==0) then
           if (south_msg_exch) then
-            call MPI_Isend (sn_s, ssize, MPI_DOUBLE_PRECISION,
+            call MPI_Isend (sn_s(1:is_s), is_s, MPI_DOUBLE_PRECISION,
      &             p_S, 5, ocean_grid_comm, req(11), ierr)
             comm(11)=11
           endif
 !        else
           if (north_msg_exch) then
-            call MPI_Isend (sn_n, nsize, MPI_DOUBLE_PRECISION,
+            call MPI_Isend (sn_n(1:is_n), is_n, MPI_DOUBLE_PRECISION,
      &             p_N, 6, ocean_grid_comm, req(12), ierr)
             comm(12)=12
           endif
@@ -868,25 +897,25 @@
 ! ...and corners:
 
         if (west_msg_exch .and. south_msg_exch) then
-          call MPI_Isend (sn_sw, swsize, MPI_DOUBLE_PRECISION,
+          call MPI_Isend (sn_sw(1:is_sw), is_sw, MPI_DOUBLE_PRECISION,
      &             p_SW, 1, ocean_grid_comm, req(13), ierr)
           comm(13)=13
         endif
 
         if (east_msg_exch .and. north_msg_exch) then
-          call MPI_Isend (sn_ne, nesize, MPI_DOUBLE_PRECISION,
+          call MPI_Isend (sn_ne(1:is_ne), is_ne, MPI_DOUBLE_PRECISION,
      &             p_NE, 2, ocean_grid_comm, req(14), ierr)
           comm(14)=14
         endif
 
         if (east_msg_exch .and. south_msg_exch) then
-          call MPI_Isend (sn_se, sesize, MPI_DOUBLE_PRECISION,
+          call MPI_Isend (sn_se(1:is_se), is_se, MPI_DOUBLE_PRECISION,
      &             p_SE, 3, ocean_grid_comm, req(15), ierr)
           comm(15)=15
         endif
 
         if (west_msg_exch .and. north_msg_exch) then
-          call MPI_Isend (sn_nw, nwsize, MPI_DOUBLE_PRECISION,
+          call MPI_Isend (sn_nw(1:is_nw), is_nw, MPI_DOUBLE_PRECISION,
      &             p_NW, 4, ocean_grid_comm, req(16), ierr)
           comm(16)=16
         endif
@@ -900,10 +929,13 @@
         if (comm(i) > 0) mess_count=mess_count+1
       enddo
 
+      if (mess_count>0) print *, mynode, 'mess_count=',mess_count
+
       do while (mess_count>0)
         if (comm(1)>0) then
           call MPI_Test (req(1), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_w,ierr)
             mess_count=mess_count-1 ; comm(1)=0
           endif
         endif
@@ -911,6 +943,7 @@
         if (comm(2)>0) then
           call MPI_Test (req(2), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_e,ierr)
             mess_count=mess_count-1 ; comm(2)=0
           endif
         endif
@@ -918,6 +951,7 @@
         if (comm(3)>0) then
           call MPI_Test (req(3), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_s,ierr)
             mess_count=mess_count-1 ; comm(3)=0
           endif
         endif
@@ -925,6 +959,7 @@
         if (comm(4)>0) then
           call MPI_Test (req(4), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_n,ierr)
             mess_count=mess_count-1 ; comm(4)=0
           endif
         endif
@@ -932,6 +967,7 @@
         if (comm(5)>0) then
           call MPI_Test (req(5), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_sw,ierr)
             mess_count=mess_count-1 ; comm(5)=0
           endif
         endif
@@ -939,6 +975,7 @@
         if (comm(6)>0) then
           call MPI_Test (req(6), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_ne,ierr)
             mess_count=mess_count-1 ; comm(6)=0
           endif
         endif
@@ -946,6 +983,7 @@
         if (comm(7)>0) then
           call MPI_Test (req(7), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_se,ierr)
             mess_count=mess_count-1 ; comm(7)=0
           endif
         endif
@@ -953,6 +991,7 @@
         if (comm(8)>0) then
           call MPI_Test (req(8), flag, status, ierr)
           if (flag) then
+            call MPI_get_count(status,MPI_DOUBLE_PRECISION,rn_nw,ierr)
             mess_count=mess_count-1 ; comm(8)=0
           endif
         endif
@@ -969,78 +1008,26 @@
       enddo !<--  while (mess_count>0)
 
       end subroutine exchange_data  !]
-
 ! ---------------------------------------------------------------------
       subroutine init_arrays_mpi_roms  ![
       implicit none
 
-      !local
-      integer :: szx,szy,szc
-      integer :: init=0
+      ! Assume max particle transfer is proportional to length of boundary
+      ! and number of particles in the sub domain
 
-      ! assume max particle transfer is proportional to length of boundary:
-
-      szx = exchange_facx*np  ! N/S border   - as a % of number of particles
-      szy = exchange_facy*np  ! E/W border
-      szc = exchange_facc*np  ! corners
+      szx = exchange_facx*np*npv+1  ! N/S border   - as a % of number of particles
+      szy = exchange_facy*np*npv+1  ! E/W border
+      szc = exchange_facc*np*npv+1  ! corners
       
 
-      allocate( sn_nw(szc,npv),   sn_n(szx,npv),   sn_ne(szc,npv),   ! size on outside for
-     &          rv_nw(szc,npv),   rv_n(szx,npv),   rv_ne(szc,npv),   ! contiguous memory
-     &          sn_w(szy,npv),                        sn_e(szy,npv),
-     &          rv_w(szy,npv),                        rv_e(szy,npv),
-     &          sn_sw(szc,npv),   sn_s(szx,npv),   sn_se(szc,npv),
-     &          rv_sw(szc,npv),   rv_s(szx,npv),   rv_SE(szc,npv)  )
+      allocate(sn_nw(szc),sn_n(szx),sn_ne(szc), 
+     &         rv_nw(szc),rv_n(szx),rv_ne(szc), 
+     &         sn_sw(szc),sn_s(szx),sn_se(szc),
+     &         rv_sw(szc),rv_s(szx),rv_se(szc), 
+     &         sn_w(szy),sn_e(szy),
+     &         rv_w(szy),rv_e(szy)    )
 
-!     sn_nw=init ;   sn_n=init ;   sn_ne=init
-!     rv_nw=init ;   rv_n=init ;   rv_ne=init
-!     sn_w=init ;                  sn_e=init
-!     rv_w=init ;                  rv_e=init
-!     sn_sw=init ;   sn_s=init ;   sn_se=init
-!     rv_sw=init ;   rv_s=init ;   rv_SE=init
-      
       end subroutine init_arrays_mpi_roms  !]
-
-! ---------------------------------------------------------------------
-      subroutine test_dummy_exchange  ![
-
-      implicit none
-
-      ! inputs
-!      integer :: istr,iend,jstr,jend
-
-      ! local
-      real :: wipe = -8.0
-
-      ! set the send values to something to confirm exchange works well
-
-      sn_nw=mynode ;   sn_n=mynode ;   sn_ne=mynode  ! slight error now at beginning as these vars not init yet.
-      sn_w=mynode ;                    sn_e=mynode
-      sn_sw=mynode ;   sn_s=mynode ;   sn_se=mynode
-
-      call exchange_data
-
-      ! confirm correct receive
-      if (mynode==iic-1) then
-        print *, 'mynode=',mynode
-        print *, 'rv_nw(4,3)=',rv_nw(4,3)
-        print *, 'rv_n(1,1)=',rv_n(1,1)
-        print *, 'rv_ne(1,1)=',rv_ne(1,1)
-        print *, 'rv_w(1,1)=',rv_w(1,1)
-        print *, 'rv_e(1,1)=',rv_e(1,1)
-        print *, 'rv_sw(1,1)=',rv_sw(1,1)
-        print *, 'rv_s(1,1)=',rv_s(1,1)
-        print *, 'rv_SE(1,1)=',rv_SE(1,1)
-      endif
-
-      ! reset receive arrays to confirm works each timestep
-
-      rv_nw=wipe ;   rv_n=wipe ;   rv_ne=wipe
-      rv_w=wipe ;                  rv_e=wipe
-      rv_sw=wipe ;   rv_s=wipe ;   rv_SE=wipe
-
-      end subroutine test_dummy_exchange !]
-
 ! ---------------------------------------------------------------------
       recursive subroutine qsort(a, d, first, last)  ![
       implicit none
@@ -1072,30 +1059,35 @@
          i=i+1
          j=j-1
       end do
-      if (first < i-1) call qsort(a, d, first, i-1)
-      if (j+1 < last)  call qsort(a, d, j+1, last)
-      end subroutine qsort  !]
+      if (present(d)) then
+        if (first < i-1) call qsort(a, d, first, i-1)
+        if (j+1 < last)  call qsort(a, d, j+1, last)
+      else
+        if (first < i-1) call qsort(a,first=first,last=i-1)
+        if (j+1 < last)  call qsort(a,first=j+1,last=last)
+      endif
 
+      end subroutine qsort  !]
 !------------------------------------------
       subroutine zlev2kidx(zlev,kidx,zw)![
       implicit none
       ! import/export
-      real,dimension(:),intent(inout):: zlev
-      real,dimension(:),intent(in)   :: zw
-      real,dimension(:),intent(out)  :: kidx
+      real,dimension(:)   ,intent(inout):: zlev
+      real,dimension(0:nz),intent(in)   :: zw
+      real,dimension(:)   ,intent(out)  :: kidx
       ! local
       integer :: i,k,npz
 
       npz = size(zlev)
 
-      call qsort(zlev,first=1,last=nt)
+      call qsort(zlev,first=1,last=npz)
 
       k = 0;
       do i = 1,npz
         do while (zw(k+1)<zlev(i))
           k = k+1;
         enddo
-        kidx(i) = (zlev(i)-zw(k))/(zw(k+1)-zw(k));
+        kidx(i) = (zlev(i)-zw(k))/(zw(k+1)-zw(k))+k;
       enddo
 
       end subroutine zlev2kidx !]
