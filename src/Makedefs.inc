@@ -50,6 +50,12 @@
 	VPATH = ${MPIHOME}/include:${NHMG_INC}
 	CPATH = ${MPIHOME}/include:${NHMG_INC}
 
+# Get netCDF paths and options ('shell' is needed to use command)
+	NETCDFF_INC=$(shell /bin/nf-config --fflags)
+	NETCDFF_LIB=$(shell /bin/nf-config --flibs)
+	NETCDFC_INC=$(shell /bin/nc-config --cflags)
+	NETCDFC_LIB=$(shell /bin/nc-config --libs)
+
 # COMPILER SETTINGS:
 
 # OpenMP flags:
