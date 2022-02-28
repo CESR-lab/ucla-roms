@@ -6,6 +6,9 @@ FC = ifort
 # - for pacific cluster uncomment:
 #FC = mpiifort
 
+# Options to link to libraries & modules (NetCDF, etc):
+LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
+
 # Normal options for the compiler
 FFLAGS =  -O3 -fp-model source $(LCDF)
 
