@@ -67,7 +67,7 @@
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
       integer             :: i, j, k, itrc, itavg
-      real, parameter     :: init=0.    !!!!  0xFFFA5A5A ==> NaN
+      real, parameter     :: init0=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
 #undef ALL_DATA
 #ifdef PRINT_TILE_RANGES
@@ -116,11 +116,11 @@
       do k=0,N
         do j=jstrR,jendR
           do i=istrR,iendR
-            We(i,j,k)=init
-            Wi(i,j,k)=init
+            We(i,j,k)=init0
+            Wi(i,j,k)=init0
 # ifdef NHMG
-            w(i,j,k,1)=init
-            w(i,j,k,2)=init
+            w(i,j,k,1)=init0
+            w(i,j,k,2)=init0
 # endif
           enddo
         enddo
@@ -147,10 +147,10 @@
 #if defined M2NUDGING && !defined M2_FRC_BRY
       do j=jstrR,jendR
         do i=istrR,iendR
-          ssh(i,j)=init
+          ssh(i,j)=init0
 # ifndef ANA_SSH
-          sshg(i,j,1)=init
-          sshg(i,j,2)=init
+          sshg(i,j,1)=init0
+          sshg(i,j,2)=init0
 # endif
         enddo
       enddo
@@ -160,7 +160,7 @@
       do itrc=1,NT
         do j=jstrR,jendR
           do i=istrR,iendR
-            Tnudgcof(i,j,itrc)=init
+            Tnudgcof(i,j,itrc)=init0
           enddo
         enddo
       enddo
@@ -170,9 +170,9 @@
         do k=1,N
           do j=jstrR,jendR
             do i=istrR,iendR
-              tclm(i,j,k,itrc)=init
-              tclima(i,j,k,1,itrc)=init
-              tclima(i,j,k,2,itrc)=init
+              tclm(i,j,k,itrc)=init0
+              tclima(i,j,k,1,itrc)=init0
+              tclima(i,j,k,2,itrc)=init0
             enddo
           enddo
         enddo
@@ -184,24 +184,24 @@
 # ifndef ANA_UCLIMA
       do j=jstrR,jendR
         do i=istrR,iendR
-          ubclm(i,j)=init
-          vbclm(i,j)=init
-          ubclima(i,j,1)=init
-          ubclima(i,j,2)=init
-          vbclima(i,j,1)=init
-          vbclima(i,j,2)=init
+          ubclm(i,j)=init0
+          vbclm(i,j)=init0
+          ubclima(i,j,1)=init0
+          ubclima(i,j,2)=init0
+          vbclima(i,j,1)=init0
+          vbclima(i,j,2)=init0
         enddo
       enddo
 #  ifdef SOLVE3D
       do k=1,N
         do j=jstrR,jendR
           do i=istrR,iendR
-            uclm(i,j,k)=init
-            vclm(i,j,k)=init
-            uclima(i,j,k,1)=init
-            uclima(i,j,k,2)=init
-            vclima(i,j,k,1)=init
-            vclima(i,j,k,2)=init
+            uclm(i,j,k)=init0
+            vclm(i,j,k)=init0
+            uclima(i,j,k,1)=init0
+            uclima(i,j,k,2)=init0
+            vclima(i,j,k,1)=init0
+            vclima(i,j,k,2)=init0
           enddo
         enddo
       enddo

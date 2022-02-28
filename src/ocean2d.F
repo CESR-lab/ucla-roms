@@ -29,30 +29,31 @@
       !----------------------------------------------------------------
       subroutine init_arrays_ocean2d  ![
       use ncvars
+      use scalars
+
       implicit none
 
-      allocate( zeta(GLOBAL_2D_ARRAY,4) )
-      allocate( ubar(GLOBAL_2D_ARRAY,4) )
-      allocate( vbar(GLOBAL_2D_ARRAY,4) )
+      allocate( zeta(GLOBAL_2D_ARRAY,4) ); zeta=0.         ! zeta(:,:,knew) needs to be =0. for set_depth_tile
+      allocate( ubar(GLOBAL_2D_ARRAY,4) ); ubar=0.         ! since knew can change if exact restart or not
+      allocate( vbar(GLOBAL_2D_ARRAY,4) ); vbar=0.         ! set all zeta = 0.
 
-      if (wrtavg(indxZ))   allocate( zeta_avg(GLOBAL_2D_ARRAY) )
-      if (wrtavg(indxUb))  allocate( ubar_avg(GLOBAL_2D_ARRAY) )
-      if (wrtavg(indxVb))  allocate( vbar_avg(GLOBAL_2D_ARRAY) )
+      if (wrtavg(indxZ)) then
+        allocate( zeta_avg(GLOBAL_2D_ARRAY) )
+        zeta_avg=init
+      endif
+      if (wrtavg(indxUb)) then
+        allocate( ubar_avg(GLOBAL_2D_ARRAY) )
+        ubar_avg=init
+      endif
+      if (wrtavg(indxVb)) then
+        allocate( vbar_avg(GLOBAL_2D_ARRAY) )
+        vbar_avg=init
+      endif
 
 #ifdef NHMG
       allocate( nh_ubar(GLOBAL_2D_ARRAY) )
       allocate( nh_vbar(GLOBAL_2D_ARRAY) )
       allocate( nh_wcor(GLOBAL_2D_ARRAY) )
-#endif
-
-      zeta=0.
-      ubar=0.
-      vbar=0.
-
-#ifdef AVERAGES
-      if (wrtavg(indxZ))  zeta_avg=0.
-      if (wrtavg(indxUb)) ubar_avg=0.
-      if (wrtavg(indxVb)) vbar_avg=0.
 #endif
 
       end subroutine init_arrays_ocean2d  !]

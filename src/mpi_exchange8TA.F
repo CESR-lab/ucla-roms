@@ -67,13 +67,13 @@
 # include "compute_message_bounds.h"
 
       ! DevinD (2021/10):
-      ! can't use MPI_Waitall for non-blocking send receives because because
+      ! can't use MPI_Waitall for non-blocking send receives because
       ! domain edges don't send/receive in all directions.
       ! Therefore Sacha using his own method, which uses MPI_test
       ! and 'comm' variable to confirm all non-blocking communications are complete.
       !
       ! From internet found MPI 3.0 standard has some grid halo exchange functions
-      ! already, whereby it can crearte a cartesian mpi sub-domain grid automatically.
+      ! already, whereby it can create a Cartesian mpi sub-domain grid automatically.
       ! This would be good for ROMS but a pain to change over.
       ! Also, didn't find function for boundaries only (i.e. not all neighbours),
       ! but sure it exists.
@@ -90,20 +90,20 @@
 ! already received and unpacked
 
 c--#define CR
-                     ! tags for receive      for send
-      do i=1,16      !         3  5  1        4  6  2
-        comm(i)=0    !         8     7        7     8
+                     ! tags for receive      for send        ! each sub-domain can receive up to 8 exchanges.
+      do i=1,16      !         3  5  1        4  6  2        ! the 'tag' value indicates which side/corner
+        comm(i)=0    !         8     7        7     8        ! the message came from.
       enddo          !         2  6  4        1  5  3
 
       if (WEST_MSG_EXCH) then
         call MPI_Irecv (recvW, jsize, MPI_DOUBLE_PRECISION,  ! recvW is array to store incoming data
-     &          p_W, jtg+8, ocean_grid_comm, req(1), ierr)   ! jsize is amount of data to receive of up to 4 arrays
+     &          p_W, jtg+8, ocean_grid_comm, req(1), ierr)   ! jsize is amount of data to receive of (up to 4 arrays - compute_message_bounds.h)
         comm(1)=1                                            ! p_W   is mpi_rank of sub-domain to the west
       endif                                                  ! jtg   is used to define tile location. No tiling jtg=0
-                                                             ! ocean_grid_comm = MPI_COMM_WORLD is the group of all mpi procs in ROMS run
-      if (EAST_MSG_EXCH) then                                ! req() stores the mpi request handle to later use
-        call MPI_Irecv (recvE, jsize, MPI_DOUBLE_PRECISION,  !       mpi_test to see if it has been completed.
-     &          p_E, jtg+7, ocean_grid_comm, req(2), ierr)
+                                                             !       +8 is the tag which indicates side/corrner message came from.
+      if (EAST_MSG_EXCH) then                                ! ocean_grid_comm = MPI_COMM_WORLD is the group of all mpi procs in ROMS run
+        call MPI_Irecv (recvE, jsize, MPI_DOUBLE_PRECISION,  ! req() stores the mpi request handle to later use
+     &          p_E, jtg+7, ocean_grid_comm, req(2), ierr)   !       mpi_test to see if it has been completed.
         comm(2)=2
       endif
 

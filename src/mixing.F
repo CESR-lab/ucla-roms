@@ -100,31 +100,31 @@
       integer :: itrc
 
 #ifdef UV_VIS2
-      allocate( visc2_r(GLOBAL_2D_ARRAY) )
-      allocate( visc2_p(GLOBAL_2D_ARRAY) )
+      allocate( visc2_r(GLOBAL_2D_ARRAY) ); visc2_r=init
+      allocate( visc2_p(GLOBAL_2D_ARRAY) ); visc2_p=init
 #endif
 #ifdef SOLVE3D
 # ifdef TS_DIF2
-      allocate( diff2(GLOBAL_2D_ARRAY,NT) )
+      allocate( diff2(GLOBAL_2D_ARRAY,NT) ); diff2=init
 # endif
 # ifdef TS_DIF4
-      allocate( diff4(GLOBAL_2D_ARRAY,NT) )
+      allocate( diff4(GLOBAL_2D_ARRAY,NT) ); diff4=init
 # endif
 # ifdef ADV_ISONEUTRAL
-      allocate( diff3u(GLOBAL_2D_ARRAY,N) )
-      allocate( diff3v(GLOBAL_2D_ARRAY,N) )
+      allocate( diff3u(GLOBAL_2D_ARRAY,N) ); diff3u=init
+      allocate( diff3v(GLOBAL_2D_ARRAY,N) ); diff3v=init
 # endif
 
-      allocate( Akv(GLOBAL_2D_ARRAY,0:N) )
+      allocate( Akv(GLOBAL_2D_ARRAY,0:N) ); Akv=init
 # ifdef SALINITY
-      allocate( Akt(GLOBAL_2D_ARRAY,0:N,isalt) )
+      allocate( Akt(GLOBAL_2D_ARRAY,0:N,isalt) ); Akt=init
 # else
-      allocate( Akt(GLOBAL_2D_ARRAY,0:N,itemp) )
+      allocate( Akt(GLOBAL_2D_ARRAY,0:N,itemp) ); Akt=init
 # endif
 # if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
   || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING\
   || defined LMD_BKPP
-      allocate( bvf(GLOBAL_2D_ARRAY,0:N) )
+      allocate( bvf(GLOBAL_2D_ARRAY,0:N) ); bvf=init
 # endif
 
 
@@ -138,10 +138,10 @@
 ! q2l     TKE times turbulent length scale[m^3/s^2] at horizontal
 !                                   RHO- and vertical W-points.
 
-      allocate( Akq(GLOBAL_2D_ARRAY,0:N) )
-      allocate( Lscale(GLOBAL_2D_ARRAY,N) )
-      allocate( q2(GLOBAL_2D_ARRAY,0:N,2) )
-      allocate( q2l(GLOBAL_2D_ARRAY,0:N,2) )
+      allocate( Akq(GLOBAL_2D_ARRAY,0:N) ); Akq=init
+      allocate( Lscale(GLOBAL_2D_ARRAY,N) ); Lscale=init
+      allocate( q2(GLOBAL_2D_ARRAY,0:N,2) ); q2=init
+      allocate( q2l(GLOBAL_2D_ARRAY,0:N,2) ); q2l=init
 #endif /* MY25_MIXING */
 
 ! Large/McWilliams/Doney oceanic planetary boundary layer variables
@@ -152,15 +152,15 @@
 !                                depth z_w [non-dimensional]
 
 # ifdef LMD_KPP
-      allocate( hbls(GLOBAL_2D_ARRAY,2) )
+      allocate( hbls(GLOBAL_2D_ARRAY,2) ); hbls=0.
 
-      allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) )
+      allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) ); swr_frac=init
 #  ifdef LMD_NONLOCAL
-      allocate( ghat(GLOBAL_2D_ARRAY,0:N) )
+      allocate( ghat(GLOBAL_2D_ARRAY,0:N) ); ghat=0.
 #  endif
 # endif /* LMD_KPP */
 # ifdef LMD_BKPP
-      allocate( hbbl(GLOBAL_2D_ARRAY,2) )
+      allocate( hbbl(GLOBAL_2D_ARRAY,2) ); hbbl=0.
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
@@ -201,20 +201,6 @@
         Akt(:,:,:,itrc)=0.
 # endif
       enddo
-
-# if defined LMD_KPP && defined LMD_NONLOCAL
-      ghat=0.
-# endif
-# ifdef LMD_KPP
-! Depth of surface planetary boundary layer.
-
-      hbls=0.
-# endif
-# ifdef LMD_BKPP
-! Thickness of bottom boundary layer.
-
-      hbbl=0.
-# endif
 
       if (wrtavg(indxAkv)) allocate( akv_avg(GLOBAL_2D_ARRAY,0:N) )
       if (wrtavg(indxAkt)) allocate( akt_avg(GLOBAL_2D_ARRAY,0:N) )
