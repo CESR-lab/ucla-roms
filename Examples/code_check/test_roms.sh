@@ -21,8 +21,8 @@ do
   cd ../code_check
   # .in file needs to be in this directory as can't have more than 3 leading periods ../../../ not allowed.
   cp benchmarks/${dir[i]}/${file[i]}_benchmark.in .
-  ./benchmarks/${dir[i]}/do_BM.sh # run roms - output piped to benchmarks/wec/*.log
-  rm ${file[i]}_benchmark.in roms
+  ./benchmarks/${dir[i]}/do_BM.sh # run roms - output piped to benchmarks/${dir[i]}/*_test.log
+  rm ${file[i]}_benchmark.in roms # remove previous example's benchmark
 done
 
 # 2) Python - confirm values:

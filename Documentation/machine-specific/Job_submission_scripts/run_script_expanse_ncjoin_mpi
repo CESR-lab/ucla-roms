@@ -2,7 +2,7 @@
 #SBATCH --job-name="ncj_mpi50"
 
 #       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
-#SBATCH --output="ncjoin_mpi50.%j.%N.out"
+#SBATCH --output="ncjoin_mpi50.%j.%N.log"
 
 #       If using less than 128 cores then the partition is 'shared' 
 #       or 'large-shared' if extra memory is needed (only use if 'shared' failed due to memory error).
