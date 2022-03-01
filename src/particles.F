@@ -769,18 +769,18 @@
       implicit none
 
       ! local
-      integer :: ip,iv,val_mx,ierr
+      integer :: ip,iv,val_mx,ierr,np_old
 
       if (.not.allocated(val)) allocate(val(npmx))
       if (.not.allocated(idx)) allocate(idx(npmx))
       if (.not.allocated(ptmp)) allocate(ptmp(npmx))
 
+      np_old = np
       do ip = 1,np
         idx(ip) = ip
         val(ip) = floor(part(ip,ipx)) + floor(part(ip,ipy))*nx 
      &          + floor(part(ip,ipz))*ny*nx
       enddo
-!     print *,mynode,minval(val(1:np))
 
       val_mx = 2*nx*ny*nz
       call remsort(val,idx,val_mx)
@@ -788,12 +788,11 @@
       call qsort(val,idx,1,np)
 
       do iv = 1,npv                     ! loop over components of particle
-        ptmp = part(1:np,iv)            
+        ptmp(1:np_old) = part(1:np_old,iv)            
         do ip = 1,np
           part(ip,iv) = ptmp(idx(ip))
         enddo
       enddo
-
 
       end subroutine sort_particles !]
 ! ---------------------------------------------------------------------
