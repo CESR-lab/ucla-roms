@@ -76,6 +76,7 @@
       integer ::  npmx ! allocated space for particle array
       integer :: big_number= 100000000      ! added to particles tags 
                                             ! to get unique numbers for all subdomains
+      integer :: n_sur=0,n_bot=0
 
       interface interp
         module procedure  interp_2D, interp_3D
@@ -104,15 +105,10 @@
       ! possibly not every eulerian time-step
       ! or... with sub step (for when working offline)
       call advance_particles
-!     print *, 'max pz: ',maxval(part(1:np,ipz)),mynode
-!     print *, 'min pz: ',minval(part(1:np,ipz)),mynode
-!     print *, 'max px: ',maxval(part(1:np,ipx)),mynode
-!     print *, 'min px: ',minval(part(1:np,ipx)),mynode
-!     print *, 'max py: ',maxval(part(1:np,ipy)),mynode
-!     print *, 'min py: ',minval(part(1:np,ipy)),mynode
 
       call exchange_particles
-      stop
+
+      call seed_bry
 
       call sort_particles
 
@@ -191,6 +187,7 @@
       real,dimension(:),pointer:: px,py,pz
       real,dimension(:),pointer:: dpx,dpy,dpz
       real,dimension(:),pointer:: dpxm,dpym,dpzm
+      integer :: ip
 
       call rhs_particles
 
@@ -215,6 +212,19 @@
        py =  py + 1.5*dpy - 0.5*dpym
        pz =  pz + 1.5*dpz - 0.5*dpzm
 
+       do ip = 1,np
+         if (pz(ip)<0) then
+           pz(ip) = 0.1
+           n_bot = n_bot+1
+!          print *,'advance: ',ip,pz(ip),part(ip,ipw),mynode
+!          stop
+         endif
+         if (pz(ip)>nz) then
+           pz(ip) = nz-0.1
+           n_sur = n_sur+1
+         endif
+       enddo
+
        dpxm = dpx
        dpym = dpy
        dpzm = dpz
@@ -238,7 +248,7 @@
       py => part(:,ipy)
 
       if (obc_west.and.(.not.west_exchng)) then
-        if (.not.allocated(nbp_west)) allocate(nbp_west(0:nx+1))
+        if (.not.allocated(nbp_west)) allocate(nbp_west(0:ny+1))
         nbp_west = 0
         do ip = 1,np
           if (floor(px(ip))==0) then
@@ -246,13 +256,14 @@
           endif
         enddo
         do j=1,ny
+          zw = z_w(1,j,:)
           hvol = h(1,j)/(pm(1,j)*pn(1,j))
-          call seed_particles(hvol,z_w(1,j,:),1,j,nbp_west(j))
+          call seed_particles(hvol,zw,1,j,nbp_west(j))
         enddo
       endif
 
       if (obc_east.and.(.not.east_exchng)) then
-        if (.not.allocated(nbp_east)) allocate(nbp_east(0:nx+1))
+        if (.not.allocated(nbp_east)) allocate(nbp_east(0:ny+1))
         nbp_east = 0
         do ip = 1,np
           if (floor(px(ip))==nx-1) then
@@ -260,13 +271,14 @@
           endif
         enddo
         do j=1,ny
+          zw = z_w(nx,j,:)
           hvol = h(nx,j)/(pm(nx,j)*pn(nx,j))
-          call seed_particles(hvol,z_w(nx,j,:),nx,j,nbp_east(j))
+          call seed_particles(hvol,zw,nx,j,nbp_east(j))
         enddo
       endif
 
       if (obc_south.and.(.not.south_exchng)) then
-        if (.not.allocated(nbp_south)) allocate(nbp_south(0:ny+1))
+        if (.not.allocated(nbp_south)) allocate(nbp_south(0:nx+1))
         nbp_south = 0
         do ip = 1,np
           if (floor(py(ip))==0) then
@@ -274,13 +286,14 @@
           endif
         enddo
         do i=1,nx
+          zw = z_w(i,1,:)
           hvol = h(i,1)/(pm(i,1)*pn(i,1))
-          call seed_particles(hvol,z_w(i,1,:),i,1,nbp_south(i))
+          call seed_particles(hvol,zw,i,1,nbp_south(i))
         enddo
       endif
 
       if (obc_north.and.(.not.north_exchng)) then
-        if (.not.allocated(nbp_north)) allocate(nbp_north(0:ny+1))
+        if (.not.allocated(nbp_north)) allocate(nbp_north(0:nx+1))
         nbp_north = 0
         do ip = 1,np
           if (floor(py(ip))==ny-1) then
@@ -288,8 +301,9 @@
           endif
         enddo
         do i=1,nx
+          zw = z_w(i,ny,:)
           hvol = h(i,ny)/(pm(i,ny)*pn(i,ny))
-          call seed_particles(hvol,z_w(i,ny,:),i,ny,nbp_north(i))
+          call seed_particles(hvol,zw,i,ny,nbp_north(i))
         enddo
       endif
 
@@ -343,10 +357,16 @@
       total_rec  = total_rec +1
       record = record + 1
 
+!     call MPI_barrier (ocean_grid_comm, ierr)
+!     ierr=nf90_close(ncid)
+!     print *,'created file'
+!     stop
+
       ierr=nf90_open(fname,nf90_write,ncid)
       ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
 
       call ncwrite(ncid,'ocean_time',(/time/),(/record/))
+
 
       start = (/1, 1, record/)
       call ncwrite(ncid,'particles',part(1:np,1:7),start)
@@ -359,6 +379,7 @@
      &       'step =', iic-1, 'rec =', record, '/', total_rec
      &        MYID
       endif
+      print *, 'n_sur,n_bot: ',n_sur,n_bot,mynode
 
       end subroutine wrt_particles !]
 !-------------------------------------------------
@@ -388,16 +409,21 @@
       ierr = nf90_put_att(ncid,varid,'units','second' )
 
       call put_global_atts(ncid, ierr)  ! put global attributes in file
+      if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'create_particles_file: ')
 
       dimnames = (/'npart','seven', 'time'/)
-      dimsizes = (/ np,  7,      0/)
+      dimsizes = (/ npmx,  7,      0/)
 
       varid = nccreate(ncid,'particles',dimnames,dimsizes,nf90_float)
+      if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'create_particles_file: ')
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Tag/x/y/z/u/v/w')
       ierr = nf90_enddef(ncid)
 
-      if (mynode==0) print *,'particles :: created new netCDF file: ',fname
+!     if (mynode==0) print *,'particles :: created new netCDF file: ',fname
+      print *,'particles :: created new netCDF file: ',mynode,fname
 
       end subroutine create_particles_file !]
 !-------------------------------------------------
@@ -453,10 +479,10 @@
           zw=  pz(ip)-kw
 
 
-          if (kw<0..or.kw>nz-1) then
-            print *,'kw: ', kw,pz(ip),mynode
-            stop
-          endif
+!         if (kw<0..or.kw>nz-1) then
+!           print *,'kw: ', kw,pz(ip),mynode
+!           stop
+!         endif
 
           if (pz(ip)<nz) then
 !          call interp(pu(ip),u(iu:iu+1,j:j+1,k:k+1,nnew),xu,y,z)
@@ -588,8 +614,6 @@
       enddo
       
       call exchange_data
-      call mpi_barrier(ocean_grid_comm, ierr)
-      stop
 
       ! add nx,ny when receiving from the e,n 
       ! We order this in sw,s,se,w,e,nw,n,ne to match the desired sorting of the particle array
@@ -707,9 +731,12 @@
       real   ,dimension(:)         ,intent(inout) :: val
       integer,dimension(:),optional,intent(inout) :: idx
       !local
-      integer :: nval,i,i2
+      integer :: i,i2,ierr,i3
 
       ! remove big entries
+!     print *, mynode,maxval(val(1:np)),np
+
+      i2 = 0
       do i=1,np
         if (val(i)>val_mx) then
           i2=i
@@ -717,14 +744,24 @@
         endif
       enddo
 
-      do i=i2+1,nval
-        if (val(i)<val_mx) then
-          val(i2) = val(i)
-          if (present(idx)) idx(i2) = idx(i)
-          i2 = i2+1
-        endif
-      enddo
-      np = i2-1
+      if (i2>0) then ! only do this if large val was found
+!       i3 = i2
+!       print *,mynode,i2,val(i2)
+        do i=i2+1,np
+          if (val(i)<val_mx) then
+            val(i2) = val(i)
+            if (present(idx)) idx(i2) = idx(i)
+            i2 = i2+1
+          endif
+        enddo
+        np = i2-1
+!       print *,mynode,i3,val(i3)
+      endif
+
+!     print *, mynode,maxval(val(1:np)),np
+!     call MPI_barrier (ocean_grid_comm, ierr)
+!     stop
+
 
       end subroutine remsort !]
 !------------------------------------------
@@ -732,7 +769,7 @@
       implicit none
 
       ! local
-      integer :: ip,iv,val_mx
+      integer :: ip,iv,val_mx,ierr
 
       if (.not.allocated(val)) allocate(val(npmx))
       if (.not.allocated(idx)) allocate(idx(npmx))
@@ -740,9 +777,10 @@
 
       do ip = 1,np
         idx(ip) = ip
-        val(ip) = floor(part(ip,ipx)) + floor(part(ip,ipy)-1)*nx 
-     &          + floor(part(ip,ipz)-1)*ny*nx
+        val(ip) = floor(part(ip,ipx)) + floor(part(ip,ipy))*nx 
+     &          + floor(part(ip,ipz))*ny*nx
       enddo
+!     print *,mynode,minval(val(1:np))
 
       val_mx = 2*nx*ny*nz
       call remsort(val,idx,val_mx)
@@ -773,26 +811,6 @@
 !      integer :: ipass
 !# endif
       logical :: flag
-      integer :: ssize, wsize, nsize, esize, swsize, sesize, nwsize, nesize    ! size of buffer to send
-
-      ssize = is_s*npv;   wsize = is_w*npv          ! size of buffers to send
-      nsize = is_n*npv;   esize = is_e*npv
-      swsize= is_sw*npv;  sesize= is_se*npv
-      nwsize= is_nw*npv;  nesize= is_ne*npv
-      
-!     if (mynode==0) then
-        print *, 'ssize',ssize,mynode
-        print *, 'nsize',nsize,mynode
-        print *, 'wsize',wsize,mynode
-        print *, 'esize',esize,mynode
-        print *, 'swsize',swsize,mynode
-        print *, 'sesize',sesize,mynode
-        print *, 'nwsize',nwsize,mynode
-        print *, 'nesize',nesize,mynode
-!     endif
-      call MPI_Barrier (ocean_grid_comm, ierr)
-!     stop
-      
 
       ! SEND EVERYTHING:
                      ! tags for receive      for send
@@ -861,7 +879,6 @@
 !      do ipass=0,1
 !        if (mod(inode+ipass,2)==0) then
           if (west_msg_exch) then
-            if (mynode==1) print *, 'sending w: ',wsize, mynode
             call MPI_Isend (sn_w(1:is_w), is_w, MPI_DOUBLE_PRECISION,
      &              p_W, 7, ocean_grid_comm, req(9), ierr)
             comm(9)=9
@@ -929,7 +946,7 @@
         if (comm(i) > 0) mess_count=mess_count+1
       enddo
 
-      if (mess_count>0) print *, mynode, 'mess_count=',mess_count
+!     if (mess_count>0) print *, mynode, 'mess_count=',mess_count
 
       do while (mess_count>0)
         if (comm(1)>0) then
@@ -1006,6 +1023,11 @@
         enddo
 
       enddo !<--  while (mess_count>0)
+
+      if (mynode==0) then
+!       print *, 'node 0, receiving north: ',rv_n(1:rn_n)
+      endif
+!     stop
 
       end subroutine exchange_data  !]
 ! ---------------------------------------------------------------------
