@@ -26,9 +26,9 @@
 
       
       logical :: full_seed = .true.           ! seed with constant density
-      real    :: output_period = 400
+      real   ,parameter :: output_period = 400
       integer :: nrpf = 100
-      real    :: ppm3 = 1e-5          ! target particles per cubic meter
+      real    :: ppm3 = 8e-5          ! target particles per cubic meter
 
       ! end user inputs
 
@@ -71,7 +71,7 @@
 
       integer :: szx,szy,szc   !! size of mpi buffers for particle exchanges
 
-      real                  :: output_time = 0
+      real                  :: output_time = 500 ! produces output at first timestep
       integer               :: total_rec = 0
       integer ::  npmx ! allocated space for particle array
       integer :: big_number= 100000000      ! added to particles tags 
@@ -97,16 +97,23 @@
       subroutine do_particles![
       implicit none
 
-      output_time = output_time + dt
+      !local
+      integer :: ierr
 
-      if (part_first) 
-     &  call init_particles
+      if (part_first) then
+        call init_particles
+        call wrt_particles
+        output_time = 0
+      endif
+
+      output_time = output_time + dt
 
       ! possibly not every eulerian time-step
       ! or... with sub step (for when working offline)
+!     if (mynode==1) print *,'before advance pz(409860): ',part(409860,ipz)
       call advance_particles
 
-      call exchange_particles
+      call exchange_particles ! marks particles as out of domain
 
       call seed_bry
 
@@ -116,7 +123,6 @@
         call wrt_particles
         output_time = 0
       endif
-
 
       end subroutine do_particles !]
 !-------------------------------------------------
@@ -147,7 +153,6 @@
            zw = z_w(i,j,:)
            hvol = h(i,j)/(pm(i,j)*pn(i,j))
            call seed_particles(hvol,zw,i,j)
-!          call seed_particles(hvol,z_w(i,j,:),i,j)
          enddo
         enddo
       else
@@ -189,6 +194,8 @@
       real,dimension(:),pointer:: dpxm,dpym,dpzm
       integer :: ip
 
+!     if (mynode==1) print *,'before rhs pz(409860): ',part(409860,ipz)
+      if (mynode==1) print *,'npmx: ',np,npmx
       call rhs_particles
 
       px   => part(1:np,ipx)
@@ -212,12 +219,13 @@
        py =  py + 1.5*dpy - 0.5*dpym
        pz =  pz + 1.5*dpz - 0.5*dpzm
 
+!      if (mynode==1) print *,'dpy(409860): ',dpy(409860),dpym(409860)
+!      if (mynode==1) print *,'pz(409860): ',part(409860,ipz)
+
        do ip = 1,np
          if (pz(ip)<0) then
            pz(ip) = 0.1
            n_bot = n_bot+1
-!          print *,'advance: ',ip,pz(ip),part(ip,ipw),mynode
-!          stop
          endif
          if (pz(ip)>nz) then
            pz(ip) = nz-0.1
@@ -357,11 +365,6 @@
       total_rec  = total_rec +1
       record = record + 1
 
-!     call MPI_barrier (ocean_grid_comm, ierr)
-!     ierr=nf90_close(ncid)
-!     print *,'created file'
-!     stop
-
       ierr=nf90_open(fname,nf90_write,ncid)
       ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
 
@@ -479,12 +482,19 @@
           zw=  pz(ip)-kw
 
 
-!         if (kw<0..or.kw>nz-1) then
-!           print *,'kw: ', kw,pz(ip),mynode
-!           stop
-!         endif
+          if (px(ip)<-0.5.or.px(ip)>nx+0.5) then
+            print *,'px: ', ip,px(ip),mynode
+            stop
+          endif
+          if (py(ip)<-0.5.or.py(ip)>ny+0.5) then
+            print *,'py: ', ip,py(ip),mynode
+            stop
+          endif
+          if (pz(ip)< 0.0.or.pz(ip)>nz) then
+            print *,'pz: ', ip,pz(ip),mynode
+            stop
+          endif
 
-          if (pz(ip)<nz) then
 !          call interp(pu(ip),u(iu:iu+1,j:j+1,k:k+1,nnew),xu,y,z)
 !          call interp(pv(ip),v(i:i+1,jv:jv+1,k:k+1,nnew),x,yv,z)
 !          call interp(pw(ip),Wp(i:i+1,j:j+1,kw:kw+1),x,y,zw)
@@ -512,11 +522,34 @@
 !         if (terminal_vel) then
 !           prz(ip) = prz(ip) + dt*pwt(ip)
 !         endif
-          endif
+        else
+          prx(ip) = 0.
+          pry(ip) = 0.
+          prz(ip) = 0.
         endif
       enddo
 
+!     if (mynode==1) print *,'pw(409860): ',part(409860,ipw)
+
       end subroutine rhs_particles !]
+!-------------------------------------------------
+       subroutine idealized_flow ![
+       ! 2D Linear interpolation
+       implicit none
+!      import/export
+       real(kind=8)               ,intent(out):: fi
+       real(kind=8),dimension(2,2),intent(in) :: f
+       real(kind=8)               ,intent(in) :: x,y
+!      local
+       real(kind=8),dimension(2,2) :: wt
+
+       wt(1,1) = (1-x)*(1-y);
+       wt(2,1) =    x *(1-y);
+       wt(1,2) = (1-x)*   y ;
+       wt(2,2) =    x *   y ;
+!      print *,'int_lin_2d: ', sum(wt)
+       fi   = sum(f*wt)
+       end subroutine interp_2D !]
 !-------------------------------------------------
        subroutine interp_2D(fi,f,x,y) ![
        ! 2D Linear interpolation
@@ -572,45 +605,65 @@
 
       ! remove nx,ny when sending to e,n
       do ip = 1,np
-        if (part(ip,ipx)>nx.and.east_exchng) then
-          if (part(ip,ipy)>ny.and.north_exchng) then
-            part(ip,ipx) = part(ip,ipx) - nx
-            part(ip,ipy) = part(ip,ipy) - ny
-            sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
-            is_ne = is_ne+npv
-          elseif (part(ip,ipy)<0.and.south_exchng) then
-            part(ip,ipx) = part(ip,ipx) - nx
-            sn_se(is_se+1:is_se+npv) = part(ip,:)
-            is_se = is_se+npv
-          else
-            part(ip,ipx) = part(ip,ipx) - nx
-            sn_e(is_e+1:is_e+npv) = part(ip,:)
-            is_e = is_e+npv
+
+       if (is_n>szx-13.or.is_s>szx-13) then
+         print *, 'is_n/s: ',is_n,is_s,szx
+         stop
+       endif
+       if (is_e>szy-13.or.is_w>szy-13) then
+         print *, 'is_e/w: ',is_e,is_w,szy
+         stop
+       endif
+
+       if (part(ip,ipz)<nz) then
+        if (part(ip,ipx)>nx) then
+          if (east_exchng) then
+            if (part(ip,ipy)>ny.and.north_exchng) then
+              part(ip,ipx) = part(ip,ipx) - nx
+              part(ip,ipy) = part(ip,ipy) - ny
+              sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
+              is_ne = is_ne+npv
+            elseif (part(ip,ipy)<0.and.south_exchng) then
+              part(ip,ipx) = part(ip,ipx) - nx
+              sn_se(is_se+1:is_se+npv) = part(ip,:)
+              is_se = is_se+npv
+            else
+              part(ip,ipx) = part(ip,ipx) - nx
+              sn_e(is_e+1:is_e+npv) = part(ip,:)
+              is_e = is_e+npv
+            endif
           endif
           part(ip,ipz) = 10*nz                   ! indicate particle no longer in domain
-        elseif (part(ip,ipx)< 0.0.and.west_exchng) then
-          if (part(ip,ipy)>ny) then
-            part(ip,ipy) = part(ip,ipy) - ny
-            sn_nw(is_nw+1:is_nw+npv) = part(ip,:)
-            is_nw = is_nw+npv
-          elseif (part(ip,ipy)<0) then
-            sn_sw(is_sw+1:is_sw+npv) = part(ip,:)
-            is_sw = is_sw+npv
-          else
-            sn_w(is_w+1:is_w+npv) = part(ip,:)
-            is_w = is_w+npv
+        elseif (part(ip,ipx)< 0.0) then
+          if (west_exchng) then
+            if (part(ip,ipy)>ny) then
+              part(ip,ipy) = part(ip,ipy) - ny
+              sn_nw(is_nw+1:is_nw+npv) = part(ip,:)
+              is_nw = is_nw+npv
+            elseif (part(ip,ipy)<0) then
+              sn_sw(is_sw+1:is_sw+npv) = part(ip,:)
+              is_sw = is_sw+npv
+            else
+              sn_w(is_w+1:is_w+npv) = part(ip,:)
+              is_w = is_w+npv
+            endif
           endif
           part(ip,ipz) = 10*nz
-        elseif (part(ip,ipy)>ny.and.north_exchng) then            ! corners already accounted for so only if north
-          part(ip,ipy) = part(ip,ipy) - ny
-          sn_n(is_n+1:is_n+npv) = part(ip,:)
-          is_n = is_n+npv
+        elseif (part(ip,ipy)>ny) then              ! corners already accounted for so only if north
+          if (north_exchng) then
+            part(ip,ipy) = part(ip,ipy) - ny
+            sn_n(is_n+1:is_n+npv) = part(ip,:)
+            is_n = is_n+npv
+          endif
           part(ip,ipz) = 10*nz
-        elseif (part(ip,ipy)< 0.0.and.south_exchng) then
-          sn_s(is_s+1:is_s+npv) = part(ip,:)
-          is_s = is_s+npv
+        elseif (part(ip,ipy)< 0.0) then
+          if (south_exchng) then
+            sn_s(is_s+1:is_s+npv) = part(ip,:)
+            is_s = is_s+npv
+          endif
           part(ip,ipz) = 10*nz
         endif
+       endif ! (part(ip,ipz)<nz)
       enddo
       
       call exchange_data
@@ -785,7 +838,7 @@
       val_mx = 2*nx*ny*nz
       call remsort(val,idx,val_mx)
 
-      call qsort(val,idx,1,np)
+!     call qsort(val,idx,1,np)
 
       do iv = 1,npv                     ! loop over components of particle
         ptmp(1:np_old) = part(1:np_old,iv)            
