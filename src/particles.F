@@ -28,7 +28,7 @@
       logical :: full_seed = .true.           ! seed with constant density
       real   ,parameter :: output_period = 400
       integer :: nrpf = 100
-      real    :: ppm3 = 8e-5          ! target particles per cubic meter
+      real    :: ppm3 = 1e-5          ! target particles per cubic meter
 
       ! end user inputs
 
@@ -423,6 +423,9 @@
      &    call handle_ierr(ierr,'create_particles_file: ')
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Tag/x/y/z/u/v/w')
+     
+      ierr=nf90_put_att( ncid, NF90_GLOBAL, 'big_number', big_number )
+     
       ierr = nf90_enddef(ncid)
 
 !     if (mynode==0) print *,'particles :: created new netCDF file: ',fname
@@ -533,23 +536,23 @@
 
       end subroutine rhs_particles !]
 !-------------------------------------------------
-       subroutine idealized_flow ![
-       ! 2D Linear interpolation
-       implicit none
-!      import/export
-       real(kind=8)               ,intent(out):: fi
-       real(kind=8),dimension(2,2),intent(in) :: f
-       real(kind=8)               ,intent(in) :: x,y
-!      local
-       real(kind=8),dimension(2,2) :: wt
+!       subroutine idealized_flow ![
+!       ! 2D Linear interpolation
+!       implicit none
+!!      import/export
+!       real(kind=8)               ,intent(out):: fi
+!       real(kind=8),dimension(2,2),intent(in) :: f
+!       real(kind=8)               ,intent(in) :: x,y
+!!      local
+!       real(kind=8),dimension(2,2) :: wt
 
-       wt(1,1) = (1-x)*(1-y);
-       wt(2,1) =    x *(1-y);
-       wt(1,2) = (1-x)*   y ;
-       wt(2,2) =    x *   y ;
-!      print *,'int_lin_2d: ', sum(wt)
-       fi   = sum(f*wt)
-       end subroutine interp_2D !]
+!       wt(1,1) = (1-x)*(1-y);
+!       wt(2,1) =    x *(1-y);
+!       wt(1,2) = (1-x)*   y ;
+!       wt(2,2) =    x *   y ;
+!!      print *,'int_lin_2d: ', sum(wt)
+!       fi   = sum(f*wt)
+!       end subroutine interp_2D !]
 !-------------------------------------------------
        subroutine interp_2D(fi,f,x,y) ![
        ! 2D Linear interpolation
