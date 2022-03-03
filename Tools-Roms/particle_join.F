@@ -147,14 +147,17 @@ c--#define VERBOSE
         ! - do 1 sub-domain (node) at a time
         ! - read in entire particle array for sub-domain
         ! - parse through all tags of every step, and compile list of contained tags
-        ! - populate one particle array by searching each time record
+        ! - populate one particle (tag) array by searching all time records for tag
         ! - write that one particle, writing continuous time-records where possible.
-        ! - one all tags complete move on to next sub-domain.
+        ! - once all tags complete, move on to next sub-domain.
 
         ! allocate output array - can be reused
-        ! do one particle at a time because otherwise output array is just too big
+        ! do one particle at a time because otherwise output array is just too big (i.e. same as input file)?
         if (allocated(p1_out)) deallocate(p1_out)          ! might not be big enough for next node, reallocate rather
         allocate( p1_out(6,tsize) )                        ! 1 particle
+        start_out=1    ! set default of 1
+        count_out=1    ! set default of 1
+        count_out(1)=6 ! always 1:6 in size
 
         i=2  ! NEW: hard-code particle var id
         do node=0,nnodes-1                                 ! loop over all input sub-domains
@@ -168,35 +171,32 @@ c--#define VERBOSE
           if (allocated(p_in)) deallocate(p_in)            ! array for read in particles. might not be big enough for next node, reallocate rather
           allocate( p_in(npart,7,tsize) )
 
-          ! read in full array (may want to do per t-step for memory efficiency later:
-!          ierr=nf90_inq_varid( ncid(node), 'particles',vid(i,node) )
-!          if(ierr/=0) print *, 'BAD ID', nf90_strerror(ierr), 'node', node
+          ! read in full array (may want to do per t-step for memory efficiency in future):
           ierr=nf90_get_var(ncid(node), vid(i,node), p_in )
           if(ierr/=0) print *, 'BAD READ', nf90_strerror(ierr), 'node', node
 !          print *, 'p_in(1,:,1)=',p_in(1,:,2)
 !          print *, 'p_in(npart-10,:,1)=',p_in(npart-10,:,2)  ! hoping for nan or fill, yes = E+36!
-!          stop 'STOPPED'
 
-          ! find ptag's contained in node
+          ! find ptag's contained in node:
           if (allocated(ptags_in)) deallocate(ptags_in)       ! array of ptags contained in node
           allocate( ptags_in(npart) )
           cnt_ptag=0                                          ! set ptag counter
           do rec=1,tsize
             do p=1,npart
 !              print *, 'p_in(p,1,rec)=',p_in(p,1,rec)
-              if (p_in(p,1,rec) < 1.0e30) then                ! valid tag (indx 1) - less than fill value
-                found_tag=.false.                             ! only reset if valid tag
-                if (cnt_ptag > 0) then                        ! first tag so no checking for conflict required                                         ! check if haven't found tag before (unique)
+              if (p_in(p,1,rec) < 1.0e30) then                ! valid tag (indx 1) < less than fill value
+                found_tag=.false.                             ! reset
+                if (cnt_ptag > 0) then                        ! first tag so no checking for pre-existing required                                         ! check if haven't found tag before (unique)
                   do it=1,cnt_ptag
-                    if (ptags_in(it) == p_in(p,1,rec)) then   ! found it - go on to next particle
+                    if (ptags_in(it) == p_in(p,1,rec)) then   ! already exists - go on to next particle
 !                      print *, 'found particle - cycle to next'
-                      found_tag = .true.                       ! need flag to cycle p loop
+                      found_tag = .true.                      ! need flag to cycle p loop
                       cycle
                     endif
                   enddo
-                  if (found_tag) cycle
+                  if (found_tag) cycle                        ! go to next particle
                 endif
-                cnt_ptag=cnt_ptag+1                           ! haven't found - we have a new particle
+                cnt_ptag=cnt_ptag+1                           ! haven't found it before - we have a new particle
 !                print *, 'counting new! cnt_ptag=',cnt_ptag
                 ptags_in(cnt_ptag) = p_in(p,1,rec)            ! store new particle tag in list of known particles
               else
@@ -209,40 +209,62 @@ c--#define VERBOSE
 !          stop 'stopped'
 
 
-          ! output ptag records (doing continguous times in one go for efficiency of write calls (assumed bottle neck) )
-          do tag=1,cnt_ptag                 ! all unique tags
-            p1_out = -1e20                  ! catch non-continuous times
-            do rec=1,tsize
-              do p=1,npart
-                if(p_in(p,1,rec) < 1.0e20) then               ! valid tag - less than fill value
+          ! output ptag records:
+          ! (doing continguous times in one go for efficiency of write calls (assumed bottle neck) )
+          do tag=1,cnt_ptag                                   ! all unique tags
 
+            p1_out = no_rec_val                               ! catch value for non-continuous times (could improve this)
+            print *, 'copying times for tag=',ptags_in(tag)
+            do rec=1,tsize
+              print *,' rec=',rec
+              do p=1,npart
+
+                if(p_in(p,1,rec) < 1.0e20) then               ! valid tag - less than fill value
                   if (p_in(p,1,rec) == ptags_in(tag)) then
+                    print *,'  copy tag=',p_in(p,1,rec),' at index p=',p
                     p1_out(:,rec) = p_in(p,2:7,rec)           ! store 6 details of particle
-                    exit                                      ! next time record as partilce found
+                    exit                                      ! next time record as particle found
                   endif
-                else
-                  exit                                        ! extent of particles for this record, particle not present in this timestep
-                endif                                         ! exit particle loop to next record?
+                else                                          ! beyond range of particles for this record, particle not present in this timestep
+                  print *,'   exiting to next rec_time!'      ! exit particle loop to next record?
+                  exit
+                endif
 
               enddo  ! nparts
             enddo    ! recs
 
             ! need to write tag - loop through concurrent times to reduce writes:
+            print *,' writing particle:'
             cnt_rec=0
             do rec=1,tsize
-              if (p1_out(1,rec) /= -1e20) then
+
+              if (p1_out(1,rec) /= no_rec_val) then             ! no record value
                 if (cnt_rec==0) rec_str=rec
                 cnt_rec=cnt_rec+1
-              else
-                if (cnt_rec>0) then                      ! catch incase nothing found yet
-!                  start_out =  ! set this up
-!                  count_out =  ! set this up
-                  ierr=nf90_put_var(nctarg, varid(i), p1_out(:,rec_str:rec-1), start_out, count_out)
-                  if(ierr/=nf90_noerr) print *, 'BAD WRITE!', nf90_strerror(ierr),'my_rank', my_rank
-                  cnt_rec=0
-                endif
+                print *,' - contains time! rec =',rec
               endif
-            enddo
+              ! CURRENTLY BUGGY IF CONTINUOUS TO END. MUST FIX.
+              if (cnt_rec>0 .and. (p1_out(1,rec) == no_rec_val .or. rec==tsize) ) then  ! catch incase nothing found yet
+
+                start_out(2) = ptags_in(tag) ! global tag number. start_out(1) = 1:6 index, i.e. always 1
+                start_out(3) = rec_str
+                count_out(3) = cnt_rec       ! continous timestep count
+
+                print *, '  cnt_rec=',cnt_rec,'rec_str=',rec_str
+                print *, '  rec_str+cnt_rec-1=',rec_str+cnt_rec-1
+                print *, '  -- start write...'
+
+                ierr=nf90_put_var(nctarg, varid(i), p1_out(:,rec_str:rec_str+cnt_rec-1), ! -1 typical for count
+     &                            start_out(1:3), count_out(1:3))
+                if(ierr/=nf90_noerr) print *, 'BAD WRITE!', nf90_strerror(ierr),'my_rank', my_rank
+                cnt_rec=0                    ! reset count
+
+                print *,'   --- finished write!'
+
+              endif
+
+            enddo    ! recs
+
           enddo      ! tags
 
         enddo  !<-- nodes

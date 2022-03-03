@@ -155,6 +155,17 @@ c--#define MPIVERBOSE
 # endif
 #endif
 
+      ! PARTICLES:
+      integer :: p, it, cnt_ptag, tag, cnt_rec, rec_str
+      integer :: big_number
+      integer :: npart                               ! number of particles in read in node
+      real,allocatable,dimension(:,:,:) :: p_in      ! particles read in from 1 node. May change to one timestep
+      real,allocatable,dimension(:,:)   :: p1_out    ! output one particle at a time, but all records, for fewer writes
+      real,allocatable,dimension(:)     :: ptags_in  ! list of ptag contained in node
+      logical :: found_tag
+      real    :: no_rec_val = -1.0e-20
+
+
       !]
 
       contains
@@ -284,8 +295,8 @@ c--#define MPIVERBOSE
                   nnodes=ibuff(2)
                   if (nnodes.gt.maxnodes) then
                     maxnodes=nnodes
-                    if (allocated(ncid)) then
-                      deallocate(dimsize)
+                    if (allocated(ncid)) then              ! for join_child_bry this is likely allocating
+                      deallocate(dimsize)                  ! a lot of unused variables? Would need to check.
                       deallocate(vid)
                       deallocate(northern_edge)
                       deallocate(southern_edge)
@@ -2210,7 +2221,7 @@ c**           endif
         error stop
       endif
 
-      end subroutine cbry_check_args
+      end subroutine cbry_check_args  !]
 
 ! ----------------------------------------------------------------------
       subroutine cbry_determine_global_dims      ![
@@ -2613,6 +2624,90 @@ c**           endif
 !      ! check first variable is called ocean_time
 !
 !      end subroutine cbry_read_write_ocean_time  !]
+
+! ----------------------------------------------------------------------
+! PARTICLE_JOIN ROUTINES:
+! ----------------------------------------------------------------------
+      subroutine particle_check_args  ![
+
+      ! Ensure reasonable number of arguements used,
+      ! if not give usage instructions.
+
+      implicit none
+
+      if(nargs < 4) then                                               ! too few program arguments
+        write(*,'(/1x,A//10x,A)') 'Correct usage of particle_join:',
+     &    'particle_join      sample_part.00000.*.nc'
+        write(*,'(1x,A/10x,A/)') 'or',
+     &    'particle_join  -d  sample_part.00000.*.nc'
+        write (*,'(/1x,A//1x,A/1x,A/)')
+     &    'where -d deletes the partial files.',
+     &    'This tool joins partial files of particle tracking',
+     &    'result files created by a ROMS simulation.'
+
+        error stop
+      endif
+
+      end subroutine particle_check_args  !]
+
+! ----------------------------------------------------------------------
+
+      subroutine particle_create_joined_file  ![
+      implicit none  ! create joined child bry file
+
+      call create_joined_empty_file
+      if(mayday) return
+
+      call copy_global_attributes
+      if(mayday) return
+
+      ! Define dimensions
+      ! input file dimnames are different from output names. E.g. xi_rho_south in input
+      ! and just xi_rho in output file. Therefore cannot use ncjoin method of dimname(i)(1:lvar)
+
+      tsize=dimsize(unlimdimid,0)  ! set here as set to 0 somewhere else for unlim size, but we don't want that
+!      print *, 'time size = ', dimsize(unlimdimid,0)
+
+      ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'big_number', big_number)
+      print *, 'big_number=',big_number
+      big_number = big_number / 1e3
+      print *, ' DEBUG TEST new big_number=',big_number  ! goes much faster but method needs fixing!
+
+      ierr=nf90_def_dim (nctarg, 'six',  6,                   dimid(1))
+      ierr=nf90_def_dim (nctarg, 'ptag', big_number * nnodes, dimid(2))
+
+      ! normally time is unlimited dimension (size=0 here),
+      ! but we will write out of sequence so need known time dimension size
+      ierr=nf90_def_dim (nctarg, 'time', tsize,               dimid(3))  ! dimsize(unlimdimid,0) = time recs
+
+      ! Define variables & atts
+
+      ierr=nf90_def_var (nctarg, 'ocean_time',NF90_DOUBLE, dimid(3),   varid(1),   ! varid(1) since only 1 variable
+     &                   deflate_level=deflate_level, shuffle=shuffle)
+
+      ierr=nf90_def_var (nctarg, 'particles', NF90_FLOAT,  dimid(1:3), varid(2),   ! varid(1) since only 1 variable
+     &                   deflate_level=deflate_level, shuffle=shuffle)
+
+      ! Leave definition mode
+
+!      ierr=nf90_close(ncid(0)) ! close last input file. completed master only reads
+!      ncid(0)=-1
+
+      ierr=nf_enddef (nctarg)
+!      ierr=nf90_close(nctarg)  ! no need to close since serial
+
+# ifdef VERBOSE
+      if(my_rank==0) write(*,'(/1x,A)') 'Leaving definition mode.'
+# endif
+
+#ifdef TIMING
+      nclk=3-nclk
+      call system_clock (iclk(nclk), clk_rate,clk_max)
+      inc_clk=iclk(nclk)-iclk(3-nclk)
+      net_fcrt_clk=net_fcrt_clk+inc_clk  ! Timing for file creation
+#endif
+
+      end subroutine particle_create_joined_file  !]
 
 ! ----------------------------------------------------------------------
 
