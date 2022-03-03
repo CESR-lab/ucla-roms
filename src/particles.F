@@ -30,7 +30,7 @@
       integer :: nrpf = 100
 !     real    :: ppm3 = 8e-5          ! target particles per cubic meter
       real    :: ppm3 = 1e-6          ! target particles per cubic meter
-      integer :: pmin ! minimum of allocated space for particle array
+      integer :: pmin = 200 ! minimum of allocated space for particle array
 
       ! end user inputs
 
