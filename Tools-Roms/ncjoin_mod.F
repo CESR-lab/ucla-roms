@@ -2210,7 +2210,7 @@ c**           endif
         error stop
       endif
 
-      end subroutine cbry_check_args
+      end subroutine cbry_check_args !]
 
 ! ----------------------------------------------------------------------
       subroutine cbry_determine_global_dims      ![
@@ -2226,7 +2226,7 @@ c**           endif
       ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'global_south_size', global_south_bry_size)
       ierr=nf90_get_att(ncid(0), NF90_GLOBAL, 'global_west_size', global_west_bry_size)
 
-      ierr=nf90_inq_dimid( ncid(0), 's_rho', dimid)  ! get s_rho veritcal levels
+      ierr=nf90_inq_dimid( ncid(0), 's_rho', dimid)  ! get s_rho vertical levels
       ierr=nf90_inquire_dimension(ncid(0), dimid, len=s_rho)
 
       end subroutine cbry_determine_global_dims  !]
@@ -2285,7 +2285,7 @@ c**           endif
 ! ----------------------------------------------------------------------
       subroutine cbry_read_write  ![
       ! due to cbry_find_relevant_parent routine, we know this
-      ! variable is contained in parent and msut be written
+      ! variable is contained in parent and must be written
       implicit none
 
 # ifdef TIMING
