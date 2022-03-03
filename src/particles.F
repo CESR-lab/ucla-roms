@@ -126,7 +126,7 @@
 
       call exchange_particles ! marks particles as out of domain
 
-      call seed_bry
+      if (full_seed) call seed_bry
 
       call sort_particles
 
