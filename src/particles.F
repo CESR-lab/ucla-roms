@@ -25,10 +25,12 @@
       real    :: exchange_facc = 0.01    ! maximum number of particles for transfer in corners    
 
       
-      logical :: full_seed = .true.           ! seed with constant density
+      logical :: full_seed = .false.           ! seed with constant density
       real   ,parameter :: output_period = 400
       integer :: nrpf = 100
-      real    :: ppm3 = 8e-5          ! target particles per cubic meter
+!     real    :: ppm3 = 8e-5          ! target particles per cubic meter
+      real    :: ppm3 = 1e-6          ! target particles per cubic meter
+      integer :: pmin ! minimum of allocated space for particle array
 
       ! end user inputs
 
@@ -102,6 +104,13 @@
 
       if (part_first) then
         call init_particles
+!       if (mynode==3) then
+!         print *,'npmx:   ',np,npmx
+!         print *,'maxmin: ',maxval(part(1:np,1:7)),minval(part(1:np,1:7)),mynode
+!       endif
+!       call MPI_barrier (ocean_grid_comm, ierr)
+!       stop
+
         call wrt_particles
         output_time = 0
       endif
@@ -110,7 +119,9 @@
 
       ! possibly not every eulerian time-step
       ! or... with sub step (for when working offline)
-!     if (mynode==1) print *,'before advance pz(409860): ',part(409860,ipz)
+
+      call idealized_flow
+
       call advance_particles
 
       call exchange_particles ! marks particles as out of domain
@@ -144,6 +155,7 @@
         dy_mn= 1./(sum(pn(1:nx,1:ny))/(nx*ny))
         np = h_mn*dx_mn*dy_mn*ppm3*nx*ny
         npmx = np*extra_space_fac
+        npmx = max(npmx,pmin)
         allocate(part(npmx,npv))
 !       print *,'Seeding ',np,' particles ',mynode
 
@@ -169,9 +181,12 @@
         part(1:np,4) = part(1:np,4)*nz
       endif
 
-      ! Tag the particles
+      ! Tag the particles and set velocities to zero
       do ip = 1,np 
           part(ip,itag) = ip + big_number*mynode
+          part(ip,ipu) = 0.
+          part(ip,ipv) = 0.
+          part(ip,ipw) = 0.
       enddo
       ntag = np
       
@@ -194,8 +209,9 @@
       real,dimension(:),pointer:: dpxm,dpym,dpzm
       integer :: ip
 
-!     if (mynode==1) print *,'before rhs pz(409860): ',part(409860,ipz)
-      if (mynode==1) print *,'npmx: ',np,npmx
+!     if (mynode==5) then
+!       print *,'before rhs, px: ',px(30)
+!     endif
       call rhs_particles
 
       px   => part(1:np,ipx)
@@ -218,9 +234,6 @@
        px =  px + 1.5*dpx - 0.5*dpxm
        py =  py + 1.5*dpy - 0.5*dpym
        pz =  pz + 1.5*dpz - 0.5*dpzm
-
-!      if (mynode==1) print *,'dpy(409860): ',dpy(409860),dpym(409860)
-!      if (mynode==1) print *,'pz(409860): ',part(409860,ipz)
 
        do ip = 1,np
          if (pz(ip)<0) then
@@ -371,8 +384,11 @@
       call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
 
-      start = (/1, 1, record/)
-      call ncwrite(ncid,'particles',part(1:np,1:7),start)
+      if (np>0) then
+        start = (/1, 1, record/)
+!       print *,'maxmin: ',maxval(part(1:np,1:7)),minval(part(1:np,1:7)),mynode
+        call ncwrite(ncid,'particles',part(1:np,1:7),start)
+      endif
 
       ierr=nf90_close(ncid)
 
@@ -534,22 +550,33 @@
       end subroutine rhs_particles !]
 !-------------------------------------------------
        subroutine idealized_flow ![
-       ! 2D Linear interpolation
+       ! Idealized flow for particle testing
        implicit none
 !      import/export
-       real(kind=8)               ,intent(out):: fi
-       real(kind=8),dimension(2,2),intent(in) :: f
-       real(kind=8)               ,intent(in) :: x,y
 !      local
-       real(kind=8),dimension(2,2) :: wt
+       integer :: i,j,k
+       integer :: z
 
-       wt(1,1) = (1-x)*(1-y);
-       wt(2,1) =    x *(1-y);
-       wt(1,2) = (1-x)*   y ;
-       wt(2,2) =    x *   y ;
-!      print *,'int_lin_2d: ', sum(wt)
-       fi   = sum(f*wt)
-       end subroutine interp_2D !]
+       if (mynode<3) then
+         do k = 1,nz
+          do j = 1,ny
+           do i = 1,nx
+             z = z_r(i,j,k)
+             u(i,j,k,nnew) = 0.1*(tanh(0.5*(z+30))+1)
+             v(i,j,k,nnew) = 0.
+           enddo
+          enddo
+         enddo
+       else
+         u = 0;
+         v = 0;
+       endif
+       call exchange_2_tile (1,nx,1,ny,
+     &                       u(START_2D_ARRAY,1,nnew), N,
+     &                       v(START_2D_ARRAY,1,nnew), N)
+       call omega(0)
+
+       end subroutine idealized_flow !]
 !-------------------------------------------------
        subroutine interp_2D(fi,f,x,y) ![
        ! 2D Linear interpolation
@@ -623,6 +650,11 @@
               part(ip,ipy) = part(ip,ipy) - ny
               sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
               is_ne = is_ne+npv
+!             if (mynode==1) then
+!               print *,'part: ', ip,part(ip,1:7)
+!               print *,'sn_ne: ', is_ne,mynode
+!               print *,sn_ne(1:is_ne)
+!             endif
             elseif (part(ip,ipy)<0.and.south_exchng) then
               part(ip,ipx) = part(ip,ipx) - nx
               sn_se(is_se+1:is_se+npv) = part(ip,:)
@@ -678,6 +710,8 @@
           enddo
         enddo
         np = np+rn_sw
+!       if (mynode==1) print *,'rn_sw: ',rn_sw
+!       if (mynode==5) print *,'rv_sw: ',rv_sw(1:rn_sw*npv)
       endif
 
       if (rn_s>0) then
@@ -688,6 +722,7 @@
           enddo
         enddo
         np = np+rn_s
+!       if (mynode==1) print *,'rn_s: ',rn_s
       endif
 
       if (rn_se>0) then
@@ -699,16 +734,19 @@
           part(np+ip,ipx) = part(np+ip,ipx)+nx
         enddo
         np = np+rn_se
+!       if (mynode==1) print *,'rn_se: ',rn_se
       endif
 
       if (rn_w>0) then
         rn_w = rn_w/npv 
-        do ip = 1,rn_s
+        do ip = 1,rn_w
           do i = 1,npv
             part(np+ip,i) = rv_w(i+(ip-1)*npv)
           enddo
         enddo
         np = np+rn_w
+!       if (mynode==1) print *,'rn_w: ',rn_w,np
+!       if (mynode==1) print *,'rv_w: ',rv_w(1:rn_w*npv)
       endif
 
       if (rn_e>0) then
@@ -720,6 +758,7 @@
           part(np+ip,ipx) = part(np+ip,ipx)+nx
         enddo
         np = np+rn_e
+!       if (mynode==1) print *,'rn_e: ',rn_e
       endif
 
       if (rn_nw>0) then
@@ -731,6 +770,7 @@
           part(np+ip,ipy) = part(np+ip,ipy)+ny
         enddo
         np = np+rn_nw
+!       if (mynode==1) print *,'rn_nw: ',rn_nw
       endif
 
       if (rn_n>0) then
@@ -742,6 +782,7 @@
           part(np+ip,ipy) = part(np+ip,ipy)+ny
         enddo
         np = np+rn_n
+!       if (mynode==1) print *,'rn_n: ',rn_n
       endif
 
       if (rn_ne>0) then
@@ -754,7 +795,13 @@
           part(np+ip,ipy) = part(np+ip,ipy)+ny
         enddo
         np = np+rn_ne
+!       if (mynode==1) print *,'rn_ne: ',rn_ne
       endif
+
+!     if (mynode==1) then
+!       print *,'exch: ', np,part(np,ipx)
+!       if (part(np,ipx)> 100) stop
+!     endif
 
       end subroutine exchange_particles !]
 !------------------------------------------
@@ -1089,9 +1136,9 @@
       ! Assume max particle transfer is proportional to length of boundary
       ! and number of particles in the sub domain
 
-      szx = exchange_facx*np*npv+1  ! N/S border   - as a % of number of particles
-      szy = exchange_facy*np*npv+1  ! E/W border
-      szc = exchange_facc*np*npv+1  ! corners
+      szx = exchange_facx*npmx*npv  ! N/S border   - as a % of number of particles
+      szy = exchange_facy*npmx*npv  ! E/W border
+      szc = exchange_facc*npmx*npv  ! corners
       
 
       allocate(sn_nw(szc),sn_n(szx),sn_ne(szc), 
