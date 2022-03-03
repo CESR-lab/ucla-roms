@@ -439,6 +439,9 @@
      &    call handle_ierr(ierr,'create_particles_file: ')
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Tag/x/y/z/u/v/w')
+     
+      ierr=nf90_put_att( ncid, NF90_GLOBAL, 'big_number', big_number )
+     
       ierr = nf90_enddef(ncid)
 
 !     if (mynode==0) print *,'particles :: created new netCDF file: ',fname
