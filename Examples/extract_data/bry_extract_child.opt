@@ -1,0 +1,13 @@
+
+      ! ****************************************************************
+      ! USER INPUTS
+      integer            :: rec_rate      = 2                                            ! output record rate for interpolated child boundaries
+      integer            :: recs_per_file = 2                                            ! total recs per output file
+      integer, parameter :: nc_grds       = 2                                            ! number of child grids required
+      character(len=50)  :: c_bry_files(nc_grds) = (/ 'cgrd_input/sample_child_ij_bry.nc',
+     &                                                'cgrd_input/sample_child_ij_bry_2nd.nc' /)    ! child boundary input file
+      character(len=60)  :: file_names(nc_grds)  = (/ '_child_bry.nc',
+     &                                                '_child_bry_2.nc' /)               ! suffix to append to simulation output rootname
+      logical, parameter :: prs_flx_bry = .true.                                         ! prs_flx u'p'/v'p' output included (used with diagnostics module)
+      ! END USER INPUTS
+      ! ****************************************************************
