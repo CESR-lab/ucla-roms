@@ -142,7 +142,9 @@
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite: '/ /vname)
+      endif
 
       end subroutine ncwrite_2D
 
@@ -211,12 +213,16 @@
         ierr = nf90_inq_dimid(ncid,dimname(i),did)
         if (ierr.ne.nf90_noerr) then
           ierr=nf90_def_dim(ncid,dimname(i),dimsize(i),did)
+          if (ierr/=nf90_noerr) call handle_err(ierr)
         endif
         dimid(i) = did
       enddo
       ! Add compression and shuffle
       ierr=nf90_def_var(ncid,varname,vartype,dimid,varid)
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=nf90_noerr) then
+        print *,'ERROR creating: ',varname
+        call handle_err(ierr)
+      endif
 
       nccreate = varid
 

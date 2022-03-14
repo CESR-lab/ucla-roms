@@ -12,6 +12,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use hidden_mpi_vars
 
       implicit none
       private
@@ -25,7 +26,7 @@
       real    :: exchange_facc = 0.01    ! maximum number of particles for transfer in corners    
 
       
-      logical :: full_seed = .false.           ! seed with constant density
+      logical :: full_seed = .true.           ! seed with constant density
       real   ,parameter :: output_period = 400
       integer :: nrpf = 100
 !     real    :: ppm3 = 8e-5          ! target particles per cubic meter
@@ -76,7 +77,7 @@
       real                  :: output_time = 500 ! produces output at first timestep
       integer               :: total_rec = 0
       integer ::  npmx ! allocated space for particle array
-      integer :: big_number= 100000000      ! added to particles tags 
+      integer :: big_number= 10000000      ! added to particles tags 
                                             ! to get unique numbers for all subdomains
       integer :: n_sur=0,n_bot=0
 
@@ -100,17 +101,10 @@
       implicit none
 
       !local
-      integer :: ierr
+      integer :: ierr,ip
 
       if (part_first) then
         call init_particles
-!       if (mynode==3) then
-!         print *,'npmx:   ',np,npmx
-!         print *,'maxmin: ',maxval(part(1:np,1:7)),minval(part(1:np,1:7)),mynode
-!       endif
-!       call MPI_barrier (ocean_grid_comm, ierr)
-!       stop
-
         call wrt_particles
         output_time = 0
       endif
@@ -224,7 +218,7 @@
       dpym => part(1:np,iprym)
       dpzm => part(1:np,iprzm)
 
-      if (part_first) then
+      if (part_first) then !!! but some particles are birthed later
         part_first = .false.
         dpxm = dpx
         dpym = dpy
@@ -258,7 +252,7 @@
       implicit none
 
       !local
-      integer :: i,j,ip
+      integer :: i,j,ip,np_old,ntag_old
       real    :: hvol
       real,dimension(:),pointer:: px,py
 
@@ -268,7 +262,9 @@
       px => part(:,ipx)
       py => part(:,ipy)
 
-      if (obc_west.and.(.not.west_exchng)) then
+      np_old = np
+
+      if (obc_west.and.(.not.west_msg_exch)) then
         if (.not.allocated(nbp_west)) allocate(nbp_west(0:ny+1))
         nbp_west = 0
         do ip = 1,np
@@ -283,7 +279,7 @@
         enddo
       endif
 
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.(.not.east_msg_exch)) then
         if (.not.allocated(nbp_east)) allocate(nbp_east(0:ny+1))
         nbp_east = 0
         do ip = 1,np
@@ -298,7 +294,7 @@
         enddo
       endif
 
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.(.not.south_msg_exch)) then
         if (.not.allocated(nbp_south)) allocate(nbp_south(0:nx+1))
         nbp_south = 0
         do ip = 1,np
@@ -313,7 +309,7 @@
         enddo
       endif
 
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.(.not.north_msg_exch)) then
         if (.not.allocated(nbp_north)) allocate(nbp_north(0:nx+1))
         nbp_north = 0
         do ip = 1,np
@@ -327,6 +323,15 @@
           call seed_particles(hvol,zw,i,ny,nbp_north(i))
         enddo
       endif
+      
+      do ip = np_old+1,np
+        part(ip,itag) = ip + ntag-np_old + big_number*mynode
+        ! first time step with these particles will be off by 1.5 for AB2
+        part(ip,iprxm) = 0
+        part(ip,iprym) = 0
+        part(ip,iprzm) = 0
+      enddo
+      ntag = ntag + np-np_old
 
       end subroutine seed_bry !]
 !-------------------------------------------------
@@ -398,7 +403,7 @@
      &       'step =', iic-1, 'rec =', record, '/', total_rec
      &        MYID
       endif
-      print *, 'n_sur,n_bot: ',n_sur,n_bot,mynode
+!     print *, 'n_sur,n_bot: ',n_sur,n_bot,mynode
 
       end subroutine wrt_particles !]
 !-------------------------------------------------
@@ -434,7 +439,7 @@
       dimnames = (/'npart','seven', 'time'/)
       dimsizes = (/ npmx,  7,      0/)
 
-      varid = nccreate(ncid,'particles',dimnames,dimsizes,nf90_float)
+      varid = nccreate(ncid,'particles',dimnames,dimsizes,nf90_double)
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'create_particles_file: ')
       ierr = nf90_put_att(ncid,varid,'long_name'
@@ -473,15 +478,13 @@
       pry => part(1:np,ipry)
       prz => part(1:np,iprz)
 
-      do k=0,nz
-        Wp(:,:,k) = (We(0:nx+1,0:ny+1,k)+Wi(0:nx+1,0:ny+1,k))
-     &                *pm(0:nx+1,0:ny+1)*pn(0:nx+1,0:ny+1)
-      enddo
+!     do k=0,nz
+!       Wp(:,:,k) = (We(0:nx+1,0:ny+1,k)+Wi(0:nx+1,0:ny+1,k))
+!    &                *pm(0:nx+1,0:ny+1)*pn(0:nx+1,0:ny+1)
+!     enddo
       ! first data at first rho-point, assume no gradient below that
       do ip = 1,np
         if (pz(ip)< 2*nz) then
-
-!         pz(ip) = min(pz(ip),nz-0.1)
 
           i = floor(px(ip)+0.5)
           j = floor(py(ip)+0.5)
@@ -491,7 +494,6 @@
           iu= floor(px(ip)+1.0)
           jv= floor(py(ip)+1.0)
           kw= floor(pz(ip))
-!         kw= min(kw,nz-1)
 
           x =  px(ip)-i +0.5
           y =  py(ip)-j +0.5
@@ -552,34 +554,51 @@
 
       end subroutine rhs_particles !]
 !-------------------------------------------------
-       subroutine idealized_flow ![
-       ! Idealized flow for particle testing
-       implicit none
-!      import/export
-!      local
-       integer :: i,j,k
-       integer :: z
+      subroutine idealized_flow ![
+      ! Idealized flow for particle testing
+      implicit none
+!     import/export
+!     local
+      integer :: i,j,k
+      integer :: z
 
-       if (mynode<3) then
-         do k = 1,nz
-          do j = 1,ny
-           do i = 1,nx
-             z = z_r(i,j,k)
-             u(i,j,k,nnew) = 0.1*(tanh(0.5*(z+30))+1)
-             v(i,j,k,nnew) = 0.
-           enddo
+      if (mynode<3) then
+        do k = 1,nz
+         do j = -1,ny+2
+          do i = -1,nx+2
+            z = z_r(i,j,k)
+            u(i,j,k,:) = 0.1*(tanh(0.5*(z+30))+1)
+            v(i,j,k,:) = 0.
           enddo
          enddo
-       else
-         u = 0;
-         v = 0;
-       endif
-       call exchange_2_tile (1,nx,1,ny,
-     &                       u(START_2D_ARRAY,1,nnew), N,
-     &                       v(START_2D_ARRAY,1,nnew), N)
-       call omega(0)
+        enddo
+      else
+        u = 0;
+        v = 0;
+      endif
 
-       end subroutine idealized_flow !]
+      do k = 1,nz
+       do j = -1,ny+2
+        do i = -1,nx+2
+         FlxU(i,j,k) = 0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)*u(i,j,k,1)
+         FlxV(i,j,k) = 0.5*(Hz(i,j,k)+Hz(i,j-1,k))*dm_v(i,j)*v(i,j,k,1)
+        enddo
+       enddo
+      enddo
+      Wp(:,:,0) = 0
+      do k = 1,nz
+        do j = 0,ny+1
+         do i = 0,nx+1
+           Wp(i,j,k) = Wp(i,j,k-1)-FlxU(i+1,j,k)+FlxU(i,j,k)
+     &                            -FlxV(i,j+1,k)+FlxV(i,j,k)
+         enddo
+        enddo
+      enddo
+      do k = 1,nz
+         Wp(:,:,k) = Wp(:,:,k)*pm(0:nx+1,0:ny+1)*pn(0:nx+1,0:ny+1)
+      enddo
+
+      end subroutine idealized_flow !]
 !-------------------------------------------------
        subroutine interp_2D(fi,f,x,y) ![
        ! 2D Linear interpolation
@@ -647,18 +666,13 @@
 
        if (part(ip,ipz)<nz) then
         if (part(ip,ipx)>nx) then
-          if (east_exchng) then
-            if (part(ip,ipy)>ny.and.north_exchng) then
+          if (east_msg_exch) then
+            if (part(ip,ipy)>ny.and.north_msg_exch) then
               part(ip,ipx) = part(ip,ipx) - nx
               part(ip,ipy) = part(ip,ipy) - ny
               sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
               is_ne = is_ne+npv
-!             if (mynode==1) then
-!               print *,'part: ', ip,part(ip,1:7)
-!               print *,'sn_ne: ', is_ne,mynode
-!               print *,sn_ne(1:is_ne)
-!             endif
-            elseif (part(ip,ipy)<0.and.south_exchng) then
+            elseif (part(ip,ipy)<0.and.south_msg_exch) then
               part(ip,ipx) = part(ip,ipx) - nx
               sn_se(is_se+1:is_se+npv) = part(ip,:)
               is_se = is_se+npv
@@ -670,7 +684,7 @@
           endif
           part(ip,ipz) = 10*nz                   ! indicate particle no longer in domain
         elseif (part(ip,ipx)< 0.0) then
-          if (west_exchng) then
+          if (west_msg_exch) then
             if (part(ip,ipy)>ny) then
               part(ip,ipy) = part(ip,ipy) - ny
               sn_nw(is_nw+1:is_nw+npv) = part(ip,:)
@@ -685,14 +699,14 @@
           endif
           part(ip,ipz) = 10*nz
         elseif (part(ip,ipy)>ny) then              ! corners already accounted for so only if north
-          if (north_exchng) then
+          if (north_msg_exch) then
             part(ip,ipy) = part(ip,ipy) - ny
             sn_n(is_n+1:is_n+npv) = part(ip,:)
             is_n = is_n+npv
           endif
           part(ip,ipz) = 10*nz
         elseif (part(ip,ipy)< 0.0) then
-          if (south_exchng) then
+          if (south_msg_exch) then
             sn_s(is_s+1:is_s+npv) = part(ip,:)
             is_s = is_s+npv
           endif
@@ -702,6 +716,14 @@
       enddo
       
       call exchange_data
+
+      if (mynode==1) then
+        do ip = 1,np
+          if (part(ip,itag)==200000177) then
+            print *,'trck 1: ', part(ip,itag),part(ip,ipx),mynode
+          endif
+        enddo
+      endif
 
       ! add nx,ny when receiving from the e,n 
       ! We order this in sw,s,se,w,e,nw,n,ne to match the desired sorting of the particle array
@@ -713,8 +735,6 @@
           enddo
         enddo
         np = np+rn_sw
-!       if (mynode==1) print *,'rn_sw: ',rn_sw
-!       if (mynode==5) print *,'rv_sw: ',rv_sw(1:rn_sw*npv)
       endif
 
       if (rn_s>0) then
@@ -798,13 +818,7 @@
           part(np+ip,ipy) = part(np+ip,ipy)+ny
         enddo
         np = np+rn_ne
-!       if (mynode==1) print *,'rn_ne: ',rn_ne
       endif
-
-!     if (mynode==1) then
-!       print *,'exch: ', np,part(np,ipx)
-!       if (part(np,ipx)> 100) stop
-!     endif
 
       end subroutine exchange_particles !]
 !------------------------------------------
@@ -1126,10 +1140,6 @@
 
       enddo !<--  while (mess_count>0)
 
-      if (mynode==0) then
-!       print *, 'node 0, receiving north: ',rv_n(1:rn_n)
-      endif
-!     stop
 
       end subroutine exchange_data  !]
 ! ---------------------------------------------------------------------
