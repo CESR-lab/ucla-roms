@@ -30,8 +30,6 @@
       !
       !  - PART 6: Compress file?
       !
-      !  1)
-      !
       !  Joining particles requires many small writes to the output file.
       !  Compression for small writes is very inefficient, since the chunk
       !  of data needs to be uncompressed each time it is written to.
@@ -137,7 +135,7 @@ c--#define VERBOSE
       implicit none
 
       ! local
-      integer                       :: cnt_p, ndup
+      integer                       :: cnt_p, ndup, low_dupl
       logical                       :: duplicate
       real,dimension(:),allocatable :: tmp_ptags, tmp_g_ptags
 
@@ -209,13 +207,19 @@ c--#define VERBOSE
             tmp_g_ptags(1:glob_n_ptags) = glob_ptags       ! copy all previous sub-domains (glob_n_ptags not updated yet)
                                                            ! need copy as don't know how many particles duplicated, thus
             ndup=0                                         ! final global array size unknown.
+            low_dupl=1                                     ! set low limit lookup search index
             do it=1,cnt_p                                  ! look in list of tags for all previous sub-domains for duplicate
 
-              call lookup_duplicate( glob_ptags, loc_ptags(node)%arr(it), glob_n_ptags, duplicate )
+              ! now since sub-domain list and global list are both sorted, don't have to search
+              ! entire global list, once you know index of previous tag in global list, that
+              ! becomes the lower limit. If duplicate, low is updated in lookup_duplicate.
+              call lookup_duplicate( glob_ptags, loc_ptags(node)%arr(it), glob_n_ptags, duplicate, low_dupl )
               if (duplicate) then
                 ndup=ndup+1                                ! count duplicate
               else
                 tmp_g_ptags(glob_n_ptags+it-ndup) = loc_ptags(node)%arr(it)  ! add non-duplicate to tmp global array
+                ! starts from end so not sure how to improve search range? Ask JM?
+                ! set new low search bound as well. Since copy array, need it's own low_sort
                 call insertion_sort_1p( tmp_g_ptags(1:glob_n_ptags+it-ndup), glob_n_ptags+it-ndup )
               endif
             enddo
@@ -286,7 +290,7 @@ c--#define VERBOSE
       implicit none
 
       ! local
-      integer :: indx
+      integer :: indx, low_indx
                                                            ! write all  particle tags in one go:
       ierr=nf90_put_var(nctarg, varid(3), glob_ptags )     ! hard-coded varid in index (3)
       if(ierr/=nf90_noerr) print *, 'BAD WRITE - ptags', nf90_strerror(ierr),'my_rank', my_rank
@@ -297,6 +301,8 @@ c--#define VERBOSE
         if(my_rank==0) write(*,'(16x,A,I4)')
      &    'Assembly of particles in node =', node
 
+
+        npart = dimsize(2,node)                            ! buffer size of particle array
         if (allocated(p_out)) deallocate(p_out)
         allocate( p_out(6,loc_n_ptags(node),tsize) )       ! don't need tag each time, hence 1-6 not 1-7 dim size
         p_out = no_rec_val                                 ! catch value for non-continuous times (could improve this)
@@ -305,7 +311,6 @@ c--#define VERBOSE
 
         ! POPULATE OUTPUT ARRAY for all read in particles:
         ! might want to do for one tag at a time so that not continually looking up indx in array?
-        npart = dimsize(2,node)
         ierr=nf90_get_var(ncid(node), vid(i,node), p_in )
         if(ierr/=0) print *, 'BAD READ - particle_write', nf90_strerror(ierr), 'node', node
 
@@ -313,6 +318,8 @@ c--#define VERBOSE
           do p=1,npart
             if (p_in(p,1,rec) < 1.0e30) then               ! valid tag (indx 1) < less than fill value +E36
                                                            ! need to find local index to populate local array p_out array
+              ! here p_in tags not sorted so must serch from low_bound=1
+              ! motivation to sort p_in online in roms rather!
               call lookup_index( loc_ptags(node)%arr, p_in(p,1,rec), loc_n_ptags(node), indx )
               p_out(:,indx,rec) = p_in(p,2:7,rec)          ! store new particle tag in list of known particles
             else
@@ -327,8 +334,9 @@ c--#define VERBOSE
         count_out(1)=6                                     ! always 1:6 in size
 
         ! WRITE ONE PARTICLE AT A TIME:
+        low_indx=1                                         ! set low bound of index lookup
         do p=1,loc_n_ptags(node)                           ! find particles index in global array
-          call lookup_index( glob_ptags, loc_ptags(node)%arr(p), glob_n_ptags, indx )
+          call lookup_index( glob_ptags, loc_ptags(node)%arr(p), glob_n_ptags, indx, low_indx )
           start_out(2)=indx
 
           do rec=1,tsize                                   ! write continuous timsteps (possible not all timesteps not contained in sub-domain)
@@ -362,11 +370,13 @@ c--#define VERBOSE
       ! improve this to a divisional search later
       ! sort 1 value (at end of array) into correct position to already sorted list
       ! can't check for duplicate too, as algo shifts values in array before it knows the outcome.
+      ! checks from top so lower bound not important
       implicit none
 
       ! inputs
       real,dimension(:) :: A
       integer           :: n
+!      integer,optional  :: low
 
       ! local
       integer :: l
@@ -386,29 +396,39 @@ c--#define VERBOSE
         A(l+1)=val                       ! set value in correct position (+1 as already incremented down)
       endif
 
+      ! for when glob_ptags is same as tmp_g_ptags
+!      if (present(low)) low=l+2          ! since located index is l+1, low is l+1+1 (next index up)
+
       end subroutine insertion_sort_1p  !]
 
 ! ---------------------------------------------------------------------
-      subroutine lookup_index( A, val, asize, indx )  ![
+      subroutine lookup_index( A, val, asize, indx, low_indx )  ![
       ! find corresponding index in ordered list
       ! bisectional search, looks in middle of known range each iteration.
       implicit none
 
       ! inputs
-      real, dimension(:), intent(in)  :: A
-      real              , intent(in)  :: val
-      integer           , intent(in)  :: asize
-      integer           , intent(out) :: indx
+      real, dimension(:), intent(in)    :: A
+      real              , intent(in)    :: val
+      integer           , intent(in)    :: asize
+      integer           , intent(out)   :: indx
+      integer,optional  , intent(inout) :: low_indx
 
       ! local
       integer :: low, imid, high
       logical :: found_ip
 
+      if(present(low_indx)) then                           ! looking up from order list to ordered list then
+          low=low_indx                                     ! previously found index is clearly the new lower bound
+      else
+          low=1
+      endif
+
       found_ip=.false.
       low=1
       high=asize
 
-      if(asize==1) then                                      ! catch if only 1 value
+      if(asize==1) then                                    ! catch if only 1 value
         if (val==A(asize)) then
           found_ip=.true.
           indx=asize
@@ -434,25 +454,36 @@ c--#define VERBOSE
         enddo
       endif
 
+      if(present(low_indx)) low_indx=imid+1
+
       end subroutine lookup_index  !]
 
 ! ---------------------------------------------------------------------
-      subroutine lookup_duplicate( A, val, asize, duplicate )  ![
+      subroutine lookup_duplicate( A, val, asize, duplicate, low_in )  ![
       ! find if value exists already in ordered list with bisection
       ! could combine this with lookup_index into one routine
       implicit none
 
       ! inputs
-      real, dimension(:), intent(in)  :: A
-      real              , intent(in)  :: val
-      integer           , intent(in)  :: asize
-      logical           , intent(out) :: duplicate
+      real, dimension(:), intent(in)    :: A
+      real              , intent(in)    :: val
+      integer           , intent(in)    :: asize
+      logical           , intent(out)   :: duplicate
+      integer, optional,  intent(inout) :: low_in
 
       ! local
       integer :: low, imid, high
 
+      ! optional arguement additional if statements.
+      ! Maybe should just have seperate routine for the optional arguement to avoid 'if's'?
+
+      if(present(low_in))then
+          low=low_in
+      else
+          low=1
+      endif
+
       duplicate=.false.
-      low=1
       high=asize
 
       if(asize==1) then                                    ! catch if only 1 value
@@ -479,6 +510,8 @@ c--#define VERBOSE
 
         enddo
       endif
+
+      if(present(low_in) .and. duplicate) low_in=imid+1
 
       end subroutine lookup_duplicate  !]
 
