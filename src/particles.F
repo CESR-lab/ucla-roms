@@ -392,7 +392,17 @@
       if (np>0) then
         start = (/1, 1, record/)
 !       print *,'maxmin: ',maxval(part(1:np,1:7)),minval(part(1:np,1:7)),mynode
+
+        ! add here:
+        part(1:np,ipx) = part(1:np,ipx) + glob_istr ! might need a minus 1
+        part(1:np,ipy) = part(1:np,ipy) + glob_jstr
+
         call ncwrite(ncid,'particles',part(1:np,1:7),start)
+
+        ! subtract again here:
+        part(1:np,ipx) = part(1:np,ipx) - glob_istr ! might need a minus 1
+        part(1:np,ipy) = part(1:np,ipy) - glob_jstr
+
       endif
 
       ierr=nf90_close(ncid)
@@ -449,8 +459,8 @@
      
       ierr = nf90_enddef(ncid)
 
-!     if (mynode==0) print *,'particles :: created new netCDF file: ',fname
-      print *,'particles :: created new netCDF file: ',mynode,fname
+      if (mynode==0) print *,'particles :: created new netCDF file: ',fname
+!      print *,'particles :: created new netCDF file: ',mynode,fname
 
       end subroutine create_particles_file !]
 !-------------------------------------------------
