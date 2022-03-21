@@ -114,7 +114,7 @@
       ! possibly not every eulerian time-step
       ! or... with sub step (for when working offline)
 
-      call idealized_flow
+!      call idealized_flow
 
       call advance_particles
 
