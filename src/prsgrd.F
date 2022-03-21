@@ -210,9 +210,11 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
         enddo
       enddo   !<-- j
 
-      if (allocated(rho_d) then
+#ifdef DIAGNOSTICS
+      if (allocated(rho_d)) then              ! devind compile fix, Jeroen must fix this.
         rho_d = rho(1:nx,1:ny,:)
       endif
+#endif
 
 ! Compute XI-component of pressure gradient term:
 !-------- ------------ -- -------- -------- -----
