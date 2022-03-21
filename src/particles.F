@@ -393,15 +393,15 @@
         start = (/1, 1, record/)
 !       print *,'maxmin: ',maxval(part(1:np,1:7)),minval(part(1:np,1:7)),mynode
 
-        ! add here:
-        part(1:np,ipx) = part(1:np,ipx) + glob_istr ! might need a minus 1
-        part(1:np,ipy) = part(1:np,ipy) + glob_jstr
+        ! translate to global indices (local 0-nx):
+        part(1:np,ipx) = part(1:np,ipx) + (iSW_corn+0.5)   ! start of sub-domain is actually 0.5 rho
+        part(1:np,ipy) = part(1:np,ipy) + (jSW_corn+0.5)   ! but locally we defined it as 0.
 
         call ncwrite(ncid,'particles',part(1:np,1:7),start)
 
-        ! subtract again here:
-        part(1:np,ipx) = part(1:np,ipx) - glob_istr ! might need a minus 1
-        part(1:np,ipy) = part(1:np,ipy) - glob_jstr
+        ! translate back to local indices (0-nx):
+        part(1:np,ipx) = part(1:np,ipx) - (iSW_corn+0.5)
+        part(1:np,ipy) = part(1:np,ipy) - (jSW_corn+0.5)
 
       endif
 
