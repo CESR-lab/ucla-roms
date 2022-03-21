@@ -30,37 +30,27 @@
       !
       !  - PART 6: Compress file?
       !
-      !  Joining particles requires many small writes to the output file.
-      !  Compression for small writes is very inefficient, since the chunk
-      !  of data needs to be uncompressed each time it is written to.
+      !  CONSIDERATIONS:
       !
-      ! WRITE PARTICLES:
-      ! assumption is that individual writes to file are far worse than extra parsing of data.
-      ! - do 1 sub-domain (node) at a time
-      ! - read in entire particle array for sub-domain
-      ! - parse through all tags of every step, and compile list of contained tags
-      ! - store local list for sub-domain for use again later, but also compile
-      !   global list. Can create joined file with known number of particles.
-
-      ! - for each sub-domain populate one particle (tag) array by searching all time records for tag
-      ! - write that one particle, writing continuous time-records where possible.
-      ! - once all tags complete, move on to next sub-domain.
-
-      ! We realized writing with compression is way too slow.
-      ! This means we can't have a max_number multiple sized file and rely on compression.
-      ! Rather, we will first parse all sub-domains and create a list of unique particle numbers
-      ! sort this list as you go for quicker searching if contained already.
-      ! May want to keep individual lists too for each sub-domain to avoid the search again when
-      ! writing each subdomain.
-      ! Then can create output file with exact total number of particles.
-      ! Write all particles.
-      ! Compress all at very end if even desired.
+      !    Joining particles requires many small writes to the output file.
+      !    Compression for small writes is very inefficient, since the chunk
+      !    of data needs to be uncompressed each time it is written to.
+      !    Hence, don't use compression, rather compress all at the end if desired.
+      !
+      !    Assumption is that individual writes to file are far worse than extra parsing of data.
+      !    We realized writing with compression is way too slow.
+      !    This means we can't have a max_number multiple sized file and rely on compression.
+      !    Rather, we will first parse all sub-domains and create a list of unique particle numbers
+      !    sort this list as you go for quicker searching if contained already.
+      !    Then can create output file with exact total number of particles.
+      !    Write all particles.
+      !    Compress all at very end if even desired.
       !
       ! MISC:
       !
-      ! large number of particle tags represented as real's requires double precision
-      ! real's to capture enough signficant figures. This is done by the 'mpc' program,
-      ! probably better to do this by a compiler directive in future.
+      !    large number of particle tags represented as real's requires double precision
+      !    real's to capture enough signficant figures. This is done by the 'mpc' program,
+      !    probably better to do this by a compiler directive in future.
       !
       ! Long term fixes:
       !  - ....
@@ -70,8 +60,6 @@
 ! Note: these cppdefs work for both module particle_join_mod and program
 !       particle_join, because they are in the same file. Also, make
 !       sure these are consistent with the cppdefs set in ncjoin_mod.
-! Delete partial files after joining:
-c#define DEL_PART_FILES
 ! Document program execution time:
 #define TIMING
 ! Verbose terminal output:
@@ -130,8 +118,15 @@ c--#define VERBOSE
 
 ! ----------------------------------------------------------------------
       subroutine particle_list_unique_particles  ![
-      ! create global list of unique particles,
-      ! can create joined file with this.
+      ! create sub-domain list and global list of unique particles,
+      ! can then create joined file with this.
+      !
+      ![ assumption is that individual writes to file are far worse than extra parsing of data.
+      ! read in entire particle array for sub-domain.
+      ! parse through all tags of every step, and compile list of unique tags in sub-domain.
+      ! sort the list by tag value, and store local list for sub-domain for use again later.
+      ! use local list to compile global list of unique particles (also sorted).
+      ! can create joined file with known number of unique particles. !]
       implicit none
 
       ! local
@@ -287,6 +282,11 @@ c--#define VERBOSE
 ! ----------------------------------------------------------------------
       subroutine particle_write  ![
       ! write all particles from sub-domain into global output file
+      !
+      ![per sub-domain, populate p_out array which is sorted by all unique particles in sub-domain.
+      ! next, write one particle by writing continuous time-records where possible (as particle
+      ! can move in and out of domains).
+      ! once all tags complete, move on to next sub-domain. !]
       implicit none
 
       ! local
@@ -298,9 +298,15 @@ c--#define VERBOSE
       i=2                                                  ! hard-code particle var id
       do node=0,nnodes-1                                   ! loop over all input sub-domains
 
+# ifdef TIMING
+        nclk=3-nclk
+        call system_clock (iclk(nclk), clk_rate,clk_max)
+        inc_clk=iclk(nclk)-iclk(3-nclk)
+        net_gray_clk=net_gray_clk+inc_clk
+# endif
+
         if(my_rank==0) write(*,'(16x,A,I4)')
      &    'Assembly of particles in node =', node
-
 
         npart = dimsize(2,node)                            ! buffer size of particle array
         if (allocated(p_out)) deallocate(p_out)
@@ -328,6 +334,14 @@ c--#define VERBOSE
           enddo    ! nparts
         enddo      ! recs
 !        print *, 'p_out=',p_out
+
+# ifdef TIMING
+        net_read_size=net_read_size+size
+        nclk=3-nclk
+        call system_clock (iclk(nclk),clk_rate,clk_max)
+        inc_clk=iclk(nclk)-iclk(3-nclk)
+        net_read_clk=net_read_clk+inc_clk
+# endif
 
         start_out=1                                        ! set default of 1
         count_out=1                                        ! set default of 1
@@ -360,6 +374,14 @@ c--#define VERBOSE
           enddo    ! <-- rec
 
         enddo      ! <-- p
+
+#ifdef TIMING
+        net_wrt_size=net_wrt_size+size
+        nclk=3-nclk
+        call system_clock(iclk(nclk), clk_rate,clk_max)
+        inc_clk=iclk(nclk)-iclk(3-nclk)
+        net_wrt_clk=net_wrt_clk+inc_clk
+#endif
 
       enddo  !<-- nodes
 
@@ -617,8 +639,6 @@ c--#define VERBOSE
       endif ! <- if(my_rank==0) END OF MASTER ONLY PRE-PROCESSING
 
       if (mayday) goto 97
-
-
 
         if(my_rank==0) write(*,'(16x,A)')                             ! WRITE OCEAN_TIME:
      &    'Assembly of ocean_time'
