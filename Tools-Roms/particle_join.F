@@ -121,18 +121,24 @@ c--#define VERBOSE
       ! create sub-domain list and global list of unique particles,
       ! can then create joined file with this.
       !
-      ![ assumption is that individual writes to file are far worse than extra parsing of data.
+      ![assumption is that individual writes to file are far worse than extra parsing of data.
       ! read in entire particle array for sub-domain.
       ! parse through all tags of every step, and compile list of unique tags in sub-domain.
       ! sort the list by tag value, and store local list for sub-domain for use again later.
       ! use local list to compile global list of unique particles (also sorted).
-      ! can create joined file with known number of unique particles. !]
+      ! can create joined file with known number of unique particles.
+      !
+      ! global list of unique particles, the final size is only known at the end.
+      ! to prevent allocations and copies of tmp_array to global_array for each
+      ! sub-domain, we rather allocate a much larger tmp_array. Once it starts
+      ! to get full, we reallocate more space.
+      !]
       implicit none
 
       ! local
-      integer                       :: cnt_p, ndup, low_dupl
+      integer                       :: cnt_p, ndup, low_dupl, buff_size
       logical                       :: duplicate
-      real,dimension(:),allocatable :: tmp_ptags, tmp_g_ptags
+      real,dimension(:),allocatable :: tmp_ptags
 
       tsize=dimsize(unlimdimid,0)                          ! set here as set to 0 somewhere else for unlim size, but we don't want that
       print *, 'tsize = ', tsize
@@ -193,14 +199,12 @@ c--#define VERBOSE
           ! ADD NEW PARTICLES TO GLOBAL UNIQUE TAG LIST:
           if (glob_n_ptags==0) then                        ! first sub-domain containing particles
             glob_n_ptags=cnt_p                             ! global count of unique particles
-            allocate(glob_ptags(cnt_p))
-            glob_ptags=loc_ptags(node)%arr                 ! copy first unique sub-domain list of particles (already sorted)
-
+            buff_size=cnt_p * (nnodes/2)                   ! chosen to multiply unique particles by no. sub-domains/2
+            allocate(glob_ptags(buff_size))                ! allocate with plenty extra space to avoid reallocation.
+            glob_ptags(1:cnt_p)=loc_ptags(node)%arr        ! copy first unique sub-domain list of particles (already sorted)
           else                                             ! all subsequent sub-domains containing particles
-            if (allocated(tmp_g_ptags)) deallocate( tmp_g_ptags )
-            allocate( tmp_g_ptags(glob_n_ptags+cnt_p) )    ! glob tmp array - size enough for possible duplicates
-            tmp_g_ptags(1:glob_n_ptags) = glob_ptags       ! copy all previous sub-domains (glob_n_ptags not updated yet)
-                                                           ! need copy as don't know how many particles duplicated, thus
+            call check_buff_space_and_expand( glob_n_ptags+cnt_p, buff_size, glob_ptags )
+                                                           ! need buff space as don't know how many particles duplicated, thus
             ndup=0                                         ! final global array size unknown.
             low_dupl=1                                     ! set low limit lookup search index
             do it=1,cnt_p                                  ! look in list of tags for all previous sub-domains for duplicate
@@ -212,17 +216,13 @@ c--#define VERBOSE
               if (duplicate) then
                 ndup=ndup+1                                ! count duplicate
               else
-                tmp_g_ptags(glob_n_ptags+it-ndup) = loc_ptags(node)%arr(it)  ! add non-duplicate to tmp global array
+                glob_ptags(glob_n_ptags+it-ndup) = loc_ptags(node)%arr(it)  ! add non-duplicate to tmp global array
                 ! starts from end so not sure how to improve search range? Ask JM?
                 ! set new low search bound as well. Since copy array, need it's own low_sort
-                call insertion_sort_1p( tmp_g_ptags(1:glob_n_ptags+it-ndup), glob_n_ptags+it-ndup )
+                call insertion_sort_1p( glob_ptags(1:glob_n_ptags+it-ndup), glob_n_ptags+it-ndup )
               endif
             enddo
             glob_n_ptags=glob_n_ptags+cnt_p-ndup           ! global count of unique particles (plus sub-domain count less duplicates)
-
-            deallocate( glob_ptags )                       ! transfer tmp global array to actual global array
-            allocate( glob_ptags(glob_n_ptags) )
-            glob_ptags=tmp_g_ptags(1:glob_n_ptags)
           endif
 
           print *, 'glob_n_ptags=',glob_n_ptags            ! debug
@@ -230,6 +230,14 @@ c--#define VERBOSE
 
         endif      ! <- cnt_p>0
       enddo        ! <- nodes
+
+      deallocate(tmp_ptags)                                ! make glob_ptags array exact size
+      allocate(tmp_ptags( glob_n_ptags ))
+      tmp_ptags=glob_ptags(1:glob_n_ptags)
+      deallocate(glob_ptags)
+      allocate(glob_ptags( glob_n_ptags ))
+      glob_ptags=tmp_ptags
+      deallocate(tmp_ptags)
 
       end subroutine particle_list_unique_particles  !]
 
@@ -537,6 +545,50 @@ c--#define VERBOSE
 
       end subroutine lookup_duplicate  !]
 
+! ---------------------------------------------------------------------
+      recursive subroutine check_buff_space_and_expand( req_size, buff_size, A ) ![
+      ! check array has enough buffer space to receive more particles
+      ! expand array if not.
+      ! this algo needs more consideration, could get major over-allocation
+      ! for very irregular particle distributions.
+      implicit none
+
+      ! inputs
+      integer,                      intent(in)    :: req_size
+      integer,                      intent(inout) :: buff_size
+      real,dimension(:),allocatable,intent(inout) :: A
+
+      ! local
+      real :: ratio_rem                                    ! ratio of remaining nodes to estimate remaining particles
+      real,dimension(:),allocatable :: A_tmp
+      integer :: buff_size_old
+
+      if (req_size > buff_size) then
+
+        print *, 'reallocting larger global array size'
+        print *, '  old buff_size=', buff_size
+
+        buff_size_old = buff_size
+        ratio_rem = 1 + real(nnodes-node+1) / real(node+1) ! +1 since node starts from 0. node is denominator as required increase.
+        buff_size = buff_size * ratio_rem
+        if (node==nnodes-1) buff_size = buff_size * 1.01   ! as ratio_rem = 1 for last node
+
+        allocate(A_tmp(buff_size_old))
+        A_tmp = A
+        deallocate(A)
+        allocate(A(buff_size))
+        A(1:buff_size_old) = A_tmp
+        deallocate(A_tmp)
+
+        if (req_size > buff_size) then                      ! incase still not big enough
+          call check_buff_space_and_expand( req_size, buff_size, A )
+        endif
+
+        print *, '  new buff_size=', buff_size
+
+      endif
+
+      end subroutine check_buff_space_and_expand  !]
 ! ---------------------------------------------------------------------
 
       end module particle_join_mod
