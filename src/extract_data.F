@@ -132,7 +132,7 @@
      &              obj(i)%coef,obj(i)%ip,obj(i)%jp,rmask)
 
         if (.not.obj(i)%scalar) then
-          call compute_rotate(obj)
+!          call compute_rotate(obj)  ! DevinD commented out to get to compile. JM must fix.
 
           allocate(obj(i)%ui(np,nz))
           allocate(obj(i)%cfu(np,4))
@@ -248,8 +248,8 @@
       obj%np = end_idx-start_idx+1
       allocate(obj%ipos(obj%np))
       allocate(obj%jpos(obj%np))
-      obj%ipos = obj_i(start_idx:end_idx)
-      obj%jpos = obj_j(start_idx:end_idx)
+      obj%ipos = gobj_i(start_idx:end_idx)
+      obj%jpos = gobj_j(start_idx:end_idx)
 
       end subroutine find_local_points  !]
 ! ----------------------------------------------------------------------
@@ -403,9 +403,9 @@
       integer :: i,itrc,record
       character(len=30) :: obj_name
       real, dimension(:,:),pointer :: vi
-      real, dimension(:,:),pointer :: ui,vi
-      real, dimension(:,:),pointer :: coef
-      integer,dimension(:),pointer :: ip,jp
+      real, dimension(:,:),pointer :: ui
+      real, dimension(:,:),pointer :: coef, cfu, cfv
+      integer,dimension(:),pointer :: ip,jp,ipu,ipv,jpu,jpv
 
       ! For now, extract zeta and all tracers for rho objects
       ! and ubar,vbar,u, and v for velocity objects
@@ -441,10 +441,10 @@
             ip   => obj(i)%ip
             jp   => obj(i)%jp
 
-            call interpolate(zeta(:,:,knew),vari(:,1),coef,ip,jp)
+            call interpolate(zeta(:,:,knew),obj(i)%vari(:,1),coef,ip,jp)
 !           call write_data(vari(:,1),'zeta',record)
             do itrc=1,nt
-              call interpolate(t(:,:,:,nstp,itrc),vari,coef,ip,jp)
+              call interpolate(t(:,:,:,nstp,itrc),obj(i)%vari,coef,ip,jp)
 !             call write_data(vari,obj_name,t_vname(itrc),record)
             enddo
             
@@ -460,11 +460,11 @@
 
             call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
             call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
-            if (obj(i)%u) then
-              vari(:,1) = obj(i)%cosa*ui(:,1)
-            else
-              vari(:,1) = obj(i)%cosa*vi(:,1)
-            endif
+!            if (obj(i)%u) then ! DevinD %u (not legal), JM must fix.
+              obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1)
+!            else
+!              vari(:,1) = obj(i)%cosa*vi(:,1)
+!            endif
 
 !           call interpolate(ui(:,1),vi(:,1),ubar(:,:,knew),
 !    &            vbar(:,:,knew),obj(i))
