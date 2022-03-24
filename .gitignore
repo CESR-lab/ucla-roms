@@ -41,6 +41,7 @@ Tools-Roms/r2r_match_topo
 *.log
 
 # DevinD related ignores:
+benchmark.result_laptop
 .settings
 .project
 .cproject

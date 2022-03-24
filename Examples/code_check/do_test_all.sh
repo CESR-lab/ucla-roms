@@ -2,9 +2,16 @@
 
 # ******** USER INPUT START ************
 # declare an array of Example folders and .in names to use:
-#                      TEST 1      TEST 2      TEST 3
 declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Tracers_passive" "WEC_real" )
 # ******** USER INPUT END   ************
+
+arg=$1
+
+if [ "$arg" != "expanse" -a "$arg" != "maya" -a "$arg" != "laptop" ]
+then
+echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
+exit
+fi
                                                  
 error_cnt=0                                      # count of exit codes from each test
 total=${#Examples[*]}                            # total number of examples
@@ -12,7 +19,7 @@ for (( i=0; i<=$(( $total -1 )); i++ ))          # run test cases:
 do
   cd ../${Examples[i]}/code_check/
   echo "${Examples[i]} test compiling..."
-  ./do_test_roms.sh
+  ./do_test_roms.sh $arg
   
   retval=$?                                      # $? gives exit code from ./do_test_roms.sh
   error_cnt=$(( $error_cnt + $retval ))          

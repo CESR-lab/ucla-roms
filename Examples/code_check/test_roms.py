@@ -37,10 +37,10 @@ def search_string_in_file(file_name, string_to_search):
 
 # ******* USER INPUTS START ************
 # Tests & file names of roms terminal output logs
-# test_names = ['WEC_real','Rivers_ana'] # ,'Rivers_ana'
 ntests = 1 # np.size(test_names)
 # -- WEC
-filename_BM  = os.path.join(os.getcwd(),'benchmark.log')
+#filename_BM  = os.path.join(os.getcwd(),'benchmark.result')
+filename_BM  = os.path.join(os.getcwd(),str(sys.argv[1]))  # read in with arguement (maya or expanse)
 filename_res = os.path.join(os.getcwd(),'test.log')
 filenames = [ filename_BM, filename_res ]
 #print(filenames)
