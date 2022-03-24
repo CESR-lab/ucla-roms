@@ -1,28 +1,22 @@
-Scripts to confirm simulation results still match benchmark results,
-and that netcdf outputting works for his, avg and rst files.
-This should ensure bugs have not been added to the code.
+Examples code checking tools:
 
-The script can be run directly on Maya with ./test_roms.sh
-Obsolete: but needs to be run on 'comet' using the job submission: qsub run_tests_comet.lsf,
-which needs to be edit to your comet user name.
+  ./do_test_all.sh
 
-Script requires a benchmark to have already been run and saved 
-e.g. 'sample_wec_bm.log' is the terminal output from the
-sample_wec example.
-Since numerical precision can differ based on different compiler versions,
-the results on maya do not exactly match the results on comet. Since the
-majority of code development is done on maya (no waiting) and not comet,
-the log files for maya are the default setup for this script.
-Should you wish to test on comet, simply edit test_roms.py to point to
-the comet benchmark log files not the maya ones. E.g:
-filename_BM  = os.path.join(os.getcwd(),'benchmarks/river/river_ana_bm.log')
-becomes:
-filename_BM  = os.path.join(os.getcwd(),'benchmarks/river/river_ana_bm_comet.log')
+This will check all the examples automatically.
+Since it takes ~30s for ROMS to compile, the script will take several minutes
+if compiling for the first time.
 
-The netcdf check is not machine dependant so nothing needs to be changed.
-It is a somewhat crude as it just confirms that the number of records written
-is what it should be, the other tests of diagnostic values should confirm
-values haven't changed in netcdf files.
+Every example contains its own code_check folder, with symbolic links to the files contained
+in Examples/code_check.
 
-WEC requires AVERAGES turned on, in order for line positions to work when reading 
-the log file.
+The python script test_roms.py is used to sum all the terminal diagnostics from the ROMS
+simulation.
+This is compared with a previously run benchmark example, to confirm values have not changed.
+
+This tool is designed to be run before any new commit of the repo, to ensure nothing has been
+inadvertently broken.
+If values have been intentionally changed, then the effected examples must have their benchmark
+file updated.
+
+
+

@@ -1,5 +1,0 @@
-Tests cyclical data working:
-
-sms (surface momentum stress - sustr, svstr) is in the first forcing file at a high frequency and tiny cycle length. Hence record 2 is read in again for sms only at timestep 6.
-
-Note, actual result is somewhat garbage as extreme sms changes due to unrealistic cycle length!

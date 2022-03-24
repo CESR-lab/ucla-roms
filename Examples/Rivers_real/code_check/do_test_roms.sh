@@ -1,0 +1,1 @@
+../../code_check/do_test_roms.sh
