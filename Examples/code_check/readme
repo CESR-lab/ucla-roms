@@ -1,6 +1,10 @@
 Examples code checking tools:
 
-  ./do_test_all.sh
+  ./do_test_all.sh maya          (on maya)
+
+  or
+
+  sbatch do_test_expanse_all.sh  (on expanse)
 
 This will check all the examples automatically.
 Since it takes ~30s for ROMS to compile, the script will take several minutes
