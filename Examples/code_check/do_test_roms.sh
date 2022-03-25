@@ -16,7 +16,14 @@ cp ../../code_check/diag.F ../                   # need special diagnostic outpu
 cd ../
 make &> /dev/null
 echo "  test running..."
+
+if [ "$1" = "expanse" ]
+then
+srun --mpi=pmi2 -n 6 ./roms code_check/benchmark.in > code_check/test.log
+else
 mpirun -n 6 ./roms code_check/benchmark.in > code_check/test.log
+fi
+
 rm diag.F roms test_his.*.*.nc grid.*.nc &> /dev/null  # grid needed for analytical examples
 cd code_check
 
