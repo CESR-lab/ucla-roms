@@ -1,5 +1,9 @@
       module roms_read_write
       ! ROMS specific read write functionality
+      !
+      ! output_root_name is used as prefix of all output files
+      ! Length is limited to 26 characters, because output_file_names
+      ! are appended with frame and node number and are limited to 32
 
       use netcdf
       use ncvars
@@ -20,33 +24,35 @@
       type,public  :: ncforce
         character(len=20)                 :: vname     ! name of variable in input file
         character(len=20)                 :: tname     ! time variable name for variable
-        real,dimension(:,:,:),allocatable :: vdata     ! need=0 to initialize all vars other than name and time_name. Slightly inefficient to set=0 though. stores raw input data for 2 times: time_A < mode
-        integer                           :: coarse=0  ! Flag to indicate interpolation of the input data
+        real,dimension(:,:,:),allocatable :: vdata     ! currently must be exact size of sub-domain (no buffer)
         real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
+        integer                           :: coarse=0  ! Flag to indicate interpolation of the input data
         integer                           :: ifile=0   ! Index to file in list of filenames
         integer                           :: irec =0   ! Record number in file
-        integer         :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
-        real,   dimension(2)              :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
+        integer                           :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
+        real,dimension(2)                 :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
       end type ncforce
 
       integer, target :: test_var
+      character(len=99), public  :: output_root_name
 
 !     interface set_frc_data
 !       module procedure  set_frc_data_2D
 !     end interface
 
       public :: set_frc_data,create_filename
+      public :: read_output_root_name
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_frc_data(nc,var1d,var2d)
+      subroutine set_frc_data(nc,var1d,var2d)  ![
       implicit none
 
       ! input/outputs
-      type(ncforce)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
+      type(ncforce),               intent(inout) :: nc    ! derived type containing all neccesary supporting data
       real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
-      real,dimension(:)  ,optional,intent(out)   :: var1d  ! time interpolated forcing data
+      real,dimension(:)  ,optional,intent(out)   :: var1d ! time interpolated forcing data
 
       ! local
       real    :: cff1,cff2  ! for time interpolations
@@ -66,6 +72,8 @@
 
       it1 = nc%it1
       it2 = nc%it2
+!      print *, 'it1=',it1,mynode
+!      print *, 'it2=',it2,mynode
 
       if (nc%times(it2) < modtime) then  ! need to refresh data
 
@@ -99,7 +107,7 @@
         error stop 'ERROR: set_frc_data :: time interpolation error'
       endif
 
-      end subroutine set_frc_data
+      end subroutine set_frc_data  !]
       
 ! ----------------------------------------------------------------------
       subroutine find_new_record(vname,tname,time,ifile,irec,vtime) ![
@@ -240,7 +248,7 @@
       end subroutine find_new_record  !]
 
 ! ----------------------------------------------------------------------
-      subroutine find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first)
+      subroutine find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first) ![
       ! Find the first record that has vtime>time, or if it's
       ! the first time calling, the record preceeding that one.
       implicit none
@@ -286,18 +294,18 @@
 
       deallocate(tim)
 
-      end subroutine find_new_record_cycle
+      end subroutine find_new_record_cycle !]
 
 ! ----------------------------------------------------------------------
-      subroutine fill_frc_slice(nc,modtime,it,d1)
+      subroutine fill_frc_slice(nc,modtime,it,d1) ![
       ! Fill a time slice of forcing data
       implicit none
 
       ! input/outputs
-      type(ncforce)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
-      real               ,intent(in)    :: modtime
-      integer            ,intent(in)    :: it
-      logical            ,intent(in)    :: d1  ! 1 or 2 dimensional forcing data
+      type(ncforce)      ,intent(inout) :: nc      ! derived type containing all neccesary supporting data
+      real               ,intent(in)    :: modtime ! current time of the model
+      integer            ,intent(in)    :: it      ! index (1 or 2) of the forcing data
+      logical            ,intent(in)    :: d1      ! 1 or 2 dimensional forcing data
 
       ! local
       integer :: ierr,ncid
@@ -323,7 +331,7 @@
 !       call exchange_2d
 !       call coarse2fine(cdata,vdata(:,:,it))
       else
-        !! Allocate vdata to be the right size for the
+        !! Allocate vdata to be the right size for the (DevinD - this should have been put somewhere clearer...
         !! subdomain (including whether we need a buffer or not
         if (d1) then
           call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
@@ -339,7 +347,7 @@
       nc%irec  = irec
       nc%ifile = ifile
 
-      end subroutine fill_frc_slice
+      end subroutine fill_frc_slice !]
 
 ! ----------------------------------------------------------------------
       subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
@@ -374,6 +382,7 @@
       error stop ! Stop simulation assumed fatal error
 
       end subroutine handle_ierr  !]
+
 ! ----------------------------------------------------------------------
       subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![
       implicit none   
@@ -388,6 +397,40 @@
      &  'rec =',               var_irec
 
       end subroutine display_read_time_to_log  !]
+
+! ----------------------------------------------------------------------
+      subroutine read_output_root_name(keyword, kwlen)  ![
+      ! read from .in file the root-name
+      ! for all output netcdf result files
+      ! this is called from read_inp.F
+      ! The following needs to be in the roms.in input file to use this
+      ! subroutine (file name needs to be 5 spaces from left margin):
+      !output_root_name:
+      !     rootname (<- insert desired rootname)
+
+      implicit none
+
+      ! inputs
+      character(len=*) :: keyword
+      integer          :: kwlen                            ! keyword length
+      ! local
+      integer           :: ierr = nf90_noerr
+      integer,parameter :: input=15
+
+      call cancel_kwd (keyword(1:kwlen), ierr)             ! remove keyword from keyword list for read_inp.F
+                                                           ! to know it's accounted for
+      read(input,'(A)',err=95) output_root_name            ! read & save filename root
+
+      goto 100
+                                                           ! error for read(input,'(A)',err=95)
+  95  write(*,'(/1x,4A/)') '### ERROR: read_write :: Cannot read ',
+     &                       'entry ''', keyword(1:kwlen), '''.'
+      error stop
+ 100  continue
+
+
+      end subroutine read_output_root_name  !]
+
 ! ----------------------------------------------------------------------
       subroutine create_filename(fname,total_rec)  ![
       ! takes a filename for output and inserts the mpi node number 
@@ -412,8 +455,9 @@
       call insert_time_index(fname,lstr,total_rec,ierr)     ! insert time index to file name
 
       end subroutine create_filename !]
+
 ! ----------------------------------------------------------------------
-      subroutine coarse2fine(cdata,fdata)
+      subroutine coarse2fine(cdata,fdata) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
       implicit none
 
@@ -447,7 +491,8 @@
         enddo
       enddo
 
+      end subroutine coarse2fine !]
 
-      end subroutine coarse2fine
+! ---------------------------------------------------------------------
 
       end module roms_read_write

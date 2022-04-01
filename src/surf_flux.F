@@ -9,6 +9,7 @@
 
       use param
       use read_write
+      use roms_read_write
       use ncvars
       use scalars
 

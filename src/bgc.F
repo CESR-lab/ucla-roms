@@ -116,11 +116,7 @@
 
 ! ----------------------------------------------------------------------
 #ifdef BEC2_DIAG
-      subroutine def_his_bgc_diag(r2dgrd  ![
-#ifdef SOLVE3D
-     &                           ,r3dgrd
-#endif
-     &                                  )
+      subroutine def_his_bgc_diag  ![
 
       ! Define history/avg file variables for BEC2_DIAG
       ! Taken from def_his.F of ETH code.
@@ -128,29 +124,24 @@
 
       implicit none
 
-      ! Inputs
-      integer r2dgrd(3) !, u2dgrd(3), v2dgrd(3)
-#ifdef SOLVE3D
-     &      , r3dgrd(4) !, u3dgrd(4), v3dgrd(4), w3dgrd(4)
-#endif
       ! Local
       integer idiag, ierr
 
       ! 2d diagnostics:
       do idiag=1,nr_bec2_diag_2d
         if (wrtavg_bec2_diag_2d(idiag)) then
-          call nc_define_var(nchis, vname_bec2_diag_2d(1,idiag),
-     &    vname_bec2_diag_2d(2,idiag), vname_bec2_diag_2d(3,idiag),
-     &    r2dgrd, ierr )
+          varid = nccreate(nchis,vname_bec2_diag_2d(1,idiag),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(nchis,varid,'long_name',vname_bec2_diag_2d(2,idiag))
+          ierr = nf90_put_att(nchis,varid,'units',vname_bec2_diag_2d(3,idiag))
         endif
       enddo
 
       ! 3d diagnostics:
       do idiag=1,nr_bec2_diag_3d
         if (wrtavg_bec2_diag_3d(idiag)) then
-          call nc_define_var(nchis, vname_bec2_diag_3d(1,idiag),
-     &    vname_bec2_diag_3d(2,idiag), vname_bec2_diag_3d(3,idiag),
-     &    r3dgrd, ierr )
+          varid = nccreate(nchis,vname_bec2_diag_3d(1,idiag),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(nchis,varid,'long_name',vname_bec2_diag_3d(2,idiag))
+          ierr = nf90_put_att(nchis,varid,'units',vname_bec2_diag_3d(3,idiag))
         endif
       enddo
 
@@ -161,33 +152,23 @@
 ! Need AVERAGES as 'ncavg' only exists in AVERAGES is defined.
 #ifdef AVERAGES
 #ifdef BEC2_DIAG
-      subroutine def_avg_bgc_diag(r2dgrd  ![
-# ifdef SOLVE3D
-     &                           ,r3dgrd
-# endif
-     &                                  )
-
+      subroutine def_avg_bgc_diag  ![
       ! Define history/avg file variables for BEC2_DIAG
       ! Taken from def_his.F of ETH code.
       ! Called from def_his.F
-
       implicit none
 
-      ! Inputs
-      integer r2dgrd(3) !, u2dgrd(3), v2dgrd(3)
-# ifdef SOLVE3D
-     &      , r3dgrd(4) !, u3dgrd(4), v3dgrd(4), w3dgrd(4)
-# endif
-      ! Local
+      ! local
       integer idiag, ierr
       character(len=64) long_name
 
       ! 2d diagnostics:
       do idiag=1,nr_bec2_diag_2d
         if (wrtavg_bec2_diag_2d(idiag)) then
-          long_name='averaged '/ /vname_bec2_diag_2d(2,idiag) ! Add averaged to long name
-          call nc_define_var(ncavg, vname_bec2_diag_2d(1,idiag),
-     &    long_name, vname_bec2_diag_2d(3,idiag), r2dgrd, ierr )
+          long_name='averaged '/ /vname_bec2_diag_2d(2,idiag) ! Add averaged to long names
+          varid = nccreate(ncavg,vname_bec2_diag_2d(1,idiag),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(ncavg,varid,'long_name',long_name)
+          ierr = nf90_put_att(ncavg,varid,'units',vname_bec2_diag_2d(3,idiag))
         endif
       enddo
 
@@ -195,8 +176,11 @@
       do idiag=1,nr_bec2_diag_3d
         if (wrtavg_bec2_diag_3d(idiag)) then
           long_name='averaged '/ /vname_bec2_diag_3d(2,idiag) ! Add averaged to long name
-          call nc_define_var(ncavg, vname_bec2_diag_3d(1,idiag),
-     &    long_name, vname_bec2_diag_3d(3,idiag), r3dgrd, ierr )
+!          call nc_define_var(ncavg, vname_bec2_diag_3d(1,idiag),
+!     &    long_name, vname_bec2_diag_3d(3,idiag), r3dgrd, ierr )
+          varid = nccreate(ncavg,vname_bec2_diag_3d(1,idiag),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncavg,varid,'long_name',long_name)
+          ierr = nf90_put_att(ncavg,varid,'units',vname_bec2_diag_3d(3,idiag))
         endif
       enddo
 

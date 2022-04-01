@@ -210,6 +210,7 @@
       use ocean2d
       use ocean3d
       use scalars
+      use roms_read_write
 
       implicit none
       private

@@ -6,12 +6,7 @@
       implicit none
       private
 
-      ! ****************************************************************
-      ! START USER INPUT
-      integer :: deflate_level=1 ! Compression level for joined file
-      logical :: shuffle=.true.  ! Shuffle on for extra conmpression
-      ! END USER INPUT
-      ! ****************************************************************
+#include "nc_read_write.opt"
 
       interface ncwrite
         module procedure  ncwrite_1D, ncwrite_2D, ncwrite_3D
@@ -142,7 +137,9 @@
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite: '/ /vname)
+      endif
 
       end subroutine ncwrite_2D
 
@@ -194,29 +191,61 @@
       implicit none
 
       ! import/export
-      integer, intent(in) :: ncid
+      integer,                      intent(in) :: ncid
       character(len=*),             intent(in) :: varname
       character(len=*),dimension(:),intent(in) :: dimname
-      integer,         dimension(:),intent(in) :: dimsize
-      integer,         optional,    intent(in) :: vartype 
+      integer,dimension(:),optional,intent(in) :: dimsize
+      integer,optional,             intent(in) :: vartype
       ! local
-      integer :: i,ndim,varid,ierr,did
+      integer :: i,ndim,varid,ierr,did,xtype
       integer,allocatable,dimension(:) :: dimid
+      real(kind=8),parameter :: spv_set_dbl=1.D+33
+      real(kind=4),parameter :: spv_set_flt=1.E+33
 
-      ndim = size(dimsize)
+      if (present(vartype)) then                           ! handle optional arguement
+        xtype = vartype
+!        if(xtype/=nf90_float .and. xtype/=nf90_double) then
+!          write(*,*)
+!     &     'ERROR: nc_define_var - optional arguement must be nf90_float or nf90_double'
+!           ierr=1; goto 2                                 ! can't use error stop as OMP_MASTER only operation?
+!        endif
+      else
+        xtype = nf90_float                                 ! default output number type is float
+      endif
+
+      ndim = size(dimname)
       allocate(dimid(ndim))
 
-      ! Get dimension ids. Create if needed.
-      do i = 1,ndim 
+      do i = 1,ndim                                        ! get dimension ids. Create if needed.
         ierr = nf90_inq_dimid(ncid,dimname(i),did)
         if (ierr.ne.nf90_noerr) then
+          if (.not. present(dimsize)) then                 ! only an issue if dimension doesn't exist yet
+            print *, 'ERROR: nccreate, no dimsize given for var=',varname
+            error stop
+          endif
           ierr=nf90_def_dim(ncid,dimname(i),dimsize(i),did)
+          if (ierr/=nf90_noerr) call handle_err(ierr)
         endif
         dimid(i) = did
       enddo
-      ! Add compression and shuffle
-      ierr=nf90_def_var(ncid,varname,vartype,dimid,varid)
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+
+      if (xtype==nf90_float .or. xtype==nf90_double) then  ! catch for non-numeric type
+#ifdef HIS_DOUBLE
+        xtype = nf90_double                                ! default output as double
+#endif
+      endif
+      ierr=nf90_def_var(ncid,varname,xtype,dimid,varid,
+     &                  deflate_level=deflate_level, shuffle=shuffle)
+      if (ierr/=nf90_noerr) then
+        print *,'ERROR creating: ',varname
+        call handle_err(ierr)
+      endif
+
+      if     (xtype==nf90_float)  then                               ! fill value to blank out mask
+        ierr = nf90_put_att(ncid,varid,'_FillValue',spv_set_flt)     ! in ncview
+      elseif (xtype==nf90_double) then                               ! if we set the mask to 0 not e+33
+        ierr = nf90_put_att(ncid,varid,'_FillValue',spv_set_dbl)     ! then we can remove this
+      endif
 
       nccreate = varid
 

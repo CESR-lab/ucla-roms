@@ -1,8 +1,7 @@
       module wec_frc
 
-      ! ===================================
       ! Wave Effect on Current (WEC) module
-      ! ===================================
+      !
       ! provides all WEC terms that
       ! enter in the momentum equations.
       !
@@ -11,7 +10,7 @@
       ! code essentially a copy of work already done under MRL_WCI cppflag
       ! of previous roms implementation, based on Delphine Hypolite's
       ! version of old (pre 2020) ROMS used for USWC simulations.
-
+      !
       ! Original WEC theory and code is courtesy of Leonel Romero.
 
 #include "cppdefs.opt"
@@ -21,34 +20,26 @@
 #if defined WEC /* WEC for whole module! */
 
       use param
-      use read_write ! new roms netcdf functionality module
+      use read_write
       use grid
       use ncvars
       use ocean2d
       use ocean3d
-      use scalars  ! universal scalars, g and pi, model time and time in days
-
+      use scalars
+      use netcdf
+      use nc_read_write
       implicit none
 
+      private                                              ! makes all variable private to this module unless public specified
+      save                                                 ! make all public variables global (might not be needed depending on compiler)
 
-      ! ****************************
-      ! MODULE SPECIFICATION SECTION
-      !
-      ! This part of the module (before the 'contains' section)
+      ! DECLARE ALL WEC VARIABLES ![
+
+      ! module specification section:
+      ! this part of the module (before the 'contains' section)
       ! is used to declare all variables that might be needed globally
       ! or if there are memory benefits to declaring only once, rather
       ! than for each call of a subroutine.
-
-      ! ****************************
-
-      ! Make all variable private to this module unless public specified
-      private
-
-      save     ! save -> Make all public variables global (might not be needed depending on compiler)
-
-      ! =========================
-      ! DECLARE ALL WEC VARIABLES
-      ! =========================
 
       ! variables as per DH's WAVE_PACKET forces.h for old MRL_WCI cppflag
 
@@ -415,7 +406,7 @@
 
       public read_inp_wec         ! called from read_inp.F
       public set_wec_frc_tile     ! called from set_forces.F
-      public def_his_def_var_wec  ! called from def_his.F
+      public def_vars_wec  ! called from def_his.F
       public init_arrays_wec_tile ! called from init_arrays.F
       public compute_wec_rhs_uv_terms ! called from step3d_uv1.F & pre_step3d4S.F
       public wstokes_wec_tile     ! called from set_avg.F
@@ -428,28 +419,19 @@
       public wrt_avg_wec          ! called from wrt_avg.F
 #endif
 
-      ! =======================
-      ! END OF MODULE PRE-AMBLE
-      ! =======================
+      ! END OF MODULE PRE-AMBLE  !]
 
       contains 
+
 ! ----------------------------------------------------------------------
-
-      ! ##################
-      ! NETCDF SUBROUTINES
-      ! ##################
-
       subroutine read_inp_wec (keyword, ierr, kwlen)  ![
-
-      ! ========================================
-      ! Read from input file which WEC variables
+      ! read from input file which WEC variables
       ! to output to netcdf results file
-      ! ================================
-
       implicit none
 
-      character(len=32) :: keyword
-      integer ierr, kwlen
+      ! inputs
+      character(len=32)  :: keyword
+      integer            :: ierr, kwlen
       integer, parameter :: input=15
 
       call cancel_kwd (keyword(1:kwlen), ierr)
@@ -505,14 +487,10 @@
      &     ,  'KAPS',   wrt_wec_vars(indxKAPS),  Kapsrf_long_name
 #  endif
 
-      ! Error handling
-      ! --------------
-
       goto 100
 
-      ! Text format for error message: read(input,*,err=95) above
-  95  write(*,'(/1x,4A/)') '### ERROR: read_inp_wec :: Cannot read ',
-     &                       'entry ''', keyword(1:kwlen), '''.'
+  95  write(*,'(/1x,4A/)') '### ERROR: read_inp_wec :: Cannot read ',          ! text format for error message:
+     &                       'entry ''', keyword(1:kwlen), '''.'               ! read(input,*,err=95) above
       ierr=ierr+1
 
  100  continue
@@ -522,16 +500,13 @@
 ! ----------------------------------------------------------------------
 #ifdef AVERAGES
       subroutine read_inp_avg_wec (keyword, ierr, kwlen)  ![
-
-      ! ========================================
-      ! Read from input file which WEC variables
+      ! read from input file which WEC variables
       ! to output to netcdf AVERAGES results file
-      ! =========================================
-
       implicit none
 
-      character(len=32) :: keyword
-      integer ierr, kwlen
+      ! inputs
+      character(len=32)  :: keyword
+      integer            :: ierr, kwlen
       integer, parameter :: input=15
 
       call cancel_kwd (keyword(1:kwlen), ierr)
@@ -588,12 +563,8 @@
      &     ,  'KAPS',   wrt_avg_vars(indxKAPS),  Kapsrf_long_name
 #  endif
 
-      ! Error handling
-      ! --------------
-
       goto 100
 
-      ! Text format for error message: read(input,*,err=95) above
   95  write(*,'(/1x,4A/)') '### ERROR: read_inp_avg_wec:: Cannot read ',
      &                       'entry ''', keyword(1:kwlen), '''.'
       ierr=ierr+1
@@ -606,498 +577,350 @@
 !-----------------------------------------------------------------------
 #ifndef ANA_WEC_FRC
       subroutine read_wec_frc(fname,irec,idx,wec_in_time)  ![
-
-      ! =========================================
-      ! READ WEC VARIABLES FROM INPUT NETCDF FILE
-      ! =========================================
-
-      ! This version is intended to exclusively read WEC variables that are
+      ! read wec variables from input file
+      ! this version is intended to exclusively read WEC variables that are
       ! part of 'Leonel's method'
-
       use netcdf
-
       implicit none
 
       ! input/output
-      character(len=*),intent(in) :: fname ! This isn't even used! Should be ifile
+      character(len=*),intent(in) :: fname                           ! this isn't even used! Should be ifile
       integer         ,intent(in) :: irec,idx
-      ! Set wec_time for read in variables
-      real,dimension(1):: wec_in_time
+      real,dimension(1)           :: wec_in_time                     ! set wec_time for read in variables
 
       ! local
-      integer ierr,ncid
-      integer varid
-      ! Whether or not to interpolate from coarse data, needed to comply
-      ! with latest nc_read_var in read_write.F
-      integer :: coarse = 0 ! 0=don't interpolate
+      integer :: ierr,ncid
+      integer :: varid
+      integer :: coarse = 0                                          ! interpolate from coarse data. 0=don't interpolate
 
-      ! Read in river variables are all from rho-points (r_var)
-      ! integer,parameter :: r_var = 0 !! grid type of var (u_var=1,v_var=2,q_var=3)
-      ! comes from ncvars.
-
-      ! open the file (maybe check if the file is open already)
-      ! =============
       ierr=nf90_open(frcfile(ifile), nf90_nowrite, ncid)
 
-      ! read the time
-      ! =============
-      ierr = nf90_inq_varid(ncid, wec_tim_name, varid) ! Get time ID (varid)
-      ! nf90_get_var needs an array for last 2 terms hence syntax
-      ierr = nf90_get_var(ncid, varid, wec_in_time, (/irec/), (/1/))
-      ! covnert read in time (currently in days) to seconds
-      wec_in_time = wec_in_time * 86400
+      ierr = nf90_inq_varid(ncid, wec_tim_name, varid)
+      ierr = nf90_get_var(ncid, varid, wec_in_time, (/irec/), (/1/)) ! nf90_get_var needs an array for last 2 terms hence syntax
+      wec_in_time = wec_in_time * 86400                              ! covnert read in time (currently in days) to seconds
 
-      ! read the vars
-      ! =============
-
-      ! Wave amplitude
-      call nc_read_var(ncid,wwag(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwag(START_2D_ARRAY,idx),1,              ! wave amplitude
      &                       wec_awv_name,r_var,irec,ierr,coarse)
-
-      ! Wave direction
-      call nc_read_var(ncid,wwdg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwdg(START_2D_ARRAY,idx),1,              ! wave direction
      &                       wec_dwv_name,r_var,irec,ierr,coarse)
-
-      ! Wave period
-      call nc_read_var(ncid,wwpg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwpg(START_2D_ARRAY,idx),1,              ! wave period
      &                       wec_pwv_name,r_var,irec,ierr,coarse)
-
-      ! ust2d
-      call nc_read_var(ncid,wwUSg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwUSg(START_2D_ARRAY,idx),1,             ! ust2d
      &                       ust2d_name,r_var,irec,ierr,coarse)
-
-      ! vst2d
-      call nc_read_var(ncid,wwVSg(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwVSg(START_2D_ARRAY,idx),1,             ! vst2d
      &                       vst2d_name,r_var,irec,ierr,coarse)
-
-      ! ustr0
-      call nc_read_var(ncid,wwUS0g(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwUS0g(START_2D_ARRAY,idx),1,            ! ustr0
      &                       ust0_name,r_var,irec,ierr,coarse)
-
-      ! vstr0
-      call nc_read_var(ncid,wwVS0g(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwVS0g(START_2D_ARRAY,idx),1,            ! vstr0
      &                       vst0_name,r_var,irec,ierr,coarse)
-
-      ! eb
-      call nc_read_var(ncid,wweb(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wweb(START_2D_ARRAY,idx),1,              ! eb
      &                       wec_ebwv_name,r_var,irec,ierr,coarse)
-
-      ! ed
-      call nc_read_var(ncid,wwed(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwed(START_2D_ARRAY,idx),1,              ! ed
      &                       wec_edwv_name,r_var,irec,ierr,coarse)
-
-      ! lmv
-      call nc_read_var(ncid,wwlm(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwlm(START_2D_ARRAY,idx),1,              ! lmv
      &                       wec_lwv_name,r_var,irec,ierr,coarse)
-
-      ! sup
-      call nc_read_var(ncid,wwsup(START_2D_ARRAY,idx),1,
+      call nc_read_var(ncid,wwsup(START_2D_ARRAY,idx),1,             ! sup
      &                       sup_name,r_var,irec,ierr,coarse)
 
       end subroutine read_wec_frc  !]
 #endif /* !ANA_WEC_FRC */
 
 ! ----------------------------------------------------------------------
-      subroutine def_his_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
-#ifdef SOLVE3D
-     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
-#endif
-     &                                                             )  ![
-
-      ! =================================
-      ! Define output variable attributes
-      ! in netcdf results file
-      ! ======================
-
+      subroutine def_vars_wec( ncid, avg )  ![
+      ! define output variable & attributes in netcdf results file
+      ! for actual or averaged variables
       implicit none
 
-      ! STORE r2dgrd, etc in WEC rather???
-      integer ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
-#ifdef SOLVE3D
-     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
-#endif
+      ! input
+      integer,intent(in) :: ncid
+      logical,intent(in) :: avg
+      ! local
+      integer           :: ierr, varid
+      character(len=64) :: text_lname
 
-      ! Wave-current interaction diagnostic variables
-      ! =============================================
-
-      ! sup: quasi-static sea-level response (wave set-up/down)
-      ! Call read_write module subroutine
-      if (wrt_wec_vars(indxSUP)) then ! if = outputing variable yes or no
-        call nc_define_var(nchis,sup_name,sup_long_name,sup_units,
-     &                          r2dgrd,ierr)
+      if (wrt_wec_vars(indxSUP)) then                                ! if = outputing variable yes or no
+        varid = nccreate(ncid,sup_name,(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        if (.not. avg) text_lname=sup_long_name                      ! seemed cleaner than if/else (same thing)
+        if (      avg) text_lname='averaged '/ /sup_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',sup_units)
       endif
-
-      ! ust2d: 2D, depth-averaged Stokes drift velocities.
-      if (wrt_wec_vars(indxUST2D)) then
-        call nc_define_var(nchis,ust2d_name,ust2d_long_name,ust2d_units,
-     &                          u2dgrd,ierr)
+      if (wrt_wec_vars(indxUST2D)) then                              ! ust2d: 2D, depth-averaged Stokes drift velocities.
+        varid = nccreate(ncid,ust2d_name,(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
+        if (.not. avg) text_lname=ust2d_long_name
+        if (      avg) text_lname='averaged '/ /ust2d_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',ust2d_units)
       endif
-
-      ! vst2d: 2D, depth-averaged Stokes drift velocities.
-      if (wrt_wec_vars(indxVST2D)) then
-        call nc_define_var(nchis,vst2d_name,vst2d_long_name,vst2d_units,
-     &                          v2dgrd,ierr)
+      if (wrt_wec_vars(indxVST2D)) then                              ! vst2d: 2D, depth-averaged Stokes drift velocities.
+        varid = nccreate(ncid,vst2d_name,(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
+        if (.not. avg) text_lname=vst2d_long_name
+        if (      avg) text_lname='averaged '/ /vst2d_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vst2d_units)
       endif
-
 # ifdef SOLVE3D
-
-      ! ust: 3D Stokes drift velocities.
-      if (wrt_wec_vars(indxUST)) then
-        call nc_define_var(nchis,ust_name,ust_long_name,ust_units,
-     &                          u3dgrd,ierr)
+      if (wrt_wec_vars(indxUST)) then                                ! ust: 3D Stokes drift velocities.
+        varid = nccreate(ncid,ust_name,(/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/))
+        if (.not. avg) text_lname=ust_long_name
+        if (      avg) text_lname='averaged '/ /ust_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',ust_units)
       endif
-
-      ! vst: 3D Stokes drift velocities.
-      if (wrt_wec_vars(indxVST)) then
-        call nc_define_var(nchis,vst_name,vst_long_name,vst_units,
-     &                          v3dgrd,ierr)
+      if (wrt_wec_vars(indxVST)) then                                ! vst: 3D Stokes drift velocities.
+        varid = nccreate(ncid,vst_name,(/'xi_rho','eta_v','s_rho','time'/),(/xi_rho,eta_v,N,0/))
+        if (.not. avg) text_lname=vst_long_name
+        if (      avg) text_lname='averaged '/ /vst_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vst_units)
       endif
-
-      ! wst: vertical Stokes drift velocity (m/s) at rho-point
-      if (wrt_wec_vars(indxWST)) then
-        call nc_define_var(nchis,wst_name,wst_long_name,wst_units,
-     &                          r3dgrd,ierr)
+      if (wrt_wec_vars(indxWST)) then                                ! wst: vertical Stokes drift velocity (m/s) at rho-point
+        varid = nccreate(ncid,wst_name,(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+        if (.not. avg) text_lname=wst_long_name
+        if (      avg) text_lname='averaged '/ /wst_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',wst_units)
       endif
-
-      ! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
-      if (wrt_wec_vars(indxAkb)) then
-        call nc_define_var(nchis,Akb_name,Akb_long_name,Akb_units,
-     &                          w3dgrd,ierr)
+      if (wrt_wec_vars(indxAkb)) then                                ! Akb: Vertical eddy viscosity coef
+        varid = nccreate(ncid,Akb_name,(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        if (.not. avg) text_lname=Akb_long_name
+        if (      avg) text_lname='averaged '/ /Akb_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',Akb_units)
       endif
-
-      ! Akw: Vertical eddy diffusivity coefficient due to primary waves.
-      if (wrt_wec_vars(indxAkw)) then
-        call nc_define_var(nchis,Akw_name,Akw_long_name,Akw_units,
-     &                          w3dgrd,ierr)
+      if (wrt_wec_vars(indxAkw)) then                                ! Akw: Vertical eddy diffusivity
+        varid = nccreate(ncid,Akw_name,(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        if (.not. avg) text_lname=Akw_long_name
+        if (      avg) text_lname='averaged '/ /Akw_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',Akw_units)
       endif
-
-      ! kvf: vertical vortex force term (u^St du/dz)
-      if (wrt_wec_vars(indxKVF)) then
-        call nc_define_var(nchis,kvf_name,kvf_long_name,kvf_units,
-     &                          r3dgrd,ierr)
+      if (wrt_wec_vars(indxKVF)) then                                ! kvf: vertical vortex force term (u^St du/dz)
+        varid = nccreate(ncid,kvf_name,(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+        if (.not. avg) text_lname=kvf_long_name
+        if (      avg) text_lname='averaged '/ /kvf_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',kvf_units)
       endif
-
-      ! calP: surface pressure correction term appeared in prsgrd term
-      if (wrt_wec_vars(indxCALP)) then
-        call nc_define_var(nchis,calP_name,calP_long_name,calP_units,
-     &                          r2dgrd,ierr)
+      if (wrt_wec_vars(indxCALP)) then                               ! calP: surface pressure correction
+        varid = nccreate(ncid,calP_name,(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        if (.not. avg) text_lname=calP_long_name
+        if (      avg) text_lname='averaged '/ /calP_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',calP_units)
       endif
-
-      ! Kapsrf: surface Bernoulli head term appeared in prsgrd term
-      if (wrt_wec_vars(indxKAPS)) then
-        call nc_define_var(nchis,Kapsrf_name,Kapsrf_long_name,
-     &                          Kapsrf_units,r2dgrd,ierr)
+      if (wrt_wec_vars(indxKAPS)) then                               ! Kapsrf: surface Bernoulli head
+        varid = nccreate(ncid,Kapsrf_name,(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        if (.not. avg) text_lname=Kapsrf_long_name
+        if (      avg) text_lname='averaged '/ /Kapsrf_long_name
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',Kapsrf_units)
       endif
-
 # endif  /* SOLVE3D */
 
-      end subroutine def_his_def_var_wec  !]
+      end subroutine def_vars_wec  !]
 
 !-----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine def_avg_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd
+      subroutine def_avg_def_var_wec (ierr, r2dgrd, u2dgrd, v2dgrd   ![
 # ifdef SOLVE3D
      &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
 # endif
      &                                                             )
 
-      ! =================================
-      ! Define output variable attributes
-      ! in netcdf results file
-      ! ======================
-
+      ! define output variable attributes in netcdf results file
       implicit none
 
-      ! STORE r2dgrd, etc in WEC rather???
-      integer ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
+      ! inputs
+      integer :: ierr, r2dgrd(3), u2dgrd(3), v2dgrd(3)
 #ifdef SOLVE3D
-     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+     &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
 #endif
 
-      ! Local variable
-      ! --------------
-      character(len=64) text_long_name
+      ! local
+      character(len=64) :: text_lname
 
-
-      ! Wave-current interaction diagnostic averaged variables
-      ! ======================================================
-
-      ! 'text_long_name' is used to add 'averaged'
-      ! onto the variable long name.
-
-      ! sup: quasi-static sea-level response (wave set-up/down)
-      if (wrt_avg_vars(indxSUP)) then ! if = outputing variable yes or no
-        text_long_name='averaged '/ /sup_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,sup_name,text_long_name,sup_units,
+      if (wrt_avg_vars(indxSUP)) then
+        text_lname='averaged '/ /sup_long_name
+        call nc_define_var(ncavg,sup_name,text_lname,sup_units,
      &                          r2dgrd,ierr)
       endif
-
-      ! ust2d: 2D, depth-averaged Stokes drift velocities.
       if (wrt_avg_vars(indxUST2D)) then
-        text_long_name='averaged '/ /ust2d_long_name
-        call nc_define_var(ncavg,ust2d_name,text_long_name,ust2d_units,
+        text_lname='averaged '/ /ust2d_long_name
+        call nc_define_var(ncavg,ust2d_name,text_lname,ust2d_units,
      &                          u2dgrd,ierr)
       endif
-
-      ! vst2d: 2D, depth-averaged Stokes drift velocities.
       if (wrt_avg_vars(indxVST2D)) then
-        text_long_name='averaged '/ /vst2d_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,vst2d_name,text_long_name,vst2d_units,
+        text_lname='averaged '/ /vst2d_long_name
+        call nc_define_var(ncavg,vst2d_name,text_lname,vst2d_units,
      &                          v2dgrd,ierr)
       endif
-
 # ifdef SOLVE3D
-
-      ! ust: 3D Stokes drift velocities.
       if (wrt_avg_vars(indxUST)) then
-        text_long_name='averaged '/ /ust_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,ust_name,text_long_name,ust_units,
+        text_lname='averaged '/ /ust_long_name
+        call nc_define_var(ncavg,ust_name,text_lname,ust_units,
      &                          u3dgrd,ierr)
       endif
-
-      ! vst: 3D Stokes drift velocities.
       if (wrt_avg_vars(indxVST)) then
-        text_long_name='averaged '/ /vst_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,vst_name,text_long_name,vst_units,
+        text_lname='averaged '/ /vst_long_name
+        call nc_define_var(ncavg,vst_name,text_lname,vst_units,
      &                          v3dgrd,ierr)
       endif
-
-      ! wst: vertical Stokes drift velocity (m/s) at rho-point
       if (wrt_avg_vars(indxWST)) then
-        text_long_name='averaged '/ /wst_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,wst_name,text_long_name,wst_units,
+        text_lname='averaged '/ /wst_long_name
+        call nc_define_var(ncavg,wst_name,text_lname,wst_units,
      &                          r3dgrd,ierr)
       endif
-
-      ! Akb: Vertical eddy viscosity coefficient due to depth-induced wave breaking.
       if (wrt_avg_vars(indxAkb)) then
-        text_long_name='averaged '/ /Akb_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,Akb_name,text_long_name,Akb_units,
+        text_lname='averaged '/ /Akb_long_name
+        call nc_define_var(ncavg,Akb_name,text_lname,Akb_units,
      &                          w3dgrd,ierr)
       endif
-
-      ! Akw: Vertical eddy diffusivity coefficient due to primary waves.
       if (wrt_avg_vars(indxAkw)) then
-        text_long_name='averaged '/ /Akw_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,Akw_name,text_long_name,Akw_units,
+        text_lname='averaged '/ /Akw_long_name
+        call nc_define_var(ncavg,Akw_name,text_lname,Akw_units,
      &                          w3dgrd,ierr)
       endif
-
-      ! kvf: vertical vortex force term (u^St du/dz)
       if (wrt_avg_vars(indxKVF)) then
-        text_long_name='averaged '/ /kvf_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,kvf_name,text_long_name,kvf_units,
+        text_lname='averaged '/ /kvf_long_name
+        call nc_define_var(ncavg,kvf_name,text_lname,kvf_units,
      &                          r3dgrd,ierr)
       endif
-
-      ! calP: surface pressure correction term appeared in prsgrd term
       if (wrt_avg_vars(indxCALP)) then
-        text_long_name='averaged '/ /calP_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,calP_name,text_long_name,calP_units,
+        text_lname='averaged '/ /calP_long_name
+        call nc_define_var(ncavg,calP_name,text_lname,calP_units,
      &                          r2dgrd,ierr)
       endif
-
-      ! Kapsrf: surface Bernoulli head term appeared in prsgrd term
       if (wrt_avg_vars(indxKAPS)) then
-        text_long_name='averaged '/ /Kapsrf_long_name ! Add averaged to var name
-        call nc_define_var(ncavg,Kapsrf_name,text_long_name,
+        text_lname='averaged '/ /Kapsrf_long_name
+        call nc_define_var(ncavg,Kapsrf_name,text_lname,
      &                          Kapsrf_units,r2dgrd,ierr)
       endif
 
 # endif  /* SOLVE3D */
 
-      end subroutine def_avg_def_var_wec
+      end subroutine def_avg_def_var_wec  !]
 #endif /* AVERAGES */
+
 ! ----------------------------------------------------------------------
-
-      subroutine wrt_his_wec (record, ierr, may_day_flag)
-
-      ! =========================================
-      ! Write WEC variables to output netcdf file
-      ! =========================================
-
+      subroutine wrt_his_wec (record, ierr, may_day_flag)  ![
+      ! write WEC variables to output netcdf file
       implicit none
 
-      ! Input vars
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr, may_day_flag ! Error handling
+      ! inputs
+      integer,intent(in) :: record                         ! timestep to be recorded
+      integer            :: ierr, may_day_flag
 
-      ! Local var
-      integer tile ! For looping through tiles
+      ! local
+      integer :: tile
 
-      ! sup
       if (wrt_wec_vars(indxSUP)) then
         call nc_write_var(nchis,sup,1,sup_name,r_var,record,ierr)
       endif
-
-      ! ust2d
       if (wrt_wec_vars(indxUST2D)) then
         call nc_write_var(nchis,ust2d,1,ust2d_name,u_var,record,ierr)
       endif
-
-      ! vst2d
       if (wrt_wec_vars(indxVST2D)) then
         call nc_write_var(nchis,vst2d,1,vst2d_name,v_var,record,ierr)
       endif
-
 # ifdef SOLVE3D
-
-      ! ust
       if (wrt_wec_vars(indxUST)) then
         call nc_write_var(nchis,ust,N,ust_name,u_var,record,ierr)
       endif
-
-      ! vst
       if (wrt_wec_vars(indxVST)) then
         call nc_write_var(nchis,vst,N,vst_name,v_var,record,ierr)
       endif
-
-      ! wst
       if (wrt_wec_vars(indxWST)) then
-        ! Calculate wst
         do tile=0,NSUB_X*NSUB_E-1
-          call wstokes_wec(tile)
+          call wstokes_wec(tile)                           ! calculate wst
         enddo
         call nc_write_var(nchis,wst,N,wst_name,r_var,record,ierr)
       endif
-
-      ! Akb
       if (wrt_wec_vars(indxAkb)) then
-        ! This was 'w3dvar' in old code. Only distinction between
-        ! r3dvar and w3dvar is that N vs N+1 vertical layers, which is
-        ! an input below so it accounts for difference.
-        ! Confirmed as s_w is the vertical dimension in output file.
         call nc_write_var(nchis,Akb,N+1,Akb_name,r_var,record,ierr)
       endif
-
-      ! Akw
-      if (wrt_wec_vars(indxAkw)) then ! This was 'w3dvar' in old code
+      if (wrt_wec_vars(indxAkw)) then
         call nc_write_var(nchis,Akw,N+1,Akw_name,r_var,record,ierr)
-        ! ierr=nf_fwrite (Akw, ncidhis, hisAkw, record, w3dvar)
       endif
-
-      ! kvf
       if (wrt_wec_vars(indxKVF)) then
         call nc_write_var(nchis,kvf,N,kvf_name,r_var,record,ierr)
       endif
-
-      ! calP
       if (wrt_wec_vars(indxCALP)) then
         call nc_write_var(nchis,calP,1,calP_name,r_var,record,ierr)
       endif
-
-      ! Kapsrf
       if (wrt_wec_vars(indxKAPS)) then
         call nc_write_var(nchis,Kapsrf,1,Kapsrf_name,r_var,record,ierr)
       endif
-
 # endif  /* SOLVE3D */
 
-      end subroutine wrt_his_wec
+      end subroutine wrt_his_wec  !]
+
 ! ----------------------------------------------------------------------
-
 #ifdef AVERAGES
-      subroutine wrt_avg_wec (record, ierr, may_day_flag)
-
-      ! ==================================================
-      ! Write WEC AVERAGED variables to output netcdf file
-      ! ==================================================
-
+      subroutine wrt_avg_wec (record, ierr, may_day_flag)  ![
+      ! write WEC AVERAGED variables to output netcdf file
       implicit none
 
-      ! Input vars
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr, may_day_flag ! Error handling
+      ! inputs
+      integer,intent(in) :: record
+      integer            :: ierr, may_day_flag
 
-      ! Write averages
-      ! --------------
-
-      ! sup
       if (wrt_avg_vars(indxSUP)) then
         call nc_write_var(ncavg,sup_avg,1,sup_name,r_var,record,ierr)
       endif
-
-      ! ust2d
       if (wrt_avg_vars(indxUST2D)) then
         call nc_write_var(ncavg,ust2d_avg,1,ust2d_name,u_var,record,ierr)
       endif
-
-      ! vst2d
       if (wrt_avg_vars(indxVST2D)) then
         call nc_write_var(ncavg,vst2d_avg,1,vst2d_name,v_var,record,ierr)
       endif
-
 # ifdef SOLVE3D
-
-      ! ust
       if (wrt_avg_vars(indxUST)) then
         call nc_write_var(ncavg,ust_avg,N,ust_name,u_var,record,ierr)
       endif
-
-      ! vst
       if (wrt_avg_vars(indxVST)) then
         call nc_write_var(ncavg,vst_avg,N,vst_name,v_var,record,ierr)
       endif
-
-      ! wst
       if (wrt_avg_vars(indxWST)) then
         call nc_write_var(ncavg,wst_avg,N,wst_name,r_var,record,ierr)
       endif
-
-      ! Akb
       if (wrt_avg_vars(indxAkb)) then
         call nc_write_var(ncavg,Akb_avg,N+1,Akb_name,r_var,record,ierr)
       endif
-
-      ! Akw
       if (wrt_avg_vars(indxAkw)) then
         call nc_write_var(ncavg,Akw_avg,N+1,Akw_name,r_var,record,ierr)
       endif
-
-      ! kvf
       if (wrt_avg_vars(indxKVF)) then
         call nc_write_var(ncavg,kvf_avg,N,kvf_name,r_var,record,ierr)
       endif
-
-      ! calP
       if (wrt_avg_vars(indxCALP)) then
         call nc_write_var(ncavg,calP_avg,1,calP_name,r_var,record,ierr)
       endif
-
-      ! Kapsrf
       if (wrt_avg_vars(indxKAPS)) then
         call nc_write_var(ncavg,Kapsrf_avg,1,Kapsrf_name,r_var,record,ierr)
       endif
-
 # endif  /* SOLVE3D */
 
-      end subroutine wrt_avg_wec
+      end subroutine wrt_avg_wec  !]
 #endif /* AVERAGES */
+
 ! ----------------------------------------------------------------------
-
-      ! ######################
-      ! ANALYTICAL SUBROUTINES
-      ! ######################
-
 #ifdef ANA_WEC_FRC
-      subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)
-
+      subroutine ana_init_wec_frc_tile (istr,iend,jstr,jend)  ![
       use tracers, only: t
-
       implicit none
 
+      ! inputs
       integer, intent(in) :: istr, iend, jstr, jend
+      ! local
       integer :: i, j, k
-
-      real :: kkw,Clw,Cg
-
+      real    :: kkw,Clw,Cg
 
       ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
       ! This had to appear after other variables declared else wont compile
 #include "compute_auxiliary_bounds.h"
 
-
-      kkw = 2.0*pi   ! Changed kw to kkw so as not to conflict part 2 also has kw
+      kkw = 2.0*pi                                         ! DPD changed kw to kkw so as not to conflict part 2 also has kw
       Clw = sqrt(g*h(2,2))
       Cg  = 0.5*sqrt(g/kkw)
 
@@ -1112,7 +935,7 @@
 
             ubar(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
      &                        ust2d(i,j)
-            ubar(i,j,2) = ubar(i,j,1) !! not actually sure if that is needed
+            ubar(i,j,2) = ubar(i,j,1)                      ! JM not actually sure if that is needed
 
             ! zeta is rho-point, so averaging u-to-rho
             zeta(i,j,1) = -((Clw**2)/((Clw**2)-(Cg**2)))*
@@ -1125,24 +948,23 @@
         enddo
       enddo
 
-      end subroutine ana_init_wec_frc_tile
+      end subroutine ana_init_wec_frc_tile  !]
 #endif /* ANA_WEC_FRC */
-! ----------------------------------------------------------------------
 
+! ----------------------------------------------------------------------
 #ifdef ANA_WEC_FRC
-      subroutine ana_wec_frc_tile (istr,iend,jstr,jend)
-      ! Analytical WEC forcing
+      subroutine ana_wec_frc_tile (istr,iend,jstr,jend)  ![
+      ! analytical WEC forcing
       implicit none
 
+      ! inputs
       integer, intent(in) :: istr, iend, jstr, jend
+      ! local
       integer :: i, j
-      ! Declare coefficient variables
-      real :: cff1,cff2
-
-      real :: kkw,Clw,Cg
-
-      real :: dx,x,timed
-      real :: amp,Lx
+      real    :: cff1,cff2
+      real    :: kkw,Clw,Cg
+      real    :: dx,x,timed
+      real    :: amp,Lx
 
 
          ! get universal scalars, g and pi
@@ -1232,32 +1054,23 @@
 
 !      call ana_init_wec_frc_tile(istr,iend,jstr,jend)
 
-      end subroutine ana_wec_frc_tile
+      end subroutine ana_wec_frc_tile  !]
 #endif /* ANA_WEC_FRC */
+
 ! ----------------------------------------------------------------------
-
-      ! ###################
-      ! FORCING SUBROUTINES
-      ! ###################
-
-      subroutine init_arrays_wec_tile (istr,iend,jstr,jend)
-
-      ! This is called from init_arrays_tile of init_arrays.F
-      ! It is needed to "first touch" arrays to optimize
+      subroutine init_arrays_wec_tile (istr,iend,jstr,jend)  ![
+      ! this is called from init_arrays_tile of init_arrays.F
+      ! it is needed to "first touch" arrays to optimize
       ! NUMA shared memory allocation on linux.
-
       implicit none
 
-      integer, intent(in) :: istr, iend, jstr, jend
-      ! Declare looping indices
-      integer :: i, j, k
+      ! inputs
+      integer,intent(in) :: istr, iend, jstr, jend
+      ! local
+      integer        :: i, j, k
+      real,parameter :: init=0.
 
-      real, parameter :: init=0.
-
-      ! compute_auxiliary_bounds.h is needed for istrR, jstrR, etc
-      ! This had to declared last else won't compile
 #include "compute_auxiliary_bounds.h"
-
 
 
 #if defined BBL || defined WEC
@@ -1268,7 +1081,6 @@
       allocate( uorb(GLOBAL_2D_ARRAY) )
       allocate( vorb(GLOBAL_2D_ARRAY) )
 #endif   /* BBL */
-
 
       allocate( whrm(GLOBAL_2D_ARRAY) )
       allocate( wdsp(GLOBAL_2D_ARRAY) )
@@ -1313,7 +1125,6 @@
 # endif  /* SOLVE3D */
 
       ! REALISTIC WEC VARIABLES (FROM READ IN NETCDF FILE)
-      ! =======================
 
 #if defined BBL || defined WEC
 # if !defined ANA_WEC_FRC && !defined WKB_WWAVE
@@ -1380,8 +1191,6 @@
       allocate( kapsrf_avg(GLOBAL_2D_ARRAY) )
 #  endif  /* SOLVE3D */
 #endif /* AVERAGES */
-
-
 
       ! This section of code is taken from DH's WAVE_PACKET init_arrays.F
 
@@ -1480,32 +1289,24 @@
         enddo
       enddo
 
+      end subroutine init_arrays_wec_tile  !]
 
-      end subroutine init_arrays_wec_tile
 ! ----------------------------------------------------------------------
-
 #ifdef SOLVE3D
-
-      subroutine wstokes_wec (tile)
-
-      ! ===========================================
-      ! Vertical Stokes drift velocity at rho-point
-      ! ===========================================
-
+      subroutine wstokes_wec (tile)  ![
+      ! vertical Stokes drift velocity at rho-point
       use hidden_mpi_vars
       use private_scratch
-
       implicit none
-! # include "param" ! already included at top of module
-      integer tile
+      integer :: tile
 
 # include "compute_tile_bounds.h"
       call wstokes_wec_tile(istr,iend,jstr,jend)
 
-      end subroutine wstokes_wec
-!-----------------------------------------------------------------------
+      end subroutine wstokes_wec  !]
 
-      subroutine wstokes_wec_tile (istr,iend,jstr,jend)
+!-----------------------------------------------------------------------
+      subroutine wstokes_wec_tile (istr,iend,jstr,jend)  ![
 
       implicit none
 !! # include "param.h" ! already included at top of module
@@ -1589,31 +1390,23 @@
 #  endif
 # endif
 
-      end subroutine wstokes_wec_tile
+      end subroutine wstokes_wec_tile  !]
 #endif  /* SOLVE3D */
+
 ! ----------------------------------------------------------------------
-
-      subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,
-     &                                           wrkone, wrktwo)
-
-      ! ========================================
-      ! Add some of the WEC variables to the RHS
+      subroutine compute_wec_rhs_uv_terms (istr,iend,jstr,jend,ru,rv,wrkone,wrktwo)  ![
+      ! add some of the WEC variables to the RHS
       ! of the equation system
-      ! ======================
-
       implicit none
 
-      integer, intent(in) :: istr, iend, jstr, jend
-       ! Declare looping indices
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) ::  wrkone,wrktwo
+      ! inputs
+      integer,intent(in) :: istr, iend, jstr, jend
+      real,dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
+      real,dimension(PRIVATE_2D_SCRATCH_ARRAY)   :: wrkone,wrktwo
 
-
+      ! local
       integer :: i, j, k
-
-      real :: cff, cff1
-
-      real :: gam1, gam2
+      real    :: cff, cff1, gam1, gam2
 
 # include "compute_auxiliary_bounds.h" /* Taken from top of rhs3d35S.F */
 ! VF_ROBUST is not undefined at end of rhs3d35S.F, hence not undefined here.
@@ -1737,16 +1530,11 @@ c      gam2=9./8.
 # undef VF_ROBUST
 
 
-      end subroutine compute_wec_rhs_uv_terms
+      end subroutine compute_wec_rhs_uv_terms  !]
 
 !-----------------------------------------------------------------------
-      subroutine set_wec_frc_tile (istr,iend,jstr,jend,ierr)
-
-      ! ==============
-      ! SET WEC FORCES
-      ! (REALISTIC OR ANALYTICAL FORCING)
-      ! =================================
-
+      subroutine set_wec_frc_tile (istr,iend,jstr,jend,ierr)  ![
+      ! set wec forces (realistic or analytical forcing)
       implicit none
 
       ! input/outputs
@@ -1754,7 +1542,7 @@ c      gam2=9./8.
       integer,intent(out):: ierr
       ! local
       integer :: tmp,i,j
-      real cff1,cff2
+      real    :: cff1,cff2
 
 ! Needed for istrR,iendR, etc
 # include "compute_extended_bounds.h"
@@ -1943,32 +1731,24 @@ C$OMP BARRIER
      &                    'end =',   wec_tim(it2)*sec2day
         ierr=ierr+1
       endif
-
 # endif /* ANA_WEC_FRC or REALISTIC MODEL */
 
-      end subroutine set_wec_frc_tile
+      end subroutine set_wec_frc_tile  !]
+
 !-------------------------------------------------------------------------
-
 #ifndef ANA_WEC_FRC
-      subroutine set_wec_inp2vars (istr,iend,jstr,jend,idx)
-
-      ! ===============================
-      ! CONVERT & MASK READ IN WEC DATA
-      ! ===============================
-
-      ! This is a partial copy of set_wwave_tile from get_wwave.F in old code.
-
+      subroutine set_wec_inp2vars (istr,iend,jstr,jend,idx)  ![
+      ! convert and mask read in wec data
+      ! partial copy of set_wwave_tile from get_wwave.F in old code.
       implicit none
 
-      !Input
-      integer istr,iend,jstr,jend
-      integer idx ! Index relating to read in variables set 1 or set 2
+      ! input
+      integer :: istr,iend,jstr,jend
+      integer :: idx                   ! index relating to read in variable data time set 1 or set 2
+      ! local
+      integer :: i,j
+      real    :: wdir                  ! interim variable to transform wave direction
 
-      ! Local
-      integer i,j
-      real wdir ! interim variable to transfor wave direction
-
-! Needed for istrR,iendR, etc
 # include "compute_extended_bounds.h"
 
 
@@ -2048,32 +1828,22 @@ C$OMP BARRIER
         enddo
       enddo
 
-      end subroutine set_wec_inp2vars
-
+      end subroutine set_wec_inp2vars  !]
 #endif /* !ANA_WEC_FRC */
+
 ! ----------------------------------------------------------------------
-
 #ifdef AVERAGES
-      subroutine set_avg_wec_tile (istr,iend,jstr,jend,cff,cff1
+      subroutine set_avg_wec_tile (istr,iend,jstr,jend,cff,cff1  ![
      &                                 ,jstrR,jendR,istrR,iendR)
-
-      ! ==========================
-      ! set WEC AVERAGED variables
-      ! ==========================
-
-      ! Calculate averaged WEC variables
-      ! from normal wec variables.
-      ! Compute time-averaged fields within a tile.
-
-      ! Taken from set_avg.F in old code.
-
+      ! set wec averaged variables
+      ! taken from set_avg.F in old code.
       implicit none
 
-      integer istr,iend,jstr,jend,jstrR,jendR,istrR,iendR,i,j
-# ifdef SOLVE3D
-     &                       , k
-# endif
-      real cff,cff1
+      ! inputs
+      integer :: istr,iend,jstr,jend,jstrR,jendR,istrR,iendR
+      real    :: cff,cff1
+      ! local
+      integer :: i,j,k
 
       if (wrt_avg_vars(indxSUP)) then
         do j=jstrR,jendR
@@ -2096,7 +1866,6 @@ C$OMP BARRIER
           enddo
         enddo
       endif
-
 #  ifdef SOLVE3D
       if (wrt_avg_vars(indxUST)) then
         do k=1,N
@@ -2168,21 +1937,17 @@ C$OMP BARRIER
       endif
 #  endif  /* SOLVE3D */
 
-      end subroutine set_avg_wec_tile
+      end subroutine set_avg_wec_tile  !]
 #endif /* AVERAGES */
+
 ! ----------------------------------------------------------------------
-
-      subroutine wec_forces (tile)
-
-      ! This is mrl_wci (tile) from mrl_wci.F in old code.
-
+      subroutine wec_forces (tile)  ![
+      ! this is mrl_wci (tile) from mrl_wci.F in old code.
       use hidden_mpi_vars
       use private_scratch
-
       implicit none
 
-      integer  tile
-!# include "param" ! DevinD - already included in top of module
+      integer :: tile
 # include "compute_tile_bounds.h"
 
       call wec_forces_tile (istr,iend,jstr,jend,
@@ -2193,10 +1958,10 @@ C$OMP BARRIER
      &                   A2d(1,7),A2d(1,8),A2d(1,9),A2d(1,10),A2d(1,11),
      &                                              A2d(1,12),A2d(1,13))
 
-      end subroutine wec_forces
-! ----------------------------------------------------------------------
+      end subroutine wec_forces  !]
 
-      subroutine wec_forces_tile (istr,iend,jstr,jend,
+! ----------------------------------------------------------------------
+      subroutine wec_forces_tile (istr,iend,jstr,jend,  ![
 # ifdef SOLVE3D
      &                                              wrk1,wrk2,wrk3,wrk7,
 # endif
@@ -3427,8 +3192,9 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 #  endif
 # endif
 
+      end subroutine wec_forces_tile  !]
 
-      end subroutine wec_forces_tile
+! ---------------------------------------------------------------------
 
 #endif /* WEC for whole module */
         
