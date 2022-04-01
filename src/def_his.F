@@ -28,31 +28,30 @@ c--#define nf_def_var my_nf_def_var
 
       use param
       use wec_frc
-      use tracers ! def_his_trc, def_avg_trc
-      use read_write ! , only: output_root_name, nc_define_var, nc_create_file
-      use bgc ! def_his_bgc_diag, def_avg_bgc_diag
-      use netcdf ! nf90_create()
+      use tracers                                          ! def_his_trc, def_avg_trc
+      use roms_read_write
+      use nc_read_write
+      use bgc                                              ! def_his_bgc_diag, def_avg_bgc_diag
+      use netcdf
       use ncvars
       use scalars
       use netcdf
+      use grid                                             ! def_grid
 
       implicit none
-      integer total_rec, ierr
 
-#include "netcdf.inc"
-      logical create_new_file
-      integer lenstr, checkdims, my_nf_def_dim, timedimid(1), var_id_tmp
-      integer rec, lfnm, lvar, timedim, prev_fill_mode,
-     &        r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
-#ifdef SOLVE3D
-     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4), itrc
-#endif
-      character(len=64) text
+      ! input
+      integer :: total_rec, ierr
+      ! local
+      logical :: create_new_file
+      integer :: lenstr, checkdims, my_nf_def_dim, timedimid(1), varid, itrc
+      integer :: rec, lfnm, lvar, timedim, prev_fill_mode
+      character(len=64) :: text
 #ifdef MASK_LAND_DATA
 # ifdef HIS_DOUBLE
-      real*8, parameter :: spv_set=1.D+33
+      real(kind=8), parameter :: spv_set=1.D+33
 # else
-      real*4, parameter :: spv_set=1.E+33
+      real(kind=4), parameter :: spv_set=1.E+33
 # endif
 #endif
 
@@ -137,17 +136,7 @@ c--#define nf_def_var my_nf_def_var
 
   10  if (create_new_file) then
 
-! DevinD: could not get ncdf_create_file to work nicely along with surf_flux output
-!         usage as record counting works differently.
-!        call ncdf_create_file(fname, ncid, prev_fill_mode
-!     &                  ,rec_per_file, total_rec, auxil
-!#ifdef SOLVE3D
-!     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd ! 3D grid dimensions
-!#endif
-!     &                  ,r2dgrd, u2dgrd, v2dgrd )        ! 2D grid dimensions
-
-        ierr=nf90_create(fname(1:lfnm), NF90_NETCDF4,
-     &                                                     ncid)
+        ierr=nf90_create(fname(1:lfnm), NF90_NETCDF4, ncid)
         if (ierr == nf90_noerr) then
 
           ! Set fill value handling
@@ -177,59 +166,11 @@ c--#define nf_def_var my_nf_def_var
         if (ierr /= nf90_noerr) goto 99
         if (rec_per_file == 0) total_rec=0
 
-! Put global attributes:
-!---- ------ -----------
-
         call put_global_atts(ncid, ierr)
-
-! Define dimensions for field placement on staggered grids:
-! ------ ---------- --- ----- --------- -- --------- -------
-
-        ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd(1))
-        ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd(1))
-        ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd(2))
-        ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd(2))
-#ifdef SOLVE3D
-        ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd(3))
-        ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd(3))
-#endif
-        ierr=my_nf_def_dim(ncid, 'time', nf_unlimited, timedim)
-        ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
-
-      ! Transfer all newly defined dimensions to grid types that use
-      ! that dimension - e.g. u-point = ( xi_u, eta_rho, timedim )
-      ! for eta_rho it can use u2dgrd(2)=r2dgrd(2) rather than nf call
-      ! --------------------------------------------------------------
-
-        auxil(2)=timedim
-
-        r2dgrd(3)=timedim                          ! Free surface
-
-        u2dgrd(2)=r2dgrd(2) ; u2dgrd(3)=timedim    ! 2D UBAR-type
-
-        v2dgrd(1)=r2dgrd(1) ; v2dgrd(3)=timedim    ! 2D VBAR-type
-
-#ifdef SOLVE3D
-        r3dgrd(1)=r2dgrd(1)
-        r3dgrd(2)=r2dgrd(2) ; r3dgrd(4)=timedim    ! 3D RHO-type
-
-        u3dgrd(1)=u2dgrd(1) ; u3dgrd(3)=r3dgrd(3)  ! 3D U-type
-        u3dgrd(2)=r2dgrd(2) ; u3dgrd(4)=timedim    !
-
-        v3dgrd(1)=r2dgrd(1) ; v3dgrd(3)=r3dgrd(3)  ! 3D V-type
-        v3dgrd(2)=v2dgrd(2) ; v3dgrd(4)=timedim    !
-
-        w3dgrd(1)=r2dgrd(1) ; w3dgrd(4)=timedim    ! 3D W-type
-        w3dgrd(2)=r2dgrd(2)
-#endif
 
 #if (defined PUT_GRID_INTO_HISTORY && !defined AVRH)\
  || (defined PUT_GRID_INTO_AVERAGES && defined AVRH)
-
-! Define grid variables.
-! ------ ---- ----------
-
-        if (total_rec <= 1) call def_grid(ncid, r2dgrd)
+        if (total_rec <= 1) call def_grid(ncid)
 #endif
 
 ! Define evolving model variables.
@@ -239,9 +180,8 @@ c--#define nf_def_var my_nf_def_var
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
 #ifndef AVRH
-        ierr=nf90_def_var (ncid, 'time_step', nf90_int, auxil, var_id_tmp )
-        ! Set variable long name
-        ierr=nf90_put_att (ncid, var_id_tmp, 'long_name',
+        varid = nccreate(ncid,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
+        ierr=nf90_put_att (ncid, varid, 'long_name',
      &             'time step and record numbers from initialization')
 #endif
 
@@ -251,9 +191,10 @@ c--#define nf_def_var my_nf_def_var
 #else
         text=vname(2,indxTime)
 #endif
-        ierr=nf90_inq_dimid(ncid, 'time', timedimid(1))
-        call nc_define_var(ncid, vname(1,indxTime),             ! 2=double to store ocean_time as double
-     &           text, vname(3,indxTime), timedimid, ierr, 2 )  ! need extra significant figs
+        ierr=nf90_inq_dimid(ncid, 'time', timedimid(1))  ! DevinD remove later?
+        varid = nccreate(ncid,vname(1,indxTime),(/'time'/),(/0/),nf90_double)  ! store ocean_time as double
+        ierr = nf90_put_att(ncid,varid,'long_name',text)                       ! as need extra significant figs
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxTime))
 
 ! Free-surface and 2D barotropic velocity components
 
@@ -263,8 +204,9 @@ c--#define nf_def_var my_nf_def_var
 #else
           text=vname(2,indxZ)
 #endif
-          call nc_define_var(ncid, vname(1,indxZ),
-     &           text,vname(3,indxZ), r2dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
         endif
 
         if (wrt(indxUb) .and. ierr == nf90_noerr) then
@@ -273,8 +215,9 @@ c--#define nf_def_var my_nf_def_var
 #else
           text=vname(2,indxUb)
 #endif
-          call nc_define_var(ncid, vname(1,indxUb),
-     &           text,vname(3,indxUb), u2dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxUb),(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
         endif
 
         if (wrt(indxVb) .and. ierr == nf90_noerr) then
@@ -283,8 +226,9 @@ c--#define nf_def_var my_nf_def_var
 #else
           text=vname(2,indxVb)
 #endif
-          call nc_define_var(ncid, vname(1,indxVb),
-     &           text,vname(3,indxVb), v2dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxVb),(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
         endif
 #ifdef SOLVE3D
 
@@ -296,8 +240,9 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxU)
 # endif
-          call nc_define_var(ncid, vname(1,indxU),
-     &           text,vname(3,indxU), u3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
         endif
 
         if (wrt(indxV) .and. ierr == nf90_noerr) then
@@ -306,18 +251,19 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxV)
 # endif
-          call nc_define_var(ncid, vname(1,indxV),
-     &           text,vname(3,indxV), v3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),(/xi_rho,eta_v,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
         endif
 
       ! Tracer variables
       ! ----------------
 # ifndef AVRH /* NOT AVRH */
         ! Define tracer his variables to output
-        call def_his_trc(r3dgrd)
+        call def_his_trc
 # else /* AVRH */
         ! Define tracers AVERAGED variables to output
-        call def_avg_trc(r3dgrd)
+        call def_avg_trc
 # endif /* END AVRH */
 
 ! Density anomaly.
@@ -328,8 +274,9 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxR)
 # endif
-          call nc_define_var(ncid, vname(1,indxR),
-     &           text,vname(3,indxR), r3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxR),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
         endif
 
 ! S-coordinate "omega" vertical velocity.
@@ -340,8 +287,9 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxO)
 # endif
-          call nc_define_var(ncid, vname(1,indxO),
-     &           text,vname(3,indxO), w3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxO),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxO))
         endif
 
 ! True W-vertical velocity.
@@ -352,8 +300,9 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxW)
 # endif
-          call nc_define_var(ncid, vname(1,indxW),
-     &           text,vname(3,indxW), r3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxW),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxW))
         endif
 
 ! Vertical viscosity coefficient.
@@ -364,8 +313,9 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxAkv)
 # endif
-          call nc_define_var(ncid, vname(1,indxAkv),
-     &           text,vname(3,indxAkv), w3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxAkv),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkv))
         endif
 
 ! Vertical thermal conductivity coefficient.
@@ -376,8 +326,9 @@ c--#define nf_def_var my_nf_def_var
 # else
           text=vname(2,indxAkt)
 # endif
-          call nc_define_var(ncid, vname(1,indxAkt),
-     &           text,vname(3,indxAkt), w3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxAkt),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkt))
         endif
 # ifdef SALINITY
 ! Vertical diffusion coefficient for salinity.
@@ -388,8 +339,9 @@ c--#define nf_def_var my_nf_def_var
 #  else
           text=vname(2,indxAks)
 #  endif
-          call nc_define_var(ncid, vname(1,indxAks),
-     &           text,vname(3,indxAks), w3dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxAks),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAks))
         endif
 # endif /* SALINITY */
 # ifdef LMD_KPP
@@ -401,8 +353,9 @@ c--#define nf_def_var my_nf_def_var
 #  else
           text=vname(2,indxHbls)
 #  endif
-          call nc_define_var(ncid, vname(1,indxHbls),
-     &           text,vname(3,indxHbls), r2dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
         endif
 # endif
 # ifdef LMD_BKPP
@@ -414,50 +367,28 @@ c--#define nf_def_var my_nf_def_var
 #  else
           text=vname(2,indxHbbl)
 #  endif
-          call nc_define_var(ncid, vname(1,indxHbbl),
-     &           text,vname(3,indxHbbl), r2dgrd, ierr )
+          varid = nccreate(ncid,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text)
+          ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
         endif
 # endif
 #endif /* SOLVE3D */
 
 
-      ! Define WEC related variable attributes
-      ! --------------------------------------
 #ifdef WEC
 # ifndef AVRH /* NOT AVRH */
-        ! Define WEC variables to be output
-        call def_his_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
-#  ifdef SOLVE3D
-     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
-#  endif
-     &                                                             )
+        call def_vars_wec( nchis, .false. )                ! define WEC variables
 # else /* AVRH */
-        ! Define WEC AVERAGED variables to be output
-        call def_avg_def_var_wec(ierr, r2dgrd, u2dgrd, v2dgrd
-#  ifdef SOLVE3D
-     &                              , r3dgrd, u3dgrd, v3dgrd, w3dgrd
-#  endif
-     &                                                             )
+        call def_vars_wec( ncavg, .true.  )                ! define WEC averaged variables                                                           )
 # endif /* END AVRH */
 #endif   /* WEC */
 
-      ! Define BGC diag variables
-      ! -------------------------
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
 # ifndef AVRH /* NOT AVRH */
-        ! Define bgc BEC2_DIAG his variables to output
-        call def_his_bgc_diag(r2dgrd
-#  ifdef SOLVE3D
-     &                      , r3dgrd
-#  endif
-     &                               )
+
+        call def_his_bgc_diag                              ! define bgc BEC2_DIAG his variables
 # else /* AVRH */
-        ! Define bgc BEC2_DIAG AVERAGED variables to output
-        call def_avg_bgc_diag(r2dgrd
-#  ifdef SOLVE3D
-     &                      , r3dgrd
-#  endif
-     &                               )
+        call def_avg_bgc_diag                              ! define bgc BEC2_DIAG averaged variables
 # endif /* END AVRH */
 #endif   /* BEC2_DIAG */
 
@@ -465,7 +396,7 @@ c--#define nf_def_var my_nf_def_var
 ! Leave definition mode.
 ! ----- ---------- -----
 
-        ierr=nf_enddef(ncid)
+        ierr=nf90_enddef(ncid)
 #ifdef MPI_SILENT_MODE
         if (mynode == 0) then
 #endif
@@ -488,9 +419,9 @@ c--#define nf_def_var my_nf_def_var
 ! their netCDF IDs.
 
       elseif (ncid == -1) then  !--> alt. to "create_new_file"
-        ierr=nf90_open(fname(1:lfnm), nf_write, ncid)
+        ierr=nf90_open(fname(1:lfnm), nf90_write, ncid)
         if (ierr == nf90_noerr) then
-          ierr=nf_set_fill(ncid, nf_nofill, prev_fill_mode)
+          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
           if (ierr == nf90_noerr) then
 #ifdef MPI_SILENT_MODE
             if (mynode == 0) then

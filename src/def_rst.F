@@ -4,11 +4,12 @@
                                            ! restart netCDF file.
 
       use param
-      use tracers,    only: t_vname, t_lname, t_units, wrt_t
-      use read_write, only: output_root_name
+      use tracers,         only: t_vname, t_lname, t_units, wrt_t
+      use roms_read_write, only: output_root_name
       use ncvars
       use scalars
       use netcdf
+      use grid                                                       ! def_grid
 
       implicit none
       integer total_rec, ierr
@@ -154,7 +155,7 @@
 
 ! Define grid variables.
 ! ------ ---- ----------
-        if (total_rec == 1) call def_grid(ncrst, r2dgrd)
+        if (total_rec == 1) call def_grid(ncrst)
 #endif
 
 ! Define evolving model variables:

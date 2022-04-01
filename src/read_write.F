@@ -33,7 +33,7 @@
 
 !      verbose = 1  !! remove this when added to dimensio
 
-      character(len=99), public  :: output_root_name
+!      character(len=99), public  :: output_root_name
       integer, parameter, public :: rp_var=0, up_var=1,  ! Labels for different grid types
      &                              vp_var=2, qp_var=3
       real                       :: cycle_length         ! Deal with cyclical forcing files
@@ -65,7 +65,7 @@
       public ncdf_create_file
       public ncdf_create_blank_file
       public nc_write_time
-      public read_output_root_name
+!      public read_output_root_name
       public ncdf_read_mod
       public handle_ierr
 #if !defined EW_PERIODIC && !defined NS_PERIODIC
@@ -691,51 +691,52 @@ C$OMP BARRIER
       end subroutine read_small_arrays  !]
 
 ! ----------------------------------------------------------------------
-      subroutine read_output_root_name(keyword, kwlen)  ![
-
-      ! ==============================
-      ! Read from input file root-name
-      ! for output netcdf result files
-      ! ==============================
-
-      ! This is called from read_inp.F
-
-      ! 1) Save desired prefix name (root name) for
-      !    all additional output files
-
-      ! The following needs to be in the roms.in input file to use this
-      ! subroutine (file name needs to be 5 spaces from left margin):
-      !output_root_name:
-      !     rootname (<- insert desired rootname)
-
-      implicit none
-
-      ! Inputs
-      character(len=*) :: keyword
-      integer          :: kwlen ! Keyword length
-
-      ! Local
-      integer :: ierr = nf90_noerr
-      integer, parameter :: input=15
-
-
-      ! Remove keyword from keyword list to know it's accounted for.
-      call cancel_kwd (keyword(1:kwlen), ierr)
-
-      ! Read & save filename root
-      read(input,'(A)',err=95) output_root_name
-
-      ! Error handling
-      ! --------------
-      goto 100
-      ! Error for read(input,'(A)',err=95)
-  95  write(*,'(/1x,4A/)') '### ERROR: read_write :: Cannot read ',
-     &                       'entry ''', keyword(1:kwlen), '''.'
-      error stop
- 100  continue
-
-
-      end subroutine read_output_root_name  !]
+!      subroutine read_output_root_name(keyword, kwlen)  ![
+!
+!      ! ==============================
+!      ! Read from input file root-name
+!      ! for output netcdf result files
+!      ! ==============================
+!
+!      ! This is called from read_inp.F
+!
+!      ! 1) Save desired prefix name (root name) for
+!      !    all additional output files
+!
+!      ! The following needs to be in the roms.in input file to use this
+!      ! subroutine (file name needs to be 5 spaces from left margin):
+!      !output_root_name:
+!      !     rootname (<- insert desired rootname)
+!
+!      implicit none
+!
+!      ! Inputs
+!      character(len=*) :: keyword
+!      integer          :: kwlen ! Keyword length
+!
+!      ! Local
+!      integer :: ierr = nf90_noerr
+!      integer, parameter :: input=15
+!
+!
+!      ! commented out in transition to roms_read_write.F
+!!      ! Remove keyword from keyword list to know it's accounted for.
+!!      call cancel_kwd (keyword(1:kwlen), ierr)
+!
+!      ! Read & save filename root
+!      read(input,'(A)',err=95) output_root_name
+!
+!      ! Error handling
+!      ! --------------
+!      goto 100
+!      ! Error for read(input,'(A)',err=95)
+!  95  write(*,'(/1x,4A/)') '### ERROR: read_write :: Cannot read ',
+!     &                       'entry ''', keyword(1:kwlen), '''.'
+!      error stop
+! 100  continue
+!
+!
+!      end subroutine read_output_root_name  !]
 
 !-----------------------------------------------------------------------
       subroutine ncdf_create_file( fname, ncid, prev_fill_mode,  ![

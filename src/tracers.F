@@ -9,6 +9,8 @@
       use surf_flux,  only: stflx ! surface tracer flux should possibly live in this module rather?
       use ncvars
       use scalars  ! for 'FIRST_TIME_STEP' and nstp
+      use nc_read_write
+      use netcdf
 
       implicit none
 
@@ -165,20 +167,19 @@
       end subroutine set_ana_surf_tracer_flx  !]
 
 ! ----------------------------------------------------------------------
-      subroutine def_his_trc(r3dgrd)  ![
+      subroutine def_his_trc  ![
       ! Define history file variables in def_his.F
 
       implicit none
 
-      ! inputs
-      integer r3dgrd(4)
       ! local
-      integer itrc, ierr
+      integer itrc, ierr, varid
 
       do itrc=1,NT
         if (wrt_t(itrc)) then
-          call nc_define_var(nchis, t_vname(itrc),
-     &    t_lname(itrc), t_units(itrc), r3dgrd, ierr )
+          varid = nccreate(nchis,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(nchis,varid,'long_name',t_lname(itrc))
+          ierr = nf90_put_att(nchis,varid,'units',t_units(itrc))
         endif
       enddo
 
@@ -187,21 +188,19 @@
 ! ----------------------------------------------------------------------
 ! Need AVERAGES as 'ncavg' only exists if AVERAGES is defined.
 #ifdef AVERAGES
-      subroutine def_avg_trc(r3dgrd)  ![
-
+      subroutine def_avg_trc  ![
       implicit none
 
-      ! inputs
-      integer r3dgrd(4)
       ! local
-      integer itrc, ierr
+      integer itrc, ierr, varid
       character(len=64) long_name
 
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then
           long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
-          call nc_define_var(ncavg, t_vname(itrc),
-     &    long_name, t_units(itrc), r3dgrd, ierr )
+          varid = nccreate(ncavg,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncavg,varid,'long_name',long_name)
+          ierr = nf90_put_att(ncavg,varid,'units',t_units(itrc))
         endif
       enddo
 
