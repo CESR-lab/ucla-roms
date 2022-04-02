@@ -1,6 +1,6 @@
 #include "cppdefs.opt"
 
-      subroutine def_rst(total_rec, ierr)  ! Create or open
+      subroutine def_rst(total_rec, ierr)  ! Create or open  ![
                                            ! restart netCDF file.
 
       use param
@@ -10,23 +10,21 @@
       use scalars
       use netcdf
       use grid                                                       ! def_grid
+      use nc_read_write
 
       implicit none
-      integer total_rec, ierr
 
-#include "netcdf.inc"
-      logical create_new_file
-      integer lenstr, checkdims, my_nf_def_dim
-      integer rec, lrst, lvar, timedim, prev_fill_mode,
-     &        r2dgrd(3), u2dgrd(3), v2dgrd(3),  auxil(2)
-#ifdef SOLVE3D
-     &      , r3dgrd(4), u3dgrd(4), v3dgrd(4),  w3dgrd(4), itrc
-#endif
+      ! input
+      integer :: total_rec, ierr
+      ! local
+      logical :: create_new_file
+      integer :: lenstr, checkdims, my_nf_def_dim, varid
+      integer :: rec, lrst, lvar, timedim, prev_fill_mode, itrc
 #ifdef MASK_LAND_DATA
 # ifdef DBLEPREC
-      real*8, parameter :: spv_set=1.D+33
+      real(kind=8),parameter :: spv_set=1.D+33
 # else
-      real*4, parameter :: spv_set=1.E+33
+      real(kind=4),parameter :: spv_set=1.E+33
 # endif
 #endif
 
@@ -88,14 +86,10 @@
       if (mynode > 0) create_new_file=.false.
 #endif
 
-! Create new restart file:    Put global attributes
-!======= === ======= =====    and define all variables.
-
   10  if (create_new_file) then
-        ierr=nf_create(rstname(1:lrst), nf_clobber+nf_64bit_offset,
-     &                                                        ncrst)
+        ierr=nf90_create(rstname(1:lrst), nf90_netcdf4, ncrst)
         if (ierr == nf90_noerr) then
-          ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
+          ierr=nf90_set_fill(ncrst, nf90_nofill, prev_fill_mode)
           if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
      &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
@@ -109,268 +103,126 @@
           goto 99              !--> ERROR
         endif
 
-! Put global attributes:
-! --- ------ -----------
-
         call put_global_atts (ncrst, ierr)
 
-! Define dimensions for field placement on staggered grids:
-! ------ ---------- --- ----- --------- -- --------- -------
-
-        ierr=my_nf_def_dim(ncrst, 'xi_rho',  xi_rho,  r2dgrd(1))
-        ierr=my_nf_def_dim(ncrst, 'xi_u',    xi_u,    u2dgrd(1))
-        ierr=my_nf_def_dim(ncrst, 'eta_rho', eta_rho, r2dgrd(2))
-        ierr=my_nf_def_dim(ncrst, 'eta_v',   eta_v,   v2dgrd(2))
-#ifdef SOLVE3D
-        ierr=my_nf_def_dim(ncrst, 's_rho',   N,       r3dgrd(3))
-        ierr=my_nf_def_dim(ncrst, 's_w',     N+1,     w3dgrd(3))
-#endif
-        ierr=my_nf_def_dim(ncrst, 'time', nf_unlimited, timedim)
-        ierr=my_nf_def_dim(ncrst, 'auxil',   iaux,     auxil(1))
-
-        auxil(2)=timedim
-
-        r2dgrd(3)=timedim                          ! Free surface
-
-        u2dgrd(2)=r2dgrd(2) ; u2dgrd(3)=timedim    ! 2D UBAR-type
-
-        v2dgrd(1)=r2dgrd(1) ; v2dgrd(3)=timedim    ! 2D VBAR-type
-
-#ifdef SOLVE3D
-        r3dgrd(1)=r2dgrd(1)
-        r3dgrd(2)=r2dgrd(2) ; r3dgrd(4)=timedim    ! 3D RHO-type
-
-        u3dgrd(1)=u2dgrd(1) ; u3dgrd(3)=r3dgrd(3)  ! 3D U-type  
-        u3dgrd(2)=r2dgrd(2) ; u3dgrd(4)=timedim    !     
-
-        v3dgrd(1)=r2dgrd(1) ; v3dgrd(3)=r3dgrd(3)  ! 3D V-type
-        v3dgrd(2)=v2dgrd(2) ; v3dgrd(4)=timedim    !
-
-        w3dgrd(1)=r2dgrd(1) ; w3dgrd(4)=timedim    ! 3D W-type
-        w3dgrd(2)=r2dgrd(2)
-#endif
-
-
 #ifdef PUT_GRID_INTO_RESTART
-
-! Define grid variables.
-! ------ ---- ----------
         if (total_rec == 1) call def_grid(ncrst)
 #endif
 
 ! Define evolving model variables:
 ! ------ -------- ----- ----------
 ! Time step number and time record numbers:
-
-        ierr=nf_def_var(ncrst, 'time_step', nf_int, 2, auxil,
-     &                                                 rstTstep)
-        ierr=nf_put_att_text (ncrst, rstTstep, 'long_name', 48,
-     &       'time step and record numbers from initialization')
+        varid = nccreate(ncrst,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
+        ierr=nf90_put_att (ncrst, varid, 'long_name',
+     &             'time step and record numbers from initialization')
 
 ! Time.
-
-        lvar=lenstr(vname(1,indxTime))
-        ierr=nf_def_var(ncrst, vname(1,indxTime)(1:lvar), NF_FTYPE,
-     &                                        1, timedim, rstTime)
-        lvar=lenstr(vname(2,indxTime))
-        ierr=nf_put_att_text (ncrst, rstTime, 'long_name', lvar,
-     &                                   vname(2,indxTime)(1:lvar))
-        lvar=lenstr(vname(3,indxTime))
-        ierr=nf_put_att_text (ncrst, rstTime, 'units',     lvar,
-     &                                   vname(3,indxTime)(1:lvar))
+        varid = nccreate(ncrst,vname(1,indxTime),(/'time'/),(/0/),nf90_double)
+        ierr=nf90_put_att(ncrst, varid, 'long_name', vname(2,indxTime))
+        ierr=nf90_put_att(ncrst, varid, 'units', vname(3,indxTime))
 
 ! Free-surface.
-
-        lvar=lenstr(vname(1,indxZ))
-        ierr=nf_def_var(ncrst, vname(1,indxZ)(1:lvar), NF_FTYPE,
-     &                                             3, r2dgrd,rstZ)
-        lvar=lenstr(vname(2,indxZ))
-        ierr=nf_put_att_text (ncrst, rstZ, 'long_name', lvar,
-     &                                      vname(2,indxZ)(1:lvar))
-        lvar=lenstr(vname(3,indxZ))
-        ierr=nf_put_att_text (ncrst, rstZ, 'units', lvar,
-     &                                      vname(3,indxZ)(1:lvar))
-#ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE (ncrst, rstZ, '_FillValue', NF_FTYPE,
-     &                                                 1, spv_set)
-#endif
+        varid = nccreate(ncrst,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att (ncrst, varid, 'long_name', vname(2,indxZ))
+        ierr=nf90_put_att (ncrst, varid, 'units', vname(3,indxZ))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue',spv_set)
 
 ! 2D momenta in XI- and ETA-components
-
-        lvar=lenstr(vname(1,indxUb))
-        ierr=nf_def_var(ncrst, vname(1,indxUb)(1:lvar), NF_FTYPE,
-     &                                          3, u2dgrd, rstUb)
-        lvar=lenstr(vname(2,indxUb))
-        ierr=nf_put_att_text(ncrst, rstUb, 'long_name', lvar,
-     &                                   vname(2,indxUb)(1:lvar))
-        lvar=lenstr(vname(3,indxUb))
-        ierr=nf_put_att_text(ncrst, rstUb, 'units', lvar,
-     &                                   vname(3,indxUb)(1:lvar))
-#ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rstUb, '_FillValue',
-     &                                     NF_FTYPE, 1, spv_set)
-#endif
-
-        lvar=lenstr(vname(1,indxVb))
-        ierr=nf_def_var(ncrst, vname(1,indxVb)(1:lvar), NF_FTYPE,
-     &                                          3, v2dgrd, rstVb)
-        lvar=lenstr(vname(2,indxVb))
-        ierr=nf_put_att_text(ncrst, rstVb, 'long_name', lvar,
-     &                                   vname(2,indxVb)(1:lvar))
-        lvar=lenstr(vname(3,indxVb))
-        ierr=nf_put_att_text(ncrst, rstVb, 'units',     lvar,
-     &                                   vname(3,indxVb)(1:lvar))
-#ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rstVb, '_FillValue',
-     &                                     NF_FTYPE, 1, spv_set)
-#endif
+        varid = nccreate(ncrst,vname(1,indxUb),(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
+     &                                   vname(2,indxUb))
+        ierr=nf90_put_att(ncrst, varid, 'units', vname(3,indxUb))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue',spv_set)
+        varid = nccreate(ncrst,vname(1,indxVb),(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
+     &                                   vname(2,indxVb))
+        ierr=nf90_put_att(ncrst, varid, 'units', vname(3,indxVb))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-        ierr=nf_def_var(ncrst, 'DU_avg2', NF_FTYPE, 3, u2dgrd,
-     &                                             rst_DU_avg2)
-        ierr=nf_put_att_text(ncrst, rst_DU_avg2, 'long_name',
-     &            38, '<<fast-time averaged ubar(:,:,n+1/2)>>')
-#   ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rst_DU_avg2, '_FillValue',
-     &                                    NF_FTYPE, 1, spv_set)
-#   endif
+        varid = nccreate(ncrst,'DU_avg2',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
+     &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 
-        ierr=nf_def_var(ncrst, 'DV_avg2', NF_FTYPE, 3, v2dgrd,
-     &                                             rst_DV_avg2)
-        ierr=nf_put_att_text(ncrst, rst_DV_avg2, 'long_name',
-     &            38, '<<fast-time-averaged vbar(:,:,n+1/2)>>')
-#   ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rst_DV_avg2, '_FillValue',
-     &                                  NF_FTYPE,  1, spv_set)
-#   endif
+        varid = nccreate(ncrst,'DV_avg2',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
+     &           '<<fast-time-averaged vbar(:,:,n+1/2)>>')
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 
-        ierr=nf_def_var(ncrst, 'DU_avg_bak', NF_FTYPE, 3, u2dgrd,
-     &                                             rst_DU_avg_bak)
-        ierr=nf_put_att_text(ncrst, rst_DU_avg_bak, 'long_name',
-     &   50, '<back-step mixed fast-time-averaged ubar(:,:,n-1)>')
-#   ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rst_DU_avg_bak, '_FillValue',
-     &                                     NF_FTYPE,  1, spv_set)
-#   endif
+        varid = nccreate(ncrst,'DU_avg_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
+     &       '<back-step mixed fast-time-averaged ubar(:,:,n-1)>')
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 
-        ierr=nf_def_var(ncrst, 'DV_avg_bak', NF_FTYPE, 3, v2dgrd,
-     &                                             rst_DV_avg_bak)
-        ierr=nf_put_att_text(ncrst, rst_DV_avg_bak, 'long_name',
-     &   50, '<back-step mixed fast-time-averaged vbar(:,:,n-1)>')
-#   ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rst_DV_avg_bak, '_FillValue',
-     &                                     NF_FTYPE, 1,  spv_set)
-#   endif
+        varid = nccreate(ncrst,'DV_avg_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
+     &       '<back-step mixed fast-time-averaged vbar(:,:,n-1)>')
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 #  elif defined PRED_COUPLED_MODE
-        ierr=nf_def_var(ncrst, 'rufrc_bak', NF_FTYPE, 3, u2dgrd,
-     &                                                rst_rufrc)
-        ierr=nf_put_att_text(ncrst, rst_rufrc, 'long_name', 30,
+        varid = nccreate(ncrst,'rufrc_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
      &                        '3D-to-2D forcing, XI-component')
-#   ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rst_rufrc, '_FillValue',
-     &                                NF_FTYPE, 1,  spv_set)
-#   endif
-        ierr=nf_def_var(ncrst, 'rvfrc_bak', NF_FTYPE, 3, v2dgrd,
-     &                                                rst_rvfrc)
-        ierr=nf_put_att_text(ncrst, rst_rvfrc, 'long_name', 31,
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
+        varid = nccreate(ncrst,'rvfrc_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
+        ierr=nf90_put_att(ncrst, varid, 'long_name',
      &                       '3D-to-2D forcing, ETA-component')
-#   ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE(ncrst, rst_rvfrc, '_FillValue',
-     &                                NF_FTYPE, 1,  spv_set)
-#   endif
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 #  endif
 # endif  /* EXACT_RESTART */
 
 ! 3D momenta in XI- and ETA-directions.
+        varid = nccreate(ncrst, vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/), NF_FTYPE)
+        ierr=nf90_put_att (ncrst, varid, 'long_name',
+     &                                     vname(2,indxU))
+        ierr=nf90_put_att (ncrst, varid, 'units',
+     &                                     vname(3,indxU))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 
-        lvar=lenstr(vname(1,indxU))
-        ierr=nf_def_var (ncrst, vname(1,indxU)(1:lvar), NF_FTYPE,
-     &                                           4, u3dgrd, rstU)
-        lvar=lenstr(vname(2,indxU))
-        ierr=nf_put_att_text (ncrst, rstU, 'long_name', lvar,
-     &                                     vname(2,indxU)(1:lvar))
-        lvar=lenstr(vname(3,indxU))
-        ierr=nf_put_att_text (ncrst, rstU, 'units',     lvar,
-     &                                     vname(3,indxU)(1:lvar))
-# ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE (ncrst, rstU, '_FillValue', NF_FTYPE,
-     &                                                 1, spv_set)
-# endif
+        varid = nccreate(ncrst,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),(/xi_rho,eta_v,N,0/), NF_FTYPE)
+        ierr=nf90_put_att (ncrst, varid, 'long_name',
+     &                                     vname(2,indxV))
+        ierr=nf90_put_att (ncrst, varid, 'units',
+     &                                     vname(3,indxV))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 
-        lvar=lenstr(vname(1,indxV))
-        ierr=nf_def_var (ncrst, vname(1,indxV)(1:lvar), NF_FTYPE,
-     &                                           4, v3dgrd, rstV)
-        lvar=lenstr(vname(2,indxV))
-        ierr=nf_put_att_text (ncrst, rstV, 'long_name', lvar,
-     &                                     vname(2,indxV)(1:lvar))
-        lvar=lenstr(vname(3,indxV))
-        ierr=nf_put_att_text (ncrst, rstV, 'units',     lvar,
-     &                                     vname(3,indxV)(1:lvar))
-# ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE (ncrst, rstV, '_FillValue', NF_FTYPE,
-     &                                                 1, spv_set)
-# endif
 ! Tracer variables.
-
         do itrc=1,NT
-          lvar=lenstr(t_vname(itrc))
-          ierr=nf_def_var (ncrst, t_vname(itrc)(1:lvar),
-     &                          NF_FTYPE, 4, r3dgrd, rstT(itrc))
-          lvar=lenstr(t_lname(itrc))
-          ierr=nf_put_att_text (ncrst, rstT(itrc), 'long_name',
-     &                     lvar,   t_lname(itrc)(1:lvar))
-          lvar=lenstr(vname(3,indxT+itrc-1))
-          ierr=nf_put_att_text (ncrst, rstT(itrc), 'units', lvar,
-     &                             t_units(itrc)(1:lvar))
-# ifdef MASK_LAND_DATA
-          ierr=nf_put_att_FTYPE (ncrst, rstT(itrc), '_FillValue',
-     &                                     NF_FTYPE, 1, spv_set)
-# endif
+          varid = nccreate(ncrst,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),
+     &                                         (/xi_rho,eta_rho,N,0/), NF_FTYPE)
+          ierr=nf90_put_att (ncrst, varid, 'long_name',
+     &                       t_lname(itrc))
+          ierr=nf90_put_att (ncrst, varid, 'units', t_units(itrc))
+          ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
         enddo
 
 # ifdef LMD_KPP
 ! Depth of surface planetary boundary layer.
-
-        lvar=lenstr(vname(1,indxHbls))
-        ierr=nf_def_var (ncrst, vname(1,indxHbls)(1:lvar),
-     &                            NF_FTYPE, 3, r2dgrd, rstHbls)
-        lvar=lenstr(vname(2,indxHbls))
-        ierr=nf_put_att_text (ncrst, rstHbls, 'long_name', lvar,
-     &                                 vname(2,indxHbls)(1:lvar))
-        lvar=lenstr(vname(3,indxHbls))
-        ierr=nf_put_att_text (ncrst, rstHbls, 'units', lvar,
-     &                                 vname(3,indxHbls)(1:lvar))
-#  ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FTYPE (ncrst, rstHbls, '_FillValue',
-     &                                  NF_FTYPE, 1, spv_set)
-#  endif
+!        ierr=nf_def_var (ncrst, vname(1,indxHbls)(1:lvar),
+!     &                            NF_FTYPE, 3, r2dgrd, rstHbls)
+        varid = nccreate(ncrst,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att (ncrst, varid, 'long_name',
+     &                                 vname(2,indxHbls))
+        ierr=nf90_put_att (ncrst, varid, 'units',
+     &                                 vname(3,indxHbls))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 # endif
 # ifdef LMD_BKPP
 ! Thickness of bottom boundary layer.
-
-        lvar=lenstr(vname(1,indxHbbl))
-        ierr=nf_def_var (ncrst, vname(1,indxHbbl)(1:lvar),
-     &                            NF_FTYPE, 3, r2dgrd, rstHbbl)
-        lvar=lenstr(vname(2,indxHbbl))
-        ierr=nf_put_att_text (ncrst, rstHbbl, 'long_name', lvar,
-     &                                 vname(2,indxHbbl)(1:lvar))
-        lvar=lenstr(vname(3,indxHbbl))
-        ierr=nf_put_att_text (ncrst, rstHbbl, 'units',     lvar,
-     &                                 vname(3,indxHbbl)(1:lvar))
-#  ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FOUT (ncrst, rstHbbl, '_FillValue',
-     &                                 NF_FTYPE, 1, spv_set)
-#  endif
+!        ierr=nf_def_var (ncrst, vname(1,indxHbbl),
+!     &                            NF_FTYPE, 3, r2dgrd, rstHbbl)
+        varid = nccreate(ncrst,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/), NF_FTYPE)
+        ierr=nf90_put_att (ncrst, varid, 'long_name',
+     &                                 vname(2,indxHbbl))
+        ierr=nf90_put_att (ncrst, varid, 'units',
+     &                                 vname(3,indxHbbl))
+        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
 # endif
 #endif /* SOLVE3D */
 
-
-! Leave definition mode.                  Also initialize record
-! ----- ---------- -----                  dimension size to zero.
-
-        ierr=nf_enddef(ncrst)
+        ierr=nf90_enddef(ncrst)
 #ifdef MPI_SILENT_MODE
         if (mynode==0) then
 #endif
@@ -394,9 +246,9 @@
 ! something is wrong with its dimensions, create new file.
 
       elseif (ncrst == -1) then
-        ierr=nf90_open(rstname(1:lrst), nf_write, ncrst)
+        ierr=nf90_open(rstname, nf90_write, ncrst)
         if (ierr == nf90_noerr) then
-          ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
+          ierr=nf90_set_fill(ncrst, nf90_nofill, prev_fill_mode)
           if (ierr /= nf90_noerr) then
             write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
      &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
@@ -560,11 +412,9 @@
 # endif
 # ifdef LMD_BKPP
 ! Thickness of bottom boundary layer.
-
-        lvar=lenstr(vname(1,indxHbbl))
-        ierr=nf90_inq_varid(ncrst, vname(1,indxHbbl)(1:lvar), rstHbbl)
+        ierr=nf90_inq_varid(ncrst, vname(1,indxHbbl), rstHbbl)
         if (ierr /= nf90_noerr) then
-        write(*,1) vname(1,indxHbbl)(1:lvar), rstname(1:lrst)
+        write(*,1) vname(1,indxHbbl), rstname
           goto 99                                       !--> ERROR
         endif
 # endif
@@ -614,4 +464,5 @@
   99  return                                              !--> ERROR
    1  format(/1x,'### ERROR: def_rst :: Cannot find variable ''', A,
      &                            ''' in netCDF file ''', A, '''.'/)
-      end
+
+      end subroutine def_rst  !]
