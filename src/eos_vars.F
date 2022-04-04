@@ -38,28 +38,22 @@
 !----------------------------------------------------------------------
       subroutine init_arrays_eos_vars  ![
       use ncvars
+      use scalars
       implicit none
 
 #ifdef SOLVE3D
 # ifdef SPLIT_EOS
-      allocate(  rho1(GLOBAL_2D_ARRAY,N) )
-      allocate( qp1(GLOBAL_2D_ARRAY,N) )
+      allocate(  rho1(GLOBAL_2D_ARRAY,N) ); rho1=0.
+      allocate( qp1(GLOBAL_2D_ARRAY,N) ); qp1=0.
 # else
-      allocate( rho(GLOBAL_2D_ARRAY,N) )
+      allocate( rho(GLOBAL_2D_ARRAY,N) ); rho=0.
 # endif
 # ifdef ADV_ISONEUTRAL
-      allocate( dRdx(GLOBAL_2D_ARRAY,N) )
-      allocate( dRde(GLOBAL_2D_ARRAY,N) )
-      allocate( idRz(GLOBAL_2D_ARRAY,0:N) )
+      allocate( dRdx(GLOBAL_2D_ARRAY,N) ); dRdx=init
+      allocate( dRde(GLOBAL_2D_ARRAY,N) ); dRde=init
+      allocate( idRz(GLOBAL_2D_ARRAY,0:N) ); idRz=0.       ! -> loop ranges need fixing before init will work
 # endif
 #endif
-
-# ifdef SPLIT_EOS
-      rho1=0.
-      qp1=0.
-# else
-      rho=0.
-# endif
 
       if (wrtavg(indxR)) then
         allocate( rho_avg(GLOBAL_2D_ARRAY,N) )

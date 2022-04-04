@@ -2,7 +2,7 @@
 #SBATCH --job-name="roms"
 
 #       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
-#SBATCH --output="roms_log.%j.%N.out"
+#SBATCH --output="roms_log.%j.%N.log"
 
 #       Can only use a max of 32 nodes on 'compute' partition:
 #SBATCH --partition=compute

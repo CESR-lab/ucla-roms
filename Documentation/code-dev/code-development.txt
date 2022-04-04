@@ -48,7 +48,17 @@ Code development discussions and strategy
     were a few bugs that appeared because some routines required arrays to be zero but weren't actually set to 0.
     
     We discussed how setting arrays at allocation to a NaN value would help catch bugs in future.
-    For example there was a tricky bug with DU_avg_bak that would have been more easily caught if it had NaN values.  
+    For example there was a tricky bug with DU_avg_bak that would have been more easily caught if it had 
+    NaN values.
+    
+    02/16: After EXTENSIVE debug checks comparing before and after (alloc arrays) outputs, we picked up
+    a bug in analytical examples needing EXACT_RESTART -> forw_start=ntstart. So the newer value was correct.
+    For realistic simulations, there is a drift in values. We could not determine why, we assume new memory
+    management leads to minute rounding differences which then propogate. These differences were at sub-domain
+    boundaries, but on top of that were heisenbug'y in nature. 1 step with 2 barotropic steps could pick up
+    differences in zeta/ubar of e-16. These differences then drift into the domain over time and choas does the
+    rest. We couldn't track this down after lots of trying due to Heisenbug behaviour (position of difference
+    would change). So we concluded we would accept what we have.  
     
     
     

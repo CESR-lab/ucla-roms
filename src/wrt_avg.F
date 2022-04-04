@@ -16,7 +16,6 @@
       use mixing
       use ncvars
       use scalars
-      use netcdf
 
       implicit none
 
