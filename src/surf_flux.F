@@ -94,7 +94,7 @@
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
-      allocate(  nc_sss%vdata( GLOBAL_2D_ARRAY,2) )
+      allocate(  nc_sss%data( GLOBAL_2D_ARRAY,2) )
 #endif
 
       if (wrt_surf_flx_avg) then
