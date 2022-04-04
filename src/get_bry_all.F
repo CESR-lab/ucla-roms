@@ -202,8 +202,8 @@
 
             do itrc=1,NT ! THIS CAN BE WRAPPER for all east/west/south...
               v_name = trim(t_vname(itrc)) / / '_west'
-              ierr=nf90_inq_varid(bry_id,v_name, t_west_id(itrc))
-              if (ierr /= nf90_noerr) then
+              ierr=nf90_inq_varid(bry_id,v_name, t_west_id(itrc))  ! look for tracer variable in bry file
+              if (ierr /= nf90_noerr) then                         ! if not there then trigger default values
 #    ifdef DEFAULT_BRY_VALUES
                 if(mynode==0) write(*,11) t_vname(itrc),
      &                        bry_file(ibry)(1:lsrc) MYID
@@ -634,7 +634,7 @@
                     ierr=read_bry_NS(bry_id, t_south_id(itrc),  bry_rec,
      &                             r_var, t_south_dt(0,1,itbry,itrc), N)
                   else ! Use default values
-                    call set_bry_tracer_defaults(t_south_dt,itrc,itbry,Lm+1)
+                    call set_bry_tracer_defaults(t_south_dt,itrc,itbry,Lm+1)  ! only need to do once
                     if(mynode==0) print 3, trim(t_vname(itrc))
 !                    ierr=nf90_noerr
                   endif

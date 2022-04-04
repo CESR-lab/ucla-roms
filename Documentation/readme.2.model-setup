@@ -45,6 +45,8 @@ param.opt:
     src/diagnostics.F has src/diagnostics.opt, in which the user defined changes
     for the module are added.
     The .opt files will have default values already.
+    analytical.F is one of the few exceptions. Users will need to make their own
+    edits in analytical.F.
     FYI, .opt has no meaning other than an abbreviation of 'options', it is just
     an include file like the .h files.
 
@@ -139,6 +141,10 @@ Surface flux outputting:
     The output frequency is in surf_flux.opt, not the roms.in file. 
     It will produce its own output file separate from the _his.nc file.
     The averages (sustr_avg, etc) are also controlled in surf_flux.opt.
+    
+BGC - Bio-geochemical:
+
+    See Documentation/readme-specifics/README.bgc-code-port-info-20201216.txt for more info.
 
 Misc.:
 

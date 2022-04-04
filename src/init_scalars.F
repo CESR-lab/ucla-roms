@@ -15,8 +15,16 @@
       use ncvars
       use scalars
 
+      use, intrinsic :: ieee_arithmetic, only: IEEE_Value, IEEE_QUIET_NAN
+      use, intrinsic :: iso_fortran_env, only: real32
+
       implicit none
       integer ierr, i
+
+      real :: nan  !real(real32) :: nan
+      nan = IEEE_VALUE(nan, IEEE_QUIET_NAN)
+      init =  nan ! 0. ! nan  ! for checking no bad inits
+
 #define ALL_DATA
 
 c      integer size, kmp_get_stacksize_s

@@ -39,6 +39,7 @@ C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 
 !----------------------------------------------------------------------
       subroutine init_arrays_private_scratch  ![
+      use scalars
       implicit none
 
 #ifdef ALLOW_SINGLE_BLOCK_MODE
@@ -51,19 +52,13 @@ C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
       N2d=size_XI*(sse*size_ETA+ssz*(N+1))/(sse+ssz)
       N3d=size_XI*size_ETA*(N+1)
 
-
-      allocate( A2d(N2d,32) )
-#ifdef SOLVE3D
-      allocate( A3d(N3d,6)  )
-      allocate( iA2d(N2d,2) )
-#endif
-
-#ifdef SOLVE3D
       ! Initialize (first touch) private
       ! scratch arrays in parallel by each thread.
-      A3d=0.
+      allocate( A2d(N2d,32) ); A2d=0.
+#ifdef SOLVE3D
+      allocate( A3d(N3d,6)  ); A3d=0.            ! if private scratch not set to zero result changes
+      allocate( iA2d(N2d,2) ); iA2d=0.           ! this hasn't been followed to see why
 #endif
-      A2d=0.
 
       end subroutine init_arrays_private_scratch  !]
 

@@ -1,0 +1,18 @@
+Additional instructions for ROMS to compile on Pacific cluster at TAU.
+
+1) Copy the bashrc file stored on the repo as your new .bashrc (save your old one somewhere). 
+   Edit the line for your ROMS_ROOT. (don't forget to 'source ~/.bashrc' afterwards):
+   Documentation/machine-specific/bashrc-cshrc-files/bashrc-pacific-tau-202202
+
+2) Edit NHMG/src/Makefile - uncomment line: FC = mpiifort.
+
+3) Uncomment the two mpiifort lines in src/Makedefs.inc.
+
+4) Follow all the usual compile steps in the readme's.
+
+
+NCJOIN_MPI:
+
+   This works, but needs to be called with mpirun not mpiexec (not sure why). E.g:
+   
+   mpirun -n 4 ncjoin_mpi 2 2 sample_his.00000.*.nc

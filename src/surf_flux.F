@@ -9,6 +9,7 @@
 
       use param
       use read_write
+      use roms_read_write
       use ncvars
       use scalars
 
@@ -49,14 +50,14 @@
       ! ----------------------------------------------------------------
 #if defined QCORRECTION && !defined ANA_SST
       ! sea-surface temperature (SST) data
-      real, public :: sst(GLOBAL_2D_ARRAY)
-      real, public :: dSSTdt
+      real,public,allocatable,dimension(:,:) :: sst
+      real,public :: dSSTdt
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      real, public :: sss(GLOBAL_2D_ARRAY)
-      real, public :: dSSSdt                  ! input units (cm/day)
+      real,public,allocatable,dimension(:,:) :: sss
+      real,public :: dSSSdt                                ! input units (cm/day)
 #endif
 
 
@@ -81,20 +82,20 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_arrays_surf_flx  ![
+      use scalars
       implicit none
 
-      allocate( sustr  (GLOBAL_2D_ARRAY)    )
-      allocate( sustr_r(GLOBAL_2D_ARRAY)    )
-      allocate( svstr  (GLOBAL_2D_ARRAY)    )
-      allocate( svstr_r(GLOBAL_2D_ARRAY)    )
-      allocate( stflx  (GLOBAL_2D_ARRAY,NT) )
-      allocate( srflx  (GLOBAL_2D_ARRAY)    )
-      sustr=0.
-      svstr=0.
-#ifdef SOLVE3D
-      stflx=0.
-      srflx=0.
-#endif /* SOLVE3D */
+      allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
+      allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
+      allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
+      allocate( svstr_r(GLOBAL_2D_ARRAY)    ); svstr_r=init
+      allocate( stflx  (GLOBAL_2D_ARRAY,NT) ); stflx=init
+      allocate( srflx  (GLOBAL_2D_ARRAY)    ); srflx=init
+
+#if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
+      allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
+      allocate(  nc_sss%data( GLOBAL_2D_ARRAY,2) )
+#endif
 
       if (wrt_surf_flx_avg) then
         allocate( sustr_avg(GLOBAL_2D_ARRAY) )

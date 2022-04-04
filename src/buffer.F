@@ -29,9 +29,10 @@
 
       !----------------------------------------------------------------
       subroutine init_arrays_buffer  ![
+      use scalars
       implicit none
 
-      allocate( buff((Lm+5)*(Mm+5)*(N+1)) )
+      allocate( buff((Lm+5)*(Mm+5)*(N+1)) ); buff=init
 
       end subroutine init_arrays_buffer  !]
 
