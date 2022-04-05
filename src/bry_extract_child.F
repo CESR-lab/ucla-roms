@@ -207,8 +207,7 @@
       use netcdf
       use mpi                                          ! debug temporary for mpi abort
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use roms_read_write
 

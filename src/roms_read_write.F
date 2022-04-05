@@ -36,14 +36,39 @@
       integer, target :: test_var
       character(len=99), public  :: output_root_name
 
+      integer,public :: i0,i1,j0,j1                        ! i0=0 (west edge), or i0=1 interior
+
 !     interface set_frc_data
 !       module procedure  set_frc_data_2D
 !     end interface
 
       public :: set_frc_data,create_filename
       public :: read_output_root_name
+      public :: init_output_indices
 
       contains
+
+! ----------------------------------------------------------------------
+      subroutine init_output_indices  ![
+      ! outputting variables requires buffer points
+      ! on the domain boundary only.
+      ! interior sub-domain is still  1:nx,1:ny
+      ! but e.g. South-West corner is 0:nx,0:ny
+      ! we write this as ncwrite( var(i0:i1,j0:j1) )
+
+      use dimensions
+      implicit none
+
+      i0=1; i1=nx; j0=1; j1=ny
+      if (.not.west_exchng)  i0=0
+      if (.not.south_exchng) j0=0
+      if (.not.east_exchng)  i1=nx+1
+      if (.not.north_exchng) j1=ny+1
+
+!      print *, mynode, 'i0=',i0,'j0=',j0,'i1=',i1,'j1=',j1
+!      print *, mynode, 'nx=',ny,'j0=',j0,'i1=',i1,'j1=',j1
+
+      end subroutine init_output_indices  !]
 
 ! ----------------------------------------------------------------------
       subroutine set_frc_data(nc,var1d,var2d)  ![

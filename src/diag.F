@@ -64,8 +64,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use eos_vars
       use grid
       use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use mpi
 

@@ -10,8 +10,7 @@
       use tracers    ! , only: wrt_avg_trc
       use read_write ! nc_write_var, rp_var, etc
       use netcdf     ! nf90 subroutines
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use eos_vars
       use mixing
       use ncvars

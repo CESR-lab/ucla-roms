@@ -62,8 +62,7 @@
       use grid
       use mixing
       use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use work_mod
 

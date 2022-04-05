@@ -34,7 +34,7 @@
       use coupling
       use grid
       use mixing
-      use ocean2d
+      use ocean_vars
       use scalars
 
       implicit none

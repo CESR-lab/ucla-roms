@@ -14,7 +14,7 @@
       use roms_read_write
       use hidden_mpi_vars
       use mixing
-      use read_write, only: output_root_name,handle_ierr
+      use read_write, only: handle_ierr
 
       implicit none
       private

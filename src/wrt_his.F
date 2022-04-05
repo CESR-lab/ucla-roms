@@ -18,25 +18,25 @@
       use grid
       use mixing
       use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use work_mod
       use mpi
       use netcdf
+      use nc_read_write
+      use roms_read_write
 
       implicit none
 
-#include "netcdf.inc"
-
-      integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
-     &   , start(2), count(2), ibuff(iaux), ncdf_write
-      character(len=18) tstring
+      integer :: ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
+     &        , start1d(2), count(2), ibuff(iaux), ncdf_write
+      integer :: start(4)
+      character(len=18) :: tstring
 #ifdef SOLVE3D
-      integer tile, itrc, j,k
+      integer :: tile, itrc, j,k
 #endif
 #if defined MPI && !defined PARALLEL_FILES
-      integer status(MPI_STATUS_SIZE), blank
+      integer :: status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
      &            mynode-1, 2, ocean_grid_comm, status, ierr)
 #endif
@@ -66,13 +66,14 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 #ifdef AVERAGES
       ibuff(4)=nrecavg
 #endif
-      start(1)=1      ; count(1)=iaux
-      start(2)=record ; count(2)=1
+      start1d(1)=1      ; count(1)=iaux
+      start1d(2)=record ; count(2)=1
+      start=1
 
       ! get time step var_id & record time step info
       ! --------------------------------------------
       ierr=nf90_inq_varid(nchis, 'time_step', var_id_tmp)
-      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start, count)
+      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start1d, count)
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
@@ -98,9 +99,9 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 ! its value hasn't evolved from 'n+1' of previous timestep,
 ! which makes it 'n' of this timestep still.
 
+      start(3)=record
       if (wrthis(indxZ)) then
-        call nc_write_var(nchis, zeta(START_2D_ARRAY,knew), 1,
-     &                    vname(1,indxZ), rp_var, record, ierr)
+        call ncwrite(nchis,vname(1,indxZ),zeta(i0:i1,j0:j1,knew),start)
       endif
       if (wrthis(indxUb)) then
         call nc_write_var(nchis, ubar(START_2D_ARRAY,knew), 1,
@@ -119,6 +120,7 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 ! Currently not sure why Sasha chose to do wrt_his in middle of timestep,
 ! rather than at the beginning.
 
+      start(3)=1; start(4)=record
       if (wrthis(indxU)) then
         call nc_write_var(nchis, u(START_2D_ARRAY,1,nstp), N,
      &                    vname(1,indxU), up_var, record, ierr)

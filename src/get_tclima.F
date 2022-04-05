@@ -181,7 +181,7 @@
 
       use param
       use climat
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none

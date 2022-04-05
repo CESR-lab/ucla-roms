@@ -19,7 +19,7 @@
        use bgc, only: srflx_dailyavg
 #endif
        use grid
-       use ocean3d
+       use ocean_vars
        use scalars
        use bgc_ecosys_vars
        use bgc_forces
@@ -642,7 +642,7 @@
 
        use param
        use grid
-       use ocean3d
+       use ocean_vars
        use scalars
        use bgc_ecosys_vars
 
@@ -2292,7 +2292,7 @@
      &      iend,j,net_dust_in)
 
         use param
-        use ocean3d
+        use ocean_vars
         use scalars
         use bgc_ecosys_vars
 
@@ -2429,7 +2429,7 @@
 
        use param
        use grid
-       use ocean3d
+       use ocean_vars
        use bgc_ecosys_vars
 
        implicit none
