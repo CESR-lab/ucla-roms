@@ -86,7 +86,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
       use ncvars
-      use ocean3d
+      use ocean_vars
       use scalars
       use analytical
 
@@ -348,6 +348,7 @@ C$OMP END MASTER
       use scalars
       use analytical
       use sponge_tune
+      use ocean_vars
 
       implicit none
       integer trd, tile, my_first, my_last, range

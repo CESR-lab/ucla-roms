@@ -24,8 +24,7 @@
       use wec_frc
       use coupling
       use grid
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use scoord
 
@@ -187,7 +186,7 @@
       use param
       use wec_frc
       use grid
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none
@@ -254,8 +253,7 @@
       use wec_frc
       use coupling
       use grid
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use dimensions
       use diagnostics

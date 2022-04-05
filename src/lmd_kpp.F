@@ -28,7 +28,7 @@ c--# define MERGE_OVERLAP
       use surf_flux ! bulk_frc-> only: sustr_r, svstr_r, stflx, srflx
       use grid      ! flux_frc-> only: sustr, svstr, stflx, srflx
       use mixing
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none

@@ -24,7 +24,7 @@
       integer, parameter :: gny = MMm
       integer, parameter ::  nz = N
 
-      integer            :: nx         ! different four boundary tiles hence not compile time parameter
+      integer            :: nx   ! Can vary between subdomains so not compile time parameters
       integer            :: ny
 
       ! DevinD: store global index ranges for each node for bry_extract_child.F
@@ -82,14 +82,14 @@
       end subroutine set_global_ij_SW_NE_corners
 
 ! ----------------------------------------------------------------------
-      subroutine init_arrays_dimensions  ![
+      subroutine init_dimensions  ![
       implicit none
       ! need to do this here because Lm, Mm change in mpi_setup and are not known at compile time.
 
       nx = Lm
       ny = Mm
 
-      end subroutine init_arrays_dimensions  !]
+      end subroutine init_dimensions  !]
 
 ! ----------------------------------------------------------------------
 

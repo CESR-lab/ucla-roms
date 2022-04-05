@@ -25,8 +25,7 @@
       use eos_vars
       use grid
       use mixing
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use surf_flux
 

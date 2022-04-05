@@ -36,14 +36,14 @@
         ! local
         integer              :: varid,ierr
         integer,dimension(1) :: dims
-        integer,dimension(2) :: sizes
+        integer,dimension(2) :: count
 
         dims = shape(dat)
         ierr = nf90_inq_varid(ncid,vname,varid)
 
         if (present(start)) then
-          sizes = (/dims, 1/)
-          ierr = nf90_get_var(ncid,varid,dat,start,sizes) 
+          count = (/dims, 1/)
+          ierr = nf90_get_var(ncid,varid,dat,start,count)
         else
           ierr = nf90_get_var(ncid,varid,dat)
         endif
@@ -64,14 +64,14 @@
         ! local
         integer              :: varid,ierr
         integer,dimension(2) :: dims
-        integer,dimension(3) :: sizes
+        integer,dimension(3) :: count
 
         dims = shape(dat)
         ierr = nf90_inq_varid(ncid,vname,varid)
 
         if (present(start)) then
-          sizes = (/dims, 1/)
-          ierr = nf90_get_var(ncid,varid,dat,start,sizes) 
+          count = (/dims, 1/)
+          ierr = nf90_get_var(ncid,varid,dat,start,count)
         else
           ierr = nf90_get_var(ncid,varid,dat)
         endif
@@ -92,15 +92,15 @@
       ! local
       integer              :: varid,ierr
       integer,dimension(1) :: dims
-      integer,dimension(2) :: sizes
+      integer,dimension(2) :: count
 
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=nf90_noerr) call handle_err(ierr)
 
       if (present(start)) then
-        sizes = (/dims, 1/)
-        ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
+        count = (/dims, 1/)
+        ierr = nf90_put_var(ncid,varid,dat,start,count)
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
@@ -123,7 +123,7 @@
       ! local
       integer              :: varid,ierr
       integer,dimension(2) :: dims
-      integer,dimension(3) :: sizes
+      integer,dimension(3) :: count
 
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
@@ -132,8 +132,8 @@
       endif
 
       if (present(start)) then
-        sizes = (/dims, 1/)
-        ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
+        count = (/dims, 1/)
+        ierr = nf90_put_var(ncid,varid,dat,start,count)
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
@@ -157,7 +157,7 @@
       ! local
       integer              :: varid,ierr
       integer,dimension(3) :: dims
-      integer,dimension(4) :: sizes
+      integer,dimension(4) :: count
 
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
@@ -166,8 +166,8 @@
       endif
 
       if (present(start)) then
-        sizes = (/dims, 1/)
-        ierr = nf90_put_var(ncid,varid,dat,start,sizes) 
+        count = (/dims, 1/)
+        ierr = nf90_put_var(ncid,varid,dat,start,count)
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif

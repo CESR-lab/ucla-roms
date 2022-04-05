@@ -189,7 +189,7 @@
       use tracers, only: t
       use grid
       use mixing
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none

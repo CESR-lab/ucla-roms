@@ -23,8 +23,7 @@
       use read_write
       use grid
       use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use netcdf
       use nc_read_write
@@ -977,10 +976,6 @@
 
          ! For PART 2 below: the include ocean.h files for mrl_wci part
          ! included in top of module
-!# include "ocean2d"
-!# ifdef SOLVE3D
-!#   include "ocean3d"
-!# endif
 
             !*** PART 1 - from DH's WAVE_PACKET analytical.F ***!
 
@@ -1313,7 +1308,6 @@
       integer istr,iend,jstr,jend, i,j,k
       real Wrk(0:N)
 !! # include "grid" ! already included at top of module
-!! # include "ocean3d" ! already included at top of module
 
       do j=jstr,jend
         do i=istr,iend
@@ -1992,9 +1986,7 @@ C$OMP BARRIER
 !# include "param"
 !# include "grid"
 !# include "scalars"
-!# include "ocean2d"
 # ifdef SOLVE3D
-!#   include "ocean3d"
 !#  if defined WAVE_FRICTION && defined BODY_FRICTION
 !#   include "mixing"
 !#  endif

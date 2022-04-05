@@ -39,10 +39,9 @@
       use tides
       use diagnostics
       use coupling
-      use ocean2d
+      use ocean_vars
       use eos_vars
       use grid
-      use ocean3d
       use scalars
 
       implicit none

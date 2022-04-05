@@ -29,8 +29,7 @@
       use dimensions                                   ! has dimensions, a list of forcing files, and rmask, glob_istr, etc
       use read_write
       use netcdf
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none

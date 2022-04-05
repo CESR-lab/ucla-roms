@@ -14,6 +14,8 @@
       use mixing
       use ncvars
       use scalars
+      use roms_read_write
+      use dimensions
 
       use, intrinsic :: ieee_arithmetic, only: IEEE_Value, IEEE_QUIET_NAN
       use, intrinsic :: iso_fortran_env, only: real32
@@ -84,6 +86,9 @@ c      v3bc_max=0.
 #endif
 
       call get_date (date_str)
+
+      call init_dimensions                                 ! needs to come before init_output_indices
+      call init_output_indices
 
 ! Names of variables in NetCDF output files. The first element
 ! is the name of the variable; the other two are are attributes.
