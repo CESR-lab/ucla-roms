@@ -5,16 +5,15 @@
 #include "cppdefs.opt"
 
       use param
-      use read_write              ! set_frc_var_tile, nc_define_var, rp_var
-      use surf_flux,  only: stflx ! surface tracer flux should possibly live in this module rather?
+      use read_write                                       ! set_frc_var_tile, nc_define_var, rp_var
+      use surf_flux,  only: stflx                          ! surface tracer flux should possibly live in this module rather?
       use ncvars
-      use scalars  ! for 'FIRST_TIME_STEP' and nstp
+      use scalars                                          ! for 'FIRST_TIME_STEP' and nstp
       use nc_read_write
+      use roms_read_write
       use netcdf
-
       implicit none
-
-      private ! All variables private to module unless public specified
+      private
 
       ! 1) in order to specify tracer variable details, user must
       ! set them in tracers.opt (NT still set in param for now).
@@ -32,32 +31,29 @@
       ! itemp lives in param still (avoid clash). Same for islt -> isalt
       integer :: itmp=0, islt=0
 
-      !-- Array of tracers
-      real,public,allocatable,dimension(:,:,:,:,:) :: t
+      real,public,allocatable,dimension(:,:,:,:,:) :: t              ! array of tracers
 
-      !-- Tracer variables (user input required in init_tracers)
-      character*42, dimension(nt), public :: t_vname   ! Short name
-      character*60, dimension(nt), public :: t_lname   ! long name
-      character*42, dimension(nt), public :: t_units   ! Tracer units
-      character*47, dimension(nt), public :: t_tname   ! Tracer input time variable name
-      logical, dimension(nt), public      :: wrt_t     ! T/F output tracer.
-      logical, dimension(nt), public      :: wrt_t_avg ! T/F output avg tracer.
-      integer, dimension(nt)              :: t_ana_frc ! Whether surf flux is read in (0), or analytical (1)
+                                                                     ! tracer netcdf variables (user input required in init_tracers)
+      character*42, dimension(nt), public :: t_vname                 ! short name
+      character*60, dimension(nt), public :: t_lname                 ! long name
+      character*42, dimension(nt), public :: t_units                 ! tracer units
+      character*47, dimension(nt), public :: t_tname                 ! tracer input time variable name
+      logical, dimension(nt), public      :: wrt_t                   ! t/f output tracer.
+      logical, dimension(nt), public      :: wrt_t_avg               ! t/f output avg tracer.
+      integer, dimension(nt)              :: t_ana_frc               ! whether surface flux is read in (0), or analytical (1)
 
-      logical, dimension(nt), public      :: wrt_t_diag = .false. ! only with DIAGNOSTICS. T/F output tracer diagnostics (from diagnostics.F). Declare .false. so that doesn't need to be filled in tracers_defs.h if not used.
+      logical, dimension(nt), public      :: wrt_t_diag = .false.    ! only with DIAGNOSTICS. T/F output tracer diagnostics (from diagnostics.F). Declare .false. so that doesn't need to be filled in tracers_defs.h if not used.
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
-      type (ncvs)     :: nc_t( NT ) ! array of ncvs for each tracer
-
-      integer, public :: iTandS     ! combined index of temperature and salinity
-                                    ! public as used in set_forces.F. Need to be parameter
-      integer         :: pt_tot     ! total number of passive tracers
-      integer         :: itot=0     ! index counter to count total number of tracers.
-                                    ! this term prevents the need to hardcode tracer indices.
-
-      integer         :: interp_t   ! interpolate forcing from coarser input grid (=1) or not (=0)
+      type (ncvs)     :: nc_t( NT )                                  ! array of ncvs for each tracer
+      integer, public :: iTandS                                      ! combined index of temperature and salinity
+                                                                     ! public as used in set_forces.F. Need to be parameter
+      integer         :: pt_tot                                      ! total number of passive tracers
+      integer         :: itot=0                                      ! index counter to count total number of tracers.
+                                                                     ! this term prevents the need to hardcode tracer indices.
+      integer         :: interp_t                                    ! interpolate forcing from coarser input grid (=1) or not (=0)
 
       ! 3 below currently in param as per old code
 !      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
@@ -67,11 +63,11 @@
 !      integer :: ntrc_bio !  - from (param - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
 
 #ifdef AVERAGES
-      real, public, allocatable, dimension(:,:,:,:) :: t_avg      ! tracer averages. Memory only allocated for tracers of interest.
-      integer,      allocatable, dimension(:)       :: t_avg_2_NT ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
+      real, public, allocatable, dimension(:,:,:,:) :: t_avg         ! tracer averages. Memory only allocated for tracers of interest.
+      integer,      allocatable, dimension(:)       :: t_avg_2_NT    ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
 
-      integer, dimension(NT) :: NT_2_t_avg                        ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
-      integer, public        :: n_t_avg                           ! number of tracer averages to output <= NT
+      integer, dimension(NT) :: NT_2_t_avg                           ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
+      integer, public        :: n_t_avg                              ! number of tracer averages to output <= NT
 #endif
 
 #ifdef BIOLOGY_BEC2
@@ -208,22 +204,20 @@
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_his_trc (record, ierr)  ![
+      subroutine wrt_his_trc (start)  ![
       ! Write tracers to history file
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! timestep to be recorded
-      integer             :: ierr   ! error handling
-
+      integer,dimension(:),intent(in) :: start
       ! local
-      integer             :: itrc
+      integer :: itrc
 
       do itrc=1,NT
-        if (wrt_t(itrc)) then
-          call nc_write_var(nchis, t(START_2D_ARRAY,1,nstp,itrc), N,
-     &            t_vname(itrc), rp_var, record, ierr )
-        endif
+        if (wrt_t(itrc)) call ncwrite(nchis,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
+!          call nc_write_var(nchis, t(START_2D_ARRAY,1,nstp,itrc), N,
+!     &            t_vname(itrc), rp_var, record, ierr )
+!        endif
       end do
 
       end subroutine wrt_his_trc  !]

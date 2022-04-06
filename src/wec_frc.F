@@ -21,6 +21,7 @@
 
       use param
       use read_write
+      use roms_read_write
       use grid
       use ncvars
       use ocean_vars
@@ -31,6 +32,19 @@
 
       private                                              ! makes all variable private to this module unless public specified
       save                                                 ! make all public variables global (might not be needed depending on compiler)
+
+      ! user inputs
+      logical,parameter :: wrt_his_file=.true.             ! t/f to write a wec history file
+      integer,parameter :: rec_rate = 1                    ! output record rate
+      integer,parameter :: nrpf     = 20                   ! total recs per file
+      ! end user inputs
+
+      ! netcdf outputting:
+!      integer            :: output_rec = 0                 ! record number of output. 0 indicates we need new file
+      integer            :: total_rec  = 0                 ! total flux output recordings so far
+      integer            :: tn                             ! roms timestep
+!      character (len=99) :: fnma = '_wec.nc'          ! suffix to append to simulation output rootname
+      integer            :: ncid=-1, prev_fill_mode
 
       ! DECLARE ALL WEC VARIABLES ![
 
@@ -802,57 +816,107 @@
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_his_wec (record, ierr, may_day_flag)  ![
+      subroutine wrt_his_wec  ![
       ! write WEC variables to output netcdf file
       implicit none
 
-      ! inputs
-      integer,intent(in) :: record                         ! timestep to be recorded
-      integer            :: ierr, may_day_flag
-
       ! local
-      integer :: tile
+      integer,dimension(4)   :: start
+      integer,save           :: record
+      character(len=99),save :: fname
+      integer :: tile, tn, ierr
 
-      if (wrt_wec_vars(indxSUP)) then
-        call nc_write_var(nchis,sup,1,sup_name,r_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxUST2D)) then
-        call nc_write_var(nchis,ust2d,1,ust2d_name,u_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxVST2D)) then
-        call nc_write_var(nchis,vst2d,1,vst2d_name,v_var,record,ierr)
-      endif
+      tn = iic-ntstart                                     ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart).
+      if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
+        if ( mod(tn,rec_rate) == 0 ) then !! Time for an output
+
+          if (mod(total_rec,nrpf)==0) then
+            call create_wec_file(total_rec,fname)
+            record = 0
+          endif
+          total_rec = total_rec +1
+          record = record + 1
+
+          ierr=nf90_open(fname,nf90_write,ncid)
+          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+          call ncwrite(ncid,'ocean_time',(/time/),(/record/))
+
+          start=1
+          start(3)=record                                      ! back to 2D vars
+          if (wrt_wec_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup(i0:i1,j0:j1),start)
+          if (wrt_wec_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d( 1:i1,j0:j1),start)
+          if (wrt_wec_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d(i0:i1, 1:j1),start)
+          start(3)=1; start(4)=record                          ! back to 3D vars
 # ifdef SOLVE3D
-      if (wrt_wec_vars(indxUST)) then
-        call nc_write_var(nchis,ust,N,ust_name,u_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxVST)) then
-        call nc_write_var(nchis,vst,N,vst_name,v_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxWST)) then
-        do tile=0,NSUB_X*NSUB_E-1
-          call wstokes_wec(tile)                           ! calculate wst
-        enddo
-        call nc_write_var(nchis,wst,N,wst_name,r_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxAkb)) then
-        call nc_write_var(nchis,Akb,N+1,Akb_name,r_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxAkw)) then
-        call nc_write_var(nchis,Akw,N+1,Akw_name,r_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxKVF)) then
-        call nc_write_var(nchis,kvf,N,kvf_name,r_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxCALP)) then
-        call nc_write_var(nchis,calP,1,calP_name,r_var,record,ierr)
-      endif
-      if (wrt_wec_vars(indxKAPS)) then
-        call nc_write_var(nchis,Kapsrf,1,Kapsrf_name,r_var,record,ierr)
-      endif
+          if (wrt_wec_vars(indxUST)) call ncwrite(ncid,ust_name,ust( 1:i1,j0:j1,:),start)
+          if (wrt_wec_vars(indxVST)) call ncwrite(ncid,vst_name,vst(i0:i1, 1:j1,:),start)
+          if (wrt_wec_vars(indxWST)) then
+            do tile=0,NSUB_X*NSUB_E-1
+              call wstokes_wec(tile)                           ! calculate wst
+            enddo
+            call ncwrite(ncid,wst_name,wst(i0:i1,j0:j1,:),start)
+          endif
+          if (wrt_wec_vars(indxAkb)) call ncwrite(ncid,Akb_name,Akb(i0:i1,j0:j1,:),start)
+          if (wrt_wec_vars(indxAkw)) call ncwrite(ncid,Akw_name,Akw(i0:i1,j0:j1,:),start)
+          if (wrt_wec_vars(indxKVF)) call ncwrite(ncid,kvf_name,kvf(i0:i1,j0:j1,:),start)
+          start(3)=record                                      ! back to 2D vars
+          if (wrt_wec_vars(indxCALP)) call ncwrite(ncid,calP_name,    calP(i0:i1,j0:j1),start)
+          if (wrt_wec_vars(indxKAPS)) call ncwrite(ncid,Kapsrf_name,Kapsrf(i0:i1,j0:j1),start)
+          start(3)=1; start(4)=record                          ! back to 3D vars
 # endif  /* SOLVE3D */
+        endif  !<-- mod(tn,rec_rate)==0
+      endif    !<-- iic>ntstart
+
+      if (mynode == 0) then
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+     &     'wec_frc :: wrote history, tdays =', tdays,
+     &     'step =', iic, 'rec =', record, '/', total_rec
+     &      MYID
+        endif
 
       end subroutine wrt_his_wec  !]
+
+!----------------------------------------------------------------------
+      subroutine create_wec_file(total_rec,fname)![
+      use roms_read_write
+      use nc_read_write
+      implicit none
+
+      !input/output
+      integer          ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
+      character(len=99),intent(out) :: fname
+
+      ! local
+      integer :: ierr,varid
+      character(len=10),dimension(4) :: dimnames ! dimension names
+      integer,          dimension(4) :: dimsizes
+
+      fname=trim(output_root_name) / / '_wec.nc'
+      call create_filename(fname,total_rec)
+
+      ierr=nf90_create(fname,nf90_netcdf4,ncid)
+      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_wec_file: ')
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
+
+      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      if (ierr/=nf90_noerr)
+     &  call handle_ierr(ierr,'create_particles_file: ')
+
+      call def_vars_wec( ncid, .false. )
+
+      ierr = nf90_enddef(ncid)
+
+!      if (mynode==0) print *,'wec :: created new netCDF file: ',fname
+      if (mynode == 0) then
+        write(*,'(7x,2A)') 'wec_frc :: created new netCDF file '
+     &                      ,fname
+      endif
+
+      end subroutine create_wec_file !]
 
 ! ----------------------------------------------------------------------
 #ifdef AVERAGES
@@ -3183,6 +3247,8 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 !#   endif
 #  endif
 # endif
+
+      if (wrt_his_file) call wrt_his_wec
 
       end subroutine wec_forces_tile  !]
 

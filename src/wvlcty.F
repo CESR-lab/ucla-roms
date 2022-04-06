@@ -30,8 +30,8 @@
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
-      real Wvlc(GLOBAL_2D_ARRAY,N)
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk
+      real Wvlc(GLOBAL_2D_ARRAY,N)                             ! DevinD this index is wrong! array is 0:N
+      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk     ! this shifts everything...
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: Wxi, Weta
 
 # include "compute_extended_bounds.h"
