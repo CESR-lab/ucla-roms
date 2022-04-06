@@ -377,7 +377,7 @@ c--#define nf_def_var my_nf_def_var
 
 #ifdef WEC
 # ifndef AVRH /* NOT AVRH */
-        call def_vars_wec( nchis, .false. )                ! define WEC variables
+!        call def_vars_wec( nchis, .false. )                ! define WEC variables
 # else /* AVRH */
         call def_vars_wec( ncavg, .true.  )                ! define WEC averaged variables                                                           )
 # endif /* END AVRH */
