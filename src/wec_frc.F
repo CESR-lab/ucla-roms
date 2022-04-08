@@ -5,13 +5,23 @@
       ! provides all WEC terms that
       ! enter in the momentum equations.
       !
-      ! coding: Devin Dollery & Jeroen Molemaker (2020)
+      ! INFO  ![
+      !
+      ! coding: module format - Devin Dollery & Jeroen Molemaker (2020)
+      !         original code - Leonel Romero
       !
       ! code essentially a copy of work already done under MRL_WCI cppflag
       ! of previous roms implementation, based on Delphine Hypolite's
       ! version of old (pre 2020) ROMS used for USWC simulations.
       !
-      ! Original WEC theory and code is courtesy of Leonel Romero.
+      ! COMMENTS:
+      !
+      ! 2022/04:
+      ! - JM & DPD wec_force should actually be called twice for the predictor step
+      !   and the corrector step. Currently only done at the predictor step.
+      ! - In set forces we normally interpolate forcing to t+0.5dt.
+      !   However, this should likely formally be at t=n (pred) and t=n+1/2 (corr)
+      !]
 
 #include "cppdefs.opt"
 ! CPP flag WEC covering entire module so that the module is empty if
@@ -36,11 +46,8 @@
 #include "wec_frc.opt"
 
       ! netcdf outputting:
-!      integer            :: output_rec = 0                ! record number of output. 0 indicates we need new file
-
-
-      integer            :: tn                             ! roms timestep
-      integer            :: ncid=-1, prev_fill_mode
+      integer :: ncid=-1, prev_fill_mode
+      real    :: t_avg_wec=0
 
       ! DECLARE ALL WEC VARIABLES ![
 
@@ -736,64 +743,62 @@
       ! local
       integer,dimension(4)   :: start
       integer,save           :: rec_his                              ! current file output record
-      logical,save           :: begin_his=.false.                    ! has ntshis_wec been reached yet?
-      real,save              :: output_time_his=0                    ! time since last output
       integer,save           :: total_rec_his=0                      ! total his output records so far
+      real,save              :: output_time_his=0                    ! time since last output
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_his
-      integer :: tile, tn, ierr
+      integer                :: tile, tn, ierr
 
       if (.not. first_step) output_time_his = output_time_his + dt   ! only start count after first timestep
       first_step=.false.                                             ! as first step the wec values are for t=0
 
-      if (begin_his==.true. .or. output_time_his >= ntshis_wec) then ! if ntshis_wec > rec_rate_his,
-                                                                     ! need begin_his flag to bypass
-        if (begin_his==.false. .or. output_time_his >= rec_rate_his) then  ! very first output we find output_time_his=0
-                                                                           ! so use begin_his=false,
-          if (mod(total_rec_his,nrpf_his)==0) then                         ! as all other time =true so ignored
-            call create_wec_file(total_rec_his,fname_his,.false.)
-            rec_his = 0
-          endif
-          total_rec_his = total_rec_his +1
-          rec_his = rec_his + 1
+      if (output_time_his>=output_period_his .or.
+     &    output_time_his==0                      ) then             ! catch to get t=0 output
 
-          ierr=nf90_open(fname_his,nf90_write,ncid)
-          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
-
-          call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))
-
-          start=1
-          start(3)=rec_his                                           ! back to 2D vars
-          if (wrt_wec_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup(i0:i1,j0:j1),start)
-          if (wrt_wec_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d( 1:i1,j0:j1),start)
-          if (wrt_wec_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d(i0:i1, 1:j1),start)
-          start(3)=1; start(4)=rec_his                               ! back to 3D vars
-# ifdef SOLVE3D
-          if (wrt_wec_vars(indxUST)) call ncwrite(ncid,ust_name,ust( 1:i1,j0:j1,:),start)
-          if (wrt_wec_vars(indxVST)) call ncwrite(ncid,vst_name,vst(i0:i1, 1:j1,:),start)
-          if (wrt_wec_vars(indxWST)) then
-            do tile=0,NSUB_X*NSUB_E-1
-              call wstokes_wec(tile)                                 ! calculate wst
-            enddo
-            call ncwrite(ncid,wst_name,wst(i0:i1,j0:j1,:),start)
-          endif
-          if (wrt_wec_vars(indxAkb)) call ncwrite(ncid,Akb_name,Akb(i0:i1,j0:j1,:),start)
-          if (wrt_wec_vars(indxAkw)) call ncwrite(ncid,Akw_name,Akw(i0:i1,j0:j1,:),start)
-          if (wrt_wec_vars(indxKVF)) call ncwrite(ncid,kvf_name,kvf(i0:i1,j0:j1,:),start)
-          start(3)=rec_his                                           ! back to 2D vars
-          if (wrt_wec_vars(indxCALP)) call ncwrite(ncid,calP_name,    calP(i0:i1,j0:j1),start)
-          if (wrt_wec_vars(indxKAPS)) call ncwrite(ncid,Kapsrf_name,Kapsrf(i0:i1,j0:j1),start)
-          start(3)=1; start(4)=rec_his                               ! back to 3D vars
-# endif  /* SOLVE3D */
-          if (mynode == 0) then
-            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
-     &       'wec_frc :: wrote history, tdays =', tdays,
-     &       'step =', iic, 'rec =', rec_his, '/', total_rec_his
-          endif
-
-          output_time_his=0
-          begin_his=.true.                                           ! beyond first output time t>ntshis_wec
+        if (mod(total_rec_his,nrpf_his)==0) then
+          call create_wec_file(total_rec_his,fname_his,.false.)
+          rec_his = 0
         endif
+        total_rec_his = total_rec_his +1
+        rec_his = rec_his + 1
+
+        ierr=nf90_open(fname_his,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))
+
+        start=1
+        start(3)=rec_his                                             ! back to 2D vars
+        if (wrt_wec_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup(i0:i1,j0:j1),start)
+        if (wrt_wec_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d( 1:i1,j0:j1),start)
+        if (wrt_wec_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d(i0:i1, 1:j1),start)
+        start(3)=1; start(4)=rec_his                                 ! back to 3D vars
+# ifdef SOLVE3D
+        if (wrt_wec_vars(indxUST)) call ncwrite(ncid,ust_name,ust( 1:i1,j0:j1,:),start)
+        if (wrt_wec_vars(indxVST)) call ncwrite(ncid,vst_name,vst(i0:i1, 1:j1,:),start)
+        if (wrt_wec_vars(indxWST)) then
+          do tile=0,NSUB_X*NSUB_E-1
+            call wstokes_wec(tile)                                   ! calculate wst
+          enddo
+          call ncwrite(ncid,wst_name,wst(i0:i1,j0:j1,:),start)
+        endif
+        if (wrt_wec_vars(indxAkb)) call ncwrite(ncid,Akb_name,Akb(i0:i1,j0:j1,:),start)
+        if (wrt_wec_vars(indxAkw)) call ncwrite(ncid,Akw_name,Akw(i0:i1,j0:j1,:),start)
+        if (wrt_wec_vars(indxKVF)) call ncwrite(ncid,kvf_name,kvf(i0:i1,j0:j1,:),start)
+        start(3)=rec_his                                             ! back to 2D vars
+        if (wrt_wec_vars(indxCALP)) call ncwrite(ncid,calP_name,    calP(i0:i1,j0:j1),start)
+        if (wrt_wec_vars(indxKAPS)) call ncwrite(ncid,Kapsrf_name,Kapsrf(i0:i1,j0:j1),start)
+        start(3)=1; start(4)=rec_his                                 ! back to 3D vars
+# endif  /* SOLVE3D */
+
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+     &     'wec_frc :: wrote history, tdays =', tdays,
+     &     'step =', iic-1, 'rec =', rec_his, '/', total_rec_his     ! -1 since iic=t(n+1)
+        endif
+
+        output_time_his=0
       endif
 
       end subroutine wrt_his_wec  !]
@@ -835,8 +840,8 @@
 
       ierr = nf90_enddef(ncid)
       if (mynode == 0) then
-        write(*,'(7x,2A)') 'wec_frc :: created new netCDF file '
-     &                      ,fname
+        write(*,'(7x,2A)')
+     &    'wec_frc :: created new netCDF file ', trim(fname)
       endif
 
       end subroutine create_wec_file !]
@@ -844,103 +849,74 @@
 ! ----------------------------------------------------------------------
       subroutine wrt_avg_wec  ![
       ! write averaged variables to output netcdf file
+      ! don't include t=0 in averaging. This create 0.5dt error in averaging,
+      ! but this 0.5dt error has always been in ROMS.
+      ! for 2 steps. True avg would be 0.5*t0 + t1 + 0.5*t2, but we've never done that.
       implicit none
 
       ! local
       integer,dimension(4)   :: start
-      integer,save           :: rec_avg
-      integer,save           :: output_time_avg=0                    ! time since last output
-      integer,save           :: total_rec_avg=0                      ! total avg output recordings so far
-      logical,save           :: begin_avg=.false.
+      integer,save           :: rec_avg                              ! current file output record
+      integer,save           :: total_rec_avg=0                      ! total avg output records so far
+      real,save              :: output_time_avg=0                    ! time since last output
+      logical,save           :: first_step=.true.
       character(len=99),save :: fname_avg
       integer :: tile, tn, ierr
 
+      if (.not. first_step) then
+        call calc_avg_wec                                            ! don't include t=0 in averaging
+        output_time_avg = output_time_avg + dt                       ! only start count after first timestep
+      endif
+      first_step=.false.                                             ! as first step the wec values are for t=0
 
-      output_time_avg = output_time_avg + dt  ! depends on the variable but dt should come at end?
-      call calc_avg_wec
+      if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
 
-      if (begin_avg==.true. .or. output_time_avg>=ntsavg_wec) then
-        if (output_time_avg >= rec_rate_avg) then
+        if (mod(total_rec_avg,nrpf_avg)==0) then
+          call create_wec_file(total_rec_avg,fname_avg,.true.)
+          rec_avg = 0
+        endif
+        total_rec_avg = total_rec_avg +1
+        rec_avg = rec_avg + 1
 
-          if (mod(total_rec_avg,nrpf_avg)==0) then
-            call create_wec_file(total_rec_avg,fname_avg,.true.)
-            rec_avg = 0
-          endif
-          total_rec_avg = total_rec_avg +1
-          rec_avg = rec_avg + 1
+        ierr=nf90_open(fname_avg,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
-          ierr=nf90_open(fname_avg,nf90_write,ncid)
-          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+        call ncwrite(ncid,'ocean_time',(/t_avg_wec/),(/rec_avg/))
 
-          call ncwrite(ncid,'ocean_time',(/time/),(/rec_avg/))
-
-          start=1
-          start(3)=rec_avg                                      ! back to 2D vars
-          if (wrt_avg_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup_avg(i0:i1,j0:j1),start)
-          if (wrt_avg_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d_avg( 1:i1,j0:j1),start)
-          if (wrt_avg_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d_avg(i0:i1, 1:j1),start)
-          start(3)=1; start(4)=rec_avg                          ! back to 3D vars
+        start=1
+        start(3)=rec_avg                                      ! back to 2D vars
+        if (wrt_avg_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup_avg(i0:i1,j0:j1),start)
+        if (wrt_avg_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d_avg( 1:i1,j0:j1),start)
+        if (wrt_avg_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d_avg(i0:i1, 1:j1),start)
+        start(3)=1; start(4)=rec_avg                          ! back to 3D vars
 # ifdef SOLVE3D
-          if (wrt_avg_vars(indxUST)) call ncwrite(ncid,ust_name,ust_avg( 1:i1,j0:j1,:),start)
-          if (wrt_avg_vars(indxVST)) call ncwrite(ncid,vst_name,vst_avg(i0:i1, 1:j1,:),start)
-          if (wrt_avg_vars(indxWST)) then
-            do tile=0,NSUB_X*NSUB_E-1
-              call wstokes_wec(tile)                           ! calculate wst
-            enddo
-            call ncwrite(ncid,wst_name,wst_avg(i0:i1,j0:j1,:),start)
-          endif
-          if (wrt_avg_vars(indxAkb)) call ncwrite(ncid,Akb_name,Akb_avg(i0:i1,j0:j1,:),start)
-          if (wrt_avg_vars(indxAkw)) call ncwrite(ncid,Akw_name,Akw_avg(i0:i1,j0:j1,:),start)
-          if (wrt_avg_vars(indxKVF)) call ncwrite(ncid,kvf_name,kvf_avg(i0:i1,j0:j1,:),start)
-          start(3)=rec_avg                                      ! back to 2D vars
-          if (wrt_avg_vars(indxCALP)) call ncwrite(ncid,calP_name,    calP_avg(i0:i1,j0:j1),start)
-          if (wrt_avg_vars(indxKAPS)) call ncwrite(ncid,Kapsrf_name,Kapsrf_avg(i0:i1,j0:j1),start)
-          start(3)=1; start(4)=rec_avg                          ! back to 3D vars
+        if (wrt_avg_vars(indxUST)) call ncwrite(ncid,ust_name,ust_avg( 1:i1,j0:j1,:),start)
+        if (wrt_avg_vars(indxVST)) call ncwrite(ncid,vst_name,vst_avg(i0:i1, 1:j1,:),start)
+        if (wrt_avg_vars(indxWST)) then
+          do tile=0,NSUB_X*NSUB_E-1
+            call wstokes_wec(tile)                           ! calculate wst
+          enddo
+          call ncwrite(ncid,wst_name,wst_avg(i0:i1,j0:j1,:),start)
+        endif
+        if (wrt_avg_vars(indxAkb)) call ncwrite(ncid,Akb_name,Akb_avg(i0:i1,j0:j1,:),start)
+        if (wrt_avg_vars(indxAkw)) call ncwrite(ncid,Akw_name,Akw_avg(i0:i1,j0:j1,:),start)
+        if (wrt_avg_vars(indxKVF)) call ncwrite(ncid,kvf_name,kvf_avg(i0:i1,j0:j1,:),start)
+        start(3)=rec_avg                                      ! back to 2D vars
+        if (wrt_avg_vars(indxCALP)) call ncwrite(ncid,calP_name,    calP_avg(i0:i1,j0:j1),start)
+        if (wrt_avg_vars(indxKAPS)) call ncwrite(ncid,Kapsrf_name,Kapsrf_avg(i0:i1,j0:j1),start)
+        start(3)=1; start(4)=rec_avg                          ! back to 3D vars
 # endif  /* SOLVE3D */
-          if (mynode == 0) then
-              write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
-     &         'wec_frc :: wrote averages, tdays =', tdays,
-     &         'step =', iic, 'rec =', rec_avg, '/', total_rec_avg
-     &          MYID
-          endif
-        endif  !<-- mod(tn,rec_rate_avg)==0
-      endif    !<-- iic>ntstart
 
-!      if (wrt_avg_vars(indxSUP)) then
-!        call nc_write_var(ncavg,sup_avg,1,sup_name,r_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxUST2D)) then
-!        call nc_write_var(ncavg,ust2d_avg,1,ust2d_name,u_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxVST2D)) then
-!        call nc_write_var(ncavg,vst2d_avg,1,vst2d_name,v_var,record,ierr)
-!      endif
-!# ifdef SOLVE3D
-!      if (wrt_avg_vars(indxUST)) then
-!        call nc_write_var(ncavg,ust_avg,N,ust_name,u_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxVST)) then
-!        call nc_write_var(ncavg,vst_avg,N,vst_name,v_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxWST)) then
-!        call nc_write_var(ncavg,wst_avg,N,wst_name,r_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxAkb)) then
-!        call nc_write_var(ncavg,Akb_avg,N+1,Akb_name,r_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxAkw)) then
-!        call nc_write_var(ncavg,Akw_avg,N+1,Akw_name,r_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxKVF)) then
-!        call nc_write_var(ncavg,kvf_avg,N,kvf_name,r_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxCALP)) then
-!        call nc_write_var(ncavg,calP_avg,1,calP_name,r_var,record,ierr)
-!      endif
-!      if (wrt_avg_vars(indxKAPS)) then
-!        call nc_write_var(ncavg,Kapsrf_avg,1,Kapsrf_name,r_var,record,ierr)
-!      endif
-!# endif  /* SOLVE3D */
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+     &        'wec_frc :: wrote averages, tdays =', tdays,
+     &        'step =', iic, 'rec =', rec_avg, '/', total_rec_avg
+     &         MYID
+        endif
+
+        output_time_avg=0
+      endif
 
       end subroutine wrt_avg_wec  !]
 
@@ -1108,17 +1084,11 @@
 
 #include "compute_auxiliary_bounds.h"
 
-      if (wrt_file_his .and. ntshis_wec/=0. .and. mod(ntshis_wec,dt)/=0) then
-        stop 'ERROR :: wec_frc.opt - dt not a factor of ntshis_wec!'
+      if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
+        stop 'ERROR :: wec_frc.opt - dt not a factor of output_period_his!'
       endif
-      if (wrt_file_avg .and. ntsavg_wec/=0.  .and. mod(ntsavg_wec,dt) /= 0) then
-        stop 'ERROR :: wec_frc.opt - dt not a factor of ntshis_wec!'
-      endif
-      if (wrt_file_his .and. mod(rec_rate_his,dt) /= 0) then
-        stop 'ERROR :: wec_frc.opt - dt not a factor of rec_rate_his!'
-      endif
-      if (wrt_file_avg .and. mod(rec_rate_avg,dt) /= 0) then
-        stop 'ERROR :: wec_frc.opt - dt not a factor of rec_rate_avg!'
+      if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
+        stop 'ERROR :: wec_frc.opt - dt not a factor of output_period_avg!'
       endif
 
 #if defined BBL || defined WEC
@@ -1889,14 +1859,16 @@ C$OMP BARRIER
       real :: coef
       integer,save :: navg_wec = 0                         ! number of samples in average
 
-      if (mod(iic-ntsavg_wec,rec_rate_avg) == 1) then
-          if (mynode==0) write(*,'(7x,A,I8,2x,A,I8,2x,A,I8)')
-     &      'wec_frc :: started averaging at iic =', iic,
-     &      'ntsavg=', ntsavg_wec, 'navg=', rec_rate_avg
-      endif
-
       navg_wec = navg_wec +1
       coef = 1./navg_wec
+
+      if (coef==1) then                                    ! this refreshes average (1-coef)=0
+       if (mynode==0) write(*,'(7x,2A,F9.1)')
+     &   'wec_frc :: started averaging. ',
+     &   'output_period_avg (s) =', output_period_avg
+      endif
+
+      t_avg_wec = t_avg_wec*(1-coef) + time*coef
 
       ! need i0:i1 indices because arrays still GLOBAL_2D therefore wasted margin
       if (wrt_avg_vars(indxSUP))

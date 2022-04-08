@@ -390,10 +390,10 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
       endif                            ! deferred until after broadcast
                                        ! of "may_day_flag" by diag.
 #ifdef SOLVE3D
-      do tile=my_tile_range                 ! interpolate forcing
-        call set_forces(tile)               ! data to model time and
+      do tile=my_tile_range            ! interpolate forcing
+        call set_forces(tile)          ! data to model time and
 # if defined TIDES
-        call set_tides(tile)            ! compute surface fluxes.
+        call set_tides(tile)           ! compute surface fluxes.
 # endif
         call    rho_eos(tile)
         call    set_HUV(tile)
