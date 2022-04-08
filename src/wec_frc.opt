@@ -1,0 +1,13 @@
+
+      ! ****************************************************************
+      ! user inputs
+      logical,parameter :: wrt_file_his = .true.           ! t/f to write a wec history file
+      real,parameter    :: rec_rate_his = 40               ! output record rate period in seconds
+      integer,parameter :: nrpf_his     = 2                ! total recs per file
+      real,parameter    :: ntshis_wec   = 100              ! time (s) to start first output 0=inital condition
+      logical,parameter :: wrt_file_avg = .false.          ! t/f to write a wec history file
+      real,parameter    :: rec_rate_avg = 40               ! output record rate and averaging period in seconds
+      integer,parameter :: nrpf_avg     = 0                ! total recs per file
+      real,parameter    :: ntsavg_wec   = 0                ! time (s) to start averaging 1=immediately (allow for spin up)
+      ! end user inputs
+      ! ****************************************************************

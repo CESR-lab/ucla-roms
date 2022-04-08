@@ -5,7 +5,6 @@
                                      ! into averages netCDF file.
 
       use param
-      use wec_frc    ! , only: wrt_avg_wec
       use bgc        ! wrt_avg_bgc_diag
       use tracers    ! , only: wrt_avg_trc
       use read_write ! nc_write_var, rp_var, etc
@@ -151,10 +150,6 @@
       endif
 #  endif
 # endif /* SOLVE3D */
-
-#ifdef WEC
-      call wrt_avg_wec(record, ierr, may_day_flag)
-#endif
 
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
       call wrt_avg_bgc_diag(record, ierr)

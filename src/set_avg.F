@@ -4,7 +4,6 @@
       subroutine set_avg (tile)
 
       use param
-      use wec_frc          ! , only: wstokes_wec_tile, indxWST
       use hidden_mpi_vars
       use ncvars
       use private_scratch
@@ -19,11 +18,6 @@
      &                                    A2d(1,2), A2d(1,3))
       endif
 
-#  ifdef WEC
-      if (wrtavg(indxWST)) then
-        call wstokes_wec_tile(istr,iend,jstr,jend)
-      endif
-#  endif
 # endif
       call set_avg_tile (istr,iend,jstr,jend)
       return
@@ -52,10 +46,6 @@
 ! scaling.
 
       use param
-# ifdef WEC
-      use wec_frc, only: set_avg_wec_tile
-# endif
-
       use tracers, only: set_avg_trc
       use bgc ! set_avg_bgc_diag
       use eos_vars
@@ -235,11 +225,6 @@
         call set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)
 #  endif
 # endif /* SOLVE3D */
-
-# ifdef WEC 
-        call set_avg_wec_tile(istr,iend,jstr,jend,cff,cff1
-     &                                 ,jstrR,jendR,istrR,iendR)
-# endif /* WEC */
 
         if (mod(iic-ntsavg,navg) == 0) then
           if (ZEROTH_TILE) then

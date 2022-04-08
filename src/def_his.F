@@ -27,7 +27,6 @@
 c--#define nf_def_var my_nf_def_var
 
       use param
-      use wec_frc
       use tracers                                          ! def_his_trc, def_avg_trc
       use roms_read_write
       use nc_read_write
@@ -373,15 +372,6 @@ c--#define nf_def_var my_nf_def_var
         endif
 # endif
 #endif /* SOLVE3D */
-
-
-#ifdef WEC
-# ifndef AVRH /* NOT AVRH */
-!        call def_vars_wec( nchis, .false. )                ! define WEC variables
-# else /* AVRH */
-        call def_vars_wec( ncavg, .true.  )                ! define WEC averaged variables                                                           )
-# endif /* END AVRH */
-#endif   /* WEC */
 
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
 # ifndef AVRH /* NOT AVRH */
