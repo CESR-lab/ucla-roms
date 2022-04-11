@@ -30,7 +30,6 @@
 #if defined WEC /* WEC for whole module! */
 
       use param
-      use read_write
       use roms_read_write
       use grid
       use ncvars
@@ -38,16 +37,13 @@
       use scalars
       use netcdf
       use nc_read_write
+      use dimensions
       implicit none
 
       private                                              ! makes all variable private to this module unless public specified
       save                                                 ! make all public variables global (might not be needed depending on compiler)
 
 #include "wec_frc.opt"
-
-      ! netcdf outputting:
-      integer :: ncid=-1, prev_fill_mode
-      real    :: t_avg_wec=0
 
       ! DECLARE ALL WEC VARIABLES ![
 
@@ -391,34 +387,11 @@
       ! current record number of data point in read in data - irec
       integer    :: irec  = 0
 
+      ! netcdf outputting:
+      integer :: ncid=-1, prev_fill_mode
+      real    :: t_avg_wec=0
+      integer :: navg_wec = 0                              ! number of samples in average
 
-      ! New set_frc functiuonality
-      ! ==========================
-
-!      real    :: whrm_data(GLOBAL_2D_ARRAY,2)
-!      real    :: whrm(GLOBAL_2D_ARRAY)
-!      integer :: whrm_grd_type  = r_var
-!      integer :: whrmd_file_indx = 0
-!      integer :: whrm_irec      = 0
-!      integer :: whrm_it1 = 1, whrm_it2 = 2
-!      real, dimension(2) :: whrm_times = [-99,-99]
-!      character(len=5)   :: whrm_name = 'Awave'
-!      character(len=8)   :: whrm_time_name = 'wwv_time'
-
-!      real    :: wdrx_data(GLOBAL_2D_ARRAY,2)
-!      real    :: wdrx(GLOBAL_2D_ARRAY)
-!      real    :: wdre(GLOBAL_2D_ARRAY) wdre_data is not needed as already read in as wdrx_data
-!      integer :: wdrx_grd_type  = r_var
-!      integer :: wdrx_file_indx = 0
-!      integer :: wdrx_irec      = 0
-!      integer :: wdrx_it1 = 1, wdrx_it2 = 2
-!      real, dimension(2) :: wdrx_times = [-99,-99]
-!      character(len=5)   :: wdrx_name = 'Dwave'
-!      character(len=8)   :: wdrx_time_name = 'wwv_time'
-
-      ! ================================
-      ! WEC subroutines needed as public (accessed outside of module)
-      ! ================================
 
       public read_inp_wec         ! called from read_inp.F
       public set_wec_frc_tile     ! called from set_forces.F
@@ -605,35 +578,37 @@
       integer :: ierr,ncid
       integer :: varid
       integer :: coarse = 0                                          ! interpolate from coarse data. 0=don't interpolate
+      integer,dimension(4) :: start
 
       ierr=nf90_open(frcfile(ifile), nf90_nowrite, ncid)
 
-      ierr = nf90_inq_varid(ncid, wec_tim_name, varid)
-      ierr = nf90_get_var(ncid, varid, wec_in_time, (/irec/), (/1/)) ! nf90_get_var needs an array for last 2 terms hence syntax
+      call ncread(ncid,wec_tim_name,wec_in_time,(/irec/))            ! needs an array for last term hence syntax
       wec_in_time = wec_in_time * 86400                              ! covnert read in time (currently in days) to seconds
 
-      call nc_read_var(ncid,wwag(START_2D_ARRAY,idx),1,              ! wave amplitude
-     &                       wec_awv_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwdg(START_2D_ARRAY,idx),1,              ! wave direction
-     &                       wec_dwv_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwpg(START_2D_ARRAY,idx),1,              ! wave period
-     &                       wec_pwv_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwUSg(START_2D_ARRAY,idx),1,             ! ust2d
-     &                       ust2d_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwVSg(START_2D_ARRAY,idx),1,             ! vst2d
-     &                       vst2d_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwUS0g(START_2D_ARRAY,idx),1,            ! ustr0
-     &                       ust0_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwVS0g(START_2D_ARRAY,idx),1,            ! vstr0
-     &                       vst0_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wweb(START_2D_ARRAY,idx),1,              ! eb
-     &                       wec_ebwv_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwed(START_2D_ARRAY,idx),1,              ! ed
-     &                       wec_edwv_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwlm(START_2D_ARRAY,idx),1,              ! lmv
-     &                       wec_lwv_name,r_var,irec,ierr,coarse)
-      call nc_read_var(ncid,wwsup(START_2D_ARRAY,idx),1,             ! sup
-     &                       sup_name,r_var,irec,ierr,coarse)
+      start=1
+      start(3)=irec
+      call ncread(ncid,wec_awv_name, wwag(i0:i1,j0:j1,idx),start)    ! wave amplitude
+      call exchange_tile(1,nx,1,ny,  wwag(:,:,idx),1)
+      call ncread(ncid,wec_dwv_name, wwdg(i0:i1,j0:j1,idx),start)    ! wave direction
+      call exchange_tile(1,nx,1,ny,  wwdg(:,:,idx),1)
+      call ncread(ncid,wec_pwv_name, wwpg(i0:i1,j0:j1,idx),start)    ! wave period
+      call exchange_tile(1,nx,1,ny,  wwpg(:,:,idx),1)
+      call ncread(ncid,ust2d_name,  wwUSg(i0:i1,j0:j1,idx),start)    ! ust2d
+      call exchange_tile(1,nx,1,ny, wwUSg(:,:,idx),1)
+      call ncread(ncid,vst2d_name,  wwVSg(i0:i1,j0:j1,idx),start)    ! vst2d
+      call exchange_tile(1,nx,1,ny, wwVSg(:,:,idx),1)
+      call ncread(ncid,ust0_name,  wwUS0g(i0:i1,j0:j1,idx),start)    ! ustr0
+      call exchange_tile(1,nx,1,ny,wwUS0g(:,:,idx),1)
+      call ncread(ncid,vst0_name,  wwVS0g(i0:i1,j0:j1,idx),start)    ! vstr0
+      call exchange_tile(1,nx,1,ny,wwVS0g(:,:,idx),1)
+      call ncread(ncid,wec_ebwv_name,wweb(i0:i1,j0:j1,idx),start)    ! eb
+      call exchange_tile(1,nx,1,ny,  wweb(:,:,idx),1)
+      call ncread(ncid,wec_edwv_name,wwed(i0:i1,j0:j1,idx),start)    ! ed
+      call exchange_tile(1,nx,1,ny,  wwed(:,:,idx),1)
+      call ncread(ncid,wec_lwv_name, wwlm(i0:i1,j0:j1,idx),start)    ! lmv
+      call exchange_tile(1,nx,1,ny,  wwlm(:,:,idx),1)
+      call ncread(ncid,sup_name,    wwsup(i0:i1,j0:j1,idx),start)    ! sup
+      call exchange_tile(1,nx,1,ny, wwsup(:,:,idx),1)
 
       end subroutine read_wec_frc  !]
 #endif /* !ANA_WEC_FRC */
@@ -884,38 +859,39 @@
         call ncwrite(ncid,'ocean_time',(/t_avg_wec/),(/rec_avg/))
 
         start=1
-        start(3)=rec_avg                                      ! back to 2D vars
+        start(3)=rec_avg                                             ! back to 2D vars
         if (wrt_avg_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup_avg(i0:i1,j0:j1),start)
         if (wrt_avg_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d_avg( 1:i1,j0:j1),start)
         if (wrt_avg_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d_avg(i0:i1, 1:j1),start)
-        start(3)=1; start(4)=rec_avg                          ! back to 3D vars
+        start(3)=1; start(4)=rec_avg                                 ! back to 3D vars
 # ifdef SOLVE3D
         if (wrt_avg_vars(indxUST)) call ncwrite(ncid,ust_name,ust_avg( 1:i1,j0:j1,:),start)
         if (wrt_avg_vars(indxVST)) call ncwrite(ncid,vst_name,vst_avg(i0:i1, 1:j1,:),start)
         if (wrt_avg_vars(indxWST)) then
           do tile=0,NSUB_X*NSUB_E-1
-            call wstokes_wec(tile)                           ! calculate wst
+            call wstokes_wec(tile)                                   ! calculate wst
           enddo
           call ncwrite(ncid,wst_name,wst_avg(i0:i1,j0:j1,:),start)
         endif
         if (wrt_avg_vars(indxAkb)) call ncwrite(ncid,Akb_name,Akb_avg(i0:i1,j0:j1,:),start)
         if (wrt_avg_vars(indxAkw)) call ncwrite(ncid,Akw_name,Akw_avg(i0:i1,j0:j1,:),start)
         if (wrt_avg_vars(indxKVF)) call ncwrite(ncid,kvf_name,kvf_avg(i0:i1,j0:j1,:),start)
-        start(3)=rec_avg                                      ! back to 2D vars
+        start(3)=rec_avg                                             ! back to 2D vars
         if (wrt_avg_vars(indxCALP)) call ncwrite(ncid,calP_name,    calP_avg(i0:i1,j0:j1),start)
         if (wrt_avg_vars(indxKAPS)) call ncwrite(ncid,Kapsrf_name,Kapsrf_avg(i0:i1,j0:j1),start)
-        start(3)=1; start(4)=rec_avg                          ! back to 3D vars
+        start(3)=1; start(4)=rec_avg                                 ! back to 3D vars
 # endif  /* SOLVE3D */
+
+        navg_wec=0
+        output_time_avg=0
 
         ierr=nf90_close(ncid)
         if (mynode == 0) then
-            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
      &        'wec_frc :: wrote averages, tdays =', tdays,
-     &        'step =', iic, 'rec =', rec_avg, '/', total_rec_avg
+     &        'step =', iic-1, 'rec =', rec_avg, '/', total_rec_avg  ! -1 since iic=t(n+1)
      &         MYID
         endif
-
-        output_time_avg=0
       endif
 
       end subroutine wrt_avg_wec  !]
@@ -1857,7 +1833,6 @@ C$OMP BARRIER
 
       ! inputs
       real :: coef
-      integer,save :: navg_wec = 0                         ! number of samples in average
 
       navg_wec = navg_wec +1
       coef = 1./navg_wec
