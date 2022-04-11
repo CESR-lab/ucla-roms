@@ -45,6 +45,8 @@
       public :: set_frc_data,create_filename
       public :: read_output_root_name
       public :: init_output_indices
+      public :: handle_ierr
+      public :: find_new_record
 
       contains
 
@@ -212,7 +214,7 @@
 
           do while (irec<max_recs .and. .not. found_rec)                ! Search through the records until correct time is found
 
-            irec=irec+1
+            irec=irec+1                                             ! why not use ncread????
             ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))       ! Get vtime (nf90 needs array hence syntax)
             vtime = ltime(1)
 
