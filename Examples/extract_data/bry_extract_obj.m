@@ -1,4 +1,7 @@
-%  Generates the i,j locations of data extraction objects
+%  This is an example of the extract data functionality that is
+%  used to generate boundary forcing data for a nested grid
+
+%  It generates the i,j locations of data extraction objects
 %  for use as boundary forcing in a subsequent nested grid
 %
 %  Writes to netcdf file the i and j locations of the places 

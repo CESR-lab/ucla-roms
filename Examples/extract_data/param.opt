@@ -15,7 +15,7 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm=199, MMm=99, N=50       ! WEC Example sample grid
+      integer, parameter :: LLm=199, MMm=99, N=50       ! Example sample grid
 
       integer, parameter :: NP_XI =  3, NP_ETA = 2
       integer, parameter :: NSUB_X = 1, NSUB_E = 1

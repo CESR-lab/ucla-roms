@@ -65,6 +65,7 @@
       !! reset viscosity
       visc2_r = 0
 
+      ierr = 0
       if (obc_west.and.(.not.west_exchng)) then
         if (nx<isp) ierr = 1
         if (.not.onoff) then

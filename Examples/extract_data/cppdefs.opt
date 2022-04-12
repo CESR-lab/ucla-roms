@@ -5,66 +5,24 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define WECAGE /* Wave Effect on Current model */
+#define MAIN_SWITCH
 
 
 /*
    Main switch starts here: model configuration choice.
 */
 
-#if defined WECAGE
-
-/* WEC */
-
-# undef ANA_WEC_FRC /* DEFINE FOR ANALYTICAL WEC */
-
-/* DevinD - from DH's analytical wave_packet cppdefs.opt */
-
-# ifdef ANA_WEC_FRC
-#  undef VERBOSE
-#  define ANA_GRID
-#  define ANA_INITIAL
-#  define ANA_SMFLUX
-#  define ANA_SRFLUX
-#  define ANA_STFLUX
-#  undef ANA_SST
-
-#  undef SALINITY
-#  define ANA_SSFLUX
-#  define SOLVE3D
-#  define UV_ADV
-#  define NONLIN_EOS
-#  define SPLIT_EOS
-
-#  define EW_PERIODIC
-#  define NS_PERIODIC
-
-#  ifdef ANA_WEC_FRC
-#   define ANA_WWAVE
-#  endif
-#  ifdef WEC
-#   define ANA_WWAVE
-#   define BRK0
-#  endif
-
-# endif /* ANA_WEC_FRC */
-
-/* DevinD - end from DH's analytical wave_packet */
-
-/* DevinD - start DH's non-analytical WEC */
-
-# define USWC_WEC /* DEFINE FOR NON-ANALYTICAL WEC - US West Coast with WEC */
+#if defined MAIN_SWITCH
 
 /* -------------------------------------------------------  */
 
-# if defined USWC_WEC
+# if defined MAIN_SWITCH
 
-#  define BRY_EXTRACT_CHILD
+c--#  define BRY_EXTRACT_CHILD
 #  define EXTRACT_DATA
 
 #  define DIAGNOSTICS
 
-#  undef GRID_ANG_DEG
 #  define SOLVE3D
 #  define UV_COR
 #  define UV_ADV
