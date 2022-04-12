@@ -140,7 +140,9 @@ CR      write(*,*) '-11' MYID
 
 
 #ifdef ANA_GRID
-      call ana_grid                   ! grid and model bathymetry
+      do tile=my_tile_range       
+        call ana_grid(tile)              ! grid and model bathymetry
+      enddo                   
 #else
       call get_grid
 #endif
@@ -200,7 +202,9 @@ CR      write(*,*) ' -6' MYID
         call set_forces(tile)          ! model prognostic variables,
       enddo                            ! either analytically or read
 C$OMP BARRIER                          ! from netCDF file.  Note that
-      call ana_init                    ! may require surface forcing
+      do tile=my_tile_range            ! Set initial conditions for
+        call ana_init(tile)            ! may require surface forcing
+      enddo                            ! either analytically or read
 C$OMP BARRIER                          ! so call forces first.
       if (nrrec > 0) then              ! Also note that ana_init may
 #endif

@@ -108,7 +108,8 @@
         real   ,dimension(:,:),pointer     :: ui,vi     ! only for vectors 
 
         ! These logicals determine which variables are desired for an
-        ! object. False by default
+        ! object. Only the ones listed below are currently functional
+        ! False by default
         logical :: zeta = .false.
         logical :: ubar = .false.
         logical :: vbar = .false.
@@ -126,8 +127,7 @@
       !! examples of objects: 'grid1_south_r', mooring1_r'
 
       interface interpolate
-        module procedure  interpolate_2D, interpolate_3D,
-     &                  interpolate_vec_2D,interpolate_vec_3D
+        module procedure  interpolate_2D, interpolate_3D
       end interface
 
       public do_extract_data
@@ -141,6 +141,7 @@
       !local
       character(len=30) :: preamb
       integer :: i,np,ierr,lpre
+      real,dimension(:),allocatable :: angp  ! grid angle
 
       if (mynode==0) print *,'reading data extraction objects'
       call read_extraction_objects
@@ -166,7 +167,15 @@
      &                obj(i)%coef,obj(i)%ip,obj(i)%jp,rmask)
 
         if (.not.obj(i)%scalar) then
-!          call compute_rotate(obj)  ! DevinD commented out to get to compile. JM must fix.
+          allocate(obj(i)%cosa(np))
+          allocate(obj(i)%sina(np))
+
+          allocate(angp(np))
+          call interpolate(angler,angp,obj(i)%coef,obj(i)%ip,obj(i)%jp)
+          obj(i)%cosa = cos(angp-obj(i)%ang)
+          obj(i)%sina = sin(angp-obj(i)%ang)
+
+          deallocate(angp)
 
           allocate(obj(i)%ui(np,nz))
           allocate(obj(i)%cfu(np,4))
@@ -419,73 +428,13 @@
 
       end subroutine interpolate_3D  !]
 ! ----------------------------------------------------------------------
-      subroutine interpolate_vec_2D(u,v,ui,vi,cfu,ipu,jpu,cfv,ipv,jpv)  ![
-      ! Interpolate a vector on a c-grid and rotate to angle
-      use dimensions
-      implicit none
-
-      ! inputs
-      real   ,dimension(-1:nx+2,-1:ny+2),intent(in) :: u    ! assumed size arrays always start at 1.
-      real   ,dimension(-1:nx+2,-1:ny+2),intent(in) :: v    ! assumed size arrays always start at 1.
-      real   ,dimension(:)              ,intent(out):: ui
-      real   ,dimension(:)              ,intent(out):: vi
-!     real   ,dimension(:)              ,intent(in) :: cosa,sina
-      real   ,dimension(:,:)            ,intent(in) :: cfu,cfv
-      integer,dimension(:)              ,intent(in) :: ipu,ipv
-      integer,dimension(:)              ,intent(in) :: jpu,jpv
-
-      ! local
-      integer :: i,np
-
-      call interpolate(u,ui,cfu,ipu,jpu)
-      call interpolate(v,vi,cfv,ipv,jpv)
-
-!     np = size(ipu,1)
-!     do i = 1,np
-!        ui(i) = ui(i)*cosa(i) - vi(i)*sina(i)
-!        vi(i) = vi(i)*cosa(i) + ui(i)*sina(i)
-!     enddo
-
-      end subroutine interpolate_vec_2D  !]
-! ----------------------------------------------------------------------
-      subroutine interpolate_vec_3D(u,v,ui,vi,cosa,sina,cfu,ipu,jpu,cfv,ipv,jpv)  ![
-      ! Interpolate a vector on a c-grid and rotate to angle
-      use dimensions
-      implicit none
-
-      ! inputs
-      real   ,dimension(-1:nx+2,-1:ny+2,nz),intent(in) :: u    ! assumed size arrays always start at 1.
-      real   ,dimension(-1:nx+2,-1:ny+2,nz),intent(in) :: v    ! assumed size arrays always start at 1.
-      real   ,dimension(:,:)               ,intent(out):: ui
-      real   ,dimension(:,:)               ,intent(out):: vi
-      real   ,dimension(:)                 ,intent(in) :: cosa,sina
-      real   ,dimension(:,:)               ,intent(in) :: cfu,cfv
-      integer,dimension(:)                 ,intent(in) :: ipu,ipv
-      integer,dimension(:)                 ,intent(in) :: jpu,jpv
-
-      ! local
-      integer :: i,k,np
-
-      call interpolate(u,ui,cfu,ipu,jpu)
-      call interpolate(v,vi,cfv,ipv,jpv)
-
-      np = size(ipu,1)
-      do k = 1,nz
-        do i = 1,np
-          ui(i,k) = ui(i,k)*cosa(i) - vi(i,k)*sina(i)
-          vi(i,k) = vi(i,k)*cosa(i) + ui(i,k)*sina(i)
-        enddo
-      enddo
-
-      end subroutine interpolate_vec_3D  !]
-! ----------------------------------------------------------------------
       subroutine do_extract_data ![
       ! extract data for all objects, for all vars
       ! and write to file
       implicit none
 
       ! local
-      integer :: i,itrc,record,ierr,ncid
+      integer :: i,itrc,record,ierr,ncid,k
       character(len=30) :: obj_name
       character(len=99),save :: fname
       character(len=20)              :: tname
@@ -497,7 +446,6 @@
       real,dimension(:),allocatable :: dummy
       integer,dimension(3) :: start2D
       integer,dimension(2) :: start1D
-      integer :: ii,jj
 
       if (.not.allocated(obj)) call init_extract_data
 
@@ -559,28 +507,30 @@
             if (obj(i)%ubar) then
               call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
               call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
-              obj(i)%vari(:,1) = ui(:,1)
-!             call rotate_vel(vari(:,1),ui(:,1),vi(:,1),cosa,sina,'u')
-!             vari(:,1) = ui*obj(i)%cosa + vi*obj(i)%sina
+              obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
               call ncwrite(ncid,obj(i)%pre//'ubar',obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%vbar) then
               call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
               call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
-              obj(i)%vari(:,1) = vi(:,1)
-!             vari(:,1) = -ui*obj(i)%sina + vi*obj(i)%cosa
+              obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
               call ncwrite(ncid,obj(i)%pre//'vbar',obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%u) then
               call interpolate(u(:,:,:,nstp),ui,cfu,ipu,jpu)
               call interpolate(v(:,:,:,nstp),vi,cfv,ipv,jpv)
               obj(i)%vari = ui
+              do k=1,nz
+                obj(i)%vari(:,k) = obj(i)%cosa*ui(:,k) - obj(i)%sina*vi(:,k)
+              enddo
               call ncwrite(ncid,obj(i)%pre//'u',obj(i)%vari,start2D)
             endif
             if (obj(i)%v) then
               call interpolate(u(:,:,:,nstp),ui,cfu,ipu,jpu)
               call interpolate(v(:,:,:,nstp),vi,cfv,ipv,jpv)
-              obj(i)%vari = vi
+              do k=1,nz
+                obj(i)%vari(:,k) = obj(i)%sina*ui(:,k) + obj(i)%cosa*vi(:,k)
+              enddo
               call ncwrite(ncid,obj(i)%pre//'v',obj(i)%vari,start2D)
             endif
           endif
