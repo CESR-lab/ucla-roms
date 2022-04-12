@@ -35,10 +35,6 @@
       real,allocatable,dimension(:) :: sp_mult
       real,allocatable,dimension(:,:):: wrk
 
-      logical           :: obc_west =.false.
-      logical           :: obc_east =.false.
-      logical           :: obc_north=.false.
-      logical           :: obc_south=.false.
 
       public adjust_sponge
 
@@ -62,18 +58,6 @@
       do i=1,isp
        sp_mult(i) = float(isp-i+0.5)/float(isp)
       enddo
-# ifdef OBC_WEST
-      obc_west =.true.
-# endif
-# ifdef OBC_EAST
-      obc_east =.true.
-# endif
-# ifdef OBC_NORTH
-      obc_north=.true.
-# endif
-# ifdef OBC_SOUTH
-      obc_south=.true.
-# endif
 
       !! max value based of cfl condition
       sp_mx = 0.1/(minval(pm)*minval(pn)*dt)
@@ -81,6 +65,7 @@
       !! reset viscosity
       visc2_r = 0
 
+      ierr = 0
       if (obc_west.and.(.not.west_exchng)) then
         if (nx<isp) ierr = 1
         if (.not.onoff) then

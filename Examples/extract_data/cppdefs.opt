@@ -5,20 +5,24 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
+#define MAIN_SWITCH
 
 
-# define MAIN_SWITCH /* 
+/*
+   Main switch starts here: model configuration choice.
+*/
+
+#if defined MAIN_SWITCH
 
 /* -------------------------------------------------------  */
 
 # if defined MAIN_SWITCH
 
-c---#  define BRY_EXTRACT_CHILD
-#  define DIAGNOSTICS
-#  define HIS_DOUBLE
-#  define SPONGE_TUNE
+c--#  define BRY_EXTRACT_CHILD
+#  define EXTRACT_DATA
 
-#  undef GRID_ANG_DEG
+#  define DIAGNOSTICS
+
 #  define SOLVE3D
 #  define UV_COR
 #  define UV_ADV
@@ -86,7 +90,7 @@ c#    define BBL_F00
 #   define SURF_FLUX_OUTPUT_AVG /* DevinD output flux variables as averages */
 #  endif
 
-c--# endif
+# endif
 
 /* DevinD - end DH's non-analytical WEC */
 

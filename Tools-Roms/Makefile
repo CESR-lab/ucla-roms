@@ -54,6 +54,9 @@ mpc: mpc.F Makefile
 	
 join_child_bry: ncjoin_mod.o join_child_bry.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o join_child_bry ncjoin_mod.o join_child_bry.o lenstr.o  $(LCDF)
+	
+particle_join: ncjoin_mod.o particle_join.o  lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o particle_join ncjoin_mod.o particle_join.o lenstr.o  $(LCDF)
 
 R2R_INIT = r2r_init.o r2r_interp_init.o r2r_subs.o r2r_rotate.o r2r_vert_interp.o\
            set_depth.o etch_into_land.o spln2d.o tiling.o roms_read_write.o\

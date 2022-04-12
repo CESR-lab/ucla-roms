@@ -44,9 +44,9 @@
       implicit none
 
       ! input/outputs
-      type(ncforce)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
-      real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
-      real,dimension(:)  ,optional,intent(out)   :: var1d  ! time interpolated forcing data
+      type(ncforce)        ,intent(inout)      :: nc    ! derived type containing all neccesary supporting data
+      real,dimension(:,:),optional,intent(out) :: var2d ! time interpolated forcing data
+      real,dimension(:)  ,optional,intent(out) :: var1d ! time interpolated forcing data
 
       ! local
       real    :: cff1,cff2  ! for time interpolations
@@ -238,9 +238,8 @@
       endif
 
       end subroutine find_new_record  !]
-
 ! ----------------------------------------------------------------------
-      subroutine find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first)
+      subroutine find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first) ![
       ! Find the first record that has vtime>time, or if it's
       ! the first time calling, the record preceeding that one.
       implicit none
@@ -286,18 +285,17 @@
 
       deallocate(tim)
 
-      end subroutine find_new_record_cycle
-
+      end subroutine find_new_record_cycle !]
 ! ----------------------------------------------------------------------
-      subroutine fill_frc_slice(nc,modtime,it,d1)
+      subroutine fill_frc_slice(nc,modtime,it,d1) ![
       ! Fill a time slice of forcing data
       implicit none
 
       ! input/outputs
-      type(ncforce)        ,intent(inout) :: nc    ! derived type containing all neccesary supporting data
-      real               ,intent(in)    :: modtime
-      integer            ,intent(in)    :: it
-      logical            ,intent(in)    :: d1  ! 1 or 2 dimensional forcing data
+      type(ncforce)      ,intent(inout) :: nc      ! derived type containing all neccesary supporting data
+      real               ,intent(in)    :: modtime ! current time of the model
+      integer            ,intent(in)    :: it      ! index (1 or 2) of the forcing data
+      logical            ,intent(in)    :: d1      ! 1 or 2 dimensional forcing data
 
       ! local
       integer :: ierr,ncid
@@ -339,8 +337,7 @@
       nc%irec  = irec
       nc%ifile = ifile
 
-      end subroutine fill_frc_slice
-
+      end subroutine fill_frc_slice !]
 ! ----------------------------------------------------------------------
       subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
       ! Handle fatal ierr with error messages.
@@ -413,7 +410,7 @@
 
       end subroutine create_filename !]
 ! ----------------------------------------------------------------------
-      subroutine coarse2fine(cdata,fdata)
+      subroutine coarse2fine(cdata,fdata) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
       implicit none
 
@@ -447,7 +444,6 @@
         enddo
       enddo
 
-
-      end subroutine coarse2fine
+      end subroutine coarse2fine !]
 
       end module roms_read_write

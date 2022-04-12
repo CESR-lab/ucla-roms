@@ -13,10 +13,13 @@
 
 # if defined MAIN_SWITCH
 
-c---#  define BRY_EXTRACT_CHILD
-#  define DIAGNOSTICS
-#  define HIS_DOUBLE
-#  define SPONGE_TUNE
+# define PARTICLES
+c--#  define BRY_EXTRACT_CHILD
+c--#  define DIAGNOSTICS
+c--#  define HIS_DOUBLE
+c--#  define SPONGE_TUNE
+
+c--#  define BRY_EXTRACT_CHILD  /* required for online child bry interp */
 
 #  undef GRID_ANG_DEG
 #  define SOLVE3D

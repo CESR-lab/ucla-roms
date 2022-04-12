@@ -24,7 +24,7 @@
       integer, parameter :: gny = MMm
       integer, parameter ::  nz = N
 
-      integer            :: nx         ! different four boundary tiles hence not compile time parameter
+      integer            :: nx   ! Can vary between subdomains so not compile time parameters
       integer            :: ny
 
       ! DevinD: store global index ranges for each node for bry_extract_child.F
