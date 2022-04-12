@@ -121,12 +121,21 @@
 
       real, allocatable,dimension(:,:) :: bt2bc    ! Barotropic to baroclinic conversion
       real, allocatable,dimension(:,:) :: bt2bc_avg! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bt2bc_ss    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bt2bc_ss_avg! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bt2bc_ff    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bt2bc_ff_avg! Barotropic to baroclinic conversion
 
-      real, allocatable,dimension(:,:,:) :: Wvel   ! Vertical velocity
+      real,public, allocatable,dimension(:,:,:) :: rho_d  ! rho for diagnostics
+      real, allocatable,dimension(:,:,:) :: Wvl   ! Vertical velocity
       real, allocatable,dimension(:,:,:) :: Wvl_slow   ! Vertical velocity
       real, allocatable,dimension(:,:) :: Wvl_fast  ! Vertical velocity
       real, allocatable,dimension(:,:) :: bc2bc    ! Baroclinic to baroclinic conversion
       real, allocatable,dimension(:,:) :: bc2bc_avg! Baroclinic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bc2bc_ss    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bc2bc_ss_avg! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bc2bc_ff    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bc2bc_ff_avg! Barotropic to baroclinic conversion
       real, allocatable,dimension(:,:) :: ape      ! Available potential energy
       real, allocatable,dimension(:,:) :: ape_avg  ! Available potential energy
       real, allocatable,dimension(:,:) :: drhodz   ! density gradient
@@ -309,19 +318,32 @@
 
         allocate( bt2bc(nx,ny) )
         allocate( bt2bc_avg(nx,ny) )
+        allocate( bt2bc_ss(nx,ny) )
+        allocate( bt2bc_ss_avg(nx,ny) )
+        allocate( bt2bc_ff(nx,ny) )
+        allocate( bt2bc_ff_avg(nx,ny) )
         bt2bc_avg = 0
+        bt2bc_ss_avg = 0
+        bt2bc_ff_avg = 0
 
+        allocate( rho_d(nx,ny,nz))
         allocate( rho_slow(nx,ny,nz))
         rho_slow = 0
         allocate( rho_fast(nx,ny))
-        allocate( Wvel(GLOBAL_2D_ARRAY,nz))
+        allocate( Wvl(GLOBAL_2D_ARRAY,nz))
         allocate( Wvl_slow(nx,ny,nz))
         Wvl_slow = 0;
         allocate( Wvl_fast(nx,ny))
 
         allocate( bc2bc(nx,ny) )
         allocate( bc2bc_avg(nx,ny) )
+        allocate( bc2bc_ss(nx,ny) )
+        allocate( bc2bc_ss_avg(nx,ny) )
+        allocate( bc2bc_ff(nx,ny) )
+        allocate( bc2bc_ff_avg(nx,ny) )
         bc2bc_avg = 0
+        bc2bc_ss_avg = 0
+        bc2bc_ff_avg = 0
 
         allocate( ape(nx,ny) )
         allocate( ape_avg(nx,ny) )
@@ -988,6 +1010,7 @@
 
       if (diag_Ebcln) then
 
+        ! the U/Vdiag term contains dz*px/py
         px_slow = beta*px_slow + alpha*Udiag(:,:,:,ipgr)
         py_slow = beta*py_slow + alpha*Vdiag(:,:,:,ipgr)
 
@@ -1005,8 +1028,8 @@
           upx = upx + u_fast*px_fast
           vpy = vpy + v_fast*py_fast
 
-          eku = eku+0.25*(u_fast*u_fast)*(Hz(0:nx-1,1:ny,k)+Hz(1:nx,1:ny,k))
-          ekv = ekv+0.25*(v_fast*v_fast)*(Hz(1:nx,0:ny-1,k)+Hz(1:nx,1:ny,k))
+!         eku = eku+0.25*(u_fast*u_fast)*(Hz(0:nx-1,1:ny,k)+Hz(1:nx,1:ny,k))
+!         ekv = ekv+0.25*(v_fast*v_fast)*(Hz(1:nx,0:ny-1,k)+Hz(1:nx,1:ny,k))
 !         upx = upx + u_fast*px_fast +
 !    &                u_fast*px_slow(:,:,k)+u_slow(:,:,k)*px_fast
 !         vpy = vpy + v_fast*py_fast +
@@ -1028,13 +1051,13 @@
         Uflx =  sum(Flxu(1:nx+1,1:ny,:),dim=3)
         Vflx =  sum(Flxv(1:nx,1:ny+1,:),dim=3)
         dzt  = -dxdyi*( Uflx(2:nx+1,:)-Uflx(1:nx,:) +
-     &                  Vflx(:,2:ny+1)-Uflx(:,1:ny) )
+     &                  Vflx(:,2:ny+1)-Vflx(:,1:ny) )
 
         dzt_slow = beta*dzt_slow + alpha*dzt
         udh_slow = beta*udh_slow + alpha*udh
-        rho_slow = beta*rho_slow + alpha*rho1(1:nx,1:ny,:)
-        call wvlcty (0,Wvel)
-        Wvl_slow = beta*Wvl_slow + alpha*Wvel(1:nx,1:ny,:)
+        rho_slow = beta*rho_slow + alpha*rho_d(1:nx,1:ny,:)
+        call wvlcty (0,Wvl)
+        Wvl_slow = beta*Wvl_slow + alpha*Wvl(1:nx,1:ny,:)
 
         call E_baroclinic
       endif
@@ -1049,7 +1072,7 @@
 
       ! Local
       integer :: i,j,k,k1,k2
-      real    :: Wbt,Wbc
+      real    :: Wbt,Wbc,Wbt_f,Wbc_f,Wbt_s,Wbc_s
       integer :: kbak
 
       kbak=knew-1
@@ -1070,13 +1093,17 @@
 
       bt2bc = 0
       bc2bc = 0
-      ape   = 0
+      bt2bc_ss = 0
+      bc2bc_ss = 0
+      bt2bc_ff = 0
+      bc2bc_ff = 0
+!     ape   = 0
 
       udh_fast = udh - udh_slow
       dzt_fast = dzt - dzt_slow
       do k=1,nz
-        rho_fast = rho1(1:nx,1:ny,k) - rho_slow(:,:,k)
-        Wvl_fast = Wvel(1:nx,1:ny,k) - Wvl_slow(:,:,k)
+        rho_fast = rho_d(1:nx,1:ny,k) - rho_slow(:,:,k)
+        Wvl_fast = Wvl(1:nx,1:ny,k) - Wvl_slow(:,:,k)
         k2 = min(k+1,nz)
         k1 = max(k-1,1)
         drhodz = -0.5*(rho_slow(1:nx,1:ny,k2)-rho_slow(1:nx,1:ny,k1))/Hz(1:nx,1:ny,k)
@@ -1088,32 +1115,38 @@
         enddo
         do j=1,ny
           do i=1,nx
-            Wbt = udh_fast(i,j) +
+            Wbt = udh(i,j) +
+     &       (z_r(i,j,k)+h(i,j))*(dzt(i,j)-udh(i,j))/(zeta(i,j,kbak) + h(i,j))
+            Wbt_s = udh_slow(i,j) +
+     &       (z_r(i,j,k)+h(i,j))*(dzt_slow(i,j)-udh_slow(i,j))/(zeta(i,j,kbak) + h(i,j))
+            Wbt_f = udh_fast(i,j) +
      &       (z_r(i,j,k)+h(i,j))*(dzt_fast(i,j)-udh_fast(i,j))/(zeta(i,j,kbak) + h(i,j))
-            bt2bc(i,j) = bt2bc(i,j) + g*Wbt*rho_fast(i,j)*Hz(i,j,k)
-            Wbc = Wvl_fast(i,j) - Wbt
-            bc2bc(i,j) = bc2bc(i,j) + g*Wbc*rho_fast(i,j)*Hz(i,j,k)
-            ape(i,j) = ape(i,j) + 
-     &         0.5*g*rho_fast(i,j)*rho_fast(i,j)*Hz(i,j,k)/drhodz(i,j)
-!           Wbt = udh(i,j) +
-!    &       (z_r(i,j,k)+h(i,j))*(dzt(i,j)-udh(i,j))/(zeta(i,j,kbak) + h(i,j))
-!           bt2bc(i,j) = bt2bc(i,j) + g*Wbt*rho1(i,j,k)*Hz(i,j,k)
-!           Wbc = Wvel(i,j,k) - Wbt
-!           bc2bc(i,j) = bc2bc(i,j) + g*Wbc*rho1(i,j,k)*Hz(i,j,k)
+
+            Wbc   = Wvl(i,j,k)    - Wbt
+            Wbc_s = Wvl_slow(i,j,k) - Wbt_s
+            Wbc_f = Wvl_fast(i,j) - Wbt_f
+
+            bt2bc(i,j)    = bt2bc(i,j)    + g*Wbt  *rho_d(i,j,k)    *Hz(i,j,k)
+            bt2bc_ss(i,j) = bt2bc_ss(i,j) + g*Wbt_s*rho_slow(i,j,k)*Hz(i,j,k)
+            bt2bc_ff(i,j) = bt2bc_ff(i,j) + g*Wbt_f*rho_fast(i,j)  *Hz(i,j,k)
+            bc2bc(i,j)    = bc2bc(i,j)    + g*Wbc  *rho_d(i,j,k)    *Hz(i,j,k)
+            bc2bc_ss(i,j) = bc2bc_ss(i,j) + g*Wbc_s*rho_slow(i,j,k)*Hz(i,j,k)
+            bc2bc_ff(i,j) = bc2bc_ff(i,j) + g*Wbc_f*rho_fast(i,j)  *Hz(i,j,k)
+!           ape(i,j) = ape(i,j) + 
+!    &         0.5*g*rho_fast(i,j)*rho_fast(i,j)*Hz(i,j,k)/drhodz(i,j)
           enddo
         enddo
       enddo
-      ape = 0.5*g*ape
-      do j=1,ny
-        do i=1,nx
-          if (isnan(ape(i,j))) then
-            print *,'APE calc_pflux: ',mynode
-            print *,i,j,vp(i,j)
-            stop
-          endif
-        enddo
-      enddo
-
+!     ape = 0.5*g*ape
+!     do j=1,ny
+!       do i=1,nx
+!         if (isnan(ape(i,j))) then
+!           print *,'APE calc_pflux: ',mynode
+!           print *,i,j,vp(i,j)
+!           stop
+!         endif
+!       enddo
+!     enddo
 
       end subroutine E_baroclinic !]
 ! ----------------------------------------------------------------------
@@ -1159,10 +1192,14 @@
         upx_avg = upx_avg*(1-coef) + upx*coef
         vpy_avg = vpy_avg*(1-coef) + vpy*coef
         bt2bc_avg = bt2bc_avg*(1-coef) + bt2bc*coef
+        bt2bc_ss_avg = bt2bc_ss_avg*(1-coef) + bt2bc_ss*coef
+        bt2bc_ff_avg = bt2bc_ff_avg*(1-coef) + bt2bc_ff*coef
         bc2bc_avg = bc2bc_avg*(1-coef) + bc2bc*coef
-        ape_avg = ape_avg*(1-coef) + ape*coef
-        eku_avg = eku_avg*(1-coef) + eku*coef
-        ekv_avg = ekv_avg*(1-coef) + ekv*coef
+        bc2bc_ss_avg = bc2bc_ss_avg*(1-coef) + bc2bc_ss*coef
+        bc2bc_ff_avg = bc2bc_ff_avg*(1-coef) + bc2bc_ff*coef
+!       ape_avg = ape_avg*(1-coef) + ape*coef
+!       eku_avg = eku_avg*(1-coef) + eku*coef
+!       ekv_avg = ekv_avg*(1-coef) + ekv*coef
       endif
 
       end subroutine calc_diag_avg !]
@@ -1248,6 +1285,7 @@
       integer,          dimension(3) :: dimsizes3 ! dim lengths
       integer                        :: varid,ierr
       integer                        :: it
+
 
       if (diag_uv) then
         dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
@@ -1389,32 +1427,38 @@
 
         dimnames3 = (/'xi_rho','eta_rho', 'time'/)
         dimsizes3 = (/ xi_rho,  eta_rho,  0/)
-        varid = nccreate(ncid,'bt2bc',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin')
+        varid = nccreate(ncid,'bt2bc_al',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin all')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
         dimnames3 = (/'xi_rho','eta_rho', 'time'/)
         dimsizes3 = (/ xi_rho,  eta_rho,  0/)
-        varid = nccreate(ncid,'bc2bc',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin')
+        varid = nccreate(ncid,'bt2bc_ss',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin ss')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
         dimnames3 = (/'xi_rho','eta_rho', 'time'/)
         dimsizes3 = (/ xi_rho,  eta_rho,  0/)
-        varid = nccreate(ncid,'ape',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','available PE')
-        ierr = nf90_put_att(ncid,varid,'units','?/?^3')
-
-        dimnames3 = (/'xi_u','eta_rho', 'time'/)
-        dimsizes3 = (/ xi_u,  eta_rho,   0/)
-        varid = nccreate(ncid,'eku',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','baroclinic KE')
+        varid = nccreate(ncid,'bt2bc_ff',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin ff')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
-        dimnames3 = (/'xi_rho','eta_v', 'time'/)
-        dimsizes3 = (/ xi_rho,  eta_v,  0/)
-        varid = nccreate(ncid,'ekv',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','baroclinic KE')
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bc2bc_al',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin all')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bc2bc_ss',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin ss')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bc2bc_ff',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin ff')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
       endif
@@ -1486,38 +1530,26 @@
       !local
 !     integer,   dimension(4) :: start    ! start vector for writing
       integer,   dimension(3) :: start    ! start vector for writing
-      integer :: i,j
-      integer :: i0,i1,j0,j1,bfx,bfy
+      integer :: bfx,bfy
 
-      i0 = iwest
-      i1 = ieast
-      j0 = jsouth
-      j1 = jnorth
       !! JM The diagnostics exclude the buffers
       bfx = 1
       bfy = 1
       if (.not.west_exchng)  bfx = 2
       if (.not.south_exchng) bfy = 2
 
+!     for 3D up data
 !     start = (/bfx, bfy, 1, record/)
-!     call ncwrite(ncid,'up',up(i0+bfx-1:i1,j0:j1,:),start)
+!     call ncwrite(ncid,'up',up(bfx:nx,1:ny,:),start)
       start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'up',up(i0+bfx-1:i1,j0:j1),start)
+      call ncwrite(ncid,'up',up(bfx:nx,1:ny),start)
           
+!     for 3D vp data
 !     start = (/bfx, bfy, 1, record/)
-!     call ncwrite(ncid,'vp',vp(i0:i1,j0+bfy-1:j1,:),start)
+!     call ncwrite(ncid,'vp',vp(1:nx,bfy:ny,:),start)
       start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'vp',vp(i0:i1,j0+bfy-1:j1),start)
+      call ncwrite(ncid,'vp',vp(1:nx,bfy:ny),start)
 
-!     do j=j0,j1
-!       do i=i0,i1
-!         if (isnan(vp(i,j))) then
-!           print *,'node: ',mynode
-!           print *,i,j,vp(i,j)
-!           stop
-!         endif
-!       enddo
-!     enddo
 
       end subroutine wrt_diag_pflx  !]
 ! ----------------------------------------------------------------------
@@ -1531,78 +1563,45 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-!     real, dimension(:,:),intent(inout) :: upx,vpy,bt2bc
 
       !local
-      integer :: i0,i1,j0,j1,bfx,bfy
+      integer :: bfx,bfy
       integer,   dimension(3) :: start    ! start vector for writing
 
-      integer :: i,j
-
-      i0 = iwest
-      i1 = ieast
-      j0 = jsouth
-      j1 = jnorth
       !! JM The diagnostics exclude the buffers
+      !! but the boundary domains include them in 
+      !! the output so skip one point in the west/south
+      !! for the domains that border the boundary
       bfx = 1
       bfy = 1
       if (.not.west_exchng)  bfx = 2
       if (.not.south_exchng) bfy = 2
-!     if (.not.west_exchng)  upx(i0,:) = 0
-!     if (.not.south_exchng) vpy(:,j0) = 0
 
-
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'upx',upx_avg(i0+bfx-1:i1,j0:j1),start)
+!     start = (/bfx, bfy, record/)
+      start = (/1, bfy, record/)
+      call ncwrite(ncid,'upx',upx_avg,start)
           
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'vpy',vpy_avg(i0:i1,j0+bfy-1:j1),start)
+      start = (/bfx, 1, record/)
+      call ncwrite(ncid,'vpy',vpy_avg,start)
 
       start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'bt2bc',bt2bc_avg(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'bt2bc_al',bt2bc_avg(1:nx,1:ny),start)
 
       start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'bc2bc',bc2bc_avg(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'bt2bc_ss',bt2bc_ss_avg(1:nx,1:ny),start)
 
-      do j=j0,j1
-        do i=i0,i1
-          if (isnan(ape_avg(i,j))) then
-            print *,'APE node: ',mynode
-            print *,i,j,ape_avg(i,j)
-            stop
-          endif
-        enddo
-      enddo
       start = (/bfx, bfy, record/)
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'ape',ape_avg(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'bt2bc_ff',bt2bc_ff_avg(1:nx,1:ny),start)
 
-      do j=j0,j1
-        do i=i0+bfx-1,i1
-          if (isnan(eku_avg(i,j))) then
-            print *,'EKU node: ',mynode
-            print *,i,j,eku_avg(i,j)
-            stop
-          endif
-        enddo
-      enddo
       start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'eku',eku_avg(i0+bfx-1:i1,j0:j1),start)
+      call ncwrite(ncid,'bc2bc_al',bc2bc_avg(1:nx,1:ny),start)
 
-      do j=j0+bfy-1,j1
-        do i=i0,i1
-          if (isnan(ekv_avg(i,j))) then
-            print *,'node: ',mynode
-            print *,i,j,ekv_avg(i,j)
-            stop
-          endif
-        enddo
-      enddo
       start = (/bfx, bfy, record/)
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'ekv',ekv_avg(i0:i1,j0+bfy-1:j1),start)
+      call ncwrite(ncid,'bc2bc_ss',bc2bc_ss_avg(1:nx,1:ny),start)
 
-          
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'bc2bc_ff',bc2bc_ff_avg(1:nx,1:ny),start)
+
 
       end subroutine wrt_diag_Ebcln !]
 ! ----------------------------------------------------------------------

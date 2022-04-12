@@ -104,8 +104,8 @@
 
 
 #define INT_TO_INT4
-c-#define REAL_TO_REAL8
-c-#define DOUBLE_CONST
+#define REAL_TO_REAL8
+#define DOUBLE_CONST
 
 #define F77_TO_F95
 #define KIND_STYLE

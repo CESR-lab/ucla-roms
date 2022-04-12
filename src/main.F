@@ -140,17 +140,12 @@ CR      write(*,*) '-11' MYID
 
 
 #ifdef ANA_GRID
-      do tile=my_tile_range            ! Set horizontal curvilinear
-        call ana_grid(tile)            ! grid and model bathymetry
-      enddo                            ! (either analytically or read
-C$OMP BARRIER                          ! from grid netCDF file).
+      call ana_grid                   ! grid and model bathymetry
 #else
-C$OMP MASTER
       call get_grid
-C$OMP END MASTER
-C$OMP BARRIER
-      if (may_day_flag /= 0) goto 99 !-->  EXIT
 #endif
+      if (may_day_flag /= 0) goto 99 !-->  EXIT
+
       do tile=my_tile_range            ! Compute various metric terms
         call setup_grid1(tile)         ! and their combinations.
       enddo
@@ -205,9 +200,7 @@ CR      write(*,*) ' -6' MYID
         call set_forces(tile)          ! model prognostic variables,
       enddo                            ! either analytically or read
 C$OMP BARRIER                          ! from netCDF file.  Note that
-      do tile=my_tile_range            ! analytical initialization
-        call ana_init(tile)            ! may require surface forcing
-      enddo                            ! fields (e.g, wind stress),
+      call ana_init                    ! may require surface forcing
 C$OMP BARRIER                          ! so call forces first.
       if (nrrec > 0) then              ! Also note that ana_init may
 #endif
@@ -460,12 +453,14 @@ C$OMP BARRIER
 !======= ====== ===== =============== ======
 
 #ifdef PARTICLES
-      if (mynode==0) print *, 'do_particles'
       call do_particles
 #endif
 #ifdef BRY_EXTRACT_CHILD
 !     call read_extraction_objects
       call set_child_bry  ! frequency flag handled within routine
+#endif
+#ifdef EXTRACT_DATA
+      call do_extract_data
 #endif
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
