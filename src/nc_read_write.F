@@ -99,9 +99,12 @@
       integer,dimension(1) :: dims
       integer,dimension(2) :: sizes
 
+
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite: '/ /vname)
+      endif
 
       if (present(start)) then
         sizes = (/dims, 1/)
@@ -109,7 +112,9 @@
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=nf90_noerr) then
+        call handle_err(ierr,'ncwrite: '/ /vname)
+      endif
 
       end subroutine ncwrite_1D
 

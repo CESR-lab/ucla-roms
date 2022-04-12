@@ -459,6 +459,9 @@ C$OMP BARRIER
 !     call read_extraction_objects
       call set_child_bry  ! frequency flag handled within routine
 #endif
+#ifdef EXTRACT_DATA
+      call do_extract_data
+#endif
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART

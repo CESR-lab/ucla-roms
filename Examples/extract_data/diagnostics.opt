@@ -30,7 +30,6 @@
 
       real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering (in seconds)
 
-      integer, parameter         :: prcsn         = 2           ! precision of output variables. 1=float, 2=double
       integer, parameter         :: diag_prec     = nf90_double ! Precision of output variables (nf90_float/nf90_double)
 
 
