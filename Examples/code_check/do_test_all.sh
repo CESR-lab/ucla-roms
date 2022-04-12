@@ -26,7 +26,7 @@ do
   if [ $error_cnt -gt 0 ]
   then
     echo "  test failed!"
-    break
+#   break
   fi  
   
   cd ../                                         # need return out of /code_check/ for next iteration
