@@ -460,7 +460,6 @@ C$OMP BARRIER
       call do_particles
 #endif
 #ifdef BRY_EXTRACT_CHILD
-!     call read_extraction_objects
       call set_child_bry  ! frequency flag handled within routine
 #endif
 #ifdef EXTRACT_DATA
