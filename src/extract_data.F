@@ -54,20 +54,13 @@
       use diagnostics
 
 
+      ! TODO: add averaging
+
+
       implicit none
       private
 
-#include "bry_extract_child.opt"
-
-      ! scalar and vectors will always be in their own object
-      ! for now, lets do all rho vars for scalar objects (zeta,T,S and other
-      ! tracers), and all velocities for vector objects (u,v,ubar,vbar)
-      ! next step is to make that selectable
-      ! next step to add averaging
-
-      character(len=60) :: extract_file = 'sample_edata.nc'
-      integer,parameter :: nrpf   = 100  ! number of records per output file
-      integer,parameter :: edat_prec = nf90_double  ! Precision of output variables (nf90_float/nf90_double)
+#include "extract_data.opt"
 
 
       integer           :: total_rec=0 ! total records
