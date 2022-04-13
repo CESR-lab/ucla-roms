@@ -5,16 +5,12 @@ function add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_mask,obj
 
   disp(['Adding: ', obj_name, ' to ',ename]);
 
-  % The domain index space of the parent is [0:nx]x[0:ny]
-  % rho-points are from -0.5 to nx+0.5;
-  % where nx = nxp-2;
-
   [nxp,nyp] = size(lonp);                  % dimension sizes of parent domain
-  ip_rho = [0:nxp-1]-0.5;                  % index numbering of parent domain
-  jp_rho = [0:nyp-1]-0.5;
-  [ip_rho,jp_rho] = meshgrid(ip_rho,jp_rho);
-  ip_rho = ip_rho';
-  jp_rho = jp_rho';
+% ip_rho = [0:nxp-1]-0.5;                  % index numbering of parent domain
+% jp_rho = [0:nyp-1]-0.5;
+% [ip_rho,jp_rho] = meshgrid(ip_rho,jp_rho);
+% ip_rho = ip_rho';
+% jp_rho = jp_rho';
 
 
   % crop parent grid to minimal size
@@ -45,13 +41,38 @@ function add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_mask,obj
   obj_j(isnan(obj_j)) = -1e5;  
 
   np = length(obj_i);
+
+  % code to help with nested boundaries objects
+  if strfind(obj_name,'grid')
+    if ~isempty(strfind(obj_name,'west')) |...
+       ~isempty(strfind(obj_name,'east'))
+      if strcmp(obj_name(end),'v')
+        dname = 'eta_v';
+      else
+        dname = 'eta_rho';
+      end
+    elseif ~isempty(strfind(obj_name,'north')) |...
+           ~isempty(strfind(obj_name,'south'))
+      if strcmp(obj_name(end),'u')
+        dname = 'xi_u';
+      else
+        dname = 'xi_rho';
+      end
+    else
+      disp(obj_name)
+      error 'Grid bry object, but not an obvious boundary'
+    end
+  else
+   dname = ['np_' obj_name];
+  end
+
   if exist('obj_ang')
-    nccreate(ename,obj_name, 'dimensions', {['np_' obj_name],np,'three',3}, 'datatype', 'single');
+    nccreate(ename,obj_name, 'dimensions', {dname,np,'three',3}, 'datatype', 'single');
     ncwriteatt(ename,obj_name, 'long_name', 'index coordinates and angle of data object');
     ncwriteatt(ename,obj_name, 'units', 'non-dimensional and radian');
     ncwrite(ename,obj_name, [obj_i obj_j obj_ang]);
   else
-    nccreate(ename,obj_name, 'dimensions', {['np_' obj_name],np,'two',2}, 'datatype', 'single');
+    nccreate(ename,obj_name, 'dimensions', {dname,np,'two',2}, 'datatype', 'single');
     ncwriteatt(ename,obj_name, 'long_name', 'index coordinates of data object');
     ncwriteatt(ename,obj_name, 'units', 'non-dimensional');
     ncwrite(ename,obj_name, [obj_i obj_j]);

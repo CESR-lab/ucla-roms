@@ -3,9 +3,14 @@
 
 	% Find limits of child grid and 
 	% crop parent grid to minimal size
-        [nxp,nyp] = size(lons);                          % dimension sizes of parent domain
-        ip_rho = [0:nxp-1];                              % index numbering of parent domain
-        jp_rho = [0:nyp-1];
+
+        % The domain index space of the parent is [0:nx]x[0:ny]
+        % rho-points are from -0.5 to nx+0.5;
+        % where nx = nxp-2;
+
+        [nxp,nyp] = size(lons);             % dimension sizes of parent domain (nxp=nx+2)
+        ip_rho = [0:nxp-1]-0.5;             % index numbering of parent domain
+	jp_rho = [0:nyp-1]-0.5;             % starts at -0.5, ends at nx+0.5
         [ips,jps] = meshgrid(ip_rho,jp_rho);
         ips = ips';
         jps = jps';
