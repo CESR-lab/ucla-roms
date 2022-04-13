@@ -1,13 +1,12 @@
       module extract_data  
       ! Extract data at various positions and frequencies
-      ! only for things that need interpolating
+      ! Only for things that need interpolating
 
-      ! We're retooling this to be more generally a way to output a
-      ! variety of things at a range of locations at various frequencies
 
       ! Auxiliary tools required:
-      ! - Tools-Roms/bry_child_input_gen.m   -> creates input file of child bry i/j values used here
-      ! - Tools-Roms/join_child_bry.F        -> joins partial files created here
+      ! - Tools-Roms/scripts/pre/add_object.m -> add a data extraction object to a netcdf file
+      ! - Tools-Roms/scripts/pre/bry_extract_obj.m -> Example showing
+      !             how to add objects for a child grid boundary forcing file
 
       !
       ! STEPS:
@@ -18,7 +17,7 @@
       !    - Name of the object ('child1_south','mooring2', etc, etc,...
       !    - Output frequency of each object
       !    - Variables to be output
-      !    - Object name, positions, var type (rho/vel), variables, frequency
+      !  
       !
       ! 1) Assign positions to subdomains
       !    - if ispresent(iobj) then see above
@@ -26,15 +25,15 @@
       !    The ROMS parent simulation needs to know where the child boundary sits in its
       !    parent domain. To do this the child bry points are given i and j coords in
       !    terms of the parent grid. We created a matlab tool to do this found here:
-      !    Tools-Roms/bry_child_input_gen.m
+      !    Tools-Roms/scripts/pre/
 
-      ! 2) create a single file per subdomain containing all the object
+      ! 2) Create a single file per subdomain containing all the objects
       !    for which ispresent(iobj) is true
       !
       ! 3) Loop through all objects and all vars, and write when needed
       !    Add averaging capability at some point
       !
-      !    vel points always need to interpolate both u, and v. in order
+      !    Vel points always need to interpolate both u, and v in order
       !    to rotate the vector to a desired angle
       !
       !]
@@ -52,6 +51,7 @@
       use ocean3d
       use scalars
       use read_write, only: output_root_name,handle_ierr
+      use diagnostics
 
 
       implicit none
@@ -70,9 +70,11 @@
       integer,parameter :: edat_prec = nf90_double  ! Precision of output variables (nf90_float/nf90_double)
 
 
-
       integer           :: total_rec=0 ! total records
       integer           :: nobj  ! number of extraction objects
+
+      logical                         :: extend_up !! flag to extend up,vp
+      real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
  
       type extract_object  ! contains all information for a data_extraction object
 
@@ -88,13 +90,13 @@
         real,   dimension(:)  ,allocatable :: ang       ! desired angle for velocities
         integer                            :: start_idx ! starting position in the obj array
 
-        real                               :: otime=0   ! time since last output
 
         !! Initializing record at nrpf will trigger the making of a file
         !! at the first time step
         integer                        :: record=nrpf   ! record number in file
+        real                               :: otime=0   ! time since last output
 
-        real,   dimension(:,:),pointer     :: vari      ! data
+        real,   dimension(:,:),pointer     :: vari      ! data for output
 
         ! these are only for scalars
         integer,dimension(:)  ,pointer     :: ip,jp     ! lower left hand point index
@@ -124,8 +126,6 @@
 
       type(extract_object),dimension(:),allocatable :: obj
 
-      !! examples of objects: 'grid1_south_r', mooring1_r'
-
       interface interpolate
         module procedure  interpolate_2D, interpolate_3D
       end interface
@@ -145,6 +145,20 @@
 
       if (mynode==0) print *,'reading data extraction objects'
       call read_extraction_objects
+
+      if (extend_up) then
+!       print *,mynode,nx,Lm,ny,Mm
+!       allocate( upe(GLOBAL_2D_ARRAY) )
+!       allocate( vpe(GLOBAL_2D_ARRAY) )
+!       print *,shape(upe),shape(vpe)
+!       deallocate(upe)
+!       deallocate(vpe)
+        allocate( upe(-1:nx+2,-1:ny+2) )
+        allocate( vpe(-1:nx+2,-1:ny+2) )
+!       print *,shape(upe),shape(vpe)
+        upe = 0
+        vpe = 0
+      endif
 
       do i = 1,nobj
         np = obj(i)%np
@@ -274,6 +288,16 @@
           if (findstr(variables,'v') )    obj(iobj)%v  = .True.
           if (findstr(variables,'up') )   obj(iobj)%up = .True.
           if (findstr(variables,'vp') )   obj(iobj)%vp = .True.
+
+          ! DIAGNOSTICS needs to be activated and diag_pflx=.true.
+          if (obj(iobj)%up.and. .not.diag_pflx) then
+            print *,'Fatal ERROR: up extraction, diag_pflx is not set'
+          endif
+          if (obj(iobj)%vp.and. .not.diag_pflx) then
+            print *,'Fatal ERROR: vp extraction, diag_pflx is not set'
+          endif
+
+          if (obj(iobj)%up.or.obj(iobj)%vp) extend_up = .true.
 
         endif
 
@@ -454,6 +478,15 @@
           obj(:)%record = 0
       endif
 
+      if (extend_up) then
+        upe(1:nx,1:ny) = up
+        vpe(1:nx,1:ny) = vp
+!       print *,shape(upe),shape(up)
+!       call exchange2d_tile(1,nx,1,ny,upe)
+!       call exchange2d_2_tile(1,nx,1,ny,upe,vpe)
+      endif
+
+
       ierr=nf90_open(fname,nf90_write,ncid)
 !     ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
@@ -491,7 +524,6 @@
             call ncwrite(ncid,tname,(/time/),(/record/))
 
             if (obj(i)%zeta) then
-!             call interpolate(lonr,obj(i)%vari(:,1),coef,ip,jp)
               call interpolate(zeta(:,:,knew),obj(i)%vari(:,1),coef,ip,jp)
               call ncwrite(ncid,obj(i)%pre//'zeta',obj(i)%vari(:,1),start1D)
             endif
@@ -532,6 +564,18 @@
                 obj(i)%vari(:,k) = obj(i)%sina*ui(:,k) + obj(i)%cosa*vi(:,k)
               enddo
               call ncwrite(ncid,obj(i)%pre//'v',obj(i)%vari,start2D)
+            endif
+            if (obj(i)%up) then
+              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
+              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
+              obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
+              call ncwrite(ncid,obj(i)%pre//'up',obj(i)%vari(:,1),start1D)
+            endif
+            if (obj(i)%vp) then
+              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
+              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
+              obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
+              call ncwrite(ncid,obj(i)%pre//'vp',obj(i)%vari(:,1),start1D)
             endif
           endif
         endif
@@ -645,24 +689,36 @@
             ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
             ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
           endif
-          if (obj(i)%u)  then 
-            varid = nccreate(ncid,obj(i)%pre//'u',dname3,dsize3,edat_prec)
-            ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
-            ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
-            ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
-            ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
-          endif
-          if (obj(i)%v)  then 
-            varid = nccreate(ncid,obj(i)%pre//'v',dname3,dsize3,edat_prec)
-            ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
-            ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
-            ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
-            ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
-          endif
+
+          if (obj(i)%u)  call create_var(ncid,obj(i),'u',dname3,dsize3)
+          if (obj(i)%v)  call create_var(ncid,obj(i),'v',dname3,dsize3)
+          if (obj(i)%up) call create_var(ncid,obj(i),'up',dname,dsize)
+          if (obj(i)%vp) call create_var(ncid,obj(i),'vp',dname,dsize)
         endif
       enddo
 
       end subroutine create_edata_vars  !]
+! ----------------------------------------------------------------------
+      subroutine create_var(ncid,obj,vname,dname,dsize) ![
+      implicit none
+
+      ! import/export
+      integer :: ncid
+      type(extract_object),intent(in) ::obj
+      character(len=*)              ,intent(in) :: vname
+      character(len=20),dimension(:),intent(in) :: dname ! dimension names
+      integer,          dimension(:),intent(in) :: dsize ! dim lengths
+
+      ! local
+      integer :: varid,ierr
+
+      varid = nccreate(ncid,obj%pre//vname,dname,dsize,edat_prec)
+      ierr = nf90_put_att(ncid,varid,'start',obj%start_idx)
+      ierr = nf90_put_att(ncid,varid,'count',obj%np)
+      ierr = nf90_put_att(ncid,varid,'dname',obj%dname)
+      ierr = nf90_put_att(ncid,varid,'dsize',obj%dsize)
+
+      end subroutine create_var  !]
 ! ----------------------------------------------------------------------
       logical function findstr(variables,var) ![
       use roms_read_write
