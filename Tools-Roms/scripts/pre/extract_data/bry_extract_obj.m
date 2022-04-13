@@ -21,11 +21,12 @@
 % Parent grid directory and file name
 pdir    = '/avatar/nmolem/NEPAC/';
 pname   = 'nepac_grd.nc';
-pdir    = './';
+pdir    = '/avatar/nmolem/SAMPLE/';
 pname   = 'sample_grd_riv.nc';
 
 % Child grid directory and file name
 cdir    = './';
+pdir    = '/avatar/nmolem/SAMPLE/';
 cname   = 'sample_child_grd.nc';
 
 % Output file name and info
@@ -40,6 +41,7 @@ info    = ['indices for ' cname ' in ' pname];
  obc_south= 1;
  obc_north= 1;
  period = 1800;
+ period =   20;
 
 
 % -- END USER INPUT ------------
@@ -51,6 +53,7 @@ cname = [cdir cname];
 
 lonp = ncread(pname,'lon_rho');        
 latp = ncread(pname,'lat_rho');
+mskp = ncread(pname,'mask_rho');
 lonp = mod(lonp,360);
 
 lonr = ncread(cname,'lon_rho');
@@ -69,6 +72,9 @@ angv = 0.5*(angr(:,1:end-1) + angr(:,2:end));
 msku = mskr(1:end-1,:).*mskr(2:end,:);
 mskv = mskr(:,1:end-1).*mskr(:,2:end);
 
+rho_vars = 'zeta, temp, salt';
+u_vars   = 'ubar, u, up';
+v_vars   = 'vbar, v, vp';
 
   if obc_west
     bnd = 'west';
@@ -77,6 +83,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_lat = latr(1,:)';
     obj_msk = mskr(1,:)';
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk);
+    ncwriteatt(ename,obj_name,'output_vars',rho_vars);
 
     obj_name = [gname '_' bnd '_u'];
     obj_lon = lonu(1,:)';
@@ -84,6 +91,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angu(1,:)';
     obj_msk = msku(1,:)';
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang);
+    ncwriteatt(ename,obj_name,'output_vars',u_vars);
 
     obj_name = [gname '_' bnd '_v'];
     obj_lon = lonv(1,:)';
@@ -91,6 +99,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angv(1,:)';
     obj_msk = mskv(1,:)';
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang);
+    ncwriteatt(ename,obj_name,'output_vars',v_vars);
   end
 
   if obc_east
@@ -100,6 +109,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_lat = latr(end,:)';
     obj_msk = mskr(end,:)';
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk)
+    ncwriteatt(ename,obj_name,'output_vars',rho_vars);
 
     obj_name = [gname '_' bnd '_u'];
     obj_lon = lonu(end,:)';
@@ -107,6 +117,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angu(end,:)';
     obj_msk = msku(end,:)';
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang)
+    ncwriteatt(ename,obj_name,'output_vars',u_vars);
 
     obj_name = [gname '_' bnd '_v'];
     obj_lon = lonv(end,:)';
@@ -114,6 +125,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angv(end,:)';
     obj_msk = mskv(end,:)';
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang)
+    ncwriteatt(ename,obj_name,'output_vars',v_vars);
   end
 
   if obc_south
@@ -123,6 +135,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_lat = latr(:,1);
     obj_msk = mskr(:,1);
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk)
+    ncwriteatt(ename,obj_name,'output_vars',rho_vars);
 
     obj_name = [gname '_' bnd '_u'];
     obj_lon = lonu(:,1);
@@ -130,6 +143,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angu(:,1);
     obj_msk = msku(:,1);
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang)
+    ncwriteatt(ename,obj_name,'output_vars',u_vars);
 
     obj_name = [gname '_' bnd '_v'];
     obj_lon = lonv(:,1);
@@ -137,6 +151,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angv(:,1);
     obj_msk = mskv(:,1);
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang)
+    ncwriteatt(ename,obj_name,'output_vars',v_vars);
   end
 
   if obc_north
@@ -146,6 +161,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_lat = latr(:,end);
     obj_msk = mskr(:,end);
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk)
+    ncwriteatt(ename,obj_name,'output_vars',rho_vars);
 
     obj_name = [gname '_' bnd '_u'];
     obj_lon = lonu(:,end);
@@ -153,6 +169,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angu(:,end);
     obj_msk = msku(:,end);
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang)
+    ncwriteatt(ename,obj_name,'output_vars',u_vars);
 
     obj_name = [gname '_' bnd '_v'];
     obj_lon = lonv(:,end);
@@ -160,6 +177,7 @@ mskv = mskr(:,1:end-1).*mskr(:,2:end);
     obj_ang = angv(:,end);
     obj_msk = mskv(:,end);
     add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang)
+    ncwriteatt(ename,obj_name,'output_vars',v_vars);
   end
 
   ncwriteatt(ename, '/', 'info',  info);           % info on parent and child grid
