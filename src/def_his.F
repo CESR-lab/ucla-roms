@@ -258,10 +258,8 @@ c--#define nf_def_var my_nf_def_var
       ! Tracer variables
       ! ----------------
 # ifndef AVRH /* NOT AVRH */
-        ! Define tracer his variables to output
         call def_his_trc
 # else /* AVRH */
-        ! Define tracers AVERAGED variables to output
         call def_avg_trc
 # endif /* END AVRH */
 
@@ -372,16 +370,6 @@ c--#define nf_def_var my_nf_def_var
         endif
 # endif
 #endif /* SOLVE3D */
-
-#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-# ifndef AVRH /* NOT AVRH */
-
-        call def_his_bgc_diag                              ! define bgc BEC2_DIAG his variables
-# else /* AVRH */
-        call def_avg_bgc_diag                              ! define bgc BEC2_DIAG averaged variables
-# endif /* END AVRH */
-#endif   /* BEC2_DIAG */
-
 
 ! Leave definition mode.
 ! ----- ---------- -----

@@ -1,11 +1,11 @@
 
       ! ****************************************************************
       ! user inputs
-      logical,parameter :: wrt_file_his      = .true.      ! t/f to write a wec history file
+      logical,parameter :: wrt_file_his      = .true.      ! t/f to write module history file
       real,parameter    :: output_period_his = 20          ! output period in seconds
       integer,parameter :: nrpf_his          = 3           ! total recs per file
       
-      logical,parameter :: wrt_file_avg      = .true.      ! t/f to write a wec averages file
+      logical,parameter :: wrt_file_avg      = .true.      ! t/f to write module averages file
       real,parameter    :: output_period_avg = 40          ! output averaging period in seconds
       integer,parameter :: nrpf_avg          = 2           ! total recs per file
       ! end user inputs

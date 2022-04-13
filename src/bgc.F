@@ -16,6 +16,10 @@
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use ncvars
       use bgc_ecosys_vars
+      use nc_read_write
+      use roms_read_write
+      use netcdf
+      use scalars
 
       implicit none
 
@@ -28,19 +32,24 @@
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      real, public    :: srflx_dailyavg(GLOBAL_2D_ARRAY)  ! daily average short-wave rad 
+      real, public    :: srflx_dailyavg(GLOBAL_2D_ARRAY)   ! daily average short-wave rad
 #endif
 
-      ! Misc from porting ETH code:
+      ! netcdf outputting:
+      integer :: ncid=-1, prev_fill_mode
+      real    :: t_avg_bgc=0
+      integer :: navg_bgc = 0                              ! number of samples in average
+
+      ! misc from porting ETH code:
       character(len=40) tclm_name(NT) ! Taken from ETH code ncvars
 
       public set_bgc_surf_frc
 #ifdef BEC2_DIAG
-      public def_his_bgc_diag
-      public wrt_his_bgc_diag
+!      public def_his_bgc_diag
+!      public wrt_his_bgc_diag
 # ifdef AVERAGES
-      public def_avg_bgc_diag
-      public wrt_avg_bgc_diag
+!      public def_avg_bgc_diag
+!      public wrt_avg_bgc_diag
       public set_avg_bgc_diag
 # endif
 #endif
@@ -115,8 +124,237 @@
       end subroutine set_bgc_surf_frc  !]
 
 ! ----------------------------------------------------------------------
+      subroutine wrt_his_bgc  ![
+      ! write variables to output netcdf file
+      ! bgc variables are in fact tracers, but we choose to output
+      ! them to their own file.
+      ! this file also include bgc diagnostic variables.
+      ! selection of variables to output is still done in tracers.opt
+      ! otherwise would cause circular reference as needed in both directions.
+      implicit none
+
+      ! local
+      integer,dimension(4)   :: start
+      integer,save           :: rec_his                              ! current file output record
+      integer,save           :: total_rec_his=0                      ! total his output records so far
+      real,save              :: output_time_his=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_his
+      integer                :: itrc, ierr
+
+      ! check this as different from WEC first_step and time. Called from step3d_t_ISO
+      if (.not. first_step) output_time_his = output_time_his + dt   ! only start count after first timestep
+      first_step=.false.                                             ! as first step the wec values are for t=0
+
+      if (output_time_his>=output_period_his .or.
+     &    output_time_his==0                      ) then             ! catch to get t=0 output
+
+        if (mod(total_rec_his,nrpf_his)==0) then
+          call create_bgc_file(total_rec_his,fname_his,.false.)
+          rec_his = 0
+        endif
+        total_rec_his = total_rec_his +1
+        rec_his = rec_his + 1
+
+        ierr=nf90_open(fname_his,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))         ! consider time here!!!
+
+        start=1; start(4)=rec_his                                    ! 3D vars
+        do itrc=iTandS+nt_passive+1, NT
+          if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
+        enddo
+
+        call wrt_his_bgc_diag(ncid,rec_his)
+
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+     &     'bgc :: wrote history, tdays =', tdays,
+     &     'step =', iic, 'rec =', rec_his, '/', total_rec_his
+        endif
+
+        output_time_his=0
+      endif
+
+      end subroutine wrt_his_bgc  !]
+
+! ----------------------------------------------------------------------
+      subroutine wrt_avg_bgc  ![
+      ! write averaged variables to output netcdf file
+      ! don't include t=0 in averaging. This create 0.5dt error in averaging,
+      ! but this 0.5dt error has always been in ROMS.
+      ! for 2 steps. True avg would be 0.5*t0 + t1 + 0.5*t2, but we've never done that.
+      implicit none
+
+      ! local
+      integer,dimension(4)   :: start
+      integer,save           :: rec_avg                              ! current file output record
+      integer,save           :: total_rec_avg=0                      ! total avg output records so far
+      real,save              :: output_time_avg=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_avg
+      integer                :: itrc, ierr, itavg
+
+      if (.not. first_step) then
+        call calc_avg_bgc                                            ! don't include t=0 in averaging
+        output_time_avg = output_time_avg + dt                       ! only start count after first timestep
+      endif
+      first_step=.false.                                             ! as first step the bgc values are for t=0
+
+      if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
+
+        if (mod(total_rec_avg,nrpf_avg)==0) then
+          call create_bgc_file(total_rec_avg,fname_avg,.true.)
+          rec_avg = 0
+        endif
+        total_rec_avg = total_rec_avg +1
+        rec_avg = rec_avg + 1
+
+        ierr=nf90_open(fname_avg,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/t_avg_bgc/),(/rec_avg/))
+
+        start=1; start(4)=rec_avg                                    ! back to 3D vars
+
+        do itrc=iTandS+nt_passive+1, NT
+          if (wrt_t_avg(itrc)) then
+            itavg = NT_2_t_avg(itrc)                                 ! get respective index for t_avg(itavg) -> t(itrc)
+            call ncwrite(ncid,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start)
+          endif
+        enddo
+
+        call wrt_avg_bgc_diag(ncid,rec_avg)
+
+        navg_bgc=0
+        output_time_avg=0
+
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
+     &        'bgc :: wrote averages, tdays =', tdays,
+     &        'step =', iic-1, 'rec =', rec_avg, '/', total_rec_avg  ! -1 since iic=t(n+1)
+     &         MYID
+        endif
+      endif
+
+      end subroutine wrt_avg_bgc  !]
+
+!----------------------------------------------------------------------
+      subroutine create_bgc_file(total_rec,fname,avg)  ![
+      implicit none
+
+      !input/output
+      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
+      character(len=99),intent(out) :: fname
+      logical,          intent(in)  :: avg                 ! his or average file
+
+      ! local
+      integer :: ierr,varid
+      character(len=10),dimension(4) :: dimnames           ! dimension names
+      integer,          dimension(4) :: dimsizes
+
+      if (      avg) fname=trim(output_root_name) / / '_bgc_avg.nc'
+      if (.not. avg) fname=trim(output_root_name) / / '_bgc.nc'
+      call create_filename(fname,total_rec)
+
+      ierr=nf90_create(fname,nf90_netcdf4,ncid)
+      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_bgc_file: ')
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      if (      avg) ierr = nf90_put_att(ncid,varid,'long_name','Average time since origin')
+      if (.not. avg) ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
+
+      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      if (ierr/=nf90_noerr)
+     &  call handle_ierr(ierr,'create_bgc_file: ')
+
+      if (      avg) call def_vars_bgc( ncid, .true.  )
+      if (.not. avg) call def_vars_bgc( ncid, .false. )
+
+      ierr = nf90_enddef(ncid)
+      if (mynode == 0) then
+        write(*,'(7x,2A)')
+     &    'bgc :: created new netCDF file ', trim(fname)
+      endif
+
+      end subroutine create_bgc_file !]
+
+! ----------------------------------------------------------------------
+      subroutine def_vars_bgc( ncid, avg )  ![
+      ! define output variable & attributes in netcdf results file
+      ! for actual or averaged variables
+      implicit none
+
+      ! input
+      integer,intent(in) :: ncid
+      logical,intent(in) :: avg
+      ! local
+      integer           :: ierr, varid, itrc
+      character(len=64) :: text_lname
+
+      do itrc=iTandS+nt_passive+1, NT
+        if (wrt_t(itrc)) then
+          if (avg) then
+            text_lname='averaged '/ /t_lname(itrc)
+          else
+            text_lname=t_lname(itrc)
+          endif
+          varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+          ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
+        endif
+      enddo
+
+      if (avg) then
+        call def_avg_bgc_diag(ncid)
+      else
+        call def_his_bgc_diag(ncid)
+      endif
+
+
+      end subroutine def_vars_bgc  !]
+
+! ----------------------------------------------------------------------
+#ifdef AVERAGES
+      subroutine calc_avg_bgc  ![
+      implicit none
+
+      ! local
+      real    :: coef
+      integer :: itrc, itavg
+
+      navg_bgc = navg_bgc +1
+      coef = 1./navg_bgc
+
+      if (coef==1) then                                    ! this refreshes average (1-coef)=0
+       if (mynode==0) write(*,'(7x,2A,F9.1)')
+     &   'bgc :: started averaging. ',
+     &   'output_period_avg (s) =', output_period_avg
+      endif
+
+      t_avg_bgc = t_avg_bgc*(1-coef) + time*coef
+
+      ! need i0:i1 indices because arrays still GLOBAL_2D therefore wasted margin
+      do itrc=iTandS+nt_passive+1, NT
+        if (wrt_t_avg(itrc)) then
+          itavg = NT_2_t_avg(itrc)                         ! get respective index for t_avg(itavg) -> t(itrc)
+          t_avg(i0:i1,j0:j1,:,itavg) = t_avg(i0:i1,j0:j1,:,itavg)    *(1-coef)
+     &                               +     t(i0:i1,j0:j1,:,nstp,itrc)*coef     ! CONFIRM NSTP OR NNEW!!!
+!                t_avg(i,j,k,itavg)=cff1*t_avg(i,j,k,itavg)
+!     &                             +cff*t(i,j,k,nstp,itrc)
+        endif
+      enddo
+
+      end subroutine calc_avg_bgc  !]
+#endif /* AVERAGES */
+
+! ----------------------------------------------------------------------
 #ifdef BEC2_DIAG
-      subroutine def_his_bgc_diag  ![
+      subroutine def_his_bgc_diag(ncid)  ![
 
       ! Define history/avg file variables for BEC2_DIAG
       ! Taken from def_his.F of ETH code.
@@ -124,24 +362,26 @@
 
       implicit none
 
-      ! Local
-      integer idiag, ierr
+      ! input
+      integer,intent(in) :: ncid
+      ! local
+      integer :: idiag, ierr, varid
 
       ! 2d diagnostics:
       do idiag=1,nr_bec2_diag_2d
         if (wrtavg_bec2_diag_2d(idiag)) then
-          varid = nccreate(nchis,vname_bec2_diag_2d(1,idiag),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
-          ierr = nf90_put_att(nchis,varid,'long_name',vname_bec2_diag_2d(2,idiag))
-          ierr = nf90_put_att(nchis,varid,'units',vname_bec2_diag_2d(3,idiag))
+          varid = nccreate(ncid,vname_bec2_diag_2d(1,idiag),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_2d(2,idiag))
+          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,idiag))
         endif
       enddo
 
       ! 3d diagnostics:
       do idiag=1,nr_bec2_diag_3d
         if (wrtavg_bec2_diag_3d(idiag)) then
-          varid = nccreate(nchis,vname_bec2_diag_3d(1,idiag),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
-          ierr = nf90_put_att(nchis,varid,'long_name',vname_bec2_diag_3d(2,idiag))
-          ierr = nf90_put_att(nchis,varid,'units',vname_bec2_diag_3d(3,idiag))
+          varid = nccreate(ncid,vname_bec2_diag_3d(1,idiag),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_3d(2,idiag))
+          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_3d(3,idiag))
         endif
       enddo
 
@@ -152,23 +392,25 @@
 ! Need AVERAGES as 'ncavg' only exists in AVERAGES is defined.
 #ifdef AVERAGES
 #ifdef BEC2_DIAG
-      subroutine def_avg_bgc_diag  ![
+      subroutine def_avg_bgc_diag(ncid)  ![
       ! Define history/avg file variables for BEC2_DIAG
       ! Taken from def_his.F of ETH code.
       ! Called from def_his.F
       implicit none
 
+      ! input
+      integer,intent(in) :: ncid
       ! local
-      integer idiag, ierr
+      integer idiag, ierr, varid
       character(len=64) long_name
 
       ! 2d diagnostics:
       do idiag=1,nr_bec2_diag_2d
         if (wrtavg_bec2_diag_2d(idiag)) then
           long_name='averaged '/ /vname_bec2_diag_2d(2,idiag) ! Add averaged to long names
-          varid = nccreate(ncavg,vname_bec2_diag_2d(1,idiag),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
-          ierr = nf90_put_att(ncavg,varid,'long_name',long_name)
-          ierr = nf90_put_att(ncavg,varid,'units',vname_bec2_diag_2d(3,idiag))
+          varid = nccreate(ncid,vname_bec2_diag_2d(1,idiag),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',long_name)
+          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,idiag))
         endif
       enddo
 
@@ -176,11 +418,11 @@
       do idiag=1,nr_bec2_diag_3d
         if (wrtavg_bec2_diag_3d(idiag)) then
           long_name='averaged '/ /vname_bec2_diag_3d(2,idiag) ! Add averaged to long name
-!          call nc_define_var(ncavg, vname_bec2_diag_3d(1,idiag),
+!          call nc_define_var(ncid, vname_bec2_diag_3d(1,idiag),
 !     &    long_name, vname_bec2_diag_3d(3,idiag), r3dgrd, ierr )
-          varid = nccreate(ncavg,vname_bec2_diag_3d(1,idiag),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
-          ierr = nf90_put_att(ncavg,varid,'long_name',long_name)
-          ierr = nf90_put_att(ncavg,varid,'units',vname_bec2_diag_3d(3,idiag))
+          varid = nccreate(ncid,vname_bec2_diag_3d(1,idiag),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',long_name)
+          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_3d(3,idiag))
         endif
       enddo
 
@@ -190,31 +432,31 @@
 
 ! ----------------------------------------------------------------------
 #ifdef BEC2_DIAG
-      subroutine wrt_his_bgc_diag (record, ierr)  ![
+      subroutine wrt_his_bgc_diag (ncid,record)  ![
       ! Write BEC2_DIAG to history file
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr ! Error handling
+      integer, intent(in) :: ncid
+      integer, intent(in) :: record
       ! local
-      integer itrc
+      integer :: itrc, ierr
 
       ! 2d diagnostics:
       do itrc=1,nr_bec2_diag_2d
          if (wrtavg_bec2_diag_2d(itrc)) then
-           call nc_write_var(nchis, bec2_diag_2d(START_2D_ARRAY,itrc), 1,
+           call nc_write_var(ncid, bec2_diag_2d(START_2D_ARRAY,itrc), 1,
      &             vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
          endif
-      end do
+      enddo
 
       ! 3d diagnostics:
       do itrc=1,nr_bec2_diag_3d
          if (wrtavg_bec2_diag_3d(itrc)) then
-           call nc_write_var(nchis, bec2_diag_3d(START_2D_ARRAY,1,itrc), N,
+           call nc_write_var(ncid, bec2_diag_3d(START_2D_ARRAY,1,itrc), N,
      &             vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
          endif
-      end do
+      enddo
 
       end subroutine wrt_his_bgc_diag  !]
 #endif /* BEC2_DIAG */
@@ -222,20 +464,20 @@
 ! ----------------------------------------------------------------------
 #ifdef AVERAGES
 #ifdef BEC2_DIAG
-      subroutine wrt_avg_bgc_diag (record, ierr)  ![
-      ! Write BEC2_DIAG to avg file
+      subroutine wrt_avg_bgc_diag (ncid,record)  ![
+      ! write BEC2_DIAG to avg file
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! The timestep to be recorded
-      integer :: ierr ! Error handling
+      integer,intent(in) :: ncid
+      integer,intent(in) :: record
       ! local
-      integer itrc
+      integer :: itrc, ierr
 
       ! 2d diagnostics:
       do itrc=1,nr_bec2_diag_2d
          if (wrtavg_bec2_diag_2d(itrc)) then
-           call nc_write_var(ncavg, bec2_diag_2d_avg(START_2D_ARRAY,itrc),
+           call nc_write_var(ncid, bec2_diag_2d_avg(START_2D_ARRAY,itrc),
      &          1, vname_bec2_diag_2d(1,itrc), rp_var, record, ierr )
          endif
       end do
@@ -243,7 +485,7 @@
       ! 3d diagnostics:
       do itrc=1,nr_bec2_diag_3d
          if (wrtavg_bec2_diag_3d(itrc)) then
-           call nc_write_var(ncavg, bec2_diag_3d_avg(START_2D_ARRAY,1,itrc),
+           call nc_write_var(ncid, bec2_diag_3d_avg(START_2D_ARRAY,1,itrc),
      &          N, vname_bec2_diag_3d(1,itrc), rp_var, record, ierr )
          endif
       end do

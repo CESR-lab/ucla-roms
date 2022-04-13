@@ -30,17 +30,17 @@
 #if defined WEC /* WEC for whole module! */
 
       use param
-      use roms_read_write
       use grid
       use ncvars
       use ocean_vars
       use scalars
       use netcdf
       use nc_read_write
+      use roms_read_write
       use dimensions
       implicit none
 
-      private                                              ! makes all variable private to this module unless public specified
+      private                                              ! make all variable private to this module unless public specified
       save                                                 ! make all public variables global (might not be needed depending on compiler)
 
 #include "wec_frc.opt"
@@ -722,7 +722,7 @@
       real,save              :: output_time_his=0                    ! time since last output
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_his
-      integer                :: tile, tn, ierr
+      integer                :: tile, ierr
 
       if (.not. first_step) output_time_his = output_time_his + dt   ! only start count after first timestep
       first_step=.false.                                             ! as first step the wec values are for t=0
@@ -780,8 +780,6 @@
 
 !----------------------------------------------------------------------
       subroutine create_wec_file(total_rec,fname,avg)  ![
-      use roms_read_write
-      use nc_read_write
       implicit none
 
       !input/output
@@ -1831,7 +1829,7 @@ C$OMP BARRIER
       ! taken from set_avg.F in old code
       implicit none
 
-      ! inputs
+      ! local
       real :: coef
 
       navg_wec = navg_wec +1
