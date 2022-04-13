@@ -1,11 +1,9 @@
 #include "cppdefs.opt"
 #ifdef AVERAGES
 
-      subroutine wrt_avg             ! Write time-averaged fields
-                                     ! into averages netCDF file.
-
+      subroutine wrt_avg  ![
+      ! write time-averaged fields into averages netCDF file.
       use param
-      use bgc        ! wrt_avg_bgc_diag
       use tracers    ! , only: wrt_avg_trc
       use read_write ! nc_write_var, rp_var, etc
       use netcdf     ! nf90 subroutines
@@ -14,18 +12,15 @@
       use mixing
       use ncvars
       use scalars
-
       implicit none
 
-      integer record, i, ierr, lstr, lvar, lenstr, ncdf_write, var_id_tmp
-# ifdef SOLVE3D
-     &             , itrc
-# endif
-      character(len=18) tstring
+      integer :: record, i, ierr, lstr, lvar, lenstr, ncdf_write, var_id_tmp , itrc
+      integer :: start(4)
+      character(len=18) :: tstring
 
 # include "netcdf.inc"
 # if defined MPI && !defined PARALLEL_FILES
-      integer status(MPI_STATUS_SIZE), blank
+      integer :: status(MPI_STATUS_SIZE), blank
       if (mynode > 0) then
         call MPI_Recv (blank, 1, MPI_INTEGER, mynode-1,  3,
      &                       ocean_grid_comm, status, ierr)
@@ -48,16 +43,14 @@
 ! Write out time-averaged variables:
 ! ----- --- ------------- ----------
 
-      ! write ocean time
-      ! ----------------
-      ierr=nf90_inq_varid(ncavg, 'ocean_time', var_id_tmp)
+      start=1
+      start(3)=record
+
+      ierr=nf90_inq_varid(ncavg, 'ocean_time', var_id_tmp)           ! write ocean time
       ierr=nf90_put_var(ncavg, var_id_tmp, time_avg,(/record/))
 
-! Barotropic mode variables: free-surface and 2D momentum components
-! in XI-,ETA-directions.
-
-      if (wrtavg(indxZ) .and. ierr == nf90_noerr) then
-        call nc_write_var(ncavg, zeta_avg, 1, vname(1,indxZ), rp_var,
+      if (wrtavg(indxZ) .and. ierr == nf90_noerr) then               ! Barotropic mode variables: free-surface and 2D
+        call nc_write_var(ncavg, zeta_avg, 1, vname(1,indxZ), rp_var,! momentum components in XI-,ETA-directions.
      &                    record, ierr)
       endif
 
@@ -72,9 +65,8 @@
       endif
 # ifdef SOLVE3D
 
-! 3D momentum components in XI- and ETA-directions.
-
-      if (wrtavg(indxU) .and. ierr == nf90_noerr) then
+      start(3)=1; start(4)=record
+      if (wrtavg(indxU) .and. ierr == nf90_noerr) then               ! 3D momentum components in XI- and ETA-directions
         call nc_write_var(ncavg, u_avg, N, vname(1,indxU), up_var,
      &                    record, ierr)
       endif
@@ -84,76 +76,59 @@
      &                    record, ierr)
       endif
 
-! Tracer variables.
+      call wrt_avg_trc(start)                                        ! Tracer variables
 
-      call wrt_avg_trc(record, ierr)
-
-! Density anomaly.
-
-      if (wrtavg(indxR) .and. ierr == nf90_noerr) then
+      if (wrtavg(indxR) .and. ierr == nf90_noerr) then               ! Density anomaly.
         call nc_write_var(ncavg, rho_avg, N, vname(1,indxR), rp_var,
      &                    record, ierr)
       endif
 
-! S-coordinate omega vertical velocity (m/s).
-
-      if (wrtavg(indxO) .and. ierr == nf90_noerr) then
+      if (wrtavg(indxO) .and. ierr == nf90_noerr) then               ! S-coordinate omega vertical velocity (m/s).
         call nc_write_var(ncavg, w_avg, N+1, vname(1,indxO), rp_var,
      &                    record, ierr)
       endif
 
-! True vertical velocity (m/s).
-
-      if (wrtavg(indxW) .and. ierr == nf90_noerr) then
+      if (wrtavg(indxW) .and. ierr == nf90_noerr) then               ! True vertical velocity (m/s).
         call nc_write_var(ncavg, wvl_avg, N, vname(1,indxW), rp_var,
      &                    record, ierr)
       endif
 
-! Vertical eddy viscosity coefficient for momentum.
-
-      if (wrtavg(indxAkv) .and. ierr == nf90_noerr) then
+      if (wrtavg(indxAkv) .and. ierr == nf90_noerr) then             ! Vertical eddy viscosity coefficient for momentum.
         call nc_write_var(ncavg, akv_avg(START_2D_ARRAY,0), N+1,
      &                    vname(1,indxAkv), rp_var, record, ierr)
       endif
 
-! Vertical heat conductivity
-
-      if (wrtavg(indxAkt) .and. ierr == nf90_noerr) then
+      if (wrtavg(indxAkt) .and. ierr == nf90_noerr) then             ! Vertical heat conductivity
         call nc_write_var(ncavg, akt_avg(START_2D_ARRAY,0), N+1,
      &                    vname(1,indxAkt), rp_var, record, ierr)
       endif
 #  ifdef SALINITY
 
-! Vertical diffusion coefficient for salinity.
-
-      if (wrtavg(indxAks) .and. ierr == nf90_noerr) then
+      if (wrtavg(indxAks) .and. ierr == nf90_noerr) then             ! Vertical diffusion coefficient for salinity.
         call nc_write_var(ncavg, Aks_avg(START_2D_ARRAY,0), N+1,
      &                    vname(1,indxAks), rp_var, record, ierr)
       endif
 #  endif
+      start(3)=record                                                ! back to 2D vars
 #  ifdef LMD_KPP
 
-! Depth of planetary boundary layer [m].
 
-      if (wrtavg(indxHbls) .and. ierr == nf90_noerr) then
+
+      if (wrtavg(indxHbls) .and. ierr == nf90_noerr) then            ! Depth of planetary boundary layer [m].
         call nc_write_var(ncavg, hbl_avg, 1, vname(1,indxHbls), rp_var,
      &                    record, ierr)
       endif
 #  endif
 #  ifdef LMD_BKPP
 
-! Thickness of KPP bottom boundary layer [m].
 
-      if (wrtavg(indxHbbl) .and. ierr == nf90_noerr) then
+
+      if (wrtavg(indxHbbl) .and. ierr == nf90_noerr) then            ! Thickness of KPP bottom boundary layer [m].
         call nc_write_var(ncavg, hbbl_avg, 1, vname(1,indxHbbl), rp_var,
      &                    record, ierr)
       endif
 #  endif
 # endif /* SOLVE3D */
-
-#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-      call wrt_avg_bgc_diag(record, ierr)
-#endif
 
   1   format(/1x, '### ERROR: wrt_avg :: Cannot write variable ''',
      &             A, ''' into averages file, rec =', i6, 3x,A,i4)
@@ -199,7 +174,7 @@
       if (mynode < NNODES-1) call MPI_Send (blank, 1, MPI_INTEGER,
      &                           mynode+1, 3, ocean_grid_comm, ierr)
 # endif
-      end
+      end  !]
 #else
       subroutine wrt_avg_empty
       end

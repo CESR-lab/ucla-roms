@@ -633,10 +633,7 @@
       !       have only just been computed.
 
       use param
-!      use wec_frc    !, only: wrt_his_wec
       use tracers    !, only: wrt_his_trc
-      use bgc        ! wrt_his_bgc_diag
-!      use read_write ! nc_write_var
       use eos_vars
       use grid
       use mixing
@@ -760,13 +757,9 @@
 # endif
 #endif
       start(3)=1; start(4)=rechis                          ! back to 3D vars
-!#ifdef WEC
-!      call wrt_his_wec(rechis, start)  ! can't call here because of circular reference to wec module
+!#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+!      call wrt_his_bgc_diag(rechis, ierr)
 !#endif
-
-#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-      call wrt_his_bgc_diag(rechis, ierr)
-#endif
 
   1   format(/1x, '### ERROR: wrt_his :: Cannot write variable ''',
      &              A, ''' into history file, rec =', i6, 3x,A,i4)

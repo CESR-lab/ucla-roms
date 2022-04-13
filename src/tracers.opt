@@ -35,6 +35,8 @@
 !             itot=itot+1, then itot can populate arrays in correct position;
 ! wrt_t_diag= Only with DIAGNOSTICS flag. Don't need otherwise.
 !             True/False to output tracer diagnostics.
+!
+! nt_passive= Number of passive tracers (default=0). Set here is you have them.
 
 ! - TEMP & SALT:
 
@@ -49,7 +51,7 @@
 
 ! - PASSIVE TRACERS:
 
-! - BGC TRACERS:
+! - BGC TRACERS: (must come after passive tracers)
 
 ! -- default bgc tracers
 

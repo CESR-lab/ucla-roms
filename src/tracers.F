@@ -1,6 +1,21 @@
       module tracers
 
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020 Oct)
+      !
+      ! INFO:  ![
+      ! 1) in order to specify tracer variable details, user must
+      ! set them in tracers.opt (NT still set in param for now).
+      !
+      ! 2) tracer name in netcdf file for _bry.nc and _init.nc
+      ! must have same name as trace variable. ptrace1 -> ptrace1
+      ! However, in the surface flux forcing file, the name of the
+      ! variable must be appended with _flx. E.g. ptrace1 -> ptrace1_flx
+      !
+      ! 3) Make sure tracer surface flux units are correct!
+      !
+      ! BGC: bgc tracers are stored in the tracer array, but the outputting
+      ! of bgc tracers is done to a seperate bgc output file in bgc.F
+      !]
 
 #include "cppdefs.opt"
 
@@ -14,16 +29,6 @@
       use netcdf
       implicit none
       private
-
-      ! 1) in order to specify tracer variable details, user must
-      ! set them in tracers.opt (NT still set in param for now).
-
-      ! 2) tracer name in netcdf file for _bry.nc and _init.nc
-      ! must have same name as trace variable. ptrace1 -> ptrace1
-      ! However, in the surface flux forcing file, the name of the
-      ! variable must be appended with _flx. E.g. ptrace1 -> ptrace1_flx
-
-      ! 3) Make sure tracer surface flux units are correct!
 
       !-- Tracer indices specific to each tracer
       ! Set to zero as possible means to avoid errors later? Might not be
@@ -47,13 +52,13 @@
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
-      type (ncvs)     :: nc_t( NT )                                  ! array of ncvs for each tracer
-      integer, public :: iTandS                                      ! combined index of temperature and salinity
+      type (ncvs)    :: nc_t( NT )                                   ! array of ncvs for each tracer
+      integer,public :: iTandS                                       ! combined index of temperature and salinity
                                                                      ! public as used in set_forces.F. Need to be parameter
-      integer         :: pt_tot                                      ! total number of passive tracers
-      integer         :: itot=0                                      ! index counter to count total number of tracers.
+      integer,public :: nt_passive=0                                 ! total number of passive tracers
+      integer        :: itot=0                                       ! index counter to count total number of tracers.
                                                                      ! this term prevents the need to hardcode tracer indices.
-      integer         :: interp_t                                    ! interpolate forcing from coarser input grid (=1) or not (=0)
+      integer        :: interp_t                                     ! interpolate forcing from coarser input grid (=1) or not (=0)
 
       ! 3 below currently in param as per old code
 !      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
@@ -66,8 +71,8 @@
       real, public, allocatable, dimension(:,:,:,:) :: t_avg         ! tracer averages. Memory only allocated for tracers of interest.
       integer,      allocatable, dimension(:)       :: t_avg_2_NT    ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
 
-      integer, dimension(NT) :: NT_2_t_avg                           ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
-      integer, public        :: n_t_avg                              ! number of tracer averages to output <= NT
+      integer,dimension(NT),public :: NT_2_t_avg                     ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
+      integer,public        :: n_t_avg                               ! number of tracer averages to output <= NT
 #endif
 
 #ifdef BIOLOGY_BEC2
@@ -171,7 +176,7 @@
       ! local
       integer itrc, ierr, varid
 
-      do itrc=1,NT
+      do itrc=1,iTandS+nt_passive
         if (wrt_t(itrc)) then
           varid = nccreate(nchis,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
           ierr = nf90_put_att(nchis,varid,'long_name',t_lname(itrc))
@@ -191,7 +196,7 @@
       integer itrc, ierr, varid
       character(len=64) long_name
 
-      do itrc=1,NT
+      do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
           varid = nccreate(ncavg,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
@@ -205,7 +210,8 @@
 
 ! ----------------------------------------------------------------------
       subroutine wrt_his_trc (start)  ![
-      ! Write tracers to history file
+      ! write tracers to history file
+      ! temp+salinity and passive tracers (no bgc)
       implicit none
 
       ! inputs
@@ -213,35 +219,34 @@
       ! local
       integer :: itrc
 
-      do itrc=1,NT
+      do itrc=1,iTandS+nt_passive
         if (wrt_t(itrc)) call ncwrite(nchis,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
-!          call nc_write_var(nchis, t(START_2D_ARRAY,1,nstp,itrc), N,
-!     &            t_vname(itrc), rp_var, record, ierr )
-!        endif
-      end do
+      enddo
 
       end subroutine wrt_his_trc  !]
 
 ! ----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine wrt_avg_trc (record, ierr)  ![
+      subroutine wrt_avg_trc (start)  ![
       ! Write tracers to avg file
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! timestep to be recorded
-      integer             :: ierr   ! error handling
+      integer,dimension(:),intent(in) :: start
+!      integer, intent(in) :: record ! timestep to be recorded
+!      integer             :: ierr   ! error handling
 
       ! local
       integer             :: itrc, itavg
 
       ! temporary system to compare old vs new methods for t_avg
 
-      do itrc=1,NT
+      do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
-          call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itavg), N,
-     &            t_vname(itrc), rp_var, record, ierr )
+          call ncwrite(ncavg,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start)
+!          call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itavg), N,
+!     &            t_vname(itrc), rp_var, record, ierr )
         endif
       enddo
 
@@ -251,6 +256,7 @@
 ! ----------------------------------------------------------------------
       subroutine wrt_rst_trc (record, ierr)  ![
       ! Write tracers to restart file
+      ! restart includes bgc tracers for simplicity
       implicit none
 
       ! inputs
@@ -278,9 +284,9 @@
       ! local
       integer :: i, j, k, itrc, itavg
 
-      do itrc=1,NT
+      do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
-          itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
+          itavg = NT_2_t_avg(itrc)                         ! get respective index for t_avg(itavg) -> t(itrc)
           do k=1,N
             do j=jstrR,jendR
               do i=istrR,iendR
