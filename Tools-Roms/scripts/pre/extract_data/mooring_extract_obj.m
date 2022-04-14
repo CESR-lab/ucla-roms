@@ -26,15 +26,22 @@ pname   = 'nepac_grd.nc';
 ename   = 'nepac_edata.nc';
 info    = ['indices for ' cname ' in ' pname];
 
-% 
 
- lon = 123;
- lat =  35;
+%lon =-122.507; 
+%lat =  33.460;
+%gname = 'SIO_CCE1'
 
- gname = 'mooring1'
- period = 1800;
+ lon =-120.811; 
+ lat =  34.305;
+ gname = 'SIO_CCE2'
+
+%lon =-122; 
+%lat =  36.75;
+%gname = 'MBARI_M1'
+
+ period =  300;
  ang = 0;
-
+ mooring_vars = 'zeta, temp, salt, u, v' ;
 
 % -- END USER INPUT ------------
 
@@ -45,11 +52,12 @@ latp = ncread(pname,'lat_rho');
 lonp = mod(lonp,360);
 
 obj_name = gname;
-obj_lon = lon;
+obj_lon = lon + 360;
 obj_lat = lat;
 obj_ang = ang;
 obj_msk =   1;
 add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang);
+ncwriteatt(ename,obj_name,'output_vars',mooring_vars);
 
 
 

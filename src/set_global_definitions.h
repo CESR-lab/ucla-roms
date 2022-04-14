@@ -121,7 +121,7 @@ c-# define IMPLICIT_BOTTOM_DRAG
 */
 
 #ifdef MASKING
-# define MASK_LAND_DATA
+c---# define MASK_LAND_DATA
 #endif
 
 
