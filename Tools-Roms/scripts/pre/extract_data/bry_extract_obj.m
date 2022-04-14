@@ -41,7 +41,6 @@ info    = ['indices for ' cname ' in ' pname];
  obc_south= 1;
  obc_north= 1;
  period = 1800;
- period =   20;
 
 
 % -- END USER INPUT ------------

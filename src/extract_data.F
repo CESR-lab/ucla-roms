@@ -140,15 +140,8 @@
       call read_extraction_objects
 
       if (extend_up) then
-!       print *,mynode,nx,Lm,ny,Mm
-!       allocate( upe(GLOBAL_2D_ARRAY) )
-!       allocate( vpe(GLOBAL_2D_ARRAY) )
-!       print *,shape(upe),shape(vpe)
-!       deallocate(upe)
-!       deallocate(vpe)
         allocate( upe(-1:nx+2,-1:ny+2) )
         allocate( vpe(-1:nx+2,-1:ny+2) )
-!       print *,shape(upe),shape(vpe)
         upe = 0
         vpe = 0
       endif
@@ -498,11 +491,11 @@
             start1D = (/1, record/)
             start2D = (/1,1,record/)
 
-            if (obj(i)%scalar) then
-              coef => obj(i)%coef
-              ip   => obj(i)%ip
-              jp   => obj(i)%jp
-            else
+            coef => obj(i)%coef
+            ip   => obj(i)%ip
+            jp   => obj(i)%jp
+
+            if (.not.obj(i)%scalar) then
               ui => obj(i)%ui
               vi => obj(i)%vi
               cfu=> obj(i)%cfu
@@ -593,7 +586,7 @@
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes 
 
-      fname=trim(output_root_name) / / '_extract.nc'
+      fname=trim(output_root_name) / / '_ext.nc'
       call create_filename(fname,total_rec)
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)

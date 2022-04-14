@@ -23,7 +23,7 @@
 
       real :: nan  !real(real32) :: nan
       nan = IEEE_VALUE(nan, IEEE_QUIET_NAN)
-      init =  nan ! 0. ! nan  ! for checking no bad inits
+      init = 0 ! nan  ! for checking no bad inits
 
 #define ALL_DATA
 
