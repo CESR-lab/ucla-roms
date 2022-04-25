@@ -1,4 +1,4 @@
-function add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_mask,obj_ang)
+function add_object(ename,obj_name,gname,lonp,latp,period,obj_lon,obj_lat,obj_mask,obj_ang)
   % Adds a data extraction object to a netcdf file
   % The object contains the fractional i,j positions of the desired locations
   % plus optionally an angle with the desired rotation for velocities
@@ -47,23 +47,23 @@ function add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_mask,obj
     if ~isempty(strfind(obj_name,'west')) |...
        ~isempty(strfind(obj_name,'east'))
       if strcmp(obj_name(end),'v')
-        dname = 'eta_v';
+        dname = [gname '_eta_v'];
       else
-        dname = 'eta_rho';
+        dname = [gname '_eta_rho'];
       end
     elseif ~isempty(strfind(obj_name,'north')) |...
            ~isempty(strfind(obj_name,'south'))
       if strcmp(obj_name(end),'u')
-        dname = 'xi_u';
+        dname = [gname '_xi_u'];
       else
-        dname = 'xi_rho';
+        dname = [gname '_xi_rho'];
       end
     else
       disp(obj_name)
       error 'Grid bry object, but not an obvious boundary'
     end
   else
-   dname = ['np_' obj_name];
+   dname = [gname '_np'];
   end
 
   if exist('obj_ang')

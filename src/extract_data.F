@@ -72,7 +72,9 @@
       type extract_object  ! contains all information for a data_extraction object
 
         ! needed as input
-        character(len=60) :: obj_name                   ! name of object
+        character(len=60)        :: obj_name            ! name of object
+        character(:),allocatable        :: sname            ! name of set
+        character(:),allocatable        :: oname            ! name of set
         character(:),allocatable :: pre                 ! preamble for vars and dims
         character(:),allocatable :: dname               ! dimension name for object
         integer                  :: dsize               ! dimension of object
@@ -133,10 +135,10 @@
 
       !local
       character(len=30) :: preamb
-      integer :: i,np,ierr,lpre
+      integer :: i,np,ierr,lpre,loname,lsname
       real,dimension(:),allocatable :: angp  ! grid angle
+      logical :: logic
 
-      if (mynode==0) print *,'reading data extraction objects'
       call read_extraction_objects
 
       if (extend_up) then
@@ -162,9 +164,34 @@
           allocate(character(len=lpre) :: obj(i)%pre)
           obj(i)%pre = preamb(1:lpre)
 
+          if(mynode==0) print *, 'i', i
+          if(mynode==0) print *, 'obj(i)%obj_name', obj(i)%obj_name
+
+          logic = findstr(obj(i)%obj_name,'_',lsname)                          ! find set name, e.g. 'grid1
+          if (logic) then
+            lsname=lsname ! redundant?
+            if(mynode==0) print *, 'lsname', lsname
+            allocate(character(len=lsname) :: obj(i)%sname)
+            obj(i)%sname=obj(i)%obj_name(1:lsname)
+
+            logic = findstr(obj(i)%obj_name(lsname+1:lpre),'_',loname)           ! find second name
+            loname=loname-1
+            allocate(character(len=loname+1) :: obj(i)%oname)                    ! +1 for underscore
+            obj(i)%oname='_'/ /obj(i)%obj_name(lsname+1:lsname+1+loname-1)
+          else
+            lsname=len( trim(obj(i)%obj_name) )
+            if(mynode==0) print *, 'lsname moor=', lsname
+            allocate(character(len=lsname+1) :: obj(i)%sname)                                                                 ! mooring (no underscores in name)
+            obj(i)%sname=trim(obj(i)%obj_name)/ /'_'
+            allocate(character(len=1) :: obj(i)%oname)
+            obj(i)%oname=' '
+          endif
+          if(mynode==0) print *, 'obj(i)%sname',obj(i)%sname
+          if(mynode==0) print *, 'obj(i)%oname',obj(i)%oname
+
           allocate(obj(i)%vari(np,nz))
           allocate(obj(i)%coef(np,4))
-          allocate(obj(i)%ip(np))
+          allocate(obj(i)%ip(np))                          ! DON'T NEED THESE FOR U or V objects
           allocate(obj(i)%jp(np))
 
           ! from absolute index to rho-index
@@ -173,39 +200,39 @@
           call compute_coef(obj(i)%ipos,obj(i)%jpos,
      &                obj(i)%coef,obj(i)%ip,obj(i)%jp,rmask)
 
-        if (.not.obj(i)%scalar) then
-          allocate(obj(i)%cosa(np))
-          allocate(obj(i)%sina(np))
+          if (.not.obj(i)%scalar) then
+            allocate(obj(i)%cosa(np))
+            allocate(obj(i)%sina(np))
 
-          allocate(angp(np))
-          call interpolate(angler,angp,obj(i)%coef,obj(i)%ip,obj(i)%jp)
-          obj(i)%cosa = cos(angp-obj(i)%ang)
-          obj(i)%sina = sin(angp-obj(i)%ang)
+            allocate(angp(np))
+            call interpolate(angler,angp,obj(i)%coef,obj(i)%ip,obj(i)%jp)
+            obj(i)%cosa = cos(angp-obj(i)%ang)
+            obj(i)%sina = sin(angp-obj(i)%ang)
 
-          deallocate(angp)
+            deallocate(angp)
 
-          allocate(obj(i)%ui(np,nz))
-          allocate(obj(i)%cfu(np,4))
-          allocate(obj(i)%ipu(np))
-          allocate(obj(i)%jpu(np))
+            allocate(obj(i)%ui(np,nz))
+            allocate(obj(i)%cfu(np,4))
+            allocate(obj(i)%ipu(np))
+            allocate(obj(i)%jpu(np))
 
-          ! from rho-index to u-index 
-          obj(i)%ipos = obj(i)%ipos+0.5
-          call compute_coef(obj(i)%ipos,obj(i)%jpos,
-     &              obj(i)%cfu,obj(i)%ipu,obj(i)%jpu,umask)
+            ! from rho-index to u-index
+            obj(i)%ipos = obj(i)%ipos+0.5
+            call compute_coef(obj(i)%ipos,obj(i)%jpos,
+     &               obj(i)%cfu,obj(i)%ipu,obj(i)%jpu,umask)
 
-          allocate(obj(i)%vi(obj(i)%np,nz))
-          allocate(obj(i)%cfv(obj(i)%np,4))
-          allocate(obj(i)%ipv(obj(i)%np))
-          allocate(obj(i)%jpv(obj(i)%np))
+            allocate(obj(i)%vi(obj(i)%np,nz))
+            allocate(obj(i)%cfv(obj(i)%np,4))
+            allocate(obj(i)%ipv(obj(i)%np))
+            allocate(obj(i)%jpv(obj(i)%np))
 
-          ! from u-index to v-index
-          obj(i)%ipos = obj(i)%ipos-0.5
-          obj(i)%jpos = obj(i)%jpos+0.5
-          call compute_coef(obj(i)%ipos,obj(i)%jpos,
-     &              obj(i)%cfv,obj(i)%ipv,obj(i)%jpv,vmask)
+            ! from u-index to v-index
+            obj(i)%ipos = obj(i)%ipos-0.5
+            obj(i)%jpos = obj(i)%jpos+0.5
+            call compute_coef(obj(i)%ipos,obj(i)%jpos,
+     &               obj(i)%cfv,obj(i)%ipv,obj(i)%jpv,vmask)
 
-        endif
+          endif
         endif
       enddo
 
@@ -227,9 +254,11 @@
       real :: period
 
       if (mynode==0) then
-        print *, 'read objects: ',extract_file
+        write(*,'(7x,2A)')
+     &    'extract_data :: read objects: ',extract_file
       endif
       ierr = nf90_open(extract_file,nf90_nowrite,ncid)
+      if (ierr/=0) call handle_ierr(ierr,'extract_data :: read objects file', extract_file)
       ierr = nf90_inquire(ncid,nVariables=nobj)
 
       allocate(obj(nobj))
@@ -237,7 +266,7 @@
       ! Read all objects from file. 
       do iobj = 1,nobj
         ierr = nf90_inquire_variable(ncid,iobj,name=objname,dimids=dimids)
-        ierr = nf90_inquire_dimension(ncid,dimids(1),len=n1)
+        ierr = nf90_inquire_dimension(ncid,dimids(1),len=n1)                   ! why is this repeated below???
         ierr = nf90_inquire_dimension(ncid,dimids(2),len=n2)
         ierr = nf90_inquire_dimension(ncid,dimids(1),name=dname,len=n1)
 
@@ -249,6 +278,7 @@
 
         ! scalar objects have i,j. Vector obj also have ang
         if (n2==2) obj(iobj)%scalar = .true.
+!        print *, 'mynode',mynode, objname,obj(iobj)%scalar
 
         allocate(object(n1,n2))
         call ncread(ncid,objname,object)
@@ -498,11 +528,10 @@
             start1D = (/1, record/)
             start2D = (/1,1,record/)
 
-            if (obj(i)%scalar) then
-              coef => obj(i)%coef
-              ip   => obj(i)%ip
-              jp   => obj(i)%jp
-            else
+            coef => obj(i)%coef
+            ip   => obj(i)%ip
+            jp   => obj(i)%jp
+            if (.not. obj(i)%scalar) then
               ui => obj(i)%ui
               vi => obj(i)%vi
               cfu=> obj(i)%cfu
@@ -513,33 +542,34 @@
               jpv=> obj(i)%jpv
             endif
 
-            tname = trim(obj(i)%obj_name)//'_time'
+            tname = trim(obj(i)%sname)//'_time'
             call ncwrite(ncid,tname,(/time/),(/record/))
 
             if (obj(i)%zeta) then
               call interpolate(zeta(:,:,knew),obj(i)%vari(:,1),coef,ip,jp)
-              call ncwrite(ncid,obj(i)%pre//'zeta',obj(i)%vari(:,1),start1D)
+              call ncwrite(ncid,obj(i)%sname//'zeta'/ /obj(i)%oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%temp) then
               call interpolate(t(:,:,:,nstp,itemp),obj(i)%vari,coef,ip,jp)
-              call ncwrite(ncid,obj(i)%pre//'temp',obj(i)%vari,start2D)
+              call ncwrite(ncid,obj(i)%sname//'temp'/ /obj(i)%oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%salt) then
               call interpolate(t(:,:,:,nstp,isalt),obj(i)%vari,coef,ip,jp)
-              call ncwrite(ncid,obj(i)%pre//'salt',obj(i)%vari,start2D)
+              call ncwrite(ncid,obj(i)%sname//'salt'/ /obj(i)%oname,obj(i)%vari,start2D)
             endif
 
             if (obj(i)%ubar) then
+!       print *, 'ubar - obj(i)%obj_name',obj(i)%obj_name, mynode
               call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
               call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
-              call ncwrite(ncid,obj(i)%pre//'ubar',obj(i)%vari(:,1),start1D)
+              call ncwrite(ncid,obj(i)%sname//'ubar'/ /obj(i)%oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%vbar) then
               call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
               call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
-              call ncwrite(ncid,obj(i)%pre//'vbar',obj(i)%vari(:,1),start1D)
+              call ncwrite(ncid,obj(i)%sname//'vbar'/ /obj(i)%oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%u) then
               call interpolate(u(:,:,:,nstp),ui,cfu,ipu,jpu)
@@ -548,7 +578,7 @@
               do k=1,nz
                 obj(i)%vari(:,k) = obj(i)%cosa*ui(:,k) - obj(i)%sina*vi(:,k)
               enddo
-              call ncwrite(ncid,obj(i)%pre//'u',obj(i)%vari,start2D)
+              call ncwrite(ncid,obj(i)%sname//'u'/ /obj(i)%oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%v) then
               call interpolate(u(:,:,:,nstp),ui,cfu,ipu,jpu)
@@ -556,19 +586,19 @@
               do k=1,nz
                 obj(i)%vari(:,k) = obj(i)%sina*ui(:,k) + obj(i)%cosa*vi(:,k)
               enddo
-              call ncwrite(ncid,obj(i)%pre//'v',obj(i)%vari,start2D)
+              call ncwrite(ncid,obj(i)%sname//'v'/ /obj(i)%oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%up) then
               call interpolate(upe,ui(:,1),cfu,ipu,jpu)
               call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
-              call ncwrite(ncid,obj(i)%pre//'up',obj(i)%vari(:,1),start1D)
+              call ncwrite(ncid,obj(i)%sname//'up'/ /obj(i)%oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%vp) then
               call interpolate(upe,ui(:,1),cfu,ipu,jpu)
               call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
-              call ncwrite(ncid,obj(i)%pre//'vp',obj(i)%vari(:,1),start1D)
+              call ncwrite(ncid,obj(i)%sname//'vp'/ /obj(i)%oname,obj(i)%vari(:,1),start1D)
             endif
           endif
         endif
@@ -603,12 +633,17 @@
 
       call put_global_atts(ncid, ierr)  ! put global attributes in file
 
+      ! ADD GLOBAL NOBJS
+
       call create_edata_vars(ncid)
 
       ierr = nf90_enddef(ncid)
 
 
-      if (mynode==0) print *,'extract_data :: created new netCDF file: ',fname
+      if (mynode==0) then
+        write(*,'(7x,2A)')
+     &    'extract_data :: created new netCDF file: ',trim(fname)
+      endif
 
       end subroutine create_edata_file !]
 ! ----------------------------------------------------------------------
@@ -616,6 +651,7 @@
       ! Add edata variables to an opened netcdf file
 
       use nc_read_write
+      use ncvars, only: vn=>vname
       implicit none
 
       !import/export
@@ -625,7 +661,7 @@
       character(len=20)              :: vname
       character(len=20)              :: tname
       integer                        :: varid,ierr
-      integer                        :: it,i,lpre
+      integer                        :: it,i,lpre,ln,lenstr
       character(len=3) :: label
       character(len=20),dimension(2) :: dname ! dimension names
       integer,          dimension(2) :: dsize ! dim lengths
@@ -635,56 +671,70 @@
       do i = 1,nobj
         if (obj(i)%np>0) then
           write(label,'(I0.3)') i
-          dname = (/ 'np'//label, 'time_'//label /)
+          ln=lenstr(obj(i)%sname)
+          dname = (/ obj(i)%sname/ /'np'//label, 'time_'//obj(i)%sname(1:ln-1) /)             ! removes the underscore
           dsize = (/ obj(i)%np ,  0/)
-          dname3(1) = 'np'//label
+          dname3(1) = obj(i)%sname/ /'np'//label
           dname3(2) = 's_rho'
-          dname3(3) = 'time_'//label
+          dname3(3) = 'time_'//obj(i)%sname(1:ln-1)
           dsize3 = (/ obj(i)%np , nz, 0/)
 
-          tname = trim(obj(i)%obj_name)//'_time'
-          varid = nccreate(ncid,tname,(/dname(2)/),(/0/),nf90_double)
+          tname = trim(obj(i)%sname)//'_time'
+          ierr=nf90_inq_varid(ncid,tname,varid)                                ! check if time var already exists
+          if (ierr/=0) then                                                    ! objects can have same time var
+            varid = nccreate(ncid,tname,(/dname(2)/),(/0/),nf90_double)
+            ierr = nf90_put_att(ncid,varid,'long_name','Time since 2000')
+            ierr = nf90_put_att(ncid,varid,'units','second' )
+          endif
 
-          ierr = nf90_put_att(ncid,varid,'long_name','Time since 2000')
-          ierr = nf90_put_att(ncid,varid,'units','second' )
           if (obj(i)%zeta)   then
-            varid = nccreate(ncid,obj(i)%pre//'zeta',dname,dsize,edat_prec)
+            varid = nccreate(ncid,obj(i)%sname//'zeta'/ /obj(i)%oname,dname,dsize,edat_prec)
             ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
             ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
             ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
             ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
+            ierr = nf90_put_att(ncid,varid,'long_name',vn(2,indxZ))
+            ierr = nf90_put_att(ncid,varid,'units',vn(3,indxZ))
           endif
           if (obj(i)%ubar)  then 
-            varid = nccreate(ncid,obj(i)%pre//'ubar',dname,dsize,edat_prec)
+            varid = nccreate(ncid,obj(i)%sname//'ubar'/ /obj(i)%oname,dname,dsize,edat_prec)
             ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
             ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
             ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
             ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
+            ierr = nf90_put_att(ncid,varid,'long_name',vn(2,indxUb))
+            ierr = nf90_put_att(ncid,varid,'units',vn(3,indxUb))
           endif
           if (obj(i)%vbar)  then 
-            varid = nccreate(ncid,obj(i)%pre//'vbar',dname,dsize,edat_prec)
+            varid = nccreate(ncid,obj(i)%sname//'vbar'/ /obj(i)%oname,dname,dsize,edat_prec)
             ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
             ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
             ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
             ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
+            ierr = nf90_put_att(ncid,varid,'long_name',vn(2,indxVb))
+            ierr = nf90_put_att(ncid,varid,'units',vn(3,indxVb))
           endif
           if (obj(i)%temp)  then 
-            varid = nccreate(ncid,obj(i)%pre//'temp',dname3,dsize3,edat_prec)
+            varid = nccreate(ncid,obj(i)%sname//'temp'/ /obj(i)%oname,dname3,dsize3,edat_prec)
             ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
             ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
             ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
             ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
+            ierr = nf90_put_att(ncid,varid,'long_name',vn(2,indxT))
+            ierr = nf90_put_att(ncid,varid,'units',vn(3,indxT))
           endif
           if (obj(i)%salt)  then 
-            varid = nccreate(ncid,obj(i)%pre//'salt',dname3,dsize3,edat_prec)
+            varid = nccreate(ncid,obj(i)%sname//'salt'/ /obj(i)%oname,dname3,dsize3,edat_prec)
             ierr = nf90_put_att(ncid,varid,'start',obj(i)%start_idx)
             ierr = nf90_put_att(ncid,varid,'count',obj(i)%np)
             ierr = nf90_put_att(ncid,varid,'dname',obj(i)%dname)
             ierr = nf90_put_att(ncid,varid,'dsize',obj(i)%dsize)
+            ierr = nf90_put_att(ncid,varid,'long_name',vn(2,indxS))
+            ierr = nf90_put_att(ncid,varid,'units',vn(3,indxS))
           endif
 
-          if (obj(i)%u)  call create_var(ncid,obj(i),'u',dname3,dsize3)
-          if (obj(i)%v)  call create_var(ncid,obj(i),'v',dname3,dsize3)
+          if (obj(i)%u)  call create_var(ncid,obj(i),'u',dname3,dsize3,indxU)
+          if (obj(i)%v)  call create_var(ncid,obj(i),'v',dname3,dsize3,indxV)
           if (obj(i)%up) call create_var(ncid,obj(i),'up',dname,dsize)
           if (obj(i)%vp) call create_var(ncid,obj(i),'vp',dname,dsize)
         endif
@@ -692,7 +742,8 @@
 
       end subroutine create_edata_vars  !]
 ! ----------------------------------------------------------------------
-      subroutine create_var(ncid,obj,vname,dname,dsize) ![
+      subroutine create_var(ncid,obj,vname,dname,dsize,idx) ![
+      use ncvars, only: vn=>vname
       implicit none
 
       ! import/export
@@ -701,40 +752,62 @@
       character(len=*)              ,intent(in) :: vname
       character(len=20),dimension(:),intent(in) :: dname ! dimension names
       integer,          dimension(:),intent(in) :: dsize ! dim lengths
+      integer,optional,              intent(in) :: idx
 
       ! local
       integer :: varid,ierr
 
-      varid = nccreate(ncid,obj%pre//vname,dname,dsize,edat_prec)
+      varid = nccreate(ncid,obj%sname//vname/ /obj%oname,dname,dsize,edat_prec)
       ierr = nf90_put_att(ncid,varid,'start',obj%start_idx)
       ierr = nf90_put_att(ncid,varid,'count',obj%np)
       ierr = nf90_put_att(ncid,varid,'dname',obj%dname)
       ierr = nf90_put_att(ncid,varid,'dsize',obj%dsize)
+      if (present(idx)) then
+        ierr = nf90_put_att(ncid,varid,'long_name',vn(2,idx))
+        ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
+      else
+        ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+      endif
 
       end subroutine create_var  !]
 ! ----------------------------------------------------------------------
-      logical function findstr(variables,var) ![
-      use roms_read_write
-      use nc_read_write
+      logical function findstr(all_string,want_string,istart) ![
+      ! this utility function should be moved somewhere more generic...
+      ! copied from extract_data.F.
+      ! should be in roms_read_write and then that module should be available to
+      ! Tools-Roms/ as well as src/
+      ! didn't do it now because roms_read_write depends on other modules so would
+      ! require a bit of work (do once ncvars is removed)
       implicit none
 
       !input/output
-      character(len=*),intent(in) :: variables
-      character(len=*),intent(in) :: var
+      character(len=*),intent(in)  :: all_string           ! entire string
+      character(len=*),intent(in)  :: want_string          ! desired string to find within all_string
+      integer,optional,intent(out) :: istart
 
       !local
       integer :: nl,nlv,i
 
-      nl  = len(trim(variables))
-      nlv = len(var)
+      nl  = len(trim(all_string))
+      nlv = len(want_string)
 
       findstr = .false.
       do i = 1,nl-nlv+1
-         if (variables(i:i+nlv-1) == var) then
+         if (all_string(i:i+nlv-1) == want_string) then
           findstr = .true.
           exit
          endif
       enddo
+
+      if (present(istart)) then
+        if (findstr) then
+          istart=i                                         ! return string starting index
+        else
+          istart=0
+          if (mynode==0) print *, 'warning: findstr not found=',want_string
+        endif
+      endif
 
       end function findstr !]
 ! ----------------------------------------------------------------------

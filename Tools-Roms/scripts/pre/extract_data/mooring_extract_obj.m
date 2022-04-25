@@ -1,5 +1,13 @@
+clc; clear
+
+%%
 %  Generates the i,j locations of data extraction objects
-%  for use as boundary forcing in a subsequent nested grid
+%  for ROMS simulation.
+%
+%  Edit and rerun to append additional moorings to the same file.
+%
+%  Make sure the output file points to the same file you used for online
+%  child boundary generation if you are also using that.
 %
 %  Writes to netcdf file the i and j locations of the places 
 %  from where we want to save data. Index locations are in [0,nx], [0,ny]
@@ -17,26 +25,32 @@
 %  In that case, subtract 180 degrees first
 %
 
+%%
 % -- START USER INPUT ----------
 % Parent grid directory and file name
-pdir    = '/avatar/nmolem/NEPAC/';
-pname   = 'nepac_grd.nc';
+pdir    = '../../../../Examples/USWC_model/input_data/';
+pname   = 'sample_grd_riv.nc';
+
+% Mooring details
+lon_actual = -120.7;
+lat_actual =  34.6;
+% lat_actual =  34.56;
+lon = lon_actual + 360;  % adjust withing 0 to 360 if required
+lat = lat_actual + 0;    % adjust withing 0 to 360 if required
+
+% gname = 'mooring1';
+gname = 'mooring2';
+% period = 40;
+period = 80;
+ang = 0;
+mooring_vars = 'zeta, temp, salt, u, v' ;
 
 % Output file name and info
-ename   = 'nepac_edata.nc';
-info    = ['indices for ' cname ' in ' pname];
-
-% 
-
- lon = 123;
- lat =  35;
-
- gname = 'mooring1'
- period = 1800;
- ang = 0;
-
+ename   = 'sample_edata.nc';
+info    = ['indices for ' gname ' in ' pname];
 
 % -- END USER INPUT ------------
+%%
 
 pname = [pdir pname];
 
@@ -49,7 +63,9 @@ obj_lon = lon;
 obj_lat = lat;
 obj_ang = ang;
 obj_msk =   1;
-add_object(ename,obj_name,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang);
-
-
+add_object(ename,obj_name,gname,lonp,latp,period,obj_lon,obj_lat,obj_msk,obj_ang);
+ncwriteatt(ename,obj_name,'output_vars',mooring_vars);
+ncwriteatt(ename,obj_name,'lat',lat_actual);
+ncwriteatt(ename,obj_name,'lon',lon_actual);
+ncwriteatt(ename, '/', [gname '_info'],  info);           % info on parent and child grid
 
