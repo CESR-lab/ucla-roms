@@ -55,6 +55,9 @@ mpc: mpc.F Makefile
 join_child_bry: ncjoin_mod.o join_child_bry.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o join_child_bry ncjoin_mod.o join_child_bry.o lenstr.o  $(LCDF)
 	
+extract_data_join: ncjoin_mod.o extract_data_join.o  lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join ncjoin_mod.o extract_data_join.o lenstr.o  $(LCDF)
+	
 particle_join: ncjoin_mod.o particle_join.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o particle_join ncjoin_mod.o particle_join.o lenstr.o  $(LCDF)
 
