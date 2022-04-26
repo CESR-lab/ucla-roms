@@ -32,7 +32,7 @@ nsub = length(bry);
 iw = 0;
 nvars = 0;
 lvars = struct;
-for i = 1:nsub  % DPD nsub should be reduced here to number of relevant files
+for i = 1:nsub
 
    ncinf = ncinfo(bry(i).name);
    fvars = ncinf.Variables;
@@ -42,10 +42,10 @@ for i = 1:nsub  % DPD nsub should be reduced here to number of relevant files
        if strfind(fvars(iv).Name,'time') % we only need to read one time variable
          if ~got_time                    % associated with this grid since they're 
            tname = fvars(iv).Name;       % assumed to all be the same
-	       nrec = fvars(iv).Size;        % number of time records in this series of files
+	   nrec = fvars(iv).Size;        % number of time records in this series of files
            tfile = bry(i).name;
            got_time = 1;
-	     end
+	 end
          continue                        
        end                               
        % check if we have this variable already 
@@ -72,8 +72,8 @@ for i = 1:nsub  % DPD nsub should be reduced here to number of relevant files
 
          sze = size(ncread(bry(i).name,fvars(iv).Name));
          if length(sze)>2
-  	       lvars(nvars).TD = 1;
-	       nz = sze(2);     % s_rho dimension size
+  	   lvars(nvars).TD = 1;
+	   nz = sze(2);     % s_rho dimension size
          else
            lvars(nvars).TD = 0;
          end
@@ -111,14 +111,14 @@ for i = 1:length(lvars)
 end
 
 % read the data from the partitioned files and write to the boundary file
-for irec = 1:nrec                             % DPD order switched. Fortran was files>var>recs
-                                              % but here is rec>var>file
+for irec = 1:nrec
+
   disp(['Merging record: ',num2str(irec)])
 
   time = ncread(tfile,tname,[irec],[1]);
-  ncwrite(bryname,'ocean_time',time,[irec]);  % DPD inefficient do time outside of rec loop
+  ncwrite(bryname,'ocean_time',time,[irec]);
 
-  for i = 1:length(lvars)                     % DPD loop variables
+  for i = 1:length(lvars)
     name = lvars(i).name;
     vname = lvars(i).vname;
     if lvars(i).TD
@@ -127,7 +127,7 @@ for irec = 1:nrec                             % DPD order switched. Fortran was 
       var = zeros(lvars(i).dsize,1);
     end
 
-    for j = 1:length(lvars(i).files)          % DPD loop sub-domains
+    for j = 1:length(lvars(i).files)
 
       idx = lvars(i).files(j);
       fname = bry(idx).name;
