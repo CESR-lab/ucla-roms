@@ -16,7 +16,7 @@ include ../src/Makedefs.inc
 
 # --------------------------------------------------------------------
 
-ALL = partit ncjoin ncjoin_mpi join_child_bry nc3to4z zslice r2r_bry\
+ALL = partit ncjoin ncjoin_mpi extract_data_join nc3to4z zslice r2r_bry\
 	r2r_match_topo r2r_init
 
 all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
@@ -52,8 +52,8 @@ mpc: mpc.F Makefile
 	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
 	
-join_child_bry: ncjoin_mod.o join_child_bry.o  lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o join_child_bry ncjoin_mod.o join_child_bry.o lenstr.o  $(LCDF)
+extract_data_join: ncjoin_mod.o extract_data_join.o  lenstr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join ncjoin_mod.o extract_data_join.o lenstr.o  $(LCDF)
 	
 particle_join: ncjoin_mod.o particle_join.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o particle_join ncjoin_mod.o particle_join.o lenstr.o  $(LCDF)
