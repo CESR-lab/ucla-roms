@@ -36,54 +36,36 @@
       !]
 
       ! PROGRAM SECTIONS:
-!      ! - PART 1: Confirm all input files are correct and related to each other
-!      ! - PART 2: Veryify all variables and dimensions in input files
-!      ! - PART 3: Create output file
-!      ! - PART X: Collectively (MPI-I/O) open all input and output files
-!      ! - PART X: Read/write partitioned variables   (bulk of work done here)
-!      ! - PART X: Close all files
-!      ! - PART X: Display program timing summary
+      ! - PART 1: Confirm all input files are correct and related to each other
+      ! - PART 2: Pre-process input files. Creates lists of nodes containing variables
+      !           for faster writing.
+      ! - PART 3: Create output file
+      ! - PART 4: Read/write partitioned variables   (bulk of work done here)
+      ! - PART 5: Close all files
+      ! - PART 6: Display program timing summary
 
 
 ![ CPP DEFS:
-! Delete partial files after joining:
-c#define DEL_PART_FILES
 ! Document program execution time:
 #define TIMING
-! Verbose terminal output:
-c--#define VERBOSE
 !]
 
       module extract_data_join_mod
 
       use ncjoin_mod
-
       implicit none
-
-      ! ------ CHILD_BRY VARS -------------
-      !  Added xdata_ to beginning of routines that are specifically for child boundary,
-      !  not ncjoin_mpi.
-      integer :: global_south_bry_size    ! size of join dimension in child boundary file
-      integer :: global_west_bry_size
-      integer :: tot_pwithc               ! total parent domains with child bry
-      integer :: max_cvars_p              ! max number of child variables contained in sub-domain
-      integer :: nd, vr                   ! loop index
-      logical :: new_var                  ! trigger reading start and count for new variable
-      integer, dimension(4) :: vid_out    ! variable ID's in joined output file NOT SURE I NEED THIS???
-      integer, dimension(3) :: child_start, child_count, startin, countin  ! start+counts for read/write
-      integer, dimension(:),   allocatable :: tot_cvars_p_all, tot_cvars_p ! child vars in parent (all nodes and actual)
-      integer, dimension(:),   allocatable :: pwithc_nodes                 ! list of whether parent contains child
-      integer, dimension(:,:), allocatable :: cvars_p_all, cvars_p         ! each child var number in parent
-      real,    dimension(:,:), allocatable :: bry_data
 
       ! XDATA VARS:
       integer,parameter :: max_sets=20                               ! max number of expected sets - need check for not exceeded!!!
       integer,parameter :: max_evars=36                              ! max vars per set - z,S,T,ub,u,up,vb,v,vp - need check (9x4=36)
       integer :: nsets=0                                             ! count of sets (root name)
       logical :: found
+      logical :: new_var                                             ! trigger reading start and count for new variable
       integer :: iv, g, id
       integer,dimension(4) :: vdimids, vdimids_out
+      integer,dimension(3) :: startout, countout, startin, countin   ! start+counts for read/write
       integer,dimension(:),allocatable :: sub_cnt
+      real,dimension(:,:),allocatable  :: vdata
 
       type extract_set                                               ! all variables associated with e.g. child grid, mooring, etc
         integer,pointer :: nvars                                     ! number of vars in set (actual want target but can't do it in derived type)
@@ -103,9 +85,6 @@ c--#define VERBOSE
         integer,dimension(:),allocatable      :: nsubs               ! number of sub-domains with var
         integer,dimension(:,:),allocatable    :: lsubs               ! list of sub-domains with var (nnodes,nvars)
         integer,dimension(:),allocatable      :: vid_out             ! varid in output file - NOT sure if needed as do at once...
-!        integer,dimension(:),allocatable      :: vid_out
-        ! don't need start and count as can just get it when I need it since writing one variable
-        ! and one sub-domain at a time
       end type extract_set
 
       type(extract_set),dimension(max_sets) :: s
@@ -153,6 +132,8 @@ c--#define VERBOSE
 
       ierr=nf90_def_var(nctarg, 'ocean_time',nf90_double,
      &                      vdimids_out(3), s(g)%vid_out(1))
+      ierr=nf90_put_att(nctarg,s(g)%vid_out(1),'long_name',s(g)%lname(1))
+      ierr=nf90_put_att(nctarg,s(g)%vid_out(1),'units',    s(g)%uname(1))
       do iv=2,s(g)%nvars
         if (s(g)%vndims(iv)==1) then
 !         ! ignore redundant time dimensions
@@ -163,7 +144,7 @@ c--#define VERBOSE
             ierr=nf90_def_var(nctarg, s(g)%vname(iv)( s(g)%nstr:lncn ),nf90_double,
      &                        (/ vdimids_out(1), vdimids_out(3) /), s(g)%vid_out(iv))
           else
-            ierr=nf90_def_var(nctarg, s(g)%vname(iv)( s(g)%nstr:lncn ),nf90_double,              ! add compression here if desired
+            ierr=nf90_def_var(nctarg, s(g)%vname(iv)( s(g)%nstr:lncn ),nf90_double,
      &                      vdimids_out(1:3), s(g)%vid_out(iv))
           endif
         endif
@@ -178,10 +159,6 @@ c--#define VERBOSE
 
       ierr=nf90_enddef (nctarg)
 !      ierr=nf90_close(nctarg)  ! no need to close since serial
-
-# ifdef VERBOSE
-      if(my_rank==0) write(*,'(/1x,A)') 'Leaving definition mode.'
-# endif
 
 #ifdef TIMING
       nclk=3-nclk
@@ -208,49 +185,46 @@ c--#define VERBOSE
 # endif
 
 
-      if (new_var) then                                              ! once per variable (don't repeat per record)
-        startin=1; countin=1; child_start=1; child_count=1
+      if (new_var) then                                    ! once per variable (don't repeat per record)
+        startin=1; countin=1; startout=1; countout=1
 
         if (ncid(node).eq.-1)
      &    ierr=nf90_open (ncname(node), nf90_nowrite, ncid(node))
 
-        if (s(g)%vndims(iv) >= 2) then  ! exclude time (1D vars)
+        if (s(g)%vndims(iv) >= 2) then                     ! exclude time (1D vars)
 !          print *, 'xdata_read_write read_write - s(g)%vname(iv)=',s(g)%vname(iv)
           ierr = nf90_inq_varid(ncid(node), s(g)%vname(iv), vid_in)
           if (ierr/=0) call handle_ierr(ierr,'xdata_read_write nf90_inq_varid var=',s(g)%vname(iv))
-          ierr = nf90_get_att(ncid(node), vid_in, 'start', child_start(1))  ! start position in global child bry
-          ierr = nf90_get_att(ncid(node), vid_in, 'count', child_count(1))  ! count of sub-domain entry in global child bry                            ! first var is time in input files
+          ierr = nf90_get_att(ncid(node), vid_in, 'start', startout(1))  ! start position in global child bry
+          ierr = nf90_get_att(ncid(node), vid_in, 'count', countout(1))  ! count of sub-domain entry in global child bry                            ! first var is time in input files
         else
 !          print *, 'xdata_read_write read_write - s(g)%tname=',s(g)%tname
           ierr = nf90_inq_varid(ncid(node), s(g)%tname, vid_in)
           if (ierr/=0) call handle_ierr(ierr,'xdata_read_write nf90_inq_varid var=',s(g)%tname)
         endif
-        countin(1:2)=(/ child_count(1), s(g)%nmax(iv) /)
+        countin(1:2)=(/ countout(1), s(g)%nmax(iv) /)
 
-        if (allocated(bry_data)) deallocate (bry_data)                           ! variable for reading data
-        allocate ( bry_data( child_count(1), s(g)%nmax(iv) ) )
+        if (allocated(vdata)) deallocate (vdata)           ! variable for reading data
+        allocate ( vdata( countout(1), s(g)%nmax(iv) ) )
         new_var = .false.
-!        print *, 'DONE ALLLLLOC'
-!        print *, 'child_count(1)',child_count(1)
-!        print *, 's(g)%nmax(iv)',s(g)%nmax(iv)
       endif  !<-- new_var
 
       if     (s(g)%vndims(iv) == 1) then                   ! set new record
-        startin(1)     = rec
-        child_start(1) = rec
-        countin(1)=1
+        startin(1)  = rec
+        startout(1) = rec
+        countin(1)  = 1
       elseif (s(g)%vndims(iv) == 2) then                   ! handle 2D or 3D variable dims
-        startin(2)     = rec                               ! set recorded timestep for read in partial bry
-        child_start(2) = rec                               ! set recorded timestep for written join bry
+        startin(2)  = rec                                  ! set recorded timestep for read in partial bry
+        startout(2) = rec                                  ! set recorded timestep for written join bry
       elseif (s(g)%vndims(iv) == 3) then
-        startin(3)     = rec                               ! set recorded timestep for read in partial bry
-        child_start(3) = rec                               ! set recorded timestep for written join bry
-        child_count(2) = s(g)%s_rho                        ! should be nmax rather?
+        startin(3)  = rec                                  ! set recorded timestep for read in partial bry
+        startout(3) = rec                                  ! set recorded timestep for written join bry
+        countout(2) = s(g)%s_rho                           ! should be nmax rather?
       else
         error stop 'ERROR: dimensions issue when writing!'
       endif
 
-      ierr = nf90_get_var( ncid(node), vid_in, bry_data,   ! read variable
+      ierr = nf90_get_var( ncid(node), vid_in, vdata,      ! read variable
      &                     start=startin(1:s(g)%vndims(iv)), count=countin(1:s(g)%vndims(iv)) )
       if (ierr/=0) then
         print *, 'node=', node
@@ -270,8 +244,8 @@ c--#define VERBOSE
 !        net_gray_clk=net_gray_clk+inc_clk
 # endif
 
-      ierr = nf90_put_var( nctarg, iv, bry_data,           ! write variable
-     &                     start=child_start(1:s(g)%vndims(iv)), count=child_count(1:s(g)%vndims(iv)) )
+      ierr = nf90_put_var( nctarg, iv, vdata,              ! write variable
+     &                     start=startout(1:s(g)%vndims(iv)), count=countout(1:s(g)%vndims(iv)) )
       if(ierr/=0) then
         print *, 'wrt ierr=', nf90_strerror(ierr), 'node=', node
         error stop 'WRITING ERROR'
@@ -289,160 +263,6 @@ c--#define VERBOSE
 !      ierr=nf90_sync (nctarg) ! debug only
 
       end subroutine xdata_read_write  !]
-
-! ----------------------------------------------------------------------
-      subroutine xdata_copy_vars_atts  ![
-      implicit none                   !  copy the variables and attributes for extract_data_join.
-                                      !  can't use ncjoin_mpi routine because of chunking and dimension issues,
-                                      !  since child bry sizes are different on east and west as orientation different from parent.
-
-#ifdef VERBOSE
-        if(my_rank==0) write(*,'(1x,2A)') 'Variables, their dimensions and ',
-     &                                           'attributes:'
-#endif
-
-        do i=1,nvars ! LOOP THROUGH VARS
-
-          node=vnode(i)
-          lncn=lenstr(ncname(node))
-          if (ncid(node).eq.-1) ierr=nf_open  (ncname(node),
-     &                               nf_nowrite, ncid(node))
-          if (ierr .eq. nf_noerr) then
-            ierr=nf_inq_var (ncid(node), vid(i,node), vname(i),
-     &                vartype(i), vdims(i), dimids(1,i),  varatts)
-
-            if (ierr .eq. nf_noerr) then
-
-              if     (vdims(i) == 1) then
-                dimids(1,i) = dimid(4)
-                nmax(i)=1
-              elseif (vdims(i) == 2) then                         ! handle 2D or 3D variable dimids
-                dimids(2:vdims(i),i) = (/ dimid(4) /)             ! same for r/u/v vars
-                nmax(i)=1                                         ! record vertical levels of var
-              elseif (vdims(i) == 3) then
-                dimids(2:vdims(i),i) = (/ dimid(3), dimid(4) /)
-                nmax(i)=s_rho
-              else
-                error stop 'ERROR: dimensions when creating file!'
-              endif
-
-              if (vdims(i) >= 2) then                       ! not 1D time variable
-                lvar=lenstr(vname(i))
-                if (vname(i)(lvar-4:lvar)=='south'  .or.
-     &              vname(i)(lvar-4:lvar)=='north') then
-
-                  dimids(1,i) = dimid(1)                      ! xi_rho for rho and v points
-                  if (vname(i)(1:2)=='u_'     .or.
-     &                vname(i)(1:5)=='ubar_') then
-                    dimids(1,i) = dimid(5)                    ! xi_u for u points
-                  endif
-
-                else                                          ! else west or east bry
-
-                  dimids(1,i) = dimid(2)                      ! eta_rho for rho and u points
-                  if (vname(i)(1:2)=='v_'     .or.
-     &                vname(i)(1:5)=='vbar_') then
-                    dimids(1,i) = dimid(6)                    ! eta_v for v points
-                  endif
-
-                endif
-              endif    ! <-- vdims >= 2
-
-              ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i),  ! add compression here if desired
-     &                           dimids(1:vdims(i),i), varid(i))
-
-              if (ierr .eq. nf_noerr) then
-!#ifdef VERBOSE
-!                write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
-!     &              ''',  dimids =', (dimids(j,i), j=1,vdims(i))
-!#endif
-                do j=1,varatts                                         ! copy attributes
-                  ierr=nf_inq_attname (ncid(node), vid(i,node),
-     &                                              j, string)
-                  if (ierr .eq. nf_noerr) then
-                    lstr=lenstr(string)
-
-                    if (string /= 'start' .and.                ! ignore 'start' and 'count' attributes, not relevant to joined file.
-     &                  string /= 'count'      ) then
-
-                      ierr=nf_copy_att (ncid(node), vid(i,node),
-     &                         string(1:lstr), nctarg, varid(i))
-                      if (ierr. ne. nf_noerr) then
-                        write(*,'(/1x,2A,I3,3A/12x,4A)')   '### ERROR: ',
-     &                   'Cannot copy attribute #', j,' for variable ''',
-     &                    vname(i)(1:lvar),  ''' into netCDF', 'file ''',
-     &                    nctargname(1:ltrg), '''.  ', nf_strerror(ierr)
-                        mayday=.true.; return ! goto 97
-                      endif
-                    endif
-#ifdef VERBOSE
-                    write(*,'(16x,3A)') '''', string(1:lstr), ''''
-#endif
-                  else
-                    write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: ',
-     &                             'Cannot get name of attribute #', j,
-     &                      'for variable ''', vname(i)(1:lvar), '''.',
-     &                                               nf90_strerror(ierr)
-                    mayday=.true.; return ! goto 97
-                  endif
-                enddo
-              else
-                write(*,'(/8x,5A/)') 'ERROR: Cannot define ',
-     &                  'variable ''', vname(i)(1:lvar), '''.',
-     &                   nf90_strerror(ierr)
-                mayday=.true.; return ! goto 97
-              endif
-            else
-
-            write(*,'(/8x,2A/15x,A,I3,1x,3A/)')  '### ERROR: Cannot ',
-     &        'determine name, type and attributes for variable #', i,
-     &            'from netCDF file ''', ncname(node)(1:lncn),  '''.'
-              mayday=.true.; return ! goto 97
-            endif
-
-! Determine whether partitionable dimensions or unlimited dimension
-! are present for this variable: the convention adopted here is:
-!           part_type = 0 -- non-partitionable array;
-!                     = 1 -- has partitionable XI-dimension only;
-!                     = 2 -- has partitionable ETA-dimension only;
-!                     = 3 -- partitionable in both XI and ETA.
-
-!            series(i)=.false.
-!            part_type(i)=0
-!            do j=1,vdims(i)
-!              if (dimids(j,i).eq.id_xi_rho .or.
-!     &            dimids(j,i).eq.id_xi_u) then
-!                part_type(i)=part_type(i)+1
-!              elseif (dimids(j,i).eq.id_eta_rho .or.
-!     &                dimids(j,i).eq.id_eta_v) then
-!                part_type(i)=part_type(i)+2
-!              elseif (dimids(j,i).eq.unlimdimid) then
-!                series(i)=.true.
-!              endif
-!            enddo
-
-!            if (node.gt.0) then
-!              ierr=nf90_close(ncid(node)) ! DevinD: Most vars in node==0, hence keep
-!              ncid(node)=-1               ! it open whilst looping through vars, close
-!            endif                         ! any node>0 as might not be used again.
-
-          else
-            write(*,'(/1x,A,1x,3A/12x,A)')  '### ERROR: Cannot open ',
-     &                  'netCDF file ''', ncname(node)(1:lncn), '''.',
-     &                                           nf90_strerror(ierr)
-            mayday=.true.; return ! goto 97
-          endif
-
-        enddo  ! <-- i=1,nvars, variable IDs.
-
-
-        do i=1,ndims                  ! set time record size
-          if (i.eq. unlimdimid) then
-            tsize=dimsize(i,0)
-          endif
-        enddo
-
-      end subroutine xdata_copy_vars_atts  !]
 
 ! ----------------------------------------------------------------------
       logical function findstr(all_string,want_string,istart) ![
@@ -491,7 +311,7 @@ c--#define VERBOSE
       integer,pointer :: s_nv
       character(len=60) :: name
 
-      print *, 'Preprocessing node = ',node
+!      print *, 'Preprocessing node = ',node
 
       ierr=nf90_inquire(ncid(node), nVariables=fnvars)
       if (ierr/=0) call handle_ierr(ierr,'xdata_preprocess_lists nf90_inquire')
@@ -515,7 +335,7 @@ c--#define VERBOSE
             nsets=nsets+1
             s(nsets)%sname=name(1:istart-1)
             print *, 'found set =',s(nsets)%sname
-            print *, 'nsets =',nsets
+!            print *, 'nsets =',nsets
             s(nsets)%nstr=istart+1
             allocate ( s(nsets)%nvars )
             s(nsets)%nvars=0
@@ -555,7 +375,7 @@ c--#define VERBOSE
             s(g)%vname(s_nv)=name
             s(g)%vndims(s_nv)=vndims
             print *, 'found var =',s(g)%vname(s_nv)
-            print *, 'nvars =',s_nv
+!            print *, 'nvars =',s_nv
 
             ! since will need to find variable ID in file anyway, it I can also get num dims and dim name
             ! so might not need to store this but doing it for now.
@@ -563,7 +383,7 @@ c--#define VERBOSE
             ! so may as well get it once then and not store for all vars..
             if (vndims==1) then                            ! must be time if 1 dim only
               s(g)%tname=name
-              print *, 's(g)%tname',s(g)%tname
+!              print *, 's(g)%tname',s(g)%tname
               s(g)%vname(s_nv)='ocean_time'
               s(g)%dname(s_nv)='time'
               ierr=nf90_inquire_dimension(ncid(node), vdimids(1), len=s(g)%dsize(s_nv))
@@ -599,18 +419,18 @@ c--#define VERBOSE
 
       endif
 
-      if (node==nnodes-1) then
-        do g=1,nsets
-          print *, ' '
-          print *, 'sname=',s(g)%sname
-          do iv=1,s(g)%nvars
-            print *, 'vname=',s(g)%vname(iv)
-            print *, 'nsubs=',s(g)%nsubs(iv)
-            print *, 'lsubs=',s(g)%lsubs(1:s(g)%nsubs(iv),iv)
-            print *, ' '
-          enddo
-        enddo
-      endif
+!      if (node==nnodes-1) then  ! debug to check lists at end
+!        do g=1,nsets
+!          print *, ' '
+!          print *, 'sname=',s(g)%sname
+!          do iv=1,s(g)%nvars
+!            print *, 'vname=',s(g)%vname(iv)
+!            print *, 'nsubs=',s(g)%nsubs(iv)
+!            print *, 'lsubs=',s(g)%lsubs(1:s(g)%nsubs(iv),iv)
+!            print *, ' '
+!          enddo
+!        enddo
+!      endif
 
       end subroutine xdata_preprocess_lists  !]
 
@@ -620,43 +440,41 @@ c--#define VERBOSE
 
       integer :: idot
 
-        i=lenstr(root_bak)
-        found=findstr(root_bak,'.',idot)
-        if (idot==1) stop 'cannot have . at start of input file names'
-        j=lenstr(sffx_bak)
-        if (root_bak(i:i).eq.'.' .and. sffx_bak(1:1).eq.'.') then
-          nctargname=trim( s(g)%sname )/ /root_bak(idot:i)/ /sffx_bak(2:j)
-        else
-          nctargname=trim( s(g)%sname )/ /root_bak(idot:i)/ /sffx_bak(1:j)
-        endif
-        ltrg=lenstr(nctargname)
+      i=lenstr(root_bak)
+      found=findstr(root_bak,'.',idot)
+      if (idot==1) stop 'cannot have . at start of input file names'
+      j=lenstr(sffx_bak)
+      if (root_bak(i:i).eq.'.' .and. sffx_bak(1:1).eq.'.') then
+        nctargname=trim( s(g)%sname )/ /root_bak(idot:i)/ /sffx_bak(2:j)
+      else
+        nctargname=trim( s(g)%sname )/ /root_bak(idot:i)/ /sffx_bak(1:j)
+      endif
+      ltrg=lenstr(nctargname)
 
-        j=0
-        do i=1,ltrg
-          if (nctargname(i:i).eq.'/') j=i+1
-        enddo
-        if (j.gt.0) then
-          nctargname=nctargname(j:ltrg)
-          ltrg=ltrg-j+1
-        endif
+      j=0
+      do i=1,ltrg
+        if (nctargname(i:i).eq.'/') j=i+1
+      enddo
+      if (j.gt.0) then
+        nctargname=nctargname(j:ltrg)
+        ltrg=ltrg-j+1
+      endif
 
-!        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO),       ! for not master only version that worked with independent mode!
-!     &                    nctarg, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
-        ierr=nf90_create (nctargname(1:ltrg), NF90_NETCDF4, nctarg)                 ! Master only works!
-!        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO), nctarg) ! Master only didn't work (hdf error at write)
-        if (ierr .eq. nf90_noerr) then
-          if(my_rank==0) write(*,'(/1x,3A)')  'Created netCDF file ''',
+      ierr=nf90_create (nctargname(1:ltrg), NF90_NETCDF4, nctarg)                 ! Master only works!
+
+      if (ierr .eq. nf90_noerr) then
+        if(my_rank==0) write(*,'(/1x,3A)')  'Created netCDF file ''',
      &                        nctargname(1:ltrg), '''.'
-          if(my_rank==0) write(*,'(1x,A,I1)')
+        if(my_rank==0) write(*,'(1x,A,I1)')
      &      '-> compression level (deflate_level) = ', deflate_level
-          if(my_rank==0) write(*,*)
+        if(my_rank==0) write(*,*)
      &      '-> compression shuffle = ', shuffle
-        else
-          write(*,'(/1x,4A/12x,A/)')     '### ERROR: Cannot create ',
+      else
+        write(*,'(/1x,4A/12x,A/)')     '### ERROR: Cannot create ',
      &                          'netCDF file ''', nctargname(1:ltrg),
      &                                      '''.', nf90_strerror(ierr)
-          mayday=.true.; return ! goto 97
-        endif
+        mayday=.true.; return ! goto 97
+      endif
 
       end subroutine xdata_create_joined_empty_file  !]
 
@@ -684,20 +502,20 @@ c--#define VERBOSE
 
       do while (arg .lt. nargs)
 
-        nnodes=-1                                            ! repeated to get 'goto' outside of master only region, as called by all procs. ! used to be 11 marker here
-        mayday=.false.                                       ! reset mayday flag
+        nnodes=-1                                          ! repeated to get 'goto' outside of master only region, as called by all procs. ! used to be 11 marker here
+        mayday=.false.                                     ! reset mayday flag
 
-        if(my_rank==0) then                                  ! leave here incase make mpi version MPI MASTER ONLY: PRE-PROCESSING. i.e. check input files, creating output file, etc.
-                                                             ! Extract a set of files which cover the whole physical grid.
+        if(my_rank==0) then                                ! leave here incase make mpi version MPI MASTER ONLY: PRE-PROCESSING. i.e. check input files, creating output file, etc.
+                                                           ! Extract a set of files which cover the whole physical grid.
 
           write(*,'(/1x,A/)') 'Pre-processing input files...'
 
-          call check_partial_file_set                        ! PART 1: CHECK ALL INPUT PARTIAL FILES ARE CORRECT
-          if (mayday) goto 23                                ! Using goto the break from if(my_rank==0)
-                                                             ! Only other idea I can think of is using select case (my_rank) case (0) ... as I can use exit with this but not for if.
+          call check_partial_file_set                      ! PART 1: CHECK ALL INPUT PARTIAL FILES ARE CORRECT
+          if (mayday) goto 23                              ! using goto the break from if(my_rank==0)
+                                                           ! only other idea I can think of is using select case (my_rank) case (0) ... as I can use exit with this but not for if.
 
 
-      ![ PART 2: VERIFY ALL VARIABLES & DIMENSIONS:
+      ![ PART 2: PRE-PROCESS FILES
 
 #ifdef TIMING
           nclk=3-nclk
@@ -705,11 +523,12 @@ c--#define VERBOSE
           inc_clk=iclk(nclk)-iclk(3-nclk)
           net_gray_clk=net_gray_clk+inc_clk
 #endif
+
+          write(*,'(/1x,A/)') 'Pre-processing list of output vars...'
           do node=0,nnodes-1
-            lncn=lenstr(ncname(node))  !? might be able to delete
 
             if (ncid(node).eq.-1) ierr=nf90_open(ncname(node),nf90_nowrite, ncid(node))
-            if (ierr .eq. nf_noerr) then
+            if (ierr .eq. nf90_noerr) then
 
               call xdata_preprocess_lists
 
@@ -721,7 +540,7 @@ c--#define VERBOSE
             else
               write(*,'(/1x,A,1x,3A/14x,A)')    '### ERROR: Cannot ',
      &                 'open netCDF file ''', ncname(node)(1:lncn),
-     &                                    '''.', nf_strerror(ierr)
+     &                                    '''.', nf90_strerror(ierr)
               goto 97
             endif
           enddo  !<-- node=0,nnodes-1
@@ -756,6 +575,7 @@ c--#define VERBOSE
             s(g)%time_done=.true.                                      ! don't need this!
           endif
 
+          ! PROBABLY WANT TO MOVE SET LOOP WITHIN NODE???
           do node=0,nnodes-1                                           ! need all nodes since don't know which are contained for set
             do iv=2,s(g)%nvars                                         ! =2 since time already done above
               if (s(g)%lsubs( sub_cnt(iv),iv )==node) then             ! var contained in sub-domain (node)
@@ -780,7 +600,7 @@ c--#define VERBOSE
         endif
   97    clean_set=.false.                                  ! most errors arrive here
 
-  98    call close_file_set                                ! PART 10
+  98    call close_file_set
 
       enddo          !<- do while (arg .lt. nargs)
 
