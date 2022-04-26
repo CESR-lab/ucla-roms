@@ -38,16 +38,16 @@
       allocate( vbar(GLOBAL_2D_ARRAY,4) ); vbar=0.         ! set all zeta = 0.
 
       if (wrtavg(indxZ)) then
-        allocate( zeta_avg(GLOBAL_2D_ARRAY) )
-        zeta_avg=init
+        allocate( zeta_avg(GLOBAL_2D_ARRAY) )              
+        zeta_avg=0.                                        ! init can't be NaN since _avg multiplied by number.
       endif
       if (wrtavg(indxUb)) then
         allocate( ubar_avg(GLOBAL_2D_ARRAY) )
-        ubar_avg=init
+        ubar_avg=0.
       endif
       if (wrtavg(indxVb)) then
         allocate( vbar_avg(GLOBAL_2D_ARRAY) )
-        vbar_avg=init
+        vbar_avg=0.
       endif
 
 #ifdef NHMG
