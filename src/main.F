@@ -395,10 +395,6 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
         call    rho_eos(tile)
         call    set_HUV(tile)
         call       diag(tile)
-! DevinD commented out bio_diag 20201208
-!# ifdef BIOLOGY
-!        call   bio_diag(tile)
-!# endif
       enddo
 C$OMP BARRIER
 

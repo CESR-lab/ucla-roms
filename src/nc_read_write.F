@@ -24,6 +24,7 @@
       public :: ncread
       public :: ncwrite
       public :: nccreate
+      public :: handle_err
 
       contains
 
@@ -45,6 +46,7 @@
 
         dims = shape(dat)
         ierr = nf90_inq_varid(ncid,vname,varid)
+        if (ierr/=0) call handle_err(ierr,'ncread: '/ /vname)
 
         if (present(start)) then
           sizes = (/dims, 1/)
@@ -52,6 +54,7 @@
         else
           ierr = nf90_get_var(ncid,varid,dat)
         endif
+        if (ierr/=0) call handle_err(ierr,'ncread: '/ /vname)
 
       end subroutine ncread_1D
 
@@ -73,6 +76,7 @@
 
         dims = shape(dat)
         ierr = nf90_inq_varid(ncid,vname,varid)
+        if (ierr/=0) call handle_err(ierr,'ncread: '/ /vname)
 
         if (present(start)) then
           sizes = (/dims, 1/)
@@ -80,6 +84,7 @@
         else
           ierr = nf90_get_var(ncid,varid,dat)
         endif
+        if (ierr/=0) call handle_err(ierr,'ncread: '/ /vname)
 
       end subroutine ncread_2D
 
@@ -225,8 +230,8 @@
       ! Add compression and shuffle
       ierr=nf90_def_var(ncid,varname,vartype,dimid,varid)
       if (ierr/=nf90_noerr) then
-        print *,'ERROR creating: ',varname
-        call handle_err(ierr)
+        print *,'ERROR creating: ',varname,dimname
+        call handle_err(ierr,'nccreate: '//varname)
       endif
 
       nccreate = varid
