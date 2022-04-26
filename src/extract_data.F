@@ -680,13 +680,13 @@
             ierr = nf90_put_att(ncid,varid,'units','second' )
           endif
 
-          if (obj(i)%zeta) call create_var(ncid,obj(i),'zeta',dname,dsize)
-          if (obj(i)%ubar) call create_var(ncid,obj(i),'ubar',dname,dsize)
-          if (obj(i)%vbar) call create_var(ncid,obj(i),'vbar',dname,dsize)
-          if (obj(i)%temp) call create_var(ncid,obj(i),'temp',dname3,dsize3)
-          if (obj(i)%salt) call create_var(ncid,obj(i),'salt',dname3,dsize3)
-          if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3)
-          if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3)
+          if (obj(i)%zeta) call create_var(ncid,obj(i),'zeta',dname,dsize,indxZ)
+          if (obj(i)%ubar) call create_var(ncid,obj(i),'ubar',dname,dsize,indxUb)
+          if (obj(i)%vbar) call create_var(ncid,obj(i),'vbar',dname,dsize,indxVb)
+          if (obj(i)%temp) call create_var(ncid,obj(i),'temp',dname3,dsize3,indxT)
+          if (obj(i)%salt) call create_var(ncid,obj(i),'salt',dname3,dsize3,indxS)
+          if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3,indxU)
+          if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3,indxV)
           if (obj(i)%up)   call create_var(ncid,obj(i),'up',dname,dsize)
           if (obj(i)%vp)   call create_var(ncid,obj(i),'vp',dname,dsize)
         endif
@@ -694,7 +694,9 @@
 
       end subroutine create_edata_vars  !]
 ! ----------------------------------------------------------------------
-      subroutine create_var(ncid,obj,vname,dname,dsize) ![
+      subroutine create_var(ncid,obj,vname,dname,dsize,idx) ![
+
+      use ncvars, only: vn=>vname
       implicit none
 
       ! import/export
@@ -703,9 +705,10 @@
       character(len=*)              ,intent(in) :: vname
       character(len=20),dimension(:),intent(in) :: dname ! dimension names
       integer,          dimension(:),intent(in) :: dsize ! dim lengths
+      integer,optional,              intent(in) :: idx
 
       ! local
-      integer :: varid,ierr,idx
+      integer :: varid,ierr
       character(len=40) :: oname
 
       oname = trim(obj%set)//'_'//vname//trim(obj%bnd)
@@ -716,6 +719,15 @@
       ierr = nf90_put_att(ncid,varid,'dname',obj%dname)
       ierr = nf90_put_att(ncid,varid,'dsize',obj%dsize)
       if (ierr/=0) call handle_err(ierr,'extract create var: '//vname)
+
+      if (present(idx)) then
+        ierr = nf90_put_att(ncid,varid,'long_name',vn(2,idx))
+        ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
+      else
+        ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+      endif
+
 
       end subroutine create_var  !]
 ! ----------------------------------------------------------------------

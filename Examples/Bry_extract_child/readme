@@ -1,4 +1,0 @@
-Example to show creation of online boundary files for 2 child grids.
-
-For simplicity in this example both child grids are actually identical, but in proper use you would use
-child grids in different locations within the parent grid.
