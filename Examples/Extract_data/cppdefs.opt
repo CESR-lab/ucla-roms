@@ -18,7 +18,6 @@
 
 # if defined MAIN_SWITCH
 
-c--#  define BRY_EXTRACT_CHILD
 #  define EXTRACT_DATA
 
 #  define DIAGNOSTICS

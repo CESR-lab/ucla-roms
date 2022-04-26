@@ -82,7 +82,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #ifdef NHMG
       use nhmg
 #endif
-      use bry_extract_child
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
       use ncvars
@@ -338,7 +337,6 @@ C$OMP END MASTER
       use param
       use wec_frc
       use tides
-      use bry_extract_child
       use extract_data
       use diagnostics
       use ncvars
@@ -454,9 +452,6 @@ C$OMP BARRIER
 
 #ifdef PARTICLES
       call do_particles
-#endif
-#ifdef BRY_EXTRACT_CHILD
-      call set_child_bry  ! frequency flag handled within routine
 #endif
 #ifdef EXTRACT_DATA
       call do_extract_data
