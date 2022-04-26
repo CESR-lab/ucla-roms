@@ -272,8 +272,7 @@
 
         ierr = nf90_get_att(ncid,iobj,'output_period',period)
         if (ierr/=0) call handle_err(ierr,'read extr ')
-!       obj(iobj)%period   = period
-        obj(iobj)%period   = 1500
+        obj(iobj)%period   = period
 
         if (obj(iobj)%np>0) then
           !! only for objects with a presences in this subdomain
