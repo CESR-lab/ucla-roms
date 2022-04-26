@@ -58,11 +58,11 @@
 
       if (wrtavg(indxU)) then
         allocate( u_avg(GLOBAL_2D_ARRAY,N) )
-        u_avg=init
+        u_avg=0.
       endif
       if (wrtavg(indxV)) then
         allocate( v_avg(GLOBAL_2D_ARRAY,N) )
-        v_avg=init
+        v_avg=0.
       endif
 
 # if defined NHMG
@@ -79,11 +79,11 @@
 
       if (wrtavg(indxO)) then
         allocate( w_avg(GLOBAL_2D_ARRAY,0:N) )
-        w_avg=init
+        w_avg=0.
       endif
       if (wrtavg(indxW)) then
         allocate( wvl_avg(GLOBAL_2D_ARRAY,0:N) )
-        wvl_avg=init
+        wvl_avg=0.
       endif
 
 
