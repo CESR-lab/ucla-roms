@@ -3,7 +3,7 @@
       ! see add_object.m for guidance
       !
       !------------------------------
-      character(len=60) :: extract_file = 'input/sample_edata.nc_2b_2m'
+      character(len=60) :: extract_file = 'input/sample_edata.nc'
       integer,parameter :: nrpf   = 96  ! number of records per output file (2 days at 0.5 hour freq
       integer,parameter :: edat_prec = nf90_double  ! Precision of output variables (nf90_float/nf90_double)
       !------------------------------
