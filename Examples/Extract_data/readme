@@ -6,4 +6,4 @@ child grids in different locations within the parent grid.
 Output partition files can be joined using the tool: Tools-Roms/extract_data_join
 
 For further instructions on the pre-processing to setup the input file:
-Documentation/readme-specifics/README.extract_data_202104
+Documentation/readme-specifics/README.extract_data
