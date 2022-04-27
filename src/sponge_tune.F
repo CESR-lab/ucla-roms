@@ -147,27 +147,23 @@
       ! The fluxes are all into the domain!!
 
       if (obc_west.and.(.not.west_exchng)) then
-!       wrk(1:isp,:) = sum(up_pp(1:isp,1:ny,:),dim=3)
-        wrk(1:isp,:) = up(1:isp,1:ny)  !! up is now already integrated
+        wrk(1:isp,:) = up(1:isp,1:ny)  !! up is already integrated
         cflx_west = cflx_west*beta + 
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
       if (obc_east.and.(.not.east_exchng)) then
-!       wrk(1:isp,:) = sum(up_pp(nx-isp+1:nx,1:ny,:),dim=3)
         wrk(1:isp,:) = up(nx-isp+1:nx,1:ny)
         cflx_east = cflx_east*beta -
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
 
       if (obc_south.and.(.not.south_exchng)) then
-!       wrk(:,1:isp) = sum(vp_pp(1:nx,1:isp,:),dim=3)
         wrk(:,1:isp) = vp(1:nx,1:isp)
         cflx_south = cflx_south*beta + 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
 !       print *,'comp_cflx: ', sum(cflx_south)/nx
       endif
       if (obc_north.and.(.not.north_exchng)) then
-!       wrk(:,1:isp) = sum(vp_pp(1:nx,ny+1-isp:ny,:),dim=3)
         wrk(:,1:isp) = vp(1:nx,ny+1-isp:ny)
         cflx_south = cflx_south*beta - 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
@@ -208,6 +204,7 @@
         if (onoff) then
           sp_south = sp_south*beta + 
      &       alpha*v_sponge*0.5*(1-cflx_south/abs(cflx_south+eps))
+          if (mynode==0) print *,cflx_south(nx/2),sp_south(nx/2)
         else
           sp_south = sp_south + alpha*(pflx_south - cflx_south)
           sp_south = max(0.,sp_south)
