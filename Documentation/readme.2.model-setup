@@ -21,7 +21,7 @@ Running new simulations:
 
 roms.in:
 
-    See Examples/Tracers_passive/USWC_sample.in as a template. 
+    See Examples/Tracers_passive/sample.in as a template. 
     Note, we now use one root name, e.g. 'pacific', stored in 
     variable 'output_root_name' for the output file names. 
     So the history file will be pacific_his.*.nc,
@@ -91,8 +91,8 @@ tides:
 Averages:
 
     Only compile roms with AVERAGES flag if you do in fact need averages. The reason for
-    this is that AVERAGES creates a second array for every variable in your model, hence
-    doubles your memory requirement. Better to remove AVERAGES flag if not using this.
+    this is that AVERAGES creates a second array for every variable in your model that
+    is 'T' for output. This increases your memory requirement. 
     
     Furthermore, if you used the AVERAGES flag but you don't need them, and your 'NTSAVG'
     (number to start averaging) in your roms.in file is at any point equal to your timestep 'iic',
@@ -112,7 +112,7 @@ Nested grid boundary file generation online:
     - Documentation/readme-specifics/README.extract_data_202104    
     
 Mooring output:
-    for information on generating online nested boundary files, see:
+    for information on generating online mooring extraction files, see:
     - Documentation/readme-specifics/README.extract_data_202104      
     
 Netcdf output compression:
