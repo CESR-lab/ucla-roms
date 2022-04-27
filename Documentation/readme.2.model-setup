@@ -107,6 +107,14 @@ Diagnostics:
     See the top of diagnostics.F for a more detailed description of the available diagnostics.
     For an example try Examples/Diagnostics/
     
+Nested grid boundary file generation online:
+    for information on generating online nested boundary files, see:
+    - Documentation/readme-specifics/README.extract_data_202104    
+    
+Mooring output:
+    for information on generating online nested boundary files, see:
+    - Documentation/readme-specifics/README.extract_data_202104      
+    
 Netcdf output compression:
 
     The new roms code now uses netcdf-4 file outputting (previously netcdf-3). This allows
@@ -149,7 +157,6 @@ BGC - Bio-geochemical:
 Misc.:
 
     The machine compilation file Makedefs/Makedefs.IntelEM64T is now Makedefs.inc.
-    For information on generating online child boundary files, see:
-    - Documentation/readme-specifics/README.bry_child_extract_202104
+    
 
 
