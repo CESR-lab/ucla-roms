@@ -493,7 +493,7 @@
         upe(1:nx,1:ny) = up
         vpe(1:nx,1:ny) = vp
 # ifdef EXCHANGE   
-!       call exchange2d_2_tile(1,nx,1,ny,upe,vpe)
+        call exchange2d_2_tile(1,nx,1,ny,upe,vpe)
 # endif
       endif
 
