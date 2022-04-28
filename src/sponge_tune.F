@@ -161,11 +161,10 @@
         wrk(:,1:isp) = vp(1:nx,1:isp)
         cflx_south = cflx_south*beta + 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
-!       print *,'comp_cflx: ', sum(cflx_south)/nx
       endif
       if (obc_north.and.(.not.north_exchng)) then
         wrk(:,1:isp) = vp(1:nx,ny+1-isp:ny)
-        cflx_south = cflx_south*beta - 
+        cflx_north = cflx_north*beta - 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
       endif
       
@@ -335,7 +334,7 @@
       character(len=99),intent(out) :: fname
 
       !local
-      integer :: ncid,ierr,varid
+      integer :: ncid,ierr,varid,dimid
       integer :: prec ! precision of output
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes 
@@ -372,10 +371,11 @@
       ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
       dimname = (/'xi_u' /)
       dimsize = (/ xi_u  /)
-      varid = nccreate(ncid,'dimu_dummy',dimname,dimsize,prec)
+      ierr = nf90_def_dim(ncid,dimname,dimsize,dimid)
       dimname = (/'eta_v'/)
       dimsize = (/ eta_v /)
-      varid = nccreate(ncid,'dimv_dummy',dimname,dimsize,prec)
+      ierr = nf90_def_dim(ncid,dimname,dimsize,dimid)
+
 
       ierr = nf90_enddef(ncid)
 
