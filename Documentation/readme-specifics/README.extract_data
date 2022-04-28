@@ -1,6 +1,6 @@
 2022/04:
 
-  extract_data is the new module modified from and replacing the old bry_extract_child.
+  extract_data is the new module modified from and replacing the old bry_extract_child module.
   It is now more generalized and can produce mooring outputs.
 
   Variables are interpolated (and rotated for u/v) to child grid or mooring point positions.
@@ -25,15 +25,14 @@ Usage:
   
   E) Edit user defined values in src/extract_data.opt. Run your parent simulation.
   
-  F) Join partial extract data files from parent simulation:
-     Once the simulation has created partial files of the interpolated child
-     boundary, it is not possible to join the partial files with ncjoin, since the joined
-     child grid does not match the parent grid that generated the partial files.
-     
-     A separate tool has been developed to join the child boundary partial files found here:
+  F) Join partial extract data files from parent simulation:     
+     A separate tool has been developed to join the extracted partial files found here:
      Tools-Roms/extract_data_join.F
      Type 'make' in Tools-Roms/ and the tools will be built. Usage is the same as ncjoin, e.g.:
      extract_data_join sample_ext.00000.*.nc
+     
+     (Note: it is not possible to join the partial files with ncjoin, since the joined
+     child grid does not match the parent grid that generated the partial files.)
 
 
 Example:
@@ -43,9 +42,11 @@ Example:
   To build, run and view the child boundary outputs simply type:
   make; do_roms.sh; join.sh
 
-----------
-OLD below:
-----------
+
+
+-------------------------
+OLD and superseded below:
+-------------------------
   
 
 2021/04:		
