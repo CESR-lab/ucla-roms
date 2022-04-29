@@ -124,7 +124,7 @@
       call copy_global_attributes
       if(mayday) return
 
-      ierr=nf90_def_dim(nctarg, 'time', s(g)%dsize(1), vdimids_out(3) )
+      ierr=nf90_def_dim(nctarg, 'time', 0, vdimids_out(3) )
       ierr=nf90_def_dim(nctarg, 's_rho', s(g)%s_rho, vdimids_out(2) )
 
 
