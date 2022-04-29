@@ -17,10 +17,9 @@ Relevant:
    src/           - The latest roms code is kept here.
                     Do not modify code here! Use Work/ directory.
 
-   Examples/      - Collection of previously run examples, some
-                    without netcdf files (stored on cloud drive).
+   Examples/      - Collection of working examples, both realistic and analytical.
                     
-   Tools-Roms/    - Useful pre & post processing tools can be compiled here.
+   Tools-Roms/    - Pre & post processing tools can be compiled here.
    
    Work/          - Edit roms files here and compile simulations here.                
                    
