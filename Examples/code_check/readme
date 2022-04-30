@@ -19,8 +19,19 @@ This is compared with a previously run benchmark example, to confirm values have
 
 This tool is designed to be run before any new commit of the repo, to ensure nothing has been
 inadvertently broken.
+
+UPDATING BENCHMARKS:
+
 If values have been intentionally changed, then the effected examples must have their benchmark
 file updated.
+Make sure you have run the code check script so that test_old.log files are current.
+Run the update_benchmarks.sh script to update benchmark files for your machine.
+Check all is in order by running the code checking do_test_all.sh script again.
+You then repeat those steps on the other machine maya or Expanse.
+
+Commit the new benchmark files.
+
+
 
 
 

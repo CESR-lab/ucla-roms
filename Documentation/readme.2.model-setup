@@ -2,19 +2,21 @@
 ROMS MODEL SETUP & CONFIGURATION
 --------------------------------
 
-Below are a few instructions that should assist in configuring the roms
-executable to work for your simulation of interest:
-(Note, these instructions will assist users of the old roms code, but
-are likely insufficient for first time roms users)
+Below are instructions that should assist in configuring the roms
+executable to work for your simulation of interest.
+Note, these instructions will assist users of the old roms code or Croco, but
+are likely insufficient for first time roms/croco users.
+These instructions do not include info on pre-processing steps such as creating
+your grid and input files.
 
 Running new simulations:
 
     When running a new simulation (i.e. new input files / grid ), it is best to do a very
     short run first. E.g. only 5 time steps, with result outputting at every time step, this
-    should make iterating to get the model to run properly go faster, rather than waiting
+    should make for faster iterations to get the model to run properly, rather than waiting
     for your first desired output only to realize there's a netcdf output issue.
     
-    Using Expanse (cluster): Expanse has 2 debug nodes per user that gives you instant access 
+    Using Expanse (cluster): Expanse has 2 debug nodes (254 cores) per user that gives you instant access 
     to test if your code runs as you get setup (without long waits to run). Strongly encouraged.
     See Documentation/machine-specific/Job_submission_scrips/run_script_expanse_debug_nodes
     for an example of a job submission script on the debug nodes.
@@ -24,9 +26,9 @@ roms.in:
     See Examples/Tracers_passive/sample.in as a template. 
     Note, we now use one root name, e.g. 'pacific', stored in 
     variable 'output_root_name' for the output file names. 
-    So the history file will be pacific_his.*.nc,
-    and the averages file will be pacific_avg.*.nc
-
+    The history  file will be pacific_his.*.nc,
+    The averages file will be pacific_avg.*.nc,
+    The restart  file will be pacific_rst.*.nc
 
 cppdefs.opt:
 
@@ -82,11 +84,11 @@ Passive tracers:
     it working, and then finally set it up with all of your tracers.
     Selection of tracers for outputting is also done in tracers.opt.
     No longer need PASSIVE_TRACER flag for this to work.
-    Default_bry_values.
+    Default boundary values can be set in subroutine set_bry_tracer_defaults.
     
 tides:
 
-    Set the number of tidal contributions you are using in tides.opt variable Ntides. 
+    Set the number of tidal contributions you are using in tides.opt variable ntides. 
     
 Averages:
 
@@ -153,6 +155,13 @@ Surface flux outputting:
 BGC - Bio-geochemical:
 
     See Documentation/readme-specifics/README.bgc-code-port-info-20201216.txt for more info.
+    
+Automated code checking:
+
+    Examples/code_check contains a script to run all examples and compare them to benchmark results
+    on Expanse and Maya. This does not ensure code 'correctness', but does ensure that the result
+    hasn't changed between code updates. Developers (not users) should always run this before
+    committing an update to the code.    
 
 Misc.:
 
