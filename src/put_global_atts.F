@@ -14,9 +14,10 @@
       use netcdf
 
       implicit none
-      integer ncid, ierr, nf_ftype, lvar,lenstr
+      integer ncid, ierr, nf_ftype, lvar,lenstr,dimid
 
 #include "netcdf.inc"
+
 
 #if defined MPI && defined PARALLEL_FILES
       integer*4 ibuff(4), npart
@@ -41,6 +42,16 @@
       ierr=nf_put_att_int (ncid, nf_global, 'partition',
      &                             nf_int, npart, ibuff)
 #endif
+
+      ! Add minimally needed dimensions to all files
+      ierr = nf90_def_dim(ncid,'xi_rho',xi_rho,dimid)
+      ierr = nf90_def_dim(ncid,'eta_rho',eta_rho,dimid)
+      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
+      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
+
+      ! Add git version info
+      ierr=nf90_put_att(ncid,nf90_global,'git_version',git_hash)
+
 
 ! Decide about output file type and precision for floating point
 ! variables (restart file always has the same precision as in the

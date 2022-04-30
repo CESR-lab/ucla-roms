@@ -208,8 +208,8 @@
           sp_south = sp_south + alpha*(pflx_south - cflx_south)
           sp_south = max(0.,sp_south)
           sp_south = min(sp_mx,sp_south)
+          if (mynode==0) print *,pflx_south(nx/2),cflx_south(nx/2),sp_south(nx/2)
         endif
-!       print *, 'adjusting: ',sum(sp_south)/nx,mynode
         do i = 1,nx
           visc2_r(i,1:isp) = sp_mult*sp_south(i)
         enddo
@@ -349,9 +349,6 @@
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'create_sp_tune_file: ')
 
-      !! Add needed dimensions: xi_rho,eta_rho,xi_u,eta_v
-      ! just use nf90_def_dimension!!!
-
       varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
       ierr = nf90_put_att(ncid,varid,'units','second' )
@@ -369,12 +366,9 @@
 
 
       ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
-      dimname = (/'xi_u' /)
-      dimsize = (/ xi_u  /)
-      ierr = nf90_def_dim(ncid,dimname,dimsize,dimid)
-      dimname = (/'eta_v'/)
-      dimsize = (/ eta_v /)
-      ierr = nf90_def_dim(ncid,dimname,dimsize,dimid)
+      ! We'll add this to add_global_att
+      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
+      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
 
 
       ierr = nf90_enddef(ncid)
