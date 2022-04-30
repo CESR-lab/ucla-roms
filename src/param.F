@@ -70,5 +70,6 @@
       logical,parameter :: obc_south=.false.
 # endif
 
+      character(len=41)::git_hash="8974da051270b86f4472a925ce43af0aee57c4fd"
 
       end module

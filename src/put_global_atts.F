@@ -44,10 +44,10 @@
 #endif
 
       ! Add minimally needed dimensions to all files
-      ierr = nf90_def_dim(ncid,'xi_rho',xi_rho,dimid)
-      ierr = nf90_def_dim(ncid,'eta_rho',eta_rho,dimid)
-      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
-      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
+      !ierr = nf90_def_dim(ncid,'xi_rho',xi_rho,dimid)
+      !ierr = nf90_def_dim(ncid,'eta_rho',eta_rho,dimid)
+      !ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
+      !ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
 
       ! Add git version info
       ierr=nf90_put_att(ncid,nf90_global,'git_version',git_hash)
