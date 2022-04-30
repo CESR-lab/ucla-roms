@@ -367,8 +367,8 @@
 
       ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
       ! We'll add this to add_global_att
-      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
-      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
+!     ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
+!     ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
 
 
       ierr = nf90_enddef(ncid)
