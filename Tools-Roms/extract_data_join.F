@@ -73,8 +73,10 @@
         logical :: time_done=.false.
         integer :: tsize                                             ! time size
         integer :: nstr                                              ! index after set name in full name
+        logical :: bry=.false.                                       ! is a boundary file or not
         character(len=30) :: tname = ' '
         character(len=30) :: sname = ' '                             ! set name (root name)    - set as blank in order
+        character(len=30) :: fname = ' '                             ! output file name
         character(len=:),dimension(:),allocatable :: vname           ! variable  name (nvars)  - to compare to read in name
         character(len=:),dimension(:),allocatable :: dname           ! dimension name
         character(len=:),dimension(:),allocatable :: lname           ! long name
@@ -122,7 +124,7 @@
       call copy_global_attributes
       if(mayday) return
 
-      ierr=nf90_def_dim(nctarg, 'time', s(g)%dsize(1), vdimids_out(3) )
+      ierr=nf90_def_dim(nctarg, 'time', 0, vdimids_out(3) )
       ierr=nf90_def_dim(nctarg, 's_rho', s(g)%s_rho, vdimids_out(2) )
 
 
@@ -307,7 +309,7 @@
       implicit none
 
       ! local
-      integer :: fnvars, vndims, istart, varid, sdimid
+      integer :: fnvars, vndims, istart, varid, sdimid, ln, ld
       integer,pointer :: s_nv
       character(len=60) :: name
 
@@ -335,6 +337,7 @@
             nsets=nsets+1
             s(nsets)%sname=name(1:istart-1)
             print *, 'found set =',s(nsets)%sname
+            s(nsets)%fname=s(nsets)%sname                  ! output file name
 !            print *, 'nsets =',nsets
             s(nsets)%nstr=istart+1
             allocate ( s(nsets)%nvars )
@@ -377,6 +380,20 @@
             print *, 'found var =',s(g)%vname(s_nv)
 !            print *, 'nvars =',s_nv
 
+            ! check if boundary file to append _bry to output file name
+            if (s_nv==2) then                              ! only need to check 2nd variable as all same convention
+              ln=len_trim( s(g)%vname(s_nv) )              ! except time s_nv=1 doesn't have bry in name
+              if ( s(g)%vname(s_nv)(ln-3:ln) == 'east'  .or.
+     &             s(g)%vname(s_nv)(ln-3:ln) == 'west'  .or.
+     &             s(g)%vname(s_nv)(ln-4:ln) == 'south' .or.
+     &             s(g)%vname(s_nv)(ln-4:ln) == 'north'      ) then
+                s(g)%bry=.true.
+                s(g)%fname = trim( s(g)%fname ) / / '_bry'
+                !print *, 's(g)%fname=',s(g)%fname
+                !print *, 'FOUND BRY'
+              endif
+            endif
+
             ! since will need to find variable ID in file anyway, it I can also get num dims and dim name
             ! so might not need to store this but doing it for now.
             ! definitely don't need start and count size doing entire var at once for sub-domain
@@ -391,6 +408,10 @@
             else
               ierr=nf90_get_att(ncid(node), varid, 'dname', s(g)%dname(s_nv))
               if (ierr/=0) call handle_ierr(ierr,'xdata_preprocess_lists attribute dname missing')
+              ln=len_trim( s(g)%sname )                    ! remove set name from dimension name
+              ld=len_trim( s(g)%dname(s_nv) )
+              s(g)%dname(s_nv)=s(g)%dname(s_nv)( ln+2:ld )
+
               ierr=nf90_get_att(ncid(node), varid, 'dsize', s(g)%dsize(s_nv))
               if (ierr/=0) call handle_ierr(ierr,'xdata_preprocess_lists attribute dsize missing')
             endif
@@ -445,9 +466,9 @@
       if (idot==1) stop 'cannot have . at start of input file names'
       j=lenstr(sffx_bak)
       if (root_bak(i:i).eq.'.' .and. sffx_bak(1:1).eq.'.') then
-        nctargname=trim( s(g)%sname )/ /root_bak(idot:i)/ /sffx_bak(2:j)
+        nctargname=trim( s(g)%fname )/ /root_bak(idot:i)/ /sffx_bak(2:j)
       else
-        nctargname=trim( s(g)%sname )/ /root_bak(idot:i)/ /sffx_bak(1:j)
+        nctargname=trim( s(g)%fname )/ /root_bak(idot:i)/ /sffx_bak(1:j)
       endif
       ltrg=lenstr(nctargname)
 
