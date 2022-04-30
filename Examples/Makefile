@@ -30,6 +30,13 @@ all:
 #       errors for .h files for inexplicable changes made to
 #       cppdefs.opt.
 
+# for adding git hash:
+tag := $(shell git rev-parse HEAD)
+tline1 := git_hash
+tline2:= 'character\(len=41\)::git_hash=\"$(tag)\"'
+show_tag:
+        @sed -i '/$(tline1)/c\      $(tline2)' param.F
+
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :
 	
