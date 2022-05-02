@@ -1256,7 +1256,7 @@
           ierr=nf90_close(ncid)
 
           if (mynode == 0) then
-            write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
      &       'diagnostics :: wrote output, tdays =', tdays,
      &       'step =', iic-1, 'rec =', record, '/', total_rec_diag
      &        MYID
@@ -1660,7 +1660,8 @@
       ierr = nf90_enddef(ncid)
 
 
-      if (mynode==0) print *,'diagnostics :: created new netCDF file: ',fname
+      if (mynode==0) write(*,'(7X,2A)') 
+     &       'diagnostics :: created new netCDF file: ',fname
 
       end subroutine create_diagnostics_file !]
 

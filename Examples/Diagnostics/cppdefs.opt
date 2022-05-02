@@ -13,7 +13,6 @@
 
 # if defined MAIN_SWITCH
 
-c---#  define BRY_EXTRACT_CHILD
 #  define DIAGNOSTICS
 #  define HIS_DOUBLE
 #  define SPONGE_TUNE

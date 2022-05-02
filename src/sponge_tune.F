@@ -60,7 +60,8 @@
       enddo
 
       !! max value based of cfl condition
-      sp_mx = 0.1/(minval(pm)*minval(pn)*dt)
+!     sp_mx = 0.06/(maxval(pm)*maxval(pn)*dt)
+      sp_mx = v_sponge
 
       !! reset viscosity
       visc2_r = 0
@@ -71,6 +72,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_w%vdata(ny,1,2))
           allocate(pflx_west(ny))
+          pflx_west = 0
         endif
         allocate(cflx_west(ny))
         allocate(sp_west(ny))
@@ -82,6 +84,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_e%vdata(ny,1,2))
           allocate(pflx_east(ny))
+          pflx_east = 0
         endif
         allocate(cflx_east(ny))
         allocate(sp_east(ny))
@@ -93,6 +96,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_n%vdata(nx,1,2))
           allocate(pflx_north(nx))
+          pflx_north = 0
         endif
         allocate(cflx_north(nx))
         allocate(sp_north(nx))
@@ -104,6 +108,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_s%vdata(nx,1,2))
           allocate(pflx_south(nx))
+          pflx_south = 0
         endif
         allocate(cflx_south(nx))
         allocate(sp_south(nx))
@@ -125,18 +130,38 @@
       subroutine set_pflx
       ! Read parent grid baroclinic pressure fluxes from bry file
       ! and interpolate to the correct time
+      
+      !local
+      integer:: i,j
 
       if (obc_west.and.(.not.west_exchng)) then
         call set_frc_data(nc_pflx_w,pflx_west)
+        do j=1,ny
+!         if (rmask(0,j)<1) pflx_west(j) = 0.
+        enddo
       endif
       if (obc_east.and.(.not.east_exchng)) then
         call set_frc_data(nc_pflx_e,pflx_east)
+        do j=1,ny
+!         if (rmask(nx+1,j)<1) pflx_east(j) = 0.
+        enddo
       endif
       if (obc_south.and.(.not.south_exchng)) then
         call set_frc_data(nc_pflx_s,pflx_south)
+        do i=1,nx
+!         if (rmask(i,0)<1) pflx_south(i) = 0.
+          if (abs(pflx_south(i))>100) pflx_south(i) = 0.
+        enddo
+!       do i=80,nx
+!         if (mynode==13) print *,'south: ',i,pflx_south(i)
+!       enddo
       endif
       if (obc_north.and.(.not.north_exchng)) then
         call set_frc_data(nc_pflx_n,pflx_north)
+        do i=1,nx
+          if (rmask(i,ny+1)<1) pflx_north(i) = 0.
+          if (abs(pflx_north(i))>100) pflx_north(i) = 0.
+        enddo
       endif
 
       end subroutine set_pflx
@@ -144,7 +169,7 @@
 ! ----------------------------------------------------------------------
       subroutine comp_cflx
       ! Compute integrated, averaged and filtered baroclinic pressure fluxes
-      ! The fluxes are all into the domain!!
+      ! up/vp fluxes are positive to the east/north
 
       if (obc_west.and.(.not.west_exchng)) then
         wrk(1:isp,:) = up(1:isp,1:ny)  !! up is already integrated
@@ -153,7 +178,7 @@
       endif
       if (obc_east.and.(.not.east_exchng)) then
         wrk(1:isp,:) = up(nx-isp+1:nx,1:ny)
-        cflx_east = cflx_east*beta -
+        cflx_east = cflx_east*beta +
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
 
@@ -164,7 +189,7 @@
       endif
       if (obc_north.and.(.not.north_exchng)) then
         wrk(:,1:isp) = vp(1:nx,ny+1-isp:ny)
-        cflx_north = cflx_north*beta - 
+        cflx_north = cflx_north*beta + 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
       endif
       
@@ -197,18 +222,20 @@
       call comp_cflx
 
       if (obc_south.and.(.not.south_exchng)) then
-!       print *, 'adjusting: ',sum(sp_south)/nx,mynode
-!       print *, 'adjusting: ',sum(cflx_south)/nx,mynode
-!       print *,sum(0.5*(1-cflx_south/abs(cflx_south+eps)))/nx
         if (onoff) then
           sp_south = sp_south*beta + 
      &       alpha*v_sponge*0.5*(1-cflx_south/abs(cflx_south+eps))
-          if (mynode==0) print *,cflx_south(nx/2),sp_south(nx/2)
+!         if (mynode==0) print *,cflx_south(nx/2),sp_south(nx/2)
         else
-          sp_south = sp_south + alpha*(pflx_south - cflx_south)
+          sp_south = sp_south - alpha*(pflx_south - cflx_south)
           sp_south = max(0.,sp_south)
           sp_south = min(sp_mx,sp_south)
-          if (mynode==0) print *,pflx_south(nx/2),cflx_south(nx/2),sp_south(nx/2)
+!         if (mynode==0) print *,pflx_south(nx/2),cflx_south(nx/2),sp_south(nx/2)
+!         if (mynode==13) then
+!           do i=80,nx
+!             print *,'south: ',i,pflx_south(i),sp_south(i)
+!           enddo
+!         endif
         endif
         do i = 1,nx
           visc2_r(i,1:isp) = sp_mult*sp_south(i)
@@ -239,7 +266,8 @@
           sp_west = max(0.,sp_west)
           sp_west = min(sp_mx,sp_west)
         endif
-        do j = 1,ny
+!       print *,'west: ',mynode,maxval(sp_west),minval(sp_west)
+        do j = 1,ny ! to get a 'diagonal' in the corners
           if (.not.south_exchng) idx = min(j,isp)
           if (.not.north_exchng) idx = min(ny-j+1,isp)
           visc2_r(1:idx,j) = sp_mult(1:idx)*sp_west(j)
@@ -252,7 +280,7 @@
           sp_east = sp_east*beta +
      &       alpha*v_sponge*0.5*(1-cflx_east/abs(cflx_east+eps))
         else
-          sp_east = sp_east - alpha*(pflx_east - cflx_east)
+          sp_east = sp_east + alpha*(pflx_east - cflx_east)
           sp_east = max(0.,sp_east)
           sp_east = min(sp_mx,sp_east)
         endif
@@ -281,7 +309,6 @@
       endif
 
       end subroutine adjust_sponge !]
-
 ! ----------------------------------------------------------------------
       subroutine write_sp_tune ![
       implicit none
@@ -343,7 +370,8 @@
 
       fname=trim(output_root_name) / / '_spn.nc'
       call create_filename(fname,total_rec)
-      if (mynode==0) print *,'sponge tune :: created new netCDF file: ',fname
+      if (mynode==0) write(*,'(7x,2A)') 
+     &      'sponge tune :: created new netCDF file: ',fname
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
@@ -367,8 +395,8 @@
 
       ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
       ! We'll add this to add_global_att
-!     ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
-!     ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
+      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
+      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
 
 
       ierr = nf90_enddef(ncid)
