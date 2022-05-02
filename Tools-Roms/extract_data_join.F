@@ -132,18 +132,19 @@
         ierr=nf90_def_dim(nctarg, s(g)%dname(iv), s(g)%dsize(iv), vdimids(1))  ! define dimensions: (repeated but doesn't matter)
       enddo
 
-      ierr=nf90_def_var(nctarg, 'ocean_time',nf90_double,
-     &                      vdimids_out(3), s(g)%vid_out(1))
-      ierr=nf90_put_att(nctarg,s(g)%vid_out(1),'long_name',s(g)%lname(1))
-      ierr=nf90_put_att(nctarg,s(g)%vid_out(1),'units',    s(g)%uname(1))
-      do iv=2,s(g)%nvars
+!      ierr=nf90_def_var(nctarg, 'ocean_time',nf90_double,
+!     &                      vdimids_out(3), s(g)%vid_out(1))
+!      ierr=nf90_put_att(nctarg,s(g)%vid_out(1),'long_name',s(g)%lname(1))
+!      ierr=nf90_put_att(nctarg,s(g)%vid_out(1),'units',    s(g)%uname(1))
+      do iv=1,s(g)%nvars
         if (s(g)%vndims(iv)==1) then
-!         ! ignore redundant time dimensions
+          ierr=nf90_def_var(nctarg, s(g)%vname(iv),nf90_double,
+     &                      vdimids_out(3), s(g)%vid_out(1))
         else
           ierr=nf90_inq_dimid(nctarg, s(g)%dname(iv), vdimids_out(1))          ! only dimension that can varys
           lncn=lenstr(s(g)%vname(iv))
           if (s(g)%vndims(iv)==2) then
-            ierr=nf90_def_var(nctarg, s(g)%vname(iv)( s(g)%nstr:lncn ),nf90_double,
+            ierr=nf90_def_var(nctarg, s(g)%vname(iv)( s(g)%nstr:lncn ),nf90_double,  ! nstr to remove set name from variable
      &                        (/ vdimids_out(1), vdimids_out(3) /), s(g)%vid_out(iv))
           else
             ierr=nf90_def_var(nctarg, s(g)%vname(iv)( s(g)%nstr:lncn ),nf90_double,
@@ -231,6 +232,10 @@
       if (ierr/=0) then
         print *, 'node=', node
         call handle_ierr(ierr,'xdata_read_write read var=',s(g)%vname(iv))
+      endif
+
+      if (s(g)%vndims(iv) == 1 .and. s(g)%bry) then
+        vdata = vdata / 86400                              ! convert boundary file times to days
       endif
 
 # ifdef TIMING
@@ -389,6 +394,8 @@
      &             s(g)%vname(s_nv)(ln-4:ln) == 'north'      ) then
                 s(g)%bry=.true.
                 s(g)%fname = trim( s(g)%fname ) / / '_bry'
+                s(g)%vname(1)='bry_time'
+                s(g)%uname(1)='days'
                 !print *, 's(g)%fname=',s(g)%fname
                 !print *, 'FOUND BRY'
               endif
