@@ -9,6 +9,7 @@
       use ncvars
       use scalars
       use netcdf
+      use diagnostics
 
       implicit none
       integer total_rec, ierr
@@ -16,7 +17,7 @@
 #include "netcdf.inc"
       logical create_new_file
       integer lenstr, checkdims, my_nf_def_dim
-      integer rec, lrst, lvar, timedim, prev_fill_mode,
+      integer rec, lrst, lvar, timedim, prev_fill_mode, itmpr,
      &        r2dgrd(3), u2dgrd(3), v2dgrd(3),  auxil(2)
 #ifdef SOLVE3D
      &      , r3dgrd(4), u3dgrd(4), v3dgrd(4),  w3dgrd(4), itrc
@@ -365,6 +366,48 @@
 # endif
 #endif /* SOLVE3D */
 
+        if (diag_pflx) then
+
+        ierr=nf_def_var (ncrst, 'u_slow',
+     &                            NF_FTYPE, 4, u3dgrd, varid_uslow)
+        lvar=lenstr('time filtered u')
+        ierr=nf_put_att_text (ncrst, varid_uslow, 'long_name', lvar,
+     &                        'time filtered u')
+        lvar=lenstr('m/s')
+        ierr=nf_put_att_text (ncrst, varid_uslow, 'units',     lvar,
+     &                                 'm/s')
+#  ifdef MASK_LAND_DATA
+        ierr=nf_put_att_FOUT (ncrst, varid_uslow, '_FillValue',
+     &                                 NF_FTYPE, 1, spv_set)
+#  endif
+
+        ierr=nf_def_var (ncrst, 'v_slow',
+     &                            NF_FTYPE, 4, v3dgrd, varid_vslow)
+        lvar=lenstr('time filtered v')
+        ierr=nf_put_att_text (ncrst, varid_vslow, 'long_name', lvar,
+     &                        'time filtered v')
+        lvar=lenstr('m/s')
+        ierr=nf_put_att_text (ncrst, varid_vslow, 'units',     lvar,
+     &                                 'm/s')
+#  ifdef MASK_LAND_DATA
+        ierr=nf_put_att_FOUT (ncrst, varid_vslow, '_FillValue',
+     &                                 NF_FTYPE, 1, spv_set)
+#  endif
+
+        ierr=nf_def_var (ncrst, 'p_slow',
+     &                            NF_FTYPE, 4, r3dgrd, varid_p_slow)
+        lvar=lenstr('time filtered pressure')
+        ierr=nf_put_att_text (ncrst, varid_p_slow, 'long_name', lvar,
+     &                        'time filtered pressure')
+        lvar=lenstr('P')
+        ierr=nf_put_att_text (ncrst, varid_p_slow, 'units',     lvar,
+     &                                 'P')
+#  ifdef MASK_LAND_DATA
+        ierr=nf_put_att_FOUT (ncrst, varid_p_slow, '_FillValue',
+     &                                 NF_FTYPE, 1, spv_set)
+#  endif
+
+        endif  !<-- diag_pflx
 
 ! Leave definition mode.                  Also initialize record
 ! ----- ---------- -----                  dimension size to zero.

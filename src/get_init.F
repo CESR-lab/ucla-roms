@@ -16,6 +16,8 @@
       use scalars
       use netcdf
       use bgc_ecosys_vars
+      use diagnostics
+      use dimensions
 
       implicit none
 
@@ -38,6 +40,9 @@
 # elif defined PRED_COUPLED_MODE
       integer vid_rufrc, vid_rvfrc
 # endif
+
+      integer :: i,j ! remove at some point DevinD
+
 # ifdef NHMG
 !     integer i,j,k
 # endif
@@ -663,6 +668,94 @@ c--#define VERBOSE
 # endif /* BIOLOGY_BEC2 && BEC2_DIAG */
 
 #endif /* SOLVE3D */
+
+      if (diag_pflx) then
+
+        if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
+          allocate( u_slow( GLOBAL_2D_ARRAY, N ))
+          u_slow = 0
+        endif
+        if (.not. allocated(v_slow)) then
+          allocate( v_slow( GLOBAL_2D_ARRAY, N ))
+          v_slow = 0
+        endif
+        if (.not. allocated(p_slow)) then
+          allocate( p_slow( GLOBAL_2D_ARRAY, N ))
+          p_slow = 0
+        endif
+        if (.not. allocated(g2d_u_slow)) then
+          allocate( g2d_u_slow( GLOBAL_2D_ARRAY, N ))
+          g2d_u_slow = 0
+        endif
+        if (.not. allocated(g2d_v_slow)) then
+          allocate( g2d_v_slow( GLOBAL_2D_ARRAY, N ))
+          g2d_v_slow = 0
+        endif
+        if (.not. allocated(g2d_p_slow)) then
+          allocate( g2d_p_slow( GLOBAL_2D_ARRAY, N ))
+          g2d_p_slow = 0
+        endif
+
+         ierr=nf90_inq_varid (ncid, 'u_slow', varid)
+         if (ierr == nf90_noerr) then
+            ierr=ncdf_read (ncid,  varid, record, u_var
+     &                    , g2d_u_slow(START_2D_ARRAY,1), N)
+            if (ierr /= nf90_noerr) then
+               write(*,2) 'u_slow', record,
+     &              trim(ininame)
+               goto 99             !--> ERROR
+            endif
+         else
+            g2d_u_slow = 0.0
+            mpi_master_only write(*,*) ' --- WARNING: '
+     &         , 'u_slow'
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf90_noerr
+         endif
+
+         ierr=nf90_inq_varid (ncid, 'v_slow', varid)
+         if (ierr == nf90_noerr) then
+            ierr=ncdf_read (ncid,  varid, record, v_var
+     &                    , g2d_v_slow(START_2D_ARRAY,1), N)
+            if (ierr /= nf90_noerr) then
+               write(*,2) 'v_slow', record,
+     &              trim(ininame)
+               goto 99             !--> ERROR
+            endif
+         else
+            g2d_v_slow = 0.0
+            mpi_master_only write(*,*) ' --- WARNING: '
+     &         , 'v_slow'
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf90_noerr
+         endif
+
+         ierr=nf90_inq_varid (ncid, 'p_slow', varid)
+         if (ierr == nf90_noerr) then
+            ierr=ncdf_read (ncid,  varid, record, r_var
+     &                    , g2d_p_slow(START_2D_ARRAY,1), N)
+            if (ierr /= nf90_noerr) then
+               write(*,2) 'p_slow', record,
+     &              trim(ininame)
+               goto 99             !--> ERROR
+            endif
+         else
+            g2d_p_slow = 0.0
+            mpi_master_only write(*,*) ' --- WARNING: '
+     &         , 'u_slow'
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf90_noerr
+         endif
+
+        do j=1,ny
+          do i=1,nx
+            u_slow(i,j,:) = g2d_u_slow(i,j,:)
+            v_slow(i,j,:) = g2d_v_slow(i,j,:)
+            p_slow(i,j,:) = g2d_p_slow(i,j,:)
+          enddo
+        enddo
+
+      endif  !<-- diag_pflx
 
 ! Close input NetCDF file and  write greeting message depending
 ! on the the type of initial/restart procedure performed above.

@@ -13,6 +13,8 @@
       use scalars
       use mpi
       use netcdf
+      use diagnostics
+      use dimensions
 
       implicit none
 
@@ -22,6 +24,8 @@
      &      , itrc
 #endif
       character(len=18) tstring
+
+      integer :: j ! remove later
 
 #include "netcdf.inc"
 
@@ -193,6 +197,55 @@
 # endif
 #endif /* SOLVE3D */
 
+      if (diag_pflx) then
+
+        if (.not. allocated(g2d_u_slow)) then
+          allocate( g2d_u_slow( GLOBAL_2D_ARRAY, N ))
+          g2d_u_slow = 0
+        endif
+        if (.not. allocated(g2d_v_slow)) then
+          allocate( g2d_v_slow( GLOBAL_2D_ARRAY, N ))
+          g2d_v_slow = 0
+        endif
+        if (.not. allocated(g2d_p_slow)) then
+          allocate( g2d_p_slow( GLOBAL_2D_ARRAY, N ))
+          g2d_p_slow = 0
+        endif
+
+        do j=1,ny
+          do i=1,nx
+            g2d_u_slow(i,j,:) = u_slow(i,j,:)   ! store into global_2D_array for outputting
+            g2d_v_slow(i,j,:) = v_slow(i,j,:)
+            g2d_p_slow(i,j,:) = p_slow(i,j,:)
+          enddo
+        enddo
+
+      ierr=ncdf_write(ncrst, varid_uslow,  record,  u_var,
+     &           g2d_u_slow(START_2D_ARRAY,1), N)
+      if (ierr == nf90_noerr) then
+        ierr=ncdf_write(ncrst, varid_vslow, record, v_var,
+     &           g2d_v_slow(START_2D_ARRAY,1), N)
+        if (ierr /= nf90_noerr) then
+          lvar=lenstr(vname(1,indxV))
+          write(*,1) 'v_slow', record MYID
+        endif
+      else
+        lvar=lenstr(vname(1,indxU))
+        write(*,1) 'u_slow', record MYID
+      endif
+      if (ierr /= nf90_noerr) goto 99                !--> ERROR
+
+      ierr=ncdf_write(ncrst, varid_p_slow,  record,  r_var,
+     &           g2d_p_slow(START_2D_ARRAY,1), N)
+      if (ierr == nf90_noerr) then
+
+      else
+        lvar=lenstr(vname(1,indxU))
+        write(*,1) 'p_slow', record MYID
+      endif
+      if (ierr /= nf90_noerr) goto 99                !--> ERROR
+
+      endif
 
   1   format(/1x, '### ERROR: wrt_rst :: Cannot write variable ''',
      &             A, ''' into restart file, rec =', i6, 3x,A,i4/)
