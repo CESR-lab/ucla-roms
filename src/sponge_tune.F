@@ -303,7 +303,7 @@
      &           visc2_r(1:nx+1,1:ny+1) + visc2_r(0:nx,1:ny+1)    
      &         + visc2_r(1:nx+1,0:ny  ) + visc2_r(0:nx,0:ny  ) )
 
-      if (time>=last_time+output_period) then
+      if (time>=last_time+output_period .and. wrt_sponge) then
         call write_sp_tune
         last_time = time
       endif
@@ -385,6 +385,7 @@
 
       dimnames = (/'xi_rho','eta_rho','time'/)
       dimsizes = (/xi_rho,eta_rho,0/)
+      print *, mynode, 'xi_rho',xi_rho ,'nx',nx
 
       prec = nf90_float
       varid = nccreate(ncid,'visc2d',dimnames,dimsizes,prec)
