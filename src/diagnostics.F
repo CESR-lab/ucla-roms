@@ -4,7 +4,6 @@
       ! Define options in diagnostics.opt
 
 #include "cppdefs.opt"
-#ifdef DIAGNOSTICS
 
       use dimensions
       use read_write
@@ -14,6 +13,7 @@
       use ocean3d
       use scalars
       use hidden_mpi_vars
+      use nc_read_write
 
       implicit none
       private
@@ -93,21 +93,23 @@
       character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
 
+      integer,public     :: varid_uslow, varid_vslow, varid_p_slow
+
       real, public,allocatable, dimension(:,:) :: dxdyi_u, dxdyi_v,dxdyi ! 1/ surface of cells
 
       ! Pressure flux terms
       ! --------------
       real,allocatable,dimension(:,:),public :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
       real,allocatable,dimension(:,:)    :: up_avg,vp_avg ! averaged u'p' and v'p'
-      real,allocatable,dimension(:,:,:)  :: p_slow        ! filtered pressure 
+      real,public,allocatable,dimension(:,:,:)  :: p_slow,g2d_p_slow        ! filtered pressure
 
 
       real, allocatable, dimension(:,:)  :: p_fast,u_fast,v_fast
 
       ! Baroclinic energy term
       ! --------------
-      real, public,allocatable, dimension(:,:,:) :: u_slow,v_slow
-      real, public,allocatable, dimension(:,:,:) :: px_slow,py_slow
+      real, public,allocatable, dimension(:,:,:) :: u_slow,v_slow, g2d_u_slow, g2d_v_slow ! global 2d arrays needed for writing
+      real, public,allocatable, dimension(:,:,:) :: px_slow,py_slow                       ! will be removed once outputting brought to new system
       real, public,allocatable, dimension(:,:)   :: px_fast,py_fast
 
       real, allocatable,dimension(:,:) :: upx      ! Divergence of up flux 
@@ -210,6 +212,7 @@
       public set_diags_u_4th_adv
       public set_diags_v_4th_adv
       public calc_diag_pflux
+!      public def_rst_diag_pflx
            !]
 
       contains
@@ -256,8 +259,10 @@
 
       if (diag_pflx) then
         if (mynode==0) print *,'allocating pflux vars'
-        allocate(p_slow(0:nx,0:ny,nz) )
-        p_slow = 0
+        if (.not. allocated( p_slow )) then         ! in case already read in with get_init
+          allocate(p_slow(0:nx,0:ny,nz) )
+          p_slow = 0
+        endif
         allocate(p_fast(0:nx,0:ny) )
 
 !       allocate( up(nx,ny,nz) )
@@ -274,10 +279,14 @@
       endif
 
       if (diag_pflx.or.diag_Ebcln) then
-        allocate(u_slow(nx,ny,nz) )
-        allocate(v_slow(nx,ny,nz) )
-        u_slow = 0
-        v_slow = 0
+        if (.not. allocated( u_slow )) then         ! in case already read in with get_init
+          allocate(u_slow(nx,ny,nz) )
+          u_slow = 0
+        endif
+        if (.not. allocated( v_slow )) then
+          allocate(v_slow(nx,ny,nz) )
+          v_slow = 0
+        endif
         allocate(u_fast(nx,ny) )
         allocate(v_fast(nx,ny) )
       endif
@@ -1665,8 +1674,23 @@
 
       end subroutine create_diagnostics_file !]
 
+! ----------------------------------------------------------------------
+!      subroutine def_rst_diag_pflx(ncid)  ![
+!      use ncvars
+!      implicit none
+!
+!      ! input
+!      integer,intent(in) :: ncid
+!
+!      integer :: varid, ierr
+!
+!      varid = nccreate(ncid,'u_slow',
+!     &  (/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/))
+!      ierr = nf90_put_att(ncid,varid,'long_name','u_slow - fitlered u')
+!      ierr = nf90_put_att(ncid,varid,'units','m/s')
+!
+!      end subroutine  !]
 
-
-#endif /* DIAGNOSTICS */
+! ----------------------------------------------------------------------
 
       end module diagnostics
