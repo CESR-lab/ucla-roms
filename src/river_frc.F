@@ -53,13 +53,13 @@
       ! Misc:
       logical, public :: init_riv_done = .false.  ! if river variables have been initialized yet
 
-      public set_river_frc_tile
+      public set_river_frc
       public init_river_frc
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_river_frc_tile(istr,iend,jstr,jend)
+      subroutine set_river_frc
 
       ! SET RIVER FORCES (REALISTIC OR ANALYTICAL FORCING):
       ! - read and interpolation all river forcing.
@@ -69,10 +69,7 @@
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
-      if(.not. init_riv_done) call init_river_frc(istr,iend,jstr,jend) ! initialize once river flux locations & arrays
+      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
 
       ! Set river flux volumes and tracer data
       if(analytical) then
@@ -107,10 +104,10 @@
 
       endif
 
-      end subroutine set_river_frc_tile
+      end subroutine set_river_frc
 
 ! ----------------------------------------------------------------------
-      subroutine init_river_frc(istr,iend,jstr,jend)
+      subroutine init_river_frc
 
       ! Initialize river forcing:
       ! Read in a grid file with locations of river mouths and flux contribution per cell.
@@ -119,8 +116,6 @@
       use netcdf
       implicit none
 
-      ! inputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
       integer :: ierr,ncid,v_id
 
@@ -146,7 +141,7 @@
       endif
 
       ! Compute uflx,vflx from rflx
-      call calc_river_flux(istr,iend,jstr,jend)
+      call calc_river_flux
 
       init_riv_done = .true.
 
@@ -155,22 +150,19 @@
       end subroutine init_river_frc
 
 ! ----------------------------------------------------------------------
-      subroutine calc_river_flux(istr,iend,jstr,jend)
+      subroutine calc_river_flux
       ! Calculate the river flux contributions to each cell.
       ! river_flux = iriver + fraction of river's flux through grid point.
       ! E.g. River 3 is over 2 grid points (half flux through each point),
       ! hence river_flux = 3 + 0.5 = 3.5
       implicit none
 
-      ! inputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
       ! local
       integer :: i,j,faces
 
       ! compute uflx,vflx from rflx
-      do j = jstr-1,jend+1   ! Loop over -1 and +1 because rflx cell only flows into
-        do i = istr-1,iend+1 ! neighbour, hence cell next to boundary could flow into cell.
+      do j = 0,ny+1   ! Loop over -1 and +1 because rflx cell only flows into
+        do i = 0,nx+1 ! neighbour, hence cell next to boundary could flow into cell.
           if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
             ! subtract 1e-5 in case only 1 grid point for river, so that floor still
             ! produces correct iriver number.

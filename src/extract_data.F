@@ -731,45 +731,5 @@
 
       end subroutine create_var  !]
 ! ----------------------------------------------------------------------
-      logical function findstr(all_string,want_string,istart) ![
-      ! this utility function should be moved somewhere more generic...
-      ! copied from extract_data.F.
-      ! should be in roms_read_write and then that module should be available to
-      ! Tools-Roms/ as well as src/
-      ! didn't do it now because roms_read_write depends on other modules so would
-      ! require a bit of work (do once ncvars is removed)
-      implicit none
-
-      !input/output
-      character(len=*),intent(in)  :: all_string           ! entire string
-      character(len=*),intent(in)  :: want_string          ! desired string to find within all_string
-      integer,optional,intent(out) :: istart
-
-      !local
-      integer :: nl,nlv,i
-
-      nl  = len(trim(all_string))
-      nlv = len(want_string)
-
-      findstr = .false.
-      do i = 1,nl-nlv+1
-         if (all_string(i:i+nlv-1) == want_string) then
-          findstr = .true.
-          exit
-         endif
-      enddo
-
-      if (present(istart)) then
-        if (findstr) then
-          istart=i                                         ! return string starting index
-        else
-          istart=0
-          if (mynode==0) write(*,'(7x,2A)')
-     &      'WARNING: findstr not found=',want_string
-        endif
-      endif
-
-      end function findstr !]
-! ----------------------------------------------------------------------
 #endif /* EXTRACT_DATA */
       end module extract_data

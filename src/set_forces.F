@@ -154,7 +154,7 @@ c***              no code here
 # endif
 
 # ifdef RIVER_SOURCE
-      call set_river_frc_tile(istr,iend,jstr,jend)
+      call set_river_frc
 #  endif
 
       if (pipe_source) call set_pipe_frc_tile(istr,iend,jstr,jend)
