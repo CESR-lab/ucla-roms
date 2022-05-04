@@ -9,9 +9,9 @@
 
       ! Modules needed:
       use param
-      use roms_read_write                        ! only: set_frc_data, ncforce
+      use read_write, only: set_frc_var_tile, ncvs
       use tracers,    only: t
-      use surf_flux                              ! sustr, svstr, stflx, srflx, sss, sst
+      use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
       use scalars
 
 
@@ -32,11 +32,11 @@
       subroutine init_arrays_flux_frc  ![
       implicit none
 
-      allocate(  nc_sustr%vdata( GLOBAL_2D_ARRAY,2) )
-      allocate(  nc_svstr%vdata( GLOBAL_2D_ARRAY,2) )
-      allocate(  nc_shflx%vdata( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_swflux%vdata( GLOBAL_2D_ARRAY,2) )
-      allocate(  nc_swrad%vdata( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_sustr%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_svstr%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_shflx%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swflux%data(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad%data( GLOBAL_2D_ARRAY,2) )
 
       end subroutine init_arrays_flux_frc  !]
 
@@ -84,8 +84,8 @@
       integer i, j
 #include "compute_extended_bounds.h"
 
-      call set_frc_data( nc_sustr, var2d=sustr )
-      call set_frc_data( nc_svstr, var2d=svstr )
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_sustr, sustr, interp_frc )
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_svstr, svstr, interp_frc )
 
       ! Combine this loop into one loop at the end
       do j=jstrR,jendR
@@ -118,7 +118,9 @@
 #include "compute_extended_bounds.h"
 
 
-      call set_frc_data( nc_shflx, var2d=stflx(:,:,itemp) )
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, stflx(:,:,itemp), interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, btflx(:,:,itemp), interp_frc )
+
 
       rho0cp=rho0*Cp ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
@@ -162,7 +164,7 @@
       real cmday2ms
 # include "compute_extended_bounds.h"
 
-      call set_frc_data( nc_swflux, var2d=stflx(:,:,isalt) )
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_swflux, stflx(:,:,isalt), interp_frc )
 
       cmday2ms=0.01/day2sec ! Set coefficient outside of loop for efficiency
       do j=jstrR,jendR
@@ -212,7 +214,7 @@
 #include "compute_extended_bounds.h"
 
       ! Do initial time interpolation only of swrad:
-      call set_frc_data( nc_swrad, var2d=srflx)
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )
 
       ! Note: the additional CPPFLAG option have been left in from old
       ! code but are untested here, might not compile.

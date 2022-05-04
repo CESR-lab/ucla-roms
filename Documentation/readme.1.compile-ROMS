@@ -4,32 +4,34 @@ INSTRUCTIONS: COMPILING ROMS
 
   1. Get roms code (git repo):
   
-     Ask a roms admin to give you access rights to the roms
-     repo. Once you have that and set up an account on
-     bitbucket.com, chose a location you want to store the 
-     code and then type the following:
+     Ask a roms admin to give you access privelages to the roms repo.
+     Once you have that and set up an account on bitbucket.com,
+     make a directory you want to store the code (typcially ~/repos/),
+     then edit <user-name> and enter the following command:
      git clone https://<user-name>@bitbucket.org/nmolem/ucla-roms.git
 
   2. Set up environment variables:
   
      Edit your ~/.bashrc file or ~/.cshrc file depending on which shell you
      are using ('echo $SHELL' will tell you your shell).
-     Note, even users of old ROMS code must do this, as environment
-     variable names have changed, e.g. MPI_ROOT -> MPIHOME.
      See/copy examples of ~/.bashrc or ~/.cshrc files in: 
      Documentation/machine-specific/bashrc-cshrc-files
      
-     For Expanse users it is 'safest' to just use the exact same .bashrc file:
+     For Expanse users it is 'safest' to just copy the exact same .bashrc file:
      Documentation/machine-specific/bashrc-cshrc-files/bashrc-expanse-202103
      Once you have all the following steps working then you can edit your old
      .bashrc as necessary if you would prefer.
-     Same applies for Maya users: cshrc-maya-202011 (for c-shell)
-     
-     For existing ROMS user's who might want to use a version pre 2020/12/01
-     as well, then you should only need to add MPIHOME exactly as your
-     existing MPI_ROOT, and same for NETCDFHOME as your NETCDF, in addition 
-     to what you already have. Now both old version and new version of roms 
-     should work. 
+     Same applies for Maya users: 
+     Documentation/machine-specific/bashrc-cshrc-files/cshrc-maya-202011 (for c-shell)
+          
+     Note, even users of old roms code must do this, as environment
+     variable names have changed, e.g. MPI_ROOT -> MPIHOME.     
+     For existing roms user's who might want to use a version pre 2020/12/01
+     as well, then you should edit your existing .bashrc file and only need 
+     to add MPIHOME exactly as your existing MPI_ROOT, 
+     and same for NETCDFHOME as your NETCDF, 
+     in addition to what you already have. 
+     Now both old version and new version of roms should work. 
      
      Load modules if on cluster such as Expanse (through .bashrc).
      You will need to ensure any variables listed in Makedefs.inc 
@@ -58,13 +60,12 @@ INSTRUCTIONS: COMPILING ROMS
      
   5. Compile ROMS tools:
   
-     This gives you access to roms tools, as of 2021/03 only produces:
+     This gives you access to some of the roms tools, for example:
      'partit' for partitioning netcdf files,
      'ncjoin' for joining netcdf result files into one file, and
      'ncjoin_mpi' for joining netcdf result files using many cores
      (much faster than ncjoin and recommended, also compresses data
-      so no need to use nc3to4z anymore. Expanse only with run script!
-      see Tools-Roms/readme for more info.)
+      so no need to use nc3to4z. See Tools-Roms/readme for more info.)
       
      Compile tools:
      cd Tools-Roms/
@@ -83,22 +84,32 @@ INSTRUCTIONS: COMPILING ROMS
      The dependency list is for the build automation program 'make'
      to know if one source code file depends on another file.
      
-  7. Compile & test roms:
+  7. Compile & test ROMS:
      
      To ensure you can successfully compile & run roms on your machine,
      quickly run the following test example as follows:
      (this is even recommended for experienced roms users using the new 
-      code for the first time...)
+      code for the first time.)
      
      A. cd Examples/Rivers_ana
-        make        (note this can be a bit slow on 'Expanse' machine)
-     B. ./do_run.sh (after roms has successfully compiled)
-                    (if using Expanse then 'sbatch do_roms_expanse.sh',
-                     you need to set --account= to your group's account)
+        make (note this can be a bit slow on 'Expanse' machine)
+        
+     B. After roms has successfully compiled:
+        - on 'Expanse':
+            sbatch do_roms_expanse.sh
+            
+            Note:
+            If not on Jim's allocation, you need to set --account= to your group's account.
+            If there is an error 'node configuration is not available', in do_roms_expanse.sh
+            change --partition=debug to --partition=shared and re-submit the job.
+          
+        - other machines:
+          ./do_run.sh                      
+                     
      C. ./join.sh   (to join & view results file)
         
      
-  8. Compile your specifc simulation:
+  8. Compile your specific simulation:
 
      A. If you are running your own simulation, copy ONLY the files that you 
         need to EDIT from src/ folder into the Work/ folder.
@@ -114,7 +125,7 @@ INSTRUCTIONS: COMPILING ROMS
         copied into Work/Compile/, and roms will be compiled.
      C. Copy 'roms' executable to wherever you are running your simulation.
   
-     NEVER edit code in the src/ directory, nor the examples in Examples/!
+     Don't edit code in the src/ directory, nor the examples in Examples/.
      The reason for this is 'git' will complain if you edit any 'tracked' 
      files in the repo, and won't allow you to update the code without first 
      using 'git stash'.     
@@ -126,13 +137,8 @@ Recompiling roms:
   A. Run 'make' to get the new roms executable.
      Only the necessary files will recompile, so it will be faster than a
      full compile.
-  
-  B. If cppdefs.opt is changed, then with the new dependency generator, you
-     are required to update the dependency list with 'make depend', as it 
-     is effected by cppflags. 
-     This will be done automatically using the Work/ or Examples/ directory.
      
-  C. If you change compiler options in Makedefs.inc, you should first run 
+  B. If you change compiler options in Makedefs.inc, you should first run 
      'make compile_clean' (or delete Compile/ directory), 
      and then 'make' to do a full rebuild.
 
@@ -161,7 +167,7 @@ Git repo (and Bitbucket)
      In order to keep all versions of ROMS as it evolves over time, we store it on a git 
      repository (repo).The version control program we use is called 'git'. It is terminal 
      based, but there are also GUI's for it. Each time we want to make a permanent change 
-     to the ROMS code, we then'commit' and 'push' the code to the repo.
+     to the ROMS code, we then 'commit' and 'push' the code to the repo.
      In order to store the version history of code 'commits', we used a web-based hosting 
      service called 'Bitbucket' (the other popular one is 'github'). This is essentially 
      our cloud based storage of the code.
@@ -202,8 +208,11 @@ Keeping code up to date:
 Additional readme's:
 --------------------
      
-     See readme-specifics for more detailed readme's on specific 
+     See Documentation/readme-specifics/ for more detailed readme's on specific 
      functionalities of roms.
+     
+     See Documentation/readme.2.model-setup for details on configuring roms for 
+     your simulation as per new code.
              
              
              

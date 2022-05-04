@@ -15,6 +15,7 @@
   
       use dimensions !! has dimensions, a list of forcing files, and rmask
       use read_write
+      use roms_read_write
       use scalars    ! for FIRST_STEP
 
       implicit none

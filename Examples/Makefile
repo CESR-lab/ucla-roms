@@ -30,6 +30,13 @@ all:
 #       errors for .h files for inexplicable changes made to
 #       cppdefs.opt.
 
+# for adding git hash:
+tag := $(shell git rev-parse HEAD)
+tline1 := git_hash
+tline2:= 'character\(len=41\)::git_hash=\"$(tag)\"'
+show_tag:
+        @sed -i '/$(tline1)/c\      $(tline2)' param.F
+
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :
 	
@@ -42,8 +49,9 @@ code_check_clean:
 	@cd $(ROMS_ROOT)/Examples/Pipes_real      ; make compile_clean
 	@cd $(ROMS_ROOT)/Examples/Rivers_ana      ; make compile_clean
 	@cd $(ROMS_ROOT)/Examples/Rivers_real     ; make compile_clean
-	@cd $(ROMS_ROOT)/Examples/WEC_real        ; make compile_clean
 	@cd $(ROMS_ROOT)/Examples/Tracers_passive ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/WEC_real        ; make compile_clean
+	
 	
 copy_to_Work_dir:
 	cp -p *.F *.h *.in *.sh ../../Work 2>/dev/null || :

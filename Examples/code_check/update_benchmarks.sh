@@ -12,36 +12,22 @@ then
 echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
 exit
 fi
-                                                 
-error_cnt=0                                      # count of exit codes from each test
+
+bm_file="benchmark.result_$arg"                    # set benchmark specific to machine (maya/expanse)
+
 total=${#Examples[*]}                            # total number of examples
 for (( i=0; i<=$(( $total -1 )); i++ ))          # run test cases:
 do
   cd ../${Examples[i]}/code_check/
-  echo "${Examples[i]}:"
-  ./do_test_roms.sh $arg
-  
-  retval=$?                                      # $? gives exit code from ./do_test_roms.sh
-  error_cnt=$(( $error_cnt + $retval ))          
-  if [ $error_cnt -gt 0 ]
-  then
-    echo -e "  test failed! \n"
-#   break
-  fi  
+  echo "${Examples[i]} updating benchmark..."
+  cp test_old.log $bm_file
+    
   
   cd ../                                         # need return out of /code_check/ for next iteration
 done
 
-if [ $error_cnt -eq 0 ]
-then
-  echo "ALL TESTS SUCCESSFUL!"
-else
-  echo "ERROR - A TEST FAILED!"
-fi
 
-# Notes:
-# - Compile/ directories are left in the various examples for fast re-compilation of all
-#   test cases.
+echo -e "\nBENCHMARK UPDATE COMPLETE!"
 
 
 

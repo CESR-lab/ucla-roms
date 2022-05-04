@@ -5,8 +5,7 @@
 #include "cppdefs.opt"
 
       use param
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use grid
       use scalars
       use tracers
@@ -241,8 +240,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       use eos_vars
       use grid
       use mixing
-      use ocean2d
-      use ocean3d
       use scalars
 
       implicit none
@@ -597,7 +594,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       use param
       use grid
       use mixing
-      use ocean3d
       use scalars
 
       implicit none

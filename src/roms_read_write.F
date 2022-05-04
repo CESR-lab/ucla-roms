@@ -378,8 +378,9 @@
 
 ! ----------------------------------------------------------------------
       subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
-      ! Handle fatal ierr with error messages.
+      ! handle fatal ierr with error messages.
       ! err_msg1 & 2 are optional messages
+      ! get this from roms_read_write module rather at some point
       implicit none
 
       ! Inputs

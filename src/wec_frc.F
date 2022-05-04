@@ -799,6 +799,8 @@
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_wec_file: ')
 
+      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
+
       varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
       if (      avg) ierr = nf90_put_att(ncid,varid,'long_name','Average time since origin')
       if (.not. avg) ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')

@@ -14,7 +14,7 @@
       use roms_read_write
       use hidden_mpi_vars
       use mixing
-      use read_write, only: handle_ierr
+      use read_write, only: output_root_name,handle_ierr
 
       implicit none
       private
@@ -35,10 +35,6 @@
       real,allocatable,dimension(:) :: sp_mult
       real,allocatable,dimension(:,:):: wrk
 
-      logical           :: obc_west =.false.
-      logical           :: obc_east =.false.
-      logical           :: obc_north=.false.
-      logical           :: obc_south=.false.
 
       public adjust_sponge
 
@@ -62,30 +58,21 @@
       do i=1,isp
        sp_mult(i) = float(isp-i+0.5)/float(isp)
       enddo
-# ifdef OBC_WEST
-      obc_west =.true.
-# endif
-# ifdef OBC_EAST
-      obc_east =.true.
-# endif
-# ifdef OBC_NORTH
-      obc_north=.true.
-# endif
-# ifdef OBC_SOUTH
-      obc_south=.true.
-# endif
 
       !! max value based of cfl condition
-      sp_mx = 0.1/(minval(pm)*minval(pn)*dt)
+!     sp_mx = 0.06/(maxval(pm)*maxval(pn)*dt)
+      sp_mx = v_sponge
 
       !! reset viscosity
       visc2_r = 0
 
+      ierr = 0
       if (obc_west.and.(.not.west_exchng)) then
         if (nx<isp) ierr = 1
         if (.not.onoff) then
           allocate(nc_pflx_w%vdata(ny,1,2))
           allocate(pflx_west(ny))
+          pflx_west = 0
         endif
         allocate(cflx_west(ny))
         allocate(sp_west(ny))
@@ -97,6 +84,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_e%vdata(ny,1,2))
           allocate(pflx_east(ny))
+          pflx_east = 0
         endif
         allocate(cflx_east(ny))
         allocate(sp_east(ny))
@@ -108,6 +96,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_n%vdata(nx,1,2))
           allocate(pflx_north(nx))
+          pflx_north = 0
         endif
         allocate(cflx_north(nx))
         allocate(sp_north(nx))
@@ -119,6 +108,7 @@
         if (.not.onoff) then
           allocate(nc_pflx_s%vdata(nx,1,2))
           allocate(pflx_south(nx))
+          pflx_south = 0
         endif
         allocate(cflx_south(nx))
         allocate(sp_south(nx))
@@ -140,18 +130,38 @@
       subroutine set_pflx
       ! Read parent grid baroclinic pressure fluxes from bry file
       ! and interpolate to the correct time
+      
+      !local
+      integer:: i,j
 
       if (obc_west.and.(.not.west_exchng)) then
         call set_frc_data(nc_pflx_w,pflx_west)
+        do j=1,ny
+!         if (rmask(0,j)<1) pflx_west(j) = 0.
+        enddo
       endif
       if (obc_east.and.(.not.east_exchng)) then
         call set_frc_data(nc_pflx_e,pflx_east)
+        do j=1,ny
+!         if (rmask(nx+1,j)<1) pflx_east(j) = 0.
+        enddo
       endif
       if (obc_south.and.(.not.south_exchng)) then
         call set_frc_data(nc_pflx_s,pflx_south)
+        do i=1,nx
+!         if (rmask(i,0)<1) pflx_south(i) = 0.
+          if (abs(pflx_south(i))>100) pflx_south(i) = 0.
+        enddo
+!       do i=80,nx
+!         if (mynode==13) print *,'south: ',i,pflx_south(i)
+!       enddo
       endif
       if (obc_north.and.(.not.north_exchng)) then
         call set_frc_data(nc_pflx_n,pflx_north)
+        do i=1,nx
+          if (rmask(i,ny+1)<1) pflx_north(i) = 0.
+          if (abs(pflx_north(i))>100) pflx_north(i) = 0.
+        enddo
       endif
 
       end subroutine set_pflx
@@ -159,32 +169,27 @@
 ! ----------------------------------------------------------------------
       subroutine comp_cflx
       ! Compute integrated, averaged and filtered baroclinic pressure fluxes
-      ! The fluxes are all into the domain!!
+      ! up/vp fluxes are positive to the east/north
 
       if (obc_west.and.(.not.west_exchng)) then
-!       wrk(1:isp,:) = sum(up_pp(1:isp,1:ny,:),dim=3)
-        wrk(1:isp,:) = up(1:isp,1:ny)  !! up is now already integrated
+        wrk(1:isp,:) = up(1:isp,1:ny)  !! up is already integrated
         cflx_west = cflx_west*beta + 
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
       if (obc_east.and.(.not.east_exchng)) then
-!       wrk(1:isp,:) = sum(up_pp(nx-isp+1:nx,1:ny,:),dim=3)
         wrk(1:isp,:) = up(nx-isp+1:nx,1:ny)
-        cflx_east = cflx_east*beta -
+        cflx_east = cflx_east*beta +
      &             alpha*sum(wrk(1:isp,:),dim=1)/isp
       endif
 
       if (obc_south.and.(.not.south_exchng)) then
-!       wrk(:,1:isp) = sum(vp_pp(1:nx,1:isp,:),dim=3)
         wrk(:,1:isp) = vp(1:nx,1:isp)
         cflx_south = cflx_south*beta + 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
-!       print *,'comp_cflx: ', sum(cflx_south)/nx
       endif
       if (obc_north.and.(.not.north_exchng)) then
-!       wrk(:,1:isp) = sum(vp_pp(1:nx,ny+1-isp:ny,:),dim=3)
         wrk(:,1:isp) = vp(1:nx,ny+1-isp:ny)
-        cflx_south = cflx_south*beta - 
+        cflx_north = cflx_north*beta + 
      &             alpha*sum(wrk(:,1:isp),dim=2)/isp
       endif
       
@@ -217,18 +222,21 @@
       call comp_cflx
 
       if (obc_south.and.(.not.south_exchng)) then
-!       print *, 'adjusting: ',sum(sp_south)/nx,mynode
-!       print *, 'adjusting: ',sum(cflx_south)/nx,mynode
-!       print *,sum(0.5*(1-cflx_south/abs(cflx_south+eps)))/nx
         if (onoff) then
           sp_south = sp_south*beta + 
      &       alpha*v_sponge*0.5*(1-cflx_south/abs(cflx_south+eps))
+!         if (mynode==0) print *,cflx_south(nx/2),sp_south(nx/2)
         else
-          sp_south = sp_south + alpha*(pflx_south - cflx_south)
+          sp_south = sp_south - alpha*(pflx_south - cflx_south)
           sp_south = max(0.,sp_south)
           sp_south = min(sp_mx,sp_south)
+!         if (mynode==0) print *,pflx_south(nx/2),cflx_south(nx/2),sp_south(nx/2)
+!         if (mynode==13) then
+!           do i=80,nx
+!             print *,'south: ',i,pflx_south(i),sp_south(i)
+!           enddo
+!         endif
         endif
-!       print *, 'adjusting: ',sum(sp_south)/nx,mynode
         do i = 1,nx
           visc2_r(i,1:isp) = sp_mult*sp_south(i)
         enddo
@@ -258,7 +266,8 @@
           sp_west = max(0.,sp_west)
           sp_west = min(sp_mx,sp_west)
         endif
-        do j = 1,ny
+!       print *,'west: ',mynode,maxval(sp_west),minval(sp_west)
+        do j = 1,ny ! to get a 'diagonal' in the corners
           if (.not.south_exchng) idx = min(j,isp)
           if (.not.north_exchng) idx = min(ny-j+1,isp)
           visc2_r(1:idx,j) = sp_mult(1:idx)*sp_west(j)
@@ -271,7 +280,7 @@
           sp_east = sp_east*beta +
      &       alpha*v_sponge*0.5*(1-cflx_east/abs(cflx_east+eps))
         else
-          sp_east = sp_east - alpha*(pflx_east - cflx_east)
+          sp_east = sp_east + alpha*(pflx_east - cflx_east)
           sp_east = max(0.,sp_east)
           sp_east = min(sp_mx,sp_east)
         endif
@@ -294,13 +303,12 @@
      &           visc2_r(1:nx+1,1:ny+1) + visc2_r(0:nx,1:ny+1)    
      &         + visc2_r(1:nx+1,0:ny  ) + visc2_r(0:nx,0:ny  ) )
 
-      if (time>=last_time+output_period) then
+      if (time>=last_time+output_period .and. wrt_sponge) then
         call write_sp_tune
         last_time = time
       endif
 
       end subroutine adjust_sponge !]
-
 ! ----------------------------------------------------------------------
       subroutine write_sp_tune ![
       implicit none
@@ -353,7 +361,7 @@
       character(len=99),intent(out) :: fname
 
       !local
-      integer :: ncid,ierr,varid
+      integer :: ncid,ierr,varid,dimid
       integer :: prec ! precision of output
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes 
@@ -362,14 +370,12 @@
 
       fname=trim(output_root_name) / / '_spn.nc'
       call create_filename(fname,total_rec)
-      if (mynode==0) print *,'sponge tune :: created new netCDF file: ',fname
+      if (mynode==0) write(*,'(7x,2A)') 
+     &      'sponge tune :: created new netCDF file: ',fname
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'create_sp_tune_file: ')
-
-      !! Add needed dimensions: xi_rho,eta_rho,xi_u,eta_v
-      ! just use nf90_def_dimension!!!
 
       varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
@@ -379,6 +385,7 @@
 
       dimnames = (/'xi_rho','eta_rho','time'/)
       dimsizes = (/xi_rho,eta_rho,0/)
+      print *, mynode, 'xi_rho',xi_rho ,'nx',nx
 
       prec = nf90_float
       varid = nccreate(ncid,'visc2d',dimnames,dimsizes,prec)
@@ -388,12 +395,10 @@
 
 
       ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
-      dimname = (/'xi_u' /)
-      dimsize = (/ xi_u  /)
-      varid = nccreate(ncid,'dimu_dummy',dimname,dimsize,prec)
-      dimname = (/'eta_v'/)
-      dimsize = (/ eta_v /)
-      varid = nccreate(ncid,'dimv_dummy',dimname,dimsize,prec)
+      ! We'll add this to add_global_att
+      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
+      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
+
 
       ierr = nf90_enddef(ncid)
 

@@ -189,7 +189,7 @@
 #endif
 #if defined T_FRC_BRY  || defined M2_FRC_BRY || \
     defined M3_FRC_BRY || defined Z_FRC_BRY
-      integer, parameter :: max_bry_files=12
+      integer, parameter :: max_bry_files=360
       character(len=max_name_size) bry_file(max_bry_files)
 #endif
 
