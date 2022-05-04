@@ -35,6 +35,8 @@
 !             itot=itot+1, then itot can populate arrays in correct position;
 ! wrt_t_diag= Only with DIAGNOSTICS flag. Don't need otherwise.
 !             True/False to output tracer diagnostics.
+!
+! nt_passive= Number of passive tracers (default=0). Set here is you have them.
 
 ! - TEMP & SALT:
 
@@ -60,5 +62,9 @@
       t_vname(itot)='salt2';         t_units  (itot)='PSUuu'
       t_tname(itot)='salt2_time';    t_ana_frc(itot)=0
       t_lname(itot)='long salt2'
+      
+      nt_passive = itot - iTandS                                     ! less temperature and salinity (not passive)
+
+! - BGC TRACERS: (must come after passive tracers)
 
 

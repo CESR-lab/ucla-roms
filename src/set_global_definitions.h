@@ -144,28 +144,28 @@ c-# define IMPLICIT_BOTTOM_DRAG
  message passing.  */
 
 #ifdef MPI
-# define GLOBAL_2D_ARRAY -1:Lm+2+padd_X,-1:Mm+2+padd_E
+# define GLOBAL_2D_ARRAY -1:Lm+2,-1:Mm+2
 # define START_2D_ARRAY -1,-1
-# define GLOBAL_1DX_ARRAY -1:Lm+2+padd_X
-# define GLOBAL_1DY_ARRAY -1:Mm+2+padd_E
+# define GLOBAL_1DX_ARRAY -1:Lm+2
+# define GLOBAL_1DY_ARRAY -1:Mm+2
 !# define START_1D -1
-!# define END_1DX Lm+2+padd_X
-!# define END_1DY Mm+2+padd_E
+!# define END_1DX Lm+2
+!# define END_1DY Mm+2
 #else
 # ifdef EW_PERIODIC
 #  ifdef NS_PERIODIC
-#   define GLOBAL_2D_ARRAY -1:Lm+2+padd_X,-1:Mm+2+padd_E
+#   define GLOBAL_2D_ARRAY -1:Lm+2,-1:Mm+2
 #   define START_2D_ARRAY -1,-1
 #  else
-#   define GLOBAL_2D_ARRAY -1:Lm+2+padd_X,0:Mm+1+padd_E
+#   define GLOBAL_2D_ARRAY -1:Lm+2,0:Mm+1
 #   define START_2D_ARRAY -1,0
 #  endif
 # else
 #  ifdef NS_PERIODIC
-#   define GLOBAL_2D_ARRAY 0:Lm+1+padd_X,-1:Mm+2+padd_E
+#   define GLOBAL_2D_ARRAY 0:Lm+1,-1:Mm+2
 #   define START_2D_ARRAY 0,-1
 #  else
-#   define GLOBAL_2D_ARRAY 0:Lm+1+padd_X,0:Mm+1+padd_E
+#   define GLOBAL_2D_ARRAY 0:Lm+1,0:Mm+1
 #   define START_2D_ARRAY 0,0
 #  endif
 # endif

@@ -112,7 +112,7 @@ for test in range(ntests):
 		print(text)
 		file_diag.write(text)
 	else:
-		text='ERROR! --> test does not match benchmark result.\n'
+		text='    ERROR! --> test does not match benchmark result.\n'
 		print(text)
 		file_diag.write(text)
 
@@ -151,7 +151,7 @@ if np.all(ncdf_diffs==0.0):
 	print(text)
 	file_diag.write(text)
 else:
-	text='ERROR! --> Netcdf output not working.\n'
+	text='    ERROR! --> Netcdf output not working.\n'
 	print(text)
 	file_diag.write(text)	
 	
@@ -164,7 +164,7 @@ if np.all(diffs==0.0) and np.all(ncdf_diffs==0.0):
     file_diag.write(text)
     retval=0                                     # let shell script know check was successful
 else:
-    text='\nERROR! --> Tests do not match benchmark results. \nEnsure using correct benchmark for machine. Deafult machine is Maya. \nSee code_check.log file for details.'
+    text='\n  ERROR! --> Tests do not match benchmark results.\n  See code_check.log file for details.'
     print(text)
     file_diag.write(text)
     retval=1                                     # let shell script know check failed

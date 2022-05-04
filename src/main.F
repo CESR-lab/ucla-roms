@@ -82,7 +82,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #ifdef NHMG
       use nhmg
 #endif
-      use bry_extract_child
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
       use ncvars
@@ -341,7 +340,6 @@ C$OMP END MASTER
       use param
       use wec_frc
       use tides
-      use bry_extract_child
       use extract_data
       use diagnostics
       use ncvars
@@ -398,10 +396,6 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
         call    rho_eos(tile)
         call    set_HUV(tile)
         call       diag(tile)
-! DevinD commented out bio_diag 20201208
-!# ifdef BIOLOGY
-!        call   bio_diag(tile)
-!# endif
       enddo
 C$OMP BARRIER
 
@@ -459,10 +453,7 @@ C$OMP BARRIER
 ! Output block: write restart/history files.
 !======= ====== ===== =============== ======
 
-#ifdef BRY_EXTRACT_CHILD
-!     call read_extraction_objects
-      call set_child_bry  ! frequency flag handled within routine
-#endif
+
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART

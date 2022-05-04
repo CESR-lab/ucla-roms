@@ -44,8 +44,9 @@
 ! Derived dimension parameters, number of tracers and tracer
 ! identification indices:
 
-      integer, parameter :: padd_X=(Lm_old+2)/2-(Lm_old+1)/2,
-     &                      padd_E=(Mm_old+2)/2-(Mm_old+1)/2
+!     integer, parameter :: padd_X=(Lm_old+2)/2-(Lm_old+1)/2,
+!    &                      padd_E=(Mm_old+2)/2-(Mm_old+1)/2
+      integer, parameter :: padd_X= 0,padd_E= 0
 
 
 # ifdef OBC_WEST
@@ -69,5 +70,6 @@
       logical,parameter :: obc_south=.false.
 # endif
 
+      character(len=41)::git_hash="8974da051270b86f4472a925ce43af0aee57c4fd"
 
       end module
