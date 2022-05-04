@@ -55,6 +55,8 @@
 #endif
       public init_arrays_bgc_frc
       public init_scalars_bec2
+      public wrt_his_bgc_tracers
+      public wrt_avg_bgc_tracers
 
       contains
 
@@ -124,13 +126,18 @@
       end subroutine set_bgc_surf_frc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_his_bgc  ![
+      subroutine wrt_his_bgc_tracers  ![
       ! write variables to output netcdf file
       ! bgc variables are in fact tracers, but we choose to output
       ! them to their own file.
       ! this file also include bgc diagnostic variables.
       ! selection of variables to output is still done in tracers.opt
       ! otherwise would cause circular reference as needed in both directions.
+      !
+      ! TIME: since bgc is calculated in step3d_t_ISO.F and uses 'nnew'
+      ! for the tracers (i.e. t=n+1). The bgc tracers are for t=n+1.
+      ! since we now write them out immediately, we need to set the time to
+      ! t=n+1, i.e. time+dt.
       implicit none
 
       ! local
@@ -159,7 +166,7 @@
         ierr=nf90_open(fname_his,nf90_write,ncid)
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
-        call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))         ! consider time here!!!
+        call ncwrite(ncid,'ocean_time',(/time+dt/),(/rec_his/))      ! t=n+1 thus time+dt
 
         start=1; start(4)=rec_his                                    ! 3D vars
         do itrc=iTandS+nt_passive+1, NT
@@ -178,10 +185,10 @@
         output_time_his=0
       endif
 
-      end subroutine wrt_his_bgc  !]
+      end subroutine wrt_his_bgc_tracers  !]
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_avg_bgc  ![
+      subroutine wrt_avg_bgc_tracers  ![
       ! write averaged variables to output netcdf file
       ! don't include t=0 in averaging. This create 0.5dt error in averaging,
       ! but this 0.5dt error has always been in ROMS.
@@ -240,7 +247,7 @@
         endif
       endif
 
-      end subroutine wrt_avg_bgc  !]
+      end subroutine wrt_avg_bgc_tracers  !]
 
 !----------------------------------------------------------------------
       subroutine create_bgc_file(total_rec,fname,avg)  ![
