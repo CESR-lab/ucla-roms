@@ -743,7 +743,7 @@ C$OMP&                              ip,jp, xi,eta, wrk2)
       call spln2d_interp_real(nx,ny, wrk1,  srX,srY,sXY,
      &                     ncx,ncy, ip,jp, xi,eta, wrk2)
 C$OMP END PARALLEL
-      call apply_mask(ncx,ncy,1, mask,wrk2)
+!     call apply_mask(ncx,ncy,1, mask,wrk2)
       call put_rec_by_name_real(nctarg,roms_init, 'zeta',
      &                                ncx,ncy,0,1, wrk2)
 #ifdef TIMING
@@ -823,9 +823,9 @@ C$OMP END PARALLEL
 C$OMP PARALLEL SHARED(ncx,ncy, N, csA,snA, wrk1,wrk2, wrk3,wrmx)
       call r2r_rotate_shift_thread(ncx,ncy,N, csA,snA, wrk1,wrk2,
      &                                                 wrk3,wrmx)
-C$OMP END PARALLEL
-      call apply_mask(ncx-1,ncy,N, umask, wrk3)
-      call apply_mask(ncx,ncy-1,N, vmask, wrmx)
+!$OMP END PARALLEL
+!     call apply_mask(ncx-1,ncy,N, umask, wrk3)
+!     call apply_mask(ncx,ncy-1,N, vmask, wrmx)
 
       call put_rec_by_name_real(nctarg, roms_init, 'u',
      &                              ncx-1,ncy,N,1,  wrk3)
@@ -837,8 +837,8 @@ C$OMP PARALLEL SHARED(ncx,ncy, N, hc,Cs_w, h, wrk3,wrmx, wrk1,wrk2)
       call compute_uvbar_thread(ncx,ncy, N, hc,Cs_w, h,  wrk3,wrmx,
      &                                                   wrk1,wrk2)
 C$OMP END PARALLEL
-      call apply_mask(ncx-1,ncy,1, umask, wrk1)
-      call apply_mask(ncx,ncy-1,1, vmask, wrk2)
+!     call apply_mask(ncx-1,ncy,1, umask, wrk1)
+!     call apply_mask(ncx,ncy-1,1, vmask, wrk2)
 
       call put_rec_by_name_real(nctarg, roms_init, 'ubar',
      &                              ncx-1,ncy,0,1,  wrk1)

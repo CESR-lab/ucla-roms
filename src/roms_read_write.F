@@ -96,6 +96,8 @@
 
 
       if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+        print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
+        print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
       endif
 
@@ -171,6 +173,8 @@
           if (ierr==nf90_noerr) then
             call find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first)
             found_rec = .true.
+          else
+            cycle_length = -1
           endif
 
           ! Number of records in file
@@ -220,14 +224,13 @@
       if (first) then  ! Handle initital timestep. Need vtime < model_time. As per (A) above.
 
         ! find_new_rec_cycle deals internally with this
-        if(cycle_length==0.) then  ! Not cyclical data
-          if (irec==1) then        ! Model time between input files.
+        if(cycle_length<0) then  ! Not cyclical data
+          if (irec==1) then         ! Model time between input files.
             ifile = ifile_old
           endif
           irec = irec_old
           vtime = time_old
         endif
-
       endif ! Handle initital timestep.
 
       if (irec==0) then
@@ -445,5 +448,46 @@
       enddo
 
       end subroutine coarse2fine !]
+! ----------------------------------------------------------------------
+      logical function findstr(string,pattern,istart) ![
+      ! this utility function should be moved somewhere more generic...
+      ! copied from extract_data.F.
+      ! should be in roms_read_write and then that module should be available to
+      ! Tools-Roms/ as well as src/
+      ! didn't do it now because roms_read_write depends on other modules so would
+      ! require a bit of work (do once ncvars is removed)
+      implicit none
+
+      !input/output
+      character(len=*),intent(in)  :: string        ! string
+      character(len=*),intent(in)  :: pattern       ! desired pattern to find within string
+      integer,optional,intent(out) :: istart
+
+      !local
+      integer :: nl,nlv,i
+
+      nl  = len(trim(string))
+      nlv = len(pattern)
+
+      findstr = .false.
+      do i = 1,nl-nlv+1
+         if (string(i:i+nlv-1) == pattern) then
+          findstr = .true.
+          exit
+         endif
+      enddo
+
+      if (present(istart)) then
+        if (findstr) then
+          istart=i                                  ! return string starting index
+        else
+          istart=0
+          if (mynode==0) write(*,'(7x,2A)')
+     &      'WARNING: findstr not found=',pattern
+        endif
+      endif
+
+      end function findstr !]
+! ----------------------------------------------------------------------
 
       end module roms_read_write
