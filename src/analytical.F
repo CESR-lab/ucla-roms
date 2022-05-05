@@ -203,8 +203,8 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 #if defined RIVER_SOURCE
       riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
           if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
             ! find 'coastline' masked cells
             if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
