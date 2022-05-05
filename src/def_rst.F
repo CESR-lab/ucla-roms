@@ -366,6 +366,7 @@
 # endif
 #endif /* SOLVE3D */
 
+#ifdef DIAGNOSTICS
         if (diag_pflx) then
 
         ierr=nf_def_var (ncrst, 'u_slow',
@@ -408,6 +409,7 @@
 #  endif
 
         endif  !<-- diag_pflx
+#endif
 
 ! Leave definition mode.                  Also initialize record
 ! ----- ---------- -----                  dimension size to zero.

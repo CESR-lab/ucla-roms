@@ -30,8 +30,7 @@ boundary: filename
      ../USWC_model/input_data/roms_bry_trace.nc
 
 restart:          NRST, NRPFRST
-                 999999   1
-     none
+                  35     10
      
 output_root_name:
      sample    

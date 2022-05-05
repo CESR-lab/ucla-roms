@@ -669,6 +669,7 @@ c--#define VERBOSE
 
 #endif /* SOLVE3D */
 
+#ifdef DIAGNOSTICS
       if (diag_pflx) then
 
         if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
@@ -756,6 +757,7 @@ c--#define VERBOSE
         enddo
 
       endif  !<-- diag_pflx
+#endif      
 
 ! Close input NetCDF file and  write greeting message depending
 ! on the the type of initial/restart procedure performed above.
