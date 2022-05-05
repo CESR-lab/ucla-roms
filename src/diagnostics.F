@@ -20,6 +20,8 @@
 
 #include "diagnostics.opt"
 
+#ifdef DIAGNOSTICS
+
       ![ Potential issues:
       !  - Since we don't have pressure in the boundary buffer, we can't get u'p' at the bry.
       !    We therefore just use the first internal pressure point instead, which introduces
@@ -1692,5 +1694,7 @@
 !      end subroutine  !]
 
 ! ----------------------------------------------------------------------
+
+#endif
 
       end module diagnostics

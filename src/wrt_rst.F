@@ -197,6 +197,7 @@
 # endif
 #endif /* SOLVE3D */
 
+#ifdef DIAGNOSTICS
       if (diag_pflx) then
 
         if (.not. allocated(g2d_u_slow)) then
@@ -246,6 +247,7 @@
       if (ierr /= nf90_noerr) goto 99                !--> ERROR
 
       endif
+#endif      
 
   1   format(/1x, '### ERROR: wrt_rst :: Cannot write variable ''',
      &             A, ''' into restart file, rec =', i6, 3x,A,i4/)
