@@ -2,11 +2,17 @@
 INSTRUCTIONS: COMPILING ROMS
 ----------------------------
 
-  1. Get roms code (git repo):
+  Note:
+     Some file paths below are abbreviated to exclude the repo directory
+     to which you cloned the code. For example:
+     Documentation/readme.1.compile-ROMS is actually
+     ~/repos/ucla-roms/Documentation/readme.1.compile-ROMS
+
+  1. Clone (download) the ROMS code (git repo):
   
-     Ask a roms admin to give you access privelages to the roms repo.
+     Ask a roms admin to give you access privileges to the roms repo.
      Once you have that and set up an account on bitbucket.com,
-     make a directory you want to store the code (typcially ~/repos/),
+     make a directory you want to store the code (typically ~/repos/),
      then edit <user-name> and enter the following command:
      git clone https://<user-name>@bitbucket.org/nmolem/ucla-roms.git
 
@@ -17,12 +23,19 @@ INSTRUCTIONS: COMPILING ROMS
      See/copy examples of ~/.bashrc or ~/.cshrc files in: 
      Documentation/machine-specific/bashrc-cshrc-files
      
+     Expanse:
      For Expanse users it is 'safest' to just copy the exact same .bashrc file:
      Documentation/machine-specific/bashrc-cshrc-files/bashrc-expanse-202103
-     Once you have all the following steps working then you can edit your old
-     .bashrc as necessary if you would prefer.
-     Same applies for Maya users: 
-     Documentation/machine-specific/bashrc-cshrc-files/cshrc-maya-202011 (for c-shell)
+     Example commands:
+     cp ~/repos/ucla-roms/Documentation/machine-specific/bashrc-cshrc-files/bashrc-expanse-202103 ~/.bashrc
+     source ~/.bashrc
+     
+     Once you have all the following steps working then you can edit/merge your 
+     old ~/.bashrc as necessary, if you would prefer.
+     
+     Maya:
+     The same applies for Maya users (for c-shell): 
+     Documentation/machine-specific/bashrc-cshrc-files/cshrc-maya-202011 
           
      Note, even users of old roms code must do this, as environment
      variable names have changed, e.g. MPI_ROOT -> MPIHOME.     
@@ -92,17 +105,24 @@ INSTRUCTIONS: COMPILING ROMS
       code for the first time.)
      
      A. cd Examples/Rivers_ana
-        make (note this can be a bit slow on 'Expanse' machine)
+        make 
+        (note this can be a bit slow on 'Expanse' machine)
         
      B. After roms has successfully compiled:
         - on 'Expanse':
             sbatch do_roms_expanse.sh
             
             Note:
-            If not on Jim's allocation, you need to set --account= to your group's account.
+            If not on Jim's allocation, you need to set --account= to your group's account.            
             If there is an error 'node configuration is not available', in do_roms_expanse.sh
-            change --partition=debug to --partition=shared and re-submit the job.
-          
+            change --partition=debug to --partition=shared and re-submit the job. For example:
+            vi do_roms_expanse.sh
+            (go to line with --partition=debug)
+            (press 'i' to be able to edit)
+            replace --partition=debug with --partition=shared
+            (then use escape, then :wq, then enter, to save and close file)
+            sbatch do_roms_expanse.sh (to re-submit the job)          
+                      
         - other machines:
           ./do_run.sh                      
                      
@@ -118,11 +138,14 @@ INSTRUCTIONS: COMPILING ROMS
         into Work/ (excluding the Makefile) 
         You can copy Makedefs.inc into Work/ if you need to change compilation
         settings, but don't copy the Makefile from src/ to Work/.
-     B. Open Work/ dir. Edit your files. See Documentation/readme.2.model-setup  
-        for details on configuring roms for your simulation as per new code.
+        
+     B. Open Work/ dir. Edit your files. 
+        See Documentation/readme.2.model-setup for details on configuring roms 
+        for your simulation as per new code.
         Type 'make'.
         All the remaining code in src/ and your edited files in Work/ will be 
         copied into Work/Compile/, and roms will be compiled.
+        
      C. Copy 'roms' executable to wherever you are running your simulation.
   
      Don't edit code in the src/ directory, nor the examples in Examples/.
