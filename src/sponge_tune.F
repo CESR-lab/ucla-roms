@@ -132,29 +132,25 @@
       ! and interpolate to the correct time
       
       !local
-      integer:: i,j
+      integer:: i,j,ierr
 
       if (obc_west.and.(.not.west_exchng)) then
         call set_frc_data(nc_pflx_w,pflx_west)
         do j=1,ny
-!         if (rmask(0,j)<1) pflx_west(j) = 0.
+          if (abs(pflx_west(j))>100) pflx_west(j) = 0.
         enddo
       endif
       if (obc_east.and.(.not.east_exchng)) then
         call set_frc_data(nc_pflx_e,pflx_east)
         do j=1,ny
-!         if (rmask(nx+1,j)<1) pflx_east(j) = 0.
+          if (abs(pflx_east(j))>100) pflx_east(j) = 0.
         enddo
       endif
       if (obc_south.and.(.not.south_exchng)) then
         call set_frc_data(nc_pflx_s,pflx_south)
         do i=1,nx
-!         if (rmask(i,0)<1) pflx_south(i) = 0.
           if (abs(pflx_south(i))>100) pflx_south(i) = 0.
         enddo
-!       do i=80,nx
-!         if (mynode==13) print *,'south: ',i,pflx_south(i)
-!       enddo
       endif
       if (obc_north.and.(.not.north_exchng)) then
         call set_frc_data(nc_pflx_n,pflx_north)
