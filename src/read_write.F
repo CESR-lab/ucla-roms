@@ -58,7 +58,6 @@
       public nc_define_var         ! find_new_record only public for WEC, once WEC updated can remove.
       public nc_write_var
       public nc_read_var
-      public nc_check_units
       public set_frc_var_tile
 
       public set_small_arrays
@@ -1194,39 +1193,6 @@ C$OMP BARRIER
  100  continue
 
       end subroutine nc_read_var  !]
-
-!-----------------------------------------------------------------------
-      subroutine nc_check_units( ncid, var_name, var_units )  ![
-
-      ! Ensure units in file are same as roms units
-
-      implicit none
-
-      ! input/output
-      integer,          intent(in) :: ncid
-      character(len=*), intent(in) :: var_name
-      character(len=*), intent(in) :: var_units
-
-      ! local
-      integer           :: ierr !, ncid
-      integer           :: var_id
-      character(len=20) :: file_var_units ! variable units in forcing file
-
-      ! file must be open already:
-
-      ierr = nf90_inq_varid(ncid, var_name, var_id)                            ! get variable ID (varid)
-      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var')
-      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)               ! get units
-      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var units')
-
-      if (var_units /= file_var_units) then
-        write(*,'(/3x,3A/5x,3A/)') 'ERROR: read_write.F :: ',
-     &  'nc_check_units: wrong units for var: ', var_name,
-     &  trim(file_var_units) ,' -> input file should be -> ', var_units
-        error stop                                                              ! stop simulation, fatal error
-      end if
-
-      end subroutine nc_check_units  !]
 
 ! ----------------------------------------------------------------------
       function ncdf_write_mod(ncid, varid, record, horiz_type, A, nmax)  ![
