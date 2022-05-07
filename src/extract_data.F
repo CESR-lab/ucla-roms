@@ -44,12 +44,11 @@
       use dimensions
       use grid
       use nc_read_write
+      use roms_read_write
       use netcdf
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
-      use read_write, only: output_root_name,handle_ierr
       use diagnostics
 
 

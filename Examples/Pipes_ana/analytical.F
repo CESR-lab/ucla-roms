@@ -274,8 +274,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 # endif
 
-# if defined PIPE_SOURCE
-#  ifdef SOLVE3D
+
       do k=1,N
         do j=jstrR,jendR
           do i=istrR,iendR
@@ -287,22 +286,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           enddo
         enddo
       enddo
-#  endif
-
-# else
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            t(i,j,k,1,itemp)=???  ! safety catch
-            t(i,j,k,2,itemp)=???
-            t(i,j,k,1,isalt)=???
-            t(i,j,k,2,isalt)=???
-          enddo
-        enddo
-      enddo
-#  endif
-# endif  /* end of configuration selection switch */
 
       call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
 

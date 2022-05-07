@@ -2,7 +2,7 @@ title:
    USWC sample domain - realistic pipe test 2020/12/02.
 
 time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
-               50        40       30       1
+               10        40       30       1
 
 S-coord: THETA_S,   THETA_B,    hc (m)
           6.0D0        6.0D0     25.0D0
@@ -11,7 +11,7 @@ grid:  filename
      ../USWC_model/input_data/sample_grd_riv.nc
 forcing: filename
      ../USWC_model/input_data/sample_flux_frc.nc
-     ../USWC_model/input_data/sample_wwv_riv.nc      
+     ../USWC_model/input_data/sample_wwv_riv.nc        
 
 initial: NRREC  filename
           1

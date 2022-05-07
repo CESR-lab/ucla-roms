@@ -1,16 +1,12 @@
 
       ! ****************************************************************
       ! user inputs
-      integer,public,parameter :: npip = 1 ! number of pipes
-#ifdef ANA_PIPE_FRC
-      logical :: p_analytical = .true.       ! analytical forcing 
-#else
-      logical :: p_analytical = .false.      ! forcing netcdf files
-#endif
+      logical,parameter,public :: pipe_source  = .false.      ! default should be false if not using pipes
+      logical,parameter        :: p_analytical = .false.      ! analytical forcing true
+      integer,public,parameter :: npip = 1                    ! number of pipes
+      
+      ! realistic pipes only: enter netcdf variable name and time name
+      type (ncforce) :: nc_pvol = ncforce( vname='pipe_volume', tname='pipe_time')
+      type (ncforce) :: nc_ptrc = ncforce( vname='pipe_tracer', tname='pipe_time') 
       ! end user inputs
       ! ****************************************************************
-#ifdef PIPE_SOURCE
-      logical,parameter,public :: pipe_source = .true.
-#else
-      logical,parameter,public :: pipe_source = .false.
-#endif

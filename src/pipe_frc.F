@@ -13,9 +13,9 @@
 ! Variables still need to be visible within code even when pipes are not used.
 
   
-      use dimensions !! has dimensions, a list of forcing files, and rmask
-      use read_write
+      use dimensions                                       ! has dimensions, a list of forcing files, and rmask
       use roms_read_write
+      use nc_read_write
       use scalars
 
       implicit none
@@ -30,7 +30,7 @@
       real   ,public,allocatable,dimension(:,:) :: pipe_fraction ! pipe fractional flux at grid points
       real   ,public,allocatable,dimension(:,:) :: pipe_flx      ! pipe flux
       real   ,public, dimension(npip,N)         :: pipe_prf      ! Pipe vertical profile
-      real   ,public, dimension(npip,nt)        :: pipe_trc      ! Pipe tracer conc.
+      real,public,allocatable,dimension(:,:)    :: pipe_trc      ! Pipe tracer conc.
       real   ,public, dimension(npip)           :: pipe_vol      ! Pipe volume
 
      ! Netcdf names
@@ -40,13 +40,6 @@
       character(len=9)  :: pipe_tim_name = 'pipe_time'  !! stored in a forcing file
       character(len=5)  ::npipe_dim_name = 'npipe'      !! dimension name for number of pipes in file
       character(len=8)  :: ntrc_dim_name = 'ntracers'   !! dimension name for number of tracers in file
-      ! Netcdf variables used for both pipe_vol & pipe_trc
-      real, dimension(npip,2)    :: pipe_vol_data ! pvol - pipe data at input times
-      real, dimension(npip,nt,2) :: pipe_trc_data ! ptrc - pipe tracer data at input times
-      integer, dimension(2) :: p_file_indx = 0
-      integer, dimension(2) :: p_irec      = 0
-      integer, dimension(2) :: p_it1 = 1, p_it2 = 2
-      real, dimension(2,2)  :: p_times = -99 ! [-99,-99]
 
       logical :: init_pipe_done = .false.
 
@@ -57,13 +50,11 @@
 
 ! ----------------------------------------------------------------------
       subroutine set_pipe_frc_tile(istr,iend,jstr,jend)  ![
-
-      ! SET PIPE FORCES (REALISTIC OR ANALYTICAL FORCING):
+      ! set pipe forces (realistic and analytical)
       ! - read and interpolation all pipe forcing.
-      ! - All pipe variables need time interpolation only
+      ! - all pipe variables need time interpolation only
       !   here so can use same generic routine.
-      ! - Input data in days!
-
+      ! - input data in days!
       implicit none
 
       ! input/outputs
@@ -71,47 +62,22 @@
       ! local
       integer :: i, j
 
-      ! Initialize pipe flux locations (One time only)
-      if(.not. init_pipe_done) call init_pipe_frc(istr,iend,jstr,jend)
+      if (.not. init_pipe_done) call init_pipe_frc(istr,iend,jstr,jend)
 
-      ! Set pipe flux volumes and tracer data
-      if(p_analytical) then
-!       if(mynode==0) print*, 'pipes: going to set_ana_pipe_frc'
+      if (p_analytical) then                                ! Set pipe flux volumes and tracer data
 
         call set_ana_pipe_frc(istr,iend,jstr,jend)
-
         ! pipe vertical profile (pipe_prf) is currently set in analytical.F
         
       else
 
-        ! Set pipe volume for all pipes at current time
-        call set_small_arrays(
-     &          pipe_vol_name,  pipe_tim_name, ! Text names
-     &          pipe_vol_data,  pipe_vol,      ! Variable arrays
-     &          p_times(:,1),                  ! Input times
-     &          npip,           1,             ! dim1 and dim2=1 if 1D
-     &          p_file_indx(1), p_irec(1),     ! File indx & Current input record
-     &          p_it1(1),       p_it2(1) )     ! Time index placeholders                   ! Online spatial interpolation flag
+        call set_frc_data(nc_pvol,pipe_vol)                ! set pipe volume for all pipes at current time
 
-!        if(mynode==0) print*, 'pipe_vol= ', pipe_vol ! debug
+        call set_frc_data(nc_ptrc,var2d=pipe_trc)          ! set pipe tracers conc. for all pipes at current time
 
-        ! Set pipe tracers conc. for all pipes at current time
-        call set_small_arrays(
-     &          pipe_trc_name,  pipe_tim_name, ! Text names
-     &          pipe_trc_data,  pipe_trc,      ! Variable arrays
-     &          p_times(:,2),                  ! Input times
-     &          npip,           nt,            ! dim1 and dim2
-     &          p_file_indx(2), p_irec(2),     ! File indx & Current input record
-     &          p_it1(2),       p_it2(2) )     ! Time index placeholders
+        call set_pipe_vert_prf                             ! set pipe vertical profiles
 
-!        if(mynode==0) print*, 'pipe_trc(1,1)= ', pipe_trc(1,1) ! debug
-!        if(mynode==0) print*, 'pipe_trc(1,2)= ', pipe_trc(1,2) ! debug
-
-        ! Set pipe vertical profiles
-        call set_pipe_vert_prf
-
-        ! Now calculated fluxes with time interpolated volumes and conc.:
-        do j = jstr,jend
+        do j = jstr,jend                                   ! calculate fluxes with time interpolated volumes and conc.:
           do i = istr,iend
             if (pipe_idx(i,j) > 0.) then
               pipe_flx(i,j)=pipe_fraction(i,j)*pipe_vol( pipe_idx(i,j) )
@@ -140,6 +106,7 @@
       ! local
       integer :: ierr,ncid,v_id,i,j
 
+
       ! Should put this in wrapper in read_write.F as 'nc_read_once'
       if (p_analytical) then
 
@@ -152,7 +119,8 @@
         ierr=nf90_inq_varid(ncid, pipe_flx_name, v_id)
         ! Temporarily store as pipe_fraction to avoid extra array,
         ! but value still pipe_idx + pipe_fraction
-        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_fraction(START_2D_ARRAY), 1)
+!        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_fraction(START_2D_ARRAY), 1)
+        call ncread(ncid,pipe_flx_name, pipe_fraction(i0:i1,j0:j1))
         if(ierr/=0) call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
 
         ! Separate pipe_idx & pipe_fraction:
@@ -167,7 +135,7 @@
       endif
 
       init_pipe_done = .true.
-      if(mynode==0) print*, 'pipes: init pipe locations'
+      if(mynode==0) write(*,'(/7x,A/)') 'pipe_frc: init pipe locations'
           
       end subroutine init_pipe_frc  !]
 
@@ -178,6 +146,10 @@
       allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
       allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
       allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
+      allocate( pipe_trc(npip,nt) ) ;             pipe_trc=0.
+
+      allocate(nc_pvol%vdata(npip,1 ,2))
+      allocate(nc_ptrc%vdata(npip,nt,2))
 
       end subroutine init_arrays_pipes  !]
 

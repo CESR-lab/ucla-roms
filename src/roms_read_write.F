@@ -47,6 +47,7 @@
       public :: init_output_indices
       public :: handle_ierr
       public :: find_new_record
+      public :: nc_check_units
 
       contains
 
@@ -78,8 +79,8 @@
 
       ! input/outputs
       type(ncforce),               intent(inout) :: nc    ! derived type containing all neccesary supporting data
-      real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
       real,dimension(:)  ,optional,intent(out)   :: var1d ! time interpolated forcing data
+      real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
 
       ! local
       real    :: cff1,cff2  ! for time interpolations
@@ -99,8 +100,6 @@
 
       it1 = nc%it1
       it2 = nc%it2
-!      print *, 'it1=',it1,mynode
-!      print *, 'it2=',it2,mynode
 
       if (nc%times(it2) < modtime) then  ! need to refresh data
 
@@ -131,6 +130,8 @@
 
 
       if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+        print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
+        print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
       endif
 
@@ -170,7 +171,7 @@
 
       real,dimension(1)    :: ltime
 
-      if (ifile==0) then  ! First time for this variable
+      if (ifile==0) then                                             ! first time for this variable
         first = .true.
         ifile = 1
         irec_old  = 0
@@ -182,62 +183,65 @@
       found_rec      = .false.
       found_var_ever = .false.
 
-      do while (.not.found_rec .and. ifile <= max_frc) ! While record not found & still more files to check
+      do while (.not.found_rec .and. ifile <= max_frc)               ! while record not found & still more files to check
 
-!     if (mynode==0) print *, 'find_new_rec, trying: ',frcfile(ifile)
-        found_var = .false.  ! reset for new file
+        found_var = .false.                                          ! reset for new file
         ierr = nf90_open(frcfile(ifile), nf90_nowrite, ncid)
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'Find_new_record, opening: ',frcfile(ifile))
 
-        ierr = nf90_inq_varid(ncid, vname,vid)    ! Check if this file contains the variable
+        ierr = nf90_inq_varid(ncid, vname,vid)                       ! check if this file contains the variable
 
-        if (ierr==nf90_noerr) then ! Variable found, now check if file times contain model time
+        if (ierr==nf90_noerr) then                                   ! variable found, now check if file times contain model time
 
           found_var      = .true.
           found_var_ever = .true.
            
-          ierr = nf90_inq_varid(ncid,tname,tid)  ! Get time ID
+          ierr = nf90_inq_varid(ncid,tname,tid)                      ! get time ID
           if (ierr/=nf90_noerr) 
      &      call handle_ierr(ierr,'Find_new_record, searching: ',tname)
 
           ! Check if the time has a cycle length
-          ierr=nf90_get_att(ncid, tid, 'cycle_length', cycle_length) 
+          ierr=nf90_get_att(ncid, tid, 'cycle_length', cycle_length)
           if (ierr==nf90_noerr) then
             call find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first)
             found_rec = .true.
+          elseif (ierr==nf90_enotatt) then                           ! non-cyclical var won't have attribute
+            cycle_length = -1                                        ! nf90_enotatt = attribute not found
+          else                                                       ! any other netcdf error is a problem.
+            call handle_ierr(ierr,'find_new_record: cycle length att')
           endif
 
           ! Number of records in file
           ierr = nf90_inquire_variable(ncid,tid, dimids = dimids)
           ierr = nf90_inquire_dimension(ncid, dimids(1), len=max_recs)
 
-          do while (irec<max_recs .and. .not. found_rec)                ! Search through the records until correct time is found
+          do while (irec<max_recs .and. .not. found_rec)             ! Search through the records until correct time is found
 
-            irec=irec+1                                             ! why not use ncread????
-            ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))       ! Get vtime (nf90 needs array hence syntax)
+            irec=irec+1                                              ! why not use ncread????
+            ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))        ! Get vtime (nf90 needs array hence syntax)
             vtime = ltime(1)
 
-            if (vtime>time) then   ! Correct time
+            if (vtime>time) then                                     ! correct time
               found_rec = .true.
-            else                      ! Not yet
+            else                                                     ! not yet
               irec_old = irec
-              ifile_old = ifile     ! Only needed initially. See label (A)
+              ifile_old = ifile                                      ! only needed initially. See label (A)
               time_old = vtime
             endif
 
-          enddo  ! while not found and irec<nrecs
+          enddo                                                      ! while not found and irec<nrecs
 
-        endif    ! found var in file
+        endif                                                        ! found var in file
 
-        if (.not.found_rec) then  ! correct record not found, try next file
+        if (.not.found_rec) then                                     ! correct record not found, try next file
           ifile = ifile+1 
-          irec = 0                ! Reset irec for new file
+          irec = 0                                                   ! Reset irec for new file
         endif
 
         ierr=nf90_close (ncid)
 
-      enddo  ! search through files: while .not. found_rec .and. ifile<=nfiles.
+      enddo                            ! search through files: while .not. found_rec .and. ifile<=nfiles.
 
 
       if (.not. found_var_ever) then
@@ -255,8 +259,8 @@
       if (first) then  ! Handle initital timestep. Need vtime < model_time. As per (A) above.
 
         ! find_new_rec_cycle deals internally with this
-        if(cycle_length==0.) then  ! Not cyclical data
-          if (irec==1) then        ! Model time between input files.
+        if(cycle_length<0) then     ! not cyclical data
+          if (irec==1) then         ! model time between input files.
             ifile = ifile_old
           endif
           irec = irec_old
@@ -520,6 +524,39 @@
       enddo
 
       end subroutine coarse2fine !]
+
+!-----------------------------------------------------------------------
+      subroutine nc_check_units( ncid, var_name, var_units )  ![
+
+      ! Ensure units in file are same as roms units
+
+      implicit none
+
+      ! input/output
+      integer,          intent(in) :: ncid
+      character(len=*), intent(in) :: var_name
+      character(len=*), intent(in) :: var_units
+
+      ! local
+      integer           :: ierr !, ncid
+      integer           :: var_id
+      character(len=20) :: file_var_units ! variable units in forcing file
+
+      ! file must be open already:
+
+      ierr = nf90_inq_varid(ncid, var_name, var_id)                            ! get variable ID (varid)
+      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var')
+      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)               ! get units
+      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var units')
+
+      if (var_units /= file_var_units) then
+        write(*,'(/3x,3A/5x,3A/)') 'ERROR: read_write.F :: ',
+     &  'nc_check_units: wrong units for var: ', var_name,
+     &  trim(file_var_units) ,' -> input file should be -> ', var_units
+        error stop                                                              ! stop simulation, fatal error
+      end if
+
+      end subroutine nc_check_units  !]
 
 ! ---------------------------------------------------------------------
 
