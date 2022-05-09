@@ -200,19 +200,19 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-#if defined RIVER_SOURCE
-      riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
-            ! find 'coastline' masked cells
-            if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-              rflx(i,j) = 1.0+1.0/riv_cells
+      if (river_source) then
+        riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
+        do j=jstrR,jendR
+          do i=istrR,iendR
+            if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
+              ! find 'coastline' masked cells
+              if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
+                rflx(i,j) = 1.0+1.0/riv_cells
+              endif
             endif
-          endif
+          enddo
         enddo
-      enddo
-#endif
+      endif
 
       end subroutine ana_grid_tile  !]
 #endif /* ANA_GRID */
@@ -280,22 +280,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 # endif
 
-# if defined RIVER_SOURCE
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-!           t(i,j,k,1,itemp)=24.0
-            t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
-            t(i,j,k,1,isalt)=36.
-            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
-            t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
-          enddo
-        enddo
-      enddo
-#  endif
-
-# else
 #  ifdef SOLVE3D
       do k=1,N
         do j=jstrR,jendR
@@ -308,7 +292,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 #  endif
-# endif  /* end of configuration selection switch */
 
       call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
 

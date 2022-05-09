@@ -875,34 +875,34 @@ c<<     &     +cff*iA_v(i,j)
 #endif
 
 
-#ifdef RIVER_SOURCE
-      do j=jstr,jend
-        do i=istrU,iend
-          if (abs(riv_uflx(i,j)).gt.1e-3) then
-            iriver = nint(riv_uflx(i,j)/10)
-            river_flux = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)
-            ubar(i,j,knew) = river_flux*
-     &           2/( dn_u(i,j)*(Dnew(i-1,j)+Dnew(i,j)) )
+      if (river_source) then
+        do j=jstr,jend
+          do i=istrU,iend
+            if (abs(riv_uflx(i,j)).gt.1e-3) then
+              iriver = nint(riv_uflx(i,j)/10)
+              river_flux = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)
+              ubar(i,j,knew) = river_flux*
+     &             2/( dn_u(i,j)*(Dnew(i-1,j)+Dnew(i,j)) )
 # ifdef SOLVE3D
-            DU_avg1(i,j) = river_flux
+              DU_avg1(i,j) = river_flux
 # endif
-          endif
+            endif
+          enddo
         enddo
-      enddo
-      do j=jstrV,jend
-        do i=istr,iend
-          if (abs(riv_vflx(i,j)).gt.1e-3) then
-            iriver = nint(riv_vflx(i,j)/10)
-            river_flux = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)
-            vbar(i,j,knew) = river_flux*
-     &           2/( dm_v(i,j)*(Dnew(i,j-1)+Dnew(i,j)) )
+        do j=jstrV,jend
+          do i=istr,iend
+            if (abs(riv_vflx(i,j)).gt.1e-3) then
+              iriver = nint(riv_vflx(i,j)/10)
+              river_flux = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)
+              vbar(i,j,knew) = river_flux*
+     &             2/( dm_v(i,j)*(Dnew(i,j-1)+Dnew(i,j)) )
 # ifdef SOLVE3D
-            DV_avg1(i,j) = river_flux
+              DV_avg1(i,j) = river_flux
 # endif
-          endif
+            endif
+          enddo
         enddo
-      enddo
-#endif   /* RIVER_SOURCE */
+      endif ! <-- river_source
 
 ! At the end of the last 2D step replace the new free-surface field
 ! "zeta(:,:,knew)" with its fast-time-averaged "_avg1" version: this

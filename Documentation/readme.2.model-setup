@@ -115,7 +115,17 @@ Nested grid boundary file generation online:
     
 Mooring output:
     for information on generating online mooring extraction files, see:
-    - Documentation/readme-specifics/README.extract_data      
+    - Documentation/readme-specifics/README.extract_data 
+    
+Pipes:
+    Pipes can be configured using src/pipe_frc.opt and src/pipe_frc.F.
+    See Examples/Pipes_real and Examples/Pipes_ana for working examples.
+    
+Rivers:
+    Pipes can be configured using src/river_frc.opt and src/river_frc.F.
+    See Examples/Rivers_real and Examples/Rivers_ana for working examples.
+
+Rivers:     
     
 Netcdf output compression:
 

@@ -25,7 +25,6 @@ boundary: filename
 
 restart:          NRST, NRPFRST / filename
                  999999   1
-     none
      
 output_root_name:
      sample_river     

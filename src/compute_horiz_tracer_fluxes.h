@@ -191,7 +191,7 @@ c---#define BIO_1ST_USTREAM_TEST
         endif  !<-- itrc>isalt, bio-components only.
 #endif
 
-#ifdef RIVER_SOURCE
+        if (river_source) then
           !! inefficient because this is inside a k-loop
           !! we could try to compute riv_uvel(i,j) somewhere else
           do j=jstr,jend
@@ -220,4 +220,4 @@ c---#define BIO_1ST_USTREAM_TEST
               endif
             enddo
           enddo
-#endif
+        endif  !<-- river_source
