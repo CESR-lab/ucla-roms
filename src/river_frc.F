@@ -91,9 +91,6 @@
       ! local
       integer :: ierr,ncid,varid
 
-      allocate(nc_rvol%vdata(nriv,1 ,2))
-      allocate(nc_rtrc%vdata(nriv,nt,2))
-
       allocate( riv_uflx(GLOBAL_2D_ARRAY) )
       allocate( riv_vflx(GLOBAL_2D_ARRAY) )
       if(.not. allocated(rflx))  then
@@ -103,10 +100,12 @@
       riv_uflx = 0.; riv_vflx = 0.
 
 
-      ! Should put this in wrapper in read_write.F as 'nc_read_once'
       if (analytical) then
         ! rflx is defined in ana_grid
       else ! Read 'river_flux' from grid file (River mouth locations)
+
+        allocate(nc_rvol%vdata(nriv,1 ,2))
+        allocate(nc_rtrc%vdata(nriv,nt,2))
         ierr=nf90_open(grdname, nf90_nowrite, ncid)
         call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
         if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')

@@ -148,8 +148,10 @@
       allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
       allocate( pipe_trc(npip,nt) ) ;             pipe_trc=0.
 
-      allocate(nc_pvol%vdata(npip,1 ,2))
-      allocate(nc_ptrc%vdata(npip,nt,2))
+      if (.not. p_analytical) then
+        allocate(nc_pvol%vdata(npip,1 ,2))
+        allocate(nc_ptrc%vdata(npip,nt,2))
+      endif
 
       end subroutine init_arrays_pipes  !]
 
