@@ -200,7 +200,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-#if defined RIVER_SOURCE
       riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -212,7 +211,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           endif
         enddo
       enddo
-#endif
 
       end subroutine ana_grid_tile  !]
 #endif /* ANA_GRID */
@@ -279,7 +277,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 # endif
 
-# if defined RIVER_SOURCE
 #  ifdef SOLVE3D
       do k=1,N
         do j=jstrR,jendR
@@ -294,20 +291,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 #  endif
 
-# else
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            t(i,j,k,1,itemp)=???
-            t(i,j,k,2,itemp)=???
-            t(i,j,k,1,isalt)=???
-            t(i,j,k,2,isalt)=???
-          enddo
-        enddo
-      enddo
-#  endif
-# endif  /* end of configuration selection switch */
 
       call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
 

@@ -29,9 +29,9 @@
         ! Input
         integer           :: ncid
         character(len=*)  :: vname
-        integer,dimension(:),optional :: start
-
         real,dimension(:) :: dat
+
+        integer,dimension(:),optional :: start
 
         ! local
         integer              :: varid,ierr
@@ -54,12 +54,12 @@
       subroutine ncread_2D(ncid,vname,dat,start)
         implicit none
 
-        ! Input
-        integer           :: ncid
-        character(len=*)  :: vname
-        integer,dimension(:),optional :: start
-
+        ! input
+        integer             :: ncid
+        character(len=*)    :: vname
         real,dimension(:,:) :: dat
+
+        integer,dimension(:),optional :: start
 
         ! local
         integer              :: varid,ierr

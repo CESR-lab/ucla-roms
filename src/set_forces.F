@@ -153,9 +153,7 @@ c***              no code here
       call set_bgc_surf_frc(istr,iend,jstr,jend)
 # endif
 
-# ifdef RIVER_SOURCE
-      call set_river_frc_tile(istr,iend,jstr,jend)
-#  endif
+      if (river_source) call set_river_frc_tile(istr,iend,jstr,jend)
 
       if (pipe_source) call set_pipe_frc_tile(istr,iend,jstr,jend)
 
