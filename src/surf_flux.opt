@@ -2,34 +2,26 @@
       ! ****************************************************************
       ! User inputs
 
-      ! Interpolate forcing from coarser input grid (=1) or not (=0)
+      logical,parameter,public :: wrt_file_his_surf_flux = .false.   ! t/f to write module history file
+      real,parameter           :: output_period_his = 80             ! output period in seconds
+      integer,parameter        :: nrpf_his          = 3              ! total recs per file
+      
+      logical,parameter,public :: wrt_file_avg_surf_flux = .false.   ! t/f to write module averages file
+      real,parameter           :: output_period_avg = 120            ! output averaging period in seconds
+      integer,parameter        :: nrpf_avg          = 2              ! total recs per file
+
+      ! controls both his and avg variables:
+      logical :: wrt_sustr = .true.                                  ! output surface u-stress
+      logical :: wrt_svstr = .true.                                  ! output surface v-stress
+      logical :: wrt_shflx = .true.                                  ! output surface heat flux
+      logical :: wrt_ssflx = .true.                                  ! output surface salinity flux
+
+      ! edit variable name and time name to match input netcdf file if necessary:          
+      type (ncvs)  :: nc_sst  = ncvs( name='sst', time_name='sst_time' )       ! sea-surface temperature (SST) data
+      type (ncvs)  :: nc_sss  = ncvs( name='sss', time_name='sss_time' )       ! sea-surface salinity (SSS) data
+
+      ! interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! For SST and SSS correction
-
-      logical,parameter,public :: wrt_surf_flx_file = .false.   ! write a flux file or not
-      logical,parameter,public :: wrt_surf_flx_avg  = .false.   ! write averages or not
-      
-      integer :: rec_rate      = 2                   ! output record rate,
-      integer :: recs_per_file = 20                  ! total recs per file
-
-      logical :: wrt_sustr = .True.                  ! output surface u-stress
-      logical :: wrt_svstr = .True.                  ! output surface v-stress
-      logical :: wrt_shflx = .True.                  ! output surface heat flux
-      logical :: wrt_ssflx = .True.                  ! output surface salinity flux
-
-      ! Writing averages to the main _avg.F file. Output averaging controlled
-      ! by roms.in, but T/F for printing variables is controlled here:
-      
-      logical :: wrt_sustr_avg = .True.              ! output average surface u-stress
-      logical :: wrt_svstr_avg = .True.              ! output average surface v-stress
-      logical :: wrt_shflx_avg = .True.              ! output average surface heat flux
-      logical :: wrt_ssflx_avg = .True.              ! output average surface salinity flux
-
-      ! Edit variable name and time name to match input netcdf file if necessary:
-            
-      ! - sea-surface temperature (SST) data
-      type (ncvs)  :: nc_sst  = ncvs( name='sst', time_name='sst_time' )
-      ! - Sea-surface salinity    (SSS) data
-      type (ncvs)  :: nc_sss  = ncvs( name='sss', time_name='sss_time' )
 
       ! End of user inputs
       ! *************************************************************

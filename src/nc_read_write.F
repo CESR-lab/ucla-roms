@@ -1,7 +1,6 @@
       module nc_read_write
 
       use netcdf
-!     use param
 
       implicit none
       private
@@ -19,70 +18,75 @@
       public :: ncread
       public :: ncwrite
       public :: nccreate
+      public :: handle_ierr
 
       contains
 
-!----------------------------------------------------------
-      subroutine ncread_1D(ncid,vname,dat,start)
-        implicit none
-
-        ! Input
-        integer           :: ncid
-        character(len=*)  :: vname
-        real,dimension(:) :: dat
-
-        integer,dimension(:),optional :: start
-
-        ! local
-        integer              :: varid,ierr
-        integer,dimension(1) :: dims
-        integer,dimension(2) :: count
-
-        dims = shape(dat)
-        ierr = nf90_inq_varid(ncid,vname,varid)
-
-        if (present(start)) then
-          count = (/dims, 1/)
-          ierr = nf90_get_var(ncid,varid,dat,start,count)
-        else
-          ierr = nf90_get_var(ncid,varid,dat)
-        endif
-
-      end subroutine ncread_1D
-
-!----------------------------------------------------------
-      subroutine ncread_2D(ncid,vname,dat,start)
-        implicit none
-
-        ! input
-        integer             :: ncid
-        character(len=*)    :: vname
-        real,dimension(:,:) :: dat
-
-        integer,dimension(:),optional :: start
-
-        ! local
-        integer              :: varid,ierr
-        integer,dimension(2) :: dims
-        integer,dimension(3) :: count
-
-        dims = shape(dat)
-        ierr = nf90_inq_varid(ncid,vname,varid)
-
-        if (present(start)) then
-          count = (/dims, 1/)
-          ierr = nf90_get_var(ncid,varid,dat,start,count)
-        else
-          ierr = nf90_get_var(ncid,varid,dat)
-        endif
-
-      end subroutine ncread_2D
-
-!----------------------------------------------------------
-      subroutine ncwrite_1D(ncid,vname,dat,start)
+!----------------------------------------------------------------------
+      subroutine ncread_1D(ncid,vname,dat,start)  ![
       implicit none
 
-      ! Input
+      ! input
+      integer           :: ncid
+      character(len=*)  :: vname
+      real,dimension(:) :: dat
+
+      integer,dimension(:),optional :: start
+
+      ! local
+      integer              :: varid,ierr
+      integer,dimension(1) :: dims
+      integer,dimension(2) :: count
+
+      dims = shape(dat)
+      ierr = nf90_inq_varid(ncid,vname,varid)
+      if (ierr/=0) call handle_ierr(ierr,'ncread inq_varid var=',vname)
+
+      if (present(start)) then
+        count = (/dims, 1/)
+        ierr = nf90_get_var(ncid,varid,dat,start,count)
+      else
+        ierr = nf90_get_var(ncid,varid,dat)
+      endif
+      if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
+
+      end subroutine ncread_1D  !]
+
+!----------------------------------------------------------------------
+      subroutine ncread_2D(ncid,vname,dat,start)  ![
+      implicit none
+
+      ! input
+      integer             :: ncid
+      character(len=*)    :: vname
+      real,dimension(:,:) :: dat
+
+      integer,dimension(:),optional :: start
+
+      ! local
+      integer              :: varid,ierr
+      integer,dimension(2) :: dims
+      integer,dimension(3) :: count
+
+      dims = shape(dat)
+      ierr = nf90_inq_varid(ncid,vname,varid)
+      if (ierr/=0) call handle_ierr(ierr,'ncread inq_varid var=',vname)
+
+      if (present(start)) then
+        count = (/dims, 1/)
+        ierr = nf90_get_var(ncid,varid,dat,start,count)
+      else
+        ierr = nf90_get_var(ncid,varid,dat)
+      endif
+      if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
+
+      end subroutine ncread_2D  !]
+
+!----------------------------------------------------------------------
+      subroutine ncwrite_1D(ncid,vname,dat,start)  ![
+      implicit none
+
+      ! input
       integer          :: ncid
       character(len=*) :: vname
       integer,dimension(:),optional :: start
@@ -96,7 +100,7 @@
 
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
@@ -104,21 +108,20 @@
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
-      if (ierr/=nf90_noerr) call handle_err(ierr)
+      if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
-      end subroutine ncwrite_1D
+      end subroutine ncwrite_1D  !]
 
-!----------------------------------------------------------
-      subroutine ncwrite_2D(ncid,vname,dat,start)
+!----------------------------------------------------------------------
+      subroutine ncwrite_2D(ncid,vname,dat,start)  ![
       implicit none
 
-      ! Input
-      integer          :: ncid
-      character(len=*) :: vname
-      integer,dimension(:),optional :: start
-
+      ! input
+      integer             :: ncid
+      character(len=*)    :: vname
       real,dimension(:,:) :: dat
 
+      integer,dimension(:),optional :: start
 
       ! local
       integer              :: varid,ierr
@@ -127,9 +130,7 @@
 
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
-      if (ierr/=nf90_noerr) then
-        call handle_err(ierr,'ncwrite: '/ /vname)
-      endif
+      if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
@@ -137,22 +138,20 @@
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
-      if (ierr/=nf90_noerr) then
-        call handle_err(ierr,'ncwrite: '/ /vname)
-      endif
+      if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
-      end subroutine ncwrite_2D
+      end subroutine ncwrite_2D  !]
 
-!----------------------------------------------------------
-      subroutine ncwrite_3D(ncid,vname,dat,start)
+!----------------------------------------------------------------------
+      subroutine ncwrite_3D(ncid,vname,dat,start)  ![
       implicit none
 
-      ! Input
-      integer          :: ncid
-      character(len=*) :: vname
-      integer,dimension(:),optional :: start
-
+      ! input
+      integer               :: ncid
+      character(len=*)      :: vname
       real,dimension(:,:,:) :: dat
+
+      integer,dimension(:),optional :: start
 
       ! local
       integer              :: varid,ierr
@@ -161,9 +160,7 @@
 
       dims = shape(dat)
       ierr = nf90_inq_varid(ncid,vname,varid)
-      if (ierr/=nf90_noerr) then
-        call handle_err(ierr,'ncwrite :: '/ /vname)
-      endif
+      if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
@@ -171,15 +168,12 @@
       else
         ierr = nf90_put_var(ncid,varid,dat)
       endif
+      if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
-      if (ierr/=nf90_noerr) then
-        call handle_err(ierr,'ncwrite :: '/ /vname)
-      endif
+      end subroutine ncwrite_3D  !]
 
-      end subroutine ncwrite_3D
-
-!----------------------------------------------------------
-      integer function nccreate(ncid,varname,dimname,dimsize,vartype)
+!----------------------------------------------------------------------
+      integer function nccreate(ncid,varname,dimname,dimsize,vartype)  ![
       ! Create a variable with dimensions in an existing file
       ! Returns the varid of the variable
 
@@ -224,7 +218,7 @@
             error stop
           endif
           ierr=nf90_def_dim(ncid,dimname(i),dimsize(i),did)
-          if (ierr/=nf90_noerr) call handle_err(ierr)
+          if (ierr/=nf90_noerr) call handle_ierr(ierr)
         endif
         dimid(i) = did
       enddo
@@ -238,7 +232,7 @@
      &                  deflate_level=deflate_level, shuffle=shuffle)
       if (ierr/=nf90_noerr) then
         print *,'ERROR creating: ',varname
-        call handle_err(ierr)
+        call handle_ierr(ierr)
       endif
 
       if     (xtype==nf90_float)  then                               ! fill value to blank out mask
@@ -249,24 +243,43 @@
 
       nccreate = varid
 
-      end function nccreate
+      end function nccreate  !]
 
-!-------------------------------------------
-      subroutine handle_err(status,txt)
+! ---------------------------------------------------------------------
+      subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
+      ! handle fatal ierr with error messages.
+      ! err_msg1 & 2 are optional messages
+      ! get this from roms_read_write module rather at some point
       implicit none
-      integer,         intent(in)          :: status
-      character(len=*),intent(in),optional :: txt
 
+      ! inputs
+      integer ierr
+      character(len=*), optional :: err_msg1, err_msg2
+      ! local
+      character(:), allocatable :: f_msg, f_msg1, f_msg2
 
-      if(status /= nf90_noerr) then
-        if (present(txt)) then
-         print *, txt,', ',trim(nf90_strerror(status))
-        else
-         print *, trim(nf90_strerror(status))
-        endif
-         stop "Stopped"
-      end if
-      end subroutine handle_err
+      ! Check if error message 1 is available
+      if(present(err_msg1))then
+          f_msg1=err_msg1
+      else
+          f_msg1=''
+      endif
+      ! Check if error message 2 is available
+      if(present(err_msg2))then
+          f_msg2=err_msg2
+      else
+          f_msg2=''
+      endif
+      ! Combine optional messages:
+      f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
 
+      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
+     &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
+
+      error stop ! Stop simulation assumed fatal error
+
+      end subroutine handle_ierr  !]
+
+! ---------------------------------------------------------------------
 
       end module nc_read_write

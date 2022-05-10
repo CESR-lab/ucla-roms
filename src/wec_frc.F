@@ -616,7 +616,7 @@
 ! ----------------------------------------------------------------------
       subroutine def_vars_wec( ncid, avg )  ![
       ! define output variable & attributes in netcdf results file
-      ! for actual or averaged variables
+      ! for instantaneous or averaged variables
       implicit none
 
       ! input
@@ -731,7 +731,7 @@
      &    output_time_his==0                      ) then             ! catch to get t=0 output
 
         if (mod(total_rec_his,nrpf_his)==0) then
-          call create_wec_file(total_rec_his,fname_his,.false.)
+          call create_file_wec(total_rec_his,fname_his,.false.)
           rec_his = 0
         endif
         total_rec_his = total_rec_his +1
@@ -742,8 +742,7 @@
 
         call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))
 
-        start=1
-        start(3)=rec_his                                             ! back to 2D vars
+        start=1; start(3)=rec_his                                    ! back to 2D vars
         if (wrt_wec_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup(i0:i1,j0:j1),start)
         if (wrt_wec_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d( 1:i1,j0:j1),start)
         if (wrt_wec_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d(i0:i1, 1:j1),start)
@@ -779,7 +778,7 @@
       end subroutine wrt_his_wec  !]
 
 !----------------------------------------------------------------------
-      subroutine create_wec_file(total_rec,fname,avg)  ![
+      subroutine create_file_wec(total_rec,fname,avg)  ![
       implicit none
 
       !input/output
@@ -797,7 +796,7 @@
       call create_filename(fname,total_rec)
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_wec_file: ')
+      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_file_wec: ')
 
       ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
 
@@ -808,7 +807,7 @@
 
       call put_global_atts(ncid, ierr)                     ! put global attributes in file
       if (ierr/=nf90_noerr)
-     &  call handle_ierr(ierr,'create_wec_file: ')
+     &  call handle_ierr(ierr,'create_file_wec: ')
 
       if (      avg) call def_vars_wec( ncid, .true.  )
       if (.not. avg) call def_vars_wec( ncid, .false. )
@@ -819,7 +818,7 @@
      &    'wec_frc :: created new netCDF file ', trim(fname)
       endif
 
-      end subroutine create_wec_file !]
+      end subroutine create_file_wec !]
 
 ! ----------------------------------------------------------------------
       subroutine wrt_avg_wec  ![
@@ -847,7 +846,7 @@
       if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
 
         if (mod(total_rec_avg,nrpf_avg)==0) then
-          call create_wec_file(total_rec_avg,fname_avg,.true.)
+          call create_file_wec(total_rec_avg,fname_avg,.true.)
           rec_avg = 0
         endif
         total_rec_avg = total_rec_avg +1
@@ -858,8 +857,7 @@
 
         call ncwrite(ncid,'ocean_time',(/t_avg_wec/),(/rec_avg/))
 
-        start=1
-        start(3)=rec_avg                                             ! back to 2D vars
+        start=1; start(3)=rec_avg                                    ! back to 2D vars
         if (wrt_avg_vars(indxSUP))   call ncwrite(ncid,sup_name,    sup_avg(i0:i1,j0:j1),start)
         if (wrt_avg_vars(indxUST2D)) call ncwrite(ncid,ust2d_name,ust2d_avg( 1:i1,j0:j1),start)
         if (wrt_avg_vars(indxVST2D)) call ncwrite(ncid,vst2d_name,vst2d_avg(i0:i1, 1:j1),start)
