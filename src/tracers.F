@@ -20,7 +20,7 @@
 #include "cppdefs.opt"
 
       use param
-      use read_write                                       ! set_frc_var_tile, nc_define_var, rp_var
+      use read_write, only: set_frc_var_tile, ncvs
       use surf_flux,  only: stflx                          ! surface tracer flux should possibly live in this module rather?
       use ncvars
       use scalars                                          ! for 'FIRST_TIME_STEP' and nstp
@@ -233,20 +233,14 @@
 
       ! inputs
       integer,dimension(:),intent(in) :: start
-!      integer, intent(in) :: record ! timestep to be recorded
-!      integer             :: ierr   ! error handling
 
       ! local
-      integer             :: itrc, itavg
-
-      ! temporary system to compare old vs new methods for t_avg
+      integer :: itrc, itavg
 
       do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
-          itavg = NT_2_t_avg(itrc)  ! get respective index for t_avg(itavg) -> t(itrc)
+          itavg = NT_2_t_avg(itrc)                                   ! get respective index for t_avg(itavg) -> t(itrc)
           call ncwrite(ncavg,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start)
-!          call nc_write_var(ncavg, t_avg(START_2D_ARRAY,1,itavg), N,
-!     &            t_vname(itrc), rp_var, record, ierr )
         endif
       enddo
 
@@ -254,21 +248,23 @@
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_rst_trc (record, ierr)  ![
-      ! Write tracers to restart file
+      subroutine wrt_rst_trc (record)  ![
+      ! write tracers to restart file
       ! restart includes bgc tracers for simplicity
       implicit none
 
       ! inputs
-      integer, intent(in) :: record ! timestep to be recorded
-      integer             :: ierr
+      integer, intent(in) :: record
       ! local
       integer :: itrc
+      integer,dimension(4) :: start
 
+      start=1; start(4)=record
       do itrc=1,NT
-        call nc_write_var(ncrst, t(START_2D_ARRAY,1,nstp,itrc), N,
-     &          t_vname(itrc), rp_var, record, ierr )
-      end do
+        call ncwrite(ncrst,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
+!        call nc_write_var(ncrst, t(START_2D_ARRAY,1,nstp,itrc), N,
+!     &          t_vname(itrc), rp_var, record, ierr )
+      enddo
 
       end subroutine wrt_rst_trc  !]
 

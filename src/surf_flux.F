@@ -8,11 +8,10 @@
 #include "cppdefs.opt"
 
       use param
-      use read_write
+      use read_write, only: set_frc_var_tile, ncvs
       use roms_read_write
       use nc_read_write
       use netcdf
-      use read_write
       use ncvars
       use scalars
 

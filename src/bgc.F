@@ -12,7 +12,7 @@
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      use read_write  ! ncvs
+      use read_write, only: set_frc_var_tile, ncvs
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use ncvars
       use bgc_ecosys_vars
@@ -71,7 +71,6 @@
 
       ! this routine is called by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
-      use read_write, only: set_frc_var_tile, ncvs
       use scalars
       use bgc_forces
 

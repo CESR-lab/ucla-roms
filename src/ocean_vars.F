@@ -964,7 +964,7 @@
       if (ierr /= nf90_noerr) goto 99                !--> ERROR
 
 ! Tracer variables.
-      call wrt_rst_trc(record, ierr)
+      call wrt_rst_trc(record)
 
 # ifdef LMD_KPP
 ! Depth of planetary boundary layer [m].
