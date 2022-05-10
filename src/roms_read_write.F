@@ -45,7 +45,6 @@
       public :: set_frc_data,create_filename
       public :: read_output_root_name
       public :: init_output_indices
-      public :: handle_ierr
       public :: find_new_record
       public :: nc_check_units
 
@@ -379,41 +378,6 @@
       nc%ifile = ifile
 
       end subroutine fill_frc_slice !]
-
-! ----------------------------------------------------------------------
-      subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
-      ! handle fatal ierr with error messages.
-      ! err_msg1 & 2 are optional messages
-      ! get this from roms_read_write module rather at some point
-      implicit none
-
-      ! Inputs
-      integer ierr
-      character(len=*), optional :: err_msg1, err_msg2
-      ! Local
-      character(:), allocatable :: f_msg, f_msg1, f_msg2
-
-      ! Check if error message 1 is available
-      if(present(err_msg1))then
-          f_msg1=err_msg1
-      else
-          f_msg1=''
-      endif
-      ! Check if error message 2 is available
-      if(present(err_msg2))then
-          f_msg2=err_msg2
-      else
-          f_msg2=''
-      endif
-      ! Combine optional messages:
-      f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
-
-      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
-     &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
-
-      error stop ! Stop simulation assumed fatal error
-
-      end subroutine handle_ierr  !]
 
 ! ----------------------------------------------------------------------
       subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![

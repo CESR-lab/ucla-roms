@@ -10,6 +10,9 @@
       use param
       use read_write
       use roms_read_write
+      use nc_read_write
+      use netcdf
+      use read_write
       use ncvars
       use scalars
 
@@ -61,22 +64,17 @@
 #endif
 
 
-      ! Netcdf outputting
-      ! -----------------
-      integer            :: ncid = -1
-      integer            :: output_rec = 0               ! record number of output. 0 indicates we need new file
-      integer            :: total_output_rec = 0         ! total flux output recordings so far
-      character (len=60) :: file_name = '_surf_flux.nc'  ! suffix to append to simulation output rootname
+      ! netcdf outputting:
+      integer :: ncid = -1, prev_fill_mode
+      real    :: t_avg_surf=0
+      integer :: navg_surf = 0                              ! number of samples in average
+
 
       ! Public functions
       public init_arrays_surf_flx
       public set_surf_field_corr
-      public wrt_surface_flux_his
-#if defined AVERAGES
-      public set_avg_surf_flux
-      public def_avg_surf_flux
+      public wrt_his_surf_flux
       public wrt_avg_surf_flux
-#endif
 
       contains
 
@@ -97,7 +95,7 @@
       allocate(  nc_sss%data( GLOBAL_2D_ARRAY,2) )
 #endif
 
-      if (wrt_surf_flx_avg) then
+      if (wrt_file_avg_surf_flux) then
         allocate( sustr_avg(GLOBAL_2D_ARRAY) )
         allocate( svstr_avg(GLOBAL_2D_ARRAY) )   ! surf stress v-point average
         allocate( shflx_avg(GLOBAL_2D_ARRAY) )   ! surf heat flux average
@@ -129,244 +127,253 @@
 
       end subroutine set_surf_field_corr  !]
 
-!-----------------------------------------------------------------------
-      subroutine set_avg_surf_flux  ![
-      ! set surface flux averages
-
+! ----------------------------------------------------------------------
+      subroutine calc_avg_surf_flux  ![
+      ! set surf_flux averaged variables
+      ! taken from set_avg.F in old code
       implicit none
 
       ! local
-      real :: cff, cff1
+      real :: coef
 
-      cff=1./dble(rec_rate)    !<-- scaling
-      if (mod(iic-ntstart-1,rec_rate) == 0) then ! iic-ntstart gives timestep. -1 give next averaging cycle.
-        if (mynode==0) print *, 'Refresh averaging cycle - surf flux'
-        cff1=0.                !--> initialize
-      else
-        cff1=1.                !--> keep adding
+      navg_surf = navg_surf +1
+      coef = 1./navg_surf
+
+      if (coef==1) then                                    ! this refreshes average (1-coef)=0
+       if (mynode==0) write(*,'(7x,2A,F9.1)')
+     &   'surf_flux :: started averaging. ',
+     &   'output_period_avg (s) =', output_period_avg
       endif
 
-      if (wrt_sustr_avg) sustr_avg = cff1*sustr_avg + cff*sustr
-      if (wrt_svstr_avg) svstr_avg = cff1*svstr_avg + cff*svstr
-      if (wrt_shflx_avg) shflx_avg = cff1*shflx_avg + cff*stflx(:,:,itemp)
-# ifdef SALINITY
-      if (wrt_ssflx_avg) ssflx_avg = cff1*ssflx_avg + cff*stflx(:,:,isalt)
-# endif
+      t_avg_surf = t_avg_surf*(1-coef) + time*coef
 
-      if (mynode==0) print *, 'sustr_avg(1,1)=', sustr_avg(1,1), 'sustr(1,1)=', sustr(1,1)
+      ! need i0:i1 indices because arrays still GLOBAL_2D therefore wasted margin
+      if (wrt_sustr) sustr_avg( 1:i1,j0:j1) = sustr_avg( 1:i1,j0:j1)*(1-coef) + sustr( 1:i1,j0:j1)*coef
+      if (wrt_svstr) svstr_avg(i0:i1, 1:j1) = svstr_avg(i0:i1, 1:j1)*(1-coef) + svstr(i0:i1, 1:j1)*coef
+      if (wrt_shflx) shflx_avg(i0:i1,j0:j1) = shflx_avg(i0:i1,j0:j1)*(1-coef) + stflx(i0:i1,j0:j1,itemp)*coef
+      if (wrt_ssflx) ssflx_avg(i0:i1,j0:j1) = ssflx_avg(i0:i1,j0:j1)*(1-coef) + stflx(i0:i1,j0:j1,isalt)*coef
 
-      end subroutine set_avg_surf_flux  !]
+      end subroutine calc_avg_surf_flux  !]
 
-!-----------------------------------------------------------------------
-      subroutine def_avg_surf_flux(r2dgrd, u2dgrd, v2dgrd)  ![
-      ! Define surface flux averaged variables in average output file.
-
+!----------------------------------------------------------------------
+      subroutine def_vars_surf_flux( ncid, avg )  ![
+      ! define output variable & attributes in netcdf results file
+      ! for instantaneous or averaged variables
       implicit none
 
-      ! Inputs
-      integer r2dgrd(3), u2dgrd(3), v2dgrd(3)
-      ! Local
-      integer ierr
+      ! input
+      integer,intent(in) :: ncid
+      logical,intent(in) :: avg
+      ! local
+      integer           :: ierr, varid
+      character(len=64) :: text_lname
 
+      ! output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
       if (wrt_sustr) then
-        call nc_define_var(ncid, sustr_avg_name,
-     &   'Averaged wind stress in x-direction','m^2/s^2', u2dgrd, ierr )
+        varid = nccreate(ncid,sustr_name,(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
+        if (.not. avg) text_lname='wind stress in x-direction'
+        if (      avg) text_lname='averaged '/ /'wind stress in x-direction'
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
       endif
       if (wrt_svstr) then
-        call nc_define_var(ncid, svstr_avg_name,
-     &   'Averaged wind stress in y-direction', 'm^2/s^2', v2dgrd, ierr )
+        varid = nccreate(ncid,svstr_name,(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
+        if (.not. avg) text_lname='wind stress in y-direction'
+        if (      avg) text_lname='averaged '/ /'wind stress in y-direction'
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
       endif
       if (wrt_shflx) then
-        call nc_define_var(ncid, shflx_avg_name,
-     &   'Averaged Surface heat flux', 'degC m/s', r2dgrd, ierr )
+        varid = nccreate(ncid,shflx_name,(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        if (.not. avg) text_lname='Surface heat flux'
+        if (      avg) text_lname='averaged '/ /'Surface heat flux'
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units','degC m/s')
       endif
       if (wrt_ssflx) then
-        call nc_define_var(ncid, ssflx_avg_name,
-     &   'Averaged Surface salinity flux','PSU m/s', r2dgrd, ierr )
+        varid = nccreate(ncid,ssflx_name,(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        if (.not. avg) text_lname='Surface salinity flux'
+        if (      avg) text_lname='averaged '/ /'Surface salinity flux'
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units','PSU m/s')
       endif
 
+      end subroutine def_vars_surf_flux  !]
 
-      end subroutine def_avg_surf_flux  !]
-
-!-----------------------------------------------------------------------
-      subroutine wrt_avg_surf_flux  ![
-      ! rite averaged surface flux variables to averaged output file
+!----------------------------------------------------------------------
+      subroutine wrt_his_surf_flux  ![
+      ! write surface fluxes to output netcdf file
       implicit none
 
       ! local
-      integer :: ierr = 0
+      integer,dimension(4)   :: start
+      integer,save           :: rec_his                              ! current file output record
+      integer,save           :: total_rec_his=0                      ! total his output records so far
+      real,save              :: output_time_his=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_his
+      integer                :: tile, ierr
 
-      if (wrt_sustr_avg) then
-        call nc_write_var(ncid, sustr_avg, 1, sustr_avg_name, up_var, output_rec, ierr)
+      if (.not. first_step) then
+        output_time_his = output_time_his + dt                       ! only start count after first timestep
+      else
+        first_step=.false.                                           ! as first step the surf_flux values are for t=0
       endif
-      if (wrt_svstr_avg) then
-        call nc_write_var(ncid, svstr_avg, 1, svstr_avg_name, vp_var, output_rec, ierr)
+
+      if (output_time_his>=output_period_his .or.
+     &    output_time_his==0                      ) then             ! catch to get t=0 output
+
+        if (mod(total_rec_his,nrpf_his)==0) then
+          call create_file_surf_flux(total_rec_his,fname_his,.false.)
+          rec_his = 0
+          if (output_time_his==0) call display_output_settings_to_terminal( fname_his )
+        endif
+        total_rec_his = total_rec_his +1
+        rec_his = rec_his + 1
+
+        ierr=nf90_open(fname_his,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)     ! set fill value - nf90_nofill for optimized writing
+
+        call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))
+
+        start=1; start(3)=rec_his
+        if (wrt_sustr) call ncwrite(ncid,sustr_name, sustr( 1:i1,j0:j1),start)
+        if (wrt_svstr) call ncwrite(ncid,svstr_name, svstr(i0:i1, 1:j1),start)
+        if (wrt_shflx) call ncwrite(ncid,shflx_name, stflx(i0:i1,j0:j1,itemp),start)
+        if (wrt_ssflx) call ncwrite(ncid,ssflx_name, stflx(i0:i1,j0:j1,isalt),start)
+
+        ierr=nf90_close (ncid)
+        if (mynode == 0) then
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+     &     'surf_flux :: wrote history, tdays =', tdays,
+     &     'step =', iic-1, 'rec =', rec_his, '/', total_rec_his     ! -1 since iic=t(n+1)
+        endif
+
+        output_time_his=0
       endif
-      if (wrt_shflx_avg) then
-        call nc_write_var(ncid, shflx_avg, 1, shflx_avg_name, rp_var, output_rec, ierr)
+
+      end subroutine wrt_his_surf_flux  !]
+
+! ----------------------------------------------------------------------
+      subroutine wrt_avg_surf_flux  ![
+      ! write averaged variables to output netcdf file
+      ! don't include t=0 in averaging. This create 0.5dt error in averaging,
+      ! but this 0.5dt error has always been in ROMS.
+      ! for 2 steps. True avg would be 0.5*t0 + t1 + 0.5*t2, but we've never done that.
+      implicit none
+
+      ! local
+      integer,dimension(4)   :: start
+      integer,save           :: rec_avg                              ! current file output record
+      integer,save           :: total_rec_avg=0                      ! total avg output records so far
+      real,save              :: output_time_avg=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_avg
+      integer :: tile, tn, ierr
+
+      if (.not. first_step) then
+        call calc_avg_surf_flux                                      ! don't include t=0 in averaging
+        output_time_avg = output_time_avg + dt                       ! only start count after first timestep
       endif
-      if (wrt_ssflx_avg) then
-        call nc_write_var(ncid, ssflx_avg, 1, ssflx_avg_name, rp_var, output_rec, ierr)
+      first_step=.false.                                             ! as first step the surf_flux values are for t=0
+
+      if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
+
+        if (mod(total_rec_avg,nrpf_avg)==0) then
+          call create_file_surf_flux(total_rec_avg,fname_avg,.true.)
+          rec_avg = 0
+        endif
+        total_rec_avg = total_rec_avg +1
+        rec_avg = rec_avg + 1
+
+        ierr=nf90_open(fname_avg,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/t_avg_surf/),(/rec_avg/))
+
+        start=1; start(3)=rec_avg                                    ! back to 2D vars
+        if (wrt_sustr) call ncwrite(ncid,sustr_name, sustr_avg( 1:i1,j0:j1),start)
+        if (wrt_svstr) call ncwrite(ncid,svstr_name, svstr_avg(i0:i1, 1:j1),start)
+        if (wrt_shflx) call ncwrite(ncid,shflx_name, shflx_avg(i0:i1,j0:j1),start)
+        if (wrt_ssflx) call ncwrite(ncid,ssflx_name, ssflx_avg(i0:i1,j0:j1),start)
+
+        navg_surf=0
+        output_time_avg=0
+
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
+     &        'surf_flux :: wrote averages, tdays =', tdays,
+     &        'step =', iic-1, 'rec =', rec_avg, '/', total_rec_avg  ! -1 since iic=t(n+1)
+     &         MYID
+        endif
       endif
 
       end subroutine wrt_avg_surf_flux  !]
 
-!-----------------------------------------------------------------------
-      subroutine wrt_surface_flux_his  ![
-      ! Write surface fluxes to output netcdf file
-
-      use netcdf
-      use read_write
-
+!----------------------------------------------------------------------
+      subroutine create_file_surf_flux(total_rec,fname,avg)  ![
       implicit none
 
+      !input/output
+      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
+      character(len=99),intent(out) :: fname
+      logical,          intent(in)  :: avg                 ! his or average file
+
       ! local
-      integer :: lenstr, my_nf_def_dim
-      integer :: lfnm, lvar, prev_fill_mode,
-     &           r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
-#ifdef SOLVE3D
-     &         , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
-#endif
+      integer :: ierr,varid
+      character(len=10),dimension(4) :: dimnames           ! dimension names
+      integer,          dimension(4) :: dimsizes
 
-      integer :: ierr = 0        ! set to no-error
-      character(len=64) :: fname ! taken from read_inp.F
+      if (      avg) fname=trim(output_root_name) / / '_surf_flux_avg.nc'
+      if (.not. avg) fname=trim(output_root_name) / / '_surf_flux.nc'
+      call create_filename(fname,total_rec)
 
-      if (wrt_surf_flx_avg) call set_avg_surf_flux                              ! averaging needed every step
+      ierr=nf90_create(fname,nf90_netcdf4,ncid)
+      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_file_surf_flux: ')
 
-      if (wrt_surf_flx_file==.true. .and. mod(iic-ntstart,rec_rate) == 0) then  ! when timestep divisble by record rate
+      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
 
-        if(total_output_rec == 0) then                            ! Add root output name to file name (only done once)
-          file_name = trim(output_root_name) / / trim(file_name)  ! Notice below space between '/ /', this is needed to avoid
-        endif                                                     ! cpp preprocessor seeing // as a c++ comment and deleting it.
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      if (      avg) ierr = nf90_put_att(ncid,varid,'long_name','Average time since origin')
+      if (.not. avg) ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
 
+      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      if (ierr/=nf90_noerr)
+     &  call handle_ierr(ierr,'create_file_surf_flux: ')
 
-        if(output_rec == 0) then                                  ! if file doesn't yet exist or need new file!
+      if (      avg) call def_vars_surf_flux( ncid, .true.  )
+      if (.not. avg) call def_vars_surf_flux( ncid, .false. )
 
-          call ncdf_create_file(file_name, ncid, prev_fill_mode   ! lose the prev_fill_mode? r2dgrd, ...., auxil are id's to dimensions, needed to create vars in the file
-     &                  ,recs_per_file, total_output_rec, auxil
-#ifdef SOLVE3D
-     &                  ,r3dgrd, u3dgrd, v3dgrd, w3dgrd           ! 3D grid dimensions
-#endif
-     &                  ,r2dgrd, u2dgrd, v2dgrd )                 ! 2D grid dimensions
+      ierr = nf90_enddef(ncid)
+      if (mynode == 0) then
+        write(*,'(7x,2A)')
+     &    'surf_flux_frc :: created new netCDF file ', trim(fname)
+      endif
 
+      end subroutine create_file_surf_flux !]
 
-          ! Define remaining variables:
-          if (wrt_sustr) then
-            ! Output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
-            call nc_define_var(ncid, sustr_name,
-     &            'wind stress in x-direction','m^2/s^2', u2dgrd, ierr )
-          endif
-          if (wrt_svstr) then
-            ! Output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
-            call nc_define_var(ncid, svstr_name,
-     &           'wind stress in y-direction', 'm^2/s^2', v2dgrd, ierr )
-          endif
-          if (wrt_shflx) then
-            call nc_define_var(ncid, shflx_name,
-     &                   'Surface heat flux', 'degC m/s', r2dgrd, ierr )
-          endif
-          if (wrt_ssflx) then
-            call nc_define_var(ncid, ssflx_name,
-     &                 'Surface salinity flux','PSU m/s', r2dgrd, ierr )
-          endif
-!          ! Output of sustr_rho and svstr_rho
-!            call nc_define_var(ncid, 'sustr_r',
-!     &            'rho wind stress in x-direction','m^2/s^2', r2dgrd, ierr )
-!            call nc_define_var(ncid, 'svstr_r',
-!     &            'rho wind stress in y-direction','m^2/s^2', r2dgrd, ierr )
+!-----------------------------------------------------------------------
+      subroutine display_output_settings_to_terminal( fname )  ![
+      implicit none
 
-          if (wrt_surf_flx_avg) call def_avg_surf_flux(r2dgrd, u2dgrd, v2dgrd)
+      character(len=99) :: fname
 
+      if (mynode==0) write(*,'(/7x,2A,F6.1,2x,A,I4,2x,2A)')          ! write to terminal output in simulation pre-amble text which
+     &  'surf_flux:: net flux history file.',                        ! result variables are being stored
+     &  'ouput_period =', output_period_his,
+     &  'recs/file =', nrpf_his,
+     &  'file = ', trim(fname)
 
-          ierr=nf90_enddef(ncid) ! end definition to write changes to disk
-          if (mynode == 0) then
-            write(*,'(6x,2A)') 'surf_flux :: created new netCDF file '
-     &                          ,file_name
-          endif
-
-        endif ! (output_rec == 0; needed to create a file)
-
-
-        ! Info to terminal output
-        ! =======================
-
-        if(total_output_rec == 0) then                                 ! Only done once - commented out if read_inp_net_flux is used
-
-          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4,2x,2A)')  ! write to terminal output in simulation pre-amble text which
-     &     'surf_flux: save results net_flux = ', wrt_surf_flx_file,          ! result variables are being stored
-     &     'rec_rate =', rec_rate, 'recs/file =', recs_per_file,
-     &     'file = ', file_name
-
-          mpi_master_only write(*,'(/1x,A,4(/8x,A,T16,L1),/)')         ! Change to number of variables 4(
-     &               '2D history fields to be saved: (T/F)'
+      if (mynode==0) write(*,'(9x,A,4(/11x,A,T20,L1),/)')            ! 4(....) repeats formatting 4 times.
+     &               '2D his/avg fields to be saved: (T/F)'          ! T20 moves to the 20th character on line
      &     ,sustr_name,  wrt_sustr
      &     ,svstr_name,  wrt_svstr
      &     ,shflx_name,  wrt_shflx
      &     ,ssflx_name,  wrt_ssflx
 
-          mpi_master_only write(*,'(/1x,A,4(/8x,A,T16,L1),/)')         ! Change to number of variables 4(
-     &               '2D AVERAGED fields to be saved: (T/F)'
-     &     ,sustr_name,  wrt_sustr_avg
-     &     ,svstr_name,  wrt_svstr_avg
-     &     ,shflx_name,  wrt_shflx_avg
-     &     ,ssflx_name,  wrt_ssflx_avg
-
-        endif ! (total_output_rec == 0)
-
-
-        ! WRITE VARIABLES TO FILE
-        ! =======================
-
-        ierr=nf90_open(file_name, nf90_write, ncid)
-
-        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  ! set fill value - nf90_nofill for optimized writing
-
-                                                ! advance output record number
-        output_rec = output_rec + 1             ! current file record
-        total_output_rec = total_output_rec + 1 ! total number of recs written
-
-
-        call nc_write_time(ncid, output_rec, total_output_rec)  ! write ocean time
-
-
-        if (wrt_sustr) then  ! write variables
-          call nc_write_var(ncid, sustr, 1, sustr_name, up_var, output_rec, ierr)
-        endif
-        if (wrt_svstr) then
-          call nc_write_var(ncid, svstr, 1, svstr_name, vp_var, output_rec, ierr)
-        endif
-        if (wrt_shflx) then
-          call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,itemp), 1,
-     &                      shflx_name, rp_var, output_rec, ierr)
-        endif
-#ifdef SALINITY
-        if (wrt_ssflx) then
-          call nc_write_var(ncid, stflx(GLOBAL_2D_ARRAY,isalt), 1,
-     &                      ssflx_name, rp_var, output_rec, ierr)
-        endif
-#endif
-!          ! Output of sustr_rho and svstr_rho
-!          call nc_write_var(ncid, sustr_r, 1, 'sustr_r', rp_var, output_rec, ierr)
-!          call nc_write_var(ncid, svstr_r, 1, 'svstr_r', rp_var, output_rec, ierr)
-
-        if (wrt_surf_flx_avg) call wrt_avg_surf_flux
-
-        ierr=nf90_close (ncid)  ! close netcdf file
-
-        if (mynode == 0) then
-          write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
-     &     'surf_flux :: wrote file, tdays =', tdays,
-     &     'step =', iic, 'rec =', output_rec, '/', total_output_rec
-     &      MYID
-        endif
-
-        if (output_rec == recs_per_file) then  ! reset output_rec to create new file
-          output_rec = 0 
-        endif
-
-      endif ! (wrt_surf_flx_file==.true.)
-
-      end subroutine wrt_surface_flux_his  !]
+      end subroutine display_output_settings_to_terminal  !]
 
 !-----------------------------------------------------------------------
 

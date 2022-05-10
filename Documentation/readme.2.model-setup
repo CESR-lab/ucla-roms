@@ -160,7 +160,7 @@ Surface flux outputting:
     It is possible to output the bulk force resulting surface flux sustr, svstr, etc. 
     The output frequency is in surf_flux.opt, not the roms.in file. 
     It will produce its own output file separate from the _his.nc file.
-    The averages (sustr_avg, etc) are also controlled in surf_flux.opt.
+    It can also produce its own averages file, also controlled in surf_flux.opt.
     
 BGC - Bio-geochemical:
 

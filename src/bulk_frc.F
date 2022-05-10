@@ -185,7 +185,7 @@
 
       ! Modules required
       ! ----------------
-      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_surface_flux_his, srflx
+      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_his_surf_flux, srflx
       use tracers, only: t
       use grid
       use mixing
@@ -1052,7 +1052,8 @@
         enddo
       enddo
 
-      if (wrt_surf_flx_file) call wrt_surface_flux_his ! write flux variables to flux output file
+      if (wrt_file_his_surf_flux) call wrt_his_surf_flux   ! write flux variables to flux output file
+      if (wrt_file_avg_surf_flux) call wrt_avg_surf_flux   ! write flux averaged variables to flux output file
 
       end subroutine calc_all_bulk_forces  !]
 
