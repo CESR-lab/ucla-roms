@@ -35,10 +35,10 @@ output_root_name:
      sample_wec     
 
 history: LDEFHIS, NWRT, NRPFHIS / filename
-            T      2      48
+            T      5      48
 
 averages: NTSAVG, NAVG, NRPFAVG / filename
-            0     999999    8
+            0     5       8
      
 primary_history_fields: zeta Ubar Vbar U V  
                          T    T    T   T T
@@ -56,7 +56,7 @@ wci_history_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
                      T    T     T    T   T   T   T    T    T   T     T
 
 wci_average_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
-                     F    F     F    F   F   F   F    F    F   F     F
+                     T    T     T    T   T   T   T    T    T   T     T
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.
