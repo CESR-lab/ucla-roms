@@ -99,8 +99,6 @@
      &          r_file_indx(2), r_irec(2),    ! File indx & Current input record
      &          r_it1(2),       r_it2(2) )    ! Time index placeholders
 
-!        if(mynode==0) print*, 'riv_trc(1,1)= ', riv_trc(1,1) ! debug
-!        if(mynode==0) print*, 'riv_trc(1,2)= ', riv_trc(1,2) ! debug
 
       endif
 

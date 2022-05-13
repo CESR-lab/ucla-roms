@@ -11,7 +11,7 @@
 
       implicit none
 
-      ! Make all variable private to this module unless public specified
+      ! Make all variables private to this module unless public specified
       private
 
 #include "tides.opt"
@@ -49,7 +49,9 @@
         allocate(ptide(GLOBAL_2D_ARRAY))
       endif
 
-      call read_tides
+      if (pot_tides.or.bry_tides) then
+        call read_tides
+      endif
 
       end subroutine init_tides
 
@@ -199,7 +201,7 @@
             enddo
           endif
 
-        endif  ! bry_tides
+        endif  ! pot_tides
 
       enddo  !  itide=1,ntides
 

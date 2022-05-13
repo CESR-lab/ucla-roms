@@ -542,6 +542,15 @@
       enddo
 # endif
 
+!     if (split_bc) then
+!       call u3dbc(u_slow)
+!       call u3dbc(u_fast)
+!       call v3dbc(v_slow)
+!       call v3dbc(v_fast)
+
+!     else
+!     endif
+
       call u3dbc_tile (istr,iend,jstr,jend, wrk1)
       call v3dbc_tile (istr,iend,jstr,jend, wrk1)
 
@@ -754,7 +763,6 @@
 # endif /* NHMG */
 
 # ifdef OBC_CHECK
-      print *, 'u3dbc: PRESTEP'
       print *, 'nnew=', nnew
       print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
       print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)

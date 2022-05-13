@@ -35,7 +35,7 @@
 !       module procedure  set_frc_data_2D
 !     end interface
 
-      public :: set_frc_data,create_filename
+      public :: set_frc_data,create_filename,findstr,append_date_node
 
       contains
 
@@ -384,7 +384,7 @@
           
       write(*,'(9x,A,A12,5x,A,G14.6,1x,A,I4)') 
      &  'set_frc :: ',         var_name,
-     &  'input time (days) =', var_time,         ! G is number for time 
+     &  'input time (days) =', var_time,  
      &  'rec =',               var_irec
 
       end subroutine display_read_time_to_log  !]
@@ -405,6 +405,7 @@
 
       fname_tmp=fname
       lstr=lenstr(fname_tmp)
+
 #if defined MPI && defined PARALLEL_FILES
       call insert_node(fname_tmp, lstr, mynode, NNODES, ierr)  ! insert MPI node numbers to file name
 #endif
@@ -489,5 +490,80 @@
 
       end function findstr !]
 ! ----------------------------------------------------------------------
+      subroutine sec2date(time,date) ![
+      ! input  time in seconds since 1970.0
+      ! output date  Array: 1=year, 2=month, 3=date, 4=hour, 5=minute, 6=secs
+      ! Adapted from: Clive Page, Leicester University, UK.   1995-may-2
+      implicit none
+
+      ! import/export
+      real,                intent(in)  :: time
+      integer,dimension(6),intent(out) :: date
+
+      ! Local
+      integer :: mjday, nsecs,utime,offset
+      real    :: day
+
+      !! number of seconds from 1970,1,1 0:00:00 to 2000,1,1 0:00:00
+      offset = 946684800  
+
+      utime = time + offset
+
+      ! Note the MJD algorithm only works from years 1901 to 2099.
+      mjday   = int(utime/86400 + 40587)
+      date(1) = 1858 + int( (mjday + 321.51) / 365.25)
+      day     = aint( mod(mjday + 262.25, 365.25) ) + 0.5
+      date(2) = 1 + int(mod(day / 30.6 + 2.0, 12.0) )
+      date(3) = 1 + int(mod(day,30.6))
+      nsecs   = mod(utime, 86400)
+      date(6) = mod(nsecs, 60)
+      nsecs   = nsecs / 60
+      date(5) = mod(nsecs, 60)
+      date(4) = nsecs / 60
+
+      print *, 'time: ', date
+
+      end subroutine sec2date !]
+! ----------------------------------------------------------------------
+      subroutine append_date_node(fname) ![
+      ! insert date and node number string into filename
+      implicit none
+
+      ! import/export
+      character(len=*),intent(inout)  :: fname 
+
+      ! Local
+      integer,dimension(6) :: date
+      character(len=15)  :: datestr
+      character(len=6)   :: indxstr
+
+      call sec2date(time,date)
+      write(datestr,'(A,I4,5I0.2)') '.',date
+      fname = trim(fname) //datestr
+
+#if defined MPI && defined PARALLEL_FILES
+      if (nnodes<10) then
+        write(indxstr,'(A,I0.1)') '.',mynode
+      elseif (nnodes<100) then
+        write(indxstr,'(A,I0.2)') '.',mynode
+      elseif (nnodes<1000) then
+        write(indxstr,'(A,I0.3)') '.',mynode
+      elseif (nnodes<10000) then
+        write(indxstr,'(A,I0.4)') '.',mynode
+      elseif (nnodes<100000) then
+        write(indxstr,'(A,I0.5)') '.',mynode
+      elseif (nnodes>100000) then
+         print *, 'ROMS is not ready for this future'
+         stop
+      endif
+      fname = trim(fname) //trim(indxstr)
+#endif
+
+      fname = trim(fname) // '.nc'
+
+      print *,fname
+      stop
+      
+      end subroutine append_date_node !]
 
       end module roms_read_write

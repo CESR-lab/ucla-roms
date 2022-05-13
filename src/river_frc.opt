@@ -2,6 +2,7 @@
       ! ****************************************************************
       ! user inputs
       integer,public,parameter :: nriv = 1 ! number of rivers
+      !!! change this so that the number of rivers is read from the input file
 #ifdef ANA_RIVER_FRC
       logical :: analytical = .true.      ! analytical forcing 
 #else
