@@ -2,15 +2,11 @@
       ! ****************************************************************
       ! user inputs
       integer,public,parameter :: npip = 1 ! number of pipes
-#ifdef ANA_PIPE_FRC
-      logical :: p_analytical = .true.       ! analytical forcing 
-#else
+
+                                             ! analytical forcing 
       logical :: p_analytical = .false.      ! forcing netcdf files
-#endif
+
       ! end user inputs
       ! ****************************************************************
-#ifdef PIPE_SOURCE
-      logical,parameter,public :: pipe_source = .true.
-#else
+
       logical,parameter,public :: pipe_source = .false.
-#endif

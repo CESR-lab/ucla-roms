@@ -399,22 +399,9 @@
 
 ! Set PHYSICAL lateral boundary conditions.
 
+!     call u3dbc_new
       call u3dbc_tile (istr,iend,jstr,jend, DC)
       call v3dbc_tile (istr,iend,jstr,jend, DC)
-
-# ifdef OBC_CHECK
-      print *, 'u3dbc:'
-      print *, 'nnew=', nnew
-      print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
-      print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
-# endif
-
-# ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) then
-!       call set_diags_u_bc
-!       call set_diags_v_bc
-      endif
-# endif
 
 
 ! Coupling 2D and 3D momentum equations:
