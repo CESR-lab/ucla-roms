@@ -53,8 +53,6 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
 
 IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
 	get_grid.F	get_init.F	put_global_atts.F\
-	def_his.F\
-	set_avg.F	wrt_avg.F\
 	get_forces.F	get_bry_all.F	set_forces.F\
 	nf_read_bry.F\
 	get_ssh.F	get_tclima.F	get_uclima.F	closecdf.F
