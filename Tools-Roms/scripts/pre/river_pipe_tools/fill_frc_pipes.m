@@ -188,7 +188,7 @@ if 0
 
  cycle = 1;  %% cyclical
  if (cycle)
-   ncwriteatt(frcname,'pipe_time','cycle_length','360');
+   ncwriteatt(frcname,'pipe_time','cycle_length',360);
  end
 
  ncwrite(frcname,'pipe_volume',pip_flx');

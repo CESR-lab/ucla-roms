@@ -8,7 +8,6 @@ c--#define INT_AT_W_POINTS
 # define LIMIT_UNSTABLE_ONLY
 c--# define LIMIT_MO_DEPTH
 
-c--# define MLCONVEC
 
 ! The following CPP-switch forces both "hbl" and "bbl" to be set to
 ! the total depth in the case when it is detected that the surface and

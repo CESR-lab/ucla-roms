@@ -370,6 +370,7 @@ C$OMP END MASTER
 
       time=start_time+dt*float(iic-ntstart) !<-- corresp. to "nstp"
       tdays=time*sec2day
+
 #ifdef SOLVE3D
       nstp=1+mod(iic-ntstart,2)
       nrhs=nstp ; nnew=3
@@ -386,7 +387,7 @@ C$OMP BARRIER                          ! avoid MPI deadlock the exit is
                                        ! of "may_day_flag" by diag.
 #ifdef SOLVE3D
       do tile=my_tile_range                 ! interpolate forcing
-        call set_forces(tile)               ! data to model time and
+        call set_forces(tile)          ! data to model time and
 # if defined TIDES
         call set_tides(tile)            ! compute surface fluxes.
 # endif
@@ -440,8 +441,15 @@ C$OMP BARRIER
       do tile=my_tile_range
         call     prsgrd(tile)
         call step3d_uv1(tile)
+
 #  ifdef UV_VIS2
-        call     visc3d(tile)
+!       if (split_bc) then
+!          call visc3d(u_slow,v_slow,visc_slow)
+!          call visc3d(u_fast,v_fast,visc_fast)
+!       else
+          !call visc3d(u,v,visc3d)
+           call visc3d(tile)
+!       endif
 #  endif
       enddo
 C$OMP BARRIER
@@ -549,7 +557,13 @@ C$OMP BARRIER                            ! time step for momenta
         call omega(tile)
         call step3d_t (tile)
 # if defined TS_DIF2 || defined TS_DIF4
-        call t3dmix(tile)
+!       if (split_bc) then
+!         call t3dmix(t_slow,diff2_slow)
+!         call t3dmix(t_fast,diff2_fast)
+!       else
+!         call t3dmix(t,diff2)
+          call t3dmix(tile)
+!       endif
 # endif
       enddo
 C$OMP BARRIER
