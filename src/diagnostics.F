@@ -1622,8 +1622,8 @@
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
-      character(len=99),intent(out) :: fname
+      integer         ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
+      character(len=*),intent(out) :: fname
 
       !local
       integer :: ncid,ierr,varid
@@ -1636,6 +1636,8 @@
       character(len=5) :: diag_pflx_str = 'False'
       character(len=5) :: diag_Ebcln_str = 'False'
 
+!     fname=trim(output_root_name) / / '_dia'
+!     call append_date_node(fname)
       fname=trim(output_root_name) / / '_dia.nc'
       call create_filename(fname,total_rec)
 
@@ -1675,7 +1677,6 @@
      &       'diagnostics :: created new netCDF file: ',fname
 
       end subroutine create_diagnostics_file !]
-
 ! ----------------------------------------------------------------------
 !      subroutine def_rst_diag_pflx(ncid)  ![
 !      use ncvars
