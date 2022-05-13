@@ -34,13 +34,13 @@ history: LDEFHIS, NWRT, NRPFHIS
             T      5    10
 
 averages: NTSAVG, NAVG, NRPFAVG
-            1e4     1e4     1e4
+            1     5     1e4
      
 primary_history_fields: zeta Ubar Vbar U V  
                          T    T    T   T T
 
 auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
-                           F   F     F   F    F    F    F    F
+                           T    T    T   T    T    T    T    T
 
 primary_averages: zeta Ubar Vbar U V  
                    T    T    T   T T

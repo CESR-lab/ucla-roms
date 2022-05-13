@@ -168,19 +168,21 @@
       end subroutine set_ana_surf_tracer_flx  !]
 
 ! ----------------------------------------------------------------------
-      subroutine def_his_trc  ![
+      subroutine def_his_trc( ncid )  ![
       ! Define history file variables in def_his.F
 
       implicit none
 
+      ! input
+      integer,intent(in) :: ncid
       ! local
       integer itrc, ierr, varid
 
       do itrc=1,iTandS+nt_passive
         if (wrt_t(itrc)) then
-          varid = nccreate(nchis,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
-          ierr = nf90_put_att(nchis,varid,'long_name',t_lname(itrc))
-          ierr = nf90_put_att(nchis,varid,'units',t_units(itrc))
+          varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',t_lname(itrc))
+          ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
       enddo
 
@@ -209,29 +211,31 @@
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_his_trc (start)  ![
+      subroutine wrt_his_trc (ncid,start)  ![
       ! write tracers to history file
       ! temp+salinity and passive tracers (no bgc)
       implicit none
 
       ! inputs
+      integer,             intent(in) :: ncid
       integer,dimension(:),intent(in) :: start
       ! local
       integer :: itrc
 
       do itrc=1,iTandS+nt_passive
-        if (wrt_t(itrc)) call ncwrite(nchis,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
+        if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
       enddo
 
       end subroutine wrt_his_trc  !]
 
 ! ----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine wrt_avg_trc (start)  ![
+      subroutine wrt_avg_trc (ncid,start)  ![
       ! Write tracers to avg file
       implicit none
 
       ! inputs
+      integer,             intent(in) :: ncid
       integer,dimension(:),intent(in) :: start
 
       ! local
@@ -240,7 +244,7 @@
       do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)                                   ! get respective index for t_avg(itavg) -> t(itrc)
-          call ncwrite(ncavg,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start)
+          call ncwrite(ncid,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start)
         endif
       enddo
 
@@ -270,27 +274,20 @@
 
 ! ----------------------------------------------------------------------
 #ifdef AVERAGES
-      subroutine set_avg_trc(istrR,iendR,jstrR,jendR,cff,cff1)  ![
+      subroutine set_avg_trc(coef)  ![
 
       implicit none
 
       ! inputs
-      integer :: istrR, iendR, jstrR, jendR
-      real    :: cff, cff1
+      real    :: coef
       ! local
-      integer :: i, j, k, itrc, itavg
+      integer :: itrc, itavg
 
       do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)                         ! get respective index for t_avg(itavg) -> t(itrc)
-          do k=1,N
-            do j=jstrR,jendR
-              do i=istrR,iendR
-                t_avg(i,j,k,itavg)=cff1*t_avg(i,j,k,itavg)
-     &                             +cff*t(i,j,k,nstp,itrc)
-              enddo
-            enddo
-          enddo
+          t_avg(i0:i1,j0:j1,:,itavg) = t_avg(i0:i1,j0:j1,:,itavg)     *(1-coef) +
+     &                                     t(i0:i1,j0:j1,:,nstp,itrc) * coef
         endif
       enddo
 

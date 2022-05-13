@@ -344,27 +344,25 @@
       end subroutine def_grid  !]
 
 !----------------------------------------------------------------------
-      subroutine wrt_grid(ncid, ncname, lncn)  ![
+      subroutine wrt_grid(ncid)  ![
 
 ! Write grid variables in output NetCDF file, which may be restart,
 ! history, averages, etc. All variables are assumed to be previously
 ! defined by def_grid.
 !
 ! Arguments: ncid    netCDF unit-ID of NetCDF file, which must be
-!                            already opened and in definition mode;
-!            ncname  netCDF file name (used only in error messages)
-!            lncn    length of ncname
+!                            already opened and in definition mode
 
       use param
       use ncvars
       use scalars
       use netcdf
+      use nc_read_write
 
       implicit none
-      character(len=*) ncname
-      integer ncid, lncn, varid, ierr, ncdf_write
+      integer ncid, varid, ierr, ncdf_write
 
-#include "netcdf.inc"
+!#include "netcdf.inc"
 
 #if defined MPI && !defined PARALLEL_FILES
       if (mynode == 0) then
@@ -374,17 +372,17 @@
 
         ierr=nf90_inq_varid(ncid, 'spherical', varid)
         if (ierr == nf90_noerr) then
-          ierr=nf_put_var1_text(ncid, varid, 1,
+          ierr=nf90_put_var(ncid, varid,
 #ifdef SPHERICAL
      &                                         'T')
 #else
      &                                         'F')
 #endif
           if (ierr /= nf90_noerr) then
-            write(*,2) 'spherical', ncname(1:lncn)
+            call handle_ierr(ierr, 'wrt_grid spherical')
           endif
         else
-          write(*,1) 'spherical', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid spherical')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 
@@ -393,23 +391,23 @@
 
         ierr=nf90_inq_varid(ncid, 'xl', varid)
         if (ierr == nf90_noerr) then
-          ierr=nf_put_var1_FTYPE(ncid, varid, 1, xl)
+          ierr=nf90_put_var(ncid, varid, 1, xl)
           if (ierr /= nf90_noerr) then
-            write(*,2) 'xl', ncname(1:lncn)
+            call handle_ierr(ierr, 'wrt_grid ')
           endif
         else
-          write(*,1) 'xl', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 
         ierr=nf90_inq_varid(ncid, 'el', varid)
         if (ierr == nf90_noerr) then
-          ierr=nf_put_var1_FTYPE(ncid, varid, 1, el)
+          ierr=nf90_put_var(ncid, varid, 1, el)
           if (ierr /= nf90_noerr) then
-            write(*,2) 'el', ncname(1:lncn)
+            call handle_ierr(ierr, 'wrt_grid ')
           endif
         else
-          write(*,1) 'el', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 #endif
@@ -431,10 +429,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0, r_var, h(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'h', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'h', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -444,10 +442,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, f(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'f', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'f', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -457,10 +455,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, pm(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'pm', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'pm', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -468,10 +466,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0, r_var, pn(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'pn', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'pn', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -482,10 +480,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write( ncid, -varid, 0,r_var, lonr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'lon_rho', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'lon_rho', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -493,10 +491,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, latr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'lat_rho', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'lat_rho', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 #else
@@ -504,10 +502,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, xr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'x_rho', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'x_rho', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -515,10 +513,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, yr(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'y_rho', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'y_rho', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 #endif
@@ -529,10 +527,10 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, angler(START_2D_ARRAY),1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'angle', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'angle', ncname(1:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 
@@ -544,18 +542,17 @@
       if (ierr == nf90_noerr) then
         ierr=ncdf_write(ncid, -varid, 0,r_var, rmask(START_2D_ARRAY), 1)
         if (ierr /= nf90_noerr) then
-          write(*,2) 'mask_rho', ncname(1:lncn)
+          call handle_ierr(ierr, 'wrt_grid ')
         endif
       else
-        write(*,1) 'mask_rho', ncname(2:lncn)
+        call handle_ierr(ierr, 'wrt_grid ')
       endif
       if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
 #endif
 #ifdef MPI_SILENT_MODE
       if (mynode == 0) then
 #endif
-        write(*,'(6x,4A,2x,A,I4)')  'wrt_grid :: wrote grid data ',
-     &          'into file ''', ncname(1:lncn), '''.' MYID
+        write(*,'(6x,A)')  'wrt_grid :: wrote grid data '
 #ifdef MPI_SILENT_MODE
       endif
 #endif

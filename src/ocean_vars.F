@@ -8,8 +8,11 @@
       use netcdf
       use nc_read_write
       use roms_read_write
+      use scalars
       implicit none
       private
+
+#include "ocean_vars.opt"
 
       ! module preamble:  ![
       ! 2D - taken from what was ocean2d.F
@@ -55,11 +58,16 @@
 # endif
 #endif  /* SOLVE3D */
 
-      integer,public :: rechis                            ! record in history file, needed by bgc and wec
+      ! netcdf outputting:
+      integer :: ncid=-1, prev_fill_mode
+      real    :: t_avg_ovars=0
+      integer :: navg_ovars = 0                              ! number of samples in average
 
       public :: init_arrays_ocean2d
       public :: init_arrays_ocean3d
-      public :: wrt_his, wrt_rst
+      public :: wrt_rst
+      public :: wrt_his_ocean_vars
+      public :: wrt_avg_ocean_vars
 
       contains  !]
 
@@ -155,8 +163,498 @@
 
       end subroutine init_arrays_ocean3d  !]
 
+! ----------------------------------------------------------------------
+      subroutine wrt_his_ocean_vars  ![
+      ! write ocean_vars variables to output netcdf file
+      ! ocean_vars variables are calculated for t=n in timestep t=n
+      ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
+
+      use ncvars  ! REMOVE THIS LATER AND MOVED WHAT IS NEEDED HERE!
+      use mixing
+      use eos_vars
+      use work_mod
+      use grid
+      use tracers    !, only: wrt_his_trc
+
+      implicit none
+
+      ! local
+      integer,dimension(4)   :: start
+      integer,save           :: rec_his                              ! current file output record
+      integer,save           :: total_rec_his=0                      ! total his output records so far
+      real,save              :: output_time_his=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_his
+      integer                :: tile, ierr, i, j, k
+
+      if (wrt_file_his) then
+
+      if (.not. first_step) output_time_his = output_time_his + dt   ! only start count after first timestep
+      first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+
+      if (output_time_his>=output_period_his .or.
+     &    output_time_his==0                      ) then             ! catch to get t=0 output
+
+        if (mod(total_rec_his,nrpf_his)==0) then
+          call create_file_ocean_vars(total_rec_his,fname_his,.false.)
+          rec_his = 0
+        endif
+        total_rec_his = total_rec_his +1
+        rec_his = rec_his + 1
+
+        ierr=nf90_open(fname_his,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/time/),(/rec_his/))
+
+        call write_time_step( ncid, rec_his, total_rec_his )
+
+        start=1; start(3)=rec_his                                    ! back to 2D vars
+        if (wrt_Z)  call ncwrite(ncid,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
+        if (wrt_Ub) call ncwrite(ncid,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
+        if (wrt_Vb) call ncwrite(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
+
+#ifdef SOLVE3D
+! 3D momentum components in XI- and ETA-directions:
+! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
+! in the previous timestep (same result).
+! wrt_his called at the middle of next timestep as some variables only calculated there for t=n.
+
+        start(3)=1; start(4)=rec_his
+        if (wrt_U) call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
+        if (wrt_V) call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
+
+        call wrt_his_trc(ncid,start)                              ! tracer variables
+
+        if (wrt_R) then
+# ifdef SPLIT_EOS
+          call ncwrite(ncid,vname(1,indxR),rho1(i0:i1,j0:j1,:),start)
+# else
+          call ncwrite(ncid,vname(1,indxR), rho(i0:i1,j0:j1,:),start)
+# endif
+        endif
+        if (wrt_O) then                              ! s-coordinate omega vertical velocity (m/s).
+          do k=0,N
+            do j=0,Mm+1
+              do i=0,Lm+1
+                work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
+              enddo
+            enddo
+          enddo
+          call ncwrite(ncid,vname(1,indxO),work(i0:i1,j0:j1,:),start)
+        endif
+        if (wrt_W) then                              ! true vertical velocity (m/s).
+          do tile=0,NSUB_X*NSUB_E-1
+            call wvlcty (tile, work)
+          enddo
+          ! need 1:N as work is 1:N+1 in size
+          ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
+          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,0:N-1),start)
+        endif
+        if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
+        if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
+# ifdef SALINITY
+        if (wrt_Aks) call ncwrite(ncid,vname(1,indxAks),Akt(i0:i1,j0:j1,:,isalt),start)
+# endif
+        start(3)=rec_his                                      ! back to 2D vars
+# ifdef LMD_KPP
+        if (wrt_Hbls) call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
+# endif
+# ifdef LMD_BKPP
+        if (wrt_Hbbl) call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
+# endif
+#endif
+
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+     &     'ocean_vars :: wrote history, tdays =', tdays,
+     &     'step =', iic-1, 'rec =', rec_his, '/', total_rec_his     ! -1 since iic=t(n+1)
+        endif
+
+        output_time_his=0
+      endif
+
+      endif  ! <-- wrt_file_his
+
+      end subroutine wrt_his_ocean_vars  !]
+
+! ----------------------------------------------------------------------
+      subroutine wrt_avg_ocean_vars  ![
+      ! write averaged variables to output netcdf file
+      ! don't include t=0 in averaging. This create 0.5dt error in averaging,
+      ! but this 0.5dt error has always been in ROMS.
+      ! for 2 steps. True avg would be 0.5*t0 + t1 + 0.5*t2, but we've never done that.
+      use ncvars  ! remove later
+      use eos_vars
+      use mixing
+      use tracers
+      use grid
+      implicit none
+
+      ! local
+      integer,dimension(4)   :: start
+      integer,save           :: rec_avg                              ! current file output record
+      integer,save           :: total_rec_avg=0                      ! total avg output records so far
+      real,save              :: output_time_avg=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_avg
+      integer :: tile, tn, ierr, k
+
+      if (wrt_file_avg) then
+
+      if (.not. first_step) then
+        call calc_avg_ocean_vars                                     ! don't include t=0 in averaging
+        output_time_avg = output_time_avg + dt                       ! only start count after first timestep
+      endif
+      first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+
+      if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
+
+        if (mod(total_rec_avg,nrpf_avg)==0) then
+          call create_file_ocean_vars(total_rec_avg,fname_avg,.true.)
+          rec_avg = 0
+        endif
+        total_rec_avg = total_rec_avg +1
+        rec_avg = rec_avg + 1
+
+        ierr=nf90_open(fname_avg,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/t_avg_ovars/),(/rec_avg/))
+
+        start=1; start(3)=rec_avg                                    ! back to 2D vars
+        if (wrt_avg_Z)   call ncwrite(ncid, vname(1,indxZ),  zeta_avg(i0:i1,j0:j1), start)
+        if (wrt_avg_Ub)  call ncwrite(ncid, vname(1,indxUb), ubar_avg( 1:i1,j0:j1), start)
+        if (wrt_avg_Vb)  call ncwrite(ncid, vname(1,indxVb), vbar_avg(i0:i1, 1:j1), start)
+# ifdef SOLVE3D
+        start(3)=1; start(4)=rec_avg
+        if (wrt_avg_U)   call ncwrite(ncid, vname(1,indxU),     u_avg( 1:i1,j0:j1,:), start)
+        if (wrt_avg_V)   call ncwrite(ncid, vname(1,indxV),     v_avg(i0:i1, 1:j1,:), start)
+
+        call wrt_avg_trc(ncid,start)     ! STILL NEED TO UPDATE                                   ! tracer variables
+
+        if (wrt_avg_R)   call ncwrite(ncid, vname(1,indxR),   rho_avg(i0:i1,j0:j1,:), start)
+        if (wrt_avg_O) then
+          do k=0,N
+            w_avg(i0:i1,j0:j1,k) = w_avg(i0:i1,j0:j1,k)*pm(i0:i1,j0:j1)*pn(i0:i1,j0:j1)  ! convert before write.
+          enddo
+          call ncwrite(ncid, vname(1,indxO),     w_avg(i0:i1,j0:j1,:), start)            ! here rather than calc_avg
+        endif                                                                            ! for efficiency
+        ! need 1:N as work is 1:N+1 in size
+        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
+        if (wrt_avg_W)   call ncwrite(ncid, vname(1,indxW),   wvl_avg(i0:i1,j0:j1,0:N-1), start)
+        if (wrt_avg_Akv) call ncwrite(ncid, vname(1,indxAkv), akv_avg(i0:i1,j0:j1,:), start)
+        if (wrt_avg_Akt) call ncwrite(ncid, vname(1,indxAkt), akt_avg(i0:i1,j0:j1,:), start)
+#  ifdef SALINITY
+        if (wrt_avg_Aks) call ncwrite(ncid, vname(1,indxAks), aks_avg(i0:i1,j0:j1,:), start)
+#  endif
+        start(3)=rec_avg                                                ! back to 2D vars
+#  ifdef LMD_KPP
+        if (wrt_avg_Hbls) call ncwrite(ncid, vname(1,indxHbls),  hbl_avg(i0:i1,j0:j1), start)
+#  endif
+#  ifdef LMD_BKPP
+        if (wrt_avg_Hbbl) call ncwrite(ncid, vname(1,indxHbbl), hbbl_avg(i0:i1,j0:j1), start)
+#  endif
+# endif /* SOLVE3D */
+
+        navg_ovars=0
+        output_time_avg=0
+
+        ierr=nf90_close(ncid)
+        if (mynode == 0) then
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
+     &        'ocean_vars :: wrote averages, tdays =', tdays,
+     &        'step =', iic-1, 'rec =', rec_avg, '/', total_rec_avg  ! -1 since iic=t(n+1)
+     &         MYID
+        endif
+      endif
+
+      endif  ! <-- wrt_file_avg
+
+      end subroutine wrt_avg_ocean_vars  !]
+
 !----------------------------------------------------------------------
-      ! def_his calls itself to get def_avg. So need to fix that first before adding here
+      subroutine create_file_ocean_vars(total_rec,fname,avg)  ![
+      implicit none
+
+      !input/output
+      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
+      character(len=99),intent(out) :: fname
+      logical,          intent(in)  :: avg                 ! his or average file
+
+      ! local
+      integer :: ierr,varid
+      character(len=10),dimension(4) :: dimnames           ! dimension names
+      integer,          dimension(4) :: dimsizes
+
+      integer :: ndims ! debug
+
+      if (      avg) fname=trim(output_root_name) / / '_avg.nc'
+      if (.not. avg) fname=trim(output_root_name) / / '_his.nc'
+      call create_filename(fname,total_rec)
+
+      ierr=nf90_create(fname,nf90_netcdf4,ncid)
+      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_file_ocean_vars: ')
+
+      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      if (      avg) ierr=nf90_put_att(ncid,varid,'long_name',
+     &                                 'Average time since origin')
+      if (.not. avg) ierr=nf90_put_att(ncid,varid,'long_name',
+     &                                 'Time since origin')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
+
+      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      if (ierr/=nf90_noerr)
+     &  call handle_ierr(ierr,'create_file_ocean_vars: ')
+
+      if (      avg) call def_vars_ocean_vars(  .true.  )
+      if (.not. avg) call def_vars_ocean_vars(  .false. )
+
+      ierr = nf90_enddef(ncid)
+      if (mynode == 0) then
+        write(*,'(7x,2A)')
+     &    'ocean_vars :: created new netCDF file ', trim(fname)
+      endif
+
+      end subroutine create_file_ocean_vars !]
+
+! ----------------------------------------------------------------------
+      subroutine def_vars_ocean_vars( avg )  ![
+      ! define output variable & attributes in netcdf results file
+      ! for instantaneous or averaged variables
+      use ncvars ! vname and indxZ
+      use tracers
+      use grid
+      implicit none
+
+      ! input
+      logical,intent(in) :: avg
+      ! local
+      integer           :: ierr, varid
+      character(len=64) :: text_lname
+      logical,save      :: grid_written=.false.
+
+      if (.not. grid_written) then  ! confirm with JM if we want grid written to averages file?
+        call def_grid(ncid)
+        call wrt_grid (ncid)
+        grid_written=.true.
+      endif
+
+! Time-step number and time-record indices: (history file only, this
+! may be needed in the event when a history record is used to restart
+! the current model run);
+      varid = nccreate(ncid,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
+      ierr=nf90_put_att (ncid, varid, 'long_name',
+     &       'time step and record numbers from initialization')
+
+      if (wrt_Z) then
+        if (.not. avg) text_lname=vname(2,indxZ)
+        if (      avg) text_lname='averaged '/ /vname(2,indxZ)
+        varid = nccreate(ncid,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
+      endif
+      if (wrt_Ub) then
+        if (.not. avg) text_lname=vname(2,indxUb)
+        if (      avg) text_lname='averaged '/ /vname(2,indxUb)
+        varid = nccreate(ncid,vname(1,indxUb),(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
+      endif
+      if (wrt_Vb) then
+        if (.not. avg) text_lname=vname(2,indxVb)
+        if (      avg) text_lname='averaged '/ /vname(2,indxVb)
+        varid = nccreate(ncid,vname(1,indxVb),(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
+      endif
+#ifdef SOLVE3D
+      if (wrt_U) then
+        if (.not. avg) text_lname=vname(2,indxU)
+        if (      avg) text_lname='averaged '/ /vname(2,indxU)
+        varid = nccreate(ncid,vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
+      endif
+      if (wrt_V) then
+        if (.not. avg) text_lname=vname(2,indxV)
+        if (      avg) text_lname='averaged '/ /vname(2,indxV)
+        varid = nccreate(ncid,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),(/xi_rho,eta_v,N,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
+      endif
+
+      call def_his_trc( ncid )
+
+      if (wrt_R) then                                      ! density anomaly.
+        if (.not. avg) text_lname=vname(2,indxR)
+        if (      avg) text_lname='averaged '/ /vname(2,indxR)
+        varid = nccreate(ncid,vname(1,indxR),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
+      endif
+      if (wrt_O) then                                      ! s-coordinate "omega" vertical velocity.
+        if (.not. avg) text_lname=vname(2,indxO)
+        if (      avg) text_lname='averaged '/ /vname(2,indxO)
+        varid = nccreate(ncid,vname(1,indxO),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxO))
+      endif
+      if (wrt_W) then                                      ! true W-vertical velocity.
+        if (.not. avg) text_lname=vname(2,indxW)
+        if (      avg) text_lname='averaged '/ /vname(2,indxW)
+        varid = nccreate(ncid,vname(1,indxW),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxW))
+      endif
+      if (wrt_Akv) then                                    ! vertical viscosity coefficient.
+        if (.not. avg) text_lname=vname(2,indxAkv)
+        if (      avg) text_lname='averaged '/ /vname(2,indxAkv)
+        varid = nccreate(ncid,vname(1,indxAkv),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkv))
+      endif
+      if (wrt_Akt) then                                    ! vertical thermal conductivity coefficient.
+        if (.not. avg) text_lname=vname(2,indxAkt)
+        if (      avg) text_lname='averaged '/ /vname(2,indxAkt)
+        varid = nccreate(ncid,vname(1,indxAkt),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkt))
+      endif
+# ifdef SALINITY
+      if (wrt_Aks) then                                    ! vertical diffusion coefficient for salinity.
+        if (.not. avg) text_lname=vname(2,indxAks)
+        if (      avg) text_lname='averaged '/ /vname(2,indxAks)
+        varid = nccreate(ncid,vname(1,indxAks),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAks))
+      endif
+# endif /* SALINITY */
+# ifdef LMD_KPP
+      if (wrt_Hbls) then                                   ! depth of surface planetary boundary layer.
+        if (.not. avg) text_lname=vname(2,indxHbls)
+        if (      avg) text_lname='averaged '/ /vname(2,indxHbls)
+        varid = nccreate(ncid,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
+      endif
+# endif
+# ifdef LMD_BKPP
+      if (wrt_Hbbl) then                                   ! thickness of bottom boundary layer.
+        if (.not. avg) text_lname=vname(2,indxHbbl)
+        if (      avg) text_lname='averaged '/ /vname(2,indxHbbl)
+        varid = nccreate(ncid,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
+      endif
+# endif
+#endif /* SOLVE3D */
+
+      end subroutine def_vars_ocean_vars  !]
+
+! ----------------------------------------------------------------------
+      subroutine calc_avg_ocean_vars  ![
+      ! set averaged variables
+      use eos_vars
+      use work_mod
+      use mixing
+      use tracers
+      implicit none
+
+      ! local
+      real :: coef
+
+      navg_ovars = navg_ovars +1
+      coef = 1./navg_ovars
+
+      if (coef==1) then                                    ! this refreshes average (1-coef)=0
+       if (mynode==0) write(*,'(7x,2A,F9.1)')
+     &   'ocean_vars :: started averaging. ',
+     &   'output_period_avg (s) =', output_period_avg
+      endif
+
+      t_avg_ovars = t_avg_ovars*(1-coef) + time*coef
+
+      ! need i0:i1 indices because arrays still GLOBAL_2D therefore wasted margin
+        if (wrt_avg_Z)  zeta_avg(i0:i1,j0:j1) = zeta_avg(i0:i1,j0:j1)*(1-coef) + zeta(i0:i1,j0:j1,knew)*coef
+        if (wrt_avg_Ub) ubar_avg( 1:i1,j0:j1) = ubar_avg( 1:i1,j0:j1)*(1-coef) + ubar( 1:i1,j0:j1,knew)*coef
+        if (wrt_avg_Vb) vbar_avg(i0:i1, 1:j1) = vbar_avg(i0:i1, 1:j1)*(1-coef) + vbar(i0:i1, 1:j1,knew)*coef
+# ifdef SOLVE3D
+        if (wrt_avg_U)   u_avg( 1:i1,j0:j1,:) = u_avg( 1:i1,j0:j1,:)*(1-coef) + u( 1:i1,j0:j1,:,nstp)*coef
+        if (wrt_avg_V)   v_avg(i0:i1, 1:j1,:) = v_avg(i0:i1, 1:j1,:)*(1-coef) + v(i0:i1, 1:j1,:,nstp)*coef
+
+        call set_avg_trc(coef)                                        ! tracer variables
+
+        if (wrt_avg_R) then
+#  ifdef SPLIT_EOS
+          rho_avg(i0:i1,j0:j1,:) = rho_avg(i0:i1,j0:j1,:)*(1-coef) +
+     &     ( rho1(i0:i1,j0:j1,:) - qp1(i0:i1,j0:j1,:) * z_r(i0:i1,j0:j1,:) )*coef
+!                rho_avg(i,j,k)=cff1*rho_avg(i,j,k) +cff*( rho1(i,j,k)
+!     &                                        -qp1(i,j,k)*z_r(i,j,k) )
+#  else
+          rho_avg(i0:i1,j0:j1,:) = rho_avg(i0:i1,j0:j1,:)*(1-coef) + rho(i0:i1,j0:j1,:)*coef
+!                rho_avg(i,j,k)=cff1*rho_avg(i,j,k) +cff*rho(i,j,k)
+#  endif
+        endif
+        if (wrt_avg_O) w_avg(i0:i1,j0:j1,:) = w_avg(i0:i1,j0:j1,:)*(1-coef)
+     &                                      + ( We(i0:i1,j0:j1,:)+Wi(i0:i1,j0:j1,:) ) *coef
+        ! need 1:N as work is 1:N+1 in size
+        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
+        if (wrt_avg_W) then
+          call wvlcty (0, work)  ! 0=tile number
+          wvl_avg(i0:i1,j0:j1,0:N-1) = wvl_avg(i0:i1,j0:j1,0:N-1)*(1-coef)
+     &                               + work(i0:i1,j0:j1,0:N-1)*coef
+        endif
+        if (wrt_avg_Akv) akv_avg(i0:i1,j0:j1,:) = akv_avg(i0:i1,j0:j1,:)*(1-coef) + akv(i0:i1,j0:j1,:)*coef
+        if (wrt_avg_Akt) akt_avg(i0:i1,j0:j1,:) = akt_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,itemp)*coef
+#  ifdef SALINITY
+        if (wrt_avg_Aks) aks_avg(i0:i1,j0:j1,:) = aks_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,isalt)*coef
+#  endif
+#  ifdef LMD_KPP
+        if (wrt_avg_Hbls) hbl_avg(i0:i1,j0:j1)  =  hbl_avg(i0:i1,j0:j1)*(1-coef) + hbls(i0:i1,j0:j1,nstp)*coef
+#  endif
+#  ifdef LMD_BKPP
+        if (wrt_avg_Hbbl) hbbl_avg(i0:i1,j0:j1) = hbbl_avg(i0:i1,j0:j1)*(1-coef) + hbbl(i0:i1,j0:j1,nstp)*coef
+#  endif
+# endif /* SOLVE3D */
+
+      end subroutine calc_avg_ocean_vars  !]
+
+! ----------------------------------------------------------------------
+      subroutine write_time_step( ncid, record, total_recs )  ![
+      use ncvars
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: ncid
+      integer, intent(in) :: record           ! current file record number
+      integer, intent(in) :: total_recs       ! total records for variable
+
+      ! local
+      integer :: ibuff(iaux), start(2), count(2) ! iaux = 6 from wrt_his.F
+      integer :: var_id_tmp, ierr
+
+      ibuff(1)=iic-1  ; ibuff(2)=nrecrst     ! time step and
+      ibuff(4:iaux)=0 ; ibuff(3)=total_recs      ! rechis numbers.
+!#ifdef AVERAGES
+!      ibuff(4)=nrecavg
+!#endif
+!      ibuff(1)=iic-1 ; ibuff(2)=999999        ! time step and nrecrst=999999 DevinD hardcode
+!      ibuff(4:6)=0   ; ibuff(3)=total_recs    ! record numbers. iaux = 6 in ncvars
+
+      start(1)=1      ; count(1)=6            ! iaux = 6 in ncvars
+      start(2)=record ; count(2)=1
+
+      ierr=nf90_inq_varid(ncid, 'time_step', var_id_tmp)        ! get time step var_id
+      if (ierr/=0) call handle_ierr(ierr,'ocean_vars write_time_step inq_varid')
+      ierr=nf90_put_var(ncid, var_id_tmp, ibuff, start, count)  ! & record time step info
+      if (ierr/=0) call handle_ierr(ierr,'ocean_vars write_time_step put_var')
+      ! can't use ncwrite() as ibuff is an integer array not real
+
+      end subroutine write_time_step  !]
 
 !----------------------------------------------------------------------
       subroutine def_rst(total_rec, ierr)  ![
@@ -624,189 +1122,188 @@
       end subroutine def_rst  !]
 
 !----------------------------------------------------------------------
-      subroutine wrt_his  ![
-      ! writes requested model fields at requested levels into history netCDF file.
-      !
-      ! NOTE: wrt_his is called in middle of roms_step in main.F because
-      !       even though u/ubar, etc, were computed at the end of the
-      !       previous timestep, other variables like 'rho', 'Akv', etc
-      !       have only just been computed.
-
-      use param
-      use tracers    !, only: wrt_his_trc
-      use eos_vars
-      use grid
-      use mixing
-      use ncvars
-      use scalars
-      use work_mod
-      use mpi
-      implicit none
-
-      integer :: ierr, i, lstr, lvar, lenstr, var_id_tmp
-     &        , start1d(2), count(2), ibuff(iaux), ncdf_write
-      integer :: start(4)
-      character(len=18) :: tstring
-#ifdef SOLVE3D
-      integer :: tile, itrc, j,k
-#endif
-#if defined MPI && !defined PARALLEL_FILES
-      integer :: status(MPI_STATUS_SIZE), blank
-      if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
-     &            mynode-1, 2, ocean_grid_comm, status, ierr)
-#endif
-
-      call def_his(nrechis, ierr)         ! create/open history and set rechis index within the file.
-      if (ierr /= nf90_noerr) goto 99
-      lstr=lenstr(hisname)
-      nrechis=max(nrechis,1)              !!! WARNING: Once time
-      if (nrpfhis == 0) then              !!! stepping has been
-        rechis=nrechis                    !!! started, it is assumed
-      else                                !!! that the global history
-        rechis=1+mod(nrechis-1, nrpfhis)  !!! rechis index "nrechis"
-      endif                               !!! is advanced by main.
-
-      ! write out evolving model variables:
-      ibuff(1)=iic-1  ; ibuff(2)=nrecrst    ! Time step and
-      ibuff(4:iaux)=0 ; ibuff(3)=nrechis    ! rechis numbers.
-#ifdef AVERAGES
-      ibuff(4)=nrecavg
-#endif
-      start1d(1)=1      ; count(1)=iaux
-      start1d(2)=rechis ; count(2)=1
-      start=1
-
-      ierr=nf90_inq_varid(nchis, 'time_step', var_id_tmp)
-      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start1d, count)
-      if (ierr /= nf90_noerr) then
-        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
-     &       'Cannot write variable ''time_step'' into history file, ',
-     &       'rec =', rechis, nf90_strerror(ierr) MYID
-        goto 99                                           !--> ERROR
-      endif
-
-
-! Time: Note that (1) time is always double precision; and (2) which
-! one to write into the file, time or tdays, is decided by attribute
-! "units" stored as vname(3,indxTime).  When computng time is always
-! in seconds, however it is more convenient to have it in days in all
-! the files.
-
-      ierr=nf90_inq_varid(nchis, 'ocean_time', var_id_tmp)
-      ierr=nf90_put_var(nchis, var_id_tmp, time,(/rechis/))
-
-! Barotropic mode variables: free-surface and 2D momentum
-! components in XI-,ETA-directions.
-! 'knew' index is normally 'n+1' timestep, but at this point
-! its value hasn't evolved from 'n+1' of previous timestep,
-! which makes it 'n' of this timestep still.
-
-      start(3)=rechis
-      if (wrthis(indxZ))  call ncwrite(nchis,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
-      if (wrthis(indxUb)) call ncwrite(nchis,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
-      if (wrthis(indxVb)) call ncwrite(nchis,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
-
-#ifdef SOLVE3D
-! 3D momentum components in XI- and ETA-directions:
-! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
-! in the previous timestep (same result).
-! wrt_his called at the middle of next timestep as some variables only calculated there for t=n.
-
-      start(3)=1; start(4)=rechis
-      if (wrthis(indxU)) call ncwrite(nchis,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
-      if (wrthis(indxV)) call ncwrite(nchis,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
-
-      call wrt_his_trc(start)                              ! tracer variables
-
-      if (wrthis(indxR)) then
-# ifdef SPLIT_EOS
-        call ncwrite(nchis,vname(1,indxR),rho1(i0:i1,j0:j1,:),start)
-# else
-        call ncwrite(nchis,vname(1,indxR), rho(i0:i1,j0:j1,:),start)
-# endif
-      endif
-      if (wrthis(indxO)) then                              ! s-coordinate omega vertical velocity (m/s).
-        do k=0,N
-          do j=0,Mm+1
-            do i=0,Lm+1
-              work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
-            enddo
-          enddo
-        enddo
-        call ncwrite(nchis,vname(1,indxO),work(i0:i1,j0:j1,:),start)
-      endif
-      if (wrthis(indxW)) then                              ! true vertical velocity (m/s).
-        do tile=0,NSUB_X*NSUB_E-1
-          call wvlcty (tile, work)
-        enddo
-        ! need 1:N as work is 1:N+1 in size
-        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
-        call ncwrite(nchis,vname(1,indxW),work(i0:i1,j0:j1,0:N-1),start)
-      endif
-      if (wrthis(indxAkv)) call ncwrite(nchis,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
-      if (wrthis(indxAkt)) call ncwrite(nchis,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
-# ifdef SALINITY
-      if (wrthis(indxAks)) call ncwrite(nchis,vname(1,indxAks),Akt(i0:i1,j0:j1,:,isalt),start)
-# endif
-      start(3)=rechis                                      ! back to 2D vars
-# ifdef LMD_KPP
-      if (wrthis(indxHbls)) call ncwrite(nchis,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
-# endif
-# ifdef LMD_BKPP
-      if (wrthis(indxHbbl)) call ncwrite(nchis,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
-# endif
-#endif
-      start(3)=1; start(4)=rechis                          ! back to 3D vars
-!#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
-!      call wrt_his_bgc_diag(rechis, ierr)
+!      subroutine wrt_his  ![
+!      ! writes requested model fields at requested levels into history netCDF file.
+!      !
+!      ! NOTE: wrt_his is called in middle of roms_step in main.F because
+!      !       even though u/ubar, etc, were computed at the end of the
+!      !       previous timestep, other variables like 'rho', 'Akv', etc
+!      !       have only just been computed.
+!
+!      use param
+!      use tracers    !, only: wrt_his_trc
+!      use eos_vars
+!      use grid
+!      use mixing
+!      use ncvars
+!      use work_mod
+!      use mpi
+!      implicit none
+!
+!      integer :: ierr, i, lstr, lvar, lenstr, var_id_tmp
+!     &        , start1d(2), count(2), ibuff(iaux), ncdf_write
+!      integer :: start(4)
+!      character(len=18) :: tstring
+!#ifdef SOLVE3D
+!      integer :: tile, itrc, j,k
 !#endif
-
-  1   format(/1x, '### ERROR: wrt_his :: Cannot write variable ''',
-     &              A, ''' into history file, rec =', i6, 3x,A,i4)
-      goto 100
-  99  if (may_day_flag == 0) may_day_flag=3
- 100  continue
-
-! Close or synchronize netCDF file to the disk to allow other
-! processes to access data immediately after it is written.
-
-#if defined MPI && !defined PARALLEL_FILES
-      ierr=nf90_close (nchis)
-      if (nrpfhis > 0 .and. rechis >= nrpfhis) nchis=-1
-#else
-      if (nrpfhis > 0 .and. rechis >= nrpfhis) then
-        ierr=nf90_close (nchis)
-        nchis=-1
-      else
-        ierr=nf90_sync(nchis)
-      endif
-#endif
-      if (ierr == nf90_noerr) then
-#ifdef MPI_SILENT_MODE
-        if (mynode == 0) then
-#endif
-          write(tstring,'(F18.8)') tdays
-          i=1
-          do while (i < 18 .and. tstring(i:i) == ' ')
-            i=i+1
-          enddo
-          write(*,'(7x,A,1x,A,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
-     &      'wrt_his :: wrote history, tdays =', tstring(i:i+8),
-     &      'step =', ibuff(1),  'rec =', rechis, '/',  nrechis
-     &       MYID
-#ifdef MPI_SILENT_MODE
-        endif
-#endif
-      else
-        write(*,'(/1x,2A/)')      '### ERROR: wrt_his :: Cannot ',
-     &                       'synchronize or close history file.'
-        if (may_day_flag == 0) may_day_flag=3
-      endif
-#if defined MPI && !defined PARALLEL_FILES
-      if (mynode < NNODES-1) call MPI_Send (blank, 1, MPI_INTEGER,
-     &                           mynode+1, 2, ocean_grid_comm, ierr)
-#endif
-      end subroutine wrt_his  !]
+!#if defined MPI && !defined PARALLEL_FILES
+!      integer :: status(MPI_STATUS_SIZE), blank
+!      if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
+!     &            mynode-1, 2, ocean_grid_comm, status, ierr)
+!#endif
+!
+!      call def_his(nrechis, ierr)         ! create/open history and set rechis index within the file.
+!      if (ierr /= nf90_noerr) goto 99
+!      lstr=lenstr(hisname)
+!      nrechis=max(nrechis,1)              !!! WARNING: Once time
+!      if (nrpfhis == 0) then              !!! stepping has been
+!        rechis=nrechis                    !!! started, it is assumed
+!      else                                !!! that the global history
+!        rechis=1+mod(nrechis-1, nrpfhis)  !!! rechis index "nrechis"
+!      endif                               !!! is advanced by main.
+!
+!      ! write out evolving model variables:
+!      ibuff(1)=iic-1  ; ibuff(2)=nrecrst    ! Time step and
+!      ibuff(4:iaux)=0 ; ibuff(3)=nrechis    ! rechis numbers.
+!#ifdef AVERAGES
+!      ibuff(4)=nrecavg
+!#endif
+!      start1d(1)=1      ; count(1)=iaux
+!      start1d(2)=rechis ; count(2)=1
+!      start=1
+!
+!      ierr=nf90_inq_varid(nchis, 'time_step', var_id_tmp)
+!      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start1d, count)
+!      if (ierr /= nf90_noerr) then
+!        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
+!     &       'Cannot write variable ''time_step'' into history file, ',
+!     &       'rec =', rechis, nf90_strerror(ierr) MYID
+!        goto 99                                           !--> ERROR
+!      endif
+!
+!
+!! Time: Note that (1) time is always double precision; and (2) which
+!! one to write into the file, time or tdays, is decided by attribute
+!! "units" stored as vname(3,indxTime).  When computng time is always
+!! in seconds, however it is more convenient to have it in days in all
+!! the files.
+!
+!      ierr=nf90_inq_varid(nchis, 'ocean_time', var_id_tmp)
+!      ierr=nf90_put_var(nchis, var_id_tmp, time,(/rechis/))
+!
+!! Barotropic mode variables: free-surface and 2D momentum
+!! components in XI-,ETA-directions.
+!! 'knew' index is normally 'n+1' timestep, but at this point
+!! its value hasn't evolved from 'n+1' of previous timestep,
+!! which makes it 'n' of this timestep still.
+!
+!      start(3)=rechis
+!      if (wrthis(indxZ))  call ncwrite(nchis,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
+!      if (wrthis(indxUb)) call ncwrite(nchis,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
+!      if (wrthis(indxVb)) call ncwrite(nchis,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
+!
+!#ifdef SOLVE3D
+!! 3D momentum components in XI- and ETA-directions:
+!! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
+!! in the previous timestep (same result).
+!! wrt_his called at the middle of next timestep as some variables only calculated there for t=n.
+!
+!      start(3)=1; start(4)=rechis
+!      if (wrthis(indxU)) call ncwrite(nchis,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
+!      if (wrthis(indxV)) call ncwrite(nchis,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
+!
+!      call wrt_his_trc(nchis,start)                              ! tracer variables
+!
+!      if (wrthis(indxR)) then
+!# ifdef SPLIT_EOS
+!        call ncwrite(nchis,vname(1,indxR),rho1(i0:i1,j0:j1,:),start)
+!# else
+!        call ncwrite(nchis,vname(1,indxR), rho(i0:i1,j0:j1,:),start)
+!# endif
+!      endif
+!      if (wrthis(indxO)) then                              ! s-coordinate omega vertical velocity (m/s).
+!        do k=0,N
+!          do j=0,Mm+1
+!            do i=0,Lm+1
+!              work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
+!            enddo
+!          enddo
+!        enddo
+!        call ncwrite(nchis,vname(1,indxO),work(i0:i1,j0:j1,:),start)
+!      endif
+!      if (wrthis(indxW)) then                              ! true vertical velocity (m/s).
+!        do tile=0,NSUB_X*NSUB_E-1
+!          call wvlcty (tile, work)
+!        enddo
+!        ! need 1:N as work is 1:N+1 in size
+!        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
+!        call ncwrite(nchis,vname(1,indxW),work(i0:i1,j0:j1,0:N-1),start)
+!      endif
+!      if (wrthis(indxAkv)) call ncwrite(nchis,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
+!      if (wrthis(indxAkt)) call ncwrite(nchis,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
+!# ifdef SALINITY
+!      if (wrthis(indxAks)) call ncwrite(nchis,vname(1,indxAks),Akt(i0:i1,j0:j1,:,isalt),start)
+!# endif
+!      start(3)=rechis                                      ! back to 2D vars
+!# ifdef LMD_KPP
+!      if (wrthis(indxHbls)) call ncwrite(nchis,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
+!# endif
+!# ifdef LMD_BKPP
+!      if (wrthis(indxHbbl)) call ncwrite(nchis,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
+!# endif
+!#endif
+!      start(3)=1; start(4)=rechis                          ! back to 3D vars
+!!#if defined BIOLOGY_BEC2 && defined BEC2_DIAG
+!!      call wrt_his_bgc_diag(rechis, ierr)
+!!#endif
+!
+!  1   format(/1x, '### ERROR: wrt_his :: Cannot write variable ''',
+!     &              A, ''' into history file, rec =', i6, 3x,A,i4)
+!      goto 100
+!  99  if (may_day_flag == 0) may_day_flag=3
+! 100  continue
+!
+!! Close or synchronize netCDF file to the disk to allow other
+!! processes to access data immediately after it is written.
+!
+!#if defined MPI && !defined PARALLEL_FILES
+!      ierr=nf90_close (nchis)
+!      if (nrpfhis > 0 .and. rechis >= nrpfhis) nchis=-1
+!#else
+!      if (nrpfhis > 0 .and. rechis >= nrpfhis) then
+!        ierr=nf90_close (nchis)
+!        nchis=-1
+!      else
+!        ierr=nf90_sync(nchis)
+!      endif
+!#endif
+!      if (ierr == nf90_noerr) then
+!#ifdef MPI_SILENT_MODE
+!        if (mynode == 0) then
+!#endif
+!          write(tstring,'(F18.8)') tdays
+!          i=1
+!          do while (i < 18 .and. tstring(i:i) == ' ')
+!            i=i+1
+!          enddo
+!          write(*,'(7x,A,1x,A,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+!     &      'wrt_his :: wrote history, tdays =', tstring(i:i+8),
+!     &      'step =', ibuff(1),  'rec =', rechis, '/',  nrechis
+!     &       MYID
+!#ifdef MPI_SILENT_MODE
+!        endif
+!#endif
+!      else
+!        write(*,'(/1x,2A/)')      '### ERROR: wrt_his :: Cannot ',
+!     &                       'synchronize or close history file.'
+!        if (may_day_flag == 0) may_day_flag=3
+!      endif
+!#if defined MPI && !defined PARALLEL_FILES
+!      if (mynode < NNODES-1) call MPI_Send (blank, 1, MPI_INTEGER,
+!     &                           mynode+1, 2, ocean_grid_comm, ierr)
+!#endif
+!      end subroutine wrt_his  !]
 
 !----------------------------------------------------------------------
       subroutine wrt_rst  ![

@@ -309,7 +309,7 @@ C$OMP MASTER
 #ifdef ANA_GRID
       call wrt_ana_grid
 #endif
-      if (ldefhis .and. wrthis(indxTime)) call wrt_his
+!      if (ldefhis .and. wrthis(indxTime)) call wrt_his
 C$OMP END MASTER
 C$OMP BARRIER
 
@@ -421,9 +421,9 @@ C$OMP BARRIER
       do tile=my_tile_range
         call     prsgrd(tile)
         call pre_step3d(tile)  ! u is m/s here
-# ifdef AVERAGES
-        call    set_avg(tile)
-# endif
+!# ifdef AVERAGES
+!        call    set_avg(tile)
+!# endif
       enddo
 C$OMP BARRIER
 
@@ -453,7 +453,8 @@ C$OMP BARRIER
 ! Output block: write restart/history files.
 !======= ====== ===== =============== ======
 
-
+      call wrt_his_ocean_vars
+      call wrt_avg_ocean_vars
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART
@@ -480,13 +481,13 @@ C$OMP MASTER
 #endif
      &                                 ) call wrt_rst
         if (mod(iic-ntstart,nwrt) == 0 .and. wrthis(indxTime)) then
-          call wrt_his  ! this is called here, in the middle of a roms_step, because
+!          call wrt_his  ! this is called here, in the middle of a roms_step, because
         endif           ! 'rho', 'Akv', etc have only just been computed for step 'n'.
                         ! Whereas, u & ubar, etc, remain unchanged from the end of the previous step
-#ifdef AVERAGES
-        if (iic > ntsavg .and. mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
-     &      call wrt_avg
-#endif
+!#ifdef AVERAGES
+!        if (iic > ntsavg .and. mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
+!     &      call wrt_avg
+!#endif
 C$OMP END MASTER
 C$OMP BARRIER
         if (iic-ntstart > ntimes) goto 99   !-->  DONE

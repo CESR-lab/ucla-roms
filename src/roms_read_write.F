@@ -419,8 +419,8 @@
 
       goto 100
                                                            ! error for read(input,'(A)',err=95)
-  95  write(*,'(/1x,4A/)') '### ERROR: read_write :: Cannot read ',
-     &                       'entry ''', keyword(1:kwlen), '''.'
+  95  write(*,'(/1x,4A/)') '### ERROR: roms_read_write :: Cannot ',
+     &                    'read entry ''', keyword(1:kwlen), '''.'
       error stop
  100  continue
 
@@ -514,7 +514,7 @@
       if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var units')
 
       if (var_units /= file_var_units) then
-        write(*,'(/3x,3A/5x,3A/)') 'ERROR: read_write.F :: ',
+        write(*,'(/3x,3A/5x,3A/)') 'ERROR: roms_read_write.F :: ',
      &  'nc_check_units: wrong units for var: ', var_name,
      &  trim(file_var_units) ,' -> input file should be -> ', var_units
         error stop                                                              ! stop simulation, fatal error

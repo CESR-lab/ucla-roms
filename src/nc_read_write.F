@@ -87,11 +87,11 @@
       implicit none
 
       ! input
-      integer          :: ncid
-      character(len=*) :: vname
-      integer,dimension(:),optional :: start
-
+      integer           :: ncid
+      character(len=*)  :: vname
       real,dimension(:) :: dat
+
+      integer,dimension(:),optional :: start
 
       ! local
       integer              :: varid,ierr
@@ -212,13 +212,13 @@
 
       do i = 1,ndim                                        ! get dimension ids. Create if needed.
         ierr = nf90_inq_dimid(ncid,dimname(i),did)
-        if (ierr.ne.nf90_noerr) then
+        if (ierr/=nf90_noerr) then
           if (.not. present(dimsize)) then                 ! only an issue if dimension doesn't exist yet
             print *, 'ERROR: nccreate, no dimsize given for var=',varname
             error stop
           endif
           ierr=nf90_def_dim(ncid,dimname(i),dimsize(i),did)
-          if (ierr/=nf90_noerr) call handle_ierr(ierr)
+          if (ierr/=0) call handle_ierr(ierr,'nccreate :: def_dim var=',varname)
         endif
         dimid(i) = did
       enddo
@@ -232,7 +232,7 @@
      &                  deflate_level=deflate_level, shuffle=shuffle)
       if (ierr/=nf90_noerr) then
         print *,'ERROR creating: ',varname
-        call handle_ierr(ierr)
+        call handle_ierr(ierr,'nccreate :: def_var=',varname)
       endif
 
       if     (xtype==nf90_float)  then                               ! fill value to blank out mask
@@ -273,7 +273,7 @@
       ! Combine optional messages:
       f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
 
-      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
+      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: nc_read_write :: ',
      &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
 
       error stop ! Stop simulation assumed fatal error
