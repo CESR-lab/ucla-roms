@@ -68,6 +68,7 @@
       public :: wrt_rst
       public :: wrt_his_ocean_vars
       public :: wrt_avg_ocean_vars
+      public :: calc_avg_ocean_vars
 
       contains  !]
 
@@ -304,7 +305,7 @@
       if (wrt_file_avg) then
 
       if (.not. first_step) then
-        call calc_avg_ocean_vars                                     ! don't include t=0 in averaging
+!        call calc_avg_ocean_vars ! don't include t=0 in averaging. can't calc_avg here as rho, omega and w change
         output_time_avg = output_time_avg + dt                       ! only start count after first timestep
       endif
       first_step=.false.                                             ! as first step the ocean_vars values are for t=0
@@ -562,23 +563,28 @@
       use work_mod
       use mixing
       use tracers
+      use private_scratch
+      use dimensions
       implicit none
 
       ! local
-      real :: coef
+      real         :: coef
+      logical,save :: first_step=.true.
 
-      navg_ovars = navg_ovars +1
-      coef = 1./navg_ovars
+      if (.not. first_step) then                           ! don't include t=0 in average
 
-      if (coef==1) then                                    ! this refreshes average (1-coef)=0
-       if (mynode==0) write(*,'(7x,2A,F9.1)')
-     &   'ocean_vars :: started averaging. ',
-     &   'output_period_avg (s) =', output_period_avg
-      endif
+        navg_ovars = navg_ovars +1
+        coef = 1./navg_ovars
 
-      t_avg_ovars = t_avg_ovars*(1-coef) + time*coef
+        if (coef==1) then                                  ! this refreshes average (1-coef)=0
+          if (mynode==0) write(*,'(7x,2A,F9.1)')
+     &      'ocean_vars :: started averaging. ',
+     &      'output_period_avg (s) =', output_period_avg
+        endif
 
-      ! need i0:i1 indices because arrays still GLOBAL_2D therefore wasted margin
+        t_avg_ovars = t_avg_ovars*(1-coef) + time*coef
+
+        ! need i0:i1 indices because arrays still GLOBAL_2D therefore wasted margin
         if (wrt_avg_Z)  zeta_avg(i0:i1,j0:j1) = zeta_avg(i0:i1,j0:j1)*(1-coef) + zeta(i0:i1,j0:j1,knew)*coef
         if (wrt_avg_Ub) ubar_avg( 1:i1,j0:j1) = ubar_avg( 1:i1,j0:j1)*(1-coef) + ubar( 1:i1,j0:j1,knew)*coef
         if (wrt_avg_Vb) vbar_avg(i0:i1, 1:j1) = vbar_avg(i0:i1, 1:j1)*(1-coef) + vbar(i0:i1, 1:j1,knew)*coef
@@ -592,11 +598,8 @@
 #  ifdef SPLIT_EOS
           rho_avg(i0:i1,j0:j1,:) = rho_avg(i0:i1,j0:j1,:)*(1-coef) +
      &     ( rho1(i0:i1,j0:j1,:) - qp1(i0:i1,j0:j1,:) * z_r(i0:i1,j0:j1,:) )*coef
-!                rho_avg(i,j,k)=cff1*rho_avg(i,j,k) +cff*( rho1(i,j,k)
-!     &                                        -qp1(i,j,k)*z_r(i,j,k) )
 #  else
           rho_avg(i0:i1,j0:j1,:) = rho_avg(i0:i1,j0:j1,:)*(1-coef) + rho(i0:i1,j0:j1,:)*coef
-!                rho_avg(i,j,k)=cff1*rho_avg(i,j,k) +cff*rho(i,j,k)
 #  endif
         endif
         if (wrt_avg_O) w_avg(i0:i1,j0:j1,:) = w_avg(i0:i1,j0:j1,:)*(1-coef)
@@ -604,9 +607,12 @@
         ! need 1:N as work is 1:N+1 in size
         ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
         if (wrt_avg_W) then
-          call wvlcty (0, work)  ! 0=tile number
-          wvl_avg(i0:i1,j0:j1,0:N-1) = wvl_avg(i0:i1,j0:j1,0:N-1)*(1-coef)
-     &                               + work(i0:i1,j0:j1,0:N-1)*coef
+          ! the w averaging, calculation and output should be checked at some point.
+          ! things seem inconsistent and buggy.
+          call wvlcty_tile(1,nx,1,ny, work, A2d(1,1), A2d(1,2), A2d(1,3))  ! as per set_avg
+
+          wvl_avg(i0:i1,j0:j1,1:N) = wvl_avg(i0:i1,j0:j1,1:N)*(1-coef)
+     &                               + work(i0:i1,j0:j1,1:N)*coef
         endif
         if (wrt_avg_Akv) akv_avg(i0:i1,j0:j1,:) = akv_avg(i0:i1,j0:j1,:)*(1-coef) + akv(i0:i1,j0:j1,:)*coef
         if (wrt_avg_Akt) akt_avg(i0:i1,j0:j1,:) = akt_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,itemp)*coef
@@ -620,6 +626,10 @@
         if (wrt_avg_Hbbl) hbbl_avg(i0:i1,j0:j1) = hbbl_avg(i0:i1,j0:j1)*(1-coef) + hbbl(i0:i1,j0:j1,nstp)*coef
 #  endif
 # endif /* SOLVE3D */
+
+      endif  ! <-- .not. first_step
+
+      first_step=.false.
 
       end subroutine calc_avg_ocean_vars  !]
 

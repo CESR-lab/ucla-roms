@@ -44,15 +44,6 @@
       character(len=40) tclm_name(NT) ! Taken from ETH code ncvars
 
       public set_bgc_surf_frc
-#ifdef BEC2_DIAG
-!      public def_his_bgc_diag
-!      public wrt_his_bgc_diag
-# ifdef AVERAGES
-!      public def_avg_bgc_diag
-!      public wrt_avg_bgc_diag
-      public set_avg_bgc_diag
-# endif
-#endif
       public init_arrays_bgc_frc
       public init_scalars_bec2
       public wrt_his_bgc_tracers
@@ -331,7 +322,7 @@
 
       ! local
       real    :: coef
-      integer :: itrc, itavg
+      integer :: itrc, itavg, k
 
       navg_bgc = navg_bgc +1
       coef = 1./navg_bgc
@@ -354,6 +345,19 @@
 !     &                             +cff*t(i,j,k,nstp,itrc)
         endif
       enddo
+
+#ifdef BEC2_DIAG
+      do itrc=1,nr_bec2_diag_2d
+        bec2_diag_2d_avg(i0:i1,j0:j1,itrc) = bec2_diag_2d_avg(i0:i1,j0:j1,itrc) *(1-coef)
+     &                                     + bec2_diag_2d(i0:i1,j0:j1,itrc)     *coef
+      end do
+      do itrc=1,nr_bec2_diag_3d
+        do k=1,N
+          bec2_diag_3d_avg(i0:i1,j0:j1,k,itrc) = bec2_diag_3d_avg(i0:i1,j0:j1,k,itrc) *(1-coef)
+     &                                         + bec2_diag_3d(i0:i1,j0:j1,k,itrc)     *coef
+        end do
+      end do
+#endif
 
       end subroutine calc_avg_bgc  !]
 #endif /* AVERAGES */
@@ -501,40 +505,40 @@
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-#ifdef AVERAGES
-#ifdef BEC2_DIAG
-      subroutine set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)  ![
-
-      implicit none
-
-      ! inputs
-      integer istrR,iendR,jstrR,jendR
-      real cff,cff1
-      ! local
-      integer i,j,k,itrc
-
-      do itrc=1,nr_bec2_diag_2d
-         do j=jstrR,jendR
-            do i=istrR,iendR
-               bec2_diag_2d_avg(i,j,itrc) = cff1*bec2_diag_2d_avg(i,j,itrc)
-     &                                    + cff*bec2_diag_2d(i,j,itrc)
-            end do
-         end do
-      end do
-      do itrc=1,nr_bec2_diag_3d
-        do k=1,N
-          do j=jstrR,jendR
-             do i=istrR,iendR
-                bec2_diag_3d_avg(i,j,k,itrc) = cff1*bec2_diag_3d_avg(i,j,k,itrc)
-     &                                       + cff*bec2_diag_3d(i,j,k,itrc)
-             end do
-          end do
-        end do
-      end do
-
-      end subroutine set_avg_bgc_diag  !]
-#endif /* BEC2_DIAG */
-#endif /* AVERAGES */
+!#ifdef AVERAGES
+!#ifdef BEC2_DIAG
+!      subroutine set_avg_bgc_diag(istrR,iendR,jstrR,jendR,cff,cff1)  ![
+!
+!      implicit none
+!
+!      ! inputs
+!      integer istrR,iendR,jstrR,jendR
+!      real cff,cff1
+!      ! local
+!      integer i,j,k,itrc
+!
+!      do itrc=1,nr_bec2_diag_2d
+!         do j=jstrR,jendR
+!            do i=istrR,iendR
+!               bec2_diag_2d_avg(i,j,itrc) = cff1*bec2_diag_2d_avg(i,j,itrc)
+!     &                                    + cff*bec2_diag_2d(i,j,itrc)
+!            end do
+!         end do
+!      end do
+!      do itrc=1,nr_bec2_diag_3d
+!        do k=1,N
+!          do j=jstrR,jendR
+!             do i=istrR,iendR
+!                bec2_diag_3d_avg(i,j,k,itrc) = cff1*bec2_diag_3d_avg(i,j,k,itrc)
+!     &                                       + cff*bec2_diag_3d(i,j,k,itrc)
+!             end do
+!          end do
+!        end do
+!      end do
+!
+!      end subroutine set_avg_bgc_diag  !]
+!#endif /* BEC2_DIAG */
+!#endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bgc_frc  ![
