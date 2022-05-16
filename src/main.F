@@ -427,6 +427,8 @@ C$OMP BARRIER
       enddo
 C$OMP BARRIER
 
+      call calc_avg_ocean_vars ! call here not wrt_his else
+                               ! rho, omega and w will change
       do tile=my_tile_range
         call set_HUV1(tile)
       enddo

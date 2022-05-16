@@ -9,7 +9,7 @@
       integer tile
       real Wvlc(GLOBAL_2D_ARRAY,0:N)
 # include "compute_tile_bounds.h"
-      call wvlcty_tile (istr,iend,jstr,jend, Wvlc, A2d(1,1), A2d(1,1),
+      call wvlcty_tile (istr,iend,jstr,jend, Wvlc, A2d(1,1), A2d(1,1),   ! looks like a bug here repeated A2d(1,1)?
      &                                                       A2d(1,2))
       end
 
