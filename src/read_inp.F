@@ -97,8 +97,6 @@
 #elif defined PACIFIC_2D
       fname='pacific_2D.in'
 #elif defined CANBAS2
-c--      fname='canBas2.in'
-c--      fname='cblanco.in'
       fname='unpr.in'
 #elif defined SPIRAL
       fname='spiral.in'
@@ -112,8 +110,6 @@ c--      fname='cblanco.in'
       fname='smsc_sub.in'
 #elif defined USWEST
       fname='mb_l1_safe.in'
-c--      fname='roms.in.USW20'
-c--      fname='roms.in.US_West'
 #elif defined SCB_TEST
       fname='scb_test.in'
 #elif defined DAMEE_B
@@ -128,11 +124,6 @@ c--      fname='roms.in.US_West'
 #ifdef MPI
       endif
       call MPI_Bcast(fname,64,MPI_BYTE, 0, ocean_grid_comm, ierr)
-#endif
-
-      wrthis(indxTime)=.false.
-#ifdef AVERAGES
-      wrtavg(indxTime)=.false.
 #endif
 
 ! Read in keyword name: keep trying, until keyword is found.
@@ -619,186 +610,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #ifndef SOLVE3D
           nrst=nrst*ndtfast
 #endif
-
-! history file controls: owerwrite flag, output frequency, number
-! of reconds per file in sequence, and filename
-
-        elseif (keyword(1:kwlen) == 'history') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) ldefhis, nwrt, nrpfhis
-          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4)')
-     &       'history :: overwrite = ', ldefhis, 'nwrt =', nwrt,
-     &       'rec/file =', nrpfhis
-#ifndef SOLVE3D
-          nwrt=nwrt*ndtfast
-#endif
-
-! Which fields to be saved into history file.
-
-        elseif (keyword(1:kwlen) == 'primary_history_fields') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrthis(indxZ),  wrthis(indxUb)
-     &                                      ,  wrthis(indxVb)
-#ifdef SOLVE3D
-     &                      ,  wrthis(indxU),  wrthis(indxV)
-      ! DevinD: no longer use roms.in for tracer T/F inputs
-!     &                      , (wrthis(indxT+itrc-1), itrc=1,NT)
-#endif
-          if ( wrthis(indxZ) .or. wrthis(indxUb) .or. wrthis(indxVb)
-#ifdef SOLVE3D
-     &                         .or. wrthis(indxU) .or. wrthis(indxV)
-#endif
-     &       ) wrthis(indxTime)=.true.
-
-          mpi_master_only write(*,'(/1x,A,5(/8x,A,T16,L1,T20,A))')
-     &                   'fields to write into history file: (T/F)'
-     &                 , 'zeta',   wrthis(indxZ),    vname(2,indxZ)
-     &                 , 'ubar',   wrthis(indxUb),   vname(2,indxUb)
-     &                 , 'vbar',   wrthis(indxVb),   vname(2,indxVb)
-#ifdef SOLVE3D
-     &                 , 'u',      wrthis(indxU),    vname(2,indxU)
-     &                 , 'v',      wrthis(indxV),    vname(2,indxV)
-          do itrc=1,NT
-            if (wrt_t(itrc)) wrthis(indxTime)=.true.
-            mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
-     &        itrc, ')', wrt_t(itrc), t_vname(itrc)
-          enddo
-
-        elseif (keyword(1:kwlen) == 'auxiliary_history_fields') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrthis(indxR), wrthis(indxO)
-     &          ,  wrthis(indxW),  wrthis(indxAkv),  wrthis(indxAkt)
-# ifdef SALINITY
-     &                                            ,  wrthis(indxAks)
-# endif
-# ifdef LMD_KPP
-     &                                            ,  wrthis(indxHbls)
-# endif
-# ifdef LMD_BKPP
-     &                                           ,  wrthis(indxHbbl)
-# endif
-          if ( wrthis(indxR) .or. wrthis(indxO) .or. wrthis(indxW)
-     &                     .or. wrthis(indxAkv) .or. wrthis(indxAkt)
-# ifdef SALINITY
-     &                                          .or. wrthis(indxAks)
-# endif
-# ifdef LMD_KPP
-     &                                          .or. wrthis(indxHbls)
-# endif
-# ifdef LMD_BKPP
-     &                                          .or. wrthis(indxHbbl)
-# endif
-     &       ) wrthis(indxTime)=.true.
-
-
-          mpi_master_only write(*,'(8(/8x,A,T16,L1,T20,A))')
-     &                   'rho',    wrthis(indxR),    vname(2,indxR)
-     &                 , 'Omega',  wrthis(indxO),    vname(2,indxO)
-     &                 , 'W',      wrthis(indxW),    vname(2,indxW)
-     &                 , 'Akv',    wrthis(indxAkv),  vname(2,indxAkv)
-     &                 , 'Akt',    wrthis(indxAkt),  vname(2,indxAkt)
-# ifdef SALINITY
-     &                 , 'Aks',    wrthis(indxAks),  vname(2,indxAks)
-# endif
-# ifdef LMD_KPP
-     &                 , 'hbls',   wrthis(indxHbls), vname(2,indxHbls)
-# endif
-# ifdef LMD_BKPP
-     &                 , 'hbbl',   wrthis(indxHbbl), vname(2,indxHbbl)
-# endif
-#endif /* SOLVE3D */
-
-
-#ifdef AVERAGES
-! Averages controls: time step number to start averaging (sets phase
-! for averaging windows); averaging interval in time steps; number of
-! records per file, and output filename.
-
-        elseif (keyword(1:kwlen) == 'averages') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) ntsavg, navg, nrpfavg
-          mpi_master_only write(*,'(/1x,A,I5,2x,A,I5,2x,A,I5)')
-     &       'averages :: ntsavg = ', ntsavg,      'navg =', navg,
-     &       'rec/file =', nrpfavg
-# ifndef SOLVE3D
-          ntsavg=ntsavg*ndtfast ; navg=navg*ndtfast
-# endif
-
-! Switches for fields to compute averages.
-
-        elseif (keyword(1:kwlen) == 'primary_averages') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrtavg(indxZ),  wrtavg(indxUb)
-     &                                        ,  wrtavg(indxVb)
-# ifdef SOLVE3D
-     &                      ,  wrtavg(indxU),     wrtavg(indxV)
-      ! DevinD: no longer use roms.in for tracer T/F inputs
-!     &                      , (wrtavg(indxT+itrc-1), itrc=1,NT)
-# endif
-          if ( wrtavg(indxZ) .or. wrtavg(indxUb) .or. wrtavg(indxVb)
-# ifdef SOLVE3D
-     &                       .or. wrtavg(indxU)  .or. wrtavg(indxV)
-# endif
-     &       ) wrtavg(indxTime)=.true.
-
-          mpi_master_only write(*,'(/1x,A,5(/8x,A,T16,L1,T20,A))')
-     &                   'fields to compute time averages of: (T/F)'
-     &                 , 'zeta',   wrtavg(indxZ),    vname(2,indxZ)
-     &                 , 'ubar',   wrtavg(indxUb),   vname(2,indxUb)
-     &                 , 'vbar',   wrtavg(indxVb),   vname(2,indxVb)
-# ifdef SOLVE3D
-     &                 , 'u',      wrtavg(indxU),    vname(2,indxU)
-     &                 , 'v',      wrtavg(indxV),    vname(2,indxV)
-          do itrc=1,NT
-            ! Currently have wrt_t(itrc) for primary_history fields. Need consistency.
-            if (wrt_t_avg(itrc)) wrtavg(indxTime)=.true.
-            mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
-     &        itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
-          enddo
-
-        elseif (keyword(1:kwlen) == 'auxiliary_averages') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrtavg(indxR), wrtavg(indxO)
-     &          ,  wrtavg(indxW),  wrtavg(indxAkv),  wrtavg(indxAkt)
-#  ifdef SALINITY
-     &                                            ,  wrtavg(indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                                            ,  wrtavg(indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                                            ,  wrtavg(indxHbbl)
-#  endif
-          if ( wrtavg(indxR) .or. wrtavg(indxO) .or. wrtavg(indxW)
-     &                     .or. wrtavg(indxAkv) .or. wrtavg(indxAkt)
-#  ifdef SALINITY
-     &                                          .or. wrtavg(indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                                          .or. wrtavg(indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                                          .or. wrtavg(indxHbbl)
-#  endif
-     &       ) wrtavg(indxTime)=.true.
-
-          mpi_master_only write(*,'(8(/8x,A,T16,L1,T20,A))')
-     &                   'rho',    wrtavg(indxR),    vname(2,indxR)
-     &                 , 'Omega',  wrtavg(indxO),    vname(2,indxO)
-     &                 , 'W',      wrtavg(indxW),    vname(2,indxW)
-     &                 , 'Akv',    wrtavg(indxAkv),  vname(2,indxAkv)
-     &                 , 'Akt',    wrtavg(indxAkt),  vname(2,indxAkt)
-#  ifdef SALINITY
-     &                 , 'Aks',    wrtavg(indxAks),  vname(2,indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                 , 'hbls',   wrtavg(indxHbls), vname(2,indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                 , 'hbbl',   wrtavg(indxHbbl), vname(2,indxHbbl)
-#  endif
-# endif /* SOLVE3D */
-#endif /* AVERAGES */
 
 ! Read output file root name using read_write.F module
         elseif (keyword(1:kwlen).eq.'output_root_name') then

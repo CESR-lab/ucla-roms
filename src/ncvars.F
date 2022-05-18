@@ -103,15 +103,11 @@
 
       integer, parameter :: max_frc_files=360
       integer max_frc, ncfrc(max_frc_files), nrst,  ncrst,   nrecrst,
-     &      nrrec, nrpfrst, ncidclm, nwrt,  nchis, nrechis, nrpfhis
-#ifdef AVERAGES
-      integer ntsavg,  navg
-#endif
+     &      nrrec, nrpfrst, ncidclm
 
 ! NetCFD IDs for model variables
 
-      integer rstTime, rstTstep,  rstZ, rstUb, rstVb,
-     &        hisTime, hisTstep,  hisZ, hisUb, hisVb
+      integer rstTime, rstTstep,  rstZ, rstUb, rstVb
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
@@ -121,28 +117,13 @@
       integer rst_rufrc, rst_rvfrc
 #  endif
 # endif
-      integer rstU, rstV, rstT(NT+1), hisO,   hisW,   hisR,
-     &        hisU, hisV, hisT(NT+1), hisAkv, hisAkt, hisAks
+      integer rstU, rstV, rstT(NT+1)
 
 # ifdef LMD_KPP
-      integer rstHbls, hisHbls
+      integer rstHbls
 # endif
 # ifdef LMD_BKPP
-      integer rstHbbl, hisHbbl
-# endif
-#endif
-
-#ifdef AVERAGES
-      integer ncavg, nrecavg, nrpfavg,  avgTime, avgZ, avgUb, avgVb
-# ifdef SOLVE3D
-      integer avgU,  avgV,  avgT(NT+1), avgR,    avgO,    avgW,
-     &                                  avgAkv,  avgAkt,  avgAks
-#  ifdef LMD_KPP
-      integer avgHbls
-#  endif
-#  ifdef LMD_BKPP
-      integer avgHbbl
-#  endif
+      integer rstHbbl
 # endif
 #endif
 
@@ -155,9 +136,6 @@
 # define NWRTHIS 24
 !# define NWRTHIS 14
 #endif
-      logical :: ldefhis, wrthis(NWRTHIS)
-      logical :: wrtavg(NWRTHIS) = .false.  ! set to false so don't need averages cpp flag
-                                            ! everywhere as won't do the work if all vars are false
 
 ! Horizontal Grid Type Codes =  0,1,2,3 for RHO-, U-, V-, PSI-points
 
