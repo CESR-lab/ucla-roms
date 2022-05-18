@@ -342,8 +342,17 @@
       if (ierr/=nf90_noerr)
      &  call handle_ierr(ierr,'create_file_surf_flux: ')
 
-      if (      avg) call def_vars_surf_flux( ncid, .true.  )
-      if (.not. avg) call def_vars_surf_flux( ncid, .false. )
+      if (avg) then
+        call def_vars_surf_flux( ncid, .true.  )
+        ierr=nf90_put_att(ncid,nf90_global,'type','ROMS averages file')
+        ierr=nf90_put_att(ncid,nf90_global,
+     &         'output_period_avg_seconds',output_period_avg)
+      else
+        call def_vars_surf_flux( ncid, .false. )
+        ierr=nf90_put_att(ncid,nf90_global,'type','ROMS history file')
+        ierr=nf90_put_att(ncid,nf90_global,
+     &         'output_period_his_seconds',output_period_his)
+      endif
 
       ierr = nf90_enddef(ncid)
       if (mynode == 0) then

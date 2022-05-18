@@ -622,7 +622,6 @@ C$   &                                                 , proc(2)
      &             check_line(i:i) /= '+'  .and.
      &             check_line(i:i) /= '-'  .and.
      &             check_line(i:i) /= '.') then
-                nwrt=1
                 if (may_day_flag == 0) then
                   write(*,*) '---> setting may day flag'
                   may_day_flag=1    !--> BLOW UP
@@ -774,12 +773,10 @@ c          prev_ke=avke
         endif    ! <-- mynode==0
 
         buff(1)=may_day_flag
-        buff(2)=nwrt
 
         call MPI_Bcast(buff,2, MPI_BUFF_TYPE, 0,ocean_grid_comm,ierr)
 
         may_day_flag=buff(1) +0.0001
-        nwrt=buff(2)         +0.0001
 #endif
       endif  ! <-- tile_count==nsubs
 C$OMP END CRITICAL (diag_cr_rgn)

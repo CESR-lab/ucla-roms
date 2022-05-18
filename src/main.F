@@ -455,16 +455,15 @@ C$OMP BARRIER
 ! Output block: write restart/history files.
 !======= ====== ===== =============== ======
 
+      ! wrt_***_ocean_vars are called here, in the middle of a roms_step, because
+      ! 'rho', 'Akv', etc have only just been computed for step 'n'.
+      ! whereas, u & ubar, etc, remain unchanged from the end of the previous step
       call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
 
       if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART
      &                         .or. mod(iic-ntstart+1,nrst) == 0
-#endif
-     &   .or. (mod(iic-ntstart,nwrt) == 0 .and. wrthis(indxTime))
-#ifdef AVERAGES
-     &   .or. (mod(iic-ntsavg,navg) == 0  .and. wrtavg(indxTime))
 #endif
      &                                                  )) then
 C$OMP MASTER
@@ -473,23 +472,11 @@ C$OMP MASTER
      &         .or. mod(iic-ntstart+1,nrst) == 0
 #endif
      &                                ) nrecrst=nrecrst+1
-        if (mod(iic-ntstart,nwrt) == 0) nrechis=nrechis+1
-#ifdef AVERAGES
-        if (mod(iic-ntsavg,navg) == 0) nrecavg=nrecavg+1
-#endif
         if (mod(iic-ntstart,nrst) == 0
 #ifdef EXACT_RESTART
      &         .or. mod(iic-ntstart+1,nrst) == 0
 #endif
      &                                 ) call wrt_rst
-        if (mod(iic-ntstart,nwrt) == 0 .and. wrthis(indxTime)) then
-!          call wrt_his  ! this is called here, in the middle of a roms_step, because
-        endif           ! 'rho', 'Akv', etc have only just been computed for step 'n'.
-                        ! Whereas, u & ubar, etc, remain unchanged from the end of the previous step
-!#ifdef AVERAGES
-!        if (iic > ntsavg .and. mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
-!     &      call wrt_avg
-!#endif
 C$OMP END MASTER
 C$OMP BARRIER
         if (iic-ntstart > ntimes) goto 99   !-->  DONE

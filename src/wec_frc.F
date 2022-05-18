@@ -651,8 +651,17 @@
       if (ierr/=nf90_noerr)
      &  call handle_ierr(ierr,'create_file_wec: ')
 
-      if (      avg) call def_vars_wec( ncid, .true.  )
-      if (.not. avg) call def_vars_wec( ncid, .false. )
+      if (avg) then
+        call def_vars_wec( ncid, .true.  )
+        ierr=nf90_put_att(ncid,nf90_global,'type','ROMS averages file')
+        ierr=nf90_put_att(ncid,nf90_global,
+     &         'output_period_avg_seconds',output_period_avg)
+      else
+        call def_vars_wec( ncid, .false. )
+        ierr=nf90_put_att(ncid,nf90_global,'type','ROMS history file')
+        ierr=nf90_put_att(ncid,nf90_global,
+     &         'output_period_his_seconds',output_period_his)
+      endif
 
       ierr = nf90_enddef(ncid)
       if (mynode == 0) then
@@ -1006,23 +1015,21 @@
 
       !#### end variables added as per forces.h #####
 
-      ! AVERAGED VARIABLES
-      ! ==================
-
-      ! from averages.h in MRL_WCI old roms code
 #ifdef AVERAGES
-      allocate( sup_avg(GLOBAL_2D_ARRAY) )
-      allocate( ust2d_avg(GLOBAL_2D_ARRAY) )
-      allocate( vst2d_avg(GLOBAL_2D_ARRAY) )
+      if (wrt_file_avg) then                                         ! wrt_file_avg avoids any allocation
+        if (wrt_avg_SUP)   allocate(   sup_avg(GLOBAL_2D_ARRAY) )    ! if don't want avg file
+        if (wrt_avg_UST2D) allocate( ust2d_avg(GLOBAL_2D_ARRAY) )
+        if (wrt_avg_VST2D) allocate( vst2d_avg(GLOBAL_2D_ARRAY) )
 #  ifdef SOLVE3D
-      allocate( ust_avg(GLOBAL_2D_ARRAY,N) )
-      allocate( vst_avg(GLOBAL_2D_ARRAY,N) )
-      allocate( wst_avg(GLOBAL_2D_ARRAY,N) )
-      allocate( akb_avg(GLOBAL_2D_ARRAY,0:N) )
-      allocate( akw_avg(GLOBAL_2D_ARRAY,0:N) )
-      allocate( kvf_avg(GLOBAL_2D_ARRAY,N) )
-      allocate( calp_avg(GLOBAL_2D_ARRAY) )
-      allocate( kapsrf_avg(GLOBAL_2D_ARRAY) )
+        if (wrt_avg_UST)   allocate(   ust_avg(GLOBAL_2D_ARRAY,N) )
+        if (wrt_avg_VST)   allocate(   vst_avg(GLOBAL_2D_ARRAY,N) )
+        if (wrt_avg_wST)   allocate(   wst_avg(GLOBAL_2D_ARRAY,N) )
+        if (wrt_avg_AKB)   allocate(   akb_avg(GLOBAL_2D_ARRAY,0:N) )
+        if (wrt_avg_AKW)   allocate(   akw_avg(GLOBAL_2D_ARRAY,0:N) )
+        if (wrt_avg_KVF)   allocate(   kvf_avg(GLOBAL_2D_ARRAY,N) )
+        if (wrt_avg_CALP)  allocate(  calp_avg(GLOBAL_2D_ARRAY) )
+        if (wrt_avg_KAPS)  allocate(kapsrf_avg(GLOBAL_2D_ARRAY) )
+      endif
 #  endif  /* SOLVE3D */
 #endif /* AVERAGES */
 

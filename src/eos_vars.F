@@ -55,10 +55,7 @@
 # endif
 #endif
 
-      if (wrtavg(indxR)) then
-        allocate( rho_avg(GLOBAL_2D_ARRAY,N) )
-        rho_avg=0.  ! this was in original init_arrays
-      endif
+      ! averaging variables allocated in ocean_vars to prevent circular reference from wrt_* logicals
 
       end subroutine  !]
 

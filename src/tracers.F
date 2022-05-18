@@ -189,26 +189,25 @@
       end subroutine def_his_trc  !]
 
 ! ----------------------------------------------------------------------
-! Need AVERAGES as 'ncavg' only exists if AVERAGES is defined.
-#ifdef AVERAGES
-      subroutine def_avg_trc  ![
+      subroutine def_avg_trc( ncid )  ![
       implicit none
 
+      ! input
+      integer,intent(in) :: ncid
       ! local
-      integer itrc, ierr, varid
-      character(len=64) long_name
+      integer :: itrc, ierr, varid
+      character(len=64) :: long_name
 
       do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
-          varid = nccreate(ncavg,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
-          ierr = nf90_put_att(ncavg,varid,'long_name',long_name)
-          ierr = nf90_put_att(ncavg,varid,'units',t_units(itrc))
+          varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+          ierr = nf90_put_att(ncid,varid,'long_name',long_name)
+          ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
       enddo
 
       end subroutine def_avg_trc  !]
-#endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
       subroutine wrt_his_trc (ncid,start)  ![

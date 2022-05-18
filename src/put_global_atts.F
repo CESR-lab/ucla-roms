@@ -53,27 +53,11 @@
         nf_ftype=NF_FOUT
       endif
 
-
 ! Title of the run
 
       lvar=lenstr(title)
       ierr=nf_put_att_text(ncid, nf_global, 'title',  lvar,
      &                                       title(1:lvar))
-
-! Type of the output file
-
-      if (ncid == ncrst) then
-        ierr=nf_put_att_text (ncid, nf_global, 'type',  17,
-     &                                 'ROMS restart file')
-      elseif (ncid == nchis) then
-        ierr=nf_put_att_text (ncid, nf_global, 'type',  17,
-     &                                 'ROMS history file')
-#ifdef AVERAGES
-      elseif (ncid == ncavg) then
-        ierr=nf_put_att_text (ncid, nf_global, 'type',  18,
-     &                                'ROMS averages file')
-#endif
-      endif
 
 ! Grid and initial conditions file names
 
@@ -95,12 +79,6 @@
       ierr=nf_put_att_FTYPE(ncid, nf_global, 'dt',    nf_ftype, 1,  dt)
       ierr=nf_put_att_FTYPE(ncid, nf_global, 'dtfast',nf_ftype,  1,
      &                                                          dtfast)
-      ierr=nf_put_att_int (ncid, nf_global, 'nwrt',  nf_int, 1, nwrt)
-#ifdef AVERAGES
-      ierr=nf_put_att_int (ncid, nf_global, 'ntsavg',nf_int, 1, ntsavg)
-
-      ierr=nf_put_att_int (ncid, nf_global, 'navg',  nf_int, 1,   navg)
-#endif
 
 ! Vertical coordinate type, control parameters "theta_s", "theta_b",
 ! "hc", and stretching curves "Cs_w", "Cs_r" at W- and RHO-points.
