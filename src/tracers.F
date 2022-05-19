@@ -251,22 +251,18 @@
 #endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
-      subroutine wrt_rst_trc (record)  ![
+      subroutine wrt_rst_trc (ncid, start)  ![
       ! write tracers to restart file
       ! restart includes bgc tracers for simplicity
       implicit none
 
       ! inputs
-      integer, intent(in) :: record
+      integer, intent(in) :: ncid
+      integer,dimension(:),intent(in) :: start
       ! local
       integer :: itrc
-      integer,dimension(4) :: start
-
-      start=1; start(4)=record
       do itrc=1,NT
-        call ncwrite(ncrst,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
-!        call nc_write_var(ncrst, t(START_2D_ARRAY,1,nstp,itrc), N,
-!     &          t_vname(itrc), rp_var, record, ierr )
+        call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
       enddo
 
       end subroutine wrt_rst_trc  !]
