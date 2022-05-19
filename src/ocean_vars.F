@@ -65,10 +65,10 @@
 
       public :: init_arrays_ocean2d
       public :: init_arrays_ocean3d
-      public :: wrt_rst
       public :: wrt_his_ocean_vars
       public :: wrt_avg_ocean_vars
       public :: calc_avg_ocean_vars
+      public :: wrt_rst_ocean_vars
 
       contains  !]
 
@@ -414,10 +414,6 @@
 
       ! local
       integer :: ierr,varid
-      character(len=10),dimension(4) :: dimnames           ! dimension names
-      integer,          dimension(4) :: dimsizes
-
-      integer :: ndims ! debug
 
       if (      avg) fname=trim(output_root_name) / / '_avg.nc'
       if (.not. avg) fname=trim(output_root_name) / / '_his.nc'
@@ -459,6 +455,44 @@
       endif
 
       end subroutine create_file_ocean_vars !]
+
+!----------------------------------------------------------------------
+      subroutine create_file_rst_ocean_vars(total_rec,fname)  ![
+      implicit none
+
+      !input/output
+      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
+      character(len=99),intent(out) :: fname
+
+      ! local
+      integer :: ierr,varid
+
+      fname=trim(output_root_name) / / '_rst.nc'
+      call create_filename(fname,total_rec)
+
+      ierr=nf90_create(fname,nf90_netcdf4,ncid)
+      if (ierr/=0) call handle_ierr(ierr,'create_file_rst_ocean_vars:')
+
+      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      ierr=nf90_put_att(ncid,varid,'long_name','Time since 2000')
+      ierr=nf90_put_att(ncid,varid,'units','second' )
+
+      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+
+      call def_vars_rst_ocean_vars
+      ierr=nf90_put_att(ncid,nf90_global,'type','ROMS restart file')
+      ierr=nf90_put_att(ncid,nf90_global,
+     &       'output_period_rst_seconds',output_period_rst)
+
+      ierr=nf90_enddef(ncid)
+      if (mynode == 0) then
+        write(*,'(7x,2A)')
+     &    'ocean_vars :: created new netCDF file ', trim(fname)
+      endif
+
+      end subroutine create_file_rst_ocean_vars !]
 
 ! ----------------------------------------------------------------------
       subroutine def_vars_ocean_vars( avg )  ![
@@ -668,6 +702,96 @@
       end subroutine calc_avg_ocean_vars  !]
 
 ! ----------------------------------------------------------------------
+      subroutine def_vars_rst_ocean_vars  ![
+      ! define output variable & attributes in netcdf restart file
+      use ncvars
+      use tracers
+      implicit none
+
+      ! local
+      integer :: ierr, varid, itrc
+
+! Time-step number and time-record indices: (history file only, this
+! may be needed in the event when a history record is used to restart
+! the current model run);
+      varid = nccreate(ncid,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
+      ierr=nf90_put_att (ncid, varid, 'long_name',
+     &       'time step and record numbers from initialization')
+
+      varid = nccreate(ncid,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),
+     &                                     (/xi_rho,eta_rho,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxZ))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
+
+      varid = nccreate(ncid,vname(1,indxUb),(/'xi_u','eta_rho','time'/),
+     &                                      (/xi_u,eta_rho,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxUb))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
+
+      varid = nccreate(ncid,vname(1,indxVb),(/'xi_rho','eta_v','time'/),
+     &                                      (/xi_rho,eta_v,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxVb))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
+#ifdef SOLVE3D
+      varid = nccreate(ncid,vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),
+     &                                     (/xi_u,eta_rho,N,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxU))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
+
+      varid = nccreate(ncid,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),
+     &                                     (/xi_rho,eta_v,N,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxV))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
+
+      do itrc=1,NT
+        varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),
+     &                                         (/xi_rho,eta_rho,N,0/), nf90_double)
+        ierr=nf90_put_att (ncid, varid, 'long_name', t_lname(itrc))
+        ierr=nf90_put_att (ncid, varid, 'units', t_units(itrc))
+      enddo
+
+# ifdef EXACT_RESTART
+#  ifdef EXTRAP_BAR_FLUXES
+      varid = nccreate(ncid,'DU_avg2',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
+
+      varid = nccreate(ncid,'DV_avg2',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time-averaged vbar(:,:,n+1/2)>>')
+
+      varid = nccreate(ncid,'DU_avg_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &       '<back-step mixed fast-time-averaged ubar(:,:,n-1)>')
+
+      varid = nccreate(ncid,'DV_avg_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &       '<back-step mixed fast-time-averaged vbar(:,:,n-1)>')
+#  elif defined PRED_COUPLED_MODE
+        varid = nccreate(ncid,'rufrc_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/),nf90_double)
+        ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                        '3D-to-2D forcing, XI-component')
+        varid = nccreate(ncid,'rvfrc_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/),nf90_double)
+        ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                       '3D-to-2D forcing, ETA-component')
+#  endif
+# endif  /* EXACT_RESTART */
+
+# ifdef LMD_KPP
+      varid = nccreate(ncid,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbls))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
+# endif
+# ifdef LMD_BKPP
+      varid = nccreate(ncid,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbbl))
+      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
+# endif
+#endif /* SOLVE3D */
+
+      end subroutine def_vars_rst_ocean_vars  !]
+
+! ----------------------------------------------------------------------
       subroutine write_time_step( ncid, record, total_recs )  ![
       use ncvars
       implicit none
@@ -681,7 +805,7 @@
       integer :: ibuff(iaux), start(2), count(2)           ! iaux = 6 from wrt_his.F
       integer :: var_id_tmp, ierr
 
-      ibuff(1)=iic-1  ; ibuff(2)=nrecrst                   ! time step and
+      ibuff(1)=iic-1  ; ibuff(2)=record                    ! time step and
       ibuff(4:iaux)=0 ; ibuff(3)=total_recs                ! rechis numbers.
 
       start(1)=1      ; count(1)=6                         ! iaux = 6 in ncvars
@@ -787,701 +911,112 @@
 
       end subroutine display_output_settings_to_terminal_avg  !]
 
-!----------------------------------------------------------------------
-      subroutine def_rst(total_rec, ierr)  ![
-      ! create or openrestart netCDF file.
+! ----------------------------------------------------------------------
+      subroutine wrt_rst_ocean_vars  ![
+      ! write ocean_vars variables to output netcdf restart file
+      ! ocean_vars variables are calculated for t=n in timestep t=n
+      ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
 
-      use tracers,         only: t_vname, t_lname, t_units, wrt_t
-      use roms_read_write, only: output_root_name
-      use ncvars
-      use scalars
-      use grid                                                       ! def_grid
-
-      implicit none
-
-      ! input
-      integer :: total_rec, ierr
-      ! local
-      logical :: create_new_file
-      integer :: lenstr, checkdims, my_nf_def_dim, varid
-      integer :: rec, lrst, lvar, timedim, prev_fill_mode, itrc
-#ifdef MASK_LAND_DATA
-# ifdef DBLEPREC
-      real(kind=8),parameter :: spv_set=1.D+33
-# else
-      real(kind=4),parameter :: spv_set=1.E+33
-# endif
-#endif
-
-! Put time record index into file name. In  the case when model
-! output is to be arranged into sequence of named files, the naming
-! convention is as follows: 'rst_root.INDEX.[MPI_node.]nc', where
-! INDEX is an integer number such that (i) it is divisible by the
-! specified number of records per file; and (ii)
-!
-!      INDEX + record_within_the_file = total_record
-!
-! where, 1 =< record_within_the_file =< records_per_file, so that
-! total_record changes continuously throughout the sequence of files.
-
-      ierr=0
-      rstname=trim(output_root_name) / / '_rst.nc'
-      lrst=lenstr(rstname)
-#if defined MPI && defined PARALLEL_FILES
-        ! Insert MPI node numbers to file name
-        call insert_node(rstname, lrst, mynode, NNODES, ierr)  ! previously done in ncdf_create_file:
-#endif
-      lrst=lenstr(rstname)
-      if (nrpfrst > 0) then
-        lvar=total_rec - (1+mod(total_rec-1, nrpfrst))
-        call insert_time_index (rstname, lrst, lvar, ierr)
-        if (ierr /= 0) goto 99
-      endif
-
-! Decide whether to create a new file, or open existing one.
-! Overall the whole code below is organized into 3-way switch,
-!
-! 10  if (create_new_file) then
-!        .... create new file, save netCDF ids for all variables;
-!     elseif (ncrst==-1) then
-!        .... try to open existing file and check its dimensions
-!       if (cannot be opened or rejected) then
-!         create_new_file=.true.
-!         goto 10
-!       endif   and prepare
-!        .... prepare the file for adding new data,
-!        .... find and save netCDF ids for all variables
-!     else
-!        .... just reopen, no checking, all ids are assumed
-!        .... to be already known (this branch is only for
-!        .... output into single file from MPI code).
-!     endif
-!
-! which is designed to implement a flexible opening policy: if
-!  (i) ldefhis=.true., it forces creation of a new file [if the file
-!      already exists, it will be overwritten]; on the other hand, if
-! (ii) ldefhis=.false., it is assumed that the file already exists
-!      and an attempt to open it is made first; if the attempt is
-!      successful, the file is prepared for appending hew data;
-!      if it fails, a new file is created.
-
-!      create_new_file=ldefhis
-      create_new_file=.true.  ! DevinD edit to work
-      if (ncrst /= -1) create_new_file=.false.
-#if defined MPI && !defined PARALLEL_FILES
-      if (mynode > 0) create_new_file=.false.
-#endif
-
-  10  if (create_new_file) then
-        ierr=nf90_create(rstname(1:lrst), nf90_netcdf4, ncrst)
-        if (ierr == nf90_noerr) then
-          ierr=nf90_set_fill(ncrst, nf90_nofill, prev_fill_mode)
-          if (ierr /= nf90_noerr) then
-            write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
-     &         MYID
-            goto 99
-          endif
-        else
-          write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_rst :: Cannot ',
-     &               'create restart NetCDF file ''', rstname(1:lrst),
-     &                                       '''',  nf90_strerror(ierr)
-          goto 99              !--> ERROR
-        endif
-
-        call put_global_atts (ncrst, ierr)
-
-#ifdef PUT_GRID_INTO_RESTART
-        if (total_rec == 1) call def_grid(ncrst)
-#endif
-
-! Define evolving model variables:
-! ------ -------- ----- ----------
-! Time step number and time record numbers:
-        varid = nccreate(ncrst,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
-        ierr=nf90_put_att (ncrst, varid, 'long_name',
-     &             'time step and record numbers from initialization')
-
-! Time.
-        varid = nccreate(ncrst,vname(1,indxTime),(/'time'/),(/0/),nf90_double)
-        ierr=nf90_put_att(ncrst, varid, 'long_name', vname(2,indxTime))
-        ierr=nf90_put_att(ncrst, varid, 'units', vname(3,indxTime))
-
-! Free-surface.
-        varid = nccreate(ncrst,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att (ncrst, varid, 'long_name', vname(2,indxZ))
-        ierr=nf90_put_att (ncrst, varid, 'units', vname(3,indxZ))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue',spv_set)
-
-! 2D momenta in XI- and ETA-components
-        varid = nccreate(ncrst,vname(1,indxUb),(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &                                   vname(2,indxUb))
-        ierr=nf90_put_att(ncrst, varid, 'units', vname(3,indxUb))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue',spv_set)
-        varid = nccreate(ncrst,vname(1,indxVb),(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &                                   vname(2,indxVb))
-        ierr=nf90_put_att(ncrst, varid, 'units', vname(3,indxVb))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-
-#ifdef SOLVE3D
-# ifdef EXACT_RESTART
-#  ifdef EXTRAP_BAR_FLUXES
-        varid = nccreate(ncrst,'DU_avg2',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-
-        varid = nccreate(ncrst,'DV_avg2',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &           '<<fast-time-averaged vbar(:,:,n+1/2)>>')
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-
-        varid = nccreate(ncrst,'DU_avg_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &       '<back-step mixed fast-time-averaged ubar(:,:,n-1)>')
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-
-        varid = nccreate(ncrst,'DV_avg_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &       '<back-step mixed fast-time-averaged vbar(:,:,n-1)>')
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-#  elif defined PRED_COUPLED_MODE
-        varid = nccreate(ncrst,'rufrc_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &                        '3D-to-2D forcing, XI-component')
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-        varid = nccreate(ncrst,'rvfrc_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/), NF_FTYPE)
-        ierr=nf90_put_att(ncrst, varid, 'long_name',
-     &                       '3D-to-2D forcing, ETA-component')
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-#  endif
-# endif  /* EXACT_RESTART */
-
-! 3D momenta in XI- and ETA-directions.
-        varid = nccreate(ncrst, vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/), NF_FTYPE)
-        ierr=nf90_put_att (ncrst, varid, 'long_name',
-     &                                     vname(2,indxU))
-        ierr=nf90_put_att (ncrst, varid, 'units',
-     &                                     vname(3,indxU))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-
-        varid = nccreate(ncrst,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),(/xi_rho,eta_v,N,0/), NF_FTYPE)
-        ierr=nf90_put_att (ncrst, varid, 'long_name',
-     &                                     vname(2,indxV))
-        ierr=nf90_put_att (ncrst, varid, 'units',
-     &                                     vname(3,indxV))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-
-! Tracer variables.
-        do itrc=1,NT
-          varid = nccreate(ncrst,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),
-     &                                         (/xi_rho,eta_rho,N,0/), NF_FTYPE)
-          ierr=nf90_put_att (ncrst, varid, 'long_name',
-     &                       t_lname(itrc))
-          ierr=nf90_put_att (ncrst, varid, 'units', t_units(itrc))
-          ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-        enddo
-
-# ifdef LMD_KPP
-! Depth of surface planetary boundary layer.
-!        ierr=nf_def_var (ncrst, vname(1,indxHbls)(1:lvar),
-!     &                            NF_FTYPE, 3, r2dgrd, rstHbls)
-        varid = nccreate(ncrst,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att (ncrst, varid, 'long_name',
-     &                                 vname(2,indxHbls))
-        ierr=nf90_put_att (ncrst, varid, 'units',
-     &                                 vname(3,indxHbls))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-# endif
-# ifdef LMD_BKPP
-! Thickness of bottom boundary layer.
-!        ierr=nf_def_var (ncrst, vname(1,indxHbbl),
-!     &                            NF_FTYPE, 3, r2dgrd, rstHbbl)
-        varid = nccreate(ncrst,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/), NF_FTYPE)
-        ierr=nf90_put_att (ncrst, varid, 'long_name',
-     &                                 vname(2,indxHbbl))
-        ierr=nf90_put_att (ncrst, varid, 'units',
-     &                                 vname(3,indxHbbl))
-        ierr = nf90_put_att(ncrst,varid,'_FillValue', spv_set)
-# endif
-#endif /* SOLVE3D */
-
-        ierr=nf90_enddef(ncrst)
-#ifdef MPI_SILENT_MODE
-        if (mynode==0) then
-#endif
-          write(*,'(7x,4A,1x,A,i4)') 'def_rst :: Created new ',
-     &          'netCDF file ''', rstname(1:lrst), '''.' MYID
-#ifdef MPI_SILENT_MODE
-        endif
-#endif
-
-! Open an existing file and prepare for appending data.
-! ==== == ======== ==== === ======= === ========= =====
-! Check consistency of the dimensions of fields from the file with
-! model dimensions. Determine the current size of unlimited dimension
-! and set initial record [in the case of MPI serialized output, at
-! this moment the last time record is assumed to be **partially**
-! written by MPI processes with lower rank. Thus the next write is
-! expected to be into the same record rather than next one (except
-! MPI-master, who initializes the record).
-!
-! In the case when file is rejected (whether it cannot be opened, or
-! something is wrong with its dimensions, create new file.
-
-      elseif (ncrst == -1) then
-        ierr=nf90_open(rstname, nf90_write, ncrst)
-        if (ierr == nf90_noerr) then
-          ierr=nf90_set_fill(ncrst, nf90_nofill, prev_fill_mode)
-          if (ierr /= nf90_noerr) then
-            write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
-     &         MYID
-            goto 99
-          endif
-
-          ierr=checkdims(ncrst, rstname, rec)
-          if (ierr == nf90_noerr) then
-            if (nrpfrst==0) then
-              ierr=rec+1 - nrecrst
-            else
-              ierr=rec+1 - (1+mod(nrecrst-1, abs(nrpfrst)))
-            endif
-            if (ierr > 0) then
-              mpi_master_only write(*,
-     &           '(/1x,A,I5,1x,3A/21x,A,I5,1x,A,I5,1x,A/21x,A/)')
-     &           'WARNING: def_rst :: The actual number of records',
-     &            rec, 'in netCDF file ''',  rstname(1:lrst), '''',
-     &           'exceeds record', rec+1-ierr, '/', total_rec,
-     &           'for restart initial conditions.',
-     &           'All records beyond this will be overwriding.'
-              rec=rec-ierr
-            elseif (nrpfrst==0) then
-              total_rec=rec+1           ! <-- set to the next record
-#if defined MPI && !defined PARALLEL_FILES
-              if (mynode > 0) total_rec=total_rec-1
-#endif
-            endif
-            ierr=nf90_noerr
-          endif
-        endif
-
-        if (ierr /= nf90_noerr) then
-#if defined MPI && !defined PARALLEL_FILES
-          if (mynode==0) then
-            create_new_file=.true.
-            goto 10
-          else
-            write(*,'(/1x,4A, 1x,A,I4/)')  '### ERROR: def_rst :: ',
-     &        'Cannot open restart netCDF file ''', rstname(1:lrst),
-     &        '''.' MYID
-            goto 99                                     !--> ERROR
-          endif
-#else
-          create_new_file=.true.
-          goto 10
-#endif
-        endif
-
-! Find netCDF variable IDs of evolving model variables:
-! ---- ------ -------- --- -- -------- ----- ----------
-
-! Time step indices and time:
-
-        ierr=nf90_inq_varid(ncrst, 'time_step', rstTstep)
-        if (ierr == nf90_noerr) then
-          lvar=lenstr(vname(1,indxTime))
-          ierr=nf90_inq_varid(ncrst, vname(1,indxTime)(1:lvar), rstTime)
-          if (ierr /= nf90_noerr) then
-            write(*,1) vname(1,indxTime)(1:lvar), rstname(1:lrst)
-          endif
-        else
-          write(*,1) 'time_step', rstname(1:lrst)
-        endif
-        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
-
-! Free-surface and 2D momenta in XI- and ETA-directions
-
-        lvar=lenstr(vname(1,indxZ))
-        ierr=nf90_inq_varid(ncrst, vname(1,indxZ)(1:lvar), rstZ)
-        if (ierr == nf90_noerr) then
-          lvar=lenstr(vname(1,indxUb))
-          ierr=nf90_inq_varid(ncrst, vname(1,indxUb)(1:lvar), rstUb)
-          if (ierr == nf90_noerr) then
-            lvar=lenstr(vname(1,indxVb))
-            ierr=nf90_inq_varid(ncrst, vname(1,indxVb)(1:lvar), rstVb)
-            if (ierr /= nf90_noerr) then
-              write(*,1) vname(1,indxVb)(1:lvar), rstname(1:lrst)
-            endif
-          else
-            write(*,1) vname(1,indxUb)(1:lvar), rstname(1:lrst)
-          endif
-        else
-          write(*,1) vname(1,indxZ)(1:lvar),  rstname(1:lrst)
-        endif
-        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
-
-#ifdef SOLVE3D
-# ifdef EXACT_RESTART
-#  ifdef EXTRAP_BAR_FLUXES
-        ierr=nf90_inq_varid(ncrst,   'DU_avg2',   rst_DU_avg2)
-        if (ierr == nf90_noerr) then
-          ierr=nf90_inq_varid(ncrst,  'DV_avg2',     rst_DV_avg2)
-          if (ierr == nf90_noerr) then
-            ierr=nf90_inq_varid(ncrst, 'DU_avg_bak', rst_DU_avg_bak)
-            if (ierr == nf90_noerr) then
-              ierr=nf90_inq_varid(ncrst, 'DV_avg_bak', rst_DV_avg_bak)
-              if (ierr /= nf90_noerr) then
-                write(*,1) 'DV_avg_bak', rstname(1:lrst)
-              endif
-            else
-              write(*,1) 'DU_avg_bak', rstname(1:lrst)
-            endif
-          else
-            write(*,1) 'DV_avg2', rstname(1:lrst)
-          endif
-        else
-          write(*,1) 'DU_avg2', rstname(1:lrst)
-        endif
-#  elif defined PRED_COUPLED_MODE
-        ierr=nf90_inq_varid(ncrst, 'rufrc_bak', rst_rufrc)
-        if (ierr == nf90_noerr) then
-          ierr=nf90_inq_varid(ncrst, 'rvfrc_bak', rst_rvfrc)
-          if (ierr /= nf90_noerr) then
-            write(*,1) 'rvfrc_bak', rstname(1:lrst)
-          endif
-        else
-          write(*,1) 'rufrc_bak', rstname(1:lrst)
-        endif
-#  endif
-        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
-# endif
-
-! 3D momenta n XI- and ETA-directions.
-
-        lvar=lenstr(vname(1,indxU))
-        ierr=nf90_inq_varid (ncrst, vname(1,indxU)(1:lvar), rstU)
-        if (ierr == nf90_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          ierr=nf90_inq_varid (ncrst, vname(1,indxV)(1:lvar), rstV)
-          if (ierr /= nf90_noerr) then
-            write(*,1) vname(1,indxV)(1:lvar), rstname(1:lrst)
-          endif
-        else
-          write(*,1) vname(1,indxU)(1:lvar), rstname(1:lrst)
-        endif
-        if (ierr /= nf90_noerr) goto 99                     !--> ERROR
-
-! Tracer variables.
-
-        do itrc=1,NT
-          lvar=lenstr(vname(1,indxT+itrc-1))
-          ierr=nf90_inq_varid(ncrst, vname(1,indxT+itrc-1)(1:lvar),
-     &                                                  rstT(itrc))
-          if (ierr /= nf90_noerr) then
-            write(*,1) vname(1,indxT+itrc-1)(1:lvar), rstname(1:lrst)
-            goto 99                                       !--> ERROR
-          endif
-        enddo
-
-# ifdef LMD_KPP
-! Depth of surface planetary boundary layer.
-
-        lvar=lenstr(vname(1,indxHbls))
-        ierr=nf90_inq_varid(ncrst, vname(1,indxHbls)(1:lvar), rstHbls)
-        if (ierr /= nf90_noerr) then
-          write(*,1) vname(1,indxHbls)(1:lvar), rstname(1:lrst)
-          goto 99                                        !--> ERROR
-        endif
-# endif
-# ifdef LMD_BKPP
-! Thickness of bottom boundary layer.
-        ierr=nf90_inq_varid(ncrst, vname(1,indxHbbl), rstHbbl)
-        if (ierr /= nf90_noerr) then
-        write(*,1) vname(1,indxHbbl), rstname
-          goto 99                                       !--> ERROR
-        endif
-# endif
-#endif
-#ifdef MPI_SILENT_MODE
-        if (mynode == 0) then
-#endif
-          write(*,'(7x,4A,I4,2x,A,I4)') 'def_rst :: open existing ',
-     &            'file ''', rstname(1:lrst), ''' from rec =', rec
-     &             MYID
-#ifdef MPI_SILENT_MODE
-        endif
-#endif
-
-#if defined MPI && !defined PARALLEL_FILES
-      else
-        ierr=nf90_open(rstname(1:lrst), nf_write, ncrst)
-        if (ierr == nf90_noerr) then
-          ierr=nf_set_fill(ncrst, nf_nofill, prev_fill_mode)
-          if (ierr == nf90_noerr) then
-# ifndef MPI_SILENT_MODE
-            write(*,'(7x,4A,I4)') 'def_rst :: reopen existing file ''',
-     &              rstname(1:lrst), '''.' MYID
-# endif
-          else
-            write(*,'(1x,4A,I4)') '### ERROR: def_rst :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
-     &         MYID
-            goto 99
-          endif
-        else
-          write(*,'(/1x,4A,1x,A,I4/)') '### ERROR: def_rst :: Cannot ',
-     &            'reopen file ''', rstname(1:lrst),'''.'
-     &             MYID
-          goto 99                                         !--> ERROR
-        endif
-#endif
-      endif              !<-- create_new_file
-
-#ifdef PUT_GRID_INTO_RESTART
-
-! Write grid variables.
-! ----- ---- ----------
-
-      if (total_rec == 1) call wrt_grid(ncrst, rstname, lrst)
-#endif
-  99  return                                              !--> ERROR
-   1  format(/1x,'### ERROR: def_rst :: Cannot find variable ''', A,
-     &                            ''' in netCDF file ''', A, '''.'/)
-
-      end subroutine def_rst  !]
-
-!----------------------------------------------------------------------
-      subroutine wrt_rst  ![
-      ! write model prognostic variables into restart netCDF file.
-
-      use tracers, only: wrt_rst_trc
-      use coupling
+      use ncvars  ! REMOVE THIS LATER AND MOVED WHAT IS NEEDED HERE!
       use mixing
-      use ncvars
-      use scalars
-      use mpi
-      use read_write                                       ! temporary addtion until writing fixed
+      use eos_vars
+      use work_mod
+      use grid
+      use tracers    !, only: wrt_his_trc
+      use coupling
 
       implicit none
 
-      integer :: record, start(2), count(2), ibuff(iaux),
-     &           i, ierr, lstr, lvar, lenstr, ncdf_write, varid, itrc
-      character(len=18) :: tstring
+      ! local
+      integer,dimension(4)   :: start
+      integer,save           :: rec_rst                              ! current file output record
+      integer,save           :: total_rec_rst=0                      ! total his output records so far
+      real,save              :: output_time_rst=0                    ! time since last output
+      logical,save           :: first_step=.true.
+      character(len=99),save :: fname_rst
+      integer                :: tile, ierr, i, j, k
 
-#if defined MPI && !defined PARALLEL_FILES
-      integer :: status(MPI_STATUS_SIZE), blank
-      if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
-     &            mynode-1, 1, ocean_grid_comm, status, ierr)
+      if (wrt_file_rst) then
+
+      if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
+      first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+
+      if (output_time_rst    >=output_period_rst
+#ifdef EXACT_RESTART
+     &    .or.
+     &    output_time_rst+dt >=output_period_rst                     ! timestep before
 #endif
+     &                    ) then
 
-! Create/open restart and set record index within the file.
-
-      call def_rst(nrecrst, ierr)
-      if (ierr /= nf90_noerr) goto 99
-      lstr=lenstr(rstname)
-      nrecrst=max(nrecrst,1)                  !!! WARNING: Here it
-      if (nrpfrst == 0) then                  !!! is assumed that
-        record=nrecrst                        !!! global restart
-      else                                    !!! record index
-        record=1+mod(nrecrst-1, abs(nrpfrst)) !!! nrecrst is already
-      endif                                   !!! advanced by main.
-
-! Write out evolving model variables:
-! ----- --- -------- ----- ----------
-
-      ibuff(1)=iic-1  ; ibuff(2)=nrecrst        ! Time step and
-      ibuff(4:iaux)=0 ; ibuff(3)=1 !nrechis     ! record numbers. DevinD put in 1 as don't need this anymore
-!#ifdef AVERAGES
-!      ibuff(4)=nrecavg  ! DevinD
-!#endif
-      start(1)=1      ; count(1)=iaux
-      start(2)=record ; count(2)=1
-
-      ierr=nf90_inq_varid(ncrst,'time_step',varid)
-      ierr=nf90_put_var(ncrst, varid, ibuff, start, count)
-      if (ierr /= nf90_noerr) then
-        write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
-     &       'Cannot write variable ''time_step'' into restart file, ',
-     &       'rec =', record, nf90_strerror(ierr) MYID
-        goto 99                                           !--> ERROR
-      endif
-
-! Time: Note that (1) time is always double precision; and (2) which
-! one to write into the file, time or tdays, is decided by attribute
-! "units" stored as vname(3,indxTime).  When computng time is always
-! in seconds, however it is more convenient to have it in days in all
-! the files; (3) this code is designed for politeness - it reads time
-! units from the initial condition file (see "get_init.F") and uses
-! it throughout the entire run.
-
-      ierr=nf90_inq_varid(ncrst, 'ocean_time', varid)
-      if (vname(3,indxTime)(1:6) == 'second') then
-        ierr=nf90_put_var(ncrst, varid, time,(/record/))
-      else
-        ierr=nf90_put_var(ncrst, varid, tdays,(/record/))
-      endif
-      if (ierr /= nf90_noerr) then
-        lvar=lenstr(vname(1,indxTime))
-        write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
-     &        'Cannot write variable ''',    vname(1,indxTime)(1:lvar),
-     &        ''' into restart file, rec =', record, nf90_strerror(ierr)
-     &            MYID
-        goto 99                                           !--> ERROR
-      endif
-
-! Free-surface and 2D momentum components in XI- and ETA-directions.
-      call nc_write_var(ncrst, zeta(START_2D_ARRAY,knew), 1,
-     &                    vname(1,indxZ), rp_var, record, ierr)
-      if (ierr == nf90_noerr) then
-        call nc_write_var(ncrst, ubar(START_2D_ARRAY,knew), 1,
-     &                    vname(1,indxUb), up_var, record, ierr)
-        if (ierr == nf90_noerr) then
-          call nc_write_var(ncrst, vbar(START_2D_ARRAY,knew), 1,
-     &                      vname(1,indxVb), vp_var, record, ierr)
-          if (ierr /= nf90_noerr) then
-            lvar=lenstr(vname(1,indxVb))
-            write(*,1) vname(1,indxVb)(1:lvar), record MYID
-          endif
-        else
-          lvar=lenstr(vname(1,indxUb))
-          write(*,1) vname(1,indxUb)(1:lvar), record MYID
+        if (mod(total_rec_rst,nrpf_rst)==0) then
+          call create_file_rst_ocean_vars(total_rec_rst,fname_rst)
+          rec_rst = 0
         endif
-      else
-        lvar=lenstr(vname(1,indxZ))
-        write(*,1) vname(1,indxZ)(1:lvar), record MYID
-      endif
-      if (ierr /= nf90_noerr) goto 99                !--> ERROR
+        total_rec_rst = total_rec_rst +1
+        rec_rst = rec_rst + 1
 
+        ierr=nf90_open(fname_rst,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
+
+        call ncwrite(ncid,'ocean_time',(/time/),(/rec_rst/))
+
+        call write_time_step( ncid, rec_rst, total_rec_rst )
+
+        start=1; start(3)=rec_rst                                    ! back to 2D vars
+        call ncwrite(ncid,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
+        call ncwrite(ncid,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
+        call ncwrite(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
 #ifdef SOLVE3D
+! 3D momentum components in XI- and ETA-directions:
+! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
+! in the previous timestep (same result).
+! wrt_rst called at the middle of next timestep as some variables only calculated there for t=n.
+
+        start(3)=1; start(4)=rec_rst
+        call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
+        call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
+
+        call wrt_rst_trc(ncid,start)                              ! tracer variables
+
+        start(3)=rec_rst                                      ! back to 2D vars
+
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-      call nc_write_var(ncrst, DU_avg2, 1, 'DU_avg2', up_var, record, ierr)
-      if (ierr == nf90_noerr) then
-        call nc_write_var(ncrst, DV_avg2, 1, 'DV_avg2', vp_var, record, ierr)
-        if (ierr == nf90_noerr) then
-          call nc_write_var(ncrst, DU_avg_bak, 1, 'DU_avg_bak', up_var, record, ierr)
-          if (ierr == nf90_noerr) then
-            call nc_write_var(ncrst, DV_avg_bak, 1, 'DV_avg_bak', vp_var, record, ierr)
-            if (ierr /= nf90_noerr) then
-              write(*,1) 'DV_avg_bak', record MYID
-            endif
-          else
-            write(*,1) 'DU_avg_bak', record MYID
-          endif
-        else
-          write(*,1) 'DV_avg2', record MYID
-        endif
-      else
-        write(*,1) 'DU_avg2', record MYID
-      endif
-#  elif defined PRED_COUPLED_MODE
-      call nc_write_var(ncrst, rufrc_bak(START_2D_ARRAY,nstp), 1, 'rufrc', up_var, record, ierr)
-      if (ierr == nf90_noerr) then
-        call nc_write_var(ncrst, rvfrc_bak(START_2D_ARRAY,nstp), 1, 'rvfrc', vp_var, record, ierr)
+        call ncwrite(ncid,'DU_avg2',    DU_avg2( 1:i1,j0:j1),start)
+        call ncwrite(ncid,'DV_avg2',    DV_avg2(i0:i1, 1:j1),start)
+        call ncwrite(ncid,'DU_avg_bak', DU_avg_bak( 1:i1,j0:j1),start)
+        call ncwrite(ncid,'DV_avg_bak', DV_avg_bak(i0:i1, 1:j1),start)
 
-        if (ierr /= nf90_noerr) then
-          write(*,1) 'rvfrc_bak', record MYID
-        endif
-      else
-        write(*,1) 'rufrc_bak', record MYID
-      endif
+#  elif defined PRED_COUPLED_MODE
+        call ncwrite(ncid,'rufrc',rufrc_bak( 1:i1,j0:j1,nstp),start)
+        call ncwrite(ncid,'rvfrc',rvfrc_bak(i0:i1, 1:j1,nstp),start)
 #  endif
-      if (ierr /= nf90_noerr) goto 99                !--> ERROR
 # endif
 
-! 3D momentum components in XI- and ETA-directions.
-      call nc_write_var(ncrst, u(START_2D_ARRAY,1,nstp), N,
-     &                    vname(1,indxU), up_var, record, ierr)
-      if (ierr == nf90_noerr) then
-        call nc_write_var(ncrst, v(START_2D_ARRAY,1,nstp), N,
-     &                    vname(1,indxV), vp_var, record, ierr)
-        if (ierr /= nf90_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          write(*,1) vname(1,indxV)(1:lvar), record MYID
-        endif
-      else
-        lvar=lenstr(vname(1,indxU))
-        write(*,1) vname(1,indxU)(1:lvar), record MYID
-      endif
-      if (ierr /= nf90_noerr) goto 99                !--> ERROR
-
-! Tracer variables.
-      call wrt_rst_trc(record)
 
 # ifdef LMD_KPP
-! Depth of planetary boundary layer [m].
-      call nc_write_var(ncrst, hbls(START_2D_ARRAY,nstp), 1,
-     &                    vname(1,indxHbls), rp_var, record, ierr)
-      if (ierr /= nf90_noerr) then
-        lvar=lenstr(vname(1,indxHbls))
-        write(*,1) vname(1,indxHbls)(1:lvar), record MYID
-        goto 99                                         !--> ERROR
-      endif
+        call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
 # endif
 # ifdef LMD_BKPP
-! Thickness of KPP bottom boundary layer [m].
-      call nc_write_var(ncrst, hbbl(START_2D_ARRAY,nstp), 1,
-     &                    vname(1,indxHbbl), rp_var, record, ierr)
-      if (ierr /= nf90_noerr) then
-        lvar=lenstr(vname(1,indxHbbl))
-        write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
-        goto 99                                         !--> ERROR
-      endif
+        call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
 # endif
-#endif /* SOLVE3D */
-
-
-  1   format(/1x, '### ERROR: wrt_rst :: Cannot write variable ''',
-     &             A, ''' into restart file, rec =', i6, 3x,A,i4/)
-      goto 100
-  99  if (may_day_flag == 0) may_day_flag=3
- 100  continue
-
-! Close or synchronize netCDF file to disk to the allow other
-! processes to access data immediately after it is written.
-
-#if defined MPI && !defined PARALLEL_FILES
-      ierr=nf90_close (ncrst)
-      if (nrpfrst > 0 .and. record >= nrpfrst) ncrst=-1
-#else
-      if (nrpfrst > 0 .and. record >= nrpfrst) then
-        ierr=nf90_close (ncrst)
-        ncrst=-1
-      else
-        ierr=nf90_sync(ncrst)
-      endif
 #endif
-      if (ierr == nf90_noerr) then
-#ifdef MPI_SILENT_MODE
+
+        ierr=nf90_close(ncid)
         if (mynode == 0) then
-#endif
-          write(tstring,'(F18.8)') tdays
-          i=1
-          do while (i<18 .and. tstring(i:i)==' ')
-            i=i+1
-          enddo
-          write(*,'(7x,A,1x,A,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
-     &      'wrt_rst :: wrote restart, tdays =', tstring(i:i+8),
-     &      'step =', ibuff(1),  'rec =', record, '/',  nrecrst
-     &       MYID
-#ifdef MPI_SILENT_MODE
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
+     &     'ocean_vars :: wrote restart, tdays =', tdays,
+     &     'step =', iic-1, 'rec =', rec_rst, '/', total_rec_rst     ! -1 since iic=t(n+1)
         endif
-#endif
-      else
-        write(*,'(/1x,2A/)')    '### ERROR: wrt_rst :: Cannot ',
-     &                          'synchronize/close restart file.'
-        if (may_day_flag == 0) may_day_flag=3
+
+        if (output_time_rst>=output_period_rst) then
+          output_time_rst=0                                          ! catch for exact restart to not
+        endif                                                        ! reset the time
       endif
 
-#if defined MPI && !defined PARALLEL_FILES
-      if (mynode < NNODES-1) call MPI_Send (blank, 1, MPI_INTEGER,
-     &                        mynode+1, 1, ocean_grid_comm, ierr)
-#endif
+      endif  ! <-- wrt_file_rst
 
-      end subroutine wrt_rst  !]
+      end subroutine wrt_rst_ocean_vars  !]
 
 !----------------------------------------------------------------------
 

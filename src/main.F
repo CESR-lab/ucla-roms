@@ -460,28 +460,7 @@ C$OMP BARRIER
       ! whereas, u & ubar, etc, remain unchanged from the end of the previous step
       call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
-
-      if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
-#ifdef EXACT_RESTART
-     &                         .or. mod(iic-ntstart+1,nrst) == 0
-#endif
-     &                                                  )) then
-C$OMP MASTER
-        if (mod(iic-ntstart,nrst) == 0
-#ifdef EXACT_RESTART
-     &         .or. mod(iic-ntstart+1,nrst) == 0
-#endif
-     &                                ) nrecrst=nrecrst+1
-        if (mod(iic-ntstart,nrst) == 0
-#ifdef EXACT_RESTART
-     &         .or. mod(iic-ntstart+1,nrst) == 0
-#endif
-     &                                 ) call wrt_rst
-C$OMP END MASTER
-C$OMP BARRIER
-        if (iic-ntstart > ntimes) goto 99   !-->  DONE
-      endif
-
+      call wrt_rst_ocean_vars
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
