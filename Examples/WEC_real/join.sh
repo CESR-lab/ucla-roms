@@ -1,4 +1,4 @@
 #!/bin/bash
 
-ncjoin -d sample_wec*.?.nc
-ncview sample_wec_wec.*.nc &
+ncjoin -d sample_*.?.nc
+ncview sample_wec.*.nc &

@@ -1,12 +1,34 @@
 
       ! ****************************************************************
       ! user inputs
-      logical,parameter :: wrt_file_his      = .false.     ! t/f to write a wec history file
-      real,parameter    :: output_period_his = 400         ! output period in seconds
-      integer,parameter :: nrpf_his          = 3           ! total recs per file
+      logical,parameter :: wrt_file_his      = .false.     ! t/f to write module history file
+      real,parameter    :: output_period_his = 100         ! output period in seconds
+      integer,parameter :: nrpf_his          = 10          ! total recs per file
+      logical,parameter :: wrt_SUP  =.true.,
+     &                     wrt_UST2D=.true., 
+     &                     wrt_VST2D=.true.,
+     &                     wrt_UST  =.true.,
+     &                     wrt_VST  =.true.,
+     &                     wrt_wST  =.true.,   
+     &                     wrt_AKB  =.true.,
+     &                     wrt_AKW  =.true.,   
+     &                     wrt_KVF  =.true.,
+     &                     wrt_CALP =.true.,  
+     &                     wrt_KAPS =.true.
       
-      logical,parameter :: wrt_file_avg      = .false.     ! t/f to write a wec averages file
-      real,parameter    :: output_period_avg = 40          ! output averaging period in seconds
-      integer,parameter :: nrpf_avg          = 2           ! total recs per file
+      logical,parameter :: wrt_file_avg      = .false.     ! t/f to write module averages file
+      real,parameter    :: output_period_avg = 100         ! output averaging period in seconds
+      integer,parameter :: nrpf_avg          = 10          ! total recs per file
+      logical,parameter :: wrt_avg_SUP  =.true.,
+     &                     wrt_avg_UST2D=.true., 
+     &                     wrt_avg_VST2D=.true.,
+     &                     wrt_avg_UST  =.true.,
+     &                     wrt_avg_VST  =.true.,
+     &                     wrt_avg_wST  =.true.,   
+     &                     wrt_avg_AKB  =.true.,
+     &                     wrt_avg_AKW  =.true.,   
+     &                     wrt_avg_KVF  =.true.,
+     &                     wrt_avg_CALP =.true.,  
+     &                     wrt_avg_KAPS =.true.
       ! end user inputs
       ! ****************************************************************

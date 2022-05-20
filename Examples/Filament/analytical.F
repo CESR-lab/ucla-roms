@@ -5,8 +5,7 @@
 #include "cppdefs.opt"
 
       use param
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use grid
       use scalars
       use tracers

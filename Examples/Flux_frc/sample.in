@@ -23,9 +23,6 @@ climatology: filename
 boundary: filename
      ../USWC_model/input_data/roms_bry_trace.nc
 
-restart:          NRST, NRPFRST
-                   4       10
-     
 output_root_name:
      sample    
 

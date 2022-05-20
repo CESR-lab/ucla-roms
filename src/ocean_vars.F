@@ -108,6 +108,13 @@
 
       implicit none
 
+      if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
+        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_his!'
+      endif
+      if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
+        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_avg!'
+      endif
+
       allocate( zeta(GLOBAL_2D_ARRAY,4) ); zeta=0.         ! zeta(:,:,knew) needs to be =0. for set_depth_tile
       allocate( ubar(GLOBAL_2D_ARRAY,4) ); ubar=0.         ! since knew can change if exact restart or not
       allocate( vbar(GLOBAL_2D_ARRAY,4) ); vbar=0.         ! set all zeta = 0.
@@ -741,6 +748,8 @@
       real         :: coef
       logical,save :: first_step=.true.
 
+      if (wrt_file_avg) then
+
       if (.not. first_step) then                           ! don't include t=0 in average
 
         navg_ovars = navg_ovars +1
@@ -800,6 +809,8 @@
       endif  ! <-- .not. first_step
 
       first_step=.false.
+
+      endif ! <-- wrt_file_avg
 
       end subroutine calc_avg_ocean_vars  !]
 
