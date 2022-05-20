@@ -344,13 +344,6 @@
       ! Add netcdf WEC terms previously contained in ncvars
       ! ===================================================
 
-      ! Array of bools for yes/no whether to output
-      ! result variable to netcdf file
-      ! ------------------------------
-
-      ! same as wrt_wec_vars but for averaging of wec variables:
-      logical wrt_avg_vars(11) ! Previously part of wrtavg in old roms
-
       ! Index numbers are arbitrary, they are just place holders for
       ! the true or false bool for outputing WEC variables stored in
       ! wrt_wec_vars
@@ -3029,7 +3022,7 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 
       if (wrt_file_his) call wrt_his_wec
       if (wrt_file_avg) then
-        if (wrtavg(indxWST)) call wstokes_wec_tile(istr,iend,jstr,jend)  ! put here for now as needed istr,iend. Can remove later
+        if (wrt_avg_WST) call wstokes_wec_tile(istr,iend,jstr,jend)  ! put here for now as needed istr,iend. Can remove later
         call wrt_avg_wec
       endif
 

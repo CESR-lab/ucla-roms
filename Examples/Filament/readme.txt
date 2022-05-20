@@ -1,3 +1,10 @@
+2022/01:
+Best results achieved with NO initial along filament flow (u0=0).
+Therefore online analytical version is preferred over python generated initial conditions,
+as there is no need for offline TTW sovler.
+LIN_EOS essential to avoid large start-up waves. This is because analytical temperature gives
+inital rho, only easily calculated with LIN_EOS.
+
 2021/11:
 Idealised_Filament python scripts created by DanielD. It includes TTW solver.
 Run script in Idealized_Filament/

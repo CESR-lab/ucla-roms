@@ -67,20 +67,20 @@ c-dd# define SPHERICAL
 # define MASK_LAND_DATA
 
         /* Open Boundaries */
-# define NS_PERIODIC
-# define EW_PERIODIC
+c# define NS_PERIODIC
+c# define EW_PERIODIC
 
-# if !defined EW_PERIODIC
+c# if !defined EW_PERIODIC
 #  define OBC_WEST
 #  define OBC_EAST
-# endif
+c# endif
 
-# if !defined NS_PERIODIC
+c# if !defined NS_PERIODIC
 #  define OBC_NORTH
 #  define OBC_SOUTH
-# endif
+c# endif
 
-# if !defined EW_PERIODIC || !defined NS_PERIODIC
+c# if !defined EW_PERIODIC || !defined NS_PERIODIC
 #  define OBC_M2FLATHER
 #  define OBC_M3ORLANSKI
 #  define OBC_TORLANSKI
@@ -89,7 +89,7 @@ c-dd# define SPHERICAL
 #  define M2_FRC_BRY
 #  define M3_FRC_BRY
 #  define T_FRC_BRY
-# endif
+c# endif
 
         /* Waves Effect on Current */
 c# define WEC

@@ -66,13 +66,11 @@
 !      integer :: ntrc_bio_base
 !      integer :: ntrc_bio !  - from (param - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
 
-#ifdef AVERAGES
       real, public, allocatable, dimension(:,:,:,:) :: t_avg         ! tracer averages. Memory only allocated for tracers of interest.
       integer,      allocatable, dimension(:)       :: t_avg_2_NT    ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
 
       integer,dimension(NT),public :: NT_2_t_avg                     ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer,public        :: n_t_avg                               ! number of tracer averages to output <= NT
-#endif
 
 #ifdef BIOLOGY_BEC2
 ! bgc needs public indexes as used in other files
@@ -85,11 +83,10 @@
       public def_his_trc
       public wrt_his_trc
       public wrt_rst_trc
-#ifdef AVERAGES
       public def_avg_trc
       public wrt_avg_trc
       public set_avg_trc
-#endif
+
       contains
 
 ! ----------------------------------------------------------------------
@@ -227,7 +224,6 @@
       end subroutine wrt_his_trc  !]
 
 ! ----------------------------------------------------------------------
-#ifdef AVERAGES
       subroutine wrt_avg_trc (ncid,start)  ![
       ! Write tracers to avg file
       implicit none
@@ -247,7 +243,6 @@
       enddo
 
       end subroutine wrt_avg_trc  !]
-#endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
       subroutine wrt_rst_trc (ncid, start)  ![
@@ -267,7 +262,6 @@
       end subroutine wrt_rst_trc  !]
 
 ! ----------------------------------------------------------------------
-#ifdef AVERAGES
       subroutine set_avg_trc(coef)  ![
 
       implicit none
@@ -286,7 +280,6 @@
       enddo
 
       end subroutine set_avg_trc  !]
-#endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
       subroutine init_tracers  ![
@@ -333,6 +326,7 @@
       t=0.
 
 #if defined AVERAGES
+      ! remove averages flag above but do wrt_file_avg flag over this to avoid any allocation
       ! Allocate memory for only the tracer averages required for output
       do itrc=1,NT
         if (wrt_t_avg(itrc)) then

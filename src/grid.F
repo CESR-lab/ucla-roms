@@ -209,7 +209,7 @@
 # endif
 
       if (ierr == nf90_noerr) then
-        call wrt_grid(ncid, fname, lncn)
+        call wrt_grid(ncid)
         ierr=nf90_close(ncid)
         if (ierr /= nf90_noerr) then
            write(*,'(/1x,4A/12x,A/)')   '### ERROR: wrt_ana_grid :: ',
@@ -351,7 +351,10 @@
       use nc_read_write
 
       implicit none
-      integer ncid, varid, ierr, ncdf_write
+      ! input
+      integer,intent(in) :: ncid
+      ! local
+      integer :: varid, ierr, ncdf_write
 
 !#include "netcdf.inc"
 
@@ -382,7 +385,7 @@
 
         ierr=nf90_inq_varid(ncid, 'xl', varid)
         if (ierr == nf90_noerr) then
-          ierr=nf90_put_var(ncid, varid, 1, xl)
+          ierr=nf90_put_var(ncid, varid, xl)
           if (ierr /= nf90_noerr) then
             call handle_ierr(ierr, 'wrt_grid ')
           endif
@@ -393,7 +396,7 @@
 
         ierr=nf90_inq_varid(ncid, 'el', varid)
         if (ierr == nf90_noerr) then
-          ierr=nf90_put_var(ncid, varid, 1, el)
+          ierr=nf90_put_var(ncid, varid, el)
           if (ierr /= nf90_noerr) then
             call handle_ierr(ierr, 'wrt_grid ')
           endif

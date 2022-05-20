@@ -47,7 +47,7 @@
       use roms_read_write
       use netcdf
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
-      use ocean_vars
+      use ocean_vars, vn=>vname
       use scalars
       use diagnostics
 
@@ -61,8 +61,8 @@
 #include "extract_data.opt"
 
 
-      integer           :: total_rec=0 ! total records
-      integer           :: nobj  ! number of extraction objects
+      integer :: total_rec=0 ! total records
+      integer :: nobj  ! number of extraction objects
 
       logical                         :: extend_up !! flag to extend up,vp
       real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp

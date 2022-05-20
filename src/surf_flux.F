@@ -84,6 +84,13 @@
       ! local
       character(len=30) :: string
 
+      if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
+        stop 'ERROR :: surf_flux.opt - dt not a factor of output_period_his!'
+      endif
+      if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
+        stop 'ERROR :: surf_flux.opt - dt not a factor of output_period_avg!'
+      endif
+
       allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
@@ -103,7 +110,7 @@
       call store_string_att(surf_forcing_strings,'cm/day')
 #endif
 
-      if (wrt_file_avg_surf_flux) then
+      if (wrt_file_avg) then
         allocate( sustr_avg(GLOBAL_2D_ARRAY) )
         allocate( svstr_avg(GLOBAL_2D_ARRAY) )   ! surf stress v-point average
         allocate( shflx_avg(GLOBAL_2D_ARRAY) )   ! surf heat flux average
@@ -139,6 +146,7 @@
       subroutine calc_avg_surf_flux  ![
       ! set surf_flux averaged variables
       ! taken from set_avg.F in old code
+      use param
       implicit none
 
       ! local
@@ -159,7 +167,9 @@
       if (wrt_sustr) sustr_avg( 1:i1,j0:j1) = sustr_avg( 1:i1,j0:j1)*(1-coef) + sustr( 1:i1,j0:j1)*coef
       if (wrt_svstr) svstr_avg(i0:i1, 1:j1) = svstr_avg(i0:i1, 1:j1)*(1-coef) + svstr(i0:i1, 1:j1)*coef
       if (wrt_shflx) shflx_avg(i0:i1,j0:j1) = shflx_avg(i0:i1,j0:j1)*(1-coef) + stflx(i0:i1,j0:j1,itemp)*coef
+#ifdef SALINITY
       if (wrt_ssflx) ssflx_avg(i0:i1,j0:j1) = ssflx_avg(i0:i1,j0:j1)*(1-coef) + stflx(i0:i1,j0:j1,isalt)*coef
+#endif
 
       end subroutine calc_avg_surf_flux  !]
 
@@ -222,6 +232,8 @@
       character(len=99),save :: fname_his
       integer                :: tile, ierr
 
+      if (wrt_file_his) then
+
       if (.not. first_step) then
         output_time_his = output_time_his + dt                       ! only start count after first timestep
       else
@@ -248,7 +260,9 @@
         if (wrt_sustr) call ncwrite(ncid,sustr_name, sustr( 1:i1,j0:j1),start)
         if (wrt_svstr) call ncwrite(ncid,svstr_name, svstr(i0:i1, 1:j1),start)
         if (wrt_shflx) call ncwrite(ncid,shflx_name, stflx(i0:i1,j0:j1,itemp),start)
+#ifdef SALINITY
         if (wrt_ssflx) call ncwrite(ncid,ssflx_name, stflx(i0:i1,j0:j1,isalt),start)
+#endif
 
         ierr=nf90_close (ncid)
         if (mynode == 0) then
@@ -259,6 +273,8 @@
 
         output_time_his=0
       endif
+
+      endif ! <-- wrt_file_his
 
       end subroutine wrt_his_surf_flux  !]
 
@@ -278,6 +294,8 @@
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_avg
       integer :: tile, tn, ierr
+
+      if (wrt_file_avg) then
 
       if (.not. first_step) then
         call calc_avg_surf_flux                                      ! don't include t=0 in averaging
@@ -316,6 +334,8 @@
      &         MYID
         endif
       endif
+
+      endif  ! <-- wrt_file_avg
 
       end subroutine wrt_avg_surf_flux  !]
 

@@ -1052,8 +1052,8 @@
         enddo
       enddo
 
-      if (wrt_file_his_surf_flux) call wrt_his_surf_flux   ! write flux variables to flux output file
-      if (wrt_file_avg_surf_flux) call wrt_avg_surf_flux   ! write flux averaged variables to flux output file
+      call wrt_his_surf_flux   ! write flux variables to flux output file
+      call wrt_avg_surf_flux   ! write flux averaged variables to flux output file
 
       end subroutine calc_all_bulk_forces  !]
 

@@ -2,11 +2,11 @@
       ! ****************************************************************
       ! User inputs
 
-      logical,parameter,public :: wrt_file_his_surf_flux = .false.   ! t/f to write module history file
+      logical,parameter,public :: wrt_file_his = .false.             ! t/f to write module history file
       real,parameter           :: output_period_his = 80             ! output period in seconds
       integer,parameter        :: nrpf_his          = 3              ! total recs per file
       
-      logical,parameter,public :: wrt_file_avg_surf_flux = .false.   ! t/f to write module averages file
+      logical,parameter,public :: wrt_file_avg = .false.             ! t/f to write module averages file
       real,parameter           :: output_period_avg = 120            ! output averaging period in seconds
       integer,parameter        :: nrpf_avg          = 2              ! total recs per file
 
