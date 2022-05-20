@@ -52,14 +52,8 @@ c      write(*,*) 'kmp_stacksize =', size
       tile_count=0                   ! Reset global sumation variables
       bc_count=0                     ! and counters needed for volume
       volume=0.                      ! and energy diagnostics, and for
-c      avke=0.                       ! volume conservation constraint.
-c      avpe=0.
-c      prev_ke=0.
-c      avke2b=0.
-c      avke3bc=0.
-c      v2d_max=0.
-c      v3d_max=0.
-c      v3bc_max=0.
+                                     ! volume conservation constraint.
+
 
       hmin=+1.E+20   ; hmax=-1.E+20     ! Set extreme values to large
       grdmin=+1.E+20 ; grdmax=-1.E+20   ! unrealistic numbers, positive

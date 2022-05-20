@@ -929,7 +929,7 @@ C$OMP BARRIER
         error stop ! stop simulation
       endif
 
-      call put_global_atts(ncid, ierr)  ! put global attributes in file
+!      call put_global_atts(ncid, ierr)  ! put global attributes in file
 
       end subroutine ncdf_create_blank_file  !]
 

@@ -38,15 +38,16 @@
 
       integer,public :: i0,i1,j0,j1                        ! i0=0 (west edge), or i0=1 interior
 
-!     interface set_frc_data
-!       module procedure  set_frc_data_2D
-!     end interface
+      integer,parameter :: max_options_string=2000
+      character(len=max_options_string),public :: surf_forcing_strings=' '
 
       public :: set_frc_data,create_filename
       public :: read_output_root_name
       public :: init_output_indices
       public :: find_new_record
       public :: nc_check_units
+      public :: put_global_atts
+      public :: store_string_att
 
       contains
 
@@ -521,6 +522,198 @@
       end if
 
       end subroutine nc_check_units  !]
+
+! ---------------------------------------------------------------------
+      subroutine put_global_atts (ncid, ierr)  ![
+
+      use param
+!      use surf_flux !, only: dSSSdt
+      use eos_vars
+      use ncvars
+      use scalars
+      use scoord
+      use strings
+      use netcdf
+
+      implicit none
+      integer :: ncid, ierr
+
+#if defined MPI && defined PARALLEL_FILES
+      integer :: ibuff(4), npart
+
+      npart=4                                    ! Put global attribute 'partition' which identifies subdomain
+      ibuff(1)=mynode                            ! within the processor grid individually for each file.
+      ibuff(2)=nnodes
+      if (WESTERN_MPI_EDGE) then
+        ibuff(3)=iSW_corn+iwest
+      else
+        ibuff(3)=iSW_corn+iwest+1
+      endif
+      if (SOUTHERN_MPI_EDGE) then
+        ibuff(4)=jSW_corn+jsouth
+      else
+        ibuff(4)=jSW_corn+jsouth+1
+      endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
+#endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'title',title)         ! Title of the run
+
+#ifndef ANA_GRID
+      ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grdname)
+#endif
+#ifndef ANA_INITIAL
+      ierr=nf90_put_att(ncid, nf90_global, 'init_file',ininame)
+#endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'ntimes', ntimes)         ! Time stepping parameters
+      ierr=nf90_put_att(ncid, nf90_global, 'ndtfast',ndtfast)
+      ierr=nf90_put_att(ncid, nf90_global, 'dt', dt)
+      ierr=nf90_put_att(ncid, nf90_global, 'dtfast', dtfast)
+
+! Vertical coordinate type, control parameters "theta_s", "theta_b",
+! "hc", and stretching curves "Cs_w", "Cs_r" at W- and RHO-points.
+
+#ifdef SOLVE3D
+# ifdef VERT_COORD_TYPE_SM09
+      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'SM09')
+# elif defined VERT_COORD_TYPE_KAU
+      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'KAU')
+# elif defined VERT_COORD_TYPE_SH94
+      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'SH94')
+# endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'theta_s', theta_s)
+      ierr=nf90_put_att(ncid, nf90_global, 'theta_b', theta_b)
+      ierr=nf90_put_att(ncid, nf90_global, 'hc', hc)
+      ierr=nf90_put_att(ncid, nf90_global, 'Cs_w', Cs_w)
+      ierr=nf90_put_att(ncid, nf90_global, 'Cs_r', Cs_r)
+
+! Boussinesq reference density and EOS coefficients for linear EOS.
+
+      ierr=nf90_put_att(ncid, nf90_global, 'rho0', rho0)
+      ierr=nf90_put_att (ncid, nf90_global, 'rho0_units', 'kg/m^3')
+# ifndef NONLIN_EOS
+      ierr=nf90_put_att(ncid, nf90_global,'Tcoef', Tcoef)
+      ierr=nf90_put_att (ncid, nf90_global,'Tcoef_units', 'deg Celsius-1')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'T0', T0)
+      ierr=nf90_put_att (ncid, nf90_global, 'T0_units', 'deg Celsius')
+
+#  ifdef SALINITY
+      ierr=nf90_put_att(ncid, nf90_global, 'Scoef', Scoef)
+      ierr=nf90_put_att (ncid, nf90_global, 'Scoef_units', 'PSU-1')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'S0', S0)
+      ierr=nf90_put_att (ncid, nf90_global, 'S0_units', 'PSU')
+#  endif
+# endif
+#endif /* SOLVE3D */
+
+#ifdef UV_VIS2
+      ierr=nf90_put_att(ncid,nf90_global, 'visc2', visc2)            ! Horizontal viscosity and mixing coefficients.
+      ierr=nf90_put_att (ncid,nf90_global, 'visc2_units', 'm^2/s')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'gamma2', gamma2)         ! Lateral slipperiness parameter
+#endif
+#ifdef SOLVE3D
+# ifdef TS_DIF2
+      ierr=nf90_put_att(ncid,nf90_global, 'tnu2', tnu2)
+      ierr=nf90_put_att (ncid,nf90_global, 'tnu2_units', 'm^2/s')
+# endif
+# ifdef MY25_MIXING
+#  ifdef Q2_DIF2
+      ierr=nf90_put_att(ncid,nf90_global, 'q2nu2', q2nu2)
+      ierr=nf90_put_att (ncid,nf90_global, 'q2nu2_units', 'm^2/s')
+#  endif
+#  ifdef Q2_DIF4
+      ierr=nf90_put_att(ncid,nf90_global,'q2nu4', q2nu4)
+      ierr=nf90_put_att (ncid,nf90_global,'q2nu4_units', 'm^4/s')
+#  endif
+# endif
+# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
+                         && !defined MY2_MIXING && !defined MY25_MIXING
+
+      ierr=nf90_put_att(ncid, nf90_global, 'Akv_bak', Akv_bak)       ! Background vertical viscosity tracer mixing
+      ierr=nf90_put_att (ncid, nf90_global, 'Akv_bak_units', 'm^2/s')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'Akt_bak', Akt_bak)
+      ierr=nf90_put_att (ncid, nf90_global, 'Akt_bak_units', 'm^2/s')
+# endif
+# ifdef MY25_MIXING
+      ierr=nf90_put_att(ncid, nf90_global, 'Akq_bak',Akq_bak)
+      ierr=nf90_put_att (ncid, nf90_global, 'Akq_bak_units', 'm^2/s')
+# endif
+#endif
+
+#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined TNUDGING \
+  || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
+                       || defined M3NUDGING  || defined WKB_FRC_BRY
+
+      ierr=nf90_put_att(ncid, nf90_global, 'ubind', ubind) ! Binding velocity for external data forcing at open boundaries
+      ierr=nf90_put_att (ncid, nf90_global, 'ubind_units', 'm/s')
+#endif
+
+#ifdef SPONGE
+      ierr=nf90_put_att(ncid, nf90_global, 'v_sponge', v_sponge)     ! Maximum viscosity in sponge layer
+      ierr=nf90_put_att (ncid, nf90_global, 'v_sponge_units','m^2/s')
+#endif
+
+!#if defined SFLX_CORR && defined SALINITY
+!      ierr=nf90_put_att(ncid, nf90_global, 'dSSSdt',
+!     &                                        dSSSdt*(100.*day2sec)) ! Sea surface salinity correction "piston velocity"
+!      ierr=nf90_put_att (ncid, nf90_global, 'dSSSdt_units','cm/day')
+!#endif
+
+      ierr=nf90_put_att(ncid,nf90_global, 'rdrg', rdrg)              ! Bottom drag parameters.
+      ierr=nf90_put_att (ncid,nf90_global, 'rdrg_units', 'm/s')
+
+      ierr=nf90_put_att(ncid,nf90_global, 'rdrg2',rdrg2)
+      ierr=nf90_put_att (ncid,nf90_global, 'rdrg2_units',
+     &                                      'nondimensional')
+#ifdef SOLVE3D
+      ierr=nf90_put_att(ncid,nf90_global, 'Zob', Zob)
+      ierr=nf90_put_att (ncid,nf90_global, 'Zob_units', 'm')
+#endif
+
+      ierr=nf90_put_att (ncid, nf90_global, 'SRCS', srcs)  ! List of source-code file names and activated CPP-switches
+      ierr=nf90_put_att (ncid, nf90_global, 'CPPS', cpps)
+
+      ! string set added to get values from modules without struggling with circular references
+      ! as those modules use roms_read_write so this module can't use them.
+      ! rather the string is filled in the module's init and can be written here to all files.
+      ierr=nf90_put_att (ncid, nf90_global, 'surf_forcing_strings', surf_forcing_strings)
+
+      end subroutine put_global_atts  !]
+
+! ---------------------------------------------------------------------
+      subroutine store_string_att( char_string, string_add )  ![
+      ! add settings that affect the solution to a string
+      ! that will be added to global attributes of all nc files
+      implicit none
+
+      ! input
+      character(len=*),intent(inout) :: char_string
+      character(len=*),intent(in)    :: string_add
+
+      ! local
+      integer :: is, ie
+
+      is=len_trim( char_string )
+      is=is+2
+      ie=len_trim( string_add )
+      ie=ie+is-1
+
+      if (ie > max_options_string) then
+        print *, 'ERROR roms_read_write:: ',
+     &    'store_string_att character full=', trim(string_add)
+        stop 'ROMS stopped'
+      endif
+
+      char_string(is:ie) = string_add
+
+      end subroutine store_string_att  !]
 
 ! ---------------------------------------------------------------------
 
