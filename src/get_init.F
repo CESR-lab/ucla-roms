@@ -272,7 +272,7 @@ c--#define VERBOSE
             ierr=nf_get_vara_int(ncid, varid, start, count, ibuff)
             if (ierr == nf90_noerr) then
               ntstart=ibuff(1)+1
-              nrecrst=ibuff(2)
+!              nrecrst=ibuff(2)
 #ifdef EXACT_RESTART
               if (tindx == 2 .and. record < max_rec) then
                 start(2)=record+1
@@ -324,7 +324,7 @@ c--#define VERBOSE
       else
         init_type=init_run
         ntstart=1               ! netCDF variable "time_step" not
-        nrecrst=0               ! found: proceed with initializing
+!        nrecrst=0               ! found: proceed with initializing
 !        nrechis=0               ! all counters to zero (initial run).
       endif
 #ifdef EXACT_RESTART
@@ -659,19 +659,18 @@ c--#define VERBOSE
      &   'conditions for day =', start_time*sec2day, 'record =',record
 #ifdef EXACT_RESTART
          elseif (init_type == exact_rst) then
-           write(*,'(6x,A,F12.4,1x,A,I4,A,I8,A,I4,A)')
+           write(*,'(6x,A,F12.4,1x,A,I4,A)')
      &    'get_init :: Exact restart from day =',  start_time*sec2day,
-     &    'rec =', record,  '(',ntstart, ',',nrecrst, ').'
+     &    'rec =', record, '.'
          elseif (init_type == apprx_rst) then
-           write(*,'(6x,A,F12.4,1x,A,I4,A,I8,A,I4,A)')
+           write(*,'(6x,A,F12.4,1x,A,I4,A)')
      &      'get_init :: Approximate, single-step restart from day =',
-     &       start_time*sec2day,   'rec =', record,  '(',ntstart, ',',
-     &                                     nrecrst, ').'
+     &       start_time*sec2day,   'rec =', record, '.'
 #else
          elseif (init_type == rst_run) then
-           write(*,'(6x,A,F12.4,1x,A,I4,A,I8,A,I4,A)')
+           write(*,'(6x,A,F12.4,1x,A,I4,A)')
      &          'get_init: Restarted from day =', start_time*sec2day,
-     &     'rec =', record, '(',ntstart,',', nrecrst,').'
+     &     'rec =', record, '.'
 #endif
          else
            write(*,'(/1x,A/)') '### ERROR: get_init :: Unknown Error.'

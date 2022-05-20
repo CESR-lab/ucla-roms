@@ -76,47 +76,7 @@
 ! WITHOUT the UNIX redirection (<): roms < startup_file like it
 ! used to be.
 
-#if defined SOLITON
-      fname='roms.in.Soliton'
-#elif defined SEAMOUNT
-      fname='roms.in.Seamount'
-#elif defined WAVE_RAD
-      fname='roms.in.WaveRad'
-#elif defined ISWAKE
-      fname='roms.in.IsWake'
-#elif defined UPWELLING
-      fname='roms.in.Upwelling'
-#elif defined GRAV_ADJ
-      fname='roms.in.GravAdj'
-#elif defined IBERIA
-      fname='roms.in.Iberia'
-#elif defined RIVER
-      fname='roms.in.River'
-#elif defined PACIFIC
-      fname='pacific.in'
-#elif defined PACIFIC_2D
-      fname='pacific_2D.in'
-#elif defined CANBAS2
-      fname='unpr.in'
-#elif defined SPIRAL
-      fname='spiral.in'
-#elif defined PACBIG
-      fname='pacbig.in'
-#elif defined NWPAC
-      fname='nwp.in'
-#elif defined SMSC
-      fname='smsc.in'
-#elif defined SMSC_SUB
-      fname='smsc_sub.in'
-#elif defined USWEST
-      fname='mb_l1_safe.in'
-#elif defined SCB_TEST
-      fname='scb_test.in'
-#elif defined DAMEE_B
-      fname='roms.in.Atl4'
-#else
       fname='roms.in'  !<-- default
-#endif
 #ifdef MPI
       if (mynode == 0) then
 #endif
@@ -599,19 +559,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                           'file = ''', clm_file(1:lstr), ''''
 #endif
 
-! Output files controls: restart, history, averages, stations, floats
-!------- ----- ---------
-
-        elseif (keyword(1:kwlen) == 'restart') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) nrst, nrpfrst
-          mpi_master_only write(*,'(1x,A,I8, 2x,A,I5)')
-     &          'restart :: nrst =',nrst, 'rec/file =', nrpfrst
-#ifndef SOLVE3D
-          nrst=nrst*ndtfast
-#endif
-
-! Read output file root name using read_write.F module
+! Read output file root name using roms_read_write.F module
         elseif (keyword(1:kwlen).eq.'output_root_name') then
           call read_output_root_name(keyword, kwlen)
 

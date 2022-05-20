@@ -249,12 +249,6 @@
       ! local
       integer :: nf_ftype, varid, ierr
 
-      if (ncid == ncrst) then                              ! decide about precision:
-        nf_ftype=NF_FTYPE
-      else
-        nf_ftype=NF_FOUT
-      endif
-
 ! Grid type switch: Spherical or Cartesian.
       ierr=nf90_def_var(ncid, 'spherical', nf90_char, varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
@@ -264,37 +258,37 @@
 
 ! Physical dimensions of model domain, xl,el (Cartesian grid only).
 #ifndef SPHERICAL
-      ierr=nf90_def_var(ncid, 'xl', nf_ftype, varid)
+      ierr=nf90_def_var(ncid, 'xl', nf90_double, varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the XI-direction')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
-      ierr=nf90_def_var(ncid, 'el', nf_ftype, varid)
+      ierr=nf90_def_var(ncid, 'el', nf90_double, varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the ETA-direction')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
 #endif
 
 ! Bathymetry.
-      varid = nccreate(ncid,'h',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'h',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'bathymetry at RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
       ierr=nf90_put_att(ncid, varid, 'field', 'bath, scalar')
 
 ! Coriolis Parameter.
-      varid = nccreate(ncid,'f',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'f',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'Coriolis parameter at RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'second-1')
       ierr=nf90_put_att(ncid, varid, 'field', 'coriolis, scalar')
 
 ! Curvilinear coordinate metric coefficients pm,pn.
-      varid = nccreate(ncid,'pm',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'pm',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                       'curvilinear coordinate metric in XI')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
       ierr=nf90_put_att(ncid, varid, 'field', 'pm, scalar')
-      varid = nccreate(ncid,'pn',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'pn',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                       'curvilinear coordinate metric in ETA')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
@@ -302,23 +296,23 @@
 
 ! Longitude-latitude or cartezian coordinates of RHO-points.
 #ifdef SPHERICAL
-      varid = nccreate(ncid,'lon_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'lon_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'longitude of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'degree_east')
       ierr=nf90_put_att(ncid, varid, 'field', 'lon_rho, scalar')
-      varid = nccreate(ncid,'lat_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'lat_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid,varid,'long_name',
      &                               'latitude of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'degree_north')
       ierr=nf90_put_att(ncid, varid, 'field', 'lat_rho, scalar')
 #else
-      varid = nccreate(ncid,'x_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'x_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'x-locations of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
       ierr=nf90_put_att(ncid, varid, 'field', 'x_rho, scalar')
-      varid = nccreate(ncid,'y_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'y_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'y-locations of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
@@ -326,7 +320,7 @@
 #endif
 #ifdef CURVGRID
 ! Angle between XI-axis and EAST at RHO-points
-      varid = nccreate(ncid,'angle',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'angle',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'angle between XI-axis and EAST')
       ierr=nf90_put_att(ncid, varid, 'units', 'radians')
@@ -334,7 +328,7 @@
 #endif
 #ifdef MASKING
 ! Land-Sea mask at RHO-points.
-      varid = nccreate(ncid,'mask_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf_ftype)
+      varid = nccreate(ncid,'mask_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'mask on RHO-points')
       ierr=nf90_put_att(ncid, varid, 'option_0', 'land' )

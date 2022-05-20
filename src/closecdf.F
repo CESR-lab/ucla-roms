@@ -9,9 +9,7 @@
 # ifdef MPI_SILENT_MODE
       if (mynode == 0) then
 # endif
-        write(*,'(/1x,A,4(1x,A,I5)/)') 'MAIN: DONE - Records written:',
-     &                   'restart:', nrecrst
-     &                                             MYID
+        write(*,'(/1x,A/)') 'MAIN: DONE - Records written:'
 
         if (may_day_flag==1) then
           write(*,'(/1x,A/)') 'MAIN: Abnormal termination: BLOWUP'
