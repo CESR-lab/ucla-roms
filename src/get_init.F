@@ -10,7 +10,6 @@
       use grid
       use hidden_mpi_vars
       use mixing
-      use ncvars
       use ocean_vars
       use scalars
       use netcdf
@@ -20,22 +19,19 @@
 
 #include "netcdf.inc"
 
-      integer req_rec, tindx, max_rec, record, ncid, varid,
-     &        ierr,  start(2), count(2), ibuff(iaux),
-     &        linit, lvar, latt, lenstr, ncdf_read, checkdims
-#ifdef SOLVE3D
-     &                                            , itrc
-#endif
+      integer :: req_rec, tindx, max_rec, record, ncid, varid,
+     &           ierr,  start(2), count(2), ibuff(iaux),
+     &           linit, lvar, latt, lenstr, ncdf_read, checkdims , itrc
       real    :: time_scale
       integer :: init_type, tile=0 ! set tile to zero for compute_tile_bounds.h below. Needed to fixed closed boundaries.
       integer, parameter :: init_run=1,  rst_run=2
 #ifdef EXACT_RESTART
      &                    , apprx_rst=3, exact_rst=4
-      real time_bak
+      real :: time_bak
 # ifdef EXTRAP_BAR_FLUXES
-      integer vid_DU, vid_DV, vid_DU_bak, vid_DV_bak
+      integer :: vid_DU, vid_DV, vid_DU_bak, vid_DV_bak
 # elif defined PRED_COUPLED_MODE
-      integer vid_rufrc, vid_rvfrc
+      integer :: vid_rufrc, vid_rvfrc
 # endif
 # ifdef NHMG
 !     integer i,j,k

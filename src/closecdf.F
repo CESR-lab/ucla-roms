@@ -2,7 +2,6 @@
 
       subroutine closecdf       ! Close output netCDF files.
       use param
-      use ncvars
       use scalars
       implicit none
 

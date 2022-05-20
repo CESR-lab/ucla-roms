@@ -6,44 +6,32 @@
 
       ! coded by Jeroen Molemaker
       use param
-      use grid
-      use ncvars
+!      use grid
 
       implicit none
-!      private
+      private
 
 #include "cppdefs.opt"
 
-!      integer, public, parameter :: gnx = LLm
-!      integer, public, parameter :: gny = MMm
-!      integer, public, parameter ::  nx = Lm
-!      integer, public, parameter ::  ny = Mm
-!      integer, public, parameter ::  nz = N
+      integer, parameter, public :: gnx = LLm
+      integer, parameter, public :: gny = MMm
+      integer, parameter, public ::  nz = N
 
-      integer, parameter :: gnx = LLm
-      integer, parameter :: gny = MMm
-      integer, parameter ::  nz = N
-
-      integer            :: nx   ! Can vary between subdomains so not compile time parameters
-      integer            :: ny
+      integer, public            :: nx   ! Can vary between subdomains so not compile time parameters
+      integer, public            :: ny
 
       ! DevinD: store global index ranges for each node for bry_extract_child.F
-      integer :: glob_istr, glob_iend, glob_jstr, glob_jend
+      integer, public :: glob_istr, glob_iend, glob_jstr, glob_jend
 
-!      public nt,frcfile,max_frc
-!      public grdname
-!
-!# ifdef MASKING
-!      public rmask
-!# endif
-!
-!      public mynode
+      public :: set_global_ij_SW_NE_corners
+      public :: init_dimensions
+
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_global_ij_SW_NE_corners   ! set the ij values for the south-west corner
-                                               ! of subdomain based on global index numbering
+      subroutine set_global_ij_SW_NE_corners   ![ set the ij values for the south-west corner
+                                               !  of subdomain based on global index numbering
       implicit none
 
       ! This routine includes start and end of boundary edges to include ghost point!
@@ -79,7 +67,7 @@
 
 !      print *, mynode,glob_istr,glob_iend,glob_jstr,glob_jend
 
-      end subroutine set_global_ij_SW_NE_corners
+      end subroutine set_global_ij_SW_NE_corners  !]
 
 ! ----------------------------------------------------------------------
       subroutine init_dimensions  ![

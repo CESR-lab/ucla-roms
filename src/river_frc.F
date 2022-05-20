@@ -126,6 +126,7 @@
       ! river_flux = iriver + fraction of river's flux through grid point.
       ! e.g. River 3 is over 2 grid points (half flux through each point),
       ! hence river_flux = 3 + 0.5 = 3.5
+      use grid
       implicit none
 
       ! inputs

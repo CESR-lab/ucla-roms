@@ -7,7 +7,6 @@
 
       use param
       use climat
-      use ncvars
       use scalars
       use netcdf
 

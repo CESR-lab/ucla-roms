@@ -695,8 +695,6 @@
       end subroutine create_edata_vars  !]
 ! ----------------------------------------------------------------------
       subroutine create_var(ncid,obj,vname,dname,dsize,idx) ![
-
-      use ncvars, only: vn=>vname
       implicit none
 
       ! import/export

@@ -6,7 +6,6 @@
       ! are appended with frame and node number and are limited to 32
 
       use netcdf
-      use ncvars
       use scalars
       use nc_read_write
 !     use param
@@ -40,6 +39,35 @@
 
       integer,parameter :: max_options_string=2000
       character(len=max_options_string),public :: surf_forcing_strings=' '
+
+      ! from old ncvars **************:
+      integer, parameter, public :: max_frc_files=360
+      integer, public :: max_frc, ncfrc(max_frc_files), nrrec
+      ! Horizontal Grid Type Codes =  0,1,2,3 for RHO-, U-, V-, PSI-points
+      integer, parameter, public :: r_var=0, u_var=1, v_var=2, q_var=3
+      !            Horizontal array dimensions in netCDF files. In the case
+      ! xi_rho     of MPI code with PARALLEL_FILES activated these dimensions
+      ! xi_u       depend on the corresponding sizes of individual subdomains
+      ! eta_rho    rather than the whole physical grid, therefore they become
+      ! eta_v      live variables placed in common block and assigned values
+      !            in "mpi_setup" rather tnan be parameters defined here.
+
+#if defined MPI && defined PARALLEL_FILES
+      integer, public ::  xi_rho, xi_u, eta_rho, eta_v
+#else
+      integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
+     &                              xi_u=xi_rho-1, eta_v=eta_rho-1
+#endif
+
+      integer, parameter, public :: max_name_size=256
+      character, public :: date_str*44, title*80
+      character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
+
+      character(len=max_name_size), public ::  clm_file  ! defined TCLIMATOLOGY && !defined ANA_TCLIMA) || !defined ANA_SSH
+
+      integer, parameter, public :: max_bry_files=360
+      character(len=max_name_size), public ::  bry_file(max_bry_files)
+      ! end old ncvars ***************
 
       public :: set_frc_data,create_filename
       public :: read_output_root_name
@@ -527,9 +555,7 @@
       subroutine put_global_atts (ncid, ierr)  ![
 
       use param
-!      use surf_flux !, only: dSSSdt
       use eos_vars
-      use ncvars
       use scalars
       use scoord
       use strings
@@ -659,12 +685,6 @@
       ierr=nf90_put_att(ncid, nf90_global, 'v_sponge', v_sponge)     ! Maximum viscosity in sponge layer
       ierr=nf90_put_att (ncid, nf90_global, 'v_sponge_units','m^2/s')
 #endif
-
-!#if defined SFLX_CORR && defined SALINITY
-!      ierr=nf90_put_att(ncid, nf90_global, 'dSSSdt',
-!     &                                        dSSSdt*(100.*day2sec)) ! Sea surface salinity correction "piston velocity"
-!      ierr=nf90_put_att (ncid, nf90_global, 'dSSSdt_units','cm/day')
-!#endif
 
       ierr=nf90_put_att(ncid,nf90_global, 'rdrg', rdrg)              ! Bottom drag parameters.
       ierr=nf90_put_att (ncid,nf90_global, 'rdrg_units', 'm/s')

@@ -37,7 +37,6 @@
 
 !----------------------------------------------------------------------
       subroutine init_arrays_eos_vars  ![
-      use ncvars
       use scalars
       implicit none
 

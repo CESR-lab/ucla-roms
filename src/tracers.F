@@ -22,7 +22,6 @@
       use param
       use read_write, only: set_frc_var_tile, ncvs
       use surf_flux,  only: stflx                          ! surface tracer flux should possibly live in this module rather?
-      use ncvars
       use scalars                                          ! for 'FIRST_TIME_STEP' and nstp
       use nc_read_write
       use roms_read_write

@@ -94,7 +94,6 @@
       subroutine init_arrays_mixing  ![
       use scalars
       use tracers
-      use ncvars
       implicit none
 
       integer :: itrc

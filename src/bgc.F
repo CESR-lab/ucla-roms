@@ -14,7 +14,6 @@
       use param
       use read_write, only: set_frc_var_tile, ncvs
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
-      use ncvars
       use bgc_ecosys_vars
       use nc_read_write
       use roms_read_write
