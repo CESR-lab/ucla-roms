@@ -22,6 +22,7 @@
       use netcdf
       use buffer
       use scalars     ! for mayday flag
+      use roms_read_write, only: max_frc, frcfile
 
       implicit none
 
@@ -61,8 +62,8 @@
       public set_frc_var_tile
 
       public set_small_arrays
-      public ncdf_create_file
-      public ncdf_create_blank_file
+!      public ncdf_create_file
+!      public ncdf_create_blank_file
       public nc_write_time
 !      public read_output_root_name
       public ncdf_read_mod
@@ -738,111 +739,109 @@ C$OMP BARRIER
 !      end subroutine read_output_root_name  !]
 
 !-----------------------------------------------------------------------
-      subroutine ncdf_create_file( fname, ncid, prev_fill_mode,  ![
-     &                   rec_per_file, total_rec, auxil,
-#ifdef SOLVE3D
-     &                   r3dgrd, u3dgrd, v3dgrd, w3dgrd,         !  3D grid dimensions
-#endif
-     &                   r2dgrd, u2dgrd, v2dgrd )                !  2D grid dimensions
-
-      ! =============================================
-      ! CREATE NEW NETCDF FILE with global attributes
-      ! dimensions and time only
-      ! ========================
-
-      use ncvars
-
-      implicit none
-
-      ! inputs/outputs
-      integer,           intent(out)   :: ncid
-      character(len=*),  intent(inout) :: fname           ! desired netcdf file name
-      integer,           intent(inout) :: prev_fill_mode  ! Needed for nf90_set_fill
-      integer,           intent(in)    :: rec_per_file    ! records per file
-      integer,           intent(in)    :: total_rec       ! Total netcdf records so far for these variables
-
-      integer,           intent(out)   :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)  ! associated dimension arrays (e.g. r2dgrd = xi_r, eta_r, time)
-#ifdef SOLVE3D
-     &                                  , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
-#endif
-
-      ! local
-      integer           :: var_id_tmp, lfnm, lvar, lenstr, lstr
-      character(len=64) :: fname_tmp
-      integer           :: ierr = 0    ! set local no_error
-      integer           :: timedim(1)  ! Made it (1). Can remain local as time defined here
-
-      integer, external :: my_nf_def_dim  ! external function needed
-
-      ! CREATE BLANK FILE WITH CORRECT NAME & GLOBAL ATTS ONLY:
-      call ncdf_create_blank_file(fname, ncid,  prev_fill_mode, rec_per_file, total_rec )
-
-
-      ! Define dimensions for field placement on staggered grids:
-      ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd(1))
-      ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd(1))
-      ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd(2))
-      ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd(2))
-#ifdef SOLVE3D
-      ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd(3))
-      ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd(3))
-#endif
-      ierr=my_nf_def_dim(ncid, 'time', nf90_unlimited, timedim(1))
-      ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
-
-      ! Transfer prescribed dimensions to rest of dimension arrays
-
-      auxil(2)=timedim(1)
-
-      r2dgrd(3)=timedim(1)                          ! Free surface
-
-      u2dgrd(2)=r2dgrd(2) ; u2dgrd(3)=timedim(1)    ! 2D UBAR-type
-
-      v2dgrd(1)=r2dgrd(1) ; v2dgrd(3)=timedim(1)    ! 2D VBAR-type
-
-#ifdef SOLVE3D
-      r3dgrd(1)=r2dgrd(1)
-      r3dgrd(2)=r2dgrd(2) ; r3dgrd(4)=timedim(1)    ! 3D RHO-type
-
-      u3dgrd(1)=u2dgrd(1) ; u3dgrd(3)=r3dgrd(3)     ! 3D U-type
-      u3dgrd(2)=r2dgrd(2) ; u3dgrd(4)=timedim(1)    !
-
-      v3dgrd(1)=r2dgrd(1) ; v3dgrd(3)=r3dgrd(3)     ! 3D V-type
-      v3dgrd(2)=v2dgrd(2) ; v3dgrd(4)=timedim(1)    !
-
-      w3dgrd(1)=r2dgrd(1) ; w3dgrd(4)=timedim(1)    ! 3D W-type
-      w3dgrd(2)=r2dgrd(2)
-#endif
-
-
-!#if (defined PUT_GRID_INTO_HISTORY && !defined AVRH)\
-! || (defined PUT_GRID_INTO_AVERAGES && defined AVRH)
-!
-!! Define grid variables.
-!! ------ ---- ----------
-!
-!      if (total_rec <= 1) call def_grid(ncid, r2dgrd)
+!      subroutine ncdf_create_file( fname, ncid, prev_fill_mode,  ![
+!     &                   rec_per_file, total_rec, auxil,
+!#ifdef SOLVE3D
+!     &                   r3dgrd, u3dgrd, v3dgrd, w3dgrd,         !  3D grid dimensions
 !#endif
-
-      ! Insert time variables
-      ! ---------------------
-
-      ! Time-step number and time-record indices: (history file only, this
-      ! may be needed in the event when a history record is used to restart
-      ! the current model run);
-      ierr=nf90_def_var( ncid, 'time_step', nf90_int,
-     &                          auxil, var_id_tmp )
-
-      ! Set variable long name
-      ierr=nf90_put_att( ncid, var_id_tmp, 'long_name',
-     &       'time step and record numbers from initialization')
-
-      ! Define ocean_time variable
-      call nc_define_var( ncid, 'ocean_time',
-     &       'Time since initialization', 'second', timedim, ierr, 2 )  ! 2 makes it a double
-
-
-      end subroutine ncdf_create_file  !]
+!     &                   r2dgrd, u2dgrd, v2dgrd )                !  2D grid dimensions
+!
+!      ! =============================================
+!      ! CREATE NEW NETCDF FILE with global attributes
+!      ! dimensions and time only
+!      ! ========================
+!
+!      implicit none
+!
+!      ! inputs/outputs
+!      integer,           intent(out)   :: ncid
+!      character(len=*),  intent(inout) :: fname           ! desired netcdf file name
+!      integer,           intent(inout) :: prev_fill_mode  ! Needed for nf90_set_fill
+!      integer,           intent(in)    :: rec_per_file    ! records per file
+!      integer,           intent(in)    :: total_rec       ! Total netcdf records so far for these variables
+!
+!      integer,           intent(out)   :: r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)  ! associated dimension arrays (e.g. r2dgrd = xi_r, eta_r, time)
+!#ifdef SOLVE3D
+!     &                                  , r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
+!#endif
+!
+!      ! local
+!      integer           :: var_id_tmp, lfnm, lvar, lenstr, lstr
+!      character(len=64) :: fname_tmp
+!      integer           :: ierr = 0    ! set local no_error
+!      integer           :: timedim(1)  ! Made it (1). Can remain local as time defined here
+!
+!      integer, external :: my_nf_def_dim  ! external function needed
+!
+!      ! CREATE BLANK FILE WITH CORRECT NAME & GLOBAL ATTS ONLY:
+!      call ncdf_create_blank_file(fname, ncid,  prev_fill_mode, rec_per_file, total_rec )
+!
+!
+!      ! Define dimensions for field placement on staggered grids:
+!      ierr=my_nf_def_dim(ncid, 'xi_rho',  xi_rho,  r2dgrd(1))
+!      ierr=my_nf_def_dim(ncid, 'xi_u',    xi_u,    u2dgrd(1))
+!      ierr=my_nf_def_dim(ncid, 'eta_rho', eta_rho, r2dgrd(2))
+!      ierr=my_nf_def_dim(ncid, 'eta_v',   eta_v,   v2dgrd(2))
+!#ifdef SOLVE3D
+!      ierr=my_nf_def_dim(ncid, 's_rho',   N,       r3dgrd(3))
+!      ierr=my_nf_def_dim(ncid, 's_w',     N+1,     w3dgrd(3))
+!#endif
+!      ierr=my_nf_def_dim(ncid, 'time', nf90_unlimited, timedim(1))
+!      ierr=my_nf_def_dim(ncid, 'auxil',   iaux,     auxil(1))
+!
+!      ! Transfer prescribed dimensions to rest of dimension arrays
+!
+!      auxil(2)=timedim(1)
+!
+!      r2dgrd(3)=timedim(1)                          ! Free surface
+!
+!      u2dgrd(2)=r2dgrd(2) ; u2dgrd(3)=timedim(1)    ! 2D UBAR-type
+!
+!      v2dgrd(1)=r2dgrd(1) ; v2dgrd(3)=timedim(1)    ! 2D VBAR-type
+!
+!#ifdef SOLVE3D
+!      r3dgrd(1)=r2dgrd(1)
+!      r3dgrd(2)=r2dgrd(2) ; r3dgrd(4)=timedim(1)    ! 3D RHO-type
+!
+!      u3dgrd(1)=u2dgrd(1) ; u3dgrd(3)=r3dgrd(3)     ! 3D U-type
+!      u3dgrd(2)=r2dgrd(2) ; u3dgrd(4)=timedim(1)    !
+!
+!      v3dgrd(1)=r2dgrd(1) ; v3dgrd(3)=r3dgrd(3)     ! 3D V-type
+!      v3dgrd(2)=v2dgrd(2) ; v3dgrd(4)=timedim(1)    !
+!
+!      w3dgrd(1)=r2dgrd(1) ; w3dgrd(4)=timedim(1)    ! 3D W-type
+!      w3dgrd(2)=r2dgrd(2)
+!#endif
+!
+!
+!!#if (defined PUT_GRID_INTO_HISTORY && !defined AVRH)\
+!! || (defined PUT_GRID_INTO_AVERAGES && defined AVRH)
+!!
+!!! Define grid variables.
+!!! ------ ---- ----------
+!!
+!!      if (total_rec <= 1) call def_grid(ncid, r2dgrd)
+!!#endif
+!
+!      ! Insert time variables
+!      ! ---------------------
+!
+!      ! Time-step number and time-record indices: (history file only, this
+!      ! may be needed in the event when a history record is used to restart
+!      ! the current model run);
+!      ierr=nf90_def_var( ncid, 'time_step', nf90_int,
+!     &                          auxil, var_id_tmp )
+!
+!      ! Set variable long name
+!      ierr=nf90_put_att( ncid, var_id_tmp, 'long_name',
+!     &       'time step and record numbers from initialization')
+!
+!      ! Define ocean_time variable
+!      call nc_define_var( ncid, 'ocean_time',
+!     &       'Time since initialization', 'second', timedim, ierr, 2 )  ! 2 makes it a double
+!
+!
+!      end subroutine ncdf_create_file  !]
 
 ! ----------------------------------------------------------------------
       subroutine create_filename(fname,total_rec)

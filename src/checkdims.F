@@ -17,8 +17,8 @@
 !                   [=0, if there is no unlimited dimension].
 
       use param
-      use ncvars
       use netcdf
+      use roms_read_write
 
       implicit none
       integer ncid, max_rec, ierr, icount, ndims, recdim,

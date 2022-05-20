@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use roms_read_write
       implicit none
 
 ! This is include file "grid": Environmental two-dimensional arrays
@@ -162,7 +163,6 @@
                                   ! Sometimes it is convenient for post
       subroutine wrt_ana_grid     ! processing to save analytical grid  ![
       use param
-      use ncvars
       use mpi
       use netcdf
       implicit none               ! into a separate netCDF file.
@@ -239,7 +239,6 @@
 !                        IDs for dimensions 'xi_rho' and 'eta_rho'.
 
       use param
-      use ncvars
       use netcdf
       use nc_read_write
       implicit none
@@ -339,16 +338,14 @@
 
 !----------------------------------------------------------------------
       subroutine wrt_grid(ncid)  ![
-
-! Write grid variables in output NetCDF file, which may be restart,
-! history, averages, etc. All variables are assumed to be previously
-! defined by def_grid.
-!
-! Arguments: ncid    netCDF unit-ID of NetCDF file, which must be
-!                            already opened and in definition mode
+      ! Write grid variables in output NetCDF file, which may be restart,
+      ! history, averages, etc. All variables are assumed to be previously
+      ! defined by def_grid.
+      !
+      ! Arguments: ncid    netCDF unit-ID of NetCDF file, which must be
+      !                            already opened and in definition mode
 
       use param
-      use ncvars
       use scalars
       use netcdf
       use nc_read_write

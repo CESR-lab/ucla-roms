@@ -6,7 +6,6 @@
       use param
       use roms_read_write, only: nc_check_units
       use grid
-      use ncvars
       use scalars
       use netcdf
 

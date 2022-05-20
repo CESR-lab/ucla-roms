@@ -58,6 +58,36 @@
 # endif
 #endif  /* SOLVE3D */
 
+      ! taken from old ncvars (should be improved eventually):
+      integer, parameter, public :: indxTime=1, indxZ=2, indxUb=3, indxVb=4
+#ifdef SOLVE3D
+     &                    , indxU=5, indxV=6, indxO=7, indxW=8
+     &                    , indxR=9, indxT=10
+# ifdef SALINITY
+     &                    , indxS=indxT+1
+# endif
+     &                    , indxAkv=indxT+NT,   indxAkt=indxAkv+1
+# ifdef SALINITY
+     &                    , indxAks=indxAkt+1
+# endif
+# ifdef LMD_KPP
+#  ifdef SALINITY
+     &                    , indxHbls=indxAks+1
+#  else
+     &                    , indxHbls=indxAkt+1
+#  endif
+# endif
+# ifdef LMD_BKPP
+     &                    , indxHbbl=indxHbls+1
+# endif
+
+#endif
+
+      character*42, public ::  vname(3, 180) ! DevinD 180 copied from old code only
+      integer, parameter, public :: iaux=6           ! Length of netCDF variable "time_step"
+
+      ! end old ncvars
+
       ! netcdf outputting:
       integer :: ncid=-1, prev_fill_mode
       real    :: t_avg_ovars=0
@@ -74,7 +104,6 @@
 
 !----------------------------------------------------------------------
       subroutine init_arrays_ocean2d  ![
-      use ncvars
       use scalars
 
       implicit none
@@ -104,6 +133,80 @@
       allocate( nh_wcor(GLOBAL_2D_ARRAY) )
 #endif
 
+! Names of variables in NetCDF output files. The first element
+! is the name of the variable; the other two are are attributes.
+
+      vname(1,indxTime)='ocean_time'
+      vname(2,indxTime)='Time since initialization'
+      vname(3,indxTime)='second'
+
+      vname(1,indxZ)='zeta'
+      vname(2,indxZ)='free-surface elevation'
+      vname(3,indxZ)='meter'
+
+      vname(1,indxUb)='ubar'
+      vname(2,indxUb)='vertically averaged u-momentum component'
+      vname(3,indxUb)='meter second-1'
+
+      vname(1,indxVb)='vbar'
+      vname(2,indxVb)='vertically averaged v-momentum component'
+      vname(3,indxVb)='meter second-1'
+
+#ifdef SOLVE3D
+      vname(1,indxU)='u'
+      vname(2,indxU)='u-momentum component'
+      vname(3,indxU)='meter second-1'
+
+      vname(1,indxV)='v'
+      vname(2,indxV)='v-momentum component'
+      vname(3,indxV)='meter second-1'
+
+      vname(1,indxO)='omega'
+      vname(2,indxO)='S-coordinate vertical velocity'
+      vname(3,indxO)='meter second-1'
+
+      vname(1,indxW)='w'
+      vname(2,indxW)='vertical velocity'
+      vname(3,indxW)='meter second-1'
+
+      vname(1,indxR)='rho'
+      vname(2,indxR)='density anomaly'
+      vname(3,indxR)='kilogram meter-3'
+
+      vname(1,indxT)='temp'
+      vname(2,indxT)='potential temperature'
+      vname(3,indxT)='Celsius'
+
+# ifdef SALINITY
+      vname(1,indxS)='salt'
+      vname(2,indxS)='salinity'
+      vname(3,indxS)='PSU'
+# endif
+
+      vname(1,indxAkv)='Akv'
+      vname(2,indxAkv)='vertical viscosity coefficient'
+      vname(3,indxAkv)='meter2 second-1'
+
+      vname(1,indxAkt)='Akt'
+      vname(2,indxAkt)='vertical thermal conductivity coefficient'
+      vname(3,indxAkt)='meter2 second-1'
+# ifdef SALINITY
+      vname(1,indxAks)='AKs'
+      vname(2,indxAks)='salinity vertical diffusion coefficient'
+      vname(3,indxAks)='meter2 second-1'
+# endif
+# ifdef LMD_KPP
+      vname(1,indxHbls)='hbls'
+      vname(2,indxHbls)='Thickness of KPP surface boundary layer'
+      vname(3,indxHbls)='meter'
+# endif
+# ifdef LMD_BKPP
+      vname(1,indxHbbl)='hbbl'
+      vname(2,indxHbbl)='Thickness of KPP bottom boundary layer'
+      vname(3,indxHbbl)='meter'
+# endif
+#endif
+
       ! NOTE: call this here to prevent output in between timesteps which would break code
       ! checking script.
       if (wrt_file_his) call display_output_settings_to_terminal
@@ -113,7 +216,7 @@
 
 !----------------------------------------------------------------------
       subroutine init_arrays_ocean3d  ![
-      use ncvars
+
       use scalars
       use eos_vars
       use mixing
@@ -198,7 +301,6 @@
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
 
-      use ncvars  ! REMOVE THIS LATER AND MOVED WHAT IS NEEDED HERE!
       use mixing
       use eos_vars
       use work_mod
@@ -314,7 +416,7 @@
       ! don't include t=0 in averaging. This create 0.5dt error in averaging,
       ! but this 0.5dt error has always been in ROMS.
       ! for 2 steps. True avg would be 0.5*t0 + t1 + 0.5*t2, but we've never done that.
-      use ncvars  ! remove later
+
       use eos_vars
       use mixing
       use tracers
@@ -498,7 +600,7 @@
       subroutine def_vars_ocean_vars( avg )  ![
       ! define output variable & attributes in netcdf results file
       ! for instantaneous or averaged variables
-      use ncvars ! vname and indxZ
+
       use tracers
       implicit none
 
@@ -704,7 +806,6 @@
 ! ----------------------------------------------------------------------
       subroutine def_vars_rst_ocean_vars  ![
       ! define output variable & attributes in netcdf restart file
-      use ncvars
       use tracers
       implicit none
 
@@ -793,7 +894,6 @@
 
 ! ----------------------------------------------------------------------
       subroutine write_time_step( ncid, record, total_recs )  ![
-      use ncvars
       implicit none
 
       ! inputs
@@ -822,7 +922,6 @@
 !-----------------------------------------------------------------------
       subroutine display_output_settings_to_terminal  ![
       use tracers
-      use ncvars
       implicit none
 
       ! local
@@ -868,7 +967,6 @@
 !-----------------------------------------------------------------------
       subroutine display_output_settings_to_terminal_avg  ![
       use tracers
-      use ncvars
       implicit none
 
       ! local
@@ -917,7 +1015,6 @@
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
 
-      use ncvars  ! REMOVE THIS LATER AND MOVED WHAT IS NEEDED HERE!
       use mixing
       use eos_vars
       use work_mod

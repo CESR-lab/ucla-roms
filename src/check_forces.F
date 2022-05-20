@@ -89,7 +89,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
       subroutine roms_init
 
       use param
-      use ncvars
       use scalars
 
       implicit none
@@ -184,7 +183,7 @@ C$OMP BARRIER
       subroutine roms_step
 
       use param
-      use ncvars
+
       use scalars
 
       implicit none
@@ -234,7 +233,7 @@ C$OMP BARRIER
       subroutine wrt_forces
 
       use param
-      use ncvars
+
       use scalars
       use mpi
       use netcdf
@@ -357,7 +356,7 @@ C$OMP BARRIER
       subroutine def_frc(total_rec, ierr)
 
       use param
-      use ncvars
+
       use scalars
       use netcdf
 

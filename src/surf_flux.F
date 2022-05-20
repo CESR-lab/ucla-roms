@@ -12,7 +12,6 @@
       use roms_read_write
       use nc_read_write
       use netcdf
-      use ncvars
       use scalars
 
       implicit none

@@ -84,7 +84,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
-      use ncvars
       use ocean_vars
       use scalars
       use analytical
@@ -342,7 +341,6 @@ C$OMP END MASTER
       use tides
       use extract_data
       use diagnostics
-      use ncvars
       use scalars
       use analytical
       use sponge_tune

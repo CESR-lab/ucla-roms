@@ -210,7 +210,6 @@
       ! read tides from forcing file. Only read once at first timestep.
 
       use netcdf
-      use ncvars
       implicit none
 
       ! local

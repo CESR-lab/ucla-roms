@@ -27,7 +27,6 @@
 
       use param
       use grid
-      use ncvars
       use ocean_vars
       use scalars
       use netcdf

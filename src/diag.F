@@ -63,7 +63,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use diag_vars
       use eos_vars
       use grid
-      use ncvars
       use ocean_vars
       use scalars
       use mpi
