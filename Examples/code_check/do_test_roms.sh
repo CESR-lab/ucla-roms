@@ -13,6 +13,7 @@ bm_file="benchmark.result_$1"                    # set benchmark specific to mac
 # 1) Compile test case:
 echo "  test compiling..."  
 cd ../
+rm roms &> /dev/null                             # delete any roms executable that might be there
 cp ../code_check/diag.F .                        # need special diagnostic output for full precision
 mkdir opt_tmp                                    # store opt files of example so not over-written
 mv *.opt opt_tmp
