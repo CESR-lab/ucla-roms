@@ -167,7 +167,8 @@ found_str = search_string_in_file_yesno(filenames[1],'wrote history')
 
 # Confirm outcome to user:
 if (found_str):
-	text='    netCDF output works! --> numbers of history records matches the benchmark.'
+#	text='    netCDF output works! --> numbers of history records matches the benchmark.'
+	text='    netCDF output works! --> wrote history string found at end of run.'
 	print(text)
 	file_diag.write(text)
 else:
@@ -178,7 +179,7 @@ else:
 	
 # ----------------------------------------------------------
 # Confirm overall outcome to user:
-if np.all(diffs==0.0) and np.all(ncdf_diffs==0.0):
+if np.all(diffs==0.0) and (found_str):
     text='  CODE CORRECT! --> All diagnostics & netcdf outputting match the benchmarks. \n  see code_check.log file for details.\n'
     print(text)
     file_diag.write(text)

@@ -19,7 +19,7 @@ mkdir opt_tmp                                    # store opt files of example so
 mv *.opt opt_tmp
 cp -p opt_tmp/cppdefs.opt .
 cp -p opt_tmp/param.opt .
-cp code_check/*.opt .  &> /dev/null
+cp -p code_check/*.opt .  &> /dev/null
 make &> /dev/null
 
 # 2) Run test case:

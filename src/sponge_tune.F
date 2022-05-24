@@ -14,6 +14,7 @@
       use roms_read_write
       use hidden_mpi_vars
       use mixing
+      use grid
 
       implicit none
       private

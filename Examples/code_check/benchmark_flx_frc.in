@@ -1,5 +1,5 @@
 title:
-   USWC sample domain - flux_frc module test.
+   USWC sample domain - realistic river example
 
 time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
                20        20       30       1
