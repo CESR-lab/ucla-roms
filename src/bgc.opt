@@ -4,7 +4,7 @@
 
       ! note: choice of bgc tracers to output is still selected in tracers.opt.
 
-      logical,parameter :: wrt_file_his      = .true.      ! t/f to write module history file
+      logical,parameter :: wrt_file_his      = .false.     ! t/f to write module history file
       real,parameter    :: output_period_his = 20          ! output period in seconds
       integer,parameter :: nrpf_his          = 3           ! total recs per file
       

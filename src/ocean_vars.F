@@ -324,6 +324,7 @@
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_his
       integer                :: tile, ierr, i, j, k
+      logical,save           :: supress=.false.
 
       if (wrt_file_his) then
 
@@ -404,11 +405,12 @@
 #endif
 
         ierr=nf90_close(ncid)
-        if (mynode == 0) then
+        if (mynode == 0 .and. .not. code_check) then                 ! supress output for code_check
           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
      &     'ocean_vars :: wrote history, tdays =', tdays,
      &     'step =', iic-1, 'rec =', rec_his, '/', total_rec_his     ! -1 since iic=t(n+1)
         endif
+        code_check=.false.
 
         output_time_his=0
       endif
@@ -558,7 +560,7 @@
       endif
 
       ierr=nf90_enddef(ncid)
-      if (mynode == 0) then
+      if (mynode == 0 .and. .not. code_check) then                   ! supress for code_check
         write(*,'(7x,2A)')
      &    'ocean_vars :: created new netCDF file ', trim(fname)
       endif
