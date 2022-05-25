@@ -202,7 +202,6 @@
 #  endif
 # endif
 
-#define BULK_LW
 #undef SST_SKIN
 #define BULK_EP
 
@@ -236,12 +235,10 @@
       parameter (blk_Zabl=600.0)
       parameter (blk_beta=1.2)
       parameter (blk_Cpa=1004.67)
-# ifdef BULK_LW
       real emiss_lw,SigmaSB
       parameter (emiss_lw=0.985)        ! longwave emissivity of ocean,
                                         ! ref. Dickey et al. (1994)
       parameter (SigmaSB=5.6697E-8)     ! Stefan-Boltzmann constant [m^2/K^4]
-# endif
       real rhow,patm
       parameter (rhow=1000.0)
       parameter (patm=1010.0)
@@ -287,8 +284,7 @@
 !  Input variables:
 !
 !      - radsw, srflx
-!      - radlw         #ifdef BULK_LW: downward longwave radiation)
-!                      #else: net outgoing longwave radiation)
+!      - radlw        downward longwave radiation
 !      - prate
 !      - sst           t(N,itemp) or sstsk
 !      - sss           t(N,isalt)
@@ -306,12 +302,6 @@
      &      cpi=1./Cp    ! inverse of specific heat for seawater
                          ! [kg*degC/Joule], Cp is defined in "scalars"
 
-!!!     &      cpaircpi=cpair*cpi ! ratio of specific heat for air
-!!!                               ! and seawater
-!!!# ifdef BULK_LW
-!!!      real, parameter ::
-!!!     &      CtoK=273.16,       ! conversion from [C] to [K]
-!!!# endif
 
       ! DevinD don't need these anymore!
       integer it1,it2, it3,it4, it5,it6, it7,it8, it9,it10
@@ -582,17 +572,12 @@
 
 !!!          Ssea=t(i,j,N,nrhs,isalt)
 
-# ifndef BULK_LW
-          hflw=-radlw ! positive downward, i.e., warming the ocean
-# else
 !
 !  Treat input longwave data as downwelling radiation only and add
 !  outgoing IR from model sea surface temperature.
 !
           hflw=radlw  ! positive downward
      &        - emiss_lw*rho0i*cpi*SigmaSB*TseaK*TseaK*TseaK*TseaK
-
-# endif
 !
 !-----------------------------------------------------------------------
 !  Compute specific humidities (kg/kg).

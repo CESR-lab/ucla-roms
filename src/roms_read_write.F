@@ -521,8 +521,6 @@
       date(5) = mod(nsecs, 60)
       date(4) = nsecs / 60
 
-      print *, 'time: ', date
-
       end subroutine sec2date !]
 ! ----------------------------------------------------------------------
       subroutine append_date_node(fname) ![
@@ -561,9 +559,6 @@
 
       fname = trim(fname) // '.nc'
 
-      print *,fname
-      stop
-      
       end subroutine append_date_node !]
 
       end module roms_read_write
