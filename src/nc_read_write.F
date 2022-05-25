@@ -212,11 +212,17 @@
       integer,         dimension(:),intent(in) :: dimsize
       integer,         optional,    intent(in) :: vartype 
       ! local
-      integer :: i,ndim,varid,ierr,did
+      integer :: i,ndim,varid,ierr,did,vtype
       integer,allocatable,dimension(:) :: dimid
 
       ndim = size(dimsize)
       allocate(dimid(ndim))
+
+      if (present(vartype)) then
+         vtype = vartype
+      else
+         vtype = nf90_double
+      endif
 
       ! Get dimension ids. Create if needed.
       do i = 1,ndim 
@@ -228,7 +234,7 @@
         dimid(i) = did
       enddo
       ! Add compression and shuffle
-      ierr=nf90_def_var(ncid,varname,vartype,dimid,varid)
+      ierr=nf90_def_var(ncid,varname,vtype,dimid,varid)
       if (ierr/=nf90_noerr) then
         print *,'ERROR creating: ',varname,dimname
         call handle_err(ierr,'nccreate: '//varname)

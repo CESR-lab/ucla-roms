@@ -344,6 +344,7 @@ C$OMP END MASTER
       use analytical
       use sponge_tune
       use particles
+      use random_output
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -566,6 +567,9 @@ C$OMP BARRIER                            ! time step for momenta
 !       endif
 # endif
       enddo
+
+      call wrt_random
+
 C$OMP BARRIER
 #endif /* SOLVE3D */
 

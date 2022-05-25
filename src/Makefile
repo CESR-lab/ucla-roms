@@ -42,6 +42,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F tracers.F\
 	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
 \
 	river_frc.F	pipe_frc.F\
+	random_output.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_ecosys_bec2_init.F	bgc_ecosys_bec2.F\
 \

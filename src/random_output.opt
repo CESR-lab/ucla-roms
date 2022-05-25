@@ -1,0 +1,10 @@
+
+      !-----------------------------------------------------------
+      ! User inputs for random output module
+      !
+      logical   ,parameter :: random_output = .false.
+
+      real   ,parameter :: output_period = 3600 ! in seconds
+      integer,parameter :: nrpf   = 10          ! number of frames per file
+      !
+      !-----------------------------------------------------------
