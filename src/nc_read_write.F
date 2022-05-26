@@ -12,7 +12,7 @@
       end interface
 
       interface ncread
-        module procedure  ncread_1D, ncread_2D
+        module procedure  ncread_1D, ncread_2D, ncread_3D
       end interface
 
       public :: ncread
@@ -81,6 +81,36 @@
       if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
 
       end subroutine ncread_2D  !]
+
+!----------------------------------------------------------------------
+      subroutine ncread_3D(ncid,vname,dat,start)  ![
+      implicit none
+
+      ! input
+      integer               :: ncid
+      character(len=*)      :: vname
+      real,dimension(:,:,:) :: dat
+
+      integer,dimension(:),optional :: start
+
+      ! local
+      integer              :: varid,ierr
+      integer,dimension(3) :: dims
+      integer,dimension(4) :: count
+
+      dims = shape(dat)
+      ierr = nf90_inq_varid(ncid,vname,varid)
+      if (ierr/=0) call handle_ierr(ierr,'ncread inq_varid var=',vname)
+
+      if (present(start)) then
+        count = (/dims, 1/)
+        ierr = nf90_get_var(ncid,varid,dat,start,count)
+      else
+        ierr = nf90_get_var(ncid,varid,dat)
+      endif
+      if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
+
+      end subroutine ncread_3D  !]
 
 !----------------------------------------------------------------------
       subroutine ncwrite_1D(ncid,vname,dat,start)  ![
