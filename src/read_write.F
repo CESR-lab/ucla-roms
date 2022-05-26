@@ -1499,8 +1499,8 @@ C$OMP BARRIER
               do j=jmin,jmax
                 shft=1-imin+count(1)*(j-jmin+(k-1)*count(2))
                 do i=imin,imax
-                  if (rmask(i,j)+rmask(i-1,j) > 0.5) then
-
+                  if (rmask(i,j)+rmask(i-1,j) > 0.5) then  ! DevinD mask is 1 or 0 so shouldn't it be /2?
+                                                           ! ( rmask(i,j)+rmask(i-1,j) ) /2 > 0.5
                     A(i,j,k)=buff(i+shft)
 
                   else
