@@ -2,24 +2,31 @@
       ! ****************************************************************
       ! User inputs
 
-      integer, parameter :: nbgc_flx = 2 ! Number of surface bgc flux forcings
+      ! note: choice of bgc tracers to output is still selected in tracers.opt.
+
+      logical,parameter :: wrt_file_his      = .false.     ! t/f to write module history file
+      real,parameter    :: output_period_his = 20          ! output period in seconds
+      integer,parameter :: nrpf_his          = 3           ! total recs per file
+      
+      logical,parameter :: wrt_file_avg      = .false.     ! t/f to write module averages file
+      real,parameter    :: output_period_avg = 40          ! output averaging period in seconds
+      integer,parameter :: nrpf_avg          = 2           ! total recs per file
+
+      integer, parameter :: nbgc_flx = 2                   ! number of surface bgc flux forcings
 #ifdef PCO2AIR_FORCING
      &                                +1
 #endif
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
      &                                +1
 #endif  
-
-      ! Interpolate forcing from coarser input grid (=1) or not (=0)
-      integer :: interp_frc  = 0 ! Factor 2 only for now
+      
+      integer :: interp_frc  = 0                           ! interpolate forcing from coarser input grid (=1) or not (=0)
 
       type (ncvs) :: nc_dust = ncvs( name='dust', time_name='dust_time' )  ! dust forcing
-      type (ncvs) :: nc_iron = ncvs( name='iron', time_name='iron_time' )  ! iron forcing
-      
+      type (ncvs) :: nc_iron = ncvs( name='iron', time_name='iron_time' )  ! iron forcing      
 #ifdef PCO2AIR_FORCING
       type (ncvs) :: nc_pco2air   = ncvs( name='pco2_air',   time_name='pco2_time' )
-#endif      
-      
+#endif            
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       type (ncvs) :: nc_swrad_avg = ncvs( name='swrad_davg', time_name='srf_davg_time' )
 #endif      

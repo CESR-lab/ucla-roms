@@ -1,8 +1,8 @@
 #include "cppdefs.opt"
-                               ! Writes requested model
-      subroutine wrt_his       ! fields at requested levels
-                               ! into history netCDF file.
 
+      subroutine wrt_his  ![
+      ! writes requested model fields at requested levels into history netCDF file.
+      !
       ! NOTE: wrt_his is called in middle of roms_step in main.F because
       !       even though u/ubar, etc, were computed at the end of the
       !       previous timestep, other variables like 'rho', 'Akv', etc
@@ -18,33 +18,30 @@
       use grid
       use mixing
       use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use work_mod
       use mpi
       use netcdf
+      use nc_read_write
+      use roms_read_write
 
       implicit none
 
-#include "netcdf.inc"
-
-      integer ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
-     &   , start(2), count(2), ibuff(iaux), ncdf_write
-      character(len=18) tstring
+      integer :: ierr,  record, i, lstr, lvar, lenstr, var_id_tmp
+     &        , start1d(2), count(2), ibuff(iaux), ncdf_write
+      integer :: start(4)
+      character(len=18) :: tstring
 #ifdef SOLVE3D
-      integer tile, itrc, j,k
+      integer :: tile, itrc, j,k
 #endif
 #if defined MPI && !defined PARALLEL_FILES
-      integer status(MPI_STATUS_SIZE), blank
+      integer :: status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
      &            mynode-1, 2, ocean_grid_comm, status, ierr)
 #endif
 
-
-! Create/open history and set record index within the file.
-
-      call def_his(nrechis, ierr)
+      call def_his(nrechis, ierr)         ! create/open history and set record index within the file.
       if (ierr /= nf90_noerr) goto 99
       lstr=lenstr(hisname)
       nrechis=max(nrechis,1)              !!! WARNING: Once time
@@ -54,25 +51,18 @@
         record=1+mod(nrechis-1, nrpfhis)  !!! record index "nrechis"
       endif                               !!! is advanced by main.
 
-
-c-#define CR
-CR      write(*,*) 'wrt_his: Entry  ' MYID
-
-! Write out evolving model variables:
-! ----- --- -------- ----- ----------
-
+      ! write out evolving model variables:
       ibuff(1)=iic-1  ; ibuff(2)=nrecrst    ! Time step and
       ibuff(4:iaux)=0 ; ibuff(3)=nrechis    ! record numbers.
 #ifdef AVERAGES
       ibuff(4)=nrecavg
 #endif
-      start(1)=1      ; count(1)=iaux
-      start(2)=record ; count(2)=1
+      start1d(1)=1      ; count(1)=iaux
+      start1d(2)=record ; count(2)=1
+      start=1
 
-      ! get time step var_id & record time step info
-      ! --------------------------------------------
       ierr=nf90_inq_varid(nchis, 'time_step', var_id_tmp)
-      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start, count)
+      ierr=nf90_put_var(nchis, var_id_tmp, ibuff, start1d, count)
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_his :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
@@ -87,8 +77,6 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 ! in seconds, however it is more convenient to have it in days in all
 ! the files.
 
-      ! write ocean time
-      ! ----------------
       ierr=nf90_inq_varid(nchis, 'ocean_time', var_id_tmp)
       ierr=nf90_put_var(nchis, var_id_tmp, time,(/record/))
 
@@ -98,53 +86,31 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
 ! its value hasn't evolved from 'n+1' of previous timestep,
 ! which makes it 'n' of this timestep still.
 
-      if (wrthis(indxZ)) then
-        call nc_write_var(nchis, zeta(START_2D_ARRAY,knew), 1,
-     &                    vname(1,indxZ), rp_var, record, ierr)
-      endif
-      if (wrthis(indxUb)) then
-        call nc_write_var(nchis, ubar(START_2D_ARRAY,knew), 1,
-     &                    vname(1,indxUb), up_var, record, ierr)
-      endif
-      if (wrthis(indxVb)) then
-        call nc_write_var(nchis, vbar(START_2D_ARRAY,knew), 1,
-     &                    vname(1,indxVb), vp_var, record, ierr)
-      endif
+      start(3)=record
+      if (wrthis(indxZ))  call ncwrite(nchis,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
+      if (wrthis(indxUb)) call ncwrite(nchis,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
+      if (wrthis(indxVb)) call ncwrite(nchis,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
 
 #ifdef SOLVE3D
-
 ! 3D momentum components in XI- and ETA-directions:
 ! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
 ! in the previous timestep (same result).
-! Currently not sure why Sasha chose to do wrt_his in middle of timestep,
-! rather than at the beginning.
+! wrt_his called at the middle of next timestep as some variables only calculated there for t=n.
 
-      if (wrthis(indxU)) then
-        call nc_write_var(nchis, u(START_2D_ARRAY,1,nstp), N,
-     &                    vname(1,indxU), up_var, record, ierr)
-      endif
-      if (wrthis(indxV)) then
-        call nc_write_var(nchis, v(START_2D_ARRAY,1,nstp), N,
-     &                    vname(1,indxV), vp_var, record, ierr)
-      endif
+      start(3)=1; start(4)=record
+      if (wrthis(indxU)) call ncwrite(nchis,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
+      if (wrthis(indxV)) call ncwrite(nchis,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
 
-! Tracer variables.
-
-      call wrt_his_trc(record, ierr)
-
-! Density anomaly.
+      call wrt_his_trc(start)                              ! tracer variables
 
       if (wrthis(indxR)) then
 # ifdef SPLIT_EOS
-        call nc_write_var(nchis, rho1, N, vname(1,indxR), rp_var, record, ierr)
+        call ncwrite(nchis,vname(1,indxR),rho1(i0:i1,j0:j1,:),start)
 # else
-        call nc_write_var(nchis, rho, N, vname(1,indxR), rp_var, record, ierr)
+        call ncwrite(nchis,vname(1,indxR), rho(i0:i1,j0:j1,:),start)
 # endif
       endif
-
-! S-coordinate omega vertical velocity (m/s).
-
-      if (wrthis(indxO)) then
+      if (wrthis(indxO)) then                              ! s-coordinate omega vertical velocity (m/s).
         do k=0,N
           do j=0,Mm+1
             do i=0,Lm+1
@@ -152,66 +118,37 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
             enddo
           enddo
         enddo
-        call nc_write_var(nchis, work, N+1, vname(1,indxO), rp_var, record, ierr)
+        call ncwrite(nchis,vname(1,indxO),work(i0:i1,j0:j1,:),start)
       endif
-
-! True vertical velocity (m/s).
-
-      if (wrthis(indxW)) then
+      if (wrthis(indxW)) then                              ! true vertical velocity (m/s).
         do tile=0,NSUB_X*NSUB_E-1
           call wvlcty (tile, work)
         enddo
-        call nc_write_var(nchis, work, N, vname(1,indxW), rp_var, record, ierr)
+        ! need 1:N as work is 1:N+1 in size
+        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
+        call ncwrite(nchis,vname(1,indxW),work(i0:i1,j0:j1,0:N-1),start)
       endif
-
-! Vertical viscosity coefficient.
-
-      if (wrthis(indxAkv)) then
-        call nc_write_var(nchis, Akv, N+1, vname(1,indxAkv), rp_var, record, ierr)
-      endif
-
-! Vertical diffusion coefficient for potential temperature.
-
-      if (wrthis(indxAkt)) then
-        call nc_write_var(nchis, Akt(START_2D_ARRAY,0,itemp), N+1,
-     &                    vname(1,indxAkt), rp_var, record, ierr)
-      endif
+      if (wrthis(indxAkv)) call ncwrite(nchis,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
+      if (wrthis(indxAkt)) call ncwrite(nchis,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
 # ifdef SALINITY
-
-! Vertical diffusion coefficient for salinity.
-
-      if (wrthis(indxAks)) then
-        call nc_write_var(nchis, Akt(START_2D_ARRAY,0,isalt), N+1,
-     &                    vname(1,indxAks), rp_var, record, ierr)
-      endif
+      if (wrthis(indxAks)) call ncwrite(nchis,vname(1,indxAks),Akt(i0:i1,j0:j1,:,isalt),start)
 # endif
+      start(3)=record                                      ! back to 2D vars
 # ifdef LMD_KPP
-! Depth of planetary boundary layer [m].
-
-      if (wrthis(indxHbls)) then
-        call nc_write_var(nchis, hbls(START_2D_ARRAY,nstp), 1,
-     &                    vname(1,indxHbls), rp_var, record, ierr)
-      endif
+      if (wrthis(indxHbls)) call ncwrite(nchis,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
 # endif
 # ifdef LMD_BKPP
-! Thickness of KPP bottom boundary layer [m].
-
-      if (wrthis(indxHbbl)) then
-        call nc_write_var(nchis, hbbl(START_2D_ARRAY,nstp), 1,
-     &                    vname(1,indxHbbl), rp_var, record, ierr)
-      endif
+      if (wrthis(indxHbbl)) call ncwrite(nchis,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
 # endif
 #endif
-
-      ! Wave Effect on Current (WEC) variables
+      start(3)=1; start(4)=record                          ! back to 3D vars
 #ifdef WEC
-      call wrt_his_wec(record, ierr, may_day_flag)
+      call wrt_his_wec(record, start)
 #endif
 
 #if defined BIOLOGY_BEC2 && defined BEC2_DIAG
       call wrt_his_bgc_diag(record, ierr)
 #endif
-
 
   1   format(/1x, '### ERROR: wrt_his :: Cannot write variable ''',
      &              A, ''' into history file, rec =', i6, 3x,A,i4)
@@ -258,4 +195,4 @@ CR      write(*,*) 'wrt_his: Entry  ' MYID
       if (mynode < NNODES-1) call MPI_Send (blank, 1, MPI_INTEGER,
      &                           mynode+1, 2, ocean_grid_comm, ierr)
 #endif
-      end
+      end subroutine wrt_his  !]

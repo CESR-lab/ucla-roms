@@ -38,7 +38,7 @@
       use param
       use pipe_frc
       use grid
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none

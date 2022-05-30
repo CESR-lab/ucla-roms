@@ -12,7 +12,7 @@
       use boundary
       use climat
       use grid
-      use ocean2d
+      use ocean_vars
       use scalars
 
       implicit none

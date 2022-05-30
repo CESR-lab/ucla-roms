@@ -1,4 +1,4 @@
 #!/bin/bash
 
-ncjoin --delete sample_wec_his*.?.nc
-ncview sample_wec_his.*.nc
+ncjoin -d sample_*.?.nc
+ncview sample_wec.*.nc &

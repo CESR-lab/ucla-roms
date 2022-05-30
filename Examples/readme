@@ -16,19 +16,12 @@ for the Makefile!).
 
 Available examples:
 
-Bulk-frc:
-  Full pacific model - 2020/11. (Won't run, needs input files)
-
 Flux_frc:
   Sample example of flux force in flux_frc module. 2020/11.
 
 Fortran:
   Basic tests of fortran performance, e.g. loop order/length.
   The code is idealised, not roms code. 2020/10.
-  
-init_arrays:
-  This has init_arrays.F with no 'first touch', i.e. arrays
-  are not initiliazed to zero.
   
 lmd_kpp_old:
   Has lmd_kkp.F but using version pre-2020. It can give different
@@ -48,8 +41,4 @@ USWC_model:
   
 WEC (ana/real):
   Analytical (1D flume) and realistic wave effect on current examples.    
-
-TANK: 
-  An analytical test case for the Non-hydrostatic kernel. 
-  A sloshing solution in a tank.
 

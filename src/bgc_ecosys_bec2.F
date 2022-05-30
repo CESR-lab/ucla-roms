@@ -15,11 +15,12 @@
 # ifdef BULK_FRC
        use bulk_frc, only: wspd_used ! to compute gas exchange
 # endif
-#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-       use bgc, only: srflx_dailyavg
-#endif
+       use bgc
+!#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+!       use bgc, only: srflx_dailyavg
+!#endif
        use grid
-       use ocean3d
+       use ocean_vars
        use scalars
        use bgc_ecosys_vars
        use bgc_forces
@@ -624,6 +625,9 @@
 
        enddo
 
+       call wrt_his_bgc_tracers
+       call wrt_avg_bgc_tracers
+
        end subroutine ecosys_bec2_tile
 
 
@@ -642,7 +646,7 @@
 
        use param
        use grid
-       use ocean3d
+       use ocean_vars
        use scalars
        use bgc_ecosys_vars
 
@@ -2292,7 +2296,7 @@
      &      iend,j,net_dust_in)
 
         use param
-        use ocean3d
+        use ocean_vars
         use scalars
         use bgc_ecosys_vars
 
@@ -2429,7 +2433,7 @@
 
        use param
        use grid
-       use ocean3d
+       use ocean_vars
        use bgc_ecosys_vars
 
        implicit none

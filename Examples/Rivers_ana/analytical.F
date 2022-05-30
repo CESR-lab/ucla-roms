@@ -5,8 +5,7 @@
 #include "cppdefs.opt"
 
       use param
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use grid
       use scalars
       use tracers
@@ -201,7 +200,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-#if defined RIVER_SOURCE
       riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
       do j=jstr-1,jend+1
         do i=istr-1,iend+1
@@ -213,7 +211,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
           endif
         enddo
       enddo
-#endif
 
       end subroutine ana_grid_tile  !]
 #endif /* ANA_GRID */
@@ -245,8 +242,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       use eos_vars
       use grid
       use mixing
-      use ocean2d
-      use ocean3d
       use scalars
 
       implicit none
@@ -282,7 +277,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 # endif
 
-# if defined RIVER_SOURCE
 #  ifdef SOLVE3D
       do k=1,N
         do j=jstrR,jendR
@@ -297,20 +291,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 #  endif
 
-# else
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            t(i,j,k,1,itemp)=???
-            t(i,j,k,2,itemp)=???
-            t(i,j,k,1,isalt)=???
-            t(i,j,k,2,isalt)=???
-          enddo
-        enddo
-      enddo
-#  endif
-# endif  /* end of configuration selection switch */
 
       call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
 
@@ -601,7 +581,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       use param
       use grid
       use mixing
-      use ocean3d
       use scalars
 
       implicit none

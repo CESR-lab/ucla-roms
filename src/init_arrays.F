@@ -49,8 +49,7 @@
       use eos_vars
       use grid
       use mixing
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use mpi
       use work_mod
@@ -213,7 +212,6 @@
 ! coefficients (see "mixing") to their background values.
 
       call init_arrays_mixing
-      call init_arrays_dimensions ! DevinD added this here to allocate
       call init_arrays_work_mod   ! DevinD added this here to allocate
       call init_arrays_boundary
       call init_arrays_buffer     ! DevinD added this here to allocate

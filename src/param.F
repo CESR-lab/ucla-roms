@@ -9,13 +9,10 @@
 #include "cppdefs.opt"
 
 ! Need this here above param.opt for BGC to work:
-      integer, parameter ::
-#ifdef SOLVE3D
-     &         itemp=1
+      integer, parameter :: itemp=1
 # ifdef SALINITY
-     &       , isalt=2
+     &                    , isalt=2
 # endif
-#endif
 
 #include "param.opt"
 

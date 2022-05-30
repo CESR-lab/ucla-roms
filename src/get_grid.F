@@ -4,9 +4,8 @@
       subroutine get_grid         ! Read in grid data from NetCDF file.
 
       use param
-      use read_write, only: nc_check_units
+      use roms_read_write, only: nc_check_units
       use grid
-      use ncvars
       use scalars
       use netcdf
 

@@ -115,8 +115,16 @@ Nested grid boundary file generation online:
     
 Mooring output:
     for information on generating online mooring extraction files, see:
-    - Documentation/readme-specifics/README.extract_data      
+    - Documentation/readme-specifics/README.extract_data 
     
+Pipes:
+    Pipes can be configured using src/pipe_frc.opt and src/pipe_frc.F.
+    See Examples/Pipes_real and Examples/Pipes_ana for working examples.
+    
+Rivers:
+    Pipes can be configured using src/river_frc.opt and src/river_frc.F.
+    See Examples/Rivers_real and Examples/Rivers_ana for working examples.
+        
 Netcdf output compression:
 
     The new roms code now uses netcdf-4 file outputting (previously netcdf-3). This allows
@@ -150,7 +158,7 @@ Surface flux outputting:
     It is possible to output the bulk force resulting surface flux sustr, svstr, etc. 
     The output frequency is in surf_flux.opt, not the roms.in file. 
     It will produce its own output file separate from the _his.nc file.
-    The averages (sustr_avg, etc) are also controlled in surf_flux.opt.
+    It can also produce its own averages file, also controlled in surf_flux.opt.
     
 BGC - Bio-geochemical:
 
