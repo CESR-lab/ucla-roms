@@ -1,0 +1,4 @@
+netcdf output not actually checked for WEC variables because output is turned off.
+This is because first wec output comes between step 0 and step 1, this would mess
+up the python script reading the diagnostics. So for a dirty fix I turned off the
+netcdf output of WEC variables...

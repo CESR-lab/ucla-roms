@@ -18,7 +18,7 @@ total=${#Examples[*]}                            # total number of examples
 for (( i=0; i<=$(( $total -1 )); i++ ))          # run test cases:
 do
   cd ../${Examples[i]}/code_check/
-  echo "${Examples[i]} test compiling..."
+  echo "${Examples[i]}:"
   ./do_test_roms.sh $arg
   
   retval=$?                                      # $? gives exit code from ./do_test_roms.sh

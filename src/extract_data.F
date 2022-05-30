@@ -47,10 +47,8 @@
       use roms_read_write
       use netcdf
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
-      use ocean2d
-      use ocean3d
+      use ocean_vars, vn=>vname
       use scalars
-      use read_write, only: output_root_name,handle_ierr
       use diagnostics
 
 
@@ -63,8 +61,8 @@
 #include "extract_data.opt"
 
 
-      integer           :: total_rec=0 ! total records
-      integer           :: nobj  ! number of extraction objects
+      integer :: total_rec=0 ! total records
+      integer :: nobj  ! number of extraction objects
 
       logical                         :: extend_up !! flag to extend up,vp
       real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
@@ -332,9 +330,8 @@
       ! local
       integer :: i,start_idx,end_idx
       integer :: np
-
+      
       np = size(gobj_i)
-
       gobj_i = gobj_i-iSW_corn
       gobj_j = gobj_j-jSW_corn
 
@@ -697,8 +694,6 @@
       end subroutine create_edata_vars  !]
 ! ----------------------------------------------------------------------
       subroutine create_var(ncid,obj,vname,dname,dsize,idx) ![
-
-      use ncvars, only: vn=>vname
       implicit none
 
       ! import/export
@@ -731,6 +726,8 @@
       endif
 
       end subroutine create_var  !]
+
 ! ----------------------------------------------------------------------
 #endif /* EXTRACT_DATA */
+
       end module extract_data

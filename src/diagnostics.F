@@ -9,8 +9,7 @@
       use read_write
       use netcdf
       use tracers
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use hidden_mpi_vars
       use nc_read_write
@@ -947,7 +946,6 @@
       subroutine calc_diag_pflux(p)
       use coupling
       use param
-      use ocean3d
       use eos_vars
       implicit none
       !! W => kg m2 s-3

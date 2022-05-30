@@ -14,8 +14,8 @@ C$    end
       subroutine mpi_setup(ierr)
       use param
       use hidden_mpi_vars
-      use ncvars
       use mpi
+      use roms_read_write
       implicit none
       integer ierr
 

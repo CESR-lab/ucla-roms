@@ -7,7 +7,7 @@
 
       use param
       use grid
-      use ocean2d
+      use ocean_vars
       use scalars
 
       implicit none
@@ -92,7 +92,7 @@
 
       use param
       use coupling
-      use ocean2d
+      use ocean_vars
       use scalars
 
       implicit none
@@ -144,7 +144,7 @@
 
       use param
       use coupling
-      use ocean2d
+      use ocean_vars
       use scalars
 
       implicit none

@@ -22,17 +22,13 @@ c--#endif
 
 #if defined ANA_RIVER_USWC
 
-# define RIVER_SOURCE
-# define ANA_RIVER_FRC
 
-# ifdef ANA_RIVER_FRC
-#  define ANA_GRID
-#  define ANA_INITIAL
-#  define ANA_SMFLUX
-#  define ANA_SRFLUX
-#  define ANA_STFLUX
-#  define ANA_SSFLUX
-# endif /* ANA_RIVER_FRC */
+# define ANA_GRID
+# define ANA_INITIAL
+# define ANA_SMFLUX
+# define ANA_SRFLUX
+# define ANA_STFLUX
+# define ANA_SSFLUX
 
         /* Basics */
 # define SOLVE3D

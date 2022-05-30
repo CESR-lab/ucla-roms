@@ -9,9 +9,9 @@
       use param
       use tracers, only: t_vname, set_bry_tracer_defaults
       use boundary
-      use ncvars
       use scalars
       use netcdf
+      use roms_read_write
 
       implicit none                        ! fields from boundary file
       integer ierr_ext
