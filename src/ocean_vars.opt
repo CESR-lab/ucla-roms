@@ -38,6 +38,7 @@
      &                     wrt_avg_Aks=.true.,
      &                     wrt_avg_Hbls=.true.,
      &                     wrt_avg_Hbbl=.true.
-      
+
+      logical :: code_check = .false.                       ! keep as false unless for code_check      
       ! end user inputs
       ! ****************************************************************

@@ -6,20 +6,18 @@
 #include "cppdefs.opt"
 
       use dimensions
-      use read_write
       use netcdf
       use tracers
       use ocean_vars
       use scalars
       use hidden_mpi_vars
       use nc_read_write
+      use grid
 
       implicit none
       private
 
 #include "diagnostics.opt"
-
-#ifdef DIAGNOSTICS
 
       ![ Potential issues:
       !  - Since we don't have pressure in the boundary buffer, we can't get u'p' at the bry.
@@ -102,14 +100,14 @@
       ! --------------
       real,allocatable,dimension(:,:),public :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
       real,allocatable,dimension(:,:)    :: up_avg,vp_avg ! averaged u'p' and v'p'
-      real,public,allocatable,dimension(:,:,:)  :: p_slow,g2d_p_slow        ! filtered pressure
+      real,public,allocatable,dimension(:,:,:)  :: p_slow        ! filtered pressure
 
 
       real, allocatable, dimension(:,:)  :: p_fast,u_fast,v_fast
 
       ! Baroclinic energy term
       ! --------------
-      real, public,allocatable, dimension(:,:,:) :: u_slow,v_slow, g2d_u_slow, g2d_v_slow ! global 2d arrays needed for writing
+      real, public,allocatable, dimension(:,:,:) :: u_slow,v_slow
       real, public,allocatable, dimension(:,:,:) :: px_slow,py_slow                       ! will be removed once outputting brought to new system
       real, public,allocatable, dimension(:,:)   :: px_fast,py_fast
 
@@ -214,6 +212,7 @@
       public set_diags_v_4th_adv
       public calc_diag_pflux
 !      public def_rst_diag_pflx
+      public get_init_slow
            !]
 
       contains
@@ -261,7 +260,7 @@
       if (diag_pflx) then
         if (mynode==0) print *,'allocating pflux vars'
         if (.not. allocated( p_slow )) then         ! in case already read in with get_init
-          allocate(p_slow(0:nx,0:ny,nz) )
+          allocate(p_slow(GLOBAL_2D_ARRAY,nz) )     ! global 2D needed for exchange in get_init.F
           p_slow = 0
         endif
         allocate(p_fast(0:nx,0:ny) )
@@ -281,11 +280,11 @@
 
       if (diag_pflx.or.diag_Ebcln) then
         if (.not. allocated( u_slow )) then         ! in case already read in with get_init
-          allocate(u_slow(nx,ny,nz) )
+          allocate(u_slow( 1:i1,j0:j1,nz) )
           u_slow = 0
         endif
         if (.not. allocated( v_slow )) then
-          allocate(v_slow(nx,ny,nz) )
+          allocate(v_slow(i0:i1, 1:j1,nz) )
           v_slow = 0
         endif
         allocate(u_fast(nx,ny) )
@@ -995,7 +994,7 @@
             enddo
           enddo
 !         p_fast = p(0:nx,0:ny,k)-g*z_w(0:nx,0:ny,nz)      - p_slow(:,:,k)
-!         u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)- u_slow(:,:,k)
+!         u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)- s(:,:,k)
 !         v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)- v_slow(:,:,k)
 
 !         up(:,:) = up + 0.25*u_fast*(p_fast(0:nx-1,1:ny) + p_fast(1:nx,1:ny) )*
@@ -1029,8 +1028,8 @@
         eku = 0
         ekv = 0
         do k=1,nz
-          u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)-u_slow(:,:,k)
-          v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)-v_slow(:,:,k)
+          u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)-u_slow(1:nx,1:ny,k)
+          v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)-v_slow(1:nx,1:ny,k)
           px_fast = Udiag(:,:,k,ipgr) - px_slow(:,:,k)
           py_fast = Vdiag(:,:,k,ipgr) - py_slow(:,:,k)
 
@@ -1634,8 +1633,6 @@
       character(len=5) :: diag_pflx_str = 'False'
       character(len=5) :: diag_Ebcln_str = 'False'
 
-!     fname=trim(output_root_name) / / '_dia'
-!     call append_date_node(fname)
       fname=trim(output_root_name) / / '_dia.nc'
       call create_filename(fname,total_rec)
 
@@ -1648,6 +1645,8 @@
       ierr = nf90_put_att(ncid,varid,'units','second' )
 
       call put_global_atts(ncid, ierr)  ! put global attributes in file
+
+      ! add his / avg attribute
 
       ! Diagnostics options
       ierr = nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
@@ -1675,9 +1674,70 @@
      &       'diagnostics :: created new netCDF file: ',fname
 
       end subroutine create_diagnostics_file !]
+
+! ----------------------------------------------------------------------
+      subroutine get_init_slow( ncid, start )  ![
+      ! get initial slow u,v and p
+      implicit none
+
+      ! input
+      integer,intent(in) :: ncid
+      integer,dimension(4),intent(in) :: start
+
+      ! local
+      integer :: ierr, varid
+
+        if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
+          allocate( u_slow(  1:i1,j0:j1, nz ))
+          u_slow = 0
+        endif
+        if (.not. allocated(v_slow)) then
+          allocate( v_slow( i0:i1, 1:j1, nz ))
+          v_slow = 0
+        endif
+        if (.not. allocated(p_slow)) then
+          allocate( p_slow( GLOBAL_2D_ARRAY, nz ))
+          p_slow = 0
+        endif
+
+         ierr=nf90_inq_varid (ncid, 'u_slow', varid)
+         if (ierr == nf90_noerr) then
+           call ncread(ncid,'u_slow', u_slow,start)
+         else
+           u_slow = 0.0
+           mpi_master_only write(*,*) ' --- WARNING: '
+     &         , 'u_slow'
+     &         , ' not in initial file.  Initialized to 0.0'
+           ierr=nf90_noerr
+         endif
+
+         ierr=nf90_inq_varid (ncid, 'v_slow', varid)
+         if (ierr == nf90_noerr) then
+           call ncread(ncid,'v_slow', v_slow,start)
+         else
+           v_slow = 0.0
+           mpi_master_only write(*,*) ' --- WARNING: '
+     &         , 'v_slow'
+     &         , ' not in initial file.  Initialized to 0.0'
+           ierr=nf90_noerr
+         endif
+
+         ierr=nf90_inq_varid (ncid, 'p_slow', varid)
+         if (ierr == nf90_noerr) then
+           call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
+           call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
+         else
+           p_slow = 0.0
+           mpi_master_only write(*,*) ' --- WARNING: '
+     &         , 'p_slow'
+     &         , ' not in initial file.  Initialized to 0.0'
+           ierr=nf90_noerr
+         endif
+
+      end subroutine get_init_slow  !]
+
 ! ----------------------------------------------------------------------
 !      subroutine def_rst_diag_pflx(ncid)  ![
-!      use ncvars
 !      implicit none
 !
 !      ! input
@@ -1693,7 +1753,5 @@
 !      end subroutine  !]
 
 ! ----------------------------------------------------------------------
-
-#endif
 
       end module diagnostics
