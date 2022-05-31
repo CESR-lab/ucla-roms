@@ -366,10 +366,6 @@
       ! coefficient variables for external calculations in prsgrd32AC1.F
       real, public :: cff_ext, cff_ext2
 
-      ! Rename grid variables
-      integer, parameter :: gnx = LLm
-      integer, parameter :: nz  = N
-
       ! timestep variables for read in WEC data
       integer              :: it1 = 1  ! Placeholder for read in time
       integer              :: it2 = 2  ! Placeholder for read in time
