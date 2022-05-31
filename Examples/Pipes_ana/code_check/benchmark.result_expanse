@@ -1,15 +1,14 @@
 
  Activated CPP configuration switches:
  <cppdefs.opt>
-       ANA_PIPES               PIPE_SOURCE             ANA_PIPE_FRC
-       ANA_GRID                ANA_INITIAL             ANA_SMFLUX
-       ANA_SRFLUX              ANA_STFLUX              ANA_SSFLUX
-       SOLVE3D                 UV_ADV                  UV_COR
-       NONLIN_EOS              SPLIT_EOS               SALINITY
-       UV_VIS2                 TS_DIF2                 LMD_MIXING
-       LMD_KPP                 LMD_NONLOCAL            LMD_RIMIX
-       LMD_CONVEC              LMD_BKPP                MASKING
-       MASK_LAND_DATA
+       ANA_PIPES               ANA_GRID                ANA_INITIAL
+       ANA_SMFLUX              ANA_SRFLUX              ANA_STFLUX
+       ANA_SSFLUX              SOLVE3D                 UV_ADV
+       UV_COR                  NONLIN_EOS              SPLIT_EOS
+       SALINITY                UV_VIS2                 TS_DIF2
+       LMD_MIXING              LMD_KPP                 LMD_NONLOCAL
+       LMD_RIMIX               LMD_CONVEC              LMD_BKPP
+       MASKING                 MASK_LAND_DATA
  <scoord.h>
        VERT_COORD_TYPE_SM09
  <pre_step3d4S.F>
@@ -29,7 +28,7 @@
        CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
        IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
 
- 2020-11: uswc sample domain with WEC
+ Analytical pipe example
      ntimes =        20   total number of 3D timesteps
          dt =    20.0000  time step [sec] for 3D equations
     ndtfast =        30   mode-splitting ratio
@@ -45,46 +44,7 @@
  WARNING: Urecognized keyword 'forcing' --> DISREGARDED.
 
 
- WARNING: Urecognized keyword 'climatology' --> DISREGARDED.
-
-
  WARNING: Urecognized keyword 'boundary' --> DISREGARDED.
-
- restart :: nrst =  999999  rec/file =    1
-
- history :: overwrite = T  nwrt =   20  rec/file =  48
-
- WARNING: Urecognized keyword 'averages' --> DISREGARDED.
-
-
- fields to write into history file: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
-
-        rho    T   density anomaly                           
-        Omega  T   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    T   vertical viscosity coefficient            
-        Akt    T   vertical thermal conductivity coefficient 
-        Aks    T   salinity vertical diffusion coefficient   
-        hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
-
- WARNING: Urecognized keyword 'primary_averages' --> DISREGARDED.
-
-
- WARNING: Urecognized keyword 'auxiliary_averages' --> DISREGARDED.
-
-
- WARNING: Urecognized keyword 'wci_history_fields' --> DISREGARDED.
-
-
- WARNING: Urecognized keyword 'wci_average_fields' --> DISREGARDED.
 
       visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
        rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
@@ -105,6 +65,25 @@
 
 
  NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 100 x 100 x 10
+
+       ocean_vars :: history file ouput_period = 400.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
  hmin =    5.000000   grdmin = 1.0000000E+02     area = 9.1600000000000000E+07
  hmax =  100.593750   grdmax = 1.0000000E+02   volume = 4.2580000000000000E+09
                                            open_cross = 0.0000000000000000E+00
@@ -128,39 +107,39 @@
 
  Maximum grid stiffness ratios:   rx0 = 0.095959596  rx1 =   2.119241469
 
- pipes: init pipe locations
-      wrt_grid :: wrote grid data into file 'grid.0.nc'.
-       def_his :: created new netCDF file 'test_his.00000.0.nc'.
-      wrt_grid :: wrote grid data into file 'test_his.00000.0.nc'.
-       wrt_his :: wrote history, tdays = 0.0000000  step =     -1 rec =   1/   1
+
+       pipe_frc: init pipe locations
+
+      wrt_grid :: wrote grid data 
 
  main :: initialization complete, started time-steping.
 
 
  STEP  KINETIC_ENRG BAROTR_KE     MAX_ADV_CFL        MAX_VERT_CFL
   0 0.0000000000000000E+00 0.0000000000000000E+00 4.5670333764709213E-02 4.5670333764709213E-02
-  1 3.4272752493935717E-07 3.4272712405340728E-07 5.2361968648381302E-02 4.5640600375577940E-02
-  2 4.5076384001748498E-07 4.4952606345840596E-07 5.1509015735939648E-02 4.7560053560668551E-02
-  3 5.2355406549949086E-07 5.0687099045425337E-07 5.2304196884475115E-02 5.2304196884475115E-02
-  4 6.3080521224804123E-07 5.5271875505184209E-07 6.0752181191307195E-02 6.0752181191307195E-02
-  5 8.2107882474080995E-07 5.8382173111308406E-07 7.2940270915118052E-02 6.9338300789464055E-02
-  6 1.1811908681546605E-06 6.1369449169475693E-07 8.8501374976459241E-02 8.3213875972918558E-02
-  7 1.8018088143332787E-06 6.3648278985697870E-07 1.0691206384654917E-01 9.9706751359589979E-02
-  8 2.8132540087959808E-06 6.6066919031305694E-07 1.2885860819660030E-01 1.2885860819660030E-01
-  9 4.3610124582914068E-06 6.8155199744554219E-07 1.5798712301744486E-01 1.5798712301744486E-01
- 10 6.6250618409315871E-06 6.9734862377639957E-07 1.9179478254654919E-01 1.9179478254654919E-01
- 11 9.8204370346372910E-06 7.0600115228159763E-07 2.3017488998552016E-01 2.3017488998552016E-01
- 12 1.4211824494591832E-05 7.1107025894423703E-07 2.7275785042407535E-01 2.7275785042407535E-01
- 13 2.0109848227349447E-05 7.1215614271030158E-07 3.1878711799884585E-01 3.1878711799884585E-01
- 14 2.7886950030532365E-05 7.2228635141547547E-07 3.6697578195568220E-01 3.6697578195568220E-01
- 15 3.7909482282373603E-05 7.3590871383812668E-07 4.1538526123997260E-01 4.1538526123997260E-01
- 16 5.0525038678782963E-05 7.6707975995597577E-07 4.7056127013654270E-01 3.3599387976484157E-01
- 17 6.5880493951217954E-05 8.0810690811080092E-07 5.7605571181631077E-01 3.8595951798354072E-01
- 18 8.3733015118742839E-05 8.5667776961881932E-07 7.0579711236640552E-01 4.8382385456492999E-01
- 19 1.0306072462692470E-04 9.0682988559643881E-07 8.3617707598552526E-01 5.9434655741794973E-01
- 20 1.2274447707227263E-04 9.6099909876664920E-07 9.5492631809850659E-01 6.4578891199204180E-01
-       wrt_his :: wrote history, tdays = 0.0046296  step =     20 rec =   2/   2
- Process    0  thread  0  cpu time =        0.20 sec
+  1 3.4272752493935739E-07 3.4272712405340759E-07 5.2361968648381323E-02 4.5640600375577940E-02
+  2 4.5076384001748488E-07 4.4952606345840580E-07 5.1509015735939634E-02 4.7560053560668517E-02
+  3 5.2355406549949128E-07 5.0687099045425401E-07 5.2304196884475046E-02 5.2304196884475046E-02
+  4 6.3080521224804017E-07 5.5271875505184262E-07 6.0752181191307042E-02 6.0752181191307042E-02
+  5 8.2107882474080698E-07 5.8382173111308449E-07 7.2940270915117927E-02 6.9338300789463944E-02
+  6 1.1811908681546535E-06 6.1369449169475693E-07 8.8501374976459116E-02 8.3213875972918502E-02
+  7 1.8018088143332671E-06 6.3648278985697828E-07 1.0691206384654907E-01 9.9706751359589993E-02
+  8 2.8132540087959618E-06 6.6066919031305514E-07 1.2885860819659978E-01 1.2885860819659978E-01
+  9 4.3610124582913771E-06 6.8155199744554092E-07 1.5798712301744422E-01 1.5798712301744422E-01
+ 10 6.6250618409315482E-06 6.9734862377639883E-07 1.9179478254654836E-01 1.9179478254654836E-01
+ 11 9.8204370346372334E-06 7.0600115228159700E-07 2.3017488998551927E-01 2.3017488998551924E-01
+ 12 1.4211824494591758E-05 7.1107025894423512E-07 2.7275785042407430E-01 2.7275785042407430E-01
+ 13 2.0109848227349359E-05 7.1215614271030105E-07 3.1878711799884485E-01 3.1878711799884485E-01
+ 14 2.7886950030532237E-05 7.2228635141547526E-07 3.6697578195568142E-01 3.6697578195568142E-01
+ 15 3.7909482282373426E-05 7.3590871383812689E-07 4.1538526123997171E-01 4.1538526123997171E-01
+ 16 5.0525038678782726E-05 7.6707975995597619E-07 4.7056127013654014E-01 3.3599387976483863E-01
+ 17 6.5880493951217642E-05 8.0810690811080092E-07 5.7605571181630599E-01 3.8595951798353656E-01
+ 18 8.3733015118742459E-05 8.5667776961882133E-07 7.0579711236640030E-01 4.8382385456492527E-01
+ 19 1.0306072462692431E-04 9.0682988559643934E-07 8.3617707598551971E-01 5.9434655741794440E-01
+ 20 1.2274447707227225E-04 9.6099909876665026E-07 9.5492631809850104E-01 6.4578891199203659E-01
+       ocean_vars :: wrote history, tdays =      0.0046  step =     20 rec =   2/   2
+ Process    0  thread  0  cpu time =        0.32 sec
 
- MAIN: DONE - Records written: history:    2 restart:    0
- MPI_run_time =  0.394706249237061     
+ MAIN: DONE - Records written:
+
+ MPI_run_time =  0.508009672164917     
