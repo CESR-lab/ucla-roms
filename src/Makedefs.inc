@@ -51,10 +51,10 @@
 	CPATH = ${MPIHOME}/include:${NHMG_INC}
 
 # Get netCDF paths and options ('shell' is needed to use command)
-	NETCDFF_INC=$(shell /bin/nf-config --fflags)
-	NETCDFF_LIB=$(shell /bin/nf-config --flibs)
-	NETCDFC_INC=$(shell /bin/nc-config --cflags)
-	NETCDFC_LIB=$(shell /bin/nc-config --libs)
+	NETCDFF_INC=$(shell nf-config --fflags)
+	NETCDFF_LIB=$(shell nf-config --flibs)
+	NETCDFC_INC=$(shell nc-config --cflags)
+	NETCDFC_LIB=$(shell nc-config --libs)
 
 # COMPILER SETTINGS:
 
@@ -74,13 +74,13 @@
 #	- using non-intel MPI:
 	CFT =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
-	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran loader name and options: (mpifort has replaced legacy mpif90)
 #	- using non-intel MPI:
 	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
-	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
