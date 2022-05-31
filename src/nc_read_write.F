@@ -1,5 +1,7 @@
       module nc_read_write
 
+#include "cppdefs.opt"
+
       use netcdf
 
       implicit none
