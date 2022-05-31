@@ -1676,63 +1676,65 @@
       end subroutine create_diagnostics_file !]
 
 ! ----------------------------------------------------------------------
-      subroutine get_init_slow( ncid, start )  ![
+      subroutine get_init_slow( ncid, record )  ![
       ! get initial slow u,v and p
       implicit none
 
       ! input
-      integer,intent(in) :: ncid
-      integer,dimension(4),intent(in) :: start
+      integer,intent(in) :: ncid, record
 
       ! local
       integer :: ierr, varid
+      integer,dimension(4) :: start
 
-        if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
-          allocate( u_slow(  1:i1,j0:j1, nz ))
-          u_slow = 0
-        endif
-        if (.not. allocated(v_slow)) then
-          allocate( v_slow( i0:i1, 1:j1, nz ))
-          v_slow = 0
-        endif
-        if (.not. allocated(p_slow)) then
-          allocate( p_slow( GLOBAL_2D_ARRAY, nz ))
-          p_slow = 0
-        endif
+      start=1; start(4)=record                                       ! 3D vars
 
-         ierr=nf90_inq_varid (ncid, 'u_slow', varid)
-         if (ierr == nf90_noerr) then
-           call ncread(ncid,'u_slow', u_slow,start)
-         else
-           u_slow = 0.0
-           mpi_master_only write(*,*) ' --- WARNING: '
+      if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
+        allocate( u_slow(  1:i1,j0:j1, nz ))
+        u_slow = 0
+      endif
+      if (.not. allocated(v_slow)) then
+        allocate( v_slow( i0:i1, 1:j1, nz ))
+        v_slow = 0
+      endif
+      if (.not. allocated(p_slow)) then
+        allocate( p_slow( GLOBAL_2D_ARRAY, nz ))
+        p_slow = 0
+      endif
+
+      ierr=nf90_inq_varid (ncid, 'u_slow', varid)
+      if (ierr == nf90_noerr) then
+        call ncread(ncid,'u_slow', u_slow,start)
+      else
+        u_slow = 0.0
+        mpi_master_only write(*,*) ' --- WARNING: '
      &         , 'u_slow'
      &         , ' not in initial file.  Initialized to 0.0'
-           ierr=nf90_noerr
-         endif
+        ierr=nf90_noerr
+      endif
 
-         ierr=nf90_inq_varid (ncid, 'v_slow', varid)
-         if (ierr == nf90_noerr) then
-           call ncread(ncid,'v_slow', v_slow,start)
-         else
-           v_slow = 0.0
-           mpi_master_only write(*,*) ' --- WARNING: '
+      ierr=nf90_inq_varid (ncid, 'v_slow', varid)
+      if (ierr == nf90_noerr) then
+        call ncread(ncid,'v_slow', v_slow,start)
+      else
+        v_slow = 0.0
+        mpi_master_only write(*,*) ' --- WARNING: '
      &         , 'v_slow'
      &         , ' not in initial file.  Initialized to 0.0'
-           ierr=nf90_noerr
-         endif
+        ierr=nf90_noerr
+      endif
 
-         ierr=nf90_inq_varid (ncid, 'p_slow', varid)
-         if (ierr == nf90_noerr) then
-           call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
-           call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
-         else
-           p_slow = 0.0
-           mpi_master_only write(*,*) ' --- WARNING: '
+      ierr=nf90_inq_varid (ncid, 'p_slow', varid)
+      if (ierr == nf90_noerr) then
+        call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
+        call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
+      else
+        p_slow = 0.0
+        mpi_master_only write(*,*) ' --- WARNING: '
      &         , 'p_slow'
      &         , ' not in initial file.  Initialized to 0.0'
-           ierr=nf90_noerr
-         endif
+        ierr=nf90_noerr
+      endif
 
       end subroutine get_init_slow  !]
 
