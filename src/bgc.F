@@ -12,7 +12,7 @@
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      use read_write, only: set_frc_var_tile, ncvs
+      use read_write, only: set_frc_var_tile, ncvs, rp_var
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use bgc_ecosys_vars
       use nc_read_write
@@ -568,6 +568,14 @@
       implicit none
       integer i,j, itrc ,lvar,lenstr ! ierr, DevinD removed ierr as arguement
       integer omp_get_num_threads
+
+      if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
+        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_his!'
+      endif
+      if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
+        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_avg!'
+      endif
+
 !#include "param.h"
 !#include "ncvars"
 !#include "ncroms_bgcflux.h"

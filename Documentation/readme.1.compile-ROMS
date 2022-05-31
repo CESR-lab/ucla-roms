@@ -230,12 +230,13 @@ Keeping code up to date:
 
 Additional readme's:
 --------------------
-     
-     See Documentation/readme-specifics/ for more detailed readme's on specific 
-     functionalities of roms.
-     
+
      See Documentation/readme.2.model-setup for details on configuring roms for 
      your simulation as per new code.
+     
+     See Documentation/readme-specifics/ for more detailed readme's on specific 
+     functionalities of roms.  
+
              
              
              

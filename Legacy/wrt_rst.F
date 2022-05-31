@@ -1,7 +1,7 @@
 #include "cppdefs.opt"
-                              ! Write model prognostic
-      subroutine wrt_rst      ! variables into restart
-                              ! netCDF file.
+
+      subroutine wrt_rst  ![
+      ! write model prognostic variables into restart netCDF file.
 
       use param
       use tracers, only: wrt_rst_trc
@@ -13,24 +13,16 @@
       use scalars
       use mpi
       use netcdf
-      use diagnostics
-      use dimensions
+      use read_write                                       ! temporary addtion until writing fixed
 
       implicit none
 
-      integer record, start(2), count(2), ibuff(iaux),
-     &        i, ierr, lstr, lvar, lenstr, ncdf_write
-#ifdef SOLVE3D
-     &      , itrc
-#endif
-      character(len=18) tstring
-
-      integer :: j ! remove later
-
-#include "netcdf.inc"
+      integer :: record, start(2), count(2), ibuff(iaux),
+     &           i, ierr, lstr, lvar, lenstr, ncdf_write, varid, itrc
+      character(len=18) :: tstring
 
 #if defined MPI && !defined PARALLEL_FILES
-      integer status(MPI_STATUS_SIZE), blank
+      integer :: status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
      &            mynode-1, 1, ocean_grid_comm, status, ierr)
 #endif
@@ -58,7 +50,8 @@
       start(1)=1      ; count(1)=iaux
       start(2)=record ; count(2)=1
 
-      ierr=nf_put_vara_int (ncrst, rstTstep, start, count, ibuff)
+      ierr=nf90_inq_varid(ncrst,'time_step',varid)
+      ierr=nf90_put_var(ncrst, varid, ibuff, start, count)
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_rst :: ',
      &       'Cannot write variable ''time_step'' into restart file, ',
@@ -74,10 +67,11 @@
 ! units from the initial condition file (see "get_init.F") and uses
 ! it throughout the entire run.
 
+      ierr=nf90_inq_varid(ncrst, 'ocean_time', varid)
       if (vname(3,indxTime)(1:6) == 'second') then
-        ierr=nf_put_var1_double(ncrst, rstTime, record, time)
+        ierr=nf90_put_var(ncrst, varid, time,(/record/))
       else
-        ierr=nf_put_var1_double(ncrst, rstTime, record, tdays)
+        ierr=nf90_put_var(ncrst, varid, tdays,(/record/))
       endif
       if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxTime))
@@ -89,15 +83,14 @@
       endif
 
 ! Free-surface and 2D momentum components in XI- and ETA-directions.
-
-      ierr=ncdf_write(ncrst,  rstZ,  record,  r_var,
-     &                zeta(START_2D_ARRAY,knew), 1)
+      call nc_write_var(ncrst, zeta(START_2D_ARRAY,knew), 1,
+     &                    vname(1,indxZ), rp_var, record, ierr)
       if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncrst,  rstUb,  record, u_var,
-     &                  ubar(START_2D_ARRAY,knew), 1)
+        call nc_write_var(ncrst, ubar(START_2D_ARRAY,knew), 1,
+     &                    vname(1,indxUb), up_var, record, ierr)
         if (ierr == nf90_noerr) then
-          ierr=ncdf_write(ncrst,  rstVb,  record, v_var,
-     &                    vbar(START_2D_ARRAY,knew), 1)
+          call nc_write_var(ncrst, vbar(START_2D_ARRAY,knew), 1,
+     &                      vname(1,indxVb), vp_var, record, ierr)
           if (ierr /= nf90_noerr) then
             lvar=lenstr(vname(1,indxVb))
             write(*,1) vname(1,indxVb)(1:lvar), record MYID
@@ -115,15 +108,13 @@
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-      ierr=ncdf_write(ncrst, rst_DU_avg2, record, u_var, DU_avg2, 1)
+      call nc_write_var(ncrst, DU_avg2, 1, 'DU_avg2', up_var, record, ierr)
       if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncrst, rst_DV_avg2, record, v_var, DV_avg2, 1)
+        call nc_write_var(ncrst, DV_avg2, 1, 'DV_avg2', vp_var, record, ierr)
         if (ierr == nf90_noerr) then
-          ierr=ncdf_write(ncrst, rst_DU_avg_bak, record, u_var,
-     &                                                  DU_avg_bak, 1)
+          call nc_write_var(ncrst, DU_avg_bak, 1, 'DU_avg_bak', up_var, record, ierr)
           if (ierr == nf90_noerr) then
-            ierr=ncdf_write(ncrst, rst_DV_avg_bak, record, v_var,
-     &                                                  DV_avg_bak, 1)
+            call nc_write_var(ncrst, DV_avg_bak, 1, 'DV_avg_bak', vp_var, record, ierr)
             if (ierr /= nf90_noerr) then
               write(*,1) 'DV_avg_bak', record MYID
             endif
@@ -137,11 +128,10 @@
         write(*,1) 'DU_avg2', record MYID
       endif
 #  elif defined PRED_COUPLED_MODE
-      ierr=ncdf_write(ncrst,   rst_rufrc,  record,  u_var,
-     &                  rufrc_bak(START_2D_ARRAY,nstp), 1)
+      call nc_write_var(ncrst, rufrc_bak(START_2D_ARRAY,nstp), 1, 'rufrc', up_var, record, ierr)
       if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncrst, rst_rvfrc,  record,  v_var,
-     &                  rvfrc_bak(START_2D_ARRAY,nstp), 1)
+        call nc_write_var(ncrst, rvfrc_bak(START_2D_ARRAY,nstp), 1, 'rvfrc', vp_var, record, ierr)
+
         if (ierr /= nf90_noerr) then
           write(*,1) 'rvfrc_bak', record MYID
         endif
@@ -153,12 +143,11 @@
 # endif
 
 ! 3D momentum components in XI- and ETA-directions.
-
-      ierr=ncdf_write(ncrst, rstU,  record,  u_var,
-     &                 u(START_2D_ARRAY,1,nstp), N)
+      call nc_write_var(ncrst, u(START_2D_ARRAY,1,nstp), N,
+     &                    vname(1,indxU), up_var, record, ierr)
       if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncrst, rstV, record, v_var,
-     &                 v(START_2D_ARRAY,1,nstp), N)
+        call nc_write_var(ncrst, v(START_2D_ARRAY,1,nstp), N,
+     &                    vname(1,indxV), vp_var, record, ierr)
         if (ierr /= nf90_noerr) then
           lvar=lenstr(vname(1,indxV))
           write(*,1) vname(1,indxV)(1:lvar), record MYID
@@ -170,14 +159,12 @@
       if (ierr /= nf90_noerr) goto 99                !--> ERROR
 
 ! Tracer variables.
-
       call wrt_rst_trc(record, ierr)
 
 # ifdef LMD_KPP
 ! Depth of planetary boundary layer [m].
-
-      ierr=ncdf_write(ncrst, rstHbls, record, r_var,
-     &                hbls(START_2D_ARRAY,nstp), 1)
+      call nc_write_var(ncrst, hbls(START_2D_ARRAY,nstp), 1,
+     &                    vname(1,indxHbls), rp_var, record, ierr)
       if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxHbls))
         write(*,1) vname(1,indxHbls)(1:lvar), record MYID
@@ -186,9 +173,8 @@
 # endif
 # ifdef LMD_BKPP
 ! Thickness of KPP bottom boundary layer [m].
-
-      ierr=ncdf_write(ncrst, rstHbbl, record, r_var,
-     &                hbbl(START_2D_ARRAY,nstp), 1)
+      call nc_write_var(ncrst, hbbl(START_2D_ARRAY,nstp), 1,
+     &                    vname(1,indxHbbl), rp_var, record, ierr)
       if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxHbbl))
         write(*,1) vname(1,indxHbbl)(1:lvar), record MYID
@@ -197,57 +183,6 @@
 # endif
 #endif /* SOLVE3D */
 
-#ifdef DIAGNOSTICS
-      if (diag_pflx) then
-
-        if (.not. allocated(g2d_u_slow)) then
-          allocate( g2d_u_slow( GLOBAL_2D_ARRAY, N ))
-          g2d_u_slow = 0
-        endif
-        if (.not. allocated(g2d_v_slow)) then
-          allocate( g2d_v_slow( GLOBAL_2D_ARRAY, N ))
-          g2d_v_slow = 0
-        endif
-        if (.not. allocated(g2d_p_slow)) then
-          allocate( g2d_p_slow( GLOBAL_2D_ARRAY, N ))
-          g2d_p_slow = 0
-        endif
-
-        do j=1,ny
-          do i=1,nx
-            g2d_u_slow(i,j,:) = u_slow(i,j,:)   ! store into global_2D_array for outputting
-            g2d_v_slow(i,j,:) = v_slow(i,j,:)
-            g2d_p_slow(i,j,:) = p_slow(i,j,:)
-          enddo
-        enddo
-
-      ierr=ncdf_write(ncrst, varid_uslow,  record,  u_var,
-     &           g2d_u_slow(START_2D_ARRAY,1), N)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncrst, varid_vslow, record, v_var,
-     &           g2d_v_slow(START_2D_ARRAY,1), N)
-        if (ierr /= nf90_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          write(*,1) 'v_slow', record MYID
-        endif
-      else
-        lvar=lenstr(vname(1,indxU))
-        write(*,1) 'u_slow', record MYID
-      endif
-      if (ierr /= nf90_noerr) goto 99                !--> ERROR
-
-      ierr=ncdf_write(ncrst, varid_p_slow,  record,  r_var,
-     &           g2d_p_slow(START_2D_ARRAY,1), N)
-      if (ierr == nf90_noerr) then
-
-      else
-        lvar=lenstr(vname(1,indxU))
-        write(*,1) 'p_slow', record MYID
-      endif
-      if (ierr /= nf90_noerr) goto 99                !--> ERROR
-
-      endif
-#endif      
 
   1   format(/1x, '### ERROR: wrt_rst :: Cannot write variable ''',
      &             A, ''' into restart file, rec =', i6, 3x,A,i4/)
@@ -295,4 +230,5 @@
       if (mynode < NNODES-1) call MPI_Send (blank, 1, MPI_INTEGER,
      &                        mynode+1, 1, ocean_grid_comm, ierr)
 #endif
-      end
+
+      end subroutine wrt_rst  !]
