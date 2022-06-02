@@ -30,7 +30,6 @@
         integer                           :: irec =0   ! Record number in file
         integer                           :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
         real,dimension(2)                 :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
-!        logical                           :: tbry=.false.                  ! for tracer default boundary only
       end type ncforce
 
       integer, target :: test_var

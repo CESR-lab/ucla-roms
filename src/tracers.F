@@ -79,7 +79,6 @@
 
       public set_surf_tracer_flx
       public init_tracers
-      public set_bry_tracer_defaults
       public def_his_trc
       public wrt_his_trc
       public wrt_rst_trc
@@ -368,113 +367,6 @@
       enddo
 
       end subroutine init_tracers  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_bry_tracer_defaults(t_bry_dt, itrc, itbry, LMmpp)  ![
-      ! Sets default values for tracers at the boundary if missing
-      ! in the _bry.nc file.
-      ! In the long run this should be put into an include file to avoid
-      ! conflicts when module is updated.
-      ! Taken from Pierre's code get_bry_all.F
-
-      use param
-      implicit none
-      real t_bry_dt(0:LMmpp,N,2,NT), cff,cff1
-      integer, intent(in):: LMmpp, itbry,itrc
-      integer :: ij, k
-#  define temp cff
-#  define SiO4 cff1
-
-      if (itrc == itemp) then
-        t_bry_dt(:,:,itbry,itrc) = 5.0 ! default temperature (only used if temp not in boundary file
-#  ifdef SALINITY
-      else if (itrc == isalt) then
-        t_bry_dt(:,:,itbry,itrc) = 35.0 ! default salinity
-#  endif
-#  if defined BIOLOGY_BEC2
-! provide defaults for selected biogeochemical variables
-      elseif (itrc .eq. iNH4 .or. itrc .eq. iDOC .or.
-     &    itrc .eq. iDON .or. itrc. eq. iDOFE .or.
-     &    itrc .eq. iDOP) then
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      else if (itrc .eq. iPO4) then
-        do k=1,N
-          do ij=0,LMmpp
-            temp=t_bry_dt(ij,k,itbry,itemp)
-            if (temp.lt.8.) then
-              SiO4=30.
-            elseif (temp.ge.8. .and. temp.le.11.) then
-              SiO4=30.-((temp-8.)*(20./3.))
-            elseif (temp.gt.11. .and. temp.le.13.) then
-              SiO4=10.-((temp-11.)*(8./2.))
-            elseif (temp.gt.13. .and. temp.le.16.) then
-              SiO4=2.-((temp-13.)*(2./3.))
-            elseif (temp.gt.16.) then
-              SiO4=0.
-            endif
-          t_bry_dt(ij,k,itbry,itrc)=(1.67+0.5873*SiO4
-     &         +0.0144*SiO4**2
-     &         +0.0003099*SiO4**3)/16
-#   ifdef NO3_SFC_CUTOFF
-          t_bry_dt(ij,k,itbry,itrc)=t_bry_dt(ij,k,itbry,itrc)*
-     &                             (1-.5*(tanh((z_r(iwest,ij,k)+100.)/8.)+1))
-#   endif /* NO3_SFC_CUTOFF */
-          enddo
-        enddo
-      ! DevinD - would be better to use switch statement here rather than if's
-      else if (itrc .eq. iNO3) then
-        t_bry_dt(:,:,itbry,itrc) = 16*t_bry_dt(:,:,itbry,iPO4)
-      else if (itrc .eq. iSiO3) then
-        t_bry_dt(:,:,itbry,itrc) = t_bry_dt(:,:,itbry,iNO3)
-      else if (itrc .eq. iFE) then
-        t_bry_dt(:,:,itbry,itrc) = 5.395e-4  ! mmol/m3
-      else if (itrc .eq. iO2) then
-        t_bry_dt(:,:,itbry,itrc) = 177.9  ! mmol/m3
-      else if (itrc .eq. iDIC) then
-        t_bry_dt(:,:,itbry,itrc) = 2255  ! mmol/m3
-      else if (itrc .eq. iALK) then
-        t_bry_dt(:,:,itbry,itrc) = 2363  ! mmol/m3
-      else if (itrc .eq. iSPC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.10
-      else if (itrc .eq. iSPCHL) then
-        t_bry_dt(:,:,itbry,itrc) = 0.1 *
-     &     t_bry_dt(:,:,itbry,iSPC)
-      else if (itrc .eq. iSPFE) then
-        t_bry_dt(:,:,itbry,itrc) = 4.d-5 *
-     &     t_bry_dt(:,:,itbry,iSPC)
-      else if (itrc .eq. iSPCACO3) then
-        t_bry_dt(:,:,itbry,itrc) = 0.03 *
-     &     t_bry_dt(:,:,itbry,iSPC)
-      else if (itrc .eq. iDIATC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.10
-      else if (itrc .eq. iDIATCHL) then
-        t_bry_dt(:,:,itbry,itrc) = 0.1 *
-     &     t_bry_dt(:,:,itbry,iDIATC)
-      else if (itrc .eq. iDIATSI) then
-        t_bry_dt(:,:,itbry,itrc) = 0.2 *
-     &     t_bry_dt(:,:,itbry,iDIATC)
-      else if (itrc .eq. iDIATFE) then
-        t_bry_dt(:,:,itbry,itrc) = 3.d-5 *
-     &     t_bry_dt(:,:,itbry,iDIATC)
-      else if (itrc .eq. iDIAZC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.01
-      else if (itrc .eq. iDIAZCHL) then
-        t_bry_dt(:,:,itbry,itrc) = 0.1 *
-     &     t_bry_dt(:,:,itbry,iDIAZC)
-      else if (itrc .eq. iDIAZFE) then
-        t_bry_dt(:,:,itbry,itrc) = 3.d-5 *
-     &     t_bry_dt(:,:,itbry,iDIAZC)
-      else if (itrc .eq. iZOOC) then
-        t_bry_dt(:,:,itbry,itrc) = 0.05
-      else if (itrc >= itrc_bio) then
-        t_bry_dt(:,:,itbry,itrc) = 1e-30
-#    endif /* BIOLOGY_BEC2 */
-      else
-        t_bry_dt(:,:,itbry,itrc) = 0.0
-      endif ! tracer cases
-
-
-      end subroutine set_bry_tracer_defaults  !]
 
 ! ----------------------------------------------------------------------
 
