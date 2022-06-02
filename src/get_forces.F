@@ -14,7 +14,6 @@
 
       use param
       use scalars
-      use boundary
       implicit none
       integer ierr
 
@@ -33,13 +32,6 @@ c--#define VERBOSE
 # if ( defined TCLIMATOLOGY ||( defined TNUDGING && \
        defined T_FRC_BRY )) && !defined ANA_TCLIMA
       call get_tclima(ierr)
-# endif
-#endif
-#if  !defined OBC_NONE &&                         \
-     (defined T_FRC_BRY  || defined M2_FRC_BRY || \
-      defined M3_FRC_BRY || defined Z_FRC_BRY )
-# ifndef ANA_BRY
-      call get_bry_all(ierr)
 # endif
 #endif
 
