@@ -23,7 +23,8 @@ Running new simulations:
 
 roms.in:
 
-    See Examples/Tracers_passive/sample.in as a template. 
+    See Examples/Tracers_passive/sample.in as a template.
+    You need to include the boundary file in the 'forcing:' filename list! 
     Note, we now use one root name, e.g. 'pacific', stored in 
     variable 'output_root_name' for the output file names. 
     The history  file will be pacific_his.*.nc,
