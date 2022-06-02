@@ -12,7 +12,8 @@ grid:  filename
 
 forcing: filename
      ../USWC_model/input_data/sample_flux_frc.nc 
-     ../USWC_model/input_data/sample_wwv_riv.nc    
+     ../USWC_model/input_data/sample_wwv_riv.nc
+     ../USWC_model/input_data/roms_bry_trace.nc        
 
 initial: NRREC  filename
           1

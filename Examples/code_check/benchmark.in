@@ -17,7 +17,7 @@ forcing: filename
      ../USWC_model/input_data/sample_rad_units_DPD.nc
      ../USWC_model/input_data/sample_tracers.nc
      ../USWC_model/input_data/sample_wwv_riv.nc
-     
+     ../USWC_model/input_data/roms_bry_trace.nc     
 
 initial: NRREC  filename
           1

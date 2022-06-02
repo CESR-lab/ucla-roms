@@ -44,6 +44,7 @@
       use hidden_mpi_vars
       use scalars
       use analytical
+      use boundary
 
       implicit none
 

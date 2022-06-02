@@ -14,6 +14,7 @@
 
       use param
       use scalars
+      use boundary
       implicit none
       integer ierr
 

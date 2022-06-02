@@ -30,6 +30,7 @@
         integer                           :: irec =0   ! Record number in file
         integer                           :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
         real,dimension(2)                 :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
+!        logical                           :: tbry=.false.                  ! for tracer default boundary only
       end type ncforce
 
       integer, target :: test_var
@@ -103,18 +104,20 @@
       end subroutine init_output_indices  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_frc_data(nc,var1d,var2d)  ![
+      subroutine set_frc_data(nc,var1d,var2d,obry)  ![
       implicit none
 
       ! input/outputs
       type(ncforce),               intent(inout) :: nc    ! derived type containing all neccesary supporting data
       real,dimension(:)  ,optional,intent(out)   :: var1d ! time interpolated forcing data
       real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
+      integer,optional,            intent(in)    :: obry  ! bry=1, suppress terminal info, bry=2 display boundary
 
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
       logical :: d1
+      integer :: bry
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
@@ -125,6 +128,12 @@
         d1 = .false.
       endif
 
+      if (present(obry)) then
+        bry = obry
+      else
+        bry = 0
+      endif
+
       modtime = tdays + 0.5*dt*sec2day    ! input data times in days. Interpolated time is based on 1/2 step time
 
       it1 = nc%it1
@@ -133,13 +142,13 @@
       if (nc%times(it2) < modtime) then  ! need to refresh data
 
         if (nc%ifile == 0) then   ! the first time, we need to fill both slots
-          call fill_frc_slice(nc,modtime,it1,d1)
+          call fill_frc_slice(nc,modtime,it1,d1,bry)
         else ! cycle it1,it2 between 1 and 2
           it1 = mod(it1,2) + 1
           it2 = mod(it2,2) + 1
         endif
 
-        call fill_frc_slice(nc,modtime,it2,d1)
+        call fill_frc_slice(nc,modtime,it2,d1,bry)
       endif 
 
       nc%it1 = it1
@@ -355,7 +364,7 @@
       end subroutine find_new_record_cycle !]
       
 ! ----------------------------------------------------------------------
-      subroutine fill_frc_slice(nc,modtime,it,d1) ![
+      subroutine fill_frc_slice(nc,modtime,it,d1,bry) ![
       ! Fill a time slice of forcing data
       implicit none
 
@@ -364,6 +373,7 @@
       real               ,intent(in)    :: modtime ! current time of the model
       integer            ,intent(in)    :: it      ! index (1 or 2) of the forcing data
       logical            ,intent(in)    :: d1      ! 1 or 2 dimensional forcing data
+      integer            ,intent(in)    :: bry     ! suppress terminal output of boundary
 
       ! local
       integer :: ierr,ncid
@@ -399,8 +409,18 @@
       endif
       ierr = nf90_close(ncid)
 
-      if (mynode == 0) 
-     &      call display_read_time_to_log(vname,nc%times(it),irec )
+      if (bry==0) then
+        if (mynode==0)
+     &    call display_read_time_to_log(vname,nc%times(it),irec )
+      elseif (bry==1) then
+        ! do nothing (suppress terminal output)
+      elseif (bry==2) then
+        if (mynode==0 .or. mynode==nnodes-1)                         ! 2 nodes catch e/w/s/n boundaries
+     &    call display_read_time_to_log(vname,nc%times(it),irec )
+      else
+        stop 'fill_frc_slice - bry error'
+      endif
+
 
       nc%irec  = irec
       nc%ifile = ifile
