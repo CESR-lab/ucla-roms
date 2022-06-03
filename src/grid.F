@@ -170,7 +170,7 @@
       implicit none               ! into a separate netCDF file.
 
       character(len=32) fname
-      integer ncid,ierr, lncn, lenstr, my_nf_def_dim
+      integer ncid,ierr, lncn, lenstr
 
 # if defined MPI && !defined PARALLEL_FILES
       integer status(MPI_STATUS_SIZE), blank
@@ -575,7 +575,7 @@
 #ifndef ANA_GRID
 
       character*1 char1
-      integer :: ierr, ncid, varid, lstr, lenstr, checkdims, ncdf_read
+      integer :: ierr, ncid, varid, lstr, lenstr, checkdims
       integer,dimension(4) :: start
 
 ! Open grid netCDF file for reading. Check that dimensions in the file

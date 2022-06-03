@@ -80,20 +80,6 @@ c***              no code here
       call set_ssh_tile(istr,iend,jstr,jend, ierr)
 # endif
 #endif
-#ifdef UCLIMATOLOGY
-# ifdef ANA_UCLIMA
-      call ana_uclima_tile(istr,iend,jstr,jend)
-# else
-      call set_uclima_tile (istr,iend,jstr,jend, ierr)
-# endif
-#endif
-#if defined SOLVE3D && defined TCLIMATOLOGY
-# ifdef ANA_TCLIMA
-      call ana_tclima_tile(istr,iend,jstr,jend)
-# else
-      call set_tclima_tile(istr,iend,jstr,jend, ierr)
-# endif
-#endif
 
                                         !--> Surface fluxes
 
