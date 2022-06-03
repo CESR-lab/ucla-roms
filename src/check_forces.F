@@ -245,8 +245,6 @@ C$OMP BARRIER
      &   , start(2), count(2), ibuff(iaux), ncdf_write
       character(len=18) tstring
 
-#include "netcdf.inc"
-
 #if defined MPI && !defined PARALLEL_FILES
       integer status(MPI_STATUS_SIZE), blank
       if (mynode > 0) call MPI_Recv (blank, 1, MPI_INTEGER,
@@ -274,7 +272,7 @@ C$OMP BARRIER
       start(1)=1      ; count(1)=iaux
       start(2)=record ; count(2)=1
 
-      ierr=nf_put_vara_int (nchis, hisTstep, start, count, ibuff)
+      ierr=nf90_put_var(nchis, hisTstep, ibuff, start, count)
       if (ierr /= nf90_noerr) then
         write(*,'(/1x,3A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_frc :: ',
      &       'Cannot write variable ''time_step'' into history file, ',
@@ -284,7 +282,7 @@ C$OMP BARRIER
 
 ! Time
 
-      ierr=nf_put_var1_FTYPE (nchis, hisTime, record, time)
+      ierr=nf90_put_var (nchis, hisTime, time, (/record/) )
       if (ierr /= nf90_noerr) then
         lvar=lenstr(vname(1,indxTime))
         write(*,'(/1x,4A,i6/11x,A,3x,A,i4/)') '### ERROR: wrt_frc :: ',
@@ -351,240 +349,3 @@ C$OMP BARRIER
       end
 
 
-
-
-      subroutine def_frc(total_rec, ierr)
-
-      use param
-
-      use scalars
-      use netcdf
-
-      implicit none
-      logical create_new_file
-      integer total_rec, ierr, rec,timedim, prev_fill_mode, lfnm, lvar
-     &      , r2dgrd(3), u2dgrd(3), v2dgrd(3), auxil(2)
-
-      integer my_nf_def_dim     !<-- instrumented netCDF function.
-      integer lenstr, checkdims
-      character(len=64) text
-
-#include "netcdf.inc"
-
-#ifdef MASK_LAND_DATA
-# ifdef HIS_DOUBLE
-      real*8, parameter :: spv_set=1.D+33
-# else
-      real*4, parameter :: spv_set=1.E+33
-# endif
-#endif
-
-      hisname='swrflux.nc' ; lfnm=lenstr(hisname)
-      create_new_file=ldefhis
-      if (nchis /= -1)  create_new_file=.false.
-# ifdef MPI
-#  ifdef PARALLEL_FILES
-      ierr=0
-      call insert_node(hisname, lfnm, mynode, NNODES, ierr)
-#  else
-      if (mynode > 0) create_new_file=.false.
-#  endif
-# endif
-      if (nrpfhis > 0) then
-        lvar=total_rec-(1+mod(total_rec-1, nrpfhis))
-        call insert_time_index(hisname, lfnm, lvar, ierr)
-      endif
-      if (ierr /= 0) goto 99
-
-  10  if (create_new_file) then
-        ierr=nf_create(hisname(1:lfnm), nf_clobber+nf_64bit_offset,
-     &                                                     nchis)
-        if (ierr == nf90_noerr) then
-          ierr=nf_set_fill(nchis, nf_nofill, prev_fill_mode)
-          if (ierr /= nf90_noerr) then
-            write(*,'(1x,4A,I4)') '### ERROR: def_frc :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
-     &         MYID
-            goto 99
-          endif
-        else
-          write(*,'(/1x,4A/12x,A/)')  '### ERROR: def_frc :: ',
-     &          'Cannot create netCDF file ''', hisname(1:lfnm),
-     &                              '''.',   nf90_strerror(ierr)
-          goto 99
-        endif
-        if (nrpfhis == 0) total_rec=0
-
-        call put_global_atts(nchis, ierr)
-
-! Define dimensions of staggered fields.
-! ------ ---------- -- --------- -------
-
-        ierr=my_nf_def_dim(nchis, 'xi_rho',  xi_rho,  r2dgrd(1))
-        ierr=my_nf_def_dim(nchis, 'xi_u',    xi_u,    u2dgrd(1))
-        ierr=my_nf_def_dim(nchis, 'eta_rho', eta_rho, r2dgrd(2))
-        ierr=my_nf_def_dim(nchis, 'eta_v',   eta_v,   v2dgrd(2))
-
-        ierr=my_nf_def_dim(nchis, 'time', nf_unlimited, timedim)
-        ierr=my_nf_def_dim(nchis, 'auxil',   iaux,     auxil(1))
-
-        auxil(2)=timedim
-
-        r2dgrd(3)=timedim           ! 2D ZETA-type
-
-        u2dgrd(2)=r2dgrd(2)         ! 2D UBAR-type
-        u2dgrd(3)=timedim
-
-        v2dgrd(1)=r2dgrd(1)         ! 2D VBAR-type
-        v2dgrd(3)=timedim
-
-! Time-step number and time-record indices: (history file only, this
-! may be needed in the event when a history record is used to restart
-! the current model run);
-
-        ierr=nf_def_var (nchis, 'time_step', nf_int, 2, auxil, hisTstep)
-        ierr=nf_put_att_text(nchis, hisTstep, 'long_name', 48,
-     &              'time step and record numbers from initialization')
-
-! Time.
-        lvar=lenstr(vname(1,indxTime))
-        ierr=nf_def_var (nchis, vname(1,indxTime)(1:lvar), NF_FTYPE,
-     &                                         1, timedim, hisTime)
-        text=vname(2,indxTime)
-        lvar=lenstr(text)
-        ierr=nf_put_att_text (nchis, hisTime, 'long_name', lvar,
-     &                                             text(1:lvar))
-        lvar=lenstr(vname(3,indxTime))
-        ierr=nf_put_att_text (nchis, hisTime, 'units',  lvar,
-     &                                vname(3,indxTime)(1:lvar))
-
-! Short wave radiation flux
-
-        ierr=nf_def_var(nchis, 'srflx',  NF_FOUT, 3, r2dgrd, vid_srfx)
-        text='short wave radiation flux' ; lvar=lenstr(text)
-        ierr=nf_put_att_text (nchis, vid_srfx, 'long_name', lvar,
-     &                                            text(1:lvar))
-        text='kinematic units' ;  lvar=lenstr(text)
-        ierr=nf_put_att_text (nchis, vid_srfx, 'units',     lvar,
-     &                                            text(1:lvar))
-#ifdef MASK_LAND_DATA
-        ierr=nf_put_att_FOUT (nchis, vid_srfx, '_FillValue', NF_FOUT,
-     &                                                 1, spv_set)
-        if (ierr /= nf90_noerr) then
-           write(*,*)  'nf_put_att_XXX:', nf90_strerror(ierr)
-        endif
-#endif
-
-! Leave definition mode.
-
-        ierr=nf_enddef(nchis)
-        mpi_master_only write(*,'(7x,5A,I4)') 'def_frc :: ',
-     &       'created new netCDF file ''', hisname(1:lfnm),
-     &       '''.' MYID
-
-! Open existing file and prepare for appending data:
-! ==== ======== ==== === ======= === ========= ====
-
-      elseif (nchis == -1) then  !--> alt. to "create_new_file"
-        ierr=nf90_open(hisname(1:lfnm), nf_write, nchis)
-        if (ierr == nf90_noerr) then
-          ierr=nf_set_fill(nchis, nf_nofill, prev_fill_mode)
-          if (ierr == nf90_noerr) then
-            mpi_master_only write(*,'(7x,5A,I4)') 'def_frc :: ',
-     &                 'open existing file ''', hisname(1:lfnm),
-     &              '''.' MYID
-          else
-            write(*,'(1x,4A,I4)') '### ERROR: def_frc :: Cannot ',
-     &        'switch to ''nf_nofill'' mode.', nf90_strerror(ierr)
-     &         MYID
-            goto 99
-          endif
-
-          ierr=checkdims(nchis, hisname, rec)
-          if (ierr == nf90_noerr) then
-            if (nrpfhis == 0) then
-              ierr=rec+1 - total_rec
-            else
-              ierr=rec+1 - (1+mod(total_rec-1, nrpfhis))
-            endif
-            if (ierr > 0) then
-              mpi_master_only write(*,
-     &                '(/1x,A,I5,1x,3A/21x,2(A,I5),1x,A/21x,A/)')
-     &          'WARNING: def_frc :: The actual number of records',
-     &             rec, 'present in file ''',  hisname(1:lfnm),  '''',
-     &            'exceeds record', rec+1-ierr, '/', total_rec,
-     &            'specified by restart initial conditions.',
-     &        'All records beyond this number will be overwritten.'
-              rec=rec-ierr
-            elseif (nrpfhis == 0) then
-              total_rec=rec+1           ! <-- set to the next record
-#if defined MPI && !defined PARALLEL_FILES
-              if (mynode > 0) total_rec=total_rec-1
-#endif
-            endif
-            ierr=nf90_noerr
-          endif
-        endif
-
-        if (ierr /= nf90_noerr) then
-#if defined MPI && !defined PARALLEL_FILES
-          if (mynode == 0) then
-            create_new_file=.true.
-            goto 10
-          else
-            write(*,'(/1x,5A,I4/)')    '### ERROR: def_frc :: ',
-     &         'Cannot open ''', hisname(1:lfnm), '''.' MYID
-            goto 99
-          endif
-#else
-          create_new_file=.true.
-          goto 10
-#endif
-        endif
-
-! Find netCDF IDs of evolving model variables:
-! ---- ------ --- -- -------- ----- ----------
-        ierr=nf90_inq_varid (nchis, 'time_step', hisTstep)
-        if (ierr /= nf90_noerr) then
-          write(*,1) 'time_step', hisname(1:lfnm)
-          goto 99                                         !--> ERROR
-        endif
-
-        lvar=lenstr(vname(1,indxTime))
-        ierr=nf90_inq_varid (nchis,vname(1,indxTime)(1:lvar),hisTime)
-        if (ierr /= nf90_noerr) then
-          write(*,1) vname(1,indxTime)(1:lvar), hisname(1:lfnm)
-          goto 99                                         !--> ERROR
-        endif
-
-        ierr=nf90_inq_varid(nchis, 'srflx', vid_srfx)
-        if (ierr /= nf90_noerr) then
-          write(*,1) vname(1,indxZ)(1:lvar), hisname(1:lfnm)
-          goto 99                                       !--> ERROR
-        endif
-
-        mpi_master_only write(*,'(7x,4A,I4,2x,A,I4)') 'def_frc :: ',
-     &                    'open existing file ''', hisname(1:lfnm),
-     &                    ''' from rec =', rec MYID
-
-#if defined MPI && !defined PARALLEL_FILES
-      else
-        ierr=nf90_open(hisname(1:lfnm), nf_write, nchis)
-        if (ierr == nf90_noerr) then
-# ifndef MPI_SILENT_MODE
-          write(*,'(7x,5A,I4)')   'def_frc :: reopen existing ',
-     &            'file ''', hisname(1:lfnm), '''.' MYID
-# endif
-        else
-          write(*,'(/1x,6A,I4/)')  '### ERROR: def_frc :: Cannot ',
-     &                       'open file ''', hisname(1:lfnm), '''.',
-     &                        nf90_strerror(ierr) MYID
-          goto 99                                   !--> ERROR
-        endif
-#endif
-      endif             !<--  create_new_file
-  99  return
-
-  1   format(/1x,'### ERROR: def_frc :: Cannot find variable ''',
-     &                           A, ''' in file ''', A, '''.'/)
-      end
