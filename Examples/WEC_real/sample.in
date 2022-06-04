@@ -23,9 +23,6 @@ initial: NRREC  filename
           1
      ../USWC_model/input_data/roms_init_trace.nc
 
-boundary: filename
-     ../USWC_model/input_data/roms_bry_trace.nc
-
 output_root_name:
      sample     
 

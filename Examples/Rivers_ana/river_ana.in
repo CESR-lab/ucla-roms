@@ -16,12 +16,6 @@ forcing: filename
 initial: NRREC  filename
           0
 
-climatology: filename
-      none
-
-boundary: filename
-      none
-
 output_root_name:
      river_ana     
 

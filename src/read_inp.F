@@ -482,53 +482,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           enddo
 #endif
 
-! Boundary forcing data file names. Check availability.
-
-#if defined T_FRC_BRY || defined M2_FRC_BRY || defined M3_FRC_BRY \
-                      || defined Z_FRC_BRY  || defined WKB_FRC_BRY
-# ifndef ANA_BRY
-
-        elseif (keyword(1:kwlen) == 'boundary') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          max_bry=0
-          lstr=1
-          do while(lstr > 0 .and. max_bry < max_bry_files+1)
-            read(input,'(A)',err=95) fname
-            lstr=lenstr(fname)
-            if (lstr > 0) then
-#  if defined MPI && defined PARALLEL_FILES
-              call insert_node(fname, lstr, mynode, NNODES, ierr)
-#  endif
-              open(testunit, file=fname(1:lstr), status='old',err=97)
-              close(testunit)
-
-              if (max_bry < max_bry_files) then
-                max_bry=max_bry+1
-                bry_file(max_bry)=fname(1:lstr)
-#  ifdef MPI_SILENT_MODE
-                if (mynode == 0) then
-#  endif
-                  if (max_bry == 1) then
-                    write(*,'(1x,2A)') 'boundary forcing file(s): ',
-     &                                  bry_file(max_bry)(1:lstr)
-                  else
-                    write(*,'(27x,A)')  bry_file(max_bry)(1:lstr)
-
-                  endif
-#  ifdef MPI_SILENT_MODE
-                endif
-#  endif
-              else
-                mpi_master_only write(*,'(1x,2A/12x,2A/)')
-     &         '### ERROR: read_inp :: Too many boundary files are ',
-     &         'specified in input script.',   'Increase parameter ',
-     &                '''max_bry_files'' in ncvars and recompile.'
-                ierr=ierr+1
-              endif
-            endif
-          enddo
-# endif
-#endif
 
 ! Climatology file name. Climatology data is needed for (1) to supply
 ! boundary data for T,S,u,v at open boundaries (just one row of points)

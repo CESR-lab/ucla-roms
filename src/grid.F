@@ -356,6 +356,7 @@
       integer,intent(in) :: ncid
       ! local
       integer :: varid, ierr, ncdf_write
+      integer,dimension(3) :: start
 
 #if defined MPI && !defined PARALLEL_FILES
       if (mynode == 0) then
@@ -416,131 +417,25 @@
 ! none of the grid variables should actually be masked, in the
 ! code below varid is passed into ncdf_write with negative sign.
 
-! Bathymetry.
+      start=1; start(3)=0                                            ! 2D var - 0 for no time records
+      call ncwrite(ncid,'h', h(i0:i1,j0:j1),start)                   ! Bathymetry.
+      call ncwrite(ncid,'f', f(i0:i1,j0:j1),start)                   ! Coriolis parameter.
 
-      ierr=nf90_inq_varid(ncid, 'h', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0, r_var, h(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
-! Coriolis parameter.
-
-      ierr=nf90_inq_varid(ncid, 'f', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, f(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
-! Curvilinear transformation metrics.
-
-      ierr=nf90_inq_varid(ncid, 'pm', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, pm(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
-      ierr=nf90_inq_varid(ncid, 'pn', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0, r_var, pn(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
-! Longitude-latitude or cartezian coordinates of RHO-points
+      call ncwrite(ncid,'pm', pm(i0:i1,j0:j1),start)                 ! Curvilinear transformation metrics.
+      call ncwrite(ncid,'pn', pn(i0:i1,j0:j1),start)
 
 #ifdef SPHERICAL
-      ierr=nf90_inq_varid(ncid, 'lon_rho', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write( ncid, -varid, 0,r_var, lonr(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
-      ierr=nf90_inq_varid(ncid, 'lat_rho', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, latr(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
+      call ncwrite(ncid,'lon_rho', lonr(i0:i1,j0:j1),start)          ! longitude-latitude or cartezian coordinates
+      call ncwrite(ncid,'lat_rho', latr(i0:i1,j0:j1),start)          ! of RHO-points
 #else
-      ierr=nf90_inq_varid(ncid, 'x_rho', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, xr(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
-      ierr=nf90_inq_varid(ncid, 'y_rho', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, yr(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
+      call ncwrite(ncid,'x_rho', xr(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'y_rho', yr(i0:i1,j0:j1),start)
 #endif
 #ifdef CURVGRID
-! Angle between XI-axis and EAST at RHO-points
-
-      ierr=nf90_inq_varid(ncid, 'angle', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, angler(START_2D_ARRAY),1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
-
+      call ncwrite(ncid,'angle', angler(i0:i1,j0:j1),start)          ! angle between XI-axis and EAST at RHO-points
 #endif
 #ifdef MASKING
-! Masking fields at RHO-points.
-
-      ierr=nf90_inq_varid(ncid, 'mask_rho', varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_write(ncid, -varid, 0,r_var, rmask(START_2D_ARRAY), 1)
-        if (ierr /= nf90_noerr) then
-          call handle_ierr(ierr, 'wrt_grid ')
-        endif
-      else
-        call handle_ierr(ierr, 'wrt_grid ')
-      endif
-      if (ierr /= nf90_noerr)  goto 99                     !--> ERROR
+      call ncwrite(ncid,'mask_rho', rmask(i0:i1,j0:j1),start)        ! masking fields at RHO-points.
 #endif
 #ifdef MPI_SILENT_MODE
       if (mynode == 0) then
