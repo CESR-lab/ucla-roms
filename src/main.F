@@ -376,15 +376,6 @@ C$OMP END MASTER
       nrhs=nstp ; nnew=3
 #endif
 
-                                       ! Read forcing and climatology
-      if (synchro_flag) then           ! data. This operation may raise
-        synchro_flag=.false.           ! "may_day_flag" in the case of
-C$OMP MASTER                           ! I/O errors which may occur on
-        call get_forces                ! some nodes, but not on all at 
-C$OMP END MASTER                       ! the same time.  Therefore to
-C$OMP BARRIER                          ! avoid MPI deadlock the exit is
-      endif                            ! deferred until after broadcast
-                                       ! of "may_day_flag" by diag.
 #ifdef SOLVE3D
       do tile=my_tile_range            ! interpolate forcing
         call set_forces(tile)          ! data to model time and

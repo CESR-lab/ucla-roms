@@ -16,16 +16,6 @@ forcing: filename
 initial: NRREC  filename
           0
 
-climatology: filename
-      none
-
-boundary: filename
-      none
-
-restart:          NRST, NRPFRST / filename
-                 999999   1
-      none
-     
 output_root_name:
      pipes_ana     
 

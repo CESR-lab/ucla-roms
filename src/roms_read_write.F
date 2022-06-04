@@ -695,7 +695,7 @@
       use netcdf
 
       implicit none
-      integer :: ncid, ierr
+      integer :: ncid, ierr, dimid
 
 #if defined MPI && defined PARALLEL_FILES
       integer :: ibuff(4), npart
@@ -713,6 +713,13 @@
       else
         ibuff(4)=jSW_corn+jsouth+1
       endif
+
+      ! add 4 main x and y dimensions so that ncjoin will work,
+      ! since if you only output rho variables xi_u and eta_v won't be created.
+      ierr=nf90_def_dim(ncid,'xi_rho', xi_rho, dimid)
+      ierr=nf90_def_dim(ncid,'xi_u',   xi_u,   dimid)
+      ierr=nf90_def_dim(ncid,'eta_rho',eta_rho,dimid)
+      ierr=nf90_def_dim(ncid,'eta_v',  eta_v,  dimid)
 
       ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
 #endif
