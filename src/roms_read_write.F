@@ -216,9 +216,9 @@
       endif
       if (.not. found_rec) then
         write(*,'(/1x,3A,I3/)')
-     &  'ERROR: find_new_record: Found variable, but ran out of time records for ',
-     &                                      vname, ' mynode=', mynode
-        error stop 'find_new_record: found var, but ran out of time records'
+     &  'ERROR: find_new_record: Ran out of time records for ',
+     &                               vname, ' mynode=', mynode
+        error stop 
       endif
 
       if (first) then  ! Handle initital timestep. Need vtime < model_time. As per (A) above.
