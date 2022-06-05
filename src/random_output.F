@@ -17,10 +17,8 @@
 
       private
 
-#include "diagnostics.opt"
+#include "random_output.opt"
 
-      real   ,parameter :: output_period =  40
-      integer,parameter :: nrpf   = 10
 
       real    :: output_time = 0
       integer :: record = nrpf ! to trigger the first file creation
@@ -68,7 +66,7 @@
       integer                :: i0,i1,j0,j1
       
       ! do nothing if random_output is false
-      if (.not.random_output) return
+      if (.not.do_random) return
 
       i0=1; i1=nx; j0=1; j1=ny
       if (.not.west_exchng)  i0=0
