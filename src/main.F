@@ -464,6 +464,9 @@ C$OMP BARRIER
       call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
       call wrt_rst_ocean_vars
+#ifdef DIAGNOSTICS
+      if (diag_pflx) call wrt_rst_diag_pflx
+#endif
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----

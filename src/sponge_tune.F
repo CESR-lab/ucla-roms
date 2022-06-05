@@ -14,7 +14,6 @@
       use roms_read_write
       use hidden_mpi_vars
       use mixing
-      use read_write, only: output_root_name,handle_ierr
 
       implicit none
       private
@@ -130,7 +129,9 @@
       subroutine set_pflx
       ! Read parent grid baroclinic pressure fluxes from bry file
       ! and interpolate to the correct time
-      
+
+      use grid
+
       !local
       integer:: i,j,ierr
 
