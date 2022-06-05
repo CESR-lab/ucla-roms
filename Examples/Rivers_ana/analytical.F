@@ -184,8 +184,8 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       riv_west=xl*0.4 ! River west bank at 40% from west
       riv_east=xl*0.6 ! River west bank at 60% from west
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=jstr-1,jend+1
+        do i=istr-1,iend+1
           ! default is water
           rmask(i,j) = 1
 
