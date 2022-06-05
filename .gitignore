@@ -37,10 +37,12 @@ Tools-Roms/r2r_bry
 Tools-Roms/r2r_init
 Tools-Roms/r2r_match_topo
 Tools-Roms/extract_data_join
+Tools-Roms/particle_join
 
 # For Examples/code_check/
 # and Expanse run logs:
 *.log
+*.out
 
 # DevinD related ignores:
 benchmark.result_laptop
