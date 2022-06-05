@@ -91,7 +91,10 @@
       ! netcdf outputting:
       integer :: ncid=-1, prev_fill_mode
       real    :: t_avg_ovars=0
-      integer :: navg_ovars = 0                              ! number of samples in average
+      integer :: navg_ovars = 0                             ! number of samples in average
+      character(len=99),public :: fname_rst                 ! restart filename needed by diagnostics
+      integer,public           :: rec_rst                   ! current file output record needed by diags
+      logical,public           :: wrt_pflx=.false.          ! for diags to know to write (hack)
 
       public :: init_arrays_ocean2d
       public :: init_arrays_ocean3d
@@ -901,6 +904,29 @@
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbbl))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
 # endif
+
+      ! this is a crude hack to get diag_plfx diagnostics into restart file with current
+      ! issue of circular reference. For now the variables are still defined even if not
+      ! using diag_pflx with diagnostics. They won't be written though, that is done from
+      ! main and only if diag_pflx is turned on.
+#ifdef DIAGNOSTICS
+      varid = nccreate(ncid,'u_slow',(/'xi_u','eta_rho','s_rho','time'/),
+     &                               (/xi_u,eta_rho,N,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
+      ierr = nf90_put_att(ncid,varid,'units','m/s')
+
+      varid = nccreate(ncid,'v_slow',(/'xi_rho','eta_v','s_rho','time'/),
+     &                               (/xi_rho,eta_v,N,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','time filtered v')
+      ierr = nf90_put_att(ncid,varid,'units','m/s')
+
+      varid = nccreate(ncid,'p_slow',(/'xi_rho','eta_rho','s_rho','time'/),
+     &                               (/xi_rho,eta_rho,N,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name',
+     &                               'time filtered pressure')
+      ierr = nf90_put_att(ncid,varid,'units','Pa??')
+#endif
+
 #endif /* SOLVE3D */
 
       end subroutine def_vars_rst_ocean_vars  !]
@@ -1039,11 +1065,9 @@
 
       ! local
       integer,dimension(4)   :: start
-      integer,save           :: rec_rst                              ! current file output record
       integer,save           :: total_rec_rst=0                      ! total his output records so far
       real,save              :: output_time_rst=0                    ! time since last output
       logical,save           :: first_step=.true.
-      character(len=99),save :: fname_rst
       integer                :: tile, ierr, i, j, k
 
       if (wrt_file_rst) then
@@ -1051,12 +1075,15 @@
       if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
       first_step=.false.                                             ! as first step the ocean_vars values are for t=0
 
+      wrt_pflx=.false.  ! hack for slow diagnostics - prevents writing out of sync
       if (output_time_rst    >=output_period_rst
 #ifdef EXACT_RESTART
      &    .or.
      &    output_time_rst+dt >=output_period_rst                     ! timestep before
 #endif
      &                    ) then
+
+        wrt_pflx=.true.                                              ! trigger diag wrt in main.F -> diagnostics.F
 
         if (mod(total_rec_rst,nrpf_rst)==0) then
           call create_file_rst_ocean_vars(total_rec_rst,fname_rst)
