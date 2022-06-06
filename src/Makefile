@@ -13,10 +13,10 @@ include Makedefs.inc
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = 		param.F dimensions.F	read_write.F tracers.F\
+KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
 	boundary.F buffer.F climat.F comm_vars.F coupling.F diag_vars.F\
 	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
-	mpi_test_arr.F ncvars.F ocean2d.F ocean3d.F private_scratch.F\
+	mpi_test_arr.F private_scratch.F\
 	scalars.F scoord.F strings.F work.F nc_read_write.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
 	diagnostics.F	step2d_FB.F	read_inp.F\
@@ -51,15 +51,8 @@ KRNSRC = 		param.F dimensions.F	read_write.F tracers.F\
 #ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 
-
-IOSRC = checkdims.F	find_record.F	insert_node.F	ncdf_read_write.F\
-	get_grid.F	get_init.F	wrt_grid.F	put_global_atts.F\
-	def_rst.F	wrt_rst.F	def_his.F	wrt_his.F\
-	set_avg.F	wrt_avg.F\
-	get_forces.F	get_bry_all.F	set_forces.F\
-	nf_read_bry.F\
-	get_ssh.F	get_tclima.F	get_uclima.F	closecdf.F
-
+IOSRC = checkdims.F	insert_node.F\
+	get_init.F	set_forces.F	closecdf.F\
 
 #FLTSRC = init_floats.F	init_arrays_floats.F	get_init_flts.F\
 #	interp_rho.F	rhs_floats.F	step_floats.F\

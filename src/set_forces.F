@@ -44,6 +44,7 @@
       use hidden_mpi_vars
       use scalars
       use analytical
+      use boundary
 
       implicit none
 
@@ -77,20 +78,6 @@ c***              no code here
       call ana_ssh_tile(istr,iend,jstr,jend)
 # else
       call set_ssh_tile(istr,iend,jstr,jend, ierr)
-# endif
-#endif
-#ifdef UCLIMATOLOGY
-# ifdef ANA_UCLIMA
-      call ana_uclima_tile(istr,iend,jstr,jend)
-# else
-      call set_uclima_tile (istr,iend,jstr,jend, ierr)
-# endif
-#endif
-#if defined SOLVE3D && defined TCLIMATOLOGY
-# ifdef ANA_TCLIMA
-      call ana_tclima_tile(istr,iend,jstr,jend)
-# else
-      call set_tclima_tile(istr,iend,jstr,jend, ierr)
 # endif
 #endif
 
@@ -153,9 +140,7 @@ c***              no code here
       call set_bgc_surf_frc(istr,iend,jstr,jend)
 # endif
 
-# ifdef RIVER_SOURCE
-      call set_river_frc
-#  endif
+      if (river_source) call set_river_frc
 
       if (pipe_source) call set_pipe_frc_tile(istr,iend,jstr,jend)
 

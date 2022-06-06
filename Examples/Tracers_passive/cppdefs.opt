@@ -107,7 +107,6 @@ c#define AVERAGES
 c-dd#define BIOLOGY_BEC2
 
 #define BULK_FRC
-#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
 
     /* Tides */
 c-dd# define TIDES

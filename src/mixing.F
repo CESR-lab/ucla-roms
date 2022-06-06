@@ -94,7 +94,6 @@
       subroutine init_arrays_mixing  ![
       use scalars
       use tracers
-      use ncvars
       implicit none
 
       integer :: itrc
@@ -202,17 +201,8 @@
 # endif
       enddo
 
-      if (wrtavg(indxAkv)) allocate( akv_avg(GLOBAL_2D_ARRAY,0:N) )
-      if (wrtavg(indxAkt)) allocate( akt_avg(GLOBAL_2D_ARRAY,0:N) )
-# ifdef SALINITY
-      if (wrtavg(indxAks)) allocate( aks_avg(GLOBAL_2D_ARRAY,0:N) )
-# endif
-# ifdef LMD_KPP
-      if (wrtavg(indxHbls))allocate( hbl_avg(GLOBAL_2D_ARRAY) )
-# endif
-# ifdef LMD_BKPP
-      if (wrtavg(indxHbbl))allocate( hbbl_avg(GLOBAL_2D_ARRAY) )
-# endif
+      ! averaging variables allocated in ocean_vars to prevent circular reference from wrt_* logicals
+
 #endif /* SOLVE3D */
 
       end subroutine init_arrays_mixing  !]

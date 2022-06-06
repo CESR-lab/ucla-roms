@@ -1,21 +1,18 @@
       module river_frc
 
-      ! RIVER FORCING MODULE
-      ! --------------------
-
-      ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
-
-#include "cppdefs.opt"
-#if defined RIVER_SOURCE
-
-      ! Contains all the necessary components to produce the riv_uflx,riv_vflx
+      ! river forcing module
+      ! initial coding by Jeroen Molemaker & Devin Dollery (2020 Nov)
+      ! contains all the necessary components to produce the riv_uflx,riv_vflx
       ! arrays which have the the horizontal river volume flux in m2/s at the current time
       ! riv_uflx, riv_vflx should be on faces between a masked and unmasked cell,
       ! in the direction of the unmasked cell.
+
+#include "cppdefs.opt"
   
-      use dimensions !! has dimensions, a list of forcing files, and rmask
-      use read_write
-      use scalars    ! for FIRST_STEP
+      use dimensions
+      use roms_read_write
+      use nc_read_write
+      use scalars                                                    ! for FIRST_STEP
 
       implicit none
 
@@ -26,32 +23,25 @@
       ! Variables used for equation system calculations
       real,public,allocatable,dimension(:,:) :: riv_uflx
       real,public,allocatable,dimension(:,:) :: riv_vflx
-      real,public,allocatable,dimension(:,:) :: rflx         ! River locations
-      real,public,dimension(nriv)    :: riv_vol              ! River volume
-      real,public,dimension(nriv,nt) :: riv_trc              ! River tracer conc.
+      real,public,allocatable,dimension(:,:) :: rflx                 ! river locations
+      real,public,dimension(nriv)    :: riv_vol                      ! river volume
+      real,public,dimension(nriv,nt) :: riv_trc                      ! river tracer conc.
 
-      integer,public :: iriver            ! River index for looping through rivers
+      integer,public :: iriver                                       ! river index for looping through rivers
       real,   public :: riv_depth
       real,   public :: riv_uvel,riv_vvel
       real,   public :: river_flux
 
       ! Netcdf names
-      character(len=10) :: riv_flx_name = 'river_flux'  !! stored in the grid file
-      character(len=12) :: riv_vol_name = 'river_volume'!! stored in a forcing file
-      character(len=12) :: riv_trc_name = 'river_tracer'!! stored in a forcing file
-      character(len=10) :: riv_tim_name = 'river_time'  !! stored in a forcing file
-      character(len=6) :: nriv_dim_name = 'nriver'      !! dimension name for number of rivers in file
-      character(len=8) :: ntrc_dim_name = 'ntracers'    !! dimension name for number of tracers in file
-      ! Netcdf variables used for both riv_vol & riv_trc
-      real, dimension(nriv,2)    :: riv_vol_data ! rvol - river data at input times
-      real, dimension(nriv,nt,2) :: riv_trc_data ! rtrc - river tracer data at input times
-      integer, dimension(2) :: r_file_indx = 0
-      integer, dimension(2) :: r_irec      = 0
-      integer, dimension(2) :: r_it1 = 1, r_it2 = 2
-      real, dimension(2,2)  :: r_times = -99 ! [-99,-99]
+      character(len=10) :: riv_flx_name = 'river_flux'               ! stored in the grid file
+      character(len=12) :: riv_vol_name = 'river_volume'             ! stored in a forcing file
+      character(len=12) :: riv_trc_name = 'river_tracer'             ! stored in a forcing file
+      character(len=10) :: riv_tim_name = 'river_time'               ! stored in a forcing file
+      character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
+      character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
 
       ! Misc:
-      logical, public :: init_riv_done = .false.  ! if river variables have been initialized yet
+      logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
 
       public set_river_frc
       public init_river_frc
@@ -59,8 +49,7 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_river_frc
-
+      subroutine set_river_frc  ![
       ! SET RIVER FORCES (REALISTIC OR ANALYTICAL FORCING):
       ! - read and interpolation all river forcing.
       ! - All river variables need time interpolation only
@@ -71,88 +60,68 @@
 
       if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
 
-      ! Set river flux volumes and tracer data
+      ! set river flux volumes and tracer data:
       if(analytical) then
-!       if(mynode==0) print*, 'rivers: going to set_ana'
 
         call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
 
       else
 
-        ! Set river volume flux for all rivers at current time
-        call set_small_arrays(
-     &          riv_vol_name,   riv_tim_name, ! Text names
-     &          riv_vol_data,   riv_vol,      ! Variable arrays
-     &          r_times(:,1),                 ! Input times
-     &          nriv,           1,            ! dim1 and dim2=1 if 1D
-     &          r_file_indx(1), r_irec(1),    ! File indx & Current input record
-     &          r_it1(1),       r_it2(1) )    ! Time index placeholders                   ! Online spatial interpolation flag
+        call set_frc_data(nc_rvol,riv_vol)                 ! set river volume flux for all rivers at current time
 
-!        if(mynode==0) print*, 'riv_vol= ', riv_vol ! debug
-
-        ! Set river tracers flux for all rivers at current time
-        call set_small_arrays(
-     &          riv_trc_name,   riv_tim_name, ! Text names
-     &          riv_trc_data,   riv_trc,      ! Variable arrays
-     &          r_times(:,2),                 ! Input times
-     &          nriv,           nt,           ! dim1 and dim2
-     &          r_file_indx(2), r_irec(2),    ! File indx & Current input record
-     &          r_it1(2),       r_it2(2) )    ! Time index placeholders
-
+        call set_frc_data(nc_rtrc,var2d=riv_trc)           ! set river tracers flux for all rivers at current time
 
       endif
 
-      end subroutine set_river_frc
+      end subroutine set_river_frc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine init_river_frc
-
-      ! Initialize river forcing:
-      ! Read in a grid file with locations of river mouths and flux contribution per cell.
-      ! Done only once as river mouth position does not change.
-
+      subroutine init_river_frc  ![
+      ! initialize river forcing:
+      ! read in a grid file with locations of river mouths and flux contribution per cell.
+      ! done only once as river mouth position does not change.
       use netcdf
       implicit none
 
       ! local
-      integer :: ierr,ncid,v_id
+      integer :: ierr,ncid,varid
 
       allocate( riv_uflx(GLOBAL_2D_ARRAY) )
       allocate( riv_vflx(GLOBAL_2D_ARRAY) )
-      if(.not. allocated(rflx))                  ! for analytical it is already allocated.
-     &  allocate( rflx(GLOBAL_2D_ARRAY) )
+      if(.not. allocated(rflx))  then
+        allocate( rflx(GLOBAL_2D_ARRAY) )                  ! for analytical it is already allocated.
+        rflx = 0.                                          ! needed for realistic river check condition
+      endif
       riv_uflx = 0.; riv_vflx = 0.
-!      rflx = 0.
 
-      ! Should put this in wrapper in read_write.F as 'nc_read_once'
+
       if (analytical) then
-
         ! rflx is defined in ana_grid
-
       else ! Read 'river_flux' from grid file (River mouth locations)
-        ierr=nf90_open(grdname, nf90_nowrite, ncid)
-        ierr=nf90_inq_varid(ncid, riv_flx_name, v_id)
-        v_id = -v_id  ! set v_id to negative so that ncdf_read_mod knows not to mask!
-        ierr=ncdf_read_mod(ncid, v_id, 0, 0, rflx(START_2D_ARRAY), 1)
-        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
 
+        allocate(nc_rvol%vdata(nriv,1 ,2))
+        allocate(nc_rtrc%vdata(nriv,nt,2))
+        ierr=nf90_open(grdname, nf90_nowrite, ncid)
+        call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
+        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
       endif
 
-      ! Compute uflx,vflx from rflx
-      call calc_river_flux
+      call calc_river_flux                                           ! compute uflx,vflx from rflx
 
       init_riv_done = .true.
 
-      if(mynode==0) print*, 'rivers: init river locations'
-          
-      end subroutine init_river_frc
+      if(mynode==0) write(*,'(/7x,A/)')
+     &  'river_frc: init river locations'
+
+      end subroutine init_river_frc  !]
 
 ! ----------------------------------------------------------------------
-      subroutine calc_river_flux
-      ! Calculate the river flux contributions to each cell.
+      subroutine calc_river_flux  ![
+      ! calculate the river flux contributions to each cell.
       ! river_flux = iriver + fraction of river's flux through grid point.
-      ! E.g. River 3 is over 2 grid points (half flux through each point),
+      ! e.g. River 3 is over 2 grid points (half flux through each point),
       ! hence river_flux = 3 + 0.5 = 3.5
+      use grid
       implicit none
 
       ! local
@@ -182,17 +151,16 @@
         enddo
       enddo
 
-      end subroutine calc_river_flux
+      end subroutine calc_river_flux  !]
 
 ! ----------------------------------------------------------------------
-      subroutine set_ana_river_frc
+      subroutine set_ana_river_frc  ![
       ! Analytical river forcing volume and tracer data
 
 #include "river_frc_ana.opt"
 
-      end subroutine set_ana_river_frc
+      end subroutine set_ana_river_frc  !]
 
 ! ----------------------------------------------------------------------
 
-# endif /* ifdef RIVER_SOURCE */
       end module river_frc

@@ -58,7 +58,24 @@ Code development discussions and strategy
     boundaries, but on top of that were heisenbug'y in nature. 1 step with 2 barotropic steps could pick up
     differences in zeta/ubar of e-16. These differences then drift into the domain over time and choas does the
     rest. We couldn't track this down after lots of trying due to Heisenbug behaviour (position of difference
-    would change). So we concluded we would accept what we have.  
+    would change). So we concluded we would accept what we have.
+    
+2022/05/16: ROMS timestep and outputting
+
+    If we move:
+    call set_forces(tile)
+    call set_tides(tile)
+    call    rho_eos(tile)
+    call    set_HUV(tile)
+    call       diag(tile)
+    
+    from the beginning of roms_step in main.F to roms_init in main.F, then we can also add them to the end of
+    roms_step. This will mean that at the end of the step all variables are updated to t=n+1, and then we can
+    output at the end of the step.
+    This is more intuitive than the current system where we have to wait for part of the next step to get mixing,
+    omega, rho and w to be updated before writing the history file.
+    
+    
     
     
     

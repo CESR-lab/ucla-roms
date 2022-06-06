@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use roms_read_write
       implicit none
 
 ! This is include file "grid": Environmental two-dimensional arrays
@@ -90,9 +91,11 @@
       real,allocatable,dimension(:,:) :: vmask
 #endif
 
+      public :: get_grid
+
       contains
 
-      !----------------------------------------------------------------
+!----------------------------------------------------------------------
       subroutine init_arrays_grid  ![
       use scalars
       implicit none
@@ -157,6 +160,454 @@
 
       end subroutine init_arrays_grid  !]
 
-      !----------------------------------------------------------------
+!----------------------------------------------------------------------
+#ifdef ANA_GRID
+                                  ! Sometimes it is convenient for post
+      subroutine wrt_ana_grid     ! processing to save analytical grid  ![
+      use param
+      use mpi
+      use netcdf
+      implicit none               ! into a separate netCDF file.
+
+      character(len=32) fname
+      integer ncid,ierr, lncn, lenstr
+
+# if defined MPI && !defined PARALLEL_FILES
+      integer status(MPI_STATUS_SIZE), blank
+      if (mynode > 0) call MPI_Recv(blank, 1, MPI_INTEGER,
+     &        mynode-1, 1, ocean_grid_comm, status, ierr)
+# endif
+
+      fname='grid.nc' ; lncn=lenstr(fname)
+# ifdef MPI
+#  ifdef PARALLEL_FILES
+      ierr=0
+      call insert_node(fname, lncn, mynode, NNODES, ierr)
+#  else
+      if (mynode == 0) then
+#  endif
+# endif
+        ierr=nf90_create(fname, NF90_NETCDF4, ncid)
+        if (ierr == nf90_noerr) then
+          call put_global_atts (ncid, ierr)
+
+          call def_grid(ncid)
+          ierr=nf90_enddef(ncid)
+        else
+          write(*,'(/1x,4A/12x,A/)')     '### ERROR: wrt_ana_grid :: ',
+     &            'Cannot create netCDF file ''', trim(fname), ''',',
+     &                                              nf90_strerror(ierr)
+        endif
+# if defined MPI && !defined PARALLEL_FILES
+      else
+        ierr=nf90_open(fname, nf_write, ncid)
+        if (ierr/=nf90_noerr) then
+          write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
+     &             'Cannot open netCDF file ''', trim(fname), ''',',
+     &                                             nf90_strerror(ierr)
+        endif
+      endif
+# endif
+
+      if (ierr == nf90_noerr) then
+        call wrt_grid(ncid)
+        ierr=nf90_close(ncid)
+        if (ierr /= nf90_noerr) then
+           write(*,'(/1x,4A/12x,A/)')   '### ERROR: wrt_ana_grid :: ',
+     &            'Cannot close netCDF file ''', trim(fname), ''',',
+     &                                             nf90_strerror(ierr)
+        endif
+      endif
+
+# if defined MPI && !defined PARALLEL_FILES
+      if (mynode < NNODES-1) then
+        call MPI_Send (blank, 1, MPI_INTEGER, mynode+1,
+     &                        1, ocean_grid_comm, ierr)
+      endif
+# endif
+      end subroutine wrt_ana_grid  !]
+#endif /* ANA_GRID */
+
+!----------------------------------------------------------------------
+      subroutine def_grid(ncid)  ![
+
+! Define grid variables in output NetCDF file, which may be
+! restart, history, averages, etc...
+!
+! Arguments: ncid    NetCDF unit-ID of NetCDF file, which must be
+!                            already opened and in definition mode;
+!            r2dgrd  integer array of size 2, which contains NetCDF
+!                        IDs for dimensions 'xi_rho' and 'eta_rho'.
+
+      use param
+      use netcdf
+      use nc_read_write
+      implicit none
+
+      ! input
+      integer :: ncid
+      ! local
+      integer :: nf_ftype, varid, ierr
+
+! Grid type switch: Spherical or Cartesian.
+      ierr=nf90_def_var(ncid, 'spherical', nf90_char, varid)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'grid type logical switch')     ! need to be new line <72 else big space in .nc
+      ierr=nf90_put_att(ncid, varid, 'option_T', 'spherical')
+      ierr=nf90_put_att(ncid, varid, 'option_F', 'cartesian')
+
+! Physical dimensions of model domain, xl,el (Cartesian grid only).
+#ifndef SPHERICAL
+      ierr=nf90_def_var(ncid, 'xl', nf90_double, varid)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                           'domain length in the XI-direction')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+      ierr=nf90_def_var(ncid, 'el', nf90_double, varid)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                           'domain length in the ETA-direction')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+#endif
+
+! Bathymetry.
+      varid = nccreate(ncid,'h',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'bathymetry at RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+      ierr=nf90_put_att(ncid, varid, 'field', 'bath, scalar')
+
+! Coriolis Parameter.
+      varid = nccreate(ncid,'f',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'Coriolis parameter at RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'units', 'second-1')
+      ierr=nf90_put_att(ncid, varid, 'field', 'coriolis, scalar')
+
+! Curvilinear coordinate metric coefficients pm,pn.
+      varid = nccreate(ncid,'pm',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                       'curvilinear coordinate metric in XI')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
+      ierr=nf90_put_att(ncid, varid, 'field', 'pm, scalar')
+      varid = nccreate(ncid,'pn',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                       'curvilinear coordinate metric in ETA')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
+      ierr=nf90_put_att(ncid, varid, 'field', 'pn, scalar')
+
+! Longitude-latitude or cartezian coordinates of RHO-points.
+#ifdef SPHERICAL
+      varid = nccreate(ncid,'lon_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'longitude of RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'units', 'degree_east')
+      ierr=nf90_put_att(ncid, varid, 'field', 'lon_rho, scalar')
+      varid = nccreate(ncid,'lat_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid,varid,'long_name',
+     &                               'latitude of RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'units', 'degree_north')
+      ierr=nf90_put_att(ncid, varid, 'field', 'lat_rho, scalar')
+#else
+      varid = nccreate(ncid,'x_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'x-locations of RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+      ierr=nf90_put_att(ncid, varid, 'field', 'x_rho, scalar')
+      varid = nccreate(ncid,'y_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'y-locations of RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+      ierr=nf90_put_att(ncid, varid, 'field', 'y_rho, scalar')
+#endif
+#ifdef CURVGRID
+! Angle between XI-axis and EAST at RHO-points
+      varid = nccreate(ncid,'angle',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'angle between XI-axis and EAST')
+      ierr=nf90_put_att(ncid, varid, 'units', 'radians')
+      ierr=nf90_put_att(ncid, varid, 'field', 'angle, scalar')
+#endif
+#ifdef MASKING
+! Land-Sea mask at RHO-points.
+      varid = nccreate(ncid,'mask_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &                               'mask on RHO-points')
+      ierr=nf90_put_att(ncid, varid, 'option_0', 'land' )
+      ierr=nf90_put_att(ncid, varid, 'option_1', 'water')
+#endif
+
+      end subroutine def_grid  !]
+
+!----------------------------------------------------------------------
+      subroutine wrt_grid(ncid)  ![
+      ! Write grid variables in output NetCDF file, which may be restart,
+      ! history, averages, etc. All variables are assumed to be previously
+      ! defined by def_grid.
+      !
+      ! Arguments: ncid    netCDF unit-ID of NetCDF file, which must be
+      !                            already opened and in definition mode
+
+      use param
+      use scalars
+      use netcdf
+      use nc_read_write
+
+      implicit none
+      ! input
+      integer,intent(in) :: ncid
+      ! local
+      integer :: varid, ierr, ncdf_write
+      integer,dimension(3) :: start
+
+#if defined MPI && !defined PARALLEL_FILES
+      if (mynode == 0) then
+#endif
+
+! Grid type switch: Spherical or Cartesian.
+
+        ierr=nf90_inq_varid(ncid, 'spherical', varid)
+        if (ierr == nf90_noerr) then
+          ierr=nf90_put_var(ncid, varid,
+#ifdef SPHERICAL
+     &                                         'T')
+#else
+     &                                         'F')
+#endif
+          if (ierr /= nf90_noerr) then
+            call handle_ierr(ierr, 'wrt_grid spherical')
+          endif
+        else
+          call handle_ierr(ierr, 'wrt_grid spherical')
+        endif
+        if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
+
+#ifndef SPHERICAL
+! Physical Dimensions of Model Domain, xl,el (Cartesian grid only).
+
+        ierr=nf90_inq_varid(ncid, 'xl', varid)
+        if (ierr == nf90_noerr) then
+          ierr=nf90_put_var(ncid, varid, xl)
+          if (ierr /= nf90_noerr) then
+            call handle_ierr(ierr, 'wrt_grid ')
+          endif
+        else
+          call handle_ierr(ierr, 'wrt_grid ')
+        endif
+        if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
+
+        ierr=nf90_inq_varid(ncid, 'el', varid)
+        if (ierr == nf90_noerr) then
+          ierr=nf90_put_var(ncid, varid, el)
+          if (ierr /= nf90_noerr) then
+            call handle_ierr(ierr, 'wrt_grid ')
+          endif
+        else
+          call handle_ierr(ierr, 'wrt_grid ')
+        endif
+        if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
+#endif
+
+
+#if defined MPI && !defined PARALLEL_FILES
+      endif
+#endif
+
+! NOTE: In the case when masking of output data is activated by
+! CPP-switch MASK_LAND_DATA, ncdf_write uses sign of its argument
+! "varid" as switch to perform on not perform masking.  Because
+! none of the grid variables should actually be masked, in the
+! code below varid is passed into ncdf_write with negative sign.
+
+      start=1; start(3)=0                                            ! 2D var - 0 for no time records
+      call ncwrite(ncid,'h', h(i0:i1,j0:j1),start)                   ! Bathymetry.
+      call ncwrite(ncid,'f', f(i0:i1,j0:j1),start)                   ! Coriolis parameter.
+
+      call ncwrite(ncid,'pm', pm(i0:i1,j0:j1),start)                 ! Curvilinear transformation metrics.
+      call ncwrite(ncid,'pn', pn(i0:i1,j0:j1),start)
+
+#ifdef SPHERICAL
+      call ncwrite(ncid,'lon_rho', lonr(i0:i1,j0:j1),start)          ! longitude-latitude or cartezian coordinates
+      call ncwrite(ncid,'lat_rho', latr(i0:i1,j0:j1),start)          ! of RHO-points
+#else
+      call ncwrite(ncid,'x_rho', xr(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'y_rho', yr(i0:i1,j0:j1),start)
+#endif
+#ifdef CURVGRID
+      call ncwrite(ncid,'angle', angler(i0:i1,j0:j1),start)          ! angle between XI-axis and EAST at RHO-points
+#endif
+#ifdef MASKING
+      call ncwrite(ncid,'mask_rho', rmask(i0:i1,j0:j1),start)        ! masking fields at RHO-points.
+#endif
+#ifdef MPI_SILENT_MODE
+      if (mynode == 0) then
+#endif
+        write(*,'(6x,A)')  'wrt_grid :: wrote grid data '
+#ifdef MPI_SILENT_MODE
+      endif
+#endif
+      return
+ 99   may_day_flag=3
+      return
+
+  1   format(/1x,'### ERROR: wrt_grid :: Cannot find variable ''',
+     &             A, ''' within netCDF' /25x, 'file ''', A,'''.'/)
+  2   format(/1x,'### ERROR: wrt_grid :: Cannot write variable ''',
+     &               A, ''' into netCDF' /25x, 'file ''', A,'''.'/)
+
+      end subroutine wrt_grid  !]
+
+!----------------------------------------------------------------------
+      subroutine get_grid  ![
+      ! read in grid data from NetCDF file.
+
+      use roms_read_write, only: nc_check_units
+      use scalars
+      use netcdf
+      use nc_read_write, only: ncread
+      use dimensions
+
+      implicit none
+
+#ifndef ANA_GRID
+
+      character*1 char1
+      integer :: ierr, ncid, varid, lstr, lenstr, checkdims
+      integer,dimension(4) :: start
+
+! Open grid netCDF file for reading. Check that dimensions in the file
+! are consistent with the model, then read all necessary variables.
+
+!      lstr=lenstr(grdname)
+      ierr=nf90_open(grdname, nf90_nowrite, ncid)
+      if (ierr == nf90_noerr) then
+        ierr=checkdims (ncid, grdname, varid)
+        if (ierr. ne. nf90_noerr) goto 99
+      else
+        write(*,'(/1x,4A/12x,A)')  '### ERROR: get_grid :: Cannot ',
+     &          'open input NetCDF file ''', trim(grdname), '''.',
+     &                                            nf90_strerror(ierr)
+        goto 99                                          !--> ERROR
+      endif
+
+! Logical switch for spherical grid configuration:
+
+      ierr=nf90_inq_varid (ncid, 'spherical', varid)
+      if (ierr == nf90_noerr) then
+        ierr=nf90_get_var(ncid, varid, char1)
+        if (ierr /= nf90_noerr) then
+          write(*,2) 'spherical', trim(grdname), nf90_strerror(ierr)
+          goto 99                                        !--> ERROR
+        endif
+      else
+        write(*,1) 'spherical', trim(grdname)
+        goto 99                                          !--> ERROR
+      endif
+
+      if (char1=='t' .or. char1=='T') then
+# ifdef SPHERICAL
+        mpi_master_only write(*,'(/1x,A/)') 'Spherical grid detected.'
+# else
+        write(*,'(/1x,2A/24x,A/)')   '### ERROR: get_grid :: ',
+     &          'Spherical grid file detected, but CPP-switch',
+     &                                 'SPHERICAL is not set.'
+        goto 99                                          !--> ERROR
+# endif
+      else
+
+! Physical dimensions of the basin in XI- and ETA-directions:
+
+        ierr=nf90_inq_varid (ncid, 'xl', varid)
+        if (ierr == nf90_noerr) then
+          ierr=nf90_get_var(ncid, varid, xl)
+          if (ierr /= nf90_noerr) then
+            write(*,2) 'xl', trim(grdname), nf90_strerror(ierr)
+            goto 99                                      !--> ERROR
+          endif
+        else
+          write(*,1) 'xl', trim(grdname)
+          goto 99                                        !--> ERROR
+        endif
+
+        ierr=nf90_inq_varid (ncid, 'el', varid)
+        if (ierr == nf90_noerr) then
+          ierr=nf90_get_var(ncid, varid, el)
+          if (ierr /= nf90_noerr) then
+            write(*,2) 'el', trim(grdname), nf90_strerror(ierr)
+            goto 99                                      !--> ERROR
+          endif
+        else
+          write(*,1) 'el', trim(grdname)
+          goto 99                                        !--> ERROR
+        endif
+      endif
+
+! Read in grid arrays.
+!===== == ==== =======
+
+      start=1; start(3)=0                                            ! 2D vars
+
+      call ncread(ncid,'h',h(i0:i1,j0:j1),start)                     ! Bathymetry:
+      call exchange_tile(1,nx,1,ny, h(START_2D_ARRAY),1)             ! h needed an exchange
+
+      call ncread(ncid,'f',f(i0:i1,j0:j1),start)                     ! Coriolis parameter.
+      call exchange_tile(1,nx,1,ny, f(START_2D_ARRAY),1)
+
+! Coordinate transfomation metrics (m,n) associated with
+! differential distances in XI- and ETA-directions.
+
+      call ncread(ncid,'pm',pm(i0:i1,j0:j1),start)
+      call exchange_tile(1,nx,1,ny, pm(START_2D_ARRAY),1)
+
+      call ncread(ncid,'pn',pn(i0:i1,j0:j1),start)
+      call exchange_tile(1,nx,1,ny, pn(START_2D_ARRAY),1)
+
+# ifdef SPHERICAL
+      call ncread(ncid,'lon_rho',lonr(i0:i1,j0:j1),start)  ! Coordinates (lon,lat [degrees]) or (x,y [meters]) at RHO-points.
+      call exchange_tile(1,nx,1,ny, lonr(START_2D_ARRAY),1)
+      call ncread(ncid,'lat_rho',latr(i0:i1,j0:j1),start)
+      call exchange_tile(1,nx,1,ny, latr(START_2D_ARRAY),1)
+# else
+      call ncread(ncid,'x_rho',xr(i0:i1,j0:j1),start)
+      call exchange_tile(1,nx,1,ny, xr(START_2D_ARRAY),1)
+      call ncread(ncid,'y_rho',yr(i0:i1,j0:j1),start)
+      call exchange_tile(1,nx,1,ny, yr(START_2D_ARRAY),1)
+# endif
+# ifdef CURVGRID
+      call ncread(ncid,'angle',angler(i0:i1,j0:j1),start)  ! Angle (radians) between XI-axis and EAST at RHO-points.
+      call exchange_tile(1,nx,1,ny, angler(START_2D_ARRAY),1)
+# endif
+# ifdef MASKING
+      call ncread(ncid,'mask_rho',rmask(i0:i1,j0:j1),start)! Mask at RHO-points.
+      call exchange_tile(1,nx,1,ny, rmask(START_2D_ARRAY),1)
+# endif
+      ierr=nf90_close(ncid)
+      if (ierr==nf90_noerr) then
+#ifdef MPI_SILENT_MODE
+        if (mynode==0) then
+#endif
+          write(*,'(6x,4A,1x,A,I4)') 'get_grid :: read grid data ',
+     &            'from file ''',  trim(grdname), '''.' MYID
+#ifdef MPI_SILENT_MODE
+        endif
+#endif
+      else
+        write(*,'(1x,4A/12x,A,1x,A,I4)')   '### ERROR: get_grid :: ',
+     &                'Cannot close file ''', trim(grdname), '''.',
+     &                 nf90_strerror(ierr) MYID
+        goto 99
+      endif
+      return                                     !--> NORMAL RETURN
+
+   1  format(/1x, '### ERROR: get_grid :: Cannot find variable ''', A,
+     &                          ''' within netCDF file ''', A, '''.'/)
+   2  format(/1x, '### ERROR: get_grid :: Cannot read variable ''', A,
+     &                     ''' from netCDF file ''', A, '''.' /12x,A/)
+  99  may_day_flag=2
+      return                                             !--> ERROR
+
+#endif /* !ANA_GRID */
+
+      end subroutine get_grid  !]
+
+!----------------------------------------------------------------------
 
       end module grid

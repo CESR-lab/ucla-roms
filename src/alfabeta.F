@@ -19,7 +19,7 @@
       use tracers, only: t
       use eos_vars
       use grid
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none
