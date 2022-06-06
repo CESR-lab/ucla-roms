@@ -19,6 +19,7 @@
       use roms_read_write
       use netcdf
       use scalars
+      use ocean_vars
 
       implicit none
 
@@ -138,6 +139,8 @@
       character(len=99),save :: fname_his
       integer                :: itrc, ierr
 
+      if (wrt_file_his) then
+
       ! check this as different from WEC first_step and time. Called from step3d_t_ISO
       if (.not. first_step) output_time_his = output_time_his + dt   ! only start count after first timestep
       first_step=.false.                                             ! as first step the wec values are for t=0
@@ -162,7 +165,9 @@
           if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
         enddo
 
+#ifdef BEC2_DIAG
         call wrt_his_bgc_diag(ncid,rec_his)
+#endif
 
         ierr=nf90_close(ncid)
         if (mynode == 0) then
@@ -173,6 +178,8 @@
 
         output_time_his=0
       endif
+
+      endif  ! <-- wrt_file_his
 
       end subroutine wrt_his_bgc_tracers  !]
 
@@ -192,6 +199,8 @@
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_avg
       integer                :: itrc, ierr, itavg
+
+      if (wrt_file_avg) then
 
       if (.not. first_step) then
         call calc_avg_bgc                                            ! don't include t=0 in averaging
@@ -222,7 +231,9 @@
           endif
         enddo
 
+#ifdef BEC2_DIAG
         call wrt_avg_bgc_diag(ncid,rec_avg)
+#endif
 
         navg_bgc=0
         output_time_avg=0
@@ -235,6 +246,8 @@
      &         MYID
         endif
       endif
+
+      endif !<-- wrt_file_avg
 
       end subroutine wrt_avg_bgc_tracers  !]
 
@@ -305,17 +318,18 @@
         endif
       enddo
 
+#ifdef BEC2_DIAG
       if (avg) then
         call def_avg_bgc_diag(ncid)
       else
         call def_his_bgc_diag(ncid)
       endif
+#endif
 
 
       end subroutine def_vars_bgc  !]
 
 ! ----------------------------------------------------------------------
-#ifdef AVERAGES
       subroutine calc_avg_bgc  ![
       implicit none
 
@@ -359,7 +373,6 @@
 #endif
 
       end subroutine calc_avg_bgc  !]
-#endif /* AVERAGES */
 
 ! ----------------------------------------------------------------------
 #ifdef BEC2_DIAG
@@ -570,10 +583,10 @@
       integer omp_get_num_threads
 
       if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
-        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_his!'
+        stop 'ERROR :: bgc.opt - dt not a factor of output_period_his!'
       endif
       if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
-        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_avg!'
+        stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
       endif
 
 !#include "param.h"
