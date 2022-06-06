@@ -77,9 +77,6 @@ c      write(*,*) 'kmp_stacksize =', size
       call init_dimensions                                 ! needs to come before init_output_indices
       call init_output_indices
 
-#ifdef BIOLOGY_BEC2
-        call init_scalars_bec2
-#endif
 
       ierr=0
       call read_inp (ierr)
@@ -99,4 +96,9 @@ c      write(*,*) 'kmp_stacksize =', size
 # endif
 #endif
       endif
+
+#ifdef BIOLOGY_BEC2
+        call init_scalars_bec2
+#endif
+
       end

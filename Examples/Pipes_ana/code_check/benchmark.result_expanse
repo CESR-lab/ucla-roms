@@ -138,8 +138,8 @@
  19 1.0306072462692431E-04 9.0682988559643934E-07 8.3617707598551971E-01 5.9434655741794440E-01
  20 1.2274447707227225E-04 9.6099909876665026E-07 9.5492631809850104E-01 6.4578891199203659E-01
        ocean_vars :: wrote history, tdays =      0.0046  step =     20 rec =   2/   2
- Process    0  thread  0  cpu time =        0.32 sec
+ Process    0  thread  0  cpu time =        0.28 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =  0.508009672164917     
+ MPI_run_time =  0.558176040649414     
