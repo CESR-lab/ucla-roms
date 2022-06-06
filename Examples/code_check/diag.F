@@ -63,9 +63,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use diag_vars
       use eos_vars
       use grid
-      use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use mpi
 
@@ -728,12 +726,12 @@ c          prev_ke=avke
         endif    ! <-- mynode==0
 
         buff(1)=may_day_flag
-        buff(2)=nwrt
+!        buff(2)=nwrt
 
         call MPI_Bcast(buff,2, MPI_BUFF_TYPE, 0,ocean_grid_comm,ierr)
 
         may_day_flag=buff(1) +0.0001
-        nwrt=buff(2)         +0.0001
+!        nwrt=buff(2)         +0.0001
 #endif
       endif  ! <-- tile_count==nsubs
 C$OMP END CRITICAL (diag_cr_rgn)

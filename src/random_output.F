@@ -8,17 +8,14 @@
       use roms_read_write
       use nc_read_write
       use netcdf
-      use ncvars
       use scalars
       use read_write
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       implicit none
 
       private
 
 #include "random_output.opt"
-
 
       real    :: output_time = 0
       integer :: record = nrpf ! to trigger the first file creation
@@ -65,7 +62,7 @@
       integer                :: ncid,ierr
       integer                :: i0,i1,j0,j1
       
-      ! do nothing if random_output is false
+      ! do nothing if do_random is false
       if (.not.do_random) return
 
       i0=1; i1=nx; j0=1; j1=ny

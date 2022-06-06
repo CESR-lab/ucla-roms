@@ -35,7 +35,7 @@
        CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
        IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
 
- 2020-11: uswc sample domain with WEC
+ 2020-11: uswc sample domain with passive tracers
      ntimes =        20   total number of 3D timesteps
          dt =    20.0000  time step [sec] for 3D equations
     ndtfast =        30   mode-splitting ratio
@@ -52,81 +52,7 @@
                        ../USWC_model/input_data/sample_tracers.0.nc
                        ../USWC_model/input_data/sample_wwv_riv.0.nc
  initial condition :: rec =  1  file = '../USWC_model/input_data/roms_init_trace.0.nc'
-
- WARNING: Urecognized keyword 'climatology' --> DISREGARDED.
-
  boundary forcing file(s): ../USWC_model/input_data/roms_bry_trace.0.nc
- restart :: nrst =  999999  rec/file =    1
-
- history :: overwrite = T  nwrt =   20  rec/file =  48
-
- averages :: ntsavg = *****  navg =*****  rec/file =    8
-
- fields to write into history file: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
-
-        rho    T   density anomaly                           
-        Omega  T   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    T   vertical viscosity coefficient            
-        Akt    T   vertical thermal conductivity coefficient 
-        Aks    T   salinity vertical diffusion coefficient   
-        hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
-
- fields to compute time averages of: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
-
-        rho    F   density anomaly                           
-        Omega  T   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    T   vertical viscosity coefficient            
-        Akt    F   vertical thermal conductivity coefficient 
-        Aks    F   salinity vertical diffusion coefficient   
-        hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
-
- fields to be saved in WEC 2D history: (T/F)
-        SUP    T   quasi-static sea-level response (set-up)
-        UST2D  T   u depth-averaged Stokes drift velocity
-        VST2D  T   v depth-averaged Stokes drift velocity
-
- fields to be saved in WEC 3D history: (T/F)
-        UST    T   u 3D Stokes drift velocity
-        VST    T   v 3D Stokes drift velocity
-        WST    T   w vertical 3D Stokes drift velocity
-        Akb    T   eddy viscosity due to wave breaking
-        Akw    T   eddy diffusivity due to primary waves
-        KVF    T   vertical vortex force (u^st du/dz)
-        CALP   T   surface pressure correction in prsgrd
-        KAPS   T   surface Bernoulli head in prsgrd term
-
- fields to be saved in WEC 2D average: (T/F)
-        SUP    F   quasi-static sea-level response (set-up)
-        UST2D  F   u depth-averaged Stokes drift velocity
-        VST2D  F   v depth-averaged Stokes drift velocity
-
- fields to be saved in WEC 3D average: (T/F)
-        UST    F   u 3D Stokes drift velocity
-        VST    F   v 3D Stokes drift velocity
-        WST    F   w vertical 3D Stokes drift velocity
-        Akb    F   eddy viscosity due to wave breaking
-        Akw    F   eddy diffusivity due to primary waves
-        KVF    F   vertical vortex force (u^st du/dz)
-        CALP   F   surface pressure correction in prsgrd
-        KAPS   F   surface Bernoulli head in prsgrd term
       visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
        rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
    v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
@@ -142,6 +68,25 @@
 
 
  NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+       ocean_vars :: history file ouput_period = 400.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
 
  Spherical grid detected.
 
@@ -216,9 +161,6 @@
       get_init :: Read initial conditions for day =   4726.5657 record =   1
 
  Sponge layer =  15 interior grid points.
-       def_his :: created new netCDF file 'test_his.00000.0.nc'.
-      wrt_grid :: wrote grid data into file 'test_his.00000.0.nc'.
-       wrt_his :: wrote history, tdays = 4726.5656  step =     -1 rec =   1/   1
 
  main :: initialization complete, started time-steping.
 
@@ -242,29 +184,30 @@
     set_wec_frc :: read WEC inputs     wec_input_time (s) =  0.408377E+09 rec =   3
 
  STEP  KINETIC_ENRG BAROTR_KE     MAX_ADV_CFL        MAX_VERT_CFL
-  0 4.2297410808290071E-03 2.7901936656076786E-03 5.4263777680991176E-01 4.2518890443653662E-01
-  1 4.2292124491992711E-03 2.7905553683254336E-03 2.9386016210782345E-01 2.9386016210782345E-01
-  2 4.2280861626488768E-03 2.7903206153394523E-03 2.9185794519804953E-01 1.5831680884989988E-01
-  3 4.2246244255990375E-03 2.7874327537915091E-03 4.5851530576516941E-01 3.6728957468855555E-01
-  4 4.2236408218349333E-03 2.7868901582482784E-03 3.4082732146002209E-01 2.5368107539712148E-01
-  5 4.2240515909927803E-03 2.7876121121209910E-03 2.4378937417461585E-01 1.3868728855495416E-01
-  6 4.2246831921204635E-03 2.7884663565666675E-03 3.3867718898547466E-01 2.8561329731141932E-01
-  7 4.2259355790825511E-03 2.7899157176461712E-03 3.6406000254196003E-01 2.7788892739247550E-01
-  8 4.2268861666622474E-03 2.7909783531255995E-03 2.3971838141344193E-01 1.2404153078552896E-01
-  9 4.2254892073100370E-03 2.7897167813109472E-03 3.6509912063827799E-01 2.9817608882573904E-01
- 10 4.2256369656232173E-03 2.7899708794637524E-03 2.8387829087687871E-01 1.8959434918038931E-01
- 11 4.2263781050528044E-03 2.7907744030183329E-03 2.3498858849069537E-01 1.5148217227607350E-01
- 12 4.2265217060680630E-03 2.7909629032288144E-03 2.5180581789995043E-01 2.5180581789995043E-01
- 13 4.2274566531951968E-03 2.7919297853928856E-03 3.1839761038331721E-01 2.2321546043129512E-01
- 14 4.2284693712615722E-03 2.7929413044187521E-03 2.3817548009964024E-01 1.3954787848712136E-01
- 15 4.2281534931484007E-03 2.7926440261998339E-03 2.7626502911999290E-01 2.4846312348337640E-01
- 16 4.2281029349177345E-03 2.7925860100027600E-03 2.1429861480736556E-01 1.2548674841566973E-01
- 17 4.2294072461715069E-03 2.7938465397033632E-03 2.2665276795205080E-01 1.5817608798498042E-01
- 18 4.2303131001378133E-03 2.7947127422602047E-03 2.0183388750652231E-01 1.9345102889403995E-01
- 19 4.2303100643177553E-03 2.7946602543949600E-03 2.3495129901388107E-01 1.4135449130419589E-01
- 20 4.2293347360177220E-03 2.7936114480276984E-03 2.2248410587954803E-01 1.5142006319931930E-01
-       wrt_his :: wrote history, tdays = 4726.5703  step =     20 rec =   2/   2
- Process    0  thread  0  cpu time =        4.69 sec
+  0 4.2297410808290071E-03 2.7901936656076791E-03 5.4263777680991121E-01 4.2518890443653601E-01
+  1 4.2292124491992720E-03 2.7905553683254349E-03 2.9386016210782351E-01 2.9386016210782351E-01
+  2 4.2280861626488829E-03 2.7903206153394541E-03 2.9185794519805097E-01 1.5831680884990046E-01
+  3 4.2246244255990488E-03 2.7874327537915121E-03 4.5851530576516708E-01 3.6728957468855361E-01
+  4 4.2236408218349489E-03 2.7868901582482814E-03 3.4082732146002565E-01 2.5368107539712487E-01
+  5 4.2240515909928262E-03 2.7876121121209957E-03 2.4378937417461594E-01 1.3868728855495435E-01
+  6 4.2246831921205165E-03 2.7884663565666723E-03 3.3867718898547461E-01 2.8561329731141932E-01
+  7 4.2259355790826075E-03 2.7899157176461773E-03 3.6406000254196647E-01 2.7788892739248167E-01
+  8 4.2268861666622960E-03 2.7909783531256060E-03 2.3971838141344182E-01 1.2404153078552915E-01
+  9 4.2254892073100856E-03 2.7897167813109545E-03 3.6509912063828109E-01 2.9817608882574226E-01
+ 10 4.2256369656232364E-03 2.7899708794637602E-03 2.8387829087687921E-01 1.8959434918038898E-01
+ 11 4.2263781050528269E-03 2.7907744030183411E-03 2.3498858849069715E-01 1.5148217227607444E-01
+ 12 4.2265217060680855E-03 2.7909629032288239E-03 2.5180581789995193E-01 2.5180581789995193E-01
+ 13 4.2274566531953044E-03 2.7919297853928960E-03 3.1839761038332060E-01 2.2321546043129803E-01
+ 14 4.2284693712617257E-03 2.7929413044187634E-03 2.3817548009964051E-01 1.3954787848712186E-01
+ 15 4.2281534931485499E-03 2.7926440261998465E-03 2.7626502911999107E-01 2.4846312348337504E-01
+ 16 4.2281029349178802E-03 2.7925860100027735E-03 2.1429861480737006E-01 1.2548674841567423E-01
+ 17 4.2294072461716587E-03 2.7938465397033779E-03 2.2665276795205047E-01 1.5817608798497976E-01
+ 18 4.2303131001379581E-03 2.7947127422602203E-03 2.0183388750656281E-01 1.9345102889408211E-01
+ 19 4.2303100643179018E-03 2.7946602543949765E-03 2.3495129901388451E-01 1.4135449130419916E-01
+ 20 4.2293347360178651E-03 2.7936114480277153E-03 2.2248410587954737E-01 1.5142006319931883E-01
+       ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2/   2
+ Process    0  thread  0  cpu time =        4.77 sec
 
- MAIN: DONE - Records written: history:    2 restart:    0 averages:    0
- MPI_run_time =   5.06826114654541     
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   4.99488353729248     

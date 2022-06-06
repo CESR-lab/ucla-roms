@@ -1,6 +1,6 @@
 #include "cppdefs.opt"
 
-      integer function checkdims(ncid, fname, max_rec)
+      integer function checkdims(ncid, fname, max_rec)  ![
 
 ! Verify that all spatial dimensions in file with netCDF ID=ncid
 ! and file name=fname are consistent with the corresponding model
@@ -17,7 +17,8 @@
 !                   [=0, if there is no unlimited dimension].
 
       use param
-      use ncvars
+      use netcdf
+      use roms_read_write
       use netcdf
 
       implicit none
@@ -26,7 +27,6 @@
       character(len=*) fname
       character(len=16) dname
 
-#include "netcdf.inc"
 #ifdef SOLVE3D
       integer check_scoord, chk_Cs_wr
       chk_Cs_wr=0
@@ -37,15 +37,16 @@
       recdim=0      ! netCDF ID of unlimited dimension (if exists);
       max_rec=0     ! current size unlimited dimension (if exists).
 
-      ierr=nf_inq_ndims (ncid, ndims)
+      ierr=nf90_inquire(ncid, ndimensions = ndims)
       if (ierr == nf90_noerr) then
-        ierr=nf_inq_unlimdim (ncid, recdim)
+!        ierr=nf_inq_unlimdim (ncid, recdim)
+        ierr=nf90_inquire(ncid, unlimitedDimId = recdim)
         if (ierr /= nf90_noerr) then
           write(*,'(/1x,4A/)')        'WARNING: No unlimited ',
      &          'dimension found in ''', fname(1:lname), '''.'
         endif
         do id=1,ndims
-          ierr=nf_inq_dim (ncid, id, dname, dsize)
+          ierr=nf90_inquire_dimension (ncid, id, dname, dsize)
           if (ierr == nf90_noerr) then
             ldim=lenstr(dname)
             if ( (ldim == 6 .and. dname(1:ldim) == 'xi_rho') .or.
@@ -112,10 +113,11 @@
      &                  A, ''' =', i5 / 12x, 'in netCDF file ''', A,
      &                            ''': must be', i5,1x, 'instead.'/)
       checkdims=icount
-      end
+
+      end  !]
 
 
-      integer function check_vardims(ncid,fname, varid, horiz_type,n3)
+      integer function check_vardims(ncid,fname, varid, horiz_type,n3)  ![
 
 ! Verify that spatial dimensions of a specified variable in netCDF
 ! file match that expected by the running mode.
@@ -142,7 +144,7 @@
       character(len=32) vname
       integer ierr, vtype, ndims, natts, dimid(8),
      &                size, i, lfnm, lvar, lenstr
-#include "netcdf.inc"
+
 #define NO_RECORD_CHECK
 #include "compute_starts_counts.h"
 #if defined MPI && !defined PARALLEL_FILES
@@ -151,12 +153,12 @@
 #endif
 
       lfnm=lenstr(fname)
-      ierr=nf_inq_var(ncid, varid, vname, vtype, ndims, dimid, natts)
+      ierr=nf90_inquire_variable(ncid, varid, vname, vtype, ndims, dimid, natts)
       if (ierr == nf90_noerr) then
         lvar=lenstr(vname)
         do i=1,2 
           if (ierr == nf90_noerr) then
-            ierr=nf_inq_dimlen(ncid, dimid(i), size)
+            ierr=nf90_inquire_dimension(ncid, dimid(i), len=size)
             if (ierr == nf90_noerr) then
               if (count(i) /= size) then
                 write(*,'(/2A,I3,1x,5A,2(I5,1x,A)/)')   '### ERROR: ',
@@ -176,7 +178,8 @@
         enddo
 
         if (n3 > 0 .and. ierr == nf90_noerr) then
-          ierr=nf_inq_dimlen(ncid, dimid(3), size)
+!          ierr=nf_inq_dimlen(ncid, dimid(3), size)
+          ierr=nf90_inquire_dimension(ncid, dimid(3), len=size)
           if (ierr == nf90_noerr) then
             if (n3 /= size) then
               write(*,'(/6A,2(I4,1x,A)/)')  '### ERROR: checkvardims ',
@@ -198,7 +201,8 @@
      &                       fname(1:lfnm), ''', ', nf90_strerror(ierr)
       endif
       check_vardims=ierr
-      end
+
+      end  !]
 
 
 #ifdef SOLVE3D
@@ -208,7 +212,7 @@
 ! Print error messages and return non-zero status, in the case of
 ! mismatch.
 
-      integer function check_scoord(ncid, fname, what_to_check)
+      integer function check_scoord(ncid, fname, what_to_check)  ![
 
       use param
       use scoord
@@ -317,12 +321,13 @@
       endif
 
       check_scoord=icount
-      end
+
+      end  !]
 #endif
 
 
 
-      function read_nc1dat(ncid, fname, vname, nlen, value)
+      function read_nc1dat(ncid, fname, vname, nlen, value)  ![
 
 ! A basic function to retrieve a simple variable [stored as either
 ! a scalar or fixed-size array], which can be stored in netCDF file
@@ -354,14 +359,13 @@
 
       integer ndims, dimids(8), varid, vtype, size,
      &               i,j, ierr,  lvar, lfile, lenstr
-#include "netcdf.inc"
 
       lvar=lenstr(vname) ; lfile=lenstr(fname)
 
-      ierr=nf_inq_att(ncid, nf_global, vname, vtype, size)
+      ierr=nf90_inquire_attribute(ncid, nf90_global, vname, vtype, size)
       if (ierr == nf90_noerr) then
         if (size == nlen) then
-          ierr=nf_get_att_FTYPE(ncid, nf_global, vname(1:lvar), value)
+          ierr=nf90_get_att(ncid, nf90_global, vname, value)
           if (ierr /= nf90_noerr) then
             write(*,'(/1x,6A/12x,A/)')    '### ERROR: read_nc1dat :: ',
      &          'Cannot retrieve global attribute ''',   vname(1:lvar),
@@ -372,15 +376,18 @@
         size=1
         ierr=nf90_inq_varid(ncid, vname, varid)
         if (ierr == nf90_noerr) then
-          ierr=nf_inq_varndims(ncid, varid, ndims)
+!          ierr=nf_inq_varndims(ncid, varid, ndims)
+          ierr=nf90_inquire_variable(ncid, varid, ndims=ndims)
           if (ierr == nf90_noerr) then
             if (ndims > 0) then
-              ierr=nf_inq_vardimid(ncid, varid, dimids)
+!              ierr=nf_inq_vardimid(ncid, varid, dimids)
+              ierr=nf90_inquire_variable(ncid, varid, dimids=dimids)
               if (ierr == nf90_noerr) then
                 i=0
                 do while (i<ndims .and. ierr==nf90_noerr)
                   i=i+1
-                  ierr=nf_inq_dimlen(ncid, dimids(i), j)
+!                  ierr=nf_inq_dimlen(ncid, dimids(i), j)
+                  ierr=nf90_inquire_dimension(ncid, dimids(i), len=j)
                   if (ierr == nf90_noerr) then
                     size=size*j
                   endif
@@ -403,7 +410,7 @@
      &      ''' in file ''',  fname(1:lfile), '''.', nf90_strerror(ierr)
           endif
           if (size == nlen .and. ierr == nf90_noerr) then
-            ierr=nf_get_var_FTYPE (ncid, varid, value)
+            ierr=nf90_get_var(ncid, varid, value)
             if (ierr/=nf90_noerr) then
               write(*,'(/1x,6A/12x,A/)')  '### ERROR: read_nc1dat :: ',
      &                       'Cannot read variable ''',  vname(1:lvar),
@@ -425,50 +432,7 @@
         ierr=+1
       endif
       read_nc1dat=ierr
-      end
+
+      end  !]
 
 
-! The following is just a wrap-around of the standard netCDF nf_def_dim
-! and nf_def_var functions instrumented solely to print out an error
-! message, if something goes wrong.  This is needed because there is no
-! error handling code in the calling routine.
-
-      function my_nf_def_dim(ncid, name, len, dimid)
-
-#ifdef MPI
-      use param
-#endif
-      use netcdf
-
-      implicit none
-      integer my_nf_def_dim, ncid, len, dimid, ierr
-      character(len=*) name
-#include "netcdf.inc"
-      ierr=nf_def_dim(ncid, name, len, dimid)
-      if (ierr /= nf90_noerr) then
-        write(*,'(/1x,2A,I3,3A,I4,A,I10/12x,2A,I3/)')   '#### ERROR: ',
-     &   'my_nf_def_dim: ncid =', ncid, ' name = ''', name, ''' len =',
-     &           len, ' dimid =', dimid, nf90_strerror(ierr) MYID
-      endif
-      my_nf_def_dim=ierr
-      end
-
-      function my_nf_def_var(ncid, name, type, ndims, dimids, varid)
-      use netcdf
-      implicit none
-      integer my_nf_def_var, ncid, type, ndims, dimids(ndims), varid
-     &      , ierr, i
-      character(len=*) name
-#include "netcdf.inc"
-      ierr=nf_def_var(ncid, name, type, ndims, dimids, varid)
-      if (ierr == nf90_noerr) then
-        write(*,*) 'created variable ', name, ' varid =', varid
-      else
-        write(*,'(/1x,A,I4,1x,A,I7,1x,2A,1x,A,I4,1x,A,4I3)')
-     &  '#### ERROR: my_nf_def_var :: ierr =', ierr, 'ncid =', ncid,
-     &                            'name = ', name, 'ndims =', ndims,
-     &                            'dimids =', (dimids(i), i=1,ndims)
-        write(*,'(1x,A)') nf90_strerror(ierr)
-      endif
-      my_nf_def_var=ierr
-      end

@@ -87,8 +87,10 @@
 	FFLAGS = -O3 -ip
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
-# - uncomment for traceback only
+# - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
+# - for code_check script ensure consistency with -fp-model strict:
+#	FFLAGS = -O3 -fp-model strict
 # - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
 # - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':

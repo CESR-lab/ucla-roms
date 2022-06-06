@@ -23,7 +23,8 @@ Running new simulations:
 
 roms.in:
 
-    See Examples/Tracers_passive/sample.in as a template. 
+    See Examples/Tracers_passive/sample.in as a template.
+    You need to include the boundary file in the 'forcing:' filename list! 
     Note, we now use one root name, e.g. 'pacific', stored in 
     variable 'output_root_name' for the output file names. 
     The history  file will be pacific_his.*.nc,
@@ -51,6 +52,22 @@ param.opt:
     edits in analytical.F.
     FYI, .opt has no meaning other than an abbreviation of 'options', it is just
     an include file like the .h files.
+    
+Code folding:
+
+    We have reorganized the code into modules containing several subroutines, 
+    rather than many files of individual subroutines. To make it easier to navigate 
+    these larger modules, we have introduced code folding.
+    
+    A folding section is demarked by a ![ at the beginning and closed with !] at the 
+    end. This folding is specific to vim / gvim. To configure your editor for code folding:
+    Open/create file: ~/.vimrc
+    Add the following two lines:
+    set foldmethod=marker
+    set foldmarker=![,!]
+    ROMS source code should be folded as default. 
+    To expand/fold applicable sections of code, use 'za' 
+    (i.e. 'z' and 'a' keys together at the same time).
 
 Forcing file units:
 
@@ -115,8 +132,16 @@ Nested grid boundary file generation online:
     
 Mooring output:
     for information on generating online mooring extraction files, see:
-    - Documentation/readme-specifics/README.extract_data      
+    - Documentation/readme-specifics/README.extract_data 
     
+Pipes:
+    Pipes can be configured using src/pipe_frc.opt and src/pipe_frc.F.
+    See Examples/Pipes_real and Examples/Pipes_ana for working examples.
+    
+Rivers:
+    Pipes can be configured using src/river_frc.opt and src/river_frc.F.
+    See Examples/Rivers_real and Examples/Rivers_ana for working examples.
+        
 Netcdf output compression:
 
     The new roms code now uses netcdf-4 file outputting (previously netcdf-3). This allows
@@ -150,7 +175,7 @@ Surface flux outputting:
     It is possible to output the bulk force resulting surface flux sustr, svstr, etc. 
     The output frequency is in surf_flux.opt, not the roms.in file. 
     It will produce its own output file separate from the _his.nc file.
-    The averages (sustr_avg, etc) are also controlled in surf_flux.opt.
+    It can also produce its own averages file, also controlled in surf_flux.opt.
     
 BGC - Bio-geochemical:
 

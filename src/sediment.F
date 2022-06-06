@@ -23,7 +23,7 @@
      &                      WR,WL, Hz_inv,Hz_inv2,Hz_inv3, ksource)
 
       use param
-      use ocean3d
+      use ocean_vars
       use scalars
 
       implicit none

@@ -1,8 +1,11 @@
       module roms_read_write
       ! ROMS specific read write functionality
+      !
+      ! output_root_name is used as prefix of all output files
+      ! Length is limited to 26 characters, because output_file_names
+      ! are appended with frame and node number and are limited to 32
 
       use netcdf
-      use ncvars
       use scalars
       use nc_read_write
 !     use param
@@ -20,38 +23,100 @@
       type,public  :: ncforce
         character(len=20)                 :: vname     ! name of variable in input file
         character(len=20)                 :: tname     ! time variable name for variable
-        real,dimension(:,:,:),allocatable :: vdata     ! need=0 to initialize all vars other than name and time_name. Slightly inefficient to set=0 though. stores raw input data for 2 times: time_A < mode
-        integer                           :: coarse=0  ! Flag to indicate interpolation of the input data
+        real,dimension(:,:,:),allocatable :: vdata     ! currently must be exact size of sub-domain (no buffer)
         real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
+        integer                           :: coarse=0  ! Flag to indicate interpolation of the input data
         integer                           :: ifile=0   ! Index to file in list of filenames
         integer                           :: irec =0   ! Record number in file
-        integer         :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
-        real,   dimension(2)              :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
+        integer                           :: it1 = 1, it2 = 2              ! used to cycle between correct entries of 'data' above
+        real,dimension(2)                 :: times = -99 ! [-99,-99]       ! stores 2 times that go with 'data' above
       end type ncforce
 
       integer, target :: test_var
+      character(len=99), public  :: output_root_name
 
-!     interface set_frc_data
-!       module procedure  set_frc_data_2D
-!     end interface
+      integer,public :: i0,i1,j0,j1                        ! i0=0 (west edge), or i0=1 interior
 
-      public :: set_frc_data,create_filename,findstr,append_date_node
+      integer,parameter :: max_options_string=2000
+      character(len=max_options_string),public :: surf_forcing_strings=' '
+
+      ! from old ncvars **************:
+      integer, parameter, public :: max_frc_files=360
+      integer, public :: max_frc, ncfrc(max_frc_files), nrrec
+      ! Horizontal Grid Type Codes =  0,1,2,3 for RHO-, U-, V-, PSI-points
+      integer, parameter, public :: r_var=0, u_var=1, v_var=2, q_var=3
+      !            Horizontal array dimensions in netCDF files. In the case
+      ! xi_rho     of MPI code with PARALLEL_FILES activated these dimensions
+      ! xi_u       depend on the corresponding sizes of individual subdomains
+      ! eta_rho    rather than the whole physical grid, therefore they become
+      ! eta_v      live variables placed in common block and assigned values
+      !            in "mpi_setup" rather tnan be parameters defined here.
+
+#if defined MPI && defined PARALLEL_FILES
+      integer, public ::  xi_rho, xi_u, eta_rho, eta_v
+#else
+      integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
+     &                              xi_u=xi_rho-1, eta_v=eta_rho-1
+#endif
+
+      integer, parameter, public :: max_name_size=256
+      character, public :: date_str*44, title*80
+      character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
+
+      character(len=max_name_size), public ::  clm_file  ! defined TCLIMATOLOGY && !defined ANA_TCLIMA) || !defined ANA_SSH
+
+      integer, parameter, public :: max_bry_files=360
+      character(len=max_name_size), public ::  bry_file(max_bry_files)
+      ! end old ncvars ***************
+
+      public :: findstr,append_date_node
+      public :: set_frc_data,create_filename
+      public :: read_output_root_name
+      public :: init_output_indices
+      public :: find_new_record
+      public :: nc_check_units
+      public :: put_global_atts
+      public :: store_string_att
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_frc_data(nc,var1d,var2d)
+      subroutine init_output_indices  ![
+      ! outputting variables requires buffer points
+      ! on the domain boundary only.
+      ! interior sub-domain is still  1:nx,1:ny
+      ! but e.g. South-West corner is 0:nx,0:ny
+      ! we write this as ncwrite( var(i0:i1,j0:j1) )
+
+      use dimensions
+      implicit none
+
+      i0=1; i1=nx; j0=1; j1=ny
+      if (.not.west_exchng)  i0=0
+      if (.not.south_exchng) j0=0
+      if (.not.east_exchng)  i1=nx+1
+      if (.not.north_exchng) j1=ny+1
+
+!      print *, mynode, 'i0=',i0,'j0=',j0,'i1=',i1,'j1=',j1
+!      print *, mynode, 'nx=',ny,'j0=',j0,'i1=',i1,'j1=',j1
+
+      end subroutine init_output_indices  !]
+
+! ----------------------------------------------------------------------
+      subroutine set_frc_data(nc,var1d,var2d,obry)  ![
       implicit none
 
       ! input/outputs
-      type(ncforce)        ,intent(inout)      :: nc    ! derived type containing all neccesary supporting data
-      real,dimension(:,:),optional,intent(out) :: var2d ! time interpolated forcing data
-      real,dimension(:)  ,optional,intent(out) :: var1d ! time interpolated forcing data
+      type(ncforce),               intent(inout) :: nc    ! derived type containing all neccesary supporting data
+      real,dimension(:)  ,optional,intent(out)   :: var1d ! time interpolated forcing data
+      real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
+      integer,optional,            intent(in)    :: obry  ! bry=1, suppress terminal info, bry=2 display boundary
 
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
       logical :: d1
+      integer :: bry
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
@@ -62,6 +127,12 @@
         d1 = .false.
       endif
 
+      if (present(obry)) then
+        bry = obry
+      else
+        bry = 0
+      endif
+
       modtime = tdays + 0.5*dt*sec2day    ! input data times in days. Interpolated time is based on 1/2 step time
 
       it1 = nc%it1
@@ -70,13 +141,13 @@
       if (nc%times(it2) < modtime) then  ! need to refresh data
 
         if (nc%ifile == 0) then   ! the first time, we need to fill both slots
-          call fill_frc_slice(nc,modtime,it1,d1)
+          call fill_frc_slice(nc,modtime,it1,d1,bry)
         else ! cycle it1,it2 between 1 and 2
           it1 = mod(it1,2) + 1
           it2 = mod(it2,2) + 1
         endif
 
-        call fill_frc_slice(nc,modtime,it2,d1)
+        call fill_frc_slice(nc,modtime,it2,d1,bry)
       endif 
 
       nc%it1 = it1
@@ -101,7 +172,7 @@
         error stop 'ERROR: set_frc_data :: time interpolation error'
       endif
 
-      end subroutine set_frc_data
+      end subroutine set_frc_data  !]
       
 ! ----------------------------------------------------------------------
       subroutine find_new_record(vname,tname,time,ifile,irec,vtime) ![
@@ -137,7 +208,7 @@
 
       real,dimension(1)    :: ltime
 
-      if (ifile==0) then  ! First time for this variable
+      if (ifile==0) then                                             ! first time for this variable
         first = .true.
         ifile = 1
         irec_old  = 0
@@ -149,64 +220,65 @@
       found_rec      = .false.
       found_var_ever = .false.
 
-      do while (.not.found_rec .and. ifile <= max_frc) ! While record not found & still more files to check
+      do while (.not.found_rec .and. ifile <= max_frc)               ! while record not found & still more files to check
 
-!     if (mynode==0) print *, 'find_new_rec, trying: ',frcfile(ifile)
-        found_var = .false.  ! reset for new file
+        found_var = .false.                                          ! reset for new file
         ierr = nf90_open(frcfile(ifile), nf90_nowrite, ncid)
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'Find_new_record, opening: ',frcfile(ifile))
 
-        ierr = nf90_inq_varid(ncid, vname,vid)    ! Check if this file contains the variable
+        ierr = nf90_inq_varid(ncid, vname,vid)                       ! check if this file contains the variable
 
-        if (ierr==nf90_noerr) then ! Variable found, now check if file times contain model time
+        if (ierr==nf90_noerr) then                                   ! variable found, now check if file times contain model time
 
           found_var      = .true.
           found_var_ever = .true.
            
-          ierr = nf90_inq_varid(ncid,tname,tid)  ! Get time ID
+          ierr = nf90_inq_varid(ncid,tname,tid)                      ! get time ID
           if (ierr/=nf90_noerr) 
      &      call handle_ierr(ierr,'Find_new_record, searching: ',tname)
 
           ! Check if the time has a cycle length
-          ierr=nf90_get_att(ncid, tid, 'cycle_length', cycle_length) 
+          ierr=nf90_get_att(ncid, tid, 'cycle_length', cycle_length)
           if (ierr==nf90_noerr) then
             call find_new_record_cycle(ncid,tid,time,irec,vtime,cycle_length,first)
             found_rec = .true.
-          else
-            cycle_length = -1
+          elseif (ierr==nf90_enotatt) then                           ! non-cyclical var won't have attribute
+            cycle_length = -1                                        ! nf90_enotatt = attribute not found
+          else                                                       ! any other netcdf error is a problem.
+            call handle_ierr(ierr,'find_new_record: cycle length att')
           endif
 
           ! Number of records in file
           ierr = nf90_inquire_variable(ncid,tid, dimids = dimids)
           ierr = nf90_inquire_dimension(ncid, dimids(1), len=max_recs)
 
-          do while (irec<max_recs .and. .not. found_rec)                ! Search through the records until correct time is found
+          do while (irec<max_recs .and. .not. found_rec)             ! Search through the records until correct time is found
 
-            irec=irec+1
-            ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))       ! Get vtime (nf90 needs array hence syntax)
+            irec=irec+1                                              ! why not use ncread????
+            ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))        ! Get vtime (nf90 needs array hence syntax)
             vtime = ltime(1)
 
-            if (vtime>time) then   ! Correct time
+            if (vtime>time) then                                     ! correct time
               found_rec = .true.
-            else                      ! Not yet
+            else                                                     ! not yet
               irec_old = irec
-              ifile_old = ifile     ! Only needed initially. See label (A)
+              ifile_old = ifile                                      ! only needed initially. See label (A)
               time_old = vtime
             endif
 
-          enddo  ! while not found and irec<nrecs
+          enddo                                                      ! while not found and irec<nrecs
 
-        endif    ! found var in file
+        endif                                                        ! found var in file
 
-        if (.not.found_rec) then  ! correct record not found, try next file
+        if (.not.found_rec) then                                     ! correct record not found, try next file
           ifile = ifile+1 
-          irec = 0                ! Reset irec for new file
+          irec = 0                                                   ! Reset irec for new file
         endif
 
         ierr=nf90_close (ncid)
 
-      enddo  ! search through files: while .not. found_rec .and. ifile<=nfiles.
+      enddo                            ! search through files: while .not. found_rec .and. ifile<=nfiles.
 
 
       if (.not. found_var_ever) then
@@ -224,8 +296,8 @@
       if (first) then  ! Handle initital timestep. Need vtime < model_time. As per (A) above.
 
         ! find_new_rec_cycle deals internally with this
-        if(cycle_length<0) then  ! Not cyclical data
-          if (irec==1) then         ! Model time between input files.
+        if(cycle_length<0) then     ! not cyclical data
+          if (irec==1) then         ! model time between input files.
             ifile = ifile_old
           endif
           irec = irec_old
@@ -289,8 +361,9 @@
       deallocate(tim)
 
       end subroutine find_new_record_cycle !]
+      
 ! ----------------------------------------------------------------------
-      subroutine fill_frc_slice(nc,modtime,it,d1) ![
+      subroutine fill_frc_slice(nc,modtime,it,d1,bry) ![
       ! Fill a time slice of forcing data
       implicit none
 
@@ -299,6 +372,7 @@
       real               ,intent(in)    :: modtime ! current time of the model
       integer            ,intent(in)    :: it      ! index (1 or 2) of the forcing data
       logical            ,intent(in)    :: d1      ! 1 or 2 dimensional forcing data
+      integer            ,intent(in)    :: bry     ! suppress terminal output of boundary
 
       ! local
       integer :: ierr,ncid
@@ -324,7 +398,7 @@
 !       call exchange_2d
 !       call coarse2fine(cdata,vdata(:,:,it))
       else
-        !! Allocate vdata to be the right size for the
+        !! Allocate vdata to be the right size for the (DevinD - this should have been put somewhere clearer...
         !! subdomain (including whether we need a buffer or not
         if (d1) then
           call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
@@ -334,46 +408,24 @@
       endif
       ierr = nf90_close(ncid)
 
-      if (mynode == 0) 
-     &      call display_read_time_to_log(vname,nc%times(it),irec )
+      if (bry==0) then
+        if (mynode==0)
+     &    call display_read_time_to_log(vname,nc%times(it),irec )
+      elseif (bry==1) then
+        ! do nothing (suppress terminal output)
+      elseif (bry==2) then
+        if (mynode==0 .or. mynode==nnodes-1)                         ! 2 nodes catch e/w/s/n boundaries
+     &    call display_read_time_to_log(vname,nc%times(it),irec )
+      else
+        stop 'fill_frc_slice - bry error'
+      endif
+
 
       nc%irec  = irec
       nc%ifile = ifile
 
       end subroutine fill_frc_slice !]
-! ----------------------------------------------------------------------
-      subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
-      ! Handle fatal ierr with error messages.
-      ! err_msg1 & 2 are optional messages
-      implicit none
 
-      ! Inputs
-      integer ierr
-      character(len=*), optional :: err_msg1, err_msg2
-      ! Local
-      character(:), allocatable :: f_msg, f_msg1, f_msg2
-
-      ! Check if error message 1 is available
-      if(present(err_msg1))then
-          f_msg1=err_msg1
-      else
-          f_msg1=''
-      endif
-      ! Check if error message 2 is available
-      if(present(err_msg2))then
-          f_msg2=err_msg2
-      else
-          f_msg2=''
-      endif
-      ! Combine optional messages:
-      f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
-
-      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: read_write :: ',
-     &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
-
-      error stop ! Stop simulation assumed fatal error
-
-      end subroutine handle_ierr  !]
 ! ----------------------------------------------------------------------
       subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![
       implicit none   
@@ -388,6 +440,40 @@
      &  'rec =',               var_irec
 
       end subroutine display_read_time_to_log  !]
+
+! ----------------------------------------------------------------------
+      subroutine read_output_root_name(keyword, kwlen)  ![
+      ! read from .in file the root-name
+      ! for all output netcdf result files
+      ! this is called from read_inp.F
+      ! The following needs to be in the roms.in input file to use this
+      ! subroutine (file name needs to be 5 spaces from left margin):
+      !output_root_name:
+      !     rootname (<- insert desired rootname)
+
+      implicit none
+
+      ! inputs
+      character(len=*) :: keyword
+      integer          :: kwlen                            ! keyword length
+      ! local
+      integer           :: ierr = nf90_noerr
+      integer,parameter :: input=15
+
+      call cancel_kwd (keyword(1:kwlen), ierr)             ! remove keyword from keyword list for read_inp.F
+                                                           ! to know it's accounted for
+      read(input,'(A)',err=95) output_root_name            ! read & save filename root
+
+      goto 100
+                                                           ! error for read(input,'(A)',err=95)
+  95  write(*,'(/1x,4A/)') '### ERROR: roms_read_write :: Cannot ',
+     &                    'read entry ''', keyword(1:kwlen), '''.'
+      error stop
+ 100  continue
+
+
+      end subroutine read_output_root_name  !]
+
 ! ----------------------------------------------------------------------
       subroutine create_filename(fname,total_rec)  ![
       ! takes a filename for output and inserts the mpi node number 
@@ -413,6 +499,7 @@
       call insert_time_index(fname,lstr,total_rec,ierr)     ! insert time index to file name
 
       end subroutine create_filename !]
+
 ! ----------------------------------------------------------------------
       subroutine coarse2fine(cdata,fdata) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
@@ -449,6 +536,7 @@
       enddo
 
       end subroutine coarse2fine !]
+
 ! ----------------------------------------------------------------------
       logical function findstr(string,pattern,istart) ![
       ! this utility function should be moved somewhere more generic...
@@ -489,6 +577,7 @@
       endif
 
       end function findstr !]
+      
 ! ----------------------------------------------------------------------
       subroutine sec2date(time,date) ![
       ! input  time in seconds since 1970.0
@@ -522,6 +611,7 @@
       date(4) = nsecs / 60
 
       end subroutine sec2date !]
+      
 ! ----------------------------------------------------------------------
       subroutine append_date_node(fname) ![
       ! insert date and node number string into filename
@@ -560,5 +650,231 @@
       fname = trim(fname) // '.nc'
 
       end subroutine append_date_node !]
+
+!-----------------------------------------------------------------------
+      subroutine nc_check_units( ncid, var_name, var_units )  ![
+
+      ! Ensure units in file are same as roms units
+
+      implicit none
+
+      ! input/output
+      integer,          intent(in) :: ncid
+      character(len=*), intent(in) :: var_name
+      character(len=*), intent(in) :: var_units
+
+      ! local
+      integer           :: ierr !, ncid
+      integer           :: var_id
+      character(len=20) :: file_var_units ! variable units in forcing file
+
+      ! file must be open already:
+
+      ierr = nf90_inq_varid(ncid, var_name, var_id)                            ! get variable ID (varid)
+      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var')
+      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)               ! get units
+      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var units')
+
+      if (var_units /= file_var_units) then
+        write(*,'(/3x,3A/5x,3A/)') 'ERROR: roms_read_write.F :: ',
+     &  'nc_check_units: wrong units for var: ', var_name,
+     &  trim(file_var_units) ,' -> input file should be -> ', var_units
+        error stop                                                              ! stop simulation, fatal error
+      end if
+
+      end subroutine nc_check_units  !]
+
+! ---------------------------------------------------------------------
+      subroutine put_global_atts (ncid, ierr)  ![
+
+      use param
+      use eos_vars
+      use scalars
+      use scoord
+      use strings
+      use netcdf
+
+      implicit none
+      integer :: ncid, ierr, dimid
+
+#if defined MPI && defined PARALLEL_FILES
+      integer :: ibuff(4), npart
+
+      npart=4                                    ! Put global attribute 'partition' which identifies subdomain
+      ibuff(1)=mynode                            ! within the processor grid individually for each file.
+      ibuff(2)=nnodes
+      if (WESTERN_MPI_EDGE) then
+        ibuff(3)=iSW_corn+iwest
+      else
+        ibuff(3)=iSW_corn+iwest+1
+      endif
+      if (SOUTHERN_MPI_EDGE) then
+        ibuff(4)=jSW_corn+jsouth
+      else
+        ibuff(4)=jSW_corn+jsouth+1
+      endif
+
+      ! add 4 main x and y dimensions so that ncjoin will work,
+      ! since if you only output rho variables xi_u and eta_v won't be created.
+      ierr=nf90_def_dim(ncid,'xi_rho', xi_rho, dimid)
+      ierr=nf90_def_dim(ncid,'xi_u',   xi_u,   dimid)
+      ierr=nf90_def_dim(ncid,'eta_rho',eta_rho,dimid)
+      ierr=nf90_def_dim(ncid,'eta_v',  eta_v,  dimid)
+
+      ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
+#endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'title',title)         ! Title of the run
+
+#ifndef ANA_GRID
+      ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grdname)
+#endif
+#ifndef ANA_INITIAL
+      ierr=nf90_put_att(ncid, nf90_global, 'init_file',ininame)
+#endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'ntimes', ntimes)         ! Time stepping parameters
+      ierr=nf90_put_att(ncid, nf90_global, 'ndtfast',ndtfast)
+      ierr=nf90_put_att(ncid, nf90_global, 'dt', dt)
+      ierr=nf90_put_att(ncid, nf90_global, 'dtfast', dtfast)
+
+! Vertical coordinate type, control parameters "theta_s", "theta_b",
+! "hc", and stretching curves "Cs_w", "Cs_r" at W- and RHO-points.
+
+#ifdef SOLVE3D
+# ifdef VERT_COORD_TYPE_SM09
+      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'SM09')
+# elif defined VERT_COORD_TYPE_KAU
+      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'KAU')
+# elif defined VERT_COORD_TYPE_SH94
+      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'SH94')
+# endif
+
+      ierr=nf90_put_att(ncid, nf90_global, 'theta_s', theta_s)
+      ierr=nf90_put_att(ncid, nf90_global, 'theta_b', theta_b)
+      ierr=nf90_put_att(ncid, nf90_global, 'hc', hc)
+      ierr=nf90_put_att(ncid, nf90_global, 'Cs_w', Cs_w)
+      ierr=nf90_put_att(ncid, nf90_global, 'Cs_r', Cs_r)
+
+! Boussinesq reference density and EOS coefficients for linear EOS.
+
+      ierr=nf90_put_att(ncid, nf90_global, 'rho0', rho0)
+      ierr=nf90_put_att (ncid, nf90_global, 'rho0_units', 'kg/m^3')
+# ifndef NONLIN_EOS
+      ierr=nf90_put_att(ncid, nf90_global,'Tcoef', Tcoef)
+      ierr=nf90_put_att (ncid, nf90_global,'Tcoef_units', 'deg Celsius-1')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'T0', T0)
+      ierr=nf90_put_att (ncid, nf90_global, 'T0_units', 'deg Celsius')
+
+#  ifdef SALINITY
+      ierr=nf90_put_att(ncid, nf90_global, 'Scoef', Scoef)
+      ierr=nf90_put_att (ncid, nf90_global, 'Scoef_units', 'PSU-1')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'S0', S0)
+      ierr=nf90_put_att (ncid, nf90_global, 'S0_units', 'PSU')
+#  endif
+# endif
+#endif /* SOLVE3D */
+
+#ifdef UV_VIS2
+      ierr=nf90_put_att(ncid,nf90_global, 'visc2', visc2)            ! Horizontal viscosity and mixing coefficients.
+      ierr=nf90_put_att (ncid,nf90_global, 'visc2_units', 'm^2/s')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'gamma2', gamma2)         ! Lateral slipperiness parameter
+#endif
+#ifdef SOLVE3D
+# ifdef TS_DIF2
+      ierr=nf90_put_att(ncid,nf90_global, 'tnu2', tnu2)
+      ierr=nf90_put_att (ncid,nf90_global, 'tnu2_units', 'm^2/s')
+# endif
+# ifdef MY25_MIXING
+#  ifdef Q2_DIF2
+      ierr=nf90_put_att(ncid,nf90_global, 'q2nu2', q2nu2)
+      ierr=nf90_put_att (ncid,nf90_global, 'q2nu2_units', 'm^2/s')
+#  endif
+#  ifdef Q2_DIF4
+      ierr=nf90_put_att(ncid,nf90_global,'q2nu4', q2nu4)
+      ierr=nf90_put_att (ncid,nf90_global,'q2nu4_units', 'm^4/s')
+#  endif
+# endif
+# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
+                         && !defined MY2_MIXING && !defined MY25_MIXING
+
+      ierr=nf90_put_att(ncid, nf90_global, 'Akv_bak', Akv_bak)       ! Background vertical viscosity tracer mixing
+      ierr=nf90_put_att (ncid, nf90_global, 'Akv_bak_units', 'm^2/s')
+
+      ierr=nf90_put_att(ncid, nf90_global, 'Akt_bak', Akt_bak)
+      ierr=nf90_put_att (ncid, nf90_global, 'Akt_bak_units', 'm^2/s')
+# endif
+# ifdef MY25_MIXING
+      ierr=nf90_put_att(ncid, nf90_global, 'Akq_bak',Akq_bak)
+      ierr=nf90_put_att (ncid, nf90_global, 'Akq_bak_units', 'm^2/s')
+# endif
+#endif
+
+#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined TNUDGING \
+  || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
+                       || defined M3NUDGING  || defined WKB_FRC_BRY
+
+      ierr=nf90_put_att(ncid, nf90_global, 'ubind', ubind) ! Binding velocity for external data forcing at open boundaries
+      ierr=nf90_put_att (ncid, nf90_global, 'ubind_units', 'm/s')
+#endif
+
+#ifdef SPONGE
+      ierr=nf90_put_att(ncid, nf90_global, 'v_sponge', v_sponge)     ! Maximum viscosity in sponge layer
+      ierr=nf90_put_att (ncid, nf90_global, 'v_sponge_units','m^2/s')
+#endif
+
+      ierr=nf90_put_att(ncid,nf90_global, 'rdrg', rdrg)              ! Bottom drag parameters.
+      ierr=nf90_put_att (ncid,nf90_global, 'rdrg_units', 'm/s')
+
+      ierr=nf90_put_att(ncid,nf90_global, 'rdrg2',rdrg2)
+      ierr=nf90_put_att (ncid,nf90_global, 'rdrg2_units',
+     &                                      'nondimensional')
+#ifdef SOLVE3D
+      ierr=nf90_put_att(ncid,nf90_global, 'Zob', Zob)
+      ierr=nf90_put_att (ncid,nf90_global, 'Zob_units', 'm')
+#endif
+
+      ierr=nf90_put_att (ncid, nf90_global, 'SRCS', srcs)  ! List of source-code file names and activated CPP-switches
+      ierr=nf90_put_att (ncid, nf90_global, 'CPPS', cpps)
+
+      ! string set added to get values from modules without struggling with circular references
+      ! as those modules use roms_read_write so this module can't use them.
+      ! rather the string is filled in the module's init and can be written here to all files.
+      ierr=nf90_put_att (ncid, nf90_global, 'surf_forcing_strings', surf_forcing_strings)
+
+      end subroutine put_global_atts  !]
+
+! ---------------------------------------------------------------------
+      subroutine store_string_att( char_string, string_add )  ![
+      ! add settings that affect the solution to a string
+      ! that will be added to global attributes of all nc files
+      implicit none
+
+      ! input
+      character(len=*),intent(inout) :: char_string
+      character(len=*),intent(in)    :: string_add
+
+      ! local
+      integer :: is, ie
+
+      is=len_trim( char_string )
+      is=is+2
+      ie=len_trim( string_add )
+      ie=ie+is-1
+
+      if (ie > max_options_string) then
+        print *, 'ERROR roms_read_write:: ',
+     &    'store_string_att character full=', trim(string_add)
+        stop 'ROMS stopped'
+      endif
+
+      char_string(is:ie) = string_add
+
+      end subroutine store_string_att  !]
+
+! ---------------------------------------------------------------------
 
       end module roms_read_write

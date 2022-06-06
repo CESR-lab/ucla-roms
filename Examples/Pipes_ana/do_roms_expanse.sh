@@ -3,7 +3,7 @@
 
 # %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
 #SBATCH --output="roms_log.%j.%N.run.out"
-#SBATCH --partition=debug
+#SBATCH --partition=shared
 
 # Can only use a max of 2 nodes on 'debug' partition:
 #SBATCH --nodes=1

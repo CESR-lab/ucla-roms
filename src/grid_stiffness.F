@@ -26,7 +26,7 @@
       use param
       use comm_vars
       use grid
-      use ocean3d
+      use ocean_vars
       use mpi
 
       implicit none

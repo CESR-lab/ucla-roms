@@ -4,16 +4,14 @@
                                         ! startup file.
 
       use param
-      use wec_frc    ! , only: read_inp_wec, read_inp_avg_wec
       use surf_flux
       use tracers, only: wrt_t, t_vname, wrt_t_avg
-      use read_write ! , only: read_output_root_name, expanse_scratch_env_var
       use boundary
       use eos_vars
-      use ncvars
       use scalars
       use scoord
       use mpi
+      use roms_read_write
 
       implicit none
       integer ierr
@@ -77,51 +75,7 @@
 ! WITHOUT the UNIX redirection (<): roms < startup_file like it
 ! used to be.
 
-#if defined SOLITON
-      fname='roms.in.Soliton'
-#elif defined SEAMOUNT
-      fname='roms.in.Seamount'
-#elif defined WAVE_RAD
-      fname='roms.in.WaveRad'
-#elif defined ISWAKE
-      fname='roms.in.IsWake'
-#elif defined UPWELLING
-      fname='roms.in.Upwelling'
-#elif defined GRAV_ADJ
-      fname='roms.in.GravAdj'
-#elif defined IBERIA
-      fname='roms.in.Iberia'
-#elif defined RIVER
-      fname='roms.in.River'
-#elif defined PACIFIC
-      fname='pacific.in'
-#elif defined PACIFIC_2D
-      fname='pacific_2D.in'
-#elif defined CANBAS2
-c--      fname='canBas2.in'
-c--      fname='cblanco.in'
-      fname='unpr.in'
-#elif defined SPIRAL
-      fname='spiral.in'
-#elif defined PACBIG
-      fname='pacbig.in'
-#elif defined NWPAC
-      fname='nwp.in'
-#elif defined SMSC
-      fname='smsc.in'
-#elif defined SMSC_SUB
-      fname='smsc_sub.in'
-#elif defined USWEST
-      fname='mb_l1_safe.in'
-c--      fname='roms.in.USW20'
-c--      fname='roms.in.US_West'
-#elif defined SCB_TEST
-      fname='scb_test.in'
-#elif defined DAMEE_B
-      fname='roms.in.Atl4'
-#else
       fname='roms.in'  !<-- default
-#endif
 #ifdef MPI
       if (mynode == 0) then
 #endif
@@ -129,11 +83,6 @@ c--      fname='roms.in.US_West'
 #ifdef MPI
       endif
       call MPI_Bcast(fname,64,MPI_BYTE, 0, ocean_grid_comm, ierr)
-#endif
-
-      wrthis(indxTime)=.false.
-#ifdef AVERAGES
-      wrtavg(indxTime)=.false.
 #endif
 
 ! Read in keyword name: keep trying, until keyword is found.
@@ -448,9 +397,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
         elseif (keyword(1:kwlen) == 'grid') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,'(A)',err=95) fname
-#ifdef EXPANSE_TEST
-          call expanse_scratch_env_var( fname )
-#endif
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
           call insert_node(fname, lstr, mynode, NNODES, ierr)
@@ -473,9 +419,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           if (nrrec > 0) then
 #endif
             read(input,'(A)',err=95) fname
-#ifdef EXPANSE_TEST
-            call expanse_scratch_env_var( fname )
-#endif
             lstr=lenstr(fname)
 #if defined MPI && defined PARALLEL_FILES
             call insert_node(fname, lstr, mynode, NNODES, ierr)
@@ -506,10 +449,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
             if (lstr > 0) then
-#ifdef EXPANSE_TEST
-              call expanse_scratch_env_var( fname )
-              lstr=lenstr(fname)
-#endif
 # if defined MPI && defined PARALLEL_FILES
               call insert_node(fname, lstr, mynode, NNODES, ierr)
 # endif
@@ -543,57 +482,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           enddo
 #endif
 
-! Boundary forcing data file names. Check availability.
-
-#if defined T_FRC_BRY || defined M2_FRC_BRY || defined M3_FRC_BRY \
-                      || defined Z_FRC_BRY  || defined WKB_FRC_BRY
-# ifndef ANA_BRY
-
-        elseif (keyword(1:kwlen) == 'boundary') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          max_bry=0
-          lstr=1
-          do while(lstr > 0 .and. max_bry < max_bry_files+1)
-            read(input,'(A)',err=95) fname
-            lstr=lenstr(fname)
-            if (lstr > 0) then
-#  ifdef EXPANSE_TEST
-              call expanse_scratch_env_var( fname )
-              lstr=lenstr(fname)
-#  endif
-#  if defined MPI && defined PARALLEL_FILES
-              call insert_node(fname, lstr, mynode, NNODES, ierr)
-#  endif
-              open(testunit, file=fname(1:lstr), status='old',err=97)
-              close(testunit)
-
-              if (max_bry < max_bry_files) then
-                max_bry=max_bry+1
-                bry_file(max_bry)=fname(1:lstr)
-#  ifdef MPI_SILENT_MODE
-                if (mynode == 0) then
-#  endif
-                  if (max_bry == 1) then
-                    write(*,'(1x,2A)') 'boundary forcing file(s): ',
-     &                                  bry_file(max_bry)(1:lstr)
-                  else
-                    write(*,'(27x,A)')  bry_file(max_bry)(1:lstr)
-
-                  endif
-#  ifdef MPI_SILENT_MODE
-                endif
-#  endif
-              else
-                mpi_master_only write(*,'(1x,2A/12x,2A/)')
-     &         '### ERROR: read_inp :: Too many boundary files are ',
-     &         'specified in input script.',   'Increase parameter ',
-     &                '''max_bry_files'' in ncvars and recompile.'
-                ierr=ierr+1
-              endif
-            endif
-          enddo
-# endif
-#endif
 
 ! Climatology file name. Climatology data is needed for (1) to supply
 ! boundary data for T,S,u,v at open boundaries (just one row of points)
@@ -623,209 +511,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                           'file = ''', clm_file(1:lstr), ''''
 #endif
 
-! Output files controls: restart, history, averages, stations, floats
-!------- ----- ---------
-
-        elseif (keyword(1:kwlen) == 'restart') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) nrst, nrpfrst
-          mpi_master_only write(*,'(1x,A,I8, 2x,A,I5)')
-     &          'restart :: nrst =',nrst, 'rec/file =', nrpfrst
-#ifndef SOLVE3D
-          nrst=nrst*ndtfast
-#endif
-
-! history file controls: owerwrite flag, output frequency, number
-! of reconds per file in sequence, and filename
-
-        elseif (keyword(1:kwlen) == 'history') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) ldefhis, nwrt, nrpfhis
-          mpi_master_only write(*,'(/1x,A,L1,2x,A,I5,2x,A,I4)')
-     &       'history :: overwrite = ', ldefhis, 'nwrt =', nwrt,
-     &       'rec/file =', nrpfhis
-#ifndef SOLVE3D
-          nwrt=nwrt*ndtfast
-#endif
-
-! Which fields to be saved into history file.
-
-        elseif (keyword(1:kwlen) == 'primary_history_fields') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrthis(indxZ),  wrthis(indxUb)
-     &                                      ,  wrthis(indxVb)
-#ifdef SOLVE3D
-     &                      ,  wrthis(indxU),  wrthis(indxV)
-      ! DevinD: no longer use roms.in for tracer T/F inputs
-!     &                      , (wrthis(indxT+itrc-1), itrc=1,NT)
-#endif
-          if ( wrthis(indxZ) .or. wrthis(indxUb) .or. wrthis(indxVb)
-#ifdef SOLVE3D
-     &                         .or. wrthis(indxU) .or. wrthis(indxV)
-#endif
-     &       ) wrthis(indxTime)=.true.
-
-          mpi_master_only write(*,'(/1x,A,5(/8x,A,T16,L1,T20,A))')
-     &                   'fields to write into history file: (T/F)'
-     &                 , 'zeta',   wrthis(indxZ),    vname(2,indxZ)
-     &                 , 'ubar',   wrthis(indxUb),   vname(2,indxUb)
-     &                 , 'vbar',   wrthis(indxVb),   vname(2,indxVb)
-#ifdef SOLVE3D
-     &                 , 'u',      wrthis(indxU),    vname(2,indxU)
-     &                 , 'v',      wrthis(indxV),    vname(2,indxV)
-          do itrc=1,NT
-            if (wrt_t(itrc)) wrthis(indxTime)=.true.
-            mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
-     &        itrc, ')', wrt_t(itrc), t_vname(itrc)
-          enddo
-
-        elseif (keyword(1:kwlen) == 'auxiliary_history_fields') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrthis(indxR), wrthis(indxO)
-     &          ,  wrthis(indxW),  wrthis(indxAkv),  wrthis(indxAkt)
-# ifdef SALINITY
-     &                                            ,  wrthis(indxAks)
-# endif
-# ifdef LMD_KPP
-     &                                            ,  wrthis(indxHbls)
-# endif
-# ifdef LMD_BKPP
-     &                                           ,  wrthis(indxHbbl)
-# endif
-          if ( wrthis(indxR) .or. wrthis(indxO) .or. wrthis(indxW)
-     &                     .or. wrthis(indxAkv) .or. wrthis(indxAkt)
-# ifdef SALINITY
-     &                                          .or. wrthis(indxAks)
-# endif
-# ifdef LMD_KPP
-     &                                          .or. wrthis(indxHbls)
-# endif
-# ifdef LMD_BKPP
-     &                                          .or. wrthis(indxHbbl)
-# endif
-     &       ) wrthis(indxTime)=.true.
-
-
-          mpi_master_only write(*,'(8(/8x,A,T16,L1,T20,A))')
-     &                   'rho',    wrthis(indxR),    vname(2,indxR)
-     &                 , 'Omega',  wrthis(indxO),    vname(2,indxO)
-     &                 , 'W',      wrthis(indxW),    vname(2,indxW)
-     &                 , 'Akv',    wrthis(indxAkv),  vname(2,indxAkv)
-     &                 , 'Akt',    wrthis(indxAkt),  vname(2,indxAkt)
-# ifdef SALINITY
-     &                 , 'Aks',    wrthis(indxAks),  vname(2,indxAks)
-# endif
-# ifdef LMD_KPP
-     &                 , 'hbls',   wrthis(indxHbls), vname(2,indxHbls)
-# endif
-# ifdef LMD_BKPP
-     &                 , 'hbbl',   wrthis(indxHbbl), vname(2,indxHbbl)
-# endif
-#endif /* SOLVE3D */
-
-
-#ifdef AVERAGES
-! Averages controls: time step number to start averaging (sets phase
-! for averaging windows); averaging interval in time steps; number of
-! records per file, and output filename.
-
-        elseif (keyword(1:kwlen) == 'averages') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) ntsavg, navg, nrpfavg
-          mpi_master_only write(*,'(/1x,A,I5,2x,A,I5,2x,A,I5)')
-     &       'averages :: ntsavg = ', ntsavg,      'navg =', navg,
-     &       'rec/file =', nrpfavg
-# ifndef SOLVE3D
-          ntsavg=ntsavg*ndtfast ; navg=navg*ndtfast
-# endif
-
-! Switches for fields to compute averages.
-
-        elseif (keyword(1:kwlen) == 'primary_averages') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrtavg(indxZ),  wrtavg(indxUb)
-     &                                        ,  wrtavg(indxVb)
-# ifdef SOLVE3D
-     &                      ,  wrtavg(indxU),     wrtavg(indxV)
-      ! DevinD: no longer use roms.in for tracer T/F inputs
-!     &                      , (wrtavg(indxT+itrc-1), itrc=1,NT)
-# endif
-          if ( wrtavg(indxZ) .or. wrtavg(indxUb) .or. wrtavg(indxVb)
-# ifdef SOLVE3D
-     &                       .or. wrtavg(indxU)  .or. wrtavg(indxV)
-# endif
-     &       ) wrtavg(indxTime)=.true.
-
-          mpi_master_only write(*,'(/1x,A,5(/8x,A,T16,L1,T20,A))')
-     &                   'fields to compute time averages of: (T/F)'
-     &                 , 'zeta',   wrtavg(indxZ),    vname(2,indxZ)
-     &                 , 'ubar',   wrtavg(indxUb),   vname(2,indxUb)
-     &                 , 'vbar',   wrtavg(indxVb),   vname(2,indxVb)
-# ifdef SOLVE3D
-     &                 , 'u',      wrtavg(indxU),    vname(2,indxU)
-     &                 , 'v',      wrtavg(indxV),    vname(2,indxV)
-          do itrc=1,NT
-            ! Currently have wrt_t(itrc) for primary_history fields. Need consistency.
-            if (wrt_t_avg(itrc)) wrtavg(indxTime)=.true.
-            mpi_master_only write(*,'(8x,A,I2,A,T16,L1,T20,A)') 't(',
-     &        itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
-          enddo
-
-        elseif (keyword(1:kwlen) == 'auxiliary_averages') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) wrtavg(indxR), wrtavg(indxO)
-     &          ,  wrtavg(indxW),  wrtavg(indxAkv),  wrtavg(indxAkt)
-#  ifdef SALINITY
-     &                                            ,  wrtavg(indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                                            ,  wrtavg(indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                                            ,  wrtavg(indxHbbl)
-#  endif
-          if ( wrtavg(indxR) .or. wrtavg(indxO) .or. wrtavg(indxW)
-     &                     .or. wrtavg(indxAkv) .or. wrtavg(indxAkt)
-#  ifdef SALINITY
-     &                                          .or. wrtavg(indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                                          .or. wrtavg(indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                                          .or. wrtavg(indxHbbl)
-#  endif
-     &       ) wrtavg(indxTime)=.true.
-
-          mpi_master_only write(*,'(8(/8x,A,T16,L1,T20,A))')
-     &                   'rho',    wrtavg(indxR),    vname(2,indxR)
-     &                 , 'Omega',  wrtavg(indxO),    vname(2,indxO)
-     &                 , 'W',      wrtavg(indxW),    vname(2,indxW)
-     &                 , 'Akv',    wrtavg(indxAkv),  vname(2,indxAkv)
-     &                 , 'Akt',    wrtavg(indxAkt),  vname(2,indxAkt)
-#  ifdef SALINITY
-     &                 , 'Aks',    wrtavg(indxAks),  vname(2,indxAks)
-#  endif
-#  ifdef LMD_KPP
-     &                 , 'hbls',   wrtavg(indxHbls), vname(2,indxHbls)
-#  endif
-#  ifdef LMD_BKPP
-     &                 , 'hbbl',   wrtavg(indxHbbl), vname(2,indxHbbl)
-#  endif
-# endif /* SOLVE3D */
-#endif /* AVERAGES */
-
-#ifdef WEC
-      ! MRL wave-current interaction variables history fields
-        elseif (keyword(1:kwlen).eq.'wci_history_fields') then
-          call read_inp_wec(keyword, ierr, kwlen)
-# ifdef AVERAGES
-        elseif (keyword(1:kwlen).eq.'wci_average_fields') then
-          call read_inp_avg_wec(keyword, ierr, kwlen)
-# endif /* AVERAGES */
-#endif /* WEC */
-
-! Read output file root name using read_write.F module
+! Read output file root name using roms_read_write.F module
         elseif (keyword(1:kwlen).eq.'output_root_name') then
           call read_output_root_name(keyword, kwlen)
 

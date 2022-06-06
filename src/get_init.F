@@ -10,39 +10,26 @@
       use grid
       use hidden_mpi_vars
       use mixing
-      use ncvars
-      use ocean2d
-      use ocean3d
+      use ocean_vars
       use scalars
       use netcdf
       use bgc_ecosys_vars
       use diagnostics
+      use nc_read_write, only: handle_ierr, ncread
+      use roms_read_write
       use dimensions
 
       implicit none
 
-#include "netcdf.inc"
-
-      integer req_rec, tindx, max_rec, record, ncid, varid,
-     &        ierr,  start(2), count(2), ibuff(iaux),
-     &        linit, lvar, latt, lenstr, ncdf_read, checkdims
-#ifdef SOLVE3D
-     &                                            , itrc
-#endif
+      integer :: req_rec, tindx, max_rec, record, ncid, varid, i, j, k,
+     &           ierr,  start(4), count(2), ibuff(iaux),
+     &           checkdims , itrc
       real    :: time_scale
       integer :: init_type, tile=0 ! set tile to zero for compute_tile_bounds.h below. Needed to fixed closed boundaries.
       integer, parameter :: init_run=1,  rst_run=2
 #ifdef EXACT_RESTART
      &                    , apprx_rst=3, exact_rst=4
       real time_bak
-# ifdef EXTRAP_BAR_FLUXES
-      integer vid_DU, vid_DV, vid_DU_bak, vid_DV_bak
-# elif defined PRED_COUPLED_MODE
-      integer vid_rufrc, vid_rvfrc
-# endif
-
-      integer :: i,j ! remove at some point DevinD
-
 # ifdef NHMG
 !     integer i,j,k
 # endif
@@ -78,8 +65,8 @@ c--#define VERBOSE
 !
 !             (2b) nrrec < 0, THE LAST available record is used.
 
-      init_type=0 ; linit=lenstr(ininame)
-      ierr=nf90_open(ininame(1:linit), nf90_nowrite, ncid)
+      init_type=0
+      ierr=nf90_open(ininame, nf90_nowrite, ncid)
       if (ierr == nf90_noerr) then
         ierr=checkdims (ncid, ininame, max_rec)
         if (ierr == nf90_noerr) then
@@ -92,7 +79,7 @@ c--#define VERBOSE
      &              '### ERROR: get_init :: requested restart time ',
      &              'record',req_rec, 'exceeds number', 'of records',
      &                       max_rec,  'available in netCDF file ''',
-     &                                       ininame(1:linit), '''.'
+     &                                       trim(ininame), '''.'
               endif
             else
               record=max_rec
@@ -103,7 +90,7 @@ c--#define VERBOSE
         endif
       else
         write(*,'(/1x,4A/12x,A/)')  '### ERROR: get_init :: Cannot ',
-     &                'open netCDF file ''', ininame(1:linit), '''.',
+     &                'open netCDF file ''', trim(ininame), '''.',
      &                                             nf90_strerror(ierr)
       endif
       if (ierr /= nf90_noerr) goto 99                     !--> ERROR
@@ -169,8 +156,7 @@ c--#define VERBOSE
 ! (3) restart from a file created by this code with activated
 ! EXACT_RESTART.
 
-      lvar=lenstr(vname(1,indxTime))
-      ierr=nf90_inq_varid(ncid, vname(1,indxTime)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxTime), varid)
 
 ! The following is done for backward compatibility: normally time
 ! variable is named "ocean_time", but legacy startup files may name
@@ -182,82 +168,66 @@ c--#define VERBOSE
       if (ierr /= nf90_noerr) then
         ierr=nf90_inq_varid(ncid, 'scrum_time', varid)
       endif
+      if (ierr/=0) call handle_ierr(ierr,'get_init: time var not found')
 
-      if (ierr == nf90_noerr) then
-        ierr=nf_get_var1_double(ncid, varid, record, start_time)
-        if (ierr == nf90_noerr) then
-          ierr=nf_get_att_text(ncid, varid, 'units', vname(3,indxTime))
-          if (ierr == nf90_noerr) then
-            latt=lenstr(vname(3,indxTime))
-            if (vname(3,indxTime)(1:6) == 'second') then
-              time_scale=1.D0
-            elseif (vname(3,indxTime)(1:3) == 'day') then
-              time_scale=day2sec
-            else
-              write(*,'(/1x,4A/12x,3A/)')    '### ERROR: get_init :: ',
-     &       'unknown units for variable ''',vname(1,indxTime)(1:lvar),
-     &              '''', 'in netCDF file ''', ininame(1:linit), '''.'
-              goto 99                                    !--> ERROR
-            endif
-            start_time=start_time*time_scale
+      ierr=nf90_get_var(ncid, varid, start_time, start=(/record/) )
+      if (ierr/=0) call handle_ierr(ierr,'get_init: get time')
+      ierr=nf90_get_att(ncid, varid, 'units', vname(3,indxTime))
+      if (ierr/=0) call handle_ierr(ierr,'get_init: get time units')
 
+      if (vname(3,indxTime)(1:6) == 'second') then
+        time_scale=1.D0
+      elseif (vname(3,indxTime)(1:3) == 'day') then
+        time_scale=day2sec
+      else
+        write(*,'(/1x,4A/12x,3A/)')    '### ERROR: get_init :: ',
+     &  'unknown units for variable ''',trim(vname(1,indxTime)),
+     &         '''', 'in netCDF file ''', trim(ininame), '''.'
+        goto 99                                    !--> ERROR
+      endif
+      start_time=start_time*time_scale
 
 #ifdef EXACT_RESTART
-            if (tindx == 2) then
-              forw_start=0
-              if (record < max_rec) then
-                time_bak=start_time
-                ierr=nf_get_var1_FTYPE (ncid, varid, record+1,
-     &                                             start_time)
-                if (ierr == nf90_noerr) then
-                  start_time=start_time*time_scale
+      if (tindx == 2) then
+        forw_start=0
+        if (record < max_rec) then
+          time_bak=start_time
+          ierr=nf90_get_var(ncid, varid, start_time, start=(/record+1/))
+          if (ierr == nf90_noerr) then
+            start_time=start_time*time_scale
 # ifdef VERBOSE
-                  write(*,'(3(1x,A,F16.6))') 'time_bak =', time_bak,
-     &                    'start_time =', start_time,    'dt =', dt
+            write(*,'(3(1x,A,F16.6))') 'time_bak =', time_bak,
+     &               'start_time =', start_time, 'dt =', dt
 # endif
 
 ! Note that expression "abs(start_time-time_bak-dt) < 0.001*dt" below
 ! is a roundoff-error tolerant version of "start_time == time_bak+dt".
 
-                 if (abs(start_time-time_bak-dt) < 0.01*dt) then
-                    forw_start=1
-                  else
-            mpi_nonexit_warn write(*,'(1x,2A,2I4/10x,4A/10x,A/)')
+            if (abs(start_time-time_bak-dt) < 0.01*dt) then
+               forw_start=1
+            else
+              mpi_nonexit_warn write(*,'(1x,2A,2I4/10x,4A/10x,A/)')
      &                'WARNING: Exact restart is requested, but ',
      &                'is not possible: records', record,record+1,
-     &                'in ''',   ininame(1:linit),  ''' are not ',
+     &                'in ''', trim(ininame),  ''' are not ',
      &                'consecutive time steps ==> proceeding ',
      &                          'with forward initial time step.'
-                  endif
-                else
-                  write(*,2) vname(1,indxTime)(1:lvar), record,
-     &                       ininame(1:linit), nf90_strerror(ierr)
-                  goto 99
-                endif
-              else
-                mpi_nonexit_warn write(*,'(1x,2A/10x,4A)')
-     &           'WARNING: Exact restart is requested, but is not ',
-     &           'possible: initial',  'file ''',  ininame(1:linit),
-     &                    ''' does not contain sufficient records.'
-              endif
-              if (forw_start /= 1) return
-              forw_start=0
             endif
-#endif
           else
-            write(*,'(/1x,4A/12x,3A/12x,A/)')  '### ERROR: get_init ',
-     &           ':: Cannot read attribute ''units'' for variable ''',
-     &         vname(1,indxTime)(1:lvar), '''', 'from netCDF file ''',
-     &                  ininame(1:linit),  '''.', nf90_strerror(ierr)
+            write(*,2) trim(vname(1,indxTime)), record,
+     &                 trim(ininame), nf90_strerror(ierr)
+            goto 99
           endif
         else
-          write(*,2) vname(1,indxTime)(1:lvar), record,
-     &               ininame(1:linit), nf90_strerror(ierr)
+           mpi_nonexit_warn write(*,'(1x,2A/10x,4A)')
+     &           'WARNING: Exact restart is requested, but is not ',
+     &           'possible: initial',  'file ''', trim(ininame),
+     &                    ''' does not contain sufficient records.'
         endif
-      else
-        write(*,1) vname(1,indxTime)(1:lvar), ininame(1:linit),
-     &                                      nf90_strerror(ierr)
+        if (forw_start /= 1) return
+        forw_start=0
       endif
+#endif
       if (ierr /= nf90_noerr)  goto 99                    !--> ERROR
 
 ! Check whether variable 'time_step' is present, which can be a
@@ -269,89 +239,56 @@ c--#define VERBOSE
 
       ierr=nf90_inq_varid(ncid, 'time_step', varid)
       if (ierr == nf90_noerr) then
-        ierr=nf_inq_vardimid(ncid, varid, ibuff)
-        if (ierr == nf90_noerr) then
-          ierr=nf_inq_dimlen(ncid, ibuff(1), count(1))
-          if (ierr == nf90_noerr) then
-            start(1)=1 ; start(2)=record ; count(2)=1
-            ibuff(1:iaux)=0
-            ierr=nf_get_vara_int(ncid, varid, start, count, ibuff)
-            if (ierr == nf90_noerr) then
-              ntstart=ibuff(1)+1
-              nrecrst=ibuff(2)
-              nrechis=ibuff(3)
-#ifdef AVERAGES
-              nrecavg=ibuff(4)
-#endif
+        ierr=nf90_inquire_variable(ncid, varid, dimids=ibuff)
+        if (ierr/=0) call handle_ierr(ierr,'get_init: cannot get time_step dimids')
+        ierr=nf90_inquire_dimension(ncid, ibuff(1), len=count(1))
+        if (ierr/=0) call handle_ierr(ierr,'get_init: cannot get time dim size')
+        start(1)=1 ; start(2)=record ; count(2)=1
+        ibuff(1:iaux)=0
+        ierr=nf90_get_var(ncid, varid, ibuff, start, count)
+        if (ierr/=0) call handle_ierr(ierr,'get_init: cannot read time_step')
+        ntstart=ibuff(1)+1
+!              nrecrst=ibuff(2)
 #ifdef EXACT_RESTART
-              if (tindx == 2 .and. record < max_rec) then
-                start(2)=record+1
-                ierr=nf_get_vara_int (ncid, varid, start, count, ibuff)
-                if (ierr == nf90_noerr) then
+        if (tindx == 2 .and. record < max_rec) then
+          start(2)=record+1
+          ierr=nf90_get_var(ncid, varid, ibuff, start, count)
+          if (ierr/=0) call handle_ierr(ierr,'get_init: cannot read 2nd time_step')
 # ifdef VERBOSE
-                  write(*,*) 'ibuff(1),ntstart =', ibuff(1), ntstart
+          write(*,*) 'ibuff(1),ntstart =', ibuff(1), ntstart
 # endif
-                  if (ibuff(1) == ntstart) then
-                    forw_start=1
-                  else
-                  mpi_nonexit_warn write(*,'(1x,2A,2I4/10x,4A/10x,A)')
+          if (ibuff(1) == ntstart) then
+            forw_start=1
+          else
+          mpi_nonexit_warn write(*,'(1x,2A,2I4/10x,4A/10x,A)')
      &             'WARNING: Exact restart is requested, but is not ',
      &             'possible: records',  record,   record+1,  'in ''',
-     &              ininame(1:linit),  ''' are not consecutive time ',
+     &              trim(ininame),  ''' are not consecutive time ',
      &                                    'steps ==> proceeding with',
      &                                   'forward initial time step.'
-                    return   !--> no need to read preliminary record
-                  endif
-                else
-                  write(*,2) 'time_step', record, ininame(1:linit),
-     &                                           nf90_strerror(ierr)
-                endif
-              elseif (tindx == 1) then
-                if (forw_start == 1) then
-                  init_type=exact_rst
-                else
-                  init_type=apprx_rst
-                endif
-              endif
-#else
-              init_type=rst_run
-#endif
-            else
-              write(*,2)  'time_step',  record,  ininame(1:linit),
-     &                                           nf90_strerror(ierr)
-            endif
-          else
-             write(*,'(/1x,3A/16x,A/)')     '### ERROR: get_init :: ',
-     &            'Cannot determine size of the first dimension for ',
-     &                  'variable ''time_step'':', nf90_strerror(ierr)
+            return   !--> no need to read preliminary record
           endif
-        else
-          write(*,'(/1x,3A/16x,A/)') '### ERROR: get_init :: Cannot ',
-     &      'determine dimensions for netCDF variable ''time_step'':',
-     &                                             nf90_strerror(ierr)
+        elseif (tindx == 1) then
+          if (forw_start == 1) then
+            init_type=exact_rst
+          else
+            init_type=apprx_rst
+          endif
         endif
+#else
+        init_type=rst_run
+#endif
         if (ierr /= nf90_noerr)  goto 99                  !--> ERROR
       else
         init_type=init_run
         ntstart=1               ! netCDF variable "time_step" not
-        nrecrst=0               ! found: proceed with initializing
-        nrechis=0               ! all counters to zero (initial run).
-#ifdef AVERAGES
-        nrecavg=0
-#endif
+!        nrecrst=0               ! found: proceed with initializing
+!        nrechis=0               ! all counters to zero (initial run).
+
+        ierr=0                                                       ! DevinD added to not trigger break later
       endif
 #ifdef EXACT_RESTART
       if (tindx == 1 .and. forw_start == 0) forw_start=ntstart
-#endif
-#ifdef AVERAGES
-      if (tindx == 1) then
-        if (ntstart > 1) then
-          mpi_master_only write(*,'(/4x,A,I5,A,I8/)')
-     &         'Adjusting averaging phase ntsavg =',  ntsavg,
-     &                          ' ---> ', ntsavg + ntstart-1
-          ntsavg=ntsavg + ntstart-1
-        endif
-      endif
 #endif
 #ifdef VERBOSE
       write(*,'(1x,2A,F12.4,1x,A,I4)')   'get_init: reading initial ',
@@ -363,48 +300,39 @@ c--#define VERBOSE
 
 ! Free-surface and barotropic 2D momentuma, XI- and ETA-components
 
-      lvar=lenstr(vname(1,indxZ))
-      ierr=nf90_inq_varid(ncid, vname(1,indxZ)(1:lvar), varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_read( ncid, varid, record, r_var,
-     &                  zeta(START_2D_ARRAY,1), 1)
-        if (ierr == nf90_noerr) then
-          lvar=lenstr(vname(1,indxUb))
-          ierr=nf90_inq_varid(ncid, vname(1,indxUb)(1:lvar), varid)
-          if (ierr == nf90_noerr) then
-            ierr=ncdf_read( ncid, varid, record, u_var,
-     &                      ubar(START_2D_ARRAY,1), 1)
-            if (ierr == nf90_noerr) then
-              lvar=lenstr(vname(1,indxVb))
-              ierr=nf90_inq_varid(ncid, vname(1,indxVb)(1:lvar), varid)
-              if (ierr == nf90_noerr) then
-                ierr=ncdf_read( ncid, varid, record, v_var,
-     &                          vbar(START_2D_ARRAY,1), 1)
-                if (ierr /= nf90_noerr) then
-                  write(*,2) vname(1,indxVb)(1:lvar),   record,
-     &                       ininame(1:linit), nf90_strerror(ierr)
-                endif
-              else
-                write(*,1) vname(1,indxVb)(1:lvar), ininame(1:linit),
-     &                                             nf90_strerror(ierr)
-              endif
-            else
-              write(*,2) vname(1,indxUb)(1:lvar),    record,
-     &                   ininame(1:linit), nf90_strerror(ierr)
-            endif
+      start=1; start(3)=record                                       ! 2D vars
+
+      call ncread(ncid,vname(1,indxZ),zeta(i0:i1,j0:j1,1),start)
+      zeta(i0:i1,j0:j1,1)=zeta(i0:i1,j0:j1,1)*rmask(i0:i1,j0:j1)     ! masking needed else answer changed?
+      call exchange_tile(1,nx,1,ny, zeta(START_2D_ARRAY,1),1)        ! exchange needed for zeta
+
+      ! in order to get the exact same values as the ncdf_read (original)
+      ! method, I needed to copy if (rmask(i,j)+rmask(i-1,j) > 0.5)...
+      ! just using ubar=ubar*umask did not get an exact match near the
+      ! shoreline. This was necessary for vbar, u and v too.
+      call ncread(ncid,vname(1,indxUb),ubar( 1:i1,j0:j1,1),start)
+      do j=j0,j1
+        do i=1,i1
+          if (rmask(i,j)+rmask(i-1,j) > 0.5) then
           else
-            write(*,1) vname(1,indxUb)(1:lvar), ininame(1:linit),
-     &                                         nf90_strerror(ierr)
+            ubar(i,j,1)=0.D0
           endif
-        else
-          write(*,2) vname(1,indxZ)(1:lvar),    record,
-     &               ininame(1:linit), nf90_strerror(ierr)
-        endif
-      else
-        write(*,1) vname(1,indxZ)(1:lvar), ininame(1:linit),
-     &                                    nf90_strerror(ierr)
-      endif
-      if (ierr /= nf90_noerr) goto 99               !--> ERROR
+        enddo
+      enddo
+!      ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)     ! umask didn't give same answer???
+      call exchange_tile(1,nx,1,ny, ubar(START_2D_ARRAY,1),1)        ! not sure if exchange is needed for remaining vars
+
+      call ncread(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,1),start)
+      do j=1,j1
+        do i=i0,i1
+          if (rmask(i,j)+rmask(i,j-1) > 0.5) then
+          else
+            vbar(i,j,1)=0.D0
+          endif
+        enddo
+      enddo
+!      vbar(i0:i1,1:j1,1) = vbar(i0:i1,1:j1,1)*vmask(i0:i1,1:j1)     ! vmask didn't give same answer
+      call exchange_tile(1,nx,1,ny, vbar(START_2D_ARRAY,1),1)
 
 ! Two sets of fast-time-averaged barotropic fluxes needed for exact
 ! restart in the case when using Adams-Bashforth-like extrapolation of
@@ -416,39 +344,18 @@ c--#define VERBOSE
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-      ierr=nf90_inq_varid(ncid, 'DU_avg2', vid_DU)
+      ierr=nf90_inq_varid(ncid, 'DU_avg2', varid)  ! change these to varid
       if (ierr == nf90_noerr) then
-        ierr=nf90_inq_varid(ncid, 'DV_avg2', vid_DV)
+        ierr=nf90_inq_varid(ncid, 'DV_avg2', varid)
         if (ierr == nf90_noerr) then
-          ierr=nf90_inq_varid(ncid, 'DU_avg_bak', vid_DU_bak)
+          ierr=nf90_inq_varid(ncid, 'DU_avg_bak', varid)
           if (ierr == nf90_noerr) then
-            ierr=nf90_inq_varid(ncid, 'DV_avg_bak', vid_DV_bak)
+            ierr=nf90_inq_varid(ncid, 'DV_avg_bak', varid)
             if (ierr == nf90_noerr) then
-              ierr=ncdf_read(ncid, vid_DU, record, u_var, DU_avg2, 1)
-              if (ierr == nf90_noerr) then
-                ierr=ncdf_read(ncid, vid_DV, record, v_var, DV_avg2,1)
-                if (ierr == nf90_noerr) then
-                  ierr=ncdf_read(ncid, vid_DU_bak, record, u_var,
-     &                                                  DU_avg_bak, 1)
-                  if (ierr == nf90_noerr) then
-                    ierr=ncdf_read(ncid, vid_DV_bak, record, v_var,
-     &                                                  DV_avg_bak, 1)
-                    if (ierr /= nf90_noerr) then
-                      write(*,2) 'DV_avg_bak', record,ininame(1:linit),
-     &                                               nf90_strerror(ierr)
-                    endif
-                  else
-                    write(*,2)  'DU_avg_bak', record, ininame(1:linit),
-     &                                               nf90_strerror(ierr)
-                  endif
-                else
-                  write(*,2) 'DV_avg2',  record, ininame(1:linit),
-     &                                          nf90_strerror(ierr)
-                endif
-              else
-                write(*,2)   'DU_avg2',  record, ininame(1:linit),
-     &                                          nf90_strerror(ierr)
-              endif
+              call ncread(ncid,'DU_avg2',      DU_avg2( 1:i1,j0:j1),start)
+              call ncread(ncid,'DV_avg2',      DV_avg2(i0:i1, 1:j1),start)
+              call ncread(ncid,'DU_avg_bak',DU_avg_bak( 1:i1,j0:j1),start)
+              call ncread(ncid,'DV_avg_bak',DV_avg_bak(i0:i1, 1:j1),start)
               if (ierr /= nf90_noerr) goto 99                  !--> ERROR
             else
               forw_start=ntstart      !--> cancel exact restart
@@ -464,24 +371,15 @@ c--#define VERBOSE
       endif
 
 #  elif defined PRED_COUPLED_MODE
-      ierr=nf90_inq_varid(ncid, 'rufrc_bak', vid_rufrc)
+      ierr=nf90_inq_varid(ncid, 'rufrc_bak', varid)
       if (ierr == nf90_noerr) then
-        ierr=nf90_inq_varid(ncid,  'rvfrc_bak',  vid_rvfrc)
+        ierr=nf90_inq_varid(ncid,  'rvfrc_bak', varid)
         if (ierr == nf90_noerr) then
-          ierr=ncdf_read( ncid,  vid_rufrc,  record,  u_var,
-     &                     rufrc_bak(START_2D_ARRAY,tindx), 1)
-          if (ierr == nf90_noerr) then
-            ierr=ncdf_read( ncid, vid_rvfrc,  record, v_var,
-     &                     rvfrc_bak(START_2D_ARRAY,tindx), 1)
-            if (ierr /= nf90_noerr) then
-              write(*,2) 'rvfrc_bak', record, ininame(1:linit),
-     &                                       nf90_strerror(ierr)
-            endif
-          else
-            write(*,2)   'rufrc_bak', record, ininame(1:linit),
-     &                                       nf90_strerror(ierr)
-          endif
+
+          call ncread(ncid,'rufrc_bak', rufrc_bak( 1:i1,j0:j1,tindx),start)    ! DevinD this update was untested
+          call ncread(ncid,'rvfrc_bak', rvfrc_bak(i0:i1, 1:j1,tindx),start)
           if (ierr /= nf90_noerr) goto 99                     !--> ERROR
+
         else
           forw_start=ntstart    !--> cancel exact restart
         endif
@@ -493,34 +391,35 @@ c--#define VERBOSE
 
 ! 3D momentum components in XI- and ETA-directions
 
-      lvar=lenstr(vname(1,indxU))
-      ierr=nf90_inq_varid(ncid, vname(1,indxU)(1:lvar), varid)
-      if (ierr == nf90_noerr) then
-        ierr=ncdf_read( ncid,  varid,  record,  u_var,
-     &                  u(START_2D_ARRAY,1,tindx), N)
-        if (ierr == nf90_noerr) then
-          lvar=lenstr(vname(1,indxV))
-          ierr=nf90_inq_varid(ncid, vname(1,indxV)(1:lvar), varid)
-          if (ierr == nf90_noerr) then
-            ierr=ncdf_read( ncid,  varid,  record,  v_var,
-     &                      v(START_2D_ARRAY,1,tindx), N)
-            if (ierr /= nf90_noerr) then
-              write(*,2) vname(1,indxV)(1:lvar),    record,
-     &                   ininame(1:linit), nf90_strerror(ierr)
-            endif
+      start=1; start(4)=record                                       ! 3D vars
+
+      call ncread(ncid,vname(1,indxU), u( 1:i1,j0:j1,:,tindx),start)           ! u requires masking and
+      do j=j0,j1                                                               ! exchange for some reason?
+        do i=1,i1
+          if (rmask(i,j)+rmask(i-1,j) > 0.5) then
           else
-            write(*,1) vname(1,indxV)(1:lvar), ininame(1:linit),
-     &                                       nf90_strerror(ierr)
+            u(i,j,:,tindx)=0.D0
           endif
-        else
-          write(*,2) vname(1,indxU)(1:lvar),    record,
-     &               ininame(1:linit), nf90_strerror(ierr)
-        endif
-      else
-        write(*,1) vname(1,indxU)(1:lvar), ininame(1:linit),
-     &                                   nf90_strerror(ierr)
-      endif
-      if (ierr /= nf90_noerr) goto 99                        !--> ERROR
+        enddo
+      enddo
+!      do k=1,N
+!        u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
+!      enddo
+      call exchange_tile(1,nx,1,ny, u(START_2D_ARRAY,1,tindx),N)
+
+      call ncread(ncid,vname(1,indxV), v(i0:i1, 1:j1,:,tindx),start)           ! v requires masking and
+      do j=1,j1                                                                ! exchange for some reason?
+        do i=i0,i1
+          if (rmask(i,j)+rmask(i,j-1) > 0.5) then                              ! see comment by ubar for masking
+          else
+            v(i,j,:,tindx)=0.D0
+          endif
+        enddo
+      enddo
+!      do k=1,N
+!        v(i0:i1,1:j1,k,tindx) = v(i0:i1,1:j1,k,tindx)*vmask(i0:i1,1:j1)
+!      enddo
+      call exchange_tile(1,nx,1,ny, v(START_2D_ARRAY,1,tindx),N)
 
 # if defined NHMG
       ! since ncdf_read already does an exchange to fill buffers, we're
@@ -542,80 +441,57 @@ c--#define VERBOSE
 
 
 ! Tracer variables.
-      ! DevinD - could move this to tracers.F -> get_init_tracers()
+
       do itrc=1,NT
 
-        ! This can be done in one call (already made wrapper for this:
-        ! example from read_var_frc (read_write.F):
-!        call nc_read_var(ncid,var_array,1, ! 1 is nmax (vertical layers)
-!     &                       var_name,var_type,irec,ierr, coarse)
-        ! Adjusted for here:
-!        call nc_read_var(ncid,t(START_2D_ARRAY,1,tindx,itrc),1, ! 1 is nmax (vertical layers)
-!     &                        t_vname(itrc),t_vtype(itrc),t_irec(itrc),
-!     &                        ierr, t_coarse)
-
-
-!        lvar=lenstr(vname(1,indxT+itrc-1))
-        lvar=lenstr(t_vname(itrc))
-        ierr=nf90_inq_varid(ncid, t_vname(itrc)(1:lvar), varid)
+        ierr=nf90_inq_varid(ncid, t_vname(itrc), varid)
         if (ierr == nf90_noerr) then
-          ierr=ncdf_read( ncid,   varid,   record,   r_var,
-     &                    t(START_2D_ARRAY,1,tindx,itrc), N)
-          if (ierr /= nf90_noerr) then
-            write(*,2) t_vname(itrc)(1:lvar), record,
-     &                     ininame(1:linit), nf90_strerror(ierr)
-            goto 99                                       !--> ERROR
-          endif
+          call ncread(ncid, t_vname(itrc), t(i0:i1,j0:j1,:,tindx,itrc), start)
+          do k=1,N
+            t(i0:i1,j0:j1,k,tindx,itrc)=t(i0:i1,j0:j1,k,tindx,itrc)*rmask(i0:i1,j0:j1)
+          enddo
+          call exchange_tile(1,nx,1,ny, t(START_2D_ARRAY,1,tindx,itrc),N)      ! DevinD - confirmed needs an exchange for some reason?
         else
 
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
-            write(*,1) t_vname(itrc)(1:lvar), ininame(1:linit),
-     &                                            nf90_strerror(ierr)
+            write(*,1) trim(t_vname(itrc)), trim(ininame),
+     &                  nf90_strerror(ierr)
             goto 99                                         !--> ERROR
           else
             t(GLOBAL_2D_ARRAY,1,tindx,itrc) = 0.0
             if(mynode==0) write(*,*) ' --- WARNING: '
-     &         , t_vname(itrc)(1:lvar)
+     &         , trim(t_vname(itrc))
      &         , ' not in initial file.  Initialized to 0.0'
             ierr=nf90_noerr
           endif
 
         endif
       enddo
+
+      start=1; start(3)=record                                       ! 2D vars
 # ifdef LMD_KPP
-      lvar=lenstr(vname(1,indxHbls))
-      ierr=nf90_inq_varid(ncid, vname(1,indxHbls)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxHbls), varid)
       if (ierr == nf90_noerr) then
-        ierr=ncdf_read( ncid,  varid,  record,  r_var,
-     &                  hbls(START_2D_ARRAY,tindx), 1)
-        if (ierr /= nf90_noerr) then
-          write(*,2) vname(1,indxHbls)(1:lvar), record,
-     &               ininame(1:linit), nf90_strerror(ierr)
-          goto 99                                        !--> ERROR
-        endif
+        call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
+        hbls(i0:i1,j0:j1,tindx)=hbls(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
+        call exchange_tile(1,nx,1,ny, hbls(START_2D_ARRAY,tindx),1)            ! confirmed needs an exchange, not sure why
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
-     & 'variable ''', vname(1,indxHbls)(1:lvar), ''' not found in ''',
-     &           ininame(1:linit), ''' ==> initialized to zero state.'
+     & 'variable ''', trim(vname(1,indxHbls)), ''' not found in ''',
+     &           trim(ininame), ''' ==> initialized to zero state.'
 
       endif
-
 # endif
 # ifdef LMD_BKPP
-      lvar=lenstr(vname(1,indxHbbl))
-      ierr=nf90_inq_varid(ncid, vname(1,indxHbbl)(1:lvar), varid)
+      ierr=nf90_inq_varid(ncid, vname(1,indxHbbl), varid)
       if (ierr == nf90_noerr) then
-        ierr=ncdf_read( ncid,  varid,  record, r_var,
-     &                  hbbl(START_2D_ARRAY,tindx),1)
-        if (ierr /= nf90_noerr) then
-          write(*,2) vname(1,indxHbbl)(1:lvar), record,
-     &               ininame(1:linit), nf90_strerror(ierr)
-          goto 99                                        !--> ERROR
-        endif
+        call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
+        hbbl(i0:i1,j0:j1,tindx)=hbbl(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
+        call exchange_tile(1,nx,1,ny, hbbl(START_2D_ARRAY,tindx),1)            ! confirmed needs an exchange, not sure why
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
-     & 'variable ''', vname(1,indxHbbl)(1:lvar), ''' not found in ''',
-     &           ininame(1:linit), ''' ==> initialized to zero state.'
+     & 'variable ''', trim(vname(1,indxHbbl)), ''' not found in ''',
+     &      trim(ininame), ''' ==> initialized to zero state.'
 
       endif
 # endif
@@ -625,42 +501,43 @@ c--#define VERBOSE
       if(mynode==0) write(*,*),'total # of 3D diagnostics:',nr_bec2_diag_3d
 
       do itrc=1,nr_bec2_diag_2d
-         lvar=lenstr(vname_bec2_diag_2d(1,itrc))
-         ierr=nf90_inq_varid (ncid, vname_bec2_diag_2d(1,itrc)(1:lvar), varid)
+!         lvar=lenstr(vname_bec2_diag_2d(1,itrc))
+         ierr=nf90_inq_varid (ncid, vname_bec2_diag_2d(1,itrc), varid)
          if (ierr .eq. nf90_noerr) then
-            ierr=ncdf_read (ncid,  varid, record, r_var
-     &                     , bec2_diag_2d(START_2D_ARRAY,itrc), 1)
-            if (ierr .ne. nf90_noerr) then
-               write(*,2) vname_bec2_diag_2d(1,itrc)(1:lvar), record,
-     &              trim(ininame)
-               goto 99             !--> ERROR
-            endif
+           call ncread(ncid,vname_bec2_diag_2d(1,itrc),bec2_diag_2d(i0:i1,j0:j1,itrc),start)
+           bec2_diag_2d(i0:i1,j0:j1,itrc)=bec2_diag_2d(i0:i1,j0:j1,itrc)*rmask(i0:i1,j0:j1)
+           call exchange_tile(1,nx,1,ny, bec2_diag_2d(START_2D_ARRAY,itrc),1)
          else
             bec2_diag_2d(GLOBAL_2D_ARRAY,itrc) = 0.0
             mpi_master_only write(*,*) ' --- WARNING: '
-     &         , vname_bec2_diag_2d(1,itrc)(1:lvar)
+     &         , trim(vname_bec2_diag_2d(1,itrc))
      &         , ' not in initial file.  Initialized to 0.0'
             ierr=nf90_noerr
          endif
       end do
 
-
+      start=1; start(4)=record                                       ! 3D vars
       ! Read in 3d diagnostic variables:
       do itrc=1,nr_bec2_diag_3d
-         lvar=lenstr(vname_bec2_diag_3d(1,itrc))
-         ierr=nf90_inq_varid (ncid, vname_bec2_diag_3d(1,itrc)(1:lvar), varid)
+!         lvar=lenstr(vname_bec2_diag_3d(1,itrc))
+         ierr=nf90_inq_varid (ncid, vname_bec2_diag_3d(1,itrc), varid)
          if (ierr == nf90_noerr) then
-            ierr=ncdf_read (ncid,  varid, record, r_var
-     &                    , bec2_diag_3d(START_2D_ARRAY,1,itrc), N)
-            if (ierr /= nf90_noerr) then
-               write(*,2) vname_bec2_diag_3d(1,itrc)(1:lvar), record,
-     &              trim(ininame)
-               goto 99             !--> ERROR
-            endif
+           call ncread(ncid, vname_bec2_diag_3d(1,itrc), bec2_diag_3d(i0:i1,j0:j1,:,itrc),start)
+           do k=1,N
+             bec2_diag_3d(i0:i1,j0:j1,k,itrc)=bec2_diag_3d(i0:i1,j0:j1,k,itrc)*rmask(i0:i1,j0:j1)
+           enddo
+           call exchange_tile(1,nx,1,ny, bec2_diag_3d(START_2D_ARRAY,1,itrc),N)
+!            ierr=ncdf_read (ncid,  varid, record, r_var
+!     &                    , bec2_diag_3d(START_2D_ARRAY,1,itrc), N)
+!            if (ierr /= nf90_noerr) then
+!               write(*,2) vname_bec2_diag_3d(1,itrc)(1:lvar), record,
+!     &              trim(ininame)
+!               goto 99             !--> ERROR
+!            endif
          else
             bec2_diag_3d(GLOBAL_2D_ARRAY,1,itrc) = 0.0
             mpi_master_only write(*,*) ' --- WARNING: '
-     &         , vname_bec2_diag_3d(1,itrc)(1:lvar)
+     &         , trim(vname_bec2_diag_3d(1,itrc))
      &         , ' not in initial file.  Initialized to 0.0'
             ierr=nf90_noerr
          endif
@@ -670,93 +547,7 @@ c--#define VERBOSE
 #endif /* SOLVE3D */
 
 #ifdef DIAGNOSTICS
-      if (diag_pflx) then
-
-        if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
-          allocate( u_slow( GLOBAL_2D_ARRAY, N ))
-          u_slow = 0
-        endif
-        if (.not. allocated(v_slow)) then
-          allocate( v_slow( GLOBAL_2D_ARRAY, N ))
-          v_slow = 0
-        endif
-        if (.not. allocated(p_slow)) then
-          allocate( p_slow( GLOBAL_2D_ARRAY, N ))
-          p_slow = 0
-        endif
-        if (.not. allocated(g2d_u_slow)) then
-          allocate( g2d_u_slow( GLOBAL_2D_ARRAY, N ))
-          g2d_u_slow = 0
-        endif
-        if (.not. allocated(g2d_v_slow)) then
-          allocate( g2d_v_slow( GLOBAL_2D_ARRAY, N ))
-          g2d_v_slow = 0
-        endif
-        if (.not. allocated(g2d_p_slow)) then
-          allocate( g2d_p_slow( GLOBAL_2D_ARRAY, N ))
-          g2d_p_slow = 0
-        endif
-
-         ierr=nf90_inq_varid (ncid, 'u_slow', varid)
-         if (ierr == nf90_noerr) then
-            ierr=ncdf_read (ncid,  varid, record, u_var
-     &                    , g2d_u_slow(START_2D_ARRAY,1), N)
-            if (ierr /= nf90_noerr) then
-               write(*,2) 'u_slow', record,
-     &              trim(ininame)
-               goto 99             !--> ERROR
-            endif
-         else
-            g2d_u_slow = 0.0
-            mpi_master_only write(*,*) ' --- WARNING: '
-     &         , 'u_slow'
-     &         , ' not in initial file.  Initialized to 0.0'
-            ierr=nf90_noerr
-         endif
-
-         ierr=nf90_inq_varid (ncid, 'v_slow', varid)
-         if (ierr == nf90_noerr) then
-            ierr=ncdf_read (ncid,  varid, record, v_var
-     &                    , g2d_v_slow(START_2D_ARRAY,1), N)
-            if (ierr /= nf90_noerr) then
-               write(*,2) 'v_slow', record,
-     &              trim(ininame)
-               goto 99             !--> ERROR
-            endif
-         else
-            g2d_v_slow = 0.0
-            mpi_master_only write(*,*) ' --- WARNING: '
-     &         , 'v_slow'
-     &         , ' not in initial file.  Initialized to 0.0'
-            ierr=nf90_noerr
-         endif
-
-         ierr=nf90_inq_varid (ncid, 'p_slow', varid)
-         if (ierr == nf90_noerr) then
-            ierr=ncdf_read (ncid,  varid, record, r_var
-     &                    , g2d_p_slow(START_2D_ARRAY,1), N)
-            if (ierr /= nf90_noerr) then
-               write(*,2) 'p_slow', record,
-     &              trim(ininame)
-               goto 99             !--> ERROR
-            endif
-         else
-            g2d_p_slow = 0.0
-            mpi_master_only write(*,*) ' --- WARNING: '
-     &         , 'u_slow'
-     &         , ' not in initial file.  Initialized to 0.0'
-            ierr=nf90_noerr
-         endif
-
-        do j=1,ny
-          do i=1,nx
-            u_slow(i,j,:) = g2d_u_slow(i,j,:)
-            v_slow(i,j,:) = g2d_v_slow(i,j,:)
-            p_slow(i,j,:) = g2d_p_slow(i,j,:)
-          enddo
-        enddo
-
-      endif  !<-- diag_pflx
+      if (diag_pflx) call get_init_slow( ncid, record )
 #endif      
 
 ! Close input NetCDF file and  write greeting message depending
@@ -772,19 +563,18 @@ c--#define VERBOSE
      &   'conditions for day =', start_time*sec2day, 'record =',record
 #ifdef EXACT_RESTART
          elseif (init_type == exact_rst) then
-           write(*,'(6x,A,F12.4,1x,A,I4,A,I8,A,I4,A,I4,A)')
+           write(*,'(6x,A,F12.4,1x,A,I4,A)')
      &    'get_init :: Exact restart from day =',  start_time*sec2day,
-     &    'rec =', record,  '(',ntstart, ',',nrecrst,',', nrechis, ').'
+     &    'rec =', record, '.'
          elseif (init_type == apprx_rst) then
-           write(*,'(6x,A,F12.4,1x,A,I4,A,I8,A,I4,A,I4,A)')
+           write(*,'(6x,A,F12.4,1x,A,I4,A)')
      &      'get_init :: Approximate, single-step restart from day =',
-     &       start_time*sec2day,   'rec =', record,  '(',ntstart, ',',
-     &                                     nrecrst, ',', nrechis,').'
+     &       start_time*sec2day,   'rec =', record, '.'
 #else
          elseif (init_type == rst_run) then
-           write(*,'(6x,A,F12.4,1x,A,I4,A,I8,A,I4,A,I4,A)')
+           write(*,'(6x,A,F12.4,1x,A,I4,A)')
      &          'get_init: Restarted from day =', start_time*sec2day,
-     &     'rec =', record, '(',ntstart,',', nrecrst,',', nrechis,').'
+     &     'rec =', record, '.'
 #endif
          else
            write(*,'(/1x,A/)') '### ERROR: get_init :: Unknown Error.'

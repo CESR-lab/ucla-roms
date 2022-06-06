@@ -10,8 +10,8 @@
       use tracers, only: init_tracers
       use mpi
 
-      implicit none              ! with single parallel region using
-      integer ierr               ! explicit barrier synchronization.
+      implicit none                                        ! with single parallel region using
+      integer :: ierr                                      ! explicit barrier synchronization.
 # ifdef MPI
       real*8 tstart, tend
 C$    integer level,req_lev
@@ -84,8 +84,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
-      use ncvars
-      use ocean3d
+      use ocean_vars
       use scalars
       use analytical
 
@@ -306,7 +305,7 @@ C$OMP MASTER
 #ifdef ANA_GRID
       call wrt_ana_grid
 #endif
-      if (ldefhis .and. wrthis(indxTime)) call wrt_his
+!      if (ldefhis .and. wrthis(indxTime)) call wrt_his
 C$OMP END MASTER
 C$OMP BARRIER
 
@@ -339,12 +338,12 @@ C$OMP END MASTER
       use tides
       use extract_data
       use diagnostics
-      use ncvars
       use scalars
       use analytical
       use sponge_tune
       use particles
       use random_output
+      use ocean_vars
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -377,20 +376,11 @@ C$OMP END MASTER
       nrhs=nstp ; nnew=3
 #endif
 
-                                       ! Read forcing and climatology
-      if (synchro_flag) then           ! data. This operation may raise
-        synchro_flag=.false.           ! "may_day_flag" in the case of
-C$OMP MASTER                           ! I/O errors which may occur on
-        call get_forces                ! some nodes, but not on all at 
-C$OMP END MASTER                       ! the same time.  Therefore to
-C$OMP BARRIER                          ! avoid MPI deadlock the exit is
-      endif                            ! deferred until after broadcast
-                                       ! of "may_day_flag" by diag.
 #ifdef SOLVE3D
-      do tile=my_tile_range                 ! interpolate forcing
+      do tile=my_tile_range            ! interpolate forcing
         call set_forces(tile)          ! data to model time and
 # if defined TIDES
-        call set_tides(tile)            ! compute surface fluxes.
+        call set_tides(tile)           ! compute surface fluxes.
 # endif
         call    rho_eos(tile)
         call    set_HUV(tile)
@@ -420,12 +410,14 @@ C$OMP BARRIER
       do tile=my_tile_range
         call     prsgrd(tile)
         call pre_step3d(tile)  ! u is m/s here
-# ifdef AVERAGES
-        call    set_avg(tile)
-# endif
+!# ifdef AVERAGES
+!        call    set_avg(tile)
+!# endif
       enddo
 C$OMP BARRIER
 
+      call calc_avg_ocean_vars ! call here not wrt_his else
+                               ! rho, omega and w will change
       do tile=my_tile_range
         call set_HUV1(tile)
       enddo
@@ -466,43 +458,15 @@ C$OMP BARRIER
       call do_extract_data
 #endif
 
-      if ( iic > ntstart .and. ( mod(iic-ntstart,nrst) == 0
-#ifdef EXACT_RESTART
-     &                         .or. mod(iic-ntstart+1,nrst) == 0
+      ! wrt_***_ocean_vars are called here, in the middle of a roms_step, because
+      ! 'rho', 'Akv', etc have only just been computed for step 'n'.
+      ! whereas, u & ubar, etc, remain unchanged from the end of the previous step
+      call wrt_his_ocean_vars
+      call wrt_avg_ocean_vars
+      call wrt_rst_ocean_vars
+#ifdef DIAGNOSTICS
+      if (diag_pflx) call wrt_rst_diag_pflx
 #endif
-     &   .or. (mod(iic-ntstart,nwrt) == 0 .and. wrthis(indxTime))
-#ifdef AVERAGES
-     &   .or. (mod(iic-ntsavg,navg) == 0  .and. wrtavg(indxTime))
-#endif
-     &                                                  )) then
-C$OMP MASTER
-        if (mod(iic-ntstart,nrst) == 0
-#ifdef EXACT_RESTART
-     &         .or. mod(iic-ntstart+1,nrst) == 0
-#endif
-     &                                ) nrecrst=nrecrst+1
-        if (mod(iic-ntstart,nwrt) == 0) nrechis=nrechis+1
-#ifdef AVERAGES
-        if (mod(iic-ntsavg,navg) == 0) nrecavg=nrecavg+1
-#endif
-        if (mod(iic-ntstart,nrst) == 0
-#ifdef EXACT_RESTART
-     &         .or. mod(iic-ntstart+1,nrst) == 0
-#endif
-     &                                 ) call wrt_rst
-        if (mod(iic-ntstart,nwrt) == 0 .and. wrthis(indxTime)) then
-          call wrt_his  ! this is called here, in the middle of a roms_step, because
-        endif           ! 'rho', 'Akv', etc have only just been computed for step 'n'.
-                        ! Whereas, u & ubar, etc, remain unchanged from the end of the previous step
-#ifdef AVERAGES
-        if (iic > ntsavg .and. mod(iic-ntsavg,navg) ==0 .and. wrtavg(indxTime))
-     &      call wrt_avg
-#endif
-C$OMP END MASTER
-C$OMP BARRIER
-        if (iic-ntstart > ntimes) goto 99   !-->  DONE
-      endif
-
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----

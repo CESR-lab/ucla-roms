@@ -2,28 +2,13 @@
 
       subroutine closecdf       ! Close output netCDF files.
       use param
-      use ncvars
       use scalars
-      use netcdf
       implicit none
-      integer ierr
 
-#include "netcdf.inc"
-
-      if (ncrst /= -1) ierr=nf90_close(ncrst)
-      if (nchis /= -1) ierr=nf90_close(nchis)
-#ifdef AVERAGES
-      if (ncavg /= -1) ierr=nf90_close(ncavg)
-#endif
 # ifdef MPI_SILENT_MODE
       if (mynode == 0) then
 # endif
-        write(*,'(/1x,A,6(1x,A,I5)/)') 'MAIN: DONE - Records written:',
-     &                     'history:', nrechis ,  'restart:', nrecrst
-#ifdef AVERAGES
-     &                                         ,  'averages:', nrecavg
-#endif
-     &                                             MYID
+        write(*,'(/1x,A/)') 'MAIN: DONE - Records written:'
 
         if (may_day_flag==1) then
           write(*,'(/1x,A/)') 'MAIN: Abnormal termination: BLOWUP'

@@ -3,7 +3,6 @@
       ! User inputs for random output module
       !
       logical   ,parameter :: do_random = .false.
-
       real   ,parameter :: output_period = 3600 ! in seconds
       integer,parameter :: nrpf   = 10          ! number of frames per file
       !

@@ -12,7 +12,6 @@
        OBC_M2FLATHER           OBC_M3ORLANSKI          OBC_TORLANSKI
        OBC_WEST                OBC_NORTH               OBC_EAST
        OBC_SOUTH               ADV_ISONEUTRAL          BULK_FRC
-       BULK_FLUX_OUTPUT
  <scoord.h>
        VERT_COORD_TYPE_SM09
  <pre_step3d4S.F>
@@ -33,7 +32,7 @@
        CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
        IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
 
- 2020-11: uswc sample domain with WEC
+ 2020-11: uswc sample domain with passive tracers
      ntimes =        20   total number of 3D timesteps
          dt =    20.0000  time step [sec] for 3D equations
     ndtfast =        30   mode-splitting ratio
@@ -50,48 +49,7 @@
                        ../USWC_model/input_data/sample_tracers.0.nc
                        ../USWC_model/input_data/sample_wwv_riv.0.nc
  initial condition :: rec =  1  file = '../USWC_model/input_data/roms_init_trace.0.nc'
-
- WARNING: Urecognized keyword 'climatology' --> DISREGARDED.
-
  boundary forcing file(s): ../USWC_model/input_data/roms_bry_trace.0.nc
- restart :: nrst =  999999  rec/file =    1
-
- history :: overwrite = T  nwrt =   20  rec/file =  48
-
- WARNING: Urecognized keyword 'averages' --> DISREGARDED.
-
-
- fields to write into history file: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
-        t( 3)  T   trace1                                    
-        t( 4)  T   salt2                                     
-
-        rho    T   density anomaly                           
-        Omega  T   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    T   vertical viscosity coefficient            
-        Akt    T   vertical thermal conductivity coefficient 
-        Aks    T   salinity vertical diffusion coefficient   
-        hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
-
- WARNING: Urecognized keyword 'primary_averages' --> DISREGARDED.
-
-
- WARNING: Urecognized keyword 'auxiliary_averages' --> DISREGARDED.
-
-
- WARNING: Urecognized keyword 'wci_history_fields' --> DISREGARDED.
-
-
- WARNING: Urecognized keyword 'wci_average_fields' --> DISREGARDED.
-
       visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
        rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
 
@@ -111,6 +69,27 @@
 
 
  NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+       ocean_vars :: history file ouput_period = 400.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
+           t( 3T   trace1                                    
+           t( 4T   salt2                                     
 
  Spherical grid detected.
 
@@ -183,9 +162,6 @@
  WARNING: netCDF variable 'hbls' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
  WARNING: netCDF variable 'hbbl' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
       get_init :: Read initial conditions for day =   4726.5657 record =   1
-       def_his :: created new netCDF file 'test_his.00000.0.nc'.
-      wrt_grid :: wrote grid data into file 'test_his.00000.0.nc'.
-       wrt_his :: wrote history, tdays = 4726.5656  step =     -1 rec =   1/   1
 
  main :: initialization complete, started time-steping.
 
@@ -211,29 +187,30 @@
          set_frc :: salt2_flx        input time (days) =   4726.58     rec =   3
 
  STEP  KINETIC_ENRG BAROTR_KE     MAX_ADV_CFL        MAX_VERT_CFL
-  0 4.2297410808290071E-03 2.7901936656076791E-03 4.5342066459395175E-01 3.4074793394734215E-01
-  1 4.2244271075078691E-03 2.7868427455233998E-03 3.0560397213612223E-01 3.0560397213612223E-01
-  2 4.2187059486388069E-03 2.7827335748267937E-03 3.3063344835503572E-01 1.8775288688590236E-01
-  3 4.2121121536642346E-03 2.7774215052336552E-03 4.6245957636486906E-01 4.0613450468356793E-01
-  4 4.2086453833564165E-03 2.7750310543804410E-03 3.4595853843150959E-01 2.6438264106831133E-01
-  5 4.2064845321351726E-03 2.7737822987610960E-03 2.0251959214073489E-01 1.9426722741437719E-01
-  6 4.2052083494800753E-03 2.7733221571328384E-03 2.3247737154020529E-01 2.3247737154020529E-01
-  7 4.2055036470826099E-03 2.7743672667717755E-03 2.8036892001733960E-01 1.9629676759463974E-01
-  8 4.2050407463064222E-03 2.7745508998304469E-03 2.0308690509272534E-01 1.9485207173737529E-01
-  9 4.2029176612917137E-03 2.7730471954320753E-03 2.0337263531256025E-01 1.9496198565685416E-01
- 10 4.2016966290778042E-03 2.7723779051531203E-03 2.0346682872935748E-01 1.9502541332800322E-01
- 11 4.2005432611668288E-03 2.7717356547986957E-03 2.0341573163524859E-01 1.9502765226724325E-01
- 12 4.2002471582806488E-03 2.7719212666032686E-03 2.0338216746466672E-01 1.9500723755614477E-01
- 13 4.1999427848085462E-03 2.7720591279701817E-03 2.0337871666539659E-01 1.9495720473840317E-01
- 14 4.1993385507186273E-03 2.7718570908992833E-03 2.0341796936353740E-01 1.9487161432399247E-01
- 15 4.1980661638283574E-03 2.7709530449992093E-03 2.0332158622067051E-01 1.9475342775469609E-01
- 16 4.1965026934339530E-03 2.7697247347993835E-03 2.0305584527508672E-01 1.9458292956683668E-01
- 17 4.1960081663575798E-03 2.7695411243675206E-03 2.0285407517437787E-01 1.9438792943467617E-01
- 18 4.1952702780943003E-03 2.7690881569438458E-03 2.0269851636974237E-01 1.9418379054236493E-01
- 19 4.1928613835074818E-03 2.7669375650066948E-03 2.0249251615805772E-01 1.9394446741487956E-01
- 20 4.1900134385892624E-03 2.7643296389612874E-03 2.0220948697113034E-01 1.9367328618368745E-01
-       wrt_his :: wrote history, tdays = 4726.5703  step =     20 rec =   2/   2
- Process    0  thread  0  cpu time =       14.59 sec
+  0 4.2297410808290071E-03 2.7901936656076791E-03 4.5342066459395114E-01 3.4074793394734154E-01
+  1 4.2244271075078691E-03 2.7868427455234003E-03 3.0560397213612234E-01 3.0560397213612234E-01
+  2 4.2187059486388095E-03 2.7827335748267954E-03 3.3063344835503500E-01 1.8775288688590117E-01
+  3 4.2121121536642407E-03 2.7774215052336578E-03 4.6245957636487245E-01 4.0613450468357226E-01
+  4 4.2086453833564234E-03 2.7750310543804444E-03 3.4595853843151692E-01 2.6438264106831849E-01
+  5 4.2064845321351831E-03 2.7737822987611003E-03 2.0251959214072998E-01 1.9426722741437205E-01
+  6 4.2052083494800874E-03 2.7733221571328436E-03 2.3247737154019465E-01 2.3247737154019465E-01
+  7 4.2055036470826221E-03 2.7743672667717816E-03 2.8036892001731784E-01 1.9629676759461934E-01
+  8 4.2050407463064378E-03 2.7745508998304538E-03 2.0308690509271632E-01 1.9485207173736593E-01
+  9 4.2029176612917293E-03 2.7730471954320827E-03 2.0337263531254995E-01 1.9496198565684361E-01
+ 10 4.2016966290778206E-03 2.7723779051531286E-03 2.0346682872934888E-01 1.9502541332799450E-01
+ 11 4.2005432611668461E-03 2.7717356547987048E-03 2.0341573163524224E-01 1.9502765226723695E-01
+ 12 4.2002471582806636E-03 2.7719212666032791E-03 2.0338216746466345E-01 1.9500723755614160E-01
+ 13 4.1999427848085575E-03 2.7720591279701925E-03 2.0337871666539498E-01 1.9495720473840178E-01
+ 14 4.1993385507186360E-03 2.7718570908992950E-03 2.0341796936353820E-01 1.9487161432399366E-01
+ 15 4.1980661638283704E-03 2.7709530449992188E-03 2.0332158622067634E-01 1.9475342775470242E-01
+ 16 4.1965026934339730E-03 2.7697247347993931E-03 2.0305584527509651E-01 1.9458292956684708E-01
+ 17 4.1960081663576093E-03 2.7695411243675301E-03 2.0285407517439188E-01 1.9438792943469088E-01
+ 18 4.1952702780943376E-03 2.7690881569438562E-03 2.0269851636976111E-01 1.9418379054238444E-01
+ 19 4.1928613835075226E-03 2.7669375650067069E-03 2.0249251615808098E-01 1.9394446741490370E-01
+ 20 4.1900134385893066E-03 2.7643296389613004E-03 2.0220948697115723E-01 1.9367328618371540E-01
+       ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2/   2
+ Process    0  thread  0  cpu time =       15.88 sec
 
- MAIN: DONE - Records written: history:    2 restart:    0
- MPI_run_time =   14.9726598262787     
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   16.4042508602142     

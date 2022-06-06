@@ -32,6 +32,22 @@ def search_string_in_file(file_name, string_to_search):
                 list_of_results.append((line_number))                
     # Return list of tuples containing line numbers
     return list_of_results
+    
+def search_string_in_file_yesno(file_name, string_to_search):
+    line_number = 0
+    found_string = False
+    # Open the file in read only mode
+    with open(file_name, 'r') as read_obj:
+        # Read all lines in the file one by one
+        for line in read_obj:
+            # For each line, check if line contains the string
+            line_number += 1
+            if string_to_search in line:
+                # If yes, then add the line number & line as a tuple in the list
+                found_string=True
+                break                
+    
+    return found_string
 
 # -----------------------------------------------------------------
 
@@ -129,25 +145,30 @@ text='  checking netCDF output:'
 print(text)
 file_diag.write('\n'+text+'\n')
 
+# only need to check in new result if wrote history was successful
+found_str = False
+found_str = search_string_in_file_yesno(filenames[1],'wrote history')
+
 # Loop through BM values and new values
-for m in range(2):
+#for m in range(2):
 
 	# read number of timesteps
-	line_num = search_string_in_file(filenames[m],'Records written:')
-	line = open(filenames[m], 'r').readlines()[line_num[0]-1] # -1 for 0 counting
+	#found_str[m] = search_string_in_file_yesno(filenames[m],'wrote history') # supressed write history so only write it once
+	#line = open(filenames[m], 'r').readlines()[line_num[0]-1] # -1 for 0 counting
 	#print('line= ' + line)
-	outputs[m,0] = int(line[42:44]) # Number of history steps written
+	#outputs[m,0] = int(line[42:44]) # Number of history steps written
 	#print('history= '  + str(outputs[m,0]))
 	#outputs[m,1] = int(line[56:58]) # Number of restart steps written
 	#print('restart= '  + str(outputs[m,1]))
 	#outputs[m,2] = int(line[71:73]) # Number of history steps written
 	#print('averages= ' + str(outputs[m,2]))
 
-ncdf_diffs = outputs[0,:]-outputs[1,:]
+#ncdf_diffs = outputs[0,:]-outputs[1,:]
 
 # Confirm outcome to user:
-if np.all(ncdf_diffs==0.0):
-	text='    netCDF output works! --> numbers of history records matches the benchmark.'
+if (found_str):
+#	text='    netCDF output works! --> numbers of history records matches the benchmark.'
+	text='    netCDF output works! --> wrote history string found at end of run.'
 	print(text)
 	file_diag.write(text)
 else:
@@ -158,7 +179,7 @@ else:
 	
 # ----------------------------------------------------------
 # Confirm overall outcome to user:
-if np.all(diffs==0.0) and np.all(ncdf_diffs==0.0):
+if np.all(diffs==0.0) and (found_str):
     text='  CODE CORRECT! --> All diagnostics & netcdf outputting match the benchmarks. \n  see code_check.log file for details.\n'
     print(text)
     file_diag.write(text)

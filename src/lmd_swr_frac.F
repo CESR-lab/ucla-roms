@@ -31,7 +31,7 @@
 
       use param
       use mixing
-      use ocean3d
+      use ocean_vars
 
       implicit none
       integer istr,iend,jstr,jend,     i,j,k, Jwt

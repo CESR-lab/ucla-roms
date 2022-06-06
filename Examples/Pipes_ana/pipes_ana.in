@@ -9,48 +9,15 @@ S-coord: THETA_S,   THETA_B,    hc (m)
 
 grid:  filename
       none
+
 forcing: filename
       none
 
 initial: NRREC  filename
           0
 
-climatology: filename
-      none
-
-boundary: filename
-      none
-
-restart:          NRST, NRPFRST / filename
-                 999999   1
-      none
-     
 output_root_name:
      pipes_ana     
-
-history: LDEFHIS, NWRT, NRPFHIS / filename
-            T      20   48
-
-averages: NTSAVG, NAVG, NRPFAVG / filename
-            0     999999    8
-     
-primary_history_fields: zeta Ubar Vbar U V  
-                         T    T    T   T T
-
-auxiliary_history_fields: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
-                           F   T     F   F    T    F    F    F
-
-primary_averages: zeta Ubar Vbar U V  
-                   T    T    T   T T
-
-auxiliary_averages: rho Omega  W  Akv  Akt  Aks  HBL  HBBL
-!                     F    T    T   T    F    F    T    T
-
-wci_history_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
-!                     T    T     T    T   T   T   T    T    T   T     T
-
-wci_average_fields: sup ust2d vst2d ust vst wst Akvb Akvw kvf calP KapSrf
-!                     F    F     F    F   F   F   F    F    F   F     F
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

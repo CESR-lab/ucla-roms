@@ -22,8 +22,6 @@ c--#endif
 
 #if defined USWC_sample
 
-# define RIVER_SOURCE
-
 /* Include standard CPP switches for UP ETH Zurich */
 c-dd#include "cppdefs_UP.h"
 

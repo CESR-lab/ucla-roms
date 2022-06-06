@@ -6,6 +6,19 @@ Examples code checking tools:
 
   sbatch do_test_expanse_all.sh  (on expanse)
 
+
+ERROR:
+To improve result reproducibility, -fp-model strict is used. 
+This is different from the normal example compiler option.
+Therefore if the example has been previously compiled as an example not a code_check, it will not
+do a full recompile on its own and the result may thus be different.
+
+Therefore, in Examples/ use the command 'make code_check_clean' and then run the code checking script again.
+This will do a full recompile of all examples with the -fp-model strict flag.
+
+
+INFO:
+
 This will check all the examples automatically.
 Since it takes ~30s for ROMS to compile, the script will take several minutes
 if compiling for the first time.
@@ -19,6 +32,7 @@ This is compared with a previously run benchmark example, to confirm values have
 
 This tool is designed to be run before any new commit of the repo, to ensure nothing has been
 inadvertently broken.
+
 
 UPDATING BENCHMARKS:
 

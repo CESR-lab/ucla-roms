@@ -419,7 +419,7 @@ c-# define TANH dtanh
 #define PUT_GRID_INTO_AVERAGES
 
 #ifdef DBLEPREC
-# define NF_FTYPE nf_double
+# define NF_FTYPE nf90_double
 # define nf_get_var_FTYPE nf_get_var_double
 # define nf_get_var1_FTYPE nf_get_var1_double
 # define nf_put_var1_FTYPE nf_put_var1_double
@@ -428,14 +428,14 @@ c-# define TANH dtanh
 # define nf_get_att_FTYPE nf_get_att_double
 # define nf_put_att_FTYPE nf_put_att_double
 # ifdef HIS_DOUBLE
-#  define NF_FOUT nf_double
+#  define NF_FOUT nf90_double
 #  define nf_put_att_FOUT nf_put_att_double
 # else
-#  define NF_FOUT nf_float
+#  define NF_FOUT nf90_float
 #  define nf_put_att_FOUT nf_put_att_real
 # endif
 #else
-# define NF_FTYPE nf_float
+# define NF_FTYPE nf90_float
 # define nf_get_var_FTYPE nf_get_var_real
 # define nf_get_var1_FTYPE nf_get_var1_real
 # define nf_put_var1_FTYPE nf_put_var1_real
@@ -443,7 +443,7 @@ c-# define TANH dtanh
 # define nf_put_vara_FTYPE nf_put_vara_real
 # define nf_get_att_FTYPE nf_get_att_real
 # define nf_put_att_FTYPE nf_put_att_real
-# define NF_FOUT nf_float
+# define NF_FOUT nf90_float
 #endif
 
 /* Specific to IBM XLF operating system. */
