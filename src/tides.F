@@ -212,6 +212,7 @@
       ! read tides from forcing file. Only read once at first timestep.
 
       use netcdf
+      use dimensions
       implicit none
 
       ! local
@@ -257,19 +258,27 @@
         if (bry_tides) then
 
           call ncread(ncid,'ssh_Re',ztide_r(i0:i1,j0:j1,itide),start)          ! read tidal elevations
+          call exchange_tile(1,nx,1,ny, ztide_r(START_2D_ARRAY,itide),1)
           call ncread(ncid,'ssh_Im',ztide_i(i0:i1,j0:j1,itide),start)
+          call exchange_tile(1,nx,1,ny, ztide_i(START_2D_ARRAY,itide),1)
 
           call ncread(ncid,'u_Re',  utide_r( 1:i1,j0:j1,itide),start)          ! read tidal barotropic velocities.
+          call exchange_tile(1,nx,1,ny, utide_r(START_2D_ARRAY,itide),1)
           call ncread(ncid,'u_Im',  utide_i( 1:i1,j0:j1,itide),start)          ! these currents must be on u,v-points
+          call exchange_tile(1,nx,1,ny, utide_i(START_2D_ARRAY,itide),1)
           call ncread(ncid,'v_Re',  vtide_r(i0:i1, 1:j1,itide),start)          ! and rotated to align with the grid
+          call exchange_tile(1,nx,1,ny, vtide_r(START_2D_ARRAY,itide),1)
           call ncread(ncid,'v_Im',  vtide_i(i0:i1, 1:j1,itide),start)
+          call exchange_tile(1,nx,1,ny, vtide_i(START_2D_ARRAY,itide),1)
 
         endif
 
         if (pot_tides) then
 
           call ncread(ncid,'pot_Re',ptide_r(i0:i1,j0:j1,itide),start)
+          call exchange_tile(1,nx,1,ny, ptide_r(START_2D_ARRAY,itide),1)
           call ncread(ncid,'pot_Im',ptide_i(i0:i1,j0:j1,itide),start)
+          call exchange_tile(1,nx,1,ny, ptide_i(START_2D_ARRAY,itide),1)
 
         endif
 
