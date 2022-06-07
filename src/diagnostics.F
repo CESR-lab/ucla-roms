@@ -85,11 +85,11 @@
       public set_diags_t_4th_v_adv
 
       ! Netcdf outputting:
-      ! ------------------
-      integer            :: output_rec = 0            ! record number of output. 0 indicates we need new file
-      integer            :: total_rec_diag = 0        ! total flux output recordings so far
-      integer            :: tn                        ! roms timestep
-      character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
+      ! -----------------
+      integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
+      integer            :: record = nrpf           ! to trigger the first file creation
+!     integer            :: tn                      ! roms timestep
+!     character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
 
       integer,public     :: varid_uslow, varid_vslow, varid_p_slow
@@ -1227,53 +1227,51 @@
       integer,save  :: record
 
 
-      tn = iic-ntstart                                ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
-
       if (.not. init_done) call init_diagnostics 
 
+      call calc_diag_avg
 
-      if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
+      output_time = output_time + dt    
 
-        call calc_diag_avg
+      if (output_time>=output_period) then  ! time for an output
 
-        if ( mod(tn,rec_rate) == 0 ) then !! Time for an output
-
-          if (mod(total_rec_diag,nrpf_diag)==0) then
-            call create_diagnostics_file(total_rec_diag,fname)
-            record = 0
-          endif 
-          total_rec_diag  = total_rec_diag +1
-          record = record + 1
-
+        if (record==nrpf) then
+!         call create_diagnostics_file(total_rec_diag,fname)
+          call create_file('_dia',fname)
           ierr=nf90_open(fname,nf90_write,ncid)
-          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
+          call create_diagvars(ncid)
+          ierr = nf90_enddef(ncid)
+          record = 0
+        endif 
+        record = record + 1
 
-          call ncwrite(ncid,'ocean_time',(/time/),(/record/))
-          if (diag_avg) then
-            if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
-!           if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag_avg)
-          else
-            if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
-!           if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag)
-          endif
+        ierr=nf90_open(fname,nf90_write,ncid)
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
 
-          if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
-          if (diag_Ebcln) call wrt_diag_Ebcln(ncid,record) !,upx_avg,vpy_avg,bt2bc_avg)
+        call ncwrite(ncid,'ocean_time',(/time/),(/record/))
+        if (diag_avg) then
+          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
+!         if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag_avg)
+        else
+          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
+!         if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag)
+        endif
 
-          navg_diag = 0
+        if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
+        if (diag_Ebcln) call wrt_diag_Ebcln(ncid,record) !,upx_avg,vpy_avg,bt2bc_avg)
 
-          ierr=nf90_close(ncid)
+        navg_diag = 0
 
-          if (mynode == 0) then
-            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
-     &       'diagnostics :: wrote output, tdays =', tdays,
-     &       'step =', iic-1, 'rec =', record, '/', total_rec_diag
-     &        MYID
-          endif
+        ierr=nf90_close(ncid)
 
-        endif ! time for an output
+        if (mynode == 0) then
+          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+     &     'diagnostics :: wrote output, tdays =', tdays,
+     &     'step =', iic-1, 'rec =', record
+        endif
 
-      endif   ! <-- icc>ntstart
+      endif ! time for an output
+
 
       end subroutine do_diagnostics  !]
 ! ----------------------------------------------------------------------
@@ -1664,15 +1662,18 @@
       character(len=5) :: diag_pflx_str = 'False'
       character(len=5) :: diag_Ebcln_str = 'False'
 
-      fname=trim(output_root_name) / / '_dia.nc'
-      call create_filename(fname,total_rec)
+!     fname=trim(output_root_name) / / '_dia.nc'
+!     call create_filename(fname,total_rec)
+
+      fname=trim(adjustl(output_root_name)) / / '_dia'
+      call append_date_node(fname)
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'create_diagnostics_file: ')
 
       varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
+      ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
       ierr = nf90_put_att(ncid,varid,'units','second' )
 
       call put_global_atts(ncid, ierr)  ! put global attributes in file
@@ -1681,8 +1682,9 @@
 
       ! Diagnostics options
       ierr = nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
-      ierr = nf90_put_att(ncid,nf90_global,'output_record_rate',rec_rate)
-      ierr = nf90_put_att(ncid,nf90_global,'records_per_file',nrpf_diag)
+
+!     ierr = nf90_put_att(ncid,nf90_global,'output_record_rate',rec_rate)
+!     ierr = nf90_put_att(ncid,nf90_global,'records_per_file',nrpf_diag)
 
       if (diag_avg) diag_avg_str = 'True'
       if (diag_uv) diag_uv_str   = 'True'
@@ -1705,7 +1707,6 @@
      &       'diagnostics :: created new netCDF file: ',fname
 
       end subroutine create_diagnostics_file !]
-
 ! ----------------------------------------------------------------------
       subroutine get_init_slow( ncid, record )  ![
       ! get initial slow u,v and p
@@ -1768,7 +1769,6 @@
       endif
 
       end subroutine get_init_slow  !]
-
 ! ----------------------------------------------------------------------
 !      subroutine def_rst_diag_pflx(ncid)  ![
 !      implicit none

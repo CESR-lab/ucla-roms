@@ -2,7 +2,7 @@
       ! ROMS specific read write functionality
       !
       ! output_root_name is used as prefix of all output files
-      ! Length is limited to 26 characters, because output_file_names
+      ! Length is limited to 18 characters, because output_file_names
       ! are appended with frame and node number and are limited to 32
 
       use netcdf
@@ -77,6 +77,7 @@
       public :: nc_check_units
       public :: put_global_atts
       public :: store_string_att
+      public :: create_file
 
       contains
 
@@ -440,7 +441,6 @@
      &  'rec =',               var_irec
 
       end subroutine display_read_time_to_log  !]
-
 ! ----------------------------------------------------------------------
       subroutine read_output_root_name(keyword, kwlen)  ![
       ! read from .in file the root-name
@@ -473,7 +473,6 @@
 
 
       end subroutine read_output_root_name  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_filename(fname,total_rec)  ![
       ! takes a filename for output and inserts the mpi node number 
@@ -499,7 +498,42 @@
       call insert_time_index(fname,lstr,total_rec,ierr)     ! insert time index to file name
 
       end subroutine create_filename !]
+! ----------------------------------------------------------------------
+      subroutine create_file(ftype,fname)  ![
+      ! Creates a file using the root_name plus the extension
+      ! It appends a date/time string and, if neccesary, a node number
+      ! It puts the global attributes and creates an ocean_time variable
+      implicit none
 
+      ! input/output
+      character(len=*),  intent(in) :: ftype     ! desired netcdf file extension
+      character(len=*),  intent(out):: fname     ! desired netcdf file name
+
+      ! local
+      integer :: ierr,ncid,varid
+
+      fname=trim(adjustl(output_root_name)) / / trim(ftype)
+      call append_date_node(fname)
+
+      ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
+      if (ierr/=nf90_noerr) 
+     &   call handle_ierr(ierr,'create_file: '/ /trim(fname) )
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
+
+      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      if (ierr/=nf90_noerr) 
+     %   call handle_ierr(ierr,'create_file: '/ / trim(fname) )
+
+      ierr = nf90_enddef(ncid)
+      if (mynode == 0) then
+        write(*,'(7x,2A)')
+     &    'created new netCDF file ', trim(fname)
+      endif
+
+      end subroutine create_file !]
 ! ----------------------------------------------------------------------
       subroutine coarse2fine(cdata,fdata) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
@@ -536,7 +570,6 @@
       enddo
 
       end subroutine coarse2fine !]
-
 ! ----------------------------------------------------------------------
       logical function findstr(string,pattern,istart) ![
       ! this utility function should be moved somewhere more generic...

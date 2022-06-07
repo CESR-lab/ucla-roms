@@ -229,7 +229,8 @@
       do while ((found_rec==0).and.(var_file_indx <= max_frc))
 
         ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
-        if(ierr/=0) call handle_ierr(ierr,'tides :: opening forcing file')
+        if(ierr/=0) 
+     &     call handle_ierr(ierr,'tides :: opening forcing file')
 
         ierr=nf90_inq_varid(ncid, 'omega', var_id)
         if(ierr/=0) then 
