@@ -76,7 +76,11 @@
       if (output_time>=output_period) then
 
         if (record==nrpf) then
-          call create_file_random(fname)
+!         call create_file_random(fname)
+          call create_file('_rnd',fname)
+          ierr=nf90_open(fname,nf90_write,ncid)
+          call def_vars_random(ncid)
+          ierr = nf90_enddef(ncid)
           record = 0
         endif
         record = record+1
@@ -125,8 +129,8 @@
       call append_date_node(fname)
 
       ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_random ')
-
+      if (ierr/=nf90_noerr) 
+     &   call handle_ierr(ierr,'create_random_file: ')
 
       varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
