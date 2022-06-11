@@ -85,11 +85,11 @@
       public set_diags_t_4th_v_adv
 
       ! Netcdf outputting:
-      ! -----------------
-      integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
-      integer            :: record = nrpf           ! to trigger the first file creation
-!     integer            :: tn                      ! roms timestep
-!     character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
+      ! ------------------
+      integer            :: output_rec = 0            ! record number of output. 0 indicates we need new file
+      integer            :: total_rec_diag = 0        ! total flux output recordings so far
+      integer            :: tn                        ! roms timestep
+      character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
 
       integer,public     :: varid_uslow, varid_vslow, varid_p_slow
@@ -306,6 +306,12 @@
         allocate( vpy_avg(nx,ny) )
         upx_avg = 0
         vpy_avg = 0
+        allocate( eku(nx,ny) )
+        allocate( ekv(nx,ny) )
+        allocate( eku_avg(nx,ny) )
+        allocate( ekv_avg(nx,ny) )
+        eku_avg = 0
+        ekv_avg = 0
 
         allocate( uhx(nx+1,ny) )
         allocate( vhy(nx,ny+1) )
@@ -386,7 +392,6 @@
       allocate(cen2( GLOBAL_2D_ARRAY ) )
 
 
-      if (mynode==0) print *,'init diagnostics', init_done
       init_done = .true.  ! ensure init is not triggered again
 
       end subroutine init_diagnostics  !]
@@ -767,6 +772,7 @@
       enddo
 
       end subroutine set_diags_t_h_mix  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_4th_h_adv(k,itrc )  ![
       ! compute the horizontal 4th order advection.
@@ -864,6 +870,7 @@
       enddo
 
       end subroutine set_diags_t_4th_h_adv  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_4th_v_adv(itrc )  ![
       ! compute the vertical 4th order advection.
@@ -934,8 +941,9 @@
       enddo     ! <-- j
 
       end subroutine set_diags_t_4th_v_adv  !]
+
 ! ----------------------------------------------------------------------
-      subroutine calc_diag_pflux(p) ![
+      subroutine calc_diag_pflux(p)
       use coupling
       use param
       use eos_vars
@@ -958,8 +966,6 @@
       kbak=knew-1
       if (kbak < 1) kbak=4
 # endif
-
-
 
       if (diag_pflx) then
 
@@ -988,13 +994,24 @@
               v_fast(i,j) = v(i,j,k,nrhs)-vbar(i,j,kbak)- v_slow(i,j,k)
             enddo
           enddo
+!         p_fast = p(0:nx,0:ny,k)-g*z_w(0:nx,0:ny,nz)      - p_slow(:,:,k)
+!         u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)- s(:,:,k)
+!         v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)- v_slow(:,:,k)
 
+!         up(:,:) = up + 0.25*u_fast*(p_fast(0:nx-1,1:ny) + p_fast(1:nx,1:ny) )*
+!    &                     (Hz(0:nx-1,1:ny,k)+ Hz(1:nx,1:ny,k) )
+!         vp(:,:) = vp(i,j) + v_fast(i,j)
+!    &           * 0.25*( p_fast(i,j-1)+p_fast(i,j) )*( Hz(i,j-1,k)+Hz(i,j,k) )
           do j=1,ny
             do i=1,nx
             up(i,j) = up(i,j) + u_fast(i,j)
      &           * 0.25*( p_fast(i-1,j)+p_fast(i,j) )*( Hz(i-1,j,k)+Hz(i,j,k) )
             vp(i,j) = vp(i,j) + v_fast(i,j)
      &           * 0.25*( p_fast(i,j-1)+p_fast(i,j) )*( Hz(i,j-1,k)+Hz(i,j,k) )
+!           up(i,j) = up(i,j) + ( u(i,j,k,nrhs) - ubar(i,j,kbak) )
+!    &           * 0.25*( p_fast(i-1,j)+p_fast(i,j) )*( Hz(i-1,j,k)+Hz(i,j,k) )
+!           vp(i,j) = vp(i,j) + ( v(i,j,k,nrhs) - vbar(i,j,kbak) )
+!    &           * 0.25*( p_fast(i,j-1)+p_fast(i,j) )*( Hz(i,j-1,k)+Hz(i,j,k) )
             enddo
           enddo
         enddo
@@ -1009,6 +1026,8 @@
         ! Divergence of pressure flux work: u*px + v*py
         upx = 0
         vpy = 0
+        eku = 0
+        ekv = 0
         do k=1,nz
           u_fast = u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak)-u_slow(1:nx,1:ny,k)
           v_fast = v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak)-v_slow(1:nx,1:ny,k)
@@ -1018,6 +1037,17 @@
           upx = upx + u_fast*px_fast
           vpy = vpy + v_fast*py_fast
 
+!         eku = eku+0.25*(u_fast*u_fast)*(Hz(0:nx-1,1:ny,k)+Hz(1:nx,1:ny,k))
+!         ekv = ekv+0.25*(v_fast*v_fast)*(Hz(1:nx,0:ny-1,k)+Hz(1:nx,1:ny,k))
+!         upx = upx + u_fast*px_fast +
+!    &                u_fast*px_slow(:,:,k)+u_slow(:,:,k)*px_fast
+!         vpy = vpy + v_fast*py_fast +
+!    &                v_fast*py_slow(:,:,k)+v_slow(:,:,k)*py_fast
+
+!         upx = upx +
+!    &      (u(1:nx,1:ny,k,nrhs)-ubar(1:nx,1:ny,kbak))*Udiag(:,:,k,ipgr)
+!         vpy = vpy +
+!    &      (v(1:nx,1:ny,k,nrhs)-vbar(1:nx,1:ny,kbak))*Vdiag(:,:,k,ipgr)
         enddo
 
         uhx = ubar(1:nx+1,1:ny,kbak)*(h(1:nx+1,1:ny)-h(0:nx,1:ny))*
@@ -1042,6 +1072,7 @@
       endif
 
       end subroutine calc_diag_pflux  !]
+
 ! ----------------------------------------------------------------------
       subroutine E_baroclinic  ![
       use param
@@ -1110,11 +1141,31 @@
             bc2bc(i,j)    = bc2bc(i,j)    + g*Wbc  *rho_d(i,j,k)    *Hz(i,j,k)
             bc2bc_ss(i,j) = bc2bc_ss(i,j) + g*Wbc_s*rho_slow(i,j,k)*Hz(i,j,k)
             bc2bc_ff(i,j) = bc2bc_ff(i,j) + g*Wbc_f*rho_fast(i,j)  *Hz(i,j,k)
+!           ape(i,j) = ape(i,j) + 
+!    &         0.5*g*rho_fast(i,j)*rho_fast(i,j)*Hz(i,j,k)/drhodz(i,j)
           enddo
         enddo
       enddo
+!     ape = 0.5*g*ape
+!     do j=1,ny
+!       do i=1,nx
+!         if (isnan(ape(i,j))) then
+!           print *,'APE calc_pflux: ',mynode
+!           print *,i,j,vp(i,j)
+!           stop
+!         endif
+!       enddo
+!     enddo
 
       end subroutine E_baroclinic !]
+! ----------------------------------------------------------------------
+      subroutine set_diags_p_conversion  ![
+      ! C(z) = Div( u'p' ) + Dissipation
+
+      implicit none
+
+
+      end subroutine set_diags_p_conversion  !]
 ! ----------------------------------------------------------------------
       subroutine calc_diag_avg ![
       ! Update diagnostics averages
@@ -1163,8 +1214,6 @@
       end subroutine calc_diag_avg !]
 ! ----------------------------------------------------------------------
       subroutine do_diagnostics  ![
-      ! as of now, this subroutine is called at the very beginning of step,
-      ! before anything has been computed. Therefore, skip the first time
       ! Write diagnostics to file
       use param
       use nc_read_write
@@ -1175,57 +1224,56 @@
 
       integer :: dim,diag, prev_fill_mode
       character(len=99),save  :: fname
-
-      if (.not. init_done) then
-        call init_diagnostics 
-        return
-      endif
-
-      call calc_diag_avg
-
-      output_time = output_time + dt    
-
-      if (output_time>=output_period) then  ! time for an output
-        output_time= 0
-
-        if (record==nrpf) then
-          call create_diagnostics_file(fname)
-!         call create_file('_dia',fname)
-!         ierr=nf90_open(fname,nf90_write,ncid)
-!         call create_diagvars(ncid)
-!         ierr = nf90_enddef(ncid)
-          record = 0
-        endif 
-        record = record + 1
-
-        ierr=nf90_open(fname,nf90_write,ncid)
-        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
-
-        call ncwrite(ncid,'ocean_time',(/time/),(/record/))
-        if (diag_avg) then
-          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
-!         if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag_avg)
-        else
-          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
-!         if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag)
-        endif
-
-        if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
-        if (diag_Ebcln) call wrt_diag_Ebcln(ncid,record) !,upx_avg,vpy_avg,bt2bc_avg)
-
-        navg_diag = 0
-
-        ierr=nf90_close(ncid)
+      integer,save  :: record
 
 
-        if (mynode == 0) then
-          write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
-     &     'diagnostics :: wrote output, tdays =', tdays,
-     &     'step =', iic-1, 'rec =', record
-        endif
+      tn = iic-ntstart                                ! model step, as timestep t=n. (icc = t(n+1), and ntstart=1 if not from restart). We write the previous step results during the start of the next step
 
-      endif ! time for an output
+      if (.not. init_done) call init_diagnostics 
 
+
+      if (iic>ntstart) then ! catch to prevent output of zeros at inital step since mod(0,anything) = 0...
+
+        call calc_diag_avg
+
+        if ( mod(tn,rec_rate) == 0 ) then !! Time for an output
+
+          if (mod(total_rec_diag,nrpf_diag)==0) then
+            call create_diagnostics_file(total_rec_diag,fname)
+            record = 0
+          endif 
+          total_rec_diag  = total_rec_diag +1
+          record = record + 1
+
+          ierr=nf90_open(fname,nf90_write,ncid)
+          ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
+
+          call ncwrite(ncid,'ocean_time',(/time/),(/record/))
+          if (diag_avg) then
+            if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
+!           if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag_avg)
+          else
+            if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
+!           if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag)
+          endif
+
+          if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
+          if (diag_Ebcln) call wrt_diag_Ebcln(ncid,record) !,upx_avg,vpy_avg,bt2bc_avg)
+
+          navg_diag = 0
+
+          ierr=nf90_close(ncid)
+
+          if (mynode == 0) then
+            write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
+     &       'diagnostics :: wrote output, tdays =', tdays,
+     &       'step =', iic-1, 'rec =', record, '/', total_rec_diag
+     &        MYID
+          endif
+
+        endif ! time for an output
+
+      endif   ! <-- icc>ntstart
 
       end subroutine do_diagnostics  !]
 ! ----------------------------------------------------------------------
@@ -1503,9 +1551,7 @@
 !     start = (/bfx, bfy, 1, record/)
 !     call ncwrite(ncid,'up',up(bfx:nx,1:ny,:),start)
       start = (/bfx, bfy, record/)
-!     print *, 'up max: ',mynode, maxval(up(bfx:nx,1:ny)),maxloc(up(bfx:nx,1:ny))
       call ncwrite(ncid,'up',up(bfx:nx,1:ny),start)
-!     stop
           
 !     for 3D vp data
 !     start = (/bfx, bfy, 1, record/)
@@ -1598,30 +1644,65 @@
 
       end subroutine wrt_rst_diag_pflx  !]
 ! ----------------------------------------------------------------------
-      subroutine create_diagnostics_file(fname) ![
+      subroutine create_diagnostics_file(total_rec,fname) ![
       use roms_read_write
       use nc_read_write
       implicit none
 
       !input/output
+      integer         ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
       character(len=*),intent(out) :: fname
 
       !local
-      integer :: ncid,ierr
+      integer :: ncid,ierr,varid
+      integer :: prec ! precision of output
+      character(len=10),dimension(3) :: dimnames ! dimension names
+      integer,          dimension(3) :: dimsizes 
+      character(len=5) :: diag_avg_str = 'False'
+      character(len=5) :: diag_uv_str = 'False'
+      character(len=5) :: diag_trc_str = 'False'
+      character(len=5) :: diag_pflx_str = 'False'
+      character(len=5) :: diag_Ebcln_str = 'False'
 
-      call create_file('_dia',fname)
+      fname=trim(output_root_name) / / '_dia.nc'
+      call create_filename(fname,total_rec)
 
-      ierr=nf90_open(fname,nf90_write,ncid)
+      ierr=nf90_create(fname,nf90_netcdf4,ncid)
+      if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'create_diagnostics_file: ')
+
+      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
+      ierr = nf90_put_att(ncid,varid,'units','second' )
+
+      call put_global_atts(ncid, ierr)  ! put global attributes in file
+
+      ! add his / avg attribute
 
       ! Diagnostics options
       ierr = nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
+      ierr = nf90_put_att(ncid,nf90_global,'output_record_rate',rec_rate)
+      ierr = nf90_put_att(ncid,nf90_global,'records_per_file',nrpf_diag)
+
+      if (diag_avg) diag_avg_str = 'True'
+      if (diag_uv) diag_uv_str   = 'True'
+      if (diag_trc) diag_trc_str = 'True'
+      if (diag_pflx) diag_pflx_str = 'True'
+      if (diag_Ebcln) diag_Ebcln_str = 'True'
+      ierr = nf90_put_att(ncid,nf90_global,'diagnostic_averaging',diag_avg_str)
+      ierr = nf90_put_att(ncid,nf90_global,'momentum_diagnostics',diag_uv_str)
+      ierr = nf90_put_att(ncid,nf90_global,'tracer_diagnostics',diag_trc_str)
+      ierr = nf90_put_att(ncid,nf90_global,'pressure_fluxes' ,diag_pflx_str)
+      ierr = nf90_put_att(ncid,nf90_global,'Barotropic_conversion',diag_Ebcln_str)
+
 
       call create_diagvars(ncid)
 
       ierr = nf90_enddef(ncid)
 
-!     if (mynode==0) write(*,'(7X,2A)') 
-!    &       'diagnostics :: created new netCDF file: ',fname
+
+      if (mynode==0) write(*,'(7X,2A)') 
+     &       'diagnostics :: created new netCDF file: ',fname
 
       end subroutine create_diagnostics_file !]
 ! ----------------------------------------------------------------------
@@ -1633,7 +1714,6 @@
       integer,intent(in) :: ncid, record
 
       ! local
-      integer :: i,j
       integer :: ierr, varid
       integer,dimension(4) :: start
 
@@ -1655,12 +1735,6 @@
       ierr=nf90_inq_varid (ncid, 'u_slow', varid)
       if (ierr == nf90_noerr) then
         call ncread(ncid,'u_slow', u_slow,start)
-        do j = j0,j1
-          do i = 1,i1
-            if (umask(i,j)<1) u_slow(i,j,:) = 0
-          enddo
-        enddo
-!       if (mynode==39) print *,'max u: ',maxval(u_slow)
       else
         u_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
@@ -1672,12 +1746,6 @@
       ierr=nf90_inq_varid (ncid, 'v_slow', varid)
       if (ierr == nf90_noerr) then
         call ncread(ncid,'v_slow', v_slow,start)
-        do j = 1,j1
-          do i = i0,i1
-            if (vmask(i,j)<1) v_slow(i,j,:) = 0
-          enddo
-        enddo
-!       if (mynode==39) print *,'max v: ',maxval(v_slow)
       else
         v_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
@@ -1690,15 +1758,6 @@
       if (ierr == nf90_noerr) then
         call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
         call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
-        do j = 0,ny
-          do i = 0,nx
-            if (rmask(i,j)<1) p_slow(i,j,:) = 0
-          enddo
-        enddo
-!       if (mynode==39) print *,maxval(p_slow(0:nx,0:ny,:)),maxloc(p_slow(0:nx,0:ny,:))
-!       if (mynode==39) print *,p_slow(0,0,1),rmask(137:139,1),p_slow(137:139,1,1)
-!       if (mynode==39) print *,p_slow(0,0,1),rmask(137:139,0),p_slow(137:139,0,1)
-!       if (mynode==39) stop
       else
         p_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '

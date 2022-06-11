@@ -34,11 +34,12 @@
 
       integer, target :: test_var
       character(len=99), public  :: output_root_name
+      character(len=41), public  :: git_hash
 
       integer,public :: i0,i1,j0,j1                        ! i0=0 (west edge), or i0=1 interior
 
       integer,parameter :: max_options_string=2000
-      character(len=max_options_string),public :: surf_forcing_strings=' '
+      character(len=max_options_string),public::surf_forcing_strings=' '
 
       ! from old ncvars **************:
       integer, parameter, public :: max_frc_files=360
@@ -63,10 +64,10 @@
       character, public :: date_str*44, title*80
       character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
 
-      character(len=max_name_size), public ::  clm_file  ! defined TCLIMATOLOGY && !defined ANA_TCLIMA) || !defined ANA_SSH
+!     character(len=max_name_size), public ::  clm_file  ! defined TCLIMATOLOGY && !defined ANA_TCLIMA) || !defined ANA_SSH
 
-      integer, parameter, public :: max_bry_files=360
-      character(len=max_name_size), public ::  bry_file(max_bry_files)
+!     integer, parameter, public :: max_bry_files=360
+!     character(len=max_name_size), public ::  bry_file(max_bry_files)
       ! end old ncvars ***************
 
       public :: findstr,append_date_node
@@ -610,7 +611,6 @@
       endif
 
       end function findstr !]
-      
 ! ----------------------------------------------------------------------
       subroutine sec2date(time,date) ![
       ! input  time in seconds since 1970.0
@@ -644,7 +644,6 @@
       date(4) = nsecs / 60
 
       end subroutine sec2date !]
-      
 ! ----------------------------------------------------------------------
       subroutine append_date_node(fname) ![
       ! insert date and node number string into filename
@@ -657,9 +656,17 @@
       integer,dimension(6) :: date
       character(len=15)  :: datestr
       character(len=6)   :: indxstr
+      integer :: dt_format = 3
 
       call sec2date(time,date)
-      write(datestr,'(A,I4,5I0.2)') '.',date
+      select case (dt_format)
+        case(1)  !! omit the year
+          write(datestr,'(A,5I0.2)') '.',date(2:6)
+        case(2)  !! omit the seconds
+          write(datestr,'(A,I4,4I0.2)') '.',date(1:5)
+        case default
+          write(datestr,'(A,I4,5I0.2)') '.',date
+      end select
       fname = trim(fname) //datestr
 
 #if defined MPI && defined PARALLEL_FILES
@@ -683,40 +690,37 @@
       fname = trim(fname) // '.nc'
 
       end subroutine append_date_node !]
-
 !-----------------------------------------------------------------------
-      subroutine nc_check_units( ncid, var_name, var_units )  ![
-
-      ! Ensure units in file are same as roms units
-
+      subroutine nc_check_units(ifile,var_name, var_units )  ![
       implicit none
 
       ! input/output
-      integer,          intent(in) :: ncid
+      integer,          intent(in) :: ifile
       character(len=*), intent(in) :: var_name
       character(len=*), intent(in) :: var_units
 
       ! local
-      integer           :: ierr !, ncid
+      integer           :: ierr,ncid
       integer           :: var_id
       character(len=20) :: file_var_units ! variable units in forcing file
 
-      ! file must be open already:
+      ierr = nf90_open(frcfile(ifile), nf90_nowrite, ncid)
+      if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'check_units, opening: ',frcfile(ifile))
 
-      ierr = nf90_inq_varid(ncid, var_name, var_id)                            ! get variable ID (varid)
-      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var')
-      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)               ! get units
-      if (ierr/=0) call handle_ierr(ierr,'nc_check_units:: cannot find var units')
+      ierr = nf90_inq_varid(ncid, var_name, var_id)                    
+      if (ierr/=0) call handle_ierr(ierr,'check_units:: cant find var')
+      ierr = nf90_get_att(ncid, var_id, 'units', file_var_units)        
+      if (ierr/=0) call handle_ierr(ierr,'check_units:: cant find units')
 
-      if (var_units /= file_var_units) then
-        write(*,'(/3x,3A/5x,3A/)') 'ERROR: roms_read_write.F :: ',
-     &  'nc_check_units: wrong units for var: ', var_name,
-     &  trim(file_var_units) ,' -> input file should be -> ', var_units
-        error stop                                                              ! stop simulation, fatal error
+      if (trim(var_units) /= trim(file_var_units)) then
+        write(*,'(/3x,3A/5x,3A/)') 'ERROR:: check_units: ',
+     &   trim(file_var_units),' for var: ', 
+     &   trim(var_name),'.  Units must be: ', trim(var_units)
+        error stop
       end if
 
       end subroutine nc_check_units  !]
-
 ! ---------------------------------------------------------------------
       subroutine put_global_atts (ncid, ierr)  ![
 
@@ -729,6 +733,7 @@
 
       implicit none
       integer :: ncid, ierr, dimid
+
 
 #if defined MPI && defined PARALLEL_FILES
       integer :: ibuff(4), npart
@@ -775,13 +780,6 @@
 ! "hc", and stretching curves "Cs_w", "Cs_r" at W- and RHO-points.
 
 #ifdef SOLVE3D
-# ifdef VERT_COORD_TYPE_SM09
-      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'SM09')
-# elif defined VERT_COORD_TYPE_KAU
-      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'KAU')
-# elif defined VERT_COORD_TYPE_SH94
-      ierr=nf90_put_att(ncid, nf90_global, 'VertCoordType', 'SH94')
-# endif
 
       ierr=nf90_put_att(ncid, nf90_global, 'theta_s', theta_s)
       ierr=nf90_put_att(ncid, nf90_global, 'theta_b', theta_b)
@@ -794,8 +792,8 @@
       ierr=nf90_put_att(ncid, nf90_global, 'rho0', rho0)
       ierr=nf90_put_att (ncid, nf90_global, 'rho0_units', 'kg/m^3')
 # ifndef NONLIN_EOS
-      ierr=nf90_put_att(ncid, nf90_global,'Tcoef', Tcoef)
-      ierr=nf90_put_att (ncid, nf90_global,'Tcoef_units', 'deg Celsius-1')
+      ierr=nf90_put_att(ncid,nf90_global,'Tcoef', Tcoef)
+      ierr=nf90_put_att(ncid,nf90_global,'Tcoef_units','deg Celsius-1')
 
       ierr=nf90_put_att(ncid, nf90_global, 'T0', T0)
       ierr=nf90_put_att (ncid, nf90_global, 'T0_units', 'deg Celsius')
@@ -878,8 +876,9 @@
       ! rather the string is filled in the module's init and can be written here to all files.
       ierr=nf90_put_att (ncid, nf90_global, 'surf_forcing_strings', surf_forcing_strings)
 
-      end subroutine put_global_atts  !]
+      call add_git_hash(ncid)
 
+      end subroutine put_global_atts  !]
 ! ---------------------------------------------------------------------
       subroutine store_string_att( char_string, string_add )  ![
       ! add settings that affect the solution to a string
