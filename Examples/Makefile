@@ -15,6 +15,7 @@
 
 all:
 	rsync -a $(ROMS_ROOT)/src/*.F $(ROMS_ROOT)/src/*.h  Compile
+	make show_tag
 	@rsync -a $(ROMS_ROOT)/src/*.opt Compile	
 	@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
@@ -32,10 +33,10 @@ all:
 
 # for adding git hash:
 tag := $(shell git rev-parse HEAD)
-tline1 := git_hash
-tline2:= 'character\(len=41\)::git_hash=\"$(tag)\"'
+tline1 := git_hash=
+tline2:= 'git_hash=\"$(tag)\"'
 show_tag:
-        @sed -i '/$(tline1)/c\      $(tline2)' param.F
+	@sed -i '/$(tline1)/c\      $(tline2)' Compile/add_git_hash.F
 
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :

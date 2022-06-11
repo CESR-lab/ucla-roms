@@ -11,6 +11,7 @@
       ! param.h needed for GLOBAL_2D_array to work
       use param
       use read_write, only: set_frc_var_tile, ncvs
+      use roms_read_write, only: nc_check_units
 
       implicit none
 
@@ -32,6 +33,7 @@
 #endif
 
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
+
 
       public init_arrays_bulk_frc
       public set_bulk_frc_tile
@@ -113,7 +115,6 @@
         ! If irec =1 only so that it only does it once as requires nf90_open
         ! Can't be irec==0 as set to 1 by function above.
         ! Incomplete at the moment.
-!        if (Q_irec==1) call nc_check_units( Q_file_indx, Q_name, 'kg/kg' )
 
       call set_frc_var_tile( istr, iend, jstr, jend, nc_prate, prate, interp_frc )  ! prate (precipitation rate) - 'rain' variable in old code get_bulk_prec.F & set_bulk_prec() in old code
 
@@ -128,6 +129,13 @@
 
       ! CALCULATE FLUX INTERACTIONS:
       call calc_all_bulk_forces(istr,iend,jstr,jend)
+
+      if (do_check_units) then
+        if(mynode==0) print *,'Checking Bulk force units'
+        call nc_check_units(nc_Q%file_indx,nc_Q%name,'kg/kg')
+        call nc_check_units(nc_prate%file_indx,nc_prate%name,'cm/day')
+        do_check_units = .false.
+      endif
 
 
       end subroutine set_bulk_frc_tile  !]

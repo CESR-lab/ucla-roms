@@ -12,8 +12,6 @@
        OBC_M3ORLANSKI          OBC_TORLANSKI           OBC_WEST
        OBC_NORTH               OBC_EAST                OBC_SOUTH
        AVERAGES                ADV_ISONEUTRAL
- <scoord.h>
-       VERT_COORD_TYPE_SM09
  <pre_step3d4S.F>
        SPLINE_UV               SPLINE_TS
  <step3d_uv1.F>

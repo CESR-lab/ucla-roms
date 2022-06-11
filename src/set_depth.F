@@ -32,10 +32,6 @@
       integer istr,iend,jstr,jend, i,j,k
       real cff_r,cff1_r, cff_w,cff1_w, ds
 
-# ifndef VERT_COORD_TYPE_SM09
-      real cff2_r,cff2_w, z_r0,z_w0
-# endif
-
 # include "compute_auxiliary_bounds.h"
                                        ! During initialization or
       if (iic == 0) then               ! restart compute barotropic
