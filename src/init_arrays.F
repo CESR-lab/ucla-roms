@@ -154,59 +154,6 @@
         enddo
       enddo
 #endif
-#ifdef SOLVE3D
-# ifdef TCLIMATOLOGY
-      do itrc=1,NT
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            Tnudgcof(i,j,itrc)=init0
-          enddo
-        enddo
-      enddo
-# endif
-# if (defined TCLIMATOLOGY || defined TNUDGING) && !defined ANA_TCLIMA
-      do itrc=1,NT
-        do k=1,N
-          do j=jstrR,jendR
-            do i=istrR,iendR
-              tclm(i,j,k,itrc)=init0
-              tclima(i,j,k,1,itrc)=init0
-              tclima(i,j,k,2,itrc)=init0
-            enddo
-          enddo
-        enddo
-      enddo
-# endif
-#endif
-
-#ifdef UCLIMATOLOGY
-# ifndef ANA_UCLIMA
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ubclm(i,j)=init0
-          vbclm(i,j)=init0
-          ubclima(i,j,1)=init0
-          ubclima(i,j,2)=init0
-          vbclima(i,j,1)=init0
-          vbclima(i,j,2)=init0
-        enddo
-      enddo
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            uclm(i,j,k)=init0
-            vclm(i,j,k)=init0
-            uclima(i,j,k,1)=init0
-            uclima(i,j,k,2)=init0
-            vclima(i,j,k,1)=init0
-            vclima(i,j,k,2)=init0
-          enddo
-        enddo
-      enddo
-#  endif
-# endif
-#endif
 
 ! Set variable horizontal viscosities and tracer diffusion
 ! coefficients (see "mixing") to their background values.

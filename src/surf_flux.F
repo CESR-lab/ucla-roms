@@ -244,7 +244,7 @@
      &    output_time_his==0                      ) then             ! catch to get t=0 output
 
         if (mod(total_rec_his,nrpf_his)==0) then
-          call create_file_surf_flux(total_rec_his,fname_his,.false.)
+          call create_file_surf_flux(fname_his,.false.)
           rec_his = 0
           if (output_time_his==0) call display_output_settings_to_terminal( fname_his )
         endif
@@ -306,7 +306,7 @@
       if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
 
         if (mod(total_rec_avg,nrpf_avg)==0) then
-          call create_file_surf_flux(total_rec_avg,fname_avg,.true.)
+          call create_file_surf_flux(fname_avg,.true.)
           rec_avg = 0
         endif
         total_rec_avg = total_rec_avg +1
@@ -340,11 +340,10 @@
       end subroutine wrt_avg_surf_flux  !]
 
 !----------------------------------------------------------------------
-      subroutine create_file_surf_flux(total_rec,fname,avg)  ![
+      subroutine create_file_surf_flux(fname,avg)  ![
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
       character(len=99),intent(out) :: fname
       logical,          intent(in)  :: avg                 ! his or average file
 
@@ -353,23 +352,15 @@
       character(len=10),dimension(4) :: dimnames           ! dimension names
       integer,          dimension(4) :: dimsizes
 
-      if (      avg) fname=trim(output_root_name) / / '_surf_flux_avg.nc'
-      if (.not. avg) fname=trim(output_root_name) / / '_surf_flux.nc'
-      call create_filename(fname,total_rec)
+      if (avg) then
+        call create_file('_sflx_avg',fname)
+      else
+        call create_file('_sflx',fname)
+      endif
 
-      ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_file_surf_flux: ')
+      ierr=nf90_open(fname,nf90_write,ncid)
 
-      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
-
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      if (      avg) ierr = nf90_put_att(ncid,varid,'long_name','Average time since origin')
-      if (.not. avg) ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
       ierr = nf90_put_att(ncid,varid,'units','second' )
-
-      call put_global_atts(ncid, ierr)                     ! put global attributes in file
-      if (ierr/=nf90_noerr)
-     &  call handle_ierr(ierr,'create_file_surf_flux: ')
 
       if (avg) then
         call def_vars_surf_flux( ncid, .true.  )

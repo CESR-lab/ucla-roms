@@ -419,29 +419,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
 #   endif
 #  else /* alternative to ANA_BRY */
-#   ifdef UCLIMATOLOGY
-      do j=jstrR,jendR                   ! Save initial data into
-        do i=istrR,iendR                 ! climatology for the
-          ubclm(i,j)=ubar(i,j,1)         ! subsequent use as inflow
-          vbclm(i,j)=vbar(i,j,1)         ! boundary conditions
-        enddo
-      enddo
-#   endif
-#   ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-#    ifdef UCLIMATOLOGY
-            uclm(i,j,k)=u(i,j,k,1)
-            vclm(i,j,k)=v(i,j,k,1)
-#    endif
-#    ifdef TCLIMATOLOGY
-            tclm(i,j,k,itemp)=t(i,j,k,1,itemp)
-#    endif
-          enddo
-        enddo
-      enddo
-#   endif /* SOLVE3D */
 #  endif /* ANA_BRY */
 # endif /* at least one of OBC_XXXXX */
 
@@ -461,21 +438,8 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       enddo
 #  endif
 #  ifdef ISWAKE
-#   ifdef UCLIMATOLOGY
-      call exchange2d_2_tile(istr,iend,jstr,jend, ubclm,vbclm)
-#   endif
-#   ifdef SOLVE3D
-#    ifdef UCLIMATOLOGY
-      call exchange_2_tile(istr,iend,jstr,jend, uclm,N, vclm,N)
-#    endif
-#    ifdef TCLIMATOLOGY
-      call exchange_tile(istr,iend,jstr,jend,
-     &                    tclm(START_2D_ARRAY,1,itemp), N)
-#    endif
-#   endif
 #  elif defined COLD_FILAMENT
       call exchange_tile(istr,iend,jstr,jend, Akv,N+1)
-
 #  endif
 # endif  /* EXCHANGE */
 
