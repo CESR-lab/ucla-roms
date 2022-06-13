@@ -1639,6 +1639,7 @@
 
       start=1; start(4)=record                                       ! 3D vars
 
+
       if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
         allocate( u_slow(  1:i1,j0:j1, nz ))
         u_slow = 0
@@ -1660,7 +1661,6 @@
             if (umask(i,j)<1) u_slow(i,j,:) = 0
           enddo
         enddo
-!       if (mynode==39) print *,'max u: ',maxval(u_slow)
       else
         u_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
@@ -1677,7 +1677,6 @@
             if (vmask(i,j)<1) v_slow(i,j,:) = 0
           enddo
         enddo
-!       if (mynode==39) print *,'max v: ',maxval(v_slow)
       else
         v_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
@@ -1695,10 +1694,6 @@
             if (rmask(i,j)<1) p_slow(i,j,:) = 0
           enddo
         enddo
-!       if (mynode==39) print *,maxval(p_slow(0:nx,0:ny,:)),maxloc(p_slow(0:nx,0:ny,:))
-!       if (mynode==39) print *,p_slow(0,0,1),rmask(137:139,1),p_slow(137:139,1,1)
-!       if (mynode==39) print *,p_slow(0,0,1),rmask(137:139,0),p_slow(137:139,0,1)
-!       if (mynode==39) stop
       else
         p_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '

@@ -103,7 +103,6 @@
 !      print *, mynode, 'nx=',ny,'j0=',j0,'i1=',i1,'j1=',j1
 
       end subroutine init_output_indices  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_frc_data(nc,var1d,var2d,obry)  ![
       implicit none
@@ -175,7 +174,6 @@
       endif
 
       end subroutine set_frc_data  !]
-      
 ! ----------------------------------------------------------------------
       subroutine find_new_record(vname,tname,time,ifile,irec,vtime) ![
       ! Finds the index for the filename and record number of the first record
@@ -363,7 +361,6 @@
       deallocate(tim)
 
       end subroutine find_new_record_cycle !]
-      
 ! ----------------------------------------------------------------------
       subroutine fill_frc_slice(nc,modtime,it,d1,bry) ![
       ! Fill a time slice of forcing data
@@ -427,7 +424,6 @@
       nc%ifile = ifile
 
       end subroutine fill_frc_slice !]
-
 ! ----------------------------------------------------------------------
       subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![
       implicit none   
