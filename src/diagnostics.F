@@ -88,8 +88,6 @@
       ! -----------------
       integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
       integer            :: record = nrpf           ! to trigger the first file creation
-!     integer            :: tn                      ! roms timestep
-!     character (len=99) :: file_name = '_dia.nc'     ! suffix to append to simulation output rootname
       integer            :: ncid=-1, prev_fill_mode
 
       integer,public     :: varid_uslow, varid_vslow, varid_p_slow
@@ -211,7 +209,6 @@
       public set_diags_u_4th_adv
       public set_diags_v_4th_adv
       public calc_diag_pflux
-!      public def_rst_diag_pflx
       public get_init_slow
       public wrt_rst_diag_pflx
            !]
@@ -1130,7 +1127,6 @@
 
       coef = 1./navg_diag
 
-
       if (diag_avg) then
         if (diag_uv) then
           Udiag_avg = Udiag_avg*(1-coef) + Udiag*coef
@@ -1190,10 +1186,6 @@
 
         if (record==nrpf) then
           call create_diagnostics_file(fname)
-!         call create_file('_dia',fname)
-!         ierr=nf90_open(fname,nf90_write,ncid)
-!         call create_diagvars(ncid)
-!         ierr = nf90_enddef(ncid)
           record = 0
         endif 
         record = record + 1
@@ -1600,7 +1592,6 @@
 ! ----------------------------------------------------------------------
       subroutine create_diagnostics_file(fname) ![
       use roms_read_write
-      use nc_read_write
       implicit none
 
       !input/output
@@ -1620,9 +1611,6 @@
 
       ierr = nf90_enddef(ncid)
 
-!     if (mynode==0) write(*,'(7X,2A)') 
-!    &       'diagnostics :: created new netCDF file: ',fname
-
       end subroutine create_diagnostics_file !]
 ! ----------------------------------------------------------------------
       subroutine get_init_slow( ncid, record )  ![
@@ -1640,6 +1628,7 @@
       start=1; start(4)=record                                       ! 3D vars
 
 
+      if (mynode==0) print *,'getting u,v,p slow'
       if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
         allocate( u_slow(  1:i1,j0:j1, nz ))
         u_slow = 0

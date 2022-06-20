@@ -93,7 +93,7 @@
       real    :: t_avg_ovars=0
       integer :: navg_ovars = 0                             ! number of samples in average
       character(len=99),public :: fname_rst                 ! restart filename needed by diagnostics
-      integer,public           :: rec_rst                   ! current file output record needed by diags
+      integer,public           :: rec_rst=nrpf_rst          ! current file output record needed by diags
       logical,public           :: wrt_pflx=.false.          ! for diags to know to write (hack)
 
       public :: init_arrays_ocean2d
@@ -104,7 +104,6 @@
       public :: wrt_rst_ocean_vars
 
       contains  !]
-
 !----------------------------------------------------------------------
       subroutine init_arrays_ocean2d  ![
       use scalars
@@ -223,7 +222,6 @@
       if (wrt_file_avg) call display_output_settings_to_terminal_avg
 
       end subroutine init_arrays_ocean2d  !]
-
 !----------------------------------------------------------------------
       subroutine init_arrays_ocean3d  ![
 
@@ -304,7 +302,6 @@
       endif  ! <-- wrt_file_avg
 
       end subroutine init_arrays_ocean3d  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_his_ocean_vars  ![
       ! write ocean_vars variables to output netcdf file
@@ -421,7 +418,6 @@
       endif  ! <-- wrt_file_his
 
       end subroutine wrt_his_ocean_vars  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_avg_ocean_vars  ![
       ! write averaged variables to output netcdf file
@@ -516,7 +512,6 @@
       endif  ! <-- wrt_file_avg
 
       end subroutine wrt_avg_ocean_vars  !]
-
 !----------------------------------------------------------------------
       subroutine create_file_ocean_vars(total_rec,fname,avg)  ![
       implicit none
@@ -534,9 +529,8 @@
       call create_filename(fname,total_rec)
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_file_ocean_vars: ')
-
-      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
+      if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'create_file_ocean_vars: ')
 
       varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
       if (avg) then
@@ -569,45 +563,27 @@
       endif
 
       end subroutine create_file_ocean_vars !]
-
 !----------------------------------------------------------------------
-      subroutine create_file_rst_ocean_vars(total_rec,fname)  ![
+      subroutine create_file_rst_ocean_vars(fname)  ![
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
       character(len=99),intent(out) :: fname
 
       ! local
       integer :: ierr,varid
 
-      fname=trim(output_root_name) / / '_rst.nc'
-      call create_filename(fname,total_rec)
+      call create_file('_rst',fname)
 
-      ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=0) call handle_ierr(ierr,'create_file_rst_ocean_vars:')
+      ierr=nf90_open(fname,nf90_write,ncid)
 
-      ! ADD 4 DEFAULT DIMENSIONS SO NCJOIN WILL WORK!!!
-
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      ierr=nf90_put_att(ncid,varid,'long_name','Time since 2000')
-      ierr=nf90_put_att(ncid,varid,'units','second' )
-
-      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      ierr=nf90_put_att(ncid,nf90_global,'type','ROMS restart file')
 
       call def_vars_rst_ocean_vars
-      ierr=nf90_put_att(ncid,nf90_global,'type','ROMS restart file')
-      ierr=nf90_put_att(ncid,nf90_global,
-     &       'output_period_rst_seconds',output_period_rst)
 
       ierr=nf90_enddef(ncid)
-      if (mynode == 0) then
-        write(*,'(7x,2A)')
-     &    'ocean_vars :: created new netCDF file ', trim(fname)
-      endif
 
       end subroutine create_file_rst_ocean_vars !]
-
 ! ----------------------------------------------------------------------
       subroutine def_vars_ocean_vars( avg )  ![
       ! define output variable & attributes in netcdf results file
@@ -737,7 +713,6 @@
 #endif /* SOLVE3D */
 
       end subroutine def_vars_ocean_vars  !]
-
 ! ----------------------------------------------------------------------
       subroutine calc_avg_ocean_vars  ![
       ! set averaged variables
@@ -818,7 +793,6 @@
       endif ! <-- wrt_file_avg
 
       end subroutine calc_avg_ocean_vars  !]
-
 ! ----------------------------------------------------------------------
       subroutine def_vars_rst_ocean_vars  ![
       ! define output variable & attributes in netcdf restart file
@@ -930,7 +904,6 @@
 #endif /* SOLVE3D */
 
       end subroutine def_vars_rst_ocean_vars  !]
-
 ! ----------------------------------------------------------------------
       subroutine write_time_step( ncid, record, total_recs )  ![
       implicit none
@@ -957,7 +930,6 @@
       ! can't use ncwrite() as ibuff is an integer array not real
 
       end subroutine write_time_step  !]
-
 !-----------------------------------------------------------------------
       subroutine display_output_settings_to_terminal  ![
       use tracers
@@ -1002,7 +974,6 @@
 #endif /* SOLVE3D */
 
       end subroutine display_output_settings_to_terminal  !]
-
 !-----------------------------------------------------------------------
       subroutine display_output_settings_to_terminal_avg  ![
       use tracers
@@ -1047,7 +1018,6 @@
 #endif /* SOLVE3D */
 
       end subroutine display_output_settings_to_terminal_avg  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_rst_ocean_vars  ![
       ! write ocean_vars variables to output netcdf restart file
@@ -1085,8 +1055,8 @@
 
         wrt_pflx=.true.                                              ! trigger diag wrt in main.F -> diagnostics.F
 
-        if (mod(total_rec_rst,nrpf_rst)==0) then
-          call create_file_rst_ocean_vars(total_rec_rst,fname_rst)
+        if (rec_rst==nrpf_rst) then
+          call create_file_rst_ocean_vars(fname_rst)
           rec_rst = 0
         endif
         total_rec_rst = total_rec_rst +1

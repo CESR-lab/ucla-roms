@@ -228,11 +228,6 @@
 
       if (present(vartype)) then                           ! handle optional arguement
         xtype = vartype
-!        if(xtype/=nf90_float .and. xtype/=nf90_double) then
-!          write(*,*)
-!     &     'ERROR: nc_define_var - optional arguement must be nf90_float or nf90_double'
-!           ierr=1; goto 2                                 ! can't use error stop as OMP_MASTER only operation?
-!        endif
       else
         xtype = nf90_float                                 ! default output number type is float
       endif
@@ -297,7 +292,7 @@
       ! Combine optional messages:
       f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
 
-      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: nc_read_write :: ',
+      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: netcdf :: ',
      &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
 
       error stop ! Stop simulation assumed fatal error

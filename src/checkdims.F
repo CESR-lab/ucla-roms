@@ -19,7 +19,7 @@
       use param
       use netcdf
       use roms_read_write
-      use netcdf
+      use nc_read_write
 
       implicit none
       integer ncid, max_rec, ierr, icount, ndims, recdim,
@@ -39,12 +39,8 @@
 
       ierr=nf90_inquire(ncid, ndimensions = ndims)
       if (ierr == nf90_noerr) then
-!        ierr=nf_inq_unlimdim (ncid, recdim)
-        ierr=nf90_inquire(ncid, unlimitedDimId = recdim)
-        if (ierr /= nf90_noerr) then
-          write(*,'(/1x,4A/)')        'WARNING: No unlimited ',
-     &          'dimension found in ''', fname(1:lname), '''.'
-        endif
+        ierr=nf90_inquire(ncid,unlimiteddimid = recdim)
+        if (ierr/=0) call handle_ierr(ierr,'checkdim:: find unldimid ')
         do id=1,ndims
           ierr=nf90_inquire_dimension (ncid, id, dname, dsize)
           if (ierr == nf90_noerr) then
@@ -115,7 +111,6 @@
       checkdims=icount
 
       end  !]
-
 
       integer function check_vardims(ncid,fname, varid, horiz_type,n3)  ![
 

@@ -22,8 +22,8 @@
 
       logical           :: tune_init = .true.
 
-      integer           :: total_rec=0       ! in the future, read in from restart file
       real              :: last_time = -99999! in the future, read in from restart file
+      integer           :: record=nrpf
 
       real              :: sp_mx             ! max value of sponge
 
@@ -312,17 +312,15 @@
 
       !local
       integer            :: ncid,ierr
-      integer            :: record
       integer            :: i0,i1,j0,j1
       integer,dimension(3) :: start    
       character(len=99)  :: fname
-      save fname,record
+      save fname
       
-      if (mod(total_rec,nspt)==0) then
-        call create_sp_tune_file(total_rec,fname)
+      if (record==nrpf) then
+        call create_sp_tune_file(fname)
         record = 0
       endif
-      total_rec  = total_rec +1
       record = record + 1
 
       ierr=nf90_open(fname, nf90_write, ncid)
@@ -350,51 +348,27 @@
       end subroutine write_sp_tune !]
 
 ! ----------------------------------------------------------------------
-      subroutine create_sp_tune_file(total_rec,fname) ![
+      subroutine create_sp_tune_file(fname) ![
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
-      character(len=99),intent(out) :: fname
+      character(len=*),intent(out) :: fname
 
       !local
-      integer :: ncid,ierr,varid,dimid
-      integer :: prec ! precision of output
+      integer :: ncid,ierr,varid
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes 
-      character(len=10),dimension(1) :: dimname
-      integer,          dimension(1) :: dimsize
 
-      fname=trim(output_root_name) / / '_spn.nc'
-      call create_filename(fname,total_rec)
-      if (mynode==0) write(*,'(7x,2A)') 
-     &      'sponge tune :: created new netCDF file: ',fname
-
-      ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'create_sp_tune_file: ')
-
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
-      ierr = nf90_put_att(ncid,varid,'units','second' )
-
-      call put_global_atts(ncid, ierr)  ! put global attributes in file
+      call create_file('_spn',fname)
 
       dimnames = (/'xi_rho','eta_rho','time'/)
       dimsizes = (/xi_rho,eta_rho,0/)
-      print *, mynode, 'xi_rho',xi_rho ,'nx',nx
 
-      prec = nf90_float
-      varid = nccreate(ncid,'visc2d',dimnames,dimsizes,prec)
+      ierr=nf90_open(fname,nf90_write,ncid)
+      varid = nccreate(ncid,'visc2d',dimnames,dimsizes,nf90_float)
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'horizontal mixing rate')
       ierr = nf90_put_att(ncid,varid,'units','m^2/s' )
-
-
-      ! At the moment, ncjoin needs xi_rho,xi_u,eta_rho,eta_v to be present
-      ! We'll add this to add_global_att
-      ierr = nf90_def_dim(ncid,'xi_u',xi_u,dimid)
-      ierr = nf90_def_dim(ncid,'eta_v',eta_v,dimid)
 
 
       ierr = nf90_enddef(ncid)
