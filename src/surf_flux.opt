@@ -2,19 +2,13 @@
       ! ****************************************************************
       ! User inputs
 
-      logical,parameter,public :: wrt_file_his = .false.             ! t/f to write module history file
-      real,parameter           :: output_period_his = 80             ! output period in seconds
-      integer,parameter        :: nrpf_his          = 3              ! total recs per file
-      
-      logical,parameter,public :: wrt_file_avg = .false.             ! t/f to write module averages file
-      real,parameter           :: output_period_avg = 120            ! output averaging period in seconds
-      integer,parameter        :: nrpf_avg          = 2              ! total recs per file
+      logical,parameter :: wrt_smflx = .false.              ! output surface momentum flux
+      logical,parameter :: wrt_stflx = .false.              ! output surface tracer flux
+      logical,parameter :: sflx_avg  = .false.              !  T/F to write averaged sflx data
 
-      ! controls both his and avg variables:
-      logical :: wrt_sustr = .true.                                  ! output surface u-stress
-      logical :: wrt_svstr = .true.                                  ! output surface v-stress
-      logical :: wrt_shflx = .true.                                  ! output surface heat flux
-      logical :: wrt_ssflx = .true.                                  ! output surface salinity flux
+      real,parameter           :: output_period = 120       ! output averaging period in seconds
+      integer,parameter        :: nrpf          = 10        ! total recs per file
+
 
       ! edit variable name and time name to match input netcdf file if necessary:          
       type (ncvs)  :: nc_sst  = ncvs( name='sst', time_name='sst_time' )       ! sea-surface temperature (SST) data
