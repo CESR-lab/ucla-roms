@@ -1591,7 +1591,6 @@
       end subroutine wrt_rst_diag_pflx  !]
 ! ----------------------------------------------------------------------
       subroutine create_diagnostics_file(fname) ![
-      use roms_read_write
       implicit none
 
       !input/output

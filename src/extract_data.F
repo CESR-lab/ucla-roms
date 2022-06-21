@@ -221,7 +221,8 @@
      &    'extract_data :: read objects: ',extract_file
       endif
       ierr = nf90_open(extract_file,nf90_nowrite,ncid)
-      if (ierr/=0) call handle_ierr(ierr,'extract_data :: read objects file', extract_file)
+      if (ierr/=0)
+     &  call handle_ierr(ierr,'extract_data :: read objects file', extract_file)
       ierr = nf90_inquire(ncid,nVariables=nobj)
       if (ierr/=0) call handle_ierr(ierr,'read extr ')
 
@@ -466,7 +467,7 @@
       implicit none
 
       ! local
-      integer :: i,itrc,record,ierr,ncid,k
+      integer :: i,itrc,ierr,ncid,k,record
       character(len=30) :: obj_name
       character(len=99),save :: fname
       character(len=20)              :: tname
@@ -483,7 +484,7 @@
       if (.not.allocated(obj)) call init_extract_data
 
       if (obj(1)%record==nrpf) then
-          call create_edata_file(total_rec,fname)
+          call create_edata_file(fname)
           obj(:)%record = 0
       endif
 
@@ -603,40 +604,22 @@
 
       end subroutine do_extract_data  !]
 ! ----------------------------------------------------------------------
-      subroutine create_edata_file(total_rec,fname) ![
-      use roms_read_write
-      use nc_read_write
+      subroutine create_edata_file(fname) ![
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
       character(len=99),intent(out) :: fname
 
       !local
-      integer :: ncid,ierr,varid
-      integer :: prec ! precision of output
-      character(len=10),dimension(3) :: dimnames ! dimension names
-      integer,          dimension(3) :: dimsizes 
+      integer :: ncid,ierr
 
-      fname=trim(output_root_name) / / '_ext.nc'
-      call create_filename(fname,total_rec)
+      call create_file('_ext',fname)
 
-      ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'create_edata_file: ')
-
-
-      call put_global_atts(ncid, ierr)  ! put global attributes in file
+      ierr=nf90_open(fname,nf90_write,ncid)
 
       call create_edata_vars(ncid)
 
       ierr = nf90_enddef(ncid)
-
-
-      if (mynode==0) then
-        write(*,'(7x,2A)')
-     &    'extract_data :: created new netCDF file: ',trim(fname)
-      endif
 
       end subroutine create_edata_file !]
 ! ----------------------------------------------------------------------
