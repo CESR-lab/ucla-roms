@@ -1641,14 +1641,17 @@
         p_slow = 0
       endif
 
+      !! JM: error when MASKING cpp is not defined
       ierr=nf90_inq_varid (ncid, 'u_slow', varid)
       if (ierr == nf90_noerr) then
         call ncread(ncid,'u_slow', u_slow,start)
+#ifdef MASKING
         do j = j0,j1
           do i = 1,i1
             if (umask(i,j)<1) u_slow(i,j,:) = 0
           enddo
         enddo
+#endif
       else
         u_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
@@ -1660,11 +1663,13 @@
       ierr=nf90_inq_varid (ncid, 'v_slow', varid)
       if (ierr == nf90_noerr) then
         call ncread(ncid,'v_slow', v_slow,start)
+#ifdef MASKING
         do j = 1,j1
           do i = i0,i1
             if (vmask(i,j)<1) v_slow(i,j,:) = 0
           enddo
         enddo
+#endif
       else
         v_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
@@ -1677,11 +1682,13 @@
       if (ierr == nf90_noerr) then
         call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
         call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
+#ifdef MASKING
         do j = 0,ny
           do i = 0,nx
             if (rmask(i,j)<1) p_slow(i,j,:) = 0
           enddo
         enddo
+#endif
       else
         p_slow = 0.0
         mpi_master_only write(*,*) ' --- WARNING: '
