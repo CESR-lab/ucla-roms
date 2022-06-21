@@ -328,17 +328,18 @@
 
       if (wrt_file_his) then
 
-      if (.not. first_step) output_time_his = output_time_his + dt   ! only start count after first timestep
-      first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+      if (.not. first_step) then
+         output_time_his = output_time_his + dt   ! only start count after first timestep
+         first_step=.false.                       ! as first step the ocean_vars values are for t=0
+      endif
 
       if (output_time_his>=output_period_his .or.
      &    output_time_his==0                      ) then             ! catch to get t=0 output
 
-        if (mod(total_rec_his,nrpf_his)==0) then
-          call create_file_ocean_vars(total_rec_his,fname_his,.false.)
+        if (rec_his==nrpf_his) then
+          call create_file_ocean_vars(fname_his,.false.)
           rec_his = 0
         endif
-        total_rec_his = total_rec_his +1
         rec_his = rec_his + 1
 
         ierr=nf90_open(fname_his,nf90_write,ncid)
@@ -408,7 +409,7 @@
         if (mynode == 0 .and. .not. code_check) then                 ! supress output for code_check
           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
      &     'ocean_vars :: wrote history, tdays =', tdays,
-     &     'step =', iic-1, 'rec =', rec_his, '/', total_rec_his     ! -1 since iic=t(n+1)
+     &     'step =', iic-1, 'rec =', rec_his
         endif
         code_check=.false.
 
@@ -451,10 +452,9 @@
       if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
 
         if (mod(total_rec_avg,nrpf_avg)==0) then
-          call create_file_ocean_vars(total_rec_avg,fname_avg,.true.)
+          call create_file_ocean_vars(fname_avg,.true.)
           rec_avg = 0
         endif
-        total_rec_avg = total_rec_avg +1
         rec_avg = rec_avg + 1
 
         ierr=nf90_open(fname_avg,nf90_write,ncid)
@@ -513,54 +513,33 @@
 
       end subroutine wrt_avg_ocean_vars  !]
 !----------------------------------------------------------------------
-      subroutine create_file_ocean_vars(total_rec,fname,avg)  ![
+      subroutine create_file_ocean_vars(fname,avg)  ![
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec           ! total netcdf records so far for these variables
       character(len=99),intent(out) :: fname
       logical,          intent(in)  :: avg                 ! his or average file
 
       ! local
       integer :: ierr,varid
 
-      if (      avg) fname=trim(output_root_name) / / '_avg.nc'
-      if (.not. avg) fname=trim(output_root_name) / / '_his.nc'
-      call create_filename(fname,total_rec)
-
-      ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'create_file_ocean_vars: ')
-
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
       if (avg) then
-        ierr=nf90_put_att(ncid,varid,'long_name',
-     &                     'Average time since origin')
+        call create_file('_avg',fname)
       else
-        ierr=nf90_put_att(ncid,varid,'long_name',
-     &                     'Time since origin')
+        call create_file('_his',fname)
       endif
-      ierr=nf90_put_att(ncid,varid,'units','second' )
 
-      call put_global_atts(ncid, ierr)                     ! put global attributes in file
+      call put_global_atts(ncid, ierr)    
 
       if (avg) then
         call def_vars_ocean_vars(  .true.  )
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS averages file')
-        ierr=nf90_put_att(ncid,nf90_global,
-     &         'output_period_avg_seconds',output_period_avg)
       else
         call def_vars_ocean_vars(  .false. )
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS history file')
-        ierr=nf90_put_att(ncid,nf90_global,
-     &         'output_period_his_seconds',output_period_his)
       endif
 
       ierr=nf90_enddef(ncid)
-      if (mynode == 0 .and. .not. code_check) then                   ! supress for code_check
-        write(*,'(7x,2A)')
-     &    'ocean_vars :: created new netCDF file ', trim(fname)
-      endif
 
       end subroutine create_file_ocean_vars !]
 !----------------------------------------------------------------------
@@ -651,7 +630,8 @@
       if ( (wrt_R .and. .not. avg) .or. (wrt_avg_R .and. avg) ) then
         if (.not. avg) text_lname=vname(2,indxR)
         if (      avg) text_lname='averaged '/ /vname(2,indxR)
-        varid = nccreate(ncid,vname(1,indxR),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+        varid = 
+     &  nccreate(ncid,vname(1,indxR),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
       endif
@@ -665,21 +645,24 @@
       if ( (wrt_W .and. .not. avg) .or. (wrt_avg_W .and. avg) ) then                                      ! true W-vertical velocity.
         if (.not. avg) text_lname=vname(2,indxW)
         if (      avg) text_lname='averaged '/ /vname(2,indxW)
-        varid = nccreate(ncid,vname(1,indxW),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+        varid = nccreate(ncid,vname(1,indxW),
+     &      (/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxW))
       endif
       if ( (wrt_Akv .and. .not. avg) .or. (wrt_avg_Akv .and. avg) ) then                                    ! vertical viscosity coefficient.
         if (.not. avg) text_lname=vname(2,indxAkv)
         if (      avg) text_lname='averaged '/ /vname(2,indxAkv)
-        varid = nccreate(ncid,vname(1,indxAkv),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        varid = nccreate(ncid,vname(1,indxAkv),
+     &    (/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkv))
       endif
-      if ( (wrt_Akt .and. .not. avg) .or. (wrt_avg_Akt .and. avg) ) then                                    ! vertical thermal conductivity coefficient.
+      if ( (wrt_Akt .and. .not. avg) .or. (wrt_avg_Akt .and. avg) ) then  ! vertical thermal conductivity coefficient.
         if (.not. avg) text_lname=vname(2,indxAkt)
         if (      avg) text_lname='averaged '/ /vname(2,indxAkt)
-        varid = nccreate(ncid,vname(1,indxAkt),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        varid = nccreate(ncid,vname(1,indxAkt),
+     &      (/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkt))
       endif

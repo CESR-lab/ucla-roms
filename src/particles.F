@@ -12,6 +12,8 @@
       use ocean_vars
       use scalars
       use hidden_mpi_vars
+      use grid
+      use nc_read_write
 
       implicit none
       private
@@ -27,7 +29,7 @@
       
       logical :: full_seed = .true.           ! seed with constant density
       real   ,parameter :: output_period = 400
-      integer :: nrpf = 100
+      integer,parameter :: nrpf = 100
 !     real    :: ppm3 = 8e-5          ! target particles per cubic meter
       real    :: ppm3 = 1e-6          ! target particles per cubic meter
       integer :: pmin = 200 ! minimum of allocated space for particle array
@@ -372,14 +374,13 @@
       ! local
       integer :: ierr,diag, prev_fill_mode,ncid
       character(len=99),save  :: fname
-      integer,save            :: record
+      integer,save            :: record=nrpf
       integer,dimension(3) :: start
 
-      if (mod(total_rec,nrpf)==0) then
-        call create_particles_file(total_rec,fname)
+      if (record==nrpf) then
+        call create_particles_file(fname)
         record = 0
       endif 
-      total_rec  = total_rec +1
       record = record + 1
 
       ierr=nf90_open(fname,nf90_write,ncid)
@@ -416,13 +417,10 @@
 
       end subroutine wrt_particles !]
 !-------------------------------------------------
-      subroutine create_particles_file(total_rec,fname)![
-      use roms_read_write
-      use nc_read_write
+      subroutine create_particles_file(fname)![
       implicit none
 
       !input/output
-      integer          ,intent(in)  :: total_rec  ! total netcdf records so far for these variables
       character(len=99),intent(out) :: fname
 
       ! local
@@ -430,23 +428,12 @@
       character(len=10),dimension(3) :: dimnames ! dimension names
       integer,          dimension(3) :: dimsizes
 
-      fname=trim(output_root_name) / / '_part.nc'
-      call create_filename(fname,total_rec)
-
-      ierr=nf90_create(fname,nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'create_particles_file: ')
-
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','Time since origin')
-      ierr = nf90_put_att(ncid,varid,'units','second' )
-
-      call put_global_atts(ncid, ierr)  ! put global attributes in file
-      if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'create_particles_file: ')
+      call create_file('_part',fname)
 
       dimnames = (/'npart','seven', 'time'/)
       dimsizes = (/ npmx,  7,      0/)
+
+      ierr=nf90_open(fname,nf90_write,ncid)
 
       varid = nccreate(ncid,'particles',dimnames,dimsizes,nf90_double)
       if (ierr/=nf90_noerr) 
@@ -454,12 +441,9 @@
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Tag/x/y/z/u/v/w')
      
-      ierr=nf90_put_att( ncid, NF90_GLOBAL, 'big_number', big_number )
+      ierr=nf90_put_att( ncid, nf90_global, 'big_number', big_number )
      
       ierr = nf90_enddef(ncid)
-
-      if (mynode==0) print *,'particles :: created new netCDF file: ',fname
-!      print *,'particles :: created new netCDF file: ',mynode,fname
 
       end subroutine create_particles_file !]
 !-------------------------------------------------

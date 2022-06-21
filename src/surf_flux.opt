@@ -4,7 +4,7 @@
 
       logical,parameter :: wrt_smflx = .false.              ! output surface momentum flux
       logical,parameter :: wrt_stflx = .false.              ! output surface tracer flux
-      logical,parameter :: sflx_avg  = .false.              !  T/F to write averaged sflx data
+      logical,parameter :: sflx_avg  = .false.              ! write averaged sflx data
 
       real,parameter           :: output_period = 120       ! output averaging period in seconds
       integer,parameter        :: nrpf          = 10        ! total recs per file
