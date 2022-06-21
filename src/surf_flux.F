@@ -148,10 +148,8 @@
 
       ! input
       integer,intent(in) :: ncid
-
       ! local
       integer           :: ierr, varid
-      character(len=64) :: text_lname
 
       ! output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
       if (wrt_smflx) then
@@ -193,10 +191,9 @@
 
       ! local
       integer,dimension(4)   :: start
-      integer,save           :: rec_avg                              ! current file output record
       logical,save           :: first_step=.true.
       character(len=99),save :: fname
-      integer :: tile, tn, ierr
+      integer                :: ierr
 
       if (.not. first_step) then
         output_time = output_time + dt                           ! only start count after first timestep
@@ -207,6 +204,7 @@
 
       if (output_time>=output_period) then  ! time for an output
         output_time = 0
+        navg_sflx   = 0
 
         if (record==nrpf) then
           call create_sflx_file(fname)
@@ -244,12 +242,11 @@
           endif
         endif
 
-        navg_sflx   = 0
 
         ierr=nf90_close(ncid)
         if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
-     &        'surf_flux :: wrote surface fluxs, tdays =', tdays,
+     &        'surf_flux :: wrote surface flux, tdays =', tdays,
      &        'step =', iic-1, 'rec =', record
         endif
       endif  ! time for an output
@@ -268,9 +265,9 @@
       integer,          dimension(4) :: dimsizes
 
       if (sflx_avg) then
-        call create_file('_sflx_avg',fname)
+        call create_file('_flx_avg',fname)
       else
-        call create_file('_sflx',fname)
+        call create_file('_flx',fname)
       endif
 
       ierr=nf90_open(fname,nf90_write,ncid)
@@ -284,10 +281,6 @@
       endif
 
       ierr = nf90_enddef(ncid)
-      if (mynode == 0) then
-        write(*,'(7x,2A)')
-     &    'surf_flux_frc :: created new netCDF file ', trim(fname)
-      endif
 
       end subroutine create_sflx_file !]
 !-----------------------------------------------------------------------

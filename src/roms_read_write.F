@@ -527,7 +527,7 @@
       ierr = nf90_enddef(ncid)
       if (mynode == 0) then
         write(*,'(7x,2A)')
-     &    'created new netCDF file ', trim(fname)
+     &    'created new netcdf file ', trim(fname)
       endif
 
       end subroutine create_file !]
@@ -601,8 +601,6 @@
           istart=i                                  ! return string starting index
         else
           istart=0
-          if (mynode==0) write(*,'(7x,2A)')
-     &      'WARNING: findstr not found=',pattern
         endif
       endif
 
