@@ -195,6 +195,8 @@
       character(len=99),save :: fname
       integer                :: ierr
 
+      if ((.not.wrt_smflx).and.(.not.wrt_stflx)) return
+
       if (.not. first_step) then
         output_time = output_time + dt                           ! only start count after first timestep
       endif

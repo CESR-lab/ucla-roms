@@ -262,12 +262,12 @@
 
       ! local
       integer :: ierr,varid
-      character(len=10),dimension(4) :: dimnames           ! dimension names
-      integer,          dimension(4) :: dimsizes
 
-      if (      avg) fname=trim(output_root_name) / / '_bgc_avg.nc'
-      if (.not. avg) fname=trim(output_root_name) / / '_bgc.nc'
-      call create_filename(fname,total_rec)
+      if (avg) then
+        call create_file('_bgc_avg',fname)
+      else
+        call create_file('_bgc',fname)
+      endif
 
       ierr=nf90_create(fname,nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_bgc_file: ')
