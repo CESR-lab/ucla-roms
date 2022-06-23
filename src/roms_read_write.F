@@ -8,7 +8,6 @@
       use netcdf
       use scalars
       use nc_read_write
-!     use param
 
       implicit none
 
@@ -71,7 +70,7 @@
       ! end old ncvars ***************
 
       public :: findstr,append_date_node
-      public :: set_frc_data,create_filename
+      public :: set_frc_data
       public :: read_output_root_name
       public :: init_output_indices
       public :: find_new_record

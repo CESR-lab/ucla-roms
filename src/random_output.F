@@ -60,23 +60,19 @@
       character(len=99),save :: fname
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
-      integer                :: i0,i1,j0,j1
+      logical,save           :: first_step=.true.
       
       ! do nothing if do_random is false
       if (.not.do_random) return
 
-      i0=1; i1=nx; j0=1; j1=ny
-      if (.not.west_exchng)  i0=0
-      if (.not.south_exchng) j0=0
-      if (.not.east_exchng)  i1=nx+1
-      if (.not.north_exchng) j1=ny+1
-
-      output_time = output_time + dt    
+      if (.not. first_step) then
+        output_time = output_time + dt                           ! only start count after first timestep
+      endif
+      first_step=.false.
 
       if (output_time>=output_period) then
 
         if (record==nrpf) then
-!         call create_file_random(fname)
           call create_file('_rnd',fname)
           ierr=nf90_open(fname,nf90_write,ncid)
           call def_vars_random(ncid)

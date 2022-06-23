@@ -1053,10 +1053,6 @@
       kbak=knew-1
       if (kbak < 1) kbak=4
 
-      ! Since the exponential smoother is not a great orthogonal
-      ! decomposition, we need 3 terms for the hf components:
-      !  hf*hf + lf*hf + hf*lf  
-      ! lf-> _f, hf -> _p
 
       ! Barotropic to baroclinic energy flux: Wbt*b
       ! Wbt is the vertical velocity of the barotropic mode
@@ -1066,19 +1062,15 @@
       ! bt2bc = Wbt*b
 
 
-      bt2bc = 0
-      bc2bc = 0
-      bt2bc_ss = 0
-      bc2bc_ss = 0
       bt2bc_ff = 0
       bc2bc_ff = 0
-!     ape   = 0
+!     ape      = 0
 
       udh_fast = udh - udh_slow
       dzt_fast = dzt - dzt_slow
       do k=1,nz
         rho_fast = rho_d(1:nx,1:ny,k) - rho_slow(:,:,k)
-        Wvl_fast = Wvl(1:nx,1:ny,k) - Wvl_slow(:,:,k)
+        Wvl_fast = Wvl(1:nx,1:ny,k)   - Wvl_slow(:,:,k)
         k2 = min(k+1,nz)
         k1 = max(k-1,1)
         drhodz = -0.5*(rho_slow(1:nx,1:ny,k2)-rho_slow(1:nx,1:ny,k1))/Hz(1:nx,1:ny,k)
@@ -1090,22 +1082,12 @@
         enddo
         do j=1,ny
           do i=1,nx
-            Wbt = udh(i,j) +
-     &       (z_r(i,j,k)+h(i,j))*(dzt(i,j)-udh(i,j))/(zeta(i,j,kbak) + h(i,j))
-            Wbt_s = udh_slow(i,j) +
-     &       (z_r(i,j,k)+h(i,j))*(dzt_slow(i,j)-udh_slow(i,j))/(zeta(i,j,kbak) + h(i,j))
             Wbt_f = udh_fast(i,j) +
      &       (z_r(i,j,k)+h(i,j))*(dzt_fast(i,j)-udh_fast(i,j))/(zeta(i,j,kbak) + h(i,j))
 
-            Wbc   = Wvl(i,j,k)    - Wbt
-            Wbc_s = Wvl_slow(i,j,k) - Wbt_s
             Wbc_f = Wvl_fast(i,j) - Wbt_f
 
-            bt2bc(i,j)    = bt2bc(i,j)    + g*Wbt  *rho_d(i,j,k)    *Hz(i,j,k)
-            bt2bc_ss(i,j) = bt2bc_ss(i,j) + g*Wbt_s*rho_slow(i,j,k)*Hz(i,j,k)
             bt2bc_ff(i,j) = bt2bc_ff(i,j) + g*Wbt_f*rho_fast(i,j)  *Hz(i,j,k)
-            bc2bc(i,j)    = bc2bc(i,j)    + g*Wbc  *rho_d(i,j,k)    *Hz(i,j,k)
-            bc2bc_ss(i,j) = bc2bc_ss(i,j) + g*Wbc_s*rho_slow(i,j,k)*Hz(i,j,k)
             bc2bc_ff(i,j) = bc2bc_ff(i,j) + g*Wbc_f*rho_fast(i,j)  *Hz(i,j,k)
           enddo
         enddo
@@ -1341,17 +1323,6 @@
       endif
 
       if (diag_pflx) then
-!       dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
-!       dimsizes = (/ xi_u,  eta_rho,  nz,    0/)
-!       varid = nccreate(ncid,'up',dimnames,dimsizes,diag_prec)
-!       ierr = nf90_put_att(ncid,varid,'long_name','prsflux in x-dir')
-!       ierr = nf90_put_att(ncid,varid,'units','W/m^2')
-
-!       dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
-!       dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
-!       varid = nccreate(ncid,'vp',dimnames,dimsizes,diag_prec)
-!       ierr = nf90_put_att(ncid,varid,'long_name','prsflux in y-dir')
-!       ierr = nf90_put_att(ncid,varid,'units','W/m^2')
         dimnames3 = (/'xi_u','eta_rho', 'time'/)
         dimsizes3 = (/ xi_u,  eta_rho,   0/)
         varid = nccreate(ncid,'up',dimnames3,dimsizes3,diag_prec)
@@ -1378,22 +1349,16 @@
         ierr = nf90_put_att(ncid,varid,'long_name','v times dpdy')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
-        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
-        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
-        varid = nccreate(ncid,'bt2bc_al',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin all')
+        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_u,  eta_rho,  0/)
+        varid = nccreate(ncid,'upxbar',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','u.dpdx barotropic')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
-        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
-        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
-        varid = nccreate(ncid,'bt2bc_ss',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin ss')
-        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
-
-        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
-        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
-        varid = nccreate(ncid,'bt2bc_ff',dimnames3,dimsizes3,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin ff')
+        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_v,  0/)
+        varid = nccreate(ncid,'upybar',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','v.dpdy barotropic')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
         dimnames3 = (/'xi_rho','eta_rho', 'time'/)
@@ -1406,6 +1371,12 @@
         dimsizes3 = (/ xi_rho,  eta_rho,  0/)
         varid = nccreate(ncid,'bc2bc_ss',dimnames3,dimsizes3,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin ss')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bt2bc_ff',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin ff')
         ierr = nf90_put_att(ncid,varid,'units','W/m^3')
 
         dimnames3 = (/'xi_rho','eta_rho', 'time'/)
@@ -1539,20 +1510,20 @@
       start = (/bfx, 1, record/)
       call ncwrite(ncid,'vpy',vpy_avg,start)
 
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'bt2bc_al',bt2bc_avg(1:nx,1:ny),start)
+!     start = (/bfx, bfy, record/)
+!     call ncwrite(ncid,'bt2bc_al',bt2bc_avg(1:nx,1:ny),start)
 
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'bt2bc_ss',bt2bc_ss_avg(1:nx,1:ny),start)
+!     start = (/bfx, bfy, record/)
+!     call ncwrite(ncid,'bt2bc_ss',bt2bc_ss_avg(1:nx,1:ny),start)
 
       start = (/bfx, bfy, record/)
       call ncwrite(ncid,'bt2bc_ff',bt2bc_ff_avg(1:nx,1:ny),start)
 
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'bc2bc_al',bc2bc_avg(1:nx,1:ny),start)
+!     start = (/bfx, bfy, record/)
+!     call ncwrite(ncid,'bc2bc_al',bc2bc_avg(1:nx,1:ny),start)
 
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'bc2bc_ss',bc2bc_ss_avg(1:nx,1:ny),start)
+!     start = (/bfx, bfy, record/)
+!     call ncwrite(ncid,'bc2bc_ss',bc2bc_ss_avg(1:nx,1:ny),start)
 
       start = (/bfx, bfy, record/)
       call ncwrite(ncid,'bc2bc_ff',bc2bc_ff_avg(1:nx,1:ny),start)
