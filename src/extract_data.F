@@ -481,7 +481,10 @@
       integer,dimension(3) :: start2D
       integer,dimension(2) :: start1D
 
-      if (.not.allocated(obj)) call init_extract_data
+      if (.not.allocated(obj)) then
+        call init_extract_data
+        return
+      endif
 
       if (obj(1)%record==nrpf) then
           call create_edata_file(fname)
