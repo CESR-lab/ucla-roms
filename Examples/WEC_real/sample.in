@@ -17,14 +17,14 @@ forcing: filename
      ../USWC_model/input_data/sample_rad_units_DPD.nc
      ../USWC_model/input_data/sample_tracers.nc
      ../USWC_model/input_data/sample_wwv_riv.nc
-     ../USWC_model/input_data/roms_bry_trace.nc     
+     ../USWC_model/input_data/roms_bry_trace.nc
 
 initial: NRREC  filename
           1
      ../USWC_model/input_data/roms_init_trace.nc
 
 output_root_name:
-     sample     
+     sample
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

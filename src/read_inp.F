@@ -435,7 +435,11 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      (defined SG_BBL96    && !defined ANA_WWAVE)  ||\
      (defined QCORRECTION && !defined ANA_SST)    ||\
      (defined SALINITY    && !defined ANA_SSFLUX) ||\
-     (defined LMD_KPP     && !defined ANA_SRFLUX))
+     (defined LMD_KPP     && !defined ANA_SRFLUX))||\
+     ((defined T_FRC_BRY || defined M2_FRC_BRY || \
+      defined M3_FRC_BRY || defined Z_FRC_BRY) && \
+      !defined ANA_BRY)
+
 
 
 ! Forcing file name. Check its availability.

@@ -168,7 +168,7 @@
         enddo
         do k=2,N-1
           do i=istrU,iend
-            u(i,j,k,nnew)=u(i,j,k,nnew)+DC(i,0)*ru(i,j,k)
+            u(i,j,k,nnew)=u(i,j,k,nnew)+DC(i,0)*ru(i,j,k)  ! u*dz
 
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
           enddo

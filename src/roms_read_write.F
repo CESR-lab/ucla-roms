@@ -35,7 +35,9 @@
       character(len=99), public  :: output_root_name
       character(len=41), public  :: git_hash
 
-      integer,public :: i0,i1,j0,j1                        ! i0=0 (west edge), or i0=1 interior
+      ! index ranges for netcdf output (See init_output_indices)
+      integer,public :: i0,i1,j0,j1
+      integer,public :: bfx,bfy
 
       integer,parameter :: max_options_string=2000
       character(len=max_options_string),public::surf_forcing_strings=' '
@@ -83,23 +85,33 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_output_indices  ![
-      ! outputting variables requires buffer points
-      ! on the domain boundary only.
-      ! interior sub-domain is still  1:nx,1:ny
-      ! but e.g. South-West corner is 0:nx,0:ny
-      ! we write this as ncwrite( var(i0:i1,j0:j1) )
+      ! There are 2 approaches to outputting to netcdf files
+      ! in the interior, we alway output (1:nx,1:ny), the boundary
+      ! subdomains netcdf files are larger because they include buffers
+      ! Method 1:
+      ! For arrays that have buffers, we use i0:i1,j0:j1.
+      ! These indices are expanded for boundary adjacent 
+      ! subdomains because there, we output domain buffers
+
+      ! Method 2:
+      ! Some arrays are size (nx,ny) only. For those, we just
+      ! skip the buffers for the boundary subdomain outputs.
 
       use dimensions
       implicit none
 
+      ! Method 1
       i0=1; i1=nx; j0=1; j1=ny
-      if (.not.west_exchng)  i0=0
-      if (.not.south_exchng) j0=0
-      if (.not.east_exchng)  i1=nx+1
-      if (.not.north_exchng) j1=ny+1
+      if (.not.west_exchng)  i0=0     ! Start at 0 to include buffer
+      if (.not.south_exchng) j0=0     ! Start at 0 to include buffer
+      if (.not.east_exchng)  i1=nx+1  ! End at nx+1 to include buffer
+      if (.not.north_exchng) j1=ny+1  ! End at ny+1 to include buffer
 
-!      print *, mynode, 'i0=',i0,'j0=',j0,'i1=',i1,'j1=',j1
-!      print *, mynode, 'nx=',ny,'j0=',j0,'i1=',i1,'j1=',j1
+      ! Method 2
+      bfx = 1
+      bfy = 1
+      if (.not.west_exchng)  bfx = 2  ! Start writing at 2 to skip buffer
+      if (.not.south_exchng) bfy = 2  ! Start writing at 2 to skip buffer
 
       end subroutine init_output_indices  !]
 ! ----------------------------------------------------------------------
@@ -498,7 +510,7 @@
       if (ierr/=nf90_noerr) 
      %   call handle_ierr(ierr,'create_file: '/ / trim(fname) )
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
       if (mynode == 0) then
         write(*,'(7x,2A)')
      &    'created new netcdf file ', trim(fname)

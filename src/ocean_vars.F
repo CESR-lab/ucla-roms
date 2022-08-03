@@ -318,7 +318,7 @@
 
       ! local
       integer,dimension(4)   :: start
-      integer,save           :: rec_his                              ! current file output record
+      integer,save           :: rec_his=nrpf_his                     ! current file output record
       integer,save           :: total_rec_his=0                      ! total his output records so far
       real,save              :: output_time_his=0                    ! time since last output
       logical,save           :: first_step=.true.
@@ -328,10 +328,13 @@
 
       if (wrt_file_his) then
 
-      if (.not. first_step) then
-         output_time_his = output_time_his + dt   ! only start count after first timestep
+      if (first_step) then
          first_step=.false.                       ! as first step the ocean_vars values are for t=0
+      else
+         output_time_his = output_time_his + dt   ! only start count after first timestep
       endif
+
+!     if (mynode==0) print *,'output_time_his: ',output_time_his
 
       if (output_time_his>=output_period_his .or.
      &    output_time_his==0                      ) then             ! catch to get t=0 output
@@ -404,7 +407,6 @@
         if (wrt_Hbbl) call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
 # endif
 #endif
-
         ierr=nf90_close(ncid)
         if (mynode == 0 .and. .not. code_check) then                 ! supress output for code_check
           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
@@ -529,7 +531,7 @@
         call create_file('_his',fname)
       endif
 
-      call put_global_atts(ncid, ierr)    
+      ierr=nf90_open(fname,nf90_write,ncid)
 
       if (avg) then
         call def_vars_ocean_vars(  .true.  )
@@ -539,7 +541,7 @@
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS history file')
       endif
 
-      ierr=nf90_enddef(ncid)
+      ierr=nf90_close(ncid)
 
       end subroutine create_file_ocean_vars !]
 !----------------------------------------------------------------------
@@ -560,7 +562,7 @@
 
       call def_vars_rst_ocean_vars
 
-      ierr=nf90_enddef(ncid)
+      ierr=nf90_close(ncid)
 
       end subroutine create_file_rst_ocean_vars !]
 ! ----------------------------------------------------------------------

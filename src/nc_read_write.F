@@ -229,7 +229,8 @@
       if (present(vartype)) then                           ! handle optional arguement
         xtype = vartype
       else
-        xtype = nf90_float                                 ! default output number type is float
+!       xtype = nf90_float                                 ! default output number type is float
+        xtype = nf90_double                                ! default output number type is float
       endif
 
       ndim = size(dimname)
@@ -248,11 +249,6 @@
         dimid(i) = did
       enddo
 
-      if (xtype==nf90_float .or. xtype==nf90_double) then  ! catch for non-numeric type
-#ifdef HIS_DOUBLE
-        xtype = nf90_double                                ! default output as double
-#endif
-      endif
       ierr=nf90_def_var(ncid,varname,xtype,dimid,varid,
      &                  deflate_level=deflate_level, shuffle=shuffle)
       if (ierr/=nf90_noerr) then
@@ -269,6 +265,7 @@
       ! handle fatal ierr with error messages.
       ! err_msg1 & 2 are optional messages
       ! get this from roms_read_write module rather at some point
+      use param
       implicit none
 
       ! inputs
@@ -292,8 +289,8 @@
       ! Combine optional messages:
       f_msg = trim(f_msg1) / / ' ' / / trim(f_msg2)
 
-      write(*,'(/3x,2A/5x,A/12x,A/)') 'ERROR: netcdf :: ',
-     &       'netcdf ierr != 0 ', trim(f_msg), nf90_strerror(ierr)
+      write(*,'(/3x,A/5x,I4,A/12x,A/)') 'ERROR:: ',mynode,' ',
+     &       trim(f_msg), nf90_strerror(ierr)
 
       error stop ! Stop simulation assumed fatal error
 

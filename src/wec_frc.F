@@ -525,7 +525,7 @@
       character(len=10),dimension(4) :: dimnames           ! dimension names
       integer,          dimension(4) :: dimsizes
       
-      if (wec_avg) then
+      if (wrt_file_avg) then
         call create_file('_wec_avg',fname)
       else
         call create_file('_wec',fname)
@@ -535,13 +535,13 @@
 
       call create_wec_vars(ncid)
 
-      if (wec_avg) then
+      if (wrt_file_avg) then
         ierr=nf90_put_att(ncid,nf90_global,'type','wec forcing average')
       else
         ierr=nf90_put_att(ncid,nf90_global,'type','wec forcing history')
       endif
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_wec_file !]
 ! ----------------------------------------------------------------------
@@ -563,7 +563,7 @@
       endif
       first_step=.false.
 
-      if (wec_avg) call calc_wec_avg
+      if (wrt_file_avg) call calc_wec_avg
 
       if (output_time>=output_period) then ! time for an output
         navg_wec=0
@@ -581,21 +581,21 @@
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
         if (wrt_sup) then
-          if (wec_avg) then 
+          if (wrt_file_avg) then 
             call ncwrite(ncid,'sup',sup_avg(i0:i1,j0:j1),(/1,1,record/))
           else
             call ncwrite(ncid,'sup',sup(i0:i1,j0:j1),(/1,1,record/))
           endif
         endif
         if (wrt_ust2d) then
-          if (wec_avg) then 
+          if (wrt_file_avg) then 
             call ncwrite(ncid,'ust2d',ust2d_avg(1:i1,j0:j1),(/1,1,record/))
           else
             call ncwrite(ncid,'ust2d',ust2d(1:i1,j0:j1),(/1,1,record/))
           endif
         endif
         if (wrt_ust2d) then
-          if (wec_avg) then 
+          if (wrt_file_avg) then 
             call ncwrite(ncid,'vst2d',vst2d_avg(i0:i1,1:j1),(/1,1,record/))
           else
             call ncwrite(ncid,'vst2d',vst2d(i0:i1,1:j1),(/1,1,record/))
@@ -603,14 +603,14 @@
         endif
 # ifdef SOLVE3D
         if (wrt_ust) then
-          if (wec_avg) then 
+          if (wrt_file_avg) then 
             call ncwrite(ncid,'ust',ust_avg(1:i1,j0:j1,:),(/1,1,1,record/))
           else
             call ncwrite(ncid,'ust',ust(1:i1,j0:j1,:),(/1,1,1,record/))
           endif
         endif
         if (wrt_vst) then
-          if (wec_avg) then 
+          if (wrt_file_avg) then 
             call ncwrite(ncid,'vst',vst_avg(i0:i1,1:j1,:),(/1,1,1,record/))
           else
             call ncwrite(ncid,'vst',vst(i0:i1,1:j1,:),(/1,1,1,record/))
@@ -926,7 +926,7 @@
       !#### end variables added as per forces.h #####
 
 #ifdef AVERAGES
-      if (wec_avg) then                                         ! wrt_file_avg avoids any allocation
+      if (wrt_file_avg) then                                         ! wrt_file_avg avoids any allocation
         if (wrt_SUP)   allocate(   sup_avg(GLOBAL_2D_ARRAY) )    ! if don't want avg file
         if (wrt_UST2D) allocate( ust2d_avg(GLOBAL_2D_ARRAY) )
         if (wrt_VST2D) allocate( vst2d_avg(GLOBAL_2D_ARRAY) )
@@ -1622,13 +1622,13 @@ C$OMP BARRIER
 #endif /* AVERAGES */
 
 !-----------------------------------------------------------------------
-      subroutine wec_forces (tile)  ![
+      subroutine wec_forces  ![
       ! this is mrl_wci (tile) from mrl_wci.F in old code.
       use hidden_mpi_vars
       use private_scratch
       implicit none
 
-      integer :: tile
+      integer,save :: tile=1
 # include "compute_tile_bounds.h"
 
       call wec_forces_tile (istr,iend,jstr,jend,
@@ -2870,7 +2870,7 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 #  endif
 # endif
 
-      if (wrt_wec) call wrt_wec_data
+      if (wrt_file_his.or.wrt_file_avg) call wrt_wec_data
 
       end subroutine wec_forces_tile  !]
 

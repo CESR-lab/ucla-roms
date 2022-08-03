@@ -285,9 +285,6 @@
           enddo
         enddo
 
-        !! JM: DC(i,0) => Hu (Water Column at u)
-        !! JM: FC(i,0) => Uflx (Barotropic Transport)
-
 
 # ifdef CORR_COUPLED_MODE
 #  ifdef EXTRAP_BAR_FLUXES
@@ -324,7 +321,7 @@
      &                          -MID*DU_avg2(i,j)
      &                       +BAK*DU_avg_bak(i,j)
      &                                          )
-            FC(i,0)=cff*FC(i,0)-ubar(i,j,kbak)
+            FC(i,0)=cff*FC(i,0)-ubar(i,j,kbak)  ! now FC(i,0) is mismatch in[m/s]
 #   else
             FC(i,0)=( FC(i,0) -NOW*DU_avg1(i,j)
      &                        +MID*DU_avg2(i,j)
@@ -337,7 +334,7 @@
      !! now FC(i,0) => mismatch between  int(U*dz)/int(dz) and ubar
 # else 
         do i=istr,iendR
-          FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0) !! 2 corrector of ubar? JM
+          FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0) ! FC(i,0) is mismatch in [m/s]
 #  ifdef WEC
      &                               +ust2d(i,j)
 #  endif
@@ -346,7 +343,7 @@
 
         do k=1,N
           do i=istr,iendR
-!!JM make sure that ust, vst is masked in wec_frc and fix this!!
+!!JM make sure that ust, vst are masked in wec_frc and fix this!!
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0)) !! removing ubar mismatch from u
 # ifdef MASKING
      &                                *umask(i,j)
@@ -361,6 +358,12 @@
      &                                          )           
           enddo
         enddo
+!       if (mynode==1) then
+!        if (j==20) then
+!          i = 10
+!          print *,'set_HUV1: ',sum(FlxU(i,j,:))/DC(i,0),ubar(i,j,kbak)
+!        endif
+!       endif
 
         if (j >= jstr) then
           do i=istrR,iendR

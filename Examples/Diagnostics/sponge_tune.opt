@@ -13,7 +13,7 @@
       real,   parameter :: pflux_norm = 1e-2     ! typical pflux scale
 
       logical,parameter :: wrt_sponge=.false.    ! yes/no output sponge to file
-      integer,parameter :: nspt = 10             ! Number of records per file
+      integer,parameter :: nrpf = 10             ! Number of records per file
       real   ,parameter :: output_period = 1800  ! time between outputs in seconds
 
       ! End of user inputs

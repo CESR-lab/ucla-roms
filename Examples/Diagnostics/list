@@ -1,0 +1,306 @@
+run model...
+
+ Activated CPP configuration switches:
+ <cppdefs.opt>
+       MAIN_SWITCH             DIAGNOSTICS             HIS_DOUBLE
+       SPONGE_TUNE             SOLVE3D                 UV_COR
+       UV_ADV                  CURVGRID                SPHERICAL
+       MASKING                 SALINITY                NONLIN_EOS
+       SPLIT_EOS               AVERAGES                NEW_S_COORD
+       UV_VIS2                 MIX_GP_UV               TS_DIF2
+       MIX_GP_TS               LMD_MIXING              LMD_KPP
+       LMD_BKPP                LMD_CONVEC              LMD_NONLOCAL
+       OBC_WEST                OBC_EAST                OBC_NORTH
+       OBC_SOUTH               OBC_M2FLATHER           OBC_M3ORLANSKI
+       OBC_TORLANSKI           Z_FRC_BRY               M2_FRC_BRY
+       M3_FRC_BRY              T_FRC_BRY               SPONGE
+       LOG_BDRAG               BULK_FRC                SURF_FLUX_OUTPUT_HIS
+       SURF_FLUX_OUTPUT_AVG
+ <pre_step3d4S.F>
+       SPLINE_UV               SPLINE_TS
+ <step3d_uv1.F>
+       UPSTREAM_UV             SPLINE_UV
+ <step3d_uv2.F>
+       DELTA=0.28              EPSIL=0.36
+ <step3d_t_ISO.F>
+       UPSTREAM_TS             SPLINE_TS
+ <set_depth.F>
+       NOW=3.63                MID=4.47                BAK=2.05
+       (N-M+B)/B=0.10243902439
+ <lmd_kpp.F>
+       INT_AT_RHO_POINTS       SMOOTH_HBL              LIMIT_UNSTABLE_ONLY
+ <set_global_definitions.h>
+       CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
+       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
+
+ 2021-05: uswc sample domain
+     ntimes =        40   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =        10   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: ../USWC_model/input_data/sample_grd_riv.0.nc
+ forcing data file(s): ../USWC_model/input_data/sample_prec_units_DPD.0.nc
+                       ../USWC_model/input_data/sample_wnd.0.nc
+                       ../USWC_model/input_data/sample_tra_units_DPD.0.nc
+                       ../USWC_model/input_data/sample_rad_units_DPD.0.nc
+                       ../USWC_model/input_data/sample_tracers.0.nc
+                       ../USWC_model/input_data/sample_wwv_riv.0.nc
+                       ../USWC_model/input_data/roms_bry_trace.0.nc
+ initial condition :: rec =  2  file = '../USWC_model/input_data/roms_init_trace.0.nc'
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+
+ NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+       ocean_vars :: history file ouput_period = 400.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     F    density anomaly                           
+           Omega   F    S-coordinate vertical velocity            
+           W       F    vertical velocity                         
+           Akv     F    vertical viscosity coefficient            
+           Akt     F    vertical thermal conductivity coefficient 
+           Aks     F    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
+
+ Spherical grid detected.
+
+      get_grid :: read grid data from file '../USWC_model/input_data/sample_grd_riv.0.nc'.
+ hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
+ hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
+                                           open_cross = 5.4367977391196312E+06
+ Cg_max = 0.3808322   Cg_min = 0.0337713   Cu_Cor = 0.0016583
+
+ Vertical S-coordinate system (z at W-points):
+
+  level   S-coord    Cs-curve    Z at hmin       at hc    half way     at hmax
+
+     50   0.000000   0.0000000       0.000       0.000       0.000       0.000
+     49  -0.020000  -0.0002160      -0.035      -0.253      -0.436      -0.500
+     48  -0.040000  -0.0008668      -0.070      -0.511      -0.915      -1.096
+     47  -0.060000  -0.0019610      -0.105      -0.775      -1.438      -1.788
+     46  -0.080000  -0.0035129      -0.140      -1.044      -2.007      -2.580
+     45  -0.100000  -0.0055425      -0.175      -1.319      -2.624      -3.476
+     44  -0.120000  -0.0080762      -0.211      -1.601      -3.292      -4.483
+     43  -0.140000  -0.0111465      -0.246      -1.889      -4.012      -5.607
+     42  -0.160000  -0.0147924      -0.281      -2.185      -4.791      -6.857
+     41  -0.180000  -0.0190596      -0.317      -2.488      -5.631      -8.242
+     40  -0.200000  -0.0240012      -0.352      -2.800      -6.539      -9.775
+     39  -0.220000  -0.0296773      -0.388      -3.121      -7.520     -11.469
+     38  -0.240000  -0.0361561      -0.424      -3.452      -8.581     -13.338
+     37  -0.260000  -0.0435132      -0.460      -3.794      -9.730     -15.399
+     36  -0.280000  -0.0518329      -0.496      -4.148     -10.975     -17.670
+     35  -0.300000  -0.0612071      -0.532      -4.515     -12.326     -20.171
+     34  -0.320000  -0.0717362      -0.568      -4.897     -13.792     -22.925
+     33  -0.340000  -0.0835284      -0.604      -5.294     -15.384     -25.955
+     32  -0.360000  -0.0966989      -0.641      -5.709     -17.113     -29.286
+     31  -0.380000  -0.1113694      -0.678      -6.142     -18.993     -32.945
+     30  -0.400000  -0.1276667      -0.715      -6.596     -21.035     -36.960
+     29  -0.420000  -0.1457202      -0.752      -7.072     -23.252     -41.358
+     28  -0.440000  -0.1656599      -0.790      -7.571     -25.658     -46.169
+     27  -0.460000  -0.1876125      -0.827      -8.095     -28.265     -51.419
+     26  -0.480000  -0.2116970      -0.866      -8.646     -31.085     -57.135
+     25  -0.500000  -0.2380192      -0.904      -9.225     -34.128     -63.341
+     24  -0.520000  -0.2666648      -0.943      -9.833     -37.403     -70.054
+     23  -0.540000  -0.2976916      -0.982     -10.471     -40.917     -77.287
+     22  -0.560000  -0.3311200      -1.021     -11.139     -44.670     -85.045
+     21  -0.580000  -0.3669228      -1.060     -11.837     -48.660     -93.322
+     20  -0.600000  -0.4050140      -1.100     -12.563     -52.879    -102.099
+     19  -0.620000  -0.4452377      -1.141     -13.315     -57.311    -111.343
+     18  -0.640000  -0.4873571      -1.181     -14.092     -61.932    -121.000
+     17  -0.660000  -0.5310454      -1.222     -14.888     -66.710    -131.000
+     16  -0.680000  -0.5758799      -1.262     -15.698     -71.602    -141.251
+     15  -0.700000  -0.6213408      -1.303     -16.517     -76.557    -151.639
+     14  -0.720000  -0.6668167      -1.344     -17.335     -81.514    -162.030
+     13  -0.740000  -0.7116186      -1.385     -18.145     -86.403    -172.273
+     12  -0.760000  -0.7550040      -1.425     -18.938     -91.151    -182.207
+     11  -0.780000  -0.7962112      -1.466     -19.703     -95.681    -191.666
+     10  -0.800000  -0.8345042      -1.506     -20.431     -99.920    -200.487
+      9  -0.820000  -0.8692240      -1.545     -21.115    -103.802    -208.527
+      8  -0.840000  -0.8998432      -1.584     -21.748    -107.274    -215.671
+      7  -0.860000  -0.9260154      -1.622     -22.325    -110.303    -221.844
+      6  -0.880000  -0.9476126      -1.660     -22.845    -112.874    -227.017
+      5  -0.900000  -0.9647416      -1.697     -23.309    -114.999    -231.213
+      4  -0.920000  -0.9777332      -1.734     -23.722    -116.711    -234.505
+      3  -0.940000  -0.9871030      -1.770     -24.089    -118.061    -237.006
+      2  -0.960000  -0.9934885      -1.806     -24.419    -119.113    -238.854
+      1  -0.980000  -0.9975709      -1.841     -24.720    -119.935    -240.199
+      0  -1.000000  -1.0000000      -1.876     -25.000    -120.592    -241.183
+
+ Maximum grid stiffness ratios:   rx0 = 0.100020449  rx1 =  17.833965349
+
+ WARNING: Exact restart is requested, but is not possible: initial
+          file '../USWC_model/input_data/roms_init_trace.0.nc' does not contain sufficient records.
+ WARNING: netCDF variable 'hbls' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in '../USWC_model/input_data/roms_init_trace.0.nc' ==> initialized to zero state.
+ getting u,v,p slow
+  --- WARNING: u_slow not in initial file.  Initialized to 0.0
+  --- WARNING: v_slow not in initial file.  Initialized to 0.0
+  --- WARNING: p_slow not in initial file.  Initialized to 0.0
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+
+ Sponge layer =  15 interior grid points.
+
+ main :: initialization complete, started time-steping.
+
+ allocating pflux vars
+ init diagnostics F
+ init random
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
+         set_frc :: swrad            input time (days) =   4726.54     rec =   2
+         set_frc :: swrad            input time (days) =   4726.58     rec =   3
+         set_frc :: lwrad_down       input time (days) =   4726.54     rec =   2
+         set_frc :: lwrad_down       input time (days) =   4726.58     rec =   3
+         set_frc :: uwnd             input time (days) =   4726.54     rec =   2
+         set_frc :: uwnd             input time (days) =   4726.58     rec =   3
+         set_frc :: vwnd             input time (days) =   4726.54     rec =   2
+         set_frc :: vwnd             input time (days) =   4726.58     rec =   3
+         set_frc :: Tair             input time (days) =   4726.54     rec =   2
+         set_frc :: Tair             input time (days) =   4726.58     rec =   3
+         set_frc :: Qair             input time (days) =   4726.54     rec =   2
+         set_frc :: Qair             input time (days) =   4726.58     rec =   3
+         set_frc :: rain             input time (days) =   4726.54     rec =   2
+         set_frc :: rain             input time (days) =   4726.58     rec =   3
+
+ STEP  time[DAYS] KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL     i_cx   j_cx k_c
+      0 4726.5656 4.22974108083-03 2.7901936656-03  0.453420664594  0.340747933947    113     83   14
+       created new netcdf file sample_his.20121209133435.0.nc
+       ocean_vars :: wrote history, tdays =   4726.5657  step =      0 rec =   1
+ Diagn,   3.074107760429717E-003           1
+ Rand, 10,10:   3.074107760429716E-003           1
+      1 4726.5659 4.22535260762-03 2.7868429445-03  0.312235474003  0.312235474003    113     83   18
+ Diagn,  -9.196974191351912E-004           2
+ Rand, 10,10:  -3.376448718485244E-003           2
+      2 4726.5661 4.22038340801-03 2.7828673068-03  0.324939490902  0.179880092140    114     84   26
+ Diagn,  -1.454658595152715E-003           3
+ Rand, 10,10:  -4.775546759511260E-003           3
+ Diagn,  -3.764775587213362E-004           4
+ Rand, 10,10:  -7.235945190606444E-004           4
+      4 4726.5666 4.21175758984-03 2.7754533888-03  0.353845455383  0.353845455383    114     84   27
+ Diagn,   2.803204575109760E-004           5
+ Rand, 10,10:   2.328636907191709E-003           5
+ Diagn,   3.981180809231164E-004           6
+ Rand, 10,10:   2.927636953976909E-003           6
+ Diagn,   6.464509184177223E-004           7
+ Rand, 10,10:   4.645851046794137E-003           7
+ Diagn,   4.748654744210884E-004           8
+ Rand, 10,10:   3.338887032389521E-003           8
+      8 4726.5675 4.21070533351-03 2.7756188063-03  0.200630177674  0.192377489168    197     38   32
+ Diagn,   1.196385603294056E-004           9
+ Rand, 10,10:   2.457228319421838E-004           9
+ Diagn,   1.672980364368805E-004          10
+ Rand, 10,10:   8.173838701521206E-004          10
+     10 4726.5679 4.20844343762-03 2.7737233925-03  0.200375049251  0.191913468057    197     38   32
+ Diagn,   6.437194339745497E-004          11
+ Rand, 10,10:   6.151009654944075E-003          11
+       created new netcdf file sample_rnd.20121209133755.0.nc
+       wrt_random :: wrote random, tdays =   4726.5680  step =     11 rec =   1
+ Diagn,   9.653641132111221E-004          12
+ Rand, 10,10:   1.014188110184549E-002          12
+ Diagn,   7.905416280901507E-004          13
+ Rand, 10,10:   8.054408208342020E-003          13
+ Diagn,   3.786944774255167E-004          14
+ Rand, 10,10:   2.503774855102864E-003          14
+ Diagn,   2.681010584214701E-004          15
+ Rand, 10,10:   1.056649723794158E-003          15
+ Diagn,   5.770162282602995E-004          16
+ Rand, 10,10:   6.201352891899764E-003          16
+ Diagn,   7.997986872741504E-004          17
+ Rand, 10,10:   1.020088545916613E-002          17
+ Diagn,   7.152152934936910E-004          18
+ Rand, 10,10:   8.911467199549449E-003          18
+ Diagn,   5.304218329091002E-004          19
+ Rand, 10,10:   5.646582152485943E-003          19
+ Diagn,   5.009975133616975E-004          20
+       created new netcdf file sample_dia.20121209134055.0.nc
+       diagnostics :: wrote output, tdays =   4726.5701  step =     20 rec =   1
+ Rand, 10,10:   5.306188486822693E-003          20
+     20 4726.5703 4.20127155261-03 2.7670116438-03  0.196173834132  0.187616660358    197     38   32
+       ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2
+ Diagn,   3.038697870785039E-003           1
+ Rand, 10,10:   8.092210715378079E-003          21
+       wrt_random :: wrote random, tdays =   4726.5703  step =     21 rec =   2
+       created new netcdf file sample_rnd2.20121209134115.0.nc
+       wrt_random :: wrote random, tdays =   4726.5703  step =     21 rec =   2
+ Diagn,   2.932983549934921E-003           2
+ Rand, 10,10:   2.827269229084803E-003           1
+ Diagn,   2.832269912200802E-003           3
+ Rand, 10,10:   4.044477251274966E-003           2
+ Diagn,   2.979892801920787E-003           4
+ Rand, 10,10:   6.119079638597383E-003           3
+ Diagn,   2.897940872254895E-003           5
+ Rand, 10,10:   7.159442882539366E-003           4
+ Diagn,   2.839388733095836E-003           6
+ Rand, 10,10:   8.274182343332036E-003           5
+ Diagn,   2.957201536055955E-003           7
+ Rand, 10,10:   1.055923030659337E-002           6
+ Diagn,   2.990461198992913E-003           8
+ Rand, 10,10:   1.227404767377450E-002           7
+ Diagn,   2.853394135785709E-003           9
+ Rand, 10,10:   1.249664934468077E-002           8
+       created new netcdf file sample_rst.20121209134415.0.nc
+       ocean_vars :: wrote restart, tdays =   4726.5724  step =     29 rec =   1/   1
+ Diagn,   2.528289256000038E-003          10
+ Rand, 10,10:   1.071047808875635E-002           9
+     30 4726.5726 4.20112731340-03 2.7656122176-03  0.189806820443  0.181193054652    197     38   32
+       ocean_vars :: wrote restart, tdays =   4726.5726  step =     30 rec =   2/   2
+ Diagn,   2.172695441863760E-003          11
+ Rand, 10,10:   8.256187580381694E-003          10
+       wrt_random :: wrote random, tdays =   4726.5726  step =     31 rec =   3
+ Diagn,   1.901747440795347E-003          12
+ Rand, 10,10:   6.426944502117073E-003          11
+ Diagn,   1.661417828079892E-003          13
+ Rand, 10,10:   4.668828269101744E-003          12
+ Diagn,   1.441691150702677E-003          14
+ Rand, 10,10:   2.894931977815881E-003          13
+ Diagn,   1.208530866994147E-003          15
+ Rand, 10,10:   6.324380173323295E-004          14
+ Diagn,   9.243196445302255E-004          16
+ Rand, 10,10:  -2.748573209585091E-003          15
+ Diagn,   7.382309174246908E-004          17
+ Rand, 10,10:  -4.815976100249886E-003          16
+ Diagn,   7.463986478296515E-004          18
+ Rand, 10,10:  -3.647433323756499E-003          17
+ Diagn,   8.098516535209099E-004          19
+ Rand, 10,10:  -1.492792383139797E-003          18
+ Diagn,   8.117238863326675E-004          20
+       diagnostics :: wrote output, tdays =   4726.5747  step =     40 rec =   2
+ Rand, 10,10:  -5.669280532184809E-004          19
+     40 4726.5749 4.21646879138-03 2.7789049874-03  0.182109468595  0.173033776569    197     38   31
+       ocean_vars :: wrote history, tdays =   4726.5749  step =     40 rec =   3
+ Process    0  thread  0  cpu time =       29.89 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   31.4389069080353     
+complete!

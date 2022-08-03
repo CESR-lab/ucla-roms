@@ -34,6 +34,8 @@
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real cff !,dmax,div
       real ub,ut
+      real :: uint,vint
+      real :: huint,hvint
 !     integer ierr
 
 # ifdef ADV_ISONEUTRAL
@@ -483,17 +485,6 @@
           CF(i,0)=0.   !<-- initialize vertical integral
         enddo          !--> keep DC(:,0) for later
 
-# ifdef OBC_CHECK
-        if(j==10) then
-          print *, ' '
-          print *, '2D3D FlxU - CF:'
-          print *, '   u(istr  ,10,10,nstp)=', u(istr,10,10,nstp)
-          print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
-          print *, '   u(iend+1,10,10,nstp)=', u(iend+1,10,10,nstp)
-          print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
-        endif
-# endif
-
         do k=N,1,-1
           do i=IU_RANGE
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0))
@@ -539,15 +530,6 @@ c>># define DELTA 0.5790
         do i=IU_RANGE
           CF(i,0)=DC(i,0)*(CF(i,0)-DU_avg2(i,j))  !<-- mismatch
         enddo
-
-# ifdef OBC_CHECK
-        if(j==10) then
-          print *, ' '
-          print *, '2D3D CF:'
-          print *, ' CF(istr  ,0)  =   CF(istr  ,0) =', CF(istr,0)
-          print *, ' CF(iend+1,10) =   CF(iend+1,10)=', CF(iend+1,10)
-        endif
-# endif
 
         do k=1,N,+1
           do i=IU_RANGE
@@ -718,14 +700,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif
         endif    !<-- j >= jstr
       enddo    ! <-- j
-
-# ifdef OBC_CHECK
-      print *, '2D3D Flx 0:'
-      print *, '   u(istr  ,10,10,nnew)=', u(istr,10,10,nnew)
-      print *, '   u(iend+1,10,10,nnew)=', u(iend+1,10,10,nnew)
-      print *, 'Flxu(istr  ,10,10)=', Flxu(istr,10,10)
-      print *, 'Flxu(iend+1,10,10)=', Flxu(iend+1,10,10)
-# endif
 
       if (river_source) then
         do j=jstr,jend

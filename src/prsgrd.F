@@ -210,8 +210,16 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
       enddo   !<-- j
 
 #ifdef DIAGNOSTICS
-      if (allocated(rho_d)) then              ! devind compile fix, Jeroen must fix this.
-        rho_d = rho(1:nx,1:ny,:)
+      if (CORR_STAGE) then
+        if (allocated(rho_d)) then    
+          rho_d = rho(1:nx,1:ny,:)
+        endif
+        if (allocated(p_int)) then    
+          p_int = 0
+          do k=1,nz
+           p_int = p_int + p(1:nx,1:ny,k)*Hz(1:nx,1:ny,k)
+          enddo
+        endif
       endif
 #endif
 
@@ -447,13 +455,13 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 
 # ifdef DIAGNOSTICS
       if (CORR_STAGE) then
-        if ((calc_diag.and.diag_uv).or.(diag_Ebcln)) then
+        if ((calc_diag.and.diag_uv)) then
           do k=1,nz
             Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u
             Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v
           enddo
         endif
-        if (diag_pflx.or.diag_Ebcln) then
+        if (diag_pflx) then
           call calc_diag_pflux(p)
         endif
       endif
