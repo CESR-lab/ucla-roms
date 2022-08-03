@@ -4,7 +4,6 @@
 ! Empty module if TIDES not defined.
 ! JM The code is currently broken for pot_tides=.false.
 ! JM Broken in step2d and prsgrd
-#ifdef TIDES
 
       use param
       use scalars                                          ! For iic, ntstart, deg2rad
@@ -289,7 +288,5 @@
       end subroutine read_tides  !]
 
 !-----------------------------------------------------------------------
-
-#endif /* TIDES for whole module */
 
       end module tides

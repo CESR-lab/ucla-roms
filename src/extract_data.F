@@ -622,7 +622,7 @@
 
       call create_edata_vars(ncid)
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_edata_file !]
 ! ----------------------------------------------------------------------

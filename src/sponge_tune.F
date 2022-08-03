@@ -371,7 +371,7 @@
       ierr = nf90_put_att(ncid,varid,'units','m^2/s' )
 
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_sp_tune_file !]
 

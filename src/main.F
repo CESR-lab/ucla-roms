@@ -28,6 +28,7 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
+        ! Devin added this
         call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
@@ -137,6 +138,7 @@ c--#define CR
 CR      write(*,*) '-11' MYID
 
 
+      !! move the ana_grid call to within get_grid
 #ifdef ANA_GRID
       do tile=my_tile_range       
         call ana_grid(tile)              ! grid and model bathymetry
@@ -344,6 +346,7 @@ C$OMP END MASTER
       use particles
       use random_output
       use ocean_vars
+      use dimensions
 
       implicit none
       integer trd, tile, my_first, my_last, range
@@ -353,9 +356,13 @@ C$OMP END MASTER
       my_first=trd*range
       my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
 
+      !! Examine all outputs and try to move these to the end of the timestep, while collecting 
+      !! Diagnostic terms along the way during the corrector step.
+      !! 
 #ifdef DIAGNOSTICS
       call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
 #endif
+      call wrt_random
 
 ! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (denoted here as "nstp"), while counter
@@ -382,19 +389,19 @@ C$OMP END MASTER
 # if defined TIDES
         call set_tides(tile)           ! compute surface fluxes.
 # endif
+       !!! move these to the end of the time-step and initialization
         call    rho_eos(tile)
         call    set_HUV(tile)
+
         call       diag(tile)
       enddo
 C$OMP BARRIER
 
 # ifdef WEC
-      do tile=my_tile_range
-        call  wec_forces(tile)
-      enddo
-C$OMP BARRIER
+      call  wec_forces
 # endif
 
+       !!! move these to the end of the time-step and initialization
       do tile=my_tile_range
         call omega(tile)
 # if defined ANA_VMIX
@@ -407,14 +414,11 @@ C$OMP BARRIER
       enddo
 C$OMP BARRIER
 
+      ! nrhs points to u/v at time level n
       do tile=my_tile_range
         call     prsgrd(tile)
         call pre_step3d(tile)  ! u is m/s here
-!# ifdef AVERAGES
-!        call    set_avg(tile)
-!# endif
       enddo
-C$OMP BARRIER
 
       call calc_avg_ocean_vars ! call here not wrt_his else
                                ! rho, omega and w will change
@@ -431,9 +435,10 @@ C$OMP BARRIER
       enddo
 C$OMP BARRIER
 
+      ! Corrector step
       do tile=my_tile_range
         call     prsgrd(tile)
-        call step3d_uv1(tile)
+        call step3d_uv1(tile)  ! update u/v(nnew) with dt*ru/rv
 
 #  ifdef UV_VIS2
 !       if (split_bc) then
@@ -532,7 +537,6 @@ C$OMP BARRIER                            ! time step for momenta
 # endif
       enddo
 
-      call wrt_random
 
 C$OMP BARRIER
 #endif /* SOLVE3D */

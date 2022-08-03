@@ -13,7 +13,6 @@
       use hidden_mpi_vars
       use nc_read_write
       use grid
-      use tides
 
       implicit none
       private
@@ -36,7 +35,7 @@
 
       ! u and v momentum:
       ! ---------------
-      integer,parameter,public :: nmd = 6    ! number of momentum diag terms
+      integer,parameter :: nmd = 6    ! number of momentum diag terms
       integer,parameter, public ::
      &  ipgr   = 1, ! Hydrostatic pressure gradient    
      &  icori  = 2, ! Coriolis & curvilinear coords  
@@ -95,20 +94,71 @@
 
       ! Pressure flux terms
       ! --------------
-      real,public,allocatable,dimension(:,:,:) :: p_slow        ! filtered pressure
-      real,public,allocatable,dimension(:,:,:) :: u_slow,v_slow
-
-      real,public,allocatable,dimension(:,:) :: p_fast,u_fast,v_fast
-
       real,allocatable,dimension(:,:),public :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
-      real,allocatable,dimension(:,:)        :: up_avg,vp_avg ! averaged u'p' and v'p'
+      real,allocatable,dimension(:,:)    :: up_avg,vp_avg ! averaged u'p' and v'p'
+      real,public,allocatable,dimension(:,:,:)  :: p_slow        ! filtered pressure
 
-      real,public,allocatable,dimension(:,:)  :: dzt ! dzeta/dt
-      real,public,allocatable,dimension(:,:)  :: Uflx,Vflx
-      real,public,allocatable,dimension(:,:,:):: rho_d  ! rho for diagnostics
-      real,public,allocatable,dimension(:,:)  :: p_int  ! for barotropic/baroclinic diagnostics
+      real,allocatable,dimension(:,:) :: upb,vpb       !  barotropic pressure fluxes
+      real,allocatable,dimension(:,:) :: upb_avg,vpb_avg ! averaged u'p' and v'p'
 
+      real, allocatable, dimension(:,:):: p_fast,u_fast,v_fast,pint_fast
+
+      ! Baroclinic energy term
+      ! --------------
+      real, public,allocatable, dimension(:,:,:) :: u_slow,v_slow
+      real, public,allocatable, dimension(:,:,:) :: px_slow,py_slow
+      real, public,allocatable, dimension(:,:)   :: px_fast,py_fast
+
+      real, allocatable,dimension(:,:) :: upx      ! Divergence of up flux 
+      real, allocatable,dimension(:,:) :: vpy      ! Divergence of vp flux 
+      real, allocatable,dimension(:,:) :: upx_avg  ! Divergence of up flux
+      real, allocatable,dimension(:,:) :: vpy_avg  ! Divergence of up flux
+      real, allocatable,dimension(:,:) :: eku      ! Baroclinic Ek
+      real, allocatable,dimension(:,:) :: ekv      ! Baroclinic Ek
+      real, allocatable,dimension(:,:) :: eku_avg  ! Baroclinic Ek
+      real, allocatable,dimension(:,:) :: ekv_avg  ! Baroclinic Ek
+
+      real, allocatable,dimension(:,:) :: bt2bc_ff    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bt2bc_ff_avg! Barotropic to baroclinic conversion
+
+      real,public, allocatable,dimension(:,:,:) :: rho_d  ! rho for diagnostics
+      real, allocatable,dimension(:,:,:) :: Wvl   ! Vertical velocity
+      real, allocatable,dimension(:,:,:) :: Wvl_slow   ! Vertical velocity
+      real, allocatable,dimension(:,:) :: Wvl_fast  ! Vertical velocity
+      real, allocatable,dimension(:,:) :: bc2bc_ff    ! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: bc2bc_ff_avg! Barotropic to baroclinic conversion
+      real, allocatable,dimension(:,:) :: ape      ! Available potential energy
+      real, allocatable,dimension(:,:) :: ape_avg  ! Available potential energy
+      real, allocatable,dimension(:,:) :: drhodz   ! density gradient
+
+      real, public,allocatable, dimension(:,:) :: upxb,vpyb     ! barotropic pressure fluxes
+      real, public,allocatable, dimension(:,:) :: upxb_avg,vpyb_avg 
+
+      real, public,allocatable, dimension(:,:) :: ub_fast,vb_fast
+      real, public,allocatable, dimension(:,:) :: ub_slow,vb_slow
+
+      real, public,allocatable, dimension(:,:) :: ekbar,ek
+      real, public,allocatable, dimension(:,:) :: ekbar_avg,ek_avg
+
+      real, public,allocatable, dimension(:,:) :: px_int,py_int ! vertical integral of pressure fluxes
+      real, public,allocatable, dimension(:,:) :: px_int_fast,py_int_fast
+      real, public,allocatable, dimension(:,:) :: px_int_slow,py_int_slow
+
+      real, public,allocatable, dimension(:,:) :: udh,udh_slow,udh_fast ! ubar.grad(h), filtered and prime
+      real, public,allocatable, dimension(:,:) :: dzt,dzt_slow,dzt_fast ! dzeta/dt, filtered and prime
+      real, public,allocatable, dimension(:,:) :: Uflx,Vflx
+      real, public,allocatable, dimension(:,:) :: uhx, vhy
+      real, allocatable,dimension(:,:,:) :: rho_slow
+      real, allocatable,dimension(:,:) :: rho_fast
+
+      integer :: nprm = 3                      ! number of pressure flux diagnostic terms
       real, public :: alpha, beta              ! filtering constants (needed for child bry)
+
+
+      character (len=20),  allocatable, dimension(:) :: pnames
+      character (len=120), allocatable, dimension(:) :: plname           ! len=70 allows for 8 characters of 'Average ' if diag_avg
+      character (len=20),  allocatable, dimension(:), public :: ppnames
+      character (len=120), allocatable, dimension(:), public :: pplname
 
       character (len=3), public :: punits = 'W/m  (i.e. up*dz)'
       character (len=3) :: pchunits = 'TBC'
@@ -217,6 +267,7 @@
           p_slow = 0
         endif
         allocate(p_fast(0:nx,0:ny) )
+        allocate(pint_fast(0:nx,0:ny) )
 
         allocate( up(nx,ny) )
         allocate( vp(nx,ny) )
@@ -225,6 +276,15 @@
         up_avg = 0
         vp_avg = 0
 
+        allocate( upb(nx,ny) )
+        allocate( vpb(nx,ny) )
+        allocate( upb_avg(nx,ny) )
+        allocate( vpb_avg(nx,ny) )
+        upb_avg = 0
+        vpb_avg = 0
+      endif
+
+      if (diag_pflx.or.diag_Ebcln) then
         if (.not. allocated( u_slow )) then         ! in case already read in with get_init
           allocate(u_slow(1:nx+1,0:ny+1,nz) )
           u_slow = 0
@@ -237,16 +297,98 @@
         allocate(v_fast(nx,ny+1) )
       endif
 
-      if (diag_pflx) then
+      if (diag_Ebcln) then
+
+        allocate( px_slow(nx,ny,nz) )
+        allocate( py_slow(nx,ny,nz) )
+        px_slow = 0
+        py_slow = 0
+        allocate( px_fast(nx,ny) )
+        allocate( py_fast(nx,ny) )
+        allocate( upx(nx,ny) )
+        allocate( vpy(nx,ny) )
+        allocate( upx_avg(nx,ny) )
+        allocate( vpy_avg(nx,ny) )
+        upx_avg = 0
+        vpy_avg = 0
+
+        allocate( uhx(nx+1,ny) )
+        allocate( vhy(nx,ny+1) )
+        allocate( udh(nx,ny) )
+        allocate( udh_slow(nx,ny) )
+        udh_slow=0
+        allocate( udh_fast(nx,ny) )
+        allocate( dzt(nx,ny) )
+        allocate( dzt_slow(nx,ny) )
+        dzt_slow = 0
+        allocate( dzt_fast(nx,ny) )
         allocate( Uflx(nx+1,ny) )
         allocate( Vflx(nx,ny+1) )
-        
-        ! strictly speaking for barotropic/baroclinic balance only
-        allocate( dzt(nx,ny) )
+
+        allocate( bt2bc_ff(nx,ny) )
+        allocate( bt2bc_ff_avg(nx,ny) )
+        bt2bc_ff_avg = 0
+
+        allocate( rho_d(nx,ny,nz))
+        allocate( rho_slow(nx,ny,nz))
+        rho_slow = 0
+        allocate( rho_fast(nx,ny))
+        allocate( Wvl(GLOBAL_2D_ARRAY,nz))
+        allocate( Wvl_slow(nx,ny,nz))
+        Wvl_slow = 0;
+        allocate( Wvl_fast(nx,ny))
+
+        allocate( bc2bc_ff(nx,ny) )
+        allocate( bc2bc_ff_avg(nx,ny) )
+        bc2bc_ff_avg = 0
+
+        allocate( ape(nx,ny) )
+        allocate( ape_avg(nx,ny) )
+        ape_avg = 0
+
+        allocate( ek(nx,ny) )
+        allocate( ek_avg(nx,ny) )
+        ek_avg = 0
+
+        allocate( ekbar(nx,ny) )
+        allocate( ekbar_avg(nx,ny) )
+        ekbar_avg = 0
+
+        allocate( upxb(nx,ny) )
+        allocate( upxb_avg(nx,ny) )
+        upxb_avg = 0
+
+        allocate( vpyb(nx,ny) )
+        allocate( vpyb_avg(nx,ny) )
+        vpyb_avg = 0
+
+        allocate( px_int(nx,ny) )
+        allocate( py_int(nx,ny) )
+        allocate( px_int_slow(nx,ny) )
+        allocate( py_int_slow(nx,ny) )
+        allocate( px_int_fast(nx,ny) )
+        allocate( py_int_fast(nx,ny) )
+        px_int_slow = 0
+        py_int_slow = 0
+
+        allocate( ub_slow(nx+1,ny) )
+        allocate( vb_slow(nx,ny+1) )
+        ub_slow = 0
+        vb_slow = 0
+        allocate( ub_fast(nx+1,ny) )
+        allocate( vb_fast(nx,ny+1) )
+
+        allocate( drhodz(nx,ny) )
+
+        if (.not.diag_uv) then 
+          ! We use them for px/py
+          allocate(Udiag(nx,ny,nz,1) )
+          allocate(Vdiag(nx,ny,nz,1) )
+        endif
       endif
 
       !!! JM this is a test for reusable space
-      ! allocate(wrk_xy(nx,ny,4))
+      allocate(wrk_xy(nx,ny,4))
 
 
       !JM: Needed for both diag_uv and diag_pflx
@@ -273,6 +415,7 @@
       init_done = .true.  ! ensure init is not triggered again
 
       end subroutine init_diagnostics  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_u_4th_adv  ![
       ! Compute the 4th order advection terms for v
@@ -374,6 +517,7 @@
       enddo  ! <--end j-loop
 
       end subroutine set_diags_u_4th_adv  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_v_4th_adv  ![
       ! Compute the 4th order advection terms for v
@@ -476,6 +620,7 @@
       enddo      ! <-- j
 
       end subroutine set_diags_v_4th_adv  !]
+
 ! ----------------------------------------------------------------------
 # ifdef NHMG
       subroutine set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )  ![
@@ -505,6 +650,7 @@
       enddo
 
       end subroutine set_diags_w_at_uv1  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_w_at_uv2( istr, iend, jstr, jend )  ![
       implicit none
@@ -534,6 +680,7 @@
       enddo
 
       end subroutine set_diags_w_at_uv2  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_w_at_bc( istr, iend, jstr, jend )  ![
       ! set the diagnostics terms for boundary changes in w
@@ -588,6 +735,7 @@
       endif
 
       end subroutine set_diags_w_at_bc  !]
+
 ! ----------------------------------------------------------------------
       subroutine set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR)  ![
       implicit none
@@ -828,7 +976,6 @@
       integer :: i,j,k
       real  :: uint,vint
       real  :: huint,hvint
-      real  :: gHzx,gHzy,gHTx,gHty
 !     real   ,dimension(:,:),pointer :: u_fast,v_fast,p_fast
 !     real   ,dimension(:,:),pointer :: px_fast,py_fast
 
@@ -849,38 +996,71 @@
 !       u_fast => wrk_xy(:,:,2)
 !       v_fast => wrk_xy(:,:,3)
 
-        ! WEC terms can modify the match between
-        ! integrated flux and ubar,vbar
-
+        ! At n+1/2, there is no exact ubar,vbar to match the vertical
+        ! integral
+!       uint = 0
+!       vint = 0
+!       huint= 0
+!       hvint= 0
+!       do k=1,nz
+!         huint = huint + 0.5*( Hz(0:nx,1:ny,k)+Hz(1:nx+1,1:ny,k) )
+!         hvint = hvint + 0.5*( Hz(1:nx,0:ny,k)+Hz(1:nx,1:ny+1,k) )
+!         uint = uint + 0.5*u(1:nx+1,1:ny,k,nrhs)*( Hz(0:nx,1:ny,k)+Hz(1:nx+1,1:ny,k) )
+!         vint = vint + 0.5*v(1:nx,1:ny+1,k,nrhs)*( Hz(1:nx,0:ny,k)+Hz(1:nx,1:ny+1,k) )
+!       enddo
+!       uint = uint/huint
+!       vint = vint/hvint
+!       print *,'diag, u_int,v_int: ',nnew,uint,vint
+!       print *,'diag, ubar,vbar: '  ,knew,ubar(i,j,knew),vbar(i,j,knew)
+!       print *,'ubars: '  ,ubar(i,j,:)
+!       print *,'vbars: '  ,vbar(i,j,:)
+!      endif
         Uflx =  sum(Flxu(1:nx+1,1:ny,:),dim=3)
         Vflx =  sum(Flxv(1:nx,1:ny+1,:),dim=3)
+        if(mynode==1) then
+          i = 10
+          j = 20
+          huint = 0.5*(z_w(i,j,nz)-z_w(i,j,0)+z_w(i-1,j,nz)-z_w(i-1,j,0))
+          hvint = 0.5*(z_w(i,j,nz)-z_w(i,j,0)+z_w(i,j-1,nz)-z_w(i,j-1,0))
+          print *,'diag1, Uflx_int,Vflx_int:',
+     &        Uflx(i,j)*0.5*(pn(i-1,j)+pn(i,j))/huint,
+     &        Vflx(i,j)*0.5*(pm(i-1,j)+pm(i,j))/hvint
+        endif
 
-        ! Strictly speaking only neccesary for barotropic/baroclinic 
-        ! balance
         dzt  = -dxdyi*( Uflx(2:nx+1,:)-Uflx(1:nx,:) +
      &                  Vflx(:,2:ny+1)-Vflx(:,1:ny) )
 
-        ! Divide the barotropic fluxes into velocities [m/s]
-        do j=1,ny
-          do i=1,nx+1
-            Uflx(i,j) =  Uflx(i,j)*(pn(i,j)+pn(i-1,j))/
-     &               (z_w(i,j,nz)-z_w(i,j,0)+z_w(i-1,j,nz)-z_w(i-1,j,0))
-          enddo
-        enddo
-        do j=1,ny+1
-          do i=1,nx
-            Vflx(i,j) =  Vflx(i,j)*(pm(i,j)+pm(i,j-1))/
-     &               (z_w(i,j,nz)-z_w(i,j,0)+z_w(i,j-1,nz)-z_w(i,j-1,0))
-          enddo
-        enddo
+        ! Divide the barotropic fluxes into velocities time column
+        ! height [m^2/s]
+        Uflx =  0.5*Uflx*(pn(0:nx,1:ny)+pn(1:nx+1,1:ny))
+        Vflx =  0.5*Vflx*(pm(1:nx,0:ny)+pm(1:nx,1:ny+1))
+
+        if(mynode==1) then
+          i = 10
+          j = 20
+          huint = 0.5*(z_w(i,j,nz)-z_w(i,j,0)+z_w(i-1,j,nz)-z_w(i-1,j,0))
+          hvint = 0.5*(z_w(i,j,nz)-z_w(i,j,0)+z_w(i,j-1,nz)-z_w(i,j-1,0))
+          print *,'diag2, Uflx_int,Vflx_int:',
+     &        Uflx(i,j)/huint,
+     &        Vflx(i,j)/hvint
+          print *,'diag3, ubar, vbar:      '
+     &       ,ubar(i,j,kbak),vbar(i,j,kbak)
+        endif
 
         up = 0
         vp = 0
+        pint_fast = 0
+        upx = 0
+        vpy = 0
         do k=1,nz
           do j=0,ny
             do i=0,nx
-              p_slow(i,j,k) = beta*p_slow(i,j,k) + alpha*p(i,j,k)
-              p_fast(i,j)   = p(i,j,k) - p_slow(i,j,k)
+              p_slow(i,j,k) = beta*p_slow(i,j,k)
+     &            + alpha*( p(i,j,k)-g*z_w(i,j,nz) )
+              p_fast(i,j) = p(i,j,k)-g*z_w(i,j,nz)-p_slow(i,j,k)
+!             p_slow(i,j,k) = beta*p_slow(i,j,k) + alpha*p(i,j,k)
+!             p_fast(i,j)   = p(i,j,k) - p_slow(i,j,k)
+              pint_fast(i,j) = pint_fast(i,j) + p_fast(i,j)*Hz(i,j,k)
             enddo
           enddo
           do j=1,ny
@@ -909,7 +1089,150 @@
         enddo
       endif  ! if pflux
 
+
+      if (diag_Ebcln) then
+
+        ! the U/Vdiag term contains dz*px/py
+!       px_slow = beta*px_slow + alpha*Udiag(:,:,:,ipgr)
+!       py_slow = beta*py_slow + alpha*Vdiag(:,:,:,ipgr)
+
+
+        ! Divergence of pressure flux work: u*px + v*py
+        px_int = 0
+        py_int = 0
+        do k=1,nz
+!         px_fast = Udiag(:,:,k,ipgr) - px_slow(:,:,k)
+!         py_fast = Vdiag(:,:,k,ipgr) - py_slow(:,:,k)
+!         upx = upx + u_fast(1:nx,:)*px_fast
+!         vpy = vpy + v_fast(:,1:ny)*py_fast
+
+          px_int = px_int + Udiag(:,:,k,ipgr)
+          py_int = py_int + Vdiag(:,:,k,ipgr)
+
+        enddo
+
+        px_int = px_int*umask(1:nx,1:ny)
+        py_int = py_int*vmask(1:nx,1:ny)
+!       upx = upx*umask(1:nx,1:ny)
+!       vpy = vpy*vmask(1:nx,1:ny)
+
+!       px_int_slow = beta*px_int_slow + alpha*px_int
+!       py_int_slow = beta*py_int_slow + alpha*py_int
+        ub_slow  = beta*ub_slow + alpha*Uflx
+        vb_slow  = beta*vb_slow + alpha*Vflx
+
+        uhx = Uflx(1:nx+1,1:ny)*(h(1:nx+1,1:ny)-h(0:nx,1:ny))*
+     &        0.5*(pm(1:nx+1,1:ny)+pm(0:nx,1:ny))
+        vhy = Vflx(1:nx,1:ny+1)*(h(1:nx,1:ny+1)-h(1:nx,0:ny))*
+     &        0.5*(pn(1:nx,1:ny+1)+pn(1:nx,0:ny))
+        udh = 0.5*(uhx(1:nx,:)+uhx(2:nx+1,:) +
+     &             vhy(:,1:ny)+vhy(:,2:ny+1) )
+
+
+        dzt_slow = beta*dzt_slow + alpha*dzt
+        udh_slow = beta*udh_slow + alpha*udh
+        rho_slow = beta*rho_slow + alpha*rho_d(1:nx,1:ny,:)
+        call wvlcty (0,Wvl)
+        Wvl_slow = beta*Wvl_slow + alpha*Wvl(1:nx,1:ny,:)
+
+        call E_baroclinic
+      endif
+
       end subroutine calc_diag_pflux  !]
+! ----------------------------------------------------------------------
+      subroutine E_baroclinic  ![
+      use param
+      use eos_vars
+      implicit none
+
+      ! Local
+      integer :: i,j,k,k1,k2
+      real    :: Wbt,Wbc,Wbt_f,Wbc_f,Wbt_s,Wbc_s
+      integer :: kbak
+
+      kbak=knew-1
+      if (kbak < 1) kbak=4
+
+
+      ! Barotropic to baroclinic energy flux: Wbt*b
+      ! Wbt is the vertical velocity of the barotropic mode
+      ! alp = ubar*hx + vbar*hy
+      ! bet = z_t + ubar*zx + vbar*zy
+      ! Wbt = alp + (zr + h)* (bet - alp)/(zeta + h)
+      ! bt2bc = Wbt*b
+
+
+      bt2bc_ff = 0
+      bc2bc_ff = 0
+      ek  = 0
+      ape = 0
+
+!     averaged:
+!     ape    = 0
+!     Ekbar  = 0
+!     Ek     = 0
+!     upxbar = 0
+!     vpybar = 0
+
+!     fast (30 minute)
+!     zeta
+!     usurf,vsurf
+!     taux,tauy
+!     px_int,py_int
+
+
+      udh_fast = udh - udh_slow
+      dzt_fast = dzt - dzt_slow
+      ub_fast = ubar(1:nx+1,1:ny,knew) - ub_slow
+      vb_fast = vbar(1:nx,1:ny+1,knew) - vb_slow
+      px_int_fast = px_int - px_int_slow
+      py_int_fast = py_int - py_int_slow
+      do j=1,ny
+        do i=1,nx
+          upb(i,j) = + ub_fast(i,j)
+     &        *0.5*( pint_fast(i-1,j)+pint_fast(i,j) )
+          vpb(i,j) = vb_fast(i,j)
+     &        *0.5*( pint_fast(i,j-1)+pint_fast(i,j) )
+          ekbar(i,j) = 0.25*(
+     &       ub_fast(i  ,j)*ub_fast(i  ,j)+
+     &       ub_fast(i+1,j)*ub_fast(i+1,j)+
+     &       vb_fast(i,j  )*vb_fast(i,j  )+
+     &       vb_fast(i,j+1)*vb_fast(i,j+1))
+!         upxb(i,j) = 0.5*(h(i,j)+h(i-1,j))*ub_fast(i,j)*px_int_fast(i,j)*umask(i,j)
+!         vpyb(i,j) = 0.5*(h(i,j)+h(i,j-1))*vb_fast(i,j)*py_int_fast(i,j)*vmask(i,j)
+        enddo
+      enddo
+      upxb = 0
+      vpyb = 0
+      do k=1,nz
+        rho_fast = rho_d(1:nx,1:ny,k) - rho_slow(:,:,k)
+        Wvl_fast = Wvl(1:nx,1:ny,k)   - Wvl_slow(:,:,k)
+        k2 = min(k+1,nz)
+        k1 = max(k-1,1)
+        drhodz = -0.5*(rho_slow(1:nx,1:ny,k2)-rho_slow(1:nx,1:ny,k1))/Hz(1:nx,1:ny,k)
+        do j=1,ny
+          do i=1,nx
+            Wbt_f = udh_fast(i,j) +
+     &       (z_r(i,j,k)+h(i,j))*(dzt_fast(i,j)-udh_fast(i,j))/(zeta(i,j,kbak) + h(i,j))
+
+            Wbc_f = Wvl_fast(i,j) - Wbt_f
+
+            bt2bc_ff(i,j) = bt2bc_ff(i,j) + g*Wbt_f*rho_fast(i,j)  *Hz(i,j,k)
+            bc2bc_ff(i,j) = bc2bc_ff(i,j) + g*Wbc_f*rho_fast(i,j)  *Hz(i,j,k)
+
+            if (drhodz(i,j)<1e-10) drhodz(i,j) = 1e-10
+            ape(i,j) = ape(i,j)
+     &        + 0.5*rho_fast(i,j)*rho_fast(i,j)/drhodz(i,j)*Hz(i,j,k)/h(i,j)
+            ek(i,j) = ek(i,j) + 0.25*Hz(i,j,k)*(
+     &         u_fast(i  ,j)*u_fast(i  ,j)+
+     &         u_fast(i+1,j)*u_fast(i+1,j)+
+     &         v_fast(i,j  )*v_fast(i,j  )+
+     &         v_fast(i,j+1)*v_fast(i,j+1))/h(i,j)
+          enddo
+        enddo
+      enddo
+
+      end subroutine E_baroclinic !]
 ! ----------------------------------------------------------------------
       subroutine calc_diag_avg ![
       ! Update diagnostics averages
@@ -938,6 +1261,24 @@
       if (diag_pflx) then
         up_avg = up_avg*(1-coef) + up*coef
         vp_avg = vp_avg*(1-coef) + vp*coef
+      endif
+
+      if (diag_Ebcln) then
+        upx_avg = upx_avg*(1-coef) + upx*coef
+        vpy_avg = vpy_avg*(1-coef) + vpy*coef
+
+        upb_avg = upb_avg*(1-coef) + upb*coef
+        vpb_avg = vpb_avg*(1-coef) + vpb*coef
+
+        upxb_avg = upxb_avg*(1-coef) + upxb*coef
+        vpyb_avg = vpyb_avg*(1-coef) + vpyb*coef
+
+        bt2bc_ff_avg = bt2bc_ff_avg*(1-coef) + bt2bc_ff*coef
+        bc2bc_ff_avg = bc2bc_ff_avg*(1-coef) + bc2bc_ff*coef
+
+        ape_avg = ape_avg*(1-coef) + ape*coef
+        ek_avg   = ek_avg   *(1-coef) + ek*coef
+        ekbar_avg= ekbar_avg*(1-coef) + ekbar*coef
       endif
 
       end subroutine calc_diag_avg !]
@@ -987,6 +1328,7 @@
         endif
 
         if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
+        if (diag_Ebcln) call wrt_diag_Ebcln(ncid,record) !,upx_avg,vpy_avg,bt2bc_avg)
 
         navg_diag = 0
 
@@ -1137,6 +1479,78 @@
         ierr = nf90_put_att(ncid,varid,'units','W/m^2')
       endif
 
+      if (diag_Ebcln) then
+        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_u,  eta_rho,   0/)
+        varid = nccreate(ncid,'upx',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','u times dpdx')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_v,  0/)
+        varid = nccreate(ncid,'vpy',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','v times dpdy')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_u,  eta_rho,  0/)
+        varid = nccreate(ncid,'upxb',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','u.dpdx barotropic')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+
+        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_v,  0/)
+        varid = nccreate(ncid,'vpyb',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','v.dpdy barotropic')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+
+        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_u,  eta_rho,  0/)
+        varid = nccreate(ncid,'upb',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','up barotropic')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+
+
+        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_v,  0/)
+        varid = nccreate(ncid,'vpb',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','vp barotropic')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bt2bc_ff',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','btrop to bclin ff')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'bc2bc_ff',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','bclin to bclin ff')
+        ierr = nf90_put_att(ncid,varid,'units','W/m^3')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'ekbar',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','hf barotropic ek')
+        ierr = nf90_put_att(ncid,varid,'units','m^3/s^2')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'ek',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','hf baroclinic ek')
+        ierr = nf90_put_att(ncid,varid,'units','m^3/s^2')
+
+        dimnames3 = (/'xi_rho','eta_rho', 'time'/)
+        dimsizes3 = (/ xi_rho,  eta_rho,  0/)
+        varid = nccreate(ncid,'ape',dimnames3,dimsizes3,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name','hf APE')
+        ierr = nf90_put_att(ncid,varid,'units','m^3/s^2')
+
+      endif
+
+
       end subroutine create_diagvars  !]
 ! ----------------------------------------------------------------------
       subroutine wrt_diag_uv(ncid,record,ud,vd)  ![
@@ -1152,8 +1566,19 @@
       real, dimension(:,:,:,:),intent(inout) :: ud,vd
 
       !local
+      integer :: bfx,bfy
       integer,   dimension(4) :: start    ! start vector for writing
 
+      ! The diagnostics exclude the domain buffers
+      ! Since the diagnostic arrays are (nx,ny), the
+      ! boundary domains don't write their first row/column
+      ! Technically, we shouldn't write ud(1,:,:.., and vd(:,1,:....
+      ! either)
+      bfx = 1
+      bfy = 1
+      if (.not.west_exchng)  bfx = 2
+      if (.not.south_exchng) bfy = 2
+ 
         if (.not.west_exchng) ud(1,:,:,:) = 0
         start = (/1, bfy, 1, record/)
 
@@ -1192,12 +1617,21 @@
       !local
 !     integer,   dimension(4) :: start    ! start vector for writing
       integer,   dimension(3) :: start    ! start vector for writing
+      integer :: bfx,bfy
+
+      !! JM The diagnostics exclude the buffers
+      bfx = 1
+      bfy = 1
+      if (.not.west_exchng)  bfx = 2
+      if (.not.south_exchng) bfy = 2
 
 !     for 3D up data
 !     start = (/bfx, bfy, 1, record/)
 !     call ncwrite(ncid,'up',up(bfx:nx,1:ny,:),start)
       start = (/bfx, bfy, record/)
+!     print *, 'up max: ',mynode, maxval(up(bfx:nx,1:ny)),maxloc(up(bfx:nx,1:ny))
       call ncwrite(ncid,'up',up(bfx:nx,1:ny),start)
+!     stop
           
 !     for 3D vp data
 !     start = (/bfx, bfy, 1, record/)
@@ -1207,6 +1641,69 @@
 
 
       end subroutine wrt_diag_pflx  !]
+! ----------------------------------------------------------------------
+      subroutine wrt_diag_Ebcln(ncid,record) ![
+      ! Write pressure fluxes
+
+      use param
+      use nc_read_write
+      implicit none
+
+      !import/export
+      integer, intent(in) :: ncid
+      integer, intent(in) :: record
+
+      !local
+      integer :: bfx,bfy
+      integer,   dimension(3) :: start    ! start vector for writing
+
+      !! JM The diagnostics exclude the buffers
+      !! but the boundary domains include them in 
+      !! the output so skip one point in the west/south
+      !! for the domains that border the boundary
+      bfx = 1
+      bfy = 1
+      if (.not.west_exchng)  bfx = 2
+      if (.not.south_exchng) bfy = 2
+
+!     ape    = 0
+!     Ekbar  = 0
+!     Ek     = 0
+!     upxbar = 0
+!     vpybar = 0
+
+!     fast (30 minute)
+!     zeta
+!     usurf,vsurf
+!     taux,tauy
+!     px_int,py_int
+
+
+      start = (/1, bfy, record/)
+      call ncwrite(ncid,'upx',upx_avg,start)
+      call ncwrite(ncid,'upxb',upxb_avg,start)
+!     call ncwrite(ncid,'upb',upb_avg,start)
+      call ncwrite(ncid,'upb',Uflx(1:nx,1:ny),start)
+          
+      start = (/bfx, 1, record/)
+      call ncwrite(ncid,'vpy' ,vpy_avg,start)
+      call ncwrite(ncid,'vpyb',vpyb_avg,start)
+!     call ncwrite(ncid,'vpb' ,vpb_avg,start)
+      call ncwrite(ncid,'vpb',Vflx(1:nx,1:ny),start)
+
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'ekbar',ekbar_avg,start)
+      call ncwrite(ncid,'ek'   ,ek_avg,start)
+      call ncwrite(ncid,'ape'  ,ape_avg,start)
+
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'bt2bc_ff',bt2bc_ff_avg(1:nx,1:ny),start)
+
+      start = (/bfx, bfy, record/)
+      call ncwrite(ncid,'bc2bc_ff',bc2bc_ff_avg(1:nx,1:ny),start)
+
+
+      end subroutine wrt_diag_Ebcln !]
 ! ----------------------------------------------------------------------
       subroutine wrt_rst_diag_pflx  ![
       ! write the slow components of u, v and P to restart file
@@ -1256,7 +1753,7 @@
 
       call create_diagvars(ncid)
 
-      ierr = nf90_close(ncid)
+      ierr = nf90_enddef(ncid)
 
       end subroutine create_diagnostics_file !]
 ! ----------------------------------------------------------------------

@@ -284,7 +284,7 @@
       if (      avg) call def_vars_bgc( ncid, .true.  )
       if (.not. avg) call def_vars_bgc( ncid, .false. )
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
       if (mynode == 0) then
         write(*,'(7x,2A)')
      &    'bgc :: created new netCDF file ', trim(fname)

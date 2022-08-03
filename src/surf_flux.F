@@ -243,9 +243,8 @@
             endif
           endif
         endif
-
-
         ierr=nf90_close(ncid)
+
         if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
      &        'surf_flux :: wrote surface flux, tdays =', tdays,
@@ -282,7 +281,7 @@
         ierr=nf90_put_att(ncid,nf90_global,'type','surface flux history')
       endif
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_sflx_file !]
 !-----------------------------------------------------------------------

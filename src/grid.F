@@ -192,7 +192,7 @@
           call put_global_atts (ncid, ierr)
 
           call def_grid(ncid)
-          ierr=nf90_enddef(ncid)
+          ierr=nf90_close(ncid)
         else
           write(*,'(/1x,4A/12x,A/)')     '### ERROR: wrt_ana_grid :: ',
      &            'Cannot create netCDF file ''', trim(fname), ''',',

@@ -11,6 +11,7 @@
       use scalars
       use read_write
       use ocean_vars
+      use diagnostics
       implicit none
 
       private
@@ -47,9 +48,7 @@
       ierr = nf90_put_att(ncid,varid,'long_name','surface y velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-
       end subroutine def_vars_random  !]
-
 !----------------------------------------------------------------------
       subroutine wrt_random  ![
       ! Call wrt_random after completion of the time-step
@@ -65,10 +64,11 @@
       ! do nothing if do_random is false
       if (.not.do_random) return
 
-      if (.not. first_step) then
+      if (first_step) then
+        first_step=.false.
+      else
         output_time = output_time + dt                           ! only start count after first timestep
       endif
-      first_step=.false.
 
       if (output_time>=output_period) then
 
@@ -108,7 +108,6 @@
       endif
 
       end subroutine wrt_random !]
-
 !----------------------------------------------------------------------
       subroutine create_file_random(fname)  ![
       implicit none

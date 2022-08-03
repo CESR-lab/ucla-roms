@@ -443,7 +443,7 @@
      
       ierr=nf90_put_att( ncid, nf90_global, 'big_number', big_number )
      
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_particles_file !]
 !-------------------------------------------------
