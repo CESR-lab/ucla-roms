@@ -21,7 +21,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
 	diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
-	setup_grid1.F	setup_grid2.F	visc_rescale.F\
+	setup_grid1.F	setup_grid2.F\
 	set_nudgcof.F  sponge_tune.F roms_read_write.F extract_data.F \
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
