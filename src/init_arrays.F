@@ -1,6 +1,6 @@
 #include "cppdefs.opt"
 
-      subroutine init_arrays(tile,my_first)
+      subroutine init_arrays
 
       use param
       use hidden_mpi_vars
@@ -8,8 +8,8 @@
 
       implicit none
 
-      integer, intent(in) :: tile, my_first
-      integer             :: i, j
+      integer,save :: tile=1
+      integer      :: i,j
 
 #include "compute_tile_bounds.h"
 
@@ -21,10 +21,10 @@
       enddo
 #endif
 
-      call init_arrays_tile(istr,iend,jstr,jend,tile,my_first)
+      call init_arrays_tile(istr,iend,jstr,jend)
       end
 
-      subroutine init_arrays_tile (istr,iend,jstr,jend,tile,my_first)
+      subroutine init_arrays_tile (istr,iend,jstr,jend)
 
 ! This routine initialize "first-touches" model shared arrays. Most
 ! of them are assigned to zeros, vertical mixing coefficients are set
@@ -64,7 +64,7 @@
       use bgc
 
       implicit none
-      integer, intent(in) :: istr, iend, jstr, jend, tile, my_first
+      integer, intent(in) :: istr, iend, jstr, jend
       integer             :: i, j, k, itrc, itavg
       real, parameter     :: init0=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA

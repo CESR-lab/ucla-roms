@@ -77,12 +77,10 @@ C$OMP END MASTER                         ! is in uniform state]. This
       return                             ! is THE ONLY route to exit
       end                                ! if something goes wrong.
 #endif
-
-      subroutine roms_init
+!----------------------------------------------------------------------
+      subroutine roms_init ![
       use param
-#ifdef NHMG
       use nhmg
-#endif
       use dimensions, only: set_global_ij_SW_NE_corners
       use grid
       use ocean_vars
@@ -91,177 +89,105 @@ C$OMP END MASTER                         ! is in uniform state]. This
 
       implicit none
 
-      integer trd, tile, my_first, my_last, range
-C$    integer omp_get_thread_num, omp_get_num_threads
+      integer trd
 
       numthreads=1 ; trd=0
-C$    numthreads=omp_get_num_threads()
-C$    trd=omp_get_thread_num()
       proc(2)=trd
 
-      if (mod(NSUB_X*NSUB_E,numthreads) /= 0) then
-C$OMP MASTER
-        mpi_master_only write(*,'(/3(1x,A,I3),A/)')
-     &    '### ERROR: Wrong choice of numthreads =', numthreads,
-c        endif
-     &         'while NSUB_X =', NSUB_X, 'NSUB_E =', NSUB_E,'.'
-        may_day_flag=8
-C$OMP END MASTER
-C$OMP BARRIER
-        goto 99 !-->  EXIT
-      endif
-                                       ! NOTE: This code is written
-      iic=0  ; kstp=1 ; knew=1         ! under an assumption that all
+      iic=0  ; kstp=1 ; knew=1       
 #ifdef SOLVE3D
-      iif=1  ; nstp=1                  ! the scalar variables assigned
-      nnew=1 ; nrhs=1                  ! on the left here are placed
+      iif=1  ; nstp=1                
+      nnew=1 ; nrhs=1                
 #endif
-      synchro_flag=.true.              ! into a THREADPRIVATE common
-      diag_sync=.false.                ! block so each thread must
-      priv_count=0                     ! assign them to same values.
+      synchro_flag=.true.             
+      diag_sync=.false.               
+      priv_count=0                    
 
-      range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
-      my_first=trd*range
-      my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
-#define my_tile_range my_first,my_last
-
-      do tile=my_tile_range              ! Initialize or "first touch"
-        call init_arrays(tile,my_first)  ! global arrays (most of them
-      enddo                              ! are just set to to zero).
-C$OMP BARRIER
+      call init_arrays                 ! global arrays (most of them)
 
 #ifdef NHMG
       call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
 #endif
 
-c--#define CR
-CR      write(*,*) '-11' MYID
-
-
       !! move the ana_grid call to within get_grid
 #ifdef ANA_GRID
-      do tile=my_tile_range       
-        call ana_grid(tile)              ! grid and model bathymetry
-      enddo                   
+      call ana_grid(1)               ! grid and model bathymetry
 #else
       call get_grid
 #endif
-      if (may_day_flag /= 0) goto 99 !-->  EXIT
+      if (may_day_flag /= 0) goto 99 
 
-      do tile=my_tile_range            ! Compute various metric terms
-        call setup_grid1(tile)         ! and their combinations.
-      enddo
-C$OMP BARRIER
-CR      write(*,*) '-10' MYID
-      do tile=my_tile_range
-        call setup_grid2(tile)
-      enddo
-C$OMP BARRIER
-CR      write(*,*) '-9' MYID
+      call setup_grid1(1)         ! 
+      call setup_grid2(1)
 
 #ifdef SOLVE3D
-C$OMP MASTER                           ! Setup vertical stretching
-      call set_scoord                  ! functions for S-coordinate
-C$OMP END MASTER                       ! system
-C$OMP BARRIER
+      call set_scoord             ! functions for S-coordinate
+
       if (may_day_flag /= 0) goto 99
 #endif
-CR      write(*,*) ' -8' MYID
-
-#if (defined UV_VIS2 && defined VIS_GRID) ||\
-    (defined TS_DIF2 && defined DIF_GRID)
-      do tile=my_tile_range            ! Rescale horizontal mixing
-        call visc_rescale(tile)        ! coefficients according to
-      enddo                            ! local grid size.
-C$OMP BARRIER
-CR      write(*,*) ' -7' MYID
-#endif
 
 #ifdef SOLVE3D
-      do tile=my_tile_range            ! Create three-dimensional
-        call set_depth(tile)           ! S-coordinate system, which
+      call set_depth(1)           ! S-coordinate system, which
 # ifdef LMD_KPP
-        call swr_frac(tile)            ! may be needed by ana_init.
+      call swr_frac(1)            ! may be needed by ana_init.
 # endif
-      enddo
-C$OMP BARRIER                          ! Here it is assumed that free
-      do tile=my_tile_range            ! surface zeta is at rest state,
-        call grid_stiffness(tile)      ! zeta=0). Also find and report
-      enddo                            ! extremal values of topographic
-C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
-CR      write(*,*) ' -6' MYID
+      call grid_stiffness(1)      ! zeta=0). Also find and report
 #endif
 
 # ifdef BIOLOGY_BEC2
-      ! pH is initialized to 0 in ecosys_init
       call ecosys2_init
 # endif
 
 #ifdef ANA_INITIAL
-      do tile=my_tile_range            ! Set initial conditions for
-        call set_forces(tile)          ! model prognostic variables,
-      enddo                            ! either analytically or read
-C$OMP BARRIER                          ! from netCDF file.  Note that
-      do tile=my_tile_range            ! Set initial conditions for
-        call ana_init(tile)            ! may require surface forcing
-      enddo                            ! either analytically or read
-C$OMP BARRIER                          ! so call forces first.
+                                       ! Set initial conditions for
+        call set_forces(1)             ! model prognostic variables,
+                                       ! either analytically or read
+                                       ! from netCDF file.  Note that
+                                       ! Set initial conditions for
+        call ana_init(1)               ! may require surface forcing
+                                       ! either analytically or read
+                                       ! so call forces first.
       if (nrrec > 0) then              ! Also note that ana_init may
 #endif
 #ifdef EXACT_RESTART
-C$OMP MASTER                           ! setup environmental variables
+                                       ! setup environmental variables
         call get_init(nrrec-1,2)       ! (e.g. analytical boundary
-C$OMP END MASTER                       ! forcing), call it first, even
-C$OMP BARRIER                          ! in the case of restart run.
+                                       ! forcing), call it first, even
+                                       ! in the case of restart run.
 # ifdef SOLVE3D
-        do tile=my_tile_range
-          call set_depth(tile)
-        enddo
-C$OMP BARRIER
+        call set_depth(1)
 # endif
 #endif
-C$OMP MASTER
         call get_init(nrrec, 1)
-C$OMP END MASTER
 #ifdef ANA_INITIAL
       endif    !<-- nrrec>0
 #endif
-C$OMP BARRIER
+
       if (may_day_flag /= 0) goto 99      !--> ERROR
-CR      write(*,*) ' -5' MYID
+
                                   ! Set initial model clock: at this
       time=start_time             ! moment "start_time" (global scalar)
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
 #ifdef SOLVE3D
-      do tile=my_tile_range       ! recompute three-dimensional S-
-        call set_depth(tile)      ! coordinate system: at this moment
-      enddo                       ! free surface has non-zero status
-C$OMP BARRIER
+                                  ! recompute three-dimensional S-
+        call set_depth(1)         ! coordinate system: at this moment
+                                  ! free surface has non-zero status
 
 !----------------------------------------------------------------------
 !  Set NHMG horizontal and vertical grids 
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
-#ifdef NHMG
+# ifdef NHMG
       call nhmg_matrices(Lm,Mm,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
      &                   dm_r(0:Lm+1,0:Mm+1),
      &                   dn_r(0:Lm+1,0:Mm+1)    )
-#endif
+# endif
 
-CR      write(*,*)  ' -4' MYID
-      do tile=my_tile_range
-        call set_HUV(tile)
-      enddo
-C$OMP BARRIER
-CR      write(*,*)  ' -3' MYID
+      call set_HUV(1)
 
-      do tile=my_tile_range
-        call omega(tile)
-        call rho_eos(tile)
-      enddo
-C$OMP BARRIER
-CR      write(*,*)  ' -2' MYID
+      call omega(1)
+      call rho_eos(1)
 #endif
 
 ! Set up climatological environment: Set nudging coefficient for
@@ -271,28 +197,12 @@ CR      write(*,*)  ' -2' MYID
 ! size [m] and density [kg/m^3] used for bottom boundary layer
 ! formulation;
 
-#if defined SPONGE || defined TCLIMATOLOGY \
-  || (defined SG_BBL96 && defined ANA_BSEDIM)\
-  || (defined TCLIMATOLOGY && defined ANA_TCLIMA)\
-  || defined ANA_SSH
-
-      do tile=my_tile_range
-# if defined SPONGE || defined TCLIMATOLOGY
-        call set_nudgcof(tile)
-# endif
-# if defined TCLIMATOLOGY && defined ANA_TCLIMA && defined SOLVE3D
-        call ana_tclima(tile)
-# endif
+#if defined SPONGE || ANA_SSH 
+      call set_nudgcof(1)
 # ifdef ANA_SSH
-        call ana_ssh(tile)
+      call ana_ssh(1)
 # endif
-# if defined SG_BBL96 && defined ANA_BSEDIM
-        call ana_bsedim(tile)
-# endif
-      enddo
-C$OMP BARRIER
 #endif
-CR      write(*,*) ' -1' MYID
 
 ! Read initial input data for forcing fields; tracer and sea surface
 ! climatology; bottom sediment grain size and density (if applicable)
@@ -303,37 +213,20 @@ CR      write(*,*) ' -1' MYID
       call set_global_ij_SW_NE_corners
 
 
-C$OMP MASTER
 #ifdef ANA_GRID
       call wrt_ana_grid
 #endif
-!      if (ldefhis .and. wrthis(indxTime)) call wrt_his
-C$OMP END MASTER
-C$OMP BARRIER
 
 
-CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
-C$OMP MASTER
         mpi_master_only write(*,'(/1x,A/)')
      &     'main :: initialization complete, started time-steping.'
-C$OMP END MASTER
 
   99  return
-      end
-
-
-!      *****    *********    ******   *******    *********
-!    ***   ***  *  ***  *   **  ***   ***   ***  *  ***  *
-!    ***           ***     **   ***   ***   ***     ***
-!      *****       ***    ***   ***   ***   **      ***
-!          ***     ***    *********   ******        ***
-!    ***   ***     ***    ***   ***   ***  **       ***
-!      *****       ***    ***   ***   ***   ***     ***
-
-
-      subroutine roms_step
+      end subroutine roms_init !]
+!----------------------------------------------------------------------
+      subroutine roms_step ![
 
       use param
       use wec_frc
@@ -545,6 +438,5 @@ C$OMP BARRIER
       call adjust_sponge
 #endif
 
-
   99  return
-      end
+      end subroutine roms_step !]
