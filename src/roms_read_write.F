@@ -482,29 +482,36 @@
 
       end subroutine read_output_root_name  !]
 ! ----------------------------------------------------------------------
-      subroutine create_file(ftype,fname)  ![
+      subroutine create_file(ftype,fname,nodate)  ![
       ! Creates a file using the root_name plus the extension
       ! It appends a date/time string and, if neccesary, a node number
       ! It puts the global attributes and creates an ocean_time variable
       implicit none
 
       ! input/output
-      character(len=*),  intent(in) :: ftype     ! desired netcdf file extension
-      character(len=*),  intent(out):: fname     ! desired netcdf file name
+      character(len=*), intent(in) :: ftype     ! desired netcdf file extension
+      character(len=*), intent(out):: fname     ! desired netcdf file name
+      logical,optional, intent(in) :: nodate    ! optional argument to skip date label and time variable
 
       ! local
       integer :: ierr,ncid,varid
 
       fname=trim(adjustl(output_root_name)) / / trim(ftype)
-      call append_date_node(fname)
+      if (present(nodate)) then
+        call append_date_node(fname,nodate)
+      else
+        call append_date_node(fname)
+      endif
 
       ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
      &   call handle_ierr(ierr,'create_file: '/ /trim(fname) )
 
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
-      ierr = nf90_put_att(ncid,varid,'units','second' )
+      if (.not.present(nodate)) then
+        varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+        ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
+        ierr = nf90_put_att(ncid,varid,'units','second' )
+      endif
 
       call put_global_atts(ncid, ierr)                     ! put global attributes in file
       if (ierr/=nf90_noerr) 
@@ -625,12 +632,13 @@
 
       end subroutine sec2date !]
 ! ----------------------------------------------------------------------
-      subroutine append_date_node(fname) ![
+      subroutine append_date_node(fname,nodate) ![
       ! insert date and node number string into filename
       implicit none
 
       ! import/export
       character(len=*),intent(inout)  :: fname 
+      logical,optional, intent(in)    :: nodate    ! optional argument to skip date label
 
       ! Local
       integer,dimension(6) :: date
@@ -638,16 +646,18 @@
       character(len=6)   :: indxstr
       integer :: dt_format = 3
 
-      call sec2date(time,date)
-      select case (dt_format)
-        case(1)  !! omit the year
-          write(datestr,'(A,5I0.2)') '.',date(2:6)
-        case(2)  !! omit the seconds
-          write(datestr,'(A,I4,4I0.2)') '.',date(1:5)
-        case default
-          write(datestr,'(A,I4,5I0.2)') '.',date
-      end select
-      fname = trim(fname) //datestr
+      if (.not.present(nodate)) then
+        call sec2date(time,date)
+        select case (dt_format)
+          case(1)  !! omit the year
+            write(datestr,'(A,5I0.2)') '.',date(2:6)
+          case(2)  !! omit the seconds
+            write(datestr,'(A,I4,4I0.2)') '.',date(1:5)
+          case default
+            write(datestr,'(A,I4,5I0.2)') '.',date
+        end select
+        fname = trim(fname) //datestr
+      endif
 
 #if defined MPI && defined PARALLEL_FILES
       if (nnodes<10) then

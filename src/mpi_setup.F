@@ -102,17 +102,6 @@ C$    endif
 ! Determine bounds of the usable portion of model arrays:
 
         off_xi=NP_XI*Lm-LLm
-!        iSW_corn=inode*Lm-off_xi/2
-!        if (inode == 0) then
-!          iwest=1+off_xi/2
-!        else
-!          iwest=1
-!        endif
-!        if (inode < NP_XI-1) then
-!          ieast=Lm
-!        else
-!          ieast=Lm -(off_xi+1)/2
-!        endif
         if (inode == 0) then               ! DevinD added
           iSW_corn = 0                     ! need to fix iSW_corn as used to determine WESTERN_EDGE
         else

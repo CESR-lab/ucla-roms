@@ -13,6 +13,7 @@
       use roms_read_write
       use nc_read_write
       use scalars                                                    ! for FIRST_STEP
+      use grid
 
       implicit none
 
@@ -77,26 +78,39 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
-      ! initialize river forcing:
-      ! read in a grid file with locations of river mouths and flux contribution per cell.
+      ! Initialize river forcing:
+      ! Read in a grid file with locations of river mouths and flux contribution per cell.
       ! done only once as river mouth position does not change.
+      ! Or: .... if analytical, define the river fluxes in this
+      ! subroutine
       use netcdf
       implicit none
 
       ! local
+      integer :: i,j
       integer :: ierr,ncid,varid
+      real  :: riv_cells,riv_east,riv_west
 
-      allocate( riv_uflx(GLOBAL_2D_ARRAY) )
-      allocate( riv_vflx(GLOBAL_2D_ARRAY) )
-      if(.not. allocated(rflx))  then
-        allocate( rflx(GLOBAL_2D_ARRAY) )                  ! for analytical it is already allocated.
-        rflx = 0.                                          ! needed for realistic river check condition
-      endif
-      riv_uflx = 0.; riv_vflx = 0.
-
+      allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
+      allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
+      allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
 
       if (analytical) then
-        ! rflx is defined in ana_grid
+        riv_west=xl*0.4 ! River west bank at 40% from west
+        riv_east=xl*0.6 ! River west bank at 60% from west
+        ! pm is constant for this case
+        riv_cells = nint( (riv_east - riv_west)*pm(1,1)) !number of cells in this river
+        do j=0,ny+1
+          do i=0,nx+1
+            if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
+              ! find 'coastline' masked cells
+              if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
+                rflx(i,j) = 1.0+1.0/riv_cells
+              endif
+            endif
+          enddo
+        enddo
+
       else ! Read 'river_flux' from grid file (River mouth locations)
 
         allocate(nc_rvol%vdata(nriv,1 ,2))
@@ -114,14 +128,12 @@
      &  'river_frc: init river locations'
 
       end subroutine init_river_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine calc_river_flux  ![
       ! calculate the river flux contributions to each cell.
       ! river_flux = iriver + fraction of river's flux through grid point.
       ! e.g. River 3 is over 2 grid points (half flux through each point),
       ! hence river_flux = 3 + 0.5 = 3.5
-      use grid
       implicit none
 
       ! local

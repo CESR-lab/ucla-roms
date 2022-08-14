@@ -6,7 +6,6 @@
       implicit none                         ! combinations of metric
       integer tile                          ! terms.
 #include "compute_tile_bounds.h"
-      print *,'i....j: ',istr,iend,jstr,jend
       call setup_Corls_tile(istr,iend,jstr,jend)
       call setup_grid1_tile(istr,iend,jstr,jend)
       end
