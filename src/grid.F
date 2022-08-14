@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       use roms_read_write
       implicit none
 
@@ -170,13 +171,11 @@
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
 
+      call wrt_ana_grid
+
       end subroutine ana_grid  !]
 ! ----------------------------------------------------------------------
       subroutine ana_grid_tile (istr,iend,jstr,jend)  ![
-
-! Set up model grid using analytical expressions:
-!---- -- ----- ---- ----- ---------- ------------
-! output: stored in common blocks, see files "scalars" "grid"
 
 ! xl,el      Physical dimensions of the computational domain [usually
 !                                                measured in  meters];
@@ -189,10 +188,8 @@
 ! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
 ! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
       use param
-      use grid
       use scalars
 
-      use river_frc
       implicit none
       integer istr,iend,jstr,jend, i,j
 
@@ -210,14 +207,11 @@
 
       real cff,y, x0,y0,dx,dy
       real dh, shelf, slope, land, coast
-      real riv_west, riv_east,riv_cells
       real psz,px,py,pipe_cells
+      real :: riv_east,riv_west
 
 # include "compute_extended_bounds.h"
 
-      ! need to initialize arrays for river. Normally done through set_river_frc,
-      ! but analytical calls come before that so need this here.
-      allocate( rflx(GLOBAL_2D_ARRAY) )
 
 C$OMP MASTER                           ! Copy physical dimensions of
       xl=Size_XI ; el=Size_ETA         ! the grid into glabally visible
@@ -260,10 +254,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       shelf=size_eta/5 ! shelf location in meters from south
       slope=(max_depth-depth)/(size_eta*4/5) ! Similar triangles o/a=dh/pm=(max_depth-depth)/(MMm*4/5)
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=0,ny+1
+        do i=0,nx+1
 
-          if(yr(i,j)<shelf .and. SOUTHERN_EDGE) then
+          if(yr(i,j)<shelf) then
             ! Constant shallow region 20% of domain in south.
             h(i,j)=depth
           else
@@ -297,84 +291,28 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-      if (river_source) then
-        riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
-              ! find 'coastline' masked cells
-              if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-                rflx(i,j) = 1.0+1.0/riv_cells
-              endif
-            endif
-          enddo
-        enddo
-      endif
+!     if (river_source) then
+!        rflx is defined in river_frc.F (init_river_frc)
+!     endif
 
       end subroutine ana_grid_tile  !]
 ! ----------------------------------------------------------------------
-      subroutine wrt_ana_grid     ! processing to save analytical grid  ![
+      subroutine wrt_ana_grid     ! write analytical grid to file  ![
       use param
       use mpi
       use netcdf
       implicit none               ! into a separate netCDF file.
 
-      character(len=32) fname
-      integer ncid,ierr, lncn, lenstr
+      character(len=99),save  :: fname
+      integer ncid,ierr
 
-# if defined MPI && !defined PARALLEL_FILES
-      integer status(MPI_STATUS_SIZE), blank
-      if (mynode > 0) call MPI_Recv(blank, 1, MPI_INTEGER,
-     &        mynode-1, 1, ocean_grid_comm, status, ierr)
-# endif
+      call create_file('_grd',fname,.true.) ! last argument is to skip date label
 
-      fname='grid.nc' ; lncn=lenstr(fname)
-# ifdef MPI
-#  ifdef PARALLEL_FILES
-      ierr=0
-      call insert_node(fname, lncn, mynode, NNODES, ierr)
-#  else
-      if (mynode == 0) then
-#  endif
-# endif
-        ierr=nf90_create(fname, NF90_NETCDF4, ncid)
-        if (ierr == nf90_noerr) then
-          call put_global_atts (ncid, ierr)
+      ierr=nf90_open(fname,nf90_write,ncid)
+      call def_grid(ncid)
+      call wrt_grid(ncid)
+      ierr=nf90_close(ncid)
 
-          call def_grid(ncid)
-          ierr=nf90_close(ncid)
-        else
-          write(*,'(/1x,4A/12x,A/)')     '### ERROR: wrt_ana_grid :: ',
-     &            'Cannot create netCDF file ''', trim(fname), ''',',
-     &                                              nf90_strerror(ierr)
-        endif
-# if defined MPI && !defined PARALLEL_FILES
-      else
-        ierr=nf90_open(fname, nf_write, ncid)
-        if (ierr/=nf90_noerr) then
-          write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
-     &             'Cannot open netCDF file ''', trim(fname), ''',',
-     &                                             nf90_strerror(ierr)
-        endif
-      endif
-# endif
-
-      if (ierr == nf90_noerr) then
-        call wrt_grid(ncid)
-        ierr=nf90_close(ncid)
-        if (ierr /= nf90_noerr) then
-           write(*,'(/1x,4A/12x,A/)')   '### ERROR: wrt_ana_grid :: ',
-     &            'Cannot close netCDF file ''', trim(fname), ''',',
-     &                                             nf90_strerror(ierr)
-        endif
-      endif
-
-# if defined MPI && !defined PARALLEL_FILES
-      if (mynode < NNODES-1) then
-        call MPI_Send (blank, 1, MPI_INTEGER, mynode+1,
-     &                        1, ocean_grid_comm, ierr)
-      endif
-# endif
       end subroutine wrt_ana_grid  !]
 #endif /* ANA_GRID */
 
@@ -386,8 +324,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 !
 ! Arguments: ncid    NetCDF unit-ID of NetCDF file, which must be
 !                            already opened and in definition mode;
-!            r2dgrd  integer array of size 2, which contains NetCDF
-!                        IDs for dimensions 'xi_rho' and 'eta_rho'.
 
       use param
       use netcdf
@@ -486,7 +422,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 #endif
 
       end subroutine def_grid  !]
-
 !----------------------------------------------------------------------
       subroutine wrt_grid(ncid)  ![
       ! Write grid variables in output NetCDF file, which may be restart,
@@ -506,7 +441,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       integer,intent(in) :: ncid
       ! local
       integer :: varid, ierr, ncdf_write
-      integer,dimension(3) :: start
 
 #if defined MPI && !defined PARALLEL_FILES
       if (mynode == 0) then
@@ -561,31 +495,24 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
 #endif
 
-! NOTE: In the case when masking of output data is activated by
-! CPP-switch MASK_LAND_DATA, ncdf_write uses sign of its argument
-! "varid" as switch to perform on not perform masking.  Because
-! none of the grid variables should actually be masked, in the
-! code below varid is passed into ncdf_write with negative sign.
+      call ncwrite(ncid,'h', h(i0:i1,j0:j1))                    ! Bathymetry.
+      call ncwrite(ncid,'f', f(i0:i1,j0:j1))                    ! Coriolis parameter.
 
-      start=1; start(3)=0                                            ! 2D var - 0 for no time records
-      call ncwrite(ncid,'h', h(i0:i1,j0:j1),start)                   ! Bathymetry.
-      call ncwrite(ncid,'f', f(i0:i1,j0:j1),start)                   ! Coriolis parameter.
-
-      call ncwrite(ncid,'pm', pm(i0:i1,j0:j1),start)                 ! Curvilinear transformation metrics.
-      call ncwrite(ncid,'pn', pn(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'pm', pm(i0:i1,j0:j1))                  ! pm=1./dx, pn=1./dy
+      call ncwrite(ncid,'pn', pn(i0:i1,j0:j1))       
 
 #ifdef SPHERICAL
-      call ncwrite(ncid,'lon_rho', lonr(i0:i1,j0:j1),start)          ! longitude-latitude or cartezian coordinates
-      call ncwrite(ncid,'lat_rho', latr(i0:i1,j0:j1),start)          ! of RHO-points
+      call ncwrite(ncid,'lon_rho', lonr(i0:i1,j0:j1))           ! longitude-latitude
+      call ncwrite(ncid,'lat_rho', latr(i0:i1,j0:j1))           !
 #else
-      call ncwrite(ncid,'x_rho', xr(i0:i1,j0:j1),start)
-      call ncwrite(ncid,'y_rho', yr(i0:i1,j0:j1),start)
+      call ncwrite(ncid,'x_rho', xr(i0:i1,j0:j1))               ! Cartesian coordinates
+      call ncwrite(ncid,'y_rho', yr(i0:i1,j0:j1))
 #endif
 #ifdef CURVGRID
-      call ncwrite(ncid,'angle', angler(i0:i1,j0:j1),start)          ! angle between XI-axis and EAST at RHO-points
+      call ncwrite(ncid,'angle', angler(i0:i1,j0:j1))           ! angle between XI-axis and EAST at RHO-points
 #endif
 #ifdef MASKING
-      call ncwrite(ncid,'mask_rho', rmask(i0:i1,j0:j1),start)        ! masking fields at RHO-points.
+      call ncwrite(ncid,'mask_rho', rmask(i0:i1,j0:j1))         ! masking fields at RHO-points.
 #endif
 #ifdef MPI_SILENT_MODE
       if (mynode == 0) then
@@ -594,6 +521,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 #ifdef MPI_SILENT_MODE
       endif
 #endif
+
       return
  99   may_day_flag=3
       return
@@ -604,7 +532,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
      &               A, ''' into netCDF' /25x, 'file ''', A,'''.'/)
 
       end subroutine wrt_grid  !]
-
 !----------------------------------------------------------------------
       subroutine get_grid  ![
       ! read in grid data from NetCDF file or define analytical grid
@@ -618,7 +545,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       implicit none
 
 #ifdef ANA_GRID
-      call ana_grid(1)
+      call ana_grid(0)
 #else 
 
       character*1 char1

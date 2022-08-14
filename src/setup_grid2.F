@@ -71,9 +71,6 @@
             my_hmax=max(my_hmax, h(i,j))
 
             cff=1./sqrt(pm(i,j)*pn(i,j))
-#if defined VIS_GRID || defined DIF_GRID
-            grdscl(i,j)=cff
-#endif
             my_grdmin=min(my_grdmin, cff)
             my_grdmax=max(my_grdmax, cff)
 
@@ -88,6 +85,10 @@
 #endif
         enddo
       enddo                        ! Compute unmasked total area and
+      print *,'setup_grid2: ',my_hmin,my_hmax
+      print *,'setup_grid2, j range: ',1,ny,jstrR,jendR
+      print *,'h in setup_grid2: ',maxval(h),minval(h)
+
                                    ! unperturbed volume of model grid
       do j=jstr,jend               ! (assuming zero free-surface).
         do i=istr,iend
@@ -385,9 +386,4 @@ C$OMP CRITICAL (grd2_cr_rgn)
         endif
 C$OMP END CRITICAL (grd2_cr_rgn)
 
-#if defined VIS_GRID || defined DIF_GRID
-# ifdef EXCHANGE
-      call exchange2d_tile (istr,iend,jstr,jend,  grdscl)
-# endif
-#endif
       end

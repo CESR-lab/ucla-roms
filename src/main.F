@@ -70,10 +70,10 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
         if (diag_sync .and. may_day_flag /= 0) goto 99
       enddo
   99  call stop_timers()                 ! summarized among all nodes
-C$OMP BARRIER                            ! and broadcasted by "diag"
-C$OMP MASTER                             ! [which sets diag_sync=T to
+                                         ! and broadcasted by "diag"
+                                         ! [which sets diag_sync=T to
       call closecdf                      ! signal that "may_day_flag"
-C$OMP END MASTER                         ! is in uniform state]. This
+                                         ! is in uniform state]. This
       return                             ! is THE ONLY route to exit
       end                                ! if something goes wrong.
 #endif
@@ -81,7 +81,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
       subroutine roms_init ![
       use param
       use nhmg
-      use dimensions, only: set_global_ij_SW_NE_corners
       use grid
       use ocean_vars
       use scalars
@@ -109,16 +108,12 @@ C$OMP END MASTER                         ! is in uniform state]. This
       call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
 #endif
 
-      !! move the ana_grid call to within get_grid
-#ifdef ANA_GRID
-      call ana_grid(1)               ! grid and model bathymetry
-#else
       call get_grid
-#endif
+
       if (may_day_flag /= 0) goto 99 
 
-      call setup_grid1(1)         ! 
-      call setup_grid2(1)
+      call setup_grid1(0)         ! 
+      call setup_grid2(0)
 
 #ifdef SOLVE3D
       call set_scoord             ! functions for S-coordinate
@@ -127,11 +122,11 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
 
 #ifdef SOLVE3D
-      call set_depth(1)           ! S-coordinate system, which
+      call set_depth(0)           ! S-coordinate system, which
 # ifdef LMD_KPP
-      call swr_frac(1)            ! may be needed by ana_init.
+      call swr_frac(0)            ! may be needed by ana_init.
 # endif
-      call grid_stiffness(1)      ! zeta=0). Also find and report
+      call grid_stiffness(0)      ! zeta=0). Also find and report
 #endif
 
 # ifdef BIOLOGY_BEC2
@@ -139,15 +134,9 @@ C$OMP END MASTER                         ! is in uniform state]. This
 # endif
 
 #ifdef ANA_INITIAL
-                                       ! Set initial conditions for
-        call set_forces(1)             ! model prognostic variables,
-                                       ! either analytically or read
-                                       ! from netCDF file.  Note that
-                                       ! Set initial conditions for
-        call ana_init(1)               ! may require surface forcing
-                                       ! either analytically or read
-                                       ! so call forces first.
-      if (nrrec > 0) then              ! Also note that ana_init may
+      call set_forces(0)    ! surface forcing may be neccesary
+      call ana_init(0)      ! for ana_init
+      if (nrrec > 0) then   
 #endif
 #ifdef EXACT_RESTART
                                        ! setup environmental variables
@@ -155,7 +144,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
                                        ! forcing), call it first, even
                                        ! in the case of restart run.
 # ifdef SOLVE3D
-        call set_depth(1)
+        call set_depth(0)
 # endif
 #endif
         call get_init(nrrec, 1)
@@ -171,7 +160,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
                                   ! copy it into threadprivate "time"
 #ifdef SOLVE3D
                                   ! recompute three-dimensional S-
-        call set_depth(1)         ! coordinate system: at this moment
+        call set_depth(0)         ! coordinate system: at this moment
                                   ! free surface has non-zero status
 
 !----------------------------------------------------------------------
@@ -184,39 +173,27 @@ C$OMP END MASTER                         ! is in uniform state]. This
      &                   dn_r(0:Lm+1,0:Mm+1)    )
 # endif
 
-      call set_HUV(1)
+      call set_HUV(0)
+      call omega(0)
+      call rho_eos(0)
 
-      call omega(1)
-      call rho_eos(1)
+# if defined ANA_VMIX
+      call ana_vmix(0)
+# elif defined LMD_MIXING
+      call lmd_vmix(0)
+# elif defined BVF_MIXING
+      call bvf_mix(0)
+# endif
+
 #endif
 
-! Set up climatological environment: Set nudging coefficient for
-!==== == ============== ============ sea-surface hight and tracer
-! climatology; create analytical tracer and sea-surface hight
-! climatology fields (if applicable); set bottom sediment grain
-! size [m] and density [kg/m^3] used for bottom boundary layer
-! formulation;
 
 #if defined SPONGE || ANA_SSH 
-      call set_nudgcof(1)
+      call set_nudgcof(0)
 # ifdef ANA_SSH
-      call ana_ssh(1)
+      call ana_ssh(0)
 # endif
 #endif
-
-! Read initial input data for forcing fields; tracer and sea surface
-! climatology; bottom sediment grain size and density (if applicable)
-! from input netCDF files.  Note that CPP-logic here is mutually
-! exclusive with respect to calls ana_tclima, ana_ssh, and ana_bsedim
-! just above.
-
-      call set_global_ij_SW_NE_corners
-
-
-#ifdef ANA_GRID
-      call wrt_ana_grid
-#endif
-
 
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
@@ -242,12 +219,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use dimensions
 
       implicit none
-      integer trd, tile, my_first, my_last, range
-
-      trd=proc(2)
-      range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
-      my_first=trd*range
-      my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
 
       !! Examine all outputs and try to move these to the end of the timestep, while collecting 
       !! Diagnostic terms along the way during the corrector step.
@@ -277,61 +248,28 @@ C$OMP END MASTER                         ! is in uniform state]. This
 #endif
 
 #ifdef SOLVE3D
-      do tile=my_tile_range            ! interpolate forcing
-        call set_forces(tile)          ! data to model time and
-# if defined TIDES
-        call set_tides(tile)           ! compute surface fluxes.
-# endif
-       !!! move these to the end of the time-step and initialization
-        call    rho_eos(tile)
-        call    set_HUV(tile)
+      call set_forces(0)    
 
-        call       diag(tile)
-      enddo
-C$OMP BARRIER
-
-# ifdef WEC
-      call  wec_forces
-# endif
-
-       !!! move these to the end of the time-step and initialization
-      do tile=my_tile_range
-        call omega(tile)
-# if defined ANA_VMIX
-        call ana_vmix(tile)
-# elif defined LMD_MIXING
-        call lmd_vmix(tile)
-# elif defined BVF_MIXING
-        call bvf_mix(tile)
-# endif
-      enddo
-C$OMP BARRIER
+      call diag(0)
 
       ! nrhs points to u/v at time level n
-      do tile=my_tile_range
-        call     prsgrd(tile)
-        call pre_step3d(tile)  ! u is m/s here
-      enddo
+
+      ! Predictor step
+      call prsgrd(0)
+      call pre_step3d(0)  ! u is m/s here
 
       call calc_avg_ocean_vars ! call here not wrt_his else
                                ! rho, omega and w will change
-      do tile=my_tile_range
-        call set_HUV1(tile)
-      enddo
-C$OMP BARRIER
+      call set_HUV1(0)
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING
 
-      do tile=my_tile_range
-        call omega(tile)
-        call rho_eos(tile)
-      enddo
-C$OMP BARRIER
+      call omega(0)
+      call rho_eos(0)
 
       ! Corrector step
-      do tile=my_tile_range
-        call     prsgrd(tile)
-        call step3d_uv1(tile)  ! update u/v(nnew) with dt*ru/rv
+      call     prsgrd(0)
+      call step3d_uv1(0)     ! update u/v(nnew) with dt*ru/rv
 
 #  ifdef UV_VIS2
 !       if (split_bc) then
@@ -339,11 +277,9 @@ C$OMP BARRIER
 !          call visc3d(u_fast,v_fast,visc_fast)
 !       else
           !call visc3d(u,v,visc3d)
-           call visc3d(tile)
+           call visc3d(0)
 !       endif
 #  endif
-      enddo
-C$OMP BARRIER
 #endif  /* SOLVE3D */
 
 ! Output block: write restart/history files.
@@ -371,67 +307,42 @@ C$OMP BARRIER
 #ifdef SOLVE3D
       do iif=1,nfast
 #endif
-#define FORW_BAK
-#ifdef FORW_BAK
-        kstp=knew                      ! This might look a bit silly,
-        knew=kstp+1                    ! because both branches of this
-        if (knew > 4) knew=1           ! "if" statement are identical.
-        if (mod(knew,2) == 0) then     ! Nevertheless, it makes sense,
-          do tile=my_tile_range        ! since mpc will reverse one of
+        kstp=knew                
+        knew=kstp+1               
+        if (knew > 4) knew=1       
 # ifndef SOLVE3D
-            call set_forces(tile)      ! these loops to make zig-zag
+        call set_forces(0)
 # endif
-            call     step2d(tile)      ! tile-processing sequence.
-          enddo
-C$OMP BARRIER
-        else
-          do tile=my_tile_range
-# ifndef SOLVE3D
-            call set_forces(tile)
-# endif
-            call     step2d(tile)
-          enddo
-C$OMP BARRIER
-        endif
-#else
-        kstp=knew
-        knew=3
-        do tile=my_tile_range
-# ifndef SOLVE3D
-          call set_forces(tile)
-# endif
-          call     step2d(tile)
-        enddo
-C$OMP BARRIER
-        knew=3-kstp
-        do tile=my_tile_range
-           call step2d(tile)
-        enddo
-C$OMP BARRIER
-#endif
+        call step2d(0)  
+
 #ifdef SOLVE3D
       enddo    ! <-- iif
 
-      do tile=my_tile_range              ! Continue solution of
-        call step3d_uv2(tile)            ! the three-dimensional
-      enddo                              ! equations: finalize
-C$OMP BARRIER                            ! time step for momenta
-      do tile=my_tile_range              ! and tracers.
-        call omega(tile)
-        call step3d_t (tile)
+      call step3d_uv2(0)
+      call omega(0)
+      call step3d_t(0)
 # if defined TS_DIF2 || defined TS_DIF4
-!       if (split_bc) then
-!         call t3dmix(t_slow,diff2_slow)
-!         call t3dmix(t_fast,diff2_fast)
-!       else
-!         call t3dmix(t,diff2)
-          call t3dmix(tile)
-!       endif
+!     if (split_bc) then
+!       call t3dmix(t_slow,diff2_slow)
+!       call t3dmix(t_fast,diff2_fast)
+!     else
+!       call t3dmix(t,diff2)
+        call t3dmix(0)
+!     endif
 # endif
-      enddo
 
+     !! finalize time-step all variables (JM)
+      call rho_eos(0)
+      call set_HUV(0)
+      call omega(0)
+# if defined ANA_VMIX
+      call ana_vmix(0)
+# elif defined LMD_MIXING
+      call lmd_vmix(0)
+# elif defined BVF_MIXING
+      call bvf_mix(0)
+# endif
 
-C$OMP BARRIER
 #endif /* SOLVE3D */
 
 #ifdef SPONGE_TUNE
