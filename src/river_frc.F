@@ -75,7 +75,6 @@
       endif
 
       end subroutine set_river_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
       ! Initialize river forcing:
@@ -164,7 +163,6 @@
       enddo
 
       end subroutine calc_river_flux  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_ana_river_frc  ![
       ! Analytical river forcing volume and tracer data

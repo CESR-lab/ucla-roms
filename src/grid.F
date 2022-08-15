@@ -49,15 +49,12 @@
       real,allocatable,dimension(:,:) :: angler
 # endif
 
-#ifdef SPHERICAL
       real,allocatable,dimension(:,:) :: latr
       real,allocatable,dimension(:,:) :: lonr
-#else
       real,allocatable,dimension(:,:) :: xp
       real,allocatable,dimension(:,:) :: xr
       real,allocatable,dimension(:,:) :: yp
       real,allocatable,dimension(:,:) :: yr
-#endif
 
       real,allocatable,dimension(:,:) :: pm
       real,allocatable,dimension(:,:) :: pn
