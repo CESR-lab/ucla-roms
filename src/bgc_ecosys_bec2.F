@@ -614,19 +614,8 @@
      &             tracer(istr:iend,jstr:jend,k,m)
      &             + dt * DTRACER_MODULE(istr:iend,jstr:jend,k,m)
           enddo 
-! total chl
-# ifdef BEC2_DIAG
-!       bec2_diag_3d(istr:iend,jstr:jend,k,totchl_idx_t) =  !! NEED_FIX_TRACER_INDICES!!
-!     &    tracer(istr:iend,jstr:jend,k,16) + dt*DTRACER_MODULE(istr:iend,jstr:jend,k,16) 
-!     &    + tracer(istr:iend,jstr:jend,k,20) + dt*DTRACER_MODULE(istr:iend,jstr:jend,k,20) 
-!     &    + tracer(istr:iend,jstr:jend,k,24) + dt*DTRACER_MODULE(istr:iend,jstr:jend,k,24) 
-!     &    + tracer(istr:iend,jstr:jend,k,26) + dt*DTRACER_MODULE(istr:iend,jstr:jend,k,28)
-# endif
 
        enddo
-
-       call wrt_his_bgc_tracers
-       call wrt_avg_bgc_tracers
 
        end subroutine ecosys_bec2_tile
 

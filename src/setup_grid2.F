@@ -85,9 +85,6 @@
 #endif
         enddo
       enddo                        ! Compute unmasked total area and
-      print *,'setup_grid2: ',my_hmin,my_hmax
-      print *,'setup_grid2, j range: ',1,ny,jstrR,jendR
-      print *,'h in setup_grid2: ',maxval(h),minval(h)
 
                                    ! unperturbed volume of model grid
       do j=jstr,jend               ! (assuming zero free-surface).
