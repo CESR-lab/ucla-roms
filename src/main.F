@@ -301,6 +301,9 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 #ifdef DIAGNOSTICS
       if (diag_pflx) call wrt_rst_diag_pflx
 #endif
+#ifdef BIOLOGY_BEC2
+      call wrt_bgc
+#endif
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----

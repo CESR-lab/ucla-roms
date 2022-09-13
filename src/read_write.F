@@ -327,11 +327,9 @@ C$OMP BARRIER
       enddo  ! search through files: while .not. found_rec .and. ifile<=nfiles.
 
       if (.not. found_var_ever) then
-        if (mynode==0) then
         write(*,'(/1x,4A,I3/)') 'ERROR: find_new_record:: ',
      &              'Could not find var: ', vname, ' mynode=', mynode
-        endif
-        error stop 'find_new_record: var not found in forcing files'
+        error stop 
       endif
       if (.not. found_rec) then
         write(*,'(/1x,3A,I3/)')

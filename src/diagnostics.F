@@ -831,6 +831,7 @@
       real  :: gHzx,gHzy,gHTx,gHty
 !     real   ,dimension(:,:),pointer :: u_fast,v_fast,p_fast
 !     real   ,dimension(:,:),pointer :: px_fast,py_fast
+      real  :: tst
 
 # if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
       integer :: kbak
@@ -876,6 +877,7 @@
 
         up = 0
         vp = 0
+        tst = 0
         do k=1,nz
           do j=0,ny
             do i=0,nx
@@ -908,6 +910,11 @@
           enddo
         enddo
       endif  ! if pflux
+!     if (mynode==0) then
+!        print *,'diagnostics: ', sum(up(1:40,ny/2)),sum(vp(nx/2,1:40))
+!        print *,'diagnostics: ', u_fast(2,ny/2),p_fast(2,ny/2),Hz(2,ny/2,50)
+!        print *,'diagnostics: ', u_slow(2,ny/2,50),Uflx(i,j)
+!     endif
 
       end subroutine calc_diag_pflux  !]
 ! ----------------------------------------------------------------------
@@ -1260,12 +1267,12 @@
 
       end subroutine create_diagnostics_file !]
 ! ----------------------------------------------------------------------
-      subroutine get_init_slow( ncid, record )  ![
+      subroutine get_init_slow(ncid,record,tindx )  ![
       ! get initial slow u,v and p
       implicit none
 
       ! input
-      integer,intent(in) :: ncid, record
+      integer,intent(in) :: ncid, record,tindx
 
       ! local
       integer :: i,j
@@ -1300,10 +1307,11 @@
         enddo
 #endif
       else
-        u_slow = 0.0
+!       u_slow = 0.0
+        u_slow(1:i1,j0:j1,:) = u(1:i1,j0:j1,:,tindx)
         mpi_master_only write(*,*) ' --- WARNING: '
-     &         , 'u_slow'
-     &         , ' not in initial file.  Initialized to 0.0'
+     &    ,'u_slow not in initial file.'
+     &    ,'  Initialized to u'
         ierr=nf90_noerr
       endif
 
@@ -1318,10 +1326,11 @@
         enddo
 #endif
       else
-        v_slow = 0.0
+!       v_slow = 0.0
+        v_slow(i0:i1,1:j1,:) = v(i0:i1,1:j1,:,tindx)
         mpi_master_only write(*,*) ' --- WARNING: '
-     &         , 'v_slow'
-     &         , ' not in initial file.  Initialized to 0.0'
+     &    ,'v_slow not in initial file.'
+     &    ,'  Initialized to v'
         ierr=nf90_noerr
       endif
 

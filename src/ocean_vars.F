@@ -303,7 +303,7 @@
 
       end subroutine init_arrays_ocean3d  !]
 ! ----------------------------------------------------------------------
-      subroutine wrt_his_ocean_vars  ![
+      subroutine wrt_his_ocean_vars(blowup)  ![
       ! write ocean_vars variables to output netcdf file
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
@@ -316,6 +316,8 @@
 
       implicit none
 
+      ! import/export
+      logical,optional       :: blowup
       ! local
       integer,dimension(4)   :: start
       integer,save           :: rec_his=nrpf_his                     ! current file output record
@@ -337,7 +339,11 @@
 !     if (mynode==0) print *,'output_time_his: ',output_time_his
 
       if (output_time_his>=output_period_his .or.
-     &    output_time_his==0                      ) then             ! catch to get t=0 output
+     &    output_time_his==0.or.present(blowup) ) then             ! catch to get t=0 output
+
+        if (present(blowup)) then
+         if (mynode==0) print *,'Writing emergency history file'
+        endif
 
         if (rec_his==nrpf_his) then
           call create_file_ocean_vars(fname_his,.false.)
