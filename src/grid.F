@@ -170,7 +170,7 @@
       implicit none               ! into a separate netCDF file.
 
       character(len=32) fname
-      integer ncid,ierr, lncn, lenstr
+      integer ncid,ierr, lncn, lenstr,varid
 
 # if defined MPI && !defined PARALLEL_FILES
       integer status(MPI_STATUS_SIZE), blank
@@ -183,40 +183,33 @@
 #  ifdef PARALLEL_FILES
       ierr=0
       call insert_node(fname, lncn, mynode, NNODES, ierr)
-#  else
-      if (mynode == 0) then
 #  endif
 # endif
-        ierr=nf90_create(fname, NF90_NETCDF4, ncid)
-        if (ierr == nf90_noerr) then
-          call put_global_atts (ncid, ierr)
+      ierr=nf90_create(fname, NF90_NETCDF4, ncid)
+      if (ierr == nf90_noerr) then
+        call put_global_atts (ncid, ierr)
 
-          call def_grid(ncid)
-          ierr=nf90_close(ncid)
-        else
+        call def_grid(ncid)
+        ierr=nf90_close(ncid)
+      else
           write(*,'(/1x,4A/12x,A/)')     '### ERROR: wrt_ana_grid :: ',
      &            'Cannot create netCDF file ''', trim(fname), ''',',
      &                                              nf90_strerror(ierr)
-        endif
-# if defined MPI && !defined PARALLEL_FILES
-      else
-        ierr=nf90_open(fname, nf_write, ncid)
-        if (ierr/=nf90_noerr) then
-          write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
+      endif
+
+      ierr=nf90_open(fname,nf90_write,ncid)
+      if (ierr/=nf90_noerr) then
+        write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
      &             'Cannot open netCDF file ''', trim(fname), ''',',
      &                                             nf90_strerror(ierr)
-        endif
       endif
-# endif
 
-      if (ierr == nf90_noerr) then
-        call wrt_grid(ncid)
-        ierr=nf90_close(ncid)
-        if (ierr /= nf90_noerr) then
+      call wrt_grid(ncid)
+      ierr=nf90_close(ncid)
+      if (ierr /= nf90_noerr) then
            write(*,'(/1x,4A/12x,A/)')   '### ERROR: wrt_ana_grid :: ',
      &            'Cannot close netCDF file ''', trim(fname), ''',',
      &                                             nf90_strerror(ierr)
-        endif
       endif
 
 # if defined MPI && !defined PARALLEL_FILES
@@ -250,7 +243,7 @@
       integer :: nf_ftype, varid, ierr
 
 ! Grid type switch: Spherical or Cartesian.
-      ierr=nf90_def_var(ncid, 'spherical', nf90_char, varid)
+      ierr=nf90_def_var(ncid, 'spherical', nf90_char,varid=varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'grid type logical switch')     ! need to be new line <72 else big space in .nc
       ierr=nf90_put_att(ncid, varid, 'option_T', 'spherical')
@@ -258,7 +251,7 @@
 
 ! Physical dimensions of model domain, xl,el (Cartesian grid only).
 #ifndef SPHERICAL
-      ierr=nf90_def_var(ncid, 'xl', nf90_double, varid)
+      ierr=nf90_def_var(ncid, 'xl', nf90_double, varid=varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the XI-direction')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
@@ -355,7 +348,7 @@
       ! input
       integer,intent(in) :: ncid
       ! local
-      integer :: varid, ierr, ncdf_write
+      integer :: varid, ierr
       integer,dimension(3) :: start
 
 #if defined MPI && !defined PARALLEL_FILES
@@ -366,6 +359,7 @@
 
         ierr=nf90_inq_varid(ncid, 'spherical', varid)
         if (ierr == nf90_noerr) then
+          print *,'spherical var found'
           ierr=nf90_put_var(ncid, varid,
 #ifdef SPHERICAL
      &                                         'T')
@@ -376,6 +370,7 @@
             call handle_ierr(ierr, 'wrt_grid spherical')
           endif
         else
+          print *,'spherical var not found'
           call handle_ierr(ierr, 'wrt_grid spherical')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
@@ -387,10 +382,10 @@
         if (ierr == nf90_noerr) then
           ierr=nf90_put_var(ncid, varid, xl)
           if (ierr /= nf90_noerr) then
-            call handle_ierr(ierr, 'wrt_grid ')
+            call handle_ierr(ierr, 'wrt_grid xl ')
           endif
         else
-          call handle_ierr(ierr, 'wrt_grid ')
+          call handle_ierr(ierr, 'wrt_grid no xl found')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 
@@ -398,10 +393,10 @@
         if (ierr == nf90_noerr) then
           ierr=nf90_put_var(ncid, varid, el)
           if (ierr /= nf90_noerr) then
-            call handle_ierr(ierr, 'wrt_grid ')
+            call handle_ierr(ierr, 'wrt_grid el')
           endif
         else
-          call handle_ierr(ierr, 'wrt_grid ')
+          call handle_ierr(ierr, 'wrt_grid no el found')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 #endif
@@ -410,12 +405,6 @@
 #if defined MPI && !defined PARALLEL_FILES
       endif
 #endif
-
-! NOTE: In the case when masking of output data is activated by
-! CPP-switch MASK_LAND_DATA, ncdf_write uses sign of its argument
-! "varid" as switch to perform on not perform masking.  Because
-! none of the grid variables should actually be masked, in the
-! code below varid is passed into ncdf_write with negative sign.
 
       start=1; start(3)=0                                            ! 2D var - 0 for no time records
       call ncwrite(ncid,'h', h(i0:i1,j0:j1),start)                   ! Bathymetry.
