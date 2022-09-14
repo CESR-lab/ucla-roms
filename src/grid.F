@@ -171,40 +171,18 @@
 
       character(len=32) fname
       integer ncid,ierr, lncn, lenstr,varid
+      logical :: nodate
 
-# if defined MPI && !defined PARALLEL_FILES
-      integer status(MPI_STATUS_SIZE), blank
-      if (mynode > 0) call MPI_Recv(blank, 1, MPI_INTEGER,
-     &        mynode-1, 1, ocean_grid_comm, status, ierr)
-# endif
 
-      fname='grid.nc' ; lncn=lenstr(fname)
-# ifdef MPI
-#  ifdef PARALLEL_FILES
-      ierr=0
-      call insert_node(fname, lncn, mynode, NNODES, ierr)
-#  endif
-# endif
-      ierr=nf90_create(fname, NF90_NETCDF4, ncid)
-      if (ierr == nf90_noerr) then
-        call put_global_atts (ncid, ierr)
-
-        call def_grid(ncid)
-        ierr=nf90_close(ncid)
-      else
-          write(*,'(/1x,4A/12x,A/)')     '### ERROR: wrt_ana_grid :: ',
-     &            'Cannot create netCDF file ''', trim(fname), ''',',
-     &                                              nf90_strerror(ierr)
-      endif
+      call create_file('_grd',fname,.true.) ! last argument will skip the
+                                            ! creation of a date extention
 
       ierr=nf90_open(fname,nf90_write,ncid)
-      if (ierr/=nf90_noerr) then
-        write(*,'(/1x,4A/12x,A/)')    '### ERROR: wrt_ana_grid :: ',
-     &             'Cannot open netCDF file ''', trim(fname), ''',',
-     &                                             nf90_strerror(ierr)
-      endif
+
+      call create_grid_vars(ncid)
 
       call wrt_grid(ncid)
+
       ierr=nf90_close(ncid)
       if (ierr /= nf90_noerr) then
            write(*,'(/1x,4A/12x,A/)')   '### ERROR: wrt_ana_grid :: ',
@@ -212,35 +190,21 @@
      &                                             nf90_strerror(ierr)
       endif
 
-# if defined MPI && !defined PARALLEL_FILES
-      if (mynode < NNODES-1) then
-        call MPI_Send (blank, 1, MPI_INTEGER, mynode+1,
-     &                        1, ocean_grid_comm, ierr)
-      endif
-# endif
       end subroutine wrt_ana_grid  !]
 #endif /* ANA_GRID */
 
 !----------------------------------------------------------------------
-      subroutine def_grid(ncid)  ![
+      subroutine create_grid_vars(ncid)  ![
 
-! Define grid variables in output NetCDF file, which may be
-! restart, history, averages, etc...
-!
-! Arguments: ncid    NetCDF unit-ID of NetCDF file, which must be
-!                            already opened and in definition mode;
-!            r2dgrd  integer array of size 2, which contains NetCDF
-!                        IDs for dimensions 'xi_rho' and 'eta_rho'.
-
-      use param
-      use netcdf
       use nc_read_write
+      use netcdf
       implicit none
 
-      ! input
-      integer :: ncid
+      ! inport/export
+      integer, intent(in) :: ncid
+
       ! local
-      integer :: nf_ftype, varid, ierr
+      integer :: varid,ierr
 
 ! Grid type switch: Spherical or Cartesian.
       ierr=nf90_def_var(ncid, 'spherical', nf90_char,varid=varid)
@@ -255,6 +219,7 @@
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the XI-direction')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+
       ierr=nf90_def_var(ncid, 'el', nf90_double, varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the ETA-direction')
@@ -287,7 +252,7 @@
       ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
       ierr=nf90_put_att(ncid, varid, 'field', 'pn, scalar')
 
-! Longitude-latitude or cartezian coordinates of RHO-points.
+! Longitude-latitude or cartesian coordinates of RHO-points.
 #ifdef SPHERICAL
       varid = nccreate(ncid,'lon_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
@@ -328,7 +293,7 @@
       ierr=nf90_put_att(ncid, varid, 'option_1', 'water')
 #endif
 
-      end subroutine def_grid  !]
+      end subroutine create_grid_vars  !]
 
 !----------------------------------------------------------------------
       subroutine wrt_grid(ncid)  ![
