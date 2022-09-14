@@ -324,7 +324,6 @@
 
         ierr=nf90_inq_varid(ncid, 'spherical', varid)
         if (ierr == nf90_noerr) then
-          print *,'spherical var found'
           ierr=nf90_put_var(ncid, varid,
 #ifdef SPHERICAL
      &                                         'T')
