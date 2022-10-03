@@ -185,7 +185,7 @@ c--#define VERBOSE
      &         '''', 'in netCDF file ''', trim(ininame), '''.'
         goto 99                                    !--> ERROR
       endif
-      start_time=start_time*time_scale
+      start_time=start_time*time_scale + 1801
 
 #ifdef EXACT_RESTART
       if (tindx == 2) then

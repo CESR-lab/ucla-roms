@@ -12,6 +12,7 @@
       use grid
       use ocean_vars
       use scalars
+      use sponge_tune
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -32,7 +33,7 @@ c-->     &                                           , dft,dfx,dfy
 # ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
 #  if defined OBC_WEST && defined OBC_TORLANSKI
-        do k=1,N
+        do k=1,nz
           do j=jstr,jend+1
             grad(istr-1,j)=( t(istr-1,j  ,k,nstp,itrc)
      &                      -t(istr-1,j-1,k,nstp,itrc))
@@ -46,47 +47,10 @@ c-->     &                                           , dft,dfx,dfy
 #   endif
           enddo
           do j=jstr,jend
-#   ifdef LEGACY_ORLANSKI
-            dft=t(istr,j,k,nstp,itrc)-t(istr  ,j,k,nnew,itrc)
-            dfx=t(istr,j,k,nnew,itrc)-t(istr+1,j,k,nnew,itrc)
-
-#    ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#    else
-            if (dft*(grad(istr,j)+grad(istr,j+1)) > 0.) then
-              dfy=grad(istr,j)
-            else
-              dfy=grad(istr,j+1)
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#     ifdef OBC_RAD_NPO
-            cy=0.
-#     else
-            cy=min(cff,max(dft*dfy,-cff))
-#     endif
-#    endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#    if defined T_FRC_BRY || defined TNUDGING
-              cext=dtfwd*ubind * pm(istr-1,j)
-            else
-              cext=0.
-#    endif
-            endif
-
-            t(istr-1,j,k,nnew,itrc)=( cff*t(istr-1,j,k,nstp,itrc)
-     &                                   +cx*t(istr,j,k,nnew,itrc)
-     &                                -max(cy,0.)*grad(istr-1,j  )
-     &                                -min(cy,0.)*grad(istr-1,j+1)
-     &                                                 )/(cff+cx)
-
-#   else  /* not legacy_orlanski */
             cx=-dtfwd*u(istr,j,k,nrhs)*pm(istr-1,j)
             cy=0.5*dtfwd*(v(istr-1,j,k,nrhs)+v(istr-1,j+1,k,nrhs))
      &                                               *pn(istr-1,j)
-            if (cx > 0.) then
+            if (cx > 0.) then ! outward flow
               cext=0.
             else
               cext=-cx ; cx=0.
@@ -100,16 +64,14 @@ c-->     &                                           , dft,dfx,dfy
      &                                      -max(cy,0.)*grad(istr,j  )
      &                                      -min(cy,0.)*grad(istr,j+1)
      &                                                              )
-#   endif /* LEGACY_ORLANSKI or not*/
 
-
-#   if defined T_FRC_BRY || defined TNUDGING
+#   if defined T_FRC_BRY
+#     if defined SPONGE_TUNE
+!           if (ub_tune) cext = ub_west(j)
+            if (ub_tune) cext = max(cext,ub_west(j))
+#     endif
             t(istr-1,j,k,nnew,itrc)=(1.-cext)*t(istr-1,j,k,nnew,itrc)
-#    ifdef T_FRC_BRY
      &                                    +cext*t_west(j,k,itrc)
-#    else
-     &                                    +cext*tclm(istr-1,j,k,itrc)
-#    endif
 #   endif
 #   ifdef MASKING
             t(istr-1,j,k,nnew,itrc)=t(istr-1,j,k,nnew,itrc)
@@ -121,11 +83,7 @@ c-->     &                                           , dft,dfx,dfy
         do k=1,N
           do j=jstr,jend
 #   if defined OBC_WEST && defined OBC_TSPECIFIED
-#    ifdef T_FRC_BRY
             t(istr-1,j,k,nnew,itrc)=t_west(j,k,itrc)
-#    else
-            t(istr-1,j,k,nnew,itrc)=tclm(istr-1,j,k,itrc)
-#    endif
 #   else
             t(istr-1,j,k,nnew,itrc)=t(istr,j,k,nnew,itrc)
 #   endif
@@ -136,10 +94,6 @@ c-->     &                                           , dft,dfx,dfy
         enddo
 #  endif
       endif     ! <-- WESTERN_EDGE
-
-#  ifdef ISWAKE_XXX
-#   define OBC_TORLANSKI
-#  endif
 
       if (EASTERN_EDGE) then
 #  if defined OBC_EAST && defined OBC_TORLANSKI
@@ -159,43 +113,6 @@ c-->     &                                           , dft,dfx,dfy
 #   endif
           enddo
           do j=jstr,jend
-#   ifdef LEGACY_ORLANSKI
-            dft=t(iend,j,k,nstp,itrc)-t(iend  ,j,k,nnew,itrc)
-            dfx=t(iend,j,k,nnew,itrc)-t(iend-1,j,k,nnew,itrc)
-
-#    ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#    else
-            if (dft*(grad(iend,j)+grad(iend,j+1)) > 0.) then
-              dfy=grad(iend,j)
-            else
-              dfy=grad(iend,j+1)
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#     ifdef OBC_RAD_NPO
-            cy=0.
-#     else
-            cy=min(cff,max(dft*dfy,-cff))
-#     endif
-#    endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#    if defined T_FRC_BRY || defined TNUDGING
-              cext=dtfwd*ubind * pm(iend+1,j)
-            else
-              cext=0.
-#    endif
-            endif
-
-            t(iend+1,j,k,nnew,itrc)=( cff*t(iend+1,j,k,nstp,itrc)
-     &                                   +cx*t(iend,j,k,nnew,itrc)
-     &                                -max(cy,0.)*grad(iend+1,j  )
-     &                                -min(cy,0.)*grad(iend+1,j+1)
-     &                                                 )/(cff+cx)
-
-#   else   
 
             cx=dtfwd*u(iend+1,j,k,nrhs)*pm(iend+1,j)
             cy=0.5*dtfwd*(v(iend+1,j,k,nrhs)+v(iend+1,j+1,k,nrhs))
@@ -214,15 +131,14 @@ c-->     &                                           , dft,dfx,dfy
      &                                      -max(cy,0.)*grad(iend,j  )
      &                                      -min(cy,0.)*grad(iend,j+1)
      &                                                              )
-#   endif /* LEGACY_ORLANSKI */
 
-#   if defined T_FRC_BRY || defined TNUDGING
+#   if defined T_FRC_BRY
+#     if defined SPONGE_TUNE
+!           if (ub_tune) cext = ub_east(j)
+            if (ub_tune) cext = max(cext,ub_east(j))
+#     endif
             t(iend+1,j,k,nnew,itrc)=(1.-cext)*t(iend+1,j,k,nnew,itrc)
-#    ifdef T_FRC_BRY
      &                                         +cext*t_east(j,k,itrc)
-#    else
-     &                                    +cext*tclm(iend+1,j,k,itrc)
-#    endif
 #   endif
 #   ifdef MASKING
             t(iend+1,j,k,nnew,itrc)=t(iend+1,j,k,nnew,itrc)
@@ -274,43 +190,6 @@ c-->     &                                           , dft,dfx,dfy
 #   endif
           enddo
           do i=istr,iend
-#   ifdef LEGACY_ORLANSKI
-            dft=t(i,jstr,k,nstp,itrc)-t(i,jstr  ,k,nnew,itrc)
-            dfx=t(i,jstr,k,nnew,itrc)-t(i,jstr+1,k,nnew,itrc)
-
-#    ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#    else
-            if (dft*(grad(i,jstr)+grad(i+1,jstr)) > 0.) then
-              dfy=grad(i,jstr)
-            else
-              dfy=grad(i+1,jstr)
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#     ifdef OBC_RAD_NPO
-            cy=0.
-#     else
-            cy=min(cff,max(dft*dfy,-cff))
-#     endif
-#    endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#    if defined T_FRC_BRY || defined TNUDGING
-              cext=dtfwd*ubind * pn(i,jstr-1)
-            else
-              cext=0.
-#    endif
-            endif
-
-            t(i,jstr-1,k,nnew,itrc)=( cff*t(i,jstr-1,k,nstp,itrc)
-     &                                   +cx*t(i,jstr,k,nnew,itrc)
-     &                                -max(cy,0.)*grad(i  ,jstr-1)
-     &                                -min(cy,0.)*grad(i+1,jstr-1)
-     &                                                 )/(cff+cx)
-
-#   else
             cx=-dtfwd*v(i,jstr,k,nrhs)*pn(i,jstr-1)
             cy=0.5*dtfwd*(u(i,jstr-1,k,nrhs)+u(i+1,jstr-1,k,nrhs))
      &                                               *pm(i,jstr-1)
@@ -329,15 +208,13 @@ c-->     &                                           , dft,dfx,dfy
      &                                      -min(cy,0.)*grad(i+1,jstr)
      &                                                              )
 
-#   endif /* LEGACY_ORLANSKI */
-
-#   if defined T_FRC_BRY || defined TNUDGING
+#   if defined T_FRC_BRY
+#     if defined SPONGE_TUNE
+!           if (ub_tune) cext = ub_south(i)
+            if (ub_tune) cext = max(cext,ub_south(i))
+#     endif
             t(i,jstr-1,k,nnew,itrc)=(1.-cext)*t(i,jstr-1,k,nnew,itrc)
-#    ifdef T_FRC_BRY
      &                                        +cext*t_south(i,k,itrc)
-#    else
-     &                                    +cext*tclm(i,jstr-1,k,itrc)
-#    endif
 #   endif
 #   ifdef MASKING
             t(i,jstr-1,k,nnew,itrc)=t(i,jstr-1,k,nnew,itrc)
@@ -382,43 +259,6 @@ c-->     &                                           , dft,dfx,dfy
 #   endif
           enddo
           do i=istr,iend
-#   ifdef LEGACY_ORLANSKI
-            dft=t(i,jend,k,nstp,itrc)-t(i,jend  ,k,nnew,itrc)
-            dfx=t(i,jend,k,nnew,itrc)-t(i,jend-1,k,nnew,itrc)
-
-#    ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#    else
-            if (dft*(grad(i,jend)+grad(i+1,jend)) > 0.) then
-              dfy=grad(i,jend)
-            else
-              dfy=grad(i+1,jend)
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#     ifdef OBC_RAD_NPO
-            cy=0.
-#     else
-            cy=min(cff,max(dft*dfy,-cff))
-#     endif
-#    endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#    if defined T_FRC_BRY || defined TNUDGING
-              cext=dtfwd*ubind * pn(i,jend+1)
-            else
-              cext=0.
-#    endif
-            endif
-
-            t(i,jend+1,k,nnew,itrc)=( cff*t(i,jend+1,k,nstp,itrc)
-     &                                 +cx*t(i,jend  ,k,nnew,itrc)
-     &                                -max(cy,0.)*grad(i  ,jend+1)
-     &                                -min(cy,0.)*grad(i+1,jend+1)
-     &                                                 )/(cff+cx)
-
-#   else
             cx=dtfwd*v(i,jend+1,k,nrhs)*pn(i,jend+1)
             cy=0.5*dtfwd*(u(i,jend+1,k,nrhs)+u(i+1,jend+1,k,nrhs))
      &                                               *pm(i,jend+1)
@@ -436,15 +276,14 @@ c-->     &                                           , dft,dfx,dfy
      &                                      -max(cy,0.)*grad(i  ,jend)
      &                                      -min(cy,0.)*grad(i+1,jend)
      &                                                              )
-#   endif /* LEGACY_ORLANSKI */
 
-#   if defined T_FRC_BRY || defined TNUDGING
+#   if defined T_FRC_BRY
+#     if defined SPONGE_TUNE
+!           if (ub_tune) cext = ub_north(i)
+            if (ub_tune) cext = max(cext,ub_north(i))
+#     endif
             t(i,jend+1,k,nnew,itrc)=(1.-cext)*t(i,jend+1,k,nnew,itrc)
-#    ifdef T_FRC_BRY
      &                                        +cext*t_north(i,k,itrc)
-#    else
-     &                                    +cext*tclm(i,jend+1,k,itrc)
-#    endif
 #   endif
 #   ifdef MASKING
             t(i,jend+1,k,nnew,itrc)=t(i,jend+1,k,nnew,itrc)

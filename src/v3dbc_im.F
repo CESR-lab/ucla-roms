@@ -13,6 +13,7 @@
       use grid
       use ocean_vars
       use scalars
+      use sponge_tune
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -68,7 +69,7 @@
             cx=dft*dfx
             if (cx < 0.) then     !--> cancel, if inflow
               cx=0. ; cy=0.
-#    if defined M3_FRC_BRY || defined M3NUDGING
+#    if defined M3_FRC_BRY
               if (v_south(i,k) > 0.) then
                 cext=v_south(i,k)
               else
@@ -85,28 +86,25 @@
      &                     -max(cy,0.)*grad(i  ,jstr)
      &                     -min(cy,0.)*grad(i+1,jstr)
      &                                    )/(cff+cx)
-#    if defined M3_FRC_BRY  || defined M3NUDGING
+#    if defined M3_FRC_BRY
+#      if defined SPONGE_TUNE
+!         if (ub_tune) cext = ub_south(i)
+          if (ub_tune) cext = max(cext,ub_south(i))
+#      endif
             v(i,jstr,k,nnew)=(1.-cext)*v(i,jstr,k,nnew)
-#     ifdef M3_FRC_BRY
      &                               +cext*v_south(i,k)
-#     else
-     &                             +cext*vclm(i,jstr,k)
-#     endif
 #    endif
 #    ifdef MASKING
             v(i,jstr,k,nnew)=v(i,jstr,k,nnew)*vmask(i,jstr)
 #    endif
           enddo
         enddo
+
 #   else           /* alternative open */
         do k=1,N
           do i=istr,iend
 #    ifdef OBC_M3SPECIFIED
-#     ifdef M3_FRC_BRY
             v(i,jstr,k,nnew)=v_south(i,k)        ! specified
-#     else
-            v(i,jstr,k,nnew)=vclm(i,jstr,k)
-#     endif
 #    else
             v(i,jstr,k,nnew)=v(i,jstr+1,k,nnew)  ! gradient (default)
 #    endif
@@ -119,15 +117,7 @@
 #  else
         do k=1,N                               ! Southern edge closed
           do i=istr,iend                       ! ======== ==== ======
-#   ifdef WEC
-cc            v(i,jstr,k,nnew)=-vst(i,jstr,k)    ! no Lagrangian flux
-            v(i,jstr,k,nnew)=v(i,jstr+1,k,nnew)  ! gradient (default)
-#    ifdef MASKING
-     &                       *vmask(i,jstr)
-#    endif
-#   else
             v(i,jstr,k,nnew)=0.                ! (no-flux, default)
-#   endif              
           enddo
         enddo
 #  endif              /* OBC_SOUTH */
@@ -189,13 +179,13 @@ cc            v(i,jstr,k,nnew)=-vst(i,jstr,k)    ! no Lagrangian flux
      &                      -max(cy,0.)*grad(i  ,jend+1)
      &                      -min(cy,0.)*grad(i+1,jend+1)
      &                                      )/(cff+cx)
-#    if defined M3_FRC_BRY  || defined M3NUDGING
+#    if defined M3_FRC_BRY
+#      if defined SPONGE_TUNE
+!         if (ub_tune) cext = ub_north(i)
+          if (ub_tune) cext = max(cext,ub_north(i))
+#      endif
             v(i,jend+1,k,nnew)=(1.-cext)*v(i,jend+1,k,nnew)
-#     ifdef M3_FRC_BRY
      &                                   +cext*v_north(i,k)
-#     else
-     &                               +cext*vclm(i,jend+1,k)
-#     endif
 #    endif
 #    ifdef MASKING
             v(i,jend+1,k,nnew)=v(i,jend+1,k,nnew)*vmask(i,jend+1)
@@ -250,44 +240,6 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
             grad(istr  ,j)=v(istr  ,j+1,k,nstp)-v(istr  ,j,k,nstp)
           enddo
           do j=jstrV,jend
-#    ifdef LEGACY_ORLANSKI
-            dft=v(istr,j,k,nstp)-v(istr  ,j,k,nnew)
-            dfx=v(istr,j,k,nnew)-v(istr+1,j,k,nnew)
-
-#     ifdef OBC_RAD_NORMAL
-            cy=0. ; cff=max(dfx*dfx, eps)
-#     else
-            if (dft*(grad(istr,j-1)+grad(istr,j)) > 0.) then
-              dfy=grad(istr,j-1)
-            else
-              dfy=grad(istr,j  )
-            endif
-            cff=max(dfx*dfx+dfy*dfy, eps)
-#      ifdef OBC_RAD_NPO
-            cy=0.
-#      else
-            cy=min(cff, max(dft*dfy, -cff))
-#      endif
-#     endif
-
-            cx=dft*dfx
-            if (cx < 0.) then     !--> cancel, if inflow
-              cx=0. ; cy=0.
-#     if defined M3_FRC_BRY || defined M3NUDGING
-              cext=dtfwd*ubind * 0.5*(pm(istr-1,j-1)+pm(istr-1,j))
-            else
-              cext=0.
-#     endif
-            endif
-
-            v(istr-1,j,k,nnew)=( cff*v(istr-1,j,k,nstp)
-     &                              +cx*v(istr,j,k,nnew)
-     &                       -max(cy,0.)*grad(istr-1,j-1)
-     &                       -min(cy,0.)*grad(istr-1,j  )
-     &                                        )/(cff+cx)
-
-#    else
-
 
           cx=-0.125*dtfwd*(u(istr,j,k,nrhs)+u(istr,j-1,k,nrhs))
      &                            *( pm(istr-1,j)+pm(istr-1,j-1)
@@ -311,16 +263,13 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
      &                            -min(cy,0.)*grad(istr,j  )
      &                                                     )
 
-
-#    endif /* LEGACY_ORLANSKI */
-
-#    if defined M3_FRC_BRY  || defined M3NUDGING
+#    if defined M3_FRC_BRY
+#      if defined SPONGE_TUNE
+!         if (ub_tune) cext = ub_west(j)
+          if (ub_tune) cext = max(cext,ub_west(j))
+#      endif
             v(istr-1,j,k,nnew)=(1.-cext)*v(istr-1,j,k,nnew)
-#     ifdef M3_FRC_BRY
      &                                    +cext*v_west(j,k)
-#     else
-     &                               +cext*vclm(istr-1,j,k)
-#     endif
 #    endif
 #    ifdef MASKING
             v(istr-1,j,k,nnew)=v(istr-1,j,k,nnew)*vmask(istr-1,j)
@@ -395,13 +344,13 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
      &                            -min(cy,0.)*grad(iend,j  )
      &                                                     )
 
-#    if defined M3_FRC_BRY  || defined M3NUDGING
+#    if defined M3_FRC_BRY 
+#      if defined SPONGE_TUNE
+!         if (ub_tune) cext = ub_east(j)
+          if (ub_tune) cext = max(cext,ub_east(j))
+#      endif
             v(iend+1,j,k,nnew)=(1.-cext)*v(iend+1,j,k,nnew)
-#     ifdef M3_FRC_BRY
      &                                    +cext*v_east(j,k)
-#     else
-     &                               +cext*vclm(iend+1,j,k)
-#     endif
 #    endif
 #    ifdef MASKING
             v(iend+1,j,k,nnew)=v(iend+1,j,k,nnew)*vmask(iend+1,j)

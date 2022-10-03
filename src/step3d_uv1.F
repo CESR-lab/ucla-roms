@@ -31,7 +31,7 @@
       use param
 # ifdef NHMG
       use nhmg
-      use mg_grids
+      use mg_grids, mggrid => grid
       use mg_tictoc, only : tic, toc
 # endif
 # ifdef WEC
@@ -76,7 +76,7 @@
 # include "compute_auxiliary_bounds.h"
 
 # ifdef DIAGNOSTICS
-#  ifdef NHMG
+#  ifdef NHMGDIAG
       if (diag_uv.and.calc_diag) then
         Wdiag(istr:iend,jstr:jend,:,iwprsgr) =rw(istr:iend,jstr:jend,:)
       endif
@@ -108,7 +108,7 @@
         enddo
 
       enddo
-#  ifdef DIAGNOSTICS
+#  ifdef DIAGNOSTICS_NHMG
       if (calc_diag) call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
 #  endif
 # endif  /* NHMG */
@@ -346,38 +346,38 @@
       do k=1,N
         do j=jstr,jend
           do i=Istr,Iend
-            u(i,j,k,nnew) = (u(i,j,k,nnew) + grid(1)%du(k,j,i) )*pn_u(i,j)
+            u(i,j,k,nnew) = (u(i,j,k,nnew) + mggrid(1)%du(k,j,i) )*pn_u(i,j)
 
-            rufrc(i,j) = rufrc(i,j) + dn_u(i,j)*grid(1)%du(k,j,i)/dt 
-            nhdu(i,j,k,iprec1) = grid(1)%du(k,j,i)/dt !stored as a trend
+            rufrc(i,j) = rufrc(i,j) + dn_u(i,j)*mggrid(1)%du(k,j,i)/dt 
+            nhdu(i,j,k,iprec1) = mggrid(1)%du(k,j,i)/dt !stored as a trend
           enddo
         enddo
 
         do j=jstr,jend
           do i=Istr,Iend
-            v(i,j,k,nnew) = (v(i,j,k,nnew) + grid(1)%dv(k,j,i) )*pm_v(i,j)
+            v(i,j,k,nnew) = (v(i,j,k,nnew) + mggrid(1)%dv(k,j,i) )*pm_v(i,j)
 
-            rvfrc(i,j) = rvfrc(i,j) + dm_v(i,j)*grid(1)%dv(k,j,i)/dt 
-            nhdv(i,j,k,iprec1) = grid(1)%dv(k,j,i)/dt !stored as a trend
+            rvfrc(i,j) = rvfrc(i,j) + dm_v(i,j)*mggrid(1)%dv(k,j,i)/dt 
+            nhdv(i,j,k,iprec1) = mggrid(1)%dv(k,j,i)/dt !stored as a trend
           enddo
         enddo
 
         if (k==N) then
           do j=jstr,jend
             do i=Istr,Iend
-              w(i,j,k,nnew) = (w(i,j,k,nnew) + grid(1)%dw(k+1,j,i) )
+              w(i,j,k,nnew) = (w(i,j,k,nnew) + mggrid(1)%dw(k+1,j,i) )
      &              * (pm(i,j)*pn(i,j))*(0.5*(            Hz(i,j,k)))
 
-              nhdw(i,j,k,iprec1) = grid(1)%dw(k+1,j,i)/dt !stored as a trend
+              nhdw(i,j,k,iprec1) = mggrid(1)%dw(k+1,j,i)/dt !stored as a trend
             enddo
           enddo
         else
           do j=jstr,jend
             do i=Istr,Iend
-              w(i,j,k,nnew) = (w(i,j,k,nnew) + grid(1)%dw(k+1,j,i) )
+              w(i,j,k,nnew) = (w(i,j,k,nnew) + mggrid(1)%dw(k+1,j,i) )
      &              * (pm(i,j)*pn(i,j))*(0.5*(Hz(i,j,k+1)+Hz(i,j,k)))
 
-              nhdw(i,j,k,iprec1) = grid(1)%dw(k+1,j,i)/dt !stored as a trend
+              nhdw(i,j,k,iprec1) = mggrid(1)%dw(k+1,j,i)/dt !stored as a trend
             enddo
           enddo
         endif

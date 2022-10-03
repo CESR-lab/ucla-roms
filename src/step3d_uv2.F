@@ -775,7 +775,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
           enddo
         enddo
       enddo
-# ifdef DIAGNOSTICS
+# ifdef DIAGNOSTICS_NHMG
       if (calc_diag) call set_diags_w_at_uv2( istr, iend, jstr, jend )
 # endif
 !
@@ -785,7 +785,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
       call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
 
-#  ifdef DIAGNOSTICS
+#  ifdef DIAGNOSTICS_NHMG
       if (calc_diag) call set_diags_w_at_bc( istr, iend, jstr, jend )
 #  endif
 !--------------------------------------------------------------------
@@ -799,8 +799,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 # endif /* NHMG */
 
 # ifdef DIAGNOSTICS
-#  ifdef NHMG
-      if (calc_diag.and.diag_uv))  call set_diags_w_at_uv2_end
+#  ifdef NHMGDIAG
+      if (calc_diag.and.diag_uv)  call set_diags_w_at_uv2_end
 #  endif
 # endif
 

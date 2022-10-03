@@ -1,7 +1,7 @@
 
       ! ****************************************************************
       ! user inputs
-      logical,parameter,public :: pipe_source = .true.        ! default should be false if not using pipes
+      logical,parameter,public :: pipe_source = .false.       ! default should be false if not using pipes
       logical,parameter        :: p_analytical = .true.       ! analytical forcing true
       integer,public,parameter :: npip = 1                    ! number of pipes
       

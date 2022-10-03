@@ -20,10 +20,7 @@ function add_object(ename,obj_name,gname,lonp,latp,period,obj_lon,obj_lat,obj_ma
   obj_i = griddata(lons,lats,ips,obj_lon,obj_lat);
   obj_j = griddata(lons,lats,jps,obj_lon,obj_lat);
 
-  obj_i(obj_mask<1) = -1e5;
-  obj_j(obj_mask<1) = -1e5;
-
-  if sum(isnan(obj_i))>0
+  if sum(isnan(obj_i)&mask>0.5)>0
     disp(obj_name)
     disp('Some points are outside the grid and not masked!!')
     error 'fatal'

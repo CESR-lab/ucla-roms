@@ -12,6 +12,7 @@
 
 # if defined MAIN_SWITCH
 
+#  define NHMG
 #  define EXTRACT_DATA
 #  define DIAGNOSTICS
 #  define HIS_DOUBLE
