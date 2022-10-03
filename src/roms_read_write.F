@@ -509,7 +509,8 @@
 
       if (.not.present(nodate)) then
         varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-        ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
+        ierr = nf90_put_att(ncid,varid,'long_name',
+     &                             'time since 2000/1/1')
         ierr = nf90_put_att(ncid,varid,'units','second' )
       endif
 

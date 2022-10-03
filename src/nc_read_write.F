@@ -229,8 +229,8 @@
       if (present(vartype)) then                           ! handle optional arguement
         xtype = vartype
       else
-!       xtype = nf90_float                                 ! default output number type is float
-        xtype = nf90_double                                ! default output number type is float
+        xtype = nf90_float                                 ! default output number type is float
+!       xtype = nf90_double                                ! default output number type is float
       endif
 
       ndim = size(dimname)

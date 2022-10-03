@@ -328,13 +328,16 @@
       integer                :: tile, ierr, i, j, k
       logical,save           :: supress=.false.
 
-      if (wrt_file_his) then
+
+
+      if (wrt_file_his.or.present(blowup)) then
 
       if (first_step) then
          first_step=.false.                       ! as first step the ocean_vars values are for t=0
       else
          output_time_his = output_time_his + dt   ! only start count after first timestep
       endif
+
 
 !     if (mynode==0) print *,'output_time_his: ',output_time_his
 
@@ -386,7 +389,9 @@
           do k=0,N
             do j=0,Mm+1
               do i=0,Lm+1
-                work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
+!               work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
+                ! Implicit omega only
+                work(i,j,k)=pm(i,j)*pn(i,j)*Wi(i,j,k)
               enddo
             enddo
           enddo
@@ -693,10 +698,11 @@
       endif
 # endif
 # ifdef LMD_BKPP
-      if ( (wrt_Hbbl .and. .not. avg) .or. (wrt_avg_Hbbl .and. avg) ) then                                   ! thickness of bottom boundary layer.
+      if ( (wrt_Hbbl .and. .not. avg) .or. (wrt_avg_Hbbl .and. avg) ) then       ! thickness of bottom boundary layer.
         if (.not. avg) text_lname=vname(2,indxHbbl)
         if (      avg) text_lname='averaged '/ /vname(2,indxHbbl)
-        varid = nccreate(ncid,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        varid = nccreate(ncid,vname(1,indxHbbl),
+     &         (/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
       endif
@@ -875,21 +881,25 @@
       ! using diag_pflx with diagnostics. They won't be written though, that is done from
       ! main and only if diag_pflx is turned on.
 #ifdef DIAGNOSTICS
-      varid = nccreate(ncid,'u_slow',(/'xi_u','eta_rho','s_rho','time'/),
+!     if (diag_pflx) then  
+!     Can't use diagnostics in the module due to circular references
+       varid = nccreate(ncid,'u_slow',(/'xi_u','eta_rho','s_rho','time'/),
      &                               (/xi_u,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
-      ierr = nf90_put_att(ncid,varid,'units','m/s')
+       ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
+       ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-      varid = nccreate(ncid,'v_slow',(/'xi_rho','eta_v','s_rho','time'/),
+       varid = nccreate(ncid,'v_slow',(/'xi_rho','eta_v','s_rho','time'/),
      &                               (/xi_rho,eta_v,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','time filtered v')
-      ierr = nf90_put_att(ncid,varid,'units','m/s')
+       ierr = nf90_put_att(ncid,varid,'long_name','time filtered v')
+       ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-      varid = nccreate(ncid,'p_slow',(/'xi_rho','eta_rho','s_rho','time'/),
-     &                               (/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',
+       varid = nccreate(ncid,'p_slow',
+     &                       (/'xi_rho','eta_rho','s_rho','time'/),
+     &                       (/xi_rho,eta_rho,n,0/),nf90_double)
+       ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'time filtered pressure')
-      ierr = nf90_put_att(ncid,varid,'units','Pa??')
+       ierr = nf90_put_att(ncid,varid,'units','Pa??')
+!     endif
 #endif
 
 #endif /* SOLVE3D */

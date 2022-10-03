@@ -34,7 +34,7 @@
       use wec_frc
 #ifdef NHMG
       use nhmg
-      use mg_grids
+      use mg_grids, mggrid => grid
       use mg_tictoc
 #endif
       use surf_flux, only: sustr, svstr
@@ -707,12 +707,12 @@
       do k=1,N
         do j=jstr,jend
           do i=istr,iend
-            div= (u(i+1,j,k,nnew) + grid(1)%du(k,j,i+1))
-     &         - (u(i  ,j,k,nnew) + grid(1)%du(k,j,i  ))
-     &         + (v(i,j+1,k,nnew) + grid(1)%dv(k,j+1,i))
-     &         - (v(i,j  ,k,nnew) + grid(1)%dv(k,j  ,i))
-     &         + (w(i,j,k  ,nnew) + grid(1)%dw(k+1,j,i))
-     &         - (w(i,j,k-1,nnew) + grid(1)%dw(k  ,j,i))
+            div= (u(i+1,j,k,nnew) + mggrid(1)%du(k,j,i+1))
+     &         - (u(i  ,j,k,nnew) + mggrid(1)%du(k,j,i  ))
+     &         + (v(i,j+1,k,nnew) + mggrid(1)%dv(k,j+1,i))
+     &         - (v(i,j  ,k,nnew) + mggrid(1)%dv(k,j  ,i))
+     &         + (w(i,j,k  ,nnew) + mggrid(1)%dw(k+1,j,i))
+     &         - (w(i,j,k-1,nnew) + mggrid(1)%dw(k  ,j,i))
             dmax = max(dmax,abs(div))
           enddo
         enddo
@@ -724,21 +724,21 @@
         do k=1,N
           do j=jstr,jend
             do i=istr,iend
-              u(i,j,k,nnew) = (u(i,j,k,nnew) + grid(1)%du(k,j,i))
+              u(i,j,k,nnew) = (u(i,j,k,nnew) + mggrid(1)%du(k,j,i))
      &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k)))* pn_u(i,j)
             enddo
           enddo
 
           do j=jstr,jend
             do i=istr,iend
-              v(i,j,k,nnew) = (v(i,j,k,nnew) + grid(1)%dv(k,j,i))
+              v(i,j,k,nnew) = (v(i,j,k,nnew) + mggrid(1)%dv(k,j,i))
      &           /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k)))* pm_v(i,j)
             enddo
           enddo
 
           do j=jstr,jend
             do i=istr,iend
-              w(i,j,k,nnew) = (w(i,j,k,nnew) + grid(1)%dw(k+1,j,i))
+              w(i,j,k,nnew) = (w(i,j,k,nnew) + mggrid(1)%dw(k+1,j,i))
      &             * (pm(i,j)*pn(i,j))
             enddo
           enddo

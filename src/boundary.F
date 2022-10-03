@@ -308,7 +308,8 @@
           call set_frc_data( nc_u_w, var2d=u_west(j0:j1,:), obry=1 )
           call set_frc_data( nc_v_w, var2d=v_west( 1:j1,:), obry=1 )
 #     ifdef NHMG
-          call set_frc_data( nc_w_w, var2d=w_west(j0:j1,:), obry=1 )
+!         call set_frc_data( nc_w_w, var2d=w_west(j0:j1,:), obry=1 )
+          w_west = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
@@ -334,7 +335,8 @@
           call set_frc_data( nc_u_e, var2d=u_east(j0:j1,:), obry=1 )
           call set_frc_data( nc_v_e, var2d=v_east( 1:j1,:), obry=1 )
 #     ifdef NHMG
-          call set_frc_data( nc_w_e, var2d=w_east(j0:j1,:), obry=1 )
+!         call set_frc_data( nc_w_e, var2d=w_east(j0:j1,:), obry=1 )
+          w_east = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
@@ -360,7 +362,8 @@
           call set_frc_data( nc_u_s, var2d=u_south( 1:i1,:), obry=1 )
           call set_frc_data( nc_v_s, var2d=v_south(i0:i1,:), obry=1 )
 #     ifdef NHMG
-          call set_frc_data( nc_w_s, var2d=w_south(i0:i1,:), obry=1 )
+!         call set_frc_data( nc_w_s, var2d=w_south(i0:i1,:), obry=1 )
+          w_south = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
@@ -386,7 +389,8 @@
           call set_frc_data( nc_u_n, var2d=u_north( 1:i1,:), obry=1 )
           call set_frc_data( nc_v_n, var2d=v_north(i0:i1,:), obry=1 )
 #     ifdef NHMG
-          call set_frc_data( nc_w_n, var2d=w_north(i0:i1,:), obry=1 )
+!         call set_frc_data( nc_w_n, var2d=w_north(i0:i1,:), obry=1 )
+          w_north = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY

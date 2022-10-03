@@ -498,7 +498,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
          enddo
       enddo
-#  ifdef DIAGNOSTICS
+#  ifdef DIAGNOSTICS_NHMG
       if (diag_uv.and.calc_diag) then
         Wdiag(:,:,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
       endif

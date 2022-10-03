@@ -26,7 +26,6 @@
 
       contains
 
-
 !----------------------------------------------------------------------
       subroutine def_vars_random(ncid)  ![
       implicit none
@@ -76,9 +75,10 @@
           call create_file('_rnd',fname)
           ierr=nf90_open(fname,nf90_write,ncid)
           call def_vars_random(ncid)
-          ierr = nf90_enddef(ncid)
+          ierr = nf90_close(ncid)
           record = 0
         endif
+
         record = record+1
 
         ierr=nf90_open(fname,nf90_write,ncid)
@@ -90,11 +90,9 @@
         ! always add time
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
-
-        start=1; start(3)=record
-        call ncwrite(ncid,'zeta'  ,zeta(i0:i1,j0:j1,knew),start)
-        call ncwrite(ncid,'u_surf',u( 1:i1,j0:j1,nz,nnew),start)
-        call ncwrite(ncid,'v_surf',v(i0:i1, 1:j1,nz,nnew),start)
+        call ncwrite(ncid,'zeta'  ,zeta(i0:i1,j0:j1,knew),(/1,1,record/))
+        call ncwrite(ncid,'u_surf',u( 1:i1,j0:j1,nz,nnew),(/1,1,record/))
+        call ncwrite(ncid,'v_surf',v(i0:i1, 1:j1,nz,nnew),(/1,1,record/))
 
         ierr=nf90_close (ncid)
 
@@ -109,41 +107,5 @@
 
       end subroutine wrt_random !]
 !----------------------------------------------------------------------
-      subroutine create_file_random(fname)  ![
-      implicit none
-
-      !input/output
-      character(len=99),intent(out) :: fname
-
-      ! local
-      integer :: ierr,varid,did,ncid
-      character(len=10),dimension(4) :: dimnames           ! dimension names
-      integer,          dimension(4) :: dimsizes
-
-      fname=trim(adjustl(output_root_name)) / / '_rnd'
-      call append_date_node(fname)
-
-      ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
-      if (ierr/=nf90_noerr) 
-     &   call handle_ierr(ierr,'create_random_file: ')
-
-      varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','time since 2000/1/1')
-      ierr = nf90_put_att(ncid,varid,'units','second' )
-
-      call put_global_atts(ncid, ierr)                     ! put global attributes in file
-      if (ierr/=nf90_noerr) call handle_ierr(ierr,'create_random: ')
-
-      call def_vars_random(ncid)
-
-      ierr = nf90_enddef(ncid)
-      if (mynode == 0) then
-        write(*,'(7x,2A)')
-     &    'wrt_random :: created new netCDF file ', trim(fname)
-      endif
-
-      end subroutine create_file_random !]
-
-!-----------------------------------------------------------------------
 
       end module random_output

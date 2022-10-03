@@ -118,15 +118,9 @@
       ! -----------
 
       ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
-# ifdef NHMG
+# ifdef NHMGDIAG
       integer, public, parameter                         :: nwd = 5    ! number of 'w' momentum diag terms (for NHMG runs)
-
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N, nwd) :: Wdiag=0    ! 3 for u,v,w
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdz_old=0  ! u from previous timestep, need to either store this or Hz to get old u*dz.
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_dif=0    ! gross u/v difference between current vs previous timestep u/v
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: Wdsum=0    ! sum of Mdiag
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: wdif=0     ! = w_dif - Mdsum
-      real, public, dimension(GLOBAL_2D_ARRAY, 0:N)      :: w_prev=0   ! store incremental u/v/w (nnew)
+      real,allocatable,dimension(:,:,:,:),public :: Wdiag 
 
       integer, parameter, public ::
      &  iwprsgr   = 1,
@@ -158,7 +152,7 @@
       public set_diags_w_at_uv2
       public set_diags_w_at_uv2_end
       public set_diags_w_at_bc
-# endif /* NHMG */
+# endif /* NHMGDIAG */
 
       public do_diagnostics
       public set_diags_u_4th_adv
@@ -477,7 +471,7 @@
 
       end subroutine set_diags_v_4th_adv  !]
 ! ----------------------------------------------------------------------
-# ifdef NHMG
+# ifdef NHMGDIAG
       subroutine set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )  ![
       ! Set the diagnostic terms for prsgrd, horiz & vert advection.
       ! Prsgrd and horiz adv still need to also be convert to dz * w
@@ -618,7 +612,7 @@
       enddo
 
       end subroutine set_diags_w_at_uv2_end  !]
-# endif /* NHMG */
+# endif /* NHMGDIAG */
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_h_mix(itrc)  ![
