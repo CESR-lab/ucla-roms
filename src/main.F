@@ -142,7 +142,7 @@ C$OMP BARRIER
       call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
 #endif
 #ifdef SPONGE_TUNE
-      call init_sponge_tune
+      call init_orlanski_tune
 #endif
 
 c--#define CR
@@ -555,8 +555,7 @@ C$OMP BARRIER
 #endif /* SOLVE3D */
 
 #ifdef SPONGE_TUNE
-!     call adjust_sponge
-      call adjust_ubind
+      call adjust_orlanski
 #endif
 !     if (mynode==0) print *,'finishing step'
 
