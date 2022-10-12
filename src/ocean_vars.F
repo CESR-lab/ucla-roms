@@ -901,6 +901,28 @@
        ierr = nf90_put_att(ncid,varid,'units','Pa??')
 !     endif
 #endif
+#ifdef SPONGE_TUNE
+       varid = nccreate(ncid,'ub_west',
+     &                       (/'eta_rho','time'/),
+     &                       (/eta_rho,0/),nf90_double)
+       ierr = nf90_put_att(ncid,varid,'long_name',
+     &                               'west bc tuning coeff')
+       varid = nccreate(ncid,'ub_east',
+     &                       (/'eta_rho','time'/),
+     &                       (/eta_rho,0/),nf90_double)
+       ierr = nf90_put_att(ncid,varid,'long_name',
+     &                               'east bc tuning coeff')
+       varid = nccreate(ncid,'ub_north',
+     &                       (/'xi_rho','time'/),
+     &                       (/xi_rho,0/),nf90_double)
+       ierr = nf90_put_att(ncid,varid,'long_name',
+     &                               'north bc tuning coeff')
+       varid = nccreate(ncid,'ub_south',
+     &                       (/'xi_rho','time'/),
+     &                       (/xi_rho,0/),nf90_double)
+       ierr = nf90_put_att(ncid,varid,'long_name',
+     &                               'south bc tuning coeff')
+#endif
 
 #endif /* SOLVE3D */
 

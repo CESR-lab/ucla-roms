@@ -67,8 +67,7 @@ c-->     &                                           , dft,dfx,dfy
 
 #   if defined T_FRC_BRY
 #     if defined SPONGE_TUNE
-!           if (ub_tune) cext = ub_west(j)
-            if (ub_tune) cext = max(cext,ub_west(j))
+            if (ub_tune) cext = max(cext,min(ub_west(j),1))
 #     endif
             t(istr-1,j,k,nnew,itrc)=(1.-cext)*t(istr-1,j,k,nnew,itrc)
      &                                    +cext*t_west(j,k,itrc)
@@ -134,8 +133,7 @@ c-->     &                                           , dft,dfx,dfy
 
 #   if defined T_FRC_BRY
 #     if defined SPONGE_TUNE
-!           if (ub_tune) cext = ub_east(j)
-            if (ub_tune) cext = max(cext,ub_east(j))
+            if (ub_tune) cext = max(cext,min(ub_east(j),1))
 #     endif
             t(iend+1,j,k,nnew,itrc)=(1.-cext)*t(iend+1,j,k,nnew,itrc)
      &                                         +cext*t_east(j,k,itrc)
@@ -210,8 +208,7 @@ c-->     &                                           , dft,dfx,dfy
 
 #   if defined T_FRC_BRY
 #     if defined SPONGE_TUNE
-!           if (ub_tune) cext = ub_south(i)
-            if (ub_tune) cext = max(cext,ub_south(i))
+            if (ub_tune) cext = max(cext,min(ub_south(i),1))
 #     endif
             t(i,jstr-1,k,nnew,itrc)=(1.-cext)*t(i,jstr-1,k,nnew,itrc)
      &                                        +cext*t_south(i,k,itrc)
@@ -279,8 +276,7 @@ c-->     &                                           , dft,dfx,dfy
 
 #   if defined T_FRC_BRY
 #     if defined SPONGE_TUNE
-!           if (ub_tune) cext = ub_north(i)
-            if (ub_tune) cext = max(cext,ub_north(i))
+            if (ub_tune) cext = max(cext,min(ub_north(i),1))
 #     endif
             t(i,jend+1,k,nnew,itrc)=(1.-cext)*t(i,jend+1,k,nnew,itrc)
      &                                        +cext*t_north(i,k,itrc)

@@ -44,6 +44,7 @@
 
       public adjust_orlanski
       public init_orlanski_tune
+      public wrt_rst_ub
 
       contains
 
@@ -60,6 +61,9 @@
         if(mynode==0) print *,'pflx diagnostics must be turned on!'
         stop
       endif
+
+      call store_string_att(bc_options,'UB_TUNING, ')
+
 
       !! max value based of cfl condition
 !     sp_mx = 0.06/(maxval(pm)*maxval(pn)*dt)
@@ -192,8 +196,7 @@
       eps = 1e-6
       ub_mn = 0.0*ub_mx
 
-!     alpha = 0.25*ub_mx*dt/sp_timscale
-      alpha = 0.01*ub_mx*dt/sp_timscale
+      alpha = 0.5*ub_mx*dt/sp_timscale
 
       if (tune_init) call init_orlanski_tune
 
@@ -202,8 +205,8 @@
 
       if (obc_south.and.(.not.south_exchng)) then
         ub_south = ub_south+alpha*(pflx_south-cflx_south)
-        ub_south = max(ub_mn,ub_south)
-        ub_south = min(ub_mx,ub_south)
+!       ub_south = max(ub_mn,ub_south)
+!       ub_south = min(ub_mx,ub_south)
 !       if (mynode==10) write(10,*),pflx_south(nx/2),cflx_south(nx/2),ub_south(nx/2)
 !       if (mynode==9)  write(9,*),pflx_south(50),cflx_south(50),ub_south(50)
         if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
@@ -211,20 +214,20 @@
 
       if (obc_north.and.(.not.north_exchng)) then
         ub_north = ub_north-alpha*(pflx_north-cflx_north)
-        ub_north = max(ub_mn,ub_north)
-        ub_north = min(ub_mx,ub_north)
+!       ub_north = max(ub_mn,ub_north)
+!       ub_north = min(ub_mx,ub_north)
       endif
       
       if (obc_west.and.(.not.west_exchng)) then
         ub_west = ub_west+alpha*(pflx_west-cflx_west)
-        ub_west = max(ub_mn,ub_west)
-        ub_west = min(ub_mx,ub_west)
+!       ub_west = max(ub_mn,ub_west)
+!       ub_west = min(ub_mx,ub_west)
       endif
 
       if (obc_east.and.(.not.east_exchng)) then
         ub_east = ub_east-alpha*(pflx_east-cflx_east)
-        ub_east = max(ub_mn,ub_east)
-        ub_east = min(ub_mx,ub_east)
+!       ub_east = max(ub_mn,ub_east)
+!       ub_east = min(ub_mx,ub_east)
       endif
 
       output_time = output_time + dt
@@ -321,20 +324,10 @@
 
       !local
       integer :: ncid,ierr,varid
-      character(len=10),dimension(3) :: dimnames ! dimension names
-      integer,          dimension(3) :: dimsizes 
 
       call create_file('_spn',fname)
 
-      dimnames = (/'xi_rho','eta_rho','time'/)
-      dimsizes = (/xi_rho,eta_rho,0/)
-
       ierr=nf90_open(fname,nf90_write,ncid)
-
-!     varid = nccreate(ncid,'visc2d',dimnames,dimsizes,nf90_float)
-!     ierr = nf90_put_att(ncid,varid,'long_name'
-!    &                                ,'horizontal mixing rate')
-!     ierr = nf90_put_att(ncid,varid,'units','m^2/s' )
 
       varid = nccreate(ncid,'cf_south',(/'xi_rho','time'/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
@@ -369,7 +362,29 @@
       ierr = nf90_close(ncid)
 
       end subroutine create_sp_tune_file !]
+! ----------------------------------------------------------------------
+      subroutine wrt_rst_ub  ![
+      ! write the bc tuning coefficients to the restart file
 
+      ! variables defined in ocean_vars.F for now. This should be fixed once ocean_vars
+      ! variables are moved into seperate module to avoid circular reference.
+      ! this is a crude hack to get diag_plfx diagnostics into restart file with current
+      ! issue of circular reference. For now the variables are still defined even if not
+      ! using diag_pflx with diagnostics. They won't be written though, that is done from
+      ! main and only if diag_pflx is turned on.
+      implicit none
+
+      ! local
+      integer :: ncid, ierr
+
+      ierr=nf90_open(fname_rst,nf90_write,ncid)
+      call ncwrite(ncid,'ub_south',ub_south_avg(i0:i1),(/1,record /))
+      call ncwrite(ncid,'ub_north',ub_south_avg(i0:i1),(/1,record /))
+      call ncwrite(ncid,'ub_east' ,ub_west_avg(j0:j1) ,(/1,record /))
+      call ncwrite(ncid,'ub_west' ,ub_west_avg(j0:j1) ,(/1,record /))
+      ierr=nf90_close(ncid)
+
+      end subroutine wrt_rst_ub !]
 
 
 #endif /* SPONGE_TUNE */

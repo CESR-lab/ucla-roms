@@ -98,6 +98,24 @@
       ! local
       integer :: itrc
 
+      if (obc_west) call store_string_att(bc_options,'OBC_WEST, ')
+      if (obc_east) call store_string_att(bc_options,'OBC_EAST, ')
+      if (obc_north) call store_string_att(bc_options,'OBC_NORTH, ')
+      if (obc_south) call store_string_att(bc_options,'OBC_SOUTH, ')
+# ifdef OBC_M3ORLANSKI
+      call store_string_att(bc_options,'OBC_M3ORLANSKI, ')
+#  endif
+# ifdef OBC_M3SPECIFIED
+      call store_string_att(bc_options,'OBC_M3SPECIFIED, ')
+#  endif
+# ifdef OBC_TORLANSKI
+      call store_string_att(bc_options,'OBC_TORLANSKI, ')
+#  endif
+# ifdef OBC_TSPECIFIED
+      call store_string_att(bc_options,'OBC_TSPECIFIED, ')
+#  endif
+
+
 # ifdef OBC_WEST
 #  ifdef Z_FRC_BRY
       allocate( zeta_west(0:Mm+1) )
@@ -215,7 +233,6 @@
 # endif
 
       end subroutine init_arrays_boundary !]
-
 !----------------------------------------------------------------------
 #if !defined ANA_BRY && ( defined OBC_WEST   || defined OBC_EAST  || \
                           defined OBC_SOUTH  || defined OBC_NORTH )  \
