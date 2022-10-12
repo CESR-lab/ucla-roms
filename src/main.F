@@ -142,7 +142,7 @@ C$OMP BARRIER
       call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
 #endif
 #ifdef SPONGE_TUNE
-      call init_orlanski_tune
+      if (ub_tune) call init_orlanski_tune
 #endif
 
 c--#define CR
@@ -485,6 +485,9 @@ C$OMP BARRIER
 #ifdef DIAGNOSTICS
       if (diag_pflx) call wrt_rst_diag_pflx
 #endif
+#ifdef SPONGE_TUNE
+      if (ub_tune) call wrt_rst_ub
+#endif
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
@@ -555,7 +558,7 @@ C$OMP BARRIER
 #endif /* SOLVE3D */
 
 #ifdef SPONGE_TUNE
-      call adjust_orlanski
+      if (ub_tune) call adjust_orlanski
 #endif
 !     if (mynode==0) print *,'finishing step'
 

@@ -41,6 +41,7 @@
 
       integer,parameter :: max_options_string=2000
       character(len=max_options_string),public::surf_forcing_strings=' '
+      character(len=max_options_string),public::bc_options = ' '
 
       ! from old ncvars **************:
       integer, parameter, public :: max_frc_files=360
@@ -743,8 +744,7 @@
         ibuff(4)=jSW_corn+jsouth+1
       endif
 
-      ! add 4 main x and y dimensions so that ncjoin will work,
-      ! since if you only output rho variables xi_u and eta_v won't be created.
+      ! Add 4 main x and y dimensions so that ncjoin will work,
       ierr=nf90_def_dim(ncid,'xi_rho', xi_rho, dimid)
       ierr=nf90_def_dim(ncid,'xi_u',   xi_u,   dimid)
       ierr=nf90_def_dim(ncid,'eta_rho',eta_rho,dimid)
@@ -835,10 +835,7 @@
 # endif
 #endif
 
-#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined TNUDGING \
-  || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
-                       || defined M3NUDGING  || defined WKB_FRC_BRY
-
+#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined M3_FRC_BRY
       ierr=nf90_put_att(ncid, nf90_global, 'ubind', ubind) ! Binding velocity for external data forcing at open boundaries
       ierr=nf90_put_att (ncid, nf90_global, 'ubind_units', 'm/s')
 #endif
@@ -866,6 +863,7 @@
       ! as those modules use roms_read_write so this module can't use them.
       ! rather the string is filled in the module's init and can be written here to all files.
       ierr=nf90_put_att (ncid, nf90_global, 'surf_forcing_strings', surf_forcing_strings)
+      ierr=nf90_put_att (ncid, nf90_global, 'bc_options', bc_options)
 
       call add_git_hash(ncid)
 
@@ -897,7 +895,24 @@
       char_string(is:ie) = string_add
 
       end subroutine store_string_att  !]
+! ---------------------------------------------------------------------
+      function  log2str(arg) ![
+      ! Translate a logical into a string
+      implicit none
 
+      ! input
+      logical,intent(in) :: arg
+
+      character(len=5) :: log2str
+
+      if (arg) then
+        log2str = 'True '
+      else
+        log2str = 'False'
+      endif
+
+
+      end function log2str  !]
 ! ---------------------------------------------------------------------
 
       end module roms_read_write
