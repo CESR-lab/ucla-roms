@@ -159,7 +159,7 @@
       public set_diags_v_4th_adv
       public calc_diag_pflux
       public get_init_slow
-      public wrt_rst_diag_pflx
+      public wrt_rst_diag_slow
            !]
 
       contains
@@ -1209,35 +1209,21 @@
 
       end subroutine wrt_diag_pflx  !]
 ! ----------------------------------------------------------------------
-      subroutine wrt_rst_diag_pflx  ![
+      subroutine wrt_rst_diag_slow(ncid,record)  ![
       ! write the slow components of u, v and P to restart file
 
-      ! variables defined in ocean_vars.F for now. This should be fixed once ocean_vars
-      ! variables are moved into seperate module to avoid circular reference.
-      ! this is a crude hack to get diag_plfx diagnostics into restart file with current
-      ! issue of circular reference. For now the variables are still defined even if not
-      ! using diag_pflx with diagnostics. They won't be written though, that is done from
-      ! main and only if diag_pflx is turned on.
       implicit none
 
-      ! local
-      integer :: ncid, ierr
-      integer,dimension(4) :: start
+      ! import/exprot
+      integer,intent(in) :: ncid
+      integer,intent(in) :: record
 
-      if (wrt_pflx) then                                    ! this ensures correct timestep to write
+      call ncwrite(ncid,'u_slow',u_slow( 1:i1,j0:j1,:),(/1,1,1,record/))
+      call ncwrite(ncid,'v_slow',v_slow(i0:i1, 1:j1,:),(/1,1,1,record/))
+      call ncwrite(ncid,'p_slow',p_slow(i0:i1,j0:j1,:),(/1,1,1,record/))
 
-        ierr=nf90_open(fname_rst,nf90_write,ncid)
 
-        start=1; start(4)=rec_rst
-        call ncwrite(ncid,'u_slow',u_slow( 1:i1,j0:j1,:),start)
-        call ncwrite(ncid,'v_slow',v_slow(i0:i1, 1:j1,:),start)
-        call ncwrite(ncid,'p_slow',p_slow(i0:i1,j0:j1,:),start)
-
-        ierr=nf90_close(ncid)
-
-      endif
-
-      end subroutine wrt_rst_diag_pflx  !]
+      end subroutine wrt_rst_diag_slow  !]
 ! ----------------------------------------------------------------------
       subroutine create_diagnostics_file(fname) ![
       implicit none

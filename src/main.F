@@ -61,6 +61,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
       use param
       use scalars
       use ocean_vars
+      use basic_output
 
       implicit none
 
@@ -74,9 +75,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
         if (diag_sync .and. may_day_flag /= 0) goto 99
       enddo
   99  call stop_timers()                 ! summarized among all nodes
-      if (mynode==0) print *,'mdf: ',may_day_flag
-      if (mynode==0) print *,'writing emergency his file'
-      call wrt_his_ocean_vars(.true.)
+      call wrt_his_ocean_vars(.true.)    ! Emergency history file output
 C$OMP BARRIER                            ! and broadcasted by "diag"
 C$OMP MASTER                             ! [which sets diag_sync=T to
       call closecdf                      ! signal that "may_day_flag"
@@ -93,6 +92,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use dimensions
       use grid
       use ocean_vars
+      use basic_output
       use scalars
       use analytical
       use sponge_tune
@@ -101,6 +101,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
 
       integer trd, tile, my_first, my_last, range
 C$    integer omp_get_thread_num, omp_get_num_threads
+      integer ierr
 
       numthreads=1 ; trd=0
 C$    numthreads=omp_get_num_threads()
@@ -244,6 +245,9 @@ CR      write(*,*) ' -5' MYID
       time=start_time             ! moment "start_time" (global scalar)
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
+
+!     call wrt_his_ocean_vars
+
 #ifdef SOLVE3D
       do tile=my_tile_range       ! recompute three-dimensional S-
         call set_depth(tile)      ! coordinate system: at this moment
@@ -357,6 +361,7 @@ C$OMP END MASTER
       use particles
       use random_output
       use ocean_vars
+      use basic_output
       use dimensions
 
       implicit none
@@ -482,12 +487,6 @@ C$OMP BARRIER
       call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
       call wrt_rst_ocean_vars
-#ifdef DIAGNOSTICS
-      if (diag_pflx) call wrt_rst_diag_pflx
-#endif
-#ifdef SPONGE_TUNE
-      if (ub_tune) call wrt_rst_ub
-#endif
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
@@ -530,6 +529,7 @@ C$OMP BARRIER
         do tile=my_tile_range
            call step2d(tile)
         enddo
+        if (mynode==0) print *,'zmax: ',maxval(zeta)
 C$OMP BARRIER
 #endif
 #ifdef SOLVE3D

@@ -25,7 +25,6 @@
 # else
       real,allocatable,dimension(:,:,:) :: rho
 # endif
-      real,allocatable,dimension(:,:,:) :: rho_avg
 # ifdef ADV_ISONEUTRAL
       real,allocatable,dimension(:,:,:) :: dRdx
       real,allocatable,dimension(:,:,:) :: dRde

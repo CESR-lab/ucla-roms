@@ -50,6 +50,7 @@
       use grid
       use mixing
       use ocean_vars
+      use basic_output
       use scalars
       use mpi
       use work_mod
@@ -99,13 +100,14 @@
 # endif
 #endif
 
-      call init_arrays_ocean2d
+      call init_arrays_ocean
+
+      call init_avg_arrays
 
       call init_arrays_coupling
 
       call init_arrays_grid     ! lots of extra arrays here initialized which might negatively affect first touch principle.
                                 ! before only rmask was first-touched here...
-      call init_arrays_ocean3d
 
       call init_arrays_mess_buffers  ! DevinD placed here. Assumed used often for higher up first touch
 

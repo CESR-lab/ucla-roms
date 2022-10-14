@@ -11,6 +11,7 @@
       use hidden_mpi_vars
       use mixing
       use ocean_vars
+      use basic_output
       use scalars
       use netcdf
       use bgc_ecosys_vars
