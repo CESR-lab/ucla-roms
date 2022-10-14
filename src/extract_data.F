@@ -47,7 +47,8 @@
       use roms_read_write
       use netcdf
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
-      use ocean_vars, vn=>vname
+      use ocean_vars
+      use basic_output, vn=>vname
       use scalars
       use diagnostics
 

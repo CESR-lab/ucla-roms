@@ -7,8 +7,10 @@
       type (ncforce) :: nc_pflx_s = ncforce( vname='pflx_south',tname='bry_time')
       type (ncforce) :: nc_pflx_n = ncforce( vname='pflx_north',tname='bry_time')
 
+      logical,public  :: ub_tune = .true.
+      logical         :: spn_avg = .true.
+
       integer,parameter :: isp   = 15            ! width of the sponge region in grid points
-      logical,parameter :: onoff = .true.        ! on/off or tunable
       real,   parameter :: sp_timscale = 24*3600 ! filtering time scale
       real,   parameter :: pflux_norm = 1e-2     ! typical pflux scale
 

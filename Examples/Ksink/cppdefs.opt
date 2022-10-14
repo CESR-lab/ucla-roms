@@ -12,11 +12,11 @@
 
 # if defined MAIN_SWITCH
 
-#  define NHMG
+c--#  define NHMG
 #  define EXTRACT_DATA
 #  define DIAGNOSTICS
-#  define HIS_DOUBLE
-#  define SPONGE_TUNE
+c--#  define HIS_DOUBLE
+#   define SPONGE_TUNE
 
 #  undef GRID_ANG_DEG
 #  define SOLVE3D

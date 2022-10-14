@@ -9,12 +9,12 @@
      &                     wrt_VST2D=.true.,
      &                     wrt_UST  =.true.,
      &                     wrt_VST  =.true.,
-     &                     wrt_wST  =.true.,   
-     &                     wrt_AKB  =.true.,
-     &                     wrt_AKW  =.true.,   
-     &                     wrt_KVF  =.true.,
-     &                     wrt_CALP =.true.,  
-     &                     wrt_KAPS =.true.
+     &                     wrt_wST  =.false.,   
+     &                     wrt_AKB  =.false.,
+     &                     wrt_AKW  =.false.,   
+     &                     wrt_KVF  =.false.,
+     &                     wrt_CALP =.false.,  
+     &                     wrt_KAPS =.false.
       
       logical,parameter :: wrt_file_avg      = .false.     ! t/f to write module averages file
       real,parameter    :: output_period_avg = 100         ! output averaging period in seconds
@@ -24,11 +24,11 @@
      &                     wrt_avg_VST2D=.true.,
      &                     wrt_avg_UST  =.true.,
      &                     wrt_avg_VST  =.true.,
-     &                     wrt_avg_wST  =.true.,   
-     &                     wrt_avg_AKB  =.true.,
-     &                     wrt_avg_AKW  =.true.,   
-     &                     wrt_avg_KVF  =.true.,
-     &                     wrt_avg_CALP =.true.,  
-     &                     wrt_avg_KAPS =.true.
+     &                     wrt_avg_wST  =.false.,   
+     &                     wrt_avg_AKB  =.false.,
+     &                     wrt_avg_AKW  =.false.,   
+     &                     wrt_avg_KVF  =.false.,
+     &                     wrt_avg_CALP =.false.,  
+     &                     wrt_avg_KAPS =.false.
       ! end user inputs
       ! ****************************************************************

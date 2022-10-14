@@ -72,20 +72,6 @@
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
-# ifdef SOLVE3D
-      real,allocatable,dimension(:,:,:) :: akv_avg
-      real,allocatable,dimension(:,:,:) :: akt_avg
-#  ifdef SALINITY
-      real,allocatable,dimension(:,:,:) :: aks_avg
-#  endif
-#  ifdef LMD_KPP
-      real,allocatable,dimension(:,:) :: hbl_avg
-#  endif
-#  ifdef LMD_BKPP
-      real,allocatable,dimension(:,:) :: hbbl_avg
-#  endif
-# endif
-
       integer :: sponge_size  ! number of grid point of sponge layer
 
       contains

@@ -5,7 +5,7 @@
       real,parameter    :: output_period_rst = 600        ! output period in seconds
       integer,parameter :: nrpf_rst          = 2          ! total recs per file
       
-      logical,parameter :: wrt_file_his      = .false.    ! t/f to write module history file
+      logical,parameter :: wrt_file_his      = .true.    ! t/f to write module history file
       real,parameter    :: output_period_his = 400         ! output period in seconds
       integer,parameter :: nrpf_his          = 10          ! total recs per file      
       logical,parameter :: wrt_Z =.true.,

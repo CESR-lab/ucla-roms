@@ -71,7 +71,7 @@
               cx=0. ; cy=0.
 #    if defined M3_FRC_BRY
               if (v_south(i,k) > 0.) then
-                cext=v_south(i,k)
+                cext=v_south(i,k)/2 !!! JM TESTING
               else
                 cext=ubind
               endif
@@ -88,7 +88,7 @@
      &                                    )/(cff+cx)
 #    if defined M3_FRC_BRY
 #      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_south(i),1))
+            if (ub_tune) cext = max(0.5*cext,min(ub_south(i),1.0))
 #      endif
             v(i,jstr,k,nnew)=(1.-cext)*v(i,jstr,k,nnew)
      &                               +cext*v_south(i,k)
@@ -180,7 +180,7 @@
      &                                      )/(cff+cx)
 #    if defined M3_FRC_BRY
 #      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_north(i),1))
+            if (ub_tune) cext = max(cext,min(ub_north(i),1.0))
 #      endif
             v(i,jend+1,k,nnew)=(1.-cext)*v(i,jend+1,k,nnew)
      &                                   +cext*v_north(i,k)
@@ -263,7 +263,7 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
 
 #    if defined M3_FRC_BRY
 #      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_west(j),1))
+            if (ub_tune) cext = max(cext,min(ub_west(j),1.0))
 #      endif
             v(istr-1,j,k,nnew)=(1.-cext)*v(istr-1,j,k,nnew)
      &                                    +cext*v_west(j,k)
@@ -343,7 +343,7 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
 
 #    if defined M3_FRC_BRY 
 #      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_east(j),1))
+            if (ub_tune) cext = max(cext,min(ub_east(j),1.0))
 #      endif
             v(iend+1,j,k,nnew)=(1.-cext)*v(iend+1,j,k,nnew)
      &                                    +cext*v_east(j,k)

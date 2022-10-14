@@ -635,18 +635,18 @@
 !         call ncwrite(ncid,Akw_name,Akw_avg(i0:i1,j0:j1,:),start)
         endif
         if (wrt_KVF) then
-          print *,'wrt_akw not ready'
+          print *,'wrt_kvf not ready'
           stop
 !         call ncwrite(ncid,kvf_name,kvf_avg(i0:i1,j0:j1,:),start)
         endif
         start(3)=record
         if (wrt_CALP) then
-          print *,'wrt_akw not ready'
+          print *,'wrt_calp not ready'
           stop
 !         call ncwrite(ncid,calP_name,    calP_avg(i0:i1,j0:j1),start)
         endif
         if (wrt_KAPS) then
-          print *,'wrt_akw not ready'
+          print *,'wrt_kaps not ready'
           stop
 !         call ncwrite(ncid,Kapsrf_name,Kapsrf_avg(i0:i1,j0:j1),start)
         endif
@@ -1628,7 +1628,7 @@ C$OMP BARRIER
       use private_scratch
       implicit none
 
-      integer,save :: tile=1
+      integer,save :: tile=0
 # include "compute_tile_bounds.h"
 
       call wec_forces_tile (istr,iend,jstr,jend,
@@ -1749,7 +1749,6 @@ C$OMP BARRIER
 #  define wkb_roller roller_fraction
 # endif
 # include "compute_auxiliary_bounds.h"
-
 
 
 ! TRANSLATIONS AND MANIPULATIONS OF WEC VARIABLES FROM RAW VALUES IN
