@@ -71,7 +71,7 @@
               cx=0. ; cy=0.
 #    if defined M3_FRC_BRY
               if (v_south(i,k) > 0.) then
-                cext=v_south(i,k)/2 !!! JM TESTING
+                cext=v_south(i,k)
               else
                 cext=ubind
               endif
@@ -88,7 +88,7 @@
      &                                    )/(cff+cx)
 #    if defined M3_FRC_BRY
 #      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(0.5*cext,min(ub_south(i),1.0))
+            if (ub_tune) cext = max(cext,min(ub_south(i),1.0))
 #      endif
             v(i,jstr,k,nnew)=(1.-cext)*v(i,jstr,k,nnew)
      &                               +cext*v_south(i,k)
