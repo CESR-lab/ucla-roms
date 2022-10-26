@@ -24,7 +24,6 @@
       real      :: output_time = 0
       real      :: navg = 0
       integer   :: record=nrpf     ! triggers creation of initial file
-      real      :: ub_mx = 1.0     ! Maximum boundary binding velocity
 
 
       real,allocatable,dimension(:) :: pflx_west,pflx_east,pflx_north,pflx_south
@@ -189,10 +188,11 @@
 
       ! local 
       real    :: alpha,beta,eps
-      real    :: ub_mn
+      real    :: ub_mn,ub_mx
 
       eps = 1e-6
-      ub_mn = -2 
+      ub_mx = 2.0 
+      ub_mn =-1.0
 
       alpha = 0.5*ub_mx*dt/sp_timscale
 
@@ -204,28 +204,26 @@
       if (obc_south.and.(.not.south_exchng)) then
         ub_south = ub_south+alpha*(pflx_south-cflx_south)
         ub_south = max(ub_mn,ub_south)
-!       ub_south = min(ub_mx,ub_south)
-!       if (mynode==10) write(10,*),pflx_south(nx/2),cflx_south(nx/2),ub_south(nx/2)
-!       if (mynode==9)  write(9,*),pflx_south(50),cflx_south(50),ub_south(50)
+        ub_south = min(ub_mx,ub_south)
         if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
       endif
 
       if (obc_north.and.(.not.north_exchng)) then
         ub_north = ub_north-alpha*(pflx_north-cflx_north)
         ub_north = max(ub_mn,ub_north)
-!       ub_north = min(ub_mx,ub_north)
+        ub_north = min(ub_mx,ub_north)
       endif
       
       if (obc_west.and.(.not.west_exchng)) then
         ub_west = ub_west+alpha*(pflx_west-cflx_west)
         ub_west = max(ub_mn,ub_west)
-!       ub_west = min(ub_mx,ub_west)
+        ub_west = min(ub_mx,ub_west)
       endif
 
       if (obc_east.and.(.not.east_exchng)) then
         ub_east = ub_east-alpha*(pflx_east-cflx_east)
         ub_east = max(ub_mn,ub_east)
-!       ub_east = min(ub_mx,ub_east)
+        ub_east = min(ub_mx,ub_east)
       endif
 
       output_time = output_time + dt

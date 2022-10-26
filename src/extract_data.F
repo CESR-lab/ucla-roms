@@ -159,6 +159,7 @@
           allocate(obj(i)%jp(np))
 
           ! from absolute index to rho-index
+          ! ipos,jpos are in 'absolute' index space: [0,nx]x[0,ny]
           obj(i)%ipos = obj(i)%ipos+0.5
           obj(i)%jpos = obj(i)%jpos+0.5
           call compute_coef(obj(i)%ipos,obj(i)%jpos,

@@ -103,9 +103,11 @@
           do i=0,nx+1
             if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
               ! find 'coastline' masked cells
+# ifdef MASKING
               if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
                 rflx(i,j) = 1.0+1.0/riv_cells
               endif
+# endif
             endif
           enddo
         enddo

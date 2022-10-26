@@ -506,7 +506,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # endif
           do i=istr,iend
 # ifdef LMD_KPP
-c**            hbl(i,j)=0.5*(hbl(i,j) + hbls(i,j,nstp))
+            hbl(i,j)=0.5*(hbl(i,j) + hbls(i,j,nstp))
 # endif
 # ifdef LMD_BKPP
             bbl(i,j)=0.5*bbl(i,j) + 0.5*hbbl(i,j,nstp)

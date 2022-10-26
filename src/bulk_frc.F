@@ -988,9 +988,6 @@
 # endif
           ! rmask applies to tau_correction if on, else svstr_r above that.
           ! either way end result is that svstr_r is rmask'ed.
-# ifdef MASKING
-     &                    *rmask(i,j)
-# endif
 
           ! Convert sustr at rho-point to u-point for Eq.System
           ! Need if (i >= istrR+1) because loop over istrR, but we use
@@ -998,7 +995,7 @@
           if (i >= istrR+1) then
             sustr(i,j) = ( sustr_r(i-1,j) + sustr_r(i,j) ) / 2
 # ifdef MASKING
-          !! JM: I don't think that this is actually doing anything usefull
+          !! JM: I don't think that this is actually doing anything useful
      &                    *umask(i,j)
 # endif
           end if
@@ -1029,9 +1026,6 @@
 # endif
           ! rmask applies to tau_correction if on, else svstr_r above that.
           ! either way end result is that svstr_r is rmask'ed.
-# ifdef MASKING
-     &                    *rmask(i,j)
-# endif
 
           ! Convert svstr at rho-point to v-point for Eq.System
           ! Need if (j >= jstrR+1) because loop over jstrR, but we use
