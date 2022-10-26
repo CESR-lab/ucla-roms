@@ -51,9 +51,13 @@
 #  else
      &                    , indxHbls=indxAkt+1
 #  endif
-# endif
 # ifdef LMD_BKPP
      &                    , indxHbbl=indxHbls+1
+# endif
+# else
+# ifdef LMD_BKPP
+     &                    , indxHbbl=indxAks+1
+# endif
 # endif
 
 #endif

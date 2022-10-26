@@ -86,6 +86,8 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_output_indices  ![
+      ! these indices also relate to reading input fields!
+      !
       ! There are 2 approaches to outputting to netcdf files
       ! in the interior, we alway output (1:nx,1:ny), the boundary
       ! subdomains netcdf files are larger because they include buffers
@@ -99,20 +101,22 @@
       ! skip the buffers for the boundary subdomain outputs.
 
       use dimensions
+      use hidden_mpi_vars
       implicit none
 
       ! Method 1
       i0=1; i1=nx; j0=1; j1=ny
-      if (.not.west_exchng)  i0=0     ! Start at 0 to include buffer
-      if (.not.south_exchng) j0=0     ! Start at 0 to include buffer
-      if (.not.east_exchng)  i1=nx+1  ! End at nx+1 to include buffer
-      if (.not.north_exchng) j1=ny+1  ! End at ny+1 to include buffer
+
+      if (inode==0)        i0=0
+      if (inode==NP_XI-1)  i1=nx+1
+      if (jnode==0)        j0=0
+      if (jnode==NP_ETA-1) j1=ny+1
 
       ! Method 2
       bfx = 1
       bfy = 1
-      if (.not.west_exchng)  bfx = 2  ! Start writing at 2 to skip buffer
-      if (.not.south_exchng) bfy = 2  ! Start writing at 2 to skip buffer
+      if (inode==0) bfx = 2  ! Start writing at 2 to skip buffer
+      if (jnode==0) bfy = 2  ! Start writing at 2 to skip buffer
 
       end subroutine init_output_indices  !]
 ! ----------------------------------------------------------------------

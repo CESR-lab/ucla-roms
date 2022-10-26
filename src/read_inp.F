@@ -8,6 +8,7 @@
       use tracers, only: wrt_t, t_vname, wrt_t_avg
       use boundary
       use eos_vars
+      use basic_output
       use scalars
       use scoord
       use mpi

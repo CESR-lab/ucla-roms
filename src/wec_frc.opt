@@ -3,7 +3,7 @@
       ! user inputs
       logical,parameter :: wrt_file_his      = .false.     ! t/f to write module history file
       real,parameter    :: output_period_his = 20          ! output period in seconds
-      integer,parameter :: nrpf_his          = 3           ! total recs per file      
+      integer,parameter :: nrpf              = 3           ! total recs per file      
       logical,parameter :: wrt_SUP  =.true.,
      &                     wrt_UST2D=.true., 
      &                     wrt_VST2D=.true.,
