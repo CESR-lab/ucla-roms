@@ -56,6 +56,8 @@
         endif
 # endif
 
+# define IMPLICIT_BOTTOM_DRAG
+
 # ifndef IMPLICIT_BOTTOM_DRAG
 
 ! Apply implicit time step for vertical viscosity term to horizontal
@@ -180,13 +182,10 @@
         enddo
         do k=N,1,-1
           do i=istrU,iend
-
-            ! DevinD current setup using this one:
             u(i,j,k,nnew)=(DC(i,k)-DC(i,0))      !<-- correction
 #  ifdef MASKING
      &                          *umask(i,j)
 #  endif
-
           enddo
         enddo        !--> discard DC,CF
 
@@ -268,9 +267,7 @@
           do i=istr,iend
             DC(i,1)=( v(i,j,1,nnew) +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                                  )/( 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
-#  ifdef IMPLCT_NO_SLIP_BTTM_BC
      &                                    +0.5*dt*(r_D(i,j)+r_D(i,j-1))
-#  endif
      &                                        +FC(i,1)+max(WC(i,1),0.)
      &                               -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                              )
