@@ -259,7 +259,6 @@
       nccreate = varid
 
       end function nccreate  !]
-
 ! ---------------------------------------------------------------------
       subroutine handle_ierr(ierr, err_msg1, err_msg2)  ![
       ! handle fatal ierr with error messages.

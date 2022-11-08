@@ -639,12 +639,13 @@
       end subroutine sec2date !]
 ! ----------------------------------------------------------------------
       subroutine append_date_node(fname,nodate) ![
-      ! insert date and node number string into filename
+      ! Insert date and node number string into filename
+      ! If the nodate argument is present, only add the node number
       implicit none
 
       ! import/export
-      character(len=*),intent(inout)  :: fname 
-      logical,optional, intent(in)    :: nodate    ! optional argument to skip date label
+      character(len=*),intent(inout):: fname 
+      logical,optional,intent(in)   :: nodate    ! leave out date extention
 
       ! Local
       integer,dimension(6) :: date

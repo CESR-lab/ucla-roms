@@ -69,7 +69,7 @@
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_GRID
-      subroutine ana_grid (tile)
+      subroutine ana_grid (tile) ![
 
       use param
       use hidden_mpi_vars
@@ -79,10 +79,9 @@
 # include "compute_tile_bounds.h"
       call ana_grid_tile (istr,iend,jstr,jend)
 
-      end subroutine ana_grid
-
+      end subroutine ana_grid !]
 ! ----------------------------------------------------------------------
-      subroutine ana_grid_tile (istr,iend,jstr,jend)
+      subroutine ana_grid_tile (istr,iend,jstr,jend) ![
 
 ! Set up model grid using analytical expressions:
 !---- -- ----- ---- ----- ---------- ------------
@@ -174,13 +173,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-      end subroutine ana_grid_tile
+      end subroutine ana_grid_tile !]
 #endif /* ANA_GRID */
-
 ! ----------------------------------------------------------------------
 #ifdef ANA_INITIAL
-      subroutine ana_init (tile)  ! Set initial conditions for momentum
-                                  ! free surface, and tracer variables
+      subroutine ana_init (tile)  ![
+                                
       use param
       use hidden_mpi_vars
       use private_scratch
@@ -192,10 +190,9 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       call ana_init_tile( istr,iend,jstr,jend )
 
-      end subroutine ana_init
-
+      end subroutine ana_init !]
 ! ----------------------------------------------------------------------
-      subroutine ana_init_tile (istr,iend,jstr,jend)
+      subroutine ana_init_tile (istr,iend,jstr,jend) ![
 
       use param
       use boundary
@@ -346,10 +343,9 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       call ana_init_generic(istr,iend,jstr,jend)
 
-      end subroutine ana_init_tile
-
+      end subroutine ana_init_tile !]
 ! ----------------------------------------------------------------------
-      subroutine ana_init_generic(istr,iend,jstr,jend)
+      subroutine ana_init_generic(istr,iend,jstr,jend) ![
 
       use param
       use boundary
@@ -541,17 +537,17 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 # if defined OBC_WEST && (defined NS_PERIODIC || defined MPI)
       if (WESTERN_EDGE) then
 #  ifdef M2_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, zeta_west,1)
-        call exch_bry_EW_tile (jstr,jend, ubar_west,1)
-        call exch_bry_EW_tile (jstr,jend, vbar_west,1)
+!       call exch_bry_EW_tile (jstr,jend, zeta_west,1)
+!       call exch_bry_EW_tile (jstr,jend, ubar_west,1)
+!       call exch_bry_EW_tile (jstr,jend, vbar_west,1)
 #  endif
 #  ifdef M3_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, u_west,N)
-        call exch_bry_EW_tile (jstr,jend, v_west,N)
+!       call exch_bry_EW_tile (jstr,jend, u_west,N)
+!       call exch_bry_EW_tile (jstr,jend, v_west,N)
 #  endif
 #  ifdef T_FRC_BRY
         do itrc=1,NT
-          call exch_bry_EW_tile (jstr,jend, t_west(0,1,itrc),N)
+!         call exch_bry_EW_tile (jstr,jend, t_west(0,1,itrc),N)
         enddo
 #  endif
       endif
@@ -560,17 +556,17 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 # if defined OBC_EAST && (defined NS_PERIODIC || defined MPI)
       if (EASTERN_EDGE) then
 #  ifdef M2_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, zeta_east,1)
-        call exch_bry_EW_tile (jstr,jend, ubar_east,1)
-        call exch_bry_EW_tile (jstr,jend, vbar_east,1)
+!       call exch_bry_EW_tile (jstr,jend, zeta_east,1)
+!       call exch_bry_EW_tile (jstr,jend, ubar_east,1)
+!       call exch_bry_EW_tile (jstr,jend, vbar_east,1)
 #  endif
 #  ifdef M3_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, u_east,N)
-        call exch_bry_EW_tile (jstr,jend, v_east,N)
+!       call exch_bry_EW_tile (jstr,jend, u_east,N)
+!       call exch_bry_EW_tile (jstr,jend, v_east,N)
 #  endif
 #  ifdef T_FRC_BRY
         do itrc=1,NT
-          call exch_bry_EW_tile (jstr,jend, t_east(0,1,itrc),N)
+!         call exch_bry_EW_tile (jstr,jend, t_east(0,1,itrc),N)
         enddo
 #  endif
       endif
@@ -579,17 +575,17 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 # if defined OBC_SOUTH && (defined EW_PERIODIC || defined MPI)
       if (SOUTHERN_EDGE) then
 #  ifdef M2_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, zeta_south,1)
-        call exch_bry_NS_tile (istr,iend, ubar_south,1)
-        call exch_bry_NS_tile (istr,iend, vbar_south,1)
+!       call exch_bry_NS_tile (istr,iend, zeta_south,1)
+!       call exch_bry_NS_tile (istr,iend, ubar_south,1)
+!       call exch_bry_NS_tile (istr,iend, vbar_south,1)
 #  endif
 #  ifdef M3_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, u_south,N)
-        call exch_bry_NS_tile (istr,iend, v_south,N)
+!       call exch_bry_NS_tile (istr,iend, u_south,N)
+!       call exch_bry_NS_tile (istr,iend, v_south,N)
 #  endif
 #  ifdef T_FRC_BRY
         do itrc=1,NT
-          call exch_bry_NS_tile (istr,iend, t_south(0,1,itrc),N)
+!         call exch_bry_NS_tile (istr,iend, t_south(0,1,itrc),N)
         enddo
 #  endif
       endif
@@ -598,28 +594,27 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 # if defined OBC_NORTH && (defined EW_PERIODIC || defined MPI)
       if (NORTHERN_EDGE) then
 #  ifdef M2_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, zeta_north,1)
-        call exch_bry_NS_tile (istr,iend, ubar_north,1)
-        call exch_bry_NS_tile (istr,iend, vbar_north,1)
+!       call exch_bry_NS_tile (istr,iend, zeta_north,1)
+!       call exch_bry_NS_tile (istr,iend, ubar_north,1)
+!       call exch_bry_NS_tile (istr,iend, vbar_north,1)
 #  endif
 #  ifdef M3_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, u_north,N)
-        call exch_bry_NS_tile (istr,iend, v_north,N)
+!       call exch_bry_NS_tile (istr,iend, u_north,N)
+!       call exch_bry_NS_tile (istr,iend, v_north,N)
 #  endif
 #  ifdef T_FRC_BRY
         do itrc=1,NT
-          call exch_bry_NS_tile (istr,iend, t_north(0,1,itrc),N)
+!         call exch_bry_NS_tile (istr,iend, t_north(0,1,itrc),N)
         enddo
 #  endif
       endif
 # endif
 
-      end subroutine ana_init_generic
+      end subroutine ana_init_generic !]
 #endif /* ANA_INITIAL */
-
 ! ----------------------------------------------------------------------
 #if defined ANA_VMIX && defined SOLVE3D
-      subroutine ana_vmix (tile)
+      subroutine ana_vmix (tile) ![
 
       use param
       use hidden_mpi_vars
@@ -628,10 +623,9 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       integer tile
 # include "compute_tile_bounds.h"
       call ana_vmix_tile (istr,iend,jstr,jend)
-      end subroutine ana_vmix
-
+      end subroutine ana_vmix !]
 ! ----------------------------------------------------------------------
-      subroutine ana_vmix_tile (istr,iend,jstr,jend)
+      subroutine ana_vmix_tile (istr,iend,jstr,jend) ![
 
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
@@ -674,16 +668,15 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 #  endif
 # endif
 
-      end subroutine ana_vmix_tile
+      end subroutine ana_vmix_tile !]
 #endif /* ANA_VMIX */
-
 ! ----------------------------------------------------------------------
 
 ! ONLY THE _TILE ROUTINES ARE USED in set_forces! GET RID OF THE NON-TILE VERSIONS
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_SMFLUX
-      subroutine ana_smflux_tile(istr,iend,jstr,jend)
+      subroutine ana_smflux_tile(istr,iend,jstr,jend) ![
 
       use param
       use surf_flux !, only: sustr,svstr
@@ -705,12 +698,11 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-      end
+      end subroutine ana_smflux_tile !]
 #endif /* ANA_SMFLUX */
-
 ! ----------------------------------------------------------------------
 #if defined ANA_SRFLUX && defined SOLVE3D
-      subroutine ana_srflux_tile(istr,iend,jstr,jend)
+      subroutine ana_srflux_tile(istr,iend,jstr,jend) ![
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
@@ -730,22 +722,20 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         enddo
       enddo
 
-      end
+      end subroutine ana_srflux_tile !]
 #endif /* ANA_SRFLUX */
-
 ! ----------------------------------------------------------------------
 #if defined ANA_SSH
-      subroutine ana_ssh(tile)            ! Set analytical sea-surface
+      subroutine ana_ssh(tile)  ![
       use param
       use hidden_mpi_vars
       implicit none                       ! height climatology [m]
       integer tile
 #include "compute_tile_bounds.h"
       call ana_ssh_tile(istr,iend,jstr,jend)
-      end
-
+      end subroutine !]
 ! ----------------------------------------------------------------------
-      subroutine ana_ssh_tile(istr,iend,jstr,jend)
+      subroutine ana_ssh_tile(istr,iend,jstr,jend) ![
 
       use param
       use climat
@@ -757,13 +747,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 # include "compute_extended_bounds.h"
 
-      end
+      end !]
 #endif
-
 ! ----------------------------------------------------------------------
 #ifdef SOLVE3D
 # if defined ANA_STFLUX || defined ANA_SSFLUX
-      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)
+      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc) ![
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
@@ -805,7 +794,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 !  Set kinematic surface flux of additional tracers, if any.
 
       endif
-      end
+      end subroutine ana_stflux_tile !]
 # endif /* ANA_STFLUX || ANA_SSFLUX */
 #endif /* SOLVE3D */
 
