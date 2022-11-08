@@ -310,6 +310,8 @@
 #  undef UV_COR
 # endif
 # undef UV_VIS2
+#else
+# define KEEP_RD
 #endif
 
 ! Compute horizontal advection terms for momentum equations (2D only)
@@ -581,11 +583,13 @@
 ! forward, if "rufrc" is, so this cancelation is done now rather
 ! than at the bottom of this loop.
 
+# if defined KEEP_RD
             rufrc(i,j)=rufrc(i,j) + 0.5*(r_D(i,j)+r_D(i-1,j))
      &                    *dm_u(i,j)*dn_u(i,j)*ubar(i,j,kstp) !! not sure about this
 
             rvfrc(i,j)=rvfrc(i,j) + 0.5*(r_D(i,j)+r_D(i,j-1))
      &                    *dm_v(i,j)*dn_v(i,j)*vbar(i,j,kstp) !! not sure about this
+# endif
 
 !! Here, we remove all the terms that are in 2d rhs
             rufrc(i,j)=rufrc(i,j)-rubar(i,j)  ! Barotropic mode runnig
@@ -704,7 +708,10 @@ c<<     &     +cff*iA_u(i,j)
 #endif
           ubar(i,j,knew)=DUnew/( Dnew(i,j)+Dnew(i-1,j)
 #ifdef SOLVE3D
+
+# ifdef KEEP_RD
      &                       +dtfast*(r_D(i,j)+r_D(i-1,j))
+# endif
      &                                                   )
 
           DU_avg1(i,j)=DU_avg1(i,j)+cff1*dn_u(i,j)*( DUnew
@@ -745,7 +752,9 @@ c<<     &     +cff*iA_v(i,j)
 #endif
           vbar(i,j,knew)=DVnew/( Dnew(i,j)+Dnew(i,j-1)
 #ifdef SOLVE3D
+# ifdef KEEP_RD
      &                       +dtfast*(r_D(i,j)+r_D(i,j-1))
+# endif
      &                                                   )
  
           DV_avg1(i,j)=DV_avg1(i,j) +cff1*dm_v(i,j) * ( DVnew
