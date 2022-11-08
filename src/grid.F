@@ -324,18 +324,18 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 ! Arguments: ncid    NetCDF unit-ID of NetCDF file, which must be
 !                            already opened and in definition mode;
 
-      use param
-      use netcdf
       use nc_read_write
+      use netcdf
       implicit none
 
-      ! input
-      integer :: ncid
+      ! inport/export
+      integer, intent(in) :: ncid
+
       ! local
-      integer :: nf_ftype, varid, ierr
+      integer :: varid,ierr
 
 ! Grid type switch: Spherical or Cartesian.
-      ierr=nf90_def_var(ncid, 'spherical', nf90_char, varid)
+      ierr=nf90_def_var(ncid, 'spherical', nf90_char,varid=varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'grid type logical switch')     ! need to be new line <72 else big space in .nc
       ierr=nf90_put_att(ncid, varid, 'option_T', 'spherical')
@@ -343,10 +343,11 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 ! Physical dimensions of model domain, xl,el (Cartesian grid only).
 #ifndef SPHERICAL
-      ierr=nf90_def_var(ncid, 'xl', nf90_double, varid)
+      ierr=nf90_def_var(ncid, 'xl', nf90_double, varid=varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the XI-direction')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
+
       ierr=nf90_def_var(ncid, 'el', nf90_double, varid)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                           'domain length in the ETA-direction')
@@ -379,7 +380,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
       ierr=nf90_put_att(ncid, varid, 'field', 'pn, scalar')
 
-! Longitude-latitude or cartezian coordinates of RHO-points.
+! Longitude-latitude or cartesian coordinates of RHO-points.
 #ifdef SPHERICAL
       varid = nccreate(ncid,'lon_rho',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
@@ -459,6 +460,7 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
             call handle_ierr(ierr, 'wrt_grid spherical')
           endif
         else
+          print *,'spherical var not found'
           call handle_ierr(ierr, 'wrt_grid spherical')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
@@ -470,10 +472,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         if (ierr == nf90_noerr) then
           ierr=nf90_put_var(ncid, varid, xl)
           if (ierr /= nf90_noerr) then
-            call handle_ierr(ierr, 'wrt_grid ')
+            call handle_ierr(ierr, 'wrt_grid xl ')
           endif
         else
-          call handle_ierr(ierr, 'wrt_grid ')
+          call handle_ierr(ierr, 'wrt_grid no xl found')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 
@@ -481,10 +483,10 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
         if (ierr == nf90_noerr) then
           ierr=nf90_put_var(ncid, varid, el)
           if (ierr /= nf90_noerr) then
-            call handle_ierr(ierr, 'wrt_grid ')
+            call handle_ierr(ierr, 'wrt_grid el')
           endif
         else
-          call handle_ierr(ierr, 'wrt_grid ')
+          call handle_ierr(ierr, 'wrt_grid no el found')
         endif
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 #endif
