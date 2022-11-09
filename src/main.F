@@ -75,7 +75,8 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
         if (diag_sync .and. may_day_flag /= 0) goto 99
       enddo
   99  call stop_timers()                 ! summarized among all nodes
-      call wrt_his_ocean_vars(.true.)    ! Emergency history file output
+      if (may_day_flag /=0) 
+     &  call wrt_his_ocean_vars(.true.)  ! Emergency history file output
 C$OMP BARRIER                            ! and broadcasted by "diag"
 C$OMP MASTER                             ! [which sets diag_sync=T to
       call closecdf                      ! signal that "may_day_flag"
