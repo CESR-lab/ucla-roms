@@ -42,6 +42,7 @@
       public adjust_orlanski
       public init_orlanski_tune
       public wrt_rst_ub
+      public get_init_ub
 
       contains
 
@@ -75,8 +76,10 @@
         cflx_west = 0
         allocate(cflx_west_avg(ny))
         cflx_west_avg = 0
-        allocate(ub_west(ny))
-        ub_west = 0.
+        if (.not.allocated(ub_west)) then
+          allocate(ub_west(ny))
+          ub_west = 0.
+        endif
         allocate(ub_west_avg(ny))
         ub_west_avg = 0.
       endif
@@ -86,8 +89,10 @@
         pflx_east = 0
         allocate(cflx_east(ny))
         cflx_east = 0
-        allocate(ub_east(ny))
-        ub_east = 0.
+        if (.not.allocated(ub_east)) then
+          allocate(ub_east(ny))
+          ub_east = 0.
+        endif
       endif
       if (obc_north.and.(.not.north_exchng)) then
         allocate(nc_pflx_n%vdata(nx,1,2))
@@ -285,18 +290,20 @@
 
       call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
+      ! fluxes and ub coefficients are defined as nx, ny sized arrays
+      ! so use method 2 for output (see roms_read_write)
       if (obc_south.and.(.not.south_exchng)) then
-        call ncwrite(ncid,'cf_south',cflx_south_avg(i0:i1),(/1,record /))
-        call ncwrite(ncid,'pf_south',pflx_south_avg(i0:i1),(/1,record /))
-        call ncwrite(ncid,'ub_south',  ub_south_avg(i0:i1),(/1,record /))
+        call ncwrite(ncid,'cf_south',cflx_south_avg,(/bfx,record /))
+        call ncwrite(ncid,'pf_south',pflx_south_avg,(/bfx,record /))
+        call ncwrite(ncid,'ub_south',  ub_south_avg,(/bfx,record /))
       endif
       if (obc_east.and.(.not.east_exchng)) then
 !       call ncwrite(ncid,'ub_east',ub_east(j0:j1),(/1,record /))
       endif
       if (obc_west.and.(.not.west_exchng)) then
-        call ncwrite(ncid,'cf_west',cflx_west_avg(j0:j1),(/1,record /))
-        call ncwrite(ncid,'pf_west',pflx_west_avg(j0:j1),(/1,record /))
-        call ncwrite(ncid,'ub_west',  ub_west_avg(j0:j1),(/1,record /))
+        call ncwrite(ncid,'cf_west',cflx_west_avg,(/ bfy,record /))
+        call ncwrite(ncid,'pf_west',pflx_west_avg,(/ bfy,record /))
+        call ncwrite(ncid,'ub_west',  ub_west_avg,(/ bfy,record /))
       endif
       
       ierr=nf90_close(ncid)    
@@ -367,21 +374,84 @@
       integer,intent(in) :: ncid
       integer,intent(in) :: record
 
+      if (mynode==0) print *,'writing ub in restart file'
       if (tune_init) call init_orlanski_tune
 
       if (obc_south.and.(.not.south_exchng)) then
-        call ncwrite(ncid,'ub_south',ub_south(i0:i1),(/1,record /))
+        call ncwrite(ncid,'ub_south',ub_south,(/bfx,record/))
       endif
       if (obc_north.and.(.not.north_exchng)) then
-        call ncwrite(ncid,'ub_north',ub_north(i0:i1),(/1,record /))
+        call ncwrite(ncid,'ub_north',ub_north,(/bfx,record/))
       endif
       if (obc_east.and.(.not.east_exchng)) then
-        call ncwrite(ncid,'ub_east' ,ub_east(j0:j1) ,(/1,record /))
+        call ncwrite(ncid,'ub_east' ,ub_east ,(/bfy,record/))
       endif
       if (obc_west.and.(.not.west_exchng)) then
-        call ncwrite(ncid,'ub_west' ,ub_west(j0:j1) ,(/1,record /))
+        call ncwrite(ncid,'ub_west' ,ub_west ,(/bfy,record/))
       endif
 
       end subroutine wrt_rst_ub !]
+! ----------------------------------------------------------------------
+      subroutine get_init_ub(ncid,record)  ![
+      ! get initial ub bry coupling coefficients
+      implicit none
+
+      ! input
+      integer,intent(in) :: ncid,record
+
+      ! local
+      integer :: i,j
+      integer :: ierr, varid
+
+      if (mynode==0) print *,'getting ub coefficients'
+      if (obc_south.and.(.not.south_exchng)) then
+        if (.not. allocated(ub_south)) allocate(ub_south(nx))
+        ierr=nf90_inq_varid (ncid, 'ub_south', varid)
+        if (ierr == nf90_noerr) then
+          call ncread(ncid,'ub_south', ub_south,(/bfx,record/))
+        else
+          if (mynode==0) print *,'--WARNING: ub_south'
+     &      ,' not in initial file, setting to zero.'
+          ub_south = 0
+        endif
+      endif
+      if (obc_north.and.(.not.north_exchng)) then
+        if (.not. allocated(ub_north)) allocate(ub_north(nx))
+        ierr=nf90_inq_varid (ncid, 'ub_north', varid)
+        if (ierr == nf90_noerr) then
+          call ncread(ncid,'ub_north', ub_north,(/bfx,record/))
+        else
+          if (mynode==0) print *,'--WARNING: ub_north'
+     &      ,' not in initial file, setting to zero.'
+          ub_north = 0
+        endif
+      endif
+
+      if (obc_east.and.(.not.east_exchng)) then
+        if (.not. allocated(ub_east)) allocate(ub_east(ny))
+        ierr=nf90_inq_varid (ncid, 'ub_east', varid)
+        if (ierr == nf90_noerr) then
+          call ncread(ncid,'ub_east', ub_east,(/bfy,record/))
+        else
+          if (mynode==0) print *,'--WARNING: ub_east'
+     &      ,' not in initial file, setting to zero.'
+          ub_east = 0
+        endif
+      endif
+
+      if (obc_west.and.(.not.west_exchng)) then
+        if (.not. allocated(ub_west)) allocate(ub_west(ny))
+        ierr=nf90_inq_varid (ncid, 'ub_west', varid)
+        if (ierr == nf90_noerr) then
+          call ncread(ncid,'ub_west', ub_west,(/bfy,record/))
+        else
+          if (mynode==0) print *,'--WARNING: ub_west'
+     &      ,' not in initial file, setting to zero.'
+          ub_west = 0
+        endif
+
+      endif
+      
+      end subroutine get_init_ub  !]
 
       end module sponge_tune
