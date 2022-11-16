@@ -67,7 +67,7 @@ c--# define CONST_TRACERS
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
+      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: FX,FE, wrk1
 # ifdef ADV_ISONEUTRAL
@@ -143,7 +143,7 @@ c--#  define ntdf nrhs
       do itrc=1,nt
 
 # ifdef DIAGNOSTICS
-        if (diag_trc) td=itrc2idia(itrc) ! get index of tracer in Tdiag (diagnostics)
+!       if (diag_trc) td=itrc2idia(itrc) ! get index of tracer in Tdiag (diagnostics)
 # endif
 
 # ifdef ADV_ISONEUTRAL
@@ -164,8 +164,11 @@ c--#  define ntdf nrhs
 # include "compute_horiz_tracer_fluxes.h"
 
 # ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &        call set_diags_t_4th_h_adv(k, itrc) ! need 't' before it is updated below
+#  ifndef ADV_ISONEUTRAL
+          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
+            call set_diags_t_4th_h_adv(k, itrc) ! need 't' before it is updated below
+          endif
+#  endif
 # endif
 
             do j=jstr,jend
@@ -178,13 +181,35 @@ c--#  define ntdf nrhs
             enddo                 !-->  discard FX,FE
 
 # ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
-              do j=jstr,jend                                           ! only be for tracers of interest
-                do i=istr,iend
-                  Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
+#  ifdef ADV_ISONEUTRAL
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
+              do j= 1,ny
+                do i=1,nx+1
+                  Tdiag(i,j,k,tadvx,td(itrc)) = FX(i,j)
+                enddo
+              enddo
+              do j= 1,ny+1
+                do i=1,nx
+                  Tdiag(i,j,k,tadvy,td(itrc)) = FE(i,j)
                 enddo
               enddo
             endif
+#  else
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
+              do j= 1,ny
+                do i=1,nx+1
+                  Tdiag(i,j,k,tmixx,td(itrc)) = FX(i,j)
+     &             - Tdiag(i,j,k,tadvx,td(itrc))
+                enddo
+              enddo
+              do j= 1,ny+1
+                do i=1,nx
+                  Tdiag(i,j,k,tmixy,td(itrc)) = FE(i,j)
+     &             - Tdiag(i,j,k,tadvy,td(itrc))
+                enddo
+              enddo
+            endif
+#  endif
 # endif
 
 # ifdef ADV_ISONEUTRAL
@@ -758,10 +783,27 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
      &                                    +FSC(i,j,k2)-FSC(i,j,k1) )
               enddo
             enddo
+            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
+              do j=1,ny
+                do i=1,nx+1
+                  Tdiag(i,j,k,tmixx,td(itrc)) = -FX(i,j)
+                enddo
+              enddo
+              do j=1,ny+1
+                do i=1,nx
+                  Tdiag(i,j,k,tmixy,td(itrc)) = -FE(i,j)
+                enddo
+              enddo
+              do j=1,ny
+                do i=1,nx
+                  Tdiag(i,j,k,tmixz,td(itrc)) = -FSC(i,j,k1)
+                enddo
+              enddo
+            endif
+
           endif   !<-- k > 0
 # endif /* ADV_ISONEUTRAL */
         enddo      !<-- k
-
 
 
 
@@ -774,6 +816,16 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 # endif
 
         do j=jstr,jend
+
+# ifdef DIAGNOSTICS
+          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
+            do k=1,nz
+              do i=istr,iend
+                Tdiag(i,j,k,vmixd,td) = t(i,j,k,nnew,itrc)
+              enddo
+            enddo
+          endif
+# endif
 
 # include "compute_vert_tracer_fluxes.h"
 
@@ -794,15 +846,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
-# ifdef DIAGNOSTICS
-          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want this in loop...
-            do k=1,N
-              do i=istr,iend
-                Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)
-              enddo
-            enddo
-          endif
-# endif
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
@@ -954,13 +997,11 @@ c??         enddo
           enddo           !--> discard FC,WC,CF,DC
 
 # ifdef DIAGNOSTICS
-          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
-            do i=istr,iend                                          ! don't know why I have 2 do's here? can make it one?
-              Tdiag(i,j,N,tmixz,td) = t(i,j,N,nnew,itrc)         ! k+1 is last to change above as loop from N to 1, -1?
-            enddo
-            do k=N-1,1,-1
+          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then 
+            do k=1,nz
               do i=istr,iend
-                Tdiag(i,j,k,tmixz,td) = t(i,j,k,nnew,itrc)       ! k+1 is last to change above as loop from N to 1, -1?
+                Tdiag(i,j,k,vmixd,td(itrc)) = (t(i,j,k,nnew,itrc)
+     &           - Tdiag(i,j,k,vmixd,td(itrc)))/dt
               enddo
             enddo
           endif

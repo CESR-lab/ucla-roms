@@ -24,7 +24,7 @@
       integer, parameter         :: nrpf          =  7        ! total recs per file
 
       logical, parameter, public :: diag_uv       = .true.    ! Momentum diagnostics
-      logical, parameter, public :: diag_trc      = .false.   ! Selected tracers diagnostics
+      logical, parameter, public :: diag_trc      = .true.    ! Selected tracers diagnostics
       logical, parameter, public :: diag_pflx     = .true.    ! Baroclinic pressure fluxes
 
       real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering (in seconds)
@@ -33,8 +33,9 @@
 
 
       !  If diag_trc=.true., select for which tracers diagnostics are desired:
-      logical,dimension(nt) :: trc_diag = .false.
-!     trc_diag(1) = .True.  ! diagnostics for temperature 
+      logical,dimension(nt) :: wrt_t_dia = .true.
+!     wrt_t_dia(1) = .True.  ! diagnostics for temperature 
+!     wrt_t_dia(2) = .True.  ! diagnostics for salinity
 
 
 
