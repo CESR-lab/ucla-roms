@@ -783,6 +783,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
      &                                    +FSC(i,j,k2)-FSC(i,j,k1) )
               enddo
             enddo
+
             if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
               do j=1,ny
                 do i=1,nx+1
@@ -821,7 +822,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
             do k=1,nz
               do i=istr,iend
-                Tdiag(i,j,k,vmixd,td) = t(i,j,k,nnew,itrc)
+                Tdiag(i,j,k,vmixd,td(itrc)) = t(i,j,k,nnew,itrc)
               enddo
             enddo
           endif
@@ -1000,7 +1001,7 @@ c??         enddo
           if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then 
             do k=1,nz
               do i=istr,iend
-                Tdiag(i,j,k,vmixd,td(itrc)) = (t(i,j,k,nnew,itrc)
+                Tdiag(i,j,k,vmixd,td(itrc)) = (Hz(i,j,k)*t(i,j,k,nnew,itrc)
      &           - Tdiag(i,j,k,vmixd,td(itrc)))/dt
               enddo
             enddo

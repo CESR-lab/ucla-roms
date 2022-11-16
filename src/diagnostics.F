@@ -1196,7 +1196,7 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(0:nx+1,0:ny+1,nz,7,2),intent(in) :: trcd
+      real, dimension(0:nx+1,0:ny+1,nz,ntd,ntdia),intent(in) :: trcd
 
       !local
       integer :: it
