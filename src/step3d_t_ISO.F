@@ -57,7 +57,7 @@ c--# define CONST_TRACERS
       use pipe_frc
       use river_frc
       use surf_flux, only: stflx, srflx
-      use tracers, only: iTandS, t, wrt_t_diag
+      use tracers
       use diagnostics
       use climat
       use eos_vars
@@ -67,7 +67,7 @@ c--# define CONST_TRACERS
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k, td
+      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: FX,FE, wrk1
 # ifdef ADV_ISONEUTRAL
@@ -140,11 +140,11 @@ c--#  define ntdf nrhs
 !  (ii) arrays of W-type are computed ahead at k+1 --> k2
 ! (iii) arrays of RHO-type are computed at k -
 
-      do itrc=1,nt
+!     if (mynode==1) then
+!       write(60,*) 't:          ',t(10,10,20,nnew,1)
+!     endif
 
-# ifdef DIAGNOSTICS
-        if (diag_trc) td=itrc2idia(itrc) ! get index of tracer in Tdiag (diagnostics)
-# endif
+      do itrc=1,nt
 
 # ifdef ADV_ISONEUTRAL
         k2=1
@@ -164,8 +164,11 @@ c--#  define ntdf nrhs
 # include "compute_horiz_tracer_fluxes.h"
 
 # ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
-     &        call set_diags_t_4th_h_adv(k, itrc) ! need 't' before it is updated below
+#  ifndef ADV_ISONEUTRAL
+          if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+            call diag_t_adv_hc4(k,itrc)
+          endif
+#  endif
 # endif
 
             do j=jstr,jend
@@ -178,13 +181,50 @@ c--#  define ntdf nrhs
             enddo                 !-->  discard FX,FE
 
 # ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want if in loop
-              do j=jstr,jend                                           ! only be for tracers of interest
-                do i=istr,iend
-                  Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)       ! store UP3 adv in dissipation array temporarily
+#  ifdef ADV_ISONEUTRAL
+            if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+              print *, 'td: ',td(itrc),itrc
+              do j= 1,ny
+                do i=1,nx+1
+                  Tdiag(i,j,k,tadvx,td(itrc)) = FX(i,j)
+                enddo
+              enddo
+              do j= 1,ny+1
+                do i=1,nx
+                  Tdiag(i,j,k,tadvy,td(itrc)) = FE(i,j)
                 enddo
               enddo
             endif
+#  else
+            if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+              do j= 1,ny
+!               do i=1,nx+1
+                do i=1,nx
+!                 Tdiag(i,j,k,tmixx,td(itrc)) = FX(i,j)
+!    &             - Tdiag(i,j,k,tadvx,td(itrc))
+                  Tdiag(i,j,k,tadvx,td(itrc)) = - pm(i,j)*pn(i,j)*
+     &                                    ( FX(i+1,j)-FX(i,j))
+
+                enddo
+              enddo
+!             do j= 1,ny+1
+              do j= 1,ny
+                do i=1,nx
+!                 Tdiag(i,j,k,tmixy,td(itrc)) = FE(i,j)
+!    &             - Tdiag(i,j,k,tadvy,td(itrc))
+                  Tdiag(i,j,k,tadvy,td(itrc)) = - pm(i,j)*pn(i,j)*
+     &                                   (FE(i,j+1)-FE(i,j))
+                enddo
+              enddo
+            endif
+!           if (mynode==1) then
+!            if (k==20) then
+!              write(60,*) 'check: ', t(10,10,20,nnew,1),
+!    &             Tdiag(10,10,20,tadvx,1)+Tdiag(10,10,20,tadvy,1)
+!             stop
+!            endif
+!           endif
+#  endif
 # endif
 
 # ifdef ADV_ISONEUTRAL
@@ -758,26 +798,59 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
      &                                    +FSC(i,j,k2)-FSC(i,j,k1) )
               enddo
             enddo
+
+            if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+              do j=1,ny
+                do i=1,nx+1
+                  Tdiag(i,j,k,tmixx,td(itrc)) = -FX(i,j)
+                enddo
+              enddo
+              do j=1,ny+1
+                do i=1,nx
+                  Tdiag(i,j,k,tmixy,td(itrc)) = -FE(i,j)
+                enddo
+              enddo
+              do j=1,ny
+                do i=1,nx
+                  Tdiag(i,j,k,tmixz,td(itrc)) = -FSC(i,j,k1)
+                enddo
+              enddo
+            endif
+
           endif   !<-- k > 0
 # endif /* ADV_ISONEUTRAL */
         enddo      !<-- k
 
 
 
-
 ! Compute and apply vertical advective fluxes.
 
 # ifdef DIAGNOSTICS
-        if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then
-          call set_diags_t_4th_v_adv(itrc )
+        if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+!         call diag_t_adv_vc4(itrc )
         endif
 # endif
 
+        if (mynode==1) then
+!         write(60,*) 'check 2: ', t(10,10,20,nnew,1)
+        endif
+
         do j=jstr,jend
+
+# ifdef DIAGNOSTICS
+          if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+            do k=1,nz
+              do i=1,nx
+                Tdiag(i,j,k,vmixd,td(itrc)) = t(i,j,k,nnew,itrc)
+              enddo
+            enddo
+          endif
+
+# endif
 
 # include "compute_vert_tracer_fluxes.h"
 
-          do k=1,N
+          do k=1,nz
             do i=istr,iend
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)*pn(i,j)
      &                                              *(FC(i,k)-FC(i,k-1))
@@ -794,15 +867,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
-# ifdef DIAGNOSTICS
-          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then  ! did not want this in loop...
-            do k=1,N
-              do i=istr,iend
-                Tdiag(i,j,k,tmixx,td) = t(i,j,k,nnew,itrc)
-              enddo
-            enddo
-          endif
-# endif
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
@@ -954,16 +1018,15 @@ c??         enddo
           enddo           !--> discard FC,WC,CF,DC
 
 # ifdef DIAGNOSTICS
-          if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag) then ! did not want this in loop...
-            do i=istr,iend                                          ! don't know why I have 2 do's here? can make it one?
-              Tdiag(i,j,N,tmixz,td) = t(i,j,N,nnew,itrc)         ! k+1 is last to change above as loop from N to 1, -1?
-            enddo
-            do k=N-1,1,-1
+          if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then 
+            do k=1,nz
               do i=istr,iend
-                Tdiag(i,j,k,tmixz,td) = t(i,j,k,nnew,itrc)       ! k+1 is last to change above as loop from N to 1, -1?
+                Tdiag(i,j,k,vmixd,td(itrc)) = (Hz(i,j,k)*t(i,j,k,nnew,itrc)
+     &           - Tdiag(i,j,k,vmixd,td(itrc)))/dt
               enddo
             enddo
           endif
+
 # endif
 
 #ifdef CONST_TRACERS
@@ -975,9 +1038,17 @@ c??         enddo
 #endif
         enddo      !<-- j
 
+!       if (mynode==1.and.itrc==1) then
+!           write(60,*) 'sum(rhs),t: ',Hz(10,10,20)*t(10,10,20,nnew,1)
+!    &         ,dt*(Tdiag(10,10,20,vmixd,td(1)) + 
+!    &          Tdiag(10,10,20,tadvx,td(1)) + 
+!    &          Tdiag(10,10,20,tadvy,td(1)) )
+!           stop
+!         endif
+
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 # ifdef DIAGNOSTICS
-!       if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
+!       if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag)
 !    &    call set_diags_t_bc(itrc,td)
 # endif
 
