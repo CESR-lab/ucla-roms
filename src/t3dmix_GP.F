@@ -20,7 +20,7 @@
      &                               FSC,dTdz, dTdx,dTde,dZdx,dZde)
 
       use param
-      use tracers ! , only: t, wrt_t_diag
+      use tracers
       use diagnostics
       use climat
       use grid
@@ -510,7 +510,7 @@ c**  &                                                             )
 # endif /* TS_DIF4 */
 
 # ifdef DIAGNOSTICS
-!     if (diag_trc .and. wrt_t_diag(itrc) .and. calc_diag)
+!     if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag)
 !    &  call set_diags_t_h_mix(itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
 # endif
 
