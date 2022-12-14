@@ -54,26 +54,27 @@
 
 
       real,         allocatable, dimension(:,:)  :: FX4, FY4   ! 4th order advective fluxes to split UP3 = ADV + DISSIP. Called in k loop so only need 2D array for each k
-      real,         allocatable, dimension(:,:)  :: cen2       ! 2nd order centred scheme used to handle boundary and mask.
       real,         allocatable, dimension(:,:)  :: FZ4        ! vertical advective fluxes. u/v only. FX4/FY4 both u/v and tracers.
+
+      real,allocatable, dimension(:,:) :: grd,flx ! work arrays for 4th order advection
 
       ! Tracers: 
       ! --------
 
-      integer,parameter :: ntd = 6   ! number of tracer diag terms
+      integer,parameter :: ntd = 7   ! number of tracer diag terms
       integer,parameter, public ::
      &  tadvx = 1, ! Advection in x-direction
      &  tadvy = 2, ! Advection in y-direction
      &  tadvz = 3, ! Advection in z-direction
      &  tmixx = 4, ! Mixing in x-direction
      &  tmixy = 5, ! Mixing in y-direction
-     &  tmixz = 6  ! Mixing in z-direction
+     &  tmixz = 6, ! Mixing in z-direction
+     &  vmixd = 7  ! Divergence of total vertical fluxes
 
       real,public,allocatable,dimension(:,:,:,:,:) :: Tdiag     ! tracer diagnostic terms
       real,allocatable,dimension(:,:,:,:,:) :: Tdiag_avg ! averages of tracer diagnostic terms
       integer                               :: ntdia     ! number of tracers for which to do diagnostics
-      integer, dimension(nt)  :: diag_tidx = -1  ! index of tracer of selected tracers only
-      integer,public,dimension(nt)  :: itrc2idia = -1  ! inverse translation from itrc to idia
+      integer,public,dimension(nt)          :: td = 0   ! inverse translation from itrc to idia
 
 
       character (len=30),  allocatable, dimension(:) :: tdname
@@ -82,8 +83,8 @@
       character (len=20) :: tunits = ' * m/s   (i.e. dC/dt*dz)'
 
       public set_diags_t_h_mix
-      public set_diags_t_4th_h_adv
-      public set_diags_t_4th_v_adv
+      public diag_t_adv_hc4
+      public diag_t_adv_vc4
 
       ! Netcdf outputting:
       ! -----------------
@@ -154,6 +155,7 @@
       public set_diags_w_at_bc
 # endif /* NHMGDIAG */
 
+      public init_diagnostics 
       public do_diagnostics
       public set_diags_u_4th_adv
       public set_diags_v_4th_adv
@@ -170,7 +172,7 @@
       implicit none
 
       ! local
-      integer :: itrc
+      integer :: itrc,idx
 
       ! Coefficients for exponential smoothing
       alpha = dt / timescale
@@ -190,18 +192,21 @@
       endif
 
       if (diag_trc) then
-        do itrc=1,nt
-          ntdia = 0
-          if (trc_diag(itrc)) then
-            ntdia = ntdia+1           
-            diag_tidx(ntdia)= itrc
-            itrc2idia(itrc) = ntdia
+        idx = 0
+        do itrc = 1,nt
+          if (wrt_t_dia(itrc)) then
+            idx = idx+1
+            td(itrc) = idx
           endif
         enddo
-        allocate(Tdiag(nx,ny,nz,ntd,ntdia) )
-        if (diag_avg) then   
-          allocate(Tdiag_avg(nx,ny,nz,ntd,ntdia) )
+        ntdia = idx
+        allocate(Tdiag(0:nx+1,0:ny+1,nz,ntd,ntdia))
+        Tdiag = 0
+        if (diag_avg) then
+          allocate(Tdiag_avg(0:nx+1,0:ny+1,nz,ntd,ntdia))
+          Tdiag_avg = 0
         endif
+        print *,'td: ',td
       endif
 
       if (diag_pflx) then
@@ -255,12 +260,13 @@
       dxdyi = pn(1:nx,1:ny)*pm(1:nx,1:ny)
 
 
+      allocate( grd( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
+      allocate( flx( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FX4( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FY4( GLOBAL_2D_ARRAY ) )       ! called within k loop so only need 2D slice per k
       allocate( FZ4( GLOBAL_1DX_ARRAY, 0:N ) ) ! both u/v/tracer. vertical flux at z_w level.
       FZ4(:,0) = 0  ! top and bottom vertical fluxes are always zero
       FZ4(:,nz)= 0
-      allocate(cen2( GLOBAL_2D_ARRAY ) )
 
 
       if (mynode==0) print *,'init diagnostics', init_done
@@ -626,9 +632,8 @@
       integer, intent(in) :: itrc
 
       ! local
-      integer :: i,j,k,td
+      integer :: i,j,k
 
-      td=itrc2idia(itrc)
       do k=1,N
         do j=1,ny
           do i=1,nx
@@ -639,172 +644,106 @@
 
       end subroutine set_diags_t_h_mix  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_4th_h_adv(k,itrc )  ![
+      subroutine diag_t_adv_hc4(k,itrc )  ![
       ! compute the horizontal 4th order advection.
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
-
-
-      ![ | T(i-2) | T(i-1) | T(i)   | T(i+1) |
-      !                    ^        ^
-      !                  FlxU(i)  FlxU(i+1)
-      !                   TFX(i)   TFX(i+1)
-      !
-      ! where UFX and TFX are at u-points and T is at rho-points.
-      !
-      ! 4th order (centered) fluxes:
-      !
-      !   TFx(i) = FlxU(i) * ( - T(i-2) + 7T(i-1) + 7T(i) - T(i+1) ) / 12
-      !
-      ! Hence divergence of the fluxes: (u2rho)
-      !
-      !   T_adv_4th(i,j) = -pm*pn*( TFX(i+1,j  ) - TFX(i,j)
-      !                            +TFY(i  ,j+1) - TFY(i,j) )
-      !
-      ! However, need to catch boundary and interior masks. We use:
-      !
-      ! 2nd order centred (cen2(i,j))   = 1/2 ( T(i-1,j) + T(i,j) )
-      !
-      ! 4th order corrector (cor4(i,j)) = - T(i-2,j) + T(i-1,j) + T(i,j) - T(i+1,j)
-      !
-      ! thus:
-      !
-      ! 4th order approx.   = ( 12 cen2 + cor4 * rmask(i-2) * rmask(i+1) ) / 12
-      !
-      ! (region of no mask) = ( - T(i-2,j) + 7T(i-1,j) + 7T(i,j) - T(i+1,j) ) /12
-      !   4th order
-      !
-      ! (boundary or 1 cell = ( T(i-1,j) + T(i,j)) / 2
-      !  away from mask)
-      !   2nd order
-      !
-      !     i-2 i-1  i  i+1
-      !      ^   ^   ^   ^          ### = mask
-      ! a) |###|   |   |   |
-      !                             a) or b) then rmask(i-2) or rmask(i+1) = 0
-      ! b) |   |   |   |###|                 so 2nd order centred.
-      !
-      ! c) |   |###|   |   |
-      !                             c) or d) then FlxU(i,j) = 0, so TFx = 0
-      !
-      ! This relies on rmask set to 0 beyond the physical domain, in init_arrays.
-      !
-      ! Note: JM and I agreed 2nd order centered scheme at boundary and near mask is
-      ! adequate, even though it's possibly not quite what the code does.
-      !]
-
       implicit none
 
       ! inputs
       integer, intent(in) :: k, itrc
 
       ! local
-      integer :: i, j, td
-
-      td=itrc2idia(itrc)
-      do j= 1,ny+1   ! +1 since u2rho averaging for Tdiag(it_h_diss) below
-        do i= 1,nx+1
-
-          ! FX4:
-          cen2(i,j) = t(i-1,j  ,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)        ! 1/2 carried in FX4 calc
-
-          FX4(i,j) = -t(i-2,j  ,k,nrhs,itrc) + t(i-1,j  ,k,nrhs,itrc)        ! temp. use FX4 as cor4 array.
-     &               -t(i+1,j  ,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)
-
-          FX4(i,j) = 0.0833333333333 * FlxU(i,j,k)
-     &             * ( 6 * cen2(i,j) + FX4(i,j)*rmask(i-2,j)*rmask(i+1,j) )  ! FX4 on RHS is cor4
-
-          ! FY4:
-          cen2(i,j) = t(i  ,j-1,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)
-
-          FY4(i,j) = -t(i  ,j-2,k,nrhs,itrc) + t(i  ,j-1,k,nrhs,itrc)        ! temp. use FY4 as cor4 array.
-     &               -t(i  ,j+1,k,nrhs,itrc) + t(i  ,j  ,k,nrhs,itrc)
-
-          FY4(i,j) = 0.0833333333333 * FlxV(i,j,k)
-     &             * ( 6 * cen2(i,j) + FY4(i,j)*rmask(i,j-2)*rmask(i,j+1) )  ! FY4 on RHS is cor4
-
-        enddo
-      enddo
+      integer :: i,j
 
       do j= 1,ny
+        do i= 0,nx+2 
+          grd(i,j) = (t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc))*umask(i,j)
+        enddo
+      enddo
+      ! For non-periodic domains, we extrapolate the gradients at the
+      ! domain boundaries because the buffer is only 1 point wide.
+      if (.not.west_msg_exch) grd(0   ,1:ny) = grd(1   ,1:nx)
+      if (.not.east_msg_exch) grd(nx+2,1:ny) = grd(nx+1,1:nx)
+      do j= 1,ny
+        do i= 0,nx+1
+          grd(i,j) = grd(i+1,j)+grd(i,j)
+        enddo
+        do i= 1,nx+1
+          Flx(i,j)=0.5*( t(i,j,k,nrhs,itrc)+t(i-1,j,k,nrhs,itrc)
+     &            -0.1666666666666667*(grd(i,j)-grd(i-1,j))
+     &                                              )*FlxU(i,j,k)
+          Tdiag(i,j,k,tadvx,td(itrc)) = Flx(i,j)
+        enddo
+      enddo
+      do j= 0,ny+2
         do i= 1,nx
-          Tdiag(i,j,k,tadvx,td) = - ( FX4(i+1,j  )-FX4(i,j) ! pm(i,j)*pn(i,j)*  ! no *dt since rate of flux divergence
-     &                                  +FY4(i  ,j+1)-FY4(i,j) )
-
+          grd(i,j) = (t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc))*vmask(i,j)
+        enddo
+      enddo
+      if (.not.north_msg_exch) grd(1:nx,0   ) = grd(1:nx,1   )
+      if (.not.south_msg_exch) grd(1:nx,ny+2) = grd(1:nx,ny+1)
+      do j= 0,ny+1
+        do i= 1,nx
+          grd(i,j) = grd(i,j+1)+grd(i,j)
+        enddo
+      enddo
+      do j= 1,ny+1
+        do i= 1,nx
+          Flx(i,j)=0.5*( t(i,j,k,nrhs,itrc)+t(i,j-1,k,nrhs,itrc)
+     &            -0.1666666666666667*(grd(i,j)-grd(i,j-1))
+     &                                              )*FlxV(i,j,k)
+          Tdiag(i,j,k,tadvy,td(itrc)) = Flx(i,j)
         enddo
       enddo
 
-      end subroutine set_diags_t_4th_h_adv  !]
+      end subroutine diag_t_adv_hc4  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_t_4th_v_adv(itrc )  ![
+      subroutine diag_t_adv_vc4(itrc)  ![
       ! compute the vertical 4th order advection.
       ! UP3 = adv_4th + dissipation
       ! Hence can also calculate dissipative part = UP3 - adv_4th
-
-      ![
-      !  FlxW = We + Wi (explicit & implicit parts of 'w')
-      !
-      !  FZ4 is at w-points
-      !  Tdiag(it_v_adv) is at rho-point (T)
-      !
-      !  ---- w(i,j,N)   --- (surface)   here w=0
-      !
-      !       T(i,j,N)
-      !
-      !  ---- w(i,j,N-1)
-      !
-      !       .......
-      !
-      !  ---- w(i,j,1)
-      !
-      !       T(i,j,1)
-      !
-      !  ---- w(i,j,0)   --- (bottom)    here w=0
-      !
-      !]
-
       implicit none
 
       ! inputs
-      integer, intent(in) :: itrc
-
+      integer,intent(in) :: itrc
       ! local
-      integer :: i, j, k, idia
-
-      idia = itrc2idia(itrc)
+      integer :: i,j,k
 
       do j= 1,ny   ! FlxW on same vertical axis as tracer, so same loop range.
 
         ! 2nd order: (due to surface/bottom contraints)
-        do k=1,N-1,N-2     ! i.e. do k=1 and k=N-1
+        do k=1,nz-1,nz-2     ! i.e. do k=1 and k=nz-1
           do i= 1,nx
-                                                                               ! r-point z=N
-            FZ4(i,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                         ! w-point z=N-1  <- FZ4(i,j,N-1)
-     &                 * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )       ! r-point z=N-1
+                                                                        
+            FZ4(i,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                  
+     &                 * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )
 
           enddo
         enddo
 
         ! 4th order:
-        do k=2,N-2
+        do k=2,nz-2
           do i= 1,nx
-                                                                               ! r-point z=k+2
-            FZ4(i,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )             ! r-point z=k+1
-     &                 * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)       ! w-point z=k  <- FZ4(i,j,k)
-     &                    -t(i,j,k+2,nrhs,itrc) + 7*t(i,j,k+1,nrhs,itrc) )     ! r-point z=k
-                                                                               ! r-point z=k-1
+                                                                        
+            FZ4(i,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )      
+     &               * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)
+     &                  -t(i,j,k+2,nrhs,itrc) + 7*t(i,j,k+1,nrhs,itrc) )
+                                                                        
           enddo
         enddo
 
-        do k=1,nz
+        ! fluxes at k=0 and k=nz are always zero
+        ! Initialize Tdiag to zero!
+        do k=1,nz-1
           do i= 1,nx
-            Tdiag(i,j,k,tadvz,idia) = - pm(i,j)*pn(i,j)* ( FZ4(i,k) - FZ4(i,k-1) )  ! FZ4 is volume integrated, hence pm*pn to get t*dz?
+            Tdiag(i,j,k,tadvz,td(itrc)) = - FZ4(i,k) 
           enddo
         enddo
 
       enddo     ! <-- j
 
-      end subroutine set_diags_t_4th_v_adv  !]
+      end subroutine diag_t_adv_vc4  !]
 ! ----------------------------------------------------------------------
       subroutine calc_diag_pflux(p) ![
       use coupling
@@ -957,10 +896,10 @@
       integer :: dim,diag, prev_fill_mode
       character(len=99),save  :: fname
 
-      if (.not. init_done) then
-        call init_diagnostics 
-        return
-      endif
+!     if (.not. init_done) then
+!       call init_diagnostics 
+!       return
+!     endif
 
       call calc_diag_avg
 
@@ -981,10 +920,10 @@
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
         if (diag_avg) then
           if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
-!         if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag_avg)
+          if (diag_trc) call wrt_diag_trc(ncid,record,Tdiag_avg)
         else
           if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
-!         if (diag_trc) call wrt_diags_trc(ncid,record,Tdiag)
+          if (diag_trc) call wrt_diag_trc(ncid,record,Tdiag)
         endif
 
         if (diag_pflx)  call wrt_diag_pflx(ncid,record,up_avg,vp_avg)
@@ -1096,31 +1035,38 @@
       if (diag_trc) then
         dimnames = (/'xi_rho','eta_rho','s_rho', 'time'/)
         dimsizes = (/ xi_rho,  eta_rho,  nz,    0/)
-        do it=1,ntdia
-          vname = t_vname(diag_tidx(it)) / / '_advx'
-          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','x-advection')
-          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(diag_tidx(it)) / / '_advy'
-          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','y-advection')
-          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(diag_tidx(it)) / / '_advz'
-          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','z-advection')
-          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(diag_tidx(it)) / / '_mixx'
-          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','x-mixing')
-          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(diag_tidx(it)) / / '_mixy'
-          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','y-mixing')
-          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
-          vname = t_vname(diag_tidx(it)) / / '_mixz'
-          varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-          ierr = nf90_put_att(ncid,varid,'long_name','z-mixing')
-          ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+        do it=1,nt
+          if (wrt_t_dia(it)) then
+           vname = trim(t_vname(it)) // '_advx'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','x-advection')
+           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           vname = trim(t_vname(it)) // '_advy'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','y-advection')
+           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           vname = trim(t_vname(it)) // '_advz'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','z-advection')
+           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           vname = trim(t_vname(it)) // '_mixx'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','x-mixing')
+           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           vname = trim(t_vname(it)) // '_mixy'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','y-mixing')
+           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           vname = trim(t_vname(it)) // '_mixz'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','z-mixing')
+           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           vname = trim(t_vname(it)) // '_vmixd'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name',
+     &               'divergence of vertical fluxes')
+           ierr = nf90_put_att(ncid,varid,'units','C m/s')
+          endif
         enddo
       endif
 
@@ -1176,6 +1122,38 @@
         call ncwrite(ncid,'v_vmx',vd(:,:,:,6),start)
 
       end subroutine wrt_diag_uv  !]
+! ----------------------------------------------------------------------
+      subroutine wrt_diag_trc(ncid,record,trcd)  ![
+      ! Write uv diagnostic vars to file
+
+      use param
+      use nc_read_write
+      implicit none
+
+      !import/export
+      integer, intent(in) :: ncid
+      integer, intent(in) :: record
+      real, dimension(0:nx+1,0:ny+1,nz,ntd,ntdia),intent(in) :: trcd
+
+      !local
+      integer :: it
+      integer,   dimension(4) :: start    ! start vector for writing
+
+      do it = 1,nt
+        if (wrt_t_dia(it)) then
+          start = (/1, 1, 1, record/)
+
+          call ncwrite(ncid,trim(t_vname(it))//'_advx' ,trcd(i0:i1,j0:j1,:,1,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_advy' ,trcd(i0:i1,j0:j1,:,2,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_advz' ,trcd(i0:i1,j0:j1,:,3,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_mixx' ,trcd(i0:i1,j0:j1,:,4,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_mixy' ,trcd(i0:i1,j0:j1,:,5,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_mixz' ,trcd(i0:i1,j0:j1,:,6,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_vmixd',trcd(i0:i1,j0:j1,:,7,td(it)),start)
+        endif
+      enddo
+          
+      end subroutine wrt_diag_trc  !]
 ! ----------------------------------------------------------------------
       subroutine wrt_diag_pflx(ncid,record,up,vp)  ![
       ! Write pressure fluxes

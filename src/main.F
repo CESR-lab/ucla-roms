@@ -97,6 +97,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use scalars
       use analytical
       use sponge_tune
+      use diagnostics
 
       implicit none
 
@@ -139,6 +140,11 @@ C$OMP BARRIER
         call init_arrays(tile,my_first)  ! global arrays (most of them
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
+
+
+#ifdef DIAGNOSTICS
+      call init_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
+#endif
 
 #ifdef NHMG
       call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)

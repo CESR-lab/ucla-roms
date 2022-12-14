@@ -21,6 +21,7 @@
 #  define SOLVE3D
 #  define UV_COR
 #  define UV_ADV
+c--#  define ADV_ISONEUTRAL
 
 #  define CURVGRID
 #  define SPHERICAL
