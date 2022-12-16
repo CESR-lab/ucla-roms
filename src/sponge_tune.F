@@ -54,9 +54,9 @@
       ! local
       integer :: i
 
-      if (.not.diag_pflx) then
-        if(mynode==0) print *,'For Orlanski tuning,'
-        if(mynode==0) print *,'pflx diagnostics must be turned on!'
+      if (.not.diag_pflx.and.mynode==0) then
+        print *,'For Orlanski tuning,'
+        print *,'pflx diagnostics must be turned on!'
         stop
       endif
 

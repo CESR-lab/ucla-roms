@@ -3,12 +3,13 @@
 # define DUKO_2001
 
 
-      subroutine rho_eos (tile)
+      subroutine rho_eos
       use param
       use hidden_mpi_vars
       use private_scratch
       implicit none
-      integer tile
+      integer,save :: tile=0
+
 # include "compute_tile_bounds.h"
 # if defined NONLIN_EOS && !defined SPLIT_EOS 
       call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2))

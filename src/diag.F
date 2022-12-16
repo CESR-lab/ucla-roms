@@ -28,13 +28,14 @@ c--#define MAX_BY_VERT_CFL_ONLY
 #define REPORT_POTEN_ENRG
 
 
-      subroutine diag(tile)
+      subroutine diag
       use param
       use hidden_mpi_vars
       use private_scratch
       use scalars
       implicit none
-      integer tile,   i,j
+      integer   i,j
+      integer,save:: tile=0
 
 #include "compute_tile_bounds.h"
 

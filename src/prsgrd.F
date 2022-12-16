@@ -1,12 +1,12 @@
 #include "cppdefs.opt"
 #ifdef SOLVE3D
 
-      subroutine prsgrd(tile)
+      subroutine prsgrd
       use param
       use hidden_mpi_vars
       use private_scratch
       implicit none
-      integer tile
+      integer,save:: tile=0
 
 # include "compute_tile_bounds.h"
       call prsgrd_tile(istr,iend,jstr,jend,  A3d(1,1),A3d(1,2),
