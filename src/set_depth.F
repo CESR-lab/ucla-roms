@@ -166,13 +166,13 @@
 
 
 
-      subroutine set_HUV(tile)
+      subroutine set_HUV
 
       use param
       use hidden_mpi_vars
 
       implicit none
-      integer tile
+      integer,save:: tile=0
 # include "compute_tile_bounds.h"
       call set_HUV_tile (istr,iend,jstr,jend)
       end

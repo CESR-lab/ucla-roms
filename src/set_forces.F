@@ -1,6 +1,6 @@
 #include "cppdefs.opt"
 
-      subroutine set_forces (tile)
+      subroutine set_forces
 
 ! Using either data read from netCDF files or created analytically,
 ! prepare surface and bottom boundary fluxes as well as relevant
@@ -51,7 +51,8 @@
 
 
       real  tmid
-      integer tile, ierr
+      integer ierr
+      integer,save:: tile=0
 
 #include "compute_tile_bounds.h"
 

@@ -141,7 +141,6 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
-
 #ifdef DIAGNOSTICS
       call init_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
 #endif
@@ -273,14 +272,14 @@ C$OMP BARRIER
 
 CR      write(*,*)  ' -4' MYID
       do tile=my_tile_range
-        call set_HUV(tile)
+        call set_HUV
       enddo
 C$OMP BARRIER
 CR      write(*,*)  ' -3' MYID
 
       do tile=my_tile_range
-        call omega(tile)
-        call rho_eos(tile)
+        call omega
+        call rho_eos
       enddo
 C$OMP BARRIER
 CR      write(*,*)  ' -2' MYID
@@ -407,28 +406,26 @@ C$OMP END MASTER
 #endif
 
 #ifdef SOLVE3D
-      do tile=my_tile_range            ! interpolate forcing
-        call set_forces(tile)          ! data to model time and
-# if defined TIDES
-        call set_tides(tile)           ! compute surface fluxes.
-# endif
-       !!! move these to the end of the time-step and initialization
-        call    rho_eos(tile)
-        call    set_HUV(tile)
+                                     ! interpolate forcing
+      call set_forces                ! data to model time n+1/2
 
-!       if (mynode==0) print *,'doing diag'
-        call       diag(tile)
-!       if (mynode==0) print *,'returning from diag'
-      enddo
-C$OMP BARRIER
+      ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
+      call rho_eos
+
+      ! Computes horizontal fluxes, using nrhs => time n
+      call set_HUV
+
+      call diag
 
 # ifdef WEC
       call  wec_forces
 # endif
 
-       !!! move these to the end of the time-step and initialization
+      ! Computes vertical flux, using Flxu,Flxv computed in set_HUV
+      ! Here, omega corresponds to time n
+      call omega
+
       do tile=my_tile_range
-        call omega(tile)
 # if defined ANA_VMIX
         call ana_vmix(tile)
 # elif defined LMD_MIXING
@@ -437,32 +434,35 @@ C$OMP BARRIER
         call bvf_mix(tile)
 # endif
       enddo
-C$OMP BARRIER
 
       ! nrhs points to u/v at time level n
       do tile=my_tile_range
-        call     prsgrd(tile)
+        call prsgrd
         call pre_step3d(tile)  ! u is m/s here
       enddo
+      !! nnew ==n+1/2  
+
 
       call calc_avg_ocean_vars ! call here not wrt_his else
                                ! rho, omega and w will change
       do tile=my_tile_range
+        !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
+        !! set_HUV1 works with nnew, which here is time n+1/2
+        ! It's using the Hz from time n though
+        ! Look into this to understand what it does
         call set_HUV1(tile)
       enddo
 C$OMP BARRIER
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING
 
-      do tile=my_tile_range
-        call omega(tile)
-        call rho_eos(tile)
-      enddo
-C$OMP BARRIER
+      !! nnew = n+1
+      call omega
+      call rho_eos   !!! use the right time index
 
       ! Corrector step
       do tile=my_tile_range
-        call     prsgrd(tile)
+        call prsgrd
         call step3d_uv1(tile)  ! update u/v(nnew) with dt*ru/rv
 
 #  ifdef UV_VIS2
@@ -547,7 +547,7 @@ C$OMP BARRIER
       enddo                              ! equations: finalize
 C$OMP BARRIER                            ! time step for momenta
       do tile=my_tile_range              ! and tracers.
-        call omega(tile)
+        call omega
         call step3d_t (tile)
 # if defined TS_DIF2 || defined TS_DIF4
 !       if (split_bc) then
@@ -555,7 +555,7 @@ C$OMP BARRIER                            ! time step for momenta
 !         call t3dmix(t_fast,diff2_fast)
 !       else
 !         call t3dmix(t,diff2)
-          call t3dmix(tile)
+          call t3dmix
 !       endif
 # endif
       enddo

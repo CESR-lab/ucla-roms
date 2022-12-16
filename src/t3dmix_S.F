@@ -1,15 +1,16 @@
 #include "cppdefs.opt"
 #if defined SOLVE3D && ( defined TS_DIF2 || defined TS_DIF4 )
  
-      subroutine t3dmix (tile)
+      subroutine t3dmix
       use param
       use hidden_mpi_vars
       use private_scratch
       implicit none
-      integer tile, itrc
+      integer,save:: tile=0
+      integer itrc
 
 # include "compute_tile_bounds.h"
-      do itrc=1,NT
+      do itrc=1,nt
         call t3dmix_tile (istr,iend,jstr,jend, itrc, A2d(1,1),
      &                                     A2d(1,2), A2d(1,3))
       enddo
@@ -36,7 +37,7 @@
 
 # include "compute_auxiliary_bounds.h"
 
-      do k=1,N
+      do k=1,nz
  
 # ifdef TS_DIF2
 
@@ -49,9 +50,6 @@
             FX(i,j)=0.25*(diff2(i,j,itrc)+diff2(i-1,j,itrc))
      &                   *pmon_u(i,j)*(Hz(i,j,k)+Hz(i-1,j,k))*(
      &                     t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &                          -tclm(i,j,k,itrc)+tclm(i-1,j,k,itrc)
-#  endif
      &                                                              )
 #  ifdef MASKING
      &                                                   *umask(i,j)
@@ -63,9 +61,6 @@
             FE(i,j)=0.25*(diff2(i,j,itrc)+diff2(i,j-1,itrc))
      &                     *pnom_v(i,j)*(Hz(i,j,k)+Hz(i,j-1,k))*(
      &                      t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &                          -tclm(i,j,k,itrc)+tclm(i,j-1,k,itrc)
-#  endif
      &                                                              )
 #  ifdef MASKING
      &                                                   *vmask(i,j)
@@ -83,6 +78,7 @@
           enddo
         enddo
 # endif /* TS_DIF2 */
+
 # ifdef TS_DIF4
 #  ifdef EW_PERIODIC
       imin=istr-1
@@ -128,9 +124,6 @@
           do i=imin,imax+1
             FX(i,j)=pmon_u(i,j)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))*(
      &                      t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &                          -tclm(i,j,k,itrc)+tclm(i-1,j,k,itrc)
-#  endif
      &                                                              )
 #  ifdef MASKING
      &                                                   *umask(i,j)
@@ -144,9 +137,6 @@
           do i=imin,imax
             FE(i,j)=pnom_v(i,j)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))*(
      &                      t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &                         -tclm(i,j,k,itrc)+tclm(i,j-1,k,itrc)
-#  endif
      &                                                            )
 #  ifdef MASKING
      &                                                 *vmask(i,j)
