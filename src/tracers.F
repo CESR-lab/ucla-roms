@@ -215,7 +215,7 @@
       integer :: itrc
 
       do itrc=1,iTandS+nt_passive
-        if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nstp,itrc),start)
+        if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nnew,itrc),start)
       enddo
 
       end subroutine wrt_his_trc  !]

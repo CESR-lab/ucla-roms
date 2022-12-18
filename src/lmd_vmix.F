@@ -2,17 +2,19 @@
 #if defined SOLVE3D && defined LMD_MIXING
 # define SMOOTH_RIG  /* local Ri number smoothing */
 
-      subroutine lmd_vmix (tile)
+      subroutine lmd_vmix(tind)
       use param
       use hidden_mpi_vars
       use private_scratch
       implicit none
-      integer tile
+      integer,save :: tile=0
+      integer      :: tind
 
 # include "compute_tile_bounds.h"
       call lmd_vmix_tile (istr,iend,jstr,jend,  A3d(1,1), A3d(1,2),
      &                                           A3d(1,3), A3d(1,4),
-     &                                 A2d(1,1), A2d(1,2), A2d(1,3))
+     &                                 A2d(1,1), A2d(1,2), A2d(1,3),
+     &                                                         tind)
 # if defined LMD_KPP || defined LMD_BKPP
       call lmd_kpp_tile  (istr,iend,jstr,jend,  A3d(1,1),  A3d(1, 2),
      &                                                     A3d(1, 3),
@@ -21,12 +23,13 @@
      &                    A2d(1, 5), A2d(1, 6), A2d(1, 7), A2d(1, 8),
      &                    A2d(1, 9), A2d(1,10), A2d(1,11), A2d(1,12),
      &                    A2d(1,13), A2d(1,14), A2d(1,15), A2d(1,16),
-     &                    A2d(1,17), A2d(1,18), iA2d(1,1), iA2d(1,2))
+     &                    A2d(1,17), A2d(1,18), iA2d(1,1), iA2d(1,2),
+     &                                                          tind)
 # endif
       end
 
       subroutine lmd_vmix_tile (istr,iend,jstr,jend, Kv,Kt,Ks, Rig,
-     &                                                   FX,FE,FE1)
+     &                                              FX,FE,FE1,tind)
 
 ! Compute vertical mixing coefficients for momentum and tracers at the
 ! ocean interior using the Large, McWilliams, and Doney (1994) mixing
@@ -50,6 +53,7 @@
 
       implicit none
 
+      integer  :: tind
       integer istr,iend,jstr,jend, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv,Kt,Ks, Rig
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE,FE1
@@ -93,7 +97,7 @@
 # endif
 
 # ifdef LMD_RIMIX
-#  define tind nstp
+c----#  define tind nstp
 #  ifdef SMOOTH_RIG
 #   ifdef EW_PERIODIC
 #    define I_EXT_RANGE istr-1,iend+1

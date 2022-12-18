@@ -8,7 +8,8 @@
      &                         ustar, Bo,Bosol, hbl,bbl, FX,FE,FE1,
      &                         Cr,FC, wrk1,wrk2,
      &                         Gm1,dGm1dS,  Gt1,dGt1dS,  Gs1,dGs1dS,
-     &                                                   kbls, kmo)
+     &                                                   kbls, kmo,
+     &                                                         tind)
 
       use param
       use wec_frc
@@ -33,6 +34,7 @@
      &                               Gm1,dGm1dS, Gt1,dGt1dS, Gs1,dGs1dS
       integer, dimension(PRIVATE_1D_SCRATCH_ARRAY) :: kbls, kmo
      &                                                    , kbbl
+      integer :: tind
 
       real, parameter ::
       ! Ricr - chosen as 0.15 by JM & PD 2020-09
@@ -66,7 +68,7 @@
 
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb
 
-# define tind nstp
+c---# define tind nstp
 
 # ifdef SMOOTH_HBL
       integer imin,imax,jmin,jmax

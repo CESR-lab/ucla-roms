@@ -252,7 +252,6 @@ CR      write(*,*) ' -5' MYID
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
 
-!     call wrt_his_ocean_vars
 
 #ifdef SOLVE3D
       do tile=my_tile_range       ! recompute three-dimensional S-
@@ -277,11 +276,9 @@ CR      write(*,*)  ' -4' MYID
 C$OMP BARRIER
 CR      write(*,*)  ' -3' MYID
 
-      do tile=my_tile_range
-        call omega
-        call rho_eos
-      enddo
-C$OMP BARRIER
+      call omega
+      call rho_eos(nrhs)
+
 CR      write(*,*)  ' -2' MYID
 #endif
 
@@ -322,6 +319,7 @@ CR      write(*,*) ' -1' MYID
 ! just above.
 
 !     call set_global_ij_SW_NE_corners
+      call wrt_his_ocean_vars
 
 
 C$OMP MASTER
@@ -406,30 +404,28 @@ C$OMP END MASTER
 #endif
 
 #ifdef SOLVE3D
-                                     ! interpolate forcing
-      call set_forces                ! data to model time n+1/2
+      ! Interpolate forcing data to model time n+1/2
+      call set_forces
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
-      call rho_eos
+      call rho_eos(nrhs)
 
       ! Computes horizontal fluxes, using nrhs => time n
+      ! Hz is computed by set_depth
       call set_HUV
 
       call diag
 
-# ifdef WEC
-      call  wec_forces
-# endif
-
       ! Computes vertical flux, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
+      ! Should be already available from previous time-step
       call omega
 
       do tile=my_tile_range
 # if defined ANA_VMIX
         call ana_vmix(tile)
 # elif defined LMD_MIXING
-        call lmd_vmix(tile)
+        call lmd_vmix(nstp)
 # elif defined BVF_MIXING
         call bvf_mix(tile)
 # endif
@@ -457,8 +453,9 @@ C$OMP BARRIER
       nrhs=3 ; nnew=3-nstp   !!! WARNING
 
       !! nnew = n+1
+      !! nrhs = n+1/2
       call omega
-      call rho_eos   !!! use the right time index
+      call rho_eos(nrhs)  !!! use the right time index
 
       ! Corrector step
       do tile=my_tile_range
@@ -491,7 +488,7 @@ C$OMP BARRIER
       ! wrt_***_ocean_vars are called here, in the middle of a roms_step, because
       ! 'rho', 'Akv', etc have only just been computed for step 'n'.
       ! whereas, u & ubar, etc, remain unchanged from the end of the previous step
-      call wrt_his_ocean_vars
+!     call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
       call wrt_rst_ocean_vars
 
@@ -542,6 +539,7 @@ C$OMP BARRIER
 #ifdef SOLVE3D
       enddo    ! <-- iif
 
+      ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
       do tile=my_tile_range              ! Continue solution of
         call step3d_uv2(tile)            ! the three-dimensional
       enddo                              ! equations: finalize
@@ -561,13 +559,23 @@ C$OMP BARRIER                            ! time step for momenta
       enddo
 
 
-C$OMP BARRIER
+      ! at this point, u,v,w and tracers are up to n+1
+      ! rho, omega, and fluxes are at n+1/2
+
+      call rho_eos(nnew)
+!     call lmd_vmix(nnew)
+
+      time=start_time+dt*float(iic) ! n+1
+      tdays=time*sec2day
+      call wrt_his_ocean_vars
+
+
+
 #endif /* SOLVE3D */
 
 #ifdef SPONGE_TUNE
       if (ub_tune) call adjust_orlanski
 #endif
-!     if (mynode==0) print *,'finishing step'
 
 
   99  return

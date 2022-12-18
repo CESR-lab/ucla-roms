@@ -3,26 +3,27 @@
 # define DUKO_2001
 
 
-      subroutine rho_eos
+      subroutine rho_eos(tidx)
       use param
       use hidden_mpi_vars
       use private_scratch
       implicit none
+      integer, intent(in) :: tidx
       integer,save :: tile=0
 
 # include "compute_tile_bounds.h"
 # if defined NONLIN_EOS && !defined SPLIT_EOS 
-      call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2))
+      call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2),tidx)
 # else
-      call rho_eos_tile (istr,iend,jstr,jend)
+      call rho_eos_tile (istr,iend,jstr,jend,tidx)
 # endif
       end
 
 
 # if defined NONLIN_EOS && !defined SPLIT_EOS 
-      subroutine rho_eos_tile (istr,iend,jstr,jend, K_up,K_dw)
+      subroutine rho_eos_tile (istr,iend,jstr,jend, K_up,K_dw,tidx)
 # else
-      subroutine rho_eos_tile (istr,iend,jstr,jend)
+      subroutine rho_eos_tile (istr,iend,jstr,jend,tidx)
 # endif
 
 ! Compute density anomaly from T,S via Equation Of State (EOS) for
@@ -128,6 +129,9 @@
       use scalars
 
       implicit none
+
+      integer, intent(in) :: tidx
+
       integer istr,iend,jstr,jend, i,j,k
 # ifdef NONLIN_EOS
       real Ts,Tt,sqrtTs, dr00, K0
@@ -188,9 +192,9 @@
 # ifdef NONLIN_EOS
         do k=1,N                                       ! NONLINEAR
           do i=istrR,iendR                             !  EQUATION
-            Tt=t(i,j,k,nrhs,itemp)                     !  OF STATE
+            Tt=t(i,j,k,tidx,itemp)                     !  OF STATE
 #  ifdef SALINITY
-            Ts=t(i,j,k,nrhs,isalt) ; sqrtTs=sqrt(max(0.,Ts))
+            Ts=t(i,j,k,tidx,isalt) ; sqrtTs=sqrt(max(0.,Ts))
 #  endif
             rho1(i,j,k)=( dr00 +Tt*( r01+Tt*( r02+Tt*( r03+Tt*(
      &                                            r04+Tt*r05 ))))
@@ -296,15 +300,15 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
         do k=1,N
           do i=istrR,iendR
 #  ifdef SPLIT_EOS
-            rho1(i,j,k)=cff -Tcoef*t(i,j,k,nrhs,itemp) 
+            rho1(i,j,k)=cff -Tcoef*t(i,j,k,tidx,itemp) 
 #   ifdef SALINITY
-     &                      +Scoef*t(i,j,k,nrhs,isalt)
+     &                      +Scoef*t(i,j,k,tidx,isalt)
 #   endif
             qp1(i,j,k)=0.
 #  else
-            rho(i,j,k)=cff  -Tcoef*t(i,j,k,nrhs,itemp)
+            rho(i,j,k)=cff  -Tcoef*t(i,j,k,tidx,itemp)
 #   ifdef SALINITY
-     &                      +Scoef*t(i,j,k,nrhs,isalt)
+     &                      +Scoef*t(i,j,k,tidx,isalt)
 #   endif
 #  endif
 
@@ -378,8 +382,8 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
         do k=1,N
           do i=istrR,iendR
             rho1(i,j,k)=rho1(i,j,k) +cff*(
-     &            f_XI(i,j)*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
-     &          -f_ETA(i,j)*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
+     &            f_XI(i,j)*(v(i,j,k,tidx)+v(i,j+1,k,tidx))
+     &          -f_ETA(i,j)*(u(i,j,k,tidx)+u(i+1,j,k,tidx))
      &                                                    )
           enddo
         enddo
