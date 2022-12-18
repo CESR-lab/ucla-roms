@@ -266,6 +266,8 @@
          output_time_his = output_time_his + dt   ! only start count after first timestep
       endif
 
+!     output_time_his = output_time_his + dt  
+
 
       if (output_time_his>=output_period_his.or.present(blowup) ) then
 
@@ -298,8 +300,8 @@
 ! wrt_his called at the middle of next timestep as some variables only calculated there for t=n.
 
         start(3)=1; start(4)=rec_his
-        if (wrt_U) call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
-        if (wrt_V) call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
+        if (wrt_U) call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nnew),start)
+        if (wrt_V) call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nnew),start)
 
         call wrt_his_trc(ncid,start)                              ! tracer variables
 
@@ -314,9 +316,9 @@
           do k=0,N
             do j=0,Mm+1
               do i=0,Lm+1
-!               work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
+                work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
                 ! Implicit omega only
-                work(i,j,k)=pm(i,j)*pn(i,j)*Wi(i,j,k)
+!               work(i,j,k)=pm(i,j)*pn(i,j)*Wi(i,j,k)
               enddo
             enddo
           enddo
