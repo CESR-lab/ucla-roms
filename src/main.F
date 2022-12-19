@@ -98,6 +98,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use analytical
       use sponge_tune
       use diagnostics
+      use boundary
 
       implicit none
 
@@ -216,15 +217,11 @@ CR      write(*,*) ' -6' MYID
 # endif
 
 #ifdef ANA_INITIAL
-      do tile=my_tile_range            ! Set initial conditions for
-        call set_forces(tile)          ! model prognostic variables,
-      enddo                            ! either analytically or read
-C$OMP BARRIER                          ! from netCDF file.  Note that
-      do tile=my_tile_range            ! Set initial conditions for
-        call ana_init(tile)            ! may require surface forcing
-      enddo                            ! either analytically or read
-C$OMP BARRIER                          ! so call forces first.
-      if (nrrec > 0) then              ! Also note that ana_init may
+                                    ! Set initial conditions for
+      call set_forces               ! model prognostic variables,
+      call ana_init(0)              ! may require surface forcing
+                                    ! either analytically or read
+      if (nrrec > 0) then 
 #endif
 #ifdef EXACT_RESTART
 C$OMP MASTER                           ! setup environmental variables
@@ -367,14 +364,15 @@ C$OMP END MASTER
       use ocean_vars
       use basic_output
       use dimensions
+      use boundary
 
       implicit none
-      integer trd, tile, my_first, my_last, range
+!     integer trd, tile, my_first, my_last, range
 
-      trd=proc(2)
-      range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
-      my_first=trd*range
-      my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
+!     trd=proc(2)
+!     range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
+!     my_first=trd*range
+!     my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
 
       !! Examine all outputs and try to move these to the end of the timestep, while collecting 
       !! Diagnostic terms along the way during the corrector step.
@@ -398,15 +396,13 @@ C$OMP END MASTER
       time=start_time+dt*float(iic-ntstart) !<-- corresp. to "nstp"
       tdays=time*sec2day
 
-#ifdef SOLVE3D
       nstp=1+mod(iic-ntstart,2)
       nrhs=nstp ; nnew=3
-#endif
 
-#ifdef SOLVE3D
       ! Interpolate forcing data to model time n+1/2
       ! get_frc (both versions work with tdays, adding 0.5*dt)
       call set_forces
+      call set_bry_all
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
       call rho_eos(nrhs)
@@ -422,34 +418,27 @@ C$OMP END MASTER
       ! Should be already available from previous time-step
       call omega
 
-      do tile=my_tile_range
 # if defined ANA_VMIX
-        call ana_vmix(tile)
+      call ana_vmix(0)
 # elif defined LMD_MIXING
-        call lmd_vmix(nstp)
+      call lmd_vmix(nstp)
 # elif defined BVF_MIXING
-        call bvf_mix(tile)
+      call bvf_mix(0)
 # endif
-      enddo
 
       ! nrhs points to u/v at time level n
-      do tile=my_tile_range
-        call prsgrd
-        call pre_step3d(tile)  ! u is m/s here
-      enddo
+      call prsgrd
+      call pre_step3d(0)  ! u is m/s here
       !! nnew ==n+1/2  
 
 
       call calc_avg_ocean_vars ! call here not wrt_his else
                                ! rho, omega and w will change
-      do tile=my_tile_range
-        !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
-        !! set_HUV1 works with nnew, which here is time n+1/2
-        ! It's using the Hz from time n though
-        ! Look into this to understand what it does
-        call set_HUV1(tile)
-      enddo
-C$OMP BARRIER
+      !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
+      !! set_HUV1 works with nnew, which here is time n+1/2
+      ! It's using the Hz from time n though
+      ! Look into this to understand what it does
+      call set_HUV1(0)
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING
 
@@ -459,22 +448,18 @@ C$OMP BARRIER
       call rho_eos(nrhs)  !!! use the right time index
 
       ! Corrector step
-      do tile=my_tile_range
-        call prsgrd
-        call step3d_uv1(tile)  ! update u/v(nnew) with dt*ru/rv
+      call prsgrd
+      call step3d_uv1(0)  ! update u/v(nnew) with dt*ru/rv
 
 #  ifdef UV_VIS2
-!       if (split_bc) then
-!          call visc3d(u_slow,v_slow,visc_slow)
-!          call visc3d(u_fast,v_fast,visc_fast)
-!       else
-          !call visc3d(u,v,visc3d)
-           call visc3d(tile)
-!       endif
+!     if (split_bc) then
+!        call visc3d(u_slow,v_slow,visc_slow)
+!        call visc3d(u_fast,v_fast,visc_fast)
+!     else
+        !call visc3d(u,v,visc3d)
+        call visc3d(0)
+!     endif
 #  endif
-      enddo
-C$OMP BARRIER
-#endif  /* SOLVE3D */
 
 ! Output block: write restart/history files.
 !======= ====== ===== =============== ======
@@ -495,69 +480,30 @@ C$OMP BARRIER
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
-#ifdef SOLVE3D
       do iif=1,nfast
-#endif
-#define FORW_BAK
-#ifdef FORW_BAK
-        kstp=knew                      ! This might look a bit silly,
-        knew=kstp+1                    ! because both branches of this
-        if (knew > 4) knew=1           ! "if" statement are identical.
-        if (mod(knew,2) == 0) then     ! Nevertheless, it makes sense,
-          do tile=my_tile_range        ! since mpc will reverse one of
-# ifndef SOLVE3D
-            call set_forces(tile)      ! these loops to make zig-zag
-# endif
-            call     step2d(tile)      ! tile-processing sequence.
-          enddo
-C$OMP BARRIER
-        else
-          do tile=my_tile_range
-# ifndef SOLVE3D
-            call set_forces(tile)
-# endif
-            call     step2d(tile)
-          enddo
-C$OMP BARRIER
-        endif
-#else
+
         kstp=knew
-        knew=3
-        do tile=my_tile_range
-# ifndef SOLVE3D
-          call set_forces(tile)
-# endif
-          call     step2d(tile)
-        enddo
-C$OMP BARRIER
-        knew=3-kstp
-        do tile=my_tile_range
-           call step2d(tile)
-        enddo
-        if (mynode==0) print *,'zmax: ',maxval(zeta)
-C$OMP BARRIER
-#endif
-#ifdef SOLVE3D
+        knew=kstp+1
+        if (knew > 4) knew=1
+
+        call step2d(0) 
+
       enddo    ! <-- iif
 
       ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
-      do tile=my_tile_range              ! Continue solution of
-        call step3d_uv2(tile)            ! the three-dimensional
-      enddo                              ! equations: finalize
-C$OMP BARRIER                            ! time step for momenta
-      do tile=my_tile_range              ! and tracers.
-        call omega
-        call step3d_t (tile)
+      call step3d_uv2(0)   
+
+      call omega
+      call step3d_t(0)
 # if defined TS_DIF2 || defined TS_DIF4
 !       if (split_bc) then
 !         call t3dmix(t_slow,diff2_slow)
 !         call t3dmix(t_fast,diff2_fast)
 !       else
 !         call t3dmix(t,diff2)
-          call t3dmix
+      call t3dmix
 !       endif
 # endif
-      enddo
 
 
       ! at this point, u,v,w and tracers are up to n+1
@@ -570,9 +516,6 @@ C$OMP BARRIER                            ! time step for momenta
       tdays=time*sec2day
       call wrt_his_ocean_vars
 
-
-
-#endif /* SOLVE3D */
 
 #ifdef SPONGE_TUNE
       if (ub_tune) call adjust_orlanski

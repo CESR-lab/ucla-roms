@@ -49,7 +49,7 @@
                      && ( defined M2_FRC_BRY || defined Z_FRC_BRY || \
                           defined M3_FRC_BRY || defined T_FRC_BRY )
 
-      public :: set_bry_all_tile
+      public :: set_bry_all
 
 #endif
 
@@ -239,189 +239,179 @@
                      && ( defined M2_FRC_BRY || defined Z_FRC_BRY || \
                           defined M3_FRC_BRY || defined T_FRC_BRY )
 
-      subroutine set_bry_all_tile (istr,iend,jstr,jend, ierr)  ![
+!     subroutine set_bry_all_tile (istr,iend,jstr,jend, ierr)  ![
+      subroutine set_bry_all  ![
       use param
       use scalars
       implicit none
 
-      integer :: istr,iend,jstr,jend, ierr
-      integer :: imin,imax,jmin,jmax, it1,it2, k, itrc, j , i
+!     integer :: istr,iend,jstr,jend, ierr
+!     integer :: imin,imax,jmin,jmax, it1,it2, k, itrc, j , i
+      integer :: itrc
 
-      logical :: need_bry
-      real    :: tmid, cff,cff1,cff2
+!     logical :: need_bry
+!     real    :: tmid, cff,cff1,cff2
 
-      need_bry=.false.
+!     need_bry=.false.
                                   ! NOTE: Temporal interpolation of
-      imin=istr                   ! BRY forcing variables is done over
+!     imin=istr                   ! BRY forcing variables is done over
 # ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then      ! non-standard ranges of spatial
+!     if (WESTERN_EDGE) then      ! non-standard ranges of spatial
 #  ifdef OBC_WEST
-        need_bry=.true.           ! indices which is motivated by the
+!       need_bry=.true.           ! indices which is motivated by the
 #  endif
-        imin=istr-1               ! desire to avoid using MPI calls
-      endif                       ! to exchange ghost points for BRY
+!       imin=istr-1               ! desire to avoid using MPI calls
+!     endif                       ! to exchange ghost points for BRY
 # elif defined EXCH_EAST_WEST
-      if (WEST_EXCHNG) then       ! arrays, while, at the same time,
-        imin=istr-1               ! having only a single row of ghost
-      endif                       ! points (so the standard "extended"
+!     if (WEST_EXCHNG) then       ! arrays, while, at the same time,
+!       imin=istr-1               ! having only a single row of ghost
+!     endif                       ! points (so the standard "extended"
 # endif
                                   ! bounds are not applicable here).
-      imax=iend
+!     imax=iend
 # ifndef EW_PERIODIC
-      if (EASTERN_EDGE) then
+!     if (EASTERN_EDGE) then
 #  ifdef OBC_EAST
-        need_bry=.true.
+!       need_bry=.true.
 #  endif
-        imax=iend+1
-      endif
+!       imax=iend+1
+!     endif
 # elif defined EXCH_EAST_WEST
-      if (EAST_EXCHNG) then
-        imax=iend+1
-      endif
+!     if (EAST_EXCHNG) then
+!       imax=iend+1
+!     endif
 # endif
 
-      jmin=jstr
+!     jmin=jstr
 # ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
+!     if (SOUTHERN_EDGE) then
 #  ifdef OBC_SOUTH
-        need_bry=.true.
+!       need_bry=.true.
 #  endif
-        jmin=jstr-1
-      endif
+!       jmin=jstr-1
+!     endif
 # elif defined EXCH_NORTH_SOUTH
-      if (SOUTH_EXCHNG) then
-        jmin=jstr-1
-      endif
+!     if (SOUTH_EXCHNG) then
+!       jmin=jstr-1
+!     endif
 # endif
 
-      jmax=jend
+!     jmax=jend
 # ifndef NS_PERIODIC
-      if (NORTHERN_EDGE) then
+!     if (NORTHERN_EDGE) then
 #  ifdef OBC_NORTH
-        need_bry=.true.
+!       need_bry=.true.
 #  endif
-        jmax=jend+1
-      endif
+!       jmax=jend+1
+!     endif
 # elif defined EXCH_NORTH_SOUTH
-      if (NORTH_EXCHNG) then
-        jmax=jend+1
+!     if (NORTH_EXCHNG) then
+!       jmax=jend+1
+!     endif
+# endif
+
+      if (obc_west.and.(.not.west_exchng)) then
+#  ifdef Z_FRC_BRY
+        call set_frc_data( nc_z_w, zeta_west(j0:j1), obry=2 )
+!       call exch_bry_EW_tile(1, ny, zeta_west, 1)      ! DevinD - exchange did not make a difference
+#  endif
+#  ifdef M2_FRC_BRY
+        call set_frc_data( nc_ub_w, ubar_west(j0:j1), obry=1 )
+        call set_frc_data( nc_vb_w, vbar_west( 1:j1), obry=1 )
+#  endif
+#  ifdef SOLVE3D
+#   ifdef M3_FRC_BRY
+        call set_frc_data( nc_u_w, var2d=u_west(j0:j1,:), obry=1 )
+        call set_frc_data( nc_v_w, var2d=v_west( 1:j1,:), obry=1 )
+#     ifdef NHMG
+!       call set_frc_data( nc_w_w, var2d=w_west(j0:j1,:), obry=1 )
+        w_west = 0
+#     endif
+#   endif
+#   ifdef T_FRC_BRY
+        do itrc=1,nt
+          call set_frc_data( nc_t_w(itrc), var2d=t_west(j0:j1,:,itrc), obry=1 )
+        enddo
+#   endif
+#  endif
       endif
-# endif
 
-
-      if (need_bry) then
-# ifdef OBC_WEST
-        if (WESTERN_EDGE) then
+      if (obc_east.and.(.not.east_exchng)) then
 #  ifdef Z_FRC_BRY
-          call set_frc_data( nc_z_w, zeta_west(j0:j1), obry=2 )
-!          call exch_bry_EW_tile(1, ny, zeta_west, 1)      ! DevinD - exchange did not make a difference
+        call set_frc_data( nc_z_e, zeta_east(j0:j1), obry=2 )
 #  endif
 #  ifdef M2_FRC_BRY
-          call set_frc_data( nc_ub_w, ubar_west(j0:j1), obry=1 )
-          call set_frc_data( nc_vb_w, vbar_west( 1:j1), obry=1 )
+        call set_frc_data( nc_ub_e, ubar_east(j0:j1), obry=1 )
+        call set_frc_data( nc_vb_e, vbar_east( 1:j1), obry=1 )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-          call set_frc_data( nc_u_w, var2d=u_west(j0:j1,:), obry=1 )
-          call set_frc_data( nc_v_w, var2d=v_west( 1:j1,:), obry=1 )
+        call set_frc_data( nc_u_e, var2d=u_east(j0:j1,:), obry=1 )
+        call set_frc_data( nc_v_e, var2d=v_east( 1:j1,:), obry=1 )
 #     ifdef NHMG
-!         call set_frc_data( nc_w_w, var2d=w_west(j0:j1,:), obry=1 )
-          w_west = 0
+!       call set_frc_data( nc_w_e, var2d=w_east(j0:j1,:), obry=1 )
+        w_east = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
-          do itrc=1,NT
-            call set_frc_data( nc_t_w(itrc), var2d=t_west(j0:j1,:,itrc), obry=1 )
-          enddo
+        do itrc=1,NT
+          call set_frc_data( nc_t_e(itrc), var2d=t_east(j0:j1,:,itrc), obry=1 )
+        enddo
 #   endif
 #  endif
-        endif
-# endif
+      endif
 
-# ifdef OBC_EAST
-        if (EASTERN_EDGE) then
+      if (obc_south.and.(.not.south_exchng)) then
 #  ifdef Z_FRC_BRY
-          call set_frc_data( nc_z_e, zeta_east(j0:j1), obry=2 )
+        call set_frc_data( nc_z_s, zeta_south(i0:i1), obry=2 )
 #  endif
 #  ifdef M2_FRC_BRY
-          call set_frc_data( nc_ub_e, ubar_east(j0:j1), obry=1 )
-          call set_frc_data( nc_vb_e, vbar_east( 1:j1), obry=1 )
+        call set_frc_data( nc_ub_s, ubar_south( 1:i1), obry=1 )
+        call set_frc_data( nc_vb_s, vbar_south(i0:i1), obry=1 )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-          call set_frc_data( nc_u_e, var2d=u_east(j0:j1,:), obry=1 )
-          call set_frc_data( nc_v_e, var2d=v_east( 1:j1,:), obry=1 )
+        call set_frc_data( nc_u_s, var2d=u_south( 1:i1,:), obry=1 )
+        call set_frc_data( nc_v_s, var2d=v_south(i0:i1,:), obry=1 )
 #     ifdef NHMG
-!         call set_frc_data( nc_w_e, var2d=w_east(j0:j1,:), obry=1 )
-          w_east = 0
+!       call set_frc_data( nc_w_s, var2d=w_south(i0:i1,:), obry=1 )
+        w_south = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
-          do itrc=1,NT
-            call set_frc_data( nc_t_e(itrc), var2d=t_east(j0:j1,:,itrc), obry=1 )
-          enddo
+        do itrc=1,nt
+          call set_frc_data( nc_t_s(itrc), var2d=t_south(i0:i1,:,itrc), obry=1 )
+        enddo
 #   endif
 #  endif
-        endif
-# endif
+      endif
 
-# ifdef OBC_SOUTH
-        if (SOUTHERN_EDGE) then
+      if (obc_north.and.(.not.north_exchng)) then
 #  ifdef Z_FRC_BRY
-          call set_frc_data( nc_z_s, zeta_south(i0:i1), obry=2 )
+        call set_frc_data( nc_z_n, zeta_north(i0:i1), obry=2 )
 #  endif
 #  ifdef M2_FRC_BRY
-          call set_frc_data( nc_ub_s, ubar_south( 1:i1), obry=1 )
-          call set_frc_data( nc_vb_s, vbar_south(i0:i1), obry=1 )
+        call set_frc_data( nc_ub_n, ubar_north( 1:i1), obry=1 )
+        call set_frc_data( nc_vb_n, vbar_north(i0:i1), obry=1 )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-          call set_frc_data( nc_u_s, var2d=u_south( 1:i1,:), obry=1 )
-          call set_frc_data( nc_v_s, var2d=v_south(i0:i1,:), obry=1 )
+        call set_frc_data( nc_u_n, var2d=u_north( 1:i1,:), obry=1 )
+        call set_frc_data( nc_v_n, var2d=v_north(i0:i1,:), obry=1 )
 #     ifdef NHMG
-!         call set_frc_data( nc_w_s, var2d=w_south(i0:i1,:), obry=1 )
-          w_south = 0
+!       call set_frc_data( nc_w_n, var2d=w_north(i0:i1,:), obry=1 )
+        w_north = 0
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
-          do itrc=1,NT
-            call set_frc_data( nc_t_s(itrc), var2d=t_south(i0:i1,:,itrc), obry=1 )
-          enddo
+        do itrc=1,NT
+          call set_frc_data( nc_t_n(itrc), var2d=t_north(i0:i1,:,itrc), obry=1 )
+        enddo
 #   endif
 #  endif
-        endif
-# endif
+      endif
 
-# ifdef OBC_NORTH
-        if (NORTHERN_EDGE) then
-#  ifdef Z_FRC_BRY
-          call set_frc_data( nc_z_n, zeta_north(i0:i1), obry=2 )
-#  endif
-#  ifdef M2_FRC_BRY
-          call set_frc_data( nc_ub_n, ubar_north( 1:i1), obry=1 )
-          call set_frc_data( nc_vb_n, vbar_north(i0:i1), obry=1 )
-#  endif
-#  ifdef SOLVE3D
-#   ifdef M3_FRC_BRY
-          call set_frc_data( nc_u_n, var2d=u_north( 1:i1,:), obry=1 )
-          call set_frc_data( nc_v_n, var2d=v_north(i0:i1,:), obry=1 )
-#     ifdef NHMG
-!         call set_frc_data( nc_w_n, var2d=w_north(i0:i1,:), obry=1 )
-          w_north = 0
-#     endif
-#   endif
-#   ifdef T_FRC_BRY
-          do itrc=1,NT
-            call set_frc_data( nc_t_n(itrc), var2d=t_north(i0:i1,:,itrc), obry=1 )
-          enddo
-#   endif
-#  endif
-        endif
-# endif
-
-      endif  ! <-- need_bry
-
-      end subroutine set_bry_all_tile  !]
+      end subroutine set_bry_all  !]
 #endif
 
 !----------------------------------------------------------------------
