@@ -69,7 +69,8 @@
 # ifdef ANA_BRY
 c***              no code here
 # else
-      call set_bry_all_tile(istr,iend,jstr,jend, ierr)
+!     call set_bry_all_tile(istr,iend,jstr,jend, ierr)
+!     call set_bry_all
 # endif
 #endif
 
