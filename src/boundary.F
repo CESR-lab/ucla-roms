@@ -239,76 +239,12 @@
                      && ( defined M2_FRC_BRY || defined Z_FRC_BRY || \
                           defined M3_FRC_BRY || defined T_FRC_BRY )
 
-!     subroutine set_bry_all_tile (istr,iend,jstr,jend, ierr)  ![
       subroutine set_bry_all  ![
       use param
       use scalars
       implicit none
 
-!     integer :: istr,iend,jstr,jend, ierr
-!     integer :: imin,imax,jmin,jmax, it1,it2, k, itrc, j , i
       integer :: itrc
-
-!     logical :: need_bry
-!     real    :: tmid, cff,cff1,cff2
-
-!     need_bry=.false.
-                                  ! NOTE: Temporal interpolation of
-!     imin=istr                   ! BRY forcing variables is done over
-# ifndef EW_PERIODIC
-!     if (WESTERN_EDGE) then      ! non-standard ranges of spatial
-#  ifdef OBC_WEST
-!       need_bry=.true.           ! indices which is motivated by the
-#  endif
-!       imin=istr-1               ! desire to avoid using MPI calls
-!     endif                       ! to exchange ghost points for BRY
-# elif defined EXCH_EAST_WEST
-!     if (WEST_EXCHNG) then       ! arrays, while, at the same time,
-!       imin=istr-1               ! having only a single row of ghost
-!     endif                       ! points (so the standard "extended"
-# endif
-                                  ! bounds are not applicable here).
-!     imax=iend
-# ifndef EW_PERIODIC
-!     if (EASTERN_EDGE) then
-#  ifdef OBC_EAST
-!       need_bry=.true.
-#  endif
-!       imax=iend+1
-!     endif
-# elif defined EXCH_EAST_WEST
-!     if (EAST_EXCHNG) then
-!       imax=iend+1
-!     endif
-# endif
-
-!     jmin=jstr
-# ifndef NS_PERIODIC
-!     if (SOUTHERN_EDGE) then
-#  ifdef OBC_SOUTH
-!       need_bry=.true.
-#  endif
-!       jmin=jstr-1
-!     endif
-# elif defined EXCH_NORTH_SOUTH
-!     if (SOUTH_EXCHNG) then
-!       jmin=jstr-1
-!     endif
-# endif
-
-!     jmax=jend
-# ifndef NS_PERIODIC
-!     if (NORTHERN_EDGE) then
-#  ifdef OBC_NORTH
-!       need_bry=.true.
-#  endif
-!       jmax=jend+1
-!     endif
-# elif defined EXCH_NORTH_SOUTH
-!     if (NORTH_EXCHNG) then
-!       jmax=jend+1
-!     endif
-# endif
 
       if (obc_west.and.(.not.west_exchng)) then
 #  ifdef Z_FRC_BRY
