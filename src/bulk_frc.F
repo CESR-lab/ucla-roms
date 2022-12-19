@@ -358,15 +358,6 @@
 !# include "compute_extended_bounds.h"
 !
 !
-# ifdef ROBUST_DIURNAL_SRFLUX
-      dtau=2.D0*pi * dt*sec2day
-      cff=4.D0*pi*(tdays-dble(int(tdays))-0.5D0)
-      tau1=max(-pi, min(pi, cff))
-      tau2=max(-pi, min(pi, cff+2.D0*dtau))
-      cff=tau2-tau1
-      Ampl=( cff + 2.D0*cos(0.5D0*(tau1+tau2))*sin(0.5D0*cff) )/dtau
-# endif
-!
 !
 !! Set coefficients for interpolation. Check that for the next time
 !! step [when time=time+dt] both weights will still be positive, and
