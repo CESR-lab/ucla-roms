@@ -405,6 +405,7 @@ C$OMP END MASTER
 
 #ifdef SOLVE3D
       ! Interpolate forcing data to model time n+1/2
+      ! get_frc (both versions work with tdays, adding 0.5*dt)
       call set_forces
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
