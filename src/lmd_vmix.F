@@ -247,7 +247,7 @@ c----#  define tind nstp
         do j=jstr,jend
           do i=istr,iend
 # ifdef LMD_RIMIX
-            cff=min(1., max(0., Rig(i,j,k)))  ! Compute mixing die
+            cff=min(1., max(0., Rig(i,j,k)))  ! Compute mixing due
             nu_sx=1. - cff*cff                ! to shear instability
             nu_sx=nu_sx*nu_sx*nu_sx           ! and internal wave
                                               ! breaking.

@@ -260,13 +260,13 @@
 !     endif
       if (wrt_file_his.or.present(blowup)) then
 
-      if (first_step) then
-         first_step=.false.                       ! as first step the ocean_vars values are for t=0
-      else
-         output_time_his = output_time_his + dt   ! only start count after first timestep
-      endif
+!     if (first_step) then
+!        first_step=.false.                       ! as first step the ocean_vars values are for t=0
+!     else
+!        output_time_his = output_time_his + dt   ! only start count after first timestep
+!     endif
 
-!     output_time_his = output_time_his + dt  
+      output_time_his = output_time_his + dt  
 
 
       if (output_time_his>=output_period_his.or.present(blowup) ) then
@@ -328,9 +328,7 @@
           do tile=0,NSUB_X*NSUB_E-1
             call wvlcty (tile, work)
           enddo
-          ! need 1:N as work is 1:N+1 in size
-          ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
-          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,0:N-1),start)
+          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:N),start)
         endif
         if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
         if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
@@ -420,9 +418,7 @@
           enddo
           call ncwrite(ncid, vname(1,indxO),     w_avg(i0:i1,j0:j1,:), start)            ! here rather than calc_avg
         endif                                                                            ! for efficiency
-        ! need 1:N as work is 1:N+1 in size
-        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
-        if (wrt_avg_W)   call ncwrite(ncid, vname(1,indxW),   wvl_avg(i0:i1,j0:j1,0:N-1), start)
+        if (wrt_avg_W)   call ncwrite(ncid, vname(1,indxW),   wvl_avg(i0:i1,j0:j1,1:N), start)
         if (wrt_avg_Akv) call ncwrite(ncid, vname(1,indxAkv), akv_avg(i0:i1,j0:j1,:), start)
         if (wrt_avg_Akt) call ncwrite(ncid, vname(1,indxAkt), akt_avg(i0:i1,j0:j1,:), start)
 #  ifdef SALINITY
@@ -476,8 +472,9 @@
 
       if (wrt_file_rst) then
 
-      if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
-      first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+!     if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
+!     first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+      output_time_rst = output_time_rst + dt
 
       if (output_time_rst    >=output_period_rst
 #ifdef EXACT_RESTART
@@ -488,7 +485,13 @@
 
 
         if (rec_rst==nrpf_rst) then
+#ifdef EXACT_RESTART
+          time = time + dt
+#endif
           call create_file_rst_ocean_vars(fname_rst)
+#ifdef EXACT_RESTART
+          time = time - dt
+#endif
           rec_rst = 0
         endif
         total_rec_rst = total_rec_rst +1
@@ -512,8 +515,8 @@
 ! wrt_rst called at the middle of next timestep as some variables only calculated there for t=n.
 
         start(3)=1; start(4)=rec_rst
-        call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nstp),start)
-        call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nstp),start)
+        call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nnew),start)
+        call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nnew),start)
 
         call wrt_rst_trc(ncid,start)                              ! tracer variables
 
@@ -933,11 +936,8 @@
         endif
         if (wrt_avg_O) w_avg(i0:i1,j0:j1,:) = w_avg(i0:i1,j0:j1,:)*(1-coef)
      &                                      + ( We(i0:i1,j0:j1,:)+Wi(i0:i1,j0:j1,:) ) *coef
-        ! need 1:N as work is 1:N+1 in size
-        ! put as 0:N-1 because z-dimension array is declared in correctly in wvlcty_tile.
         if (wrt_avg_W) then
           ! the w averaging, calculation and output should be checked at some point.
-          ! things seem inconsistent and buggy.
           call wvlcty_tile(1,nx,1,ny, work, A2d(1,1), A2d(1,2), A2d(1,3))  ! as per set_avg
 
           wvl_avg(i0:i1,j0:j1,1:N) = wvl_avg(i0:i1,j0:j1,1:N)*(1-coef)

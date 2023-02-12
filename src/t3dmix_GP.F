@@ -1,15 +1,16 @@
 #include "cppdefs.opt"
 #if defined SOLVE3D && (defined TS_DIF2 || defined TS_DIF4 )
 
-      subroutine t3dmix (tile)
+      subroutine t3dmix
       use param
       use hidden_mpi_vars
       use private_scratch
       implicit none
-      integer tile, itrc
+      integer,save :: tile=0
+      integer itrc
 
 # include "compute_tile_bounds.h"
-      do itrc=1,NT
+      do itrc=1,nt
         call t3dmix_tile (istr,iend,jstr,jend, itrc, A3d(1,1),A2d(1,1),
      &                                     A2d(1,2), A2d(1,3),A2d(1,5),
      &                       A2d(1,7), A2d(1,9), A2d(1,11), A2d(1,13))
@@ -63,9 +64,6 @@
               dZdx(i,j,k2)=cff*(z_r(i,j,k+1) -z_r(i-1,j,k+1))
               dTdx(i,j,k2)=cff*(t(i,j,k+1,nrhs,itrc)
      &                               -t(i-1,j,k+1,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &               -tclm(i,j,k+1,itrc)+tclm(i-1,j,k+1,itrc)
-#  endif
      &                                                      )
             enddo
           enddo
@@ -75,9 +73,6 @@
               dZde(i,j,k2)=cff*(z_r(i,j,k+1) -z_r(i,j-1,k+1))
               dTde(i,j,k2)=cff*(t(i,j,k+1,nrhs,itrc)
      &                               -t(i,j-1,k+1,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &               -tclm(i,j,k+1,itrc)+tclm(i,j-1,k+1,itrc)
-#  endif
      &                                                      )
             enddo
           enddo
@@ -94,9 +89,6 @@
           do j=jstr-1,jend+1
             do i=istr-1,iend+1
               dTdz(i,j,k2)=(t(i,j,k+1,nrhs,itrc)-t(i,j,k,nrhs,itrc)
-#  ifdef CLIMAT_TS_MIXH
-     &                          -tclm(i,j,k+1,itrc)+tclm(i,j,k,itrc)
-#  endif
      &                                   )/(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
@@ -126,22 +118,6 @@
           if (k<N) then
             do j=jstr,jend
               do i=istr,iend
-c**             cff1=min(dZdx(i,j,k1)+dZdx(i+1,j,k2),0.)
-c**             cff2=max(dZdx(i,j,k2)+dZdx(i+1,j,k1),0.)
-c**
-c**             cff3=min(dZde(i,j,k1)+dZde(i,j+1,k2),0.)
-c**             cff4=max(dZde(i,j,k2)+dZde(i,j+1,k1),0.)
-c**
-c**             FSC(i,j,k2)=0.25*diff2(i,j,itrc)*(
-c**  &                             dTdz(i,j,k2)*( (cff1+cff2)**2
-c**  &                                           +(cff3+cff4)**2)
-c**
-c**  &                           -cff1*(dTdx(i,j,k1)+dTdx(i+1,j,k2))
-c**  &                           -cff2*(dTdx(i,j,k2)+dTdx(i+1,j,k1))
-c**
-c**  &                           -cff3*(dTde(i,j,k1)+dTde(i,j+1,k2))
-c**  &                           -cff4*(dTde(i,j,k2)+dTde(i,j+1,k1))
-c**  &                                                             )
 
                 cff1=min(dZdx(i  ,j,k1),0.)
                 cff2=min(dZdx(i+1,j,k2),0.)

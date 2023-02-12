@@ -57,7 +57,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
  corrector-coupled (including the option with forward extrapolation of
  barotropic fluxes) modes. */
 
-#define KEEP_CORIOLIS
+c--#define KEEP_CORIOLIS
 
 /* Activation of the first switch of the following two makes computing
  vertical viscous terms as well as implicit part of vertical advection

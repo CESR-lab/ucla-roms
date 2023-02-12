@@ -20,7 +20,7 @@
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
       
       logical, parameter         :: diag_avg      = .true.    ! compute history (=F) or averages (=T)
-      integer, parameter         :: output_period =  20       ! output period
+      integer, parameter         :: output_period =  400      ! output period
       integer, parameter         :: nrpf          =  7        ! total recs per file
 
       logical, parameter, public :: diag_uv       = .true.    ! Momentum diagnostics
