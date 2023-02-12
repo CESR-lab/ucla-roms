@@ -150,6 +150,10 @@
 
 #define IMPLICIT_BOTTOM_DRAG
 # ifdef IMPLICIT_BOTTOM_DRAG
+        if (diag_uv) then
+          u_prev = u(1:nx,j,:,nnew)
+        endif
+
         do i=istrU,iend
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
@@ -211,6 +215,20 @@
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
           enddo
         enddo
+# ifdef DIAGNOSTICS
+        if (diag_uv.and.calc_diag) then
+          do k=1,nz
+           do i=1,nx
+            Udiag(i,j,k,idiss) = ru(i,j,k)*dxdyi_u(i,j)*umask(i,j)
+     &          - Udiag(i,j,k,ipgr)
+     &          - Udiag(i,j,k,icori)
+     &          - Udiag(i,j,k,iadv)
+            Udiag(i,j,k,ivmix) = (u(i,j,k,nnew)-u_prev(i,k))/dt - 
+     &              ru(i,j,k)*dxdyi_u(i,j)
+           enddo
+          enddo
+        endif
+# endif
 
         if (j >= jstrV) then
           do i=istr,iend
@@ -271,9 +289,25 @@
               rvfrc(i,j)=rvfrc(i,j) + rv(i,j,k)
             enddo
           enddo
+
+# ifdef DIAGNOSTICS
+         if (diag_uv.and.calc_diag) then
+          do k=1,nz
+           do i=1,nx
+            Vdiag(i,j,k,idiss) = rv(i,j,k)*dxdyi_v(i,j)*vmask(i,j)
+     &          - Vdiag(i,j,k,ipgr)
+     &          - Vdiag(i,j,k,icori)
+     &          - Vdiag(i,j,k,iadv)
+            Vdiag(i,j,k,ivmix) = (v(i,j,k,nnew)-v_prev(i,k))/dt - 
+     &              rv(i,j,k)*dxdyi_v(i,j)
+           enddo
+          enddo
+         endif
+# endif
+
         endif   !<-- j >= jstrV
 
-# else  /* --> !IMPLICIT_BOTTOM_DRAG */
+# else  /* --> not IMPLICIT_BOTTOM_DRAG */
 
         do i=istrU,iend
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
@@ -295,7 +329,7 @@
 # ifdef DIAGNOSTICS
         if (diag_uv.and.calc_diag) then
           do k=1,nz
-            Udiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_u(:,j)
+            Udiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_u(:,j)*umask(i,j)
      &          - Udiag(:,j,k,ipgr)
      &          - Udiag(:,j,k,icori)
      &          - Udiag(:,j,k,iadv)
@@ -324,7 +358,7 @@
 # ifdef DIAGNOSTICS
         if (diag_uv.and.calc_diag) then
           do k=1,nz
-            Vdiag(:,j,k,idiss) = rv(1:nx,j,k)*dxdyi_v(:,j)
+            Vdiag(:,j,k,idiss) = rv(1:nx,j,k)*dxdyi_v(:,j)*vmask(i,j)
      &          - Vdiag(:,j,k,ipgr)
      &          - Vdiag(:,j,k,icori)
      &          - Vdiag(:,j,k,iadv)
