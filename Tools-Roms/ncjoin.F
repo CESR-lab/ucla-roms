@@ -1989,7 +1989,7 @@ c*    write(*,'(1x,A,2I3,3(3x,A,4I4))')  'ndims,vdims =', ndims,
 c*   &   vdims, 'imax1,jmax1,kmax1,lmax1 =', imax1,jmax1,kmax1,lmax1,
 c*   &                  'imax,jmax,kmax,lmax =', imax,jmax,kmax,lmax,
 c*   &                  'istr,jstr,kstr,lstr =', istr,jstr,kstr,lstr
-  
+
       do l=1,lmax
         ls=l-1
         ls1=l+lstr-2
