@@ -47,16 +47,19 @@
 
 # include "compute_auxiliary_bounds.h"
 
+# define IMPLICIT_BOTTOM_DRAG
+
       do j=jstr,jend
 
 # ifdef DIAGNOSTICS
+#  ifndef IMPLICIT_BOTTOM_DRAG
         if (diag_uv) then
           u_prev = u(1:nx,j,:,nnew)
           v_prev = v(1:nx,j,:,nnew)
         endif
+#  endif
 # endif
 
-# define IMPLICIT_BOTTOM_DRAG
 
 # ifndef IMPLICIT_BOTTOM_DRAG
 
@@ -189,9 +192,22 @@
           enddo
         enddo        !--> discard DC,CF
 
+#  ifdef DIAGNOSTICS
+      if (diag_uv .and. calc_diag) then
+       do k = 1,nz
+        do i = 1,nx
+          Udiag(i,j,1:nz,ivmix) = ( DC(i,k)*
+     &          0.5*( Hz(i,j-1,k)+Hz(i,j,k) )-v_prev(i,k) ) / dt  
+          Udiag(i,j,k,icoup) = -DC(i,0)*umask(i,j)
+     &           *0.5*(Hz(i,j,k)+Hz(i-1,j,k))/dt
+        enddo
+       enddo
+      endif
+#  endif
+
 # else /* yes IMPLICIT_BOTTOM_DRAG */
-        ! the only thing we do is 'coupling'.
-        ! correcting the 3D flow to be in line with the 2D prediction
+        ! The only thing we do is 'coupling'.
+        ! Correcting the 3D flow to be in line with the 2D prediction
 
         do i=istrU,iend                          !--> coupling only
           CF(i,0)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))
@@ -210,7 +226,7 @@
           DC(i,0)=( DC(i,0)*dn_u(i,j)-DU_avg1(i,j)  !<-- mismatch
      &                       )/(CF(i,0)*dn_u(i,j))
         enddo
-        do k=1,N
+        do k=1,nz
           do i=istrU,iend
             u(i,j,k,nnew)=(u(i,j,k,nnew)-DC(i,0))
 #  ifdef MASKING
@@ -218,6 +234,16 @@
 #  endif
           enddo
         enddo
+#  ifdef DIAGNOSTICS
+        if (diag_uv .and. calc_diag) then
+         do k=1,nz
+          do i=1,nx
+           Udiag(i,j,k,icoup) = -DC(i,0)*umask(i,j)
+     &           *0.5*(Hz(i,j,k)+Hz(i-1,j,k))/dt
+          enddo
+         enddo
+        endif
+#  endif
 
 # endif
 
@@ -297,6 +323,20 @@
             enddo
           enddo       !--> discard DC,CF(:,0)
 
+#  ifdef DIAGNOSTICS
+      if (diag_uv .and. calc_diag) then
+       do k=1,nz
+        do i=1,nx
+          Vdiag(i,j,k,ivmix) = ( DC(i,k)*
+     &          0.5*( Hz(i,j-1,k)+Hz(i,j,k) )-v_prev(i,k) ) / dt  
+          Vdiag(i,j,k,icoup) = -DC(i,0)*vmask(i,j)
+     &           *0.5*(Hz(i,j,k)+Hz(i,j-1,k))/dt
+        enddo
+       enddo
+      endif
+#  endif
+
+
 # else  /* yes IMPLICIT_BOTTOM_DRAG */
 
           do i=istr,iend
@@ -325,10 +365,21 @@
             enddo
           enddo       !--> discard DC,CF(:,0)
 # endif
+#  ifdef DIAGNOSTICS
+      if (diag_uv .and. calc_diag) then
+       do k=1,nz
+        do i=1,nx
+          Vdiag(i,j,k,icoup) = -DC(i,0)*vmask(i,j)
+     &           *0.5*(Hz(i,j,k)+Hz(i,j-1,k))/dt
+        enddo
+       enddo
+      endif
+#  endif
+
         endif  !<-- j>=jstrV
 
 # ifdef NHMG
-      
+      !!! JM fix this wrt to IMPLICIT BOTTOM STRESS
         do i=istr,iend
           DC(i,0) =dt*pm(i,j)*pn(i,j)
           FC(i,N-1)= 0.5*dt*(Akv(i,j,N)+Akv(i,j,N-1))
@@ -382,15 +433,15 @@
 
 
 # ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) then
-        Udiag(:,j,:,ivmix) = ( u(1:nx,j,:,nnew)*
-     &    0.5*( Hz(0:nx-1,j,:)+Hz(1:nx,j,:) )-u_prev ) / dt  
-        Vdiag(:,j,:,ivmix) = ( v(1:nx,j,:,nnew)*
-     &    0.5*( Hz(1:nx,j-1,:)+Hz(1:nx,j,:) )-v_prev ) / dt  
+!     if (diag_uv .and. calc_diag) then
+!       Udiag(:,j,:,ivmix) = ( u(1:nx,j,:,nnew)*
+!    &    0.5*( Hz(0:nx-1,j,:)+Hz(1:nx,j,:) )-u_prev ) / dt  
+!       Vdiag(:,j,:,ivmix) = ( v(1:nx,j,:,nnew)*
+!    &    0.5*( Hz(1:nx,j-1,:)+Hz(1:nx,j,:) )-v_prev ) / dt  
 
-        Udiag(:,j,nz,ivmix) = Udiag(:,j,nz,ivmix)+sustr(1:nx,j)
-        Vdiag(:,j,nz,ivmix) = Vdiag(:,j,nz,ivmix)+svstr(1:nx,j)
-      endif
+!       Udiag(:,j,nz,ivmix) = Udiag(:,j,nz,ivmix)+sustr(1:nx,j)
+!       Vdiag(:,j,nz,ivmix) = Vdiag(:,j,nz,ivmix)+svstr(1:nx,j)
+!     endif
 # endif
 
       enddo      ! <-- j
@@ -498,6 +549,7 @@ c--# define TR
 # ifdef TR
 ! Daniel add, can proably clean this up with & +ust(i,j,k) instead of
 ! double repeated line, but wait for testing
+            ! DC_ik = dz*dy -> is the flux
 #  ifdef WEC
             CF(i,k)=DC(i,k)*( 0.5*(u(i,j,k,nstp)+u(i,j,k,nnew))
      &                                            +ust(i,j,k) )
@@ -659,22 +711,6 @@ c*   &                                                               )
      &       dn_v(i,j  )*max(abs(dRde(i,j  ,k)), abs(dRde(i,j  ,k+1))),
      &       dn_v(i,j+1)*max(abs(dRde(i,j+1,k)), abs(dRde(i,j+1,k+1)))
      &                                                               )
-
-
-/*
-                cff=(z_w(i,j,N)-z_w(i,j,k))/max( hbls(i,j,3-nstp),
-c**  &                                     z_w(i,j,N)-z_w(i,j,N-5) )
-c??     &                                     z_w(i,j,N)-z_w(i,j,N-1) )
-c??     &                                      20. ) !<-- 20 meters
-     &                                      50. ) !<-- 50 meters
-                if (cff < 1.) then
-                  cff=ALPHA_MAX*cff*cff*(3.-2.*cff)
-                else
-                  cff=ALPHA_MAX
-                endif
-
-                cff=ALPHA_MAX*cff*cff*(3.-2.*cff)
-*/
 
 
                 cfs=min(1., (z_w(i,j,N)-z_w(i,j,k))/max( 50.,
