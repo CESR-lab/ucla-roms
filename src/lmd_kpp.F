@@ -66,7 +66,7 @@
       real Cg, ustar3, Bfsfc, zscale, zetahat, ws,wm, Kern, Vtc,Vtsq,
      &         ssgm, z_bl, cff,cff1, cff_up,cff_dn
 
-      real Kv0, Kt0, Ks0, wmb,wsb, sgmb
+      real Kv0, Kt0, Ks0, wmb,wsb, sgmb,amp
 
 c---# define tind nstp
 
@@ -398,10 +398,15 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
                 cff=0.D0
               endif
               cff=cff + ssgm*(1.-ssgm)**2
-              Kv(i,j,k)=Kv(i,j,k) + wm*hbl(i,j)*cff
-              Kt(i,j,k)=Kt(i,j,k) + ws*hbl(i,j)*cff
+              amp = ssgm**2
+              ! JM
+              !Kv(i,j,k)=Kv(i,j,k) + wm*hbl(i,j)*cff
+              !Kt(i,j,k)=Kt(i,j,k) + ws*hbl(i,j)*cff
+              Kv(i,j,k)=sqrt((amp*Kv(i,j,k))**2 + (wm*hbl(i,j)*cff)**2 )
+              Kt(i,j,k)=sqrt((amp*Kt(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
 #  ifdef SALINITY
-              Ks(i,j,k)=Ks(i,j,k) + ws*hbl(i,j)*cff
+              !Ks(i,j,k)=Ks(i,j,k) + ws*hbl(i,j)*cff
+              Ks(i,j,k)=sqrt((amp*Ks(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
 #  endif
 
 #  ifdef LMD_NONLOCAL
@@ -436,7 +441,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
 
         do i=istr,iend
-
+          ! wmb = vonKar*ustar_bottom (rd*u)
           wmb=vonKar*vonKar*sqrt( 0.333333333333*(
      &               u(i,j,1,nstp)**2 +u(i+1,j,1,nstp)**2
      &                      +u(i,j,1,nstp)*u(i+1,j,1,nstp)
