@@ -4,7 +4,6 @@
       ! Particles live in index space: [0:nx]x[0:ny][0:nz]
 
 #include "cppdefs.opt"
-#ifdef PARTICLES
 
       use dimensions    ! has dimensions, a list of forcing files, and rmask, glob_istr, etc
       use read_write
@@ -19,22 +18,7 @@
       private
 
 
-      ! user inputs:
-      integer :: np=50                   ! local number of particles
-      real    :: extra_space_fac = 1.5   ! buffer space to receive extra exchanged particles 
-      real    :: exchange_facx = 0.1     ! maximum number of particles for transfer in NS
-      real    :: exchange_facy = 0.1     ! maximum number of particles for transfer in EW
-      real    :: exchange_facc = 0.01    ! maximum number of particles for transfer in corners    
-
-      
-      logical :: full_seed = .true.           ! seed with constant density
-      real   ,parameter :: output_period = 400
-      integer,parameter :: nrpf = 100
-!     real    :: ppm3 = 8e-5          ! target particles per cubic meter
-      real    :: ppm3 = 1e-6          ! target particles per cubic meter
-      integer :: pmin = 200 ! minimum of allocated space for particle array
-
-      ! end user inputs
+#include "particles.opt"
 
       logical :: terminal_vel= .false. ! terminal velocities on particles (not yet implemented)
 
@@ -1219,6 +1203,4 @@
 
       end subroutine zlev2kidx !]
 
-! ---------------------------------------------------------------------
-#endif /* PARTICLES */
       end module particles

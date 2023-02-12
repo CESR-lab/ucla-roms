@@ -98,7 +98,7 @@
 
       do itide=1,ntides
 
-        omT = ftide(itide)*time
+        omT = ftide(itide)*(time+0.5*dt)
 
         if (bry_tides) then
 

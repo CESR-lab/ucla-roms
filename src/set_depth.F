@@ -68,7 +68,7 @@
         print *, 'DU_avg1(istr,10)=',DU_avg1(istr,10)
 # endif
 
-      endif
+      endif  ! first time
 
       ds=1.D0/dble(N)
       do j=jstrR,jendR
@@ -309,7 +309,6 @@
 #   define BAK 2.05D0
 
 
-
 !  DC(i,0) is the barotropic surface H*dy = dy*integral(Hz)
 !  FC(i,0) is the barotropic flux dy*integral(Hz*u)
 
@@ -515,7 +514,7 @@
       enddo
       is=ie+2 ; ie=is+9+lstr
       if (ie > max_opt_size) goto 99
-      cpps(is:ie)='(N-M+B)/B='/ /tmpstr(1:lstr)
+      cpps(is:ie)='(N-M+B-1)/B='/ /tmpstr(1:lstr)
 # endif
       return
   99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',

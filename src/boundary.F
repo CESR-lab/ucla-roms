@@ -16,42 +16,27 @@
 #endif  /* ~ANA_BRY */
 
 
-# ifdef OBC_WEST
-      real,allocatable,dimension(:)     :: zeta_west         ! all allocatabel arrays so could remove cppflag clutter...
+      real,allocatable,dimension(:)     :: zeta_west
       real,allocatable,dimension(:)     :: ubar_west, vbar_west
       real,allocatable,dimension(:,:)   :: u_west, v_west, w_west
       real,allocatable,dimension(:,:,:) :: t_west
-# endif
 
-# ifdef OBC_EAST
       real,allocatable,dimension(:)     :: zeta_east
       real,allocatable,dimension(:)     :: ubar_east, vbar_east
       real,allocatable,dimension(:,:)   :: u_east, v_east, w_east
       real,allocatable,dimension(:,:,:) :: t_east
-# endif
 
-# ifdef OBC_SOUTH
       real,allocatable,dimension(:)     :: zeta_south
       real,allocatable,dimension(:)     :: ubar_south, vbar_south
       real,allocatable,dimension(:,:)   :: u_south, v_south, w_south
       real,allocatable,dimension(:,:,:) :: t_south
-# endif
 
-# ifdef OBC_NORTH
       real,allocatable,dimension(:)     :: zeta_north
       real,allocatable,dimension(:)     :: ubar_north, vbar_north
       real,allocatable,dimension(:,:)   :: u_north, v_north, w_north
       real,allocatable,dimension(:,:,:) :: t_north
-# endif
-
-#if !defined ANA_BRY && ( defined OBC_WEST   || defined OBC_EAST  || \
-                          defined OBC_SOUTH  || defined OBC_NORTH )  \
-                     && ( defined M2_FRC_BRY || defined Z_FRC_BRY || \
-                          defined M3_FRC_BRY || defined T_FRC_BRY )
 
       public :: set_bry_all
-
-#endif
 
       type (ncforce) :: nc_z_w = ncforce( vname='zeta_west', tname='bry_time')
       type (ncforce) :: nc_ub_w = ncforce( vname='ubar_west', tname='bry_time')
@@ -98,8 +83,8 @@
       ! local
       integer :: itrc
 
-      if (obc_west) call store_string_att(bc_options,'OBC_WEST, ')
-      if (obc_east) call store_string_att(bc_options,'OBC_EAST, ')
+      if (obc_west)  call store_string_att(bc_options,'OBC_WEST, ')
+      if (obc_east)  call store_string_att(bc_options,'OBC_EAST, ')
       if (obc_north) call store_string_att(bc_options,'OBC_NORTH, ')
       if (obc_south) call store_string_att(bc_options,'OBC_SOUTH, ')
 # ifdef OBC_M3ORLANSKI
@@ -234,11 +219,6 @@
 
       end subroutine init_arrays_boundary !]
 !----------------------------------------------------------------------
-#if !defined ANA_BRY && ( defined OBC_WEST   || defined OBC_EAST  || \
-                          defined OBC_SOUTH  || defined OBC_NORTH )  \
-                     && ( defined M2_FRC_BRY || defined Z_FRC_BRY || \
-                          defined M3_FRC_BRY || defined T_FRC_BRY )
-
       subroutine set_bry_all  ![
       use param
       use scalars
@@ -348,7 +328,6 @@
       endif
 
       end subroutine set_bry_all  !]
-#endif
 
 !----------------------------------------------------------------------
 

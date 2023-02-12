@@ -156,145 +156,7 @@
 
       end subroutine init_arrays_grid  !]
 !----------------------------------------------------------------------
-#ifdef ANA_GRID
-! ----------------------------------------------------------------------
-      subroutine ana_grid (tile)  ![
-
-      use param
-      use hidden_mpi_vars
-
-      implicit none
-      integer tile
-# include "compute_tile_bounds.h"
-      call ana_grid_tile (istr,iend,jstr,jend)
-
-      call wrt_ana_grid
-
-      end subroutine ana_grid  !]
-! ----------------------------------------------------------------------
-      subroutine ana_grid_tile (istr,iend,jstr,jend)  ![
-
-! xl,el      Physical dimensions of the computational domain [usually
-!                                                measured in  meters];
-! h          Model bathymetry [meters, positive] at RHO-points.
-! hmin,hmax  Minimum and maximum values of depth of bathymetry [m].
-! f          Coriolis parameter (1/seconds) at RHO-points.
-! pm,pn      Coordinate transformation metric "m" [1/meters]
-!                   associated with the differential distances in
-!                   XI- and ETA-directions, both are at RHO-points.
-! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
-! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
-      use param
-      use scalars
-
-      implicit none
-      integer istr,iend,jstr,jend, i,j
-
-! Grid configuration parameters:
-!----- ------------- -----------
-! Size_XI, Size_ETA  are the physical dimensions of the computational
-!                                domain [usually measured in  meters];
-! depth      the maximum depth [meters, positive];
-! f0,beta    Coriolis parameters to setup a beta-plane [1/s, 1/(m*s)].
-
-      real, parameter ::
-     &       Size_XI = 1.0e4,   Size_ETA= 1.0e4,
-     &       depth=5.,          max_depth=100.0,
-     &       f0=0.0e-4,            beta=0.
-
-      real cff,y, x0,y0,dx,dy
-      real dh, shelf, slope, land, coast
-      real psz,px,py,pipe_cells
-      real :: riv_east,riv_west
-
-# include "compute_extended_bounds.h"
-
-
-C$OMP MASTER                           ! Copy physical dimensions of
-      xl=Size_XI ; el=Size_ETA         ! the grid into glabally visible
-C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
-
-      dx=Size_XI/dble(LLm)             ! Set grid spacings for
-      dy=Size_ETA/dble(MMm)            ! Cartesian rectangular grid
-# ifdef MPI
-      x0=dx*dble(iSW_corn)             ! Coordinates of south-west
-      y0=dy*dble(jSW_corn)             ! corner of MPI subdomain
-# else
-      x0=0. ; y0=0.
-# endif
-
-      do j=jstrR,jendR                  ! Setup Cartezian grid
-        do i=istrR,iendR                ! (XI,ETA) at PSI- and RHO-
-          xp(i,j)=x0+dx* dble(i-1)      ! points and compute metric
-          xr(i,j)=x0+dx*(dble(i)-0.5D0) ! transformation coefficients
-          yp(i,j)=y0+dy* dble(j-1)      ! pm and pn, which are
-          yr(i,j)=y0+dy*(dble(j)-0.5D0) ! uniform in this case.
-
-          pm(i,j)=1./dx
-          pn(i,j)=1./dy
-        enddo
-      enddo
-
-! Set Coriolis parameter [1/s] at RHO-points.
-
-      x0=Size_XI/2.
-      y0=Size_ETA/2.
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          f(i,j)=f0+beta*( yr(i,j)-y0 )
-# if defined NONTRAD_COR
-!         feta(i,j) = f0*cos(pi/4)
-!         fxi(i,j)  = f0*sin(pi/4)
-# endif
-        enddo
-      enddo
-
-      shelf=size_eta/5 ! shelf location in meters from south
-      slope=(max_depth-depth)/(size_eta*4/5) ! Similar triangles o/a=dh/pm=(max_depth-depth)/(MMm*4/5)
-      do j=0,ny+1
-        do i=0,nx+1
-
-          if(yr(i,j)<shelf) then
-            ! Constant shallow region 20% of domain in south.
-            h(i,j)=depth
-          else
-            ! Uniform gradient from south (shallow) to north (deep).
-            dh=(yr(i,j)-shelf)*slope
-            h(i,j)=depth+dh
-          endif
-
-        enddo
-      enddo
-
-      ! Set up land masking for river channel
-      land  = el*0.1  ! Land extends 10% of domain from south
-      coast = el*0.02 ! Coast is not as far
-      riv_west=xl*0.4 ! River west bank at 40% from west
-      riv_east=xl*0.6 ! River west bank at 60% from west
-
-# ifdef MASKING
-      do j=jstr-1,jend+1
-        do i=istr-1,iend+1
-          ! default is water
-          rmask(i,j) = 1
-
-          if(yr(i,j)<land) then
-            if (xr(i,j)<riv_west .or. xr(i,j)>riv_east) then
-              rmask(i,j)=0.0
-            endif
-          endif
-          if(yr(i,j)<coast) then !! All land in the far south
-            rmask(i,j) = 0.0
-          endif
-        enddo
-      enddo
-# endif
-
-!     if (river_source) then
-!        rflx is defined in river_frc.F (init_river_frc)
-!     endif
-
-      end subroutine ana_grid_tile  !]
+#include "ana_grid.opt"
 ! ----------------------------------------------------------------------
       subroutine wrt_ana_grid     ! write analytical grid to file  ![
       use param
@@ -313,8 +175,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       ierr=nf90_close(ncid)
 
       end subroutine wrt_ana_grid  !]
-#endif /* ANA_GRID */
-
 !----------------------------------------------------------------------
       subroutine def_grid(ncid)  ![
 
@@ -546,7 +406,8 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       implicit none
 
 #ifdef ANA_GRID
-      call ana_grid(0)
+      call ana_grid
+      call wrt_ana_grid
 #else 
 
       character*1 char1

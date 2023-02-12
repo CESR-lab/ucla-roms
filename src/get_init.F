@@ -397,31 +397,31 @@ c--#define VERBOSE
       start=1; start(4)=record                                       ! 3D vars
 
       call ncread(ncid,vname(1,indxU), u( 1:i1,j0:j1,:,tindx),start)           ! u requires masking and
-      do j=j0,j1                                                               ! exchange for some reason?
-        do i=1,i1
-          if (rmask(i,j)+rmask(i-1,j) > 0.5) then
-          else
-            u(i,j,:,tindx)=0.D0
-          endif
-        enddo
+!     do j=j0,j1                                                               ! exchange for some reason?
+!       do i=1,i1
+!         if (rmask(i,j)+rmask(i-1,j) > 0.5) then
+!         else
+!           u(i,j,:,tindx)=0.D0
+!         endif
+!       enddo
+!     enddo
+      do k=1,N
+        u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
       enddo
-!      do k=1,N
-!        u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
-!      enddo
       call exchange_tile(1,nx,1,ny, u(START_2D_ARRAY,1,tindx),N)
 
       call ncread(ncid,vname(1,indxV), v(i0:i1, 1:j1,:,tindx),start)           ! v requires masking and
-      do j=1,j1                                                                ! exchange for some reason?
-        do i=i0,i1
-          if (rmask(i,j)+rmask(i,j-1) > 0.5) then                              ! see comment by ubar for masking
-          else
-            v(i,j,:,tindx)=0.D0
-          endif
-        enddo
-      enddo
-!      do k=1,N
-!        v(i0:i1,1:j1,k,tindx) = v(i0:i1,1:j1,k,tindx)*vmask(i0:i1,1:j1)
-!      enddo
+!     do j=1,j1                                                                ! exchange for some reason?
+!       do i=i0,i1
+!         if (rmask(i,j)+rmask(i,j-1) > 0.5) then                              ! see comment by ubar for masking
+!         else
+!           v(i,j,:,tindx)=0.D0
+!         endif
+!       enddo
+!     enddo
+       do k=1,nz
+         v(i0:i1,1:j1,k,tindx) = v(i0:i1,1:j1,k,tindx)*vmask(i0:i1,1:j1)
+       enddo
       call exchange_tile(1,nx,1,ny, v(START_2D_ARRAY,1,tindx),N)
 
 # if defined NHMG

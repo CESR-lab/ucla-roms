@@ -53,7 +53,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
 
       end subroutine ncread_1D  !]
-
 !----------------------------------------------------------------------
       subroutine ncread_2D(ncid,vname,dat,start)  ![
       implicit none
@@ -83,7 +82,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
 
       end subroutine ncread_2D  !]
-
 !----------------------------------------------------------------------
       subroutine ncread_3D(ncid,vname,dat,start)  ![
       implicit none
@@ -113,7 +111,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
 
       end subroutine ncread_3D  !]
-
 !----------------------------------------------------------------------
       subroutine ncwrite_1D(ncid,vname,dat,start)  ![
       implicit none
@@ -143,7 +140,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
       end subroutine ncwrite_1D  !]
-
 !----------------------------------------------------------------------
       subroutine ncwrite_2D(ncid,vname,dat,start)  ![
       implicit none
@@ -173,7 +169,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
       end subroutine ncwrite_2D  !]
-
 !----------------------------------------------------------------------
       subroutine ncwrite_3D(ncid,vname,dat,start)  ![
       implicit none
@@ -203,7 +198,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
       end subroutine ncwrite_3D  !]
-
 !----------------------------------------------------------------------
       integer function nccreate(ncid,varname,dimname,dimsize,vartype)  ![
       ! Create a variable with dimensions in an existing file
@@ -229,8 +223,7 @@
       if (present(vartype)) then                           ! handle optional arguement
         xtype = vartype
       else
-        xtype = nf90_float                                 ! default output number type is float
-!       xtype = nf90_double                                ! default output number type is float
+        xtype = default_prec 
       endif
 
       ndim = size(dimname)
@@ -294,7 +287,6 @@
       error stop ! Stop simulation assumed fatal error
 
       end subroutine handle_ierr  !]
-
 ! ---------------------------------------------------------------------
 
       end module nc_read_write

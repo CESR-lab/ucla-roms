@@ -142,8 +142,10 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
+      call get_grid                  ! can be analytic or from netcdf
+
 #ifdef DIAGNOSTICS
-      call init_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
+      call init_diagnostics  
 #endif
 
 #ifdef NHMG
@@ -157,14 +159,7 @@ c--#define CR
 CR      write(*,*) '-11' MYID
 
 
-      !! move the ana_grid call to within get_grid
-#ifdef ANA_GRID
-      do tile=my_tile_range       
-        call ana_grid(tile)              ! grid and model bathymetry
-      enddo                   
-#else
-      call get_grid
-#endif
+
       if (may_day_flag /= 0) goto 99 !-->  EXIT
 
       do tile=my_tile_range            ! Compute various metric terms
@@ -186,15 +181,6 @@ C$OMP BARRIER
       if (may_day_flag /= 0) goto 99
 #endif
 CR      write(*,*) ' -8' MYID
-
-#if (defined UV_VIS2 && defined VIS_GRID) ||\
-    (defined TS_DIF2 && defined DIF_GRID)
-      do tile=my_tile_range            ! Rescale horizontal mixing
-        call visc_rescale(tile)        ! coefficients according to
-      enddo                            ! local grid size.
-C$OMP BARRIER
-CR      write(*,*) ' -7' MYID
-#endif
 
 #ifdef SOLVE3D
       do tile=my_tile_range            ! Create three-dimensional
@@ -249,7 +235,6 @@ CR      write(*,*) ' -5' MYID
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
 
-
 #ifdef SOLVE3D
       do tile=my_tile_range       ! recompute three-dimensional S-
         call set_depth(tile)      ! coordinate system: at this moment
@@ -295,9 +280,6 @@ CR      write(*,*)  ' -2' MYID
 # if defined SPONGE || defined TCLIMATOLOGY
         call set_nudgcof(tile)
 # endif
-# if defined TCLIMATOLOGY && defined ANA_TCLIMA && defined SOLVE3D
-        call ana_tclima(tile)
-# endif
 # ifdef ANA_SSH
         call ana_ssh(tile)
 # endif
@@ -315,17 +297,7 @@ CR      write(*,*) ' -1' MYID
 ! exclusive with respect to calls ana_tclima, ana_ssh, and ana_bsedim
 ! just above.
 
-!     call set_global_ij_SW_NE_corners
       call wrt_his_ocean_vars
-
-
-C$OMP MASTER
-#ifdef ANA_GRID
-      call wrt_ana_grid
-#endif
-!      if (ldefhis .and. wrthis(indxTime)) call wrt_his
-C$OMP END MASTER
-C$OMP BARRIER
 
 
 CR      write(*,*) '  0' MYID
@@ -352,35 +324,16 @@ C$OMP END MASTER
       subroutine roms_step
 
       use param
-      use wec_frc
-      use tides
       use extract_data
       use diagnostics
       use scalars
-      use analytical
       use sponge_tune
       use particles
       use random_output
-      use ocean_vars
       use basic_output
-      use dimensions
       use boundary
 
       implicit none
-!     integer trd, tile, my_first, my_last, range
-
-!     trd=proc(2)
-!     range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
-!     my_first=trd*range
-!     my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
-
-      !! Examine all outputs and try to move these to the end of the timestep, while collecting 
-      !! Diagnostic terms along the way during the corrector step.
-      !! 
-#ifdef DIAGNOSTICS
-      call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
-#endif
-      call wrt_random
 
 ! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (denoted here as "nstp"), while counter
@@ -401,7 +354,15 @@ C$OMP END MASTER
 
       ! Interpolate forcing data to model time n+1/2
       ! get_frc (both versions work with tdays, adding 0.5*dt)
+      ! set_tides on the other hand work wit time, not adding 0.5*dt
+      ! use time at n for surface forcing values
+
+      tdays = (time-0.5*dt)*sec2day
       call set_forces
+      ! use time at n+1/2 for boundary values
+      ! we use these values at the end of pre_step, and during step2d
+
+      tdays = (time-0.0*dt)*sec2day
       call set_bry_all
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
@@ -413,7 +374,7 @@ C$OMP END MASTER
 
       call diag
 
-      ! Computes vertical flux, using Flxu,Flxv computed in set_HUV
+      ! Computes vertical flux omega, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
       ! Should be already available from previous time-step
       call omega
@@ -447,36 +408,26 @@ C$OMP END MASTER
       call omega
       call rho_eos(nrhs)  !!! use the right time index
 
+      tdays = (time-0.0*dt)*sec2day
+      call set_forces   ! get for time n+1/2
+# if defined LMD_MIXING
+      call lmd_vmix(nrhs)
+# endif
+
+      tdays = (time+0.5*dt)*sec2day
+      call set_bry_all  ! get for time n+1
+
+
+      ! All of this seems to happen with Hz's from time n
       ! Corrector step
       call prsgrd
       call step3d_uv1(0)  ! update u/v(nnew) with dt*ru/rv
 
 #  ifdef UV_VIS2
-!     if (split_bc) then
-!        call visc3d(u_slow,v_slow,visc_slow)
-!        call visc3d(u_fast,v_fast,visc_fast)
-!     else
-        !call visc3d(u,v,visc3d)
-        call visc3d(0)
-!     endif
+      call visc3d
 #  endif
 
-! Output block: write restart/history files.
-!======= ====== ===== =============== ======
 
-#ifdef PARTICLES
-      call do_particles
-#endif
-#ifdef EXTRACT_DATA
-      call do_extract_data
-#endif
-
-      ! wrt_***_ocean_vars are called here, in the middle of a roms_step, because
-      ! 'rho', 'Akv', etc have only just been computed for step 'n'.
-      ! whereas, u & ubar, etc, remain unchanged from the end of the previous step
-!     call wrt_his_ocean_vars
-      call wrt_avg_ocean_vars
-      call wrt_rst_ocean_vars
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
@@ -488,7 +439,7 @@ C$OMP END MASTER
 
         call step2d(0) 
 
-      enddo    ! <-- iif
+      enddo
 
       ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
       call step3d_uv2(0)   
@@ -496,13 +447,7 @@ C$OMP END MASTER
       call omega
       call step3d_t(0)
 # if defined TS_DIF2 || defined TS_DIF4
-!       if (split_bc) then
-!         call t3dmix(t_slow,diff2_slow)
-!         call t3dmix(t_fast,diff2_fast)
-!       else
-!         call t3dmix(t,diff2)
       call t3dmix
-!       endif
 # endif
 
 
@@ -512,15 +457,28 @@ C$OMP END MASTER
       call rho_eos(nnew)
 !     call lmd_vmix(nnew)
 
-      time=start_time+dt*float(iic) ! n+1
+
+      time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
+
+!     Done with stepping, time for outputs
+
       call wrt_his_ocean_vars
+      call wrt_rst_ocean_vars
+      call wrt_avg_ocean_vars
 
-
-#ifdef SPONGE_TUNE
-      if (ub_tune) call adjust_orlanski
+#ifdef EXTRACT_DATA
+      call do_extract_data
 #endif
 
+      if (ub_tune)  call adjust_orlanski
 
-  99  return
+      if (do_random) call wrt_random
+
+      if (floats)  call do_particles
+
+#ifdef DIAGNOSTICS
+      call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
+#endif
+
       end

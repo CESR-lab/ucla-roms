@@ -1,14 +1,14 @@
 #include "cppdefs.opt"
 #if defined SOLVE3D && defined UV_VIS2
 
-      subroutine visc3d (tile)
+      subroutine visc3d
 
       use param
       use hidden_mpi_vars
       use private_scratch
 
       implicit none
-      integer tile
+      integer,parameter :: tile=0
 
 #include "compute_tile_bounds.h"
 

@@ -145,9 +145,9 @@
       grho=g/rho0
       HalfGRho=0.5*grho
 
-      do j=jstrV-1,jend
-        do k=1,N-1
-          do i=istrU-1,iend
+      do j=0,ny
+        do k=1,nz-1
+          do i=0,nx
             dZ(i,k)=z_r(i,j,k+1)-z_r(i,j,k)
 # ifdef SPLIT_EOS
 c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
@@ -161,14 +161,17 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 # endif
           enddo
         enddo
-        do i=istrU-1,iend
-          dR(i,N)=dR(i,N-1)
-          dR(i,0)=dR(i,1)
-          dZ(i,N)=dZ(i,N-1)
-          dZ(i,0)=dZ(i,1)
+        ! Extend derivatives top and bottom
+        ! dR and dZ are at 'w-points'
+        do i=0,nx
+          dR(i,nz)=dR(i,nz-1)
+          dR(i,0 )=dR(i,1)
+          dZ(i,nz)=dZ(i,nz-1)
+          dZ(i,0 )=dZ(i,1)
         enddo
-        do k=N,1,-1               !--> irreversible
-          do i=istrU-1,iend
+        ! Irreversible due to in-place overwriting of dZ and dR
+        do k=nz,1,-1 
+          do i=0,nx
             cff=2.*dZ(i,k)*dZ(i,k-1)
             dZ(i,k)=cff/(dZ(i,k)+dZ(i,k-1))
 
@@ -186,6 +189,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
 # endif
           enddo
         enddo
+
         do i=istrU-1,iend
           P(i,j,N)=g*z_w(i,j,N) + grho*( rho(i,j,N)
      &       +0.5*(rho(i,j,N)-rho(i,j,N-1))*(z_w(i,j,N)-z_r(i,j,N))
@@ -194,7 +198,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           P(i,j,N) = P(i,j,N) - g*ptide(i,j)
 # endif
         enddo
-        do k=N-1,1,-1
+        do k=nz-1,1,-1
           do i=istrU-1,iend
             P(i,j,k)=P(i,j,k+1)+HalfGRho*( (rho(i,j,k+1)+rho(i,j,k))
      &                                     *(z_r(i,j,k+1)-z_r(i,j,k))
@@ -457,8 +461,8 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       if (CORR_STAGE) then
         if ((calc_diag.and.diag_uv)) then
           do k=1,nz
-            Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u
-            Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v
+            Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u*umask(1:nx,1:ny)
+            Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v*vmask(1:nx,1:ny)
           enddo
         endif
         if (diag_pflx) then
