@@ -36,14 +36,15 @@
 
       ! u and v momentum:
       ! ---------------
-      integer,parameter,public :: nmd = 6    ! number of momentum diag terms
+      integer,parameter,public :: nmd = 7    ! number of momentum diag terms
       integer,parameter, public ::
      &  ipgr   = 1, ! Hydrostatic pressure gradient    
      &  icori  = 2, ! Coriolis & curvilinear coords  
      &  iadv   = 3, ! purely advective fluxes        
      &  idiss  = 4, ! dissipation from advection      
      &  ihmix  = 5, ! Viscous terms (horiz mixing)    
-     &  ivmix  = 6  ! Vertical mixing & 2D/3D coupling 
+     &  ivmix  = 6, ! Vertical mixing & 2D/3D coupling 
+     &  icoup  = 7  ! 2D/3D coupling
 
       real,allocatable,dimension(:,:,:,:),public :: Udiag 
       real,allocatable,dimension(:,:,:,:),public :: Vdiag
@@ -865,6 +866,10 @@
 
       coef = 1./navg_diag
 
+!     if (mynode==0) then
+!        print *, 'coef: ',coef
+!        print *, 'Udiag(10,10,10): ',Udiag(10,10,10,:)
+!     endif
       if (diag_avg) then
         if (diag_uv) then
           Udiag_avg = Udiag_avg*(1-coef) + Udiag*coef
@@ -895,11 +900,6 @@
 
       integer :: dim,diag, prev_fill_mode
       character(len=99),save  :: fname
-
-!     if (.not. init_done) then
-!       call init_diagnostics 
-!       return
-!     endif
 
       call calc_diag_avg
 
@@ -997,6 +997,11 @@
      &                               ,'Vertical mixing')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
+        varid = nccreate(ncid,'u_cpl',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'2D/3D coupling')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
         dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
         dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
 
@@ -1028,6 +1033,11 @@
         varid = nccreate(ncid,'v_vmx',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'Vertical mixing')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'v_cpl',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'2D/3D coupling')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
       endif
@@ -1110,6 +1120,7 @@
         call ncwrite(ncid,'u_dis',ud(:,:,:,4),start)
         call ncwrite(ncid,'u_hmx',ud(:,:,:,5),start)
         call ncwrite(ncid,'u_vmx',ud(:,:,:,6),start)
+        call ncwrite(ncid,'u_cpl',ud(:,:,:,7),start)
           
         if (.not.south_exchng) vd(:,1,:,:) = 0
         start = (/bfx, 1, 1, record/)
@@ -1120,6 +1131,7 @@
         call ncwrite(ncid,'v_dis',vd(:,:,:,4),start)
         call ncwrite(ncid,'v_hmx',vd(:,:,:,5),start)
         call ncwrite(ncid,'v_vmx',vd(:,:,:,6),start)
+        call ncwrite(ncid,'v_cpl',vd(:,:,:,7),start)
 
       end subroutine wrt_diag_uv  !]
 ! ----------------------------------------------------------------------
