@@ -152,6 +152,7 @@
 # ifdef IMPLICIT_BOTTOM_DRAG
         if (diag_uv) then
           u_prev = u(1:nx,j,:,nnew)
+          v_prev = v(1:nx,j,:,nnew)
         endif
 
         do i=istrU,iend
