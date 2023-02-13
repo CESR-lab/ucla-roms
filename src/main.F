@@ -410,7 +410,7 @@ C$OMP END MASTER
         knew=kstp+1
         if (knew > 4) knew=1
 
-        call step2d(0) 
+        call step2d
 
       enddo
 
