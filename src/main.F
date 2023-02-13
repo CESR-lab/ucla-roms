@@ -264,38 +264,11 @@ CR      write(*,*)  ' -3' MYID
 CR      write(*,*)  ' -2' MYID
 #endif
 
-! Set up climatological environment: Set nudging coefficient for
-!==== == ============== ============ sea-surface hight and tracer
-! climatology; create analytical tracer and sea-surface hight
-! climatology fields (if applicable); set bottom sediment grain
-! size [m] and density [kg/m^3] used for bottom boundary layer
-! formulation;
 
-#if defined SPONGE || defined TCLIMATOLOGY \
-  || (defined SG_BBL96 && defined ANA_BSEDIM)\
-  || (defined TCLIMATOLOGY && defined ANA_TCLIMA)\
-  || defined ANA_SSH
-
-      do tile=my_tile_range
-# if defined SPONGE || defined TCLIMATOLOGY
-        call set_nudgcof(tile)
-# endif
-# ifdef ANA_SSH
-        call ana_ssh(tile)
-# endif
-# if defined SG_BBL96 && defined ANA_BSEDIM
-        call ana_bsedim(tile)
-# endif
-      enddo
-C$OMP BARRIER
+#if defined SPONGE 
+      call set_nudgcof(0)
 #endif
 CR      write(*,*) ' -1' MYID
-
-! Read initial input data for forcing fields; tracer and sea surface
-! climatology; bottom sediment grain size and density (if applicable)
-! from input netCDF files.  Note that CPP-logic here is mutually
-! exclusive with respect to calls ana_tclima, ana_ssh, and ana_bsedim
-! just above.
 
       call wrt_his_ocean_vars
 

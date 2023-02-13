@@ -107,7 +107,6 @@
       integer :: ierr,ncid,v_id,i,j
 
 
-      ! Should put this in wrapper in read_write.F as 'nc_read_once'
       if (p_analytical) then
 
         ! pipe_flx is defined in ana_grid()
@@ -116,12 +115,11 @@
 
         ! Read 'pipe_flux' from grid file (Pipe_idx & pipe_fraction in one value)
         ierr=nf90_open(grdname, nf90_nowrite, ncid)
-        ierr=nf90_inq_varid(ncid, pipe_flx_name, v_id)
         ! Temporarily store as pipe_fraction to avoid extra array,
         ! but value still pipe_idx + pipe_fraction
-!        ierr=ncdf_read_mod(ncid, v_id, 0, rp_var, pipe_fraction(START_2D_ARRAY), 1)
         call ncread(ncid,pipe_flx_name, pipe_fraction(i0:i1,j0:j1))
-        if(ierr/=0) call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
+        if(ierr/=0) 
+     &      call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
 
         ! Separate pipe_idx & pipe_fraction:
         do j = jstr,jend

@@ -389,7 +389,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #endif
 
 ! Input file controls:  grid, initial conditions, surface forcing,
-!----- ----- ---------  climatology, lateral boundary forcing data
+!----- ----- ---------  lateral boundary forcing data
 
 #ifndef ANA_GRID
 ! Grid file name. Check its availability.
