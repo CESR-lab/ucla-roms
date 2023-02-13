@@ -1,10 +1,3 @@
-      subroutine ana_grid
-
-!   Provide analytical version of coordinates, grid scale, coriolis, and depth
-!   This file will be included in the grid module
-!   This is a simple seamount example
-
-      implicit none
 
       real  :: SizeX,SizeY
       real  :: f0,beta
@@ -69,5 +62,3 @@
         enddo
       enddo
 # endif
-
-      end subroutine ana_grid 
