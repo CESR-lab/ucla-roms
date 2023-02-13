@@ -59,7 +59,6 @@ c--# define CONST_TRACERS
       use surf_flux, only: stflx, srflx
       use tracers
       use diagnostics
-      use climat
       use eos_vars
       use grid
       use mixing

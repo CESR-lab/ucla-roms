@@ -21,7 +21,6 @@
 ! Computes horizontal mixing of tracers along S-surfaces.
 
       use param
-      use climat
       use grid
       use mixing
       use ocean_vars

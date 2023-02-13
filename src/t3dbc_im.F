@@ -8,7 +8,6 @@
       use param
       use tracers, only: t
       use boundary
-      use climat
       use grid
       use ocean_vars
       use scalars

@@ -18,7 +18,6 @@
       subroutine set_nudgcof_tile (istr,iend,jstr,jend, wrk)
 
       use param
-      use climat
       use mixing
       use scalars
 

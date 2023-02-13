@@ -23,7 +23,6 @@
       use param
       use tracers
       use diagnostics
-      use climat
       use grid
       use mixing
       use ocean_vars

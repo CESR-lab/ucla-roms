@@ -9,7 +9,6 @@
       use param
       use wec_frc
       use boundary
-      use climat
       use grid
       use ocean_vars
       use scalars
