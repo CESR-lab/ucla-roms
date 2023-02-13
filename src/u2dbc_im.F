@@ -10,7 +10,6 @@
       use wec_frc
 #endif
       use boundary
-      use climat
       use grid
       use ocean_vars
       use scalars

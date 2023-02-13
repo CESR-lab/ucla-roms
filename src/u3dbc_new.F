@@ -8,7 +8,6 @@
       use param
       use dimensions
       use boundary
-      use climat
       use grid
       use ocean3d
       use scalars
