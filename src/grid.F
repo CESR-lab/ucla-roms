@@ -5,6 +5,7 @@
       use param
       use dimensions
       use roms_read_write
+      use pipe_frc
       implicit none
 
 !
@@ -156,9 +157,21 @@
 
       end subroutine init_arrays_grid  !]
 !----------------------------------------------------------------------
-#include "ana_grid.opt"
+      subroutine ana_grid ![
+
+!   Provide analytical version of coordinates, grid scale, coriolis, and depth
+
+      implicit none
+
 ! ----------------------------------------------------------------------
-      subroutine wrt_ana_grid     ! write analytical grid to file  ![
+
+#include "ana_grid.opt"
+
+
+      end subroutine ana_grid !]
+! ----------------------------------------------------------------------
+      subroutine wrt_ana_grid ![
+      ! write analytical grid to file 
       use param
       use mpi
       use netcdf
@@ -405,14 +418,15 @@
 
       implicit none
 
+      character*1 char1
+      integer :: ierr, ncid, varid, lstr, lenstr, checkdims
+      integer,dimension(4) :: start
+
+
 #ifdef ANA_GRID
       call ana_grid
       call wrt_ana_grid
 #else 
-
-      character*1 char1
-      integer :: ierr, ncid, varid, lstr, lenstr, checkdims
-      integer,dimension(4) :: start
 
 ! Open grid netCDF file for reading. Check that dimensions in the file
 ! are consistent with the model, then read all necessary variables.

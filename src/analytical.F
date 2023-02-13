@@ -21,18 +21,13 @@
 ! ana_meanRHO_tile  Analytical mean density anomaly.
 ! ana_smflux_tile   Analytical kinematic surface momentum flux (wind stress).
 ! ana_srflux_tile   Analytical kinematic surface shortwave radiation.
-! ana_ssh_tile      Analytical sea surface height climatology.
 ! ana_sst_tile      Analytical sea surface temperature and dQdSST
 !                         which are used during heat flux correction.
 ! ana_stflux_tile   Analytical kinematic surface flux of tracer type variables.
-! ana_tclima_tile   Analytical tracer climatology fields.
-! ana_uclima_tile   Analytical tracer climatology fields.
 ! ana_wwave_tile    Analytical wind induced wave amplitude, direction and period.
 
 ! REMOVE ALL FLAGS LATER
-#ifdef ANA_GRID
-      public ana_grid
-#endif
+
 #ifdef ANA_INITIAL
       public ana_init
 #endif
@@ -82,7 +77,6 @@
       use param
       use tracers, only: t
       use boundary
-      use climat
       use eos_vars
       use grid
       use mixing
@@ -278,8 +272,8 @@
      &                t(START_2D_ARRAY,1,1,itrc), N)
       enddo
 #  endif
-#  ifdef ISWAKE
-#  elif defined COLD_FILAMENT
+#  ifdef COLD_FILAMENT
+      !! Move this
       call exchange_tile(istr,iend,jstr,jend, Akv,N+1)
 #  endif
 # endif  /* EXCHANGE */
@@ -473,32 +467,6 @@
       enddo
       end subroutine ana_srflux_tile  !]
 #endif /* ANA_SRFLUX */
-
-! ----------------------------------------------------------------------
-#if defined ANA_SSH
-      subroutine ana_ssh(tile)            ![ Set analytical sea-surface
-      use param
-      use hidden_mpi_vars
-      implicit none                       !  height climatology [m]
-      integer tile
-#include "compute_tile_bounds.h"
-      call ana_ssh_tile(istr,iend,jstr,jend)
-      end subroutine ana_ssh  !]
-! ----------------------------------------------------------------------
-      subroutine ana_ssh_tile(istr,iend,jstr,jend)  ![
-
-      use param
-      use climat
-      use grid
-      use scalars
-
-      implicit none
-      integer istr,iend,jstr,jend, i,j
-
-# include "compute_extended_bounds.h"
-
-      end subroutine ana_ssh_tile  !]
-#endif
 
 ! ----------------------------------------------------------------------
 #ifdef SOLVE3D

@@ -3,8 +3,8 @@
       subroutine set_forces
 
 ! Using either data read from netCDF files or created analytically,
-! prepare surface and bottom boundary fluxes as well as relevant
-! climatological fields, so they can be applied to the model. This
+! prepare surface and bottom boundary fluxes, so they can be 
+! applied to the model. This
 ! procedure essentially interpolates the available data to current
 ! model time and converts units to make all fluxes be kinematic
 ! fluxes, i.e,
@@ -28,10 +28,6 @@
 ! Bottom drag is computed using either Styles and Glenn(1996) bottom
 ! boundary layer formulation, or linear/quadratic friction law..
 !
-! NOTE: Since some of the surface flux formulation may require
-! climatological data (e.g., salinity at surface) update tclima
-! first.
-
       use param
       use bulk_frc  ! ,  only: set_bulk_frc_tile
       use flux_frc
@@ -61,7 +57,6 @@
       ierr=0
 ! External data to supply at open boundaries. Note that there are
 ! two mutually exclusive mechanisms for each variable: either _BRY
-! or climatological data. 
 
 #if  !defined OBC_NONE &&                         \
      (defined T_FRC_BRY  || defined M2_FRC_BRY || \

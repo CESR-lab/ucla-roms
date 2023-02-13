@@ -44,7 +44,6 @@
       use bulk_frc
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
       use tracers   ! iTandS, t, t_avg
-      use climat
       use coupling
       use eos_vars
       use grid
@@ -140,10 +139,6 @@
 # ifdef WEC
       call init_arrays_wec_tile(istr,iend,jstr,jend)
 # endif
-
-! Initialize climatology arrays (see "climat").
-
-      call init_arrays_climat  ! DevinD added
 
 #if defined M2NUDGING && !defined M2_FRC_BRY
       do j=jstrR,jendR
