@@ -167,7 +167,6 @@
 
 #include "ana_grid.opt"
 
-
       end subroutine ana_grid !]
 ! ----------------------------------------------------------------------
       subroutine wrt_ana_grid ![
