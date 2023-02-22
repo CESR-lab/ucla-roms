@@ -440,15 +440,13 @@ C$OMP END MASTER
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
 
-#ifdef EXTRACT_DATA
-      call do_extract_data
-#endif
+      if (do_extract) call do_extract_data
 
       if (ub_tune)  call adjust_orlanski
 
       if (do_random) call wrt_random
 
-      if (floats)  call do_particles
+      if (floats) call do_particles
 
 #ifdef DIAGNOSTICS
       call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
