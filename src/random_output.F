@@ -58,16 +58,8 @@
       character(len=99),save :: fname
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
-      logical,save           :: first_step=.true.
       
-      ! do nothing if do_random is false
-      if (.not.do_random) return
-
-      if (first_step) then
-        first_step=.false.
-      else
-        output_time = output_time + dt                           ! only start count after first timestep
-      endif
+      output_time = output_time + dt
 
       if (output_time>=output_period) then
 
