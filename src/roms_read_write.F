@@ -568,9 +568,7 @@
       end subroutine coarse2fine !]
 ! ----------------------------------------------------------------------
       logical function findstr(string,pattern,istart) ![
-      ! this utility function should be moved somewhere more generic...
-      ! copied from extract_data.F.
-      ! should be in roms_read_write and then that module should be available to
+      ! Should be in roms_read_write and then that module should be available to
       ! Tools-Roms/ as well as src/
       ! didn't do it now because roms_read_write depends on other modules so would
       ! require a bit of work (do once ncvars is removed)
