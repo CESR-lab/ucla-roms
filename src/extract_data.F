@@ -39,7 +39,6 @@
       !]
 
 #include "cppdefs.opt"
-#ifdef EXTRACT_DATA
 
       use dimensions
       use grid
@@ -716,6 +715,5 @@
       end subroutine create_var  !]
 
 ! ----------------------------------------------------------------------
-#endif /* EXTRACT_DATA */
 
       end module extract_data
