@@ -1,6 +1,12 @@
       module grid
 
 #include "cppdefs.opt"
+              
+      ! possible choices for an .opt file
+      ! ana_grid
+      ! curvgrid
+      ! spherical
+      ! non-traditional (horizontal coriolis components
 
       use param
       use dimensions
@@ -165,7 +171,7 @@
 
 ! ----------------------------------------------------------------------
 
-#include "ana_grid.opt"
+#include "ana_grid.h"
 
       end subroutine ana_grid !]
 ! ----------------------------------------------------------------------
