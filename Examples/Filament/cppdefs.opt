@@ -7,14 +7,6 @@
 
 #define FILAMENT_IDEAL
 
-/*
-    Embedded (nested) grid configuration segment
-*/
-
-c--#ifndef MAX_GRID_LEVEL
-c--# define MAX_GRID_LEVEL 2
-c--# include "redefs.X"
-c--#endif
 
 /*
    Main switch starts here: model configuration choice.
@@ -48,48 +40,36 @@ c# define SALINITY
 # define TS_DIF2
 
         /*        - vertical */
-c# define ANA_VMIX
-# ifndef ANA_VMIX
-#  define LMD_MIXING
-#  define LMD_KPP
-#  define LMD_NONLOCAL
-#  define LMD_RIMIX
-#  define LMD_CONVEC
-#  define LMD_BKPP
-# endif
+# define ANA_VMIX
+c# define LMD_MIXING
+c# define LMD_KPP
+c# define LMD_NONLOCAL
+c# define LMD_RIMIX
+c# define LMD_CONVEC
+c# define LMD_BKPP
 
         /* Grid Configuration */
-c-dd# define CURVGRID
-c-dd# define SPHERICAL
+c# define CURVGRID
+c# define SPHERICAL
 # define MASKING
 
-        /* Output Options */
-# define MASK_LAND_DATA
+        /* Boundaries */
+# define NS_PERIODIC
+# define EW_PERIODIC
 
-        /* Open Boundaries */
-c# define NS_PERIODIC
-c# define EW_PERIODIC
+c#  define OBC_WEST
+c#  define OBC_EAST
+c#  define OBC_NORTH
+c#  define OBC_SOUTH
 
-c# if !defined EW_PERIODIC
-#  define OBC_WEST
-#  define OBC_EAST
-c# endif
+c#  define OBC_M2FLATHER
+c#  define OBC_M3ORLANSKI
+c#  define OBC_TORLANSKI
 
-c# if !defined NS_PERIODIC
-#  define OBC_NORTH
-#  define OBC_SOUTH
-c# endif
-
-c# if !defined EW_PERIODIC || !defined NS_PERIODIC
-#  define OBC_M2FLATHER
-#  define OBC_M3ORLANSKI
-#  define OBC_TORLANSKI
-
-#  define Z_FRC_BRY
-#  define M2_FRC_BRY
-#  define M3_FRC_BRY
-#  define T_FRC_BRY
-c# endif
+c#  define Z_FRC_BRY
+c#  define M2_FRC_BRY
+c#  define M3_FRC_BRY
+c#  define T_FRC_BRY
 
         /* Waves Effect on Current */
 c# define WEC

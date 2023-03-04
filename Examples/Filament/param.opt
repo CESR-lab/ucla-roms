@@ -15,17 +15,16 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm=200, MMm=10, N=250      ! WEC Example sample grid
+      integer, parameter :: LLm=256, MMm=256, N=128 
 
-      integer, parameter :: NP_XI  = 3, NP_ETA = 2
+      integer, parameter :: NP_XI  = 4, NP_ETA = 4
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
       integer, parameter :: nt = 1 
       
-! Additional params for L4
       real,    parameter :: 
-     &   HD  = 250                ! m (depth) is H in DH script
-     & , f0  = 7.81e-5              
+     &   HD  = 1000               ! m (depth) is H in DH script
+!    & , f0  = 7.81e-5              
  
 
 
