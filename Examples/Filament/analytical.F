@@ -24,13 +24,10 @@
 !                          (wind stress).
 ! ana_srflux_tile   Analytical kinematic surface shortwave
 !                          radiation.
-! ana_ssh_tile      Analytical sea surface height climatology.
 ! ana_sst_tile      Analytical sea surface temperature and dQdSST
 !                         which are used during heat flux correction.
 ! ana_stflux_tile   Analytical kinematic surface flux of tracer type
 !                          variables.
-! ana_tclima_tile   Analytical tracer climatology fields.
-! ana_uclima_tile   Analytical tracer climatology fields.
 ! ana_wwave_tile    Analytical wind induced wave amplitude,
 !                         direction and period.
 
@@ -38,9 +35,6 @@
       logical, parameter :: restore = .false.
 
 ! REMOVE ALL FLAGS LATER
-#ifdef ANA_GRID
-      public ana_grid
-#endif
 #ifdef ANA_INITIAL
       public ana_init
 #endif
@@ -63,293 +57,32 @@
 # endif
 #endif
 
-      ! Non-typical analytical vars:
 
       contains
 
 ! ----------------------------------------------------------------------
-#ifdef ANA_GRID
-      subroutine ana_grid (tile) ![
-
-      use param
-      use hidden_mpi_vars
-
-      implicit none
-      integer tile
-# include "compute_tile_bounds.h"
-      call ana_grid_tile (istr,iend,jstr,jend)
-
-      end subroutine ana_grid !]
-! ----------------------------------------------------------------------
-      subroutine ana_grid_tile (istr,iend,jstr,jend) ![
-
-! Set up model grid using analytical expressions:
-!---- -- ----- ---- ----- ---------- ------------
-! output: stored in common blocks, see files "scalars" "grid"
-
-! xl,el      Physical dimensions of the computational domain [usually
-!                                                measured in  meters];
-! h          Model bathymetry [meters, positive] at RHO-points.
-! hmin,hmax  Minimum and maximum values of depth of bathymetry [m].
-! f          Coriolis parameter (1/seconds) at RHO-points.
-! pm,pn      Coordinate transformation metric "m" [1/meters]
-!                   associated with the differential distances in
-!                   XI- and ETA-directions, both are at RHO-points.
-! xp,xr      XI-coordinates [m] at PSI- and RHO-points.
-! yp,yr      ETA-coordinates [m] at PSI- and RHO-points.
-      use param
-      use grid
-      use scalars
-
-      implicit none
-      integer istr,iend,jstr,jend, i,j
-
-! Grid configuration parameters:
-!----- ------------- -----------
-! Size_XI, Size_ETA  are the physical dimensions of the computational
-!                                domain [usually measured in  meters];
-! depth      the maximum depth [meters, positive];
-! f0,beta    Coriolis parameters to setup a beta-plane [1/s, 1/(m*s)].
-
-      real cff,y, x0,y0,dx,dy
-      real dh, shelf, slope, land, coast
-
-      real, parameter ::
-     &       depth = HD       ! H set in param.opt
-
-
-# include "compute_extended_bounds.h"
-
-      dx=200.0                         ! Set grid spacings for
-      dy=200.0                         ! Cartesian rectangular grid
-
-C$OMP MASTER                           ! Copy physical dimensions of
-      xl=dx*dble(LLm)
-      el=dy*dble(MMm)                  ! the grid into glabally vizible
-C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
-
-# ifdef MPI
-      x0=dx*dble(iSW_corn) - xl/2  ! Coordinates of south-west
-      y0=dy*dble(jSW_corn)             ! corner of MPI subdomain
-                                       ! -xl/2 to centre over axis
-# else
-      x0=0. ; y0=0.
-# endif
-
-      do j=jstrR,jendR                  ! Setup Cartezian grid
-        do i=istrR,iendR                ! (XI,ETA) at PSI- and RHO-
-          xp(i,j)=x0+dx* dble(i-1)      ! points and compute metric
-          xr(i,j)=x0+dx*(dble(i)-0.5D0) ! transformation coefficients
-          yp(i,j)=y0+dy* dble(j-1)      ! pm and pn, which are
-          yr(i,j)=y0+dy*(dble(j)-0.5D0) ! uniform in this case.
-
-          pm(i,j)=1./dx
-          pn(i,j)=1./dy
-        enddo
-      enddo
-
-! Set Coriolis parameter [1/s] at RHO-points.
-
-      x0=xl/2.
-      y0=el/2.
-      do j=jstrR,jendR
-        do i=istrR,iendR
-!          f(i,j)=f0+beta*( yr(i,j)-y0 )
-          f(i,j)=f0
-        enddo
-      enddo
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          h(i,j)=depth ! constant depth
-        enddo
-      enddo
-
-      ! Set up land masking
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          rmask(i,j) = 1
-        enddo
-      enddo
-
-      end subroutine ana_grid_tile !]
-#endif /* ANA_GRID */
-! ----------------------------------------------------------------------
 #ifdef ANA_INITIAL
-      subroutine ana_init (tile)  ![
-                                
-      use param
-      use hidden_mpi_vars
-      use private_scratch
-
-      implicit none               ! using analytical expressions.
-      integer tile
-
-# include "compute_tile_bounds.h"
-
-      call ana_init_tile( istr,iend,jstr,jend )
-
-      end subroutine ana_init !]
-! ----------------------------------------------------------------------
-      subroutine ana_init_tile (istr,iend,jstr,jend) ![
+      subroutine ana_init ![
 
       use param
+      use scalars
       use boundary
-      use climat
+      use tracers
       use eos_vars
       use mixing
-      use read_write
-      use netcdf
-      use mpi
 
       implicit none
 
-      integer :: istr,iend,jstr,jend, i,j,k, itrc, ierr
-
-      real, dimension(GLOBAL_2D_ARRAY)    :: h_sbl
-      real, allocatable, dimension(:,:,:) :: b, a1, a2
-
-      real, dimension(GLOBAL_2D_ARRAY, N) :: dbdx_xr    ! db/dx at xi_rho, s_rho. v sits at xi_rho, and constant in y
-      real, dimension(GLOBAL_2D_ARRAY, N) :: rho_loc    ! local rho
-      real :: zeta_edge
-
-      ! Daniel values:
-      ! - SMC Density Initial Condition:
-      real :: b0          = 6.4e-3
-      real :: B_cff       = 0.025    ! gamma in JCM
-      real :: lambda_inv  = 10.0      ! m. scale of transition from surface to pycnocline
-      real :: Nb          = 1.0e-7   ! surface s^-2
-      real :: N0          = 3.4e-5   ! background
-      real :: h0          = 60.0     ! m. boundary layer beyond filament
-      real :: dh0         = 15.      ! m
-      real :: dh2         = 10.0     ! m. Buffer between pycnocline and deeper stratification.
-      real :: N2          = 1.5e-4   ! Daniel said try 0
-      real :: h2          = 70.0     !
-      real :: L           = 4000.0     ! m
-      real :: bs0         = 8.51e-3  ! ms-2
-
-# include "compute_auxiliary_bounds.h"
-
-      ! necessary for FIRST_TIME_STEP flag to work, as per set_global_definitions.h
-      ! this had no value for analytical examples previously.
-#ifdef EXACT_RESTART
-      forw_start=ntstart
-#endif
-
-
-#ifdef FILAMENT_RESTORE
-      alpha_fil = dt / ( 3600 )  ! set restoring coeff
-#endif
-
-      allocate(  b(GLOBAL_2D_ARRAY, N) )
-      allocate( a1(GLOBAL_2D_ARRAY, N) )
-      allocate( a2(GLOBAL_2D_ARRAY, N) )
-
-      ! Calculate temperature from buoyancy:
-
-      b=0.0
-      do j=jstrR-1,jendR+1     ! j is length of filament. Go beyond buffer for averaging to v.
-        do i=istrR-1,iendR+1   ! go beyond buffer to allow for averaging later. Since analytical, doesn't matter.
-
-          h_sbl(i,j) = h0  + (dh0 * exp(-(( xr(i,j) /L )**2)))
-
-          do k=1,N
-
-            a1(i,j,k) = Nb * (z_r(i,j,k) + HD)
-            a2(i,j,k) = (0.5 * N0) * ( (1+ B_cff) * z_r(i,j,k) - ( 1- B_cff)
-     &          *( h_sbl(i,j) + lambda_inv * log(cosh((1./lambda_inv) *(z_r(i,j,k) + h_sbl(i,j))))))
-
-            b(i,j,k) = bs0 + a1(i,j,k) + a2(i,j,k)
-
-            ! buoyancy do as temperature (got this from Daniel's script?):
-            t(i,j,k,1,itemp) = b(i,j,k) / (2.0e-4 * 9.81)
-
-          enddo
-        enddo
-      enddo
-
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-!            t(i,j,k,1,itemp)=20.0
-            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
-# ifdef SALINITY
-            t(i,j,k,1,isalt)=36.
-            t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
-# endif
-          enddo
-        enddo
-      enddo
-
-      ! Set geostrophic flow in u-direction based on temperature as proxy for buoyancy:
-      dbdx_xr=0.0
-      v(:,:,:,1)=0.0
-      vbar(:,:,1)=0.0
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            dbdx_xr(i,j,k) = ( b(i+1,j,k) - b(i-1,j,k) ) * pm(i,j) * 0.5      ! pm * 0.5 = / 2 * dx
-            if(k==1) then
-              v(i,j,k,1)= 0  ! since pressure gradient is zero can set directly
-            else
-              v(i,j,k,1)= v(i,j,k-1,1) + 0.25 * ( dbdx_xr(i,j,k-1) + dbdx_xr(i,j,k) )
-     &                                        * (      Hz(i,j,k-1) +      Hz(i,j,k) ) / f(i,j)
-            endif
-            vbar(i,j,1)=vbar(i,j,1)+v(i,j,k,1) * Hz(i,j,k)
-          enddo
-        enddo
-      enddo
-      vbar(:,:,1) = vbar(:,:,1) / HD  ! average vertical integral over depth
-                                      ! excludes zeta since 'v' was calculated without it, but should be there
-
-      ! zeta needed for vbar calculation:
-      zeta(:,:,1)=0.
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          do k=1,N
-            rho_loc(i,j,k)=Tcoef*T0 - Tcoef*t(i,j,k,1,itemp)  ! rho as per LIN_EOS in rho_eos.F
-          enddo
-          do k=1,N
-            zeta(i,j,1) = zeta(i,j,1) - rho_loc(i,j,k)  * Hz(i,j,k) / rho0
-          enddo
-        enddo
-      enddo
-
-      ! remove average zeta
-      if (mynode==0) zeta_edge = zeta(1,5,1)  ! get zeta level at western_edge and communicate to all other domains
-      call MPI_Barrier(MPI_COMM_WORLD, ierr)
-      call MPI_BCAST(zeta_edge, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD, ierr)  ! exchange zeta to all other sub-domains.
-
-      zeta(:,:,1) = zeta(:,:,1) - zeta_edge
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ubar(i,j,1)=0.
-          vbar(i,j,2)=vbar(i,j,1)  ! DevinD experiment, made no difference
-          zeta(i,j,2)=zeta(i,j,1)  ! DevinD added, made no difference
-          do k=1,N
-            u(i,j,k,1)=0.
-!            v(i,j,k,1)=0.
-            u(i,j,k,2)=u(i,j,k,1)
-            v(i,j,k,2)=v(i,j,k,1)
-          enddo
-        enddo
-      enddo
-
-
-
-      ! The rest of the code is independent of the specific configuration:
+#include "ana_init.h"
 
       call ana_init_generic(istr,iend,jstr,jend)
 
-      end subroutine ana_init_tile !]
+      end subroutine ana_init !]
 ! ----------------------------------------------------------------------
       subroutine ana_init_generic(istr,iend,jstr,jend) ![
 
       use param
       use boundary
-      use climat
       implicit none
 
       ! input
@@ -616,40 +349,46 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 #if defined ANA_VMIX && defined SOLVE3D
       subroutine ana_vmix (tile) ![
 
-      use param
-      use hidden_mpi_vars
-
       implicit none
       integer tile
-# include "compute_tile_bounds.h"
-      call ana_vmix_tile (istr,iend,jstr,jend)
+      call ana_vmix_tile 
       end subroutine ana_vmix !]
 ! ----------------------------------------------------------------------
-      subroutine ana_vmix_tile (istr,iend,jstr,jend) ![
+      subroutine ana_vmix_tile ![
 
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
 ! using analytical expressions.
 
-      use param
-      use grid
-      use mixing
-      use ocean3d
-      use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
-      real cff
+      integer :: i,j,k
+      real    :: cff
+      real    :: hbl,ssgm
 
-# include "compute_auxiliary_bounds.h"
+      hbl = 70;  ! match the initial mixed layer depth
 
       if (FIRST_TIME_STEP) then
-        do k=0,N
-          do j=jstr,jend
-            do i=istr,iend
-             Akv(i,j,k)=0.0
+        do k=0,nz
+          do j=0,ny+1
+            do i=0,nx+1
+              ssgm=(z_w(i,j,nz)-z_w(i,j,k))/hbl
 
-             Akt(i,j,k,itemp)=0.
+              if (ssgm < 1.) then
+                if (ssgm<0.07D0) then
+                  cff=0.5*(ssgm-0.07D0)**2/0.07D0
+                else
+                  cff=0.D0
+                endif
+                cff=cff + ssgm*(1.-ssgm)**2
+              else
+                cff=0
+              endif
+
+              ! attempt to get a max value of 0.005 m^2/s
+              Akv(i,j,k) = cff*0.005/0.15
+
+              Akt(i,j,k,itemp)=cff*0.005/0.15
 #  ifdef SALINITY
               Akt(i,j,k,isalt)=Akt_bak(isalt)
 #  endif
@@ -660,12 +399,12 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
 
 # ifdef EXCHANGE
-      call exchange_2_tile (istr,iend,jstr,jend,  Akv, N+1,
-     &                    Akt(START_2D_ARRAY,0,itemp), N+1)
-#  ifdef SALINITY
-      call exchange_tile (istr,iend,jstr,jend,
-     &                    Akt(START_2D_ARRAY,0,isalt), N+1)
-#  endif
+!     call exchange_2_tile (istr,iend,jstr,jend,  Akv, N+1,
+!    &                    Akt(START_2D_ARRAY,0,itemp), N+1)
+!  ifdef SALINITY
+!     call exchange_tile (istr,iend,jstr,jend,
+!    &                    Akt(START_2D_ARRAY,0,isalt), N+1)
+!  endif
 # endif
 
       end subroutine ana_vmix_tile !]
@@ -692,8 +431,8 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
         do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
           do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
-            sustr(i,j)=0.        ! at horizontal U- and V-points.
-            svstr(i,j)=1.0e-5    ! For code compactness, both are set
+            sustr(i,j)=0.0e-5    ! at horizontal U- and V-points.
+            svstr(i,j)=0.0e-5    ! For code compactness, both are set
           enddo                  ! to zero at first (default values),
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
@@ -718,39 +457,13 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
 
       do j=jstrR,jendR
         do i=istrR,iendR
-          srflx(i,j)=2.4e-5
+          srflx(i,j) = 0
         enddo
       enddo
 
       end subroutine ana_srflux_tile !]
 #endif /* ANA_SRFLUX */
 ! ----------------------------------------------------------------------
-#if defined ANA_SSH
-      subroutine ana_ssh(tile)  ![
-      use param
-      use hidden_mpi_vars
-      implicit none                       ! height climatology [m]
-      integer tile
-#include "compute_tile_bounds.h"
-      call ana_ssh_tile(istr,iend,jstr,jend)
-      end subroutine !]
-! ----------------------------------------------------------------------
-      subroutine ana_ssh_tile(istr,iend,jstr,jend) ![
-
-      use param
-      use climat
-      use grid
-      use scalars
-
-      implicit none
-      integer istr,iend,jstr,jend, i,j
-
-# include "compute_extended_bounds.h"
-
-      end !]
-#endif
-! ----------------------------------------------------------------------
-#ifdef SOLVE3D
 # if defined ANA_STFLUX || defined ANA_SSFLUX
       subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc) ![
 
@@ -796,7 +509,6 @@ C$OMP END MASTER                       ! variables (ONE THREAD ONLY).
       endif
       end subroutine ana_stflux_tile !]
 # endif /* ANA_STFLUX || ANA_SSFLUX */
-#endif /* SOLVE3D */
 
 ! ----------------------------------------------------------------------
 
