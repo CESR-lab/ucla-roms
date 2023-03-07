@@ -48,9 +48,6 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 ! dt       Time step for 3D primitive equations [seconds];
 ! dtfast   Time step for 2D (barotropic) mode [seconds];
 
-! xl,el    Physical size[m] of the domain in XI- and ETA-directions
-
-! rdrg,rdrg2    Linear and quadratic bottom drag coefficients.
 ! gamma2   Slipperiness parameter, either 1. (free-slip)
 
 ! ntstart  Starting timestep in evolving the 3D primitive equations;
@@ -77,7 +74,8 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 ! levbfrc                                stress as as bodyforce.
 
       real(kind=8) start_time, dt, dtfast, time_avg
-      real xl,el, rdrg,rdrg2,Zob, visc2,gamma2
+      real rdrg,rdrg2,Zob, visc2,gamma2
+!     real :: xl,el
 
 #ifdef SOLVE3D
       real rho0, tnu2(NT)

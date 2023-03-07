@@ -357,12 +357,6 @@
      &                                          )           
           enddo
         enddo
-!       if (mynode==1) then
-!        if (j==20) then
-!          i = 10
-!          print *,'set_HUV1: ',sum(FlxU(i,j,:))/DC(i,0),ubar(i,j,kbak)
-!        endif
-!       endif
 
         if (j >= jstr) then
           do i=istrR,iendR
@@ -419,7 +413,7 @@
 #  endif
           enddo
 # endif
-          do k=1,N
+          do k=1,nz
             do i=istrR,iendR
 !! JM same thing as above for ust. (masking in wec_frc)
               v(i,j,k,nnew)=(v(i,j,k,nnew)-FC(i,0))
@@ -434,6 +428,7 @@
      &                                +vst(i,j,k)
 # endif
      &                                          )
+
             enddo
           enddo
         endif

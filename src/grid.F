@@ -9,9 +9,12 @@
       ! non-traditional (horizontal coriolis components
 
       use param
+      use netcdf
+      use nc_read_write
       use dimensions
       use roms_read_write
       use pipe_frc
+      use scalars
       implicit none
 
 !
@@ -52,9 +55,7 @@
       real,allocatable,dimension(:,:) :: f_ETA
 # endif
 
-# ifdef CURVGRID
       real,allocatable,dimension(:,:) :: angler
-# endif
 
       real,allocatable,dimension(:,:) :: latr
       real,allocatable,dimension(:,:) :: lonr
@@ -94,13 +95,16 @@
       real,allocatable,dimension(:,:) :: vmask
 #endif
 
+      real :: xl,el
+
+      character(len=99),public  :: ana_grdname
+
       public :: get_grid
 
       contains
 
 !----------------------------------------------------------------------
       subroutine init_arrays_grid  ![
-      use scalars
       implicit none
 
       ! WARNING: "rmask" MUST BE initialized to all-one (=1) state in order to
@@ -164,12 +168,8 @@
       end subroutine init_arrays_grid  !]
 !----------------------------------------------------------------------
       subroutine ana_grid ![
-
-!   Provide analytical version of coordinates, grid scale, coriolis, and depth
-
+!   Provide analytical definitionf coordinates, grid scale, coriolis, and depth
       implicit none
-
-! ----------------------------------------------------------------------
 
 #include "ana_grid.h"
 
@@ -177,17 +177,13 @@
 ! ----------------------------------------------------------------------
       subroutine wrt_ana_grid ![
       ! write analytical grid to file 
-      use param
-      use mpi
-      use netcdf
-      implicit none               ! into a separate netCDF file.
+      implicit none
 
-      character(len=99),save  :: fname
-      integer ncid,ierr
+      integer :: ncid,ierr
 
-      call create_file('_grd',fname,.true.) ! last argument is to skip date label
+      call create_file('_grd',ana_grdname,.true.) ! last argument is to skip date label
 
-      ierr=nf90_open(fname,nf90_write,ncid)
+      ierr=nf90_open(ana_grdname,nf90_write,ncid)
       call def_grid(ncid)
       call wrt_grid(ncid)
       ierr=nf90_close(ncid)
@@ -309,8 +305,6 @@
       ! Arguments: ncid    netCDF unit-ID of NetCDF file, which must be
       !                            already opened and in definition mode
 
-      use param
-      use scalars
       use netcdf
       use nc_read_write
 
@@ -346,6 +340,7 @@
 #ifndef SPHERICAL
 ! Physical Dimensions of Model Domain, xl,el (Cartesian grid only).
 
+        print *,'writing xl: ',xl
         ierr=nf90_inq_varid(ncid, 'xl', varid)
         if (ierr == nf90_noerr) then
           ierr=nf90_put_var(ncid, varid, xl)
@@ -414,17 +409,10 @@
 !----------------------------------------------------------------------
       subroutine get_grid  ![
       ! read in grid data from NetCDF file or define analytical grid
-
-      use roms_read_write, only: nc_check_units
-      use scalars
-      use netcdf
-      use nc_read_write, only: ncread
-      use dimensions
-
       implicit none
 
       character*1 char1
-      integer :: ierr, ncid, varid, lstr, lenstr, checkdims
+      integer :: ierr, ncid, varid, lstr, checkdims
       integer,dimension(4) :: start
 
 
@@ -436,7 +424,6 @@
 ! Open grid netCDF file for reading. Check that dimensions in the file
 ! are consistent with the model, then read all necessary variables.
 
-!      lstr=lenstr(grdname)
       ierr=nf90_open(grdname, nf90_nowrite, ncid)
       if (ierr == nf90_noerr) then
         ierr=checkdims (ncid, grdname, varid)

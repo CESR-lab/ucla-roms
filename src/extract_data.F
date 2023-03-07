@@ -547,11 +547,13 @@
               call interpolate(t(:,:,:,nstp,itemp),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
+#ifdef SALINITY
             if (obj(i)%salt) then
               oname = trim(obj(i)%set)//'_salt'//trim(obj(i)%bnd)
               call interpolate(t(:,:,:,nstp,isalt),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
+#endif
 
             if (obj(i)%ubar) then
               oname = trim(obj(i)%set)//'_ubar'//trim(obj(i)%bnd)
@@ -670,7 +672,9 @@
           if (obj(i)%ubar) call create_var(ncid,obj(i),'ubar',dname,dsize,indxUb)
           if (obj(i)%vbar) call create_var(ncid,obj(i),'vbar',dname,dsize,indxVb)
           if (obj(i)%temp) call create_var(ncid,obj(i),'temp',dname3,dsize3,indxT)
+#ifdef SALINITY
           if (obj(i)%salt) call create_var(ncid,obj(i),'salt',dname3,dsize3,indxS)
+#endif
           if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3,indxU)
           if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3,indxV)
           if (obj(i)%up)   call create_var(ncid,obj(i),'up',dname,dsize)
