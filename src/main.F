@@ -205,7 +205,7 @@ CR      write(*,*) ' -6' MYID
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
       call set_forces               ! model prognostic variables,
-      call ana_init(0)              ! may require surface forcing
+      call ana_init                 ! may require surface forcing
                                     ! either analytically or read
       if (nrrec > 0) then 
 #endif
@@ -278,7 +278,7 @@ CR      write(*,*) '  0' MYID
 
 C$OMP MASTER
         mpi_master_only write(*,'(/1x,A/)')
-     &     'main :: initialization complete, started time-steping.'
+     &     'main :: initialization complete, started time-stepping.'
 C$OMP END MASTER
 
   99  return
@@ -305,6 +305,7 @@ C$OMP END MASTER
       use random_output
       use basic_output
       use boundary
+      use analytical
 
       implicit none
 

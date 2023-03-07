@@ -34,8 +34,10 @@
 
       !  If diag_trc=.true., select for which tracers diagnostics are desired:
       logical,public,dimension(nt) :: wrt_t_dia = (/
-     &             .true. ,   !! Temperature
-     &             .false.    !! Salinity
+     &             .true.     !! Temperature
+# ifdef SALINITY
+     &            ,.false.    !! Salinity
+# endif
      &           /)
 
 

@@ -418,7 +418,6 @@
 #endif /* ANA_VMIX */
 
 ! ----------------------------------------------------------------------
-#ifdef ANA_SMFLUX
       subroutine ana_smflux_tile(istr,iend,jstr,jend)  ![
 
       use param
@@ -442,10 +441,7 @@
       endif                      ! be overwritten by nontrivial values.
 
       end subroutine ana_smflux_tile  !]
-#endif /* ANA_SMFLUX */
-
 ! ----------------------------------------------------------------------
-#if defined ANA_SRFLUX && defined SOLVE3D
       subroutine ana_srflux_tile(istr,iend,jstr,jend)  ![
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
@@ -466,11 +462,7 @@
         enddo
       enddo
       end subroutine ana_srflux_tile  !]
-#endif /* ANA_SRFLUX */
-
 ! ----------------------------------------------------------------------
-#ifdef SOLVE3D
-# if defined ANA_STFLUX || defined ANA_SSFLUX
       subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)  ![
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
@@ -514,9 +506,6 @@
 
       endif
       end subroutine ana_stflux_tile  !]
-# endif /* ANA_STFLUX || ANA_SSFLUX */
-#endif /* SOLVE3D */
-
 ! ---------------------------------------------------------------------
 
       end module analytical

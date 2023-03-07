@@ -69,7 +69,7 @@ c      write(*,*) 'kmp_stacksize =', size
         ncfrc(i)=-1
       enddo
 #ifndef ANA_BRY
-       bry_id=-1
+!      bry_id=-1
 #endif
 
       call get_date (date_str)

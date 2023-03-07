@@ -94,6 +94,7 @@
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
 
+
       if (analytical) then
         riv_west=xl*0.4 ! River west bank at 40% from west
         riv_east=xl*0.6 ! River west bank at 60% from west
@@ -109,8 +110,19 @@
               endif
 # endif
             endif
+
+
           enddo
         enddo
+
+        ierr=nf90_open(ana_grdname,nf90_write,ncid)
+        varid = nccreate(ncid,'river_flux',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+        ierr=nf90_put_att(ncid, varid,'long_name','River volume flux') 
+!       ierr=nf90_close(ncid)
+!       print *,'added river_flux',mynode
+!       ierr=nf90_open(ana_grdname,nf90_write,ncid)
+        call ncwrite(ncid,'river_flux', rflx(i0:i1,j0:j1))
+        ierr=nf90_close(ncid)
 
       else ! Read 'river_flux' from grid file (River mouth locations)
 
