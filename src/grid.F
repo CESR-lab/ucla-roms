@@ -340,7 +340,6 @@
 #ifndef SPHERICAL
 ! Physical Dimensions of Model Domain, xl,el (Cartesian grid only).
 
-        print *,'writing xl: ',xl
         ierr=nf90_inq_varid(ncid, 'xl', varid)
         if (ierr == nf90_noerr) then
           ierr=nf90_put_var(ncid, varid, xl)
