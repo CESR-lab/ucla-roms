@@ -445,12 +445,12 @@ C$OMP END MASTER
 
       if (ub_tune)  call adjust_orlanski
 
-      if (do_random) call wrt_random
-
       if (floats) call do_particles
 
 #ifdef DIAGNOSTICS
-      call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
+      call do_diagnostics 
 #endif
+
+      if (do_random) call wrt_random
 
       end

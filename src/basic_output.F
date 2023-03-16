@@ -833,31 +833,24 @@
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
 # endif
 
-      ! this is a crude hack to get diag_plfx diagnostics into restart file with current
-      ! issue of circular reference. For now the variables are still defined even if not
-      ! using diag_pflx with diagnostics. They won't be written though, that is done from
-      ! main and only if diag_pflx is turned on.
-#ifdef DIAGNOSTICS
-!     if (diag_pflx) then  
-!     Can't use diagnostics in the module due to circular references
-       varid = nccreate(ncid,'u_slow',(/'xi_u','eta_rho','s_rho','time'/),
+      if (diag_pflx) then  
+        varid = nccreate(ncid,'u_slow',(/'xi_u','eta_rho','s_rho','time'/),
      &                               (/xi_u,eta_rho,N,0/),nf90_double)
-       ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
-       ierr = nf90_put_att(ncid,varid,'units','m/s')
+        ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
+        ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-       varid = nccreate(ncid,'v_slow',(/'xi_rho','eta_v','s_rho','time'/),
+        varid = nccreate(ncid,'v_slow',(/'xi_rho','eta_v','s_rho','time'/),
      &                               (/xi_rho,eta_v,N,0/),nf90_double)
-       ierr = nf90_put_att(ncid,varid,'long_name','time filtered v')
-       ierr = nf90_put_att(ncid,varid,'units','m/s')
+        ierr = nf90_put_att(ncid,varid,'long_name','time filtered v')
+        ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-       varid = nccreate(ncid,'p_slow',
+        varid = nccreate(ncid,'p_slow',
      &                       (/'xi_rho','eta_rho','s_rho','time'/),
      &                       (/xi_rho,eta_rho,n,0/),nf90_double)
-       ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'time filtered pressure')
-       ierr = nf90_put_att(ncid,varid,'units','Pa??')
-!     endif
-#endif
+        ierr = nf90_put_att(ncid,varid,'units','Pa??')
+      endif
 #ifdef SPONGE_TUNE
        if (ub_tune) then
          varid = nccreate(ncid,'ub_west',

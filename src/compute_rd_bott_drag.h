@@ -32,7 +32,10 @@ c**           rd(i,j)=rdrg + cff*(vonKar/log(Hz(i,j,1)/Zob))**2
 c**           rd(i,j)=rdrg + cff*(  vonKar/(   (1.+Zob/Hz(i,j,1))
 c**                                  *log(1.+Hz(i,j,1)/Zob) -1. ) )**2
 
-              rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
+!  Removed the addition of a linear 'background' drag
+c             rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
+
+              rd(i,j)= cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
 # ifdef WEC
 
 !! JM look at this. Not working atm. Intended to unify rd between wec and nowec
