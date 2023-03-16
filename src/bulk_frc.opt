@@ -12,9 +12,9 @@
       type (ncvs) :: nc_uwnd  = ncvs( name='uwnd', time_name='time' )  ! u-wind (input data in m/s at 10m)
       type (ncvs) :: nc_vwnd  = ncvs( name='vwnd', time_name='time' )  ! v-wind (input data in m/s at 10m)
       type (ncvs) :: nc_tair  = ncvs( name='Tair', time_name='time' )  ! Air temp (input data Degrees C at 2m)
-      type (ncvs) :: nc_Q     = ncvs( name='qair', time_name='time' )  ! Q (Specific humidity (kg/kg) NOT relative hum. at 2m)
+      type (ncvs) :: nc_Q     = ncvs( name='qair', time_name='time' )  ! Q (Specific humidity (kg/kg)
       type (ncvs) :: nc_prate = ncvs( name='rain', time_name='time' )  ! Precipitation rate (cm/day)
-      type (ncvs) :: nc_lwrad = ncvs( name='lwrad',time_name='time' )  ! Net downward longwave radiation [W/m^2]
+      type (ncvs) :: nc_lwrad = ncvs( name='lwrad',time_name='time' )  ! Downward longwave radiation [W/m^2]
       type (ncvs) :: nc_swrad = ncvs( name='swrad',time_name='time' )  ! net shortwave radiation [W/m^2]
 
 #if defined TAU_CORRECTION
