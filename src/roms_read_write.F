@@ -649,15 +649,22 @@
       integer,dimension(6) :: date
       character(len=15)  :: datestr
       character(len=6)   :: indxstr
-      integer :: dt_format = 3
+      integer :: dt_format = 0
+      integer :: label
+      integer,parameter :: period=900
 
       if (.not.present(nodate)) then
         call sec2date(time,date)
         select case (dt_format)
           case(1)  !! omit the year
             write(datestr,'(A,5I0.2)') '.',date(2:6)
-          case(2)  !! omit the seconds
+          case(2)  !! omit the year and the month
+            write(datestr,'(A,4I0.2)') '.',date(3:6)
+          case(3)  !! omit the seconds
             write(datestr,'(A,I4,4I0.2)') '.',date(1:5)
+          case(4)  !! Get old style number, based on output period
+            label = int(time/period)
+            write(datestr,'(A,I0.5)') '.',label
           case default
             write(datestr,'(A,I4,5I0.2)') '.',date
         end select

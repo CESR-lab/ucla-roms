@@ -819,6 +819,7 @@
               p_fast(i,j)   = p(i,j,k) - p_slow(i,j,k)
             enddo
           enddo
+          ! u_slow, and u_fast are baroclinic velocities
           do j=1,ny
             do i=1,nx+1
               u_slow(i,j,k) = beta*u_slow(i,j,k)
@@ -826,6 +827,7 @@
               u_fast(i,j) = u(i,j,k,nrhs)-Uflx(i,j)- u_slow(i,j,k)
             enddo
           enddo
+          ! v_slow, and v_fast are baroclinic velocities
           do j=1,ny+1
             do i=1,nx
               v_slow(i,j,k) = beta*v_slow(i,j,k)
@@ -844,11 +846,6 @@
           enddo
         enddo
       endif  ! if pflux
-!     if (mynode==0) then
-!        print *,'diagnostics: ', sum(up(1:40,ny/2)),sum(vp(nx/2,1:40))
-!        print *,'diagnostics: ', u_fast(2,ny/2),p_fast(2,ny/2),Hz(2,ny/2,50)
-!        print *,'diagnostics: ', u_slow(2,ny/2,50),Uflx(i,j)
-!     endif
 
       end subroutine calc_diag_pflux  !]
 ! ----------------------------------------------------------------------
