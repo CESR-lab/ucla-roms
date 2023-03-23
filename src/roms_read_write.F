@@ -15,6 +15,18 @@
 
       private
 
+
+      ! Time is in seconds relative to a reference date
+      
+      ! ---- user input begins
+      integer,parameter,dimension(3) :: reference_date = (/2000,1,1/)  ! year, month, day
+      integer :: dt_format = 0
+      ! ---- user input ends
+
+      character(len=21) :: refdatestr
+      integer :: offset = 0
+
+
       ! Type ncforce contains all required netcdf variables and input data array for frc variable.
       ! Set the name and time_name of variable to match what is in the input forcing files.
       ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
@@ -66,11 +78,7 @@
       character, public :: date_str*44, title*80
       character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
 
-!     character(len=max_name_size), public ::  clm_file  ! defined TCLIMATOLOGY && !defined ANA_TCLIMA) || !defined ANA_SSH
 
-!     integer, parameter, public :: max_bry_files=360
-!     character(len=max_name_size), public ::  bry_file(max_bry_files)
-      ! end old ncvars ***************
 
       public :: findstr,append_date_node
       public :: set_frc_data
@@ -508,14 +516,18 @@
         call append_date_node(fname)
       endif
 
+!     if (mynode==0) then
+!       print *,'creating: ',fname
+!       stop
+!     endif
+
       ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
      &   call handle_ierr(ierr,'create_file: '/ /trim(fname) )
 
       if (.not.present(nodate)) then
         varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
-        ierr = nf90_put_att(ncid,varid,'long_name',
-     &                             'time since 2000/1/1')
+        ierr = nf90_put_att(ncid,varid,'long_name', refdatestr)
         ierr = nf90_put_att(ncid,varid,'units','second' )
       endif
 
@@ -614,11 +626,13 @@
       integer,dimension(6),intent(out) :: date
 
       ! Local
-      integer :: mjday, nsecs,utime,offset
+      integer :: mjday, nsecs,utime
       real    :: day
 
       !! number of seconds from 1970,1,1 0:00:00 to 2000,1,1 0:00:00
-      offset = 946684800  
+      if (offset==0) then
+        call init_refdate
+      endif
 
       utime = time + offset
 
@@ -636,6 +650,49 @@
 
       end subroutine sec2date !]
 ! ----------------------------------------------------------------------
+      subroutine init_refdate ![
+      ! input: date  Array: 1=year, 2=month, 3=date, 4=hour, 5=minute, 6=secs
+      ! output  time in seconds since 1970.1,1 0:00:00
+      implicit none
+
+      ! Local
+      integer :: jul0,jul,y,m,d
+      real    :: day
+
+      y = 1970
+      m = 1
+      d = 1
+
+      jul0 = d-32075 + 1461*(y + 4800 + (m-14)/12)/4 +
+     &       367*(m-2-((m-14)/12)*12)/12 -
+     &       3*((y+4900+(m-14)/12)/100)/4
+
+!     jul0 = floor(jul0)
+
+      y = reference_date(1)
+      m = reference_date(2)
+      d = reference_date(3)
+
+      jul = d-32075 + 1461*(y + 4800 + (m-14)/12)/4 +
+     &       367*(m-2-((m-14)/12)*12)/12 -
+     &       3*((y+4900+(m-14)/12)/100)/4
+
+      offset = (jul-jul0)*3600*24
+
+      write(refdatestr,'(A,I4,A,I0.2,A,I0.2)') 
+     &    'Time since ',reference_date(1),'/'
+     &,       reference_date(2),'/',reference_date(3)
+
+      if (mynode==0) then
+        print *,'Reference time used for simulation is: ',
+     &           refdatestr(12:21)
+      endif
+
+             
+
+
+      end subroutine init_refdate !]
+! ----------------------------------------------------------------------
       subroutine append_date_node(fname,nodate) ![
       ! Insert date and node number string into filename
       ! If the nodate argument is present, only add the node number
@@ -649,7 +706,6 @@
       integer,dimension(6) :: date
       character(len=15)  :: datestr
       character(len=6)   :: indxstr
-      integer :: dt_format = 0
       integer :: label
       integer,parameter :: period=900
 
@@ -880,8 +936,8 @@
       end subroutine put_global_atts  !]
 ! ---------------------------------------------------------------------
       subroutine store_string_att( char_string, string_add )  ![
-      ! add settings that affect the solution to a string
-      ! that will be added to global attributes of all nc files
+      ! Add settings that affect the solution to a string
+      ! which will be added to global attributes of all nc files
       implicit none
 
       ! input
