@@ -227,7 +227,7 @@
 
       end subroutine init_avg_arrays !]
 ! ----------------------------------------------------------------------
-      subroutine wrt_his_ocean_vars(blowup)  ![
+      subroutine wrt_his_ocean_vars(special)  ![
       ! write ocean_vars variables to output netcdf file
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
@@ -241,7 +241,7 @@
       implicit none
 
       ! import/export
-      logical,optional       :: blowup
+      logical,optional       :: special !! for blowup and initial history file
       ! local
       integer,dimension(4)   :: start
       integer,save           :: rec_his=nrpf_his                     ! current file output record
@@ -251,29 +251,34 @@
       character(len=99),save :: fname_his
       integer                :: tile, ierr, i, j, k
       logical,save           :: supress=.false.
+      logical                :: blowup,initial
 
 
-!     if (present(blowup)) then
-!       if(mynode==0) print *, 'BLOWUP HISTORY'
-!     else
-!       if(mynode==0) print *, 'history,output_time:  ',output_time_his,first_step
-!     endif
-      if (wrt_file_his.or.present(blowup)) then
-
-!     if (first_step) then
-!        first_step=.false.                       ! as first step the ocean_vars values are for t=0
-!     else
-!        output_time_his = output_time_his + dt   ! only start count after first timestep
-!     endif
-
-      output_time_his = output_time_his + dt  
-
-
-      if (output_time_his>=output_period_his.or.present(blowup) ) then
-
-        if (present(blowup)) then
-         if (mynode==0) print *,'Writing emergency history file'
+      blowup = .false.
+      initial= .false.
+      if (present(special)) then
+        if (special==.false.) then
+          initial = .true.
+        else
+          blowup = .true.
         endif
+      endif
+
+
+      if (wrt_file_his.or.blowup) then
+
+        if (.not.present(special)) then 
+         output_time_his = output_time_his + dt  
+        endif
+
+
+      if (output_time_his>=output_period_his.or.present(special) ) then
+
+         if (initial) then
+           if (mynode==0) print *,'Writing initial history file'
+         else
+           if (mynode==0) print *,'Writing emergency history file'
+         endif
 
         if (rec_his==nrpf_his) then
           call create_file_ocean_vars(fname_his,.false.)
@@ -372,7 +377,7 @@
 
       ! local
       integer,dimension(4)   :: start
-      integer,save           :: rec_avg                              ! current file output record
+      integer,save           :: rec_avg=nrpf_avg
       integer,save           :: total_rec_avg=0                      ! total avg output records so far
       real,save              :: output_time_avg=0                    ! time since last output
       logical,save           :: first_step=.true.
@@ -381,18 +386,14 @@
 
       if (wrt_file_avg) then
 
-      if (.not. first_step) then
-!        call calc_avg_ocean_vars ! don't include t=0 in averaging. can't calc_avg here as rho, omega and w change
-        output_time_avg = output_time_avg + dt                       ! only start count after first timestep
-      endif
-      first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+        output_time_avg = output_time_avg + dt
 
-      if (output_time_avg>=output_period_avg) then                   ! catch to get t=0 output
+        if (output_time_avg>=output_period_avg) then
 
-        if (mod(total_rec_avg,nrpf_avg)==0) then
-          call create_file_ocean_vars(fname_avg,.true.)
-          rec_avg = 0
-        endif
+          if (rec_avg == nrpf_avg) then
+            call create_file_ocean_vars(fname_avg,.true.)
+            rec_avg = 0
+          endif
         rec_avg = rec_avg + 1
 
         ierr=nf90_open(fname_avg,nf90_write,ncid)
