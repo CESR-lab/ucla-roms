@@ -270,7 +270,7 @@ CR      write(*,*)  ' -2' MYID
 #endif
 CR      write(*,*) ' -1' MYID
 
-      call wrt_his_ocean_vars
+      call wrt_his_ocean_vars(.false.)
 
 
 CR      write(*,*) '  0' MYID
