@@ -302,6 +302,7 @@ C$OMP END MASTER
       use scalars
       use sponge_tune
       use particles
+      use surf_flux
       use random_output
       use basic_output
       use boundary
@@ -446,6 +447,8 @@ C$OMP END MASTER
       if (ub_tune)  call adjust_orlanski
 
       if (floats) call do_particles
+
+      if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
 #ifdef DIAGNOSTICS
       call do_diagnostics 

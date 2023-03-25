@@ -1030,7 +1030,7 @@
         enddo
       enddo
 
-      call wrt_sflux  ! write flux variables to flux output file
+!     call wrt_sflux  ! write flux variables to flux output file
 
       end subroutine calc_all_bulk_forces  !]
 
