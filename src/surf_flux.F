@@ -191,16 +191,10 @@
 
       ! local
       integer,dimension(4)   :: start
-      logical,save           :: first_step=.true.
       character(len=99),save :: fname
       integer                :: ierr
 
-      if ((.not.wrt_smflx).and.(.not.wrt_stflx)) return
-
-      if (.not. first_step) then
-        output_time = output_time + dt                           ! only start count after first timestep
-      endif
-      first_step=.false.                                             ! as first step the surf_flux values are for t=0
+      output_time = output_time + dt                           ! only start count after first timestep
 
       if (sflx_avg) call calc_sflx_avg
 
