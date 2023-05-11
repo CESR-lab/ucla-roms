@@ -99,6 +99,10 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use sponge_tune
       use diagnostics
       use boundary
+# ifdef BIOLOGY_BEC2
+      use bgc_param_ini
+      use bgc
+# endif
 
       implicit none
 
@@ -268,10 +272,12 @@ CR      write(*,*)  ' -2' MYID
 #if defined SPONGE 
       call set_nudgcof(0)
 #endif
-CR      write(*,*) ' -1' MYID
-
+      ! The optional argument refers to
+      ! blowup if true, and initial if false. 
       call wrt_his_ocean_vars(.false.)
-
+#ifdef BIOLOGY_BEC2
+      call wrt_bgc(.true.)
+#endif
 
 CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
@@ -307,6 +313,8 @@ C$OMP END MASTER
       use basic_output
       use boundary
       use analytical
+      use bgc
+      use tides
 
       implicit none
 
@@ -339,6 +347,8 @@ C$OMP END MASTER
 
       tdays = (time-0.0*dt)*sec2day
       call set_bry_all
+
+      if (bry_tides.or.pot_tides) call set_tides(0)
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
       call rho_eos(nrhs)
@@ -391,7 +401,7 @@ C$OMP END MASTER
 
       tdays = (time+0.5*dt)*sec2day
       call set_bry_all  ! get for time n+1
-
+      if (bry_tides.or.pot_tides) call set_tides(0)
 
       ! All of this seems to happen with Hz's from time n
       ! Corrector step
@@ -441,6 +451,9 @@ C$OMP END MASTER
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
+#ifdef BIOLOGY_BEC2
+      call wrt_bgc
+#endif
 
       if (do_extract) call do_extract_data
 
@@ -455,5 +468,9 @@ C$OMP END MASTER
 #endif
 
       if (do_random) call wrt_random
+
+#if (defined BIOLOGY_BEC2 && defined BEC2_DIAG) 
+      call do_bgc_diags
+#endif /* BIOLOGY_BEC2 */
 
       end

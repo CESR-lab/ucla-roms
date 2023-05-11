@@ -26,6 +26,7 @@
       use ocean_vars
       use scalars
       use tracers
+      use diagnostics
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k
@@ -66,6 +67,20 @@
 #  endif
           enddo
         enddo
+        if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+          do j=jstr,jend
+            do i=istr,iend+1
+              Tdiag(i,j,k,tmixx,td(itrc)) = 
+     &           Tdiag(i,j,k,tmixx,td(itrc)) - FX(i,j)
+            enddo
+          enddo
+          do j=jstr,jend+1
+            do i=istr,iend
+              Tdiag(i,j,k,tmixy,td(itrc)) = 
+     &           Tdiag(i,j,k,tmixy,td(itrc)) - FE(i,j)
+            enddo
+          enddo
+        endif
 
 ! Add in horizontal diffusion of tracer [T m^3/s].
 

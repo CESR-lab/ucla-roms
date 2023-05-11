@@ -276,7 +276,7 @@
 
          if (initial) then
            if (mynode==0) print *,'Writing initial history file'
-         else
+         elseif (blowup) then
            if (mynode==0) print *,'Writing emergency history file'
          endif
 

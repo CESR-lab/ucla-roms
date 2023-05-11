@@ -182,7 +182,6 @@ c--#  define ntdf nrhs
 # ifdef DIAGNOSTICS
 #  ifdef ADV_ISONEUTRAL
             if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
-              print *, 'td: ',td(itrc),itrc
               do j= 1,ny
                 do i=1,nx+1
                   Tdiag(i,j,k,tadvx,td(itrc)) = FX(i,j)
@@ -197,32 +196,18 @@ c--#  define ntdf nrhs
 #  else
             if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
               do j= 1,ny
-!               do i=1,nx+1
-                do i=1,nx
-!                 Tdiag(i,j,k,tmixx,td(itrc)) = FX(i,j)
-!    &             - Tdiag(i,j,k,tadvx,td(itrc))
-                  Tdiag(i,j,k,tadvx,td(itrc)) = - pm(i,j)*pn(i,j)*
-     &                                    ( FX(i+1,j)-FX(i,j))
-
+                do i=1,nx+1
+                  Tdiag(i,j,k,tmixx,td(itrc)) = FX(i,j)
+     &             - Tdiag(i,j,k,tadvx,td(itrc))
                 enddo
               enddo
-!             do j= 1,ny+1
-              do j= 1,ny
+              do j= 1,ny+1
                 do i=1,nx
-!                 Tdiag(i,j,k,tmixy,td(itrc)) = FE(i,j)
-!    &             - Tdiag(i,j,k,tadvy,td(itrc))
-                  Tdiag(i,j,k,tadvy,td(itrc)) = - pm(i,j)*pn(i,j)*
-     &                                   (FE(i,j+1)-FE(i,j))
+                  Tdiag(i,j,k,tmixy,td(itrc)) = FE(i,j)
+     &             - Tdiag(i,j,k,tadvy,td(itrc))
                 enddo
               enddo
             endif
-!           if (mynode==1) then
-!            if (k==20) then
-!              write(60,*) 'check: ', t(10,10,20,nnew,1),
-!    &             Tdiag(10,10,20,tadvx,1)+Tdiag(10,10,20,tadvy,1)
-!             stop
-!            endif
-!           endif
 #  endif
 # endif
 
@@ -798,6 +783,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
               enddo
             enddo
 
+# ifdef DIAGNOSTICS
             if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
               do j=1,ny
                 do i=1,nx+1
@@ -811,10 +797,11 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
               enddo
               do j=1,ny
                 do i=1,nx
-                  Tdiag(i,j,k,tmixz,td(itrc)) = -FSC(i,j,k1)
+                  Tdiag(i,j,k,tmixz,td(itrc)) = -FSC(i,j,k2)/(pm(i,j)*pn(i,j))
                 enddo
               enddo
             endif
+# endif /* DIAGNOSTICS */
 
           endif   !<-- k > 0
 # endif /* ADV_ISONEUTRAL */
@@ -826,13 +813,9 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 # ifdef DIAGNOSTICS
         if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
-!         call diag_t_adv_vc4(itrc )
+          call diag_t_adv_vc4(itrc )
         endif
 # endif
-
-        if (mynode==1) then
-!         write(60,*) 'check 2: ', t(10,10,20,nnew,1)
-        endif
 
         do j=jstr,jend
 
@@ -840,7 +823,8 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
             do k=1,nz
               do i=1,nx
-                Tdiag(i,j,k,vmixd,td(itrc)) = t(i,j,k,nnew,itrc)
+!                Tdiag(i,j,k,vmixd,td(itrc)) = t(i,j,k,nnew,itrc)
+                VFlxD(i,j,k) = t(i,j,k,nnew,itrc)
               enddo
             enddo
           endif
@@ -1020,12 +1004,31 @@ c??         enddo
           if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then 
             do k=1,nz
               do i=istr,iend
-                Tdiag(i,j,k,vmixd,td(itrc)) = (Hz(i,j,k)*t(i,j,k,nnew,itrc)
-     &           - Tdiag(i,j,k,vmixd,td(itrc)))/dt
+!                Tdiag(i,j,k,vmixd,td(itrc)) = -(Hz(i,j,k)*t(i,j,k,nnew,itrc)
+!     &           - Tdiag(i,j,k,vmixd,td(itrc)))/dt
+                VFlxD(i,j,k) =
+     &            (VFlxD(i,j,k) - Hz(i,j,k)*t(i,j,k,nnew,itrc))/dt
               enddo
             enddo
-          endif
+            ! Convert to flux on w-point
+            do i=istr,iend
+              do k=1,nz
+                 if (k==1) then
+                  Tdiag(i,j,k,vmixd,td(itrc)) = VFlxD(i,j,k)/(pm(i,j)*pn(i,j)) 
+                 else
+                  Tdiag(i,j,k,vmixd,td(itrc)) = VFlxD(i,j,k)/(pm(i,j)*pn(i,j)) + 
+     &               Tdiag(i,j,k-1,vmixd,td(itrc))
+                 endif
+              enddo
+            enddo
+            do i=istr,iend
+              do k=1,nz
+                 Tdiag(i,j,k,vmixd,td(itrc)) = Tdiag(i,j,k,vmixd,td(itrc))
+     &               - Tdiag(i,j,k,tadvz,td(itrc)) 
+              enddo
+            enddo
 
+          endif
 # endif
 
 #ifdef CONST_TRACERS
@@ -1036,14 +1039,6 @@ c??         enddo
           enddo
 #endif
         enddo      !<-- j
-
-!       if (mynode==1.and.itrc==1) then
-!           write(60,*) 'sum(rhs),t: ',Hz(10,10,20)*t(10,10,20,nnew,1)
-!    &         ,dt*(Tdiag(10,10,20,vmixd,td(1)) + 
-!    &          Tdiag(10,10,20,tadvx,td(1)) + 
-!    &          Tdiag(10,10,20,tadvy,td(1)) )
-!           stop
-!         endif
 
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 # ifdef DIAGNOSTICS

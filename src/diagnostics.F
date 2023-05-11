@@ -72,6 +72,7 @@
      &  tmixz = 6, ! Mixing in z-direction
      &  vmixd = 7  ! Divergence of total vertical fluxes
 
+      real,public,allocatable,dimension(:,:,:) :: VFlxD     ! Divergence of implicit mixing related vertical fluxes
       real,public,allocatable,dimension(:,:,:,:,:) :: Tdiag     ! tracer diagnostic terms
       real,allocatable,dimension(:,:,:,:,:) :: Tdiag_avg ! averages of tracer diagnostic terms
       integer                               :: ntdia     ! number of tracers for which to do diagnostics
@@ -203,6 +204,8 @@
         ntdia = idx
         allocate(Tdiag(0:nx+1,0:ny+1,nz,ntd,ntdia))
         Tdiag = 0
+        allocate(VflxD(0:nx+1,0:ny+1,nz))
+        VflxD = 0
         if (diag_avg) then
           allocate(Tdiag_avg(0:nx+1,0:ny+1,nz,ntd,ntdia))
           Tdiag_avg = 0
@@ -738,7 +741,7 @@
         ! Initialize Tdiag to zero!
         do k=1,nz-1
           do i= 1,nx
-            Tdiag(i,j,k,tadvz,td(itrc)) = - FZ4(i,k) 
+            Tdiag(i,j,k,tadvz,td(itrc)) = FZ4(i,k) 
           enddo
         enddo
 
@@ -1046,33 +1049,37 @@
           if (wrt_t_dia(it)) then
            vname = trim(t_vname(it)) // '_advx'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','x-advection')
-           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           ierr = nf90_put_att(ncid,varid,'long_name','x-advective flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_advy'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','y-advection')
-           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           ierr = nf90_put_att(ncid,varid,'long_name','y-advective flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_advz'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','z-advection')
-           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           ierr = nf90_put_att(ncid,varid,'long_name','z-advective flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_mixx'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','x-mixing')
-           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           ierr = nf90_put_att(ncid,varid,'long_name','mixing x-flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_mixy'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','y-mixing')
-           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           ierr = nf90_put_att(ncid,varid,'long_name','mixing y-flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_mixz'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','z-mixing')
-           ierr = nf90_put_att(ncid,varid,'units','C m^2/s')
+           ierr = nf90_put_att(ncid,varid,'long_name','mixing z-flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
+           ierr = nf90_put_att(ncid,varid,'note',
+     &      'This term only has FSC from iso-neutral')
            vname = trim(t_vname(it)) // '_vmixd'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
            ierr = nf90_put_att(ncid,varid,'long_name',
-     &               'divergence of vertical fluxes')
-           ierr = nf90_put_att(ncid,varid,'units','C m/s')
+     &      'Kitchen sink of all vertical implicit fluxes')
+           ierr = nf90_put_att(ncid,varid,'note',
+     &           'This term and vmixd should be add to make sense')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
           endif
         enddo
       endif
