@@ -14,22 +14,18 @@
       implicit none
       private
 
+
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
 !
-! ana_bsedim_tile   Analytical bottom sediment grain size
-!                          and density.
+
 ! ana_meanRHO_tile  Analytical mean density anomaly.
-! ana_smflux_tile   Analytical kinematic surface momentum flux
-!                          (wind stress).
-! ana_srflux_tile   Analytical kinematic surface shortwave
-!                          radiation.
+! ana_smflux_tile   Analytical kinematic surface momentum flux (wind stress).
+! ana_srflux_tile   Analytical kinematic surface shortwave radiation.
 ! ana_sst_tile      Analytical sea surface temperature and dQdSST
 !                         which are used during heat flux correction.
-! ana_stflux_tile   Analytical kinematic surface flux of tracer type
-!                          variables.
-! ana_wwave_tile    Analytical wind induced wave amplitude,
-!                         direction and period.
+! ana_stflux_tile   Analytical kinematic surface flux of tracer type variables.
+! ana_wwave_tile    Analytical wind induced wave amplitude, direction and period.
 
       ! user input:
       logical, parameter :: restore = .false.
@@ -56,7 +52,6 @@
       public ana_stflux_tile
 # endif
 #endif
-
 
       contains
 
@@ -242,7 +237,7 @@
       call exchange_2_tile(istr,iend,jstr,jend,
      &                     u(START_2D_ARRAY,1,1), N,
      &                     v(START_2D_ARRAY,1,1), N)
-      do itrc=1,NT
+      do itrc=1,nt
         call exchange_tile(istr,iend,jstr,jend,
      &                t(START_2D_ARRAY,1,1,itrc), N)
       enddo
@@ -409,6 +404,7 @@
 
       end subroutine ana_vmix_tile !]
 #endif /* ANA_VMIX */
+
 ! ----------------------------------------------------------------------
 
 ! ONLY THE _TILE ROUTINES ARE USED in set_forces! GET RID OF THE NON-TILE VERSIONS
@@ -431,14 +427,15 @@
       if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
         do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
           do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
-            sustr(i,j)=0.0e-5    ! at horizontal U- and V-points.
-            svstr(i,j)=0.0e-5    ! For code compactness, both are set
+            sustr(i,j)=0.0       ! at horizontal U- and V-points.
+            svstr(i,j)=0.0       ! For code compactness, both are set
           enddo                  ! to zero at first (default values),
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
       end subroutine ana_smflux_tile !]
 #endif /* ANA_SMFLUX */
+
 ! ----------------------------------------------------------------------
 #if defined ANA_SRFLUX && defined SOLVE3D
       subroutine ana_srflux_tile(istr,iend,jstr,jend) ![
@@ -457,12 +454,13 @@
 
       do j=jstrR,jendR
         do i=istrR,iendR
-          srflx(i,j) = 0
+          srflx(i,j) = 0.
         enddo
       enddo
 
       end subroutine ana_srflux_tile !]
 #endif /* ANA_SRFLUX */
+
 ! ----------------------------------------------------------------------
 # if defined ANA_STFLUX || defined ANA_SSFLUX
       subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc) ![

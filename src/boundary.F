@@ -9,6 +9,8 @@
       use dimensions
       implicit none
 
+      ! Set module to private and make vars explicitly public
+
 #ifndef ANA_BRY
 !     real(kind=8) :: bry_cycle, bry_time(2)
 !     integer :: itbry, ntbry, bry_ncycle, ibry, max_bry,  ! DELETE THESE

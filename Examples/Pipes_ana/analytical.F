@@ -9,15 +9,16 @@
       use grid
       use scalars
       use tracers
+      use mixing
 
       implicit none
       private
 
-      ![ Preamble:
+
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
 !
-! ana_bsedim_tile   Analytical bottom sediment grain size and density.
+
 ! ana_meanRHO_tile  Analytical mean density anomaly.
 ! ana_smflux_tile   Analytical kinematic surface momentum flux (wind stress).
 ! ana_srflux_tile   Analytical kinematic surface shortwave radiation.
@@ -50,93 +51,37 @@
 # endif
 #endif
 
-      ! Non-typical analytical vars:
-      !]----------------------------
-
       contains
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_INITIAL
-      subroutine ana_init (tile)  ![ Set initial conditions for momentum
-                                  !  free surface, and tracer variables
-      use param
-      use hidden_mpi_vars
-      use private_scratch
-
-      implicit none               !  using analytical expressions.
-      integer tile
-
-# include "compute_tile_bounds.h"
-
-      call ana_init_tile( istr,iend,jstr,jend )
-
-      end subroutine ana_init  !]
-! ----------------------------------------------------------------------
-      subroutine ana_init_tile (istr,iend,jstr,jend)  ![
+      subroutine ana_init ![
 
       use param
-      use tracers, only: t
-      use boundary
-      use eos_vars
-      use grid
-      use mixing
       use scalars
+      use boundary
+      use tracers
+      use eos_vars
+      use mixing
 
       implicit none
 
-      integer :: istr, iend, jstr, jend, i, j, k, itrc
+#include "ana_init.h"
 
-# include "compute_auxiliary_bounds.h"
+      call ana_init_generic(1,nx,1,ny) 
 
-      ! necessary for FIRST_TIME_STEP flag to work, as per set_global_definitions.h
-      ! this had no value for analytical examples previously.
-#ifdef EXACT_RESTART
-      forw_start=ntstart
-#endif
+      end subroutine ana_init !]
+! ----------------------------------------------------------------------
+      subroutine ana_init_generic( istr, iend, jstr, jend ) ![
 
-      do j=jstrR,jendR         ! Set everything (except temperature
-        do i=istrR,iendR       ! and salinity) to all-zero state, then
-          zeta(i,j,1)=0.       ! modify some of the variables, if a
-          ubar(i,j,1)=0.       ! non-trivial initialization required.
-          vbar(i,j,1)=0.       ! Note: A code to initialize T [and S]
-        enddo                  ! must always be supplied for 3D
-      enddo                    ! applications.
-# ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            u(i,j,k,1)=0.
-            u(i,j,k,2)=0.
-            v(i,j,k,1)=0.
-            v(i,j,k,2)=0.
-          enddo
-        enddo
-      enddo
-# endif
-
-
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-!           t(i,j,k,1,itemp)=24.0
-            t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
-            t(i,j,k,1,isalt)=36.
-            t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
-            t(i,j,k,2,isalt)=t(i,j,k,1,isalt)
-          enddo
-        enddo
-      enddo
-
-      call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
-
-      end subroutine ana_init_tile  !]
-
-! ---------------------------------------------------------------------
-      subroutine ana_init_generic( istr, iend, jstr, jend )  ![
-      ! mpi exchanges, etc, required for all analytical initial conditions
+      use param
+      use boundary
       implicit none
 
-      integer :: istr, iend, jstr, jend, i, j, k, itrc
+      ! input
+      integer, intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer :: i,j,k, itrc
 
 ! The rest of the code is independent of the specific configuration.
 
@@ -419,7 +364,7 @@
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_SMFLUX
-      subroutine ana_smflux_tile(istr,iend,jstr,jend)  ![
+      subroutine ana_smflux_tile(istr,iend,jstr,jend) ![
 
       use param
       use surf_flux !, only: sustr,svstr
@@ -435,18 +380,18 @@
       if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
         do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
           do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
-            sustr(i,j)=0.        ! at horizontal U- and V-points.
-            svstr(i,j)=0.        ! For code compactness, both are set
+            sustr(i,j)=0.0       ! at horizontal U- and V-points.
+            svstr(i,j)=0.0       ! For code compactness, both are set
           enddo                  ! to zero at first (default values),
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-      end subroutine ana_smflux_tile  !]
+      end subroutine ana_smflux_tile !]
 #endif /* ANA_SMFLUX */
 
 ! ----------------------------------------------------------------------
 #if defined ANA_SRFLUX && defined SOLVE3D
-      subroutine ana_srflux_tile(istr,iend,jstr,jend)  ![
+      subroutine ana_srflux_tile(istr,iend,jstr,jend) ![
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
@@ -462,16 +407,16 @@
 
       do j=jstrR,jendR
         do i=istrR,iendR
-          srflx(i,j)=0.
+          srflx(i,j) = 0.
         enddo
       enddo
-      end subroutine ana_srflux_tile  !]
+
+      end subroutine ana_srflux_tile !]
 #endif /* ANA_SRFLUX */
 
 ! ----------------------------------------------------------------------
-#ifdef SOLVE3D
 # if defined ANA_STFLUX || defined ANA_SSFLUX
-      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)  ![
+      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc) ![
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
@@ -513,9 +458,8 @@
 !  Set kinematic surface flux of additional tracers, if any.
 
       endif
-      end subroutine ana_stflux_tile  !]
+      end subroutine ana_stflux_tile !]
 # endif /* ANA_STFLUX || ANA_SSFLUX */
-#endif /* SOLVE3D */
 
 ! ----------------------------------------------------------------------
 

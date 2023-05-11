@@ -468,24 +468,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
               Ks(i,j,k)=sqrt( Ks(i,j,k)**2 + (wsb*bbl(i,j)*cff1)**2 )
 #  endif
 
-
-#  ifdef LMD_CONVEC
-            else
-              if (bvf(i,j,k) < 0.) then
-#   if defined LMD_KPP && !defined MLCONV
-                z_bl=z_w(i,j,N)-hbl(i,j)
-                if (z_w(i,j,k) < z_bl) then
-#   endif
-                  Kv(i,j,k)=Kv(i,j,k) + nu0c   ! Add convective
-                  Kt(i,j,k)=Kt(i,j,k) + nu0c   ! adjustment outside
-#   ifdef SALINITY
-                  Ks(i,j,k)=Ks(i,j,k) + nu0c   ! of mixed layers.
-#   endif
-#   if defined LMD_KPP && !defined MLCONV
-                endif
-#   endif
-              endif
-#  endif
             endif
           enddo      !<-- k
         enddo      !<-- i

@@ -712,11 +712,18 @@ c*   &                                                               )
      &       dn_v(i,j+1)*max(abs(dRde(i,j+1,k)), abs(dRde(i,j+1,k+1)))
      &                                                               )
 
-
+# ifdef LMD_KPP
                 cfs=min(1., (z_w(i,j,N)-z_w(i,j,k))/max( 50.,
      &                                    hbls(i,j,3-nstp) ))
+# else
+                cfs=min(1., (z_w(i,j,N)-z_w(i,j,k))/50.)
+# endif
+# ifdef LMD_BKPP
                 cfb=min(1., (z_w(i,j,k)-z_w(i,j,0))/max( 50.,
      &                                    hbbl(i,j,3-nstp) )) 
+# else
+                cfb=min(1., (z_w(i,j,k)-z_w(i,j,0))/50.)
+# endif
 
                 cff=ALPHA_MAX*cfs*(2.-cfs) * cfb*(2.-cfb)
  

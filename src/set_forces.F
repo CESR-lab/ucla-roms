@@ -138,7 +138,6 @@ c***              no code here
       call set_bgc_surf_frc(istr,iend,jstr,jend)
 # endif
 
-      if (bry_tides.or.pot_tides) call set_tides(0)
 
       if (river_source) call set_river_frc
 

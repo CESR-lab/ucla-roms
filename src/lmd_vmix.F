@@ -257,7 +257,10 @@ c----#  define tind nstp
             Kv(i,j,k)=nuwm                    ! internal waves
             Kt(i,j,k)=nuws                    ! only
 # endif
-# if defined LMD_CONVEC && (!defined LMD_KPP && !defined LMD_BKPP)
+            ! Convective adjustment will now be added everywhere
+            ! but 'tailed' near the bottom
+            ! It is not generally recommended to use...
+# if defined LMD_CONVEC 
             if (Rig(i,j,k) < 0.) then         ! In the case of KPP
               Kv(i,j,k)=Kv(i,j,k) + nu0c      ! convective adjustment
               Kt(i,j,k)=Kt(i,j,k) + nu0c      ! will be added later
