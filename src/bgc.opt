@@ -4,14 +4,22 @@
 
       ! note: choice of bgc tracers to output is still selected in tracers.opt.
 
-      logical,parameter :: wrt_file_his      = .false.     ! t/f to write module history file
-      real,parameter    :: output_period_his = 20          ! output period in seconds
-      integer,parameter :: nrpf_his          = 3           ! total recs per file
+      logical,parameter :: wrt_his           = .true.             ! t/f to write module history file
+      real,parameter    :: output_period_his = 30*24*60*60        ! output period in seconds
+      integer,parameter :: nrpf_his          = 2                  ! total recs per file
       
       ! still need AVERAGES cppflag set for bgc average file to work:
-      logical,parameter :: wrt_file_avg      = .false.     ! t/f to write module averages file
-      real,parameter    :: output_period_avg = 40          ! output averaging period in seconds
-      integer,parameter :: nrpf_avg          = 2           ! total recs per file
+      logical,parameter :: wrt_avg           = .true.             ! t/f to write module averages file
+      real,parameter    :: output_period_avg = 30*24*60*60        ! output averaging period in seconds
+      integer,parameter :: nrpf_avg          = 1                  ! total recs per file
+
+      logical,parameter :: wrt_his_dia           = .false.        ! t/f to write module history file
+      real,parameter    :: output_period_his_dia = 2635200  ! output period in seconds
+      integer,parameter :: nrpf_his_dia          = 13             ! total recs per file
+
+      logical,parameter :: wrt_avg_dia           = .true.         ! t/f to write module history file
+      real,parameter    :: output_period_avg_dia = 30*24*60*60    ! output period in seconds
+      integer,parameter :: nrpf_avg_dia          = 1              ! total recs per file
 
       integer, parameter :: nbgc_flx = 2                   ! number of surface bgc flux forcings
 #ifdef PCO2AIR_FORCING
@@ -32,8 +40,8 @@
       type (ncvs) :: nc_swrad_avg = ncvs( name='swrad_davg', time_name='srf_davg_time' )
 #endif      
 
-#include "bgc_tracers.h"
-#include "bgc_bio_diag.h"
+!#include "bgc_tracers.h"
+!#include "bgc_bio_diag.h"
 
       ! End of user inputs
       ! *************************************************************
