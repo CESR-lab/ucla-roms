@@ -322,7 +322,6 @@
       allocate( t(GLOBAL_2D_ARRAY,N,3,NT) )
       t=0.
 
-#if defined AVERAGES
       ! remove averages flag above but do wrt_file_avg flag over this to avoid any allocation
       ! Allocate memory for only the tracer averages required for output
       do itrc=1,NT
@@ -346,8 +345,6 @@
           t_avg_2_NT(cnt)=itrc                         ! store the actual tracer index of 't' array
         endif                                          ! since t(NT) but t_avg(n_t_avg). NT >= n_t_avg...
       enddo
-
-#endif  /* AVERAGES */
 
       ! initialize read in forcing data arrays
       do itrc=iTandS+1,NT
