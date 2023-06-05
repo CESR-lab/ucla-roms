@@ -430,18 +430,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #ifdef ANA_INITIAL
           endif
 #endif
-#if !defined ANA_SMFLUX  ||  defined SOLVE3D  &&\
-   ( !defined ANA_STFLUX  ||\
-     (defined SG_BBL96    && !defined ANA_BSEDIM) ||\
-     (defined SG_BBL96    && !defined ANA_WWAVE)  ||\
-     (defined QCORRECTION && !defined ANA_SST)    ||\
-     (defined SALINITY    && !defined ANA_SSFLUX) ||\
-     (defined LMD_KPP     && !defined ANA_SRFLUX))||\
-     ((defined T_FRC_BRY || defined M2_FRC_BRY || \
-      defined M3_FRC_BRY || defined Z_FRC_BRY) && \
-      !defined ANA_BRY)
-
-
 
 ! Forcing file name. Check its availability.
 
@@ -484,7 +472,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
               endif
             endif
           enddo
-#endif
 
 
 ! Climatology file name. Climatology data is needed for (1) to supply
