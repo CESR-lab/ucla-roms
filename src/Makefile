@@ -44,7 +44,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
 	river_frc.F	pipe_frc.F      add_git_hash.F\
 	random_output.F\
 \
-	bgc_ecosys_vars.F bgc_forces.F bgc_ecosys_bec2_init.F	bgc_ecosys_bec2.F\
+	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F\
 \
 	main.F	
 
