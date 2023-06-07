@@ -78,7 +78,7 @@
       integer :: rn_s, rn_w, rn_n, rn_e                       ! received msg buffer size
       integer :: rn_sw,rn_se,rn_nw,rn_ne
 
-      public do_particles
+      public do_particles,init_particles
 
       contains
 !-------------------------------------------------
@@ -89,9 +89,9 @@
       integer :: ierr,ip
 
       if (part_first) then
-        call init_particles
-        call wrt_particles
-        output_time = 0
+!       call init_particles
+!       call wrt_particles
+!       output_time = 0
       endif
 
       output_time = output_time + dt
@@ -170,6 +170,10 @@
       ntag = np
       
       call init_arrays_mpi_roms
+
+      call wrt_particles
+      output_time = 0
+
 
 !     print *,'init particles done'
 
@@ -351,7 +355,7 @@
 
       end subroutine seed_particles !]
 !-------------------------------------------------
-      subroutine wrt_particles![
+      subroutine wrt_particles ![
       use nc_read_write
       implicit none
 

@@ -99,6 +99,8 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use sponge_tune
       use diagnostics
       use boundary
+      use particles
+      use random_output
 # ifdef BIOLOGY_BEC2
       use bgc_param_ini
       use bgc
@@ -268,6 +270,9 @@ CR      write(*,*)  ' -3' MYID
 CR      write(*,*)  ' -2' MYID
 #endif
 
+      if (floats) then
+        call init_particles
+      endif
 
 #if defined SPONGE 
       call set_nudgcof(0)
@@ -278,6 +283,7 @@ CR      write(*,*)  ' -2' MYID
 #ifdef BIOLOGY_BEC2
       call wrt_bgc(.true.)
 #endif
+      if (do_random) call init_random
 
 CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
@@ -303,6 +309,7 @@ C$OMP END MASTER
       subroutine roms_step
 
       use param
+      use ocean_vars
       use extract_data
       use diagnostics
       use scalars
@@ -375,11 +382,10 @@ C$OMP END MASTER
       ! nrhs points to u/v at time level n
       call prsgrd
       call pre_step3d(0)  ! u is m/s here
+
       !! nnew ==n+1/2  
 
 
-      call calc_avg_ocean_vars ! call here not wrt_his else
-                               ! rho, omega and w will change
       !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
       !! set_HUV1 works with nnew, which here is time n+1/2
       ! It's using the Hz from time n though
@@ -446,7 +452,10 @@ C$OMP END MASTER
       time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
 
+      call calc_avg_ocean_vars ! call here not wrt_his else
+
 !     Done with stepping, time for outputs
+
 
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
