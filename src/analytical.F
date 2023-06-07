@@ -9,15 +9,14 @@
       use grid
       use scalars
       use tracers
+      use mixing
 
       implicit none
       private
 
-      ![ Preamble:
 ! ANALYTICAL PACKAGE:   Set up various analytical forcing fields
 !=========== ========   for the model.
 !
-! ana_bsedim_tile   Analytical bottom sediment grain size and density.
 ! ana_meanRHO_tile  Analytical mean density anomaly.
 ! ana_smflux_tile   Analytical kinematic surface momentum flux (wind stress).
 ! ana_srflux_tile   Analytical kinematic surface shortwave radiation.
@@ -27,7 +26,6 @@
 ! ana_wwave_tile    Analytical wind induced wave amplitude, direction and period.
 
 ! REMOVE ALL FLAGS LATER
-
 #ifdef ANA_INITIAL
       public ana_init
 #endif
@@ -50,94 +48,37 @@
 # endif
 #endif
 
-      ! Non-typical analytical vars:
-      !]----------------------------
-
       contains
 
 ! ----------------------------------------------------------------------
 #ifdef ANA_INITIAL
-      subroutine ana_init (tile)  ![ Set initial conditions for momentum
-                                  !  free surface, and tracer variables
-      use param
-      use hidden_mpi_vars
-      use private_scratch
-
-      implicit none               !  using analytical expressions.
-      integer tile
-
-# include "compute_tile_bounds.h"
-
-      call ana_init_tile( istr,iend,jstr,jend )
-
-      end subroutine ana_init  !]
-! ----------------------------------------------------------------------
-      subroutine ana_init_tile (istr,iend,jstr,jend)  ![
+      subroutine ana_init ![
 
       use param
-      use tracers, only: t
-      use boundary
-      use eos_vars
-      use grid
-      use mixing
-      use ocean_vars
       use scalars
+      use boundary
+      use tracers
+      use eos_vars
+      use mixing
 
       implicit none
 
-      integer istr,iend,jstr,jend, i,j,k, itrc
+#include "ana_init.h"
 
-# include "compute_auxiliary_bounds.h"
+      call ana_init_generic(1,nx,1,ny) 
 
-      ! necessary for FIRST_TIME_STEP flag to work, as per set_global_definitions.h
-      ! this had no value for analytical examples previously.
-#ifdef EXACT_RESTART
-      forw_start=ntstart
-#endif
+      end subroutine ana_init !]
+! ----------------------------------------------------------------------
+      subroutine ana_init_generic(istr,iend,jstr,jend) ![
 
-
-      do j=jstrR,jendR         ! Set everything (except temperature
-        do i=istrR,iendR       ! and salinity) to all-zero state, then
-          zeta(i,j,1)=0.       ! modify some of the variables, if a
-          ubar(i,j,1)=0.       ! non-trivial initialization required.
-          vbar(i,j,1)=0.       ! Note: A code to initialize T [and S]
-        enddo                  ! must always be supplied for 3D
-      enddo                    ! applications.
-# ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            u(i,j,k,1)=0.
-            u(i,j,k,2)=0.
-            v(i,j,k,1)=0.
-            v(i,j,k,2)=0.
-          enddo
-        enddo
-      enddo
-# endif
-
-#  ifdef SOLVE3D
-      do k=1,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            t(i,j,k,1,itemp)=???
-            t(i,j,k,2,itemp)=???
-            t(i,j,k,1,isalt)=???
-            t(i,j,k,2,isalt)=???
-          enddo
-        enddo
-      enddo
-#  endif
-
-      call ana_init_generic(istr, iend, jstr, jend)  ! leave this. all ana_init must do this.
-
-      end subroutine ana_init_tile  !]
-! ---------------------------------------------------------------------
-      subroutine ana_init_generic( istr, iend, jstr, jend )  ![
-      ! mpi exchanges, etc, required for all analytical initial conditions
+      use param
+      use boundary
       implicit none
 
-      integer :: istr, iend, jstr, jend, i, j, k, itrc
+      ! input
+      integer, intent(in) :: istr,iend,jstr,jend
+      ! local
+      integer :: i,j,k, itrc
 
 ! The rest of the code is independent of the specific configuration.
 
@@ -267,7 +208,7 @@
       call exchange_2_tile(istr,iend,jstr,jend,
      &                     u(START_2D_ARRAY,1,1), N,
      &                     v(START_2D_ARRAY,1,1), N)
-      do itrc=1,NT
+      do itrc=1,nt
         call exchange_tile(istr,iend,jstr,jend,
      &                t(START_2D_ARRAY,1,1,itrc), N)
       enddo
@@ -355,15 +296,11 @@
       endif
 # endif
 
-      end subroutine ana_init_generic  !]
+      end subroutine ana_init_generic !]
 #endif /* ANA_INITIAL */
-
 ! ---------------------------------------------------------------------
 #if defined ANA_VMIX && defined SOLVE3D
-      subroutine ana_vmix (tile)  ![
-
-      use param
-      use hidden_mpi_vars
+      subroutine ana_vmix (tile) ![
 
       implicit none
       integer tile
@@ -377,25 +314,34 @@
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
 ! using analytical expressions.
 
-      use param
-      use grid
-      use mixing
-      use ocean_vars
-      use scalars
-
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
-      real cff
+      integer :: i,j,k
+      real    :: cff
+      real    :: hbl,ssgm
 
-# include "compute_auxiliary_bounds.h"
+      hbl = 70;  ! match the initial mixed layer depth
 
       if (FIRST_TIME_STEP) then
-        do k=0,N
-          do j=jstr,jend
-            do i=istr,iend
-             Akv(i,j,k)=0.0
+        do k=0,nz
+          do j=0,ny+1
+            do i=0,nx+1
+              ssgm=(z_w(i,j,nz)-z_w(i,j,k))/hbl
 
-             Akt(i,j,k,itemp)=0.
+              if (ssgm < 1.) then
+                if (ssgm<0.07D0) then
+                  cff=0.5*(ssgm-0.07D0)**2/0.07D0
+                else
+                  cff=0.D0
+                endif
+                cff=cff + ssgm*(1.-ssgm)**2
+              else
+                cff=0
+              endif
+
+              ! attempt to get a max value of 0.005 m^2/s
+              Akv(i,j,k) = cff*0.005/0.15
+
+              Akt(i,j,k,itemp)=cff*0.005/0.15
 #  ifdef SALINITY
               Akt(i,j,k,isalt)=Akt_bak(isalt)
 #  endif
