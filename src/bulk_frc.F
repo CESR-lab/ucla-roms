@@ -11,7 +11,7 @@
       ! param.h needed for GLOBAL_2D_array to work
       use param
       use read_write, only: set_frc_var_tile, ncvs
-      use roms_read_write, only: nc_check_units
+      use roms_read_write
 
       implicit none
 
@@ -132,8 +132,9 @@
 
       if (do_check_units) then
         if(mynode==0) print *,'Checking Bulk force units'
-        call nc_check_units(nc_Q%file_indx,nc_Q%name,'kg/kg')
-        call nc_check_units(nc_prate%file_indx,nc_prate%name,'cm/day')
+        call nc_check_units(frcfile(nc_Q%file_indx),nc_Q%name,'kg/kg')
+        call nc_check_units(
+     &         frcfile(nc_prate%file_indx),nc_prate%name,'cm/day')
         do_check_units = .false.
       endif
 
@@ -205,10 +206,6 @@
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
 
-# ifdef SEA_ICE_NOFLUX
-#  ifdef LMD_KPP
-#  endif
-# endif
 
 #undef SST_SKIN
 #define BULK_EP
@@ -902,7 +899,7 @@
 # endif
 
 !---------------------------------------------------------------
-! Restrict stflx to prevent surface temperature to go below -2
+! Restrict stflx to prevent surface temperature to go below -1.8
 ! degrees C.
 !---------------------------------------------------------------
 #ifdef SEA_ICE_NOFLUX

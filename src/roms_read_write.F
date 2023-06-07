@@ -79,7 +79,6 @@
       character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
 
 
-
       public :: findstr,append_date_node
       public :: set_frc_data
       public :: read_output_root_name
@@ -749,11 +748,13 @@
 
       end subroutine append_date_node !]
 !-----------------------------------------------------------------------
-      subroutine nc_check_units(ifile,var_name, var_units )  ![
+      subroutine nc_check_units(file_name,var_name, var_units )  ![
+!     subroutine nc_check_units(ifile,var_name, var_units )
       implicit none
 
       ! input/output
-      integer,          intent(in) :: ifile
+!     integer,          intent(in) :: ifile      ! index
+      character(len=*), intent(in) :: file_name
       character(len=*), intent(in) :: var_name
       character(len=*), intent(in) :: var_units
 
@@ -762,9 +763,11 @@
       integer           :: var_id
       character(len=20) :: file_var_units ! variable units in forcing file
 
-      ierr = nf90_open(frcfile(ifile), nf90_nowrite, ncid)
+!     ierr = nf90_open(frcfile(ifile), nf90_nowrite, ncid)
+      ierr = nf90_open(file_name,nf90_nowrite,ncid)
       if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'check_units, opening: ',frcfile(ifile))
+!    &    call handle_ierr(ierr,'check_units, opening: ',frcfile(ifile))
+     &    call handle_ierr(ierr,'check_units, opening: ',file_name)
 
       ierr = nf90_inq_varid(ncid, var_name, var_id)                    
       if (ierr/=0) call handle_ierr(ierr,'check_units:: cant find var')
@@ -774,9 +777,10 @@
       if (trim(var_units) /= trim(file_var_units)) then
         write(*,'(/3x,3A/5x,3A/)') 'ERROR:: check_units: ',
      &   trim(file_var_units),' for var: ', 
-     &   trim(var_name),'.  Units must be: ', trim(var_units)
+     &   trim(var_name),',  Units must be: ', trim(var_units)
         error stop
       end if
+      ierr = nf90_close(ncid)
 
       end subroutine nc_check_units  !]
 ! ---------------------------------------------------------------------
