@@ -459,7 +459,7 @@
       use eos_vars
       use work_mod
       use grid
-      use tracers    !, only: wrt_his_trc
+      use tracers 
       use coupling
 
       implicit none
@@ -893,11 +893,11 @@
 
       ! local
       real         :: coef
-      logical,save :: first_step=.true.
+!     logical,save :: first_step=.true.
 
       if (wrt_file_avg) then
 
-      if (.not. first_step) then                           ! don't include t=0 in average
+!     if (.not. first_step) then                           ! don't include t=0 in average
 
         navg_ovars = navg_ovars +1
         coef = 1./navg_ovars
@@ -950,9 +950,9 @@
 #  endif
 # endif /* SOLVE3D */
 
-      endif  ! <-- .not. first_step
+!     endif  ! <-- .not. first_step
 
-      first_step=.false.
+!     first_step=.false.
 
       endif ! <-- wrt_file_avg
 
