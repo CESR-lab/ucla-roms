@@ -462,3 +462,6 @@ c-# define TANH dtanh
 
 /* 2021/09: moved from scoord. h */
 #define VERT_COORD_TYPE_SM09
+
+/* 2023/05:  Poor man's sea ice model */
+#define SEA_ICE_NOFLUX
