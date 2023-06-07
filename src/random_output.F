@@ -22,10 +22,30 @@
       integer :: record = nrpf ! to trigger the first file creation
 
       ! Public functions
-      public wrt_random
+      public wrt_random,init_random
 
       contains
 
+!----------------------------------------------------------------------
+      subroutine init_random ![
+      ! Allocate and initialize arrays.
+      implicit none
+
+      ! local
+      logical,save :: done=.false.
+
+      if (done) then
+        return
+      else
+        done = .true.
+      endif
+
+      ! put the relevant part of your code here
+
+
+      if (mynode==0) print *,'init random'
+
+      end subroutine init_random  !]
 !----------------------------------------------------------------------
       subroutine def_vars_random(ncid)  ![
       implicit none
