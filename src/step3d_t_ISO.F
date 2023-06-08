@@ -819,19 +819,20 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
         do j=jstr,jend
 
+# include "compute_vert_tracer_fluxes.h"
+
 # ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
             do k=1,nz
               do i=1,nx
-!                Tdiag(i,j,k,vmixd,td(itrc)) = t(i,j,k,nnew,itrc)
-                VFlxD(i,j,k) = t(i,j,k,nnew,itrc)
+                Tdiag(i,j,k,tadvz,td(itrc)) = FC(i,k)
+                VFlxD(i,k) = t(i,j,k,nnew,itrc)
               enddo
             enddo
           endif
 
 # endif
 
-# include "compute_vert_tracer_fluxes.h"
 
           do k=1,nz
             do i=istr,iend
@@ -1004,27 +1005,34 @@ c??         enddo
           if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then 
             do k=1,nz
               do i=istr,iend
-!                Tdiag(i,j,k,vmixd,td(itrc)) = -(Hz(i,j,k)*t(i,j,k,nnew,itrc)
-!     &           - Tdiag(i,j,k,vmixd,td(itrc)))/dt
-                VFlxD(i,j,k) =
-     &            (VFlxD(i,j,k) - Hz(i,j,k)*t(i,j,k,nnew,itrc))/dt
+                VFlxD(i,k) =
+     &            (VFlxD(i,k) - Hz(i,j,k)*t(i,j,k,nnew,itrc))/dt
               enddo
             enddo
-            ! Convert to flux on w-point
+            ! Convert divergence to fluxes on w-points
             do i=istr,iend
-              do k=1,nz
-                 if (k==1) then
-                  Tdiag(i,j,k,vmixd,td(itrc)) = VFlxD(i,j,k)/(pm(i,j)*pn(i,j)) 
-                 else
-                  Tdiag(i,j,k,vmixd,td(itrc)) = VFlxD(i,j,k)/(pm(i,j)*pn(i,j)) + 
-     &               Tdiag(i,j,k-1,vmixd,td(itrc))
-                 endif
+              ZFlx(i,1)= VFlxD(i,1)/(pm(i,j)*pn(i,j)) 
+              do k=2,nz
+                ZFlx(i,k)= VFlxD(i,k)/(pm(i,j)*pn(i,j)) + ZFlx(i,k-1)
               enddo
             enddo
+            if (j==20.and.mynode==0) then
+!              print *,maxval(Tdiag(1:nx,j,:,tmixz,td(itrc)))
+            endif
             do i=istr,iend
               do k=1,nz
-                 Tdiag(i,j,k,vmixd,td(itrc)) = Tdiag(i,j,k,vmixd,td(itrc))
-     &               - Tdiag(i,j,k,tadvz,td(itrc)) 
+!               Tdiag(i,j,k,vmixd,td(itrc)) = 
+!    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+!               Tdiag(i,j,k,tmixz,td(itrc)) = 
+!    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+
+#  ifdef ADV_ISONEUTRAL
+                Tdiag(i,j,k,tmixz,td(itrc)) = Tdiag(i,j,k,tmixz,td(itrc)) +
+     &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+#  else
+                Tdiag(i,j,k,tmixz,td(itrc)) = 
+     &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+#  endif
               enddo
             enddo
 
