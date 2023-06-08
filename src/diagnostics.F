@@ -69,10 +69,10 @@
      &  tadvz = 3, ! Advection in z-direction
      &  tmixx = 4, ! Mixing in x-direction
      &  tmixy = 5, ! Mixing in y-direction
-     &  tmixz = 6, ! Mixing in z-direction
-     &  vmixd = 7  ! Divergence of total vertical fluxes
+     &  tmixz = 6  ! Mixing in z-direction
 
-      real,public,allocatable,dimension(:,:,:) :: VFlxD     ! Divergence of implicit mixing related vertical fluxes
+      real,public,allocatable,dimension(:,:) :: VFlxD     ! Divergence of implicit mixing related vertical fluxes
+      real,public,allocatable,dimension(:,:) :: ZFlx      ! Implicit mixing related vertical fluxes
       real,public,allocatable,dimension(:,:,:,:,:) :: Tdiag     ! tracer diagnostic terms
       real,allocatable,dimension(:,:,:,:,:) :: Tdiag_avg ! averages of tracer diagnostic terms
       integer                               :: ntdia     ! number of tracers for which to do diagnostics
@@ -204,13 +204,14 @@
         ntdia = idx
         allocate(Tdiag(0:nx+1,0:ny+1,nz,ntd,ntdia))
         Tdiag = 0
-        allocate(VflxD(0:nx+1,0:ny+1,nz))
-        VflxD = 0
+        allocate(VFlxD(0:nx+1,nz))
+        VFlxD = 0
+        allocate(ZFlx(0:nx+1,nz))
+        ZFlx = 0
         if (diag_avg) then
           allocate(Tdiag_avg(0:nx+1,0:ny+1,nz,ntd,ntdia))
           Tdiag_avg = 0
         endif
-        print *,'td: ',td
       endif
 
       if (diag_pflx) then
@@ -1071,15 +1072,6 @@
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
            ierr = nf90_put_att(ncid,varid,'long_name','mixing z-flux')
            ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
-           ierr = nf90_put_att(ncid,varid,'note',
-     &      'This term only has FSC from iso-neutral')
-           vname = trim(t_vname(it)) // '_vmixd'
-           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name',
-     &      'Kitchen sink of all vertical implicit fluxes')
-           ierr = nf90_put_att(ncid,varid,'note',
-     &           'This term and vmixd should be add to make sense')
-           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
           endif
         enddo
       endif
@@ -1165,7 +1157,6 @@
           call ncwrite(ncid,trim(t_vname(it))//'_mixx' ,trcd(i0:i1,j0:j1,:,4,td(it)),start)
           call ncwrite(ncid,trim(t_vname(it))//'_mixy' ,trcd(i0:i1,j0:j1,:,5,td(it)),start)
           call ncwrite(ncid,trim(t_vname(it))//'_mixz' ,trcd(i0:i1,j0:j1,:,6,td(it)),start)
-          call ncwrite(ncid,trim(t_vname(it))//'_vmixd',trcd(i0:i1,j0:j1,:,7,td(it)),start)
         endif
       enddo
           
