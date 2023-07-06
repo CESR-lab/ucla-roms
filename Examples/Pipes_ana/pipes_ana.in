@@ -8,10 +8,8 @@ S-coord: THETA_S,   THETA_B,    hc (m)
           6.0D0        6.0D0     25.0D0
 
 grid:  filename
-      none
 
 forcing: filename
-      none
 
 initial: NRREC  filename
           0
