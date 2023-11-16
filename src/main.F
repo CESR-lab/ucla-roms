@@ -372,7 +372,7 @@ C$OMP END MASTER
       call omega
 
 # if defined ANA_VMIX
-      call ana_vmix(0)
+      call ana_vmix
 # elif defined LMD_MIXING
       call lmd_vmix(nstp)
 # elif defined BVF_MIXING
