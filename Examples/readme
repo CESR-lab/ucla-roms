@@ -23,10 +23,6 @@ Fortran:
   Basic tests of fortran performance, e.g. loop order/length.
   The code is idealised, not roms code. 2020/10.
   
-lmd_kpp_old:
-  Has lmd_kkp.F but using version pre-2020. It can give different
-  results, and hence is here for comparison.
-  
 Pipes (ana/real):
   Analytical and realistic pipe examples. 2020/12
   
