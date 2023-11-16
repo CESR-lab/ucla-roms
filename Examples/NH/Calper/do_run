@@ -1,4 +1,0 @@
-#!/bin/csh
-
-#mpiexec -np 4 roms_tank tank.in < /dev/null > & jobout &
-mpiexec -np 4 roms_cald caldeira.in
