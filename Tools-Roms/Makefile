@@ -11,13 +11,13 @@ include ../src/Makedefs.inc
 
 # OpenMP flags - needed for r2r_bry (and possibly others):
 #	note, -qopenmp is the new -openmp but is still needed for maya
-#       OMP_FLAG = -fpp -openmp
-        OMP_FLAG = -qopenmp
+        OMP_FLAG = -fpp -openmp
+#       OMP_FLAG = -qopenmp
 
 # --------------------------------------------------------------------
 
-ALL = partit ncjoin ncjoin_mpi extract_data_join nc3to4z zslice r2r_bry\
-	r2r_match_topo r2r_init
+ALL = partit ncjoin ncjoin_mpi extract_data_join nc3to4z zslice sample
+#r2r_bry r2r_match_topo r2r_init
 
 all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
 
@@ -72,9 +72,12 @@ r2r_init: $(R2R_INIT)
 r2r_bry: $(R2R_BRY)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_bry $(R2R_BRY) $(LCDF)
 
- ZSLICE = roms_read_write.o	zslice.o set_depth.o sigma_to_z_intr.o tiling.o\
+ ZSLICE = roms_read_write.o zslice.o set_depth.o sigma_to_z_intr.o tiling.o\
           read_add_write.o read_string.o lenstr.o
-          
+
+ SAMPLE = roms_read_write.o sample.o tiling.o\
+          read_add_write.o read_string.o lenstr.o
+
 R2R_MATCH_TOPO = r2r_match_topo.o r2r_interp_init.o mrg_zone_subs.o tiling.o\
                         spln2d.o roms_read_write.o read_string.o lenstr.o
                         
@@ -83,6 +86,9 @@ r2r_match_topo: $(R2R_MATCH_TOPO)
           
 zslice: $(ZSLICE)
 	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
+
+sample: $(SAMPLE)
+	$(LDR) $(FFLAGS) -o sample $(SAMPLE) $(LCDF)
 
 clean:
 	/bin/rm -f *.f *.o *.a *.s *.trace *.mod
