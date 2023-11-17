@@ -20,7 +20,7 @@
       
       ! ---- user input begins
       integer,parameter,dimension(3) :: reference_date = (/2000,1,1/)  ! year, month, day
-      integer :: dt_format = 0
+      integer,parameter :: dt_format = 0
       ! ---- user input ends
 
       character(len=21) :: refdatestr
