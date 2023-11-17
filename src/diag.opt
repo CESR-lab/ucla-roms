@@ -1,0 +1,13 @@
+      
+      ! ***************************************************************
+      ! User inputs
+      !
+      
+      logical, parameter :: code_check  = .false. ! dedicated output in log file 
+                                                  ! for code checking
+      
+      ! End of user inputs                                  
+      ! ***************************************************************
+
+                                                            
+            

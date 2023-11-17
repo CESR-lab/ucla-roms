@@ -1,4 +1,4 @@
 #!/bin/bash
 
-ncjoin -d sample_his*.?.nc
-ncview sample_his.*.nc
+ncjoin -d pipes_his*.?.nc
+ncview pipes_his.*.nc

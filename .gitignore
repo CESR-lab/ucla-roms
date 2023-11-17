@@ -38,6 +38,7 @@ Tools-Roms/r2r_init
 Tools-Roms/r2r_match_topo
 Tools-Roms/extract_data_join
 Tools-Roms/particle_join
+Tools-Roms/sample
 
 # For Examples/code_check/
 # and Expanse run logs:
