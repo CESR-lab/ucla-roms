@@ -80,10 +80,8 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 #ifdef SOLVE3D
       real rho0, tnu2(NT)
 
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
       real Akv_bak, Akt_bak(NT)
-# endif
+
 # ifdef MY25_MIXING
       real Akq_bak,   q2nu2,   q2nu4
 # endif

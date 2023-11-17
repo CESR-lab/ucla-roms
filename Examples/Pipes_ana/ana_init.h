@@ -30,8 +30,8 @@
 
 
       do k=1,nz
-        do j= 1,ny
-          do i= 1,nx
+        do j= 0,ny+1
+          do i= 0,nx+1
 !           t(i,j,k,1,itemp)=24.0
             t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
             t(i,j,k,1,isalt)=36.
