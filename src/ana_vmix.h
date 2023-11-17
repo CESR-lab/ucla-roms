@@ -8,11 +8,11 @@
           do j=0,ny+1
             do i=0,nx+1
               
-              Akv(i,j,k) = 1e-5
+              Akv(i,j,k) = Akv_bak
 
-              Akt(i,j,k,itemp)= 1e-5
+              Akt(i,j,k,itemp)= Akt_bak(itemp)
 #  ifdef SALINITY
-              Akt(i,j,k,isalt)= 1e-5
+              Akt(i,j,k,isalt)= Akt_bak(isalt)
 #  endif
             enddo
           enddo

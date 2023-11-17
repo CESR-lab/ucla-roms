@@ -10,6 +10,7 @@
       use scalars
       use tracers
       use mixing
+      use scalars
 
       implicit none
       private
@@ -36,12 +37,8 @@
 ! ----------------------------------------------------------------------
       subroutine ana_init ![
 
-      use param
-      use scalars
       use boundary
-      use tracers
       use eos_vars
-      use mixing
 
       implicit none
 
