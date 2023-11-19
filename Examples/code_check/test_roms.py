@@ -56,7 +56,7 @@ def search_string_in_file_yesno(file_name, string_to_search):
 ntests = 1 # np.size(test_names)
 # -- WEC
 #filename_BM  = os.path.join(os.getcwd(),'benchmark.result')
-filename_BM  = os.path.join(os.getcwd(),str(sys.argv[1]))  # read in with arguement (maya or expanse)
+filename_BM  = os.path.join(os.getcwd(),str(sys.argv[1]))  # read in with argument (maya or expanse)
 filename_res = os.path.join(os.getcwd(),'test.log')
 filenames = [ filename_BM, filename_res ]
 #print(filenames)
@@ -66,7 +66,7 @@ filenames = [ filename_BM, filename_res ]
 # Diagnostic terms
 fields = ['KINETIC_ENRG','BAROTR_KE','MAX_ADV_CFL','MAX_VERT_CFL']
 diags = np.zeros((ntests,2,4)) # 2 for bm vs new, 4 for fields
-diffs = np.zeros((ntests,4)) # Differences between bm vs new fiels - 4 for fields
+diffs = np.zeros((ntests,4)) # Differences between bm vs new fields - 4 for fields
 
 # Generate log file for diagnostic checks from this script
 file_diag = open("code_check.log","w")
@@ -84,7 +84,7 @@ for test in range(ntests):
 	nstps = int(line[18:23]) + 1 # use +1 as diagnostics start from step 0
 	#print('nstps=',nstps)
 
-	# Loop through BM log values and new log values
+	# Loop through Benchmark log values and new log values
 	for m in range(2):
 	
 		# -- find line where diagnostics start (within loop in-case terminal output changes between commits)

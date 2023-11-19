@@ -532,7 +532,7 @@ c**     write(*,*) 'received avke =', buff(3)/volume
   1   format(/1x,A,2x,A,1x,A,5x,A,8x,A,2(5x,A),3x,A,2(1x,A))
   2   format(ES18.11, ES17.10, 2F16.12, 2I7,I5, I3)
   3   format(/2x,A,1x,A,5x,A,8x,A,2(5x,A),3x,A,2(1x,A))
-  4   format(I4,1x,4ES23.16)
+  4   format(I2,1x,4ES23.16)
 
 # elif defined REPORT_MAX_UV && defined REPORT_POTEN_ENRG
 
