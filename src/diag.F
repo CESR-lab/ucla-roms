@@ -37,7 +37,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       do while(i<j)                    ! at the beginning of model run.
         i=2*i
       enddo
-      if (mod(iic-1,min(i,ninfo)) == 0) then
+      if (mod(iic,min(i,ninfo)) == 0) then
         call diag_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2),A2d(1,3)
 #ifdef SOLVE3D
      &               , A2d(1,4), A2d(1,5), A2d(1,6), A2d(1,7), A2d(1,8)
@@ -523,7 +523,7 @@ c**     write(*,*) 'received avke =', buff(3)/volume
             endif
           endif
           if (code_check) then
-            write(*,4) iic-1, avke,  avke2b, Cu_Adv, Cu_W
+            write(*,4) iic, avke,  avke2b, Cu_Adv, Cu_W
           else
             write(check_line,2,iostat=ierr)  avke,  avke2b,  Cu_Adv,
      &                        Cu_W, i_cx_max,  j_cx_max,  k_cx_max
@@ -628,7 +628,7 @@ C$   &                                                 , proc(2)
           do while (i<18 .and. tstring(i:i)==' ')
             i=i+1
           enddo
-          write(*,'(I7,2(1x,A))') iic-1, tstring(i:i+8),
+          write(*,'(I7,2(1x,A))') iic, tstring(i:i+8),
      &                                check_line(is:ie)
           endif ! .not. code_check
 

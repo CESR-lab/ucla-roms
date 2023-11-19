@@ -69,7 +69,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
       call start_timers()                ! a possibility of I/O error
       call roms_init                     ! occurring on some MPI nodes,
       if (may_day_flag /= 0) goto 99     ! but not simultaneously on
-      do iic=ntstart,ntstart+ntimes      ! all, exiting is deferred
+      do iic=ntstart,ntstart+ntimes-1    ! all, exiting is deferred
         diag_sync=.false.                ! until "may_day_flag" is
         call roms_step
         if (diag_sync .and. may_day_flag /= 0) goto 99
@@ -285,6 +285,8 @@ CR      write(*,*)  ' -2' MYID
 #endif
       if (do_random) call init_random
 
+      call diag  ! log file output of global norms
+
 CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
@@ -364,7 +366,8 @@ C$OMP END MASTER
       ! Hz is computed by set_depth
       call set_HUV
 
-      call diag
+      !! Move call diag to the end and add a call at the end of init
+!     call diag
 
       ! Computes vertical flux omega, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
@@ -456,6 +459,7 @@ C$OMP END MASTER
 
 !     Done with stepping, time for outputs
 
+      call diag  ! log file output of global norms
 
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
