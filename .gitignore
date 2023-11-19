@@ -21,6 +21,7 @@ Examples/*/Compile
 Examples/*/*.nc
 Examples/*/fort*
 Examples/*/Makedefs.inc
+Examples/*/code_check/Compile
 setup_kwds.F
 check_switches1.F
 check_srcs.F
