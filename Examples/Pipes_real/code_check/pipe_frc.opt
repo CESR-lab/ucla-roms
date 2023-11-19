@@ -1,0 +1,12 @@
+
+      ! ****************************************************************
+      ! user inputs
+      logical,parameter,public :: pipe_source = .true.        ! default should be false if not using pipes
+      logical,parameter        :: p_analytical = .false.      ! forcing netcdf files
+      integer,public,parameter :: npip = 1                    ! number of pipes
+      
+      ! realistic pipes only: enter netcdf variable name and time name
+      type (ncforce) :: nc_pvol = ncforce( vname='pipe_volume', tname='pipe_time')
+      type (ncforce) :: nc_ptrc = ncforce( vname='pipe_tracer', tname='pipe_time')       
+      ! end user inputs
+      ! ****************************************************************
