@@ -42,7 +42,7 @@ rm cppdefs.opt &> /dev/null
 cp $ROMS_ROOT/Examples/code_check/test_roms.py . 
 python3 test_roms.py $bm_file
 retval=$?
-echo $retval
+#echo $retval
 
 rm test_roms.py
 
