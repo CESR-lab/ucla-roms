@@ -65,8 +65,8 @@ filenames = [ filename_BM, filename_res ]
 # --------------------------------------------
 # Diagnostic terms
 fields = ['KINETIC_ENRG','BAROTR_KE','MAX_ADV_CFL','MAX_VERT_CFL']
-diags = np.zeros((ntests,2,4)) # 2 for bm vs new, 4 for fields
-diffs = np.zeros((ntests,4)) # Differences between bm vs new fields - 4 for fields
+diags = np.zeros((ntests,2,4)) # 2 for benchmark vs new, 4 for fields
+diffs = np.zeros((ntests,4)) # Differences between benchmark vs new fields - 4 for fields
 
 # Generate log file for diagnostic checks from this script
 file_diag = open("code_check.log","w")
@@ -87,31 +87,42 @@ for test in range(ntests):
 	# Loop through Benchmark log values and new log values
 	for m in range(2):
 	
-		# -- find line where diagnostics start (within loop in-case terminal output changes between commits)
-		lstart = search_string_in_file(filenames[m],'STEP')
-		#print('lstart=',lstart)   # debug
+	  # -- find line where diagnostics start (within loop in-case terminal output changes between commits)
+	  lstart = search_string_in_file(filenames[m],'STEP')
+	  #print('lstart=',lstart)   # debug
 	
-		#print('m=',m)   # debug
-		# Loop through time steps & sum diagnostics
-		for t in range(nstps):
-			#print('t=',t)   # debug
-			# read timestep line
-			line = open(filenames[m], 'r').readlines()[lstart[0]+t]  # need the [0] even though scalar
-			  
-			diags[test,m,0] += float(line[ 4:26])          # python's float already double precision (64 bit)
-			#print('diags[test,m,0]',diags[test,m,0])      # read KINETIC_ENRG
-			diags[test,m,1] += float(line[27:49])          # read BAROTR_KE
-			#print('diags[test,m,1]',diags[test,m,1])      
-			diags[test,m,2] += float(line[50:72])          # read MAX_ADV_CFL        
-			#print('diags[test,m,2]',diags[test,m,2])
-			diags[test,m,3] += float(line[73:95])          # read MAX_VERT_CFL
-			#print('diags[test,m,3]',diags[test,m,3])
-			
-			# Sanity check to confirm correct read of values as totals only
-			# are hard to spot check
-			if t==1 and m==1:
-				file_diag.write('\n'+'Diagnostics for 1st timestep of '+str(nstps-1)+' total steps:\n') # -1 as +1 before
-				file_diag.write( str(t)+' '+str(diags[test,m,:])+'\n' )				
+	  # Loop through time steps & sum diagnostics
+	  iline = lstart[0]
+	  dline = 0
+	  while dline < nstps :
+	    line = open(filenames[m],'r').readlines()[iline]
+	    if len(line) > 94 :
+	      diags[test,m,0] += float(line[ 4:26])     # read Kinetic Energy
+	      diags[test,m,1] += float(line[27:49])     # read barotropic KE
+	      diags[test,m,2] += float(line[50:72])     # read MAX_ADV_CFL        
+	      diags[test,m,3] += float(line[73:95])     # read MAX_VERT_CFL
+	      dline += 1
+	    iline += 1
+
+#	for t in range(nstps):
+#		#print('t=',t)   # debug
+#		# read timestep line
+#		line = open(filenames[m], 'r').readlines()[lstart[0]+t]  # need the [0] even though scalar
+#		  
+#		diags[test,m,0] += float(line[ 4:26])          # python's float already double precision (64 bit)
+#		#print('diags[test,m,0]',diags[test,m,0])      # read KINETIC_ENRG
+#		diags[test,m,1] += float(line[27:49])          # read BAROTR_KE
+#		#print('diags[test,m,1]',diags[test,m,1])      
+#		diags[test,m,2] += float(line[50:72])          # read MAX_ADV_CFL        
+#		#print('diags[test,m,2]',diags[test,m,2])
+#		diags[test,m,3] += float(line[73:95])          # read MAX_VERT_CFL
+#		#print('diags[test,m,3]',diags[test,m,3])
+#		
+#		# Sanity check to confirm correct read of values as totals only
+#		# are hard to spot check
+#		if t==1 and m==1:
+#			file_diag.write('\n'+'Diagnostics for 1st timestep of '+str(nstps-1)+' total steps:\n') # -1 as +1 before
+#			file_diag.write( str(t)+' '+str(diags[test,m,:])+'\n' )				
 	
 	# Confirm results
 	file_diag.write('RESULTS: \n')

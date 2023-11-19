@@ -18,6 +18,7 @@ checkkwds
 cppcheck
 srcscheck
 Examples/*/Compile
+Examples/*/input_data
 Examples/*/*.nc
 Examples/*/fort*
 Examples/*/Makedefs.inc
