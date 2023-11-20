@@ -1,0 +1,37 @@
+You can try any of these examples:
+
+1) Open the specific example
+2) Type 'make' to compile example.
+3) Type do_roms.sh to run example.
+(Note, do not edit the example)
+
+If you want to use one of the examples for your own project, or edit
+the .in file of the example:
+
+1) copy the contents of an example directory into ../Work/ (except
+for the Makefile!).
+2) cd to Work/
+3) Type 'make' to compile example.
+4) Type do_roms.sh to run example. 
+
+Available examples:
+
+Flux_frc:
+  Sample example of flux force in flux_frc module.
+  
+Pipes (ana/real):
+  Analytical and realistic pipe examples. 
+  
+Rivers (ana/real):
+  Analytical and realistic river examples. 
+
+The examples are also used to verify that the code still works after updates
+
+The rest of the examples are currently not garanteed to work
+  
+Tracers_passive:
+  Realistic test of 2 passive tracers to confirm new tracer module. 2020/10.
+  
+WEC (ana/real):
+  Analytical (1D flume) and realistic wave effect on current examples.    
+
