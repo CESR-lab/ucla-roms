@@ -1,0 +1,48 @@
+title:
+   Idealized filament, based on Daniel's settings
+
+time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
+                  20      5       60     1
+
+S-coord: THETA_S,   THETA_B,    hc (m)
+          6.0D0        2.0D0    25
+
+grid:  filename
+      none
+
+forcing: filename
+
+initial: NRREC  filename
+          0
+      none
+
+output_root_name:
+      fila
+
+lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
+                 0.       0.
+
+rho0:
+      1000
+
+v_sponge:           V_SPONGE [m^2/sec]
+                   1.
+                   
+vertical_mixing:  Akv  Akt1  Akt2
+                  0.0  0.0   0.0                   
+
+tracer_diff2: TNU2(1:NT)           [m^2/sec for all]
+ 0. 0. 0. 0. 0. 0. 0. 0. 0.
+
+bottom_drag:     RDRG [m/s],  RDRG2,  Zob [m],  Cdb_min, Cdb_max
+                  0.E-4       1.0E-3   1.E-2     1.E-4    1.E-2
+
+gamma2:
+                  1.D0
+
+ubind: OBC binding velocity scale [m/s]
+       0.1
+       
+lin_rho_eos:  Tcoef    T0    Scoef   S0
+              0.20   1.0   0.822  1.0
+

@@ -28,7 +28,7 @@ if [ "$1" = "expanse" ]
 then
 srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
 else
-mpirun -n 6 ./roms benchmark.in > test.log
+ mpirun -n 6 ./roms benchmark.in > test.log
 fi
 
 rm *.h       &> /dev/null

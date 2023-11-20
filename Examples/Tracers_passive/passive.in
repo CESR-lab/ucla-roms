@@ -8,22 +8,22 @@ S-coord: THETA_S,   THETA_B,    hc (m)
           6.0D0        6.0D0     25.0D0
 
 grid:  filename
-     ../USWC_model/input_data/sample_grd_riv.nc
+     input_data/sample_grd_riv.nc
 
 forcing: filename
-     ../USWC_model/input_data/sample_prec_units_DPD.nc
-     ../USWC_model/input_data/sample_wnd.nc
-     ../USWC_model/input_data/sample_tra_units_DPD.nc
-     ../USWC_model/input_data/sample_rad_units_DPD.nc
-     ../USWC_model/input_data/sample_tracers.nc
-     ../USWC_model/input_data/roms_bry_trace.nc     
+     input_data/sample_prec_units_DPD.nc
+     input_data/sample_wnd.nc
+     input_data/sample_tra_units_DPD.nc
+     input_data/sample_rad_units_DPD.nc
+     input_data/sample_tracers.nc
+     input_data/roms_bry_trace.nc     
 
 initial: NRREC  filename
           1
-     ../USWC_model/input_data/roms_init_trace.nc
+     input_data/roms_init_trace.nc
 
 output_root_name:
-     sample     
+     passive
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

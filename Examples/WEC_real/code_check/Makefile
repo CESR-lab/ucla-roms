@@ -14,7 +14,7 @@
 .PHONY: all clean depend
 
 all:
-	rm input_data	2>/dev/null || :
+#rm input_data	2>/dev/null || :
 	rsync -a $(ROMS_ROOT)/src/*.F $(ROMS_ROOT)/src/*.h  Compile
 	make show_tag
 	@rsync -a $(ROMS_ROOT)/src/*.opt Compile	
@@ -25,7 +25,7 @@ all:
 	cp -p *.h *.F *.opt Makedefs.inc Compile 2>/dev/null || :
 	cd Compile; make depend 2>/dev/null || :
 	cd Compile; make mpc; make -j6; mv roms ..
-	ln -s $(ROMS_ROOT)/Examples/input_data input_data 2>/dev/null || :
+	ln -s $(ROMS_ROOT)/Examples/USWC_model/input_data input_data 2>/dev/null || :
 
 # note: "2>/dev/null || :" above is needed to suppress error 
 #       stop if no .h or .F files in current directory.
