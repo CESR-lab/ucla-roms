@@ -19,7 +19,14 @@ cppcheck
 srcscheck
 Examples/*/Compile
 Examples/*/input_data
-Examples/*/*.nc
+Examples/Pipes_ana/*.nc
+Examples/Pipes_real/*.nc
+Examples/Rivers_ana/*.nc
+Examples/Rivers_real/*.nc
+Examples/Filament/*.nc
+Examples/Flux_frc/*.nc
+Examples/Diagnostics/*.nc
+Examples/Tracers_passive/*.nc
 Examples/*/fort*
 Examples/*/Makedefs.inc
 Examples/*/code_check/Compile
