@@ -281,10 +281,10 @@ c----#  define tind nstp
             ! but 'tailed' near the bottom
             ! It is not generally recommended to use...
 # if defined LMD_CONVEC 
-            if (Rig(i,j,k) < 0.) then         ! In the case of KPP
-              Kv(i,j,k)=Kv(i,j,k) + nu0c      ! convective adjustment
-              Kt(i,j,k)=Kt(i,j,k) + nu0c      ! will be added later
-            endif                             ! and only below HBL
+            if (Rig(i,j,k) < 0.) then
+              Kv(i,j,k)=Kv(i,j,k) + nu0c
+              Kt(i,j,k)=Kt(i,j,k) + nu0c
+            endif
 # endif
             Ks(i,j,k)=Kt(i,j,k)
           enddo
