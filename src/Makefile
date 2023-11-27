@@ -89,7 +89,7 @@ check_forces: check_forces.o $(SBIN)
 	mv a.out check_forces
 
 # Everything
-all: mpc tools depend $(SBIN)
+all: tools depend $(SBIN)
 
 # A program to test MPI halo exchange routines.
 # - ------- -- ---- --- ---- -------- ---------
@@ -103,16 +103,11 @@ mpi_test: $(MPI_TEST_OBJ)
 
 # Auxiliary utility programs
 # --------- ------- --------
- TOOLS = mpc cppcheck srcscheck checkkwds redefs
+ TOOLS = cppcheck srcscheck checkkwds redefs
 
 tools: $(TOOLS)
 
     TMP = .
-
-mpc: mpc.F Makefile
-	$(CPP) $(CPPFLAGS) -P mpc.F > $(TMP)/mpc.f
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc $(TMP)/mpc.f
-#	/bin/rm -rf $(TMP)/mpc.f
 
 partit_t.f: partit.F
 	$(CPP) -P $(CPPFLAGS) -DTRANSPOSED_MPI_NODE_ORDER partit.F| mpc > partit_t.f
@@ -148,9 +143,6 @@ setup_kwds.F: checkkwds read_inp.F
 depend:  # Note: cross_matrix no longer used
 	@${ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend
 	@echo 'Updated Make.depend (dependency list)'
-
-plotter: plotter.o
-	$(CFT) -o plotter plotter.o $(LIBNCAR)
 
 # Target to create tar file.
 # ------ -- ------ --- -----
