@@ -72,8 +72,11 @@ r2r_init: $(R2R_INIT)
 r2r_bry: $(R2R_BRY)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_bry $(R2R_BRY) $(LCDF)
 
- ZSLICE = roms_read_write.o zslice.o set_depth.o sigma_to_z_intr.o tiling.o\
-          read_add_write.o read_string.o lenstr.o
+ ZSLICE = zslice.o set_depth.o sigma_to_z_intr.o read_add_write.o\
+	  roms_read_write.o read_string.o lenstr.o tiling.o
+
+ IPSLICE = ipslice.o set_depth.o sigma_to_z_intr.o rho_eos.o\
+	   read_add_write.o roms_read_write.o read_string.o lenstr.o tiling.o
 
  SAMPLE = roms_read_write.o sample.o tiling.o\
           read_add_write.o read_string.o lenstr.o
@@ -86,6 +89,12 @@ r2r_match_topo: $(R2R_MATCH_TOPO)
           
 zslice: $(ZSLICE)
 	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
+
+ipslice: $(IPSLICE)
+	$(LDR) $(FFLAGS) -o ipslice $(IPSLICE) $(LCDF)
+
+ipslice.f: zslice.F
+	$(CPP) -P $(CPPFLAGS) -DIPSLICE zslice.F | ./mpc > ipslice.f
 
 sample: $(SAMPLE)
 	$(LDR) $(FFLAGS) -o sample $(SAMPLE) $(LCDF)
