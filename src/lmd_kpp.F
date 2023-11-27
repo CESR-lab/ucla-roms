@@ -678,11 +678,6 @@ c      endif
       if (ie > max_opt_size) goto 99
       cpps(is:ie)='SMOOTH_HBL'
 # endif
-# ifdef MLCONV
-      is=ie+2 ; ie=is+7
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='MLCONV'
-# endif
 # ifdef MERGE_OVERLAP
       is=ie+2 ; ie=is+13
       if (ie > max_opt_size) goto 99

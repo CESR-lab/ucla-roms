@@ -285,15 +285,12 @@ CR      write(*,*)  ' -2' MYID
 #endif
       if (do_random) call init_random
 
-      call diag  ! log file output of global norms
-
-CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
-C$OMP MASTER
         mpi_master_only write(*,'(/1x,A/)')
      &     'main :: initialization complete, started time-stepping.'
-C$OMP END MASTER
+
+      call diag  ! log file output of global norms
 
   99  return
       end
@@ -365,9 +362,6 @@ C$OMP END MASTER
       ! Computes horizontal fluxes, using nrhs => time n
       ! Hz is computed by set_depth
       call set_HUV
-
-      !! Move call diag to the end and add a call at the end of init
-!     call diag
 
       ! Computes vertical flux omega, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
