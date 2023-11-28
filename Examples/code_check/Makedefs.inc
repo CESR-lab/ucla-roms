@@ -7,11 +7,11 @@
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
-	@$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
+	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
 .F.f:
-	$(CPP) -P $(CPPFLAGS) $*.F | ./mpc > $*.f
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
 .f.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f

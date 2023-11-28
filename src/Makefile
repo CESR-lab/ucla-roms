@@ -71,7 +71,7 @@ IOSRC = checkdims.F	insert_node.F\
  LROMS4 = 2/$(LROMS) 3/$(LROMS) 4/$(LROMS)
 
 # ROMS excutable (This is the first target and hence the default):
-$(SBIN): mpc $(OBJS)
+$(SBIN): $(OBJS)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
 	mv a.out $(SBIN)
 
