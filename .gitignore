@@ -34,6 +34,8 @@ Examples/*/code_check/input_data
 setup_kwds.F
 check_switches1.F
 check_srcs.F
+
+# Work directory
 Work/*
 
 # tools
