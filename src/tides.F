@@ -1,9 +1,6 @@
       module tides
 
 #include "cppdefs.opt"
-! Empty module if TIDES not defined.
-! JM The code is currently broken for pot_tides=.false.
-! JM Broken in step2d and prsgrd
 
       use param
       use scalars                                          ! For iic, ntstart, deg2rad
@@ -55,7 +52,6 @@
       endif
 
       end subroutine init_tides  !]
-
 !-----------------------------------------------------------------------
       subroutine set_tides(tile)  ![
       ! computes current forcing for boundaries and surface tidal
@@ -76,7 +72,6 @@
       call set_tides_tile(istr,iend,jstr,jend)
 
       end subroutine set_tides  !]
-
 !-----------------------------------------------------------------------
       subroutine set_tides_tile(istr,iend,jstr,jend)  ![
 
@@ -205,7 +200,6 @@
       enddo  !  itide=1,ntides
 
       end subroutine set_tides_tile  !]
-
 !-----------------------------------------------------------------------
       subroutine read_tides  ![
       ! read tides from forcing file. Only read once at first timestep.
@@ -286,7 +280,6 @@
       if(mynode==0) write(*,'(7x,A)')'tides :: read all tides'
 
       end subroutine read_tides  !]
-
 !-----------------------------------------------------------------------
 
       end module tides

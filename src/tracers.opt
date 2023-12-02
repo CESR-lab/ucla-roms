@@ -33,7 +33,7 @@
 ! itot      = Counter to increment tracer indices without hard-coding indices,
 !             thus each new tracer index (e.g. itrcX) simply needs:
 !             itot=itot+1, then itot can populate arrays in correct position;
-! wrt_t_diag= Only with DIAGNOSTICS flag. Don't need otherwise.
+! wrt_t_dia = Only with DIAGNOSTICS flag. Don't need otherwise.
 !             True/False to output tracer diagnostics.
 !
 ! nt_passive= Number of passive tracers (default=0). Set here is you have them.
