@@ -14,7 +14,7 @@
 .PHONY: all clean depend
 
 optfiles := $(shell ls *.opt)
-tag := $(shell git rev-parse HEAD)
+tag := $(shell git --git-dir $(ROMS_ROOT)/.git rev-parse HEAD)
 tline1 := git_hash=
 tline2:= 'git_hash=\"$(tag)\"'
 

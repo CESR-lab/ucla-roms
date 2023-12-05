@@ -41,7 +41,9 @@
 # ifdef ADV_ISONEUTRAL
       real dRz,dRx_max, dpth, r0g, cfs,cfb
       real, parameter :: epsil=1.E-33
-#  define  ALPHA_MAX 4.
+      !  Alphamax = 4 leads to mixing that is worse than
+      ! up3 over steep slopes
+#  define  ALPHA_MAX 2.  
 #  define GAMMA 0.0833333333333
 # endif
 
