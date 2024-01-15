@@ -403,6 +403,7 @@ CR      write(*,*)  ' -2' MYID
 # endif
 
       tdays = (time+0.5*dt)*sec2day
+
       call set_bry_all  ! get for time n+1
       if (bry_tides.or.pot_tides) call set_tides(0)
 
@@ -464,9 +465,9 @@ CR      write(*,*)  ' -2' MYID
 
       if (do_extract) call do_extract_data
 
-      if (ub_tune)  call adjust_orlanski
+      if (ub_tune)    call adjust_orlanski
 
-      if (floats) call do_particles
+      if (floats)     call do_particles
 
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 

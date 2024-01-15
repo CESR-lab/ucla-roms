@@ -485,7 +485,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
                 Akt(i,j,k,isalt)=Ks(i,j,k)
 # endif
               enddo
-            else
+            else  !! Average 2 time steps of mixing coefficients
               do k=0,N
                 Akv(i,j,k)       = 0.5*Akv(i,j,k)       + 0.5*Kv(i,j,k)
                 Akt(i,j,k,itemp) = 0.5*Akt(i,j,k,itemp) + 0.5*Kt(i,j,k)
