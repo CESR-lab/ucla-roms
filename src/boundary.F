@@ -227,6 +227,10 @@
 
       integer :: itrc
 
+
+#  ifdef ANA_BRY
+      return
+#  endif
       if (obc_west.and.(.not.west_exchng)) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_w, zeta_west(j0:j1), obry=2 )

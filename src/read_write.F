@@ -190,6 +190,7 @@ C$OMP BARRIER
       end subroutine set_frc_var_tile  !]
 
 ! ----------------------------------------------------------------------
+
       subroutine find_new_record( vname,     time_name, time_model,    ![
      &                            file_indx, irec,      vtime       )
 
@@ -287,7 +288,10 @@ C$OMP BARRIER
 
           found_var      = .true.
           found_var_ever = .true.
-          ! if(mynode==0) write(*,'(10x,3A)') 'Found var: ', vname, ' in file ', frcfile(file_indx)
+!         if (mynode==0) then
+!           write(*,'(10x,3A)') 'Found var: ', vname, ' in file ', frcfile(file_indx)
+!         endif
+           
            
           call get_time_max_recs(ncid, time_name, max_recs)
 
