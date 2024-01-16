@@ -578,7 +578,7 @@
       if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
 !       if  (mynode==0) print *, 'AB2 extrapolate'
         do k=1,N
-          do j=jstr,iend
+          do j=jstr,jend
             do i=istrU,iend
               u(i,j,k,nnew) = u(i,j,k,nnew)
      &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1))*dtau
