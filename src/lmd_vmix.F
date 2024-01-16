@@ -390,6 +390,16 @@ c----#  define tind nstp
           Kt(i,j,0)=Kt(i,j,  1)
         enddo
       enddo
+      ! vertical smoothing of interior mixing
+      do k=1,N-1
+        do j=jstr,jend
+          do i=istr,iend
+            Kv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
+            Kt(i,j,k)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
+            Ks(i,j,k)=0.5*Ks(i,j,k)+0.25*Ks(i,j,k-1)+0.25*Ks(i,j,k+1)
+          enddo
+        enddo
+      enddo
 # else
 
 ! Finalize: Copy everything into shared arrays:
@@ -397,15 +407,19 @@ c----#  define tind nstp
       do k=1,N-1
         do j=jstr,jend
           do i=istr,iend
-            Akv(i,j,k)=Kv(i,j,k)
-            Akt(i,j,k,itemp)=Kt(i,j,k)
+!           Akv(i,j,k)=Kv(i,j,k) 
+            AKv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
+!           Akt(i,j,k,itemp)=Kt(i,j,k)
+            AKt(i,j,k,itemp)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
 #  ifdef SALINITY
-            Akt(i,j,k,isalt)=Ks(i,j,k)
+!           Akt(i,j,k,isalt)=Ks(i,j,k)
+            AKt(i,j,k,isalt)=0.5*Ks(i,j,k)+0.25*Ks(i,j,k-1)+0.25*Ks(i,j,k+1)
 #  endif
           enddo
         enddo
       enddo
 
+      !! Do we really need to exchange the mixing coefficients?
 #  ifdef EXCHANGE
       call exchange_2_tile (istr,iend,jstr,jend, Akv,N+1,
      &                   Akt(START_2D_ARRAY,0,itemp),N+1)
