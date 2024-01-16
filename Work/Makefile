@@ -25,6 +25,7 @@ all:
 	@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
 	@rsync -a $(ROMS_ROOT)/src/Makefile Compile
+	@rm Compile/*.f	2>/dev/null || :
 	cp -p *.h *.F *.opt Makedefs.inc Compile 2>/dev/null || :
 	cd Compile; make depend 2>/dev/null || :
 	cd Compile; make -j6; mv roms ..
@@ -33,7 +34,7 @@ all:
 #       stop if no .h or .F files in current directory.
 #       Also, makedepf90 in make depend can throw out strange
 #       errors for .h files for inexplicable changes made to
-#       cppdefs.h.
+#       cppdefs.opt.
 
 
 show_tag:
