@@ -1,8 +1,12 @@
-      ! User input
-      ! Most choices are communicated through the data extract input file (netcdf)
-      ! see add_object.m for guidance
+      ! The extract_data module is intended to output data that is spatially interpolated
+      ! online. Typical use is for generating boundary data for a following nested grid,
+      ! or for the high frequency output at, for instance, a mooring position.
+      ! 
+      ! Frequency and location choices are communicated through the netcdf input file.
+      ! There are matlab scripts in the Tools directory for guidance.
       !
       !------------------------------
+      logical,parameter,public :: do_extract = .true.
       character(len=60) :: extract_file = 'input/sample_edata.nc'
       integer,parameter :: nrpf   = 96  ! number of records per output file (2 days at 0.5 hour freq
       integer,parameter :: edat_prec = nf90_double  ! Precision of output variables (nf90_float/nf90_double)

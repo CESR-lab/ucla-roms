@@ -7,7 +7,7 @@
        ns_pre         = 3,             !-
        ns_post        = 2,             !-
        relax_method   = 'RB',          !- 'Gauss-Seidel','GS','Red-Black','RB','Four-Color','FC'
-       output_freq    = 10000        !- output frequency
+       output_freq    = 10000          !- output frequency
        surface_neumann = .false.
        netcdf_output  = .false.        ! - write solver fields to netcdf file
 /
