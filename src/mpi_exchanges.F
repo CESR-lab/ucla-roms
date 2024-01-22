@@ -47,6 +47,93 @@
 !     2 (left, down only)
 
 !--------------------------------------------------------
+      subroutine exchange2D_1var(A,exch_bf) ![
+      ! 2D variable, 1 at the time
+      ! Can exchange less data than the allocated buffer space
+      implicit none
+
+      !input/output
+      real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: A
+      integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+
+      !local
+      integer(kind=4) :: halo
+
+      if (.not.init_buffer_done) call init_mpi_buffers
+
+      if (present(exch_bf)) then
+        halo=exch_bf
+      else
+        halo = bf
+      endif
+
+      allocate(maskEW(halo,ny,1))
+      allocate(maskNS(nx,halo,1))
+      allocate(maskCr(halo,halo,1))
+      maskEW = .true.
+      maskNS = .true.
+      maskCr = .true.
+
+      szEW = ny*halo
+      szNS = nx*halo
+      szCr = halo*halo
+
+      call pack_buffers(A,nx,ny,1,bf,halo)
+
+      call mpi_buffer_exchange
+
+      call unpack_buffers(A,nx,ny,1,bf,halo)
+        
+      deallocate(maskEW)
+      deallocate(maskNS)
+      deallocate(maskCr)
+
+      end subroutine exchange2D_1var !]
+!--------------------------------------------------------
+      subroutine exchange2D_2var(A,B,exch_bf) ![
+      ! 2D variable, 2 at the time
+      ! Can exchange less data than the allocated buffer space
+      implicit none
+
+      !input/output
+      real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: A
+      real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: B
+      integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+
+      !local
+      integer(kind=4) :: halo
+
+      if (.not.init_buffer_done) call init_mpi_buffers
+
+      if (present(exch_bf)) then
+        halo=exch_bf
+      else
+        halo = bf
+      endif
+
+      allocate(maskEW(halo,ny,1))
+      allocate(maskNS(nx,halo,1))
+      allocate(maskCr(halo,halo,1))
+      maskEW = .true.
+      maskNS = .true.
+      maskCr = .true.
+
+      szEW = 2*ny*halo
+      szNS = 2*nx*halo
+      szCr = 2*halo*halo
+
+      call pack_buffers(A,nx,ny,1,bf,halo,B)
+
+      call mpi_buffer_exchange
+
+      call unpack_buffers(A,nx,ny,1,bf,halo,B)
+        
+      deallocate(maskEW)
+      deallocate(maskNS)
+      deallocate(maskCr)
+
+      end subroutine exchange2D_2var !]
+!--------------------------------------------------------
       subroutine init_mpi_buffers ![
       ! Allocate space for mpi exchange buffers
       implicit none
@@ -80,86 +167,6 @@
       allocate(recvSW(mxCr))
 
       end subroutine init_mpi_buffers !]
-!--------------------------------------------------------
-      subroutine exchange2D_1var(A,exch_bf) ![
-      ! 2D variable, 1 at the time
-      ! halo refers to the amount of data exchanged
-      implicit none
-
-      !input/output
-      real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: A
-      integer(kind=4),optional :: exch_bf
-
-      !local
-      integer(kind=4) :: halo
-
-      if (.not.init_buffer_done) call init_mpi_buffers
-
-      if (present(exch_bf)) then
-        halo=exch_bf
-      else
-        halo = bf
-      endif
-
-      szEW = ny*halo
-      szNS = nx*halo
-      szCr = halo*halo
-
-      allocate(maskEW(halo,ny,1))
-      allocate(maskNS(nx,halo,1))
-      allocate(maskCr(halo,halo,1))
-      maskEW = .true.
-      maskNS = .true.
-      maskCr = .true.
-
-      call pack_buffers(A,nx,ny,1,bf,halo)
-
-      call mpi_buffer_exchange
-
-      call unpack_buffers(A,nx,ny,1,bf,halo)
-        
-      deallocate(maskEW)
-      deallocate(maskNS)
-      deallocate(maskCr)
-
-      end subroutine exchange2D_1var !]
-!--------------------------------------------------------
-      subroutine exchange2D_2var(A,B,halo) ![
-      ! 2D variable, 1 at the time
-      ! halo refers to the amount of data exchanged
-      implicit none
-
-      !input/output
-      integer(kind=4),optional :: halo
-      real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: A
-      real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: B
-
-      if (.not.init_buffer_done) call init_mpi_buffers
-
-      if (.not.present(halo)) halo=bf
-
-      szEW = 2*ny*halo
-      szNS = 2*nx*halo
-      szCr = 2*halo*halo
-
-      allocate(maskEW(halo,ny,1))
-      allocate(maskNS(nx,halo,1))
-      allocate(maskCr(halo,halo,1))
-      maskEW = .true.
-      maskNS = .true.
-      maskCr = .true.
-
-      call pack_buffers(A,nx,ny,1,bf,halo,B)
-
-      call mpi_buffer_exchange
-
-      call unpack_buffers(A,nx,ny,1,bf,halo,B)
-        
-      deallocate(maskEW)
-      deallocate(maskNS)
-      deallocate(maskCr)
-
-      end subroutine exchange2D_2var !]
 !--------------------------------------------------------
       subroutine pack_buffers(A,nxl,nyl,nzl,bl,hl,B,C,D) ![
       implicit none
