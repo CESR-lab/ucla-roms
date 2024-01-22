@@ -16,6 +16,8 @@
       integer, parameter, public :: gny = MMm
       integer, parameter, public ::  nz = N
 
+      integer, parameter, public ::  bf = 2 ! allocation buffer size
+
       integer, public            :: nx   ! Can vary between subdomains so not compile time parameters
       integer, public            :: ny
 
