@@ -207,8 +207,6 @@
       integer,intent(in)  :: istr,iend,jstr,jend
 
 
-#undef SST_SKIN
-#define BULK_EP
 
       integer i,j, IterMax,iter
       real a
@@ -555,11 +553,8 @@
           wspd0=wspd_used(i,j)
           TairC=tair(i,j) ! DevinD
           TairK=TairC+273.16
-# ifdef SST_SKIN
-          TseaC=sst_skin(i,j)   ! sea surface temperature and salinity
-# else
+
           TseaC=t(i,j,N,nrhs,itemp)
-# endif
           TseaK=TseaC+273.16
 
           ! label(HUMIDITY) - chose between specific or relative humidity
@@ -825,16 +820,11 @@
 !
           stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
 !
-# ifdef BULK_EP
-!
 !  Total surface salt flux
 !
           evap=-cp*hflat/Hlv
-          ! DevinD old: divide prate by 1000: units of [kg/m^2/s^1 == mm/s] convert to m/s.
-          ! DevinD current: divide prate by 100.*3600.*24.: units of [cm/day] convert to [m/s] as per pdamien pacific.
+          ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
           stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
-
-# endif
 
 # ifdef MASKING
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)

@@ -110,9 +110,9 @@
       itg=4*(istr+iend-2*iwest)/(iend-istr+1)   ! two-dimensional
       jtg=4*(jstr+jend-2*jsouth)/(jend-jstr+1)  ! indices of tile
 
+      itg = 0
+      jtg = 0
 
-c*    write(*,*) mynode, proc(2), ' itg,jtg =', itg,jtg
-c*    write(*,'(2(6x,A,I2,2x,A,I3,2x,A,I3))')
-c*   &        'inode=',inode, 'imin=',imin, 'imax=',imax,
-c*   &        'jnode=',jnode, 'jmin=',jmin, 'jmax=',jmax
+!     write(*,*) mynode, 99, ' itg,jtg =', itg,jtg
+!     stop
 

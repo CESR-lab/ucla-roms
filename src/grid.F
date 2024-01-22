@@ -15,6 +15,7 @@
       use roms_read_write
       use pipe_frc
       use scalars
+      use mpi_exchanges
       implicit none
 
 !
@@ -492,12 +493,13 @@
       start=1; start(3)=0                                            ! 2D vars
 
       call ncread(ncid,'h',h(i0:i1,j0:j1),start)                     ! Bathymetry:
-      call exchange_tile(1,nx,1,ny, h(START_2D_ARRAY),1)             ! h needed an exchange
+!     call exchange_tile(1,nx,1,ny, h(START_2D_ARRAY),1)             ! h needed an exchange
+      call exchange_xxx(h)
 
       call ncread(ncid,'f',f(i0:i1,j0:j1),start)                     ! Coriolis parameter.
       call exchange_tile(1,nx,1,ny, f(START_2D_ARRAY),1)
 
-! Coordinate transfomation metrics (m,n) associated with
+! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 
       call ncread(ncid,'pm',pm(i0:i1,j0:j1),start)
