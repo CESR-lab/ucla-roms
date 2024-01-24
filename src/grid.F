@@ -490,23 +490,24 @@
 ! Read in grid arrays.
 !===== == ==== =======
 
-      start=1; start(3)=0                                            ! 2D vars
+      start=1; start(3)=0      ! starting indices in netcdf file. Might not be needed here
 
-      call ncread(ncid,'h',h(i0:i1,j0:j1),start)                     ! Bathymetry:
-!     call exchange_tile(1,nx,1,ny, h(START_2D_ARRAY),1)             ! h needed an exchange
+      ! The i0,i1,j0,j1 indices are needed because the netcdf files do
+      ! include 1 more row/column for subdomains at the physical boundary
+
+      call ncread(ncid,'h',h(i0:i1,j0:j1))                                 ! Bathymetry
       call exchange_xxx(h)
-
-      call ncread(ncid,'f',f(i0:i1,j0:j1),start)                     ! Coriolis parameter.
-      call exchange_tile(1,nx,1,ny, f(START_2D_ARRAY),1)
+      call ncread(ncid,'f',f(i0:i1,j0:j1))                                 ! Coriolis parameter.
+      call exchange_xxx(f)
 
 ! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 
       call ncread(ncid,'pm',pm(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, pm(START_2D_ARRAY),1)
+      call exchange_xxx(pm)
 
       call ncread(ncid,'pn',pn(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, pn(START_2D_ARRAY),1)
+      call exchange_xxx(pn)
 
 # ifdef SPHERICAL
       call ncread(ncid,'lon_rho',lonr(i0:i1,j0:j1),start)  ! Coordinates (lon,lat [degrees]) or (x,y [meters]) at RHO-points.
