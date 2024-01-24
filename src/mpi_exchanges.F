@@ -4,6 +4,7 @@
       use param
       use dimensions
       use hidden_mpi_vars
+      use roms_read_write
       use mpi
       implicit none
 
@@ -67,15 +68,15 @@
         halo = bf
       endif
 
-      allocate(maskEW(halo,ny,1))
-      allocate(maskNS(nx,halo,1))
+      allocate(maskEW(halo,j1+1-j0,1))
+      allocate(maskNS(i1+1-i0,halo,1))
       allocate(maskCr(halo,halo,1))
       maskEW = .true.
       maskNS = .true.
       maskCr = .true.
 
-      szEW = ny*halo
-      szNS = nx*halo
+      szEW = halo*(j1+1-j0)
+      szNS = halo*(i1+1-i0)
       szCr = halo*halo
 
       call pack_buffers(A,nx,ny,1,bf,halo)
@@ -111,15 +112,15 @@
         halo = bf
       endif
 
-      allocate(maskEW(halo,ny,1))
-      allocate(maskNS(nx,halo,1))
+      allocate(maskEW(halo,j1+1-j0,1))
+      allocate(maskNS(i1+1-i0,halo,1))
       allocate(maskCr(halo,halo,1))
       maskEW = .true.
       maskNS = .true.
       maskCr = .true.
 
-      szEW = 2*ny*halo
-      szNS = 2*nx*halo
+      szEW = 2*halo*(j1+1-j0)
+      szNS = 2*halo*(i1+1-i0)
       szCr = 2*halo*halo
 
       call pack_buffers(A,nx,ny,1,bf,halo,B)
@@ -144,9 +145,9 @@
       if (mynode.eq.0) print *, 'init buffers'
       init_buffer_done = .true.
 
-      mxEW = 4*bf*ny*nz  ! maximum of 4 3D arrays at the time
-      mxNS = 4*bf*nx*nz  ! maximum of 4 3D arrays at the time
-      mxCr = 4*bf*bf*nz  ! maximum of 4 3D arrays at the time
+      mxEW = 4*bf*(j1+1-j0)*nz  ! maximum of 4 3D arrays at the time
+      mxNS = 4*bf*(i1+1-i0)*nz  ! maximum of 4 3D arrays at the time
+      mxCr = 4*bf*bf*nz      ! maximum of 4 3D arrays at the time
 
       allocate(sendW(mxEW))
       allocate(sendE(mxEW))
@@ -171,6 +172,8 @@
       subroutine pack_buffers(A,nxl,nyl,nzl,bl,hl,B,C,D) ![
       implicit none
 
+      ! do better at domain boundaries
+
       !input/output
       integer,intent(in) :: nxl,nyl,nzl,bl,hl
       real,intent(in),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl) :: A
@@ -182,69 +185,69 @@
 ! Pack all data in buffers to be send
 !----------------------------------------------
       if (west_msg_exch) then
-        sendW(1:szEW) = pack(A(1:hl,1:ny,:),maskEW)
+        sendW(1:szEW) = pack(A(1:hl,j0:j1,:),maskEW)
         szW = szEW
         if ((present(B))) then
-          sendW(szEW+1:2*szEW) = pack(B(1:hl,1:ny,:),maskEW)
+          sendW(szEW+1:2*szEW) = pack(B(1:hl,j0:j1,:),maskEW)
           szW = 2*szEW
         endif
         if ((present(C))) then
-          sendW(2*szEW+1:3*szEW) = pack(C(1:hl,1:ny,:),maskEW)
+          sendW(2*szEW+1:3*szEW) = pack(C(1:hl,j0:j1,:),maskEW)
           szW = 3*szEW
         endif
         if ((present(D))) then
-          sendW(3*szEW+1:4*szEW) = pack(D(1:hl,1:ny,:),maskEW)
+          sendW(3*szEW+1:4*szEW) = pack(D(1:hl,j0:j1,:),maskEW)
           szW = 4*szEW
         endif
       endif
 
       if (east_msg_exch) then
-        sendE(1:szEW) = pack(A(nx+1-hl:nx,1:ny,:),maskEW) 
+        sendE(1:szEW) = pack(A(nx+1-hl:nx,j0:j1,:),maskEW) 
         szE = szEW
         if (present(B)) then
-          sendE(szEW+1:2*szEW) = pack(B(1:hl,1:ny,:),maskEW)
+          sendE(szEW+1:2*szEW) = pack(B(1:hl,j0:j1,:),maskEW)
           szE = 2*szEW
         endif
         if (present(C)) then
-          sendE(2*szEW+1:3*szEW) = pack(C(1:hl,1:ny,:),maskEW)
+          sendE(2*szEW+1:3*szEW) = pack(C(1:hl,j0:j1,:),maskEW)
           szE = 3*szEW
         endif
         if (present(D)) then
-          sendE(3*szEW+1:4*szEW) = pack(D(1:hl,1:ny,:),maskEW)
+          sendE(3*szEW+1:4*szEW) = pack(D(1:hl,j0:j1,:),maskEW)
           szE = 4*szEW
         endif
       endif
 
       if (south_msg_exch) then
-        sendS(1:szNS) = pack(A(1:nx,1:hl,:),maskNS)
+        sendS(1:szNS) = pack(A(i0:i1,1:hl,:),maskNS)
         szS = szNS
         if (present(B)) then
-          sendS(szNS+1:2*szNS) = pack(B(1:nx,1:hl,:),maskNS)
+          sendS(szNS+1:2*szNS) = pack(B(i0:i1,1:hl,:),maskNS)
           szS = 2*szNS
         endif
         if (present(C)) then
-          sendS(2*szNS+1:3*szNS) = pack(C(1:nx,1:hl,:),maskNS)
+          sendS(2*szNS+1:3*szNS) = pack(C(i0:i1,1:hl,:),maskNS)
           szS = 3*szNS
         endif
         if (present(D)) then
-          sendS(3*szNS+1:4*szNS) = pack(D(1:nx,1:hl,:),maskNS)
+          sendS(3*szNS+1:4*szNS) = pack(D(i0:i1,1:hl,:),maskNS)
           szS = 4*szNS
         endif
       endif
 
       if (north_msg_exch) then
-        sendN(1:szNS) = pack(A(1:nx,ny+1-hl:ny,:),maskNS)
+        sendN(1:szNS) = pack(A(i0:i1,ny+1-hl:ny,:),maskNS)
         szN = szNS
         if (present(B)) then
-          sendE(szNS+1:2*szNS) = pack(B(1:nx,ny+1-hl:ny,:),maskNS)
+          sendE(szNS+1:2*szNS) = pack(B(i0:i1,ny+1-hl:ny,:),maskNS)
           szN = 2*szNS
         endif
         if (present(C)) then
-          sendE(2*szNS+1:3*szNS) = pack(C(1:nx,ny+1-hl:ny,:),maskNS)
+          sendE(2*szNS+1:3*szNS) = pack(C(i0:i1,ny+1-hl:ny,:),maskNS)
           szN = 3*szNS
         endif
         if (present(D)) then
-          sendE(3*szNS+1:4*szNS) = pack(D(1:nx,ny+1-hl:ny,:),maskNS)
+          sendE(3*szNS+1:4*szNS) = pack(D(i0:i1,ny+1-hl:ny,:),maskNS)
           szN = 4*szNS
         endif
       endif
@@ -254,15 +257,15 @@
         szSW = szCr
         if (present(B)) then
           sendSW(szCr+1:2:szCr) = pack(B(1:hl,1:hl,:),maskCr)
-          szS = 2*szCr
+          szSW = 2*szCr
         endif
         if (present(C)) then
           sendSW(2*szCr+1:3*szCr) = pack(D(1:hl,1:hl,:),maskCr)
-          szS = 3*szCr
+          szSW = 3*szCr
         endif
         if (present(D)) then
           sendSW(3*szCr+1:4*szCr) = pack(D(1:hl,1:hl,:),maskCr)
-          szS = 4*szCr
+          szSW = 4*szCr
         endif
       endif
 
@@ -335,85 +338,106 @@
 ! Unpack all data from exchanged buffers into arrays
 !----------------------------------------------
       if (west_msg_exch) then
-        A(1-hl:0,1:ny,:) = unpack(recvW(1:szEW),maskEW,field=0.)
+        A(1-hl:0,j0:j1,:) = unpack(recvW(1:szEW),maskEW,field=0.)
         if (present(B)) then
-          B(1-hl:0,1:ny,:)=unpack(recvW(szEW+1:2*szEW),maskEW,field=0.)
+          B(1-hl:0,j0:j1,:)=unpack(recvW(szEW+1:2*szEW),maskEW,field=0.)
         endif
         if (present(C)) then
-          C(1-hl:0,1:ny,:)=unpack(recvW(2*szEW+1:3*szEW),maskEW,field=0.)
+          C(1-hl:0,j0:j1,:)=unpack(recvW(2*szEW+1:3*szEW),maskEW,field=0.)
         endif
         if (present(D)) then
-          D(1-hl:0,1:ny,:)=unpack(recvW(3*szEW+1:4*szEW),maskEW,field=0.)
+          D(1-hl:0,j0:j1,:)=unpack(recvW(3*szEW+1:4*szEW),maskEW,field=0.)
         endif
       endif
 
       if (east_msg_exch) then
-        A(nx+1:nx+hl,1:ny,:) = unpack(recvE(1:szEW),maskEW,field=0.)
+        A(nx+1:nx+hl,j0:j1,:) = unpack(recvE(1:szEW),maskEW,field=0.)
         if (present(B)) then
+          B(nx+1:nx+hl,j0:j1,:) = unpack(recvE(szEW+1:2*szEW),maskEW,field=0.)
         endif
         if (present(C)) then
+          C(nx+1:nx+hl,j0:j1,:) = unpack(recvE(2*szEW+1:3*szEW),maskEW,field=0.)
         endif
         if (present(D)) then
+          D(nx+1:nx+hl,j0:j1,:) = unpack(recvE(3*szEW+1:4*szEW),maskEW,field=0.)
         endif
       endif
 
       if (south_msg_exch) then
-        A(1:nx,1-hl:0,:) = unpack(recvS(1:szNS),maskNS,field=0.)
+        A(i0:i1,1-hl:0,:) = unpack(recvS(1:szNS),maskNS,field=0.)
         if (present(B)) then
+          B(i0:i1,1-hl:0,:) = unpack(recvS(szNS+1:2*szNS),maskNS,field=0.)
         endif
         if (present(C)) then
+          C(i0:i1,1-hl:0,:) = unpack(recvS(2*szNS+1:3*szNS),maskNS,field=0.)
         endif
         if (present(D)) then
+          D(i0:i1,1-hl:0,:) = unpack(recvS(3*szNS+1:4*szNS),maskNS,field=0.)
         endif
       endif
 
       if (north_msg_exch) then
-        A(1:nx,ny+1:ny+hl,:) = unpack(recvN(1:szNS),maskNS,field=0.)
+        A(i0:i1,ny+1:ny+hl,:) = unpack(recvN(1:szNS),maskNS,field=0.)
         if (present(B)) then
+          B(i0:i1,ny+1:ny+hl,:) = unpack(recvN(szNS+1:2*szNS),maskNS,field=0.)
         endif
         if (present(C)) then
+          C(i0:i1,ny+1:ny+hl,:) = unpack(recvN(2*szNS+1:3*szNS),maskNS,field=0.)
         endif
         if (present(D)) then
+          D(i0:i1,ny+1:ny+hl,:) = unpack(recvN(3*szNS+1:4*szNS),maskNS,field=0.)
         endif
       endif
 
       if (south_msg_exch.and.west_msg_exch) then
         A(1-hl:0,1-hl:0,:) = unpack(recvSW(1:szSW),maskCr,field=0.)
         if (present(B)) then
+          B(1-hl:0,1-hl:0,:) = unpack(recvSW(szSW+1:2*szSW),maskCr,field=0.)
         endif
         if (present(C)) then
+          C(1-hl:0,1-hl:0,:) = unpack(recvSW(2*szSW+1:3*szSW),maskCr,field=0.)
         endif
         if (present(D)) then
+          D(1-hl:0,1-hl:0,:) = unpack(recvSW(3*szSW+1:4*szSW),maskCr,field=0.)
         endif
       endif
 
       if (south_msg_exch.and.east_msg_exch) then
         A(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(1:szSE),maskCr,field=0.)
         if (present(B)) then
+          B(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(szSE+1:2*szSE),maskCr,field=0.)
         endif
         if (present(C)) then
+          C(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(2*szSE+1:3*szSE),maskCr,field=0.)
         endif
         if (present(D)) then
+          D(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(3*szSE+1:4*szSE),maskCr,field=0.)
         endif
       endif
 
       if (north_msg_exch.and.west_msg_exch) then
         A(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(1:szNW),maskCr,field=0.)
         if (present(B)) then
+          B(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(szNW+1:2*szNW),maskCr,field=0.)
         endif
         if (present(C)) then
+          C(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(2*szNW+1:3*szNW),maskCr,field=0.)
         endif
         if (present(D)) then
+          D(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(3*szNW+1:4*szNW),maskCr,field=0.)
         endif
       endif
 
       if (north_msg_exch.and.east_msg_exch) then
         A(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(1:szNE),maskCr,field=0.)
         if (present(B)) then
+          B(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(szNE+1:2*szNE),maskCr,field=0.)
         endif
         if (present(C)) then
+          C(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(2*szNE+1:3*szNE),maskCr,field=0.)
         endif
         if (present(D)) then
+          D(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(3*szNE+1:4*szNE),maskCr,field=0.)
         endif
       endif
 
@@ -436,6 +460,13 @@
 ! This is needed because later in this code array "req" is subject to
 ! rearrangement in order to ignore directions from which no message is
 ! expected, as well as to ignore requests from which messages are
+      if (mynode.eq.5) then
+        print *,size(recvS),szS
+        print *,p_S
+      endif
+      call MPI_Barrier(ocean_grid_comm, ierr)
+
+     
       
                      ! tags for receive      for send        ! each sub-domain can receive up to 8 exchanges.
       do i=1,16      !         3  5  1        4  6  2        ! the 'tag' value indicates which side/corner
