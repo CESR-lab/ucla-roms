@@ -495,10 +495,10 @@
       ! The i0,i1,j0,j1 indices are needed because the netcdf files do
       ! include 1 more row/column for subdomains at the physical boundary
 
-      call ncread(ncid,'h',h(i0:i1,j0:j1))                                 ! Bathymetry
-      call exchange_xxx(h)
-      call ncread(ncid,'f',f(i0:i1,j0:j1))                                 ! Coriolis parameter.
-      call exchange_xxx(f)
+      call ncread(ncid,'h',h(i0:i1,j0:j1))         ! Bathymetry
+      call exchange_xxx(h)                         ! (2,.true.)
+      call ncread(ncid,'f',f(i0:i1,j0:j1))         ! Coriolis parameter.
+      call exchange_xxx(f,1,.false.)               ! (1,.false.)
 
 ! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.

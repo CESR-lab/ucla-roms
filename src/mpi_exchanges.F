@@ -22,8 +22,10 @@
       integer :: szW,szE,szN,szS,szNE,szNW,szSE,szSW
       logical :: init_buffer_done = .false.
 
-      logical,dimension(:,:,:),allocatable :: maskNS,maskEW,maskCr
+!     logical,dimension(:,:,:),allocatable :: maskNS,maskEW,maskCr
       
+      ! optional arguments are halo size and corner exchanges
+      ! Default values are halo=bf, and do_corners = .true.
       interface exchange_xxx
         module procedure exchange2D_1var,exchange2D_2var
 !       module procedure exchange3D_1var,exchange3D_2var
@@ -48,7 +50,7 @@
 !     2 (left, down only)
 
 !--------------------------------------------------------
-      subroutine exchange2D_1var(A,exch_bf) ![
+      subroutine exchange2D_1var(A,exch_bf,do_corn) ![
       ! 2D variable, 1 at the time
       ! Can exchange less data than the allocated buffer space
       implicit none
@@ -56,42 +58,34 @@
       !input/output
       real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: A
       integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      logical,optional :: do_corn
 
       !local
       integer(kind=4) :: halo
+      logical  :: do_corners
 
       if (.not.init_buffer_done) call init_mpi_buffers
 
       if (present(exch_bf)) then
-        halo=exch_bf
+        halo= min(exch_bf,bf)
       else
         halo = bf
       endif
-
-      allocate(maskEW(halo,j1+1-j0,1))
-      allocate(maskNS(i1+1-i0,halo,1))
-      allocate(maskCr(halo,halo,1))
-      maskEW = .true.
-      maskNS = .true.
-      maskCr = .true.
-
-      szEW = halo*(j1+1-j0)
-      szNS = halo*(i1+1-i0)
-      szCr = halo*halo
+      if (present(do_corn)) then
+        do_corners = do_corn
+      else
+        do_corners = .true.
+      endif
 
       call pack_buffers(A,nx,ny,1,bf,halo)
 
       call mpi_buffer_exchange
 
-      call unpack_buffers(A,nx,ny,1,bf,halo)
+      call unpack_buffers(A,nx,ny,1,bf,halo,do_corners)
         
-      deallocate(maskEW)
-      deallocate(maskNS)
-      deallocate(maskCr)
-
       end subroutine exchange2D_1var !]
 !--------------------------------------------------------
-      subroutine exchange2D_2var(A,B,exch_bf) ![
+      subroutine exchange2D_2var(A,B,exch_bf,do_corn) ![
       ! 2D variable, 2 at the time
       ! Can exchange less data than the allocated buffer space
       implicit none
@@ -100,39 +94,31 @@
       real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: A
       real,intent(inout),dimension(1-bf:nx+bf,1-bf:ny+bf) :: B
       integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      logical,optional :: do_corn
 
       !local
       integer(kind=4) :: halo
+      logical :: do_corners
 
       if (.not.init_buffer_done) call init_mpi_buffers
 
       if (present(exch_bf)) then
-        halo=exch_bf
+        halo= min(exch_bf,bf) 
       else
         halo = bf
       endif
-
-      allocate(maskEW(halo,j1+1-j0,1))
-      allocate(maskNS(i1+1-i0,halo,1))
-      allocate(maskCr(halo,halo,1))
-      maskEW = .true.
-      maskNS = .true.
-      maskCr = .true.
-
-      szEW = 2*halo*(j1+1-j0)
-      szNS = 2*halo*(i1+1-i0)
-      szCr = 2*halo*halo
+      if (present(do_corn)) then
+        do_corners = do_corn
+      else
+        do_corners = .true.
+      endif
 
       call pack_buffers(A,nx,ny,1,bf,halo,B)
 
       call mpi_buffer_exchange
 
-      call unpack_buffers(A,nx,ny,1,bf,halo,B)
+      call unpack_buffers(A,nx,ny,1,bf,halo,do_corners,B)
         
-      deallocate(maskEW)
-      deallocate(maskNS)
-      deallocate(maskCr)
-
       end subroutine exchange2D_2var !]
 !--------------------------------------------------------
       subroutine init_mpi_buffers ![
@@ -172,8 +158,6 @@
       subroutine pack_buffers(A,nxl,nyl,nzl,bl,hl,B,C,D) ![
       implicit none
 
-      ! do better at domain boundaries
-
       !input/output
       integer,intent(in) :: nxl,nyl,nzl,bl,hl
       real,intent(in),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl) :: A
@@ -181,263 +165,273 @@
       real,intent(in),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: C
       real,intent(in),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: D
 
+      szEW = hl*(j1+1-j0)
+      szNS = hl*(i1+1-i0)
+      szCr = hl*hl
 
 ! Pack all data in buffers to be send
 !----------------------------------------------
       if (west_msg_exch) then
-        sendW(1:szEW) = pack(A(1:hl,j0:j1,:),maskEW)
+        sendW(1:szEW) = reshape(A(1:hl,j0:j1,:),(/szEW/))
         szW = szEW
         if ((present(B))) then
-          sendW(szEW+1:2*szEW) = pack(B(1:hl,j0:j1,:),maskEW)
+          sendW(szEW+1:2*szEW) = reshape(B(1:hl,j0:j1,:),(/szEW/))
           szW = 2*szEW
         endif
         if ((present(C))) then
-          sendW(2*szEW+1:3*szEW) = pack(C(1:hl,j0:j1,:),maskEW)
+          sendW(2*szEW+1:3*szEW) = reshape(C(1:hl,j0:j1,:),(/szEW/))
           szW = 3*szEW
         endif
         if ((present(D))) then
-          sendW(3*szEW+1:4*szEW) = pack(D(1:hl,j0:j1,:),maskEW)
+          sendW(3*szEW+1:4*szEW) = reshape(D(1:hl,j0:j1,:),(/szEW/))
           szW = 4*szEW
         endif
       endif
 
       if (east_msg_exch) then
-        sendE(1:szEW) = pack(A(nx+1-hl:nx,j0:j1,:),maskEW) 
+        sendE(1:szEW) = reshape(A(nx+1-hl:nx,j0:j1,:),(/szEW/))
         szE = szEW
         if (present(B)) then
-          sendE(szEW+1:2*szEW) = pack(B(1:hl,j0:j1,:),maskEW)
+          sendE(szEW+1:2*szEW) = reshape(B(1:hl,j0:j1,:),(/szEW/))
           szE = 2*szEW
         endif
         if (present(C)) then
-          sendE(2*szEW+1:3*szEW) = pack(C(1:hl,j0:j1,:),maskEW)
+          sendE(2*szEW+1:3*szEW) = reshape(C(1:hl,j0:j1,:),(/szEW/))
           szE = 3*szEW
         endif
         if (present(D)) then
-          sendE(3*szEW+1:4*szEW) = pack(D(1:hl,j0:j1,:),maskEW)
+          sendE(3*szEW+1:4*szEW) = reshape(D(1:hl,j0:j1,:),(/szEW/))
           szE = 4*szEW
         endif
       endif
 
       if (south_msg_exch) then
-        sendS(1:szNS) = pack(A(i0:i1,1:hl,:),maskNS)
+        sendS(1:szNS) = reshape(A(i0:i1,1:hl,:),(/szNS/))
         szS = szNS
         if (present(B)) then
-          sendS(szNS+1:2*szNS) = pack(B(i0:i1,1:hl,:),maskNS)
+          sendS(szNS+1:2*szNS) = reshape(B(i0:i1,1:hl,:),(/szNS/))
           szS = 2*szNS
         endif
         if (present(C)) then
-          sendS(2*szNS+1:3*szNS) = pack(C(i0:i1,1:hl,:),maskNS)
+          sendS(2*szNS+1:3*szNS) = reshape(C(i0:i1,1:hl,:),(/szNS/))
           szS = 3*szNS
         endif
         if (present(D)) then
-          sendS(3*szNS+1:4*szNS) = pack(D(i0:i1,1:hl,:),maskNS)
+          sendS(3*szNS+1:4*szNS) = reshape(D(i0:i1,1:hl,:),(/szNS/))
           szS = 4*szNS
         endif
       endif
 
       if (north_msg_exch) then
-        sendN(1:szNS) = pack(A(i0:i1,ny+1-hl:ny,:),maskNS)
+        sendN(1:szNS) = reshape(A(i0:i1,ny+1-hl:ny,:),(/szNS/))
         szN = szNS
         if (present(B)) then
-          sendE(szNS+1:2*szNS) = pack(B(i0:i1,ny+1-hl:ny,:),maskNS)
+          sendE(szNS+1:2*szNS) = reshape(B(i0:i1,ny+1-hl:ny,:),(/szNS/))
           szN = 2*szNS
         endif
         if (present(C)) then
-          sendE(2*szNS+1:3*szNS) = pack(C(i0:i1,ny+1-hl:ny,:),maskNS)
+          sendE(2*szNS+1:3*szNS) = reshape(C(i0:i1,ny+1-hl:ny,:),(/szNS/))
           szN = 3*szNS
         endif
         if (present(D)) then
-          sendE(3*szNS+1:4*szNS) = pack(D(i0:i1,ny+1-hl:ny,:),maskNS)
+          sendE(3*szNS+1:4*szNS) = reshape(D(i0:i1,ny+1-hl:ny,:),(/szNS/))
           szN = 4*szNS
         endif
       endif
 
       if (south_msg_exch.and.west_msg_exch) then
-        sendSW(1:szCr) = pack(A(1:hl,1:hl,:),maskCr)
+        sendSW(1:szCr) = reshape(A(1:hl,1:hl,:),(/szCr/))
         szSW = szCr
         if (present(B)) then
-          sendSW(szCr+1:2:szCr) = pack(B(1:hl,1:hl,:),maskCr)
+          sendSW(szCr+1:2:szCr) = reshape(B(1:hl,1:hl,:),(/szCr/))
           szSW = 2*szCr
         endif
         if (present(C)) then
-          sendSW(2*szCr+1:3*szCr) = pack(D(1:hl,1:hl,:),maskCr)
+          sendSW(2*szCr+1:3*szCr) = reshape(D(1:hl,1:hl,:),(/szCr/))
           szSW = 3*szCr
         endif
         if (present(D)) then
-          sendSW(3*szCr+1:4*szCr) = pack(D(1:hl,1:hl,:),maskCr)
+          sendSW(3*szCr+1:4*szCr) = reshape(D(1:hl,1:hl,:),(/szCr/))
           szSW = 4*szCr
         endif
       endif
 
       if (south_msg_exch.and.east_msg_exch) then
-        sendSE(1:szCr) = pack(A(nx+1-hl:nx,1:hl,:),maskCr)
+        sendSE(1:szCr) = reshape(A(nx+1-hl:nx,1:hl,:),(/szCr/))
         szSE = szCr
         if (present(B)) then
-          sendSE(szCr+1:2:szCr) = pack(B(nx+1-hl:nx,1:hl,:),maskCr)
+          sendSE(szCr+1:2:szCr) = reshape(B(nx+1-hl:nx,1:hl,:),(/szCr/))
           szSE = 2*szCr
         endif
         if (present(C)) then
-         sendSE(2*szCr+1:3:szCr) = pack(C(nx+1-hl:nx,1:hl,:),maskCr)
+         sendSE(2*szCr+1:3:szCr) = reshape(C(nx+1-hl:nx,1:hl,:),(/szCr/))
           szSE = 3*szCr
         endif
         if (present(D)) then
-         sendSE(3*szCr+1:4:szCr) = pack(D(nx+1-hl:nx,1:hl,:),maskCr)
+         sendSE(3*szCr+1:4:szCr) = reshape(D(nx+1-hl:nx,1:hl,:),(/szCr/))
           szSE = 4*szCr
         endif
       endif
 
       if (north_msg_exch.and.east_msg_exch) then
-        sendNE(1:szCr) = pack(A(nx+1-hl:nx,ny+1-hl:ny,:),maskCr)
+        sendNE(1:szCr) = reshape(A(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
         szNE = szCr
         if (present(B)) then
-          sendNE(szCr+1:2:szCr) = 
-     &          pack(B(nx+1-hl:nx,ny+1-hl:ny,:),maskCr)
+          sendNE(szCr+1:2:szCr) = reshape(B(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
           szNE = 2*szCr
         endif
         if (present(C)) then
-          sendNE(2*szCr+1:3:szCr) = 
-     &          pack(C(nx+1-hl:nx,ny+1-hl:ny,:),maskCr)
+          sendNE(2*szCr+1:3:szCr) = reshape(C(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
           szNE = 3*szCr
         endif
         if (present(D)) then
-          sendNE(3*szCr+1:4:szCr) = 
-     &          pack(D(nx+1-hl:nx,ny+1-hl:ny,:),maskCr)
+          sendNE(3*szCr+1:4:szCr) = reshape(D(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
           szNE = 4*szCr
         endif
       endif
 
       if (north_msg_exch.and.west_msg_exch) then
-        sendNW(1:szCr) = pack(A(1:hl,ny+1-hl:ny,:),maskCr)
+        sendNW(1:szCr) = reshape(A(1:hl,ny+1-hl:ny,:),(/szCr/))
         szNW = szCr
         if (present(B)) then
-          sendNW(szCr+1:2:szCr) = pack(B(1:hl,ny+1-hl:ny,:),maskCr)
+          sendNW(szCr+1:2:szCr) = reshape(B(1:hl,ny+1-hl:ny,:),(/szCr/))
           szNW = 2*szCr
         endif
         if (present(C)) then
-          sendNW(2*szCr+1:3:szCr) = pack(C(1:hl,ny+1-hl:ny,:),maskCr)
+          sendNW(2*szCr+1:3:szCr) = reshape(C(1:hl,ny+1-hl:ny,:),(/szCr/))
           szNW = 3*szCr
         endif
         if (present(D)) then
-          sendNW(3*szCr+1:4:szCr) = pack(D(1:hl,ny+1-hl:ny,:),maskCr)
+          sendNW(3*szCr+1:4:szCr) = reshape(D(1:hl,ny+1-hl:ny,:),(/szCr/))
           szNW = 4*szCr
         endif
       endif
 
       end subroutine pack_buffers !]
 !--------------------------------------------------------
-      subroutine unpack_buffers(A,nxl,nyl,nzl,bl,hl,B,C,D) ![
+      subroutine unpack_buffers(A,nxl,nyl,nzl,bl,hl,do_corners,B,C,D) ![
       implicit none
 
       !input/output
       integer,intent(in) :: nxl,nyl,nzl,bl,hl
+      logical,intent(in) :: do_corners ! Corners (.true.), no Corners (.false.)
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl) :: A
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: B
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: C
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: D
 
+      !local
+      integer,dimension(3) :: shEW,shNS,shCr
+
+      shEW = shape(A(1:hl,j0:j1,:))
+      shNS = shape(A(i0:i1,1:hl,:))
+      shCr = shape(A(1:hl,1:hl,:))
+
+
 ! Unpack all data from exchanged buffers into arrays
 !----------------------------------------------
       if (west_msg_exch) then
-        A(1-hl:0,j0:j1,:) = unpack(recvW(1:szEW),maskEW,field=0.)
+!       A(1-hl:0,j0:j1,:) = unpack(recvW(1:szEW),maskEW,field=0.)
+        A(1-hl:0,j0:j1,:) = reshape(recvW(1:szEW),shEW)
         if (present(B)) then
-          B(1-hl:0,j0:j1,:)=unpack(recvW(szEW+1:2*szEW),maskEW,field=0.)
+          B(1-hl:0,j0:j1,:)=reshape(recvW(szEW+1:2*szEW),shEW)
         endif
         if (present(C)) then
-          C(1-hl:0,j0:j1,:)=unpack(recvW(2*szEW+1:3*szEW),maskEW,field=0.)
+          C(1-hl:0,j0:j1,:)=reshape(recvW(2*szEW+1:3*szEW),shEW)
         endif
         if (present(D)) then
-          D(1-hl:0,j0:j1,:)=unpack(recvW(3*szEW+1:4*szEW),maskEW,field=0.)
+          D(1-hl:0,j0:j1,:)=reshape(recvW(3*szEW+1:4*szEW),shEW)
         endif
       endif
 
       if (east_msg_exch) then
-        A(nx+1:nx+hl,j0:j1,:) = unpack(recvE(1:szEW),maskEW,field=0.)
+        A(nx+1:nx+hl,j0:j1,:) = reshape(recvE(1:szEW),shEW)
         if (present(B)) then
-          B(nx+1:nx+hl,j0:j1,:) = unpack(recvE(szEW+1:2*szEW),maskEW,field=0.)
+          B(nx+1:nx+hl,j0:j1,:) = reshape(recvE(szEW+1:2*szEW),shEW)
         endif
         if (present(C)) then
-          C(nx+1:nx+hl,j0:j1,:) = unpack(recvE(2*szEW+1:3*szEW),maskEW,field=0.)
+          C(nx+1:nx+hl,j0:j1,:) = reshape(recvE(2*szEW+1:3*szEW),shEW)
         endif
         if (present(D)) then
-          D(nx+1:nx+hl,j0:j1,:) = unpack(recvE(3*szEW+1:4*szEW),maskEW,field=0.)
+          D(nx+1:nx+hl,j0:j1,:) = reshape(recvE(3*szEW+1:4*szEW),shEW)
         endif
       endif
 
       if (south_msg_exch) then
-        A(i0:i1,1-hl:0,:) = unpack(recvS(1:szNS),maskNS,field=0.)
+        A(i0:i1,1-hl:0,:) = reshape(recvS(1:szNS),shNS)
         if (present(B)) then
-          B(i0:i1,1-hl:0,:) = unpack(recvS(szNS+1:2*szNS),maskNS,field=0.)
+          B(i0:i1,1-hl:0,:) = reshape(recvS(szNS+1:2*szNS),shNS)
         endif
         if (present(C)) then
-          C(i0:i1,1-hl:0,:) = unpack(recvS(2*szNS+1:3*szNS),maskNS,field=0.)
+          C(i0:i1,1-hl:0,:) = reshape(recvS(2*szNS+1:3*szNS),shNS)
         endif
         if (present(D)) then
-          D(i0:i1,1-hl:0,:) = unpack(recvS(3*szNS+1:4*szNS),maskNS,field=0.)
+          D(i0:i1,1-hl:0,:) = reshape(recvS(3*szNS+1:4*szNS),shNS)
         endif
       endif
 
       if (north_msg_exch) then
-        A(i0:i1,ny+1:ny+hl,:) = unpack(recvN(1:szNS),maskNS,field=0.)
+        A(i0:i1,ny+1:ny+hl,:) = reshape(recvN(1:szNS),shNS)
         if (present(B)) then
-          B(i0:i1,ny+1:ny+hl,:) = unpack(recvN(szNS+1:2*szNS),maskNS,field=0.)
+          B(i0:i1,ny+1:ny+hl,:) = reshape(recvN(szNS+1:2*szNS),shNS)
         endif
         if (present(C)) then
-          C(i0:i1,ny+1:ny+hl,:) = unpack(recvN(2*szNS+1:3*szNS),maskNS,field=0.)
+          C(i0:i1,ny+1:ny+hl,:) = reshape(recvN(2*szNS+1:3*szNS),shNS)
         endif
         if (present(D)) then
-          D(i0:i1,ny+1:ny+hl,:) = unpack(recvN(3*szNS+1:4*szNS),maskNS,field=0.)
+          D(i0:i1,ny+1:ny+hl,:) = reshape(recvN(3*szNS+1:4*szNS),shNS)
         endif
       endif
 
-      if (south_msg_exch.and.west_msg_exch) then
-        A(1-hl:0,1-hl:0,:) = unpack(recvSW(1:szSW),maskCr,field=0.)
+      if (south_msg_exch.and.west_msg_exch.and.do_corners) then
+        A(1-hl:0,1-hl:0,:) = reshape(recvSW(1:szSW),shCr)
         if (present(B)) then
-          B(1-hl:0,1-hl:0,:) = unpack(recvSW(szSW+1:2*szSW),maskCr,field=0.)
+          B(1-hl:0,1-hl:0,:) = reshape(recvSW(szSW+1:2*szSW),shCr)
         endif
         if (present(C)) then
-          C(1-hl:0,1-hl:0,:) = unpack(recvSW(2*szSW+1:3*szSW),maskCr,field=0.)
+          C(1-hl:0,1-hl:0,:) = reshape(recvSW(2*szSW+1:3*szSW),shCr)
         endif
         if (present(D)) then
-          D(1-hl:0,1-hl:0,:) = unpack(recvSW(3*szSW+1:4*szSW),maskCr,field=0.)
+          D(1-hl:0,1-hl:0,:) = reshape(recvSW(3*szSW+1:4*szSW),shCr)
         endif
       endif
 
-      if (south_msg_exch.and.east_msg_exch) then
-        A(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(1:szSE),maskCr,field=0.)
+      if (south_msg_exch.and.east_msg_exch.and.do_corners) then
+        A(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(1:szSE),shCr)
         if (present(B)) then
-          B(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(szSE+1:2*szSE),maskCr,field=0.)
+          B(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(szSE+1:2*szSE),shCr)
         endif
         if (present(C)) then
-          C(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(2*szSE+1:3*szSE),maskCr,field=0.)
+          C(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(2*szSE+1:3*szSE),shCr)
         endif
         if (present(D)) then
-          D(nx+1:nx+hl,1-hl:0,:) = unpack(recvSE(3*szSE+1:4*szSE),maskCr,field=0.)
+          D(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(3*szSE+1:4*szSE),shCr)
         endif
       endif
 
-      if (north_msg_exch.and.west_msg_exch) then
-        A(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(1:szNW),maskCr,field=0.)
+      if (north_msg_exch.and.west_msg_exch.and.do_corners) then
+        A(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(1:szNW),shCr)
         if (present(B)) then
-          B(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(szNW+1:2*szNW),maskCr,field=0.)
+          B(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(szNW+1:2*szNW),shCr)
         endif
         if (present(C)) then
-          C(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(2*szNW+1:3*szNW),maskCr,field=0.)
+          C(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(2*szNW+1:3*szNW),shCr)
         endif
         if (present(D)) then
-          D(1-hl:0,ny+1:ny+hl,:) = unpack(recvNW(3*szNW+1:4*szNW),maskCr,field=0.)
+          D(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(3*szNW+1:4*szNW),shCr)
         endif
       endif
 
-      if (north_msg_exch.and.east_msg_exch) then
-        A(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(1:szNE),maskCr,field=0.)
+      if (north_msg_exch.and.east_msg_exch.and.do_corners) then
+        A(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(1:szNE),shCr)
         if (present(B)) then
-          B(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(szNE+1:2*szNE),maskCr,field=0.)
+          B(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(szNE+1:2*szNE),shCr)
         endif
         if (present(C)) then
-          C(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(2*szNE+1:3*szNE),maskCr,field=0.)
+          C(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(2*szNE+1:3*szNE),shCr)
         endif
         if (present(D)) then
-          D(nx+1:nx+hl,ny+1:ny+hl,:) = unpack(recvNE(3*szNE+1:4*szNE),maskCr,field=0.)
+          D(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(3*szNE+1:4*szNE),shCr)
         endif
       endif
 
