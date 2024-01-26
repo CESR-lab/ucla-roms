@@ -22,8 +22,6 @@
       integer :: szW,szE,szN,szS,szNE,szNW,szSE,szSW
       logical :: init_buffer_done = .false.
 
-!     logical,dimension(:,:,:),allocatable :: maskNS,maskEW,maskCr
-      
       ! optional arguments are halo size and corner exchanges
       ! Default values are halo=bf, and do_corners = .true.
       interface exchange_xxx
@@ -118,7 +116,7 @@
       call mpi_buffer_exchange
 
       call unpack_buffers(A,nx,ny,1,bf,halo,do_corners,B)
-        
+
       end subroutine exchange2D_2var !]
 !--------------------------------------------------------
       subroutine init_mpi_buffers ![
@@ -192,15 +190,15 @@
         sendE(1:szEW) = reshape(A(nx+1-hl:nx,j0:j1,:),(/szEW/))
         szE = szEW
         if (present(B)) then
-          sendE(szEW+1:2*szEW) = reshape(B(1:hl,j0:j1,:),(/szEW/))
+          sendE(szEW+1:2*szEW) = reshape(B(nx+1-hl:nx,j0:j1,:),(/szEW/))
           szE = 2*szEW
         endif
         if (present(C)) then
-          sendE(2*szEW+1:3*szEW) = reshape(C(1:hl,j0:j1,:),(/szEW/))
+          sendE(2*szEW+1:3*szEW) = reshape(C(nx+1-hl:nx,j0:j1,:),(/szEW/))
           szE = 3*szEW
         endif
         if (present(D)) then
-          sendE(3*szEW+1:4*szEW) = reshape(D(1:hl,j0:j1,:),(/szEW/))
+          sendE(3*szEW+1:4*szEW) = reshape(D(nx+1-hl:nx,j0:j1,:),(/szEW/))
           szE = 4*szEW
         endif
       endif
@@ -226,15 +224,15 @@
         sendN(1:szNS) = reshape(A(i0:i1,ny+1-hl:ny,:),(/szNS/))
         szN = szNS
         if (present(B)) then
-          sendE(szNS+1:2*szNS) = reshape(B(i0:i1,ny+1-hl:ny,:),(/szNS/))
+          sendN(szNS+1:2*szNS) = reshape(B(i0:i1,ny+1-hl:ny,:),(/szNS/))
           szN = 2*szNS
         endif
         if (present(C)) then
-          sendE(2*szNS+1:3*szNS) = reshape(C(i0:i1,ny+1-hl:ny,:),(/szNS/))
+          sendN(2*szNS+1:3*szNS) = reshape(C(i0:i1,ny+1-hl:ny,:),(/szNS/))
           szN = 3*szNS
         endif
         if (present(D)) then
-          sendE(3*szNS+1:4*szNS) = reshape(D(i0:i1,ny+1-hl:ny,:),(/szNS/))
+          sendN(3*szNS+1:4*szNS) = reshape(D(i0:i1,ny+1-hl:ny,:),(/szNS/))
           szN = 4*szNS
         endif
       endif
@@ -243,11 +241,11 @@
         sendSW(1:szCr) = reshape(A(1:hl,1:hl,:),(/szCr/))
         szSW = szCr
         if (present(B)) then
-          sendSW(szCr+1:2:szCr) = reshape(B(1:hl,1:hl,:),(/szCr/))
+          sendSW(szCr+1:2*szCr) = reshape(B(1:hl,1:hl,:),(/szCr/))
           szSW = 2*szCr
         endif
         if (present(C)) then
-          sendSW(2*szCr+1:3*szCr) = reshape(D(1:hl,1:hl,:),(/szCr/))
+          sendSW(2*szCr+1:3*szCr) = reshape(C(1:hl,1:hl,:),(/szCr/))
           szSW = 3*szCr
         endif
         if (present(D)) then
@@ -260,15 +258,15 @@
         sendSE(1:szCr) = reshape(A(nx+1-hl:nx,1:hl,:),(/szCr/))
         szSE = szCr
         if (present(B)) then
-          sendSE(szCr+1:2:szCr) = reshape(B(nx+1-hl:nx,1:hl,:),(/szCr/))
+          sendSE(szCr+1:2*szCr) = reshape(B(nx+1-hl:nx,1:hl,:),(/szCr/))
           szSE = 2*szCr
         endif
         if (present(C)) then
-         sendSE(2*szCr+1:3:szCr) = reshape(C(nx+1-hl:nx,1:hl,:),(/szCr/))
+         sendSE(2*szCr+1:3*szCr) = reshape(C(nx+1-hl:nx,1:hl,:),(/szCr/))
           szSE = 3*szCr
         endif
         if (present(D)) then
-         sendSE(3*szCr+1:4:szCr) = reshape(D(nx+1-hl:nx,1:hl,:),(/szCr/))
+         sendSE(3*szCr+1:4*szCr) = reshape(D(nx+1-hl:nx,1:hl,:),(/szCr/))
           szSE = 4*szCr
         endif
       endif
@@ -277,15 +275,15 @@
         sendNE(1:szCr) = reshape(A(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
         szNE = szCr
         if (present(B)) then
-          sendNE(szCr+1:2:szCr) = reshape(B(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
+          sendNE(szCr+1:2*szCr) = reshape(B(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
           szNE = 2*szCr
         endif
         if (present(C)) then
-          sendNE(2*szCr+1:3:szCr) = reshape(C(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
+          sendNE(2*szCr+1:3*szCr) = reshape(C(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
           szNE = 3*szCr
         endif
         if (present(D)) then
-          sendNE(3*szCr+1:4:szCr) = reshape(D(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
+          sendNE(3*szCr+1:4*szCr) = reshape(D(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
           szNE = 4*szCr
         endif
       endif
@@ -294,15 +292,15 @@
         sendNW(1:szCr) = reshape(A(1:hl,ny+1-hl:ny,:),(/szCr/))
         szNW = szCr
         if (present(B)) then
-          sendNW(szCr+1:2:szCr) = reshape(B(1:hl,ny+1-hl:ny,:),(/szCr/))
+          sendNW(szCr+1:2*szCr) = reshape(B(1:hl,ny+1-hl:ny,:),(/szCr/))
           szNW = 2*szCr
         endif
         if (present(C)) then
-          sendNW(2*szCr+1:3:szCr) = reshape(C(1:hl,ny+1-hl:ny,:),(/szCr/))
+          sendNW(2*szCr+1:3*szCr) = reshape(C(1:hl,ny+1-hl:ny,:),(/szCr/))
           szNW = 3*szCr
         endif
         if (present(D)) then
-          sendNW(3*szCr+1:4:szCr) = reshape(D(1:hl,ny+1-hl:ny,:),(/szCr/))
+          sendNW(3*szCr+1:4*szCr) = reshape(D(1:hl,ny+1-hl:ny,:),(/szCr/))
           szNW = 4*szCr
         endif
       endif
@@ -314,7 +312,7 @@
 
       !input/output
       integer,intent(in) :: nxl,nyl,nzl,bl,hl
-      logical,intent(in) :: do_corners ! Corners (.true.), no Corners (.false.)
+      logical,intent(in) :: do_corners 
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl) :: A
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: B
       real,intent(inout),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl),optional :: C
@@ -326,6 +324,7 @@
       shEW = shape(A(1:hl,j0:j1,:))
       shNS = shape(A(i0:i1,1:hl,:))
       shCr = shape(A(1:hl,1:hl,:))
+
 
 
 ! Unpack all data from exchanged buffers into arrays
@@ -384,54 +383,54 @@
       endif
 
       if (south_msg_exch.and.west_msg_exch.and.do_corners) then
-        A(1-hl:0,1-hl:0,:) = reshape(recvSW(1:szSW),shCr)
+        A(1-hl:0,1-hl:0,:) = reshape(recvSW(1:szCr),shCr)
         if (present(B)) then
-          B(1-hl:0,1-hl:0,:) = reshape(recvSW(szSW+1:2*szSW),shCr)
+          B(1-hl:0,1-hl:0,:) = reshape(recvSW(szCr+1:2*szCr),shCr)
         endif
         if (present(C)) then
-          C(1-hl:0,1-hl:0,:) = reshape(recvSW(2*szSW+1:3*szSW),shCr)
+          C(1-hl:0,1-hl:0,:) = reshape(recvSW(2*szCr+1:3*szCr),shCr)
         endif
         if (present(D)) then
-          D(1-hl:0,1-hl:0,:) = reshape(recvSW(3*szSW+1:4*szSW),shCr)
+          D(1-hl:0,1-hl:0,:) = reshape(recvSW(3*szCr+1:4*szCr),shCr)
         endif
       endif
 
       if (south_msg_exch.and.east_msg_exch.and.do_corners) then
-        A(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(1:szSE),shCr)
+        A(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(1:szCr),shCr)
         if (present(B)) then
-          B(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(szSE+1:2*szSE),shCr)
+          B(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(szCr+1:2*szCr),shCr)
         endif
         if (present(C)) then
-          C(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(2*szSE+1:3*szSE),shCr)
+          C(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(2*szCr+1:3*szCr),shCr)
         endif
         if (present(D)) then
-          D(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(3*szSE+1:4*szSE),shCr)
+          D(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(3*szCr+1:4*szCr),shCr)
         endif
       endif
 
       if (north_msg_exch.and.west_msg_exch.and.do_corners) then
-        A(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(1:szNW),shCr)
+        A(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(1:szCr),shCr)
         if (present(B)) then
-          B(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(szNW+1:2*szNW),shCr)
+          B(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(szCr+1:2*szCr),shCr)
         endif
         if (present(C)) then
-          C(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(2*szNW+1:3*szNW),shCr)
+          C(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(2*szCr+1:3*szCr),shCr)
         endif
         if (present(D)) then
-          D(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(3*szNW+1:4*szNW),shCr)
+          D(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(3*szCr+1:4*szCr),shCr)
         endif
       endif
 
       if (north_msg_exch.and.east_msg_exch.and.do_corners) then
-        A(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(1:szNE),shCr)
+        A(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(1:szCr),shCr)
         if (present(B)) then
-          B(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(szNE+1:2*szNE),shCr)
+          B(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(szCr+1:2*szCr),shCr)
         endif
         if (present(C)) then
-          C(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(2*szNE+1:3*szNE),shCr)
+          C(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(2*szCr+1:3*szCr),shCr)
         endif
         if (present(D)) then
-          D(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(3*szNE+1:4*szNE),shCr)
+          D(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(3*szCr+1:4*szCr),shCr)
         endif
       endif
 
@@ -454,13 +453,6 @@
 ! This is needed because later in this code array "req" is subject to
 ! rearrangement in order to ignore directions from which no message is
 ! expected, as well as to ignore requests from which messages are
-      if (mynode.eq.5) then
-        print *,size(recvS),szS
-        print *,p_S
-      endif
-      call MPI_Barrier(ocean_grid_comm, ierr)
-
-     
       
                      ! tags for receive      for send        ! each sub-domain can receive up to 8 exchanges.
       do i=1,16      !         3  5  1        4  6  2        ! the 'tag' value indicates which side/corner
