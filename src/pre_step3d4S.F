@@ -659,7 +659,7 @@
           enddo
         enddo
 #  ifdef EXCHANGE
-        !! try to see if we could avoid this.
+        !! try to see if we could avoid this. NHMG only!
         call exchange_2_tile(istr,iend,jstr,jend,u(START_2D_ARRAY,1,nnew),N
      &                                          ,v(START_2D_ARRAY,1,nnew),N)
 #  endif

@@ -497,6 +497,7 @@
 
       call ncread(ncid,'h',h(i0:i1,j0:j1))         ! Bathymetry
       call exchange_xxx(h)                         ! (2,.true.)
+
       
 ! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
@@ -510,15 +511,12 @@
       call ncread(ncid,'lat_rho',latr(i0:i1,j0:j1),start)
       call exchange_xxx(lonr,latr)
 # else
-      ! check this with filament example
+      ! check this with analytical filament example
       call ncread(ncid,'x_rho',xr(i0:i1,j0:j1),start)
-!     call exchange_tile(1,nx,1,ny, xr(START_2D_ARRAY),1)
       call ncread(ncid,'y_rho',yr(i0:i1,j0:j1),start)
-!     call exchange_tile(1,nx,1,ny, yr(START_2D_ARRAY),1)
 
       ! Only use if non-spherical grid, otherwise computed in  setup_grid1
       call ncread(ncid,'f',f(i0:i1,j0:j1))         ! Coriolis parameter.
-!     call exchange_xxx(f,1,.false.)               ! (1,.false.)
       call exchange_xxx(xr,yr,f)
 
 # endif
