@@ -597,10 +597,7 @@ c<<     &     +cff*iA_v(i,j)
       endif
 
 #ifdef EXCHANGE
-      call exchange2d_3_tile(istr,iend,jstr,jend,
-     &                  zeta(START_2D_ARRAY,knew),
-     &                  ubar(START_2D_ARRAY,knew),
-     &                  vbar(START_2D_ARRAY,knew))
+      call exchange_xxx(zeta(:,:,knew),ubar(:,:,knew),vbar(:,:,knew))
 #endif
 
       end

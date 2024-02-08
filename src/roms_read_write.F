@@ -544,27 +544,72 @@
 ! ----------------------------------------------------------------------
       subroutine coarse2fine(cdata,fdata) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
+      use hidden_mpi_vars
+      use dimensions
       implicit none
-
 
       ! input/output
       real,dimension(:,:),intent(in) :: cdata   ! coarse data
       real,dimension(:,:),intent(out):: fdata   ! fine data
 
       ! local
-      integer :: nx,ny
       integer :: i,j
       integer :: ic,jc
+      integer :: i2ic,j2jc
+      integer :: iSWc,jSWc
+      integer :: gnxc,gnyc,nxc,nyc
+      integer :: off_xc,off_yc
+
       real  :: a,b
 
       a = 0.75
       b = 0.25
 
-
 !     call exchange_2d(cdata)
+
+      gnxc = gnx/2
+      gnyc = gnx/2
+      nxc = (gnxc+NP_xi-1)/np_xi
+      nyc = (gnyc+NP_eta-1)/np_eta
+
+      off_xc = NP_XI*nxc - gnxc
+      if (inode==0) then
+        iSWc = 0
+      else
+        iSWc = inode*nxc - off_xc/2
+      endif
+
+!     if inode==0 then
+!       nxc = nxc - off_xi/2
+!     elseif (inode==np_xi-1) then
+!       nxc = nxc - (off_xi+1)/2
+!     endif
+
+      off_yc = NP_eta*nyc - gnyc
+      if (jnode==0) then
+        jSWc = 0
+      else
+        jSWc = jnode*nyc - off_yc/2
+      endif
+
+!     if jnode==0 then
+!       nyc = nyc - off_y/2
+!     elseif (jnode==np_eta-1) then
+!       nyc = nyc - (off_y+1)/2
+!     endif
+
+!     gic = gi/2 = (i + iSW_corn)/2 = ic + iSWc.
+!     ic =  i/2 + iSW_corn/2 - iSWc
+!     gjc = gj/2 = (j + jSW_corn)/2 = jc + jSWc.
+!     jc =  j/2 + jSW_corn/2 - jSWc
+
+!     i2ic = iSW_corn/2 - iSWc
+!     j2jc = jSW_corn/2 - jSWc
 
       do j=1,ny,2
         do i=1,nx,2
+          ic = i/2 + i2ic;
+          jc = j/2 + j2jc;
           fdata(i  ,j  ) = a*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
      &                   + b*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
           fdata(i+1,j  ) = a*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))

@@ -100,7 +100,7 @@
       if (iic == 0) then
         call exchange2d_tile(istr,iend,jstr,jend, hinv)
       endif
-      call exchange_3_tile(istr,iend,jstr,jend, z_w,N+1, z_r,N, Hz,N)
+      call exchange_xxx(z_w,z_r,Hz)
 # endif
 
 #if defined NHMG || defined NONTRAD_COR
@@ -126,7 +126,7 @@
          enddo
        endif
       if (EASTERN_EDGE) then
-         do k = 1, N
+!        do k = 1, N
             do j = 0,Mm+1
                dzdxi (Lm  ,j,k) = 0.
                dzdxi (Lm+1,j,k) = 0.
