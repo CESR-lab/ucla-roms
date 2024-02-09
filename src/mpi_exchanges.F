@@ -30,8 +30,9 @@
       ! Default values are halo=bf, do_corners = .true., and bl = bf
 
       interface exchange_xxx
-        module procedure exchange_2,exchange_22,exchange_222
-     &                  ,exchange_3,exchange_33,exchange_333
+        module procedure 
+     &        exchange_2,exchange_22,exchange_222,exchange_2222
+     &       ,exchange_3,exchange_33,exchange_333,exchange_3333
      &                  ,exchange_32,exchange_332
         ! etc, etc
       end interface
@@ -152,6 +153,44 @@
 
       end subroutine exchange_222 !]
 !--------------------------------------------------------
+      subroutine exchange_2222(A,B,C,D,exch_bf,do_corn) ![
+      ! 2D variable, 2 at the time
+      ! Can exchange less data than the allocated buffer space
+      implicit none
+
+      !input/output
+      real,intent(inout),dimension(:,:) :: A
+      real,intent(inout),dimension(:,:) :: B
+      real,intent(inout),dimension(:,:) :: C
+      real,intent(inout),dimension(:,:) :: D
+      integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      logical,optional :: do_corn
+
+      if (.not.init_buffer_done) call init_mpi_buffers
+
+      bl = bf
+      hl = bf
+      if (present(exch_bf)) hl = exch_bf
+
+      do_corners = .true.
+      if (present(do_corn)) do_corners = do_corn
+
+      call reset_buffer_sizes
+      call pack_2dvar(A)
+      call pack_2dvar(B)
+      call pack_2dvar(C)
+      call pack_2dvar(D)
+
+      call mpi_buffer_exchange
+
+      call reset_buffer_sizes
+      call unpack_2dvar(A)
+      call unpack_2dvar(B)
+      call unpack_2dvar(C)
+      call unpack_2dvar(D)
+
+      end subroutine exchange_2222 !]
+!--------------------------------------------------------
       subroutine exchange_3(A,exch_bf,do_corn) ![
       ! 3D variable, 1 at the time
       ! Can exchange less data than the allocated buffer space
@@ -247,6 +286,44 @@
       call unpack_3dvar(C)
 
       end subroutine exchange_333 !]
+!--------------------------------------------------------
+      subroutine exchange_3333(A,B,C,D,exch_bf,do_corn) ![
+      ! 3D variable, 1 at the time
+      ! Can exchange less data than the allocated buffer space
+      implicit none
+
+      !input/output
+      real,intent(inout),dimension(:,:,:) :: A
+      real,intent(inout),dimension(:,:,:) :: B
+      real,intent(inout),dimension(:,:,:) :: C
+      real,intent(inout),dimension(:,:,:) :: D
+      integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      logical,optional :: do_corn
+
+      if (.not.init_buffer_done) call init_mpi_buffers
+
+      bl = bf
+      hl = bf
+      if (present(exch_bf)) hl = exch_bf
+
+      do_corners = .true.
+      if (present(do_corn)) do_corners = do_corn
+
+      call reset_buffer_sizes
+      call pack_3dvar(A)
+      call pack_3dvar(B)
+      call pack_3dvar(C)
+      call pack_3dvar(D)
+
+      call mpi_buffer_exchange
+
+      call reset_buffer_sizes
+      call unpack_3dvar(A)
+      call unpack_3dvar(B)
+      call unpack_3dvar(C)
+      call unpack_3dvar(D)
+
+      end subroutine exchange_3333 !]
 !--------------------------------------------------------
       subroutine exchange_32(A,B,exch_bf,do_corn) ![
       ! 3D variable, 1 at the time

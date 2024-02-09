@@ -243,20 +243,24 @@ c--#define VERBOSE
       ierr=nf90_inq_varid(ncid, 'time_step', varid)
       if (ierr == nf90_noerr) then
         ierr=nf90_inquire_variable(ncid, varid, dimids=ibuff)
-        if (ierr/=0) call handle_ierr(ierr,'get_init: cannot get time_step dimids')
+        if (ierr/=0) 
+     &    call handle_ierr(ierr,'get_init: cannot get time_step dimids')
         ierr=nf90_inquire_dimension(ncid, ibuff(1), len=count(1))
-        if (ierr/=0) call handle_ierr(ierr,'get_init: cannot get time dim size')
+        if (ierr/=0) 
+     &    call handle_ierr(ierr,'get_init: cannot get time dim size')
         start(1)=1 ; start(2)=record ; count(2)=1
         ibuff(1:iaux)=0
         ierr=nf90_get_var(ncid, varid, ibuff, start, count)
-        if (ierr/=0) call handle_ierr(ierr,'get_init: cannot read time_step')
+        if (ierr/=0) 
+     &  call handle_ierr(ierr,'get_init: cannot read time_step')
         ntstart=ibuff(1)+1
-!              nrecrst=ibuff(2)
+
 #ifdef EXACT_RESTART
         if (tindx == 2 .and. record < max_rec) then
           start(2)=record+1
           ierr=nf90_get_var(ncid, varid, ibuff, start, count)
-          if (ierr/=0) call handle_ierr(ierr,'get_init: cannot read 2nd time_step')
+          if (ierr/=0) 
+     &  call handle_ierr(ierr,'get_init: cannot read 2nd time_step')
 # ifdef VERBOSE
           write(*,*) 'ibuff(1),ntstart =', ibuff(1), ntstart
 # endif
@@ -307,7 +311,8 @@ c--#define VERBOSE
 
       call ncread(ncid,vname(1,indxZ),zeta(i0:i1,j0:j1,1),start)
       zeta(i0:i1,j0:j1,1)=zeta(i0:i1,j0:j1,1)*rmask(i0:i1,j0:j1)     ! masking needed else answer changed?
-      call exchange_tile(1,nx,1,ny, zeta(START_2D_ARRAY,1),1)        ! exchange needed for zeta
+      call exchange_xxx(zeta(:,:,1))                                ! exchange needed for zeta
+
 
       ! in order to get the exact same values as the ncdf_read (original)
       ! method, I needed to copy if (rmask(i,j)+rmask(i-1,j) > 0.5)...
@@ -323,7 +328,7 @@ c--#define VERBOSE
         enddo
       enddo
 !      ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)     ! umask didn't give same answer???
-      call exchange_tile(1,nx,1,ny, ubar(START_2D_ARRAY,1),1)        ! not sure if exchange is needed for remaining vars
+      call exchange_xxx(ubar(:,:,1))             ! not sure if exchange is needed for remaining vars
 
       call ncread(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,1),start)
       do j=1,j1
@@ -335,7 +340,7 @@ c--#define VERBOSE
         enddo
       enddo
 !      vbar(i0:i1,1:j1,1) = vbar(i0:i1,1:j1,1)*vmask(i0:i1,1:j1)     ! vmask didn't give same answer
-      call exchange_tile(1,nx,1,ny, vbar(START_2D_ARRAY,1),1)
+      call exchange_xxx(vbar(:,:,1))             ! not sure if exchange is needed for remaining vars
 
 ! Two sets of fast-time-averaged barotropic fluxes needed for exact
 ! restart in the case when using Adams-Bashforth-like extrapolation of
@@ -405,10 +410,10 @@ c--#define VERBOSE
 !         endif
 !       enddo
 !     enddo
-      do k=1,N
+      do k=1,nz
         u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
       enddo
-      call exchange_tile(1,nx,1,ny, u(START_2D_ARRAY,1,tindx),N)
+      call exchange_xxx(u(:,:,:,tindx) )
 
       call ncread(ncid,vname(1,indxV), v(i0:i1, 1:j1,:,tindx),start)           ! v requires masking and
 !     do j=1,j1                                                                ! exchange for some reason?
@@ -422,7 +427,7 @@ c--#define VERBOSE
        do k=1,nz
          v(i0:i1,1:j1,k,tindx) = v(i0:i1,1:j1,k,tindx)*vmask(i0:i1,1:j1)
        enddo
-      call exchange_tile(1,nx,1,ny, v(START_2D_ARRAY,1,tindx),N)
+      call exchange_xxx(v(:,:,:,tindx) )
 
 # if defined NHMG
       ! since ncdf_read already does an exchange to fill buffers, we're
@@ -453,7 +458,7 @@ c--#define VERBOSE
           do k=1,N
             t(i0:i1,j0:j1,k,tindx,itrc)=t(i0:i1,j0:j1,k,tindx,itrc)*rmask(i0:i1,j0:j1)
           enddo
-          call exchange_tile(1,nx,1,ny, t(START_2D_ARRAY,1,tindx,itrc),N)      ! DevinD - confirmed needs an exchange for some reason?
+          call exchange_xxx(t(:,:,:,tindx,itrc) ) 
         else
 
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
@@ -477,7 +482,7 @@ c--#define VERBOSE
       if (ierr == nf90_noerr) then
         call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
         hbls(i0:i1,j0:j1,tindx)=hbls(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
-        call exchange_tile(1,nx,1,ny, hbls(START_2D_ARRAY,tindx),1)            ! confirmed needs an exchange, not sure why
+        call exchange_xxx(hbls(:,:,tindx) )
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
      & 'variable ''', trim(vname(1,indxHbls)), ''' not found in ''',
@@ -490,7 +495,7 @@ c--#define VERBOSE
       if (ierr == nf90_noerr) then
         call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
         hbbl(i0:i1,j0:j1,tindx)=hbbl(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
-        call exchange_tile(1,nx,1,ny, hbbl(START_2D_ARRAY,tindx),1)            ! confirmed needs an exchange, not sure why
+        call exchange_xxx(hbbl(:,:,tindx) )            ! confirmed needs an exchange, not sure why
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
      & 'variable ''', trim(vname(1,indxHbbl)), ''' not found in ''',
@@ -509,7 +514,7 @@ c--#define VERBOSE
          if (ierr .eq. nf90_noerr) then
            call ncread(ncid,vname_bec2_diag_2d(1,itrc),bec2_diag_2d(i0:i1,j0:j1,itrc),start)
            bec2_diag_2d(i0:i1,j0:j1,itrc)=bec2_diag_2d(i0:i1,j0:j1,itrc)*rmask(i0:i1,j0:j1)
-           call exchange_tile(1,nx,1,ny, bec2_diag_2d(START_2D_ARRAY,itrc),1)
+           call exchange_xxx(bec2_diag_2d(:,:,itrc) )
          else
             bec2_diag_2d(GLOBAL_2D_ARRAY,itrc) = 0.0
             mpi_master_only write(*,*) ' --- WARNING: '
@@ -529,7 +534,7 @@ c--#define VERBOSE
            do k=1,N
              bec2_diag_3d(i0:i1,j0:j1,k,itrc)=bec2_diag_3d(i0:i1,j0:j1,k,itrc)*rmask(i0:i1,j0:j1)
            enddo
-           call exchange_tile(1,nx,1,ny, bec2_diag_3d(START_2D_ARRAY,1,itrc),N)
+           call exchange_xxx(bec2_diag_3d(:,:,:,itrc) )
 !            ierr=ncdf_read (ncid,  varid, record, r_var
 !     &                    , bec2_diag_3d(START_2D_ARRAY,1,itrc), N)
 !            if (ierr /= nf90_noerr) then

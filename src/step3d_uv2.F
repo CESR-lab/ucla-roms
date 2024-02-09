@@ -780,19 +780,11 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 ! Exchange periodic boundaries and computational margins.
 
 # ifdef EXCHANGE
-!     call exchange_3_tile (istr,iend,jstr,jend,   FlxU,N,
-!    &                         u(START_2D_ARRAY,1,nnew), N,
-!    &                         ubar(START_2D_ARRAY,knew),1)
       call exchange_xxx(FlxU,u(:,:,:,nnew),ubar(:,:,knew) )
 
-!     call exchange_3_tile (istr,iend,jstr,jend,   FlxV,N,
-!    &                         v(START_2D_ARRAY,1,nnew), N,
-!    &                         vbar(START_2D_ARRAY,knew),1)
       call exchange_xxx(FlxV,v(:,:,:,nnew),vbar(:,:,knew) )
 
 #  ifdef ADV_ISONEUTRAL
-!     call exchange_3_tile (istr,iend,jstr,jend, idRz,N+1,
-!    &                                 diff3u,N, diff3v,N)
       call exchange_xxx(idRz,diff3u,diff3v)
 #  endif
 # endif
@@ -837,8 +829,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 ! Exchange periodic boundaries and computational margins. 
 !--------------------------------------------------------------------
 #  ifdef EXCHANGE
-!     call exchange_tile (istr,iend,jstr,jend,
-!    &                          w(START_2D_ARRAY,1,nnew),N)
       call exchange_xxx(w(:,:,:,nnew))
 #  endif
 

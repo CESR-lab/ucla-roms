@@ -7,6 +7,7 @@
       use grid
       use hidden_mpi_vars
       use private_scratch
+      use mpi_exchanges
 
       implicit none                  ! inverse time-scale coeffcients
       integer tile                   ! (units [1/sec])
@@ -116,7 +117,7 @@
 #   endif
 #   ifdef UV_VIS2
 #    ifdef EXCHANGE
-        call exchange2d_tile (istr,iend,jstr,jend, visc2_p)
+!     call exchange_xxx(visc2_p)
 #    endif
 #   endif
 #  endif

@@ -39,7 +39,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
-	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
+	mpi_setup.F\
 \
 	river_frc.F	pipe_frc.F      add_git_hash.F\
 	random_output.F mpi_exchanges.F\
@@ -47,7 +47,7 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F\
 \
 	main.F	
-
+#exchange.F	mpi_exchange8TA.F\
 #ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 

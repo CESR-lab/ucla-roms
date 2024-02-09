@@ -490,8 +490,7 @@ c**  &                                                             )
 # endif
 
 # ifdef EXCHANGE
-        call exchange_tile (istr,iend,jstr,jend,
-     &                      t(START_2D_ARRAY,1,nnew,itrc),N)
+        call exchange_xxx(t(:,:,:,,nnew,itrc) )
 # endif
       end
 #else

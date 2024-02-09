@@ -35,6 +35,7 @@
       use mixing
       use ocean_vars
       use scalars
+      use mpi_exchanges
 
       implicit none
       integer istr,iend,jstr,jend, i,j, kbak, kold
