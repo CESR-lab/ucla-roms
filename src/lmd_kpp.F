@@ -627,34 +627,22 @@ c      endif
 # ifdef EXCHANGE
 #  ifdef LMD_KPP
 #   ifdef LMD_BKPP
-      call exchange_3_tile( istr,iend,jstr,jend, Akv, N+1,
-     &                      hbls(START_2D_ARRAY,3-nstp),1,
-     &                      hbbl(START_2D_ARRAY,3-nstp),1)
-!     call exchange_xxx(Akv)
-!     call exchange_xxx(hbls(:,:,3-nstp))
-!     call exchange_xxx(hbbl(:,:,3-nstp))
+      call exchange_xxx(Akv)
+      call exchange_xxx(hbls(:,:,3-nstp))
+      call exchange_xxx(hbbl(:,:,3-nstp))
 #   else
-      call exchange_2_tile( istr,iend,jstr,jend, Akv, N+1,
-     &                      hbls(START_2D_ARRAY,3-nstp),1)
-!     call exchange_xxx(Akv)
-!     call exchange_xxx(hbls(:,:,3-nstp))
+      call exchange_xxx(Akv)
+      call exchange_xxx(hbls(:,:,3-nstp))
 #   endif
 #  else
-      call exchange_2_tile( istr,iend,jstr,jend, Akv, N+1,
-     &                      hbbl(START_2D_ARRAY,3-nstp),1)
-!     call exchange_xxx(Akv)
-!     call exchange_xxx(hbbl(:,:,3-nstp))
+      call exchange_xxx(Akv)
+      call exchange_xxx(hbbl(:,:,3-nstp))
 #  endif
 #  ifdef SALINITY
-      call exchange_2_tile( istr,iend,jstr,jend,
-     &                   Akt(START_2D_ARRAY,0,itemp), N+1,
-     &                   Akt(START_2D_ARRAY,0,isalt), N+1)
-!     call exchange_xxx(Akt(:,:,:,itemp))
-!     call exchange_xxx(Akt(:,:,:,isalt))
+      call exchange_xxx(Akt(:,:,:,itemp))
+      call exchange_xxx(Akt(:,:,:,isalt))
 #  else
-      call exchange_tile( istr,iend,jstr,jend,
-     &                   Akt(START_2D_ARRAY,0,itemp), N+1)
-!     call exchange_xxx(Akt(:,:,:,itemp))
+      call exchange_xxx(Akt(:,:,:,itemp))
 #  endif
 # endif
       end

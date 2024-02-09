@@ -1061,14 +1061,14 @@ c??         enddo
 # endif
 
 # if defined EW_PERIODIC || defined NS_PERIODIC || defined MPI
-      do itrc=1,NT-1,2
-        call exchange_2_tile(istr,iend,jstr,jend,
-     &                       t(START_2D_ARRAY,1,nnew,itrc  ), N,
-     &                       t(START_2D_ARRAY,1,nnew,itrc+1), N)
+      ! for BGC, we should be able to pack more tracer arrays
+      ! in a single mpi_exchange
+      do itrc=1,nt-1,2
+        call exchange_xxx( t(:,:,:,nnew,itrc),
+     &                     t(:,:,:,nnew,itrc+1) )
       enddo
-      if (mod(NT,2) == 1) then
-        call exchange_tile (istr,iend,jstr,jend,
-     &                          t(START_2D_ARRAY,1,nnew,NT), N)
+      if (mod(nt,2) == 1) then
+        call exchange_xxx( t(:,:,:,nnew,nt) )
       endif
 # endif
       end
