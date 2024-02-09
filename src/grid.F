@@ -525,12 +525,10 @@
       ! and for in-place rotation for data extraction
       ! Also used in wec for the moment
       call ncread(ncid,'angle',angler(i0:i1,j0:j1),start)  ! Angle (radians) between XI-axis and EAST at RHO-points.
-!     call exchange_tile(1,nx,1,ny, angler(START_2D_ARRAY),1)
       call exchange_xxx(angler)
 # endif
 # ifdef MASKING
       call ncread(ncid,'mask_rho',rmask(i0:i1,j0:j1),start)! Mask at RHO-points.
-!     call exchange_tile(1,nx,1,ny, rmask(START_2D_ARRAY),1)
       call exchange_xxx(rmask)
 # endif
       ierr=nf90_close(ncid)

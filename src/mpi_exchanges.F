@@ -32,7 +32,7 @@
       interface exchange_xxx
         module procedure exchange_2,exchange_22,exchange_222
      &                  ,exchange_3,exchange_33,exchange_333
-!    &                  ,exchange_32,exchange_322
+     &                  ,exchange_32,exchange_332
         ! etc, etc
       end interface
 
@@ -247,6 +247,73 @@
       call unpack_3dvar(C)
 
       end subroutine exchange_333 !]
+!--------------------------------------------------------
+      subroutine exchange_32(A,B,exch_bf,do_corn) ![
+      ! 3D variable, 1 at the time
+      ! Can exchange less data than the allocated buffer space
+      implicit none
+
+      !input/output
+      real,intent(inout),dimension(:,:,:) :: A
+      real,intent(inout),dimension(:,:)   :: B
+      integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      logical,optional :: do_corn
+
+      if (.not.init_buffer_done) call init_mpi_buffers
+
+      bl = bf
+      hl = bf
+      if (present(exch_bf)) hl = exch_bf
+
+      do_corners = .true.
+      if (present(do_corn)) do_corners = do_corn
+
+      call reset_buffer_sizes
+      call pack_3dvar(A)
+      call pack_2dvar(B)
+
+      call mpi_buffer_exchange
+
+      call reset_buffer_sizes
+      call unpack_3dvar(A)
+      call unpack_2dvar(B)
+
+      end subroutine exchange_32 !]
+!--------------------------------------------------------
+      subroutine exchange_332(A,B,C,exch_bf,do_corn) ![
+      ! 3D variable, 1 at the time
+      ! Can exchange less data than the allocated buffer space
+      implicit none
+
+      !input/output
+      real,intent(inout),dimension(:,:,:) :: A
+      real,intent(inout),dimension(:,:,:) :: B
+      real,intent(inout),dimension(:,:)   :: C
+      integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      logical,optional :: do_corn
+
+      if (.not.init_buffer_done) call init_mpi_buffers
+
+      bl = bf
+      hl = bf
+      if (present(exch_bf)) hl = exch_bf
+
+      do_corners = .true.
+      if (present(do_corn)) do_corners = do_corn
+
+      call reset_buffer_sizes
+      call pack_3dvar(A)
+      call pack_3dvar(B)
+      call pack_2dvar(C)
+
+      call mpi_buffer_exchange
+
+      call reset_buffer_sizes
+      call unpack_3dvar(A)
+      call unpack_3dvar(B)
+      call unpack_2dvar(C)
+
+      end subroutine exchange_332 !]
 !--------------------------------------------------------
       subroutine reset_buffer_sizes ![
       ! reset the current size of the mpi buffers

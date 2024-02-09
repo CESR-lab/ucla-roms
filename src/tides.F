@@ -277,6 +277,15 @@
 
       end do ! <-- itide=1,ntides
 
+      if (bry_tides) then
+!       call exchange_xxx(ztide_r,ztide_i)
+!       call exchange_xxx(utide_r,utide_i)
+!       call exchange_xxx(vtide_r,vtide_i)
+      endif
+      if (pot_tides) then
+!       call exchange_xxx(ptide_r,ptide_i)
+      endif
+
       if(mynode==0) write(*,'(7x,A)')'tides :: read all tides'
 
       end subroutine read_tides  !]
