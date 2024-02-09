@@ -446,9 +446,7 @@
 #  ifdef EXCHANGE
       !! Todo: we should be able to avoid this. We only need u and v at the boundaries
       !! Todo: computational ranges for u and v need to be extended to Iend+1, Jend+1
-      call exchange_2_tile (istr,iend,jstr,jend,
-     &                         u(START_2D_ARRAY,1,nnew),N,
-     &                         v(START_2D_ARRAY,1,nnew),N)
+      call exchange_xxx(u(:,:,:,nnew),v(:,:,:,nnew) )
 #  endif
 
       !! only do this for neumann nhmg conditions
@@ -541,7 +539,7 @@
 # undef r_D
 # if defined ADV_ISONEUTRAL && defined EXCHANGE
        !!!! JM not clear what this does !!!
-      call exchange_2_tile (istr,iend,jstr,jend, dRdx,N, dRde,N)
+      call exchange_xxx(dRdx,dRde)
 # endif
 
       end

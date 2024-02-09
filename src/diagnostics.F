@@ -1302,7 +1302,7 @@
       ierr=nf90_inq_varid (ncid, 'p_slow', varid)
       if (ierr == nf90_noerr) then
         call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
-        call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
+        call exchange_xxx(p_slow)  ! need exchange since r2u to get u'p'
 #ifdef MASKING
         do j = 0,ny
           do i = 0,nx

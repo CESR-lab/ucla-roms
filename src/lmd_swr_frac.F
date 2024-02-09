@@ -32,6 +32,7 @@
       use param
       use mixing
       use ocean_vars
+      use mpi_exchanges
 
       implicit none
       integer istr,iend,jstr,jend,     i,j,k, Jwt
@@ -88,7 +89,7 @@
         enddo
       enddo
 # ifdef EXCHANGE
-      call exchange_tile (istr,iend,jstr,jend, swr_frac,N+1)
+      call exchange_xxx(swr_frac)
 # endif
       end
 #else
