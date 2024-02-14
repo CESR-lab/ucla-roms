@@ -424,7 +424,7 @@ c--#define MPIVERBOSE
       call MPI_BCAST(complete, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
       call MPI_BCAST(arg,      1, MPI_INT,     0, MPI_COMM_WORLD, ierr)  ! need for catch at end of program
       call MPI_BCAST(nargs,    1, MPI_INT,     0, MPI_COMM_WORLD, ierr)
-      if (mayday==.true.) goto 97
+      if (mayday) goto 97 !20231013 got rid of ==.true. due to compiler issues
 
       call exchange_mpi_master_pre_processing_to_all                   !]PART 4:
 

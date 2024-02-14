@@ -1472,7 +1472,7 @@ C$OMP BARRIER
         endif
 
         ! If it is an interior tile corner, interpolate corner
-        if (corner_bool==.true.) then
+        if (corner_bool .eqv. .true.) then
 
         ! store values so not over-written
         SW_raw = A(x_SW(c),y_SW(c),1)

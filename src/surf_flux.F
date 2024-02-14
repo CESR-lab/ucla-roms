@@ -153,12 +153,12 @@
 
       ! output surface flux as per Eq.Sys. units m^2/s^2 not N/m^2
       if (wrt_smflx) then
-        varid = nccreate(ncid,'sustr',(/'xi_u','eta_rho','time'/),
+        varid = nccreate(ncid,'sustr',(/'xi_u   ','eta_rho','time   '/),
      &                   (/xi_u,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',
      &         'wind stress in x-direction')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
-        varid = nccreate(ncid,'svstr',(/'xi_rho','eta_v','time'/),
+        varid = nccreate(ncid,'svstr',(/'xi_rho','eta_v ','time  '/),
      &                   (/xi_rho,eta_v,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',
      &         'wind stress in y-direction')
@@ -166,13 +166,15 @@
       endif
 
       if (wrt_stflx) then
-        varid = nccreate(ncid,shflx_name,(/'xi_rho','eta_rho','time'/),
+         varid = nccreate(ncid,shflx_name,(/'xi_rho ',
+     &        'eta_rho','time   '/),
      &                 (/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',
      &                            'Surface heat flux')
         ierr = nf90_put_att(ncid,varid,'units','degC m/s')
         if (salinity) then
-          varid = nccreate(ncid,'ssflx',(/'xi_rho','eta_rho','time'/),
+           varid = nccreate(ncid,'ssflx',(/'xi_rho',
+     &          'eta_rho','time   '/),
      &                 (/xi_rho,eta_rho,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',
      &                            'Surface Salinity flux')
