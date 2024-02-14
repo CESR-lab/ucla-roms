@@ -580,7 +580,7 @@
 
         endif ! <- if(my_rank==0) END OF MASTER ONLY PRE-PROCESSING
 
-        if (mayday) goto 97 !20231013 removed ==.true. due to compiler issues
+        if (mayday) goto 97
 
         do g=1,nsets
 
