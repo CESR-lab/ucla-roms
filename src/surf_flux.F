@@ -173,7 +173,7 @@
      &                            'Surface heat flux')
         ierr = nf90_put_att(ncid,varid,'units','degC m/s')
         if (salinity) then
-           varid = nccreate(ncid,'ssflx',(/'xi_rho',
+           varid = nccreate(ncid,'ssflx',(/'xi_rho ',
      &          'eta_rho','time   '/),
      &                 (/xi_rho,eta_rho,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',

@@ -412,7 +412,7 @@
      &                         nc%times(it) )
 
       ierr=nf90_open(frcfile(ifile),nf90_nowrite, ncid)
-      if (nc%coarse) then
+      if (nc%coarse == 1) then
         print *,'coarse to fine not yet implemented here'
         stop
 !       cdata => nc_var%cdata
