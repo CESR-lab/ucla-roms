@@ -257,7 +257,7 @@
       blowup = .false.
       initial= .false.
       if (present(special)) then
-        if (special==.false.) then
+        if (special .eqv. .false.) then
           initial = .true.
         else
           blowup = .true.
@@ -631,28 +631,33 @@
 ! Time-step number and time-record indices: (history file only, this
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
-      varid = nccreate(ncid,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
+      varid = nccreate(ncid,'time_step',(/'auxil','time '/),
+     &                                  (/iaux,0/),nf90_int)
       ierr=nf90_put_att (ncid, varid, 'long_name',
      &       'time step and record numbers from initialization')
 
       if ( (wrt_Z .and. .not. avg) .or. (wrt_avg_Z .and. avg) ) then ! .or. needed for his or avg output selection
         if (.not. avg) text_lname=vname(2,indxZ)
         if (      avg) text_lname='averaged '/ /vname(2,indxZ)
-        varid = nccreate(ncid,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        varid = nccreate(ncid,vname(1,indxZ),
+     &                           (/'xi_rho ','eta_rho','time   '/),
+     &                                       (/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
       endif
       if ( (wrt_Ub .and. .not. avg) .or. (wrt_avg_Ub .and. avg) ) then
         if (.not. avg) text_lname=vname(2,indxUb)
         if (      avg) text_lname='averaged '/ /vname(2,indxUb)
-        varid = nccreate(ncid,vname(1,indxUb),(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
+        varid = nccreate(ncid,vname(1,indxUb),
+     &             (/'xi_u   ','eta_rho','time   '/),(/xi_u,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
       endif
       if ( (wrt_Vb .and. .not. avg) .or. (wrt_avg_Vb .and. avg) ) then
         if (.not. avg) text_lname=vname(2,indxVb)
         if (      avg) text_lname='averaged '/ /vname(2,indxVb)
-        varid = nccreate(ncid,vname(1,indxVb),(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
+        varid = nccreate(ncid,vname(1,indxVb),
+     &              (/'xi_rho','eta_v ','time  '/),(/xi_rho,eta_v,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
       endif
@@ -660,14 +665,18 @@
       if ( (wrt_U .and. .not. avg) .or. (wrt_avg_U .and. avg) ) then
         if (.not. avg) text_lname=vname(2,indxU)
         if (      avg) text_lname='averaged '/ /vname(2,indxU)
-        varid = nccreate(ncid,vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),(/xi_u,eta_rho,N,0/))
+        varid = nccreate(ncid,vname(1,indxU),
+     &       (/'xi_u   ','eta_rho','s_rho  ','time   '/),
+     &       (/xi_u,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
       endif
       if ( (wrt_V .and. .not. avg) .or. (wrt_avg_V .and. avg) ) then
         if (.not. avg) text_lname=vname(2,indxV)
         if (      avg) text_lname='averaged '/ /vname(2,indxV)
-        varid = nccreate(ncid,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),(/xi_rho,eta_v,N,0/))
+        varid = nccreate(ncid,vname(1,indxV),
+     &       (/'xi_rho','eta_v ','s_rho ','time  '/),
+     &       (/xi_rho,eta_v,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
       endif
@@ -682,14 +691,18 @@
         if (.not. avg) text_lname=vname(2,indxR)
         if (      avg) text_lname='averaged '/ /vname(2,indxR)
         varid = 
-     &  nccreate(ncid,vname(1,indxR),(/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+     &       nccreate(ncid,vname(1,indxR),
+     &       (/'xi_rho ','eta_rho','s_rho  ','time   '/),
+     &       (/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
       endif
       if ( (wrt_O .and. .not. avg) .or. (wrt_avg_O .and. avg) ) then                                      ! s-coordinate "omega" vertical velocity.
         if (.not. avg) text_lname=vname(2,indxO)
         if (      avg) text_lname='averaged '/ /vname(2,indxO)
-        varid = nccreate(ncid,vname(1,indxO),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        varid = nccreate(ncid,vname(1,indxO),
+     &               (/'xi_rho ','eta_rho','s_w    ','time   '/),
+     &               (/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxO))
       endif
@@ -697,7 +710,8 @@
         if (.not. avg) text_lname=vname(2,indxW)
         if (      avg) text_lname='averaged '/ /vname(2,indxW)
         varid = nccreate(ncid,vname(1,indxW),
-     &      (/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+     &       (/'xi_rho ','eta_rho','s_rho  ','time   '/),
+     &       (/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxW))
       endif
@@ -705,7 +719,8 @@
         if (.not. avg) text_lname=vname(2,indxAkv)
         if (      avg) text_lname='averaged '/ /vname(2,indxAkv)
         varid = nccreate(ncid,vname(1,indxAkv),
-     &    (/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+     &       (/'xi_rho ','eta_rho','s_w    ','time   '/),
+     &       (/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkv))
       endif
@@ -713,7 +728,8 @@
         if (.not. avg) text_lname=vname(2,indxAkt)
         if (      avg) text_lname='averaged '/ /vname(2,indxAkt)
         varid = nccreate(ncid,vname(1,indxAkt),
-     &      (/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+     &       (/'xi_rho ','eta_rho','s_w    ','time   '/),
+     &       (/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkt))
       endif
@@ -721,7 +737,9 @@
       if ( (wrt_Aks .and. .not. avg) .or. (wrt_avg_Aks .and. avg) ) then                                    ! vertical diffusion coefficient for salinity.
         if (.not. avg) text_lname=vname(2,indxAks)
         if (      avg) text_lname='averaged '/ /vname(2,indxAks)
-        varid = nccreate(ncid,vname(1,indxAks),(/'xi_rho','eta_rho','s_w','time'/),(/xi_rho,eta_rho,N+1,0/))
+        varid = nccreate(ncid,vname(1,indxAks),
+     &       (/'xi_rho ','eta_rho','s_w    ','time   '/),
+     &       (/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAks))
       endif
@@ -730,7 +748,8 @@
       if ( (wrt_Hbls .and. .not. avg) .or. (wrt_avg_Hbls .and. avg) ) then                                   ! depth of surface planetary boundary layer.
         if (.not. avg) text_lname=vname(2,indxHbls)
         if (      avg) text_lname='averaged '/ /vname(2,indxHbls)
-        varid = nccreate(ncid,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        varid = nccreate(ncid,vname(1,indxHbls),
+     &       (/'xi_rho ','eta_rho','time   '/),(/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
       endif
@@ -740,7 +759,7 @@
         if (.not. avg) text_lname=vname(2,indxHbbl)
         if (      avg) text_lname='averaged '/ /vname(2,indxHbbl)
         varid = nccreate(ncid,vname(1,indxHbbl),
-     &         (/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+     &         (/'xi_rho ','eta_rho','time   '/),(/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
       endif
@@ -760,94 +779,119 @@
 ! Time-step number and time-record indices: (history file only, this
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
-      varid = nccreate(ncid,'time_step',(/'auxil','time'/),(/iaux,0/),nf90_int)
+      varid = nccreate(ncid,'time_step',(/'auxil','time '/),
+     &                                  (/iaux,0/),nf90_int)
       ierr=nf90_put_att (ncid, varid, 'long_name',
      &       'time step and record numbers from initialization')
 
-      varid = nccreate(ncid,vname(1,indxZ),(/'xi_rho','eta_rho','time'/),
-     &                                     (/xi_rho,eta_rho,0/),nf90_double)
+      varid = nccreate(ncid,vname(1,indxZ),
+     &                                (/'xi_rho ','eta_rho','time   '/),
+     &                                (/xi_rho,eta_rho,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxZ))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
 
-      varid = nccreate(ncid,vname(1,indxUb),(/'xi_u','eta_rho','time'/),
-     &                                      (/xi_u,eta_rho,0/),nf90_double)
+      varid = nccreate(ncid,vname(1,indxUb),
+     &                            (/'xi_u   ','eta_rho','time   '/),
+     &                            (/xi_u,eta_rho,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxUb))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
 
-      varid = nccreate(ncid,vname(1,indxVb),(/'xi_rho','eta_v','time'/),
-     &                                      (/xi_rho,eta_v,0/),nf90_double)
+      varid = nccreate(ncid,vname(1,indxVb),
+     &                                   (/'xi_rho','eta_v ','time  '/),
+     &                                   (/xi_rho,eta_v,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxVb))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
 #ifdef SOLVE3D
-      varid = nccreate(ncid,vname(1,indxU),(/'xi_u','eta_rho','s_rho','time'/),
-     &                                     (/xi_u,eta_rho,N,0/),nf90_double)
+      varid = nccreate(ncid,vname(1,indxU),
+     &                      (/'xi_u   ','eta_rho','s_rho  ','time   '/),
+     &                      (/xi_u,eta_rho,N,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxU))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
 
-      varid = nccreate(ncid,vname(1,indxV),(/'xi_rho','eta_v','s_rho','time'/),
-     &                                     (/xi_rho,eta_v,N,0/),nf90_double)
+      varid = nccreate(ncid,vname(1,indxV),
+     &                    (/'xi_rho','eta_v ','s_rho ','time  '/),
+     &                    (/xi_rho,eta_v,N,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxV))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
 
       do itrc=1,NT
-        varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho','s_rho','time'/),
-     &                                         (/xi_rho,eta_rho,N,0/), nf90_double)
+         varid = nccreate(ncid,t_vname(itrc),
+     &                      (/'xi_rho ','eta_rho','s_rho  ','time   '/),
+     &                      (/xi_rho,eta_rho,N,0/), nf90_double)
         ierr=nf90_put_att (ncid, varid, 'long_name', t_lname(itrc))
         ierr=nf90_put_att (ncid, varid, 'units', t_units(itrc))
       enddo
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-      varid = nccreate(ncid,'DU_avg2',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/),nf90_double)
+      varid = nccreate(ncid,'DU_avg2',
+     &                     (/'xi_u   ','eta_rho','time   '/),
+     &                     (/xi_u,eta_rho,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
 
-      varid = nccreate(ncid,'DV_avg2',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/),nf90_double)
+      varid = nccreate(ncid,'DV_avg2',
+     &                             (/'xi_rho','eta_v ','time  '/),
+     &                              (/xi_rho,eta_v,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &           '<<fast-time-averaged vbar(:,:,n+1/2)>>')
 
-      varid = nccreate(ncid,'DU_avg_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/),nf90_double)
+      varid = nccreate(ncid,'DU_avg_bak',
+     &                            (/'xi_u   ','eta_rho','time   '/),
+     &                            (/xi_u,eta_rho,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &       '<back-step mixed fast-time-averaged ubar(:,:,n-1)>')
 
-      varid = nccreate(ncid,'DV_avg_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/),nf90_double)
+      varid = nccreate(ncid,'DV_avg_bak',
+     &                             (/'xi_rho','eta_v ','time  '/),
+     &                             (/xi_rho,eta_v,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &       '<back-step mixed fast-time-averaged vbar(:,:,n-1)>')
 #  elif defined PRED_COUPLED_MODE
-        varid = nccreate(ncid,'rufrc_bak',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/),nf90_double)
+      varid = nccreate(ncid,'rufrc_bak',
+     &                (/'xi_u   ','eta_rho','time   '/),
+     &                 /xi_u,eta_rho,0/),nf90_double)
         ierr=nf90_put_att(ncid, varid, 'long_name',
      &                        '3D-to-2D forcing, XI-component')
-        varid = nccreate(ncid,'rvfrc_bak',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/),nf90_double)
+        varid = nccreate(ncid,'rvfrc_bak',
+     &                  (/'xi_rho','eta_v ','time  '/),
+     &                  (/xi_rho,eta_v,0/),nf90_double)
         ierr=nf90_put_att(ncid, varid, 'long_name',
      &                       '3D-to-2D forcing, ETA-component')
 #  endif
 # endif  /* EXACT_RESTART */
 
 # ifdef LMD_KPP
-      varid = nccreate(ncid,vname(1,indxHbls),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/),nf90_double)
+        varid = nccreate(ncid,vname(1,indxHbls),
+     &                             (/'xi_rho ','eta_rho','time   '/),
+     &                             (/xi_rho,eta_rho,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbls))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
 # endif
 # ifdef LMD_BKPP
-      varid = nccreate(ncid,vname(1,indxHbbl),(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/),nf90_double)
+      varid = nccreate(ncid,vname(1,indxHbbl),
+     &                (/'xi_rho ','eta_rho','time   '/),
+     &                (/xi_rho,eta_rho,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbbl))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
 # endif
 
       if (diag_pflx) then  
-        varid = nccreate(ncid,'u_slow',(/'xi_u','eta_rho','s_rho','time'/),
-     &                               (/xi_u,eta_rho,N,0/),nf90_double)
+         varid = nccreate(ncid,'u_slow',
+     &                   (/'xi_u   ','eta_rho','s_rho  ','time   '/),
+     &                   (/xi_u,eta_rho,N,0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
         ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-        varid = nccreate(ncid,'v_slow',(/'xi_rho','eta_v','s_rho','time'/),
+        varid = nccreate(ncid,'v_slow',
+     &                  (/'xi_rho','eta_v ','s_rho ','time  '/),
      &                               (/xi_rho,eta_v,N,0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name','time filtered v')
         ierr = nf90_put_att(ncid,varid,'units','m/s')
 
         varid = nccreate(ncid,'p_slow',
-     &                       (/'xi_rho','eta_rho','s_rho','time'/),
-     &                       (/xi_rho,eta_rho,n,0/),nf90_double)
+     &                  (/'xi_rho ','eta_rho','s_rho  ','time   '/),
+     &                  (/xi_rho,eta_rho,n,0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'time filtered pressure')
         ierr = nf90_put_att(ncid,varid,'units','Pa??')
@@ -855,22 +899,22 @@
 #ifdef SPONGE_TUNE
        if (ub_tune) then
          varid = nccreate(ncid,'ub_west',
-     &                       (/'eta_rho','time'/),
+     &                       (/'eta_rho','time   '/),
      &                       (/eta_rho,0/),nf90_double)
          ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'west bc tuning coeff')
          varid = nccreate(ncid,'ub_east',
-     &                       (/'eta_rho','time'/),
+     &                       (/'eta_rho','time   '/),
      &                       (/eta_rho,0/),nf90_double)
          ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'east bc tuning coeff')
          varid = nccreate(ncid,'ub_north',
-     &                       (/'xi_rho','time'/),
+     &                       (/'xi_rho','time  '/),
      &                       (/xi_rho,0/),nf90_double)
          ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'north bc tuning coeff')
          varid = nccreate(ncid,'ub_south',
-     &                       (/'xi_rho','time'/),
+     &                       (/'xi_rho','time  '/),
      &                       (/xi_rho,0/),nf90_double)
          ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'south bc tuning coeff')

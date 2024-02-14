@@ -418,7 +418,7 @@
 
       call create_file('_part',fname)
 
-      dimnames = (/'npart','seven', 'time'/)
+      dimnames = (/'npart','seven', 'time '/)
       dimsizes = (/ npmx,  7,      0/)
 
       ierr=nf90_open(fname,nf90_write,ncid)

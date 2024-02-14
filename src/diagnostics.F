@@ -965,7 +965,7 @@
 
 
       if (diag_uv) then
-        dimnames = (/'xi_u','eta_rho','s_rho', 'time'/)
+        dimnames = (/'xi_u   ','eta_rho','s_rho  ', 'time   '/)
         dimsizes = (/ xi_u,  eta_rho,  nz,      0/)
 
         varid = nccreate(ncid,'u_pgr',dimnames,dimsizes,diag_prec)
@@ -1003,7 +1003,7 @@
      &                               ,'2D/3D coupling')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        dimnames = (/'xi_rho','eta_v','s_rho', 'time'/)
+        dimnames = (/'xi_rho','eta_v ','s_rho ', 'time  '/)
         dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
 
         varid = nccreate(ncid,'v_pgr',dimnames,dimsizes,diag_prec)
@@ -1044,7 +1044,7 @@
       endif
 
       if (diag_trc) then
-        dimnames = (/'xi_rho','eta_rho','s_rho', 'time'/)
+        dimnames = (/'xi_rho ','eta_rho','s_rho  ', 'time   '/)
         dimsizes = (/ xi_rho,  eta_rho,  nz,    0/)
         do it=1,nt
           if (wrt_t_dia(it)) then
@@ -1077,13 +1077,13 @@
       endif
 
       if (diag_pflx) then
-        dimnames3 = (/'xi_u','eta_rho', 'time'/)
+        dimnames3 = (/'xi_u   ','eta_rho', 'time   '/)
         dimsizes3 = (/ xi_u,  eta_rho,   0/)
         varid = nccreate(ncid,'up',dimnames3,dimsizes3,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name','prsflux xdir')
         ierr = nf90_put_att(ncid,varid,'units','W/m^2')
 
-        dimnames3 = (/'xi_rho','eta_v', 'time'/)
+        dimnames3 = (/'xi_rho','eta_v ', 'time  '/)
         dimsizes3 = (/ xi_rho,  eta_v,  0/)
         varid = nccreate(ncid,'vp',dimnames3,dimsizes3,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name','prsflux ydir')
