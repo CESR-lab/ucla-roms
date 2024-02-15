@@ -30,7 +30,6 @@
       ! Type ncforce contains all required netcdf variables and input data array for frc variable.
       ! Set the name and time_name of variable to match what is in the input forcing files.
       ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
-      ! type (ncvs) :: nc_uwnd  = ncvs( name='uwnd',       time_name='wnd_time'  )
       type,public  :: ncforce
         character(len=20)                 :: vname     ! name of variable in input file
         character(len=20)                 :: tname     ! time variable name for variable
@@ -89,6 +88,10 @@
       public :: store_string_att
       public :: create_file
 
+      interface set_frc_data
+        module procedure set_frc_data_1d,set_frc_data_2d
+      end interface
+
       contains
 
 ! ----------------------------------------------------------------------
@@ -127,14 +130,13 @@
 
       end subroutine init_output_indices  !]
 ! ----------------------------------------------------------------------
-      subroutine set_frc_data(nc,var1d,var2d,obry)  ![
+      subroutine set_frc_data_1d(nc,var1d,obry)  ![
       implicit none
 
       ! input/outputs
-      type(ncforce),               intent(inout) :: nc    ! derived type containing all neccesary supporting data
-      real,dimension(:)  ,optional,intent(out)   :: var1d ! time interpolated forcing data
-      real,dimension(:,:),optional,intent(out)   :: var2d ! time interpolated forcing data
-      integer,optional,            intent(in)    :: obry  ! bry=1, suppress terminal info, bry=2 display boundary
+      type(ncforce),    intent(inout) :: nc    ! derived type containing all neccesary supporting data
+      real,dimension(:),intent(out)   :: var1d ! time interpolated forcing data
+      integer,optional, intent(in)    :: obry  ! bry=1, suppress terminal info, bry=2 display boundary
 
       ! local
       real    :: cff1,cff2  ! for time interpolations
@@ -145,11 +147,7 @@
       integer           :: it1,it2
       real,dimension(2) :: vtimes
 
-      if (present(var1d)) then
-        d1 = .true.
-      else
-        d1 = .false.
-      endif
+      d1 = .true.
 
       if (present(obry)) then
         bry = obry
@@ -183,11 +181,8 @@
       cff1=( vtimes(it2)-modtime )/( vtimes(it2)-vtimes(it1) )
       cff2=( modtime-vtimes(it1) )/( vtimes(it2)-vtimes(it1) )
 
-      if (d1) then
-        var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
-      else
-        var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
-      endif
+      var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
+!     var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
 
       if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
@@ -196,7 +191,69 @@
         error stop 'ERROR: set_frc_data :: time interpolation error'
       endif
 
-      end subroutine set_frc_data  !]
+      end subroutine set_frc_data_1d  !]
+! ----------------------------------------------------------------------
+      subroutine set_frc_data_2d(nc,var2d,obry)  ![
+      implicit none
+
+      ! input/outputs
+      type(ncforce),      intent(inout) :: nc    ! derived type containing all neccesary supporting data
+      real,dimension(:,:),intent(out)   :: var2d ! time interpolated forcing data
+      integer,optional,   intent(in)    :: obry  ! bry=1, suppress terminal info, bry=2 display boundary
+
+      ! local
+      real    :: cff1,cff2  ! for time interpolations
+      real    :: modtime    ! model time
+      logical :: d1
+      integer :: bry
+
+      integer           :: it1,it2
+      real,dimension(2) :: vtimes
+
+      d1 = .false.
+
+      if (present(obry)) then
+        bry = obry
+      else
+        bry = 0
+      endif
+
+      modtime = tdays + 0.5*dt*sec2day    ! input data times in days. Interpolated time is based on 1/2 step time
+
+      it1 = nc%it1
+      it2 = nc%it2
+
+      if (nc%times(it2) < modtime) then  ! need to refresh data
+
+        if (nc%ifile == 0) then   ! the first time, we need to fill both slots
+          call fill_frc_slice(nc,modtime,it1,d1,bry)
+        else ! cycle it1,it2 between 1 and 2
+          it1 = mod(it1,2) + 1
+          it2 = mod(it2,2) + 1
+        endif
+
+        call fill_frc_slice(nc,modtime,it2,d1,bry)
+      endif 
+
+      nc%it1 = it1
+      nc%it2 = it2
+
+      ! Temporal interpolation
+
+      vtimes  = nc%times
+      cff1=( vtimes(it2)-modtime )/( vtimes(it2)-vtimes(it1) )
+      cff2=( modtime-vtimes(it1) )/( vtimes(it2)-vtimes(it1) )
+
+      var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
+
+
+      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+        print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
+        print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
+        error stop 'ERROR: set_frc_data :: time interpolation error'
+      endif
+
+      end subroutine set_frc_data_2d  !]
 ! ----------------------------------------------------------------------
       subroutine find_new_record(vname,tname,time,ifile,irec,vtime) ![
       ! Finds the index for the filename and record number of the first record
@@ -417,7 +474,7 @@
         stop
 !       cdata => nc_var%cdata
 !       ncread(ncid,vname,cdata,(/1,1,irec/))
-!       call exchange_2d
+!       call exchange_xxx(cdata)
 !       call coarse2fine(cdata,vdata(:,:,it))
       else
         !! Allocate vdata to be the right size for the (DevinD - this should have been put somewhere clearer...

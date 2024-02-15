@@ -8,7 +8,6 @@
 #include "cppdefs.opt"
 
       use param
-      use read_write, only: set_frc_var_tile, ncvs
       use roms_read_write
       use nc_read_write
       use netcdf
@@ -78,12 +77,12 @@
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
       allocate( svstr_r(GLOBAL_2D_ARRAY)    ); svstr_r=init
-      allocate( stflx  (GLOBAL_2D_ARRAY,NT) ); stflx=init
+      allocate( stflx  (GLOBAL_2D_ARRAY,nt) ); stflx=init
       allocate( srflx  (GLOBAL_2D_ARRAY)    ); srflx=init
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
-      allocate(  nc_sss%data( GLOBAL_2D_ARRAY,2) )
+      allocate(nc_sss%vdata(i0:i1,j0:j1,2) )
 
       call store_string_att(surf_forcing_strings,'<surf_flux.F>')
       call store_string_att(surf_forcing_strings,'dSSSdt=')
@@ -101,25 +100,21 @@
 
       end subroutine init_arrays_surf_flx  !]
 ! ----------------------------------------------------------------------
-      subroutine set_surf_field_corr(istr,iend,jstr,jend)  ![
+      subroutine set_surf_field_corr ![
       ! Set surface fields that will be restored towards
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
-
-
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_sst, sst, interp_frc )
+      print *,'Allocate space for sst first!! '
+      call set_frc_data(nc_sst,sst(i0:i1,j0:j1))
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_sss, sss, interp_frc )
+      call set_frc_data(nc_sss,sss(i0:i1,j0:j1))
 #endif
-
 
       end subroutine set_surf_field_corr  !]
 ! ----------------------------------------------------------------------
