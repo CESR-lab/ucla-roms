@@ -9,7 +9,6 @@
       use nc_read_write
       use netcdf
       use scalars
-      use read_write
       use ocean_vars
       use diagnostics
       implicit none
