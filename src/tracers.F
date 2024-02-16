@@ -20,6 +20,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       use surf_flux,  only: stflx                          ! surface tracer flux should possibly live in this module rather?
       use scalars                                          ! for 'FIRST_TIME_STEP' and nstp
       use nc_read_write

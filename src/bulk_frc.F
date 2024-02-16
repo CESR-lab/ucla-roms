@@ -1,15 +1,9 @@
       module bulk_frc
 
-      ! BULK FORCING MODULE
-
-      ! initial coding: Devin Dollery,Jeroen Molemaker & Pierre Damien (2020)
-
 #include "cppdefs.opt"
-! CPP flag BULK_FRC covering entire module, module empty if off
-#if defined BULK_FRC /* for whole module! */
 
-      ! param.h needed for GLOBAL_2D_array to work
       use param
+      use dimensions
       use roms_read_write
 
       implicit none
@@ -32,7 +26,6 @@
 #endif
 
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
-
 
       public init_arrays_bulk_frc
       public set_bulk_frc_tile
@@ -71,9 +64,18 @@
       allocate( nc_tauy%vdata( i0:i1,j0:j1,2) )
 #endif
 
+      if (interp_frc==1) then 
+        nc_uwnd%coarse = 1
+        nc_vwnd%coarse = 1
+        nc_tair%coarse = 1
+        nc_Q%coarse = 1
+        nc_prate%coarse = 1
+        nc_lwrad%coarse = 1
+        nc_swrad%coarse = 1
+      endif
+
 
       end subroutine init_arrays_bulk_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
 
@@ -181,8 +183,6 @@
 
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
-
-
 
       integer i,j, IterMax,iter
       real a
@@ -997,7 +997,6 @@
 !     call wrt_sflux  ! write flux variables to flux output file
 
       end subroutine calc_all_bulk_forces  !]
-
 !-----------------------------------------------------------------------
       function bulk_psiu (ZoL, pi)  ![
 !
@@ -1060,7 +1059,6 @@
 
       return
       end function bulk_psiu  !]
-
 !-----------------------------------------------------------------------
       function bulk_psit (ZoL, pi)  ![
 
@@ -1121,9 +1119,6 @@
 
       return
       end function bulk_psit  !]
-
 !-----------------------------------------------------------------------
-
-#endif /* BULK_FRC for whole module */
 
       end module bulk_frc

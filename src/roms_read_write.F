@@ -8,6 +8,9 @@
       use netcdf
       use scalars
       use nc_read_write
+      use dimensions
+      use hidden_mpi_vars
+      use mpi_exchanges
 
       implicit none
 
@@ -34,7 +37,6 @@
         character(len=20)                 :: vname     ! name of variable in input file
         character(len=20)                 :: tname     ! time variable name for variable
         real,dimension(:,:,:),allocatable :: vdata     ! currently must be exact size of sub-domain (no buffer)
-        real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
         integer                           :: coarse=0  ! Flag to indicate interpolation of the input data
         integer                           :: ifile=0   ! Index to file in list of filenames
         integer                           :: irec =0   ! Record number in file
@@ -47,8 +49,13 @@
       character(len=41), public  :: git_hash
 
       ! index ranges for netcdf output (See init_output_indices)
-      integer,public :: i0,i1,j0,j1
+!     integer,public :: i0,i1,j0,j1
       integer,public :: bfx,bfy
+
+      ! index ranges for coarse netcdf input
+      integer :: ic0,ic1,jc0,jc1
+      integer :: iSWc,jSWc
+      real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
 
       integer,parameter :: max_options_string=2000
       character(len=max_options_string),public::surf_forcing_strings=' '
@@ -110,17 +117,15 @@
       ! Some arrays are size (nx,ny) only. For those, we just
       ! skip the buffers for the boundary subdomain outputs.
 
-      use dimensions
-      use hidden_mpi_vars
       implicit none
 
       ! Method 1
-      i0=1; i1=nx; j0=1; j1=ny
+!     i0=1; i1=nx; j0=1; j1=ny
 
-      if (inode==0)        i0=0
-      if (inode==NP_XI-1)  i1=nx+1
-      if (jnode==0)        j0=0
-      if (jnode==NP_ETA-1) j1=ny+1
+!     if (inode==0)        i0=0
+!     if (inode==NP_XI-1)  i1=nx+1
+!     if (jnode==0)        j0=0
+!     if (jnode==NP_ETA-1) j1=ny+1
 
       ! Method 2
       bfx = 1
@@ -129,6 +134,61 @@
       if (jnode==0) bfy = 2  ! Start writing at 2 to skip buffer
 
       end subroutine init_output_indices  !]
+! ----------------------------------------------------------------------
+      subroutine init_coarse  ![
+      ! Work out sizes for coarse arrays
+      ! Used so we can read in coarse surface 
+      ! forcing data
+      !
+      use dimensions
+      use hidden_mpi_vars
+      implicit none
+
+      integer :: gnxc,gnyc
+      integer :: nxc,nyc
+      integer :: off_xc,off_yc
+
+      gnxc = gnx/2
+      gnyc = gnx/2
+      nxc = (gnxc+NP_xi-1)/np_xi
+      nyc = (gnyc+NP_eta-1)/np_eta
+
+      off_xc = NP_XI*nxc - gnxc
+      if (inode==0) then
+        iSWc = 0
+      else
+        iSWc = inode*nxc - off_xc/2
+      endif
+
+      if (inode==0) then
+        nxc = nxc - off_xc/2
+      elseif (inode==np_xi-1) then
+        nxc = nxc - (off_xc+1)/2
+      endif
+
+      off_yc = NP_eta*nyc - gnyc
+      if (jnode==0) then
+        jSWc = 0
+      else
+        jSWc = jnode*nyc - off_yc/2
+      endif
+
+      if (jnode==0) then
+        nyc = nyc - off_yc/2
+      elseif (jnode==np_eta-1) then
+        nyc = nyc - (off_yc+1)/2
+      endif
+
+      ic0=1; ic1=nxc; jc0=1; jc1=nyc
+
+      if (inode==0)        ic0=0
+      if (inode==NP_XI-1)  ic1=nxc+1
+      if (jnode==0)        jc0=0
+      if (jnode==NP_ETA-1) jc1=nyc+1
+
+      allocate(cdata(1-bf:nxc+bf,1-bf:nyc+bf) )
+
+      end subroutine init_coarse !]
 ! ----------------------------------------------------------------------
       subroutine set_frc_data_1d(nc,var1d,obry)  ![
       implicit none
@@ -182,8 +242,6 @@
       cff2=( modtime-vtimes(it1) )/( vtimes(it2)-vtimes(it1) )
 
       var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
-!     var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
-
 
       if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
@@ -470,15 +528,19 @@
 
       ierr=nf90_open(frcfile(ifile),nf90_nowrite, ncid)
       if (nc%coarse) then
-        print *,'coarse to fine not yet implemented here'
-        stop
-!       cdata => nc_var%cdata
-!       ncread(ncid,vname,cdata,(/1,1,irec/))
-!       call exchange_xxx(cdata)
-!       call coarse2fine(cdata,vdata(:,:,it))
+        if (d1) then
+          print *,'no coarse to fine for 1D data'
+          stop
+        endif
+        if (.not.allocated(cdata)) then
+          call init_coarse
+        endif
+        call ncread(ncid,vname,cdata(ic0:ic1,jc0:jc1),(/1,1,irec/))
+        call exchange_xxx(cdata)
+        call coarse2fine(cdata,nc%vdata(:,:,it))
       else
-        !! Allocate vdata to be the right size for the (DevinD - this should have been put somewhere clearer...
-        !! subdomain (including whether we need a buffer or not
+        ! The size of vdata must match the size of the data in the
+        ! file. Ensure this in the allocation of vdata
         if (d1) then
           call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
         else
@@ -613,58 +675,22 @@
       integer :: i,j
       integer :: ic,jc
       integer :: i2ic,j2jc
-      integer :: iSWc,jSWc
-      integer :: gnxc,gnyc,nxc,nyc
-      integer :: off_xc,off_yc
 
       real  :: a,b
-
-      a = 0.75
-      b = 0.25
-
-!     call exchange_2d(cdata)
-
-      gnxc = gnx/2
-      gnyc = gnx/2
-      nxc = (gnxc+NP_xi-1)/np_xi
-      nyc = (gnyc+NP_eta-1)/np_eta
-
-      off_xc = NP_XI*nxc - gnxc
-      if (inode==0) then
-        iSWc = 0
-      else
-        iSWc = inode*nxc - off_xc/2
-      endif
-
-!     if inode==0 then
-!       nxc = nxc - off_xi/2
-!     elseif (inode==np_xi-1) then
-!       nxc = nxc - (off_xi+1)/2
-!     endif
-
-      off_yc = NP_eta*nyc - gnyc
-      if (jnode==0) then
-        jSWc = 0
-      else
-        jSWc = jnode*nyc - off_yc/2
-      endif
-
-!     if jnode==0 then
-!       nyc = nyc - off_y/2
-!     elseif (jnode==np_eta-1) then
-!       nyc = nyc - (off_y+1)/2
-!     endif
 
 !     gic = gi/2 = (i + iSW_corn)/2 = ic + iSWc.
 !     ic =  i/2 + iSW_corn/2 - iSWc
 !     gjc = gj/2 = (j + jSW_corn)/2 = jc + jSWc.
 !     jc =  j/2 + jSW_corn/2 - jSWc
 
-!     i2ic = iSW_corn/2 - iSWc
-!     j2jc = jSW_corn/2 - jSWc
+      i2ic = iSW_corn/2 - iSWc
+      j2jc = jSW_corn/2 - jSWc
 
-      do j=1,ny,2
-        do i=1,nx,2
+      a = 0.75
+      b = 0.25
+
+      do j=j0,j1,2
+        do i=i0,i1,2
           ic = i/2 + i2ic;
           jc = j/2 + j2jc;
           fdata(i  ,j  ) = a*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
