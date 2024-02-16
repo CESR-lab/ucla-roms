@@ -40,6 +40,14 @@
       allocate( nc_swflux%vdata(i0:i1,j0:j1,2) )
       allocate( nc_swrad%vdata(i0:i1,j0:j1,2) )
 
+      if (interp_frc==1) then
+        nc_sustr%coarse=1
+        nc_svstr%coarse=1
+        nc_shflx%coarse=1
+        nc_swflux%coarse=1
+        nc_swrad%coarse=1
+      endif
+
       end subroutine init_arrays_flux_frc  !]
 ! ----------------------------------------------------------------------
       subroutine set_flux_frc(istr,iend,jstr,jend)  ![

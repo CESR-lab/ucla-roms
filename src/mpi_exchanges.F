@@ -4,7 +4,6 @@
       use param
       use dimensions
       use hidden_mpi_vars
-      use roms_read_write
       use mpi
       implicit none
 
