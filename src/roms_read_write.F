@@ -55,6 +55,7 @@
       ! index ranges for coarse netcdf input
       integer :: ic0,ic1,jc0,jc1
       integer :: iSWc,jSWc
+      integer :: nxc,nyc
       real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
 
       integer,parameter :: max_options_string=2000
@@ -145,11 +146,11 @@
       implicit none
 
       integer :: gnxc,gnyc
-      integer :: nxc,nyc
+!     integer :: nxc,nyc
       integer :: off_xc,off_yc
 
       gnxc = gnx/2
-      gnyc = gnx/2
+      gnyc = gny/2
       nxc = (gnxc+NP_xi-1)/np_xi
       nyc = (gnyc+NP_eta-1)/np_eta
 
@@ -668,13 +669,15 @@
       implicit none
 
       ! input/output
-      real,dimension(:,:),intent(in) :: cdata   ! coarse data
-      real,dimension(:,:),intent(out):: fdata   ! fine data
+
+      real,dimension(1-bf:nxc+bf,1-bf:nyc+bf),intent(in) :: cdata   ! coarse data
+      real,dimension(1-bf:nx +bf,1-bf:ny +bf),intent(out):: fdata   ! fine   data
 
       ! local
       integer :: i,j
       integer :: ic,jc
       integer :: i2ic,j2jc
+      integer :: ierr
 
       real  :: a,b
 
@@ -685,6 +688,15 @@
 
       i2ic = iSW_corn/2 - iSWc
       j2jc = jSW_corn/2 - jSWc
+
+!     if (mynode==0) then
+!      print *,nxc,nyc,bf
+!      print *,shape(cdata)
+!      print *,shape(fdata)
+!      print *,i2ic,j2jc
+!     endif
+!     call MPI_Barrier (ocean_grid_comm, ierr)
+!      stop
 
       a = 0.75
       b = 0.25
