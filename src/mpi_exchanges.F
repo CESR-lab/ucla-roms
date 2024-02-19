@@ -521,32 +521,47 @@
       integer,intent(in) :: nxl,nyl,nzl
       real,intent(in),dimension(1-bl:nxl+bl,1-bl:nyl+bl,nzl) :: A
 
-      szEW = hl*(j1+1-j0)*nzl
-      szNS = hl*(i1+1-i0)*nzl
+      !local
+      integer :: il0,il1,jl0,jl1
+
+      il0=1; il1=nxl; jl0=1; jl1=nyl
+
+      if (inode==0)        il0=0
+      if (inode==NP_XI-1)  il1=nxl+1
+      if (jnode==0)        jl0=0
+      if (jnode==NP_ETA-1) jl1=nyl+1
+
+!     if (mynode==0) then
+!      print *,nxl,nyl,bl
+!      print *,il0,il1,jl0,jl1
+!      print *,shape(A)
+!      stop
+!     endif
+
+
+      szEW = hl*(jl1+1-jl0)*nzl
+      szNS = hl*(il1+1-il0)*nzl
       szCr = hl*hl*nzl
 
 ! Append buffers with data from the array to be send
 !----------------------------------------------
       if (west_msg_exch) then
-        sendW(szW+1:szW+szEW) = reshape(A(1:hl,j0:j1,:),(/szEW/))
+        sendW(szW+1:szW+szEW) = reshape(A(1:hl,jl0:jl1,:),(/szEW/))
         szW = szW+szEW
       endif
 
       if (east_msg_exch) then
-        sendE(szE+1:szE+szEW) = reshape(A(nx+1-hl:nx,j0:j1,:),(/szEW/))
+        sendE(szE+1:szE+szEW) = reshape(A(nxl+1-hl:nxl,jl0:jl1,:),(/szEW/))
         szE = szE+szEW
-!       if (mynode==0) then
-!         print *,'node 0: ', A(nx,20,:)
-!       endif
       endif
 
       if (south_msg_exch) then
-        sendS(szS+1:szS+szNS) = reshape(A(i0:i1,1:hl,:),(/szNS/))
+        sendS(szS+1:szS+szNS) = reshape(A(il0:il1,1:hl,:),(/szNS/))
         szS = szS+szNS
       endif
 
       if (north_msg_exch) then
-        sendN(szN+1:szN+szNS) = reshape(A(i0:i1,ny+1-hl:ny,:),(/szNS/))
+        sendN(szN+1:szN+szNS) = reshape(A(il0:il1,nyl+1-hl:nyl,:),(/szNS/))
         szN = szN+szNS
       endif
 
@@ -556,17 +571,17 @@
       endif
 
       if (south_msg_exch.and.east_msg_exch) then
-        sendSE(szSE+1:szSE+szCr) = reshape(A(nx+1-hl:nx,1:hl,:),(/szCr/))
+        sendSE(szSE+1:szSE+szCr) = reshape(A(nxl+1-hl:nxl,1:hl,:),(/szCr/))
         szSE = szSE+szCr
       endif
 
       if (north_msg_exch.and.east_msg_exch) then
-        sendNE(szNE+1:szNE+szCr) = reshape(A(nx+1-hl:nx,ny+1-hl:ny,:),(/szCr/))
+        sendNE(szNE+1:szNE+szCr) = reshape(A(nxl+1-hl:nxl,nyl+1-hl:nyl,:),(/szCr/))
         szNE = szNE+szCr
       endif
 
       if (north_msg_exch.and.west_msg_exch) then
-        sendNW(szNW+1:szNW+szCr) = reshape(A(1:hl,ny+1-hl:ny,:),(/szCr/))
+        sendNW(szNW+1:szNW+szCr) = reshape(A(1:hl,nyl+1-hl:nyl,:),(/szCr/))
         szNW = szNW+szCr
       endif
 
@@ -581,34 +596,42 @@
 
       !local
       integer,dimension(3) :: shEW,shNS,shCr
+      integer :: il0,il1,jl0,jl1
 
-      shEW = shape(A(1:hl,j0:j1,:))
-      shNS = shape(A(i0:i1,1:hl,:))
+      il0=1; il1=nxl; jl0=1; jl1=nyl
+
+      if (inode==0)        il0=0
+      if (inode==NP_XI-1)  il1=nxl+1
+      if (jnode==0)        jl0=0
+      if (jnode==NP_ETA-1) jl1=nyl+1
+
+      shEW = shape(A(1:hl,jl0:jl1,:))
+      shNS = shape(A(il0:il1,1:hl,:))
       shCr = shape(A(1:hl,1:hl,:))
-      szEW = hl*(j1+1-j0)*nzl
-      szNS = hl*(i1+1-i0)*nzl
+      szEW = hl*(jl1+1-jl0)*nzl
+      szNS = hl*(il1+1-il0)*nzl
       szCr = hl*hl*nzl
 
 
 ! Unpack data from exchanged buffers into array
 !----------------------------------------------
       if (west_msg_exch) then
-        A(1-hl:0,j0:j1,:) = reshape(recvW(szW+1:szW+szEW),shEW)
+        A(1-hl:0,jl0:jl1,:) = reshape(recvW(szW+1:szW+szEW),shEW)
         szW = szW+szEW
       endif
 
       if (east_msg_exch) then
-        A(nx+1:nx+hl,j0:j1,:) = reshape(recvE(szE+1:szE+szEW),shEW)
+        A(nxl+1:nxl+hl,jl0:jl1,:) = reshape(recvE(szE+1:szE+szEW),shEW)
         szE = szE+szEW
       endif
 
       if (south_msg_exch) then
-        A(i0:i1,1-hl:0,:) = reshape(recvS(szS+1:szS+szNS),shNS)
+        A(il0:il1,1-hl:0,:) = reshape(recvS(szS+1:szS+szNS),shNS)
         szS = szS+szNS
       endif
 
       if (north_msg_exch) then
-        A(i0:i1,ny+1:ny+hl,:) = reshape(recvN(szN+1:szN+szNS),shNS)
+        A(il0:il1,nyl+1:nyl+hl,:) = reshape(recvN(szN+1:szN+szNS),shNS)
         szN = szN+szNS
       endif
 
@@ -619,17 +642,17 @@
       endif
 
       if (south_msg_exch.and.east_msg_exch.and.do_corners) then
-        A(nx+1:nx+hl,1-hl:0,:) = reshape(recvSE(szSE+1:szSE+szCr),shCr)
+        A(nxl+1:nxl+hl,1-hl:0,:) = reshape(recvSE(szSE+1:szSE+szCr),shCr)
         szSE = szSE+szCr
       endif
 
       if (north_msg_exch.and.west_msg_exch.and.do_corners) then
-        A(1-hl:0,ny+1:ny+hl,:) = reshape(recvNW(szNW+1:szNW+szCr),shCr)
+        A(1-hl:0,nyl+1:nyl+hl,:) = reshape(recvNW(szNW+1:szNW+szCr),shCr)
         szNW = szNW+szCr
       endif
 
       if (north_msg_exch.and.east_msg_exch.and.do_corners) then
-        A(nx+1:nx+hl,ny+1:ny+hl,:) = reshape(recvNE(szNE+1:szNE+szCr),shCr)
+        A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = reshape(recvNE(szNE+1:szNE+szCr),shCr)
         szNE = szNE+szCr
       endif
 
