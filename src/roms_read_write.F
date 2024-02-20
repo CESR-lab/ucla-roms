@@ -305,7 +305,6 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-
       if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
@@ -664,6 +663,7 @@
 ! ----------------------------------------------------------------------
       subroutine coarse2fine(cdata,fdata) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
+      ! possible not correct for u-grid or v-grid variables
       use hidden_mpi_vars
       use dimensions
       implicit none
@@ -671,15 +671,13 @@
       ! input/output
 
       real,dimension(1-bf:nxc+bf,1-bf:nyc+bf),intent(in) :: cdata   ! coarse data
-      real,dimension(1-bf:nx +bf,1-bf:ny +bf),intent(out):: fdata   ! fine   data
+      real,dimension(i0:i1,j0:j1),intent(out):: fdata   ! fine   data
 
       ! local
       integer :: i,j
       integer :: ic,jc
       integer :: i2ic,j2jc
-      integer :: ierr
-
-      real  :: a,b
+      real    :: a,b
 
 !     gic = gi/2 = (i + iSW_corn)/2 = ic + iSWc.
 !     ic =  i/2 + iSW_corn/2 - iSWc
@@ -688,15 +686,6 @@
 
       i2ic = iSW_corn/2 - iSWc
       j2jc = jSW_corn/2 - jSWc
-
-!     if (mynode==0) then
-!      print *,nxc,nyc,bf
-!      print *,shape(cdata)
-!      print *,shape(fdata)
-!      print *,i2ic,j2jc
-!     endif
-!     call MPI_Barrier (ocean_grid_comm, ierr)
-!      stop
 
       a = 0.75
       b = 0.25
