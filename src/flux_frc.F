@@ -34,11 +34,11 @@
       subroutine init_arrays_flux_frc  ![
       implicit none
 
-      allocate( nc_sustr%vdata(1:i1,j0:j1,2) )
-      allocate( nc_svstr%vdata(i0:i1,1:j1,2) )
-      allocate( nc_shflx%vdata(i0:i1,j0:j1,2) )
-      allocate( nc_swflux%vdata(i0:i1,j0:j1,2) )
-      allocate( nc_swrad%vdata(i0:i1,j0:j1,2) )
+      allocate( nc_sustr%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_sustr%vdata = 0
+      allocate( nc_svstr%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_svstr%vdata = 0
+      allocate( nc_shflx%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_shflx%vdata = 0
+      allocate( nc_swflux%vdata(GLOBAL_2D_ARRAY,2) );nc_swflux%vdata = 0
+      allocate( nc_swrad%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_swrad%vdata = 0
 
       if (interp_frc==1) then
         nc_sustr%coarse=1
@@ -58,18 +58,17 @@
       integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
-      integer :: i, j
-
+      integer :: i, j,ierr
 
       ! 1) set surface momentum flux
-      call set_frc_data(nc_sustr,sustr(1:i1,j0:j1))
-      call set_frc_data(nc_svstr,svstr(i0:i1,1:j1))
-      sustr(1:i1,j0:j1) = sustr(1:i1,j0:j1)/rho0
-      svstr(i0:i1,1:j1) = svstr(i0:i1,1:j1)/rho0
+      call set_frc_data(nc_sustr,sustr,'u')
+      call set_frc_data(nc_svstr,svstr,'v')
+      sustr = sustr/rho0
+      svstr = svstr/rho0
 
       ! 2) set surface heat flux: stflx(itemp)
-      call set_frc_data(nc_shflx,stflx(i0:i1,j0:j1,itemp))
-      stflx(i0:i1,j0:j1,itemp) = stflx(i0:i1,j0:j1,itemp) /(rho0*Cp)
+      call set_frc_data(nc_shflx,stflx(:,:,itemp),'r')
+      stflx(:,:,itemp) = stflx(:,:,itemp) /(rho0*Cp)
 #ifdef SEA_ICE_NOFLUX
       do j=j0,j1
         do i=i0,i1
@@ -92,7 +91,7 @@
 #endif
 
       ! 2a) set bottom heat flux: stflx(itemp)
-!     call set_frc_data(nc_bhflx,btflx(i0:i1,j0:j1,itemp))
+!     call set_frc_data(nc_bhflx,btflx(i0:i1,j0:j1,itemp),'r')
 
       ! 3) set short-wave radiation flux
       call set_srflux
@@ -103,10 +102,10 @@
 #endif
 
 #ifdef EXCHANGE
-      call exchange_xxx(sustr,svstr)
-      call exchange_xxx(srflx,stflx(:,:,itemp))
+!     call exchange_xxx(sustr,svstr)
+!     call exchange_xxx(srflx,stflx(:,:,itemp))
 #ifdef SALINITY
-      call exchange_xxx(stflx(:,:,isalt))
+!     call exchange_xxx(stflx(:,:,isalt))
 #endif
 #endif
 !     srflx = 0
@@ -124,7 +123,7 @@
       integer i,j
       real cmday2ms
 
-      call set_frc_data(nc_swflux,stflx(i0:i1,j0:j1,isalt))
+      call set_frc_data(nc_swflux,stflx(:,:,isalt),'r')
 
       cmday2ms=0.01/day2sec ! Set coefficient outside of loop for efficiency
       do j=j0,j1
@@ -159,10 +158,8 @@
       real, parameter :: year2day=365.25,  day2year=1.D0/year2day
 # endif
 
-      call set_frc_data(nc_swrad,srflx(i0:i1,j0:j1))
-!     print *,'maxval srflx: ', maxval(abs(srflx(i0:10,j0:10)))
-!     stop
-      srflx(i0:i1,j0:j1)=srflx(i0:i1,j0:j1)/(rho0*Cp)
+      call set_frc_data(nc_swrad,srflx,'r')
+      srflx = srflx/(rho0*Cp)
 
 # ifdef DIURNAL_SRFLUX
 

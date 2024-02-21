@@ -324,6 +324,8 @@ CR      write(*,*)  ' -2' MYID
 
       implicit none
 
+      integer :: ierr
+
 ! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (denoted here as "nstp"), while counter
 ! "iic" corresponds to "n+1", so normally, assuming that time is
@@ -350,6 +352,11 @@ CR      write(*,*)  ' -2' MYID
       call set_forces
       ! use time at n+1/2 for boundary values
       ! we use these values at the end of pre_step, and during step2d
+
+
+      call wrt_sflux
+      call mpi_barrier(ocean_grid_comm,ierr)
+      stop
 
       tdays = (time-0.0*dt)*sec2day
       call set_bry_all
