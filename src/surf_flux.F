@@ -55,7 +55,7 @@
       real,public :: dSSSdt                                ! input units (cm/day)
 
       ! Netcdf outputting:
-      integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
+      integer            :: output_time = 1000000   ! large value to trigger first time output
       integer            :: record = nrpf           ! to trigger the first file creation
       integer :: ncid = -1, prev_fill_mode
 
@@ -83,7 +83,7 @@
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
-      allocate(nc_sss%vdata(i0:i1,j0:j1,2) )
+      allocate(nc_sss%vdata(GLOBAL_2D_ARRAY,2) )
 
       call store_string_att(surf_forcing_strings,'<surf_flux.F>')
       call store_string_att(surf_forcing_strings,'dSSSdt=')
@@ -109,12 +109,12 @@
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
       print *,'Allocate space for sst first!! '
-      call set_frc_data(nc_sst,sst(i0:i1,j0:j1))
+      call set_frc_data(nc_sst,sst)
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      call set_frc_data(nc_sss,sss(i0:i1,j0:j1))
+      call set_frc_data(nc_sss,sss)
 #endif
 
       end subroutine set_surf_field_corr  !]
@@ -190,7 +190,7 @@
       character(len=99),save :: fname
       integer                :: ierr
 
-      output_time = output_time + dt                           ! only start count after first timestep
+      output_time = output_time + dt 
 
       if (sflx_avg) call calc_sflx_avg
 
@@ -258,7 +258,7 @@
       if (sflx_avg) then
         call create_file('_flx_avg',fname)
       else
-        call create_file('_flx',fname)
+        call create_file('_flx_his',fname)
       endif
 
       ierr=nf90_open(fname,nf90_write,ncid)

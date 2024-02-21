@@ -4,6 +4,7 @@
 
       use param
       use dimensions
+      use mpi_exchanges
       use roms_read_write
 
       implicit none
@@ -45,23 +46,21 @@
 
       allocate( wspd_used(GLOBAL_2D_ARRAY) )
 
-      ! the size of the vdata arrays need to match
-      ! the size of the corresponding variable 
-      ! in the netcdf file, hence the use of i0,i1 etc.
-      allocate( nc_uwnd%vdata( i0:i1,j0:j1,2) )
-      allocate( nc_vwnd%vdata( i0:i1,j0:j1,2) )
-      allocate( nc_tair%vdata( i0:i1,j0:j1,2) )
-      allocate( nc_Q%vdata(i0:i1,j0:j1,2) )
-      allocate( nc_prate%vdata( i0:i1,j0:j1,2) )
-      allocate( nc_lwrad%vdata( i0:i1,j0:j1,2) )
-      allocate( nc_swrad%vdata( i0:i1,j0:j1,2) )
+      ! vdata needs to be of blobal_2d_array size
+      allocate( nc_uwnd%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_vwnd%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_tair%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_Q%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_prate%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_lwrad%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad%vdata(GLOBAL_2D_ARRAY,2) )
 
 #if defined TAU_CORRECTION
       allocate( taux(GLOBAL_2D_ARRAY) )
       allocate( tauy(GLOBAL_2D_ARRAY) )
 
-      allocate( nc_taux%vdata( i0:i1,j0:j1,2) )
-      allocate( nc_tauy%vdata( i0:i1,j0:j1,2) )
+      allocate( nc_taux%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_tauy%vdata(GLOBAL_2D_ARRAY,2) )
 #endif
 
       if (interp_frc==1) then 
@@ -93,23 +92,29 @@
 
       ! All variables (including wind) should be on rho-points in the surface forcing
       ! file. The ranges here need to match the sizes in the partitioned files
-      call set_frc_data(nc_swrad,srflx(i0:i1,j0:j1))
-      call set_frc_data(nc_lwrad,lwrad(i0:i1,j0:j1))
+      call set_frc_data(nc_swrad,srflx,'r')
+      call set_frc_data(nc_lwrad,lwrad,'r')
 
-      call set_frc_data(nc_uwnd,uwnd(i0:i1,j0:j1))
-      call set_frc_data(nc_vwnd,vwnd(i0:i1,j0:j1))
+      call set_frc_data(nc_uwnd,uwnd,'r')
+      call set_frc_data(nc_vwnd,vwnd,'r')
 
-      call set_frc_data(nc_tair,tair(i0:i1,j0:j1))
-      call set_frc_data(nc_Q,Q(i0:i1,j0:j1))
+      call set_frc_data(nc_tair,tair,'r')
+      call set_frc_data(nc_Q,Q,'r')
 
       ! Possibly check units of Q and others
 
-      call set_frc_data(nc_prate,prate(i0:i1,j0:j1))
+      call set_frc_data(nc_prate,prate,'r')
 
 #if defined TAU_CORRECTION
-      call set_frc_data(nc_taux,taux(i0:i1,j0:j1))
-      call set_frc_data(nc_tauy,tauy(i0:i1,j0:j1))
+      call set_frc_data(nc_taux,taux,'r')
+      call set_frc_data(nc_tauy,tauy,'r')
+!     call exchange_xxx(taux,tauy)
 #endif
+
+!     call exchange_xxx(srflx,lwrad)
+!     call exchange_xxx(uwnd,vwnd)
+!     call exchange_xxx(tair,Q)
+!     call exchange_xxx(prate)
 
 
       ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY:

@@ -97,7 +97,12 @@
       public :: create_file
 
       interface set_frc_data
-        module procedure set_frc_data_1d,set_frc_data_2d
+        module procedure
+     &     set_frc_data_1d,set_frc_data_2d,set_frc_data_surf
+      end interface
+      interface fill_frc_slice
+        module procedure
+     &     fill_frc_slice_aux,fill_frc_slice_surf
       end interface
 
       contains
@@ -187,7 +192,7 @@
       if (jnode==0)        jc0=0
       if (jnode==NP_ETA-1) jc1=nyc+1
 
-      allocate(cdata(1-bf:nxc+bf,1-bf:nyc+bf) )
+      allocate(cdata(1-bf:nxc+bf,1-bf:nyc+bf) );cdata = 0
 
       end subroutine init_coarse !]
 ! ----------------------------------------------------------------------
@@ -312,6 +317,65 @@
       endif
 
       end subroutine set_frc_data_2d  !]
+! ----------------------------------------------------------------------
+      subroutine set_frc_data_surf(nc,var2d,gtype)  ![
+      implicit none
+      ! Specifically for 2-dimensional surface forcing data
+      ! Deals with u,v, or rho-grids and performs a mpi exchange if needed
+      ! vdata must be allocated with the same 'standard' 2D size as var2d
+
+      ! input/outputs
+      type(ncforce)                        ,intent(inout):: nc    ! Derived type containing all neccesary supporting data
+      real,dimension(1-bf:nx+bf,1-bf:ny+bf),intent(out)  :: var2d ! time interpolated forcing data
+      character(len=1)                     ,intent(in)   :: gtype ! 'u','v','r'
+
+      ! local
+      real    :: cff1,cff2  ! for time interpolations
+      real    :: modtime    ! model time
+      logical :: d1
+      integer :: bry
+
+      integer           :: it1,it2
+      real,dimension(2) :: vtimes
+
+      d1 = .false.
+
+      modtime = tdays + 0.5*dt*sec2day    ! input data times in days. Interpolated time is based on 1/2 step time
+
+      it1 = nc%it1
+      it2 = nc%it2
+
+      if (nc%times(it2) < modtime) then  ! need to refresh data
+
+        if (nc%ifile == 0) then   ! the first time, we need to fill both slots
+          call fill_frc_slice_surf(nc,modtime,it1,gtype)
+!         call exchange_xxx(nc%vdata(:,:,it1))
+        else ! cycle it1,it2 between 1 and 2
+          it1 = mod(it1,2) + 1
+          it2 = mod(it2,2) + 1
+        endif
+        call fill_frc_slice_surf(nc,modtime,it2,gtype)
+!       call exchange_xxx(nc%vdata(:,:,it2))
+      endif 
+
+      nc%it1 = it1
+      nc%it2 = it2
+
+      ! Temporal interpolation
+
+      vtimes  = nc%times
+      cff1=( vtimes(it2)-modtime )/( vtimes(it2)-vtimes(it1) )
+      cff2=( modtime-vtimes(it1) )/( vtimes(it2)-vtimes(it1) )
+
+      var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
+
+      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+        print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
+        print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
+        error stop 'ERROR: set_frc_data :: time interpolation error'
+      endif
+
+      end subroutine set_frc_data_surf  !]
 ! ----------------------------------------------------------------------
       subroutine find_new_record(vname,tname,time,ifile,irec,vtime) ![
       ! Finds the index for the filename and record number of the first record
@@ -500,8 +564,8 @@
 
       end subroutine find_new_record_cycle !]
 ! ----------------------------------------------------------------------
-      subroutine fill_frc_slice(nc,modtime,it,d1,bry) ![
-      ! Fill a time slice of forcing data
+      subroutine fill_frc_slice_aux(nc,modtime,it,d1,bry) ![
+      ! Fill a time slice of forcing data, not surface forcing
       implicit none
 
       ! input/outputs
@@ -527,25 +591,13 @@
      &                         nc%times(it) )
 
       ierr=nf90_open(frcfile(ifile),nf90_nowrite, ncid)
-      if (nc%coarse) then
-        if (d1) then
-          print *,'no coarse to fine for 1D data'
-          stop
-        endif
-        if (.not.allocated(cdata)) then
-          call init_coarse
-        endif
-        call ncread(ncid,vname,cdata(ic0:ic1,jc0:jc1),(/1,1,irec/))
-        call exchange_xxx(cdata)
-        call coarse2fine(cdata,nc%vdata(:,:,it))
+      ! The size of vdata must match the size of the data in the
+      ! file. Ensure this in the allocation of vdata
+      ! This is in contrast with the _surf version of fill_frc_slice
+      if (d1) then
+        call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
       else
-        ! The size of vdata must match the size of the data in the
-        ! file. Ensure this in the allocation of vdata
-        if (d1) then
-          call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
-        else
-          call ncread(ncid,vname,nc%vdata(:,:,it),(/1,1,irec/))
-        endif
+        call ncread(ncid,vname,nc%vdata(:,:,it),(/1,1,irec/))
       endif
       ierr = nf90_close(ncid)
 
@@ -561,11 +613,69 @@
         stop 'fill_frc_slice - bry error'
       endif
 
+      nc%irec  = irec
+      nc%ifile = ifile
+
+      end subroutine fill_frc_slice_aux !]
+! ----------------------------------------------------------------------
+      subroutine fill_frc_slice_surf(nc,modtime,it,gtype) ![
+      ! Fill a time slice of forcing data
+      implicit none
+
+      ! input/outputs
+      type(ncforce)      ,intent(inout) :: nc      ! derived type containing all neccesary supporting data
+      real               ,intent(in)    :: modtime ! current time of the model
+      integer            ,intent(in)    :: it      ! index (1 or 2) of the forcing data
+      character(len=1)   ,intent(in)    :: gtype   ! 'u','v','r' grid type
+
+      ! local
+      integer :: ierr,ncid
+
+      character(len=20)  :: vname  ! name of variable in input file
+      character(len=20)  :: tname  ! time variable name for variable
+      integer            :: irec,ifile
+
+      irec  = nc%irec
+      ifile = nc%ifile
+      vname = nc%vname
+      tname = nc%tname
+
+      call find_new_record(vname,tname,modtime,ifile,irec,
+     &                         nc%times(it) )
+
+      ierr=nf90_open(frcfile(ifile),nf90_nowrite, ncid)
+      if (nc%coarse>0) then
+        if (.not.allocated(cdata)) then
+          call init_coarse
+        endif
+        if (gtype=='u') then
+          call ncread(ncid,vname,cdata(1:ic1,jc0:jc1),(/1,1,irec/))
+        elseif (gtype=='v') then
+          call ncread(ncid,vname,cdata(ic0:ic1,1:jc1),(/1,1,irec/))
+        else 
+          call ncread(ncid,vname,cdata(ic0:ic1,jc0:jc1),(/1,1,irec/))
+        endif
+        call exchange_xxx(cdata)
+        call coarse2fine(cdata,nc%vdata(:,:,it),gtype)
+      else
+        if (gtype=='u') then
+          call ncread(ncid,vname,nc%vdata(1:i1,j0:j1,it),(/1,1,irec/))
+        elseif (gtype=='v') then
+          call ncread(ncid,vname,nc%vdata(i0:i1,1:j1,it),(/1,1,irec/))
+        else    ! rho-grid 
+          call ncread(ncid,vname,nc%vdata(i0:i1,j0:j1,it),(/1,1,irec/))
+        endif
+      endif
+      ierr = nf90_close(ncid)
+
+      if (mynode==0) then
+        call display_read_time_to_log(vname,nc%times(it),irec )
+      endif
 
       nc%irec  = irec
       nc%ifile = ifile
 
-      end subroutine fill_frc_slice !]
+      end subroutine fill_frc_slice_surf !]
 ! ----------------------------------------------------------------------
       subroutine display_read_time_to_log(var_name, var_time, var_irec)  ![
       implicit none   
@@ -661,23 +771,23 @@
 
       end subroutine create_file !]
 ! ----------------------------------------------------------------------
-      subroutine coarse2fine(cdata,fdata) ![
+      subroutine coarse2fine(cdata,fdata,gtype) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
-      ! possible not correct for u-grid or v-grid variables
+      ! NOT correct for u-grid or v-grid variables
       use hidden_mpi_vars
       use dimensions
       implicit none
 
       ! input/output
-
       real,dimension(1-bf:nxc+bf,1-bf:nyc+bf),intent(in) :: cdata   ! coarse data
-      real,dimension(i0:i1,j0:j1),intent(out):: fdata   ! fine   data
+      real,dimension(1-bf:nx +bf,1-bf:ny +bf),intent(out):: fdata   ! fine data
+      character(len=1)                       ,intent(in) :: gtype   ! 'u','v','r' grid type
 
       ! local
       integer :: i,j
       integer :: ic,jc
       integer :: i2ic,j2jc
-      real    :: a,b
+      real    :: a,b,c
 
 !     gic = gi/2 = (i + iSW_corn)/2 = ic + iSWc.
 !     ic =  i/2 + iSW_corn/2 - iSWc
@@ -689,21 +799,54 @@
 
       a = 0.75
       b = 0.25
+      c = 0.50
 
-      do j=j0,j1,2
-        do i=i0,i1,2
-          ic = i/2 + i2ic;
-          jc = j/2 + j2jc;
-          fdata(i  ,j  ) = a*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
-     &                   + b*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
-          fdata(i+1,j  ) = a*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
-     &                   + b*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
-          fdata(i  ,j+1) = b*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
-     &                   + a*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
-          fdata(i+1,j+1) = b*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
-     &                   + a*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+      if (gtype=='u') then
+        do j=0,ny+1,2
+          do i=1,nx+1,2
+            ic = (i+1)/2 + i2ic;
+            jc = j/2 + j2jc;
+            fdata(i  ,j  ) = a*(  cdata(ic,jc  )                   )
+     &                     + b*(  cdata(ic,jc+1)                   )
+            fdata(i+1,j  ) = a*(c*cdata(ic,jc  )+c*cdata(ic+1,jc  ))
+     &                     + b*(c*cdata(ic,jc+1)+c*cdata(ic+1,jc+1))
+            fdata(i  ,j+1) = b*(  cdata(ic,jc  )                   )
+     &                     + a*(  cdata(ic,jc+1)                   )
+            fdata(i+1,j+1) = b*(c*cdata(ic,jc  )+c*cdata(ic+1,jc  ))
+     &                     + a*(c*cdata(ic,jc+1)+c*cdata(ic+1,jc+1))
+          enddo
         enddo
-      enddo
+      elseif (gtype=='v') then
+        do j=1,ny+1,2
+          do i=0,nx+1,2
+            ic = i/2 + i2ic;
+            jc = (j+1)/2 + j2jc;
+            fdata(i  ,j  ) =   (a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
+
+            fdata(i+1,j  ) =   (b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
+
+            fdata(i  ,j+1) = c*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
+     &                     + c*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
+            fdata(i+1,j+1) = c*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
+     &                     + c*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+          enddo
+        enddo
+      else   ! rho-grid
+        do j=0,ny+1,2
+          do i=0,nx+1,2
+            ic = i/2 + i2ic;
+            jc = j/2 + j2jc;
+            fdata(i  ,j  ) = a*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
+     &                     + b*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
+            fdata(i+1,j  ) = a*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
+     &                     + b*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+            fdata(i  ,j+1) = b*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
+     &                     + a*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
+            fdata(i+1,j+1) = b*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
+     &                     + a*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+          enddo
+        enddo
+      endif
 
       end subroutine coarse2fine !]
 ! ----------------------------------------------------------------------
