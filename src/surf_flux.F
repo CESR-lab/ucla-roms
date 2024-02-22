@@ -55,8 +55,8 @@
       real,public :: dSSSdt                                ! input units (cm/day)
 
       ! Netcdf outputting:
-      integer            :: output_time = 1000000   ! large value to trigger first time output
-      integer            :: record = nrpf           ! to trigger the first file creation
+      integer            :: output_time = 0  
+      integer            :: record = nrpf     ! to trigger the first file creation
       integer :: ncid = -1, prev_fill_mode
 
       ! Public functions

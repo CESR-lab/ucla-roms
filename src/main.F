@@ -353,11 +353,6 @@ CR      write(*,*)  ' -2' MYID
       ! use time at n+1/2 for boundary values
       ! we use these values at the end of pre_step, and during step2d
 
-
-      call wrt_sflux
-      call mpi_barrier(ocean_grid_comm,ierr)
-      stop
-
       tdays = (time-0.0*dt)*sec2day
       call set_bry_all
 
