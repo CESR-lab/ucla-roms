@@ -207,6 +207,7 @@
         ierr=nf90_open(fname,nf90_write,ncid)
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
+!       print *,'trying to write time to flx file ',wrt_smflx,wrt_stflx
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
         start=1; start(3)=record

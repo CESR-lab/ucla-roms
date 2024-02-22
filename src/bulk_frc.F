@@ -177,7 +177,7 @@
 
       ! Modules required
       ! ----------------
-      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_sflux, srflx
+      use surf_flux
       use tracers, only: t
       use grid
       use mixing
@@ -998,8 +998,6 @@
           end if
         enddo
       enddo
-
-!     call wrt_sflux  ! write flux variables to flux output file
 
       end subroutine calc_all_bulk_forces  !]
 !-----------------------------------------------------------------------
