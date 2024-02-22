@@ -48,6 +48,16 @@
       character(len=99), public  :: output_root_name
       character(len=41), public  :: git_hash
 
+      ! Dimension names for in and output in netcdf files
+      ! All dimension names need to be strings of 7 characters
+!     character(len=7), public,parameter  :: xdim = 'xi_rho '
+!    &                                      ,ydim = 'eta_rho'
+!    &                                      ,zdim = 's_rho  '
+!    &                                      ,tdim = 'time   '
+!    &                                      ,xdimu= 'xi_u   '
+!    &                                      ,ydimv= 'eta_v  '
+!    &                                      ,zdimw= 's_w    '
+
       ! index ranges for netcdf output (See init_output_indices)
 !     integer,public :: i0,i1,j0,j1
       integer,public :: bfx,bfy

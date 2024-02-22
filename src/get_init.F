@@ -309,15 +309,15 @@ c--#define VERBOSE
 
       start=1; start(3)=record                                       ! 2D vars
 
-      call ncread(ncid,vname(1,indxZ),zeta(i0:i1,j0:j1,1),start)
+      call ncread(ncid,'zeta',zeta(i0:i1,j0:j1,1),start)
       zeta(i0:i1,j0:j1,1)=zeta(i0:i1,j0:j1,1)*rmask(i0:i1,j0:j1)
       call exchange_xxx(zeta(:,:,1))                              
 
-      call ncread(ncid,vname(1,indxUb),ubar( 1:i1,j0:j1,1),start)
+      call ncread(ncid,'ubar',ubar( 1:i1,j0:j1,1),start)
       ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)  
       call exchange_xxx(ubar(:,:,1))
 
-      call ncread(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,1),start)
+      call ncread(ncid,'vbar',vbar(i0:i1, 1:j1,1),start)
       vbar(i0:i1,1:j1,1) = vbar(i0:i1,1:j1,1)*vmask(i0:i1,1:j1)
       call exchange_xxx(vbar(:,:,1))
 
