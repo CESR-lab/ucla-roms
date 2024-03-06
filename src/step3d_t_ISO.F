@@ -58,6 +58,14 @@ c--# define CONST_TRACERS
       use river_frc
       use surf_flux, only: stflx, srflx
       use tracers
+#ifdef MARBL      
+      use marbl_driver, only: marbldrv_column_physics,marbl_saved_state_2d,marbl_saved_state_3d
+      use bgc_ecosys_vars, only: landmask
+#ifdef MARBL_DIAGS            
+      use bgc_ecosys_vars, only: bec2_diag_2d, bec2_diag_3d
+#endif      
+
+#endif      
       use diagnostics
       use eos_vars
       use grid
@@ -1056,7 +1064,28 @@ c??         enddo
 
       enddo     !<-- itrc
 
-# if defined BIOLOGY_BEC2
+# if defined(MARBL)
+
+      if (mynode==0) then
+      print *, 'doing BGC with MARBL'
+      end if
+      
+      ! Pass indices, tracer and mask arrays, diagnostics arrays, and saved state arrays to MARBL
+      call marbldrv_column_physics(istr,iend,jstr,jend,
+     &     t(istr:iend,jstr:jend,:,:,:)
+     &     ,landmask(istr:iend,jstr:jend)
+#ifdef MARBL_DIAGS      
+     &     ,bec2_diag_2d(istr:iend,jstr:jend,:)
+     &     ,bec2_diag_3d(istr:iend,jstr:jend,:,:)
+#endif
+     &     ,marbl_saved_state_2d(istr:iend,jstr:jend,:)
+     &     ,marbl_saved_state_3d(istr:iend,jstr:jend,:,:)
+     &     )                    !MARBL, 2023
+# elif defined(BIOLOGY_BEC2)
+      if (mynode==0) then
+      print *, 'doing BGC with BEC'
+      end if
+      
       call ecosys_bec2_tile(istr,iend,jstr,jend) ! BEC, 2014
 # endif
 

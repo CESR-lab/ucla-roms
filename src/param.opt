@@ -20,6 +20,24 @@
       integer, parameter :: NP_XI = 16, NP_ETA = 8
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      integer, parameter :: nt = 2 
+      ! Defining number of tracers
+      integer, parameter :: ntrc_pas=0      
+# ifdef BIOLOGY_BEC2
+     &       ,  ntrc_bio_base=26
+     &       ,  ntrc_bio=26
+# elif defined MARBL
+     &       , ntrc_bio_base=32
+     &       , ntrc_bio=32
+# else
+     &       , ntrc_bio_base=0
+     &       , ntrc_bio=0
+# endif
+#ifdef SALINITY
+     &       , ntrc_salt=1
+#else
+     &       , ntrc_salt=0
+#endif
 
-
+      integer, parameter :: nt=1+ntrc_pas+ntrc_bio+ntrc_salt
+    
+      

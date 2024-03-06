@@ -31,7 +31,7 @@
       real*QUAD bc_flux, ubar_xs
 #endif
 #if defined BIOLOGY || defined BIOLOGY_NPZDOC || defined BIOLOGY_BEC \
-                    || defined BIOLOGY_BEC2
+                    || defined BIOLOGY_BEC2 || defined MARBL
       real*QUAD global_sum(0:2*NT+1), global_srf_sum(0:NT)
 #endif 
       real hmin,hmax, grdmin,grdmax, rx0,rx1, Cg_min,Cg_max, Cu_Cor

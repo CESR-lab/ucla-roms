@@ -1,0 +1,16 @@
+      ! ***************************************************************
+      ! User inputs, make sure that units in the forcing files match!
+
+      ! Interpolate forcing from coarser input grid (=1) or not (=0)
+      integer :: interp_frc = 0 ! Factor 2 only for now
+
+      ! Type ncvs contains all required netcdf variables and input data array for frc variable.
+      ! Set the name and time_name of variable to match what is in the input forcing files.
+      ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
+      
+      type (ncvs) :: nc_uwnd  = ncvs( name='uwnd', time_name='time' )  ! u-wind (input data in m/s at 10m)
+      type (ncvs) :: nc_vwnd  = ncvs( name='vwnd', time_name='time' )  ! v-wind (input data in m/s at 10m)
+      
+
+      ! End of user inputs
+      ! ***************************************************************

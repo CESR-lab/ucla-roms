@@ -12,15 +12,15 @@
       use param
       use read_write, only: set_frc_var_tile, ncvs
       use roms_read_write
-
+      ! Get wind variables from a separate module to avoid a circular dependency with the MARBL driver:
+      use get_bulk_wnd, only : uwnd, vwnd, nc_uwnd, nc_vwnd
       implicit none
 
       private  ! make all variable private to this module unless public specified
 
 #include "bulk_frc.opt"
 
-      real,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
-      real,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind
+      
       real,allocatable,dimension(:,:) ::  tair             ! air temp
       real,allocatable,dimension(:,:) ::     Q             ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
       real,allocatable,dimension(:,:) :: prate             ! prate (precipitation rate) - 'rain' variable in old code
@@ -43,18 +43,15 @@
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bulk_frc  ![
       implicit none
-
-      allocate(  uwnd(GLOBAL_2D_ARRAY) )
-      allocate(  vwnd(GLOBAL_2D_ARRAY) )
+      
       allocate(  tair(GLOBAL_2D_ARRAY) )
       allocate(     Q(GLOBAL_2D_ARRAY) )
       allocate( prate(GLOBAL_2D_ARRAY) )
       allocate( lwrad(GLOBAL_2D_ARRAY) )
 
-      allocate( wspd_used(GLOBAL_2D_ARRAY) )
 
-      allocate( nc_uwnd%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_vwnd%data( GLOBAL_2D_ARRAY,2) )
+      allocate( wspd_used(GLOBAL_2D_ARRAY) )
+      
       allocate( nc_tair%data( GLOBAL_2D_ARRAY,2) )
       allocate( nc_Q%data(GLOBAL_2D_ARRAY,2) )
       allocate( nc_prate%data( GLOBAL_2D_ARRAY,2) )
@@ -100,13 +97,12 @@
       ! short-wave radiation flux first because bulk flux routine performs
       ! the final assembly of everything.
       call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )  ! short wave radiation - this accounts for get_srflx.F & time interp of set_srflx.F in newer code and get_srflux.F & set_srflux() in old code
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_lwrad, lwrad, interp_frc )  ! lwrad
-
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_lwrad, lwrad, interp_frc ) ! lwrad
+      
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc )  ! u-wind
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc )  ! v-wind
-
-      ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
+      ! Now back in a new module also called get_bulk_wnd.F, avoiding circular dependencies when running with MARBL
+      
+!     Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
       call set_frc_var_tile( istr, iend, jstr, jend, nc_tair,  tair,  interp_frc )
       call set_frc_var_tile( istr, iend, jstr, jend, nc_Q,     Q,     interp_frc )  ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
 

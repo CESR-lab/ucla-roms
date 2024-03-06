@@ -26,6 +26,9 @@
       use nc_read_write
       use roms_read_write
       use netcdf
+#ifdef MARBL      
+      use marbl_driver
+#endif      
       implicit none
       private
 
@@ -44,6 +47,7 @@
       character*47, dimension(nt), public :: t_tname                 ! tracer input time variable name
       logical, dimension(nt), public      :: wrt_t                   ! t/f output tracer.
       logical, dimension(nt), public      :: wrt_t_avg               ! t/f output avg tracer.
+      logical, dimension(nt), public      :: wrt_t_dia               ! t/f output dia tracer.
       integer, dimension(nt)              :: t_ana_frc               ! whether surface flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
@@ -70,8 +74,12 @@
       integer,dimension(NT),public :: NT_2_t_avg                     ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer,public        :: n_t_avg                               ! number of tracer averages to output <= NT
 
-#ifdef BIOLOGY_BEC2
+!#ifdef BIOLOGY_BEC2
 ! bgc needs public indexes as used in other files
+!# include "bgc_tracers_indx.opt"
+!#endif
+
+#if defined(BIOLOGY_BEC2) && !defined(MARBL)
 # include "bgc_tracers_indx.opt"
 #endif
 
@@ -326,6 +334,42 @@
 
       ! Additional passive tracers:
 #include "tracers.opt"
+
+
+#ifdef MARBL      
+      call marbldrv_configure_tracers(
+     &     itot,t_vname,t_lname,t_units,t_tname,wrt_t,wrt_t_avg,t_ana_frc)
+#endif      
+
+#if defined(BIOLOGY_BEC2)
+      if (mynode==0) then
+         print *, 'itmp,islt'
+         print *, itmp, islt
+         print *, 'iDOFE'
+         print *, iDOFE
+         print *, 'iPO4, iNO3, iSIO3, iNH4, iFE'
+         print *, iPO4, iNO3, iSIO3, iNH4, iFE      
+         print *, 'iO2, iDIC,iALK, iDOC, iDON'
+         print *, iO2, iDIC,iALK, iDOC, iDON      
+         print *, 'iDOP, iDOPR,iDONR,iZOOC,iSPCHL'
+         print *, iDOP, iDOPR,iDONR,iZOOC,iSPCHL      
+         print *, 'iSPC, iSPFE, iSPCACO3, iDIATCHL, iDIATC'
+         print *, iSPC, iSPFE, iSPCACO3, iDIATCHL, iDIATC      
+         print *, 'iDIATFE, iDIATSI, iDIAZCHL, iDIAZC, iDIAZFE'
+         print *, iDIATFE, iDIATSI, iDIAZCHL, iDIAZC, iDIAZFE
+      end if
+#endif
+      if (mynode==0) then
+         print *, 'metadata about ',NT, ' tracers:'
+         do itrc=1,NT
+            print *, '-----------'
+            print *, 'TRACER NO.: ', itrc
+            print *,'SHORT NAME: ', t_vname(itrc)
+            print *,'LONG NAME: ', t_lname(itrc)
+            print *,'UNITS: ', t_units(itrc)
+            print *, '-----------'         
+         end do
+      end if
 
       allocate( t(GLOBAL_2D_ARRAY,N,3,NT) )
       t=0.

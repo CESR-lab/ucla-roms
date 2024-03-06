@@ -60,7 +60,7 @@
 !    since the indices are used in tracers.F and bgc.F, need to be public.
 
 #ifdef BIOLOGY_BEC2
-
+#ifndef MARBL
       ! itrc_bio=1+iTandS ! Starting tracer index for bgc tracers. Set in tracers_defs.h
 
       itot=itot+1;                iPO4=itot
@@ -244,7 +244,7 @@
       ! total number of bgc tracers
       !ntrc_bio=ntrc_bio_base ! +ntrc_bio_cocco +ntrc_bio_ncycle
 
-
+#endif /* MARBL */
 #endif /* BIOLOGY_BEC2 */
 
 
