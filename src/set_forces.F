@@ -29,7 +29,10 @@
 ! boundary layer formulation, or linear/quadratic friction law..
 !
       use param
-      use bulk_frc  ! ,  only: set_bulk_frc_tile
+      use bulk_frc              ! ,  only: set_bulk_frc_tile
+!     Handle wind separately to other bulk forcing variables to
+!     avoid circular dependency when running with MARBL
+      use get_bulk_wnd ! , only: set_bulk_wnd_tile
       use flux_frc
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
@@ -107,6 +110,10 @@ c***              no code here
       call ana_srflux_tile(istr,iend,jstr,jend) ! Should move this to bulk module
 #   endif
 #  endif
+
+!     Set wind separately to other bulk forcing variables to avoid circular dependency when running with MARBL
+      call set_bulk_wnd_tile(istr,iend,jstr,jend)
+
       call set_bulk_frc_tile(istr,iend,jstr,jend) ! bulk flux module
 
 # else
@@ -134,7 +141,7 @@ c***              no code here
       if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
 
       ! BGC surface flux:
-# ifdef BIOLOGY_BEC2
+# if defined(BIOLOGY_BEC2) || defined(MARBL)
       call set_bgc_surf_frc(istr,iend,jstr,jend)
 # endif
 

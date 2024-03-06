@@ -35,10 +35,19 @@
       type (ncvs) :: nc_iron = ncvs( name='iron', time_name='iron_time' )  ! iron forcing      
 #ifdef PCO2AIR_FORCING
       type (ncvs) :: nc_pco2air   = ncvs( name='pco2_air',   time_name='pco2_time' )
+#ifdef MARBL      
+      type (ncvs) :: nc_pco2air_alt   = ncvs( name='pco2_air_alt',   time_name='pco2_time' )
+#endif      
 #endif            
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       type (ncvs) :: nc_swrad_avg = ncvs( name='swrad_davg', time_name='srf_davg_time' )
-#endif      
+#endif
+#ifdef NOX_FORCING
+      type (ncvs) :: nc_nox = ncvs( name='nox', time_name='nox_time' )
+#endif
+#ifdef NHY_FORCING
+      type (ncvs) :: nc_nhy = ncvs( name='nhy', time_name='nhy_time' )
+#endif
 
 !#include "bgc_tracers.h"
 !#include "bgc_bio_diag.h"

@@ -8,12 +8,15 @@
       ! by Pierre Damien to run full pacific models.
 
 #include "cppdefs.opt"
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
       use read_write, only: set_frc_var_tile, ncvs, rp_var
-      use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+#ifdef MARBL      
+      use marbl_driver          ! have moved ^^^ these indices here
+#endif      
       use bgc_ecosys_vars
       use nc_read_write
       use roms_read_write
@@ -92,8 +95,19 @@
 
 #ifdef PCO2AIR_FORCING
       call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
-#endif /* PCO2AIR_FORCING */   
-
+#ifdef MARBL
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air_alt, pco2air_alt, interp_frc )
+#endif      
+#endif /* PCO2AIR_FORCING */
+      
+#ifdef NOX_FORCING
+      !20231026
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_nox, nox, interp_frc ) !nox
+#endif /* NOX_FORCING */   
+#ifdef NHY_FORCING
+      !20231027
+      call set_frc_var_tile( istr, iend, jstr, jend, nc_nhy, nhy, interp_frc ) !nhy
+#endif /* NHY_FORCING */
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
@@ -235,7 +249,7 @@
       end subroutine wrt_bgc_tracers  !]
 
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine wrt_bgc_diags(avg)  ![
       implicit none
 
@@ -347,7 +361,7 @@
       ierr=nf90_close(ncid)
 
       end subroutine wrt_bgc_diags  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 !----------------------------------------------------------------------
       subroutine create_bgc_file(fname,avg)  ![
@@ -375,7 +389,7 @@
       end subroutine create_bgc_file !]
 
 !----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine create_bgc_dia_file(fname,avg)  ![
       implicit none
 
@@ -399,7 +413,7 @@
       ierr = nf90_enddef(ncid)
 
       end subroutine create_bgc_dia_file !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
       subroutine def_vars_bgc( ncid, avg )  ![
@@ -469,7 +483,7 @@
       end subroutine calc_avg_bgc  !]
 
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine calc_avg_dia_bgc  ![
       implicit none
 
@@ -500,10 +514,10 @@
       end do
 
       end subroutine calc_avg_dia_bgc  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine def_bgc_diag(ncid,avg)  ![
 
       ! Define history/avg file variables for BEC2_DIAG
@@ -541,7 +555,7 @@
       enddo
 
       end subroutine def_bgc_diag  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bgc_frc  ![
@@ -552,6 +566,18 @@
 
 #ifdef PCO2AIR_FORCING
       allocate( nc_pco2air%data( GLOBAL_2D_ARRAY,2) )
+#ifdef MARBL      
+      allocate( nc_pco2air_alt%data( GLOBAL_2D_ARRAY,2) )
+#endif      
+#endif
+
+#ifdef NOX_FORCING
+      ! 20231026
+      allocate( nc_nox%data( GLOBAL_2D_ARRAY,2) )
+#endif
+#ifdef NHY_FORCING
+      ! 20231026
+      allocate( nc_nhy%data( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
@@ -603,7 +629,9 @@
       alk_ind_t     = iALK-iTandS-nt_passive
       doc_ind_t     = iDOC-iTandS-nt_passive
       don_ind_t     = iDon-iTandS-nt_passive
-      dofe_ind_t    = iDofe-iTandS-nt_passive
+#ifndef MARBL
+      dofe_ind_t    = iDofe-iTandS-nt_passive !not a tracer in marbl
+#endif      
       dop_ind_t     = iDop-iTandS-nt_passive
       dopr_ind_t    = iDopr-iTandS-nt_passive
       donr_ind_t    = iDonr-iTandS-nt_passive
@@ -644,7 +672,9 @@
       tclm_name(iDOPR) = 'dop_time'
       tclm_name(iDON) = 'don_time'
       tclm_name(iDONR) = 'don_time'
-      tclm_name(iDOFE) = 'dofe_time'
+#ifndef MARBL      
+      tclm_name(iDOFE) = 'dofe_time' !DoFe not a tracer in MARBL
+#endif      
       tclm_name(iSPC) = 'spc_time'
       tclm_name(iSPCHL) = 'spchl_time'
       tclm_name(iSPCACO3) = 'spcaco3_time'
@@ -694,15 +724,15 @@
       subroutine do_bgc_diags  ![
       implicit none
 
-# ifdef BEC2_DIAG      
+# if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       if (wrt_his_dia) call wrt_bgc_diags(.false.) ! write his data
       if (wrt_avg_dia) call wrt_bgc_diags(.true.) ! write avg data
-# endif /* BEC2_DIAG */
+# endif /* BEC2_DIAG || MARBL_DIAGS*/
 
 !      if (mynode==0) print *,'wrt_bgc diags done'
 
       end subroutine do_bgc_diags  !]
 
 ! ----------------------------------------------------------------------
-#endif /* BIOLOGY_BEC2 - entire module */
+#endif /* (BIOLOGY_BEC2) || (MARBL) - entire module */
       end module bgc

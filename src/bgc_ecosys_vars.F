@@ -2,10 +2,16 @@
       ! formerly bgc_ecosys_bec2.h
 
 #include "cppdefs.opt"
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       use param
-      use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+#ifdef MARBL      
+      use marbl_driver,only: marbldrv_configure_saved_state
+#endif      
+#ifdef MARBL_DIAGS      
+     &                      ,marbldrv_configure_diagnostics
+#endif      
       implicit none
 
       ! tracer: values passed to biological model by ROMS
@@ -15,15 +21,18 @@
       real,allocatable,dimension(:,:,:,:) :: tracer
       real,allocatable,dimension(:,:,:,:) :: DTRACER_MODULE
 
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
 !
 ! Diagnostic variables appearing in average and history files:
 !
       integer :: nr_bec2_diag_2d, nr_bec2_diag_3d, nr_bec2_diag
       integer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
-
+#ifndef MARBL_DIAGS
       parameter( nr_bec2_diag_3d=103, nr_bec2_diag_2d=37)
-
+#else
+      ! Just hardcoding this for now but will need to obtain it dynamically
+      parameter( nr_bec2_diag_3d=164, nr_bec2_diag_2d=179)
+#endif
       parameter( nr_bec2_diag=nr_bec2_diag_2d+nr_bec2_diag_3d )
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d
       real,allocatable,dimension(:,:,:)   :: bec2_diag_2d
@@ -182,14 +191,20 @@
       contains
 
 !----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine find_write_bgc_diag
       implicit none
 
       integer idiag
-
-#include "bgc_2Ddiagnostics.opt"
+#if defined(BEC2_DIAG)
+#include "bgc_2Ddiagnostics.opt" 
 #include "bgc_3Ddiagnostics.opt"
+      
+#elif defined(MARBL_DIAGS)
+      call marbldrv_configure_diagnostics(
+     &     vname_bec2_diag_2d,vname_bec2_diag_3d,
+     &     wrt_bec2_diag_2d,wrt_bec2_diag_3d)
+#endif /* BEC2_DIAG */ 
     
       nr_bec2_wrdiag_2d=0
       do idiag=1,nr_bec2_diag_2d
@@ -220,7 +235,7 @@
       enddo
 
       end subroutine find_write_bgc_diag  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 !----------------------------------------------------------------------
       subroutine init_arrays_bgc_ecosys_vars  ![
@@ -229,7 +244,7 @@
       allocate( tracer(GLOBAL_2D_ARRAY,N,ntrc_bio) )
       allocate( DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio) )
 
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined (MARBL_DIAGS)
 
       call find_write_bgc_diag 
    
@@ -246,7 +261,10 @@
       endif 
 
 #endif /* BEC2_DIAG */
-
+#ifdef MARBL      
+!     Allocate arrays for MARBL saved state variables
+      call marbldrv_configure_saved_state
+#endif 
       allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
 
       allocate( landmask(GLOBAL_2D_ARRAY) )
@@ -301,6 +319,6 @@
 
 !----------------------------------------------------------------------
 
-#endif /* BIOLOGY_BEC2 */
+#endif /* BIOLOGY_BEC2 || MARBL  */
 
       end module bgc_ecosys_vars

@@ -42,6 +42,9 @@
       use param
       use wec_frc
       use bulk_frc
+      ! Get wind separately to other bulk forcing to avoid circular dependency when running with MARBL
+      use get_bulk_wnd
+
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
       use tracers   ! iTandS, t, t_avg
       use coupling
@@ -133,6 +136,9 @@
       call init_arrays_surf_flx
 
 #ifdef BULK_FRC
+      ! Get wind separately to other forcing to avoid circular dependency when running with MARBL
+      call init_arrays_bulk_wnd
+
       call init_arrays_bulk_frc
 #endif
 
@@ -166,7 +172,7 @@
 
       if (pipe_source) call init_arrays_pipes
 
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       call init_arrays_bgc_ecosys_vars
       call init_arrays_bgc_forces
       call init_arrays_bgc_frc
