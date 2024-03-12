@@ -19,9 +19,7 @@
 ! Array dimensions and bounds of the used portions of sub-arrays:
 
 #ifdef MPI
-      integer, parameter :: NNODES=NP_XI*NP_ETA
-!     integer, parameter ::
-!    &    Lm_old=(LLm+NP_XI-1)/NP_XI, Mm_old=(MMm+NP_ETA-1)/NP_ETA
+      integer, parameter :: nnodes=NP_XI*NP_ETA
 
       integer ::
      &    Lm=(LLm+NP_XI-1)/NP_XI, Mm=(MMm+NP_ETA-1)/NP_ETA
