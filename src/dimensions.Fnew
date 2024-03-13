@@ -1,0 +1,103 @@
+      module dimensions
+
+      ! ========================================
+      ! Contains global and subdomain dimensions
+      ! ========================================
+
+      ! coded by Jeroen Molemaker
+      use param
+      use hidden_mpi_vars
+
+      implicit none
+      private
+
+#include "cppdefs.opt"
+
+      integer,parameter, public :: gnx = LLm
+      integer,parameter, public :: gny = MMm
+      integer,parameter, public ::  nz = N
+
+      integer,parameter, public ::  bf = 2 ! allocation buffer size
+
+      integer,public            :: nx   ! Can vary between subdomains so not compile time parameters
+      integer,public            :: ny
+
+      integer,parameter,public  :: npx = np_xi  ! number of sub-domains in x-direction
+      integer,parameter,public  :: npy = np_eta ! number of sub-domains in y-direction
+
+      integer,public :: i0,i1,j0,j1     ! accounts for physical boundary buffers
+
+      public :: init_dimensions
+
+      contains
+
+! ----------------------------------------------------------------------
+      subroutine init_dimensions  ![
+      implicit none
+      ! need to do this here because Lm, Mm change in mpi_setup and are not known at compile time.
+      !local
+      integer :: surplus,ierr
+
+      nx = ceiling(1.0*gnx/npx)  ! x-size of all internal sub-domains. 
+      ny = ceiling(1.0*gny/npy)  ! y-size of all internal sub-domains. 
+
+      ! The domain size is not required to be an integer times the
+      ! sub-domain size, nx. It's possible to have a surplus.
+
+      surplus = nx*npx - gnx
+
+      ! Before we modify the first and last subdomain size, we figure
+      ! out the global indices of the South West corner of each subdomain
+      if (inode==0) then
+        iSW_corn = 0 
+      else
+        iSW_corn = inode*nx - floor(0.5*surplus)  
+      endif
+
+      ! The surplus grid-points are removed by making the first and last
+      ! sub-domain smaller. If the surplus is odd, the right-most
+      ! sub-domain will be the smallest.
+
+      if (inode==0) then
+        nx = nx - floor(0.5*surplus)
+      elseif (inode==npx-1) then
+        nx = nx - ceiling(0.5*surplus)
+      endif
+
+!     print *,'X-dir surplus: ',mynode,nx,surplus,floor(0.5*surplus),ceiling(0.5*surplus)
+
+      surplus = ny*npy - gny
+
+      if (inode==0) then
+        jSW_corn = 0 
+      else
+        jSW_corn = jnode*ny - floor(0.5*surplus)  
+      endif
+
+      if (jnode==0) then
+        ny = ny - floor(0.5*surplus)
+      elseif (jnode==npy-1) then
+        ny = ny - ceiling(0.5*surplus)
+      endif
+
+!     print *, mynode,nx,ny,Lm,Mm
+!     call MPI_Barrier(ocean_grid_comm, ierr)
+
+
+      if ((nx/=Lm).or.(ny/=Mm)) then
+        print *,'Error in computing sub-domain sizes'
+        stop
+      endif
+
+      i0=1; i1=nx; j0=1; j1=ny
+
+      if (inode==0)        i0=0
+      if (inode==NP_XI-1)  i1=nx+1
+      if (jnode==0)        j0=0
+      if (jnode==NP_ETA-1) j1=ny+1
+
+      end subroutine init_dimensions  !]
+
+! ----------------------------------------------------------------------
+
+      end module dimensions

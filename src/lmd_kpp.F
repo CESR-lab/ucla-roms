@@ -489,8 +489,11 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
               do k=0,N
                 Akv(i,j,k)       = 0.5*Akv(i,j,k)       + 0.5*Kv(i,j,k)
                 Akt(i,j,k,itemp) = 0.5*Akt(i,j,k,itemp) + 0.5*Kt(i,j,k)
+!               Akv(i,j,k)       = Kv(i,j,k)
+!               Akt(i,j,k,itemp) = Kt(i,j,k)
 # ifdef SALINITY
                 Akt(i,j,k,isalt) = 0.5*Akt(i,j,k,isalt) + 0.5*Ks(i,j,k)
+!               Akt(i,j,k,isalt) = Ks(i,j,k)
 # endif
               enddo
 

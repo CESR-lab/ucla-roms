@@ -321,6 +321,7 @@ CR      write(*,*)  ' -2' MYID
       use analytical
       use bgc
       use tides
+      use mixing
 
       implicit none
 
@@ -374,6 +375,9 @@ CR      write(*,*)  ' -2' MYID
       call ana_vmix
 # elif defined LMD_MIXING
       call lmd_vmix(nstp)
+      if (mynode==0) then
+!       print *,'pre-step mixing: ',hbls(20,20,nstp),maxval(Akv(20,20,:))
+      endif
 # elif defined BVF_MIXING
       call bvf_mix(0)
 # endif
@@ -402,6 +406,9 @@ CR      write(*,*)  ' -2' MYID
       call set_forces   ! get for time n+1/2
 # if defined LMD_MIXING
       call lmd_vmix(nrhs)
+      if (mynode==0) then
+!       print *,'cor-step mixing: ',hbls(20,20,nrhs),maxval(Akv(20,20,:))
+      endif
 # endif
 
       tdays = (time+0.5*dt)*sec2day
