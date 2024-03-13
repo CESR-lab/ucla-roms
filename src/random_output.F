@@ -54,15 +54,15 @@
       ! local
       integer                        :: ierr, varid
 
-      varid = nccreate(ncid,'zeta',(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+      varid = nccreate(ncid,'zeta',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name','sea surface heigth')
       ierr = nf90_put_att(ncid,varid,'units','m')
 
-      varid = nccreate(ncid,'u_surf',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
+      varid = nccreate(ncid,'u_surf',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name','surface x velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-      varid = nccreate(ncid,'v_surf',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
+      varid = nccreate(ncid,'v_surf',(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/))
       ierr = nf90_put_att(ncid,varid,'long_name','surface y velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s')
 
