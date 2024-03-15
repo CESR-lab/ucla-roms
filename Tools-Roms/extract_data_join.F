@@ -580,7 +580,7 @@
 
         endif ! <- if(my_rank==0) END OF MASTER ONLY PRE-PROCESSING
 
-        if (mayday==.true.) goto 97
+        if (mayday) goto 97
 
         do g=1,nsets
 
