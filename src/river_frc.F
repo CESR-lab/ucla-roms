@@ -116,7 +116,7 @@
         enddo
 
         ierr=nf90_open(ana_grdname,nf90_write,ncid)
-        varid = nccreate(ncid,'river_flux',(/'xi_rho','eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+        varid = nccreate(ncid,'river_flux',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
         ierr=nf90_put_att(ncid, varid,'long_name','River volume flux') 
 !       ierr=nf90_close(ncid)
 !       print *,'added river_flux',mynode
