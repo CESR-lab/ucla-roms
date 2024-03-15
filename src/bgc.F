@@ -418,8 +418,8 @@
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t_avg(itrc)) then
              text_lname='avg_'/ /t_lname(itrc)
-             varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho',
-     &                  's_rho','time'/),(/xi_rho,eta_rho,N,0/))
+             varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,
+     &                  dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
@@ -428,8 +428,8 @@
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t(itrc)) then
              text_lname='avg_'/ /t_lname(itrc)
-             varid = nccreate(ncid,t_vname(itrc),(/'xi_rho','eta_rho',
-     &                  's_rho','time'/),(/xi_rho,eta_rho,N,0/))
+             varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,
+     &                  dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
@@ -522,7 +522,7 @@
       do idiag=1,nr_bec2_diag_2d
         if (wrt_bec2_diag_2d(idiag)) then
           varid = nccreate(ncid,vname_bec2_diag_2d(1,idiag),
-     &            (/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+     &            (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_2d(2,idiag))
           ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,idiag))
         endif
@@ -532,7 +532,7 @@
       do idiag=1,nr_bec2_diag_3d
         if (wrt_bec2_diag_3d(idiag)) then
           varid = nccreate(ncid,vname_bec2_diag_3d(1,idiag),
-     &            (/'xi_rho','eta_rho','s_rho','time'/),(/xi_rho,eta_rho,N,0/))
+     &            (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_3d(2,idiag))
           ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_3d(3,idiag))
         endif
