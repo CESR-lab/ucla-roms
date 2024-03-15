@@ -564,8 +564,8 @@
       do itrc=1,NT
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 # ifdef EXCHANGE
-        call exchange_tile (istr,iend,jstr,jend,
-     &                      t(START_2D_ARRAY,1,nnew,itrc), N)
+        ! Another opportunity to pack more mpi_exchanges
+        call exchange_xxx(t(:,:,:,nnew,itrc))
 # endif
       enddo
 
@@ -578,7 +578,7 @@
       if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
 !       if  (mynode==0) print *, 'AB2 extrapolate'
         do k=1,N
-          do j=jstr,iend
+          do j=jstr,jend
             do i=istrU,iend
               u(i,j,k,nnew) = u(i,j,k,nnew)
      &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1))*dtau
@@ -659,9 +659,8 @@
           enddo
         enddo
 #  ifdef EXCHANGE
-        !! try to see if we could avoid this.
-        call exchange_2_tile(istr,iend,jstr,jend,u(START_2D_ARRAY,1,nnew),N
-     &                                          ,v(START_2D_ARRAY,1,nnew),N)
+        !! try to see if we could avoid this. NHMG only!
+        call exchange_xxx(u(:,:,:,nnew),v(:,:,:,nnew))
 #  endif
 
         ! Compute a 'barotropic' correction to w such that it matches
@@ -755,8 +754,7 @@
       !! u and v are exchanged in set_depth (set_HUV1)
       !! for neatness, we could move this exchange there as well
 #  ifdef EXCHANGE
-      call exchange_tile (istr,iend,jstr,jend,
-     &                          w(START_2D_ARRAY,1,nnew),N)
+      call exchange_xxx(w(:,:,:,nnew))
 #  endif
 
 # endif /* NHMG */

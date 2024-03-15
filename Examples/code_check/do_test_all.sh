@@ -2,7 +2,8 @@
 
 # ******** USER INPUT START ************
 # declare an array of Example folders and .in names to use:
-declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Tracers_passive" "WEC_real" )
+#declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Tracers_passive" "WEC_real" )
+declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Filament" )
 # ******** USER INPUT END   ************
 
 arg=$1

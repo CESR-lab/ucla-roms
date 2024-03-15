@@ -2,7 +2,7 @@ title:
    Analytical pipe example
 
 time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
-               20        20       30       1
+               20        60       30       1
 
 S-coord: THETA_S,   THETA_B,    hc (m)
           6.0D0        6.0D0     25.0D0
@@ -17,7 +17,7 @@ initial: NRREC  filename
 boundary: filename
 
 output_root_name:
-     test     
+     pipes
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

@@ -98,9 +98,9 @@
       enddo
 # ifdef EXCHANGE
       if (iic == 0) then
-        call exchange2d_tile(istr,iend,jstr,jend, hinv)
+        call exchange_xxx(hinv)
       endif
-      call exchange_3_tile(istr,iend,jstr,jend, z_w,N+1, z_r,N, Hz,N)
+      call exchange_xxx(z_w,z_r,Hz)
 # endif
 
 #if defined NHMG || defined NONTRAD_COR
@@ -126,7 +126,7 @@
          enddo
        endif
       if (EASTERN_EDGE) then
-         do k = 1, N
+!        do k = 1, N
             do j = 0,Mm+1
                dzdxi (Lm  ,j,k) = 0.
                dzdxi (Lm+1,j,k) = 0.
@@ -223,7 +223,7 @@
         enddo
       enddo
 # ifdef EXCHANGE
-      call exchange_2_tile (istr,iend,jstr,jend, FlxU,N, FlxV,N)
+      call exchange_xxx(FlxU,FlxV)
 # endif
       end
 
@@ -436,17 +436,10 @@
 
 # ifdef EXCHANGE
 #  if defined EXTRAP_BAR_FLUXES && defined KEEP_CORIOLIS
-      call exchange_3_tile(istr,iend,jstr,jend,     FlxU, N,
-     &                                u(START_2D_ARRAY,1,nnew), N,
-     &                               ubar(START_2D_ARRAY,kbak), 1)
-
-      call exchange_3_tile(istr,iend,jstr,jend,     FlxV, N,
-     &                                v(START_2D_ARRAY,1,nnew), N,
-     &                               vbar(START_2D_ARRAY,kbak), 1)
+      call exchange_xxx(FlxU,u(:,:,:,nnew),ubar)
+      call exchange_xxx(FlxV,v(:,:,:,nnew),vbar)
 #  else
-      call exchange_4_tile(istr,iend,jstr,jend, FlxU, N,  FlxV, N,
-     &                                u(START_2D_ARRAY,1,nnew), N,
-     &                                v(START_2D_ARRAY,1,nnew), N)
+      call exchange_xxx(FlxU,FlxV,u(:,:,:,nnew),v(:,:,:,nnew))
 #  endif
 # endif
       end

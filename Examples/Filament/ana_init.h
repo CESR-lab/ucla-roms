@@ -52,8 +52,6 @@
           enddo
         enddo
       enddo
-!     print *,minval(xr),maxval(xr)
-!     print *,minval(h_sbl),maxval(h_sbl)
      
       bf_int = 0
       do k=1,nz
@@ -62,7 +60,7 @@
      &           0.5*N0*( (1+ B_cff) * z_r(1,1,k) - ( 1- B_cff)
      &          *( h0 + lambda_inv * 
      &           log(cosh((1./lambda_inv) *(z_r(1,1,k) + h0)))))
-     &               )
+     &               )/g
       enddo
 
 !     print *,'bf_int: ',bf_int

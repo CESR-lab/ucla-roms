@@ -15,6 +15,7 @@
       use roms_read_write
       use pipe_frc
       use scalars
+      use mpi_exchanges
       implicit none
 
 !
@@ -489,41 +490,46 @@
 ! Read in grid arrays.
 !===== == ==== =======
 
-      start=1; start(3)=0                                            ! 2D vars
+      start=1; start(3)=0      ! starting indices in netcdf file. Might not be needed here
 
-      call ncread(ncid,'h',h(i0:i1,j0:j1),start)                     ! Bathymetry:
-      call exchange_tile(1,nx,1,ny, h(START_2D_ARRAY),1)             ! h needed an exchange
+      ! The i0,i1,j0,j1 indices are needed because the netcdf files do
+      ! include 1 more row/column for subdomains at the physical boundary
 
-      call ncread(ncid,'f',f(i0:i1,j0:j1),start)                     ! Coriolis parameter.
-      call exchange_tile(1,nx,1,ny, f(START_2D_ARRAY),1)
+      call ncread(ncid,'h',h(i0:i1,j0:j1))         ! Bathymetry
+      call exchange_xxx(h)                         ! (2,.true.)
 
-! Coordinate transfomation metrics (m,n) associated with
+      
+! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 
       call ncread(ncid,'pm',pm(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, pm(START_2D_ARRAY),1)
-
       call ncread(ncid,'pn',pn(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, pn(START_2D_ARRAY),1)
+      call exchange_xxx(pm,pn)
 
 # ifdef SPHERICAL
       call ncread(ncid,'lon_rho',lonr(i0:i1,j0:j1),start)  ! Coordinates (lon,lat [degrees]) or (x,y [meters]) at RHO-points.
-      call exchange_tile(1,nx,1,ny, lonr(START_2D_ARRAY),1)
       call ncread(ncid,'lat_rho',latr(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, latr(START_2D_ARRAY),1)
+      call exchange_xxx(lonr,latr)
 # else
+      ! check this with analytical filament example
       call ncread(ncid,'x_rho',xr(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, xr(START_2D_ARRAY),1)
       call ncread(ncid,'y_rho',yr(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, yr(START_2D_ARRAY),1)
+
+      ! Only use if non-spherical grid, otherwise computed in  setup_grid1
+      call ncread(ncid,'f',f(i0:i1,j0:j1))         ! Coriolis parameter.
+      call exchange_xxx(xr,yr,f)
+
 # endif
 # ifdef CURVGRID
+      ! grid angle is used to compute non-traditional coriolis components
+      ! and for in-place rotation for data extraction
+      ! Also used in wec for the moment
       call ncread(ncid,'angle',angler(i0:i1,j0:j1),start)  ! Angle (radians) between XI-axis and EAST at RHO-points.
-      call exchange_tile(1,nx,1,ny, angler(START_2D_ARRAY),1)
+      call exchange_xxx(angler)
 # endif
 # ifdef MASKING
       call ncread(ncid,'mask_rho',rmask(i0:i1,j0:j1),start)! Mask at RHO-points.
-      call exchange_tile(1,nx,1,ny, rmask(START_2D_ARRAY),1)
+      call exchange_xxx(rmask)
 # endif
       ierr=nf90_close(ncid)
       if (ierr==nf90_noerr) then

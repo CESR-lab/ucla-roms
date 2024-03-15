@@ -485,7 +485,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
                 Akt(i,j,k,isalt)=Ks(i,j,k)
 # endif
               enddo
-            else
+            else  !! Average 2 time steps of mixing coefficients
               do k=0,N
                 Akv(i,j,k)       = 0.5*Akv(i,j,k)       + 0.5*Kv(i,j,k)
                 Akt(i,j,k,itemp) = 0.5*Akt(i,j,k,itemp) + 0.5*Kt(i,j,k)
@@ -627,24 +627,22 @@ c      endif
 # ifdef EXCHANGE
 #  ifdef LMD_KPP
 #   ifdef LMD_BKPP
-      call exchange_3_tile( istr,iend,jstr,jend, Akv, N+1,
-     &                      hbls(START_2D_ARRAY,3-nstp),1,
-     &                      hbbl(START_2D_ARRAY,3-nstp),1)
+      call exchange_xxx(Akv)
+      call exchange_xxx(hbls(:,:,3-nstp))
+      call exchange_xxx(hbbl(:,:,3-nstp))
 #   else
-      call exchange_2_tile( istr,iend,jstr,jend, Akv, N+1,
-     &                      hbls(START_2D_ARRAY,3-nstp),1)
+      call exchange_xxx(Akv)
+      call exchange_xxx(hbls(:,:,3-nstp))
 #   endif
 #  else
-      call exchange_2_tile( istr,iend,jstr,jend, Akv, N+1,
-     &                      hbbl(START_2D_ARRAY,3-nstp),1)
+      call exchange_xxx(Akv)
+      call exchange_xxx(hbbl(:,:,3-nstp))
 #  endif
 #  ifdef SALINITY
-      call exchange_2_tile( istr,iend,jstr,jend,
-     &                   Akt(START_2D_ARRAY,0,itemp), N+1,
-     &                   Akt(START_2D_ARRAY,0,isalt), N+1)
+      call exchange_xxx(Akt(:,:,:,itemp))
+      call exchange_xxx(Akt(:,:,:,isalt))
 #  else
-      call exchange_tile( istr,iend,jstr,jend,
-     &                   Akt(START_2D_ARRAY,0,itemp), N+1)
+      call exchange_xxx(Akt(:,:,:,itemp))
 #  endif
 # endif
       end
@@ -677,11 +675,6 @@ c      endif
       is=ie+2 ; ie=is+9
       if (ie > max_opt_size) goto 99
       cpps(is:ie)='SMOOTH_HBL'
-# endif
-# ifdef MLCONV
-      is=ie+2 ; ie=is+7
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='MLCONV'
 # endif
 # ifdef MERGE_OVERLAP
       is=ie+2 ; ie=is+13

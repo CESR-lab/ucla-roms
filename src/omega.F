@@ -197,7 +197,7 @@ c**         Wi(i,j,k)=0.            !<-- back to fully explicit code
 #  endif
 # endif
 # ifdef EXCHANGE
-      call exchange_2_tile (istr,iend,jstr,jend, We,N+1, Wi,N+1)
+      call exchange_xxx(We,Wi)
 # endif
       end
 #else

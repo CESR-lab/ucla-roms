@@ -1,4 +1,4 @@
 #!/bin/bash
 
-ncjoin -d sample_his*.?.nc
-ncview sample_his*.nc
+ncjoin -d Flux_frc_his*.?.nc
+ncview Flux_frc_his*.nc

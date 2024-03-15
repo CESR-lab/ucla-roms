@@ -190,6 +190,7 @@ C$OMP BARRIER
       end subroutine set_frc_var_tile  !]
 
 ! ----------------------------------------------------------------------
+
       subroutine find_new_record( vname,     time_name, time_model,    ![
      &                            file_indx, irec,      vtime       )
 
@@ -287,7 +288,10 @@ C$OMP BARRIER
 
           found_var      = .true.
           found_var_ever = .true.
-          ! if(mynode==0) write(*,'(10x,3A)') 'Found var: ', vname, ' in file ', frcfile(file_indx)
+!         if (mynode==0) then
+!           write(*,'(10x,3A)') 'Found var: ', vname, ' in file ', frcfile(file_indx)
+!         endif
+           
            
           call get_time_max_recs(ncid, time_name, max_recs)
 
@@ -776,9 +780,9 @@ C$OMP BARRIER
 #  define EXCH_ARR_RANGE 1,Lm,1,Mm
 # endif
 # ifdef SOLVE3D
-      call exchange_tile(EXCH_ARR_RANGE, A,nmax)
+      call exchange_xxx(A)
 # else
-      call exchange2d_tile(EXCH_ARR_RANGE, A)
+      call exchange_xxx(A)
 # endif
 #endif
 
@@ -1331,9 +1335,11 @@ C$OMP BARRIER
 #  define EXCH_ARR_RANGE 1,Lm,1,Mm
 # endif
 # ifdef SOLVE3D
-      call exchange_tile(EXCH_ARR_RANGE, A,1) ! Swapped nmax for 1 for now
+!     call exchange_tile(EXCH_ARR_RANGE, A,1) ! Swapped nmax for 1 for now
+      call exchange_xxx(A) ! Swapped nmax for 1 for now
 # else
-      call exchange2d_tile(EXCH_ARR_RANGE, A)
+!     call exchange2d_tile(EXCH_ARR_RANGE, A)
+      call exchange_xxx(A) ! Swapped nmax for 1 for now
 # endif
 #endif
 

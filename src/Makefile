@@ -13,7 +13,7 @@ include Makedefs.inc
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
+KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
 	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
 	mpi_test_arr.F private_scratch.F basic_output.F\
@@ -39,15 +39,16 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
-	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
+	mpi_setup.F\
 \
 	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F\
+	random_output.F mpi_exchanges.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F\
 \
 	main.F	
-
+#read_write.F
+#exchange.F	mpi_exchange8TA.F\
 #ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 
@@ -71,7 +72,7 @@ IOSRC = checkdims.F	insert_node.F\
  LROMS4 = 2/$(LROMS) 3/$(LROMS) 4/$(LROMS)
 
 # ROMS excutable (This is the first target and hence the default):
-$(SBIN): mpc $(OBJS)
+$(SBIN): $(OBJS)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
 	mv a.out $(SBIN)
 
@@ -89,7 +90,7 @@ check_forces: check_forces.o $(SBIN)
 	mv a.out check_forces
 
 # Everything
-all: mpc tools depend $(SBIN)
+all: tools depend $(SBIN)
 
 # A program to test MPI halo exchange routines.
 # - ------- -- ---- --- ---- -------- ---------
@@ -103,16 +104,11 @@ mpi_test: $(MPI_TEST_OBJ)
 
 # Auxiliary utility programs
 # --------- ------- --------
- TOOLS = mpc cppcheck srcscheck checkkwds redefs
+ TOOLS = cppcheck srcscheck checkkwds redefs
 
 tools: $(TOOLS)
 
     TMP = .
-
-mpc: mpc.F Makefile
-	$(CPP) $(CPPFLAGS) -P mpc.F > $(TMP)/mpc.f
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc $(TMP)/mpc.f
-#	/bin/rm -rf $(TMP)/mpc.f
 
 partit_t.f: partit.F
 	$(CPP) -P $(CPPFLAGS) -DTRANSPOSED_MPI_NODE_ORDER partit.F| mpc > partit_t.f
@@ -148,9 +144,6 @@ setup_kwds.F: checkkwds read_inp.F
 depend:  # Note: cross_matrix no longer used
 	@${ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend
 	@echo 'Updated Make.depend (dependency list)'
-
-plotter: plotter.o
-	$(CFT) -o plotter plotter.o $(LIBNCAR)
 
 # Target to create tar file.
 # ------ -- ------ --- -----

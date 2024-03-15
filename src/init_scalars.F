@@ -75,7 +75,7 @@ c      write(*,*) 'kmp_stacksize =', size
       call get_date (date_str)
 
       call init_dimensions                                 ! needs to come before init_output_indices
-      call init_output_indices
+      call init_output_indices      ! retire this soon (the bfx, bfy thing)
 
 
       ierr=0

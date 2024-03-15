@@ -30,7 +30,7 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
-        ! Devin added this
+
         call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
@@ -69,7 +69,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
       call start_timers()                ! a possibility of I/O error
       call roms_init                     ! occurring on some MPI nodes,
       if (may_day_flag /= 0) goto 99     ! but not simultaneously on
-      do iic=ntstart,ntstart+ntimes      ! all, exiting is deferred
+      do iic=ntstart,ntstart+ntimes-1    ! all, exiting is deferred
         diag_sync=.false.                ! until "may_day_flag" is
         call roms_step
         if (diag_sync .and. may_day_flag /= 0) goto 99
@@ -285,13 +285,12 @@ CR      write(*,*)  ' -2' MYID
 #endif
       if (do_random) call init_random
 
-CR      write(*,*) '  0' MYID
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
-C$OMP MASTER
         mpi_master_only write(*,'(/1x,A/)')
      &     'main :: initialization complete, started time-stepping.'
-C$OMP END MASTER
+
+      call diag  ! log file output of global norms
 
   99  return
       end
@@ -324,6 +323,8 @@ C$OMP END MASTER
       use tides
 
       implicit none
+
+      integer :: ierr
 
 ! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (denoted here as "nstp"), while counter
@@ -364,15 +365,13 @@ C$OMP END MASTER
       ! Hz is computed by set_depth
       call set_HUV
 
-      call diag
-
       ! Computes vertical flux omega, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
       ! Should be already available from previous time-step
       call omega
 
 # if defined ANA_VMIX
-      call ana_vmix(0)
+      call ana_vmix
 # elif defined LMD_MIXING
       call lmd_vmix(nstp)
 # elif defined BVF_MIXING
@@ -406,6 +405,7 @@ C$OMP END MASTER
 # endif
 
       tdays = (time+0.5*dt)*sec2day
+
       call set_bry_all  ! get for time n+1
       if (bry_tides.or.pot_tides) call set_tides(0)
 
@@ -456,6 +456,7 @@ C$OMP END MASTER
 
 !     Done with stepping, time for outputs
 
+      call diag  ! log file output of global norms
 
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
@@ -466,14 +467,14 @@ C$OMP END MASTER
 
       if (do_extract) call do_extract_data
 
-      if (ub_tune)  call adjust_orlanski
+      if (ub_tune)    call adjust_orlanski
 
-      if (floats) call do_particles
+      if (floats)     call do_particles
 
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
 #ifdef DIAGNOSTICS
-      call do_diagnostics 
+      if (diag_uv.or.diag_trc.or.diag_pflx) call do_diagnostics 
 #endif
 
       if (do_random) call wrt_random

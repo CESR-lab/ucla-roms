@@ -10,6 +10,7 @@
       use scalars
       use tracers
       use mixing
+      use scalars
 
       implicit none
       private
@@ -25,41 +26,19 @@
 ! ana_stflux_tile   Analytical kinematic surface flux of tracer type variables.
 ! ana_wwave_tile    Analytical wind induced wave amplitude, direction and period.
 
-! REMOVE ALL FLAGS LATER
-#ifdef ANA_INITIAL
       public ana_init
-#endif
-#ifdef ANA_VMIX
       public ana_vmix
-#endif
-
-#ifdef ANA_SMFLUX
       public ana_smflux_tile
-#endif
-#if defined ANA_SRFLUX && defined SOLVE3D
       public ana_srflux_tile
-#endif
-#if defined ANA_SSH
-      public ana_ssh_tile
-#endif
-#ifdef SOLVE3D
-# if defined ANA_STFLUX || defined ANA_SSFLUX
       public ana_stflux_tile
-# endif
-#endif
 
       contains
 
 ! ----------------------------------------------------------------------
-#ifdef ANA_INITIAL
       subroutine ana_init ![
 
-      use param
-      use scalars
       use boundary
-      use tracers
       use eos_vars
-      use mixing
 
       implicit none
 
@@ -91,8 +70,6 @@
 ! between the initial state and side boundary conditions.
 
 
-# if defined OBC_WEST  || defined OBC_EAST ||\
-     defined OBC_SOUTH || defined OBC_NORTH
 #  ifdef ANA_BRY
 #   ifdef OBC_WEST
       if (WESTERN_EDGE) then
@@ -194,177 +171,45 @@
 #    endif
       endif
 #   endif
-#  else /* alternative to ANA_BRY */
 #  endif /* ANA_BRY */
-# endif /* at least one of OBC_XXXXX */
 
 
 # ifdef EXCHANGE
-      call exchange2d_3_tile(istr,iend,jstr,jend,
-     &                       zeta(START_2D_ARRAY,1),
-     &                       ubar(START_2D_ARRAY,1),
-     &                       vbar(START_2D_ARRAY,1))
+      call exchange_xxx(zeta(:,:,1),ubar(:,:,1),vbar(:,:,1))
 #  ifdef SOLVE3D
-      call exchange_2_tile(istr,iend,jstr,jend,
-     &                     u(START_2D_ARRAY,1,1), N,
-     &                     v(START_2D_ARRAY,1,1), N)
+      call exchange_xxx(u(:,:,:,1),v(:,:,:,1))
       do itrc=1,nt
-        call exchange_tile(istr,iend,jstr,jend,
-     &                t(START_2D_ARRAY,1,1,itrc), N)
+        call exchange_xxx(t(:,:,:,1,itrc) )
       enddo
-#  endif
-#  ifdef COLD_FILAMENT
-      !! Move this
-      call exchange_tile(istr,iend,jstr,jend, Akv,N+1)
 #  endif
 # endif  /* EXCHANGE */
 
 
-# if defined OBC_WEST && (defined NS_PERIODIC || defined MPI)
-      if (WESTERN_EDGE) then
-#  ifdef M2_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, zeta_west,1)
-        call exch_bry_EW_tile (jstr,jend, ubar_west,1)
-        call exch_bry_EW_tile (jstr,jend, vbar_west,1)
-#  endif
-#  ifdef M3_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, u_west,N)
-        call exch_bry_EW_tile (jstr,jend, v_west,N)
-#  endif
-#  ifdef T_FRC_BRY
-        do itrc=1,NT
-          call exch_bry_EW_tile (jstr,jend, t_west(0,1,itrc),N)
-        enddo
-#  endif
-      endif
-# endif
-
-# if defined OBC_EAST && (defined NS_PERIODIC || defined MPI)
-      if (EASTERN_EDGE) then
-#  ifdef M2_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, zeta_east,1)
-        call exch_bry_EW_tile (jstr,jend, ubar_east,1)
-        call exch_bry_EW_tile (jstr,jend, vbar_east,1)
-#  endif
-#  ifdef M3_FRC_BRY
-        call exch_bry_EW_tile (jstr,jend, u_east,N)
-        call exch_bry_EW_tile (jstr,jend, v_east,N)
-#  endif
-#  ifdef T_FRC_BRY
-        do itrc=1,NT
-          call exch_bry_EW_tile (jstr,jend, t_east(0,1,itrc),N)
-        enddo
-#  endif
-      endif
-# endif
-
-# if defined OBC_SOUTH && (defined EW_PERIODIC || defined MPI)
-      if (SOUTHERN_EDGE) then
-#  ifdef M2_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, zeta_south,1)
-        call exch_bry_NS_tile (istr,iend, ubar_south,1)
-        call exch_bry_NS_tile (istr,iend, vbar_south,1)
-#  endif
-#  ifdef M3_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, u_south,N)
-        call exch_bry_NS_tile (istr,iend, v_south,N)
-#  endif
-#  ifdef T_FRC_BRY
-        do itrc=1,NT
-          call exch_bry_NS_tile (istr,iend, t_south(0,1,itrc),N)
-        enddo
-#  endif
-      endif
-# endif
-
-# if defined OBC_NORTH && (defined EW_PERIODIC || defined MPI)
-      if (NORTHERN_EDGE) then
-#  ifdef M2_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, zeta_north,1)
-        call exch_bry_NS_tile (istr,iend, ubar_north,1)
-        call exch_bry_NS_tile (istr,iend, vbar_north,1)
-#  endif
-#  ifdef M3_FRC_BRY
-        call exch_bry_NS_tile (istr,iend, u_north,N)
-        call exch_bry_NS_tile (istr,iend, v_north,N)
-#  endif
-#  ifdef T_FRC_BRY
-        do itrc=1,NT
-          call exch_bry_NS_tile (istr,iend, t_north(0,1,itrc),N)
-        enddo
-#  endif
-      endif
-# endif
-
       end subroutine ana_init_generic !]
-#endif /* ANA_INITIAL */
 ! ---------------------------------------------------------------------
-#if defined ANA_VMIX && defined SOLVE3D
-      subroutine ana_vmix (tile) ![
-
-      implicit none
-      integer tile
-# include "compute_tile_bounds.h"
-      call ana_vmix_tile (istr,iend,jstr,jend)
-      end subroutine ana_vmix  !]
-! ---------------------------------------------------------------------
-      subroutine ana_vmix_tile (istr,iend,jstr,jend)  ![
+      subroutine ana_vmix ![
 
 ! Set vertical kinematic vertical viscosity "Akv" [m^2/s] for momentum
 ! and vertical mixing c efficients "Akt" [m^2/s] for tracer equations
 ! using analytical expressions.
 
       implicit none
-      integer :: i,j,k
-      real    :: cff
-      real    :: hbl,ssgm
 
-      hbl = 70;  ! match the initial mixed layer depth
-
-      if (FIRST_TIME_STEP) then
-        do k=0,nz
-          do j=0,ny+1
-            do i=0,nx+1
-              ssgm=(z_w(i,j,nz)-z_w(i,j,k))/hbl
-
-              if (ssgm < 1.) then
-                if (ssgm<0.07D0) then
-                  cff=0.5*(ssgm-0.07D0)**2/0.07D0
-                else
-                  cff=0.D0
-                endif
-                cff=cff + ssgm*(1.-ssgm)**2
-              else
-                cff=0
-              endif
-
-              ! attempt to get a max value of 0.005 m^2/s
-              Akv(i,j,k) = cff*0.005/0.15
-
-              Akt(i,j,k,itemp)=cff*0.005/0.15
-#  ifdef SALINITY
-              Akt(i,j,k,isalt)=Akt_bak(isalt)
-#  endif
-            enddo
-          enddo
-        enddo
-      endif
-
+#include "ana_vmix.h"
 
 # ifdef EXCHANGE
-      call exchange_2_tile (istr,iend,jstr,jend,  Akv, N+1,
-     &                    Akt(START_2D_ARRAY,0,itemp), N+1)
+      call exchange_xxx(Akv,Akt(:,:,:,itemp))
+
 #  ifdef SALINITY
-      call exchange_tile (istr,iend,jstr,jend,
-     &                    Akt(START_2D_ARRAY,0,isalt), N+1)
+      call exchange_xxx(Akt(:,:,:,isalt))
 #  endif
-# endif
 
-      end subroutine ana_vmix_tile  !]
-#endif /* ANA_VMIX */
+# endif  /* EXCHANGE */
 
+
+      end subroutine ana_vmix !]
 ! ----------------------------------------------------------------------
-      subroutine ana_smflux_tile(istr,iend,jstr,jend)  ![
+      subroutine ana_smflux_tile(istr,iend,jstr,jend) ![
 
       use param
       use surf_flux !, only: sustr,svstr
@@ -380,13 +225,13 @@
       if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
         do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
           do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
-            sustr(i,j)=0.        ! at horizontal U- and V-points.
-            svstr(i,j)=0.        ! For code compactness, both are set
+            sustr(i,j)=0.0       ! at horizontal U- and V-points.
+            svstr(i,j)=0.0       ! For code compactness, both are set
           enddo                  ! to zero at first (default values),
         enddo                    ! then either one of them, or both may
       endif                      ! be overwritten by nontrivial values.
 
-      end subroutine ana_smflux_tile  !]
+      end subroutine ana_smflux_tile !]
 ! ----------------------------------------------------------------------
       subroutine ana_srflux_tile(istr,iend,jstr,jend)  ![
 

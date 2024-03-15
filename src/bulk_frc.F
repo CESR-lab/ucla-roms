@@ -1,16 +1,10 @@
       module bulk_frc
 
-      ! BULK FORCING MODULE
-
-      ! initial coding: Devin Dollery,Jeroen Molemaker & Pierre Damien (2020)
-
 #include "cppdefs.opt"
-! CPP flag BULK_FRC covering entire module, module empty if off
-#if defined BULK_FRC /* for whole module! */
 
-      ! param.h needed for GLOBAL_2D_array to work
       use param
-      use read_write, only: set_frc_var_tile, ncvs
+      use dimensions
+      use mpi_exchanges
       use roms_read_write
 
       implicit none
@@ -34,7 +28,6 @@
 
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
-
       public init_arrays_bulk_frc
       public set_bulk_frc_tile
 
@@ -53,40 +46,37 @@
 
       allocate( wspd_used(GLOBAL_2D_ARRAY) )
 
-      allocate( nc_uwnd%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_vwnd%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_tair%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_Q%data(GLOBAL_2D_ARRAY,2) )
-      allocate( nc_prate%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_lwrad%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_swrad%data( GLOBAL_2D_ARRAY,2) )
+      ! vdata needs to be of blobal_2d_array size
+      allocate( nc_uwnd%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_vwnd%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_tair%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_Q%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_prate%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_lwrad%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad%vdata(GLOBAL_2D_ARRAY,2) )
 
 #if defined TAU_CORRECTION
       allocate( taux(GLOBAL_2D_ARRAY) )
       allocate( tauy(GLOBAL_2D_ARRAY) )
-      allocate( nc_taux%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_tauy%data( GLOBAL_2D_ARRAY,2) )
+
+      allocate( nc_taux%vdata(GLOBAL_2D_ARRAY,2) )
+      allocate( nc_tauy%vdata(GLOBAL_2D_ARRAY,2) )
 #endif
+
+      if (interp_frc==1) then 
+        nc_uwnd%coarse = 1
+        nc_vwnd%coarse = 1
+        nc_tair%coarse = 1
+        nc_Q%coarse = 1
+        nc_prate%coarse = 1
+        nc_lwrad%coarse = 1
+        nc_swrad%coarse = 1
+      endif
 
 
       end subroutine init_arrays_bulk_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
-
-      ![Set all bulk forces.
-      !
-      ! Landing subroutine from set_forces
-      ! where all bulk forces are set.
-      !
-      ! All bulk variables need time interpolation only
-      ! here so can use same generic routine
-      !
-      ! 1) Find & save force variable file_indx & correct record (irec)
-      ! 2) Read in forcing data
-      ! 3) Interpolate input forcing to correct model time
-      !
-      ! ALL FORCING INPUT DATA NEEDS TO BE IN DAYS!]
 
       use surf_flux, only: srflx
 
@@ -99,30 +89,32 @@
       ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
       ! short-wave radiation flux first because bulk flux routine performs
       ! the final assembly of everything.
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )  ! short wave radiation - this accounts for get_srflx.F & time interp of set_srflx.F in newer code and get_srflux.F & set_srflux() in old code
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_lwrad, lwrad, interp_frc )  ! lwrad
 
-      ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc )  ! u-wind
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc )  ! v-wind
+      ! All variables (including wind) should be on rho-points in the surface forcing
+      ! file. The ranges here need to match the sizes in the partitioned files
+      call set_frc_data(nc_swrad,srflx,'r')
+      call set_frc_data(nc_lwrad,lwrad,'r')
 
-      ! Atmospheric tracers (get_bulk_tra & set_bulk_tra() in old code)
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_tair,  tair,  interp_frc )
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_Q,     Q,     interp_frc )  ! Q (SPECIFIC humidity (kg/kg) (not relative) ) qair in old code
+      call set_frc_data(nc_uwnd,uwnd,'r')
+      call set_frc_data(nc_vwnd,vwnd,'r')
 
-        ! Check units of Q:
-        ! Needs to come after so Q_file_indx has been set.
-        ! If irec =1 only so that it only does it once as requires nf90_open
-        ! Can't be irec==0 as set to 1 by function above.
-        ! Incomplete at the moment.
+      call set_frc_data(nc_tair,tair,'r')
+      call set_frc_data(nc_Q,Q,'r')
 
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_prate, prate, interp_frc )  ! prate (precipitation rate) - 'rain' variable in old code get_bulk_prec.F & set_bulk_prec() in old code
+      ! Possibly check units of Q and others
 
+      call set_frc_data(nc_prate,prate,'r')
 
 #if defined TAU_CORRECTION
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_taux,  taux,  interp_frc )  ! Set field corrector in x-axis
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_tauy,  tauy,  interp_frc )  ! Set field corrector in y-axis
+      call set_frc_data(nc_taux,taux,'r')
+      call set_frc_data(nc_tauy,tauy,'r')
+!     call exchange_xxx(taux,tauy)
 #endif
+
+!     call exchange_xxx(srflx,lwrad)
+!     call exchange_xxx(uwnd,vwnd)
+!     call exchange_xxx(tair,Q)
+!     call exchange_xxx(prate)
 
 
       ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY:
@@ -132,25 +124,16 @@
 
       if (do_check_units) then
         if(mynode==0) print *,'Checking Bulk force units'
-        call nc_check_units(frcfile(nc_Q%file_indx),nc_Q%name,'kg/kg')
+        call nc_check_units(frcfile(nc_Q%ifile),nc_Q%vname,'kg/kg')
         call nc_check_units(
-     &         frcfile(nc_prate%file_indx),nc_prate%name,'cm/day')
+     &         frcfile(nc_prate%ifile),nc_prate%vname,'cm/day')
         do_check_units = .false.
       endif
 
 
       end subroutine set_bulk_frc_tile  !]
-
 !-----------------------------------------------------------------------
       subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
-
-      ! =========================================
-      ! CALCULATE INTERACTIVE BULK FORCE TRANSFER
-      ! =========================================
-
-      ! This started as a copy of bulk_flux_COARE.F
-      ! from the new code
-
 
 ! Compute bulk parameterization for surface wind stress and net heat
 ! fluxes. Adapted from COARE code originally written by David Rutgers
@@ -194,7 +177,7 @@
 
       ! Modules required
       ! ----------------
-      use surf_flux ! vars: sustr, sustr_r, svstr, svstr_r, stflx, sss, wrt_sflux, srflx
+      use surf_flux
       use tracers, only: t
       use grid
       use mixing
@@ -206,10 +189,6 @@
       ! input/outputs
       integer,intent(in)  :: istr,iend,jstr,jend
 
-
-#undef SST_SKIN
-#define BULK_EP
-
       integer i,j, IterMax,iter
       real a
       real rho0i
@@ -220,7 +199,7 @@
       real u10,Zo10,Cd10,Ch10,Ct10,Cd
       real Ct,CC,Ri,Ribcu,Zetu,L10
       real Wstar,Tstar,Qstar
-      real ZoW,ZoT,ZoT10,ZoQ,ZoL,L,Rr,Bf
+      real ZoW,ZoT,ZoT10,ZoQ,ZoL,L,Rr,Bff
       real Wpsi,Tpsi,Qpsi
       real wspd0,Wgus,charn
 
@@ -555,11 +534,8 @@
           wspd0=wspd_used(i,j)
           TairC=tair(i,j) ! DevinD
           TairK=TairC+273.16
-# ifdef SST_SKIN
-          TseaC=sst_skin(i,j)   ! sea surface temperature and salinity
-# else
+
           TseaC=t(i,j,N,nrhs,itemp)
-# endif
           TseaK=TseaC+273.16
 
           ! label(HUMIDITY) - chose between specific or relative humidity
@@ -755,9 +731,9 @@
 !
 !  Compute gustiness in wind speed.
 !
-            Bf=-g/TairK*Wstar*(Tstar+0.61*TairK*Qstar)
-            if (Bf.gt.0.0) then
-              Wgus=blk_beta*(Bf*blk_Zabl)**r3
+            Bff=-g/TairK*Wstar*(Tstar+0.61*TairK*Qstar)
+            if (Bff.gt.0.0) then
+              Wgus=blk_beta*(Bff*blk_Zabl)**r3
             else
               Wgus=0.2
             endif
@@ -825,16 +801,11 @@
 !
           stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
 !
-# ifdef BULK_EP
-!
 !  Total surface salt flux
 !
           evap=-cp*hflat/Hlv
-          ! DevinD old: divide prate by 1000: units of [kg/m^2/s^1 == mm/s] convert to m/s.
-          ! DevinD current: divide prate by 100.*3600.*24.: units of [cm/day] convert to [m/s] as per pdamien pacific.
+          ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
           stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
-
-# endif
 
 # ifdef MASKING
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
@@ -876,6 +847,7 @@
 !---------------------------------------------------------------
 !
 # ifdef QCORRECTION
+          ! Not sure that this still works....
           cff=cff11*dqdtg(i,j,it11)+cff12*dqdtg(i,j,it12)
           stflx(i,j,itemp)=stflx(i,j,itemp) +cff*(
      &           t(i,j,N,nrhs,itemp) -cff13*sstg(i,j,it13)
@@ -1027,10 +999,7 @@
         enddo
       enddo
 
-!     call wrt_sflux  ! write flux variables to flux output file
-
       end subroutine calc_all_bulk_forces  !]
-
 !-----------------------------------------------------------------------
       function bulk_psiu (ZoL, pi)  ![
 !
@@ -1093,7 +1062,6 @@
 
       return
       end function bulk_psiu  !]
-
 !-----------------------------------------------------------------------
       function bulk_psit (ZoL, pi)  ![
 
@@ -1154,9 +1122,6 @@
 
       return
       end function bulk_psit  !]
-
 !-----------------------------------------------------------------------
-
-#endif /* BULK_FRC for whole module */
 
       end module bulk_frc

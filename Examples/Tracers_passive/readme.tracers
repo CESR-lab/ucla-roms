@@ -1,5 +1,0 @@
-trace1 is just a tracers released at the boundary.
-isalt2 is just reproducing the salinity tracer as an additional passive tracer.
-
-tracers.F_orig is there to show how it worked originally, but src/tracers.F will be used when you
-compile. However, tracers.opt will use what's in this directory.

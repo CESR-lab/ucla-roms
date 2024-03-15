@@ -62,9 +62,6 @@
       real, parameter ::     ! Critical gradient Richardson number
      &      Ri0=0.7,         ! below which shear instabilty occurs.
 
-      !!! JM We're going to up this to 1e-2
-!    &      nu0m=50.e-4,     ! Maximum viscosity and diffusivity
-!    &      nu0s=50.e-4,     ! due to shear instability [m^2/s];
      &      nu0m= 1.e-2,     ! Maximum viscosity and diffusivity
      &      nu0s= 1.e-2,     ! due to shear instability [m^2/s];
 
@@ -166,9 +163,7 @@ c----#  define tind nstp
      &                    dudz*dudz+dvdz*dvdz, 1.E-10 ))
           enddo
         enddo
-      enddo
 
-      do k=1,N-1 
 #  ifdef SMOOTH_RIG
 #   ifndef EW_PERIODIC
         if (WESTERN_EDGE) then
@@ -211,29 +206,18 @@ c----#  define tind nstp
 
        cff=1./12.
        cff1=3./16.
-       ! Isotropic smoothing by first computing masked
-       ! elementary differences in each direction,
-       ! after which expressing the transversal terms
-       ! via the very same masked differences.
-
-       ! Combine this with smoothing in the vertical 
-       ! to avoid 2dz noise
-
-        do j=jstr-1,jend+1
-          do i=istr,iend+1
-            FX(i,j)=( 0.50*(Rig(i,j,k  )-Rig(i-1,j,k  ))
-     &              + 0.25*(Rig(i,j,k+1)-Rig(i-1,j,k+1))
-     &              + 0.25*(Rig(i,j,k-1)-Rig(i-1,j,k-1)) )
+                                               ! Isotropic smoothing by
+        do j=jstr-1,jend+1                     ! first computing masked
+          do i=istr,iend+1                     ! elementary differences
+            FX(i,j)=(Rig(i,j,k)-Rig(i-1,j,k))  ! in each direction,
 #  ifdef MASKING
-     &                            *umask(i,j)
+     &                            *umask(i,j)  ! after which expressing
 #  endif
-          enddo
-        enddo   
-        do j=jstr,jend+1
+          enddo                                ! the transversal terms
+        enddo                                  ! via the very same
+        do j=jstr,jend+1                       ! masked differences.
           do i=istr-1,iend+1
-            FE1(i,j)=( 0.50*(Rig(i,j,k  )-Rig(i,j-1,k  ))
-     &               + 0.25*(Rig(i,j,k+1)-Rig(i,j-1,k+1))
-     &               + 0.25*(Rig(i,j,k-1)-Rig(i,j-1,k-1)) )
+            FE1(i,j)=(Rig(i,j,k)-Rig(i,j-1,k))
 #  ifdef MASKING
      &                             *vmask(i,j)
 #  endif
@@ -281,10 +265,10 @@ c----#  define tind nstp
             ! but 'tailed' near the bottom
             ! It is not generally recommended to use...
 # if defined LMD_CONVEC 
-            if (Rig(i,j,k) < 0.) then         ! In the case of KPP
-              Kv(i,j,k)=Kv(i,j,k) + nu0c      ! convective adjustment
-              Kt(i,j,k)=Kt(i,j,k) + nu0c      ! will be added later
-            endif                             ! and only below HBL
+            if (Rig(i,j,k) < 0.) then
+              Kv(i,j,k)=Kv(i,j,k) + nu0c
+              Kt(i,j,k)=Kt(i,j,k) + nu0c
+            endif
 # endif
             Ks(i,j,k)=Kt(i,j,k)
           enddo
@@ -406,6 +390,16 @@ c----#  define tind nstp
           Kt(i,j,0)=Kt(i,j,  1)
         enddo
       enddo
+      ! vertical smoothing of interior mixing
+      do k=1,N-1
+        do j=jstr,jend
+          do i=istr,iend
+            Kv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
+            Kt(i,j,k)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
+            Ks(i,j,k)=0.5*Ks(i,j,k)+0.25*Ks(i,j,k-1)+0.25*Ks(i,j,k+1)
+          enddo
+        enddo
+      enddo
 # else
 
 ! Finalize: Copy everything into shared arrays:
@@ -413,21 +407,24 @@ c----#  define tind nstp
       do k=1,N-1
         do j=jstr,jend
           do i=istr,iend
-            Akv(i,j,k)=Kv(i,j,k)
-            Akt(i,j,k,itemp)=Kt(i,j,k)
+!           Akv(i,j,k)=Kv(i,j,k) 
+            AKv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
+!           Akt(i,j,k,itemp)=Kt(i,j,k)
+            AKt(i,j,k,itemp)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
 #  ifdef SALINITY
-            Akt(i,j,k,isalt)=Ks(i,j,k)
+!           Akt(i,j,k,isalt)=Ks(i,j,k)
+            AKt(i,j,k,isalt)=0.5*Ks(i,j,k)+0.25*Ks(i,j,k-1)+0.25*Ks(i,j,k+1)
 #  endif
           enddo
         enddo
       enddo
 
+      !! Do we really need to exchange the mixing coefficients?
 #  ifdef EXCHANGE
-      call exchange_2_tile (istr,iend,jstr,jend, Akv,N+1,
-     &                   Akt(START_2D_ARRAY,0,itemp),N+1)
 #   ifdef SALINITY
-      call exchange_tile (istr,iend,jstr,jend,
-     &                   Akt(START_2D_ARRAY,0,isalt),N+1)
+      call exchange_xxx(Akv,Akt(:,:,:,itemp),Akt(:,:,:,isalt))
+#   else
+      call exchange_xxx(Akv,Akt(:,:,:,itemp))
 #   endif
 #  endif
 # endif /* LMD_KPP || LMD_BKPP */

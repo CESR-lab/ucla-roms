@@ -6,7 +6,6 @@
 #include "cppdefs.opt"
 
       use dimensions    ! has dimensions, a list of forcing files, and rmask, glob_istr, etc
-      use read_write
       use netcdf
       use ocean_vars
       use scalars

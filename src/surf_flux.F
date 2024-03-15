@@ -8,7 +8,7 @@
 #include "cppdefs.opt"
 
       use param
-      use read_write, only: set_frc_var_tile, ncvs
+      use dimensions
       use roms_read_write
       use nc_read_write
       use netcdf
@@ -55,8 +55,8 @@
       real,public :: dSSSdt                                ! input units (cm/day)
 
       ! Netcdf outputting:
-      integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
-      integer            :: record = nrpf           ! to trigger the first file creation
+      integer            :: output_time = 0  
+      integer            :: record = nrpf     ! to trigger the first file creation
       integer :: ncid = -1, prev_fill_mode
 
       ! Public functions
@@ -78,12 +78,12 @@
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
       allocate( svstr_r(GLOBAL_2D_ARRAY)    ); svstr_r=init
-      allocate( stflx  (GLOBAL_2D_ARRAY,NT) ); stflx=init
+      allocate( stflx  (GLOBAL_2D_ARRAY,nt) ); stflx=init
       allocate( srflx  (GLOBAL_2D_ARRAY)    ); srflx=init
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
-      allocate(  nc_sss%data( GLOBAL_2D_ARRAY,2) )
+      allocate(nc_sss%vdata(GLOBAL_2D_ARRAY,2) )
 
       call store_string_att(surf_forcing_strings,'<surf_flux.F>')
       call store_string_att(surf_forcing_strings,'dSSSdt=')
@@ -101,25 +101,21 @@
 
       end subroutine init_arrays_surf_flx  !]
 ! ----------------------------------------------------------------------
-      subroutine set_surf_field_corr(istr,iend,jstr,jend)  ![
+      subroutine set_surf_field_corr ![
       ! Set surface fields that will be restored towards
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
-
-
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_sst, sst, interp_frc )
+      print *,'Allocate space for sst first!! '
+      call set_frc_data(nc_sst,sst)
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_sss, sss, interp_frc )
+      call set_frc_data(nc_sss,sss)
 #endif
-
 
       end subroutine set_surf_field_corr  !]
 ! ----------------------------------------------------------------------
@@ -194,7 +190,7 @@
       character(len=99),save :: fname
       integer                :: ierr
 
-      output_time = output_time + dt                           ! only start count after first timestep
+      output_time = output_time + dt 
 
       if (sflx_avg) call calc_sflx_avg
 
@@ -211,6 +207,7 @@
         ierr=nf90_open(fname,nf90_write,ncid)
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
+!       print *,'trying to write time to flx file ',wrt_smflx,wrt_stflx
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
         start=1; start(3)=record
@@ -262,7 +259,7 @@
       if (sflx_avg) then
         call create_file('_flx_avg',fname)
       else
-        call create_file('_flx',fname)
+        call create_file('_flx_his',fname)
       endif
 
       ierr=nf90_open(fname,nf90_write,ncid)

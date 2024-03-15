@@ -11,16 +11,7 @@
 ! and, finally, MPI reduction to compute global integrals.
 
 
-#if defined SEAMOUNT || defined UPWELLING || defined PACIFIC \
-                                          || defined ISWAKE
-# define REPORT_MAX_UV
-# define REPORT_POTEN_ENRG
-#elif defined USWC
-# define REPORT_MAX_UV
-#endif
-
 #define SUM_BY_PAIRS
-c---#define ETALON_CHECK
 #define MAX_ADV_CFL
 c--#define MAX_BY_VERT_CFL_ONLY
 
@@ -34,6 +25,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use private_scratch
       use scalars
       implicit none
+
+
       integer   i,j
       integer,save:: tile=0
 
@@ -44,7 +37,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       do while(i<j)                    ! at the beginning of model run.
         i=2*i
       enddo
-      if (mod(iic-1,min(i,ninfo)) == 0) then
+      if (mod(iic,min(i,ninfo)) == 0) then
         call diag_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2),A2d(1,3)
 #ifdef SOLVE3D
      &               , A2d(1,4), A2d(1,5), A2d(1,6), A2d(1,7), A2d(1,8)
@@ -69,6 +62,9 @@ c--#define MAX_BY_VERT_CFL_ONLY
       use mpi
 
       implicit none
+
+#include "diag.opt"
+
       integer istr,iend,jstr,jend
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dVol, ke, pe
 #ifdef SOLVE3D
@@ -106,19 +102,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
       integer, parameter :: max_check_line=128
       character(len=max_check_line) check_line
       character(len=18) tstring
-#ifdef ETALON_CHECK
-      integer, parameter :: ncheck=32, npars=8
-      real    A0(npars), A1(npars)
-      integer P0(npars), P1(npars), check_point(ncheck), icheck
-      character(len=max_check_line) etalon_line(ncheck)
-      character(len=8) fmt
-                                       ! Reset check_lines to all-blanc
-      do icheck=1,ncheck               ! state before filling them with
-        check_point(icheck)=-1         ! their meaningful values.  This
-        etalon_line(icheck)=' '        ! is needed because some of them
-      enddo                            ! may be left uninitialized.
-
-#endif
 
       ierr=0
       my_v2d_max=0.
@@ -530,17 +513,26 @@ c**     write(*,*) 'received avke =', buff(3)/volume
 # if defined MAX_ADV_CFL
           if (first_time==0) then
             first_time=1
-            write(*,1)   'STEP', 'time[DAYS]',  'KINETIC_ENRG',      ! currently using this one
+            if (code_check) then
+              write(*,3) 'STEP',  'KINETIC_ENRG',                  ! Special for code checks
+     &                'BAROTR_KE', 'MAX_ADV_CFL', 'MAX_VERT_CFL'
+            else
+              write(*,1) 'STEP', 'time[DAYS]',  'KINETIC_ENRG',    !  Normal log file output
      &                'BAROTR_KE', 'MAX_ADV_CFL', 'MAX_VERT_CFL',
      &                                     'i_cx', 'j_cx', 'k_c'
-C$   &                                                   , 'trd'
+            endif
           endif
-          write(check_line,2,iostat=ierr)  avke,  avke2b,  Cu_Adv,
+          if (code_check) then
+            write(*,4) iic, avke,  avke2b, Cu_Adv, Cu_W
+          else
+            write(check_line,2,iostat=ierr)  avke,  avke2b,  Cu_Adv,
      &                        Cu_W, i_cx_max,  j_cx_max,  k_cx_max
-C$   &                                                 , proc(2)
+          endif
 
-  1       format(/1x,A,2x,A,1x,A,5x,A,8x,A,2(5x,A),3x,A,2(1x,A))
-  2       format(ES18.11, ES17.10, 2F16.12, 2I7,I5, I3)
+  1   format(/1x,A,2x,A,1x,A,5x,A,8x,A,2(5x,A),3x,A,2(1x,A))
+  2   format(ES18.11, ES17.10, 2F16.12, 2I7,I5, I3)
+  3   format(/2x,A,1x,A,5x,A,8x,A,2(5x,A),3x,A,2(1x,A))
+  4   format(I2,1x,4ES23.16)
 
 # elif defined REPORT_MAX_UV && defined REPORT_POTEN_ENRG
 
@@ -594,6 +586,7 @@ C$   &                                                 , 'trd'
      &                             avke, avpe, avke+avpe, avzeta
 C$   &                                                 , proc(2)
 #endif /* SOLVE3D */
+          if (.not.code_check) then
           ie=max_check_line
           do while (check_line(ie:ie)==' ' .and. ie>0)
             ie=ie-1
@@ -626,13 +619,6 @@ C$   &                                                 , proc(2)
                   write(*,*) '---> setting may day flag'
                   may_day_flag=1    !--> BLOW UP
                 endif
-#ifdef DOUBLE_GYRE
-              elseif (avke2b > 0.01) then
-                if (may_day_flag == 0) then
-                  write(*,*) '---> exceeding barotropic KE'
-                  may_day_flag=10
-                endif
-#endif
               endif
             endif
           enddo  ! <-- while(..)
@@ -642,131 +628,11 @@ C$   &                                                 , proc(2)
           do while (i<18 .and. tstring(i:i)==' ')
             i=i+1
           enddo
-          write(*,'(I7,2(1x,A))') iic-1, tstring(i:i+8),
+          write(*,'(I7,2(1x,A))') iic, tstring(i:i+8),
      &                                check_line(is:ie)
+          endif ! .not. code_check
+
           call flush(6)
-
-#ifdef  ETALON_CHECK
-# define WRITE_ETALON
-
-! The following segment performs comparison of model output from
-! current run (stored and formatted as "check_line") with pre-stored
-! data ("etalon_line"). This version is designed to handle situation
-! where the number of significant digits for each parameter to be
-! compared is unknown (determined dynamically) and it is only assumed
-! that format contains mantissa and power, which are recognized as
-! A1,P1 and A0,P0 for current and etalon data respectively. This is
-! necessary to re-scale the mantissa of the difference (if occurs) in
-! such a way that its power is the same as for the current output.
-! This code organization also has the property that no adjustment is
-! necessary, if output format (see above) is modified (i.e., number
-! of controlled parameters or number of significant digits in each
-! parameter is changed).
-
-C$        ie=ie-3             ! <--  disregard thread number
-          do icheck=1,ncheck
-            if (iic-1 == check_point(icheck)) then
-# ifdef WRITE_ETALON
-              if (mcheck==0) open(unit=19, file='etalon_data.NEW')
-              mcheck=mcheck+1
-              write(19,'(8x,A,I2,A,I6,2x,A,2x,A,I2,A/5x,A,3x,3A)')
-     &       'check_point(', mcheck, ')=', check_point(icheck), ';',
-     &       'etalon_line(', mcheck, ')=', '&',  '''',
-     &                                       check_line(is:ie), ''''
-              if (icheck < ncheck) then
-                call flush(19)
-              else
-                close(19)
-                write(*,*) 'finished etalon_data.NEW.'
-              endif
-# endif
-
-! Extract arrays of mantissa and exponent A1,P1 and A0,P0 from check
-! and etalon lines respectively. Perform the comparison, choosing the
-! number of controlled parameters to be the smaller of one from check
-! and etalon line. Rescale "A0" of etalon line to match scale of
-! mantissa of check line.
-
-              call read_check_line(check_line, ie, A1,P1,j, npars)
-              call read_check_line(etalon_line(icheck),
-     &                                         ie, A0,P0,k, npars)
-              k=min(j,k)
-              if (k>0) then
-                ierr=0
-                do i=1,k
-                  if (P0(i)==P1(i) .and. A0(i)==A1(i)) then
-                    A1(i)=0.
-                  else
-                    A1(i)=A1(i)-A0(i)*10.**(P0(i)-P1(i))
-                    ierr=ierr+1
-                  endif
-                enddo            !--> discard A0,P0,P1, keep A1
-
-! Print out comparison results. If difference is discovered, print out
-! only its mantissa, retaining the same number of digits after decimal
-! point as in the original format. To do so, analyze the format of
-! check line and save the location of decimal point as P0(j) and last
-! digit of mantissa P1(j) for each controlled parameter indexed
-! j=1,..,k.
-
-                if (ierr==0) then
-                  write(*,*) 'PASSED_ETALON_CHECK'
-                else
-                  do j=1,k              ! P0(j) is location of decimal
-                    P0(j)=0             ! point of parameter "j";
-                    P1(j)=0             ! P1(j) is location of the last
-                  enddo                 ! digit of its mantissa
-                  j=0
-                  do i=1,ie
-                    if (check_line(i:i)=='.' .and. j<npars) then
-                      j=j+1
-                      P0(j)=i
-                    elseif (check_line(i:i)==' ' .and. j>0) then
-                      if (P0(j)>0 .and. P1(j)==0) P1(j)=i-1
-                    endif
-                  enddo                 ! unless j==0, "i" is the
-                                        ! location of the first symbol
-                  do j=1,k              ! after the last digit of the
-                    if (j>1) then       ! mantissa of previous number.
-                      i=P1(j-1)+1       ! Note that the whole string is
-                    else                ! shifted by 6 characters when
-                      i=-5              ! printing.
-                    endif
-                    write(fmt,'(2(A,I2),A)') '(F', P1(j)-i+1, '.',
-     &                                             P1(j)-P0(j), ')'
-                    write(check_line(i+6:P1(j)+6),fmt,iostat=ierr) A1(j)
-                  enddo
-                                        ! For visual purposes replace
-                  j=0                   ! zeros following decimal point
-                  do i=2,P1(k)+6                           ! with dots.
-                    if (check_line(i-1:i)=='0.') then
-                      check_line(i:i)=':'
-                      j=1
-                    elseif (check_line(i:i)=='0' .and. j==1) then
-                      check_line(i:i)='.'
-                    else
-                      j=0
-                    endif
-                  enddo
-                  write(*,'(1x,2A/1x,A)')    'difference',
-     &            check_line(1:P1(k)+6), 'DIFFERENCE DISCOVERED'
-                endif      !<-- ierr==0
-              else
-                write(*,*) 'WARNING: No parameters can ',
-     &                     'be compared by ETALON CHECK.'
-              endif     !<-- k>0
-            endif     !<-- iic-1 == check_point(icheck)
-          enddo     !<-- icheck
-#endif /* ETALON_CHECK */
-
-
-c          if (prev_ke > 1.D0-20) then
-c            if (avke > 1.002*prev_ke) then
-c              nwrt=1
-c              write(*,*) 'Abrupt change in KE: setting nwrt to 1.'
-c            endif
-c          endif
-c          prev_ke=avke
 
 
 #ifdef MPI
@@ -783,56 +649,3 @@ C$OMP END CRITICAL (diag_cr_rgn)
       diag_sync=.true.     !<-- to signal that "diag" has been called
       end
 
-#ifdef ETALON_CHECK
-      subroutine read_check_line(string, lstr, A,P,np, npars)
-
-! For a given character string of length lstr, which is assumed to
-! contain a sequence of floating point numbers written in Fw.d, Ew.d
-! or ESw.d format unknown in advance, determine how many numbers "np"
-! are written and extract mantissa A and exponent P separately for each
-! number. If exponent is absent (Fw.d format), the corresponding P is
-! set to zero.
-
-      implicit none
-      character(len=*) string
-      integer  lstr, npars, P(npars), np,  i,k, ierr
-      real A(npars)
-
-      np=0
-      i=0
-      do while (i<lstr .and. np<npars)
-        i=i+1
-        if (string(i:i) == '.') then
-          k=i-1
-          do while (k>1 .and. '0'<=string(k:k) .and. string(k:k)<='9')
-            k=k-1
-          enddo
-          if (string(k:k)==' ') k=k+1
-          i=i+1
-          do while ('0' <= string(i:i) .and. string(i:i) <= '9')
-            i=i+1
-          enddo
-          np=np+1
-          A(np)=0.
-          P(np)=0
-          read(string(k:i-1),*, iostat=ierr) A(np)
-          if (string(i:i)=='E' .or.  string(i:i)=='e') then
-            string(i:i)=' '
-            i=i+1
-          endif
-          if (string(i:i)=='+' .or. string(i:i)=='-') then
-            k=i
-            i=i+1
-            do while ('0' <= string(i:i) .and. string(i:i) <= '9')
-              i=i+1
-            enddo
-            if (string(i:i) /= '.') then
-              read(string(k:i-1),*,iostat=ierr) P(np)
-              string(k:i-1)=' '
-            endif
-          endif
-c**       write(*,*) np, A(np),P(np)
-        endif
-      enddo
-      end
-#endif

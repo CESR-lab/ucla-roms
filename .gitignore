@@ -18,12 +18,24 @@ checkkwds
 cppcheck
 srcscheck
 Examples/*/Compile
-Examples/*/*.nc
+Examples/*/input_data
+Examples/Pipes_ana/*.nc
+Examples/Pipes_real/*.nc
+Examples/Rivers_ana/*.nc
+Examples/Rivers_real/*.nc
+Examples/Filament/*.nc
+Examples/Flux_frc/*.nc
+Examples/Diagnostics/*.nc
+Examples/Tracers_passive/*.nc
 Examples/*/fort*
 Examples/*/Makedefs.inc
+Examples/*/code_check/Compile
+Examples/*/code_check/input_data
 setup_kwds.F
 check_switches1.F
 check_srcs.F
+
+# Work directory
 Work/*
 
 # tools
@@ -31,6 +43,7 @@ Tools-Roms/partit
 Tools-Roms/ncjoin
 Tools-Roms/ncjoin_mpi
 Tools-Roms/join_child_bry
+Tools-Roms/ipslice
 Tools-Roms/zslice
 Tools-Roms/nc3to4z
 Tools-Roms/r2r_bry
@@ -38,6 +51,7 @@ Tools-Roms/r2r_init
 Tools-Roms/r2r_match_topo
 Tools-Roms/extract_data_join
 Tools-Roms/particle_join
+Tools-Roms/sample
 
 # For Examples/code_check/
 # and Expanse run logs:
