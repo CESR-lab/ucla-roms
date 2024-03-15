@@ -24,6 +24,16 @@
       ! ---- user input begins
       integer,parameter,dimension(3) :: reference_date = (/2000,1,1/)  ! year, month, day
       integer,parameter :: dt_format = 0
+
+      ! Dimension names for in netcdf files
+      character(len=7),public,parameter :: dn_xr = 'xi_rho'
+      character(len=7),public,parameter :: dn_yr = 'eta_rho'
+      character(len=7),public,parameter :: dn_xu = 'xi_u'
+      character(len=7),public,parameter :: dn_yv = 'eta_v'
+      character(len=7),public,parameter :: dn_zr = 's_rho'
+      character(len=7),public,parameter :: dn_zw = 's_w'
+      character(len=7),public,parameter :: dn_tm = 'time'
+
       ! ---- user input ends
 
       character(len=21) :: refdatestr
@@ -754,7 +764,7 @@
      &   call handle_ierr(ierr,'create_file: '/ /trim(fname) )
 
       if (.not.present(nodate)) then
-        varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+        varid = nccreate(ncid,'ocean_time',(/dn_tm/),(/0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name', refdatestr)
         ierr = nf90_put_att(ncid,varid,'units','second' )
       endif
