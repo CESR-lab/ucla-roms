@@ -12,7 +12,7 @@
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      use read_write, only: set_frc_var_tile, ncvs, rp_var
+      !use read_write, only: set_frc_var_tile, ncvs, rp_var
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
 #ifdef MARBL      
       use marbl_driver          ! have moved ^^^ these indices here
@@ -22,6 +22,7 @@
       use roms_read_write
       use netcdf
       use scalars
+      use dimensions !
       use ocean_vars
 
       implicit none
@@ -89,29 +90,35 @@
 #endif
 
 
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
-
+      !call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc ) ! dust
+      !call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc ) ! iron
+      call set_frc_data(nc_dust,dust,'r')
+      call set_frc_data(nc_iron,iron,'r')
 
 #ifdef PCO2AIR_FORCING
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
+      call set_frc_data(nc_pco2air,pco2air,'r')
 #ifdef MARBL
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air_alt, pco2air_alt, interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air_alt, pco2air_alt, interp_frc )
+      call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')      
 #endif      
 #endif /* PCO2AIR_FORCING */
       
 #ifdef NOX_FORCING
       !20231026
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_nox, nox, interp_frc ) !nox
+!call set_frc_var_tile( istr, iend, jstr, jend, nc_nox, nox, interp_frc ) !nox
+      call set_frc_data(nc_nox,nox,'r')
 #endif /* NOX_FORCING */   
 #ifdef NHY_FORCING
       !20231027
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_nhy, nhy, interp_frc ) !nhy
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_nhy, nhy, interp_frc ) !nhy
+      call set_frc_data(nc_nhy,nhy,'r')
 #endif /* NHY_FORCING */
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+!call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+      call set_frc_data(nc_swrad_avg,swrad_avg,'r')
      
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -559,27 +566,27 @@
       subroutine init_arrays_bgc_frc  ![
       implicit none
 
-      allocate( nc_dust%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_iron%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_dust%vdata( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_iron%vdata( GLOBAL_2D_ARRAY,2) )
 
 #ifdef PCO2AIR_FORCING
-      allocate( nc_pco2air%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_pco2air%vdata( GLOBAL_2D_ARRAY,2) )
 #ifdef MARBL      
-      allocate( nc_pco2air_alt%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_pco2air_alt%vdata( GLOBAL_2D_ARRAY,2) )
 #endif      
 #endif
 
 #ifdef NOX_FORCING
       ! 20231026
-      allocate( nc_nox%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_nox%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 #ifdef NHY_FORCING
       ! 20231026
-      allocate( nc_nhy%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_nhy%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      allocate( nc_swrad_avg%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad_avg%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
       end subroutine  init_arrays_bgc_frc !]

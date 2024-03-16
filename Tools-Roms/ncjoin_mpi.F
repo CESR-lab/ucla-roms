@@ -420,7 +420,7 @@ c--#define MPIVERBOSE
       ![ PART 4: EXCHANGE ALL PARTIAL FILE INFO FROM MASTER TO ALL PROCS:
 
       call MPI_Barrier(MPI_COMM_WORLD, ierr)                             ! exchange vars needed
-      call MPI_BCAST(mayday,   1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)  ! after if (mayday==.true.) goto 97
+      call MPI_BCAST(mayday,   1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)  ! after if (mayday) goto 97
       call MPI_BCAST(complete, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
       call MPI_BCAST(arg,      1, MPI_INT,     0, MPI_COMM_WORLD, ierr)  ! need for catch at end of program
       call MPI_BCAST(nargs,    1, MPI_INT,     0, MPI_COMM_WORLD, ierr)
