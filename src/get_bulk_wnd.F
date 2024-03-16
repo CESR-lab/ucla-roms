@@ -3,8 +3,8 @@
 #include "cppdefs.opt"      
 #if defined BULK_FRC
       use param
-      use read_write, only: set_frc_var_tile, ncvs
-      
+!      use read_write, only: set_frc_var_tile, ncvs
+      use roms_read_write
       implicit none
 !      private
       
@@ -26,8 +26,8 @@
       allocate(  uwnd(GLOBAL_2D_ARRAY) )
       allocate(  vwnd(GLOBAL_2D_ARRAY) )
 
-      allocate( nc_uwnd%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_vwnd%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_uwnd%vdata( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_vwnd%vdata( GLOBAL_2D_ARRAY,2) )
 
       end subroutine init_arrays_bulk_wnd
 ! --------------------------------------------------------------------------------
@@ -37,8 +37,11 @@
       integer, intent(in) :: istr,iend,jstr,jend
       
       ! Wind (get_bulk_wnd.F & set_bulk_wnd() in old code)
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc )  ! u-wind
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc )  ! v-wind
+      !call set_frc_var_tile( istr, iend, jstr, jend, nc_uwnd,  uwnd,  interp_frc ) ! u-wind
+!call set_frc_var_tile( istr, iend, jstr, jend, nc_vwnd,  vwnd,  interp_frc ) ! v-wind
+      call set_frc_data(nc_uwnd,uwnd,'r')
+      call set_frc_data(nc_vwnd,vwnd,'r')
+
      
       end subroutine set_bulk_wnd_tile
 #endif /* defined BULK_FRC */      

@@ -332,38 +332,32 @@
 
       ierr=nf90_open(fname,nf90_write,ncid)
 
-      varid = nccreate(ncid,'cf_south',(/'xi_rho','time  '/),
-     &     (/xi_rho,0/))
+      varid = nccreate(ncid,'cf_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'South boundary child flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'pf_south',(/'xi_rho','time  '/),
-     &     (/xi_rho,0/))
+      varid = nccreate(ncid,'pf_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'South boundary parent flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'ub_south',(/'xi_rho','time  '/),
-     &     (/xi_rho,0/))
+      varid = nccreate(ncid,'ub_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'South boundary binding velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s' )
 
-      varid = nccreate(ncid,'cf_west',(/'eta_rho','time   '/),
-     &     (/xi_rho,0/))
+      varid = nccreate(ncid,'cf_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'West boundary child flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'pf_west',(/'eta_rho','time   '/),
-     &     (/xi_rho,0/))
+      varid = nccreate(ncid,'pf_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'West boundary parent flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'ub_west',(/'eta_rho','time   '/),
-     &     (/xi_rho,0/))
+      varid = nccreate(ncid,'ub_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'West boundary binding velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s' )

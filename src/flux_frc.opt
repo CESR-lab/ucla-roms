@@ -4,12 +4,12 @@
       
       integer     :: interp_frc = 0   ! interpolate forcing from coarser input grid (=1) or not (=0). factor 2 only for now
 
-      type (ncvs) :: nc_sustr  = ncvs( name='sustr',  time_name='sms_time', grd_type=1 )  ! sustr - surface u-momentum stress flux (input data in N/m^2)
-      type (ncvs) :: nc_svstr  = ncvs( name='svstr',  time_name='sms_time', grd_type=2 )  ! svstr - surface v-momentum stress flux (input data in N/m^2)
+      type (ncforce) :: nc_sustr  = ncforce(vname='sustr', tname='time')  ! sustr - surface u-momentum stress flux (input data in N/m^2)
+      type (ncforce) :: nc_svstr  = ncforce(vname='svstr', tname='time')  ! svstr - surface v-momentum stress flux (input data in N/m^2)
 
-      type (ncvs) :: nc_shflx  = ncvs( name='shflux', time_name='shf_time' )  ! stflx(itemp) - surface heat flux (input data in W/m^2)
-      type (ncvs) :: nc_swflux = ncvs( name='swflux', time_name='swf_time' )  ! stflx(isalt) - surface freshwater flux (input data in cm/day). Might want to use #if def SALINITY?
-      type (ncvs) :: nc_swrad  = ncvs( name='swrad',  time_name='srf_time' )  ! swrad - surface short-wave radiation flux (input data in W/m^2)
+      type (ncforce) :: nc_shflx  = ncforce(vname='shflux',tname='time' ) ! stflx(itemp) - surface heat flux (input data in W/m^2)
+      type (ncforce) :: nc_swflux = ncforce(vname='swflux',tname='time' ) ! stflx(isalt) - surface freshwater flux (input data in cm/day). Might want to use #if def SALINITY?
+      type (ncforce) :: nc_swrad  = ncforce(vname='swrad', tname='time' ) ! swrad - surface short-wave radiation flux (input data in W/m^2)
 
       ! End of user inputs
       ! ****************************************************************

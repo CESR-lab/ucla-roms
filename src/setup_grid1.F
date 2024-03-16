@@ -183,23 +183,19 @@ C***      if (gamma2 < 0.) pmask(i,j)=2.-pmask(i,j)
       enddo
 
 #ifdef EXCHANGE
-      call exchange2d_4_tile (istr,iend,jstr,jend,  dm_r, dn_r,
-     &                                              dm_p,  dn_p)
-
-      call exchange2d_3_tile(istr,iend,jstr,jend, dm_u, dn_u, iA_u)
-
-      call exchange2d_3_tile(istr,iend,jstr,jend, dm_v, dn_v, iA_v)
+      call exchange_xxx(dm_r,dn_r,dm_p)
+      call exchange_xxx(dn_p)
+      call exchange_xxx(dm_u, dn_u, iA_u)
+      call exchange_xxx(dm_v, dn_v, iA_v)
+      call exchange_xxx(pmon_u, pnom_v)
 
 # if defined CURVGRID && defined UV_ADV
-      call exchange2d_4_tile (istr,iend,jstr,jend, pmon_u, pnom_v,
-     &                                               dndx,   dmde)
-# else
-      call exchange2d_2_tile (istr,iend,jstr,jend, pmon_u, pnom_v)
+      call exchange_xxx(dndx, dmde)
 # endif
 
 # ifdef MASKING
-      call exchange2d_4_tile (istr,iend,jstr,jend,  rmask, umask,
-     &                                              vmask, pmask)
+      call exchange_xxx(rmask,umask)
+      call exchange_xxx(vmask,pmask)
 # endif
 #endif /* EXCHANGE */
       end

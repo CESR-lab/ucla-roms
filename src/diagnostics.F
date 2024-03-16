@@ -12,6 +12,7 @@
       use scalars
       use hidden_mpi_vars
       use nc_read_write
+      use roms_read_write
       use grid
       use tides
 
@@ -965,7 +966,7 @@
 
 
       if (diag_uv) then
-        dimnames = (/'xi_u   ','eta_rho','s_rho  ', 'time   '/)
+        dimnames = (/dn_xu,dn_yr,dn_zr, dn_tm/)
         dimsizes = (/ xi_u,  eta_rho,  nz,      0/)
 
         varid = nccreate(ncid,'u_pgr',dimnames,dimsizes,diag_prec)
@@ -1003,7 +1004,7 @@
      &                               ,'2D/3D coupling')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        dimnames = (/'xi_rho','eta_v ','s_rho ', 'time  '/)
+        dimnames = (/dn_xr,dn_yv,dn_zr, dn_tm/)
         dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
 
         varid = nccreate(ncid,'v_pgr',dimnames,dimsizes,diag_prec)
@@ -1044,7 +1045,7 @@
       endif
 
       if (diag_trc) then
-        dimnames = (/'xi_rho ','eta_rho','s_rho  ', 'time   '/)
+        dimnames = (/dn_xr,dn_yr,dn_zr, dn_tm/)
         dimsizes = (/ xi_rho,  eta_rho,  nz,    0/)
         do it=1,nt
           if (wrt_t_dia(it)) then
@@ -1077,13 +1078,13 @@
       endif
 
       if (diag_pflx) then
-        dimnames3 = (/'xi_u   ','eta_rho', 'time   '/)
+        dimnames3 = (/dn_xu,dn_yr, dn_tm/)
         dimsizes3 = (/ xi_u,  eta_rho,   0/)
         varid = nccreate(ncid,'up',dimnames3,dimsizes3,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name','prsflux xdir')
         ierr = nf90_put_att(ncid,varid,'units','W/m^2')
 
-        dimnames3 = (/'xi_rho','eta_v ', 'time  '/)
+        dimnames3 = (/dn_xr,dn_yv, dn_tm/)
         dimsizes3 = (/ xi_rho,  eta_v,  0/)
         varid = nccreate(ncid,'vp',dimnames3,dimsizes3,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name','prsflux ydir')
@@ -1302,7 +1303,7 @@
       ierr=nf90_inq_varid (ncid, 'p_slow', varid)
       if (ierr == nf90_noerr) then
         call ncread(ncid, 'p_slow', p_slow(i0:i1,j0:j1,:), start)
-        call exchange_tile(1,nx,1,ny, p_slow(START_2D_ARRAY,1),N)  ! need exchange since r2u to get u'p'
+        call exchange_xxx(p_slow)  ! need exchange since r2u to get u'p'
 #ifdef MASKING
         do j = 0,ny
           do i = 0,nx

@@ -11,8 +11,8 @@
 
 
       ! edit variable name and time name to match input netcdf file if necessary:          
-      type (ncvs)  :: nc_sst  = ncvs( name='sst', time_name='sst_time' )       ! sea-surface temperature (SST) data
-      type (ncvs)  :: nc_sss  = ncvs( name='sss', time_name='sss_time' )       ! sea-surface salinity (SSS) data
+      type (ncforce) :: nc_sst  = ncforce(vname='sst',tname='sst_time' )       ! sea-surface temperature (SST) data
+      type (ncforce) :: nc_sss  = ncforce(vname='sss',tname='sss_time' )       ! sea-surface salinity (SSS) data
 
       ! interpolate forcing from coarser input grid (=1) or not (=0)
       integer :: interp_frc = 0 ! For SST and SSS correction

@@ -15,6 +15,7 @@
       use roms_read_write
       use pipe_frc
       use scalars
+      use mpi_exchanges
       implicit none
 
 !
@@ -229,30 +230,26 @@
 #endif
 
 ! Bathymetry.
-      varid = nccreate(ncid,'h',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'h',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'bathymetry at RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
       ierr=nf90_put_att(ncid, varid, 'field', 'bath, scalar')
 
 ! Coriolis Parameter.
-      varid = nccreate(ncid,'f',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'f',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'Coriolis parameter at RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'second-1')
       ierr=nf90_put_att(ncid, varid, 'field', 'coriolis, scalar')
 
 ! Curvilinear coordinate metric coefficients pm,pn.
-      varid = nccreate(ncid,'pm',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'pm',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                       'curvilinear coordinate metric in XI')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
       ierr=nf90_put_att(ncid, varid, 'field', 'pm, scalar')
-      varid = nccreate(ncid,'pn',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'pn',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                       'curvilinear coordinate metric in ETA')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter-1')
@@ -260,27 +257,23 @@
 
 ! Longitude-latitude or cartesian coordinates of RHO-points.
 #ifdef SPHERICAL
-      varid = nccreate(ncid,'lon_rho',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'lon_rho',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'longitude of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'degree_east')
       ierr=nf90_put_att(ncid, varid, 'field', 'lon_rho, scalar')
-      varid = nccreate(ncid,'lat_rho',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'lat_rho',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid,varid,'long_name',
      &                               'latitude of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'degree_north')
       ierr=nf90_put_att(ncid, varid, 'field', 'lat_rho, scalar')
 #else
-      varid = nccreate(ncid,'x_rho',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'x_rho',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'x-locations of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
       ierr=nf90_put_att(ncid, varid, 'field', 'x_rho, scalar')
-      varid = nccreate(ncid,'y_rho',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'y_rho',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'y-locations of RHO-points')
       ierr=nf90_put_att(ncid, varid, 'units', 'meter')
@@ -288,8 +281,7 @@
 #endif
 #ifdef CURVGRID
 ! Angle between XI-axis and EAST at RHO-points
-      varid = nccreate(ncid,'angle',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'angle',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'angle between XI-axis and EAST')
       ierr=nf90_put_att(ncid, varid, 'units', 'radians')
@@ -297,8 +289,7 @@
 #endif
 #ifdef MASKING
 ! Land-Sea mask at RHO-points.
-      varid = nccreate(ncid,'mask_rho',(/'xi_rho ',
-     & 'eta_rho'/),(/xi_rho,eta_rho/), nf90_double)
+      varid = nccreate(ncid,'mask_rho',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'mask on RHO-points')
       ierr=nf90_put_att(ncid, varid, 'option_0', 'land' )
@@ -499,41 +490,46 @@
 ! Read in grid arrays.
 !===== == ==== =======
 
-      start=1; start(3)=0                                            ! 2D vars
+      start=1; start(3)=0      ! starting indices in netcdf file. Might not be needed here
 
-      call ncread(ncid,'h',h(i0:i1,j0:j1),start)                     ! Bathymetry:
-      call exchange_tile(1,nx,1,ny, h(START_2D_ARRAY),1)             ! h needed an exchange
+      ! The i0,i1,j0,j1 indices are needed because the netcdf files do
+      ! include 1 more row/column for subdomains at the physical boundary
 
-      call ncread(ncid,'f',f(i0:i1,j0:j1),start)                     ! Coriolis parameter.
-      call exchange_tile(1,nx,1,ny, f(START_2D_ARRAY),1)
+      call ncread(ncid,'h',h(i0:i1,j0:j1))         ! Bathymetry
+      call exchange_xxx(h)                         ! (2,.true.)
 
-! Coordinate transfomation metrics (m,n) associated with
+      
+! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 
       call ncread(ncid,'pm',pm(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, pm(START_2D_ARRAY),1)
-
       call ncread(ncid,'pn',pn(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, pn(START_2D_ARRAY),1)
+      call exchange_xxx(pm,pn)
 
 # ifdef SPHERICAL
       call ncread(ncid,'lon_rho',lonr(i0:i1,j0:j1),start)  ! Coordinates (lon,lat [degrees]) or (x,y [meters]) at RHO-points.
-      call exchange_tile(1,nx,1,ny, lonr(START_2D_ARRAY),1)
       call ncread(ncid,'lat_rho',latr(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, latr(START_2D_ARRAY),1)
+      call exchange_xxx(lonr,latr)
 # else
+      ! check this with analytical filament example
       call ncread(ncid,'x_rho',xr(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, xr(START_2D_ARRAY),1)
       call ncread(ncid,'y_rho',yr(i0:i1,j0:j1),start)
-      call exchange_tile(1,nx,1,ny, yr(START_2D_ARRAY),1)
+
+      ! Only use if non-spherical grid, otherwise computed in  setup_grid1
+      call ncread(ncid,'f',f(i0:i1,j0:j1))         ! Coriolis parameter.
+      call exchange_xxx(xr,yr,f)
+
 # endif
 # ifdef CURVGRID
+      ! grid angle is used to compute non-traditional coriolis components
+      ! and for in-place rotation for data extraction
+      ! Also used in wec for the moment
       call ncread(ncid,'angle',angler(i0:i1,j0:j1),start)  ! Angle (radians) between XI-axis and EAST at RHO-points.
-      call exchange_tile(1,nx,1,ny, angler(START_2D_ARRAY),1)
+      call exchange_xxx(angler)
 # endif
 # ifdef MASKING
       call ncread(ncid,'mask_rho',rmask(i0:i1,j0:j1),start)! Mask at RHO-points.
-      call exchange_tile(1,nx,1,ny, rmask(START_2D_ARRAY),1)
+      call exchange_xxx(rmask)
 # endif
       ierr=nf90_close(ncid)
       if (ierr==nf90_noerr) then
