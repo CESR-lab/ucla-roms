@@ -485,14 +485,16 @@ c--#define VERBOSE
             
             marbl_saved_state_2d(i0:i1,j0:j1,itrc)=
      &         marbl_saved_state_2d(i0:i1,j0:j1,itrc)*rmask(i0:i1,j0:j1)
-            call exchange_tile(1,nx,1,ny,
-     &           marbl_saved_state_2d(START_2D_ARRAY,itrc),1)
+!            call exchange_tile(1,nx,1,ny,
+!     &           marbl_saved_state_2d(START_2D_ARRAY,itrc),1)
+            call exchange_xxx(marbl_saved_state_2d(:,:,itrc))
          else
             marbl_saved_state_2d(GLOBAL_2D_ARRAY,itrc) = 0.0
-            mpi_master_only write(*,*) ' --- WARNING: '
-     &         , trim(vname_marbl_ss_2d(1,itrc))
+            if(mynode==0) write(*,*) ' --- WARNING: '
+     &         , trim(vname_marbl_ss_2d(1,itrc))            
      &         , ' not in initial file.  Initialized to 0.0'
             ierr=nf90_noerr
+            
          endif
       end do
       start=1; start(4)=record                                       ! 3D vars
@@ -507,14 +509,15 @@ c--#define VERBOSE
               marbl_saved_state_3d(i0:i1,j0:j1,k,itrc)=
      &             marbl_saved_state_3d(i0:i1,j0:j1,k,itrc)*rmask(i0:i1,j0:j1)
            enddo
-           call exchange_tile(1,nx,1,ny,
-     &          marbl_saved_state_3d(START_2D_ARRAY,1,itrc),N)
+!           call exchange_tile(1,nx,1,ny,
+!     &          marbl_saved_state_3d(START_2D_ARRAY,1,itrc),N)
+           call exchange_xxx(marbl_saved_state_3d(:,:,:,itrc) )
          else
             marbl_saved_state_3d(GLOBAL_2D_ARRAY,:,itrc) = 0.0 ! Note ':' instead of '1' as in similar blocks
-            mpi_master_only write(*,*) ' --- WARNING: '
-     &         , trim(vname_marbl_ss_3d(1,itrc))
+            if(mynode==0) write(*,*) ' --- WARNING: '
+     &         , trim(vname_marbl_ss_3d(1,itrc))            
      &         , ' not in initial file.  Initialized to 0.0'
-            ierr=nf90_noerr
+            ierr=nf90_noerr            
          endif
       end do
       
