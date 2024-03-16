@@ -20,7 +20,7 @@
 #include "cppdefs.opt"
 
       use param
-      use read_write, only: set_frc_var_tile, ncvs
+      use dimensions
       use surf_flux,  only: stflx                          ! surface tracer flux should possibly live in this module rather?
       use scalars                                          ! for 'FIRST_TIME_STEP' and nstp
       use nc_read_write
@@ -29,6 +29,7 @@
 #ifdef MARBL      
       use marbl_driver
 #endif      
+      use mpi_exchanges
       implicit none
       private
 
@@ -53,7 +54,7 @@
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d
       ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
-      type (ncvs)    :: nc_t( NT )                                   ! array of ncvs for each tracer
+      type (ncforce)    :: nc_t( NT )                                   ! array of ncvs for each tracer
       integer,public :: iTandS                                       ! combined index of temperature and salinity
                                                                      ! public as used in set_forces.F. Need to be parameter
       integer,public :: nt_passive=0                                 ! total number of passive tracers
@@ -110,7 +111,7 @@
 
         if (t_ana_frc(itrc)==0) then ! Read in forcing data (not analytical)
 
-          call set_frc_var_tile( istr, iend, jstr, jend, nc_t(itrc), stflx(:,:,itrc), interp_t )
+          call set_frc_data(nc_t(itrc), stflx(i0:i1,j0:j1,itrc) )
 
         elseif(t_ana_frc(itrc)==1) then ! Analytical forcing
 
@@ -121,16 +122,17 @@
           if(mynode==0) then
             write(*,'(/1x,2A,I3,2A/)') 'ERROR: set_surf_tracer_flx:: ',
      &      'Forcing type not supported: t_ana_frc(itrc)= ', t_ana_frc(itrc),
-     &      ', for passive tracer: ', t_vname(itrc)
+     &      ', for tracer: ', nc_t(itrc)%vname
           endif
           error stop
 
         endif ! if(t_ana_frc(itrc)==0)
 
+        call exchange_xxx(stflx)
+
       enddo
 
       end subroutine set_surf_tracer_flx  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)  ![
       ! Set analytical surface tracer flux
@@ -167,7 +169,6 @@
 !     endif
 
       end subroutine set_ana_surf_tracer_flx  !]
-
 ! ----------------------------------------------------------------------
       subroutine def_his_trc( ncid )  ![
       ! Define history file variables in def_his.F
@@ -181,11 +182,8 @@
 
       do itrc=1,iTandS+nt_passive
         if (wrt_t(itrc)) then
-           varid = nccreate(ncid,t_vname(itrc),(/'xi_rho ',
-     &                                           'eta_rho',
-     &                                           's_rho  ',
-     &                                           'time   '/),
-     &                                (/xi_rho,eta_rho,N,0/))
+          varid = nccreate(ncid,t_vname(itrc), 
+     &   (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',t_lname(itrc))
           ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
@@ -206,11 +204,7 @@
       do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
-          varid = nccreate(ncid,t_vname(itrc),(/'xi_rho ',
-     &                                          'eta_rho',
-     &                                          's_rho  ',
-     &                                          'time   '/),
-     &                              (/xi_rho,eta_rho,N,0/))
+          varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',long_name)
           ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
@@ -402,13 +396,13 @@
       do itrc=iTandS+1,NT
         if (t_ana_frc(itrc)==0) then
 
-          allocate( nc_t(itrc)%data( GLOBAL_2D_ARRAY,2) )
+          allocate( nc_t(itrc)%vdata( GLOBAL_2D_ARRAY,2) )
 
-          ! set nc_v%name and nc_t%time_name only once: currently set in t_vname & t_tname,
+          ! set nc_v%vname and nc_t%tname only once: currently set in t_vname & t_tname,
           ! left it like this so people don't need to change their tracers.opt files.
 
-          nc_t(itrc)%name      = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
-          nc_t(itrc)%time_name = t_tname(itrc)
+          nc_t(itrc)%vname = trim(t_vname(itrc)) / / '_flx' ! Forcing file flux name
+          nc_t(itrc)%tname = t_tname(itrc)
 
         endif
       enddo

@@ -9,10 +9,12 @@
 
       ! Modules needed:
       use param
-      use read_write, only: set_frc_var_tile, ncvs
+      use dimensions
       use tracers,    only: t
       use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
       use scalars
+      use roms_read_write
+      use grid
 
 
       implicit none
@@ -32,14 +34,21 @@
       subroutine init_arrays_flux_frc  ![
       implicit none
 
-      allocate( nc_sustr%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_svstr%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_shflx%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_swflux%data(GLOBAL_2D_ARRAY,2) )
-      allocate( nc_swrad%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_sustr%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_sustr%vdata = 0
+      allocate( nc_svstr%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_svstr%vdata = 0
+      allocate( nc_shflx%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_shflx%vdata = 0
+      allocate( nc_swflux%vdata(GLOBAL_2D_ARRAY,2) );nc_swflux%vdata = 0
+      allocate( nc_swrad%vdata(GLOBAL_2D_ARRAY,2) ) ;nc_swrad%vdata = 0
+
+      if (interp_frc==1) then
+        nc_sustr%coarse=1
+        nc_svstr%coarse=1
+        nc_shflx%coarse=1
+        nc_swflux%coarse=1
+        nc_swrad%coarse=1
+      endif
 
       end subroutine init_arrays_flux_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_flux_frc(istr,iend,jstr,jend)  ![
 
@@ -49,126 +58,76 @@
       integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
-      integer :: i, j
-
-! scalars for rho0
-! index bounds for do loop division by rho0
-#include "compute_extended_bounds.h"
+      integer :: i, j,ierr
 
       ! 1) set surface momentum flux
-      call set_smflux(istr,iend,jstr,jend)
+      call set_frc_data(nc_sustr,sustr,'u')
+      call set_frc_data(nc_svstr,svstr,'v')
+      sustr = sustr/rho0
+      svstr = svstr/rho0
 
       ! 2) set surface heat flux: stflx(itemp)
-      call set_shflux(istr,iend,jstr,jend)
-
-      ! 3) set short-wave radiation flux
-      call set_srflux(istr,iend,jstr,jend)
-
-      ! 4) set water flux: stflx(isalt)
-#ifdef SALINITY
-      call set_swflux(istr,iend,jstr,jend)
+      call set_frc_data(nc_shflx,stflx(:,:,itemp),'r')
+      stflx(:,:,itemp) = stflx(:,:,itemp) /(rho0*Cp)
+#ifdef SEA_ICE_NOFLUX
+      do j=j0,j1
+        do i=i0,i1
+          if( t(i,j,nz,nrhs,itemp) .le. -1.8 ) then
+            stflx(i,j,itemp)=0.
+#   if defined LMD_KPP
+            srflx(i,j)=0.
+#    endif
+          endif
+        enddo
+      enddo
+#endif
+# if defined QCORRECTION
+      do j=j0,j1
+        do i=i0,i1
+          stflx(i,j,itemp)=
+     &       -dSSTdt*(t(i,j,nz,nrhs,itemp) - sst(i,j))
+        enddo
+      enddo
 #endif
 
+      ! 2a) set bottom heat flux: stflx(itemp)
+!     call set_frc_data(nc_bhflx,btflx(i0:i1,j0:j1,itemp),'r')
+
+      ! 3) set short-wave radiation flux
+      call set_srflux
+
+#ifdef SALINITY
+      ! 4) set water flux: stflx(isalt)
+      call set_swflux
+#endif
+
+#ifdef EXCHANGE
+!     call exchange_xxx(sustr,svstr)
+!     call exchange_xxx(srflx,stflx(:,:,itemp))
+#ifdef SALINITY
+!     call exchange_xxx(stflx(:,:,isalt))
+#endif
+#endif
+!     srflx = 0
+!     print *,'maxval srflx: ', maxval(abs(srflx))
 
       end subroutine set_flux_frc  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_smflux(istr,iend,jstr,jend)  ![
-      ! set surface momentum flux, sustr, svstr
-
-      implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-      ! local
-      integer i, j
-#include "compute_extended_bounds.h"
-
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_sustr, sustr, interp_frc )
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_svstr, svstr, interp_frc )
-
-      ! Combine this loop into one loop at the end
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          sustr(i,j)=sustr(i,j) / rho0
-          svstr(i,j)=svstr(i,j) / rho0
-        enddo
-      enddo
-      ! Move rho0 into arguement of set_var_frc_tile eventually?
-
-      ! DevinD debug
-!      if(mynode==0) then
-!        print *, 'sustr(20,20)= ', sustr(20,20)
-!        print *, 'svstr(20,20)= ', svstr(20,20)
-!      endif
-
-      end subroutine set_smflux  !]
-
-! ----------------------------------------------------------------------
-      subroutine set_shflux(istr,iend,jstr,jend)  ![
-      ! Set surface heat flux
-
-      implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-      ! local
-      integer i, j
-      real rho0cp
-#include "compute_extended_bounds.h"
-
-
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, stflx(:,:,itemp), interp_frc )
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_shflx, btflx(:,:,itemp), interp_frc )
-
-
-      rho0cp=rho0*Cp ! Set coefficient outside of loop for efficiency
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          stflx(i,j,itemp)=stflx(i,j,itemp)/rho0cp
-!         btflx(i,j,itemp)=stflx(i,j,itemp)/rho0cp
-
-# if defined QCORRECTION && !defined ANA_SST
-     &         -dSSTdt*(t(i,j,N,nrhs,itemp) - sst(i,j))
-
-! Restrict stflx to prevent surface temperature to go below -2
-! degrees C.
-#  ifdef SEA_ICE_NOFLUX
-              stflx(i,j,itemp)=max( stflx(i,j,itemp),
-#   ifdef LMD_KPP
-     &                          max(hbls(i,j,nstp), Hz(i,j,N))
-#   else
-     &                                               Hz(i,j,N)
-#   endif
-     &                         *(-2.D0-t(i,j,N,nrhs,itemp))/dt
-     &                                                       )
-#  endif
-# endif
-
-        enddo
-      enddo
-
-      end subroutine set_shflux  !]
-
 ! ----------------------------------------------------------------------
 #ifdef SALINITY
-      subroutine set_swflux(istr,iend,jstr,jend)  ![
+      subroutine set_swflux  ![
       ! set surface freshwater flux: stflx(isalt)
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
-      integer i, j
+      integer i,j
       real cmday2ms
-# include "compute_extended_bounds.h"
 
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_swflux, stflx(:,:,isalt), interp_frc )
+      call set_frc_data(nc_swflux,stflx(:,:,isalt),'r')
 
       cmday2ms=0.01/day2sec ! Set coefficient outside of loop for efficiency
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=j0,j1
+        do i=i0,i1
           ! cm/day -> m/s
           stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N,nrhs,isalt)*cmday2ms
 
@@ -182,69 +141,25 @@
         enddo
       enddo
 
-      ! DevinD debug
-!      if(mynode==0) then
-!        print *, 'stflx(20,20,isalt)= ', stflx(20,20,isalt)
-!      endif
-
       end subroutine set_swflux  !]
 #endif /* SALINITY */
 
 ! ----------------------------------------------------------------------
-      subroutine set_srflux(istr,iend,jstr,jend)  ![
+      subroutine set_srflux  ![
       ! set short-wave radiation flux
-
-      use grid
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
       integer i, j, it1, it2
       real tmid, cff, cff1, cff2
 # ifdef DIURNAL_SRFLUX
       real Ampl, cos_h, dec,cos_d,sin_d, tan_d, phi, csph,snph, h0
       real, parameter :: year2day=365.25,  day2year=1.D0/year2day
-# elif defined ROBUST_DIURNAL_SRFLUX
-      real Ampl, dtau, tau1,tau2
-# endif
-# define SWRAD_DATA
-
-#include "compute_extended_bounds.h"
-
-      ! Do initial time interpolation only of swrad:
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad, srflx, interp_frc )
-
-      ! Note: the additional CPPFLAG option have been left in from old
-      ! code but are untested here, might not compile.
-
-# ifdef ROBUST_DIURNAL_SRFLUX
-      dtau=2.D0*pi * dt*sec2day
-      cff=4.D0*pi*(tdays-dble(int(tdays))-0.5D0)
-      tau1=max(-pi, min(pi, cff))
-      tau2=max(-pi, min(pi, cff+2.D0*dtau))
-      cff=tau2-tau1
-      Ampl=( cff + 2.D0*cos(0.5D0*(tau1+tau2))*sin(0.5D0*cff) )/dtau
 # endif
 
-! Set coefficients for interpolation. Check that for the next time
-! step [when time=time+dt] both weights will still be positive, and
-! if not, set synchro_flag to signal that new data should be read
-! from an appropriate netCDF input file (master thread only).
-! After that either load time-invariant data or interpolate in time.
-! In either case apply factor 1./(rho0*Cp) to convert units from
-! [Watts/m^2, data units] to [degC*m/sec, units of kinematic flux].
-! Complain about error and signal to quit, if interpolation is
-! needed, but not possible.
-
-                                               ! interpolate shortwave
-!        tmid=time+0.5*dt                       ! radiation flux in time
-!        it2=itsrf ; cff1=srf_time(it2)-tmid
-!        it1=3-it2 ; cff2=tmid-srf_time(it1)
-!        if (cff1 < dt) synchro_flag=.true.
-!        cff=1./(rho0*Cp*(cff1+cff2))
-!        cff1=cff1*cff ; cff2=cff2*cff
+      call set_frc_data(nc_swrad,srflx,'r')
+      srflx = srflx/(rho0*Cp)
 
 # ifdef DIURNAL_SRFLUX
 
@@ -261,23 +176,14 @@
 !
 ! Yusuke Uchiyama, 2009: UTC correction based on lonr is added.
 !                               ocean_time should be in UTC.
-#  define UTC_CORRECTION
 
-#  ifndef UTC_CORRECTION
-        cos_h=cos(2.*pi*(tdays+0.5-int(tdays+0.5)))
-#  endif
         dec=-0.406*cos(deg2rad*(tdays-int(tdays*day2year)*year2day))
         cos_d=cos(dec) ; sin_d=sin(dec) ; tan_d=tan(dec)
-# endif
 
-        ! This loop is not subject to any CPP flags
-        do j=jstrR,jendR
-          do i=istrR,iendR
-# ifdef DIURNAL_SRFLUX
-#  ifdef UTC_CORRECTION
+        do j=j0:j1
+          do i=i0:i1
             cos_h=cos( 2.*pi*(tdays+0.5 -int(tdays+0.5))
      &                               +deg2rad*lonr(i,j) )
-#  endif
             phi=deg2rad*latr(i,j)
             h0=acos(-tan(phi)*tan_d)
             csph=cos_d*cos(phi) ; snph=sin_d*sin(phi)
@@ -285,21 +191,15 @@
             Ampl=max( 0.,  pi*(cos_h*csph +  snph)
      &                     /(sin(h0)*csph + h0*snph)
      &                                             )
-# endif
 
-!            srflx(i,j)=cff1*swradg(i,j,it1)+cff2*swradg(i,j,it2)
-            srflx(i,j)=srflx(i,j)/(rho0*Cp) ! DevinD equivalent
-
-# if defined DIURNAL_SRFLUX || defined ROBUST_DIURNAL_SRFLUX
             cff=stflx(i,j,itemp)-srflx(i,j)    ! subtract short-wave
-            srflx(i,j)=srflx(i,j)*Ampl         ! radiatin from the net,
+            srflx(i,j)=srflx(i,j)*Ampl         ! radiating from the net,
             stflx(i,j,itemp)= cff+srflx(i,j)   ! modulate and add back
-# endif
           enddo
         enddo
+# endif
 
       end subroutine set_srflux  !]
-
 ! ----------------------------------------------------------------------
 
       end module flux_frc

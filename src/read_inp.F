@@ -467,7 +467,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
                 mpi_master_only write(*,'(1x,2A/12x,2A/)')
      &          '### ERROR: read_inp :: Too many forcing files are ',
      &          'specified in input script.',  'Increase parameter ',
-     &                '''max_frc_files'' in ncvars and recompile.'
+     &                '''max_frc_files'' in roms_read_write and recompile.'
                 ierr=ierr+1
               endif
             endif

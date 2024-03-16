@@ -421,11 +421,10 @@ c----#  define tind nstp
 
       !! Do we really need to exchange the mixing coefficients?
 #  ifdef EXCHANGE
-      call exchange_2_tile (istr,iend,jstr,jend, Akv,N+1,
-     &                   Akt(START_2D_ARRAY,0,itemp),N+1)
 #   ifdef SALINITY
-      call exchange_tile (istr,iend,jstr,jend,
-     &                   Akt(START_2D_ARRAY,0,isalt),N+1)
+      call exchange_xxx(Akv,Akt(:,:,:,itemp),Akt(:,:,:,isalt))
+#   else
+      call exchange_xxx(Akv,Akt(:,:,:,itemp))
 #   endif
 #  endif
 # endif /* LMD_KPP || LMD_BKPP */

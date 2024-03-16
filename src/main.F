@@ -30,7 +30,7 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
-        ! Devin added this
+
         call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
@@ -324,6 +324,8 @@ CR      write(*,*)  ' -2' MYID
 
       implicit none
 
+      integer :: ierr
+
 ! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (denoted here as "nstp"), while counter
 ! "iic" corresponds to "n+1", so normally, assuming that time is
@@ -472,7 +474,7 @@ CR      write(*,*)  ' -2' MYID
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
 #ifdef DIAGNOSTICS
-      call do_diagnostics 
+      if (diag_uv.or.diag_trc.or.diag_pflx) call do_diagnostics 
 #endif
 
       if (do_random) call wrt_random

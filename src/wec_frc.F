@@ -453,70 +453,60 @@
       integer           :: ierr, varid
 
       if (wrt_SUP) then                                ! if = outputing variable yes or no
-         varid = nccreate(ncid,'sup',(/'xi_rho ',
-     &        'eta_rho','time   '/),(/xi_rho,eta_rho,0/))
+        varid = nccreate(ncid,'sup',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',sup_long_name)
         ierr = nf90_put_att(ncid,varid,'units','m')
       endif
       if (wrt_UST2D) then                              ! ust2d: 2D, depth-averaged Stokes drift velocities.
-         varid = nccreate(ncid,'ust2d',(/'xi_u   ',
-     &        'eta_rho','time   '/),(/xi_u,eta_rho,0/))
+        varid = nccreate(ncid,'ust2d',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',ust2d_long_name)
         ierr = nf90_put_att(ncid,varid,'units',ust2d_units)
       endif
       if (wrt_VST2D) then                              ! vst2d: 2D, depth-averaged Stokes drift velocities.
-         varid = nccreate(ncid,vst2d_name,(/'xi_rho','eta_v ',
-     &        'time  '/),(/xi_rho,eta_v,0/))
+        varid = nccreate(ncid,vst2d_name,(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',vst2d_long_name)
         ierr = nf90_put_att(ncid,varid,'units',vst2d_units)
       endif
 # ifdef SOLVE3D
       if (wrt_UST) then                                ! ust: 3D Stokes drift velocities.
-         varid = nccreate(ncid,ust_name,(/'xi_u   ','eta_rho',
-     &        's_rho  ','time   '/),(/xi_u,eta_rho,N,0/))
+        varid = nccreate(ncid,ust_name,(/dn_xu,dn_yr,dn_zr,dn_tm/),(/xi_u,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',ust_long_name)
         ierr = nf90_put_att(ncid,varid,'units',ust_units)
       endif
       if (wrt_VST) then                                ! vst: 3D Stokes drift velocities.
-         varid = nccreate(ncid,vst_name,(/'xi_rho','eta_v ',
-     &        's_rho ','time  '/),(/xi_rho,eta_v,N,0/))
+        varid = nccreate(ncid,vst_name,(/dn_xr,dn_yv,dn_zr,dn_tm/),(/xi_rho,eta_v,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',vst_long_name)
         ierr = nf90_put_att(ncid,varid,'units',vst_units)
       endif
       if (wrt_WST) then                                ! wst: vertical Stokes drift velocity (m/s) at rho-point
         varid = 
-     &        nccreate(ncid,wst_name,(/'xi_rho ','eta_rho',
-     &        's_rho  ','time   '/),(/xi_rho,eta_rho,N,0/))
+     &     nccreate(ncid,wst_name,(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',wst_long_name)
         ierr = nf90_put_att(ncid,varid,'units',wst_units)
       endif
       if (wrt_Akb) then                                ! Akb: Vertical eddy viscosity coef
-         varid = nccreate(ncid,Akb_name,(/'xi_rho ','eta_rho',
-     &        's_w   ','time   '/),(/xi_rho,eta_rho,N+1,0/))
+        varid = nccreate(ncid,Akb_name,(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',Akb_long_name)
         ierr = nf90_put_att(ncid,varid,'units',Akb_units)
       endif
       if (wrt_Akw) then                                ! Akw: Vertical eddy diffusivity
-         varid = nccreate(ncid,Akw_name,(/'xi_rho ','eta_rho',
-     &        's_w    ','time   '/),(/xi_rho,eta_rho,N+1,0/))
+        varid = nccreate(ncid,Akw_name,(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',Akw_long_name)
         ierr = nf90_put_att(ncid,varid,'units',Akw_units)
       endif
       if (wrt_KVF) then                                ! kvf: vertical vortex force term (u^St du/dz)
         varid = 
-     &        nccreate(ncid,kvf_name,(/'xi_rho ','eta_rho',
-     &        's_rho  ','time   '/),(/xi_rho,eta_rho,N,0/))
+     &    nccreate(ncid,kvf_name,(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',kvf_long_name)
         ierr = nf90_put_att(ncid,varid,'units',kvf_units)
       endif
       if (wrt_CALP) then                               ! calP: surface pressure correction
-         varid = nccreate(ncid,calP_name,(/'xi_rho ','eta_rho',
-     &        'time   '/),(/xi_rho,eta_rho,0/))
+        varid = nccreate(ncid,calP_name,(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',calP_long_name)
         ierr = nf90_put_att(ncid,varid,'units',calP_units)
       endif
       if (wrt_KAPS) then                               ! Kapsrf: surface Bernoulli head
-        varid = nccreate(ncid,Kapsrf_name,(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
+        varid = nccreate(ncid,Kapsrf_name,(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',Kapsrf_long_name)
         ierr = nf90_put_att(ncid,varid,'units',Kapsrf_units)
       endif

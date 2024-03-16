@@ -175,22 +175,12 @@
 
 
 # ifdef EXCHANGE
-      call exchange2d_3_tile(istr,iend,jstr,jend,
-     &                       zeta(START_2D_ARRAY,1),
-     &                       ubar(START_2D_ARRAY,1),
-     &                       vbar(START_2D_ARRAY,1))
+      call exchange_xxx(zeta(:,:,1),ubar(:,:,1),vbar(:,:,1))
 #  ifdef SOLVE3D
-      call exchange_2_tile(istr,iend,jstr,jend,
-     &                     u(START_2D_ARRAY,1,1), N,
-     &                     v(START_2D_ARRAY,1,1), N)
+      call exchange_xxx(u(:,:,:,1),v(:,:,:,1))
       do itrc=1,nt
-        call exchange_tile(istr,iend,jstr,jend,
-     &                t(START_2D_ARRAY,1,1,itrc), N)
+        call exchange_xxx(t(:,:,:,1,itrc) )
       enddo
-#  endif
-#  ifdef COLD_FILAMENT
-      !!! JM move this
-      call exchange_tile(istr,iend,jstr,jend, Akv,N+1)
 #  endif
 # endif  /* EXCHANGE */
 
@@ -206,6 +196,16 @@
       implicit none
 
 #include "ana_vmix.h"
+
+# ifdef EXCHANGE
+      call exchange_xxx(Akv,Akt(:,:,:,itemp))
+
+#  ifdef SALINITY
+      call exchange_xxx(Akt(:,:,:,isalt))
+#  endif
+
+# endif  /* EXCHANGE */
+
 
       end subroutine ana_vmix !]
 ! ----------------------------------------------------------------------
