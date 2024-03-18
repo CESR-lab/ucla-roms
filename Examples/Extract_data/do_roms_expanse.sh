@@ -27,7 +27,7 @@ module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
 module load netcdf-c/4.7.4
 module load netcdf-fortran/4.5.3
 
-srun --mpi=pmi2 -n 6 roms sample.in
+srun --mpi=pmi2 -n 6 roms extract.in
 
 
 

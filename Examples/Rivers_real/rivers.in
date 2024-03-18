@@ -31,6 +31,10 @@ rho0:
 v_sponge:           V_SPONGE [m^2/sec]
                    1.
 
+vertical_mixing:  Akv  Akt1  Akt2
+                  0.0  0.0   0.0
+
+
 tracer_diff2: TNU2(1:NT)           [m^2/sec for all]
  0. 0. 0. 0. 0. 0. 0. 0. 0.
 

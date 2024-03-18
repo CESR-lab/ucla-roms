@@ -13,35 +13,48 @@
 
 .PHONY: all clean depend
 
-optfiles := $(shell ls *.opt)
-tag := $(shell git --git-dir $(ROMS_ROOT)/.git rev-parse HEAD)
-tline1 := git_hash=
-tline2:= 'git_hash=\"$(tag)\"'
-
 all:
+	ln -s $(ROMS_ROOT)/Examples/input_data input_data 2>/dev/null || :
 	rsync -a $(ROMS_ROOT)/src/*.F $(ROMS_ROOT)/src/*.h  Compile
 	make show_tag
 	@rsync -a $(ROMS_ROOT)/src/*.opt Compile	
 	@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
 	@rsync -a $(ROMS_ROOT)/src/Makefile Compile
+	@rm Compile/*.f	2>/dev/null || :
 	cp -p *.h *.F *.opt Makedefs.inc Compile 2>/dev/null || :
 	cd Compile; make depend 2>/dev/null || :
 	cd Compile; make -j6; mv roms ..
+
 
 # note: "2>/dev/null || :" above is needed to suppress error 
 #       stop if no .h or .F files in current directory.
 #       Also, makedepf90 in make depend can throw out strange
 #       errors for .h files for inexplicable changes made to
-#       cppdefs.opt
+#       cppdefs.opt.
 
+# for adding git hash:
+tag := $(shell git rev-parse HEAD)
+tline1 := git_hash=
+tline2:= 'git_hash=\"$(tag)\"'
 show_tag:
 	@sed -i '/$(tline1)/c\      $(tline2)' Compile/add_git_hash.F
+
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :
 	
 work_clean:
 	rm -r Compile/ *.F *.h *.in *.sh *.nc roms 2>/dev/null || :	
+
+code_check_clean:
+	@cd $(ROMS_ROOT)/Examples/Flux_frc        ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/Pipes_ana       ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/Pipes_real      ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/Rivers_ana      ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/Rivers_real     ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/Tracers_passive ; make compile_clean
+	@cd $(ROMS_ROOT)/Examples/WEC_real        ; make compile_clean
+	
 	
 copy_to_Work_dir:
 	cp -p *.F *.h *.in *.sh ../../Work 2>/dev/null || :

@@ -11,11 +11,11 @@
       ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
 
       ! nc_uwnd and nc_vwnd have been moved to bulk_wnd.opt to avoid circular dependency when running with MARBL
-      type (ncforce) :: nc_tair  = ncforce( name='Tair', tname='time' )  ! Air temp (input data Degrees C at 2m)
-      type (ncforce) :: nc_Q     = ncforce( name='qair', tname='time' )  ! Q (Specific humidity (kg/kg)
-      type (ncforce) :: nc_prate = ncforce( name='rain', tname='time' )  ! Precipitation rate (cm/day)
-      type (ncforce) :: nc_lwrad = ncforce( name='lwrad',tname='time' )  ! Downward longwave radiation [W/m^2]
-      type (ncforce) :: nc_swrad = ncforce( name='swrad',tname='time' )  ! net shortwave radiation [W/m^2]
+      type (ncforce) :: nc_tair  = ncforce(vname='Tair', tname='time' )  ! Air temp (input data Degrees C at 2m)
+      type (ncforce) :: nc_Q     = ncforce(vname='qair', tname='time' )  ! Q (Specific humidity (kg/kg)
+      type (ncforce) :: nc_prate = ncforce(vname='rain', tname='time' )  ! Precipitation rate (cm/day)
+      type (ncforce) :: nc_lwrad = ncforce(vname='lwrad',tname='time' )  ! Downward longwave radiation [W/m^2]
+      type (ncforce) :: nc_swrad = ncforce(vname='swrad',tname='time' )  ! net shortwave radiation [W/m^2]
 
 #if defined TAU_CORRECTION
       type (ncforce)  :: nc_taux = ncforce(vname='TauX_corr',tname='Taucorr_time'  )  ! The TAU_CORRECTION flag is used to active a correction term to
