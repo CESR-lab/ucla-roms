@@ -13,7 +13,7 @@ include Makedefs.inc
 #   3) boundary conditions;        7) netCDF I/O routines;
 #   4) sea-water EOS routines;     8) model forcing routines;
 
-KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
+KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
 	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
 	mpi_test_arr.F private_scratch.F basic_output.F\
@@ -40,15 +40,16 @@ KRNSRC = 		param.F dimensions.F	read_write.F ocean_vars.F tracers.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
-	mpi_setup.F	exchange.F	mpi_exchange8TA.F\
+	mpi_setup.F\
 \
 	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F\
+	random_output.F mpi_exchanges.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
 \
 	main.F	
-
+#read_write.F
+#exchange.F	mpi_exchange8TA.F\
 #ab_ratio.F	alfabeta.F\
 #mpi_exchange4.F	mpi_exchange8TA.F\
 
