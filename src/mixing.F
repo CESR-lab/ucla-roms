@@ -60,7 +60,7 @@
 !                                depth z_w [non-dimensional]
 
 # ifdef LMD_KPP
-      real,allocatable,dimension(:,:,:) :: hbls
+      real,allocatable,dimension(:,:) :: hbls
 
       real,allocatable,dimension(:,:,:) :: swr_frac
 #  ifdef LMD_NONLOCAL
@@ -68,7 +68,7 @@
 #  endif
 # endif /* LMD_KPP */
 # ifdef LMD_BKPP
-      real,allocatable,dimension(:,:,:) :: hbbl
+      real,allocatable,dimension(:,:) :: hbbl
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
@@ -137,7 +137,7 @@
 !                                depth z_w [non-dimensional]
 
 # ifdef LMD_KPP
-      allocate( hbls(GLOBAL_2D_ARRAY,2) ); hbls=0.
+      allocate( hbls(GLOBAL_2D_ARRAY) ); hbls=0.
 
       allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) ); swr_frac=init
 #  ifdef LMD_NONLOCAL
@@ -145,7 +145,7 @@
 #  endif
 # endif /* LMD_KPP */
 # ifdef LMD_BKPP
-      allocate( hbbl(GLOBAL_2D_ARRAY,2) ); hbbl=0.
+      allocate( hbbl(GLOBAL_2D_ARRAY) ); hbbl=0.
 # endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 

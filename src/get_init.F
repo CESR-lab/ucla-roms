@@ -443,9 +443,9 @@ c--#define VERBOSE
 # ifdef LMD_KPP
       ierr=nf90_inq_varid(ncid, vname(1,indxHbls), varid)
       if (ierr == nf90_noerr) then
-        call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
-        hbls(i0:i1,j0:j1,tindx)=hbls(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
-        call exchange_xxx(hbls(:,:,tindx) )
+        call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
+        hbls(i0:i1,j0:j1)=hbls(i0:i1,j0:j1)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
+        call exchange_xxx(hbls(:,:) )
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
      & 'variable ''', trim(vname(1,indxHbls)), ''' not found in ''',
@@ -456,9 +456,9 @@ c--#define VERBOSE
 # ifdef LMD_BKPP
       ierr=nf90_inq_varid(ncid, vname(1,indxHbbl), varid)
       if (ierr == nf90_noerr) then
-        call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
-        hbbl(i0:i1,j0:j1,tindx)=hbbl(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
-        call exchange_xxx(hbbl(:,:,tindx) )            ! confirmed needs an exchange, not sure why
+        call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
+        hbbl(i0:i1,j0:j1)=hbbl(i0:i1,j0:j1)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
+        call exchange_xxx(hbbl(:,:) )            ! confirmed needs an exchange, not sure why
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
      & 'variable ''', trim(vname(1,indxHbbl)), ''' not found in ''',
