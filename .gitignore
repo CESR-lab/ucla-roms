@@ -19,6 +19,7 @@ cppcheck
 srcscheck
 Examples/*/Compile
 Examples/*/input_data
+Examples/Restart/*.nc
 Examples/Pipes_ana/*.nc
 Examples/Pipes_real/*.nc
 Examples/Rivers_ana/*.nc

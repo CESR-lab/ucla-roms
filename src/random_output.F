@@ -62,7 +62,7 @@
       ierr = nf90_put_att(ncid,varid,'long_name','surface x velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s')
 
-      varid = nccreate(ncid,'v_surf',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_v,0/))
+      varid = nccreate(ncid,'v_surf',(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/))
       ierr = nf90_put_att(ncid,varid,'long_name','surface y velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s')
 

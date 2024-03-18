@@ -86,7 +86,7 @@
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
 	FFLAGS = -O3 -ip
 # - uncomment for debugging:
-#	FFLAGS = -g -traceback -check all -CA -CB -CS
+ 	FFLAGS = -g -traceback -check all -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:

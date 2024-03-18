@@ -1,0 +1,189 @@
+#include "cppdefs.opt"
+#ifdef MPI
+c--# define TRANSPOSED_MPI_NODE_ORDER
+c--# define PRINT_HOSTNAME
+
+      subroutine mpi_setup(ierr)
+      use param
+      use hidden_mpi_vars
+      use mpi
+      use roms_read_write
+      implicit none
+      integer ierr
+
+      integer nsize, off_xi,off_eta, conv_ijnode_to_rank
+
+      character(len=60),parameter :: partition_file = 'pachug_part.nc'
+
+      ocean_grid_comm=MPI_COMM_WORLD
+      call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
+      call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
+
+
+      if (nsize/=nnodes) then
+        if(mynode==0) write(*,'(/1x,A,I4,1x,A,I3,A/)')
+     &   '### ERROR: mpi_setup: number of MPI-nodes should be',
+     &                         nnodes, 'instead of', nsize, '.'
+        ierr=99
+        return
+      endif
+
+      jnode=mynode/np_xi          ! Indices inode,jnode identify
+      inode=mynode-jnode*np_xi    ! the location of current subdomain
+
+      west_msg_exch=.true.        ! Start by assuming that we do
+      east_msg_exch=.true.        ! have neighbors on both sides
+      if (.not.ew_periodic) then
+        if (inode==0) then
+          west_msg_exch=.false.   ! A physical boundary to the west
+        endif
+        if (inode==np_xi) then
+          east_msg_exch=.false.   ! A physical boundary to the east
+        endif
+      endif
+
+      south_msg_exch=.true.       ! Start by assuming that we do
+      north_msg_exch=.true.       ! have neighbors on both sides
+      if (.not.ns_periodic) then
+        if (jnode==0) then
+          south_msg_exch=.false.  ! A physical boundary to the south
+        endif
+        if (jnode==np_eta) then
+          north_msg_exch=.false.  ! A physical boundary to the north
+        endif
+      endif
+
+! Determine MPI-ranks of the MPI subdomains adjacent from the sides
+! and corners. These are needed to designate MPI ranks for sources of
+! incoming and targets for outgoing messages.
+
+         p_E=conv_ijnode_to_rank(inode+1,jnode  , NP_XI,NP_ETA)
+        p_NE=conv_ijnode_to_rank(inode+1,jnode+1, NP_XI,NP_ETA)
+        p_N =conv_ijnode_to_rank(inode  ,jnode+1, NP_XI,NP_ETA)
+        p_NW=conv_ijnode_to_rank(inode-1,jnode+1, NP_XI,NP_ETA)
+         p_W=conv_ijnode_to_rank(inode-1,jnode  , NP_XI,NP_ETA)
+        p_SW=conv_ijnode_to_rank(inode-1,jnode-1, NP_XI,NP_ETA)
+        p_S =conv_ijnode_to_rank(inode  ,jnode-1, NP_XI,NP_ETA)
+        p_SE=conv_ijnode_to_rank(inode+1,jnode-1, NP_XI,NP_ETA)
+
+! Determine bounds of the usable portion of model arrays:
+
+        off_xi=NP_XI*Lm-LLm
+        if (inode == 0) then               ! DevinD added
+          iSW_corn = 0                     ! need to fix iSW_corn as used to determine WESTERN_EDGE
+        else
+          iSW_corn = inode*Lm - off_xi/2   ! add length of western domain.
+        endif
+        if (inode == 0) then
+          Lm = Lm - off_xi/2
+        endif
+        if (inode == NP_XI-1) then
+          Lm = Lm -(off_xi+1)/2
+        endif
+        iwest = 1
+        ieast = Lm                               ! all sub-domains (Lm same for all interior,
+                                                 ! possibly different E & W edges
+
+        off_eta=NP_ETA*Mm-MMm
+        jSW_corn=jnode*Mm-off_eta/2
+!        if (jnode == 0) then
+!          jsouth=1+off_eta/2
+!        else
+!          jsouth=1
+!        endif
+!        if (jnode < NP_ETA-1) then
+!          jnorth=Mm
+!        else
+!          jnorth=Mm -(off_eta+1)/2
+!        endif
+        if (jnode == 0) then                ! DevinD added
+          jSW_corn = 0                      ! need to fix iSW_corn as used to determine WESTERN_EDGE
+        else
+          jSW_corn = jnode*Mm - off_eta/2   ! add length of western domain.
+        endif
+        if (jnode == 0) then
+          Mm = Mm - off_eta/2
+        endif
+        if (jnode == NP_ETA-1) then
+          Mm = Mm -(off_eta+1)/2
+        endif
+        jsouth = 1
+        jnorth = Mm
+
+#ifdef VERBOSE
+      write(*,'(A,7I5,1x,A,I4)') 'XI:', LLm, off_xi, iSW_corn, Lm,
+     & ieast-iwest+1, iwest+iSW_corn,ieast+iSW_corn, 'node=', mynode
+      write(*,'(A,7I5,1x,A,I4)') 'ETA:',MMm, off_eta, jSW_corn, Mm,
+     & jnorth-jsouth+1,jsouth+jSW_corn,jnorth+jSW_corn,'node=',mynode
+#endif
+
+# ifdef PARALLEL_FILES
+         xi_rho=ieast-iwest+1
+         if (EASTERN_MPI_EDGE) then
+           xi_rho=xi_rho+1
+         endif
+         if (WESTERN_MPI_EDGE) then
+           xi_rho=xi_rho+1
+           xi_u=xi_rho-1
+         else
+           xi_u=xi_rho
+         endif
+
+         eta_rho=jnorth-jsouth+1
+         if (NORTHERN_MPI_EDGE) then
+           eta_rho=eta_rho+1
+         endif
+         if (SOUTHERN_MPI_EDGE) then
+           eta_rho=eta_rho+1
+           eta_v=eta_rho-1
+         else
+           eta_v=eta_rho
+         endif
+# endif
+
+        ierr=0
+      end
+
+! Convert processor-grid indices i,jnode into MPI rank. Check whether
+! the indices are within the bounds of processor grid. Return them back
+! into periodicity domain, if there is periodicity in either direction,
+! but only if the number of subdomains is greater than one (hence
+! periodicity must go through message passing).
+
+      function conv_ijnode_to_rank(ii,jj, np_xi,np_eta)
+      implicit none
+      integer conv_ijnode_to_rank, ii,jj, np_xi,np_eta, i,j
+      i=ii ; j=jj
+# ifdef EW_PERIODIC
+      if (np_xi > 1) then
+        if (i < 0) then
+          i=i+np_xi
+        elseif (i > np_xi-1) then
+          i=i-np_xi
+        endif
+      endif
+# endif
+# ifdef NS_PERIODIC
+      if (np_eta > 1) then
+        if (j < 0) then
+          j=j+np_eta
+        elseif (j > np_eta-1) then
+          j=j-np_eta
+        endif
+      endif
+# endif
+      if (0 <= i .and. i < np_xi .and. 0 <= j .and. j < np_eta) then
+# ifdef TRANSPOSED_MPI_NODE_ORDER
+        conv_ijnode_to_rank=j + i*np_eta
+# else
+        conv_ijnode_to_rank=i + j*np_xi
+# endif
+      else
+        conv_ijnode_to_rank=-1 !<- meaning that the rank does not exist
+      endif
+      end
+
+#else
+      subroutine mpi_setup_empty
+      end
+#endif    /* MPI */
