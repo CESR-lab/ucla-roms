@@ -418,8 +418,9 @@
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t_avg(itrc)) then
              text_lname='avg_'/ /t_lname(itrc)
-             varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,
-     &                  dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+             varid = nccreate(ncid,t_vname(itrc),
+     &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
@@ -428,8 +429,8 @@
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t(itrc)) then
              text_lname='avg_'/ /t_lname(itrc)
-             varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,
-     &                  dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+             varid = nccreate(ncid,t_vname(itrc),
+     &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif

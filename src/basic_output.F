@@ -544,6 +544,12 @@
         call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
 # endif
 #endif
+        ! Added for perfect restart reasons
+!       start(3)=1; start(4)=rec_rst
+!       call ncwrite(ncid,'Akv',Akv(i0:i1,j0:j1,:,nstp),start)
+!       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,nstp,itemp),start)
+!       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,nstp,isalt),start)
+
         if (ub_tune)   call wrt_rst_ub(ncid,rec_rst)
         if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
 
@@ -687,7 +693,7 @@
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
       endif
-      if ( (wrt_O .and. .not. avg) .or. (wrt_avg_O .and. avg) ) then                                      ! s-coordinate "omega" vertical velocity.
+      if ( (wrt_O .and. .not. avg) .or. (wrt_avg_O .and. avg) ) then    ! s-coordinate "omega" vertical velocity.
         if (.not. avg) text_lname=vname(2,indxO)
         if (      avg) text_lname='averaged '/ /vname(2,indxO)
         varid = 
@@ -765,6 +771,7 @@
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
       varid = nccreate(ncid,'time_step',(/dn_aux,dn_tm/),(/iaux,0/),nf90_int)
+
       ierr=nf90_put_att (ncid, varid, 'long_name',
      &       'time step and record numbers from initialization')
 
