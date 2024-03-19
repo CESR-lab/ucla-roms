@@ -48,7 +48,7 @@
       character*47, dimension(nt), public :: t_tname                 ! tracer input time variable name
       logical, dimension(nt), public      :: wrt_t                   ! t/f output tracer.
       logical, dimension(nt), public      :: wrt_t_avg               ! t/f output avg tracer.
-      logical, dimension(nt), public      :: wrt_t_dia               ! t/f output dia tracer.
+      !logical, dimension(nt), public      :: wrt_t_dia               ! t/f output dia tracer. !20240319 - DS - Not sure why/how/when this got added?
       integer, dimension(nt)              :: t_ana_frc               ! whether surface flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:

@@ -1,7 +1,7 @@
 ! This module created to avoid circular dependencies with the MARBL BGC driver
       module get_bulk_wnd
 #include "cppdefs.opt"      
-#if defined BULK_FRC
+
       use param
 !      use read_write, only: set_frc_var_tile, ncvs
       use roms_read_write
@@ -29,6 +29,12 @@
       allocate( nc_uwnd%vdata( GLOBAL_2D_ARRAY,2) )
       allocate( nc_vwnd%vdata( GLOBAL_2D_ARRAY,2) )
 
+      if (interp_frc==1) then 
+        nc_uwnd%coarse = 1
+        nc_vwnd%coarse = 1
+      endif
+
+      
       end subroutine init_arrays_bulk_wnd
 ! --------------------------------------------------------------------------------
       subroutine set_bulk_wnd_tile(istr,iend,jstr,jend)
@@ -44,6 +50,6 @@
 
      
       end subroutine set_bulk_wnd_tile
-#endif /* defined BULK_FRC */      
+
       end module get_bulk_wnd
 
