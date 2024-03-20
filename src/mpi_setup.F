@@ -193,7 +193,7 @@ C$    endif
       else
         mpi_master_only write(*,'(/1x,A,I4,1x,A,I3,A/)')
      &   '### ERROR: mpi_setup: number of MPI-nodes should be',
-     &                         NNODES, 'instead of', nsize, '.'
+     &                         NNODES, 'instead of ', nsize, '.'
         ierr=99
       endif
       end

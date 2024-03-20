@@ -106,6 +106,7 @@
       character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
 
 
+      public :: insert_nodes
       public :: findstr,append_date_node
       public :: set_frc_data
       public :: read_output_root_name
@@ -1039,6 +1040,51 @@
       fname = trim(fname) // '.nc'
 
       end subroutine append_date_node !]
+!-----------------------------------------------------------------------
+      subroutine insert_nodes(fname) ![
+      ! Insert date and node number string into filename
+      ! If the nodate argument is present, only add the node number
+      implicit none
+
+      ! import/export
+      character(len=*),intent(inout):: fname 
+
+      ! Local
+      character(len=6)   :: indxstr
+      integer :: label
+      logical :: ncf
+      integer :: istart
+
+      ncf =  findstr(fname,'.nc',istart) 
+      if (ncf) then
+        fname(istart:istart+2) = '   '
+      else
+        print *,'error insert_node. No .nc found in file name'
+        stop
+      endif
+
+
+#if defined MPI && defined PARALLEL_FILES
+      if (nnodes<10) then
+        write(indxstr,'(A,I0.1)') '.',mynode
+      elseif (nnodes<100) then
+        write(indxstr,'(A,I0.2)') '.',mynode
+      elseif (nnodes<1000) then
+        write(indxstr,'(A,I0.3)') '.',mynode
+      elseif (nnodes<10000) then
+        write(indxstr,'(A,I0.4)') '.',mynode
+      elseif (nnodes<100000) then
+        write(indxstr,'(A,I0.5)') '.',mynode
+      elseif (nnodes>100000) then
+         print *, 'ROMS is not ready for this future'
+         stop
+      endif
+      fname = trim(fname) //trim(indxstr)
+#endif
+
+      fname = trim(fname) // '.nc'
+
+      end subroutine insert_nodes !]
 !-----------------------------------------------------------------------
       subroutine nc_check_units(file_name,var_name, var_units )  ![
 !     subroutine nc_check_units(ifile,var_name, var_units )
