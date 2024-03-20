@@ -29,7 +29,7 @@
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
       public init_arrays_bulk_frc
-      public set_bulk_frc_tile
+      public set_bulk_frc
 
       contains
 
@@ -76,7 +76,7 @@
 
       end subroutine init_arrays_bulk_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
+      subroutine set_bulk_frc(istr,iend,jstr,jend) ![
 
       use surf_flux, only: srflx
 
@@ -131,7 +131,7 @@
       endif
 
 
-      end subroutine set_bulk_frc_tile  !]
+      end subroutine set_bulk_frc  !]
 !-----------------------------------------------------------------------
       subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
 
