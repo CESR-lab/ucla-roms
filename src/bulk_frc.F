@@ -43,7 +43,8 @@
       allocate(     Q(GLOBAL_2D_ARRAY) )
       allocate( prate(GLOBAL_2D_ARRAY) )
       allocate( lwrad(GLOBAL_2D_ARRAY) )
-
+      
+      allocate( wspd_used(GLOBAL_2D_ARRAY) )
 
       ! vdata needs to be of blobal_2d_array size
 !      allocate( nc_uwnd%vdata(GLOBAL_2D_ARRAY,2) )
