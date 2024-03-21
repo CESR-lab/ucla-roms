@@ -4,23 +4,23 @@
 # Compilation rules for file types:
 #   (used for every file until the final linking step)
 
-.SUFFIXES: .o .fpp .F .f90
+.SUFFIXES: .o .f .F .f90
 
 .F.o:
-	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.fpp
-	$(CFT) -c $(FFLAGS) -o $*.o $*.fpp $(LCDF)
-	#@/bin/rm -f $*.fpp
-.F.fpp:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.fpp
-.fpp.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.fpp $(LCDF)
-	#@/bin/rm -f $*.fpp
+	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+	@/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+.f.o:
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+	@/bin/rm -f $*.f
 
 .f90.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f90 $(LCDF)
 .F:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.fpp:
+.f:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 .f90:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
@@ -33,15 +33,14 @@
 #	the standard CPP is not aware of this.
 
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-#    CPP = /lib/cpp -traditional -D__IFC # 20230927
-    CPP = /usr/bin/cpp -traditional -D__IFC
+    CPP = /lib/cpp -traditional -D__IFC
 	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include -I${MARBL_ROOT}/include
 
-#   Since we no longer keep .fpp files after compilation, if you want to still
-#   see the .fpp to confirm what code is left after c-pre-processing (CPPFLAGS
+#   Since we no longer keep .f files after compilation, if you want to still
+#   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
 #   removed) or for runtime debug line numbers, use the following
 #   in the Compile/ folder (change 'main' for your file of interest):
-#   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.fpp
+#   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
 
 # Path names (non-hydrostatic & NetCDF libraries):
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
@@ -57,6 +56,11 @@
 	NETCDFC_INC=$(shell nc-config --cflags)
 	NETCDFC_LIB=$(shell nc-config --libs)
 
+# MARBL
+        MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
+    	MARBL_LIB = -lmarbl-gnu-mpi -L${MARBL_ROOT}/lib
+  
+
 # COMPILER SETTINGS:
 
 # OpenMP flags:
@@ -69,7 +73,7 @@
 #	LARGE_MEM_FLAG = -mcmodel=large
 
 # Fortran compiler flags:
-#	CFTFLAGS = -pc64 -auto #20230927
+	CFTFLAGS = -pc64 -auto
 
 # Fortran compiler name and options:
 #	- using non-intel MPI:
@@ -85,24 +89,20 @@
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-#	FFLAGS = -O3 -ip
+	FFLAGS = -O3 -ip
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
-	FFLAGS = -g
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
 #	FFLAGS = -O3 -fp-model strict
-# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.fpp':
+# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.fpp':
+# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-	#LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
-	#LCDF = -lmpi -lnetcdf -lnetcdff -L$(MPIHOME)/lib -L$(NETCDFHOME)lib -I$(MPIHOME)/include -I$(NETCDFHOME)include	-L${MARBL_ROOT}/lib -lmarbl-gnu-mpi -I${MARBL_ROOT}/include/gnu-mpi
-	LCDF = -lmpi -lnetcdf -lnetcdff -L$(MPIHOME)/lib -L$(NETCDFHOME)lib -I$(MPIHOME)/include -I$(NETCDFHOME)include	-L${MARBL_ROOT}/lib -lmarbl-intel-mpi -I${MARBL_ROOT}/include/intel-mpi
-	
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(MARBL_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MARBL_INC)
 
 # -------------------------------------------------------------
 
