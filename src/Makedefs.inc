@@ -66,7 +66,7 @@
 # OpenMP flags:
 #	note, -qopenmp is the new -openmp but is still needed for maya
 #	OMP_FLAG = -fpp -openmp
-#	OMP_FLAG = -qopenmp
+	OMP_FLAG = -qopenmp
 
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
