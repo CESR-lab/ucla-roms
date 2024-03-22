@@ -58,7 +58,7 @@
 
 # MARBL
         MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-    	MARBL_LIB = -lmarbl-gnu-mpi -L${MARBL_ROOT}/lib
+    	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
   
 
 # COMPILER SETTINGS:
