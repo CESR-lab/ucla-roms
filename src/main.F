@@ -279,6 +279,7 @@ CR      write(*,*)  ' -2' MYID
 #endif
       ! The optional argument refers to
       ! blowup if true, and initial if false. 
+      ! Come up with a better name!
       call wrt_his_ocean_vars(.false.)
 #ifdef BIOLOGY_BEC2
       call wrt_bgc(.true.)
@@ -457,7 +458,7 @@ CR      write(*,*)  ' -2' MYID
       time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
 
-      call calc_avg_ocean_vars ! call here not wrt_his else
+      call calc_avg_ocean_vars 
 
 !     Done with stepping, time for outputs
 
