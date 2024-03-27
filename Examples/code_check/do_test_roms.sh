@@ -22,6 +22,7 @@ cp -p $ROMS_ROOT/Examples/Makefile .
 
 make &> /dev/null
 
+
 # 2) Run test case:
 echo "  test running..."
 if [ "$1" = "expanse" ]
@@ -35,8 +36,9 @@ rm *.h       &> /dev/null
 rm *.nc      &> /dev/null
 rm diag.opt  &> /dev/null
 rm Make*     &> /dev/null
-rm param.opt  &> /dev/null
+rm param.opt &> /dev/null
 rm cppdefs.opt &> /dev/null
+rm roms      &> /dev/null
 
 # 2) Python - confirm values:
 cp $ROMS_ROOT/Examples/code_check/test_roms.py . 
