@@ -46,9 +46,6 @@
       wrt_t     (islt)=.True.;    wrt_t_avg(islt) =.True.    ! salinity
 #endif
 
-   wrt_t_dia = .false.
-
-
 ! - PASSIVE TRACERS:
 
 ! - BGC TRACERS: (must come after passive tracers)
