@@ -400,7 +400,7 @@ c----#  define tind nstp
           enddo
         enddo
       enddo
-# else
+# else /* no kpp at all */
 
 ! Finalize: Copy everything into shared arrays:
 

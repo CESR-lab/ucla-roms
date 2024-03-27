@@ -12,7 +12,6 @@
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      use read_write, only: set_frc_var_tile, ncvs, rp_var
       use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use bgc_ecosys_vars
       use nc_read_write
@@ -20,6 +19,7 @@
       use netcdf
       use scalars
       use ocean_vars
+      use dimensions
 
       implicit none
 
@@ -86,18 +86,22 @@
 #endif
 
 
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
+      call set_frc_data(nc_dust,dust,'r')
+      call set_frc_data(nc_iron,iron,'r')
 
 
 #ifdef PCO2AIR_FORCING
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
+      call set_frc_data(nc_pco2air,pco2air,'r')
 #endif /* PCO2AIR_FORCING */   
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+      call set_frc_data(nc_swrad_avg,swrad_avg,'r')
      
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -546,15 +550,15 @@
       subroutine init_arrays_bgc_frc  ![
       implicit none
 
-      allocate( nc_dust%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_iron%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_dust%vdata( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_iron%vdata( GLOBAL_2D_ARRAY,2) )
 
 #ifdef PCO2AIR_FORCING
-      allocate( nc_pco2air%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_pco2air%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      allocate( nc_swrad_avg%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad_avg%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
       end subroutine  init_arrays_bgc_frc !]

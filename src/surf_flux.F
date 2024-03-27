@@ -207,7 +207,6 @@
         ierr=nf90_open(fname,nf90_write,ncid)
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
-!       print *,'trying to write time to flx file ',wrt_smflx,wrt_stflx
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
         start=1; start(3)=record
@@ -239,7 +238,7 @@
         if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
      &        'surf_flux :: wrote surface flux, tdays =', tdays,
-     &        'step =', iic-1, 'rec =', record
+     &        'step =', iic, 'rec =', record
         endif
       endif  ! time for an output
 
