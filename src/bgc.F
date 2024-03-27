@@ -424,6 +424,7 @@
              text_lname='avg_'/ /t_lname(itrc)
              varid = nccreate(ncid,t_vname(itrc),
      &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
