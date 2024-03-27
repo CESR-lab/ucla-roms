@@ -17,7 +17,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
 	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
 	mpi_test_arr.F private_scratch.F basic_output.F\
-	scalars.F scoord.F strings.F work.F nc_read_write.F\
+	scalars.F scoord.F strings.F work_mod.F nc_read_write.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
 	diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\

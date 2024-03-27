@@ -29,7 +29,7 @@
 ! boundary layer formulation, or linear/quadratic friction law..
 !
       use param
-      use bulk_frc  ! ,  only: set_bulk_frc_tile
+      use bulk_frc
       use flux_frc
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
@@ -46,13 +46,10 @@
       implicit none
 
 
-      real  tmid
       integer ierr
       integer,save:: tile=0
 
 #include "compute_tile_bounds.h"
-
-      tmid=time+0.5*dt
 
       ierr=0
 ! External data to supply at open boundaries. Note that there are
@@ -107,7 +104,7 @@ c***              no code here
       call ana_srflux_tile(istr,iend,jstr,jend) ! Should move this to bulk module
 #   endif
 #  endif
-      call set_bulk_frc_tile(istr,iend,jstr,jend) ! bulk flux module
+      call set_bulk_frc(istr,iend,jstr,jend) 
 
 # else
 
@@ -141,7 +138,7 @@ c***              no code here
 
       if (river_source) call set_river_frc
 
-      if (pipe_source) call set_pipe_frc_tile(istr,iend,jstr,jend)
+      if (pipe_source) call set_pipe_frc
 
 # ifdef WEC
       call set_wec_frc_tile(istr,iend,jstr,jend,ierr)
