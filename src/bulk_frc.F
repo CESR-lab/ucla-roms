@@ -704,12 +704,16 @@
 !  Total surface salt flux
 !
           evap=-cp*hflat/Hlv
-          ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
+! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
+#ifdef SALINITY          
           stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
+#endif          
 
 # ifdef MASKING
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
+#ifdef SALINITY          
           stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
+#endif          
 # endif
 !
 !  Save for the calculation of wind stress
