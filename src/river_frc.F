@@ -181,7 +181,7 @@
       subroutine set_ana_river_frc  ![
       ! Analytical river forcing volume and tracer data
 
-#include "river_frc_ana.opt"
+#include "ana_frc_river.h"
 
       end subroutine set_ana_river_frc  !]
 
