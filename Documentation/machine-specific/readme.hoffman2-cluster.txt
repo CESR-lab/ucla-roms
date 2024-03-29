@@ -16,7 +16,7 @@ General Hoffman2 information:
 How to run ROMS on Hoffman2:
   Sample run scripts
   Documentation/machine-specific/Job_submission_scripts
-  Submit job: qsub <your_run_script.cmd>
+  Submit job: qsub <your_run_script.cmd> (submit.cmd in the example)
   Job status: qstat -u <your_username>
   Cancel job: qdel <job_number> or qdel -u <your_username> (to delete all your jobs)
 
