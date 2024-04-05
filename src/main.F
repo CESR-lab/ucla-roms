@@ -279,6 +279,7 @@ CR      write(*,*)  ' -2' MYID
 #endif
       ! The optional argument refers to
       ! blowup if true, and initial if false. 
+      ! Come up with a better name!
       call wrt_his_ocean_vars(.false.)
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
@@ -321,6 +322,7 @@ CR      write(*,*)  ' -2' MYID
       use analytical
       use bgc
       use tides
+      use mixing
 
       implicit none
 
@@ -374,8 +376,9 @@ CR      write(*,*)  ' -2' MYID
       call ana_vmix
 # elif defined LMD_MIXING
       call lmd_vmix(nstp)
-# elif defined BVF_MIXING
-      call bvf_mix(0)
+!     if (mynode==0) then
+!       print *,'pre-step mixing: ',hbls(nx,20),maxval(Akv(nx,20,:))
+!     endif
 # endif
 
       ! nrhs points to u/v at time level n
@@ -402,6 +405,9 @@ CR      write(*,*)  ' -2' MYID
       call set_forces   ! get for time n+1/2
 # if defined LMD_MIXING
       call lmd_vmix(nrhs)
+!     if (mynode==0) then
+!       print *,'cor-step mixing: ',hbls(nx,20),maxval(Akv(nx,20,:))
+!     endif
 # endif
 
       tdays = (time+0.5*dt)*sec2day
@@ -452,7 +458,7 @@ CR      write(*,*)  ' -2' MYID
       time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
 
-      call calc_avg_ocean_vars ! call here not wrt_his else
+      call calc_avg_ocean_vars 
 
 !     Done with stepping, time for outputs
 

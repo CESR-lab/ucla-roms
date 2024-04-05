@@ -55,7 +55,7 @@
 !     2 (left, down only), send NE, recv SW
 
 !--------------------------------------------------------
-      subroutine exchange_2(A,exch_bf,do_corn) ![
+      subroutine exchange_2(A,exch_bf,array_bf,do_corn) ![
       ! 2D variable, 2 at the time
       ! Can exchange less data than the allocated buffer space
       implicit none
@@ -63,12 +63,20 @@
       !input/output
       real,intent(inout),dimension(:,:) :: A
       integer(kind=4),optional :: exch_bf  ! amount of data to exchange: exch_bf <= bf
+      integer,        optional :: array_bf ! non-default allocated buffer for array
       logical,optional :: do_corn
 
       if (.not.init_buffer_done) call init_mpi_buffers
 
-      bl = bf
-      hl = bf
+      ! Provide the ability to work with arrays with non-standard 
+      ! allocated buffer sizes
+      bl = bf 
+      if (present(array_bf)) then
+        bl = array_bf
+      endif
+
+      ! Provide the ability to exchange less than the allocated buffer
+      hl = bl
       if (present(exch_bf)) hl = exch_bf
 
       do_corners = .true.
@@ -418,8 +426,8 @@
       integer(kind=4) :: nxl,nyl
 
       dims = shape(A)
-      nxl = dims(1) -2*bf
-      nyl = dims(2) -2*bf
+      nxl = dims(1) -2*bl
+      nyl = dims(2) -2*bl
       call pack_buffers(A,nxl,nyl,1)
         
       end subroutine pack_2dvar !]
@@ -436,8 +444,8 @@
       integer(kind=4) :: nxl,nyl,nzl
 
       dims = shape(A)
-      nxl = dims(1) -2*bf
-      nyl = dims(2) -2*bf
+      nxl = dims(1) -2*bl
+      nyl = dims(2) -2*bl
       nzl = dims(3)
       call pack_buffers(A,nxl,nyl,nzl)
         
@@ -455,8 +463,8 @@
       integer(kind=4) :: nxl,nyl
 
       dims = shape(A)
-      nxl = dims(1) -2*bf
-      nyl = dims(2) -2*bf
+      nxl = dims(1) -2*bl
+      nyl = dims(2) -2*bl
       call unpack_buffers(A,nxl,nyl,1)
         
       end subroutine unpack_2dvar !]
@@ -473,8 +481,8 @@
       integer(kind=4) :: nxl,nyl,nzl
 
       dims = shape(A)
-      nxl = dims(1) -2*bf
-      nyl = dims(2) -2*bf
+      nxl = dims(1) -2*bl
+      nyl = dims(2) -2*bl
       nzl = dims(3)
       call unpack_buffers(A,nxl,nyl,nzl)
         

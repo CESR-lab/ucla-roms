@@ -24,6 +24,7 @@
       use scalars
       use dimensions !
       use ocean_vars
+      use dimensions
 
       implicit none
 
@@ -90,10 +91,11 @@
 #endif
 
 
-      !call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc ) ! dust
-      !call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc ) ! iron
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
       call set_frc_data(nc_dust,dust,'r')
       call set_frc_data(nc_iron,iron,'r')
+
 
 #ifdef PCO2AIR_FORCING
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
@@ -115,9 +117,10 @@
       call set_frc_data(nc_nhy,nhy,'r')
 #endif /* NHY_FORCING */
 
+
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
-!call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
       call set_frc_data(nc_swrad_avg,swrad_avg,'r')
      
       do j=jstrR,jendR
@@ -439,8 +442,9 @@
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t_avg(itrc)) then
              text_lname='avg_'/ /t_lname(itrc)
-             varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,
-     &                  dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+             varid = nccreate(ncid,t_vname(itrc),
+     &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
@@ -449,8 +453,8 @@
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t(itrc)) then
              text_lname='avg_'/ /t_lname(itrc)
-             varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,
-     &                  dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+             varid = nccreate(ncid,t_vname(itrc),
+     &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif

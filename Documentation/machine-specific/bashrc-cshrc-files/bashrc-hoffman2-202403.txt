@@ -1,0 +1,44 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+# added 20110721- BMP
+# User specific aliases and functions
+umask 0022
+
+export PATH=~/bin:$PATH
+PS1='\u@\h:\w\$ '
+
+# User specific aliases and functions
+module purge
+
+# ROMS user-defined path to where you have cloned the repo code:
+export ROMS_ROOT="$HOME/ucla-roms"
+
+# ROMS not user-defined (same for everyone):
+
+# - Prerequisite modules for netcdf (as told by using 'module spider netcdf')
+#   Also provides ifort and MPI.
+module load intel/2020.4  mpich/3.4
+module load curl/7.70.0
+
+# - netCDF-c
+module load netcdf/c-4.7.4
+
+# - netCDF-Fortran
+module load netcdf/fortran-4.5.3
+
+# - ncview
+module load ncview/2.1.7
+
+# - adds roms tools to path (you still need to build them first)
+export PATH=$PATH:$ROMS_ROOT/Tools-Roms
+
+# - set ROMS environment variables to match Expanse module paths:
+export NETCDFHOME=$NETCDF
+export MPIHOME=$MPICH_DIR
+
+export LD_LIBRARY_PATH=$ROMS_ROOT/NHMG/lib:$LD_LIBRARY_PATH
