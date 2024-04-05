@@ -15,7 +15,7 @@
       real,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind
 
       public init_arrays_bulk_wnd
-      public set_bulk_wnd_tile
+      public set_bulk_wnd
       
       contains
 
@@ -37,7 +37,7 @@
       
       end subroutine init_arrays_bulk_wnd
 ! --------------------------------------------------------------------------------
-      subroutine set_bulk_wnd_tile(istr,iend,jstr,jend)
+      subroutine set_bulk_wnd(istr,iend,jstr,jend)
 
       implicit none
       integer, intent(in) :: istr,iend,jstr,jend
@@ -49,7 +49,7 @@
       call set_frc_data(nc_vwnd,vwnd,'r')
 
      
-      end subroutine set_bulk_wnd_tile
+      end subroutine set_bulk_wnd
 
       end module get_bulk_wnd
 

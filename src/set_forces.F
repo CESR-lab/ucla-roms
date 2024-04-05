@@ -46,7 +46,6 @@
 
       implicit none
 
-
       integer ierr
       integer,save:: tile=0
 
@@ -105,8 +104,8 @@ c***              no code here
       call ana_srflux_tile(istr,iend,jstr,jend) ! Should move this to bulk module
 #   endif
 #  endif
-      call set_bulk_wnd_tile(istr,iend,jstr,jend) ! bulk wind module      
-      call set_bulk_frc_tile(istr,iend,jstr,jend) ! bulk flux module
+      call set_bulk_wnd(istr,iend,jstr,jend) ! bulk wind module      
+      call set_bulk_frc(istr,iend,jstr,jend) ! bulk flux module
 # else
 
       ! DevinD not sure what flag to use here to avoid set_flux for purely analytical
@@ -168,4 +167,3 @@ c>>>      if (ierr /= 0) may_day_flag=2
       if (ZEROTH_TILE) call ana_psource
 #endif
       end
-
