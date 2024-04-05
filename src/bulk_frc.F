@@ -672,7 +672,10 @@
 !
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
-          hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
+          hfsen=-blk_Cpa*rhoAir*Wstar*Tstar !
+!  Compute turbulent latent heat flux (W/m2), Hl.
+!
+          hflat=-Hlv*rhoAir*Wstar*Qstar          
 !  For EMINUSP option,  EVAP = LHeat (W/m2) / Hlv (J/kg) = kg/m2/s
 !                       PREC = rain = kg/m2/s
 !
@@ -719,10 +722,6 @@
 !  Save for the calculation of wind stress
 !
           aer(i,j)=rhoAir*wspd0*rho0i
-!
-!  Compute turbulent latent heat flux (W/m2), Hl.
-!
-          hflat=-Hlv*rhoAir*Wstar*Qstar
 !
 !  Compute Webb correction (Webb effect) to latent heat flux, Hlw.
 !
