@@ -1,0 +1,67 @@
+/* This is "cppdefs.opt": MODEL CONFIGURATION FILE
+   ==== == ============ ===== ============= ==== */
+
+/*
+ * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
+ */
+
+#define RIVERS
+
+
+#if defined RIVERS
+
+c--# define DIAGNOSTICS
+c--# define TIDES
+c--# define BULK_FRC
+c--# define SPONGE_TUNE
+c--# define RIVER_SOURCE
+# define EXTRACT_DATA
+
+c--# define SFLX_CORR
+
+# define SOLVE3D
+# define UV_COR
+# define UV_ADV
+
+# define CURVGRID
+# define SPHERICAL
+# define MASKING
+
+# define SALINITY
+# define NONLIN_EOS
+# define SPLIT_EOS
+
+c--# define AVERAGES
+# define EXACT_RESTART
+# define IMPLICIT_BOTTOM_DRAG
+
+# define UV_VIS2
+# define TS_DIF2
+
+# define LMD_MIXING
+# define LMD_KPP
+# define LMD_BKPP
+# define LMD_RIMIX
+# define LMD_NONLOCAL
+c--# define LMD_CONVEC
+
+# define OBC_WEST
+# define OBC_EAST
+# define OBC_NORTH
+# define OBC_SOUTH
+
+# define OBC_M2FLATHER  /* Barotop. BC: OBC_M2FLATHER, OBC_M2ORLANSKI, OBC_M2SPECIFIED */
+# define OBC_M3ORLANSKI /* Baroclin. BC: OBC_M3ORLANSKI, OBC_M3SPECIFIED */
+# define OBC_TORLANSKI  /* Tracer BC: OBC_TORLANSKI, OBC_TSPECIFIED */
+
+# define Z_FRC_BRY
+# define M2_FRC_BRY
+# define M3_FRC_BRY
+# define T_FRC_BRY
+# define SPONGE
+
+#endif
+
+
+#include "set_global_definitions.h"
+

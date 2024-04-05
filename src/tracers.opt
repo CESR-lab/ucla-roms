@@ -46,7 +46,6 @@
       wrt_t     (islt)=.True.;    wrt_t_avg(islt) =.True.    ! salinity
 #endif
 
-
 ! - PASSIVE TRACERS:
 
 ! - BGC TRACERS: (must come after passive tracers)
@@ -68,6 +67,7 @@
       t_vname(itot)='PO4';        t_units  (itot)='mMol P m-3'
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Phosphate'
+      wrt_t_dia(itot) = .false.
 
       itot=itot+1;                iNO3=itot
       wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.

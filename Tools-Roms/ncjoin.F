@@ -110,11 +110,11 @@ c--#define VERBOSE
       integer, dimension(maxdims) :: dimid,   ldim,   ibuff,
      &                               start,   count,  start1
       integer, dimension(maxdims,maxvars) :: dimids
-      integer max_buff_size, alloc_buff_size
+      integer*8 max_buff_size, alloc_buff_size
       real*8, allocatable, dimension(:) :: buff
 #ifdef FAST_MODE
       integer count1(maxdims)
-      integer max_bfr_out, alloc_bfr_out
+      integer*8 max_bfr_out, alloc_bfr_out
       real*8, allocatable, dimension(:) :: bfr_out
 #endif
 #ifdef DEL_PART_FILES
@@ -1474,6 +1474,8 @@ c**           endif
      &                     vname(i)(1:lvar), ''' has unknown type.'
 !dd                      goto 97
                     endif
+
+!                   print *,size,max_buff_size*8
 
                     if (size .gt. 8*max_buff_size) then
                       if (allocated(buff)) deallocate(buff)

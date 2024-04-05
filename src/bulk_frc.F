@@ -30,7 +30,7 @@
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
       public init_arrays_bulk_frc
-      public set_bulk_frc_tile
+      public set_bulk_frc
 
       contains
 
@@ -76,7 +76,7 @@
 
       end subroutine init_arrays_bulk_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
+      subroutine set_bulk_frc(istr,iend,jstr,jend) ![
 
       use surf_flux, only: srflx
 
@@ -131,7 +131,7 @@
       endif
 
 
-      end subroutine set_bulk_frc_tile  !]
+      end subroutine set_bulk_frc  !]
 !-----------------------------------------------------------------------
       subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
 
@@ -213,9 +213,9 @@
 
       real blk_Rgas,blk_ZW,blk_ZT,blk_ZQ,blk_beta,blk_Cpa,blk_Zabl
       parameter (blk_Rgas=287.1)
-      parameter (blk_ZW=10.0)
-      parameter (blk_ZT=10.0)
-      parameter (blk_ZQ=10.0)
+      parameter (blk_ZW=10.0)  ! The height at which the atm. Wind is taken
+      parameter (blk_ZT=10.0)  ! The height at which the atm. Temp is taken
+      parameter (blk_ZQ=10.0)  ! The height at which the atm. Humi.is taken
       parameter (blk_Zabl=600.0)
       parameter (blk_beta=1.2)
       parameter (blk_Cpa=1004.67)
@@ -326,7 +326,6 @@
 !# elif defined ROBUST_DIURNAL_SRFLUX
 !      real Ampl, dtau, tau1,tau2
 !# endif
-!# define SWRAD_DATA
 !# include "param.h"
 !# include "scalars"
 !# include "grid"
@@ -435,85 +434,9 @@
       ! SUBROUTINE FROM BULK_FLUX_COARE.F STARTS HERE
       ! =============================================
 
-! inverse seawater density, use mean value for seawater density.
 
       rho0i=1.0/rho0
 
-!      tmid=time+0.5*dt ! DevinD commented
-!> wind (m/s) - DevinD purely time interp, done already
-!      it2=itwnd ; cff1=wnd_time(it2)-tmid
-!      it1=3-it2 ; cff2=tmid-wnd_time(it1)
-!      if (cff1 < dt) synchro_flag=.true.
-!      cff=1./(cff1+cff2)
-!      cff1=cff1*cff ; cff2=cff2*cff
-
-!> tair (degC) - DevinD purely time interp, done already
-!      it4=ittair ; cff3=tair_time(it4)-tmid
-!      it3=3-it4  ; cff4=tmid-tair_time(it3)
-!      if (cff3 < dt) synchro_flag=.true.
-!      cff=1./(cff3+cff4)
-!      cff3=cff3*cff ; cff4=cff4*cff
-
-!> rhum (frac RELATIVE HUMIDITY)
-! convert to fraction from percent
-!      it6=itrhum ; cff5=rhum_time(it6)-tmid
-!      it5=3-it6  ; cff6=tmid-rhum_time(it5)
-!      if (cff5 < dt) synchro_flag=.true.
-!      cff=1./(100.*(cff5+cff6))
-!      cff5=cff5*cff ; cff6=cff6*cff
-
-!> rhum (frac of SPECIFIC HUMIDITY)  - DevinD purely time interp, done already
-!      it6=itrhum ; cff5=rhum_time(it6)-tmid
-!      it5=3-it6  ; cff6=tmid-rhum_time(it5)
-!      if (cff5 < dt) synchro_flag=.true.
-!      cff=1./(cff5+cff6)
-!      cff5=cff5*cff ; cff6=cff6*cff
-
-!> prate (m/s)
-!      it8=itprate ; cff7=prate_time(it8)-tmid
-!      it7=3-it8   ; cff8=tmid-prate_time(it7)
-!      if (cff7 < dt) synchro_flag=.true.
-
-! Drakkar rain is in units of [kg/m^2/s^2]. convert it to [m/s]
-!! UNITS?? isn't it [kg/m^2/s]?
-!cff7 and cff8 units of 1/precip?
-! using fresh water density rho=1000.
-
-! SY New units of cm/day--convert to m/s.
-!      cff=1./(100.*3600.*24.*(cff7+cff8))
-!      cff7=cff7*cff ; cff8=cff8*cff
-! units of [kg/m^2/s^1] --convert to m/s.
-!      cff=1./(1000.*(cff7+cff8))
-!      cff7=cff7*cff ; cff8=cff8*cff
-
-
-!> lwrad (degC.m/s)
-!      it10=itlrf ; cff9=lrf_time(it10)-tmid
-!      it9=3-it10 ; cff10=tmid-lrf_time(it9)
-!      if (cff9 < dt) synchro_flag=.true.
-!      cff=1./(rho0*Cp*(cff9+cff10))     ! <-- convert [Watts/m^2] into
-!      cff9=cff9*cff ; cff10=cff10*cff   !     kinematic flux [degC*m/s]
-
-# ifdef QCORRECTION
-!      it12=itdqdt ; cff11=dqdt_time(it12)-tmid  ! Flux correction for
-!      it11=3-it12 ; cff12=tmid-dqdt_time(it11)  ! net surface heat flux
-!      if (cff11 < dt) synchro_flag=.true.       ! (relaxation toward
-!      cff=1./(rho0*Cp*(cff11+cff12))            ! observed SST data)
-!      cff11=cff11*cff ; cff12=cff12*cff         ! and, optionally, ...
-!
-!      it14=itsst  ; cff13=sst_time(it14)-tmid
-!      it13=3-it14 ; cff14=tmid-sst_time(it13)
-!      if (cff13 < dt) synchro_flag=.true.
-!      cff=1/(cff13+cff14)
-!      cff13=cff13*cff ; cff14=cff14*cff
-# endif
-# ifdef SFLX_CORR
-!      it16=itsss  ; cff15=sss_time(it16)-tmid   ! the same for surface
-!      it15=3-it16 ; cff16=tmid-sss_time(it15)   ! freshwater flux
-!      if (cff15 < dt) synchro_flag=.true.
-!      cff=1./(cff15+cff16)
-!      cff15=cff15*cff ; cff16=cff16*cff
-# endif
 
       ! All calculations in this loop at rho-points. Loop over extended
       ! bounds.
@@ -523,10 +446,6 @@
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
           wspd_used(i,j)=sqrt(uwnd(i,j)*uwnd(i,j)+vwnd(i,j)*vwnd(i,j))
-
-!          tair=cff3*tairg(i,j,it3)  +cff4*tairg(i,j,it4) ! DevinD time only
-!          rhum=cff5*rhumg(i,j,it5)  +cff6*rhumg(i,j,it6) ! DevinD time only
-!          prate=cff7*prateg(i,j,it7)+cff8*prateg(i,j,it8) ! DevinD divide 1000 below
 
           ! convert [Watts/m^2] into kinematic flux [degC*m/s]
           radlw=lwrad(i,j) / (rho0*Cp)
@@ -753,7 +672,53 @@
 !
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
-          hfsen=-blk_Cpa*rhoAir*Wstar*Tstar
+          hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
+!  For EMINUSP option,  EVAP = LHeat (W/m2) / Hlv (J/kg) = kg/m2/s
+!                       PREC = rain = kg/m2/s
+!
+!  To convert these rates to m/s divide by freshwater density, rhow.
+!
+!  Note that when the air is undersaturated in water vapor (Q < Qsea)
+!  the model will evaporate and LHeat > 0:
+!
+!                   LHeat positive out of the ocean
+!                    evap positive out of the ocean
+!
+!  Note that if evaporating, the salt flux is positive
+!        and if     raining, the salt flux is negative
+!
+!  Note that fresh water flux is positive out of the ocean and the
+!  salt flux (stflx(isalt)) is positive into the ocean. It is converted
+!  to (psu m/s) for stflx(isalt) in "set_vbc.F".
+!----------------------------------------------------------------------
+!
+!  Latent and sensible heat fluxes
+!
+          hflat=-hflat*rho0i*cpi
+          hfsen=-hfsen*rho0i*cpi
+!
+!  Total surface heat flux
+!
+          stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
+!
+!  Total surface salt flux
+!
+          evap=-cp*hflat/Hlv
+! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
+#ifdef SALINITY          
+          stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
+#endif          
+
+# ifdef MASKING
+          stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
+#ifdef SALINITY          
+          stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
+#endif          
+# endif
+!
+!  Save for the calculation of wind stress
+!
+          aer(i,j)=rhoAir*wspd0*rho0i
 !
 !  Compute turbulent latent heat flux (W/m2), Hl.
 !

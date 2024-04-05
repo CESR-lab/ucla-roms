@@ -400,6 +400,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
           call insert_node(fname, lstr, mynode, NNODES, ierr)
+!         call insert_nodes(fname)
 # endif
           open(testunit,file=fname(1:lstr), status='old', err=97)
           close(testunit)
@@ -521,7 +522,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
       ierr=ierr+1
       goto 99
   97  lstr=lenstr(fname)
-      write(*,'(/1x,4A/)') '### ERROR: read_inp :: Cannot find ',
+      write(*,'(/i4,1x,4A/)') mynode,'### ERROR: read_inp :: Cannot find ',
      &                     'input file ''', fname(1:lstr), '''.'
       ierr=ierr+1
   99  close (input)

@@ -182,8 +182,8 @@
 
       do itrc=1,iTandS+nt_passive
         if (wrt_t(itrc)) then
-          varid = nccreate(ncid,t_vname(itrc), 
-     &   (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+          varid = nccreate(ncid,t_vname(itrc),
+     &      (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',t_lname(itrc))
           ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
@@ -204,14 +204,14 @@
       do itrc=1,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
-          varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+          varid = nccreate(ncid,t_vname(itrc),
+     &      (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',long_name)
           ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
       enddo
 
       end subroutine def_avg_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_his_trc (ncid,start)  ![
       ! write tracers to history file
@@ -229,7 +229,6 @@
       enddo
 
       end subroutine wrt_his_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_avg_trc (ncid,start)  ![
       ! Write tracers to avg file
@@ -250,7 +249,6 @@
       enddo
 
       end subroutine wrt_avg_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_rst_trc (ncid, start)  ![
       ! write tracers to restart file

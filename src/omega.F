@@ -62,6 +62,9 @@ c**     dtau=(1.-1./6.)*dt
 
       do j=jstr,jend
 
+      !!! For NHMG pipes, the flux needs to be out of the bottom.
+      !!! Additionally, modify, where needed, the We to Wi split 
+      !!! for pipe sources
         do i=istr,iend
           Wi(i,j,0)=0.
         enddo

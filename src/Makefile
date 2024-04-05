@@ -33,7 +33,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
 	rho_eos.F	alfabeta.F\
 \
-	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	bvf_mix.F\
+	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
         lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
