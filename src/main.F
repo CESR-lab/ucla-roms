@@ -207,7 +207,7 @@ CR      write(*,*) ' -6' MYID
 !     pH is initialized to 0 in ecosys_init
 !     FIXME: if using MARBL with diagnostics then this call is skipped and diagnostics arrays are not initialised to 0
       call ecosys2_init
-# endif
+# endif /*BIOLOGY_BEC2*/
 
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for

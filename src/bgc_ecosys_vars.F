@@ -252,9 +252,16 @@
    
       allocate( bec2_diag_3d(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
       allocate( bec2_diag_2d(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
+      
+      bec2_diag_2d=0.0
+      bec2_diag_3d=0.0
+      
 #  ifdef AVERAGES
       allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
       allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
+
+      bec2_diag_2d_avg=0.0
+      bec2_diag_3d_avg=0.0
 #  endif /* AVERAGES */
 
       if (mynode == 0) then
