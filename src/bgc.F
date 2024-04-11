@@ -102,7 +102,7 @@
       call set_frc_data(nc_pco2air,pco2air,'r')
 #ifdef MARBL
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air_alt, pco2air_alt, interp_frc )
-      call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')      
+      call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
 #endif      
 #endif /* PCO2AIR_FORCING */
       
@@ -597,7 +597,8 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![
-!
+#ifndef MARBL
+!     
 ! Set initial values for  globally accessible (stored in common
 ! blocks) scalar variables of the BEC model.
 !
@@ -638,9 +639,7 @@
       alk_ind_t     = iALK-iTandS-nt_passive
       doc_ind_t     = iDOC-iTandS-nt_passive
       don_ind_t     = iDon-iTandS-nt_passive
-#ifndef MARBL
       dofe_ind_t    = iDofe-iTandS-nt_passive !not a tracer in marbl
-#endif      
       dop_ind_t     = iDop-iTandS-nt_passive
       dopr_ind_t    = iDopr-iTandS-nt_passive
       donr_ind_t    = iDonr-iTandS-nt_passive
@@ -681,9 +680,7 @@
       tclm_name(iDOPR) = 'dop_time'
       tclm_name(iDON) = 'don_time'
       tclm_name(iDONR) = 'don_time'
-#ifndef MARBL      
       tclm_name(iDOFE) = 'dofe_time' !DoFe not a tracer in MARBL
-#endif      
       tclm_name(iSPC) = 'spc_time'
       tclm_name(iSPCHL) = 'spchl_time'
       tclm_name(iSPCACO3) = 'spcaco3_time'
@@ -703,6 +700,7 @@
 # endif
 #endif /* SOLVE3D */
 
+#endif /* ndef MARBL */      
       end subroutine init_scalars_bec2  !]
 
 ! ----------------------------------------------------------------------

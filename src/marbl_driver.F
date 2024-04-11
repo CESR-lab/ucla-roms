@@ -94,7 +94,6 @@
       integer                             :: printnode = 7 ! cpu
 
 
-#include "bgc_tracers_indx.opt"
 ! ----------------------------------------------------------------------
       
       contains

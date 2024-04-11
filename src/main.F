@@ -203,8 +203,9 @@ C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
 CR      write(*,*) ' -6' MYID
 #endif
 
-# if defined(BIOLOGY_BEC2) || defined(MARBL)
-      ! pH is initialized to 0 in ecosys_init
+# if defined(BIOLOGY_BEC2)
+!     pH is initialized to 0 in ecosys_init
+!     FIXME: if using MARBL with diagnostics then this call is skipped and diagnostics arrays are not initialised to 0
       call ecosys2_init
 # endif
 
