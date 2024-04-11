@@ -615,7 +615,7 @@
       if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
         stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
       endif
-#ifdef BEC2_DIA
+#ifdef BEC2_DIAG
       if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
         stop 'ERROR :: bgc.opt - dt not a factor 
      &        of output_period_his_dia for diagnostics!'
