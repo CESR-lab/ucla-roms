@@ -14,7 +14,7 @@
 !!====================================================================
 
 #include "cppdefs.opt"
-#if defined(BIOLOGY_BEC2) || defined(MARBL)
+#ifdef BIOLOGY_BEC2
 
       implicit none
 
@@ -511,7 +511,7 @@
       !---------------------------------------------------------------------------
       !   Initialize diagnostic variables:
       !---------------------------------------------------------------------------
-#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
+#ifdef BEC2_DIAG
       bec2_diag_2d = c0
       bec2_diag_3d = c0
 #  ifdef AVERAGES
@@ -552,7 +552,7 @@
 
 ! ----------------------------------------------------------------------
 
-#endif /* BIOLOGY_BEC2 || MARBL - entire module */
+#endif /* BIOLOGY_BEC2 - entire module */
       end module bgc_param_ini
 
 

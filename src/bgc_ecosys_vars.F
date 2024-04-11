@@ -42,7 +42,7 @@
       logical :: wrt_bec2_diag_3d(nr_bec2_diag_3d)
       integer :: idx_bec2_diag_2d(nr_bec2_diag_2d)
       integer :: idx_bec2_diag_3d(nr_bec2_diag_3d) 
-
+#if defined(BEC2_DIAG)
       ! Indices to be used in bec2_diag_3d only:
       integer :: par_idx_t, pocfluxin_idx_t,
      &   pocprod_idx_t, pocremin_idx_t, caco3fluxin_idx_t,
@@ -92,7 +92,7 @@
 !      ! The IDs of the 2d vars are first, the those of the 3d.
 !      integer :: hisT_bec2_diag(nr_bec2_diag)  , avgT_bec2_diag(nr_bec2_diag), 
 !     &           slavgT_bec2_diag(nr_bec2_diag), rstT_bec2_diag(nr_bec2_diag)
-
+#endif /* BEC2_DIAG */
       ! Arrays storing information (name, unit, fill value) about each diagnostic variable:
       character*72 ::  vname_bec2_diag_2d(4,nr_bec2_diag_2d)
       character*72 ::  vname_bec2_diag_3d(4,nr_bec2_diag_3d)
@@ -102,12 +102,12 @@
       real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_avg
 #  endif /* AVERAGES */
 
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG  || MARBL_DIAGS */
 
       real,allocatable,dimension(:,:) :: ifrac, press
 
       logical,allocatable,dimension(:,:) :: landmask
-
+#ifdef BIOLOGY_BEC2
       logical :: lsource_sink,lflux_gas_o2, lflux_gas_co2
 #if defined Ncycle_SY
      &  ,lflux_gas_n2o, lflux_gas_n2
@@ -171,7 +171,7 @@
 !! Arrays related to carbon chemistry: 
 !!
       real,allocatable,dimension(:,:) :: ph_srf
-
+#endif /*BIOLOGY_BEC2*/
 !!
 !! Arrays related to carbon chemistry: these are in bec2_diag_2d or
 !! bec2_diag_3d if BEC2_DIAG is defined
@@ -260,7 +260,7 @@
      &        nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d
       endif 
 
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 #ifdef MARBL      
 !     Allocate arrays for MARBL saved state variables
       call marbldrv_configure_saved_state
@@ -268,7 +268,7 @@
       allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
 
       allocate( landmask(GLOBAL_2D_ARRAY) )
-
+#if defined(BIOLOGY_BEC2)
       allocate(P_CaCO3_sflux_out(GLOBAL_2D_ARRAY), P_CaCO3_hflux_out(GLOBAL_2D_ARRAY) )
       allocate( P_SiO2_sflux_out(GLOBAL_2D_ARRAY),  P_SiO2_hflux_out(GLOBAL_2D_ARRAY) )
       allocate(   dust_sflux_out(GLOBAL_2D_ARRAY),    dust_hflux_out(GLOBAL_2D_ARRAY) )
@@ -314,7 +314,7 @@
 !      allocate( ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg, mold=ifrac )
 !      allocate( PAR_avg(GLOBAL_2D_ARRAY,N) )
 !#endif /* !BEC2_DIAG */
-
+#endif /* BIOLOGY_BEC2*/
       end subroutine init_arrays_bgc_ecosys_vars  !]
 
 !----------------------------------------------------------------------
