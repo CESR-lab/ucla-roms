@@ -107,6 +107,8 @@
       real,allocatable,dimension(:,:) :: ifrac, press
 
       logical,allocatable,dimension(:,:) :: landmask
+
+      
 #ifdef BIOLOGY_BEC2
       logical :: lsource_sink,lflux_gas_o2, lflux_gas_co2
 #if defined Ncycle_SY
