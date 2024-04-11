@@ -818,14 +818,14 @@
 !     Add MARBL saved_state variables to restart file
       do itrc=1,nr_marbl_ss_3d
          varid = nccreate(ncid,vname_marbl_ss_3d(1,itrc),
-     &                      (/'xi_rho ','eta_rho','s_rho  ','time   '/),
+     &                      (/dn_xr,dn_yr,dn_zr,dn_tm/),
      &                      (/xi_rho,eta_rho,N,0/), nf90_double)
         ierr=nf90_put_att (ncid, varid, 'long_name', vname_marbl_ss_3d(2,itrc))
         ierr=nf90_put_att (ncid, varid, 'units', vname_marbl_ss_3d(3,itrc))
       enddo
       do itrc=1,nr_marbl_ss_2d
          varid = nccreate(ncid,vname_marbl_ss_2d(1,itrc),
-     &                      (/'xi_rho ','eta_rho','time   '/),
+     &                      (/dn_xr,dn_yr,dn_tm/),
      &                      (/xi_rho,eta_rho,0/), nf90_double)
         ierr=nf90_put_att (ncid, varid, 'long_name', vname_marbl_ss_2d(2,itrc))
         ierr=nf90_put_att (ncid, varid, 'units', vname_marbl_ss_2d(3,itrc))
