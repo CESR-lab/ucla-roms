@@ -593,7 +593,7 @@
       do m=1,size(MARBL_instance%surface_flux_diags%diags)
          ! Check if this diagnostic is 2D (true) or 3D (false/else)
          if (trim(MARBL_instance%surface_flux_diags%diags(m)%vertical_grid) .eq. "none") then ! 2D field
-            vname_bec2_diag_2d(1,idx2d)=
+            vname_bec2_diag_2d(1,diagidx2d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%short_name)
             vname_bec2_diag_2d(2,diagidx2d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%long_name)
