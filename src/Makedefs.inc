@@ -56,11 +56,6 @@
 	NETCDFC_INC=$(shell nc-config --cflags)
 	NETCDFC_LIB=$(shell nc-config --libs)
 
-# MARBL
-        MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-    	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
-
-
 # COMPILER SETTINGS:
 
 # OpenMP flags:
@@ -102,8 +97,7 @@
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-#	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
-      	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(MARBL_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MARBL_INC)		    
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
 
 # -------------------------------------------------------------
 
