@@ -7,7 +7,7 @@
       use tracers, only: t_vname, t, iTandS
       use bgc                   ! get_init_bgc_diag
 #ifdef MARBL
-      use marbl_driver, only: marbldrv_read_saved_state_from_restart_file
+      use marbl_driver, only: marbldrv_read_ss_vars_from_rst
 #endif
       use coupling
       use grid
@@ -472,7 +472,7 @@ c--#define VERBOSE
 
 #ifdef MARBL
 !     Read in MARBL saved_state variables here
-      call marbldrv_read_saved_state_from_restart_file(ncid,record)
+      call marbldrv_read_ss_vars_from_rst(ncid,record)
 #endif /* MARBL */      
       
 #endif /* SOLVE3D */

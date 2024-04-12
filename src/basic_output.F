@@ -463,10 +463,7 @@
       use coupling
 #ifdef MARBL
 !     add MARBL saved state to restart to restart file
-!     Need access to number, & values, & names of 2d and 3d saved state variables
-      use marbl_driver, only: nr_marbl_ss_2d,nr_marbl_ss_3d,
-     &     marbl_saved_state_2d,marbl_saved_state_3d,
-     &     vname_marbl_ss_2d,vname_marbl_ss_3d
+      use marbl_driver, only: marbldrv_write_ss_vars_to_rst
 #endif       
       implicit none
 
@@ -560,17 +557,7 @@
         if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
 
 #ifdef MARBL
-        ! Add MARBL saved_state variables to restart file
-        start(3)=1; start(4)=rec_rst
-        do i=1,nr_marbl_ss_3d
-           call ncwrite(ncid,vname_marbl_ss_3d(1,i),
-     &          marbl_saved_state_3d(i0:i1,j0:j1,:,i),start)
-        enddo        
-        start(3)=rec_rst        ! back to 2D vars
-        do i=1,nr_marbl_ss_2d
-           call ncwrite(ncid,vname_marbl_ss_2d(1,i),
-     &          marbl_saved_state_2d(i0:i1,j0:j1,i),start)
-        enddo                
+        call marbldrv_write_ss_vars_to_rst(ncid,rec_rst)
 #endif         
 
         ierr=nf90_close(ncid)
@@ -781,10 +768,8 @@
       ! define output variable & attributes in netcdf restart file
       use tracers
 #ifdef MARBL
-!     Add MARBL saved state variables to restart file
-!     Need access to total number, & names of variables
-      use marbl_driver, only: nr_marbl_ss_2d,nr_marbl_ss_3d,
-     &     vname_marbl_ss_2d,vname_marbl_ss_3d
+!     add MARBL saved state to restart to restart file
+      use marbl_driver, only: marbldrv_create_ss_vars_in_rst
 #endif       
       implicit none
 
@@ -815,21 +800,7 @@
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxVb))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
 #ifdef MARBL
-!     Add MARBL saved_state variables to restart file
-      do itrc=1,nr_marbl_ss_3d
-         varid = nccreate(ncid,vname_marbl_ss_3d(1,itrc),
-     &                      (/dn_xr,dn_yr,dn_zr,dn_tm/),
-     &                      (/xi_rho,eta_rho,N,0/), nf90_double)
-        ierr=nf90_put_att (ncid, varid, 'long_name', vname_marbl_ss_3d(2,itrc))
-        ierr=nf90_put_att (ncid, varid, 'units', vname_marbl_ss_3d(3,itrc))
-      enddo
-      do itrc=1,nr_marbl_ss_2d
-         varid = nccreate(ncid,vname_marbl_ss_2d(1,itrc),
-     &                      (/dn_xr,dn_yr,dn_tm/),
-     &                      (/xi_rho,eta_rho,0/), nf90_double)
-        ierr=nf90_put_att (ncid, varid, 'long_name', vname_marbl_ss_2d(2,itrc))
-        ierr=nf90_put_att (ncid, varid, 'units', vname_marbl_ss_2d(3,itrc))
-      enddo
+      call marbldrv_create_ss_vars_in_rst(ncid)
 #endif      
 #ifdef SOLVE3D
       varid = nccreate(ncid,vname(1,indxU),(/dn_xu,dn_yr,dn_zr,dn_tm/),
