@@ -476,7 +476,88 @@
             
             
       end subroutine marbldrv_configure_saved_state
+!--------------------------------------------------------------------------------
+      subroutine marbldrv_read_saved_state_from_restart_file(
+     &     ncid,record)
 
+!-----------------------------------------------------------------------
+!     SUBROUTINE: marbldrv_read_saved_state_from_restart_file
+!     DESCRIPTION:
+!     Get MARBL saved state information from IC or restart file
+!      
+!     METHOD:
+!     loop over 2D and 3D saved state metadata arrays populated in
+!     marbldrv_configure_saved_state and get associated variables
+!     using ncread. Called from inside `get_init` module.
+!                 
+!     INPUT:
+!     - ncid: integer identifier of the restart netCDF file
+!     - record: current file record number
+      
+!     NOTES:
+!     - These code blocks adapted from get_init 
+!     
+!-----------------------------------------------------------------------
+      
+      use nc_read_write, only: ncread,handle_ierr
+      use netcdf
+      use dimensions, only : i0,i1,j0,j1
+      use mpi_exchanges, only : exchange_xxx
+      use hidden_mpi_vars
+      use grid, only : rmask
+      use param, only : N
+      implicit none
+
+      integer, intent(in) :: ncid,record
+      integer :: ierr,varid,start(4)
+      integer :: itrc,k
+      
+!     Read in MARBL saved_state variables here      
+!     vname indices: 1=short name, 2=long name, 3=units
+      start=1; start(3)=record ! Set "start" index to 1 for all dimensions except time (3) which starts at current record
+!     Read in 2D saved state variables (for surface_flux_saved_state)
+      do itrc=1,nr_marbl_ss_2d
+         ierr=nf90_inq_varid (ncid, vname_marbl_ss_2d(1,itrc), varid) 
+         if (ierr .eq. nf90_noerr) then
+            call ncread(ncid,vname_marbl_ss_2d(1,itrc),
+     &           marbl_saved_state_2d(i0:i1,j0:j1,itrc),start)
+            
+            marbl_saved_state_2d(i0:i1,j0:j1,itrc)=
+     &         marbl_saved_state_2d(i0:i1,j0:j1,itrc)*rmask(i0:i1,j0:j1)
+            call exchange_xxx(marbl_saved_state_2d(:,:,itrc))
+         else
+            marbl_saved_state_2d(GLOBAL_2D_ARRAY,itrc) = 0.0
+            if(mynode==0) write(*,*) ' --- WARNING: '
+     &         , trim(vname_marbl_ss_2d(1,itrc))            
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf90_noerr
+            
+         endif
+      end do
+      start=1; start(4)=record                                       ! 3D vars
+
+!     Read in 3d saved state variables (for interior_tendency_saved_state)
+      do itrc=1,nr_marbl_ss_3d
+         ierr=nf90_inq_varid (ncid, vname_marbl_ss_3d(1,itrc), varid)
+         if (ierr == nf90_noerr) then
+            call ncread(ncid, vname_marbl_ss_3d(1,itrc),
+     &           marbl_saved_state_3d(i0:i1,j0:j1,:,itrc),start)
+           do k=1,N
+              marbl_saved_state_3d(i0:i1,j0:j1,k,itrc)=
+     &             marbl_saved_state_3d(i0:i1,j0:j1,k,itrc)*rmask(i0:i1,j0:j1)
+           enddo
+           call exchange_xxx(marbl_saved_state_3d(:,:,:,itrc) )
+         else
+            marbl_saved_state_3d(GLOBAL_2D_ARRAY,:,itrc) = 0.0 ! Note ':' instead of '1' as in similar blocks
+            if(mynode==0) write(*,*) ' --- WARNING: '
+     &         , trim(vname_marbl_ss_3d(1,itrc))            
+     &         , ' not in initial file.  Initialized to 0.0'
+            ierr=nf90_noerr            
+         endif
+      end do
+      
+      
+      end subroutine marbldrv_read_saved_state_from_restart_file
 
 #ifdef MARBL_DIAGS
       subroutine marbldrv_configure_diagnostics(
