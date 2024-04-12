@@ -477,8 +477,8 @@
             
       end subroutine marbldrv_configure_saved_state
 !--------------------------------------------------------------------------------
-      subroutine marbldrv_read_saved_state_from_restart_file(
-     &     ncid,record)
+      subroutine marbldrv_read_ss_vars_from_rst(
+     &     ncid,rec_rst)
 
 !-----------------------------------------------------------------------
 !     SUBROUTINE: marbldrv_read_saved_state_from_restart_file
@@ -492,7 +492,7 @@
 !                 
 !     INPUT:
 !     - ncid: integer identifier of the restart netCDF file
-!     - record: current file record number
+!     - rec_rst: current file record number
       
 !     NOTES:
 !     - These code blocks adapted from get_init 
@@ -508,13 +508,13 @@
       use param, only : N
       implicit none
 
-      integer, intent(in) :: ncid,record
+      integer, intent(in) :: ncid,rec_rst
       integer :: ierr,varid,start(4)
       integer :: itrc,k
       
 !     Read in MARBL saved_state variables here      
 !     vname indices: 1=short name, 2=long name, 3=units
-      start=1; start(3)=record ! Set "start" index to 1 for all dimensions except time (3) which starts at current record
+      start=1; start(3)=rec_rst ! Set "start" index to 1 for all dimensions except time (3) which starts at current record
 !     Read in 2D saved state variables (for surface_flux_saved_state)
       do itrc=1,nr_marbl_ss_2d
          ierr=nf90_inq_varid (ncid, vname_marbl_ss_2d(1,itrc), varid) 
@@ -534,7 +534,7 @@
             
          endif
       end do
-      start=1; start(4)=record                                       ! 3D vars
+      start=1; start(4)=rec_rst                                       ! 3D vars
 
 !     Read in 3d saved state variables (for interior_tendency_saved_state)
       do itrc=1,nr_marbl_ss_3d
@@ -557,8 +557,109 @@
       end do
       
       
-      end subroutine marbldrv_read_saved_state_from_restart_file
+      end subroutine marbldrv_read_ss_vars_from_rst
 
+      subroutine marbldrv_create_ss_vars_in_rst(ncid)
+!-----------------------------------------------------------------------
+!     SUBROUTINE: marbldrv_create_ss_vars_in_rst
+!     DESCRIPTION:
+!     Create netcdf variables corresponding to MARBL saved state data
+!     in ROMS' restart file
+!      
+!     METHOD:
+!     loop over 2D and 3D saved state metadata arrays populated in
+!     marbldrv_configure_saved_state create netcdf variables using nccreate
+!     created in marbldrv_create_ss_vars_in_rst.
+!     Called from inside `get_init` module.
+!                 
+!     INPUT:
+!     - ncid: integer identifier of the restart netCDF file
+!     - rec_rst: current file record number
+      
+!     NOTES:
+!     - These code blocks adapted from get_init
+!     - RELATED: marbldrv_read_ss_vars_from_rst,
+!                marbldrv_write_ss_vars_to_rst
+!     
+!-----------------------------------------------------------------------
+
+      use netcdf
+      use nc_read_write
+      use roms_read_write, only: dn_xr,dn_yr,dn_zr,dn_tm,xi_rho,eta_rho
+      use param, only : N
+      
+      implicit none      
+
+      integer, intent(in) :: ncid
+      integer itrc,varid,ierr
+      
+      !     Add MARBL saved_state variables to restart file
+      do itrc=1,nr_marbl_ss_3d
+         varid = nccreate(ncid,vname_marbl_ss_3d(1,itrc),
+     &                      (/dn_xr,dn_yr,dn_zr,dn_tm/),
+     &                      (/xi_rho,eta_rho,N,0/), nf90_double)
+        ierr=nf90_put_att (ncid, varid, 'long_name', vname_marbl_ss_3d(2,itrc))
+        ierr=nf90_put_att (ncid, varid, 'units', vname_marbl_ss_3d(3,itrc))
+      enddo
+      do itrc=1,nr_marbl_ss_2d
+         varid = nccreate(ncid,vname_marbl_ss_2d(1,itrc),
+     &                      (/dn_xr,dn_yr,dn_tm/),
+     &                      (/xi_rho,eta_rho,0/), nf90_double)
+        ierr=nf90_put_att (ncid, varid, 'long_name', vname_marbl_ss_2d(2,itrc))
+        ierr=nf90_put_att (ncid, varid, 'units', vname_marbl_ss_2d(3,itrc))
+      enddo
+
+      end subroutine
+      
+      subroutine marbldrv_write_ss_vars_to_rst(      
+     &     ncid,rec_rst)
+
+!-----------------------------------------------------------------------
+!     SUBROUTINE: marbldrv_write_ss_vars_to_rst
+!     DESCRIPTION:
+!     Add MARBL saved state data to ROMS' restart file
+!      
+!     METHOD:
+!     loop over 2D and 3D saved state metadata arrays populated in
+!     marbldrv_configure_saved_state and write to netcdf variables
+!     created in marbldrv_create_ss_vars_in_rst.
+!     Called from inside `get_init` module.
+!                 
+!     INPUT:
+!     - ncid: integer identifier of the restart netCDF file
+!     - rec_rst: current file record number
+      
+!     NOTES:
+!     - These code blocks adapted from get_init
+!     - RELATED: marbldrv_read_ss_vars_from_rst
+!     
+!-----------------------------------------------------------------------
+      
+      use nc_read_write, only: ncwrite
+      use dimensions, only : i0,i1,j0,j1
+      
+      implicit none
+
+      integer, intent(in) :: ncid,rec_rst
+      integer :: start(4)
+      integer :: itrc
+      
+        ! Add MARBL saved_state variables to restart file
+        start=1; start(4)=rec_rst
+        do itrc=1,nr_marbl_ss_3d
+           call ncwrite(ncid,vname_marbl_ss_3d(1,itrc),
+     &          marbl_saved_state_3d(i0:i1,j0:j1,:,itrc),start)
+        enddo        
+        start=1;start(3)=rec_rst        ! back to 2D vars
+        do itrc=1,nr_marbl_ss_2d
+           call ncwrite(ncid,vname_marbl_ss_2d(1,itrc),
+     &          marbl_saved_state_2d(i0:i1,j0:j1,itrc),start)
+        enddo                
+      
+      
+      end subroutine marbldrv_write_ss_vars_to_rst
+
+      
 #ifdef MARBL_DIAGS
       subroutine marbldrv_configure_diagnostics(
      &     vname_bec2_diag_2d,vname_bec2_diag_3d,
