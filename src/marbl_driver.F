@@ -40,6 +40,7 @@
       use surf_flux                   , only: srflx
       use nc_read_write
       use scalars                     , only: nstp,nnew,dt,iic,ntstart
+      use grid                        , only : rmask      
 #ifdef NOX_FORCING
       use bgc_forces                  , only: nox
 #endif
@@ -504,7 +505,6 @@
       use dimensions, only : i0,i1,j0,j1
       use mpi_exchanges, only : exchange_xxx
       use hidden_mpi_vars
-      use grid, only : rmask
       use param, only : N
       implicit none
 
@@ -833,11 +833,9 @@
 #endif /* MARBL_DIAGS */
       
       subroutine marbldrv_column_physics(istr,iend,jstr,jend,tracer_array
-     &     ,landmask
 #ifdef MARBL_DIAGS      
      &     ,diag_array_2d,diag_array_3d
 #endif
-     &     ,marbl_ss_2d,marbl_ss_3d
      &     )
       
 !-----------------------------------------------------------------------
@@ -868,9 +866,7 @@
 !     INPUT/OUTPUT:
 !     - istr,jstr,iend,jend: i,j indices on this node over which to loop
 !     - tracer_array: the ROMS tracer array (t) to be updated by MARBL
-!     - landmask: the ROMS tracer land mask, to skip dry points
 !     - diag_array_2d,diag_array_3d: ROMS 2d/3d BGC diagnostics arrays
-!     - marbl_ss_2d,marbl_ss_3d: ROMS 2d/3d MARBL saved state arrays
 !      
 !     NOTES:
 !     - All 3D variables are flipped when passing between MARBL and ROMS
@@ -893,28 +889,29 @@
 
 !     
 !-----------------------------------------------------------------------
-            
-      integer, intent(in)                          :: istr,jstr,iend,jend
-      real, dimension(:,:,:,:,:), intent(inout)    :: tracer_array
-      logical, dimension(      :,:), intent(in)    :: landmask      
-#ifdef MARBL_DIAGS      
-      real, dimension(:,:,:), intent(inout)        :: diag_array_2d
-      real, dimension(:,:,:,:), intent(inout)      :: diag_array_3d
-      integer                                      :: diagidx2d,diagidx3d ! indices for stepping through diagnostics arrays
+     
+      integer, intent(in)                           :: istr,jstr,iend,jend
+      real, dimension(GLOBAL_2D_ARRAY,nz,3,nt) ,
+     &                            intent(inout)     :: tracer_array      
+#ifdef MARBL_DIAGS
+      real, dimension(GLOBAL_2D_ARRAY,
+     &     n_marbl_2d_sf_diags+n_marbl_2d_it_diags),
+     &                         intent(inout)        :: diag_array_2d
+      real, dimension(GLOBAL_2D_ARRAY,nz,
+     &     n_marbl_3d_sf_diags+n_marbl_3d_it_diags),
+     &                         intent(inout)        :: diag_array_3d
+      integer                                       :: diagidx2d,diagidx3d ! indices for stepping through diagnostics arrays
 #endif
-      real, dimension(:,:,:), intent(inout)        :: marbl_ss_2d
-      real, dimension(:,:,:,:),intent(inout)       :: marbl_ss_3d
-
-      integer                                      :: i,j,k,m
-      logical                                      :: print_values = .false. ! Print example values to stdout during loop
+      integer                                       :: i,j,k,m
+      logical                                       :: print_values = .false. ! Print example values to stdout during loop
 
       
 !     1. Populate MARBL instance surface flux forcing values:
 !     ----------------------------------------------------------------------
-      
       do j=jstr,jend
          do i=istr,iend
-            if ( landmask(i,j) .eqv. .false. ) cycle
+
+            if (rmask(i,j)==0.) cycle
             
 ! sea surface salinity
             if (sss_ind > 0) then
@@ -1007,7 +1004,7 @@
             
             do m=1,MARBL_instance%surface_flux_saved_state%saved_state_cnt
                MARBL_instance%surface_flux_saved_state%state(m)%field_2d(1)
-     &              =marbl_ss_2d(i,j,m)
+     &              =marbl_saved_state_2d(i,j,m)               
                
 !     Print surface flux saved state values at a chosen location if desired:
                if ( (i==printi) .and. (j==printj)
@@ -1042,7 +1039,7 @@
 !     ----------------------------------------------------------------------            
             
             do m=1,MARBL_instance%surface_flux_saved_state%saved_state_cnt
-               marbl_ss_2d(i,j,m)=
+               marbl_saved_state_2d(i,j,m)=
      &              MARBL_instance%surface_flux_saved_state%state(m)%field_2d(1)
             end do
             
@@ -1073,7 +1070,7 @@
 
       do j=jstr,jend
          do i=istr,iend
-            if (landmask(i,j) .eqv. .false. ) cycle
+            if (rmask(i,j)==0.) cycle
             
 ! First, update domain in MARBL instance to local geometry:
             
@@ -1146,7 +1143,7 @@
             
             do m=1,MARBL_instance%interior_tendency_saved_state%saved_state_cnt
                MARBL_instance%interior_tendency_saved_state%state(m)%field_3d(:,1)
-     &              =marbl_ss_3d(i,j,nz:1:-1,m)
+     &              =marbl_saved_state_3d(i,j,nz:1:-1,m)
                
 !     Print interior tendency saved state bottom values at a chosen location if desired:
                if ( (i==printi) .and. (j==printj)
@@ -1197,7 +1194,7 @@
 !     ----------------------------------------------------------------------
             
             do m=1,MARBL_instance%interior_tendency_saved_state%saved_state_cnt
-               marbl_ss_3d(i,j,:,m)=
+               marbl_saved_state_3d(i,j,:,m)=
      &             MARBL_instance%interior_tendency_saved_state%state(m)%field_3d(nz:1:-1,1)
             end do    
             
@@ -1387,5 +1384,4 @@
       end subroutine if_test_print
 #endif      
       end module marbl_driver
-
 

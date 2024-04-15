@@ -333,24 +333,6 @@
      &     itot,t_vname,t_lname,t_units,t_tname,wrt_t,wrt_t_avg,t_ana_frc)
 #endif      
 
-#if defined(BIOLOGY_BEC2)
-      if (mynode==0) then
-         print *, 'itmp,islt'
-         print *, itmp, islt
-         print *, 'iDOFE'
-         print *, iDOFE
-         print *, 'iPO4, iNO3, iSIO3, iNH4, iFE'
-         print *, iPO4, iNO3, iSIO3, iNH4, iFE      
-         print *, 'iO2, iDIC,iALK, iDOC, iDON'
-         print *, iO2, iDIC,iALK, iDOC, iDON      
-         print *, 'iDOP, iDOPR,iDONR,iZOOC,iSPCHL'
-         print *, iDOP, iDOPR,iDONR,iZOOC,iSPCHL      
-         print *, 'iSPC, iSPFE, iSPCACO3, iDIATCHL, iDIATC'
-         print *, iSPC, iSPFE, iSPCACO3, iDIATCHL, iDIATC      
-         print *, 'iDIATFE, iDIATSI, iDIAZCHL, iDIAZC, iDIAZFE'
-         print *, iDIATFE, iDIATSI, iDIAZCHL, iDIAZC, iDIAZFE
-      end if
-#endif
       if (mynode==0) then
          print *, 'metadata about ',NT, ' tracers:'
          do itrc=1,NT
