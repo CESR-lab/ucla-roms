@@ -1,16 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name="Pipes_ana"
-#SBATCH --output="Pipes_ana.out"
-#SBATCH --partition=debug
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=6
-#SBATCH --account=edf100
-#SBATCH --export=ALL
-#SBATCH --mail-type=ALL
-#SBATCH -t 00:10:00
 
-source ~/.bashrc
+if [ -z "${ACCOUNT_KEY}" ];then
+    echo "ACCOUNT_KEY environment variable empty. Set using export ACCOUNT_KEY=<your_account_key>."
+    exit 1
+fi
 
-echo "run model..."
-srun --mpi=pmi2 -n 6 ./roms pipes_ana.in
-echo "complete!"
+sbatch --job-name="Pipes_ana" \
+       --output="Pipes_ana.out" \
+       --partition="debug" \
+       --nodes=1 \
+       --ntasks-per-node=6 \
+       --account=${ACCOUNT_KEY} \
+       --export=ALL \
+       --mail-type=ALL \
+       -t 00:10:00 \
+       --wrap="srun --mpi=pmi2 -n 6 ./roms pipes_ana.in"
