@@ -1,4 +1,3 @@
-# M2 Macbook (ARM64) version
 include ../src/Makedefs.inc
 
 # NEED TO OVERRIDE SOME OF MAKEDEFS.INC:
@@ -7,14 +6,13 @@ include ../src/Makedefs.inc
 	FFLAGS = -O3
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.fpp':
+# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -pg
 
 # OpenMP flags - needed for r2r_bry (and possibly others):
 #	note, -qopenmp is the new -openmp but is still needed for maya
-#        OMP_FLAG = -fpp -openmp
-#        OMP_FLAG = -cpp -fopenmp
-       OMP_FLAG = -qopenmp
+        OMP_FLAG = -fpp -openmp
+#       OMP_FLAG = -qopenmp
 
 # --------------------------------------------------------------------
 
@@ -26,17 +24,17 @@ all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
 #install: $(ALL)
 #	mv $(ALL) ~/bin
 
-# Note: the following .fpp: dependencies are needed to make everything
+# Note: the following .f: dependencies are needed to make everything
 # go through CPP and take custom defined CPPFLAGS rather than compiling
 # executables from .F directly.
 
-chkindent: chkindent.fpp
+chkindent: chkindent.f
 
 # The following two are built from the same source
 # and differ only CPP macro setting:
 
-mreplace.fpp: mreplace.F
-	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace.F > mreplace.fpp
+mreplace.f: mreplace.F
+	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace.F > mreplace.f
 	
 partit: partit.o insert_node.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)
@@ -51,8 +49,8 @@ nc3to4z: nc3to4z.o lenstr.o read_string.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o nc3to4z nc3to4z.o lenstr.o read_string.o $(LCDF)
 	
 mpc: mpc.F Makefile
-	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.fpp
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.fpp
+	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
 	
 extract_data_join: ncjoin_mod.o extract_data_join.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join ncjoin_mod.o extract_data_join.o lenstr.o  $(LCDF)
@@ -95,14 +93,14 @@ zslice: $(ZSLICE)
 ipslice: $(IPSLICE)
 	$(LDR) $(FFLAGS) -o ipslice $(IPSLICE) $(LCDF)
 
-ipslice.fpp: zslice.F
-	$(CPP) -P $(CPPFLAGS) -DIPSLICE zslice.F | ./mpc > ipslice.fpp
+ipslice.f: zslice.F
+	$(CPP) -P $(CPPFLAGS) -DIPSLICE zslice.F | ./mpc > ipslice.f
 
 sample: $(SAMPLE)
 	$(LDR) $(FFLAGS) -o sample $(SAMPLE) $(LCDF)
 
 clean:
-	/bin/rm -f *.fpp *.o *.a *.s *.trace *.mod
+	/bin/rm -f *.f *.o *.a *.s *.trace *.mod
 
 clobber: clean
 	/bin/rm -f $(ALL) *.bak
