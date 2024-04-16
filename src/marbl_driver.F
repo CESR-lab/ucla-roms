@@ -34,7 +34,7 @@
       use param                       , only: mynode,nt,ntrc_bio,
      &                                        isalt,itemp,Lm,Mm
       use dimensions                  , only: nz
-      use get_bulk_wnd                , only: uwnd, vwnd
+      use surf_flux                   , only: uwnd, vwnd
       use bgc_forces                  , only: pco2air,pco2air_alt,
      &                                        dust,iron
       use surf_flux                   , only: srflx

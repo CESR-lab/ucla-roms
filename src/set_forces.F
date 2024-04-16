@@ -30,7 +30,6 @@
 !
       use param
       use bulk_frc              ! ,  only: set_bulk_frc_tile
-      use get_bulk_wnd !
       use flux_frc
       use surf_flux, only: set_surf_field_corr
       use tracers,   only: set_surf_tracer_flx, iTandS
@@ -104,7 +103,6 @@ c***              no code here
       call ana_srflux_tile(istr,iend,jstr,jend) ! Should move this to bulk module
 #   endif
 #  endif
-      call set_bulk_wnd(istr,iend,jstr,jend) ! bulk wind module      
       call set_bulk_frc(istr,iend,jstr,jend) ! bulk flux module
 # else
 
