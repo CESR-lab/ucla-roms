@@ -6,7 +6,6 @@
       use dimensions
       use mpi_exchanges
       use roms_read_write
-      ! Get wind variables from a separate module to avoid a circular dependency with the MARBL driver:
       
       implicit none
 
@@ -91,8 +90,10 @@
       ! file. The ranges here need to match the sizes in the partitioned files
       call set_frc_data(nc_swrad,srflx,'r')
       call set_frc_data(nc_lwrad,lwrad,'r')
+      
       call set_frc_data(nc_uwnd,uwnd,'r')
       call set_frc_data(nc_vwnd,vwnd,'r')
+      
       call set_frc_data(nc_tair,tair,'r')
       call set_frc_data(nc_Q,Q,'r')
 
@@ -667,7 +668,7 @@
 !
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
-          hfsen=-blk_Cpa*rhoAir*Wstar*Tstar !
+          hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
 !  Compute turbulent latent heat flux (W/m2), Hl.
 !
           hflat=-Hlv*rhoAir*Wstar*Qstar          

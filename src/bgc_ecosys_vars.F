@@ -30,7 +30,7 @@
 #ifndef MARBL_DIAGS
       parameter( nr_bec2_diag_3d=103, nr_bec2_diag_2d=37)
 #else
-      ! Just hardcoding this for now but will need to obtain it dynamically
+      ! Just hardcoding this for now but would be nice to obtain it dynamically
       parameter( nr_bec2_diag_3d=164, nr_bec2_diag_2d=179)
 #endif
       parameter( nr_bec2_diag=nr_bec2_diag_2d+nr_bec2_diag_3d )

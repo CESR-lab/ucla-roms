@@ -509,7 +509,7 @@
       CaCO3_ind(auto_ind)     = 0
 
 
- ! moved initialisation of BGC diagnostics arrays to bgc_ecosys_vars/init_arrays_bgc_ecosys_vars
+ ! DS: moved initialisation of BGC diagnostics arrays to bgc_ecosys_vars/init_arrays_bgc_ecosys_vars
      
       !---------------------------------------------------------------------------
       !   Initialize ph for CO2 flux computation :
