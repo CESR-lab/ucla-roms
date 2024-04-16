@@ -11,8 +11,8 @@ include ../src/Makedefs.inc
 
 # OpenMP flags - needed for r2r_bry (and possibly others):
 #	note, -qopenmp is the new -openmp but is still needed for maya
-        OMP_FLAG = -fpp -openmp
-#       OMP_FLAG = -qopenmp
+#        OMP_FLAG = -fpp -openmp
+       OMP_FLAG = -qopenmp
 
 # --------------------------------------------------------------------
 
