@@ -12,10 +12,9 @@
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      !use read_write, only: set_frc_var_tile, ncvs, rp_var
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
 #ifdef MARBL      
-      use marbl_driver          ! have moved ^^^ these indices here
+      use marbl_driver 
 #endif      
       use bgc_ecosys_vars
       use nc_read_write
@@ -101,19 +100,14 @@
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
       call set_frc_data(nc_pco2air,pco2air,'r')
 #ifdef MARBL
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air_alt, pco2air_alt, interp_frc )
       call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
 #endif      
 #endif /* PCO2AIR_FORCING */
       
 #ifdef NOX_FORCING
-      !20231026
-!call set_frc_var_tile( istr, iend, jstr, jend, nc_nox, nox, interp_frc ) !nox
       call set_frc_data(nc_nox,nox,'r')
 #endif /* NOX_FORCING */   
 #ifdef NHY_FORCING
-      !20231027
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_nhy, nhy, interp_frc ) !nhy
       call set_frc_data(nc_nhy,nhy,'r')
 #endif /* NHY_FORCING */
 
@@ -581,11 +575,9 @@
 #endif
 
 #ifdef NOX_FORCING
-      ! 20231026
       allocate( nc_nox%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 #ifdef NHY_FORCING
-      ! 20231026
       allocate( nc_nhy%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
@@ -639,7 +631,7 @@
       alk_ind_t     = iALK-iTandS-nt_passive
       doc_ind_t     = iDOC-iTandS-nt_passive
       don_ind_t     = iDon-iTandS-nt_passive
-      dofe_ind_t    = iDofe-iTandS-nt_passive !not a tracer in marbl
+      dofe_ind_t    = iDofe-iTandS-nt_passive
       dop_ind_t     = iDop-iTandS-nt_passive
       dopr_ind_t    = iDopr-iTandS-nt_passive
       donr_ind_t    = iDonr-iTandS-nt_passive
@@ -680,7 +672,7 @@
       tclm_name(iDOPR) = 'dop_time'
       tclm_name(iDON) = 'don_time'
       tclm_name(iDONR) = 'don_time'
-      tclm_name(iDOFE) = 'dofe_time' !DoFe not a tracer in MARBL
+      tclm_name(iDOFE) = 'dofe_time'
       tclm_name(iSPC) = 'spc_time'
       tclm_name(iSPCHL) = 'spchl_time'
       tclm_name(iSPCACO3) = 'spcaco3_time'

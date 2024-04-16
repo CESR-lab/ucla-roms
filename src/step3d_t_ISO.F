@@ -59,7 +59,7 @@ c--# define CONST_TRACERS
       use surf_flux, only: stflx, srflx
       use tracers
 #ifdef MARBL      
-      use marbl_driver, only: marbldrv_column_physics!,marbl_saved_state_2d,marbl_saved_state_3d
+      use marbl_driver, only: marbldrv_column_physics
       use bgc_ecosys_vars, only: landmask
 #ifdef MARBL_DIAGS            
       use bgc_ecosys_vars, only: bec2_diag_2d, bec2_diag_3d

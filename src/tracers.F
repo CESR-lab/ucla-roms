@@ -48,7 +48,6 @@
       character*47, dimension(nt), public :: t_tname                 ! tracer input time variable name
       logical, dimension(nt), public      :: wrt_t                   ! t/f output tracer.
       logical, dimension(nt), public      :: wrt_t_avg               ! t/f output avg tracer.
-      !logical, dimension(nt), public      :: wrt_t_dia               ! t/f output dia tracer. !20240319 - DS - Not sure why/how/when this got added?
       integer, dimension(nt)              :: t_ana_frc               ! whether surface flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
@@ -74,11 +73,6 @@
 
       integer,dimension(NT),public :: NT_2_t_avg                     ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer,public        :: n_t_avg                               ! number of tracer averages to output <= NT
-
-!#ifdef BIOLOGY_BEC2
-! bgc needs public indexes as used in other files
-!# include "bgc_tracers_indx.opt"
-!#endif
 
 #if defined(BIOLOGY_BEC2) && !defined(MARBL)
 # include "bgc_tracers_indx.opt"

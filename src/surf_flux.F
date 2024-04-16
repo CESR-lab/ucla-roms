@@ -36,7 +36,7 @@
       real,public,allocatable,dimension(:,:)   :: svstr    ! v-point: used in Eq.System
       real,public,allocatable,dimension(:,:)   :: svstr_r  ! rho-point, only used in lmd_kpp to get ustar
       real,public,allocatable,dimension(:,:,:) :: stflx    ! Surface fluxes of tracer type variables (rho-points)
-      real,public,allocatable,dimension(:,:)   :: srflx ! Short-wave radiation surface flux
+      real,public,allocatable,dimension(:,:)   :: srflx    ! Short-wave radiation surface flux
 
       real,public,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
       real,public,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind      

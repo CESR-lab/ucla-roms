@@ -5,6 +5,18 @@ if [ -z "${ACCOUNT_KEY}" ];then
     exit 1
 fi
 
+
+# Flags needed for mvapich2:
+export MV2_USE_RDMA_CM=0
+export MV2_IBA_HCA=mlx5_2
+export MV2 DEFAULT PORT=1
+
+module purge
+module load slurm
+module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
+module load netcdf-c/4.7.4
+module load netcdf-fortran/4.5.3
+
 sbatch --job-name="Pipes_ana" \
        --output="Pipes_ana.out" \
        --partition="debug" \
