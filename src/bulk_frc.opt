@@ -10,7 +10,9 @@
       ! Set the name and tname of variable to match what is in the input forcing files.
       ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
 
-      ! nc_uwnd and nc_vwnd have been moved to bulk_wnd.opt to avoid circular dependency when running with MARBL
+      type (ncforce) :: nc_uwnd  = ncforce(vname='uwnd', tname='time' )  ! u-wind (input data in m/s at 10m)
+      type (ncforce) :: nc_vwnd  = ncforce(vname='vwnd', tname='time' )  ! v-wind (input data in m/s at 10m)
+      
       type (ncforce) :: nc_tair  = ncforce(vname='Tair', tname='time' )  ! Air temp (input data Degrees C at 2m)
       type (ncforce) :: nc_Q     = ncforce(vname='qair', tname='time' )  ! Q (Specific humidity (kg/kg)
       type (ncforce) :: nc_prate = ncforce(vname='rain', tname='time' )  ! Precipitation rate (cm/day)

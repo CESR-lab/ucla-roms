@@ -42,7 +42,6 @@
       use param
       use wec_frc
       use bulk_frc
-      use get_bulk_wnd !
       use surf_flux ! for: sustr, svstr, stflx, sst_data, sss_data
       use tracers   ! iTandS, t, t_avg
       use coupling
@@ -134,7 +133,6 @@
       call init_arrays_surf_flx
 
 #ifdef BULK_FRC
-      call init_arrays_bulk_wnd      
       call init_arrays_bulk_frc
 #endif
 
