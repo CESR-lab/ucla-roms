@@ -60,7 +60,6 @@ c--# define CONST_TRACERS
       use tracers
 #ifdef MARBL      
       use marbl_driver, only: marbldrv_column_physics
-      use bgc_ecosys_vars, only: landmask
 #ifdef MARBL_DIAGS            
       use bgc_ecosys_vars, only: bec2_diag_2d, bec2_diag_3d
 #endif      
