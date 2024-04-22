@@ -40,13 +40,13 @@
 
 ! - TEMP & SALT:
 
-      wrt_t     (itmp)=.True.;    wrt_t_avg(itmp) =.True.    ! temp
+      wrt_t     (itemp)=.True.;    wrt_t_avg(itemp) =.True.    ! temp
+      wrt_t_dia(itemp) = .true.
       
 #ifdef SALINITY
-      wrt_t     (islt)=.True.;    wrt_t_avg(islt) =.True.    ! salinity
+      wrt_t     (isalt)=.True.;    wrt_t_avg(isalt) =.True.    ! salinity
+      wrt_t_dia(isalt) = .true.
 #endif
-
-!  wrt_t_dia = .false.
 
 
 ! - PASSIVE TRACERS:

@@ -31,6 +31,7 @@
       public ana_smflux_tile
       public ana_srflux_tile
       public ana_stflux_tile
+      public ana_init_generic
 
       contains
 
@@ -74,21 +75,21 @@
 #   ifdef OBC_WEST
       if (WESTERN_EDGE) then
 #    ifdef M2_FRC_BRY
-        do j=jstrR,jendR                     ! Save perimeter values
-          zeta_west(j)=zeta(istr-1,j,1)      ! of the initial fields
-          ubar_west(j)=ubar(istr  ,j,1)      ! to be used as external
-          vbar_west(j)=vbar(istr-1,j,1)      ! forcing data for side
-        enddo                                ! boundaries.
+        do j=1,ny                       ! Save perimeter values
+          zeta_west(j)=zeta(0,j,1)      ! of the initial fields
+          ubar_west(j)=ubar(1,j,1)      ! to be used as external
+          vbar_west(j)=vbar(0,j,1)      ! forcing data for side
+        enddo                           ! boundaries.
 #    endif
 #    ifdef SOLVE3D
-        do k=1,N
-          do j=jstrR,jendR
+        do k=1,nz
+          do j=1,ny
 #     ifdef M3_FRC_BRY
-            u_west(j,k)=u(istr  ,j,k,1)
-            v_west(j,k)=v(istr-1,j,k,1)
+            u_west(j,k)=u(1,j,k,1)
+            v_west(j,k)=v(0,j,k,1)
 #     endif
 #     ifdef T_FRC_BRY
-            t_west(j,k,itemp)=t(istr-1,j,k,1,itemp)
+            t_west(j,k,:)=t(0,j,k,1,:)
 #     endif
           enddo
         enddo
@@ -99,21 +100,21 @@
 #   ifdef OBC_EAST
       if (EASTERN_EDGE) then
 #    ifdef M2_FRC_BRY
-        do j=jstrR,jendR
-          zeta_east(j)=zeta(iend+1,j,1)
-          ubar_east(j)=ubar(iend+1,j,1)
-          vbar_east(j)=vbar(iend+1,j,1)
+        do j=1,ny
+          zeta_east(j)=zeta(nx+1,j,1)
+          ubar_east(j)=ubar(nx+1,j,1)
+          vbar_east(j)=vbar(nx+1,j,1)
         enddo
 #    endif
 #    ifdef SOLVE3D
-        do k=1,N
-          do j=jstrR,jendR
+        do k=1,nz
+          do j=1,ny
 #     ifdef M3_FRC_BRY
-            u_east(j,k)=u(iend+1,j,k,1)
-            v_east(j,k)=v(iend+1,j,k,1)
+            u_east(j,k)=u(nx+1,j,k,1)
+            v_east(j,k)=v(nx+1,j,k,1)
 #     endif
 #     ifdef T_FRC_BRY
-            t_east(j,k,itemp)=t(iend+1,j,k,1,itemp)
+            t_east(j,k,:)=t(nx+1,j,k,1,:)
 #     endif
           enddo
         enddo
@@ -125,21 +126,21 @@
 #   ifdef OBC_SOUTH
       if (SOUTHERN_EDGE) then
 #    ifdef M2_FRC_BRY
-        do i=istrR,iendR
-          zeta_south(i)=zeta(i,jstr-1,1)
-          ubar_south(i)=ubar(i,jstr-1,1)
-          vbar_south(i)=vbar(i,jstr  ,1)
+        do i=1,nx
+          zeta_south(i)=zeta(i,0,1)
+          ubar_south(i)=ubar(i,0,1)
+          vbar_south(i)=vbar(i,1,1)
         enddo
 #    endif
 #    ifdef SOLVE3D
-        do k=1,N
-          do i=istrR,iendR
+        do k=1,nz
+          do i=1,nx
 #     ifdef M3_FRC_BRY
-            u_south(i,k)=u(i,jstr-1,k,1)
-            v_south(i,k)=v(i,jstr  ,k,1)
+            u_south(i,k)=u(i,0,k,1)
+            v_south(i,k)=v(i,1,k,1)
 #     endif
 #     ifdef T_FRC_BRY
-            t_south(i,k,itemp)=t(i,jstr-1,k,1,itemp)
+            t_south(i,k,:)=t(i,0,k,1,:)
 #     endif
           enddo
         enddo
@@ -150,21 +151,21 @@
 #   ifdef OBC_NORTH
       if (NORTHERN_EDGE) then
 #    ifdef M2_FRC_BRY
-        do i=istrR,iendR
-          zeta_north(i)=zeta(i,jend+1,1)
-          ubar_north(i)=ubar(i,jend+1,1)
-          vbar_north(i)=vbar(i,jend+1,1)
+        do i=1,nx
+          zeta_north(i)=zeta(i,ny+1,1)
+          ubar_north(i)=ubar(i,ny+1,1)
+          vbar_north(i)=vbar(i,ny+1,1)
         enddo
 #    endif
 #    ifdef SOLVE3D
-        do k=1,N
-          do i=istrR,iendR
+        do k=1,nz
+          do i=1,nx
 #     ifdef M3_FRC_BRY
-            u_north(i,k)=u(i,jend+1,k,1)
-            v_north(i,k)=v(i,jend+1,k,1)
+            u_north(i,k)=u(i,ny+1,k,1)
+            v_north(i,k)=v(i,ny+1,k,1)
 #     endif
 #     ifdef T_FRC_BRY
-            t_north(i,k,itemp)=t(i,jend+1,k,1,itemp)
+            t_north(i,k,:)=t(i,ny+1,k,1,:)
 #     endif
           enddo
         enddo

@@ -30,12 +30,6 @@
       implicit none
       private
 
-      !-- Tracer indices specific to each tracer
-      ! Set to zero as possible means to avoid errors later? Might not be
-      ! Necessary. itmp -> itemp, had to spell differently for now as
-      ! itemp lives in param still (avoid clash). Same for islt -> isalt
-      integer :: itmp=0, islt=0
-
       real,public,allocatable,dimension(:,:,:,:,:) :: t              ! array of tracers
 
                                                                      ! tracer netcdf variables (user input required in init_tracers)
@@ -53,7 +47,7 @@
       type (ncforce)    :: nc_t( NT )                                   ! array of ncvs for each tracer
       integer,public :: iTandS                                       ! combined index of temperature and salinity
                                                                      ! public as used in set_forces.F. Need to be parameter
-      integer,public :: nt_passive=0                                 ! total number of passive tracers
+!     integer,public :: nt_passive=0                                 ! total number of passive tracers
       integer        :: itot=0                                       ! index counter to count total number of tracers.
                                                                      ! this term prevents the need to hardcode tracer indices.
       integer        :: interp_t                                     ! interpolate forcing from coarser input grid (=1) or not (=0)
@@ -182,7 +176,6 @@
       enddo
 
       end subroutine def_his_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine def_avg_trc( ncid )  ![
       implicit none
@@ -257,7 +250,6 @@
       enddo
 
       end subroutine wrt_rst_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_avg_trc(coef)  ![
 
@@ -304,14 +296,12 @@
       integer :: cnt=0, itrc
 
       ! Core tracers - temp and salt:
-      itmp=1;
-      t_vname(itmp)='temp';        t_units(itmp)='Celsius'
-      t_lname(itmp)='potential temperature'
+      t_vname(itemp)='temp';        t_units(itemp)='Celsius'
+      t_lname(itemp)='potential temperature'
       iTandS = 1         ! if only temp, no salt.
 #ifdef SALINITY
-      islt=2;
-      t_vname(islt)='salt';        t_units(islt)='PSU'
-      t_lname(islt)='salinity'
+      t_vname(isalt)='salt';        t_units(isalt)='PSU'
+      t_lname(isalt)='salinity'
       iTandS = 2         ! if both temp and salt.
 #endif
       itot=iTandS        ! set up counting for additional tracers
