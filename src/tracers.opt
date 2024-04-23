@@ -48,7 +48,10 @@
       wrt_t_dia(isalt) = .true.
 #endif
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 25dff3bca5b7486c780dd4d801f905ff20b534d7
 ! - PASSIVE TRACERS:
 
 ! - BGC TRACERS: (must come after passive tracers)
