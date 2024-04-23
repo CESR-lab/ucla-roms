@@ -720,15 +720,18 @@
 !
           stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
 !
+# ifdef SALINITY          
 !  Total surface salt flux
 !
           evap=-cp*hflat/Hlv
           ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
           stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
-
+#endif
 # ifdef MASKING
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
+# ifdef SALINITY
           stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
+# endif          
 # endif
 !
 !  Save for the calculation of wind stress
@@ -782,11 +785,13 @@
 ! Flux correction to surface salt flux.
 !--------------------------------------------------------------
 # ifdef SFLX_CORR
+# ifdef SALINITY          
           stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
      &           t(i,j,N,nrhs,isalt) - sss(i,j)  )
 #  ifdef MASKING
      &                                           *rmask(i,j)
 #  endif
+# endif          
 # endif
 
 !---------------------------------------------------------------

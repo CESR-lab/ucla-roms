@@ -257,10 +257,10 @@
       blowup = .false.
       initial= .false.
       if (present(special)) then
-        if (special==.false.) then
-          initial = .true.
-        else
+        if (special) then
           blowup = .true.
+        else
+          initial = .true.           
         endif
       endif
 
@@ -765,11 +765,13 @@
 
       ! local
       integer :: ierr, varid, itrc
-
+      character(len=7)  :: dn_aux = 'auxil'
+      
 ! Time-step number and time-record indices: (history file only, this
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
-      varid = nccreate(ncid,'time_step',(/'auxil',dn_tm/),(/iaux,0/),nf90_int)
+      varid = nccreate(ncid,'time_step',(/dn_aux,dn_tm/),(/iaux,0/),nf90_int)
+
       ierr=nf90_put_att (ncid, varid, 'long_name',
      &       'time step and record numbers from initialization')
 
