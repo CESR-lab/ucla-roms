@@ -26,4 +26,4 @@ sbatch --job-name="Rivers_ana" \
        --export=ALL \
        --mail-type=ALL \
        -t 00:10:00 \
-       --wrap="srun --mpi=pmi2 -n 6 ./river_ana.in"
+       --wrap="srun --mpi=pmi2 -n 6 roms ./river_ana.in"

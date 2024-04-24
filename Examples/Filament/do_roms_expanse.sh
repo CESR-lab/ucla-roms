@@ -21,9 +21,9 @@ sbatch --job-name="Filament" \
        --output="Filament.out" \
        --partition="debug" \
        --nodes=1 \
-       --ntasks-per-node=16 \
+       --ntasks-per-node=6 \
        --account=${ACCOUNT_KEY} \
        --export=ALL \
        --mail-type=ALL \
        -t 00:10:00 \
-       --wrap="srun --mpi=pmi2 -n 16 ./roms filament.in"
+       --wrap="srun --mpi=pmi2 -n 6 ./roms filament.in"
