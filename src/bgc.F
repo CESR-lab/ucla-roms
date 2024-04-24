@@ -609,12 +609,12 @@
       endif
 #ifdef BEC2_DIAG
       if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor 
-     &        of output_period_his_dia for diagnostics!'
+        stop 'ERROR :: bgc.opt - dt not a factor ' //
+     &        'of output_period_his_dia for diagnostics!'
       endif
       if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor 
-     &        of output_period_avg_dia for diagnostics!'
+        stop 'ERROR :: bgc.opt - dt not a factor' //
+     &        'of output_period_avg_dia for diagnostics!'
       endif
 #endif /* BEC2_DIA */
 

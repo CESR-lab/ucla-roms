@@ -11,6 +11,8 @@
 #endif      
 #ifdef MARBL_DIAGS      
      &                      ,marbldrv_configure_diagnostics
+     &     ,nr_marbl_diag_2d,nr_marbl_diag_3d,
+     &     diag_array_2d,diag_array_3d
 #endif      
       implicit none
 
@@ -31,11 +33,12 @@
       parameter( nr_bec2_diag_3d=103, nr_bec2_diag_2d=37)
 #else
       ! Just hardcoding this for now but would be nice to obtain it dynamically
-      parameter( nr_bec2_diag_3d=164, nr_bec2_diag_2d=179)
+      parameter( nr_bec2_diag_3d=nr_marbl_diag_3d,
+     &           nr_bec2_diag_2d=nr_marbl_diag_2d)
 #endif
       parameter( nr_bec2_diag=nr_bec2_diag_2d+nr_bec2_diag_3d )
-      real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d
-      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d
+      real,allocatable,dimension(:,:,:,:),target   :: bec2_diag_3d
+      real,allocatable,dimension(:,:,:)  ,target   :: bec2_diag_2d
 
 ! Control BEC2_DIAG Output vars
       logical :: wrt_bec2_diag_2d(nr_bec2_diag_2d)
@@ -255,6 +258,10 @@
       
       bec2_diag_2d=0.0
       bec2_diag_3d=0.0
+#ifdef MARBL_DIAGS
+      diag_array_2d => bec2_diag_2d
+      diag_array_3d => bec2_diag_3d
+#endif      
       
 #  ifdef AVERAGES
       allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )

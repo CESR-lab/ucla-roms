@@ -73,11 +73,19 @@
 
 #ifdef MARBL_DIAGS      
 !     Keeping count of diagnostics:
+!     These are the amount to allocate in ROMS...
+      integer, parameter, public :: nr_marbl_diag_2d = 179
+      integer, parameter, public :: nr_marbl_diag_3d = 164
+!     ... and these are the amount supplied by MARBL (to be counted up)      
       integer, public :: n_marbl_2d_sf_diags ! Number of MARBL 2D surface flux diagnostic vars
       integer, public :: n_marbl_3d_sf_diags ! Number of MARBL 3D surface flux diagnostic vars
       integer, public :: n_marbl_2d_it_diags ! Number of MARBL 2D interior tendency diagnostic vars
       integer, public :: n_marbl_3d_it_diags ! Number of MARBL 3D interior tendency diagnostic vars
-      integer, public :: n_marbl_diags       ! Total number of MARBL diagnostic vars
+      integer, public :: n_marbl_diags ! Total number of MARBL diagnostic vars
+
+      real,dimension(:,:,:,:),pointer :: diag_array_3d ! points to bec2_diag_3d
+      real,dimension(:,:,:)  ,pointer :: diag_array_2d ! points to bec2_diag_2d
+      
 #endif      
 !     Saved state variables: (mimicking structure of bgc_ecosys_vars for bec2_diag arrays)
       integer                             :: nr_marbl_ss_2d,nr_marbl_ss_3d       ! No. of saved_state vars
@@ -832,11 +840,7 @@
       end subroutine marbldrv_configure_diagnostics
 #endif /* MARBL_DIAGS */
       
-      subroutine marbldrv_column_physics(istr,iend,jstr,jend,tracer_array
-#ifdef MARBL_DIAGS      
-     &     ,diag_array_2d,diag_array_3d
-#endif
-     &     )
+      subroutine marbldrv_column_physics(istr,iend,jstr,jend,tracer_array)
       
 !-----------------------------------------------------------------------
 !     SUBROUTINE: marbldrv_column_physics
@@ -866,7 +870,6 @@
 !     INPUT/OUTPUT:
 !     - istr,jstr,iend,jend: i,j indices on this node over which to loop
 !     - tracer_array: the ROMS tracer array (t) to be updated by MARBL
-!     - diag_array_2d,diag_array_3d: ROMS 2d/3d BGC diagnostics arrays
 !      
 !     NOTES:
 !     - All 3D variables are flipped when passing between MARBL and ROMS
@@ -891,15 +894,15 @@
 !-----------------------------------------------------------------------
      
       integer, intent(in)                           :: istr,jstr,iend,jend
+
       real, dimension(GLOBAL_2D_ARRAY,nz,3,nt) ,
      &                            intent(inout)     :: tracer_array      
 #ifdef MARBL_DIAGS
-      real, dimension(GLOBAL_2D_ARRAY,
-     &     n_marbl_2d_sf_diags+n_marbl_2d_it_diags),
-     &                         intent(inout)        :: diag_array_2d
-      real, dimension(GLOBAL_2D_ARRAY,nz,
-     &     n_marbl_3d_sf_diags+n_marbl_3d_it_diags),
-     &                         intent(inout)        :: diag_array_3d
+!      real, dimension(GLOBAL_2D_ARRAY,diag_cnt_2d_tot),
+!     &                         intent(inout)        :: diag_array_2d
+!      real, dimension(GLOBAL_2D_ARRAY,nz,diag_cnt_3d_tot),
+!     &                         intent(inout)        :: diag_array_3d
+      
       integer                                       :: diagidx2d,diagidx3d ! indices for stepping through diagnostics arrays
 #endif
       integer                                       :: i,j,k,m
