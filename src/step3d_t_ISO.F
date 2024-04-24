@@ -60,10 +60,6 @@ c--# define CONST_TRACERS
       use tracers
 #ifdef MARBL      
       use marbl_driver, only: marbldrv_column_physics
-#ifdef MARBL_DIAGS            
-      use bgc_ecosys_vars, only: bec2_diag_2d, bec2_diag_3d
-#endif      
-
 #endif      
       use diagnostics
       use eos_vars
@@ -1074,11 +1070,7 @@ c??         enddo
 !         print *, shape(t), ' is the shape of t'
 !         print *, lbound(t), ' is the lower bound of t'
 !      end if
-      call marbldrv_column_physics(istr,iend,jstr,jend,t
-#ifdef MARBL_DIAGS      
-     &     ,bec2_diag_2d,bec2_diag_3d
-#endif
-     &     )                    !MARBL, 2023
+      call marbldrv_column_physics(istr,iend,jstr,jend,t)
 # elif defined(BIOLOGY_BEC2)
       if (mynode==0) then
       print *, 'doing BGC with BEC'
