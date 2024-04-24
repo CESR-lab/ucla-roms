@@ -10,9 +10,11 @@
       use marbl_driver,only: marbldrv_configure_saved_state
 #endif      
 #ifdef MARBL_DIAGS      
-     &                      ,marbldrv_configure_diagnostics
-     &     ,nr_marbl_diag_2d,nr_marbl_diag_3d,
-     &     diag_array_2d,diag_array_3d
+     &     ,marbldrv_configure_diagnostics
+     &     ,nr_marbl_diag_2d,nr_marbl_diag_3d
+     &     ,diag_array_2d,diag_array_3d
+     &     ,idx_bgc_diag_2d,idx_bgc_diag_3d
+     &     ,wrt_bgc_diag_2d,wrt_bgc_diag_3d
 #endif      
       implicit none
 
@@ -41,10 +43,10 @@
       real,allocatable,dimension(:,:,:)  ,target   :: bec2_diag_2d
 
 ! Control BEC2_DIAG Output vars
-      logical :: wrt_bec2_diag_2d(nr_bec2_diag_2d)
-      logical :: wrt_bec2_diag_3d(nr_bec2_diag_3d)
-      integer :: idx_bec2_diag_2d(nr_bec2_diag_2d)
-      integer :: idx_bec2_diag_3d(nr_bec2_diag_3d) 
+      logical, target :: wrt_bec2_diag_2d(nr_bec2_diag_2d)
+      logical, target :: wrt_bec2_diag_3d(nr_bec2_diag_3d)
+      integer, target :: idx_bec2_diag_2d(nr_bec2_diag_2d)
+      integer, target :: idx_bec2_diag_3d(nr_bec2_diag_3d) 
 #if defined(BEC2_DIAG)
       ! Indices to be used in bec2_diag_3d only:
       integer :: par_idx_t, pocfluxin_idx_t,
@@ -206,9 +208,16 @@
 #include "bgc_3Ddiagnostics.opt"
       
 #elif defined(MARBL_DIAGS)
+
+      wrt_bgc_diag_2d => wrt_bec2_diag_2d
+      wrt_bgc_diag_3d => wrt_bec2_diag_3d
+      idx_bgc_diag_2d => idx_bec2_diag_2d
+      idx_bgc_diag_3d => idx_bec2_diag_3d
+      
+      
       call marbldrv_configure_diagnostics(
-     &     vname_bec2_diag_2d,vname_bec2_diag_3d,
-     &     wrt_bec2_diag_2d,wrt_bec2_diag_3d)
+     &     vname_bec2_diag_2d,vname_bec2_diag_3d
+     & )
 #endif /* BEC2_DIAG */ 
     
       nr_bec2_wrdiag_2d=0
