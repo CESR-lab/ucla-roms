@@ -1,26 +1,26 @@
 
  Activated CPP configuration switches:
  <cppdefs.opt>
-       USWC_sample             SOLVE3D                 UV_ADV
-       UV_COR                  NONLIN_EOS              SPLIT_EOS
-       SALINITY                T_FRC_BRY               Z_FRC_BRY
-       M3_FRC_BRY              M2_FRC_BRY              SPONGE_WIDTH
+       RIVERS                  SPONGE_TUNE             RIVER_SOURCE
+       EXTRACT_DATA            SOLVE3D                 UV_COR
+       UV_ADV                  CURVGRID                SPHERICAL
+       MASKING                 SALINITY                NONLIN_EOS
+       SPLIT_EOS               EXACT_RESTART           IMPLICIT_BOTTOM_DRAG
        UV_VIS2                 TS_DIF2                 LMD_MIXING
-       LMD_KPP                 LMD_NONLOCAL            LMD_RIMIX
-       LMD_CONVEC              LMD_BKPP                CURVGRID
-       SPHERICAL               MASKING                 MASK_LAND_DATA
-       OBC_M2FLATHER           OBC_M3ORLANSKI          OBC_TORLANSKI
-       OBC_WEST                OBC_NORTH               OBC_EAST
-       OBC_SOUTH               AVERAGES                ADV_ISONEUTRAL
+       LMD_KPP                 LMD_BKPP                LMD_RIMIX
+       LMD_NONLOCAL            OBC_WEST                OBC_EAST
+       OBC_NORTH               OBC_SOUTH               OBC_M2FLATHER
+       OBC_M3ORLANSKI          OBC_TORLANSKI           Z_FRC_BRY
+       M2_FRC_BRY              M3_FRC_BRY              T_FRC_BRY
+       SPONGE
  <pre_step3d4S.F>
        SPLINE_UV               SPLINE_TS
  <step3d_uv1.F>
        UPSTREAM_UV             SPLINE_UV
  <step3d_uv2.F>
-       DELTA=0.28              EPSIL=0.36              GAMMA=8.333333333329999E-002
-       ALPHA_MAX=4.0
+       DELTA=0.28              EPSIL=0.36
  <step3d_t_ISO.F>
-       SPLINE_TS
+       UPSTREAM_TS             SPLINE_TS
  <set_depth.F>
        NOW=3.63                MID=4.47                BAK=2.05
        (N-M+B-1)/B=0.102439024
@@ -45,9 +45,7 @@
  initial condition :: rec =  1  file = 'input_data/roms_init_trace.0.nc'
       visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
        rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
-
- WARNING: Urecognized keyword 'v_sponge' --> DISREGARDED.
-
+   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
    tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
    tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
        rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
@@ -82,6 +80,7 @@
 
  Spherical grid detected.
 
+ init buffers
       get_grid :: read grid data from file 'input_data/sample_grd_riv.0.nc'.
  hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
  hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
@@ -151,15 +150,17 @@
  WARNING: netCDF variable 'hbls' not found in 'input_data/roms_init_trace.0.nc' ==> initialized to zero state.
  WARNING: netCDF variable 'hbbl' not found in 'input_data/roms_init_trace.0.nc' ==> initialized to zero state.
       get_init :: Read initial conditions for day =   4726.5657 record =   1
+
+ Sponge layer =  15 interior grid points.
  Writing initial history file
  Reference time used for simulation is: 2000/01/01
        created new netcdf file rivers_his.20121209133435.0.nc
 
-  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
- 0  4.2294863111058626E-03 2.7899525690339702E-03 1.0852755536198224E+00 8.5037780887307202E-01
-
  main :: initialization complete, started time-stepping.
 
+
+  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
+ 0  4.2294863111058626E-03 2.7899525690339702E-03 1.0852755536198224E+00 8.5037780887307202E-01
          set_frc :: sustr            input time (days) =   4725.00     rec =   2
          set_frc :: sustr            input time (days) =   4755.00     rec =   3
          set_frc :: svstr            input time (days) =   4725.00     rec =   2
@@ -176,38 +177,38 @@
          set_frc :: river_volume     input time (days) =   4726.50     rec =  47
          set_frc :: river_volume     input time (days) =   4727.50     rec =  48
          set_frc :: river_tracer     input time (days) =   4726.50     rec =  47
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
          set_frc :: river_tracer     input time (days) =   4727.50     rec =  48
          set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
-         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
          set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
          set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
          set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
- 1  4.2294414282045157E-03 2.7899047321309316E-03 4.4611818293856004E-01 4.4611818293856004E-01
- 2  4.2203823917905305E-03 2.7849879773568613E-03 5.9205726942327708E-01 3.8233863478034491E-01
- 3  4.2148652601540744E-03 2.7817664559450376E-03 1.0768833693929709E+00 7.9680531575921321E-01
- 4  4.2155016801370395E-03 2.7833137979328018E-03 1.1567363395640746E+00 9.3411110354487392E-01
- 5  4.2177776625413879E-03 2.7860848080407488E-03 1.4680823810034491E+00 1.3070483141768254E+00
- 6  4.2161960278230479E-03 2.7844505594183978E-03 1.9644992081096255E+00 1.8021164121811530E+00
- 7  4.2144832217587466E-03 2.7823264032658637E-03 2.4551290350331745E+00 2.2937588604813870E+00
- 8  4.2118808904628357E-03 2.7791630342715885E-03 2.8969775131945386E+00 2.7558228626740382E+00
- 9  4.2080088068886289E-03 2.7745083205968379E-03 3.3962681908388967E+00 3.2346526763022077E+00
-10  4.2053001515907837E-03 2.7709116154402604E-03 3.7376869252070777E+00 3.5809591420078082E+00
-11  4.2013121763650844E-03 2.7658197123311742E-03 4.0504686686115967E+00 3.8921724364503065E+00
-12  4.2006219541861510E-03 2.7637897273643628E-03 4.2898936638807115E+00 4.1224513694320963E+00
-13  4.2017953168844010E-03 2.7635168338858694E-03 4.4050665370384285E+00 4.2346757935633148E+00
-14  4.2031025085644729E-03 2.7633511709344327E-03 4.4462125526031855E+00 4.2667614051704010E+00
-15  4.2076955576348949E-03 2.7662990985695408E-03 4.4626690732674943E+00 4.2659533849323710E+00
-16  4.2121836357938399E-03 2.7691254607634789E-03 4.4212012677004813E+00 4.2180460549543985E+00
-17  4.2150576871580791E-03 2.7704039398572817E-03 4.3528619458396740E+00 4.1854501326659532E+00
-18  4.2189711188404481E-03 2.7727221804661490E-03 4.1333734186371629E+00 3.9650758490175004E+00
-19  4.2219613185365268E-03 2.7741191858578467E-03 3.9335634543753328E+00 3.7716009991122514E+00
-20  4.2232736569861838E-03 2.7738407354591112E-03 3.8537761406995537E+00 3.6893086912011230E+00
+ 1  4.2294406410411239E-03 2.7899037107360350E-03 4.6983767493148748E-01 4.6983767493148748E-01
+ 2  4.2254703250159146E-03 2.7851804229431436E-03 5.9305443055925289E-01 3.8493464920271442E-01
+ 3  4.2238651393696125E-03 2.7826558114183940E-03 1.0752921206369319E+00 7.9625229636675332E-01
+ 4  4.2275666825217278E-03 2.7852965331994430E-03 1.1736803293352294E+00 9.4915430346703500E-01
+ 5  4.2324664717196007E-03 2.7893194379697787E-03 1.5183897935512032E+00 1.3561367180813937E+00
+ 6  4.2332377024567672E-03 2.7889703562207976E-03 2.0529856736546517E+00 1.8921066660976671E+00
+ 7  4.2337065676406596E-03 2.7881669028615029E-03 2.5580242154837127E+00 2.3992350553617086E+00
+ 8  4.2332029054899280E-03 2.7863362500253883E-03 3.0000178306687419E+00 2.8646202302621497E+00
+ 9  4.2314000230290628E-03 2.7830463283729139E-03 3.4982023179610637E+00 3.3324448534035307E+00
+10  4.2307990311084166E-03 2.7808460560650419E-03 3.8308184933147493E+00 3.6706391297608807E+00
+11  4.2288186337335098E-03 2.7771605930855519E-03 4.1325560505622425E+00 3.9708761464238145E+00
+12  4.2301778295538509E-03 2.7765585661584523E-03 4.3551598804479807E+00 4.1835426843222141E+00
+13  4.2333549658534371E-03 2.7776855908256573E-03 4.4469190530443887E+00 4.2791142586388400E+00
+14  4.2367736736959186E-03 2.7789908901407093E-03 4.4880692478449911E+00 4.3295420551043202E+00
+15  4.2435666489579072E-03 2.7834401638818528E-03 4.5413044202303015E+00 4.3717733912830008E+00
+16  4.2502325378894184E-03 2.7876806482638400E-03 4.4947360393010554E+00 4.3275365468903129E+00
+17  4.2553499709038212E-03 2.7903454297047246E-03 4.4740024962803862E+00 4.3115682803827786E+00
+18  4.2615547385238556E-03 2.7940297340481582E-03 4.4602288966183679E+00 4.2995217055663160E+00
+19  4.2668717963618760E-03 2.7967597442181322E-03 4.4467913144664397E+00 4.2673772657741935E+00
+20  4.2705367032940004E-03 2.7977869157663538E-03 4.4348191826872849E+00 4.2529209175238716E+00
        ocean_vars :: wrote history, tdays =   4726.5749  step =     20 rec =   2
- Process    0  thread  0  cpu time =       13.03 sec
+ Process    0  thread  0  cpu time =       14.34 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   13.4859039783478     
+ MPI_run_time =   14.5302870273590     
