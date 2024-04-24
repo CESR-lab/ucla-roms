@@ -4,8 +4,6 @@
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
       integer :: i,j,ip
 
@@ -19,8 +17,8 @@
       pipe_prf(1,2) = 0.5  ! Dispersion profile
 
       pipe_flx = pipe_fraction*pipe_vol(1)
-!     do j = jstr,jend
-!       do i = istr,iend
+!     do j = 1,ny
+!       do i = 1,nx
 !         pipe_flx(i,j) = 0.0
 !         if (pipe_idx(i,j) > 0) then
 !           pidx = pipe_idx(i,j)

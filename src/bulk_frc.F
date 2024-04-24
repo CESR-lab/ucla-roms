@@ -669,55 +669,6 @@
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
           hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
-!  Compute turbulent latent heat flux (W/m2), Hl.
-!
-          hflat=-Hlv*rhoAir*Wstar*Qstar          
-!  For EMINUSP option,  EVAP = LHeat (W/m2) / Hlv (J/kg) = kg/m2/s
-!                       PREC = rain = kg/m2/s
-!
-!  To convert these rates to m/s divide by freshwater density, rhow.
-!
-!  Note that when the air is undersaturated in water vapor (Q < Qsea)
-!  the model will evaporate and LHeat > 0:
-!
-!                   LHeat positive out of the ocean
-!                    evap positive out of the ocean
-!
-!  Note that if evaporating, the salt flux is positive
-!        and if     raining, the salt flux is negative
-!
-!  Note that fresh water flux is positive out of the ocean and the
-!  salt flux (stflx(isalt)) is positive into the ocean. It is converted
-!  to (psu m/s) for stflx(isalt) in "set_vbc.F".
-!----------------------------------------------------------------------
-!
-!  Latent and sensible heat fluxes
-!
-          hflat=-hflat*rho0i*cpi
-          hfsen=-hfsen*rho0i*cpi
-!
-!  Total surface heat flux
-!
-          stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
-!
-!  Total surface salt flux
-!
-          evap=-cp*hflat/Hlv
-! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
-#ifdef SALINITY          
-          stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
-#endif          
-
-# ifdef MASKING
-          stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
-#ifdef SALINITY          
-          stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
-#endif          
-# endif
-!
-!  Save for the calculation of wind stress
-!
-          aer(i,j)=rhoAir*wspd0*rho0i
 !
 !  Compute Webb correction (Webb effect) to latent heat flux, Hlw.
 !

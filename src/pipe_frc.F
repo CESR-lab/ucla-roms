@@ -171,7 +171,7 @@
       ! Analytical pipe forcing volume and tracer data
       ! Put here to avoid circular reference if in analytical.F
 
-#include "pipe_frc_ana.opt"
+#include "ana_pipe_frc.h"
 
       end subroutine set_ana_pipe_frc  !]
 ! ----------------------------------------------------------------------
