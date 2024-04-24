@@ -38,6 +38,6 @@
      &       , ntrc_salt=0
 #endif
 
-      integer, parameter :: nt=1+ntrc_pas+ntrc_bio+ntrc_salt
+      integer, parameter :: nt=1+nt_passive+ntrc_bio+ntrc_salt
     
       
