@@ -41,17 +41,13 @@
 ! - TEMP & SALT:
 
       wrt_t     (itemp)=.True.;    wrt_t_avg(itemp) =.True.    ! temp
-      wrt_t_dia(itemp) = .true.
+!      wrt_t_dia(itemp) = .true.
       
 #ifdef SALINITY
       wrt_t     (isalt)=.True.;    wrt_t_avg(isalt) =.True.    ! salinity
-      wrt_t_dia(isalt) = .true.
+!      wrt_t_dia(isalt) = .true.
 #endif
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 25dff3bca5b7486c780dd4d801f905ff20b534d7
 ! - PASSIVE TRACERS:
 
 ! - BGC TRACERS: (must come after passive tracers)
@@ -73,7 +69,6 @@
       t_vname(itot)='PO4';        t_units  (itot)='mMol P m-3'
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Phosphate'
-!     wrt_t_dia(itot) = .false.
 
       itot=itot+1;                iNO3=itot
       wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.

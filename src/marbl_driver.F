@@ -40,7 +40,11 @@
       use surf_flux                   , only: srflx
       use nc_read_write
       use scalars                     , only: nstp,nnew,dt,iic,ntstart
-      use grid                        , only : rmask      
+      use grid                        , only : rmask
+#ifdef MPI
+      use mpi
+      use hidden_mpi_vars
+#endif      
 #ifdef NOX_FORCING
       use bgc_forces                  , only: nox
 #endif
@@ -152,7 +156,7 @@
       integer , dimension(nt)    , intent(inout) :: t_ana_frc
       logical , dimension(nt)    , intent(inout) :: wrt_t, wrt_t_avg
       real    , dimension(nz)                    :: dummy_array
-      integer :: marbl_settings_in, read_status
+      integer :: marbl_settings_in, open_status, read_status, ierr
       
       dummy_array(:)=1.0        ! Temporary measure until we can access an allocated Hz,z_w,z_r
       marbl_settings_in = 111
@@ -160,29 +164,37 @@
 !     1. Read in MARBL settings file (marbl_in), pass settings to MARBL:
 !     ------------------------------------------------------------------
       
-      if (mynode>=0) then
-!     This is always true but uses the format of the MOM driver which would
-!     read on primary CPU and then broadcast,
-!     Haven't yet implemented ROMS equiv (MPI_Bcast?) so just reading on every CPU
-         
-     ! read the marbl_in into buffer
-         open(unit=marbl_settings_in, file='marbl_in', iostat=read_status)
-         
-         if (read_status .ne. 0) then  ! can't find namelist file, skip
 
-            write(*, '(A, I0, 3A)') "IO WARNING ", read_status,
+!     read the marbl_in into buffer
+      if (mynode==0) then
+         open(unit=marbl_settings_in, file='marbl_in', iostat=open_status)
+         if (open_status .ne. 0) then ! can't find namelist file, skip
+            write(*, '(A, I0, 3A)') "IO WARNING ", open_status,
      &           "could not open namelist file : ", "marbl_in",
      &           ". attempting to proceed with default MARBL settings"
-            
-         else                          ! can find namelist file, read
+
+         end if
+      end if         
+#ifdef MPI
+         call MPI_Bcast(open_status,1,MPI_INTEGER,0,ocean_grid_comm,ierr)
+#endif            
+         if (open_status==0) then
             namelist_line = ''
-            do                         !namelist line-by-line read
-               read(marbl_settings_in,"(A)",iostat=read_status),
-     &              namelist_line
+            do                  !namelist line-by-line read
+               if (mynode==0) then
+                  read(marbl_settings_in,"(A)",iostat=read_status),
+     &                 namelist_line
+               end if
+#ifdef MPI
+               call MPI_Bcast(read_status,1,MPI_INTEGER,0,ocean_grid_comm,ierr)
+#endif            
+               
                if (read_status .ne. 0) then
-                  exit !loop
+                  exit          !loop
                else
-                                       ! Main step - apply setting to MARBL:
+#ifdef MPI
+                  call MPI_Bcast(namelist_line,256,MPI_CHARACTER,0,ocean_grid_comm,ierr)
+#endif                  
                   call marbl_instance%put_setting(namelist_line)
                   
                   if (mynode==printnode) print *,'marbl_in: ',namelist_line
@@ -209,7 +221,6 @@
                print *, 'we successfully read and closed marbl_in'
             end if
          endif
-      endif
 
 !     2. Now generate a MARBL instance with these settings:
 ! ---------------------------------------------------------
@@ -512,7 +523,7 @@
       use netcdf
       use dimensions, only : i0,i1,j0,j1
       use mpi_exchanges, only : exchange_xxx
-      use hidden_mpi_vars
+!      use hidden_mpi_vars
       use param, only : N
       implicit none
 
