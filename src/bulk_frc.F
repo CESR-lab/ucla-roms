@@ -6,15 +6,13 @@
       use dimensions
       use mpi_exchanges
       use roms_read_write
-
+      
       implicit none
 
       private  ! make all variable private to this module unless public specified
 
 #include "bulk_frc.opt"
 
-      real,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
-      real,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind
       real,allocatable,dimension(:,:) ::  tair             ! air temp
       real,allocatable,dimension(:,:) ::     Q             ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
       real,allocatable,dimension(:,:) :: prate             ! prate (precipitation rate) - 'rain' variable in old code
@@ -36,19 +34,17 @@
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bulk_frc  ![
       implicit none
-
-      allocate(  uwnd(GLOBAL_2D_ARRAY) )
-      allocate(  vwnd(GLOBAL_2D_ARRAY) )
       allocate(  tair(GLOBAL_2D_ARRAY) )
       allocate(     Q(GLOBAL_2D_ARRAY) )
       allocate( prate(GLOBAL_2D_ARRAY) )
       allocate( lwrad(GLOBAL_2D_ARRAY) )
-
+      
       allocate( wspd_used(GLOBAL_2D_ARRAY) )
 
-      ! vdata needs to be of blobal_2d_array size
+!     vdata needs to be of global_2d_array size
       allocate( nc_uwnd%vdata(GLOBAL_2D_ARRAY,2) )
       allocate( nc_vwnd%vdata(GLOBAL_2D_ARRAY,2) )
+!
       allocate( nc_tair%vdata(GLOBAL_2D_ARRAY,2) )
       allocate( nc_Q%vdata(GLOBAL_2D_ARRAY,2) )
       allocate( nc_prate%vdata(GLOBAL_2D_ARRAY,2) )
@@ -63,7 +59,7 @@
       allocate( nc_tauy%vdata(GLOBAL_2D_ARRAY,2) )
 #endif
 
-      if (interp_frc==1) then 
+      if (interp_frc==1) then
         nc_uwnd%coarse = 1
         nc_vwnd%coarse = 1
         nc_tair%coarse = 1
@@ -78,7 +74,7 @@
 ! ----------------------------------------------------------------------
       subroutine set_bulk_frc(istr,iend,jstr,jend) ![
 
-      use surf_flux, only: srflx
+      use surf_flux, only: srflx,uwnd,vwnd
 
       implicit none
 
@@ -94,10 +90,10 @@
       ! file. The ranges here need to match the sizes in the partitioned files
       call set_frc_data(nc_swrad,srflx,'r')
       call set_frc_data(nc_lwrad,lwrad,'r')
-
+      
       call set_frc_data(nc_uwnd,uwnd,'r')
       call set_frc_data(nc_vwnd,vwnd,'r')
-
+      
       call set_frc_data(nc_tair,tair,'r')
       call set_frc_data(nc_Q,Q,'r')
 
@@ -673,10 +669,6 @@
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
           hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
-!
-!  Compute turbulent latent heat flux (W/m2), Hl.
-!
-          hflat=-Hlv*rhoAir*Wstar*Qstar
 !
 !  Compute Webb correction (Webb effect) to latent heat flux, Hlw.
 !

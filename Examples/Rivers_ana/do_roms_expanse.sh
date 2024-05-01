@@ -1,20 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name="roms"
 
-# %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
-#SBATCH --output="roms_log.%N.run.out"
-#SBATCH --partition=shared
+if [ -z "${ACCOUNT_KEY}" ];then
+    echo "ACCOUNT_KEY environment variable empty. Set using export ACCOUNT_KEY=<your_account_key>."
+    exit 1
+fi
 
-# Can only use a max of 2 nodes on 'debug' partition:
-#SBATCH --nodes=1
-
-# Expanse has 128 cores per node:
-#SBATCH --ntasks-per-node=6
-#SBATCH --account=cla119
-#SBATCH --export=ALL
-
-# Max run time on 'debug' is 30 minutes:
-#SBATCH -t 00:02:00
 
 # Flags needed for mvapich2:
 export MV2_USE_RDMA_CM=0
@@ -27,7 +17,13 @@ module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
 module load netcdf-c/4.7.4
 module load netcdf-fortran/4.5.3
 
-srun --mpi=pmi2 -n 6 roms river_ana.in
-
-
-
+sbatch --job-name="Rivers_ana" \
+       --output="Rivers_ana.out" \
+       --partition="debug" \
+       --nodes=1 \
+       --ntasks-per-node=6 \
+       --account=${ACCOUNT_KEY} \
+       --export=ALL \
+       --mail-type=ALL \
+       -t 00:10:00 \
+       --wrap="srun --mpi=pmi2 -n 6 roms ./river_ana.in"

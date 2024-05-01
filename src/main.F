@@ -101,7 +101,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use boundary
       use particles
       use random_output
-# ifdef BIOLOGY_BEC2
+# if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
       use bgc
 # endif
@@ -203,10 +203,11 @@ C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
 CR      write(*,*) ' -6' MYID
 #endif
 
-# ifdef BIOLOGY_BEC2
-      ! pH is initialized to 0 in ecosys_init
+# if defined(BIOLOGY_BEC2)
+!     pH is initialized to 0 in ecosys_init
+!     FIXME: if using MARBL with diagnostics then this call is skipped and diagnostics arrays are not initialised to 0
       call ecosys2_init
-# endif
+# endif /*BIOLOGY_BEC2*/
 
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
@@ -281,7 +282,7 @@ CR      write(*,*)  ' -2' MYID
       ! blowup if true, and initial if false. 
       ! Come up with a better name!
       call wrt_his_ocean_vars(.false.)
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
       if (do_random) call init_random
@@ -467,7 +468,7 @@ CR      write(*,*)  ' -2' MYID
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc
 #endif
 
@@ -485,7 +486,7 @@ CR      write(*,*)  ' -2' MYID
 
       if (do_random) call wrt_random
 
-#if (defined BIOLOGY_BEC2 && defined BEC2_DIAG) 
+#if (defined BIOLOGY_BEC2 && defined BEC2_DIAG) || (defined MARBL && defined MARBL_DIAGS)
       call do_bgc_diags
 #endif /* BIOLOGY_BEC2 */
 

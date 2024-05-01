@@ -3,6 +3,22 @@
 !
 ! nr_bec2_diag_3d : number of available 3d diags set in bgc_ecosys_vars
 !
+! MARBL USERS NOTE:
+!--------------------------------------------------------------------------------
+!      if running with MARBL, do not specify BGC diagnostics in this file: they are
+!      provided to ROMS by MARBL. Control the MARBL config (therefore diagnostics)
+!      using a "marbl_in" file in your run directory. 
+!      Regarding output: by default, all MARBL diagnostics are written to output.
+!      To control which particular diagnostics to write out, make a
+!      text file "marbl_diagnostic_output_list" in your run directory
+!      and add the shortname of each required diagnostic to a new line.
+!      If the text file is empty, does not exist,
+!      contains only comments (!) or no recognised diagnostics,
+!      ROMS will revert to default behaviour and output all MARBL diagnostics.
+!      Output frequency etc. are still controlled using "bgc.opt".
+!      For a list of available MARBL diagnostics, see
+!      $MARBL_ROOT/tests/regression_tests/requested_diags/requested_diags.py 
+
 
 #ifdef BIOLOGY_BEC2
 #ifdef BEC2_DIAG

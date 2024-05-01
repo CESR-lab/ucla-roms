@@ -166,7 +166,7 @@
 
       if (pipe_source) call init_arrays_pipes
 
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       call init_arrays_bgc_ecosys_vars
       call init_arrays_bgc_forces
       call init_arrays_bgc_frc
