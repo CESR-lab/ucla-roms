@@ -1,30 +1,37 @@
-# Platform-specific definitions for Intel(R) Ifort(TM)
+# M2 Macbook (ARM64) version
 # ----------------------------------------------------
+
+UPF77_ext = .F
+PPF77_ext = .fpp
+UPF90_ext = .F90
+PPF90_ext = .f90pp
+OBJ_ext = .o
+
 
 # Compilation rules for file types:
 #   (used for every file until the final linking step)
 
-.SUFFIXES: .o .f .F .f90
+.SUFFIXES: $(OBJ_ext) $(PPF77_ext) $(UPF77_ext) $(PPF90_ext)
 
-.F.o:
-	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
-	@/bin/rm -f $*.f
-.F.f:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
-.f.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
-	@/bin/rm -f $*.f
+$(UPF77_ext)$(OBJ_ext):
+	@$(CPP) -P $(CPPFLAGS) $*$(UPF77_ext) | mpc > $*$(PPF77_ext)
+	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF77_ext) $(LCDF)
+	@/bin/rm -f $*$(PPF77_ext)
+$(UPF77_ext)$(PPF77_ext):
+	$(CPP) -P $(CPPFLAGS) $*$(UPF77_ext) | mpc > $*$(PPF77_ext)
+$(PPF77_ext)$(OBJ_ext):
+	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF77_ext) $(LCDF)
+	@/bin/rm -f $*$(PPF77_ext)
 
-.f90.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f90 $(LCDF)
-.F:
+$(PPF90_ext)$(OBJ_ext):
+	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF90_ext) $(LCDF)
+$(UPF77_ext):
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.f:
+$(PPF77_ext):
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.f90:
+$(PPF90_ext):
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.o:
+$(OBJ_ext):
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 
 # C-preprocessor (cpp):
@@ -33,14 +40,14 @@
 #	the standard CPP is not aware of this.
 
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-    CPP = /lib/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include -I${MARBL_ROOT}/include	
+    CPP = /usr/bin/cpp -traditional -D__IFC
+	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include -I${MARBL_ROOT}/include
 
-#   Since we no longer keep .f files after compilation, if you want to still
-#   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
+#   Since we no longer keep preprocessed files after compilation, if you want to still
+#   see them to confirm what code is left after c-pre-processing (CPPFLAGS
 #   removed) or for runtime debug line numbers, use the following
 #   in the Compile/ folder (change 'main' for your file of interest):
-#   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
+#   /lib/cpp -traditional -D__IFC -P main$(UPF77_ext) | ./mpc > main.$(PPF77_ext)
 
 # Path names (non-hydrostatic & NetCDF libraries):
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
@@ -57,8 +64,9 @@
 	NETCDFC_LIB=$(shell nc-config --libs)
 
 # MARBL
-        MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-    	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+        MARBL_INC = -I${MARBL_ROOT}/include/gnu-mpi
+        MARBL_LIB = -lmarbl-gnu-mpi -L${MARBL_ROOT}/lib
+
 
 # COMPILER SETTINGS:
 
@@ -72,7 +80,7 @@
 #	LARGE_MEM_FLAG = -mcmodel=large
 
 # Fortran compiler flags:
-	CFTFLAGS = -pc64 -auto
+#	CFTFLAGS = -pc64 -auto
 
 # Fortran compiler name and options:
 #	- using non-intel MPI:
@@ -88,20 +96,24 @@
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ip
+#	FFLAGS = -O3 -ip
+# - Optimized: (-flto = linktime optimisation, similarly to -ip/-ipo)
+	FFLAGS = -O3
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
 #	FFLAGS = -O3 -fp-model strict
-# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
+# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*$(PPF77_ext)':
 #	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
+# - for profiling with grof to see source code, also comment '@/bin/rm -f $*$(PPF77_ext)':
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-      	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(MARBL_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MARBL_INC)		    	
+#	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
+#	LCDF = -lmpi -lnetcdf -lnetcdff -L$(MPIHOME)/lib -L$(NETCDFHOME)lib -I$(MPIHOME)/include -I$(NETCDFHOME)include	-L${MARBL_ROOT}/lib -lmarbl-gnu-mpi -I${MARBL_ROOT}/include/gnu-mpi ${NHMG_LIB}
+        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(MARBL_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MARBL_INC)		    
 
 # -------------------------------------------------------------
 
