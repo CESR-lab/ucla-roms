@@ -20,7 +20,8 @@
       integer, parameter :: NP_XI =  3, NP_ETA = 2
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      integer, parameter :: nt = 2 
+      integer, parameter :: nt = 2
+      integer, parameter :: nt_passive = 0
       
       ! All logicals listed here:
 

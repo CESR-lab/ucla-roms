@@ -2,10 +2,20 @@
       ! formerly bgc_ecosys_bec2.h
 
 #include "cppdefs.opt"
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       use param
-      use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+#ifdef MARBL      
+      use marbl_driver,only: marbldrv_configure_saved_state
+#endif      
+#ifdef MARBL_DIAGS      
+     &     ,marbldrv_configure_diagnostics
+     &     ,nr_marbl_diag_2d,nr_marbl_diag_3d
+     &     ,diag_array_2d,diag_array_3d
+     &     ,idx_bgc_diag_2d,idx_bgc_diag_3d
+     &     ,wrt_bgc_diag_2d,wrt_bgc_diag_3d
+#endif      
       implicit none
 
       ! tracer: values passed to biological model by ROMS
@@ -15,25 +25,29 @@
       real,allocatable,dimension(:,:,:,:) :: tracer
       real,allocatable,dimension(:,:,:,:) :: DTRACER_MODULE
 
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
 !
 ! Diagnostic variables appearing in average and history files:
 !
       integer :: nr_bec2_diag_2d, nr_bec2_diag_3d, nr_bec2_diag
       integer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
-
+#ifndef MARBL_DIAGS
       parameter( nr_bec2_diag_3d=103, nr_bec2_diag_2d=37)
-
+#else
+      ! Just hardcoding this for now but would be nice to obtain it dynamically
+      parameter( nr_bec2_diag_3d=nr_marbl_diag_3d,
+     &           nr_bec2_diag_2d=nr_marbl_diag_2d)
+#endif
       parameter( nr_bec2_diag=nr_bec2_diag_2d+nr_bec2_diag_3d )
-      real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d
-      real,allocatable,dimension(:,:,:)   :: bec2_diag_2d
+      real,allocatable,dimension(:,:,:,:),target   :: bec2_diag_3d
+      real,allocatable,dimension(:,:,:)  ,target   :: bec2_diag_2d
 
 ! Control BEC2_DIAG Output vars
-      logical :: wrt_bec2_diag_2d(nr_bec2_diag_2d)
-      logical :: wrt_bec2_diag_3d(nr_bec2_diag_3d)
-      integer :: idx_bec2_diag_2d(nr_bec2_diag_2d)
-      integer :: idx_bec2_diag_3d(nr_bec2_diag_3d) 
-
+      logical, target :: wrt_bec2_diag_2d(nr_bec2_diag_2d)
+      logical, target :: wrt_bec2_diag_3d(nr_bec2_diag_3d)
+      integer, target :: idx_bec2_diag_2d(nr_bec2_diag_2d)
+      integer, target :: idx_bec2_diag_3d(nr_bec2_diag_3d) 
+#if defined(BEC2_DIAG)
       ! Indices to be used in bec2_diag_3d only:
       integer :: par_idx_t, pocfluxin_idx_t,
      &   pocprod_idx_t, pocremin_idx_t, caco3fluxin_idx_t,
@@ -83,7 +97,7 @@
 !      ! The IDs of the 2d vars are first, the those of the 3d.
 !      integer :: hisT_bec2_diag(nr_bec2_diag)  , avgT_bec2_diag(nr_bec2_diag), 
 !     &           slavgT_bec2_diag(nr_bec2_diag), rstT_bec2_diag(nr_bec2_diag)
-
+#endif /* BEC2_DIAG */
       ! Arrays storing information (name, unit, fill value) about each diagnostic variable:
       character*72 ::  vname_bec2_diag_2d(4,nr_bec2_diag_2d)
       character*72 ::  vname_bec2_diag_3d(4,nr_bec2_diag_3d)
@@ -93,12 +107,14 @@
       real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_avg
 #  endif /* AVERAGES */
 
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG  || MARBL_DIAGS */
 
       real,allocatable,dimension(:,:) :: ifrac, press
 
       logical,allocatable,dimension(:,:) :: landmask
 
+      
+#ifdef BIOLOGY_BEC2
       logical :: lsource_sink,lflux_gas_o2, lflux_gas_co2
 #if defined Ncycle_SY
      &  ,lflux_gas_n2o, lflux_gas_n2
@@ -162,7 +178,7 @@
 !! Arrays related to carbon chemistry: 
 !!
       real,allocatable,dimension(:,:) :: ph_srf
-
+#endif /*BIOLOGY_BEC2*/
 !!
 !! Arrays related to carbon chemistry: these are in bec2_diag_2d or
 !! bec2_diag_3d if BEC2_DIAG is defined
@@ -182,14 +198,27 @@
       contains
 
 !----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine find_write_bgc_diag
       implicit none
 
       integer idiag
-
-#include "bgc_2Ddiagnostics.opt"
+#if defined(BEC2_DIAG)
+#include "bgc_2Ddiagnostics.opt" 
 #include "bgc_3Ddiagnostics.opt"
+      
+#elif defined(MARBL_DIAGS)
+
+      wrt_bgc_diag_2d => wrt_bec2_diag_2d
+      wrt_bgc_diag_3d => wrt_bec2_diag_3d
+      idx_bgc_diag_2d => idx_bec2_diag_2d
+      idx_bgc_diag_3d => idx_bec2_diag_3d
+      
+      
+      call marbldrv_configure_diagnostics(
+     &     vname_bec2_diag_2d,vname_bec2_diag_3d
+     & )
+#endif /* BEC2_DIAG */ 
     
       nr_bec2_wrdiag_2d=0
       do idiag=1,nr_bec2_diag_2d
@@ -220,7 +249,7 @@
       enddo
 
       end subroutine find_write_bgc_diag  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 !----------------------------------------------------------------------
       subroutine init_arrays_bgc_ecosys_vars  ![
@@ -229,15 +258,26 @@
       allocate( tracer(GLOBAL_2D_ARRAY,N,ntrc_bio) )
       allocate( DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio) )
 
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined (MARBL_DIAGS)
 
       call find_write_bgc_diag 
    
       allocate( bec2_diag_3d(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
       allocate( bec2_diag_2d(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
+      
+      bec2_diag_2d=0.0
+      bec2_diag_3d=0.0
+#ifdef MARBL_DIAGS
+      diag_array_2d => bec2_diag_2d
+      diag_array_3d => bec2_diag_3d
+#endif      
+      
 #  ifdef AVERAGES
       allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
       allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
+
+      bec2_diag_2d_avg=0.0
+      bec2_diag_3d_avg=0.0
 #  endif /* AVERAGES */
 
       if (mynode == 0) then
@@ -245,12 +285,15 @@
      &        nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d
       endif 
 
-#endif /* BEC2_DIAG */
-
+#endif /* BEC2_DIAG || MARBL_DIAGS */
+#ifdef MARBL      
+!     Allocate arrays for MARBL saved state variables
+      call marbldrv_configure_saved_state
+#endif 
       allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
 
       allocate( landmask(GLOBAL_2D_ARRAY) )
-
+#if defined(BIOLOGY_BEC2)
       allocate(P_CaCO3_sflux_out(GLOBAL_2D_ARRAY), P_CaCO3_hflux_out(GLOBAL_2D_ARRAY) )
       allocate( P_SiO2_sflux_out(GLOBAL_2D_ARRAY),  P_SiO2_hflux_out(GLOBAL_2D_ARRAY) )
       allocate(   dust_sflux_out(GLOBAL_2D_ARRAY),    dust_hflux_out(GLOBAL_2D_ARRAY) )
@@ -296,11 +339,11 @@
 !      allocate( ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg, mold=ifrac )
 !      allocate( PAR_avg(GLOBAL_2D_ARRAY,N) )
 !#endif /* !BEC2_DIAG */
-
+#endif /* BIOLOGY_BEC2*/
       end subroutine init_arrays_bgc_ecosys_vars  !]
 
 !----------------------------------------------------------------------
 
-#endif /* BIOLOGY_BEC2 */
+#endif /* BIOLOGY_BEC2 || MARBL  */
 
       end module bgc_ecosys_vars

@@ -8,16 +8,20 @@
       ! by Pierre Damien to run full pacific models.
 
 #include "cppdefs.opt"
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+#ifdef MARBL      
+      use marbl_driver 
+#endif      
       use bgc_ecosys_vars
       use nc_read_write
       use roms_read_write
       use netcdf
       use scalars
+      use dimensions !
       use ocean_vars
       use dimensions
 
@@ -95,7 +99,17 @@
 #ifdef PCO2AIR_FORCING
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
       call set_frc_data(nc_pco2air,pco2air,'r')
-#endif /* PCO2AIR_FORCING */   
+#ifdef MARBL
+      call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
+#endif      
+#endif /* PCO2AIR_FORCING */
+      
+#ifdef NOX_FORCING
+      call set_frc_data(nc_nox,nox,'r')
+#endif /* NOX_FORCING */   
+#ifdef NHY_FORCING
+      call set_frc_data(nc_nhy,nhy,'r')
+#endif /* NHY_FORCING */
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
@@ -239,7 +253,7 @@
       end subroutine wrt_bgc_tracers  !]
 
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine wrt_bgc_diags(avg)  ![
       implicit none
 
@@ -351,7 +365,7 @@
       ierr=nf90_close(ncid)
 
       end subroutine wrt_bgc_diags  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 !----------------------------------------------------------------------
       subroutine create_bgc_file(fname,avg)  ![
@@ -379,7 +393,7 @@
       end subroutine create_bgc_file !]
 
 !----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine create_bgc_dia_file(fname,avg)  ![
       implicit none
 
@@ -403,7 +417,7 @@
       ierr = nf90_enddef(ncid)
 
       end subroutine create_bgc_dia_file !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
       subroutine def_vars_bgc( ncid, avg )  ![
@@ -474,7 +488,7 @@
       end subroutine calc_avg_bgc  !]
 
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine calc_avg_dia_bgc  ![
       implicit none
 
@@ -505,10 +519,10 @@
       end do
 
       end subroutine calc_avg_dia_bgc  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine def_bgc_diag(ncid,avg)  ![
 
       ! Define history/avg file variables for BEC2_DIAG
@@ -544,7 +558,7 @@
       enddo
 
       end subroutine def_bgc_diag  !]
-#endif /* BEC2_DIAG */
+#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bgc_frc  ![
@@ -555,6 +569,16 @@
 
 #ifdef PCO2AIR_FORCING
       allocate( nc_pco2air%vdata( GLOBAL_2D_ARRAY,2) )
+#ifdef MARBL      
+      allocate( nc_pco2air_alt%vdata( GLOBAL_2D_ARRAY,2) )
+#endif      
+#endif
+
+#ifdef NOX_FORCING
+      allocate( nc_nox%vdata( GLOBAL_2D_ARRAY,2) )
+#endif
+#ifdef NHY_FORCING
+      allocate( nc_nhy%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
@@ -565,7 +589,8 @@
 
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![
-!
+#ifndef MARBL
+!     
 ! Set initial values for  globally accessible (stored in common
 ! blocks) scalar variables of the BEC model.
 !
@@ -582,14 +607,14 @@
       if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
         stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
       endif
-#ifdef BEC2_DIA
+#ifdef BEC2_DIAG
       if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor 
-     &        of output_period_his_dia for diagnostics!'
+        stop 'ERROR :: bgc.opt - dt not a factor ' //
+     &        'of output_period_his_dia for diagnostics!'
       endif
       if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor 
-     &        of output_period_avg_dia for diagnostics!'
+        stop 'ERROR :: bgc.opt - dt not a factor' //
+     &        'of output_period_avg_dia for diagnostics!'
       endif
 #endif /* BEC2_DIA */
 
@@ -667,6 +692,7 @@
 # endif
 #endif /* SOLVE3D */
 
+#endif /* ndef MARBL */      
       end subroutine init_scalars_bec2  !]
 
 ! ----------------------------------------------------------------------
@@ -697,15 +723,15 @@
       subroutine do_bgc_diags  ![
       implicit none
 
-# ifdef BEC2_DIAG      
+# if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       if (wrt_his_dia) call wrt_bgc_diags(.false.) ! write his data
       if (wrt_avg_dia) call wrt_bgc_diags(.true.) ! write avg data
-# endif /* BEC2_DIAG */
+# endif /* BEC2_DIAG || MARBL_DIAGS*/
 
 !      if (mynode==0) print *,'wrt_bgc diags done'
 
       end subroutine do_bgc_diags  !]
 
 ! ----------------------------------------------------------------------
-#endif /* BIOLOGY_BEC2 - entire module */
+#endif /* (BIOLOGY_BEC2) || (MARBL) - entire module */
       end module bgc

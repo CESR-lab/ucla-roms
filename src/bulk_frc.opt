@@ -7,7 +7,7 @@
       logical :: do_check_units=.false.                  ! check units of input vars
 
       ! Type ncforce contains all required netcdf variables and input data array for frc variable.
-      ! Set the name and time_name of variable to match what is in the input forcing files.
+      ! Set the name and tname of variable to match what is in the input forcing files.
       ! Use same name as bulk_frc variable name, e.g. uwnd has nc_uwnd for netcdf vars.
       type (ncforce) :: nc_uwnd  = ncforce(vname='uwnd', tname='time' )  ! u-wind (input data in m/s at 10m)
       type (ncforce) :: nc_vwnd  = ncforce(vname='vwnd', tname='time' )  ! v-wind (input data in m/s at 10m)
