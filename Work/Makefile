@@ -58,7 +58,7 @@ copy_to_Work_dir:
 	cp -p *.F *.h *.in *.sh ../../Work 2>/dev/null || :
 
 nhmg:
-	cd $(ROMS_ROOT)/NHMG/src; make clean; cd .. ; make		
+	cd $(ROMS_ROOT)/NHMG/src; make clean; make
 
 tools-roms:
 	cd $(ROMS_ROOT)/Tools-Roms/; make ;

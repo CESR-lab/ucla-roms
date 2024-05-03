@@ -73,7 +73,6 @@ endif
 .SUFFIXES: $(OBJ_ext) $(PPF77_ext) $(UPF77_ext) $(PPF90_ext)
 # Unprocessed F77 -> object file (typically .F->.o)
 $(UPF77_ext)$(OBJ_ext):
-	$(info USEMARBL is $(USEMARBL))
 	@$(CPP) -P $(CPPFLAGS) $*$(UPF77_ext) | mpc > $*$(PPF77_ext)
 	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF77_ext) $(LCDF)
 	@if [ "$(KEEP_PPSRC)" = "false" ]; then \
