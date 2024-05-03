@@ -2,7 +2,7 @@
 #        USER OPTIONS        #
 
 #intel (gnu) uses ifort (gfortran) compiler flags
-COMPILER ?=gnu
+COMPILER ?=intel
 #MPI distribution. generic -> mpifort, intel -> mpiifort
 MPI_DIST ?=generic
 # Configure FFLAGS by setting BUILD_MODE to "debug","strict","vtune",or "grof"
