@@ -4,7 +4,7 @@
 
 include Makedefs.inc
 
-	# Build ROMS source list from unprocessed F77 files (typically .F extension) 
+# Build ROMS source list from unprocessed F77 files (typically .F extension) 
    SRCS = $(shell ls *$(UPF77_ext))
 
 # Exclude files that are not part of main build
@@ -128,7 +128,23 @@ clobber: clean
 
 .PHONY: help
 help:
-	@echo "this will be the documentation"
+	@echo "Universal make procedure for ucla-roms, compatible with most UNIX systems."
+	@echo "The following user options are available"
+	@echo "COMPILER (fortran compiler):"
+	@echo "  intel :  default, use ifort as compiler"
+	@echo "  gnu :    use gfortran as compiler"
+	@echo "MPI_DIST (mpi distribution):"
+	@echo "   generic: default, uses mpifort as a wrapper for the fortran compiler"
+	@echo "   intel  : use intel mpiifort as a wrapper for the fortran compiler"
+	@echo "BUILD_MODE:"
+	@echo "   regular : default, uses optimisation level 3"
+	@echo "   debug   : compile with debug flags"
+	@echo "   strict  : compile with -fp-model strict (intel only)"
+	@echo "   vtune   : compile with flags for profiling with vtune (intel only)"
+	@echo "   grof    : compile with flags for profiling with grof (intel only)"
+	@echo "KEEP_PPSRC:"
+	@echo "    true   : keep pre-processed source code after processing"
+	@echo "    false  : delete pre-processed source code after processing"
 
 # Automatically generated dependency list:
 include Make.depend
