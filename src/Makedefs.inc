@@ -63,7 +63,9 @@ else ifeq ($(BUILD_MODE),grof)
 endif
 
 #Check whether we're compiling with MARBL:
-USEMARBL := $(shell grep -q '^[^!]*\#[[:space:]]*define[[:space:]]+MARBL' cppdefs.opt && echo true || echo false)
+ifeq ($(wildcard cppdefs.opt),cppdefs.opt)
+	USEMARBL := $(shell grep -q '^[^!]*\#[[:space:]]*define[[:space:]]+MARBL' cppdefs.opt && echo true || echo false)
+endif
 
 # Compilation rules for file types:
 #   (used for every file until the final linking step)
@@ -103,8 +105,8 @@ $(OBJ_ext):
 #	the standard CPP is not aware of this.
 
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-    CPP = /usr/bin/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include
+        CPP = /usr/bin/cpp
+	CPPFLAGS =  -traditional -D__IFC -I${MPIHOME}/include -I${NETCDFHOME}/include
 ifeq ($(USEMARBL),true)
 	CPPFLAGS+= -I${MARBL_ROOT}/include
 endif
@@ -146,6 +148,8 @@ endif
 # OpenMP flags:
 ifeq ($(COMPILER),intel)
 	OMP_FLAG = -qopenmp
+else ifeq ($(COMPILER),gnu)
+	OMP_FLAG = -cpp -fopenmp
 endif
 
 # Large memory runs (e.g. for bgc):

@@ -96,8 +96,10 @@ setup_kwds$(UPF77_ext): checkkwds read_inp$(UPF77_ext)
 	./checkkwds
 
 .PHONY: depend
-depend:  # Note: cross_matrix no longer used
-	@${ROMS_ROOT}/Tools-Roms/makedep.py  Make.depend
+depend:  # makedepf90 is preferable but does not work on e.g. osx-arm64. Offer python fallback.
+	@{ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend || \
+	echo "failed to generate dependency list with makedepf90, using python fallback" && \
+	${ROMS_ROOT}/Tools-Roms/makedep.py  Make.depend
 	@echo 'Updated Make.depend (dependency list)'
 
 # Target to create tar file.

@@ -14,10 +14,6 @@ include ../src/Makedefs.inc
 ifeq ($(findstring -ip,$(FFLAGS)),-ip)
     FFLAGS :=$(subst -ip,,$(FFLAGS))
 endif
-
-ifeq ($(COMPILER),intel)
-       OMP_FLAG = -qopenmp
-endif
 # --------------------------------------------------------------------
 
 ALL = partit ncjoin ncjoin_mpi extract_data_join nc3to4z zslice sample
@@ -60,7 +56,7 @@ mpc: mpc$(UPF77_ext) Makefile
 # extract_data_join
 EXTRACT_DATA_JOIN = ncjoin_mod extract_data_join  lenstr
 EXTRACT_DATA_JOIN := $(addsuffix $(OBJ_ext),$(EXTRACT_DATA_JOIN))
-extract_data_join: 
+extract_data_join: $(EXTRACT_DATA_JOIN)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join $(EXTRACT_DATA_JOIN) $(LCDF)
 
 # particle_join
