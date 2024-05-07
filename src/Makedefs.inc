@@ -172,13 +172,13 @@ endif
 ifeq ($(COMPILER),intel)
 	FFLAGS = -O3 -ip
     ifeq ($(BUILD_MODE),debug)
-	FFLAGS += -g -traceback -check all
+	FFLAGS = -g -traceback -check all
 # for code_check script ensure consistency with -fp-model strict:
     else ifeq ($(BUILD_MODE),strict)
 	FFLAGS += -fp-model strict
 # - for profiling with vtune to see source code:
     else ifeq ($(BUILD_MODE),vtune)
-	FFLAGS += -g -debug inline-debug-info -parallel-source-info=2
+	FFLAGS = -g -debug inline-debug-info -parallel-source-info=2
 # - for profiling with grof to see source code:
     else ifeq ($(BUILD_MODE),grof)
 	FFLAGS += -pg
@@ -186,7 +186,7 @@ ifeq ($(COMPILER),intel)
 else ifeq ($(COMPILER),gnu)
 	FFLAGS = -O3 -fallow-argument-mismatch
     ifeq ($(BUILD_MODE),debug)
-	FFLAGS += -g -fbacktrace -fcheck=all
+	FFLAGS = -fallow-argument-mismatch -g -fbacktrace -fcheck=all
     endif
 endif
 
