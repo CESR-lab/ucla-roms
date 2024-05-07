@@ -184,7 +184,7 @@ ifeq ($(COMPILER),intel)
 	FFLAGS += -pg
     endif
 else ifeq ($(COMPILER),gnu)
-	FFLAGS = -O3
+	FFLAGS = -O3 -fallow-argument-mismatch
     ifeq ($(BUILD_MODE),debug)
 	FFLAGS += -g -fbacktrace -fcheck=all
     endif
