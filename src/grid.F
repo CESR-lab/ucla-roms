@@ -169,7 +169,7 @@
       end subroutine init_arrays_grid  !]
 !----------------------------------------------------------------------
       subroutine ana_grid ![
-!   Provide analytical definitionf coordinates, grid scale, coriolis, and depth
+!   Provide analytical definition of coordinates, grid scale, coriolis, and depth
       implicit none
 
 #include "ana_grid.h"

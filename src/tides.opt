@@ -5,6 +5,7 @@
       integer,parameter        :: ntides=10         ! Number of tidal components to consider.
       logical,parameter,public :: bry_tides=.false. ! Barotropic tides at the boundary from TPXO
       logical,parameter,public :: pot_tides=.false. ! Surface tidal potential
+      logical,parameter,public :: ana_tides=.false. ! Surface tidal potential
 
       ! end user inputs
       ! ****************************************************************

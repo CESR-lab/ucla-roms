@@ -7,6 +7,7 @@
       use nc_read_write
       use roms_read_write
       use mpi_exchanges
+      use grid
 
       implicit none
 
@@ -49,7 +50,11 @@
       endif
 
       if (pot_tides.or.bry_tides) then
-        call read_tides
+        if (ana_tides) then
+          call make_tides
+        else
+          call read_tides
+        endif
       endif
 
       end subroutine init_tides  !]
@@ -100,6 +105,11 @@
 
 #  ifdef OBC_WEST
           if (WESTERN_EDGE) THEN
+#   ifdef ANA_BRY
+            zeta_west(jstrR:jendR) = 0
+            ubar_west(jstrR:jendR) = 0
+            vbar_west(jstr :jendR) = 0
+#   endif
             i=istr-1
             do j=jstrR,jendR
               zeta_west(j) =zeta_west(j)
@@ -120,6 +130,11 @@
 
 #  ifdef OBC_EAST
           if (EASTERN_EDGE) THEN
+#   ifdef ANA_BRY
+            zeta_east(jstrR:jendR) = 0
+            ubar_east(jstrR:jendR) = 0
+            vbar_east(jstr :jendR) = 0
+#   endif
             i = iend+1
             do j=jstrR,jendR
               zeta_east(j) =zeta_east(j)
@@ -138,6 +153,11 @@
 
 #  ifdef OBC_SOUTH
           if (SOUTHERN_EDGE) THEN
+#   ifdef ANA_BRY
+            zeta_south(istrR:jendR) = 0
+            ubar_south(istr :iendR) = 0
+            vbar_south(istrR:iendR) = 0
+#   endif
             j=jstr-1
             do i=istrR,iendR
               zeta_south(i)=zeta_south(i)
@@ -157,6 +177,11 @@
 #  endif
 #  ifdef OBC_NORTH
           if (NORTHERN_EDGE) THEN
+#   ifdef ANA_BRY
+            zeta_north(istrR:jendR) = 0
+            ubar_north(istr :iendR) = 0
+            vbar_north(istrR:iendR) = 0
+#   endif
             j=jend+1
             do i=istrR,iendR
               zeta_north(i)=zeta_north(i)
@@ -283,6 +308,20 @@
       if(mynode==0) write(*,'(7x,A)')'tides :: read all tides'
 
       end subroutine read_tides  !]
+!-----------------------------------------------------------------------
+      subroutine make_tides  ![
+      ! Construct an analytical tidal forcing
+
+      use dimensions
+      implicit none
+
+      ! local
+
+#include "ana_tide.h"
+
+      if(mynode==0) write(*,*) 'tides :: constructed analytical tides'
+
+      end subroutine make_tides  !]
 !-----------------------------------------------------------------------
 
       end module tides
