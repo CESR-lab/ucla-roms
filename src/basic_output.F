@@ -461,7 +461,10 @@
       use grid
       use tracers 
       use coupling
-
+#ifdef MARBL
+!     add MARBL saved state to restart to restart file
+      use marbl_driver, only: marbldrv_write_ss_vars_to_rst
+#endif       
       implicit none
 
       ! local
@@ -553,6 +556,9 @@
         if (ub_tune)   call wrt_rst_ub(ncid,rec_rst)
         if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
 
+#ifdef MARBL
+        call marbldrv_write_ss_vars_to_rst(ncid,rec_rst)
+#endif         
 
         ierr=nf90_close(ncid)
         if (mynode == 0) then
@@ -761,6 +767,10 @@
       subroutine def_vars_rst_ocean_vars  ![
       ! define output variable & attributes in netcdf restart file
       use tracers
+#ifdef MARBL
+!     add MARBL saved state to restart to restart file
+      use marbl_driver, only: marbldrv_create_ss_vars_in_rst
+#endif       
       implicit none
 
       ! local
@@ -789,6 +799,9 @@
      &                                      (/xi_rho,eta_v,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxVb))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
+#ifdef MARBL
+      call marbldrv_create_ss_vars_in_rst(ncid)
+#endif      
 #ifdef SOLVE3D
       varid = nccreate(ncid,vname(1,indxU),(/dn_xu,dn_yr,dn_zr,dn_tm/),
      &                                     (/xi_u,eta_rho,N,0/),nf90_double)

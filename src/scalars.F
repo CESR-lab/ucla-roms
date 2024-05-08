@@ -131,7 +131,7 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 #else
      &                 , g=9.81 ! m/s^2
 #endif
-#if defined BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       real nmol_cm2_to_mmol_m2
       parameter (nmol_cm2_to_mmol_m2 = 0.01)
 #endif

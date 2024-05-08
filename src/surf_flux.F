@@ -37,6 +37,10 @@
       real,public,allocatable,dimension(:,:)   :: svstr_r  ! rho-point, only used in lmd_kpp to get ustar
       real,public,allocatable,dimension(:,:,:) :: stflx    ! Surface fluxes of tracer type variables (rho-points)
       real,public,allocatable,dimension(:,:)   :: srflx    ! Short-wave radiation surface flux
+
+      real,public,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
+      real,public,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind      
+      
       character(len=5) :: sustr_name = 'sustr'
       character(len=5) :: svstr_name = 'svstr'
       character(len=5) :: shflx_name = 'shflx'
@@ -73,7 +77,8 @@
 
       ! local
       character(len=30) :: string
-
+      allocate(  uwnd  (GLOBAL_2D_ARRAY)    );
+      allocate(  vwnd  (GLOBAL_2D_ARRAY)    );       
       allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
