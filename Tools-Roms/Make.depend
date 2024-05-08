@@ -2,9 +2,9 @@
 # !!! WARNING: THIS IS A MACHINE GENERATED FILE: DO NOT EDIT !!!
 # To create or update this file use commands:
 #
-#        cross_matrix *.F
+#        cross_matrix *$(UPF77_ext)
 # or
-#        cross_matrix *.F *.h
+#        cross_matrix *$(UPF77_ext) *.h
 # or
 #        make depend
 #
@@ -33,217 +33,217 @@
 #                                      --------------------------
 #                                      total lines:         60076
 
-pvtd_comm_vars.mod: biharm.o
+pvtd_comm_vars.mod: biharm$(OBJ_ext)
 
-mod_bry_cntrl.mod: bry.o
+mod_bry_cntrl.mod: bry$(OBJ_ext)
 
-comm_vars_hraw.mod: compute_hraw.o
+comm_vars_hraw.mod: compute_hraw$(OBJ_ext)
 
-cond_rx0_sync_vars.mod: cond_rx0_topo.o
+cond_rx0_sync_vars.mod: cond_rx0_topo$(OBJ_ext)
 
-etch_on_land_vars.mod: etch_into_land.o
+etch_on_land_vars.mod: etch_into_land$(OBJ_ext)
 
-ext_on_land_vars.mod: extend_on_land.o
+ext_on_land_vars.mod: extend_on_land$(OBJ_ext)
 
-ext_on_land_vars.mod: extend_on_land_wgt.o
+ext_on_land_vars.mod: extend_on_land_wgt$(OBJ_ext)
 
-comm_vars_gshhs_mask.mod: gshhs_to_roms_mask.o
+comm_vars_gshhs_mask.mod: gshhs_to_roms_mask$(OBJ_ext)
 
-horiz_inter_arrays.mod: interp_2d.o
+horiz_inter_arrays.mod: interp_2d$(OBJ_ext)
 
-izogrid_params.mod: izogrid_subs.o
+izogrid_params.mod: izogrid_subs$(OBJ_ext)
 
-mod_gshhs.mod: mod_gshhs.o
+mod_gshhs.mod: mod_gshhs$(OBJ_ext)
 
-mrg_zone_comm_vars.mod: mrg_zone_subs.o
+mrg_zone_comm_vars.mod: mrg_zone_subs$(OBJ_ext)
 
-nc_file_coords.mod: nc_read_write.o
+nc_file_coords.mod: nc_read_write$(OBJ_ext)
 
-pivtd_gs_sync_vars.mod: pivoted_gs_solver.o
+pivtd_gs_sync_vars.mod: pivoted_gs_solver$(OBJ_ext)
 
-r2r_rotate_scratch.mod: r2r_rotate.o
+r2r_rotate_scratch.mod: r2r_rotate$(OBJ_ext)
 
-r2r_vertint_vars.mod: r2r_vert_interp.o
+r2r_vertint_vars.mod: r2r_vert_interp$(OBJ_ext)
 
-comp_uvbar_vars.mod: r2r_vert_interp.o
+comp_uvbar_vars.mod: r2r_vert_interp$(OBJ_ext)
 
-multi_grid_arrays.mod: refine.o
+multi_grid_arrays.mod: refine$(OBJ_ext)
 
-ref2d_patch_arrays.mod: refine.o
+ref2d_patch_arrays.mod: refine$(OBJ_ext)
 
-sync_vars_ref2d.mod: refine.o
+sync_vars_ref2d.mod: refine$(OBJ_ext)
 
-roms_grid_vars.mod: roms_read_write.o
+roms_grid_vars.mod: roms_read_write$(OBJ_ext)
 
-roms_grid_params.mod: roms_read_write.o
+roms_grid_params.mod: roms_read_write$(OBJ_ext)
 
-mod_io_size_acct.mod: roms_read_write.o
+mod_io_size_acct.mod: roms_read_write$(OBJ_ext)
 
-rotate_priv_vars.mod: rotate.o
+rotate_priv_vars.mod: rotate$(OBJ_ext)
 
-s_to_z_scratch.mod: sigma_to_z_intr.o
+s_to_z_scratch.mod: sigma_to_z_intr$(OBJ_ext)
 
-single_conn_comm_vars.mod: single_conn_comm_vars.o
+single_conn_comm_vars.mod: single_conn_comm_vars$(OBJ_ext)
 
-rx_comm_vars.mod: smooth_utils.o
+rx_comm_vars.mod: smooth_utils$(OBJ_ext)
 
-spline_work_arrays.mod: spline_2d.o
+spline_work_arrays.mod: spline_2d$(OBJ_ext)
 
-smooth_topo_params.mod: write_topo.o
+smooth_topo_params.mod: write_topo$(OBJ_ext)
 
 
-addrivs.o: addrivs.f roms_grid_vars.mod
-addrivs.f: addrivs.F phys_const.h
+addrivs$(OBJ_ext): addrivs$(PPF77_ext) roms_grid_vars.mod
+addrivs$(PPF77_ext): addrivs$(UPF77_ext) phys_const.h
 
-arched_contour.o: arched_contour.f izogrid_params.mod
+arched_contour$(OBJ_ext): arched_contour$(PPF77_ext) izogrid_params.mod
 
-compute_hraw.f: compute_hraw.F phys_const.h
+compute_hraw$(PPF77_ext): compute_hraw$(UPF77_ext) phys_const.h
 
-compute_vorticity.f: compute_vorticity.F compute_extended_bounds.h
+compute_vorticity$(PPF77_ext): compute_vorticity$(UPF77_ext) compute_extended_bounds.h
 
-cond_rx0_topo.o: cond_rx0_topo.f smooth_topo_params.mod
+cond_rx0_topo$(OBJ_ext): cond_rx0_topo$(PPF77_ext) smooth_topo_params.mod
 
-courant.f: courant.F compute_extended_bounds.h
+courant$(PPF77_ext): courant$(UPF77_ext) compute_extended_bounds.h
 
-curveort.o: curveort.f izogrid_params.mod
-curveort.f: curveort.F adjust_cont_1.F adjust_cont_2.F
+curveort$(OBJ_ext): curveort$(PPF77_ext) izogrid_params.mod
+curveort$(PPF77_ext): curveort$(UPF77_ext) adjust_cont_1$(UPF77_ext) adjust_cont_2$(UPF77_ext)
 
-def_bry_file.f: def_bry_file.F spval.h
+def_bry_file$(PPF77_ext): def_bry_file$(UPF77_ext) spval.h
 
-def_frc_file.f: def_frc_file.F spval.h
+def_frc_file$(PPF77_ext): def_frc_file$(UPF77_ext) spval.h
 
-def_roms_file.f: def_roms_file.F spval.h
+def_roms_file$(PPF77_ext): def_roms_file$(UPF77_ext) spval.h
 
-def_wind_file.f: def_wind_file.F spval.h
+def_wind_file$(PPF77_ext): def_wind_file$(UPF77_ext) spval.h
 
-drakkar.o: drakkar.f nc_file_coords.mod
+drakkar$(OBJ_ext): drakkar$(PPF77_ext) nc_file_coords.mod
 
-drakkar_winds.o: drakkar_winds.f nc_file_coords.mod
-drakkar_winds.f: drakkar_winds.F def_wind_file.F spval.h
+drakkar_winds$(OBJ_ext): drakkar_winds$(PPF77_ext) nc_file_coords.mod
+drakkar_winds$(PPF77_ext): drakkar_winds$(UPF77_ext) def_wind_file$(UPF77_ext) spval.h
 
-epmerge.o: epmerge.f roms_grid_vars.mod
-epmerge.f: epmerge.F def_swf_file.F
+epmerge$(OBJ_ext): epmerge$(PPF77_ext) roms_grid_vars.mod
+epmerge$(PPF77_ext): epmerge$(UPF77_ext) def_swf_file$(UPF77_ext)
 
-etopo.o: etopo.f roms_grid_vars.mod comm_vars_hraw.mod
+etopo$(OBJ_ext): etopo$(PPF77_ext) roms_grid_vars.mod comm_vars_hraw.mod
 
-frc_heat.o: frc_heat.f nc_file_coords.mod
-frc_heat.f: frc_heat.F def_frc_file.F spval.h
+frc_heat$(OBJ_ext): frc_heat$(PPF77_ext) nc_file_coords.mod
+frc_heat$(PPF77_ext): frc_heat$(UPF77_ext) def_frc_file$(UPF77_ext) spval.h
 
-gebco.o: gebco.f roms_grid_vars.mod comm_vars_hraw.mod
+gebco$(OBJ_ext): gebco$(PPF77_ext) roms_grid_vars.mod comm_vars_hraw.mod
 
-grid.o: grid.f roms_grid_vars.mod roms_grid_params.mod
-grid.f: grid.F phys_const.h
+grid$(OBJ_ext): grid$(PPF77_ext) roms_grid_vars.mod roms_grid_params.mod
+grid$(PPF77_ext): grid$(UPF77_ext) phys_const.h
 
-gshhs_to_roms_mask.o: gshhs_to_roms_mask.f mod_gshhs.mod
+gshhs_to_roms_mask$(OBJ_ext): gshhs_to_roms_mask$(PPF77_ext) mod_gshhs.mod
 
-interp_2d.f: interp_2d.F spval.h
+interp_2d$(PPF77_ext): interp_2d$(UPF77_ext) spval.h
 
-interp_3d.o: interp_3d.f horiz_inter_arrays.mod
+interp_3d$(OBJ_ext): interp_3d$(PPF77_ext) horiz_inter_arrays.mod
 
-iso_lev.f: iso_lev.F spval.h
+iso_lev$(PPF77_ext): iso_lev$(UPF77_ext) spval.h
 
-izogrid.o: izogrid.f izogrid_params.mod mod_gshhs.mod
+izogrid$(OBJ_ext): izogrid$(PPF77_ext) izogrid_params.mod mod_gshhs.mod
 
-izogrid_subs.o: izogrid_subs.f mod_gshhs.mod
+izogrid_subs$(OBJ_ext): izogrid_subs$(PPF77_ext) mod_gshhs.mod
 
-lambert.o: lambert.f roms_grid_vars.mod
-lambert.f: lambert.F phys_const.h
+lambert$(OBJ_ext): lambert$(PPF77_ext) roms_grid_vars.mod
+lambert$(PPF77_ext): lambert$(UPF77_ext) phys_const.h
 
-lsmooth_bak.o: lsmooth_bak.f smooth_topo_params.mod
+lsmooth_bak$(OBJ_ext): lsmooth_bak$(PPF77_ext) smooth_topo_params.mod
 
-mercator.f: mercator.F phys_const.h
+mercator$(PPF77_ext): mercator$(UPF77_ext) phys_const.h
 
-mkclim.f: mkclim.F def_roms_file.F spval.h
+mkclim$(PPF77_ext): mkclim$(UPF77_ext) def_roms_file$(UPF77_ext) spval.h
 
-mrcgrid.o: mrcgrid.f roms_grid_vars.mod
-mrcgrid.f: mrcgrid.F phys_const.h
+mrcgrid$(OBJ_ext): mrcgrid$(PPF77_ext) roms_grid_vars.mod
+mrcgrid$(PPF77_ext): mrcgrid$(UPF77_ext) phys_const.h
 
-nc_read_write.o: nc_read_write.f mod_io_size_acct.mod
+nc_read_write$(OBJ_ext): nc_read_write$(PPF77_ext) mod_io_size_acct.mod
 
-ncar_winds.f: ncar_winds.F def_wind_file.F spval.h
+ncar_winds$(PPF77_ext): ncar_winds$(UPF77_ext) def_wind_file$(UPF77_ext) spval.h
 
-ncep.o: ncep.f nc_file_coords.mod
-ncep.f: ncep.F def_frc_file.F spval.h
+ncep$(OBJ_ext): ncep$(PPF77_ext) nc_file_coords.mod
+ncep$(PPF77_ext): ncep$(UPF77_ext) def_frc_file$(UPF77_ext) spval.h
 
-ncep_heat.o: ncep_heat.f nc_file_coords.mod
-ncep_heat.f: ncep_heat.F def_frc_file.F spval.h
+ncep_heat$(OBJ_ext): ncep_heat$(PPF77_ext) nc_file_coords.mod
+ncep_heat$(PPF77_ext): ncep_heat$(UPF77_ext) def_frc_file$(UPF77_ext) spval.h
 
-ncep_test.f: ncep_test.F spval.h
+ncep_test$(PPF77_ext): ncep_test$(UPF77_ext) spval.h
 
-ncep_winds.o: ncep_winds.f nc_file_coords.mod
-ncep_winds.f: ncep_winds.F def_wind_file.F spval.h
+ncep_winds$(OBJ_ext): ncep_winds$(PPF77_ext) nc_file_coords.mod
+ncep_winds$(PPF77_ext): ncep_winds$(UPF77_ext) def_wind_file$(UPF77_ext) spval.h
 
-ncjoin.f: ncjoin.F copy_subarray.h
+ncjoin$(PPF77_ext): ncjoin$(UPF77_ext) copy_subarray.h
 
-partit.f: partit.F copy_subarray.h
+partit$(PPF77_ext): partit$(UPF77_ext) copy_subarray.h
 
-plot_contour.o: plot_contour.f izogrid_params.mod
+plot_contour$(OBJ_ext): plot_contour$(PPF77_ext) izogrid_params.mod
 
-r2r_bry.o: r2r_bry.f mod_io_size_acct.mod
-r2r_bry.f: r2r_bry.F phys_const.h
+r2r_bry$(OBJ_ext): r2r_bry$(PPF77_ext) mod_io_size_acct.mod
+r2r_bry$(PPF77_ext): r2r_bry$(UPF77_ext) phys_const.h
 
-r2r_bry_interp.o: r2r_bry_interp.f r2r_vertint_vars.mod
+r2r_bry_interp$(OBJ_ext): r2r_bry_interp$(PPF77_ext) r2r_vertint_vars.mod
 
-r2r_bry_nhmg.o: r2r_bry_nhmg.f mod_io_size_acct.mod
-r2r_bry_nhmg.f: r2r_bry_nhmg.F phys_const.h
+r2r_bry_nhmg$(OBJ_ext): r2r_bry_nhmg$(PPF77_ext) mod_io_size_acct.mod
+r2r_bry_nhmg$(PPF77_ext): r2r_bry_nhmg$(UPF77_ext) phys_const.h
 
-r2r_init.o: r2r_init.f mod_io_size_acct.mod
-r2r_init.f: r2r_init.F def_roms_file.F phys_const.h spval.h
+r2r_init$(OBJ_ext): r2r_init$(PPF77_ext) mod_io_size_acct.mod
+r2r_init$(PPF77_ext): r2r_init$(UPF77_ext) def_roms_file$(UPF77_ext) phys_const.h spval.h
 
-r2r_subs.f: r2r_subs.F spval.h
+r2r_subs$(PPF77_ext): r2r_subs$(UPF77_ext) spval.h
 
-r2r_vert_interp.f: r2r_vert_interp.F spval.h
+r2r_vert_interp$(PPF77_ext): r2r_vert_interp$(UPF77_ext) spval.h
 
-read_add_write.o: read_add_write.f mod_io_size_acct.mod
+read_add_write$(OBJ_ext): read_add_write$(PPF77_ext) mod_io_size_acct.mod
 
-read_grid_params.o: read_grid_params.f roms_grid_params.mod
+read_grid_params$(OBJ_ext): read_grid_params$(PPF77_ext) roms_grid_params.mod
 
-read_gshhs_data.o: read_gshhs_data.f mod_gshhs.mod
+read_gshhs_data$(OBJ_ext): read_gshhs_data$(PPF77_ext) mod_gshhs.mod
 
-refine.f: refine.F spval.h
+refine$(PPF77_ext): refine$(UPF77_ext) spval.h
 
-roms_read_write.f: roms_read_write.F phys_const.h
+roms_read_write$(PPF77_ext): roms_read_write$(UPF77_ext) phys_const.h
 
-rotate.f: rotate.F compute_extended_bounds.h
+rotate$(PPF77_ext): rotate$(UPF77_ext) compute_extended_bounds.h
 
-rotate_grid.f: rotate_grid.F phys_const.h
+rotate_grid$(PPF77_ext): rotate_grid$(UPF77_ext) phys_const.h
 
-scow_winds.f: scow_winds.F def_wind_file.F phys_const.h spval.h
+scow_winds$(PPF77_ext): scow_winds$(UPF77_ext) def_wind_file$(UPF77_ext) phys_const.h spval.h
 
-single_connect.o: single_connect.f single_conn_comm_vars.mod
+single_connect$(OBJ_ext): single_connect$(PPF77_ext) single_conn_comm_vars.mod
 
-smooth.o: smooth.f smooth_topo_params.mod
-smooth.f: smooth.F cond_rx0_topo.F topo_smooth_subs.F
+smooth$(OBJ_ext): smooth$(PPF77_ext) smooth_topo_params.mod
+smooth$(PPF77_ext): smooth$(UPF77_ext) cond_rx0_topo$(UPF77_ext) topo_smooth_subs$(UPF77_ext)
 
-socal90m_topo.o: socal90m_topo.f roms_grid_vars.mod comm_vars_hraw.mod
+socal90m_topo$(OBJ_ext): socal90m_topo$(PPF77_ext) roms_grid_vars.mod comm_vars_hraw.mod
 
-socal_topo.o: socal_topo.f roms_grid_vars.mod comm_vars_hraw.mod
+socal_topo$(OBJ_ext): socal_topo$(PPF77_ext) roms_grid_vars.mod comm_vars_hraw.mod
 
-soda.f: soda.F def_roms_file.F spval.h
+soda$(PPF77_ext): soda$(UPF77_ext) def_roms_file$(UPF77_ext) spval.h
 
-soda_winds.o: soda_winds.f spval.h
-soda_winds.f: soda_winds.F def_wind_file.F
+soda_winds$(OBJ_ext): soda_winds$(PPF77_ext) spval.h
+soda_winds$(PPF77_ext): soda_winds$(UPF77_ext) def_wind_file$(UPF77_ext)
 
-sphere.f: sphere.F phys_const.h
+sphere$(PPF77_ext): sphere$(UPF77_ext) phys_const.h
 
-spline_2d.o: spline_2d.f horiz_inter_arrays.mod
+spline_2d$(OBJ_ext): spline_2d$(PPF77_ext) horiz_inter_arrays.mod
 
-srotate.o: srotate.f izogrid_params.mod
+srotate$(OBJ_ext): srotate$(PPF77_ext) izogrid_params.mod
 
-srtopo.o: srtopo.f roms_grid_vars.mod comm_vars_hraw.mod
+srtopo$(OBJ_ext): srtopo$(PPF77_ext) roms_grid_vars.mod comm_vars_hraw.mod
 
-test_etching.f: test_etching.F spval.h
+test_etching$(PPF77_ext): test_etching$(UPF77_ext) spval.h
 
-test_gshhs.o: test_gshhs.f mod_gshhs.mod
+test_gshhs$(OBJ_ext): test_gshhs$(PPF77_ext) mod_gshhs.mod
 
-time_to_days.f: time_to_days.F phys_const.h
+time_to_days$(PPF77_ext): time_to_days$(UPF77_ext) phys_const.h
 
-topo_smooth_subs.o: topo_smooth_subs.f smooth_topo_params.mod
+topo_smooth_subs$(OBJ_ext): topo_smooth_subs$(PPF77_ext) smooth_topo_params.mod
 
-tpxo.o: tpxo.f roms_grid_vars.mod
+tpxo$(OBJ_ext): tpxo$(PPF77_ext) roms_grid_vars.mod
 
-trmm.f: trmm.F def_swf_file.F spval.h
+trmm$(PPF77_ext): trmm$(UPF77_ext) def_swf_file$(UPF77_ext) spval.h
 
-vort.f: vort.F compute_vorticity.F compute_extended_bounds.h
+vort$(PPF77_ext): vort$(UPF77_ext) compute_vorticity$(UPF77_ext) compute_extended_bounds.h
 
-zslice.o: zslice.f mod_io_size_acct.mod
+zslice$(OBJ_ext): zslice$(PPF77_ext) mod_io_size_acct.mod

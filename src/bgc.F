@@ -267,7 +267,7 @@
       logical,save           :: first_step_dia_his=.true.
 
       if (avg) then
-
+#ifdef AVERAGES
 !         if (.not. first_step_dia_avg) then
             call calc_avg_dia_bgc                              ! don't include t=0 in averaging
             output_time_dia_avg = output_time_dia_avg + dt     ! only start count after first timestep
@@ -313,7 +313,7 @@
      &       'step =', iic, 'rec =', record_dia_avg
           endif
         endif  
-
+#endif
       else
 
         if (.not. first_step_dia_his) then
@@ -488,8 +488,9 @@
       end subroutine calc_avg_bgc  !]
 
 ! ----------------------------------------------------------------------
-#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
-      subroutine calc_avg_dia_bgc  ![
+#if (defined(BEC2_DIAG) || defined(MARBL_DIAGS)) && defined(AVERAGES)
+      subroutine calc_avg_dia_bgc ![
+      
       implicit none
 
       ! local
@@ -519,7 +520,7 @@
       end do
 
       end subroutine calc_avg_dia_bgc  !]
-#endif /* BEC2_DIAG || MARBL_DIAGS */
+#endif /* (BEC2_DIAG || MARBL_DIAGS) && AVERAGES */
 
 ! ----------------------------------------------------------------------
 #if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
