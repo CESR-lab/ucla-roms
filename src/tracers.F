@@ -57,13 +57,6 @@
                                                                      ! this term prevents the need to hardcode tracer indices.
       integer        :: interp_t                                     ! interpolate forcing from coarser input grid (=1) or not (=0)
 
-      ! 3 below currently in param as per old code
-!      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
-      ! Number of 'base' bgc tracers, i.e. minimum number of bgc tracers without cocco
-      ! and nitrogen cycle additions
-!      integer :: ntrc_bio_base
-!      integer :: ntrc_bio !  - from (param - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
-
       real, public, allocatable, dimension(:,:,:,:) :: t_avg         ! tracer averages. Memory only allocated for tracers of interest.
       integer,      allocatable, dimension(:)       :: t_avg_2_NT    ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
 

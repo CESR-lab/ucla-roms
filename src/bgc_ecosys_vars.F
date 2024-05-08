@@ -102,10 +102,8 @@
       character*72 ::  vname_bec2_diag_2d(4,nr_bec2_diag_2d)
       character*72 ::  vname_bec2_diag_3d(4,nr_bec2_diag_3d)
 
-#  ifdef AVERAGES
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_avg
       real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_avg
-#  endif /* AVERAGES */
 
 #endif /* BEC2_DIAG  || MARBL_DIAGS */
 
@@ -272,13 +270,12 @@
       diag_array_3d => bec2_diag_3d
 #endif      
       
-#  ifdef AVERAGES
-      allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
-      allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
-
-      bec2_diag_2d_avg=0.0
-      bec2_diag_3d_avg=0.0
-#  endif /* AVERAGES */
+      if (wrt_avg_dia) then
+        allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
+        allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
+        bec2_diag_2d_avg=0.0
+        bec2_diag_3d_avg=0.0
+      endif
 
       if (mynode == 0) then
               write(*,'(7x,A,I3,I3)') 'BGC diags allocation :: ',

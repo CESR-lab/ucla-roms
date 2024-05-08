@@ -23,19 +23,20 @@
       ! Defining number of tracers
       integer, parameter :: nt_passive=0      
 # ifdef BIOLOGY_BEC2
-     &       ,  ntrc_bio_base=26
-     &       ,  ntrc_bio=26
+#   ifdef NCycle_SY
+      integer,parameter :: ntrc_bio=26
+#   else
+      integer,parameter :: ntrc_bio=29
+#   endif
 # elif defined MARBL
-     &       , ntrc_bio_base=32
-     &       , ntrc_bio=32
+      integer,parameter :: ntrc_bio=32
 # else
-     &       , ntrc_bio_base=0
-     &       , ntrc_bio=0
+      integer,parameter :: ntrc_bio=0
 # endif
 #ifdef SALINITY
-     &       , ntrc_salt=1
+      integer,parameter :: ntrc_salt=1
 #else
-     &       , ntrc_salt=0
+      integer,parameter :: ntrc_salt=0
 #endif
 
       integer, parameter :: nt=1+nt_passive+ntrc_bio+ntrc_salt
