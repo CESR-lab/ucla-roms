@@ -10,7 +10,7 @@
        ! Taken from PDamien's ecosys_bec2_td2.F
 
        use param
-       use tracers, only: t, iTandS, nt_passive ! DevinD added
+       use tracers, only: t, iTandS
        use surf_flux ! , only: sustr,sustr_r,svstr,svstr_r,srflx
 # ifdef BULK_FRC
        use bulk_frc, only: wspd_used ! to compute gas exchange

@@ -26,6 +26,9 @@
       use nc_read_write
       use roms_read_write
       use netcdf
+#ifdef MARBL      
+      use marbl_driver
+#endif      
       use mpi_exchanges
       implicit none
       private
@@ -67,8 +70,7 @@
       integer,dimension(NT),public :: NT_2_t_avg                     ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer,public        :: n_t_avg                               ! number of tracer averages to output <= NT
 
-#ifdef BIOLOGY_BEC2
-! bgc needs public indexes as used in other files
+#if defined(BIOLOGY_BEC2) && !defined(MARBL)
 # include "bgc_tracers_indx.opt"
 #endif
 
@@ -310,6 +312,24 @@
 
       ! Additional passive tracers:
 #include "tracers.opt"
+
+
+#ifdef MARBL      
+      call marbldrv_configure_tracers(
+     &     itot,t_vname,t_lname,t_units,t_tname,wrt_t,wrt_t_avg,t_ana_frc)
+#endif      
+
+      if (mynode==0) then
+         print *, 'metadata about ',NT, ' tracers:'
+         do itrc=1,NT
+            print *, '-----------'
+            print *, 'TRACER NO.: ', itrc
+            print *,'SHORT NAME: ', t_vname(itrc)
+            print *,'LONG NAME: ', t_lname(itrc)
+            print *,'UNITS: ', t_units(itrc)
+            print *, '-----------'         
+         end do
+      end if
 
       allocate( t(GLOBAL_2D_ARRAY,N,3,NT) )
       t=0.
