@@ -8,7 +8,6 @@
       real,parameter    :: output_period_his = 30*24*60*60        ! output period in seconds
       integer,parameter :: nrpf_his          = 2                  ! total recs per file
       
-      ! still need AVERAGES cppflag set for bgc average file to work:
       logical,parameter :: wrt_avg           = .true.             ! t/f to write module averages file
       real,parameter    :: output_period_avg = 30*24*60*60        ! output averaging period in seconds
       integer,parameter :: nrpf_avg          = 1                  ! total recs per file

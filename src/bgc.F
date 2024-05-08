@@ -53,10 +53,8 @@
       public set_bgc_surf_frc
       public init_arrays_bgc_frc
       public init_scalars_bec2
-!      public wrt_bgc_tracers
-!      public wrt_bgc_diags
+      public wrt_bgc_diags
       public wrt_bgc
-      public do_bgc_diags
 
       contains
 
@@ -254,11 +252,8 @@
 
 ! ----------------------------------------------------------------------
 #if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
-      subroutine wrt_bgc_diags(avg)  ![
+      subroutine wrt_bgc_diags  ![
       implicit none
-
-      ! import/export
-      logical, intent(in) :: avg
 
       ! local
       character(len=99),save :: fname_his,fname_avg
@@ -266,7 +261,7 @@
       logical,save           :: first_step_dia_avg=.true.
       logical,save           :: first_step_dia_his=.true.
 
-      if (avg) then
+      if (wrt_avg_dia) then
 
 !         if (.not. first_step_dia_avg) then
             call calc_avg_dia_bgc                              ! don't include t=0 in averaging
@@ -286,10 +281,6 @@
           call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_avg/))
           do itrc=1,nr_bec2_diag_2d
             if (wrt_bec2_diag_2d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: average, diag = ', vname_bec2_diag_2d(1,itrc)
-!               endif
             idiag = idx_bec2_diag_2d(itrc)
             call ncwrite(ncid,vname_bec2_diag_2d(1,itrc),
      &           bec2_diag_2d_avg(i0:i1,j0:j1,idiag),(/1,1,record_dia_avg/))
@@ -297,24 +288,21 @@
           enddo
           do itrc=1,nr_bec2_diag_3d
             if (wrt_bec2_diag_3d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: average, diag = ', vname_bec2_diag_3d(1,itrc)
-!               endif
             idiag = idx_bec2_diag_3d(itrc)
             call ncwrite(ncid,vname_bec2_diag_3d(1,itrc),
      &           bec2_diag_3d_avg(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_avg/))
             endif
           enddo
           if (mynode == 0) then
-!           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4)')
      &       'bgc diag :: wrote average, tdays =', tdays,
      &       'step =', iic, 'rec =', record_dia_avg
           endif
         endif  
 
-      else
+      endif  
+
+      if (wrt_his_dia) then
 
         if (.not. first_step_dia_his) then
            output_time_dia_his = output_time_dia_his + dt
@@ -586,7 +574,6 @@
 #endif
 
       end subroutine  init_arrays_bgc_frc !]
-
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![
 #ifndef MARBL
@@ -694,7 +681,6 @@
 
 #endif /* ndef MARBL */      
       end subroutine init_scalars_bec2  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_bgc(init)  ![
       implicit none
@@ -710,28 +696,8 @@
          if (wrt_his)     call wrt_bgc_tracers(.false.) ! write his data
          if (wrt_avg)     call wrt_bgc_tracers(.true.) ! write avg data
       endif
-!# ifdef BEC2_DIAG      
-!      if (wrt_his_dia) call wrt_bgc_diags(.false.) ! write his data
-!      if (wrt_avg_dia) call wrt_bgc_diags(.true.) ! write avg data
-!# endif /* BEC2_DIAG */
-
-!      if (mynode==0) print *,'wrt_bgc done'      
 
       end subroutine wrt_bgc  !]
-
-! ----------------------------------------------------------------------
-      subroutine do_bgc_diags  ![
-      implicit none
-
-# if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
-      if (wrt_his_dia) call wrt_bgc_diags(.false.) ! write his data
-      if (wrt_avg_dia) call wrt_bgc_diags(.true.) ! write avg data
-# endif /* BEC2_DIAG || MARBL_DIAGS*/
-
-!      if (mynode==0) print *,'wrt_bgc diags done'
-
-      end subroutine do_bgc_diags  !]
-
 ! ----------------------------------------------------------------------
 #endif /* (BIOLOGY_BEC2) || (MARBL) - entire module */
       end module bgc
