@@ -194,11 +194,9 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           P(i,j,N)=g*z_w(i,j,N) + grho*( rho(i,j,N)
      &       +0.5*(rho(i,j,N)-rho(i,j,N-1))*(z_w(i,j,N)-z_r(i,j,N))
      &          /(z_r(i,j,N)-z_r(i,j,N-1)) )*(z_w(i,j,N)-z_r(i,j,N))
-c--# ifdef TIDES
           if (pot_tides) then
             P(i,j,N) = P(i,j,N) - g*ptide(i,j)
           endif
-c--# endif
         enddo
         do k=nz-1,1,-1
           do i=istrU-1,iend
