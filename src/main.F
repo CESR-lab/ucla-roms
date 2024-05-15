@@ -485,8 +485,5 @@ CR      write(*,*)  ' -2' MYID
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc
 #endif
-#if (defined BIOLOGY_BEC2 && defined BEC2_DIAG) || (defined MARBL && defined MARBL_DIAGS)
-      call wrt_bgc_diags
-#endif /* BIOLOGY_BEC2 */
 
       end

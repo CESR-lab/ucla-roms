@@ -1,0 +1,75 @@
+/* This is "cppdefs.opt": MODEL CONFIGURATION FILE
+   ==== == ============ ===== ============= ==== */
+
+/*
+ * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
+ */
+
+#define RIVERS
+
+
+#if defined RIVERS
+
+c--# define DIAGNOSTICS
+c--# define TIDES
+c--# define BULK_FRC
+# define SPONGE_TUNE
+# define RIVER_SOURCE
+# define EXTRACT_DATA
+
+c--# define SFLX_CORR
+
+# define SOLVE3D
+# define UV_COR
+# define UV_ADV
+
+# define CURVGRID
+# define SPHERICAL
+# define MASKING
+
+# define SALINITY
+# define NONLIN_EOS
+# define SPLIT_EOS
+
+c--# define AVERAGES
+# define EXACT_RESTART
+# define IMPLICIT_BOTTOM_DRAG
+
+# define UV_VIS2
+# define TS_DIF2
+
+# define LMD_MIXING
+# define LMD_KPP
+# define LMD_BKPP
+# define LMD_RIMIX
+# define LMD_NONLOCAL
+c--# define LMD_CONVEC
+
+# define OBC_WEST
+# define OBC_EAST
+# define OBC_NORTH
+# define OBC_SOUTH
+
+# define OBC_M2FLATHER  /* Barotop. BC: OBC_M2FLATHER, OBC_M2ORLANSKI, OBC_M2SPECIFIED */
+# define OBC_M3ORLANSKI /* Baroclin. BC: OBC_M3ORLANSKI, OBC_M3SPECIFIED */
+# define OBC_TORLANSKI  /* Tracer BC: OBC_TORLANSKI, OBC_TSPECIFIED */
+
+# define Z_FRC_BRY
+# define M2_FRC_BRY
+# define M3_FRC_BRY
+# define T_FRC_BRY
+# define SPONGE
+
+# define BIOLOGY_BEC2
+# define BEC2_DIAG                /* BGC diagnostics */
+# define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
+# define PCO2AIR_FORCING          /* CO2 forcing */
+# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
+# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 
+# define DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
+
+#endif
+
+
+#include "set_global_definitions.h"
+

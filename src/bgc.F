@@ -6,9 +6,9 @@
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Dec)
       ! Refactoring of ETH Zurich roms code with BEC2, code which has been used
       ! by Pierre Damien to run full pacific models.
+#if defined BIOLOGY_BEC2 || defined MARBL
 
 #include "cppdefs.opt"
-#if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
@@ -30,7 +30,6 @@
       private ! Make all variable private to this module unless public specified
 
       ! Includes:
-#include "bgc.opt"
 
       ! netcdf outputting:
       integer :: ncid=-1, prev_fill_mode
@@ -249,10 +248,8 @@
       ierr=nf90_close(ncid)
 
       end subroutine wrt_bgc_tracers  !]
-
 ! ----------------------------------------------------------------------
-#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
-      subroutine wrt_bgc_diags  ![
+      subroutine wrt_bgc_diags ![
       implicit none
 
       ! local
@@ -271,7 +268,7 @@
 
         if (output_time_dia_avg>=output_period_avg_dia) then  ! time for an output
           if (mod(record_dia_avg,nrpf_avg_dia)==0) then
-             call create_bgc_dia_file(fname_avg,avg)
+             call create_bgc_dia_file(fname_avg,.true.)
              record_dia_avg = 0
           endif
           record_dia_avg = record_dia_avg + 1
@@ -312,7 +309,7 @@
         if (output_time_dia_his>=output_period_his_dia .or.
      &      output_time_dia_his==0                     ) then  ! time for an output
           if (mod(record_dia_his,nrpf_his_dia)==0) then
-             call create_bgc_dia_file(fname_his,avg)
+             call create_bgc_dia_file(fname_his,.false.)
              record_dia_his = 0
           endif
           record_dia_his = record_dia_his + 1
@@ -353,7 +350,6 @@
       ierr=nf90_close(ncid)
 
       end subroutine wrt_bgc_diags  !]
-#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 !----------------------------------------------------------------------
       subroutine create_bgc_file(fname,avg)  ![
@@ -379,9 +375,7 @@
       ierr = nf90_enddef(ncid)
 
       end subroutine create_bgc_file !]
-
 !----------------------------------------------------------------------
-#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine create_bgc_dia_file(fname,avg)  ![
       implicit none
 
@@ -405,7 +399,6 @@
       ierr = nf90_enddef(ncid)
 
       end subroutine create_bgc_dia_file !]
-#endif /* BEC2_DIAG || MARBL_DIAGS */
 
 ! ----------------------------------------------------------------------
       subroutine def_vars_bgc( ncid, avg )  ![
@@ -474,9 +467,7 @@
       enddo
 
       end subroutine calc_avg_bgc  !]
-
 ! ----------------------------------------------------------------------
-#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine calc_avg_dia_bgc  ![
       implicit none
 
@@ -507,10 +498,7 @@
       end do
 
       end subroutine calc_avg_dia_bgc  !]
-#endif /* BEC2_DIAG || MARBL_DIAGS */
-
 ! ----------------------------------------------------------------------
-#if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
       subroutine def_bgc_diag(ncid,avg)  ![
 
       ! Define history/avg file variables for BEC2_DIAG
@@ -546,8 +534,6 @@
       enddo
 
       end subroutine def_bgc_diag  !]
-#endif /* BEC2_DIAG || MARBL_DIAGS */
-
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bgc_frc  ![
       implicit none
@@ -697,7 +683,13 @@
          if (wrt_avg)     call wrt_bgc_tracers(.true.) ! write avg data
       endif
 
+#if defined BEC2_DIAG || defined MARBL_DIAGS
+      call wrt_bgc_diags
+#endif 
+
+
       end subroutine wrt_bgc  !]
 ! ----------------------------------------------------------------------
-#endif /* (BIOLOGY_BEC2) || (MARBL) - entire module */
+#endif /*(BIOLOGY_BEC2 || MARBL)*/
+
       end module bgc

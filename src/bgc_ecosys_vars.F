@@ -6,17 +6,21 @@
 
       use param
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use roms_read_write
 #ifdef MARBL      
       use marbl_driver,only: marbldrv_configure_saved_state
-#endif      
-#ifdef MARBL_DIAGS      
+# ifdef MARBL_DIAGS      
      &     ,marbldrv_configure_diagnostics
      &     ,nr_marbl_diag_2d,nr_marbl_diag_3d
      &     ,diag_array_2d,diag_array_3d
      &     ,idx_bgc_diag_2d,idx_bgc_diag_3d
      &     ,wrt_bgc_diag_2d,wrt_bgc_diag_3d
+# endif      
 #endif      
+
       implicit none
+
+#include "bgc.opt"
 
       ! tracer: values passed to biological model by ROMS
       ! DTRACER_MODULE: stores the tendencies of the biological tracers
