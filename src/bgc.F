@@ -6,9 +6,9 @@
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Dec)
       ! Refactoring of ETH Zurich roms code with BEC2, code which has been used
       ! by Pierre Damien to run full pacific models.
-#if defined BIOLOGY_BEC2 || defined MARBL
-
 #include "cppdefs.opt"
+
+#if defined BIOLOGY_BEC2 || defined MARBL
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
