@@ -100,8 +100,10 @@
         pflx_north = 0
         allocate(cflx_north(nx))
         cflx_north = 0
-        allocate(ub_north(nx))
-        ub_north = 0.
+        if (.not.allocated(ub_north)) then
+          allocate(ub_north(nx))
+          ub_north = 0.
+        endif
       endif
       if (obc_south.and.(.not.south_exchng)) then
         allocate(nc_pflx_s%vdata(nx,1,2))
@@ -113,8 +115,10 @@
         cflx_south = 0
         allocate(cflx_south_avg(nx))
         cflx_south_avg = 0
-        allocate(ub_south(nx))
-        ub_south = 0.
+        if (.not.allocated(ub_south)) then
+          allocate(ub_south(nx))
+          ub_south = 0.
+        endif
         allocate(ub_south_avg(nx))
         ub_south_avg = 0
       endif
