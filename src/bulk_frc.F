@@ -669,6 +669,10 @@
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
           hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
+
+!  Compute turbulent latent heat flux (W/m2), Hl.
+!
+          hflat=-Hlv*rhoAir*Wstar*Qstar
 !
 !  Compute Webb correction (Webb effect) to latent heat flux, Hlw.
 !
