@@ -114,12 +114,12 @@
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
       print *,'Allocate space for sst first!! '
-      call set_frc_data(nc_sst,sst)
+      call set_frc_data(nc_sst,sst,'r')
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      call set_frc_data(nc_sss,sss)
+      call set_frc_data(nc_sss,sss,'r')
 #endif
 
       end subroutine set_surf_field_corr  !]
