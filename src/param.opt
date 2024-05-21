@@ -23,10 +23,10 @@
       ! Defining number of tracers
       integer, parameter :: nt_passive=0      
 # ifdef BIOLOGY_BEC2
-#   ifdef NCycle_SY
-      integer,parameter :: ntrc_bio=26
-#   else
+#   ifdef Ncycle_SY
       integer,parameter :: ntrc_bio=29
+#   else
+      integer,parameter :: ntrc_bio=26
 #   endif
 # elif defined MARBL
       integer,parameter :: ntrc_bio=32
