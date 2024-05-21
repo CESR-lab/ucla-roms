@@ -214,7 +214,7 @@
         ub_south = ub_south+alpha*(pflx_south-cflx_south)
         ub_south = max(ub_mn,ub_south)
         ub_south = min(ub_mx,ub_south)
-        if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
+!       if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
       endif
 
       if (obc_north.and.(.not.north_exchng)) then
