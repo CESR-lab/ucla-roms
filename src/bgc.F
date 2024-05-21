@@ -248,10 +248,9 @@
 
       end subroutine wrt_bgc_tracers  !]
 ! ----------------------------------------------------------------------
-#if defined (BEC2_DIAG) || defined (MARBL_DIAGS)
       subroutine wrt_bgc_diags ![
       implicit none
-
+#if defined (BEC2_DIAG) || defined (MARBL_DIAGS)
       ! local
       character(len=99),save :: fname_his,fname_avg
       integer                :: itrc, ierr, idiag
@@ -348,9 +347,9 @@
       endif
 
       ierr=nf90_close(ncid)
+#endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
 
       end subroutine wrt_bgc_diags  !]
-#endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
 !----------------------------------------------------------------------
       subroutine create_bgc_file(fname,avg)  ![
       implicit none
