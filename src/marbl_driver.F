@@ -61,7 +61,17 @@
       type(MARBL_interface_class) :: marbl_instance ! Object to interface between ROMS and MARBL
       integer                     :: nt_marbl       ! number of marbl tracers (according to MARBL)
       integer                     :: idx            ! Looping variable
-       
+
+!     MARBL namelist file names:
+      character(len=256), public :: marbl_namelist_fname='marbl_in'
+      character(len=256), public ::marbl_tracer_list_fname=
+     &                   'marbl_tracer_output_list'
+#ifdef MARBL_DIAGS      
+      character(len=256), public :: marbl_diag_list_fname=
+     &                   'marbl_diagnostic_output_list'
+#endif      
+      
+      
 !     Surface flux forcing variable indices (-1 means unused,default)
       integer,public ::    u10_sqr_ind=-1,       sss_ind=-1,      sst_ind=-1,
      &                       ifrac_ind=-1,  dust_dep_ind=-1,   fe_dep_ind=-1,
@@ -176,11 +186,12 @@
 
 !     read the marbl_in into buffer
       if (mynode==0) then
-         open(unit=marbl_settings_in, file='marbl_in', iostat=open_status)
+         open(unit=marbl_settings_in, file=marbl_namelist_fname,
+     &        iostat=open_status)
          if (open_status .ne. 0) then ! can't find namelist file, skip
             write(*, '(A, I0, 3A)') "IO WARNING ", open_status,
-     &           "could not open namelist file : ", "marbl_in",
-     &           ". attempting to proceed with default MARBL settings"
+     &           "could not open namelist file : ", marbl_namelist_fname
+     &           ,". attempting to proceed with default MARBL settings"
 
          end if
       end if         
@@ -206,28 +217,30 @@
 #endif                  
                   call marbl_instance%put_setting(namelist_line)
                   
-                  if (mynode==printnode) print *,'marbl_in: ',namelist_line
+                  if (mynode==printnode) then
+                     print *,marbl_namelist_fname,': ',namelist_line
+                  end if
                end if
                
             end do                     !/namelist line-by-line read
 
             if (is_iostat_end(read_status)) then
                if (mynode==printnode) then
-                  write(*, '(3A)') "Successfully read ","marbl_in",
+                  write(*, '(3A)') "Successfully read ",marbl_namelist_fname,
      &                 " to end of file"
                end if
             else
                if (mynode==printnode) then
                   write(*, '(A, I0, 2A)') "IO ERROR ", read_status,
      &                 " : ERROR reading MARBL namelist file  ",
-     &                 "marbl_in"
+     &                 marbl_namelist_fname
                end if
                error stop
             end if
          
             close(marbl_settings_in)
             if (mynode==printnode) then
-               print *, 'we successfully read and closed marbl_in'
+               print *, 'we successfully read and closed ',marbl_namelist_fname
             end if
          endif
 
@@ -404,13 +417,13 @@
 !     ------------------------------------------------------------------
       
       if (mynode==0) then
-         open(unit=marbl_tracer_list, file='marbl_tracer_output_list',
+         open(unit=marbl_tracer_list, file=marbl_tracer_list_fname,
      &        iostat=open_status)
          
          if (open_status .ne. 0) then ! can't find namelist file, skip and output all tracers
             write(*, '(A, I0, 3A)') "IO WARNING ", read_status,
      &           "could not open tracer list file : ",
-     &           "marbl_tracer_output_list",
+     &           marbl_tracer_list_fname,
      &           ". All MARBL tracers will be written to output"
          end if
       end if
@@ -467,7 +480,7 @@
                
             if (mynode==0) then
                write(*,'(A)'), 'NO REQUESTED TRACERS FOUND IN ' //
-     &              ' marbl_tracer_output_list. Defaulting to ' //
+     &              marbl_tracer_list_fname,'. Defaulting to ' //
      &              ' writing all BGC tracers to output file.'
             end if
          end if
@@ -482,7 +495,7 @@
             if (mynode==printnode) then
                write(*, '(A, I0, 2A)') "IO ERROR ", read_status,
      &              " : ERROR reading MARBL tracer list file  ",
-     &              "marbl_tracer_output_list"
+     &              marbl_tracer_list_fname
             end if
             error stop
          end if
@@ -490,7 +503,7 @@
          close(marbl_tracer_list)
          if (mynode==printnode) then
             write(*,'(2A)'), 'we successfully read and closed ',
-     &           'marbl_tracer_output_list'
+     &           marbl_tracer_list_fname
          end if
       endif
 
@@ -1032,13 +1045,13 @@
 !     ------------------------------------------------------------------
       
       if (mynode==0) then
-         open(unit=marbl_diag_list, file='marbl_diagnostic_output_list',
+         open(unit=marbl_diag_list, file=marbl_diag_list_fname,
      &        iostat=open_status)
          
          if (open_status .ne. 0) then ! can't find file, skip and output all diags
             write(*, '(A, I0, 3A)') "IO WARNING ", open_status,
      &           "could not open diagnostics list file : ",
-     &           "marbl_diagnostic_output_list",
+     &           marbl_diag_list_fname,
      &           ". All MARBL diagnostics will be written to output"
          end if
       end if
@@ -1106,7 +1119,7 @@
      &                 'requested_diagnostics/requested_diagnostics.py ' //
      &                 'for a list of available diagnostics,' //
      &                 ' or run without the file ' //
-     &                 'marbl_diagnostic_output_list to write all diags'
+     &                 marbl_diag_list_fname, ' to write all diags'
                end if
             end if              ! read_status=/=0
             
@@ -1119,7 +1132,7 @@
                
             if (mynode==0) then
                write(*,'(A)'), 'NO REQUESTED DIAGNOSTICS FOUND IN ' //
-     &              ' marbl_diagnostic_output_list. Defaulting to ' //
+     &              marbl_diag_list_fname, '. Defaulting to ' //
      &              ' writing all BGC diagnostics to output file.'
             end if
          end if
@@ -1127,14 +1140,14 @@
          if (is_iostat_end(read_status)) then
             if (mynode==printnode) then
                write(*, '(3A)') "Successfully read ",
-     &              "marbl_diagnostic_output_list",
+     &              marbl_diag_list_fname,
      &              " to end of file"
             end if
          else
             if (mynode==printnode) then
                write(*, '(A, I0, 2A)') "IO ERROR ", read_status,
      &              " : ERROR reading MARBL diagnostic list file  ",
-     &              "marbl_diagnostic_output_list"
+     &              marbl_diag_list_fname
             end if
             error stop
          end if
@@ -1142,7 +1155,7 @@
          close(marbl_diag_list)
          if (mynode==printnode) then
             write(*,'(2A)'), 'we successfully read and closed ',
-     &           'marbl_diagnostic_output_list'
+     &           marbl_diag_list_fname
             
          end if
       endif         
@@ -1553,7 +1566,6 @@
       
       
       end subroutine marbldrv_column_physics
-
 
       subroutine print_marbl_log(log_to_print,i,j)
 
