@@ -25,8 +25,8 @@
         enddo
       enddo
 
-      do j=1,ny
-        do i=1,nx
+      do j=0,ny+1
+        do i=0,nx+1
           ubar(i,j,1)=0.
           ubar(i,j,2)=ubar(i,j,1)
           vbar(i,j,1)=0

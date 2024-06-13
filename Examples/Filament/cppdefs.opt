@@ -7,11 +7,6 @@
 
 #define FILAMENT_IDEAL
 
-
-/*
-   Main switch starts here: model configuration choice.
-*/
-
 #if defined FILAMENT_IDEAL
 
 c# define DIAGNOSTICS

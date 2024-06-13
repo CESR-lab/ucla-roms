@@ -15,18 +15,18 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm=920, MMm=480, N=60    ! Pacific 25km grid
+      integer, parameter :: LLm=199, MMm=99, N=50       ! WEC Example sample grid
 
-      integer, parameter :: NP_XI = 16, NP_ETA = 8
+      integer, parameter :: NP_XI =  3, NP_ETA = 2
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      ! Defining number of tracers
-      integer, parameter :: nt_passive=0      
+      ! Defining number of additional tracers
+      integer, parameter :: nt_passive=0
 # ifdef BIOLOGY_BEC2
-#   ifdef Ncycle_SY
-      integer,parameter :: ntrc_bio=29
-#   else
+#   ifdef NCycle_SY
       integer,parameter :: ntrc_bio=26
+#   else
+      integer,parameter :: ntrc_bio=29
 #   endif
 # elif defined MARBL
       integer,parameter :: ntrc_bio=32
@@ -40,5 +40,4 @@
 #endif
 
       integer, parameter :: nt=1+nt_passive+ntrc_bio+ntrc_salt
-    
-      
+

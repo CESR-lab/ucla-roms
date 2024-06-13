@@ -6,17 +6,21 @@
 
       use param
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use roms_read_write
 #ifdef MARBL      
       use marbl_driver,only: marbldrv_configure_saved_state
-#endif      
-#ifdef MARBL_DIAGS      
+# ifdef MARBL_DIAGS      
      &     ,marbldrv_configure_diagnostics
      &     ,nr_marbl_diag_2d,nr_marbl_diag_3d
      &     ,diag_array_2d,diag_array_3d
      &     ,idx_bgc_diag_2d,idx_bgc_diag_3d
      &     ,wrt_bgc_diag_2d,wrt_bgc_diag_3d
+# endif      
 #endif      
+
       implicit none
+
+#include "bgc.opt"
 
       ! tracer: values passed to biological model by ROMS
       ! DTRACER_MODULE: stores the tendencies of the biological tracers
@@ -102,10 +106,8 @@
       character*72 ::  vname_bec2_diag_2d(4,nr_bec2_diag_2d)
       character*72 ::  vname_bec2_diag_3d(4,nr_bec2_diag_3d)
 
-#  ifdef AVERAGES
       real,allocatable,dimension(:,:,:,:) :: bec2_diag_3d_avg
       real,allocatable,dimension(:,:,:)   :: bec2_diag_2d_avg
-#  endif /* AVERAGES */
 
 #endif /* BEC2_DIAG  || MARBL_DIAGS */
 
@@ -272,13 +274,12 @@
       diag_array_3d => bec2_diag_3d
 #endif      
       
-#  ifdef AVERAGES
-      allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
-      allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
-
-      bec2_diag_2d_avg=0.0
-      bec2_diag_3d_avg=0.0
-#  endif /* AVERAGES */
+      if (wrt_avg_dia) then
+        allocate( bec2_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bec2_wrdiag_3d) )
+        allocate( bec2_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bec2_wrdiag_2d) )
+        bec2_diag_2d_avg=0.0
+        bec2_diag_3d_avg=0.0
+      endif
 
       if (mynode == 0) then
               write(*,'(7x,A,I3,I3)') 'BGC diags allocation :: ',

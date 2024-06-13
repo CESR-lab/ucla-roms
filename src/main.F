@@ -468,10 +468,6 @@ CR      write(*,*)  ' -2' MYID
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
-#if defined(BIOLOGY_BEC2) || defined(MARBL)
-      call wrt_bgc
-#endif
-
       if (do_extract) call do_extract_data
 
       if (ub_tune)    call adjust_orlanski
@@ -486,8 +482,8 @@ CR      write(*,*)  ' -2' MYID
 
       if (do_random) call wrt_random
 
-#if (defined BIOLOGY_BEC2 && defined BEC2_DIAG) || (defined MARBL && defined MARBL_DIAGS)
-      call do_bgc_diags
-#endif /* BIOLOGY_BEC2 */
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
+      call wrt_bgc
+#endif
 
       end

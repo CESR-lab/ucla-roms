@@ -12,6 +12,7 @@
       use coupling
       use grid
       use hidden_mpi_vars
+      use analytical
       use mixing
       use ocean_vars
       use basic_output
@@ -553,6 +554,11 @@ c--#define VERBOSE
         vbar(:     ,jend+1,1)      =0.0
       endif
 #endif
+
+#if defined ANA_BRY
+      call ana_init_generic(1,nx,1,ny)
+#endif
+
 
 #ifdef VERBOSE
       write(*,'(1x,3(1x,A,I6))') 'return from get_init, ntstart =',
