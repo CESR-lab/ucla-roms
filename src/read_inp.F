@@ -84,7 +84,7 @@
 #ifdef MPI
       if (mynode == 0) then
 #endif
-        is=iargc() ; if (is == 1) call getarg(is,fname) ! This gets the correct name of fname from the CL if not default, e.g. mpiexec -n 9 ./roms ./my_roms.in returns myroms
+        is=iargc() ; if (is == 1) call getarg(is,fname) 
 #ifdef MPI
       endif
       call MPI_Bcast(fname,max_fname,MPI_BYTE, 0, ocean_grid_comm, ierr)
