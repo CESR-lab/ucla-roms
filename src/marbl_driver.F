@@ -1185,6 +1185,7 @@
 !     3. Compute surface fluxes using MARBL
 !     4a. Update saved state array in ROMS using newly computed values
 !     4b. Update diagnostics array in ROMS using newly computed values
+!     4c. Update    tracer   array in ROMS using newly computed values
 !     5. Populate MARBL instance interior tendency forcing values
 !        using ROMS ocean interior values
 !     6. Populate MARBL interior tendency saved state values from
@@ -1398,9 +1399,32 @@
                end if
             end do
 #endif       
-           
+
+!     4c. Update tracer array in ROMS using newly computed values:
+!     ----------------------------------------------------------------------            
+            do m=1,nt_marbl
+               if ( marbl_instance%surface_fluxes(1,m) .ne. 0) then
+                  tracer_array(i,j,nz,nnew, m+(NT-nt_marbl) ) =
+     &                 tracer_array(i,j,nz,nnew, m+(NT-nt_marbl) ) +
+     &                 marbl_instance%surface_fluxes(1,m)*dt/Hz(i,j,nz)
+            
+                  if ( (i==printi) .and. (j==printj)
+     &                 .and. (mynode==printnode)
+     &                 .and. (print_values) ) then
+                     write(*,'(A,F10.5,1X,A,1X,A,1X,A)') 
+     &                    'We just applied a surface flux of ',
+     &                    marbl_instance%surface_fluxes(1,m),
+     &                    trim(marbl_instance%tracer_metadata(m)%flux_units),
+     &                    'to',
+     &                    trim(marbl_instance%tracer_metadata(m)%short_name)
+                  end if
+               end if
+            end do ! m=1,nt_marbl
+
+            
          end do   ! j=jstr,jend
       end do      ! i=istr,iend
+
       
 !     5. Populate MARBL instance interior tendency forcing values:      
 !     ----------------------------------------------------------------------
@@ -1522,26 +1546,6 @@
 !     ----------------------------------------------------------------------
 
             do m=1,nt_marbl
-
-!     8ai. Surface fluxes:
-               if ( marbl_instance%surface_fluxes(1,m) .gt. 0) then
-                  tracer_array(i,j,nz,nnew, m+(NT-nt_marbl) ) =
-     &                 tracer_array(i,j,nz,nnew, m+(NT-nt_marbl) ) +
-     &                 marbl_instance%surface_fluxes(1,m)*dt/Hz(i,j,nz)
-
-                  if ( (i==printi) .and. (j==printj)
-     &                 .and. (mynode==printnode)
-     &                 .and. (print_values) ) then
-                     write(*,'(A,F10.5,1X,A,1X,A,1X,A)') 
-     &                 'We just applied a surface flux of ',
-     &                 marbl_instance%surface_fluxes(1,m),
-     &                 trim(marbl_instance%tracer_metadata(m)%flux_units),
-     &                 'to',
-     &                 trim(marbl_instance%tracer_metadata(m)%short_name)
-                  end if
-               end if
-!     8aii. Interior tendencies:
-            
                tracer_array(i,j,:,nnew, m+(NT-nt_marbl) ) =
      &              tracer_array(i,j,:,nnew, m+(NT-nt_marbl) ) +
      &              marbl_instance%interior_tendencies(m,nz:1:-1)*dt
