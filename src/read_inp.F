@@ -82,7 +82,7 @@
         is=iargc() ; if (is == 1) call getarg(is,fname)
 #ifdef MPI
       endif
-      call MPI_Bcast(fname,64,MPI_BYTE, 0, ocean_grid_comm, ierr)
+      call MPI_Bcast(fname,max_fname,MPI_BYTE, 0, ocean_grid_comm, ierr)
 #endif
 
 ! Read in keyword name: keep trying, until keyword is found.

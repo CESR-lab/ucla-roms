@@ -39,7 +39,8 @@
      &                                        dust,iron
       use surf_flux                   , only: srflx
       use nc_read_write
-      use scalars                     , only: nstp,nnew,dt,iic,ntstart
+      use scalars                     , only: nstp,nnew,dt,iic,ntstart,
+     &                                        Cp, rho0
       use grid                        , only : rmask
 #ifdef MPI
       use mpi
@@ -1373,8 +1374,8 @@
 
                else             ! 3D field
                   if (wrt_bgc_diag_3d(diagidx3d)) then
-                     diag_array_3d(i,j,:,idx_bgc_diag_2d(diagidx3d))=
-     &                    real(MARBL_instance%surface_flux_diags%diags(m)%field_3d(1,:))
+                     diag_array_3d(i,j,:,idx_bgc_diag_3d(diagidx3d))=
+     &                    real(MARBL_instance%surface_flux_diags%diags(m)%field_3d(nz:1:-1,1))
                   end if                     
                   diagidx3d=diagidx3d+1
 
@@ -1412,7 +1413,7 @@
 ! surface shortwave
             if (surf_shortwave_ind > 0) then               
                MARBL_instance%interior_tendency_forcings(surf_shortwave_ind)%field_1d(1,1)=
-     &              srflx(i,j)
+     &              srflx(i,j) * Cp * rho0
             end if
 ! potential temperature
             if (potemp_ind > 0) then
@@ -1537,7 +1538,7 @@
                else             ! 3D field
                   if (wrt_bgc_diag_3d(diagidx3d)) then                  
                      diag_array_3d(i,j,:,idx_bgc_diag_3d(diagidx3d))=
-     &                    real(MARBL_instance%interior_tendency_diags%diags(m)%field_3d(:,1))
+     &                    real(MARBL_instance%interior_tendency_diags%diags(m)%field_3d(nz:1:-1,1))
                   end if                      
                   diagidx3d=diagidx3d+1
 
