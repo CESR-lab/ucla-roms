@@ -84,17 +84,7 @@ c      write(*,*) 'kmp_stacksize =', size
 #ifdef SOLVE3D
         call set_weights
 #endif
-#ifdef GRID_LEVEL
-# if GRID_LEVEL < MAX_GRID_LEVEL
-#  if GRID_LEVEL == 1
-        call init_scalars_2 (ierr)
-#  elif GRID_LEVEL == 2
-        call init_scalars_3 (ierr)
-#  elif GRID_LEVEL == 3
-        call init_scalars_4 (ierr)
-#  endif
-# endif
-#endif
+
       endif
 
 #ifdef BIOLOGY_BEC2
