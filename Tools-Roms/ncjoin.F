@@ -81,7 +81,7 @@ c--#define VERBOSE
       
       integer, dimension(4) :: chunk_sizes ! DevinD: chunksize debugging
 
-      integer, parameter :: maxdims=32, maxvars=220 ! BGC has 201 vars in restart file
+      integer, parameter :: maxdims=32, maxvars=350 ! BGC has 201 vars in restart file
       integer, parameter :: part_XI=1,  part_ETA=2, part_2D=3
 
       logical complete, clean_set,  digit, var_mask,    lnewvar
