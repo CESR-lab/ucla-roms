@@ -98,7 +98,7 @@
 
         elseif(t_ana_frc(itrc)==1) then ! Analytical forcing
 
-          call set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)
+          call set_ana_surf_tracer_flx(itrc)
 
         else
 
@@ -117,25 +117,23 @@
 
       end subroutine set_surf_tracer_flx  !]
 ! ----------------------------------------------------------------------
-      subroutine set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)  ![
+      subroutine set_ana_surf_tracer_flx(itrc)  ![
       ! Set analytical surface tracer flux
       implicit none
 
       ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       integer itrc ! Current tracer index number
 
       ! local
       integer i,j
-
-#include "compute_extended_bounds.h"
+      real    u_pist
 
       ! Currently set up for zero surface tracer flux
       ! Also, time invariant so only set once for efficiency (doesn't change each timestep)
       if (FIRST_TIME_STEP) then ! Only first timestep
 
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=0,ny+1
+          do i=0,nx+1
             stflx(i,j,itrc)= 0.
           enddo
         enddo
@@ -143,13 +141,15 @@
       endif
 
 !     Could have various switches here for the different tracers, e.g.:
-!     if(itrc==iptrace1) then
-!        do j=jstrR,jendR
-!          do i=istrR,iendR
-!            stflx(i,j,itrc)=sin(time)*100. ! Made up example
-!          enddo
-!        enddo
-!     endif
+      u_pist = 5.55e-5 ! 0.20 cm/hour
+      u_pist = u_pist/20.  ! linearization of carbon chemistry
+      if(itrc==3) then
+         do j=0,ny+1
+           do i=0,nx+1
+             stflx(i,j,itrc)= -u_pist*t(i,j,nz,nrhs,itrc)
+           enddo
+         enddo
+      endif
 
       end subroutine set_ana_surf_tracer_flx  !]
 ! ----------------------------------------------------------------------
@@ -266,7 +266,6 @@
       enddo
 
       end subroutine set_avg_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine init_tracers  ![
 
