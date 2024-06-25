@@ -30,10 +30,9 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
-
-        call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
+        call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
 
         if (ierr == 0) then
 C$        call omp_set_dynamic(.false.)
