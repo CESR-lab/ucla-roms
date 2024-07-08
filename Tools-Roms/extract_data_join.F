@@ -56,8 +56,8 @@
       implicit none
 
       ! XDATA VARS:
-      integer,parameter :: max_sets=20                               ! max number of expected sets - need check for not exceeded!!!
-      integer,parameter :: max_evars=40                              ! max vars per set - z,S,T,ub,u,up,vb,v,vp - need check (9x4=36)
+      integer,parameter :: max_sets=64                               ! max number of expected sets - need check for not exceeded!!!
+      integer,parameter :: max_evars=256                              ! max vars per set - z,S,T,ub,u,up,vb,v,vp - need check (9x4=36)
       integer :: nsets=0                                             ! count of sets (root name)
       logical :: found
       logical :: new_var                                             ! trigger reading start and count for new variable
