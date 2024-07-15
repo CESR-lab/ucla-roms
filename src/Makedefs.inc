@@ -34,7 +34,7 @@
 
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
     CPP = /lib/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include
+	CPPFLAGS = -I${MPIHOME}/include/mpi -I${NETCDFHOME}/include
 
 #   Since we no longer keep .f files after compilation, if you want to still
 #   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
@@ -43,12 +43,16 @@
 #   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
 
 # Path names (non-hydrostatic & NetCDF libraries):
+	ROMS_ROOT = /home/nmolem/ucla-roms/
+
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
 	NHMG_INC  = $(NHMG_ROOT)/include
 
 	VPATH = ${MPIHOME}/include:${NHMG_INC}
-	CPATH = ${MPIHOME}/include:${NHMG_INC}
+	CPATH = ${MPIHOME}/include/mpi:${NHMG_INC}
+
+	MPI_INC = -I/opt/intel/oneapi/mpi/latest/include/mpi
 
 # Get netCDF paths and options ('shell' is needed to use command)
 	NETCDFF_INC=$(shell nf-config --fflags)
@@ -61,7 +65,7 @@
 # OpenMP flags:
 #	note, -qopenmp is the new -openmp but is still needed for maya
 #	OMP_FLAG = -fpp -openmp
-#	OMP_FLAG = -qopenmp
+ 	OMP_FLAG = -qopenmp
 
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
@@ -75,18 +79,19 @@
 	CFT =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
 #	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+ 	CFT = mpiifx $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran loader name and options: (mpifort has replaced legacy mpif90)
 #	- using non-intel MPI:
-	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
-#	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+ 	LDR = mpiifx $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
 	FFLAGS = -O3 -ip
 # - uncomment for debugging:
- 	FFLAGS = -g -traceback -check all -CA -CB -CS
+#	FFLAGS = -g -traceback -check all -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
@@ -97,7 +102,7 @@
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MPI_INC)
 
 # -------------------------------------------------------------
 
