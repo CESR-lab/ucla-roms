@@ -649,10 +649,17 @@
       character(len=20),dimension(3) :: dname3 ! dimension names
       integer,          dimension(3) :: dsize3 ! dim lengths
 
+      character(len=20) :: np_label
+      character(len=20) :: time_label
+
       do i = 1,nobj
         if (obj(i)%np>0) then
           write(label,'(I0.3)') i
-          dname = (/ 'np'//label, 'time_'//trim(obj(i)%set) /)
+!         dname = (/ 'np'//label, 'time_'//trim(obj(i)%set) /)
+          np_label = 'np'//label
+          time_label = 'time_'//trim(obj(i)%set)
+          dname = (/ np_label, time_label /)
+
           dsize = (/ obj(i)%np ,  0/)
           dname3(1) = 'np'//label
           dname3(2) = 's_rho'

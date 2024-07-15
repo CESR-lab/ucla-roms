@@ -6,9 +6,13 @@
       use param
       use tracers, only: t_vname, t, iTandS
       use bgc ! get_init_bgc_diag
+#ifdef MARBL
+      use marbl_driver, only: marbldrv_read_ss_vars_from_rst
+#endif
       use coupling
       use grid
       use hidden_mpi_vars
+      use analytical
       use mixing
       use ocean_vars
       use basic_output
@@ -443,9 +447,9 @@ c--#define VERBOSE
 # ifdef LMD_KPP
       ierr=nf90_inq_varid(ncid, vname(1,indxHbls), varid)
       if (ierr == nf90_noerr) then
-        call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
-        hbls(i0:i1,j0:j1,tindx)=hbls(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
-        call exchange_xxx(hbls(:,:,tindx) )
+        call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
+        hbls(i0:i1,j0:j1)=hbls(i0:i1,j0:j1)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
+        call exchange_xxx(hbls(:,:) )
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
      & 'variable ''', trim(vname(1,indxHbls)), ''' not found in ''',
@@ -456,9 +460,9 @@ c--#define VERBOSE
 # ifdef LMD_BKPP
       ierr=nf90_inq_varid(ncid, vname(1,indxHbbl), varid)
       if (ierr == nf90_noerr) then
-        call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,tindx),start)      ! mask doesn't change answer but makes
-        hbbl(i0:i1,j0:j1,tindx)=hbbl(i0:i1,j0:j1,tindx)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
-        call exchange_xxx(hbbl(:,:,tindx) )            ! confirmed needs an exchange, not sure why
+        call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
+        hbbl(i0:i1,j0:j1)=hbbl(i0:i1,j0:j1)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
+        call exchange_xxx(hbbl(:,:) )            ! confirmed needs an exchange, not sure why
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
      & 'variable ''', trim(vname(1,indxHbbl)), ''' not found in ''',
@@ -467,6 +471,11 @@ c--#define VERBOSE
       endif
 # endif
 
+#ifdef MARBL
+!     Read in MARBL saved_state variables here
+      call marbldrv_read_ss_vars_from_rst(ncid,record)
+#endif /* MARBL */      
+      
 #endif /* SOLVE3D */
 
 
@@ -545,6 +554,11 @@ c--#define VERBOSE
         vbar(:     ,jend+1,1)      =0.0
       endif
 #endif
+
+#if defined ANA_BRY
+      call ana_init_generic(1,nx,1,ny)
+#endif
+
 
 #ifdef VERBOSE
       write(*,'(1x,3(1x,A,I6))') 'return from get_init, ntstart =',

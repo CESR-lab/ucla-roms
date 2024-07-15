@@ -257,10 +257,10 @@
       blowup = .false.
       initial= .false.
       if (present(special)) then
-        if (special==.false.) then
-          initial = .true.
-        else
+        if (special) then
           blowup = .true.
+        else
+          initial = .true.           
         endif
       endif
 
@@ -342,10 +342,10 @@
 # endif
         start(3)=rec_his                                      ! back to 2D vars
 # ifdef LMD_KPP
-        if (wrt_Hbls) call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
+        if (wrt_Hbls) call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)
 # endif
 # ifdef LMD_BKPP
-        if (wrt_Hbbl) call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
+        if (wrt_Hbbl) call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)
 # endif
 #endif
         ierr=nf90_close(ncid)
@@ -441,7 +441,7 @@
         if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
      &        'ocean_vars :: wrote averages, tdays =', tdays,
-     &        'step =', iic-1, 'rec =', rec_avg, '/', total_rec_avg  ! -1 since iic=t(n+1)
+     &        'step =', iic, 'rec =', rec_avg, '/', total_rec_avg  ! 
      &         MYID
         endif
       endif
@@ -461,7 +461,10 @@
       use grid
       use tracers 
       use coupling
-
+#ifdef MARBL
+!     add MARBL saved state to restart to restart file
+      use marbl_driver, only: marbldrv_write_ss_vars_to_rst
+#endif       
       implicit none
 
       ! local
@@ -538,27 +541,30 @@
 
 
 # ifdef LMD_KPP
-        call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1,nstp),start)
+        call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)
 # endif
 # ifdef LMD_BKPP
-        call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1,nstp),start)
+        call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)
 # endif
 #endif
         ! Added for perfect restart reasons
 !       start(3)=1; start(4)=rec_rst
-!       call ncwrite(ncid,'Akv',Akv(i0:i1,j0:j1,:,nstp),start)
-!       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,nstp,itemp),start)
-!       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,nstp,isalt),start)
+!       call ncwrite(ncid,'Akv',Akv(i0:i1,j0:j1,:),start)
+!       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,itemp),start)
+!       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,isalt),start)
 
         if (ub_tune)   call wrt_rst_ub(ncid,rec_rst)
         if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
 
+#ifdef MARBL
+        call marbldrv_write_ss_vars_to_rst(ncid,rec_rst)
+#endif         
 
         ierr=nf90_close(ncid)
         if (mynode == 0) then
           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
      &     'ocean_vars :: wrote restart, tdays =', tdays,
-     &     'step =', iic-1, 'rec =', rec_rst, '/', total_rec_rst     ! -1 since iic=t(n+1)
+     &     'step =', iic, 'rec =', rec_rst, '/', total_rec_rst
         endif
 
         if (output_time_rst>=output_period_rst) then
@@ -761,15 +767,21 @@
       subroutine def_vars_rst_ocean_vars  ![
       ! define output variable & attributes in netcdf restart file
       use tracers
+#ifdef MARBL
+!     add MARBL saved state to restart to restart file
+      use marbl_driver, only: marbldrv_create_ss_vars_in_rst
+#endif       
       implicit none
 
       ! local
       integer :: ierr, varid, itrc
-
+      character(len=7)  :: dn_aux = 'auxil'
+      
 ! Time-step number and time-record indices: (history file only, this
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
-      varid = nccreate(ncid,'time_step',(/'auxil',dn_tm/),(/iaux,0/),nf90_int)
+      varid = nccreate(ncid,'time_step',(/dn_aux,dn_tm/),(/iaux,0/),nf90_int)
+
       ierr=nf90_put_att (ncid, varid, 'long_name',
      &       'time step and record numbers from initialization')
 
@@ -787,6 +799,9 @@
      &                                      (/xi_rho,eta_v,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxVb))
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
+#ifdef MARBL
+      call marbldrv_create_ss_vars_in_rst(ncid)
+#endif      
 #ifdef SOLVE3D
       varid = nccreate(ncid,vname(1,indxU),(/dn_xu,dn_yr,dn_zr,dn_tm/),
      &                                     (/xi_u,eta_rho,N,0/),nf90_double)
@@ -953,10 +968,10 @@
         if (wrt_avg_Aks) aks_avg(i0:i1,j0:j1,:) = aks_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,isalt)*coef
 #  endif
 #  ifdef LMD_KPP
-        if (wrt_avg_Hbls) hbl_avg(i0:i1,j0:j1)  =  hbl_avg(i0:i1,j0:j1)*(1-coef) + hbls(i0:i1,j0:j1,nstp)*coef
+        if (wrt_avg_Hbls) hbl_avg(i0:i1,j0:j1)  =  hbl_avg(i0:i1,j0:j1)*(1-coef) + hbls(i0:i1,j0:j1)*coef
 #  endif
 #  ifdef LMD_BKPP
-        if (wrt_avg_Hbbl) hbbl_avg(i0:i1,j0:j1) = hbbl_avg(i0:i1,j0:j1)*(1-coef) + hbbl(i0:i1,j0:j1,nstp)*coef
+        if (wrt_avg_Hbbl) hbbl_avg(i0:i1,j0:j1) = hbbl_avg(i0:i1,j0:j1)*(1-coef) + hbbl(i0:i1,j0:j1)*coef
 #  endif
 # endif /* SOLVE3D */
 
@@ -980,7 +995,7 @@
       integer :: ibuff(iaux), start(2), count(2)           ! iaux = 6 from wrt_his.F
       integer :: var_id_tmp, ierr
 
-      ibuff(1)=iic-1  ; ibuff(2)=record                    ! time step and
+      ibuff(1)=iic    ; ibuff(2)=record                    ! time step and
       ibuff(4:iaux)=0 ; ibuff(3)=total_recs                ! rechis numbers.
 
       start(1)=1      ; count(1)=6                         ! iaux = 6 in ncvars

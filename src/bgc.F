@@ -6,27 +6,30 @@
       ! Initial coding by Jeroen Molemaker & Devin Dollery (2020 Dec)
       ! Refactoring of ETH Zurich roms code with BEC2, code which has been used
       ! by Pierre Damien to run full pacific models.
-
 #include "cppdefs.opt"
-#ifdef BIOLOGY_BEC2
+
+#if defined BIOLOGY_BEC2 || defined MARBL
 
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
-      use read_write, only: set_frc_var_tile, ncvs, rp_var
-      use tracers     ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+      use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
+#ifdef MARBL      
+      use marbl_driver 
+#endif      
       use bgc_ecosys_vars
       use nc_read_write
       use roms_read_write
       use netcdf
       use scalars
+      use dimensions !
       use ocean_vars
+      use dimensions
 
       implicit none
 
       private ! Make all variable private to this module unless public specified
 
       ! Includes:
-#include "bgc.opt"
 
       ! netcdf outputting:
       integer :: ncid=-1, prev_fill_mode
@@ -49,10 +52,8 @@
       public set_bgc_surf_frc
       public init_arrays_bgc_frc
       public init_scalars_bec2
-!      public wrt_bgc_tracers
-!      public wrt_bgc_diags
+      public wrt_bgc_diags
       public wrt_bgc
-      public do_bgc_diags
 
       contains
 
@@ -86,18 +87,32 @@
 #endif
 
 
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
+      call set_frc_data(nc_dust,dust,'r')
+      call set_frc_data(nc_iron,iron,'r')
 
 
 #ifdef PCO2AIR_FORCING
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
-#endif /* PCO2AIR_FORCING */   
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
+      call set_frc_data(nc_pco2air,pco2air,'r')
+#ifdef MARBL
+      call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
+#endif      
+#endif /* PCO2AIR_FORCING */
+      
+#ifdef NOX_FORCING
+      call set_frc_data(nc_nox,nox,'r')
+#endif /* NOX_FORCING */   
+#ifdef NHY_FORCING
+      call set_frc_data(nc_nhy,nhy,'r')
+#endif /* NHY_FORCING */
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
-      call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+!     call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
+      call set_frc_data(nc_swrad_avg,swrad_avg,'r')
      
       do j=jstrR,jendR
         do i=istrR,iendR
@@ -119,7 +134,6 @@
 #endif /* DAILYPAR_PHOTOINHIBITION */ 
 
       end subroutine set_bgc_surf_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_bgc_tracers(avg)  ![
       ! write variables to output netcdf file
@@ -233,22 +247,17 @@
       ierr=nf90_close(ncid)
 
       end subroutine wrt_bgc_tracers  !]
-
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
-      subroutine wrt_bgc_diags(avg)  ![
+      subroutine wrt_bgc_diags ![
       implicit none
-
-      ! import/export
-      logical, intent(in) :: avg
-
+#if defined (BEC2_DIAG) || defined (MARBL_DIAGS)
       ! local
       character(len=99),save :: fname_his,fname_avg
       integer                :: itrc, ierr, idiag
       logical,save           :: first_step_dia_avg=.true.
       logical,save           :: first_step_dia_his=.true.
 
-      if (avg) then
+      if (wrt_avg_dia) then
 
 !         if (.not. first_step_dia_avg) then
             call calc_avg_dia_bgc                              ! don't include t=0 in averaging
@@ -258,7 +267,7 @@
 
         if (output_time_dia_avg>=output_period_avg_dia) then  ! time for an output
           if (mod(record_dia_avg,nrpf_avg_dia)==0) then
-             call create_bgc_dia_file(fname_avg,avg)
+             call create_bgc_dia_file(fname_avg,.true.)
              record_dia_avg = 0
           endif
           record_dia_avg = record_dia_avg + 1
@@ -268,10 +277,6 @@
           call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_avg/))
           do itrc=1,nr_bec2_diag_2d
             if (wrt_bec2_diag_2d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: average, diag = ', vname_bec2_diag_2d(1,itrc)
-!               endif
             idiag = idx_bec2_diag_2d(itrc)
             call ncwrite(ncid,vname_bec2_diag_2d(1,itrc),
      &           bec2_diag_2d_avg(i0:i1,j0:j1,idiag),(/1,1,record_dia_avg/))
@@ -279,24 +284,21 @@
           enddo
           do itrc=1,nr_bec2_diag_3d
             if (wrt_bec2_diag_3d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: average, diag = ', vname_bec2_diag_3d(1,itrc)
-!               endif
             idiag = idx_bec2_diag_3d(itrc)
             call ncwrite(ncid,vname_bec2_diag_3d(1,itrc),
      &           bec2_diag_3d_avg(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_avg/))
             endif
           enddo
           if (mynode == 0) then
-!           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4)')
      &       'bgc diag :: wrote average, tdays =', tdays,
      &       'step =', iic, 'rec =', record_dia_avg
           endif
         endif  
 
-      else
+      endif  
+
+      if (wrt_his_dia) then
 
         if (.not. first_step_dia_his) then
            output_time_dia_his = output_time_dia_his + dt
@@ -306,7 +308,7 @@
         if (output_time_dia_his>=output_period_his_dia .or.
      &      output_time_dia_his==0                     ) then  ! time for an output
           if (mod(record_dia_his,nrpf_his_dia)==0) then
-             call create_bgc_dia_file(fname_his,avg)
+             call create_bgc_dia_file(fname_his,.false.)
              record_dia_his = 0
           endif
           record_dia_his = record_dia_his + 1
@@ -345,10 +347,9 @@
       endif
 
       ierr=nf90_close(ncid)
+#endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
 
       end subroutine wrt_bgc_diags  !]
-#endif /* BEC2_DIAG */
-
 !----------------------------------------------------------------------
       subroutine create_bgc_file(fname,avg)  ![
       implicit none
@@ -373,9 +374,8 @@
       ierr = nf90_enddef(ncid)
 
       end subroutine create_bgc_file !]
-
 !----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined (BEC2_DIAG) || defined (MARBL_DIAGS)
       subroutine create_bgc_dia_file(fname,avg)  ![
       implicit none
 
@@ -399,8 +399,7 @@
       ierr = nf90_enddef(ncid)
 
       end subroutine create_bgc_dia_file !]
-#endif /* BEC2_DIAG */
-
+#endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
 ! ----------------------------------------------------------------------
       subroutine def_vars_bgc( ncid, avg )  ![
       ! define output variable & attributes in netcdf results file
@@ -420,6 +419,7 @@
              text_lname='avg_'/ /t_lname(itrc)
              varid = nccreate(ncid,t_vname(itrc),
      &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
@@ -437,7 +437,6 @@
       endif
 
       end subroutine def_vars_bgc  !]
-
 ! ----------------------------------------------------------------------
       subroutine calc_avg_bgc  ![
       implicit none
@@ -467,9 +466,8 @@
       enddo
 
       end subroutine calc_avg_bgc  !]
-
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined (BEC2_DIAG) || defined (MARBL_DIAGS)
       subroutine calc_avg_dia_bgc  ![
       implicit none
 
@@ -500,10 +498,9 @@
       end do
 
       end subroutine calc_avg_dia_bgc  !]
-#endif /* BEC2_DIAG */
-
+#endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
 ! ----------------------------------------------------------------------
-#ifdef BEC2_DIAG
+#if defined (BEC2_DIAG) || defined (MARBL_DIAGS)
       subroutine def_bgc_diag(ncid,avg)  ![
 
       ! Define history/avg file variables for BEC2_DIAG
@@ -539,28 +536,37 @@
       enddo
 
       end subroutine def_bgc_diag  !]
-#endif /* BEC2_DIAG */
-
+#endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bgc_frc  ![
       implicit none
 
-      allocate( nc_dust%data( GLOBAL_2D_ARRAY,2) )
-      allocate( nc_iron%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_dust%vdata( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_iron%vdata( GLOBAL_2D_ARRAY,2) )
 
 #ifdef PCO2AIR_FORCING
-      allocate( nc_pco2air%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_pco2air%vdata( GLOBAL_2D_ARRAY,2) )
+#ifdef MARBL      
+      allocate( nc_pco2air_alt%vdata( GLOBAL_2D_ARRAY,2) )
+#endif      
+#endif
+
+#ifdef NOX_FORCING
+      allocate( nc_nox%vdata( GLOBAL_2D_ARRAY,2) )
+#endif
+#ifdef NHY_FORCING
+      allocate( nc_nhy%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      allocate( nc_swrad_avg%data( GLOBAL_2D_ARRAY,2) )
+      allocate( nc_swrad_avg%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
       end subroutine  init_arrays_bgc_frc !]
-
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![
-!
+#ifndef MARBL
+!     
 ! Set initial values for  globally accessible (stored in common
 ! blocks) scalar variables of the BEC model.
 !
@@ -577,14 +583,14 @@
       if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
         stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
       endif
-#ifdef BEC2_DIA
+#ifdef BEC2_DIAG
       if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor 
-     &        of output_period_his_dia for diagnostics!'
+        stop 'ERROR :: bgc.opt - dt not a factor ' //
+     &        'of output_period_his_dia for diagnostics!'
       endif
       if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor 
-     &        of output_period_avg_dia for diagnostics!'
+        stop 'ERROR :: bgc.opt - dt not a factor' //
+     &        'of output_period_avg_dia for diagnostics!'
       endif
 #endif /* BEC2_DIA */
 
@@ -662,8 +668,8 @@
 # endif
 #endif /* SOLVE3D */
 
+#endif /* ndef MARBL */      
       end subroutine init_scalars_bec2  !]
-
 ! ----------------------------------------------------------------------
       subroutine wrt_bgc(init)  ![
       implicit none
@@ -679,28 +685,14 @@
          if (wrt_his)     call wrt_bgc_tracers(.false.) ! write his data
          if (wrt_avg)     call wrt_bgc_tracers(.true.) ! write avg data
       endif
-!# ifdef BEC2_DIAG      
-!      if (wrt_his_dia) call wrt_bgc_diags(.false.) ! write his data
-!      if (wrt_avg_dia) call wrt_bgc_diags(.true.) ! write avg data
-!# endif /* BEC2_DIAG */
 
-!      if (mynode==0) print *,'wrt_bgc done'      
+#if defined BEC2_DIAG || defined MARBL_DIAGS
+      call wrt_bgc_diags
+#endif 
+
 
       end subroutine wrt_bgc  !]
-
 ! ----------------------------------------------------------------------
-      subroutine do_bgc_diags  ![
-      implicit none
+#endif /*(BIOLOGY_BEC2 || MARBL)*/
 
-# ifdef BEC2_DIAG      
-      if (wrt_his_dia) call wrt_bgc_diags(.false.) ! write his data
-      if (wrt_avg_dia) call wrt_bgc_diags(.true.) ! write avg data
-# endif /* BEC2_DIAG */
-
-!      if (mynode==0) print *,'wrt_bgc diags done'
-
-      end subroutine do_bgc_diags  !]
-
-! ----------------------------------------------------------------------
-#endif /* BIOLOGY_BEC2 - entire module */
       end module bgc

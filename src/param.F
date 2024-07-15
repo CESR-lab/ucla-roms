@@ -9,10 +9,7 @@
 #include "cppdefs.opt"
 
 ! Need this here above param.opt for BGC to work:
-      integer, parameter :: itemp=1
-# ifdef SALINITY
-     &                    , isalt=2
-# endif
+      integer, parameter :: itemp=1,isalt=2
 
 #include "param.opt"
 

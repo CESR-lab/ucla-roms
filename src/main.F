@@ -101,7 +101,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use boundary
       use particles
       use random_output
-# ifdef BIOLOGY_BEC2
+# if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
       use bgc
 # endif
@@ -203,10 +203,11 @@ C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
 CR      write(*,*) ' -6' MYID
 #endif
 
-# ifdef BIOLOGY_BEC2
-      ! pH is initialized to 0 in ecosys_init
+# if defined(BIOLOGY_BEC2)
+!     pH is initialized to 0 in ecosys_init
+!     FIXME: if using MARBL with diagnostics then this call is skipped and diagnostics arrays are not initialised to 0
       call ecosys2_init
-# endif
+# endif /*BIOLOGY_BEC2*/
 
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
@@ -279,8 +280,9 @@ CR      write(*,*)  ' -2' MYID
 #endif
       ! The optional argument refers to
       ! blowup if true, and initial if false. 
+      ! Come up with a better name!
       call wrt_his_ocean_vars(.false.)
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
       if (do_random) call init_random
@@ -375,11 +377,9 @@ CR      write(*,*)  ' -2' MYID
       call ana_vmix
 # elif defined LMD_MIXING
       call lmd_vmix(nstp)
-      if (mynode==0) then
-!       print *,'pre-step mixing: ',hbls(20,20,nstp),maxval(Akv(20,20,:))
-      endif
-# elif defined BVF_MIXING
-      call bvf_mix(0)
+!     if (mynode==0) then
+!       print *,'pre-step mixing: ',hbls(nx,20),maxval(Akv(nx,20,:))
+!     endif
 # endif
 
       ! nrhs points to u/v at time level n
@@ -406,9 +406,9 @@ CR      write(*,*)  ' -2' MYID
       call set_forces   ! get for time n+1/2
 # if defined LMD_MIXING
       call lmd_vmix(nrhs)
-      if (mynode==0) then
-!       print *,'cor-step mixing: ',hbls(20,20,nrhs),maxval(Akv(20,20,:))
-      endif
+!     if (mynode==0) then
+!       print *,'cor-step mixing: ',hbls(nx,20),maxval(Akv(nx,20,:))
+!     endif
 # endif
 
       tdays = (time+0.5*dt)*sec2day
@@ -459,7 +459,7 @@ CR      write(*,*)  ' -2' MYID
       time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
 
-      call calc_avg_ocean_vars ! call here not wrt_his else
+      call calc_avg_ocean_vars 
 
 !     Done with stepping, time for outputs
 
@@ -468,10 +468,6 @@ CR      write(*,*)  ' -2' MYID
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
-#ifdef BIOLOGY_BEC2
-      call wrt_bgc
-#endif
-
       if (do_extract) call do_extract_data
 
       if (ub_tune)    call adjust_orlanski
@@ -486,8 +482,8 @@ CR      write(*,*)  ' -2' MYID
 
       if (do_random) call wrt_random
 
-#if (defined BIOLOGY_BEC2 && defined BEC2_DIAG) 
-      call do_bgc_diags
-#endif /* BIOLOGY_BEC2 */
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
+      call wrt_bgc
+#endif
 
       end

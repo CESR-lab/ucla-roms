@@ -2,7 +2,7 @@
       ! formerly bgc_forces.h
 
 #include "cppdefs.opt"
-#ifdef BIOLOGY_BEC2
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       use param
       implicit none
@@ -12,6 +12,9 @@
 ! ------- -------------
 !     pCO2air: pCO2air concentraion [ppm]
       real,allocatable,dimension(:,:) :: pco2air
+#ifdef MARBL      
+      real,allocatable,dimension(:,:) :: pco2air_alt
+#endif      
 CSDISTRIBUTE_RESHAPE  pCO2air(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # if defined PCO2AIR_DATA || defined ALL_DATA
 # ifndef SET_SMTH
@@ -75,7 +78,7 @@ CSDISTRIBUTE_RESHAPE  noxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
 #endif /* NOX_FORCING */
 
-#if defined BIOLOGY_BEC || defined BIOLOGY_BEC2
+#if defined BIOLOGY_BEC || defined BIOLOGY_BEC2 || defined(MARBL)
 ! dust flux
 ! ---- ----
 !      dust: dust flux [kg m-2 s-1]
@@ -106,7 +109,7 @@ CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
      &           iron_file_id, iron_id,  iron_tid
 # endif /* defined IRON_DATA || defined ALL_DATA */
 
-#endif /* BIOLOG_BEC || BIOLOG_BEC2 */
+#endif /* BIOLOG_BEC || MARBL */
 
       contains
 
@@ -116,6 +119,9 @@ CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 #ifdef PCO2AIR_FORCING
       allocate( pco2air(GLOBAL_2D_ARRAY) )
+#ifdef MARBL      
+      allocate( pco2air_alt(GLOBAL_2D_ARRAY) )
+#endif      
 #endif /* PCO2AIR_FORCING */
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
@@ -142,7 +148,7 @@ CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
 #endif /* NOX_FORCING */
 
-#if defined BIOLOGY_BEC || defined BIOLOGY_BEC2
+#if defined BIOLOGY_BEC || defined BIOLOGY_BEC2 || defined MARBL
       allocate( dust(GLOBAL_2D_ARRAY) )
 # if defined DUST_DATA || defined ALL_DATA
 #  ifndef SET_SMTH
@@ -163,5 +169,5 @@ CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 !----------------------------------------------------------------------
 
-#endif /* BIOLOGY_BEC2 */
+#endif /* BIOLOGY_BEC2  || MARBL */
       end module bgc_forces

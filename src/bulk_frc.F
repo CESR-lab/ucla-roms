@@ -6,15 +6,13 @@
       use dimensions
       use mpi_exchanges
       use roms_read_write
-
+      
       implicit none
 
       private  ! make all variable private to this module unless public specified
 
 #include "bulk_frc.opt"
 
-      real,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
-      real,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind
       real,allocatable,dimension(:,:) ::  tair             ! air temp
       real,allocatable,dimension(:,:) ::     Q             ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
       real,allocatable,dimension(:,:) :: prate             ! prate (precipitation rate) - 'rain' variable in old code
@@ -29,26 +27,24 @@
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
       public init_arrays_bulk_frc
-      public set_bulk_frc_tile
+      public set_bulk_frc
 
       contains
 
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bulk_frc  ![
       implicit none
-
-      allocate(  uwnd(GLOBAL_2D_ARRAY) )
-      allocate(  vwnd(GLOBAL_2D_ARRAY) )
       allocate(  tair(GLOBAL_2D_ARRAY) )
       allocate(     Q(GLOBAL_2D_ARRAY) )
       allocate( prate(GLOBAL_2D_ARRAY) )
       allocate( lwrad(GLOBAL_2D_ARRAY) )
-
+      
       allocate( wspd_used(GLOBAL_2D_ARRAY) )
 
-      ! vdata needs to be of blobal_2d_array size
+!     vdata needs to be of global_2d_array size
       allocate( nc_uwnd%vdata(GLOBAL_2D_ARRAY,2) )
       allocate( nc_vwnd%vdata(GLOBAL_2D_ARRAY,2) )
+!
       allocate( nc_tair%vdata(GLOBAL_2D_ARRAY,2) )
       allocate( nc_Q%vdata(GLOBAL_2D_ARRAY,2) )
       allocate( nc_prate%vdata(GLOBAL_2D_ARRAY,2) )
@@ -63,7 +59,7 @@
       allocate( nc_tauy%vdata(GLOBAL_2D_ARRAY,2) )
 #endif
 
-      if (interp_frc==1) then 
+      if (interp_frc==1) then
         nc_uwnd%coarse = 1
         nc_vwnd%coarse = 1
         nc_tair%coarse = 1
@@ -76,9 +72,9 @@
 
       end subroutine init_arrays_bulk_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_bulk_frc_tile(istr,iend,jstr,jend) ![
+      subroutine set_bulk_frc(istr,iend,jstr,jend) ![
 
-      use surf_flux, only: srflx
+      use surf_flux, only: srflx,uwnd,vwnd
 
       implicit none
 
@@ -94,10 +90,10 @@
       ! file. The ranges here need to match the sizes in the partitioned files
       call set_frc_data(nc_swrad,srflx,'r')
       call set_frc_data(nc_lwrad,lwrad,'r')
-
+      
       call set_frc_data(nc_uwnd,uwnd,'r')
       call set_frc_data(nc_vwnd,vwnd,'r')
-
+      
       call set_frc_data(nc_tair,tair,'r')
       call set_frc_data(nc_Q,Q,'r')
 
@@ -131,7 +127,7 @@
       endif
 
 
-      end subroutine set_bulk_frc_tile  !]
+      end subroutine set_bulk_frc  !]
 !-----------------------------------------------------------------------
       subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
 
@@ -673,49 +669,7 @@
 !  Compute turbulent sensible heat flux (W/m2), Hs.
 !
           hfsen=-blk_Cpa*rhoAir*Wstar*Tstar!
-!  For EMINUSP option,  EVAP = LHeat (W/m2) / Hlv (J/kg) = kg/m2/s
-!                       PREC = rain = kg/m2/s
-!
-!  To convert these rates to m/s divide by freshwater density, rhow.
-!
-!  Note that when the air is undersaturated in water vapor (Q < Qsea)
-!  the model will evaporate and LHeat > 0:
-!
-!                   LHeat positive out of the ocean
-!                    evap positive out of the ocean
-!
-!  Note that if evaporating, the salt flux is positive
-!        and if     raining, the salt flux is negative
-!
-!  Note that fresh water flux is positive out of the ocean and the
-!  salt flux (stflx(isalt)) is positive into the ocean. It is converted
-!  to (psu m/s) for stflx(isalt) in "set_vbc.F".
-!----------------------------------------------------------------------
-!
-!  Latent and sensible heat fluxes
-!
-          hflat=-hflat*rho0i*cpi
-          hfsen=-hfsen*rho0i*cpi
-!
-!  Total surface heat flux
-!
-          stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
-!
-!  Total surface salt flux
-!
-          evap=-cp*hflat/Hlv
-          ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
-          stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
 
-# ifdef MASKING
-          stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
-          stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
-# endif
-!
-!  Save for the calculation of wind stress
-!
-          aer(i,j)=rhoAir*wspd0*rho0i
-!
 !  Compute turbulent latent heat flux (W/m2), Hl.
 !
           hflat=-Hlv*rhoAir*Wstar*Qstar
@@ -762,15 +716,18 @@
 !
           stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
 !
+# ifdef SALINITY          
 !  Total surface salt flux
 !
           evap=-cp*hflat/Hlv
           ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
           stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
-
+#endif
 # ifdef MASKING
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
+# ifdef SALINITY
           stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
+# endif          
 # endif
 !
 !  Save for the calculation of wind stress
@@ -824,11 +781,13 @@
 ! Flux correction to surface salt flux.
 !--------------------------------------------------------------
 # ifdef SFLX_CORR
+# ifdef SALINITY          
           stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
      &           t(i,j,N,nrhs,isalt) - sss(i,j)  )
 #  ifdef MASKING
      &                                           *rmask(i,j)
 #  endif
+# endif          
 # endif
 
 !---------------------------------------------------------------

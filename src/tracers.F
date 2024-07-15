@@ -26,15 +26,12 @@
       use nc_read_write
       use roms_read_write
       use netcdf
+#ifdef MARBL      
+      use marbl_driver
+#endif      
       use mpi_exchanges
       implicit none
       private
-
-      !-- Tracer indices specific to each tracer
-      ! Set to zero as possible means to avoid errors later? Might not be
-      ! Necessary. itmp -> itemp, had to spell differently for now as
-      ! itemp lives in param still (avoid clash). Same for islt -> isalt
-      integer :: itmp=0, islt=0
 
       real,public,allocatable,dimension(:,:,:,:,:) :: t              ! array of tracers
 
@@ -45,6 +42,8 @@
       character*47, dimension(nt), public :: t_tname                 ! tracer input time variable name
       logical, dimension(nt), public      :: wrt_t                   ! t/f output tracer.
       logical, dimension(nt), public      :: wrt_t_avg               ! t/f output avg tracer.
+      logical, dimension(nt), public      :: wrt_t_dia = .false.     ! t/f diagnostics tracer.
+
       integer, dimension(nt)              :: t_ana_frc               ! whether surface flux is read in (0), or analytical (1)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
@@ -53,17 +52,10 @@
       type (ncforce)    :: nc_t( NT )                                   ! array of ncvs for each tracer
       integer,public :: iTandS                                       ! combined index of temperature and salinity
                                                                      ! public as used in set_forces.F. Need to be parameter
-      integer,public :: nt_passive=0                                 ! total number of passive tracers
+!     integer,public :: nt_passive=0                                 ! total number of passive tracers
       integer        :: itot=0                                       ! index counter to count total number of tracers.
                                                                      ! this term prevents the need to hardcode tracer indices.
       integer        :: interp_t                                     ! interpolate forcing from coarser input grid (=1) or not (=0)
-
-      ! 3 below currently in param as per old code
-!      integer :: itrc_bio=0 ! Starting tracer index for bgc tracers. Set in tracers_defs.h
-      ! Number of 'base' bgc tracers, i.e. minimum number of bgc tracers without cocco
-      ! and nitrogen cycle additions
-!      integer :: ntrc_bio_base
-!      integer :: ntrc_bio !  - from (param - ntrc_bio=ntrc_bio_base+ntrc_bio_cocco+ntrc_bio_ncycle)
 
       real, public, allocatable, dimension(:,:,:,:) :: t_avg         ! tracer averages. Memory only allocated for tracers of interest.
       integer,      allocatable, dimension(:)       :: t_avg_2_NT    ! convert index from t_avg(itavg) to t(itrc) since averages array may be smaller
@@ -71,8 +63,7 @@
       integer,dimension(NT),public :: NT_2_t_avg                     ! convert index from t(itrc) to t_avg(itavg) since averages array may be smaller
       integer,public        :: n_t_avg                               ! number of tracer averages to output <= NT
 
-#ifdef BIOLOGY_BEC2
-! bgc needs public indexes as used in other files
+#if defined(BIOLOGY_BEC2) && !defined(MARBL)
 # include "bgc_tracers_indx.opt"
 #endif
 
@@ -107,7 +98,7 @@
 
         elseif(t_ana_frc(itrc)==1) then ! Analytical forcing
 
-          call set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)
+          call set_ana_surf_tracer_flx(itrc)
 
         else
 
@@ -126,25 +117,23 @@
 
       end subroutine set_surf_tracer_flx  !]
 ! ----------------------------------------------------------------------
-      subroutine set_ana_surf_tracer_flx(istr,iend,jstr,jend,itrc)  ![
+      subroutine set_ana_surf_tracer_flx(itrc)  ![
       ! Set analytical surface tracer flux
       implicit none
 
       ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       integer itrc ! Current tracer index number
 
       ! local
       integer i,j
-
-#include "compute_extended_bounds.h"
+      real    u_pist
 
       ! Currently set up for zero surface tracer flux
       ! Also, time invariant so only set once for efficiency (doesn't change each timestep)
       if (FIRST_TIME_STEP) then ! Only first timestep
 
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=0,ny+1
+          do i=0,nx+1
             stflx(i,j,itrc)= 0.
           enddo
         enddo
@@ -152,13 +141,15 @@
       endif
 
 !     Could have various switches here for the different tracers, e.g.:
-!     if(itrc==iptrace1) then
-!        do j=jstrR,jendR
-!          do i=istrR,iendR
-!            stflx(i,j,itrc)=sin(time)*100. ! Made up example
-!          enddo
-!        enddo
-!     endif
+      u_pist = 5.55e-5 ! 0.20 cm/hour
+      u_pist = u_pist/20.  ! linearization of carbon chemistry
+      if(itrc==3) then
+         do j=0,ny+1
+           do i=0,nx+1
+             stflx(i,j,itrc)= -u_pist*t(i,j,nz,nrhs,itrc)
+           enddo
+         enddo
+      endif
 
       end subroutine set_ana_surf_tracer_flx  !]
 ! ----------------------------------------------------------------------
@@ -182,7 +173,6 @@
       enddo
 
       end subroutine def_his_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine def_avg_trc( ncid )  ![
       implicit none
@@ -257,7 +247,6 @@
       enddo
 
       end subroutine wrt_rst_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_avg_trc(coef)  ![
 
@@ -277,7 +266,6 @@
       enddo
 
       end subroutine set_avg_trc  !]
-
 ! ----------------------------------------------------------------------
       subroutine init_tracers  ![
 
@@ -304,20 +292,36 @@
       integer :: cnt=0, itrc
 
       ! Core tracers - temp and salt:
-      itmp=1;
-      t_vname(itmp)='temp';        t_units(itmp)='Celsius'
-      t_lname(itmp)='potential temperature'
+      t_vname(itemp)='temp';        t_units(itemp)='Celsius'
+      t_lname(itemp)='potential temperature'
       iTandS = 1         ! if only temp, no salt.
 #ifdef SALINITY
-      islt=2;
-      t_vname(islt)='salt';        t_units(islt)='PSU'
-      t_lname(islt)='salinity'
+      t_vname(isalt)='salt';        t_units(isalt)='PSU'
+      t_lname(isalt)='salinity'
       iTandS = 2         ! if both temp and salt.
 #endif
       itot=iTandS        ! set up counting for additional tracers
 
       ! Additional passive tracers:
 #include "tracers.opt"
+
+
+#ifdef MARBL      
+      call marbldrv_configure_tracers(
+     &     itot,t_vname,t_lname,t_units,t_tname,wrt_t,wrt_t_avg,t_ana_frc)
+#endif      
+
+      if (mynode==0) then
+         print *, 'metadata about ',NT, ' tracers:'
+         do itrc=1,NT
+            print *, '-----------'
+            print *, 'TRACER NO.: ', itrc
+            print *,'SHORT NAME: ', t_vname(itrc)
+            print *,'LONG NAME: ', t_lname(itrc)
+            print *,'UNITS: ', t_units(itrc)
+            print *, '-----------'         
+         end do
+      end if
 
       allocate( t(GLOBAL_2D_ARRAY,N,3,NT) )
       t=0.

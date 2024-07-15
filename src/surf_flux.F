@@ -37,6 +37,10 @@
       real,public,allocatable,dimension(:,:)   :: svstr_r  ! rho-point, only used in lmd_kpp to get ustar
       real,public,allocatable,dimension(:,:,:) :: stflx    ! Surface fluxes of tracer type variables (rho-points)
       real,public,allocatable,dimension(:,:)   :: srflx    ! Short-wave radiation surface flux
+
+      real,public,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
+      real,public,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind      
+      
       character(len=5) :: sustr_name = 'sustr'
       character(len=5) :: svstr_name = 'svstr'
       character(len=5) :: shflx_name = 'shflx'
@@ -73,7 +77,8 @@
 
       ! local
       character(len=30) :: string
-
+      allocate(  uwnd  (GLOBAL_2D_ARRAY)    );
+      allocate(  vwnd  (GLOBAL_2D_ARRAY)    );       
       allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
@@ -109,12 +114,12 @@
 #if defined QCORRECTION && !defined ANA_SST
       ! Sea-surface temperature (SST) data
       print *,'Allocate space for sst first!! '
-      call set_frc_data(nc_sst,sst)
+      call set_frc_data(nc_sst,sst,'r')
 #endif
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       ! Sea-surface salinity (SSS) data
-      call set_frc_data(nc_sss,sss)
+      call set_frc_data(nc_sss,sss,'r')
 #endif
 
       end subroutine set_surf_field_corr  !]
@@ -207,7 +212,6 @@
         ierr=nf90_open(fname,nf90_write,ncid)
         ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
-!       print *,'trying to write time to flx file ',wrt_smflx,wrt_stflx
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
         start=1; start(3)=record
@@ -239,7 +243,7 @@
         if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
      &        'surf_flux :: wrote surface flux, tdays =', tdays,
-     &        'step =', iic-1, 'rec =', record
+     &        'step =', iic, 'rec =', record
         endif
       endif  ! time for an output
 

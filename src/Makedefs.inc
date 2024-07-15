@@ -34,7 +34,7 @@
 
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
     CPP = /lib/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include/mpi -I${NETCDFHOME}/include
+	CPPFLAGS = -I${MPIHOME}/include/mpi -I${NETCDFHOME}/include -I${MARBL_ROOT}/include	
 
 #   Since we no longer keep .f files after compilation, if you want to still
 #   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
@@ -59,6 +59,10 @@
 	NETCDFF_LIB=$(shell nf-config --flibs)
 	NETCDFC_INC=$(shell nc-config --cflags)
 	NETCDFC_LIB=$(shell nc-config --libs)
+
+# MARBL
+#       MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
+#   	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
 
 # COMPILER SETTINGS:
 
@@ -102,7 +106,7 @@
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MPI_INC)
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MPI_INC) $(MARBL_INC)
 
 # -------------------------------------------------------------
 
