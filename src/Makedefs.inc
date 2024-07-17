@@ -69,7 +69,7 @@
 # OpenMP flags:
 #	note, -qopenmp is the new -openmp but is still needed for maya
 #	OMP_FLAG = -fpp -openmp
- 	OMP_FLAG = -qopenmp
+#	OMP_FLAG = -qopenmp
 
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
@@ -93,7 +93,7 @@
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ip
+	FFLAGS = -O3
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
@@ -106,8 +106,8 @@
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MPI_INC) $(MARBL_INC)
 
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MPI_INC) $(MARBL_INC)
 # -------------------------------------------------------------
 
 # Compiler settings info:
