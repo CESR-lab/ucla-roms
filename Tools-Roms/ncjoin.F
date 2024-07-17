@@ -81,7 +81,7 @@ c--#define VERBOSE
       
       integer, dimension(4) :: chunk_sizes ! DevinD: chunksize debugging
 
-      integer, parameter :: maxdims=32, maxvars=220 ! BGC has 201 vars in restart file
+      integer, parameter :: maxdims=32, maxvars=350 ! BGC has 201 vars in restart file
       integer, parameter :: part_XI=1,  part_ETA=2, part_2D=3
 
       logical complete, clean_set,  digit, var_mask,    lnewvar
@@ -94,8 +94,8 @@ c--#define VERBOSE
 
       character(len=8) sffx, sffx_bak
       character(len=32) vname(maxvars), dimname(maxdims) 
-      character(len=128) :: nctestname, nctargname, root, root_bak, string
-      character(len=128), dimension(:), allocatable :: ncname
+      character(len=256) :: nctestname, nctargname, root, root_bak, string
+      character(len=256), dimension(:), allocatable :: ncname
       character(len=1) :: buff_char ! DevinD added as Expanse complained about putting
                                     ! spherical character in numerical 'buff' array...
 
