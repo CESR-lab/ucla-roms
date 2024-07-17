@@ -1,0 +1,10 @@
+In order to reduce the size of the repo, the input and forcing data
+that are needed to run the examples are stored separately at:
+
+https://ucla.box.com/s/tu6must5svcz8e5ebvgwc7t5dgjeq9bt
+
+- Place all the netcdf files from the ucla box storage above to this directory.
+
+- Partition all netcdf files using: 'partit 3 2 *.nc'. In order to do this, you 
+  need to have compiled the tools in the Tools-Roms directory
+
