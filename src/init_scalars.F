@@ -72,7 +72,7 @@ c      write(*,*) 'kmp_stacksize =', size
 !      bry_id=-1
 #endif
 
-      call get_date (date_str)
+!     call get_date (date_str)
 
       call init_dimensions                                 ! needs to come before init_output_indices
       call init_output_indices      ! retire this soon (the bfx, bfy thing)
@@ -84,17 +84,7 @@ c      write(*,*) 'kmp_stacksize =', size
 #ifdef SOLVE3D
         call set_weights
 #endif
-#ifdef GRID_LEVEL
-# if GRID_LEVEL < MAX_GRID_LEVEL
-#  if GRID_LEVEL == 1
-        call init_scalars_2 (ierr)
-#  elif GRID_LEVEL == 2
-        call init_scalars_3 (ierr)
-#  elif GRID_LEVEL == 3
-        call init_scalars_4 (ierr)
-#  endif
-# endif
-#endif
+
       endif
 
 #ifdef BIOLOGY_BEC2

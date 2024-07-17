@@ -24,6 +24,17 @@
       ! ---- user input begins
       integer,parameter,dimension(3) :: reference_date = (/2000,1,1/)  ! year, month, day
       integer,parameter :: dt_format = 0
+      integer :: cbf = 5  ! buffer size for coarse data array
+
+      ! Dimension names for in netcdf files
+      character(len=7),public,parameter :: dn_xr = 'xi_rho'
+      character(len=7),public,parameter :: dn_yr = 'eta_rho'
+      character(len=7),public,parameter :: dn_xu = 'xi_u'
+      character(len=7),public,parameter :: dn_yv = 'eta_v'
+      character(len=7),public,parameter :: dn_zr = 's_rho'
+      character(len=7),public,parameter :: dn_zw = 's_w'
+      character(len=7),public,parameter :: dn_tm = 'time'
+
       ! ---- user input ends
 
       character(len=21) :: refdatestr
@@ -47,6 +58,16 @@
       integer, target :: test_var
       character(len=99), public  :: output_root_name
       character(len=41), public  :: git_hash
+
+      ! Dimension names for in and output in netcdf files
+      ! All dimension names need to be strings of 7 characters
+!     character(len=7), public,parameter  :: xdim = 'xi_rho '
+!    &                                      ,ydim = 'eta_rho'
+!    &                                      ,zdim = 's_rho  '
+!    &                                      ,tdim = 'time   '
+!    &                                      ,xdimu= 'xi_u   '
+!    &                                      ,ydimv= 'eta_v  '
+!    &                                      ,zdimw= 's_w    '
 
       ! index ranges for netcdf output (See init_output_indices)
 !     integer,public :: i0,i1,j0,j1
@@ -86,6 +107,7 @@
       character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
 
 
+      public :: insert_nodes
       public :: findstr,append_date_node
       public :: set_frc_data
       public :: read_output_root_name
@@ -154,6 +176,10 @@
 !     integer :: nxc,nyc
       integer :: off_xc,off_yc
 
+      integer :: nxc_left,nxc_righ,nx_righ,nx_left,dfx
+      integer :: nyc_left,nyc_righ,ny_righ,ny_left,dfy
+      integer :: off_x,off_y
+
       gnxc = gnx/2
       gnyc = gny/2
       nxc = (gnxc+NP_xi-1)/np_xi
@@ -192,7 +218,33 @@
       if (jnode==0)        jc0=0
       if (jnode==NP_ETA-1) jc1=nyc+1
 
-      allocate(cdata(1-bf:nxc+bf,1-bf:nyc+bf) );cdata = 0
+      ! figure out how much buffer space we need for cdata
+      ! The biggest offsets between coarse and fine subdomains
+      ! are at the ends of the physical domain due to differences
+      ! off_x,off_y
+      off_x = np_xi*ceiling(1.0*gnx/np_xi) - gnx
+      nxc_left = ceiling(1.0*gnxc/np_xi) - floor(off_xc/2.0)
+      nx_left  = ceiling(1.0*gnx/np_xi)  - floor(off_x/2.0)
+      nxc_righ = ceiling(1.0*gnxc/np_xi) - floor(off_xc/2.0)
+      nx_righ  = ceiling(1.0*gnx/np_xi)  - floor(off_x/2.0)
+      dfx  = max(nx_left - nxc_left*2, nx_righ-nxc_righ*2)
+
+      off_y = np_eta*ceiling(1.0*gny/np_eta) - gny
+      nyc_left = ceiling(1.0*gnyc/np_eta) - floor(off_yc/2.0)
+      ny_left  = ceiling(1.0*gny/np_eta)  - floor(off_y/2.0)
+      nyc_righ = ceiling(1.0*gnyc/np_eta) - floor(off_yc/2.0)
+      ny_righ  = ceiling(1.0*gny/np_eta)  - floor(off_y/2.0)
+      dfy  = max(ny_left - nyc_left*2, ny_righ-nyc_righ*2)
+!     print *, 'dfx: ', dfx
+!     print *, 'dfx: ', dfx
+      cbf = max(ceiling(0.5*dfx)+1,2)
+      cbf = max(ceiling(0.5*dfy)+1,cbf)
+      cbf = cbf + 1
+      if (mynode==0) then
+        print *,'buffer for coarse array: ',cbf
+      endif
+
+      allocate(cdata(1-cbf:nxc+cbf,1-cbf:nyc+cbf) );cdata = 0
 
       end subroutine init_coarse !]
 ! ----------------------------------------------------------------------
@@ -349,13 +401,11 @@
 
         if (nc%ifile == 0) then   ! the first time, we need to fill both slots
           call fill_frc_slice_surf(nc,modtime,it1,gtype)
-!         call exchange_xxx(nc%vdata(:,:,it1))
         else ! cycle it1,it2 between 1 and 2
           it1 = mod(it1,2) + 1
           it2 = mod(it2,2) + 1
         endif
         call fill_frc_slice_surf(nc,modtime,it2,gtype)
-!       call exchange_xxx(nc%vdata(:,:,it2))
       endif 
 
       nc%it1 = it1
@@ -655,7 +705,7 @@
         else 
           call ncread(ncid,vname,cdata(ic0:ic1,jc0:jc1),(/1,1,irec/))
         endif
-        call exchange_xxx(cdata)
+        call exchange_xxx(cdata,array_bf=cbf)
         call coarse2fine(cdata,nc%vdata(:,:,it),gtype)
       else
         if (gtype=='u') then
@@ -667,6 +717,8 @@
         endif
       endif
       ierr = nf90_close(ncid)
+
+      call exchange_xxx(nc%vdata(:,:,it))
 
       if (mynode==0) then
         call display_read_time_to_log(vname,nc%times(it),irec )
@@ -754,7 +806,7 @@
      &   call handle_ierr(ierr,'create_file: '/ /trim(fname) )
 
       if (.not.present(nodate)) then
-        varid = nccreate(ncid,'ocean_time',(/'time'/),(/0/),nf90_double)
+        varid = nccreate(ncid,'ocean_time',(/dn_tm/),(/0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name', refdatestr)
         ierr = nf90_put_att(ncid,varid,'units','second' )
       endif
@@ -779,71 +831,58 @@
       implicit none
 
       ! input/output
-      real,dimension(1-bf:nxc+bf,1-bf:nyc+bf),intent(in) :: cdata   ! coarse data
+      real,dimension(1-cbf:nxc+cbf,1-cbf:nyc+cbf),intent(in) :: cdata   ! coarse data
       real,dimension(1-bf:nx +bf,1-bf:ny +bf),intent(out):: fdata   ! fine data
       character(len=1)                       ,intent(in) :: gtype   ! 'u','v','r' grid type
 
       ! local
       integer :: i,j
       integer :: ic,jc
-      integer :: i2ic,j2jc
-      real    :: a,b,c
+      real    :: xl,yl
 
-!     gic = gi/2 = (i + iSW_corn)/2 = ic + iSWc.
-!     ic =  i/2 + iSW_corn/2 - iSWc
-!     gjc = gj/2 = (j + jSW_corn)/2 = jc + jSWc.
-!     jc =  j/2 + jSW_corn/2 - jSWc
+!  ic,jc in terms of i,j
+!  rho-points:
+!     gi  = 2*gic - 0.5 -> i + iSW = 2*(ic + iSWc) -0.5
+!     ic = 0.5*(i+iSW) - iSWc + 0.25
+!  u-points:
+!     gi  = 2*gic - 1.0 -> i + iSW = 2*(ic + iSWc) -1.0
+!     ic = 0.5*(i+iSW) - iSWc + 0.50
+!  v-points:
+!     gj  = 2*gjc - 1.0 -> j + jSW = 2*(jc + jSWc) -1.0
+!     jc = 0.5*(j+jSW) - jSWc + 0.50
 
-      i2ic = iSW_corn/2 - iSWc
-      j2jc = jSW_corn/2 - jSWc
-
-      a = 0.75
-      b = 0.25
-      c = 0.50
 
       if (gtype=='u') then
-        do j=0,ny+1,2
-          do i=1,nx+1,2
-            ic = (i+1)/2 + i2ic;
-            jc = j/2 + j2jc;
-            fdata(i  ,j  ) = a*(  cdata(ic,jc  )                   )
-     &                     + b*(  cdata(ic,jc+1)                   )
-            fdata(i+1,j  ) = a*(c*cdata(ic,jc  )+c*cdata(ic+1,jc  ))
-     &                     + b*(c*cdata(ic,jc+1)+c*cdata(ic+1,jc+1))
-            fdata(i  ,j+1) = b*(  cdata(ic,jc  )                   )
-     &                     + a*(  cdata(ic,jc+1)                   )
-            fdata(i+1,j+1) = b*(c*cdata(ic,jc  )+c*cdata(ic+1,jc  ))
-     &                     + a*(c*cdata(ic,jc+1)+c*cdata(ic+1,jc+1))
+        do j=j0,j1
+          do i=1,i1
+            ic = floor(0.5*(i+iSW_corn) - iSWc +0.5)
+            xl = 0.5*(i+iSW_corn) - iSWc +0.5 - ic
+            jc = floor(0.5*(j+jSW_corn) - jSWc +0.25)
+            yl = 0.5*(j+jSW_corn) - jSWc +0.25 - jc
+            fdata(i,j) = (1-yl)*((1-xl)*cdata(ic,jc  )+xl*cdata(ic+1,jc  ))
+     &                 +    yl *((1-xl)*cdata(ic,jc+1)+xl*cdata(ic+1,jc+1))
           enddo
         enddo
       elseif (gtype=='v') then
-        do j=1,ny+1,2
-          do i=0,nx+1,2
-            ic = i/2 + i2ic;
-            jc = (j+1)/2 + j2jc;
-            fdata(i  ,j  ) =   (a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
-
-            fdata(i+1,j  ) =   (b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
-
-            fdata(i  ,j+1) = c*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
-     &                     + c*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
-            fdata(i+1,j+1) = c*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
-     &                     + c*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+        do j= 1,j1
+          do i=i0,i1
+            ic = floor(0.5*(i+iSW_corn) - iSWc +0.25)
+            xl = 0.5*(i+iSW_corn) - iSWc +0.25 - ic
+            jc = floor(0.5*(j+jSW_corn) - jSWc +0.5)
+            yl = 0.5*(j+jSW_corn) - jSWc +0.5 - jc
+            fdata(i,j) = (1-yl)*((1-xl)*cdata(ic,jc  )+xl*cdata(ic+1,jc  ))
+     &                 +    yl *((1-xl)*cdata(ic,jc+1)+xl*cdata(ic+1,jc+1))
           enddo
         enddo
       else   ! rho-grid
-        do j=0,ny+1,2
-          do i=0,nx+1,2
-            ic = i/2 + i2ic;
-            jc = j/2 + j2jc;
-            fdata(i  ,j  ) = a*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
-     &                     + b*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
-            fdata(i+1,j  ) = a*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
-     &                     + b*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
-            fdata(i  ,j+1) = b*(a*cdata(ic,jc  )+b*cdata(ic+1,jc  ))
-     &                     + a*(a*cdata(ic,jc+1)+b*cdata(ic+1,jc+1))
-            fdata(i+1,j+1) = b*(b*cdata(ic,jc  )+a*cdata(ic+1,jc  ))
-     &                     + a*(b*cdata(ic,jc+1)+a*cdata(ic+1,jc+1))
+        do j=j0,j1
+          do i=i0,i1
+            ic = floor(0.5*(i+iSW_corn) - iSWc +0.25)
+            xl = 0.5*(i+iSW_corn) - iSWc +0.25 - ic
+            jc = floor(0.5*(j+jSW_corn) - jSWc +0.25)
+            yl = 0.5*(j+jSW_corn) - jSWc +0.25 - jc
+            fdata(i,j) = (1-yl)*((1-xl)*cdata(ic,jc  )+xl*cdata(ic+1,jc  ))
+     &                 +    yl *((1-xl)*cdata(ic,jc+1)+xl*cdata(ic+1,jc+1))
           enddo
         enddo
       endif
@@ -1019,6 +1058,51 @@
       fname = trim(fname) // '.nc'
 
       end subroutine append_date_node !]
+!-----------------------------------------------------------------------
+      subroutine insert_nodes(fname) ![
+      ! Insert date and node number string into filename
+      ! If the nodate argument is present, only add the node number
+      implicit none
+
+      ! import/export
+      character(len=*),intent(inout):: fname 
+
+      ! Local
+      character(len=6)   :: indxstr
+      integer :: label
+      logical :: ncf
+      integer :: istart
+
+      ncf =  findstr(fname,'.nc',istart) 
+      if (ncf) then
+        fname(istart:istart+2) = '   '
+      else
+        print *,'error insert_node. No .nc found in file name'
+        stop
+      endif
+
+
+#if defined MPI && defined PARALLEL_FILES
+      if (nnodes<10) then
+        write(indxstr,'(A,I0.1)') '.',mynode
+      elseif (nnodes<100) then
+        write(indxstr,'(A,I0.2)') '.',mynode
+      elseif (nnodes<1000) then
+        write(indxstr,'(A,I0.3)') '.',mynode
+      elseif (nnodes<10000) then
+        write(indxstr,'(A,I0.4)') '.',mynode
+      elseif (nnodes<100000) then
+        write(indxstr,'(A,I0.5)') '.',mynode
+      elseif (nnodes>100000) then
+         print *, 'ROMS is not ready for this future'
+         stop
+      endif
+      fname = trim(fname) //trim(indxstr)
+#endif
+
+      fname = trim(fname) // '.nc'
+
+      end subroutine insert_nodes !]
 !-----------------------------------------------------------------------
       subroutine nc_check_units(file_name,var_name, var_units )  ![
 !     subroutine nc_check_units(ifile,var_name, var_units )

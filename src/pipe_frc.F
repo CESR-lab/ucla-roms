@@ -43,13 +43,13 @@
 
       logical :: init_pipe_done = .false.
 
-      public set_pipe_frc_tile
+      public set_pipe_frc
       public init_arrays_pipes
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_pipe_frc_tile(istr,iend,jstr,jend)  ![
+      subroutine set_pipe_frc  ![
       ! set pipe forces (realistic and analytical)
       ! - read and interpolation all pipe forcing.
       ! - all pipe variables need time interpolation only
@@ -57,17 +57,14 @@
       ! - input data in days!
       implicit none
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
-      integer :: i, j
+      integer :: i,j
 
-      if (.not. init_pipe_done) call init_pipe_frc(istr,iend,jstr,jend)
+      if (.not. init_pipe_done) call init_pipe_frc
 
       if (p_analytical) then                                ! Set pipe flux volumes and tracer data
 
-        call set_ana_pipe_frc(istr,iend,jstr,jend)
-        ! pipe vertical profile (pipe_prf) is currently set in analytical.F
+        call set_ana_pipe_frc
         
       else
 
@@ -77,8 +74,8 @@
 
         call set_pipe_vert_prf                             ! set pipe vertical profiles
 
-        do j = jstr,jend                                   ! calculate fluxes with time interpolated volumes and conc.:
-          do i = istr,iend
+        do j = 1,ny                                        ! calculate fluxes with time interpolated volumes and conc.:
+          do i = 1,nx
             if (pipe_idx(i,j) > 0.) then
               pipe_flx(i,j)=pipe_fraction(i,j)*pipe_vol( pipe_idx(i,j) )
             endif
@@ -87,10 +84,9 @@
 
       endif
 
-      end subroutine set_pipe_frc_tile  !]
-
+      end subroutine set_pipe_frc !]
 ! ----------------------------------------------------------------------
-      subroutine init_pipe_frc(istr,iend,jstr,jend)  ![
+      subroutine init_pipe_frc  ![
 
       ! Initialize pipe forcing:
       ! Read in a grid file with locations of pipes and flux contribution per cell.
@@ -101,8 +97,6 @@
       use netcdf
       implicit none
 
-      ! inputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
       integer :: ierr,ncid,v_id,i,j
 
@@ -122,8 +116,8 @@
      &      call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
 
         ! Separate pipe_idx & pipe_fraction:
-        do j = jstr,jend
-          do i = istr,iend
+        do j = 1,ny
+          do i = 1,nx
             ! read in value = pidx + pipe_fraction = pipe_idx(i,j) + pipe_fraction(i,j)
             pipe_idx(i,j)=floor(pipe_fraction(i,j)-1e-5)
             pipe_fraction(i,j)=pipe_fraction(i,j)-pipe_idx(i,j)
@@ -136,7 +130,6 @@
       if(mynode==0) write(*,'(/7x,A/)') 'pipe_frc: init pipe locations'
           
       end subroutine init_pipe_frc  !]
-
 ! ----------------------------------------------------------------------
       subroutine init_arrays_pipes  ![
       implicit none
@@ -152,7 +145,6 @@
       endif
 
       end subroutine init_arrays_pipes  !]
-
 ! ----------------------------------------------------------------------
       subroutine set_pipe_vert_prf  ![
       ! set vertical discharge profile of pipes
@@ -174,16 +166,14 @@
       enddo
 
       end subroutine set_pipe_vert_prf  !]
-
 ! ----------------------------------------------------------------------
-      subroutine set_ana_pipe_frc(istr,iend,jstr,jend)  ![
+      subroutine set_ana_pipe_frc  ![
       ! Analytical pipe forcing volume and tracer data
       ! Put here to avoid circular reference if in analytical.F
 
-#include "pipe_frc_ana.opt"
+#include "ana_pipe_frc.h"
 
       end subroutine set_ana_pipe_frc  !]
-
 ! ----------------------------------------------------------------------
 
       end module pipe_frc

@@ -81,7 +81,7 @@ c--#define VERBOSE
       
       integer, dimension(4) :: chunk_sizes ! DevinD: chunksize debugging
 
-      integer, parameter :: maxdims=32, maxvars=220 ! BGC has 201 vars in restart file
+      integer, parameter :: maxdims=32, maxvars=350 ! BGC has 201 vars in restart file
       integer, parameter :: part_XI=1,  part_ETA=2, part_2D=3
 
       logical complete, clean_set,  digit, var_mask,    lnewvar
@@ -94,8 +94,8 @@ c--#define VERBOSE
 
       character(len=8) sffx, sffx_bak
       character(len=32) vname(maxvars), dimname(maxdims) 
-      character(len=128) :: nctestname, nctargname, root, root_bak, string
-      character(len=128), dimension(:), allocatable :: ncname
+      character(len=256) :: nctestname, nctargname, root, root_bak, string
+      character(len=256), dimension(:), allocatable :: ncname
       character(len=1) :: buff_char ! DevinD added as Expanse complained about putting
                                     ! spherical character in numerical 'buff' array...
 
@@ -110,11 +110,11 @@ c--#define VERBOSE
       integer, dimension(maxdims) :: dimid,   ldim,   ibuff,
      &                               start,   count,  start1
       integer, dimension(maxdims,maxvars) :: dimids
-      integer max_buff_size, alloc_buff_size
+      integer*8 max_buff_size, alloc_buff_size
       real*8, allocatable, dimension(:) :: buff
 #ifdef FAST_MODE
       integer count1(maxdims)
-      integer max_bfr_out, alloc_bfr_out
+      integer*8 max_bfr_out, alloc_bfr_out
       real*8, allocatable, dimension(:) :: bfr_out
 #endif
 #ifdef DEL_PART_FILES
@@ -1474,6 +1474,8 @@ c**           endif
      &                     vname(i)(1:lvar), ''' has unknown type.'
 !dd                      goto 97
                     endif
+
+!                   print *,size,max_buff_size*8
 
                     if (size .gt. 8*max_buff_size) then
                       if (allocated(buff)) deallocate(buff)

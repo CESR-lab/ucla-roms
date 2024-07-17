@@ -21,7 +21,8 @@
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
       integer, parameter :: nt = 1 
-      
+      integer, parameter :: nt_passive = 0
+
       real,    parameter :: 
      &   HD  = 1000               ! m (depth) is H in DH script
 !    & , f0  = 7.81e-5              

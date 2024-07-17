@@ -9,19 +9,14 @@
 #include "cppdefs.opt"
 
 ! Need this here above param.opt for BGC to work:
-      integer, parameter :: itemp=1
-# ifdef SALINITY
-     &                    , isalt=2
-# endif
+      integer, parameter :: itemp=1,isalt=2
 
 #include "param.opt"
 
 ! Array dimensions and bounds of the used portions of sub-arrays:
 
 #ifdef MPI
-      integer, parameter :: NNODES=NP_XI*NP_ETA
-!     integer, parameter ::
-!    &    Lm_old=(LLm+NP_XI-1)/NP_XI, Mm_old=(MMm+NP_ETA-1)/NP_ETA
+      integer, parameter :: nnodes=NP_XI*NP_ETA
 
       integer ::
      &    Lm=(LLm+NP_XI-1)/NP_XI, Mm=(MMm+NP_ETA-1)/NP_ETA
@@ -41,6 +36,16 @@
 !    &                      padd_E=(Mm_old+2)/2-(Mm_old+1)/2
       integer, parameter :: padd_X= 0,padd_E= 0
 
+# ifdef EW_PERIODIC
+      logical,parameter :: ew_periodic =.true.
+# else
+      logical,parameter :: ew_periodic =.false.
+# endif
+# ifdef NS_PERIODIC
+      logical,parameter :: ns_periodic =.true.
+# else
+      logical,parameter :: ns_periodic =.false.
+# endif
 
 # ifdef OBC_WEST
       logical,parameter :: obc_west =.true.

@@ -412,12 +412,14 @@
 
       ! local
       integer :: ncid,ierr,varid
-      character(len=10),dimension(3) :: dimnames ! dimension names
+      character(len=7),dimension(3) :: dimnames ! dimension names
+      character(len=7)  :: dn_seven = 'seven'
+      character(len=7)  :: dn_npart = 'npart'
       integer,          dimension(3) :: dimsizes
 
       call create_file('_part',fname)
 
-      dimnames = (/'npart','seven', 'time'/)
+      dimnames = (/dn_npart,dn_seven, dn_tm/)
       dimsizes = (/ npmx,  7,      0/)
 
       ierr=nf90_open(fname,nf90_write,ncid)

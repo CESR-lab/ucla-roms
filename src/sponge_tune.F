@@ -100,8 +100,10 @@
         pflx_north = 0
         allocate(cflx_north(nx))
         cflx_north = 0
-        allocate(ub_north(nx))
-        ub_north = 0.
+        if (.not.allocated(ub_north)) then
+          allocate(ub_north(nx))
+          ub_north = 0.
+        endif
       endif
       if (obc_south.and.(.not.south_exchng)) then
         allocate(nc_pflx_s%vdata(nx,1,2))
@@ -113,8 +115,10 @@
         cflx_south = 0
         allocate(cflx_south_avg(nx))
         cflx_south_avg = 0
-        allocate(ub_south(nx))
-        ub_south = 0.
+        if (.not.allocated(ub_south)) then
+          allocate(ub_south(nx))
+          ub_south = 0.
+        endif
         allocate(ub_south_avg(nx))
         ub_south_avg = 0
       endif
@@ -210,7 +214,7 @@
         ub_south = ub_south+alpha*(pflx_south-cflx_south)
         ub_south = max(ub_mn,ub_south)
         ub_south = min(ub_mx,ub_south)
-        if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
+!       if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
       endif
 
       if (obc_north.and.(.not.north_exchng)) then
@@ -332,32 +336,32 @@
 
       ierr=nf90_open(fname,nf90_write,ncid)
 
-      varid = nccreate(ncid,'cf_south',(/'xi_rho','time'/),(/xi_rho,0/))
+      varid = nccreate(ncid,'cf_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'South boundary child flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'pf_south',(/'xi_rho','time'/),(/xi_rho,0/))
+      varid = nccreate(ncid,'pf_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'South boundary parent flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'ub_south',(/'xi_rho','time'/),(/xi_rho,0/))
+      varid = nccreate(ncid,'ub_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'South boundary binding velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s' )
 
-      varid = nccreate(ncid,'cf_west',(/'eta_rho','time'/),(/xi_rho,0/))
+      varid = nccreate(ncid,'cf_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'West boundary child flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'pf_west',(/'eta_rho','time'/),(/xi_rho,0/))
+      varid = nccreate(ncid,'pf_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'West boundary parent flux')
       ierr = nf90_put_att(ncid,varid,'units','W/m' )
 
-      varid = nccreate(ncid,'ub_west',(/'eta_rho','time'/),(/xi_rho,0/))
+      varid = nccreate(ncid,'ub_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                            ,'West boundary binding velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s' )

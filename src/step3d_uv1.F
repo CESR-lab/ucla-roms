@@ -536,6 +536,7 @@
 # endif /* NHMG */
 
 
+       !!!! JM not clear what this does either
 # undef r_D
 # if defined ADV_ISONEUTRAL && defined EXCHANGE
        !!!! JM not clear what this does !!!
