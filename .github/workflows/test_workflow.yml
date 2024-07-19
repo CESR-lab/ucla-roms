@@ -74,7 +74,12 @@ jobs:
         cd ${ROMS_ROOT}/Tools-Roms/
         make
       shell: bash
-
+    - name: Get input data
+      run: |
+        cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples
+        cd ${ROMS_ROOT}/Examples
+        ./get_input_files.sh
+      shell: bash
     - name: Run Tests
       #run: bash Examples/code_check/do_test_all.sh
       run: |
