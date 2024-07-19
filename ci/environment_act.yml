@@ -1,0 +1,12 @@
+name: roms-ci
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy
+  - compilers
+  - netcdf-fortran
+  - mpich
+  - nco
+  - ncview
+  - rsync

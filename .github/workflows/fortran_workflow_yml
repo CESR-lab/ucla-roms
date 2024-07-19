@@ -1,0 +1,58 @@
+name: Fortran CI
+
+# Trigger the workflow on push to the main branch or on pull requests targeting the main branch
+on:
+#  push:
+#    branches:
+#      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    # Run the job on the specified operating systems and Fortran compilers
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain:
+          - {compiler: gcc, version: 13}
+          - {compiler: intel, version: '2023.2'}
+          - {compiler: intel-classic, version: '2021.10'}
+          - {compiler: nvidia-hpc, version: '23.11'}
+        include:
+          - os: ubuntu-latest
+            toolchain: {compiler: gcc, version: 12}
+        exclude:
+          - os: macos-latest
+            toolchain: {compiler: intel, version: '2023.2'}
+          - os: macos-latest
+            toolchain: {compiler: nvidia-hpc, version: '23.11'}
+          - os: windows-latest
+            toolchain: {compiler: nvidia-hpc, version: '23.11'}
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up the Fortran compiler using the fortran-lang/setup-fortran action
+      - name: Set up Fortran compiler
+        uses: fortran-lang/setup-fortran@v1
+        id: setup-fortran
+        with:
+          compiler: ${{ matrix.toolchain.compiler }}
+          version: ${{ matrix.toolchain.version }}
+
+      # Step 3: Compile the Fortran code
+      - name: Compile Fortran code
+        run: |
+          ${{ env.FC }} -o my_program my_program.f90
+        shell: bash
+
+      # Step 4: Run the compiled Fortran program
+      - name: Run Fortran program
+        run: ./my_program
+        shell: bash
