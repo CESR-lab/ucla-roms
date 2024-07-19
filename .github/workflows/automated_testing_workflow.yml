@@ -76,8 +76,8 @@ jobs:
       shell: bash
     - name: Get input data
       run: |
-        cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples
-        cd ${ROMS_ROOT}/Examples
+        cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
+        cd ${ROMS_ROOT}/Examples/input_data/
         ./get_input_files.sh
       shell: bash
     - name: Run Tests

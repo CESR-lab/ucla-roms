@@ -8,7 +8,7 @@ declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_r
 
 arg=$1
 
-if [ "$arg" != "expanse" -a "$arg" != "maya" -a "$arg" != "laptop" ]
+if [ "$arg" != "expanse" -a "$arg" != "maya" -a "$arg" != "laptop" -a "$arg" != "github" ]
 then
 echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
 exit
