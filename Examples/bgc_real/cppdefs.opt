@@ -60,8 +60,8 @@ c--# define LMD_CONVEC
 # define T_FRC_BRY
 # define SPONGE
 
-c-# define BIOLOGY_BEC2
-c-# define BEC2_DIAG                /* BGC diagnostics */
+# define BIOLOGY_BEC2
+# define BEC2_DIAG                /* BGC diagnostics */
 # define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
 # define PCO2AIR_FORCING          /* CO2 forcing */
 # undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
