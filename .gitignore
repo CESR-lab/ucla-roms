@@ -36,11 +36,11 @@ setup_kwds.F
 check_switches1.F
 check_srcs.F
 
-# Work directory
-Work/*
-
 # Netcdf output files
 *.nc
+
+# Work directory
+Work/*
 
 # tools
 Tools-Roms/partit
