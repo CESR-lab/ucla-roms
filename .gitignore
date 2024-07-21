@@ -39,6 +39,9 @@ check_srcs.F
 # Work directory
 Work/*
 
+# Netcdf output files
+*.nc
+
 # tools
 Tools-Roms/partit
 Tools-Roms/ncjoin
