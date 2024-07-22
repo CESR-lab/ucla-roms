@@ -62,7 +62,7 @@ c--# define LMD_CONVEC
 
                         /* Biology Settings */
 # define MARBL
-!# define MARBL_DIAGS
+# define MARBL_DIAGS
 
 #ifdef MARBL
 # define NOX_FORCING

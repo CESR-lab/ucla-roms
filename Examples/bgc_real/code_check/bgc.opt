@@ -1,0 +1,55 @@
+
+      ! ****************************************************************
+      ! User inputs for BGC 
+      ! 
+      ! ----------------------------------------------------------------
+      ! Outputs for bgc tracers and diagnostics of bgc rates 
+      ! notes : - choice of bgc tracers to output is still selected in tracers.opt.
+      !       : - choice of diagnostics to output is in bgc_2Ddiagnostics.opt and bgc_3Ddiagnostics.opt 
+
+      logical,parameter :: wrt_his           = .true.             ! t/f to write module history file
+      real,parameter    :: output_period_his = 100                ! output period in seconds
+      integer,parameter :: nrpf_his          = 10                 ! total recs per file
+      
+      logical,parameter :: wrt_avg           = .false.            ! t/f to write module averages file
+      real,parameter    :: output_period_avg = 100                ! output averaging period in seconds
+      integer,parameter :: nrpf_avg          = 10                 ! total recs per file
+
+      logical,parameter :: wrt_his_dia           = .true.         ! t/f to write module history file
+      real,parameter    :: output_period_his_dia = 100            ! output period in seconds
+      integer,parameter :: nrpf_his_dia          = 10             ! total recs per file
+
+      logical,parameter :: wrt_avg_dia           = .false.        ! t/f to write module history file
+      real,parameter    :: output_period_avg_dia = 100            ! output period in seconds
+      integer,parameter :: nrpf_avg_dia          = 10             ! total recs per file
+
+      !
+      ! ----------------------------------------------------------------
+      ! BGC forcing 
+      !       By default BEC require dust and iron depostion 
+
+      integer :: interp_frc  = 0                           ! interpolate forcing from coarser input grid (=1) or not (=0)
+
+      type (ncforce) :: nc_dust        = ncforce(vname='dust', tname='dust_time' )  ! dust forcing
+      type (ncforce) :: nc_iron        = ncforce(vname='iron', tname='iron_time' )  ! iron forcing      
+#ifdef PCO2AIR_FORCING
+      type (ncforce) :: nc_pco2air     = ncforce(vname='pco2_air',   tname='pco2_time' )
+#ifdef MARBL      
+      type (ncforce) :: nc_pco2air_alt = ncforce(vname='pco2_air_alt',   tname='pco2_time' )
+#endif      
+#endif            
+#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
+      type (ncforce) :: nc_swrad_avg   = ncforce(vname='swrad_LFreq', tname='rad_time_LFreq' )
+#endif
+#ifdef ALK_SOURCE
+      type (ncforce) :: nc_alksource   = ncforce(vname='ALK',   tname='ALK_time' )
+#endif
+#ifdef NOX_FORCING
+      type (ncforce) :: nc_nox        = ncforce(vname='nox', tname='nox_time' )
+#endif
+#ifdef NHY_FORCING
+      type (ncforce) :: nc_nhy        = ncforce(vname='nhy', tname='nhy_time' )
+#endif
+
+      ! End of user inputs
+      ! *************************************************************
