@@ -36,6 +36,9 @@ setup_kwds.F
 check_switches1.F
 check_srcs.F
 
+# Netcdf output files
+*.nc
+
 # Work directory
 Work/*
 
