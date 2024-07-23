@@ -24,7 +24,8 @@ for BGC_MODEL in {"BEC","MARBL"};do
     cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
     cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
     cp -p $ROMS_ROOT/Examples/Makefile .
-    cp -p $ROMS_ROOT/Examples/code_check/test_roms.py . 
+    cp -p $ROMS_ROOT/Examples/code_check/test_roms.py .
+    ls $MARBL_ROOT/include/*
     make compile_clean
     make #&> /dev/null
 
