@@ -3,11 +3,10 @@ name: Automated Testing
 on:
   push:
     branches:
-      - main
-      - automated_testing
+      - '*'
   pull_request:
     branches:
-      - '*'
+      - main
 
 jobs:
   test:
@@ -16,9 +15,6 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
-      with:
-        repository: dafyddstephenson/ucla-roms
-        ref: automated_testing
 
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2
