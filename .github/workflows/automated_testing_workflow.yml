@@ -83,7 +83,7 @@ jobs:
         cd ~/MARBL
         git checkout marbl0.45.0
         cd src
-        make gnu USEMPI=true
+        make gnu USEMPI=TRUE
         cd ~/MARBL
         MARBL_ROOT=$(pwd)
         echo "MARBL_ROOT=$(pwd)" >> $GITHUB_ENV
