@@ -74,6 +74,21 @@ jobs:
         cd ${ROMS_ROOT}/Tools-Roms/
         make
       shell: bash
+    - name: Compile MARBL
+      run: |
+        source $HOME/.bashrc
+        source $GITHUB_ENV
+        conda activate roms-ci
+        git clone https://github.com/marbl-ecosys/MARBL.git ~/MARBL
+        cd ~/MARBL
+        git checkout marbl0.45.0
+        cd src
+        make gnu USEMPI=true
+        cd ~/MARBL
+        MARBL_ROOT=$(pwd)
+        echo "MARBL_ROOT=$(pwd)" >> $GITHUB_ENV
+        
+      shell: bash      
     - name: Get input data
       run: |
         cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
