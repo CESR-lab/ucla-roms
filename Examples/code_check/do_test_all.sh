@@ -35,9 +35,11 @@ done
 
 if [ $error_cnt -eq 0 ]
 then
-  echo "ALL TESTS SUCCESSFUL!"
+    echo "ALL TESTS SUCCESSFUL!"
+    exit 0
 else
-  echo "ERROR - A TEST FAILED!"
+    echo "ERROR - A TEST FAILED!"
+    exit 1
 fi
 
 # Notes:

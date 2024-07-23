@@ -10,7 +10,7 @@ fi
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
 echo "$bm_file"
 retval=0
-for BGC_MODEL in {"MARBL","BEC"};do
+for BGC_MODEL in {"BEC","MARBL"};do
     echo "Running bgc_real test with ${BGC_MODEL}"
     # 1) Compile test case:
     echo "  test compiling..."    
@@ -26,7 +26,7 @@ for BGC_MODEL in {"MARBL","BEC"};do
     cp -p $ROMS_ROOT/Examples/Makefile .
     cp -p $ROMS_ROOT/Examples/code_check/test_roms.py . 
     make compile_clean
-    make &> /dev/null
+    make #&> /dev/null
 
 
     # 2) Run test case:
@@ -52,7 +52,7 @@ for BGC_MODEL in {"MARBL","BEC"};do
     # 2) Python - confirm values:
     python3 test_roms.py $bm_file
     retval_tmp=$?
-
+    echo "exit code for ${BGC_MODEL} test: $retval_tmp"
     if [ $retval_tmp -gt $retval ];then
 	echo "Test failed for ${BGC_MODEL}"
 	retval=retval_tmp
