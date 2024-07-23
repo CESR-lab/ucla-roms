@@ -62,14 +62,13 @@
 #ifdef BIOLOGY_BEC2
 
       ! itrc_bio=1+iTandS+n_passive ! Starting tracer index for bgc tracers. Set in tracers_defs.h
-      
+
       itot=itot+1;                iPO4=itot
       wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
       t_vname(itot)='PO4';        t_units  (itot)='mMol P m-3'
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Phosphate'
       wrt_t_dia(itot)=.False.
-      print *, 'TRACER INDEX iPO4',iPO4
 
       itot=itot+1;                iNO3=itot
       wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
@@ -77,7 +76,6 @@
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Nitrate'
       wrt_t_dia(itot)=.True.
-      print *, 'TRACER INDEX iNO3',iNO3
 
       itot=itot+1;                iSIO3=itot
       wrt_t  (itot)=.False.;       wrt_t_avg(itot)=.True.
@@ -85,7 +83,6 @@
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Silicate'
       wrt_t_dia(itot)=.False.
-      print *, 'TRACER INDEX iSIO3',iSIO3
 
       itot=itot+1;                iNH4=itot
       wrt_t  (itot)=.False.;      wrt_t_avg(itot)=.True.
@@ -93,7 +90,6 @@
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Ammonium'
       wrt_t_dia(itot)=.True.
-      print *, 'TRACER INDEX iNH4',iNH4      
 
       itot=itot+1;                iFE=itot
       wrt_t  (itot)=.False.;      wrt_t_avg(itot)=.True.
@@ -101,7 +97,6 @@
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Iron'
       wrt_t_dia(itot)=.False.
-      print *, 'TRACER INDEX iFE',iFE
 
       itot=itot+1;                iO2=itot
       wrt_t  (itot)=.True.;      wrt_t_avg(itot)=.True.
@@ -109,7 +104,6 @@
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Oxygen'
       wrt_t_dia(itot)=.True.
-      print *, 'TRACER INDEX iO2',iO2      
 
       itot=itot+1;                iDIC=itot
       wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
