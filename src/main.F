@@ -30,10 +30,16 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
+#ifdef BIOLOGY_BEC2
+!     When using BEC, BGC tracer indices are set in init_tracers
+!     then used in init_scalars, so this order must be maintained
+         call init_tracers
+         call init_scalars(ierr)
+#else
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
-        call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
-
+        call init_tracers
+#endif
         if (ierr == 0) then
 C$        call omp_set_dynamic(.false.)
 C$OMP PARALLEL                           ! fast-time averaging weights
