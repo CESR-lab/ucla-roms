@@ -7,11 +7,11 @@
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
-	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	@$(CPP) -P $*.F | mpc > $*.f
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
 .F.f:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
@@ -28,27 +28,20 @@
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 
 # C-preprocessor (cpp):
-#	cpp from Intel compiler package "fpp" treats __IFC as
-#	a pre-defined, so there is no need to include it into CPPFLAGS, but
-#	the standard CPP is not aware of this.
-
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-    CPP = /lib/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include -I${MARBL_ROOT}/include	
-
-#   Since we no longer keep .f files after compilation, if you want to still
-#   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
-#   removed) or for runtime debug line numbers, use the following
-#   in the Compile/ folder (change 'main' for your file of interest):
-#   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
+    CPP = cpp -traditional
 
 # Path names (non-hydrostatic & NetCDF libraries):
+	ROMS_ROOT = /home/nmolem/ucla-roms/
+
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
 	NHMG_INC  = $(NHMG_ROOT)/include
 
 	VPATH = ${MPIHOME}/include:${NHMG_INC}
-	CPATH = ${MPIHOME}/include:${NHMG_INC}
+	CPATH = ${MPIHOME}/include/mpi:${NHMG_INC}
+
+	MPI_INC = -I/opt/intel/oneapi/mpi/latest/include/mpi
 
 # Get netCDF paths and options ('shell' is needed to use command)
 	NETCDFF_INC=$(shell nf-config --fflags)
@@ -79,16 +72,17 @@
 	CFT =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
 #	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+ 	CFT = mpiifx $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran loader name and options: (mpifort has replaced legacy mpif90)
 #	- using non-intel MPI:
-	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+#	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 #	- using intel MPI:
-#	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+ 	LDR = mpiifx $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ip
+	FFLAGS = -O3
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
@@ -101,8 +95,8 @@
 #	FFLAGS = -O3 -ip -pg
 
 # Options to link to libraries & modules (NetCDF, etc):
-      	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(MARBL_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MARBL_INC)		    	
 
+	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MPI_INC) $(MARBL_INC)
 # -------------------------------------------------------------
 
 # Compiler settings info:

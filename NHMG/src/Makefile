@@ -5,7 +5,7 @@
 include ../../src/Makedefs.inc
 
 # Fortran Compiler
-FC = ifort
+FC = ifx
 # - for pacific cluster uncomment:
 #FC = mpiifort
 
@@ -16,9 +16,11 @@ FFLAGS =  -O3 -fp-model source $(LCDF)
 #FFLAGS =  -g -check -warn
 #FFLAGS = -g -traceback -check all -CA -CB -CS
 
+CPPFLAGS = -I${MPIHOME}/include/mpi -I${NETCDFHOME}/include
+
 # Library paths:
-VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
-CPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
+VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include/
+CPATH = ${MPIHOME}/include/mpi:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include
 
 # Rule to make *.o out of *.f90
 %.o : %.f90

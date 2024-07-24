@@ -110,14 +110,6 @@ tools: $(TOOLS)
 
     TMP = .
 
-partit_t.f: partit.F
-	$(CPP) -P $(CPPFLAGS) -DTRANSPOSED_MPI_NODE_ORDER partit.F| mpc > partit_t.f
-partit_t: partit_t.f insert_node.o lenstr.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o partit_t partit_t.f insert_node.o lenstr.o $(LCDF)
-
-partit: partit_t partit.o insert_node.o lenstr.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)
-
 cppcheck: cppcheck.o
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck.o
 

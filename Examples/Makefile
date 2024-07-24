@@ -13,7 +13,10 @@
 
 .PHONY: all clean depend
 
+ROMS_ROOT = /home/nmolem/ucla-roms
+
 all:
+	@echo "Doing my thing"
 	ln -s $(ROMS_ROOT)/Examples/input_data input_data 2>/dev/null || :
 	rsync -a $(ROMS_ROOT)/src/*.F $(ROMS_ROOT)/src/*.h  Compile
 	make show_tag
