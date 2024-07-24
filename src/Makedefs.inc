@@ -7,11 +7,11 @@
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
-	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	@$(CPP) -P $*.F | mpc > $*.f
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
 .F.f:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
+	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
 	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 	@/bin/rm -f $*.f
@@ -28,19 +28,8 @@
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 
 # C-preprocessor (cpp):
-#	cpp from Intel compiler package "fpp" treats __IFC as
-#	a pre-defined, so there is no need to include it into CPPFLAGS, but
-#	the standard CPP is not aware of this.
-
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-    CPP = /lib/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include/mpi -I${NETCDFHOME}/include -I${MARBL_ROOT}/include	
-
-#   Since we no longer keep .f files after compilation, if you want to still
-#   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
-#   removed) or for runtime debug line numbers, use the following
-#   in the Compile/ folder (change 'main' for your file of interest):
-#   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
+    CPP = cpp -traditional
 
 # Path names (non-hydrostatic & NetCDF libraries):
 	ROMS_ROOT = /home/nmolem/ucla-roms/
