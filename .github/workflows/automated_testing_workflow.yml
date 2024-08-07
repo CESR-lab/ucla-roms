@@ -15,7 +15,10 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
-
+    - name: Crash early
+      shell: bash
+      run: exit 1
+      continue-on-error: true
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -93,15 +96,14 @@ jobs:
       shell: bash
     - name: Run Tests
       #run: bash Examples/code_check/do_test_all.sh
+      shell: bash
       run: |
         source $HOME/.bashrc
         source $GITHUB_ENV
         conda activate roms-ci            	      
         cd ${ROMS_ROOT}/Examples/code_check/
         ./do_test_all.sh github
-      continue-on-error: true
-        
-      shell: bash
+      continue-on-error: true      
     - name: Print updated logs (potential new benchmarks)
       run: |
         source $HOME/.bashrc
