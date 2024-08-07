@@ -100,3 +100,16 @@ jobs:
         cd ${ROMS_ROOT}/Examples/code_check/
         ./do_test_all.sh github
       shell: bash
+    - name: Print updated logs (potential new benchmarks)
+      run: |
+        source $HOME/.bashrc
+        source $GITHUB_ENV
+        echo "--------------------------------------------------------------------------------"
+        echo "This step will print the `test_old.log` files from each case run by"
+        echo "Examples/code_check/do_test_all.sh"
+        echo "If the tests failed but you are confident in your changes,"
+        echo "overwrite the `benchmark.result_github` files for each case with"
+        echo "the contents of these log files"
+        echo "--------------------------------------------------------------------------------"
+        cd ci
+        ./print_output_logs.sh
