@@ -2,13 +2,12 @@
 
 # ******** USER INPUT START ************
 # declare an array of Example folders and .in names to use:
-#declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Tracers_passive" "WEC_real" )
-declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Filament" )
+declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_real" "Filament" "bgc_real" )
 # ******** USER INPUT END   ************
 
 arg=$1
 
-if [ "$arg" != "expanse" -a "$arg" != "maya" -a "$arg" != "laptop" ]
+if [ "$arg" != "expanse" -a "$arg" != "maya" -a "$arg" != "laptop" -a "$arg" != "github" ]
 then
 echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
 exit
@@ -35,9 +34,11 @@ done
 
 if [ $error_cnt -eq 0 ]
 then
-  echo "ALL TESTS SUCCESSFUL!"
+    echo "ALL TESTS SUCCESSFUL!"
+    exit 0
 else
-  echo "ERROR - A TEST FAILED!"
+    echo "ERROR - A TEST FAILED!"
+    exit 1
 fi
 
 # Notes:
