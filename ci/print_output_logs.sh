@@ -22,8 +22,10 @@ fi
 
 # Loop over the "Examples" array
 for example in "${Examples[@]}"; do
-    echo "----------------------------------------"
+    echo "###############################################################################################"
     echo "$example"
-    echo "----------------------------------------"
-    cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
+    echo "###############################################################################################"    
+
+    #cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
+    ls ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
 done

@@ -1,9 +1,3 @@
- TRACER INDEX iPO4           3
- TRACER INDEX iNO3           4
- TRACER INDEX iSIO3           5
- TRACER INDEX iNH4           6
- TRACER INDEX iFE           7
- TRACER INDEX iO2           8
  metadata about           31  tracers:
  -----------
  TRACER NO.:            1
@@ -61,7 +55,7 @@
  -----------
  -----------
  TRACER NO.:           10
- SHORT NAME: Alk                                       
+ SHORT NAME: ALK                                       
  LONG NAME: Alkalinity                                                  
  UNITS: mMol m-3                                  
  -----------
@@ -91,85 +85,85 @@
  -----------
  -----------
  TRACER NO.:           15
- SHORT NAME: DOPR                                      
+ SHORT NAME: DOPr                                      
  LONG NAME: Refractory dissolved organic phosphorus                     
  UNITS: mMol P m-3                                
  -----------
  -----------
  TRACER NO.:           16
- SHORT NAME: DONR                                      
+ SHORT NAME: DONr                                      
  LONG NAME: Refractory dissolved organic nitrogen                       
  UNITS: mMol N m-3                                
  -----------
  -----------
  TRACER NO.:           17
- SHORT NAME: ZOOC                                      
+ SHORT NAME: zooC                                      
  LONG NAME: Zooplankton                                                 
  UNITS: mMol C m-3                                
  -----------
  -----------
  TRACER NO.:           18
- SHORT NAME: SPC                                       
+ SHORT NAME: spC                                       
  LONG NAME: Small phytoplankton carbon                                  
  UNITS: mMol C m-3                                
  -----------
  -----------
  TRACER NO.:           19
- SHORT NAME: SPCHL                                     
+ SHORT NAME: spChl                                     
  LONG NAME: Small phytoplankton chlorophyll                             
  UNITS: mg Chl-a m-3                              
  -----------
  -----------
  TRACER NO.:           20
- SHORT NAME: SPFE                                      
+ SHORT NAME: spFe                                      
  LONG NAME: Small phytoplankton iron                                    
  UNITS: mMol Fe m-3                               
  -----------
  -----------
  TRACER NO.:           21
- SHORT NAME: SPCACO3                                   
+ SHORT NAME: spCaCO3                                   
  LONG NAME: Small phytoplankton CaCO3                                   
  UNITS: mMol CaCO3 m-3                            
  -----------
  -----------
  TRACER NO.:           22
- SHORT NAME: DIATC                                     
+ SHORT NAME: diatC                                     
  LONG NAME: Diatom carbon                                               
  UNITS: mMol C m-3                                
  -----------
  -----------
  TRACER NO.:           23
- SHORT NAME: DIATCHL                                   
+ SHORT NAME: diatChl                                   
  LONG NAME: Diatom chlorophyll                                          
  UNITS: mg Chl-a m-3                              
  -----------
  -----------
  TRACER NO.:           24
- SHORT NAME: DIATFE                                    
+ SHORT NAME: diatFe                                    
  LONG NAME: Diatom Iron                                                 
  UNITS: mMol Fe m-3                               
  -----------
  -----------
  TRACER NO.:           25
- SHORT NAME: DIATSI                                    
+ SHORT NAME: diatSi                                    
  LONG NAME: Diatom silicon                                              
  UNITS: mMol Si m-3                               
  -----------
  -----------
  TRACER NO.:           26
- SHORT NAME: DIAZC                                     
+ SHORT NAME: diazC                                     
  LONG NAME: Diazotroph carbon                                           
  UNITS: mMol C m-3                                
  -----------
  -----------
  TRACER NO.:           27
- SHORT NAME: DIAZCHL                                   
+ SHORT NAME: diazChl                                   
  LONG NAME: Diazotroph chlorophyll                                      
  UNITS: mg Chl-a m-3                              
  -----------
  -----------
  TRACER NO.:           28
- SHORT NAME: DIAZFE                                    
+ SHORT NAME: diazFe                                    
  LONG NAME: Diazotroph iron                                             
  UNITS: mMol Fe m-3                               
  -----------
@@ -191,36 +185,6 @@
  LONG NAME: Nitrous oxide                                               
  UNITS: mMol N2O m-3                              
  -----------
- TRACER INDEX iPO4           3
- TRACER INDEX iNO3           4
- TRACER INDEX iSIO3           5
- TRACER INDEX iNH4           6
- TRACER INDEX iFE           7
- TRACER INDEX iO2           8
- TRACER INDEX iPO4           3
- TRACER INDEX iNO3           4
- TRACER INDEX iSIO3           5
- TRACER INDEX iNH4           6
- TRACER INDEX iFE           7
- TRACER INDEX iO2           8
- TRACER INDEX iPO4           3
- TRACER INDEX iNO3           4
- TRACER INDEX iSIO3           5
- TRACER INDEX iNH4           6
- TRACER INDEX iFE           7
- TRACER INDEX iO2           8
- TRACER INDEX iPO4           3
- TRACER INDEX iNO3           4
- TRACER INDEX iSIO3           5
- TRACER INDEX iNH4           6
- TRACER INDEX iFE           7
- TRACER INDEX iO2           8
- TRACER INDEX iPO4           3
- TRACER INDEX iNO3           4
- TRACER INDEX iSIO3           5
- TRACER INDEX iNH4           6
- TRACER INDEX iFE           7
- TRACER INDEX iO2           8
 
  Activated CPP configuration switches:
  <cppdefs.opt>
@@ -265,12 +229,11 @@
          hc =  25.00000  critical depth [m]
  grid file: input_data/sample_grd_riv.0.nc
  forcing data file(s): input_data/sample_flux_frc.0.nc
-                       input_data/roms_bry_trace.0.nc
-                       input_data/roms_bgcbry.0.nc
-                       input_data/roms_default_bgcbry.0.nc
-                       input_data/roms_bgcflx.0.nc
-                       input_data/roms_LFfrc.0.nc
- initial condition :: rec =  1  file = 'input_data/roms_init_bgc.0.nc'
+                       input_data/sample_flux_bgc.0.nc
+                       input_data/sample_bry_trace.0.nc
+                       input_data/sample_bry_bgc.0.nc
+                       input_data/sample_LFfrc.0.nc
+ initial condition :: rec =  1  file = 'input_data/sample_init_trace.0.nc'
 
  WARNING: Urecognized keyword 'MARBL_biogeochemistry' --> DISREGARDED.
 
@@ -427,9 +390,9 @@
 
  ecosys_bec2_init:: init bgc extras
  WARNING: Exact restart is requested, but is not possible: initial
-          file 'input_data/roms_init_bgc.0.nc' does not contain sufficient records.
- WARNING: netCDF variable 'hbls' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
- WARNING: netCDF variable 'hbbl' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
+          file 'input_data/sample_init_trace.0.nc' does not contain sufficient records.
+ WARNING: netCDF variable 'hbls' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
       get_init :: Read initial conditions for day =   4726.5657 record =   1
 
  Sponge layer =  15 interior grid points.
@@ -468,29 +431,29 @@
          set_frc :: pco2_air         input time (days) =   4732.50     rec =  12
          set_frc :: swrad_LFreq      input time (days) =   0.00000     rec =   1
          set_frc :: swrad_LFreq      input time (days) =   6000.00     rec =   2
-         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
          set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4728.54     rec =   2
          set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_north       input time (days) =   4728.54     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_south       input time (days) =   4728.54     rec =   2
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 1  4.2294649426827752E-03 2.7899249149024373E-03 4.0042803391422316E-01 3.7077050964273756E-01
+ 1  4.2294654214637111E-03 2.7899249651072646E-03 4.0042803391422316E-01 3.7077050964273756E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 2  4.2263016925915067E-03 2.7864445365095797E-03 2.9727921070808583E-01 1.5941239141462391E-01
+ 2  4.2262719636340660E-03 2.7864159965506688E-03 2.9727921070808583E-01 1.5941239141462391E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 3  4.2225774050149573E-03 2.7823574532778571E-03 4.4126746280757645E-01 3.3094571426649327E-01
+ 3  4.2224815186327758E-03 2.7822649195050411E-03 4.4126746280757645E-01 3.3094571426649327E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 4  4.2175559100636291E-03 2.7770322653037091E-03 2.0939178050411059E-01 2.0939178050411059E-01
+ 4  4.2173645648254030E-03 2.7768448056368546E-03 2.0939178050411059E-01 2.0939178050411059E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 5  4.2156884387640411E-03 2.7748446670304090E-03 2.3177809649896725E-01 1.2055899482549449E-01
+ 5  4.2153781896218162E-03 2.7745388418503247E-03 2.3177809649896725E-01 1.2055899482549449E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -500,19 +463,19 @@
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 6  4.2152040814771958E-03 2.7739722001996693E-03 2.9069716164208897E-01 2.1955254137678093E-01
+ 6  4.2147476883444349E-03 2.7735205732703386E-03 2.9069716164208897E-01 2.1955254137678093E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 7  4.2151862902665045E-03 2.7735783950617273E-03 2.0236960308730259E-01 1.9417549565908776E-01
+ 7  4.2145547977904176E-03 2.7729520525784390E-03 2.0236319733593641E-01 1.9416650136970071E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 8  4.2170121436412985E-03 2.7750135230121100E-03 2.5068775379237274E-01 1.3721936096844359E-01
+ 8  4.2161863940904766E-03 2.7741923516442497E-03 2.5068775379237274E-01 1.3721936096844359E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 9  4.2180071756222201E-03 2.7755668732725993E-03 2.8034745621743995E-01 2.1845061661780568E-01
+ 9  4.2169678420176295E-03 2.7745315512994755E-03 2.8034745621743995E-01 2.1845061661780568E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
-10  4.2170859825898842E-03 2.7742121745185401E-03 2.0266617748650559E-01 1.9424691792345652E-01
+10  4.2158108733286294E-03 2.7729385344420973E-03 2.0265076553717215E-01 1.9424122684357920E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -520,8 +483,8 @@
        wrt_bgc_tracers :: history , trc =  DIC                                       
        bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
        bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
- Process    0  thread  0  cpu time =       28.24 sec
+ Process    0  thread  0  cpu time =       38.12 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   93.176809889999959     
+ MPI_run_time =   58.116328608000003     
