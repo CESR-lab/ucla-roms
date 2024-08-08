@@ -15,10 +15,6 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
-    - name: Crash early
-      shell: bash
-      run: exit 1
-      continue-on-error: true
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -109,10 +105,10 @@ jobs:
         source $HOME/.bashrc
         source $GITHUB_ENV
         echo "--------------------------------------------------------------------------------"
-        echo "This step will print the `test_old.log` files from each case run by"
+        echo "This step will print the test_old.log files from each case run by"
         echo "Examples/code_check/do_test_all.sh"
         echo "If the tests failed but you are confident in your changes,"
-        echo "overwrite the `benchmark.result_github` files for each case with"
+        echo "overwrite the benchmark.result_github files for each case with"
         echo "the contents of these log files"
         echo "--------------------------------------------------------------------------------"
         cd ci
