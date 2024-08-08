@@ -101,6 +101,7 @@ jobs:
         ./do_test_all.sh github
       continue-on-error: true      
     - name: Print updated logs (potential new benchmarks)
+      shell: bash
       run: |
         source $HOME/.bashrc
         source $GITHUB_ENV
