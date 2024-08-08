@@ -9,7 +9,7 @@
     [[ "$line" == *"USER INPUT END"* ]] && break
     eval "$line"
   done 
-} < do_test_all.sh
+} < $ROMS_ROOT/Examples/code_check/do_test_all.sh
 
 if [ ${#Examples[@]} -eq 0 ]; then
     echo "The Examples array is empty."
