@@ -60,7 +60,8 @@ for BGC_MODEL in {"BEC","MARBL"};do
 
     # 3) Rename results logs so they can't be mistakenly read by the 
     #    python script even if new simulation doesn't run
-    cp test.log test_old_${BGC_MODEL}.log
+    mv test.log test_old.log
+    cp test_old.log test_old_${BGC_MODEL}.log
 
     rm test_roms.py
 done

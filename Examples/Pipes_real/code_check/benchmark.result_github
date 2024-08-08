@@ -1,16 +1,3 @@
- metadata about            2  tracers:
- -----------
- TRACER NO.:            1
- SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
- UNITS: Celsius                                   
- -----------
- -----------
- TRACER NO.:            2
- SHORT NAME: salt                                      
- LONG NAME: salinity                                                    
- UNITS: PSU                                       
- -----------
 
  Activated CPP configuration switches:
  <cppdefs.opt>
@@ -54,8 +41,8 @@
  grid file: input_data/sample_grd_riv.0.nc
  forcing data file(s): input_data/sample_flux_frc.0.nc
                        input_data/sample_wwv_riv.0.nc
-                       input_data/roms_bry_trace.0.nc
- initial condition :: rec =  1  file = 'input_data/roms_init_trace.0.nc'
+                       input_data/sample_bry_trace.0.nc
+ initial condition :: rec =  1  file = 'input_data/sample_init_trace.0.nc'
       visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
        rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
 
@@ -71,6 +58,19 @@
 
  Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
 
+ metadata about            2  tracers:
+ -----------
+ TRACER NO.:            1
+ SHORT NAME: temp                                      
+ LONG NAME: potential temperature                                       
+ UNITS: Celsius                                   
+ -----------
+ -----------
+ TRACER NO.:            2
+ SHORT NAME: salt                                      
+ LONG NAME: salinity                                                    
+ UNITS: PSU                                       
+ -----------
 
  NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
 
@@ -161,9 +161,9 @@
  Maximum grid stiffness ratios:   rx0 = 0.100020449  rx1 =  17.833965349
 
  WARNING: Exact restart is requested, but is not possible: initial
-          file 'input_data/roms_init_trace.0.nc' does not contain sufficient records.
- WARNING: netCDF variable 'hbls' not found in 'input_data/roms_init_trace.0.nc' ==> initialized to zero state.
- WARNING: netCDF variable 'hbbl' not found in 'input_data/roms_init_trace.0.nc' ==> initialized to zero state.
+          file 'input_data/sample_init_trace.0.nc' does not contain sufficient records.
+ WARNING: netCDF variable 'hbls' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
       get_init :: Read initial conditions for day =   4726.5657 record =   1
  Writing initial history file
  Reference time used for simulation is: 2000/01/01
@@ -191,37 +191,37 @@
          set_frc :: pipe_volume      input time (days) =   4727.50     rec =  48
          set_frc :: pipe_tracer      input time (days) =   4726.50     rec =  47
          set_frc :: pipe_tracer      input time (days) =   4727.50     rec =  48
-         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
          set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
-         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4728.54     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
- 1  4.2294584063623450E-03 2.7899205602659270E-03 3.9038524154052090E-01 3.6123655355967982E-01
- 2  4.2249168889852470E-03 2.7865920180127650E-03 2.9986271060024872E-01 1.6427514796516768E-01
- 3  4.2200552568929335E-03 2.7823378954610323E-03 4.2687990376311247E-01 3.1654424073377291E-01
- 4  4.2139435293783367E-03 2.7765850270352931E-03 2.9604243725996610E-01 2.9139041537509752E-01
- 5  4.2111595339715041E-03 2.7739846923484470E-03 3.0514093882877114E-01 3.0319053794984313E-01
- 6  4.2093575052440727E-03 2.7721983260705681E-03 3.1895930846238946E-01 3.1829621385485424E-01
- 7  4.2081593111468274E-03 2.7709549085013037E-03 3.3710847486181833E-01 3.3644139292665970E-01
- 8  4.2091364590040184E-03 2.7717788253024253E-03 3.5796958713761767E-01 3.5737690029971475E-01
- 9  4.2097760554758576E-03 2.7721138733526021E-03 3.8124255398862933E-01 3.8082475809826127E-01
-10  4.2090482297646422E-03 2.7709677747627900E-03 4.0695451689485818E-01 4.0652942045855817E-01
-11  4.2094673064878296E-03 2.7707909542069977E-03 4.3481288185399286E-01 4.3418322729572595E-01
-12  4.2096081801854040E-03 2.7701249432531970E-03 4.6855546817775834E-01 4.6855546817775834E-01
-13  4.2108202232253051E-03 2.7702661193182545E-03 5.1540782615926972E-01 5.1538233326807836E-01
-14  4.2124751147983525E-03 2.7704836186166733E-03 5.7231742590757317E-01 5.7231742590757317E-01
-15  4.2140241991414128E-03 2.7701197171018676E-03 6.3711582571748715E-01 6.3659728756630884E-01
-16  4.2155617046620488E-03 2.7691413130062782E-03 7.1475026201783387E-01 7.1456280533304262E-01
-17  4.2174575536999661E-03 2.7677206947433557E-03 8.0172217213478159E-01 8.0172217213478159E-01
-18  4.2211451780444107E-03 2.7670816097076444E-03 9.0103883858632250E-01 9.0098293142171626E-01
-19  4.2257646511505310E-03 2.7660514854637450E-03 1.0169244509902129E+00 1.0169244509902129E+00
-20  4.2303071532101416E-03 2.7632026257974319E-03 1.1433484068866933E+00 1.1433484068866933E+00
+         set_frc :: zeta_south       input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_north       input time (days) =   4728.54     rec =   2
+ 1  4.2294588851435342E-03 2.7899206104715127E-03 3.9038524154052090E-01 3.6123655355967982E-01
+ 2  4.2248879069612397E-03 2.7865634771685106E-03 2.9986271060024872E-01 1.6427514796516768E-01
+ 3  4.2199596262736385E-03 2.7822453519915236E-03 4.2687990376311247E-01 3.1654424073377291E-01
+ 4  4.2137528356999314E-03 2.7763981363599145E-03 2.9604244642710664E-01 2.9139041676526278E-01
+ 5  4.2108512483198029E-03 2.7736806662186078E-03 3.0514124729641423E-01 3.0319056448046022E-01
+ 6  4.2089037249854544E-03 2.7717488344206746E-03 3.1896005445880704E-01 3.1829624192459627E-01
+ 7  4.2075287634108565E-03 2.7703291095827437E-03 3.3711118692004194E-01 3.3644142263094362E-01
+ 8  4.2083073293493790E-03 2.7709550107769929E-03 3.5797444350566193E-01 3.5737687118372469E-01
+ 9  4.2087277889837514E-03 2.7710706609614913E-03 3.8124779999287317E-01 3.8082433298166563E-01
+10  4.2077528092837272E-03 2.7696759667826410E-03 4.0695830381713438E-01 4.0652803420150674E-01
+11  4.2079006186886364E-03 2.7692245626687421E-03 4.3481498873315716E-01 4.3418032690559888E-01
+12  4.2077570900210561E-03 2.7682698995957242E-03 4.6855706550939163E-01 4.6855706550939163E-01
+13  4.2086910759192818E-03 2.7681307708092096E-03 5.1540815213822477E-01 5.1538462778608951E-01
+14  4.2100886438662102E-03 2.7680882963110505E-03 5.7231991797916926E-01 5.7231991797916926E-01
+15  4.2113945062114072E-03 2.7674771036607384E-03 6.3712074189365797E-01 6.3660072358178355E-01
+16  4.2127082135774239E-03 2.7662688645561798E-03 7.1475633501670488E-01 7.1456512360440039E-01
+17  4.2143938891963861E-03 2.7646317080243302E-03 8.0171519720691053E-01 8.0171519720691053E-01
+18  4.2178674065508322E-03 2.7637721284588723E-03 9.0103307476039685E-01 9.0096625262598173E-01
+19  4.2222607644276005E-03 2.7625107013054284E-03 1.0168888523937389E+00 1.0168888523937389E+00
+20  4.2265593234254144E-03 2.7594110498718348E-03 1.1432847062539135E+00 1.1432847062539135E+00
        ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2
- Process    0  thread  0  cpu time =       12.00 sec
+ Process    0  thread  0  cpu time =       16.31 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   47.051943270000038     
+ MPI_run_time =   26.849166494999963     
