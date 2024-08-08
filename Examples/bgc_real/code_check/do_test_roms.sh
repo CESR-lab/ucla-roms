@@ -10,7 +10,7 @@ fi
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
 echo "$bm_file"
 retval=0
-for BGC_MODEL in {"BEC","MARBL"};do
+for BGC_MODEL in {"MARBL","BEC"};do
     echo "Running bgc_real test with ${BGC_MODEL}"
     # 1) Compile test case:
     echo "  test compiling..."    

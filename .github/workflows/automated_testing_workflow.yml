@@ -99,8 +99,8 @@ jobs:
         conda activate roms-ci            	      
         cd ${ROMS_ROOT}/Examples/code_check/
         ./do_test_all.sh github
-      continue-on-error: true      
-    - name: Print updated logs (potential new benchmarks)
+    - name: Print logs (in case of failure)
+      if: failure()
       shell: bash
       run: |
         source $HOME/.bashrc
