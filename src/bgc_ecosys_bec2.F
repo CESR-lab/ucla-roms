@@ -10,7 +10,7 @@
        ! Taken from PDamien's ecosys_bec2_td2.F
 
        use param
-       use tracers, only: t, iTandS
+       use tracers, only: t, iTandS, nt_passive ! DevinD added
        use surf_flux ! , only: sustr,sustr_r,svstr,svstr_r,srflx
 # ifdef BULK_FRC
        use bulk_frc, only: wspd_used ! to compute gas exchange
@@ -1761,10 +1761,11 @@
 # endif
 
      !-----------------------------------------------------------------------
-     !  Compute iron scavenging :
+     !  Compute iron scavenging (Moore et al. 2008):
      !  1) compute in terms of loss per year per unit iron (%/year/fe)
      !  2) scale by sinking POMx10 + Dust + bSi + CaCO3 flux
-     !  3) increase scavenging at higher iron (>0.6nM)
+     !                      POMx10 = 120 ;
+     !  3) increase scavenging at higher iron (>0.6nM) (we are currently using 0.8)
      !  4) convert to net loss per second
      !-----------------------------------------------------------------------
 
@@ -2424,6 +2425,7 @@
 
      !-----------------------------------------------------------------------
      !  Compute initial QA(dust) POC flux deficit.
+     !      Note : dust_rho converts dust_flux from kg/m2/s to mmolC/m2/s
      !-----------------------------------------------------------------------
 
         QA_dust_def = dust_rho * (dust_sflux_out(istr:iend,j) + dust_hflux_out(istr:iend,j))

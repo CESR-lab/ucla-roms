@@ -202,7 +202,7 @@
        real fe_scavenge_thres1, dust_fescav_scale, fe_max_scale2
        parameter(
      &   fe_scavenge_thres1 = 0.8e-3,   ! upper thres. for Fe scavenging (mmol/m^3)
-     &   dust_fescav_scale  = 1.0e10,   ! dust scavenging scale factor (was 1e9 in CESM)
+     &   dust_fescav_scale  = 1.0e6 ,   ! dust scavenging scale factor (was 1e9 in CESM)
      &   fe_max_scale2      = 1200.0    ! unitless scaling coeff.
      & )
 
@@ -429,11 +429,11 @@
      !--------------------------------- -----------
 
       parm_BSIbury           = 0.65  ! x1 default
-      parm_Fe_scavenge_rate0 = 2.5   ! test initial scavenging rate 3 times higher (previous default : 3.0)
-      parm_f_prod_sp_CaCO3   = 0.055 ! x1 default
+      parm_Fe_scavenge_rate0 = 25.0  ! test initial scavenging rate 3 times higher (previous default : 3.0)
+      parm_f_prod_sp_CaCO3   = 0.055 ! 2.4% in  Moore et al. 2004 (Upper ocean ...)
       parm_POC_diss          = 105.0 ! 88.0
       parm_SiO2_diss         = 300.0 ! 250.0
-      parm_CaCO3_diss        = 180.0 ! 150.0
+      parm_CaCO3_diss        = 180.0 ! 150.0 (ref was 180.0; Moore et al.,2001 uses 600m)
 
       parm_scalelen_z    = (/ 100.0, 300.0, 600.0, 900.0 /) ! DL: converted to m
       parm_scalelen_vals = (/   1.0,   3.5,   7.0,   8.5 /) ! (/     1.0,     2.9,     5.6,      5.7 /)
@@ -508,9 +508,18 @@
       Si_ind(auto_ind)        = 0
       CaCO3_ind(auto_ind)     = 0
 
+      !---------------------------------------------------------------------------
+      !   Initialize diagnostic variables:
+      !---------------------------------------------------------------------------
+#ifdef BEC2_DIAG
+      bec2_diag_2d = c0
+      bec2_diag_3d = c0
+#  ifdef AVERAGES
+      bec2_diag_3d_avg = c0
+      bec2_diag_2d_avg = c0
+#  endif /* AVERAGES */
+#endif /* BEC2_DIAG */
 
- ! DS: moved initialisation of BGC diagnostics arrays to bgc_ecosys_vars/init_arrays_bgc_ecosys_vars
-     
       !---------------------------------------------------------------------------
       !   Initialize ph for CO2 flux computation :
       !---------------------------------------------------------------------------
