@@ -50,7 +50,9 @@
       use basic_output, vn=>vname
       use scalars
       use diagnostics
-
+#ifdef BIOLOGY_BEC2 
+      use bgc_ecosys_vars
+#endif
 
       ! TODO: add averaging
 
@@ -66,6 +68,9 @@
 
       logical                         :: extend_up !! flag to extend up,vp
       real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
+
+      ! For vertical velocity
+      real,dimension(:,:,:),allocatable :: Wvl   ! Vertical velocity
  
       type extract_object  ! contains all information for a data_extraction object
 
@@ -110,10 +115,12 @@
         logical :: vbar = .false.
         logical :: u    = .false.
         logical :: v    = .false.
+        logical :: w    = .false.
         logical :: temp = .false.
         logical :: salt = .false.
         logical :: up   = .false.
         logical :: vp   = .false.
+        logical :: bgc     = .false.
 
       end type extract_object
 
@@ -138,6 +145,8 @@
 
       call read_extraction_objects
 
+      ! For vertical velocity
+      allocate( Wvl(GLOBAL_2D_ARRAY,nz+1))
       if (diag_pflx) then
         allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
         allocate( vpe(GLOBAL_2D_ARRAY) ); vpe = 0
@@ -211,7 +220,7 @@
       integer,dimension(2)  :: dimids
       character(len=20) :: dname
       character(len=30) :: objname
-      character(len=80) :: variables
+      character(len=150) :: variables
       real,dimension(:,:),allocatable :: object
       integer               :: n1,n2,i0,i1,lstr
       integer ierr,sidx,sidx2
@@ -295,8 +304,10 @@
           if (findstr(variables,'vbar') ) obj(iobj)%vbar = .True.
           if (findstr(variables,'u'   ) ) obj(iobj)%u    = .True.
           if (findstr(variables,'v'   ) ) obj(iobj)%v    = .True.
+          if (findstr(variables,'w'   ) ) obj(iobj)%w    = .True.
           if (findstr(variables,'up'  ) ) obj(iobj)%up   = .True.
           if (findstr(variables,'vp'  ) ) obj(iobj)%vp   = .True.
+          if (findstr(variables,'bgc'    ) ) obj(iobj)%bgc     = .True.
 
           ! DIAGNOSTICS needs to be activated and diag_pflx=.true.
           if (obj(iobj)%up.and. .not.diag_pflx) then
@@ -307,7 +318,12 @@
             print *,'Fatal ERROR: vp extraction, diag_pflx is not set'
             stop
           endif
-
+#ifndef BIOLOGY_BEC2 
+         if (obj(iobj)%bgc) then
+            print *,'Fatal ERROR: BGC extraction, BIOLOGY_BEC2 not set'
+            stop
+         endif
+#endif
           if (obj(iobj)%up.or.obj(iobj)%vp) extend_up = .true.
 
         endif
@@ -468,7 +484,7 @@
       implicit none
 
       ! local
-      integer :: i,itrc,ierr,ncid,k,record
+      integer :: i,itrc,ierr,ncid,k,record,indt
       character(len=30) :: obj_name
       character(len=99),save :: fname
       character(len=20)              :: tname
@@ -588,6 +604,12 @@
               oname = trim(obj(i)%set)//'_v'//trim(obj(i)%bnd)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
+            if (obj(i)%w) then
+              call wvlcty (0,Wvl)
+              oname = trim(obj(i)%set)//'_w'//trim(obj(i)%bnd)
+              call interpolate(Wvl(-1:nx+2,-1:ny+2,1:nz),obj(i)%vari,coef,ip,jp)
+              call ncwrite(ncid,oname,obj(i)%vari,start2D)
+            endif
             if (obj(i)%up) then
               call interpolate(upe,ui(:,1),cfu,ipu,jpu)
               call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
@@ -602,6 +624,14 @@
               oname = trim(obj(i)%set)//'_vp'//trim(obj(i)%bnd)
               call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
             endif
+            if (obj(i)%bgc) then
+              do indt=isalt+nt_passive+1,NT
+              oname = trim(obj(i)%set)//'_'//trim(t_vname(indt))//trim(obj(i)%bnd)
+              call interpolate(t(:,:,:,nstp,indt),obj(i)%vari,coef,ip,jp)
+              call ncwrite(ncid,oname,obj(i)%vari,start2D)
+              enddo
+            endif
+
           endif
         endif
       enddo
@@ -642,15 +672,15 @@
       character(len=20)              :: vname
       character(len=20)              :: tname
       integer                        :: varid,ierr
-      integer                        :: it,i,lpre
+      integer                        :: it,i,lpre,indt
       character(len=3) :: label
       character(len=20),dimension(2) :: dname ! dimension names
       integer,          dimension(2) :: dsize ! dim lengths
       character(len=20),dimension(3) :: dname3 ! dimension names
       integer,          dimension(3) :: dsize3 ! dim lengths
-
       character(len=20) :: np_label
       character(len=20) :: time_label
+
 
       do i = 1,nobj
         if (obj(i)%np>0) then
@@ -684,8 +714,15 @@
 #endif
           if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3,indxU)
           if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3,indxV)
+          if (obj(i)%w)    call create_var(ncid,obj(i),'w',dname3,dsize3,indxW)
           if (obj(i)%up)   call create_var(ncid,obj(i),'up',dname,dsize)
           if (obj(i)%vp)   call create_var(ncid,obj(i),'vp',dname,dsize)
+          if (obj(i)%bgc) then
+              do indt=isalt+nt_passive+1,NT
+              call create_var(ncid,obj(i),t_vname(indt),dname3,dsize3,-99)
+              enddo
+          endif
+
         endif
       enddo
 
@@ -706,7 +743,7 @@
       integer :: varid,ierr
       character(len=40) :: oname
 
-      oname = trim(obj%set)//'_'//vname//trim(obj%bnd)
+      oname = trim(obj%set)//'_'//trim(vname)//trim(obj%bnd)
 
       varid = nccreate(ncid,oname,dname,dsize,edat_prec)
       ierr = nf90_put_att(ncid,varid,'start',obj%start_idx)
@@ -716,8 +753,13 @@
       if (ierr/=0) call handle_ierr(ierr,'extract create var: '//vname)
 
       if (present(idx)) then
+        if (idx>=0) then
         ierr = nf90_put_att(ncid,varid,'long_name',vn(2,idx))
         ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
+        else
+        ierr = nf90_put_att(ncid,varid,'long_name','bgc concentration')
+        ierr = nf90_put_att(ncid,varid,'units','mmol/m^3')
+        endif
       else
         ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')
         ierr = nf90_put_att(ncid,varid,'units','W/m^2')
