@@ -153,6 +153,14 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
+#ifdef SOLVE3D
+C$OMP MASTER                           ! Setup vertical stretching
+      call set_scoord                  ! functions for S-coordinate
+C$OMP END MASTER                       ! system
+C$OMP BARRIER
+      if (may_day_flag /= 0) goto 99
+#endif
+      
       call get_grid                  ! can be analytic or from netcdf
 
 #ifdef DIAGNOSTICS
@@ -184,13 +192,6 @@ CR      write(*,*) '-10' MYID
 C$OMP BARRIER
 CR      write(*,*) '-9' MYID
 
-#ifdef SOLVE3D
-C$OMP MASTER                           ! Setup vertical stretching
-      call set_scoord                  ! functions for S-coordinate
-C$OMP END MASTER                       ! system
-C$OMP BARRIER
-      if (may_day_flag /= 0) goto 99
-#endif
 CR      write(*,*) ' -8' MYID
 
 #ifdef SOLVE3D
