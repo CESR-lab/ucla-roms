@@ -17,7 +17,8 @@
 	@/bin/rm -f $*.f
 
 .f90.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f90 $(LCDF)
+#$(CFT) -c $(FFLAGS) -o $*.o $*.f90 $(LCDF)
+	$(CFT) -c $(FFLAGS) -o $*.o $*.f90
 .F:
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 .f:
