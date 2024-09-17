@@ -19,7 +19,7 @@ c--#define MPIVERBOSE
 
       ! INCLUDES:
       ! remove netcdf.inc once fully converted to nf90_ routines
-#include "netcdf.inc"
+c--#include "netcdf.inc"
 
       ![ DECLARATION OF VARIABLES:
 

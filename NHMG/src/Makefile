@@ -10,22 +10,19 @@ FC = ifx
 #FC = mpiifort
 
 # Normal options for the compiler
-FFLAGS =  -O3 -fp-model source $(LCDF)
+FFLAGS =  -O3 -fp-model source
 
 # Debugging options for the compiler
 #FFLAGS =  -g -check -warn
 #FFLAGS = -g -traceback -check all -CA -CB -CS
 
-CPPFLAGS = -I${MPIHOME}/include/mpi -I${NETCDFHOME}/include
-
 # Library paths:
-VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include/
+#VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include/
 CPATH = ${MPIHOME}/include/mpi:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include
 
-# Rule to make *.o out of *.f90
-%.o : %.f90
-	$(FC) -c $(FFLAGS)  $<
-
+## Rule to make *.o out of *.f90
+#%.o : %.f90
+#	$(FC) -c $(FFLAGS)  $<
 
 sources = mg_autotune.f90 mg_cst.f90 mg_gather.f90 \
 	mg_grids.f90 mg_horiz_grids.f90 mg_intergrids.f90 mg_mpi_exchange.f90\
