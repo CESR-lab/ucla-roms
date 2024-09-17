@@ -1761,10 +1761,11 @@
 # endif
 
      !-----------------------------------------------------------------------
-     !  Compute iron scavenging :
+     !  Compute iron scavenging (Moore et al. 2008):
      !  1) compute in terms of loss per year per unit iron (%/year/fe)
      !  2) scale by sinking POMx10 + Dust + bSi + CaCO3 flux
-     !  3) increase scavenging at higher iron (>0.6nM)
+     !                      POMx10 = 120 ;
+     !  3) increase scavenging at higher iron (>0.6nM) (we are currently using 0.8)
      !  4) convert to net loss per second
      !-----------------------------------------------------------------------
 
