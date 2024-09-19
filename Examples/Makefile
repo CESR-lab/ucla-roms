@@ -13,7 +13,7 @@
 
 .PHONY: all clean depend
 
-ROMS_ROOT = /home/nmolem/ucla-roms
+#ROMS_ROOT = /home/nmolem/ucla-roms
 
 all:
 	@echo "Doing my thing"

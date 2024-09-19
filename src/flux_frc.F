@@ -48,6 +48,15 @@
         nc_swrad%coarse=1
       endif
 
+      ! Print option to netcdf file 
+      flux_frc_opt = ''
+      call store_string_att(flux_frc_opt, 'True')
+      if (interp_frc==1) then
+        call store_string_att(flux_frc_opt, '/ Interpolation = True')
+      else
+        call store_string_att(flux_frc_opt, '/ Interpolation = False') 
+      endif 
+
       end subroutine init_arrays_flux_frc  !]
 ! ----------------------------------------------------------------------
       subroutine set_flux_frc(istr,iend,jstr,jend)  ![

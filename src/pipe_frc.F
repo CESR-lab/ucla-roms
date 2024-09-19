@@ -41,6 +41,10 @@
       character(len=5)  ::npipe_dim_name = 'npipe'      !! dimension name for number of pipes in file
       character(len=8)  :: ntrc_dim_name = 'ntracers'   !! dimension name for number of tracers in file
 
+     ! Netcdf Prints for ncinfo 
+      character(len=30) :: string  
+       
+
       logical :: init_pipe_done = .false.
 
       public set_pipe_frc
@@ -143,6 +147,18 @@
         allocate(nc_pvol%vdata(npip,1 ,2))
         allocate(nc_ptrc%vdata(npip,nt,2))
       endif
+
+      ! Print statements 
+      pipe_frc_opt = ''
+      if (pipe_source) then 
+        write(string, '(A,I3)') 'npip =', npip
+        call store_string_att(pipe_frc_opt, string)
+        if (p_analytical) then
+          call store_string_att(pipe_frc_opt, '/ Analytical')
+        else
+          call store_string_att(pipe_frc_opt, '/ Realistic')
+        endif
+      endif 
 
       end subroutine init_arrays_pipes  !]
 ! ----------------------------------------------------------------------

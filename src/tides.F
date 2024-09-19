@@ -24,6 +24,9 @@
 
       public set_tides
 
+      ! printing to netcdf
+      character(len=30) :: string 
+
       contains
 
 !-----------------------------------------------------------------------
@@ -49,13 +52,28 @@
         allocate(ptide(GLOBAL_2D_ARRAY))
       endif
 
+      ! Save tide options to netcdf and call respective sub routines 
+      ! based on options 
+      tide_opt = ''
       if (pot_tides.or.bry_tides) then
+        write(string, '(A, I3)') 'ntides =', ntides
+        call store_string_att(tide_opt, string)
         if (ana_tides) then
           call make_tides
+          call store_string_att(tide_opt, '/ Analytical')
         else
           call read_tides
+          call store_string_att(tide_opt, '/ Realistic')
         endif
       endif
+
+      ! Save additional tide options to netcdf 
+      if (pot_tides) then 
+        call store_string_att(tide_opt, '/ Tidal Potential = True')
+      endif
+      if (bry_tides) then 
+        call store_string_att(tide_opt, '/ Barotropic Tides = True') 
+      endif 
 
       end subroutine init_tides  !]
 !-----------------------------------------------------------------------

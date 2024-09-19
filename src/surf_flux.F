@@ -90,12 +90,12 @@
       allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
       allocate(nc_sss%vdata(GLOBAL_2D_ARRAY,2) )
 
-      call store_string_att(surf_forcing_strings,'<surf_flux.F>')
-      call store_string_att(surf_forcing_strings,'dSSSdt=')
-      write (string, "(F9.6)") dSSSdt*(100.*day2sec)                 ! convert number to string...
-      call store_string_att(surf_forcing_strings,string)
-      call store_string_att(surf_forcing_strings,'dSSSdt_units')
-      call store_string_att(surf_forcing_strings,'cm/day')
+     ! call store_string_att(surf_forcing_strings,'<surf_flux.F>')
+     ! call store_string_att(surf_forcing_strings,'dSSSdt=')
+     ! write (string, "(F9.6)") dSSSdt*(100.*day2sec)                 ! convert number to string...
+     ! call store_string_att(surf_forcing_strings,string)
+     ! call store_string_att(surf_forcing_strings,'dSSSdt_units')
+     ! call store_string_att(surf_forcing_strings,'cm/day')
 #endif
 
       if (sflx_avg) then

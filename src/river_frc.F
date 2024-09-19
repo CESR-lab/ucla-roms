@@ -40,7 +40,10 @@
       character(len=10) :: riv_tim_name = 'river_time'               ! stored in a forcing file
       character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
-
+      
+      ! Option values printed to netcdf
+      character(len=30) :: string                 
+      
       ! Misc:
       logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
 
@@ -139,6 +142,19 @@
 
       if(mynode==0) write(*,'(/7x,A/)')
      &  'river_frc: init river locations'
+
+      ! Print statements for netcdf  
+      river_frc_opt = ''
+      if (river_source) then
+        write(string, '(A,I3)') 'nriv =', nriv
+        call store_string_att(river_frc_opt, string)
+        if (analytical) then
+          call store_string_att(river_frc_opt, '/ Analytical')
+        else
+          call store_string_att(river_frc_opt, '/ Realistic')
+        endif
+      endif
+
 
       end subroutine init_river_frc  !]
 ! ----------------------------------------------------------------------

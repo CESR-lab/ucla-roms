@@ -278,6 +278,18 @@
       if (mynode==0) print *,'init diagnostics', init_done
       init_done = .true.  ! ensure init is not triggered again
 
+      ! Print diagnostics opts to netcdf 
+      call store_string_att(diagnostic_opt, 'Chosen Diagnostics = ')
+      if (diag_uv) then 
+        call store_string_att(diagnostic_opt, 'Momentum')
+      endif
+      if (diag_trc) then 
+        call store_string_att(diagnostic_opt, '/ Selected Tracers')
+      endif
+      if (diag_pflx) then 
+        call store_string_att(diagnostic_opt, '/ Baroclinic Pressure Fluxes')
+      endif
+
       end subroutine init_diagnostics  !]
 ! ----------------------------------------------------------------------
       subroutine set_diags_u_4th_adv  ![
