@@ -13,9 +13,9 @@
       ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
       use param
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
-#ifdef MARBL      
-      use marbl_driver 
-#endif      
+#ifdef MARBL
+      use marbl_driver
+#endif
       use bgc_ecosys_vars
       use nc_read_write
       use roms_read_write
@@ -38,7 +38,7 @@
       integer,save :: navg_bgc = 0               ! number of samples in average
       integer,save :: navg_dia_bgc = 0           ! number of samples in average
       integer :: record_avg = nrpf_avg           ! Triggers making of initial file
-      integer :: record_his = nrpf_his           
+      integer :: record_his = nrpf_his
       integer :: record_dia_avg = nrpf_avg_dia   ! Triggers making of initial file
       integer :: record_dia_his = nrpf_his_dia
       real,save :: output_time_his = 0
@@ -78,7 +78,7 @@
 
       ! input/outputs
       integer,intent(in) :: istr,iend,jstr,jend
-      
+
       ! local
       integer :: i, j
 
@@ -98,40 +98,43 @@
       call set_frc_data(nc_pco2air,pco2air,'r')
 #ifdef MARBL
       call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
-#endif      
+#endif
 #endif /* PCO2AIR_FORCING */
-      
+
 #ifdef NOX_FORCING
       call set_frc_data(nc_nox,nox,'r')
-#endif /* NOX_FORCING */   
+#endif /* NOX_FORCING */
 #ifdef NHY_FORCING
       call set_frc_data(nc_nhy,nhy,'r')
 #endif /* NHY_FORCING */
+#ifdef FESEDFLUX_FORCING
+      call set_frc_data(nc_fesedflux,fesedflux,'r')
+#endif /* FESEDFLUX_FORCING */
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
       call set_frc_data(nc_swrad_avg,swrad_avg,'r')
-     
+
       do j=jstrR,jendR
         do i=istrR,iendR
           swrad_avg(i,j)= swrad_avg(i,j)/(rho0*Cp)
-          
+
 #ifdef SEA_ICE_NOFLUX
           if( t(i,j,N,nrhs,itemp) .le. -1.8 ) then    ! Restrict stflx to prevent surface temperature to go below -2 degrees C.
 #   if defined LMD_KPP
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
             swrad_avg(i,j)=0.
-#endif                   
+#endif
 #   endif
           endif
 #endif
 
         enddo !<- istrR
       enddo   !<- jstrR
-     
-#endif /* DAILYPAR_PHOTOINHIBITION */ 
+
+#endif /* DAILYPAR_PHOTOINHIBITION */
 
       end subroutine set_bgc_surf_frc  !]
 ! ----------------------------------------------------------------------
@@ -166,7 +169,7 @@
            output_time_avg = output_time_avg + dt     ! only start count after first timestep
 !        endif
 !        first_step_avg=.false.
-        
+
 
 !        if (mynode == 0) then
 !           write(*,'(7x,A,1x,F11.4,2x,A,F11.4,1x,A,I4)')
@@ -188,7 +191,7 @@
              if (wrt_t_avg(itrc)) then
                 if (mynode == 0) then
                    write(*,'(7x,A,1x,A)')
-     &             'wrt_bgc_tracers :: average, trc = ', t_vname(itrc) 
+     &             'wrt_bgc_tracers :: average, trc = ', t_vname(itrc)
                 endif
              itavg = NT_2_t_avg(itrc)                         ! get respective index for t_avg(itavg) -> t(itrc)
              call ncwrite(ncid,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),(/1,1,1,record_avg/))
@@ -200,7 +203,7 @@
      &       'bgc :: wrote average, tdays =', tdays,
      &       'step =', iic, 'rec =', record_avg
           endif
-        endif  
+        endif
 
       else
 
@@ -294,9 +297,9 @@
      &       'bgc diag :: wrote average, tdays =', tdays,
      &       'step =', iic, 'rec =', record_dia_avg
           endif
-        endif  
+        endif
 
-      endif  
+      endif
 
       if (wrt_his_dia) then
 
@@ -546,9 +549,9 @@
 
 #ifdef PCO2AIR_FORCING
       allocate( nc_pco2air%vdata( GLOBAL_2D_ARRAY,2) )
-#ifdef MARBL      
+#ifdef MARBL
       allocate( nc_pco2air_alt%vdata( GLOBAL_2D_ARRAY,2) )
-#endif      
+#endif
 #endif
 
 #ifdef NOX_FORCING
@@ -556,6 +559,10 @@
 #endif
 #ifdef NHY_FORCING
       allocate( nc_nhy%vdata( GLOBAL_2D_ARRAY,2) )
+#endif
+
+#ifdef FESEDFLUX_FORCING
+      allocate( nc_fesedflux%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
@@ -566,7 +573,7 @@
 ! ----------------------------------------------------------------------
       subroutine init_scalars_bec2()  ![
 #ifndef MARBL
-!     
+!
 ! Set initial values for  globally accessible (stored in common
 ! blocks) scalar variables of the BEC model.
 !
@@ -597,7 +604,7 @@
 #ifdef SOLVE3D
 
 ! set the bgc tracer index for the bgc routines
-      po4_ind_t     = iPO4-iTandS-nt_passive     
+      po4_ind_t     = iPO4-iTandS-nt_passive
       no3_ind_t     = iNO3-iTandS-nt_passive
       sio3_ind_t    = iSIO3-iTandS-nt_passive
       nh4_ind_t     = iNH4-iTandS-nt_passive
@@ -668,7 +675,7 @@
 # endif
 #endif /* SOLVE3D */
 
-#endif /* ndef MARBL */      
+#endif /* ndef MARBL */
       end subroutine init_scalars_bec2  !]
 ! ----------------------------------------------------------------------
       subroutine wrt_bgc(init)  ![
@@ -688,7 +695,7 @@
 
 #if defined BEC2_DIAG || defined MARBL_DIAGS
       call wrt_bgc_diags
-#endif 
+#endif
 
 
       end subroutine wrt_bgc  !]
