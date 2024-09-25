@@ -7,7 +7,7 @@
       logical,parameter :: wrt_his           = .true.             ! t/f to write module history file
       real,parameter    :: output_period_his = 30*24*60*60        ! output period in seconds
       integer,parameter :: nrpf_his          = 2                  ! total recs per file
-      
+
       logical,parameter :: wrt_avg           = .true.             ! t/f to write module averages file
       real,parameter    :: output_period_avg = 30*24*60*60        ! output averaging period in seconds
       integer,parameter :: nrpf_avg          = 1                  ! total recs per file
@@ -26,18 +26,18 @@
 #endif
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
      &                                +1
-#endif  
-      
+#endif
+
       integer :: interp_frc  = 0                           ! interpolate forcing from coarser input grid (=1) or not (=0)
 
       type (ncforce) :: nc_dust        = ncforce(vname='dust', tname='dust_time' )  ! dust forcing
-      type (ncforce) :: nc_iron        = ncforce(vname='iron', tname='iron_time' )  ! iron forcing      
+      type (ncforce) :: nc_iron        = ncforce(vname='iron', tname='iron_time' )  ! iron forcing
 #ifdef PCO2AIR_FORCING
       type (ncforce) :: nc_pco2air     = ncforce(vname='pco2_air',   tname='pco2_time' )
-#ifdef MARBL      
+#ifdef MARBL
       type (ncforce) :: nc_pco2air_alt = ncforce(vname='pco2_air_alt',   tname='pco2_time' )
-#endif      
-#endif            
+#endif
+#endif
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       type (ncforce) :: nc_swrad_avg   = ncforce(vname='swrad_davg', tname='srf_davg_time' )
 #endif
@@ -46,6 +46,9 @@
 #endif
 #ifdef NHY_FORCING
       type (ncforce) :: nc_nhy        = ncforce(vname='nhy', tname='nhy_time' )
+#endif
+#ifdef FESEDFLUX_FORCING
+      type (ncforce) :: nc_fesedflux        = ncforce(vname='fesedflux', tname='fesedflux_time' )
 #endif
 
 !#include "bgc_tracers.h"
