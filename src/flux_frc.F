@@ -113,7 +113,6 @@
 
       end subroutine set_flux_frc  !]
 ! ----------------------------------------------------------------------
-#ifdef SALINITY
       subroutine set_swflux  ![
       ! set surface freshwater flux: stflx(isalt)
 
@@ -142,8 +141,6 @@
       enddo
 
       end subroutine set_swflux  !]
-#endif /* SALINITY */
-
 ! ----------------------------------------------------------------------
       subroutine set_srflux  ![
       ! set short-wave radiation flux

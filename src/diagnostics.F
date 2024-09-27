@@ -91,9 +91,9 @@
 
       ! Netcdf outputting:
       ! -----------------
-      integer            :: output_time = 0         ! record number of output. 0 indicates we need new file
-      integer            :: record = nrpf           ! to trigger the first file creation
-      integer            :: ncid=-1, prev_fill_mode
+      real    :: output_time = 0         ! record number of output. 0 indicates we need new file
+      integer :: record = nrpf           ! to trigger the first file creation
+      integer :: ncid=-1, prev_fill_mode
 
       real, public,allocatable, dimension(:,:) :: dxdyi_u, dxdyi_v,dxdyi ! 1/ surface of cells
 
@@ -898,7 +898,7 @@
       implicit none
 
       ! local
-      integer                 :: ierr = 0, imd, i, j, k, tile, idt, itrc, td, np
+      integer :: ierr = 0
 
       integer :: dim,diag, prev_fill_mode
       character(len=99),save  :: fname

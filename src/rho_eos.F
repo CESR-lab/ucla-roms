@@ -237,8 +237,7 @@
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #   endif
 #  endif
-#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-   || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
+#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP 
 #   ifndef SPLIT_EOS
             dpth=-z_w(i,j,k)
             K_up(i,k)=K0+dpth*(K1+K2*dpth)

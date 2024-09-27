@@ -86,6 +86,7 @@
 	FFLAGS = -O3
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
+#	FFLAGS = -g -traceback -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
