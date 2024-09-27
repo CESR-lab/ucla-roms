@@ -41,9 +41,6 @@
       character(len=5)  ::npipe_dim_name = 'npipe'      !! dimension name for number of pipes in file
       character(len=8)  :: ntrc_dim_name = 'ntracers'   !! dimension name for number of tracers in file
 
-     ! Netcdf Prints for ncinfo 
-      character(len=30) :: string  
-       
 
       logical :: init_pipe_done = .false.
 
@@ -138,6 +135,7 @@
       subroutine init_arrays_pipes  ![
       implicit none
 
+      character(len=30) :: string  
       allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
       allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
       allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.

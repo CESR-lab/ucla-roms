@@ -41,9 +41,6 @@
       character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
       
-      ! Option values printed to netcdf
-      character(len=30) :: string                 
-      
       ! Misc:
       logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
 
@@ -93,6 +90,7 @@
       integer :: ierr,ncid,varid
       real  :: riv_cells,riv_east,riv_west
 
+      character(len=30) :: string                 
       allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
@@ -146,7 +144,7 @@
 
       ! Print user options (river_frc.opt) to netcdf attributes
       river_frc_opt = ''
-      write(string, '(A,I2)') 'nriv =', nriv
+      write(string, '(A,I3)') 'nriv =', nriv
       call store_string_att(river_frc_opt, string)
       if (analytical) then 
         call store_string_att(river_frc_opt, ', Analytical')

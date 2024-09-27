@@ -24,9 +24,6 @@
 
       public set_tides
 
-      ! printing to netcdf
-      character(len=30) :: string 
-
       contains
 
 !-----------------------------------------------------------------------
@@ -35,6 +32,7 @@
 
       implicit none
 
+      character(len=30) :: string 
       allocate(ftide(ntides))
 
       if (bry_tides) then
@@ -62,7 +60,7 @@
 
       ! Print user options (tides.opt) to netcdf attributes
       tide_opt = ''
-      write(string, '(A, I3)') 'ntides =', ntides
+      write(string, '(A, I2)') 'ntides =', ntides
       call store_string_att(tide_opt, string)
       if (ana_tides) call store_string_att(tide_opt, ', Analytical tides')
       if (pot_tides) call store_string_att(tide_opt, ', Tidal potential')
