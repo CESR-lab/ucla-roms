@@ -77,6 +77,7 @@
 
       endif
 
+
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
@@ -87,7 +88,6 @@
       ! subroutine
       use netcdf
       implicit none
-
       ! local
       integer :: i,j
       integer :: ierr,ncid,varid
@@ -134,6 +134,7 @@
         ierr=nf90_open(grdname, nf90_nowrite, ncid)
         call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
         if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
+        
       endif
 
       call calc_river_flux                                           ! compute uflx,vflx from rflx
@@ -143,19 +144,16 @@
       if(mynode==0) write(*,'(/7x,A/)')
      &  'river_frc: init river locations'
 
-      ! Print statements for netcdf  
+      ! Print user options (river_frc.opt) to netcdf attributes
       river_frc_opt = ''
-      if (river_source) then
-        write(string, '(A,I3)') 'nriv =', nriv
-        call store_string_att(river_frc_opt, string)
-        if (analytical) then
-          call store_string_att(river_frc_opt, '/ Analytical')
-        else
-          call store_string_att(river_frc_opt, '/ Realistic')
-        endif
+      write(string, '(A,I2)') 'nriv =', nriv
+      call store_string_att(river_frc_opt, string)
+      if (analytical) then 
+        call store_string_att(river_frc_opt, ', Analytical')
       endif
-
-
+      print *, 'Done with attributes', mynode 
+      print "(a15)", river_frc_opt
+      print "(a15)", ierr
       end subroutine init_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine calc_river_flux  ![

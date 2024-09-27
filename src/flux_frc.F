@@ -48,14 +48,12 @@
         nc_swrad%coarse=1
       endif
 
-      ! Print option to netcdf file 
+      ! Print user options (flux_frc.opt) to netcdf attributes
+      ! Note: to turn flux forces off, edit cppdefs! 
       flux_frc_opt = ''
       call store_string_att(flux_frc_opt, 'True')
-      if (interp_frc==1) then
-        call store_string_att(flux_frc_opt, '/ Interpolation = True')
-      else
-        call store_string_att(flux_frc_opt, '/ Interpolation = False') 
-      endif 
+      if (interp_frc==1) call store_string_att(flux_frc_opt, 
+     &                                         ', Interpolated')
 
       end subroutine init_arrays_flux_frc  !]
 ! ----------------------------------------------------------------------

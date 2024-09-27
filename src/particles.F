@@ -177,18 +177,18 @@
       call wrt_particles
       output_time = 0
 
-      ! Print options to netcdf 
+      ! Print user options (particles.opt) to netcdf attributes 
       call store_string_att(particle_opt, '')
       if (full_seed) then 
         call store_string_att(particle_opt, 'Seeded with constant density')
-        write(particle_conc_string, '(A, E10.2)') '/ Partcile Conc. =', ppm3
+        write(particle_conc_string, '(A, E10.2)') ', Partcile Conc. =', ppm3
         call store_string_att(particle_opt, particle_conc_string)
-        write(particle_num_string, '(A, I2)') '/ Number of Partciles =', np
+        write(particle_num_string, '(A, I2)') ', Number of Partciles =', np
         call store_string_att(particle_opt, particle_num_string)
       else 
         call store_string_att(particle_opt, 'Seeded Randomly')
       endif
-      write(buffer_string, '(A, F5.3)') '/ Buffer Space =', extra_space_fac
+      write(buffer_string, '(A, F5.3)') ', Buffer Space =', extra_space_fac
       call store_string_att(particle_opt, buffer_string)
        
 

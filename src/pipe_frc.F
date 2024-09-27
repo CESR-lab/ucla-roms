@@ -107,7 +107,7 @@
 
       if (p_analytical) then
 
-        ! pipe_flx is defined in ana_grid()
+        ! pipe_flx is defined in ana_pipe_frc.h
 
       else
 
@@ -148,17 +148,13 @@
         allocate(nc_ptrc%vdata(npip,nt,2))
       endif
 
-      ! Print statements 
+      ! Print user options (pipe_frc.opt) to netcdf attributes 
       pipe_frc_opt = ''
-      if (pipe_source) then 
-        write(string, '(A,I3)') 'npip =', npip
-        call store_string_att(pipe_frc_opt, string)
-        if (p_analytical) then
-          call store_string_att(pipe_frc_opt, '/ Analytical')
-        else
-          call store_string_att(pipe_frc_opt, '/ Realistic')
-        endif
-      endif 
+      write(string, '(A,I3)') 'npip =', npip
+      call store_string_att(pipe_frc_opt, string)
+      if (p_analytical) then
+        call store_string_att(pipe_frc_opt, ', Analytical')
+      endif
 
       end subroutine init_arrays_pipes  !]
 ! ----------------------------------------------------------------------
