@@ -80,8 +80,15 @@
       real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
 
       integer,parameter :: max_options_string=2000
-      character(len=max_options_string),public::surf_forcing_strings=' '
-      character(len=max_options_string),public::bc_options = ' '
+      character(len=max_options_string),public::bc_options = 'False'
+      character(len=max_options_string),public::pipe_frc_opt='False'
+      character(len=max_options_string),public::river_frc_opt='False'
+      character(len=max_options_string),public::tide_opt='False'
+      character(len=max_options_string),public::bulk_frc_opt='False'
+      character(len=max_options_string),public::flux_frc_opt='False'
+      character(len=max_options_string),public::particle_opt='False'
+      character(len=max_options_string),public::diagnostic_opt='False'
+      
 
       ! from old ncvars **************:
       integer, parameter, public :: max_frc_files=360
@@ -796,10 +803,10 @@
         call append_date_node(fname)
       endif
 
-!     if (mynode==0) then
-!       print *,'creating: ',fname
-!       stop
-!     endif
+!      if (mynode==0) then
+!        print *,'creating: ',fname
+!        stop
+!      endif
 
       ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr) 
@@ -1288,9 +1295,14 @@
       ! string set added to get values from modules without struggling with circular references
       ! as those modules use roms_read_write so this module can't use them.
       ! rather the string is filled in the module's init and can be written here to all files.
-      ierr=nf90_put_att (ncid, nf90_global, 'surf_forcing_strings', surf_forcing_strings)
       ierr=nf90_put_att (ncid, nf90_global, 'bc_options', bc_options)
-
+      ierr=nf90_put_att (ncid, nf90_global, 'bulk_frc_options', bulk_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'flux_frc_options', flux_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'tide_options', tide_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'river_frc_options', river_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'pipe_frc_options', pipe_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'particle_options', particle_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'diagnostic_options', diagnostic_opt)
       call add_git_hash(ncid)
 
       end subroutine put_global_atts  !]
@@ -1299,7 +1311,6 @@
       ! Add settings that affect the solution to a string
       ! which will be added to global attributes of all nc files
       implicit none
-
       ! input
       character(len=*),intent(inout) :: char_string
       character(len=*),intent(in)    :: string_add

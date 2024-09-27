@@ -209,6 +209,7 @@ CR      write(*,*) ' -6' MYID
       call ecosys2_init
 # endif /*BIOLOGY_BEC2*/
 
+      
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
       call set_forces               ! model prognostic variables,
@@ -216,6 +217,7 @@ CR      write(*,*) ' -6' MYID
                                     ! either analytically or read
       if (nrrec > 0) then 
 #endif
+      
 #ifdef EXACT_RESTART
         call get_init(nrrec-1,2) 
         call set_depth(0)
@@ -231,10 +233,9 @@ CR      write(*,*) ' -6' MYID
       time=start_time             ! moment "start_time" (global scalar)
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
-
+      call set_forces
       call set_depth(0)
 C$OMP BARRIER
-
 !----------------------------------------------------------------------
 !  Set NHMG horizontal and vertical grids 
 !  then set matrices coefficients for the elliptic problem
