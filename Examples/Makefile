@@ -13,8 +13,6 @@
 
 .PHONY: all clean depend
 
-#ROMS_ROOT = /home/nmolem/ucla-roms
-
 all:
 	@echo "Doing my thing"
 	ln -s $(ROMS_ROOT)/Examples/input_data input_data 2>/dev/null || :

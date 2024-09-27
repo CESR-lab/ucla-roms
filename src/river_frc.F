@@ -40,7 +40,7 @@
       character(len=10) :: riv_tim_name = 'river_time'               ! stored in a forcing file
       character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
-
+      
       ! Misc:
       logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
 
@@ -74,6 +74,7 @@
 
       endif
 
+
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
@@ -84,12 +85,12 @@
       ! subroutine
       use netcdf
       implicit none
-
       ! local
       integer :: i,j
       integer :: ierr,ncid,varid
       real  :: riv_cells,riv_east,riv_west
 
+      character(len=30) :: string                 
       allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
@@ -131,6 +132,7 @@
         ierr=nf90_open(grdname, nf90_nowrite, ncid)
         call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
         if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
+        
       endif
 
       call calc_river_flux                                           ! compute uflx,vflx from rflx
@@ -140,6 +142,16 @@
       if(mynode==0) write(*,'(/7x,A/)')
      &  'river_frc: init river locations'
 
+      ! Print user options (river_frc.opt) to netcdf attributes
+      river_frc_opt = ''
+      write(string, '(A,I3)') 'nriv =', nriv
+      call store_string_att(river_frc_opt, string)
+      if (analytical) then 
+        call store_string_att(river_frc_opt, ', Analytical')
+      endif
+      print *, 'Done with attributes', mynode 
+      print "(a15)", river_frc_opt
+      print "(a15)", ierr
       end subroutine init_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine calc_river_flux  ![

@@ -33,7 +33,6 @@
     CPP = cpp -traditional
 
 # Path names (non-hydrostatic & NetCDF libraries):
-	ROMS_ROOT = /home/nmolem/ucla-roms/
 
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg

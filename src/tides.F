@@ -32,6 +32,7 @@
 
       implicit none
 
+      character(len=30) :: string 
       allocate(ftide(ntides))
 
       if (bry_tides) then
@@ -56,6 +57,15 @@
           call read_tides
         endif
       endif
+
+      ! Print user options (tides.opt) to netcdf attributes
+      tide_opt = ''
+      write(string, '(A, I2)') 'ntides =', ntides
+      call store_string_att(tide_opt, string)
+      if (ana_tides) call store_string_att(tide_opt, ', Analytical tides')
+      if (pot_tides) call store_string_att(tide_opt, ', Tidal potential')
+      if (bry_tides) call store_string_att(tide_opt, 
+     &                                     'Barotropic tide at boundary') 
 
       end subroutine init_tides  !]
 !-----------------------------------------------------------------------
