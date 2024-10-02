@@ -17,6 +17,7 @@
       use roms_read_write
       use nc_read_write
       use scalars
+      use grid
 
       implicit none
 
@@ -33,6 +34,7 @@
       real,public,allocatable,dimension(:,:)    :: pipe_trc      ! Pipe tracer conc.
       real   ,public, dimension(npip)           :: pipe_vol      ! Pipe volume
 
+
      ! Netcdf names
       character(len=9)  :: pipe_flx_name = 'pipe_flux'  !! stored in the grid file
       character(len=11) :: pipe_vol_name = 'pipe_volume'!! stored in a forcing file
@@ -41,10 +43,15 @@
       character(len=5)  ::npipe_dim_name = 'npipe'      !! dimension name for number of pipes in file
       character(len=8)  :: ntrc_dim_name = 'ntracers'   !! dimension name for number of tracers in file
 
+      ! Fix for ana_grid.h error in pipes_ana example
+      real psz, px, py, pipe_cells
+      real sizeX, sizeY
+      real dx, dy
 
       logical :: init_pipe_done = .false.
 
       public set_pipe_frc
+      public init_pipe_frc
       public init_arrays_pipes
 
       contains
@@ -101,10 +108,31 @@
       ! local
       integer :: ierr,ncid,v_id,i,j
 
+      call init_arrays_pipes
 
       if (p_analytical) then
+        ! Also a part of fix for ana_grid.h error
+        SizeX = 30.0e3  !! Domain size in x-direction [m]
+        SizeY = 30.0e3  !! Domain size in y-direction [m]
+        dx = SizeX/gnx
+        dy = SizeY/gny
 
-        ! pipe_flx is defined in ana_pipe_frc.h
+        psz = sizeX*0.02 ! Width of the pipe
+        px  = sizeX*.5  ! x location pipe
+        py  = sizeY*.5  ! y location pipe
+        pipe_cells = nint(psz/dx)**2 !number of cells in this pipe
+        do j=-1,ny+2
+          do i=-1,nx+2
+            pipe_fraction(i,j) = 0.0
+            pipe_idx(i,j) = 0
+            if (xr(i,j)> px-0.5*psz .and. xr(i,j)<px+0.5*psz) then
+              if (yr(i,j)> py-0.5*psz .and. yr(i,j)<py+0.5*psz) then
+                 pipe_fraction(i,j) = 1.0/pipe_cells
+                 pipe_idx(i,j) = 1
+              endif
+            endif
+          enddo
+        enddo
 
       else
 

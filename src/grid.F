@@ -13,7 +13,6 @@
       use nc_read_write
       use dimensions
       use roms_read_write
-      use pipe_frc
       use scalars
       use mpi_exchanges
       implicit none
@@ -100,7 +99,7 @@
 
       character(len=99),public  :: ana_grdname
 
-      public :: get_grid
+      public :: init_grid
 
       contains
 
@@ -407,7 +406,7 @@
 
       end subroutine wrt_grid  !]
 !----------------------------------------------------------------------
-      subroutine get_grid  ![
+      subroutine init_grid  ![
       ! read in grid data from NetCDF file or define analytical grid
       implicit none
 
@@ -415,6 +414,8 @@
       integer :: ierr, ncid, varid, lstr, checkdims
       integer,dimension(4) :: start
 
+      ! allocate space for gridded data 
+      call init_arrays_grid
 
 #ifdef ANA_GRID
       call ana_grid
@@ -429,7 +430,7 @@
         ierr=checkdims (ncid, grdname, varid)
         if (ierr. ne. nf90_noerr) goto 99
       else
-        write(*,'(/1x,4A/12x,A)')  '### ERROR: get_grid :: Cannot ',
+        write(*,'(/1x,4A/12x,A)')  '### ERROR: init_grid :: Cannot ',
      &          'open input NetCDF file ''', trim(grdname), '''.',
      &                                            nf90_strerror(ierr)
         goto 99                                          !--> ERROR
@@ -453,7 +454,7 @@
 # ifdef SPHERICAL
         mpi_master_only write(*,'(/1x,A/)') 'Spherical grid detected.'
 # else
-        write(*,'(/1x,2A/24x,A/)')   '### ERROR: get_grid :: ',
+        write(*,'(/1x,2A/24x,A/)')   '### ERROR: init_grid :: ',
      &          'Spherical grid file detected, but CPP-switch',
      &                                 'SPHERICAL is not set.'
         goto 99                                          !--> ERROR
@@ -536,29 +537,29 @@
 #ifdef MPI_SILENT_MODE
         if (mynode==0) then
 #endif
-          write(*,'(6x,4A,1x,A,I4)') 'get_grid :: read grid data ',
+          write(*,'(6x,4A,1x,A,I4)') 'init_grid :: read grid data ',
      &            'from file ''',  trim(grdname), '''.' MYID
 #ifdef MPI_SILENT_MODE
         endif
 #endif
       else
-        write(*,'(1x,4A/12x,A,1x,A,I4)')   '### ERROR: get_grid :: ',
+        write(*,'(1x,4A/12x,A,1x,A,I4)')   '### ERROR: init_grid :: ',
      &                'Cannot close file ''', trim(grdname), '''.',
      &                 nf90_strerror(ierr) MYID
         goto 99
       endif
       return                                     !--> NORMAL RETURN
 
-   1  format(/1x, '### ERROR: get_grid :: Cannot find variable ''', A,
+   1  format(/1x, '### ERROR: init_grid :: Cannot find variable ''', A,
      &                          ''' within netCDF file ''', A, '''.'/)
-   2  format(/1x, '### ERROR: get_grid :: Cannot read variable ''', A,
+   2  format(/1x, '### ERROR: init_grid :: Cannot read variable ''', A,
      &                     ''' from netCDF file ''', A, '''.' /12x,A/)
   99  may_day_flag=2
       return                                             !--> ERROR
 
 #endif /* ifdef ANA_GRID */
 
-      end subroutine get_grid  !]
+      end subroutine init_grid  !]
 
 !----------------------------------------------------------------------
 

@@ -148,8 +148,6 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
-      call get_grid                  ! can be analytic or from netcdf
-
 #ifdef DIAGNOSTICS
       call init_diagnostics  
 #endif
@@ -233,7 +231,6 @@ CR      write(*,*) ' -6' MYID
       time=start_time             ! moment "start_time" (global scalar)
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
-      call set_forces
       call set_depth(0)
 C$OMP BARRIER
 !----------------------------------------------------------------------
@@ -258,9 +255,6 @@ CR      write(*,*)  ' -3' MYID
 
 CR      write(*,*)  ' -2' MYID
 
-      if (floats) then
-        call init_particles
-      endif
 
 #if defined SPONGE 
       call set_nudgcof(0)

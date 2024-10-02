@@ -59,6 +59,8 @@
       use dimensions
       use flux_frc
       use pipe_frc
+      use river_frc
+      use particles
       use bgc_ecosys_vars
       use bgc_forces
       use bgc
@@ -99,77 +101,45 @@
 # endif
 #endif
 
+! ----- Allocating Arrays -----
+      ! General Variables and File Outputs
       call init_arrays_ocean
-
       call init_avg_arrays
-
-      call init_arrays_coupling
-
-      call init_arrays_grid     ! lots of extra arrays here initialized which might negatively affect first touch principle.
-                                ! before only rmask was first-touched here...
-
-      call init_arrays_mess_buffers  ! DevinD placed here. Assumed used often for higher up first touch
-
-      call init_arrays_eos_vars
-
-#ifdef SOLVE3D
-      do k=0,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
-            We(i,j,k)=init0
-            Wi(i,j,k)=init0
-# ifdef NHMG
-            w(i,j,k,1)=init0
-            w(i,j,k,2)=init0
-# endif
-          enddo
-        enddo
-      enddo
-
-#endif /* SOLVE3D */
-
-! Initialize forcing arrays.
-
+      ! Forcing 
       call init_arrays_surf_flx
-
 #ifdef BULK_FRC
       call init_arrays_bulk_frc
 #endif
-
+#ifndef BULK_FRC
+      call init_arrays_flux_frc
+#endif
+      ! Additional
 # ifdef WEC
       call init_arrays_wec_tile(istr,iend,jstr,jend)
 # endif
-
-#if defined M2NUDGING && !defined M2_FRC_BRY
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          ssh(i,j)=init0
-# ifndef ANA_SSH
-          sshg(i,j,1)=init0
-          sshg(i,j,2)=init0
-# endif
-        enddo
-      enddo
-#endif
-
-! Set variable horizontal viscosities and tracer diffusion
-! coefficients (see "mixing") to their background values.
-
       call init_arrays_mixing
-      call init_arrays_work_mod   ! DevinD added this here to allocate
+      call init_arrays_coupling
+      call init_arrays_mess_buffers
+      call init_arrays_eos_vars
+      call init_arrays_work_mod
       call init_arrays_boundary
-      call init_arrays_buffer     ! DevinD added this here to allocate
-
-#ifndef BULK_FRC
-      call init_arrays_flux_frc   ! DevinD added this here to allocate
-#endif
-
-      if (pipe_source) call init_arrays_pipes
-
+      call init_arrays_buffer
+      ! Biological
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call init_arrays_bgc_ecosys_vars
       call init_arrays_bgc_forces
       call init_arrays_bgc_frc
 #endif
+
+! ----- Initialization Routines -----
+      ! Sets up grid through either reading in netcdf files, or, if analytical,
+      ! defining a grid through ana_grid.h
+      call init_grid     ! lots of extra arrays here initialized which might negatively affect first touch principle.
+      ! Places pipes and sets up their forcing
+      if (pipe_source) call init_pipe_frc
+      ! Does the same for rivers, as done in pipes
+      if (river_source) call init_river_frc
+      ! Set up particles if specified
+      if (floats) call init_particles
 
       end
