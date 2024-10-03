@@ -2,7 +2,7 @@
       ! ****************************************************************
       ! user inputs
       logical,parameter,public :: pipe_source  = .false.      ! default should be false if not using pipes
-      logical,parameter        :: p_analytical = .false.      ! analytical forcing true
+      logical,parameter        :: analytical_pipes = .false.      ! analytical forcing true
       integer,public,parameter :: npip = 1                    ! number of pipes
       
       ! realistic pipes only: enter netcdf variable name and time name

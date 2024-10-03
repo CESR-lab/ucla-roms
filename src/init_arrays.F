@@ -135,8 +135,6 @@
       ! Sets up grid through either reading in netcdf files, or, if analytical,
       ! defining a grid through ana_grid.h
       call init_grid     ! lots of extra arrays here initialized which might negatively affect first touch principle.
-      ! Places pipes and sets up their forcing
-      if (pipe_source) call init_pipe_frc
       ! Does the same for rivers, as done in pipes
       if (river_source) call init_river_frc
       ! Set up particles if specified

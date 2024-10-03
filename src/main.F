@@ -100,6 +100,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use diagnostics
       use boundary
       use particles
+      use pipe_frc
       use random_output
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
@@ -147,6 +148,9 @@ C$OMP BARRIER
         call init_arrays(tile,my_first)  ! global arrays (most of them
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
+
+      ! Initialization Routines
+      if (pipe_source) call init_pipe_frc
 
 #ifdef DIAGNOSTICS
       call init_diagnostics  
