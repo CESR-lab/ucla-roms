@@ -101,6 +101,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use boundary
       use particles
       use pipe_frc
+      use river_frc
       use random_output
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
@@ -151,6 +152,7 @@ C$OMP BARRIER
 
       ! Initialization Routines
       if (pipe_source) call init_pipe_frc
+      if (river_source) call init_river_frc
 
 #ifdef DIAGNOSTICS
       call init_diagnostics  

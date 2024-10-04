@@ -59,10 +59,8 @@
 
       implicit none
 
-      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
-
       ! set river flux volumes and tracer data:
-      if(analytical) then
+      if (analytical_rivers) then
 
         call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
 
@@ -77,82 +75,80 @@
 
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
+      subroutine set_ana_river_frc  ![
+      ! Analytical river forcing volume and tracer data
+
+#include "ana_frc_river.h"
+
+      end subroutine set_ana_river_frc  !]
+! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
+
       ! Initialize river forcing:
       ! Read in a grid file with locations of river mouths and flux contribution per cell.
       ! done only once as river mouth position does not change.
       ! Or: .... if analytical, define the river fluxes in this
       ! subroutine
-      use netcdf
+
       implicit none
-      ! local
-      integer :: i,j
-      integer :: ierr,ncid,varid
-      real  :: riv_cells,riv_east,riv_west
 
       character(len=30) :: string                 
+      ! Allocate arrays
       allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
+      if (.not. analytical_rivers) then
+        allocate(nc_rvol%vdata(nriv,1 ,2))
+        allocate(nc_rtrc%vdata(nriv,nt,2))
+      endif
 
 
-      if (analytical) then
-        riv_west=xl*0.4 ! River west bank at 40% from west
-        riv_east=xl*0.6 ! River west bank at 60% from west
-        ! pm is constant for this case
-        riv_cells = nint( (riv_east - riv_west)*pm(1,1)) !number of cells in this river
-        do j=0,ny+1
-          do i=0,nx+1
-            if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
-              ! find 'coastline' masked cells
-# ifdef MASKING
-              if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-                rflx(i,j) = 1.0+1.0/riv_cells
-              endif
-# endif
-            endif
+      if (analytical_rivers) then
 
-
-          enddo
-        enddo
-
-        ierr=nf90_open(ana_grdname,nf90_write,ncid)
-        varid = nccreate(ncid,'river_flux',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
-        ierr=nf90_put_att(ncid, varid,'long_name','River volume flux') 
-!       ierr=nf90_close(ncid)
-!       print *,'added river_flux',mynode
-!       ierr=nf90_open(ana_grdname,nf90_write,ncid)
-        call ncwrite(ncid,'river_flux', rflx(i0:i1,j0:j1))
-        ierr=nf90_close(ncid)
+        call ana_river_loc
 
       else ! Read 'river_flux' from grid file (River mouth locations)
 
-        allocate(nc_rvol%vdata(nriv,1 ,2))
-        allocate(nc_rtrc%vdata(nriv,nt,2))
-        ierr=nf90_open(grdname, nf90_nowrite, ncid)
-        call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
-        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
-        
+        call get_river_loc
+
       endif
 
-      call calc_river_flux                                           ! compute uflx,vflx from rflx
-
-      init_riv_done = .true.
-
-      if(mynode==0) write(*,'(/7x,A/)')
-     &  'river_frc: init river locations'
+      ! compute uflx,vflx from rflx
+      call calc_river_flux
 
       ! Print user options (river_frc.opt) to netcdf attributes
       river_frc_opt = ''
       write(string, '(A,I3)') 'nriv =', nriv
       call store_string_att(river_frc_opt, string)
-      if (analytical) then 
+      if (analytical_rivers) then
         call store_string_att(river_frc_opt, ', Analytical')
       endif
-      print *, 'Done with attributes', mynode 
-      print "(a15)", river_frc_opt
-      print "(a15)", ierr
+
+      if(mynode==0) write(*,'(/7x,A/)')
+     &  'river_frc: River Locations Set'
+
       end subroutine init_river_frc  !]
+! ----------------------------------------------------------------------
+      subroutine ana_river_loc ![
+      use netcdf
+      implicit none
+
+#include "ana_river_loc.h"
+
+      end subroutine ana_river_loc !]
+! ----------------------------------------------------------------------
+      subroutine get_river_loc ![
+      use netcdf
+      implicit none 
+
+      ! local
+      integer :: ierr,ncid
+
+      ierr=nf90_open(grdname, nf90_nowrite, ncid)
+      call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
+      if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
+
+      end subroutine get_river_loc !]
 ! ----------------------------------------------------------------------
       subroutine calc_river_flux  ![
       ! calculate the river flux contributions to each cell.
@@ -189,14 +185,6 @@
       enddo
 
       end subroutine calc_river_flux  !]
-! ----------------------------------------------------------------------
-      subroutine set_ana_river_frc  ![
-      ! Analytical river forcing volume and tracer data
-
-#include "ana_frc_river.h"
-
-      end subroutine set_ana_river_frc  !]
-
 ! ----------------------------------------------------------------------
 
       end module river_frc

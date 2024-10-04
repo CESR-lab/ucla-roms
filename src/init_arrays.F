@@ -58,8 +58,6 @@
       use mess_buffers
       use dimensions
       use flux_frc
-      use pipe_frc
-      use river_frc
       use particles
       use bgc_ecosys_vars
       use bgc_forces
@@ -135,8 +133,6 @@
       ! Sets up grid through either reading in netcdf files, or, if analytical,
       ! defining a grid through ana_grid.h
       call init_grid     ! lots of extra arrays here initialized which might negatively affect first touch principle.
-      ! Does the same for rivers, as done in pipes
-      if (river_source) call init_river_frc
       ! Set up particles if specified
       if (floats) call init_particles
 
