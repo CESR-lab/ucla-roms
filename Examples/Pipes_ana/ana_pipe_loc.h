@@ -5,14 +5,14 @@
       integer :: i, j
 
 
-      SizeX = 0  !! Domain size in x-direction [m]
-      SizeY = 0  !! Domain size in y-direction [m]
+      SizeX = 30.0e3  !! Domain size in x-direction [m]
+      SizeY = 30.0e3  !! Domain size in y-direction [m]
       dx = SizeX/gnx
       dy = SizeY/gny
 
-      psz = sizeX ! Width of the pipe
-      px  = sizeX  ! x location pipe
-      py  = sizeY  ! y location pipe
+      psz = sizeX*0.02 ! Width of the pipe
+      px  = sizeX*.5  ! x location pipe
+      py  = sizeY*.5  ! y location pipe
       pipe_cells = nint(psz/dx)**2 !number of cells in this pipe
       do j=-1,ny+2
         do i=-1,nx+2

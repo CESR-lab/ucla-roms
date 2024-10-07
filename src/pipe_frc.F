@@ -123,8 +123,8 @@
 
       implicit none
 
-      ! Allocate arrays 
       character(len=30) :: string  
+      ! Allocate arrays
       allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
       allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
       allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
@@ -161,7 +161,7 @@
       subroutine ana_pipe_loc  ![
       implicit none
 
-#include "ana_pipe_loc.h"      
+#include "ana_pipe_loc.h"
 
       end subroutine ana_pipe_loc  !]
 ! ----------------------------------------------------------------------

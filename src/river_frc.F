@@ -41,9 +41,6 @@
       character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
       
-      ! Misc:
-      logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
-
       public set_river_frc
       public init_river_frc
 
@@ -78,7 +75,7 @@
       subroutine set_ana_river_frc  ![
       ! Analytical river forcing volume and tracer data
 
-#include "ana_frc_river.h"
+#include "ana_river_frc.h"
 
       end subroutine set_ana_river_frc  !]
 ! ----------------------------------------------------------------------
