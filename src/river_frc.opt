@@ -2,7 +2,7 @@
       ! ****************************************************************
       ! user inputs
       logical,parameter,public :: river_source = .false.   ! default should be false if not using rivers
-      logical,parameter        :: analytical   = .false.   ! analytical forcing, if false then realistic
+      logical,parameter        :: analytical_rivers = .false.   ! analytical forcing, if false then realistic
       integer,public,parameter :: nriv = 1                 ! number of rivers
       
       ! realistic rivers only: enter netcdf variable name and time name

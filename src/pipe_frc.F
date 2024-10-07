@@ -17,6 +17,7 @@
       use roms_read_write
       use nc_read_write
       use scalars
+      use grid
 
       implicit none
 
@@ -33,6 +34,7 @@
       real,public,allocatable,dimension(:,:)    :: pipe_trc      ! Pipe tracer conc.
       real   ,public, dimension(npip)           :: pipe_vol      ! Pipe volume
 
+
      ! Netcdf names
       character(len=9)  :: pipe_flx_name = 'pipe_flux'  !! stored in the grid file
       character(len=11) :: pipe_vol_name = 'pipe_volume'!! stored in a forcing file
@@ -41,11 +43,8 @@
       character(len=5)  ::npipe_dim_name = 'npipe'      !! dimension name for number of pipes in file
       character(len=8)  :: ntrc_dim_name = 'ntracers'   !! dimension name for number of tracers in file
 
-
-      logical :: init_pipe_done = .false.
-
       public set_pipe_frc
-      public init_arrays_pipes
+      public init_pipe_frc
 
       contains
 
@@ -61,9 +60,7 @@
       ! local
       integer :: i,j
 
-      if (.not. init_pipe_done) call init_pipe_frc
-
-      if (p_analytical) then                                ! Set pipe flux volumes and tracer data
+      if (analytical_pipes) then                           ! Set pipe flux volumes and tracer data
 
         call set_ana_pipe_frc
         
@@ -86,75 +83,6 @@
       endif
 
       end subroutine set_pipe_frc !]
-! ----------------------------------------------------------------------
-      subroutine init_pipe_frc  ![
-
-      ! Initialize pipe forcing:
-      ! Read in a grid file with locations of pipes and flux contribution per cell.
-      ! Done only once as pipe position does not change.
-      ! Realistic case - stored as one value in NetCDF file where
-      ! pipe grid point value = pidx + pipe_fraction
-
-      use netcdf
-      implicit none
-
-      ! local
-      integer :: ierr,ncid,v_id,i,j
-
-
-      if (p_analytical) then
-
-        ! pipe_flx is defined in ana_pipe_frc.h
-
-      else
-
-        ! Read 'pipe_flux' from grid file (Pipe_idx & pipe_fraction in one value)
-        ierr=nf90_open(grdname, nf90_nowrite, ncid)
-        ! Temporarily store as pipe_fraction to avoid extra array,
-        ! but value still pipe_idx + pipe_fraction
-        call ncread(ncid,pipe_flx_name, pipe_fraction(i0:i1,j0:j1))
-        if(ierr/=0) 
-     &      call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
-
-        ! Separate pipe_idx & pipe_fraction:
-        do j = 1,ny
-          do i = 1,nx
-            ! read in value = pidx + pipe_fraction = pipe_idx(i,j) + pipe_fraction(i,j)
-            pipe_idx(i,j)=floor(pipe_fraction(i,j)-1e-5)
-            pipe_fraction(i,j)=pipe_fraction(i,j)-pipe_idx(i,j)
-          enddo
-        enddo
-
-      endif
-
-      init_pipe_done = .true.
-      if(mynode==0) write(*,'(/7x,A/)') 'pipe_frc: init pipe locations'
-          
-      end subroutine init_pipe_frc  !]
-! ----------------------------------------------------------------------
-      subroutine init_arrays_pipes  ![
-      implicit none
-
-      character(len=30) :: string  
-      allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
-      allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
-      allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
-      allocate( pipe_trc(npip,nt) ) ;             pipe_trc=0.
-
-      if (.not. p_analytical) then
-        allocate(nc_pvol%vdata(npip,1 ,2))
-        allocate(nc_ptrc%vdata(npip,nt,2))
-      endif
-
-      ! Print user options (pipe_frc.opt) to netcdf attributes 
-      pipe_frc_opt = ''
-      write(string, '(A,I3)') 'npip =', npip
-      call store_string_att(pipe_frc_opt, string)
-      if (p_analytical) then
-        call store_string_att(pipe_frc_opt, ', Analytical')
-      endif
-
-      end subroutine init_arrays_pipes  !]
 ! ----------------------------------------------------------------------
       subroutine set_pipe_vert_prf  ![
       ! set vertical discharge profile of pipes
@@ -184,6 +112,84 @@
 #include "ana_pipe_frc.h"
 
       end subroutine set_ana_pipe_frc  !]
+! ----------------------------------------------------------------------
+      subroutine init_pipe_frc  ![
+
+      ! Initialize pipe forcing:
+      ! Read in a grid file with locations of pipes and flux contribution per cell.
+      ! Done only once as pipe position does not change.
+      ! Realistic case - stored as one value in NetCDF file where
+      ! pipe grid point value = pidx + pipe_fraction
+
+      implicit none
+
+      character(len=30) :: string  
+      ! Allocate arrays
+      allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
+      allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
+      allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
+      allocate( pipe_trc(npip,nt) ) ;             pipe_trc=0.
+
+      if (.not. analytical_pipes) then
+        allocate(nc_pvol%vdata(npip,1 ,2))
+        allocate(nc_ptrc%vdata(npip,nt,2))
+      endif
+
+      ! Either set pipe or read in via netcdf
+      if (analytical_pipes) then
+
+        call ana_pipe_loc
+
+      else
+
+        call get_pipe_loc
+
+      endif
+
+      ! Print user options (pipe_frc.opt) to netcdf attributes 
+      pipe_frc_opt = ''
+      write(string, '(A,I3)') 'npip =', npip
+      call store_string_att(pipe_frc_opt, string)
+      if (analytical_pipes) then
+        call store_string_att(pipe_frc_opt, ', Analytical')
+      endif
+          
+      if(mynode==0) write(*,'(/7x,A/)') 'pipe_frc: Initialization Complete'
+
+      end subroutine init_pipe_frc  !]
+! ----------------------------------------------------------------------
+      subroutine ana_pipe_loc  ![
+      implicit none
+
+#include "ana_pipe_loc.h"
+
+      end subroutine ana_pipe_loc  !]
+! ----------------------------------------------------------------------
+      subroutine get_pipe_loc  ![
+      use netcdf
+      implicit none
+
+      ! local
+      integer :: ierr,ncid,v_id,i,j
+
+      ! Read 'pipe_flux' from grid file (Pipe_idx & pipe_fraction in one value)
+      ierr=nf90_open(grdname, nf90_nowrite, ncid)
+      ! Temporarily store as pipe_fraction to avoid extra array,
+      ! but value still pipe_idx + pipe_fraction
+      call ncread(ncid,pipe_flx_name, pipe_fraction(i0:i1,j0:j1))
+      if(ierr/=0) 
+     &  call handle_ierr(ierr,'init_pipe_frc:: pipe not in file!')
+
+      ! Separate pipe_idx & pipe_fraction:
+      do j = 1,ny
+        do i = 1,nx
+          ! read in value = pidx + pipe_fraction = pipe_idx(i,j) + pipe_fraction(i,j)
+          pipe_idx(i,j)=floor(pipe_fraction(i,j)-1e-5)
+          pipe_fraction(i,j)=pipe_fraction(i,j)-pipe_idx(i,j)
+        enddo
+      enddo
+
+      end subroutine get_pipe_loc  !]
 ! ----------------------------------------------------------------------
 
       end module pipe_frc
