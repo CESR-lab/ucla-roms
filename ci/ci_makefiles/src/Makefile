@@ -22,6 +22,8 @@ include Makedefs.inc
 # Object and pre-processed source files are source list with extension changes
    RCS = $(SRCS:$(UPF77_ext)=$(PPF77_ext))
   OBJS = $(RCS:$(PPF77_ext)=$(OBJ_ext)) 
+# Sort OBJS to remove duplicates
+  OBJS := $(sort $(OBJS))
 
   SBIN = roms
  LROMS = libroms.a
