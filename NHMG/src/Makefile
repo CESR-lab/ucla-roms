@@ -1,28 +1,27 @@
 # This line de-activates all implicit rules
-.SUFFIXES:
+.SUFFIXES: .o .f .F .f90
 
-# Set machine dependent definitions and rules.
-include ../../src/Makedefs.inc
+# Fortran Compiler is set in ~/.bashrc as environment variable
 
-# Fortran Compiler
-FC = ifx
-# - for pacific cluster uncomment:
-#FC = mpiifort
-
-# Normal options for the compiler
-FFLAGS =  -O3 -fp-model source
+# Normal options for the compiler (mpiifx,mpiifort,others)
+ifeq ($(FCOMP),mpiifx)
+	FFLAGS = -O3 -fp-model source -pc64 -auto
+else ifeq ($(FCOMP),mpiifort)
+	FFLAGS = -O3
+else 
+	FFLAGS = -O3
+endif
 
 # Debugging options for the compiler
-#FFLAGS =  -g -check -warn
+#FFLAGS = -g -check -warn
 #FFLAGS = -g -traceback -check all -CA -CB -CS
 
-# Library paths:
-#VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include/
-CPATH = ${MPIHOME}/include/mpi:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include:/usr/include
+# Include paths:
+CPATH = ${NETCDF_ROOT}/include
 
 ## Rule to make *.o out of *.f90
-#%.o : %.f90
-#	$(FC) -c $(FFLAGS)  $<
+.f90.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
 sources = mg_autotune.f90 mg_cst.f90 mg_gather.f90 \
 	mg_grids.f90 mg_horiz_grids.f90 mg_intergrids.f90 mg_mpi_exchange.f90\
@@ -43,7 +42,6 @@ $(libnhmg): ${libnhmg}(${objects})
 	cp *.mod ../include/
 
 depend depend.mk:
-#makedepf90 -D... -free -Wmissing -Wconfused  -nosrc -u ... ${sources} > depend.mk
 	makedepf90 -free ${sources} > depend.mk
 
 clean:
