@@ -1,17 +1,69 @@
-# Universal machine independent makefile for ROMS model
+# Makefile for UCLA ROMS model
 #========== ======= =========== ======== === ==== =====
-# Set machine dependent definitions and rules.
+# This makefile requires that you have the following 
+# environment variables defined: 
+#  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
+# 
+#
+.SUFFIXES: .o .f .F .f90
 
-include Makedefs.inc
-#include Makedefs.Intel_MPI
-#include Makedefs.GCC
+.F.o:
+	@$(CPP) -P $*.F | mpc > $*.f
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	@/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P  $*.F | mpc > $*.f
+.f.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 
-# Configuration for ROMS model:  All source code files are sorted into
-# ------------- --- ---- ------  eight groups separated by blanc lines:
-#   1) main driving part;          5) vertical mixing schemes;
-#   2) 3D time stepping engine;    6) diagnostic and cross-checking;
-#   3) boundary conditions;        7) netCDF I/O routines;
-#   4) sea-water EOS routines;     8) model forcing routines;
+     CPP = cpp -traditional
+
+# Path names (non-hydrostatic & NetCDF libraries):
+
+	NHMG_ROOT = $(ROMS_ROOT)/NHMG
+	NHMG_INC  = $(NHMG_ROOT)/include
+	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
+
+	NETCDF_INC = $(NETCDF_ROOT)/include
+	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
+	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
+
+	MPI_INC = ${MPIHOME}/include/mpi
+
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
+
+	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
+
+# MARBL
+#       MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
+#   	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+
+
+# Large memory runs (e.g. for bgc):
+#	LARGE_MEM_FLAG = -mcmodel=medium
+#	LARGE_MEM_FLAG = -mcmodel=large
+
+# Fortran compiler flags:
+	CFTFLAGS = -pc64 -auto
+
+# Fortran loader name and options: 
+ 	LDR = $(FCOMP)  $(CFTFLAGS)
+
+# Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
+# - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
+	FFLAGS = -O3
+# - uncomment for debugging:
+#	FFLAGS = -g -traceback -check all -CA -CB -CS
+#	FFLAGS = -g -traceback -CA -CB -CS
+# - uncomment for traceback only (traceback not as accurate as full debug mode...)
+#	FFLAGS = -O3 -ip -traceback
+# - for code_check script ensure consistency with -fp-model strict:
+#	FFLAGS = -O3 -fp-model strict
+# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
+#	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
+# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
+#	FFLAGS = -O3 -ip -pg
+
 
 KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
@@ -47,60 +99,22 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
 \
 	main.F	
-#read_write.F
-#exchange.F	mpi_exchange8TA.F\
-#ab_ratio.F	alfabeta.F\
-#mpi_exchange4.F	mpi_exchange8TA.F\
 
 IOSRC = checkdims.F	insert_node.F\
 	get_init.F	set_forces.F	closecdf.F\
-
-#FLTSRC = init_floats.F	init_arrays_floats.F	get_init_flts.F\
-#	interp_rho.F	rhs_floats.F	step_floats.F\
-#	def_floats.F	wrt_floats.F
-
-# old/obsolete/non-parallelized stuff
-#       pp_vmix.F	get_wwave.F	smol_adv.F	get_bsedim.F
 
   SRCS = $(KRNSRC) $(IOSRC)
    RCS = $(SRCS:.F=.f)
   OBJS = $(RCS:.f=.o) 
   SBIN = roms
- LROMS = libroms.a
- LROMS2 = 2/$(LROMS)
- LROMS3 = 2/$(LROMS) 3/$(LROMS)
- LROMS4 = 2/$(LROMS) 3/$(LROMS) 4/$(LROMS)
 
 # ROMS excutable (This is the first target and hence the default):
 $(SBIN): $(OBJS)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF)
 	mv a.out $(SBIN)
-
-
-# Multilevel libraries
-
-$(LROMS): $(OBJS)
-	/bin/rm -f $(LROMS)
-	ar r $(LROMS) $(OBJS)
-
-
-check_forces: check_forces.o $(SBIN)
-	cp -pv check_forces.o main.o 	
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
-	mv a.out check_forces
 
 # Everything
 all: tools depend $(SBIN)
-
-# A program to test MPI halo exchange routines.
-# - ------- -- ---- --- ---- -------- ---------
-MPI_TEST = mpi_test.F	mpi_setup.F	exchange.F	mpi_exchange4.F\
-							mpi_exchange8WA.F
-MPI_TEST_RCS = $(MPI_TEST:.F=.f)
-MPI_TEST_OBJ = $(MPI_TEST_RCS:.f=.o)
-
-mpi_test: $(MPI_TEST_OBJ)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o mpi_test $(MPI_TEST_OBJ) $(LCDF) $(LMPI)
 
 # Auxiliary utility programs
 # --------- ------- --------
@@ -111,17 +125,13 @@ tools: $(TOOLS)
     TMP = .
 
 cppcheck: cppcheck.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck.o
+	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck.o
 
 srcscheck: srcscheck.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck.o
+	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck.o
 
 checkkwds: checkkwds.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds.o
-
-redefs: redefs.o
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o redefs redefs.o
-
+	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds.o
 
 
 checkdefs: check_switches1.F setup_kwds.F
@@ -146,16 +156,6 @@ tarfile: clean
 # -------- -------
 clean:
 	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ $(COMP_FILES)
-allclean: clean
-	cd 2; make -f ./Makefile clean; cd ..
-	cd 3; make -f ./Makefile clean; cd ..
-	cd 4; make -f ./Makefile clean; cd ..
-
-clobber: clean
-	/bin/rm -f check_switches1.F setup_kwds.F check_srcs.F
-	/bin/rm -f $(SBIN) $(TOOLS) nsub
-	/bin/rm -f core core.*
-	/bin/rm -f *_genmod.mod *_genmod.f90
 
 # Automatically generated dependency list:
 
