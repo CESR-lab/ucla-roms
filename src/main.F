@@ -100,6 +100,8 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use diagnostics
       use boundary
       use particles
+      use pipe_frc
+      use river_frc
       use random_output
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
@@ -148,7 +150,9 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
-      call get_grid                  ! can be analytic or from netcdf
+      ! Initialization Routines
+      if (pipe_source) call init_pipe_frc
+      if (river_source) call init_river_frc
 
 #ifdef DIAGNOSTICS
       call init_diagnostics  
@@ -233,7 +237,6 @@ CR      write(*,*) ' -6' MYID
       time=start_time             ! moment "start_time" (global scalar)
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
-      call set_forces
       call set_depth(0)
 C$OMP BARRIER
 !----------------------------------------------------------------------
@@ -258,9 +261,6 @@ CR      write(*,*)  ' -3' MYID
 
 CR      write(*,*)  ' -2' MYID
 
-      if (floats) then
-        call init_particles
-      endif
 
 #if defined SPONGE 
       call set_nudgcof(0)
