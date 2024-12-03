@@ -3,7 +3,23 @@
 # This makefile requires that you have the following 
 # environment variables defined: 
 #  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
-# 
+#
+#  Example entries in a .bashrc file:
+#
+# export FCOMP=mpiifx
+# export MPIHOME=/opt/intel/oneapi/mpi/latest
+# export NETCDF_ROOT=/opt/netcdf-fortran-4.6.1
+# export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
+#
+# export LD_LIBRARY_PATH=${MPIHOME}/lib/:$LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH=${NETCDF_ROOT}/lib/:$LD_LIBRARY_PATH
+
+# export ROMS_ROOT=/home/username/ucla-roms
+# export PATH=${ROMS_ROOT}/Tools-Roms:$PATH
+# export PATH=${NETCDFC_ROOT}/bin:$PATH
+# export PATH=${NETCDF_ROOT}/bin:$PATH
+
 #
 .SUFFIXES: .o .f .F .f90
 
@@ -44,17 +60,18 @@
 #	LARGE_MEM_FLAG = -mcmodel=large
 
 # Fortran compiler flags:
-	CFTFLAGS = -pc64 -auto
+#	CFTFLAGS = -pc64 -auto
+	CFTFLAGS = 
 
 # Fortran loader name and options: 
  	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3
+	FFLAGS = -O3 -ipo -fp-model fast
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
-#	FFLAGS = -g -traceback -CA -CB -CS
+ 	FFLAGS = -g -traceback -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
