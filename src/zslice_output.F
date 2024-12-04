@@ -148,7 +148,8 @@
          enddo
          enddo
       enddo
-      call exchange_tile(1,nx,1,ny, Uz(START_2D_ARRAY,1),ndep)
+      call exchange_xxx(Uz)
+
       endif
 
       if (wrt_V) then
@@ -169,7 +170,7 @@
          enddo
          enddo
       enddo
-      call exchange_tile(1,nx,1,ny, Vz(START_2D_ARRAY,1),ndep)
+      call exchange_xxx(Vz)
       endif
 
       end subroutine calc_zslice  !]
