@@ -27,7 +27,7 @@
       ! particles would be slower than going through an array that is
       ! stored in contiguous memory.
       
-      character(len=30) :: particle_num_string  
+      character(len=40) :: particle_num_string  
       character(len=30) :: particle_conc_string  
       character(len=30) :: buffer_string  
 
@@ -181,9 +181,12 @@
       call store_string_att(particle_opt, '')
       if (full_seed) then 
         call store_string_att(particle_opt, 'Seeded with constant density')
-        write(particle_conc_string, '(A, E10.2)') ', Partcile Conc. =', ppm3
+        write(particle_conc_string, '(A, E10.2)')
+     &                ', Particle Conc. =', ppm3
         call store_string_att(particle_opt, particle_conc_string)
-        write(particle_num_string, '(A, I2)') ', Number of Partciles =', np
+        write(*,*) 'Number of Particles = ', np
+        write(particle_num_string, '(A, I7)') 
+     &             ', Number of Particles =', np
         call store_string_att(particle_opt, particle_num_string)
       else 
         call store_string_att(particle_opt, 'Seeded Randomly')
@@ -902,7 +905,7 @@
       val_mx = 2*nx*ny*nz
       call remsort(val,idx,val_mx)
 
-!     call qsort(val,idx,1,np)
+      call qsort(val,idx,1,np)
 
       do iv = 1,npv                     ! loop over components of particle
         ptmp(1:np_old) = part(1:np_old,iv)            
