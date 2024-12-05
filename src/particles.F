@@ -181,12 +181,12 @@
       call store_string_att(particle_opt, '')
       if (full_seed) then 
         call store_string_att(particle_opt, 'Seeded with constant density')
-        write(particle_conc_string, '(A, E10.2)')
+        write(particle_conc_string, '(A, E10.2)') 
      &                ', Particle Conc. =', ppm3
         call store_string_att(particle_opt, particle_conc_string)
         write(*,*) 'Number of Particles = ', np
-        write(particle_num_string, '(A, I7)') 
-     &             ', Number of Particles =', np
+        write(particle_num_string, '(A, I7)')
+     &                ', Number of Particles =', np
         call store_string_att(particle_opt, particle_num_string)
       else 
         call store_string_att(particle_opt, 'Seeded Randomly')
