@@ -286,12 +286,12 @@
          
          t_tname(itot)=''
          wrt_t     (itot)=.false.
-         wrt_t_avg (itot)=.true.
+         wrt_t_avg (itot)=.false.
          t_ana_frc( itot)=1
 
       end do
       ! Read user file to determine which tracers to write out
-      call marbldrv_read_tracer_output_list(t_vname,wrt_t)
+      call marbldrv_read_tracer_output_list(t_vname,wrt_t,wrt_t_avg)
       
 !     3. Determine surf flux forcing variables MARBL needs
 !     ---------------------------------------------------------
@@ -385,7 +385,7 @@
       
       end subroutine marbldrv_configure_tracers
 
-      subroutine marbldrv_read_tracer_output_list(t_vname,wrt_t)
+      subroutine marbldrv_read_tracer_output_list(t_vname,wrt_t,wrt_t_avg)
 
 !-----------------------------------------------------------------------
 !     SUBROUTINE: marbldrv_read_tracer_output_list
@@ -408,6 +408,7 @@
       character*42, dimension(nt), intent(inout) :: t_vname
       character(len=256)                         :: file_line
       logical , dimension(nt)    , intent(inout) :: wrt_t
+      logical , dimension(nt)    , intent(inout) :: wrt_t_avg      
       
       integer :: marbl_tracer_list, open_status, read_status,idx,ierr
       logical :: recognized_tracer, no_tracers_requested
@@ -456,6 +457,7 @@
                do idx=1,NT
                   if (trim(t_vname(idx)) == trim(file_line)) then
                      wrt_t(idx) =.true.
+                     wrt_t_avg(idx) =.true.
                      if (mynode==printnode) then
                         write(*,'(2A)'),
      &                       'REQUESTED MARBL TRACER OUTPUT: ' // trim(t_vname(idx))
@@ -479,6 +481,7 @@
          if (no_tracers_requested) then ! Write all of them to output
                
             wrt_t(:)=.true.
+            wrt_t_avg(:)=.true.
                
             if (mynode==0) then
                write(*,'(A)'), 'NO REQUESTED TRACERS FOUND IN ' //
