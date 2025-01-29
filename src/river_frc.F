@@ -58,12 +58,7 @@
       ! - Input data in days!
 
       implicit none
-
-      if (.not. init_riv_done) then
-         allocate(nc_rvol%vdata(nriv,1 ,2))
-         allocate(nc_rtrc%vdata(nriv,nt,2))
-      end if
-
+      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
       ! set river flux volumes and tracer data:
       if(analytical) then
 
@@ -74,8 +69,6 @@
         call set_frc_data(nc_rtrc,var2d=riv_trc)           ! set river tracers flux for all rivers at current time
 
       endif
-
-      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
       
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
@@ -127,7 +120,14 @@
         call ncwrite(ncid,'river_flux', rflx(i0:i1,j0:j1))
         ierr=nf90_close(ncid)
 
-      else ! Read 'river_flux' from grid file (River mouth locations)
+      else                      ! Read 'river_flux' from grid file (River mouth locations)
+         
+         allocate(nc_rvol%vdata(nriv,1 ,2))
+         allocate(nc_rtrc%vdata(nriv,nt,2))
+         
+         call set_frc_data(nc_rvol,riv_vol) ! Set ncforce fields for nc_rvol
+         call set_frc_data(nc_rtrc,var2d=riv_trc) ! set ncforce fields for nc_trc
+                 
          ierr=nf90_open(grdname, nf90_nowrite, ncid)
          ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
          
