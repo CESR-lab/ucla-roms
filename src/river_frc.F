@@ -33,13 +33,8 @@
       real,   public :: riv_uvel,riv_vvel
       real,   public :: river_flux
 
-      ! Netcdf names
-      character(len=10) :: riv_flx_name = 'river_flux'               ! stored in the grid file
-      character(len=12) :: riv_vol_name = 'river_volume'             ! stored in a forcing file
-      character(len=12) :: riv_trc_name = 'river_tracer'             ! stored in a forcing file
-      character(len=10) :: riv_tim_name = 'river_time'               ! stored in a forcing file
-      character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
-      character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
+      type (ncforce) :: nc_rvol = ncforce( vname=riv_vol_name, tname=riv_tim_name)
+      type (ncforce) :: nc_rtrc = ncforce( vname=riv_trc_name, tname=riv_tim_name) 
 
       ! Misc:
       logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
