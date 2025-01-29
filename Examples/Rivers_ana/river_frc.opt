@@ -3,10 +3,13 @@
       ! user inputs
       logical,parameter,public :: river_source = .true.    ! default should be false if not using rivers
       logical,parameter        :: analytical   = .true.    ! analytical forcing, if false then realistic
-      integer,public,parameter :: nriv = 1                 ! number of rivers
-      
+      integer,public,parameter :: nriv = 1 ! number of rivers
+
       ! realistic rivers only: enter netcdf variable name and time name
-      type (ncforce) :: nc_rvol = ncforce( vname='river_volume', tname='river_time')
-      type (ncforce) :: nc_rtrc = ncforce( vname='river_tracer', tname='river_time')
+      character(len=*), parameter :: riv_flx_name = 'river_index_plus_fraction'               ! stored in the grid file
+      character(len=12), parameter :: riv_vol_name = 'river_volume'             ! stored in a forcing file
+      character(len=12), parameter :: riv_trc_name = 'river_tracer'             ! stored in a forcing file
+      character(len=10), parameter :: riv_tim_name = 'river_time'               ! stored in a forcing file
+      
       ! end user inputs
       ! ****************************************************************
