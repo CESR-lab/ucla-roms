@@ -6,7 +6,7 @@
       integer,public,parameter :: nriv = 1 ! number of rivers
 
       ! realistic rivers only: enter netcdf variable name and time name
-      character(len=*), parameter :: riv_flx_name = 'river_index_plus_fraction'               ! stored in the grid file
+      character(len=*), parameter :: riv_loc_name = 'river_index_plus_fraction'               ! stored in the grid file
       character(len=12), parameter :: riv_vol_name = 'river_volume'             ! stored in a forcing file
       character(len=12), parameter :: riv_trc_name = 'river_tracer'             ! stored in a forcing file
       character(len=10), parameter :: riv_tim_name = 'river_time'               ! stored in a forcing file

@@ -107,12 +107,12 @@
         enddo
 
         ierr=nf90_open(ana_grdname,nf90_write,ncid)
-        varid = nccreate(ncid,'river_flux',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
+        varid = nccreate(ncid,riv_loc_name,(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
         ierr=nf90_put_att(ncid, varid,'long_name','River volume flux') 
 !       ierr=nf90_close(ncid)
 !       print *,'added river_flux',mynode
 !       ierr=nf90_open(ana_grdname,nf90_write,ncid)
-        call ncwrite(ncid,'river_flux', rflx(i0:i1,j0:j1))
+        call ncwrite(ncid,riv_loc_name, rflx(i0:i1,j0:j1))
         ierr=nf90_close(ncid)
 
       else                      ! Read 'river_flux' from grid file (River mouth locations)
@@ -124,15 +124,15 @@
          call set_frc_data(nc_rtrc,var2d=riv_trc) ! set ncforce fields for nc_trc
                  
          ierr=nf90_open(grdname, nf90_nowrite, ncid)
-         ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
+         ierr = nf90_inq_varid(ncid, riv_loc_name, varid) ! check grid file for variable
          
          if (ierr /= nf90_noerr) then ! if not in grid file
             ierr = nf90_close(ncid)    ! close grid file
             ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
-            ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check river forcing file for variable
+            ierr = nf90_inq_varid(ncid, riv_loc_name, varid) ! check river forcing file for variable
             if (ierr /= nf90_noerr) then
                call handle_ierr(ierr, 'init_riv:: '//
-     &          'river location variable (' // trim(riv_flx_name) //
+     &          'river location variable (' // trim(riv_loc_name) //
      &          ') not found in grid (' // trim(grdname) //') '//
      &          ' or river forcing (' // trim(frcfile(nc_rvol%ifile)) //
      &          ') files')
@@ -140,7 +140,7 @@
          end if
             
          ! Read from whichever of the two files contains the variable
-         call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1))
+         call ncread(ncid, riv_loc_name, rflx(i0:i1,j0:j1))
          ierr = nf90_close(ncid)
         
       endif
