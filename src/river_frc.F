@@ -108,14 +108,15 @@
 
         ierr=nf90_open(ana_grdname,nf90_write,ncid)
         varid = nccreate(ncid,riv_loc_name,(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
-        ierr=nf90_put_att(ncid, varid,'long_name','River volume flux') 
+        ierr=nf90_put_att(ncid, varid,'long_name','River index ' //
+     &       'plus local volume fraction') 
 !       ierr=nf90_close(ncid)
 !       print *,'added river_flux',mynode
 !       ierr=nf90_open(ana_grdname,nf90_write,ncid)
         call ncwrite(ncid,riv_loc_name, rflx(i0:i1,j0:j1))
         ierr=nf90_close(ncid)
 
-      else                      ! Read 'river_flux' from grid file (River mouth locations)
+      else                      ! Read 'river_location' from grid or forcing file (River mouth locations)
          
          allocate(nc_rvol%vdata(nriv,1 ,2))
          allocate(nc_rtrc%vdata(nriv,nt,2))
@@ -126,7 +127,7 @@
          ierr=nf90_open(grdname, nf90_nowrite, ncid)
          ierr = nf90_inq_varid(ncid, riv_loc_name, varid) ! check grid file for variable
          
-         if (ierr /= nf90_noerr) then ! if not in grid file
+         if (ierr /= nf90_noerr) then ! if not in grid file 
             ierr = nf90_close(ncid)    ! close grid file
             ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
             ierr = nf90_inq_varid(ncid, riv_loc_name, varid) ! check river forcing file for variable
