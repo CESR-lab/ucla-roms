@@ -4,34 +4,20 @@
 # Set machine dependent definitions and rules.
 include ../../src/Makedefs.inc
 
-# Fortran Compiler
-FC = ifort
-# - for pacific cluster uncomment:
-#FC = mpiifort
-
-# Normal options for the compiler
-FFLAGS =  -O3 -fp-model source $(LCDF)
-
-# Debugging options for the compiler
-#FFLAGS =  -g -check -warn
-#FFLAGS = -g -traceback -check all -CA -CB -CS
-
 # Library paths:
 VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
 CPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
 
-# Rule to make *.o out of *.f90
-%.o : %.f90
-	$(FC) -c $(FFLAGS)  $<
+# Build list of source files (typically most .f90 files)
+SRCS = $(shell ls *$(PPF90_ext))
 
+# Exclude some files from list
+EXCL = mg_diagnostics mg_netcdf_out_false
+EXCL := $(addsuffix $(PPF90_ext), $(EXCL))
+SRCS := $(filter-out $(EXCL), $(SRCS))
 
-sources = mg_autotune.f90 mg_cst.f90 mg_gather.f90 \
-	mg_grids.f90 mg_horiz_grids.f90 mg_intergrids.f90 mg_mpi_exchange.f90\
-	mg_mpi.f90 mg_namelist.f90 mg_netcdf_out.f90 mg_projection.f90\
-	mg_relax.f90 mg_solvers.f90 mg_tictoc.f90 mg_vert_grids.f90 \
-	nhmg_debug.f90 nhmg.f90 mg_netcdf_out_true.f90
-
-objects = $(sources:.f90=.o)
+# Object list is source list with modified file extension
+OBJS = $(SRCS:$(PPF90_ext)=$(OBJ_ext))
 
 libnhmg =  ../lib/libnhmg.a
 
@@ -40,14 +26,13 @@ libnhmg =  ../lib/libnhmg.a
 
 all: $(libnhmg)
 
-$(libnhmg): ${libnhmg}(${objects})
+$(libnhmg): ${libnhmg}(${OBJS})
 	cp *.mod ../include/
 
 depend depend.mk:
-#makedepf90 -D... -free -Wmissing -Wconfused  -nosrc -u ... ${sources} > depend.mk
-	makedepf90 -free ${sources} > depend.mk
+	makedepf90 -free $(SRCS} > depend.mk
 
 clean:
-	rm -f ${libnhmg} ${objects} *.mod
+	rm -f ${libnhmg} ${OBJS} *.mod
 
 include depend.mk
