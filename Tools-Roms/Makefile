@@ -1,6 +1,33 @@
-include ../src/Makedefs.inc
+#
+.SUFFIXES: .o .f .F .f90
 
-# NEED TO OVERRIDE SOME OF MAKEDEFS.INC:
+.F.o:
+	@$(CPP) -P $*.F | mpc > $*.f
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	@/bin/rm -f $*.f
+.F.f:
+	$(CPP) -P  $*.F | mpc > $*.f
+.f.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+
+     CPP = cpp -traditional
+
+# Path names (non-hydrostatic & NetCDF libraries):
+
+	NHMG_ROOT = $(ROMS_ROOT)/NHMG
+	NHMG_INC  = $(NHMG_ROOT)/include
+	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
+
+	NETCDF_INC = $(NETCDF_ROOT)/include
+	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
+	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
+
+	MPI_INC = ${MPIHOME}/include/mpi
+
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
+
+# Fortran loader name and options: 
+ 	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # - Can't use -ip optimization for tools (partit won't compile)
 	FFLAGS = -O3
@@ -40,6 +67,9 @@ partit: partit.o insert_node.o lenstr.o
 
 ncjoin: ncjoin.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
+
+simple_xy_par_wr: simple_xy_par_wr.o
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o simple_xy_par_wr simple_xy_par_wr.o $(LCDF) 
 	
 ncjoin_mpi: ncjoin_mpi.opt ncjoin_mod.o ncjoin_mpi.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi ncjoin_mod.o ncjoin_mpi.o lenstr.o $(LCDF)

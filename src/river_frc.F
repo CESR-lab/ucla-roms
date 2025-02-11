@@ -149,9 +149,9 @@
       if (analytical) then 
         call store_string_att(river_frc_opt, ', Analytical')
       endif
-      print *, 'Done with attributes', mynode 
-      print "(a15)", river_frc_opt
-      print "(a15)", ierr
+!     print *, 'Done with attributes', mynode 
+!     print "(a15)", river_frc_opt
+!     print "(a15)", ierr
       end subroutine init_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine calc_river_flux  ![
