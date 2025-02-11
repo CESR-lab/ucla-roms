@@ -174,7 +174,6 @@
       endif
 
       end subroutine calc_zslice  !]
-
 !----------------------------------------------------------------------
       subroutine sigma_to_z(var_zlv,var,zz,j) ![
      
@@ -349,7 +348,7 @@
       if (output_time>=output_period) then
 
         if (record==nrpf) then
-          call create_file('_zsc',fname)
+          call create_file('_zsl',fname)
           ierr=nf90_open(fname,nf90_write,ncid)
           call def_vars_zslice(ncid)
           call ncwrite(ncid,'depth',vecdep)

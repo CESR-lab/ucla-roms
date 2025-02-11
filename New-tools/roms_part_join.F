@@ -681,11 +681,14 @@
       call get_nc_info(npid)
 
       ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
-      if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'get global dims: ',trim(partfile) )
-      gnx = gdims(1)
-      gny = gdims(2)
-      nz  = gdims(3)
+      if (ierr/=nf90_noerr) then 
+        gdims = 0
+      ! call handle_ierr(ierr,'get global dims: ',trim(partfile) )
+      else
+        gnx = gdims(1)
+        gny = gdims(2)
+        nz  = gdims(3)
+      endif
 
       if (mynode==0) then ! single node to create joined file
 
@@ -740,6 +743,8 @@
       endif ! mynode==0
 
       ierr = nf90_close(npid)
+
+      ! no global dims in partial file. Use old method
 
       end subroutine make_joined_file !]
 ! ----------------------------------------------------------------------

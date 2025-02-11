@@ -319,7 +319,7 @@
 
         ! The first/last interior flux can only be 2nd order 
         ! JM for now, the first and last domain may start/end
-        ! JM at something differend than 1 or nx/ny.
+        ! JM at something different than 1 or nx/ny.
         if (.not.west_msg_exch) then 
           i=iwest
           do j=1,ny

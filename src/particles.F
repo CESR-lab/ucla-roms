@@ -180,8 +180,9 @@
       ! Print user options (particles.opt) to netcdf attributes 
       call store_string_att(particle_opt, '')
       if (full_seed) then 
-        call store_string_att(particle_opt, 'Seeded with constant density')
-        write(particle_conc_string, '(A, E10.2)') 
+        call store_string_att(particle_opt,
+     &                 'Seeded with constant density')
+        write(particle_conc_string, '(A, E10.2)')
      &                ', Particle Conc. =', ppm3
         call store_string_att(particle_opt, particle_conc_string)
         write(*,*) 'Number of Particles = ', np
@@ -191,10 +192,10 @@
       else 
         call store_string_att(particle_opt, 'Seeded Randomly')
       endif
-      write(buffer_string, '(A, F5.3)') ', Buffer Space =', extra_space_fac
+      write(buffer_string, '(A, F5.3)') 
+     &             ', Buffer Space =', extra_space_fac
       call store_string_att(particle_opt, buffer_string)
        
-
 !     print *,'init particles done'
 
       end subroutine init_particles !]
@@ -631,14 +632,14 @@
 !      local 
        real(kind=8),dimension(2,2,2) :: wt
 
-       wt(1,1,1) = (1-z)*(1-y)*(1-x);
-       wt(2,1,1) =    z *(1-y)*(1-x);
-       wt(1,2,1) = (1-z)*   y *(1-x);
-       wt(2,2,1) =    z *   y *(1-x);
-       wt(1,1,2) = (1-z)*(1-y)*   x ;
-       wt(2,1,2) =    z *(1-y)*   x ;
-       wt(1,2,2) = (1-z)*   y *   x ;
-       wt(2,2,2) =    z *   y *   x ;
+       wt(1,1,1) = (1-x)*(1-y)*(1-z);
+       wt(2,1,1) =    x *(1-y)*(1-z);
+       wt(1,2,1) = (1-x)*   y *(1-z);
+       wt(2,2,1) =    x *   y *(1-z);
+       wt(1,1,2) = (1-x)*(1-y)*   z ;
+       wt(2,1,2) =    x *(1-y)*   z ;
+       wt(1,2,2) = (1-x)*   y *   z ;
+       wt(2,2,2) =    x *   y *   z ;
 !      print *,'int_lin_3d: ', sum(wt)
        fi   = sum(f*wt)
        end subroutine interp_3D !]

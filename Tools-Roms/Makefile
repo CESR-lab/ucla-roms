@@ -1,4 +1,4 @@
-
+#
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
@@ -11,6 +11,23 @@
 	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
 
      CPP = cpp -traditional
+
+# Path names (non-hydrostatic & NetCDF libraries):
+
+	NHMG_ROOT = $(ROMS_ROOT)/NHMG
+	NHMG_INC  = $(NHMG_ROOT)/include
+	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
+
+	NETCDF_INC = $(NETCDF_ROOT)/include
+	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
+	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
+
+	MPI_INC = ${MPIHOME}/include/mpi
+
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
+
+# Fortran loader name and options: 
+ 	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # - Can't use -ip optimization for tools (partit won't compile)
 	FFLAGS = -O3

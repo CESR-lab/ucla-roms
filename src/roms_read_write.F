@@ -40,6 +40,8 @@
       character(len=21) :: refdatestr
       integer :: offset = 0
 
+      real,parameter :: eps=1e-2 ! prevent rounding error failures in get_frc_data
+
 
       ! Type ncforce contains all required netcdf variables and input data array for frc variable.
       ! Set the name and time_name of variable to match what is in the input forcing files.
@@ -308,7 +310,7 @@
 
       var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
 
-      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -369,7 +371,8 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+!     if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -426,7 +429,8 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+!     if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
