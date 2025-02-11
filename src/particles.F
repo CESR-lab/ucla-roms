@@ -186,8 +186,8 @@
      &                ', Particle Conc. =', ppm3
         call store_string_att(particle_opt, particle_conc_string)
         write(*,*) 'Number of Particles = ', np
-        write(particle_num_string, '(A, I7)') 
-     &             ', Number of Particles =', np
+        write(particle_num_string, '(A, I7)')
+     &                ', Number of Particles =', np
         call store_string_att(particle_opt, particle_num_string)
       else 
         call store_string_att(particle_opt, 'Seeded Randomly')
