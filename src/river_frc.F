@@ -59,7 +59,10 @@
 
       implicit none
 
-      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
+      if (.not. init_riv_done) then
+         allocate(nc_rvol%vdata(nriv,1 ,2))
+         allocate(nc_rtrc%vdata(nriv,nt,2))
+      end if
 
       ! set river flux volumes and tracer data:
       if(analytical) then
@@ -67,13 +70,13 @@
         call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
 
       else
-
-        call set_frc_data(nc_rvol,riv_vol)                 ! set river volume flux for all rivers at current time
-
+         call set_frc_data(nc_rvol,riv_vol) ! set river volume flux for all rivers at current time
         call set_frc_data(nc_rtrc,var2d=riv_trc)           ! set river tracers flux for all rivers at current time
 
       endif
 
+      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
+      
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
@@ -94,7 +97,7 @@
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
 
-
+      
       if (analytical) then
         riv_west=xl*0.4 ! River west bank at 40% from west
         riv_east=xl*0.6 ! River west bank at 60% from west
@@ -125,12 +128,26 @@
         ierr=nf90_close(ncid)
 
       else ! Read 'river_flux' from grid file (River mouth locations)
-
-        allocate(nc_rvol%vdata(nriv,1 ,2))
-        allocate(nc_rtrc%vdata(nriv,nt,2))
-        ierr=nf90_open(grdname, nf90_nowrite, ncid)
-        call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
-        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
+         ierr=nf90_open(grdname, nf90_nowrite, ncid)
+         ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
+         
+         if (ierr /= nf90_noerr) then ! if not in grid file
+            ierr = nf90_close(ncid)    ! close grid file
+            ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
+            ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check river forcing file for variable
+            if (ierr /= nf90_noerr) then
+               call handle_ierr(ierr, 'init_riv:: '//
+     &          'river location variable (' // trim(riv_flx_name) //
+     &          ') not found in grid (' // trim(grdname) //') '//
+     &          ' or river forcing (' // trim(frcfile(nc_rvol%ifile)) //
+     &          ') files')
+            end if
+         end if
+            
+         ! Read from whichever of the two files contains the variable
+         call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1))
+         ierr = nf90_close(ncid)
+        
       endif
 
       call calc_river_flux                                           ! compute uflx,vflx from rflx
