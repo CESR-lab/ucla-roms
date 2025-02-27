@@ -229,9 +229,9 @@
             if (km(i) == -3) then
               var_zlv(i,m)=0.             !<-- masked out
             elseif (km(i) == -2) then
-              var_zlv(i,m)=0.             !<-- below bottom , FillValue
+              var_zlv(i,m)=0.             !<-- below bottom 
             elseif (km(i) == N+2) then
-              var_zlv(i,m)=0.             !<-- above surface , -FillValue
+              var_zlv(i,m)=0.             !<-- above surface
             elseif (km(i) == N) then
               var_zlv(i,m)=var(i,N)       !-> R-point, above z_r(N)
      &              +(zlev-zz(i,N))*(var(i,N)-var(i,N-1))
