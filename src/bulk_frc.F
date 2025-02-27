@@ -72,9 +72,11 @@
       ! Print user options (bulk_frc.opt) to netcdf attributes 
       ! Note: to turn bulk forces off, edit cppdefs! 
       bulk_frc_opt = ''
-      call store_string_att(bulk_frc_opt, 'True')
-      if (interp_frc==1) call store_string_att(bulk_frc_opt,
-     &                                         ', Interpolated')
+      if (interp_frc==1) then
+        call store_string_att(bulk_frc_opt, 'Interpolation ON')
+      else
+        call store_string_att(bulk_frc_opt, 'Interpolation OFF')
+      endif
 
       end subroutine init_arrays_bulk_frc  !]
 ! ----------------------------------------------------------------------

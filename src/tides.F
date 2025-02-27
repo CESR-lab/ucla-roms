@@ -60,12 +60,19 @@
 
       ! Print user options (tides.opt) to netcdf attributes
       tide_opt = ''
-      write(string, '(A, I2)') 'ntides =', ntides
+      write(string, '(A, I2)') '# of constituents:', ntides
       call store_string_att(tide_opt, string)
-      if (ana_tides) call store_string_att(tide_opt, ', Analytical tides')
-      if (pot_tides) call store_string_att(tide_opt, ', Tidal potential')
+      if (ana_tides) then
+        call store_string_att(tide_opt, ', analytical')
+      else
+        call store_string_att(tide_opt, ', real')
+      endif
+
+      if (pot_tides) call store_string_att(tide_opt, ', tidalpotential')
       if (bry_tides) call store_string_att(tide_opt, 
-     &                                     'Barotropic tide at boundary') 
+     &                                     ', barotropictide@boundary') 
+
+      tide_opt = trim(adjustl(tide_opt))
 
       end subroutine init_tides  !]
 !-----------------------------------------------------------------------
@@ -248,6 +255,8 @@
       integer :: i,j
       integer :: ierr, var_file_indx, ncid, var_id, itide, found_rec
       integer,dimension(3) :: start
+      character(len=100) :: info
+      character(len=300) :: frcstr
 
 
       found_rec = 0                                        ! set found variable flag to not found
@@ -305,6 +314,19 @@
         endif
 
       end do ! <-- itide=1,ntides
+
+      ! add tide info to forcing attributes - embedded in here due to tides init
+      if (mynode == 0) then
+        ierr = nf90_get_att(ncid,nf90_global,'data_source',info)
+        if (len(trim(info)) /= 0) then
+          if (index(force_info,info) == 0) then
+            frctype = 'TIDES:'
+            write(frcstr,'(2A)') trim(adjustl(frctype)),
+     &            trim(adjustl(info))
+            call store_string_att(force_info,frcstr)
+          endif
+        endif
+      endif
 
       if (bry_tides) then
         call exchange_xxx(ztide_r,ztide_i)

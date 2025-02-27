@@ -279,11 +279,12 @@
       init_done = .true.  ! ensure init is not triggered again
 
       ! Print diagnostics opts (diagnostics.opt) to netcdf attributes
+      diagnostic_opt = ''
       call store_string_att(diagnostic_opt, 'Chosen Diagnostics = ')
       if (diag_uv) call store_string_att(diagnostic_opt, 'Momentum')
-      if (diag_trc) call store_string_att(diagnostic_opt, ', Selected Tracers')
+      if (diag_trc) call store_string_att(diagnostic_opt, ', Tracers')
       if (diag_pflx) call store_string_att(diagnostic_opt, 
-     &                                     ', Baroclinic Pressure Fluxes')
+     & ', Baroclinic Pressure Fluxes')
 
       end subroutine init_diagnostics  !]
 ! ----------------------------------------------------------------------
@@ -875,10 +876,6 @@
 
       coef = 1./navg_diag
 
-!     if (mynode==0) then
-!        print *, 'coef: ',coef
-!        print *, 'Udiag(10,10,10): ',Udiag(10,10,10,:)
-!     endif
       if (diag_avg) then
         if (diag_uv) then
           Udiag_avg = Udiag_avg*(1-coef) + Udiag*coef
@@ -906,15 +903,22 @@
 
       ! local
       integer :: ierr = 0
-
       integer :: dim,diag, prev_fill_mode
       character(len=99),save  :: fname
-
+      character(len=100) :: output_time_string
       call calc_diag_avg
 
       output_time = output_time + dt    
 
       if (output_time>=output_period) then  ! time for an output
+
+        ! store averaging timescale in diagnostic output file
+        if (diag_avg) then
+          diag_avg_output=''
+          write(output_time_string,'(F12.1, A)') output_time, ' seconds'
+          call store_string_att(diag_avg_output,output_time_string)
+        endif
+
         output_time= 0
 
         if (record==nrpf) then
@@ -940,7 +944,6 @@
         navg_diag = 0
 
         ierr=nf90_close(ncid)
-
 
         if (mynode == 0) then
           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')      ! confirm work completed
@@ -1232,7 +1235,11 @@
       ierr=nf90_open(fname,nf90_write,ncid)
 
       ! Diagnostics options
-      ierr = nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
+      ierr=nf90_put_att (ncid, nf90_global, 'diagnostic_options', adjustl(diagnostic_opt))
+      if (diag_avg) then
+        ierr=nf90_put_att (ncid, nf90_global, 'diag_avg_time', adjustl(diag_avg_output))
+        ierr=nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
+      endif
 
       call create_diagvars(ncid)
 

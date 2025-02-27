@@ -84,6 +84,7 @@
       if (obc_east)  call store_string_att(bc_options,'OBC_EAST, ')
       if (obc_north) call store_string_att(bc_options,'OBC_NORTH, ')
       if (obc_south) call store_string_att(bc_options,'OBC_SOUTH, ')
+      bc_options = trim(adjustl(bc_options))
 # ifdef OBC_M3ORLANSKI
       call store_string_att(bc_options,'OBC_M3ORLANSKI, ')
 #  endif
