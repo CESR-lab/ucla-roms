@@ -119,6 +119,8 @@
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
 
+      if (do_avg) call calc_average
+
       output_time = output_time + dt
 
       if (output_time>=output_period) then
