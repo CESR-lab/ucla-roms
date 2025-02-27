@@ -70,7 +70,6 @@
 !    &                                      ,zdimw= 's_w    '
 
       ! index ranges for netcdf output (See init_output_indices)
-!     integer,public :: i0,i1,j0,j1
       integer,public :: bfx,bfy
 
       ! index ranges for coarse netcdf input
