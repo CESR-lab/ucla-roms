@@ -137,13 +137,11 @@
       else ! Not analytical, read from file
 
 !     First, check forcing file for separate index and fraction variables
-         if(mynode==0) print *, 'we here 1'
          ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
          ierr = nf90_inq_varid(ncid, "river_index", varid) ! check river forcing file for index...
          ierr = ierr * nf90_inq_varid(ncid, "river_fraction", varid) ! ... and fraction variables
          
          if (ierr == nf90_noerr) then ! Found the variables in the forcing file
-            if(mynode==0) print *, 'we here 2'            
             call ncread(ncid, "river_index", ridx_real(i0:i1,j0:j1))
             call ncread(ncid, "river_fraction", rfrc(i0:i1,j0:j1))
             ierr = nf90_close(ncid)            
@@ -154,7 +152,6 @@
                stop
             endif
 !     Convert to integer
-            if(mynode==0) print *, 'we here 3'            
          else !     Fallback, check grid for combined index and fraction variable (deprecated):
             ierr = nf90_close(ncid) ! Close the forcing file
 
@@ -195,7 +192,6 @@
                end where
             end if
          end if                 ! separate river_index, river_fraction vars (T) single river_flux var (F)
-         if(mynode==0) print *, 'we here 4'         
       endif                     ! analytical
 
       call calc_river_flux                                           ! compute uflx,vflx from rflx
@@ -218,7 +214,6 @@
       integer :: i,j,faces
 
 ! compute uflx,vflx from rflx
-      if(mynode==0) print *, 'we here 5'         
       do j = 0,ny+1   ! Loop over -1 and +1 because rflx cell only flows into
         do i = 0,nx+1 ! neighbour, hence cell next to boundary could flow into cell.
           if (rfrc(i,j) > 0) then ! distribute mass flux to all available unmasked cells
@@ -241,7 +236,6 @@
           endif
         enddo
       enddo
-      if(mynode==0) print *, 'we here 6' 
       end subroutine calc_river_flux  !]
 ! ----------------------------------------------------------------------
       subroutine set_ana_river_frc  ![
