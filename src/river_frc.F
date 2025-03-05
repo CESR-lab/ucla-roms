@@ -117,7 +117,8 @@
               ! find 'coastline' masked cells
 # ifdef MASKING
               if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-                rflx(i,j) = 1.0+1.0/riv_cells
+                 ridx(i,j) = 1
+                 rfrc(i,j) = 1/riv_cells
               endif
 # endif
             endif
