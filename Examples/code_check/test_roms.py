@@ -96,7 +96,7 @@ for test in range(ntests):
 	  dline = 0
 	  while dline < nstps :
 	    line = open(filenames[m],'r').readlines()[iline]
-	    if len(line) > 94 :
+	    if (len(line) > 94) and (len(line.split())==5):
 	      diags[test,m,0] += float(line[ 4:26])     # read Kinetic Energy
 	      diags[test,m,1] += float(line[27:49])     # read barotropic KE
 	      diags[test,m,2] += float(line[50:72])     # read MAX_ADV_CFL        
