@@ -24,7 +24,11 @@
       ! Variables used for equation system calculations
       real,public,allocatable,dimension(:,:) :: riv_uflx
       real,public,allocatable,dimension(:,:) :: riv_vflx
-      real,public,allocatable,dimension(:,:) :: rflx                 ! river locations
+      real,public,allocatable,dimension(:,:) :: rflx ! river locations
+      real   ,public,allocatable,dimension(:,:) :: rfrc ! River fraction
+      real   ,public,allocatable,dimension(:,:) :: ridx_real ! River indices (read as real by ncread)
+      integer,public,allocatable,dimension(:,:) :: ridx ! River indices (stored as int by ROMS)
+      
       real,public,dimension(nriv)    :: riv_vol                      ! river volume
       real,public,dimension(nriv,nt) :: riv_trc                      ! river tracer conc.
 
@@ -96,6 +100,10 @@
       allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
+      allocate( ridx(GLOBAL_2D_ARRAY) )    ; ridx = 0
+      allocate( ridx_real(GLOBAL_2D_ARRAY) )    ; ridx_real = 0.
+      allocate( rfrc(GLOBAL_2D_ARRAY) )    ; rfrc = 0.      
+      
 
       
       if (analytical) then
@@ -109,7 +117,8 @@
               ! find 'coastline' masked cells
 # ifdef MASKING
               if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-                rflx(i,j) = 1.0+1.0/riv_cells
+                 ridx(i,j) = 1
+                 rfrc(i,j) = 1/riv_cells
               endif
 # endif
             endif
@@ -127,28 +136,64 @@
         call ncwrite(ncid,'river_flux', rflx(i0:i1,j0:j1))
         ierr=nf90_close(ncid)
 
-      else ! Read 'river_flux' from grid file (River mouth locations)
-         ierr=nf90_open(grdname, nf90_nowrite, ncid)
-         ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
+      else                      ! Not analytical, read from file
+         ! Start by checking forcing file for separate variables
+         ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
+         ierr = nf90_inq_varid(ncid, "river_index", varid) ! check river forcing file for index...
+         ierr = ierr * nf90_inq_varid(ncid, "river_fraction", varid) ! ... and fraction variables
          
-         if (ierr /= nf90_noerr) then ! if not in grid file
-            ierr = nf90_close(ncid)    ! close grid file
-            ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
-            ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check river forcing file for variable
-            if (ierr /= nf90_noerr) then
+         if (ierr == nf90_noerr) then ! Found the variables in the forcing file
+            call ncread(ncid, "river_index", ridx_real(i0:i1,j0:j1))
+            call ncread(ncid, "river_fraction", rfrc(i0:i1,j0:j1))
+            ierr = nf90_close(ncid)            
+!     Check for non-integer values
+            ridx(i0:i1, j0:j1) = int(ridx_real(i0:i1, j0:j1))
+            if (any(abs(ridx_real(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)) > 1.0e-6)) then
+               write(*,*) 'ERROR: river_index contains non-integers!'
+               stop
+            endif
+         else ! if not in the forcing file, look for a single variable in the grid file
+            ierr=nf90_close(ncid)
+            ierr=nf90_open(grdname, nf90_nowrite, ncid)
+            ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
+         
+            if (ierr /= nf90_noerr) then ! if not in grid file
+               ierr = nf90_close(ncid) ! close grid file
                call handle_ierr(ierr, 'init_riv:: '//
-     &          'river location variable (' // trim(riv_flx_name) //
-     &          ') not found in grid (' // trim(grdname) //') '//
-     &          ' or river forcing (' // trim(frcfile(nc_rvol%ifile)) //
-     &          ') files')
-            end if
-         end if
-            
-         ! Read from whichever of the two files contains the variable
-         call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1))
-         ierr = nf90_close(ncid)
-        
-      endif
+     &              'unable to find river index and fraction'//
+     &              ' either as separate variables '//
+     &              ' (river_index, river_fraction) in river '//
+     &              ' forcing file ('// trim(frcfile(nc_rvol%ifile)) //
+     &              ') or as a combined variable ('// trim(riv_flx_name) //
+     &              ', deprecated) in grid (' // trim(grdname)//
+     &              ') file.')
+            else
+               if (mynode == 0) then
+                  write(*,'(/7x,A/)') 'DEPRECATION WARNING, init_riv:'//
+     &                 'ROMS has located a single variable '//
+     &                 '(river_flux) containing both river index '//
+     &                 ' and fraction in the grid file ('// trim(grdname)//
+     &                 '). This behavior is deprecated '//
+     &                 'as of March 2025 and will be removed in a '//
+     &                 'future version. Please provide separate ' //
+     &                 'variables: river_index and river_fraction '//
+     &                 ' in the river forcing file ('// 
+     &                 trim(frcfile(nc_rvol%ifile))//').'
+               end if
+                  
+
+               call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1))
+               ierr = nf90_close(ncid)
+               where (rflx(i0:i1, j0:j1) > 0)
+                  ridx(i0:i1, j0:j1) = floor(rflx(i0:i1, j0:j1) - 1e-5)
+                  rfrc(i0:i1,j0:j1) = rflx(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)                  
+               elsewhere
+                  ridx(i0:i1, j0:j1) = 0
+                  rfrc(i0:i1, j0:j1) = 0
+               end where
+            end if ! found in grid file               
+         end if                 ! Separate variables found in forcing file
+      endif !analytical
 
       call calc_river_flux                                           ! compute uflx,vflx from rflx
 
@@ -172,11 +217,12 @@
       ! compute uflx,vflx from rflx
       do j = 0,ny+1   ! Loop over -1 and +1 because rflx cell only flows into
         do i = 0,nx+1 ! neighbour, hence cell next to boundary could flow into cell.
-          if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
+          if (rfrc(i,j) > 0) then ! distribute mass flux to all available unmasked cells
             ! subtract 1e-5 in case only 1 grid point for river, so that floor still
             ! produces correct iriver number.
 !            write(*,*) 'mynode=',mynode,'i,j',i,j,rflx(i,j),'rflx(i,j)'
-            iriver = floor(rflx(i,j)-1e-5)
+             !iriver = floor(rflx(i,j)-1e-5)
+             !iriver = ridx(i,j)
 #ifdef MASKING
             faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
             if ( faces == 0 .or. rmask(i,j)>0  ) then
@@ -184,10 +230,10 @@
             endif
             ! 10*iriver needed because uflx/vflx can be positive or negative around
             ! the iriver number, and hence nearest integer is safest done with 10*.
-            if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rflx(i,j)-iriver)/faces + 10*iriver
-            if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
-            if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
-            if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
+            if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rfrc(i,j))/faces + 10*ridx(i,j)
+            if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rfrc(i,j))/faces + 10*ridx(i,j)
+            if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rfrc(i,j))/faces + 10*ridx(i,j)
+            if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rfrc(i,j))/faces + 10*ridx(i,j)
 #endif
           endif
         enddo
