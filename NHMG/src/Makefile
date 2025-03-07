@@ -9,7 +9,7 @@ VPATH = ${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
 CPATH = ${MPIHOME}/include:${NETCDFHOME}/include:${ROMS_ROOT}/NHMG/include
 
 # Build list of source files (typically most .f90 files)
-SRCS = $(shell ls *$(PPF90_ext))
+SRCS = $(wildcard *$(PPF90_ext))
 
 # Exclude some files from list
 EXCL = mg_diagnostics mg_netcdf_out_false
