@@ -1,31 +1,71 @@
-# Platform-specific definitions for Intel(R) Ifort(TM)
-# ----------------------------------------------------
+##############################
+#        USER OPTIONS        #
 
-# Compilation rules for file types:
-#   (used for every file until the final linking step)
+# Compiler flags depend on compiler: intel -> ifx, gnu -> gfortran, ifort -> ifort (deprecated)
+COMPILER ?=gnu
+# Configure FFLAGS by setting BUILD_MODE to "debug","strict","vtune",or "grof"
+BUILD_MODE ?=regular
+# Keep pre-processed source code or not:
+KEEP_PPSRC ?=false
+##############################
+#       FILE EXTENSIONS      #
 
-.SUFFIXES: .o .f .F .f90
+#unprocessed  Fortran 77 code
+UPF77_ext = .F
+#unprocessed  Fortran 90 code
+UPF90_ext = .F90
+#preprocessed Fortran 77 code
+PPF77_ext = .f
+#preprocessed Fortran 90 code
+PPF90_ext = .f90
+#object files
+OBJ_ext = .o
 
-.F.o:
-	@$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
-	@/bin/rm -f $*.f
-.F.f:
-	$(CPP) -P $(CPPFLAGS) $*.F | mpc > $*.f
-.f.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
-	@/bin/rm -f $*.f
+##############################
+#    PRELIMINARY CHECKS      #
 
-.f90.o:
-	$(CFT) -c $(FFLAGS) -o $*.o $*.f90 $(LCDF)
-.F:
-	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.f:
-	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.f90:
-	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
-.o:
-	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+ifeq ($(COMPILER),ifort)
+    $(warning WARNING: COMPILER=ifort is deprecated as intel have discontinued support in favor of ifx. To compile with ifx, use COMPILER=intel)
+endif
+
+# If we're using MacOS, typically the filesystem is case-insensitive
+# so we should use an alternative extension for preprocessed files:
+OS := $(shell uname -s)
+ifeq ($(OS),Darwin)
+    PPF77_ext = .fpp
+endif
+
+## Set linker and compiler based on compiler/MPI wrapper
+ifeq ($(COMPILER),gnu)
+	LDR =  mpifort
+        CFT =  mpifort
+	expected_fc=GNU Fortran # For checking correct compiler is wrapped
+else ifeq ($(COMPILER),intel)
+        LDR = mpiifx
+        CFT = mpiifx
+	expected_fc=ifx
+else ifeq ($(COMPILER),ifort)
+        LDR = mpiifort
+        CFT = mpiifort
+	expected_fc=ifort
+endif
+
+MPIVER := $(shell $(CFT) --version | head -n1)
+ifeq ($(findstring $(expected_fc),$(MPIVER)),)
+      _ := $(error "COMPILER is set to $(COMPILER) but $(CFT) wraps $(MPIVER). Call make with the COMPILER= argument (either intel or gnu)")
+endif
+
+# For BUILD_MODE = "vtune" or "grof" always keep source code:
+ifeq ($(BUILD_MODE),vtune)
+   KEEP_PPSRC=true
+else ifeq ($(BUILD_MODE),grof)
+   KEEP_PPSRC=true
+endif
+
+#Check whether we're compiling with MARBL:
+ifeq ($(wildcard cppdefs.opt),cppdefs.opt)
+	USEMARBL := $(shell grep -q '^[^!]*\#[[:space:]]*define[[:space:]]*MARBL' cppdefs.opt && echo true || echo false )
+endif
 
 # C-preprocessor (cpp):
 #	cpp from Intel compiler package "fpp" treats __IFC as
@@ -33,14 +73,24 @@
 #	the standard CPP is not aware of this.
 
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-    CPP = /lib/cpp -traditional -D__IFC
-	CPPFLAGS = -I${MPIHOME}/include -I${NETCDFHOME}/include -I${MARBL_ROOT}/include	
+ifeq ($(COMPILER),intel)
+	CPP = fpp
+	CPPFLAGS = -D__IFC -free -I${MPIHOME}/include -I${NETCDFHOME}/include
+else
+        CPP = /usr/bin/cpp
+	CPPFLAGS =  -traditional -D__IFC -I${MPIHOME}/include -I${NETCDFHOME}/include
+endif
 
-#   Since we no longer keep .f files after compilation, if you want to still
-#   see the .f to confirm what code is left after c-pre-processing (CPPFLAGS
+ifeq ($(USEMARBL),true)
+	CPPFLAGS+= -I${MARBL_ROOT}/include
+endif
+
+#   Since we no longer keep preprocessed files after compilation, if you want to still
+#   see them to confirm what code is left after c-pre-processing (CPPFLAGS
 #   removed) or for runtime debug line numbers, use the following
 #   in the Compile/ folder (change 'main' for your file of interest):
-#   /lib/cpp -traditional -D__IFC -P main.F | ./mpc > main.f
+#   /lib/cpp -traditional -D__IFC -P main$(UPF77_ext) | ./mpc > main.$(PPF77_ext)
+
 
 # Path names (non-hydrostatic & NetCDF libraries):
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
@@ -51,57 +101,121 @@
 	CPATH = ${MPIHOME}/include:${NHMG_INC}
 
 # Get netCDF paths and options ('shell' is needed to use command)
-	NETCDFF_INC=$(shell nf-config --fflags)
-	NETCDFF_LIB=$(shell nf-config --flibs)
-	NETCDFC_INC=$(shell nc-config --cflags)
-	NETCDFC_LIB=$(shell nc-config --libs)
+# Some systems return empty strings for `n{c,f}-config --args`, so using $(or as a fallback
+	NETCDFF_INC=$(or $(shell nf-config --fflags), -I$(NETCDFHOME)include)
+	NETCDFF_LIB=$(or $(shell nf-config --flibs) , -L$(NETCDFHOME)lib -lnetcdf -lnetcdff)
+	NETCDFC_INC=$(or $(shell nc-config --cflags), -I$(NETCDFHOME)include)
+	NETCDFC_LIB=$(or $(shell nc-config --libs),   -L$(NETCDFHOME)lib -lnetcdf)
 
 # MARBL
-#       MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-#   	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+ifeq ($(USEMARBL),true)
+    ifeq ($(COMPILER),gnu)
+        MARBL_INC = -I$(MARBL_ROOT)/include/gnu-mpi
+        MARBL_LIB = -lmarbl-gnu-mpi -L$(MARBL_ROOT)/lib
+    else ifeq ($(COMPILER),intel)
+        MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
+        MARBL_LIB = -lmarbl-intel-mpi -L$(MARBL_ROOT)/lib
+    else ifeq ($(COMPILER),ifort)
+        MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
+        MARBL_LIB = -lmarbl-intel-mpi -L$(MARBL_ROOT)/lib
+    endif
+endif
 
 # COMPILER SETTINGS:
-
 # OpenMP flags:
-#	note, -qopenmp is the new -openmp but is still needed for maya
-#	OMP_FLAG = -fpp -openmp
-#	OMP_FLAG = -qopenmp
+ifeq ($(COMPILER),intel)
+	OMP_FLAG = -qopenmp
+else ifeq ($(COMPILER),ifort)
+	OMP_FLAG = -qopenmp
+else ifeq ($(COMPILER),gnu)
+	OMP_FLAG = -cpp -fopenmp
+endif
 
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
 #	LARGE_MEM_FLAG = -mcmodel=large
 
 # Fortran compiler flags:
-	CFTFLAGS = -pc64 -auto
+ifeq ($(COMPILER),intel)
+	CFTFLAGS= -pc64 -auto
+else ifeq ($(COMPILER),ifort)
+	CFTFLAGS= -pc64 -auto
+endif
 
-# Fortran compiler name and options:
-#	- using non-intel MPI:
-	CFT =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
-#	- using intel MPI:
-#	CFT = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+# Fortran compiler options:
+CFTFLAGS += $(OMP_FLAG) $(LARGE_MEM_FLAG)
 
-# Fortran loader name and options: (mpifort has replaced legacy mpif90)
-#	- using non-intel MPI:
-	LDR =  mpifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
-#	- using intel MPI:
-#	LDR = mpiifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+# Fortran loader options:
+LDFLAGS = $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
-# Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
+# Fortran compiler options/flags:
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ip
-# - uncomment for debugging:
-#	FFLAGS = -g -traceback -check all -CA -CB -CS
-# - uncomment for traceback only (traceback not as accurate as full debug mode...)
-#	FFLAGS = -O3 -ip -traceback
-# - for code_check script ensure consistency with -fp-model strict:
-#	FFLAGS = -O3 -fp-model strict
-# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
-#	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
-#	FFLAGS = -O3 -ip -pg
+ifeq ($(COMPILER),ifort)
+    FFLAGS = -O3 -ip  # Apply -ip only for ifort
+else ifeq ($(COMPILER),intel)
+    FFLAGS = -O3      # Do NOT use -ip for ifx
+endif
+
+# Apply debug, strict, vtune, or grof settings for Intel compilers
+ifeq ($(COMPILER),$(filter ifort intel, $(COMPILER)))
+    ifeq ($(BUILD_MODE),debug)
+        FFLAGS = -g -traceback -check all
+    else ifeq ($(BUILD_MODE),strict)
+        FFLAGS += -fp-model strict
+    else ifeq ($(BUILD_MODE),vtune)
+        FFLAGS = -g -debug inline-debug-info -parallel-source-info=2
+    else ifeq ($(BUILD_MODE),grof)
+        FFLAGS += -pg
+    endif
+endif
+
+# GNU compiler settings
+ifeq ($(COMPILER),gnu)
+    FFLAGS = -O3 -fallow-argument-mismatch
+    ifeq ($(BUILD_MODE),debug)
+        FFLAGS = -fallow-argument-mismatch -g -fbacktrace -fcheck=all
+    endif
+endif
 
 # Options to link to libraries & modules (NetCDF, etc):
-      	LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(MARBL_LIB) $(NETCDFF_INC) $(NETCDFC_INC) $(MARBL_INC)		    	
+        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
+ifeq ($(USEMARBL),true)
+	LCDF += $(MARBL_LIB) $(MARBL_INC)
+endif
+
+
+# Compilation rules for file types:
+#   (used for every file until the final linking step)
+
+.SUFFIXES: $(OBJ_ext) $(PPF77_ext) $(UPF77_ext) $(PPF90_ext)
+# Unprocessed F77 -> object file (typically .F->.o)
+$(UPF77_ext)$(OBJ_ext):
+	@$(CPP) -P $(CPPFLAGS) $*$(UPF77_ext) | mpc > $*$(PPF77_ext)
+	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF77_ext) $(LCDF)
+	@if [ "$(KEEP_PPSRC)" = "false" ]; then \
+	   /bin/rm -f $*$(PPF77_ext); \
+	fi
+# unprocessed F77 -> preprocessed (typically .F ->.f)
+$(UPF77_ext)$(PPF77_ext):
+	$(CPP) -P $(CPPFLAGS) $*$(UPF77_ext) | mpc > $*$(PPF77_ext)
+# preprocessed F77 -> object file (typically .f->.o)
+$(PPF77_ext)$(OBJ_ext):
+	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF77_ext) $(LCDF)
+	@if [ "$(KEEP_PPSRC)" = "false" ]; then \
+	   /bin/rm -f $*$(PPF77_ext); \
+	fi
+# preprocessed F90 -> object file
+$(PPF90_ext)$(OBJ_ext):
+	$(CFT) -c $(FFLAGS) -o $*$(OBJ_ext) $*$(PPF90_ext) $(LCDF)
+$(UPF77_ext):
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+$(PPF77_ext):
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+$(PPF90_ext):
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+$(OBJ_ext):
+	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
+
 
 # -------------------------------------------------------------
 
@@ -155,4 +269,3 @@
 #	This was not an issue before with #include netcdf.inc because the external function
 #	is declared within the source code, so it only needs to be linked at the end.
 #	The order of $(NETCDFF_LIB) $(NETCDFC_LIB) was important, I am not sure why.
-
