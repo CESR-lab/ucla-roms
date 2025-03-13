@@ -250,9 +250,9 @@
         dimid(i) = did
       enddo
 
-!     ierr=nf90_def_var(ncid,varname,xtype,dimid,varid,
-!    &                  deflate_level=deflate_level, shuffle=shuffle)
-      ierr=nf90_def_var(ncid,varname,xtype,dimid,varid)
+      ierr=nf90_def_var(ncid,varname,xtype,dimid,varid,
+     &                  deflate_level=deflate_level, shuffle=shuffle)
+!     ierr=nf90_def_var(ncid,varname,xtype,dimid,varid)
       if (ierr/=nf90_noerr) then
         print *,'ERROR creating: ',varname
         call handle_ierr(ierr,'nccreate :: def_var=',varname)
