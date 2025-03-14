@@ -35,6 +35,7 @@
       use tracers,   only: set_surf_tracer_flx, iTandS
       use river_frc
       use pipe_frc
+      use cdr_frc
       use tides
       use wec_frc
       use bgc ! , only: set_bgc_surf_frc
@@ -138,6 +139,8 @@ c***              no code here
       if (river_source) call set_river_frc
 
       if (pipe_source) call set_pipe_frc
+
+      if (cdr_source) call set_cdr_frc
 
 # ifdef WEC
       call set_wec_frc_tile(istr,iend,jstr,jend,ierr)

@@ -59,6 +59,7 @@
       use dimensions
       use flux_frc
       use pipe_frc
+      use cdr_frc
       use bgc_ecosys_vars
       use bgc_forces
       use bgc
@@ -165,6 +166,8 @@
 #endif
 
       if (pipe_source) call init_arrays_pipes
+
+      if (cdr_source) call init_cdr_frc
 
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call init_arrays_bgc_ecosys_vars
