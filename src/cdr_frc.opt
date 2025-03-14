@@ -1,0 +1,21 @@
+
+      ! ****************************************************************
+      ! user inputs
+      logical,parameter,public :: cdr_source  = .false.  ! default. Should be false if not using CDR forcing
+
+      ! Enter netcdf variable name and time name
+      type (ncforce) :: nc_cdrvol = ncforce( vname='cdr_volume', tname='cdr_time')
+      type (ncforce) :: nc_cdrtrc = ncforce( vname='cdr_tracer', tname='cdr_time') 
+
+     ! Netcdf names
+      character(len=9)  :: cdr_loc_lon = 'cdr_lon'  !!  longitude of CDR release
+      character(len=9)  :: cdr_loc_lat = 'cdr_lat'  !!  latitude of CDR release
+      character(len=9)  :: cdr_loc_dep = 'cdr_dep'  !!  depth of CDR release
+      character(len=9)  :: cdr_scl_hor = 'cdr_hsc'  !!  horizontal scale of CDR release
+      character(len=9)  :: cdr_scl_vrt = 'cdr_vsc'  !!  vertical of CDR release
+
+      ! end user inputs
+      ! ****************************************************************
+
+      ! possibly for future, instead of all tracers, only provide 1, and specify which one by name
+      !character(7),parameter :: cdr_varname = 'salt'     ! this determines which tracer is released
