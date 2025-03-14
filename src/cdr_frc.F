@@ -4,7 +4,7 @@
       ! --------------------
 
       ! for cdrs:  Qbar(nx,y), the total cdr flux for that grid point ! (m3/s) function of time
-      !             Qshape(ncdrs), the vertical shape of the cdr distribution ! fractions sum(Qshape) = 1
+      !            Qshape(ncdrs), the vertical shape of the cdr distribution ! fractions sum(Qshape) = 1
 
       ! Coding by Jeroen Molemaker (March 2025)
 
@@ -105,22 +105,71 @@
 
       else
 
-        ! Read 'cdr_flux' from crd file.
-        ierr=nf90_open(cdrname, nf90_nowrite, ncid)
-        ! Temporarily store as cdr_fraction to avoid extra array,
-        ! but value still cdr_idx + cdr_fraction
-        call ncread(ncid,cdr_flx_name, cdr_flux(i0:i1,j0:j1))
-        if(ierr/=0) 
-     &      call handle_ierr(ierr,'init_cdr_frc:: cdr flux  not in file!')
+        ! Read 'cdr_lon,cdr_lat' from crd file.
+        allocate(cdr_lon(ncdr))
+        allocate(cdr_lat(ncdr))
+        allocate(cdr_hsc(ncdr))
+        allocate(cdr_vsc(ncdr))
+        allocate(cdr_dep(ncdr))
 
-        ! Separate cdr_idx & cdr_fraction:
-        do j = 1,ny
-          do i = 1,nx
-            ! read in value = pidx + cdr_fraction = cdr_idx(i,j) + cdr_fraction(i,j)
-            cdr_idx(i,j)=floor(cdr_fraction(i,j)-1e-5)
-            cdr_fraction(i,j)=cdr_fraction(i,j)-cdr_idx(i,j)
+        ierr=nf90_open(cdrname, nf90_nowrite, ncid)
+        if(ierr/=0) 
+     &      call handle_ierr(ierr,'init_cdr_frc:: Cant open cdr forcing file')
+
+        call ncread(ncid,cdr_loc_lon,cdr_lon)
+        call ncread(ncid,cdr_loc_lon,cdr_lat)
+        call ncread(ncid,cdr_loc_hsc,cdr_hsc)
+        call ncread(ncid,cdr_loc_vsc,cdr_vsc)
+        call ncread(ncid,cdr_loc_dep,cdr_dep)
+        nf90_close(cdrname)
+
+        ! find fractional cdr fluxes for this subdomain
+        allocate(dist(GLOBAL_2D_ARRAY))
+        allocate(frac(GLOBAL_2D_ARRAY))
+        do icdr= 1,ncdr
+          norm = pi*hsc*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
+          call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
+          frac = exp(-(dist/cdr_hsc)**2)
+          frac = frac/pm/pn/norm
+
+          allocate(cdr_idx(GLOBAL_2D_ARRAY))
+          do j=1,ny
+            do i=1,nx
+              if (frac(i,j) >1e-3) then
+                cidx = cidx+1
+                cdr_idx(i,j) = cidx
+              endif
+            enddo
           enddo
         enddo
+
+        allocate(cdr_prf(cidx,nz))
+        do icdr= 1,ncdr
+          do j=1,ny
+            do i=1,nx
+               if (cdr_idx(i,j)>0) then
+                 cidx = cdr_idx(i,j)
+
+                 ! figure vertical profile, depths are relative to surface
+                 ! prf = exp( - ((z-d)/vsc )^2)
+                 vint = 0
+                 do k=1,nz
+                   arg = ( (z_r(i,j,k) + cdr_dep(icdr) )/cdr_vsc)**2
+                   cdr_prf(cidx,k) = exp(-arg)*Hz(i,j,k)
+                   vint = vint + cdr_prf(cidx,k)
+                 enddo
+                 cdr_prf(cidx,:) = frac(i,j)*cdr_prf(cidx,:)/vint
+                 cdr_icdr(cidx) = icdr  ! identifies a specific release with this profile
+               endif
+            enddo
+          enddo
+
+          ! Todo, use mpi gather to obtain discretely unit integrals of fractions across sub-domains
+
+        enddo
+
+        deallocate(dist)
+        deallocate(frac)
 
       endif
 
@@ -185,6 +234,33 @@
 #include "ana_cdr_frc.h"
 
       end subroutine set_ana_cdr_frc  !]
+! ----------------------------------------------------------------------
+      subroutine ll2dist(lon,lat,lon0,lat0,dist)  ![
+      ! Great circle distance from lon,lat fields to point (lon0,lat0)
+      ! Using haversine function
+      implicit none
+
+      ! import/export
+      real,dimension(GLOBAL_2D_ARRAY),intent(in) :: lon,lat
+      real,                           intent(in) :: lon0,lat0
+      real,dimension(GLOBAL_2D_ARRAY),intent(out):: dist
+
+      ! local
+      real,parameter ::radius=6.371e6; ! radius earth in m
+      real,dimension(:,:),allocatable :: a,dLon2,dLat2
+
+      allocate(dLon2(GLOBAL_2D_ARRAY))
+      allocate(dLat2(GLOBAL_2D_ARRAY))
+      dLon2 = 0.5*(lon-lon0)
+      dLat2 = 0.5*(lat-lat0)
+      dist=sin((dLat2)**2 + cos(lat)*cos(lat0) * sin(dLon2)**2
+      dist=2*atan2(sqrt(dist),sqrt(1-dist));
+
+      dist = radius*dist;    !Haversine distance
+      deallocate(dLon2)
+      deallocate(dLat2)
+
+      end subroutine ll2dist  !]
 ! ----------------------------------------------------------------------
 
       end module cdr_frc
