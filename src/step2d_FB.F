@@ -28,6 +28,7 @@
       use param
       use river_frc
       use pipe_frc
+      use cdr_frc
       use wec_frc
       use tides
       use coupling
@@ -142,6 +143,12 @@
           if (pipe_source) then          ! If pipe_source is false, the branch will
             if (pipe_idx(i,j) > 0.) then ! be eliminated by compile optimization
               zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
+            endif
+          endif
+
+          if (cdr_source.and.cdr_volume) then          ! If pipe_source is false, the branch will
+            if (cdr_idx(i,j) > 0.) then ! be eliminated by compile optimization
+              zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*cdr_flx(i,j)
             endif
           endif
 

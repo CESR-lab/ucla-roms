@@ -37,6 +37,7 @@
 
       use param
       use pipe_frc
+      use cdr_frc
       use grid
       use ocean_vars
       use scalars
@@ -79,6 +80,15 @@ c**     dtau=(1.-1./6.)*dt
      &                   + pipe_flx(i,j)*pipe_prf(pidx,k)
               endif
             endif
+
+            if (cdr_source.and.cdr_volume) then
+              if (cdr_idx(i,j)>0) then         ! pipe_source removes branching because it's a parameter
+                pidx = cdr_idx(i,j)
+                Wi(i,j,k)=Wi(i,j,k)
+     &                   + cdr_flx(i,j)*cdf_prf(pidx,k)
+              endif
+            endif
+
 
             CX(i,k)=max(FlxU(i+1,j,k),0.)-min(FlxU(i,j,k),0.)
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)

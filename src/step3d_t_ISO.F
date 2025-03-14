@@ -55,6 +55,7 @@ c--# define CONST_TRACERS
 
       use param
       use pipe_frc
+      use cdr_frc
       use river_frc
       use surf_flux, only: stflx, srflx
       use tracers
@@ -850,6 +851,14 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
      &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
                 endif
               endif
+!             if (cdr_source) then
+!               if (cdr_idx(i,j)>0.) then                           ! cdr_source parameter will
+!               cidx = cdr_idx(i,j)                                 ! remove branching if false
+!               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+!    &            +dt*pm(i,j)*pn(i,j)*
+!    &              cdr_flx(i,j)*cdr_prf(cidx,k)*cdr_trc(cidx,itrc)
+!               endif
+!             endif
 
             enddo
           enddo
