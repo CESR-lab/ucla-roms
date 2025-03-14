@@ -17,8 +17,8 @@ module load cpu/0.15.4  intel/19.1.1.217  mvapich2/2.3.4
 module load netcdf-c/4.7.4
 module load netcdf-fortran/4.5.3
 
-sbatch --job-name="Rivers_real" \
-       --output="Rivers_real.out" \
+sbatch --job-name="cdr_real" \
+       --output="cdr_real.out" \
        --partition="debug" \
        --nodes=1 \
        --ntasks-per-node=6 \
@@ -26,4 +26,4 @@ sbatch --job-name="Rivers_real" \
        --export=ALL \
        --mail-type=ALL \
        -t 00:10:00 \
-       --wrap="srun --mpi=pmi2 -n 6 ./roms rivers.in"
+       --wrap="srun --mpi=pmi2 -n 6 ./roms cdr.in"

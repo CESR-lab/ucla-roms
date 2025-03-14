@@ -121,7 +121,7 @@
         call ncread(ncid,cdr_loc_hsc,cdr_hsc)
         call ncread(ncid,cdr_loc_vsc,cdr_vsc)
         call ncread(ncid,cdr_loc_dep,cdr_dep)
-        nf90_close(cdrname)
+        ierr = nf90_close(cdrname)
 
         ! find fractional cdr fluxes for this subdomain
         allocate(dist(GLOBAL_2D_ARRAY))
