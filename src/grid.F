@@ -14,7 +14,6 @@
       use dimensions
       use roms_read_write
       use pipe_frc
-      use cdr_frc
       use scalars
       use mpi_exchanges
       implicit none
