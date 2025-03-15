@@ -82,10 +82,11 @@ c**     dtau=(1.-1./6.)*dt
             endif
 
             if (cdr_source.and.cdr_volume) then
-              if (cdr_idx(i,j)>0) then         ! pipe_source removes branching because it's a parameter
-                pidx = cdr_idx(i,j)
+              if (cdr_idx(i,j)>0) then  
+                cidx = cdr_idx(i,j)
+                icdr = cdr_icdr(cidx)
                 Wi(i,j,k)=Wi(i,j,k)
-     &                   + cdr_flx(i,j)*cdf_prf(pidx,k)
+     &                   + cdr_vol(icdr)*cdr_prf(cidx,k)
               endif
             endif
 

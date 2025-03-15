@@ -1,13 +1,15 @@
 
       ! ****************************************************************
       ! user inputs
-      logical,parameter,public :: cdr_source  = .false.  ! default. Should be false if not using CDR forcing
+      logical,parameter,public :: cdr_source  = .true.   ! default. Should be false if not using CDR forcing
       logical,parameter,public :: cdr_volume  = .false.  ! If false, use tracer flux only
                                                          ! If true, use volume flux and tracer concentrations
 
-      integer,parameter,public :: ncdr   !! number of discrete CDR releases
+      logical,parameter :: cdr_analytical  = .false.     ! If true, cdr release specified in ana_cdf_frc.h
 
-      ! Enter netcdf variable name and time name
+      integer,parameter,public :: ncdr=1   !! number of discrete CDR releases
+
+      ! netcdf forcing file nad variable names
 
       character(len=60) :: cdr_file = 'cdr_releases.nc'
 
