@@ -68,7 +68,7 @@
 
       if (cdr_analytical) then                                ! Set cdr flux volumes and tracer data
 
-        call set_ana_cdr_frc
+!       call set_ana_cdr_frc
         
       else
 
@@ -127,13 +127,13 @@
         ! find fractional cdr fluxes for this subdomain
         allocate(dist(GLOBAL_2D_ARRAY))
         allocate(frac(GLOBAL_2D_ARRAY))
+
         do icdr= 1,ncdr
           norm = pi*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
           call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
           frac = exp(-(dist/cdr_hsc(icdr))**2)
           frac = frac/pm/pn/norm
 
-          allocate(cdr_idx(GLOBAL_2D_ARRAY))
           do j=1,ny
             do i=1,nx
               if (frac(i,j) >1e-3) then
@@ -206,11 +206,11 @@
 
       end subroutine init_arrays_cdr  !]
 ! ----------------------------------------------------------------------
-!!       subroutine set_ana_cdr_frc  ![
+!     subroutine set_ana_cdr_frc  ![
       ! Analytical cdr forcing volume and tracer data
       ! Put here to avoid circular reference if in analytical.F
 
-!! #include "ana_cdr_frc.h"
+!!!!!#include "ana_cdr_frc.h"
 
 !     end subroutine set_ana_cdr_frc  !]
 ! ----------------------------------------------------------------------

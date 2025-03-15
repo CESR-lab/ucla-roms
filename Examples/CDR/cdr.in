@@ -14,6 +14,7 @@ forcing: filename
      input_data/sample_flux_frc.nc
      input_data/sample_wwv_riv.nc      
      input_data/roms_bry_trace.nc
+     cdr_release.nc
 
 initial: NRREC  filename
           1
