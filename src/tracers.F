@@ -141,15 +141,16 @@
       endif
 
 !     Could have various switches here for the different tracers, e.g.:
-      u_pist = 5.55e-5 ! 0.20 cm/hour
-      u_pist = u_pist/20.  ! linearization of carbon chemistry
-      if(itrc==3) then
-         do j=0,ny+1
-           do i=0,nx+1
-             stflx(i,j,itrc)= -u_pist*t(i,j,nz,nrhs,itrc)
-           enddo
-         enddo
-      endif
+!     This should be an include file instead: ana_frc_trc.h
+!     u_pist = 5.55e-5 ! 0.20 cm/hour
+!     u_pist = u_pist/20.  ! linearization of carbon chemistry
+!     if(itrc==3) then
+!        do j=0,ny+1
+!          do i=0,nx+1
+!            stflx(i,j,itrc)= -u_pist*t(i,j,nz,nrhs,itrc)
+!          enddo
+!        enddo
+!     endif
 
       end subroutine set_ana_surf_tracer_flx  !]
 ! ----------------------------------------------------------------------
