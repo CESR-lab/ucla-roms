@@ -11,7 +11,7 @@
 
       ! netcdf forcing file nad variable names
 
-      character(len=60) :: cdr_file = 'cdr_releases.nc'
+      character(len=60) :: cdr_file = 'cdr_release.nc'
 
       ! Use either volume flux [m3/s] and tracer concentrations [C/m3], or use tracer flux [C/s]
       type (ncforce) :: nc_cdrvol = ncforce( vname='cdr_volume', tname='cdr_time')
