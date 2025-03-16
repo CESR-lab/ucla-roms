@@ -6,16 +6,21 @@
       ! for cdrs:  Qbar(nx,y), the total cdr flux for that grid point ! (m3/s) function of time
       !            Qshape(ncdrs), the vertical shape of the cdr distribution ! fractions sum(Qshape) = 1
 
+      ! move from cdr_idx(i,j) to 1,cdr_locs
+      ! add MPI_reduce_scatter
+      ! force all tracers or single tracer forcing
+
       ! Coding by Jeroen Molemaker (March 2025)
 
 #include "cppdefs.opt"
   
-      use dimensions                                       ! has dimensions, a list of forcing files, and rmask
+      use dimensions
       use roms_read_write
       use nc_read_write
       use scalars
       use grid
       use ocean_vars
+      use hidden_mpi_vars
 
       implicit none
 
@@ -24,7 +29,7 @@
 #include "cdr_frc.opt"
 
       ! Variables used in the evolution equations
-      integer,public  :: icdr,cidx ! Pipe index for looping through cdrs
+      integer,public  :: icdr,cidx !   index for looping through cdr locations
       integer,public,allocatable,dimension(:,:) :: cdr_idx      ! cdr indices at grid points
       real   ,public,allocatable,dimension(:,:) :: cdr_prf      ! cdr fractions
       real   ,public,allocatable,dimension(:)   :: cdr_icdr     ! cdr release number
@@ -35,6 +40,7 @@
       real,dimension(ncdr,nt)        :: cdr_trc      ! cdr tracer concentration
       real,dimension(ncdr)           :: cdr_lon,cdr_lat         ! cdr location
       real,dimension(ncdr)           :: cdr_hsc,cdr_vsc,cdr_dep ! cdr scales and depth
+      integer,dimension(0:ncdr)   :: cdr_nloc=0  ! number of active grid points for per cdr
 
      ! Netcdf names
       character(len=9)  :: cdr_flx_name = 'cdr_flux'  !! stored in the grid file
@@ -98,11 +104,13 @@
       ! cdr grid point value = pidx + cdr_fraction
 
       use netcdf
+      use mpi
       implicit none
 
       ! local
       integer :: ierr,ncid,i,j,k
       real :: norm,vint,arg
+      real :: local_int,global_int
       real,dimension(:,:),allocatable :: dist,frac
 
       call init_arrays_cdr
@@ -118,7 +126,7 @@
      &      call handle_ierr(ierr,'init_cdr_frc:: Cant open cdr forcing file')
 
         call ncread(ncid,cdr_loc_lon,cdr_lon)
-        call ncread(ncid,cdr_loc_lon,cdr_lat)
+        call ncread(ncid,cdr_loc_lat,cdr_lat)
         call ncread(ncid,cdr_loc_dep,cdr_dep)
         call ncread(ncid,cdr_scl_hor,cdr_hsc)
         call ncread(ncid,cdr_scl_vrt,cdr_vsc)
@@ -133,6 +141,10 @@
           call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
           frac = exp(-(dist/cdr_hsc(icdr))**2)
           frac = frac/pm/pn/norm
+!         print *,mynode,minval(dist(1:nx,1:ny)),norm
+!         print *,mynode,cdr_lon(icdr),cdr_lat(icdr)
+!         print *,mynode,minval(abs(lonr(1:nx,1:ny)-cdr_lon(icdr))),
+!    %            minval(abs(latr(1:nx,1:ny)-cdr_lat(icdr)))
 
           do j=1,ny
             do i=1,nx
@@ -145,6 +157,7 @@
         enddo
         ! This presents a problem if 2 releases overlap in space
 
+        ! instead of cdr_idx, just loop from 1,cidx in every sub-domain
         allocate(cdr_prf(cidx,nz))
         allocate(cdr_icdr(cidx))
         do icdr= 1,ncdr
@@ -162,13 +175,21 @@
                    vint = vint + cdr_prf(cidx,k)
                  enddo
                  cdr_prf(cidx,:) = frac(i,j)*cdr_prf(cidx,:)/vint
-                 cdr_icdr(cidx) = icdr  ! identifies a specific release with this profile
+                 cdr_icdr(cidx) = icdr  ! identifies a specific release for this profile
                endif
             enddo
           enddo
+          cdr_nloc(icdr) = cidx
 
-          ! Todo, use mpi gather to obtain discretely unit integrals of fractions across sub-domains
+          local_int = sum(cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:))
+          call MPI_Reduce(local_int,global_int,1,
+     %           mpi_double_precision,mpi_sum,0,ocean_grid_comm,ierr)
+          call MPI_Bcast(global_int,1,mpi_double_precision,0,ocean_grid_comm,ierr)
 
+!         print *,mynode, local_int,global_int
+          cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:) =
+     %        cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:)/global_int
+          
         enddo
 
         deallocate(dist)
