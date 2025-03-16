@@ -152,7 +152,6 @@ C$OMP BARRIER
 
       call get_grid                  ! can be analytic or from netcdf
 
-      if (cdr_source) call init_cdr_frc
 
 #ifdef DIAGNOSTICS
       call init_diagnostics  
@@ -213,7 +212,9 @@ CR      write(*,*) ' -6' MYID
       call ecosys2_init
 # endif /*BIOLOGY_BEC2*/
 
-      
+      ! we should have a grid and z_r by now
+      if (cdr_source) call init_cdr_frc
+
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
       call set_forces               ! model prognostic variables,
