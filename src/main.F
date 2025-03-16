@@ -106,6 +106,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use boundary
       use particles
       use random_output
+      use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
       use bgc
@@ -162,6 +163,8 @@ C$OMP BARRIER
 #endif
       
       call get_grid                  ! can be analytic or from netcdf
+
+      if (cdr_source) call init_cdr_frc
 
 #ifdef DIAGNOSTICS
       call init_diagnostics  

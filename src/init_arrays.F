@@ -167,7 +167,7 @@
 
       if (pipe_source) call init_arrays_pipes
 
-      if (cdr_source) call init_cdr_frc
+!     if (cdr_source) call init_cdr_frc ! must be after get_grid
 
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call init_arrays_bgc_ecosys_vars
