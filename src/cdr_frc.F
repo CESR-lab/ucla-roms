@@ -7,7 +7,7 @@
       !            Qshape(ncdrs), the vertical shape of the cdr distribution ! fractions sum(Qshape) = 1
 
       ! move from cdr_idx(i,j) to 1,cdr_locs
-      ! add MPI_reduce_scatter
+      ! done: add MPI_reduce_scatter
       ! force all tracers or single tracer forcing
 
       ! Coding by Jeroen Molemaker (March 2025)
