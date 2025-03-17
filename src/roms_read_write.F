@@ -83,6 +83,7 @@
 
       integer,parameter :: max_options_string=2000
       character(len=max_options_string),public::bc_options = 'False'
+      character(len=max_options_string),public::cdr_frc_opt='False'
       character(len=max_options_string),public::pipe_frc_opt='False'
       character(len=max_options_string),public::river_frc_opt='False'
       character(len=max_options_string),public::tide_opt='False'

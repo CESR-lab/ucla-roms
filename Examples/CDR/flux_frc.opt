@@ -1,0 +1,15 @@
+
+      ! ****************************************************************
+      ! User inputs
+      
+      integer     :: interp_frc = 0   ! interpolate forcing from coarser input grid (=1) or not (=0). factor 2 only for now
+
+      type (ncforce) :: nc_sustr  = ncforce(vname='sustr', tname='sms_time')  ! sustr - surface u-momentum stress flux (input data in N/m^2)
+      type (ncforce) :: nc_svstr  = ncforce(vname='svstr', tname='sms_time')  ! svstr - surface v-momentum stress flux (input data in N/m^2)
+
+      type (ncforce) :: nc_shflx  = ncforce(vname='shflux',tname='shf_time' ) ! stflx(itemp) - surface heat flux (input data in W/m^2)
+      type (ncforce) :: nc_swflux = ncforce(vname='swflux',tname='swf_time' ) ! stflx(isalt) - surface freshwater flux (input data in cm/day). Might want to use #if def SALINITY?
+      type (ncforce) :: nc_swrad  = ncforce(vname='swrad', tname='srf_time' ) ! swrad - surface short-wave radiation flux (input data in W/m^2)
+
+      ! End of user inputs
+      ! ****************************************************************

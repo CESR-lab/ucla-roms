@@ -154,7 +154,8 @@
       stop
 
       end subroutine show_use_partit !]
-! ----------------------------------------------------------------------
+! ----------------------------------------------------------------------h
+
       subroutine show_use_ncjoin  ![
       implicit none
 
@@ -654,10 +655,12 @@
       integer :: dimids(4),ndims
       integer :: ivar,nvars,xtype
       character(len=20) :: vname
-      character(len=7),dimension(5)  ::dname
-      integer         ,dimension(5)  ::dsize
-      character(len=20),dimension(5) ::attname
-      character(len=200),dimension(5)::attvalue
+      character(len=7),dimension(5)  :: dname
+      integer         ,dimension(5)  :: dsize
+      integer         ,dimension(5)  :: did
+      integer         ,dimension(5)  :: csizes
+      character(len=20),dimension(5) :: attname
+      character(len=200),dimension(5):: attvalue
       integer :: ierr, ncid,npid
       integer :: natts,idm,vid
       integer :: idx1
@@ -687,7 +690,7 @@
 
         ! Global dimensions attribute not found, use old method
 
-        partfile = partfiles(nparts)
+        partfile = partfiles(nparts-1)
         ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
@@ -717,10 +720,25 @@
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'creating file: ',trim(joinfile) )
 
-        ! read all global attributes from the partial file and write them
+        ! Adding dmimensions to joined file
+        ierr = nf90_open(trim(partfiles(nparts-1)), nf90_nowrite, npid)
+        if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
+        ierr=nf90_inquire(npid,ndimensions=ndims)
+        do i = 1,ndims
+          ierr = nf90_inquire_dimension(npid,i,dname(1),dsize(1))
+          if (index(dname(1),'xi_rho')>0)   dsize(1) = gnx
+          if (index(dname(1),'xi_u') > 0) dsize(1) = gnx-1
+          if (index(dname(1),'eta_rho')>0)  dsize(1) = gny
+          if (index(dname(1),'eta_v') > 0)dsize(1) = gny-1
+          if (index(dname(1),'time') > 0) dsize(1) = 0 
+          ierr=nf90_def_dim(ncid,dname(1),dsize(1),did(1))
+        enddo
+
+        ! Read all global attributes from partial file and write to joined
         ierr = nf90_inquire(npid, nAttributes=ngatt)
         if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'getting atts: ',trim(partfile) )
+     &    call handle_ierr(ierr,'getting global atts: ',trim(partfile) )
         do iatt = 1,ngatt
           ierr = nf90_inq_attname(npid,nf90_global,iatt,att_name)
           if (index(att_name,'globaldims')>0) cycle
@@ -747,9 +765,20 @@
             if (index(dname(idm),'eta_rho') > 0) dsize(idm)=gny
             if (index(dname(idm),'eta_v') > 0)   dsize(idm)=gny-1
             if (index(dname(idm),'time') > 0)    dsize(idm)= 0 
+            ierr = nf90_inq_dimid(ncid,dname(idm),did(idm))
           enddo
 
-          vid = nccreate(ncid,vname,dname(1:ndims),dsize(1:ndims),xtype)
+!          print *,vname,did(1:ndims)
+          ierr=nf90_def_var(ncid,vname,xtype,did(1:ndims),vid,
+     &            chunksizes = csizes(1:ndims),
+     &            deflate_level=1, shuffle=.true.)
+          if (ierr/=nf90_noerr) 
+     &      call handle_ierr(ierr,'creating joined var: ',trim(vname) )
+ 
+
+!         vid = nccreate(ncid,vname,dname(1:ndims),dsize(1:ndims),xtype)
+!         ierr = nf90_def_var_fill(ncid,varid,0,0);
+
           ierr = nf90_var_par_access(ncid, varid, nf90_collective)
           do iatt=1,natts
             ierr = nf90_put_att(ncid,vid,attname(iatt),attvalue(iatt))
@@ -757,10 +786,10 @@
         enddo
 
         ierr = nf90_close(ncid)
+        ierr = nf90_close(npid)
 
       endif ! mynode==0
 
-      ierr = nf90_close(npid)
 
       if (gdims(1)==0) then 
     
@@ -798,6 +827,9 @@
       integer :: sz1,sz2,sz3,ndims
       integer :: RSS,i
 
+      integer                          :: nparts,jrow,nrows,row
+      integer,dimension(:),allocatable :: srow
+      integer,dimension(3):: csizes
 
       ! get info about variables from first partial file in range
 
@@ -825,26 +857,11 @@
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
 
-
-!       ierr = nf90_get_att(npid,nf90_global,'start_idx',llidx)
-!       i0(part) = llidx(1)
-!       j0(part) = llidx(2)
-!       i0u(part)= llidx(3)
-!       j0v(part)= llidx(4)
-
-!       ierr = nf90_get_att(npid,nf90_global,'end_idx',llidx)
-!       i1(part) = llidx(1)
-!       j1(part) = llidx(2)
-!       i1u(part)= llidx(3)
-!       j1v(part)= llidx(4)
-!       print *,'new: ',i0u(part),i1u(part),j0v(part),j1v(part)
-
         ierr = nf90_get_att(npid,nf90_global,'partition',ibuff)
         i0(part) = ibuff(3)
         j0(part) = ibuff(4)
         i0u(part)= max(i0(part)-1,1)
         j0v(part)= max(j0(part)-1,1)
-
 
         ierr=nf90_inquire(npid,ndimensions=ndims)
         do i = 1,ndims
@@ -859,23 +876,50 @@
         i1u(part)= i0u(part)+ nxu-1
         j1v(part)= j0v(part)+ nyv-1
 
-!       print *,'old: ',i0u(part),i1u(part),j0v(part),j1v(part)
-!       print *,'part: ',part
-
-!       stop
+        ierr = nf90_close(npid)
       enddo
-!     stop
 
-      li0 = minval(i0)
-      li1 = maxval(i1)
-      lj0 = minval(j0)
-      lj1 = maxval(j1)
-      li0u = minval(i0u)
-      li1u = maxval(i1u)
-      lj0v = minval(j0v)
-      lj1v = maxval(j1v)
-      lnx = li1 - li0 + 1
-      lny = lj1 - lj0 + 1
+
+      ! partial areas could look like this:
+      ! xxxxxx----
+      ! xxxxxxxxxx
+      ! ------xxxx
+      ! possibly, either the bottom or top row
+      ! is a full row also
+      !
+      ! Figure out what subdomain row this node is 
+      ! reponsible for.
+      ! than, do all full rows at once, and do the partial
+      ! rows separate (or maybe do the thing row by row)
+      
+      ! 1. find number of SD rows:
+      ! 2. check first and last for completeness
+
+      nparts = part1-part0+1
+      allocate(srow(nparts))
+      jrow = j0(part0)
+      nrows = 1
+      srow(1) = part0
+      do part = part0+1,part1
+        if (j0(part) /= jrow) then ! new row
+           jrow = j0(part)
+           nrows = nrows+1
+           srow(nrows) = part
+        endif
+      enddo
+      srow(nrows+1) = part1+1
+      print *,nrows
+      print *,srow(1:nrows+1)
+
+      srow(3) = srow(nrows-1)
+      srow(4) = part1+1
+      nrows = 3
+      print *,srow(1:4)
+      print *,j0(srow(1:3))
+      print *,j1(srow(1:3))
+
+!     srow(2) = part1+1
+!     nrows = 1
 
       print *,'do all records: ',ncinfo%nrecords
 
@@ -890,7 +934,34 @@
 
             ndims = ncinfo%ndims(ivar)
 
+            ierr = nf90_open(trim(joinfile),nf90_write,ncid)
+            ierr = nf90_inquire_variable(ncid,ivar,vname,chunksizes=csizes)
+            print *,'chunks: ',trim(vname),csizes
+            ierr = nf90_close(ncid)
+            
+
+!       call system_mem_usage(RSS)
+!       print * ,'Mem usage 1: ', vname,'  ',RSS/1000
+
+!       print *, li0,li1,lj0,lj1
+!       var3d = 0
+
+
         if (ncinfo%varpart(ivar)) then
+
+        do row = 1,nrows ! Do this per row
+
+          li0 = minval(i0(srow(row):srow(row+1)-1))
+          li1 = maxval(i1(srow(row):srow(row+1)-1))
+          lj0 = minval(j0(srow(row):srow(row+1)-1))
+          lj1 = maxval(j1(srow(row):srow(row+1)-1))
+          li0u = minval(i0u(srow(row):srow(row+1)-1))
+          li1u = maxval(i1u(srow(row):srow(row+1)-1))
+          lj0v = minval(j0v(srow(row):srow(row+1)-1))
+          lj1v = maxval(j1v(srow(row):srow(row+1)-1))
+          lnx = li1 - li0 + 1
+          lny = lj1 - lj0 + 1
+
           select case(ndims)
           case(1)
             ! save for later
@@ -940,76 +1011,100 @@
               end select
               startw = (/1,1,1,record/)
           end select
-        else
-          select case(ndims)
-          case(1)
-            if (index(ncinfo%dims(ivar)%dimnames(1),'time')>0) then
-              startr = (/record,1,1,1/)
-              startw = (/record,1,1,1/)
-              allocate(var3d(1,1,1))
-              is = 1; ie = 1
-              js = 1; je = 1
-            else
-              if (record>1) continue
-              startr = (/1,1,1,1/)
-              startw = (/1,1,1,1/)
-              sz1 = ncinfo%dims(ivar)%dimsizes(1)
-              allocate(var3d(sz1,1,1))
-              is = 1; ie = sz1
-              js = 1; je = 1
-            endif
-          case(2)
-            if (index(ncinfo%dims(ivar)%dimnames(2),'time')>0) then
-              startr = (/1,record,1,1/)
-              startw = (/1,record,1,1/)
-              sz1 = ncinfo%dims(ivar)%dimsizes(1)
-              allocate(var3d(sz1,1,1))
-              is = 1; ie = sz1
-              js = 1; je = 1
-            else
-              if (record>1) continue
-              startr = (/1,1,1,1/)
-              startw = (/1,1,1,1/)
-              sz1 = ncinfo%dims(ivar)%dimsizes(1)
-              sz2 = ncinfo%dims(ivar)%dimsizes(2)
-              allocate(var3d(sz1,sz2,1))
-              is = 1; ie = sz1
-              js = 1; je = sz2
-            endif
-          end select
+
+          var3d = 0
+          do part = srow(row),srow(row+1)-1
+            partfile = partfiles(part)
+            ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
+            call ncread(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+            ierr = nf90_close(npid)
+          enddo
+
+!       call system_mem_usage(RSS)
+!       print * ,'Mem usage 2: ', vname,'  ',RSS/1000
+
+          print *,'maxval: ',maxval(abs(var3d))
+          ierr = nf90_open_par(trim(joinfile),nf90_write,part_comm,MPI_Info_Null, ncid)
+!         ierr = nf90_open(trim(joinfile),nf90_write,ncid)
+          ierr = nf90_var_par_access(ncid, ivar, nf90_collective)
+
+          if (ierr/=nf90_noerr) 
+     &      call handle_ierr(ierr,'opening file: ',trim(joinfile) )
+          print *, mynode,shape(var3d),startr
+
+          call ncwrite(ncid,vname,var3d,startr)
+          ierr = nf90_close(ncid)
+
+          deallocate(var3d)
+
+        enddo ! row=1,nrows
+
+        else !not-partitionable
+ 
+          if (mynode==0) then
+            if (mynode==0) print *,trim(vname),' is NOT partitionable '
+            select case(ndims)
+            case(1)
+              if (index(ncinfo%dims(ivar)%dimnames(1),'time')>0) then
+                startr = (/record,1,1,1/)
+                startw = (/record,1,1,1/)
+                allocate(var3d(1,1,1))
+                is = 1; ie = 1
+                js = 1; je = 1
+                
+              else
+                if (record>1) continue
+                startr = (/1,1,1,1/)
+                startw = (/1,1,1,1/)
+                sz1 = ncinfo%dims(ivar)%dimsizes(1)
+                allocate(var3d(sz1,1,1))
+                is = 1; ie = sz1
+                js = 1; je = 1
+              endif
+            case(2)
+              if (index(ncinfo%dims(ivar)%dimnames(2),'time')>0) then
+                startr = (/1,record,1,1/)
+                startw = (/1,record,1,1/)
+                sz1 = ncinfo%dims(ivar)%dimsizes(1)
+                allocate(var3d(sz1,1,1))
+                is = 1; ie = sz1
+                js = 1; je = 1
+              else
+                if (record>1) continue
+                startr = (/1,1,1,1/)
+                startw = (/1,1,1,1/)
+                sz1 = ncinfo%dims(ivar)%dimsizes(1)
+                sz2 = ncinfo%dims(ivar)%dimsizes(2)
+                allocate(var3d(sz1,sz2,1))
+                is = 1; ie = sz1
+                js = 1; je = sz2
+              endif
+            end select
+
+
+            var3d = 0
+            partfile = partfiles(part0)
+            ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
+            if (ierr/=nf90_noerr) 
+     &        call handle_ierr(ierr,'opening file: ',trim(joinfile) )
+            call ncread(npid,vname,var3d(is(part0):ie(part0),js(part0):je(part0),:),startw)
+            ierr = nf90_close(npid)
+
+            ierr = nf90_open(trim(joinfile),nf90_write,ncid)
+            if (ierr/=nf90_noerr) 
+     &         call handle_ierr(ierr,'opening file: ',trim(joinfile) )
+              call ncwrite(ncid,vname,var3d,startr)
+              ierr = nf90_close(ncid)
+
+            deallocate(var3d)
+
+          endif !mynode=0
 
         endif
 
-        call system_mem_usage(RSS)
-        print * ,'Mem usage 1: ', vname,'  ',RSS/1000
+!       call system_mem_usage(RSS)
+!       print * ,'Mem usage 3: ', vname,'  ',RSS/1000
 
-!       print *, li0,li1,lj0,lj1
-        var3d = 0
-
-        do part = part0,part1  ! zero based
-          partfile = partfiles(part)
-          ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
-          call ncread(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
-          ierr = nf90_close(npid)
-        enddo
-
-        call system_mem_usage(RSS)
-        print * ,'Mem usage 2: ', vname,'  ',RSS/1000
-
-        print *,'maxval: ',maxval(abs(var3d))
-        ierr = nf90_open_par(trim(joinfile),nf90_write,part_comm,MPI_Info_Null, ncid)
-        ierr = nf90_var_par_access(ncid, ivar, nf90_collective)
-!       ierr = nf90_open(trim(joinfile),nf90_write,ncid)
-        if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'opening file: ',trim(joinfile) )
-        call ncwrite(ncid,vname,var3d,startr)
-        ierr = nf90_close(ncid)
-
-
-        call system_mem_usage(RSS)
-        print * ,'Mem usage 3: ', vname,'  ',RSS/1000
-
-        deallocate(var3d)
 
         call system_mem_usage(RSS)
         print * ,'Mem usage 4: ', vname,'  ',RSS/1000

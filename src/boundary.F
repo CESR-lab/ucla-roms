@@ -7,6 +7,7 @@
       use param
       use roms_read_write
       use dimensions
+      use hidden_mpi_vars
       implicit none
 
       ! Set module to private and make vars explicitly public
