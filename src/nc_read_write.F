@@ -147,6 +147,7 @@
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
+      deallocate(tmp_array)
       end subroutine ncwrite_1D  !]
 !----------------------------------------------------------------------
       subroutine ncwrite_2D(ncid,vname,dat,start)  ![
@@ -184,6 +185,7 @@
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
+      deallocate(tmp_array)
       end subroutine ncwrite_2D  !]
 !----------------------------------------------------------------------
       subroutine ncwrite_3D(ncid,vname,dat,start)  ![
@@ -222,6 +224,7 @@
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
+      deallocate(tmp_array)
       end subroutine ncwrite_3D  !]
 !----------------------------------------------------------------------
       integer function nccreate(ncid,varname,dimname,dimsize,vartype)  ![
