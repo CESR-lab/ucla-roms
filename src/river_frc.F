@@ -74,7 +74,6 @@
 
       endif
 
-
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
@@ -90,7 +89,7 @@
       integer :: ierr,ncid,varid
       real  :: riv_cells,riv_east,riv_west
 
-      character(len=30) :: string                 
+      character(len=150) :: string
       allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
@@ -144,14 +143,16 @@
 
       ! Print user options (river_frc.opt) to netcdf attributes
       river_frc_opt = ''
-      write(string, '(A,I3)') 'nriv =', nriv
+      write(string, '(A,I3)') '# of rivers:', nriv
       call store_string_att(river_frc_opt, string)
       if (analytical) then 
-        call store_string_att(river_frc_opt, ', Analytical')
+        call store_string_att(river_frc_opt, ', analytical')
+      else
+        call store_string_att(river_frc_opt, ', real')
       endif
-!     print *, 'Done with attributes', mynode 
-!     print "(a15)", river_frc_opt
-!     print "(a15)", ierr
+      
+      river_frc_opt = trim(adjustl(river_frc_opt))
+
       end subroutine init_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine calc_river_flux  ![

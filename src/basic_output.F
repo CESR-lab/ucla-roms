@@ -383,6 +383,8 @@
       real,save              :: output_time_avg=0                    ! time since last output
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_avg
+      character(len=99)      :: output_time_string
+      character(len=99)      :: formatted_string
       integer :: tile, tn, ierr, k
 
       if (wrt_file_avg) then
@@ -390,6 +392,13 @@
         output_time_avg = output_time_avg + dt
 
         if (output_time_avg>=output_period_avg) then
+
+          ! save info to netcdf
+          avg_output = ''
+          write(output_time_string,'(F12.1)') output_time_avg
+          write(formatted_string,'(A,A)') trim(adjustl(output_time_string)),
+     &                                    ' seconds'
+          call store_string_att(avg_output,formatted_string)
 
           if (rec_avg == nrpf_avg) then
             call create_file_ocean_vars(fname_avg,.true.)
@@ -598,6 +607,7 @@
       if (avg) then
         call def_vars_ocean_vars(  .true.  )
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS averages file')
+        ierr=nf90_put_att(ncid,nf90_global,'averaging_timescale',adjustl(avg_output))
       else
         call def_vars_ocean_vars(  .false. )
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS history file')

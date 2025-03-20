@@ -148,11 +148,14 @@
 
       ! Print user options (pipe_frc.opt) to netcdf attributes 
       pipe_frc_opt = ''
-      write(string, '(A,I3)') 'npip =', npip
+      write(string, '(A,I3)') '# of pipes: ', npip
       call store_string_att(pipe_frc_opt, string)
       if (p_analytical) then
-        call store_string_att(pipe_frc_opt, ', Analytical')
+        call store_string_att(pipe_frc_opt, ', analytical')
+      else
+        call store_string_att(pipe_frc_opt, ', real')
       endif
+      pipe_frc_opt = trim(adjustl(pipe_frc_opt))
 
       end subroutine init_arrays_pipes  !]
 ! ----------------------------------------------------------------------
