@@ -33,6 +33,10 @@
       implicit none
 
       character(len=30) :: string 
+
+      if (.not.pot_tides.and..not.bry_tides) then
+         return
+      endif
       allocate(ftide(ntides))
 
       if (bry_tides) then
@@ -62,6 +66,7 @@
       tide_opt = ''
       write(string, '(A, I2)') '# of constituents:', ntides
       call store_string_att(tide_opt, string)
+
       if (ana_tides) then
         call store_string_att(tide_opt, ', analytical')
       else
@@ -73,6 +78,7 @@
      &                                     ', barotropictide@boundary') 
 
       tide_opt = trim(adjustl(tide_opt))
+
 
       end subroutine init_tides  !]
 !-----------------------------------------------------------------------

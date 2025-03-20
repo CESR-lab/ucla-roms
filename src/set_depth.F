@@ -126,7 +126,7 @@
          enddo
        endif
       if (EASTERN_EDGE) then
-!        do k = 1, N
+         do k = 1, N
             do j = 0,Mm+1
                dzdxi (Lm  ,j,k) = 0.
                dzdxi (Lm+1,j,k) = 0.

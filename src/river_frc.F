@@ -150,6 +150,7 @@
       else
         call store_string_att(river_frc_opt, ', real')
       endif
+      
       river_frc_opt = trim(adjustl(river_frc_opt))
 
       end subroutine init_river_frc  !]

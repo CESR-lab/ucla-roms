@@ -4,6 +4,9 @@
 # Fortran Compiler is set in ~/.bashrc as environment variable
 
 # Normal options for the compiler (mpiifx,mpiifort,others)
+# ifx does use the cpath environment variable to specify include paths, 
+# but ifort appears to not do that. gfortran also does not like cpath
+
 ifeq ($(FCOMP),mpiifx)
 	FFLAGS = -O3 -fp-model source -pc64 -auto
 else ifeq ($(FCOMP),mpiifort)
@@ -18,6 +21,8 @@ endif
 
 # Include paths:
 CPATH = ${NETCDF_ROOT}/include
+
+#FFLAGS = -O3
 
 ## Rule to make *.o out of *.f90
 .f90.o:
