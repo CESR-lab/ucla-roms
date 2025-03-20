@@ -27,9 +27,11 @@
       ! particles would be slower than going through an array that is
       ! stored in contiguous memory.
       
-      character(len=40) :: particle_num_string  
-      character(len=30) :: particle_conc_string  
-      character(len=30) :: buffer_string  
+      character(len=130) :: particle_string
+      character(len=130) :: particle_num_string
+      character(len=30) :: particle_conc_string
+      character(len=30) :: buffer_string
+
 
       ! indices of various quantities in particle array
       integer,parameter :: itag = 1   ! identification tag
@@ -178,26 +180,23 @@
       output_time = 0
 
       ! Print user options (particles.opt) to netcdf attributes 
-      call store_string_att(particle_opt, '')
+      particle_opt = ''
       if (full_seed) then 
-        call store_string_att(particle_opt,
-     &                 'Seeded with constant density')
-        write(particle_conc_string, '(A, E10.2)')
-     &                ', Particle Conc. =', ppm3
+        call store_string_att(particle_opt, 'full seed')
+        call store_string_att(particle_opt, ', constant density')
+        write(particle_conc_string, '(A, E10.2)') ', concentration(m^-3):', ppm3
         call store_string_att(particle_opt, particle_conc_string)
-        write(*,*) 'Number of Particles = ', np
-        write(particle_num_string, '(A, I7)')
-     &                ', Number of Particles =', np
+        write(particle_num_string, '(A, I2)') ', # of partciles:', np
+
         call store_string_att(particle_opt, particle_num_string)
       else 
-        call store_string_att(particle_opt, 'Seeded Randomly')
+        call store_string_att(particle_opt, 'seeded randomly')
       endif
-      write(buffer_string, '(A, F5.3)') 
-     &             ', Buffer Space =', extra_space_fac
-      call store_string_att(particle_opt, buffer_string)
-       
-!     print *,'init particles done'
+      write(buffer_string, '(A, F5.3)') ', buffer:', extra_space_fac
 
+      call store_string_att(particle_opt, buffer_string)
+      particle_opt = trim(adjustl(particle_opt))
+       
       end subroutine init_particles !]
 !-------------------------------------------------
       subroutine advance_particles![

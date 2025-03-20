@@ -19,7 +19,7 @@
 
       integer, parameter :: input=15, testunit=40,
      &                  max_fname=256, max_kwsize=99
-      character(len=max_fname)  :: fname
+      character(len=max_fname)  :: fname, force_string
       character(len=max_kwsize) :: keyword
       character(len=3), parameter :: end_signal='end'
       integer is,ie,  kwlen, lstr, lenstr
@@ -436,6 +436,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 
         elseif (keyword(1:kwlen) == 'forcing') then
           call cancel_kwd(keyword(1:kwlen), ierr)
+          force_files = ''
+          force_info  = ''
           max_frc=0
           lstr=1
           do while(lstr > 0 .and. max_frc < max_frc_files+1)
@@ -459,6 +461,10 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &                                 frcfile(max_frc)(1:lstr)
                   else
                     write(*,'(23x,A)') frcfile(max_frc)(1:lstr)
+                  endif
+                  ! add to attributes
+                  if (mynode == 0) then
+                    call store_string_att(force_files, frcfile(max_frc)(1:lstr))
                   endif
 
 # ifdef MPI_SILENT_MODE
