@@ -50,6 +50,7 @@ jobs:
         source $GITHUB_ENV
         cd ${ROMS_ROOT}/Examples/code_check/
         sed -i -e "s/make /make COMPILER=intel /g" do_test_roms.sh
+        sed -i -e "s/make /make COMPILER=intel /g" ../bgc_real/code_check/do_test_roms.sh        
         ./do_test_all.sh github
     - name: Print logs (in case of failure)
       if: failure()
