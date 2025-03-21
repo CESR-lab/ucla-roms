@@ -1,4 +1,4 @@
-name: Automated Testing
+name: Automated Testing (ifx)
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/dafyddstephenson/roms_ifx_build:latest    
+      image: ghcr.io/dafyddstephenson/roms_ifx_build:1.0
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
