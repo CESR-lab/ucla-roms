@@ -29,7 +29,6 @@ jobs:
       
     - name: Compile Fortran Code
       run: |
-        source $HOME/.bashrc
         source $GITHUB_ENV
         conda activate roms-ci
         #Copy GNU-compatible makefiles
@@ -49,7 +48,6 @@ jobs:
     - name: Run Tests
       shell: bash
       run: |
-        source $HOME/.bashrc
         source $GITHUB_ENV
         conda activate roms-ci            	      
         cd ${ROMS_ROOT}/Examples/code_check/
@@ -59,7 +57,6 @@ jobs:
       if: failure()
       shell: bash
       run: |
-        source $HOME/.bashrc
         source $GITHUB_ENV
         echo "--------------------------------------------------------------------------------"
         echo "This step will print the test_old.log files from each case run by"
