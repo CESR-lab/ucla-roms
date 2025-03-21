@@ -19,8 +19,8 @@ cp -p ../param.opt .
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
 cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
-make compile_clean &> /dev/null
-make &> /dev/null
+make compile_clean #&> /dev/null
+make #&> /dev/null
 
 
 # 2) Run test case:
@@ -32,13 +32,13 @@ else
  mpirun -n 6 ./roms benchmark.in > test.log
 fi
 
-rm *.h       &> /dev/null
-rm *.nc      &> /dev/null
-rm diag.opt  &> /dev/null
-rm Make*     &> /dev/null
-rm param.opt &> /dev/null
-rm cppdefs.opt &> /dev/null
-rm roms      &> /dev/null
+rm *.h       #&> /dev/null
+rm *.nc      #&> /dev/null
+rm diag.opt  #&> /dev/null
+rm Make*     #&> /dev/null
+rm param.opt #&> /dev/null
+rm cppdefs.opt# &> /dev/null
+rm roms      #&> /dev/null
 
 # 2) Python - confirm values:
 cp $ROMS_ROOT/Examples/code_check/test_roms.py . 
