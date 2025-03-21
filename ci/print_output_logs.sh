@@ -26,6 +26,6 @@ for example in "${Examples[@]}"; do
     echo "$example"
     echo "###############################################################################################"    
 
-    #cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
-    ls ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
+    cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
+    #ls ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
 done
