@@ -6,6 +6,7 @@
       use dimensions
       use mpi_exchanges
       use roms_read_write
+      use netcdf
       
       implicit none
 
@@ -26,14 +27,20 @@
 
       real,public,allocatable,dimension(:,:) :: wspd_used  ! wind speed at rho point (also used in BGC routines)
 
-      public init_arrays_bulk_frc
+      public init_bulk_frc
       public set_bulk_frc
 
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine init_arrays_bulk_frc  ![
+      subroutine init_bulk_frc  ![
       implicit none
+
+      ! to search file
+      integer :: ncid, ierr, vid, ifile
+      character(len=100) :: forcing_source
+      character(len=300) :: frcstr
+
       allocate(  tair(GLOBAL_2D_ARRAY) )
       allocate(     Q(GLOBAL_2D_ARRAY) )
       allocate( prate(GLOBAL_2D_ARRAY) )
@@ -70,7 +77,6 @@
       endif
 
       ! Print user options (bulk_frc.opt) to netcdf attributes 
-      ! Note: to turn bulk forces off, edit cppdefs! 
       bulk_frc_opt = ''
       if (interp_frc==1) then
         call store_string_att(bulk_frc_opt, 'Interpolation ON')
@@ -78,7 +84,23 @@
         call store_string_att(bulk_frc_opt, 'Interpolation OFF')
       endif
 
-      end subroutine init_arrays_bulk_frc  !]
+      ! search for file w/ data source attribute
+      do ifile=1,max_frc_files
+        ierr = nf90_open(frcfile(ifile), nf90_nowrite, ncid)
+        ierr = nf90_inq_varid(ncid, 'uwnd', vid)
+        if (ierr==nf90_noerr) then                                   ! check if this file contains the variable
+          ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_source)
+          if (ierr==nf90_noerr) then                                 ! check if forcing netcdf has information
+            write(frcstr,'(2A)') trim(adjustl(forcing_source))
+            call store_string_att(force_info,frcstr)
+          endif
+          ierr = nf90_close(ncid)                                    ! close netcdf before exiting
+          exit                                                       ! exit loop once info is saved
+        endif
+        ierr = nf90_close(ncid)                                      ! still close each netcdf if info is missed
+      enddo
+
+      end subroutine init_bulk_frc  !]
 ! ----------------------------------------------------------------------
       subroutine set_bulk_frc(istr,iend,jstr,jend) ![
 
