@@ -672,7 +672,7 @@
       joinfile = joinfile(1:idx1-1) //'.nc'
       print *, trim(partfile),' ',trim(joinfile)
 
-      ! )pen first partial file in range 
+      ! Open first partial file in range 
       ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
       if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
@@ -682,11 +682,29 @@
 
       ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
       if (ierr/=nf90_noerr) 
-     &    call handle_ierr(ierr,'get global dims: ',trim(partfile) )
+        ! Global dimensions attribute not found, use old method ![
+
+        partfile = partfiles(nparts)
+        ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
+        if (ierr/=nf90_noerr) 
+     &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
+
+        ierr=nf90_get_att(npid, nf90_global, 'partition', ibuff)
+
+        nf90_inquire(npid,ndimensions=ndims)
+        do i = 1,ndims
+          ierr = nf90_inquire_dimension(ncid,i,dname,dsize)
+          if (index(dname,'xi_rho')>0)  gdims(1) = ibuff(3) + dsize -1
+          if (index(dname,'eta_rho')>0) gdims(2) = ibuff(4) + dsize -1
+          if (index(dname,'s_rho')>0)   gdims(3) = dsize
+        enddo
+        ierr = nf90_close(npid)
+
+      endif
       gnx = gdims(1)
       gny = gdims(2)
       nz  = gdims(3)
-
+      
       if (mynode==0) then ! single node to create joined file
 
         print *,'Creating joined file'
@@ -741,6 +759,11 @@
 
       ierr = nf90_close(npid)
 
+      if (gdims(1)==0) then 
+    
+      endif 
+  
+
       end subroutine make_joined_file !]
 ! ----------------------------------------------------------------------
       subroutine write_joined_file ![
@@ -751,7 +774,7 @@
       ! local
       integer :: ierr, ncid,npid,dimid
       integer,dimension(4) :: llidx
-      integer :: nx,ny,nxu,nyv
+      integer :: nx,ny,nxu=0,nyv=0
       integer,dimension(:),allocatable :: i0,j0
       integer,dimension(:),allocatable :: i1,j1
       integer,dimension(:),allocatable :: i0u,i1u
@@ -796,7 +819,6 @@
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
 
-!       if (part.eq.part0) call get_nc_info(npid, ncinfo) 
 
         ierr = nf90_get_att(npid,nf90_global,'start_idx',llidx)
         i0(part) = llidx(1)
@@ -809,6 +831,25 @@
         j1(part) = llidx(2)
         i1u(part)= llidx(3)
         j1v(part)= llidx(4)
+
+        ierr = nf90_get_att(npid,nf90_global,'partition',ibuff)
+        i0(part) = ibuff(3)
+        j0(part) = ibuff(4)
+        i0u(part)= max(i0(part)-1,1)
+        j0v(part)= max(j0(part)-1,1)
+
+        nf90_inquire(npid,ndimensions=ndims)
+        do i = 1,ndims
+          ierr = nf90_inquire_dimension(ncid,i,dname,dsize)
+          if (index(dname,'xi_rho')>0)  nx = dsize
+          if (index(dname,'eta_rho')>0) ny = dsize
+          if (index(dname,'xi_u')>0)    nxu = dsize
+          if (index(dname,'eta_v')>0)   nyv = dsize
+        enddo
+        i1(part) = i0(part) + nx-1
+        j1(part) = j0(part) + ny-1
+        i1u(part)= i0u(part)+ nxu-1
+        j1v(part)= j0v(part)+ nyv-1
 
       enddo
 

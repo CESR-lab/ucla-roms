@@ -26,6 +26,9 @@
 
 	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
 
+        CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
+
+
 # Fortran loader name and options: 
  	LDR = $(FCOMP)  $(CFTFLAGS)
 
