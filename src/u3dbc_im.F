@@ -31,9 +31,7 @@
 # define dt illegal
 
 # ifndef EW_PERIODIC
-!     if (.not.ew_periodic) then ! no boundary conditions if periodic
-!     if (.not. west_exchng) then
-      if (inode==0) then
+      if (.not. west_exchng) then
 #  ifdef OBC_WEST
 #   ifdef OBC_M3ORLANSKI
         do k=1,nz                         ! Western edge radiation

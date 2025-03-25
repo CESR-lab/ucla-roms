@@ -228,7 +228,7 @@
 #  ifdef ANA_BRY
       return
 #  endif
-      if (obc_west.and.(inode==0)) then
+      if (obc_west.and.(.not.west_exchng)) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_w, zeta_west(j0:j1), obry=2 )
 !       call exch_bry_EW_tile(1, ny, zeta_west, 1)      ! DevinD - exchange did not make a difference

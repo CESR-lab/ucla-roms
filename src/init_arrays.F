@@ -133,7 +133,7 @@
       call init_arrays_surf_flx
 
 #ifdef BULK_FRC
-      call init_arrays_bulk_frc
+      call init_bulk_frc
 #endif
 
 # ifdef WEC

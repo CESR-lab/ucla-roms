@@ -52,7 +52,7 @@
       type (ncforce)    :: nc_t( NT )                                   ! array of ncvs for each tracer
       integer,public :: iTandS                                       ! combined index of temperature and salinity
                                                                      ! public as used in set_forces.F. Need to be parameter
-!     integer,public :: nt_passive=0                                 ! total number of passive tracers
+      integer,public :: nt_passive=0                                 ! total number of passive tracers
       integer        :: itot=0                                       ! index counter to count total number of tracers.
                                                                      ! this term prevents the need to hardcode tracer indices.
       integer        :: interp_t                                     ! interpolate forcing from coarser input grid (=1) or not (=0)

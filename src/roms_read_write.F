@@ -504,7 +504,7 @@
           found_var_ever = .true.
            
           ierr = nf90_inq_varid(ncid,tname,tid)                      ! get time ID
-          if (ierr/=nf90_noerr) 
+          if (ierr/=nf90_noerr)
      &      call handle_ierr(ierr,'Find_new_record, searching: ',tname)
 
           ! Check if the time has a cycle length
@@ -647,8 +647,6 @@
 
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
-      character(len=100) :: forcing_version ! version of forcing input data
-      character(len=300) :: frcstr
       integer            :: irec,ifile
 
       irec  = nc%irec
@@ -702,8 +700,6 @@
 
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
-      character(len=100) :: forcing_version ! version of forcing input data
-      character(len=300) :: frcstr
       integer            :: irec,ifile
 
       irec  = nc%irec
@@ -1208,10 +1204,8 @@
 #ifndef ANA_GRID
       ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grdname)
 #endif
-#ifndef ANA_GRID
       ierr=nf90_put_att (ncid, nf90_global, 'forcing_files', force_files)
-      ierr=nf90_put_att (ncid, nf90_global, 'forcing_info', adjustl(force_info))
-#endif
+      ierr=nf90_put_att (ncid, nf90_global, 'forcing_source', force_info)
 #ifndef ANA_INITIAL
       ierr=nf90_put_att(ncid, nf90_global, 'init_file',ininame)
 #endif
