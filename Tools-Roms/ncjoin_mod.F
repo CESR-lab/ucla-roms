@@ -545,8 +545,8 @@ c--#include "netcdf.inc"
         stop
       endif
      
-      print *,'testing!'
-      stop
+!     print *,'testing!'
+!     stop
 
       end subroutine check_partial_file_set  !]
 
@@ -654,7 +654,6 @@ c**           endif
 
 
       end subroutine check_ndims_nvars_natts  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_catalog_of_var_names_IDs_ranks( node )  ![
 
@@ -725,7 +724,6 @@ c**           endif
             enddo
 
       end subroutine create_catalog_of_var_names_IDs_ranks  !]
-
 ! ----------------------------------------------------------------------
       subroutine determine_joined_file_dim_sizes  ![
       implicit none
@@ -838,7 +836,6 @@ c**           endif
         enddo ! <-- i loop over dimensions
 
       end subroutine determine_joined_file_dim_sizes  !]
-
 ! ----------------------------------------------------------------------
       subroutine indentify_boundary_edges  ![
       implicit none
@@ -891,7 +888,6 @@ c**           endif
         enddo ! <- node=0,nnodes-1
 
       end subroutine indentify_boundary_edges  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_joined_chunked_file  ![
       implicit none                          !  create joined file with chunking for compression
@@ -1212,7 +1208,6 @@ c**           endif
 # endif
 
       end subroutine create_joined_chunked_file  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_joined_empty_file  ![
       implicit none
@@ -1260,7 +1255,6 @@ c**           endif
         endif
 
       end subroutine create_joined_empty_file  !]
-
 ! ----------------------------------------------------------------------
       subroutine copy_global_attributes  ![
       implicit none
@@ -1308,7 +1302,6 @@ c**           endif
         endif
 
       end subroutine copy_global_attributes  !]
-
 ! ----------------------------------------------------------------------
       subroutine exchange_mpi_master_pre_processing_to_all  ![
                                                             !  exchange all info about file pre-processing
@@ -1421,7 +1414,6 @@ c**           endif
 #endif
 
       end subroutine  !]
-
 ! ----------------------------------------------------------------------
       subroutine collectively_open_input_output_files  ![
       implicit none
