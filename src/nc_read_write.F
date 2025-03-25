@@ -126,28 +126,20 @@
       integer              :: varid,ierr
       integer,dimension(1) :: dims
       integer,dimension(2) :: count
-      real, allocatable    :: tmp_array(:)
       
       dims = shape(dat)
       
-!     Allocate a contiguous temporary array on the heap
-      allocate(tmp_array(dims(1)))
-
-!     Copy data to the temporary array to ensure contiguous storage
-      tmp_array = dat
-
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
-        ierr = nf90_put_var(ncid,varid,tmp_array,start,count)
+        ierr = nf90_put_var(ncid,varid,dat,start,count)
       else
-        ierr = nf90_put_var(ncid,varid,tmp_array)
+        ierr = nf90_put_var(ncid,varid,dat)
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
-      deallocate(tmp_array)
       end subroutine ncwrite_1D  !]
 !----------------------------------------------------------------------
       subroutine ncwrite_2D(ncid,vname,dat,start)  ![
@@ -164,28 +156,20 @@
       integer              :: varid,ierr
       integer,dimension(2) :: dims
       integer,dimension(3) :: count
-      real, allocatable    :: tmp_array(:,:)
       
       dims = shape(dat)
-      
-!     Allocate a contiguous temporary array on the heap
-      allocate(tmp_array(dims(1), dims(2)))
-
-!     Copy data to the temporary array to ensure contiguous storage
-      tmp_array = dat
       
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
-        ierr = nf90_put_var(ncid,varid,tmp_array,start,count)
+        ierr = nf90_put_var(ncid,varid,dat,start,count)
       else
-        ierr = nf90_put_var(ncid,varid,tmp_array)
+        ierr = nf90_put_var(ncid,varid,dat)
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
-      deallocate(tmp_array)
       end subroutine ncwrite_2D  !]
 !----------------------------------------------------------------------
       subroutine ncwrite_3D(ncid,vname,dat,start)  ![
