@@ -254,17 +254,18 @@ c--#include "netcdf.inc"
         endif
 #endif
         if (ntest.ne.-1) then
-          ierr=nf_close(ntest)
+          ierr=nf90_close(ntest)
           ntest=-1
         endif
-        ierr=nf_open (nctestname, nf_nowrite, ntest)
-        if (ierr .eq. nf_noerr) then
-          ierr=nf_inq_att (ntest, nf_global, 'partition', i, lvar) ! e.g. :partition = 0, 6, 1, 1 ;
+        ierr=nf90_open (nctestname, nf90_nowrite, ntest)
+!       print *,nctestname,ntest
+        if (ierr .eq. nf90_noerr) then
+          ierr=nf90_inquire_attribute(ntest, nf90_global, 'partition', i, lvar) ! e.g. :partition = 0, 6, 1, 1 ;
                                                                    ! i=attribute type, lvar= number of values stored in attribute.
-          if (ierr .eq. nf_noerr) then
-            if (i.eq.nf_int .and. lvar.eq.4) then
-              ierr=nf_get_att_int (ntest,nf_global, 'partition', ibuff) ! ibuff array stores the 4 integers of 'partition'.
-              if (ierr .eq. nf_noerr) then
+          if (ierr .eq. nf90_noerr) then
+            if (i.eq.nf90_int .and. lvar.eq.4) then
+              ierr=nf90_get_att(ntest,nf90_global, 'partition', ibuff) ! ibuff array stores the 4 integers of 'partition'.
+              if (ierr .eq. nf90_noerr) then
                 if (nnodes.eq.-1) then
                   nnodes=ibuff(2)
                   if (nnodes.gt.maxnodes) then
@@ -393,7 +394,7 @@ c--#include "netcdf.inc"
 
 ! Checking consistency of root name with previously found.
 
-                  ierr=nf_noerr
+                  ierr=nf90_noerr
                   if (root_bak(1:1).eq.' ') then
                     root_bak=root
                   else
@@ -454,7 +455,7 @@ c--#include "netcdf.inc"
 
 ! Stop, if something is wrong.
 
-                  if (ierr.ne.nf_noerr) then
+                  if (ierr.ne.nf90_noerr) then
                     mayday=.true.; return ! goto 97 can't have go to
                   endif
                 else
@@ -487,7 +488,7 @@ c--#include "netcdf.inc"
         else
           write(*,'(/1x,4A/14x,A/)')   '### WARNING: Cannot open ''',
      &                   nctestname(1:lncn), ''' as a netCDF file: ',
-     &                nf_strerror(ierr), ' ==> The file is ignored.'
+     &                nf90_strerror(ierr), ' ==> The file is ignored.'
         endif
 
 #define nctestname illegal
@@ -500,14 +501,17 @@ c--#include "netcdf.inc"
         if (nnodes.gt.0) then
           complete=.true.
           do node=0,nnodes-1
-            if (ncid(node).lt.0) complete=.false.
+            if (ncid(node).lt.0) then
+               complete=.false.
+!             print *,node,ncid(node)
+            endif
           enddo
         endif
 
       if (.not.complete .and. arg.lt.nargs) goto 2  !--> next file
 
 
-! Once a complete set is identified, print the finenames.
+! Once a complete set is identified, print the file names.
 
       if (complete) then
         lncn=lenstr(ncname(0))
@@ -527,7 +531,7 @@ c--#include "netcdf.inc"
 
 #undef ntest
         if (ntest.ne.-1) then       ! Thus far netCDF file id array
-          ierr=nf_close(ntest)      ! "ncid(0:nnodes-1)" was used just
+          ierr=nf90_close(ntest)      ! "ncid(0:nnodes-1)" was used just
           ntest=-1                  ! to signal that a complete set of
         endif                       ! partitioned files has been
         do node=0,nnodes-1          ! identified, but all the files are
@@ -540,6 +544,9 @@ c--#include "netcdf.inc"
         write(*,*) 'stop at 466'
         stop
       endif
+     
+!     print *,'testing!'
+!     stop
 
       end subroutine check_partial_file_set  !]
 
@@ -555,12 +562,12 @@ c--#include "netcdf.inc"
 
       integer, intent(in) :: node
 
-            ierr=nf_inq (ncid(node), ibuff(1), ibuff(2),  ! returns: 1-ndims,  2-nvars
+            ierr=nf90_inquire(ncid(node), ibuff(1), ibuff(2),  ! returns: 1-ndims,  2-nvars
      &                               ibuff(3), ibuff(4))  !          3-ngatts, 4-unlimid
-            if (ierr .ne. nf_noerr) then
+            if (ierr .ne. nf90_noerr) then
               write(*,'(/1x,4A/12x,A/)')  '### ERROR: Cannot make ',
      &                        'general inquiry into netCDF file ''',
-     &               ncname(node)(1:lncn), '''.', nf_strerror(ierr)
+     &               ncname(node)(1:lncn), '''.', nf90_strerror(ierr)
               mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
             elseif (ibuff(1) .gt. maxdims) then
               write(*,'(/1x,2A,I4,1x,3A/12x,2A/)')   '### ERROR: ',
@@ -608,7 +615,7 @@ c**           endif
      &                                      ncname(0)(1:lstr), '''.'
                 ierr=ierr+1
               endif
-              if (ierr .ne. nf_noerr) then
+              if (ierr .ne. nf90_noerr) then
                 mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
               endif
             endif
@@ -618,8 +625,8 @@ c**           endif
 
 #define i ilegal
             do j=1,ibuff(1)
-              ierr=nf_inq_dim (ncid(node),j,string,dimsize(j,node))
-              if (ierr .eq. nf_noerr) then
+              ierr=nf90_inquire_dimension(ncid(node),j,string,dimsize(j,node))
+              if (ierr .eq. nf90_noerr) then
                 lstr=lenstr(string)
                 if (node.eq.0) then
                   ldim(j)=lstr
@@ -639,7 +646,7 @@ c**           endif
                 write(*,'(/1x,2A,I3/12x,3A/12x,A)')    '### ERROR: ',
      &            'Cannot determine name and size of dimension #', j,
      &            'in netCDF file ''',   ncname(node)(1:lncn), '''.',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
                 mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
               endif
             enddo
@@ -647,7 +654,6 @@ c**           endif
 
 
       end subroutine check_ndims_nvars_natts  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_catalog_of_var_names_IDs_ranks( node )  ![
 
@@ -674,11 +680,11 @@ c**           endif
 
             if (node.eq.0) nvars=0
             do i=1,ibuff(2)
-              ierr=nf_inq_varname (ncid(node), i, string)
-              if (ierr .eq. nf_noerr) then
+              ierr=nf90_inquire_variable(ncid(node), i, string)
+              if (ierr .eq. nf90_noerr) then
                 lstr=lenstr(string)
-                ierr=nf_inq_varndims (ncid(node), i, k)
-                if (ierr .eq. nf_noerr) then
+                ierr=nf90_inquire_variable(ncid(node),i,ndims=k)
+                if (ierr .eq. nf90_noerr) then
                   lnewvar=.true.
                   do j=1,nvars
                     lvar=lenstr(vname(j))
@@ -705,20 +711,19 @@ c**           endif
      &                      'for variable with id =', i,  'named ''',
      &                       string(1:lstr),  ''' in netCDF file ''',
      &                       ncname(node)(1:lncn), '''.',
-     &                                             nf_strerror(ierr)
+     &                                             nf90_strerror(ierr)
                   mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
                 endif
               else
                 write(*,'(/1x,2A,I3/12x,3A/12x,A)')    '### ERROR: ',
      &                 'Cannot determine name of variable with id =',
      &                  i, 'in netCDF file ''', ncname(node)(1:lncn),
-     &                                      '''.', nf_strerror(ierr)
+     &                                      '''.', nf90_strerror(ierr)
                 mayday=.true.; return ! goto 97 ! can't have goto out of subroutine
               endif
             enddo
 
       end subroutine create_catalog_of_var_names_IDs_ranks  !]
-
 ! ----------------------------------------------------------------------
       subroutine determine_joined_file_dim_sizes  ![
       implicit none
@@ -826,12 +831,11 @@ c**           endif
           endif
           if (i.eq. unlimdimid) then
             tsize=dimsize(i,nnodes)
-            dimsize(i,nnodes)=nf_unlimited
+            dimsize(i,nnodes)=nf90_unlimited
           endif
         enddo ! <-- i loop over dimensions
 
       end subroutine determine_joined_file_dim_sizes  !]
-
 ! ----------------------------------------------------------------------
       subroutine indentify_boundary_edges  ![
       implicit none
@@ -884,7 +888,6 @@ c**           endif
         enddo ! <- node=0,nnodes-1
 
       end subroutine indentify_boundary_edges  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_joined_chunked_file  ![
       implicit none                          !  create joined file with chunking for compression
@@ -893,6 +896,8 @@ c**           endif
       !------- -------- ------ -----   partial files have been established
       ! and dimensions survive consistency check, create the combined file,
       ! define its dimensions and copy global attributes.
+
+      integer :: did
 
       call create_joined_empty_file
       if(mayday) return                ! return if error occured in create_joined_empty_file
@@ -913,13 +918,13 @@ c**           endif
           ! Set time dimension to actual length, not unlimited.
           ! This is necessary for netcdf independent parallel I/O (can't have unlimited dim).
           if(dimsize(i,nnodes) /= 0) then ! Not time dimension
-            ierr=nf_def_dim (nctarg, dimname(i)(1:lvar),
+            ierr=nf90_def_dim (nctarg, dimname(i)(1:lvar),
      &                       dimsize(i,nnodes), dimid(i))
           else                            ! is  time dimension
-            ierr=nf_def_dim (nctarg, dimname(i)(1:lvar),
+            ierr=nf90_def_dim (nctarg, dimname(i)(1:lvar),
      &                       tsize, dimid(i))
           endif
-          if (ierr .eq. nf_noerr) then
+          if (ierr .eq. nf90_noerr) then
             if (dimid(i) .eq. i) then
 # ifdef VERBOSE
               write(*,'(14x,I3,I5,1x,3A)') dimid(i),
@@ -943,7 +948,7 @@ c**           endif
             endif
           else
            write(*,'(/1x,4A/12x,A/)')      '### ERROR: Cannot define ',
-     &    'dimension ''', dimname(i)(1:lvar), '''.', nf_strerror(ierr)
+     &    'dimension ''', dimname(i)(1:lvar), '''.', nf90_strerror(ierr)
               mayday=.true.; return ! goto 97
           endif
         enddo ! <-- i loop over dimensions
@@ -954,8 +959,8 @@ c**           endif
 ! Define variables and copy their attributes.
 
 #ifdef VERBOSE
-        if(my_rank==0) write(*,'(1x,2A)') 'Variables, their dimensions and ',
-     &                                           'attributes:'
+        if(my_rank==0) write(*,'(1x,2A)') 'Variables, their dimensions
+     &                                     and attributes: '
 #endif
 
         if(my_rank==0) write(*,'(/1x,A)')
@@ -994,16 +999,17 @@ c**           endif
 
           node=vnode(i)
           lncn=lenstr(ncname(node))
-          if (ncid(node).eq.-1) ierr=nf_open  (ncname(node),
-     &                               nf_nowrite, ncid(node))
-          if (ierr .eq. nf_noerr) then
-            ierr=nf_inq_var (ncid(node), vid(i,node), vname(i),
-     &                vartype(i), vdims(i), dimids(1,i),  varatts)
+          if (ncid(node).eq.-1) ierr=nf90_open  (ncname(node),
+     &                               nf90_nowrite, ncid(node))
+          if (ierr .eq. nf90_noerr) then
+            ierr=nf90_inquire_variable(ncid(node),vid(i,node),vname(i),
+     &                vartype(i),vdims(i),dimids=dimids(:,i)
+     &                 ,nAtts=varatts)
             ! DevinD: set variable as a collective I/O variable: ! Now done by master only but leave here for record of independent mode!
 !            ierr=nf90_var_par_access(ncid(node), vid(i,node), NF90_COLLECTIVE)
 !        print *, 'read collective variable set, ierr = ', nf90_strerror(ierr)
 
-            if (ierr .eq. nf_noerr) then
+            if (ierr .eq. nf90_noerr) then
               lvar=lenstr(vname(i))
 
               if (.not. vdims(i)<=1 .and.                   ! Not scalar, 1D vars, so calc chunk sizing
@@ -1078,7 +1084,7 @@ c**           endif
                 end do
 
                 ! OLD F77 method:
-                ! ierr=nf_def_var (nctarg, vname(i)(1:lvar),vartype(i), vdims(i), dimids(1,i), varid(i))
+                ! ierr=nf90_def_var (nctarg, vname(i)(1:lvar),vartype(i), vdims(i), dimids(1,i), varid(i))
 
                 ! NEW F90 method:
                 ! - nf90 routine no longer requires number of dimensions for
@@ -1109,23 +1115,23 @@ c**           endif
 !              ierr=nf90_var_par_access(nctarg, varid(i), NF90_COLLECTIVE)
 !        print *, 'write collective variable, ierr = ', nf90_strerror(ierr)
 
-              if (ierr .eq. nf_noerr) then
+              if (ierr .eq. nf90_noerr) then
 #ifdef VERBOSE
                 write(*,'(8x,3A,8I3)')   '''', vname(i)(1:lvar),
      &              ''',  dimids =', (dimids(j,i), j=1,vdims(i))
 #endif
                 do j=1,varatts
-                  ierr=nf_inq_attname (ncid(node), vid(i,node),
+                  ierr=nf90_inq_attname (ncid(node), vid(i,node),
      &                                              j, string)
-                  if (ierr .eq. nf_noerr) then
+                  if (ierr .eq. nf90_noerr) then
                     lstr=lenstr(string)
-                    ierr=nf_copy_att (ncid(node), vid(i,node),
+                    ierr=nf90_copy_att (ncid(node), vid(i,node),
      &                       string(1:lstr), nctarg, varid(i))
-                    if (ierr. ne. nf_noerr) then
+                    if (ierr. ne. nf90_noerr) then
                       write(*,'(/1x,2A,I3,3A/12x,4A)')   '### ERROR: ',
      &                 'Cannot copy attribute #', j,' for variable ''',
      &                  vname(i)(1:lvar),  ''' into netCDF', 'file ''',
-     &                  nctargname(1:ltrg), '''.  ', nf_strerror(ierr)
+     &                  nctargname(1:ltrg), '''.  ', nf90_strerror(ierr)
                       mayday=.true.; return ! goto 97
                     endif
 #ifdef VERBOSE
@@ -1194,7 +1200,7 @@ c**           endif
 
 ! Leave definition mode
 
-        ierr=nf_enddef (nctarg)
+        ierr=nf90_enddef (nctarg)
         ierr=nf90_close(nctarg)  ! DevinD: close output file for parallel open later.
 
 # ifdef VERBOSE
@@ -1202,7 +1208,6 @@ c**           endif
 # endif
 
       end subroutine create_joined_chunked_file  !]
-
 ! ----------------------------------------------------------------------
       subroutine create_joined_empty_file  ![
       implicit none
@@ -1235,7 +1240,7 @@ c**           endif
 !     &                    nctarg, comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
         ierr=nf90_create (nctargname(1:ltrg), NF90_NETCDF4, nctarg)                 ! Master only works!
 !        ierr=nf90_create (nctargname(1:ltrg), IOR(NF90_NETCDF4, NF90_MPIIO), nctarg) ! Master only didn't work (hdf error at write)
-        if (ierr .eq. nf_noerr) then
+        if (ierr .eq. nf90_noerr) then
           if(my_rank==0) write(*,'(/1x,3A)')  'Created netCDF file ''',
      &                        nctargname(1:ltrg), '''.'
           if(my_rank==0) write(*,'(1x,A,I1)')
@@ -1245,12 +1250,11 @@ c**           endif
         else
           write(*,'(/1x,4A/12x,A/)')     '### ERROR: Cannot create ',
      &                          'netCDF file ''', nctargname(1:ltrg),
-     &                                      '''.', nf_strerror(ierr)
+     &                                      '''.', nf90_strerror(ierr)
           mayday=.true.; return ! goto 97
         endif
 
       end subroutine create_joined_empty_file  !]
-
 ! ----------------------------------------------------------------------
       subroutine copy_global_attributes  ![
       implicit none
@@ -1261,22 +1265,22 @@ c**           endif
         write(*,'(1x,A)') 'Copying global attributes:'
 # endif
         lncn=lenstr(ncname(0))
-        if (ncid(0).eq.-1) ierr=nf_open (ncname(0), nf_nowrite,
+        if (ncid(0).eq.-1) ierr=nf90_open (ncname(0), nf90_nowrite,
      &                                                 ncid(0))
-        if (ierr .eq. nf_noerr) then
+        if (ierr .eq. nf90_noerr) then
 
           do i=1,ngatts
-            ierr=nf_inq_attname (ncid(0), nf_global, i, string)
-            if (ierr. eq. nf_noerr) then
+            ierr=nf90_inq_attname (ncid(0), nf90_global, i, string)
+            if (ierr. eq. nf90_noerr) then
               lvar=lenstr(string)
               if (string(1:lvar) .ne. 'partition') then
-                ierr=nf_copy_att (ncid(0), nf_global, string(1:lvar),
-     &                                             nctarg, nf_global)
-                if (ierr .ne. nf_noerr) then
+                ierr=nf90_copy_att (ncid(0), nf90_global, string(1:lvar),
+     &                                             nctarg, nf90_global)
+                if (ierr .ne. nf90_noerr) then
                   write(*,'(/1x,4A/12x,3A/12x,A)')     '### ERROR: ',
      &             'Cannot copy global attribute ''', string(1:lvar),
      &             ''' into netCDF',  'file ''',  nctargname(1:ltrg),
-     &                                     '''.',  nf_strerror(ierr)
+     &                                     '''.',  nf90_strerror(ierr)
                   mayday=.true.; return ! goto 97
                 endif
 # ifdef VERBOSE
@@ -1287,18 +1291,17 @@ c**           endif
             write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: Cannot',
      &                    ' determine name of global attribute #', i,
      &                     'from netCDF file ''',  ncname(0)(1:lncn),
-     &                                     '''.',  nf_strerror(ierr)
+     &                                     '''.',  nf90_strerror(ierr)
               mayday=.true.; return ! goto 97
             endif
           enddo
         else
           write(*,'(/1x,A,1x,3A/14x,A)')     '### ERROR: Cannot open ',
-     &   'netCDF file ''', ncname(0)(1:lncn), '''.', nf_strerror(ierr)
+     &   'netCDF file ''', ncname(0)(1:lncn), '''.', nf90_strerror(ierr)
           mayday=.true.; return ! goto 97
         endif
 
       end subroutine copy_global_attributes  !]
-
 ! ----------------------------------------------------------------------
       subroutine exchange_mpi_master_pre_processing_to_all  ![
                                                             !  exchange all info about file pre-processing
@@ -1411,7 +1414,6 @@ c**           endif
 #endif
 
       end subroutine  !]
-
 ! ----------------------------------------------------------------------
       subroutine collectively_open_input_output_files  ![
       implicit none
@@ -1443,7 +1445,7 @@ c**           endif
 
         do node=0,nnodes-1 ! MPI I/O: open partition input files
           ierr=nf90_open (ncname(node),
-!     &                    IOR(NF90_NETCDF4, NF90_MPIIO), ncid(node), ! not sure if I need nf_nowrite in here somehow
+!     &                    IOR(NF90_NETCDF4, NF90_MPIIO), ncid(node), ! not sure if I need nf90_nowrite in here somehow
      &                    IOR(NF90_NOWRITE, NF90_MPIIO), ncid(node),  ! nowrite is faster for read only.
      &                    comm = MPI_COMM_WORLD, info = MPI_INFO_NULL)
           if(ierr/=0) print *, 'BAD OPEN OF INFILE', nf90_strerror(ierr)
@@ -1754,14 +1756,14 @@ c**           endif
                 if(my_rank==0) write(*,'(16x,3A)')
      &            'Copy 1D variable: ''',vname(i)(1:lvar),'''...'
 
-                if (vartype(i) .eq. nf_char)       then
+                if (vartype(i) .eq. nf90_char)       then
                   ierr=nf90_get_var(ncid(0), vid(i,0), char_in)
-                elseif (vartype(i) .eq. nf_int)    then
+                elseif (vartype(i) .eq. nf90_int)    then
                   if( allocated(int_1D) ) deallocate(int_1D)
                   allocate( int_1D (count_1D(1)) )
                   ierr=nf90_get_var(ncid(0), vid(i,0), int_1D)
-                elseif (vartype(i) .eq. nf_float
-     &             .or. vartype(i) .eq. nf_double) then             ! Compiler default for real is double.
+                elseif (vartype(i) .eq. nf90_float
+     &             .or. vartype(i) .eq. nf90_double) then             ! Compiler default for real is double.
                   if( allocated(real_1D) ) deallocate(real_1D)
                   allocate( real_1D (count_1D(1)) )
                   ierr=nf90_get_var(ncid(0), vid(i,0), real_1D)
@@ -1771,29 +1773,29 @@ c**           endif
      &              '''', vname(i)(1:lvar), ''' has unknown type.'
                   mayday=.true.; return ! goto 97
                 endif
-                if (ierr .eq. nf_noerr) then
-                  if (vartype(i) .eq. nf_char)       then
+                if (ierr .eq. nf90_noerr) then
+                  if (vartype(i) .eq. nf90_char)       then
                     ierr=nf90_put_var(nctarg ,varid(i),char_in)
-                  elseif (vartype(i) .eq. nf_int)    then
+                  elseif (vartype(i) .eq. nf90_int)    then
                     ierr=nf90_put_var(nctarg, varid(i), int_1D)
                   elseif (vartype(i) .eq. nf90_float
      &               .or. vartype(i) .eq. nf90_double) then
                     ierr=nf90_put_var(nctarg, varid(i), real_1D)
                   endif
-                  if (ierr .ne. nf_noerr) then
+                  if (ierr .ne. nf90_noerr) then
                     lvar=lenstr(vname(i))
                     write(*,'(/1x,4A/12x,3A/12x,A)')  '### ERROR: ',
      &                            'Cannot write scalar variable ''',
      &                           vname(i)(1:lvar), ''' into netCDF',
      &                                'file ''', nctargname(1:ltrg),
-     &                                    '''.',  nf_strerror(ierr)
+     &                                    '''.',  nf90_strerror(ierr)
                     mayday=.true.; return ! goto 97
                   endif
                 else
                   lvar=lenstr(vname(i))
                   write(*,'(/1x,4A/12x,A/)')  '### ERROR: Cannot ',
      &                 'read scalar variable ''', vname(i)(1:lvar),
-     &                                    '''.', nf_strerror(ierr)
+     &                                    '''.', nf90_strerror(ierr)
                   mayday=.true.; return ! goto 97
                 endif
 
@@ -1817,15 +1819,15 @@ c**           endif
                   endif
                   size=size*count(j)
                 enddo
-                if (vartype(i) .eq. nf_char .or.
-     &              vartype(i) .eq. nf_byte) then
+                if (vartype(i) .eq. nf90_char .or.
+     &              vartype(i) .eq. nf90_byte) then
                   size=size*1
-                elseif (vartype(i) .eq. nf_short) then
+                elseif (vartype(i) .eq. nf90_short) then
                   size=size*2
-                elseif (vartype(i) .eq. nf_int .or.
-     &                  vartype(i) .eq. nf_float) then
+                elseif (vartype(i) .eq. nf90_int .or.
+     &                  vartype(i) .eq. nf90_float) then
                   size=size*4
-                elseif (vartype(i) .eq. nf_double) then
+                elseif (vartype(i) .eq. nf90_double) then
                   size=size*8
                 else
                   lvar=lenstr(vname(i))
@@ -1843,48 +1845,39 @@ c**           endif
 #endif
 !                endif
 
-                if (vartype(i) .eq. nf_char) then
+                if (vartype(i) .eq. nf90_char) then
 
-                elseif (vartype(i) .eq. nf_int) then
-                  ierr=nf_get_vara_int    (ncid(0), vid(i,0),
-     &                                    start,count, buff)
-                elseif (vartype(i) .eq. nf_float) then
-                  ierr=nf_get_vara_real   (ncid(0), vid(i,0),
-     &                                    start,count, buff)
-                elseif (vartype(i) .eq. nf_double) then
-                  ierr=nf_get_vara_double (ncid(0), vid(i,0),
-     &                                    start,count, buff)
+                elseif (vartype(i) .eq. nf90_int) then
+                  ierr=nf90_get_var(ncid(0),vid(i,0),buff,
+     &                                    start,count)
+                elseif (vartype(i) .eq. nf90_float) then
+                  ierr=nf90_get_var(ncid(0), vid(i,0),buff,
+     &                                    start,count)
+                elseif (vartype(i) .eq. nf90_double) then
+                  ierr=nf90_get_var(ncid(0), vid(i,0),buff,
+     &                                    start,count)
                 endif
-                if (ierr .eq. nf_noerr) then
+                if (ierr .eq. nf90_noerr) then
 
-                  if (vartype(i) .eq. nf_char) then
-
-                  elseif (vartype(i) .eq. nf_int) then
-                    ierr=nf_put_vara_int   (nctarg, varid(i),
-     &                                    start,count, buff)
-                  elseif (vartype(i) .eq. nf_float) then
-#ifdef MPIVERBOSE
-                    print *, 'WRITING FLOAT non-par: ', 'my_rank', my_rank
-#endif
-                    ierr=nf_put_vara_real  (nctarg, varid(i),
-     &                                    start,count, buff)
-                  elseif (vartype(i) .eq. nf_double) then
-                    ierr=nf_put_vara_double(nctarg, varid(i),
-     &                                    start,count, buff)
+                  if (vartype(i).eq.nf90_char) then
+                     ! do nothing
+                  else
+                  ierr=nf90_put_var(nctarg,varid(i),buff,
+     &                                    start,count)
                   endif
-                  if (ierr .ne. nf_noerr) then
+                  if (ierr .ne. nf90_noerr) then
                     lvar=lenstr(vname(i))
                     write(*,'(/8x,4A,I3/15x,3A/)')    '### ERROR: ',
      &                 'Cannot write variable ''', vname(i)(1:lvar),
      &              ''' for time record',rec, 'into netCDF file ''',
-     &                  nctargname(1:ltrg),'''.', nf_strerror(ierr)
+     &                  nctargname(1:ltrg),'''.', nf90_strerror(ierr)
                     mayday=.true.; return ! goto 97
                   endif
                 else
                   lvar=lenstr(vname(i))
                   write(*,'(/8x,4A,I3,A/15x,A/)')     '### ERROR: ',
      &              'Cannot read variable ''',     vname(i)(1:lvar),
-     &              ''' for time record',rec,'.', nf_strerror(ierr)
+     &              ''' for time record',rec,'.', nf90_strerror(ierr)
                   mayday=.true.; return ! goto 97
                 endif
 
@@ -1973,7 +1966,7 @@ c**           endif
                       net_gray_clk=net_gray_clk+inc_clk
 # endif
 
-                      if (vartype(i) .eq. nf_char) then
+                      if (vartype(i) .eq. nf90_char) then
 
                       elseif (vartype(i) == nf90_float  .or.
      &                        vartype(i) == nf90_double      ) then
@@ -1986,7 +1979,7 @@ c**           endif
      &                                        'my_rank', my_rank
                       endif
 # ifdef TIMING
-                      if (ierr.eq.nf_noerr) then
+                      if (ierr.eq.nf90_noerr) then
                         net_read_size=net_read_size+size
                         nclk=3-nclk
                         call system_clock (iclk(nclk),clk_rate,clk_max)
@@ -1994,7 +1987,7 @@ c**           endif
                         net_read_clk=net_read_clk+inc_clk
                       else
 # else
-                      if (ierr.ne.nf_noerr) then
+                      if (ierr.ne.nf90_noerr) then
 # endif
                         lvar=lenstr(vname(i))
                         lncn=lenstr(ncname(node))
@@ -2002,7 +1995,7 @@ c**           endif
      &                              'ERROR: Cannot read variable ''',
      &                   vname(i)(1:lvar), ''' for time record', rec,
      &                  'from netCDF file ''',  ncname(node)(1:lncn),
-     &                                      '''.', nf_strerror(ierr)
+     &                                      '''.', nf90_strerror(ierr)
 !dd                        goto 97
                       endif
 
@@ -2028,7 +2021,7 @@ c**           endif
 
 
 #ifdef TIMING
-                if (ierr.eq.nf_noerr) then       ! DevinD moved here
+                if (ierr.eq.nf90_noerr) then       ! DevinD moved here
                   net_wrt_size=net_wrt_size+size
 
                   nclk=3-nclk
@@ -2111,7 +2104,7 @@ c**           endif
         if(my_rank==0) write(*,'(/1x,A)') 'closing files...'    ! depends on the state of CPP ! was a 98 here
         do node=0,nnodes-1               ! switch KEEP_CLOSED.   If the
           if (ncid(node).ne.-1) then     ! switch is defined, then only
-            ierr=nf_close(ncid(node))    ! node=0 file is expected to
+            ierr=nf90_close(ncid(node))    ! node=0 file is expected to
             ncid(node)=-1                ! be opened here.   Otherwise
           endif                          ! the entire set is opened and
         enddo                            ! needs to be closed.   Either
@@ -2122,7 +2115,7 @@ c**           endif
         inc_clk=iclk(nclk)-iclk(3-nclk)
         net_gray_clk=net_gray_clk+inc_clk
 #endif
-        ierr=nf_close (nctarg)           ! is used as flag indicating
+        ierr=nf90_close (nctarg)           ! is used as flag indicating
 #if defined TIMING
         nclk=3-nclk
         call system_clock(iclk(nclk), clk_rate, clk_max)
