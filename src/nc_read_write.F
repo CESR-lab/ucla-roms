@@ -126,8 +126,9 @@
       integer              :: varid,ierr
       integer,dimension(1) :: dims
       integer,dimension(2) :: count
-
+      
       dims = shape(dat)
+      
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
@@ -155,8 +156,9 @@
       integer              :: varid,ierr
       integer,dimension(2) :: dims
       integer,dimension(3) :: count
-
+      
       dims = shape(dat)
+      
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
@@ -184,19 +186,29 @@
       integer              :: varid,ierr
       integer,dimension(3) :: dims
       integer,dimension(4) :: count
+      real, allocatable    :: tmp_array(:,:,:)
 
+      
       dims = shape(dat)
+      
+!     Allocate a contiguous temporary array on the heap
+      allocate(tmp_array(dims(1), dims(2), dims(3)))
+
+!     Copy data to the temporary array to ensure contiguous storage
+      tmp_array = dat
+
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
-        ierr = nf90_put_var(ncid,varid,dat,start,count)
+        ierr = nf90_put_var(ncid,varid,tmp_array,start,count)
       else
-        ierr = nf90_put_var(ncid,varid,dat)
+        ierr = nf90_put_var(ncid,varid,tmp_array)
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
 
+      deallocate(tmp_array)
       end subroutine ncwrite_3D  !]
 !----------------------------------------------------------------------
       integer function nccreate(ncid,varname,dimname,dimsize,vartype)  ![
