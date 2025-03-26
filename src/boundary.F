@@ -220,6 +220,7 @@
       subroutine set_bry_all  ![
       use param
       use scalars
+      use hidden_mpi_vars
       implicit none
 
       integer :: itrc
@@ -228,7 +229,7 @@
 #  ifdef ANA_BRY
       return
 #  endif
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.(inode==0)) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_w, zeta_west(j0:j1), obry=2 )
 !       call exch_bry_EW_tile(1, ny, zeta_west, 1)      ! DevinD - exchange did not make a difference

@@ -45,7 +45,7 @@
       use nc_read_write
       use roms_read_write
       use netcdf
-      use tracers, only: t, t_vname, t_lname, t_units, nt_passive ! need to get names of tracers
+      use tracers
       use ocean_vars
       use basic_output, vn=>vname
       use scalars

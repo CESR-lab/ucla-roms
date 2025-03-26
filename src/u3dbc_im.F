@@ -13,6 +13,7 @@
       use ocean_vars
       use scalars
       use sponge_tune
+      use hidden_mpi_vars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -31,7 +32,7 @@
 # define dt illegal
 
 # ifndef EW_PERIODIC
-      if (.not. west_exchng) then
+      if (inode==0) then
 #  ifdef OBC_WEST
 #   ifdef OBC_M3ORLANSKI
         do k=1,nz                         ! Western edge radiation
