@@ -282,9 +282,9 @@
       diagnostic_opt = ''
       call store_string_att(diagnostic_opt, 'Chosen Diagnostics = ')
       if (diag_uv) call store_string_att(diagnostic_opt, 'Momentum')
-      if (diag_trc) call store_string_att(diagnostic_opt, ', Tracers')
+      if (diag_trc) call store_string_att(diagnostic_opt, 'Tracers')
       if (diag_pflx) call store_string_att(diagnostic_opt, 
-     & ', Baroclinic Pressure Fluxes')
+     & 'BaroclinicPressureFluxes')
 
       end subroutine init_diagnostics  !]
 ! ----------------------------------------------------------------------

@@ -221,6 +221,7 @@
       subroutine set_bry_all  ![
       use param
       use scalars
+      use hidden_mpi_vars
       implicit none
 
       integer :: itrc
