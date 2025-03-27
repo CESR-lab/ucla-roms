@@ -17,13 +17,16 @@ error_cnt=0                                      # count of exit codes from each
 total=${#Examples[*]}                            # total number of examples
 for (( i=0; i<=$(( $total -1 )); i++ ))          # run test cases:
 do
-  cd ../${Examples[i]}/code_check/
-  echo "${Examples[i]}:"
-  ./do_test_roms.sh $arg
+    cd ../${Examples[i]}/code_check/
+    echo "##############################"
+    echo "${Examples[i]}:"
+    echo "##############################"
+    
+    ./do_test_roms.sh $arg
   
   retval=$?                                      # $? gives exit code from ./do_test_roms.sh
   error_cnt=$(( $error_cnt + $retval ))          
-  if [ $error_cnt -gt 0 ]
+  if [ $retval -neq 0 ]
   then
     echo -e "  test failed! \n"
 #   break

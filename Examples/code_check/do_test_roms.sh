@@ -11,7 +11,9 @@ bm_file="benchmark.result_$1"                    # set benchmark specific to mac
 echo "$bm_file"
 
 # 1) Compile test case:
-echo "  test compiling..."    
+echo "##############################"
+echo "  test compiling..."
+echo "##############################"
 
 cp -p ../*.h . &> /dev/null
 cp -p ../cppdefs.opt .
@@ -24,12 +26,15 @@ make #> compile.log
 
 
 # 2) Run test case:
+echo "##############################"
 echo "  test running..."
+echo "##############################"
+
 if [ "$1" = "expanse" ]
 then
-srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
+    srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
 else
- mpirun -n 6 ./roms benchmark.in 2&>1 | tee -a test.log
+    mpirun -n 6 ./roms benchmark.in 2&>1 | tee -a test.log
 fi
 
 rm *.h       &> /dev/null

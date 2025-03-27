@@ -13,7 +13,9 @@ retval=0
 for BGC_MODEL in {"MARBL","BEC"};do
     echo "Running bgc_real test with ${BGC_MODEL}"
     # 1) Compile test case:
-    echo "  test compiling..."    
+    echo "##############################"    
+    echo "  test compiling, ${BGC_MODEL}..."
+    echo "##############################"    
 
     cp -p ../*.h . &> /dev/null
     cp -p ../cppdefs_${BGC_MODEL}.opt ./cppdefs.opt
@@ -30,7 +32,9 @@ for BGC_MODEL in {"MARBL","BEC"};do
 
 
     # 2) Run test case:
-    echo "  test running..."
+    echo "##############################"    
+    echo "  test running, ${BGC_MODEL} ..."
+    echo "##############################"    
     if [ "$1" = "expanse" ]
     then
 	srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
