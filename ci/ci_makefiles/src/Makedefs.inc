@@ -45,8 +45,8 @@ else ifeq ($(COMPILER),intel)
         CFT = mpiifx
 	expected_fc=ifx
 else ifeq ($(COMPILER),ifort)
-        LDR = mpiifort
-        CFT = mpiifort
+        LDR = mpifort
+        CFT = mpifort
 	expected_fc=ifort
 endif
 
@@ -111,25 +111,25 @@ endif
 ifeq ($(USEMARBL),true)
     ifeq ($(COMPILER),gnu)
         MARBL_INC = -I$(MARBL_ROOT)/include/gnu-mpi
-        MARBL_LIB = -lmarbl-gnu-mpi -L$(MARBL_ROOT)/lib
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-gnu-mpi 
     else ifeq ($(COMPILER),intel)
         MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
-        MARBL_LIB = -lmarbl-intel-mpi -L$(MARBL_ROOT)/lib
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi
     else ifeq ($(COMPILER),ifort)
         MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
-        MARBL_LIB = -lmarbl-intel-mpi -L$(MARBL_ROOT)/lib
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi 
     endif
 endif
 
 # COMPILER SETTINGS:
 # OpenMP flags:
-ifeq ($(COMPILER),intel)
-	OMP_FLAG = -qopenmp
-else ifeq ($(COMPILER),ifort)
-	OMP_FLAG = -qopenmp
-else ifeq ($(COMPILER),gnu)
-	OMP_FLAG = -cpp -fopenmp
-endif
+# ifeq ($(COMPILER),intel)
+# 	OMP_FLAG = -qopenmp
+# else ifeq ($(COMPILER),ifort)
+# 	OMP_FLAG = -fpp -qopenmp
+# else ifeq ($(COMPILER),gnu)
+# 	OMP_FLAG = -cpp -fopenmp
+# endif
 
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
@@ -144,9 +144,11 @@ endif
 
 # Fortran compiler options:
 CFTFLAGS += $(OMP_FLAG) $(LARGE_MEM_FLAG)
+CFT += $(CFTFLAGS)
 
 # Fortran loader options:
 LDFLAGS = $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+LDR += $(LDFLAGS)
 
 # Fortran compiler options/flags:
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
@@ -178,9 +180,13 @@ ifeq ($(COMPILER),gnu)
 endif
 
 # Options to link to libraries & modules (NetCDF, etc):
-        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
+        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB)
 ifeq ($(USEMARBL),true)
-	LCDF += $(MARBL_LIB) $(MARBL_INC)
+	LCDF += $(MARBL_LIB)
+endif
+	LCDF +=$(NETCDFF_INC) $(NETCDFC_INC)
+ifeq ($(USEMARBL),true)
+	LCDF += $(MARBL_INC)
 endif
 
 
