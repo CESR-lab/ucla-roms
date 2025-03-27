@@ -26,7 +26,7 @@ for BGC_MODEL in {"MARBL","BEC"};do
     cp -p $ROMS_ROOT/Examples/Makefile .
     cp -p $ROMS_ROOT/Examples/code_check/test_roms.py .
     make compile_clean &> /dev/null
-    make > compile_${BGC_MODEL}.log 
+    make 2>&1 | tee -a compile_${BGC_MODEL}.log 
 
 
     # 2) Run test case:
