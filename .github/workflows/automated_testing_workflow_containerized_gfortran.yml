@@ -1,4 +1,4 @@
-name: Automated Testing (ifx)
+name: Automated Testing (gfortran, containerized)
 
 on:
   push:
