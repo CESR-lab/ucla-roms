@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/dafyddstephenson/roms_ifx_build:1.0
+      image: ghcr.io/dafyddstephenson/roms_gfortran_build_env:1.0
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -33,9 +33,9 @@ jobs:
         #Copy GNU-compatible makefiles
         rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
         cd Work/
-        make nhmg COMPILER=intel
+        make nhmg COMPILER=gnu
         cd ${ROMS_ROOT}/Tools-Roms/
-        make COMPILER=intel
+        make COMPILER=gnu
         
       shell: bash      
     - name: Get input data
@@ -49,13 +49,13 @@ jobs:
       run: |
         source $GITHUB_ENV
         cd ${ROMS_ROOT}/Examples/code_check/
-        sed -i -e "s/make /make COMPILER=intel /g" do_test_roms.sh
-        sed -i -e "s/make /make COMPILER=intel /g" ../bgc_real/code_check/do_test_roms.sh        
+        sed -i -e "s/make /make COMPILER=gnu /g" do_test_roms.sh
+        sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh        
         ./do_test_all.sh github
     - name: Print Runtimes
       shell: bash
       run: |
-        grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"        
+        grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
     - name: Print logs (in case of failure)
       if: failure()
       shell: bash
