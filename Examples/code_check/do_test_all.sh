@@ -26,7 +26,7 @@ do
   
   retval=$?                                      # $? gives exit code from ./do_test_roms.sh
   error_cnt=$(( $error_cnt + $retval ))          
-  if [ $retval -neq 0 ]
+  if [ $retval -ne 0 ]
   then
     echo -e "  test failed! \n"
 #   break
