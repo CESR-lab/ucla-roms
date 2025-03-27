@@ -24,8 +24,24 @@ fi
 for example in "${Examples[@]}"; do
     echo "###############################################################################################"
     echo "$example"
-    echo "###############################################################################################"    
-
-    cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
+    echo "###############################################################################################"
+    if [ -e "${ROMS_ROOT}/Examples/${example}/code_check/test_old.log" ];then
+	cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
+    fi
+    if $example == "bgc_real"
+       echo "------------------------------"
+       echo "MARBL"
+       echo "------------------------------"
+       if [ -e "${ROMS_ROOT}/Examples/${example}/code_check/test_old_MARBL.log" ] ;then
+	   cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old_MARBL.log
+       fi
+       echo "------------------------------"
+       echo "BEC"
+       echo "------------------------------"
+       if [ -e "${ROMS_ROOT}/Examples/${example}/code_check/test_old_BEC.log" ];then
+	   cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old_BEC.log
+       fi
+    fi
+       
     #ls ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
 done
