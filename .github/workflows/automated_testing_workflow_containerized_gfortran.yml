@@ -30,6 +30,7 @@ jobs:
     - name: Compile Fortran Code
       run: |
         source $GITHUB_ENV
+        conda activate roms-ci
         #Copy GNU-compatible makefiles
         rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
         cd Work/
@@ -48,6 +49,7 @@ jobs:
       shell: bash
       run: |
         source $GITHUB_ENV
+        conda activate roms-ci
         cd ${ROMS_ROOT}/Examples/code_check/
         sed -i -e "s/make /make COMPILER=gnu /g" do_test_roms.sh
         sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh        
@@ -61,6 +63,7 @@ jobs:
       shell: bash
       run: |
         source $GITHUB_ENV
+        conda activate roms-ci
         echo "--------------------------------------------------------------------------------"
         echo "This step will print the test_old.log files from each case run by"
         echo "Examples/code_check/do_test_all.sh"
