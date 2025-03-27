@@ -55,7 +55,15 @@ jobs:
     - name: Print Runtimes
       shell: bash
       run: |
-        grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"        
+        grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
+    - name: Print compilation logs (in case of failure)
+      if: failure()
+      shell: bash
+      run: |
+        source $HOME/.bashrc
+        source $GITHUB_ENV
+        cd ci
+        ./print_compilation_logs.sh                
     - name: Print logs (in case of failure)
       if: failure()
       shell: bash

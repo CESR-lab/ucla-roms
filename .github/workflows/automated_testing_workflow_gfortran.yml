@@ -98,7 +98,15 @@ jobs:
         conda activate roms-ci            	      
         cd ${ROMS_ROOT}/Examples/code_check/
         ./do_test_all.sh github
-    - name: Print logs (in case of failure)
+    - name: Print compilation logs (in case of failure)
+      if: failure()
+      shell: bash
+      run: |
+        source $HOME/.bashrc
+        source $GITHUB_ENV
+        cd ci
+        ./print_compilation_logs.sh        
+    - name: Print run logs (in case of failure)
       if: failure()
       shell: bash
       run: |
