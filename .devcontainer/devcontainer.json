@@ -1,1 +1,5 @@
-devcontainer.json_gfortran
+{
+    "name": "GNU",
+    "image": "ghcr.io/dafyddstephenson/roms_gfortran_build:1.0",
+    "postCreateCommand": "echo 'GNU Fortran environment ready'"
+}
