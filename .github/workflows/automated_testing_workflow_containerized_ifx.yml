@@ -26,7 +26,12 @@ jobs:
         echo "PATH="./:$PATH"" >> $GITHUB_ENV
         echo "PATH=$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
       shell: bash
-      
+    - name: Print system info
+      run: |
+        echo "==== CPU Info ===="
+        lscpu
+        echo "==== Memory Info ===="
+        free -h
     - name: Compile Fortran Code
       run: |
         source $GITHUB_ENV

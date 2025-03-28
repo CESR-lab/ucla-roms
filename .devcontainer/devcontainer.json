@@ -1,5 +1,1 @@
-{
-    "name": "IFX",
-    "image": "ghcr.io/dafyddstephenson/roms_ifx_build:1.0",
-    "postCreateCommand": "echo 'Intel Fortran environment ready'"
-}
+devcontainer.json_gfortran

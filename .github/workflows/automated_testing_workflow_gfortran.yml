@@ -26,14 +26,19 @@ jobs:
     - name: Initialize Conda
       run: conda init bash
       shell: bash
-
     - name: Activate Conda Environment
       run: |
         source $HOME/.bashrc
         conda activate roms-ci
         echo "The Conda prefix is ${CONDA_PREFIX}"
-        conda info	
-
+        conda info
+    - name: Print system info
+      run: |
+        echo "==== CPU Info ===="
+        lscpu
+        echo "==== Memory Info ===="
+        free -h
+        
     - name: Set Environment Variables
       run: |
         source $HOME/.bashrc
