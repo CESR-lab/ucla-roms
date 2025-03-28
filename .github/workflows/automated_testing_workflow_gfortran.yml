@@ -34,11 +34,7 @@ jobs:
         conda info
     - name: Print system info
       run: |
-        echo "==== CPU Info ===="
         lscpu
-        echo "==== Memory Info ===="
-        free -h
-        
     - name: Set Environment Variables
       run: |
         source $HOME/.bashrc
