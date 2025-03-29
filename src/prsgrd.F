@@ -260,6 +260,8 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
           do j=jstr,jend               ! differences near physical
             FC(imin-1,j)=FC(imin,j)    ! boundaries to compensate.
             rx(imin-1,j)=rx(imin,j)    ! for reduced loop ranges.
+            FC(1,j)=FC(2,j)
+            rx(1,j)=rx(2,j)
           enddo
         endif
         if (EASTERN_EDGE) then

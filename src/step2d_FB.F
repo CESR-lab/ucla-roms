@@ -413,11 +413,11 @@ c<<     &     +cff*iA_u(i,j)
           ubar(i,j,knew)=DUnew/( Dnew(i,j)+Dnew(i-1,j)
      &                                                   )
 
-          DU_avg1(i,j)=DU_avg1(i,j)+cff1*dn_u(i,j)*( DUnew
-# ifdef WEC
-     &                 +(Dnew(i,j)+Dnew(i-1,j))*ust2d(i,j)
-# endif
-     &                                                   )
+!          DU_avg1(i,j)=DU_avg1(i,j)+cff1*dn_u(i,j)*( DUnew
+!# ifdef WEC
+!     &                 +(Dnew(i,j)+Dnew(i-1,j))*ust2d(i,j)
+!# endif
+!     &                                                   )
 
         enddo
       enddo
@@ -477,16 +477,19 @@ c<<     &     +cff*iA_v(i,j)
 # endif
       cff1=0.5*weight(1,iif)
 # ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
+!      if (WESTERN_EDGE) then
+      do i=istrR,iendR
         do j=jstrR,jendR
-          DU_avg1(istrU-1,j)=DU_avg1(istrU-1,j)+cff1*(Dnew(istrU-1,j)
+          DU_avg1(i,j)=DU_avg1(i,j)+cff1*(Dnew(i,j)
 
-     &         +Dnew(istrU-2,j))*( ubar(istrU-1,j,knew)
+     &         +Dnew(i-1,j))*( ubar(i,j,knew)
 # ifdef WEC
-     &                                             +ust2d(istrU-1,j)
+     &                                             +ust2d(i,j)
 # endif
-     &                                             )*dn_u(istrU-1,j)  
+     &                                             )*dn_u(i,j)  
         enddo
+      enddo
+      if (WESTERN_EDGE) then
         do j=jstrV,jend
           DV_avg1(istr-1,j)=DV_avg1(istr-1,j) +cff1*(Dnew(istr-1,j)
 
@@ -498,14 +501,14 @@ c<<     &     +cff*iA_v(i,j)
         enddo
       endif
       if (EASTERN_EDGE) then
-        do j=jstrR,jendR
-          DU_avg1(iend+1,j)=DU_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-     &            +Dnew(iend,j) )*( ubar(iend+1,j,knew)
-# ifdef WEC 
-     &                                              +ust2d(iend+1,j)
-# endif
-     &                                              )*dn_u(iend+1,j)
-        enddo
+!        do j=jstrR,jendR
+!          DU_avg1(iend+1,j)=DU_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
+!     &            +Dnew(iend,j) )*( ubar(iend+1,j,knew)
+!# ifdef WEC 
+!     &                                              +ust2d(iend+1,j)
+!# endif
+!     &                                              )*dn_u(iend+1,j)
+!        enddo
         do j=jstrV,jend
           DV_avg1(iend+1,j)=DV_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
      &        +Dnew(iend+1,j-1) )*( vbar(iend+1,j,knew)
@@ -518,14 +521,14 @@ c<<     &     +cff*iA_v(i,j)
 # endif
 # ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
-        do i=istrU,iend
-          DU_avg1(i,jstr-1)=DU_avg1(i,jstr-1) +cff1*( Dnew(i,jstr-1)
-     &        +Dnew(i-1,jstr-1) )*( ubar(i,jstr-1,knew)
-# ifdef WEC
-     &                                              +ust2d(i,jstr-1)
-# endif
-     &                                              )*dn_u(i,jstr-1)
-        enddo
+!        do i=istrU,iend
+!          DU_avg1(i,jstr-1)=DU_avg1(i,jstr-1) +cff1*( Dnew(i,jstr-1)
+!     &        +Dnew(i-1,jstr-1) )*( ubar(i,jstr-1,knew)
+!# ifdef WEC
+!     &                                              +ust2d(i,jstr-1)
+!# endif
+!     &                                              )*dn_u(i,jstr-1)
+!        enddo
         do i=istrR,iendR
           DV_avg1(i,jstrV-1)=DV_avg1(i,jstrV-1)+cff1*(Dnew(i,jstrV-1)
      &         +Dnew(i,jstrV-2))*( vbar(i,jstrV-1,knew)
@@ -536,14 +539,14 @@ c<<     &     +cff*iA_v(i,j)
         enddo
       endif
       if (NORTHERN_EDGE) then
-        do i=istrU,iend
-          DU_avg1(i,jend+1)=DU_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-     &        +Dnew(i-1,jend+1) )*( ubar(i,jend+1,knew)
-# ifdef WEC 
-     &                                               +ust2d(i,jend+1)
-# endif
-     &                                               )*dn_u(i,jend+1)
-        enddo
+!        do i=istrU,iend
+!          DU_avg1(i,jend+1)=DU_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
+!     &        +Dnew(i-1,jend+1) )*( ubar(i,jend+1,knew)
+!# ifdef WEC 
+!     &                                               +ust2d(i,jend+1)
+!# endif
+!     &                                               )*dn_u(i,jend+1)
+!        enddo
         do i=istrR,iendR
           DV_avg1(i,jend+1)=DV_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
      &            +Dnew(i,jend) )*( vbar(i,jend+1,knew)

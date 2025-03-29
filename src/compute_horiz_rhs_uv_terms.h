@@ -93,8 +93,8 @@
 # ifndef EW_PERIODIC
         if (WESTERN_EDGE) then
           do j=jstr,jend
-            uxx(istrU-1,j) =uxx(istrU,j)
-            Huxx(istrU-1,j)=Huxx(istrU,j)
+            uxx(1,j) =uxx(2,j)
+            Huxx(1,j)=Huxx(2,j)
           enddo
         endif
         if (EASTERN_EDGE) then

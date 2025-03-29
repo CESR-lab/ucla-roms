@@ -45,7 +45,7 @@
 #ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
         istrR=istr-1
-        istrU=istr+1
+        istrU=1
       else
         istrR=istr
         istrU=istr
