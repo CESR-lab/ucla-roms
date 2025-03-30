@@ -60,7 +60,7 @@
 #ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
         jstrR=jstr-1
-        jstrV=jstr+1
+        jstrV=1
       else
         jstrR=jstr
         jstrV=jstr

@@ -150,8 +150,8 @@
 # ifndef NS_PERIODIC
         if (SOUTHERN_EDGE) then
           do i=istr,iend
-            vee(i,jstrV-1)=vee(i,jstrV)
-            Hvee(i,jstrV-1)=Hvee(i,jstrV)
+            vee(i,1)=vee(i,2)
+            Hvee(i,1)=Hvee(i,2)
           enddo
         endif
         if (NORTHERN_EDGE) then

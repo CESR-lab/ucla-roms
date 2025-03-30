@@ -258,10 +258,8 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
 # ifndef EW_PERIODIC
         if (WESTERN_EDGE) then         ! Extrapolate elementary
           do j=jstr,jend               ! differences near physical
-            FC(imin-1,j)=FC(imin,j)    ! boundaries to compensate.
-            rx(imin-1,j)=rx(imin,j)    ! for reduced loop ranges.
-            FC(1,j)=FC(2,j)
-            rx(1,j)=rx(2,j)
+            FC(1,j)=FC(2,j)            ! boundaries to compensate.
+            rx(1,j)=rx(2,j)            ! for reduced loop ranges.
           enddo
         endif
         if (EASTERN_EDGE) then
@@ -373,8 +371,8 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
 # ifndef NS_PERIODIC
         if (SOUTHERN_EDGE) then
           do i=istr,iend
-            FC(i,jmin-1)=FC(i,jmin)
-            rx(i,jmin-1)=rx(i,jmin)
+            FC(i,1)=FC(i,2)
+            rx(i,1)=rx(i,2)
           enddo
         endif
         if (NORTHERN_EDGE) then
