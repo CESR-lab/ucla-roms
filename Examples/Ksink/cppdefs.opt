@@ -5,62 +5,59 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
+#define ksink
 
-# define MAIN_SWITCH /* 
+#if defined ksink
 
-/* -------------------------------------------------------  */
+# define DIAGNOSTICS
+# define TIDES
+# define RIVERS
+# define BULK_FRC
+# define SPONGE_TUNE
+# define EXTRACT_DATA
+c--# define SFLX_CORR
 
-# if defined MAIN_SWITCH
+# define SOLVE3D
+# define UV_COR
+# define UV_ADV
+# define ADV_ISONEUTRAL
 
-c--#  define NHMG
-#  define EXTRACT_DATA
-#  define DIAGNOSTICS
-c--#  define HIS_DOUBLE
-#   define SPONGE_TUNE
+# define CURVGRID
+# define SPHERICAL
+# define MASKING
 
-#  undef GRID_ANG_DEG
-#  define SOLVE3D
-#  define UV_COR
-#  define UV_ADV
+# define SALINITY
+# define NONLIN_EOS
+# define SPLIT_EOS
 
-#  define CURVGRID
-#  define SPHERICAL
-#  define MASKING
+C--# define AVERAGES
+# define EXACT_RESTART
+# define IMPLICIT_BOTTOM_DRAG
 
-#  define SALINITY
-#  define NONLIN_EOS
-#  define SPLIT_EOS
+# define UV_VIS2
+# define TS_DIF2
 
-#  define AVERAGES
-c# define EXACT_RESTART
-#  define NEW_S_COORD
-c# define IMPLICIT_BOTTOM_DRAG
+# define LMD_MIXING
+# define LMD_KPP
+# define LMD_BKPP
+# define LMD_RIMIX
+# define LMD_NONLOCAL
+C--# define LMD_CONVEC
 
-#  define UV_VIS2
-#  define MIX_GP_UV
-#  define TS_DIF2
-#  define MIX_GP_TS
+# define OBC_WEST
+# define OBC_EAST
+# define OBC_NORTH
+# define OBC_SOUTH
 
-#  define LMD_MIXING
-#  define LMD_KPP
-#  define LMD_BKPP
-#  define LMD_CONVEC
-#  define LMD_NONLOCAL
+# define OBC_M2FLATHER
+# define OBC_M3ORLANSKI
+# define OBC_TORLANSKI
 
-#  define OBC_WEST
-#  define OBC_EAST
-#  define OBC_NORTH
-#  define OBC_SOUTH
-
-#  define OBC_M2FLATHER
-#  define OBC_M3ORLANSKI
-#  define OBC_TORLANSKI
-
-#  define Z_FRC_BRY
-#  define M2_FRC_BRY
-#  define M3_FRC_BRY
-#  define T_FRC_BRY
-#  define SPONGE
+# define Z_FRC_BRY
+# define M2_FRC_BRY
+# define M3_FRC_BRY
+# define T_FRC_BRY
+# define SPONGE
 
 c--#  define WEC
 
@@ -86,7 +83,6 @@ c--# endif
 /* DevinD - end DH's non-analytical WEC */
 
 #endif
-
 
 #include "set_global_definitions.h"
 

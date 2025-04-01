@@ -133,17 +133,17 @@
             ubar_west(jstrR:jendR) = 0
             vbar_west(jstr :jendR) = 0
 #   endif
-            i=istr-1
+            i=0
             do j=jstrR,jendR
               zeta_west(j) =zeta_west(j)
      &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
             enddo
-            i=istrU-1
+            i=1
             do j=jstrR,jendR
               ubar_west(j)=ubar_west(j)
      &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
             enddo
-            i=istr-1
+            i=0
             do j=jstr,jendR
               vbar_west(j)=vbar_west(j)
      &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
@@ -181,17 +181,17 @@
             ubar_south(istr :iendR) = 0
             vbar_south(istrR:iendR) = 0
 #   endif
-            j=jstr-1
+            j=0
             do i=istrR,iendR
               zeta_south(i)=zeta_south(i)
      &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
             enddo
-            j=jstr-1
+            j=0
             do i=istr,iendR
               ubar_south(i)=ubar_south(i)
      &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
             enddo
-            j=jstrV-1
+            j=1
             do i=istrR,iendR
               vbar_south(i)=vbar_south(i)
      &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
