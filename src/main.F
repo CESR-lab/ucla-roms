@@ -350,7 +350,7 @@ CR      write(*,*)  ' -2' MYID
       tdays = (time-0.0*dt)*sec2day
       call set_bry_all
 
-      if (bry_tides.or.pot_tides) call set_tides(0)
+      if (bry_tides.or.pot_tides) call set_tides
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
       call rho_eos(nrhs)
@@ -398,7 +398,7 @@ CR      write(*,*)  ' -2' MYID
 
       tdays = (time+0.5*dt)*sec2day
       call set_bry_all  ! get for time n+1
-      if (bry_tides.or.pot_tides) call set_tides(0)
+      if (bry_tides.or.pot_tides) call set_tides
 
       ! All of this seems to happen with Hz's from time n
       ! Corrector step

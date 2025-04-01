@@ -167,7 +167,7 @@
 ! Set boundary conditions for the free-surface, after which copy
 ! the newly computed free-surface zeta_new into shared array.
 
-      call zetabc_tile (istr,iend,jstr,jend, zeta_new)
+      call zetabc (zeta_new)
 
       do j=jstrR,jendR
         do i=istrR,iendR
