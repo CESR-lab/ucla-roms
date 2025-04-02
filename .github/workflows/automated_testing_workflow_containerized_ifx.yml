@@ -12,6 +12,7 @@ jobs:
     container:
       image: ghcr.io/dafyddstephenson/roms_ifx_build_env:1.0
     strategy:
+      fail-fast: false      
       matrix:
         example: ["Rivers_real", "Rivers_ana", "Pipes_real", "Pipes_ana", "Flux_frc", "Filament", "bgc_real"]
     name: Test ${{ matrix.example }}
