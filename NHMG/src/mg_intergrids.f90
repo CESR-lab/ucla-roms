@@ -71,7 +71,8 @@ contains
 !  be aware that the 2D mg is not tested yet
 
     real(kind=rp),dimension(:,:,:),pointer,intent(in) :: x
-    real(kind=rp),dimension(:,:,:),pointer,intent(out) :: y
+!   real(kind=rp),dimension(:,:,:),pointer,intent(out) :: y
+    real(kind=rp),dimension(:,:,:),pointer :: y
     integer(kind=ip), intent(in) :: nx, ny
 
     integer(kind=ip) :: i,j,i2,j2
@@ -107,7 +108,8 @@ contains
     !
     ! Fine2coarse 'x' from fine level l1 to 'y' on coarse level l2=l1+1
     real(kind=rp),dimension(:,:,:),pointer,intent(in) :: x
-    real(kind=rp),dimension(:,:,:),pointer,intent(out) :: y
+!   real(kind=rp),dimension(:,:,:),pointer,intent(out) :: y
+    real(kind=rp),dimension(:,:,:),pointer :: y
     integer(kind=ip), intent(in) :: nx, ny, nz
     ! local
     integer(kind=ip) :: i,j,k,i2,j2,k2
@@ -178,7 +180,8 @@ contains
   !------------------------------------------------------------
   subroutine coarse2fine_2D_linear(xf,xc,nx,ny)
 
-    real(kind=rp),dimension(:,:,:),pointer,intent(out) :: xf
+!   real(kind=rp),dimension(:,:,:),pointer,intent(out) :: xf
+    real(kind=rp),dimension(:,:,:),pointer :: xf
     real(kind=rp),dimension(:,:,:),pointer,intent(in)  :: xc
     integer(kind=ip),intent(in) :: nx, ny
 
@@ -219,7 +222,8 @@ contains
   !------------------------------------------------------------
   subroutine coarse2fine_3D_linear(xf,xc,nx,ny,nz)
 
-    real(kind=rp),dimension(:,:,:),pointer,intent(out) :: xf
+!   real(kind=rp),dimension(:,:,:),pointer,intent(out) :: xf
+    real(kind=rp),dimension(:,:,:) :: xf
     real(kind=rp),dimension(:,:,:),pointer,intent(in)  :: xc
     integer(kind=ip),intent(in) :: nx, ny, nz
 
