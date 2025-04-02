@@ -1,0 +1,10 @@
+{
+    "name": "Ubuntu 22.04",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+    "features": {},
+    "customizations": {
+	"vscode": {
+	    "extensions": []
+	}
+    }
+}
