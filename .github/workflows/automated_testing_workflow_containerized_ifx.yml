@@ -7,11 +7,14 @@ on:
     branches: ['*']
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/dafyddstephenson/roms_ifx_build_env:1.0
-    name: Build and Prepare
+    strategy:
+      matrix:
+        example: ["Rivers_real", "Rivers_ana", "Pipes_real", "Pipes_ana", "Flux_frc", "Filament", "bgc_real"]
+    name: Test ${{ matrix.example }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,14 +33,21 @@ jobs:
         shell: bash
         run: |
           source $GITHUB_ENV
-          # Copy GNU-compatible makefiles
           rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
           cd Work/
           make nhmg COMPILER=intel
           cd ${ROMS_ROOT}/Tools-Roms/
           make COMPILER=intel
 
-      - name: Get input data
+      - name: Cache input_data
+        id: cache-input
+        uses: actions/cache@v4
+        with:
+          path: Examples/input_data
+          key: roms-input-${{ hashFiles('ci/get_input_files.sh') }}
+
+      - name: Get input data (if not cached)
+        if: steps.cache-input.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
@@ -45,41 +55,7 @@ jobs:
           ./get_input_files.sh
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
-
-
-      - name: Upload compiled build and inputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: compiled-roms
-          path: |
-            ./Work/
-            ./Tools-Roms/
-            ./Examples/input_data/
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/dafyddstephenson/roms_ifx_build_env:1.0
-    strategy:
-      matrix:
-        example: ["Rivers_real", "Rivers_ana", "Pipes_real", "Pipes_ana", "Flux_frc", "Filament", "bgc_real"]
-    name: Test ${{ matrix.example }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Download build and inputs
-        uses: actions/download-artifact@v4
-        with:
-          name: compiled-roms
-
-      - name: Set Environment Variables
-        shell: bash
-        run: |
-          ROMS_ROOT=$(pwd)
-          echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
-          echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+          
 
       - name: Run test for ${{ matrix.example }}
         shell: bash
@@ -91,7 +67,7 @@ jobs:
       - name: Print Runtimes
         shell: bash
         run: |
-          grep -ria "MPI_run_time" test_old.log || echo "No runtime info found"
+          grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
 
       - name: Print logs (if test fails)
         if: failure()
