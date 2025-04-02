@@ -2,81 +2,102 @@ name: Automated Testing (ifx, containerized)
 
 on:
   push:
-    branches:
-      - '*'
+    branches: ['*']
   pull_request:
-    branches:
-      - '*'
+    branches: ['*']
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/dafyddstephenson/roms_ifx_build_env:1.0
+    name: Build and Prepare
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-    - name: Set Environment Variables
-      run: |
-        ROMS_ROOT=$(pwd)
-        PATH="./:$PATH"
-        PATH=$PATH:$ROMS_ROOT/Tools-Roms
-        # Now copy these variables to GITHUB_ENV to source in future steps
-        echo "ROMS_ROOT=$(pwd)" >> $GITHUB_ENV
-        echo "PATH="./:$PATH"" >> $GITHUB_ENV
-        echo "PATH=$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
-      shell: bash
-    - name: Print system info
-      run: |
-        lscpu
-    - name: Compile Fortran Code
-      run: |
-        source $GITHUB_ENV
-        #Copy GNU-compatible makefiles
-        rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
-        cd Work/
-        make nhmg COMPILER=intel
-        cd ${ROMS_ROOT}/Tools-Roms/
-        make COMPILER=intel
-        
-      shell: bash      
-    - name: Get input data
-      run: |
-        cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
-        cd ${ROMS_ROOT}/Examples/input_data/
-        ./get_input_files.sh
-      shell: bash
-    - name: Run Tests
-      shell: bash
-      run: |
-        source $GITHUB_ENV
-        cd ${ROMS_ROOT}/Examples/code_check/
-        sed -i -e "s/make /make COMPILER=intel /g" do_test_roms.sh
-        sed -i -e "s/make /make COMPILER=intel /g" ../bgc_real/code_check/do_test_roms.sh        
-        ./do_test_all.sh github
-    - name: Print Runtimes
-      shell: bash
-      run: |
-        grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
-    - name: Print compilation logs (in case of failure)
-      if: failure()
-      shell: bash
-      run: |
-        source $HOME/.bashrc
-        source $GITHUB_ENV
-        cd ci
-        ./print_compilation_logs.sh                
-    - name: Print logs (in case of failure)
-      if: failure()
-      shell: bash
-      run: |
-        source $GITHUB_ENV
-        echo "--------------------------------------------------------------------------------"
-        echo "This step will print the test_old.log files from each case run by"
-        echo "Examples/code_check/do_test_all.sh"
-        echo "If the tests failed but you are confident in your changes,"
-        echo "overwrite the benchmark.result_github files for each case with"
-        echo "the contents of these log files"
-        echo "--------------------------------------------------------------------------------"
-        cd ci
-        ./print_output_logs.sh
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        shell: bash
+        run: |
+          ROMS_ROOT=$(pwd)
+          echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
+          echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+
+      - name: Print system info
+        run: lscpu
+
+      - name: Compile Fortran Code
+        shell: bash
+        run: |
+          source $GITHUB_ENV
+          # Copy GNU-compatible makefiles
+          rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
+          cd Work/
+          make nhmg COMPILER=intel
+          cd ${ROMS_ROOT}/Tools-Roms/
+          make COMPILER=intel
+
+      - name: Get input data
+        shell: bash
+        run: |
+          cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
+          cd ${ROMS_ROOT}/Examples/input_data/
+          ./get_input_files.sh
+          sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
+          sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
+
+
+      - name: Upload compiled build and inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-roms
+          path: |
+            ./Work/
+            ./Tools-Roms/
+            ./Examples/input_data/
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/dafyddstephenson/roms_ifx_build_env:1.0
+    strategy:
+      matrix:
+        example: ["Rivers_real", "Rivers_ana", "Pipes_real", "Pipes_ana", "Flux_frc", "Filament", "bgc_real"]
+    name: Test ${{ matrix.example }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download build and inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-roms
+
+      - name: Set Environment Variables
+        shell: bash
+        run: |
+          ROMS_ROOT=$(pwd)
+          echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
+          echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+
+      - name: Run test for ${{ matrix.example }}
+        shell: bash
+        run: |
+          source $GITHUB_ENV
+          cd $ROMS_ROOT/Examples/${{ matrix.example }}/code_check/
+          ./do_test_roms.sh github
+
+      - name: Print Runtimes
+        shell: bash
+        run: |
+          grep -ria "MPI_run_time" test_old.log || echo "No runtime info found"
+
+      - name: Print logs (if test fails)
+        if: failure()
+        shell: bash
+        run: |
+          echo "--------------------------------------------------------------------------------"
+          echo "Test failed for ${{ matrix.example }} — dumping log"
+          echo "--------------------------------------------------------------------------------"
+          cat test_old.log || echo "No log found"
