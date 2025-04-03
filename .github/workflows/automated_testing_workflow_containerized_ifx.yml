@@ -14,8 +14,18 @@ jobs:
     strategy:
       fail-fast: false      
       matrix:
-        example: ["Rivers_real", "Rivers_ana", "Pipes_real", "Pipes_ana", "Flux_frc", "Filament", "bgc_real"]
-    name: Test ${{ matrix.example }}
+        include:
+          - example: "Rivers_real"
+          - example: "Rivers_ana"
+          - example: "Pipes_real"
+          - example: "Pipes_ana"
+          - example: "Flux_frc"
+          - example: "Filament"
+          - example: "bgc_real"
+            bgc_mode: "BEC"
+          - example: "bgc_real"
+            bgc_mode: "MARBL"
+    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -65,8 +75,12 @@ jobs:
         run: |
           source $GITHUB_ENV
           cd $ROMS_ROOT/Examples/${{ matrix.example }}/code_check/
+          if [[ "${{ matrix.example }}" == "bgc_real" ]]; then
+          ./do_test_roms.sh github_ifx ${{ matrix.bgc_mode }}
+          else
           ./do_test_roms.sh github_ifx
-
+          fi
+          
       - name: Print Runtimes
         shell: bash
         run: |

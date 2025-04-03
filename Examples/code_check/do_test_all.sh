@@ -25,11 +25,21 @@ do
     echo "##############################"
     echo "${Examples[i]}:"
     echo "##############################"
+
+    case ${Examples[i]} in
+	bgc_real)
+	    ./do_test_roms.sh $arg BEC
+	    retval=$?
+	    error_cnt=$(( $error_cnt + $retval ))
+	    ./do_test_roms.sh $arg MARBL
+	    ;;
+	*)
+	    ./do_test_roms.sh $arg
+	    ;;
+    esac
+    retval=$?                                      # $? gives exit code from ./do_test_roms.sh
+    error_cnt=$(( $error_cnt + $retval ))
     
-    ./do_test_roms.sh $arg
-  
-  retval=$?                                      # $? gives exit code from ./do_test_roms.sh
-  error_cnt=$(( $error_cnt + $retval ))          
   if [ $retval -ne 0 ]
   then
     echo -e "  test failed! \n"
