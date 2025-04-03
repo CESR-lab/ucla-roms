@@ -28,7 +28,7 @@ for example in "${Examples[@]}"; do
     if [ -e "${ROMS_ROOT}/Examples/${example}/code_check/compile.log" ];then
 	cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
     fi
-    if $example == "bgc_real";then
+    if [ $example == "bgc_real" ];then
 	
        echo "------------------------------"
        echo "MARBL"
