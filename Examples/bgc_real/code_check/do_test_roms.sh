@@ -23,7 +23,7 @@ BGC_MODEL=$2
 
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
 echo "$bm_file"
-retval=0
+
 echo "Running bgc_real test with ${BGC_MODEL}"
 # 1) Compile test case:
 echo "##############################"    
@@ -64,12 +64,8 @@ rm roms      &> /dev/null
     
 # 2) Python - confirm values:
 python3 test_roms.py $bm_file
-retval_tmp=$?
-echo "exit code for ${BGC_MODEL} test: $retval_tmp"
-if [ $retval_tmp -gt $retval ];then
-    echo "Test failed for ${BGC_MODEL}"
-    retval=retval_tmp
-fi
+retval=$?
+echo "exit code for ${BGC_MODEL} test: $retval"
 
 if [ $retval -gt 0 ];then
     echo "========DUMPING Make.Depend==========="
@@ -83,7 +79,6 @@ mv test.log test_old.log
 cp test_old.log test_old_${BGC_MODEL}.log
 
 rm test_roms.py
-done
 exit $retval                                     # pass success value onto do_test_all script
 
 # Notes:
