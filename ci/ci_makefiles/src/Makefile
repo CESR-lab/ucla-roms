@@ -78,8 +78,9 @@ tools: $(TOOLS)
 cppcheck: cppcheck$(OBJ_ext)
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck$(OBJ_ext)
 
-srcscheck: srcscheck$(OBJ_ext): strings$(OBJ_ext)
+srcscheck: srcscheck$(OBJ_ext):
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck$(OBJ_ext)
+srcscheck$(OBJ_ext): strings$(OBJ_ext)
 
 checkkwds: checkkwds$(OBJ_ext)
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds$(OBJ_ext)

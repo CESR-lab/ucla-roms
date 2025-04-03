@@ -59,10 +59,10 @@ jobs:
       if: failure()
       shell: bash
       run: |
-        source $HOME/.bashrc
-        source $GITHUB_ENV
+        micromamba run -n roms-ci bash -c '        
         cd ci
-        ./print_compilation_logs.sh                
+        ./print_compilation_logs.sh
+        '
     - name: Print logs (in case of failure)
       if: failure()
       shell: bash
