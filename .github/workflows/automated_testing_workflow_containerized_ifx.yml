@@ -63,7 +63,7 @@ jobs:
         run: |
           source $GITHUB_ENV
           cd $ROMS_ROOT/Examples/${{ matrix.example }}/code_check/
-          ./do_test_roms.sh github
+          ./do_test_roms.sh github_ifx
 
       - name: Print Runtimes
         shell: bash
