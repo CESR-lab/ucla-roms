@@ -1,12 +1,16 @@
 #!/bin/bash
 
 # need this here as well, in case example run on its own:
-if [ "$1" != "expanse" -a "$1" != "maya" -a "$1" != "laptop" -a "$1" != "github" ]
-then
-echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
-exit
-fi
-
+case "$1" in
+    expanse|maya|laptop|github|github_ifx)
+	echo "running test for $1"
+	;;
+    *)
+	echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
+	exit
+	;;
+esac
+    
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
 echo "$bm_file"
 
@@ -37,6 +41,7 @@ else
     mpirun -n 6 ./roms benchmark.in 2>&1 | tee -a test.log
 fi
 
+
 rm *.h       &> /dev/null
 rm *.nc      &> /dev/null
 rm diag.opt  &> /dev/null
@@ -50,6 +55,12 @@ cp $ROMS_ROOT/Examples/code_check/test_roms.py .
 python3 test_roms.py $bm_file
 retval=$?
 #echo $retval
+
+if [ $retval -gt 0 ];then
+    echo "========DUMPING Make.Depend==========="
+    cat Compile/Make.depend
+    echo "======================================"
+fi
 
 rm test_roms.py
 

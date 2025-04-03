@@ -70,11 +70,17 @@ jobs:
         run: |
           grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
 
-      - name: Print logs (if test fails)
+      - name: Print logs (in case of failure)
         if: failure()
         shell: bash
         run: |
           echo "--------------------------------------------------------------------------------"
-          echo "Test failed for ${{ matrix.example }} — dumping log"
+          echo "This step will print the test_old.log files from each case run by"
+          echo "Examples/code_check/do_test_all.sh"
+          echo "If the tests failed but you are confident in your changes,"
+          echo "overwrite the benchmark.result_github_ifx files for each case with"
+          echo "the contents of these log files"
           echo "--------------------------------------------------------------------------------"
-          cat test_old.log || echo "No log found"
+          cd ci
+          ./print_output_logs.sh
+

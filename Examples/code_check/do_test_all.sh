@@ -7,11 +7,15 @@ declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_r
 
 arg=$1
 
-if [ "$arg" != "expanse" -a "$arg" != "maya" -a "$arg" != "laptop" -a "$arg" != "github" ]
-then
-echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
-exit
-fi
+case "$arg" in
+    expanse|maya|laptop|github|github_ifx)
+	echo "running test for $arg"
+	;;
+    *)
+	echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
+	exit
+	;;
+esac
                                                  
 error_cnt=0                                      # count of exit codes from each test
 total=${#Examples[*]}                            # total number of examples

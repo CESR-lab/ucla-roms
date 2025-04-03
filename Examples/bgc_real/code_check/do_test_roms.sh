@@ -1,16 +1,20 @@
 #!/bin/bash
 
 # need this here as well, in case example run on its own:
-if [ "$1" != "expanse" -a "$1" != "maya" -a "$1" != "laptop" -a "$1" != "github" ]
-then
-echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
-exit
-fi
+case "$1" in
+    expanse|maya|laptop|github|github_ifx)
+	echo "running test for $1"
+	;;
+    *)
+	echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
+	exit
+	;;
+esac
 
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
 echo "$bm_file"
 retval=0
-for BGC_MODEL in {"MARBL","BEC"};do
+for BGC_MODEL in {"BEC","MARBL"};do
     echo "Running bgc_real test with ${BGC_MODEL}"
     # 1) Compile test case:
     echo "##############################"    
@@ -62,6 +66,12 @@ for BGC_MODEL in {"MARBL","BEC"};do
 	retval=retval_tmp
     fi
 
+    if [ $retval -gt 0 ];then
+	echo "========DUMPING Make.Depend==========="
+	cat Compile/Make.depend
+	echo "======================================"
+    fi
+    
     # 3) Rename results logs so they can't be mistakenly read by the 
     #    python script even if new simulation doesn't run
     mv test.log test_old.log
