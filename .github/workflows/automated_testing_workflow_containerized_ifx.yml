@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/dafyddstephenson/roms_ifx_build_env:1.0
+      image: ghcr.io/dafyddstephenson/roms_ifx_build_env:latest
     strategy:
       fail-fast: false      
       matrix:
