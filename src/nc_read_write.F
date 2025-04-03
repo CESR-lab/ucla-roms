@@ -158,7 +158,7 @@
       integer,dimension(3) :: count
       
       dims = shape(dat)
-            
+      
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
