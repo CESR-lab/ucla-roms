@@ -80,11 +80,14 @@ jobs:
           else
           ./do_test_roms.sh github_ifx
           fi
-          
-      - name: Print Runtimes
+      - name: Print compilation logs (in case of failure)
+        if: failure()
         shell: bash
         run: |
-          grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
+          source $HOME/.bashrc
+          source $GITHUB_ENV
+          cd ci
+          ./print_compilation_logs.sh        
 
       - name: Print logs (in case of failure)
         if: failure()

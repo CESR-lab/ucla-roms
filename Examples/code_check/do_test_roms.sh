@@ -25,8 +25,8 @@ cp -p ../param.opt .
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
 cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
-make compile_clean #&> /dev/null
-make #> compile.log 
+make compile_clean &> /dev/null
+make > compile.log 
 
 
 # 2) Run test case:
@@ -38,7 +38,7 @@ if [ "$1" = "expanse" ]
 then
     srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
 else
-    mpirun -n 6 ./roms benchmark.in 2>&1 | tee -a test.log
+    mpirun -n 6 ./roms benchmark.in > test.log #2>&1 | tee -a test.log
 fi
 
 
@@ -54,13 +54,6 @@ rm roms      &> /dev/null
 cp $ROMS_ROOT/Examples/code_check/test_roms.py . 
 python3 test_roms.py $bm_file
 retval=$?
-#echo $retval
-
-if [ $retval -gt 0 ];then
-    echo "========DUMPING Make.Depend==========="
-    cat Compile/Make.depend
-    echo "======================================"
-fi
 
 rm test_roms.py
 

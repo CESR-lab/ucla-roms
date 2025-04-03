@@ -55,10 +55,6 @@ jobs:
         sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh        
         ./do_test_all.sh github
         '
-    - name: Print Runtimes
-      shell: bash
-      run: |
-        grep -ria "MPI_run_time" ${ROMS_ROOT}/Examples --include "test_old.log"
     - name: Print compilation logs (in case of failure)
       if: failure()
       shell: bash

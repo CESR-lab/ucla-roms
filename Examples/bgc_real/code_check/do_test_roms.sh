@@ -41,7 +41,7 @@ cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
 cp -p $ROMS_ROOT/Examples/code_check/test_roms.py .
 make compile_clean &> /dev/null
-make 2>&1 | tee -a compile_${BGC_MODEL}.log 
+make > compile_${BGC_MODEL}.log # 2>&1 | tee -a compile_${BGC_MODEL}.log 
 
 # 2) Run test case:
 echo "##############################"    
@@ -51,7 +51,7 @@ if [ "$1" = "expanse" ]
 then
     srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
 else
-    mpirun -n 6 ./roms benchmark.in 2>&1 | tee -a test.log
+    mpirun -n 6 ./roms benchmark.in > test.log #2>&1 | tee -a test.log
 fi
 
 rm *.h       &> /dev/null
@@ -67,12 +67,6 @@ python3 test_roms.py $bm_file
 retval=$?
 echo "exit code for ${BGC_MODEL} test: $retval"
 
-if [ $retval -gt 0 ];then
-    echo "========DUMPING Make.Depend==========="
-    cat Compile/Make.depend
-    echo "======================================"
-fi
-    
 # 3) Rename results logs so they can't be mistakenly read by the 
 #    python script even if new simulation doesn't run
 mv test.log test_old.log
