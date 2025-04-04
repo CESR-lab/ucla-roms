@@ -18,11 +18,12 @@ endif
 # Debugging options for the compiler
 #FFLAGS = -g -check -warn
 #FFLAGS = -g -traceback -check all -CA -CB -CS
+#FFLAGS = -g -traceback -CA -CB -CS
 
 # Include paths:
 CPATH = ${NETCDF_ROOT}/include
 
-#FFLAGS = -O3
+FFLAGS = -O3
 
 ## Rule to make *.o out of *.f90
 .f90.o:
