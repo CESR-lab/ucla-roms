@@ -67,7 +67,7 @@
 # else
       logical,parameter :: obc_south=.false.
 # endif
-# if def ANA_BRY
+# ifdef ANA_BRY
       logical,parameter :: ana_bry=.true.
 # else
       logical,parameter :: ana_bry=.false.

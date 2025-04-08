@@ -95,7 +95,7 @@
       integer :: tile, itide, i, j
       real :: omT
 
-      if (.not.allocated(ftide)) then 
+      if (.not.allocated(ftide)) then
         call init_tides
       endif
 
@@ -104,11 +104,11 @@
         omT = ftide(itide)*(time+0.5*dt)
 
         if (bry_tides) then
-          if (inode==0.and.obc_west) then                  ! Western BC 
+          if (inode==0.and.obc_west) then                  ! Western BC
             if (ana_bry) then
               zeta_west(j0:j1) = 0
               ubar_west(j0:j1) = 0
-              vbar_west(j0:j1) = 0
+              vbar_west(1:j1)  = 0
             endif
             do j=j0,j1
               zeta_west(j)=zeta_west(j)
@@ -118,18 +118,18 @@
               ubar_west(j)=ubar_west(j)
      &        + utide_r(1,j,itide)*cos(omT)- utide_i(1,j,itide)*sin(omT)
             enddo
-            do j=j0,j1
+            do j=1,j1
               vbar_west(j)=vbar_west(j)
      &        + vtide_r(0,j,itide)*cos(omT)- vtide_i(0,j,itide)*sin(omT)
             enddo
           endif
 
-          if (inode==np_eta-1.and.obc_east) then           ! Eastern BC    
+          if (inode==np_xi-1.and.obc_east) then           ! Eastern BC
             if (ana_bry) then
               zeta_east(j0:j1) = 0
               ubar_east(j0:j1) = 0
-              vbar_east(j0:j1) = 0
-            endif            
+              vbar_east(1:j1)  = 0
+            endif
             do j=j0,j1
               zeta_east(j) =zeta_east(j)
      &        + ztide_r(nx+1,j,itide)*cos(omT)- ztide_i(nx+1,j,itide)*sin(omT)
@@ -138,7 +138,7 @@
               ubar_east(j)=ubar_east(j)
      &        + utide_r(nx+1,j,itide)*cos(omT)- utide_i(nx+1,j,itide)*sin(omT)
             enddo
-            do j=j0,j1
+            do j=1,j1
               vbar_east(j)=vbar_east(j)
      &        + vtide_r(nx+1,j,itide)*cos(omT)- vtide_i(nx+1,j,itide)*sin(omT)
             enddo
@@ -147,14 +147,14 @@
           if (jnode==0.and.obc_south) then                 ! Southern BC
             if (ana_bry) then
               zeta_south(i0:i1) = 0
-              ubar_south(i0:i1) = 0
+              ubar_south(1:i1)  = 0
               vbar_south(i0:i1) = 0
             endif
             do i=i0,i1
               zeta_south(i)=zeta_south(i)
      &        + ztide_r(i,0,itide)*cos(omT)- ztide_i(i,0,itide)*sin(omT)
             enddo
-            do i=i0,i1
+            do i=1,i1
               ubar_south(i)=ubar_south(i)
      &        + utide_r(i,0,itide)*cos(omT)- utide_i(i,0,itide)*sin(omT)
             enddo
@@ -174,7 +174,7 @@
               zeta_north(i)=zeta_north(i)
      &        + ztide_r(i,ny+1,itide)*cos(omT)- ztide_i(i,ny+1,itide)*sin(omT)
             enddo
-            do i=i0,i1
+            do i=1,i1
               ubar_north(i)=ubar_north(i)
      &        + utide_r(i,ny+1,itide)*cos(omT)- utide_i(i,ny+1,itide)*sin(omT)
             enddo
