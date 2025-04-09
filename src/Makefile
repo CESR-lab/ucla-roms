@@ -31,6 +31,8 @@
 	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
 	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+.f90.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
      CPP = cpp -traditional
 

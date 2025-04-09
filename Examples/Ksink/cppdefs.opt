@@ -12,16 +12,18 @@
 
 # if defined MAIN_SWITCH
 
-c--#  define NHMG
+#  define BULK_FRC
+
 #  define EXTRACT_DATA
 #  define DIAGNOSTICS
 c--#  define HIS_DOUBLE
 #   define SPONGE_TUNE
 
-#  undef GRID_ANG_DEG
 #  define SOLVE3D
 #  define UV_COR
 #  define UV_ADV
+
+c--#  define NHMG
 
 #  define CURVGRID
 #  define SPHERICAL
@@ -62,24 +64,6 @@ c# define IMPLICIT_BOTTOM_DRAG
 #  define T_FRC_BRY
 #  define SPONGE
 
-c--#  define WEC
-
-#  ifdef WEC
-#    define BRK0
-#    define SURFACE_BREAK
-#    undef SPEC_DD
-#    undef LOG_BDRAG
-#    undef WKB_WWAVE
-#    undef BBL
-#    define WAVE_OFFLINE
-#    define WAVE_FRICTION
-#    define BBL_S95
-#    define SUP_OFF
-#    define WAVE_DIFF_FROM_LM
-#  else
-#   define LOG_BDRAG
-#  endif
-#  define BULK_FRC
 
 c--# endif
 
