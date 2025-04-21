@@ -67,6 +67,11 @@
 # else
       logical,parameter :: obc_south=.false.
 # endif
+# ifdef OBC_M2FLATHER
+      logical,parameter :: obc_m2flather=.true.
+# else
+      logical,parameter :: obc_m2flather=.false.
+# endif
 # ifdef ANA_BRY
       logical,parameter :: ana_bry=.true.
 # else

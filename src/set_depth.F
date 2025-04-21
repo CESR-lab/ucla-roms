@@ -11,10 +11,10 @@
       integer tile
 
 # include "compute_tile_bounds.h"
-      call set_depth_tile(istr,iend,jstr,jend)
+      call set_depth_tile
       end
 
-      subroutine set_depth_tile(istr,iend,jstr,jend)
+      subroutine set_depth_tile
 
 ! Compute evolving z-coordinates "z_r" and "z_w" and the heights
 ! of vertical grid boxes "Hz" from fast-time-averaged free surface,
@@ -29,20 +29,19 @@
       use scoord
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
+      integer i,j,k
       real cff_r,cff1_r, cff_w,cff1_w, ds
 
-# include "compute_auxiliary_bounds.h"
                                        ! During initialization or
       if (iic == 0) then               ! restart compute barotropic
-        do j=jstrR,jendR               ! fluxes and place them into
-          do i=istrR,iendR             ! arrays for fast-time-averaged
+        do j=j0,j1                     ! fluxes and place them into
+          do i=i0,i1                   ! arrays for fast-time-averaged
             hinv(i,j)=1./(h(i,j)+hc)   ! fluxes. Later during the first
           enddo                        ! procedure uses these DU_avg1,
         enddo                          ! DV_avg1 as input to compute
                                        ! ubar,vbar as it does so during
-        do j=jstrR,jendR               ! all subsequent steps.
-          do i=istr,iendR
+        do j=j0,j1                     ! all subsequent steps.
+          do i=1,i1
             DU_avg1(i,j)=0.5*( h(i-1,j)+h(i,j)+zeta(i,j,1)
      &            +zeta(i-1,j,1) )*dn_u(i,j)*( ubar(i,j,1)
 # ifdef WEC
@@ -52,8 +51,8 @@
           enddo
         enddo
 
-        do j=jstr,jendR
-          do i=istrR,iendR
+        do j=1,j1
+          do i=i0,i1
             DV_avg1(i,j)=0.5*( h(i,j)+h(i,j-1)+zeta(i,j,1)
      &            +zeta(i,j-1,1) )*dm_v(i,j)*( vbar(i,j,1)
 # ifdef WEC
@@ -63,16 +62,11 @@
           enddo
         enddo
 
-# ifdef OBC_CHECK
-        print *, 'set_depth_tile:'
-        print *, 'DU_avg1(istr,10)=',DU_avg1(istr,10)
-# endif
-
       endif  ! first time
 
       ds=1.D0/dble(N)
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=j0,j1
+        do i=i0,i1
           z_w(i,j,0)=-h(i,j)
         enddo
 
@@ -84,7 +78,7 @@
           cff1_w=Cs_w(k)
           cff1_r=Cs_r(k)
 
-          do i=istrR,iendR
+          do i=i0,i1
 
             z_w(i,j,k)=zeta(i,j,knew) +(zeta(i,j,knew)+h(i,j))
      &                        *(cff_w+cff1_w*h(i,j))*hinv(i,j)
@@ -106,8 +100,8 @@
 #if defined NHMG || defined NONTRAD_COR
 !     Compute slopes
       do k = 1, N
-         do j = 0,Mm+1
-            do i = 0,Lm+1
+         do j = 0,ny+1
+            do i = 0,nx+1
                dzdxi (i,j,k)=0.5*(z_r(i+1,j,k)-z_r(i-1,j,k))*pn(i,j)
                dzdeta(i,j,k)=0.5*(z_r(i,j+1,k)-z_r(i,j-1,k))*pm(i,j)
             enddo
@@ -117,7 +111,7 @@
 # ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
          do k = 1, N
-            do j = 0,Mm+1
+            do j = 0,ny+1
                dzdxi (0,j,k) = 0.
                dzdxi (1,j,k) = 0.
                dzdeta(0,j,k) = 0.
@@ -128,10 +122,10 @@
       if (EASTERN_EDGE) then
          do k = 1, N
             do j = 0,Mm+1
-               dzdxi (Lm  ,j,k) = 0.
-               dzdxi (Lm+1,j,k) = 0.
-               dzdeta(Lm  ,j,k) = 0.
-               dzdeta(Lm+1,j,k) = 0.
+               dzdxi (nx  ,j,k) = 0.
+               dzdxi (nx+1,j,k) = 0.
+               dzdeta(nx  ,j,k) = 0.
+               dzdeta(nx+1,j,k) = 0.
             enddo
          enddo
        endif
@@ -150,10 +144,10 @@
       if (NORTHERN_EDGE) then
          do k = 1, N
             do i = 0,Lm+1
-               dzdxi (i,Mm  ,k) = 0.
-               dzdxi (i,Mm+1,k) = 0.
-               dzdeta(i,Mm  ,k) = 0.
-               dzdeta(i,Mm+1,k) = 0.
+               dzdxi (i,ny  ,k) = 0.
+               dzdxi (i,ny+1,k) = 0.
+               dzdeta(i,ny  ,k) = 0.
+               dzdeta(i,ny+1,k) = 0.
             enddo
          enddo
        endif
