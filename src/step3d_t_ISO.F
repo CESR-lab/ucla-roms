@@ -829,9 +829,11 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             icdr = cdr_icdr(cidx)
             i = cdr_iloc(cidx)
             j = cdr_jloc(cidx)
-            t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+            do k=1,nz
+              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &           +dt*pm(i,j)*pn(i,j)*
      &            cdr_prf(cidx,k)*cdr_flx(icdr,itrc)
+            enddo
           enddo
         endif
 
