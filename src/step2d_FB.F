@@ -136,6 +136,16 @@
 #define rzeta  UFe
 #define rzeta2  VFe
 #define rzetaSA VFx
+      if (cdr_source.and.cdr_volume) then
+        do cidx=1,cdr_nprf
+          icdr = cdr_icdr(cidx)
+          i = cdr_iloc(cidx)
+          j = cdr_jloc(cidx)
+ 
+          zeta(i,j,kstp)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
+     &               *cdr_vol(icdr)*sum(cdr_prf(cidx,:))
+        enddo
+      endif
       do j=jstrV-1,jend !! why are these from ...-1?
         do i=istrU-1,iend
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
@@ -146,14 +156,6 @@
             endif
           endif
 
-          if (cdr_source.and.cdr_volume) then
-            if (cdr_idx(i,j) > 0.) then
-              cidx = cdr_idx(i,j)
-              icdr = cdr_icdr(cidx)
-              zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)
-     &               *cdr_vol(icdr)*sum(cdr_prf(cidx,:))
-            endif
-          endif
 
 #ifdef MASKING
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed

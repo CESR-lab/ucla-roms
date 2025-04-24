@@ -6,7 +6,6 @@
       ! for cdrs:  Qbar(nx,y), the total cdr flux for that grid point ! (m3/s) function of time
       !            Qshape(ncdrs), the vertical shape of the cdr distribution ! fractions sum(Qshape) = 1
 
-      ! move from cdr_idx(i,j) to 1,cdr_locs
       ! done: add MPI_reduce_scatter
       ! force all tracers or single tracer forcing
 
@@ -29,10 +28,13 @@
 #include "cdr_frc.opt"
 
       ! Variables used in the evolution equations
-      integer,public  :: icdr,cidx !   index for looping through cdr locations
-      integer,public,allocatable,dimension(:,:) :: cdr_idx      ! cdr indices at grid points
+      integer,public                            :: cdr_nprf     ! number of locations with a release
       real   ,public,allocatable,dimension(:,:) :: cdr_prf      ! cdr fractions
+      integer,public,allocatable,dimension(:)   :: cdr_iloc     ! cdr local i location
+      integer,public,allocatable,dimension(:)   :: cdr_jloc     ! cdr local j location
       real   ,public,allocatable,dimension(:)   :: cdr_icdr     ! cdr release number
+
+      integer,public  :: icdr,cidx !   index for looping through cdr locations
 
       real,public,dimension(ncdr)           :: cdr_vol      ! cdr volume
       real,public,dimension(ncdr,nt)        :: cdr_flx      ! cdr tracer flux
@@ -111,7 +113,9 @@
       integer :: ierr,ncid,i,j,k
       real :: norm,vint,arg
       real :: local_int,global_int
-      real,dimension(:,:),allocatable :: dist,frac
+      real,dimension(:,:)  ,allocatable :: dist
+      real,dimension(:,:,:),allocatable :: frac
+      real :: eps = 1e-6
 
       call init_arrays_cdr
 
@@ -132,39 +136,50 @@
         call ncread(ncid,cdr_scl_vrt,cdr_vsc)
         ierr = nf90_close(ncid)
 
+        ! For point source releases, set hor and vrt scale to zero
+        eps = 1e-6
+        cdr_hsc = max(cdr_hsc,eps)
+        cdr_vsc = max(cdr_vsc,eps)
+
         ! find fractional cdr fluxes for this subdomain
         allocate(dist(GLOBAL_2D_ARRAY))
-        allocate(frac(GLOBAL_2D_ARRAY))
-
+        allocate(frac(GLOBAL_2D_ARRAY,ncdr))
+        
+        cidx = 0
         do icdr= 1,ncdr
+
           norm = pi*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
           call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
-          frac = exp(-(dist/cdr_hsc(icdr))**2)
-          frac = frac/pm/pn/norm
-!         print *,mynode,minval(dist(1:nx,1:ny)),norm
-!         print *,mynode,cdr_lon(icdr),cdr_lat(icdr)
-!         print *,mynode,minval(abs(lonr(1:nx,1:ny)-cdr_lon(icdr))),
-!    %            minval(abs(latr(1:nx,1:ny)-cdr_lat(icdr)))
-
+          frac(:,:,icdr) = exp(-(dist/cdr_hsc(icdr))**2)
+          frac(:,:,icdr) = frac(:,:,icdr)/pm/pn/norm
           do j=1,ny
             do i=1,nx
-              if (frac(i,j) >1e-3) then
+              if (frac(i,j,icdr) >1e-3.and.rmask(i,j)>0) then
                 cidx = cidx+1
-                cdr_idx(i,j) = cidx
               endif
             enddo
           enddo
         enddo
-        ! This presents a problem if 2 releases overlap in space
+        cdr_nprf = cidx
+        
+        ! allocate total number of profiles for all releases
+        allocate(cdr_prf(cdr_nprf,nz))
+        allocate(cdr_icdr(cdr_nprf))
+        allocate(cdr_iloc(cdr_nprf))
+        allocate(cdr_jloc(cdr_nprf))
 
-        ! instead of cdr_idx, just loop from 1,cidx in every sub-domain
-        allocate(cdr_prf(cidx,nz))
-        allocate(cdr_icdr(cidx))
+        ! populate the profiles with fractional releases
+        cidx = 0
         do icdr= 1,ncdr
           do j=1,ny
             do i=1,nx
-               if (cdr_idx(i,j)>0) then
-                 cidx = cdr_idx(i,j)
+              if (frac(i,j,icdr) >1e-3.and.rmask(i,j)>0) then
+                 cidx = cidx+1
+
+                 ! Location and specific release for this profile
+                 cdr_icdr(cidx) = icdr  
+                 cdr_iloc(cidx) = i
+                 cdr_jloc(cidx) = j
 
                  ! figure vertical profile, depths are relative to surface
                  ! prf = exp( - ((z-d)/vsc )^2)
@@ -174,8 +189,7 @@
                    cdr_prf(cidx,k) = exp(-arg)*Hz(i,j,k)
                    vint = vint + cdr_prf(cidx,k)
                  enddo
-                 cdr_prf(cidx,:) = frac(i,j)*cdr_prf(cidx,:)/vint
-                 cdr_icdr(cidx) = icdr  ! identifies a specific release for this profile
+                 cdr_prf(cidx,:) = frac(i,j,icdr)*cdr_prf(cidx,:)/vint
                endif
             enddo
           enddo
@@ -206,7 +220,6 @@
       implicit none
 
       character(len=30) :: string  
-      allocate( cdr_idx(GLOBAL_2D_ARRAY) );      cdr_idx=0.
 
       if (.not. cdr_analytical) then
         if (cdr_volume) then
@@ -251,9 +264,9 @@
 
       allocate(dLon2(GLOBAL_2D_ARRAY))
       allocate(dLat2(GLOBAL_2D_ARRAY))
-      dLon2 = 0.5*(lon-lon0)
-      dLat2 = 0.5*(lat-lat0)
-      dist = sin(dLat2)**2 + cos(lat)*cos(lat0) * sin(dLon2)**2
+      dLon2 = 0.5*(lon-lon0)*deg2rad
+      dLat2 = 0.5*(lat-lat0)*deg2rad
+      dist = sin(dLat2)**2 + cos(lat*deg2rad)*cos(lat0*deg2rad)*sin(dLon2)**2
       dist=2*atan2(sqrt(dist),sqrt(1-dist));
 
       dist = radius*dist;    !Haversine distance
