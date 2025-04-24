@@ -136,6 +136,8 @@
         call ncread(ncid,cdr_scl_vrt,cdr_vsc)
         ierr = nf90_close(ncid)
 
+        cdr_hsc = 10
+
         ! For point source releases, set hor and vrt scale to zero
         eps = 1e-6
         cdr_hsc = max(cdr_hsc,eps)
@@ -148,12 +150,14 @@
         cidx = 0
         do icdr= 1,ncdr
 
-          norm = pi*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
+!         close  = max(3*cdr_hsc(icdr),dx)
+          norm = pi*cdr_hsc(icdr)*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
           call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
           frac(:,:,icdr) = exp(-(dist/cdr_hsc(icdr))**2)
           frac(:,:,icdr) = frac(:,:,icdr)/pm/pn/norm
           do j=1,ny
             do i=1,nx
+!             if (dist(i,j)<close.and.rmask(i,j)>0) then
               if (frac(i,j,icdr) >1e-3.and.rmask(i,j)>0) then
                 cidx = cidx+1
               endif
@@ -200,9 +204,11 @@
      %           mpi_double_precision,mpi_sum,0,ocean_grid_comm,ierr)
           call MPI_Bcast(global_int,1,mpi_double_precision,0,ocean_grid_comm,ierr)
 
-!         print *,mynode, local_int,global_int
+          print *,mynode, local_int,global_int,cdr_nloc
           cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:) =
      %        cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:)/global_int
+          local_int = sum(cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:))
+          print *,mynode, local_int,sum(cdr_prf(1,:))
           
         enddo
 
