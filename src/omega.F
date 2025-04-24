@@ -61,14 +61,25 @@
 c**     dtau=(1.-1./6.)*dt
       endif
 
+      Wi(1:nx,1:ny,0)=0.
+
+      if (cdr_source.and.cdr_volume) then
+        do cidx=1,cdr_nprf
+          icdr = cdr_icdr(cidx)
+          i = cdr_iloc(cidx)
+          j = cdr_iloc(cidx)
+          do k=1,nz
+            Wi(i,j,k)=Wi(i,j,k-1)
+     &         + cdr_vol(icdr)*cdr_prf(cidx,k)
+          enddo
+        enddo
+      endif
+
       do j=jstr,jend
 
       !!! For NHMG pipes, the flux needs to be out of the bottom.
       !!! Additionally, modify, where needed, the We to Wi split 
       !!! for pipe sources
-        do i=istr,iend
-          Wi(i,j,0)=0.
-        enddo
         do k=1,N,+1        !--> recursive
           do i=istr,iend
             Wi(i,j,k)=Wi(i,j,k-1) -FlxU(i+1,j,k) +FlxU(i,j,k)
@@ -80,16 +91,6 @@ c**     dtau=(1.-1./6.)*dt
      &                   + pipe_flx(i,j)*pipe_prf(pidx,k)
               endif
             endif
-
-            if (cdr_source.and.cdr_volume) then
-              if (cdr_idx(i,j)>0) then  
-                cidx = cdr_idx(i,j)
-                icdr = cdr_icdr(cidx)
-                Wi(i,j,k)=Wi(i,j,k)
-     &                   + cdr_vol(icdr)*cdr_prf(cidx,k)
-              endif
-            endif
-
 
             CX(i,k)=max(FlxU(i+1,j,k),0.)-min(FlxU(i,j,k),0.)
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)
