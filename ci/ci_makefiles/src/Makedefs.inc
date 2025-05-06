@@ -1,10 +1,8 @@
 ##############################
 #        USER OPTIONS        #
 
-#intel (gnu) uses ifort (gfortran) compiler flags
+# Compiler flags depend on compiler: intel -> ifx, gnu -> gfortran, ifort -> ifort (deprecated)
 COMPILER ?=gnu
-#MPI distribution. generic -> mpifort, intel -> mpiifort
-MPI_DIST ?=generic
 # Configure FFLAGS by setting BUILD_MODE to "debug","strict","vtune",or "grof"
 BUILD_MODE ?=regular
 # Keep pre-processed source code or not:
@@ -26,6 +24,10 @@ OBJ_ext = .o
 ##############################
 #    PRELIMINARY CHECKS      #
 
+ifeq ($(COMPILER),ifort)
+    $(warning WARNING: COMPILER=ifort is deprecated as intel have discontinued support in favor of ifx. To compile with ifx, use COMPILER=intel)
+endif
+
 # If we're using MacOS, typically the filesystem is case-insensitive
 # so we should use an alternative extension for preprocessed files:
 OS := $(shell uname -s)
@@ -33,27 +35,25 @@ ifeq ($(OS),Darwin)
     PPF77_ext = .fpp
 endif
 
-# Check MPI distribution:
-ifeq ($(MPI_DIST),generic)
+## Set linker and compiler based on compiler/MPI wrapper
+ifeq ($(COMPILER),gnu)
 	LDR =  mpifort
         CFT =  mpifort
-else ifeq ($(MPI_DIST),intel)
-        LDR = mpiifort
-        CFT = mpiifort
+	expected_fc=GNU Fortran # For checking correct compiler is wrapped
+else ifeq ($(COMPILER),intel)
+        LDR = mpiifx
+        CFT = mpiifx
+	expected_fc=ifx
+else ifeq ($(COMPILER),ifort)
+        LDR = mpifort
+        CFT = mpifort
+	expected_fc=ifort
 endif
 
-# Check whether mpifort is wrapping the anticipated compiler
-ifeq ($(CFT),mpifort)
-   ifeq ($(COMPILER),gnu)
-      expected_fc=GNU Fortran
-   else ifeq ($(COMPILER),intel)
-      expected_fc=ifort
-   endif
-   MPIVER := $(shell mpifort --version | head -n1)
-   ifeq ($(findstring $(expected_fc),$(MPIVER)),)
-	_ := $(error "COMPILER is set to $(COMPILER) but mpifort wraps $(MPIVER). Call make with the COMPILER= argument (either intel or gnu)")
-   endif
-endif 
+MPIVER := $(shell $(CFT) --version | head -n1)
+ifeq ($(findstring $(expected_fc),$(MPIVER)),)
+      _ := $(error "COMPILER is set to $(COMPILER) but $(CFT) wraps $(MPIVER). Call make with the COMPILER= argument (either intel or gnu)")
+endif
 
 # For BUILD_MODE = "vtune" or "grof" always keep source code:
 ifeq ($(BUILD_MODE),vtune)
@@ -66,6 +66,129 @@ endif
 ifeq ($(wildcard cppdefs.opt),cppdefs.opt)
 	USEMARBL := $(shell grep -q '^[^!]*\#[[:space:]]*define[[:space:]]*MARBL' cppdefs.opt && echo true || echo false )
 endif
+
+# C-preprocessor (cpp):
+#	cpp from Intel compiler package "fpp" treats __IFC as
+#	a pre-defined, so there is no need to include it into CPPFLAGS, but
+#	the standard CPP is not aware of this.
+
+#   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
+ifeq ($(COMPILER),intel)
+	CPP = fpp
+	CPPFLAGS = -D__IFC -free -I${MPIHOME}/include -I${NETCDFHOME}/include
+else
+        CPP = /usr/bin/cpp
+	CPPFLAGS =  -traditional -D__IFC -I${MPIHOME}/include -I${NETCDFHOME}/include
+endif
+
+ifeq ($(USEMARBL),true)
+	CPPFLAGS+= -I${MARBL_ROOT}/include
+endif
+
+#   Since we no longer keep preprocessed files after compilation, if you want to still
+#   see them to confirm what code is left after c-pre-processing (CPPFLAGS
+#   removed) or for runtime debug line numbers, use the following
+#   in the Compile/ folder (change 'main' for your file of interest):
+#   /lib/cpp -traditional -D__IFC -P main$(UPF77_ext) | ./mpc > main.$(PPF77_ext)
+
+
+# Path names (non-hydrostatic & NetCDF libraries):
+	NHMG_ROOT = $(ROMS_ROOT)/NHMG
+	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
+	NHMG_INC  = $(NHMG_ROOT)/include
+
+	VPATH = ${MPIHOME}/include:${NHMG_INC}
+	CPATH = ${MPIHOME}/include:${NHMG_INC}
+
+# Get netCDF paths and options ('shell' is needed to use command)
+# Some systems return empty strings for `n{c,f}-config --args`, so using $(or as a fallback
+	NETCDFF_INC=$(or $(shell nf-config --fflags), -I$(NETCDFHOME)include)
+	NETCDFF_LIB=$(or $(shell nf-config --flibs) , -L$(NETCDFHOME)lib -lnetcdf -lnetcdff)
+	NETCDFC_INC=$(or $(shell nc-config --cflags), -I$(NETCDFHOME)include)
+	NETCDFC_LIB=$(or $(shell nc-config --libs),   -L$(NETCDFHOME)lib -lnetcdf)
+
+# MARBL
+ifeq ($(USEMARBL),true)
+    ifeq ($(COMPILER),gnu)
+        MARBL_INC = -I$(MARBL_ROOT)/include/gnu-mpi
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-gnu-mpi 
+    else ifeq ($(COMPILER),intel)
+        MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi
+    else ifeq ($(COMPILER),ifort)
+        MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi 
+    endif
+endif
+
+# COMPILER SETTINGS:
+# OpenMP flags:
+# ifeq ($(COMPILER),intel)
+# 	OMP_FLAG = -qopenmp
+# else ifeq ($(COMPILER),ifort)
+# 	OMP_FLAG = -fpp -qopenmp
+# else ifeq ($(COMPILER),gnu)
+# 	OMP_FLAG = -cpp -fopenmp
+# endif
+
+# Large memory runs (e.g. for bgc):
+#	LARGE_MEM_FLAG = -mcmodel=medium
+#	LARGE_MEM_FLAG = -mcmodel=large
+
+# Fortran compiler flags:
+ifeq ($(COMPILER),intel)
+	CFTFLAGS= -pc64 -auto
+else ifeq ($(COMPILER),ifort)
+	CFTFLAGS= -pc64 -auto
+endif
+
+# Fortran compiler options:
+CFTFLAGS += $(OMP_FLAG) $(LARGE_MEM_FLAG)
+CFT += $(CFTFLAGS)
+
+# Fortran loader options:
+LDFLAGS = $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+LDR += $(LDFLAGS)
+
+# Fortran compiler options/flags:
+# - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
+ifeq ($(COMPILER),ifort)
+    FFLAGS = -O3 -ip  # Apply -ip only for ifort
+else ifeq ($(COMPILER),intel)
+    FFLAGS = -O3      # Do NOT use -ip for ifx
+endif
+
+# Apply debug, strict, vtune, or grof settings for Intel compilers
+ifeq ($(COMPILER),$(filter ifort intel, $(COMPILER)))
+    ifeq ($(BUILD_MODE),debug)
+        FFLAGS = -g -traceback -check all
+    else ifeq ($(BUILD_MODE),strict)
+        FFLAGS += -fp-model strict
+    else ifeq ($(BUILD_MODE),vtune)
+        FFLAGS = -g -debug inline-debug-info -parallel-source-info=2
+    else ifeq ($(BUILD_MODE),grof)
+        FFLAGS += -pg
+    endif
+endif
+
+# GNU compiler settings
+ifeq ($(COMPILER),gnu)
+    FFLAGS = -O3 -fallow-argument-mismatch
+    ifeq ($(BUILD_MODE),debug)
+        FFLAGS = -fallow-argument-mismatch -g -fbacktrace -fcheck=all
+    endif
+endif
+
+# Options to link to libraries & modules (NetCDF, etc):
+        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB)
+ifeq ($(USEMARBL),true)
+	LCDF += $(MARBL_LIB)
+endif
+	LCDF +=$(NETCDFF_INC) $(NETCDFC_INC)
+ifeq ($(USEMARBL),true)
+	LCDF += $(MARBL_INC)
+endif
+
 
 # Compilation rules for file types:
 #   (used for every file until the final linking step)
@@ -99,103 +222,6 @@ $(PPF90_ext):
 $(OBJ_ext):
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 
-# C-preprocessor (cpp):
-#	cpp from Intel compiler package "fpp" treats __IFC as
-#	a pre-defined, so there is no need to include it into CPPFLAGS, but
-#	the standard CPP is not aware of this.
-
-#   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
-        CPP = /usr/bin/cpp
-	CPPFLAGS =  -traditional -D__IFC -I${MPIHOME}/include -I${NETCDFHOME}/include
-ifeq ($(USEMARBL),true)
-	CPPFLAGS+= -I${MARBL_ROOT}/include
-endif
-
-#   Since we no longer keep preprocessed files after compilation, if you want to still
-#   see them to confirm what code is left after c-pre-processing (CPPFLAGS
-#   removed) or for runtime debug line numbers, use the following
-#   in the Compile/ folder (change 'main' for your file of interest):
-#   /lib/cpp -traditional -D__IFC -P main$(UPF77_ext) | ./mpc > main.$(PPF77_ext)
-
-# Path names (non-hydrostatic & NetCDF libraries):
-	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
-	NHMG_INC  = $(NHMG_ROOT)/include
-
-	VPATH = ${MPIHOME}/include:${NHMG_INC}
-	CPATH = ${MPIHOME}/include:${NHMG_INC}
-
-# Get netCDF paths and options ('shell' is needed to use command)
-# Some systems return empty strings for `n{c,f}-config --args`, so using $(or as a fallback
-	NETCDFF_INC=$(or $(shell nf-config --fflags), -I$(NETCDFHOME)include)
-	NETCDFF_LIB=$(or $(shell nf-config --flibs) , -L$(NETCDFHOME)lib -lnetcdf -lnetcdff)
-	NETCDFC_INC=$(or $(shell nc-config --cflags), -I$(NETCDFHOME)include)
-	NETCDFC_LIB=$(or $(shell nc-config --libs),   -L$(NETCDFHOME)lib -lnetcdf)
-
-# MARBL
-ifeq ($(USEMARBL),true)
-   ifeq ($(COMPILER),gnu)
-        MARBL_INC = -I$(MARBL_ROOT)/include/gnu-mpi
-        MARBL_LIB = -lmarbl-gnu-mpi -L$(MARBL_ROOT)/lib
-   else ifeq ($(COMPILER),intel)
-        MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
-        MARBL_LIB = -lmarbl-intel-mpi -L$(MARBL_ROOT)/lib
-   endif
-endif
-
-# COMPILER SETTINGS:
-
-# OpenMP flags:
-ifeq ($(COMPILER),intel)
-	OMP_FLAG = -qopenmp
-else ifeq ($(COMPILER),gnu)
-	OMP_FLAG = -cpp -fopenmp
-endif
-
-# Large memory runs (e.g. for bgc):
-#	LARGE_MEM_FLAG = -mcmodel=medium
-#	LARGE_MEM_FLAG = -mcmodel=large
-
-# Fortran compiler flags:
-ifeq ($(COMPILER),intel)
-	CFTFLAGS= -pc64 -auto
-endif
-
-# Fortran compiler options:
-	CFTFLAGS += $(OMP_FLAG) $(LARGE_MEM_FLAG)
-
-# Fortran loader options:
-	LDFLAGS = $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
-
-# Fortran compiler options/flags:
-# - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-ifeq ($(COMPILER),intel)
-	FFLAGS = -O3 -ip
-    ifeq ($(BUILD_MODE),debug)
-	FFLAGS = -g -traceback -check all
-# for code_check script ensure consistency with -fp-model strict:
-    else ifeq ($(BUILD_MODE),strict)
-	FFLAGS += -fp-model strict
-# - for profiling with vtune to see source code:
-    else ifeq ($(BUILD_MODE),vtune)
-	FFLAGS = -g -debug inline-debug-info -parallel-source-info=2
-# - for profiling with grof to see source code:
-    else ifeq ($(BUILD_MODE),grof)
-	FFLAGS += -pg
-    endif
-else ifeq ($(COMPILER),gnu)
-	FFLAGS = -O3 -fallow-argument-mismatch
-    ifeq ($(BUILD_MODE),debug)
-	FFLAGS = -fallow-argument-mismatch -g -fbacktrace -fcheck=all
-    endif
-endif
-
-
-# Options to link to libraries & modules (NetCDF, etc):
-        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB) $(NETCDFF_INC) $(NETCDFC_INC)
-ifeq ($(USEMARBL),true)
-	LCDF += $(MARBL_LIB) $(MARBL_INC)
-endif
 
 # -------------------------------------------------------------
 

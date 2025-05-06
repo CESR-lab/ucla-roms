@@ -7,7 +7,7 @@
       
 
       logical,parameter :: wrt_file_his      = .true.      ! t/f to write module history file
-      real,parameter    :: output_period_his = 20*5        ! output period in seconds
+      real,parameter    :: output_period_his = 10*5        ! output period in seconds
       integer,parameter :: nrpf_his          = 10          ! total recs per file      
       logical,parameter :: wrt_Z =.true.,
      &                     wrt_Ub=.true.,

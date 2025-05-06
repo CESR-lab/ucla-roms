@@ -1,0 +1,125 @@
+ Activated CPP configuration switches:
+ <cppdefs.opt>
+       USWC_sample             SOLVE3D                 UV_ADV
+       UV_COR                  NONLIN_EOS              SPLIT_EOS
+       SALINITY                T_FRC_BRY               Z_FRC_BRY
+       M3_FRC_BRY              M2_FRC_BRY              SPONGE_WIDTH
+       UV_VIS2                 TS_DIF2                 LMD_MIXING
+       LMD_KPP                 LMD_NONLOCAL            LMD_RIMIX
+       LMD_CONVEC              LMD_BKPP                CURVGRID
+       SPHERICAL               MASKING                 MASK_LAND_DATA
+       OBC_M2FLATHER           OBC_M3ORLANSKI          OBC_TORLANSKI
+       OBC_WEST                OBC_NORTH               OBC_EAST
+       OBC_SOUTH               AVERAGES                ADV_ISONEUTRAL
+ <pre_step3d4S.F>
+       SPLINE_UV               SPLINE_TS
+ <step3d_uv1.F>
+       UPSTREAM_UV             SPLINE_UV
+ <step3d_uv2.F>
+       DELTA=0.28              EPSIL=0.36              GAMMA=8.333333333329999E-002
+       ALPHA_MAX=2.0
+ <step3d_t_ISO.F>
+       SPLINE_TS
+ <set_depth.F>
+       NOW=3.63                MID=4.47                BAK=2.05
+       (N-M+B-1)/B=0.102439024
+ <lmd_kpp.F>
+       INT_AT_RHO_POINTS       SMOOTH_HBL
+ <set_global_definitions.h>
+       CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       IMPLCT_NO_SLIP_BTTM_BC
+
+ USWC sample domain - realistic pipe test
+     ntimes =        20   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: input_data/sample_grd_riv.0.nc
+ forcing data file(s): input_data/sample_flux_frc.0.nc
+                       input_data/sample_wwv_riv.0.nc
+                       input_data/sample_bry_trace.0.nc
+ initial condition :: rec =  1  file = 'input_data/sample_init_trace.0.nc'
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+
+ WARNING: Urecognized keyword 'v_sponge' --> DISREGARDED.
+
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+ metadata about            2  tracers:
+ -----------
+ TRACER NO.:            1
+ WARNING: netCDF variable 'hbls' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+ Writing initial history file
+ Reference time used for simulation is: 2000/01/01
+       created new netcdf file pipes_his.20121209133435.0.nc
+
+ main :: initialization complete, started time-stepping.
+
+
+  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
+ 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263777680990899E-01 4.2518890443653429E-01
+         set_frc :: sustr            input time (days) =   4725.00     rec =   2
+         set_frc :: sustr            input time (days) =   4755.00     rec =   3
+         set_frc :: svstr            input time (days) =   4725.00     rec =   2
+         set_frc :: svstr            input time (days) =   4755.00     rec =   3
+         set_frc :: shflux           input time (days) =   4725.00     rec =   2
+         set_frc :: shflux           input time (days) =   4755.00     rec =   3
+         set_frc :: swrad            input time (days) =   4725.00     rec =   2
+         set_frc :: swrad            input time (days) =   4755.00     rec =   3
+         set_frc :: swflux           input time (days) =   4725.00     rec =   2
+         set_frc :: swflux           input time (days) =   4755.00     rec =   3
+
+       pipe_frc: init pipe locations
+
+         set_frc :: pipe_volume      input time (days) =   4726.50     rec =  47
+         set_frc :: pipe_volume      input time (days) =   4727.50     rec =  48
+         set_frc :: pipe_tracer      input time (days) =   4726.50     rec =  47
+         set_frc :: pipe_tracer      input time (days) =   4727.50     rec =  48
+         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_west        input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_south       input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_north       input time (days) =   4728.54     rec =   2
+ 1  4.2294588851435342E-03 2.7899206104715123E-03 3.9038524154051918E-01 3.6123655355967826E-01
+ 2  4.2248879069612362E-03 2.7865634771685088E-03 2.9986271060024566E-01 1.6427514796516524E-01
+ 3  4.2199596262736359E-03 2.7822453519915206E-03 4.2687990376310891E-01 3.1654424073376974E-01
+ 4  4.2137528356999297E-03 2.7763981363599106E-03 2.9604244642710098E-01 2.9139041676525751E-01
+ 5  4.2108512483197977E-03 2.7736806662186030E-03 3.0514124729641512E-01 3.0319056448046139E-01
+ 6  4.2089037249854492E-03 2.7717488344206685E-03 3.1896005445880854E-01 3.1829624192459788E-01
+ 7  4.2075287634108496E-03 2.7703291095827363E-03 3.3711118692003661E-01 3.3644142263093846E-01
+ 8  4.2083073293493721E-03 2.7709550107769842E-03 3.5797444350566388E-01 3.5737687118372680E-01
+ 9  4.2087277889837436E-03 2.7710706609614818E-03 3.8124779999287539E-01 3.8082433298166801E-01
+10  4.2077528092837185E-03 2.7696759667826302E-03 4.0695830381713671E-01 4.0652803420150924E-01
+11  4.2079006186886260E-03 2.7692245626687304E-03 4.3481498873315916E-01 4.3418032690560110E-01
+12  4.2077570900210456E-03 2.7682698995957116E-03 4.6855706550939241E-01 4.6855706550939241E-01
+13  4.2086910759192705E-03 2.7681307708091957E-03 5.1540815213823354E-01 5.1538462778609839E-01
+14  4.2100886438661981E-03 2.7680882963110353E-03 5.7231991797918813E-01 5.7231991797918813E-01
+15  4.2113945062113942E-03 2.7674771036607223E-03 6.3712074189368739E-01 6.3660072358181319E-01
+16  4.2127082135774091E-03 2.7662688645561638E-03 7.1475633501675495E-01 7.1456512360445146E-01
+17  4.2143938891963688E-03 2.7646317080243120E-03 8.0171519720694029E-01 8.0171519720694029E-01
+18  4.2178674065508097E-03 2.7637721284588532E-03 9.0103307476042249E-01 9.0096625262600893E-01
+19  4.2222607644275736E-03 2.7625107013054084E-03 1.0168888523937705E+00 1.0168888523937705E+00
+20  4.2265593234253858E-03 2.7594110498718131E-03 1.1432847062539244E+00 1.1432847062539244E+00
+       ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2
+ Process    0  thread  0  cpu time =       96.50 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   194.026313320486 

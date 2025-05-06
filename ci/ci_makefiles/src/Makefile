@@ -4,7 +4,7 @@
 
 include Makedefs.inc
 
-# Build ROMS source list from unprocessed F77 files (typically .F extension) 
+# Build ROMS source list from unprocessed F77 files (typically .F extension)
    SRCS = $(wildcard *$(UPF77_ext))
 
 # Exclude files that are not part of main build
@@ -80,6 +80,7 @@ cppcheck: cppcheck$(OBJ_ext)
 
 srcscheck: srcscheck$(OBJ_ext)
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck$(OBJ_ext)
+srcscheck$(OBJ_ext): strings$(OBJ_ext)
 
 checkkwds: checkkwds$(OBJ_ext)
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds$(OBJ_ext)
