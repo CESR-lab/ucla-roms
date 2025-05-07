@@ -12,7 +12,7 @@
       ! Coding by Jeroen Molemaker (March 2025)
 
 #include "cppdefs.opt"
-  
+
       use dimensions
       use roms_read_write
       use nc_read_write
@@ -77,13 +77,13 @@
       if (cdr_analytical) then                                ! Set cdr flux volumes and tracer data
 
 !       call set_ana_cdr_frc
-        
+
       else
 
         if (cdr_volume) then
           call set_frc_data(nc_cdrvol,cdr_vol)                ! set cdr volume for all cdrs at current time
           call set_frc_data(nc_cdrtrc,var2d=cdr_trc)          ! set cdr tracers conc. for all cdrs at current time
-         
+
           do icdr=1,ncdr
             cdr_flx(icdr,:) = cdr_vol(icdr)*cdr_trc(icdr,:)
           enddo
@@ -113,9 +113,13 @@
       integer :: ierr,ncid,i,j,k
       real :: norm,vint,arg
       real :: local_int,global_int
+      real, dimension(nz) :: arg_nz
+      real :: local_min_val
+      integer, dimension(2) :: lmi
+      real, dimension(2) :: local_minloc
+      real, dimension(2) :: global_minloc
       real,dimension(:,:)  ,allocatable :: dist
       real,dimension(:,:,:),allocatable :: frac
-      real :: eps = 1e-6
 
       call init_arrays_cdr
 
@@ -126,7 +130,7 @@
       else
 
         ierr=nf90_open(cdr_file, nf90_nowrite, ncid)
-        if(ierr/=0) 
+        if(ierr/=0)
      &      call handle_ierr(ierr,'init_cdr_frc:: Cant open cdr forcing file')
 
         call ncread(ncid,cdr_loc_lon,cdr_lon)
@@ -136,36 +140,67 @@
         call ncread(ncid,cdr_scl_vrt,cdr_vsc)
         ierr = nf90_close(ncid)
 
-        cdr_hsc = 10
-
-        ! For point source releases, set hor and vrt scale to zero
-        eps = 1e-6
-        cdr_hsc = max(cdr_hsc,eps)
-        cdr_vsc = max(cdr_vsc,eps)
-
         ! find fractional cdr fluxes for this subdomain
-        allocate(dist(GLOBAL_2D_ARRAY))
+        allocate(dist(GLOBAL_2D_ARRAY)); dist = 1e6 ! Some large number so we don't get single-point releases in the halos
         allocate(frac(GLOBAL_2D_ARRAY,ncdr))
-        
+
         cidx = 0
         do icdr= 1,ncdr
 
-!         close  = max(3*cdr_hsc(icdr),dx)
-          norm = pi*cdr_hsc(icdr)*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
-          call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
-          frac(:,:,icdr) = exp(-(dist/cdr_hsc(icdr))**2)
-          frac(:,:,icdr) = frac(:,:,icdr)/pm/pn/norm
-          do j=1,ny
-            do i=1,nx
-!             if (dist(i,j)<close.and.rmask(i,j)>0) then
-              if (frac(i,j,icdr) >1e-3.and.rmask(i,j)>0) then
+          if (cdr_hsc(icdr) == 0) then
+            call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
+
+            local_min_val = MINVAL(dist)
+            ! Find local index that is closest to release location
+            lmi = MINLOC(dist)
+            ! Adjust index to account for the fact that GLOBAL_ARRAY does not start at index 1
+            lmi(:) = lmi(:) + lbound(dist) - 1
+
+            ! Pack local minimum and MPI rank into a vector
+            local_minloc(1) = local_min_val
+            local_minloc(2) = mynode
+
+            ! Find global minimum and rank where the minimum occurs
+            call MPI_Reduce( local_minloc, global_minloc, 2, mpi_2double_precision,
+     &      mpi_minloc, 0, ocean_grid_comm, ierr)
+
+            ! Broadcast rank where minimum occurs to all processes
+            call MPI_Bcast(global_minloc, 2,mpi_double_precision,0,ocean_grid_comm,ierr)
+
+            if (mynode == global_minloc(2)) then
+              print *, 'The minimum distance to single-point Release', icdr, 'is', global_minloc(1)
+              print *, 'This is on rank:', mynode
+              print *, 'at point', lmi
+              print *, 'The intended release location was Lon:', cdr_lon(icdr), 'Lat:', cdr_lat(icdr)
+              print *, 'The release will take place at Lon:', lonr(lmi(1),lmi(2)), 'Lat:', latr(lmi(1),lmi(2))
+              if (rmask(lmi(1),lmi(2))=0) then
+                error stop 'ERROR: single-point CDR release requested on a land point'
+              else
+                frac(lmi(1),lmi(2),icdr) = 1
                 cidx = cidx+1
               endif
+            endif
+
+          else
+
+!           close  = max(3*cdr_hsc(icdr),dx)
+            norm = pi*cdr_hsc(icdr)*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
+            call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
+            frac(:,:,icdr) = exp(-(dist/cdr_hsc(icdr))**2)
+            frac(:,:,icdr) = frac(:,:,icdr)/pm/pn/norm
+            do j=1,ny
+              do i=1,nx
+!               if (dist(i,j)<close.and.rmask(i,j)>0) then
+                if (frac(i,j,icdr) >1e-3.and.rmask(i,j)>0) then
+                  cidx = cidx+1
+                endif
+              enddo
             enddo
-          enddo
-        enddo
+          endif ! hscl = 0
+        enddo ! icdr
+
         cdr_nprf = cidx
-        
+
         ! allocate total number of profiles for all releases
         allocate(cdr_prf(cdr_nprf,nz))
         allocate(cdr_icdr(cdr_nprf))
@@ -181,19 +216,27 @@
                  cidx = cidx+1
 
                  ! Location and specific release for this profile
-                 cdr_icdr(cidx) = icdr  
+                 cdr_icdr(cidx) = icdr
                  cdr_iloc(cidx) = i
                  cdr_jloc(cidx) = j
 
                  ! figure vertical profile, depths are relative to surface
                  ! prf = exp( - ((z-d)/vsc )^2)
-                 vint = 0
-                 do k=1,nz
-                   arg = ( (z_r(i,j,k) + cdr_dep(icdr) )/cdr_vsc(icdr) )**2
-                   cdr_prf(cidx,k) = exp(-arg)*Hz(i,j,k)
-                   vint = vint + cdr_prf(cidx,k)
-                 enddo
-                 cdr_prf(cidx,:) = frac(i,j,icdr)*cdr_prf(cidx,:)/vint
+                 if (cdr_vsc(icdr) == 0) then
+                   do k=1,nz
+                     arg_nz(k) = abs(z_r(i,j,k) + cdr_dep(icdr))
+                   enddo
+                     arg = minloc(arg_nz,1)
+                     cdr_prf(cidx,arg) = 1
+                 else
+                   vint = 0
+                   do k=1,nz
+                     arg = ( (z_r(i,j,k) + cdr_dep(icdr) )/cdr_vsc(icdr) )**2
+                     cdr_prf(cidx,k) = exp(-arg)*Hz(i,j,k)
+                     vint = vint + cdr_prf(cidx,k)
+                   enddo
+                   cdr_prf(cidx,:) = frac(i,j,icdr)*cdr_prf(cidx,:)/vint
+                 endif
                endif
             enddo
           enddo
@@ -204,12 +247,10 @@
      %           mpi_double_precision,mpi_sum,0,ocean_grid_comm,ierr)
           call MPI_Bcast(global_int,1,mpi_double_precision,0,ocean_grid_comm,ierr)
 
-          print *,mynode, local_int,global_int,cdr_nloc
           cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:) =
      %        cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:)/global_int
           local_int = sum(cdr_prf(cdr_nloc(icdr-1)+1:cdr_nloc(icdr),:))
-          print *,mynode, local_int,sum(cdr_prf(1,:))
-          
+
         enddo
 
         deallocate(dist)
@@ -219,13 +260,13 @@
 
       init_cdr_done = .true.
       if(mynode==0) write(*,'(/7x,A/)') 'cdr_frc: init cdr locations'
-          
+
       end subroutine init_cdr_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_arrays_cdr  ![
       implicit none
 
-      character(len=30) :: string  
+      character(len=30) :: string
 
       if (.not. cdr_analytical) then
         if (cdr_volume) then
@@ -236,7 +277,7 @@
         endif
       endif
 
-      ! Print user options (cdr_frc.opt) to netcdf attributes 
+      ! Print user options (cdr_frc.opt) to netcdf attributes
       cdr_frc_opt = ''
       write(string, '(A,I3)') 'ncdr =', ncdr
       call store_string_att(cdr_frc_opt, string)
@@ -260,6 +301,7 @@
       implicit none
 
       ! import/export
+      integer :: i,j
       real,dimension(GLOBAL_2D_ARRAY),intent(in) :: lon,lat
       real,                           intent(in) :: lon0,lat0
       real,dimension(GLOBAL_2D_ARRAY),intent(out):: dist
@@ -272,10 +314,17 @@
       allocate(dLat2(GLOBAL_2D_ARRAY))
       dLon2 = 0.5*(lon-lon0)*deg2rad
       dLat2 = 0.5*(lat-lat0)*deg2rad
-      dist = sin(dLat2)**2 + cos(lat*deg2rad)*cos(lat0*deg2rad)*sin(dLon2)**2
-      dist=2*atan2(sqrt(dist),sqrt(1-dist));
 
-      dist = radius*dist;    !Haversine distance
+      ! Need to loop over only the points in the computational domain (i.e. not the halos)
+      ! This will prevent single-point releases from occurring in the halos, in which case
+      ! they aren't actually included.
+      do j=1,ny
+        do i=1,nx
+          dist(i,j) = sin(dLat2(i,j))**2 + cos(lat(i,j)*deg2rad)*cos(lat0*deg2rad) * sin(dLon2(i,j))**2
+          dist(i,j)=2*atan2(sqrt(dist(i,j)),sqrt(1-dist(i,j)));
+          dist(i,j) = radius*dist(i,j);    !Haversine distance
+        enddo
+      enddo
       deallocate(dLon2)
       deallocate(dLat2)
 
