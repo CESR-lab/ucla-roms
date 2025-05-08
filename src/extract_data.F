@@ -178,7 +178,7 @@
             allocate(obj(i)%sina(np))
 
             allocate(angp(np))
-            call interpolate(angler,angp,obj(i)%coef,obj(i)%ip,obj(i)%jp)
+            call interpolate_2D(angler,angp,obj(i)%coef,obj(i)%ip,obj(i)%jp)
             obj(i)%cosa = cos(angp-obj(i)%ang)
             obj(i)%sina = sin(angp-obj(i)%ang)
 
@@ -511,8 +511,10 @@
       endif
 
       if (diag_pflx) then
-        upe(1:nx,1:ny) = up
-        vpe(1:nx,1:ny) = vp
+!        upe(1:nx,1:ny) = up
+        upe(1:nx,1:ny) = 1
+!        vpe(1:nx,1:ny) = vp
+        vpe(1:nx,1:ny) = 1
 # ifdef EXCHANGE   
         call exchange_xxx(upe,vpe)
 # endif
@@ -557,79 +559,82 @@
 
             if (obj(i)%zeta) then
               oname = trim(obj(i)%set)//'_zeta'//trim(obj(i)%bnd)
-              call interpolate(zeta(:,:,knew),obj(i)%vari(:,1),coef,ip,jp)
+              call interpolate_2D(zeta(:,:,knew),obj(i)%vari(:,1),coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%temp) then
               oname = trim(obj(i)%set)//'_temp'//trim(obj(i)%bnd)
-              call interpolate(t(:,:,:,nstp,itemp),obj(i)%vari,coef,ip,jp)
+              call interpolate_3D(t(:,:,:,nstp,itemp),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
 #ifdef SALINITY
             if (obj(i)%salt) then
               oname = trim(obj(i)%set)//'_salt'//trim(obj(i)%bnd)
-              call interpolate(t(:,:,:,nstp,isalt),obj(i)%vari,coef,ip,jp)
+              call interpolate_3D(t(:,:,:,nstp,isalt),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
 #endif
 
-            if (obj(i)%ubar) then
-              oname = trim(obj(i)%set)//'_ubar'//trim(obj(i)%bnd)
-              call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
-              call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
-              obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
-              call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
-            endif
-            if (obj(i)%vbar) then
-              oname = trim(obj(i)%set)//'_vbar'//trim(obj(i)%bnd)
-              call interpolate(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
-              call interpolate(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
-              obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
-              call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
-            endif
-            if (obj(i)%u) then
-              call interpolate(u(:,:,:,nstp),ui,cfu,ipu,jpu)
-              call interpolate(v(:,:,:,nstp),vi,cfv,ipv,jpv)
-              obj(i)%vari = ui
-              do k=1,nz
-                obj(i)%vari(:,k) = obj(i)%cosa*ui(:,k) - obj(i)%sina*vi(:,k)
-              enddo
-              oname = trim(obj(i)%set)//'_u'//trim(obj(i)%bnd)
-              call ncwrite(ncid,oname,obj(i)%vari,start2D)
-            endif
-            if (obj(i)%v) then
-              call interpolate(u(:,:,:,nstp),ui,cfu,ipu,jpu)
-              call interpolate(v(:,:,:,nstp),vi,cfv,ipv,jpv)
-              do k=1,nz
-                obj(i)%vari(:,k) = obj(i)%sina*ui(:,k) + obj(i)%cosa*vi(:,k)
-              enddo
-              oname = trim(obj(i)%set)//'_v'//trim(obj(i)%bnd)
-              call ncwrite(ncid,oname,obj(i)%vari,start2D)
-            endif
-            if (obj(i)%w) then
-              call wvlcty (0,Wvl)
-              oname = trim(obj(i)%set)//'_w'//trim(obj(i)%bnd)
-              call interpolate(Wvl(-1:nx+2,-1:ny+2,1:nz),obj(i)%vari,coef,ip,jp)
-              call ncwrite(ncid,oname,obj(i)%vari,start2D)
-            endif
-            if (obj(i)%up) then
-              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
-              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
-              obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
-              oname = trim(obj(i)%set)//'_up'//trim(obj(i)%bnd)
-              call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
-            endif
-            if (obj(i)%vp) then
-              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
-              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
-              obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
-              oname = trim(obj(i)%set)//'_vp'//trim(obj(i)%bnd)
-              call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
-            endif
+            if (.not.obj(i)%scalar) then
+              if (obj(i)%ubar) then
+                oname = trim(obj(i)%set)//'_ubar'//trim(obj(i)%bnd)
+                call interpolate_2D(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
+                call interpolate_2D(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
+                obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
+                call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
+              endif
+              if (obj(i)%vbar) then
+                oname = trim(obj(i)%set)//'_vbar'//trim(obj(i)%bnd)
+                call interpolate_2D(ubar(:,:,knew),ui(:,1),cfu,ipu,jpu)
+                call interpolate_2D(vbar(:,:,knew),vi(:,1),cfv,ipv,jpv)
+                obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
+                call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
+              endif
+              if (obj(i)%u) then
+                call interpolate_3D(u(:,:,:,nstp),ui,cfu,ipu,jpu)
+                call interpolate_3D(v(:,:,:,nstp),vi,cfv,ipv,jpv)
+                obj(i)%vari = ui
+                do k=1,nz
+                  obj(i)%vari(:,k) = obj(i)%cosa*ui(:,k) - obj(i)%sina*vi(:,k)
+                enddo
+                oname = trim(obj(i)%set)//'_u'//trim(obj(i)%bnd)
+                call ncwrite(ncid,oname,obj(i)%vari,start2D)
+              endif
+              if (obj(i)%v) then
+                call interpolate_3D(u(:,:,:,nstp),ui,cfu,ipu,jpu)
+                call interpolate_3D(v(:,:,:,nstp),vi,cfv,ipv,jpv)
+                do k=1,nz
+                  obj(i)%vari(:,k) = obj(i)%sina*ui(:,k) + obj(i)%cosa*vi(:,k)
+                enddo
+                oname = trim(obj(i)%set)//'_v'//trim(obj(i)%bnd)
+                call ncwrite(ncid,oname,obj(i)%vari,start2D)
+              endif
+              if (obj(i)%w) then
+                call wvlcty (0,Wvl)
+                oname = trim(obj(i)%set)//'_w'//trim(obj(i)%bnd)
+                call interpolate_3D(Wvl(-1:nx+2,-1:ny+2,1:nz),obj(i)%vari,coef,ip,jp)
+                call ncwrite(ncid,oname,obj(i)%vari,start2D)
+              endif
+              if (obj(i)%up) then
+                call interpolate_2D(upe,ui(:,1),cfu,ipu,jpu)
+                call interpolate_2D(vpe,vi(:,1),cfv,ipv,jpv)
+                obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
+                oname = trim(obj(i)%set)//'_up'//trim(obj(i)%bnd)
+                call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
+              endif
+              if (obj(i)%vp) then
+                call interpolate_2D(upe,ui(:,1),cfu,ipu,jpu)
+                call interpolate_2D(vpe,vi(:,1),cfv,ipv,jpv)
+                obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
+                oname = trim(obj(i)%set)//'_vp'//trim(obj(i)%bnd)
+                call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
+              endif
+            endif 
+
             if (obj(i)%bgc) then
               do indt=isalt+nt_passive+1,NT
               oname = trim(obj(i)%set)//'_'//trim(t_vname(indt))//trim(obj(i)%bnd)
-              call interpolate(t(:,:,:,nstp,indt),obj(i)%vari,coef,ip,jp)
+              call interpolate_3D(t(:,:,:,nstp,indt),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
               enddo
             endif
