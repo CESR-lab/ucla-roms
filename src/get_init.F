@@ -105,7 +105,7 @@ c--#define VERBOSE
 !----- -- -------- ----- ----------
 ! Time: find netCDF id, read value, read attribute 'units' and set
 ! starting time index and time clock in days.  Note that time units
-! read below also saved as vname(3,indxTime) and thereafter used to 
+! read below also saved as vname(3,indxTime) and thereafter used to
 ! control output time units literally copying it from the initial
 ! condition to restart/history/averages output files and writing time
 ! is seconds or days accordingly.
@@ -196,6 +196,8 @@ c--#define VERBOSE
 
 #ifdef EXACT_RESTART
       if (tindx == 2) then
+        iic = 1 ! Set to 1 here so that, if exact restart is successful, it will
+                ! load DU_avg1 and DV_avg1 rather than compute them
         forw_start=0
         if (record < max_rec) then
           time_bak=start_time
@@ -219,6 +221,7 @@ c--#define VERBOSE
      &                'in ''', trim(ininame),  ''' are not ',
      &                'consecutive time steps ==> proceeding ',
      &                          'with forward initial time step.'
+              iic = 0 ! Set back to zero if exact restart fails
             endif
           else
             write(*,2) trim(vname(1,indxTime)), record,
@@ -230,6 +233,7 @@ c--#define VERBOSE
      &           'WARNING: Exact restart is requested, but is not ',
      &           'possible: initial',  'file ''', trim(ininame),
      &                    ''' does not contain sufficient records.'
+           iic = 0  ! Set back to zero if exact restart fails
         endif
         if (forw_start /= 1) return
         forw_start=0
@@ -247,15 +251,15 @@ c--#define VERBOSE
       ierr=nf90_inq_varid(ncid, 'time_step', varid)
       if (ierr == nf90_noerr) then
         ierr=nf90_inquire_variable(ncid, varid, dimids=ibuff)
-        if (ierr/=0) 
+        if (ierr/=0)
      &    call handle_ierr(ierr,'get_init: cannot get time_step dimids')
         ierr=nf90_inquire_dimension(ncid, ibuff(1), len=count(1))
-        if (ierr/=0) 
+        if (ierr/=0)
      &    call handle_ierr(ierr,'get_init: cannot get time dim size')
         start(1)=1 ; start(2)=record ; count(2)=1
         ibuff(1:iaux)=0
         ierr=nf90_get_var(ncid, varid, ibuff, start, count)
-        if (ierr/=0) 
+        if (ierr/=0)
      &  call handle_ierr(ierr,'get_init: cannot read time_step')
         ntstart=ibuff(1)+1
 
@@ -263,7 +267,7 @@ c--#define VERBOSE
         if (tindx == 2 .and. record < max_rec) then
           start(2)=record+1
           ierr=nf90_get_var(ncid, varid, ibuff, start, count)
-          if (ierr/=0) 
+          if (ierr/=0)
      &  call handle_ierr(ierr,'get_init: cannot read 2nd time_step')
 # ifdef VERBOSE
           write(*,*) 'ibuff(1),ntstart =', ibuff(1), ntstart
@@ -277,6 +281,7 @@ c--#define VERBOSE
      &              trim(ininame),  ''' are not consecutive time ',
      &                                    'steps ==> proceeding with',
      &                                   'forward initial time step.'
+          iic = 0  ! Set back to zero if exact restart fails
             return   !--> no need to read preliminary record
           endif
         elseif (tindx == 1) then
@@ -291,6 +296,7 @@ c--#define VERBOSE
 #endif
         if (ierr /= nf90_noerr)  goto 99                  !--> ERROR
       else
+        iic = 0  ! Set back to zero if exact restart fails (treat as initial run)
         init_type=init_run
         ntstart=1               ! netCDF variable "time_step" not
 !        nrecrst=0               ! found: proceed with initializing
@@ -315,10 +321,10 @@ c--#define VERBOSE
 
       call ncread(ncid,'zeta',zeta(i0:i1,j0:j1,1),start)
       zeta(i0:i1,j0:j1,1)=zeta(i0:i1,j0:j1,1)*rmask(i0:i1,j0:j1)
-      call exchange_xxx(zeta(:,:,1))                              
+      call exchange_xxx(zeta(:,:,1))
 
       call ncread(ncid,'ubar',ubar( 1:i1,j0:j1,1),start)
-      ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)  
+      ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)
       call exchange_xxx(ubar(:,:,1))
 
       call ncread(ncid,'vbar',vbar(i0:i1, 1:j1,1),start)
@@ -335,7 +341,11 @@ c--#define VERBOSE
 #ifdef SOLVE3D
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
-      ierr=nf90_inq_varid(ncid, 'DU_avg2', varid)  ! change these to varid
+        ierr=nf90_inq_varid(ncid, 'DU_avg1', varid)  ! change these to varid
+      if (ierr == nf90_noerr) then
+        ierr=nf90_inq_varid(ncid, 'DV_avg1', varid)
+      if (ierr == nf90_noerr) then
+        ierr=nf90_inq_varid(ncid, 'DU_avg2', varid)  ! change these to varid
       if (ierr == nf90_noerr) then
         ierr=nf90_inq_varid(ncid, 'DV_avg2', varid)
         if (ierr == nf90_noerr) then
@@ -343,6 +353,8 @@ c--#define VERBOSE
           if (ierr == nf90_noerr) then
             ierr=nf90_inq_varid(ncid, 'DV_avg_bak', varid)
             if (ierr == nf90_noerr) then
+              call ncread(ncid,'DU_avg1',      DU_avg1( 1:i1,j0:j1),start)
+              call ncread(ncid,'DV_avg1',      DV_avg1(i0:i1, 1:j1),start)
               call ncread(ncid,'DU_avg2',      DU_avg2( 1:i1,j0:j1),start)
               call ncread(ncid,'DV_avg2',      DV_avg2(i0:i1, 1:j1),start)
               call ncread(ncid,'DU_avg_bak',DU_avg_bak( 1:i1,j0:j1),start)
@@ -350,16 +362,29 @@ c--#define VERBOSE
               if (ierr /= nf90_noerr) goto 99                  !--> ERROR
             else
               forw_start=ntstart      !--> cancel exact restart
+              iic = 0  ! Set back to zero if exact restart fails
             endif
           else
             forw_start=ntstart      !--> cancel exact restart
+            iic = 0  ! Set back to zero if exact restart fails
           endif
         else
           forw_start=ntstart    !--> cancel exact restart
+          iic = 0  ! Set back to zero if exact restart fails
         endif
       else
         forw_start=ntstart    !--> cancel exact restart
+        iic = 0  ! Set back to zero if exact restart fails
       endif
+      else
+        forw_start=ntstart    !--> cancel exact restart
+        iic = 0  ! Set back to zero if exact restart fails
+      endif
+      else
+        forw_start=ntstart    !--> cancel exact restart
+        iic = 0  ! Set back to zero if exact restart fails
+      endif
+
 
 #  elif defined PRED_COUPLED_MODE
       ierr=nf90_inq_varid(ncid, 'rufrc_bak', varid)
@@ -373,9 +398,11 @@ c--#define VERBOSE
 
         else
           forw_start=ntstart    !--> cancel exact restart
+          iic = 0  ! Set back to zero if exact restart fails
         endif
       else
         forw_start=ntstart    !--> cancel exact restart
+        iic = 0  ! Set back to zero if exact restart fails
       endif
 #  endif
 # endif /*EXACT_RESTART*/
@@ -384,7 +411,7 @@ c--#define VERBOSE
 
       start=1; start(4)=record                                       ! 3D vars
 
-      call ncread(ncid,vname(1,indxU), u(1:i1,j0:j1,:,tindx),start) 
+      call ncread(ncid,vname(1,indxU), u(1:i1,j0:j1,:,tindx),start)
       do k=1,nz
         u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
       enddo
@@ -425,7 +452,7 @@ c--#define VERBOSE
           do k=1,N
             t(i0:i1,j0:j1,k,tindx,itrc)=t(i0:i1,j0:j1,k,tindx,itrc)*rmask(i0:i1,j0:j1)
           enddo
-          call exchange_xxx(t(:,:,:,tindx,itrc) ) 
+          call exchange_xxx(t(:,:,:,tindx,itrc) )
         else
 
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
@@ -442,6 +469,7 @@ c--#define VERBOSE
 
         endif
       enddo
+
 
       start=1; start(3)=record                                       ! 2D vars
 # ifdef LMD_KPP
@@ -474,15 +502,15 @@ c--#define VERBOSE
 #ifdef MARBL
 !     Read in MARBL saved_state variables here
       call marbldrv_read_ss_vars_from_rst(ncid,record)
-#endif /* MARBL */      
-      
+#endif /* MARBL */
+
 #endif /* SOLVE3D */
 
 
 #ifdef DIAGNOSTICS
       if (diag_pflx) call get_init_slow(ncid,record,tindx)
       if (ub_tune)   call get_init_ub(ncid,record)
-#endif      
+#endif
 
 ! Close input NetCDF file and  write greeting message depending
 ! on the the type of initial/restart procedure performed above.

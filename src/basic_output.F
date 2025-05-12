@@ -204,7 +204,7 @@
       vname(2,indxAkt)='vertical thermal conductivity coefficient'
       vname(3,indxAkt)='meter2 second-1'
 # ifdef SALINITY
-      vname(1,indxAks)='AKs'
+      vname(1,indxAks)='Aks'
       vname(2,indxAks)='salinity vertical diffusion coefficient'
       vname(3,indxAks)='meter2 second-1'
 # endif
@@ -260,15 +260,15 @@
         if (special) then
           blowup = .true.
         else
-          initial = .true.           
+          initial = .true.
         endif
       endif
 
 
       if (wrt_file_his.or.blowup) then
 
-        if (.not.present(special)) then 
-         output_time_his = output_time_his + dt  
+        if (.not.present(special)) then
+         output_time_his = output_time_his + dt
         endif
 
 
@@ -441,7 +441,7 @@
         if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')  ! confirm work completed
      &        'ocean_vars :: wrote averages, tdays =', tdays,
-     &        'step =', iic, 'rec =', rec_avg, '/', total_rec_avg  ! 
+     &        'step =', iic, 'rec =', rec_avg, '/', total_rec_avg  !
      &         MYID
         endif
       endif
@@ -459,12 +459,12 @@
       use eos_vars
       use work_mod
       use grid
-      use tracers 
+      use tracers
       use coupling
 #ifdef MARBL
 !     add MARBL saved state to restart to restart file
       use marbl_driver, only: marbldrv_write_ss_vars_to_rst
-#endif       
+#endif
       implicit none
 
       ! local
@@ -528,6 +528,8 @@
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
+        call ncwrite(ncid,'DU_avg1',    DU_avg1( 1:i1,j0:j1),start)
+        call ncwrite(ncid,'DV_avg1',    DV_avg1(i0:i1, 1:j1),start)
         call ncwrite(ncid,'DU_avg2',    DU_avg2( 1:i1,j0:j1),start)
         call ncwrite(ncid,'DV_avg2',    DV_avg2(i0:i1, 1:j1),start)
         call ncwrite(ncid,'DU_avg_bak', DU_avg_bak( 1:i1,j0:j1),start)
@@ -553,12 +555,13 @@
 !       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,itemp),start)
 !       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,isalt),start)
 
+
         if (ub_tune)   call wrt_rst_ub(ncid,rec_rst)
         if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
 
 #ifdef MARBL
         call marbldrv_write_ss_vars_to_rst(ncid,rec_rst)
-#endif         
+#endif
 
         ierr=nf90_close(ncid)
         if (mynode == 0) then
@@ -694,7 +697,7 @@
       if ( (wrt_R .and. .not. avg) .or. (wrt_avg_R .and. avg) ) then
         if (.not. avg) text_lname=vname(2,indxR)
         if (      avg) text_lname='averaged '/ /vname(2,indxR)
-        varid = 
+        varid =
      &   nccreate(ncid,vname(1,indxR),(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,n,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
@@ -702,7 +705,7 @@
       if ( (wrt_O .and. .not. avg) .or. (wrt_avg_O .and. avg) ) then    ! s-coordinate "omega" vertical velocity.
         if (.not. avg) text_lname=vname(2,indxO)
         if (      avg) text_lname='averaged '/ /vname(2,indxO)
-        varid = 
+        varid =
      &    nccreate(ncid,vname(1,indxO),(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,n+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxO))
@@ -710,7 +713,7 @@
       if ( (wrt_W .and. .not. avg) .or. (wrt_avg_W .and. avg) ) then   ! true W-vertical velocity.
         if (.not. avg) text_lname=vname(2,indxW)
         if (      avg) text_lname='averaged '/ /vname(2,indxW)
-        varid = 
+        varid =
      &    nccreate(ncid,vname(1,indxW),(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,n,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxW))
@@ -735,7 +738,7 @@
       if ( (wrt_Aks .and. .not. avg) .or. (wrt_avg_Aks .and. avg) ) then! vertical diffusion coefficient for salinity.
         if (.not. avg) text_lname=vname(2,indxAks)
         if (      avg) text_lname='averaged '/ /vname(2,indxAks)
-        varid = 
+        varid =
      &    nccreate(ncid,vname(1,indxAks),(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,N+1,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAks))
@@ -770,13 +773,13 @@
 #ifdef MARBL
 !     add MARBL saved state to restart to restart file
       use marbl_driver, only: marbldrv_create_ss_vars_in_rst
-#endif       
+#endif
       implicit none
 
       ! local
       integer :: ierr, varid, itrc
       character(len=7)  :: dn_aux = 'auxil'
-      
+
 ! Time-step number and time-record indices: (history file only, this
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
@@ -801,7 +804,7 @@
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
 #ifdef MARBL
       call marbldrv_create_ss_vars_in_rst(ncid)
-#endif      
+#endif
 #ifdef SOLVE3D
       varid = nccreate(ncid,vname(1,indxU),(/dn_xu,dn_yr,dn_zr,dn_tm/),
      &                                     (/xi_u,eta_rho,N,0/),nf90_double)
@@ -822,6 +825,15 @@
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
+
+      varid = nccreate(ncid,'DU_avg1',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time barotropic u flux>>')
+
+      varid = nccreate(ncid,'DV_avg1',(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time barotropic v flux >>')
+
       varid = nccreate(ncid,'DU_avg2',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
@@ -859,7 +871,7 @@
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
 # endif
 
-      if (diag_pflx) then  
+      if (diag_pflx) then
         varid = nccreate(ncid,'u_slow',(/dn_xu,dn_yr,dn_zr,dn_tm/),
      &                               (/xi_u,eta_rho,N,0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
