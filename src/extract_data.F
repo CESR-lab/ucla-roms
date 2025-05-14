@@ -50,7 +50,7 @@
       use basic_output, vn=>vname
       use scalars
       use diagnostics
-#ifdef BIOLOGY_BEC2 
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_ecosys_vars
 #endif
 
@@ -318,12 +318,14 @@
             print *,'Fatal ERROR: vp extraction, diag_pflx is not set'
             stop
           endif
-#ifndef BIOLOGY_BEC2 
+#if !defined(BIOLOGY_BEC2) && !defined(MARBL)          
          if (obj(iobj)%bgc) then
-            print *,'Fatal ERROR: BGC extraction, BIOLOGY_BEC2 not set'
+            print *,'Fatal ERROR: BGC extraction, BIOLOGY_BEC2'//
+     &           ' or MARBL cpp key not set'
             stop
          endif
 #endif
+
           if (obj(iobj)%up.or.obj(iobj)%vp) extend_up = .true.
 
         endif
@@ -678,23 +680,21 @@
       integer,          dimension(2) :: dsize ! dim lengths
       character(len=20),dimension(3) :: dname3 ! dimension names
       integer,          dimension(3) :: dsize3 ! dim lengths
+
       character(len=20) :: np_label
       character(len=20) :: time_label
 
-
       do i = 1,nobj
-        if (obj(i)%np>0) then
-          write(label,'(I0.3)') i
-!         dname = (/ 'np'//label, 'time_'//trim(obj(i)%set) /)
-          np_label = 'np'//label
-          time_label = 'time_'//trim(obj(i)%set)
-          dname = (/ np_label, time_label /)
-
-          dsize = (/ obj(i)%np ,  0/)
-          dname3(1) = 'np'//label
-          dname3(2) = 's_rho'
-          dname3(3) = 'time_'//trim(obj(i)%set)
-          dsize3 = (/ obj(i)%np , nz, 0/)
+         if (obj(i)%np>0) then
+            write(label,'(I0.3)') i
+            np_label='np'//label
+            time_label='time_'//trim(obj(i)%set)
+            dname = (/np_label,time_label/)
+            dsize = (/ obj(i)%np ,  0/)
+            dname3(1) = 'np'//label
+            dname3(2) = 's_rho'
+            dname3(3) = 'time_'//trim(obj(i)%set)
+            dsize3 = (/ obj(i)%np , nz, 0/)
 
           tname = trim(obj(i)%set)//'_time'
           ierr=nf90_inq_varid(ncid,tname,varid)    
