@@ -1,0 +1,157 @@
+ metadata about            2  tracers:
+ -----------
+ TRACER NO.:            1
+ SHORT NAME: temp                                      
+ LONG NAME: potential temperature                                       
+ UNITS: Celsius                                   
+ -----------
+ -----------
+ TRACER NO.:            2
+ SHORT NAME: salt                                      
+ LONG NAME: salinity                                                    
+ UNITS: PSU                                       
+ -----------
+
+ Activated CPP configuration switches:
+ <cppdefs.opt>
+       ANA_PIPES               ANA_GRID                ANA_INITIAL
+       ANA_SMFLUX              ANA_SRFLUX              ANA_STFLUX
+       ANA_SSFLUX              SOLVE3D                 UV_ADV
+       UV_COR                  NONLIN_EOS              SPLIT_EOS
+       SALINITY                UV_VIS2                 TS_DIF2
+       LMD_MIXING              LMD_KPP                 LMD_NONLOCAL
+       LMD_RIMIX               LMD_CONVEC              LMD_BKPP
+       MASKING                 MASK_LAND_DATA
+ <pre_step3d4S.F>
+       SPLINE_UV               SPLINE_TS
+ <step3d_uv1.F>
+       UPSTREAM_UV             SPLINE_UV
+ <step3d_uv2.F>
+       DELTA=0.2800000000000000EPSIL=0.35999999999999999
+ <step3d_t_ISO.F>
+       UPSTREAM_TS             SPLINE_TS
+ <set_depth.F>
+       NOW=3.63                MID=4.47                BAK=2.05
+       (N-M+B-1)/B=0.102439024
+ <lmd_kpp.F>
+       INT_AT_RHO_POINTS       SMOOTH_HBL
+ <set_global_definitions.h>
+       CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       IMPLCT_NO_SLIP_BTTM_BC
+
+ Analytical pipe example
+     ntimes =        20   total number of 3D timesteps
+         dt =    60.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+
+ WARNING: Urecognized keyword 'grid' --> DISREGARDED.
+
+
+ WARNING: Urecognized keyword 'boundary' --> DISREGARDED.
+
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+
+ WARNING: Urecognized keyword 'v_sponge' --> DISREGARDED.
+
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+
+ WARNING: Urecognized keyword 'ubind' --> DISREGARDED.
+
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+
+ NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 100 x 100 x 10
+
+       ocean_vars :: history file ouput_period =1200.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
+       created new netcdf file pipes_grd.0.nc
+      wrt_grid :: wrote grid data 
+ init buffers
+ hmin =   10.000000   grdmin = 3.0000000E+02     area = 8.2439999999999976E+08
+ hmax =  100.562500   grdmax = 3.0000000E+02   volume = 4.0643999999999992E+10
+                                           open_cross = 0.0000000000000000E+00
+ Cg_max = 0.2961258   Cg_min = 0.0933809   Cu_Cor = 0.0060000
+
+ Vertical S-coordinate system (z at W-points):
+
+  level   S-coord    Cs-curve    Z at hmin       at hc    half way     at hmax
+
+     10   0.000000   0.0000000       0.000       0.000       0.000       0.000
+      9  -0.100000  -0.0055425      -0.730      -1.319      -1.856      -2.449
+      8  -0.200000  -0.0240012      -1.497      -2.800      -4.146      -5.938
+      7  -0.300000  -0.0612071      -2.318      -4.515      -7.065     -10.936
+      6  -0.400000  -0.1276667      -3.222      -6.596     -10.967     -18.291
+      5  -0.500000  -0.2380192      -4.251      -9.225     -16.342     -29.181
+      4  -0.600000  -0.4050140      -5.443     -12.563     -23.620     -44.633
+      3  -0.700000  -0.6213408      -6.775     -16.517     -32.555     -64.059
+      2  -0.800000  -0.8345042      -8.099     -20.431     -41.384     -83.229
+      1  -0.900000  -0.9647416      -9.185     -23.309     -47.427     -95.721
+      0  -1.000000  -1.0000000     -10.000     -25.000     -50.281    -100.562
+
+ Maximum grid stiffness ratios:   rx0 = 0.050561798  rx1 =   1.221581568
+
+
+       pipe_frc: init pipe locations
+
+ Writing initial history file
+ Reference time used for simulation is: 2000/01/01
+       created new netcdf file pipes_his.20000101000000.0.nc
+
+ main :: initialization complete, started time-stepping.
+
+
+  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
+ 0  0.0000000000000000E+00 0.0000000000000000E+00 1.4424111815424507E-02 1.4424111815424507E-02
+ 1  0.0000000000000000E+00 0.0000000000000000E+00 1.6278530965389747E-02 1.4417635761124648E-02
+ 2  3.3829476368893037E-08 3.3829400632089734E-08 1.6425604095287021E-02 1.5050230683890334E-02
+ 3  4.4319275001009345E-08 4.4166736322933981E-08 1.6771067280123449E-02 1.6769549618436484E-02
+ 4  5.1605848824014248E-08 4.9777511848432435E-08 1.9822968905580607E-02 1.9820802371225556E-02
+ 5  6.2583553953115757E-08 5.4249526134195199E-08 2.4261396186052227E-02 2.4255307170984584E-02
+ 6  8.2197160487399278E-08 5.7309042301319630E-08 3.0048764980797022E-02 3.0034449220943841E-02
+ 7  1.1872084020874613E-07 6.0234922636717172E-08 3.7128062990374563E-02 3.7100238658503502E-02
+ 8  1.8016580117931478E-07 6.2465191991607325E-08 4.5420156354343162E-02 4.5372489110217781E-02
+ 9  2.7726102672837517E-07 6.4804284187193064E-08 5.4824342369329454E-02 5.4749647108474533E-02
+10  4.2067457167856098E-07 6.6767360997027448E-08 6.5218214799987864E-02 6.5108466649546975E-02
+11  6.2221914140405211E-07 6.7969710835363585E-08 7.6459156134597597E-02 7.6305704973024899E-02
+12  8.9549092958219069E-07 6.8640570037615186E-08 8.8398055954822530E-02 8.8191722452592533E-02
+13  1.2548063575393039E-06 6.8075001597290123E-08 1.0088530210914275E-01 1.0061659263982142E-01
+14  1.7190289174100408E-06 6.7936410117701963E-08 1.1377614935931378E-01 1.1343537041979503E-01
+15  2.3073211686487070E-06 6.7737106468723701E-08 1.2494698304064851E-01 1.2454203231871544E-01
+16  3.0080211465775254E-06 6.7875057268203413E-08 1.4287695962909733E-01 1.4263455231553770E-01
+17  3.9253986240018582E-06 6.8736418466790032E-08 1.6322181042417563E-01 1.6289968828101586E-01
+18  5.0790141404212253E-06 7.0425133632524172E-08 1.8495258096217762E-01 1.8453467087811859E-01
+19  6.4774967832537449E-06 7.3856069918805088E-08 2.0782319178072101E-01 2.0729279901202610E-01
+20  8.1570802012233582E-06 7.9235168767833191E-08 2.3097930491129209E-01 2.3031734166408352E-01
+       ocean_vars :: wrote history, tdays =      0.0139  step =     20 rec =   2
+ Process    0  thread  0  cpu time =        6.52 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   24.735925611999960     
