@@ -110,6 +110,7 @@ c***              no code here
 
       ! DevinD not sure what flag to use here to avoid set_flux for purely analytical
 #  ifndef ANA_SMFLUX
+      frctype = 'SURF:'
       call set_flux_frc(istr,iend,jstr,jend)
 #  endif
 
@@ -136,7 +137,10 @@ c***              no code here
 # endif
 
 
-      if (river_source) call set_river_frc
+      if (river_source) then
+        frctype = 'RIVERS:'
+        call set_river_frc
+      endif
 
       if (pipe_source) call set_pipe_frc
 
