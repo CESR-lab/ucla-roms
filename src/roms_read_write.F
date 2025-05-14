@@ -82,10 +82,11 @@
 
       integer,parameter :: max_options_string=2000
 
-      ! option files
-      character(len=max_options_string),public::bc_options = 'OFF'
-      character(len=max_options_string),public::pipe_frc_opt='OFF'
+      ! option string to go into output file attributes
+      character(len=max_options_string),public::bc_options   = 'OFF'
+      character(len=max_options_string),public::pipe_frc_opt ='OFF'
       character(len=max_options_string),public::river_frc_opt='OFF'
+      character(len=max_options_string),public::cdr_frc_opt  ='OFF'
       character(len=max_options_string),public::tide_opt='OFF'
       character(len=max_options_string),public::bulk_frc_opt='OFF'
       character(len=max_options_string),public::flux_frc_opt='OFF'
