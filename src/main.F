@@ -151,6 +151,7 @@ C$OMP BARRIER
 
       call get_grid                  ! can be analytic or from netcdf
 
+
 #ifdef DIAGNOSTICS
       call init_diagnostics  
 #endif
@@ -218,6 +219,7 @@ CR      write(*,*) ' -6' MYID
                                     ! either analytically or read
       if (nrrec > 0) then 
 #endif
+
       
 #ifdef EXACT_RESTART
         call get_init(nrrec-1,2) 
@@ -227,6 +229,10 @@ CR      write(*,*) ' -6' MYID
 
 #ifdef ANA_INITIAL
       endif    !<-- nrrec>0
+#endif
+
+#ifdef ANA_VMIX
+      call ana_vmix
 #endif
       if (may_day_flag /= 0) goto 99      !--> ERROR
 
@@ -364,9 +370,7 @@ CR      write(*,*)  ' -2' MYID
       ! Should be already available from previous time-step
       call omega
 
-# if defined ANA_VMIX
-      call ana_vmix
-# elif defined LMD_MIXING
+# if defined LMD_MIXING
       call lmd_vmix(nstp)
 # endif
 
