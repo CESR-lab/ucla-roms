@@ -114,7 +114,7 @@
 
       itot=itot+1;                iALK=itot
       wrt_t  (itot)=.False.;       wrt_t_avg(itot)=.True.
-      t_vname(itot)='ALK';        t_units  (itot)='mMol m-3'
+      t_vname(itot)='Alk';        t_units  (itot)='mMol m-3'
       t_tname(itot)='';           t_ana_frc(itot)=1
       t_lname(itot)='Alkalinity'
       wrt_t_dia(itot)=.False.

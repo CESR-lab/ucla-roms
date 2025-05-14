@@ -11,11 +11,11 @@ grid:  filename
      input_data/sample_grd_riv.nc
 
 forcing: filename
-     input_data/sample_flux_frc.nc
-     input_data/sample_flux_bgc.nc     
-     input_data/sample_bry_trace.nc       
-     input_data/sample_bry_bgc.nc
-     input_data/sample_LFfrc.nc
+     input_data/roms_flux_frc.nc
+     input_data/roms_flux_bgc.nc     
+     input_data/roms_bry_trace.nc       
+     input_data/roms_bry_bgc.nc
+     input_data/roms_LFfrc.nc
 
 initial: NRREC  filename
           1
