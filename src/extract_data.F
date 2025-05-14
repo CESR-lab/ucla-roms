@@ -683,6 +683,7 @@
 
       character(len=20) :: np_label
       character(len=20) :: time_label
+
       do i = 1,nobj
          if (obj(i)%np>0) then
             write(label,'(I0.3)') i
@@ -757,7 +758,7 @@
         ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
         else
         ierr = nf90_put_att(ncid,varid,'long_name','bgc concentration')
-        ierr = nf90_put_att(ncid,varid,'units','mmolm-3')
+        ierr = nf90_put_att(ncid,varid,'units','mmol/m^3')
         endif
       else
         ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')
