@@ -173,7 +173,7 @@
               print *, 'at point', lmi
               print *, 'The intended release location was Lon:', cdr_lon(icdr), 'Lat:', cdr_lat(icdr)
               print *, 'The release will take place at Lon:', lonr(lmi(1),lmi(2)), 'Lat:', latr(lmi(1),lmi(2))
-              if (rmask(lmi(1),lmi(2))=0) then
+              if (rmask(lmi(1),lmi(2))==0) then
                 error stop 'ERROR: single-point CDR release requested on a land point'
               else
                 frac(lmi(1),lmi(2),icdr) = 1

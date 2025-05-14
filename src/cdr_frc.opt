@@ -5,16 +5,20 @@
       logical,parameter,public :: cdr_volume  = .false.  ! If false, use tracer flux only
                                                          ! If true, use volume flux and tracer concentrations
 
-      integer,parameter,public :: ncdr   !! number of discrete CDR releases
+      logical,parameter :: cdr_analytical  = .false.     ! If true, cdr release specified in ana_cdf_frc.h
 
-      ! Enter netcdf variable name and time name
-      ! Use either volume flux [,3/s] and tracer concentrations [C/m3], or use tracer flux [C/s]
+      integer,parameter,public :: ncdr=1   !! number of discrete CDR releases
+
+      ! netcdf forcing file nad variable names
+
+      character(len=60) :: cdr_file = 'cdr_release.nc'
+
+      ! Use either volume flux [m3/s] and tracer concentrations [C/m3], or use tracer flux [C/s]
       type (ncforce) :: nc_cdrvol = ncforce( vname='cdr_volume', tname='cdr_time')
       type (ncforce) :: nc_cdrtrc = ncforce( vname='cdr_tracer', tname='cdr_time') 
 
-      type (ncforce) :: nc_cdrflx = ncforce( vname='cdr_tracer', tname='cdr_time') 
+      type (ncforce) :: nc_cdrflx = ncforce( vname='cdr_trcflx', tname='cdr_time') 
 
-     ! Netcdf names
       character(len=9)  :: cdr_loc_lon = 'cdr_lon'  !!  longitude of CDR release [degrees East]
       character(len=9)  :: cdr_loc_lat = 'cdr_lat'  !!  latitude of CDR release  [degrees North]
       character(len=9)  :: cdr_loc_dep = 'cdr_dep'  !!  depth of CDR release [m]
