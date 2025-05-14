@@ -81,6 +81,7 @@
       real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
 
       integer,parameter :: max_options_string=2000
+
       ! option files
       character(len=max_options_string),public::bc_options = 'OFF'
       character(len=max_options_string),public::pipe_frc_opt='OFF'

@@ -55,6 +55,7 @@ c--# define CONST_TRACERS
 
       use param
       use pipe_frc
+      use cdr_frc
       use river_frc
       use surf_flux, only: stflx, srflx
       use tracers
@@ -820,6 +821,22 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
         endif
 # endif
 
+        if (cdr_source) then
+          ! Loop over cdr release locations in this subdomain
+          ! The global sum over all cdr_prf should be 1. 
+          ! cdr_flux unit is [C/s]
+          do cidx=1,cdr_nprf
+            icdr = cdr_icdr(cidx)
+            i = cdr_iloc(cidx)
+            j = cdr_jloc(cidx)
+            do k=1,nz
+              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+     &           +dt*pm(i,j)*pn(i,j)*
+     &            cdr_prf(cidx,k)*cdr_flx(icdr,itrc)
+            enddo
+          enddo
+        endif
+
         do j=jstr,jend
 
 # include "compute_vert_tracer_fluxes.h"
@@ -853,6 +870,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
             enddo
           enddo
+
 
 
 ! Start computation of vertical diffusion: add surface forcing fluxes

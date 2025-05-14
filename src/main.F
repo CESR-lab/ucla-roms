@@ -102,6 +102,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use particles
       use cstar_output
       use random_output
+      use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
       use bgc
@@ -211,7 +212,9 @@ CR      write(*,*) ' -6' MYID
       call ecosys2_init
 # endif /*BIOLOGY_BEC2*/
 
-      
+      ! we should have a grid and z_r by now
+      if (cdr_source) call init_cdr_frc
+
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
       call set_forces               ! model prognostic variables,
