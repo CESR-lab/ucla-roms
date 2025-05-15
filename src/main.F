@@ -191,7 +191,7 @@ CR      write(*,*) ' -8' MYID
 
 #ifdef SOLVE3D
       do tile=my_tile_range            ! Create three-dimensional
-        call set_depth(tile)           ! S-coordinate system, which
+        call set_depth           ! S-coordinate system, which
 # ifdef LMD_KPP
         call swr_frac(tile)            ! may be needed by ana_init.
 # endif
@@ -221,7 +221,7 @@ CR      write(*,*) ' -6' MYID
       
 #ifdef EXACT_RESTART
         call get_init(nrrec-1,2) 
-        call set_depth(0)
+        call set_depth
 #endif
         call get_init(nrrec, 1)
 
@@ -235,7 +235,7 @@ CR      write(*,*) ' -6' MYID
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
       call set_forces
-      call set_depth(0)
+      call set_depth
 
 !----------------------------------------------------------------------
 !  Set NHMG horizontal and vertical grids 

@@ -8,20 +8,6 @@
 ! and perform fast-time averaging to interact with baroclinic mode.
 
       use param
-      use hidden_mpi_vars
-      use private_scratch
-
-      call step2d_FB( A2d(1, 1), A2d(1, 2), A2d(1, 3), A2d(1, 4),
-     &                A2d(1, 5), A2d(1, 6), A2d(1, 7), A2d(1, 8),
-     &                A2d(1, 9), A2d(1,10), A2d(1,11), A2d(1,12),
-     &                                                 A2d(1,13))
-      end
-
-      subroutine step2d_FB( zeta_new,Dnew,
-     &                      rubar,rvbar, urhs,vrhs,  DUon,DVom,
-     &                                   Drhs, UFx,UFe,VFx,VFe)
-
-      use param
       use river_frc
       use pipe_frc
       use wec_frc
@@ -33,16 +19,35 @@
       use scalars
       use mpi_exchanges
       use hidden_mpi_vars
+      use private_scratch
 
       implicit none
 
       ! local
       integer :: i,j, kbak, kold
-      real, dimension(1-bf:nx +bf,1-bf:ny +bf) :: zeta_new, Dnew,
-     &                        rubar,rvbar,  urhs,vrhs,  DUon,DVom,
-     &                                      Drhs, UFx,UFe,VFx,VFe
       real :: fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
-     &        cff,cff1,cff2, DUnew,DVnew
+     &        cff,cff1,cff2, DUnew,DVnew,
+     &        base, rss1, rss2, rss3
+
+      real,dimension(:,:),pointer :: zeta_new,Dnew,Drhs,
+     &                               DUon,DVom,
+     &                               rubar,rvbar,
+     &                               UFx,UFe,VFx,VFe,
+     &                               urhs,vrhs
+
+      ! set pointers to scratch arrays
+      Drhs(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,1)
+      Dnew(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,2)
+      DUon(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,3)
+      DVom(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,4)
+      rubar(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,5)
+      rvbar(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,6)
+      UFx(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,7)
+      UFe(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,8)
+      VFx(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,9)
+      VFe(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,10)
+      urhs(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,11)
+      vrhs(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,12)
 
 ! Set coefficients for AB3-AM4 forward-backward algorithm.
 !---- ------------ --- ------- ------- -------- ----------
@@ -126,6 +131,9 @@
         enddo
       enddo
 
+      ! reallocate scratch for zeta_new
+      nullify(Drhs)
+      zeta_new(1-bf:nx+bf,1-bf:ny+bf) => scratch_2d(:,1)
 
 ! Advance free-surface:  Compute "zeta_new" at new time step and
 !-------- ---- --------  interpolate it half-step backward, "zwrk"
@@ -139,6 +147,7 @@
         do i=0,nx
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
+
           if (pipe_source) then          ! If pipe_source is false, the branch will
             if (pipe_idx(i,j) > 0.) then ! be eliminated by compile optimization
               zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
@@ -491,6 +500,9 @@
         enddo
       endif ! <-- river_source
 
+      ! nulllify workspace
+      nullify(zeta_new,Dnew,DUon,DVom,rubar,rvbar,UFx,UFe,VFx,VFe,urhs,vrhs)
+
 ! At the end of the last 2D step replace the new free-surface field
 ! "zeta(:,:,knew)" with its fast-time-averaged "_avg1" version: this
 ! is the only version of free surface which communicates with 3D part
@@ -504,7 +516,7 @@
             zeta(i,j,knew)=Zt_avg1(i,j)
           enddo
         enddo
-        call set_depth_tile
+        call set_depth
       endif
 
 #ifdef EXCHANGE

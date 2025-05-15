@@ -3,19 +3,6 @@
 
       subroutine omega
 
-      use param
-      use hidden_mpi_vars
-      use private_scratch
-
-      implicit none
-      integer,save :: tile = 0
-
-# include "compute_tile_bounds.h"
-      call omega_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2))
-      end
-
-      subroutine omega_tile (istr,iend,jstr,jend, CX,wrk)
-
 ! Compute S-coordinate vertical velocity, w=[Hz/(m*n)]*omega [m^3/s],
 ! which has the meaning of FINITE_VOLUME FLUX across MOVING grid-box
 ! interfaces of RHO-boxes. To compute it we first integrate divergence
@@ -40,16 +27,23 @@
       use grid
       use ocean_vars
       use scalars
+      use private_scratch
+      use hidden_mpi_vars
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
-      real CX(PRIVATE_1D_SCRATCH_ARRAY,0:N),  dtau, c2d,dh, cw, cff, 
-     &    wrk(PRIVATE_1D_SCRATCH_ARRAY),      cw_min,cw_max,cw_max2
-      real, parameter :: cu_min=0.6D0, cu_max=1.0D0,
+
+      ! local
+      integer :: i,j,k
+      real,dimension(:,:),pointer :: CX
+      real,dimension(:),pointer   :: wrk
+      real                        :: dtau,c2d,dh,cw,cff,
+     &                               cw_min,cw_max,cw_max2
+      real,parameter              :: cu_min=0.6D0, cu_max=1.0D0,
      &  cmnx_ratio=cu_min/cu_max,  cutoff=2.D0-cmnx_ratio,
      &                      r4cmx=0.25D0/(1.D0-cmnx_ratio)
 
-# include "compute_auxiliary_bounds.h"
+      CX(1-bf:nx+bf,1-bf:nz+bf) => scratch_2d(:,1)
+      wrk => scratch_1d(:,1)
 
       if (CORR_STAGE) then
         dtau=dt
@@ -57,19 +51,17 @@
         dtau=0.5*dt
       else
         dtau=0.6*dt
-c**     dtau=(1.-1./6.)*dt
       endif
 
-      do j=jstr,jend
-
+      do j=1,ny
       !!! For NHMG pipes, the flux needs to be out of the bottom.
       !!! Additionally, modify, where needed, the We to Wi split 
       !!! for pipe sources
-        do i=istr,iend
+        do i=1,nx
           Wi(i,j,0)=0.
         enddo
         do k=1,N,+1        !--> recursive
-          do i=istr,iend
+          do i=1,nx
             Wi(i,j,k)=Wi(i,j,k-1) -FlxU(i+1,j,k) +FlxU(i,j,k)
      &                            -FlxV(i,j+1,k) +FlxV(i,j,k)
             if (pipe_source) then
@@ -84,7 +76,7 @@ c**     dtau=(1.-1./6.)*dt
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)
           enddo
         enddo
-        do i=istr,iend
+        do i=1,nx
           wrk(i)=Wi(i,j,N)/(z_w(i,j,N)-z_w(i,j,0))
           Wi(i,j,N)=0.
           We(i,j,N)=0.                      ! note that
@@ -92,7 +84,7 @@ c**     dtau=(1.-1./6.)*dt
           CX(i,0)=dtau*pm(i,j)*pn(i,j)      ! is horizontal 2D Courant
         enddo                               ! number within Hz(i,j,k)
         do k=N-1,1,-1
-          do i=istr,iend
+          do i=1,nx
             Wi(i,j,k)=Wi(i,j,k)-wrk(i)*(z_w(i,j,k)-z_w(i,j,0))  !! this removes the grid motion
 
 c*          if (Wi(i,j,k) > 0.) then         ! Three different variants 
@@ -137,68 +129,70 @@ c**         Wi(i,j,k)=0.            !<-- back to fully explicit code
         enddo
       enddo
 
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then                       ! Set lateral
-        do k=0,N                                   ! boundary
-          do j=jstr,jend                           ! conditions
-            We(istr-1,j,k)=We(istr,j,k)
-            Wi(istr-1,j,k)=Wi(istr,j,k)
+      ! done with scratch space
+      nullify(CX,wrk)
+
+      ! lateral boundary conditions
+      if (inode==0.and.(.not.ew_periodic)) then
+        do k=0,N
+          do j=1,ny
+            We(0,j,k)=We(1,j,k)
+            Wi(0,j,k)=Wi(1,j,k)
           enddo
         enddo
       endif
-      if (EASTERN_EDGE) then
+      if (inode==np_xi-1.and.(.not.ew_periodic)) then
         do k=0,N
-          do j=jstr,jend
-            We(iend+1,j,k)=We(iend,j,k)
-            Wi(iend+1,j,k)=Wi(iend,j,k)
+          do j=1,ny
+            We(nx+1,j,k)=We(nx,j,k)
+            Wi(nx+1,j,k)=Wi(nx,j,k)
           enddo
         enddo
       endif
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
+      if (jnode==0.and.(.not.ns_periodic)) then
         do k=0,N
-          do i=istr,iend
-            We(i,jstr-1,k)=We(i,jstr,k)
-            Wi(i,jstr-1,k)=Wi(i,jstr,k)
+          do i=1,nx
+            We(i,0,k)=We(i,1,k)
+            Wi(i,0,k)=Wi(i,1,k)
           enddo
         enddo
       endif
-      if (NORTHERN_EDGE) then
+      if (jnode==np_eta-1.and.(.not.ns_periodic)) then
         do k=0,N
-          do i=istr,iend
-            We(i,jend+1,k)=We(i,jend,k)
-            Wi(i,jend+1,k)=Wi(i,jend,k)
+          do i=1,nx
+            We(i,ny+1,k)=We(i,ny,k)
+            Wi(i,ny+1,k)=Wi(i,ny,k)
           enddo
         enddo
       endif
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=0,N
-          We(istr-1,jstr-1,k)=We(istr,jstr,k)
-          Wi(istr-1,jstr-1,k)=Wi(istr,jstr,k)
-        enddo
+
+      ! corners
+      if ((.not.ew_periodic).and.(.not.ns_periodic)) then
+        if (jnode==0.and.inode==0) then
+          do k=0,N
+            We(0,0,k)=We(1,1,k)
+            Wi(0,0,k)=Wi(1,1,k)
+          enddo
+        endif
+        if (jnode==0.and.inode==np_xi-1) then
+          do k=0,N
+            We(0,ny+1,k)=We(1,ny,k)
+            Wi(0,ny+1,k)=Wi(1,ny,k)
+          enddo
+        endif
+        if (jnode==np_eta-1.and.inode==0) then
+          do k=0,N
+            We(nx+1, 0,k)=We(nx,1,k)
+            Wi(nx+1, 0,k)=Wi(nx,1,k)
+          enddo
+        endif
+        if (jnode==np_eta-1.and.inode==np_xi-1) then
+          do k=0,N
+            We(nx+1,ny+1,k)=We(nx,ny,k)
+            Wi(nx+1,ny+1,k)=Wi(nx,ny,k)
+          enddo
+        endif
       endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=0,N
-          We(istr-1,jend+1,k)=We(istr,jend,k)
-          Wi(istr-1,jend+1,k)=Wi(istr,jend,k)
-        enddo
-      endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=0,N
-          We(iend+1, jstr-1,k)=We(iend,jstr,k)
-          Wi(iend+1, jstr-1,k)=Wi(iend,jstr,k)
-        enddo
-      endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=0,N
-          We(iend+1,jend+1,k)=We(iend,jend,k)
-          Wi(iend+1,jend+1,k)=Wi(iend,jend,k)
-        enddo
-      endif
-#  endif
-# endif
 # ifdef EXCHANGE
       call exchange_xxx(We,Wi)
 # endif
