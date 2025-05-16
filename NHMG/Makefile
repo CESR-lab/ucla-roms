@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 # Fortran Compiler
-FC = ifort
+FC = ifx
 
 # Normal options for the compiler
 #FFLAGS =  -O3 -fp-model source -I/opt/mpich-3.2/include/

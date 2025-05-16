@@ -89,7 +89,7 @@
       ! input
       integer               :: ncid
       character(len=*)      :: vname
-      real,dimension(:,:,:) :: dat
+      real,dimension(:,:,:),contiguous :: dat
 
       integer,dimension(:),optional :: start
 
