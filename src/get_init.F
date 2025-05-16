@@ -353,7 +353,7 @@ c--#define VERBOSE
       ierr=nf90_inq_varid(ncid, 'DV_avg_bak', varid)
       if (ierr /= nf90_noerr) exact_succes = .false.
 
-      if (ierr == nf90_noerr) then
+      if (exact_succes) then
         call ncread(ncid,'DU_avg1',   DU_avg1( 1:i1,j0:j1),start)
         call ncread(ncid,'DV_avg1',   DV_avg1(i0:i1, 1:j1),start)
         call ncread(ncid,'DU_avg2',   DU_avg2( 1:i1,j0:j1),start)
