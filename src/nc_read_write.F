@@ -97,24 +97,18 @@
       integer              :: varid,ierr
       integer,dimension(3) :: dims
       integer,dimension(4) :: count
-      real,dimension(:,:,:),allocatable :: tmp
 
       dims = shape(dat)
-      allocate(tmp(dims(1),dims(2),dims(3)))
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncread inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
-!       ierr = nf90_get_var(ncid,varid,dat,start,count)
-        ierr = nf90_get_var(ncid,varid,tmp,start,count)
+        ierr = nf90_get_var(ncid,varid,dat,start,count)
       else
-!       ierr = nf90_get_var(ncid,varid,dat)
-        ierr = nf90_get_var(ncid,varid,tmp)
+        ierr = nf90_get_var(ncid,varid,dat)
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncread read var=',vname)
-      dat = tmp
-      deallocate(tmp)
 
       end subroutine ncread_3D  !]
 !----------------------------------------------------------------------
@@ -184,7 +178,7 @@
       ! input
       integer               :: ncid
       character(len=*)      :: vname
-      real,dimension(:,:,:),contiguous :: dat
+      real,dimension(:,:,:) :: dat
 
       integer,dimension(:),optional :: start
 
@@ -192,25 +186,27 @@
       integer              :: varid,ierr
       integer,dimension(3) :: dims
       integer,dimension(4) :: count
-      real,dimension(:,:,:),allocatable :: tmp
+      real, allocatable    :: tmp_array(:,:,:)
 
       
       dims = shape(dat)
-      allocate(tmp(dims(1),dims(2),dims(3)))
-      tmp = dat
+      
+!     Allocate a contiguous temporary array on the heap
+      allocate(tmp_array(dims(1), dims(2), dims(3)))
+
+!     Copy data to the temporary array to ensure contiguous storage
+      tmp_array = dat
+
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
       if (present(start)) then
         count = (/dims, 1/)
-!       ierr = nf90_put_var(ncid,varid,dat,start,count)
-        ierr = nf90_put_var(ncid,varid,tmp,start,count)
+        ierr = nf90_put_var(ncid,varid,tmp_array,start,count)
       else
-!       ierr = nf90_put_var(ncid,varid,dat)
-        ierr = nf90_put_var(ncid,varid,tmp)
+        ierr = nf90_put_var(ncid,varid,tmp_array)
       endif
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
-      deallocate(tmp)
 
       deallocate(tmp_array)
       end subroutine ncwrite_3D  !]
