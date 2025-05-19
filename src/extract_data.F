@@ -683,7 +683,6 @@
 
       character(len=20) :: np_label
       character(len=20) :: time_label
-
       do i = 1,nobj
          if (obj(i)%np>0) then
             write(label,'(I0.3)') i

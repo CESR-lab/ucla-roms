@@ -30,11 +30,16 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
-
-        call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
+#ifdef BIOLOGY_BEC2
+!     When using BEC, BGC tracer indices are set in init_tracers
+!     then used in init_scalars, so this order must be maintained
+         call init_tracers
+         call init_scalars(ierr)
+#else
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
-
+        call init_tracers
+#endif
         if (ierr == 0) then
 C$        call omp_set_dynamic(.false.)
 C$OMP PARALLEL                           ! fast-time averaging weights
@@ -150,6 +155,14 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
+#ifdef SOLVE3D
+C$OMP MASTER                           ! Setup vertical stretching
+      call set_scoord                  ! functions for S-coordinate
+C$OMP END MASTER                       ! system
+C$OMP BARRIER
+      if (may_day_flag /= 0) goto 99
+#endif
+      
       call get_grid                  ! can be analytic or from netcdf
 
 
@@ -182,13 +195,6 @@ CR      write(*,*) '-10' MYID
 C$OMP BARRIER
 CR      write(*,*) '-9' MYID
 
-#ifdef SOLVE3D
-C$OMP MASTER                           ! Setup vertical stretching
-      call set_scoord                  ! functions for S-coordinate
-C$OMP END MASTER                       ! system
-C$OMP BARRIER
-      if (may_day_flag /= 0) goto 99
-#endif
 CR      write(*,*) ' -8' MYID
 
 #ifdef SOLVE3D

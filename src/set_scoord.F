@@ -26,23 +26,25 @@
       enddo
 
 
-      mpi_master_only write(*,'(/1x,A/,/2x,A,7x,A/)')
-     &        'Vertical S-coordinate system (z at W-points):',
-     &             'level   S-coord    Cs-curve    Z at hmin',
-     &                        'at hc    half way     at hmax'
+      mpi_master_only write(*,'(/1x,A/)')
+     &        'Vertical S-coordinate system (z at W-points):'
+
+      mpi_master_only write(*,
+     &     '(A7,2x,A11,2x,A14,2x,A16,2x,A14,2x,A14,2x,A14)')
+     &     'level', 'S-coord', 'Cs-curve', 'Z at hmin',
+     &     'at hc', 'half way', 'at hmax'
+
+      
       do k=N,0,-1
         sc=ds*dble(k-N)
         z1=hmin*(hc*sc + hmin*Cs_w(k))/(hc+hmin)
         zhc=0.5*hc*(sc + Cs_w(k))
         z2=0.5*hmax*(hc*sc + 0.5*hmax*Cs_w(k))/(hc+0.5*hmax)
         z3=hmax*(hc*sc + hmax*Cs_w(k))/(hc+hmax)
-        if (hc < 1.E+4) then
-          mpi_master_only write(*,'(I7,F11.6,F12.7,4F12.3)')
-     &                              k, ds*(k-N),Cs_w(k), z1,zhc,z2,z3
-        else
-         mpi_master_only write(*,'(I7,F11.6,F12.7,F12.3,12x,2F12.3)')
-     &                              k, ds*(k-N),Cs_w(k), z1,    z2,z3
-        endif
+        
+        mpi_master_only write(*,
+     &'(I7,2X,ES11.4,2X,ES14.7,2X,ES16.7,2X,ES14.7,2X,ES14.7,2X,ES14.7)')
+     &       k, ds*(k-N), Cs_w(k), z1, zhc, z2, z3
       enddo
       end
 

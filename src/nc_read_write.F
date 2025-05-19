@@ -132,8 +132,9 @@
       integer              :: varid,ierr
       integer,dimension(1) :: dims
       integer,dimension(2) :: count
-
+      
       dims = shape(dat)
+      
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
@@ -161,8 +162,9 @@
       integer              :: varid,ierr
       integer,dimension(2) :: dims
       integer,dimension(3) :: count
-
+      
       dims = shape(dat)
+      
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
@@ -192,6 +194,7 @@
       integer,dimension(4) :: count
       real,dimension(:,:,:),allocatable :: tmp
 
+      
       dims = shape(dat)
       allocate(tmp(dims(1),dims(2),dims(3)))
       tmp = dat
@@ -209,6 +212,7 @@
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
       deallocate(tmp)
 
+      deallocate(tmp_array)
       end subroutine ncwrite_3D  !]
 !----------------------------------------------------------------------
       integer function nccreate(ncid,varname,dimname,dimsize,vartype)  ![
