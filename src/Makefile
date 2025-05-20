@@ -26,7 +26,7 @@
 #
 .SUFFIXES: .o .f .F .f90
 
-USEMARBLE=TRUE
+USEMARBL=TRUE
 
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
@@ -35,7 +35,7 @@ USEMARBLE=TRUE
 .F.f:
 	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
 .f90.o:
 	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
@@ -43,7 +43,7 @@ USEMARBLE=TRUE
 
 # Path names (non-hydrostatic, MARBL and NetCDF libraries):
 	MARBL_INC = ${MARBL_ROOT}/include/intel-mpi
-	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+	MARBL_LIB = -L${MARBL_ROOT}/lib -lmarbl-intel-mpi
 
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_INC  = $(NHMG_ROOT)/include
@@ -55,10 +55,11 @@ USEMARBLE=TRUE
 
 	MPI_INC = ${MPIHOME}/include/mpi
 
+
 ifeq ($(USEMARBL),TRUE)
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB) $(MARBL_LIB)
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(MARBL_LIB)
 else
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB)
 endif
 
 	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
