@@ -20,8 +20,13 @@
 # export PATH=${NETCDFC_ROOT}/bin:$PATH
 # export PATH=${NETCDF_ROOT}/bin:$PATH
 
+#export MARBL_ROOT=/home/username/MARBL
+
+
 #
 .SUFFIXES: .o .f .F .f90
+
+USEMARBLE=TRUE
 
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
@@ -50,8 +55,11 @@
 
 	MPI_INC = ${MPIHOME}/include/mpi
 
-#LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB) $(MARBL_LIB)
+ifeq ($(USEMARBL),TRUE)
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB) $(MARBL_LIB)
+else
 	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
+endif
 
 	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
 
