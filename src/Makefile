@@ -30,12 +30,12 @@ USEMARBL=TRUE
 
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
 	@/bin/rm -f $*.f
 .F.f:
 	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
 .f90.o:
 	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
@@ -62,7 +62,12 @@ else
 	LCDF = $(NHMG_LIB) $(NETCDF_LIB)
 endif
 
+ifeq ($(FCOMP),mpiifx)
 	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
+	ICDF = 
+else
+	ICDF = -I$(MPI_INC) -I$(NHMG_INC) -I$(NETCDF_INC) -I$(MARBL_INC)
+endif
 
 
 # Large memory runs (e.g. for bgc):
