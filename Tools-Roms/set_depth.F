@@ -178,8 +178,10 @@ c--#define VERBOSE
 #include "netcdf.inc"
 
       VertCoordType=' '
-      ierr=nf_get_att_text (ncid, nf_global, 'VertCoordType',
-     &                                        VertCoordType)
+!     ierr=nf_get_att_text (ncid, nf_global, 'VertCoordType',
+!    &                                        VertCoordType)
+      VertCoordType='NEW'
+      ierr=nf_noerr
       if (ierr == nf_noerr) then
         write(*,*) 'VertCoordType=', VertCoordType
         if (VertCoordType=='NEW') VertCoordType='SM09'

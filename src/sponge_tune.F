@@ -296,15 +296,15 @@
 
       ! fluxes and ub coefficients are defined as nx, ny sized arrays
       ! so use method 2 for output (see roms_read_write)
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.(jnode==0)) then
         call ncwrite(ncid,'cf_south',cflx_south_avg,(/bfx,record /))
         call ncwrite(ncid,'pf_south',pflx_south_avg,(/bfx,record /))
         call ncwrite(ncid,'ub_south',  ub_south_avg,(/bfx,record /))
       endif
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.(inode==np_xi-1)) then
 !       call ncwrite(ncid,'ub_east',ub_east(j0:j1),(/1,record /))
       endif
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.(inode==0)) then
         call ncwrite(ncid,'cf_west',cflx_west_avg,(/ bfy,record /))
         call ncwrite(ncid,'pf_west',pflx_west_avg,(/ bfy,record /))
         call ncwrite(ncid,'ub_west',  ub_west_avg,(/ bfy,record /))
@@ -381,16 +381,16 @@
       if (mynode==0) print *,'writing ub in restart file'
       if (tune_init) call init_orlanski_tune
 
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.(jnode==0)) then
         call ncwrite(ncid,'ub_south',ub_south,(/bfx,record/))
       endif
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.(jnode==np_eta-1)) then
         call ncwrite(ncid,'ub_north',ub_north,(/bfx,record/))
       endif
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.(inode==np_xi-1)) then
         call ncwrite(ncid,'ub_east' ,ub_east ,(/bfy,record/))
       endif
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.(inode==0)) then
         call ncwrite(ncid,'ub_west' ,ub_west ,(/bfy,record/))
       endif
 
@@ -408,7 +408,7 @@
       integer :: ierr, varid
 
       if (mynode==0) print *,'getting ub coefficients'
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.(jnode==0)) then
         if (.not. allocated(ub_south)) allocate(ub_south(nx))
         ierr=nf90_inq_varid (ncid, 'ub_south', varid)
         if (ierr == nf90_noerr) then
@@ -419,7 +419,7 @@
           ub_south = 0
         endif
       endif
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.(jnode==np_eta-1)) then
         if (.not. allocated(ub_north)) allocate(ub_north(nx))
         ierr=nf90_inq_varid (ncid, 'ub_north', varid)
         if (ierr == nf90_noerr) then
@@ -431,7 +431,7 @@
         endif
       endif
 
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.(inode==np_xi-1)) then
         if (.not. allocated(ub_east)) allocate(ub_east(ny))
         ierr=nf90_inq_varid (ncid, 'ub_east', varid)
         if (ierr == nf90_noerr) then
@@ -443,7 +443,7 @@
         endif
       endif
 
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.(inode==0)) then
         if (.not. allocated(ub_west)) allocate(ub_west(ny))
         ierr=nf90_inq_varid (ncid, 'ub_west', varid)
         if (ierr == nf90_noerr) then

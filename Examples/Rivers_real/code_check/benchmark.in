@@ -13,11 +13,11 @@ grid:  filename
 forcing: filename
      input_data/sample_flux_frc.nc
      input_data/sample_wwv_riv.nc      
-     input_data/sample_bry_trace.nc
+     input_data/roms_bry_trace.nc
 
 initial: NRREC  filename
           1
-     input_data/sample_init_trace.nc
+     input_data/roms_init_trace.nc
 
 output_root_name:
      rivers
