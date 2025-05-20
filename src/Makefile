@@ -36,7 +36,9 @@
 
      CPP = cpp -traditional
 
-# Path names (non-hydrostatic & NetCDF libraries):
+# Path names (non-hydrostatic, MARBL and NetCDF libraries):
+	MARBL_INC = ${MARBL_ROOT}/include/intel-mpi
+	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
 
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_INC  = $(NHMG_ROOT)/include
@@ -48,13 +50,10 @@
 
 	MPI_INC = ${MPIHOME}/include/mpi
 
+#LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB) $(MARBL_LIB)
 	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
 
-	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
-
-# MARBL
-#       MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-#   	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
 
 
 # Large memory runs (e.g. for bgc):
@@ -107,7 +106,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
-        lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
+        lenstr.F	setup_kwds.F	check_switches1.F\
         get_date.F	ext_copy_prv2shr.F		check_switches2.F\
 \
 	mpi_setup.F\

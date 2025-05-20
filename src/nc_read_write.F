@@ -212,7 +212,6 @@
       if (ierr/=0) call handle_ierr(ierr,'ncwrite write var=',vname)
       deallocate(tmp)
 
-      deallocate(tmp_array)
       end subroutine ncwrite_3D  !]
 !----------------------------------------------------------------------
       integer function nccreate(ncid,varname,dimname,dimsize,vartype)  ![
