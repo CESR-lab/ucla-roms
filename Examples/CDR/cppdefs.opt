@@ -60,7 +60,12 @@ c--# define LMD_CONVEC
 # define T_FRC_BRY
 # define SPONGE
 
+c--# tmp for cdr testing:
+# define ANA_SMFLUX
+# define ANA_STFLUX
+
 #endif
+
 
 
 #include "set_global_definitions.h"

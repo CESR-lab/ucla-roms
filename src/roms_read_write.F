@@ -83,6 +83,8 @@
       character(len=max_options_string),public::surf_forcing_strings=' '
       character(len=max_options_string),public::bc_options = ' '
 
+      character(len=max_options_string),public::cdr_frc_opt='False'
+      
       ! from old ncvars **************:
       integer, parameter, public :: max_frc_files=360
       integer, public :: max_frc, ncfrc(max_frc_files), nrrec
