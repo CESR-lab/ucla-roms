@@ -26,7 +26,7 @@
 #
 .SUFFIXES: .o .f .F .f90
 
-USEMARBL=TRUE
+USEMARBL=FALSE
 
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
@@ -121,7 +121,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
         lenstr.F	setup_kwds.F	check_switches1.F\
-        get_date.F	ext_copy_prv2shr.F		check_switches2.F\
+        ext_copy_prv2shr.F		check_switches2.F\
 \
 	mpi_setup.F\
 \
