@@ -7,7 +7,7 @@
 
       logical,parameter :: cdr_analytical  = .false.     ! If true, cdr release specified in ana_cdf_frc.h
 
-      integer,parameter,public :: ncdr = 1   !! number of discrete CDR releases
+      integer,parameter,public :: ncdr=1   !! number of discrete CDR releases
 
       ! netcdf forcing file nad variable names
 
