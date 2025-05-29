@@ -1,0 +1,77 @@
+! User notes:
+!   1) Specify tracer variable details here. 
+!      (number of tracers (NT) still set in param.h for now)
+!
+!   2) tracer name in netcdf file for _bry.nc and _init.nc
+!   must have same name as trace variable. E.g. ptrace1 -> ptrace1
+!   However, in the surface flux forcing file, the name of the
+!   variable must be appended with _flx. E.g. ptrace1 -> ptrace1_flx
+!
+!   3) Make sure tracer surface flux units are correct!
+
+! USER INPUT 1:
+! - Interpolate forcing from coarser input grid (=1) or not (=0)
+      interp_t = 0 ! Factor 2 scaling only for now
+! - now complete USER INPUT 2 below.
+
+
+! MARBL USERS NOTE:
+!--------------------------------------------------------------------------------
+!      if running with MARBL, do not specify BGC tracers in this file: they are
+!      provided to ROMS by MARBL. Control the MARBL config (therefore tracers)
+!      using a "marbl_in" file in your run directory. 
+!      Regarding output: by default, all MARBL tracers are written to output file.
+!      To control which particular tracers to write out, make a
+!      text file "marbl_tracer_output_list" in your run directory
+!      and add the shortname of each required tracer to a new line.
+!      If the text file is empty, does not exist,
+!      contains only comments (!) or no recognised tracers,
+!      ROMS will revert to default behaviour and output all MARBL tracers.
+!      Output frequency etc. are still controlled using "bgc.opt".
+!      For a list of available MARBL tracers, see
+!      $MARBL_ROOT/tests/regression_tests/requested_tracers/requested_tracers.py 
+
+
+! USER INPUT 2:
+!
+! descriptions:
+!
+! wrt_t     = True/False whether to write tracer to output file
+! wrt_t_avg = True/False whether to write tracer avg to output file
+! t_vname   = Tracer short name
+! t_units   = Tracer units (for outputing tracer)
+! t_lname   = Tracer long name (for outputing tracer)
+! t_tname   = Name of time dimension that goes with tracer in forcing file.
+!             Not necessary for analytical model or no surface forcing for tracer.
+! t_ana_frc = Whether surf flux is read in (0), or analytical (1)
+!             Could be extended 2,3,... depending on different types of
+!             analytical forcing, e.g. time variant/invariant, and further
+!             specific for each variable using its 'itrace' index...
+! itot      = Counter to increment tracer indices without hard-coding indices,
+!             thus each new tracer index (e.g. itrcX) simply needs:
+!             itot=itot+1, then itot can populate arrays in correct position;
+! wrt_t_dia = Only with DIAGNOSTICS flag. Don't need otherwise.
+!             True/False to output tracer diagnostics.
+!
+! nt_passive= Number of passive tracers (default=0). Set here is you have them.
+
+! - TEMP & SALT:
+
+      wrt_t     (itemp)=.True.;    wrt_t_avg(itemp) =.True.    ! temp
+      wrt_t_dia(itemp) = .true.
+      
+#ifdef SALINITY
+      wrt_t     (isalt)=.True.;    wrt_t_avg(isalt) =.True.    ! salinity
+      wrt_t_dia(isalt) = .true.
+#endif
+
+      if (nt_passive>0) then
+        t_ana_frc(3)= 1   ! analytical forcing (zeros in this case)
+        t_vname(3)='passive' 
+        t_units(3)='none'
+        t_lname(3)='passive tracer'
+        wrt_t(3)     =.True.
+        wrt_t_avg(3) =.True.
+        wrt_t_dia(3) =.True.
+      endif
+

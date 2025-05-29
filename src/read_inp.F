@@ -5,7 +5,6 @@
 
       use param
       use surf_flux
-      use tracers, only: wrt_t, t_vname, wrt_t_avg
       use boundary
       use eos_vars
       use basic_output
@@ -13,6 +12,12 @@
       use scoord
       use mpi
       use roms_read_write
+#ifdef MARBL
+      use marbl_driver, only: marbl_namelist_fname, marbl_tracer_list_fname
+#ifdef MARBL_DIAGS
+     &     , marbl_diag_list_fname
+#endif      
+#endif       
 
       implicit none
       integer ierr
@@ -79,7 +84,7 @@
 #ifdef MPI
       if (mynode == 0) then
 #endif
-        is=iargc() ; if (is == 1) call getarg(is,fname)
+        is=iargc() ; if (is == 1) call getarg(is,fname) 
 #ifdef MPI
       endif
       call MPI_Bcast(fname,max_fname,MPI_BYTE, 0, ocean_grid_comm, ierr)
@@ -143,6 +148,27 @@
           ninfo=ninfo*ndtfast
 #endif
 
+#ifdef MARBL
+        elseif (keyword(1:kwlen) == 'MARBL_biogeochemistry') then
+          call cancel_kwd(keyword(1:kwlen), ierr)
+          read(input,'(A)',err=95) marbl_namelist_fname
+          lstr=lenstr(marbl_namelist_fname)
+             mpi_master_only write(*,'(1x,A,15x,A)'),
+     &            'MARBL namelist file',marbl_namelist_fname(1:lstr)
+       
+          read(input,'(A)',err=95) marbl_tracer_list_fname
+          lstr=lenstr(marbl_tracer_list_fname)
+             mpi_master_only write(*,'(1x,A,5x,A)'),
+     &            'MARBL tracer output list file',marbl_tracer_list_fname(1:lstr)
+             
+#ifdef MARBL_DIAGS          
+          read(input,'(A)',err=95) marbl_diag_list_fname
+          lstr=lenstr(marbl_diag_list_fname)
+             mpi_master_only write(*,'(1x,A,1x,A)'),
+     &            'MARBL diagnostic output list file',marbl_diag_list_fname(1:lstr)
+#endif
+#endif
+          
 ! Vertical S-coordinates transformation. Note that "hc" may be chosen
 ! to be very large (infinity) if vertically uniform sigma is desired.
 
@@ -429,7 +455,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &       'initial condition :: rec =', nrrec,  'file = ''',
      &                                   ininame(1:lstr), ''''
 #ifdef ANA_INITIAL
-          endif
+         endif
 #endif
 
 ! Forcing file name. Check its availability.
@@ -542,7 +568,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &  'A total of', ierr, 'configuration errors discovered.'
        return
       endif
-      call check_srcs
+!     call check_srcs
 #ifdef MPI
       call MPI_Barrier (ocean_grid_comm, ierr)
 #endif

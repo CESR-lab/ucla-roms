@@ -10,6 +10,7 @@
       use param
       use river_frc
       use pipe_frc
+      use cdr_frc
       use wec_frc
       use tides
       use coupling
@@ -143,6 +144,16 @@
 #define rzeta  UFe
 #define rzeta2  VFe
 #define rzetaSA VFx
+      if (cdr_source.and.cdr_volume) then
+        do cidx=1,cdr_nprf
+          icdr = cdr_icdr(cidx)
+          i = cdr_iloc(cidx)
+          j = cdr_jloc(cidx)
+ 
+          zeta(i,j,kstp)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
+     &               *cdr_vol(icdr)*sum(cdr_prf(cidx,:))
+        enddo
+      endif
       do j=0,ny
         do i=0,nx
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
@@ -154,6 +165,11 @@
             endif
           endif
 
+<<<<<<< HEAD
+=======
+
+#ifdef MASKING
+>>>>>>> ifx_functionality
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed
 
           Dnew(i,j)=zeta_new(i,j)+h(i,j)

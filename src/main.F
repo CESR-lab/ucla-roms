@@ -30,11 +30,16 @@ C$    ierr=0
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif
-
-        call init_tracers                ! New: initiate tracer variables (must be before init_scalars)
+#ifdef BIOLOGY_BEC2
+!     When using BEC, BGC tracer indices are set in init_tracers
+!     then used in init_scalars, so this order must be maintained
+         call init_tracers
+         call init_scalars(ierr)
+#else
         call init_scalars(ierr)          ! Initialize global scalars,
                                          ! model tunable parameters,
-
+        call init_tracers
+#endif
         if (ierr == 0) then
 C$        call omp_set_dynamic(.false.)
 C$OMP PARALLEL                           ! fast-time averaging weights
@@ -102,6 +107,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use particles
       use cstar_output
       use random_output
+      use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
       use bgc
@@ -149,7 +155,16 @@ C$OMP BARRIER
       enddo                              ! are just set to to zero).
 C$OMP BARRIER
 
+#ifdef SOLVE3D
+C$OMP MASTER                           ! Setup vertical stretching
+      call set_scoord                  ! functions for S-coordinate
+C$OMP END MASTER                       ! system
+C$OMP BARRIER
+      if (may_day_flag /= 0) goto 99
+#endif
+      
       call get_grid                  ! can be analytic or from netcdf
+
 
 #ifdef DIAGNOSTICS
       call init_diagnostics  
@@ -180,13 +195,6 @@ CR      write(*,*) '-10' MYID
 C$OMP BARRIER
 CR      write(*,*) '-9' MYID
 
-#ifdef SOLVE3D
-C$OMP MASTER                           ! Setup vertical stretching
-      call set_scoord                  ! functions for S-coordinate
-C$OMP END MASTER                       ! system
-C$OMP BARRIER
-      if (may_day_flag /= 0) goto 99
-#endif
 CR      write(*,*) ' -8' MYID
 
 #ifdef SOLVE3D
@@ -210,7 +218,9 @@ CR      write(*,*) ' -6' MYID
       call ecosys2_init
 # endif /*BIOLOGY_BEC2*/
 
-      
+      ! we should have a grid and z_r by now
+      if (cdr_source) call init_cdr_frc
+
 #ifdef ANA_INITIAL
                                     ! Set initial conditions for
       call set_forces               ! model prognostic variables,
@@ -218,6 +228,7 @@ CR      write(*,*) ' -6' MYID
                                     ! either analytically or read
       if (nrrec > 0) then 
 #endif
+
       
 #ifdef EXACT_RESTART
         call get_init(nrrec-1,2) 
@@ -227,6 +238,10 @@ CR      write(*,*) ' -6' MYID
 
 #ifdef ANA_INITIAL
       endif    !<-- nrrec>0
+#endif
+
+#ifdef ANA_VMIX
+      call ana_vmix
 #endif
       if (may_day_flag /= 0) goto 99      !--> ERROR
 
@@ -364,9 +379,7 @@ CR      write(*,*)  ' -2' MYID
       ! Should be already available from previous time-step
       call omega
 
-# if defined ANA_VMIX
-      call ana_vmix
-# elif defined LMD_MIXING
+# if defined LMD_MIXING
       call lmd_vmix(nstp)
 # endif
 

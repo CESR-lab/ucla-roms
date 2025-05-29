@@ -1,0 +1,80 @@
+name: Automated Testing (gfortran, containerized)
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/dafyddstephenson/roms_gfortran_build_env:1.0
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Set Environment Variables
+      run: |
+        ROMS_ROOT=$(pwd)
+        PATH="./:$PATH"
+        PATH=$PATH:$ROMS_ROOT/Tools-Roms
+        # Now copy these variables to GITHUB_ENV to source in future steps
+        echo "ROMS_ROOT=$(pwd)" >> $GITHUB_ENV
+        echo "PATH="./:$PATH"" >> $GITHUB_ENV
+        echo "PATH=$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+      shell: bash
+    - name: Print system info
+      run: |
+        lscpu
+    - name: Compile Fortran Code
+      run: |
+        micromamba run -n roms-ci bash -c '
+        #Copy GNU-compatible makefiles
+        rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
+        cd Work/
+        make nhmg COMPILER=gnu
+        cd ${ROMS_ROOT}/Tools-Roms/
+        make COMPILER=gnu
+        '
+      shell: bash      
+    - name: Get input data
+      run: |
+        cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
+        cd ${ROMS_ROOT}/Examples/input_data/
+        ./get_input_files.sh
+      shell: bash
+    - name: Run Tests
+      shell: bash
+      run: |
+        micromamba run -n roms-ci bash -c '
+        cd ${ROMS_ROOT}/Examples/code_check/
+        sed -i -e "s/make /make COMPILER=gnu /g" do_test_roms.sh
+        sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh        
+        ./do_test_all.sh github
+        '
+    - name: Print compilation logs (in case of failure)
+      if: failure()
+      shell: bash
+      run: |
+        micromamba run -n roms-ci bash -c '        
+        cd ci
+        ./print_compilation_logs.sh
+        '
+    - name: Print logs (in case of failure)
+      if: failure()
+      shell: bash
+      run: |
+        micromamba run -n roms-ci bash -c '
+        echo "--------------------------------------------------------------------------------"
+        echo "This step will print the test_old.log files from each case run by"
+        echo "Examples/code_check/do_test_all.sh"
+        echo "If the tests failed but you are confident in your changes,"
+        echo "overwrite the benchmark.result_github files for each case with"
+        echo "the contents of these log files"
+        echo "--------------------------------------------------------------------------------"
+        cd ci
+        ./print_output_logs.sh
+        '

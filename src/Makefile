@@ -20,21 +20,30 @@
 # export PATH=${NETCDFC_ROOT}/bin:$PATH
 # export PATH=${NETCDF_ROOT}/bin:$PATH
 
+#export MARBL_ROOT=/home/username/MARBL
+
+
 #
 .SUFFIXES: .o .f .F .f90
 
+USEMARBL=FALSE
+
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
 	@/bin/rm -f $*.f
 .F.f:
 	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
+.f90.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
      CPP = cpp -traditional
 
-# Path names (non-hydrostatic & NetCDF libraries):
+# Path names (non-hydrostatic, MARBL and NetCDF libraries):
+	MARBL_INC = ${MARBL_ROOT}/include/intel-mpi
+	MARBL_LIB = -L${MARBL_ROOT}/lib -lmarbl-intel-mpi
 
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_INC  = $(NHMG_ROOT)/include
@@ -46,13 +55,19 @@
 
 	MPI_INC = ${MPIHOME}/include/mpi
 
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
 
-	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
+ifeq ($(USEMARBL),TRUE)
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(MARBL_LIB)
+else
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB)
+endif
 
-# MARBL
-#       MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-#   	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+ifeq ($(FCOMP),mpiifx)
+	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
+	ICDF = 
+else
+	ICDF = -I$(MPI_INC) -I$(NHMG_INC) -I$(NETCDF_INC) -I$(MARBL_INC)
+endif
 
 
 # Large memory runs (e.g. for bgc):
@@ -95,7 +110,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
-	visc3d_S.F	t3dmix_S.F      particles.F\
+	visc3d_S.F	t3dmix_S.F      particles.F	visc2d.F\
 \
 	zetabc.F	u2dbc_im.F	v2dbc_im.F\
 	u3dbc_im.F	v3dbc_im.F	w3dbc_im.F	t3dbc_im.F\
@@ -105,12 +120,12 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
-        lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
-        get_date.F	ext_copy_prv2shr.F		check_switches2.F\
+        lenstr.F	setup_kwds.F	check_switches1.F\
+        ext_copy_prv2shr.F		check_switches2.F\
 \
 	mpi_setup.F\
 \
-	river_frc.F	pipe_frc.F      add_git_hash.F\
+	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
 	random_output.F cstar_output.F mpi_exchanges.F	zslice_output.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\

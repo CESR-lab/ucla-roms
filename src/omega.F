@@ -24,6 +24,7 @@
 
       use param
       use pipe_frc
+      use cdr_frc
       use grid
       use ocean_vars
       use scalars
@@ -53,13 +54,25 @@
         dtau=0.6*dt
       endif
 
-      do j=1,ny
+      Wi(1:nx,1:ny,0)=0.
+
+      if (cdr_source.and.cdr_volume) then
+        do cidx=1,cdr_nprf
+          icdr = cdr_icdr(cidx)
+          i = cdr_iloc(cidx)
+          j = cdr_iloc(cidx)
+          do k=1,nz
+            Wi(i,j,k)=Wi(i,j,k-1)
+     &         + cdr_vol(icdr)*cdr_prf(cidx,k)
+          enddo
+        enddo
+      endif
+
+      do j=jstr,jend
+
       !!! For NHMG pipes, the flux needs to be out of the bottom.
       !!! Additionally, modify, where needed, the We to Wi split 
       !!! for pipe sources
-        do i=1,nx
-          Wi(i,j,0)=0.
-        enddo
         do k=1,N,+1        !--> recursive
           do i=1,nx
             Wi(i,j,k)=Wi(i,j,k-1) -FlxU(i+1,j,k) +FlxU(i,j,k)

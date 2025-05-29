@@ -24,7 +24,11 @@
       ! Variables used for equation system calculations
       real,public,allocatable,dimension(:,:) :: riv_uflx
       real,public,allocatable,dimension(:,:) :: riv_vflx
-      real,public,allocatable,dimension(:,:) :: rflx                 ! river locations
+      real,public,allocatable,dimension(:,:) :: rflx ! river locations
+      real   ,public,allocatable,dimension(:,:) :: rfrc ! River fraction
+      real   ,public,allocatable,dimension(:,:) :: ridx_real ! River indices (read as real by ncread)
+      integer,public,allocatable,dimension(:,:) :: ridx ! River indices (stored as int by ROMS)
+      
       real,public,dimension(nriv)    :: riv_vol                      ! river volume
       real,public,dimension(nriv,nt) :: riv_trc                      ! river tracer conc.
 
@@ -40,7 +44,7 @@
       character(len=10) :: riv_tim_name = 'river_time'               ! stored in a forcing file
       character(len=6) :: nriv_dim_name = 'nriver'                   ! dimension name for number of rivers in file
       character(len=8) :: ntrc_dim_name = 'ntracers'                 ! dimension name for number of tracers in file
-      
+
       ! Misc:
       logical, public :: init_riv_done = .false.                     ! if river variables have been initialized yet
 
@@ -59,7 +63,10 @@
 
       implicit none
 
-      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
+      if (.not. init_riv_done) then
+         allocate(nc_rvol%vdata(nriv,1 ,2))
+         allocate(nc_rtrc%vdata(nriv,nt,2))
+      end if
 
       ! set river flux volumes and tracer data:
       if(analytical) then
@@ -67,13 +74,13 @@
         call set_ana_river_frc ! cppflags needed else won't link without the analytical.F
 
       else
-
-        call set_frc_data(nc_rvol,riv_vol)                 ! set river volume flux for all rivers at current time
-
+         call set_frc_data(nc_rvol,riv_vol) ! set river volume flux for all rivers at current time
         call set_frc_data(nc_rtrc,var2d=riv_trc)           ! set river tracers flux for all rivers at current time
 
       endif
 
+      if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
+      
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
@@ -84,17 +91,21 @@
       ! subroutine
       use netcdf
       implicit none
+
       ! local
       integer :: i,j
       integer :: ierr,ncid,varid
       real  :: riv_cells,riv_east,riv_west
 
-      character(len=150) :: string
       allocate( riv_uflx(GLOBAL_2D_ARRAY) ); riv_uflx = 0.
       allocate( riv_vflx(GLOBAL_2D_ARRAY) ); riv_vflx = 0.
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
+      allocate( ridx(GLOBAL_2D_ARRAY) )    ; ridx = 0
+      allocate( ridx_real(GLOBAL_2D_ARRAY) )    ; ridx_real = 0.
+      allocate( rfrc(GLOBAL_2D_ARRAY) )    ; rfrc = 0.      
+      
 
-
+      
       if (analytical) then
         riv_west=xl*0.4 ! River west bank at 40% from west
         riv_east=xl*0.6 ! River west bank at 60% from west
@@ -106,7 +117,8 @@
               ! find 'coastline' masked cells
 # ifdef MASKING
               if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-                rflx(i,j) = 1.0+1.0/riv_cells
+                 ridx(i,j) = 1
+                 rfrc(i,j) = 1/riv_cells
               endif
 # endif
             endif
@@ -124,15 +136,64 @@
         call ncwrite(ncid,'river_flux', rflx(i0:i1,j0:j1))
         ierr=nf90_close(ncid)
 
-      else ! Read 'river_flux' from grid file (River mouth locations)
+      else                      ! Not analytical, read from file
+         ! Start by checking forcing file for separate variables
+         ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
+         ierr = nf90_inq_varid(ncid, "river_index", varid) ! check river forcing file for index...
+         ierr = ierr * nf90_inq_varid(ncid, "river_fraction", varid) ! ... and fraction variables
+         
+         if (ierr == nf90_noerr) then ! Found the variables in the forcing file
+            call ncread(ncid, "river_index", ridx_real(i0:i1,j0:j1))
+            call ncread(ncid, "river_fraction", rfrc(i0:i1,j0:j1))
+            ierr = nf90_close(ncid)            
+!     Check for non-integer values
+            ridx(i0:i1, j0:j1) = int(ridx_real(i0:i1, j0:j1))
+            if (any(abs(ridx_real(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)) > 1.0e-6)) then
+               write(*,*) 'ERROR: river_index contains non-integers!'
+               stop
+            endif
+         else ! if not in the forcing file, look for a single variable in the grid file
+            ierr=nf90_close(ncid)
+            ierr=nf90_open(grdname, nf90_nowrite, ncid)
+            ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
+         
+            if (ierr /= nf90_noerr) then ! if not in grid file
+               ierr = nf90_close(ncid) ! close grid file
+               call handle_ierr(ierr, 'init_riv:: '//
+     &              'unable to find river index and fraction'//
+     &              ' either as separate variables '//
+     &              ' (river_index, river_fraction) in river '//
+     &              ' forcing file ('// trim(frcfile(nc_rvol%ifile)) //
+     &              ') or as a combined variable ('// trim(riv_flx_name) //
+     &              ', deprecated) in grid (' // trim(grdname)//
+     &              ') file.')
+            else
+               if (mynode == 0) then
+                  write(*,'(/7x,A/)') 'DEPRECATION WARNING, init_riv:'//
+     &                 'ROMS has located a single variable '//
+     &                 '(river_flux) containing both river index '//
+     &                 ' and fraction in the grid file ('// trim(grdname)//
+     &                 '). This behavior is deprecated '//
+     &                 'as of March 2025 and will be removed in a '//
+     &                 'future version. Please provide separate ' //
+     &                 'variables: river_index and river_fraction '//
+     &                 ' in the river forcing file ('// 
+     &                 trim(frcfile(nc_rvol%ifile))//').'
+               end if
+                  
 
-        allocate(nc_rvol%vdata(nriv,1 ,2))
-        allocate(nc_rtrc%vdata(nriv,nt,2))
-        ierr=nf90_open(grdname, nf90_nowrite, ncid)
-        call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1) )
-        if(ierr/=0) call handle_ierr(ierr,'init_riv:: riv not in file!')
-        
-      endif
+               call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1))
+               ierr = nf90_close(ncid)
+               where (rflx(i0:i1, j0:j1) > 0)
+                  ridx(i0:i1, j0:j1) = floor(rflx(i0:i1, j0:j1) - 1e-5)
+                  rfrc(i0:i1,j0:j1) = rflx(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)                  
+               elsewhere
+                  ridx(i0:i1, j0:j1) = 0
+                  rfrc(i0:i1, j0:j1) = 0
+               end where
+            end if ! found in grid file               
+         end if                 ! Separate variables found in forcing file
+      endif !analytical
 
       call calc_river_flux                                           ! compute uflx,vflx from rflx
 
@@ -140,18 +201,6 @@
 
       if(mynode==0) write(*,'(/7x,A/)')
      &  'river_frc: init river locations'
-
-      ! Print user options (river_frc.opt) to netcdf attributes
-      river_frc_opt = ''
-      write(string, '(A,I3)') '# of rivers:', nriv
-      call store_string_att(river_frc_opt, string)
-      if (analytical) then 
-        call store_string_att(river_frc_opt, ', analytical')
-      else
-        call store_string_att(river_frc_opt, ', real')
-      endif
-      
-      river_frc_opt = trim(adjustl(river_frc_opt))
 
       end subroutine init_river_frc  !]
 ! ----------------------------------------------------------------------
@@ -168,11 +217,12 @@
       ! compute uflx,vflx from rflx
       do j = 0,ny+1   ! Loop over -1 and +1 because rflx cell only flows into
         do i = 0,nx+1 ! neighbour, hence cell next to boundary could flow into cell.
-          if (rflx(i,j) > 0) then ! distribute mass flux to all available unmasked cells
+          if (rfrc(i,j) > 0) then ! distribute mass flux to all available unmasked cells
             ! subtract 1e-5 in case only 1 grid point for river, so that floor still
             ! produces correct iriver number.
 !            write(*,*) 'mynode=',mynode,'i,j',i,j,rflx(i,j),'rflx(i,j)'
-            iriver = floor(rflx(i,j)-1e-5)
+             !iriver = floor(rflx(i,j)-1e-5)
+             !iriver = ridx(i,j)
 #ifdef MASKING
             faces =  rmask(i-1,j)+rmask(i+1,j)+rmask(i,j-1)+rmask(i,j+1) !! amount of unmasked cells around
             if ( faces == 0 .or. rmask(i,j)>0  ) then
@@ -180,10 +230,10 @@
             endif
             ! 10*iriver needed because uflx/vflx can be positive or negative around
             ! the iriver number, and hence nearest integer is safest done with 10*.
-            if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rflx(i,j)-iriver)/faces + 10*iriver
-            if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rflx(i,j)-iriver)/faces + 10*iriver
-            if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rflx(i,j)-iriver)/faces + 10*iriver
-            if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rflx(i,j)-iriver)/faces + 10*iriver
+            if (rmask(i-1,j)>0 ) riv_uflx(i  ,j) =-(rfrc(i,j))/faces + 10*ridx(i,j)
+            if (rmask(i+1,j)>0 ) riv_uflx(i+1,j) = (rfrc(i,j))/faces + 10*ridx(i,j)
+            if (rmask(i,j-1)>0 ) riv_vflx(i,j  ) =-(rfrc(i,j))/faces + 10*ridx(i,j)
+            if (rmask(i,j+1)>0 ) riv_vflx(i,j+1) = (rfrc(i,j))/faces + 10*ridx(i,j)
 #endif
           endif
         enddo

@@ -22,17 +22,21 @@ c--# define SFLX_CORR
 # define UV_ADV
 # define ADV_ISONEUTRAL
 
-# define CURVGRID
-# define SPHERICAL
-# define MASKING
+#  define BULK_FRC
 
-# define SALINITY
-# define NONLIN_EOS
-# define SPLIT_EOS
+#  define EXTRACT_DATA
+#  define DIAGNOSTICS
+#   define SPONGE_TUNE
 
-C--# define AVERAGES
-# define EXACT_RESTART
-# define IMPLICIT_BOTTOM_DRAG
+#  define SOLVE3D
+#  define UV_COR
+#  define UV_ADV
+
+c--#  define NHMG
+
+#  define CURVGRID
+#  define SPHERICAL
+#  define MASKING
 
 # define UV_VIS2
 # define TS_DIF2
@@ -59,24 +63,6 @@ C--# define LMD_CONVEC
 # define T_FRC_BRY
 # define SPONGE
 
-c--#  define WEC
-
-#  ifdef WEC
-#    define BRK0
-#    define SURFACE_BREAK
-#    undef SPEC_DD
-#    undef LOG_BDRAG
-#    undef WKB_WWAVE
-#    undef BBL
-#    define WAVE_OFFLINE
-#    define WAVE_FRICTION
-#    define BBL_S95
-#    define SUP_OFF
-#    define WAVE_DIFF_FROM_LM
-#  else
-#   define LOG_BDRAG
-#  endif
-#  define BULK_FRC
 
 c--# endif
 
