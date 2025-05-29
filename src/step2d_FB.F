@@ -165,12 +165,8 @@
             endif
           endif
 
-<<<<<<< HEAD
-=======
 
 #ifdef MASKING
->>>>>>> ifx_functionality
-          zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed
 
           Dnew(i,j)=zeta_new(i,j)+h(i,j)
           zwrk(i,j)=bkw_new*zeta_new(i,j) +bkw*zeta(i,j,kstp)
