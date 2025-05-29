@@ -13,7 +13,7 @@
 
       character(len=60) :: cdr_file = 'cdr_release.nc'
 
-      ! Use either volume flux [m3/s] and tracer concentrations [C/m3], or use tracer flux [C/s]
+      ! Use either volume flux [m3/s] and tracer concentrations [mmol/m3], or use tracer flux [mmol/s]
       type (ncforce) :: nc_cdrvol = ncforce( vname='cdr_volume', tname='cdr_time')
       type (ncforce) :: nc_cdrtrc = ncforce( vname='cdr_tracer', tname='cdr_time') 
 

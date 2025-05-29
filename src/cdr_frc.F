@@ -203,6 +203,8 @@
 
         ! allocate total number of profiles for all releases
         allocate(cdr_prf(cdr_nprf,nz))
+        cdr_prf(:,:) = 0
+        
         allocate(cdr_icdr(cdr_nprf))
         allocate(cdr_iloc(cdr_nprf))
         allocate(cdr_jloc(cdr_nprf))
@@ -227,7 +229,7 @@
                      arg_nz(k) = abs(z_r(i,j,k) + cdr_dep(icdr))
                    enddo
                      arg = minloc(arg_nz,1)
-                     cdr_prf(cidx,arg) = 1
+                     cdr_prf(cidx,arg) = frac(i,j,icdr)
                  else
                    vint = 0
                    do k=1,nz
