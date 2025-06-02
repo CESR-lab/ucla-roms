@@ -106,6 +106,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use boundary
       use particles
       use random_output
+      use cstar_output
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
@@ -297,6 +298,7 @@ CR      write(*,*)  ' -2' MYID
       call wrt_bgc(.true.)
 #endif
       if (do_random) call init_random
+      if (do_cstar)  call init_cstar
 
       if (may_day_flag /=0 ) goto 99     !-->  EXIT
 
@@ -329,6 +331,7 @@ CR      write(*,*)  ' -2' MYID
       use particles
       use surf_flux
       use random_output
+      use cstar_output
       use basic_output
       use boundary
       use analytical
@@ -492,6 +495,9 @@ CR      write(*,*)  ' -2' MYID
 #endif
 
       if (do_random) call wrt_random
+#if defined MARBL && defined MARBL_DIAGS
+      if (do_cstar)  call wrt_cstar
+#endif
 
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc
