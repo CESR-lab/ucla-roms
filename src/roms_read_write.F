@@ -86,7 +86,6 @@
       character(len=max_options_string),public::bc_options   = 'OFF'
       character(len=max_options_string),public::pipe_frc_opt ='OFF'
       character(len=max_options_string),public::river_frc_opt='OFF'
-      character(len=max_options_string),public::cdr_frc_opt  ='OFF'
       character(len=max_options_string),public::tide_opt='OFF'
       character(len=max_options_string),public::bulk_frc_opt='OFF'
       character(len=max_options_string),public::flux_frc_opt='OFF'
