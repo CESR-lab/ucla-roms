@@ -291,7 +291,7 @@
       if (wrt_T_zsl) then
       do n=1,nt_z
       varid = nccreate(ncid,t_vname(trc2zsc(n)),
-     &         (/'xi_rho','eta_rho','depth','time'/),(/xi_rho,eta_rho,ndep,0/))
+     &         (/dn_xr,dn_yr,'depth',dn_tm/),(/xi_rho,eta_rho,ndep,0/))
       if (do_avg) then
         ierr = nf90_put_att(ncid,varid,'long_name','averaged'//t_lname(trc2zsc(n)))
       else
@@ -302,7 +302,7 @@
       endif
 
       if (wrt_U_zsl) then
-      varid = nccreate(ncid,'u',(/'xi_u','eta_rho','depth','time'/),(/xi_u,eta_rho,ndep,0/))
+      varid = nccreate(ncid,'u',(/dn_xu,dn_yr,'depth',dn_tm/),(/xi_u,eta_rho,ndep,0/))
       if (do_avg) then
         ierr = nf90_put_att(ncid,varid,'long_name','averaged u-momentum component')
       else
@@ -312,7 +312,7 @@
       endif
 
       if (wrt_V_zsl) then
-      varid = nccreate(ncid,'v',(/'xi_rho','eta_v','depth','time'/),(/xi_rho,eta_v,ndep,0/))
+      varid = nccreate(ncid,'v',(/dn_xr,dn_yv,'depth',dn_tm/),(/xi_rho,eta_v,ndep,0/))
       if (do_avg) then
          ierr = nf90_put_att(ncid,varid,'long_name','averaged v-momentum component')
       else
