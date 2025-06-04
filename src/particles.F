@@ -240,11 +240,11 @@
 
        do ip = 1,np
          if (pz(ip)<0) then
-           pz(ip) = 0.1
+           pz(ip) = 0.02
            n_bot = n_bot+1
          endif
          if (pz(ip)>nz) then
-           pz(ip) = nz-0.1
+           pz(ip) = nz-0.02
            n_sur = n_sur+1
          endif
        enddo
