@@ -332,6 +332,7 @@ CR      write(*,*)  ' -2' MYID
       use surf_flux
       use random_output
       use cstar_output
+      use zslice_output
       use basic_output
       use boundary
       use analytical
@@ -420,13 +421,9 @@ CR      write(*,*)  ' -2' MYID
       call set_forces   ! get for time n+1/2
 # if defined LMD_MIXING
       call lmd_vmix(nrhs)
-!     if (mynode==0) then
-!       print *,'cor-step mixing: ',hbls(nx,20),maxval(Akv(nx,20,:))
-!     endif
 # endif
 
       tdays = (time+0.5*dt)*sec2day
-
       call set_bry_all  ! get for time n+1
       if (bry_tides.or.pot_tides) call set_tides(0)
 
@@ -498,6 +495,8 @@ CR      write(*,*)  ' -2' MYID
 #if defined MARBL && defined MARBL_DIAGS
       if (do_cstar)  call wrt_cstar
 #endif
+
+      if (do_zslice) call wrt_zslice
 
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc
