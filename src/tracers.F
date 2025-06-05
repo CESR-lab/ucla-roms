@@ -79,12 +79,10 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_surf_tracer_flx(istr,iend,jstr,jend) ![ set tracer flux at surface
+      subroutine set_surf_tracer_flx ![
+      ! set tracer flux at surface
 
       implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
       integer           :: itrc       ! tracer number for loop index
