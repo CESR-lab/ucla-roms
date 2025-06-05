@@ -1,6 +1,6 @@
 #if defined UV_COR || (defined CURVGRID && defined UV_ADV)
-        do j=jstrV-1,jend                ! Add Coriolis terms and
-          do i=istrU-1,iend              ! contribution to advection
+        do j=0,ny                ! Add Coriolis terms and
+          do i=0,nx              ! contribution to advection
             cff=0.5*Hz(i,j,k)*(          ! associated with curvilinear
 # ifdef UV_COR
      &              fomn(i,j)            ! horizontal coordinates.
@@ -30,16 +30,16 @@
 # endif
           enddo
         enddo
-        do j=jstr,jend
-          do i=istrU,iend
+        do j=1,ny
+          do i=1,nx
             ru(i,j,k)=ru(i,j,k)+0.5*(UFx(i,j)+UFx(i-1,j))
 # ifdef WEC
      &               + 0.5*(UFe(i,j)+UFe(i-1,j))
 # endif
           enddo
         enddo
-        do j=jstrV,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             rv(i,j,k)=rv(i,j,k)-0.5*(VFe(i,j)+VFe(i,j-1))
 # ifdef WEC
      &               -0.5*(VFx(i,j)+VFx(i,j-1))
@@ -69,43 +69,43 @@
 
 # define uxx wrk1
 # define Huxx wrk2
-# ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then        ! Sort out bounding indices for
-          imin=istrU                  ! the extended ranges: note that
-        else                          ! in the vicinity of physical
-          imin=istrU-1                ! boundaries values at the
-        endif                         ! extremal points of stencil
-        if (EASTERN_EDGE) then        ! are not available, so an
-          imax=iend                   ! extrapolation rule needs to
-        else                          ! be applied.  Also note that
-          imax=iend+1                 ! for this purpose periodic
-        endif                         ! ghost points and MPI margins
-# else
-        imin=istr-1                   ! are not considered as
-        imax=iend+1                   ! physical boundaries.
-# endif
-        do j=jstr,jend
+        if (.not.(ew_periodic)) then
+          if (inode==0) then        ! Sort out bounding indices for
+            imin=1                      ! the extended ranges: note that
+          else                          ! in the vicinity of physical
+            imin=0                      ! boundaries values at the
+          endif                         ! extremal points of stencil
+          if (inode==np_xi-1) then        ! are not available, so an
+            imax=nx                     ! extrapolation rule needs to
+          else                          ! be applied.  Also note that
+            imax=nx+1                 ! for this purpose periodic
+          endif                         ! ghost points and MPI margins
+        else
+          imin=0                   ! are not considered as
+          imax=nx+1                   ! physical boundaries.
+        endif
+        do j=1,ny
           do i=imin,imax
             uxx(i,j)=u(i-1,j,k,nrhs)-2.*u(i,j,k,nrhs)+u(i+1,j,k,nrhs)
             Huxx(i,j)=FlxU(i-1,j,k) -2.*FlxU(i,j,k) +FlxU(i+1,j,k)
           enddo
         enddo
-# ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then
-          do j=jstr,jend
-            uxx(1,j) =uxx(2,j)
-            Huxx(1,j)=Huxx(2,j)
-          enddo
+        if (.not.(ew_periodic)) then
+          if (inode==0) then
+            do j=1,ny
+              uxx(1,j) =uxx(2,j)
+              Huxx(1,j)=Huxx(2,j)
+            enddo
+          endif
+          if (inode==np_xi-1) then
+            do j=1,ny
+              uxx(nx+1,j) =uxx(nx,j)
+              Huxx(nx+1,j)=Huxx(nx,j)
+            enddo
+          endif
         endif
-        if (EASTERN_EDGE) then
-          do j=jstr,jend
-            uxx(iend+1,j) =uxx(iend,j)
-            Huxx(iend+1,j)=Huxx(iend,j)
-          enddo
-        endif
-# endif
-        do j=jstr,jend
-          do i=istrU-1,iend
+        do j=1,ny
+          do i=0,nx
 # ifdef UPSTREAM_UV
             cff=FlxU(i,j,k)+FlxU(i+1,j,k)-delta*( Huxx(i  ,j)
      &                                            +Huxx(i+1,j))
@@ -126,43 +126,43 @@
 
 # define vee wrk1
 # define Hvee wrk2
-# ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          jmin=jstrV
+        if (.not.(ns_periodic)) then
+          if (jnode==0) then
+            jmin=1
+          else
+            jmin=0
+          endif
+          if (jnode==np_eta-1) then
+            jmax=ny
+          else
+            jmax=ny+1
+          endif
         else
-          jmin=jstrV-1
+          jmin=0
+          jmax=ny+1
         endif
-        if (NORTHERN_EDGE) then
-          jmax=jend
-        else
-          jmax=jend+1
-        endif
-# else
-        jmin=jstr-1
-        jmax=jend+1
-# endif
         do j=jmin,jmax
-          do i=istr,iend
+          do i=1,nx
             vee(i,j)=v(i,j-1,k,nrhs)-2.*v(i,j,k,nrhs)+v(i,j+1,k,nrhs)
             Hvee(i,j)=FlxV(i,j-1,k) -2.*FlxV(i,j,k)  +FlxV(i,j+1,k)
           enddo
         enddo
-# ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          do i=istr,iend
-            vee(i,1)=vee(i,2)
-            Hvee(i,1)=Hvee(i,2)
-          enddo
+        if (.not.(ns_periodic)) then
+          if (jnode==0) then
+            do i=1,nx
+              vee(i,1)=vee(i,2)
+              Hvee(i,1)=Hvee(i,2)
+            enddo
+          endif
+          if (jnode==np_eta-1) then
+            do i=1,nx
+              vee(i,ny+1)=vee(i,ny)
+              Hvee(i,ny+1)=Hvee(i,ny)
+            enddo
+          endif
         endif
-        if (NORTHERN_EDGE) then
-          do i=istr,iend
-            vee(i,jend+1)=vee(i,jend)
-            Hvee(i,jend+1)=Hvee(i,jend)
-          enddo
-        endif
-# endif
-        do j=jstrV-1,jend
-          do i=istr,iend
+        do j=1-1,ny
+          do i=1,nx
 # ifdef UPSTREAM_UV
             cff=FlxV(i,j,k)+FlxV(i,j+1,k)-delta*( Hvee(i,j  )
      &                                           +Hvee(i,j+1))
@@ -181,47 +181,47 @@
 # undef Hvee
 # undef vee
 
-# define uee wrk1
 # define Hvxx wrk2
-# ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          jmin=jstr
+        if (.not.(ns_periodic)) then
+          if (jnode==0) then
+            jmin=1
+          else
+            jmin=0
+          endif
+          if (jnode==np_eta-1) then
+            jmax=ny
+          else
+            jmax=ny+1
+          endif
         else
-          jmin=jstr-1
+          jmin=0
+          jmax=ny+1
         endif
-        if (NORTHERN_EDGE) then
-          jmax=jend
-        else
-          jmax=jend+1
-        endif
-# else
-        jmin=jstr-1
-        jmax=jend+1
-# endif
+        uee(1-bf:nx+bf,1-bf:ny+bf) => scratch_2d(:,7)
         do j=jmin,jmax
-          do i=istrU,iend
+          do i=1,nx
             uee(i,j)=u(i,j-1,k,nrhs)-2.*u(i,j,k,nrhs)+u(i,j+1,k,nrhs)
           enddo
         enddo
-# ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          do i=istrU,iend
-            uee(i,jstr-1)=uee(i,jstr)
-          enddo
+        if (.not.(ns_periodic)) then
+          if (jnode==0) then
+            do i=1,nx
+              uee(i,0)=uee(i,1)
+            enddo
+          endif
+          if (jnode==np_eta-1) then
+            do i=1,nx
+              uee(i,ny+1)=uee(i,ny)
+            enddo
+          endif
         endif
-        if (NORTHERN_EDGE) then
-          do i=istrU,iend
-            uee(i,jend+1)=uee(i,jend)
-          enddo
-        endif
-# endif
-        do j=jstr,jend+1
-          do i=istrU-1,iend
+        do j=1,ny+1
+          do i=1-1,nx
            Hvxx(i,j)=FlxV(i-1,j,k)-2.*FlxV(i,j,k)+FlxV(i+1,j,k)
           enddo
         enddo
-        do j=jstr,jend+1
-          do i=istrU,iend
+        do j=1,ny+1
+          do i=1,nx
 # ifdef UPSTREAM_UV
             cff=FlxV(i,j,k)+FlxV(i-1,j,k)-delta*( Hvxx(i  ,j)
      &                                           +Hvxx(i-1,j))
@@ -237,50 +237,50 @@
 # endif
           enddo
         enddo
+        nullify(uee)
 # undef Hvxx
-# undef uee
 
-# define vxx wrk1
 # define Huee wrk2
-# ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then
-          imin=istr
+        if (.not.(ew_periodic)) then
+          if (inode==0) then
+            imin=1
+          else
+            imin=0
+          endif
+          if (inode==np_xi-1) then
+            imax=nx
+          else
+            imax=nx+1
+          endif
         else
-          imin=istr-1
+          imin=0
+          imax=nx+1
         endif
-        if (EASTERN_EDGE) then
-          imax=iend
-        else
-          imax=iend+1
-        endif
-# else
-        imin=istr-1
-        imax=iend+1
-# endif
-        do j=jstrV,jend
+        vxx(1-bf:nx+bf,1-bf:ny+bf) => scratch_2d(:,7)
+        do j=1,ny
           do i=imin,imax
             vxx(i,j)=v(i-1,j,k,nrhs)-2.*v(i,j,k,nrhs)+v(i+1,j,k,nrhs)
           enddo
         enddo
-# ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then
-          do j=jstrV,jend
-            vxx(istr-1,j)=vxx(istr,j)
-          enddo
+        if (.not.(ew_periodic)) then
+          if (inode==0) then
+            do j=1,ny
+              vxx(0,j)=vxx(1,j)
+            enddo
+          endif
+          if (inode==np_xi-1) then
+            do j=1,ny
+              vxx(nx+1,j)=vxx(nx,j)
+            enddo
+          endif
         endif
-        if (EASTERN_EDGE) then
-          do j=jstrV,jend
-            vxx(iend+1,j)=vxx(iend,j)
-          enddo
-        endif
-# endif
-        do j=jstrV-1,jend
-          do i=istr,iend+1
+        do j=0,ny
+          do i=1,nx+1
            Huee(i,j)=FlxU(i,j-1,k)-2.*FlxU(i,j,k)+FlxU(i,j+1,k)
           enddo
         enddo
-        do j=jstrV,jend
-          do i=istr,iend+1
+        do j=1,ny
+          do i=1,nx+1
 # ifdef UPSTREAM_UV
             cff=FlxU(i,j,k)+FlxU(i,j-1,k)-delta*( Huee(i,j  )
      &                                           +Huee(i,j-1))
@@ -297,15 +297,15 @@
           enddo
         enddo
 # undef Huee
-# undef vxx
-        do j=jstr,jend
-          do i=istrU,iend
+        nullify(vxx)
+        do j=1,ny
+          do i=1,nx
             ru(i,j,k)=ru(i,j,k)-UFx(i,j  )+UFx(i-1,j)
      &                         -UFe(i,j+1)+UFe(i  ,j)
           enddo
         enddo
-        do j=jstrV,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             rv(i,j,k)=rv(i,j,k)-VFx(i+1,j)+VFx(i,j  )
      &                         -VFe(i  ,j)+VFe(i,j-1)
           enddo

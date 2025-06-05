@@ -68,7 +68,7 @@
         enddo
       endif
 
-      do j=jstr,jend
+      do j=1,ny
 
       !!! For NHMG pipes, the flux needs to be out of the bottom.
       !!! Additionally, modify, where needed, the We to Wi split 

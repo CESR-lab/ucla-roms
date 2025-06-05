@@ -10,7 +10,7 @@
       integer tile
 
 # include "compute_tile_bounds.h"
-      call step3d_uv1_tile( istr,iend,jstr,jend,    A3d(1,1),A3d(1,2),
+      call step3d_uv1_tile( istr,iend,jstr,jend,
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                                              A2d(1,5),A2d(1,6)
@@ -20,7 +20,7 @@
      &                                                              )
       end
 
-      subroutine step3d_uv1_tile( istr,iend,jstr,jend, ru,rv,
+      subroutine step3d_uv1_tile( istr,iend,jstr,jend,
      &                                            WC,FC,CF,DC,
      &                             UFx,UFe,VFx,VFe, wrk1,wrk2 
 # ifdef NHMG
@@ -46,10 +46,11 @@
       use mixing
       use ocean_vars
       use scalars
+      use private_scratch
+      use hidden_mpi_vars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe,
      &                                                   wrk1,wrk2
@@ -65,6 +66,8 @@
       real  div,dmax
 !     integer :: ierr !,imx,jmx,kmx
 #endif
+      real,dimension(:,:,:),pointer :: ru,rv
+      real,dimension(:,:),pointer :: uee,vxx
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
 ! but needs to be declared here in declarations section not in
@@ -75,10 +78,13 @@
 
 # include "compute_auxiliary_bounds.h"
 
+      ru(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,1)
+      rv(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,2)
+
 # ifdef DIAGNOSTICS
 #  ifdef NHMGDIAG
       if (diag_uv.and.calc_diag) then
-        Wdiag(istr:iend,jstr:jend,:,iwprsgr) =rw(istr:iend,jstr:jend,:)
+        Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)
       endif
 #  endif
 # endif
@@ -95,21 +101,21 @@
 #  undef FE
 #  undef FX
 
-      do j=jstr,jend
+      do j=1,ny
 
 #  include "compute_vert_rhs_w_terms.h"
-        do i=istr,iend
+        do i=1,nx
           DC(i,0)=dt*pm(i,j)*pn(i,j)
         enddo
         do k=1,N           !! w is dz*w after this
-          do i=istr,iend
+          do i=1,nx
             w(i,j,k,nnew)=w(i,j,k,nnew) +DC(i,0)*rw(i,j,k)
           enddo
         enddo
 
       enddo
 #  ifdef DIAGNOSTICS_NHMG
-      if (calc_diag) call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
+      if (calc_diag) call set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )
 #  endif
 # endif  /* NHMG */
 
@@ -118,7 +124,7 @@
       enddo
 
 # ifdef WEC
-      call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
+      call compute_wec_rhs_uv_terms(1,nx,1,ny,ru,rv,wrk1,wrk2)
 # endif
 
 # ifdef DIAGNOSTICS
@@ -128,7 +134,7 @@
         endif
 # endif
 
-      do j=jstr,jend
+      do j=1,ny
 
 # include "compute_vert_rhs_uv_terms.h"
 
@@ -139,10 +145,10 @@
 #  if defined WAVE_FRICTION && !defined BODY_FRICTION
         !! JM add this somehow like a bustr in a manner like below
         !! or move into compute_wec_rhs_uv.
-        do i=istrU,iend
+        do i=1,nx
           ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
         enddo
-        do i=istr,iend
+        do i=1,nx
           rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
         enddo
 #  endif
@@ -155,7 +161,7 @@
           v_prev = v(1:nx,j,:,nnew)
         endif
 
-        do i=istrU,iend
+        do i=1,nx
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
           FC(i,N-1)= 2.*dt*(Akv(i,j,N-1)+Akv(i-1,j,N-1))
@@ -174,7 +180,7 @@
      &                                                  )
         enddo
         do k=N-1,2,-1      !--> forward elimination
-          do i=istrU,iend
+          do i=1,nx
             FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
      &                        /(  Hz(i,j,k  )+Hz(i-1,j,k  )
      &                           +Hz(i,j,k-1)+Hz(i-1,j,k-1))
@@ -192,7 +198,7 @@
      &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
           enddo
         enddo
-        do i=istrU,iend
+        do i=1,nx
           DC(i,1)=( u(i,j,1,nnew) +DC(i,0)*ru(i,j,1)
      &                      +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                          )/( 0.5*(Hz(i,j,1)+Hz(i-1,j,1))
@@ -208,7 +214,7 @@
      &            -0.5*(r_D(i-1,j)+r_D(i,j))*DC(i,1) )
         enddo
         do k=2,N,+1          !--> backsubstitution
-          do i=istrU,iend
+          do i=1,nx
             DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1)
 
             u(i,j,k,nnew)=DC(i,k) * 0.5*(Hz(i,j,k)+Hz(i-1,j,k))
@@ -231,8 +237,8 @@
         endif
 # endif
 
-        if (j >= jstrV) then
-          do i=istr,iend
+        if (j >= 1) then
+          do i=1,nx
             DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
 
             FC(i,N-1)= 2.*dt*(Akv(i,j,N-1)+Akv(i,j-1,N-1))
@@ -251,7 +257,7 @@
      &                                                    )
           enddo
           do k=N-1,2,-1      !--> forward elimination
-            do i=istr,iend
+            do i=1,nx
               FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i,j-1,k-1))
      &                          /(  Hz(i,j,k  )+Hz(i,j-1,k  )
      &                             +Hz(i,j,k-1)+Hz(i,j-1,k-1))
@@ -269,7 +275,7 @@
      &                   +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
             enddo
           enddo
-          do i=istr,iend
+          do i=1,nx
             DC(i,1)=( v(i,j,1,nnew) +DC(i,0)*rv(i,j,1)
      &                       +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                            )/( 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
@@ -283,7 +289,7 @@
      &              -0.5*(r_D(i,j-1)+r_D(i,j))*DC(i,1) )
           enddo
           do k=2,N,+1          !--> backsubstitution
-            do i=istr,iend
+            do i=1,nx
               DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1)
 
               v(i,j,k,nnew)=DC(i,k) * 0.5*(Hz(i,j,k)+Hz(i,j-1,k))
@@ -306,11 +312,11 @@
          endif
 # endif
 
-        endif   !<-- j >= jstrV
+        endif   !<-- j >= 1
 
 # else  /* --> not IMPLICIT_BOTTOM_DRAG */
 
-        do i=istrU,iend
+        do i=1,nx
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
           u(i,j,N,nnew)=u(i,j,N,nnew) +DC(i,0)*ru(i,j,N)
@@ -322,7 +328,7 @@
      &                 -0.5*(r_D(i-1,j)+r_D(i,j))*u(i,j,1,nstp) )!! add brk2dx
         enddo
         do k=2,N-1
-          do i=istrU,iend
+          do i=1,nx
             u(i,j,k,nnew)=u(i,j,k,nnew)+DC(i,0)*ru(i,j,k)  ! u*dz
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
           enddo
@@ -338,8 +344,8 @@
         endif
 # endif
 
-        if (j >= jstrV) then
-          do i=istr,iend
+        if (j >= 1) then
+          do i=1,nx
             DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
 
             v(i,j,N,nnew)=v(i,j,N,nnew) +DC(i,0)*rv(i,j,N)
@@ -351,7 +357,7 @@
      &                   -0.5*(r_D(i,j-1)+r_D(i,j))*v(i,j,1,nstp) )
           enddo
           do k=2,N-1
-            do i=istr,iend
+            do i=1,nx
               v(i,j,k,nnew)=v(i,j,k,nnew)+DC(i,0)*rv(i,j,k)
               rvfrc(i,j)=rvfrc(i,j) +rv(i,j,k)
             enddo
@@ -366,7 +372,7 @@
           enddo
         endif
 # endif
-        endif  !<-- if j>=jstrV
+        endif  !<-- if j>=1
 
 # endif /* IMPLICIT_BOTTOM_DRAG */
       enddo  !<-- j
@@ -377,17 +383,17 @@
 #  ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
         do k=1,N
-          do j=jstr,jend
-            u(istr,j,k,nnew) = u(istr,j,k,nnew)*
-     &         0.5*(Hz(istr-1,j,k)+Hz(istr,j,k))
+          do j=1,ny
+            u(1,j,k,nnew) = u(1,j,k,nnew)*
+     &         0.5*(Hz(0,j,k)+Hz(1,j,k))
           enddo
         enddo
       endif
       if (EASTERN_EDGE) then
         do k=1,N
-          do j=jstr,jend
-            u(iend+1,j,k,nnew) = u(iend+1,j,k,nnew)*
-     &         0.5*(Hz(iend+1,j,k)+Hz(iend,j,k))
+          do j=1,ny
+            u(nx+1,j,k,nnew) = u(nx+1,j,k,nnew)*
+     &         0.5*(Hz(nx+1,j,k)+Hz(nx,j,k))
           enddo
         enddo
       endif
@@ -395,17 +401,17 @@
 #  ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
         do k=1,N
-          do i=istr,iend
-            v(i,jstr,k,nnew) = v(i,jstr,k,nnew)*
-     &         0.5*(Hz(i,jstr-1,k)+Hz(i,jstr,k))
+          do i=1,nx
+            v(i,1,k,nnew) = v(i,1,k,nnew)*
+     &         0.5*(Hz(i,0,k)+Hz(i,1,k))
           enddo
         enddo
       endif
       if (NORTHERN_EDGE) then
         do k=1,N
-          do i=istr,iend
-            v(i,jend+1,k,nnew) = v(i,jend+1,k,nnew)*
-     &         0.5*(Hz(i,jend+1,k)+Hz(i,jend,k))
+          do i=1,nx
+            v(i,ny+1,k,nnew) = v(i,ny+1,k,nnew)*
+     &         0.5*(Hz(i,ny+1,k)+Hz(i,ny,k))
           enddo
         enddo
       endif
@@ -416,26 +422,26 @@
       ! instead of u
 
       do k=1,N
-        do j=jstr,jend
-          do i=istr,iend+1
+        do j=1,ny
+          do i=1,nx+1
             u(i,j,k,nnew) = u(i,j,k,nnew)*dn_u(i,j)
           enddo
         enddo
-        do j=jstr,jend+1
-          do i=istr,iend
+        do j=1,ny+1
+          do i=1,nx
             v(i,j,k,nnew) = v(i,j,k,nnew)*dm_v(i,j)
           enddo
         enddo
         if (k==N) then
-          do j=Jstr,Jend
-            do i=istr,iend
+          do j=1,ny
+            do i=1,nx
               w(i,j,k,nnew) = w(i,j,k,nnew)*dm_r(i,j)*dn_r(i,j)
      &            /(0.5*(            Hz(i,j,k)))
             enddo
           enddo
         else
-          do j=Jstr,Jend
-            do i=istr,iend
+          do j=1,ny
+            do i=1,nx
               w(i,j,k,nnew) = w(i,j,k,nnew)*dm_r(i,j)*dn_r(i,j)
      &          /(0.5*(Hz(i,j,k+1)+Hz(i,j,k)))
             enddo
@@ -445,7 +451,7 @@
 
 #  ifdef EXCHANGE
       !! Todo: we should be able to avoid this. We only need u and v at the boundaries
-      !! Todo: computational ranges for u and v need to be extended to Iend+1, Jend+1
+      !! Todo: computational ranges for u and v need to be extended to nx+1, ny+1
       call exchange_xxx(u(:,:,:,nnew),v(:,:,:,nnew) )
 #  endif
 
@@ -457,26 +463,26 @@
         nh_ubar = 0.
         nh_vbar = 0.
         do k=1,N
-          do j=Jstr,Jend
-            do i=Istr,Iend+1
+          do j=1,ny
+            do i=1,nx+1
               nh_ubar(i,j) = nh_ubar(i,j) + u(i,j,k,nnew)
             enddo
           enddo
-          do j=Jstr,Jend+1
-            do i=Istr,Iend
+          do j=1,ny+1
+            do i=1,nx
               nh_vbar(i,j) = nh_vbar(i,j) + v(i,j,k,nnew)
             enddo
           enddo
         enddo
-        do j=Jstr,Jend
-          do i=Istr,Iend
+        do j=1,ny
+          do i=1,nx
             nh_wcor(i,j) = w(i,j,N,nnew) +
      &         (nh_ubar(i+1,j)-nh_ubar(i,j)+nh_vbar(i,j+1)-nh_vbar(i,j))
           enddo
         enddo
         do k=1,N
-          do j=Jstr,Jend
-            do i=Istr,Iend
+          do j=1,ny
+            do i=1,nx
               w(i,j,k,nnew) = w(i,j,k,nnew) - nh_wcor(i,j)
      &                       * (z_w(i,j,k)-z_w(i,j,0))
      &                       / (z_w(i,j,N)-z_w(i,j,0))
@@ -491,8 +497,8 @@
 
       ! At this point u,v,w are fluxes with the dimension of m^3/s
       do k=1,N
-        do j=jstr,jend
-          do i=Istr,Iend
+        do j=1,ny
+          do i=1,nx
             u(i,j,k,nnew) = (u(i,j,k,nnew) + mggrid(1)%du(k,j,i) )*pn_u(i,j)
 
             rufrc(i,j) = rufrc(i,j) + dn_u(i,j)*mggrid(1)%du(k,j,i)/dt 
@@ -500,8 +506,8 @@
           enddo
         enddo
 
-        do j=jstr,jend
-          do i=Istr,Iend
+        do j=1,ny
+          do i=1,nx
             v(i,j,k,nnew) = (v(i,j,k,nnew) + mggrid(1)%dv(k,j,i) )*pm_v(i,j)
 
             rvfrc(i,j) = rvfrc(i,j) + dm_v(i,j)*mggrid(1)%dv(k,j,i)/dt 
@@ -510,8 +516,8 @@
         enddo
 
         if (k==N) then
-          do j=jstr,jend
-            do i=Istr,Iend
+          do j=1,ny
+            do i=1,nx
               w(i,j,k,nnew) = (w(i,j,k,nnew) + mggrid(1)%dw(k+1,j,i) )
      &              * (pm(i,j)*pn(i,j))*(0.5*(            Hz(i,j,k)))
 
@@ -519,8 +525,8 @@
             enddo
           enddo
         else
-          do j=jstr,jend
-            do i=Istr,Iend
+          do j=1,ny
+            do i=1,nx
               w(i,j,k,nnew) = (w(i,j,k,nnew) + mggrid(1)%dw(k+1,j,i) )
      &              * (pm(i,j)*pn(i,j))*(0.5*(Hz(i,j,k+1)+Hz(i,j,k)))
 
@@ -543,7 +549,9 @@
       call exchange_xxx(dRdx,dRde)
 # endif
 
+      nullify(ru,rv)
       end
+
 
       subroutine check_step_uv1_switches(ierr)
 
@@ -570,6 +578,7 @@
      &  'Insufficient length of string "cpps" in file "strings".',
      &        'Increase parameter "max_opt_size" it and recompile.'
       ierr=ierr+1
+
       end
 
 #else

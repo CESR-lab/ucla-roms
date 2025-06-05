@@ -385,7 +385,7 @@ CR      write(*,*)  ' -2' MYID
 
       ! nrhs points to u/v at time level n
       call prsgrd
-      call pre_step3d(0)  ! u is m/s here
+      call pre_step3d  ! u is m/s here
 
       !! nnew ==n+1/2  
 
