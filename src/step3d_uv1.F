@@ -2,31 +2,7 @@
 #ifdef SOLVE3D
 # define UPSTREAM_UV
 
-      subroutine step3d_uv1(tile)
-      use param
-      use hidden_mpi_vars
-      use private_scratch
-      implicit none
-      integer tile
-
-# include "compute_tile_bounds.h"
-      call step3d_uv1_tile( istr,iend,jstr,jend,
-     &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
-     &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
-     &                                              A2d(1,5),A2d(1,6)
-# ifdef NHMG
-     &                                             ,A3d(1,5)
-# endif
-     &                                                              )
-      end
-
-      subroutine step3d_uv1_tile( istr,iend,jstr,jend,
-     &                                            WC,FC,CF,DC,
-     &                             UFx,UFe,VFx,VFe, wrk1,wrk2 
-# ifdef NHMG
-     &                                            ,rw
-# endif
-     &                                                              )
+      subroutine step3d_uv1
 
       use param
 # ifdef NHMG
@@ -50,24 +26,25 @@
       use hidden_mpi_vars
 
       implicit none
-      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe,
-     &                                                   wrk1,wrk2
-      real cff
-      real, parameter ::  delta=0.1666666666666667 ! delta=0.125
+
+      ! local
+      integer :: imin,imax,jmin,jmax, i,j,k
+      real    :: cff
+      real, parameter :: delta=0.1666666666666667 ! delta=0.125
 # ifdef UPSTREAM_UV
-     &                  , gamma=0.3333333333333333 ! gamma=0.25
+     &                  ,gamma=0.3333333333333333 ! gamma=0.25
 # endif
+      real,dimension(:,:),pointer   :: WC,FC,CF,DC,
+     &                                 UFx,VFe,UFe,VFx,
+     &                                 wrk1,wrk2,
+     &                                 uee,vxx
+      real,dimension(:,:,:),pointer :: ru,rv
 # ifdef NHMG
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: rw
+      real,dimension(:,:,:),pointer :: rw
       real  Flxw,Uflxw,Vflxw
       real  ub,ut
       real  div,dmax
-!     integer :: ierr !,imx,jmx,kmx
 #endif
-      real,dimension(:,:,:),pointer :: ru,rv
-      real,dimension(:,:),pointer :: uee,vxx
 
 ! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
 ! but needs to be declared here in declarations section not in
@@ -76,10 +53,18 @@
       real cff1
 # endif
 
-# include "compute_auxiliary_bounds.h"
-
+      UFx(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,1)
+      VFe(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,2)
+      UFe(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,3)
+      VFx(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,4)
+      wrk1(1-bf:nx+bf,1-bf:ny+bf)   => scratch_2d(:,5)
+      wrk2(1-bf:nx+bf,1-bf:ny+bf)   => scratch_2d(:,6)
+      DC(1-bf:nx+bf,0:nz)           => scratch_2d(:,7)
       ru(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,1)
       rv(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,2)
+# ifdef NHMG
+      rw(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,3)
+# endif
 
 # ifdef DIAGNOSTICS
 #  ifdef NHMGDIAG
@@ -91,15 +76,9 @@
 
 # ifdef NHMG
 
-#  define FX UFx
-#  define FE VFe
-
       do k=1,N
 #  include "compute_horiz_rhs_w_terms.h"
       enddo
-
-#  undef FE
-#  undef FX
 
       do j=1,ny
 
@@ -133,6 +112,12 @@
           call set_diags_v_4th_adv
         endif
 # endif
+
+      nullify(UFx,VFe,UFe,VFx,wrk1,wrk2)
+
+      WC(1-bf:nx+bf,0:nz) => scratch_2d(:,1)
+      FC(1-bf:nx+bf,0:nz) => scratch_2d(:,2)
+      CF(1-bf:nx+bf,0:nz) => scratch_2d(:,3)
 
       do j=1,ny
 
@@ -380,42 +365,42 @@
 
 # if defined NHMG
 
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        do k=1,N
-          do j=1,ny
-            u(1,j,k,nnew) = u(1,j,k,nnew)*
-     &         0.5*(Hz(0,j,k)+Hz(1,j,k))
+      if (.not.(ew_periodic)) then
+        if (inode==0) then
+          do k=1,N
+            do j=1,ny
+              u(1,j,k,nnew) = u(1,j,k,nnew)*
+       &         0.5*(Hz(0,j,k)+Hz(1,j,k))
+            enddo
           enddo
-        enddo
-      endif
-      if (EASTERN_EDGE) then
-        do k=1,N
-          do j=1,ny
-            u(nx+1,j,k,nnew) = u(nx+1,j,k,nnew)*
-     &         0.5*(Hz(nx+1,j,k)+Hz(nx,j,k))
+        endif
+        if (inode==np_xi-1) then
+          do k=1,N
+            do j=1,ny
+              u(nx+1,j,k,nnew) = u(nx+1,j,k,nnew)*
+       &         0.5*(Hz(nx+1,j,k)+Hz(nx,j,k))
+            enddo
           enddo
-        enddo
+        endif
       endif
-#  endif
-#  ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do k=1,N
-          do i=1,nx
-            v(i,1,k,nnew) = v(i,1,k,nnew)*
-     &         0.5*(Hz(i,0,k)+Hz(i,1,k))
+      if (.not.(ns_periodic)) then
+        if (jnode==0) then
+          do k=1,N
+            do i=1,nx
+              v(i,1,k,nnew) = v(i,1,k,nnew)*
+       &         0.5*(Hz(i,0,k)+Hz(i,1,k))
+            enddo
           enddo
-        enddo
-      endif
-      if (NORTHERN_EDGE) then
-        do k=1,N
-          do i=1,nx
-            v(i,ny+1,k,nnew) = v(i,ny+1,k,nnew)*
-     &         0.5*(Hz(i,ny+1,k)+Hz(i,ny,k))
+        endif
+        if (jnode==np_eta-1) then
+          do k=1,N
+            do i=1,nx
+              v(i,ny+1,k,nnew) = v(i,ny+1,k,nnew)*
+       &         0.5*(Hz(i,ny+1,k)+Hz(i,ny,k))
+            enddo
           enddo
-        enddo
+        endif
       endif
-#  endif
 
 
       ! Translate to fluxes, different than in pre_step, we have dz*u
@@ -549,7 +534,10 @@
       call exchange_xxx(dRdx,dRde)
 # endif
 
-      nullify(ru,rv)
+      nullify(ru,rv,WC,FC,CF,DC)
+# ifdef NHMG
+      nullify(rw)
+# endif
       end
 
 

@@ -26,14 +26,14 @@
 
       ! local
       integer :: i,j,k,imin,imax,jmin,jmax
-      real,dimension(:,:,:),pointer :: ru,rv,Hz_bak,Hz_fwd
       real,dimension(:,:),pointer   :: UFx,UFe,VFx,VFe,
      &                                 WC,FC,CF,DC,
      &                                 wrk1,wrk2,
      &                                 uee,vxx,
      &                                 wrk3
+      real,dimension(:,:,:),pointer :: ru,rv,Hz_bak,Hz_fwd
 #ifdef NHMG
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: rw
+      real,dimension(:,:,:),pointer :: rw
       real  Flxw,Uflxw,Vflxw
       real  div,dmax
       real  ub,ut
@@ -61,8 +61,11 @@
       wrk2(1-bf:nx+bf,1-bf:ny+bf)       => scratch_2d(:,6)
       ru(1-bf:nx+bf,1-bf:ny+bf,0:N)     => scratch_3d(:,1)
       rv(1-bf:nx+bf,1-bf:ny+bf,0:N)     => scratch_3d(:,2)
-      Hz_bak(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,3)
-      Hz_fwd(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,4)
+# ifdef NHMG
+      rw(1-bf:nx+bf,1-bf:ny+bf,0:N)     => scratch_3d(:,3)
+# endif
+      Hz_bak(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,4)
+      Hz_fwd(1-bf:nx+bf,1-bf:ny+bf,0:N) => scratch_3d(:,5)
 
 ! Preliminary step: initialize computations of the new time step
 ! 3D primitive variables.
@@ -753,7 +756,9 @@
 # endif
 
       nullify(ru,rv,Hz_bak,Hz_fwd,WC,FC,CF,DC,wrk1,wrk2)
-
+# ifdef NHMG 
+      nullify(rw)
+# endif
       end
 
 !------------------------------------------------------------------------------------------
