@@ -42,7 +42,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	mpi_setup.F\
 \
 	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F mpi_exchanges.F\
+	cstar_output.F	random_output.F mpi_exchanges.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
 \
