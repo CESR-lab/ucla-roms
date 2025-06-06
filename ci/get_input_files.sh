@@ -12,12 +12,12 @@ files=(
     "sample_LFfrc.nc"
     "sample_flux_bgc.nc"
     "sample_bry_bgc.nc"
-    "sample_init_trace.nc"
+    "roms_init_trace.nc"
     "sample_grd_riv.nc"
     "sample_rad_units_DPD.nc"
     "sample_tra_units_DPD.nc"
     "sample_wnd.nc"
-    "sample_bry_trace.nc"
+    "roms_bry_trace.nc"
     "sample_flux_frc.nc"
     "sample_prec_units_DPD.nc"
     "sample_tides.nc"
@@ -33,4 +33,3 @@ for fname in "${files[@]}";do
     partit 3 2 "${fname}"
     #echo "${URL_PREFIX}/${fname}"
 done
-

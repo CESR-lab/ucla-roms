@@ -84,7 +84,6 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          source $HOME/.bashrc
           source $GITHUB_ENV
           cd ci
           ./print_compilation_logs.sh        
