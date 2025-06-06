@@ -33,4 +33,3 @@ for fname in "${files[@]}";do
     partit 3 2 "${fname}"
     #echo "${URL_PREFIX}/${fname}"
 done
-
