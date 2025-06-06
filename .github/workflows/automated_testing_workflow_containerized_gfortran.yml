@@ -83,6 +83,7 @@ jobs:
         ./do_test_roms.sh github_gnu ${{ matrix.bgc_mode }}
         else
         ./do_test_roms.sh github_gnu
+        fi
         '
     - name: Print compilation logs (in case of failure)
       if: failure()
