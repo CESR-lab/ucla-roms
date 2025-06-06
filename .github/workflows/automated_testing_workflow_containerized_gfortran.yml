@@ -69,7 +69,6 @@ jobs:
         cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
         cd ${ROMS_ROOT}/Examples/input_data/
         ./get_input_files.sh
-      shell: bash
     - name: Update COMPILER arg in make commands
       shell: bash
       run: |
