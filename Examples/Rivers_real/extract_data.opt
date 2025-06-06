@@ -6,7 +6,7 @@
       ! There are matlab scripts in the Tools directory for guidance.
       !
       !------------------------------
-      logical,parameter,public :: do_extract = .true.
+      logical,parameter,public :: do_extract = .false.
       character(len=60) :: extract_file = 'input_data/sample_edata.nc'
       integer,parameter :: nrpf = 48    ! number of records per output file 
       integer,parameter :: edat_prec = nf90_double  ! Precision of output variables (nf90_float/nf90_double)

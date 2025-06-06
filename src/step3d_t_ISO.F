@@ -43,7 +43,7 @@ c--# define CONST_TRACERS
       end
 
       subroutine step3d_t_iso_tile( istr,iend,jstr,jend, WC,FC,CF,DC
-     &                                                 ,  FX,FE, wrk1
+     &                                                 ,  UFx,VFe, wrk1
 # ifdef ADV_ISONEUTRAL
      &                                           , FSC,dTdz,dTdx,dTde
      &                                                         , LapT
@@ -68,11 +68,14 @@ c--# define CONST_TRACERS
       use mixing
       use ocean_vars
       use scalars
+      use hidden_mpi_vars
+      use private_scratch
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: FX,FE, wrk1
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: UFx,VFe, wrk1
+      real, dimension(:,:),pointer     :: wrk3 
 # ifdef ADV_ISONEUTRAL
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,2) :: FSC,  dTdz,
      &                                               dTdx, dTde
@@ -177,23 +180,23 @@ c--#  define ntdf nrhs
             do j=jstr,jend
               do i=istr,iend
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)
-     &                                *pn(i,j)*( FX(i+1,j)-FX(i,j)
-     &                                          +FE(i,j+1)-FE(i,j)
+     &                                *pn(i,j)*( UFx(i+1,j)-UFx(i,j)
+     &                                          +VFe(i,j+1)-VFe(i,j)
      &                                                           )
               enddo
-            enddo                 !-->  discard FX,FE
+            enddo                 !-->  discard UFx,VFe
 
 # ifdef DIAGNOSTICS
 #  ifdef ADV_ISONEUTRAL
             if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
               do j= 1,ny
                 do i=1,nx+1
-                  Tdiag(i,j,k,tadvx,td(itrc)) = FX(i,j)
+                  Tdiag(i,j,k,tadvx,td(itrc)) = UFx(i,j)
                 enddo
               enddo
               do j= 1,ny+1
                 do i=1,nx
-                  Tdiag(i,j,k,tadvy,td(itrc)) = FE(i,j)
+                  Tdiag(i,j,k,tadvy,td(itrc)) = VFe(i,j)
                 enddo
               enddo
             endif
@@ -201,13 +204,13 @@ c--#  define ntdf nrhs
             if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
               do j= 1,ny
                 do i=1,nx+1
-                  Tdiag(i,j,k,tmixx,td(itrc)) = FX(i,j)
+                  Tdiag(i,j,k,tmixx,td(itrc)) = UFx(i,j)
      &             - Tdiag(i,j,k,tadvx,td(itrc))
                 enddo
               enddo
               do j= 1,ny+1
                 do i=1,nx
-                  Tdiag(i,j,k,tmixy,td(itrc)) = FE(i,j)
+                  Tdiag(i,j,k,tmixy,td(itrc)) = VFe(i,j)
      &             - Tdiag(i,j,k,tadvy,td(itrc))
                 enddo
               enddo
@@ -305,9 +308,9 @@ c--#  define ntdf nrhs
           endif
 
 ! Note that dTdx,dTde are computed one-step-ahead along k-loop before
-! they are used to compute FX,FE below.  This migh seem to be off, but
+! they are used to compute UFx,VFe below.  This migh seem to be off, but
 ! it should be kept in mind that dTdx,dTde are needed for dual purpose:
-! (i) to compute FX,FE, and eventually, to compute slope-contributions
+! (i) to compute UFx,VFe, and eventually, to compute slope-contributions
 ! to FSC further below, where both slices of dTdx,dTde will be used
 ! simultaneously.
 
@@ -338,7 +341,7 @@ c--#  define ntdf nrhs
           if (k > 0) then
             do j=jmin,jmax
               do i=imin,imax+1
-                FX(i,j)=diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
+                UFx(i,j)=diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
      &                                                  *dn_u(i,j)*(
      &                       dTdx(i,j,k1)
 #  ifdef SW_TRIADS
@@ -354,7 +357,7 @@ c--#  define ntdf nrhs
 
             do j=jmin,jmax+1
               do i=imin,imax
-                FE(i,j)=diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
+                VFe(i,j)=diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
      &                                                  *dm_v(i,j)*(
      &                       dTde(i,j,k1)
 #  ifdef SW_TRIADS
@@ -468,8 +471,8 @@ c--#  define ntdf nrhs
             endif     !<--   k < N
             do j=jmin,jmax
               do i=imin,imax
-                LapT(i,j,k)=( pm(i,j)*pn(i,j)*( FX(i+1,j)-FX(i,j)
-     &                                         +FE(i,j+1)-FE(i,j)
+                LapT(i,j,k)=( pm(i,j)*pn(i,j)*( UFx(i+1,j)-UFx(i,j)
+     &                                         +VFe(i,j+1)-VFe(i,j)
      &                      )+FSC(i,j,k2)-FSC(i,j,k1) )/Hz(i,j,k)
               enddo
             enddo
@@ -584,7 +587,7 @@ c--#  define ntdf nrhs
           if (k > 0) then
             do j=jstr,jend
               do i=istr,iend+1
-                FX(i,j)=-diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
+                UFx(i,j)=-diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
      &                                                 *dn_u(i,j)*(
      &                      dTdx(i,j,k1)
 #  ifdef SW_TRIADS
@@ -600,7 +603,7 @@ c--#  define ntdf nrhs
 
             do j=jstr,jend+1
               do i=istr,iend
-                FE(i,j)=-diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
+                VFe(i,j)=-diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
      &                                                 *dm_v(i,j)*(
      &                      dTde(i,j,k1)
 #  ifdef SW_TRIADS
@@ -782,7 +785,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             do j=jstr,jend
               do i=istr,iend
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) +dt*( pm(i,j)
-     &               *pn(i,j)*(FX(i+1,j)-FX(i,j) +FE(i,j+1)-FE(i,j))
+     &               *pn(i,j)*(UFx(i+1,j)-UFx(i,j) +VFe(i,j+1)-VFe(i,j))
      &                                    +FSC(i,j,k2)-FSC(i,j,k1) )
               enddo
             enddo
@@ -791,12 +794,12 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
               do j=1,ny
                 do i=1,nx+1
-                  Tdiag(i,j,k,tmixx,td(itrc)) = -FX(i,j)
+                  Tdiag(i,j,k,tmixx,td(itrc)) = -UFx(i,j)
                 enddo
               enddo
               do j=1,ny+1
                 do i=1,nx
-                  Tdiag(i,j,k,tmixy,td(itrc)) = -FE(i,j)
+                  Tdiag(i,j,k,tmixy,td(itrc)) = -VFe(i,j)
                 enddo
               enddo
               do j=1,ny
