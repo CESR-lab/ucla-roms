@@ -2,7 +2,7 @@
 
 # need this here as well, in case example run on its own:
 case "$1" in
-    expanse|maya|laptop|github|github_ifx)
+    expanse|maya|laptop|github_gnu|github_ifx)
 	echo "running test for $1"
 	;;
     *)

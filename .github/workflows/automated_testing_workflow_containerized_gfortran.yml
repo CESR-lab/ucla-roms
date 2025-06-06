@@ -13,6 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/dafyddstephenson/roms_gfortran_build_env:1.0
+    strategy:
+      fail-fast: false      
+      matrix:
+        include:
+          - example: "Rivers_real"
+          - example: "Rivers_ana"
+          - example: "Pipes_real"
+          - example: "Pipes_ana"
+          - example: "Flux_frc"
+          - example: "Filament"
+          - example: "bgc_real"
+            bgc_mode: "BEC"
+          - example: "bgc_real"
+            bgc_mode: "MARBL"
+    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -30,6 +45,7 @@ jobs:
       run: |
         lscpu
     - name: Compile Fortran Code
+      shell: bash            
       run: |
         micromamba run -n roms-ci bash -c '
         #Copy GNU-compatible makefiles
@@ -39,21 +55,35 @@ jobs:
         cd ${ROMS_ROOT}/Tools-Roms/
         make COMPILER=gnu
         '
-      shell: bash      
-    - name: Get input data
+    - name: Cache input_data
+      id: cache-input
+      uses: actions/cache@v4
+      with:
+        path: Examples/input_data
+        key: roms-input-${{ hashFiles('ci/get_input_files.sh') }}
+        
+    - name: Get input data (if not cached)
+      if: steps.cache-input.outputs.cache-hit != 'true'
+      shell: bash
       run: |
         cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
         cd ${ROMS_ROOT}/Examples/input_data/
         ./get_input_files.sh
       shell: bash
-    - name: Run Tests
+    - name: Update COMPILER arg in make commands
+      shell: bash
+      run: |
+        sed -i -e "s/make /make COMPILER=gnu /g" do_test_roms.sh
+        sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh                
+    - name: Run Test for ${{ matrix.example }}
       shell: bash
       run: |
         micromamba run -n roms-ci bash -c '
-        cd ${ROMS_ROOT}/Examples/code_check/
-        sed -i -e "s/make /make COMPILER=gnu /g" do_test_roms.sh
-        sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh        
-        ./do_test_all.sh github
+        cd ${ROMS_ROOT}/Examples/${{ matrix.example}}/code_check/
+        if [[ "${{ matrix.example }}" == "bgc_real" ]];then
+        ./do_test_roms.sh github_gnu ${{ matrix.bgc_mode }}
+        else
+        ./do_test_roms.sh github_gnu
         '
     - name: Print compilation logs (in case of failure)
       if: failure()
