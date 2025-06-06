@@ -72,8 +72,8 @@ jobs:
     - name: Update COMPILER arg in make commands
       shell: bash
       run: |
-        sed -i -e "s/make /make COMPILER=gnu /g" do_test_roms.sh
-        sed -i -e "s/make /make COMPILER=gnu /g" ../bgc_real/code_check/do_test_roms.sh                
+        sed -i -e "s/make /make COMPILER=gnu /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
+        sed -i -e "s/make /make COMPILER=gnu /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
     - name: Run Test for ${{ matrix.example }}
       shell: bash
       run: |
