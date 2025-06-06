@@ -8,7 +8,7 @@ declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_r
 arg=$1
 
 case "$arg" in
-    expanse|maya|laptop|github|github_ifx)
+    expanse|maya|laptop|github_gnu|github_ifx)
 	echo "running test for $arg"
 	;;
     *)

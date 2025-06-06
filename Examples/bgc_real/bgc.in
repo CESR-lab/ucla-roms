@@ -19,7 +19,7 @@ forcing: filename
 
 initial: NRREC  filename
           1
-     input_data/sample_init_trace.nc
+     input_data/roms_init_trace.nc
 
 MARBL_biogeochemistry: namelist  tracer_output_list   diagnostic_output_list
       marbl_in

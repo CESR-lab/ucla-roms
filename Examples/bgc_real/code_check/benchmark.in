@@ -13,13 +13,13 @@ grid:  filename
 forcing: filename
      input_data/sample_flux_frc.nc
      input_data/sample_flux_bgc.nc     
-     input_data/sample_bry_trace.nc       
+     input_data/roms_bry_trace.nc       
      input_data/sample_bry_bgc.nc
      input_data/sample_LFfrc.nc
 
 initial: NRREC  filename
           1
-     input_data/sample_init_trace.nc
+     input_data/roms_init_trace.nc
 
 MARBL_biogeochemistry: namelist  tracer_output_list   diagnostic_output_list
       marbl_in
