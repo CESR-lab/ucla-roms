@@ -1,0 +1,29 @@
+
+# Set env variables for ROMS
+# adjust paths to fit your system
+
+# Activate intel API kits
+. /opt/intel/oneapi/setvars.sh
+
+# Specify compiler
+export FCOMP=mpiifx
+
+export ROMS_ROOT=/home/<user>/ucla-roms
+export MARBL_ROOT=/home/<user>/MARBL
+
+export MPIHOME=/opt/intel/oneapi/mpi/latest
+export NETCDF_ROOT=/opt/netcdf-fortran-4.6.1
+export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
+
+# Not sure if these are needed 
+export LD_LIBRARY_PATH=${MPIHOME}/lib/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${NETCDF_ROOT}/lib/:$LD_LIBRARY_PATH
+
+# Gives you access to the nc-config/nf-config commands
+export PATH=${NETCDFC_ROOT}/bin:$PATH
+export PATH=${NETCDF_ROOT}/bin:$PATH
+
+
+PATH=${ROMS_ROOT}/Tools-Roms:$PATH
+

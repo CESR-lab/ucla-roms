@@ -7,7 +7,7 @@ case "$1" in
 	;;
     *)
 	echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
-	exit
+	exit 1
 	;;
 esac
     
@@ -23,7 +23,7 @@ cp -p ../*.h . &> /dev/null
 cp -p ../cppdefs.opt .
 cp -p ../param.opt .
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
-cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
+#cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
 make compile_clean &> /dev/null
 make > compile.log 

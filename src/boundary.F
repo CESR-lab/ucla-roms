@@ -7,6 +7,7 @@
       use param
       use roms_read_write
       use dimensions
+      use hidden_mpi_vars
       implicit none
 
       ! Set module to private and make vars explicitly public
@@ -77,11 +78,14 @@
 
       ! local
       integer :: itrc
-
+      if (obc_west.or.obc_east.or.obc_north.or.obc_south) then
+        bc_options = ''
+      endif 
       if (obc_west)  call store_string_att(bc_options,'OBC_WEST, ')
       if (obc_east)  call store_string_att(bc_options,'OBC_EAST, ')
       if (obc_north) call store_string_att(bc_options,'OBC_NORTH, ')
       if (obc_south) call store_string_att(bc_options,'OBC_SOUTH, ')
+      bc_options = trim(adjustl(bc_options))
 # ifdef OBC_M3ORLANSKI
       call store_string_att(bc_options,'OBC_M3ORLANSKI, ')
 #  endif
@@ -225,7 +229,7 @@
 #  ifdef ANA_BRY
       return
 #  endif
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.(inode==0)) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_w, zeta_west(j0:j1), obry=2 )
 !       call exch_bry_EW_tile(1, ny, zeta_west, 1)      ! DevinD - exchange did not make a difference

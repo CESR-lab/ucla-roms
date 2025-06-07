@@ -2,66 +2,26 @@
 INSTRUCTIONS: COMPILING ROMS
 ----------------------------
 
-  Note:
-     Some file paths below are abbreviated to exclude the repo directory
-     to which you cloned the code. For example:
-     Documentation/readme.1.compile-ROMS is actually
-     ~/repos/ucla-roms/Documentation/readme.1.compile-ROMS
+  0. In order to run ROMS, you'll need a fortran compiler, mpi  and a netcdf library. 
+     We recommend the (free) intel compiler at: 
+     https://www.intel.com/content/www/us/en/developer/tools/oneapi/fortran-compiler.html
+     The netcdf library needs to be compiled with the same compiler that you use to compile
+     the ROMS code and be compiled with the parralel option. You'll have to install HDF5, netcdf-c, and
+     netcdf-fortran, in that order. Standard versions installed with a package manager typically will 
+     not suffice. Instructions on how to accomplish that are in a different file (notes_netcdf) in this directory. 
+     You may need help from your system administrator in this step.
 
   1. Clone (download) the ROMS code (git repo):
   
-     Ask a roms admin to give you access privileges to the roms repo.
-     Once you have that and set up an account on bitbucket.com,
-     make a directory you want to store the code (typically ~/repos/),
-     then edit <user-name> and enter the following command:
-     git clone https://<user-name>@bitbucket.org/nmolem/ucla-roms.git
+     The ROMS code is maintained on a public repo at github. To clone it, use:
+     git clone https://github.com/CESR-lab/ucla-roms. 
 
   2. Set up environment variables:
   
-     Edit your ~/.bashrc file or ~/.cshrc file depending on which shell you
-     are using ('echo $SHELL' will tell you your shell).
-     See/copy examples of ~/.bashrc or ~/.cshrc files in: 
-     Documentation/machine-specific/bashrc-cshrc-files
+     Edit your ~/.bashrc file to specify your compiler and the location of various include
+     directories and libraries. See instructions in src/Makefile or the bashr-example in this
+     directory for environment variables to add to your .bashrc file
      
-     Expanse:
-     For Expanse users it is 'safest' to just copy the exact same .bashrc file:
-     Documentation/machine-specific/bashrc-cshrc-files/bashrc-expanse-202103
-     Example commands:
-     cp ~/repos/ucla-roms/Documentation/machine-specific/bashrc-cshrc-files/bashrc-expanse-202103 ~/.bashrc
-     source ~/.bashrc
-     
-     Once you have all the following steps working then you can edit/merge your 
-     old ~/.bashrc as necessary, if you would prefer.
-     
-     Maya:
-     The same applies for Maya users (for c-shell): 
-     Documentation/machine-specific/bashrc-cshrc-files/cshrc-maya-202011 
-          
-     Note, even users of old roms code must do this, as environment
-     variable names have changed, e.g. MPI_ROOT -> MPIHOME.     
-     For existing roms user's who might want to use a version pre 2020/12/01
-     as well, then you should edit your existing .bashrc file and only need 
-     to add MPIHOME exactly as your existing MPI_ROOT, 
-     and same for NETCDFHOME as your NETCDF, 
-     in addition to what you already have. 
-     Now both old version and new version of roms should work. 
-     
-     Load modules if on cluster such as Expanse (through .bashrc).
-     You will need to ensure any variables listed in Makedefs.inc 
-     such as NETCDFHOME, ROMS_ROOT, MPIHOME, etc, have a path set.
-     You can test this by typing e.g. 'echo $ROMS_ROOT' and it should
-     display where you keep your roms directory.
-     (Typically, for best roms performance use intel compiler (ifort) and
-      netcdf/mpi libraries that are also compiled using intel compilers.)
-     
-  3. (Optional) Edit Makedefs.inc:
-  
-     Hopefully this step can be skipped. Return here if roms won't compile.
-     Depending on which cluster you are using, you might need to edit
-     this file. If you have compiling issues, then see the folder in
-     Documentation/machine-specific/Makedefs/ for examples that work on 
-     different clusters. Shouldn't need to change this for 'Expanse' & 'Maya'.    
-
   4. Compile NHMG library:
   
      Regardless of whether you use the non-hydrostatic library
@@ -136,8 +96,6 @@ INSTRUCTIONS: COMPILING ROMS
         This is likely only to be files with extension .opt for all user inputs.         
         If you are using an example then also copy relevant files from Examples/... 
         into Work/ (excluding the Makefile) 
-        You can copy Makedefs.inc into Work/ if you need to change compilation
-        settings, but don't copy the Makefile from src/ to Work/.
         
      B. Open Work/ dir. Edit your files. 
         See Documentation/readme.2.model-setup for details on configuring roms 
@@ -161,7 +119,7 @@ Recompiling roms:
      Only the necessary files will recompile, so it will be faster than a
      full compile.
      
-  B. If you change compiler options in Makedefs.inc, you should first run 
+  B. If you change compiler options in your Makefile, you should first run 
      'make compile_clean' (or delete Compile/ directory), 
      and then 'make' to do a full rebuild.
 
@@ -191,14 +149,13 @@ Git repo (and Bitbucket)
      repository (repo).The version control program we use is called 'git'. It is terminal 
      based, but there are also GUI's for it. Each time we want to make a permanent change 
      to the ROMS code, we then 'commit' and 'push' the code to the repo.
-     In order to store the version history of code 'commits', we used a web-based hosting 
-     service called 'Bitbucket' (the other popular one is 'github'). This is essentially 
-     our cloud based storage of the code.
+     In order to store the version history of code (the commits), we use github.
+     This is our public, cloud based storage of the code.
      With one command, it is possible to jump between the current version and all older
      versions of the code.
      
      You see the online version of the repository at: 
-     https://bitbucket.org/nmolem/ucla-roms/src/master/
+     https://github.com/CESR-lab/ucla-roms. 
      If you click on 'commits' you can see the full history of all the code updates if you
      are interested in seeing any older version of the code.
          
@@ -206,13 +163,13 @@ Git repo (and Bitbucket)
 Keeping code up to date:
 ------------------------    
      
-     The repo is periodically updated (daily/weekly). This will mean source code 
+     The repo is periodically updated. This will mean source code 
      in the src/ folder can change. Also, additional examples may be added to Examples/.
      To update your code to the latest version use the command: 'git pull'.
      (If git complains, try using 'git stash', then 'git pull')
      
      Since you are editing code in the Work/ directory, your edited files will not be
-     effected. The Work/ directory is not 'tracked' by git, and therefore none of your files 
+     affected. The Work/ directory is not 'tracked' by git, and therefore none of your files 
      in there risk being overwritten when you update you code in future.
      However, it is possibly that the file you have edited for your needs, e.g. 
      bulk_frc.opt, has been changed in the latest code update and hence in the src/ directory, 
@@ -224,9 +181,6 @@ Keeping code up to date:
      You can use 'meld' to merge in the new code changes into your version in Work/, if you 
      still need your code additions.
      
-     Important updates to the code will be broadcasted to users in an email, but if you want 
-     to you can also sign up on bitbucket.com to receive an email each time the code is updated.
-             
 
 Additional readme's:
 --------------------
@@ -237,7 +191,6 @@ Additional readme's:
      See Documentation/readme-specifics/ for more detailed readme's on specific 
      functionalities of roms.  
 
-             
              
              
 *********************************             
@@ -289,7 +242,6 @@ Specifying libraries:
 It is of ten the case that computer contains more than one version for each
 library: netCDF, HDF5, MPI, and their dependencies, as well as different
 versions of compilers.
-
 
 
 For ROMS it is always preferable to use Intel compiler for performance reasons.
