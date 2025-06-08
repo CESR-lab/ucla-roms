@@ -9,10 +9,11 @@ echo ${DOWNLOAD_COMMAND}
 # URLs to download
 URL_PREFIX="https://github.com/CESR-lab/input_data/raw/main"
 files=(
-    "sample_LFfrc.nc"
+    "roms_LFfrc.nc"
     "sample_flux_bgc.nc"
     "sample_bry_bgc.nc"
     "roms_bgcbry.nc"
+    "roms_default_bgcbry.nc"
     "roms_init_trace.nc"
     "roms_init_bgc.nc"
     "sample_grd_riv.nc"
