@@ -2,7 +2,10 @@
 INSTRUCTIONS: COMPILING ROMS
 ----------------------------
 
-  0. In order to run ROMS, you'll need a fortran compiler, mpi  and a netcdf library. 
+We strive to make these instructions incrementally better. Please contact us if you encountered
+(and solved, preferably) problems that are not described in this readme.
+
+  0. In order to run ROMS, you'll need a fortran compiler, mpi and a netcdf library. 
      We recommend the (free) intel compiler at: 
      https://www.intel.com/content/www/us/en/developer/tools/oneapi/fortran-compiler.html
      The netcdf library needs to be compiled with the same compiler that you use to compile
@@ -15,6 +18,8 @@ INSTRUCTIONS: COMPILING ROMS
   
      The ROMS code is maintained on a public repo at github. To clone it, use:
      git clone https://github.com/CESR-lab/ucla-roms. 
+
+     execute 'git pull' from within the repo to bring it up-to-date with the latest version
 
   2. Set up environment variables:
   
