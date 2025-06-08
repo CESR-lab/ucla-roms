@@ -8,7 +8,7 @@ INSTRUCTIONS: COMPILING ROMS
      The netcdf library needs to be compiled with the same compiler that you use to compile
      the ROMS code and be compiled with the parralel option. You'll have to install HDF5, netcdf-c, and
      netcdf-fortran, in that order. Standard versions installed with a package manager typically will 
-     not suffice. Instructions on how to accomplish that are in a different file (notes_netcdf) in this directory. 
+     not suffice. Instructions on how to accomplish that are in a different file (notes_netcdf_install) in this directory. 
      You may need help from your system administrator in this step.
 
   1. Clone (download) the ROMS code (git repo):
