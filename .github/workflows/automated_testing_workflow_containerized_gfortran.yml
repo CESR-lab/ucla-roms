@@ -5,8 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - '*'
+    branches: '*'
 
 jobs:
   test:
@@ -34,18 +33,13 @@ jobs:
     - name: Set Environment Variables
       run: |
         ROMS_ROOT=$(pwd)
-        PATH="./:$PATH"
-        PATH=$PATH:$ROMS_ROOT/Tools-Roms
-        # Now copy these variables to GITHUB_ENV to source in future steps
-        echo "ROMS_ROOT=$(pwd)" >> $GITHUB_ENV
-        echo "PATH="./:$PATH"" >> $GITHUB_ENV
-        echo "PATH=$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+        echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
+        echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
       shell: bash
     - name: Print system info
-      run: |
-        lscpu
+      run: lscpu
     - name: Compile Fortran Code
-      shell: bash            
+      shell: bash
       run: |
         micromamba run -n roms-ci bash -c '
         #Copy GNU-compatible makefiles

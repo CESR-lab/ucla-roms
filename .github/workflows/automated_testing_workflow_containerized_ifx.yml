@@ -2,10 +2,10 @@ name: Automated Testing (ifx, containerized)
 
 on:
   push:
-    branches: 
+    branches:
       - main
   pull_request:
-    branches: ['*']
+    branches: '*'
 
 jobs:
   test:
@@ -26,30 +26,27 @@ jobs:
             bgc_mode: "BEC"
           - example: "bgc_real"
             bgc_mode: "MARBL"
-    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}    
+    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set Environment Variables
-        shell: bash
-        run: |
-          ROMS_ROOT=$(pwd)
-          echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
-          echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
-
-      - name: Print system info
-        run: lscpu
-
-      - name: Compile Fortran Code
-        shell: bash
-        run: |
-          source $GITHUB_ENV
-          rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
-          cd Work/
-          make nhmg COMPILER=intel
-          cd ${ROMS_ROOT}/Tools-Roms/
-          make COMPILER=intel
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Set Environment Variables
+      run: |
+        ROMS_ROOT=$(pwd)
+        echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
+        echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+      shell: bash
+    - name: Print system info
+      run: lscpu
+    - name: Compile Fortran Code
+      shell: bash
+      run: |
+        source $GITHUB_ENV
+        rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
+        cd Work/
+        make nhmg COMPILER=intel
+        cd ${ROMS_ROOT}/Tools-Roms/
+        make COMPILER=intel
 
       - name: Cache input_data
         id: cache-input
@@ -71,16 +68,16 @@ jobs:
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
 
-      - name: Run test for ${{ matrix.example }}
-        shell: bash
-        run: |
-          source $GITHUB_ENV
-          cd $ROMS_ROOT/Examples/${{ matrix.example }}/code_check/
-          if [[ "${{ matrix.example }}" == "bgc_real" ]]; then
-          ./do_test_roms.sh github_ifx ${{ matrix.bgc_mode }}
-          else
-          ./do_test_roms.sh github_ifx
-          fi
+   - name: Run test for ${{ matrix.example }}
+      shell: bash
+      run: |
+        source $GITHUB_ENV
+        cd $ROMS_ROOT/Examples/${{ matrix.example }}/code_check/
+        if [[ "${{ matrix.example }}" == "bgc_real" ]]; then
+        ./do_test_roms.sh github_ifx ${{ matrix.bgc_mode }}
+        else
+        ./do_test_roms.sh github_ifx
+        fi
       - name: Print compilation logs (in case of failure)
         if: failure()
         shell: bash
