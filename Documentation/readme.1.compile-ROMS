@@ -19,7 +19,7 @@ INSTRUCTIONS: COMPILING ROMS
   2. Set up environment variables:
   
      Edit your ~/.bashrc file to specify your compiler and the location of various include
-     directories and libraries. See instructions in src/Makefile or the bashr-example in this
+     directories and libraries. See the instructions in src/Makefile or the bashr-example in this
      directory for environment variables to add to your .bashrc file
      
   4. Compile NHMG library:
@@ -46,21 +46,20 @@ INSTRUCTIONS: COMPILING ROMS
      (If not done in step 2, add 'export PATH=$PATH:$ROMS_ROOT/Tools-Roms'
       to your .bashrc file to have access to these tools from any dir.)
 
-  6. (Info only) Generate dependency list:
-  
-     This step is done automatically using 'make' in the Work/ or Examples/
-     directory, so it's just here for your info:
-     'make depend'
-     This will update file "Make.depend" consistent with the
-     contents of all *.F files in the source code directory. 
-     See Tools-Roms/readme for more info.
-     The dependency list is for the build automation program 'make'
-     to know if one source code file depends on another file.
-     
+  6. Download and partition input files for the test examples
+
+     To run the examples, you will need input files, they are stored
+     separately from the ucla-roms repo at: https://github.com/CESR-lab/input_data.
+ 
+     To get them, do:
+
+     cd Examples/input_data
+     ./get_input_files.sh
+
   7. Compile & test ROMS:
      
      To ensure you can successfully compile & run roms on your machine,
-     quickly run the following test example as follows:
+     run the following test example as follows:
      (this is even recommended for experienced roms users using the new 
       code for the first time.)
      
@@ -84,9 +83,11 @@ INSTRUCTIONS: COMPILING ROMS
             sbatch do_roms_expanse.sh (to re-submit the job)          
                       
         - other machines:
-          ./do_run.sh                      
+          ./do_roms.sh                      
                      
      C. ./join.sh   (to join & view results file)
+
+     Feel free to try the other examples. 
         
      
   8. Compile your specific simulation:
