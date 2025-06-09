@@ -52,7 +52,7 @@ C$    endif
         inode=mynode-jnode*NP_XI    ! the location of current subdomain
 # endif
                                     ! on the "processor grid".
-        if (NP_XI > 1) then
+!       if (NP_XI > 1) then
 # ifdef EW_PERIODIC
           west_msg_exch=.true.      ! Determine whether the subdomain
           east_msg_exch=.true.      ! has neighbors on the four sides
@@ -60,16 +60,16 @@ C$    endif
           west_msg_exch=inode>0          ! around it and set the
           east_msg_exch=inode<NP_XI-1    ! corresponding logical
 # endif
-        else                        ! flags: e.g. est_msg_exch==.true.
-          west_msg_exch=.false.     ! means that there is a neighbor on
-          east_msg_exch=.false.     ! the west side, so this subdomain
-        endif                       ! must send and and expects to
+!       else                        ! flags: e.g. est_msg_exch==.true.
+!         west_msg_exch=.false.     ! means that there is a neighbor on
+!         east_msg_exch=.false.     ! the west side, so this subdomain
+!       endif                       ! must send and and expects to
 # ifndef EW_PERIODIC
         west_exchng=west_msg_exch   ! receive incoming  messages
         east_exchng=east_msg_exch   ! to/from the neighbor.
 # endif
                                     ! Note that periodic boundaries
-        if (NP_ETA > 1) then        ! (if any) are treated exclusively
+!       if (NP_ETA > 1) then        ! (if any) are treated exclusively
 # ifdef NS_PERIODIC
           south_msg_exch=.true.     ! via exchange of computational
           north_msg_exch=.true.     ! margins, so that in this case
@@ -77,10 +77,10 @@ C$    endif
           south_msg_exch=jnode>0         ! communications take place
           north_msg_exch=jnode<NP_ETA-1  ! even if the subdomain is
 # endif
-        else                        ! located near the edge of
-          south_msg_exch=.false.    ! the grid.
-          north_msg_exch=.false.
-        endif
+!       else                        ! located near the edge of
+!         south_msg_exch=.false.    ! the grid.
+!         north_msg_exch=.false.
+!       endif
 # ifndef NS_PERIODIC
         south_exchng=south_msg_exch
         north_exchng=north_msg_exch
@@ -98,6 +98,8 @@ C$    endif
         p_SW=conv_ijnode_to_rank(inode-1,jnode-1, NP_XI,NP_ETA)
         p_S =conv_ijnode_to_rank(inode  ,jnode-1, NP_XI,NP_ETA)
         p_SE=conv_ijnode_to_rank(inode+1,jnode-1, NP_XI,NP_ETA)
+
+!       print *, 'neighbors: ', mynode, p_W,p_E
 
 ! Determine bounds of the usable portion of model arrays:
 
@@ -209,21 +211,17 @@ C$    endif
       integer conv_ijnode_to_rank, ii,jj, np_xi,np_eta, i,j
       i=ii ; j=jj
 # ifdef EW_PERIODIC
-      if (np_xi > 1) then
-        if (i < 0) then
-          i=i+np_xi
-        elseif (i > np_xi-1) then
-          i=i-np_xi
-        endif
+      if (i < 0) then
+        i=i+np_xi
+      elseif (i > np_xi-1) then
+        i=i-np_xi
       endif
 # endif
 # ifdef NS_PERIODIC
-      if (np_eta > 1) then
-        if (j < 0) then
-          j=j+np_eta
-        elseif (j > np_eta-1) then
-          j=j-np_eta
-        endif
+      if (j < 0) then
+        j=j+np_eta
+      elseif (j > np_eta-1) then
+        j=j-np_eta
       endif
 # endif
       if (0 <= i .and. i < np_xi .and. 0 <= j .and. j < np_eta) then

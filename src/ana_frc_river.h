@@ -10,5 +10,3 @@
 #ifdef SALINITY  
       riv_trc(1,2) =  1.0  ! Salinity in PSU
 #endif  
-      
-      

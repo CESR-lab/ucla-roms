@@ -32,13 +32,6 @@
       integer, parameter         :: diag_prec     = nf90_double ! Precision of output variables (nf90_float/nf90_double)
 
 
-      !  If diag_trc=.true., select for which tracers diagnostics are desired:
-      logical,public,dimension(nt) :: wrt_t_dia = (/
-     &             .true. ,   !! Temperature
-     &             .false.    !! Salinity
-     &           /)
-
-
 
       
       ! End of user inputs                                  

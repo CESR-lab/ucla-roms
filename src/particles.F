@@ -27,6 +27,12 @@
       ! particles would be slower than going through an array that is
       ! stored in contiguous memory.
       
+      character(len=130) :: particle_string
+      character(len=130) :: particle_num_string
+      character(len=30) :: particle_conc_string
+      character(len=30) :: buffer_string
+
+
       ! indices of various quantities in particle array
       integer,parameter :: itag = 1   ! identification tag
       integer,parameter :: ipx  = 2   ! x-position (index space)
@@ -173,9 +179,24 @@
       call wrt_particles
       output_time = 0
 
+      ! Print user options (particles.opt) to netcdf attributes 
+      particle_opt = ''
+      if (full_seed) then 
+        call store_string_att(particle_opt, 'full seed')
+        call store_string_att(particle_opt, ', constant density')
+        write(particle_conc_string, '(A, E10.2)') ', concentration(m^-3):', ppm3
+        call store_string_att(particle_opt, particle_conc_string)
+        write(particle_num_string, '(A, I2)') ', # of partciles:', np
 
-!     print *,'init particles done'
+        call store_string_att(particle_opt, particle_num_string)
+      else 
+        call store_string_att(particle_opt, 'seeded randomly')
+      endif
+      write(buffer_string, '(A, F5.3)') ', buffer:', extra_space_fac
 
+      call store_string_att(particle_opt, buffer_string)
+      particle_opt = trim(adjustl(particle_opt))
+       
       end subroutine init_particles !]
 !-------------------------------------------------
       subroutine advance_particles![
@@ -219,11 +240,11 @@
 
        do ip = 1,np
          if (pz(ip)<0) then
-           pz(ip) = 0.1
+           pz(ip) = 0.02
            n_bot = n_bot+1
          endif
          if (pz(ip)>nz) then
-           pz(ip) = nz-0.1
+           pz(ip) = nz-0.02
            n_sur = n_sur+1
          endif
        enddo
@@ -610,14 +631,14 @@
 !      local 
        real(kind=8),dimension(2,2,2) :: wt
 
-       wt(1,1,1) = (1-z)*(1-y)*(1-x);
-       wt(2,1,1) =    z *(1-y)*(1-x);
-       wt(1,2,1) = (1-z)*   y *(1-x);
-       wt(2,2,1) =    z *   y *(1-x);
-       wt(1,1,2) = (1-z)*(1-y)*   x ;
-       wt(2,1,2) =    z *(1-y)*   x ;
-       wt(1,2,2) = (1-z)*   y *   x ;
-       wt(2,2,2) =    z *   y *   x ;
+       wt(1,1,1) = (1-x)*(1-y)*(1-z);
+       wt(2,1,1) =    x *(1-y)*(1-z);
+       wt(1,2,1) = (1-x)*   y *(1-z);
+       wt(2,2,1) =    x *   y *(1-z);
+       wt(1,1,2) = (1-x)*(1-y)*   z ;
+       wt(2,1,2) =    x *(1-y)*   z ;
+       wt(1,2,2) = (1-x)*   y *   z ;
+       wt(2,2,2) =    x *   y *   z ;
 !      print *,'int_lin_3d: ', sum(wt)
        fi   = sum(f*wt)
        end subroutine interp_3D !]
@@ -884,7 +905,7 @@
       val_mx = 2*nx*ny*nz
       call remsort(val,idx,val_mx)
 
-!     call qsort(val,idx,1,np)
+      call qsort(val,idx,1,np)
 
       do iv = 1,npv                     ! loop over components of particle
         ptmp(1:np_old) = part(1:np_old,iv)            

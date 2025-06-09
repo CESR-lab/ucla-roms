@@ -164,29 +164,15 @@
      &              ' either as separate variables '//
      &              ' (river_index, river_fraction) in river '//
      &              ' forcing file ('// trim(frcfile(nc_rvol%ifile)) //
-     &              ') or as a combined variable ('// trim(riv_flx_name) //
-     &              ', deprecated) in grid (' // trim(grdname)//
+     &              ') or as a combined variable, '// trim(riv_flx_name) //
+     &              ',  in grid (' // trim(grdname)//
      &              ') file.')
             else
-               if (mynode == 0) then
-                  write(*,'(/7x,A/)') 'DEPRECATION WARNING, init_riv:'//
-     &                 'ROMS has located a single variable '//
-     &                 '(river_flux) containing both river index '//
-     &                 ' and fraction in the grid file ('// trim(grdname)//
-     &                 '). This behavior is deprecated '//
-     &                 'as of March 2025 and will be removed in a '//
-     &                 'future version. Please provide separate ' //
-     &                 'variables: river_index and river_fraction '//
-     &                 ' in the river forcing file ('// 
-     &                 trim(frcfile(nc_rvol%ifile))//').'
-               end if
-                  
-
                call ncread(ncid, riv_flx_name, rflx(i0:i1,j0:j1))
                ierr = nf90_close(ncid)
                where (rflx(i0:i1, j0:j1) > 0)
                   ridx(i0:i1, j0:j1) = floor(rflx(i0:i1, j0:j1) - 1e-5)
-                  rfrc(i0:i1,j0:j1) = rflx(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)                  
+                  rfrc(i0:i1,j0:j1) = rflx(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)
                elsewhere
                   ridx(i0:i1, j0:j1) = 0
                   rfrc(i0:i1, j0:j1) = 0

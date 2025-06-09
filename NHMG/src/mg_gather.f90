@@ -24,7 +24,7 @@ contains
 
     integer(kind=ip),intent(in) :: lev
     real(kind=rp),dimension(:,:),pointer,intent(in) :: x
-    real(kind=rp),dimension(:,:),pointer,intent(out) :: y
+    real(kind=rp),dimension(:,:),pointer,intent(inout) :: y
 
     integer(kind=ip):: nx,ny
     integer(kind=ip):: ngx,ngy,Ng
@@ -92,7 +92,7 @@ contains
 
     integer(kind=ip),intent(in) :: lev
     real(kind=rp),dimension(:,:,:),pointer,intent(in) :: x
-    real(kind=rp),dimension(:,:,:),pointer,intent(out) :: y
+    real(kind=rp),dimension(:,:,:),pointer,intent(inout) :: y
 
     integer(kind=ip):: nx,ny,nz
     integer(kind=ip):: ngx,ngy,Ng
@@ -164,7 +164,7 @@ contains
 
     integer(kind=ip),intent(in) :: lev
     real(kind=rp),dimension(:,:,:),pointer,intent(in) :: x
-    real(kind=rp),dimension(:,:,:),pointer,intent(out) :: y
+    real(kind=rp),dimension(:,:,:),pointer,intent(inout) :: y
 
     integer(kind=ip):: nx,ny,nz
     integer(kind=ip):: ngx,ngy
