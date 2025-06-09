@@ -410,50 +410,31 @@
 
  main :: initialization complete, started time-stepping.
 
-
   STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
  0  4.2294863111058626E-03 2.7899525690339702E-03 5.4263777680991121E-01 4.2518890443653601E-01
-         set_frc :: sustr            input time (days) =   4725.00     rec =   2
-         set_frc :: sustr            input time (days) =   4755.00     rec =   3
-         set_frc :: svstr            input time (days) =   4725.00     rec =   2
-         set_frc :: svstr            input time (days) =   4755.00     rec =   3
-         set_frc :: shflux           input time (days) =   4725.00     rec =   2
-         set_frc :: shflux           input time (days) =   4755.00     rec =   3
-         set_frc :: swrad            input time (days) =   4725.00     rec =   2
-         set_frc :: swrad            input time (days) =   4755.00     rec =   3
-         set_frc :: swflux           input time (days) =   4725.00     rec =   2
-         set_frc :: swflux           input time (days) =   4755.00     rec =   3
-         set_frc :: dust             input time (days) =   4702.00     rec =  11
-         set_frc :: dust             input time (days) =   4732.50     rec =  12
-         set_frc :: iron             input time (days) =   4702.00     rec =  11
-         set_frc :: iron             input time (days) =   4732.50     rec =  12
-         set_frc :: pco2_air         input time (days) =   4702.00     rec =  11
-         set_frc :: pco2_air         input time (days) =   4732.50     rec =  12
-         set_frc :: swrad_LFreq      input time (days) =   0.00000     rec =   1
-         set_frc :: swrad_LFreq      input time (days) =   6000.00     rec =   2
          set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_west        input time (days) =   4728.54     rec =   2
          set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_east        input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
          set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_north       input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
-         set_frc :: zeta_south       input time (days) =   4728.54     rec =   2
+         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 1  4.2294654214637111E-03 2.7899249651072646E-03 4.0042803391422316E-01 3.7077050964273756E-01
+ 1  4.2294649426827743E-03 2.7899249149024364E-03 4.0042803391422316E-01 3.7077050964273756E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 2  4.2262719636340660E-03 2.7864159965506688E-03 2.9727921070808583E-01 1.5941239141462391E-01
+ 2  4.2263010986340324E-03 2.7864445365131003E-03 2.9727921070808583E-01 1.5941239141462391E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 3  4.2224815186327758E-03 2.7822649195050411E-03 4.4126746280757645E-01 3.3094571426649327E-01
+ 3  4.2225760985883896E-03 2.7823574534196955E-03 4.4126746280757645E-01 3.3094571426649327E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 4  4.2173645648254030E-03 2.7768448056368546E-03 2.0939178050411059E-01 2.0939178050411059E-01
+ 4  4.2175537894076059E-03 2.7770322654641875E-03 2.0939178050411059E-01 2.0939178050411059E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 5  4.2153781896218162E-03 2.7745388418503247E-03 2.3177809649896725E-01 1.2055899482549449E-01
+ 5  4.2156855156165653E-03 2.7748446673095976E-03 2.3177809649896725E-01 1.2055899482549449E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -463,19 +444,19 @@
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 6  4.2147476883444349E-03 2.7735205732703386E-03 2.9069716164208897E-01 2.1955254137678093E-01
+ 6  4.2152003412827726E-03 2.7739722008516513E-03 2.9069716164208897E-01 2.1955254137678093E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 7  4.2145547977904176E-03 2.7729520525784390E-03 2.0236319733593641E-01 1.9416650136970071E-01
+ 7  4.2151817454044874E-03 2.7735783961351161E-03 2.0236960307385274E-01 1.9417549565773662E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 8  4.2161863940904766E-03 2.7741923516442497E-03 2.5068775379237274E-01 1.3721936096844359E-01
+ 8  4.2170067232140665E-03 2.7750135245570530E-03 2.5068775379237274E-01 1.3721936096844359E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 9  4.2169678420176295E-03 2.7745315512994755E-03 2.8034745621743995E-01 2.1845061661780568E-01
+ 9  4.2180008699533528E-03 2.7755668751599646E-03 2.8034745621743995E-01 2.1845061661780568E-01
  doing BGC with BEC
        ecosys_bec2_td:: computing bgc
-10  4.2158108733286294E-03 2.7729385344420973E-03 2.0265076553717215E-01 1.9424122684357920E-01
+10  4.2170787295234278E-03 2.7742121767264476E-03 2.0266617746802937E-01 1.9424691793363899E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -483,8 +464,8 @@
        wrt_bgc_tracers :: history , trc =  DIC                                       
        bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
        bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
- Process    0  thread  0  cpu time =       38.12 sec
+ Process    0  thread  0  cpu time =       15.84 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   58.116328608000003     
+ MPI_run_time =   24.040379679000125     
