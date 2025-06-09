@@ -7,7 +7,7 @@ case "$1" in
 	;;
     *)
 	echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
-	exit
+	exit 1
 	;;
 esac
     
