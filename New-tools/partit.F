@@ -7,7 +7,7 @@
       ! ----- Module -----
       use netcdf
       use mpi
-      use roms_part_join
+      use roms_part
 
       ! ----- Allocation ----- 
       implicit none
@@ -70,7 +70,6 @@
       call write_partial_files
       ! read required block of data for partitionable
       ! vars from srcfile and write to partial files
-
 
       call MPI_Finalize(ierr)
 
