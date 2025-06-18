@@ -13,9 +13,9 @@
       type (ncforce) :: nc_vwnd  = ncforce(vname='vwnd', tname='time' )  ! v-wind (input data in m/s at 10m)
       type (ncforce) :: nc_tair  = ncforce(vname='Tair', tname='time' )  ! Air temp (input data Degrees C at 2m)
       type (ncforce) :: nc_Q     = ncforce(vname='qair', tname='time' )  ! Q (Specific humidity (kg/kg)
-      type (ncforce) :: nc_prate = ncforce(vname='rain', tname='time' )  ! Precipitation rate (cm/day)
-      type (ncforce) :: nc_lwrad = ncforce(vname='lwrad',tname='time' )  ! Downward longwave radiation [W/m^2]
-      type (ncforce) :: nc_swrad = ncforce(vname='swrad',tname='time' )  ! net shortwave radiation [W/m^2]
+      type (ncforce) :: nc_prate = ncforce(vname='rain', tname='rad_time' )  ! Precipitation rate (cm/day)
+      type (ncforce) :: nc_lwrad = ncforce(vname='lwrad',tname='rad_time' )  ! Downward longwave radiation [W/m^2]
+      type (ncforce) :: nc_swrad = ncforce(vname='swrad',tname='rad_time' )  ! net shortwave radiation [W/m^2]
 
 #if defined TAU_CORRECTION
       type (ncforce)  :: nc_taux = ncforce(vname='TauX_corr',tname='Taucorr_time'  )  ! The TAU_CORRECTION flag is used to active a correction term to

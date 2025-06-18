@@ -2425,6 +2425,7 @@
 
      !-----------------------------------------------------------------------
      !  Compute initial QA(dust) POC flux deficit.
+     !      Note : dust_rho converts dust_flux from kg/m2/s to mmolC/m2/s
      !-----------------------------------------------------------------------
 
         QA_dust_def = dust_rho * (dust_sflux_out(istr:iend,j) + dust_hflux_out(istr:iend,j))

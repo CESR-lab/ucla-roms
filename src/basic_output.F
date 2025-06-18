@@ -345,9 +345,10 @@
           call ncwrite(ncid,vname(1,indxO),work(i0:i1,j0:j1,:),start)
         endif
         if (wrt_W) then                              ! true vertical velocity (m/s).
-          do tile=0,NSUB_X*NSUB_E-1
-            call wvlcty (tile, work)
-          enddo
+!         do tile=0,NSUB_X*NSUB_E-1
+!           call wvlcty (tile, work)
+!         enddo
+          call wvlcty (0, work)
           call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:N),start)
         endif
         if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
@@ -397,6 +398,8 @@
       real,save              :: output_time_avg=0                    ! time since last output
       logical,save           :: first_step=.true.
       character(len=99),save :: fname_avg
+      character(len=99)      :: output_time_string
+      character(len=99)      :: formatted_string
       integer :: tile, tn, ierr, k
 
       if (wrt_file_avg) then
@@ -404,6 +407,13 @@
         output_time_avg = output_time_avg + dt
 
         if (output_time_avg>=output_period_avg) then
+
+          ! save info to netcdf
+          avg_output = ''
+          write(output_time_string,'(F12.1)') output_time_avg
+          write(formatted_string,'(A,A)') trim(adjustl(output_time_string)),
+     &                                    ' seconds'
+          call store_string_att(avg_output,formatted_string)
 
           if (rec_avg == nrpf_avg) then
             call create_file_ocean_vars(fname_avg,.true.)
@@ -583,6 +593,8 @@
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
+        call ncwrite(ncid,'DU_avg1',    DU_avg1( 1:i1,j0:j1),start)
+        call ncwrite(ncid,'DV_avg1',    DV_avg1(i0:i1, 1:j1),start)
         call ncwrite(ncid,'DU_avg2',    DU_avg2( 1:i1,j0:j1),start)
         call ncwrite(ncid,'DV_avg2',    DV_avg2(i0:i1, 1:j1),start)
         call ncwrite(ncid,'DU_avg_bak', DU_avg_bak( 1:i1,j0:j1),start)
@@ -645,6 +657,7 @@
       if (avg) then
         call def_vars_ocean_vars(  .true.  )
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS averages file')
+        ierr=nf90_put_att(ncid,nf90_global,'averaging_timescale',adjustl(avg_output))
       else
         call def_vars_ocean_vars(  .false. )
         ierr=nf90_put_att(ncid,nf90_global,'type','ROMS history file')
@@ -870,6 +883,14 @@
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
+      varid = nccreate(ncid,'DU_avg1',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time averaged uflx>>')
+
+      varid = nccreate(ncid,'DV_avg1',(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time-averaged vflx>>')
+
       varid = nccreate(ncid,'DU_avg2',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
@@ -907,7 +928,7 @@
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
 # endif
 
-      if (diag_pflx) then  
+      if (diag_pflx) then
         varid = nccreate(ncid,'u_slow',(/dn_xu,dn_yr,dn_zr,dn_tm/),
      &                               (/xi_u,eta_rho,N,0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')

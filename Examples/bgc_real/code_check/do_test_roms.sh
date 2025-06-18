@@ -37,7 +37,7 @@ if [ ${BGC_MODEL} == "MARBL" ];then
     cp -p ../marbl_in .
 fi
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
-cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
+#cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
 cp -p $ROMS_ROOT/Examples/code_check/test_roms.py .
 make compile_clean &> /dev/null

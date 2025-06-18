@@ -48,6 +48,15 @@
         nc_swrad%coarse=1
       endif
 
+      ! Print user options (flux_frc.opt) to netcdf attributes
+      ! Note: to turn flux forces off, edit cppdefs! 
+      flux_frc_opt = ''
+      if (interp_frc==1) then
+        call store_string_att(flux_frc_opt, 'Interpolation ON')
+      else
+        call store_string_att(flux_frc_opt, 'Interpolation OFF')
+      endif
+      flux_frc_opt = trim(adjustl(flux_frc_opt))
       end subroutine init_arrays_flux_frc  !]
 ! ----------------------------------------------------------------------
       subroutine set_flux_frc(istr,iend,jstr,jend)  ![
@@ -113,7 +122,6 @@
 
       end subroutine set_flux_frc  !]
 ! ----------------------------------------------------------------------
-#ifdef SALINITY
       subroutine set_swflux  ![
       ! set surface freshwater flux: stflx(isalt)
 
@@ -142,8 +150,6 @@
       enddo
 
       end subroutine set_swflux  !]
-#endif /* SALINITY */
-
 ! ----------------------------------------------------------------------
       subroutine set_srflux  ![
       ! set short-wave radiation flux

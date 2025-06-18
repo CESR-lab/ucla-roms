@@ -46,11 +46,11 @@ C$OMP END PARALLEL
       implicit none
       integer nx,ny, nsub_x,nsub_y
       integer ntrds, ntx,nty, nsb, i,size,excess,max_exc
-C$    integer omp_get_num_threads
+!C$    integer omp_get_num_threads
       integer,parameter :: min_vect_lenght=96, targ_length=128
 
       ntrds=1
-C$    ntrds=omp_get_num_threads()
+!C$    ntrds=omp_get_num_threads()
 
       if (nx>8*min_vect_lenght-1 .and. mod(ntrds,8)==0) then
         ntx=8

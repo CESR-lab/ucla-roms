@@ -1,0 +1,79 @@
+These are instructions to download the intel fortran compiler with mpi and to download
+and compile dedicated netcdf libraries.
+This process may be tricky. You'll need many supporting libraries to be present. For instance,
+the current hdf5 library requires glibc to be version 2.28 or newer. You may have to update your
+system. There are also mentions of library that you may need to install during the process. These
+came up for us. You might have other missing libraries. The install.log file should give you information
+on what's missing. 
+
+Good luck!
+
+Step 0: Install intel oneapi and add the setting of path names to the root .bashrc
+
+# Go to intel download website and follow instructions. If using ubuntu, the apt instructions
+are recommended.
+
+https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html
+
+Install the Intel oneAPI HPC Toolkit, the intel fortran essentials are not sufficient
+
+
+#Add this line to /root/.bashrc and source the bashrc to activate:
+. /opt/intel/oneapi/setvars.sh
+
+# Set for compilation of netcdf-fortran library
+export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
+export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
+
+
+Step 1: Install the hdf library with the right compilers and the parallel option
+
+# Download hdf tarball from hdfgroup.org: https://www.hdfgroup.org/download-hdf5/source-code/
+# Change version number into the actual version for the library, currently 1.14.6
+
+> sudo su
+> cd ~
+> mv <path-to-tarbal>/hdf5-1.14.6.tar.gz .  (move gzipped tarbal to /root)
+> gunzip hdf5-1.14.6.tar.gz
+> tar xvf hdf5-1.14.6.tar
+> cd hdf5-1.14.6/
+
+# Install zlib if you haven't installed yet
+> apt install zlib1g-dev
+
+> ./configure --prefix=/opt/hdf5-1.14.6 --enable-fortran --enable-shared --enable-parallel --with-pic CC=mpiicx FC=mpiifx CXX=mpiicpc CFLAGS="-fPIC -O3 -xHost -align" FFLAGS="-fPIC -O3 -xHost -align" CXXFLAGS="-fPIC -O3 -xHost -ip -align" FFLAGS="-I/opt/intel/oneapi/mpi/latest/include/mpi -L/opt/intel/oneapi/mpi/latest/lib"
+> make -j8
+> make install
+
+
+Step 2: Download and install the netcdf c library, again with the right compiler and options
+
+#Change versions into the actual versions, currently 1.14.6 for hdf, and 4.9.3 for netcdf-c
+
+> wget https://downloads.unidata.ucar.edu/netcdf-c/4.9.3/netcdf-c-4.9.3.tar.gz .
+
+# Install libxml2 if you haven't installed yet
+> apt install libxml2-dev
+
+# Install curl if you haven't installed yet
+> apt install libssl-dev libcurl4-openssl-dev
+
+
+> ./configure --prefix=/opt/netcdf-c-4.9.2 CC=mpiicx CFLAGS="-O3 -align" CPPFLAGS=-I/opt/hdf5-1.14.4-2/include LDFLAGS=-L/opt/hdf5-1.14.4-2/lib
+> make check -j8
+> make install
+
+
+
+Step 3: Install the netcdf fortran library, again with the right compiler and options
+
+# Change versions into the actual versions, currently 4.6.1 netcdf fortran, and 4.9.2 for netcdf-c
+
+> wget https://downloads.unidata.ucar.edu/netcdf-fortran/4.6.2/netcdf-fortran-4.6.2.tar.gz
+> gunzip netcdf-fortran-4.6.2.tar.gz
+> tar xvf netcdf-fortran-4.6.2.tar
+> cd netcdf-fortran-4.6.2
+
+> ./configure --prefix=/opt/netcdf-fortran-4.6.1 CC=mpiicx FC=mpiifx FFLAGS="-O3 -xHost" CPPFLAGS=-I/opt/netcdf-c-4.9.2/include LDFLAGS=-L/opt/netcdf-c-4.9.2/lib
+> make check -j8
+> make install 

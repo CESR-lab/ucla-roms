@@ -61,8 +61,8 @@ c--# define LMD_CONVEC
 # define SPONGE
 
                         /* Biology Settings */
-!# define MARBL
-!# define MARBL_DIAGS
+c--# define MARBL
+c--# define MARBL_DIAGS
 
 #ifdef MARBL
 # define NOX_FORCING
@@ -71,10 +71,9 @@ c--# define LMD_CONVEC
 
 # define BIOLOGY_BEC2
 
-
 #ifdef BIOLOGY_BEC2
 # define BIOLOGY                  /* DPD current does nothing in new code */
-# define BEC2_DIAG                /* BGC diagnostics */
+!# define BEC2_DIAG                /* BGC diagnostics */
 # define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
 # undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
 # undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 

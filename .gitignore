@@ -42,6 +42,10 @@ check_srcs.F
 # Work directory
 Work/*
 
+# New-tools
+New-Tools/partit
+New-Tools/ncjoin
+
 # tools
 Tools-Roms/partit
 Tools-Roms/ncjoin

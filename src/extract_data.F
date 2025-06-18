@@ -757,7 +757,7 @@
         ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
         else
         ierr = nf90_put_att(ncid,varid,'long_name','bgc concentration')
-        ierr = nf90_put_att(ncid,varid,'units','mmolm-3')
+        ierr = nf90_put_att(ncid,varid,'units','mmol/m^3')
         endif
       else
         ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')

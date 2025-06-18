@@ -40,6 +40,8 @@
       character(len=21) :: refdatestr
       integer :: offset = 0
 
+      real,parameter :: eps=1e-2 ! prevent rounding error failures in get_frc_data
+
 
       ! Type ncforce contains all required netcdf variables and input data array for frc variable.
       ! Set the name and time_name of variable to match what is in the input forcing files.
@@ -70,7 +72,6 @@
 !    &                                      ,zdimw= 's_w    '
 
       ! index ranges for netcdf output (See init_output_indices)
-!     integer,public :: i0,i1,j0,j1
       integer,public :: bfx,bfy
 
       ! index ranges for coarse netcdf input
@@ -80,10 +81,27 @@
       real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
 
       integer,parameter :: max_options_string=2000
+
       ! option string to go into output file attributes
-      character(len=max_options_string),public::surf_forcing_strings=' '
+
       character(len=max_options_string),public::bc_options   = 'OFF'
-      character(len=max_options_string),public::cdr_frc_opt  ='OFF'
+      character(len=max_options_string),public::pipe_frc_opt ='OFF'
+      character(len=max_options_string),public::river_frc_opt='OFF'
+      character(len=max_options_string),public::tide_opt='OFF'
+      character(len=max_options_string),public::bulk_frc_opt='OFF'
+      character(len=max_options_string),public::flux_frc_opt='OFF'
+      character(len=max_options_string),public::particle_opt='OFF'
+      character(len=max_options_string),public::cdr_frc_opt  ='OFF'      
+      ! forcing file specifications
+      character(len=max_options_string),public::force_files='N/A'
+      character(len=max_options_string),public::force_info='N/A'
+      character(len=100),public::frctype ! variable across netcdf files (forcing module)
+      ! average files
+      character(len=100),public::avg_output=''
+      character(len=max_options_string),public::diagnostic_opt='diagnostics OFF'
+      ! average diagnostic options
+      character(len=100),public::diag_avg_output=''
+
 
       ! from old ncvars **************:
       integer, parameter, public :: max_frc_files=360
@@ -307,7 +325,7 @@
 
       var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
 
-      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -368,7 +386,8 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+!     if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -425,7 +444,8 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+!     if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
+      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -636,6 +656,8 @@
 
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
+      character(len=100) :: forcing_version ! version of forcing input data
+      character(len=300) :: frcstr
       integer            :: irec,ifile
 
       irec  = nc%irec
@@ -654,6 +676,20 @@
         call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
       else
         call ncread(ncid,vname,nc%vdata(:,:,it),(/1,1,irec/))
+      endif
+      ! add force file info to output nc
+      if (mynode == 0) then
+        ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
+        ! if forcing netcdf has information
+        if (len(trim(forcing_version)) /= 0) then
+          ! if attribute has not been set yet
+          if (index(force_info,forcing_version) == 0) then
+            write(frcstr,'(2A)') trim(adjustl(frctype)),
+     &            trim(adjustl(forcing_version))
+            frcstr = trim(adjustl(frcstr))
+            call store_string_att(force_info,frcstr)
+          endif
+        endif
       endif
       ierr = nf90_close(ncid)
 
@@ -689,6 +725,8 @@
 
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
+      character(len=100) :: forcing_version ! version of forcing input data
+      character(len=300) :: frcstr
       integer            :: irec,ifile
 
       irec  = nc%irec
@@ -720,6 +758,19 @@
           call ncread(ncid,vname,nc%vdata(i0:i1,1:j1,it),(/1,1,irec/))
         else    ! rho-grid
           call ncread(ncid,vname,nc%vdata(i0:i1,j0:j1,it),(/1,1,irec/))
+        endif
+      endif
+      ! add force file info to output nc
+      if (mynode == 0) then
+        ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
+        ! if forcing netcdf has information
+        if (len(trim(forcing_version)) /= 0) then
+          ! if attribute has not been set yet
+          if (index(force_info,forcing_version) == 0) then
+            write(frcstr,'(2A)') trim(adjustl(frctype)),trim(adjustl(forcing_version))
+            frcstr = trim(adjustl(frcstr))
+            call store_string_att(force_info,frcstr)
+          endif
         endif
       endif
       ierr = nf90_close(ncid)
@@ -802,10 +853,10 @@
         call append_date_node(fname)
       endif
 
-!     if (mynode==0) then
-!       print *,'creating: ',fname
-!       stop
-!     endif
+!      if (mynode==0) then
+!        print *,'creating: ',fname
+!        stop
+!      endif
 
       ierr=nf90_create(trim(fname),nf90_netcdf4,ncid)
       if (ierr/=nf90_noerr)
@@ -1185,10 +1236,17 @@
       ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
 #endif
 
+      ierr=nf90_put_att(ncid, nf90_global, 'global_x', gnx)
+      ierr=nf90_put_att(ncid, nf90_global, 'global_y', gny)
+
       ierr=nf90_put_att(ncid, nf90_global, 'title',title)         ! Title of the run
 
 #ifndef ANA_GRID
       ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grdname)
+#endif
+#ifndef ANA_GRID
+      ierr=nf90_put_att (ncid, nf90_global, 'forcing_files', force_files)
+      ierr=nf90_put_att (ncid, nf90_global, 'forcing_info', adjustl(force_info))
 #endif
 #ifndef ANA_INITIAL
       ierr=nf90_put_att(ncid, nf90_global, 'init_file',ininame)
@@ -1252,8 +1310,7 @@
       ierr=nf90_put_att (ncid,nf90_global,'q2nu4_units', 'm^4/s')
 #  endif
 # endif
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
+# if !defined LMD_MIXING && !defined BVF_MIXING
 
       ierr=nf90_put_att(ncid, nf90_global, 'Akv_bak', Akv_bak)       ! Background vertical viscosity tracer mixing
       ierr=nf90_put_att (ncid, nf90_global, 'Akv_bak_units', 'm^2/s')
@@ -1294,9 +1351,13 @@
       ! string set added to get values from modules without struggling with circular references
       ! as those modules use roms_read_write so this module can't use them.
       ! rather the string is filled in the module's init and can be written here to all files.
-      ierr=nf90_put_att (ncid, nf90_global, 'surf_forcing_strings', surf_forcing_strings)
       ierr=nf90_put_att (ncid, nf90_global, 'bc_options', bc_options)
-
+      ierr=nf90_put_att (ncid, nf90_global, 'bulk_frc_options', bulk_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'flux_frc_options', flux_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'tide_options', tide_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'river_frc_options', river_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'pipe_frc_options', pipe_frc_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'particle_options', particle_opt)
       call add_git_hash(ncid)
 
       end subroutine put_global_atts  !]
@@ -1305,7 +1366,6 @@
       ! Add settings that affect the solution to a string
       ! which will be added to global attributes of all nc files
       implicit none
-
       ! input
       character(len=*),intent(inout) :: char_string
       character(len=*),intent(in)    :: string_add

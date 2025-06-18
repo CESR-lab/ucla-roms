@@ -506,7 +506,8 @@
       end subroutine wrt_output !]
 !----------------------------------------------------------------------
 
-#else ! MARBL && MARBL_DIAGS
+#else /* MARBL && MARBL_DIAGS */
+
 !----------------------------------------------------------------------
       use param
       use tracers
@@ -541,6 +542,6 @@
       end subroutine init_cstar !]
 !----------------------------------------------------------------------
 
-#endif ! MARBL && MARBL_DIAGS
+#endif /* MARBL && MARBL_DIAGS */
 
       end module cstar_output

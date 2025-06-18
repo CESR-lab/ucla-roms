@@ -105,6 +105,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use diagnostics
       use boundary
       use particles
+      use cstar_output
       use random_output
       use cstar_output
       use cdr_frc
@@ -228,37 +229,29 @@ CR      write(*,*) ' -6' MYID
                                     ! either analytically or read
       if (nrrec > 0) then 
 #endif
+
+      
 #ifdef EXACT_RESTART
-C$OMP MASTER                           ! setup environmental variables
-        call get_init(nrrec-1,2)       ! (e.g. analytical boundary
-C$OMP END MASTER                       ! forcing), call it first, even
-C$OMP BARRIER                          ! in the case of restart run.
-# ifdef SOLVE3D
-        do tile=my_tile_range
-          call set_depth(tile)
-        enddo
-C$OMP BARRIER
-# endif
+        call get_init(nrrec-1,2) 
+        call set_depth(0)
 #endif
-C$OMP MASTER
         call get_init(nrrec, 1)
-C$OMP END MASTER
+
 #ifdef ANA_INITIAL
       endif    !<-- nrrec>0
 #endif
-C$OMP BARRIER
+
+#ifdef ANA_VMIX
+      call ana_vmix
+#endif
       if (may_day_flag /= 0) goto 99      !--> ERROR
-CR      write(*,*) ' -5' MYID
+
                                   ! Set initial model clock: at this
       time=start_time             ! moment "start_time" (global scalar)
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
-
-#ifdef SOLVE3D
-      do tile=my_tile_range       ! recompute three-dimensional S-
-        call set_depth(tile)      ! coordinate system: at this moment
-      enddo                       ! free surface has non-zero status
-C$OMP BARRIER
+      call set_forces
+      call set_depth(0)
 
 !----------------------------------------------------------------------
 !  Set NHMG horizontal and vertical grids 
@@ -281,7 +274,6 @@ CR      write(*,*)  ' -3' MYID
       call rho_eos(nrhs)
 
 CR      write(*,*)  ' -2' MYID
-#endif
 
       if (floats) then
         call init_particles
@@ -388,13 +380,8 @@ CR      write(*,*)  ' -2' MYID
       ! Should be already available from previous time-step
       call omega
 
-# if defined ANA_VMIX
-      call ana_vmix
-# elif defined LMD_MIXING
+# if defined LMD_MIXING
       call lmd_vmix(nstp)
-!     if (mynode==0) then
-!       print *,'pre-step mixing: ',hbls(nx,20),maxval(Akv(nx,20,:))
-!     endif
 # endif
 
       ! nrhs points to u/v at time level n
@@ -495,6 +482,8 @@ CR      write(*,*)  ' -2' MYID
 #if defined MARBL && defined MARBL_DIAGS
       if (do_cstar)  call wrt_cstar
 #endif
+
+      if (do_cstar)  call wrt_cstar
 
       if (do_zslice) call wrt_zslice
 
