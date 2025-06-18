@@ -95,7 +95,6 @@
       ! forcing file specifications
       character(len=max_options_string),public::force_files='N/A'
       character(len=max_options_string),public::force_info='N/A'
-      character(len=100),public::frctype ! variable across netcdf files (forcing module)
       ! average files
       character(len=100),public::avg_output=''
       character(len=max_options_string),public::diagnostic_opt='diagnostics OFF'
@@ -656,8 +655,6 @@
 
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
-      character(len=100) :: forcing_version ! version of forcing input data
-      character(len=300) :: frcstr
       integer            :: irec,ifile
 
       irec  = nc%irec
@@ -676,20 +673,6 @@
         call ncread(ncid,vname,nc%vdata(:,1,it),(/1,irec/))
       else
         call ncread(ncid,vname,nc%vdata(:,:,it),(/1,1,irec/))
-      endif
-      ! add force file info to output nc
-      if (mynode == 0) then
-        ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
-        ! if forcing netcdf has information
-        if (len(trim(forcing_version)) /= 0) then
-          ! if attribute has not been set yet
-          if (index(force_info,forcing_version) == 0) then
-            write(frcstr,'(2A)') trim(adjustl(frctype)),
-     &            trim(adjustl(forcing_version))
-            frcstr = trim(adjustl(frcstr))
-            call store_string_att(force_info,frcstr)
-          endif
-        endif
       endif
       ierr = nf90_close(ncid)
 
@@ -725,8 +708,6 @@
 
       character(len=20)  :: vname  ! name of variable in input file
       character(len=20)  :: tname  ! time variable name for variable
-      character(len=100) :: forcing_version ! version of forcing input data
-      character(len=300) :: frcstr
       integer            :: irec,ifile
 
       irec  = nc%irec
@@ -758,19 +739,6 @@
           call ncread(ncid,vname,nc%vdata(i0:i1,1:j1,it),(/1,1,irec/))
         else    ! rho-grid
           call ncread(ncid,vname,nc%vdata(i0:i1,j0:j1,it),(/1,1,irec/))
-        endif
-      endif
-      ! add force file info to output nc
-      if (mynode == 0) then
-        ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
-        ! if forcing netcdf has information
-        if (len(trim(forcing_version)) /= 0) then
-          ! if attribute has not been set yet
-          if (index(force_info,forcing_version) == 0) then
-            write(frcstr,'(2A)') trim(adjustl(frctype)),trim(adjustl(forcing_version))
-            frcstr = trim(adjustl(frcstr))
-            call store_string_att(force_info,frcstr)
-          endif
         endif
       endif
       ierr = nf90_close(ncid)
@@ -1244,10 +1212,8 @@
 #ifndef ANA_GRID
       ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grdname)
 #endif
-#ifndef ANA_GRID
       ierr=nf90_put_att (ncid, nf90_global, 'forcing_files', force_files)
-      ierr=nf90_put_att (ncid, nf90_global, 'forcing_info', adjustl(force_info))
-#endif
+      ierr=nf90_put_att (ncid, nf90_global, 'forcing_source', force_info)
 #ifndef ANA_INITIAL
       ierr=nf90_put_att(ncid, nf90_global, 'init_file',ininame)
 #endif
