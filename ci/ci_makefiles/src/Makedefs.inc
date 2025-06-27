@@ -35,18 +35,16 @@ ifeq ($(OS),Darwin)
     PPF77_ext = .fpp
 endif
 
+## Use mpifort as the wrapper for any compiler:
+LDR = mpifort
+CFT = mpifort
+
 ## Set linker and compiler based on compiler/MPI wrapper
 ifeq ($(COMPILER),gnu)
-	LDR =  mpifort
-        CFT =  mpifort
 	expected_fc=GNU Fortran # For checking correct compiler is wrapped
 else ifeq ($(COMPILER),intel)
-        LDR = mpiifx
-        CFT = mpiifx
 	expected_fc=ifx
 else ifeq ($(COMPILER),ifort)
-        LDR = mpifort
-        CFT = mpifort
 	expected_fc=ifort
 endif
 
