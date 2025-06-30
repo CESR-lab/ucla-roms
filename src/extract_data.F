@@ -253,7 +253,11 @@
         obj(iobj)%dsize = n1
         
         ! scalar objects have i,j. Vector obj also have ang
-        if (n2==2) obj(iobj)%scalar = .true.
+        if (n2==2) then
+           obj(iobj)%scalar = .true.
+        else
+           obj(iobj)%scalar = .false.
+        endif
 
         allocate(object(n1,n2))
         call ncread(ncid,objname,object)
