@@ -60,11 +60,11 @@ LOOP BEGIN at loop-k-j-i.f90(29,5)
       LOOP BEGIN at loop-k-j-i.f90(29,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -90,11 +90,11 @@ LOOP BEGIN at loop-k-j-i.f90(30,5)
       LOOP BEGIN at loop-k-j-i.f90(30,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -120,11 +120,11 @@ LOOP BEGIN at loop-k-j-i.f90(31,5)
       LOOP BEGIN at loop-k-j-i.f90(31,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -151,13 +151,13 @@ LOOP BEGIN at loop-k-j-i.f90(39,21)
          LOOP BEGIN at loop-k-j-i.f90(37,17)
             remark #15300: LOOP WAS VECTORIZED
             remark #15442: entire loop may be executed in remainder
-            remark #15448: unmasked aligned unit stride loads: 2 
-            remark #15449: unmasked aligned unit stride stores: 1 
-            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15448: unmasked aligned unit stride loads: 2
+            remark #15449: unmasked aligned unit stride stores: 1
+            remark #15450: unmasked unaligned unit stride loads: 1
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 9 
-            remark #15477: vector cost: 4.500 
-            remark #15478: estimated potential speedup: 1.880 
+            remark #15476: scalar cost: 9
+            remark #15477: vector cost: 4.500
+            remark #15478: estimated potential speedup: 1.880
             remark #15488: --- end vector cost summary ---
             remark #25015: Estimate of max trip count of loop=25
          LOOP END
@@ -183,14 +183,14 @@ loop-k-j-i.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] loop-k-j-i.f9
         Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
         Callee-save  :    6[ rbx rbp r12-r15]
         Assigned     :   22[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm7]
-        
+
     Routine temporaries
         Total         :     384
             Global    :     119
             Local     :     265
         Regenerable   :      96
         Spilled       :      35
-        
+
     Routine stack
         Variables     :     156 bytes*
             Reads     :       7 [6.04e-04 ~ 0.0%]
@@ -198,11 +198,11 @@ loop-k-j-i.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] loop-k-j-i.f9
         Spills        :     240 bytes*
             Reads     :      34 [1.32e+00 ~ 1.3%]
             Writes    :      33 [1.73e-01 ~ 0.2%]
-    
+
     Notes
-    
+
         *Non-overlapping variables and spills may share stack space,
          so the total stack size might be less than this.
-    
+
 
 ===========================================================================

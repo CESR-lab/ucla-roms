@@ -1,9 +1,9 @@
-function [mjd]=mjd(y,m,d,h) 
+function [mjd]=mjd(y,m,d,h)
 %
 % Get the date in Modified Julian Days
 %
  if nargin<4, h=0; end;
- 
+
  y(find(m<3))=y(find(m<3))-1;
  m(find(m<3))=m(find(m<3))+12;
 

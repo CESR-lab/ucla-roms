@@ -31,7 +31,7 @@
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
       real Wvlc(GLOBAL_2D_ARRAY,0:N)
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk 
+      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: Wxi, Weta
 
 # include "compute_extended_bounds.h"

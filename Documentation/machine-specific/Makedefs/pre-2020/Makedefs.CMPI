@@ -12,14 +12,14 @@
 # outermost directory of appropriate installation of MPI/Pro (hence
 # "cmpif90c" has absolute path $CMPIPRO_ROOT/bin/cmpif90c, "mpif.h"
 # is taken from $CMPIPRO_ROOT/include/mpif.h, while relevant MPI
-# libraries are coming from $CMPIPRO_ROOT/lib. 
+# libraries are coming from $CMPIPRO_ROOT/lib.
 #
 # WARNING: Optimizations specific to CPU type (.e.g. -tpp7 -axN -xN)
 # MUST BE SET CONSISTENTLY for both CFT and LDR: not doing so results
 # is CFT generating processor-specific code which needs special
 # libraries, while LDR tries to link it to default ones resulting in
 # missing references and linking failure.  Also note that Open MP
-# switch is not activated in this setup. 
+# switch is not activated in this setup.
 #
 
 .SUFFIXES: .o .f .F

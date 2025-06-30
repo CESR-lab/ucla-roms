@@ -1,5 +1,5 @@
 #include "cppdefs.opt"
- 
+
       subroutine visc3d(u,v)
 
 ! Compute harmonic mixing of momentum, along constant S-surfaces as
@@ -43,7 +43,7 @@
         do j= 0,ny
           do i= 0,nx
             cff=0.5*Hz(i,j,k)*visc2_r(i,j)*(
- 
+
      &      dn_r(i,j)*pm(i,j)*( (pn(i  ,j)+pn(i+1,j))*u(i+1,j,k,nstp)
      &                         -(pn(i-1,j)+pn(i  ,j))*u(i  ,j,k,nstp)
      &                                                              )
@@ -59,7 +59,7 @@
           do i=1,nx+1
             cff=0.125*(Hz(i-1,j,k)+Hz(i,j,k)+Hz(i-1,j-1,k)
      &                         +Hz(i,j-1,k))*visc2_p(i,j)*(
- 
+
      &      0.25*(pm(i-1,j)+pm(i,j)+pm(i-1,j-1)+pm(i,j-1))*dn_p(i,j)
      &                     *( (pn(i  ,j-1)+pn(i  ,j))*v(i  ,j,k,nstp)
      &                       -(pn(i-1,j-1)+pn(i-1,j))*v(i-1,j,k,nstp)

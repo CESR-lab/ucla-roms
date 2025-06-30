@@ -30,7 +30,7 @@
        INT_AT_RHO_POINTS       SMOOTH_HBL              LIMIT_UNSTABLE_ONLY
  <set_global_definitions.h>
        CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
-       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
+       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D
 
  USWC sample domain - realistic river example
      ntimes =        20   total number of 3D timesteps
@@ -66,22 +66,22 @@
 
        ocean_vars :: history file ouput_period = 400.0  recs/file =  10
          his fields to be saved: (T/F)
-           zeta    T    free-surface elevation                    
-           ubar    T    vertically averaged u-momentum component  
-           vbar    T    vertically averaged v-momentum component  
-           u       T    u-momentum component                      
-           v       T    v-momentum component                      
-           rho     T    density anomaly                           
-           Omega   T    S-coordinate vertical velocity            
-           W       T    vertical velocity                         
-           Akv     T    vertical viscosity coefficient            
-           Akt     T    vertical thermal conductivity coefficient 
-           Aks     T    salinity vertical diffusion coefficient   
-           hbls    T    Thickness of KPP surface boundary layer   
-           hbbl    T    Thickness of KPP bottom boundary layer    
+           zeta    T    free-surface elevation
+           ubar    T    vertically averaged u-momentum component
+           vbar    T    vertically averaged v-momentum component
+           u       T    u-momentum component
+           v       T    v-momentum component
+           rho     T    density anomaly
+           Omega   T    S-coordinate vertical velocity
+           W       T    vertical velocity
+           Akv     T    vertical viscosity coefficient
+           Akt     T    vertical thermal conductivity coefficient
+           Aks     T    salinity vertical diffusion coefficient
+           hbls    T    Thickness of KPP surface boundary layer
+           hbbl    T    Thickness of KPP bottom boundary layer
 
-           t( 1T   temp                                      
-           t( 2T   salt                                      
+           t( 1T   temp
+           t( 2T   salt
 
  Spherical grid detected.
 
@@ -210,4 +210,4 @@
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   3.87313532829285     
+ MPI_run_time =   3.87313532829285

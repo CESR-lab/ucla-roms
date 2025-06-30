@@ -1,7 +1,7 @@
 2021 March: notes about the roms grid. DevinD
 
     useful link: https://www.myroms.org/wiki/Parallelization
-    The following description tries to compliment the link above, and fill in 
+    The following description tries to compliment the link above, and fill in
     descriptions deemed missing from the roms wiki.
 
 
@@ -19,17 +19,17 @@ Full domain:
        :  __       __  :      MMm         DIAGRAM 1
        : |           | :
        : |           | :                xi_rho = LLm + 2
-                                       eta_rho = MMm + 2 
-                    
+                                       eta_rho = MMm + 2
+
        : |           | :             j ^
        : |__       __| :       1       |
-       .....      ......       0        ---> 
+       .....      ......       0        --->
                                            i
 
 
 Subdomains:
 
-    The roms partitioning into subdomains (nodes) is based on the choice of 
+    The roms partitioning into subdomains (nodes) is based on the choice of
     NP_XI & NP_ETA (number of processes in x & y), such that number of processes NP = NP_XI x NP_ETA
     The nodes are numbered in sequential rows starting from zero from the SW corner of domains.
     In diagram 2, we chose NP_XI=4 & NP_ETA=3, and hence we must use 12 mpi processes (cores).
@@ -41,27 +41,27 @@ Subdomains:
      MPI processes (nodes): 00-11                        inode & jnode
 
           ----------------                            --------------------
-         | 08  09  10  11 |                          | 0,2  1,2  2,2  3,2 |                 
-         |                |                          |                    |     
-         | 04  05  06  07 |  NP_ETA=3                | 0,1  1,1  2,1  3,1 |       
-         |                |                          |                    |                 
-         | 00  01  02  03 |                          | 0,0  1,0  2,0  3,0 | 
-          ----------------                            -------------------- 
-              NP_XI=4               
-     
-     
+         | 08  09  10  11 |                          | 0,2  1,2  2,2  3,2 |
+         |                |                          |                    |
+         | 04  05  06  07 |  NP_ETA=3                | 0,1  1,1  2,1  3,1 |
+         |                |                          |                    |
+         | 00  01  02  03 |                          | 0,0  1,0  2,0  3,0 |
+          ----------------                            --------------------
+              NP_XI=4
+
+
 Subdomain size in x & y:
-     
-    ROMS calculates the grid point index ranges in i/j for each MPI process (node). 
+
+    ROMS calculates the grid point index ranges in i/j for each MPI process (node).
     The total grid points in x (LLm) are then divided by the number of subdomains chosen in x (NP_XI)
     to give:
     Lm - the number of grid point in x (Lm) for each subdomain, such that Lm = LLm / NP_XI.
-    However, LLm may not be exactly divisible by NP_XI, in which case the subdomains cannot all have 
+    However, LLm may not be exactly divisible by NP_XI, in which case the subdomains cannot all have
     the same number of grid points in the x axis.
     To account for this, the largest subdomain size is calculated in param.h using upward rounding:
     Lm = (LLm+NP_XI-1) / NP_XI
 
-    For example, if we have a domain in x: 
+    For example, if we have a domain in x:
     xi_rho=23
     LLm=21
     NP_XI=4  (choice made)
@@ -89,7 +89,7 @@ Subdomain ranges in x/y:
     Note, the 4 is for the various timestepping values of zeta.
     All arrays are thus sized 1-Lm with 2 additional grid points on each side: indices -1 & 0 on west side,
     and Lm+1 & Lm+2 on the east side. (This computational margin is discussed further down).
-        
+
     To deal with the fact number of grid points are not all the same (even though the array size is the same),
     The ranges of i and j to store data in the arrays are limited to the number of grid points.
     I.e. you don't loop over the size of the array, but rather the number of grid points in the node.
@@ -100,7 +100,7 @@ Subdomain ranges in x/y:
 
               DIAGRAM 4:                              DIAGRAM 5:
          West boundary nodes array            East boundary nodes array
-  
+
             [ ...........                           [ ...........
               - x x x x x   (in ij plane)             x x x x - -   (in ij plane)
               - x x x x x   (- empty entry)           x x x x - -   (- empty entry)
@@ -108,16 +108,16 @@ Subdomain ranges in x/y:
           i=  1 2 3 4 5 6                         i=  1 2 3 4 5 6
                 ^       ^                             ^     ^
               iwest   ieast                         iwest ieast
-              
+
 
     Similarly, for the east boundary nodes, the node's west grid points use the first entry of the variable's
-    array, but the data might not reach the end of the array. 
+    array, but the data might not reach the end of the array.
     For the example, east node 03 only had 4 grid points, its arrays are filled as per diagram 5.
-    
+
     The algorithm for this is in mpi_setup.F:
 
         Excess grid points based on largest subdomain size (Lm):
-        off_xi=NP_XI*Lm-LLm     (1)                     (Off_xi is the unused grid points based 
+        off_xi=NP_XI*Lm-LLm     (1)                     (Off_xi is the unused grid points based
                                                          on NP_XI * Lm, as actual number is LLm)
 
         Catch west boundary nodes:
@@ -128,16 +128,16 @@ Subdomain ranges in x/y:
         if (inode < NP_XI-1) -> ieast=Lm                (all others)
         else                 -> ieast=Lm-(off_xi+1)/2   (east boundary nodes - e.g. 03, 07, 11)
                                                         (for off_xi+1, the +1 catches fortran integer division)
-        
+
     For our example, we calculte off_xi = 4*6-21 = 3.
-    We know that node 00 has an inode value of 0 hence iwest = 1+3/2 = 1+1 = 2.  (Fortran rounds 3/2 down) 
+    We know that node 00 has an inode value of 0 hence iwest = 1+3/2 = 1+1 = 2.  (Fortran rounds 3/2 down)
     This iwest value is seen in diagram 4.
 
     I believe this method was chosen to make it easier to do MPI exchanges with neighbours, as you are always
-    exchanging the end values from the west boundary into the domain, and similarly always transferring 
+    exchanging the end values from the west boundary into the domain, and similarly always transferring
     to the start of the east boundary from within the domain. This is probably easier to program.
 
-    Note, all grid point use local numbering to the subdomain, i.e. ranging from 1-Lm, 
+    Note, all grid point use local numbering to the subdomain, i.e. ranging from 1-Lm,
     not relative to the global grid point number!
 
 Looping through node arrays:
@@ -148,10 +148,10 @@ Looping through node arrays:
 Boundary & interior:
 
     Often in ROMS it is necessary to compute over only the global boundary of a sub-domain,
-    or just the interior of the sub-domain. However, we find that a u-point has one less grid point 
-    in xi than v/rho-points, whereas v has one less grid point in eta than u/rho points. 
+    or just the interior of the sub-domain. However, we find that a u-point has one less grid point
+    in xi than v/rho-points, whereas v has one less grid point in eta than u/rho points.
 
-    The code has indices to help with this. 
+    The code has indices to help with this.
     The indices (istr, jstr, iend, jend) come from compute_tile_bounds.h.
     The indices (istrR, istrU, jstrR, jstrV, iendR, jendR) come from either
     compute_extended_bounds.h   -> when needing a 2 point computational margin, typically when updating forcing.
@@ -178,23 +178,23 @@ Boundary & interior:
 
 Loop ranges for u, v & rho vars:
 
-    u-var:       
+    u-var:
         Incl. boundary:  j=jstrR,jendR
-                           i=istr,iendR                            
+                           i=istr,iendR
         Excl. boundary:  j=jstr,jend
                            i=istrU,iend
-                           
-    v-var:       
+
+    v-var:
         Incl. boundary:  j=jstr,jendR
-                           i=istrR,iendR                            
+                           i=istrR,iendR
         Excl. boundary:  j=jstrV,jend
                            i=istr,iend
-                           
-    r-var:       
+
+    r-var:
         Incl. boundary:  j=jstrR,jendR
-                           i=istrR,iendR                            
+                           i=istrR,iendR
         Excl. boundary:  j=jstr,jend
-                           i=istr,iend                                                      
+                           i=istr,iend
 
 
 Global indices for node grid point:
@@ -202,21 +202,21 @@ Global indices for node grid point:
     The original roms did not directly track global grid point numbers for each node.
     The only time it used global GPs was to add the 'partition' attribute to each result file,
     whereby the global iSW corner and global jSW corner of the node is stored. HOWEVER, these values
-    start from 1, but global ij numbering should start from 0, so not quite right! 
+    start from 1, but global ij numbering should start from 0, so not quite right!
     This is done in put_global_atts.F with:
         if (WESTERN_MPI_EDGE)   ->  ibuff(3)=iSW_corn+iwest     (2)
-        else                    ->  ibuff(3)=iSW_corn+iwest+1 
+        else                    ->  ibuff(3)=iSW_corn+iwest+1
 
-    Where iSW_corn (which is not actually the global corner, but a shifted value) is set in 
+    Where iSW_corn (which is not actually the global corner, but a shifted value) is set in
     mpi_setup.F with:
         iSW_corn = inode*Lm-off_xi/2        (see eq (1) for off_xi)
-    
+
     For our example, we find for node 00:
         iSW_corn =   0  *6 -  3   /2    = 0 - 1 = -1
 
     Hence, using eq 2 we find the south west corner i index for node 00 in global numering:
         ibuff(3) = iSW_corn+iwest = -1 + 2 = 1
-    
+
     This is what we had hoped since the south west corner of node 00 should start with the first
     global grid point.
 
@@ -236,9 +236,9 @@ u, v and rho points:
     Averaging:
 
         rho-2-u:   v_u  (i,j,k) = 1/2 * ( v_rho(i-1,j,k) + v_rho(i  ,j  ,k) )
-         
+
         u-2-rho:   v_rho(i,j,k) = 1/2 * ( v_u  (i  ,j,k) + v_u  (i+1,j  ,k) )
-         
+
 
     Hoizontal diagram:
 

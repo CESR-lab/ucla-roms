@@ -1,15 +1,15 @@
 !-----------------------------------------------------------------------
-! A simple program to join NHMG netcdf files 
+! A simple program to join NHMG netcdf files
 !
 ! Arguments :
 !   1- the number of procs in x
 !   2- the number of procs in y
 !   3- Number of dimension and order [ij, ijk, ji, kji, dkji]
-!   4- ghost points : before 1 in x, after nx in x, before 1 in y, 
+!   4- ghost points : before 1 in x, after nx in x, before 1 in y,
 !      after ny in y [0000, 1111, 0111,1101, 2222, ...]
 !   5..n - the netcdf file names in good order in term of rank
 !
-! Examples : 
+! Examples :
 ! nhmg_join 2 2  ijk 1111 nc0.nc nc1.nc nc2.nc nc3.nc
 ! or
 ! nhmg_join 2 2   ij 1111 h*.nc

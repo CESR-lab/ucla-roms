@@ -3,7 +3,7 @@ Xavier,
 It seems to me that found a reason for loss of synchronization
 of the code in Open MP mode, and I have a remedy: it looks like
 it is either due to violation of Open MP standard by us or Intel
-compiler mishandls somehow communication between the threads 
+compiler mishandls somehow communication between the threads
 using a shared scalar variable (in our case it is "synchro_flag")
 which is assigned in one routine and used as input in another.
 I read the new, 2005 version of Open MP specification for Fortran
@@ -27,8 +27,8 @@ To privatize synchro_flag you must:
 
        1a: find declaration of synchro_flag and its placement
            in common block (which is shared among the threads)
-           and delete it there. 
-       1b: introduce declaration "logical synchro_flag" and 
+           and delete it there.
+       1b: introduce declaration "logical synchro_flag" and
            its placement AT THE END common block /priv_scalars/
            (this is the common block which has THREADPRIVATE
            directive).
@@ -38,28 +38,28 @@ To privatize synchro_flag you must:
                synchro_flag=.true.
 
    in this file (since init_scalars is called before creation
-   of parallel region it is executed only by master thread, on 
+   of parallel region it is executed only by master thread, on
    variables in /priv_scalars/ on child threads can not be
    initialized here).
 
 
 3. Edit "main.F" and
-       3a:  find line 
+       3a:  find line
 
                 iic=0
 
             and introduce initialization within routine
             "roms_init", just after time stepping indices,
 
-                synchro_flag=.true 
+                synchro_flag=.true
 
-       3b: find line 
+       3b: find line
 
                if (synchro_flag) then
- 
+
            and remove directives C$OMP MASTER .... C$OMP END MASTER
            enclosing line
-    
+
                  synchro_flag=.false.
 
            after that the whole block of code should look like
@@ -73,7 +73,7 @@ To privatize synchro_flag you must:
                   if (may_day_flag.ne.0) goto 99  !-->  EXIT
                 endif
 
-4. Execute command 
+4. Execute command
 
             grep synchro_flag *.F | grep true
 
@@ -90,7 +90,7 @@ To privatize synchro_flag you must:
           get_uclima.F
           get_wwave.F
 
-   and edit them one-by-one to 
+   and edit them one-by-one to
 
        4a. find line which looks like
 

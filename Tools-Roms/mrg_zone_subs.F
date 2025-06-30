@@ -16,8 +16,8 @@
 ! iself or at least one of its 4 immediate neighbors is already
 ! positive.  After completion this procedure creates a constant-slope
 ! shape function function connected to the boundary by water points.
-! Argument "mask" is input-only land mask; "mgz" is input-output; 
-! "wrk" is used as work array;   
+! Argument "mask" is input-only land mask; "mgz" is input-output;
+! "wrk" is used as work array;
 
       implicit none
       integer ncx,ncy, wdth

@@ -7,7 +7,7 @@
 
       implicit none
 #include "param.h"
-#include "floats.h" 
+#include "floats.h"
 #include "scalars.h"
 
       integer iflt, j, i
@@ -16,13 +16,13 @@
 !  Initialize floats trajectory array.
 !
       do iflt=1,Mfloats
-        fltgrd(iflt)=-1 ! -1 is the dead float value. 
+        fltgrd(iflt)=-1 ! -1 is the dead float value.
         nrecvel(iflt)=0
 
-        do j=igrd,izgrd  
+        do j=igrd,izgrd
            Tinfo(j,iflt)=spval
         enddo
-        
+
         do j=1,NDIAGS
         trackaux(j,iflt)=0.
         enddo

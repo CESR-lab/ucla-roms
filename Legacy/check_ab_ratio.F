@@ -11,7 +11,7 @@
       Ts=40.0 - Smean    !  Check Value: ab_ratio=0.34763 (Celsius/PSU)
       Tt=10.0            !  ab_ratio=0.34763 (Celsius/PSU)
       Tp=4000.0          !  at s=40.0, t=10.0, p=4000.0
- 
+
 
                ratio=A0+Tt*(A1+Tt*(A2+Tt*(A3+Tt*A4)))
      &                 +Ts*(B0+Tt*B1+Ts*CO)
@@ -25,7 +25,7 @@
 
       stop
       end
- 
- 
- 
- 
+
+
+
+

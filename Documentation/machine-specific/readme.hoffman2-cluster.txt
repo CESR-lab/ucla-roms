@@ -11,7 +11,7 @@ Additional instructions for ROMS to compile on Hoffman2 cluster at UCLA IDRE.
 4) Follow all the usual compile steps in the readme's.
 
 General Hoffman2 information:
-  Hoffman2 is a UCLA IDRE cluster. You need to be part of a group to access and run on Hoffman2. 
+  Hoffman2 is a UCLA IDRE cluster. You need to be part of a group to access and run on Hoffman2.
 
 How to run ROMS on Hoffman2:
   Sample run scripts
@@ -28,7 +28,7 @@ Running an example:
   Check the roms.joblog to see if it succeeded
 
 Hoffman2 job submission options:
-  Every job must be submitted with requested number of cores, memory, and time. 
+  Every job must be submitted with requested number of cores, memory, and time.
   #  Resources requested
   #$ -pe dc* 6                # requested number of nodes, 6 here
   #$-l h_data=4G              # h_data is memory requested, 4 GB here
@@ -45,7 +45,7 @@ Hardware:
   Hoffman2 has shared/public nodes you can use for up to 24 hours. You can use your group's owned nodes for unlimited time and queue
 multiple jobs in a row on those nodes. If your group's nodes are not being used, they will be lent out to other group as public nodes
 for use up to 24 hours. If trying to use your group's owned nodes and your job doesn't start immediately, they are likley being
-lent out and you will have to wait until they are freed. 
+lent out and you will have to wait until they are freed.
 
 Transferring data:
   If you have lots of large files to transfer between your personal machine / campus server,
@@ -54,7 +54,7 @@ Transferring data:
   In the GUI use:
   Collection = Official UCLA Hoffman2 Cluster
   home path = /u/home/$first_letter_of_username$/$username$ (to get to your expanse home directory)
-  scratch path = /u/scratch/$first_letter_of_username$/$username$ 
+  scratch path = /u/scratch/$first_letter_of_username$/$username$
   rsync can be used but is generally much slower.
 
 Resources and documentation:

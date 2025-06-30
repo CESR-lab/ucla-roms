@@ -9,7 +9,7 @@ I hast wondering whether you can adapt it.
 The following code has tunable time-stepping coefficient and, if
 chosen for maximum stability, it allows approximately 25...33% larger
 barotropic time step than the existing version in Rutgers beta 7
-code. (previous settings are also included for reference.) 
+code. (previous settings are also included for reference.)
 
 
 The second significant difference is that it is reorganized in such
@@ -26,15 +26,15 @@ it is no longer necessary to keep track of all that 5/12, -1/12 and
 
 The other distinction is that the need for the additional time step
 in the driving routine (associated with synchronization and delayed
-mode computation of fast-time-averages) has been eliminated. 
+mode computation of fast-time-averages) has been eliminated.
 
-The primary motivation to do both changes is due to the fact that 
+The primary motivation to do both changes is due to the fact that
 that the other companion, the Forward-Backward version uses entirely
 different index rolling algorithm and having that additional time
 step was too much hassle to straighten it up: in the present version
 for both version the 2D time index rolling is continuous between
 3D time stepping (pretty much the same as it used to be in SCRUM 3.0
-code), and yet all synchronization issues have been worked out. 
+code), and yet all synchronization issues have been worked out.
 
 
 
@@ -51,14 +51,14 @@ As for the conventional viscosity, I am using somewhat simplified
 form of a symmetric tensor: I do not scurpulusly recover (as Hernan
 does) all bits associated with curvilinear transformation metric.
 This is somewhat similar to POM. This may be recovered, but I do
-not believe that it makes any difference in practice. 
+not believe that it makes any difference in practice.
 
 
 
 Minor, but important thing:  time index "krhs" has been excluded
 ====== === ========= ======  from common block "scalars.h". It exist
 only as an internal variable in step2D_tile. Keeping it there while
-using the new code would cause false sharing. 
+using the new code would cause false sharing.
 
 
 The driver now looks like: [NOTE: 1. "do iif=1,nfast", it is no
@@ -107,7 +107,7 @@ CSDOACROSS LOCAL(tile)
         enddo
 #endif
 
- 
+
 
 I am sending the actual step2d code as a separate message immediately
 following this one.
@@ -116,4 +116,4 @@ Sasha
 
 
 
- 
+

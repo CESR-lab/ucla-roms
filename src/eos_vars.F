@@ -7,14 +7,14 @@
       use param
       implicit none
 
-! Tcoef, T0   Coefficients for linear Equation of State 
+! Tcoef, T0   Coefficients for linear Equation of State
 ! Scoef, S0     rho = Tcoef*(T-T0) + Scoef*(S-S0)
 !
 #ifdef SOLVE3D
 # ifndef NONLIN_EOS
       real Tcoef, T0
 #  ifdef SALINITY
-      real Scoef, S0 
+      real Scoef, S0
 #  endif
 # endif
 

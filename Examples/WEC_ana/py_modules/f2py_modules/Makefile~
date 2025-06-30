@@ -6,7 +6,7 @@
     CXX = cpp
 
 # compile flags
-FCFLAGS = -DF2PY_REPORT_ON_ARRAY_COPY=1 -c --fcompiler=intelem --compiler=intelem 
+FCFLAGS = -DF2PY_REPORT_ON_ARRAY_COPY=1 -c --fcompiler=intelem --compiler=intelem
 
 # source files and objects
     SRCS = R_tools_fort.F

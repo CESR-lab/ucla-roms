@@ -4,7 +4,7 @@
 #       %j=job_number and %N gives nodelist output="wec_real.%j.%N.out"
 #SBATCH --output="ncjoin_mpi50.%j.%N.log"
 
-#       If using less than 128 cores then the partition is 'shared' 
+#       If using less than 128 cores then the partition is 'shared'
 #       or 'large-shared' if extra memory is needed (only use if 'shared' failed due to memory error).
 #       Note, the job charge costs 4x more for 'large-shared' than 'shared' or 'compute', use allocation wisely!
 #SBATCH --partition=shared
@@ -19,7 +19,7 @@
 #       Leave this at 1:
 #SBATCH --cpus-per-task=1
 
-#       Memory: default is 1GB on all nodes. However, you can request 2GB per core on  
+#       Memory: default is 1GB on all nodes. However, you can request 2GB per core on
 #       shared/compute/debug or 15.5GB/core on large-shared at no extra cost.
 #       Charged on number of cores or fraction of total memory, whichever is greater.
 #       shared/compute/debug total mem=256G, large-shared total mem=2000G
@@ -31,7 +31,7 @@
 #       Time duration requested for run:
 #SBATCH -t 00:10:00
 
-#-----------------------------------------------------------------	
+#-----------------------------------------------------------------
 
 # Flags needed for mvapich2:
 export MV2_USE_RDMA_CM=0

@@ -59,9 +59,9 @@ Activated CPP configuration switches:
  metadata about            2  tracers:
  -----------
  TRACER NO.:            1
- SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
- UNITS: Celsius                                   
+ SHORT NAME: temp
+ LONG NAME: potential temperature
+ UNITS: Celsius
 
  Maximum grid stiffness ratios:   rx0 = 0.095959596  rx1 =   2.119241469
 
@@ -102,4 +102,4 @@ Activated CPP configuration switches:
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   374.333098830218  
+ MPI_run_time =   374.333098830218

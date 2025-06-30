@@ -185,7 +185,7 @@ c--#define VERBOSE
         endif
       else
         write(*,'(2(/1x,2A)/1x,A/)')    'This command interpolates ',
-     &           'user-specified record of the parent-grid solution', 
+     &           'user-specified record of the parent-grid solution',
      &  'into the child grid and creates an initial condition file ',
      &  'to start the child', 'grid model.  It should be invoked as'
         write(*,'(/2x,2A/)')       'r2r_init child_grid.nc theta_s ',

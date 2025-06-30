@@ -13,7 +13,7 @@
 	lat = grd.lat;
 	mask= grd.mask;
 
-        frc = ncread(datname,varname,[i0 j0 irec],[fnx fny 1]); 
+        frc = ncread(datname,varname,[i0 j0 irec],[fnx fny 1]);
 	frc = fliplr(frc);
 
         frc(mask<1) = nan;

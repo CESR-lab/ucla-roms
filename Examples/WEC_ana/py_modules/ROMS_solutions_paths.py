@@ -1,6 +1,6 @@
 ##########################################
 
-#  ROMS_solutions_paths.py 
+#  ROMS_solutions_paths.py
 '''
 Streamline setting of solution paths
 by calling function in this module
@@ -28,7 +28,7 @@ and set UTC and PST hours for a given ocean_time
 import os
 import sys
 import numpy as np
-import datetime 
+import datetime
 import matplotlib.dates as dates
 import pytz
 
@@ -68,7 +68,7 @@ class ROMS_run(object):
     #################################
     def set_paths(self):
         if self.ROMS_run_ID == 'L4_SBC':
-           
+
 	   self.path_output   = '/mnt/kamiya//dauhajre/Simulations/MidCal/usw4_sbc/his/'
 	   self.path_grid     = '/mnt/kamiya/dauhajre/Simulations/MidCal/usw4_sbc/input/'
            self.path_input = '/mnt/kamiyadauhajre/Simulations/MidCal/usw4_sbc/input/'
@@ -82,9 +82,9 @@ class ROMS_run(object):
 	   self.prec_name     = 'usw4sbc_prec.nc'
 	   self.tra_name     = 'usw4sbc_tra.nc'
 	   self.rad_name     = 'usw4sbc_rad.nc'
-	   
+
            self.date_origin = datetime.datetime(2004,1,1,0,0,0,0)
-           
+
 
 	   #############################
            # netcdf ID number paramters
@@ -92,7 +92,7 @@ class ROMS_run(object):
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4711
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 0
@@ -103,42 +103,42 @@ class ROMS_run(object):
            ###################################
            # OTHER PARAMTERS
 	   ##################################
-	   
-	   self.dx        = 36 
-	   self.nc_tstep        = 48 
-       	   
+
+	   self.dx        = 36
+	   self.nc_tstep        = 48
+
 	   self.ROMS_run_parent_set = 'MidCal'
-      
+
 
 	if self.ROMS_run_ID == 'L3_MidCal_Spring_2007':
-           
+
 	   self.path_output   = '/mnt/inca/akanc/MidCal/L3/04_out_spring2007/'
            self.path_grid     = '/mnt/inca/akanc/MidCal/L3/03_out_winter2006/'
-  	   self.path_input = '/mnt/inca/akanc/MidCal/L3/02_input/winter2006/' 
-	   
-	   
+  	   self.path_input = '/mnt/inca/akanc/MidCal/L3/02_input/winter2006/'
+
+
 	   self.out_base_name = 'usw3_avg.'
 	   self.grid_name     = 'usw3_grd.nc'
            #self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   #self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   #self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
-           
+
 	   self.date_origin = datetime.datetime(1994,1,1,0,0,0,0)
-         
+
         if self.ROMS_run_ID == 'L3_MidCal_Winter_2006':
-           
+
 	   self.path_output   = '/mnt/inca/akanc/MidCal/L3/03_out_winter2006/'
 	   self.path_grid = self.path_output
-           self.path_input = '/mnt/inca/akanc/MidCal/L3/02_input/winter2006/' 
-	   
+           self.path_input = '/mnt/inca/akanc/MidCal/L3/02_input/winter2006/'
+
 	   self.out_base_name = 'usw3_avg.'
 	   self.grid_name     = 'usw3_grd.nc'
            self.wind_name     = 'usw3_wind.nc'
 	   self.hflux_name    = 'usw3_rad.nc'
 	   #self.swflux_name   = 'usw3.nc'
-           
+
 	   self.date_origin = datetime.datetime(1994,1,1,0,0,0,0)
-           
+
 
 	   #############################
            # netcdf ID number paramters
@@ -146,7 +146,7 @@ class ROMS_run(object):
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4706
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 0
@@ -157,37 +157,37 @@ class ROMS_run(object):
            ###################################
            # OTHER PARAMTERS
 	   ##################################
-	   
+
 	   self.dx        = 100
 	   self.nc_tstep        = 24
        	   #self.pst_hour_start  = 17
-           
+
 	   self.ROMS_run_parent_set = 'MidCal'
-           
+
 
 	if self.ROMS_run_ID == 'L3_MidCal_Spring_2007':
-           
+
 	   self.path_output   = '/mnt/inca/akanc/MidCal/L3/04_out_spring2007/'
            self.path_grid     = '/mnt/inca/akanc/MidCal/L3/03_out_winter2006/'
-  	   self.path_input = '/mnt/inca/akanc/MidCal/L3/02_input/winter2006/' 
-	   
-	   
+  	   self.path_input = '/mnt/inca/akanc/MidCal/L3/02_input/winter2006/'
+
+
 	   self.out_base_name = 'usw3_avg.'
 	   self.grid_name     = 'usw3_grd.nc'
            #self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   #self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   #self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
-           
+
 	   self.date_origin = datetime.datetime(1994,1,1,0,0,0,0)
-           
+
 
 	   #############################
            # netcdf ID number paramters
 	   ###########################
 
 	   # Model start day (in model day convetions)
-	   self.start_day = 4821 
-	   
+	   self.start_day = 4821
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 0
@@ -198,27 +198,27 @@ class ROMS_run(object):
            ###################################
            # OTHER PARAMTERS
 	   ##################################
-	   
+
 	   self.dx        = 100
 	   self.nc_tstep        = 24
        	   #self.pst_hour_start  = 17
-           
+
 	   self.ROMS_run_parent_set = 'MidCal'
-    
+
         if self.ROMS_run_ID == 'L1_MidCal':
-           
+
 	   self.path_output   = '/mnt/inca/akanc/MidCal/L1/03_out_6hr/his/'
 	   self.path_grid = '/mnt/inca/akanc/MidCal/L1/02_input/'
-	   
-	   
+
+
 	   self.out_base_name = 'usw1_his.'
 	   self.grid_name     = 'usw1_grd.nc' #grid in output
            #self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   #self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   #self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
-           
+
 	   self.date_origin = datetime.datetime(1994,1,1,0,0,0,0)
-           
+
 
 	   #############################
            # netcdf ID number paramters
@@ -226,7 +226,7 @@ class ROMS_run(object):
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4352
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 0
@@ -234,21 +234,21 @@ class ROMS_run(object):
 	   #number ID of first netcdf FILE
            self.nc_ID_initial = 0
 
- 
+
 	if self.ROMS_run_ID == 'L2_MidCal':
-           
+
 	   self.path_output   = '/mnt/inca/akanc/MidCal/L2/03_output/'
 	   self.path_grid = '/mnt/inca/akanc/MidCal/L2/02_input/'
-	   
-	   
+
+
 	   self.out_base_name = 'usw2_avg.'
 	   self.grid_name     = 'usw2_grd.nc' #grid in output
            #self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   #self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   #self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
-           
+
 	   self.date_origin = datetime.datetime(1994,1,1,0,0,0,0)
-           
+
 
 	   #############################
            # netcdf ID number paramters
@@ -256,7 +256,7 @@ class ROMS_run(object):
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4352
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 0
@@ -267,34 +267,34 @@ class ROMS_run(object):
            ###################################
            # OTHER PARAMTERS
 	   ##################################
-	   
+
 	   self.dx        = 300
 	   self.nc_tstep        = 24
        	   #self.pst_hour_start  = 17
-           
+
 	   self.ROMS_run_parent_set = 'MidCal'
-           
-           
+
+
 	   ########################################################
            # FORCING FILE TIME CONVENTIONS RELATIVE TO MODEL OUTPUT
 	   ########################################################
-               
-	    
-	    
-	    
+
+
+
+
         if self.ROMS_run_ID == 'L4PV_nowec_2hr':
-           
+
 	   self.path_output   = '/kamiya/yusuke/L4PV_new/'
 	   self.path_grid     = '/home/dauhajre/SCB/python_ROMS/ROMS_outputs_grids/'
 	   self.path_input    = '/home/dauhajre/SCB/L4PV/input_wrf07_v2/'
-	   
+
 	   self.out_base_name = 'usw4wrf07_avg.'
 	   self.grid_name     = 'usw4pv_grd.nc'
            self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
            self.date_origin = datetime.datetime(1996,1,1,0,0,0,0)
-           
+
 
 	   #############################
            # netcdf ID number paramters
@@ -302,7 +302,7 @@ class ROMS_run(object):
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4352
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 0
@@ -313,48 +313,48 @@ class ROMS_run(object):
            ###################################
            # OTHER PARAMTERS
 	   ##################################
-	   
+
 	   self.dx        = 75
 	   self.nc_tstep        = 12
        	   self.pst_hour_start  = 17
-           
+
 	   self.ROMS_run_parent_set = 'L4PV'
-           
-           
+
+
 	   ########################################################
            # FORCING FILE TIME CONVENTIONS RELATIVE TO MODEL OUTPUT
 	   ########################################################
-           self.forcing_time_multiplier = 2 
+           self.forcing_time_multiplier = 2
 	   self.forcing_start_day = 4352
-	   # i.e. for L4PV_nowec_2hr, the forcing 
+	   # i.e. for L4PV_nowec_2hr, the forcing
 	   # sampling is once every hour, so there
-	   # are twice as many time points 
+	   # are twice as many time points
 
 
 
 
 	if self.ROMS_run_ID == 'L4PV_nowec_30min_p1':
-           
+
 	   self.path_output   = '/mnt/ainu/akanc/L4PV/00_nowec/01_30min_output_p1/'
 	   self.path_grid     = '/home/dauhajre/SCB/python_ROMS/ROMS_outputs_grids/'
 	   self.path_input    = '/home/dauhajre/SCB/L4PV/input_wrf07_v2/'
-	   
+
 	   self.out_base_name = 'usw4nw07p1_avg.'
 	   self.grid_name     = 'usw4pv_grd.nc'
            self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
 	   self.date_origin = datetime.datetime(1996,1,1,0,0,0,0)
-           
-	   
-	   
+
+
+
 	   #############################
            # netcdf ID number paramters
 	   ###########################
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4359
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 36 #python index (starts at 0)
@@ -362,117 +362,117 @@ class ROMS_run(object):
 	   #number ID of first netcdf FILE
            self.nc_ID_initial = 48
 
- 
+
 	   self.dx        = 75
            self.nc_tstep        = 48
            self.pst_hour_start  = 17
-    
+
            self.ROMS_run_parent_set = 'L4PV'
-           
+
 	   ########################################################
            # FORCING FILE TIME CONVENTIONS RELATIVE TO MODEL OUTPUT
 	   ########################################################
            self.forcing_start_day = 4352
-           self.forcing_time_multiplier = 0.5 
-	   # i.e. for L4PV_nowec_2hr, the forcing 
+           self.forcing_time_multiplier = 0.5
+	   # i.e. for L4PV_nowec_2hr, the forcing
 	   # sampling is once every hour, so there
-	   # are twice as many time points 
+	   # are twice as many time points
 
-       
+
 
 	if self.ROMS_run_ID == 'L4PV_nowec_30min_p2':
-           
+
 	   self.path_output   = '/mnt/ainu/akanc/L4PV/00_nowec/02_30min_output_p2/'
 	   self.path_grid     = '/home/dauhajre/SCB/python_ROMS/ROMS_outputs_grids/'
 	   self.path_input    = '/home/dauhajre/SCB/L4PV/input_wrf07_v2/'
-	   
+
 	   self.out_base_name = 'usw4nw07p2_avg.'
 	   self.grid_name     = 'usw4pv_grd.nc'
            self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
 	   self.date_origin = datetime.datetime(1996,1,1,0,0,0,0)
-    
-	   
-	   
+
+
+
 	   #############################
            # netcdf ID number paramters
 	   ###########################
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4379
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 36 #python index (starts at 0)
 
 	   #number ID of first netcdf FILE
-           self.nc_ID_initial = 288 
+           self.nc_ID_initial = 288
 
- 
+
 	   self.dx        = 75
            self.nc_tstep        = 48
            self.pst_hour_start  = 17
-    
+
            self.ROMS_run_parent_set = 'L4PV'
-           
+
 	   ########################################################
            # FORCING FILE TIME CONVENTIONS RELATIVE TO MODEL OUTPUT
 	   ########################################################
            self.forcing_start_day = 4352
-           self.forcing_time_multiplier = 0.5 
-	   # i.e. for L4PV_nowec_2hr, the forcing 
+           self.forcing_time_multiplier = 0.5
+	   # i.e. for L4PV_nowec_2hr, the forcing
 	   # sampling is once every hour, so there
-	   # are twice as many time points 
+	   # are twice as many time points
 
 
         #################################################
         # MINI RUN FOCUSING IN ONE FILAMENT
         #################################################
 	if self.ROMS_run_ID == 'L4PV_nowec_30min_P2_SPB2':
-           
+
 	   self.path_output   = '/kamiya/dauhajre/runs/l4pv_nowec_p2spb2/'
 	   self.path_grid     = '/home/dauhajre/SCB/python_ROMS/ROMS_outputs_grids/'
 	   self.path_input    = '/home/dauhajre/SCB/L4PV/input_wrf07_v2/'
-	   
+
 	   self.out_base_name = 'usw4nw07P2SPB2_avg.'
 	   self.grid_name     = 'usw4pv_grd.nc'
            self.wind_name     = 'usw4pv_wrf_wind_2007.nc'
 	   self.hflux_name    = 'usw4pv_wrf_hflx_2007.nc'
 	   self.swflux_name   = 'usw4pv_wrf_wflx_2007.nc'
 	   self.date_origin = datetime.datetime(1996,1,1,0,0,0,0)
-    
-	   
-	   
+
+
+
 	   #############################
            # netcdf ID number paramters
 	   ###########################
 
 	   # Model start day (in model day convetions)
 	   self.start_day = 4381
-	   
+
 	   # index in first netcdf file of real data
 	   # this takes into account zero padding
 	   self.nc_step_start = 12 #python index (starts at 0)
 
 	   #number ID of first netcdf FILE
-           self.nc_ID_initial = 336 
+           self.nc_ID_initial = 336
 
- 
+
 	   self.dx        = 75
            self.nc_tstep        = 48
            self.pst_hour_start  = 17
-    
+
            self.ROMS_run_parent_set = 'L4PV'
-           
+
 	   ########################################################
            # FORCING FILE TIME CONVENTIONS RELATIVE TO MODEL OUTPUT
 	   ########################################################
            self.forcing_start_day = 4352
-           self.forcing_time_multiplier = 0.5 
-	   # i.e. for L4PV_nowec_2hr, the forcing 
+           self.forcing_time_multiplier = 0.5
+	   # i.e. for L4PV_nowec_2hr, the forcing
 	   # sampling is once every hour, so there
-	   # are twice as many time points 
+	   # are twice as many time points
 
 
 
@@ -487,8 +487,8 @@ class ROMS_run(object):
     INPUTS
     model_day ---> day in model day units
     t_step ---. starts at 0, ends at nc_tstep -1
-    
-    
+
+
     OUTPUTS
     nc_file_ID --> the number corresponding the netcdf number ID (to acces file like '%04g' %nc_file_ID)
     t_step_in_file ---> the index within that netcdf file to get that specific time point
@@ -500,16 +500,16 @@ class ROMS_run(object):
 	if t_step <0 or t_step >= self.nc_tstep:
            print 'ERROR: t_step out of bounds'
 	   return
-        
+
         # get netcdf ID number for the START of that day (so if netcdf files have
 	# days that overlap within each file, this will account for that)
 	day_look = model_day - self.start_day
 	nc_index = (day_look * self.nc_tstep) + (self.nc_ID_initial + self.nc_step_start + t_step)
-	
+
 	# now get the specific index of the time step, to know which netcdf file to get (if days overalp within netcdf file)
 	nc_file_ID = (nc_index / self.nc_tstep) * self.nc_tstep
         t_step_in_file = nc_index - nc_file_ID
-        
+
 
 	return nc_file_ID, t_step_in_file
 
@@ -525,7 +525,7 @@ class ROMS_run(object):
     '''
     FIND INDEX WHERE sms_time is closest to ocean_time
     and return index in sms_time to access forcing
-    that is phase aligned with ocean_time w/out 
+    that is phase aligned with ocean_time w/out
     interpolating in time
 
     ocean_time --> in seconds, actual number, not array at all points
@@ -572,7 +572,7 @@ class ROMS_run(object):
     # for plotting purposes
 
     # ocean_time --> array of size model_nc_step
-    
+
     '''
     takes time passed since model day
     and converts this time to separate
@@ -580,14 +580,14 @@ class ROMS_run(object):
     '''
     ######################################
     def get_utc_pst_hour(self, ocean_time):
-        
+
 	#####################################
 	# set initial UTC hour
 	#####################################
 	if self.ROMS_run_parent_set == 'L4PV':
            utc_initial = 0
-        
-        
+
+
 
         #######################################################
         #  GET DAY, HOUR, MINUTE FOR OCEAN_TIME OF A FULL DAY
@@ -599,13 +599,13 @@ class ROMS_run(object):
         for i in range(len(ocean_time)):
 	    model_day[i] = int(ocean_time_days[i])
 	    time_passed_days[i] = (ocean_time_days[i] - int(ocean_time_days[i]))
-           
+
 	minutes   = np.round(time_passed_days *24 *60, decimals =0)
-        
+
 	utc_hours_temp = np.zeros([len(ocean_time)])
 	for i in range(len(ocean_time)):
 	    utc_hours_temp[i] = int(minutes[i] / 60.)
-        
+
 	# CONVERT utc_hours = 0 TO 24
 
         utc_hours = np.copy(utc_hours_temp)
@@ -624,19 +624,19 @@ class ROMS_run(object):
         self.minute_arr = minutes_of_hour
 	self.utc_hour_arr = utc_hours
         self.model_day_arr = model_day
-        
+
 
 
 	##### CONVERT HOURS FROM UTC TO PST ####
         ###### UTC 8 HOURS AHEAD OF PST ######
 
-        utc_day = [1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]        
+        utc_day = [1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
         pst_day = [17, 18, 19, 20, 21, 22, 23, 24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14,15,16,17]
-        
+
 	pst_hour = np.zeros([len(ocean_time)])
 	for i in range(len(ocean_time)):
 	    hour = self.utc_hour_arr[i]
-	    
+
 	    ind = np.where(utc_day == hour)[0][0]
 
 	    pst_hour[i] = pst_day[ind]
@@ -644,28 +644,28 @@ class ROMS_run(object):
 
         self.pst_hour_arr = pst_hour
 
-        
+
 	###################################
-        # CONVERT HOUR/MINUTE TO A STRING 
-	# IN A LIST 
+        # CONVERT HOUR/MINUTE TO A STRING
+	# IN A LIST
 	##################################
-       
+
         pst_hour_list = []
         for i in range(len(ocean_time)):
 	    pst_hour_i = int(self.pst_hour_arr[i])
 	    minute_i   = int(self.minute_arr[i])
-	    
+
 	    if pst_hour_i < 10:
 	       if minute_i < 10:
 		  pst_hour_list.append('0' + str(pst_hour_i) + ':0' + str(minute_i))
-    
+
 	       if minute_i >=10:
 		  pst_hour_list.append('0' + str(pst_hour_i) + ':' + str(minute_i))
 
 	    if pst_hour_i >= 10:
 	       if minute_i <10:
 		  pst_hour_list.append(str(pst_hour_i) + ':0' + str(minute_i))
-	
+
 	       if minute_i >=10:
 		  pst_hour_list.append(str(pst_hour_i) + ':' + str(minute_i))
 

@@ -7,7 +7,7 @@ Some notes have been made as to what 'u' represents in that moment.
 The first aspect is which time the predicted 'u' represents, i.e. t=n+1/2 or t=n+1.
 The second aspect is what units 'u' is represented. This changes from u='m/s' and u-> dz*u.
 These notes were made to the final timestep only so scroll to the bottom.
-It is useful to understand how ROMS uses the 3 indices of u/v, namely 'nstp', 'nrhs' and 'nnew'. 
+It is useful to understand how ROMS uses the 3 indices of u/v, namely 'nstp', 'nrhs' and 'nnew'.
 
 === END README ==
 
@@ -47,7 +47,7 @@ run model...
        INT_AT_RHO_POINTS       SMOOTH_HBL              LIMIT_UNSTABLE_ONLY
  <set_global_definitions.h>
        CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
-       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
+       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D
 
  2020-11: uswc sample domain
      ntimes =         2   total number of 3D timesteps
@@ -77,40 +77,40 @@ run model...
  averages :: ntsavg = 10000  navg =10000  rec/file =****
 
  fields to write into history file: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
+        zeta   T   free-surface elevation
+        ubar   T   vertically averaged u-momentum component
+        vbar   T   vertically averaged v-momentum component
+        u      T   u-momentum component
+        v      T   v-momentum component
+        t( 1)  T   temp
+        t( 2)  T   salt
 
-        rho    F   density anomaly                           
-        Omega  F   S-coordinate vertical velocity            
-        W      F   vertical velocity                         
-        Akv    F   vertical viscosity coefficient            
-        Akt    F   vertical thermal conductivity coefficient 
-        Aks    F   salinity vertical diffusion coefficient   
-        hbls   F   Thickness of KPP surface boundary layer   
-        hbbl   F   Thickness of KPP bottom boundary layer    
+        rho    F   density anomaly
+        Omega  F   S-coordinate vertical velocity
+        W      F   vertical velocity
+        Akv    F   vertical viscosity coefficient
+        Akt    F   vertical thermal conductivity coefficient
+        Aks    F   salinity vertical diffusion coefficient
+        hbls   F   Thickness of KPP surface boundary layer
+        hbbl   F   Thickness of KPP bottom boundary layer
 
  fields to compute time averages of: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
+        zeta   T   free-surface elevation
+        ubar   T   vertically averaged u-momentum component
+        vbar   T   vertically averaged v-momentum component
+        u      T   u-momentum component
+        v      T   v-momentum component
+        t( 1)  T   temp
+        t( 2)  T   salt
 
-        rho    T   density anomaly                           
-        Omega  T   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    T   vertical viscosity coefficient            
-        Akt    T   vertical thermal conductivity coefficient 
-        Aks    T   salinity vertical diffusion coefficient   
-        hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
+        rho    T   density anomaly
+        Omega  T   S-coordinate vertical velocity
+        W      T   vertical velocity
+        Akv    T   vertical viscosity coefficient
+        Akt    T   vertical thermal conductivity coefficient
+        Aks    T   salinity vertical diffusion coefficient
+        hbls   T   Thickness of KPP surface boundary layer
+        hbbl   T   Thickness of KPP bottom boundary layer
 
  WARNING: Urecognized keyword 'wci_history_fields' --> DISREGARDED.
 
@@ -261,27 +261,27 @@ UV1 end: u +DC(i,0)*ru(i,j,k)
  u(10,10,48,nnew)= -4.720890824161047E-002 nnew=           2
  u(10,10,48,nstp)= -7.990296185016632E-002 nstp=           1
  u(10,10,48,nrhs)= -8.010093430948073E-002 nrhs=           3
-      diagnostics :: created new netCDF file sample_on_diags.0000.0.nc                                   
+      diagnostics :: created new netCDF file sample_on_diags.0000.0.nc
       diagnostics :: wrote output, tdays =   4726.5657  step =      0 rec =   1/   1
 
 UV2 start:
  u(10,10,48,nnew)= -4.721224777359077E-002 nnew=           2
  u(10,10,48,nstp)= -7.990296185016632E-002 nstp=           1
  u(10,10,48,nrhs)= -8.010093430948073E-002 nrhs=           3
-  
+
  Hz(13,14,48)=  0.234589062571102                4
 
 UV2 DC-end: DC(i,k)-DC(i,0)
  u(10,10,48,nnew)= -8.052298899797380E-002 nnew=           2
  u(10,10,48,nstp)= -7.990296185016632E-002 nstp=           1
  u(10,10,48,nrhs)= -8.010093430948073E-002 nrhs=           3
-  
+
 
 UV2 end: u(i,j,k,nnew)-FC(i,0)
  u(10,10,48,nnew)= -8.052298899797380E-002 nnew=           2
  u(10,10,48,nstp)= -7.990296185016632E-002 nstp=           1
  u(10,10,48,nrhs)= -8.010093430948073E-002 nrhs=           3
-  
+
       1 4726.5659 4.22537209470-03 2.7868429449-03  0.312235474003  0.312235474003    113     83   18
 
 pre_step3d start:
@@ -322,20 +322,20 @@ UV2 start:
  u(10,10,48,nnew)= -4.810141951881079E-002 nnew=           1
  u(10,10,48,nstp)= -8.052298899797380E-002 nstp=           2
  u(10,10,48,nrhs)= -9.114372502314430E-002 nrhs=           3
-  
+
  Hz(13,14,48)=  0.234414680479458                4
 
 UV2 DC-end: DC(i,k)-DC(i,0)
  u(10,10,48,nnew)= -8.137115850275778E-002 nnew=           1
  u(10,10,48,nstp)= -8.052298899797380E-002 nstp=           2
  u(10,10,48,nrhs)= -9.114372502314430E-002 nrhs=           3
-  
+
 
 UV2 end: u(i,j,k,nnew)-FC(i,0)
  u(10,10,48,nnew)= -8.137115850275776E-002 nnew=           1
  u(10,10,48,nstp)= -8.052298899797380E-002 nstp=           2
  u(10,10,48,nrhs)= -9.114372502314430E-002 nrhs=           3
-  
+
       2 4726.5661 4.22042699175-03 2.7828661880-03  0.324938347743  0.179878872609    114     84   26
 
 pre_step3d start:
@@ -348,7 +348,7 @@ u3dbc (prestep) start:
  u(istr,10,48,nnew)= -3.800613409151847E-002 nnew=           3
  u(istr,10,48,nstp)= -3.181264885824010E-002 nstp=           1
  u(istr,10,48,nrhs)= -3.181264885824010E-002 nrhs=           1
-  
+
 u3dbc (prestep) end:
  u(istr,10,48,nnew)= -3.223112205607205E-002 nnew=           3
  u(istr,10,48,nstp)= -3.181264885824010E-002 nstp=           1
@@ -383,7 +383,7 @@ UV1 end: u(nnew)=u(nnew)+DC(i,0)*ru(i,j,k)
 
 Visc
    -add visc to u(indx) which is  u(nnew)   dz*u(n+1)*
-   
+
 visc3d start:
  u(10,10,48,nnew)= -4.866687620528944E-002 nnew=           2
  u(10,10,48,nstp)= -8.137115850275776E-002 nstp=           1
@@ -393,14 +393,14 @@ visc3d end: u(indx)=u(indx)+dt*(UFs(k2)-UFs)
  u(10,10,48,nnew)= -4.867007550970563E-002 nnew=           2
  u(10,10,48,nstp)= -8.137115850275776E-002 nstp=           1
  u(10,10,48,nrhs)= -8.183101819765720E-002 nrhs=           3
- u(10,10,48,indx)= -4.867007550970563E-002 indx=           2    
-  
+ u(10,10,48,indx)= -4.867007550970563E-002 indx=           2
+
 wrt_his using u(nstp), which is u(n)
 
 steps in step3d_uv2
   -  combined implicit vert mixing and 2d/3d coupling
   -  apply bc
-  -  2d/3d coupling 
+  -  2d/3d coupling
 
 UV2 start:
  u(10,10,48,nnew)= -4.867007550970563E-002 nnew=           2
@@ -416,19 +416,19 @@ u3dbc (uv2) start:
  u(istr,10,48,nnew)= -3.053911293966002E-002 nnew=           2
  u(istr,10,48,nstp)= -3.181264885824010E-002 nstp=           1
  u(istr,10,48,nrhs)= -3.217580839972717E-002 nrhs=           3
-  
+
 u3dbc (uv2) end:
  u(istr,10,48,nnew)= -3.258741530289512E-002 nnew=           2
  u(istr,10,48,nstp)= -3.181264885824010E-002 nstp=           1
- u(istr,10,48,nrhs)= -3.217580839972717E-002 nrhs=           3  
+ u(istr,10,48,nrhs)= -3.217580839972717E-002 nrhs=           3
 
 UV2 end: u(nnew)=u(nnew)-FC(i,0)    (2D to 3D correction)
  u(10,10,48,nnew)= -8.178339794306810E-002 nnew=           2   u(n+1) (including the kitchen sink)
  u(10,10,48,nstp)= -8.137115850275776E-002 nstp=           1   u(n)
  u(10,10,48,nrhs)= -8.183101819765720E-002 nrhs=           3   u(n+1/2)
-  
+
  Process    0  thread  0  cpu time =        1.96 sec
 
  MAIN: DONE - Records written: history:    3 restart:    0 averages:    0
- MPI_run_time =   1.99217224121094     
+ MPI_run_time =   1.99217224121094
 complete!

@@ -189,7 +189,7 @@ c--#define LEGACY_METHOD
 
       xcmin=xc(1,1) ; xcmax=xc(1,1)
       do j=1,ncy
-        do i=1,ncx 
+        do i=1,ncx
           if (xc(i,j) < xcmin) then
             xcmin=xc(i,j)
           elseif (xc(i,j) > xcmax) then

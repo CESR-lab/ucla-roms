@@ -167,7 +167,7 @@
       subroutine comp_cflx ![
       ! Compute  baroclinic pressure fluxes
       ! up/vp fluxes are positive to the east/north
-      ! Instead of taking the mean flux over the sponge region, we're 
+      ! Instead of taking the mean flux over the sponge region, we're
       ! taking the flux on the 'inside' boundary of the sponge region.
 
       ! local
@@ -175,7 +175,7 @@
 
       pos = 2
       if (obc_west.and.(.not.west_exchng)) then
-        cflx_west = up(pos,1:ny) 
+        cflx_west = up(pos,1:ny)
       endif
       if (obc_east.and.(.not.east_exchng)) then
         cflx_east = up(nx-pos+1,1:ny)
@@ -186,21 +186,21 @@
       if (obc_north.and.(.not.north_exchng)) then
         cflx_north = vp(1:nx,ny-pos+1)
       endif
-      
+
       end subroutine comp_cflx !]
 ! ----------------------------------------------------------------------
       subroutine adjust_orlanski ![
       ! Adjust the restoring rate at the boundary
-      ! by modifying ubind based on the difference 
+      ! by modifying ubind based on the difference
       ! between parent and child pressure flux
       implicit none
 
-      ! local 
+      ! local
       real    :: alpha,beta,eps
       real    :: ub_mn,ub_mx
 
       eps = 1e-6
-      ub_mx = 2.0 
+      ub_mx = 2.0
       ub_mn =-1.0
 
       alpha = 0.5*ub_mx*dt/sp_timscale
@@ -222,7 +222,7 @@
         ub_north = max(ub_mn,ub_north)
         ub_north = min(ub_mx,ub_north)
       endif
-      
+
       if (obc_west.and.(.not.west_exchng)) then
         ub_west = ub_west+alpha*(pflx_west-cflx_west)
         ub_west = max(ub_mn,ub_west)
@@ -281,7 +281,7 @@
       integer            :: ncid,ierr
       character(len=99)  :: fname
       save fname
-      
+
       if (record==nrpf) then
         call create_sp_tune_file(fname)
         record = 0
@@ -289,7 +289,7 @@
       record = record + 1
 
       ierr=nf90_open(fname, nf90_write, ncid)
-      if (ierr/=nf90_noerr) 
+      if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'write sponge_tune: ',fname)
 
       call ncwrite(ncid,'ocean_time',(/time/),(/record/))
@@ -309,8 +309,8 @@
         call ncwrite(ncid,'pf_west',pflx_west_avg,(/ bfy,record /))
         call ncwrite(ncid,'ub_west',  ub_west_avg,(/ bfy,record /))
       endif
-      
-      ierr=nf90_close(ncid)    
+
+      ierr=nf90_close(ncid)
 
       navg = 0
 
@@ -455,7 +455,7 @@
         endif
 
       endif
-      
+
       end subroutine get_init_ub  !]
 
       end module sponge_tune

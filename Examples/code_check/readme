@@ -8,7 +8,7 @@ Examples code checking tools:
 
 
 ERROR:
-To improve result reproducibility, -fp-model strict is used. 
+To improve result reproducibility, -fp-model strict is used.
 This is different from the normal example compiler option.
 Therefore if the example has been previously compiled as an example not a code_check, it will not
 do a full recompile on its own and the result may thus be different.

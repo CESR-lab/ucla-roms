@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# 
+#
 
 # Get the "Examples" array from Examples/code_check/do_test_all.sh
-{ 
-  IFS= read -r shebang_line 
+{
+  IFS= read -r shebang_line
   while IFS= read -r line || [[ -n "$line" ]]; do
     [[ "$line" == *"USER INPUT END"* ]] && break
     eval "$line"
-  done 
+  done
 } < $ROMS_ROOT/Examples/code_check/do_test_all.sh
 
 if [ ${#Examples[@]} -eq 0 ]; then
@@ -29,7 +29,7 @@ for example in "${Examples[@]}"; do
 	cat ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
     fi
     if [ $example == "bgc_real" ];then
-	
+
        echo "------------------------------"
        echo "MARBL"
        echo "------------------------------"
@@ -43,6 +43,6 @@ for example in "${Examples[@]}"; do
 	   cat ${ROMS_ROOT}/Examples/${example}/code_check/compile_BEC.log
        fi
     fi
-       
+
     #ls ${ROMS_ROOT}/Examples/${example}/code_check/test_old.log
 done

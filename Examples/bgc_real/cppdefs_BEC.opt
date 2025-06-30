@@ -76,8 +76,8 @@ c--# define LMD_CONVEC
 # define BIOLOGY                  /* DPD current does nothing in new code */
 # define BEC2_DIAG                /* BGC diagnostics */
 # define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
-# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
-# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 
+# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */
+# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */
 # define DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
 
 #endif /* BIOLOGY_BEC2 */

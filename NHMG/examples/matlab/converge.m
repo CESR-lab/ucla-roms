@@ -14,7 +14,7 @@ for pw = 0:0
 
 %% A trick to get momenta from cartesian;
 %% u = uc + zx*wc; and U = u - zx*w;
-Xc = [uc(:)' vc(:)' -wc(:)']'; 
+Xc = [uc(:)' vc(:)' -wc(:)']';
 Xtmp = T*Xc;
 u = reshape(Xtmp(1:ndu),nx+1,ny,nz);
 u(2:nx,:,1) = uc(2:nx,:,1) + 0.5*(zx(2:nx,:,1).*wc(2:nx,:,2)+zx(1:nx-1,:,1).*wc(1:nx-1,:,2));
@@ -25,10 +25,10 @@ disp('solving')
 tic
 if strcmp(rname(1:2),'FM')
   disp('Flux Momentum')
-  X = [u(:)' v(:)' w(:)']'; 
+  X = [u(:)' v(:)' w(:)']';
   R = D*T*X;
   p = Pt\R;
-  dp = Mi*D'*p(:);  
+  dp = Mi*D'*p(:);
 else
   disp('Carthesian')
   X = [uc(:)' vc(:)' wc(:)']';
@@ -38,12 +38,12 @@ else
 end
 toc
 
-Xd = X-dp; 
+Xd = X-dp;
 
 if strcmp(rname(1:2),'FM')
   Ekd = 0.5*Xd'*M*T*Xd/(sizex*sizey*sizez)
 else
-  Ekd = 0.5*Xd'*M*Xd/(sizex*sizey*sizez)  
+  Ekd = 0.5*Xd'*M*Xd/(sizex*sizey*sizez)
 end
     Pwrk = 0.5*Xd'*(M*T)'*dp/(sizex*sizey*sizez)
 %    Pwrk = 0.5*dp'*M*T*Xd/(sizex*sizey*sizez)

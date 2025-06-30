@@ -7,15 +7,15 @@ clc; clear
 %  Edit and rerun to append additional grids to the same output file.
 %  Online extract_data module only reads in 1 input file.
 %
-%  Writes to netcdf file the i and j locations of the places 
+%  Writes to netcdf file the i and j locations of the places
 %  from where we want to save data. Index locations are in [0,nx], [0,ny]
-%  
+%
 %  It writes a data extraction object for each set of i,j points; each boundary
 %  has 3 different objects, for rho,u, and v-points. The velocity objects
 %  also include and angle to which the desired velocties will be rotated
 %
 %  If the child grid point is not in the parent domain it is given a value
-%  of -1e5 
+%  of -1e5
 %
 %  Note the mod statements for lonc and lonp. This is an attempt to deal
 %  with parent and child longitudes that are possibly 360 apart
@@ -34,9 +34,9 @@ cdir    = '../../../../Examples/extract_data/input/';
 cname   = 'sample_child_grd.nc';
 gname   = 'grid1'
 % gname   = 'grid2'
-obc_west=1; 
-obc_east=0; 
-obc_south=1; 
+obc_west=1;
+obc_east=0;
+obc_south=1;
 obc_north=1;
 period  = 20;
 % period  = 60;
@@ -51,7 +51,7 @@ info    = ['indices for ' gname ' ' cname ' in ' pname];
 pname = [pdir pname];
 cname = [cdir cname];
 
-lonp = ncread(pname,'lon_rho');        
+lonp = ncread(pname,'lon_rho');
 latp = ncread(pname,'lat_rho');
 mskp = ncread(pname,'mask_rho');
 lonp = mod(lonp,360);

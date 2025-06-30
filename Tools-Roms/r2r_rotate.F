@@ -3,13 +3,13 @@
 C$OMP THREADPRIVATE(alloc_FX_size)
        real(kind=4), allocatable, dimension(:):: FX,FE
 C$OMP THREADPRIVATE(FX,FE)
-      end module r2r_rotate_scratch 
+      end module r2r_rotate_scratch
 
 
       subroutine r2r_rotate_shift_thread(nx,ny,N, csA,snA, ur,vr, u,v)
 
 ! Rotate vector components (ur,vr) colocated ar RHO-points while
-! simultaneously shifting them into U- and V-locations on C-grid. 
+! simultaneously shifting them into U- and V-locations on C-grid.
 ! inputs csA,snA, ur,vr (all remain unchanged); outpits u,v
 
       use r2r_rotate_scratch
@@ -100,7 +100,7 @@ C$OMP END CRITICAL(ext_wr_rgn)
       subroutine r2r_rotate_in_place_thread(nx,ny,N, csA,snA, ur,vr)
 
 ! Rotate vector components (ur,vr) colocated ar RHO-points and place
-! the outcome back into the same arrays.  
+! the outcome back into the same arrays.
 
       implicit none
       integer nx,ny,N

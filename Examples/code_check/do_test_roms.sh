@@ -10,7 +10,7 @@ case "$1" in
 	exit 1
 	;;
 esac
-    
+
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
 echo "$bm_file"
 
@@ -26,7 +26,7 @@ cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
 #cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
 make compile_clean &> /dev/null
-make > compile.log 
+make > compile.log
 
 
 # 2) Run test case:
@@ -51,13 +51,13 @@ rm cppdefs.opt# &> /dev/null
 rm roms      &> /dev/null
 
 # 2) Python - confirm values:
-cp $ROMS_ROOT/Examples/code_check/test_roms.py . 
+cp $ROMS_ROOT/Examples/code_check/test_roms.py .
 python3 test_roms.py $bm_file
 retval=$?
 
 rm test_roms.py
 
-# 3) Rename results logs so they can't be mistakenly read by the 
+# 3) Rename results logs so they can't be mistakenly read by the
 #    python script even if new simulation doesn't run
 mv test.log test_old.log
 

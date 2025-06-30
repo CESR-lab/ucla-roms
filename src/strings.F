@@ -9,5 +9,5 @@
 
       integer, parameter       :: max_opt_size=2048
       character*(max_opt_size) :: cpps, srcs, kwds
- 
+
       end module strings

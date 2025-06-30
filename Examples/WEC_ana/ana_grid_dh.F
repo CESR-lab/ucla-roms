@@ -1,6 +1,6 @@
 #include "cppdefs.opt"
 #ifdef ANA_GRID
- 
+
       subroutine ana_grid (tile)
       implicit none
       integer tile
@@ -9,7 +9,7 @@
       call ana_grid_tile (istr,iend,jstr,jend)
       return
       end
- 
+
       subroutine ana_grid_tile (istr,iend,jstr,jend)
 
 ! Set up model grid using analytical expressions:
@@ -43,7 +43,7 @@
      &                  Size_XI = 1400.0,   Size_ETA= 2.0,
      &                  depth=10.,          f0=0.0,        beta=0.
 # else
-#  error "ANA_GRID" CPP-key is set, but grid parameters are missing 
+#  error "ANA_GRID" CPP-key is set, but grid parameters are missing
 # endif
 
       real cff,y, x0,y0,dx,dy
@@ -56,7 +56,7 @@ C$OMP MASTER                           ! Copy physical dimensions of
       xl=Size_XI                       ! the grid into glabally vizible
       el=Size_ETA                      ! variables (ONE THREAD ONLY).
 C$OMP END MASTER
- 
+
       dx=Size_XI/float(LLm)            ! Set grid spacings for
       dy=Size_ETA/float(MMm)           ! rectangular grids
 # ifdef MPI
@@ -66,7 +66,7 @@ C$OMP END MASTER
       x0=0.
       y0=0.
 # endif
- 
+
 
 # ifdef SEAMOUNT
 #  define STRTCH 0.333333333333
@@ -102,12 +102,12 @@ C$OMP END MASTER
       enddo
 #  undef STRTCH
 # else
-      do j=jstrR,jendR                  ! Setup Cartezian grid  
+      do j=jstrR,jendR                  ! Setup Cartezian grid
         do i=istrR,iendR                ! (XI,ETA) at PSI- and RHO-
-          xp(i,j)=x0+dx* float(i-1)     ! points and compute metric 
+          xp(i,j)=x0+dx* float(i-1)     ! points and compute metric
           xr(i,j)=x0+dx*(float(i)-0.5)  ! transformation coefficients
           yp(i,j)=y0+dy* float(j-1)     ! pm and pn, which are
-          yr(i,j)=y0+dy*(float(j)-0.5)  ! uniform in this case. 
+          yr(i,j)=y0+dy*(float(j)-0.5)  ! uniform in this case.
 
           pm(i,j)=1./dx
           pn(i,j)=1./dy
@@ -157,12 +157,12 @@ c     &                    +(0.1)*(xr(i,j)-x0))
 
 ! Island topography and coastline: two versions are available:
 ! cylinder-shaped island with vertical walls and island with
-! cylindrical above-surface part and gaussian-shaped shelf.  
+! cylindrical above-surface part and gaussian-shaped shelf.
 ! Note that the above-surface area of the island is smaller in
 ! the second case because an extra space is needed to accommodate
 ! shelf areas.  For a 80km-wide domain maximum allowed "rd_inner"
 ! should not exceed 10 and 7.5 km for cylinder and shelf-shaped
-! islands respectively. 
+! islands respectively.
 
       y0=Size_ETA/2.            ! location of the center of island
       x0=y0
@@ -170,9 +170,9 @@ c--#  define GAUSSIAN_SLOPE_ISLAND
 #  ifdef GAUSSIAN_SLOPE_ISLAND
       rd_inner=7.5e+3           ! radius of the above-surface part
 #  else
-      rd_inner=10.e+3           ! radius of the cylinder-shaped island  
+      rd_inner=10.e+3           ! radius of the cylinder-shaped island
 #  endif
-      rd_outer=rd_inner*1.      
+      rd_outer=rd_inner*1.
       do j=jstrR,jendR
         do i=istrR,iendR
           h(i,j)=depth         ! <-- maximum depth and mask to water
@@ -182,9 +182,9 @@ c--#  define GAUSSIAN_SLOPE_ISLAND
 c     &      *0.6144*(1.-1.25*(yr(i,j)-y0)/Size_ETA)   ! 4.8e-3
 c     &      *0.6389*(1.-1.125*(yr(i,j)-y0)/Size_ETA)  ! 4.4923e-3
 
-     &      *0.6666*(1.-(yr(i,j)-y0)/Size_ETA)        ! 4.16625e-3 
+     &      *0.6666*(1.-(yr(i,j)-y0)/Size_ETA)        ! 4.16625e-3
 c     &      *0.695*(1.-0.875*(yr(i,j)-y0)/Size_ETA)   ! 3.80078e-3
-c     &      *0.727*(1.-0.75*(yr(i,j)-y0)/Size_ETA)    ! 3.407e-3 
+c     &      *0.727*(1.-0.75*(yr(i,j)-y0)/Size_ETA)    ! 3.407e-3
 c     &      *0.761*(1.-0.625*(yr(i,j)-y0)/Size_ETA)   ! 2.9726e-3
 c     &      *0.8*(1.-0.5*(yr(i,j)-y0)/Size_ETA)       ! 2.5e-3
 
@@ -193,7 +193,7 @@ c     &      *0.6666*(1.+(yr(i,j)-y0)/Size_ETA)  !         (unstable)
 
 
 #  ifdef MASKING
-          rmask(i,j)=1.     ! everywhere, then modify it 
+          rmask(i,j)=1.     ! everywhere, then modify it
 #  endif
           rd=sqrt((xr(i,j)-x0)**2+(yr(i,j)-y0)**2)
 
@@ -269,7 +269,7 @@ c     &      *0.6666*(1.+(yr(i,j)-y0)/Size_ETA)  !         (unstable)
 !
 ! Weir et al. 2011 after Lippmann et al. 1999 (idealization of Duck beach)
 !
-          xs=150;      ! inner surf zone 
+          xs=150;      ! inner surf zone
           db=80;       ! distance from xs to sand bar
           alpha=0.02;
           lambda=256;  ! sand bar perturbation wavelength
@@ -302,7 +302,7 @@ c     &      *0.6666*(1.+(yr(i,j)-y0)/Size_ETA)  !         (unstable)
       endif
 #  endif
 !--------------------------------------------------------------------!
-      
+
 # elif defined RIVER
       do i=istrR,iendR
 #  ifdef MPI
@@ -335,7 +335,7 @@ c     &      *0.6666*(1.+(yr(i,j)-y0)/Size_ETA)  !         (unstable)
       enddo                           ! channel through that strip.
 #   ifdef MPI
       imax=min(LLm/15-iSW_corn,iendR) ! translate "absolute" index
-      jchn=3*MMm/4 -jSW_corn          ! into index within the 
+      jchn=3*MMm/4 -jSW_corn          ! into index within the
 #   else
       imax=min(LLm/15,iendR)          ! presend MPI subdomain.
       jchn=3*MMm/4

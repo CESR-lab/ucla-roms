@@ -5,7 +5,7 @@ list = dir(['sample_extract.' label '*nc']);
 gname = 'grid1';
 
 nsub = length(list);
-% 
+%
 % figure out files with variables for this grid
 if 0
  ib = 0;
@@ -40,15 +40,15 @@ for i = 1:nsub
      if strfind(fvars(iv).Name,gname) % only if this var is part of the child grid
 
        if strfind(fvars(iv).Name,'time') % we only need to read one time variable
-         if ~got_time                    % associated with this grid since they're 
+         if ~got_time                    % associated with this grid since they're
            tname = fvars(iv).Name;       % assumed to all be the same
 	   nrec = fvars(iv).Size;        % number of time records in this series of files
            tfile = bry(i).name;
            got_time = 1;
 	 end
-         continue                        
-       end                               
-       % check if we have this variable already 
+         continue
+       end
+       % check if we have this variable already
        % in the list of vars
        found = 0;
        for ivar = 1:nvars
@@ -64,7 +64,7 @@ for i = 1:nsub
          lvars(nvars).files = [i];
          lvars(nvars).start = [start];
          lvars(nvars).count = [count];
-  
+
          dname = ncreadatt(bry(i).name,fvars(iv).Name,'dname');
          dsize = ncreadatt(bry(i).name,fvars(iv).Name,'dsize');
          lvars(nvars).dname = dname;
@@ -90,7 +90,7 @@ for i = 1:nsub
    end
 end
 
-bryname = [gname '_bry.' label '.nc'] 
+bryname = [gname '_bry.' label '.nc']
 delete(bryname)
 
 % create the boundary file

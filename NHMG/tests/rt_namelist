@@ -8,7 +8,7 @@
 	Lx      =   1.d4   , ! Domain length in x [meter]
 	Ly      =   1.d4   , ! Domain length in y [meter]
 	Htot    =   4.d3   , ! Depth [meter]
-	hc      =   4.d3   , ! 
+	hc      =   4.d3   , !
 	theta_b =   1.     , !
 	theta_s =   1.     , !
 /

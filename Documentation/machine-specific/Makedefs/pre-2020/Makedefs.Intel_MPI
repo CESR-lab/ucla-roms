@@ -35,7 +35,7 @@
 # still accepted, but causes warning messages).   To make this setup
 # universal and silent, soft links are added to Intel compiler bin
 # directory with "f90" pointing to either "ifc" or "ifort" whichever
-# is more appropriate. 
+# is more appropriate.
 #
 # Compiler settings:  -fpp2 is required only if -openmp is present.
 # Not having -fpp2 here just causes compiler warning (-fpp is set to
@@ -70,13 +70,13 @@
 	CFT = ifort $(OMP_FLAG) -pc80 -tpp7 -axN -xN -align dcommon -auto -stack_temps
 
 
-      LDR = $(CFT) 
+      LDR = $(CFT)
 
-   FFLAGS = -O3 -IPF_fma -ip 
+   FFLAGS = -O3 -IPF_fma -ip
 # -prof_gen
 #    FFLAGS = -O0             #  -CA check pointer; -CS check shape
 #  FFLAGS = -O3                       (not implemented in ifort8.1)
-#   FFLAGS = -g -CA -CB -CS -CU -CV 
+#   FFLAGS = -g -CA -CB -CS -CU -CV
 #   FFLAGS = -g  -CB -CU -CV
 #  FFLAGS = $(CPPFLAGS) -O0
 

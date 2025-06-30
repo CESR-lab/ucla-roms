@@ -52,7 +52,7 @@ def make_cmap(colors, position=None, bit=False):
 
 
 def make_cbar_even_space(col_map,ncols):
-    """ Return a list of indiivudal 
+    """ Return a list of indiivudal
         evenely spaced colors (ncols)
     for a given colormap """
     import matplotlib.colors as colors
@@ -669,8 +669,8 @@ def get_rgb_list(cmap_name):
                        ( 162 , 43  ,33),\
                        ( 160 , 52 , 43),\
                        ( 159 , 55,  47)]
-    
-    
+
+
     if cmap_name == 'sirkes':
        return        [    (0,  97, 128),\
                           (0, 128, 161),\
@@ -693,8 +693,8 @@ def get_rgb_list(cmap_name):
                         (252 , 33,   0),\
                         (191 ,  0,   0),\
                         (128 ,  0,   0)]
-    
- 
+
+
     if cmap_name == 'NCV_roullet':
        return        [  (91,  96,  152),\
                       (63,  70,  156),\
@@ -1207,7 +1207,7 @@ def get_rgb_list(cmap_name):
         (157 ,  23 ,  28),\
         (154 ,  22 ,  27),\
         (151 ,  22 ,  26),\
-        (146 ,  21 ,  25)] 
+        (146 ,  21 ,  25)]
 
 
 

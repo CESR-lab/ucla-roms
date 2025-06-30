@@ -18,24 +18,24 @@ Basic usage:
 	Generic netCDF assembly tool that reads ROMS partial netCDF files (.nc)
 	and assembles them into a file for the whole physical grid.
 	It is the inverse operation to partit.
- 	Runs in parallel with many cores using MPI. 
+ 	Runs in parallel with many cores using MPI.
  	To run on Expanse, modify and use run script here:
  	Documentation/machine-specific/Job_submission_scripts/run_script_expanse_ncjoin_mpi
- 				
+
 	ncjoin_mpi usage:
-			
+
 	       mpiexec -n np ncjoin_mpi np_x np_y files.???.nc
 	 or
 	       mpiexec -n np ncjoin_mpi np_x np_y -d files.???.nc
-				
+
 	where files.???.nc matches a complete set of partial files (or
 	several complete sets) and "-d" or "--delete" forces deletion of
-	partial files upon successful joining. 
+	partial files upon successful joining.
 
 	np is the total number of processors you use.
 	np_x and np_y are the number of sub-domains you choose in x and y
 	for ncjoin_mpi not your input partition files, they can be different!
-	For potential efficiency, try to keep keep the ratio of np_x to np_y 
+	For potential efficiency, try to keep keep the ratio of np_x to np_y
 	similar to the sub-domaining of your partitial files.
 	Note, requirement: np = np_x X np_y !
 
@@ -50,22 +50,22 @@ Efficiency & job costs:
 	50 cores to mitigate wasted burn allocation due to poor efficiency.
 	Stick to 1 node and only use 'shared' or 'large-shared' partitions.
 
-	
+
 Outputs per file from ROMS:
 
-	ncjoin_mpi works much better with more timesteps in each file, so try to have atleast 
+	ncjoin_mpi works much better with more timesteps in each file, so try to have atleast
 	10+ timesteps in your result files.
 	This also avoids duplication of grid variables in each new result file.
 	Also, Expanse becomes much less responsive with lots of result files in a directory...
-	
-	
+
+
 Large-memory requirements:
 
 	Depending on your simulation, ncjoin_mpi may sometimes run out of memory on the 'shared' nodes.
 	In such case, you will see an 'exceeded memory' error in your log file for ncjoin_mpi.
 	You should then use 'large-shared' partition, which has up to 2000G of ram available.
-	
-	Charges are based on either the number of cores or the fraction of the memory requested, whichever 
+
+	Charges are based on either the number of cores or the fraction of the memory requested, whichever
 	is larger! So if you request 64 cores, only request 1000G of memory.
 	The following command shows what percentage of the memory you used in the run once complete: seff jobid
 	Note, 'large-shared' costs 4x more in allocation, so only use if needed!
@@ -75,11 +75,11 @@ ROMS output compression:
 
 	The latest ROMS code outputs with level 1 compression as default.
 	Compressed results need to be uncompressed when read, so ncjoin_mpi would run faster with uncompressed
-	input files. You could consider no compression in ROMS output (change to deflate_level=0 in read_write.F).	
-	
-	
+	input files. You could consider no compression in ROMS output (change to deflate_level=0 in read_write.F).
+
+
 Report performance issues:
 
 	Since this is a new tool, please let me (Devin) know of any performance observations or issues you find.
-	
+
 

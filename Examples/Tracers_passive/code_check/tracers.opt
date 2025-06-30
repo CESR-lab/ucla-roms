@@ -1,5 +1,5 @@
 ! User notes:
-!   1) Specify tracer variable details here. 
+!   1) Specify tracer variable details here.
 !      (number of tracers (NT) still set in param.h for now)
 !
 !   2) tracer name in netcdf file for _bry.nc and _init.nc
@@ -42,7 +42,7 @@
 
       wrt_t     (itmp)=.True.;    wrt_t_avg(itmp) =.True.    ! temp
       wrt_t_diag(itmp)=.False.
-      
+
 #ifdef SALINITY
       wrt_t     (islt)=.True.;    wrt_t_avg(islt) =.True.    ! salinity
       wrt_t_diag(islt)=.True.
@@ -57,12 +57,12 @@
       t_tname(itot)='trace1_time';   t_ana_frc(itot)=0
       t_lname(itot)='long trace1'
 
-      itot=itot+1               
+      itot=itot+1
       wrt_t  (itot) =.True.;         wrt_t_avg(itot)=.True.
       t_vname(itot)='salt2';         t_units  (itot)='PSUuu'
       t_tname(itot)='salt2_time';    t_ana_frc(itot)=0
       t_lname(itot)='long salt2'
-      
+
       nt_passive = itot - iTandS                                     ! less temperature and salinity (not passive)
 
 ! - BGC TRACERS: (must come after passive tracers)

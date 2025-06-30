@@ -59,9 +59,9 @@
         endif
       elseif (iic == ntstart) then           ! load time-invariant
         cff=1./rho0                          ! wind at initialization
-        do j=jstrR,jendR                     ! only when there is only 
-          do i=IstR,iendR                    ! one record, ntwnd == 1 
-            sustr(i,j)=cff*uwind(i,j,itwnd)  
+        do j=jstrR,jendR                     ! only when there is only
+          do i=IstR,iendR                    ! one record, ntwnd == 1
+            sustr(i,j)=cff*uwind(i,j,itwnd)
             svstr(i,j)=cff*vwind(i,j,itwnd)
           enddo
         enddo

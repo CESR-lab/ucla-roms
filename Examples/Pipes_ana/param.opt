@@ -22,7 +22,7 @@
 
       integer, parameter :: nt = 2
       integer, parameter :: nt_passive = 0
-      
+
       ! All logicals listed here:
 
 

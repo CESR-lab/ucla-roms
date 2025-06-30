@@ -7,7 +7,7 @@
 !--------------------------------------------------------------------------------
 !      if running with MARBL, do not specify BGC diagnostics in this file: they are
 !      provided to ROMS by MARBL. Control the MARBL config (therefore diagnostics)
-!      using a "marbl_in" file in your run directory. 
+!      using a "marbl_in" file in your run directory.
 !      Regarding output: by default, all MARBL diagnostics are written to output.
 !      To control which particular diagnostics to write out, make a
 !      text file "marbl_diagnostic_output_list" in your run directory
@@ -17,13 +17,13 @@
 !      ROMS will revert to default behaviour and output all MARBL diagnostics.
 !      Output frequency etc. are still controlled using "bgc.opt".
 !      For a list of available MARBL diagnostics, see
-!      $MARBL_ROOT/tests/regression_tests/requested_diags/requested_diags.py 
+!      $MARBL_ROOT/tests/regression_tests/requested_diags/requested_diags.py
 
 
 #ifdef BIOLOGY_BEC2
 #ifdef BEC2_DIAG
 
-!!!!!!!!!!!! bec2_diag_3d !!!!!!!!!!!!!!!!!!! 
+!!!!!!!!!!!! bec2_diag_3d !!!!!!!!!!!!!!!!!!!
 
       par_idx_t=1
       vname_bec2_diag_3d(1,par_idx_t)='PAR'
@@ -633,7 +633,7 @@
       vname_bec2_diag_3d(3,totchl_idx_t)='mg Chl/m3'
       vname_bec2_diag_3d(4,totchl_idx_t)=' '
       wrt_bec2_diag_3d(totchl_idx_t)=.True.
-      
+
       spplim_idx_t=88
       vname_bec2_diag_3d(1,spplim_idx_t)='SP_P_LIM'
       vname_bec2_diag_3d(2,spplim_idx_t)='Small phytoplankton P limitation (PO4 + DOP)'

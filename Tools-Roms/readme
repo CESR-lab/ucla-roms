@@ -1,11 +1,11 @@
 ROMS related tools:
 
-To compile tools: 
-1) Simply type "make" 
+To compile tools:
+1) Simply type "make"
 
 ! Dependecy list: Make.depend
 ! ===========================
- 
+
  makedepf90 -   This is an open-source dependency generator. The exectuable
                 should work across platforms, and hence is kept in repo as such.
                 It is possible to install through package managers, e.g.:
@@ -14,15 +14,15 @@ To compile tools:
                 folder for manual install if necessary.
                 The program is able to detect cppflags, e.g. if you turn on WEC flag,
                 be sure to run 'make depend' again, as now more files will depend
-                on wec_frc.F module. 
-                HOWEVER, it does not seem to be able to handle if-else with cppflags. 
+                on wec_frc.F module.
+                HOWEVER, it does not seem to be able to handle if-else with cppflags.
                 I found this with flux_frc in set_forces, where
                 it had #if def BULK_FRC / # else (flux_frc), but then in Make.depend
                 set_forces had no dependence on flux_frc.
                 If compiled with -Wconfused then it will print warnings when confused.
-                
+
                 Source code: https://salsa.debian.org/science-team/makedepf90
-                Man page: https://linux.die.net/man/1/makedepf90 
+                Man page: https://linux.die.net/man/1/makedepf90
                 (Note: cross_matrix is no longer used)
 
 ! NETCDF tools
@@ -31,25 +31,25 @@ To compile tools:
  partit -	Separates single input files over domain into multiple input
  		files based on the MPI tiling based on the parameters you set
  		in param.h file.
- 				
+
  ncjoin_mpi -	Generic netCDF assembly tool that reads ROMS partial netCDF files (.nc)
 		and assembles them into a file for the whole physical grid.
 		It is the inverse operation to partit.
  		Runs in parallel with many cores using MPI.
  		Compresses joined file (no need for nc3to4z).
- 		Currently, ncjoin_mpi can only be used  on Xsede's expanse. 
+ 		Currently, ncjoin_mpi can only be used  on Xsede's expanse.
  		To run on Expanse, see run script here:
  		Documentation/machine-specific/Job_submission_scrips/run_script_expanse_ncjoin_mpi
- 				
+
 		ncjoin_mpi usage:
-				
+
 		       mpiexec -n np ncjoin_mpi np_x np_y files.???.nc
 		 or
 		       mpiexec -n np ncjoin_mpi np_x np_y -d files.???.nc
-				
+
 		where files.???.nc matches a complete set of partial files (or
 		several complete sets) and "-d" or "--delete" forces deletion of
-		partial files upon successful joining. 
+		partial files upon successful joining.
 
 		np is the total number of processors you use.
 		np_x and np_y are the number of sub-domains you choose in x and y
@@ -57,7 +57,7 @@ To compile tools:
 		For efficiency, try to keep keep the ratio of np_x to np_y similar to
 		the sub-domaining of your partitial files.
 		Note, np = np_x X np_y !
-		
+
 		Please read detailed instructions to get most productivity from tool, here:
 		Documentation/readme-tools/readme.ncjoin_mpi
 
@@ -69,7 +69,7 @@ To compile tools:
  		E.g.: with files result.0.nc result.1.nc
  		ncjoin -d result.*.nc
  		Will prodcue result.nc file containing joined results.
- 		the -d flag will delete the individual files, e.g. .0. and .1.                
+ 		the -d flag will delete the individual files, e.g. .0. and .1.
 
 zslice -        Produces slice across constant depth from your result files.
                 Can also be compiled as ipslice (for iso-pycnal).
@@ -84,13 +84,13 @@ zslice -        Produces slice across constant depth from your result files.
     version for now. ncjoin and ncjoin_mpi were doctored from the old version,
     which is unfortunate, but would be a lot of work to start from the new version
     now.
-    
+
 
 ! Online child boundary interpolation
 ! ===================================
 
-		As of 2021/04 ROMS now has functionality to generate online interpolated 
-		child boundary files using src/bry_extract_child.F. This functionality 
+		As of 2021/04 ROMS now has functionality to generate online interpolated
+		child boundary files using src/bry_extract_child.F. This functionality
 		requires the following two auxiliary tools:
 
   bry_child_input_gen.m:
@@ -106,15 +106,15 @@ zslice -        Produces slice across constant depth from your result files.
 
 		This fortran program is somewhat based off ncjoin, and it borrows pre-
 		processing subroutines from ncjoin_mod.F.
-		
 
 
 
- 
+
+
 ! Code editing
-! ============ 
+! ============
 
- chkindent -    checks identing and alignment of CPP #directives; 
+ chkindent -    checks identing and alignment of CPP #directives;
 
  mreplace -  	searches and renames objects in Fortran source codes.
               	Useful for speed editing multiple files if consistent name

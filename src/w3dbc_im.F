@@ -29,7 +29,7 @@
 # ifndef EW_PERIODIC
 
       if (WESTERN_EDGE) then
-#  if defined OBC_WEST 
+#  if defined OBC_WEST
 #   if defined OBC_M3ORLANSKI
         do k=1,N
           do j=jstr,jend+1
@@ -57,7 +57,7 @@
 
 #    if defined M3_FRC_BRY
             w(istr-1,j,k,nnew)= (1.-cext)*w(istr-1,j,k,nnew)
-     &                                +cext*w_west(j,k) 
+     &                                +cext*w_west(j,k)
 #    endif
           enddo
         enddo
@@ -85,7 +85,7 @@
 
 
       if (EASTERN_EDGE) then
-#  if defined OBC_EAST 
+#  if defined OBC_EAST
 #   if defined OBC_M3ORLANSKI
         do k=1,N
           do j=jstr,jend+1
@@ -217,7 +217,7 @@
      &                             +cx*( w(i,jend  ,k,nnew)
      &                             -max(cy,0.)*grad(i  ,jend  )
      &                             -min(cy,0.)*grad(i+1,jend  ) )
-#    if defined W_FRC_BRY 
+#    if defined W_FRC_BRY
             w(i,jend+1,k,nnew)= ((1.-cext)*w(i,jend+1,k,nnew)
      &                             +cext*w_north(i,k) )
 #    endif
@@ -229,7 +229,7 @@
 #    if defined OBC_M3SPECIFIED
             w(i,jend+1,k,nnew)=w_north(i,k)
 #    else
-            w(i,jend+1,k,nnew)=w(i,jend,k,nnew)  
+            w(i,jend+1,k,nnew)=w(i,jend,k,nnew)
 #    endif
           enddo
         enddo
@@ -350,7 +350,7 @@
 # endif
       end
 
-#else 
+#else
 
       subroutine w3dbc_empty
       end

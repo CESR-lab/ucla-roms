@@ -49,7 +49,7 @@
       endif
 
       ! Print user options (flux_frc.opt) to netcdf attributes
-      ! Note: to turn flux forces off, edit cppdefs! 
+      ! Note: to turn flux forces off, edit cppdefs!
       flux_frc_opt = ''
       if (interp_frc==1) then
         call store_string_att(flux_frc_opt, 'Interpolation ON')

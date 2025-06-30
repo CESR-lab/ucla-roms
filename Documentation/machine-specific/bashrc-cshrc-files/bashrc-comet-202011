@@ -10,8 +10,8 @@ fi
 #  comet user-defined - path to where you have cloned the repo code
 export ROMS_ROOT=~/repos/ucla-roms
 #  comet non-user defined (same for everyone)
-module purge 
-module load intel 
+module purge
+module load intel
 module load mvapich2_ib/2.3.2
 module load netcdf
 module load ncview/2.1.7

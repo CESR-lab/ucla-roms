@@ -88,11 +88,11 @@ program mg_testrndtopo
 
   if (rank == 0) then
      write(*,*)'test rndtopo parameters:'
-     write(*,*)'  - nit     : ', nit 
+     write(*,*)'  - nit     : ', nit
      write(*,*)'  - nxg     : ', nxg
      write(*,*)'  - nyg     : ', nyg
      write(*,*)'  - nzg     : ', nzg
-     write(*,*)'  - npxg    : ', npxg 
+     write(*,*)'  - npxg    : ', npxg
      write(*,*)'  - npyg    : ', npyg
      write(*,*)'  - Lx      : ', Lx
      write(*,*)'  - Ly      : ', Ly
@@ -143,7 +143,7 @@ program mg_testrndtopo
        dx,dy,           &
        zeta,h        )
 
-  !- stretching vertical grid -!   
+  !- stretching vertical grid -!
   call setup_zr_zw_hz(hc,theta_b,theta_s,zeta,h,z_r,z_w,Hz,'new_s_coord')
   !- linear vertical grid -!
   !  call setup_zr_zw_hz(h,z_r,z_w,Hz)

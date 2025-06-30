@@ -1,16 +1,16 @@
 
       !-----------------------------------------------------------
       ! User inputs for zslice output module
-      ! 
+      !
       ! Notes : - The zsliced depth are defined with respect to the free surface
-      ! 
+      !
       !-----------------------------------------------------------
       logical,public,parameter :: do_zslice = .true.
       logical,parameter        :: do_avg    = .false.
       real   ,parameter        :: output_period = 1200 ! in seconds
       integer,parameter        :: nrpf   = 72          ! number of frames per file
       integer,parameter        :: ndep   =  6          ! number of depth slice
-      real, dimension(ndep) :: vecdep = (/-2.0, -15.0, -30.0, -60.0, -120.0, -250.0/) ! depths slice  
+      real, dimension(ndep) :: vecdep = (/-2.0, -15.0, -30.0, -60.0, -120.0, -250.0/) ! depths slice
       logical,parameter     :: wrt_T_zsl = .true. ,    ! tracers
      &                         wrt_U_zsl = .true. ,    ! u-velocity
      &                         wrt_V_zsl = .true.      ! v-velocity

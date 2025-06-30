@@ -5,12 +5,12 @@ df_l2 = zeros(4,6);
 rname = 'Data/FMbc'
 for i=0:6
     fname = [rname num2str(i)];
-    
+
     load(fname);
     if i>0
         diff = wi-wi0;
         l2_diff = sqrt(mean( diff(:).^2));
-        df_l2(1,i+1) = l2_diff;        
+        df_l2(1,i+1) = l2_diff;
     end
     wi0 = wi;
 end
@@ -19,15 +19,15 @@ wi1 = wi;
 rname = 'Data/Cbc'
 for i=0:6
     fname = [rname num2str(i)];
-    
+
     load(fname);
     if i>0
         diff = wi-wi0;
         l2_diff = sqrt(mean( diff(:).^2));
-        df_l2(2,i+1) = l2_diff;        
+        df_l2(2,i+1) = l2_diff;
     end
     wi0 = wi;
-    
+
 end
 diff2 = diff;
 wi2 = wi;
@@ -36,12 +36,12 @@ wi2 = wi;
 rname = 'Data/FMnbc'
 for i=0:6
     fname = [rname num2str(i)];
-    
+
     load(fname);
     if i>0
         diff = wi-wi0;
         l2_diff = sqrt(mean(diff(:).^2));
-        df_l2(3,i+1) = l2_diff;        
+        df_l2(3,i+1) = l2_diff;
     end
     wi0 = wi;
 end
@@ -51,12 +51,12 @@ wi3 = wi;
 rname = 'Data/Zlev'
 for i=0:6
     fname = [rname num2str(i)];
-    
+
     load(fname);
     if i>0
         diff = wi-wi0;
         l2_diff = sqrt(mean( diff(:).^2));
-        df_l2(4,i+1) = l2_diff;        
+        df_l2(4,i+1) = l2_diff;
     end
     wi0 = wi;
 end

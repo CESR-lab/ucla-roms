@@ -271,7 +271,7 @@ c**                   ierr=nf_close(ncid) ; ncfrc(ifrc)=-1
 #  define VAR_GRD_TYPE2 r_var
 # endif
                       if (ierr == nf_noerr) then
-                        ierr=check_vardims(ncid, frcname, varid2, 
+                        ierr=check_vardims(ncid, frcname, varid2,
      &                                          VAR_GRD_TYPE2, 0)
 # ifdef varname3
 #  ifndef VAR_GRD_TYPE3

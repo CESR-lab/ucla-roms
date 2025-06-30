@@ -1,5 +1,5 @@
-! CASE = undefined, 2, 3 are for integer kind=4,2,8 
-! CASE = 4 or 8 for real type of kind=4 or 8 respectively; 
+! CASE = undefined, 2, 3 are for integer kind=4,2,8
+! CASE = 4 or 8 for real type of kind=4 or 8 respectively;
 
 #ifdef CASE
 # if CASE == 4
@@ -51,7 +51,7 @@
       var_TYPE value
       integer(kind=8) mnts, mnts_bak  !<-- to prevent/detect overflows
       integer is,ie, ierr, isgn
-      
+
 #if CASE > 3
       logical dcm_point, exp_present
       integer xpsgn, k,n
@@ -166,9 +166,9 @@ c**       write(*,*) 'mnts=', mnts, 'k,n =',k,n
             else                        !   "isgn" sign of mantissa;
               xpsgn=-1 ; k=-k           !   "n" the number of digits
             endif                       !       after decimal point;
-            do while(k > 31)            !   "k" (>0) decimal exponent 
-              k=k-32                    !       as it is read from 
-              if (xpsgn > 0) then       !       the input string; 
+            do while(k > 31)            !   "k" (>0) decimal exponent
+              k=k-32                    !       as it is read from
+              if (xpsgn > 0) then       !       the input string;
                 value=value*1.0D+32     !   "xpsgn" sign of exponent.
               else                      !
                 value=value*1.0D-32     ! The code on the left is
@@ -176,11 +176,11 @@ c**       write(*,*) 'mnts=', mnts, 'k,n =',k,n
             enddo                       !
             do while(k > 15)            !  isgn*mnts * 10^(xpsgn*k-n)
               k=k-16                    !
-              if (xpsgn > 0) then       ! however a special care is 
-                value=value*1.0D+16     ! needed to avoid overflows 
-              else                      ! within the intermediate 
-                value=value*1.0D-16     ! operations and/or round-off 
-              endif                     ! errors due to underflows 
+              if (xpsgn > 0) then       ! however a special care is
+                value=value*1.0D+16     ! needed to avoid overflows
+              else                      ! within the intermediate
+                value=value*1.0D-16     ! operations and/or round-off
+              endif                     ! errors due to underflows
             enddo                       ! in the middle.
             if (k > 7) then
               k=k-8

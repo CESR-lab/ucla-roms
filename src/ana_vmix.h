@@ -7,7 +7,7 @@
         do k=0,nz
           do j=0,ny+1
             do i=0,nx+1
-              
+
               Akv(i,j,k) = Akv_bak
 
               Akt(i,j,k,itemp)= Akt_bak(itemp)

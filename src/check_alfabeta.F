@@ -23,18 +23,18 @@
      &                +Ts*(R1+Tt*R2+Ts*X0)
      &                +Tp*( U0+Tt*(U1+Tt*U2)+Ts*W0
      &                        +Tp*(V0+Tt*V1+Ts*Y0+Tp*Z0))
- 
- 
+
+
           ratio=A0+Tt*(A1+Tt*( A2+Tt*(A3+Tt*A4)))
      &            +Ts*(B0+Tt*B1+Ts*CO)
      &            +Tp*( D0+Tt*(D1+Tt*D2)+Ts*E0
      &                    +Tp*(Ts*F0+Tt*Tt*G0+Tp*H0))
- 
+
           alpha=ratio*beta
       write(*,*) beta, ratio
- 
+
 c?? THE ORIGINAL VERSION
- 
+
           beta=Q0+Tt*(Q1+Tt*(Q3+Tt*Q4))+
      &              Ts*(R1+Tt*R2)+
      &              Tp*(U0+Tt*(U1+Tt*U2))+
@@ -42,7 +42,7 @@ c?? THE ORIGINAL VERSION
      &              Ts*Tp*W0+Ts*Ts*X0+
      &              Tp*Tp*Ts*Y0+
      &              Tp*Tp*Tp*Z0
- 
+
           ratio=(A0+Tt*(A1+Tt*(A2+Tt*(A3+
      &                            Tt*A4)))+
      &                Ts*(B0+Tt*B1)+Ts*Ts*CO)+
@@ -50,15 +50,15 @@ c?? THE ORIGINAL VERSION
      &               Tp*Ts*E0+
      &               Tp*Tp*(Ts*F0+Tt*Tt*G0+
      &                                Tp*H0)
- 
- 
- 
+
+
+
           alpha=ratio*beta
- 
+
       write(*,*) beta, ratio
       stop
       end
- 
+
 c**     7.246469      0.4151567
- 
- 
+
+

@@ -20,6 +20,6 @@
       integer, parameter :: NP_XI =  8, NP_ETA = 1
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      integer, parameter :: nt = 1 
+      integer, parameter :: nt = 1
 
 

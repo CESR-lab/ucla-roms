@@ -34,7 +34,7 @@ program mg_testfillhalo
        nyg        , &
        nzg        , &
        npxg       , &
-       npyg 
+       npyg
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_world, rank, ierr)
@@ -59,7 +59,7 @@ program mg_testfillhalo
      write(*,*)'  - nxg     : ', nxg
      write(*,*)'  - nyg     : ', nyg
      write(*,*)'  - nzg     : ', nzg
-     write(*,*)'  - npxg    : ', npxg 
+     write(*,*)'  - npxg    : ', npxg
      write(*,*)'  - npyg    : ', npyg
      write(*,*)'  '
   endif

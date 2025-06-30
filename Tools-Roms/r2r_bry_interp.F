@@ -320,7 +320,7 @@ C$    icmin=1+trd*chunk_size ; icmax=min(icmin+chunk_size-1,ncx)
       integer(kind=2) msk(ncx)
       real(kind=4) src(nx,ny,N), targ(ncx,N)
       real(kind=8), parameter :: TwoThird=2.D0/3.D0,
-     &                         FourNineth=4.D0/9.D0    
+     &                         FourNineth=4.D0/9.D0
       real(kind=8) px,qx,pqx, HxL,HxR,GxL,GxR, FxLL,FxRL,FxLR,FxRR,
      &             py,qy,pqy, HyL,HyR,GyL,GyR, FyLL,FyRL,FyLR,FyRR,
      &                                     FxyLL,FxyRL,FxyLR,FxyRR
@@ -364,7 +364,7 @@ C$    icmin=1+trd*chunk_size ; icmax=min(icmin+chunk_size-1,ncx)
      &                       -src(i-1,j-2,k)     +src(i+1,j-2,k)
      &            +0.125D0*(   -src(i-2,j+2,k) +src(i+2,j+2,k)
      &                         +src(i-2,j-2,k) -src(i+2,j-2,k)
-     &                                                   ))) 
+     &                                                   )))
             FxyRL=FourNineth*( -src(i  ,j+1,k) +src(i+2,j+1,k)
      &                         +src(i  ,j-1,k) -src(i+2,j-1,k)
      &            +0.125D0*(  src(i  ,j+2,k)     -src(i+2,j+2,k)

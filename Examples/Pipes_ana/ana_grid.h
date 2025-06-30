@@ -30,8 +30,8 @@
 # endif
 
       do j=-1,ny+2                      ! Extended ranges for x,y arrays
-        do i=-1,nx+2                    ! 
-          xr(i,j)=x0+dx*(dble(i)-0.5D0) ! 
+        do i=-1,nx+2                    !
+          xr(i,j)=x0+dx*(dble(i)-0.5D0) !
           yr(i,j)=y0+dy*(dble(j)-0.5D0) !
 
           pm(i,j)=1./dx
@@ -96,8 +96,8 @@
 
       if (pipe_source) then
         psz = sizeX*0.02 ! Width of the pipe
-        px  = sizeX*.5  ! x location pipe 
-        py  = sizeY*.5  ! y location pipe 
+        px  = sizeX*.5  ! x location pipe
+        py  = sizeY*.5  ! y location pipe
         pipe_cells = nint(psz/dx)**2 !number of cells in this pipe
         do j=-1,ny+2
           do i=-1,nx+2

@@ -22,7 +22,7 @@
 
       subroutine pre_step3d_tile (istr,iend,jstr,jend, ru,rv, Hz_bak,
      &                                         Hz_fwd,   WC,FC,CF,DC,
-     &                                    UFx,UFe,VFx,VFe, wrk1,wrk2 
+     &                                    UFx,UFe,VFx,VFe, wrk1,wrk2
 # ifdef NHMG
      &                                            ,rw
 # endif
@@ -140,7 +140,7 @@
                                              ! Advance tracer fields
         do itrc=1,nt                         ! starting with applying
                                              ! horizontal fluxes. Also
-# include "compute_horiz_tracer_fluxes.h"   
+# include "compute_horiz_tracer_fluxes.h"
 !! river included in above include file
                                              ! INITIALIZE CORRECTOR
           do j=jstr,jend                     ! STEP by pre-multiplying
@@ -214,7 +214,7 @@
 
           iAkt=min(itrc,iTandS)
 
-          !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  )) 
+          !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  ))
           !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
           !!                                                  Hz*T(k)
           !! See numerical recipes p40
@@ -294,7 +294,7 @@
         do i=istr,iend
           DC(i,0) =dtau*pm(i,j)*pn(i,j)
         enddo
-        !! w(indx),w(nstp) in m/s, 
+        !! w(indx),w(nstp) in m/s,
         !! w(0) is always zero
         do k=1,N-1
           do i=istr,iend
@@ -305,11 +305,11 @@
             w(i,j,k,indx)=0.5*(Hz(i,j,k+1)+Hz(i,j,k))*w(i,j,k,nstp)
           enddo
         enddo
-        k = N   
+        k = N
         !! here is the special volume weighting for w(N)
         !! Still, write out the volume integrated (dz*w) vertical mixing eq.
         !! Just to check :)
-        do i=istr,iend 
+        do i=istr,iend
           DC(i,k)=0.5*(   Hz_bak(i,j,k))*(
      &                cf_stp*w(i,j,k,nstp)+cf_bak*w(i,j,k,indx) )
      &                                         + DC(i,0)*rw(i,j,k)
@@ -318,7 +318,7 @@
         enddo
 
         !! start of tri-diag solve
-        !   FC(i,1)=0.5*dtau*(Akt(i,j,k+1)+Akt(i,j,k)/( Hz_fwd(i,j,k) 
+        !   FC(i,1)=0.5*dtau*(Akt(i,j,k+1)+Akt(i,j,k)/( Hz_fwd(i,j,k)
         do i=istr,iend
           FC(i,N-1)= 0.5*dtau*(-Akv(i,j,N)+Akv(i,j,N-1)) ! see notes, exception for k=N
      &                      /Hz_fwd(i,j,N)
@@ -327,7 +327,7 @@
 
           cff = 0.5*Hz_fwd(i,j,N) +FC(i,N-1)-min(WC(i,N-1),0.)
 
-          CF(i,N-1)= ( FC(i,N-1)+max(WC(i,N-1),0.) )/cff ! gam(n-1)=c(n)/bet 
+          CF(i,N-1)= ( FC(i,N-1)+max(WC(i,N-1),0.) )/cff ! gam(n-1)=c(n)/bet
 
           DC(i,N)=  DC(i,N)/cff                          ! u(1) = r(1)/bet
         enddo

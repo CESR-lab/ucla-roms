@@ -20,7 +20,7 @@
       integer, parameter :: NP_XI = 4, NP_ETA = 12
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      integer, parameter ::  
+      integer, parameter ::
 #ifdef SOLVE3D
 # ifdef SALINITY
 #  if defined BIOLOGY_BEC2

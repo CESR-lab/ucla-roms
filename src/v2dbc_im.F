@@ -155,9 +155,9 @@
 #   endif
 #  else
           vbar(i,jstr,knew)=0.               ! (no-flux, default)
-#  endif 
-           
-        enddo                                
+#  endif
+
+        enddo
 # endif          /* OBC_SOUTH */
       endif   !<-- SOUTHERN_EDGE
 
@@ -246,7 +246,7 @@
      &                                    +cext*vbar_north(i)
 #    else
      &                                   +cext*vbclm(i,jend+1)
-#    endif 
+#    endif
      &          +attnM2*dtfast*g*0.5*(pn(i,jend)+pn(i,jend+1))
 #    ifdef M2_FRC_BRY
      &                      *(zeta(i,jend,knew)-zeta_north(i))
@@ -286,8 +286,8 @@
 #   endif
 #  else
           vbar(i,jend+1,knew)=0.                ! (no-flux, default)
-#  endif                        
-        enddo                               
+#  endif
+        enddo
 # endif /* OBC_NORTH */
       endif          !<--  NORTHERN_EDGE
 #endif                  /* !NS_PERIODIC */

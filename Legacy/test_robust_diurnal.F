@@ -17,7 +17,7 @@
 ! from time(it) to time(it)+dt] so as the result the discrete sum
 ! of Ampl(it) over each pulse EXACTLY adds up to 1 without relying
 ! on the smallness of time step relative to 12-hour pulse duration.
-! The algorithm below utilized 
+! The algorithm below utilized
 !
 ! int_t1^t2 Amp(t) dt = 2*(t2-t2) + 1/(2*pi)*{ sin[2*pi*(2*t2-1)]
 !                                             -sin[2*pi*(2*t1-1)] }
@@ -63,7 +63,7 @@ c**   Ampl=(tau2-tau1 +sin(tau2)-sin(tau1))/dtau
 
 #elif defined COS2_CYCLE
 
-! Straightforward computation of the above formula sampled at 
+! Straightforward computation of the above formula sampled at
 ! instantaneous moments of time.
 
 /*

@@ -397,7 +397,7 @@ c**  &      ' not_end_of_file =', not_end_of_file
 
             if (type == char_type) then
               isft=isft+6
-              str(ie+1+isft:lstr+isft)=str(ie+1:lstr) 
+              str(ie+1+isft:lstr+isft)=str(ie+1:lstr)
               lstr=lstr+isft
               str(i+1:i+5)='(len='
               str(i+6:i+ie-is+6)=bffr(1:ie-is+1)
@@ -921,10 +921,10 @@ c                       write(*,'(A)') '!dir$ unroll'
                                             ! Save the whole string
           if (ip1 > 0 .and. ip2 > 0) then   ! into buffer array before
             bffr(1:lstr)=str(1:lstr)        ! start messing with it.
-         
+
             if (ip1 > is2 .and. is2 >= is1 .and. is1 > 0) then
               str(is1:is1+11)='numthreads, '
-              str(is1+12:ip1-11)=bffr(is1:ip1-1)        
+              str(is1+12:ip1-11)=bffr(is1:ip1-1)
               str(ip1+12:ip1+21)='trd,subs, '
               str(ip1+22:lstr+22)=bffr(ip1:lstr)
               lstr=lstr+22
@@ -987,7 +987,7 @@ c                       write(*,'(A)') '!dir$ unroll'
               do i=m+1,k
                 str(i:i)=' '
               enddo
-              str(k+1-lstr+k:k)=str(k+1:lstr)  
+              str(k+1-lstr+k:k)=str(k+1:lstr)
               if (iout > 0) then
                 write(iout,'(A)') str(1:k)
               else
@@ -1121,7 +1121,7 @@ c                       write(*,'(A)') '!dir$ unroll'
           ks2=0        ! This is merely aesthetic matter: split
           ks3=0        ! can be made where there is a natural
           ks4=0        ! divider: semicolon, blank character,
-          ks5=0        ! comma, or arithmetic operation 
+          ks5=0        ! comma, or arithmetic operation
 
           do k=7,72
             if (str(k:k) == ';') then
@@ -1193,7 +1193,7 @@ c                       write(*,'(A)') '!dir$ unroll'
           else                  ! it must appear on the continuation
             do i=1,k            ! line as well.  On the other hand,
               str(i:i)=' '      ! if it is just a normal line, it may
-            enddo               ! contain label which should not be 
+            enddo               ! contain label which should not be
           endif                 ! repeated.
           str(6:6)='&'
           m=(lstr+k-79)/2       ! <-- center the continuation line

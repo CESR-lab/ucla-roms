@@ -10,7 +10,7 @@
        output_freq    = 100000         !- output frequency
        surface_neumann= .true.
        netcdf_output  = .false.        ! - write solver fields to netcdf file
-       ew_periodic    = .true.         ! 
-       ns_periodic    = .true.         ! 
+       ew_periodic    = .true.         !
+       ns_periodic    = .true.         !
 /
 

@@ -6,10 +6,10 @@ Agrif) are affected by this issue.
 
 The problem comes from the fact that full 3D pressure gradient term
 is computed assuming that free-surface elevation is exactly at time
-step "n", while the r.h.s. of 2D at the first barotropic time step is 
+step "n", while the r.h.s. of 2D at the first barotropic time step is
 computed from free-surface updated by the first barotropic time step.
 As the result, when fully computed r.h.s. of 2D mode is subtracted
-from vertically integrated r.h.s. of 3D, 
+from vertically integrated r.h.s. of 3D,
 
 
           rufrc(i,j) = rufrc(i,j)-rubar(i,j)
@@ -18,8 +18,8 @@ from vertically integrated r.h.s. of 3D,
 
 the resultant forcing term implicitly contains the difference of
 barotropic pressure gradient terms computed by 3D and 2D modes,
-which contains error due to different time-placement of free surface. 
-Specific errors in time-placement are: 
+which contains error due to different time-placement of free surface.
+Specific errors in time-placement are:
 
    0.5*dt/ndtfast  --- Rutgers (all versions); Agrif (except corrected)
 
@@ -76,7 +76,7 @@ term during the first barotropic step in two stages:
         pressure gradient terms (FB version), or 1/3 of that change
         (LF-AM3).
 
-Modified UCLA codes can be found in 
+Modified UCLA codes can be found in
 
       http://www.atmos.ucla.edu/~alex/ROMS/step2D_coupling_patch.tar
 

@@ -4,13 +4,13 @@
       integer :: i,j
 
       cI = cmplx(0.0,1.0)
-      f0 = 9e-5 
+      f0 = 9e-5
       f0 = 1e-11
-      D = 4000 
+      D = 4000
       c = sqrt(g*D)   ! = om/k
       Ld = c/f0
       amp = 0.01
-      
+
       ! Kelvin wave solution
       ! u = uc*exp(-yr/Ld)*exp(cI(kx - om*t))
       ! z = zc*exp(-yr/Ld)*exp(cI(kx - om*t))

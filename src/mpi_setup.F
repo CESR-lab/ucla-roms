@@ -24,7 +24,7 @@ C$    integer nthrds
 # ifdef PRINT_HOSTNAME
       integer status(MPI_STATUS_SIZE), blank
       character(len=38) msg1 ! <-- greeting message to print
-      character(len=23) msg2 
+      character(len=23) msg2
 # endif
 
       ocean_grid_comm=MPI_COMM_WORLD
@@ -182,7 +182,7 @@ C$    endif
      &                                   ocean_grid_comm, status, ierr)
 
         write(msg1,'(A,I5,1x,A,I5,1x,A,2x)') 'MPI rank', mynode,
-     &                              'out of', nsize, 'running on' 
+     &                              'out of', nsize, 'running on'
         write(msg2,'(2x,A,2I4)') 'inode,jnode =', inode,jnode
 
         call system('echo "'/ /msg1/ /'`hostname -s`'/ /msg2/ /'"')

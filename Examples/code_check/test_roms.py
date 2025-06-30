@@ -29,10 +29,10 @@ def search_string_in_file(file_name, string_to_search):
             line_number += 1
             if string_to_search in line:
                 # If yes, then add the line number & line as a tuple in the list
-                list_of_results.append((line_number))                
+                list_of_results.append((line_number))
     # Return list of tuples containing line numbers
     return list_of_results
-    
+
 def search_string_in_file_yesno(file_name, string_to_search):
     line_number = 0
     found_string = False
@@ -45,8 +45,8 @@ def search_string_in_file_yesno(file_name, string_to_search):
             if string_to_search in line:
                 # If yes, then add the line number & line as a tuple in the list
                 found_string=True
-                break                
-    
+                break
+
     return found_string
 
 # -----------------------------------------------------------------
@@ -86,11 +86,11 @@ for test in range(ntests):
 
 	# Loop through Benchmark log values and new log values
 	for m in range(2):
-	
+
 	  # -- find line where diagnostics start (within loop in-case terminal output changes between commits)
 	  lstart = search_string_in_file(filenames[m],'STEP')
 	  #print('lstart=',lstart)   # debug
-	
+
 	  # Loop through time steps & sum diagnostics
 	  iline = lstart[0]
 	  dline = 0
@@ -99,7 +99,7 @@ for test in range(ntests):
 	    if (len(line) > 94) and (len(line.split())==5):
 	      diags[test,m,0] += float(line[ 4:26])     # read Kinetic Energy
 	      diags[test,m,1] += float(line[27:49])     # read barotropic KE
-	      diags[test,m,2] += float(line[50:72])     # read MAX_ADV_CFL        
+	      diags[test,m,2] += float(line[50:72])     # read MAX_ADV_CFL
 	      diags[test,m,3] += float(line[73:95])     # read MAX_VERT_CFL
 	      dline += 1
 	    iline += 1
@@ -108,29 +108,29 @@ for test in range(ntests):
 #		#print('t=',t)   # debug
 #		# read timestep line
 #		line = open(filenames[m], 'r').readlines()[lstart[0]+t]  # need the [0] even though scalar
-#		  
+#
 #		diags[test,m,0] += float(line[ 4:26])          # python's float already double precision (64 bit)
 #		#print('diags[test,m,0]',diags[test,m,0])      # read KINETIC_ENRG
 #		diags[test,m,1] += float(line[27:49])          # read BAROTR_KE
-#		#print('diags[test,m,1]',diags[test,m,1])      
-#		diags[test,m,2] += float(line[50:72])          # read MAX_ADV_CFL        
+#		#print('diags[test,m,1]',diags[test,m,1])
+#		diags[test,m,2] += float(line[50:72])          # read MAX_ADV_CFL
 #		#print('diags[test,m,2]',diags[test,m,2])
 #		diags[test,m,3] += float(line[73:95])          # read MAX_VERT_CFL
 #		#print('diags[test,m,3]',diags[test,m,3])
-#		
+#
 #		# Sanity check to confirm correct read of values as totals only
 #		# are hard to spot check
 #		if t==1 and m==1:
 #			file_diag.write('\n'+'Diagnostics for 1st timestep of '+str(nstps-1)+' total steps:\n') # -1 as +1 before
-#			file_diag.write( str(t)+' '+str(diags[test,m,:])+'\n' )				
-	
+#			file_diag.write( str(t)+' '+str(diags[test,m,:])+'\n' )
+
 	# Confirm results
 	file_diag.write('RESULTS: \n')
 	for t in range(4):
 		file_diag.write(fields[t]+':\n')
-		file_diag.write(str(diags[test,0,t])+' - BM\n')  # debug ' = diags[0,'+str(t)+'] = ', 
+		file_diag.write(str(diags[test,0,t])+' - BM\n')  # debug ' = diags[0,'+str(t)+'] = ',
 		file_diag.write(str(diags[test,1,t])+' - new\n') # debug ' = diags[1,'+str(t)+'] = ',
-		diffs[test,t] = diags[test,1,t]-diags[test,0,t]	
+		diffs[test,t] = diags[test,1,t]-diags[test,0,t]
 		file_diag.write(str(diffs[test,t])+' = difference\n')
 
 	# Confirm outcome to user:
@@ -185,9 +185,9 @@ if (found_str):
 else:
 	text='    ERROR! --> Netcdf output not working.\n'
 	print(text)
-	file_diag.write(text)	
-	
-	
+	file_diag.write(text)
+
+
 # ----------------------------------------------------------
 # Confirm overall outcome to user:
 if np.all(diffs==0.0) and (found_str):

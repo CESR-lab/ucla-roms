@@ -15,7 +15,7 @@
 #SBATCH --account=cla119
 #SBATCH --export=ALL
 
-#       Memory: default is 1GB on all nodes. However, you can request 2GB per core on  
+#       Memory: default is 1GB on all nodes. However, you can request 2GB per core on
 #       shared/compute/debug or 15.5GB/core on large-shared at no extra cost.
 #       Charged on number of cores or fraction of total memory, whichever is greater.
 #       shared/compute/debug total mem=248G, large-shared total mem=2000G

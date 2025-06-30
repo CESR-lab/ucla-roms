@@ -38,8 +38,8 @@
       !local
       integer :: surplus,ierr
 
-      nx = ceiling(1.0*gnx/npx)  ! x-size of all internal sub-domains. 
-      ny = ceiling(1.0*gny/npy)  ! y-size of all internal sub-domains. 
+      nx = ceiling(1.0*gnx/npx)  ! x-size of all internal sub-domains.
+      ny = ceiling(1.0*gny/npy)  ! y-size of all internal sub-domains.
 
       ! The domain size is not required to be an integer times the
       ! sub-domain size, nx. It's possible to have a surplus.
@@ -49,9 +49,9 @@
       ! Before we modify the first and last subdomain size, we figure
       ! out the global indices of the South West corner of each subdomain
       if (inode==0) then
-        iSW_corn = 0 
+        iSW_corn = 0
       else
-        iSW_corn = inode*nx - floor(0.5*surplus)  
+        iSW_corn = inode*nx - floor(0.5*surplus)
       endif
 
       ! The surplus grid-points are removed by making the first and last
@@ -69,9 +69,9 @@
       surplus = ny*npy - gny
 
       if (inode==0) then
-        jSW_corn = 0 
+        jSW_corn = 0
       else
-        jSW_corn = jnode*ny - floor(0.5*surplus)  
+        jSW_corn = jnode*ny - floor(0.5*surplus)
       endif
 
       if (jnode==0) then

@@ -40,9 +40,9 @@ c--#endif
 
 #if defined USWC   /* US West Coast 2010 */
 
-c# define PSOURCE 
-c# define Q_PSOURCE 
-c# define PASSIVE_TRACER 
+c# define PSOURCE
+c# define Q_PSOURCE
+c# define PASSIVE_TRACER
 c# define ANA_PSOURCE
 
 # define SOLVE3D
@@ -99,24 +99,24 @@ c# define LMD_RIMIX
 
 #elif defined BASIN    /* Big Bad Basin Configuration */
 # define SOLVE3D
- 
+
 # define UV_ADV
 # define UV_COR
 # define MIX_GP_UV
- 
+
 # undef  SALINITY
 # undef  NONLIN_EOS
- 
+
 # undef  TS_DIF2
 # undef  TS_DIF4
- 
+
 /*  define BODYFORCE */
 # define ANA_GRID
 # define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_STFLUX
 # undef  ANA_VMIX
- 
+
 #elif defined CANYON_A      /* Canyon A Configuration */
 # define SOLVE3D
 # define UV_ADV
@@ -130,7 +130,7 @@ c# define LMD_RIMIX
 # define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_STFLUX
- 
+
 #elif defined CANYON_B      /* Canyon B Configuration */
 # define SOLVE3D
 # define UV_ADV
@@ -144,7 +144,7 @@ c# define LMD_RIMIX
 # define ANA_SMFLUX
 # define ANA_STFLUX
 # define ANA_VMIX
- 
+
 #elif defined DAMEE_B                      /* North Atlantic     */
 # define SOLVE3D                            /* DAMEE configuration */
 c--# define AVERAGES
@@ -169,7 +169,7 @@ c--# define AVERAGES
 #  define LMD_RIMIX
 #  define LMD_CONVEC
 c--#  define LMD_DDMIX
- 
+
 c--#  define LMD_KPP
 c--#  define LMD_NONLOCAL
 !
@@ -182,8 +182,8 @@ c--#  define LMD_NONLOCAL
 # define WESTERN_WALL
 # define SOUTHERN_WALL
 # define NORTHERN_WALL
- 
- 
+
+
 c--# define REST_STATE_TEST    /* Rest-state unforced problem */
 # ifdef REST_STATE_TEST     /* (pressure gradient error test) */
 #  define ANA_INITIAL
@@ -206,40 +206,40 @@ c--# define REST_STATE_TEST    /* Rest-state unforced problem */
 !
 #elif defined GRAV_ADJ     /* Gravitational Adjustment */
 # define SOLVE3D
- 
+
 # define UV_ADV
 # undef UV_COR
 # define UV_VIS2
 # define MIX_GP_UV
- 
+
 # define TS_DIF2
- 
+
 # define ANA_GRID
 # define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_STFLUX
 
 c--# define OBC_WEST
-c--# define OBC_EAST 
+c--# define OBC_EAST
 c--# define OBC_M2ORLANSKI
 c--# define OBC_M3ORLANSKI
 c--# define OBC_TORLANSKI
 !
 #elif defined NJ_BIGHT        /* New Jersey Bight Configuration */
 # define SOLVE3D
- 
+
 # define UV_ADV
 # define UV_COR
 # define UV_VIS2
 # define MIX_GP_UV
- 
+
 # define SALINITY
- 
+
 # define TS_DIF2
- 
+
 # define CURVGRID
 # define SPHERICAL
- 
+
 # define STATIONS
 # define OBC_EAST
 # define OBC_NORTH
@@ -310,7 +310,7 @@ c>>># define UCLIMATOLOGY
 
 # define Z_FRC_BRY
 # define M2_FRC_BRY
-# define M3_FRC_BRY 
+# define M3_FRC_BRY
 # define T_FRC_BRY
 
 # define SPONGE
@@ -339,38 +339,38 @@ c--# define OBC_VOLCONS
 
 #elif defined OVERFLOW      /* Gravitational Overflow */
 # define SOLVE3D
- 
+
 # define UV_ADV
 # define UV_VIS2
 # define MIX_GP_UV
- 
+
 # define TS_DIF2
- 
+
 # define ANA_GRID
 # define ANA_INITIAL
 # define ANA_SMFLUX
 # define ANA_STFLUX
- 
+
 #elif defined SEAMOUNT     /* Seamount Configuration */
 # define SOLVE3D
- 
+
 #define EXACT_RESTART
 
 # define UV_ADV
 # define UV_COR
- 
+
 # define UV_VIS2
 # define MIX_S_UV
 c--# define MIX_GP_UV
- 
+
 # undef TS_DIF2
 # undef  TS_DIF4
- 
+
 c--# define  NONLIN_EOS
 c--# define SALINITY
- 
+
 # define EW_PERIODIC
- 
+
 # define ANA_GRID
 # define ANA_INITIAL
 # define ANA_SMFLUX
@@ -401,7 +401,7 @@ c--# define OBC_M2SPECIFIED
 # define OBC_TSPECIFIED
 
 #define OBC_M2FLATHER
- 
+
 #define EXACT_RESTART
 
 # define ANA_BRY
@@ -428,11 +428,11 @@ c--# define OBC_M2SPECIFIED
 !
 #elif defined SOLITON    /* Equatorial Rossby Soliton */
 # undef  SOLVE3D
- 
+
 # define ANA_GRID
 # define ANA_INITIAL
 # define ANA_SMFLUX
- 
+
 # define UV_COR
 # define UV_ADV
 # undef UV_VIS2
@@ -444,7 +444,7 @@ c--# define OBC_EAST
 c--# define OBC_NORTH
 c--# define OBC_SOUTH
 c--# define OBC_M2ORLANSKI
- 
+
 #elif defined RIVER     /* River run-off test problem */
 # define SOLVE3D
 # define UV_ADV
@@ -473,20 +473,20 @@ c--# define OBC_M2ORLANSKI
 # define OBC_TORLANSKI
 # define OBC_M2ORLANSKI
 # define OBC_M3ORLANSKI
- 
+
 #elif defined UPWELLING     /* Upwelling Configuration */
 # define SOLVE3D
 # define UV_ADV
 # define UV_COR
 # define MIX_GP_UV
- 
+
 # undef NONLIN_EOS
 # define SALINITY
 # undef LMD_VMIX
- 
- 
+
+
 # define EW_PERIODIC
- 
+
 # define ANA_GRID
 # define ANA_INITIAL
 # define ANA_SMFLUX
@@ -769,6 +769,6 @@ c--# define OBC_M2ORLANSKI
 # define M2_FRC_BRY
 
 #endif
- 
+
 #include "set_global_definitions.h"
- 
+

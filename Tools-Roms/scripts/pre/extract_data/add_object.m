@@ -33,9 +33,9 @@ function add_object(ename,obj_name,gname,lonp,latp,period,obj_lon,obj_lat,obj_ma
   if (min(j_chk)<0)|(max(j_chk)>nyp-2)
     disp('Some points are borderline')
   end
-              
-  obj_i(isnan(obj_i)) = -1e5;  
-  obj_j(isnan(obj_j)) = -1e5;  
+
+  obj_i(isnan(obj_i)) = -1e5;
+  obj_j(isnan(obj_j)) = -1e5;
 
   np = length(obj_i);
 

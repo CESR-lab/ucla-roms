@@ -10,7 +10,7 @@ code this could be expressed as
        enddo
 
 where iW,iE,jS,jN are the bounding indices of the special region on the
-PHYSICAL GRID (that is grid of the size of LLm x MMm in our terms). 
+PHYSICAL GRID (that is grid of the size of LLm x MMm in our terms).
 
 
 On an OpenMP code, if this needed to be executed inside a tiled region,
@@ -75,7 +75,7 @@ is empty, while
 
            do i=max(istr,iW)-1,min(iE,iend)
 
-is not (may be executed once). 
+is not (may be executed once).
 
 
 
@@ -96,16 +96,16 @@ within the subdomain,
        jmin=max(jstr,jS)
        jmax=min(jN,jend)
 #endif
-  
+
 where iSW_corn,jSW_corn are ABSOLUTE i,j indices corresponding to the RHO-point
-with RELATIVE indices i,j=0,0 defined within the particular MPI subdomain. 
+with RELATIVE indices i,j=0,0 defined within the particular MPI subdomain.
 
 
 The values of  iSW_corn,jSW_corn computed by mpi_setup.F, and should be
 considered as part of ROMS environment, i.e., any physical/user code should
 rely on their existence, treat them in read-only mode (do not attempt to
 modify them), do not make any specific assumption about how they are computed,
-and do not attempt to make an alternative algorithm to by-pass them. 
+and do not attempt to make an alternative algorithm to by-pass them.
 
 
 P.S. In the past some legacy codes may use "processor grid" indices
@@ -131,7 +131,7 @@ northern edge of Gibraltar, the code should be
        if (EASTERN_EDGE) then
 
            compute the standard boundary condition (Flather or whatever),
-           along the eastern edge, then overwrite it 
+           along the eastern edge, then overwrite it
 
 
 #ifdef MPI
@@ -142,9 +142,9 @@ northern edge of Gibraltar, the code should be
           jmax=min(jN,jend)
 #endif
           do j=jmin,jmax
-            ubar(iend+1,j,knew)=ubar(iend,j,knew) 
+            ubar(iend+1,j,knew)=ubar(iend,j,knew)
           endif
-       endif 
+       endif
 
 
 A little bit care should be exercised in computing "zeta_new" -- a private
@@ -163,7 +163,7 @@ in zetabc.F):
           jmax=min(jN ,jend)
 #endif
           do j=jmin-1,jmax
-            zeta_new(iend+1,j,knew)=zeta_new(iend,j,knew)  
+            zeta_new(iend+1,j,knew)=zeta_new(iend,j,knew)
           endif
        endif
 

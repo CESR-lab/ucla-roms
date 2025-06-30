@@ -6,7 +6,7 @@ __email__          = "ddauhajre@atmos.ucla.edu"
 __python_version__ = "2.7.9"
 
 '''
-PYTHON LIBRARY OF FUNCTIONS TO 
+PYTHON LIBRARY OF FUNCTIONS TO
 CONVERT SIGMA LEVELS TO DEPTHS OF A ROMS
 GRID BASED ON OUTPUT (i.e., free surface)
 '''
@@ -22,7 +22,7 @@ def get_zr_zw_tind(nc_roms, nc_grd, tind, dim_bounds):
 
     nc_roms --> single netcdf file with roms output
     nc_grd  --> single netcdf file of roms grid
-    tind    --> time index 
+    tind    --> time index
     dim_bounds   ---> [eta_0, eta_1, xi_0, xi_1] list of spatial bounds
     '''
     #######################
@@ -34,20 +34,20 @@ def get_zr_zw_tind(nc_roms, nc_grd, tind, dim_bounds):
     [eta_0, eta_1, xi_0, xi_1] = dim_bounds
     Ly = eta_1 - eta_0
     Lx = xi_1 - xi_0
-    
+
     z_r = np.zeros([N,Ly_all,Lx_all])
     z_w = np.zeros([N+1,Ly_all,Lx_all])
-    
+
     ####################################
     # SET DEPTH CALCULATION ATTRIBUTES
     #####################################
-   
+
     # SEE CODE IN set_depth() for documentation on these values
     Vtrans  = 2
     Vstret = 4
-    
-    
-    
+
+
+
     #ACCESS GLOBAL ATTRIBUES
     hc      = getattr(nc_roms, 'hc')
     theta_s = getattr(nc_roms, 'theta_s')
@@ -61,8 +61,8 @@ def get_zr_zw_tind(nc_roms, nc_grd, tind, dim_bounds):
     print('Calculating z_r, z_w at time-step =', tind)
     z_r = set_depth(Vtrans, Vstret, theta_s, theta_b, hc, N, 1, h, zeta).T
     z_w = set_depth(Vtrans, Vstret, theta_s, theta_b, hc, N, 5, h, zeta).T
-   
-   
+
+
     return np.swapaxes(z_r,1,2), np.swapaxes(z_w,1,2)
     ##########################################################
 
@@ -75,7 +75,7 @@ def get_zs(nc_roms, nc_grd, levs, dim_bounds, igrid=1):
     GET DEPTHS FOR A SPECIFIC netcdf ROMS output file
 
     nc_roms --> single netcdf file with roms output
-    nc_grd  --> single netcdf file of roms grid 
+    nc_grd  --> single netcdf file of roms grid
     dim_bounds   ---> [eta_0, eta_1, xi_0, xi_1] list of spatial bounds
     '''
     #######################
@@ -87,19 +87,19 @@ def get_zs(nc_roms, nc_grd, levs, dim_bounds, igrid=1):
     Lx = xi_1 - xi_0
     nlevs = len(levs)
 
- 
+
     z = np.zeros([nt,nlevs,Ly_all,Lx_all])
 
     ####################################
     # SET DEPTH CALCULATION ATTRIBUTES
     #####################################
-   
+
     # SEE CODE IN set_depth.py for documentation on these values
     Vtrans  = 2
     Vstret = 4
-    
-    
-    
+
+
+
     #ACCESS GLOBAL ATTRIBUES
     hc      = getattr(nc_roms, 'hc')
     theta_s = getattr(nc_roms, 'theta_s')
@@ -112,7 +112,7 @@ def get_zs(nc_roms, nc_grd, levs, dim_bounds, igrid=1):
     ####################################
     # CALCULATE DEPTHS AT TIME-STEPS
     ####################################
- 
+
     for n in range(nt):
         zeta = nc_roms.variables['zeta'][n,eta_0:eta_1,xi_0:xi_1]
         print('Calculating depths at time-step =', n)
@@ -207,7 +207,7 @@ def set_depth( Vtr, Vstr, thts, thtb, hc, N, igrid, h, zeta ):
         kgrid=1
     else:
         kgrid=0
-        
+
     s,C = stretching(Vstr, thts, thtb, hc, N, kgrid);
     #-----------------------------------------------------------------------
     #  Average bathymetry and free-surface at requested C-grid type.
@@ -218,7 +218,7 @@ def set_depth( Vtr, Vstr, thts, thtb, hc, N, igrid, h, zeta ):
         zetar = zeta
     elif (igrid==2):
         hp    = 0.25*(h[0:L,0:M]+h[1:Lp,0:M]+h[0:L,1:Mp]+h[1:Lp,1:Mp])
-        zetap = 0.25*(zeta[0:L,0:M]+zeta[1:Lp,0:M]+zeta[0:L,1:Mp]+zeta[1:Lp,1:Mp]) 
+        zetap = 0.25*(zeta[0:L,0:M]+zeta[1:Lp,0:M]+zeta[0:L,1:Mp]+zeta[1:Lp,1:Mp])
     elif (igrid==3):
         hu    = 0.5*(h[0:L,0:Mp]+h[1:Lp,0:Mp])
         zetau = 0.5*(zeta[0:L,0:Mp]+zeta[1:Lp,0:Mp])
@@ -248,7 +248,7 @@ def set_depth( Vtr, Vstr, thts, thtb, hc, N, igrid, h, zeta ):
         elif (igrid==4):
             for k in range (0,N):
                 z0 = (s[k]-C[k])*hc + C[k]*hv
-                z[:,:,k] = z0 + zetav*(1.0 + z0/hv)                      
+                z[:,:,k] = z0 + zetav*(1.0 + z0/hv)
         elif (igrid==5):
             z[:,:,0] = -hr
             for k in range (0,Np):
@@ -325,7 +325,7 @@ def stretching(Vstr, thts, thtb, hc, N, kgrid):
     #-----------------------------------------------------------------
     # Compute ROMS S-coordinates vertical stretching function
     #-----------------------------------------------------------------
-    
+
     # Original vertical stretching function (Song and Haidvogel, 1994).
     if (Vstr == 1):
         ds = 1.0/N
@@ -338,7 +338,7 @@ def stretching(Vstr, thts, thtb, hc, N, kgrid):
             Nlev = N
             lev  = np.linspace(1.0,N,Np)-0.5
             s    = (lev-N)*ds
-        
+
         if (thts > 0):
             Ptheta = np.sinh(thts*s)/np.sinh(thts)
             Rtheta = np.tanh(thts*(s+0.5))/(2.0*np.tanh(0.5*thts))-0.5
@@ -347,7 +347,7 @@ def stretching(Vstr, thts, thtb, hc, N, kgrid):
             C=s
 
     # A. Shchepetkin (UCLA-ROMS, 2005) vertical stretching function.
-    if (Vstr==2):        
+    if (Vstr==2):
         alfa = 1.0
         beta = 1.0
         ds   = 1.0/N
@@ -360,7 +360,7 @@ def stretching(Vstr, thts, thtb, hc, N, kgrid):
             Nlev = N
             lev  = np.linspace(1.0,N,Np)-0.5
             s    = (lev-N)*ds
-        
+
         if (thts > 0):
             Csur = (1.0-np.cosh(thts*s))/(np.cosh(thts)-1.0)
             if (thtb > 0):
@@ -375,7 +375,7 @@ def stretching(Vstr, thts, thtb, hc, N, kgrid):
     # R. Geyer BBL vertical stretching function.
     if (Vstr==3):
         ds   = 1.0/N
-       
+
         if (kgrid == 1):
             Nlev = Np
             lev  = np.linspace(0.0,N,Np)

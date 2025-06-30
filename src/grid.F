@@ -1,7 +1,7 @@
       module grid
 
 #include "cppdefs.opt"
-              
+
       ! possible choices for an .opt file
       ! ana_grid
       ! curvgrid
@@ -127,11 +127,11 @@
       allocate( f_XI(GLOBAL_2D_ARRAY) )  ; f_XI=init
       allocate( f_ETA(GLOBAL_2D_ARRAY) ) ; f_ETA=init
 # endif
- 
+
 # ifdef CURVGRID
       allocate( angler(GLOBAL_2D_ARRAY) ) ; angler=init
 # endif
- 
+
 #ifdef SPHERICAL
       allocate( latr(GLOBAL_2D_ARRAY) ) ; latr=init
       allocate( lonr(GLOBAL_2D_ARRAY) ) ; lonr=init
@@ -141,7 +141,7 @@
       allocate( yp(GLOBAL_2D_ARRAY) ) ; yp=init
       allocate( yr(GLOBAL_2D_ARRAY) ) ; yr=init
 #endif
- 
+
       allocate( pm(GLOBAL_2D_ARRAY) )   ; pm=init
       allocate( pn(GLOBAL_2D_ARRAY) )   ; pn=init
       allocate( dm_r(GLOBAL_2D_ARRAY) ) ; dm_r=init
@@ -157,7 +157,7 @@
 
       allocate( iA_u(GLOBAL_2D_ARRAY) ) ; iA_u=init
       allocate( iA_v(GLOBAL_2D_ARRAY) ) ; iA_v=init
- 
+
 #if (defined CURVGRID && defined UV_ADV)
       allocate( dmde(GLOBAL_2D_ARRAY) ) ; dmde=init
       allocate( dndx(GLOBAL_2D_ARRAY) ) ; dndx=init
@@ -177,7 +177,7 @@
       end subroutine ana_grid !]
 ! ----------------------------------------------------------------------
       subroutine wrt_ana_grid ![
-      ! write analytical grid to file 
+      ! write analytical grid to file
       implicit none
 
       integer :: ncid,ierr
@@ -373,7 +373,7 @@
       call ncwrite(ncid,'f', f(i0:i1,j0:j1))                    ! Coriolis parameter.
 
       call ncwrite(ncid,'pm', pm(i0:i1,j0:j1))                  ! pm=1./dx, pn=1./dy
-      call ncwrite(ncid,'pn', pn(i0:i1,j0:j1))       
+      call ncwrite(ncid,'pn', pn(i0:i1,j0:j1))
 
 #ifdef SPHERICAL
       call ncwrite(ncid,'lon_rho', lonr(i0:i1,j0:j1))           ! longitude-latitude
@@ -419,7 +419,7 @@
 #ifdef ANA_GRID
       call ana_grid
       call wrt_ana_grid
-#else 
+#else
 ! Open grid netCDF file for reading. Check that dimensions in the file
 ! are consistent with the model, then read all necessary variables.
 
@@ -497,7 +497,7 @@
       call ncread(ncid,'h',h(i0:i1,j0:j1))         ! Bathymetry
       call exchange_xxx(h)                         ! (2,.true.)
 
-      
+
 ! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 

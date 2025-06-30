@@ -46,17 +46,17 @@
 
       integer, parameter :: NFT=3,   NFV=6, NDIAGS=10,
      &         igrd=-1,     itstr=0,
-     &         ixgrd=1,     iygrd=2,     izgrd=3,   ! for track 
+     &         ixgrd=1,     iygrd=2,     izgrd=3,   ! for track
      &         ixrhs=4,     iyrhs=5,     izrhs=6,   ! for track
 
      &         iflon=4,     iflat=5,     ifdpt=6,   ! for trackaux
-     &         iftem=7,     ifsal=8,     ifden=9, 
+     &         iftem=7,     ifsal=8,     ifden=9,
      &         ifvel=10
 
       logical bounded(Mfloats), diagfloats
       common /lfloats/ bounded
 
-      integer nfloats, fltgrd(Mfloats), nrecvel(Mfloats) 
+      integer nfloats, fltgrd(Mfloats), nrecvel(Mfloats)
       common /floatsn/ nfloats, diagfloats, nrecvel
 
       real Tinfo(igrd:izgrd,Mfloats)

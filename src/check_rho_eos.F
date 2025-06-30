@@ -24,12 +24,12 @@
       integer i,j,k
       parameter (i=1,j=1,k=1)
       real rho(i,j,k), z_r(i,j,k), rho1(i,k), K0(i,k),K1(i,k),K2(i,k)
- 
+
       Ts=40.0
       Tt=10.0
       z_r(i,j,k)=-4000.0
       call original (Ts,Tt,z_r)
- 
+
               sqrtTs=sqrt(Ts)
 !----------------------
               K0(i,k)=A00+Tt*(A01+Tt*(A02+Tt*(A03+Tt*A04)))
@@ -47,7 +47,7 @@
      &                       -z_r(i,j,k)*(K1(i,k)-z_r(i,j,k)*K2(i,k))
      &                                                       ))-rho0
 !---------------------
- 
+
       write(*,*) rho(i,j,k)
       stop
       end
@@ -57,7 +57,7 @@
       real A0, A1, A2, A3, A4, B0, B1, B2, B3, D0, D1, D2, E0, E1,
      &     E2, E3, F0, F1, F2, G0, G1, G2, G3, H0, H1, H2, Q0, Q1,
      &     Q3, Q4, Q5, Q6, U0, U1, U2, U3, U4, V0, V1, V2, W0
- 
+
       parameter (A0=+19092.56   , A1=+209.8925   , A2=+3.041638  ,
      &           A3=-1.852732e-3, A4=+1.361629e-5, B0=+104.4077   ,
      &           B1=+6.500517   , B2=+0.1553190  , B3=-2.326469e-4,
@@ -72,16 +72,16 @@
      &           U0=+0.824493   , U1=-4.08990e-3 , U2=+7.64380e-5 ,
      &           U3=-8.24670e-7 , U4=+5.38750e-9 , V0=-5.72466e-3 ,
      &           V1=+1.02270e-4 , V2=-1.65460e-6 , W0=+4.8314e-4 )
- 
+
       real rho0
       parameter (rho0=1000.)
       integer i,j,k
       parameter (i=1,j=1,k=1)
       real dena(i,j,k), a3d(i,j,k),z_r(i,j,k),Ts(i,j),Tt(i,j),Tz(i,j)
- 
- 
+
+
             Tz(i,j)=z_r(i,j,k)
- 
+
             a3d(i,j,k)=A0+
      &                 Tt(i,j)*(A1-Tt(i,j)*(A2-Tt(i,j)*(A3-
      &                          Tt(i,j)*A4)))+
@@ -96,8 +96,8 @@
      &                 Tz(i,j)*Tz(i,j)*(G1-Tt(i,j)*(G2-Tt(i,j)*G3))+
      &                 Tz(i,j)*Tz(i,j)*Ts(i,j)*(H0+Tt(i,j)*(H1+
      &                                          Tt(i,j)*H2))
- 
- 
+
+
             dena(i,j,k)=(Q0+
      &                   Tt(i,j)*(Q1+Tt(i,j)*(Q3+Tt(i,j)*(Q4+
      &                            Tt(i,j)*(Q5+Tt(i,j)*Q6))))+
@@ -107,12 +107,12 @@
      &                                            (V1+Tt(i,j)*V2))+
      &                   W0*Ts(i,j)*Ts(i,j)) /
      &                  (1.0+0.1*Tz(i,j)/a3d(i,j,k)) - rho0
- 
+
       write(*,*) dena(i,j,k)
       end
- 
- 
- 
- 
- 
- 
+
+
+
+
+
+

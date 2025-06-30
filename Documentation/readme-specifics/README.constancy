@@ -1,11 +1,11 @@
-modi4 52# mail arango@ahab.Rutgers.EDU patrickm@cloud.atmos.Ucla.EDU edilorenzo@ucsd.edu klinck@ccpo.odu.edu  glenn@caribbean.rutgers.edu 
+modi4 52# mail arango@ahab.Rutgers.EDU patrickm@cloud.atmos.Ucla.EDU edilorenzo@ucsd.edu klinck@ccpo.odu.edu  glenn@caribbean.rutgers.edu
 Subject: ROMS CODE: Constancy preservation patch....
 
 
 Dear All ROMS users,
 
 This are instructions how to apply Patch for fixing constansy
-preservation property in ROMS code. 
+preservation property in ROMS code.
 
 Problem repaired:
 ======= =========
@@ -17,11 +17,11 @@ Problem repaired:
 Thought this error is relatively small is basin scale models,
 (since the error is of order of magnitude of
 
-    truncation error of time stepping * zeta/ZetaDepth 
+    truncation error of time stepping * zeta/ZetaDepth
 
 the problem does not affect much large scale configurations,
 but may be significant for very shallow near cost setups with
-relatively large free surface elevations. 
+relatively large free surface elevations.
 
 This problem was first reported by John Klinck.
 
@@ -31,7 +31,7 @@ Sources of Error:
 Error 1. Inconsistent definition of S-coordinate system AND "omega"
    vertical velocity. This error appears only of there is nonlinear
    mapping of vertical coordinate. This error does not appear in the
-   case of equidistant grid spacing in vertical coordinate. 
+   case of equidistant grid spacing in vertical coordinate.
    This error usually observed as dirturbance of [constant] tracer
    such that there are disturbances of opposite sign near the surface
    and the bottom, which are proportional to free surface
@@ -39,24 +39,24 @@ Error 1. Inconsistent definition of S-coordinate system AND "omega"
    in free surface and S-coordinate model. Note, that the modified
    (see below) definitions of S-coordinates and Omega Vertical
    velocity are different that that of Tony Song, 1994, as well as
-   in SCRUM code. The diffeerence, however, vanishes if zeta=0.  
+   in SCRUM code. The diffeerence, however, vanishes if zeta=0.
 
 Error 2. Slightly inconsistent setting weights for fast time
    averaging, subroutine set_weights, file "set_weights.F": the
    irregularity due to startup of two-dimensional stepping was
    neglected. Constancy nonpreservation associated with this Error
    is usually very small, 0.000004 (4 of one million) of the constant
-   tracer field value. 
+   tracer field value.
 
 
 Remedy Instructions:
 ====== =============
 
-1. Configure your model (AS IS) for the upwelling test example. 
+1. Configure your model (AS IS) for the upwelling test example.
    Make sure that it runs. Plot crossestions of velocities,
-   temperature and salinity. For this run set 
+   temperature and salinity. For this run set
 
-   NTIMES = 450     DT (s) = 960.d0    NDTFAST = 41    NWRT = 90 
+   NTIMES = 450     DT (s) = 960.d0    NDTFAST = 41    NWRT = 90
 
    So that you will run it ffor 5 days and will get dayly pictures.
 
@@ -75,7 +75,7 @@ c*            t(i,j,k,1,isalt)=1.E-4*yr(i,j)-S0 +0.1
 
           http://www.atmos.ucla.edu/~alex/patch
 
-   and download (ftp) file  "patch.tar". Make a special directory 
+   and download (ftp) file  "patch.tar". Make a special directory
    in your computer and move it there; Untar it. You will see sixth
    files:
 
@@ -97,7 +97,7 @@ CSDISTRIBUTE_RESHAPE h(BLOCK_PATTERN) BLOCK_CLAUSE
    b) Substitute three files, "set_scoord.F", "set_depth.F",
       "omega.F" with the files from the patch directory; recompile
       and repeat the run.
-      
+
       Observe that the constancy nonpreservation has beed decreased
       by approximately two to three orders of magnitude, but does
       not go away completely.
@@ -109,7 +109,7 @@ CSDISTRIBUTE_RESHAPE h(BLOCK_PATTERN) BLOCK_CLAUSE
 
       After this step, the conservation of constancy should be
       EXACT (nothing, but roundoff error). The statistics reported by
-      Hernan's plotting package should looke like this: 
+      Hernan's plotting package should looke like this:
 
   Field Diagnostics:
 

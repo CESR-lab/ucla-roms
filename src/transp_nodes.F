@@ -133,7 +133,7 @@
           read(iin,'(A)',iostat=ierr) str
           if (ierr == 0) then
             ie=lenstr(str)
-            nhosts=1 
+            nhosts=1
             do i=2,ie-1
               if (str(i:i) == ' ') nhosts=nhosts+1
             enddo
@@ -257,9 +257,9 @@
      &          host(i) ==  host(jhost(j)) ) then
             jrpts(j)=jrpts(j)+1
           endif
-        enddo                                ! verify that that all 
-      enddo                                  ! unique names appear 
-                                             ! exactly the same number 
+        enddo                                ! verify that that all
+      enddo                                  ! unique names appear
+                                             ! exactly the same number
       lswitch=.true.                         ! of times
       do j=2,nunique
         if (jrpts(j)/=jrpts(1)) lswitch=.false.

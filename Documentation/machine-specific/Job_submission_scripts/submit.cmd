@@ -23,7 +23,7 @@
 # Initialization for mpi parallel execution
 #
   unalias *
-  set qqversion = 
+  set qqversion =
   set qqapp     = "intelmpi parallel"
   set qqptasks  = 6
   set qqidir    = $submitdir

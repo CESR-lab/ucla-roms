@@ -39,7 +39,7 @@ c             rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
 # ifdef WEC
 
 !! JM look at this. Not working atm. Intended to unify rd between wec and nowec
-! Combined wave-current bottom drag coefficient rd at rho-points 
+! Combined wave-current bottom drag coefficient rd at rho-points
 ! Based on formulation in Soulsby, 1995 (See Uchiyama, 2008, eq. 8)
 !  ubmag = magnitude of orbital bottom velocity
 !!       Uorb1 = 0.5*fr(i,j)*wh(i,j)/max(sinh(min(kD(i,j),khmax)),eps)

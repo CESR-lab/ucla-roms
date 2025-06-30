@@ -6,16 +6,16 @@
       real,parameter    :: output_period = 200  ! output period in seconds
       integer,parameter :: nrpf          = 10   ! total recs per file
       logical,parameter :: wrt_SUP  =.true.,
-     &                     wrt_UST2D=.true., 
+     &                     wrt_UST2D=.true.,
      &                     wrt_VST2D=.true.,
      &                     wrt_UST  =.true.,
      &                     wrt_VST  =.true.,
-     &                     wrt_wST  =.false.,   ! everything from here on down is 
+     &                     wrt_wST  =.false.,   ! everything from here on down is
      &                     wrt_AKB  =.false.,   ! not ready yet
-     &                     wrt_AKW  =.false.,  
-     &                     wrt_KVF  =.false.,  
-     &                     wrt_CALP =.false.,  
-     &                     wrt_KAPS =.false.   
-      
+     &                     wrt_AKW  =.false.,
+     &                     wrt_KVF  =.false.,
+     &                     wrt_CALP =.false.,
+     &                     wrt_KAPS =.false.
+
       ! end user inputs
       ! ****************************************************************

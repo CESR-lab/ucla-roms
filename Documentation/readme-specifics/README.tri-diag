@@ -8,7 +8,7 @@ The discrete equation that is solved for u (and similar for v,w, and tracers t) 
 
 !
 !   du(k)     1     [         u(k+1)-u(k)             u(k)-u(k-1) ]
-!  ------ = ----- * [ Akv(k)* ----------- - Akv(k-1)* ----------- ]  
+!  ------ = ----- * [ Akv(k)* ----------- - Akv(k-1)* ----------- ]
 !    dt     Hz(k)   [           dz(k)                   dz(k-1)   ]
 
 
@@ -25,14 +25,14 @@ as euler backward, first order upwind.
 
 
  Hz(k)*(u(k)-u_old(k)) = A(k)*(u(k+1)-u(k)) - A(k-1)*(u(k)-u(k-1))
-           - dt*(wi(k)*0.5*(u(k+1)+u(k)) - wi(k-1)*0.5*(u(k-1)+u(k)) ) 
-                    
+           - dt*(wi(k)*0.5*(u(k+1)+u(k)) - wi(k-1)*0.5*(u(k-1)+u(k)) )
+
  with W(k) = dt*wi(k) and A(k) = dt*Avk(k)/dz(k), defined at w-points. or:
 
 
      [          -A(k-1)        - W(k-1)]*u(k-1) +
      [Hz(k)+A(k)+A(k-1) + W(k) - W(k-1)]*u(k)   +
-     [     -A(k)        + W(k)         ]*u(k+1) = 
+     [     -A(k)        + W(k)         ]*u(k+1) =
                                     Hz(k)*u_old(k)
 
 Use W(k) with u(k+1) when negative, and with u(k) when positive.
@@ -47,17 +47,17 @@ Neuman top would be:
 
 Bottom is:
      [Hz(1)+A(1)        + W(1)         ]*u(1)   +
-     [     -A(1)        + W(1)         ]*u(2) = 
+     [     -A(1)        + W(1)         ]*u(2) =
                                     Hz(k)*u_old(1) -dt*rd*u(1)
 
-or 
+or
      [Hz(1)+A(1)        + W(1) + dt*rd ]*u(1)   +
-     [     -A(1)        + W(1)         ]*u(2) = 
+     [     -A(1)        + W(1)         ]*u(2) =
                                     Hz(k)*u_old(1)
 
 
 
-In the code, FC denotes the rescaled mixing coefs, A. WC denotes W, there is 
+In the code, FC denotes the rescaled mixing coefs, A. WC denotes W, there is
 a division by dx*dy to go from flux to velocity.
 
 
@@ -68,11 +68,11 @@ the right hand side r of the system is Hz*u (+ top and bottom stress)
      FC(n-1) = A(n)
      WC(n-1) = W(n)
 
-     
+
      cff = 1/ (Hz(n) + A(n-1) - W(n-1) )  --> 1/bet  bet = b(n)
 
      CF(n-1) = ( A(n-1) + W(n-1) )/bet  -->  gam(n-1) = c(n)/bet
-   
+
      DC(n) = r(n)/bet  --> u(n) = r(1)/bet
 
     ! r(n) = u_old(n) + dt*sustr ---> don't add again (we can since sustr is known)
@@ -101,18 +101,18 @@ the right hand side r of the system is Hz*u (+ top and bottom stress)
 
 Top is:
 
-     dw/dt = 1/(0.5*hzw) *[ A(n)*dwz(n) - A(n-1/2)*(w(n)-w(n-1)) 
+     dw/dt = 1/(0.5*hzw) *[ A(n)*dwz(n) - A(n-1/2)*(w(n)-w(n-1))
                              - wi(n-1/2)*(w(n) + w(n-1) ]
 
-0.5*hzw*w(n) = dt*[ A(n)*dwz(n) - A(n-1/2)*(w(n)-w(n-1)/hzw) 
+0.5*hzw*w(n) = dt*[ A(n)*dwz(n) - A(n-1/2)*(w(n)-w(n-1)/hzw)
                              - wi(n-1/2)*(w(n) + w(n-1) ]
                                               + w_old(n)*0.5*hzw
 
 write dwz(n) as: A(n)*(W(n)-W(n-1))/Hz(n)
 
-so, we get: 
+so, we get:
 
-0.5*hzw*w(n) = dt*[ A(n)*(w(n)-w(n-1))/hz - A(n-1/2)*(w(n)-w(n-1)/hz) 
+0.5*hzw*w(n) = dt*[ A(n)*(w(n)-w(n-1))/hz - A(n-1/2)*(w(n)-w(n-1)/hz)
                              - wi(n-1/2)*(w(n) + w(n-1) ]
                                               + w_old(n)*0.5*hzw
 
@@ -129,5 +129,5 @@ for w, A(n-1/2) = 0.5*(Akv(n) + Akv(n-1)) and A(n) = Akv(n)
 near bottom w(1) is:
 
      [Hz(1)+A(1)+A(0) + W(1)- W(0)]*u(1)   +
-     [     -A(1)      + W(1)         ]*u(2) = 
+     [     -A(1)      + W(1)         ]*u(2) =
                                     Hz(k)*u_old(1)

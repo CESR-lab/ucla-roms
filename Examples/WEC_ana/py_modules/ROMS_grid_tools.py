@@ -41,7 +41,7 @@ def psi2rho_3d(var_psi):
     [Nz,Mz,Lz]=var_psi.shape
     var_rho=np.zeros((Nz,Mz+1,Lz+1))
 
-    for iz in range(0, Nz, 1):    
+    for iz in range(0, Nz, 1):
         var_rho[iz,:,:]=psi2rho_2d(var_psi[iz,:,:])
 
 

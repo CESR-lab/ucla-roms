@@ -2,7 +2,7 @@
 
 # NEEDED FOR ROMS 2020-12
 
-# user defined: 
+# user defined:
 setenv ROMS_ROOT /home/ddevin/repos-devin-maya/ucla-roms
 
 # should be the same for all maya users:

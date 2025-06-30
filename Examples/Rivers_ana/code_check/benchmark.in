@@ -17,7 +17,7 @@ initial: NRREC  filename
 boundary: filename
 
 output_root_name:
-     test     
+     test
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

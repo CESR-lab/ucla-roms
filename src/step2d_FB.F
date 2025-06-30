@@ -141,7 +141,7 @@
           icdr = cdr_icdr(cidx)
           i = cdr_iloc(cidx)
           j = cdr_jloc(cidx)
- 
+
           zeta(i,j,kstp)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &               *cdr_vol(icdr)*sum(cdr_prf(cidx,:))
         enddo
@@ -201,7 +201,7 @@
           do j=jstrR,jendR
             do i=istrR,iendR
 # ifdef EXTRAP_BAR_FLUXES
-! PAC23 verified setting with theoretical alpha_max=1.0877. 
+! PAC23 verified setting with theoretical alpha_max=1.0877.
 ! the number 0.1024390... is the ratio of delta/gamma=0.21/2.05
 ! this should match the simlarly-labelled setting of NOW MID BAK
 ! in set_depth.F.   All the other settings are to be considered
@@ -445,9 +445,9 @@ c<<     &     +cff*iA_v(i,j)
 #endif
           vbar(i,j,knew)=DVnew/( Dnew(i,j)+Dnew(i,j-1)
      &                                                   )
- 
+
           DV_avg1(i,j)=DV_avg1(i,j) +cff1*dm_v(i,j) * ( DVnew
-# ifdef WEC 
+# ifdef WEC
      &                 +(Dnew(i,j)+Dnew(i,j-1))*vst2d(i,j)
 # endif
      &                                                   )
@@ -497,7 +497,7 @@ c<<     &     +cff*iA_v(i,j)
 # ifdef WEC
      &                                             +ust2d(istrU-1,j)
 # endif
-     &                                             )*dn_u(istrU-1,j)  
+     &                                             )*dn_u(istrU-1,j)
         enddo
         do j=jstrV,jend
           DV_avg1(istr-1,j)=DV_avg1(istr-1,j) +cff1*(Dnew(istr-1,j)
@@ -513,7 +513,7 @@ c<<     &     +cff*iA_v(i,j)
         do j=jstrR,jendR
           DU_avg1(iend+1,j)=DU_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
      &            +Dnew(iend,j) )*( ubar(iend+1,j,knew)
-# ifdef WEC 
+# ifdef WEC
      &                                              +ust2d(iend+1,j)
 # endif
      &                                              )*dn_u(iend+1,j)
@@ -521,10 +521,10 @@ c<<     &     +cff*iA_v(i,j)
         do j=jstrV,jend
           DV_avg1(iend+1,j)=DV_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
      &        +Dnew(iend+1,j-1) )*( vbar(iend+1,j,knew)
-# ifdef WEC 
+# ifdef WEC
      &                                              +vst2d(iend+1,j)
 # endif
-     &                                              )*dm_v(iend+1,j)   
+     &                                              )*dm_v(iend+1,j)
        enddo
       endif
 # endif
@@ -541,7 +541,7 @@ c<<     &     +cff*iA_v(i,j)
         do i=istrR,iendR
           DV_avg1(i,jstrV-1)=DV_avg1(i,jstrV-1)+cff1*(Dnew(i,jstrV-1)
      &         +Dnew(i,jstrV-2))*( vbar(i,jstrV-1,knew)
-# ifdef WEC 
+# ifdef WEC
      &                                              +vst2d(i,jstrV-1)
 # endif
      &                                              )*dm_v(i,jstrV-1)
@@ -551,7 +551,7 @@ c<<     &     +cff*iA_v(i,j)
         do i=istrU,iend
           DU_avg1(i,jend+1)=DU_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
      &        +Dnew(i-1,jend+1) )*( ubar(i,jend+1,knew)
-# ifdef WEC 
+# ifdef WEC
      &                                               +ust2d(i,jend+1)
 # endif
      &                                               )*dn_u(i,jend+1)
@@ -559,7 +559,7 @@ c<<     &     +cff*iA_v(i,j)
         do i=istrR,iendR
           DV_avg1(i,jend+1)=DV_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
      &            +Dnew(i,jend) )*( vbar(i,jend+1,knew)
-# ifdef WEC 
+# ifdef WEC
      &                                               +vst2d(i,jend+1)
 # endif
      &                                               )*dm_v(i,jend+1)

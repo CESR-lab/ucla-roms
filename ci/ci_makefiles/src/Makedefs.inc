@@ -111,13 +111,13 @@ endif
 ifeq ($(USEMARBL),true)
     ifeq ($(COMPILER),gnu)
         MARBL_INC = -I$(MARBL_ROOT)/include/gnu-mpi
-        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-gnu-mpi 
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-gnu-mpi
     else ifeq ($(COMPILER),intel)
         MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
         MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi
     else ifeq ($(COMPILER),ifort)
         MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
-        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi 
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi
     endif
 endif
 

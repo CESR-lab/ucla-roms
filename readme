@@ -4,7 +4,7 @@ ROMS basic usage:
 See Documentation/ directory, for further instructions:
 
    readme.1.compile-ROMS - Info on getting roms to compile on your machine.
-   
+
    readme.2.model-setup  - How to configure roms for your specific simulation.
 
 Directories:
@@ -18,14 +18,14 @@ Relevant:
                     Do not modify code here! Use Work/ directory.
 
    Examples/      - Collection of working examples, both realistic and analytical.
-                    
+
    Tools-Roms/    - Pre & post processing tools can be compiled here.
-   
-   Work/          - Edit roms files here and compile simulations here.                
-                   
-Less relevant: (you're unlikely to use these)                   
-                 
+
+   Work/          - Edit roms files here and compile simulations here.
+
+Less relevant: (you're unlikely to use these)
+
    Legacy/        - Old code no longer used in latest version of ROMS.
-   
-   NHMG/          - Non-hydrostatic modules   
+
+   NHMG/          - Non-hydrostatic modules
 

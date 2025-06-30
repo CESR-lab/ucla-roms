@@ -7,7 +7,7 @@
 !--------------------------------------------------------------------------------
 !      if running with MARBL, do not specify BGC diagnostics in this file: they are
 !      provided to ROMS by MARBL. Control the MARBL config (therefore diagnostics)
-!      using a "marbl_in" file in your run directory. 
+!      using a "marbl_in" file in your run directory.
 !      Regarding output: by default, all MARBL diagnostics are written to output.
 !      To control which particular diagnostics to write out, make a
 !      text file "marbl_diagnostic_output_list" in your run directory
@@ -17,7 +17,7 @@
 !      ROMS will revert to default behaviour and output all MARBL diagnostics.
 !      Output frequency etc. are still controlled using "bgc.opt".
 !      For a list of available MARBL diagnostics, see
-!      $MARBL_ROOT/tests/regression_tests/requested_diags/requested_diags.py 
+!      $MARBL_ROOT/tests/regression_tests/requested_diags/requested_diags.py
 
 
 #ifdef BIOLOGY_BEC2
@@ -25,7 +25,7 @@
 
 !!!!!!!!!!!! bec2_diag_2d !!!!!!!!!!!!!!
 
-      pco2air_idx_t=1 
+      pco2air_idx_t=1
       vname_bec2_diag_2d(1,pco2air_idx_t)='pCO2air'
       vname_bec2_diag_2d(2,pco2air_idx_t)='Surface water pCO2'
       vname_bec2_diag_2d(3,pco2air_idx_t)='ppm'
@@ -176,10 +176,10 @@
       vname_bec2_diag_2d(1,caco3fluxtosed_idx_t)='CACO3_FLUX_TO_SED'
       vname_bec2_diag_2d(2,caco3fluxtosed_idx_t)='CaCO3 reaching the sed'
       vname_bec2_diag_2d(3,caco3fluxtosed_idx_t)='mmol/m2/s'
-      vname_bec2_diag_2d(4,caco3fluxtosed_idx_t)=' ' 
+      vname_bec2_diag_2d(4,caco3fluxtosed_idx_t)=' '
       wrt_bec2_diag_2d(caco3fluxtosed_idx_t)=.false.
-  
-      sio2fluxtosed_idx_t=23 
+
+      sio2fluxtosed_idx_t=23
       vname_bec2_diag_2d(1,sio2fluxtosed_idx_t)='SIO2_FLUX_TO_SED'
       vname_bec2_diag_2d(2,sio2fluxtosed_idx_t)='Opal reaching the sed'
       vname_bec2_diag_2d(3,sio2fluxtosed_idx_t)='mmol/m2/s'
@@ -211,7 +211,7 @@
       vname_bec2_diag_2d(1,otherremin_idx_t)='OTHER_REMIN'
       vname_bec2_diag_2d(2,otherremin_idx_t)='other remin pathways in sed'
       vname_bec2_diag_2d(3,otherremin_idx_t)='mmol/m2/s'
-      vname_bec2_diag_2d(4,otherremin_idx_t)=' ' 
+      vname_bec2_diag_2d(4,otherremin_idx_t)=' '
       wrt_bec2_diag_2d(otherremin_idx_t)=.false.
 
       caco3sedloss_idx_t=28
@@ -228,7 +228,7 @@
       vname_bec2_diag_2d(4,sio2sedloss_idx_t)=' '
       wrt_bec2_diag_2d(sio2sedloss_idx_t)=.false.
 
-      fgn2o_idx_t=30                 ! Available with NCYCLE_SY            
+      fgn2o_idx_t=30                 ! Available with NCYCLE_SY
       vname_bec2_diag_2d(1,fgn2o_idx_t)='FG_N2O'
       vname_bec2_diag_2d(2,fgn2o_idx_t)='Air-sea flux of N2O '
       vname_bec2_diag_2d(3,fgn2o_idx_t)='mmol/m2/s '
@@ -241,7 +241,7 @@
       vname_bec2_diag_2d(3,schmidt_n2o_idx_t)=' '
       vname_bec2_diag_2d(4,schmidt_n2o_idx_t)=' '
       wrt_bec2_diag_2d(schmidt_n2o_idx_t)=.false.
- 
+
       n2osat_idx_t=32                ! Available with NCYCLE_SY
       vname_bec2_diag_2d(1,n2osat_idx_t)='N2OSAT'
       vname_bec2_diag_2d(2,n2osat_idx_t)='N2O saturation concentration'

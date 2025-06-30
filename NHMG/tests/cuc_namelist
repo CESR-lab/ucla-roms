@@ -8,7 +8,7 @@
 	Lx      =  200.d3 , ! Domain length in x [meter]
 	Ly      =  200.d3 , ! Domain length in y [meter]
 	Htot    =    4.d3 , ! Depth [meter]
-	hc      =  250.   , ! 
+	hc      =  250.   , !
 	theta_b =    6.   , !
 	theta_s =    6.   , !
 /

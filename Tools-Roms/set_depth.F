@@ -236,10 +236,10 @@ c--#define VERBOSE
       write(*,'(1x,4A,F12.4,1x,A,3I5)')           'enter set_depth: ',
      &   'VertCoordType = ''', VertCoordType(1:lenstr(VertCoordType)),
      &                           ''' hc =', hc, 'Lm,Mm,N =', Lm,Mm,N
-c**   write(*,'(1x,A,80F10.6)') 'Cs_r =', (Cs_r(k), k=1,N) 
+c**   write(*,'(1x,A,80F10.6)') 'Cs_r =', (Cs_r(k), k=1,N)
 #endif
       if (VertCoordType == 'SM09') then
-        write(*,*) 'new VertCoordType = SM09' 
+        write(*,*) 'new VertCoordType = SM09'
       else
         write(*,*) 'defaulting to SH94 S-coordinate'
       endif

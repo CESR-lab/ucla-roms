@@ -1,7 +1,7 @@
 %% construct P directly
 
  %   ! Define matrix coefficients cA
- %   ! Coefficients are stored in order of diagonals (Fortran code)  
+ %   ! Coefficients are stored in order of diagonals (Fortran code)
  %   ! cA(1,:,:,:)      -> p(k,j,i)
  %   ! cA(2,:,:,:)      -> p(k-1,j,i)
  %   ! cA(3,:,:,:)      -> p(k+1,j-1,i)
@@ -10,13 +10,13 @@
  %   ! cA(6,:,:,:)      -> p(k+1,j,i-1)
  %   ! cA(7,:,:,:)      -> p(k,j,i-1)
  %   ! cA(8,:,:,:)      -> p(k-1,j,i-1)
- 
+
     alpha = (1 + zx.^2 + zy.^2); %% defined at rho-points
     zxzy8dzcwi = 0.125*zx(:,:,1).*zy(:,:,1).*dz(:,:,1)./alpha(:,:,1);
 
     cA = zeros(8,nx,ny,nz);
 
-    for i = 1:nx   
+    for i = 1:nx
       for j = 1:ny
         for k = 2:nz
              cA(2,i,j,k) =  Aw(i,j)/dzw(i,j,k)*(1+ ...                                 %%  couples with k-1
@@ -26,17 +26,17 @@
     end
     for i = 1:nx
       for j = 2:ny
-        for k = 2:nz-1 
+        for k = 2:nz-1
              cA(3,i,j,k) =  0.25*( zy(i,j,k+1)*dx(i,j)+ zy(i,j-1,k)*dx(i,j-1) );       %% couples with k+1 j-1
              cA(4,i,j,k) =  Av(i,j,k)/dyv(i,j);                                        %% couples with j-1
              cA(5,i,j,k) = -0.25*( zy(i,j,k-1)*dx(i,j)+ zy(i,j-1,k)*dx(i,j-1) );       %% couples with k-1 j-1
         end
       end
     end
-    
+
     for i = 2:nx
       for j = 1:ny
-        for k = 2:nz-1 
+        for k = 2:nz-1
           cA(6,i,j,k) =  0.25*( zx(i,j,k+1)*dy(i,j)+ zx(i-1,j,k)*dy(i-1,j) );       %% couples with k+1 i-1
           cA(7,i,j,k) =  Au(i,j,k)/dxu(i,j);                                        %% couples with i-1
           cA(8,i,j,k) = -0.25*( zx(i,j,k-1)*dy(i,j)+ zx(i-1,j,k)*dy(i-1,j) );       %% couples with k-1 i-1
@@ -45,57 +45,57 @@
     end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
     k = 1;  %% bottom level
     for i = 1:nx
       for j = 2:ny
          cA(3,i,j,k) =  0.25*( zy(i,j,k+1)*dx(i,j)+ zy(i,j-1,k)*dx(i,j-1) );       %% couples with k+1 j-1
-         
-         alp = 1-0.25*(zy(i,j,1)^2/alpha(i,j,1)+zy(i,j-1,1)^2/alpha(i,j-1,1)); 
-         cA(4,i,j,k) =  alp*Av(i,j,k)/dyv(i,j) ...                                 %% couples with j-1    
+
+         alp = 1-0.25*(zy(i,j,1)^2/alpha(i,j,1)+zy(i,j-1,1)^2/alpha(i,j-1,1));
+         cA(4,i,j,k) =  alp*Av(i,j,k)/dyv(i,j) ...                                 %% couples with j-1
                         - 0.25*zy(i,j-1,k)*dx(i,j-1)+0.25*zy(i,j,k)*dx(i,j);
       end
     end
     for i = 2:nx
       for j = 1:ny
-         cA(6,i,j,k) =  0.25*( zx(i,j,k+1)*dy(i,j)+ zx(i-1,j,k)*dy(i-1,j) );       %% couples with k+1 i-1 
-        
-         alp = 1-0.25*(zx(i,j,1)^2/alpha(i,j,1)+zx(i-1,j,1)^2/alpha(i-1,j,1)); 
-         cA(7,i,j,k) =  alp*Au(i,j,k)/dxu(i,j) ...                                 %% couples with i-1    
-                       - 0.25*zx(i-1,j,k)*dy(i-1,j)+0.25*zx(i,j,k)*dy(i,j); 
+         cA(6,i,j,k) =  0.25*( zx(i,j,k+1)*dy(i,j)+ zx(i-1,j,k)*dy(i-1,j) );       %% couples with k+1 i-1
+
+         alp = 1-0.25*(zx(i,j,1)^2/alpha(i,j,1)+zx(i-1,j,1)^2/alpha(i-1,j,1));
+         cA(7,i,j,k) =  alp*Au(i,j,k)/dxu(i,j) ...                                 %% couples with i-1
+                       - 0.25*zx(i-1,j,k)*dy(i-1,j)+0.25*zx(i,j,k)*dy(i,j);
       end
-    end 
-    
+    end
+
     for i = 2:nx
       for j = 1:ny-1
-         cA(5,i,j,k) =   zxzy8dzcwi(i-1,j,k) + zxzy8dzcwi(i,j+1,k);              %% couples with j+1 i-1 
+         cA(5,i,j,k) =   zxzy8dzcwi(i-1,j,k) + zxzy8dzcwi(i,j+1,k);              %% couples with j+1 i-1
       end
-    end    
+    end
     for i = 2:nx
       for j = 2:ny
          cA(8,i,j,k) =  -zxzy8dzcwi(i-1,j,k) - zxzy8dzcwi(i,j-1,k);              %% couples with j-1 i-1
       end
     end
-    
-    
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
     k = nz;  %% top level
     for i = 1:nx
       for j = 2:ny
-          
-         cA(4,i,j,k) =  Av(i,j,k)/dyv(i,j) ...                                     %% couples with j-1    
+
+         cA(4,i,j,k) =  Av(i,j,k)/dyv(i,j) ...                                     %% couples with j-1
                         - 0.25*zy(i,j-1,k)*dx(i,j-1)+0.25*zy(i,j,k)*dx(i,j);
          cA(5,i,j,k) = -0.25*( zy(i,j,k-1)*dx(i,j)+ zy(i,j-1,k)*dx(i,j-1) );       %% couples with k-1 j-1
       end
-    end    
+    end
     for i = 2:nx
-      for j = 1:ny         
-         cA(7,i,j,k) =  Au(i,j,k)/dxu(i,j) ...                                     %% couples with i-1    
+      for j = 1:ny
+         cA(7,i,j,k) =  Au(i,j,k)/dxu(i,j) ...                                     %% couples with i-1
                         - 0.25*zx(i-1,j,k)*dy(i-1,j)+0.25*zx(i,j,k)*dy(i,j);
          cA(8,i,j,k) = -0.25*( zx(i,j,k-1)*dy(i,j)+ zx(i-1,j,k)*dy(i-1,j) );       %% couples with k-1 i-1
       end
-    end    
+    end
 return
 
 %%% Top Boundary:  remember that dzw(nz+1) is half a normal dzw
@@ -123,7 +123,7 @@ return
 %                              + p(i,j  ,k  )*2*zy4dx(i,j  ,k) ...
 %              -( p(i,j-1,k  ) - p(i,j-1,k-1))*zy4dx(i,j-1,k) ...
 %              -( p(i,j  ,k  ) - p(i,j  ,k-1))*zy4dx(i,j  ,k) ...
-%  
+%
 %           alp =  1 + 0.5*(zx(i,j,k+1)^2 + zy(i,j,k+1)^2 +...
 %                                 zx(i,j,k  )^2 + zy(i,j,k  )^2 );
 %           w+: (     - p(i  ,j,k  ))*alp*Aw(i,j,k+1)/dzwi(i,j,k+1) ...
@@ -187,7 +187,7 @@ return
 %              -( p(i+1,j-1,k) - p(i  ,j-1,k))*zxzy8dzcwi(i,j-1,k) ...
 %              -( p(i  ,j-1,k) - p(i-1,j-1,k))*zxzy8dzcwi(i,j-1,k) ...
 %
-%  
+%
 %           alp =  1 + 0.5*(zx(i,j,k+1)^2 + zy(i,j,k+1)^2 +...
 %                                 zx(i,j,k  )^2 + zy(i,j,k  )^2 );
 %           w+: ( p(i  ,k+1) - p(i  ,k  ))*alp*Aw(i,j,k+1)/dzwi(i,j,k+1) ...
@@ -201,7 +201,7 @@ return
 %              -( p(i,j+1,k  ) - p(i,j  ,k  ))*zy4dx(i,j,k  ) ...
 %              -( p(i,j+1,k+1) - p(i,j  ,k+1))*zy4dx(i,j,k+1);
 %
-%           w-: 0 
+%           w-: 0
 
 
 
@@ -217,7 +217,7 @@ return
 %           u+: ( p(i+1,k  ) - p(i  ,k  ))*Au(i+1,j,k)/dxu(i+1,j)  ...
 %              -( p(i  ,k  ) - p(i  ,k-1))*zx4dy(i  ,j,k) ...
 %              -( p(i  ,k+1) - p(i  ,k  ))*zx4dy(i  ,j,k) ...
-%              -( p(i+1,k  ) - p(i+1,k-1))*zx4dy(i+1,j,k) ... 
+%              -( p(i+1,k  ) - p(i+1,k-1))*zx4dy(i+1,j,k) ...
 %              -( p(i+1,k+1) - p(i+1,k  ))*zx4dy(i+1,j,k);
 
 %
@@ -232,7 +232,7 @@ return
 %              -( p(i  ,k+1) - p(i-1,k+1))*zx4(i,k+1) ...
 %              -( p(i+1,k  ) - p(i  ,k  ))*zx4(i,k  ) ...
 %              -( p(i+1,k+1) - p(i  ,k+1))*zx4(i,k+1);
-%    
+%
 %           wi:-( p(i  ,k  ) - p(i  ,k-1))*dx(i)*dzwi(i,k  )*(1+zxw^2) ...
 %              +( p(i  ,k-1) - p(i-1,k-1))*zx4(i,k-1) ...
 %              +( p(i  ,k  ) - p(i-1,k  ))*zx4(i,k  ) ...
@@ -247,9 +247,9 @@ for k =1:nz
                 - dx.*dziw(:,k  ).*(1+zxw(:,k).^2);
 end
 
-ccb = zeros(nx,nz+1);       
+ccb = zeros(nx,nz+1);
 for k =1:nz+1
-   ccb(:,k) = dx.*dziw(:,k).*(1+zxw(:,k).^2); 
+   ccb(:,k) = dx.*dziw(:,k).*(1+zxw(:,k).^2);
 end
 cct = ccb(:,2:nz+1);
 ccb = ccb(:,1:nz);
@@ -262,7 +262,7 @@ end
 cec = cwc(2:nx+1,:);
 cwc = cwc(1:nx,:);
 
-        
+
 cwt = zeros(nx,nz);
 cwt(2:nx,:) = 0.25*zx(1:nx-1,:);
 cwt(:,1:nz-1) = cwt(:,1:nz-1) + 0.25*zx(:,2:nz);
@@ -283,7 +283,7 @@ cet(1:nx-1,:) = -0.25*zx(2:nx,:);
 cet(:,1:nz-1) = cet(:,1:nz-1) - 0.25*zx(:,2:nz);
 cet(:,nz) = cet(:,nz) - 0.25*zx_sur;
 
-          
+
 %% bc's at the left:  no flux and no px, slightly subtle!
 ccc(1,:) = ccc(1,:) + cwc(1,:);
 cct(1,1:nz-1) = cct(1,1:nz-1) + zx4(1,2:nz) - zx4(1,1:nz-1  );
@@ -298,11 +298,11 @@ ccb(nx,2:nz  ) = ccb(nx,2:nz  ) - zx4(nx,2:nz) + zx4(nx,1:nz-1);
 ccc(:,nz) = ccc(:,nz) - cct(:,nz);
 cwc(:,nz) = cwc(:,nz) - cwt(:,nz);
 cec(:,nz) = cec(:,nz) - cet(:,nz);
- 
+
 nd = nx*(nz+1);
 is = 1;
 ks = nx;
-A =sparse(nd,nd,9*nd);         
+A =sparse(nd,nd,9*nd);
 for i = 1:nx
    for k = 1:nz-1
        idx = (k-1)*nx + i-1 +nx;
@@ -318,7 +318,7 @@ for i = 1:nx
        end
        A(idx+1,idx+1-ks)= ccb(i,k);
        A(idx+1,idx+1+ks)= cct(i,k);
-       A(idx+1,idx+1   )= ccc(i,k); 
+       A(idx+1,idx+1   )= ccc(i,k);
    end
    k = nz;
    idx = (k-1)*nx + i-1 + nx;
@@ -331,7 +331,7 @@ for i = 1:nx
       A(idx+1,idx+1+is-ks)= ceb(i,k);
    end
    A(idx+1,idx+1-ks)= ccb(i,k);
-   A(idx+1,idx+1   )= ccc(i,k);    
+   A(idx+1,idx+1   )= ccc(i,k);
 end
 
 %% Bottom boundary condition
@@ -344,9 +344,9 @@ for i = 1:nx
       A(idx+1,idx+1+is+ks) = -0.25*zx(i,1);
    end
    A(idx+1,idx+1      ) = -0.5*dx(i)*dziw(i,1)*(1+zxw(i,1)*zxw(i,1));
-   
+
    A(idx+1,idx+1   +ks) = +0.5*dx(i)*dziw(i,1)*(1+zxw(i,1)*zxw(i,1));
-   
+
 end
 
 %% Get a coefficient out of the (P4) matrix for comparison

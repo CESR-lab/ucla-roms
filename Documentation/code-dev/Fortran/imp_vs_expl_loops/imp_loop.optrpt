@@ -67,11 +67,11 @@ LOOP BEGIN at imp_loop.f90(35,5)
       LOOP BEGIN at imp_loop.f90(35,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -97,11 +97,11 @@ LOOP BEGIN at imp_loop.f90(36,5)
       LOOP BEGIN at imp_loop.f90(36,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -137,20 +137,20 @@ LOOP BEGIN at imp_loop.f90(43,6)
 
             remark #15301: FUSED LOOP WAS VECTORIZED
             remark #15442: entire loop may be executed in remainder
-            remark #15448: unmasked aligned unit stride loads: 2 
-            remark #15449: unmasked aligned unit stride stores: 2 
-            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15448: unmasked aligned unit stride loads: 2
+            remark #15449: unmasked aligned unit stride stores: 2
+            remark #15450: unmasked unaligned unit stride loads: 1
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 13 
-            remark #15477: vector cost: 6.000 
-            remark #15478: estimated potential speedup: 2.140 
+            remark #15476: scalar cost: 13
+            remark #15477: vector cost: 6.000
+            remark #15478: estimated potential speedup: 2.140
             remark #15488: --- end vector cost summary ---
             remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
             remark #25015: Estimate of max trip count of loop=96
          LOOP END
 
          LOOP BEGIN at imp_loop.f90(44,6)
-            remark #25046: Loop lost in Fusion 
+            remark #25046: Loop lost in Fusion
          LOOP END
 
          LOOP BEGIN at imp_loop.f90(43,6)
@@ -161,29 +161,29 @@ LOOP BEGIN at imp_loop.f90(43,6)
 
          LOOP BEGIN at imp_loop.f90(43,6)
          <Remainder loop for vectorization>
-            remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+            remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override
             remark #15442: entire loop may be executed in remainder
-            remark #15448: unmasked aligned unit stride loads: 2 
-            remark #15449: unmasked aligned unit stride stores: 2 
-            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15448: unmasked aligned unit stride loads: 2
+            remark #15449: unmasked aligned unit stride stores: 2
+            remark #15450: unmasked unaligned unit stride loads: 1
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 13 
-            remark #15477: vector cost: 6.000 
-            remark #15478: estimated potential speedup: 2.140 
+            remark #15476: scalar cost: 13
+            remark #15477: vector cost: 6.000
+            remark #15478: estimated potential speedup: 2.140
             remark #15488: --- end vector cost summary ---
             remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
          LOOP END
       LOOP END
 
       LOOP BEGIN at imp_loop.f90(44,6)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
    LOOP END
 
    LOOP BEGIN at imp_loop.f90(44,6)
       remark #25101: Loop Interchange not done due to: Original Order seems proper
       remark #25452: Original Order found to be proper, but by a close margin
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 LOOP END
 
@@ -196,14 +196,14 @@ imp_loop.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] imp_loop.f90:11
         Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
         Callee-save  :    6[ rbx rbp r12-r15]
         Assigned     :   24[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm9]
-        
+
     Routine temporaries
         Total         :     438
             Global    :     119
             Local     :     319
         Regenerable   :     144
         Spilled       :      44
-        
+
     Routine stack
         Variables     :     244 bytes*
             Reads     :       7 [3.89e-03 ~ 0.0%]
@@ -211,11 +211,11 @@ imp_loop.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] imp_loop.f90:11
         Spills        :     312 bytes*
             Reads     :      49 [2.26e+00 ~ 2.3%]
             Writes    :      41 [1.59e-01 ~ 0.2%]
-    
+
     Notes
-    
+
         *Non-overlapping variables and spills may share stack space,
          so the total stack size might be less than this.
-    
+
 
 ===========================================================================

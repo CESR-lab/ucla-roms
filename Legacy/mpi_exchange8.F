@@ -544,7 +544,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
 
 
 
-        if (WEST_MSG_EXCH) then 
+        if (WEST_MSG_EXCH) then
           call MPI_Wait (req(1), status, ierr)
           do k=1,nmaxA
             kshft=2*jshft*(k-1) +1
@@ -706,7 +706,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
             enddo
           enddo
 # endif
-        endif 
+        endif
 
         if (WEST_MSG_EXCH .and. SOUTH_MSG_EXCH) then
           call MPI_Wait (req(5), status, ierr)
@@ -783,7 +783,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
         endif
 
         if (EAST_MSG_EXCH .and. SOUTH_MSG_EXCH) then
-          call MPI_Wait (req(7), status, ierr) 
+          call MPI_Wait (req(7), status, ierr)
           do k=1,nmaxA
             A(ieast+1,jsouth-2,k)=rv_SE(k        )
             A(ieast+2,jsouth-2,k)=rv_SE(k + nmaxA)
@@ -820,7 +820,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
         endif
 
         if (WEST_MSG_EXCH .and. NORTH_MSG_EXCH) then
-          call MPI_Wait (req(8), status, ierr) 
+          call MPI_Wait (req(8), status, ierr)
           do k=1,nmaxA
             A(iwest-2,jnorth+1,k)=rv_NW(k        )
             A(iwest-1,jnorth+1,k)=rv_NW(k + nmaxA)

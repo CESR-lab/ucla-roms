@@ -128,7 +128,7 @@
 !        n3         expected size of vertical dimension [=0 means do
 !                   not check this dimension]
 
-! returned value    error status [=nf90_noerr when no mismatches] 
+! returned value    error status [=nf90_noerr when no mismatches]
 
       use param
       use netcdf
@@ -151,7 +151,7 @@
       ierr=nf90_inquire_variable(ncid, varid, vname, vtype, ndims, dimid, natts)
       if (ierr == nf90_noerr) then
         lvar=lenstr(vname)
-        do i=1,2 
+        do i=1,2
           if (ierr == nf90_noerr) then
             ierr=nf90_inquire_dimension(ncid, dimid(i), len=size)
             if (ierr == nf90_noerr) then

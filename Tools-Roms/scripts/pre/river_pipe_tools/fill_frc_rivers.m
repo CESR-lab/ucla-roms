@@ -2,7 +2,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  Put in the daily river runoff data in the 'new' format. 
+%  Put in the daily river runoff data in the 'new' format.
 %     from rivers_gom_2010.nc
 %
 %  2020, Jeroen Molemaker (UCLA)
@@ -55,7 +55,7 @@ mask = ncread(grdname,'mask_rho');
  dy  = 1./dyi;
 
  [nx, ny] = size(lon);
- 
+
 
  if 0 % reset river flux if needed
    rflx = 0*mask;
@@ -100,7 +100,7 @@ if 0
  iloc(out) = [];
  jloc(out) = [];
  mindist(out) = [];
- nriv = length(iloc) 
+ nriv = length(iloc)
  riv_flx = zeros(nt,nriv);
  riv_lon = zeros(nriv);
  riv_lat = zeros(nriv);
@@ -157,7 +157,7 @@ if 0
      rflx(2:end-1,2:end-1) = rflx_sm;
    end
 
-   sum_flx = sum(rflx(:)>=iriv&rflx(:)<iriv+1) 
+   sum_flx = sum(rflx(:)>=iriv&rflx(:)<iriv+1)
    if sum_flx>0
      rflx(rflx>=iriv&rflx<iriv+1) = iriv + 1./sum_flx;
    end

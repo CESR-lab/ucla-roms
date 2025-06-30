@@ -87,9 +87,9 @@ c*******
 
           cx=dft*dfx ; cxi=dft*dfxi ;  cff=dfx*dfx
           if (cx < 0.) then
-            cx=0. ; cxi=0. 
+            cx=0. ; cxi=0.
           elseif (cx > c0*cff) then
-            cxi=  
+            cxi=
 
             write(*,*) 'supercourant'
 

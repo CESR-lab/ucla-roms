@@ -42,7 +42,7 @@ if src_dir != src_dir2:
   files_in_src_dir.extend(os.listdir(src_dir2))
 
 for src_file in files_in_src_dir:
-#for src_file in ['diagnostics.F',]:  
+#for src_file in ['diagnostics.F',]:
   file_name, file_ext = os.path.splitext(src_file)
   if file_ext in ['.F','.opt']:
     try:
@@ -82,7 +82,7 @@ for src_file in files_in_src_dir:
                   #logging.info(file_name+'.o depends on '+file_used+'.mod')
                   #fout.write(file_name+'.o: '+file_used+'.mod\n')
         except:
-          print('something went screwy with '+file_name+' on line '+line)          
+          print('something went screwy with '+file_name+' on line '+line)
 ################################################################################
       # (2) look for statement that starts with "#include"
       #     (case insensitive)

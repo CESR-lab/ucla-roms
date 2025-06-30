@@ -544,7 +544,7 @@ c--#include "netcdf.inc"
         write(*,*) 'stop at 466'
         stop
       endif
-     
+
 !     print *,'testing!'
 !     stop
 

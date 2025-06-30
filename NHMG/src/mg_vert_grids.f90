@@ -22,8 +22,8 @@ contains
     integer(kind=ip) :: nyf,nyc
     integer(kind=ip) :: nzf,nzc
 
-    real(kind=rp), dimension(:,:,:), pointer :: zxf,zxc 
-    real(kind=rp), dimension(:,:,:), pointer :: zyf,zyc 
+    real(kind=rp), dimension(:,:,:), pointer :: zxf,zxc
+    real(kind=rp), dimension(:,:,:), pointer :: zyf,zyc
     real(kind=rp), dimension(:,:,:), pointer :: dzf,dzc
 
     real(kind=rp), dimension(:,:)  , pointer :: dx,dy
@@ -51,7 +51,7 @@ contains
        dx    => grid(lev)%dx
        dy    => grid(lev)%dy
 
-       if (lev == 1) then 
+       if (lev == 1) then
 
           !! we fill slopes and dz in nhmg at the finest grid level
 
@@ -145,7 +145,7 @@ contains
        gamu  => grid(lev)%gamu
        gamv  => grid(lev)%gamv
 
-       !! Cell height 
+       !! Cell height
        do i = 0,nx+1
           do j = 0,ny+1
              dzw(1,j,i) = hlf * dz(1,j,i)
@@ -188,13 +188,13 @@ contains
 
        do i = 0,nx+1
           do j = 0,ny+1
-             gamu(j,i) = one - hlf * ( zxdy(1,j,i) / dy(j,i) )**2 / alpha(1,j,i) 
+             gamu(j,i) = one - hlf * ( zxdy(1,j,i) / dy(j,i) )**2 / alpha(1,j,i)
           enddo
        enddo
 
        do i = 0,nx+1
           do j = 0,ny+1
-             gamv(j,i) = one - hlf * ( zydx(1,j,i) / dx(j,i) )**2 / alpha(1,j,i) 
+             gamv(j,i) = one - hlf * ( zydx(1,j,i) / dx(j,i) )**2 / alpha(1,j,i)
           enddo
        enddo
 

@@ -9,11 +9,11 @@
 ! not call nf_enddef to finish the definitions and switch into input
 ! mode leaving the calling program some room to customize the
 ! definitions without resorting to nf_redef (which may require moving
-! the data). 
+! the data).
 
       implicit none
       character(len=*) fname
-      integer ncid, xi_rho,xi_u, eta_rho,eta_v, s_rho, ierr, 
+      integer ncid, xi_rho,xi_u, eta_rho,eta_v, s_rho, ierr,
      &                        old_fill_mode, varid,  lfnm, lenstr
       real(kind=8) theta_s,theta_b, hc, Cs_w(0:s_rho),Cs_r(s_rho)
 #ifdef WITH_REC_DIM

@@ -23,7 +23,7 @@
      &   nf_redef, nf_rename_dim, nf_rename_att, nf_rename_var,
 
      &   nf_get_att_text,  nf_get_att_int1,  nf_get_att_int2,
-     &   nf_get_att_int,   nf_get_att_real,  nf_get_att_double, 
+     &   nf_get_att_int,   nf_get_att_real,  nf_get_att_double,
      &   nf_put_att_text,  nf_put_att_int1,  nf_put_att_int2,
      &   nf_put_att_int,   nf_put_att_real,  nf_put_att_double,
 
@@ -32,9 +32,9 @@
      &   nf_get_var1_text, nf_get_var1_int1, nf_get_var1_int2,
      &   nf_get_var1_int,  nf_get_var1_real, nf_get_var1_double,
      &   nf_get_vara_text, nf_get_vara_int1, nf_get_vara_int2,
-     &   nf_get_vara_int,  nf_get_vara_real, nf_get_vara_double, 
+     &   nf_get_vara_int,  nf_get_vara_real, nf_get_vara_double,
 
-     &   nf_put_var_text,  nf_put_var_int1,  nf_put_var_int2, 
+     &   nf_put_var_text,  nf_put_var_int1,  nf_put_var_int2,
      &   nf_put_var_int,   nf_put_var_real,  nf_put_var_double,
      &   nf_put_var1_text, nf_put_var1_int1, nf_put_var1_int2,
      &   nf_put_var1_int,  nf_put_var1_real, nf_put_var1_double,
@@ -43,4 +43,4 @@
      &   nf_sync,          nf_close
 
       character(len=80), external :: nf_strerror
-    
+

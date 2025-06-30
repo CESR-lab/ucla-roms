@@ -1,4 +1,4 @@
-#ifdef FLOATS 
+#ifdef FLOATS
 ! This is include file "ncvars_floats.h".
 ! ==== == ======= ==== ============
 ! indices in character array "vname", which holds variable names
@@ -29,7 +29,7 @@
       logical wrtflt(fltfield)
 
       common/incvars_floats/ ncidflt, nrecflt, nrpfflt, fltGlevel,
-     &        fltTstep, fltTime,    fltXgrd,  fltYgrd,   fltZgrd, 
+     &        fltTstep, fltTime,    fltXgrd,  fltYgrd,   fltZgrd,
      &        fltVel,   rstnfloats, rstTinfo, rstfltgrd, rsttrack
 #ifdef SPHERICAL
      &      , fltLon,   fltLat

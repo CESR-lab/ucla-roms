@@ -6,7 +6,7 @@ compressibe versions of the new, prsgrd32Ax family routines and
 accompanying EOS routines. A am using Atlantic grid4 as a test
 problem and looking for deep currents: 1 km and below. I learned
 a lot of new thing about all that eddy-mess in abyssal part of the
-model. 
+model.
 
 Go to
               http://www.atmos.ucla.edu/~alex/prsgrd
@@ -26,7 +26,7 @@ This tar file contains the following files:
                    conservation of KE+PE is useful in practice.
                    Simply because KE << PE, and numerical errors of
                    tracer advection generate enough spurious PE to
-                   be available for conversion into KE. 
+                   be available for conversion into KE.
 
    AppendixB.ps -- material to read about EOS. Probably worth
                    discussing with John Wilkin. I found that this

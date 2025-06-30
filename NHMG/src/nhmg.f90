@@ -30,7 +30,7 @@ contains
 
   !--------------------------------------------------------------
   subroutine nhmg_init(nx,ny,nz,npxg,npyg)
-      
+
     integer(kind=ip), intent(in) :: nx, ny, nz
     integer(kind=ip), intent(in) :: npxg, npyg
 
@@ -167,7 +167,7 @@ contains
 
     !  Fill the rhs for the poisson equation
     do i = 1,nx
-       do j = 1,ny 
+       do j = 1,ny
           do k = 1,nz
              grid(1)%b(k,j,i) = ua(i+1,j,k) - ua(i,j,k) &
                               + va(i,j+1,k) - va(i,j,k) &
@@ -181,14 +181,14 @@ contains
        call sb_autotune()  !- test of autotuning
     end if
 
-    call solve_p()   
+    call solve_p()
 
     tscount = tscount + 1
 
     call correction_uvw()
 
 !   do i = 1,nx
-!      do j = 1,ny 
+!      do j = 1,ny
 !         do k = 1,nz
 !            grid(1)%b(k,j,i) = ( ua(i+1,j,k) + grid(1)%du(k,j,i+1) )  &
 !                             - ( ua(i  ,j,k) + grid(1)%du(k,j,i  ) )  &

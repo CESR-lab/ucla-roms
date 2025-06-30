@@ -30,10 +30,10 @@ def get_depths(fname, gname, tindex, ctype, scoord):
     zeta_orig=roms_out.variables['zeta'][:,:,:]
     zeta_nosqueeze=np.copy(zeta_orig) #size for L4PV [12, 562, 1602]
     zeta=zeta_nosqueeze[tindex,:,:] #size for L4PV [562, 1602]
-    
+
 #get theta b and theta_s
     if scoord=='new' or scoord=='old':
-       theta_s=getattr(roms_out, 'theta_s') 
+       theta_s=getattr(roms_out, 'theta_s')
        theta_b=getattr(roms_out, 'theta_b')
        hc=getattr(roms_out, 'hc')
     if len(zeta)==0:
@@ -43,29 +43,29 @@ def get_depths(fname, gname, tindex, ctype, scoord):
     # added len() 9/24/14 for netcdf4 update
     N=len(dim['s_rho']) #number of sigma levels
 
-   
+
     vtype=ctype
     if ctype=='u' or ctype=='v':
        vtype='r'
-     
+
     if scoord=='new' or scoord=='old':
-       
+
 
     #def zlevs(h,zeta,theta_s,theta_b,hc,N,vtype,scoord): THIS SOMEHOW WORKS W/OUT ZLEVS FUNCTION, SLOPPIER, FIX LATER
         alpha=0
         beta=1
-   
+
         [L,M]=h.shape
-    
+
 #Set s-curves in domain [-1<sc<0] at vertical W- and RHO-points
-    
+
         if vtype=='w':
            sc=(np.array(range(0,N+1),dtype='float64')-N)/N
            N=N+1
         else:
             sc=(np.array(range(1,N+1),dtype='float64')-N-0.5)/N
 
-    
+
 
         if scoord=='new' or scoord=='NEW':
            if theta_s>0:
@@ -117,10 +117,10 @@ def get_depths(fname, gname, tindex, ctype, scoord):
     #return z
 
 
-     
-
-   
-        
 
 
-    
+
+
+
+
+

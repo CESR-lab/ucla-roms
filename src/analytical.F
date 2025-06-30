@@ -45,7 +45,7 @@
 
 #include "ana_init.h"
 
-      call ana_init_generic(1,nx,1,ny) 
+      call ana_init_generic(1,nx,1,ny)
 
       end subroutine ana_init !]
 ! ----------------------------------------------------------------------

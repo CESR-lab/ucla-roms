@@ -60,37 +60,37 @@
  metadata about            2  tracers:
  -----------
  TRACER NO.:            1
- SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
- UNITS: Celsius                                   
+ SHORT NAME: temp
+ LONG NAME: potential temperature
+ UNITS: Celsius
  -----------
  -----------
  TRACER NO.:            2
- SHORT NAME: salt                                      
- LONG NAME: salinity                                                    
- UNITS: PSU                                       
+ SHORT NAME: salt
+ LONG NAME: salinity
+ UNITS: PSU
  -----------
 
  NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
 
        ocean_vars :: history file ouput_period = 400.0  recs/file =  10
          his fields to be saved: (T/F)
-           zeta    T    free-surface elevation                    
-           ubar    T    vertically averaged u-momentum component  
-           vbar    T    vertically averaged v-momentum component  
-           u       T    u-momentum component                      
-           v       T    v-momentum component                      
-           rho     T    density anomaly                           
-           Omega   T    S-coordinate vertical velocity            
-           W       T    vertical velocity                         
-           Akv     T    vertical viscosity coefficient            
-           Akt     T    vertical thermal conductivity coefficient 
-           Aks     T    salinity vertical diffusion coefficient   
-           hbls    T    Thickness of KPP surface boundary layer   
-           hbbl    T    Thickness of KPP bottom boundary layer    
+           zeta    T    free-surface elevation
+           ubar    T    vertically averaged u-momentum component
+           vbar    T    vertically averaged v-momentum component
+           u       T    u-momentum component
+           v       T    v-momentum component
+           rho     T    density anomaly
+           Omega   T    S-coordinate vertical velocity
+           W       T    vertical velocity
+           Akv     T    vertical viscosity coefficient
+           Akt     T    vertical thermal conductivity coefficient
+           Aks     T    salinity vertical diffusion coefficient
+           hbls    T    Thickness of KPP surface boundary layer
+           hbbl    T    Thickness of KPP bottom boundary layer
 
-           t( 1T   temp                                      
-           t( 2T   salt                                      
+           t( 1T   temp
+           t( 2T   salt
 
  Spherical grid detected.
 
@@ -248,4 +248,4 @@
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   26.635949167000035     
+ MPI_run_time =   26.635949167000035

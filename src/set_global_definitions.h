@@ -81,9 +81,9 @@ c-# define IMPLICIT_BOTTOM_DRAG
 #define VAR_RHO_2D
 
 
-/* Normally, whenever nonlinear EOS is selected, use stiffened and 
+/* Normally, whenever nonlinear EOS is selected, use stiffened and
  split form,
-                rho(S,T,z) = rho1(S,T) + qp1(S,T)*[z+qp2*z^2] 
+                rho(S,T,z) = rho1(S,T) + qp1(S,T)*[z+qp2*z^2]
 
  where all pressure dependency is explicit via "z", while "rho1","qp1"
  do not depend on pressure (i.e., "z");  "qp2" is just a constant.
@@ -92,7 +92,7 @@ c-# define IMPLICIT_BOTTOM_DRAG
  accuracy and robustness.  Overall this follows Shchepetkin and
  McWilliams (2003, 2011), which in its turn is an adaptation of
  Dukowicz (2001) and earlier work of Sun, Bleck, Rooth, Dukowicz,
- Chassignet, and Killworth (1999) with respect to this matter.   */    
+ Chassignet, and Killworth (1999) with respect to this matter.   */
 
 #ifdef NONLIN_EOS
 # define SPLIT_EOS
@@ -370,7 +370,7 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
 c---#if defined DBLEPREC && !defined GCC && !defined __IFC \
 c---                     && !defined PGI && !defined CRAY
-/*-- for now, we keep doing the double precision for global sums 
+/*-- for now, we keep doing the double precision for global sums
    instead of the quad stuff */
 #if defined JEROEN_TEST
 # define QUAD 16

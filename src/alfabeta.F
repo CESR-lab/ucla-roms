@@ -35,7 +35,7 @@
      &                        r13=-8.24670E-7,  r14=+5.38750E-9,
      &       rS0=-5.72466E-3, rS1=+1.02270E-4,  rS2=-1.65460E-6,
      &       r20=+4.8314E-4
-      real Ts, sqrtTs 
+      real Ts, sqrtTs
 #  endif
 # else
 !#  include "eos_vars"

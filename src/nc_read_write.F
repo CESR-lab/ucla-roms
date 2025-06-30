@@ -132,9 +132,9 @@
       integer              :: varid,ierr
       integer,dimension(1) :: dims
       integer,dimension(2) :: count
-      
+
       dims = shape(dat)
-      
+
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
@@ -162,9 +162,9 @@
       integer              :: varid,ierr
       integer,dimension(2) :: dims
       integer,dimension(3) :: count
-      
+
       dims = shape(dat)
-      
+
       ierr = nf90_inq_varid(ncid,vname,varid)
       if (ierr/=0) call handle_ierr(ierr,'ncwrite inq_varid var=',vname)
 
@@ -194,7 +194,7 @@
       integer,dimension(4) :: count
       real,dimension(:,:,:),allocatable :: tmp
 
-      
+
       dims = shape(dat)
       allocate(tmp(dims(1),dims(2),dims(3)))
       tmp = dat
@@ -238,7 +238,7 @@
       if (present(vartype)) then                           ! handle optional arguement
         xtype = vartype
       else
-        xtype = default_prec 
+        xtype = default_prec
       endif
 
       ndim = size(dimname)

@@ -1,6 +1,6 @@
 Secondly, I modified input for reading forcing data in my ROMS
 code to essentially make it easy to adjust to receive all kind of
-data. I studied both Rutgers ROMS and AGRIF with respect to 
+data. I studied both Rutgers ROMS and AGRIF with respect to
 this and found that I do not like the approach in dealing with this
 in both of them:
 
@@ -37,7 +37,7 @@ routines (as before), but instead of having individual FORTRAN
  mainly change variable names as needed.  This manual
  editing in now replaced with CPP.
 
-In the same web directory find 
+In the same web directory find
 
           get_smth.F  <-- template
         get_forces.F  <-- assembly platform;
@@ -48,10 +48,10 @@ In the same web directory find
 
 Why not to create a generic subroutine? (like, say, Hernan did)
 
-There are two reasons: 
+There are two reasons:
 
        1. Bulky Fortran code in get_forces.F equivalent because of
-           large number of arguments; 
+           large number of arguments;
 
        2. Lack of flexibility: variable number of arguments is required,
            leading to potentially advanced reliance of F90 features,
@@ -68,8 +68,8 @@ There are two reasons:
            In contrast, CPP consistently inserts character
            strings, which otherwise should be kept as variables
            or parameters, assigned values, and computed
-           length.        
-    
+           length.
+
 This way to create a new routine read a netCDF file, one just needs
  to
        (i) create a block in forces.h using other block as template

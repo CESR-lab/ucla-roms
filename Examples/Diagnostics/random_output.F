@@ -29,17 +29,17 @@
 
       ! Barotropic/Baroclinic energy terms
       ! --------------
-      real,allocatable, dimension(:,:,:)  :: Ud2d,Vd2d 
+      real,allocatable, dimension(:,:,:)  :: Ud2d,Vd2d
       real,allocatable, dimension(:,:)    :: ub_slow,vb_slow
       real,allocatable, dimension(:,:)    :: ub_fast,vb_fast
 
       real,allocatable, dimension(:,:)    :: px_int,py_int
 
-      real,allocatable, dimension(:,:,:,:):: Udiag_slow,Vdiag_slow 
-      real,allocatable, dimension(:,:)    :: Udiag_fast,Vdiag_fast 
+      real,allocatable, dimension(:,:,:,:):: Udiag_slow,Vdiag_slow
+      real,allocatable, dimension(:,:)    :: Udiag_fast,Vdiag_fast
 
       real,allocatable, dimension(:,:) :: u2,v2,ek  ! baroclinic ek
-      real,allocatable, dimension(:,:) :: ek_avg 
+      real,allocatable, dimension(:,:) :: ek_avg
 
       real,allocatable, dimension(:,:,:):: u2_bt,v2_bt,ek_bt  !  barotropic ek balance
       real,allocatable, dimension(:,:,:):: u2_bc,v2_bc,ek_bc  !  baroclinic ek balance
@@ -49,9 +49,9 @@
       real,allocatable, dimension(:,:,:):: u2_bts,v2_bts,ek_bts !  barotropic ek balance
       real,allocatable, dimension(:,:,:):: u2_bcs,v2_bcs,ek_bcs !  baroclinic ek balance
 
-      real,allocatable, dimension(:,:,:):: ek_bt_avg,ek_bc_avg 
-      real,allocatable, dimension(:,:,:):: ek_bta_avg,ek_bca_avg 
-      real,allocatable, dimension(:,:,:):: ek_bts_avg,ek_bcs_avg 
+      real,allocatable, dimension(:,:,:):: ek_bt_avg,ek_bc_avg
+      real,allocatable, dimension(:,:,:):: ek_bta_avg,ek_bca_avg
+      real,allocatable, dimension(:,:,:):: ek_bts_avg,ek_bcs_avg
 
       real,allocatable, dimension(:,:) :: dzt_slow,dzt_fast ! dzeta/dt, filtered and prime
       real,allocatable, dimension(:,:) :: udh,udh_slow,udh_fast ! ubar.grad(h), filtered and prime
@@ -207,7 +207,7 @@
         enddo
       enddo
 
-      ! Hack!! to extract wind work from the vmx term 
+      ! Hack!! to extract wind work from the vmx term
       ! Move windstress to the hmx term (5) (which is mostly zero)
       Udiag(:,:,nz,6) = Udiag(:,:,nz,6) - sustr(1:nx,1:ny)
       Vdiag(:,:,nz,6) = Vdiag(:,:,nz,6) - svstr(1:nx,1:ny)
@@ -235,9 +235,9 @@
         enddo
         do j = 1,ny
           do i = 1,nx
-            u2(i,j) = u2(i,j) + 
+            u2(i,j) = u2(i,j) +
      &       0.5*(Hz(i,j,k)+Hz(i-1,j,k))*u_fast(i,j)*u_fast(i,j)
-            v2(i,j) = v2(i,j) + 
+            v2(i,j) = v2(i,j) +
      &       0.5*(Hz(i,j,k)+Hz(i,j-1,k))*v_fast(i,j)*v_fast(i,j)
           enddo
         enddo
@@ -248,11 +248,11 @@
             do i = 1,nx
               u2_bc(i,j,itrm)= u2_bc(i,j,itrm)+
      &              u_fast(i,j)*Udiag_fast(i,j)
-              v2_bc(i,j,itrm)= v2_bc(i,j,itrm)+ 
+              v2_bc(i,j,itrm)= v2_bc(i,j,itrm)+
      &              v_fast(i,j)*Vdiag_fast(i,j)
               u2_bt(i,j,itrm)= u2_bt(i,j,itrm)+
      &              ub_fast(i,j)*Udiag_fast(i,j)
-              v2_bt(i,j,itrm)= v2_bt(i,j,itrm)+ 
+              v2_bt(i,j,itrm)= v2_bt(i,j,itrm)+
      &              vb_fast(i,j)*Vdiag_fast(i,j)
             enddo
           enddo
@@ -269,15 +269,15 @@
             do i = 1,nx
 !             u2_bca(i,j,itrm)= u2_bca(i,j,itrm)+
 !    &              (u(i,j,k,nrhs)-Uflx(i,j))*Udiag(i,j,k,itrm)
-!             v2_bca(i,j,itrm)= v2_bca(i,j,itrm)+ 
+!             v2_bca(i,j,itrm)= v2_bca(i,j,itrm)+
 !    &              (v(i,j,k,nrhs)-Vflx(i,j))*Vdiag(i,j,k,itrm)
               u2_bca(i,j,itrm)= u2_bca(i,j,itrm)+
      &              u(i,j,k,nrhs)*Udiag(i,j,k,itrm)
-              v2_bca(i,j,itrm)= v2_bca(i,j,itrm)+ 
+              v2_bca(i,j,itrm)= v2_bca(i,j,itrm)+
      &              v(i,j,k,nrhs)*Vdiag(i,j,k,itrm)
               u2_bta(i,j,itrm)= u2_bta(i,j,itrm)+
      &              Uflx(i,j)*Udiag(i,j,k,itrm)
-              v2_bta(i,j,itrm)= v2_bta(i,j,itrm)+ 
+              v2_bta(i,j,itrm)= v2_bta(i,j,itrm)+
      &              Vflx(i,j)*Vdiag(i,j,k,itrm)
             enddo
           enddo
@@ -294,11 +294,11 @@
             do i = 1,nx
               u2_bcs(i,j,itrm)= u2_bcs(i,j,itrm)+
      &              u_slow(i,j,k)*Udiag_slow(i,j,k,itrm)
-              v2_bcs(i,j,itrm)= v2_bcs(i,j,itrm)+ 
+              v2_bcs(i,j,itrm)= v2_bcs(i,j,itrm)+
      &              v_slow(i,j,k)*Vdiag_slow(i,j,k,itrm)
               u2_bts(i,j,itrm)= u2_bts(i,j,itrm)+
      &              ub_slow(i,j)*Udiag_slow(i,j,k,itrm)
-              v2_bts(i,j,itrm)= v2_bts(i,j,itrm)+ 
+              v2_bts(i,j,itrm)= v2_bts(i,j,itrm)+
      &              vb_slow(i,j)*Vdiag_slow(i,j,k,itrm)
             enddo
           enddo
@@ -390,7 +390,7 @@
           enddo
         enddo
       enddo
-      
+
 
       ! Don't split in fast/slow, but write at fast interval
       ! (p_int, px_int,py_int,ubar,vbar,zeta,u_surf,v_surf)
@@ -444,31 +444,31 @@
        varid = nccreate(ncid,'zeta',(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','sea surface heigth')
        ierr = nf90_put_att(ncid,varid,'units','m')
- 
+
        varid = nccreate(ncid,'ubar',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','barotropic velocity')
        ierr = nf90_put_att(ncid,varid,'units','m/s')
- 
+
        varid = nccreate(ncid,'vbar',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','barotropic velocity')
        ierr = nf90_put_att(ncid,varid,'units','m/s')
- 
+
        varid = nccreate(ncid,'u_surf',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','surface x velocity')
        ierr = nf90_put_att(ncid,varid,'units','m/s')
- 
+
        varid = nccreate(ncid,'v_surf',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','surface y velocity')
        ierr = nf90_put_att(ncid,varid,'units','m/s')
- 
+
        varid = nccreate(ncid,'p_int',(/'xi_rho','eta_rho','time'/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','vertical int of p')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
- 
+
        varid = nccreate(ncid,'px_int',(/'xi_u','eta_rho','time'/),(/xi_u,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','vertical int of px')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
- 
+
        varid = nccreate(ncid,'py_int',(/'xi_rho','eta_v','time'/),(/xi_rho,eta_v,0/))
        ierr = nf90_put_att(ncid,varid,'long_name','vertical int of py')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2')
@@ -525,7 +525,7 @@
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
       logical,save           :: first_step=.true.
-      
+
       ! do nothing if do_random is false
       if (.not.do_random) return
 
@@ -533,7 +533,7 @@
         first_step=.false.
         call init_random
         output_time = output_time  - dt ! Hack, but needed because of the timing of the call within the time step
-!       output_time2= output_time2 - dt                        
+!       output_time2= output_time2 - dt
         return
       else
         output_time = output_time  + dt       ! only start count after first timestep
@@ -556,7 +556,7 @@
         record = record+1
 
         ierr=nf90_open(fname,nf90_write,ncid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &      call handle_ierr(ierr,'wrt_random, opening: ',fname)
 
 !       ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)     ! set fill value - nf90_nofill for optimized writing

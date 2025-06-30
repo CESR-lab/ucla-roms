@@ -164,8 +164,8 @@
 # else
 ! For WEC there was this (talk to delphine)
 ! No lagrangian flux
-!      ubar(istr,j,knew)=-ust2d(istr,j)     
-!     &                    *umask(istr,j)  
+!      ubar(istr,j,knew)=-ust2d(istr,j)
+!     &                    *umask(istr,j)
         do j=jstr,jend                          ! Western edge closed
           ubar(istr,j,knew)=0.                  ! ======= ==== ======
         enddo                                   !  (no-flux, default)

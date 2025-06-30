@@ -19,7 +19,7 @@
 	$(CFT) -o $@ $(FFLAGS) $(LDFLAGS) $<
 
 
-      CPP = /usr/ccs/lib/cpp 
+      CPP = /usr/ccs/lib/cpp
  CPPFLAGS = -DAIX -I/usr/lpp/ppe.poe/include/thread
 
 # NOTE: by default, non-F90/95 versions of IBM compilers produce
@@ -28,13 +28,13 @@
 # be executed inside a parallel region.   Compiler switch -qnosave
 # overrides this behavior (when using xlf_r -qsmp=omp  it is also
 # mandatory to specify -qnosave ==> otherwise Open MP code fails;
-# however it is not necessary for xlf95_r).  Also, by default F90/95  
+# however it is not necessary for xlf95_r).  Also, by default F90/95
 # compilers interprete source code as in free format, while ROMS uses
 # fixed format. Thus, -qfixed is needed when using xlf95_r.
 #
 # Compiler is sensitive to -qalias=noaryovrlp (about 15% gain in
-# performance) 
-      
+# performance)
+
 
  OMP_FLAG = -qsmp=omp
 
@@ -61,7 +61,7 @@
 #   FFLAGS = -O5 -qstrict -qhot -qalias=noaryovrlp -qarch=auto -qunroll=yes
     FFLAGS = -O5 -qstrict -qhot -qalias=noaryovrlp -qarch=pwr4 -qtune=pwr4 -qunroll=yes
 
-    FFLAGS = -g -O0 -qsigtrap=xl__ieee -qflttrap=enable:zerodivide:invalid:overflow -qsigtrap -C 
+    FFLAGS = -g -O0 -qsigtrap=xl__ieee -qflttrap=enable:zerodivide:invalid:overflow -qsigtrap -C
 #
 # Profiling flag: -pg
 #

@@ -10,25 +10,25 @@ These are:
      boundaries are handled together with MPI and are independent
      from physical boundaries). This changes the scope of
      applicability of things like WEST_INTER to handle periodic
-     conditions in non-MPI mode.   
+     conditions in non-MPI mode.
 
      Backward effects NONE.
 
      It affects you only if you play with periodic problem
      in non-MPI mode AND you have quadratic bottom drag (like
-     Yusuke does). 
+     Yusuke does).
 
 
   2. BUGFIX: rhs3d35S.F :: Insufficient index ranges for definition
      of r_D (bottom drag array) in periodic case, non-MPI mode.
      NOTE: Please fix it even if you decide to replace "rhs3d35S.F"
-     altogether.  
+     altogether.
 
      Backward effects NONE, except for Yusuke.
 
 
 
-  3. BUGFIX: step2D_FB.F :: lines 446 and 459, see under CPP-switch  
+  3. BUGFIX: step2D_FB.F :: lines 446 and 459, see under CPP-switch
      #ifndef LINEAR_DRAG_ONLY :: wrong i-index range (2 occasions)
      when adding bottom drag term into "rubar" and "rvbar".  The
      correct index range should be
@@ -46,7 +46,7 @@ These are:
 
      Backward effects: NONE for virtually everything of what you are
      doing.   This part of the code is used only if you do a purely
-     2D, non-periodic problem with non-zero bottom drag. 
+     2D, non-periodic problem with non-zero bottom drag.
 
 
 
@@ -55,13 +55,13 @@ These are:
      NON-PHYSICAL NUMERICAL STABILITY CONSTRAINT,
 
                     dt*rd(i,j)/H(i,j,1) < 1
-     
+
      THIS REQUIRES MOVING IMPLICIT VERTICAL VISCOSITY COMPUTATION
-     FROM "step3d_uv2.F"  to "rhs3d35S.F" IN ORDER TO ACHIEVE PROPER 
+     FROM "step3d_uv2.F"  to "rhs3d35S.F" IN ORDER TO ACHIEVE PROPER
      INTERACTION WITH THE BAROTROPIC MODE.
 
      In practical terms changes in the two routines are too massive
-     for copy-pasting, so BOTH files should be replaced as a set. 
+     for copy-pasting, so BOTH files should be replaced as a set.
 
      NOTE: both updated files contain CPP switches to activate
      the changes
@@ -75,10 +75,10 @@ These are:
      stiff update operators.
 
 
-     Backward effects: MINOR 
+     Backward effects: MINOR
 
          a. Undefining both CPP switches in both files reverts
-            the code to what it was before, except replacement 
+            the code to what it was before, except replacement
 
             FC(i,k)=dt*(Akv(i,j,k)+Akv(i-1,j,k))
      &                       /( z_r(i,j,k+1)+z_r(i-1,j,k+1)
@@ -91,7 +91,7 @@ These are:
      &                        /(  Hz(i,j,k  )+Hz(i-1,j,k  )
      &                          +Hz(i,j,k-1)+Hz(i-1,j,k-1))
 
-            
+
             in tridiagonal solver.  These two are close, but not
             exactly equivalent, but are numerically close.  The
             former one is more consistent with finite-difference
@@ -105,18 +105,18 @@ These are:
             is moved back to step3d_uv2 where it was been originally.
             This is done for more clean view what CPP switches
             are doing, and to a large extent to simplify switching.
- 
+
             But this also mandated that both routines must be
             replaced together, since one-by one they are incompatible
-            with their partners from the original code. 
-              
+            with their partners from the original code.
 
 
-         d. The code can still work in PREDICTOR_COUPLED_MODE 
+
+         d. The code can still work in PREDICTOR_COUPLED_MODE
             (like AGRIF) but only if both switches, NO_SLIP_BOTTOM
             and IMPLICIT_BOTTOM_DRAG are undefined. This
             necessitates imposing limit on bottom drag as in the
-            original code. 
+            original code.
 
 
          e. In future I forecee removing of these CPP switches and
@@ -126,7 +126,7 @@ These are:
             (useful for many idealised problems).  So that the code
             will be streamlined with most of CPP switching removed.
 
-             
+
 
 
 
@@ -159,8 +159,8 @@ Details for items 1 and 2:
 Add "#else# branch along with the comment, so the above becomes
 
 
-/* The following four macros are to signal the proximity of 
- communication boundaries: rows of ghost points associated with 
+/* The following four macros are to signal the proximity of
+ communication boundaries: rows of ghost points associated with
  either MPI exchange zones or periodicity.
 */
 
@@ -188,12 +188,12 @@ restricted to physical boundaries only, and are #undefined
 if there are no boundaries, i.e., periodicity to prevent
 their accidental use; similarly, WEST_INTER applies only
 to exchange boundaries, and are in undefined state, if there
-are no such boundaries. 
+are no such boundaries.
 
 
 
 
-2. Edit file "rhs3d35S.F" and  make ranges for  "r_D" as follows 
+2. Edit file "rhs3d35S.F" and  make ranges for  "r_D" as follows
 
 
 # if defined MPI  || defined EW_PERIODIC

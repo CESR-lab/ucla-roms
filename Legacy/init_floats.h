@@ -8,9 +8,9 @@
 **********************************************************************
 **                                                                  **
 ** Ftitle     Floats application title.                             **
-** Ft0, Fx0, ... input trajectory variables red in the floats.in file. 
+** Ft0, Fx0, ... input trajectory variables red in the floats.in file.
 ** These variables are used by put_global_atts.F to write this      **
-** float.in into netcdf float output file.                          ** 
+** float.in into netcdf float output file.                          **
 **********************************************************************
 */
 
@@ -19,7 +19,7 @@
      &     Fdt(Mfloats), Fdx(Mfloats), Fdy(Mfloats), Fdz(Mfloats)
       common /ncrealfloats/ Ft0,Fx0,Fy0,Fz0, Fdt,Fdx,Fdy,Fdz
 
-      integer  Fcoor(Mfloats),  Ftype(Mfloats), Fcount(Mfloats), 
+      integer  Fcoor(Mfloats),  Ftype(Mfloats), Fcount(Mfloats),
      &         Fgrd(Mfloats), i_floats
       common /ncintfloats/ Fcoor, Ftype, Fcount, Fgrd, i_floats
 

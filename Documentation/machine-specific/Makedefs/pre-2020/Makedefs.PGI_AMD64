@@ -32,13 +32,13 @@
 #        leave the registers. This flag is synonymous to IFC -pc80.
 #
 # -tp k8-64 optimisation flag for AMD 64 bits platform (opteron,
-#        athlon ...). 
+#        athlon ...).
 #
 # -mcmodel=medium  has to be present if the job needs 2GB of memory
 #        or more keeping it activated for small jobs results in loss
 #        of efficiency but the job will run ok. Note that netcdf
 #        library has to be compiled with this flag as well for
-#        successful linking (if job is over 2GB). 
+#        successful linking (if job is over 2GB).
 
       CPP = /lib/cpp -traditional
  CPPFLAGS = -DPGI

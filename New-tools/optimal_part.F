@@ -12,7 +12,7 @@
       implicit none
 
 
-!     integer :: i,nargs 
+!     integer :: i,nargs
 
       integer :: npartx,nparty
       integer :: ierr
@@ -21,7 +21,7 @@
       ! Get available cores and grid file through command line argument
       call cmd_args_optimal
 
-  
+
       ar = gnx/gny  ! aspect ratio grid:
       ocean = sum(msk)/(gnx*gny) ! percentage of grid that is not masked
 
@@ -33,13 +33,13 @@
       ! 16 guesses ok?
       npx0 = max(npx1-4,1)
       npy0 = max(npy1-4,1)
-        
+
       i = 0
       do npy = npy0,npy1
         do npx = npx0,npx1
           call partition_mask(npx,npy)
           i = i+1
-          active(i,1) = 
+          active(i,1) =
           active(i,2) = npx
           active(i,3) = npy
         enddo

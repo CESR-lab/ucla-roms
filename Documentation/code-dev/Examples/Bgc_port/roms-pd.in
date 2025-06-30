@@ -20,23 +20,23 @@ initial: NRREC  filename
 
 !climatology:
 !2
-!         Input/SAWC_clm.nc 
+!         Input/SAWC_clm.nc
 !         Input/SAWC_clm2.nc
 
 boundary: filename
        pacmed_0p25_bry_2000.nc
 
 restart:          NRST,  NRPFRST / filename
-                  2232  2 
+                  2232  2
 rst/rst_for_Y2000M02.nc
 
 
-history: LDEFHIS, NWRT, NRPFHIS / filename  
+history: LDEFHIS, NWRT, NRPFHIS / filename
             T     1     40
       pac_his.nc
 
 averages: NTSAVG, NAVG, NRPFAVG / filename
-            100000     100000  5 
+            100000     100000  5
 
 slice_averages: K2D, NTSSLAVG, NSLAVG, NRPFSLAVG / filename
                  42      1     72    0
@@ -83,8 +83,8 @@ auxiliary_slice_avg: rho Omega  W  Akv  Akt  Aks  HBL
 rho0:
        1000.0d0
 
-lateral_visc:   VISC2,   
-                 0.     
+lateral_visc:   VISC2,
+                 0.
 
 tracer_diff2: TNU2(1:NT)           [m^2/sec for all]
               0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.
@@ -102,7 +102,7 @@ nudg_cof: TauM2_in/out  attnM2   TauM3_in/out  TauT_in/out [days for all]
              3  360    0.0      3. 360.      1.  360.
 
 ubind:  binding velocity [m/s]
-            0.5 
+            0.5
 
 SSS_correction:   dSSSdt [m/day]
                    0.07777

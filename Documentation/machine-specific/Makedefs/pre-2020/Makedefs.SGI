@@ -34,7 +34,7 @@
 
           CFT = f77 -r8 -$(BINARY_TYPE) -mips4 $(CPPFLAGS)
 #                 -TARG:platform=ip21:processor=r8000:madd=ON
-          LDR = $(CFT) 
+          LDR = $(CFT)
 
        FFLAGS = -O3 -TENV:X=3 -OPT:alias=restrict -mp -MP:open_mp=ON
 

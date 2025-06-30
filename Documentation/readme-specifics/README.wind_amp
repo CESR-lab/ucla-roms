@@ -1,5 +1,5 @@
 This is patch tarfile to include reading of wind stress amplitude
-from file. 
+from file.
 
 Usage of this file:
 
@@ -8,7 +8,7 @@ Usage of this file:
    the fifth file, "lmd_kpp.F", should be examined and it is safer
    to patch it rather than (e.g., my CPP setting may be different
    than yours; but the only place which needs to be modified is
-   computation of "ustar": 
+   computation of "ustar":
 
 
 # ifdef WIND_STRESS_AMP
@@ -23,13 +23,13 @@ Description of changes:
 ----------------------
 
 forces.h    added extra variables to handle wind-stress amplitude.
- 
+
 get_smflux.F        added interpolation of wind-stress amplitude;
                     also improved netCDF error diagnostics, but
                     other than that everything is identical to what
                     it was before;
 
-get_stress_magn.F   new file --> this file should be added to 
+get_stress_magn.F   new file --> this file should be added to
                          SRC list of Makefile.
 
 get_forces.F        added call to get_stress_magn just after call
@@ -83,6 +83,6 @@ NOTES:
 
 
 
- 
+
 
 

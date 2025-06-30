@@ -42,7 +42,7 @@ def psi2rho_3d(var_psi):
     [Nz,Mz,Lz]=var_psi.shape
     var_rho=np.zeros((Nz,Mz+1,Lz+1))
 
-    for iz in range(0, Nz, 1):    
+    for iz in range(0, Nz, 1):
         var_rho[iz,:,:]=psi2rho_2d(var_psi[iz,:,:])
 
 
@@ -166,15 +166,15 @@ def rho2w_2d(var_rho,z_rho,z_w):
     for j in range(M):
 	var_w[j,:] = np.interp(z_w[j,:],z_rho[j,:],var_rho[j,:])
     return var_w
-    
-      
-   
+
+
+
 def rho2w_3d(var_rho,z_rho,z_w):
     [M,L,N] = var_rho.shape
     var_w = np.zeros([M,L,N+1])
     for j in range(M):
 	for i in range(L):
-	    var_w[j,i,:] = np.interp(z_w[j,i,:],z_rho[j,i,:],var_rho[j,i,:]) 
+	    var_w[j,i,:] = np.interp(z_w[j,i,:],z_rho[j,i,:],var_rho[j,i,:])
     return var_w
 
 
@@ -186,7 +186,7 @@ def w2rho(var_w,z_rho,z_w):
        var_rho = w2rho_2d(var_w,z_rho,z_w)
     else:
 	var_rho = w2rho_3d(var_w,z_rho,z_w)
-    
+
     return var_rho
 
 

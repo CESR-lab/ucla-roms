@@ -10,7 +10,7 @@
       integer,parameter        :: nrpf          = 10        ! total recs per file
 
 
-      ! edit variable name and time name to match input netcdf file if necessary:          
+      ! edit variable name and time name to match input netcdf file if necessary:
       type (ncforce) :: nc_sst  = ncforce(vname='sst',tname='sst_time' )       ! sea-surface temperature (SST) data
       type (ncforce) :: nc_sss  = ncforce(vname='sss',tname='sss_time' )       ! sea-surface salinity (SSS) data
 

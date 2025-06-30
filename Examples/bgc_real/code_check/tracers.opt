@@ -1,5 +1,5 @@
 ! User notes:
-!   1) Specify tracer variable details here. 
+!   1) Specify tracer variable details here.
 !      (number of tracers (NT) still set in param.h for now)
 !
 !   2) tracer name in netcdf file for _bry.nc and _init.nc
@@ -41,14 +41,14 @@
 
       wrt_t     (itemp)=.False.;    wrt_t_avg(itemp) =.True.    ! temp
       wrt_t_dia (itemp)=.False.
-      
+
 #ifdef SALINITY
       wrt_t     (isalt)=.False.;    wrt_t_avg(isalt) =.True.    ! salinity
       wrt_t_dia (isalt)=.False.
 #endif
 
 ! - PASSIVE TRACERS:
- 
+
 ! - BGC TRACERS:
 
 ! -- default bgc tracers

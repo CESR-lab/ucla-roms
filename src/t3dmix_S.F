@@ -1,6 +1,6 @@
 #include "cppdefs.opt"
 #if defined SOLVE3D && ( defined TS_DIF2 || defined TS_DIF4 )
- 
+
       subroutine t3dmix
       use param
       use hidden_mpi_vars
@@ -15,7 +15,7 @@
      &                                     A2d(1,2), A2d(1,3))
       enddo
       end
- 
+
       subroutine t3dmix_tile (istr,iend,jstr,jend, itrc, FX,FE,LapT)
 
 ! Computes horizontal mixing of tracers along S-surfaces.
@@ -38,7 +38,7 @@
 # include "compute_auxiliary_bounds.h"
 
       do k=1,nz
- 
+
 # ifdef TS_DIF2
 
 ! Add in horizontal Laplacian diffusion along constant S-surfaces.
@@ -70,13 +70,13 @@
         if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
           do j=jstr,jend
             do i=istr,iend+1
-              Tdiag(i,j,k,tmixx,td(itrc)) = 
+              Tdiag(i,j,k,tmixx,td(itrc)) =
      &           Tdiag(i,j,k,tmixx,td(itrc)) - FX(i,j)
             enddo
           enddo
           do j=jstr,jend+1
             do i=istr,iend
-              Tdiag(i,j,k,tmixy,td(itrc)) = 
+              Tdiag(i,j,k,tmixy,td(itrc)) =
      &           Tdiag(i,j,k,tmixy,td(itrc)) - FE(i,j)
             enddo
           enddo

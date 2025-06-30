@@ -241,11 +241,11 @@ c--#define MAX_BY_VERT_CFL_ONLY
 #endif /* SOLVE3D */
 #ifdef SUM_BY_PAIRS
 
-      isize=iend-istr                  ! Horizontal summation within 
+      isize=iend-istr                  ! Horizontal summation within
       jsize=jend-jstr                  ! the tile: compute partial sums
-                                       ! using a split-directional 
+                                       ! using a split-directional
       do while (isize>0 .or. jsize>0)  ! reduction-by-pairs algorithm
-        if (jsize>0) then              ! in order to avoid accumulation 
+        if (jsize>0) then              ! in order to avoid accumulation
           js=(jsize+1)/2-1             ! of roundoff errors.
           do j=0,js
             jtg=jstr+j
@@ -471,7 +471,7 @@ c**     write(*,*) 'received avke =', buff(3)/volume
 #  ifdef MAX_ADV_CFL
 #   ifdef MAX_BY_VERT_CFL_ONLY
               if (buff(10) > Cu_W) then
-#   else      
+#   else
               if (buff(9) > Cu_Adv) then
 #   endif
                 Cu_Adv=buff(9)

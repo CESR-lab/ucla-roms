@@ -1,7 +1,7 @@
 
 	function [lons,lats,ips,jps] = crop_parent(lons,lats,lonbc,latbc);
 
-	% Find limits of child grid and 
+	% Find limits of child grid and
 	% crop parent grid to minimal size
 
         % The domain index space of the parent is [0:nx]x[0:ny]

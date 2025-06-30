@@ -79,7 +79,7 @@ contains
 
     do it = 1,nsweeps
        if (mod(it,1) == 0) then
-          ib = 1 
+          ib = 1
           ie = nx
           jb = 1
           je = ny
@@ -259,7 +259,7 @@ contains
          - cA(6,k,j,i)*p(k+1,j,i-1)                                &
          - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1) &
          - cA(8,k+1,j,i+1)*p(k+1,j,i+1)                            &
-!!  Special cross terms 
+!!  Special cross terms
          - cA(5,k,j,i)*p(k,j+1,i-1) - cA(5,k,j-1,i+1)*p(k,j-1,i+1) &
          - cA(8,k,j,i)*p(k,j-1,i-1) - cA(8,k,j+1,i+1)*p(k,j+1,i+1)
 
@@ -273,7 +273,7 @@ contains
             - cA(5,k,j,i)*p(k-1,j-1,i) - cA(5,k+1,j+1,i)*p(k+1,j+1,i) &
             - cA(6,k,j,i)*p(k+1,j,i-1) - cA(6,k-1,j,i+1)*p(k-1,j,i+1) &
             - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1) &
-            - cA(8,k,j,i)*p(k-1,j,i-1) - cA(8,k+1,j,i+1)*p(k+1,j,i+1) 
+            - cA(8,k,j,i)*p(k-1,j,i-1) - cA(8,k+1,j,i+1)*p(k+1,j,i+1)
        d(k)   = cA(1,k,j,i)
        ud(k)  = cA(2,k+1,j,i)
     enddo
@@ -285,7 +285,7 @@ contains
          - cA(5,k,j,i)*p(k-1,j-1,i)                                &
          - cA(6,k-1,j,i+1)*p(k-1,j,i+1) &
          - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1) &
-         - cA(8,k,j,i)*p(k-1,j,i-1) 
+         - cA(8,k,j,i)*p(k-1,j,i-1)
     d(k)   = cA(1,k,j,i)
 
     call tridiag(nz,d,ud,rhs,p(:,j,i)) ! solve 1D tridiagonal system
@@ -436,7 +436,7 @@ contains
                - cA(6,k,j,i)*p(k+1,j,i-1)                               &
                - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1)&
                - cA(8,k+1,j,i+1)*p(k+1,j,i+1)                           &
-!!  Special cross terms 
+!!  Special cross terms
                - cA(5,k,j,i)*p(k,j+1,i-1) - cA(5,k,j-1,i+1)*p(k,j-1,i+1)&
                - cA(8,k,j,i)*p(k,j-1,i-1) - cA(8,k,j+1,i+1)*p(k,j+1,i+1)
 

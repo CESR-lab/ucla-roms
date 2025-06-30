@@ -4,7 +4,7 @@
 
       subroutine prsgrd32AC1(rho, z_r, prsgrd)
 
-       
+
 
       implicit none
       integer Lm, Mm, N, imin, imax, jim, jmax, i,j,k
@@ -27,7 +27,7 @@ Cf2py intent(out)
       imax=Lm+1
       jmin=0
       jmax=Mm+1
-     
+
       numthreads=1
       trd=0
       chunk_size=(jmax-jmin + numthreads)/numthreads
@@ -73,11 +73,11 @@ Cf2py intent(out)
                do i=imax,imin
                   P(i,j,k)=P(i,j,k+1)+HalfGRho*( (rho(i,j,k+1)+rho(i,j,k))
      &                                           *(z_r(i,j,k+1)-z_r(i,j,k))
-     
+
      &            -OneFifth*( (dR(i,k+1)-dR(i,k))*(z_r(i,j,k+1)-z_r(i,j,k)
      &                                    -OneTwelfth*(dZ(i,k+1)+dZ(i,k))  )
 
-     &                        -dZ(i,k+1)-dZ(i,k)) *(rho(i,j,k+1)-rho(i,j,k)             
+     &                        -dZ(i,k+1)-dZ(i,k)) *(rho(i,j,k+1)-rho(i,j,k)
      &                                      -OneTwelfth*(dR(i,k+1)+dR(i,k)) )
      &                                                                     ))
                 enddo
@@ -102,8 +102,8 @@ Cf2py intent(out)
                dZx(i,j)=cff/(FC(i,j)+FC(i+1,j))
              else
                dzX(i,j)=0.
-             endif 
-             
+             endif
+
              cfr=2.*rx(i,j)*rx(i+1,j)
              if (cfr.gt.epsil) then
                dRx(i,j)=cfr/(rx(i,j)+rx(i+1,j))
@@ -120,12 +120,12 @@ Cf2py intent(out)
 
      &        -OneFifth*( (dRx(i,j)-dRx(i-1,j))*(z_r(i,j,k)-z_r(i-1,j,k)
      &                                -OneTwelfth*(dZx(i,j)+dZx(i-1,j)) )
-                     
+
      &                    -(dZx(i,j)-dZx(i-1,j))*( rho(i,j,k)-rho(i-1,j,k)
      &                                 -OneTwelfth*(dRx(i,j)+drX(i-1,j))  )
                                                                         )))
             enddo
-          enddo 
+          enddo
 
 !
 !! ETA-component of pressure gradient term
@@ -168,8 +168,8 @@ Cf2py intent(out)
             endif
           enddo
       enddo !<--k
-  
 
-            
+
+
 
 

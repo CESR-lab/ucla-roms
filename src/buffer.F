@@ -9,7 +9,7 @@
       ! with the plotting package and other pre- and post-processing software.
       ! This implies that variables defined at RHO-, U-, V-, and PSI-points
       ! when written into netCDF files are dimensioned as follows:
- 
+
       ! Location     name                  dimensions
       !
       !   RHO-        r2dvar   zeta-type   (0:Lm+1,0:Mm+1)
@@ -39,5 +39,5 @@
       !----------------------------------------------------------------
 
       end module buffer
- 
- 
+
+

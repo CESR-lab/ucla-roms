@@ -39,7 +39,7 @@ program timings
     print 10, ntests, t2-t1
  10 format("Performed ",i4, " matrix multiplies: CPU time = ",f12.8, " seconds")
 
-    
+
     call system_clock(tclock2, clock_rate)
     elapsed_time = float(tclock2 - tclock1) / float(clock_rate)
     print 11, elapsed_time

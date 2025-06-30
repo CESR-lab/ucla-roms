@@ -40,17 +40,17 @@ LOOP BEGIN at roms-pres3d-kji.f90(27,5)
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(28,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(27,5)
    <Remainder loop for vectorization>
-      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override
    LOOP END
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(28,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(30,5)
@@ -74,27 +74,27 @@ LOOP BEGIN at roms-pres3d-kji.f90(30,5)
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(31,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(32,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(33,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(34,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(35,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(36,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-kji.f90(30,5)
@@ -108,52 +108,52 @@ LOOP BEGIN at roms-pres3d-kji.f90(30,5)
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(31,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(32,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(33,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(34,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(35,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-kji.f90(36,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(31,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(32,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(33,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(34,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(35,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(36,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-kji.f90(44,9)
@@ -191,14 +191,14 @@ roms-pres3d-kji.f90(3,9):remark #34051: REGISTER ALLOCATION : [MAIN__] roms-pres
         Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
         Callee-save  :    6[ rbx rbp r12-r15]
         Assigned     :   25[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm10]
-        
+
     Routine temporaries
         Total         :     475
             Global    :     133
             Local     :     342
         Regenerable   :     115
         Spilled       :      59
-        
+
     Routine stack
         Variables     :     148 bytes*
             Reads     :       4 [2.07e-09 ~ 0.0%]
@@ -206,11 +206,11 @@ roms-pres3d-kji.f90(3,9):remark #34051: REGISTER ALLOCATION : [MAIN__] roms-pres
         Spills        :     408 bytes*
             Reads     :      63 [1.04e-01 ~ 0.1%]
             Writes    :      61 [2.18e-02 ~ 0.0%]
-    
+
     Notes
-    
+
         *Non-overlapping variables and spills may share stack space,
          so the total stack size might be less than this.
-    
+
 
 ===========================================================================

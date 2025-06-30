@@ -10,13 +10,13 @@ and options that can be used with poe. When debugging MPI programs,
 consider using the following poe options:
 
 -infolevel 1
-    poe displays errors and warnings 
+    poe displays errors and warnings
 -labelio yes
-    output from the parallel tasks is labeled by task ID 
+    output from the parallel tasks is labeled by task ID
 -euidevelop yes
     the message passing interface performs more detailed checking
     during execution. This additional checking is intended for
-    developing applications and can significantly slow performance. 
+    developing applications and can significantly slow performance.
 
 Here is an example of the poe command with various debug options:
 

@@ -2,10 +2,10 @@ module mg_autotune
 
   !- NHMG AUTOTUNE -!
   ! If the namelist parameter autotune is .True.
-  ! test different values of namelist parameters to solve an output of CROCO 
+  ! test different values of namelist parameters to solve an output of CROCO
   ! after a number of time steps (100 by default).
   ! Results, in terms of performance, are ranked and the best set of values underligned.
-  ! 
+  !
   ! Nov 2017 : test only ns_pre and ns_post
   !
   ! - NHMG AUTOTUNE -!
@@ -75,7 +75,7 @@ contains
 
           call tic(1,trim(testname))
 
-          !- WARNING : 
+          !- WARNING :
           !- Array values used in solve_p have to be exactly the same at each test.
           !- List of arrays:
           !-      -

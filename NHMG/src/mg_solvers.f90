@@ -57,7 +57,7 @@ contains
     fac = sqrt(1./(nx*ny*nz))
 
     ! residual returns both 'r' and its norm
-    call compute_residual(1,rnorm) 
+    call compute_residual(1,rnorm)
     res0   = rnorm/bnorm
     rnorm0 = res0
 
@@ -118,7 +118,7 @@ contains
     call relax(maxlev, ns_coarsest)
 
     do lev=maxlev-1,1,-1
-       call coarse2fine(lev) 
+       call coarse2fine(lev)
        call Vcycle(lev)
     enddo
 

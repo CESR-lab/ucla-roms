@@ -1,7 +1,7 @@
 function create_frc_bulk(gridfile,frcfile)
 %
 %   Create ROMS bulk forcing file
-% 
+%
 %
 [nx,ny] = size(ncread(gridfile,'h'));
 

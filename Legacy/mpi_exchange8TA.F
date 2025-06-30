@@ -660,7 +660,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
           call MPI_Test (req(3), flag, status, ierr)
           if (flag) then
             mess_count=mess_count-1 ; comm(3)=0
-            
+
             do k=1,nmaxA
               kshft=2*ishft*(k-1) +1
               do i=imin,imax
@@ -698,7 +698,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
               enddo
             enddo
 # endif
-          endif 
+          endif
         endif
 
         if (comm(4)>0) then
@@ -744,11 +744,11 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
             enddo
 # endif
           endif
-        endif 
+        endif
 
         if (comm(5)>0) then
           call MPI_Test (req(5), flag, status, ierr)
-          if (flag) then 
+          if (flag) then
             mess_count=mess_count-1 ; comm(5)=0
             do k=1,nmaxA
               A(iwest-2,jsouth-2,k)=rv_SW(k        )
@@ -828,7 +828,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
         endif
 
         if (comm(7)>0) then
-          call MPI_Test (req(7), flag, status, ierr) 
+          call MPI_Test (req(7), flag, status, ierr)
           if (flag) then
             mess_count=mess_count-1 ; comm(7)=0
 
@@ -869,7 +869,7 @@ CR        write(*,*) 'mpi_exchange: 1.8', mynode
         endif
 
         if (comm(8)>0) then
-          call MPI_Test (req(8), flag, status, ierr) 
+          call MPI_Test (req(8), flag, status, ierr)
           if (flag) then
             mess_count=mess_count-1 ; comm(8)=0
 

@@ -22,7 +22,7 @@
 
       subroutine step3d_uv1_tile( istr,iend,jstr,jend, ru,rv,
      &                                            WC,FC,CF,DC,
-     &                             UFx,UFe,VFx,VFe, wrk1,wrk2 
+     &                             UFx,UFe,VFx,VFe, wrk1,wrk2
 # ifdef NHMG
      &                                            ,rw
 # endif
@@ -146,7 +146,7 @@
           rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
         enddo
 #  endif
-# endif 
+# endif
 
 #define IMPLICIT_BOTTOM_DRAG
 # ifdef IMPLICIT_BOTTOM_DRAG
@@ -224,7 +224,7 @@
      &          - Udiag(i,j,k,ipgr)
      &          - Udiag(i,j,k,icori)
      &          - Udiag(i,j,k,iadv)
-            Udiag(i,j,k,ivmix) = (u(i,j,k,nnew)-u_prev(i,k))/dt - 
+            Udiag(i,j,k,ivmix) = (u(i,j,k,nnew)-u_prev(i,k))/dt -
      &              ru(i,j,k)*dxdyi_u(i,j)
            enddo
           enddo
@@ -299,7 +299,7 @@
      &          - Vdiag(i,j,k,ipgr)
      &          - Vdiag(i,j,k,icori)
      &          - Vdiag(i,j,k,iadv)
-            Vdiag(i,j,k,ivmix) = (v(i,j,k,nnew)-v_prev(i,k))/dt - 
+            Vdiag(i,j,k,ivmix) = (v(i,j,k,nnew)-v_prev(i,k))/dt -
      &              rv(i,j,k)*dxdyi_v(i,j)
            enddo
           enddo
@@ -495,7 +495,7 @@
           do i=Istr,Iend
             u(i,j,k,nnew) = (u(i,j,k,nnew) + mggrid(1)%du(k,j,i) )*pn_u(i,j)
 
-            rufrc(i,j) = rufrc(i,j) + dn_u(i,j)*mggrid(1)%du(k,j,i)/dt 
+            rufrc(i,j) = rufrc(i,j) + dn_u(i,j)*mggrid(1)%du(k,j,i)/dt
             nhdu(i,j,k,iprec1) = mggrid(1)%du(k,j,i)/dt !stored as a trend
           enddo
         enddo
@@ -504,7 +504,7 @@
           do i=Istr,Iend
             v(i,j,k,nnew) = (v(i,j,k,nnew) + mggrid(1)%dv(k,j,i) )*pm_v(i,j)
 
-            rvfrc(i,j) = rvfrc(i,j) + dm_v(i,j)*mggrid(1)%dv(k,j,i)/dt 
+            rvfrc(i,j) = rvfrc(i,j) + dm_v(i,j)*mggrid(1)%dv(k,j,i)/dt
             nhdv(i,j,k,iprec1) = mggrid(1)%dv(k,j,i)/dt !stored as a trend
           enddo
         enddo

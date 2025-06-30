@@ -16,7 +16,7 @@
 c---#define BIO_1ST_USTREAM_TEST
 #ifdef  BIO_1ST_USTREAM_TEST
         if (itrc>isalt) then       ! biological tracer components:
-!       if (itrc>0) then       ! biological tracer components: 
+!       if (itrc>0) then       ! biological tracer components:
           if (nrhs==3) then         ! compute fluxes during corrector
             do j=jstr,jend            ! stage only
               do i=istr,iend+1

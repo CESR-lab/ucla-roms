@@ -13,7 +13,7 @@
 
       use param
       implicit none
- 
+
 #ifdef MPI
       integer inode,jnode,  p_W, p_SW, p_S, p_SE, p_E, p_NE, p_N,
      &                                      p_NW,  exc_call_count
@@ -21,4 +21,4 @@
 #endif
 
       end module hidden_mpi_vars
- 
+
