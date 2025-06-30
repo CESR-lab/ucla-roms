@@ -37,6 +37,7 @@
       character(len=7),public,parameter :: dn_zr = 's_rho'
       character(len=7),public,parameter :: dn_zw = 's_w'
       character(len=7),public,parameter :: dn_tm = 'time'
+      character(len=10),public :: tdim
 
       ! module local variables
       integer,public       :: nparts
@@ -56,7 +57,7 @@
       end type ncstructure
 
       type,public :: dimstruct
-        character(len=7),dimension(:),allocatable ::dimnames
+        character(len=10),dimension(:),allocatable ::dimnames
         integer,         dimension(:),allocatable ::dimsizes
       end type dimstruct
 
@@ -298,7 +299,7 @@
       integer :: ivar,nvars,xtype
       character(len=20) :: vname
       type(ncstructure)  :: ncinfo
-      character(len=7),dimension(5)  ::dname
+      character(len=10),dimension(5)  ::dname
       integer         ,dimension(5)  ::dsize
       character(len=20),dimension(10) ::attname
       character(len=200),dimension(10)::attvalue
@@ -384,7 +385,7 @@
           if (ndims==0) then
             dname='N/A'
           endif
- 
+
           if (ncinfo%vartype(ivar).eq.'s') then
             continue
           elseif (ndims==0) then
@@ -405,9 +406,21 @@
           endif
 
         enddo
+
+
         ierr = nf90_close(npid)
 
       enddo 
+      
+      ! save specific name of time dimension
+      ndims = ncinfo%ndims(1)
+      dname(1:ndims) = ncinfo%dims(1)%dimnames
+      do idm =1,ndims
+        if (index(dname(idm),'tim')>0) then
+          tdim = dname(idm)
+          exit
+        endif
+      enddo
 
       ierr = nf90_close(ncid)
 
@@ -430,7 +443,9 @@
       integer,dimension(:),allocatable :: j0v,j1v
       integer :: li0,li1,lj0,lj1,li0u,li1u,lj0v,lj1v
       real,dimension(:,:,:),allocatable :: var3d
-      real,dimension(:,:),allocatable   :: var2d
+      real,dimension(:,:),allocatable   :: var2d,t2d
+      real,dimension(:),allocatable     :: var0d
+      character(len=10),dimension(:),allocatable :: charvar
       character(len=20) :: vname
       character(len=1)  :: bry
       type(ncstructure)  :: ncinfo
@@ -441,7 +456,7 @@
       integer :: part0,part1,myparts,part
       integer :: varid,ivar
       integer :: record,nrecords
-      integer,dimension(4) :: startr,startw
+      integer,dimension(4) :: startr,startw,startwr
       real,dimension(:),allocatable :: var1d
       integer :: sz1,sz2,sz3,ndims
       integer :: RSS
@@ -500,7 +515,6 @@
         ncparts(part) = npid
 
       enddo ! part=part0,part1  !]
-      print *, ncparts
 
       li0 = minval(i0)
       li1 = maxval(i1)
@@ -521,11 +535,17 @@
       if (ierr /= nf90_noerr) then
         ierr = nf90_inq_dimid(ncid,'rec_time',dimid)    ! backwards compatibility for bry files
         if (ierr /= nf90_noerr) then
-          print *,'no time dim'
-          nrecords=1
+          ierr = nf90_inq_dimid(ncid,tdim,dimid)        ! backwards compatibility for sample input data
+          if (ierr /= nf90_noerr) then
+            print *,'no time dim'
+            nrecords=1
+          else
+            ierr = nf90_inquire_dimension(ncid,dimid,len=nrecords)
+            if (ierr /= nf90_noerr) call handle_ierr(ierr)
+          endif
         else
-          ierr = nf90_inquire_dimension(ncid,dimid,len=nrecords)
-          if (ierr /= nf90_noerr) call handle_ierr(ierr)
+            ierr = nf90_inquire_dimension(ncid,dimid,len=nrecords)
+            if (ierr /= nf90_noerr) call handle_ierr(ierr)
         endif
       else
         ierr = nf90_inquire_dimension(ncid,dimid,len=nrecords)
@@ -542,8 +562,9 @@
 
         call cpu_time(startvar)
         vname = ncinfo%varname(ivar)
+!        if (nrecords==1) print*,vname
 
-        if (ncinfo%xtype(ivar).eq.nf90_char) cycle
+        if (ncinfo%xtype(ivar).eq.nf90_char) goto 99
 
 !        if (mynode==0) print *,'Processing: ',trim(vname)
 
@@ -608,7 +629,8 @@
                 is = i0u; ie = i1u
                 js = j0v; je = j1v
               end select
-              startw = (/1,1,record,1/)
+              startwr = (/i0,js,record,1/)
+              startw  = (/1,1,record,1/)
             endif
           case(3)
             ! ----- BOUNDARIES ONLY ----- ![
@@ -660,6 +682,25 @@
               startw = (/1,1,record,1/)
             else
               if (record>1) continue
+              nz = ncinfo%dims(ivar)%dimsizes(3)
+              select case(ncinfo%vartype(ivar))
+              case('r')
+                allocate(var3d(li0:li1,lj0:lj1,nz))
+                startr = (/li0,lj0,1,1/)
+                is = i0; ie = i1
+                js = j0; je = j1
+              case('u')
+                allocate(var3d(li0u:li1u,lj0:lj1,nz))
+                startr = (/li0u,lj0,1,1/)
+                is = i0u; ie = i1u
+                js = j0; je = j1
+              case('v')
+                allocate(var3d(li0:li1,lj0v:lj1v,nz))
+                startr = (/li0,lj0v,1,1/)
+                is = i0; ie = i1
+                js = j0v; je = j1v
+              end select
+              startw = (/1,1,1,1/)
             ! save for later (not present in pachug_rst.nc)
             endif
           case(4)
@@ -685,6 +726,8 @@
           end select
         else
           select case(ndims)
+          case(0) ! needed to handle single value variables
+            goto 98
           case(1)
             if (index(ncinfo%dims(ivar)%dimnames(1),'time')>0) then
               startr = (/record,1,1,1/)
@@ -706,7 +749,7 @@
               startr = (/1,record,1,1/)
               startw = (/1,record,1,1/)
               sz1 = ncinfo%dims(ivar)%dimsizes(1)
-              allocate(var3d(sz1,1,1))
+              allocate(var2d(sz1,1))
               is = 1; ie = sz1
               js = 1; je = 1
             else
@@ -715,55 +758,107 @@
               startw = (/1,1,1,1/)
               sz1 = ncinfo%dims(ivar)%dimsizes(1)
               sz2 = ncinfo%dims(ivar)%dimsizes(2)
+              allocate(var2d(sz1,sz2))
+              is = 1; ie = sz1
+              js = 1; je = sz2
+            endif
+          case(3)
+            if (index(ncinfo%dims(ivar)%dimnames(3),'time')>0) then
+              startr = (/1,1,record,1/)
+              startw = (/1,1,record,1/)
+              sz1 = ncinfo%dims(ivar)%dimsizes(1)
+              sz2 = ncinfo%dims(ivar)%dimsizes(2)
               allocate(var3d(sz1,sz2,1))
+              is = 1; ie = sz1
+              js = 1; je = sz2
+            else
+              startr = (/1,1,1,1/)
+              startw = (/1,1,1,1/)
+              sz1 = ncinfo%dims(ivar)%dimsizes(1)
+              sz2 = ncinfo%dims(ivar)%dimsizes(2)
+              sz3 = ncinfo%dims(ivar)%dimsizes(3)
+              allocate(var3d(sz1,sz2,sz3))
               is = 1; ie = sz1
               js = 1; je = sz2
             endif
           end select
-
         endif
 
 !        call system_mem_usage(RSS)
 !        print * ,'Mem usage 1: ', vname,'  ',RSS/1000
 
+        ! variables that need to be saved once
+!        if ((index(ncinfo%dims(ivar)%dimnames(1),'nriver')>0)
+!     &  .or.(index(ncinfo%dims(ivar)%dimnames(1),'npipe')>0)) then
+!        if (record==1) then
+!          if (ndims==2) then
+!            call ncread(ncid,vname,var2d)
+!            do part = part0,part1
+!              call ncwrite(ncparts(part),vname,var2d)
+!            enddo
+!          endif
+!          goto 99
+!        else
+!          cycle
+!        endif
+!        endif
+
+        if (ndims==1) call ncread(ncid,vname,var3d,startr)
         if (ndims==2) call ncread(ncid,vname,var2d,startr)
         if (ndims==3) call ncread(ncid,vname,var3d,startr)
         if (ndims==4) call ncread(ncid,vname,var3d,startr)
+
 
 !        call system_mem_usage(RSS)
 !        print * ,'Mem usage 2: ', vname,'  ',RSS/1000
 
         call cpu_time(startwri)
         do part = part0,part1  ! zero based
-!          fname = srcfile
+          fname = srcfile
 
-!          call insert_nodes(fname,part,nparts)
-!          ierr = nf90_open(trim(fname), nf90_write, npid)
+          call insert_nodes(fname,part,nparts)
+          ierr = nf90_open(trim(fname), nf90_write, npid)
 
           if ((bry=='w').or.(bry=='e').or.(bry=='s').or.(bry=='n')) then  ! check if boundary var
             if (boundary_nodes(part+1)==1) then                           ! only write at boundary
               if (ndims==2) then
-                call ncwrite(ncparts(part),vname,var2d(bs(part):be(part),:),startw)
+                call ncwrite(npid,vname,var2d(bs(part):be(part),:),startw)
               elseif (ndims==3) then
-                call ncwrite(ncparts(part),vname,var3d(bs(part):be(part),:,:),startw)
+                call ncwrite(npid,vname,var3d(bs(part):be(part),:,:),startw)
               endif
-!              ierr = nf90_close(npid)
             else
               cycle
             endif  ! <-- not at boundary node
           else     ! <-- not boundary var
-            if (ndims==2) then
-              call ncwrite(ncparts(part),vname,var2d(is(part):ie(part),js(part):je(part)),startw)
+            if (ndims==1) then
+              call ncwrite(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+            elseif (ndims==2) then
+              call ncwrite(npid,vname,var2d(is(part):ie(part),js(part):je(part)),startw)
+              print*,'write:',vname,part,var2d(1,1),npid
+!              allocate(t2d(ie(part)-is(part)+1,je(part)-js(part)+1))
             elseif (ndims==3) then
-              call ncwrite(ncparts(part),vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+              call ncwrite(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
             elseif (ndims==4) then
-              call ncwrite(ncparts(part),vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+              call ncwrite(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
             endif
-!            ierr = nf90_close(npid)
           endif
+
+!          print*,shape(var2d(is(part):ie(part),js(part):je(part))),shape(t2d)
+
+!          if (allocated(t2d)) then
+!            call ncread(npid,vname,t2d)
+!            print*,'read:',vname,part,t2d(1,1),npid
+!            deallocate(t2d)
+!          endif
+
+          ierr = nf90_close(npid)
         enddo
+
+
+
+!        if (vname=='hraw') stop
         call cpu_time(endwri)
-        print *, 'wir time:', endwri-startwri, vname
+!        print *, 'wir time:', endwri-startwri, vname
 
 !        call system_mem_usage(RSS)
 !        print * ,'Mem usage 3: ', vname,'  ',RSS/1000
@@ -774,13 +869,52 @@
 !        call system_mem_usage(RSS)
 !        print * ,'Mem usage 4: ', vname,'  ',RSS/1000
         call cpu_time(endvar)
-        print *, 'var time:', endvar-startvar, vname
+!        print *, 'var time:', endvar-startvar, vname
 
+        ! single value (double/real) variables
+  98    if ((ncinfo%xtype(ivar).eq.nf90_double).and.(ndims==1)) then
+          allocate(var0d(1))
+          ierr = nf90_inq_varid(ncid,vname,varid)
+          ierr = nf90_get_var(ncid,varid,var0d)
+          do part = part0,part1
+            fname = srcfile
+            call insert_nodes(fname,part,nparts)
+            ierr = nf90_open(trim(fname), nf90_write, npid)
+            ierr = nf90_put_var(npid,varid,var0d)
+            ierr = nf90_close(npid)
+          enddo
+          if (allocated(var0d)) deallocate(var0d)
+        endif
+
+        ! handle char variables
+  99    if (ncinfo%xtype(ivar).eq.nf90_char) then        
+          allocate(charvar(1))
+          ierr = nf90_inq_varid(ncid,vname,varid)
+          ierr = nf90_get_var(ncid,varid,charvar)
+          do part = part0,part1
+            fname = srcfile
+            call insert_nodes(fname,part,nparts)
+            print*,fname
+            ierr = nf90_open(trim(fname), nf90_write, npid)
+            if (ierr/=nf90_noerr) print*,ierr
+            ierr = nf90_put_var(npid,varid,charvar)
+            if (ierr/=nf90_noerr) print*,ierr
+            ierr = nf90_put_var(npid,varid,charvar)
+            if (ierr/=nf90_noerr) print*,ierr
+            ierr = nf90_close(npid)
+          enddo
+          if (allocated(charvar)) deallocate(charvar)
+        endif
+        
       enddo  ! ivars
 
       call cpu_time(endrec)
-      print *,'nrec time:',endrec-startrec
+!      print *,'nrec time:',endrec-startrec
       enddo  ! records
+
+!      do part=part0,part1
+!        ierr=nf90_close(npid)
+!      enddo
 
       ierr = nf90_close(ncid)
 
@@ -789,6 +923,11 @@
       deallocate(j0); deallocate(j0v);
       deallocate(j1); deallocate(j1v);
 
+!      ierr=nf90_open('sample_grd_riv.5.nc',nf90_nowrite,ncid)
+!      call ncread(ncid,'hraw',t2d)
+!      print*,t2d(1,1)
+!      deallocate(t2d)
+!      ierr=nf90_close(npid)
 
       end subroutine write_partial_files !]
 ! ----------------------------------------------------------------------
@@ -804,8 +943,8 @@
       character(len=20) :: attname
       character(len=200):: attvalue
       real              :: attparam
-      character(len=7),allocatable,dimension(:) :: dnames
-      character(len=7)  :: dname
+      character(len=10),allocatable,dimension(:) :: dnames
+      character(len=10)  :: dname
       character(len=20) :: vname
       integer :: ierr, i, xtype,natts,dsize
       integer,dimension(5) :: dimids

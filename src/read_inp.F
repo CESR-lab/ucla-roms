@@ -479,23 +479,14 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
               if (max_frc < max_frc_files) then
                 max_frc=max_frc+1
                 frcfile(max_frc)=fname(1:lstr)
-# ifdef MPI_SILENT_MODE
-                if (mynode == 0) then
-# endif
-                  if (max_frc == 1) then
-                    write(*,'(1x,2A)') 'forcing data file(s): ',
-     &                                 frcfile(max_frc)(1:lstr)
-                  else
-                    write(*,'(23x,A)') frcfile(max_frc)(1:lstr)
-                  endif
-                  ! add to attributes
-                  if (mynode == 0) then
-                    call store_string_att(force_files, frcfile(max_frc)(1:lstr))
-                  endif
-
-# ifdef MPI_SILENT_MODE
+                if (max_frc == 1) then
+                  write(*,'(1x,2A)') 'forcing data file(s): ',
+     &                                frcfile(max_frc)(1:lstr)
+                else
+                  write(*,'(23x,A)') frcfile(max_frc)(1:lstr)
                 endif
-# endif
+                ! add to attributes
+                call store_string_att(force_files, frcfile(max_frc)(1:lstr))
               else
                 mpi_master_only write(*,'(1x,2A/12x,2A/)')
      &          '### ERROR: read_inp :: Too many forcing files are ',

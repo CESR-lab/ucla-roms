@@ -16,8 +16,14 @@ C$    end
       use hidden_mpi_vars
       use mpi
       use roms_read_write
+      ! temp ![
+      use netcdf 
+      use nc_read_write
+      !------!]
       implicit none
-      integer ierr
+      integer :: ierr,ncid,lstr,lenstr
+      integer,dimension(8) :: neighbors
+      character(len=128) :: fname
 
 C$    integer nthrds
       integer nsize, off_xi,off_eta, conv_ijnode_to_rank
@@ -44,6 +50,15 @@ C$      call omp_set_num_threads (nthrds)
 C$    endif
                                     ! Check whether the number of
       if (nsize == NNODES) then     ! nodes specified by -np argument
+      
+        fname='ksink_data/sample_grd_riv.nc'
+        lstr=lenstr(fname)
+        call insert_node(fname, lstr, mynode, NNODES, ierr)
+        ierr=nf90_open(fname,nf90_nowrite,ncid)
+         if (ierr/=nf90_noerr) call handle_ierr(ierr)
+        ierr=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
+        print*,mynode,neighbors
+
 # ifdef TRANSPOSED_MPI_NODE_ORDER
         inode=mynode/NP_ETA         ! of mpiexec matches the parameter
         jnode=mynode-inode*NP_ETA   ! settings in the code, and find
@@ -57,8 +72,13 @@ C$    endif
           west_msg_exch=.true.      ! Determine whether the subdomain
           east_msg_exch=.true.      ! has neighbors on the four sides
 # else
+          if (ierr.eq.nf90_noerr) then
+          west_msg_exch=(neighbors(7)/=-99)
+          east_msg_exch=(neighbors(3)/=-99)
+          else
           west_msg_exch=inode>0          ! around it and set the
           east_msg_exch=inode<NP_XI-1    ! corresponding logical
+          endif
 # endif
 !       else                        ! flags: e.g. est_msg_exch==.true.
 !         west_msg_exch=.false.     ! means that there is a neighbor on
@@ -74,8 +94,13 @@ C$    endif
           south_msg_exch=.true.     ! via exchange of computational
           north_msg_exch=.true.     ! margins, so that in this case
 # else
+          if (ierr.eq.nf90_noerr) then
+          south_msg_exch=(neighbors(5)/=-99)
+          north_msg_exch=(neighbors(1)/=-99)
+          else
           south_msg_exch=jnode>0         ! communications take place
           north_msg_exch=jnode<NP_ETA-1  ! even if the subdomain is
+          endif
 # endif
 !       else                        ! located near the edge of
 !         south_msg_exch=.false.    ! the grid.
