@@ -89,7 +89,7 @@
 
       tmid=time+0.5*dt
 !> wind
-      it2=itwnd ; cff1=wnd_time(it2)-tmid 
+      it2=itwnd ; cff1=wnd_time(it2)-tmid
       it1=3-it2 ; cff2=tmid-wnd_time(it1)
       if (cff1 < dt) synchro_flag=.true.
       cff=1./(cff1+cff2)
@@ -104,14 +104,14 @@
 
 !> rhum
       it6=itrhum ; cff5=rhum_time(it6)-tmid
-      it5=3-it6  ; cff6=tmid-rhum_time(it5) 
+      it5=3-it6  ; cff6=tmid-rhum_time(it5)
       if (cff5 < dt) synchro_flag=.true.
       cff=1./(cff5+cff6)
       cff5=cff5*cff ; cff6=cff6*cff
 
 !> prate
       it8=itprate ; cff7=prate_time(it8)-tmid
-      it7=3-it8   ; cff8=tmid-prate_time(it7) 
+      it7=3-it8   ; cff8=tmid-prate_time(it7)
       if (cff7 < dt) synchro_flag=.true.
 
 ! Drakkar rain is in units of [kg/m^2/s^2]. convert it to [m/s]
@@ -121,7 +121,7 @@
       cff7=cff7*cff ; cff8=cff8*cff
 
 !> lwrad
-      it10=itlrf ; cff9=lrf_time(it10)-tmid 
+      it10=itlrf ; cff9=lrf_time(it10)-tmid
       it9=3-it10 ; cff10=tmid-lrf_time(it9)
       if (cff9 < dt) synchro_flag=.true.
       cff=1./(rho0*Cp*(cff9+cff10))     ! <-- convert [Watts/m^2] into

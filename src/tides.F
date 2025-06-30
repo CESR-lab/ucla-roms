@@ -32,7 +32,7 @@
 
       implicit none
 
-      character(len=30) :: string 
+      character(len=30) :: string
 
       if (.not.pot_tides.and..not.bry_tides) then
          return
@@ -74,8 +74,8 @@
       endif
 
       if (pot_tides) call store_string_att(tide_opt, ', tidalpotential')
-      if (bry_tides) call store_string_att(tide_opt, 
-     &                                     ', barotropictide@boundary') 
+      if (bry_tides) call store_string_att(tide_opt,
+     &                                     ', barotropictide@boundary')
 
       tide_opt = trim(adjustl(tide_opt))
 
@@ -116,7 +116,7 @@
 
 #include "compute_auxiliary_bounds.h"
 
-      if (.not.allocated(ftide)) then 
+      if (.not.allocated(ftide)) then
         call init_tides
       endif
 
@@ -274,16 +274,16 @@
       do while ((found_rec==0).and.(var_file_indx <= max_frc))
 
         ierr=nf90_open(frcfile(var_file_indx), nf90_nowrite, ncid)
-        if(ierr/=0) 
+        if(ierr/=0)
      &     call handle_ierr(ierr,'tides :: opening forcing file')
 
         ierr=nf90_inq_varid(ncid, 'omega', var_id)
-        if(ierr/=0) then 
+        if(ierr/=0) then
           var_file_indx = var_file_indx +1
         else
           found_rec=1 ! Set to 1 to exit do while loop
         endif
-      enddo 
+      enddo
 
       if (found_rec==0) then
         error stop 'tides :: tide input data not found'
@@ -308,7 +308,7 @@
           call ncread(ncid,'u_Im',utide_i(1:i1,j0:j1,itide),start)      ! these currents must be on u,v-points
 !         call exchange_xxx(utide_r(:,:,itide),utide_i(:,:,itide))      ! and rotated to align with the grid
 
-          call ncread(ncid,'v_Re',  vtide_r(i0:i1,1:j1,itide),start)    
+          call ncread(ncid,'v_Re',  vtide_r(i0:i1,1:j1,itide),start)
           call ncread(ncid,'v_Im',  vtide_i(i0:i1,1:j1,itide),start)
 !         call exchange_xxx(vtide_r(:,:,itide),vtide_i(:,:,itide))
         endif

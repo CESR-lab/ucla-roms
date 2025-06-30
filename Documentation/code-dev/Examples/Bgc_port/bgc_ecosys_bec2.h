@@ -7,7 +7,7 @@
       ! DevinD changed /tracers/ as clashes with module name 'tracers'
       common /tracers_com/ tracer, DTRACER_MODULE
 
-      integer counter_no3(288),counter_coccochl(288)      
+      integer counter_no3(288),counter_coccochl(288)
       common /counter_neg/ counter_no3, counter_coccochl
 
 #ifdef BEC2_DIAG
@@ -18,7 +18,7 @@
       integer nr_cchem_mocsy_2d, nr_cchem_mocsy_3d
 # ifdef CCHEM_MOCSY
       ! Parameters nr_cchem_mocsy_2d and nr_cchem_mocsy_3d give the numbers of *additional*
-      ! diagnostic variables if MOCSY code is used for carbon chemistry (relative to the 
+      ! diagnostic variables if MOCSY code is used for carbon chemistry (relative to the
       ! OCMIP code):
 #  ifdef CCHEM_TODEPTH
       parameter( nr_cchem_mocsy_2d=-3, nr_cchem_mocsy_3d=7 )
@@ -36,7 +36,7 @@
      &  +14
 #endif
 #ifdef N2O_NEV
-     &  +2 
+     &  +2
 #endif
 # ifdef USE_EXPLICIT_VSINK
      &  +10
@@ -44,7 +44,7 @@
 # ifdef BEC_COCCO
      &  +18
 #endif
-     & , nr_bec2_diag_2d=29+nr_cchem_mocsy_2d 
+     & , nr_bec2_diag_2d=29+nr_cchem_mocsy_2d
 # ifdef Ncycle_SY
      &  +8
 # ifdef N2O_TRACER_DECOMP
@@ -160,7 +160,7 @@
      &   coccoplim_idx_t=LAST_I+18
 #  undef LAST_I
 #  define LAST_I coccoplim_idx_t
-# endif        
+# endif
 
 # ifdef Ncycle_SY
       integer, parameter :: ammox_idx_t=LAST_I+1,nitrox_idx_t=LAST_I+2,
@@ -190,7 +190,7 @@
 # define LAST_I dco2star_idx_t
 #ifdef Ncycle_SY
      &   ,schmidt_n2o_idx_t=LAST_I+1, pvn2o_idx_t=LAST_I+2, n2osat_idx_t=LAST_I+3,
-     &    fgn2o_idx_t=LAST_I+4, schmidt_n2_idx_t=LAST_I+5, pvn2_idx_t=LAST_I+6, 
+     &    fgn2o_idx_t=LAST_I+4, schmidt_n2_idx_t=LAST_I+5, pvn2_idx_t=LAST_I+6,
      &    fgn2_idx_t=LAST_I+7, n2sat_idx_t=LAST_I+8
 # undef LAST_I
 # define LAST_I n2sat_idx_t
@@ -218,7 +218,7 @@
      &   fluxtosed_idx_t=LAST_I+2,caco3fluxtosed_idx_t=LAST_I+3,
      &   sio2fluxtosed_idx_t=LAST_I+4,pironfluxtosed_idx_t=LAST_I+5,dustfluxtosed_idx_t=LAST_I+6,
      &   pocsedloss_idx_t=LAST_I+7,otherremin_idx_t=LAST_I+8,caco3sedloss_idx_t=LAST_I+9,
-     &   sio2sedloss_idx_t=LAST_I+10 
+     &   sio2sedloss_idx_t=LAST_I+10
 
       ! Array for storing the Netcdf variable IDs of the diagnostics:
       ! The IDs of the 2d vars are first, the those of the 3d.
@@ -337,7 +337,7 @@
 #  undef LAST_I
 #  define LAST_I n2o_ind_t
 #ifdef N2O_TRACER_DECOMP
-     &     ,n2o_ao1_ind_t=LAST_I+1, n2o_siden_ind_t=LAST_I+2, 
+     &     ,n2o_ao1_ind_t=LAST_I+1, n2o_siden_ind_t=LAST_I+2,
      &     n2o_soden_ind_t=LAST_I+3, n2o_atm_ind_t=LAST_I+4,
      &     n2_sed_ind_t=LAST_I+5
 #  undef LAST_I
@@ -356,7 +356,7 @@
 ! Parameters related to sinking particles:
 !
 
-      real 
+      real
      &   POC_diss,       ! diss. length (m), modified by TEMP
      &   POC_mass,       ! molecular weight of POC
      &   P_CaCO3_diss,   ! diss. length (m)
@@ -398,13 +398,13 @@
      &   P_SiO2_sflux_out, P_SiO2_hflux_out,
      &   dust_sflux_out, dust_hflux_out,
      &   P_iron_sflux_out, P_iron_hflux_out,
-     &   POC_sflux_out, POC_hflux_out, 
+     &   POC_sflux_out, POC_hflux_out,
      &   P_CaCO3_sflux_in, P_CaCO3_hflux_in,
-     &   P_SiO2_sflux_in, P_SiO2_hflux_in, 
+     &   P_SiO2_sflux_in, P_SiO2_hflux_in,
      &   dust_sflux_in, dust_hflux_in,
      &   P_iron_sflux_in, P_iron_hflux_in,
      &   POC_sflux_in, POC_hflux_in,
-     &   P_CaCO3_sed_loss, P_SiO2_sed_loss, 
+     &   P_CaCO3_sed_loss, P_SiO2_sed_loss,
      &   P_iron_sed_loss,POC_sed_loss,
      &   dust_sed_loss,
      &   DOP_remin, DOPr_remin
@@ -425,11 +425,11 @@
      &   P_iron_sflux_out, P_iron_hflux_out,
      &   POC_sflux_out, POC_hflux_out,
      &   P_CaCO3_sflux_in, P_CaCO3_hflux_in,
-     &   P_SiO2_sflux_in, P_SiO2_hflux_in, 
+     &   P_SiO2_sflux_in, P_SiO2_hflux_in,
      &   dust_sflux_in, dust_hflux_in,
      &   P_iron_sflux_in, P_iron_hflux_in,
      &   POC_sflux_in, POC_hflux_in,
-     &   P_CaCO3_sed_loss, P_SiO2_sed_loss, 
+     &   P_CaCO3_sed_loss, P_SiO2_sed_loss,
      &   P_iron_sed_loss,POC_sed_loss,
      &   dust_sed_loss,
      &   DOP_remin, DOPr_remin,
@@ -448,15 +448,15 @@
       ! Number of sinking components:
       ! Indices to be used in VSinkFlux only (!!)
       integer, parameter :: nsink=10,iDUSTHARD_VSink=1,iPOCHARD_VSink=iDUSTHARD_VSink+1,
-     &   iPCACO3HARD_VSink=iDUSTHARD_VSink+2,iPSIO2HARD_VSink=iDUSTHARD_VSink+3,  
-     &   iPIRONHARD_VSink=iDUSTHARD_VSink+4,iDUSTSOFT_VSink=iDUSTHARD_VSink+5,  
-     &   iPOCSOFT_VSink=iDUSTHARD_VSink+6,iPCACO3SOFT_VSink=iDUSTHARD_VSink+7,  
-     &   iPSIO2SOFT_VSink=iDUSTHARD_VSink+8,iPIRONSOFT_VSink=iDUSTHARD_VSink+9  
+     &   iPCACO3HARD_VSink=iDUSTHARD_VSink+2,iPSIO2HARD_VSink=iDUSTHARD_VSink+3,
+     &   iPIRONHARD_VSink=iDUSTHARD_VSink+4,iDUSTSOFT_VSink=iDUSTHARD_VSink+5,
+     &   iPOCSOFT_VSink=iDUSTHARD_VSink+6,iPCACO3SOFT_VSink=iDUSTHARD_VSink+7,
+     &   iPSIO2SOFT_VSink=iDUSTHARD_VSink+8,iPIRONSOFT_VSink=iDUSTHARD_VSink+9
       ! Vertical sink fluxes [mmol m-2 s-1], upward flux is positive
       real VSinkFlux(GLOBAL_2D_ARRAY,0:N,nsink)
       ! Indices of sinking variables in temprorary array tracer (used in ecosys_bec2.F):
-!      integer, dimension(nsink), parameter :: 
-!     &    tidx_vsink = (/ dust_ind_t, poc_ind_t, 
+!      integer, dimension(nsink), parameter ::
+!     &    tidx_vsink = (/ dust_ind_t, poc_ind_t,
 !     &        pcaco3_ind_t, psio2_ind_t, piron_ind_t /)
       common /bec2_vsink/ VSinkFlux
 #endif
@@ -481,7 +481,7 @@
      &   ph_avg, pCO2_avg, pCO2air_avg, PARinc_avg
       real, dimension(GLOBAL_2D_ARRAY,N) ::
      &   PAR_avg
-      common /time_avg1/ PAR_avg, PARinc_avg, 
+      common /time_avg1/ PAR_avg, PARinc_avg,
      &        pco2_avg, pCO2air_avg, pH_avg
 # ifdef SLICE_AVG
       real PAR_slavg(GLOBAL_2D_ARRAY)
@@ -489,7 +489,7 @@
       real pco2_slavg(GLOBAL_2D_ARRAY)
       real pCO2air_slavg(GLOBAL_2D_ARRAY)
       real pH_slavg(GLOBAL_2D_ARRAY)
-      common /time_slavg1/ PAR_slavg, PARinc_slavg, 
+      common /time_slavg1/ PAR_slavg, PARinc_slavg,
      &        pco2_slavg, pCO2air_slavg, pH_slavg
 # endif /* SLICE_AVG */
 #endif /* !BEC2_DIAG */

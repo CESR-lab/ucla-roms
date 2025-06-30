@@ -1,5 +1,5 @@
       implicit none      ! This code just prints
-      integer i          ! ASCII characters agains 
+      integer i          ! ASCII characters agains
       character A*1      ! their numbers
       do i=0,255
         A=char(i)
@@ -7,5 +7,5 @@
       enddo
       stop
       end
- 
- 
+
+

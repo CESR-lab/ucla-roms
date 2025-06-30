@@ -29,7 +29,7 @@
       ! Default values are halo=bf, do_corners = .true., and bl = bf
 
       interface exchange_xxx
-        module procedure 
+        module procedure
      &        exchange_2,exchange_22,exchange_222,exchange_2222
      &       ,exchange_3,exchange_33,exchange_333,exchange_3333
      &                  ,exchange_32,exchange_332
@@ -68,9 +68,9 @@
 
       if (.not.init_buffer_done) call init_mpi_buffers
 
-      ! Provide the ability to work with arrays with non-standard 
+      ! Provide the ability to work with arrays with non-standard
       ! allocated buffer sizes
-      bl = bf 
+      bl = bf
       if (present(array_bf)) then
         bl = array_bf
       endif
@@ -429,7 +429,7 @@
       nxl = dims(1) -2*bl
       nyl = dims(2) -2*bl
       call pack_buffers(A,nxl,nyl,1)
-        
+
       end subroutine pack_2dvar !]
 !--------------------------------------------------------
       subroutine pack_3dvar(A) ![
@@ -448,7 +448,7 @@
       nyl = dims(2) -2*bl
       nzl = dims(3)
       call pack_buffers(A,nxl,nyl,nzl)
-        
+
       end subroutine pack_3dvar !]
 !--------------------------------------------------------
       subroutine unpack_2dvar(A) ![
@@ -466,7 +466,7 @@
       nxl = dims(1) -2*bl
       nyl = dims(2) -2*bl
       call unpack_buffers(A,nxl,nyl,1)
-        
+
       end subroutine unpack_2dvar !]
 !--------------------------------------------------------
       subroutine unpack_3dvar(A) ![
@@ -485,7 +485,7 @@
       nyl = dims(2) -2*bl
       nzl = dims(3)
       call unpack_buffers(A,nxl,nyl,nzl)
-        
+
       end subroutine unpack_3dvar !]
 !--------------------------------------------------------
       subroutine init_mpi_buffers ![
@@ -683,13 +683,13 @@
 ! This is needed because later in this code array "req" is subject to
 ! rearrangement in order to ignore directions from which no message is
 ! expected, as well as to ignore requests from which messages are
-      
+
                      ! tags for receive      for send        ! each sub-domain can receive up to 8 exchanges.
       do i=1,16      !         3  5  1        4  6  2        ! the 'tag' value indicates which side/corner
         comm(i)=0    !         8     7        7     8        ! the message came from.
       enddo          !         2  6  4        1  5  3
 
-! Prepare to receive:  
+! Prepare to receive:
       if (west_msg_exch) then
         call MPI_Irecv (recvW, szW, MPI_DOUBLE_PRECISION,
      &          p_W, 8, ocean_grid_comm, req(1), ierr)

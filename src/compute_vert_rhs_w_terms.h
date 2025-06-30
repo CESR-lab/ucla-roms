@@ -31,7 +31,7 @@
      &                               +curv(i,k  )*min(Flxw,0.))
             enddo
           enddo
-  
+
           !! These guys (FC) are fluxes (m3/s) of velocity (m/s) -> m4/s2
           do k=1,N-1
             do i=istr,iend

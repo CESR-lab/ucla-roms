@@ -7,7 +7,7 @@
 
 ! Auxiliary module "private_scratch":   A set of tile-size arrays
 !---------- ------ --------------------   to provide workspace for
-! intermediate computations individually for each thread.  The arrays 
+! intermediate computations individually for each thread.  The arrays
 ! passed as arguments to physical routines called by their drivers
 ! and are used internally there.  In most cases the result is no
 ! longer needed upon completion of physical routines; occasionally
@@ -16,7 +16,7 @@
 !
 ! Note that "sse-ssz" below are to make N2d=size_XI*max(size_ETA,N+1)
 ! without using "max" function inside parameter statement.
-  
+
 #ifdef ALLOW_SINGLE_BLOCK_MODE
       integer :: size_XI, size_ETA
 #else

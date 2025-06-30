@@ -1,5 +1,5 @@
 #include "cppdefs.opt"
-#if defined SOLVE3D && defined LMD_KPP 
+#if defined SOLVE3D && defined LMD_KPP
 
 # define INT_AT_RHO_POINTS
 # define SMOOTH_HBL
@@ -68,7 +68,7 @@
 
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb,amp
 
-      !! When smoothing hbl, we try to not 
+      !! When smoothing hbl, we try to not
       !! smooth over the mask and the domain
       !! boundaries
 # ifdef SMOOTH_HBL
@@ -325,7 +325,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # endif
           enddo
 # if defined LMD_KPP || defined LMD_BKPP
-        endif 
+        endif
 # endif
 
 # if defined MERGE_OVERLAP && defined LMD_KPP && defined LMD_BKPP

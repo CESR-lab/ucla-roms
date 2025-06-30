@@ -16,10 +16,10 @@ function [z,Cs] = zlevs3(h,zeta,theta_s,theta_b,hc,N,type,scoord)
 %  On Output:
 %
 %    z       Depths (m) of RHO- or W-points (3D matrix).
-% 
-%  Further Information:  
+%
+%  Further Information:
 %  http://www.brest.ird.fr/Roms_tools/
-%  
+%
 %  This file is part of ROMSTOOLS
 %
 %  ROMSTOOLS is free software; you can redistribute it and/or modify
@@ -37,8 +37,8 @@ function [z,Cs] = zlevs3(h,zeta,theta_s,theta_b,hc,N,type,scoord)
 %  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 %  MA  02111-1307  USA
 %
-%  Copyright (c) 2002-2006 by Pierrick Penven 
-%  e-mail:Pierrick.Penven@ird.fr  
+%  Copyright (c) 2002-2006 by Pierrick Penven
+%  e-mail:Pierrick.Penven@ird.fr
 %
 %  modified by Yusuke Uchiyama, UCLA, 2008
 %  further modified by Evan Mason, UCLA, 2008

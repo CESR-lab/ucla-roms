@@ -35,7 +35,7 @@ contains
           grid(lev)%dxu(0:ny+1,1:nx+1) = hlf*(grid(lev)%dx(0:ny+1,0:nx)+grid(lev)%dx(0:ny+1,1:nx+1))
           grid(lev)%dyv(1:ny+1,0:nx+1) = hlf*(grid(lev)%dy(0:ny,0:nx+1)+grid(lev)%dy(1:ny+1,0:nx+1))
 
-       else               ! coarsen dx,dy 
+       else               ! coarsen dx,dy
           ! (needed when directly discretizing on coarser grids)
 
           nxf =grid(lev-1)%nx

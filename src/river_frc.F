@@ -8,7 +8,7 @@
       ! in the direction of the unmasked cell.
 
 #include "cppdefs.opt"
-  
+
       use dimensions
       use roms_read_write
       use nc_read_write
@@ -28,7 +28,7 @@
       real   ,public,allocatable,dimension(:,:) :: rfrc ! River fraction
       real   ,public,allocatable,dimension(:,:) :: ridx_real ! River indices (read as real by ncread)
       integer,public,allocatable,dimension(:,:) :: ridx ! River indices (stored as int by ROMS)
-      
+
       real,public,dimension(nriv)    :: riv_vol                      ! river volume
       real,public,dimension(nriv,nt) :: riv_trc                      ! river tracer conc.
 
@@ -80,7 +80,7 @@
       endif
 
       if(.not. init_riv_done) call init_river_frc ! initialize once river flux locations & arrays
-      
+
       end subroutine set_river_frc  !]
 ! ----------------------------------------------------------------------
       subroutine init_river_frc  ![
@@ -102,10 +102,10 @@
       allocate( rflx(GLOBAL_2D_ARRAY) )    ; rflx = 0.
       allocate( ridx(GLOBAL_2D_ARRAY) )    ; ridx = 0
       allocate( ridx_real(GLOBAL_2D_ARRAY) )    ; ridx_real = 0.
-      allocate( rfrc(GLOBAL_2D_ARRAY) )    ; rfrc = 0.      
-      
+      allocate( rfrc(GLOBAL_2D_ARRAY) )    ; rfrc = 0.
 
-      
+
+
       if (analytical) then
         riv_west=xl*0.4 ! River west bank at 40% from west
         riv_east=xl*0.6 ! River west bank at 60% from west
@@ -129,7 +129,7 @@
 
         ierr=nf90_open(ana_grdname,nf90_write,ncid)
         varid = nccreate(ncid,'river_flux',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
-        ierr=nf90_put_att(ncid, varid,'long_name','River volume flux') 
+        ierr=nf90_put_att(ncid, varid,'long_name','River volume flux')
 !       ierr=nf90_close(ncid)
 !       print *,'added river_flux',mynode
 !       ierr=nf90_open(ana_grdname,nf90_write,ncid)
@@ -141,11 +141,11 @@
          ierr=nf90_open(frcfile(nc_rvol%ifile), nf90_nowrite, ncid) ! open river forcing file
          ierr = nf90_inq_varid(ncid, "river_index", varid) ! check river forcing file for index...
          ierr = ierr * nf90_inq_varid(ncid, "river_fraction", varid) ! ... and fraction variables
-         
+
          if (ierr == nf90_noerr) then ! Found the variables in the forcing file
             call ncread(ncid, "river_index", ridx_real(i0:i1,j0:j1))
             call ncread(ncid, "river_fraction", rfrc(i0:i1,j0:j1))
-            ierr = nf90_close(ncid)            
+            ierr = nf90_close(ncid)
 !     Check for non-integer values
             ridx(i0:i1, j0:j1) = int(ridx_real(i0:i1, j0:j1))
             if (any(abs(ridx_real(i0:i1,j0:j1) - ridx(i0:i1,j0:j1)) > 1.0e-6)) then
@@ -156,7 +156,7 @@
             ierr=nf90_close(ncid)
             ierr=nf90_open(grdname, nf90_nowrite, ncid)
             ierr = nf90_inq_varid(ncid, riv_flx_name, varid) ! check grid file for variable
-         
+
             if (ierr /= nf90_noerr) then ! if not in grid file
                ierr = nf90_close(ncid) ! close grid file
                call handle_ierr(ierr, 'init_riv:: '//
@@ -177,7 +177,7 @@
                   ridx(i0:i1, j0:j1) = 0
                   rfrc(i0:i1, j0:j1) = 0
                end where
-            end if ! found in grid file               
+            end if ! found in grid file
          end if                 ! Separate variables found in forcing file
       endif !analytical
 

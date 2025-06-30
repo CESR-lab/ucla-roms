@@ -12,7 +12,7 @@ grid:  filename
 
 forcing: filename
      input_data/sample_flux_frc.nc
-     input_data/sample_wwv_riv.nc        
+     input_data/sample_wwv_riv.nc
      input_data/roms_bry_trace.nc
 
 initial: NRREC  filename
@@ -20,7 +20,7 @@ initial: NRREC  filename
      input_data/roms_init_trace.nc
 
 output_root_name:
-     pipes     
+     pipes
 
 lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
                  0.       0.

@@ -77,7 +77,7 @@
       character(len=99),save :: fname
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
-      
+
       output_time = output_time + dt
 
       if (output_time>=output_period) then
@@ -93,7 +93,7 @@
         record = record+1
 
         ierr=nf90_open(fname,nf90_write,ncid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &      call handle_ierr(ierr,'wrt_random, opening: ',fname)
 
 !       ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)     ! set fill value - nf90_nofill for optimized writing

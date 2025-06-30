@@ -387,7 +387,7 @@
 
       ! END OF MODULE PRE-AMBLE  !]
 
-      contains 
+      contains
 
 !-----------------------------------------------------------------------
 #ifndef ANA_WEC_FRC
@@ -479,7 +479,7 @@
         ierr = nf90_put_att(ncid,varid,'units',vst_units)
       endif
       if (wrt_WST) then                                ! wst: vertical Stokes drift velocity (m/s) at rho-point
-        varid = 
+        varid =
      &     nccreate(ncid,wst_name,(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',wst_long_name)
         ierr = nf90_put_att(ncid,varid,'units',wst_units)
@@ -495,7 +495,7 @@
         ierr = nf90_put_att(ncid,varid,'units',Akw_units)
       endif
       if (wrt_KVF) then                                ! kvf: vertical vortex force term (u^St du/dz)
-        varid = 
+        varid =
      &    nccreate(ncid,kvf_name,(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',kvf_long_name)
         ierr = nf90_put_att(ncid,varid,'units',kvf_units)
@@ -524,7 +524,7 @@
       integer :: ierr,varid
       character(len=10),dimension(4) :: dimnames           ! dimension names
       integer,          dimension(4) :: dimsizes
-      
+
       if (wrt_file_avg) then
         call create_file('_wec_avg',fname)
       else
@@ -559,7 +559,7 @@
       integer :: tile, ierr
 
       if (.not. first_step) then
-        output_time = output_time + dt 
+        output_time = output_time + dt
       endif
       first_step=.false.
 
@@ -581,21 +581,21 @@
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
         if (wrt_sup) then
-          if (wrt_file_avg) then 
+          if (wrt_file_avg) then
             call ncwrite(ncid,'sup',sup_avg(i0:i1,j0:j1),(/1,1,record/))
           else
             call ncwrite(ncid,'sup',sup(i0:i1,j0:j1),(/1,1,record/))
           endif
         endif
         if (wrt_ust2d) then
-          if (wrt_file_avg) then 
+          if (wrt_file_avg) then
             call ncwrite(ncid,'ust2d',ust2d_avg(1:i1,j0:j1),(/1,1,record/))
           else
             call ncwrite(ncid,'ust2d',ust2d(1:i1,j0:j1),(/1,1,record/))
           endif
         endif
         if (wrt_ust2d) then
-          if (wrt_file_avg) then 
+          if (wrt_file_avg) then
             call ncwrite(ncid,'vst2d',vst2d_avg(i0:i1,1:j1),(/1,1,record/))
           else
             call ncwrite(ncid,'vst2d',vst2d(i0:i1,1:j1),(/1,1,record/))
@@ -603,14 +603,14 @@
         endif
 # ifdef SOLVE3D
         if (wrt_ust) then
-          if (wrt_file_avg) then 
+          if (wrt_file_avg) then
             call ncwrite(ncid,'ust',ust_avg(1:i1,j0:j1,:),(/1,1,1,record/))
           else
             call ncwrite(ncid,'ust',ust(1:i1,j0:j1,:),(/1,1,1,record/))
           endif
         endif
         if (wrt_vst) then
-          if (wrt_file_avg) then 
+          if (wrt_file_avg) then
             call ncwrite(ncid,'vst',vst_avg(i0:i1,1:j1,:),(/1,1,1,record/))
           else
             call ncwrite(ncid,'vst',vst(i0:i1,1:j1,:),(/1,1,1,record/))
@@ -1763,7 +1763,7 @@ C$OMP BARRIER
         do i=istr,iendR
           ust2d(i,j)=0.5*(ustr2d(i-1,j)+ustr2d(i,j))
 # ifdef MASKING
-!    &                  *umask(i,j) 
+!    &                  *umask(i,j)
 # endif
         enddo
       enddo
@@ -2876,5 +2876,5 @@ c             vst_r(i,j,k)= ust_r(i,j,k)*wdre(i,j) ! test
 ! ---------------------------------------------------------------------
 
 #endif /* WEC for whole module */
-        
+
       end module wec_frc

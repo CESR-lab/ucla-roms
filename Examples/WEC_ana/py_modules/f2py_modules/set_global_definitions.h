@@ -3,7 +3,7 @@
   C-preprocessor.  General user is strongly discouraged from attempts
   to modify anything below this line.
 ------------------------------------------------------------------ */
- 
+
 /* Switch to allow mixed [tiled + single-block] execution in Open
   MP mode. Activation of this switch enables special logical branch
   in "compute_tile_bounds" which recognizes tile=NSUB_X*NSUB_E as
@@ -11,7 +11,7 @@
   declared in "private_scratch" to accomodate enough workspace
   accordingly. This switch is used for debugging purposes only and
   normally should be undefined.  */
- 
+
 c--#define ALLOW_SINGLE_BLOCK_MODE
 #ifdef ALLOW_SINGLE_BLOCK_MODE
 # define SINGLE NSUB_X*NSUB_E,NSUB_X*NSUB_E !!!
@@ -19,8 +19,8 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 
 
 /* Switch to control at what stage time-stepping of barotropic takes
-  place: either during predictor or corrector phase of main time step. 
-  Note: only one of the two options must be defined. */ 
+  place: either during predictor or corrector phase of main time step.
+  Note: only one of the two options must be defined. */
 
 #undef PRED_COUPLED_MODE
 #define CORR_COUPLED_MODE
@@ -37,36 +37,36 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 #endif
 
 
-/* Macro to signal that we are in predictor sub-step of 3D mode. 
+/* Macro to signal that we are in predictor sub-step of 3D mode.
   This does not have alternative settings. */
 
 #define PRE_STEP nnew.eq.3
- 
- 
+
+
 /* Take into account nonuniform density in barotropic mode pressure-
   gradient terms. If not activated, then Shallow Water Equation (SWE)
   term is used.  This switch has no effect for a 2D problem.   */
- 
+
 #define VAR_RHO_2D
- 
- 
+
+
 /* Switch ON/OFF double precision for real type variables (since this
   is mostly controlled by mpc and/or compuler options, this CPP-switch
   affects only on the correct choice of netCDF functions, see below)
   and the use QUAD precision for global summation variables, which is
   always desirable, but some compilers do not support it.  */
- 
+
 #define DBLEPREC
- 
- 
+
+
 /* Turn ON/OFF MPI parallelization. If not activated,the code becomes
   shared memory parallel code. The second switch makes each MPI process
   create its own output file (this switch has no effect if MPI is not
   defined).  */
- 
+
 #define MPI
 #define PARALLEL_FILES
- 
+
 /* Define standard dimensions for the model arrays (vertical
   dimensions are inserted explicitly in the code, when needed).
   Periodic and nonperiodic versions may differ by the number of
@@ -76,7 +76,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
   the physical domain (as opposite to the whole domain), so two
   ghost zones are always provided on the each side. These data for
   these two ghost zones is then exchanged by message passing.  */
- 
+
 #ifdef MPI
 # define GLOBAL_2D_ARRAY -1:Lm+2+padd_X,-1:Mm+2+padd_E
 # define START_2D_ARRAY -1,-1
@@ -99,10 +99,10 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 #  endif
 # endif
 #endif
- 
+
 #define PRIVATE_1D_SCRATCH_ARRAY istr-2:iend+2
 #define PRIVATE_2D_SCRATCH_ARRAY istr-2:iend+2,jstr-2:jend+2
- 
+
 /* The following definitions contain logical expressions which answer
   the question: ''Am I a thread working on subdomain (tile) which is
   adjacent to WESTERN[EASTERN,SOUTHERN,NORTHERN] edge (i.e. physical
@@ -112,7 +112,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
   either direction these macros are always .false., because WEST[EAST,
   ...]_INTER are .true., and periodicty is handled by MPI messages,
   but they are also should be prevented from being used.  */
- 
+
 #ifdef MPI
 # define WESTERN_EDGE istr.eq.iwest .and. .not.west_inter
 # define EASTERN_EDGE iend.eq.ieast .and. .not.east_inter
@@ -174,7 +174,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 
 
 
- 
+
 /* Sometimes an operation needs to be restricted to one MPI process,
   the master process. Typically this occurs when it is desirable to
   avoid redundant write of the same message by all MPI processes into
@@ -182,7 +182,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
   into printed message. To do it conditionally (MPI code only) add
   MYID (without preceeding comma) into the end of the message to be
   printed.   */
- 
+
 #ifdef MPI
 # define MPI_master_only if (mynode.eq.0)
 # define MYID ,' node =', mynode
@@ -190,7 +190,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 # define MPI_master_only
 # define MYID !
 #endif
- 
+
 /* Similarly, if operation needed to be done by one thread only, e.g.,
   copy a redundantly computed private scalar into shared scalar, or
   write an error message in situation where it is guaranteed that the
@@ -198,14 +198,14 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
   the same for all) and only one needs to complain.  ZEROTH_TILE is
   intended to restrict the operation only to thread which is working
   on south-western tile.
- 
+
   Occasinally a subroutine designed to process a tile may be called
   to process the whole domain. If it is necessary to dustinguish
   whether it is being called for the whole domain (SINGLE_TILE_MODE)
   or a tile.
- 
+
   All these switches are the same for MPI/nonMPI code.  */
- 
+
 #ifdef MPI
 # define ZEROTH_TILE (istr.eq.iwest .and. jstr.eq.jsouth)
 # define SINGLE_TILE_MODE (iend-istr.eq.ieast-iwest .and. \
@@ -236,8 +236,8 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 #else
 # define FIRST_2D_STEP iic.eq.ntstart
 #endif
- 
- 
+
+
 /* Turn ON/OFF double precision for real type variables, associated
   intrinsic functions and netCDF library functions. It should be noted
   that because ROMS relies on compiler options and "mpc" program (see
@@ -250,7 +250,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
   accuracy. Additionally, activate the use QUAD precision for global
   summation variables, which is always desirable, but some compilers
   do not support it.        */
- 
+
 #if defined DBLEPREC && !defined Linux && !defined PGI && !defined __IFC
 # define QUAD 16
 #  define QuadZero 0.Q0
@@ -259,7 +259,7 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 # define QUAD 8
 # define QuadZero 0.D0
 #endif
- 
+
 c-#ifdef DBLEPREC
 c-# define float dfloat
 c-# define FLoaT dfloat
@@ -271,24 +271,24 @@ c-# define EXP dexp
 c-# define dtanh dtanh
 c-# define TANH dtanh
 c-#endif
- 
+
 /* Model netCDF input/output control: decide whether to put grid data
   into output files (separate choice for each output file) and select
   appropriate double/single precision types for netCDF input
   (controlled by NF_FTYPE) and netCDF output (NF_FOUT) functions.
- 
+
   NOTE: Even if the whole code is compiled with double precision
   accuracy, it is still possible to save history and averages netCDF
   files in single precision in order to save disk space. This happens
   if HIS_DOUBLE switch is undefined. Status of HIS_DOUBLE switch does
   not precision of restart file, which is always kept consistent with
   precision of the code.  */
- 
+
 /* #define HIS_DOUBLE */
 #undef PUT_GRID_INTO_RESTART
 #define PUT_GRID_INTO_HISTORY
 #define PUT_GRID_INTO_AVERAGES
- 
+
 #ifdef DBLEPREC
 # define NF_FTYPE nf_double
 # define nf_get_var_FTYPE nf_get_var_double
@@ -316,7 +316,7 @@ c-#endif
 # define nf_put_vara_FTYPE nf_put_vara_real
 # define NF_FOUT nf_float
 #endif
- 
+
 /* The following definitions are machine dependent macros, compiler
   directives, etc. A proper set of definitions is activated by a
   proper choice C-preprocessor flag, i.e. -DSGI for an SGI computer

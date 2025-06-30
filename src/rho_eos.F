@@ -12,7 +12,7 @@
       integer,save :: tile=0
 
 # include "compute_tile_bounds.h"
-# if defined NONLIN_EOS && !defined SPLIT_EOS 
+# if defined NONLIN_EOS && !defined SPLIT_EOS
       call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2),tidx)
 # else
       call rho_eos_tile (istr,iend,jstr,jend,tidx)
@@ -20,7 +20,7 @@
       end
 
 
-# if defined NONLIN_EOS && !defined SPLIT_EOS 
+# if defined NONLIN_EOS && !defined SPLIT_EOS
       subroutine rho_eos_tile (istr,iend,jstr,jend, K_up,K_dw,tidx)
 # else
       subroutine rho_eos_tile (istr,iend,jstr,jend,tidx)
@@ -136,7 +136,7 @@
 # ifdef NONLIN_EOS
       real Ts,Tt,sqrtTs, dr00, K0
 #  ifndef SPLIT_EOS
-      real K1, K2                     
+      real K1, K2
       real dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: K_up,K_dw
 #  endif
 
@@ -157,7 +157,7 @@
      &                                              K13=2.326469e-4,
      &      KS0=-5.587545,      KS1=+0.7390729,     KS2=-1.909078e-2
 
-#  ifndef SPLIT_EOS 
+#  ifndef SPLIT_EOS
       real, parameter ::   B00=0.4721788,
      &      B01=0.01028859,     B02=-2.512549e-4,   B03=-5.939910e-7,
      &      B10=-0.01571896,    B11=-2.598241e-4,   B12=7.267926e-6,
@@ -165,7 +165,7 @@
 
      &      E00=+1.045941e-5,   E01=-5.782165e-10,  E02=+1.296821e-7,
      &      E10=-2.595994e-7,   E11=-1.248266e-9,   E12=-3.508914e-9
-#  endif 
+#  endif
 #  ifdef DUKO_2001
       real K0_Duk  !, rho1_0
 #  endif
@@ -237,7 +237,7 @@
             rho(i,j,k)=rho(i,j,k)*rmask(i,j)
 #   endif
 #  endif
-#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP 
+#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP
 #   ifndef SPLIT_EOS
             dpth=-z_w(i,j,k)
             K_up(i,k)=K0+dpth*(K1+K2*dpth)
@@ -295,11 +295,11 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
         cff=Tcoef*T0-Scoef*S0
 #  else
         cff=Tcoef*T0
-#  endif 
+#  endif
         do k=1,N
           do i=istrR,iendR
 #  ifdef SPLIT_EOS
-            rho1(i,j,k)=cff -Tcoef*t(i,j,k,tidx,itemp) 
+            rho1(i,j,k)=cff -Tcoef*t(i,j,k,tidx,itemp)
 #   ifdef SALINITY
      &                      +Scoef*t(i,j,k,tidx,isalt)
 #   endif

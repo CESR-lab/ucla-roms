@@ -142,8 +142,8 @@ C$OMP END CRITICAL (tiling_cr_rgn)
       istr=max(istr,1)                   ! upward, while the excess
                                          ! (in the case when the
       size=(ny+nsub_y-1)/nsub_y          ! domain cannot be divided
-      jstr=1+j*size -(nsub_y*size-ny)/2  ! evenly) is half-and-half 
-      jend=min(jstr+size-1,ny)           ! split between the ends. 
+      jstr=1+j*size -(nsub_y*size-ny)/2  ! evenly) is half-and-half
+      jend=min(jstr+size-1,ny)           ! split between the ends.
       jstr=max(jstr,1)                   ! As the result tiles the
                                          ! first and the last in each
       end                                ! direction may be smaller.

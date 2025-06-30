@@ -5,46 +5,46 @@ INSTRUCTIONS: COMPILING ROMS
 We strive to make these instructions incrementally better. Please contact us if you encountered
 (and solved, preferably) problems that are not described in this readme.
 
-  0. In order to run ROMS, you'll need a fortran compiler, mpi and a netcdf library. 
-     We recommend the (free) intel compiler at: 
+  0. In order to run ROMS, you'll need a fortran compiler, mpi and a netcdf library.
+     We recommend the (free) intel compiler at:
      https://www.intel.com/content/www/us/en/developer/tools/oneapi/fortran-compiler.html
      The netcdf library needs to be compiled with the same compiler that you use to compile
      the ROMS code and be compiled with the parralel option. You'll have to install HDF5, netcdf-c, and
-     netcdf-fortran, in that order. Standard versions installed with a package manager typically will 
-     not suffice. Instructions on how to accomplish that are in a different file (notes_netcdf_install) in this directory. 
+     netcdf-fortran, in that order. Standard versions installed with a package manager typically will
+     not suffice. Instructions on how to accomplish that are in a different file (notes_netcdf_install) in this directory.
      You may need help from your system administrator in this step.
 
   1. Clone (download) the ROMS code (git repo):
-  
+
      The ROMS code is maintained on a public repo at github. To clone it, use:
-     git clone https://github.com/CESR-lab/ucla-roms. 
+     git clone https://github.com/CESR-lab/ucla-roms.
 
      execute 'git pull' from within the repo to bring it up-to-date with the latest version
 
   2. Set up environment variables:
-  
+
      Edit your ~/.bashrc file to specify your compiler and the location of various include
      directories and libraries. See the instructions in src/Makefile or the bashr-example in this
      directory for environment variables to add to your .bashrc file
-     
+
   4. Compile NHMG library:
-  
+
      Regardless of whether you use the non-hydrostatic library
      you need to compile NHMG once (and never again), as follows:
      cd Work/
-     make nhmg 
-     (Note, NHMG/src/Makefile may need to be edited for your machine, 
+     make nhmg
+     (Note, NHMG/src/Makefile may need to be edited for your machine,
      ask for help if 'make nhmg' fails.)
-     
+
   5. Compile ROMS tools:
-  
+
      This gives you access to some of the roms tools, for example:
      'partit' for partitioning netcdf files,
      'ncjoin' for joining netcdf result files into one file, and
      'ncjoin_mpi' for joining netcdf result files using many cores
      (much faster than ncjoin and recommended, also compresses data
       so no need to use nc3to4z. See Tools-Roms/readme for more info.)
-      
+
      Compile tools:
      cd Tools-Roms/
      make
@@ -55,29 +55,29 @@ We strive to make these instructions incrementally better. Please contact us if 
 
      To run the examples, you will need input files, they are stored
      separately from the ucla-roms repo at: https://github.com/CESR-lab/input_data.
- 
+
      To get them, do:
 
      cd Examples/input_data
      ./get_input_files.sh
 
   7. Compile & test ROMS:
-     
+
      To ensure you can successfully compile & run roms on your machine,
      run the following test example as follows:
-     (this is even recommended for experienced roms users using the new 
+     (this is even recommended for experienced roms users using the new
       code for the first time.)
-     
+
      A. cd Examples/Rivers_ana
-        make 
+        make
         (note this can be a bit slow on 'Expanse' machine)
-        
+
      B. After roms has successfully compiled:
         - on 'Expanse':
             sbatch do_roms_expanse.sh
-            
+
             Note:
-            If not on Jim's allocation, you need to set --account= to your group's account.            
+            If not on Jim's allocation, you need to set --account= to your group's account.
             If there is an error 'node configuration is not available', in do_roms_expanse.sh
             change --partition=debug to --partition=shared and re-submit the job. For example:
             vi do_roms_expanse.sh
@@ -85,48 +85,48 @@ We strive to make these instructions incrementally better. Please contact us if 
             (press 'i' to be able to edit)
             replace --partition=debug with --partition=shared
             (then use escape, then :wq, then enter, to save and close file)
-            sbatch do_roms_expanse.sh (to re-submit the job)          
-                      
+            sbatch do_roms_expanse.sh (to re-submit the job)
+
         - other machines:
-          ./do_roms.sh                      
-                     
+          ./do_roms.sh
+
      C. ./join.sh   (to join & view results file)
 
-     Feel free to try the other examples. 
-        
-     
+     Feel free to try the other examples.
+
+
   8. Compile your specific simulation:
 
-     A. If you are running your own simulation, copy ONLY the files that you 
+     A. If you are running your own simulation, copy ONLY the files that you
         need to EDIT from src/ folder into the Work/ folder.
-        This is likely only to be files with extension .opt for all user inputs.         
-        If you are using an example then also copy relevant files from Examples/... 
-        into Work/ (excluding the Makefile) 
-        
-     B. Open Work/ dir. Edit your files. 
-        See Documentation/readme.2.model-setup for details on configuring roms 
+        This is likely only to be files with extension .opt for all user inputs.
+        If you are using an example then also copy relevant files from Examples/...
+        into Work/ (excluding the Makefile)
+
+     B. Open Work/ dir. Edit your files.
+        See Documentation/readme.2.model-setup for details on configuring roms
         for your simulation as per new code.
         Type 'make'.
-        All the remaining code in src/ and your edited files in Work/ will be 
+        All the remaining code in src/ and your edited files in Work/ will be
         copied into Work/Compile/, and roms will be compiled.
-        
+
      C. Copy 'roms' executable to wherever you are running your simulation.
-  
+
      Don't edit code in the src/ directory, nor the examples in Examples/.
-     The reason for this is 'git' will complain if you edit any 'tracked' 
-     files in the repo, and won't allow you to update the code without first 
-     using 'git stash'.     
-  
-          
+     The reason for this is 'git' will complain if you edit any 'tracked'
+     files in the repo, and won't allow you to update the code without first
+     using 'git stash'.
+
+
 Recompiling roms:
 -----------------
 
   A. Run 'make' to get the new roms executable.
      Only the necessary files will recompile, so it will be faster than a
      full compile.
-     
-  B. If you change compiler options in your Makefile, you should first run 
-     'make compile_clean' (or delete Compile/ directory), 
+
+  B. If you change compiler options in your Makefile, you should first run
+     'make compile_clean' (or delete Compile/ directory),
      and then 'make' to do a full rebuild.
 
 
@@ -139,71 +139,71 @@ Roms tools:
      (much faster than ncjoin and recommended, also compresses data
       so no need to use nc3to4z anymore. Expanse only with run script!
       see Tools-Roms/readme for more info.)
-      
+
      To build tools:
      cd Tools-Roms/
      make
      (Resulting executables will be there)
      If you add 'export PATH=$PATH:$ROMS_ROOT/Tools-Roms' to your bashrc file you
      will then have access to those tools from any directory (see example bashrc files).
-      
-     
+
+
 Git repo (and Bitbucket)
 ------------------------
 
-     In order to keep all versions of ROMS as it evolves over time, we store it on a git 
-     repository (repo).The version control program we use is called 'git'. It is terminal 
-     based, but there are also GUI's for it. Each time we want to make a permanent change 
+     In order to keep all versions of ROMS as it evolves over time, we store it on a git
+     repository (repo).The version control program we use is called 'git'. It is terminal
+     based, but there are also GUI's for it. Each time we want to make a permanent change
      to the ROMS code, we then 'commit' and 'push' the code to the repo.
      In order to store the version history of code (the commits), we use github.
      This is our public, cloud based storage of the code.
      With one command, it is possible to jump between the current version and all older
      versions of the code.
-     
-     You see the online version of the repository at: 
-     https://github.com/CESR-lab/ucla-roms. 
+
+     You see the online version of the repository at:
+     https://github.com/CESR-lab/ucla-roms.
      If you click on 'commits' you can see the full history of all the code updates if you
      are interested in seeing any older version of the code.
-         
-     
+
+
 Keeping code up to date:
-------------------------    
-     
-     The repo is periodically updated. This will mean source code 
+------------------------
+
+     The repo is periodically updated. This will mean source code
      in the src/ folder can change. Also, additional examples may be added to Examples/.
      To update your code to the latest version use the command: 'git pull'.
      (If git complains, try using 'git stash', then 'git pull')
-     
+
      Since you are editing code in the Work/ directory, your edited files will not be
-     affected. The Work/ directory is not 'tracked' by git, and therefore none of your files 
+     affected. The Work/ directory is not 'tracked' by git, and therefore none of your files
      in there risk being overwritten when you update you code in future.
-     However, it is possibly that the file you have edited for your needs, e.g. 
-     bulk_frc.opt, has been changed in the latest code update and hence in the src/ directory, 
+     However, it is possibly that the file you have edited for your needs, e.g.
+     bulk_frc.opt, has been changed in the latest code update and hence in the src/ directory,
      such that your version of bulk_frc.opt in Work/ is no longer compatible with the code.
-          
+
      This is not something that will happen often, but it is somewhere to look if your code
      suddenly doesn't work after updating. It is worth periodically comparing your edited files
      in Work/ against the respective file in src/ using a difference viewer such as 'meld'.
-     You can use 'meld' to merge in the new code changes into your version in Work/, if you 
+     You can use 'meld' to merge in the new code changes into your version in Work/, if you
      still need your code additions.
-     
+
 
 Additional readme's:
 --------------------
 
-     See Documentation/readme.2.model-setup for details on configuring roms for 
+     See Documentation/readme.2.model-setup for details on configuring roms for
      your simulation as per new code.
-     
-     See Documentation/readme-specifics/ for more detailed readme's on specific 
-     functionalities of roms.  
 
-             
-             
-*********************************             
+     See Documentation/readme-specifics/ for more detailed readme's on specific
+     functionalities of roms.
+
+
+
+*********************************
 EXTRA READING MATERIAL BELOW ONLY (you're unlikely to need this)
 *********************************
 
-  
+
      'make tools' will create auxiliary utility executable file named
      "mpc".
      "mpc" is an auxiliary multi-functional precompiler designed
@@ -225,14 +225,14 @@ ROMS/UCLA building procedure:
      contains the list of source code files which determine the particular
      model configuration to be build. User is free to add or delete files
      from this configuration list at his/her own discretion without any
-     restrictions, depending on physical formulation of the problem. 
+     restrictions, depending on physical formulation of the problem.
 
  ii. Makedefs.inc:
      Makedefs.machine_type (e.g., Makedefs.sgi, Makedefs.Linux): These files
      contain definitions of rules, compilers and compiler options, which are
      generally machine dependent. These files may be edited by the user in
      order to insure optimal usage of the compiler flags for a particular
-     machine type or compiler.  
+     machine type or compiler.
 
 iii. Make.depend -- an automatically generated list of dependencies. Usually
      this list contains the names and dependencies of ALL source codes in the

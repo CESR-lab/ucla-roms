@@ -5,4 +5,4 @@ Edit and run bry_extract_obj.m and/or mooring_extract_obj.m to generate input fi
 Only 1 input file is read in by roms extract_data module.
 
 To add multiple grids/moorings, rerun bry_extract_obj.m/mooring_extract_obj.m as required.
-This will append additional grids/moorings to the same input file. 
+This will append additional grids/moorings to the same input file.

@@ -43,10 +43,10 @@
 # Setting  FFLAGS = -O2 -mp (or lower optimization level) is needed
 # to pass ETALON_CHECK: -O3 causes roundoff-level differences from
 # the length of innermost i-loop (the results still pass ETALON_CHECK
-# if  NP_XI = NSUB_X = 1, regardless of partition in ETA-direction). 
+# if  NP_XI = NSUB_X = 1, regardless of partition in ETA-direction).
 # As of ifort v. 11.0.xxx -mp is superseeded by -fp-model <arg> flag.
 
-# Flags collected under LARGE_MEM_FLAG are needed only if exceeding 
+# Flags collected under LARGE_MEM_FLAG are needed only if exceeding
 # 2 GBytes of memory: both -mcmodel (sets size of addressing pointers)
 # and -i-dynamic (ensures proper linking with Intel dynamic libraries
 # must be specified.
@@ -59,7 +59,7 @@
 
 #  CFTFLAGS = -pc80 -auto -stack_temps -warn unused
    CFTFLAGS = -pc64 -auto -stack_temps -warn all
-#  CFTFLAGS = -pc64 -auto -stack_temps 
+#  CFTFLAGS = -pc64 -auto -stack_temps
 
 
       CFT = ifort $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
@@ -67,7 +67,7 @@
      LDR = mpif90 $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
 
 
-#   FFLAGS = -O3 -IPF_fma -ip 
+#   FFLAGS = -O3 -IPF_fma -ip
 # -qopt-report=5 -qopt-report-phase=vec
 
 # DevinD - This was the new code flag originally -O3 -fp-model source
@@ -76,7 +76,7 @@
 #	 	 - it exists above already anyway -O3 -IPF_fma -ip
  FFLAGS = -O3 -IPF_fma -ip
 
-#   FFLAGS =  -fp-model precise -O3 
+#   FFLAGS =  -fp-model precise -O3
 #  FFLAGS =  -O2 -fp-model strict
 # -prof_gen
 
@@ -91,10 +91,10 @@
 
  COMP_FILES = ifort?????* tmp?????*
 
-#    LMPI = ${MPI_ROOT}/lib/libmpich.a 
+#    LMPI = ${MPI_ROOT}/lib/libmpich.a
 
 
-    LCDF = -lnetcdff 
+    LCDF = -lnetcdff
    LCDF = -lnetcdff -L$(ROMS_ROOT)/ncio-master/lib/ -lncio -I$(ROMS_ROOT)/ncio-master/include/ -L$(ROMS_ROOT)/NHMG/lib/ -lnhmg
 
 

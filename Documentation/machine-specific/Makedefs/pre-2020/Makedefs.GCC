@@ -36,7 +36,7 @@ NETCDFDIR = /opt/netcdf-3.6.3_gcc
   FFLAGS = $(CPPFLAGS) -O3
 
   FFLAGS =  -g -DEBUG:div_check=3:subscript_check=ON:trap_uninitialized=ON:verbose_runtime=ON
-  
+
 
 #    LCDF = -L$(NETCDFDIR)/lib -lnetcdf
 #    LCDF = -L$(NETCDFDIR)/lib -lnetcdff -lnetcdf

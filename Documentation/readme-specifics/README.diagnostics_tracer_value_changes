@@ -33,7 +33,7 @@ run model...
        INT_AT_RHO_POINTS       SMOOTH_HBL              LIMIT_UNSTABLE_ONLY
  <set_global_definitions.h>
        CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       KEEP_CORIOLIS
-       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D              
+       IMPLCT_NO_SLIP_BTTM_BC  VAR_RHO_2D
 
  2020-11: uswc sample domain
      ntimes =         3   total number of 3D timesteps
@@ -63,40 +63,40 @@ run model...
  averages :: ntsavg = 10000  navg =10000  rec/file =****
 
  fields to write into history file: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
+        zeta   T   free-surface elevation
+        ubar   T   vertically averaged u-momentum component
+        vbar   T   vertically averaged v-momentum component
+        u      T   u-momentum component
+        v      T   v-momentum component
+        t( 1)  T   temp
+        t( 2)  T   salt
 
-        rho    F   density anomaly                           
-        Omega  F   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    F   vertical viscosity coefficient            
-        Akt    F   vertical thermal conductivity coefficient 
-        Aks    F   salinity vertical diffusion coefficient   
-        hbls   F   Thickness of KPP surface boundary layer   
-        hbbl   F   Thickness of KPP bottom boundary layer    
+        rho    F   density anomaly
+        Omega  F   S-coordinate vertical velocity
+        W      T   vertical velocity
+        Akv    F   vertical viscosity coefficient
+        Akt    F   vertical thermal conductivity coefficient
+        Aks    F   salinity vertical diffusion coefficient
+        hbls   F   Thickness of KPP surface boundary layer
+        hbbl   F   Thickness of KPP bottom boundary layer
 
  fields to compute time averages of: (T/F)
-        zeta   T   free-surface elevation                    
-        ubar   T   vertically averaged u-momentum component  
-        vbar   T   vertically averaged v-momentum component  
-        u      T   u-momentum component                      
-        v      T   v-momentum component                      
-        t( 1)  T   temp                                      
-        t( 2)  T   salt                                      
+        zeta   T   free-surface elevation
+        ubar   T   vertically averaged u-momentum component
+        vbar   T   vertically averaged v-momentum component
+        u      T   u-momentum component
+        v      T   v-momentum component
+        t( 1)  T   temp
+        t( 2)  T   salt
 
-        rho    T   density anomaly                           
-        Omega  T   S-coordinate vertical velocity            
-        W      T   vertical velocity                         
-        Akv    T   vertical viscosity coefficient            
-        Akt    T   vertical thermal conductivity coefficient 
-        Aks    T   salinity vertical diffusion coefficient   
-        hbls   T   Thickness of KPP surface boundary layer   
-        hbbl   T   Thickness of KPP bottom boundary layer    
+        rho    T   density anomaly
+        Omega  T   S-coordinate vertical velocity
+        W      T   vertical velocity
+        Akv    T   vertical viscosity coefficient
+        Akt    T   vertical thermal conductivity coefficient
+        Aks    T   salinity vertical diffusion coefficient
+        hbls   T   Thickness of KPP surface boundary layer
+        hbbl   T   Thickness of KPP bottom boundary layer
 
  WARNING: Urecognized keyword 'wci_history_fields' --> DISREGARDED.
 
@@ -196,7 +196,7 @@ run model...
 
  main :: initialization complete, started time-steping.
 
-      diagnostics :: created new netCDF file sample_on_diags.0000.0.nc                                   
+      diagnostics :: created new netCDF file sample_on_diags.0000.0.nc
       diagnostics :: wrote output, tdays =   4726.5657  step =      0 rec =   1/   1
          get_bry_all :: read all boundary fields   bry_time =   4726.5657 rec =    1
          get_bry_all :: read all boundary fields   bry_time =   4726.5865 rec =    2
@@ -457,5 +457,5 @@ t3dmix_GP.F       end:t(nnew)=t(nnew)+dt*(pm*pn*(FX-FX+FE-FE)+FSC-FSC/Hz
  Process    0  thread  0  cpu time =        2.71 sec
 
  MAIN: DONE - Records written: history:    4 restart:    0 averages:    0
- MPI_run_time =   2.76599836349487     
+ MPI_run_time =   2.76599836349487
 complete!

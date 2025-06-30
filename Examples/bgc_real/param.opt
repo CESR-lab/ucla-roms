@@ -22,7 +22,7 @@
 
 
       ! Defining number of tracers
-      integer, parameter :: nt_passive=0      
+      integer, parameter :: nt_passive=0
 # ifdef BIOLOGY_BEC2
 #   ifdef Ncycle_SY
       integer,parameter :: ntrc_bio=29
@@ -41,5 +41,5 @@
 #endif
 
       integer, parameter :: nt=1+nt_passive+ntrc_bio+ntrc_salt
-    
-      
+
+

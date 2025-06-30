@@ -8,7 +8,7 @@
 
 !
 ! Compute density anomaly from T,S via Equation Of State (EOS) for
-!-------- ------- ------- ----  for seawater. Following Jackett and 
+!-------- ------- ------- ----  for seawater. Following Jackett and
 ! McDougall, 1995, physical EOS is assumed to have form
 !
 !                           rho0 + rho1(T,S)
@@ -180,7 +180,7 @@ C$    trd=omp_get_thread_num()
       do j=jstr,jend
         do k=1,N
           do i=imin,imax
-            Tt=T(i,j,k)                   
+            Tt=T(i,j,k)
 
             Ts=max(S(i,j,k), 0.)
             sqrtTs=sqrt(Ts)
@@ -195,7 +195,7 @@ C$    trd=omp_get_thread_num()
             K0= Tt*( K01+Tt*( K02+Tt*( K03+Tt*K04 )))
      &         +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
      &              +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
- 
+
 
 
 
@@ -212,7 +212,7 @@ C$    trd=omp_get_thread_num()
 
           enddo
         enddo
- 
+
 
 
       enddo    ! <-- j

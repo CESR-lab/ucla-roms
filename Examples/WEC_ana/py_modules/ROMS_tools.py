@@ -81,9 +81,9 @@ def curvilinear_div(ubar,vbar,pm,pn):
 def curvilinear_grad(phi,pm,pn):
     """ Compute horizontal gradient
         of a scalar field in curvilinear coordinates
-    
+
     grad(phi) = pm * dphi/dxi + pn * dphi/deta
-   
+
     *** USES SIMPLE CENTERED DIFFERENCING ***
 
     returns 2-component gradient vector in [eta,xi] shape
@@ -98,7 +98,7 @@ def curvilinear_grad(phi,pm,pn):
     return dphi_deta,dphi_dxi
 
 
-def princ_strain_axis(ubar,vbar,pm,pn): 
+def princ_strain_axis(ubar,vbar,pm,pn):
     '''
     CALCULATE PRINCIPLE STRIAN AXIS
     tan(2*theta_p) = (v_x + u_y) / (u_x - v_y)
@@ -114,15 +114,15 @@ def princ_strain_axis(ubar,vbar,pm,pn):
 def curvilinear_vort(ubar,vbar,pm,pn):
     """ Calculate vertical component of velocity curl
         in curvilinear coordinates
-    
-     
+
+
     vort = (pm*pn) * (d/dxi(((1/pn)*v) - d/deta((1/pm)*u))
              = (pm*pn) * (d1 - d2)
     """
 
-    
+
     [neta,nxi] = pm.shape
-   
+
     d1 = np.zeros([neta-1,nxi-1])
     d2 = np.zeros([neta-1,nxi-1])
     d1[:,:] = (rho2v(1/pn)[:,1:] *vbar[:,1:]) - (rho2v(1/pn)[:,:-1] * vbar[:,:-1])
@@ -130,14 +130,14 @@ def curvilinear_vort(ubar,vbar,pm,pn):
 
     xi = rho2psi(pm*pn) * (d1 - d2)
     return xi
-    
+
 
 def curvilinear_div_strain(ubar,vbar,pm,pn):
     """ Calculate divergence and strain of velocity
-        in ROMS curvilinear coordinates 
-    
-    div = (pm*pn) * ( d/dxi((1/pn)*u) + d/deta( (1/pm) * v) 
-          
+        in ROMS curvilinear coordinates
+
+    div = (pm*pn) * ( d/dxi((1/pn)*u) + d/deta( (1/pm) * v)
+
     S = \sqrt{ (pm*d/dxi(u) - pn * d/deta(v))^2 + (pm*d/dxi(v) + pn*d/deta(u))**2)
     """
 
@@ -173,10 +173,10 @@ def curvilinear_div_strain(ubar,vbar,pm,pn):
 
 
 
-     
+
 
 ##################################################
-# vort_calc ==> compute relative vorticity 
+# vort_calc ==> compute relative vorticity
 ############################################
 
 '''
@@ -198,12 +198,12 @@ def vort_calc(ubar, vbar, pm, pn):
     mn_p    = np.zeros([M,L])
     uom     = np.zeros([M,Lp])
     von     = np.zeros([Mp,L])
-    
-    
+
+
     uom = 2 * ubar / (pm[:,0:L] + pm[:,1:Lp])
     von = 2 * vbar / (pn[0:M,:] + pn[1:Mp,:])
 
-    
+
    # uom = 2 * ubar / (pn[0:M,:] + pn[1:Mp,:])
     #von = 2* vbar /  (pm[:,0:L] + pm[:,1:Lp])
 
@@ -212,7 +212,7 @@ def vort_calc(ubar, vbar, pm, pn):
     xi   = mn_p * ( von[:,1:Lp] - von[:,0:L]  - uom[1:Mp,:] + uom[0:M,:] )
     return xi
 
-    
+
 
 '''
 matlab code
@@ -240,32 +240,32 @@ xi=mn_p.*(von(:,2:Lp)-von(:,1:L)-uom(2:Mp,:)+uom(1:M,:));
 
 
 def div_strain_calc(ubar, vbar, pm, pn):
-  
+
     [Mp,Lp] = pm.shape
     M = Mp-1
     L = Lp-1
-    
-    
+
+
     #ux,uy = np.gradient(ubar) * ( (rho2u(pm) + rho2u(pn)) / 2.)
     #vx,vy = np.gradient(vbar) * ( (rho2v(pm) + rho2v(pn)) / 2.)
-    
+
     '''
     ASSUMES PYTHON CONVENTIONS OF READING IN ROMS NETCDF
-    ubar.shape, vbar.shape = [eta, xi] = [y, x] 
+    ubar.shape, vbar.shape = [eta, xi] = [y, x]
     '''
 
     uy,ux = np.gradient(ubar) * ( (rho2u(pm) + rho2u(pn)) / 2.)
     vy,vx = np.gradient(vbar) * ( (rho2v(pm) + rho2v(pn)) / 2.)
-    
+
     ux_r = u2rho(ux)
     uy_r = u2rho(uy)
-    vx_r = v2rho(vx) 
+    vx_r = v2rho(vx)
     vy_r = v2rho(vy)
 
 
     div    = ux_r + vy_r
     strain = np.sqrt( (ux_r - vy_r) **2 + (vx_r + uy_r)**2)
-    
+
     return div,strain
 
 
@@ -314,7 +314,7 @@ def psi2rho_3d(var_psi):
     [Nz,Mz,Lz]=var_psi.shape
     var_rho=np.zeros((Nz,Mz+1,Lz+1))
 
-    for iz in range(0, Nz, 1):    
+    for iz in range(0, Nz, 1):
         var_rho[iz,:,:]=psi2rho_2d(var_psi[iz,:,:])
 
 
@@ -437,15 +437,15 @@ def rho2w_2d(var_rho,z_rho,z_w):
     for j in range(M):
         var_w[j,:] = np.interp(z_w[j,:],z_rho[j,:],var_rho[j,:])
     return var_w
-    
-      
-   
+
+
+
 def rho2w_3d(var_rho,z_rho,z_w):
     [M,L,N] = var_rho.shape
     var_w = np.zeros([M,L,N+1])
     for j in range(M):
         for i in range(L):
-            var_w[j,i,:] = np.interp(z_w[j,i,:],z_rho[j,i,:],var_rho[j,i,:]) 
+            var_w[j,i,:] = np.interp(z_w[j,i,:],z_rho[j,i,:],var_rho[j,i,:])
     return var_w
 
 ###############################################################
@@ -456,7 +456,7 @@ def w2rho(var_w,z_rho,z_w):
        var_rho = w2rho_2d(var_w,z_rho,z_w)
     else:
         var_rho = w2rho_3d(var_w,z_rho,z_w)
-    
+
     return var_rho
 
 
@@ -561,7 +561,7 @@ def v2rho_3d(var_v):
 
 
 #######################################################
-#interpolate a 3D variable on horizontal levels of constant depths 
+#interpolate a 3D variable on horizontal levels of constant depths
 #######################################################
 
 def vinterps(var,z,depths,topo, cubic=0,ground_interp=0):
@@ -588,7 +588,7 @@ def vinterps(var,z,depths,topo, cubic=0,ground_interp=0):
 
     return vnew
 
-    
+
 ####################
 
 
@@ -597,8 +597,8 @@ def vinterp(var,z,depth,topo=None,cubic=0,ground_interp=0):
     [N,Mp,Lp]=z.shape
 
 
-    if depth>0: 
-    
+    if depth>0:
+
         varz = np.nan
 
     #######################################################
@@ -622,7 +622,7 @@ def vinterp(var,z,depth,topo=None,cubic=0,ground_interp=0):
 
         v1=var[pos1]
         v2=var[pos2]
-    
+
         varz = (((v1-v2)*depth+v2*z1-v1*z2)/(z1-z2))
         if topo!=None: varz[depth<-1*topo]=np.nan
 
@@ -640,7 +640,7 @@ def vinterp(var,z,depth,topo=None,cubic=0,ground_interp=0):
         #levs2[levs1==N-1]=N-2
 
         #cubic interpolation will use 4 values of var and z in the vertical (2 below and 2 above depth)
-        Nlev = 4 
+        Nlev = 4
 
         #prepare arrays for intermediate variables:
         X,Y=np.meshgrid(np.arange(0,Lp),np.arange(0,Mp))
@@ -659,22 +659,22 @@ def vinterp(var,z,depth,topo=None,cubic=0,ground_interp=0):
 
         #######################################################
 
-        test0=np.zeros((Mp,Lp)); test0[levs2==-1]=1; 
+        test0=np.zeros((Mp,Lp)); test0[levs2==-1]=1;
         test1=np.zeros((Mp,Lp)); test1[levs2==0]=1;
-        testN1=np.zeros((Mp,Lp)); testN1[levs2==N-2]=1; 
+        testN1=np.zeros((Mp,Lp)); testN1[levs2==N-2]=1;
         testN=np.zeros((Mp,Lp)); testN[levs2==N-1]=1;
- 
+
         #######################################################
 
         zz[1:-1,:,:] = testN * zz[:-2,:,:] + test0 * zz[2:,:,:] + (1 - test0 - testN) * zz[1:-1,:,:]
 
-        dzz = zz[1:,:,:]- zz[:-1,:,:]; 
+        dzz = zz[1:,:,:]- zz[:-1,:,:];
         dzz[-1,:,:] = testN1 * dzz[1,:,:] + (1-testN1)* dzz[-1,:,:]
         dzz[0,:,:] = test1 * dzz[1,:,:] + (1-test1)* dzz[0,:,:]
 
         vark[1:-1,:,:] = testN * vark[:-2,:,:] + test0 * vark[2:,:,:] + (1 - test0 - testN) * vark[1:-1,:,:]
 
-        dvark = vark[1:,:,:]-vark[:-1,:,:]; 
+        dvark = vark[1:,:,:]-vark[:-1,:,:];
         dvark[-1,:,:] = testN1 * dvark[1,:,:] + (1-testN1)* dvark[-1,:,:]
         dvark[0,:,:] = test1 * dvark[1,:,:] + (1-test1)* dvark[0,:,:]
 
@@ -686,17 +686,17 @@ def vinterp(var,z,depth,topo=None,cubic=0,ground_interp=0):
 
 
         #######################################################
-        
+
         cff = 1/dzz[1,:,:]; p=depth-zz[1,:,:]; q=zz[2,:,:]-depth
 
-        varz = cff*(q*vark[1,:,:]+p*vark[2,:,:]- (1-test0-testN) * cff*p*q*(cff*(q-p)*dvark[1,:,:]+p*FC[1,:,:]-q*FC[0,:,:]))     
+        varz = cff*(q*vark[1,:,:]+p*vark[2,:,:]- (1-test0-testN) * cff*p*q*(cff*(q-p)*dvark[1,:,:]+p*FC[1,:,:]-q*FC[0,:,:]))
 
         #######################################################
 
-        # mask values below ground 
+        # mask values below ground
         if ground_interp==0: varz[depth<-1*topo]=np.nan
 
-   
+
     return varz
 
 
@@ -717,21 +717,21 @@ def vinterp(var,z,depth,topo=None,cubic=0,ground_interp=0):
 def zlevs(h,zeta,hc,Cs_r,Cs_w):
     N = Cs_r.shape[0]
     z_r = np.zeros([N,h.shape[0], h.shape[1]])
-    
+
     for k in range(N):
         cff        = hc * ((k+1-N) - 0.5)/N
         z_r[k,:,:] = zeta + (zeta+h) * (cff + Cs_r[k] * h) / (hc + h)
 
-   
+
         z_w = np.zeros([N+1, h.shape[0], h.shape[1]])
         z_w[0,:,:]  = -h # set bottom to actual depth
-        z_w[-1,:,:] = zeta # set top to free surface height 
-    
+        z_w[-1,:,:] = zeta # set top to free surface height
+
     for k in range(1,N+1):
         cff        = hc * ((k-N)) / N
         z_w[k,:,:] = zeta + (zeta+h) * (cff + Cs_w[k] * h) / (hc+h)
 
-   
+
     return z_r, z_w
 
 

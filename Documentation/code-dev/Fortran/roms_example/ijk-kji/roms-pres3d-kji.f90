@@ -30,15 +30,15 @@ program prestep3d_loop
     FlxU = 1.5
     FlxV = 3.1
     We = 8.1
-    Wi = 4.95    
+    Wi = 4.95
     Hz_bak = 2.8
     Hz_fwd = 5.01
     Hz = 1.12
 
     call cpu_time(t1)   ! start cpu timer
 
-! ----------------------------------------------------------------    
-    do itest=1,ntests    
+! ----------------------------------------------------------------
+    do itest=1,ntests
       do k=1,N                        ! compressible predictor substep,
         cff=0.5*dtau                  ! Eq. (4.7) from SM2005.
         do j=1,y
@@ -59,7 +59,7 @@ program prestep3d_loop
     print 10, ntests, t2-t1
  10 format("Performed ",i7, " loops: CPU time = ",f12.8, " seconds")
 
-    
+
     call system_clock(tclock2, clock_rate)
     elapsed_time = float(tclock2 - tclock1) / float(clock_rate)
     print 11, elapsed_time

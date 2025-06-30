@@ -26,9 +26,9 @@
       use nc_read_write
       use roms_read_write
       use netcdf
-#ifdef MARBL      
+#ifdef MARBL
       use marbl_driver
-#endif      
+#endif
       use mpi_exchanges
       implicit none
       private
@@ -305,10 +305,10 @@
 #include "tracers.opt"
 
 
-#ifdef MARBL      
+#ifdef MARBL
       call marbldrv_configure_tracers(
      &     itot,t_vname,t_lname,t_units,t_tname,wrt_t,wrt_t_avg,t_ana_frc)
-#endif      
+#endif
 
       if (mynode==0) then
          print *, 'metadata about ',NT, ' tracers:'
@@ -318,7 +318,7 @@
             print *,'SHORT NAME: ', t_vname(itrc)
             print *,'LONG NAME: ', t_lname(itrc)
             print *,'UNITS: ', t_units(itrc)
-            print *, '-----------'         
+            print *, '-----------'
          end do
       end if
 

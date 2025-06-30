@@ -5,7 +5,7 @@ if command -v curl &> /dev/null;then
 elif command -v wget &> /dev/null;then
     DOWNLOAD_COMMAND=wget
 fi
-echo ${DOWNLOAD_COMMAND}   
+echo ${DOWNLOAD_COMMAND}
 # URLs to download
 URL_PREFIX="https://github.com/CESR-lab/input_data/raw/main"
 files=(

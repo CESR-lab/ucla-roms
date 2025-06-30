@@ -1,7 +1,7 @@
 # Makefile for UCLA ROMS model
 #========== ======= =========== ======== === ==== =====
-# This makefile requires that you have the following 
-# environment variables defined: 
+# This makefile requires that you have the following
+# environment variables defined:
 #  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
 #
 #  Example entries in a .bashrc file:
@@ -64,7 +64,7 @@ endif
 
 ifeq ($(FCOMP),mpiifx)
 	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
-	ICDF = 
+	ICDF =
 else
 	ICDF = -I$(MPI_INC) -I$(NHMG_INC) -I$(NETCDF_INC) -I$(MARBL_INC)
 endif
@@ -76,9 +76,9 @@ endif
 
 # Fortran compiler flags:
 #	CFTFLAGS = -pc64 -auto
-	CFTFLAGS = 
+	CFTFLAGS =
 
-# Fortran loader name and options: 
+# Fortran loader name and options:
  	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
@@ -130,14 +130,14 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
 \
-	main.F	
+	main.F
 
 IOSRC = checkdims.F	insert_node.F\
 	get_init.F	set_forces.F	closecdf.F\
 
   SRCS = $(KRNSRC) $(IOSRC)
    RCS = $(SRCS:.F=.f)
-  OBJS = $(RCS:.f=.o) 
+  OBJS = $(RCS:.f=.o)
   SBIN = roms
 
 # ROMS excutable (This is the first target and hence the default):

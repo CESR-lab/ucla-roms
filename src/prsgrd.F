@@ -170,7 +170,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
           dZ(i,0 )=dZ(i,1)
         enddo
         ! Irreversible due to in-place overwriting of dZ and dR
-        do k=nz,1,-1 
+        do k=nz,1,-1
           do i=0,nx
             cff=2.*dZ(i,k)*dZ(i,k-1)
             dZ(i,k)=cff/(dZ(i,k)+dZ(i,k-1))
@@ -215,10 +215,10 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
 
 #ifdef DIAGNOSTICS
       if (CORR_STAGE) then
-        if (allocated(rho_d)) then    
+        if (allocated(rho_d)) then
           rho_d = rho(1:nx,1:ny,:)
         endif
-        if (allocated(p_int)) then    
+        if (allocated(p_int)) then
           p_int = 0
           do k=1,nz
            p_int = p_int + p(1:nx,1:ny,k)*Hz(1:nx,1:ny,k)
@@ -478,22 +478,22 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 !       dpdz = -zx*dpdx - zy*dpdy (See Molemaker et al., 2018)
 !--------------------------------------------------------------------
 !
-!     We are re-using dR as a work array 
+!     We are re-using dR as a work array
 
       do j=Jstr,Jend
          do k = 1,N
             do i=Istr,Iend
-              dR(i,k) = dzdxi(i,j,k) *(                                
-     $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k)) 
+              dR(i,k) = dzdxi(i,j,k) *(
+     $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k))
      $            + ru(i+1,j,k  )/(Hz(i,j,k)+Hz(i+1,j,k)))
-     $            +     dzdeta(i,j,k) *(                               
-     $              rv(i,j  ,k  )/(Hz(i,j,k)+Hz(i,j-1,k)) 
+     $            +     dzdeta(i,j,k) *(
+     $              rv(i,j  ,k  )/(Hz(i,j,k)+Hz(i,j-1,k))
      $            + rv(i,j+1,k  )/(Hz(i,j,k)+Hz(i,j+1,k)))
             enddo
          enddo
 
          !! rw is a V*dwdt units object (m4/s2), just like ru, rv
-         do k = 1,N-1 
+         do k = 1,N-1
             do i=Istr,Iend
               rw(i,j,k)=-0.25*(dR(i,k+1)+dR(i,k))*(Hz(i,j,k+1)+Hz(i,j,k))
             enddo

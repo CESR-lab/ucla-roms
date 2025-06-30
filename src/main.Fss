@@ -41,7 +41,7 @@ C$OMP PARALLEL                           ! fast-time averaging weights
           call roms_thread               ! for barotropic mode, and
 C$OMP END PARALLEL                       ! launch the model in OpenMP
         endif                            ! parallel regime.
-#ifdef NHMG  
+#ifdef NHMG
       ! write nhmg statistics to fort.10
       call nhmg_clean()
 #endif
@@ -75,7 +75,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
       if(mynode==0) print *,'may_day_flag: ',may_day_flag
   99  call stop_timers()                 ! summarized among all nodes
       if(mynode==0) print *,'may_day_flag: ',may_day_flag
-      if (may_day_flag /=0) 
+      if (may_day_flag /=0)
      &  call wrt_his_ocean_vars(.true.)
                                          ! and broadcasted by "diag"
                                          ! [which sets diag_sync=T to
@@ -101,14 +101,14 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
       numthreads=1 ; trd=0
       proc(2)=trd
 
-      iic=0  ; kstp=1 ; knew=1       
+      iic=0  ; kstp=1 ; knew=1
 #ifdef SOLVE3D
-      iif=1  ; nstp=1                
-      nnew=1 ; nrhs=1                
+      iif=1  ; nstp=1
+      nnew=1 ; nrhs=1
 #endif
-      synchro_flag=.true.             
-      diag_sync=.false.               
-      priv_count=0                    
+      synchro_flag=.true.
+      diag_sync=.false.
+      priv_count=0
 
       call init_arrays                 ! global arrays (most of them)
 
@@ -121,9 +121,9 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 
       call get_grid
 
-      if (may_day_flag /= 0) goto 99 
+      if (may_day_flag /= 0) goto 99
 
-      call setup_grid1(0)         ! 
+      call setup_grid1(0)         !
       call setup_grid2(0)
 
 #ifdef SOLVE3D
@@ -147,7 +147,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 #ifdef ANA_INITIAL
       call set_forces(0)    ! surface forcing may be neccesary
       call ana_init(0)      ! for ana_init
-      if (nrrec > 0) then   
+      if (nrrec > 0) then
 #endif
 #ifdef EXACT_RESTART
                                        ! setup environmental variables
@@ -175,7 +175,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
                                   ! free surface has non-zero status
 
 !----------------------------------------------------------------------
-!  Set NHMG horizontal and vertical grids 
+!  Set NHMG horizontal and vertical grids
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
 # ifdef NHMG
@@ -199,7 +199,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 #endif
 
 
-#if defined SPONGE || ANA_SSH 
+#if defined SPONGE || ANA_SSH
       call set_nudgcof(0)
 # ifdef ANA_SSH
       call ana_ssh(0)
@@ -231,9 +231,9 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 
       implicit none
 
-      !! Examine all outputs and try to move these to the end of the timestep, while collecting 
+      !! Examine all outputs and try to move these to the end of the timestep, while collecting
       !! Diagnostic terms along the way during the corrector step.
-      !! 
+      !!
 #ifdef DIAGNOSTICS
       call do_diagnostics  ! call before nnew and nstp have swapped indices (as if previous timestep)
 #endif
@@ -259,7 +259,7 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 #endif
 
 #ifdef SOLVE3D
-      call set_forces(0)    
+      call set_forces(0)
 
       call diag(0)
 
@@ -321,13 +321,13 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
 #ifdef SOLVE3D
       do iif=1,nfast
 #endif
-        kstp=knew                
-        knew=kstp+1               
-        if (knew > 4) knew=1       
+        kstp=knew
+        knew=kstp+1
+        if (knew > 4) knew=1
 # ifndef SOLVE3D
         call set_forces(0)
 # endif
-        call step2d(0)  
+        call step2d(0)
 
 #ifdef SOLVE3D
       enddo    ! <-- iif

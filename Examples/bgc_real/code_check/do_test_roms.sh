@@ -26,9 +26,9 @@ echo "$bm_file"
 
 echo "Running bgc_real test with ${BGC_MODEL}"
 # 1) Compile test case:
-echo "##############################"    
+echo "##############################"
 echo "  test compiling, ${BGC_MODEL}..."
-echo "##############################"    
+echo "##############################"
 
 cp -p ../*.h . &> /dev/null
 cp -p ../cppdefs_${BGC_MODEL}.opt ./cppdefs.opt
@@ -41,12 +41,12 @@ cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
 cp -p $ROMS_ROOT/Examples/Makefile .
 cp -p $ROMS_ROOT/Examples/code_check/test_roms.py .
 make compile_clean &> /dev/null
-make > compile_${BGC_MODEL}.log # 2>&1 | tee -a compile_${BGC_MODEL}.log 
+make > compile_${BGC_MODEL}.log # 2>&1 | tee -a compile_${BGC_MODEL}.log
 
 # 2) Run test case:
-echo "##############################"    
+echo "##############################"
 echo "  test running, ${BGC_MODEL} ..."
-echo "##############################"    
+echo "##############################"
 if [ "$1" = "expanse" ]
 then
     srun --mpi=pmi2 -n 6 ./roms benchmark.in > test.log
@@ -61,13 +61,13 @@ rm Make*     &> /dev/null
 rm param.opt &> /dev/null
 rm cppdefs.opt &> /dev/null
 rm roms      &> /dev/null
-    
+
 # 2) Python - confirm values:
 python3 test_roms.py $bm_file
 retval=$?
 echo "exit code for ${BGC_MODEL} test: $retval"
 
-# 3) Rename results logs so they can't be mistakenly read by the 
+# 3) Rename results logs so they can't be mistakenly read by the
 #    python script even if new simulation doesn't run
 mv test.log test_old.log
 cp test_old.log test_old_${BGC_MODEL}.log

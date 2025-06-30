@@ -24,7 +24,7 @@
 !
 ! where files.???.nc matches a complete set of partial files (or
 ! several complete sets) and "-d" or "--delete" forces deletion of
-! partial files upon successful joining. 
+! partial files upon successful joining.
 
 ! np_x and np_y are the number of sub-domains you choose in x and y
 ! for ncjoin_mpi not your input partition files, they can be different!
@@ -388,7 +388,7 @@ c--#define MPIVERBOSE
      &                                    '''.', nf90_strerror(ierr)
             goto 97
           endif
-        enddo  !<-- node=0,nnodes-1 
+        enddo  !<-- node=0,nnodes-1
 
 #ifdef VERBOSE
         if(my_rank==0) then

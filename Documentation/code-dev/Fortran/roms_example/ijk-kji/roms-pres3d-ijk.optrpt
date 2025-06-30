@@ -63,35 +63,35 @@ LOOP BEGIN at roms-pres3d-ijk.f90(27,5)
       remark #25045: Fused Loops: ( 27 28 )
 
       remark #15301: FUSED LOOP WAS VECTORIZED
-      remark #15449: unmasked aligned unit stride stores: 2 
+      remark #15449: unmasked aligned unit stride stores: 2
       remark #15475: --- begin vector cost summary ---
-      remark #15476: scalar cost: 7 
-      remark #15477: vector cost: 3.000 
-      remark #15478: estimated potential speedup: 2.070 
+      remark #15476: scalar cost: 7
+      remark #15477: vector cost: 3.000
+      remark #15478: estimated potential speedup: 2.070
       remark #15488: --- end vector cost summary ---
       remark #25015: Estimate of max trip count of loop=12
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(28,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(27,5)
    <Remainder loop for vectorization>
-      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
-      remark #15448: unmasked aligned unit stride loads: 6 
-      remark #15449: unmasked aligned unit stride stores: 2 
-      remark #15450: unmasked unaligned unit stride loads: 6 
+      remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override
+      remark #15448: unmasked aligned unit stride loads: 6
+      remark #15449: unmasked aligned unit stride stores: 2
+      remark #15450: unmasked unaligned unit stride loads: 6
       remark #15475: --- begin vector cost summary ---
-      remark #15476: scalar cost: 42 
-      remark #15477: vector cost: 21.000 
-      remark #15478: estimated potential speedup: 1.940 
+      remark #15476: scalar cost: 42
+      remark #15477: vector cost: 21.000
+      remark #15478: estimated potential speedup: 1.940
       remark #15488: --- end vector cost summary ---
    LOOP END
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(28,5)
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(30,5)
@@ -115,49 +115,49 @@ LOOP BEGIN at roms-pres3d-ijk.f90(30,5)
          remark #25045: Fused Loops: ( 30 31 32 33 34 35 36 )
 
          remark #15301: FUSED LOOP WAS VECTORIZED
-         remark #15449: unmasked aligned unit stride stores: 7 
+         remark #15449: unmasked aligned unit stride stores: 7
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 25 
-         remark #15477: vector cost: 10.500 
-         remark #15478: estimated potential speedup: 2.150 
+         remark #15476: scalar cost: 25
+         remark #15477: vector cost: 10.500
+         remark #15478: estimated potential speedup: 2.150
          remark #15488: --- end vector cost summary ---
          remark #25015: Estimate of max trip count of loop=12
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(31,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(32,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(33,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(34,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(35,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(36,5)
-         remark #25046: Loop lost in Fusion 
+         remark #25046: Loop lost in Fusion
       LOOP END
 
       LOOP BEGIN at roms-pres3d-ijk.f90(30,5)
       <Remainder loop for vectorization>
          remark #15301: REMAINDER LOOP WAS VECTORIZED
-         remark #15448: unmasked aligned unit stride loads: 6 
-         remark #15449: unmasked aligned unit stride stores: 2 
-         remark #15450: unmasked unaligned unit stride loads: 6 
+         remark #15448: unmasked aligned unit stride loads: 6
+         remark #15449: unmasked aligned unit stride stores: 2
+         remark #15450: unmasked unaligned unit stride loads: 6
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 42 
-         remark #15477: vector cost: 21.000 
-         remark #15478: estimated potential speedup: 1.940 
+         remark #15476: scalar cost: 42
+         remark #15477: vector cost: 21.000
+         remark #15478: estimated potential speedup: 1.940
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -167,64 +167,64 @@ LOOP BEGIN at roms-pres3d-ijk.f90(30,5)
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(31,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(32,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(33,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(34,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(35,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 
    LOOP BEGIN at roms-pres3d-ijk.f90(36,5)
-      remark #25046: Loop lost in Fusion 
+      remark #25046: Loop lost in Fusion
    LOOP END
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(31,5)
    remark #25101: Loop Interchange not done due to: Original Order seems proper
    remark #25452: Original Order found to be proper, but by a close margin
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(32,5)
    remark #25101: Loop Interchange not done due to: Original Order seems proper
    remark #25452: Original Order found to be proper, but by a close margin
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(33,5)
    remark #25101: Loop Interchange not done due to: Original Order seems proper
    remark #25452: Original Order found to be proper, but by a close margin
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(34,5)
    remark #25101: Loop Interchange not done due to: Original Order seems proper
    remark #25452: Original Order found to be proper, but by a close margin
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(35,5)
    remark #25101: Loop Interchange not done due to: Original Order seems proper
    remark #25452: Original Order found to be proper, but by a close margin
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(36,5)
    remark #25101: Loop Interchange not done due to: Original Order seems proper
    remark #25452: Original Order found to be proper, but by a close margin
-   remark #25046: Loop lost in Fusion 
+   remark #25046: Loop lost in Fusion
 LOOP END
 
 LOOP BEGIN at roms-pres3d-ijk.f90(44,9)
@@ -244,13 +244,13 @@ LOOP BEGIN at roms-pres3d-ijk.f90(44,9)
 
          LOOP BEGIN at roms-pres3d-ijk.f90(42,7)
             remark #15301: PERMUTED LOOP WAS VECTORIZED
-            remark #15448: unmasked aligned unit stride loads: 6 
-            remark #15449: unmasked aligned unit stride stores: 2 
-            remark #15450: unmasked unaligned unit stride loads: 6 
+            remark #15448: unmasked aligned unit stride loads: 6
+            remark #15449: unmasked aligned unit stride stores: 2
+            remark #15450: unmasked unaligned unit stride loads: 6
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 42 
-            remark #15477: vector cost: 21.000 
-            remark #15478: estimated potential speedup: 1.940 
+            remark #15476: scalar cost: 42
+            remark #15477: vector cost: 21.000
+            remark #15478: estimated potential speedup: 1.940
             remark #15488: --- end vector cost summary ---
             remark #25015: Estimate of max trip count of loop=50
          LOOP END
@@ -272,14 +272,14 @@ roms-pres3d-ijk.f90(3,9):remark #34051: REGISTER ALLOCATION : [MAIN__] roms-pres
         Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
         Callee-save  :    6[ rbx rbp r12-r15]
         Assigned     :   25[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm10]
-        
+
     Routine temporaries
         Total         :     475
             Global    :     133
             Local     :     342
         Regenerable   :     115
         Spilled       :      59
-        
+
     Routine stack
         Variables     :     148 bytes*
             Reads     :       4 [2.12e-09 ~ 0.0%]
@@ -287,11 +287,11 @@ roms-pres3d-ijk.f90(3,9):remark #34051: REGISTER ALLOCATION : [MAIN__] roms-pres
         Spills        :     408 bytes*
             Reads     :      63 [2.06e-01 ~ 0.2%]
             Writes    :      61 [4.32e-02 ~ 0.0%]
-    
+
     Notes
-    
+
         *Non-overlapping variables and spills may share stack space,
          so the total stack size might be less than this.
-    
+
 
 ===========================================================================

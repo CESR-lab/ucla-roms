@@ -10,10 +10,10 @@ the files are mainly I/O related) simply replace files (save backup copies if
 you want to).   I also provide enough detail to allow copy-pasting the
 substantial changes (but not all the changes). [For Yusuke it is a bit more
 complicated because sediment/wave data is part of restart, so we have to sit
-together and reconcile the restart procedures]. 
+together and reconcile the restart procedures].
 
 [update of checkdims.F is new for everyone except Jaison, to whom I updated
-some of my modifications (but not exact restart) quite sometime ago.] 
+some of my modifications (but not exact restart) quite sometime ago.]
 
 
 
@@ -29,7 +29,7 @@ Files involved:
        set_scoord.F  <-- minor updates to improve printout and
                          diagnostics (this is not a bug fix; nor
                          any change in model results caused by
-                         the update) 
+                         the update)
 
 
        ncvars.h   get_initial.F def_rst.F  def_his.F   <-- update restart
@@ -37,16 +37,16 @@ Files involved:
 
        checkdims.F  <-- introduce/enforce consistency check of vertical
                         transform between the current model settings
-                        (roms.in + CPP switches) and input netCDF files; 
+                        (roms.in + CPP switches) and input netCDF files;
 
-       nf_fread.F   <-- error diagnostics 
+       nf_fread.F   <-- error diagnostics
 
 
 
 
 
 1. file "main.F", comment only: at the beginning of subroutine roms_step
-   find lines 
+   find lines
 
                                 !--> increment time index and clock
       iic=iic+1
@@ -54,15 +54,15 @@ Files involved:
 
    and replace the commentary with:
 
-! Increment time-step index and set model clock. Note that "time" set 
+! Increment time-step index and set model clock. Note that "time" set
 ! below corresponds to step "n" (labelled as "nstp"),  while counter
-! "iic" corresponds to "n+1", so normally, assuming that time is 
-! counted from zero, the following relation holds: time=dt*(iic-1).  
-!  Also note that the output history/restart/averages routines write 
-! time and all the fields at step "n" (not n+1), while the first 
-! element of structure "time_index" written into the files is actually 
-! iic-1, hence normally time=time_index*dt there.  Same rule applies 
-! to the diagnostic routine "diag" which prints time and time step 
+! "iic" corresponds to "n+1", so normally, assuming that time is
+! counted from zero, the following relation holds: time=dt*(iic-1).
+!  Also note that the output history/restart/averages routines write
+! time and all the fields at step "n" (not n+1), while the first
+! element of structure "time_index" written into the files is actually
+! iic-1, hence normally time=time_index*dt there.  Same rule applies
+! to the diagnostic routine "diag" which prints time and time step
 ! (actually iic-1) on the screen.
 
 
@@ -124,7 +124,7 @@ c>          FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
           enddo
         endif                                             <-- new
 
-and 
+and
 
           if (FIRST_TIME_STEP) then                       <-- new
             do i=istrR,iendR                              <-- new
@@ -156,12 +156,12 @@ u,v(:,:,:,nnew) are used only for computing r.h.s. advection terms
 for 3D momentum equations, this results on O(dt) error during startup
 (i.e., some terms in r.h.s. are twice as large, and, as the result
  u^{n+1}=u^n + dt*r.h.s._u^{n+1/2} admits O(dt) error). The error
-is practically not observable. 
+is practically not observable.
 
 
 Fluxes for tracer advection are not affected (even during the starting
 time step) because tracer update takes place after barotropic mode
-using updated u,v velocities and coupling takes place again. 
+using updated u,v velocities and coupling takes place again.
 
 All subsequent time steps work correctly.
 
@@ -169,7 +169,7 @@ All subsequent time steps work correctly.
 NOTE: originally EXACT_RESTART was designed to use the commented-out
 lines
 
-c>             FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0) 
+c>             FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
 
 c>             FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
 
@@ -180,16 +180,16 @@ this error while investigating why I am not getting exact restart
 
 REMEDIES:  1. introduce logic in set_HUV1_tile to avoid DU,V_avg2 at the
               first (meaning starting from the very initial condition);
-              and  
+              and
 
            2. revise EXACT_RESTART procedure: DU,V_avg2 cannot be, in
               principle, computed from variables normally saved in
               restart file, and therefore must be stored.
 
-           
+
 
 3. files    ncvars.h   get_initial.F def_rst.F  def_his.F
-            wrt_rst.F  wrt_grid.F    wrt_avg.F  wrt_his.F   
+            wrt_rst.F  wrt_grid.F    wrt_avg.F  wrt_his.F
 
 
    are modified to update exact restart procedures.
@@ -214,11 +214,11 @@ REMEDIES:  1. introduce logic in set_HUV1_tile to avoid DU,V_avg2 at the
            time_step(1) and and the fact that ROMS output data at the
            early stage of time stepping procedure, which is motivated by
            convenience and the desire to minimize synchronization events.
- 
+
            Since time_step(1:4) is needed only to restart ROMS stepping
            and automatic numbering of output files in the sequence, it do
            not expect any side-effect due to this change as long as all
-           the files are updated consistently, with the exception of 
+           the files are updated consistently, with the exception of
            situation when restarting runs using updated code, but old
            restart file: ==> the time step numbers in the restarted run
            will be offset by 1.
@@ -236,11 +236,11 @@ REMEDIES:  1. introduce logic in set_HUV1_tile to avoid DU,V_avg2 at the
        [3.]  various editings in diagnostic messages in handling
              netCDF errors: basically more intuitive printout.
 
-                  
 
 
 
-ncvars.h introduce two new variables 
+
+ncvars.h introduce two new variables
 
 # ifdef EXACT_RESTART
       integer rst_DU_avg2, rst_DV_avg2
@@ -255,7 +255,7 @@ get_initial.F  multiple changes for all the 3 reasons outlined above,
 
 
 def_rst.F  introduced netCDF variables DU,V_avg2 and saved their IDs.
-            
+
 
 
 wrt_rst.F  ---> changed  ibuff(1)=iic   into
@@ -287,7 +287,7 @@ checkdims.F  --> introduced two new functions:  check_scoord and
                  transform consistency: now if there is a conflict
                  between roms.in and netCDF data regarding vertical
                  coordinate, the code with print error message and
-                 quit instead of running. 
+                 quit instead of running.
 
 
 nf_fread.F   edited netCDF error messages; not crucial

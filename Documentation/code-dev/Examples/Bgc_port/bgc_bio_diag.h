@@ -88,7 +88,7 @@
      &            , indxCOCCOPO4UPTAKE=LAST_I+6,indxCOCCOFEUPTAKE=LAST_I+7
      &            , indxCOCCOLIGHTLIM=LAST_I+8,indxCACO3PRODCOCCO=LAST_I+9
      &            , indxIRONUPTAKECOCCO=LAST_I+10,indxCOCCONO3UPTAKE=LAST_I+11
-     &            , indxCOCCONH4UPTAKE=LAST_I+12,indxCOCCOGRAZEDIC=LAST_I+13 
+     &            , indxCOCCONH4UPTAKE=LAST_I+12,indxCOCCOGRAZEDIC=LAST_I+13
      &            , indxCOCCOLOSSDIC=LAST_I+14,indxGRAZECOCCOZOO=LAST_I+15
      &            , indxQCACO3COCCO=LAST_I+16,indxCOCCOPHOTOACC=LAST_I+17
      &            , indxCOCCOPLIM=LAST_I+18
@@ -99,7 +99,7 @@
      &            , indxammox=LAST_I+1,indxnitrox=LAST_I+2
      &            , indxanammox=LAST_I+3,indxDENITRIF1=LAST_I+4,indxDENITRIF2=LAST_I+5
      &            , indxDENITRIF3=LAST_I+6, indxSPNO2UPTAKE=LAST_I+7,indxDIATNO2UPTAKE=LAST_I+8
-     &            , indxDIAZNO2UPTAKE=LAST_I+9, indxN2OAMMOX=LAST_I+10 
+     &            , indxDIAZNO2UPTAKE=LAST_I+9, indxN2OAMMOX=LAST_I+10
 #  undef LAST_I
 #  define LAST_I indxN2OAMMOX
 # endif

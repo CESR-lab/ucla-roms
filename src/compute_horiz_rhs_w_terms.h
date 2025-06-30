@@ -4,7 +4,7 @@
 ! to instantaneous values at interface location.  2 options an be
 ! selected: 3-point upstream-biased parabolic interpolation (UPSTREAM_W);
 !  4-point symmetric fourth-order method (undefined state of both CPP
-! switches); 
+! switches);
 
 ! This code is extracted into a special module because it is used
 ! twice, in predictor and corrector substeps for w
@@ -15,7 +15,7 @@
 
 #ifdef UPSTREAM_W
 # define curv wrk1
-#else 
+#else
 # define grad wrk1
 #endif
 #ifndef EW_PERIODIC

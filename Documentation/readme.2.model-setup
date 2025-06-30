@@ -15,8 +15,8 @@ Running new simulations:
     short run first. E.g. only 5 time steps, with result outputting at every time step, this
     should make for faster iterations to get the model to run properly, rather than waiting
     for your first desired output only to realize there's a netcdf output issue.
-    
-    Using Expanse (cluster): Expanse has 2 debug nodes (254 cores) per user that gives you instant access 
+
+    Using Expanse (cluster): Expanse has 2 debug nodes (254 cores) per user that gives you instant access
     to test if your code runs as you get setup (without long waits to run). Strongly encouraged.
     See Documentation/machine-specific/Job_submission_scrips/run_script_expanse_debug_nodes
     for an example of a job submission script on the debug nodes.
@@ -24,9 +24,9 @@ Running new simulations:
 roms.in:
 
     See Examples/Tracers_passive/sample.in as a template.
-    You need to include the boundary file in the 'forcing:' filename list! 
-    Note, we now use one root name, e.g. 'pacific', stored in 
-    variable 'output_root_name' for the output file names. 
+    You need to include the boundary file in the 'forcing:' filename list!
+    Note, we now use one root name, e.g. 'pacific', stored in
+    variable 'output_root_name' for the output file names.
     The history  file will be pacific_his.*.nc,
     The averages file will be pacific_avg.*.nc,
     The restart  file will be pacific_rst.*.nc
@@ -35,12 +35,12 @@ cppdefs.opt:
 
     We have removed some cppflags, 'grep' search the code to see if they still
     exist, or ask someone who might know :).
-    
+
 param.opt:
 
     Set your domain decomposition here, e.g. LLm, MMm, NP_XI, NP_ETA.
     Set number of tracers here.
-    
+
 *.opt:
 
     The file extension .opt is used to designate files that may require the user
@@ -52,21 +52,21 @@ param.opt:
     edits in analytical.F.
     FYI, .opt has no meaning other than an abbreviation of 'options', it is just
     an include file like the .h files.
-    
+
 Code folding:
 
-    We have reorganized the code into modules containing several subroutines, 
-    rather than many files of individual subroutines. To make it easier to navigate 
+    We have reorganized the code into modules containing several subroutines,
+    rather than many files of individual subroutines. To make it easier to navigate
     these larger modules, we have introduced code folding.
-    
-    A folding section is demarked by a ![ at the beginning and closed with !] at the 
+
+    A folding section is demarked by a ![ at the beginning and closed with !] at the
     end. This folding is specific to vim / gvim. To configure your editor for code folding:
     Open/create file: ~/.vimrc
     Add the following two lines:
     set foldmethod=marker
     set foldmarker=![,!]
-    ROMS source code should be folded as default. 
-    To expand/fold applicable sections of code, use 'za' 
+    ROMS source code should be folded as default.
+    To expand/fold applicable sections of code, use 'za'
     (i.e. 'z' and 'a' keys together at the same time).
 
 Forcing file units:
@@ -75,20 +75,20 @@ Forcing file units:
     stated at the top of:
     bulk_frc.F -> for BULK_FRC simulations (BULK_FLUX of old is now BULK_FRC)
     flux_frc.F -> for direct flux simulations (still default)
-     
-    For the names of the variable and variable time, either change the forcing 
-    files to match: the variable name, the variable's time name, the value to 
-    the correct units, and the name of the units. 
+
+    For the names of the variable and variable time, either change the forcing
+    files to match: the variable name, the variable's time name, the value to
+    the correct units, and the name of the units.
     Alternatively, you can change the variable name and time name in bulk_frc.opt
-    or flux_frc.opt if you prefer (ensure character(len=?) matches length of new name. 
+    or flux_frc.opt if you prefer (ensure character(len=?) matches length of new name.
     Note, the units must be changed to match code.
-    
-    You can use scripts to edit netcdf files, or below is a command line example 
+
+    You can use scripts to edit netcdf files, or below is a command line example
     of how to do it if you prefer:
     - change name:  ncrename -v prec,rain sample_prec.nc (changes prec -> rain)
-    - change value: ncap2 -s 'rain=2*rain' sample_prec.nc (e.g. multiply rain 
+    - change value: ncap2 -s 'rain=2*rain' sample_prec.nc (e.g. multiply rain
       variable by 2)
-    - change units: ncatted -a units,rain,m,c,'cm/day' sample_prec.nc (changes 
+    - change units: ncatted -a units,rain,m,c,'cm/day' sample_prec.nc (changes
       name of units of 'rain' to 'cm/day')
 
 Passive tracers:
@@ -97,26 +97,26 @@ Passive tracers:
     User inputs, such as the name of tracers, is done in the file tracers.opt, which
     also contains further instructions.
     Set number of tracers 'NT' in param.opt as before.
-    I would suggest starting with no tracers or just 1 or 2 to ensure that you can get 
+    I would suggest starting with no tracers or just 1 or 2 to ensure that you can get
     it working, and then finally set it up with all of your tracers.
     Selection of tracers for outputting is also done in tracers.opt.
     No longer need PASSIVE_TRACER flag for this to work.
     Default boundary values can be set in subroutine set_bry_tracer_defaults.
-    
+
 tides:
 
-    Set the number of tidal contributions you are using in tides.opt variable ntides. 
-    
+    Set the number of tidal contributions you are using in tides.opt variable ntides.
+
 Averages:
 
     Only compile roms with AVERAGES flag if you do in fact need averages. The reason for
     this is that AVERAGES creates a second array for every variable in your model that
-    is 'T' for output. This increases your memory requirement. 
-    
+    is 'T' for output. This increases your memory requirement.
+
     Furthermore, if you used the AVERAGES flag but you don't need them, and your 'NTSAVG'
     (number to start averaging) in your roms.in file is at any point equal to your timestep 'iic',
     you will start computing averages at that point, which is expensive and wasted computing.
-    
+
 Diagnostics:
 
     Diagnostics are calculated using the diagnostics module of src/diagnostics.F.
@@ -125,23 +125,23 @@ Diagnostics:
     Select the tracer variables for which you want diagnostics in tracers.opt in wrt_t_diag array.
     See the top of diagnostics.F for a more detailed description of the available diagnostics.
     For an example try Examples/Diagnostics/
-    
+
 Nested grid boundary file generation online:
     for information on generating online nested boundary files, see:
-    - Documentation/readme-specifics/README.extract_data    
-    
+    - Documentation/readme-specifics/README.extract_data
+
 Mooring output:
     for information on generating online mooring extraction files, see:
-    - Documentation/readme-specifics/README.extract_data 
-    
+    - Documentation/readme-specifics/README.extract_data
+
 Pipes:
     Pipes can be configured using src/pipe_frc.opt and src/pipe_frc.F.
     See Examples/Pipes_real and Examples/Pipes_ana for working examples.
-    
+
 Rivers:
     Pipes can be configured using src/river_frc.opt and src/river_frc.F.
     See Examples/Rivers_real and Examples/Rivers_ana for working examples.
-        
+
 Netcdf output compression:
 
     The new roms code now uses netcdf-4 file outputting (previously netcdf-3). This allows
@@ -156,41 +156,41 @@ Netcdf output compression:
     On comet the compression increased run time by a few percent. Note that the output
     frequency was quite high to test the impact of compression, so for normal simulation
     output rates it is unlikely to make an impact.
-    
+
     If you are outputting at every time-step for some reason, you may want to remove compression
     by setting "deflate_level=0" in read_write.opt.
     The code currently uses default 'chunking' of netcdf variables. Depending on your simulation
     it is possible that compression might not work nicely. It is recommended you do a small test,
     e.g. 50 steps outputting every 25 steps (2 outputs), and confirm that the compression does
     not cost a lot of time, and that the output files are considerably smaller (worth the cost).
-    
+
     ncjoin has been modified to create compressed files as well. On maya we found:
     no compression = 316s execution time -> 21GB
     d1 compression = 808s execution time ->  8GB
     The time penalty is considerable but the file size savings is impressive.
-    Again, if you are finding ncjoin too slow, change to "deflate_level=0" in Tools-Roms/ncjoin.F.        
+    Again, if you are finding ncjoin too slow, change to "deflate_level=0" in Tools-Roms/ncjoin.F.
 
 Surface flux outputting:
-    
-    It is possible to output the bulk force resulting surface flux sustr, svstr, etc. 
-    The output frequency is in surf_flux.opt, not the roms.in file. 
+
+    It is possible to output the bulk force resulting surface flux sustr, svstr, etc.
+    The output frequency is in surf_flux.opt, not the roms.in file.
     It will produce its own output file separate from the _his.nc file.
     It can also produce its own averages file, also controlled in surf_flux.opt.
-    
+
 BGC - Bio-geochemical:
 
     See Documentation/readme-specifics/README.bgc-code-port-info-20201216.txt for more info.
-    
+
 Automated code checking:
 
     Examples/code_check contains a script to run all examples and compare them to benchmark results
     on Expanse and Maya. This does not ensure code 'correctness', but does ensure that the result
     hasn't changed between code updates. Developers (not users) should always run this before
-    committing an update to the code.    
+    committing an update to the code.
 
 Misc.:
 
     The machine compilation file Makedefs/Makedefs.IntelEM64T is now Makedefs.inc.
-    
+
 
 

@@ -4,7 +4,7 @@
 
 # *************************************************************
 
-# NEEDED FOR ROMS 2020-12 
+# NEEDED FOR ROMS 2020-12
 
 #  user defined:
 export ROMS_ROOT=/home/devin/code-roms-versions/eclipse/WEC/ucla-roms-DevinD-WEC
@@ -30,7 +30,7 @@ export PATH=$PATH:$ROMS_ROOT/Tools-Roms
 
 # Copied from maya cshrc
 export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/opt/bin:/opt/include
-export PATH=./:$PATH 
+export PATH=./:$PATH
 export MANPATH=/usr/local/man:/usr/share/man
 
 export HDF5_LIB=/usr/lib/x86_64-linux-gnu/hdf5/serial

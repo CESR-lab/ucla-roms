@@ -1,4 +1,4 @@
-# Platform-specific definitions for Linux using Fujitsu frt/f90/f95 
+# Platform-specific definitions for Linux using Fujitsu frt/f90/f95
 # ======== ======== =========== === ===== ===== =======  ==========
 
 .SUFFIXES: .o .f .F

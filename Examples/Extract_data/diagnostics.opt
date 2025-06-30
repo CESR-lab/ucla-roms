@@ -1,4 +1,4 @@
-      
+
       ! ***************************************************************
       ! User inputs:
       !
@@ -11,14 +11,14 @@
       !   Notes:
       !     1) need DIAGNOSTICS flag in cppdefs.opt
       !     2) units are du/dt*dz - m^2/s^2 (or v/w/tracer) - i.e. vertically integrated in cell
-      !     3) if tracer diagnostics required set diag_trc==T, 
+      !     3) if tracer diagnostics required set diag_trc==T,
       !        select which tracers you want in wrt_t_diag array in tracers.opt
       !     4) for an example try Examples/Diagnostics/
       !     5) averaging frequency = rec_rate * time_step
       !        averaging is expensive and will likely slow your simulation by 30-40%
       !        with u, v, temp and salinity diagnostics.
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
-      
+
       logical, parameter         :: diag_avg      = .true.    ! compute history (=F) or averages (=T)
       integer, parameter         :: output_period = 200       ! output period
       integer, parameter         :: nrpf          =  7        ! total recs per file
@@ -35,13 +35,13 @@
 
       !  If diag_trc=.true., select for which tracers diagnostics are desired:
       logical,dimension(nt) :: trc_diag = .false.
-!     trc_diag(1) = .True.  ! diagnostics for temperature 
+!     trc_diag(1) = .True.  ! diagnostics for temperature
 
 
 
-      
-      ! End of user inputs                                  
+
+      ! End of user inputs
       ! ***************************************************************
 
-                                                            
-            
+
+

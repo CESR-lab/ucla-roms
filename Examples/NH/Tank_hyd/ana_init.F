@@ -28,7 +28,7 @@
       real  amp,Lt
 # if defined TANKINT
       real drho, thickn
-# endif 
+# endif
 
 # include "compute_auxiliary_bounds.h"
 
@@ -58,7 +58,7 @@
       enddo
 # endif
 
-# if defined TANK 
+# if defined TANK
       amp = 0.001
       Lt  = 10.0
       do j=jstrR,jendR

@@ -30,8 +30,8 @@ swcorrname = [frc_dir 'SSR_correction.nc'];
 
 root_name = 'pachug';
 
-wind_dropoff = 0; 
-add_rivers   = 1; 
+wind_dropoff = 0;
+add_rivers   = 1;
 
 %
 %%%%%%%%%%%%%%%%%%% END USER-DEFINED VARIABLES %%%%%%%%%%%%%%%%%%%%%%%
@@ -97,7 +97,7 @@ add_rivers   = 1;
    lon_frc = lon_frc(i0:i1);
    lat_frc = flipud(lat_frc(j0:j1));
 
-   sst = ncread(datname,'sst',[i0 j0 1],[fnx fny 1]); 
+   sst = ncread(datname,'sst',[i0 j0 1],[fnx fny 1]);
    mask = 1+0*sst;
    mask(isnan(sst)) = 0;
    mask = fliplr(mask); % to deal with upside down ERA5 data
@@ -117,7 +117,7 @@ add_rivers   = 1;
    corr_time = ncread(swcorrname,'time');
    swr_mult = zeros(nx,ny,12);
    for i=1:12
-     corr_swr  = ncread(swcorrname,'ssr_corr',[i0 j0 i],[fnx fny 1]); 
+     corr_swr  = ncread(swcorrname,'ssr_corr',[i0 j0 i],[fnx fny 1]);
      corr_swr = fliplr(corr_swr);
      corr_swr(mask<1) = nan;
      corr_swr = inpaint_nans(corr_swr,2);
@@ -143,7 +143,7 @@ add_rivers   = 1;
      date_num = double(dat_time(1)/24) + datenum(1900,1,1);
      label = datestr(date_num,'YYYYmmdd')
 
-     frcname = [root_name '_frc.' label '.nc'] 
+     frcname = [root_name '_frc.' label '.nc']
 
      data.datname = datname;
      data.lon = lon_frc;
@@ -170,8 +170,8 @@ add_rivers   = 1;
 	% ---- 10 meter winds -----
 	u = get_frc_era(data,grd,'u10',irec,'makima');
 	v = get_frc_era(data,grd,'v10',irec,'makima');
-	
-	% rotate to grid angles 
+
+	% rotate to grid angles
         ugrid = cosa.*u + sina.*v;
         vgrid =-sina.*u + cosa.*v;
 
@@ -188,12 +188,12 @@ add_rivers   = 1;
 	lwr = get_frc_era(data,grd,'strd',irec,'linear'); % downward_longwave_flux [J/m2]
 
 	% Translate to fluxes. ERA5 stores values integrated over 1 hour
-	% Are these centered around the current time? 
+	% Are these centered around the current time?
 	swr = swr/3600;
 	lwr = lwr/3600;
 
 	% ---- Correction to swr using  COREv2 dataset -----
-	% This is a multiplicative correcting, trying to account for 
+	% This is a multiplicative correcting, trying to account for
 	% for errors in the ERA5 cloud cover
 	% temporal interpolation in a monthly climatology
 	yr_day = mod(days,365.25);
@@ -228,7 +228,7 @@ add_rivers   = 1;
 
         % Relative to absolute humidity assuming constand pressure
 
-        patm=1010.0; 
+        patm=1010.0;
 
         cff=(1.0007+3.46e-6*patm).*6.1121.*exp(17.502*t2m./(240.97+t2m));
         cff=cff.* Qair;
@@ -241,7 +241,7 @@ add_rivers   = 1;
 	rain = get_frc_era(data,grd,'tp',irec,'linear'); % precipitation [m]
 
 	% Translate to fluxes. ERA5 stores values integrated over 1 hour
-	% Are these centered around the current time? 
+	% Are these centered around the current time?
 	rain = rain/3600;
 
 	% ---- Correction to rain using Dai and Trenberth data  -----
@@ -267,6 +267,6 @@ add_rivers   = 1;
 	return
 
      end
-   end % 
+   end %
 
 

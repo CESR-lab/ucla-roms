@@ -20,7 +20,7 @@ boundary: filename
 
 restart:          NRST, NRPFRST / filename
                  999999   1
-     
+
 output_root_name:
      pipes
 
@@ -30,7 +30,7 @@ history: LDEFHIS, NWRT, NRPFHIS / filename
 averages: NTSAVG, NAVG, NRPFAVG / filename
             0     999999    8
      usw3_avg.nc
-     
+
 primary_history_fields: zeta U,VBAR  U,V   wrtT(1:NT)
                           T   T T    T T   T T T T
 

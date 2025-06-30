@@ -2,8 +2,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%  Put in the daily Pipe runoff data in the 'new' format. 
-%     
+%  Put in the daily Pipe runoff data in the 'new' format.
+%
 %
 %  2020, Jeroen Molemaker (UCLA)
 %
@@ -56,7 +56,7 @@ mask = ncread(grdname,'mask_rho');
  dy  = 1./dyi;
 
  [nx, ny] = size(lon);
- 
+
 
  if 0 % reset pipe flux if needed
    rflx = 0*mask;
@@ -102,7 +102,7 @@ if 0
  iloc(out) = [];
  jloc(out) = [];
  mindist(out) = [];
- npip = length(iloc) 
+ npip = length(iloc)
  pip_flx = zeros(nt,npip);
  pip_lon = zeros(npip);
  pip_lat = zeros(npip);
@@ -151,7 +151,7 @@ if 0
      disp('some fluxes were wrong and were removed')
    end
 
-   sum_flx = sum(rflx(:)>=ipip&rflx(:)<ipip+1) 
+   sum_flx = sum(rflx(:)>=ipip&rflx(:)<ipip+1)
    if sum_flx>0
      rflx(rflx>=ipip&rflx<ipip+1) = ipip + 1./sum_flx;
    end

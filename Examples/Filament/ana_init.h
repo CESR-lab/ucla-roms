@@ -24,7 +24,7 @@
       forw_start=ntstart
 #endif
 
-      
+
       ! Calculate temperature from buoyancy:
       ! Make sure that you are using linear equation of state
 
@@ -43,22 +43,22 @@
 !         h_sbl = h0 + dh0*( tanh( 2e-3*(xr(i,j) + 3.15e3)) - tanh( 2e-3*(xr(i,j) - 3.15e3)))
 
           do k=1,nz
-            b  = b0 + Nb * (z_r(i,j,k) + HD) + 
+            b  = b0 + Nb * (z_r(i,j,k) + HD) +
      &           0.5*N0*( (1+ B_cff) * z_r(i,j,k) - ( 1- B_cff)
-     &          *( h_sbl + lambda_inv * 
+     &          *( h_sbl + lambda_inv *
      &           log(cosh((1./lambda_inv) *(z_r(i,j,k) + h_sbl)))))
 
             t(i,j,k,1,itemp) = b/(g*alpha)
           enddo
         enddo
       enddo
-     
+
       bf_int = 0
       do k=1,nz
         bf_int = bf_int + Hz(1,1,k)*(
-     &           b0 + Nb * (z_r(1,1,k) + HD) + 
+     &           b0 + Nb * (z_r(1,1,k) + HD) +
      &           0.5*N0*( (1+ B_cff) * z_r(1,1,k) - ( 1- B_cff)
-     &          *( h0 + lambda_inv * 
+     &          *( h0 + lambda_inv *
      &           log(cosh((1./lambda_inv) *(z_r(1,1,k) + h0)))))
      &               )/g
       enddo
@@ -86,7 +86,7 @@
       do k=1,nz
         do j=-1,ny+2
           do i=-1,nx+2
-	     zeta(i,j,1)= zeta(i,j,1) + t(i,j,k,1,1)*alpha*Hz(i,j,k) 
+	     zeta(i,j,1)= zeta(i,j,1) + t(i,j,k,1,1)*alpha*Hz(i,j,k)
           enddo
         enddo
       enddo

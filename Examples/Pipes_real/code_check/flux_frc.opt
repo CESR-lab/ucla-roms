@@ -1,7 +1,7 @@
 
       ! ****************************************************************
       ! User inputs
-      
+
       integer     :: interp_frc = 0   ! interpolate forcing from coarser input grid (=1) or not (=0). factor 2 only for now
 
       type (ncforce) :: nc_sustr  = ncforce(vname='sustr', tname='sms_time')  ! sustr - surface u-momentum stress flux (input data in N/m^2)

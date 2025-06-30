@@ -12,12 +12,12 @@ fi
 
 # Load modules
 
-# - this includes intel MPI:                              
+# - this includes intel MPI:
 module load pacific-local/intel/parallel_studio_xe_2020.4
 
-module load pacific-local/hdf5/hdf5-1.12.1-intel-2020.4                          
-module load pacific-local/netcdf-c/combined-c-4.8.0-f-4.5.3-intel-2020.4                                                    
-module load libcurl/curl-7.71.1 
+module load pacific-local/hdf5/hdf5-1.12.1-intel-2020.4
+module load pacific-local/netcdf-c/combined-c-4.8.0-f-4.5.3-intel-2020.4
+module load libcurl/curl-7.71.1
 
 
 # UCLA ROMS additions:
@@ -31,4 +31,4 @@ export PATH=$PATH:$ROMS_ROOT/Tools-Roms
 
 # - I believe this is not needed since intel MPI paths loaded automatically with intel module
 export MPIHOME="/home/apps/intel/2020.4/compilers_and_libraries/linux/mpi/intel64"
- 
+

@@ -16,8 +16,8 @@
       use marbl_driver, only: marbl_namelist_fname, marbl_tracer_list_fname
 #ifdef MARBL_DIAGS
      &     , marbl_diag_list_fname
-#endif      
-#endif       
+#endif
+#endif
 
       implicit none
       integer ierr
@@ -84,7 +84,7 @@
 #ifdef MPI
       if (mynode == 0) then
 #endif
-        is=iargc() ; if (is == 1) call getarg(is,fname) 
+        is=iargc() ; if (is == 1) call getarg(is,fname)
 #ifdef MPI
       endif
       call MPI_Bcast(fname,max_fname,MPI_BYTE, 0, ocean_grid_comm, ierr)
@@ -155,20 +155,20 @@
           lstr=lenstr(marbl_namelist_fname)
              mpi_master_only write(*,'(1x,A,15x,A)'),
      &            'MARBL namelist file',marbl_namelist_fname(1:lstr)
-       
+
           read(input,'(A)',err=95) marbl_tracer_list_fname
           lstr=lenstr(marbl_tracer_list_fname)
              mpi_master_only write(*,'(1x,A,5x,A)'),
      &            'MARBL tracer output list file',marbl_tracer_list_fname(1:lstr)
-             
-#ifdef MARBL_DIAGS          
+
+#ifdef MARBL_DIAGS
           read(input,'(A)',err=95) marbl_diag_list_fname
           lstr=lenstr(marbl_diag_list_fname)
              mpi_master_only write(*,'(1x,A,1x,A)'),
      &            'MARBL diagnostic output list file',marbl_diag_list_fname(1:lstr)
 #endif
 #endif
-          
+
 ! Vertical S-coordinates transformation. Note that "hc" may be chosen
 ! to be very large (infinity) if vertically uniform sigma is desired.
 
@@ -232,7 +232,7 @@
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,*,err=95) gamma2
           mpi_master_only write(*,'(5x,A,ES10.3,2x,2A)') 'gamma2 =',
-     &                           gamma2, 'slipperiness parameter: ', 
+     &                           gamma2, 'slipperiness parameter: ',
      &                           'free-slip = +1, or no-slip = -1.'
 # endif
 #endif
@@ -318,11 +318,11 @@
           mpi_master_only write(*,'(5x,A,ES10.3,2x,2A/38x,A)')
      &   'dSSSdt =', dSSSdt, 'Sea-Surface Salinity correction ',
      &                       'coefficient expressed',
-     &            'kinematically as "piston velocity" [cm/day]' 
+     &            'kinematically as "piston velocity" [cm/day]'
 
           dSSSdt=dSSSdt/(100*day2sec)   !<-- Convert cm/day to convert to [m/s]
           ! This is also defined in put_global_atts so needs to be consistent.
-           
+
 # endif
 
 # if defined QCORRECTION

@@ -81,7 +81,7 @@ contains
     northeast = grid(lev)%neighb(7)
     northwest = grid(lev)%neighb(8)
 
-    !- 
+    !-
     !-
 
     sendS => gbuffers(lev)%sendS2D1
@@ -128,7 +128,7 @@ contains
        comm(1)=1
     elseif ((lbc).and.(trim(cuv)=='v')) then
 !       a2d(1,:) = zero
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        a2D(1-nh:0,1:nx) = a2D(nh:1:-1,1:nx)
     endif
 
@@ -139,7 +139,7 @@ contains
        comm(2)=2
     elseif ((lbc).and.(trim(cuv)=='u')) then
 !       a2d(:,nx+1) = zero
-    else !!Homogenous Neumann 
+    else !!Homogenous Neumann
        a2D(1:ny,nx+1) = a2D(1:ny,nx)
     endif
 
@@ -148,9 +148,9 @@ contains
             recvN,nx*nh,MPI_DOUBLE_PRECISION,north, &
             sntag,MPI_COMM_WORLD,req(3),ierr)
        comm(3)=3
-    elseif ((lbc).and.(trim(cuv)=='v')) then 
+    elseif ((lbc).and.(trim(cuv)=='v')) then
 !       a2d(ny+1,:) = zero
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        a2D(ny+1:ny+nh,1:nx) = a2D(ny:ny-nh+1:-1,1:nx)
     endif
 
@@ -231,7 +231,7 @@ contains
        flag_nw_n = .true.
     elseif (west.ne.MPI_PROC_NULL) then
        flag_nw_w = .true.
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        a2D(ny+1:ny+nh,1-nh:0) = a2D(ny:ny-nh+1:-1,nh:1:-1)
     endif
 
@@ -240,7 +240,7 @@ contains
     !--------------------!
 
     if (south.ne.MPI_PROC_NULL) then
-       sendS(:,:) = a2D(1:nh,1:nx)  
+       sendS(:,:) = a2D(1:nh,1:nx)
        call MPI_ISend(                              &
             sendS,nx*nh,MPI_DOUBLE_PRECISION,south, &
             sntag,MPI_COMM_WORLD,req(9),ierr)
@@ -248,7 +248,7 @@ contains
     endif
 
     if (east.ne.MPI_PROC_NULL) then
-       sendE(:,:) = a2D(1:ny,nx-nh+1:nx) 
+       sendE(:,:) = a2D(1:ny,nx-nh+1:nx)
        call MPI_ISend(                             &
             sendE,ny*nh,MPI_DOUBLE_PRECISION,east, &
             ewtag,MPI_COMM_WORLD,req(10),ierr)
@@ -264,7 +264,7 @@ contains
     endif
 
     if (west.ne.MPI_PROC_NULL) then
-       sendW(:,:) = a2D(1:ny,1:nh)  
+       sendW(:,:) = a2D(1:ny,1:nh)
        call MPI_ISend(                             &
             sendW,ny*nh,MPI_DOUBLE_PRECISION,west, &
             wetag,MPI_COMM_WORLD,req(12),ierr)
@@ -273,7 +273,7 @@ contains
 
 
     if (southwest.ne.MPI_PROC_NULL) then
-       sendSW(:,:) = a2D(1:nh,1:nh)  
+       sendSW(:,:) = a2D(1:nh,1:nh)
        call MPI_ISend(                                   &
             sendSW,nh*nh,MPI_DOUBLE_PRECISION,southwest, &
             swnetag,MPI_COMM_WORLD,req(13),ierr)
@@ -281,7 +281,7 @@ contains
     endif
 
     if (southeast.ne.MPI_PROC_NULL) then
-       sendSE(:,:) = a2D(1:nh,nx-nh+1:nx)  
+       sendSE(:,:) = a2D(1:nh,nx-nh+1:nx)
        call MPI_ISend(                                   &
             sendSE,nh*nh,MPI_DOUBLE_PRECISION,southeast, &
             senwtag,MPI_COMM_WORLD,req(14),ierr)
@@ -289,7 +289,7 @@ contains
     endif
 
     if (northeast.ne.MPI_PROC_NULL) then
-       sendNE(:,:) = a2D(ny-nh+1:ny,nx-nh+1:nx) 
+       sendNE(:,:) = a2D(ny-nh+1:ny,nx-nh+1:nx)
        call MPI_ISend(                                   &
             sendNE,nh*nh,MPI_DOUBLE_PRECISION,northeast, &
             neswtag,MPI_COMM_WORLD,req(15),ierr)
@@ -313,7 +313,7 @@ contains
           icount=icount+1          ! or is expected from.  At the
           if (icount.lt.i) then    ! end of this segment icount
              comm(icount)=comm(i)  ! is equal to the actual number
-             req(icount)=req(i)    ! of messages sent and received, 
+             req(icount)=req(i)    ! of messages sent and received,
           endif                    ! arrays comm,req(1:icount)
        endif                       ! store directional indices
     enddo
@@ -325,9 +325,9 @@ contains
        indx=comm(j)           ! Save directional index for
        icount=icount-1        ! message received and ready to
        do i=j,icount          ! unpack, then erase its "req"
-          req(i)=req(i+1)     ! and "comm" and "req" by 
+          req(i)=req(i+1)     ! and "comm" and "req" by
           comm(i)=comm(i+1)   ! by compressing the arrays, so
-       enddo                  ! that the same message will 
+       enddo                  ! that the same message will
 
        ! be unpacked only once.
        if (indx.eq.1) then ! south
@@ -502,7 +502,7 @@ contains
             recvS,nz*nx*nh,MPI_DOUBLE_PRECISION,south, &
             nstag,MPI_COMM_WORLD,req(1),ierr)
        comm(1)=1
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        p(:,1-nh:0,1:nx) = p(:,nh:1:-1,1:nx)
     endif
 
@@ -520,7 +520,7 @@ contains
             recvN,nz*nx*nh,MPI_DOUBLE_PRECISION,north, &
             sntag,MPI_COMM_WORLD,req(3),ierr)
        comm(3)=3
-    else  !!Homogenous Neumann  
+    else  !!Homogenous Neumann
        p(:,ny+1:ny+nh,1:nx) = p(:,ny:ny-nh+1:-1,1:nx)
     endif
 
@@ -544,7 +544,7 @@ contains
        flag_sw_s = .true.
     elseif (west.ne.MPI_PROC_NULL) then
        flag_sw_w = .true.
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        p(:,1-nh:0,1-nh:0) = p(:,nh:1:-1,nh:1:-1)
     endif
 
@@ -559,7 +559,7 @@ contains
        flag_se_s = .true.
     elseif (east.ne.MPI_PROC_NULL) then
        flag_se_e = .true.
-    else!!Homogenous Neumann  
+    else!!Homogenous Neumann
        p(:,1-nh:0,nx+1:nx+nh) = p(:,nh:1:-1,nx:nx-nh+1:-1)
     endif
 
@@ -574,7 +574,7 @@ contains
        flag_ne_n = .true.
     elseif (east.ne.MPI_PROC_NULL) then
        flag_ne_e = .true.
-    else!!Homogenous Neumann  
+    else!!Homogenous Neumann
        p(:,ny+1:ny+nh,nx+1:nx+nh) = p(:,ny:ny-nh+1:-1,nx:nx-nh+1:-1)
     endif
 
@@ -589,7 +589,7 @@ contains
        flag_nw_n = .true.
     elseif (west.ne.MPI_PROC_NULL) then
        flag_nw_w = .true.
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        p(:,ny+1:ny+nh,1-nh:0) = p(:,ny:ny-nh+1:-1,nh:1:-1)
     endif
 
@@ -598,7 +598,7 @@ contains
     !--------------------!
 
     if (south.ne.MPI_PROC_NULL) then
-       sendS = p(:,1:nh,1:nx)  
+       sendS = p(:,1:nh,1:nx)
        call MPI_ISend(                              &
             sendS,nz*nx*nh,MPI_DOUBLE_PRECISION,south, &
             sntag,MPI_COMM_WORLD,req(9),ierr)
@@ -606,7 +606,7 @@ contains
     endif
 
     if (east.ne.MPI_PROC_NULL) then
-       sendE = p(:,1:ny,nx-nh+1:nx) 
+       sendE = p(:,1:ny,nx-nh+1:nx)
        call MPI_ISend(                             &
             sendE,nz*ny*nh,MPI_DOUBLE_PRECISION,east, &
             ewtag,MPI_COMM_WORLD,req(10),ierr)
@@ -622,7 +622,7 @@ contains
     endif
 
     if (west.ne.MPI_PROC_NULL) then
-       sendW = p(:,1:ny,1:nh)  
+       sendW = p(:,1:ny,1:nh)
        call MPI_ISend(                             &
             sendW,nz*ny*nh,MPI_DOUBLE_PRECISION,west, &
             wetag,MPI_COMM_WORLD,req(12),ierr)
@@ -630,7 +630,7 @@ contains
     endif
 
     if (southwest.ne.MPI_PROC_NULL) then
-       sendSW = p(:,1:nh,1:nh)  
+       sendSW = p(:,1:nh,1:nh)
        call MPI_ISend(                                &
             sendSW,nz*nh*nh,MPI_DOUBLE_PRECISION,southwest, &
             swnetag,MPI_COMM_WORLD,req(13),ierr)
@@ -638,7 +638,7 @@ contains
     endif
 
     if (southeast.ne.MPI_PROC_NULL) then
-       sendSE = p(:,1:nh,nx-nh+1:nx)  
+       sendSE = p(:,1:nh,nx-nh+1:nx)
        call MPI_ISend(                                &
             sendSE,nz*nh*nh,MPI_DOUBLE_PRECISION,southeast, &
             senwtag,MPI_COMM_WORLD,req(14),ierr)
@@ -646,7 +646,7 @@ contains
     endif
 
     if (northeast.ne.MPI_PROC_NULL) then
-       sendNE = p(:,ny-nh+1:ny,nx-nh+1:nx) 
+       sendNE = p(:,ny-nh+1:ny,nx-nh+1:nx)
        call MPI_ISend(                                &
             sendNE,nz*nh*nh,MPI_DOUBLE_PRECISION,northeast, &
             neswtag,MPI_COMM_WORLD,req(15),ierr)
@@ -669,7 +669,7 @@ contains
           icount=icount+1          ! or is expected from.  At the
           if (icount.lt.i) then    ! end of this segment icount
              comm(icount)=comm(i)  ! is equal to the actual number
-             req(icount)=req(i)    ! of messages sent and received, 
+             req(icount)=req(i)    ! of messages sent and received,
           endif                    ! arrays comm,req(1:icount)
        endif                       ! store directional indices
     enddo
@@ -681,9 +681,9 @@ contains
        indx=comm(j)           ! Save directional index for
        icount=icount-1        ! message received and ready to
        do i=j,icount          ! unpack, then erase its "req"
-          req(i)=req(i+1)     ! and "comm" and "req" by 
+          req(i)=req(i+1)     ! and "comm" and "req" by
           comm(i)=comm(i+1)   ! by compressing the arrays, so
-       enddo                  ! that the same message will 
+       enddo                  ! that the same message will
 
        ! be unpacked only once.
        if (indx.eq.1) then ! south
@@ -693,7 +693,7 @@ contains
           p(:,1:ny,nx+1:nx+nh) = recvE
 
        elseif (indx.eq.3) then ! north
-          p(:,ny+1:ny+nh,1:nx)  = recvN 
+          p(:,ny+1:ny+nh,1:nx)  = recvN
 
        elseif (indx.eq.4) then ! west
           p(:,1:ny,1-nh:0) = recvW
@@ -912,7 +912,7 @@ contains
     nwsetag = 107
 
     !-
-    ! Fill_halo nh=2 for ZR and ZW 
+    ! Fill_halo nh=2 for ZR and ZW
     !- If you don't have a neighbour
     !- FOR Homogenous Neumann CONDITIONS
     !-
@@ -929,7 +929,7 @@ contains
     ! ... |   | B­D | A­C    | A­B    | ?­A   | ?   <= calculation x +1  – x ­1  (0 to n+1)
     ! ... |   |     | A­2B+D | ?­2A+C | ?­A+B | ?   <= calculation x +1  – x ­1  (0 to n+1)
     !
-    ! What is the value of ?: 
+    ! What is the value of ?:
     ! ? ­ 2A + C = ­B + C
     ! ? = +2A – C – B + C
     ! ? = 2A – B
@@ -990,9 +990,9 @@ contains
             recvN,nz*nx*nh,MPI_DOUBLE_PRECISION,north, &
             sntag,MPI_COMM_WORLD,req(3),ierr)
        comm(3)=3
-    elseif ((lbc).and.(trim(cuv)=='v')) then 
+    elseif ((lbc).and.(trim(cuv)=='v')) then
        p(:,ny+1,:) = zero
-    else  !!Homogenous Neumann  
+    else  !!Homogenous Neumann
 !!$       p(:,ny+1:ny+nh,1:nx) = p(:,ny:ny-nh+1:-1,1:nx)
        do ih = 1, nh
           if (ih == 1) then
@@ -1038,7 +1038,7 @@ contains
        flag_sw_s = .true.
     elseif (west.ne.MPI_PROC_NULL) then
        flag_sw_w = .true.
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        p(:,1-nh:0,1-nh:0) = p(:,nh:1:-1,nh:1:-1)
     endif
 
@@ -1055,7 +1055,7 @@ contains
        flag_se_s = .true.
     elseif (east.ne.MPI_PROC_NULL) then
        flag_se_e = .true.
-    else!!Homogenous Neumann  
+    else!!Homogenous Neumann
        p(:,1-nh:0,nx+1:nx+nh) = p(:,nh:1:-1,nx:nx-nh+1:-1)
     endif
 
@@ -1073,7 +1073,7 @@ contains
        flag_ne_n = .true.
     elseif (east.ne.MPI_PROC_NULL) then
        flag_ne_e = .true.
-    else!!Homogenous Neumann  
+    else!!Homogenous Neumann
        p(:,ny+1:ny+nh,nx+1:nx+nh) = p(:,ny:ny-nh+1:-1,nx:nx-nh+1:-1)
     endif
 
@@ -1091,7 +1091,7 @@ contains
        flag_nw_n = .true.
     elseif (west.ne.MPI_PROC_NULL) then
        flag_nw_w = .true.
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
        p(:,ny+1:ny+nh,1-nh:0) = p(:,ny:ny-nh+1:-1,nh:1:-1)
     endif
 
@@ -1100,7 +1100,7 @@ contains
     !--------------------!
 
     if (south.ne.MPI_PROC_NULL) then
-       sendS = p(:,1:nh,1:nx)  
+       sendS = p(:,1:nh,1:nx)
        call MPI_ISend(                              &
             sendS,nz*nx*nh,MPI_DOUBLE_PRECISION,south, &
             sntag,MPI_COMM_WORLD,req(9),ierr)
@@ -1108,7 +1108,7 @@ contains
     endif
 
     if (east.ne.MPI_PROC_NULL) then
-       sendE = p(:,1:ny,nx-nh+1:nx) 
+       sendE = p(:,1:ny,nx-nh+1:nx)
        call MPI_ISend(                             &
             sendE,nz*ny*nh,MPI_DOUBLE_PRECISION,east, &
             ewtag,MPI_COMM_WORLD,req(10),ierr)
@@ -1124,7 +1124,7 @@ contains
     endif
 
     if (west.ne.MPI_PROC_NULL) then
-       sendW = p(:,1:ny,1:nh)  
+       sendW = p(:,1:ny,1:nh)
        call MPI_ISend(                             &
             sendW,nz*ny*nh,MPI_DOUBLE_PRECISION,west, &
             wetag,MPI_COMM_WORLD,req(12),ierr)
@@ -1132,7 +1132,7 @@ contains
     endif
 
     if (southwest.ne.MPI_PROC_NULL) then
-       sendSW = p(:,1:nh,1:nh)  
+       sendSW = p(:,1:nh,1:nh)
        call MPI_ISend(                                &
             sendSW,nz*nh*nh,MPI_DOUBLE_PRECISION,southwest, &
             swnetag,MPI_COMM_WORLD,req(13),ierr)
@@ -1140,7 +1140,7 @@ contains
     endif
 
     if (southeast.ne.MPI_PROC_NULL) then
-       sendSE = p(:,1:nh,nx-nh+1:nx)  
+       sendSE = p(:,1:nh,nx-nh+1:nx)
        call MPI_ISend(                                &
             sendSE,nz*nh*nh,MPI_DOUBLE_PRECISION,southeast, &
             senwtag,MPI_COMM_WORLD,req(14),ierr)
@@ -1148,7 +1148,7 @@ contains
     endif
 
     if (northeast.ne.MPI_PROC_NULL) then
-       sendNE = p(:,ny-nh+1:ny,nx-nh+1:nx) 
+       sendNE = p(:,ny-nh+1:ny,nx-nh+1:nx)
        call MPI_ISend(                                &
             sendNE,nz*nh*nh,MPI_DOUBLE_PRECISION,northeast, &
             neswtag,MPI_COMM_WORLD,req(15),ierr)
@@ -1171,7 +1171,7 @@ contains
           icount=icount+1          ! or is expected from.  At the
           if (icount.lt.i) then    ! end of this segment icount
              comm(icount)=comm(i)  ! is equal to the actual number
-             req(icount)=req(i)    ! of messages sent and received, 
+             req(icount)=req(i)    ! of messages sent and received,
           endif                    ! arrays comm,req(1:icount)
        endif                       ! store directional indices
     enddo
@@ -1183,9 +1183,9 @@ contains
        indx=comm(j)           ! Save directional index for
        icount=icount-1        ! message received and ready to
        do i=j,icount          ! unpack, then erase its "req"
-          req(i)=req(i+1)     ! and "comm" and "req" by 
+          req(i)=req(i+1)     ! and "comm" and "req" by
           comm(i)=comm(i+1)   ! by compressing the arrays, so
-       enddo                  ! that the same message will 
+       enddo                  ! that the same message will
 
        ! be unpacked only once.
        if (indx.eq.1) then ! south
@@ -1195,7 +1195,7 @@ contains
           p(:,1:ny,nx+1:nx+nh) = recvE
 
        elseif (indx.eq.3) then ! north
-          p(:,ny+1:ny+nh,1:nx)  = recvN 
+          p(:,ny+1:ny+nh,1:nx)  = recvN
 
        elseif (indx.eq.4) then ! west
           p(:,1:ny,1-nh:0) = recvW
@@ -1331,8 +1331,8 @@ contains
             recvS,nd*nz*nx,MPI_DOUBLE_PRECISION,south, &
             nstag,MPI_COMM_WORLD,req(1),ierr)
        comm(1)=1
-    else !!Homogenous Neumann  
-!       cA(:,:,0,1:nx) = zero 
+    else !!Homogenous Neumann
+!       cA(:,:,0,1:nx) = zero
     endif
 
     if (east.ne.MPI_PROC_NULL) then
@@ -1349,7 +1349,7 @@ contains
             recvN,nd*nz*nx,MPI_DOUBLE_PRECISION,north, &
             sntag,MPI_COMM_WORLD,req(3),ierr)
        comm(3)=3
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
 !       cA(:,:,ny+1,1:nx) = zero
     endif
 
@@ -1367,7 +1367,7 @@ contains
             recvSW,nd*nz,MPI_DOUBLE_PRECISION,southwest, &
             neswtag,MPI_COMM_WORLD,req(5),ierr)
        comm(5)=5
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
 !       cA(:,:,0,0) = zero
     endif
 
@@ -1376,7 +1376,7 @@ contains
             recvSE,nd*nz,MPI_DOUBLE_PRECISION,southeast, &
             nwsetag,MPI_COMM_WORLD,req(6),ierr)
        comm(6)=6
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
 !       cA(:,:,0,nx+1) = zero
     endif
 
@@ -1385,7 +1385,7 @@ contains
             recvNE,nd*nz,MPI_DOUBLE_PRECISION,northeast, &
             swnetag,MPI_COMM_WORLD,req(7),ierr)
        comm(7)=7
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
 !       cA(:,:,ny+1,nx+1) = zero
     endif
 
@@ -1394,7 +1394,7 @@ contains
             recvNW,nd*nz,MPI_DOUBLE_PRECISION,northwest, &
             senwtag,MPI_COMM_WORLD,req(8),ierr)
        comm(8)=8
-    else !!Homogenous Neumann  
+    else !!Homogenous Neumann
 !       cA(:,:,ny+1,0) = zero
     endif
 
@@ -1403,7 +1403,7 @@ contains
     !--------------------!
 
     if (south.ne.MPI_PROC_NULL) then
-       sendS = cA(:,:,1,1:nx)  
+       sendS = cA(:,:,1,1:nx)
        call MPI_ISend(                                 &
             sendS,nd*nz*nx,MPI_DOUBLE_PRECISION,south, &
             sntag,MPI_COMM_WORLD,req(9),ierr)
@@ -1411,7 +1411,7 @@ contains
     endif
 
     if (east.ne.MPI_PROC_NULL) then
-       sendE = cA(:,:,1:ny,nx) 
+       sendE = cA(:,:,1:ny,nx)
        call MPI_ISend(                                &
             sendE,nd*nz*ny,MPI_DOUBLE_PRECISION,east, &
             ewtag,MPI_COMM_WORLD,req(10),ierr)
@@ -1427,7 +1427,7 @@ contains
     endif
 
     if (west.ne.MPI_PROC_NULL) then
-       sendW = cA(:,:,1:ny,1)  
+       sendW = cA(:,:,1:ny,1)
        call MPI_ISend(                                &
             sendW,nd*nz*ny,MPI_DOUBLE_PRECISION,west, &
             wetag,MPI_COMM_WORLD,req(12),ierr)
@@ -1435,7 +1435,7 @@ contains
     endif
 
     if (southwest.ne.MPI_PROC_NULL) then
-       sendSW = cA(:,:,1,1)  
+       sendSW = cA(:,:,1,1)
        call MPI_ISend(                                   &
             sendSW,nd*nz,MPI_DOUBLE_PRECISION,southwest, &
             swnetag,MPI_COMM_WORLD,req(13),ierr)
@@ -1443,7 +1443,7 @@ contains
     endif
 
     if (southeast.ne.MPI_PROC_NULL) then
-       sendSE = cA(:,:,1,nx)  
+       sendSE = cA(:,:,1,nx)
        call MPI_ISend(                                   &
             sendSE,nd*nz,MPI_DOUBLE_PRECISION,southeast, &
             senwtag,MPI_COMM_WORLD,req(14),ierr)
@@ -1451,7 +1451,7 @@ contains
     endif
 
     if (northeast.ne.MPI_PROC_NULL) then
-       sendNE = cA(:,:,ny,nx) 
+       sendNE = cA(:,:,ny,nx)
        call MPI_ISend(                                   &
             sendNE,nd*nz,MPI_DOUBLE_PRECISION,northeast, &
             neswtag,MPI_COMM_WORLD,req(15),ierr)
@@ -1474,7 +1474,7 @@ contains
           icount=icount+1          ! or is expected from.  At the
           if (icount.lt.i) then    ! end of this segment icount
              comm(icount)=comm(i)  ! is equal to the actual number
-             req(icount)=req(i)    ! of messages sent and received, 
+             req(icount)=req(i)    ! of messages sent and received,
           endif                    ! arrays comm,req(1:icount)
        endif                       ! store directional indices
     enddo
@@ -1486,9 +1486,9 @@ contains
        indx=comm(j)           ! Save directional index for
        icount=icount-1        ! message received and ready to
        do i=j,icount          ! unpack, then erase its "req"
-          req(i)=req(i+1)     ! and "comm" and "req" by 
+          req(i)=req(i+1)     ! and "comm" and "req" by
           comm(i)=comm(i+1)   ! by compressing the arrays, so
-       enddo                  ! that the same message will 
+       enddo                  ! that the same message will
 
        ! be unpacked only once.
        if (indx.eq.1) then ! south
@@ -1498,7 +1498,7 @@ contains
           cA(:,:,1:ny,nx+1) = recvE
 
        elseif (indx.eq.3) then ! north
-          cA(:,:,ny+1,1:nx)  = recvN 
+          cA(:,:,ny+1,1:nx)  = recvN
 
        elseif (indx.eq.4) then ! west
           cA(:,:,1:ny,0) = recvW
@@ -1516,7 +1516,7 @@ contains
           cA(:,:,ny+1,0) = recvNW
        endif
 
-    enddo      !<-- while  
+    enddo      !<-- while
 
     call toc(lev,'fill_halo_4D')
 
@@ -1574,10 +1574,10 @@ contains
     real(kind=rp)    :: maxglo
     integer(kind=ip) :: ierr
 
-    ! note: the global comm using MPI_COMM_WORLD is over-kill for levels 
+    ! note: the global comm using MPI_COMM_WORLD is over-kill for levels
     ! where subdomains are gathered
     ! this is not optimal, but not wrong
-    call MPI_ALLREDUCE(maxloc,maxglo,1,MPI_DOUBLE_PRECISION,MPI_max,MPI_COMM_WORLD,ierr)   
+    call MPI_ALLREDUCE(maxloc,maxglo,1,MPI_DOUBLE_PRECISION,MPI_max,MPI_COMM_WORLD,ierr)
 
     maxloc = maxglo
 
@@ -1593,9 +1593,9 @@ contains
 
     integer(kind=ip) :: ierr
 
-    ! note: the global comm using MPI_COMM_WORLD is over-kill for levels 
+    ! note: the global comm using MPI_COMM_WORLD is over-kill for levels
     ! where subdomains are gathered
-    call MPI_ALLREDUCE(sumloc,sumglo,1,MPI_DOUBLE_PRECISION,MPI_sum,MPI_COMM_WORLD,ierr)   
+    call MPI_ALLREDUCE(sumloc,sumglo,1,MPI_DOUBLE_PRECISION,MPI_sum,MPI_COMM_WORLD,ierr)
 
     ! therefore we need to rescale the global sum
     sumglo = sumglo * (grid(lev)%npx*grid(lev)%npy)/(grid(1)%npx*grid(1)%npy)

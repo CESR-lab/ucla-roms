@@ -194,10 +194,10 @@ C$OMP BARRIER
       subroutine find_new_record( vname,     time_name, time_model,    ![
      &                            file_indx, irec,      vtime       )
 
-      ![================================================================= 
+      ![=================================================================
       ! Finds the index for the filename and record number of the first record
       ! with a time that is larger than the model time. Stores time.
-      ! When called for the first time, it will find the last record with a 
+      ! When called for the first time, it will find the last record with a
       ! time smaller than the model time.
       !
       ! Find: if var contained in file
@@ -236,7 +236,7 @@ C$OMP BARRIER
       !    E.g. if modeling 2005-2007, and annual data for 2006 is missing,
       !    then times will just be interpolated between end of 2005 & start 2007.
       !
-      !]================================================================= 
+      !]=================================================================
 
       implicit none
 
@@ -270,7 +270,7 @@ C$OMP BARRIER
       else
         first = .false.
       endif
-      
+
       found_rec      = .false.
       found_var_ever = .false.
 
@@ -291,8 +291,8 @@ C$OMP BARRIER
 !         if (mynode==0) then
 !           write(*,'(10x,3A)') 'Found var: ', vname, ' in file ', frcfile(file_indx)
 !         endif
-           
-           
+
+
           call get_time_max_recs(ncid, time_name, max_recs)
 
           ierr=nf90_get_att(ncid, timeid, 'cycle_length', cycle_length) ! Will continue if cycle_length value not available
@@ -322,7 +322,7 @@ C$OMP BARRIER
         endif    ! found var in file
 
         if (.not.found_rec) then  ! correct record not found, try next file
-          file_indx = file_indx+1 
+          file_indx = file_indx+1
           irec = 0                ! Reset irec for new file
         endif
 
@@ -333,7 +333,7 @@ C$OMP BARRIER
       if (.not. found_var_ever) then
         write(*,'(/1x,4A,I3/)') 'ERROR: find_new_record:: ',
      &              'Could not find var: ', vname, ' mynode=', mynode
-        error stop 
+        error stop
       endif
       if (.not. found_rec) then
         write(*,'(/1x,3A,I3/)')

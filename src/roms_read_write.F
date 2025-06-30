@@ -91,7 +91,7 @@
       character(len=max_options_string),public::bulk_frc_opt='OFF'
       character(len=max_options_string),public::flux_frc_opt='OFF'
       character(len=max_options_string),public::particle_opt='OFF'
-      character(len=max_options_string),public::cdr_frc_opt  ='OFF'      
+      character(len=max_options_string),public::cdr_frc_opt  ='OFF'
       ! forcing file specifications
       character(len=max_options_string),public::force_files='N/A'
       character(len=max_options_string),public::force_info='N/A'

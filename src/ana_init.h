@@ -1,4 +1,4 @@
- 
+
       ! Everything after the implicit none
       ! Replace with something less trivial when needed
 
@@ -11,7 +11,7 @@
       forw_start=ntstart
 #endif
 
-      
+
       do k=1,nz
         do j=-1,ny+2
           do i=-1,nx+2

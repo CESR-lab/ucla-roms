@@ -1,7 +1,7 @@
 # Makefile for UCLA ROMS model
 #========== ======= =========== ======== === ==== =====
-# This makefile requires that you have the following 
-# environment variables defined: 
+# This makefile requires that you have the following
+# environment variables defined:
 #  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
 #
 #  Example entries in a .bashrc file:
@@ -63,9 +63,9 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 
 # Fortran compiler flags:
 #	CFTFLAGS = -pc64 -auto
-	CFTFLAGS = 
+	CFTFLAGS =
 
-# Fortran loader name and options: 
+# Fortran loader name and options:
  	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
@@ -90,9 +90,9 @@ JSRC = ncjoin.F roms_part_join.F nc_read_write.F
 
   PCS = $(PSRC:.F=.f)
   JCS = $(JSRC:.F=.f)
-  PBJS = $(PSRC:.F=.o) 
-  JBJS = $(JSRC:.F=.o) 
-  
+  PBJS = $(PSRC:.F=.o)
+  JBJS = $(JSRC:.F=.o)
+
 # Everything
 all: depend partit ncjoin
 
@@ -111,7 +111,7 @@ depend:  # Note: cross_matrix no longer used
 # Cleaning targets
 # -------- -------
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit ncjoin 
+	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit ncjoin
 
 # Automatically generated dependency list:
 

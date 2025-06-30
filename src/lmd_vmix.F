@@ -85,7 +85,7 @@
      &      lmd_sdd2=1.85,
      &      lmd_sdd3=0.85,
      &      eps=1.E-14,
-     &      Lturb = 10.      ! Length scale of bottom boundary layer 
+     &      Lturb = 10.      ! Length scale of bottom boundary layer
                              ! where turbulence is supressed
 
       real dist,mult
@@ -264,7 +264,7 @@ c----#  define tind nstp
             ! Convective adjustment will now be added everywhere
             ! but 'tailed' near the bottom
             ! It is not generally recommended to use...
-# if defined LMD_CONVEC 
+# if defined LMD_CONVEC
             if (Rig(i,j,k) < 0.) then
               Kv(i,j,k)=Kv(i,j,k) + nu0c
               Kt(i,j,k)=Kt(i,j,k) + nu0c
@@ -358,7 +358,7 @@ c----#  define tind nstp
 # endif /* LMD_DDMIX */
       enddo     ! <-- k
 
-! Supress mixing away near the bottom. 
+! Supress mixing away near the bottom.
       do k=1,N-1
         do j=jstr,jend
           do i=istr,iend
@@ -407,7 +407,7 @@ c----#  define tind nstp
       do k=1,N-1
         do j=jstr,jend
           do i=istr,iend
-!           Akv(i,j,k)=Kv(i,j,k) 
+!           Akv(i,j,k)=Kv(i,j,k)
             AKv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
 !           Akt(i,j,k,itemp)=Kt(i,j,k)
             AKt(i,j,k,itemp)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)

@@ -196,7 +196,7 @@
             FlxU(i,j,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
 
      &                                       *( u(i,j,k,nrhs)
-# ifdef WEC 
+# ifdef WEC
      &                                            +ust(i,j,k)
 # endif
      &                                                      )
@@ -212,7 +212,7 @@
 ! Daniel add/edit for WEC
 !     &                                         *v(i,j,k,nrhs)
      &                                       *( v(i,j,k,nrhs)
-# ifdef WEC 
+# ifdef WEC
      &                                           + vst(i,j,k)
 # endif
      &                                                      )
@@ -292,7 +292,7 @@
 #  endif
           do i=istr,iendR
             FC(i,0)=(FC(i,0)-DU_avg1(i,j))/DC(i,0)
-#  ifdef WEC 
+#  ifdef WEC
      &                                 +ust2d(i,j)
 #  endif
           enddo
@@ -331,7 +331,7 @@
         endif
 #  endif
      !! now FC(i,0) => mismatch between  int(U*dz)/int(dz) and ubar
-# else 
+# else
         do i=istr,iendR
           FC(i,0)=(FC(i,0)-DU_avg2(i,j))/DC(i,0) ! FC(i,0) is mismatch in [m/s]
 #  ifdef WEC
@@ -354,7 +354,7 @@
 # ifdef WEC
      &                                +ust(i,j,k)
 # endif
-     &                                          )           
+     &                                          )
           enddo
         enddo
 
@@ -377,7 +377,7 @@
 #  endif
             do i=istrR,iendR
               FC(i,0)=(FC(i,0)-DV_avg1(i,j))/DC(i,0)
-#  ifdef WEC 
+#  ifdef WEC
      &                                   +vst2d(i,j)
 #  endif
             enddo
@@ -408,7 +408,7 @@
 # else
           do i=istrR,iendR
             FC(i,0)=(FC(i,0)-DV_avg2(i,j))/DC(i,0)
-#  ifdef WEC 
+#  ifdef WEC
      &                                 +vst2d(i,j)
 #  endif
           enddo
@@ -424,7 +424,7 @@
 #  endif
 # endif
               FlxV(i,j,k)=DC(i,k)*( v(i,j,k,nnew)
-# ifdef WEC 
+# ifdef WEC
      &                                +vst(i,j,k)
 # endif
      &                                          )

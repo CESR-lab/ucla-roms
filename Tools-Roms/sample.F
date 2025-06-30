@@ -800,7 +800,7 @@ c--# define VERBOSE
       else
         istr=imin
       endif
-      if ( (var_grid_type == 2 .or. var_grid_type == 3) .and. 
+      if ( (var_grid_type == 2 .or. var_grid_type == 3) .and.
      &    (jmin == jmax .and. jmin > 0 .and. newcount(2) == 2) ) then
         jstr=jmin-1
       else

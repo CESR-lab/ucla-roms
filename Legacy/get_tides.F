@@ -208,7 +208,7 @@
      &                    frcname(1:lfrc), '''.',  nf_strerror(ierr)
             ierr_count=ierr_count+1
         endif
-        
+
         ierr=nf_inq_varid(ncid,'tide_Pphase',varid)
         if (ierr == nf_noerr) then
         ierr=ncdf_read(ncid, varid, itide, r_var,

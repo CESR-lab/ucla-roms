@@ -337,7 +337,7 @@ CDEBUG      write(*,*)'level',level
               sum=sum+temp
               do k=N,1,-1
                 if ( z_w(xfloat,yfloat,k-1) <= zfloat .and.
-     &                 zfloat < z_w(xfloat,yfloat,k) ) then 
+     &                 zfloat < z_w(xfloat,yfloat,k) ) then
 
                   temp2=FLOAT(k-1) + (zfloat-z_w(xfloat,yfloat,k-1))
      &                /(z_w(xfloat,yfloat,k)-z_w(xfloat,yfloat,k-1))

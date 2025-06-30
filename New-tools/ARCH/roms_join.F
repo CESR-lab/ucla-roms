@@ -1,5 +1,5 @@
       module roms_join
-      
+
       ! ROMS functionality to facilitate partioning and joining of files
 
       use netcdf
@@ -7,7 +7,7 @@
       use nc_read_write
 
       private
-       
+
       ! mpi variables
       integer,public :: part_comm,mynode,nnodes  ! mpi vars
 
@@ -39,7 +39,7 @@
       character(len=7),public,parameter :: dn_zw = 's_w'
       character(len=7),public,parameter :: dn_tm = 'time'
 
-      
+
       type,public :: ncstructure
         integer                                     :: nrecords  ! number of records
         integer                                     :: nvars     ! number of variables
@@ -48,7 +48,7 @@
         character(len=1),dimension(:), allocatable  :: vartype   ! 'f/r/u f/r/v f/r/w f/t'
         logical,dimension(:),allocatable            :: varpart   ! partitionable or not
         integer,dimension(:),allocatable            :: xtype     ! variable type
-        integer,dimension(:),allocatable            :: ndims  
+        integer,dimension(:),allocatable            :: ndims
         integer,dimension(:),allocatable            :: natts
         type(dimstruct),dimension(:),allocatable    :: dims
         type(attstruct),dimension(:),allocatable    :: atts
@@ -63,7 +63,7 @@
         character(len=20),dimension(:),allocatable ::attnames
         character(len=200),dimension(:),allocatable ::attvalues
       end type attstruct
-      
+
       public :: cmd_args_partit
       public :: cmd_args_ncjoin
       public :: partition_mask
@@ -83,7 +83,7 @@
       nargs =  command_argument_count()
 
       if (nargs < 1) call show_use_ncjoin
-      
+
       nparts = nargs
       allocate(partfiles(0:nparts-1))
       do i = 1,nargs
@@ -103,7 +103,7 @@
 
       print *, 'Usage of ncjoin should be: ',
      &       'ncjoin file1.??.nc ...'
-     
+
       stop
 
       end subroutine show_use_ncjoin !]
@@ -140,15 +140,15 @@
       joinfile = joinfile(1:idx1-1) //'.nc'
       print *, trim(partfile),' ',trim(joinfile)
 
-      ! open first partial file in range 
+      ! open first partial file in range
       ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
-      if (ierr/=nf90_noerr) 
+      if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
 
-      call get_nc_info(npid, ncinfo) 
+      call get_nc_info(npid, ncinfo)
 
       ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
-      if (ierr/=nf90_noerr) 
+      if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'get global dims: ',trim(partfile) )
       gnx = gdims(1)
       gny = gdims(1)
@@ -159,12 +159,12 @@
 
         ierr=nf90_create(trim(joinfile),nf90_netcdf4,ncid)
 !       ierr=nf90_create(trim(joinfile),nf90_classic_model,ncid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'creating file: ',trim(joinfile) )
 
         ! read all global attributes from the partial file and write them
         ierr = nf90_inquire(npid, nAttributes=ngatt)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'getting atts: ',trim(partfile) )
         do iatt = 1,ngatt
           ierr = nf90_inq_attname(npid,nf90_global,iatt,att_name)
@@ -174,7 +174,7 @@
           if (index(att_name,'start_idx')>0) cycle
           if (index(att_name,'neighbors')>0) cycle
           ierr = nf90_copy_att(npid,nf90_global,att_name,ncid,nf90_global)
-        enddo 
+        enddo
 
         do ivar = 1,ncinfo%nvars
           vname   = ncinfo%varname(ivar)
@@ -191,7 +191,7 @@
             if (index(dname(idm),'xi_u') > 0)    dsize(idm)=gnx-1
             if (index(dname(idm),'eta_rho') > 0) dsize(idm)=gny
             if (index(dname(idm),'eta_v') > 0)   dsize(idm)=gny-1
-            if (index(dname(idm),'time') > 0)    dsize(idm)= 0 
+            if (index(dname(idm),'time') > 0)    dsize(idm)= 0
           enddo
 
           vid = nccreate(ncid,vname,dname(1:ndims),dsize(1:ndims),xtype)
@@ -209,7 +209,7 @@
 !       startr = (/record,1,1,1/)
 !       allocate(var3d(1,1,1))
 !       var3d = 0
-       
+
 !       call ncwrite(ncid,vname,var3d,startr)
 !       ierr = nf90_close(ncid)
 !       print *,'Closing joined file'
@@ -265,14 +265,14 @@
       allocate(je(part0:part1))
 
       do part = part0,part1  ! zero based ![
-    
+
         partfile = partfiles(part)
 
         ierr = nf90_open(trim(adjustl(partfile)),nf90_write,npid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
 
-        if (part.eq.part0) call get_nc_info(npid, ncinfo) 
+        if (part.eq.part0) call get_nc_info(npid, ncinfo)
 
         ierr = nf90_get_att(npid,nf90_global,'start_idx',llidx)
         i0(part) = llidx(1)
@@ -450,7 +450,7 @@
         ierr = nf90_open_par(trim(joinfile),nf90_write,part_comm,MPI_Info_Null, ncid)
         ierr = nf90_var_par_access(ncid, ivar, nf90_collective)
 !       ierr = nf90_open(trim(joinfile),nf90_write,ncid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'opening file: ',trim(joinfile) )
         call ncwrite(ncid,vname,var3d,startr)
         ierr = nf90_close(ncid)
@@ -478,8 +478,8 @@
 ! ----------------------------------------------------------------------
       subroutine get_nc_info(ncid, ncinfo)  ![
 
-      implicit none        
-        
+      implicit none
+
       ! input/output
       integer,           intent(in)  :: ncid
       type(ncstructure), intent(out) :: ncinfo
@@ -518,10 +518,10 @@
 
       ! append info to allocated arrays apart of derived type
       do ivar = 1,nvars
-        
+
         ! Get information per variable
         ierr = nf90_inquire_variable(ncid,ivar,vname,xtype,ndims,dimids,natts)
-        
+
         ! name of variable
         ncinfo%varname(ivar) = vname
 
@@ -566,7 +566,7 @@
           ncinfo%atts(ivar)%attnames(i) = attname
           ncinfo%atts(ivar)%attvalues(i) = attvalue
         enddo
-        
+
       enddo
 
       end subroutine get_nc_info !]

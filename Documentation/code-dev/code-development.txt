@@ -1,28 +1,28 @@
 Code development discussions and strategy
 
 2021/08/03: Tiling, loop ranges and sub-domains (Jeroen & Devin)
-        
+
     Would be nice to strip out to simplify code if it only adds limited speed improvement.
     Hope loop ranges can become simpler variation of 1:nx (+/- 1 or 2).
     Avoids: do tile=1,tile_range
     Avoids: call set_forces, then again call set_forces_tile.
             Can rather put work arrays in module and rename arrays using module variable renaming.
     Loop ranges can be hard-coded as longest necessary range, and just do the extra work for simpler code.
-    
-    If we keep tiling then we should not have to versions of compute_extended_bounds and 
+
+    If we keep tiling then we should not have to versions of compute_extended_bounds and
     compute_auxiliary_bounds. E.g. have istrE and istrA rather than istrR for both.
-    
+
     Removing tiling may not clean up loop ranges since may still need mechanism to handle sub-domain ranges
     for boundary sub-domains.
-    
+
     Believe arrays are same size for all sub-domains since code was original developed with common blocks,
     where array size are needed at compile time and can't be allocated.
-    
+
     To transition away from tiling and allocatable arrays, we would need to remove all common blocks first.
-    
+
     init allocatable arrays called in own module, not from init_arrays.F.
-    
-    
+
+
 2022/01/20: CPPFLAGS
 
     We discussed how, using logical parameters, we can move the code completely away from CPPFLAGS.
@@ -35,22 +35,22 @@ Code development discussions and strategy
     Since arrays are now all allocatable there is minimal memory impact to not having empty modules.
     Compile time of ROMS is not prohibitive, so even now having to compile modules that were empty before
     due to CPPKEY turned off, this should be a reasonable price to pay for cleaner code.
-    
+
     Init_arrays:
     Modules can perform their own init routine, as we've been doing. Unless arrays are littered around the
     code and it is easier to initialize arrays through the init_arrays.F routine.
-    
-    
-2022/02/01: Allocatable arrays  
+
+
+2022/02/01: Allocatable arrays
 
     When moving the code from common blocks to allocatable arrays, we noticed some issues. Common block variables
     appeared to automatically be set to zero. However, allocated arrays can have garbage values in them. There
     were a few bugs that appeared because some routines required arrays to be zero but weren't actually set to 0.
-    
+
     We discussed how setting arrays at allocation to a NaN value would help catch bugs in future.
-    For example there was a tricky bug with DU_avg_bak that would have been more easily caught if it had 
+    For example there was a tricky bug with DU_avg_bak that would have been more easily caught if it had
     NaN values.
-    
+
     02/16: After EXTENSIVE debug checks comparing before and after (alloc arrays) outputs, we picked up
     a bug in analytical examples needing EXACT_RESTART -> forw_start=ntstart. So the newer value was correct.
     For realistic simulations, there is a drift in values. We could not determine why, we assume new memory
@@ -59,7 +59,7 @@ Code development discussions and strategy
     differences in zeta/ubar of e-16. These differences then drift into the domain over time and choas does the
     rest. We couldn't track this down after lots of trying due to Heisenbug behaviour (position of difference
     would change). So we concluded we would accept what we have.
-    
+
 2022/05/16: ROMS timestep and outputting
 
     If we move:
@@ -68,16 +68,16 @@ Code development discussions and strategy
     call    rho_eos(tile)
     call    set_HUV(tile)
     call       diag(tile)
-    
+
     from the beginning of roms_step in main.F to roms_init in main.F, then we can also add them to the end of
     roms_step. This will mean that at the end of the step all variables are updated to t=n+1, and then we can
     output at the end of the step.
     This is more intuitive than the current system where we have to wait for part of the next step to get mixing,
     omega, rho and w to be updated before writing the history file.
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+

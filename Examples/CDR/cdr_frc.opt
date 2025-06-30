@@ -15,9 +15,9 @@
 
       ! Use either volume flux [m3/s] and tracer concentrations [C/m3], or use tracer flux [C/s]
       type (ncforce) :: nc_cdrvol = ncforce( vname='cdr_volume', tname='cdr_time')
-      type (ncforce) :: nc_cdrtrc = ncforce( vname='cdr_tracer', tname='cdr_time') 
+      type (ncforce) :: nc_cdrtrc = ncforce( vname='cdr_tracer', tname='cdr_time')
 
-      type (ncforce) :: nc_cdrflx = ncforce( vname='cdr_trcflx', tname='cdr_time') 
+      type (ncforce) :: nc_cdrflx = ncforce( vname='cdr_trcflx', tname='cdr_time')
 
       character(len=9)  :: cdr_loc_lon = 'cdr_lon'  !!  longitude of CDR release [degrees East]
       character(len=9)  :: cdr_loc_lat = 'cdr_lat'  !!  latitude of CDR release  [degrees North]

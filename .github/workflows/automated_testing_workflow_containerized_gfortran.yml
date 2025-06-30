@@ -13,7 +13,7 @@ jobs:
     container:
       image: ghcr.io/dafyddstephenson/roms_gfortran_build_env:1.0
     strategy:
-      fail-fast: false      
+      fail-fast: false
       matrix:
         include:
           - example: "Rivers_real"
@@ -55,7 +55,7 @@ jobs:
       with:
         path: Examples/input_data
         key: roms-input-${{ hashFiles('ci/get_input_files.sh') }}
-        
+
     - name: Get input data (if not cached)
       if: steps.cache-input.outputs.cache-hit != 'true'
       shell: bash
@@ -83,7 +83,7 @@ jobs:
       if: failure()
       shell: bash
       run: |
-        micromamba run -n roms-ci bash -c '        
+        micromamba run -n roms-ci bash -c '
         cd ci
         ./print_compilation_logs.sh
         '

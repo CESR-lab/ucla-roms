@@ -10,7 +10,7 @@ module mg_zr_hz
 
 contains
 
-  !-------------------------------------------------------------------------     
+  !-------------------------------------------------------------------------
   subroutine setup_zr_zw_hz_linear(h, zr, zw, hz)
 
     integer(kind=4),parameter :: ip=4,rp=8
@@ -48,7 +48,7 @@ contains
 
   end subroutine setup_zr_zw_hz_linear
 
-  !-------------------------------------------------------------------------     
+  !-------------------------------------------------------------------------
   subroutine setup_zr_zw_hz_stretch(hlim,theta_b,theta_s,zeta,h,zr,zw,hz,coord_type)
 
     ! compute zr and zw from zeta(i,j) and h(i,j)
@@ -196,8 +196,8 @@ contains
                 cff_w = hc * sc_w
                 cff_r = hc * sc_r
 
-                z_w0 = cff_w + cs_w*h(i,j) 
-                z_r0 = cff_r + cs_r*h(i,j)  
+                z_w0 = cff_w + cs_w*h(i,j)
+                z_r0 = cff_r + cs_r*h(i,j)
 
                 hinv = one / (h(i,j)+hc)
 

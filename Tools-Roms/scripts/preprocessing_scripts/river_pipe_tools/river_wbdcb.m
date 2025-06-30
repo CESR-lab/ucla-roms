@@ -15,7 +15,7 @@
         assignin('base','mask',mask);
         assignin('base','rflx',rflx);
 
-        
+
 %       xinit = cp(1,1);yinit = cp(1,2);
 %       hl = line('XData',xinit,'YData',yinit,...
 %       'Marker','p','color','b');
@@ -29,7 +29,7 @@
 %          ydat = [yinit,cp(1,2)];
 %          set(hl,'XData',xdat,'YData',ydat);drawnow
 %       end
-%  
+%
         function wbucb(src,evnt)
            if strcmp(get(src,'SelectionType'),'alt')
               set(src,'Pointer','arrow')

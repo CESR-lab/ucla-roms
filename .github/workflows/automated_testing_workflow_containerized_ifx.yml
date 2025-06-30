@@ -2,7 +2,7 @@ name: Automated Testing (ifx, containerized)
 
 on:
   push:
-    branches: 
+    branches:
       - main
   pull_request:
     branches: ['*']
@@ -13,7 +13,7 @@ jobs:
     container:
       image: ghcr.io/dafyddstephenson/roms_ifx_build_env:latest
     strategy:
-      fail-fast: false      
+      fail-fast: false
       matrix:
         include:
           - example: "Rivers_real"
@@ -26,7 +26,7 @@ jobs:
             bgc_mode: "BEC"
           - example: "bgc_real"
             bgc_mode: "MARBL"
-    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}    
+    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -87,7 +87,7 @@ jobs:
         run: |
           source $GITHUB_ENV
           cd ci
-          ./print_compilation_logs.sh        
+          ./print_compilation_logs.sh
 
       - name: Print logs (in case of failure)
         if: failure()

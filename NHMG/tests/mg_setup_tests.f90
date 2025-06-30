@@ -1,6 +1,6 @@
 module mg_setup_tests
 
-  use mg_mpi 
+  use mg_mpi
   use mg_tictoc
   use mg_mpi_exchange_ijk
   use mg_netcdf_out
@@ -9,7 +9,7 @@ module mg_setup_tests
 
 contains
 
-  !-------------------------------------------------------------------------     
+  !-------------------------------------------------------------------------
   subroutine setup_cuc(    &
        nx, ny, npxg, npyg, &
        dx, dy,             &
@@ -106,7 +106,7 @@ contains
 
   end subroutine setup_cuc
 
-  !-------------------------------------------------------------------------     
+  !-------------------------------------------------------------------------
   subroutine setup_seamount( &
        nx, ny, npxg, npyg,   &
        Lx, Ly, Htot,         &
@@ -161,7 +161,7 @@ contains
 
   end subroutine setup_seamount
 
-  !-------------------------------------------------------------------------     
+  !-------------------------------------------------------------------------
   subroutine setup_rndtopo( &
        nx, ny, npxg, npyg,   &
        Lx, Ly, Htot,         &

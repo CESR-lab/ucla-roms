@@ -1,4 +1,4 @@
-This example is a cold filament in a flat bottom, doubly periodic domain. 
-As is, it represents a geostrophically balanced flow, without any forcing. 
+This example is a cold filament in a flat bottom, doubly periodic domain.
+As is, it represents a geostrophically balanced flow, without any forcing.
 
 Add things to get interesting behavior.

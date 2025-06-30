@@ -29,7 +29,7 @@
         CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
 
 
-# Fortran loader name and options: 
+# Fortran loader name and options:
  	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # - Can't use -ip optimization for tools (partit won't compile)
@@ -61,11 +61,11 @@
 
 	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
 
-# Fortran loader name and options: 
- 	LDR = $(FCOMP)  
+# Fortran loader name and options:
+ 	LDR = $(FCOMP)
 
-# Fortran compiler name and options: 
- 	CFT = $(FCOMP)  
+# Fortran compiler name and options:
+ 	CFT = $(FCOMP)
 
 # --------------------------------------------------------------------
 
@@ -88,29 +88,29 @@ chkindent: chkindent.f
 
 mreplace.f: mreplace.F
 	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace.F > mreplace.f
-	
+
 partit: partit.o insert_node.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)
 
 ncjoin: ncjoin.o lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)	
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)
 
 simple_xy_par_wr: simple_xy_par_wr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o simple_xy_par_wr simple_xy_par_wr.o $(LCDF)	
-	
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o simple_xy_par_wr simple_xy_par_wr.o $(LCDF)
+
 ncjoin_mpi: ncjoin_mpi.opt ncjoin_mod.o ncjoin_mpi.o lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi ncjoin_mod.o ncjoin_mpi.o lenstr.o $(LCDF)
-	
+
 nc3to4z: nc3to4z.o lenstr.o read_string.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o nc3to4z nc3to4z.o lenstr.o read_string.o $(LCDF)
-	
+
 mpc: mpc.F Makefile
 	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
 	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
-	
+
 extract_data_join: ncjoin_mod.o extract_data_join.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join ncjoin_mod.o extract_data_join.o lenstr.o  $(LCDF)
-	
+
 particle_join: ncjoin_mod.o particle_join.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o particle_join ncjoin_mod.o particle_join.o lenstr.o  $(LCDF)
 
@@ -139,10 +139,10 @@ r2r_bry: $(R2R_BRY)
 
 R2R_MATCH_TOPO = r2r_match_topo.o r2r_interp_init.o mrg_zone_subs.o tiling.o\
                         spln2d.o roms_read_write.o read_string.o lenstr.o
-                        
+
 r2r_match_topo: $(R2R_MATCH_TOPO)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_match_topo $(R2R_MATCH_TOPO) $(LCDF)                                  
-          
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_match_topo $(R2R_MATCH_TOPO) $(LCDF)
+
 zslice: $(ZSLICE)
 	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
 
@@ -160,5 +160,5 @@ clean:
 
 clobber: clean
 	/bin/rm -f $(ALL) *.bak
-	
+
 include Make.depend

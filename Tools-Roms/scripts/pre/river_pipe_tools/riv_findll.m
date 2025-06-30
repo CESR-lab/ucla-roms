@@ -1,7 +1,7 @@
 function  [i,j,rflx,mask] = findll(xr,yr,x,y,x0,y0,i,j,rflx,mask,sc0,sc1);
 
-%%   
-%%   finds the index of the lower left corner of the 
+%%
+%%   finds the index of the lower left corner of the
 %%   enclosing box around x0,y0
 %%
 %%   x,y are 2d arrays of psi points
@@ -22,13 +22,13 @@ function  [i,j,rflx,mask] = findll(xr,yr,x,y,x0,y0,i,j,rflx,mask,sc0,sc1);
 %while notfound
  for it = 1:10000
   if idir
-    %% 'left' or 'right of the line (x,y)(j,i)->(x,y)(j,i+1)  
+    %% 'left' or 'right of the line (x,y)(j,i)->(x,y)(j,i+1)
     if j<ny
      orient = sign((y0 - y(j,i))*(x(j+1,i) - x(j,i)) - (x0 - x(j,i))*(y(j+1,i) - y(j,i)));
     else
      orient = sign((y0 - y(j,i))*(x(j,i) - x(j-1,i)) - (x0 - x(j,i))*(y(j,i) - y(j-1,i)));
     end
-    if orient<=0 
+    if orient<=0
       if i < nx
         if j<ny
           new_orient = sign((y0 - y(j,i+1))*(x(j+1,i+1) - x(j,i+1)) - (x0 - x(j,i+1))*(y(j+1,i+1) - y(j,i+1)));
@@ -68,7 +68,7 @@ function  [i,j,rflx,mask] = findll(xr,yr,x,y,x0,y0,i,j,rflx,mask,sc0,sc1);
     else
      orient = sign((y0 - y(j,i))*(x(j,i) - x(j,i-1)) - (x0 - x(j,i))*(y(j,i) - y(j,i-1)));
     end
-    if orient>=0 
+    if orient>=0
       if j < ny
         if i<nx
           new_orient = sign((y0 - y(j+1,i))*(x(j+1,i+1) - x(j+1,i)) - (x0 - x(j+1,i))*(y(j+1,i+1) - y(j+1,i)));
@@ -117,7 +117,7 @@ function  [i,j,rflx,mask] = findll(xr,yr,x,y,x0,y0,i,j,rflx,mask,sc0,sc1);
       hold on;plot(xr(j+1,i+1),yr(j+1,i+1),'*m');hold off
       if rflx(j+1,i+1)>0
         rflx(j+1,i+1) = 0;
-        
+
       else
         rflx(j+1,i+1) = iriv;
       end

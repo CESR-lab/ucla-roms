@@ -1,8 +1,8 @@
 #include "cppdefs.opt"
 #if (defined UV_VIS2 && defined VIS_GRID) ||\
     (defined TS_DIF2 && defined DIF_GRID)
- 
- 
+
+
       subroutine visc_rescale (tile)
 
       use param
@@ -13,9 +13,9 @@
 #include "compute_tile_bounds.h"
       call visc_rescale_tile (istr,iend,jstr,jend)
       end
- 
- 
- 
+
+
+
       subroutine visc_rescale_tile (istr,iend,jstr,jend)
 
 ! Rescale horizontal viscosity and mixing coefficients proportionally
@@ -64,4 +64,4 @@
       subroutine visc_rescale_empty
       end
 #endif
- 
+

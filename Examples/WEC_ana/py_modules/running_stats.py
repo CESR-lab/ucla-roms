@@ -8,21 +8,21 @@ compute sample variance
 import numpy as np
 
 class OnlineVariance(object):
-      
+
       def __init__(self,iterable=None,ddof=1):
 	 self.ddof,self.n,self.mean,self.M2=ddof, 0,0.0,0.0
 	 if iterable is not None:
             for datum in iterable:
 		self.include(datum)
 
- 
+
       def include(self,datum):
 	  self.n+=1
 	  self.delta =datum-self.mean
 	  self.mean+=self.delta/self.n
 	  self.M2+=self.delta*(datum-self.mean)
 	  self.variance = self.M2 / (self.n - self.ddof)
- 
+
       @property
       def std(self):
 	  return np.sqrt(self.variance)
@@ -55,6 +55,6 @@ class OnlineSkewKurt(object):
 
       def kurt_skew(self):
 	  self.kurtosis = (self.n*self.M4) / (self.M2*self.M2) -3
-	  self.skew    = (np.sqrt(self.n)*self.M3) / (self.M2**1.5) 
+	  self.skew    = (np.sqrt(self.n)*self.M3) / (self.M2**1.5)
 
 

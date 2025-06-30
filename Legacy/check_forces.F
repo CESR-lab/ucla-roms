@@ -202,7 +202,7 @@ C$OMP BARRIER
       nnew=3
 #endif
 C$OMP MASTER
-      mpi_master_only write(*,'(1x,I7,F12.5)') iic-1, tdays 
+      mpi_master_only write(*,'(1x,I7,F12.5)') iic-1, tdays
       call get_forces
 C$OMP END MASTER
 C$OMP BARRIER

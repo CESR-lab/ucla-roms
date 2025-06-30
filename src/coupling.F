@@ -11,7 +11,7 @@
 ! is 3D --> 2D forcing terms (including both direct and parametric
 ! forcing). They are computed by the 3D part and used as input by
 ! step2D. The lower group is what barotropic mode returns to 3D:
-! these are fast-time-averaged barotropic variables. 
+! these are fast-time-averaged barotropic variables.
 !
 #ifdef SOLVE3D
       real weight(2,288)

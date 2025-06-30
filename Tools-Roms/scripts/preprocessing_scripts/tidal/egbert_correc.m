@@ -1,8 +1,8 @@
 function [pf,pu,t0,phase_mkB]=egbert_correc(mjd,hr,minute,second)
 %---------------------------------------------------------------------
 %  Correct phases and amplitudes for real time runs
-%  Use parts of pos-processing code from Egbert's & Erofeeva's (OSU) 
-%  TPXO model. Their routines have been adapted from code by Richard Ray 
+%  Use parts of pos-processing code from Egbert's & Erofeeva's (OSU)
+%  TPXO model. Their routines have been adapted from code by Richard Ray
 %  (@?) and David Cartwright.
 %---------------------------------------------------------------------
 %
@@ -14,16 +14,16 @@ disp(['Start date for nodal correction : ',mjd2greg(mjd)]);
 % Determine nodal corrections pu & pf :
 % these expressions are valid for period 1990-2010 (Cartwright 1990).
 % reset time origin for astronomical arguments to 4th of May 1860:
-% 
+%
 timetemp=tstart-51544.4993;
-%	
+%
 % mean longitude of lunar perigee
 % -------------------------------
 P =  83.3535 +  0.11140353 * timetemp;
 P = mod(P,360.0);
 P(P<0.0) = P(P<0.0) + 360.0;
 P=P*rad;
-%	
+%
 % mean longitude of ascending lunar node
 % --------------------------------------
 N = 125.0445 -  0.05295377 * timetemp;
@@ -31,15 +31,15 @@ N = mod(N,360.0) ;
 N(N<0.0) = N(N<0.0) + 360.0;
 N=N*rad;
 %
-% nodal corrections: pf = amplitude scaling factor [], 
+% nodal corrections: pf = amplitude scaling factor [],
 %                    pu = phase correction [deg]
 sinn = sin(N);
 cosn = cos(N);
 sin2n = sin(2*N);
 cos2n = cos(2*N);
 sin3n = sin(3*N);
-tmp1  = 1.36*cos(P)+.267*cos((P-N)); 
-tmp2  = 0.64*sin(P)+.135*sin((P-N));  
+tmp1  = 1.36*cos(P)+.267*cos((P-N));
+tmp2  = 0.64*sin(P)+.135*sin((P-N));
 temp1 = 1.-0.25*cos(2*P)-0.11*cos((2*P-N))-0.04*cosn ;
 temp2 =    0.25*sin(2*P)+0.11*sin((2*P-N))+0.04*sinn ;
 pftmp  = sqrt((1.-.03731*cosn+.00052*cos2n)^2+ ...
@@ -81,10 +81,10 @@ pu(14) = putmp ;                                                         % 2n2
 pu(15) = 0.0 ;                                                           % S1
 
 % to determine phase shifts below time should be in hours
-% relatively Jan 1 1992 (=48622mjd) 
-      
+% relatively Jan 1 1992 (=48622mjd)
+
 t0=48622.0*24.0;
-	
+
 % Astronomical arguments, obtained with Richard Ray's
 % "arguments" and "astrol", for Jan 1, 1992, 00:00 Greenwich time
 
@@ -103,5 +103,5 @@ phase_mkB=[1.731557546,...   % M2
            1.731557546,...   % Ms4
            4.086699633,...   % 2n2
            0.000000000]*deg; % S1
-              
-              
+
+

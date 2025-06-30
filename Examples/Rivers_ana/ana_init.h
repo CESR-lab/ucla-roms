@@ -16,8 +16,8 @@
       enddo                    ! applications.
 # ifdef SOLVE3D
       do k=1,nz
-        do j=0,ny+1      
-          do i=0,nx+1    
+        do j=0,ny+1
+          do i=0,nx+1
             u(i,j,k,1)=0.
             u(i,j,k,2)=0.
             v(i,j,k,1)=0.
@@ -29,8 +29,8 @@
 
 #  ifdef SOLVE3D
       do k=1,nz
-        do j=0,ny+1      
-          do i=0,nx+1    
+        do j=0,ny+1
+          do i=0,nx+1
             t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
             t(i,j,k,1,isalt)=36.
             t(i,j,k,2,itemp)=t(i,j,k,1,itemp)

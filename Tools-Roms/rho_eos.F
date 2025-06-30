@@ -62,7 +62,7 @@ C$    integer omp_get_num_threads, omp_get_thread_num
      &            +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
 
 c**   write(*,'(2(4x,A,F16.8))') 'rho1_0=',rho1_0, 'K0_Duk=',K0_Duk
-      rho0=rho1_0 
+      rho0=rho1_0
 #  endif
       dr00=r00-1000.D0-rho0
 

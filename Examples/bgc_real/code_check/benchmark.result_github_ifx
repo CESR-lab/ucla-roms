@@ -1,189 +1,189 @@
  metadata about           31  tracers:
  -----------
  TRACER NO.:            1
- SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
- UNITS: Celsius                                   
+ SHORT NAME: temp
+ LONG NAME: potential temperature
+ UNITS: Celsius
  -----------
  -----------
  TRACER NO.:            2
- SHORT NAME: salt                                      
- LONG NAME: salinity                                                    
- UNITS: PSU                                       
+ SHORT NAME: salt
+ LONG NAME: salinity
+ UNITS: PSU
  -----------
  -----------
  TRACER NO.:            3
- SHORT NAME: PO4                                       
- LONG NAME: Phosphate                                                   
- UNITS: mMol P m-3                                
+ SHORT NAME: PO4
+ LONG NAME: Phosphate
+ UNITS: mMol P m-3
  -----------
  -----------
  TRACER NO.:            4
- SHORT NAME: NO3                                       
- LONG NAME: Nitrate                                                     
- UNITS: mMol N m-3                                
+ SHORT NAME: NO3
+ LONG NAME: Nitrate
+ UNITS: mMol N m-3
  -----------
  -----------
  TRACER NO.:            5
- SHORT NAME: SiO3                                      
- LONG NAME: Silicate                                                    
- UNITS: mMol Si m-3                               
+ SHORT NAME: SiO3
+ LONG NAME: Silicate
+ UNITS: mMol Si m-3
  -----------
  -----------
  TRACER NO.:            6
- SHORT NAME: NH4                                       
- LONG NAME: Ammonium                                                    
- UNITS: mMol N m-3                                
+ SHORT NAME: NH4
+ LONG NAME: Ammonium
+ UNITS: mMol N m-3
  -----------
  -----------
  TRACER NO.:            7
- SHORT NAME: Fe                                        
- LONG NAME: Iron                                                        
- UNITS: mMol Fe m-3                               
+ SHORT NAME: Fe
+ LONG NAME: Iron
+ UNITS: mMol Fe m-3
  -----------
  -----------
  TRACER NO.:            8
- SHORT NAME: O2                                        
- LONG NAME: Oxygen                                                      
- UNITS: mMol O2 m-3                               
+ SHORT NAME: O2
+ LONG NAME: Oxygen
+ UNITS: mMol O2 m-3
  -----------
  -----------
  TRACER NO.:            9
- SHORT NAME: DIC                                       
- LONG NAME: Dissolved inorganic carbon                                  
- UNITS: mMol C m-3                                
+ SHORT NAME: DIC
+ LONG NAME: Dissolved inorganic carbon
+ UNITS: mMol C m-3
  -----------
  -----------
  TRACER NO.:           10
- SHORT NAME: ALK                                       
- LONG NAME: Alkalinity                                                  
- UNITS: mMol m-3                                  
+ SHORT NAME: ALK
+ LONG NAME: Alkalinity
+ UNITS: mMol m-3
  -----------
  -----------
  TRACER NO.:           11
- SHORT NAME: DOC                                       
- LONG NAME: Dissolved organic carbon                                    
- UNITS: mMol C m-3                                
+ SHORT NAME: DOC
+ LONG NAME: Dissolved organic carbon
+ UNITS: mMol C m-3
  -----------
  -----------
  TRACER NO.:           12
- SHORT NAME: DON                                       
- LONG NAME: Dissolved organic nitrogen                                  
- UNITS: mMol N m-3                                
+ SHORT NAME: DON
+ LONG NAME: Dissolved organic nitrogen
+ UNITS: mMol N m-3
  -----------
  -----------
  TRACER NO.:           13
- SHORT NAME: DOFE                                      
- LONG NAME: Dissolved organic iron                                      
- UNITS: mMol Fe m-3                               
+ SHORT NAME: DOFE
+ LONG NAME: Dissolved organic iron
+ UNITS: mMol Fe m-3
  -----------
  -----------
  TRACER NO.:           14
- SHORT NAME: DOP                                       
- LONG NAME: Dissolved organic phosphorus                                
- UNITS: mMol P m-3                                
+ SHORT NAME: DOP
+ LONG NAME: Dissolved organic phosphorus
+ UNITS: mMol P m-3
  -----------
  -----------
  TRACER NO.:           15
- SHORT NAME: DOPr                                      
- LONG NAME: Refractory dissolved organic phosphorus                     
- UNITS: mMol P m-3                                
+ SHORT NAME: DOPr
+ LONG NAME: Refractory dissolved organic phosphorus
+ UNITS: mMol P m-3
  -----------
  -----------
  TRACER NO.:           16
- SHORT NAME: DONr                                      
- LONG NAME: Refractory dissolved organic nitrogen                       
- UNITS: mMol N m-3                                
+ SHORT NAME: DONr
+ LONG NAME: Refractory dissolved organic nitrogen
+ UNITS: mMol N m-3
  -----------
  -----------
  TRACER NO.:           17
- SHORT NAME: zooC                                      
- LONG NAME: Zooplankton                                                 
- UNITS: mMol C m-3                                
+ SHORT NAME: zooC
+ LONG NAME: Zooplankton
+ UNITS: mMol C m-3
  -----------
  -----------
  TRACER NO.:           18
- SHORT NAME: spC                                       
- LONG NAME: Small phytoplankton carbon                                  
- UNITS: mMol C m-3                                
+ SHORT NAME: spC
+ LONG NAME: Small phytoplankton carbon
+ UNITS: mMol C m-3
  -----------
  -----------
  TRACER NO.:           19
- SHORT NAME: spChl                                     
- LONG NAME: Small phytoplankton chlorophyll                             
- UNITS: mg Chl-a m-3                              
+ SHORT NAME: spChl
+ LONG NAME: Small phytoplankton chlorophyll
+ UNITS: mg Chl-a m-3
  -----------
  -----------
  TRACER NO.:           20
- SHORT NAME: spFe                                      
- LONG NAME: Small phytoplankton iron                                    
- UNITS: mMol Fe m-3                               
+ SHORT NAME: spFe
+ LONG NAME: Small phytoplankton iron
+ UNITS: mMol Fe m-3
  -----------
  -----------
  TRACER NO.:           21
- SHORT NAME: spCaCO3                                   
- LONG NAME: Small phytoplankton CaCO3                                   
- UNITS: mMol CaCO3 m-3                            
+ SHORT NAME: spCaCO3
+ LONG NAME: Small phytoplankton CaCO3
+ UNITS: mMol CaCO3 m-3
  -----------
  -----------
  TRACER NO.:           22
- SHORT NAME: diatC                                     
- LONG NAME: Diatom carbon                                               
- UNITS: mMol C m-3                                
+ SHORT NAME: diatC
+ LONG NAME: Diatom carbon
+ UNITS: mMol C m-3
  -----------
  -----------
  TRACER NO.:           23
- SHORT NAME: diatChl                                   
- LONG NAME: Diatom chlorophyll                                          
- UNITS: mg Chl-a m-3                              
+ SHORT NAME: diatChl
+ LONG NAME: Diatom chlorophyll
+ UNITS: mg Chl-a m-3
  -----------
  -----------
  TRACER NO.:           24
- SHORT NAME: diatFe                                    
- LONG NAME: Diatom Iron                                                 
- UNITS: mMol Fe m-3                               
+ SHORT NAME: diatFe
+ LONG NAME: Diatom Iron
+ UNITS: mMol Fe m-3
  -----------
  -----------
  TRACER NO.:           25
- SHORT NAME: diatSi                                    
- LONG NAME: Diatom silicon                                              
- UNITS: mMol Si m-3                               
+ SHORT NAME: diatSi
+ LONG NAME: Diatom silicon
+ UNITS: mMol Si m-3
  -----------
  -----------
  TRACER NO.:           26
- SHORT NAME: diazC                                     
- LONG NAME: Diazotroph carbon                                           
- UNITS: mMol C m-3                                
+ SHORT NAME: diazC
+ LONG NAME: Diazotroph carbon
+ UNITS: mMol C m-3
  -----------
  -----------
  TRACER NO.:           27
- SHORT NAME: diazChl                                   
- LONG NAME: Diazotroph chlorophyll                                      
- UNITS: mg Chl-a m-3                              
+ SHORT NAME: diazChl
+ LONG NAME: Diazotroph chlorophyll
+ UNITS: mg Chl-a m-3
  -----------
  -----------
  TRACER NO.:           28
- SHORT NAME: diazFe                                    
- LONG NAME: Diazotroph iron                                             
- UNITS: mMol Fe m-3                               
+ SHORT NAME: diazFe
+ LONG NAME: Diazotroph iron
+ UNITS: mMol Fe m-3
  -----------
  -----------
  TRACER NO.:           29
- SHORT NAME: NO2                                       
- LONG NAME: Nitrite                                                     
- UNITS: mMol N m-3                                
+ SHORT NAME: NO2
+ LONG NAME: Nitrite
+ UNITS: mMol N m-3
  -----------
  -----------
  TRACER NO.:           30
- SHORT NAME: N2                                        
- LONG NAME: Dinitrogen                                                  
- UNITS: mMol N2 m-3                               
+ SHORT NAME: N2
+ LONG NAME: Dinitrogen
+ UNITS: mMol N2 m-3
  -----------
  -----------
  TRACER NO.:           31
- SHORT NAME: N2O                                       
- LONG NAME: Nitrous oxide                                               
- UNITS: mMol N2O m-3                              
+ SHORT NAME: N2O
+ LONG NAME: Nitrous oxide
+ UNITS: mMol N2O m-3
  -----------
 
  Activated CPP configuration switches:
@@ -284,41 +284,41 @@
 
        ocean_vars :: history file ouput_period = 100.0  recs/file =  10
          his fields to be saved: (T/F)
-           zeta    T    free-surface elevation                    
-           ubar    T    vertically averaged u-momentum component  
-           vbar    T    vertically averaged v-momentum component  
-           u       T    u-momentum component                      
-           v       T    v-momentum component                      
-           rho     T    density anomaly                           
-           Omega   T    S-coordinate vertical velocity            
-           W       T    vertical velocity                         
-           Akv     T    vertical viscosity coefficient            
-           Akt     T    vertical thermal conductivity coefficient 
-           Aks     T    salinity vertical diffusion coefficient   
-           hbls    T    Thickness of KPP surface boundary layer   
-           hbbl    T    Thickness of KPP bottom boundary layer    
+           zeta    T    free-surface elevation
+           ubar    T    vertically averaged u-momentum component
+           vbar    T    vertically averaged v-momentum component
+           u       T    u-momentum component
+           v       T    v-momentum component
+           rho     T    density anomaly
+           Omega   T    S-coordinate vertical velocity
+           W       T    vertical velocity
+           Akv     T    vertical viscosity coefficient
+           Akt     T    vertical thermal conductivity coefficient
+           Aks     T    salinity vertical diffusion coefficient
+           hbls    T    Thickness of KPP surface boundary layer
+           hbbl    T    Thickness of KPP bottom boundary layer
 
-           t( 1F   temp                                      
-           t( 2F   salt                                      
-       2D BGC diags ::   1  2 PARinc                                                                  
-       2D BGC diags ::   2  3 FG_O2                                                                   
-       2D BGC diags ::   3  4 FG_CO2                                                                  
-       2D BGC diags ::   4 14 SED_DENITRIF                                                            
-       2D BGC diags ::   5 30 FG_N2O                                                                  
-       2D BGC diags ::   6 34 FG_N2                                                                   
-       3D BGC diags ::   1  1 PAR                                                                     
-       3D BGC diags ::   2  2 POC_FLUX_IN                                                             
-       3D BGC diags ::   3 26 TOT_PROD                                                                
-       3D BGC diags ::   4 59 SP_NO3_UPTAKE                                                           
-       3D BGC diags ::   5 60 DIAT_NO3_UPTAKE                                                         
-       3D BGC diags ::   6 61 DIAZ_NO3_UPTAKE                                                         
-       3D BGC diags ::   7 87 TOT_CHL                                                                 
-       3D BGC diags ::   8 91 TOT_PHYTOC                                                              
-       3D BGC diags ::   9 92 O2_CONSUMPTION                                                          
-       3D BGC diags ::  10 93 O2_PRODUCTION                                                           
-       3D BGC diags ::  11 95 NITROX                                                                  
-       3D BGC diags ::  12 96 ANAMMOX                                                                 
-       3D BGC diags ::  13 97 DENITRIF1                                                               
+           t( 1F   temp
+           t( 2F   salt
+       2D BGC diags ::   1  2 PARinc
+       2D BGC diags ::   2  3 FG_O2
+       2D BGC diags ::   3  4 FG_CO2
+       2D BGC diags ::   4 14 SED_DENITRIF
+       2D BGC diags ::   5 30 FG_N2O
+       2D BGC diags ::   6 34 FG_N2
+       3D BGC diags ::   1  1 PAR
+       3D BGC diags ::   2  2 POC_FLUX_IN
+       3D BGC diags ::   3 26 TOT_PROD
+       3D BGC diags ::   4 59 SP_NO3_UPTAKE
+       3D BGC diags ::   5 60 DIAT_NO3_UPTAKE
+       3D BGC diags ::   6 61 DIAZ_NO3_UPTAKE
+       3D BGC diags ::   7 87 TOT_CHL
+       3D BGC diags ::   8 91 TOT_PHYTOC
+       3D BGC diags ::   9 92 O2_CONSUMPTION
+       3D BGC diags ::  10 93 O2_PRODUCTION
+       3D BGC diags ::  11 95 NITROX
+       3D BGC diags ::  12 96 ANAMMOX
+       3D BGC diags ::  13 97 DENITRIF1
        BGC diags allocation ::   6 13
 
  Vertical S-coordinate system (z at W-points):
@@ -399,10 +399,10 @@
  Reference time used for simulation is: 2000/01/01
        created new netcdf file bgc_his.20121209133435.0.nc
        created new netcdf file bgc_bgc.20121209133435.0.nc
-       wrt_bgc_tracers :: history , trc =  PO4                                       
-       wrt_bgc_tracers :: history , trc =  NO3                                       
-       wrt_bgc_tracers :: history , trc =  O2                                        
-       wrt_bgc_tracers :: history , trc =  DIC                                       
+       wrt_bgc_tracers :: history , trc =  PO4
+       wrt_bgc_tracers :: history , trc =  NO3
+       wrt_bgc_tracers :: history , trc =  O2
+       wrt_bgc_tracers :: history , trc =  DIC
        bgc :: wrote history, tdays =   4726.5657  step =     -1 rec =   1
        created new netcdf file bgc_bgc_dia.20121209133435.0.nc
        bgc diag :: wrote history, tdays =   4726.5657  step =      0 rec =   1
@@ -436,10 +436,10 @@
        ecosys_bec2_td:: computing bgc
  5  4.2156855156165749E-03 2.7748446673095924E-03 2.3177809649896658E-01 1.2055899482549376E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
-       wrt_bgc_tracers :: history , trc =  PO4                                       
-       wrt_bgc_tracers :: history , trc =  NO3                                       
-       wrt_bgc_tracers :: history , trc =  O2                                        
-       wrt_bgc_tracers :: history , trc =  DIC                                       
+       wrt_bgc_tracers :: history , trc =  PO4
+       wrt_bgc_tracers :: history , trc =  NO3
+       wrt_bgc_tracers :: history , trc =  O2
+       wrt_bgc_tracers :: history , trc =  DIC
        bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
  doing BGC with BEC
@@ -458,14 +458,14 @@
        ecosys_bec2_td:: computing bgc
 10  4.2170787295234425E-03 2.7742121767264372E-03 2.0266617746804758E-01 1.9424691793365764E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
-       wrt_bgc_tracers :: history , trc =  PO4                                       
-       wrt_bgc_tracers :: history , trc =  NO3                                       
-       wrt_bgc_tracers :: history , trc =  O2                                        
-       wrt_bgc_tracers :: history , trc =  DIC                                       
+       wrt_bgc_tracers :: history , trc =  PO4
+       wrt_bgc_tracers :: history , trc =  NO3
+       wrt_bgc_tracers :: history , trc =  O2
+       wrt_bgc_tracers :: history , trc =  DIC
        bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
        bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
  Process    0  thread  0  cpu time =       83.79 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   168.945391120118  
+ MPI_run_time =   168.945391120118

@@ -14,7 +14,7 @@
 ! assembles them into a file for the whole physical grid.  It is the
 ! inverse operation to partit.  Usage:
 !
-!                  ncjoin files.???.nc 
+!                  ncjoin files.???.nc
 ! or
 !                  ncjoin -d files.???.nc
 ! or
@@ -22,14 +22,14 @@
 !
 ! where files.???.nc matches a complete set of partial files (or
 ! several complete sets) and "-d" or "--delete" forces deletion of
-! partial files upon successful joining. 
+! partial files upon successful joining.
 
 
 ! This code uses self-inclusion in order to generate several similar
 ! subroutines from the same source code. CPP-macro EXCLUDE_MAIN makes
-! main program appear only once after CPP is executed: it is assumed 
+! main program appear only once after CPP is executed: it is assumed
 ! to be undefined initially.  All other CPP-switches below are user
-! configurable. 
+! configurable.
 
 ! CPP-switch "FAST_MODE" activates mode in which partial arrays are
 ! assembled into a big array in operating memory, and the whole data
@@ -49,7 +49,7 @@
 ! missing file, or one file has fewer records than others, or reading
 ! error; etc), the files stay intact.  If ncjoin is interrupted, the
 ! partial files stay intact.
- 
+
 ! CPP-switch "KEEP_CLOSED" forces regime in which to keep no more
 ! than one partial file for MPI-nodes 1:nnnodes-1 be opened at any
 ! given time (file belonging to MPI-node=0 is kept permanently open,
@@ -78,7 +78,7 @@ c--#define VERBOSE
       integer :: deflate_level=1 ! Compression level for joined file
       logical :: shuffle=.true.  ! Shuffle on for extra conmpression
       ! END USER INPUT
-      
+
       integer, dimension(4) :: chunk_sizes ! DevinD: chunksize debugging
 
       integer, parameter :: maxdims=32, maxvars=350 ! BGC has 201 vars in restart file
@@ -93,7 +93,7 @@ c--#define VERBOSE
      &        i,j,k, is,ie,   lncn,     ltrg,   lstr, lbak, lenstr
 
       character(len=8) sffx, sffx_bak
-      character(len=32) vname(maxvars), dimname(maxdims) 
+      character(len=32) vname(maxvars), dimname(maxdims)
       character(len=256) :: nctestname, nctargname, root, root_bak, string
       character(len=256), dimension(:), allocatable :: ncname
       character(len=1) :: buff_char ! DevinD added as Expanse complained about putting
@@ -127,7 +127,7 @@ c--#define VERBOSE
       integer*8 net_read_size, net_wrt_size, net_fcrt_clk,
      &          net_read_clk,  net_wrt_clk,  net_assm_clk,
      &          net_sync_clk,  net_gray_clk, inc_clk
-      real*8 ReadSize, ReadTime, WrtSize,  WrtTime, 
+      real*8 ReadSize, ReadTime, WrtSize,  WrtTime,
      &       FcrtTime, AssmTime, SyncTime, GrayTime
 # ifdef __IFC
       real*4 etime
@@ -177,10 +177,10 @@ c--#define VERBOSE
       net_rmcmd_clk=0
 # endif
 #endif
-      ntest=-1                         ! initialize sizes of buffer 
+      ntest=-1                         ! initialize sizes of buffer
       maxnodes=-1                      ! arrays to be allocated. Here
-      max_buff_size=0                  ! "max_*" means the needed size, 
-      alloc_buff_size=0                ! and "alloc_*" is the size of 
+      max_buff_size=0                  ! "max_*" means the needed size,
+      alloc_buff_size=0                ! and "alloc_*" is the size of
 #ifdef FAST_MODE
       max_bfr_out=0                    ! the actually allocated array.
       alloc_bfr_out=0
@@ -195,7 +195,7 @@ c--#define VERBOSE
       root_bak(1:1)=' '                ! define the file set.
       sffx_bak(1:1)=' '
       code_size_bak=-1
- 
+
       ! DD: will cycle through argument list of names of partitioned
       !     files by coming back here with 'goto 2'
   2   arg=arg+1
@@ -277,7 +277,7 @@ c--#define VERBOSE
                 endif
 
                 node=ibuff(1)
-                if (ncid(node).ne.-1) then 
+                if (ncid(node).ne.-1) then
                   write(*,'(/1x,2A,I4,1x,A)') '### ERROR: netCDF ID ',
      &                         'for file corresponding to MPI-node =',
      &                                   node,  'is already in use.'
@@ -287,7 +287,7 @@ c--#define VERBOSE
 
                 if (ncid(node).eq.-1 .and. xi_start(node).eq.-1
      &                         .and.  eta_start(node).eq.-1) then
-                  ncid(node)=ntest 
+                  ncid(node)=ntest
                   ncname(node)=nctestname
                   xi_start(node)=ibuff(3)
                   eta_start(node)=ibuff(4)
@@ -311,7 +311,7 @@ c--#define VERBOSE
                   do while (is.eq.0 .and. i.gt.1)
                     i=i-1
                     if (nctestname(i:i).ge.'0' .and.
-     &                  nctestname(i:i).le.'9') then 
+     &                  nctestname(i:i).le.'9') then
                       if (.not.digit) then
                         if (i.lt.lncn) then
                           if (nctestname(i+1:i+1).eq.'.') then
@@ -325,7 +325,7 @@ c--#define VERBOSE
                       endif
                     elseif (digit .and. nctestname(i:i).eq.'.') then
                       digit=.false.
-                      is=i+1 
+                      is=i+1
                     endif
                   enddo
 
@@ -401,7 +401,7 @@ c--#define VERBOSE
      &                ''' is different than previously determined',
      &                                     code_size_bak, '.'
                   endif
- 
+
 ! Checking consistency of node number with the file name.
 
                   if (k.ne.node) then
@@ -459,16 +459,16 @@ c--#define VERBOSE
       if (.not.complete .and. arg.lt.nargs) goto 2  !--> next file
 
 #ifdef VERBOSE
-      write(*,*) ' line 433, complete =', complete, ' nnodes =', nnodes 
+      write(*,*) ' line 433, complete =', complete, ' nnodes =', nnodes
 #endif
 
-! Once a complete set is identified, print the finenames. 
+! Once a complete set is identified, print the finenames.
 
       if (complete) then
         lncn=lenstr(ncname(0))
         write(*,'(2(1x,A,I4),1x,A,2x,A,2I5)')   'Processing set of ',
      &                         nnodes, 'files', 0, ncname(0)(1:lncn),
-     &                          'i,jSW =', xi_start(0), eta_start(0) 
+     &                          'i,jSW =', xi_start(0), eta_start(0)
         do node=1,nnodes-1
           if (node.lt.16 .or. (nnodes.gt.16 .and.
      &                         node.eq.nnodes-1 )) then
@@ -487,7 +487,7 @@ c--#define VERBOSE
         endif                       ! partitioned files has been
         do node=0,nnodes-1          ! identified, but all the files are
           ncid(node)=-1             ! actually closed at this moment.
-        enddo                       ! Reset the ids accordingly. 
+        enddo                       ! Reset the ids accordingly.
 
       elseif (arg.lt.nargs) then
         goto 1
@@ -500,7 +500,7 @@ c--#define VERBOSE
 
 !      *****    *********    ******   *******    *********
 !    ***   ***  *  ***  *   **  ***   ***   ***  *  ***  *
-!    ***           ***     **   ***   ***   ***     *** 
+!    ***           ***     **   ***   ***   ***     ***
 !      *****       ***    ***   ***   ***   **      ***
 !          ***     ***    *********   ******        ***
 !    ***   ***     ***    ***   ***   ***  **       ***
@@ -550,7 +550,7 @@ c--#define VERBOSE
               goto 97
             elseif (node.eq.0) then
               ndims=ibuff(1)
-c**           nvars=ibuff(2) 
+c**           nvars=ibuff(2)
               ngatts=ibuff(3)
               unlimdimid=ibuff(4)
             else
@@ -574,7 +574,7 @@ c**           endif
      &               'different number of global attributes than ''',
      &                                       ncname(0)(1:lstr),'''.'
                 ierr=ierr+1
-              endif 
+              endif
               if (ibuff(4) .ne. unlimdimid) then
                 write(*,'(/4x,4A/15x,3A/)')     '### ERROR: netCDF ',
      &                    'file ''', ncname(node)(1:lncn), ''' has ',
@@ -582,7 +582,7 @@ c**           endif
      &                                      ncname(0)(1:lstr), '''.'
                 ierr=ierr+1
               endif
-              if (ierr .ne. nf_noerr) goto 97 
+              if (ierr .ne. nf_noerr) goto 97
             endif
 
 
@@ -623,7 +623,7 @@ c**           endif
 ! defined here is as follows:
 !
 !     nvars    -- total number of variables discovered;
-!     vname(i), where i=1:nvars -- variable name; 
+!     vname(i), where i=1:nvars -- variable name;
 !     vid(i,node) -- netCDF ID for that variable in netCDF file for
 !                      MPI node "node", where node=0:nnodes-1;
 !     vdims(i) -- "rank", i.e. namber of dimensions of that variable;
@@ -633,9 +633,9 @@ c**           endif
 !                 between the true variable and its proxy "dummy
 !                 scalar", if partit creates one, e.g., in the case
 !                 of boundary forcing variable in inner MPI node,
-!                 where it is not needed).   
+!                 where it is not needed).
 
-            if (node.eq.0) nvars=0 
+            if (node.eq.0) nvars=0
             do i=1,ibuff(2)
               ierr=nf_inq_varname (ncid(node), i, string)
               if (ierr .eq. nf_noerr) then
@@ -691,11 +691,11 @@ c**           endif
      &                                    '''.', nf_strerror(ierr)
             goto 97
           endif
-        enddo  !<-- node=0,nnodes-1 
+        enddo  !<-- node=0,nnodes-1
 
 #ifdef VERBOSE
         write(*,'(/1x,A,I3)') 'Inventory of variables: nvars =',nvars
-        do i=1,nvars 
+        do i=1,nvars
           lvar=lenstr(vname(i))
           write(*,'(4I4,2x,3A)') i, vid(i,vnode(i)), vnode(i),
      &                 vdims(i), '''', vname(i)(1:lvar), ''''
@@ -744,7 +744,7 @@ c**           endif
               size_XI=max(size_XI,dimsize(i,node))
               XI_rho=max(XI_rho, dimsize(i,nnodes))
             enddo
-           
+
           elseif (lvar.eq.4 .and.dimname(i)(1:lvar).eq.'xi_u') then
             id_xi_u=i
             do node=0,nnodes-1
@@ -792,7 +792,7 @@ c**           endif
      &                 ' named ''', dimname(i)(1:lvar), ''', size =',
      &                  dimsize(i,node),   'in netCDF',    'file ''',
      &                  ncname(node)(1:lncn),    ''' has different ',
-     &                 'size than the corresponding', 
+     &                 'size than the corresponding',
      &                 'dimension from file ''',   ncname(0)(1:lncn),
      &                     ''', which has size =', dimsize(i,0), '.'
                 goto 97
@@ -825,7 +825,7 @@ c**           endif
           endif
           if (id_xi_rho.gt.0) then
             if ( xi_start(node)+dimsize(id_xi_rho,node)
-     &          .lt.XI_rho ) eastern_edge(node)=.false. 
+     &          .lt.XI_rho ) eastern_edge(node)=.false.
           endif
           if (id_xi_u.gt.0) then
             if ( xi_start(node)+dimsize(id_xi_u,node)
@@ -859,7 +859,7 @@ c**           endif
 
 ! set buffer size for needed to accommodate data for the largest
 ! possible MPI-subdomain (i.e., partial file).
-! 
+!
         max_buff_size=size_XI*size_ETA*size_S
 !
 ! Create combined netCDF file:   Once the completeness of the set of
@@ -948,10 +948,10 @@ c**           endif
            write(*,'(/1x,4A/12x,A/)')      '### ERROR: Cannot define ',
      &    'dimension ''', dimname(i)(1:lvar), '''.', nf_strerror(ierr)
               goto 97
-          endif 
+          endif
         enddo ! <-- i loop over dimensions
 # ifdef FAST_MODE
-        max_bfr_out=size_XI*size_ETA*size_S 
+        max_bfr_out=size_XI*size_ETA*size_S
 # endif
 
 ! Copy all global attributes, except 'partition'.
@@ -980,7 +980,7 @@ c**           endif
                 endif
 # ifdef VERBOSE
                 write(*,'(20x,3A)') '''', string(1:lvar), ''''
-# endif      
+# endif
               endif
             else
             write(*,'(/1x,2A,I3/12x,3A/12x,A/)') '### ERROR: Cannot',
@@ -1140,7 +1140,7 @@ c**           endif
 ! initialized to zero at the beginning.   Basically this anticipates
 ! the possibility of gradual increase of needed size of buffer array,
 ! so that if it is allocated at this moment, but insufficient, it is
-! deallocated first. 
+! deallocated first.
 
 #ifdef FAST_MODE
         if (max_bfr_out .gt. alloc_bfr_out) then
@@ -1286,7 +1286,7 @@ c**           endif
                   write(*,*) 'allocated "buff" with max_buff_size =',
      &                                              max_buff_size
                 endif
- 
+
                 if (vartype(i) .eq. nf_char) then
                   ierr=nf_get_vara_text  (ncid(0), vid(i,0),
      &                                    start,count, buff)
@@ -1352,8 +1352,8 @@ c**           endif
 
                 do node=0,nnodes-1
                   var_mask=.false.
-                  if (part_type(i).eq.1 .and. lvar.gt.6) then 
-                    if (vname(i)(lvar-5:lvar).eq.'_south' 
+                  if (part_type(i).eq.1 .and. lvar.gt.6) then
+                    if (vname(i)(lvar-5:lvar).eq.'_south'
      &                        .and. southern_edge(node)) then
                       var_mask=.true.
 #ifdef VERBOSE
@@ -1593,7 +1593,7 @@ c**           endif
                       max_bfr_out=(size1+7)/8
                       allocate(bfr_out(max_bfr_out))
                       write(*,*) 'allocated "bfr_out" with ',
-     &                           'max_bfr_out =', max_bfr_out 
+     &                           'max_bfr_out =', max_bfr_out
                     endif
 # ifdef TIMING
                     nclk=3-nclk
@@ -1605,7 +1605,7 @@ c**           endif
                       call assembly_text (buff, count, bfr_out,
      &                                 start1,count1, vdims(i))
                     elseif (vartype(i) .eq. nf_byte) then
-                      call assembly_byte (buff, count, bfr_out, 
+                      call assembly_byte (buff, count, bfr_out,
      &                                 start1,count1, vdims(i))
                     elseif (vartype(i) .eq. nf_short) then
                       call assembly_int2 (buff, count, bfr_out,
@@ -1675,7 +1675,7 @@ c**           endif
 !dd                      goto 97
                     endif
 #endif /* FAST_MODE */
-                  endif  ! <-- var_mask 
+                  endif  ! <-- var_mask
 
 #ifdef FAST_MODE
                   if (node .eq. nnodes-1) then
@@ -1740,7 +1740,7 @@ c        ierr=nf_sync (nctarg)
 ! Use intermediate one-per-record nf_sync of the target file only in
 ! verbose mode because it slows down the execution speed.   Note that
 ! time spent by nf_sync is counted as writing time, and so does time
-! spent to close the target file. 
+! spent to close the target file.
 
 c--#ifdef VERBOSE
 # if defined TIMING
@@ -1751,8 +1751,8 @@ c--#ifdef VERBOSE
 # endif
           ierr=nf_sync (nctarg)
 
-c          write(*,*) 'close' 
-c          ierr=nf_close (nctarg) 
+c          write(*,*) 'close'
+c          ierr=nf_close (nctarg)
 c          write(*,*) 'reopen'
 c          ierr=nf_open (nctargname(1:ltrg), nf_write, nctarg)
 # if defined TIMING
@@ -1761,7 +1761,7 @@ c          ierr=nf_open (nctargname(1:ltrg), nf_write, nctarg)
           inc_clk=iclk(nclk)-iclk(3-nclk)
           net_sync_clk=net_sync_clk+inc_clk
 # endif
-c--#endif 
+c--#endif
 
         enddo    !<--- rec, loop over records
 
@@ -1769,7 +1769,7 @@ c--#endif
           clean_set=.true.
           goto 98
         endif
-  97    clean_set=.false. 
+  97    clean_set=.false.
 
 ! Close all files                        ! At this moment open/closed
                                          ! status of partial files
@@ -1794,7 +1794,7 @@ c--#endif
         inc_clk=iclk(nclk)-iclk(3-nclk)
         net_sync_clk=net_sync_clk+inc_clk
 #endif
-        write(*,*) '...........output'   ! status of each file. 
+        write(*,*) '...........output'   ! status of each file.
 
 #ifdef DEL_PART_FILES
         if (del_part_files) then
@@ -1840,14 +1840,14 @@ c--#endif
       call etime(CPU_time, RUN_time)
 # endif
       RUN_time=RUN_time-tstart
-      
+
 
       write(*,'(/3(1x,A,F11.2,1x))') 'CPU_time:  run =', RUN_time,
      &                   'usr =', CPU_time(1),  'sys =', CPU_time(2)
 
       if (clk_rate.gt.0) then
         ReadSize=1.0D-6*net_read_size
-        WrtSize=1.0D-6*net_wrt_size  
+        WrtSize=1.0D-6*net_wrt_size
         ReadTime=net_read_clk/dble(clk_rate)
         AssmTime=net_assm_clk/dble(clk_rate)
         WrtTime = net_wrt_clk/dble(clk_rate)
@@ -1897,7 +1897,7 @@ c--#endif
 
 ! The following four subroutines differ only by name and type of the
 ! first and the third argument, but their inner codes are identically
-! the same. Use self-inclusion to generate multiple versions. 
+! the same. Use self-inclusion to generate multiple versions.
 
 #ifdef FAST_MODE
 # if F_TYPE == 1
@@ -1912,19 +1912,19 @@ c--#endif
       implicit none
       integer(kind=2) :: buff(*), bfr_out(*)
 
-# elif F_TYPE == 3   
+# elif F_TYPE == 3
       subroutine assembly_int  (buff, count,  bfr_out,
      &                          start1, count1, vdims)
       implicit none
       integer(kind=4) :: buff(*), bfr_out(*)
 
-# elif F_TYPE == 4   
+# elif F_TYPE == 4
       subroutine assembly_real (buff, count,  bfr_out,
      &                          start1, count1, vdims)
       implicit none
       real(kind=4) :: buff(*), bfr_out(*)
 
-# elif F_TYPE == 5   
+# elif F_TYPE == 5
       subroutine assembly_double (buff,count, bfr_out,
      &                          start1, count1, vdims)
       implicit none

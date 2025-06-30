@@ -15,17 +15,17 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm= 64, MMm= 64, N= 32 
+      integer, parameter :: LLm= 64, MMm= 64, N= 32
 
       integer, parameter :: NP_XI  = 3, NP_ETA = 2
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
-      integer, parameter :: nt = 1 
+      integer, parameter :: nt = 1
       integer, parameter :: nt_passive = 0
 
-      real,    parameter :: 
+      real,    parameter ::
      &   HD  = 1000               ! m (depth) is H in DH script
-!    & , f0  = 7.81e-5              
- 
+!    & , f0  = 7.81e-5
+
 
 

@@ -10,7 +10,7 @@
 # define bry_rotate_TYPE_in_place   bry_rotate_u_in_place
 # define bry_rotate_TYPE_inp_thread bry_rotate_u_inp_thread
 #else
-# define bry_rotate_TYPE_in_place   bry_rotate_v_in_place  
+# define bry_rotate_TYPE_in_place   bry_rotate_v_in_place
 # define bry_rotate_TYPE_inp_thread bry_rotate_v_inp_thread
 #endif
 

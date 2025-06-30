@@ -84,7 +84,7 @@ contains
        do i2=1,nx
           i=2*i2-1
           do j2=1,ny
-             j=2*j2-1      
+             j=2*j2-1
              y(1,j2,i2) = (x(1,j,i)+x(1,j,i+1)+x(1,j+1,i)+x(1,j+1,i+1))
           enddo
        enddo
@@ -93,7 +93,7 @@ contains
        do i2=1,nx
           i=2*i2-1
           do j2=1,ny
-             j=2*j2-1     
+             j=2*j2-1
              y(1,j2,i2) = (x(1,j,i)+x(1,j,i+1)+x(1,j+1,i)+x(1,j+1,i+1)&
                           +x(2,j,i)+x(2,j,i+1)+x(2,j+1,i)+x(2,j+1,i+1))
           enddo
@@ -154,7 +154,7 @@ contains
        pc => grid(lev+1)%dummy3
        nxc = grid(lev+1)%nx / grid(lev+1)%ngx
        nyc = grid(lev+1)%ny / grid(lev+1)%ngy
-       nzc = grid(lev+1)%nz       
+       nzc = grid(lev+1)%nz
     endif
 
     rf => grid(lev)%r
@@ -246,7 +246,7 @@ contains
     e =  9._8 / 64._8
     f =  3._8 / 64._8
     g =  1._8 / 64._8
-    ! 
+    !
     do i2=1,nx
        i=2*i2-1
        do j2=1,ny
@@ -304,7 +304,7 @@ contains
                b * xc(k2,j2+1,i2) + b * xc(k2,j2  ,i2-1)   )
           xf(k  ,j  ,i+1) =  (1-hlf*dirichlet_flag)  * (     &
                a * xc(k2,j2  ,i2) + c * xc(k2,j2-1,i2+1) +   &
-               b * xc(k2,j2-1,i2) + b * xc(k2,j2  ,i2+1)   ) 
+               b * xc(k2,j2-1,i2) + b * xc(k2,j2  ,i2+1)   )
           xf(k  ,j+1,i+1) =  (1-hlf*dirichlet_flag)  * (     &
                a * xc(k2,j2  ,i2) + c * xc(k2,j2+1,i2+1) +   &
                b * xc(k2,j2+1,i2) + b * xc(k2,j2  ,i2+1)   )

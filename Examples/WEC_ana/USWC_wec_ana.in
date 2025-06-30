@@ -11,7 +11,7 @@ grid:  filename
      none
 forcing: filename
      none
-     
+
 
 initial: NRREC  filename
           1
@@ -26,16 +26,16 @@ boundary: filename
 restart:          NRST, NRPFRST / filename
                  999999   1
      none
-     
+
 output_root_name:
-     uswc_wec_ana     
+     uswc_wec_ana
 
 history: LDEFHIS, NWRT, NRPFHIS / filename
             T    1   48
 
 averages: NTSAVG, NAVG, NRPFAVG / filename
             0     999999    8
-     
+
 primary_history_fields: zeta U,VBAR  U,V   wrtT(1:NT)
                           T   T T    T T   T T T T
 

@@ -2,13 +2,13 @@
 
       subroutine set_mask(nx,ny, rmsk, mask,umask,vmask)
       implicit none
-      integer nx,ny, i,j 
+      integer nx,ny, i,j
       real(kind=8) rmsk(nx,ny)
       integer(kind=2) mask(nx,ny), umask(2:nx,ny), vmask(nx,2:ny)
       do j=1,ny
         do i=1,nx                        ! Convert RHO-point mask,
-          if (rmsk(i,j) < 0.5D0) then    ! real(kind=8) array into 
-            mask(i,j)=0                  ! short 2-byte integer. 
+          if (rmsk(i,j) < 0.5D0) then    ! real(kind=8) array into
+            mask(i,j)=0                  ! short 2-byte integer.
           else
             mask(i,j)=1                  ! Note that here U- and V-
           endif                          ! masks are set to zero only
@@ -33,7 +33,7 @@
       end                                ! therefore left unmasked.
 
 
-      subroutine set_contour_mask(nx,ny, rmsk, mask,umask,vmask) 
+      subroutine set_contour_mask(nx,ny, rmsk, mask,umask,vmask)
       implicit none
       integer nx,ny, i,j, iw2,iw,ie,js2,js,jn
       real(kind=8) rmsk(nx,ny)
@@ -64,7 +64,7 @@
         if (j > 1) then
           do i=1,nx
             iw=max(1,i-1) ; ie=min(i+1,nx)
-            if ( rmsk(i,j-1) < 0.5D0 .and. rmsk(i,j) < 0.5D0 .and. 
+            if ( rmsk(i,j-1) < 0.5D0 .and. rmsk(i,j) < 0.5D0 .and.
      &          (             rmsk(i,jn) > 0.5D0 .or.
      &           rmsk(iw,j  ) > 0.5D0 .or. rmsk(ie,j  ) > 0.5D0 .or.
      &           rmsk(iw,j-1) > 0.5D0 .or. rmsk(ie,j-1) > 0.5D0 .or.

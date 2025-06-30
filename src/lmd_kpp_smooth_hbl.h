@@ -20,7 +20,7 @@
 !
 !       5-point                 isotropic                 2D 1-2-1
 !      Laplacian                Laplacian                 Hanning
-!       smoother                smoother                  window 
+!       smoother                smoother                  window
 !
 ! All three smoothing operators suppress the checkerboard mode in just
 ! after a single iteration, however, only the last one eliminates flat-

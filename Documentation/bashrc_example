@@ -15,7 +15,7 @@ export MPIHOME=/opt/intel/oneapi/mpi/latest
 export NETCDF_ROOT=/opt/netcdf-fortran-4.6.1
 export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
 
-# Not sure if these are needed 
+# Not sure if these are needed
 export LD_LIBRARY_PATH=${MPIHOME}/lib/:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=${NETCDF_ROOT}/lib/:$LD_LIBRARY_PATH

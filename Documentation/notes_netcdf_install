@@ -4,7 +4,7 @@ This process may be tricky. You'll need many supporting libraries to be present.
 the current hdf5 library requires glibc to be version 2.28 or newer. You may have to update your
 system. There are also mentions of library that you may need to install during the process. These
 came up for us. You might have other missing libraries. The install.log file should give you information
-on what's missing. 
+on what's missing.
 
 Good luck!
 
@@ -76,4 +76,4 @@ Step 3: Install the netcdf fortran library, again with the right compiler and op
 
 > ./configure --prefix=/opt/netcdf-fortran-4.6.1 CC=mpiicx FC=mpiifx FFLAGS="-O3 -xHost" CPPFLAGS=-I/opt/netcdf-c-4.9.2/include LDFLAGS=-L/opt/netcdf-c-4.9.2/lib
 > make check -j8
-> make install 
+> make install

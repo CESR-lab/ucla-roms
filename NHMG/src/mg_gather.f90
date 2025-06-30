@@ -50,7 +50,7 @@ contains
     nx = nx / ngx
     ny = ny / ngy
     do m=0,ngy-1
-       ! copy only the inner points of x into y because 
+       ! copy only the inner points of x into y because
        ! the halo of x is corrupted
        ! Indeed, x comes from the coarsening
        ! after which we didn't update the halo
@@ -121,7 +121,7 @@ contains
     ny = ny / ngy
 
     do m=0,ngy-1
-       ! copy only the inner points of x into y because 
+       ! copy only the inner points of x into y because
        ! the halo of x is corrupted
        ! Indeed, x comes from the coarsening
        ! after which we didn't update the halo

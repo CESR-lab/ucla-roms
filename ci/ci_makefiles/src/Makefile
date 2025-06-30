@@ -21,7 +21,7 @@ include Makedefs.inc
 
 # Object and pre-processed source files are source list with extension changes
    RCS = $(SRCS:$(UPF77_ext)=$(PPF77_ext))
-  OBJS = $(RCS:$(PPF77_ext)=$(OBJ_ext)) 
+  OBJS = $(RCS:$(PPF77_ext)=$(OBJ_ext))
 # Sort OBJS to remove duplicates
   OBJS := $(sort $(OBJS))
 
@@ -49,7 +49,7 @@ $(LROMS): $(OBJS)
 
 
 check_forces: check_forces$(OBJ_ext) $(SBIN)
-	cp -pv check_forces$(OBJ_ext) main$(OBJ_ext) 	
+	cp -pv check_forces$(OBJ_ext) main$(OBJ_ext)
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
 	mv a.out check_forces
 
@@ -104,7 +104,7 @@ depend:  # makedepf90 is preferable but does not work on e.g. osx-arm64. Offer p
 	@${ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend  || \
 	(echo "failed to generate dependency list with makedepf90, using python fallback"; \
 	 ${ROMS_ROOT}/Tools-Roms/makedep.py  Make.depend)
-	@echo 'Updated Make.depend (dependency list)' 
+	@echo 'Updated Make.depend (dependency list)'
 
 # Target to create tar file.
 # ------ -- ------ --- -----

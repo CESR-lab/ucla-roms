@@ -117,7 +117,7 @@ nhmg_ncjoin_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
 am__testcuc_SOURCES_DIST = mg_zr_hz.f90 mg_mpi_exchange_ijk.f90 \
 	mg_setup_tests.f90 mg_testcuc.f90
 @NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@am_testcuc_OBJECTS =  \
@@ -195,11 +195,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 FCCOMPILE = $(FC) $(AM_FCFLAGS) $(FCFLAGS)
 LTFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
@@ -207,7 +207,7 @@ LTFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_FC = $(am__v_FC_@AM_V@)
 am__v_FC_ = $(am__v_FC_@AM_DEFAULT_V@)
 am__v_FC_0 = @echo "  FC      " $@;
-am__v_FC_1 = 
+am__v_FC_1 =
 FCLD = $(FC)
 FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) \
@@ -215,7 +215,7 @@ FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_FCLD = $(am__v_FCLD_@AM_V@)
 am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
+am__v_FCLD_1 =
 SOURCES = $(nhmg_ncjoin_SOURCES) $(testcuc_SOURCES) \
 	$(testfillhalo_SOURCES) $(testrndtopo_SOURCES) \
 	$(testseamount_SOURCES) $(testseamount_rnd_SOURCES)
@@ -632,7 +632,7 @@ EXTRA_DIST = $(bin_SCRIPTS)
 @NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@	mg_zr_hz.f90            \
 @NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@	mg_mpi_exchange_ijk.f90 \
 @NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@	mg_setup_tests.f90      \
-@NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@	mg_testcuc.f90 
+@NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@	mg_testcuc.f90
 
 @NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@nhmg_ncjoin_SOURCES = \
 @NETCDF_CMP_TRUE@@NHMG_TESTS_TRUE@	nhmg_ncjoin.f90
@@ -730,27 +730,27 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-nhmg_ncjoin$(EXEEXT): $(nhmg_ncjoin_OBJECTS) $(nhmg_ncjoin_DEPENDENCIES) $(EXTRA_nhmg_ncjoin_DEPENDENCIES) 
+nhmg_ncjoin$(EXEEXT): $(nhmg_ncjoin_OBJECTS) $(nhmg_ncjoin_DEPENDENCIES) $(EXTRA_nhmg_ncjoin_DEPENDENCIES)
 	@rm -f nhmg_ncjoin$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(nhmg_ncjoin_OBJECTS) $(nhmg_ncjoin_LDADD) $(LIBS)
 
-testcuc$(EXEEXT): $(testcuc_OBJECTS) $(testcuc_DEPENDENCIES) $(EXTRA_testcuc_DEPENDENCIES) 
+testcuc$(EXEEXT): $(testcuc_OBJECTS) $(testcuc_DEPENDENCIES) $(EXTRA_testcuc_DEPENDENCIES)
 	@rm -f testcuc$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testcuc_OBJECTS) $(testcuc_LDADD) $(LIBS)
 
-testfillhalo$(EXEEXT): $(testfillhalo_OBJECTS) $(testfillhalo_DEPENDENCIES) $(EXTRA_testfillhalo_DEPENDENCIES) 
+testfillhalo$(EXEEXT): $(testfillhalo_OBJECTS) $(testfillhalo_DEPENDENCIES) $(EXTRA_testfillhalo_DEPENDENCIES)
 	@rm -f testfillhalo$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testfillhalo_OBJECTS) $(testfillhalo_LDADD) $(LIBS)
 
-testrndtopo$(EXEEXT): $(testrndtopo_OBJECTS) $(testrndtopo_DEPENDENCIES) $(EXTRA_testrndtopo_DEPENDENCIES) 
+testrndtopo$(EXEEXT): $(testrndtopo_OBJECTS) $(testrndtopo_DEPENDENCIES) $(EXTRA_testrndtopo_DEPENDENCIES)
 	@rm -f testrndtopo$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testrndtopo_OBJECTS) $(testrndtopo_LDADD) $(LIBS)
 
-testseamount$(EXEEXT): $(testseamount_OBJECTS) $(testseamount_DEPENDENCIES) $(EXTRA_testseamount_DEPENDENCIES) 
+testseamount$(EXEEXT): $(testseamount_OBJECTS) $(testseamount_DEPENDENCIES) $(EXTRA_testseamount_DEPENDENCIES)
 	@rm -f testseamount$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testseamount_OBJECTS) $(testseamount_LDADD) $(LIBS)
 
-testseamount_rnd$(EXEEXT): $(testseamount_rnd_OBJECTS) $(testseamount_rnd_DEPENDENCIES) $(EXTRA_testseamount_rnd_DEPENDENCIES) 
+testseamount_rnd$(EXEEXT): $(testseamount_rnd_OBJECTS) $(testseamount_rnd_DEPENDENCIES) $(EXTRA_testseamount_rnd_DEPENDENCIES)
 	@rm -f testseamount_rnd$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testseamount_rnd_OBJECTS) $(testseamount_rnd_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)

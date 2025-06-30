@@ -295,7 +295,7 @@ CSDISTRIBUTE_RESHAPE  sssg(BLOCK_PATTERN,*) BLOCK_CLAUSE
      &        sss_ncycle,  itsss,  ntsss, sss_rec,
      &        sss_file_id, sss_id, sss_tid
 #  endif /* SSS_DATA */
-# endif 
+# endif
 
 
 

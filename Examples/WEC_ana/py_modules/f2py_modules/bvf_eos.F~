@@ -8,7 +8,7 @@
 
 !
 ! Compute density anomaly from T,S via Equation Of State (EOS) for
-!-------- ------- ------- ----  for seawater. Following Jackett and 
+!-------- ------- ------- ----  for seawater. Following Jackett and
 ! McDougall, 1995, physical EOS is assumed to have form
 !
 !                           rho0 + rho1(T,S)
@@ -180,7 +180,7 @@ C$    trd=omp_get_thread_num()
       do j=jstr,jend
         do k=1,N
           do i=imin,imax
-            Tt=T(i,j,k)                   
+            Tt=T(i,j,k)
 
             Ts=max(S(i,j,k), 0.)
             sqrtTs=sqrt(Ts)
@@ -195,27 +195,27 @@ C$    trd=omp_get_thread_num()
             K0= Tt*( K01+Tt*( K02+Tt*( K03+Tt*K04 )))
      &         +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
      &              +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
- 
+
 
      #      ifdef DUKO_2001
                  qp1(i,j,k)= 0.1D0*(rho0+rho1(i,j,k))*(K0_Duk-K0)
      &                               /((K00+K0)*(K00+K0_Duk))
      #      else
-               qp1(i,j,k) = (0.000649D0 + 0.1DO * (K00*rho1(i,j,k) 
+               qp1(i,j,k) = (0.000649D0 + 0.1DO * (K00*rho1(i,j,k)
      &                             - rho0*K0)/(K00*(K00+K0)) )
      #      endif
 
 
           enddo
         enddo
- 
+
         cff=g/rho0
         do k=1,N-1
           do i=imin,imax
 
             dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
             cff2=( rho1(i,j,k+1)-rho1(i,j,k)             ! Elementary
-     &                        +(qp1(i,j,k+1)-qp1(i,j,k)) ! adiabatic 
+     &                        +(qp1(i,j,k+1)-qp1(i,j,k)) ! adiabatic
      &                            *dpth*(1.-2.*qp2*dpth) ! difference
      &                       )
 

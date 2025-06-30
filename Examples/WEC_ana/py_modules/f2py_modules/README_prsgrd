@@ -12,7 +12,7 @@ STEPS:
 IF SPLIT_EOS is defined:
     Density needs to be calculated first using rho_eos_V2
 
-    rho_eos_V2 will return: rho,rho1,qp1,qp2 
+    rho_eos_V2 will return: rho,rho1,qp1,qp2
 
 Also, need to input some grid-specific variables for prsgrd() function
 To maintain the nativeness of the ROMS code and for debugging purposes

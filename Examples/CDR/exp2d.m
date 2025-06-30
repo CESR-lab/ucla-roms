@@ -14,4 +14,4 @@ func = exp(-d2/scl2);
 imagesc(func')
 colorbar
 
-sum(func(:))*dx*dx 
+sum(func(:))*dx*dx

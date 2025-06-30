@@ -12,7 +12,7 @@
       implicit none
       integer istr,iend,jstr,jend, itrc, ierr, i,j, it1,it2
       real tmid, cff1,cff2, cff
-      logical out_of_bounds 
+      logical out_of_bounds
 
 # include "param.h"
 # include "scalars.h"
@@ -132,7 +132,7 @@
 
 ! Add relaxation of surface salinity back to climatological value to
 ! avoid long-term drift.  Note that dSSSdt below is "piston velocity"
-! expressed in [m/s]. 
+! expressed in [m/s].
 
 #  if defined SFLX_CORR && defined SALINITY
 

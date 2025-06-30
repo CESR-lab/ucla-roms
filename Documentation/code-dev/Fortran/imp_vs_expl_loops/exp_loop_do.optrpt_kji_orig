@@ -60,11 +60,11 @@ LOOP BEGIN at exp_loop_do.f90(30,5)
       LOOP BEGIN at exp_loop_do.f90(30,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -90,11 +90,11 @@ LOOP BEGIN at exp_loop_do.f90(31,5)
       LOOP BEGIN at exp_loop_do.f90(31,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -122,13 +122,13 @@ LOOP BEGIN at exp_loop_do.f90(38,21)
          LOOP BEGIN at exp_loop_do.f90(37,17)
             remark #15300: LOOP WAS VECTORIZED
             remark #15442: entire loop may be executed in remainder
-            remark #15448: unmasked aligned unit stride loads: 2 
-            remark #15449: unmasked aligned unit stride stores: 2 
-            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15448: unmasked aligned unit stride loads: 2
+            remark #15449: unmasked aligned unit stride stores: 2
+            remark #15450: unmasked unaligned unit stride loads: 1
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 13 
-            remark #15477: vector cost: 6.000 
-            remark #15478: estimated potential speedup: 2.130 
+            remark #15476: scalar cost: 13
+            remark #15477: vector cost: 6.000
+            remark #15478: estimated potential speedup: 2.130
             remark #15488: --- end vector cost summary ---
             remark #25456: Number of Array Refs Scalar Replaced In Loop: 4
             remark #25015: Estimate of max trip count of loop=100
@@ -142,15 +142,15 @@ LOOP BEGIN at exp_loop_do.f90(38,21)
 
          LOOP BEGIN at exp_loop_do.f90(37,17)
          <Remainder loop for vectorization>
-            remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
+            remark #15335: remainder loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override
             remark #15442: entire loop may be executed in remainder
-            remark #15448: unmasked aligned unit stride loads: 2 
-            remark #15449: unmasked aligned unit stride stores: 2 
-            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15448: unmasked aligned unit stride loads: 2
+            remark #15449: unmasked aligned unit stride stores: 2
+            remark #15450: unmasked unaligned unit stride loads: 1
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 13 
-            remark #15477: vector cost: 6.000 
-            remark #15478: estimated potential speedup: 2.130 
+            remark #15476: scalar cost: 13
+            remark #15477: vector cost: 6.000
+            remark #15478: estimated potential speedup: 2.130
             remark #15488: --- end vector cost summary ---
             remark #25456: Number of Array Refs Scalar Replaced In Loop: 1
          LOOP END
@@ -167,14 +167,14 @@ exp_loop_do.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] exp_loop_do.
         Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
         Callee-save  :    6[ rbx rbp r12-r15]
         Assigned     :   24[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm9]
-        
+
     Routine temporaries
         Total         :     365
             Global    :     105
             Local     :     260
         Regenerable   :      97
         Spilled       :      31
-        
+
     Routine stack
         Variables     :     156 bytes*
             Reads     :       7 [2.88e-03 ~ 0.0%]
@@ -182,11 +182,11 @@ exp_loop_do.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] exp_loop_do.
         Spills        :     208 bytes*
             Reads     :      28 [1.51e+00 ~ 1.5%]
             Writes    :      29 [4.97e-01 ~ 0.5%]
-    
+
     Notes
-    
+
         *Non-overlapping variables and spills may share stack space,
          so the total stack size might be less than this.
-    
+
 
 ===========================================================================

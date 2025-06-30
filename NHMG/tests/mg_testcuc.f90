@@ -1,7 +1,7 @@
 program mg_testcuc
 
   use mg_cst
-  use mg_mpi 
+  use mg_mpi
   use mg_tictoc
   use mg_zr_hz
   use mg_mpi_exchange_ijk
@@ -14,7 +14,7 @@ program mg_testcuc
   integer(kind=4):: ierr, np, rank
   integer(kind=4):: nx, ny, nz ! local dimensions
 
-  real(kind=rp), dimension(:,:), pointer :: dx, dy 
+  real(kind=rp), dimension(:,:), pointer :: dx, dy
   real(kind=rp), dimension(:,:), pointer :: zeta, h
   real(kind=rp), dimension(:,:), pointer :: dxu, dyv
   real(kind=rp), dimension(:,:,:), pointer :: z_r,z_w
@@ -74,11 +74,11 @@ program mg_testcuc
 
   if (rank == 0) then
      write(*,*)'test CUC parameters:'
-     write(*,*)'  - nit     : ', nit 
+     write(*,*)'  - nit     : ', nit
      write(*,*)'  - nxg     : ', nxg
      write(*,*)'  - nyg     : ', nyg
      write(*,*)'  - nzg     : ', nzg
-     write(*,*)'  - npxg    : ', npxg 
+     write(*,*)'  - npxg    : ', npxg
      write(*,*)'  - npyg    : ', npyg
      write(*,*)'  - Lx      : ', Lx
      write(*,*)'  - Ly      : ', Ly
@@ -140,7 +140,7 @@ program mg_testcuc
        dx,dy,           &
        zeta,h)
 
-  !- stretching vertical grid -!   
+  !- stretching vertical grid -!
   call setup_zr_zw_hz(hc,theta_b,theta_s,zeta,h,z_r,z_w,Hz,'new_s_coord')
   !- linear vertical grid -!
   !  call setup_zr_zw_hz(h,z_r,z_w,Hz)

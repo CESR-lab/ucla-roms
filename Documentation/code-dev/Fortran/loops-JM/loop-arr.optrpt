@@ -61,11 +61,11 @@ LOOP BEGIN at loop-arr.f90(28,5)
       LOOP BEGIN at loop-arr.f90(28,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -91,11 +91,11 @@ LOOP BEGIN at loop-arr.f90(29,5)
       LOOP BEGIN at loop-arr.f90(29,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -121,11 +121,11 @@ LOOP BEGIN at loop-arr.f90(30,5)
       LOOP BEGIN at loop-arr.f90(30,5)
          remark #15300: LOOP WAS VECTORIZED
          remark #15442: entire loop may be executed in remainder
-         remark #15449: unmasked aligned unit stride stores: 1 
+         remark #15449: unmasked aligned unit stride stores: 1
          remark #15475: --- begin vector cost summary ---
-         remark #15476: scalar cost: 4 
-         remark #15477: vector cost: 1.500 
-         remark #15478: estimated potential speedup: 2.550 
+         remark #15476: scalar cost: 4
+         remark #15477: vector cost: 1.500
+         remark #15478: estimated potential speedup: 2.550
          remark #15488: --- end vector cost summary ---
       LOOP END
 
@@ -137,7 +137,7 @@ LOOP END
 
 LOOP BEGIN at loop-arr.f90(34,5)
    remark #25096: Loop Interchange not done due to: Imperfect Loop Nest (Either at Source or due to other Compiler Transformations)
-   remark #25451: Advice: Loop Interchange, if possible, might help loopnest. Suggested Permutation : ( 1 2 3 4 ) --> ( 2 1 3 4 ) 
+   remark #25451: Advice: Loop Interchange, if possible, might help loopnest. Suggested Permutation : ( 1 2 3 4 ) --> ( 2 1 3 4 )
    remark #15542: loop was not vectorized: inner loop was already vectorized
 
    LOOP BEGIN at loop-arr.f90(35,7)
@@ -156,13 +156,13 @@ LOOP BEGIN at loop-arr.f90(34,5)
          LOOP BEGIN at loop-arr.f90(35,7)
             remark #15300: LOOP WAS VECTORIZED
             remark #15442: entire loop may be executed in remainder
-            remark #15448: unmasked aligned unit stride loads: 2 
-            remark #15449: unmasked aligned unit stride stores: 1 
-            remark #15450: unmasked unaligned unit stride loads: 1 
+            remark #15448: unmasked aligned unit stride loads: 2
+            remark #15449: unmasked aligned unit stride stores: 1
+            remark #15450: unmasked unaligned unit stride loads: 1
             remark #15475: --- begin vector cost summary ---
-            remark #15476: scalar cost: 9 
-            remark #15477: vector cost: 4.500 
-            remark #15478: estimated potential speedup: 1.940 
+            remark #15476: scalar cost: 9
+            remark #15477: vector cost: 4.500
+            remark #15478: estimated potential speedup: 1.940
             remark #15488: --- end vector cost summary ---
          LOOP END
 
@@ -186,14 +186,14 @@ loop-arr.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] loop-arr.f90:11
         Available    :   39[ rax rdx rcx rbx rbp rsi rdi r8-r15 mm0-mm7 zmm0-zmm15]
         Callee-save  :    6[ rbx rbp r12-r15]
         Assigned     :   22[ rax rdx rcx rbx rsi rdi r8-r15 zmm0-zmm7]
-        
+
     Routine temporaries
         Total         :     396
             Global    :     122
             Local     :     274
         Regenerable   :      98
         Spilled       :      42
-        
+
     Routine stack
         Variables     :     276 bytes*
             Reads     :       7 [8.00e-04 ~ 0.0%]
@@ -201,11 +201,11 @@ loop-arr.f90(11,9):remark #34051: REGISTER ALLOCATION : [MAIN__] loop-arr.f90:11
         Spills        :     296 bytes*
             Reads     :      42 [1.45e+00 ~ 1.4%]
             Writes    :      41 [4.45e-01 ~ 0.4%]
-    
+
     Notes
-    
+
         *Non-overlapping variables and spills may share stack space,
          so the total stack size might be less than this.
-    
+
 
 ===========================================================================

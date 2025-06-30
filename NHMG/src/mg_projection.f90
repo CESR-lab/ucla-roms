@@ -42,8 +42,8 @@ contains
     real(kind=rp), dimension(:,:),     pointer :: gamv
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
 
-    integer(kind=ip) :: dirichlet_flag 
-    
+    integer(kind=ip) :: dirichlet_flag
+
 
     if (surface_neumann) then
        dirichlet_flag = 0
@@ -118,7 +118,7 @@ contains
        !-------------------!
        do i = 1,nx
           do j = 1,ny
-             do k = 2,nz-1 
+             do k = 2,nz-1
                 ! couples with k-1
                 cA(2,k,j,i) = &
                      ( Arz(j,i) / dzw(k,j,i) ) * &
@@ -129,11 +129,11 @@ contains
 
        do i = 1,nx
           do j = 1,ny+1
-             do k = 2,nz-1 
+             do k = 2,nz-1
                 ! couples with k+1,j-1
                 cA(3,k,j,i) = qrt * ( zydx(k+1,j,i) + zydx(k,j-1,i) )
                 ! couples with j-1
-                cA(4,k,j,i) =  Ary(k,j,i) / dyv(j,i) 
+                cA(4,k,j,i) =  Ary(k,j,i) / dyv(j,i)
                 ! couples with k-1,j-1
                 cA(5,k,j,i) = - qrt * ( zydx(k-1,j,i) + zydx(k,j-1,i) )
              enddo
@@ -141,12 +141,12 @@ contains
        enddo
 
        do i = 1,nx+1
-          do j = 1,ny 
-             do k = 2,nz-1 
+          do j = 1,ny
+             do k = 2,nz-1
                 ! couples with k+1,i-1
                 cA(6,k,j,i) = qrt * ( zxdy(k+1,j,i) + zxdy(k,j,i-1) )
                 ! couples with i-1
-                cA(7,k,j,i) = Arx(k,j,i) / dxu(j,i) 
+                cA(7,k,j,i) = Arx(k,j,i) / dxu(j,i)
                 ! couples with k-1,i-1
                 cA(8,k,j,i) = - qrt * ( zxdy(k-1,j,i) + zxdy(k,j,i-1) )
              enddo
@@ -157,8 +157,8 @@ contains
        !- upper level -!
        !---------------!
        k = nz
-       do i = 1,nx    
-          do j = 1,ny 
+       do i = 1,nx
+          do j = 1,ny
              ! couples with k-1
              cA(2,k,j,i) = (Arz(j,i)/dzw(k,j,i)) * hlf * ( alpha(k,j,i) + alpha(k-1,j,i) )
           enddo
@@ -168,19 +168,19 @@ contains
           do j = 1,ny+1
              ! couples with j-1
              cA(4,k,j,i) = Ary(k,j,i) / dyv(j,i) &
-                  + qrt * ( - zydx(k,j-1,i) + zydx(k,j,i) ) *(2*dirichlet_flag-1) 
+                  + qrt * ( - zydx(k,j-1,i) + zydx(k,j,i) ) *(2*dirichlet_flag-1)
              ! couples with k-1,j-1
              cA(5,k,j,i) = - qrt * ( zydx(k-1,j,i) + zydx(k,j-1,i) )
           enddo
        enddo
 
        do i = 1,nx+1
-          do j = 1,ny 
+          do j = 1,ny
              ! with Neumann BC, the CA(7,:,:) has flip signed on the slope term
              ! this will be in the paper
              ! couples with i-1
              cA(7,k,j,i) = Arx(k,j,i) / dxu(j,i) &
-                  + qrt * ( -zxdy(k,j,i-1) + zxdy(k,j,i) )*(2*dirichlet_flag-1) 
+                  + qrt * ( -zxdy(k,j,i-1) + zxdy(k,j,i) )*(2*dirichlet_flag-1)
              ! couples with k-1,i-1
              cA(8,k,j,i) = - qrt * ( zxdy(k-1,j,i) + zxdy(k,j,i-1) )
           enddo
@@ -232,7 +232,7 @@ contains
 
   end subroutine set_matrices
 
-  !-------------------------------------------------------------------------     
+  !-------------------------------------------------------------------------
   subroutine correction_uvw()
 
     !! u,v,w are fluxes, the correction is T*grad(p)
@@ -254,7 +254,7 @@ contains
     real(kind=rp), dimension(:,:,:), pointer :: du,dv,dw
 
     integer(kind=ip) :: dirichlet_flag
- 
+
 !    if (myrank==0) write(*,*)'   - compute pressure gradient and translate to fluxes'
 
     if (surface_neumann) then
@@ -296,7 +296,7 @@ contains
     enddo
 
     do i = 0,nx+1
-       do j = 1,ny+1 
+       do j = 1,ny+1
           do k = 1,nz
              py(k,j,i) = -one / dyv(j,i) * (p(k,j,i)-p(k,j-1,i))
           enddo
@@ -323,8 +323,8 @@ contains
 
     du => grid(1)%du
 
-    do i = 1,nx+1  
-       do j = 1,ny 
+    do i = 1,nx+1
+       do j = 1,ny
           k = 1
           gamma = one - qrt * ( &
                (zxdy(k,j,i  )/dy(j,i  ))**2/alpha(k,j,i  ) + &
@@ -338,7 +338,7 @@ contains
                - beta(j,i  )   * dyv(j  ,i  )   * py(k,j  ,i  ) &
                - beta(j,i  )   * dyv(j+1,i  )   * py(k,j+1,i  )
 
-          do k = 2,nz-1 
+          do k = 2,nz-1
              du(k,j,i) = Arx(k,j,i) * px(k,j,i) &
                   - qrt * ( &
                   + zxdy(k,j,i  ) * dzw(k  ,j,i  ) * pz(k  ,j,i  ) &
@@ -357,7 +357,7 @@ contains
        enddo
     enddo
 
-    !! Correction for V - 
+    !! Correction for V -
 
     dv => grid(1)%dv
 
@@ -391,7 +391,7 @@ contains
                + zydx(k,j  ,i)       * dzw(k  ,j  ,i) * pz(k  ,j  ,i) &
                + zydx(k,j  ,i) * two * dzw(k+1,j  ,i) * pz(k+1,j  ,i) * dirichlet_flag &
                + zydx(k,j-1,i)       * dzw(k  ,j-1,i) * pz(k  ,j-1,i) &
-               + zydx(k,j-1,i) * two * dzw(k+1,j-1,i) * pz(k+1,j-1,i) * dirichlet_flag) 
+               + zydx(k,j-1,i) * two * dzw(k+1,j-1,i) * pz(k+1,j-1,i) * dirichlet_flag)
 
        enddo
     enddo
@@ -417,7 +417,7 @@ contains
                   + zydx(k-1,j,i) * dyv(j+1,i) * py(k-1,j+1,i) )
           enddo
 
-          k = nz+1 
+          k = nz+1
           dw(k,j,i) = alpha(k-1,j,i) * Arz(j,i) * pz(k,j,i) &
                - hlf * ( &
                + zxdy(k-1,j,i) * dxu(j,i  ) * px(k-1,j,i  ) &

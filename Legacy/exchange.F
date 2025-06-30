@@ -124,7 +124,7 @@
 #  endif
 #  undef J_RANGE
 # endif            /* EW_PERIODIC */
- 
+
 # ifdef NS_PERIODIC
 #  ifdef EW_PERIODIC
 #   define I_RANGE istr,iend
@@ -176,7 +176,7 @@
 #  endif
 #  undef I_RANGE
 # endif               /* NS_PERIODIC */
- 
+
 # if defined EW_PERIODIC && defined NS_PERIODIC
 #  ifdef MPI
       if (NP_XI == 1 .and. NP_ETA == 1) then
@@ -299,7 +299,7 @@
 #  if defined EW_PERIODIC || defined NS_PERIODIC
       integer k
 #   ifdef EW_PERIODIC
-     &       , j 
+     &       , j
 #   endif
 #   ifdef NS_PERIODIC
      &       , i
@@ -388,7 +388,7 @@
 #   endif
 #   undef J_RANGE
 #  endif            /* EW_PERIODIC */
- 
+
 #  ifdef NS_PERIODIC
 #   ifdef EW_PERIODIC
 #    define I_RANGE istr,iend
@@ -468,7 +468,7 @@
 #   endif
 #   undef I_RANGE
 #  endif               /* NS_PERIODIC */
- 
+
 #  if defined EW_PERIODIC && defined NS_PERIODIC
 #   ifdef MPI
       if (NP_XI == 1 .and. NP_ETA == 1) then
@@ -629,7 +629,7 @@
 ! to facilitate transition. Normally CPP-switch BAKWD_COMPAT
 ! should not be activated.
 
-      subroutine exchange_r2d_tile(istr,iend,jstr,jend, A) 
+      subroutine exchange_r2d_tile(istr,iend,jstr,jend, A)
       use param
       implicit none
       integer istr,iend,jstr,jend
@@ -703,7 +703,7 @@
       end
 
 #   endif  /* SOLVE3D */
-#  endif  /* BAKWD_COMPAT */ 
+#  endif  /* BAKWD_COMPAT */
 # endif  /* NARGS */
 #else
       subroutine exchange_empty

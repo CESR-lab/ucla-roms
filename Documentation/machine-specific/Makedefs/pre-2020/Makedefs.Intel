@@ -35,7 +35,7 @@
 # still accepted, but causes warning messages).   To make this setup
 # universal and silent, soft links are added to Intel compiler bin
 # directory with "f90" pointing to either "ifc" or "ifort" whichever
-# is more appropriate. 
+# is more appropriate.
 #
 # Compiler settings:  -fpp2 is required only if -openmp is present.
 # Not having -fpp2 here just causes compiler warning (-fpp is set to
@@ -64,7 +64,7 @@
 # Option -Vaxlib within LDFLAGS enables proper resolution of "iargc"
 # and "getarg" functions when using ifc 7.x and earlier compilers.
 # Starting with release version 8.0, Intel compiler treats them as
-# intrinsic procedures, so there is no need to specify this option. 
+# intrinsic procedures, so there is no need to specify this option.
 
 
 
@@ -77,8 +77,8 @@
 
       LDR = $(CFT)
 
-   FFLAGS = -O3 -IPF_fma -ip 
-   FFLAGS = -O3 -arch pn3 
+   FFLAGS = -O3 -IPF_fma -ip
+   FFLAGS = -O3 -arch pn3
 # -prof_gen
 #    FFLAGS = -O0             #  -CA check pointer; -CS check shape
 #
@@ -86,7 +86,7 @@
 # and -CS check shape are not implemented in ifort8.1.xxx
 # and should not be used.
 #
-#   FFLAGS = -g -CA -CB -CS -CU -CV 
+#   FFLAGS = -g -CA -CB -CS -CU -CV
 #  LDFLAGS = -Vaxlib
 
 

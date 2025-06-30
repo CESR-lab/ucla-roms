@@ -50,7 +50,7 @@ C$OMP CRITICAL(alloc_scr_cr_rgn)
         allocate(km(siz3d))
         size=size + 2*siz3d  !<-- actually allocated size expressed
         allocate(zz(siz3d))  !          in would be 4-byte numbers
-      
+
 #ifdef CUBIC
         allocate(dz(siz3d),FC(siz3d))
         size=size + 4*siz3d
@@ -82,8 +82,8 @@ C$OMP END CRITICAL(alloc_scr_cr_rgn)
       subroutine sigma_to_z_tile( istr,iend,jstr,jend, Lm,Mm,N,
      &                  z_r,z_w,rmask, nz,z_lev, imin,jmin,kmin,
      &                           var,var_zlv, FillValue,  km,zz
-#ifdef CUBIC   
-     &                                                  , dz,FC 
+#ifdef CUBIC
+     &                                                  , dz,FC
 #endif
      &                                                        )
       implicit none
@@ -104,7 +104,7 @@ C$OMP END CRITICAL(alloc_scr_cr_rgn)
 ! 0 or 1 each are used to determine variable placement on the staggered
 ! C-grid: 0,0,* are for horizontal RHO-points; 1,0,* for U-; 0,1,* for
 ! V-; and 1,1,* for vorticity; the third one *,*,1 for vertical RHO-
-! and *,*,0 for W-points. 
+! and *,*,0 for W-points.
 
       do j=jstr,jend
         if (imin == 0 .and. jmin == 0 .and. kmin == 0) then

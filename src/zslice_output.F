@@ -29,8 +29,8 @@
       ! Variables to z-slice
       real,allocatable,dimension(:,:,:,:) :: Tz, Tz_avg
       real,allocatable,dimension(:,:,:) :: Uz, Uz_avg
-      real,allocatable,dimension(:,:,:) :: Vz, Vz_avg 
-      
+      real,allocatable,dimension(:,:,:) :: Vz, Vz_avg
+
       ! Needed for z-slicing
       real,allocatable,dimension(:,:) :: zz
       real,allocatable,dimension(:,:) :: var
@@ -52,14 +52,14 @@
           allocate( Tz(GLOBAL_2D_ARRAY,ndep,nt_z) )
           Tz=0.
           if (do_avg)  then
-             allocate( Tz_avg(GLOBAL_2D_ARRAY,ndep,nt_z) ) 
-             Tz_avg=0. 
+             allocate( Tz_avg(GLOBAL_2D_ARRAY,ndep,nt_z) )
+             Tz_avg=0.
           endif
       endif
 
       if (wrt_U_zsl)  then
           allocate( Uz(GLOBAL_2D_ARRAY,ndep) )
-          Uz=0.      
+          Uz=0.
           if (do_avg)  then
              allocate( Uz_avg(GLOBAL_2D_ARRAY,ndep) )
              Uz_avg=0.
@@ -68,22 +68,22 @@
 
       if (wrt_V_zsl)  then
           allocate( Vz(GLOBAL_2D_ARRAY,ndep) )
-          Vz=0.      
+          Vz=0.
           if (do_avg)  then
              allocate( Vz_avg(GLOBAL_2D_ARRAY,ndep) )
              Vz_avg=0.
           endif
       endif
- 
+
       allocate(zz(1:nx,0:N+1))
       allocate(var(1:nx,1:nz))
       allocate(var_zlv(nx,ndep))
 
-      if (mynode==0) write(*,'(7x,A,I2,A,I2,A)') 
-     &    'init zslice : nb depth =',ndep , ' to be done on ', 
-     &    nt_z , ' tracers ' 
-      if (mynode==0) then 
-         do m=1,ndep  
+      if (mynode==0) write(*,'(7x,A,I2,A,I2,A)')
+     &    'init zslice : nb depth =',ndep , ' to be done on ',
+     &    nt_z , ' tracers '
+      if (mynode==0) then
+         do m=1,ndep
          write(*,'(7x,A,I2,A,F7.2)') 'zslice : dep(',m,')=',vecdep(m)
          enddo
          do m=1,nt_z
@@ -95,19 +95,19 @@
 !----------------------------------------------------------------------
       subroutine calc_zslice ![
       ! Calculate variables for zslice output
-      ! inspired from zslice in Tools-Roms 
-      ! only the vertical RHO-point (kmin==1) are implemented 
-      ! 
+      ! inspired from zslice in Tools-Roms
+      ! only the vertical RHO-point (kmin==1) are implemented
+      !
 
       implicit none
 
       ! local
       integer i, j, k, m, trcz
-      real zlev, dpth    
+      real zlev, dpth
       integer km(1:nx)
 
-      if (wrt_T_zsl) then 
-      do j=1,ny 
+      if (wrt_T_zsl) then
+      do j=1,ny
          do k=1,N
          do i=1,nx
             zz(i,k)=z_r(i,j,k)-z_w(i,j,N)
@@ -176,7 +176,7 @@
       end subroutine calc_zslice  !]
 !----------------------------------------------------------------------
       subroutine sigma_to_z(var_zlv,var,zz,j) ![
-     
+
       implicit none
 
       !import/export
@@ -214,7 +214,7 @@
                 km(i)=-1          !--> to search
               endif
           enddo
-          
+
           do k=N-1,1,-1
             do i=1,nx
               if (km(i) == -1) then
@@ -224,12 +224,12 @@
               endif
             enddo
           enddo
-           
+
           do i=1,nx
             if (km(i) == -3) then
               var_zlv(i,m)=0.             !<-- masked out
             elseif (km(i) == -2) then
-              var_zlv(i,m)=0.             !<-- below bottom 
+              var_zlv(i,m)=0.             !<-- below bottom
             elseif (km(i) == N+2) then
               var_zlv(i,m)=0.             !<-- above surface
             elseif (km(i) == N) then
@@ -360,7 +360,7 @@
         record = record+1
 
         ierr=nf90_open(fname,nf90_write,ncid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &      call handle_ierr(ierr,'wrt_zslice, opening: ',fname)
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
         if (wrt_T_zsl) then

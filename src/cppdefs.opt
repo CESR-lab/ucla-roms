@@ -106,14 +106,14 @@ c#define EXACT_RESTART
 # define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
 # undef N2O_TRACER_DECOMP         /* Deleted  */
 # undef N2O_NEV                   /* Deleted  */
-# undef RIVER_LOAD_N              /* under construction */ 
+# undef RIVER_LOAD_N              /* under construction */
 # undef RIVER_LOAD_P              /* under construction */
 c-dd# undef define NHY_FORCING        /* under construction */
 c-dd# undef define NOX_FORCING        /* under construction */
 # define PCO2AIR_FORCING          /* CO2 forcing */
-# undef BEC_COCCO                 /* Coccolitophorus */ 
-# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
-# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 
+# undef BEC_COCCO                 /* Coccolitophorus */
+# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */
+# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */
 # undef DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
 #endif /* BIOLOGY_BEC2 */
 

@@ -12,9 +12,9 @@
 ! ------- -------------
 !     pCO2air: pCO2air concentraion [ppm]
       real,allocatable,dimension(:,:) :: pco2air
-#ifdef MARBL      
+#ifdef MARBL
       real,allocatable,dimension(:,:) :: pco2air_alt
-#endif      
+#endif
 CSDISTRIBUTE_RESHAPE  pCO2air(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # if defined PCO2AIR_DATA || defined ALL_DATA
 # ifndef SET_SMTH
@@ -119,9 +119,9 @@ CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
 
 #ifdef PCO2AIR_FORCING
       allocate( pco2air(GLOBAL_2D_ARRAY) )
-#ifdef MARBL      
+#ifdef MARBL
       allocate( pco2air_alt(GLOBAL_2D_ARRAY) )
-#endif      
+#endif
 #endif /* PCO2AIR_FORCING */
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC

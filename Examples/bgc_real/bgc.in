@@ -13,8 +13,8 @@ grid:  filename
 forcing: filename
      input_data/sample_flux_frc.nc
      input_data/sample_flux_bgc.nc
-     input_data/sample_bry_bgc.nc  
-     input_data/roms_bry_trace.nc       
+     input_data/sample_bry_bgc.nc
+     input_data/roms_bry_trace.nc
      input_data/roms_bgcbry.nc
      input_data/roms_default_bgcbry.nc
      input_data/roms_LFfrc.nc

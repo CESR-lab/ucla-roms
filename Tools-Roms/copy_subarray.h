@@ -12,7 +12,7 @@
 ! or "ncjoin.F" where this file is used to create multiple versions of
 ! alike subroutines to process different kinds of input data.
 ! Essentially extraction of this code segment into a separate file
-! is poor-man polymorphism. 
+! is poor-man polymorphism.
 
 ! The input arguments (declared above in this file) are:
 
@@ -29,7 +29,7 @@
 
 !          except that formally speaking "buff" is declared as
 !          1D-array because the actual number of its dimensions
-!          "vdims" may be anything during run time; 
+!          "vdims" may be anything during run time;
 
 ! count1 -- an array containing dimensions of the entire grid, as it
 !           would be

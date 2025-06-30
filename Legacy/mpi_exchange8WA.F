@@ -20,7 +20,7 @@
 # include "cppdefs.h"
 # define NONBLK_SEND
 # define ALT_SEND_ORD
-# define USE_WAIT_ANY 
+# define USE_WAIT_ANY
 #endif
 
 #ifdef MPI
@@ -60,7 +60,7 @@ CSDISTRIBUTE_RESHAPE C(BLOCK_PATTERN,*) BLOCK_CLAUSE
 CSDISTRIBUTE_RESHAPE D(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
       integer i,j,k, kshft, indx, mess_count, ierr, comm(16), req(16),
-# ifdef USE_WAIT_ANY 
+# ifdef USE_WAIT_ANY
      &                                         status(MPI_STATUS_SIZE)
 # else
      &                                      status(MPI_STATUS_SIZE,16)

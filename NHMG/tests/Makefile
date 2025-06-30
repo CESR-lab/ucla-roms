@@ -117,7 +117,7 @@ nhmg_ncjoin_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
 am__testcuc_SOURCES_DIST = mg_zr_hz.f90 mg_mpi_exchange_ijk.f90 \
 	mg_setup_tests.f90 mg_testcuc.f90
 ##am_testcuc_OBJECTS =  \
@@ -195,11 +195,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_$(V))
 am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.
 FCCOMPILE = $(FC) $(AM_FCFLAGS) $(FCFLAGS)
 LTFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
@@ -207,7 +207,7 @@ LTFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_FC = $(am__v_FC_$(V))
 am__v_FC_ = $(am__v_FC_$(AM_DEFAULT_VERBOSITY))
 am__v_FC_0 = @echo "  FC      " $@;
-am__v_FC_1 = 
+am__v_FC_1 =
 FCLD = $(FC)
 FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) \
@@ -215,7 +215,7 @@ FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_FCLD = $(am__v_FCLD_$(V))
 am__v_FCLD_ = $(am__v_FCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
+am__v_FCLD_1 =
 SOURCES = $(nhmg_ncjoin_SOURCES) $(testcuc_SOURCES) \
 	$(testfillhalo_SOURCES) $(testrndtopo_SOURCES) \
 	$(testseamount_SOURCES) $(testseamount_rnd_SOURCES)
@@ -479,22 +479,22 @@ CC = gcc
 CCDEPMODE = depmode=none
 CFLAGS = -g -O2
 CPP = gcc -E
-CPPFLAGS = 
+CPPFLAGS =
 CYGPATH_W = echo
 DEFS = -DPACKAGE_NAME=\"NHMG\" -DPACKAGE_TARNAME=\"NHMG\" -DPACKAGE_VERSION=\"0.2.2\" -DPACKAGE_STRING=\"NHMG\ 0.2.2\" -DPACKAGE_BUGREPORT=\"nmolem@atmos.ucla.edu,\ Guillaume.Roullet@univ-brest.fr,\ Nicolas.Ducousso@univ-brest.fr,\ Nicolas.Grima@univ-brest.fr\ \" -DPACKAGE_URL=\"https://github.com/ngrigri/NHMG\" -DPACKAGE=\"NHMG\" -DVERSION=\"0.2.2\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\"
 DEPDIR = .deps
 DLLTOOL = false
-DSYMUTIL = 
-DUMPBIN = 
-ECHO_C = 
+DSYMUTIL =
+DUMPBIN =
+ECHO_C =
 ECHO_N = -n
-ECHO_T = 
+ECHO_T =
 EGREP = /usr/bin/grep -E
-EXEEXT = 
+EXEEXT =
 F77 = ifort
 FC = mpif90
 FCFLAGS = -g -O2 -xHost -I/opt/mpich-3.2/include
-FCFLAGS_f90 = 
+FCFLAGS_f90 =
 FGREP = /usr/bin/grep -F
 GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
@@ -504,12 +504,12 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS =  -xHost
-LIBOBJS = 
-LIBS = 
+LIBOBJS =
+LIBS =
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
-LIPO = 
+LIPO =
 LN_S = ln -s
-LTLIBOBJS = 
+LTLIBOBJS =
 MAKEINFO = ${SHELL} /home/nmolem/ucla-roms/NHMG/confdb/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /usr/bin/mkdir -p
@@ -518,13 +518,13 @@ MPI_LIB = /opt/mpich-3.2/lib
 NETCDF_INC = /opt/netcdf-4.6.1/include
 NETCDF_LIB = /opt/netcdf-4.4.1/lib
 NM = /usr/bin/nm -B
-NMEDIT = 
+NMEDIT =
 OBJDUMP = objdump
 OBJEXT = o
-OTOOL = 
-OTOOL64 = 
+OTOOL =
+OTOOL64 =
 PACKAGE = NHMG
-PACKAGE_BUGREPORT = nmolem@atmos.ucla.edu, Guillaume.Roullet@univ-brest.fr, Nicolas.Ducousso@univ-brest.fr, Nicolas.Grima@univ-brest.fr 
+PACKAGE_BUGREPORT = nmolem@atmos.ucla.edu, Guillaume.Roullet@univ-brest.fr, Nicolas.Ducousso@univ-brest.fr, Nicolas.Grima@univ-brest.fr
 PACKAGE_NAME = NHMG
 PACKAGE_STRING = NHMG 0.2.2
 PACKAGE_TARNAME = NHMG
@@ -533,7 +533,7 @@ PACKAGE_VERSION = 0.2.2
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SED = /usr/bin/sed
-SET_MAKE = 
+SET_MAKE =
 SHELL = /bin/sh
 STRIP = strip
 TESTLIBS =   -I/opt/mpich-3.2/include -L/opt/mpich-3.2/lib -lmpich -lmpichf90
@@ -544,16 +544,16 @@ abs_top_builddir = /home/nmolem/ucla-roms/NHMG
 abs_top_srcdir = /home/nmolem/ucla-roms/NHMG
 ac_ct_AR = ar
 ac_ct_CC = gcc
-ac_ct_DUMPBIN = 
+ac_ct_DUMPBIN =
 ac_ct_FC = ifort
 am__include = include
 am__leading_dot = .
-am__quote = 
+am__quote =
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
 bindir = ${exec_prefix}/bin
 build = x86_64-unknown-linux-gnu
-build_alias = 
+build_alias =
 build_cpu = x86_64
 build_os = linux-gnu
 build_vendor = unknown
@@ -564,7 +564,7 @@ docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
 host = x86_64-unknown-linux-gnu
-host_alias = 
+host_alias =
 host_cpu = x86_64
 host_os = linux-gnu
 host_vendor = unknown
@@ -587,7 +587,7 @@ sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
 sysconfdir = ${prefix}/etc
-target_alias = 
+target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
@@ -632,7 +632,7 @@ EXTRA_DIST = $(bin_SCRIPTS)
 ##	mg_zr_hz.f90            \
 ##	mg_mpi_exchange_ijk.f90 \
 ##	mg_setup_tests.f90      \
-##	mg_testcuc.f90 
+##	mg_testcuc.f90
 
 ##nhmg_ncjoin_SOURCES = \
 ##	nhmg_ncjoin.f90
@@ -730,27 +730,27 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-nhmg_ncjoin$(EXEEXT): $(nhmg_ncjoin_OBJECTS) $(nhmg_ncjoin_DEPENDENCIES) $(EXTRA_nhmg_ncjoin_DEPENDENCIES) 
+nhmg_ncjoin$(EXEEXT): $(nhmg_ncjoin_OBJECTS) $(nhmg_ncjoin_DEPENDENCIES) $(EXTRA_nhmg_ncjoin_DEPENDENCIES)
 	@rm -f nhmg_ncjoin$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(nhmg_ncjoin_OBJECTS) $(nhmg_ncjoin_LDADD) $(LIBS)
 
-testcuc$(EXEEXT): $(testcuc_OBJECTS) $(testcuc_DEPENDENCIES) $(EXTRA_testcuc_DEPENDENCIES) 
+testcuc$(EXEEXT): $(testcuc_OBJECTS) $(testcuc_DEPENDENCIES) $(EXTRA_testcuc_DEPENDENCIES)
 	@rm -f testcuc$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testcuc_OBJECTS) $(testcuc_LDADD) $(LIBS)
 
-testfillhalo$(EXEEXT): $(testfillhalo_OBJECTS) $(testfillhalo_DEPENDENCIES) $(EXTRA_testfillhalo_DEPENDENCIES) 
+testfillhalo$(EXEEXT): $(testfillhalo_OBJECTS) $(testfillhalo_DEPENDENCIES) $(EXTRA_testfillhalo_DEPENDENCIES)
 	@rm -f testfillhalo$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testfillhalo_OBJECTS) $(testfillhalo_LDADD) $(LIBS)
 
-testrndtopo$(EXEEXT): $(testrndtopo_OBJECTS) $(testrndtopo_DEPENDENCIES) $(EXTRA_testrndtopo_DEPENDENCIES) 
+testrndtopo$(EXEEXT): $(testrndtopo_OBJECTS) $(testrndtopo_DEPENDENCIES) $(EXTRA_testrndtopo_DEPENDENCIES)
 	@rm -f testrndtopo$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testrndtopo_OBJECTS) $(testrndtopo_LDADD) $(LIBS)
 
-testseamount$(EXEEXT): $(testseamount_OBJECTS) $(testseamount_DEPENDENCIES) $(EXTRA_testseamount_DEPENDENCIES) 
+testseamount$(EXEEXT): $(testseamount_OBJECTS) $(testseamount_DEPENDENCIES) $(EXTRA_testseamount_DEPENDENCIES)
 	@rm -f testseamount$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testseamount_OBJECTS) $(testseamount_LDADD) $(LIBS)
 
-testseamount_rnd$(EXEEXT): $(testseamount_rnd_OBJECTS) $(testseamount_rnd_DEPENDENCIES) $(EXTRA_testseamount_rnd_DEPENDENCIES) 
+testseamount_rnd$(EXEEXT): $(testseamount_rnd_OBJECTS) $(testseamount_rnd_DEPENDENCIES) $(EXTRA_testseamount_rnd_DEPENDENCIES)
 	@rm -f testseamount_rnd$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(testseamount_rnd_OBJECTS) $(testseamount_rnd_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)

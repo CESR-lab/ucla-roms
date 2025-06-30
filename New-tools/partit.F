@@ -1,6 +1,6 @@
       program partit
 
-      ! To distinguish between the partitions and the nodes of this 
+      ! To distinguish between the partitions and the nodes of this
       ! code, we'll use mynode,nnodes for the mpi-nodes that this
       ! application uses and npart,part for the number of partitions
 
@@ -9,16 +9,16 @@
       use mpi
       use roms_part_join
 
-      ! ----- Allocation ----- 
+      ! ----- Allocation -----
       implicit none
 
       ! Local
-!     type(ncstructure) :: ncinfo            ! structure to access netcdf info  
-!     integer :: ierr,ncgrd,count,dimid ! netcdf 
+!     type(ncstructure) :: ncinfo            ! structure to access netcdf info
+!     integer :: ierr,ncgrd,count,dimid ! netcdf
 !     integer :: gnx,gny                     ! Global domain dimensions
 !     integer :: loc_x,loc_y,lnx,lny         ! partition lengths
 
-!     integer :: i,nargs 
+!     integer :: i,nargs
 
       integer :: npartx,nparty
       integer :: ierr
@@ -29,7 +29,7 @@
 
       call MPI_Init(ierr)
 
-      ! Set up nodes 
+      ! Set up nodes
       part_comm = MPI_COMM_WORLD
       call MPI_Comm_rank(part_comm, mynode, ierr)
       call MPI_Comm_size(part_comm, nnodes, ierr)
@@ -37,7 +37,7 @@
 
       if (mynode==0) then
       ! possibly: all nodes do this, making their on set of partial files
-        
+
         ! figures how many relevant nodes, their location, sizes and neighbors
         call partition_mask(npartx,nparty)
 
@@ -56,7 +56,7 @@
       srcfile = srcfiles(ifile)
       fullsrcfile = trim(spath) // trim(srcfile)
 
-      ! Make partial files 
+      ! Make partial files
       if (mynode==0) then
         ! possibly: all nodes do this, making their on set of partial files
         call make_partial_files

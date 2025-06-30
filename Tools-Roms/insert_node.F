@@ -79,19 +79,19 @@ c--#define TEST_INSERT  ! <-- self testing
             endif
           endif
         else                               ! Determine whether the
-          leading_dots=.false.             ! name has a suffix: the 
+          leading_dots=.false.             ! name has a suffix: the
         endif                              ! last segment of the name
       enddo                                ! is considered to be a
-                                           ! suffix if it has least one 
+                                           ! suffix if it has least one
       lsffx=0                              ! character which is not a
       if (ndots > 0) then                  ! digit or UNIX wildcard.
         i=idot(ndots)+1
    1    if ( (name(i:i) < '0' .or. name(i:i) > '9') .and.
      &      name(i:i) /= '*' .and. name(i:i) /= '?' ) then
           lsffx=lstr-idot(ndots)+1
-        elseif (i < lstr) then             ! If suffix is present, it 
-          i=i+1                            ! will be saved and added 
-          goto 1                           ! back to the name later. 
+        elseif (i < lstr) then             ! If suffix is present, it
+          i=i+1                            ! will be saved and added
+          goto 1                           ! back to the name later.
         endif
       endif                                ! Inspect segments between
                                            ! the dots. These segments
@@ -244,9 +244,9 @@ c--#define TEST_INSERT  ! <-- self testing
 # endif
       do while(power > 9)              ! Insert time index or MPI node
         power=power/10 ; j=k/power     ! number (rank) into the string,
-        i=i+1          ; k=k-j*power   ! then attach suffix, if needed. 
+        i=i+1          ; k=k-j*power   ! then attach suffix, if needed.
         name(i:i)=char(48+j)
-      enddo                               
+      enddo
       if (lsffx > 0) name(i+1:i+lsffx)=sffx(1:lsffx)
       lstr=i+lsffx
 #endif  /* EXTRACT_INDEX */

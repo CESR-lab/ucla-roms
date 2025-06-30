@@ -17,8 +17,8 @@
 
                CC = cc
               CPP = /usr/ccs/lib/cpp
-              CFT = f77 
-              LDR = $(CFT) 
+              CFT = f77
+              LDR = $(CFT)
 
            INCDIR = ../lib_Sun
          CPPFLAGS = -DSUN -I$(INCDIR)

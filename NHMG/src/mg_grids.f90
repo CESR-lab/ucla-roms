@@ -10,7 +10,7 @@ module mg_grids
   !-
   !- Derived type are created to place all grid information in one structure.
   !- The array memory allocation is called only one time for each grid level
-  !- at the begining of the program. This avoid memory allocation and deallocation 
+  !- at the begining of the program. This avoid memory allocation and deallocation
   !- during the execution of the program.
   !- Pointers are used to simplify the readability of the code.
   !- In subroutines which use grids arrays, we use this tip to improve readability:
@@ -19,7 +19,7 @@ module mg_grids
   !-
 
   !-
-  !- GRID_TYPE is a derived type which has the function 
+  !- GRID_TYPE is a derived type which has the function
   !- to reserve memory space for all the main variables of the multigrid solver.
   !-
   type grid_type
@@ -80,7 +80,7 @@ module mg_grids
   end type grid_type
 
   !-
-  !- MPI_BUFFERS is a derived type which has the function 
+  !- MPI_BUFFERS is a derived type which has the function
   !- to reserve memory for MPI exchanges at the boundaries
   !-
   type mpi_buffers
@@ -147,7 +147,7 @@ contains
     ! The matrix coefficient is symmetric and compact
     ! 2D : nd = 5
     ! 3D : nd = 8 (equivalent to 15 points = 7 + 7' + 1 where 7 and 7' are symmetric)
-    integer(kind=ip) :: nd 
+    integer(kind=ip) :: nd
 
     integer(kind=ip) :: nx, ny, nz
 
@@ -164,7 +164,7 @@ contains
     allocate(gbuffers(nlevs))
 
     ! At lev = 1
-    grid(1)%nx = nxl 
+    grid(1)%nx = nxl
     grid(1)%ny = nyl
     grid(1)%nz = nzl
 
@@ -234,7 +234,7 @@ contains
     allocate(grid(lev)%dv(1:nz  ,0:ny+1,0:nx+1))
     allocate(grid(lev)%dw(1:nz+1,0:ny+1,0:nx+1))
 
-    do lev=1,nlevs ! 
+    do lev=1,nlevs !
        nx = grid(lev)%nx
        ny = grid(lev)%ny
        nz = grid(lev)%nz
@@ -562,12 +562,12 @@ contains
           grid(lev)%gather = 1
           if (npx > 1)then
              npx  = npx/2
-             nx   = nx*2             
+             nx   = nx*2
              grid(lev)%ngx = 2
           endif
           if (npy > 1)then
              npy  = npy/2
-             ny   = ny*2             
+             ny   = ny*2
              grid(lev)%ngy = 2
           endif
           incx=incx*2
@@ -605,7 +605,7 @@ contains
     pi = mod(myrank,npx)
 
     ! Neighbours
-    do lev=1,nlevs       
+    do lev=1,nlevs
        ! incx is the distance to my neighbours in x (1, 2, 4, ...)
        incx = grid(lev)%incx
        incy = grid(lev)%incy
@@ -694,7 +694,7 @@ contains
     integer(kind=ip) :: npx, npy
     integer(kind=ip) :: incx, incy
 
-    integer(kind=ip) :: pi, pj 
+    integer(kind=ip) :: pi, pj
     integer(kind=ip) :: lev
 
     ! for the gathering
@@ -718,7 +718,7 @@ contains
           nz = grid(lev)%nz
           nd = size(grid(lev)%cA,1)
           incx=grid(lev)%incx / 2
-          incy=grid(lev)%incy / 2          
+          incy=grid(lev)%incy / 2
           ngx=grid(lev)%ngx
           ngy=grid(lev)%ngy
 
@@ -733,8 +733,8 @@ contains
           nextfamily = (pi/(2*incx))*incx*incy*4 + (npx)*2*incy*(pj/(incy*2))
 
           ! Assign a color to each core: make a cycling ramp index
-          ! through 2 or 4 close families 
-          ! - cores having the same color should be a pair or a quadruplet 
+          ! through 2 or 4 close families
+          ! - cores having the same color should be a pair or a quadruplet
           ! - colors are all distinct *within* a family
           color=nextfamily + mod(pi,incx)+mod(pj,incy)*incx
 

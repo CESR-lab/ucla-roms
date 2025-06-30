@@ -3,7 +3,7 @@
       subroutine set_forces
 
 ! Using either data read from netCDF files or created analytically,
-! prepare surface and bottom boundary fluxes, so they can be 
+! prepare surface and bottom boundary fluxes, so they can be
 ! applied to the model. This
 ! procedure essentially interpolates the available data to current
 ! model time and converts units to make all fluxes be kinematic
@@ -46,7 +46,7 @@
 
       implicit none
 
-      
+
       integer ierr
       integer,save:: tile=0
 
@@ -86,7 +86,7 @@ c***              no code here
 ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
 ! short-wave radiation flux first because bulk flux routine performs
 ! the final assembly of everything. Conversely if model is forced by
-! precomputed total flux (which includes daily averaged short-wave 
+! precomputed total flux (which includes daily averaged short-wave
 ! radiation interpolated in time), then to introduce DIURNAL CYCLE
 ! modulation set_srflux routine must interpolate short-wave flux in
 ! time first, then subtract it from total, then modulate short-wave,
@@ -153,7 +153,7 @@ c***              no code here
 
 #endif  /* SOLVE3D */
 
-                                 
+
 !--> Bottom boundary fluxes [Styles and Glenn (1996) bottom
 !    boundary layer formulation.  Not implemented in this code]
 

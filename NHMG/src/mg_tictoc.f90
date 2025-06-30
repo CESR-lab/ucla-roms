@@ -26,7 +26,7 @@ contains
     character(len=*), intent(in) :: string
 
     integer(kind=st) :: ns
-    logical :: flag 
+    logical :: flag
 
     if (nbsub > 0) then
 
@@ -78,7 +78,7 @@ contains
     character(len=*), intent(in) :: string
 
     integer(kind=st) :: ns
-    logical :: flag 
+    logical :: flag
 
     real(kind=lg)   :: rate
 
@@ -120,7 +120,7 @@ contains
     character(len=*), intent(in)  :: string
 
     integer(kind=st) :: ns
-    logical :: flag 
+    logical :: flag
 
     if (nbsub > 0) then
 
@@ -175,7 +175,7 @@ contains
     subname_sort(:) = subname(:)
     calls_sort(:,:) = calls(:,:)
 
-    do                
+    do
        end_sort = .true.
 
        do ii=2,nbsub

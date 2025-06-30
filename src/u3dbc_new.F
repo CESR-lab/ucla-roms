@@ -71,7 +71,7 @@
               cx=0. ; cy=0.
 
 #    if defined M3_FRC_BRY
-              if (u_west(j,k) > 0.) then 
+              if (u_west(j,k) > 0.) then
                 cext=u_west(j,k)
               else
                 cext=ubind
@@ -87,7 +87,7 @@
      &                      -max(cy,0.)*gradEW(1,j  )
      &                      -min(cy,0.)*gradEW(1,j+1)
      &                                     )/(cff+cx)
-#    if defined M3_FRC_BRY 
+#    if defined M3_FRC_BRY
             u(1,j,k,nnew)=(1.-cext)*u(1,j,k,nnew)
      &                                +cext*u_west(j,k)
 #    endif
@@ -342,7 +342,7 @@
 #  endif
       endif   !<-- NORTHERN_EDGE
 # endif        /* !NS_PERIODIC */
-                           
+
 ! Corners between adjacent open boundaries
 
 # if defined OBC_SOUTH && defined OBC_WEST

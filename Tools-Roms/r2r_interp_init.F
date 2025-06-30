@@ -59,11 +59,11 @@ C$    jcmin=1+trd*chunk_size ; jcmax=min(jcmin+chunk_size-1,ncy)
       subroutine r2r_interp_search_thread( nx,ny,x,y, ncx,ncy, xc,yc,
      &                                                          ip,jp)
       implicit none
-      integer nx,ny, ncx,ncy                       ! Search for parent 
+      integer nx,ny, ncx,ncy                       ! Search for parent
       real(kind=8), dimension(nx,ny) :: x,y        ! grid indices only,
-      real(kind=8), dimension(ncx,ncy) :: xc,yc    ! do not compute 
-      integer(kind=4), dimension(ncx,ncy) :: ip,jp ! xi,eta offsets. 
-      integer icmin,icmax,jcmin,jcmax 
+      real(kind=8), dimension(ncx,ncy) :: xc,yc    ! do not compute
+      integer(kind=4), dimension(ncx,ncy) :: ip,jp ! xi,eta offsets.
+      integer icmin,icmax,jcmin,jcmax
 C$    integer numthreads, trd, chunk_size
 C$    integer omp_get_num_threads, omp_get_thread_num
 C$    numthreads=omp_get_num_threads() ; trd=omp_get_thread_num()
@@ -80,10 +80,10 @@ C$    jcmin=1+trd*chunk_size ; jcmax=min(jcmin+chunk_size-1,ncy)
       subroutine search_indices_tile(icmin,icmax,jcmin,jcmax, nx,ny,
      &                                  x,y, ncx,ncy, xc,yc, ip,jp)
       implicit none
-      integer nx,ny, ncx,ncy, icmin,icmax,jcmin,jcmax 
+      integer nx,ny, ncx,ncy, icmin,icmax,jcmin,jcmax
       real(kind=8), dimension(nx,ny) :: x,y
       real(kind=8), dimension(ncx,ncy) :: xc,yc         !   4 <---- 3
-      integer(kind=4), dimension(ncx,ncy) :: ip,jp      !   !       ^ 
+      integer(kind=4), dimension(ncx,ncy) :: ip,jp      !   !       ^
       integer i,j, ic,jc, inew,jnew, iinc               !   !       !
       real(kind=8) dx4,dy4, dx3,dy3, r41,r34,           !   v       !
      &             dx1,dy1, dx2,dy2, r12,r23            !   1 ----> 2

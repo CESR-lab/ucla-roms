@@ -12,7 +12,7 @@
       real,allocatable,dimension(:,:,:,:) :: v
       real,allocatable,dimension(:,:,:)   :: u_avg
       real,allocatable,dimension(:,:,:)   :: v_avg
-# if defined NHMG 
+# if defined NHMG
       real,allocatable,dimension(:,:,:,:) :: w
       real,allocatable,dimension(:,:,:,:) :: nhdu
       real,allocatable,dimension(:,:,:,:) :: nhdv
@@ -23,7 +23,7 @@
       real,allocatable,dimension(:,:,:) :: FlxV
       real,allocatable,dimension(:,:,:) :: We      ! explicit
       real,allocatable,dimension(:,:,:) :: Wi      ! implicit
-      
+
       real,allocatable,dimension(:,:,:) :: w_avg
       real,allocatable,dimension(:,:,:) :: wvl_avg
 

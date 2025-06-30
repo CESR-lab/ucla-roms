@@ -22,11 +22,11 @@
       logical :: terminal_vel= .false. ! terminal velocities on particles (not yet implemented)
 
       ! We choose not to define a derived particle type that has all the
-      ! information for a particles because the memory storage would be 
+      ! information for a particles because the memory storage would be
       ! less efficient. Looping through all the x-positions of all the
       ! particles would be slower than going through an array that is
       ! stored in contiguous memory.
-      
+
       character(len=130) :: particle_string
       character(len=130) :: particle_num_string
       character(len=30) :: particle_conc_string
@@ -67,7 +67,7 @@
       real                  :: output_time = 500 ! produces output at first timestep
       integer               :: total_rec = 0
       integer ::  npmx ! allocated space for particle array
-      integer :: big_number= 10000000      ! added to particles tags 
+      integer :: big_number= 10000000      ! added to particles tags
                                             ! to get unique numbers for all subdomains
       integer :: n_sur=0,n_bot=0
 
@@ -166,22 +166,22 @@
       endif
 
       ! Tag the particles and set velocities to zero
-      do ip = 1,np 
+      do ip = 1,np
           part(ip,itag) = ip + big_number*mynode
           part(ip,ipu) = 0.
           part(ip,ipv) = 0.
           part(ip,ipw) = 0.
       enddo
       ntag = np
-      
+
       call init_arrays_mpi_roms
 
       call wrt_particles
       output_time = 0
 
-      ! Print user options (particles.opt) to netcdf attributes 
+      ! Print user options (particles.opt) to netcdf attributes
       particle_opt = ''
-      if (full_seed) then 
+      if (full_seed) then
         call store_string_att(particle_opt, 'full seed')
         call store_string_att(particle_opt, ', constant density')
         write(particle_conc_string, '(A, E10.2)') ', concentration(m^-3):', ppm3
@@ -189,14 +189,14 @@
         write(particle_num_string, '(A, I2)') ', # of partciles:', np
 
         call store_string_att(particle_opt, particle_num_string)
-      else 
+      else
         call store_string_att(particle_opt, 'seeded randomly')
       endif
       write(buffer_string, '(A, F5.3)') ', buffer:', extra_space_fac
 
       call store_string_att(particle_opt, buffer_string)
       particle_opt = trim(adjustl(particle_opt))
-       
+
       end subroutine init_particles !]
 !-------------------------------------------------
       subroutine advance_particles![
@@ -332,7 +332,7 @@
           call seed_particles(hvol,zw,i,ny,nbp_north(i))
         enddo
       endif
-      
+
       do ip = np_old+1,np
         part(ip,itag) = ip + ntag-np_old + big_number*mynode
         ! first time step with these particles will be off by 1.5 for AB2
@@ -362,7 +362,7 @@
       endif
       if (lnp>0) then
         allocate(z(lnp))
-        call random_number(z); 
+        call random_number(z);
         z = z*(zw(nz)-zw(0)) + zw(0)
         call zlev2kidx(z,part(np+1:np+lnp,ipz),zw(:))
         call random_number(part(np+1:np+lnp,ipx))
@@ -388,11 +388,11 @@
       if (record==nrpf) then
         call create_particles_file(fname)
         record = 0
-      endif 
+      endif
       record = record + 1
 
       ierr=nf90_open(fname,nf90_write,ncid)
-      ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
+      ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
       call ncwrite(ncid,'ocean_time',(/time/),(/record/))
 
@@ -416,7 +416,7 @@
       ierr=nf90_close(ncid)
 
       if (mynode == 0) then
-       write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)') 
+       write(*,'(6x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
      &       'particles :: wrote output, tdays =', tdays,
      &       'step =', iic-1, 'rec =', record, '/', total_rec
      &        MYID
@@ -446,13 +446,13 @@
       ierr=nf90_open(fname,nf90_write,ncid)
 
       varid = nccreate(ncid,'particles',dimnames,dimsizes,nf90_double)
-      if (ierr/=nf90_noerr) 
+      if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'create_particles_file: ')
       ierr = nf90_put_att(ncid,varid,'long_name'
      &                                ,'Tag/x/y/z/u/v/w')
-     
+
       ierr=nf90_put_att( ncid, nf90_global, 'big_number', big_number )
-     
+
       ierr = nf90_close(ncid)
 
       end subroutine create_particles_file !]
@@ -467,7 +467,7 @@
       real,dimension(:),pointer:: px,py,pz
       real,dimension(:),pointer:: pu,pv,pw
       real,dimension(:),pointer:: prx,pry,prz
-      
+
       real, dimension(2,2)   :: tmp2d   ! DPD temp to remove debug warnings
       real, dimension(2,2,2) :: tmp3d
 
@@ -532,7 +532,7 @@
           ! local grid distances
 !          call interp(pdxi,pm(i:i+1,j:j+1),x,y)
 !          call interp(pdyi,pn(i:i+1,j:j+1),x,y)
-!          call interp(pdz,Hz(i:i+1,j:j+1,k:k+1),x,y,z)          
+!          call interp(pdz,Hz(i:i+1,j:j+1,k:k+1),x,y,z)
           tmp2d=pm(i:i+1,j:j+1)
           call interp(pdxi,tmp2d,x,y)
           tmp2d=pn(i:i+1,j:j+1)
@@ -540,8 +540,8 @@
           tmp3d=Hz(i:i+1,j:j+1,k:k+1)
           call interp(pdz,tmp3d,x,y,z)
 
-          prx(ip) = dt*pu(ip)*pdxi 
-          pry(ip) = dt*pv(ip)*pdyi 
+          prx(ip) = dt*pu(ip)*pdxi
+          pry(ip) = dt*pv(ip)*pdyi
           prz(ip) = dt*pw(ip)/pdz
 !         if (terminal_vel) then
 !           prz(ip) = prz(ip) + dt*pwt(ip)
@@ -628,7 +628,7 @@
        real(kind=8)                 ,intent(out):: fi
        real(kind=8),dimension(2,2,2),intent(in) :: f
        real(kind=8)                 ,intent(in) :: x,y,z
-!      local 
+!      local
        real(kind=8),dimension(2,2,2) :: wt
 
        wt(1,1,1) = (1-x)*(1-y)*(1-z);
@@ -717,7 +717,7 @@
         endif
        endif ! (part(ip,ipz)<nz)
       enddo
-      
+
       call exchange_data
 
       if (mynode==1) then
@@ -728,10 +728,10 @@
         enddo
       endif
 
-      ! add nx,ny when receiving from the e,n 
+      ! add nx,ny when receiving from the e,n
       ! We order this in sw,s,se,w,e,nw,n,ne to match the desired sorting of the particle array
-      if (rn_sw>0) then         ! divide buffer size by npv to get particle count  
-        rn_sw = rn_sw/npv     
+      if (rn_sw>0) then         ! divide buffer size by npv to get particle count
+        rn_sw = rn_sw/npv
         do ip = 1,rn_sw
           do i = 1,npv
             part(np+ip,i) = rv_sw(i+(ip-1)*npv)
@@ -741,7 +741,7 @@
       endif
 
       if (rn_s>0) then
-        rn_s = rn_s/npv 
+        rn_s = rn_s/npv
         do ip = 1,rn_s
           do i = 1,npv
             part(np+ip,i) = rv_s(i+(ip-1)*npv)
@@ -752,7 +752,7 @@
       endif
 
       if (rn_se>0) then
-        rn_se = rn_se/npv     
+        rn_se = rn_se/npv
         do ip = 1,rn_se
           do i = 1,npv
             part(np+ip,i) = rv_se(i+(ip-1)*npv)
@@ -764,7 +764,7 @@
       endif
 
       if (rn_w>0) then
-        rn_w = rn_w/npv 
+        rn_w = rn_w/npv
         do ip = 1,rn_w
           do i = 1,npv
             part(np+ip,i) = rv_w(i+(ip-1)*npv)
@@ -776,7 +776,7 @@
       endif
 
       if (rn_e>0) then
-        rn_e = rn_e/npv     
+        rn_e = rn_e/npv
         do ip = 1,rn_e
           do i = 1,npv
             part(np+ip,i) = rv_e(i+(ip-1)*npv)
@@ -788,7 +788,7 @@
       endif
 
       if (rn_nw>0) then
-        rn_nw = rn_nw/npv     
+        rn_nw = rn_nw/npv
         do ip = 1,rn_nw
           do i = 1,npv
             part(np+ip,i) = rv_nw(i+(ip-1)*npv)
@@ -800,7 +800,7 @@
       endif
 
       if (rn_n>0) then
-        rn_n = rn_n/npv     
+        rn_n = rn_n/npv
         do ip = 1,rn_n
           do i = 1,npv
             part(np+ip,i) = rv_n(i+(ip-1)*npv)
@@ -812,7 +812,7 @@
       endif
 
       if (rn_ne>0) then
-        rn_ne = rn_ne/npv     
+        rn_ne = rn_ne/npv
         do ip = 1,rn_ne
           do i = 1,npv
             part(np+ip,i) = rv_ne(i+(ip-1)*npv)
@@ -898,7 +898,7 @@
       np_old = np
       do ip = 1,np
         idx(ip) = ip
-        val(ip) = floor(part(ip,ipx)) + floor(part(ip,ipy))*nx 
+        val(ip) = floor(part(ip,ipx)) + floor(part(ip,ipy))*nx
      &          + floor(part(ip,ipz))*ny*nx
       enddo
 
@@ -908,7 +908,7 @@
       call qsort(val,idx,1,np)
 
       do iv = 1,npv                     ! loop over components of particle
-        ptmp(1:np_old) = part(1:np_old,iv)            
+        ptmp(1:np_old) = part(1:np_old,iv)
         do ip = 1,np
           part(ip,iv) = ptmp(idx(ip))
         enddo
@@ -936,12 +936,12 @@
       do i=1,16      !         3  5  1        4  6  2
         comm(i)=0    !         8     7        7     8
       enddo          !         2  6  4        1  5  3
-      
-      ! must send and receive even if there are no particles to send, 
+
+      ! must send and receive even if there are no particles to send,
       ! as the receiver does not know this.
 
       if (west_msg_exch) then
-        call MPI_Irecv (rv_w, szy, MPI_DOUBLE_PRECISION,   ! rv_w is array to store incoming data and 
+        call MPI_Irecv (rv_w, szy, MPI_DOUBLE_PRECISION,   ! rv_w is array to store incoming data and
      &          p_W, 8, ocean_grid_comm, req(1), ierr)     !  szy is its size
         comm(1)=1                                          ! p_W   is mpi_rank of sub-domain to the west
       endif
@@ -1155,12 +1155,12 @@
       szx = exchange_facx*npmx*npv  ! N/S border   - as a % of number of particles
       szy = exchange_facy*npmx*npv  ! E/W border
       szc = exchange_facc*npmx*npv  ! corners
-      
 
-      allocate(sn_nw(szc),sn_n(szx),sn_ne(szc), 
-     &         rv_nw(szc),rv_n(szx),rv_ne(szc), 
+
+      allocate(sn_nw(szc),sn_n(szx),sn_ne(szc),
+     &         rv_nw(szc),rv_n(szx),rv_ne(szc),
      &         sn_sw(szc),sn_s(szx),sn_se(szc),
-     &         rv_sw(szc),rv_s(szx),rv_se(szc), 
+     &         rv_sw(szc),rv_s(szx),rv_se(szc),
      &         sn_w(szy),sn_e(szy),
      &         rv_w(szy),rv_e(szy)    )
 

@@ -14,7 +14,7 @@
       integer :: loc_x,loc_y
       integer :: npi,npj
       integer :: count
-      
+
 
       ierr = nf90_open(trim(adjustl(grdfile)), nf90_nowrite, ncid)
        if (ierr/=0) call handle_ierr(ierr,'opening: ',trim(adjustl(grdfile)))
@@ -117,13 +117,13 @@
       allocate(jlcv(npy,3))
       ilcu = iloc
       jlcv = jloc
-      ilcu(1,1) = iloc(1,1)-1 
-      jlcv(1,1) = jloc(1,1)-1 
-      ilcu(2:npx,2) = ilcu(2:npx,2)-1 
-      ilcu(:,3) = ilcu(:,3)-1 
-      jlcv(2:npy,2) = jlcv(2:npy,2)-1 
-      jlcv(:,3) = jlcv(:,3)-1 
-      
+      ilcu(1,1) = iloc(1,1)-1
+      jlcv(1,1) = jloc(1,1)-1
+      ilcu(2:npx,2) = ilcu(2:npx,2)-1
+      ilcu(:,3) = ilcu(:,3)-1
+      jlcv(2:npy,2) = jlcv(2:npy,2)-1
+      jlcv(:,3) = jlcv(:,3)-1
+
       end subroutine partition_mask  !]
 ! ----------------------------------------------------------------------
 
@@ -144,13 +144,13 @@
   ! 16 guesses ok?
   npx0 = max(npx1-4,1)
   npy0 = max(npy1-4,1)
-        
+
   i = 0
   for npy = npy0:npy1
     for npx = npx0:npx1
       call partition_mask(npx,npy)
       i = i+1
-      active(i,1) = 
+      active(i,1) =
       active(i,2) = npx
       active(i,3) = npy
     end

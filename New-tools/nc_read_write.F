@@ -231,7 +231,7 @@
       if (present(vartype)) then                           ! handle optional arguement
         xtype = vartype
       else
-        xtype = default_prec 
+        xtype = default_prec
       endif
 
       ndim = size(dimname)

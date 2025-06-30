@@ -30,9 +30,9 @@ C$    integer omp_get_num_threads, omp_get_thread_num
 
 !############ F2PY INPUT/OUT FOR PYTHON !##############
 Cf2py intent(in) Lm,Mm,N,nz,z_r,z_w,rmask,var,z_lev,imin,jmin,kmin,FillValue
-Cf2py intent(out) var_zlv 
+Cf2py intent(out) var_zlv
 !#######################################################
-      
+
       imax=Lm+1
       jmax=Mm+1
 

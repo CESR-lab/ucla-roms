@@ -49,7 +49,7 @@ export PATH=$PATH:MPIHOME/bin
 # DEVIND COMMANDS ONLY (NOT ROMS RELATED):
 alias ltr='ls -lthr | tail -20'
 # - Show my current submitted jobs
-alias qstat='squeue -u ddevin' 
+alias qstat='squeue -u ddevin'
 alias scratch='cd /expanse/lustre/scratch/ddevin/temp_project'
 alias projects='cd /expanse/lustre/projects/cla119/ddevin'
 export PROJ='/expanse/lustre/projects/cla119/ddevin'

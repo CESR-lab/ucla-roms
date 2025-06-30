@@ -5,7 +5,7 @@ Remark 1:
   PERIODICITY RULES: in the case of periodicity conditions in either
   directions, all fields have the same number of points regardless of
   their type according to the staggered grid convention, (RHO-, U-,
-  V- and PSI-types). The internal ranges of indices are 
+  V- and PSI-types). The internal ranges of indices are
 
          1:Lm in XI-direction
          1:Mm in ETA-direction
@@ -14,7 +14,7 @@ Remark 1:
   that:
 
          A(-1,j,..)=A(Lm-1,j,..)     A(i,-1,..)=A(i,Mm-1,..)
-         A( 0,j,..)=A(Lm  ,j,..)     A(i, 0,..)=A(i,Mm  ,..) 
+         A( 0,j,..)=A(Lm  ,j,..)     A(i, 0,..)=A(i,Mm  ,..)
          A(Lm+1,j,..)=A( 1,j,..)     A(i,Mm+1,..)=A(i, 1,..)
          A(Lm+2,j,..)=A( 2,j,..)     A(i,Mm+2,..)=A(i, 2,..)
 
@@ -62,15 +62,15 @@ Remark 3:
 
      U-type                         V-type
        first                          first
-         Western edge                   Southern edge   
+         Western edge                   Southern edge
          Eastern edge                   Northern edge
        then                           then
          Southern edge                  Western edge
          Northern edge                  Eastern edge
 
-  This is done to avoid necessity of special care about the corner 
+  This is done to avoid necessity of special care about the corner
   ghost points in the case of combinations of open and solid
-  boudaries. 
+  boudaries.
 
 Remark 4:
 

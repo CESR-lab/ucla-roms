@@ -6,7 +6,7 @@ sizez = 2e3*2;
 resmx = 3;
 nzmx = 40*2^(resmx-1);
 prof_z = zeros(nzmx,resmx);
-prof_u = zeros(nzmx,resmx); 
+prof_u = zeros(nzmx,resmx);
 Ekconv = zeros(resmx,1);
 
 for res = resmx:resmx %% test resolution convergence
@@ -184,7 +184,7 @@ X(ndu+ndv+1:end) = w(:);
 Ek2 = 0.5*X'*Mzl*X/(sizex*sizey*sizez)
 
    prof_z(1:nz,res) = zu(nx/2+1,:);
-   prof_u(1:nz,res) =  u(nx/2+1,:); 
+   prof_u(1:nz,res) =  u(nx/2+1,:);
    Ekconv(res) = Ek2;
 end %% convergence loop
 [max(p_b) min(p_b)];

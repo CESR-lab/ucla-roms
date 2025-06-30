@@ -50,9 +50,9 @@
      &        numthreads, trd, chunksize, margin, jstr,
      &        jend, istr, iend, istrU, jstrV
 
-                               
+
       real*8 rho(0:Lm+1,0:Mm+1,N),  z_r(0:Lm+1,0:Mm+1,N),
-     &       z_w(0:Lm+1,0:Mm+1,0:N),  
+     &       z_w(0:Lm+1,0:Mm+1,0:N),
      &       Hz(0:Lm+1,0:Mm+1,N),
      &       dn_u(0:Lm+1,0:Mm+1), dm_v(0:Lm+1,0:Mm+1), dpth
       real*8, dimension(0:Lm+1,0:Mm+1,N) :: ru,rv,P
@@ -64,7 +64,7 @@
 
 
 !!!! INPUTS: Lm,Mm,N --> not inputted in python
-!!!! !!!!!!!!!!!!! rho , rho1,qp1,qp2---> all returned from rho_eos_V2.F  
+!!!! !!!!!!!!!!!!! rho , rho1,qp1,qp2---> all returned from rho_eos_V2.F
 
 
 Cf2py intent(in) Lm,Mm,N,z_r,z_w,rho,rho0,Hz, dn_u, dm_v
@@ -78,14 +78,14 @@ Cf2py intent(out) ru, rv
       imax=Lm+1
       jmin=0
       jmax=Mm+1
-     
+
       numthreads=1
       trd=0
       chunksize=(jmax-jmin + numthreads)/numthreads
       margin=(chunksize*numthreads -jmax+jmin-1)/2
       jstr=max(   trd   *chunksize  -margin, jmin )
       jend=min(  (trd+1)*chunksize-1-margin, jmax )
-      
+
       trd=0
       chunksize=(imax-imin + numthreads)/numthreads
       margin=(chunksize*numthreads -imax+imin-1)/2
@@ -134,10 +134,10 @@ Cf2py intent(out) ru, rv
           do i=istrU-1,iend
             P(i,j,k)=P(i,j,k+1)+HalfGRho*( (rho(i,j,k+1)+rho(i,j,k))
      &                                     *(z_r(i,j,k+1)-z_r(i,j,k))
- 
+
      &     -OneFifth*( (dR(i,k+1)-dR(i,k))*( z_r(i,j,k+1)-z_r(i,j,k)
      &                              -OneTwelfth*(dZ(i,k+1)+dZ(i,k)) )
- 
+
      &                -(dZ(i,k+1)-dZ(i,k))*( rho(i,j,k+1)-rho(i,j,k)
      &                              -OneTwelfth*(dR(i,k+1)+dR(i,k)) )
      &                                                             ))
@@ -164,7 +164,7 @@ Cf2py intent(out) ru, rv
             else
               dZx(i,j)=0.
             endif
- 
+
             cfr=2.*rx(i,j)*rx(i+1,j)
             if (cfr.gt.epsil) then
               dRx(i,j)=cfr/(rx(i,j)+rx(i+1,j))
@@ -178,10 +178,10 @@ Cf2py intent(out) ru, rv
      &                              P(i-1,j,k)-P(i,j,k)-HalfGRho*(
 
      &            (rho(i,j,k)+rho(i-1,j,k))*(z_r(i,j,k)-z_r(i-1,j,k))
- 
+
      &   -OneFifth*( (dRx(i,j)-dRx(i-1,j))*( z_r(i,j,k)-z_r(i-1,j,k)
      &                            -OneTwelfth*(dZx(i,j)+dZx(i-1,j)) )
- 
+
      &              -(dZx(i,j)-dZx(i-1,j))*( rho(i,j,k)-rho(i-1,j,k)
      &                            -OneTwelfth*(dRx(i,j)+dRx(i-1,j)) )
      &                                                            )))
@@ -205,7 +205,7 @@ Cf2py intent(out) ru, rv
             else
               dZx(i,j)=0.
             endif
- 
+
             cfr=2.*rx(i,j)*rx(i,j+1)
             if (cfr.gt.epsil) then
               dRx(i,j)=cfr/(rx(i,j)+rx(i,j+1))
@@ -219,10 +219,10 @@ Cf2py intent(out) ru, rv
      &                             P(i,j-1,k)-P(i,j,k) -HalfGRho*(
 
      &            (rho(i,j,k)+rho(i,j-1,k))*(z_r(i,j,k)-z_r(i,j-1,k))
- 
+
      &   -OneFifth*( (dRx(i,j)-dRx(i,j-1))*( z_r(i,j,k)-z_r(i,j-1,k)
      &                            -OneTwelfth*(dZx(i,j)+dZx(i,j-1)) )
- 
+
      &              -(dZx(i,j)-dZx(i,j-1))*( rho(i,j,k)-rho(i,j-1,k)
      &                            -OneTwelfth*(dRx(i,j)+dRx(i,j-1)) )
      &                                                            )))
@@ -232,8 +232,8 @@ Cf2py intent(out) ru, rv
       enddo   !<-- k
       return
       end
-            
 
-            
+
+
 
 

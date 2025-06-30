@@ -22,8 +22,8 @@ A=[0.242334 ... % M2
    0.000000 ... % Mn4
    0.000000 ... % Ms4
    0.006141 ... % 2n2
-   0.000764 ];  % S1  
-%%% Elasticity factor 
+   0.000764 ];  % S1
+%%% Elasticity factor
 B=[0.693 ... % M2
    0.693 ... % S2
    0.693 ... % N2
@@ -36,15 +36,15 @@ B=[0.693 ... % M2
    0.693 ... % Mm
    0.693 ... % M4
    0.693 ... % Mn4
-   0.693 ... % Ms4 
-   0.693 ... % 2n2 
-   0.693];   % S1              
+   0.693 ... % Ms4
+   0.693 ... % 2n2
+   0.693];   % S1
 % Tide species : 2 : semidiurnal equilibrium tides
 %                1 : diurnal equilibrium tides
 %                0 long-period equilibrium tides
-%      M2 S2 N2 K2 K1 O1 P1 Q1 Mf Mn M4 Mn4 Ms4 2n2 s1  
+%      M2 S2 N2 K2 K1 O1 P1 Q1 Mf Mn M4 Mn4 Ms4 2n2 s1
 ityp =[ 2  2  2  2  1  1  1  1  0  0  0   0   0   2  1]  ;
-% note: for now, ispec for M4 set to 0 (ispec is only used to define forcing 
+% note: for now, ispec for M4 set to 0 (ispec is only used to define forcing
 %       in atgf, and this is always  0 for M4, see OTPSnc)
 %
  [nx,ny] = size(lon);
@@ -58,13 +58,13 @@ sin2lat=sin(2.*d2r*lat);
   pcr = zeros(nx,ny,nc);
   pc = complex(pcr,pcr);
   for ic = 1:nc
-    if ityp(ic)==2                    % semidiurnal   
+    if ityp(ic)==2                    % semidiurnal
       p_amp = A(ic)*B(ic)*coslat2;
       p_pha = -2.*lon*d2r;
     elseif ityp(ic)==1                % diurnal
       p_amp = A(ic)*B(ic)*sin2lat;
       p_pha = -lon*d2r;
-    elseif ityp(ic)==0                % long-term   
+    elseif ityp(ic)==0                % long-term
 %     error: p_amp = A(ic)*B(ic)*(1-1.5*coslat2);  Error
       Pamp= A(ic)*B(ic)*(0.5-1.5*coslat2);
       p_pha = 0;

@@ -50,7 +50,7 @@
          for j = j0:j1
 		 [j j1]
           for i = i0:i1
-            if mask(i,j) < 1 
+            if mask(i,j) < 1
               cdist(i,j) = 0;
             else
               dist =  gc_dist(lon(j,i)*d2r,lat(j,i)*d2r,mlon*d2r,mlat*d2r);
@@ -61,9 +61,9 @@
          end
         else
          cdist(j0:j1,i0:i1) = min(3e5,cdist(j0:j1,i0:i1));
-   
-        
-        
+
+
+
         end
       end
     end

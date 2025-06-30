@@ -210,7 +210,7 @@
 #  else
         do k=1,N                               ! Northern edge closed
           do i=istr,iend                       ! ======== ==== ======
-#   ifdef WEC 
+#   ifdef WEC
 cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
             v(i,jend+1,k,nnew)=v(i,jend,k,nnew)  ! gradient (default)
 #    ifdef MASKING
@@ -218,7 +218,7 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
 #    endif
 #   else
             v(i,jend+1,k,nnew)=0.               ! (no-flux, default)
-#   endif          
+#   endif
           enddo
         enddo
 #  endif
@@ -340,7 +340,7 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
      &                            -min(cy,0.)*grad(iend,j  )
      &                                                     )
 
-#    if defined M3_FRC_BRY 
+#    if defined M3_FRC_BRY
 #      if defined SPONGE_TUNE
             if (ub_tune) cext = max(cext,min(ub_east(j),1.0))
 #      endif

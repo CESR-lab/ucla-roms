@@ -80,7 +80,7 @@
       integer :: itrc
       if (obc_west.or.obc_east.or.obc_north.or.obc_south) then
         bc_options = ''
-      endif 
+      endif
       if (obc_west)  call store_string_att(bc_options,'OBC_WEST, ')
       if (obc_east)  call store_string_att(bc_options,'OBC_EAST, ')
       if (obc_north) call store_string_att(bc_options,'OBC_NORTH, ')
