@@ -142,7 +142,7 @@
 
         ! find fractional cdr fluxes for this subdomain
         allocate(dist(GLOBAL_2D_ARRAY)); dist = 1e6 ! Some large number so we don't get single-point releases in the halos
-        allocate(frac(GLOBAL_2D_ARRAY,ncdr))
+        allocate(frac(GLOBAL_2D_ARRAY,ncdr));frac = 0
 
         cidx = 0
         do icdr= 1,ncdr
