@@ -26,7 +26,15 @@ C$ !!   write(*,*) 'MPI thread support levels =', req_lev,level
 C$    ierr=0
       if (ierr == 1) call MPI_Init(ierr)
 
-      call mpi_setup(ierr)
+      ocean_grid_comm=MPI_COMM_WORLD
+      call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
+      call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
+
+      ierr=0
+      call read_inp (ierr)
+
+      if (ierr==0) call mpi_setup(ierr)
+  
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif

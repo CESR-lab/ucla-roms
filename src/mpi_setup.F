@@ -3,109 +3,93 @@
 c--# define TRANSPOSED_MPI_NODE_ORDER
 c--# define PRINT_HOSTNAME
 
-C$    subroutine master_num_threads (nthrds)
-C$    implicit none
-C$    integer nthrds, trd, omp_get_num_threads, omp_get_thread_num
-C$    trd=omp_get_thread_num()
-C$    if (trd == 0) nthrds=omp_get_num_threads()
-C$    end
-
-
       subroutine mpi_setup(ierr)
       use param
       use hidden_mpi_vars
       use mpi
       use roms_read_write
-      ! temp ![
       use netcdf 
       use nc_read_write
-      !------!]
       implicit none
-      integer :: ierr,ncid,lstr,lenstr
+      integer :: ierr,newpart,ncid
       integer,dimension(8) :: neighbors
+      integer,dimension(2) :: subdompos
+      integer,dimension(4) :: partition 
       character(len=128) :: fname
 
-C$    integer nthrds
-      integer nsize, off_xi,off_eta, conv_ijnode_to_rank
+      integer off_xi,off_eta, conv_ijnode_to_rank,check_neighbor
 # ifdef PRINT_HOSTNAME
       integer status(MPI_STATUS_SIZE), blank
       character(len=38) msg1 ! <-- greeting message to print
       character(len=23) msg2 
 # endif
 
-      ocean_grid_comm=MPI_COMM_WORLD
-      call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
-      call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
-
       exc_call_count=0
-                                         ! Determine number of threads
-C$    if (mynode == 0) then              ! on MPI node rank=0, then
-C$OMP PARALLEL SHARED(nthrds)            ! broadcast it, so all others
-C$      call master_num_threads (nthrds) ! can set the same number of
-C$OMP END PARALLEL                       ! threads as the rank=0 node.
-C$    endif
-C$    call MPI_Bcast(nthrds, 1, MPI_INTEGER, 0, ocean_grid_comm, ierr)
-C$    if (mynode > 0) then
-C$      call omp_set_num_threads (nthrds)
-C$    endif
-                                    ! Check whether the number of
-      if (nsize == NNODES) then     ! nodes specified by -np argument
-      
-        fname='ksink_data/sample_grd_riv.nc'
-        lstr=lenstr(fname)
-        call insert_node(fname, lstr, mynode, NNODES, ierr)
-        ierr=nf90_open(fname,nf90_nowrite,ncid)
-         if (ierr/=nf90_noerr) call handle_ierr(ierr)
-        ierr=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
-        print*,mynode,neighbors
 
+      ! read in gridfile to check if mpi masking is present
+      ierr=nf90_open(grdname,nf90_nowrite,ncid)
+       if (ierr/=nf90_noerr) call handle_ierr(ierr)
+      newpart=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
+      ! determine nodes based on version
+      if (newpart.eq.nf90_noerr) then
+        ierr=nf90_get_att(ncid,nf90_global,"partition",partition)
+        NNODES=partition(2)
+        ! grab neighbors & i/j nodes
+        ierr=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
+        ierr=nf90_get_att(ncid,nf90_global,"subdompos",subdompos)
+        print*,'MPI_SETUP: MASKING ON'
+      else
+        NNODES=NP_XI*NP_ETA
+      endif
+      ierr=nf90_close(ncid)
+
+
+      if (nsize==NNODES) then       ! Check whether the number of
+                                    ! nodes specified by -np argument
 # ifdef TRANSPOSED_MPI_NODE_ORDER
         inode=mynode/NP_ETA         ! of mpiexec matches the parameter
         jnode=mynode-inode*NP_ETA   ! settings in the code, and find
 # else
+        if (newpart.eq.nf90_noerr) then
+        inode=subdompos(1)
+        jnode=subdompos(2)
+        else
         jnode=mynode/NP_XI          ! indices inode,jnode identifying
         inode=mynode-jnode*NP_XI    ! the location of current subdomain
+        endif
 # endif
                                     ! on the "processor grid".
-!       if (NP_XI > 1) then
 # ifdef EW_PERIODIC
-          west_msg_exch=.true.      ! Determine whether the subdomain
-          east_msg_exch=.true.      ! has neighbors on the four sides
+        west_msg_exch=.true.        ! Determine whether the subdomain
+        east_msg_exch=.true.        ! has neighbors on the four sides
 # else
-          if (ierr.eq.nf90_noerr) then
-          west_msg_exch=(neighbors(7)/=-99)
-          east_msg_exch=(neighbors(3)/=-99)
-          else
-          west_msg_exch=inode>0          ! around it and set the
-          east_msg_exch=inode<NP_XI-1    ! corresponding logical
-          endif
+        if (newpart.eq.nf90_noerr) then
+        west_msg_exch=(neighbors(7)/=-99)
+        east_msg_exch=(neighbors(3)/=-99)
+        else
+        west_msg_exch=inode>0            ! around it and set the
+        east_msg_exch=inode<NP_XI-1      ! corresponding logical
+        endif
 # endif
-!       else                        ! flags: e.g. est_msg_exch==.true.
-!         west_msg_exch=.false.     ! means that there is a neighbor on
-!         east_msg_exch=.false.     ! the west side, so this subdomain
-!       endif                       ! must send and and expects to
+
 # ifndef EW_PERIODIC
         west_exchng=west_msg_exch   ! receive incoming  messages
         east_exchng=east_msg_exch   ! to/from the neighbor.
 # endif
-                                    ! Note that periodic boundaries
-!       if (NP_ETA > 1) then        ! (if any) are treated exclusively
+
 # ifdef NS_PERIODIC
-          south_msg_exch=.true.     ! via exchange of computational
-          north_msg_exch=.true.     ! margins, so that in this case
+        south_msg_exch=.true.       ! via exchange of computational
+        north_msg_exch=.true.       ! margins, so that in this case
 # else
-          if (ierr.eq.nf90_noerr) then
-          south_msg_exch=(neighbors(5)/=-99)
-          north_msg_exch=(neighbors(1)/=-99)
-          else
-          south_msg_exch=jnode>0         ! communications take place
-          north_msg_exch=jnode<NP_ETA-1  ! even if the subdomain is
-          endif
+        if (newpart.eq.nf90_noerr) then
+        south_msg_exch=(neighbors(5)/=-99)
+        north_msg_exch=(neighbors(1)/=-99)
+        else
+        south_msg_exch=jnode>0         ! communications take place
+        north_msg_exch=jnode<NP_ETA-1  ! even if the subdomain is
+        endif
 # endif
-!       else                        ! located near the edge of
-!         south_msg_exch=.false.    ! the grid.
-!         north_msg_exch=.false.
-!       endif
+
 # ifndef NS_PERIODIC
         south_exchng=south_msg_exch
         north_exchng=north_msg_exch
@@ -115,6 +99,16 @@ C$    endif
 ! and corners. These are needed to designate MPI ranks for sources of
 ! incoming and targets for outgoing messages.
 
+        if (newpart.eq.nf90_noerr) then
+         p_E=check_neighbor(neighbors(3))
+        p_NE=check_neighbor(neighbors(2))
+        p_N =check_neighbor(neighbors(1))
+        p_NW=check_neighbor(neighbors(8))
+         p_W=check_neighbor(neighbors(7))
+        p_SW=check_neighbor(neighbors(6))
+        p_S =check_neighbor(neighbors(5))
+        p_SE=check_neighbor(neighbors(4))
+        else
          p_E=conv_ijnode_to_rank(inode+1,jnode  , NP_XI,NP_ETA)
         p_NE=conv_ijnode_to_rank(inode+1,jnode+1, NP_XI,NP_ETA)
         p_N =conv_ijnode_to_rank(inode  ,jnode+1, NP_XI,NP_ETA)
@@ -123,8 +117,7 @@ C$    endif
         p_SW=conv_ijnode_to_rank(inode-1,jnode-1, NP_XI,NP_ETA)
         p_S =conv_ijnode_to_rank(inode  ,jnode-1, NP_XI,NP_ETA)
         p_SE=conv_ijnode_to_rank(inode+1,jnode-1, NP_XI,NP_ETA)
-
-!       print *, 'neighbors: ', mynode, p_W,p_E
+        endif
 
 ! Determine bounds of the usable portion of model arrays:
 
@@ -146,16 +139,6 @@ C$    endif
 
         off_eta=NP_ETA*Mm-MMm
         jSW_corn=jnode*Mm-off_eta/2
-!        if (jnode == 0) then
-!          jsouth=1+off_eta/2
-!        else
-!          jsouth=1
-!        endif
-!        if (jnode < NP_ETA-1) then
-!          jnorth=Mm
-!        else
-!          jnorth=Mm -(off_eta+1)/2
-!        endif
         if (jnode == 0) then                ! DevinD added
           jSW_corn = 0                      ! need to fix iSW_corn as used to determine WESTERN_EDGE
         else
@@ -259,6 +242,18 @@ C$    endif
         conv_ijnode_to_rank=-1 !<- meaning that the rank does not exist
       endif
       end
+
+! Convert masked value, if any, to -1.
+
+      function check_neighbor(n)
+      implicit none
+      integer check_neighbor,n
+      if (n==-99) then
+        check_neighbor=-1
+      else
+        check_neighbor=n
+      endif
+      end 
 
 #else
       subroutine mpi_setup_empty
