@@ -27,6 +27,10 @@ c--# define PRINT_HOSTNAME
       exc_call_count=0
 
       ! read in gridfile to check if mpi masking is present
+# ifdef ANA_GRID
+      NNODES=NP_XI*NP_ETA
+      newpart=99
+# else
       ierr=nf90_open(grdname,nf90_nowrite,ncid)
        if (ierr/=nf90_noerr) call handle_ierr(ierr)
       newpart=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
@@ -42,6 +46,7 @@ c--# define PRINT_HOSTNAME
         NNODES=NP_XI*NP_ETA
       endif
       ierr=nf90_close(ncid)
+# endif
 
 
       if (nsize==NNODES) then       ! Check whether the number of

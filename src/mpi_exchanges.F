@@ -651,7 +651,7 @@
         A(il0:il1,nyl+1:nyl+hl,:) = A(il0:il1,nyl:hl,:)
       endif
 
-      if (south_msg_exch.and.west_msg_exch) then
+      if (south_msg_exch.and.west_msg_exch.and.do_corners) then
         A(1-hl:0,1-hl:0,:) = reshape(recvSW(szSW+1:szSW+szCr),shCr)
         szSW = szSW+szCr
       elseif ((inode>0).and.(jnode>0)) then
