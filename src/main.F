@@ -237,6 +237,8 @@ CR      write(*,*) ' -6' MYID
 #endif
         call get_init(nrrec, 1)
 
+        call init_restarts
+
 #ifdef ANA_INITIAL
       endif    !<-- nrrec>0
 #endif

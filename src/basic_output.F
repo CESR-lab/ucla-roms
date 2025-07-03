@@ -82,6 +82,7 @@
       public :: calc_avg_ocean_vars
       public :: wrt_rst_ocean_vars
       public :: init_avg_arrays
+      public :: init_restarts
 
       contains  !]
 !----------------------------------------------------------------------
@@ -92,8 +93,10 @@
       integer,dimension(6)   :: date
 
       if (wrt_file_rst .and. monthly_restarts) then
-          call sec2date(time,date)
-          prev_month = date(2)
+        ! Look one timestep ahead to initialize the "previous month", so that
+        ! when we restart we don't immediately write out a file.
+        call sec2date(start_time+dt,date)
+        prev_month = date(2)
       endif
 
       end subroutine init_restarts !]
@@ -495,14 +498,19 @@
           ! new month.
           ! time + 2*dt here so that it looks two timesteps ahead to see if we're changing months.
           call sec2date(time+2*dt,date)
-          if ((date(2) - prev_month) /= 0) then
-            call wrt_restart_file
-            write_another_step = .true.
-          endif
+
+      if (mynode == 0) then
+      print *, "currmonth", date(2)
+      endif
 
           if (write_another_step) then
             call wrt_restart_file
             write_another_step = .false.
+          endif
+
+          if ((date(2) - prev_month) /= 0) then
+            call wrt_restart_file
+            write_another_step = .true.
           endif
 
           prev_month = date(2)

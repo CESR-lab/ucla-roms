@@ -91,8 +91,10 @@
          error stop 'ERROR: cstar_output:: monthly avgs=t, but do_avg=f'
       endif
 
+      ! Look one timestep ahead to initialize the "previous month", so that
+      ! when we restart we don't immediately write out a file.
       if (monthly_averages) then
-          call sec2date(time,date)
+          call sec2date(time+dt,date)
           prev_month = date(2)
       endif
 
