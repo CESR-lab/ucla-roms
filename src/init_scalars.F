@@ -76,14 +76,9 @@ c      write(*,*) 'kmp_stacksize =', size
       call init_output_indices      ! retire this soon (the bfx, bfy thing)
 
 
-      ierr=0
-      call read_inp (ierr)
-      if (ierr==0) then
 #ifdef SOLVE3D
-        call set_weights
+      call set_weights
 #endif
-
-      endif
 
 #ifdef BIOLOGY_BEC2
         call init_scalars_bec2

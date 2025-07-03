@@ -53,7 +53,7 @@
 ! they add 1 for each error discovered.
 
       ierr=0                      ! <-- reset error counter
-      call check_tiling(ierr)
+!      call check_tiling(ierr)
       call check_switches1(ierr)
 #ifdef SOLVE3D
       call check_pre_step_switches(ierr)
@@ -425,7 +425,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           read(input,'(A)',err=95) fname
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname, lstr, mynode, nsize, ierr)
 !         call insert_nodes(fname)
 # endif
           open(testunit,file=fname(1:lstr), status='old', err=97)
@@ -448,7 +448,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
 #if defined MPI && defined PARALLEL_FILES
-            call insert_node(fname, lstr, mynode, NNODES, ierr)
+            call insert_node(fname, lstr, mynode, nsize, ierr)
 #endif
             ininame=fname(1:lstr)
             mpi_master_only write(*,'(1x,A,I3,2x,3A)')
@@ -471,7 +471,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             lstr=lenstr(fname)
             if (lstr > 0) then
 # if defined MPI && defined PARALLEL_FILES
-              call insert_node(fname, lstr, mynode, NNODES, ierr)
+              call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif
               open(testunit,file=fname(1:lstr),status='old',err=97)
               close(testunit)
@@ -517,7 +517,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           read(input,'(A)',err=95) fname
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif
           open(testunit, file=fname(1:lstr), status='old', err=97)
           close(testunit)

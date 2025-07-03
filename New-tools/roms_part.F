@@ -331,7 +331,7 @@
         ierr=nf90_put_att(npid, nf90_global, 'globaldims', ncinfo%gsize)
 
         ! subdompos: i,j position of sub-domain
-        subdompos = (/ i, j /)
+        subdompos = (/ i-1, j-1 /) ! zero-based!
         ierr=nf90_put_att(npid, nf90_global, 'subdompos', subdompos)
 
         ! partition: node, total nodes, llc x, llc y
@@ -526,7 +526,6 @@
       lj1v = maxval(j1v)
 
       call system_mem_usage(RSS)
-!      print * ,'Mem usage: ', RSS/1000
 
       ierr = nf90_open(trim(srcfile),nf90_nowrite,ncid)
       if (ierr/=0) call handle_ierr(ierr,'opening: ',trim(srcfile))
@@ -555,18 +554,14 @@
       print *,'nrecords: ',nrecords
 
       do record = 1,nrecords
-        call cpu_time(startrec)
 
         if (mynode==0) print *,'Processing record: ',record
+
       do ivar=1,ncinfo%nvars
 
-        call cpu_time(startvar)
         vname = ncinfo%varname(ivar)
-!        if (nrecords==1) print*,vname
 
         if (ncinfo%xtype(ivar).eq.nf90_char) goto 99
-
-!        if (mynode==0) print *,'Processing: ',trim(vname)
 
         bry = ncinfo%bryvar(ivar)
 
@@ -784,9 +779,6 @@
           end select
         endif
 
-!        call system_mem_usage(RSS)
-!        print * ,'Mem usage 1: ', vname,'  ',RSS/1000
-
         ! variables that need to be saved once
 !        if ((index(ncinfo%dims(ivar)%dimnames(1),'nriver')>0)
 !     &  .or.(index(ncinfo%dims(ivar)%dimnames(1),'npipe')>0)) then
@@ -808,80 +800,47 @@
         if (ndims==3) call ncread(ncid,vname,var3d,startr)
         if (ndims==4) call ncread(ncid,vname,var3d,startr)
 
-
-!        call system_mem_usage(RSS)
-!        print * ,'Mem usage 2: ', vname,'  ',RSS/1000
-
-        call cpu_time(startwri)
         do part = part0,part1  ! zero based
           fname = srcfile
 
-          call insert_nodes(fname,part,nparts)
-          ierr = nf90_open(trim(fname), nf90_write, npid)
+          npid = ncparts(part)
 
           if ((bry=='w').or.(bry=='e').or.(bry=='s').or.(bry=='n')) then  ! check if boundary var
             if (boundary_nodes(part+1)==1) then                           ! only write at boundary
               if (ndims==2) then
-                call ncwrite(npid,vname,var2d(bs(part):be(part),:),startw)
+                call ncwrite(ncparts(part),vname,var2d(bs(part):be(part),:),startw)
               elseif (ndims==3) then
-                call ncwrite(npid,vname,var3d(bs(part):be(part),:,:),startw)
+                call ncwrite(ncparts(part),vname,var3d(bs(part):be(part),:,:),startw)
               endif
             else
               cycle
             endif  ! <-- not at boundary node
           else     ! <-- not boundary var
             if (ndims==1) then
-              call ncwrite(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+              call ncwrite(ncparts(part),vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
             elseif (ndims==2) then
-              call ncwrite(npid,vname,var2d(is(part):ie(part),js(part):je(part)),startw)
-              print*,'write:',vname,part,var2d(1,1),npid
-!              allocate(t2d(ie(part)-is(part)+1,je(part)-js(part)+1))
+              call ncwrite(ncparts(part),vname,var2d(is(part):ie(part),js(part):je(part)),startw)
             elseif (ndims==3) then
-              call ncwrite(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+              call ncwrite(ncparts(part),vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
             elseif (ndims==4) then
-              call ncwrite(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
+              call ncwrite(ncparts(part),vname,var3d(is(part):ie(part),js(part):je(part),:),startw)
             endif
           endif
 
-!          print*,shape(var2d(is(part):ie(part),js(part):je(part))),shape(t2d)
-
-!          if (allocated(t2d)) then
-!            call ncread(npid,vname,t2d)
-!            print*,'read:',vname,part,t2d(1,1),npid
-!            deallocate(t2d)
-!          endif
-
-          ierr = nf90_close(npid)
         enddo
-
-
-
-!        if (vname=='hraw') stop
-        call cpu_time(endwri)
-!        print *, 'wir time:', endwri-startwri, vname
-
-!        call system_mem_usage(RSS)
-!        print * ,'Mem usage 3: ', vname,'  ',RSS/1000
 
         if (allocated(var2d)) deallocate(var2d)
         if (allocated(var3d)) deallocate(var3d)
 
-!        call system_mem_usage(RSS)
-!        print * ,'Mem usage 4: ', vname,'  ',RSS/1000
-        call cpu_time(endvar)
-!        print *, 'var time:', endvar-startvar, vname
-
         ! single value (double/real) variables
-  98    if ((ncinfo%xtype(ivar).eq.nf90_double).and.(ndims==1)) then
+  98    if ((ncinfo%xtype(ivar).eq.nf90_double).and.(ndims<=1)) then
           allocate(var0d(1))
           ierr = nf90_inq_varid(ncid,vname,varid)
           ierr = nf90_get_var(ncid,varid,var0d)
           do part = part0,part1
-            fname = srcfile
-            call insert_nodes(fname,part,nparts)
-            ierr = nf90_open(trim(fname), nf90_write, npid)
+            npid = ncparts(part)
             ierr = nf90_put_var(npid,varid,var0d)
-            ierr = nf90_close(npid)
+             if (ierr/=nf90_noerr) call handle_ierr(ierr)
           enddo
           if (allocated(var0d)) deallocate(var0d)
         endif
@@ -892,29 +851,16 @@
           ierr = nf90_inq_varid(ncid,vname,varid)
           ierr = nf90_get_var(ncid,varid,charvar)
           do part = part0,part1
-            fname = srcfile
-            call insert_nodes(fname,part,nparts)
-            print*,fname
-            ierr = nf90_open(trim(fname), nf90_write, npid)
-            if (ierr/=nf90_noerr) print*,ierr
+            npid = ncparts(part)
             ierr = nf90_put_var(npid,varid,charvar)
-            if (ierr/=nf90_noerr) print*,ierr
-            ierr = nf90_put_var(npid,varid,charvar)
-            if (ierr/=nf90_noerr) print*,ierr
-            ierr = nf90_close(npid)
+             if (ierr/=nf90_noerr) call handle_ierr(ierr)
           enddo
           if (allocated(charvar)) deallocate(charvar)
         endif
         
       enddo  ! ivars
 
-      call cpu_time(endrec)
-!      print *,'nrec time:',endrec-startrec
       enddo  ! records
-
-!      do part=part0,part1
-!        ierr=nf90_close(npid)
-!      enddo
 
       ierr = nf90_close(ncid)
 
@@ -922,12 +868,6 @@
       deallocate(i1); deallocate(i1u);
       deallocate(j0); deallocate(j0v);
       deallocate(j1); deallocate(j1v);
-
-!      ierr=nf90_open('sample_grd_riv.5.nc',nf90_nowrite,ncid)
-!      call ncread(ncid,'hraw',t2d)
-!      print*,t2d(1,1)
-!      deallocate(t2d)
-!      ierr=nf90_close(npid)
 
       end subroutine write_partial_files !]
 ! ----------------------------------------------------------------------

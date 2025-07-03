@@ -626,42 +626,57 @@
       if (west_msg_exch) then
         A(1-hl:0,jl0:jl1,:) = reshape(recvW(szW+1:szW+szEW),shEW)
         szW = szW+szEW
+      elseif (inode>0) then
+        A(1-hl:0,jl0:jl1,:) = A(1:hl,jl0:jl1,:)
       endif
-
+ 
       if (east_msg_exch) then
         A(nxl+1:nxl+hl,jl0:jl1,:) = reshape(recvE(szE+1:szE+szEW),shEW)
         szE = szE+szEW
+      elseif (inode<np_xi-1) then
+        A(nxl+1:nxl+hl,jl0:jl1,:) = A(nxl:hl,jl0:jl1,:)
       endif
-
+ 
       if (south_msg_exch) then
         A(il0:il1,1-hl:0,:) = reshape(recvS(szS+1:szS+szNS),shNS)
         szS = szS+szNS
+      elseif (jnode>0) then
+        A(il0:il1,1-hl:0,:) = A(il0:il1,1:hl,:)
       endif
 
       if (north_msg_exch) then
         A(il0:il1,nyl+1:nyl+hl,:) = reshape(recvN(szN+1:szN+szNS),shNS)
         szN = szN+szNS
+      elseif (jnode<np_eta-1) then
+        A(il0:il1,nyl+1:nyl+hl,:) = A(il0:il1,nyl:hl,:)
       endif
 
-!     if (south_msg_exch.and.west_msg_exch.and.do_corners) then
       if (south_msg_exch.and.west_msg_exch) then
         A(1-hl:0,1-hl:0,:) = reshape(recvSW(szSW+1:szSW+szCr),shCr)
         szSW = szSW+szCr
+      elseif ((inode>0).and.(jnode>0)) then
+        A(1-hl:0,1-hl:0,:) = A(1:hl,1:hl,:)
       endif
 
       if (south_msg_exch.and.east_msg_exch.and.do_corners) then
         A(nxl+1:nxl+hl,1-hl:0,:) = reshape(recvSE(szSE+1:szSE+szCr),shCr)
         szSE = szSE+szCr
+      elseif ((jnode>0).and.(inode<np_xi-1).and.(do_corners)) then
+        A(nxl+1:nxl+hl,1-hl:0,:) = A(nxl:hl,1:hl,:)      
       endif
 
       if (north_msg_exch.and.west_msg_exch.and.do_corners) then
         A(1-hl:0,nyl+1:nyl+hl,:) = reshape(recvNW(szNW+1:szNW+szCr),shCr)
         szNW = szNW+szCr
+      elseif ((jnode<np_eta-1).and.(inode>0).and.(do_corners)) then
+        A(1-hl:0,nyl+1:nyl+hl,:) = A(1:hl,nyl:hl,:)
       endif
-
+ 
       if (north_msg_exch.and.east_msg_exch.and.do_corners) then
         A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = reshape(recvNE(szNE+1:szNE+szCr),shCr)
         szNE = szNE+szCr
+      elseif ((jnode<np_eta-1).and.(inode<np_xi-1).and.(do_corners)) then
+        A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = A(nxl:hl,nyl:hl,:)
       endif
 
       end subroutine unpack_buffers !]
