@@ -111,7 +111,8 @@
 
       ! local
       integer :: ierr,ncid,i,j,k
-      real :: norm,vint,arg
+      integer :: arg
+      real :: norm,vint
       real :: local_int,global_int
       real, dimension(nz) :: arg_nz
       real :: local_min_val
