@@ -111,8 +111,8 @@
 
       ! local
       integer :: ierr,ncid,i,j,k
-      integer :: arg
-      real :: norm,vint
+      integer :: vidx
+      real :: norm,vint,arg
       real :: local_int,global_int
       real, dimension(nz) :: arg_nz
       real :: local_min_val
@@ -228,8 +228,8 @@
                    do k=1,nz
                      arg_nz(k) = abs(z_r(i,j,k) + cdr_dep(icdr))
                    enddo
-                     arg = minloc(arg_nz,1)
-                     cdr_prf(cidx,arg) = frac(i,j,icdr)
+                     vidx = minloc(arg_nz,1)
+                     cdr_prf(cidx,vidx) = frac(i,j,icdr)
                  else
                    vint = 0
                    do k=1,nz
