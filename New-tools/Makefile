@@ -70,10 +70,10 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ipo -fp-model fast
+        FFLAGS = -O3 -ipo -fp-model fast
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
- 	FFLAGS = -g -traceback -CA -CB -CS
+# 	FFLAGS = -g -traceback -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
@@ -84,34 +84,33 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 #	FFLAGS = -O3 -ip -pg
 
 
-PSRC = partit.F roms_part_join.F nc_read_write.F
-
-JSRC = ncjoin.F roms_part_join.F nc_read_write.F
+PSRC = partit.F roms_part.F nc_read_write.F
+MSRC = partmap.F roms_part.F nc_read_write.F
 
   PCS = $(PSRC:.F=.f)
-  JCS = $(JSRC:.F=.f)
   PBJS = $(PSRC:.F=.o) 
-  JBJS = $(JSRC:.F=.o) 
+  MCS = $(MSRC:.F=.f)
+  MBJS = $(MSRC:.F=.o) 
   
 # Everything
-all: depend partit ncjoin
+all: depend partit partmap
 
 partit:  $(PBJS)
 	@echo 'Making: $(PBJS)'
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit $(PBJS) $(LCDF)
 
-ncjoin:  $(JBJS)
-	@echo 'Making: $(JBJS)'
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin $(JBJS) $(LCDF)
+partmap:  $(MBJS)
+	@echo 'Making: $(MBJS)'
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o partmap $(MBJS) $(LCDF)
 
 depend:  # Note: cross_matrix no longer used
-	@makedepf90 $(PSRC) $(JSRC) > Make.depend
+	@makedepf90 $(PSRC) $(MSRC) > Make.depend
 	@echo 'Updated Make.depend (dependency list)'
 
 # Cleaning targets
 # -------- -------
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit ncjoin 
+	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit partmap
 
 # Automatically generated dependency list:
 
