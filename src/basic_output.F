@@ -74,7 +74,7 @@
       integer :: navg_ovars = 0                             ! number of samples in average
       character(len=99),public :: fname_rst                 ! restart filename needed by diagnostics
       integer,public           :: rec_rst=nrpf_rst          ! current file output record needed by diags
-      integer                :: prev_month
+      integer                :: month_at_prev_timestep
       logical                :: write_another_step = .false.
 
       public :: wrt_his_ocean_vars
@@ -82,6 +82,7 @@
       public :: calc_avg_ocean_vars
       public :: wrt_rst_ocean_vars
       public :: init_avg_arrays
+      public :: init_restarts
 
       contains  !]
 !----------------------------------------------------------------------
@@ -92,8 +93,10 @@
       integer,dimension(6)   :: date
 
       if (wrt_file_rst .and. monthly_restarts) then
-          call sec2date(time,date)
-          prev_month = date(2)
+        ! Look one timestep ahead to initialize the "previous month", so that
+        ! when we restart we don't immediately write out a file.
+        call sec2date(start_time+dt,date)
+        month_at_prev_timestep = date(2)
       endif
 
       end subroutine init_restarts !]
@@ -495,17 +498,18 @@
           ! new month.
           ! time + 2*dt here so that it looks two timesteps ahead to see if we're changing months.
           call sec2date(time+2*dt,date)
-          if ((date(2) - prev_month) /= 0) then
-            call wrt_restart_file
-            write_another_step = .true.
-          endif
 
           if (write_another_step) then
             call wrt_restart_file
             write_another_step = .false.
           endif
 
-          prev_month = date(2)
+          if ((date(2) - month_at_prev_timestep) /= 0) then
+            call wrt_restart_file
+            write_another_step = .true.
+          endif
+
+          month_at_prev_timestep = date(2)
       else
 !     if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
 !     first_step=.false.                                             ! as first step the ocean_vars values are for t=0
