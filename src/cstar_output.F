@@ -28,7 +28,7 @@
 
       integer,dimension(6) :: date
       character(len=15)  :: datestr
-      integer :: prev_month
+      integer :: month_at_prev_timestep
 
       integer :: navg = 0
       integer :: iALK, iDIC, iALK_alt, iDIC_alt
@@ -95,10 +95,10 @@
       ! when we restart we don't immediately write out a file.
       if (monthly_averages) then
           call sec2date(time+dt,date)
-          prev_month = date(2)
+          month_at_prev_timestep = date(2)
       endif
 
-      if (mynode==0) print *,'init random'
+      if (mynode==0) print *,'init cstar'
 
       ! Loop over MARBL tracers...
       ! ...but use itot as index (to include other tracers)
@@ -404,9 +404,9 @@
       if (monthly_averages) then
         call sec2date(time+dt,date)
 
-        if ((date(2) - prev_month) /= 0) call wrt_output
+        if ((date(2) - month_at_prev_timestep) /= 0) call wrt_output
 
-        prev_month = date(2)
+        month_at_prev_timestep = date(2)
       else
 
         output_time = output_time + dt
