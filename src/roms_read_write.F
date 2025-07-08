@@ -80,7 +80,7 @@
       integer :: nxc,nyc
       real,dimension(:,:),allocatable   :: cdata     ! Array to read in coarse surface forcing data
 
-      integer,parameter :: max_options_string=2000
+      integer,parameter :: max_options_string=20000
 
       ! option string to go into output file attributes
 
