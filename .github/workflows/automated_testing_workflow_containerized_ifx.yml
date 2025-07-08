@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/dafyddstephenson/roms_ifx_build_env:latest
+      image: ghcr.io/cworthy-ocean/marbl_ifx_openmpi:latest
     strategy:
       fail-fast: false      
       matrix:
