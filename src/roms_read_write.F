@@ -93,6 +93,8 @@
       character(len=max_options_string),public::particle_opt='OFF'
       character(len=max_options_string),public::cdr_frc_opt  ='OFF'      
       ! forcing file specifications
+      character(len=max_options_string),public::grid_files='N/A'
+      character(len=max_options_string),public::ini_files='N/A'
       character(len=max_options_string),public::force_files='N/A'
       character(len=max_options_string),public::force_info='N/A'
       character(len=100),public::frctype ! variable across netcdf files (forcing module)
@@ -1242,15 +1244,13 @@
       ierr=nf90_put_att(ncid, nf90_global, 'title',title)         ! Title of the run
 
 #ifndef ANA_GRID
-      ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grdname)
+      ierr=nf90_put_att(ncid, nf90_global, 'grid_file',grid_files)
 #endif
 #ifndef ANA_GRID
       ierr=nf90_put_att (ncid, nf90_global, 'forcing_files', force_files)
       ierr=nf90_put_att (ncid, nf90_global, 'forcing_info', adjustl(force_info))
 #endif
-#ifndef ANA_INITIAL
-      ierr=nf90_put_att(ncid, nf90_global, 'init_file',ininame)
-#endif
+      ierr=nf90_put_att(ncid, nf90_global, 'init_file',ini_files)
 
       ierr=nf90_put_att(ncid, nf90_global, 'ntimes', ntimes)         ! Time stepping parameters
       ierr=nf90_put_att(ncid, nf90_global, 'ndtfast',ndtfast)

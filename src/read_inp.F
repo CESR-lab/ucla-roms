@@ -24,9 +24,10 @@
 
       integer, parameter :: input=15, testunit=40,
      &                  max_fname=256, max_kwsize=99
-      character(len=max_fname)  :: fname, force_string
+      character(len=max_fname)  :: fname, fname_orig,force_string
       character(len=max_kwsize) :: keyword
       character(len=3), parameter :: end_signal='end'
+      integer idx
       integer is,ie,  kwlen, lstr, lenstr
 #ifdef SOLVE3D
      &                                 , itrc
@@ -424,6 +425,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,'(A)',err=95) fname
           lstr=lenstr(fname)
+          idx = index(fname,'/',back=.true.)
+          fname_orig = trim(fname(idx+1:lstr))
 # if defined MPI && defined PARALLEL_FILES
           call insert_node(fname, lstr, mynode, NNODES, ierr)
 !         call insert_nodes(fname)
@@ -433,6 +436,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           grdname=fname(1:lstr)
           mpi_master_only write(*,'(1x,2A)') 'grid file: ',
      &                                     grdname(1:lstr)
+          grid_files = ''
+          call store_string_att(grid_files, fname_orig)
 #endif
 
 ! Initial conditions file name. Check its availability (in the case
@@ -447,6 +452,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #endif
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
+            idx = index(fname,'/',back=.true.)
+            fname_orig = trim(fname(idx+1:lstr))
 #if defined MPI && defined PARALLEL_FILES
             call insert_node(fname, lstr, mynode, NNODES, ierr)
 #endif
@@ -454,6 +461,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             mpi_master_only write(*,'(1x,A,I3,2x,3A)')
      &       'initial condition :: rec =', nrrec,  'file = ''',
      &                                   ininame(1:lstr), ''''
+            ini_files = ''
+            call store_string_att(ini_files, fname_orig)
 #ifdef ANA_INITIAL
          endif
 #endif
@@ -470,6 +479,12 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
             if (lstr > 0) then
+              idx = index(fname,'/',back=.true.)
+              fname_orig = trim(fname(idx+1:lstr))
+              if (mynode==0) then
+                print *,'idx: ',idx
+                print *,'fnames: ',trim(fname),' ',trim(fname_orig)
+              endif
 # if defined MPI && defined PARALLEL_FILES
               call insert_node(fname, lstr, mynode, NNODES, ierr)
 # endif
@@ -489,9 +504,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
                     write(*,'(23x,A)') frcfile(max_frc)(1:lstr)
                   endif
                   ! add to attributes
-                  if (mynode == 0) then
-                    call store_string_att(force_files, frcfile(max_frc)(1:lstr))
-                  endif
+                  call store_string_att(force_files, fname_orig)
 
 # ifdef MPI_SILENT_MODE
                 endif
@@ -505,7 +518,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
               endif
             endif
           enddo
-
 
 ! Climatology file name. Climatology data is needed for (1) to supply
 ! boundary data for T,S,u,v at open boundaries (just one row of points)
