@@ -569,7 +569,7 @@
       real,dimension(:,:,:),allocatable :: var3d
       real,dimension(:,:),allocatable   :: var2d,t2d
       real,dimension(:),allocatable     :: var0d
-      character(len=10),dimension(:),allocatable :: charvar
+      character(len=1) :: charvar
       character(len=20) :: vname
       character(len=1)  :: bry
       type(ncstructure)  :: ncinfo
@@ -685,7 +685,7 @@
 
         vname = ncinfo%varname(ivar)
         if (mynode==0) print *,'Processing variable: ',vname
-        if (mynode==0) print *,'Partitionable? ',ncinfo%varpart(ivar)
+!       if (mynode==0) print *,'Partitionable? ',ncinfo%varpart(ivar)
 
         if (ncinfo%xtype(ivar).eq.nf90_char) goto 99
 
@@ -974,20 +974,13 @@
 
         ! handle char variables
   99    if (ncinfo%xtype(ivar).eq.nf90_char) then        
-          print *,'hoi 0'
-          allocate(charvar(1))
-          print *,'hoi 1'
           ierr = nf90_inq_varid(ncid,vname,varid)
-          print *,'hoi 2'
           ierr = nf90_get_var(ncid,varid,charvar)
-          print *,'hoi 3'
           do part = part0,part1
             npid = ncparts(part)
-            ierr = nf90_put_var(npid,varid,(/charvar/))
+            ierr = nf90_put_var(npid,varid,charvar)
              if (ierr/=nf90_noerr) call handle_ierr(ierr)
           enddo
-          print *,'hoi 4'
-          if (allocated(charvar)) deallocate(charvar)
         endif
         
       enddo  ! ivars
