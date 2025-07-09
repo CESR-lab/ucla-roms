@@ -61,6 +61,10 @@ Tools-Roms/extract_data_join
 Tools-Roms/particle_join
 Tools-Roms/sample
 
+New-tools/ncjoin
+New-tools/partit
+New-tools/optimal
+
 # For Examples/code_check/
 # and Expanse run logs:
 *.log

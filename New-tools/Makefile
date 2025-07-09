@@ -86,11 +86,14 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 
 PSRC = partit.F roms_part.F nc_read_write.F
 MSRC = partmap.F roms_part.F nc_read_write.F
+OSRC = optimal_part.F roms_part.F nc_read_write.F
 
   PCS = $(PSRC:.F=.f)
   PBJS = $(PSRC:.F=.o) 
   MCS = $(MSRC:.F=.f)
   MBJS = $(MSRC:.F=.o) 
+  OCS = $(OSRC:.F=.f)
+  OBJS = $(OSRC:.F=.o) 
   
 # Everything
 all: depend partit partmap
@@ -103,8 +106,12 @@ partmap:  $(MBJS)
 	@echo 'Making: $(MBJS)'
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partmap $(MBJS) $(LCDF)
 
+optimal:  $(OBJS)
+	@echo 'Making: $(OBJS)'
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o optimal $(OBJS) $(LCDF)
+
 depend:  # Note: cross_matrix no longer used
-	@makedepf90 $(PSRC) $(MSRC) > Make.depend
+	@makedepf90 $(PSRC) $(MSRC) $(OSRC) > Make.depend
 	@echo 'Updated Make.depend (dependency list)'
 
 # Cleaning targets

@@ -8,7 +8,7 @@
       use netcdf
       use nc_read_write
       use mpi
-      use roms_part_join
+      use roms_part
 
       implicit none
 
@@ -17,7 +17,7 @@
 
       integer :: ncid,npid,ierr,       ! netcdf error handling
      &           dimid,                ! netcdf dimensions
-     &           gnx,gny,
+!    &           gnx,gny,
      &           npx0,npx1,npy0,npy1,  ! loop ranges
      &           npx,npy,i,k
       real                              :: cores,ocean,ar

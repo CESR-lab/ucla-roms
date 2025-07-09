@@ -67,13 +67,39 @@
         real,dimension(:),allocatable               ::attparams
       end type attstruct
       
+      public :: cmd_args_optimal
       public :: cmd_args_map
       public :: cmd_args_partit
       public :: partition_mask
+      public :: check_mask
       public :: make_partial_files
       public :: write_partial_files
 
       contains
+! ----------------------------------------------------------------------
+      subroutine cmd_args_optimal(cores,grdfile)  ![
+      implicit none
+
+!     import/export
+      real,intent(out)            :: cores 
+      character(len=128),intent(out) :: grdfile 
+
+!     local
+      integer            :: nargs
+      character(len=128) :: arg 
+
+      nargs =  command_argument_count()
+
+      if (nargs < 2) call show_use_optimal
+
+!     available cpus/cores
+      call get_command_argument(1,arg);
+      read(arg, *) cores
+!     grdfile
+      call get_command_argument(2,arg);
+      grdfile = arg
+
+      end subroutine cmd_args_optimal !]
 ! ----------------------------------------------------------------------
       subroutine cmd_args_map(npartx,nparty)  ![
 
@@ -151,6 +177,95 @@
       stop
 
       end subroutine show_use_partit !]
+! ----------------------------------------------------------------------
+      subroutine show_use_optimal ![
+      implicit none
+
+      print *, 'Usage of optimal should be: ',
+     &         'optimal_part cores grdfile.nc'
+       
+      stop
+
+      end subroutine show_use_optimal !]
+! ----------------------------------------------------------------------
+      subroutine check_mask(npx,npy,gnx,gny,mask)   ![
+      implicit none
+
+      ! input/outputs
+      integer, intent(in)            :: npx,npy,gnx,gny
+      real,dimension(:,:),intent(in) :: mask
+
+      ! local
+      real,dimension(:,:),allocatable :: rflx
+      real    :: msk_mx,rfx_mx
+      integer :: nx,ny
+      integer :: surplus_x,surplus_y
+      integer :: loc_x,loc_y
+      integer :: npi,npj
+      integer :: count
+      
+      ! Get interior subdomain size
+      nx = ceiling(1.0*gnx/npx)
+      ny = ceiling(1.0*gny/npy)
+
+      surplus_x = nx*npx - gnx
+      surplus_y = ny*npy - gny
+
+      ! Array's to store the location and size of each subdomain
+      allocate(iloc(npx,3)) ! lnx = iloc(:,1), is = iloc(:,2), ie = iloc(:,3)
+      allocate(jloc(npy,3)) ! lny = jloc(:,1), js = jloc(:,2), je = jloc(:,3)
+
+      loc_x = 1
+      do npi = 1,npx
+        if (npi==1) then ! left-most subdomain
+          iloc(npi,1) = nx - surplus_x/2
+        elseif (npi==npx) then ! East-most subdomain
+          iloc(npi,1) = nx - (surplus_x+1)/2
+        else
+          iloc(npi,1) = nx
+        endif
+        iloc(npi,2) = loc_x
+        iloc(npi,3) = loc_x + iloc(npi,1) -1
+        loc_x = loc_x + iloc(npi,1)
+      enddo
+
+      loc_y = 1
+      do npj = 1,npy
+        if (npj==1) then ! left-most subdomain
+          jloc(npj,1) = ny - surplus_y/2
+        elseif (npj==npy) then ! North-most subdomain
+          jloc(npj,1) = ny - (surplus_y+1)/2
+        else
+          jloc(npj,1) = ny
+        endif
+        jloc(npj,2) = loc_y
+        jloc(npj,3) = loc_y + jloc(npj,1) -1
+        loc_y = loc_y + jloc(npj,1)
+      enddo
+
+      allocate(node_map(0:npy+1,0:npx+1))
+      node_map = -98
+      allocate(npi_c(npx*npy))
+      allocate(npj_c(npx*npy))
+
+      count = 0
+      do npj = 1,npy
+        do npi = 1,npx
+          msk_mx = maxval(mask(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          !rfx_mx = maxval(rflx(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          if (msk_mx > 0) then
+            count = count+1
+            node_map(npj,npi) = count
+            npi_c(count) = npi
+            npj_c(count) = npj
+          endif
+        enddo
+      enddo
+      nparts = count
+
+      deallocate(iloc,jloc,node_map,npi_c,npj_c)
+
+      end subroutine check_mask !]
 ! ----------------------------------------------------------------------
       subroutine partition_mask(npx,npy)   ![
       implicit none

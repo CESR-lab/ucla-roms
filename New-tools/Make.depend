@@ -1,4 +1,5 @@
-partit.o : partit.F roms_part_join.o 
-roms_part_join.o : roms_part_join.F nc_read_write.o 
+partit.o : partit.F roms_part.o 
+roms_part.o : roms_part.F nc_read_write.o 
 nc_read_write.o : nc_read_write.F nc_read_write.opt 
-ncjoin.o : ncjoin.F roms_part_join.o 
+partmap.o : partmap.F roms_part.o nc_read_write.o 
+optimal_part.o : optimal_part.F roms_part.o nc_read_write.o 
