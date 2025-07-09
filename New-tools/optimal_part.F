@@ -66,26 +66,28 @@
       dsize=(/gnx+2,gny+2/)
       varid=nccreate(npid,vname,dname,dsize)
 
-      ar    = gnx/gny                ! aspect ratio grid:
-      ocean = (sum(msk)/(gnx*gny))+1 ! percentage of grid that is not masked
+      ar    = real(gnx)/real(gny)   ! aspect ratio grid:
+      ocean = (sum(msk)/(gnx*gny))  ! fraction of the grid that is not masked
 
       ! first guess of x,y partition that gives roughly square subdomains
       ! and should exceed the number of available cores by a bit.
-      npx1 = ceiling(sqrt(cores)*ar/ocean)
-      npy1 = ceiling(sqrt(cores)/ar/ocean)
+      npx1 = ceiling(sqrt(cores*ar/ocean))
+      npy1 = ceiling(sqrt(cores/ar/ocean))
 
-      ! 16 guesses ok?
-      npx0 = max(npx1-4,1)
-      npy0 = max(npy1-4,1)
 
-      allocate(active(1:npx1*npy1,1:3))
+      npx0 = max(npx1-7,1)
+      npy0 = max(npy1-7,1)
+
+      allocate(active(1:56,1:3))
       i = 0
-      do npy = 20,40
-        do npx = 20,40
-          if ((npx*npy>=cores).and.(npx*npy<=ocean*cores)) then
+      do npy = npx0,npx1
+        do npx = npy0,npy1
+!         print *,npx*npy,cores/ocean
+          if ((npx*npy>=cores).and.(npx*npy<=cores/ocean)) then
             call check_mask(npx,npy,gnx,gny,msk)
             i = i+1
-            if (nparts<=480) then
+            if (nparts<=cores) then
+!             print *, nparts, npx,npy
               active(i,1) = nparts
               active(i,2) = npx
               active(i,3) = npy

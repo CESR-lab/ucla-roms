@@ -146,13 +146,16 @@
       print *,nargs,npartx,nparty
 
       call get_command_argument(3,arg)
-      read(arg,*) grdfile
+      grdfile = trim(adjustl(arg))
+!     read(arg,*) grdfile
+!     print *,'gridfile: ',grdfile
       
       nfiles = nargs - 3
       allocate(srcfiles(nfiles))
       do i = 4,nargs
         call get_command_argument(i,arg)
-        read(arg,*) srcfiles(i-3)
+        srcfiles(i-3) = trim(adjustl(arg))
+!       read(arg,*) srcfiles(i-3)
       enddo
       print *,grdfile,srcfiles(1)
 
@@ -252,8 +255,9 @@
       do npj = 1,npy
         do npi = 1,npx
           msk_mx = maxval(mask(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
-          !rfx_mx = maxval(rflx(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
-          if (msk_mx > 0) then
+          rfx_mx = 0
+!         rfx_mx = maxval(rflx(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          if (msk_mx > 0.or.rfx_mx>0) then
             count = count+1
             node_map(npj,npi) = count
             npi_c(count) = npi
@@ -285,6 +289,7 @@
       
 
       ierr = nf90_open(trim(adjustl(grdfile)), nf90_nowrite, ncid)
+       print *, grdfile
        if (ierr/=0) call handle_ierr(ierr,'opening: ',trim(adjustl(grdfile)))
 
       ierr = nf90_inq_dimid(ncid,'xi_rho',dimid)
@@ -480,6 +485,10 @@
 
         do ivar = 1,ncinfo%nvars
           vname   = ncinfo%varname(ivar)
+          if (index(vname,'coarse')>0) then
+            if (part==1) print *,'Skipping coarse variable: ', vname
+            cycle
+          endif
           xtype   = ncinfo%xtype(ivar)
           ndims   = ncinfo%ndims(ivar)
           dsize(1:ndims) = ncinfo%dims(ivar)%dimsizes
@@ -675,6 +684,8 @@
       do ivar=1,ncinfo%nvars
 
         vname = ncinfo%varname(ivar)
+        if (mynode==0) print *,'Processing variable: ',vname
+        if (mynode==0) print *,'Partitionable? ',ncinfo%varpart(ivar)
 
         if (ncinfo%xtype(ivar).eq.nf90_char) goto 99
 
@@ -682,6 +693,7 @@
 
         ndims = ncinfo%ndims(ivar)
         if (vname=='time_step') cycle
+        if (index(vname,'coarse')>0) cycle
 
         if (ncinfo%varpart(ivar)) then
           select case(ndims)
@@ -834,7 +846,7 @@
             end select
             startw = (/1,1,1,record/)
           end select
-        else
+        else   ! not partitionable
           select case(ndims)
           case(0) ! needed to handle single value variables
             goto 98
@@ -962,14 +974,19 @@
 
         ! handle char variables
   99    if (ncinfo%xtype(ivar).eq.nf90_char) then        
+          print *,'hoi 0'
           allocate(charvar(1))
+          print *,'hoi 1'
           ierr = nf90_inq_varid(ncid,vname,varid)
+          print *,'hoi 2'
           ierr = nf90_get_var(ncid,varid,charvar)
+          print *,'hoi 3'
           do part = part0,part1
             npid = ncparts(part)
-            ierr = nf90_put_var(npid,varid,charvar)
+            ierr = nf90_put_var(npid,varid,(/charvar/))
              if (ierr/=nf90_noerr) call handle_ierr(ierr)
           enddo
+          print *,'hoi 4'
           if (allocated(charvar)) deallocate(charvar)
         endif
         
