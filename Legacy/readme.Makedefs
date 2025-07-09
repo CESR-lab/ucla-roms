@@ -1,0 +1,59 @@
+This is for information only:
+Typical user does NOT need to read this.
+
+Makedefs.inc file is stored in src/ directory.
+Further examples of Makedefs.XXX are found in
+Documentation/machine-specific/Makedefs/
+
+Explanation of MACRO definitions set in Makedefs.XXX
+=========== == ===== =========== === == ============
+
+         CPP  name/path of the C preprocessor
+
+              WARNING !!!!  DO NOT USE /lib/cpp ON SGI COMPUTERS,
+                            THERE IS A BUG IN THERE. READ AND TEST
+                            cpp_bug.F FOR DETAILS.
+
+
+    CPPFLAGS  flags to the C preprocessor
+
+         CFT  name/path of the FORTRAN compiler to use
+
+      FFLAGS  compilation options (flags) for FORTRAN compiler
+
+         LDR  name/path of  FORTRAN loader (usually the same as CFT) 
+
+     LDFLAGS  flags specific for the loader, but not needed during
+              compilation phase.
+
+ BINARY_TYPE  (specific SGI IRIX only) -- birany format for executable
+               file: either n32 or 64 (very old SGIs may use -32).
+
+        LCDF  name/path to netCDF library
+
+     LIBNCAR  name/path to NCAR graphics library
+
+      LPEPCD  (specific for Intel ifc compilers only) -- name/path to
+              Intel libLPEPCD90 compatibility library which contains
+              iargc--getarg functions. It has the same effect as Intel
+              ifc compiler flag -Vaxlib.
+             
+     LIBNCAR  NCAR graphics library [ROMS code is never linked
+              directly to it, but some auxiliary diagnostic programs 
+              (e.g. plotter) may use it.]
+
+  COMP_FILES  specific files created by the compuler, for example
+              work.pc, work.pcl by Intel IFC compiler, or rii_files
+              by SGI compiler. This is needed for proper cleaning.
+
+
+Further comments 2020:
+
+- 2020-11: Legacy Makedefs used '-IPF_fma' which was deprecated in favor of 
+  '-fma' (see ifort v11 user guide). This option is on by default '-fma', hence 
+  removed from Makedefs.inc as redundant.
+- 2020-11: -stack_temps option for ifort is extremely old. It has not been 
+  used since atleast ifort v11.0. It places temporary arrays on the stack. 
+  This is anyway the default behaviour for ifort v19.0.
+
+
