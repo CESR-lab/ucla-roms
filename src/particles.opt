@@ -15,4 +15,6 @@
       real    :: ppm3 = 1e-6          ! target particles per cubic meter
       integer :: pmin = 200 ! minimum of allocated space for particle array
 
+      logical :: cont_seed = .false.
+
       ! end user inputs
