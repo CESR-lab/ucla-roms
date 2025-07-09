@@ -65,11 +65,13 @@ jobs:
           cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
           cd ${ROMS_ROOT}/Examples/input_data/
           ./get_input_files.sh
-      - name: Update COMPILER arg in make commands
+      - name: Update COMPILER arg in make commands and allow OpenMPI oversubscription
         shell: bash
         run: |
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
+          sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
+          sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh          
 
       - name: Run test for ${{ matrix.example }}
         shell: bash
