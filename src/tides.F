@@ -232,14 +232,14 @@
             do j=jstrR-1,jendR
               do i=istrR-1,iendR
                 ptide(i,j)=
-     &        + ptide_r(i,j,itide)*cos(omT)- ptide_i(i,j,itide)*sin(omT)
+     &          ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
               enddo
             enddo
           else
             do j=jstrR-1,jendR ! DevinD does jstrR-1 not go beyond computational margin?
               do i=istrR-1,iendR
-                ptide(i,j)= ptide(i,j)+
-     &          + ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
+                ptide(i,j)= ptide(i,j)
+     &        + ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
               enddo
             enddo
           endif

@@ -490,7 +490,7 @@ c**  &                                                             )
 # endif
 
 # ifdef EXCHANGE
-        call exchange_xxx(t(:,:,:,,nnew,itrc) )
+        call exchange_xxx(t(:,:,:,nnew,itrc) )
 # endif
       end
 #else

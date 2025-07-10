@@ -111,6 +111,7 @@
 
       ! local
       integer :: ierr,ncid,i,j,k
+      integer :: vidx
       real :: norm,vint,arg
       real :: local_int,global_int
       real, dimension(nz) :: arg_nz
@@ -142,7 +143,7 @@
 
         ! find fractional cdr fluxes for this subdomain
         allocate(dist(GLOBAL_2D_ARRAY)); dist = 1e6 ! Some large number so we don't get single-point releases in the halos
-        allocate(frac(GLOBAL_2D_ARRAY,ncdr))
+        allocate(frac(GLOBAL_2D_ARRAY,ncdr));frac = 0
 
         cidx = 0
         do icdr= 1,ncdr
@@ -227,8 +228,8 @@
                    do k=1,nz
                      arg_nz(k) = abs(z_r(i,j,k) + cdr_dep(icdr))
                    enddo
-                     arg = minloc(arg_nz,1)
-                     cdr_prf(cidx,arg) = frac(i,j,icdr)
+                     vidx = minloc(arg_nz,1)
+                     cdr_prf(cidx,vidx) = frac(i,j,icdr)
                  else
                    vint = 0
                    do k=1,nz
