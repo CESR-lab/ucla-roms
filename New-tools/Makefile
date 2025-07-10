@@ -73,7 +73,7 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
         FFLAGS = -O3 -ipo -fp-model fast
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
- 	FFLAGS = -g -traceback -CA -CB -CS
+#	FFLAGS = -g -traceback -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
@@ -96,7 +96,7 @@ OSRC = optimal_part.F roms_part.F nc_read_write.F
   OBJS = $(OSRC:.F=.o) 
   
 # Everything
-all: depend partit partmap
+all: depend partit partmap optimal
 
 partit:  $(PBJS)
 	@echo 'Making: $(PBJS)'
