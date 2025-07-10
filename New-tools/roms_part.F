@@ -195,8 +195,8 @@
       implicit none
 
       ! input/outputs
-      integer, intent(in)            :: npx,npy,gnx,gny
-      real,dimension(:,:),intent(in) :: mask
+      integer, intent(in)                        :: npx,npy,gnx,gny
+      real,dimension(0:gnx+1,0:gny+1),intent(in) :: mask
 
       ! local
       real,dimension(:,:),allocatable :: rflx
@@ -360,7 +360,7 @@
       do npj = 1,npy
         do npi = 1,npx
           msk_mx = maxval(mask(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
-          if (msk_mx /= 0) then
+          if (msk_mx > 0) then
             count = count+1
             node_map(npj,npi) = count
             npi_c(count) = npi
@@ -480,6 +480,12 @@
         ierr = nf90_inquire(ncid, nAttributes=ngatt)
         do iatt = 1,ngatt
           ierr = nf90_inq_attname(ncid,nf90_global,iatt,att_name)
+          ! if present, these attributes would mess up the writes above
+          if (index(att_name,'start_idx')) cycle
+          if (index(att_name,'end_idx')) cycle
+          if (index(att_name,'neighbors')) cycle
+          if (index(att_name,'subdompos')) cycle
+          if (index(att_name,'globaldims')) cycle
           ierr = nf90_copy_att(ncid,nf90_global,att_name,npid,nf90_global)
         enddo 
 

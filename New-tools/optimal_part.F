@@ -50,7 +50,7 @@
       gny = gny-2
 
       ! mask rho
-      allocate(msk(0:gnx,0:gny)); msk=1 
+      allocate(msk(0:gnx+1,0:gny+1)); msk=1 
       call ncread(ncid,'mask_rho',msk)
 
       ierr = nf90_close(ncid)
@@ -80,14 +80,12 @@
 
       allocate(active(1:56,1:3))
       i = 0
-      do npy = npx0,npx1
-        do npx = npy0,npy1
-!         print *,npx*npy,cores/ocean
+      do npy = npy0,npy1
+        do npx = npx0,npx1
           if ((npx*npy>=cores).and.(npx*npy<=cores/ocean)) then
             call check_mask(npx,npy,gnx,gny,msk)
             i = i+1
             if (nparts<=cores) then
-!             print *, nparts, npx,npy
               active(i,1) = nparts
               active(i,2) = npx
               active(i,3) = npy
