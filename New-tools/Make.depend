@@ -3,3 +3,4 @@ roms_part.o : roms_part.F nc_read_write.o
 nc_read_write.o : nc_read_write.F nc_read_write.opt 
 partmap.o : partmap.F roms_part.o nc_read_write.o 
 optimal_part.o : optimal_part.F roms_part.o nc_read_write.o 
+ncjoin.o : ncjoin.F roms_part.o 
