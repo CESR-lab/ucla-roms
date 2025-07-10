@@ -737,7 +737,6 @@
         if (mynode==0) then
           if (record==1) print *,'Processing variable: ',vname
         endif
-!       if (mynode==0) print *,'Partitionable? ',ncinfo%varpart(ivar)
 
         if (ncinfo%xtype(ivar).eq.nf90_char) goto 99
 
