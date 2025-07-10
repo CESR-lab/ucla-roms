@@ -1,152 +1,71 @@
-# Makefile for UCLA ROMS model
+# Universal machine independent makefile for ROMS model
 #========== ======= =========== ======== === ==== =====
-# This makefile requires that you have the following
-# environment variables defined:
-#  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
-#
-#  Example entries in a .bashrc file:
-#
-# export FCOMP=mpiifx
-# export MPIHOME=/opt/intel/oneapi/mpi/latest
-# export NETCDF_ROOT=/opt/netcdf-fortran-4.6.1
-# export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
-#
-# export LD_LIBRARY_PATH=${MPIHOME}/lib/:$LD_LIBRARY_PATH
-# export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
-# export LD_LIBRARY_PATH=${NETCDF_ROOT}/lib/:$LD_LIBRARY_PATH
+# Set machine dependent definitions and rules.
 
-# export ROMS_ROOT=/home/username/ucla-roms
-# export PATH=${ROMS_ROOT}/Tools-Roms:$PATH
-# export PATH=${NETCDFC_ROOT}/bin:$PATH
-# export PATH=${NETCDF_ROOT}/bin:$PATH
+include Makedefs.inc
 
-#export MARBL_ROOT=/home/username/MARBL
+# Build ROMS source list from unprocessed F77 files (typically .F extension)
+   SRCS = $(wildcard *$(UPF77_ext))
 
+# Exclude files that are not part of main build
+   EXCL = mpi_test checkkwds cppcheck srcscheck
+   EXCL += check_alfabeta check_rho_eos int_r3d sediment t3dmix_GP transp_nodes u3dbc_new visc3d_GP visc3d_S_FS
+   EXCL := $(addsuffix $(UPF77_ext), $(EXCL))
+   SRCS := $(filter-out $(EXCL), $(SRCS))
 
-#
-.SUFFIXES: .o .f .F .f90
+# Include files that do not exist yet but
+# 	are generated as part of the build:
+   INCL = check_srcs check_switches1 setup_kwds
+   INCL := $(addsuffix $(UPF77_ext), $(INCL))
+   SRCS := $(SRCS) $(INCL)
 
-USEMARBL=FALSE
+# Object and pre-processed source files are source list with extension changes
+   RCS = $(SRCS:$(UPF77_ext)=$(PPF77_ext))
+  OBJS = $(RCS:$(PPF77_ext)=$(OBJ_ext))
+# Sort OBJS to remove duplicates
+  OBJS := $(sort $(OBJS))
 
-.F.o:
-	@$(CPP) -P $*.F | mpc > $*.f
-	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
-	@/bin/rm -f $*.f
-.F.f:
-	$(CPP) -P  $*.F | mpc > $*.f
-.f.o:
-	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
-.f90.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
-
-     CPP = cpp -traditional
-
-# Path names (non-hydrostatic, MARBL and NetCDF libraries):
-	MARBL_INC = ${MARBL_ROOT}/include/intel-mpi
-	MARBL_LIB = -L${MARBL_ROOT}/lib -lmarbl-intel-mpi
-
-	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_INC  = $(NHMG_ROOT)/include
-	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
-
-	NETCDF_INC = $(NETCDF_ROOT)/include
-	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
-	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
-
-	MPI_INC = ${MPIHOME}/include/mpi
-
-
-ifeq ($(USEMARBL),TRUE)
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(MARBL_LIB)
-else
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB)
-endif
-
-ifeq ($(FCOMP),mpiifx)
-	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
-	ICDF =
-else
-	ICDF = -I$(MPI_INC) -I$(NHMG_INC) -I$(NETCDF_INC) -I$(MARBL_INC)
-endif
-
-
-# Large memory runs (e.g. for bgc):
-#	LARGE_MEM_FLAG = -mcmodel=medium
-#	LARGE_MEM_FLAG = -mcmodel=large
-
-# Fortran compiler flags:
-#	CFTFLAGS = -pc64 -auto
-	CFTFLAGS =
-
-# Fortran loader name and options:
- 	LDR = $(FCOMP)  $(CFTFLAGS)
-
-# Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
-# - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ipo -fp-model fast
-# - uncomment for debugging:
-#	FFLAGS = -g -traceback -check all -CA -CB -CS
-#	FFLAGS = -g -traceback -CA -CB -CS
-# - uncomment for traceback only (traceback not as accurate as full debug mode...)
-#	FFLAGS = -O3 -ip -traceback
-# - for code_check script ensure consistency with -fp-model strict:
-#	FFLAGS = -O3 -fp-model strict
-# - for profiling with vtune to see source code, also comment '@/bin/rm -f $*.f':
-#	FFLAGS = -O3 -g -debug inline-debug-info -parallel-source-info=2
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
-#	FFLAGS = -O3 -ip -pg
-
-
-KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
-	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
-	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
-	mpi_test_arr.F private_scratch.F basic_output.F\
-	scalars.F scoord.F strings.F work_mod.F nc_read_write.F\
-	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
-	diagnostics.F	step2d_FB.F	read_inp.F\
-	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
-	setup_grid1.F	setup_grid2.F\
-	set_nudgcof.F  sponge_tune.F roms_read_write.F extract_data.F \
-\
-	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
-	step3d_t_ISO.F	set_depth.F	omega.F\
-	visc3d_S.F	t3dmix_S.F      particles.F\
-\
-	zetabc.F	u2dbc_im.F	v2dbc_im.F\
-	u3dbc_im.F	v3dbc_im.F	w3dbc_im.F	t3dbc_im.F\
-\
-	rho_eos.F	alfabeta.F\
-\
-	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	\
-\
-        diag.F		timers.F	wvlcty.F	grid_stiffness.F\
-        lenstr.F	setup_kwds.F	check_switches1.F\
-        ext_copy_prv2shr.F		check_switches2.F\
-\
-	mpi_setup.F\
-\
-	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F cstar_output.F mpi_exchanges.F	zslice_output.F\
-\
-	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
-\
-	main.F
-
-IOSRC = checkdims.F	insert_node.F\
-	get_init.F	set_forces.F	closecdf.F\
-
-  SRCS = $(KRNSRC) $(IOSRC)
-   RCS = $(SRCS:.F=.f)
-  OBJS = $(RCS:.f=.o)
   SBIN = roms
+ LROMS = libroms.a
+ LROMS2 = 2/$(LROMS)
+ LROMS3 = 2/$(LROMS) 3/$(LROMS)
+ LROMS4 = 2/$(LROMS) 3/$(LROMS) 4/$(LROMS)
+
+###########
+# TARGETS #
+###########
 
 # ROMS excutable (This is the first target and hence the default):
 $(SBIN): $(OBJS)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
 	mv a.out $(SBIN)
 
+
+# Multilevel libraries
+
+$(LROMS): $(OBJS)
+	/bin/rm -f $(LROMS)
+	ar r $(LROMS) $(OBJS)
+
+
+check_forces: check_forces$(OBJ_ext) $(SBIN)
+	cp -pv check_forces$(OBJ_ext) main$(OBJ_ext)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o a.out $(OBJS) $(LCDF) $(LMPI)
+	mv a.out check_forces
+
 # Everything
+.PHONY: all
 all: tools depend $(SBIN)
+
+# A program to test MPI halo exchange routines.
+# - ------- -- ---- --- ---- -------- ---------
+MPI_TEST = mpi_test	mpi_setup	exchange	mpi_exchange4\
+							mpi_exchange8WA
+MPI_TEST_RCS := $(addsuffix $(PPF77_ext), $(MPI_TEST))
+MPI_TEST_OBJ := $(addsuffix $(OBJ_ext)  , $(MPI_TEST))
+
+mpi_test: $(MPI_TEST_OBJ)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o mpi_test $(MPI_TEST_OBJ) $(LCDF) $(LMPI)
 
 # Auxiliary utility programs
 # --------- ------- --------
@@ -156,40 +75,81 @@ tools: $(TOOLS)
 
     TMP = .
 
-cppcheck: cppcheck.o
-	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck.o
+cppcheck: cppcheck$(OBJ_ext)
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck$(OBJ_ext)
 
-srcscheck: srcscheck.o
-	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck.o
+srcscheck: srcscheck$(OBJ_ext)
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck$(OBJ_ext)
+srcscheck$(OBJ_ext): strings$(OBJ_ext)
 
-checkkwds: checkkwds.o
-	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds.o
+checkkwds: checkkwds$(OBJ_ext)
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds$(OBJ_ext)
+
+redefs: redefs$(OBJ_ext)
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o redefs redefs$(OBJ_ext)
 
 
-checkdefs: check_switches1.F setup_kwds.F
 
-check_switches1.F: cppcheck cppdefs.opt
+checkdefs: check_switches1$(UPF77_ext) setup_kwds$(UPF77_ext)
+
+check_switches1$(UPF77_ext): cppcheck cppdefs.opt
 	./cppcheck cppdefs.opt
-check_srcs.F: srcscheck Makefile
+check_srcs$(UPF77_ext): srcscheck Makefile
 	./srcscheck
-setup_kwds.F: checkkwds read_inp.F
+setup_kwds$(UPF77_ext): checkkwds read_inp$(UPF77_ext)
 	./checkkwds
 
-depend:  # Note: cross_matrix no longer used
-	@${ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend
+.PHONY: depend
+depend:  # makedepf90 is preferable but does not work on e.g. osx-arm64. Offer python fallback.
+	@${ROMS_ROOT}/Tools-Roms/makedepf90 $(SRCS) > Make.depend  || \
+	(echo "failed to generate dependency list with makedepf90, using python fallback"; \
+	 ${ROMS_ROOT}/Tools-Roms/makedep.py  Make.depend)
 	@echo 'Updated Make.depend (dependency list)'
 
 # Target to create tar file.
 # ------ -- ------ --- -----
 tarfile: clean
-	tar cvf roms.tar Make* *.F *.h etalon_data.* README.*  *.in* *.mod
+	tar cvf roms.tar Make* *$(UPF77_ext) *.h etalon_data.* README.*  *.in* *.mod
 
 # Cleaning targets
 # -------- -------
+.PHONY: clean
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ $(COMP_FILES)
+	/bin/rm -rf *$(PPF77_ext) *$(OBJ_ext) *.a *.s *.mod *.trace *~ $(COMP_FILES)
+
+.PHONY: allclean
+allclean: clean
+	cd 2; make -f ./Makefile clean; cd ..
+	cd 3; make -f ./Makefile clean; cd ..
+	cd 4; make -f ./Makefile clean; cd ..
+
+.PHONY: clobber
+clobber: clean
+	/bin/rm -f check_switches1$(UPF77_ext) setup_kwds$(UPF77_ext) check_srcs$(UPF77_ext)
+	/bin/rm -f $(SBIN) $(TOOLS) nsub
+	/bin/rm -f core core.*
+	/bin/rm -f *_genmod.mod *_genmod$(PPF90_ext)
+
+.PHONY: help
+help:
+	@echo "Universal make procedure for ucla-roms, compatible with most UNIX systems."
+	@echo "The following user options are available"
+	@echo "COMPILER (fortran compiler):"
+	@echo "  intel :  default, use ifort as compiler"
+	@echo "  gnu :    use gfortran as compiler"
+	@echo "MPI_DIST (mpi distribution):"
+	@echo "   generic: default, uses mpifort as a wrapper for the fortran compiler"
+	@echo "   intel  : use intel mpiifort as a wrapper for the fortran compiler"
+	@echo "BUILD_MODE:"
+	@echo "   regular : default, uses optimisation level 3"
+	@echo "   debug   : compile with debug flags"
+	@echo "   strict  : compile with -fp-model strict (intel only)"
+	@echo "   vtune   : compile with flags for profiling with vtune (intel only)"
+	@echo "   grof    : compile with flags for profiling with grof (intel only)"
+	@echo "KEEP_PPSRC:"
+	@echo "    true   : keep pre-processed source code after processing"
+	@echo "    false  : delete pre-processed source code after processing"
 
 # Automatically generated dependency list:
-
 include Make.depend
 

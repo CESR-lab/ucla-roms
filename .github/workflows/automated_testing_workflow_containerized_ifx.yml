@@ -45,7 +45,6 @@ jobs:
         shell: bash
         run: |
           source $GITHUB_ENV
-          rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
           cd Work/
           make nhmg COMPILER=intel
           cd ${ROMS_ROOT}/Tools-Roms/

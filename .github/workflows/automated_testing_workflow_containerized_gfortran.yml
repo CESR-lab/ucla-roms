@@ -43,7 +43,6 @@ jobs:
       run: |
         micromamba run -n roms-ci bash -c '
         #Copy GNU-compatible makefiles
-        rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
         cd Work/
         make nhmg COMPILER=gnu
         cd ${ROMS_ROOT}/Tools-Roms/

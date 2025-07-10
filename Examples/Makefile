@@ -14,12 +14,11 @@
 .PHONY: all clean depend
 
 all:
-	@echo "Doing my thing"
 	ln -s $(ROMS_ROOT)/Examples/input_data input_data 2>/dev/null || :
 	rsync -a $(ROMS_ROOT)/src/*.F $(ROMS_ROOT)/src/*.h  Compile
 	make show_tag
 	@rsync -a $(ROMS_ROOT)/src/*.opt Compile
-#@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
+	@rsync -a $(ROMS_ROOT)/src/Makedefs.inc Compile
 	@rsync -a $(ROMS_ROOT)/src/Make.depend Compile
 	@rsync -a $(ROMS_ROOT)/src/Makefile Compile
 	@rm Compile/*.f	2>/dev/null || :
@@ -36,10 +35,8 @@ all:
 
 # for adding git hash:
 tag := $(shell git rev-parse HEAD)
-tline1 := git_hash=
-tline2:= 'git_hash=\"$(tag)\"'
 show_tag:
-	@sed -i '/$(tline1)/c\      $(tline2)' Compile/add_git_hash.F
+	@perl -i -pe 's/git_hash=.*/git_hash="$(tag)"/' Compile/add_git_hash.*
 
 compile_clean:
 	rm -r Compile/ roms 2>/dev/null || :
@@ -61,7 +58,11 @@ copy_to_Work_dir:
 	cp -p *.F *.h *.in *.sh ../../Work 2>/dev/null || :
 
 nhmg:
-	cd $(ROMS_ROOT)/NHMG/src; make clean; cd .. ; make
+	cd $(ROMS_ROOT)/NHMG/src; make clean; make
+
+tools-roms:
+	cd $(ROMS_ROOT)/Tools-Roms/; make ;
+
 
 # The no-print suppress makes messages of entering/leaving directories
 MAKEFLAGS += --no-print-directory
