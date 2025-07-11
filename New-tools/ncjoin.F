@@ -7,7 +7,7 @@
       ! ----- Module -----
       use netcdf
       use mpi
-      use roms_part_join
+      use roms_part
 
       ! ----- Allocation ----- 
       implicit none
