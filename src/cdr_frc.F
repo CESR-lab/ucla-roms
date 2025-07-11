@@ -234,8 +234,12 @@
                    do k=1,nz
                      arg = ( (z_r(i,j,k) + cdr_dep(icdr) )/cdr_vsc(icdr) )**2
                      cdr_prf(cidx,k) = exp(-arg)*Hz(i,j,k)
-                     vint = vint + cdr_prf(cidx,k)
                    enddo
+                   ! The 1D integral of exp^(z/cdr_vsc(icdr))**2 is cdr_vsc(icdr)*SQRT(pi),
+                   ! so normalizing by this amount will ensure we don't weight the
+                   ! tracer incorrectly in this column when a substantial fraction of the release
+                   ! is beneath the seafloor.
+                   vint = cdr_vsc(icdr) * SQRT(pi)
                    cdr_prf(cidx,:) = frac(i,j,icdr)*cdr_prf(cidx,:)/vint
                  endif
                endif
