@@ -50,6 +50,7 @@ else ifeq ($(COMPILER),ifort)
     compatible_wrappers := mpifort mpiifort
 endif
 
+
 # Detect and set MPI wrapper if set to `auto` above:
 ifeq ($(MPI_WRAPPER),auto)
     MPI_WRAPPER := $(shell \
@@ -62,12 +63,17 @@ ifeq ($(MPI_WRAPPER),auto)
     $(info INFO: Automatically selected MPI_WRAPPER=$(MPI_WRAPPER) based on COMPILER=$(COMPILER))
 endif
 
-# Fail if MPI_WRAPPER is empty or still "auto" after it should have been set:
-ifeq ($(filter auto, $(MPI_WRAPPER)),auto)
-    $(error Failed to auto-detect a suitable MPI wrapper for COMPILER=$(COMPILER). Tried: $(compatible_wrappers))
+# If MPI_WRAPPER is still 'auto', or is now empty, autodetect failed - make sure it's empty in both cases to catch
+ifeq ($(MPI_WRAPPER),auto)
+    $(MPI_WRAPPER):=
 endif
 
-# Fail if the wrapper doesn't exist
+# Fail if MPI_WRAPPER is empty:
+ifeq ($(strip $(MPI_WRAPPER)),)
+    $(error MPI_WRAPPER not set or make failed to auto-detect a suitable MPI wrapper for COMPILER=$(COMPILER). Tried the following wrappers: $(compatible_wrappers))
+endif
+
+# Fail if the user-chosen wrapper doesn't exist
 ifeq ($(shell command -v $(MPI_WRAPPER) >/dev/null 2>&1 || echo missing),missing)
     $(error MPI_WRAPPER=$(MPI_WRAPPER) not found. Install it or set MPI_WRAPPER to a valid MPI wrapper)
 endif
@@ -75,7 +81,7 @@ endif
 # Fail if the chosen wrapper doesn't wrap the chosen compiler
 MPIVER := $(shell $(MPI_WRAPPER) --version | head -n1)
 ifeq ($(findstring $(expected_fc),$(MPIVER)),)
-    $(error COMPILER=$(COMPILER) expects $(expected_fc), but MPI_WRAPPER=$(MPI_WRAPPER) wraps $(MPIVER). Set COMPILER and MPI_WRAPPER to be compatible.)
+    $(error COMPILER=$(COMPILER) expects $(expected_fc), but MPI_WRAPPER=$(MPI_WRAPPER) does not wrap $(expected_fc). Set COMPILER and MPI_WRAPPER to be compatible.)
 endif
 
 # Set compiler and linker to chosen wrapper
@@ -149,16 +155,6 @@ ifeq ($(USEMARBL),true)
     endif
 endif
 
-# COMPILER SETTINGS:
-# OpenMP flags:
-# ifeq ($(COMPILER),intel)
-# 	OMP_FLAG = -qopenmp
-# else ifeq ($(COMPILER),ifort)
-# 	OMP_FLAG = -fpp -qopenmp
-# else ifeq ($(COMPILER),gnu)
-# 	OMP_FLAG = -cpp -fopenmp
-# endif
-
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
 #	LARGE_MEM_FLAG = -mcmodel=large
@@ -171,11 +167,11 @@ else ifeq ($(COMPILER),ifort)
 endif
 
 # Fortran compiler options:
-CFTFLAGS += $(OMP_FLAG) $(LARGE_MEM_FLAG)
+CFTFLAGS += $(LARGE_MEM_FLAG)
 CFT += $(CFTFLAGS)
 
 # Fortran loader options:
-LDFLAGS = $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+LDFLAGS = $(CFTFLAGS) $(LARGE_MEM_FLAG)
 LDR += $(LDFLAGS)
 
 # Fortran compiler options/flags:
