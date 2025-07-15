@@ -331,10 +331,10 @@
           temp_irec = nc%irec-2
           ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
             call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
-      &     temp_irec, temp_vtime)
+     &     temp_irec, temp_vtime)
           ! Do fill_frc_slice pretending that the model time is just before temp_vtime
           ! to fill in it1
-      &   call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
+          call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
         endif
       endif
 
@@ -416,10 +416,10 @@
           temp_irec = nc%irec-2
           ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
             call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
-      &     temp_irec, temp_vtime)
+     &     temp_irec, temp_vtime)
           ! Do fill_frc_slice pretending that the model time is just before temp_vtime
           ! to fill in it1
-      &   call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
+          call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
         endif
       endif
 
@@ -499,10 +499,10 @@
           temp_irec = nc%irec-2
           ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
             call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
-      &     temp_irec, temp_vtime)
+     &     temp_irec, temp_vtime)
           ! Do fill_frc_slice pretending that the model time is just before temp_vtime
           ! to fill in it1
-      &   call fill_frc_slice_surf(nc,temp_vtime-eps,it1,gtype)
+          call fill_frc_slice_surf(nc,temp_vtime-eps,it1,gtype)
         endif
       endif
 
