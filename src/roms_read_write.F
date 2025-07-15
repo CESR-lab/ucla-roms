@@ -288,6 +288,10 @@
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
+      real              :: temp_modtime, temp_vtime
+      integer           :: temp_irec
+      integer           :: curr_irec, curr_ifile
+      real, parameter   :: eps = 1.E-10  ! Some really small number
 
       d1 = .true.
 
@@ -311,7 +315,27 @@
           it2 = mod(it2,2) + 1
         endif
 
+        ! Make temporary variables to store the record number and file name at the current it1.
+        curr_irec = nc%irec
+        curr_ifile = nc%ifile
+        ! Do I need to add a catch in case we switched files?
         call fill_frc_slice(nc,modtime,it2,d1,bry)
+
+        ! If (new irec) is greater than (old irec-1), this means we skipped one or more
+        ! forcing entries. Then we need to also do fill_frc_slice for it1,
+        ! and we will read in the greatest irec that is less than (new irec)
+        if ((nc%irec - curr_irec)>1) then
+          ! Make a temporary time variable pretending that the model time is nc%times(it1), and
+          ! a temporary record variable currently at nc%irec-2
+          temp_modtime = nc%times(it1)
+          temp_irec = nc%irec-2
+          ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
+            call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
+      &     temp_irec, temp_vtime)
+          ! Do fill_frc_slice pretending that the model time is just before temp_vtime
+          ! to fill in it1
+      &   call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
+        endif
       endif
 
       nc%it1 = it1
@@ -349,6 +373,10 @@
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
+      real              :: temp_modtime, temp_vtime
+      integer           :: temp_irec
+      integer           :: curr_irec, curr_ifile
+      real, parameter   :: eps = 1.E-10  ! Some really small number
 
       d1 = .false.
 
@@ -372,7 +400,27 @@
           it2 = mod(it2,2) + 1
         endif
 
+        ! Make temporary variables to store the record number and file name at the current it1.
+        curr_irec = nc%irec
+        curr_ifile = nc%ifile
+        ! Do I need to add a catch in case we switched files?
         call fill_frc_slice(nc,modtime,it2,d1,bry)
+
+        ! If (new irec) is greater than (old irec-1), this means we skipped one or more
+        ! forcing entries. Then we need to also do fill_frc_slice for it1,
+        ! and we will read in the greatest irec that is less than (new irec)
+        if ((nc%irec - curr_irec)>1) then
+          ! Make a temporary time variable pretending that the model time is nc%times(it1), and
+          ! a temporary record variable currently at nc%irec-2
+          temp_modtime = nc%times(it1)
+          temp_irec = nc%irec-2
+          ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
+            call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
+      &     temp_irec, temp_vtime)
+          ! Do fill_frc_slice pretending that the model time is just before temp_vtime
+          ! to fill in it1
+      &   call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
+        endif
       endif
 
       nc%it1 = it1
@@ -414,6 +462,10 @@
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
+      real              :: temp_modtime, temp_vtime
+      integer           :: temp_irec
+      integer           :: curr_irec, curr_ifile
+      real, parameter   :: eps = 1.E-10  ! Some really small number
 
       d1 = .false.
 
@@ -430,7 +482,28 @@
           it1 = mod(it1,2) + 1
           it2 = mod(it2,2) + 1
         endif
+
+        ! Make temporary variables to store the record number and file name at the current it1.
+        curr_irec = nc%irec
+        curr_ifile = nc%ifile
+        ! Do I need to add a catch in case we switched files?
         call fill_frc_slice_surf(nc,modtime,it2,gtype)
+
+        ! If (new irec) is greater than (old irec-1), this means we skipped one or more
+        ! forcing entries. Then we need to also do fill_frc_slice for it1,
+        ! and we will read in the greatest irec that is less than (new irec)
+        if ((nc%irec - curr_irec)>1) then
+          ! Make a temporary time variable pretending that the model time is nc%times(it1), and
+          ! a temporary record variable currently at nc%irec-2
+          temp_modtime = nc%times(it1)
+          temp_irec = nc%irec-2
+          ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
+            call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
+      &     temp_irec, temp_vtime)
+          ! Do fill_frc_slice pretending that the model time is just before temp_vtime
+          ! to fill in it1
+      &   call fill_frc_slice_surf(nc,temp_vtime-eps,it1,gtype)
+        endif
       endif
 
       nc%it1 = it1
