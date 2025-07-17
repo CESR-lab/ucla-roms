@@ -115,6 +115,10 @@
       ! eta_v      live variables placed in common block and assigned values
       !            in "mpi_setup" rather tnan be parameters defined here.
 
+      integer :: irec_stride
+      integer :: ifile_stride
+      integer, public :: ifile_max_recs(max_frc_files)
+
 #if defined MPI && defined PARALLEL_FILES
       integer, public ::  xi_rho, xi_u, eta_rho, eta_v
 #else
@@ -283,6 +287,7 @@
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
+      real    :: dummy_modtime=0  ! a dummy variable that does nothing
       logical :: d1
       integer :: bry
 
@@ -312,6 +317,22 @@
         endif
 
         call fill_frc_slice(nc,modtime,it2,d1,bry)
+
+        ! If (new irec) is greater than (old irec-1), this means we skipped one or more
+        ! forcing entries. Then we need to also do fill_frc_slice for it1,
+        ! and we will read in the greatest irec that is less than (new irec)
+        if (irec_stride > 1) then
+
+          if ((ifile_stride == 0) .or. (nc%irec>2)) then
+            nc%irec = nc%irec-2
+          else
+            nc%ifile = nc%ifile-1
+            nc%irec = ifile_max_recs(nc%ifile) + nc%irec - 2
+          endif
+
+          call fill_frc_slice(nc,dummy_modtime,it1,d1,bry)
+
+        endif
       endif
 
       nc%it1 = it1
@@ -325,7 +346,7 @@
 
       var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
 
-      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
+      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -344,6 +365,7 @@
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
+      real    :: dummy_modtime=0  ! a dummy variable that does nothing
       logical :: d1
       integer :: bry
 
@@ -373,6 +395,22 @@
         endif
 
         call fill_frc_slice(nc,modtime,it2,d1,bry)
+
+        ! If (new irec) is greater than (old irec-1), this means we skipped one or more
+        ! forcing entries. Then we need to also do fill_frc_slice for it1,
+        ! and we will read in the greatest irec that is less than (new irec)
+        if (irec_stride > 1) then
+
+          if ((ifile_stride == 0) .or. (nc%irec>2)) then
+            nc%irec = nc%irec-2
+          else
+            nc%ifile = nc%ifile-1
+            nc%irec = ifile_max_recs(nc%ifile) + nc%irec - 2
+          endif
+
+          call fill_frc_slice(nc,dummy_modtime,it1,d1,bry)
+
+        endif
       endif
 
       nc%it1 = it1
@@ -386,8 +424,7 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-!     if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
-      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
+      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -409,6 +446,7 @@
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
+      real    :: dummy_modtime=0  ! a dummy variable that does nothing
       logical :: d1
       integer :: bry
 
@@ -430,7 +468,24 @@
           it1 = mod(it1,2) + 1
           it2 = mod(it2,2) + 1
         endif
+
         call fill_frc_slice_surf(nc,modtime,it2,gtype)
+
+        ! If (new irec) is greater than (old irec-1), this means we skipped one or more
+        ! forcing entries. Then we need to also do fill_frc_slice for it1,
+        ! and we will read in the greatest irec that is less than (new irec)
+        if (irec_stride > 1) then
+
+          if ((ifile_stride == 0) .or. (nc%irec>2)) then
+            nc%irec = nc%irec-2
+          else
+            nc%ifile = nc%ifile-1
+            nc%irec = ifile_max_recs(nc%ifile) + nc%irec - 2
+          endif
+
+          call fill_frc_slice_surf(nc,dummy_modtime,it1,gtype)
+
+        endif
       endif
 
       nc%it1 = it1
@@ -498,6 +553,8 @@
       found_rec      = .false.
       found_var_ever = .false.
 
+      irec_stride = 0
+      ifile_stride = 0
       do while (.not.found_rec .and. ifile <= max_frc)               ! while record not found & still more files to check
 
         found_var = .false.                                          ! reset for new file
@@ -530,9 +587,10 @@
           ! Number of records in file
           ierr = nf90_inquire_variable(ncid,tid, dimids = dimids)
           ierr = nf90_inquire_dimension(ncid, dimids(1), len=max_recs)
-
+          ifile_max_recs(ifile) = max_recs
           do while (irec<max_recs .and. .not. found_rec)             ! Search through the records until correct time is found
 
+            irec_stride = irec_stride+1
             irec=irec+1                                              ! why not use ncread????
             ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))        ! Get vtime (nf90 needs array hence syntax)
             vtime = ltime(1)
@@ -550,6 +608,7 @@
         endif                                                        ! found var in file
 
         if (.not.found_rec) then                                     ! correct record not found, try next file
+          ifile_stride = ifile_stride+1
           ifile = ifile+1
           irec = 0                                                   ! Reset irec for new file
         endif
@@ -666,7 +725,7 @@
       tname = nc%tname
 
       call find_new_record(vname,tname,modtime,ifile,irec,
-     &                         nc%times(it) )
+     &                         nc%times(it))
 
       ierr=nf90_open(frcfile(ifile),nf90_nowrite, ncid)
       ! The size of vdata must match the size of the data in the
