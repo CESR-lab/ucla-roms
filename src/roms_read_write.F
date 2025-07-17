@@ -115,6 +115,10 @@
       ! eta_v      live variables placed in common block and assigned values
       !            in "mpi_setup" rather tnan be parameters defined here.
 
+      integer :: irec_stride
+      integer :: ifile_stride
+      integer, public :: ifile_max_recs(max_frc_files)
+
 #if defined MPI && defined PARALLEL_FILES
       integer, public ::  xi_rho, xi_u, eta_rho, eta_v
 #else
@@ -283,15 +287,12 @@
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
+      real    :: dummy_modtime=0  ! a dummy variable that does nothing
       logical :: d1
       integer :: bry
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
-      real              :: temp_modtime, temp_vtime
-      integer           :: temp_irec
-      integer           :: curr_irec, curr_ifile
-      real, parameter   :: eps = 1.E-10  ! Some really small number
 
       d1 = .true.
 
@@ -315,26 +316,22 @@
           it2 = mod(it2,2) + 1
         endif
 
-        ! Make temporary variables to store the record number and file name at the current it1.
-        curr_irec = nc%irec
-        curr_ifile = nc%ifile
-        ! Do I need to add a catch in case we switched files?
         call fill_frc_slice(nc,modtime,it2,d1,bry)
 
         ! If (new irec) is greater than (old irec-1), this means we skipped one or more
         ! forcing entries. Then we need to also do fill_frc_slice for it1,
         ! and we will read in the greatest irec that is less than (new irec)
-        if ((nc%irec - curr_irec)>1) then
-          ! Make a temporary time variable pretending that the model time is nc%times(it1), and
-          ! a temporary record variable currently at nc%irec-2
-          temp_modtime = nc%times(it1)
-          temp_irec = nc%irec-2
-          ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
-            call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
-     &     temp_irec, temp_vtime)
-          ! Do fill_frc_slice pretending that the model time is just before temp_vtime
-          ! to fill in it1
-          call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
+        if (irec_stride > 1) then
+
+          if (ifile_stride == 0) then
+            nc%irec = nc%irec-2
+          else
+            nc%ifile = nc%ifile-1
+            nc%irec = ifile_max_recs(nc%ifile) + nc%irec - 2
+          endif
+
+          call fill_frc_slice(nc,dummy_modtime,it1,d1,bry)
+
         endif
       endif
 
@@ -349,7 +346,7 @@
 
       var1d = cff1*nc%vdata(:,1,it1) + cff2*nc%vdata(:,1,it2)
 
-      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
+      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -368,15 +365,12 @@
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
+      real    :: dummy_modtime=0  ! a dummy variable that does nothing
       logical :: d1
       integer :: bry
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
-      real              :: temp_modtime, temp_vtime
-      integer           :: temp_irec
-      integer           :: curr_irec, curr_ifile
-      real, parameter   :: eps = 1.E-10  ! Some really small number
 
       d1 = .false.
 
@@ -400,26 +394,22 @@
           it2 = mod(it2,2) + 1
         endif
 
-        ! Make temporary variables to store the record number and file name at the current it1.
-        curr_irec = nc%irec
-        curr_ifile = nc%ifile
-        ! Do I need to add a catch in case we switched files?
         call fill_frc_slice(nc,modtime,it2,d1,bry)
 
         ! If (new irec) is greater than (old irec-1), this means we skipped one or more
         ! forcing entries. Then we need to also do fill_frc_slice for it1,
         ! and we will read in the greatest irec that is less than (new irec)
-        if ((nc%irec - curr_irec)>1) then
-          ! Make a temporary time variable pretending that the model time is nc%times(it1), and
-          ! a temporary record variable currently at nc%irec-2
-          temp_modtime = nc%times(it1)
-          temp_irec = nc%irec-2
-          ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
-            call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
-     &     temp_irec, temp_vtime)
-          ! Do fill_frc_slice pretending that the model time is just before temp_vtime
-          ! to fill in it1
-          call fill_frc_slice(nc,temp_vtime-eps,it1,d1,bry)
+        if (irec_stride > 1) then
+
+          if (ifile_stride == 0) then
+            nc%irec = nc%irec-2
+          else
+            nc%ifile = nc%ifile-1
+            nc%irec = ifile_max_recs(nc%ifile) + nc%irec - 2
+          endif
+
+          call fill_frc_slice(nc,dummy_modtime,it1,d1,bry)
+
         endif
       endif
 
@@ -434,8 +424,7 @@
 
       var2d = cff1*nc%vdata(:,:,it1) + cff2*nc%vdata(:,:,it2)
 
-!     if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
-      if (vtimes(it1)>modtime+eps.or.vtimes(it2)<modtime-eps) then
+      if (vtimes(it1)>modtime.or.vtimes(it2)<modtime) then
         print * ,'set_frc_data :: ', nc%vname,frcfile(nc%ifile)
         print * ,'set_frc_data :: ', vtimes(it1), vtimes(it2), modtime
         error stop 'ERROR: set_frc_data :: time interpolation error'
@@ -457,15 +446,12 @@
       ! local
       real    :: cff1,cff2  ! for time interpolations
       real    :: modtime    ! model time
+      real    :: dummy_modtime=0  ! a dummy variable that does nothing
       logical :: d1
       integer :: bry
 
       integer           :: it1,it2
       real,dimension(2) :: vtimes
-      real              :: temp_modtime, temp_vtime
-      integer           :: temp_irec
-      integer           :: curr_irec, curr_ifile
-      real, parameter   :: eps = 1.E-10  ! Some really small number
 
       d1 = .false.
 
@@ -483,26 +469,22 @@
           it2 = mod(it2,2) + 1
         endif
 
-        ! Make temporary variables to store the record number and file name at the current it1.
-        curr_irec = nc%irec
-        curr_ifile = nc%ifile
-        ! Do I need to add a catch in case we switched files?
         call fill_frc_slice_surf(nc,modtime,it2,gtype)
 
         ! If (new irec) is greater than (old irec-1), this means we skipped one or more
         ! forcing entries. Then we need to also do fill_frc_slice for it1,
         ! and we will read in the greatest irec that is less than (new irec)
-        if ((nc%irec - curr_irec)>1) then
-          ! Make a temporary time variable pretending that the model time is nc%times(it1), and
-          ! a temporary record variable currently at nc%irec-2
-          temp_modtime = nc%times(it1)
-          temp_irec = nc%irec-2
-          ! Running find_new_record should return the time at nc%irec-1 in temp_vtime
-            call find_new_record(nc%vname, nc%tname, temp_modtime, curr_ifile,
-     &     temp_irec, temp_vtime)
-          ! Do fill_frc_slice pretending that the model time is just before temp_vtime
-          ! to fill in it1
-          call fill_frc_slice_surf(nc,temp_vtime-eps,it1,gtype)
+        if (irec_stride > 1) then
+
+          if (ifile_stride == 0) then
+            nc%irec = nc%irec-2
+          else
+            nc%ifile = nc%ifile-1
+            nc%irec = ifile_max_recs(nc%ifile) + nc%irec - 2
+          endif
+
+          call fill_frc_slice_surf(nc,dummy_modtime,it1,gtype)
+
         endif
       endif
 
@@ -571,6 +553,8 @@
       found_rec      = .false.
       found_var_ever = .false.
 
+      irec_stride = 0
+      ifile_stride = 0
       do while (.not.found_rec .and. ifile <= max_frc)               ! while record not found & still more files to check
 
         found_var = .false.                                          ! reset for new file
@@ -603,9 +587,10 @@
           ! Number of records in file
           ierr = nf90_inquire_variable(ncid,tid, dimids = dimids)
           ierr = nf90_inquire_dimension(ncid, dimids(1), len=max_recs)
-
+          ifile_max_recs(ifile) = max_recs
           do while (irec<max_recs .and. .not. found_rec)             ! Search through the records until correct time is found
 
+            irec_stride = irec_stride+1
             irec=irec+1                                              ! why not use ncread????
             ierr=nf90_get_var(ncid,tid,ltime,(/irec/), (/1/))        ! Get vtime (nf90 needs array hence syntax)
             vtime = ltime(1)
@@ -623,6 +608,7 @@
         endif                                                        ! found var in file
 
         if (.not.found_rec) then                                     ! correct record not found, try next file
+          ifile_stride = ifile_stride+1
           ifile = ifile+1
           irec = 0                                                   ! Reset irec for new file
         endif
@@ -739,7 +725,7 @@
       tname = nc%tname
 
       call find_new_record(vname,tname,modtime,ifile,irec,
-     &                         nc%times(it) )
+     &                         nc%times(it))
 
       ierr=nf90_open(frcfile(ifile),nf90_nowrite, ncid)
       ! The size of vdata must match the size of the data in the
