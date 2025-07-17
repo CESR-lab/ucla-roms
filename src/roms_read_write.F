@@ -323,7 +323,7 @@
         ! and we will read in the greatest irec that is less than (new irec)
         if (irec_stride > 1) then
 
-          if (ifile_stride == 0) then
+          if ((ifile_stride == 0) .or. (nc%irec>2)) then
             nc%irec = nc%irec-2
           else
             nc%ifile = nc%ifile-1
@@ -401,7 +401,7 @@
         ! and we will read in the greatest irec that is less than (new irec)
         if (irec_stride > 1) then
 
-          if (ifile_stride == 0) then
+          if ((ifile_stride == 0) .or. (nc%irec>2)) then
             nc%irec = nc%irec-2
           else
             nc%ifile = nc%ifile-1
@@ -476,7 +476,7 @@
         ! and we will read in the greatest irec that is less than (new irec)
         if (irec_stride > 1) then
 
-          if (ifile_stride == 0) then
+          if ((ifile_stride == 0) .or. (nc%irec>2)) then
             nc%irec = nc%irec-2
           else
             nc%ifile = nc%ifile-1
