@@ -1,0 +1,22 @@
+Purpose:
+
+Test for improvement in runtime by using chunking to delineate partition indices
+which seperate subdomains. Done for only the y dimension - in the essence of 
+simplicity - where grids are broken into rows whose lengths (ny) are multiples of 
+the chunking size in the y dimension. 
+
+What is measured is the time taken to write to a file, in parallel, five times over.
+The reason for a loop is to produce a measurable level of runtime, in the case one
+iteration would be too quick for reasonable comparison of two methods. 
+
+Usage:
+
+  --> make  (if not done so already)
+
+  --> ./do_test.sh 'file' 'option'
+     * number of processors used in parallel may be adjusted within ./do_test.sh
+     * 'file' should be a large grid with temperature - pachug_rst.nc if available
+     * 'option' may either be row (default partitioning) or chunk (new)
+                             -----                         ------- 
+
+  Information on runtime is printed...
