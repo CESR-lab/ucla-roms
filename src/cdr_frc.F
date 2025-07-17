@@ -111,7 +111,7 @@
 
       ! local
       integer :: ierr,ncid,i,j,k
-      real :: norm,vint,arg
+      real :: vint,arg
       real :: local_int,global_int
       real, dimension(nz) :: arg_nz
       real :: local_min_val
@@ -183,14 +183,10 @@
 
           else
 
-!           close  = max(3*cdr_hsc(icdr),dx)
-            norm = pi*cdr_hsc(icdr)*cdr_hsc(icdr) ! 2d integral of exp(-(dist/hscl)^2 )
             call ll2dist(lonr,latr,cdr_lon(icdr),cdr_lat(icdr),dist);
             frac(:,:,icdr) = exp(-(dist/cdr_hsc(icdr))**2)
-            frac(:,:,icdr) = frac(:,:,icdr)/pm/pn/norm
             do j=1,ny
               do i=1,nx
-!               if (dist(i,j)<close.and.rmask(i,j)>0) then
                 if (frac(i,j,icdr) >1e-3.and.rmask(i,j)>0) then
                   cidx = cidx+1
                 endif
