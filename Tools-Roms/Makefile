@@ -1,164 +1,133 @@
-#
-.SUFFIXES: .o .f .F .f90
+include ../src/Makedefs.inc
 
-.F.o:
-	@$(CPP) -P $*.F | mpc > $*.f
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
-	@/bin/rm -f $*.f
-.F.f:
-	$(CPP) -P  $*.F | mpc > $*.f
-.f.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+# File extensions are set as variables in Makedefs.inc to
+# account for case-insensitive filesystems. Default values are:
 
-     CPP = cpp -traditional
+#UPF77_ext = .F   #unprocessed  Fortran 77 code
+#UPF90_ext = .F90 #unprocessed  Fortran 90 code
+#PPF77_ext = .f   #preprocessed Fortran 77 code
+#PPF90_ext = .f90 #preprocessed Fortran 90 code
+#OBJ_ext = .o     #object files
 
-# Path names (non-hydrostatic & NetCDF libraries):
-
-	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_INC  = $(NHMG_ROOT)/include
-	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
-
-	NETCDF_INC = $(NETCDF_ROOT)/include
-	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
-	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
-
-	MPI_INC = ${MPIHOME}/include/mpi
-
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
-
-        CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
-
-
-# Fortran loader name and options:
- 	LDR = $(FCOMP)  $(CFTFLAGS)
 
 # - Can't use -ip optimization for tools (partit won't compile)
-	FFLAGS = -O3
-# - uncomment for debugging:
-#	FFLAGS = -g -traceback -check all -CA -CB -CS
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
-#	FFLAGS = -O3 -pg
-
-# OpenMP flags - needed for r2r_bry (and possibly others):
-#	note, -qopenmp is the new -openmp but is still needed for maya
-        OMP_FLAG = -qopenmp
-
-
-
-# Path names (non-hydrostatic & NetCDF libraries):
-
-	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_INC  = $(NHMG_ROOT)/include
-	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
-
-	NETCDF_INC = $(NETCDF_ROOT)/include
-	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
-	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
-
-	MPI_INC = ${MPIHOME}/include/mpi
-
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
-
-	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
-
-# Fortran loader name and options:
- 	LDR = $(FCOMP)
-
-# Fortran compiler name and options:
- 	CFT = $(FCOMP)
-
+ifeq ($(findstring -ip,$(FFLAGS)),-ip)
+    FFLAGS :=$(subst -ip,,$(FFLAGS))
+endif
 # --------------------------------------------------------------------
 
 ALL = partit ncjoin ncjoin_mpi extract_data_join nc3to4z zslice sample
 #r2r_bry r2r_match_topo r2r_init
 
-all:	$(info MAKING ROMS TOOLS:) mpc $(ALL)
+all:	$(info MAKING ROMS TOOLS: ) mpc $(ALL)
 
 #install: $(ALL)
 #	mv $(ALL) ~/bin
+
+# partit
+PARTIT = partit insert_node lenstr
+PARTIT := $(addsuffix $(OBJ_ext), $(PARTIT))
+partit: $(PARTIT)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit $(PARTIT) $(LCDF)
+
+# ncjoin
+NCJOIN = ncjoin lenstr
+NCJOIN := $(addsuffix $(OBJ_ext), $(NCJOIN))
+ncjoin: $(NCJOIN)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin $(NCJOIN) $(LCDF)
+#ncjoin_mpi
+NCJOIN_MPI = ncjoin_mod ncjoin_mpi lenstr
+NCJOIN_MPI := $(addsuffix $(OBJ_ext), $(NCJOIN_MPI))
+
+ncjoin_mpi: ncjoin_mpi.opt $(NCJOIN_MPI)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi $(NCJOIN_MPI) $(LCDF)
+
+# nc3to4z
+NC3TO4Z = nc3to4z lenstr read_string
+NC3TO4Z := $(addsuffix $(OBJ_ext),$(NC3TO4Z))
+nc3to4z: $(NC3TO4Z)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o nc3to4z $(NC3TO4Z) $(LCDF)
+
+# mpc
+mpc: mpc$(UPF77_ext) Makefile
+	$(CPP) $(CPPFLAGS) -P mpc$(UPF77_ext) > ./mpc$(PPF77_ext)
+	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc$(PPF77_ext)
+
+# extract_data_join
+EXTRACT_DATA_JOIN = ncjoin_mod extract_data_join  lenstr
+EXTRACT_DATA_JOIN := $(addsuffix $(OBJ_ext),$(EXTRACT_DATA_JOIN))
+extract_data_join: $(EXTRACT_DATA_JOIN)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join $(EXTRACT_DATA_JOIN) $(LCDF)
+
+# particle_join
+PARTICLE_JOIN = ncjoin_mod particle_join  lenstr
+PARTICLE_JOIN := $(addsuffix $(OBJ_ext), $(PARTICLE_JOIN))
+particle_join:
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o particle_join $(PARTICLE_JOIN) $(LCDF)
+
+# r2r_init
+R2R_INIT = r2r_init r2r_interp_init r2r_subs r2r_rotate r2r_vert_interp\
+           set_depth etch_into_land spln2d tiling roms_read_write\
+           read_string lenstr
+R2R_INIT ::= $(addsuffix, $(OBJ_ext), $(R2R_INIT))
+r2r_init: $(R2R_INIT)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_init $(R2R_INIT) $(LCDF)
+
+# r2r_bry
+R2R_BRY = r2r_bry r2r_bry_interp r2r_subs r2r_bry_rotate r2r_rotate\
+           r2r_vert_interp set_depth etch_into_land spln2d tiling\
+           def_bry_file roms_read_write read_string lenstr
+R2R_BRY := $(addsuffix $(OBJ_ext),$(R2R_BRY))
+r2r_bry: $(R2R_BRY)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_bry $(R2R_BRY) $(LCDF)
+
+# zslice
+ZSLICE = zslice set_depth sigma_to_z_intr read_add_write\
+	  roms_read_write read_string lenstr tiling
+ZSLICE := $(addsuffix $(OBJ_ext),$(ZSLICE))
+zslice: $(ZSLICE)
+	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
+
+# ipslice
+IPSLICE = ipslice set_depth sigma_to_z_intr rho_eos\
+	   read_add_write roms_read_write read_string lenstr tiling
+IPSLICE := $(addsuffix $(OBJ_ext), $(IPSLICE))
+ipslice: $(IPSLICE)
+	$(LDR) $(FFLAGS) -o ipslice $(IPSLICE) $(LCDF)
+ipslice$(PPF77_ext): zslice$(UPF77_ext)
+	$(CPP) -P $(CPPFLAGS) -DIPSLICE zslice$(UPF77_ext) | ./mpc > ipslice$(PPF77_ext)
+
+# r2r_match_topo
+R2R_MATCH_TOPO = r2r_match_topo r2r_interp_init mrg_zone_subs tiling\
+                        spln2d roms_read_write read_string lenstr
+R2R_MATCH_TOPO := $(addsuffix $(OBJ_ext),$(R2R_MATCH_TOPO))
+r2r_match_topo: $(R2R_MATCH_TOPO)
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_match_topo $(R2R_MATCH_TOPO) $(LCDF)
+
+# sample
+SAMPLE = roms_read_write sample tiling\
+          read_add_write read_string lenstr
+SAMPLE := $(addsuffix $(OBJ_ext), $(SAMPLE))
+sample: $(SAMPLE)
+	$(LDR) $(FFLAGS) -o sample $(SAMPLE) $(LCDF)
+
+# clean
+clean:
+	/bin/rm -f *$(PPF77_ext) *$(OBJ_ext) *.a *.s *.trace *.mod
+# clobber
+clobber: clean
+	/bin/rm -f $(ALL) *.bak
 
 # Note: the following .f: dependencies are needed to make everything
 # go through CPP and take custom defined CPPFLAGS rather than compiling
 # executables from .F directly.
 
-chkindent: chkindent.f
+chkindent: chkindent$(PPF77_ext)
 
 # The following two are built from the same source
 # and differ only CPP macro setting:
 
-mreplace.f: mreplace.F
-	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace.F > mreplace.f
-
-partit: partit.o insert_node.o lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit partit.o insert_node.o lenstr.o $(LCDF)
-
-ncjoin: ncjoin.o lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin ncjoin.o lenstr.o $(LCDF)
-
-simple_xy_par_wr: simple_xy_par_wr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o simple_xy_par_wr simple_xy_par_wr.o $(LCDF)
-
-ncjoin_mpi: ncjoin_mpi.opt ncjoin_mod.o ncjoin_mpi.o lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin_mpi ncjoin_mod.o ncjoin_mpi.o lenstr.o $(LCDF)
-
-nc3to4z: nc3to4z.o lenstr.o read_string.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o nc3to4z nc3to4z.o lenstr.o read_string.o $(LCDF)
-
-mpc: mpc.F Makefile
-	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
-
-extract_data_join: ncjoin_mod.o extract_data_join.o  lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join ncjoin_mod.o extract_data_join.o lenstr.o  $(LCDF)
-
-particle_join: ncjoin_mod.o particle_join.o  lenstr.o
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o particle_join ncjoin_mod.o particle_join.o lenstr.o  $(LCDF)
-
-R2R_INIT = r2r_init.o r2r_interp_init.o r2r_subs.o r2r_rotate.o r2r_vert_interp.o\
-           set_depth.o etch_into_land.o spln2d.o tiling.o roms_read_write.o\
-           read_string.o lenstr.o
-
-r2r_init: $(R2R_INIT)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_init $(R2R_INIT) $(LCDF)
-
- R2R_BRY = r2r_bry.o r2r_bry_interp.o r2r_subs.o r2r_bry_rotate.o r2r_rotate.o\
-           r2r_vert_interp.o set_depth.o etch_into_land.o spln2d.o tiling.o\
-           def_bry_file.o roms_read_write.o read_string.o lenstr.o
-
-r2r_bry: $(R2R_BRY)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_bry $(R2R_BRY) $(LCDF)
-
- ZSLICE = zslice.o set_depth.o sigma_to_z_intr.o read_add_write.o\
-	  roms_read_write.o read_string.o lenstr.o tiling.o
-
- IPSLICE = ipslice.o set_depth.o sigma_to_z_intr.o rho_eos.o\
-	   read_add_write.o roms_read_write.o read_string.o lenstr.o tiling.o
-
- SAMPLE = roms_read_write.o sample.o tiling.o\
-          read_add_write.o read_string.o lenstr.o
-
-R2R_MATCH_TOPO = r2r_match_topo.o r2r_interp_init.o mrg_zone_subs.o tiling.o\
-                        spln2d.o roms_read_write.o read_string.o lenstr.o
-
-r2r_match_topo: $(R2R_MATCH_TOPO)
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o r2r_match_topo $(R2R_MATCH_TOPO) $(LCDF)
-
-zslice: $(ZSLICE)
-	$(LDR) $(FFLAGS) -o zslice $(ZSLICE) $(LCDF)
-
-ipslice: $(IPSLICE)
-	$(LDR) $(FFLAGS) -o ipslice $(IPSLICE) $(LCDF)
-
-ipslice.f: zslice.F
-	$(CPP) -P $(CPPFLAGS) -DIPSLICE zslice.F | ./mpc > ipslice.f
-
-sample: $(SAMPLE)
-	$(LDR) $(FFLAGS) -o sample $(SAMPLE) $(LCDF)
-
-clean:
-	/bin/rm -f *.f *.o *.a *.s *.trace *.mod
-
-clobber: clean
-	/bin/rm -f $(ALL) *.bak
+mreplace$(PPF77_ext): mreplace$(UPF77_ext)
+	$(CPP) -P $(CPPFLAGS) -DREPLACE mreplace$(UPF77_ext) > mreplace$(PPF77_ext)
 
 include Make.depend
