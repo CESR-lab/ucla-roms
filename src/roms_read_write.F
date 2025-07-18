@@ -763,18 +763,18 @@
         endif
       endif
       ! add force file info to output nc
-      if (mynode == 0) then
-        ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
+!      if (mynode == 0) then
+      ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
         ! if forcing netcdf has information
-        if (len(trim(forcing_version)) /= 0) then
+      if (len(trim(forcing_version)) /= 0) then
           ! if attribute has not been set yet
-          if (index(force_info,forcing_version) == 0) then
-            write(frcstr,'(2A)') trim(adjustl(frctype)),trim(adjustl(forcing_version))
-            frcstr = trim(adjustl(frcstr))
-            call store_string_att(force_info,frcstr)
-          endif
+        if (index(force_info,forcing_version) == 0) then
+          write(frcstr,'(2A)') trim(adjustl(frctype)),trim(adjustl(forcing_version))
+          frcstr = trim(adjustl(frcstr))
+          call store_string_att(force_info,frcstr)
         endif
       endif
+!      endif
       ierr = nf90_close(ncid)
 
       call exchange_xxx(nc%vdata(:,:,it))
@@ -1237,9 +1237,9 @@
 
       ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
 #endif
-
-      ierr=nf90_put_att(ncid, nf90_global, 'global_x', gnx)
-      ierr=nf90_put_att(ncid, nf90_global, 'global_y', gny)
+!     ierr=nf90_put_att(ncid, nf90_global, 'global_x', gnx)
+!     ierr=nf90_put_att(ncid, nf90_global, 'global_y', gny)
+      ierr=nf90_put_att(ncid, nf90_global, 'globaldims', (/gnx+2,gny+2/))
 
       ierr=nf90_put_att(ncid, nf90_global, 'title',title)         ! Title of the run
 

@@ -1,26 +1,3 @@
-# Makefile for UCLA ROMS model
-#========== ======= =========== ======== === ==== =====
-# This makefile requires that you have the following 
-# environment variables defined: 
-#  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
-#
-#  Example entries in a .bashrc file:
-#
-# export FCOMP=mpiifx
-# export MPIHOME=/opt/intel/oneapi/mpi/latest
-# export NETCDF_ROOT=/opt/netcdf-fortran-4.6.1
-# export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
-#
-# export LD_LIBRARY_PATH=${MPIHOME}/lib/:$LD_LIBRARY_PATH
-# export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
-# export LD_LIBRARY_PATH=${NETCDF_ROOT}/lib/:$LD_LIBRARY_PATH
-
-# export ROMS_ROOT=/home/username/ucla-roms
-# export PATH=${ROMS_ROOT}/Tools-Roms:$PATH
-# export PATH=${NETCDFC_ROOT}/bin:$PATH
-# export PATH=${NETCDF_ROOT}/bin:$PATH
-
-#
 .SUFFIXES: .o .f .F .f90
 
 .F.o:
@@ -83,47 +60,26 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 # - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -ip -pg
 
-PSRC = partit.F roms_part.F nc_read_write.F
-MSRC = partmap.F roms_part.F nc_read_write.F
-OSRC = optimal_part.F roms_part.F nc_read_write.F
-JSRC = ncjoin.F roms_part.F nc_read_write.F
+TSRC = test.F test_routines.F nc_read_write.F
 
-  PCS = $(PSRC:.F=.f)
-  PBJS = $(PSRC:.F=.o) 
-  MCS = $(MSRC:.F=.f)
-  MBJS = $(MSRC:.F=.o) 
-  OCS = $(OSRC:.F=.f)
-  OBJS = $(OSRC:.F=.o) 
-  JCS = $(JSRC:.F=.f)
-  JBJS = $(JSRC:.F=.o) 
+  TCS = $(TSRC:.F=.f)
+  TBJS = $(TSRC:.F=.o) 
 
 # Everything
-all: depend partit partmap optimal ncjoin 
+all: depend test
 
-partit:  $(PBJS)
-	@echo 'Making: $(PBJS)'
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit $(PBJS) $(LCDF)
-
-partmap:  $(MBJS)
-	@echo 'Making: $(MBJS)'
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o partmap $(MBJS) $(LCDF)
-
-optimal:  $(OBJS)
-	@echo 'Making: $(OBJS)'
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o optimal $(OBJS) $(LCDF)
-
-ncjoin:  $(JBJS)
-	@echo 'Making: $(JBJS)'
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin $(JBJS) $(LCDF)
+test:  $(TBJS)
+	@echo 'Making: $(TBJS)'
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o test $(TBJS) $(LCDF)
 
 depend:  # Note: cross_matrix no longer used
-	@makedepf90 $(PSRC) $(MSRC) $(OSRC) $(JSRC) > Make.depend
+	@makedepf90 $(TSRC) > Make.depend
 	@echo 'Updated Make.depend (dependency list)'
 
 # Cleaning targets
 # -------- -------
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit partmap optimal ncjoin 
+	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ test
 
 # Automatically generated dependency list:
 
