@@ -35,7 +35,7 @@ podman pull ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0
 podman run -it ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0 
 ```
 
-You can then clone ROMS into the container as described on the [previous page](install/index).
+You can then clone ROMS into the container as described on the {doc}`following page <compilation>`.
 
 ## Using conda
 :::{warning}

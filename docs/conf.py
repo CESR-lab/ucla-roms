@@ -20,8 +20,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-logger.info("python exec:", sys.executable)
-logger.info("sys.path:", sys.path)
+logger.info(f"python exec: {sys.executable}")
+logger.info(f"sys.path: {sys.path}")
 root = pathlib.Path(__file__).parent.parent.absolute()
 os.environ["PYTHONPATH"] = str(root)
 sys.path.insert(0, str(root))
