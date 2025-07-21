@@ -1,4 +1,4 @@
-name: roms-ci
+name: roms_env
 channels:
   - conda-forge
 dependencies:
