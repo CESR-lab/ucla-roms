@@ -41,6 +41,7 @@
       use grid
       use ocean_vars
       use scalars
+      use hidden_mpi_vars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k

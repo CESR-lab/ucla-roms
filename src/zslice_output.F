@@ -84,10 +84,10 @@
      &    nt_z , ' tracers ' 
       if (mynode==0) then 
          do m=1,ndep  
-         write(*,'(7x,A,I2,A,F7.2)') 'zslice : dep(',m,')=',vecdep(m)
+         write(*,'(7x,A,I2,A,F8.2)') 'depth(',m,')=',vecdep(m)
          enddo
          do m=1,nt_z
-         write(*,'(7x,A,I2,A,A)') 'zslice : tracers(',trc2zsc(m),')=',t_vname(trc2zsc(m))
+         write(*,'(7x,A,I2,A,A)') 'tracers(',trc2zsc(m),')=',t_vname(trc2zsc(m))
          enddo
       endif
 

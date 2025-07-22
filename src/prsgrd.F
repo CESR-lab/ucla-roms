@@ -43,6 +43,7 @@
       use eos_vars
       use grid
       use scalars
+      use hidden_mpi_vars
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
