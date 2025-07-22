@@ -17,10 +17,3 @@ sphinx:
 # Conda environment
 conda:
   environment: docs/sphinx_environment.yml
-
-# Python dependencies and install method
-python:
-  install:
-    - method: pip
-      path: .
-
