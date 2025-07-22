@@ -41,7 +41,7 @@ c--# define PRINT_HOSTNAME
         ! grab neighbors & i/j nodes
         ierr=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
         ierr=nf90_get_att(ncid,nf90_global,"subdompos",subdompos)
-        print*,'MPI_SETUP: MASKING ON'
+!       print*,'MPI_SETUP: MASKING ON'
       else
         NNODES=NP_XI*NP_ETA
       endif
@@ -105,14 +105,14 @@ c--# define PRINT_HOSTNAME
 ! incoming and targets for outgoing messages.
 
         if (newpart.eq.nf90_noerr) then
-         p_E=check_neighbor(neighbors(3))
-        p_NE=check_neighbor(neighbors(2))
-        p_N =check_neighbor(neighbors(1))
-        p_NW=check_neighbor(neighbors(8))
-         p_W=check_neighbor(neighbors(7))
-        p_SW=check_neighbor(neighbors(6))
-        p_S =check_neighbor(neighbors(5))
-        p_SE=check_neighbor(neighbors(4))
+          p_N  =neighbors(1)
+          p_NE =neighbors(2)
+           p_E =neighbors(3)
+          p_SE =neighbors(4)
+          p_S  =neighbors(5)
+          p_SW =neighbors(6)
+           p_W =neighbors(7)
+          p_NW =neighbors(8)
         else
          p_E=conv_ijnode_to_rank(inode+1,jnode  , NP_XI,NP_ETA)
         p_NE=conv_ijnode_to_rank(inode+1,jnode+1, NP_XI,NP_ETA)
@@ -247,18 +247,6 @@ c--# define PRINT_HOSTNAME
         conv_ijnode_to_rank=-1 !<- meaning that the rank does not exist
       endif
       end
-
-! Convert masked value, if any, to -1.
-
-      function check_neighbor(n)
-      implicit none
-      integer check_neighbor,n
-      if (n==-99) then
-        check_neighbor=-1
-      else
-        check_neighbor=n
-      endif
-      end 
 
 #else
       subroutine mpi_setup_empty
