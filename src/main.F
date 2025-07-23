@@ -115,7 +115,6 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use particles
       use cstar_output
       use random_output
-      use cstar_output
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
