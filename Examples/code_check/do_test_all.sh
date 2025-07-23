@@ -8,12 +8,12 @@ declare -a Examples=( "Flux_frc" "Pipes_ana" "Pipes_real" "Rivers_ana" "Rivers_r
 arg=$1
 
 case "$arg" in
-    expanse|maya|laptop|github|github_ifx)
+    expanse|maya|laptop|github_gnu|github_ifx)
 	echo "running test for $arg"
 	;;
     *)
 	echo "Script must have argument 'expanse' or 'maya'! E.g.: './do_test_all.sh maya'. Try again!"
-	exit
+	exit 1
 	;;
 esac
                                                  

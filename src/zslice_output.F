@@ -48,7 +48,7 @@
 
       integer m
 
-      if (wrt_T)  then
+      if (wrt_T_zsl)  then
           allocate( Tz(GLOBAL_2D_ARRAY,ndep,nt_z) )
           Tz=0.
           if (do_avg)  then
@@ -57,7 +57,7 @@
           endif
       endif
 
-      if (wrt_U)  then
+      if (wrt_U_zsl)  then
           allocate( Uz(GLOBAL_2D_ARRAY,ndep) )
           Uz=0.      
           if (do_avg)  then
@@ -66,7 +66,7 @@
           endif
       endif
 
-      if (wrt_V)  then
+      if (wrt_V_zsl)  then
           allocate( Vz(GLOBAL_2D_ARRAY,ndep) )
           Vz=0.      
           if (do_avg)  then
@@ -106,7 +106,7 @@
       real zlev, dpth    
       integer km(1:nx)
 
-      if (wrt_T) then 
+      if (wrt_T_zsl) then 
       do j=1,ny 
          do k=1,N
          do i=1,nx
@@ -130,7 +130,7 @@
       enddo
       endif
 
-      if (wrt_U) then
+      if (wrt_U_zsl) then
       do j=1,ny
          do k=1,N
          do i=1,nx
@@ -152,7 +152,7 @@
 
       endif
 
-      if (wrt_V) then
+      if (wrt_V_zsl) then
       do j=1,ny
          do k=1,N
          do i=1,nx
@@ -272,9 +272,9 @@
      &   'output_period (s) =', output_period
       endif
 
-      if (wrt_T)  Tz_avg = Tz_avg*(1-coef) + Tz*coef
-      if (wrt_U)  Uz_avg = Uz_avg*(1-coef) + Uz*coef
-      if (wrt_V)  Vz_avg = Vz_avg*(1-coef) + Vz*coef
+      if (wrt_T_zsl)  Tz_avg = Tz_avg*(1-coef) + Tz*coef
+      if (wrt_U_zsl)  Uz_avg = Uz_avg*(1-coef) + Uz*coef
+      if (wrt_V_zsl)  Vz_avg = Vz_avg*(1-coef) + Vz*coef
 
       end subroutine calc_average !]
 !----------------------------------------------------------------------
@@ -288,10 +288,10 @@
 
       varid = nccreate(ncid,'depth',(/'depth'/),(/ndep/))
 
-      if (wrt_T) then
+      if (wrt_T_zsl) then
       do n=1,nt_z
       varid = nccreate(ncid,t_vname(trc2zsc(n)),
-     &         (/'xi_rho','eta_rho','depth','time'/),(/xi_rho,eta_rho,ndep,0/))
+     &         (/dn_xr,dn_yr,'depth',dn_tm/),(/xi_rho,eta_rho,ndep,0/))
       if (do_avg) then
         ierr = nf90_put_att(ncid,varid,'long_name','averaged'//t_lname(trc2zsc(n)))
       else
@@ -301,8 +301,8 @@
       enddo
       endif
 
-      if (wrt_U) then
-      varid = nccreate(ncid,'u',(/'xi_u','eta_rho','depth','time'/),(/xi_u,eta_rho,ndep,0/))
+      if (wrt_U_zsl) then
+      varid = nccreate(ncid,'u',(/dn_xu,dn_yr,'depth',dn_tm/),(/xi_u,eta_rho,ndep,0/))
       if (do_avg) then
         ierr = nf90_put_att(ncid,varid,'long_name','averaged u-momentum component')
       else
@@ -311,8 +311,8 @@
       ierr = nf90_put_att(ncid,varid,'units','meter second-1')
       endif
 
-      if (wrt_V) then
-      varid = nccreate(ncid,'v',(/'xi_rho','eta_v','depth','time'/),(/xi_rho,eta_v,ndep,0/))
+      if (wrt_V_zsl) then
+      varid = nccreate(ncid,'v',(/dn_xr,dn_yv,'depth',dn_tm/),(/xi_rho,eta_v,ndep,0/))
       if (do_avg) then
          ierr = nf90_put_att(ncid,varid,'long_name','averaged v-momentum component')
       else
@@ -363,23 +363,24 @@
         if (ierr/=nf90_noerr) 
      &      call handle_ierr(ierr,'wrt_zslice, opening: ',fname)
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
-        if (wrt_T) then
+        if (wrt_T_zsl) then
           do n=1,nt_z
           if (do_avg) then
-          call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz_avg(1:nx,1:ny,:,n),(/bfx,bfy,1,record/))
+          call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz_avg(1:nx,1:ny,:,n),
+     &        (/bfx,bfy,1,record/))
           else
           call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz(1:nx,1:ny,:,n),(/bfx,bfy,1,record/))
           endif
           enddo
         endif
-        if (wrt_U) then
+        if (wrt_U_zsl) then
           if (do_avg) then
           call ncwrite(ncid,'u',Uz_avg(1:nx,1:ny,:),(/1,bfy,1,record/))
           else
           call ncwrite(ncid,'u',Uz(1:nx,1:ny,:),(/1,bfy,1,record/))
           endif
         endif
-        if (wrt_V) then
+        if (wrt_V_zsl) then
           if (do_avg) then
           call ncwrite(ncid,'v',Vz_avg(1:nx,1:ny,:),(/bfx,1,1,record/))
           else

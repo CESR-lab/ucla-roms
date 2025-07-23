@@ -67,7 +67,7 @@
 
       if (nt_passive>0) then
         t_ana_frc(3)= 1   ! analytical forcing (zeros in this case)
-        t_vname(3)='passive' 
+        t_vname(3)='trace1' 
         t_units(3)='none'
         t_lname(3)='passive tracer'
         wrt_t(3)     =.True.

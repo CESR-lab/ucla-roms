@@ -74,6 +74,8 @@
       integer :: navg_ovars = 0                             ! number of samples in average
       character(len=99),public :: fname_rst                 ! restart filename needed by diagnostics
       integer,public           :: rec_rst=nrpf_rst          ! current file output record needed by diags
+      integer                :: prev_month
+      logical                :: write_another_step = .false.
 
       public :: wrt_his_ocean_vars
       public :: wrt_avg_ocean_vars
@@ -82,6 +84,19 @@
       public :: init_avg_arrays
 
       contains  !]
+!----------------------------------------------------------------------
+      subroutine init_restarts  ![
+
+      implicit none
+
+      integer,dimension(6)   :: date
+
+      if (wrt_file_rst .and. monthly_restarts) then
+          call sec2date(time,date)
+          prev_month = date(2)
+      endif
+
+      end subroutine init_restarts !]
 !----------------------------------------------------------------------
       subroutine init_avg_arrays  ![
       use scalars
@@ -465,6 +480,59 @@
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
 
+      implicit none
+
+      ! local
+      real,save              :: output_time_rst=0                    ! time since last output
+      integer,dimension(6)   :: date
+      character(len=15)      :: datestr
+
+      if (wrt_file_rst) then
+
+      if (monthly_restarts) then
+          ! We need to save the last two timesteps of the month, so that when the new simulation
+          ! loads the restart file the first timestep it takes will be the first timestep of the
+          ! new month.
+          ! time + 2*dt here so that it looks two timesteps ahead to see if we're changing months.
+          call sec2date(time+2*dt,date)
+          if ((date(2) - prev_month) /= 0) then
+            call wrt_restart_file
+            write_another_step = .true.
+          endif
+
+          if (write_another_step) then
+            call wrt_restart_file
+            write_another_step = .false.
+          endif
+
+          prev_month = date(2)
+      else
+!     if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
+!     first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+          output_time_rst = output_time_rst + dt
+
+          if (output_time_rst    >=output_period_rst
+#ifdef EXACT_RESTART
+     &        .or.
+     &        output_time_rst+dt >=output_period_rst         ! timestep before
+#endif
+     &        ) then
+             call wrt_restart_file
+             if (output_time_rst>=output_period_rst) then
+                 output_time_rst=0                             ! catch for exact restart to not
+             endif                                             ! reset the time
+          endif ! it output_time > output_period
+      endif ! monthly_restarts
+
+      endif ! wrt_file_rst
+
+      end subroutine wrt_rst_ocean_vars  !]
+!----------------------------------------------------------------------
+      subroutine wrt_restart_file  ![
+      ! write ocean_vars variables to output netcdf restart file
+      ! ocean_vars variables are calculated for t=n in timestep t=n
+      ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
+
       use mixing
       use eos_vars
       use work_mod
@@ -483,19 +551,6 @@
       real,save              :: output_time_rst=0                    ! time since last output
       logical,save           :: first_step=.true.
       integer                :: tile, ierr, i, j, k
-
-      if (wrt_file_rst) then
-
-!     if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
-!     first_step=.false.                                             ! as first step the ocean_vars values are for t=0
-      output_time_rst = output_time_rst + dt
-
-      if (output_time_rst    >=output_period_rst
-#ifdef EXACT_RESTART
-     &    .or.
-     &    output_time_rst+dt >=output_period_rst                     ! timestep before
-#endif
-     &                    ) then
 
 
         if (rec_rst==nrpf_rst) then
@@ -579,14 +634,7 @@
      &     'step =', iic, 'rec =', rec_rst, '/', total_rec_rst
         endif
 
-        if (output_time_rst>=output_period_rst) then
-          output_time_rst=0                                          ! catch for exact restart to not
-        endif                                                        ! reset the time
-      endif
-
-      endif  ! <-- wrt_file_rst
-
-      end subroutine wrt_rst_ocean_vars  !]
+      end subroutine wrt_restart_file  !]
 !----------------------------------------------------------------------
       subroutine create_file_ocean_vars(fname,avg)  ![
       implicit none

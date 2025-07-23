@@ -107,6 +107,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use particles
       use cstar_output
       use random_output
+      use cstar_output
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
@@ -478,6 +479,9 @@ CR      write(*,*)  ' -2' MYID
 #endif
 
       if (do_random) call wrt_random
+#if defined MARBL && defined MARBL_DIAGS
+      if (do_cstar)  call wrt_cstar
+#endif
 
       if (do_cstar)  call wrt_cstar
 

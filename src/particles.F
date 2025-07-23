@@ -29,8 +29,8 @@
       
       character(len=130) :: particle_string
       character(len=130) :: particle_num_string
-      character(len=30) :: particle_conc_string
-      character(len=30) :: buffer_string
+      character(len=40)  :: part_conc
+      character(len=130) :: buffer_string
 
 
       ! indices of various quantities in particle array
@@ -111,10 +111,11 @@
       call exchange_particles ! marks particles as out of domain
 
       if (full_seed) call seed_bry
+      if (cont_seed) call seed_loc
 
       call sort_particles
 
-      if (output_time > output_period) then
+      if (output_time >= output_period) then
         call wrt_particles
         output_time = 0
       endif
@@ -184,8 +185,8 @@
       if (full_seed) then 
         call store_string_att(particle_opt, 'full seed')
         call store_string_att(particle_opt, ', constant density')
-        write(particle_conc_string, '(A, E10.2)') ', concentration(m^-3):', ppm3
-        call store_string_att(particle_opt, particle_conc_string)
+        write(part_conc, '(A, E12.2)') ', concentration(m^-3): ', ppm3
+        call store_string_att(particle_opt, part_conc)
         write(particle_num_string, '(A, I2)') ', # of partciles:', np
 
         call store_string_att(particle_opt, particle_num_string)
@@ -240,11 +241,11 @@
 
        do ip = 1,np
          if (pz(ip)<0) then
-           pz(ip) = 0.1
+           pz(ip) = 0.02
            n_bot = n_bot+1
          endif
          if (pz(ip)>nz) then
-           pz(ip) = nz-0.1
+           pz(ip) = nz-0.02
            n_sur = n_sur+1
          endif
        enddo
@@ -344,7 +345,100 @@
 
       end subroutine seed_bry !]
 !-------------------------------------------------
+      subroutine seed_loc![
+      ! Use a 2d map to seed randomized particles
+      ! in an area. The rate is determined by the
+      ! value of the 2d field with a max rate of 1
+      ! particle per time step.
+      implicit none
+
+      !local
+      integer :: i,j,ip,np_old,ntag_old
+      real    :: hvol
+      real,dimension(:),pointer:: px,py
+
+      ! Check the particle density between 0.0 and 1.0
+      ! and add particles if needed
+
+      px => part(:,ipx)
+      py => part(:,ipy)
+
+      np_old = np
+
+      if (obc_west.and.(.not.west_msg_exch)) then
+        if (.not.allocated(nbp_west)) allocate(nbp_west(0:ny+1))
+        nbp_west = 0
+        do ip = 1,np
+          if (floor(px(ip))==0) then
+            nbp_west(floor(py(ip))+1) = nbp_west(floor(py(ip))+1) +1
+          endif
+        enddo
+        do j=1,ny
+          zw = z_w(1,j,:)
+          hvol = h(1,j)/(pm(1,j)*pn(1,j))
+          call seed_particles(hvol,zw,1,j,nbp_west(j))
+        enddo
+      endif
+
+      if (obc_east.and.(.not.east_msg_exch)) then
+        if (.not.allocated(nbp_east)) allocate(nbp_east(0:ny+1))
+        nbp_east = 0
+        do ip = 1,np
+          if (floor(px(ip))==nx-1) then
+            nbp_east(floor(py(ip))+1) = nbp_east(floor(py(ip))+1) +1
+          endif
+        enddo
+        do j=1,ny
+          zw = z_w(nx,j,:)
+          hvol = h(nx,j)/(pm(nx,j)*pn(nx,j))
+          call seed_particles(hvol,zw,nx,j,nbp_east(j))
+        enddo
+      endif
+
+      if (obc_south.and.(.not.south_msg_exch)) then
+        if (.not.allocated(nbp_south)) allocate(nbp_south(0:nx+1))
+        nbp_south = 0
+        do ip = 1,np
+          if (floor(py(ip))==0) then
+            nbp_south(floor(px(ip))+1) = nbp_south(floor(px(ip))+1) +1
+          endif
+        enddo
+        do i=1,nx
+          zw = z_w(i,1,:)
+          hvol = h(i,1)/(pm(i,1)*pn(i,1))
+          call seed_particles(hvol,zw,i,1,nbp_south(i))
+        enddo
+      endif
+
+      if (obc_north.and.(.not.north_msg_exch)) then
+        if (.not.allocated(nbp_north)) allocate(nbp_north(0:nx+1))
+        nbp_north = 0
+        do ip = 1,np
+          if (floor(py(ip))==ny-1) then
+            nbp_north(floor(px(ip))+1) = nbp_north(floor(px(ip))+1) +1
+          endif
+        enddo
+        do i=1,nx
+          zw = z_w(i,ny,:)
+          hvol = h(i,ny)/(pm(i,ny)*pn(i,ny))
+          call seed_particles(hvol,zw,i,ny,nbp_north(i))
+        enddo
+      endif
+      
+      do ip = np_old+1,np
+        part(ip,itag) = ip + ntag-np_old + big_number*mynode
+        ! first time step with these particles will be off by 1.5 for AB2
+        part(ip,iprxm) = 0
+        part(ip,iprym) = 0
+        part(ip,iprzm) = 0
+      enddo
+      ntag = ntag + np-np_old
+
+      end subroutine seed_loc !]
+!-------------------------------------------------
       subroutine seed_particles(hvol,zw,i,j,np_cur)![
+      ! part of full seeding strategy. Use random to seed
+      ! lnp particles in the current i,j colomn. 
       implicit none
       ! import/export
       real                ,intent(in) :: hvol ! volume of the water column

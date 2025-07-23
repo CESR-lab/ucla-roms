@@ -195,7 +195,7 @@
             do j=0,ny
               do i=0,nx
                 ptide(i,j)=
-     &        + ptide_r(i,j,itide)*cos(omT)- ptide_i(i,j,itide)*sin(omT)
+     &          ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
               enddo
             enddo
           else

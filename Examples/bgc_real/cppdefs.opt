@@ -61,16 +61,15 @@ c--# define LMD_CONVEC
 # define SPONGE
 
                         /* Biology Settings */
-# define MARBL
-# define MARBL_DIAGS
+c--# define MARBL
+c--# define MARBL_DIAGS
 
 #ifdef MARBL
 # define NOX_FORCING
 # define NHY_FORCING
 #endif
 
-!# define BIOLOGY_BEC2
-
+# define BIOLOGY_BEC2
 
 #ifdef BIOLOGY_BEC2
 # define BIOLOGY                  /* DPD current does nothing in new code */

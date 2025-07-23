@@ -99,8 +99,7 @@ C$    endif
         p_S =conv_ijnode_to_rank(inode  ,jnode-1, NP_XI,NP_ETA)
         p_SE=conv_ijnode_to_rank(inode+1,jnode-1, NP_XI,NP_ETA)
 
-!       print *, 'neighbors: ', mynode, p_S,p_N
-!       stop
+!       print *, 'neighbors: ', mynode, p_W,p_E
 
 ! Determine bounds of the usable portion of model arrays:
 
@@ -212,22 +211,18 @@ C$    endif
       integer conv_ijnode_to_rank, ii,jj, np_xi,np_eta, i,j
       i=ii ; j=jj
 # ifdef EW_PERIODIC
-      if (np_xi > 1) then
-        if (i < 0) then
-          i=i+np_xi
-        elseif (i > np_xi-1) then
-          i=i-np_xi
-        endif
+      if (i < 0) then
+        i=i+np_xi
+      elseif (i > np_xi-1) then
+        i=i-np_xi
       endif
 # endif
 # ifdef NS_PERIODIC
-!     if (np_eta > 1) then
-        if (j < 0) then
-          j=j+np_eta
-        elseif (j > np_eta-1) then
-          j=j-np_eta
-        endif
-!     endif
+      if (j < 0) then
+        j=j+np_eta
+      elseif (j > np_eta-1) then
+        j=j-np_eta
+      endif
 # endif
       if (0 <= i .and. i < np_xi .and. 0 <= j .and. j < np_eta) then
 # ifdef TRANSPOSED_MPI_NODE_ORDER

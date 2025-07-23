@@ -3,6 +3,7 @@
       ! user inputs
       logical,parameter :: wrt_file_rst      = .false.     ! t/f to write module history file
       real,parameter    :: output_period_rst = 2000        ! output period in seconds
+      logical,parameter :: monthly_restarts = .false.      ! This overrides output_period
       integer,parameter :: nrpf_rst          =  2          ! total recs per file
       
       logical,parameter :: wrt_file_his      = .true.      ! t/f to write module history file

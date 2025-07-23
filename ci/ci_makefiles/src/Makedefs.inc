@@ -3,6 +3,8 @@
 
 # Compiler flags depend on compiler: intel -> ifx, gnu -> gfortran, ifort -> ifort (deprecated)
 COMPILER ?=gnu
+# Set MPI wrapper (auto, mpifort, mpiifx, mpiifort)
+MPI_WRAPPER ?=auto
 # Configure FFLAGS by setting BUILD_MODE to "debug","strict","vtune",or "grof"
 BUILD_MODE ?=regular
 # Keep pre-processed source code or not:
@@ -35,25 +37,51 @@ ifeq ($(OS),Darwin)
     PPF77_ext = .fpp
 endif
 
-## Set linker and compiler based on compiler/MPI wrapper
+## Setting MPI wrapper:
+# Set compatible MPI wrappers based on selected compiler
 ifeq ($(COMPILER),gnu)
-	LDR =  mpifort
-        CFT =  mpifort
-	expected_fc=GNU Fortran # For checking correct compiler is wrapped
+    expected_fc := GNU Fortran
+    compatible_wrappers := mpifort
 else ifeq ($(COMPILER),intel)
-        LDR = mpiifx
-        CFT = mpiifx
-	expected_fc=ifx
+    expected_fc := ifx
+    compatible_wrappers := mpifort mpiifx
 else ifeq ($(COMPILER),ifort)
-        LDR = mpifort
-        CFT = mpifort
-	expected_fc=ifort
+    expected_fc := ifort
+    compatible_wrappers := mpifort mpiifort
 endif
 
-MPIVER := $(shell $(CFT) --version | head -n1)
-ifeq ($(findstring $(expected_fc),$(MPIVER)),)
-      _ := $(error "COMPILER is set to $(COMPILER) but $(CFT) wraps $(MPIVER). Call make with the COMPILER= argument (either intel or gnu)")
+# Detect and set MPI wrapper if set to `auto` above:
+ifeq ($(MPI_WRAPPER),auto)
+    MPI_WRAPPER := $(shell \
+        for wrapper in $(compatible_wrappers); do \
+            if $$wrapper --version 2>/dev/null | grep -q '$(expected_fc)'; then \
+                echo $$wrapper; \
+                break; \
+            fi; \
+        done)
+    $(info INFO: Automatically selected MPI_WRAPPER=$(MPI_WRAPPER) based on COMPILER=$(COMPILER))
 endif
+
+# Fail if MPI_WRAPPER is empty or still "auto" after it should have been set:
+ifeq ($(filter auto, $(MPI_WRAPPER)),auto)
+    $(error Failed to auto-detect a suitable MPI wrapper for COMPILER=$(COMPILER). Tried: $(compatible_wrappers))
+endif
+
+# Fail if the wrapper doesn't exist
+ifeq ($(shell command -v $(MPI_WRAPPER) >/dev/null 2>&1 || echo missing),missing)
+    $(error MPI_WRAPPER=$(MPI_WRAPPER) not found. Install it or set MPI_WRAPPER to a valid MPI wrapper)
+endif
+
+# Fail if the chosen wrapper doesn't wrap the chosen compiler
+MPIVER := $(shell $(MPI_WRAPPER) --version | head -n1)
+ifeq ($(findstring $(expected_fc),$(MPIVER)),)
+    $(error COMPILER=$(COMPILER) expects $(expected_fc), but MPI_WRAPPER=$(MPI_WRAPPER) wraps $(MPIVER). Set COMPILER and MPI_WRAPPER to be compatible.)
+endif
+
+# Set compiler and linker to chosen wrapper
+CFT := $(MPI_WRAPPER)
+LDR := $(MPI_WRAPPER)
+
 
 # For BUILD_MODE = "vtune" or "grof" always keep source code:
 ifeq ($(BUILD_MODE),vtune)
