@@ -134,7 +134,7 @@
       itot = 0
       ! Loop over 3D BGC diagnostics...
       ! ...but use itot as index (to include other diagnostics)
-      do idx=1,nr_marbl_ss_2d
+      do idx=1,nr_marbl_ss_3d
          itot=itot+1
          if (vname_marbl_ss_3d(1,idx)=='MARBL_PH_3D') then
            iPH = itot
