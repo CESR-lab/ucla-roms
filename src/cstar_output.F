@@ -230,7 +230,7 @@
 
       pH_avg(:,:,:) = pH_avg(:,:,:)*(1-coef) + marbl_saved_state_3d(:,:,:,iPH)*coef
 
-      pH_alt_avg(:,:,:) = pH_alt_avg(:,:,:)*(1-coef) + marbl_saved_state_3d(i0:i1,j0:j1,:,iPH_alt)*coef
+      pH_alt_avg(:,:,:) = pH_alt_avg(:,:,:)*(1-coef) + marbl_saved_state_3d(:,:,:,iPH_alt)*coef
 
       FG_CO2_avg(:,:) = FG_CO2_avg(:,:)*(1-coef) + bec2_diag_2d(:,:,iFG)*coef
 
