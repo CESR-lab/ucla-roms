@@ -134,12 +134,12 @@
       itot = 0
       ! Loop over 3D BGC diagnostics...
       ! ...but use itot as index (to include other diagnostics)
-      do idx=1,nr_bec2_diag_3d
+      do idx=1,nr_marbl_ss_3d
          itot=itot+1
-         if (vname_bec2_diag_3d(1,idx)=='pH_3D') then
+         if (vname_marbl_ss_3d(1,idx)=='MARBL_PH_3D') then
            iPH = itot
          endif
-         if (vname_bec2_diag_3d(1,idx)=='pH_3D_ALT_CO2') then
+         if (vname_marbl_ss_3d(1,idx)=='MARBL_PH_3D_ALT_CO2') then
            iPH_alt = itot
          endif
       enddo
@@ -228,9 +228,9 @@
 
       hDIC_alt_avg(:,:,:) = hDIC_alt_avg(:,:,:)*(1-coef) + t(:,:,:,knew,iDIC_alt)*Hz(:,:,:)*coef
 
-      pH_avg(:,:,:) = pH_avg(:,:,:)*(1-coef) + bec2_diag_3d(:,:,:,iPH)*coef
+      pH_avg(:,:,:) = pH_avg(:,:,:)*(1-coef) + marbl_saved_state_3d(:,:,:,iPH)*coef
 
-      pH_alt_avg(:,:,:) = pH_alt_avg(:,:,:)*(1-coef) + bec2_diag_3d(:,:,:,iPH_alt)*coef
+      pH_alt_avg(:,:,:) = pH_alt_avg(:,:,:)*(1-coef) + marbl_saved_state_3d(:,:,:,iPH_alt)*coef
 
       FG_CO2_avg(:,:) = FG_CO2_avg(:,:)*(1-coef) + bec2_diag_2d(:,:,iFG)*coef
 
@@ -307,64 +307,66 @@
       integer                        :: ierr, varid
 
       varid = nccreate(ncid,'zeta',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','sea surface heigth')
-      ierr = nf90_put_att(ncid,varid,'units','m')
+      ierr = nf90_put_att(ncid,varid,'long_name',
+     & 'free-surface elevation')
+      ierr = nf90_put_att(ncid,varid,'units','meters')
 
       varid = nccreate(ncid,'temp',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','temperature')
-      ierr = nf90_put_att(ncid,varid,'units','degrees C')
+      ierr = nf90_put_att(ncid,varid,'long_name',
+     & 'potential temperature')
+      ierr = nf90_put_att(ncid,varid,'units','degrees Celsius')
 
       varid = nccreate(ncid,'salt',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
       ierr = nf90_put_att(ncid,varid,'long_name','salinity')
       ierr = nf90_put_att(ncid,varid,'units','PSU')
 
       varid = nccreate(ncid,'ALK',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alkalinity')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name',t_lname(iALK))
+      ierr = nf90_put_att(ncid,varid,'units',t_units(iALK))
 
       varid = nccreate(ncid,'DIC',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','DIC')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name',t_lname(iDIC))
+      ierr = nf90_put_att(ncid,varid,'units',t_units(iDIC))
 
       varid = nccreate(ncid,'ALK_ALT_CO2',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alt alkalinity')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name',t_lname(iALK_alt))
+      ierr = nf90_put_att(ncid,varid,'units',t_units(iALK_alt))
 
       varid = nccreate(ncid,'DIC_ALT_CO2',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alt DIC')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name',t_lname(iDIC_alt))
+      ierr = nf90_put_att(ncid,varid,'units',t_units(iDIC_alt))
 
       varid = nccreate(ncid,'hALK',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','thickness-weighted alkalinity')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name','thickness-weighted '/ /trim(t_lname(iALK)))
+      ierr = nf90_put_att(ncid,varid,'units','meters '/ /trim(t_units(iALK)))
 
       varid = nccreate(ncid,'hDIC',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','thickness-weighted DIC')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name','thickness-weighted '/ /trim(t_lname(iDIC)))
+      ierr = nf90_put_att(ncid,varid,'units','meters '/ /trim(t_units(iDIC)))
 
       varid = nccreate(ncid,'hALK_ALT_CO2',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alt thickness-weighted alkalinity')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name','thickness-weighted '/ /trim(t_lname(iALK_alt)))
+      ierr = nf90_put_att(ncid,varid,'units','meters '/ /trim(t_units(iALK_alt)))
 
       varid = nccreate(ncid,'hDIC_ALT_CO2',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alt thickness-weighted DIC')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name','thickness-weighted '/ /trim(t_lname(iDIC_alt)))
+      ierr = nf90_put_att(ncid,varid,'units','meters '/ /trim(t_units(iDIC_alt)))
 
       varid = nccreate(ncid,'pH',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','pH')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name',vname_marbl_ss_3d(2,iPH))
+      ierr = nf90_put_att(ncid,varid,'units',vname_marbl_ss_3d(3,iPH))
 
       varid = nccreate(ncid,'pH_ALT_CO2',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alt pH')
-      ierr = nf90_put_att(ncid,varid,'units','nondimensional')
+      ierr = nf90_put_att(ncid,varid,'long_name',vname_marbl_ss_3d(2,iPH_alt))
+      ierr = nf90_put_att(ncid,varid,'units',vname_marbl_ss_3d(3,iPH_alt))
 
       varid = nccreate(ncid,'FG_CO2',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','surface flux of CO2')
-      ierr = nf90_put_att(ncid,varid,'units','m')
+      ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_2d(2,iFG))
+      ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,iFG))
 
       varid = nccreate(ncid,'FG_ALT_CO2',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name','alt surface flux of CO2')
-      ierr = nf90_put_att(ncid,varid,'units','m')
+      ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_2d(2,iFG_alt))
+      ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,iFG_alt))
 
       if (cdr_source) then
         varid = nccreate(ncid,'ALK_source',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/),nf90_double)
@@ -482,8 +484,8 @@
           call ncwrite(ncid,'hDIC',hDIC_tmp(i0:i1,j0:j1,:),(/1,1,1,record/))
           call ncwrite(ncid,'hALK_ALT_CO2',hALK_alt_tmp(i0:i1,j0:j1,:),(/1,1,1,record/))
           call ncwrite(ncid,'hDIC_ALT_CO2',hDIC_alt_tmp(i0:i1,j0:j1,:),(/1,1,1,record/))
-          call ncwrite(ncid,'pH',bec2_diag_3d(i0:i1,j0:j1,:,iPH),(/1,1,1,record/))
-          call ncwrite(ncid,'pH_ALT_CO2',bec2_diag_3d(i0:i1,j0:j1,:,iPH_alt),(/1,1,1,record/))
+          call ncwrite(ncid,'pH',marbl_saved_state_3d(i0:i1,j0:j1,:,iPH),(/1,1,1,record/))
+          call ncwrite(ncid,'pH_ALT_CO2',marbl_saved_state_3d(i0:i1,j0:j1,:,iPH_alt),(/1,1,1,record/))
           call ncwrite(ncid,'FG_CO2'  ,bec2_diag_2d(i0:i1,j0:j1,iFG),(/1,1,record/))
           call ncwrite(ncid,'FG_ALT_CO2'  ,bec2_diag_2d(i0:i1,j0:j1,iFG_alt),(/1,1,record/))
           if (cdr_source) then
