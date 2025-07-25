@@ -1,7 +1,4 @@
 #include "cppdefs.opt"
-#ifdef MPI
-c--# define TRANSPOSED_MPI_NODE_ORDER
-c--# define PRINT_HOSTNAME
 
       subroutine mpi_setup(ierr)
       use param
@@ -18,17 +15,10 @@ c--# define PRINT_HOSTNAME
       character(len=128) :: fname
 
       integer off_xi,off_eta, conv_ijnode_to_rank,check_neighbor
-# ifdef PRINT_HOSTNAME
-      integer status(MPI_STATUS_SIZE), blank
-      character(len=38) msg1 ! <-- greeting message to print
-      character(len=23) msg2 
-# endif
-
-      exc_call_count=0
 
       ! read in gridfile to check if mpi masking is present
 # ifdef ANA_GRID
-      NNODES=NP_XI*NP_ETA
+      nnodes=np_xi*np_eta
       newpart=99
 # else
       ierr=nf90_open(grdname,nf90_nowrite,ncid)
@@ -37,17 +27,15 @@ c--# define PRINT_HOSTNAME
       ! determine nodes based on version
       if (newpart.eq.nf90_noerr) then
         ierr=nf90_get_att(ncid,nf90_global,"partition",partition)
-        NNODES=partition(2)
+        nnodes=partition(2)
         ! grab neighbors & i/j nodes
         ierr=nf90_get_att(ncid,nf90_global,"neighbors",neighbors)
         ierr=nf90_get_att(ncid,nf90_global,"subdompos",subdompos)
-!       print*,'MPI_SETUP: MASKING ON'
       else
-        NNODES=NP_XI*NP_ETA
+        nnodes=NP_XI*NP_ETA
       endif
       ierr=nf90_close(ncid)
 # endif
-
 
       if (nsize==NNODES) then       ! Check whether the number of
                                     ! nodes specified by -np argument
@@ -105,23 +93,23 @@ c--# define PRINT_HOSTNAME
 ! incoming and targets for outgoing messages.
 
         if (newpart.eq.nf90_noerr) then
-          p_N  =neighbors(1)
-          p_NE =neighbors(2)
-           p_E =neighbors(3)
-          p_SE =neighbors(4)
-          p_S  =neighbors(5)
-          p_SW =neighbors(6)
-           p_W =neighbors(7)
-          p_NW =neighbors(8)
+          p_N  = neighbors(1)
+          p_NE = neighbors(2)
+          p_E  = neighbors(3)
+          p_SE = neighbors(4)
+          p_S  = neighbors(5)
+          p_SW = neighbors(6)
+          p_W  = neighbors(7)
+          p_NW = neighbors(8)
         else
-         p_E=conv_ijnode_to_rank(inode+1,jnode  , NP_XI,NP_ETA)
-        p_NE=conv_ijnode_to_rank(inode+1,jnode+1, NP_XI,NP_ETA)
-        p_N =conv_ijnode_to_rank(inode  ,jnode+1, NP_XI,NP_ETA)
-        p_NW=conv_ijnode_to_rank(inode-1,jnode+1, NP_XI,NP_ETA)
-         p_W=conv_ijnode_to_rank(inode-1,jnode  , NP_XI,NP_ETA)
-        p_SW=conv_ijnode_to_rank(inode-1,jnode-1, NP_XI,NP_ETA)
-        p_S =conv_ijnode_to_rank(inode  ,jnode-1, NP_XI,NP_ETA)
-        p_SE=conv_ijnode_to_rank(inode+1,jnode-1, NP_XI,NP_ETA)
+          p_E =conv_ijnode_to_rank(inode+1,jnode  , NP_XI,NP_ETA)
+          p_NE=conv_ijnode_to_rank(inode+1,jnode+1, NP_XI,NP_ETA)
+          p_N =conv_ijnode_to_rank(inode  ,jnode+1, NP_XI,NP_ETA)
+          p_NW=conv_ijnode_to_rank(inode-1,jnode+1, NP_XI,NP_ETA)
+          p_W =conv_ijnode_to_rank(inode-1,jnode  , NP_XI,NP_ETA)
+          p_SW=conv_ijnode_to_rank(inode-1,jnode-1, NP_XI,NP_ETA)
+          p_S =conv_ijnode_to_rank(inode  ,jnode-1, NP_XI,NP_ETA)
+          p_SE=conv_ijnode_to_rank(inode+1,jnode-1, NP_XI,NP_ETA)
         endif
 
 ! Determine bounds of the usable portion of model arrays:
@@ -247,8 +235,3 @@ c--# define PRINT_HOSTNAME
         conv_ijnode_to_rank=-1 !<- meaning that the rank does not exist
       endif
       end
-
-#else
-      subroutine mpi_setup_empty
-      end
-#endif    /* MPI */

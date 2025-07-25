@@ -87,7 +87,7 @@
 #endif
       real,allocatable,dimension(:,:) :: pmon_u
       real,allocatable,dimension(:,:) :: pnom_v
-      real,allocatable,dimension(:,:) :: grdscl
+!     real,allocatable,dimension(:,:) :: grdscl
 
 #ifdef MASKING
       real,allocatable,dimension(:,:) :: rmask
@@ -108,33 +108,29 @@
       subroutine init_arrays_grid  ![
       implicit none
 
-      ! WARNING: "rmask" MUST BE initialized to all-one (=1) state in order to
-      ! read grid variables (coordinates, metric, topography), which should
-      ! not be masked.
-
 #ifdef MASKING
       allocate( rmask(GLOBAL_2D_ARRAY) ) ; rmask=1.
-      allocate( pmask(GLOBAL_2D_ARRAY) ) ; pmask=init
-      allocate( umask(GLOBAL_2D_ARRAY) ) ; umask=init
-      allocate( vmask(GLOBAL_2D_ARRAY) ) ; vmask=init
+      allocate( pmask(GLOBAL_2D_ARRAY) ) ; pmask=1.
+      allocate( umask(GLOBAL_2D_ARRAY) ) ; umask=1.
+      allocate( vmask(GLOBAL_2D_ARRAY) ) ; vmask=1.
 #endif
 
-      allocate( h(GLOBAL_2D_ARRAY) )    ; h=init           ! potential first touch issue.
-      allocate( hinv(GLOBAL_2D_ARRAY) ) ; hinv=init        ! before only rmask was set in init_arrays...
-      allocate( f(GLOBAL_2D_ARRAY) )    ; f=init
-      allocate( fomn(GLOBAL_2D_ARRAY) ) ; fomn=init
+      allocate( h(GLOBAL_2D_ARRAY) )    ; h = 5.0
+      allocate( hinv(GLOBAL_2D_ARRAY) ) ; hinv= 1./5       ! before only rmask was set in init_arrays...
+      allocate( f(GLOBAL_2D_ARRAY) )    ; f = 0
+      allocate( fomn(GLOBAL_2D_ARRAY) ) ; fomn= 0
 # ifdef NON_TRADITIONAL
-      allocate( f_XI(GLOBAL_2D_ARRAY) )  ; f_XI=init
-      allocate( f_ETA(GLOBAL_2D_ARRAY) ) ; f_ETA=init
+      allocate( f_XI(GLOBAL_2D_ARRAY) )  ; f_XI = 0
+      allocate( f_ETA(GLOBAL_2D_ARRAY) ) ; f_ETA =0
 # endif
  
 # ifdef CURVGRID
-      allocate( angler(GLOBAL_2D_ARRAY) ) ; angler=init
+      allocate( angler(GLOBAL_2D_ARRAY) ) ; angler = 0
 # endif
  
 #ifdef SPHERICAL
-      allocate( latr(GLOBAL_2D_ARRAY) ) ; latr=init
-      allocate( lonr(GLOBAL_2D_ARRAY) ) ; lonr=init
+      allocate( latr(GLOBAL_2D_ARRAY) ) ; latr = 0
+      allocate( lonr(GLOBAL_2D_ARRAY) ) ; lonr = 0
 #else
       allocate( xp(GLOBAL_2D_ARRAY) ) ; xp=init
       allocate( xr(GLOBAL_2D_ARRAY) ) ; xr=init
@@ -142,29 +138,29 @@
       allocate( yr(GLOBAL_2D_ARRAY) ) ; yr=init
 #endif
  
-      allocate( pm(GLOBAL_2D_ARRAY) )   ; pm=init
-      allocate( pn(GLOBAL_2D_ARRAY) )   ; pn=init
-      allocate( dm_r(GLOBAL_2D_ARRAY) ) ; dm_r=init
-      allocate( dn_r(GLOBAL_2D_ARRAY) ) ; dn_r=init
-      allocate( pn_u(GLOBAL_2D_ARRAY) ) ; pn_u=init
-      allocate( dm_u(GLOBAL_2D_ARRAY) ) ; dm_u=init
-      allocate( dn_u(GLOBAL_2D_ARRAY) ) ; dn_u=init
-      allocate( dm_v(GLOBAL_2D_ARRAY) ) ; dm_v=init
-      allocate( pm_v(GLOBAL_2D_ARRAY) ) ; pm_v=init
-      allocate( dn_v(GLOBAL_2D_ARRAY) ) ; dn_v=init
-      allocate( dm_p(GLOBAL_2D_ARRAY) ) ; dm_p=init
-      allocate( dn_p(GLOBAL_2D_ARRAY) ) ; dn_p=init
+      allocate( pm(GLOBAL_2D_ARRAY) )   ; pm = 1.
+      allocate( pn(GLOBAL_2D_ARRAY) )   ; pn = 1.
+      allocate( dm_r(GLOBAL_2D_ARRAY) ) ; dm_r=1.
+      allocate( dn_r(GLOBAL_2D_ARRAY) ) ; dn_r=1.
+      allocate( pn_u(GLOBAL_2D_ARRAY) ) ; pn_u=1.
+      allocate( dm_u(GLOBAL_2D_ARRAY) ) ; dm_u=1.
+      allocate( dn_u(GLOBAL_2D_ARRAY) ) ; dn_u=1.
+      allocate( dm_v(GLOBAL_2D_ARRAY) ) ; dm_v=1.
+      allocate( pm_v(GLOBAL_2D_ARRAY) ) ; pm_v=1.
+      allocate( dn_v(GLOBAL_2D_ARRAY) ) ; dn_v=1.
+      allocate( dm_p(GLOBAL_2D_ARRAY) ) ; dm_p=1.
+      allocate( dn_p(GLOBAL_2D_ARRAY) ) ; dn_p=1.
 
       allocate( iA_u(GLOBAL_2D_ARRAY) ) ; iA_u=init
       allocate( iA_v(GLOBAL_2D_ARRAY) ) ; iA_v=init
  
 #if (defined CURVGRID && defined UV_ADV)
-      allocate( dmde(GLOBAL_2D_ARRAY) ) ; dmde=init
-      allocate( dndx(GLOBAL_2D_ARRAY) ) ; dndx=init
+      allocate( dmde(GLOBAL_2D_ARRAY) ) ; dmde= 0.
+      allocate( dndx(GLOBAL_2D_ARRAY) ) ; dndx= 0.
 #endif
-      allocate( pmon_u(GLOBAL_2D_ARRAY) ) ; pmon_u=init
-      allocate( pnom_v(GLOBAL_2D_ARRAY) ) ; pnom_v=init
-      allocate( grdscl(GLOBAL_2D_ARRAY) ) ; grdscl=init
+      allocate( pmon_u(GLOBAL_2D_ARRAY) ) ; pmon_u= 1.0
+      allocate( pnom_v(GLOBAL_2D_ARRAY) ) ; pnom_v= 1.0
+!     allocate( grdscl(GLOBAL_2D_ARRAY) ) ; grdscl=init
 
       end subroutine init_arrays_grid  !]
 !----------------------------------------------------------------------
@@ -497,7 +493,6 @@
       call ncread(ncid,'h',h(i0:i1,j0:j1))         ! Bathymetry
       call exchange_xxx(h)                         ! (2,.true.)
 
-      
 ! Coordinate transformation metrics (m,n) associated with
 ! differential distances in XI- and ETA-directions.
 
