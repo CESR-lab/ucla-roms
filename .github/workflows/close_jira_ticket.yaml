@@ -20,7 +20,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
-            
+
             // Find the comment containing the Jira link
             const jiraComment = comments.find(comment => comment.body.includes('This issue has been linked to Jira story'));
             if (!jiraComment) {
@@ -40,7 +40,7 @@ jobs:
             console.log("Extracted STORY_KEY:", storyKey);
 
             core.setOutput("story_key", storyKey);
-            
+
       - name: Close Jira Ticket
         env:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN_MENDOCINO }}

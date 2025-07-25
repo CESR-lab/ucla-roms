@@ -70,7 +70,7 @@ jobs:
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
           sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
           sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
-          sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh          
+          sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
 
       - name: Run test for ${{ matrix.example }}
         shell: bash
