@@ -80,25 +80,14 @@
         enddo
       enddo
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
 #  ifdef SPONGE
 #   ifdef UV_VIS2
+      do j=jstrR,jendR
+        do i=istrR,iendR
           visc2_r(i,j)=visc2_r(i,j)+v_sponge*wrk(i,j)
-#   endif
-#   if defined SOLVE3D && defined TS_DIF2
-#    ifdef PACIFIC
-          diff2(i,j,itemp)=diff2(i,j,itemp)+0.5*v_sponge*wrk(i,j)
-#    else
-          diff2(i,j,itemp)=diff2(i,j,itemp)+v_sponge*wrk(i,j)
-#    endif
-#   endif
-#  endif
         enddo
       enddo
 
-#  ifdef SPONGE
-#   ifdef UV_VIS2
       do j=jstr,jendR        ! viscosity at psi points
         do i=istr,iendR
           visc2_p(i,j)=visc2_p(i,j)+0.25*v_sponge*( wrk(i,j)
@@ -106,19 +95,15 @@
         enddo
       enddo
 #   endif
+
 #   if defined SOLVE3D && defined TS_DIF2
-      do itrc=2,NT           ! diffusivity for the other tracers
+      do itrc=1,NT           ! diffusivity for the tracers
         do j=jstrR,jendR
           do i=istrR,iendR
-            diff2(i,j,itrc)=diff2(i,j,itemp)  ! Waste of space to have this 2D array copied...
+            diff2(i,j,itrc)=diff2(i,j,itrc)+v_sponge*wrk(i,j)
           enddo
         enddo
       enddo
-#   endif
-#   ifdef UV_VIS2
-#    ifdef EXCHANGE
-!     call exchange_xxx(visc2_p)
-#    endif
 #   endif
 #  endif
       end
