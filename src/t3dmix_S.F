@@ -27,6 +27,7 @@
       use scalars
       use tracers
       use diagnostics
+      use hidden_mpi_vars
 
       implicit none
       integer istr,iend,jstr,jend, itrc, i,j,k

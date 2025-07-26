@@ -66,7 +66,7 @@
       !! max value based of cfl condition
 !     sp_mx = 0.06/(maxval(pm)*maxval(pn)*dt)
 
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.inode.eq.0) then
         allocate(nc_pflx_w%vdata(ny,1,2))
         allocate(pflx_west(ny))
         pflx_west = 0
@@ -83,7 +83,7 @@
         allocate(ub_west_avg(ny))
         ub_west_avg = 0.
       endif
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.inode.eq.np_xi-1) then
         allocate(nc_pflx_e%vdata(ny,1,2))
         allocate(pflx_east(ny))
         pflx_east = 0
@@ -94,7 +94,7 @@
           ub_east = 0.
         endif
       endif
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.jnode.eq.np_eta-1) then
         allocate(nc_pflx_n%vdata(nx,1,2))
         allocate(pflx_north(nx))
         pflx_north = 0
@@ -105,7 +105,7 @@
           ub_north = 0.
         endif
       endif
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.jnode.eq.0) then
         allocate(nc_pflx_s%vdata(nx,1,2))
         allocate(pflx_south(nx))
         pflx_south = 0
@@ -136,25 +136,25 @@
       !local
       integer:: i,j,ierr
 
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.inode.eq.0) then
         call set_frc_data(nc_pflx_w,pflx_west)
         do j=1,ny
           if (abs(pflx_west(j))>100) pflx_west(j) = 0.
         enddo
       endif
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.inode.eq.np_xi-1) then
         call set_frc_data(nc_pflx_e,pflx_east)
         do j=1,ny
           if (abs(pflx_east(j))>100) pflx_east(j) = 0.
         enddo
       endif
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.jnode.eq.0) then
         call set_frc_data(nc_pflx_s,pflx_south)
         do i=1,nx
           if (abs(pflx_south(i))>100) pflx_south(i) = 0.
         enddo
       endif
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.jnode.eq.np_eta-1) then
         call set_frc_data(nc_pflx_n,pflx_north)
         do i=1,nx
           if (rmask(i,ny+1)<1) pflx_north(i) = 0.

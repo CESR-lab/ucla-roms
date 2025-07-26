@@ -82,7 +82,6 @@
       do_corners = .true.
       if (present(do_corn)) do_corners = do_corn
 
-
       call reset_buffer_sizes
       call pack_2dvar(A)
 
@@ -223,7 +222,7 @@
       call mpi_buffer_exchange
 
       call reset_buffer_sizes
-      call unpack_3dvar(A)
+      call unpack_3dvar(A) 
 
       end subroutine exchange_3 !]
 !--------------------------------------------------------
@@ -539,14 +538,6 @@
       if (jnode==0)        jl0=0
       if (jnode==NP_ETA-1) jl1=nyl+1
 
-!     if (mynode==0) then
-!      print *,nxl,nyl,bl
-!      print *,il0,il1,jl0,jl1
-!      print *,shape(A)
-!      stop
-!     endif
-
-
       szEW = hl*(jl1+1-jl0)*nzl
       szNS = hl*(il1+1-il0)*nzl
       szCr = hl*hl*nzl
@@ -573,22 +564,22 @@
         szN = szN+szNS
       endif
 
-      if (south_msg_exch.and.west_msg_exch) then
+      if (p_sw>=0) then
         sendSW(szSW+1:szSW+szCr) = reshape(A(1:hl,1:hl,:),(/szCr/))
         szSW = szSW+szCr
       endif
 
-      if (south_msg_exch.and.east_msg_exch) then
+      if (p_se>=0) then
         sendSE(szSE+1:szSE+szCr) = reshape(A(nxl+1-hl:nxl,1:hl,:),(/szCr/))
         szSE = szSE+szCr
       endif
 
-      if (north_msg_exch.and.east_msg_exch) then
+      if (p_ne>=0) then
         sendNE(szNE+1:szNE+szCr) = reshape(A(nxl+1-hl:nxl,nyl+1-hl:nyl,:),(/szCr/))
         szNE = szNE+szCr
       endif
 
-      if (north_msg_exch.and.west_msg_exch) then
+      if (p_nw>=0) then
         sendNW(szNW+1:szNW+szCr) = reshape(A(1:hl,nyl+1-hl:nyl,:),(/szCr/))
         szNW = szNW+szCr
       endif
@@ -620,7 +611,6 @@
       szNS = hl*(il1+1-il0)*nzl
       szCr = hl*hl*nzl
 
-
 ! Unpack data from exchanged buffers into array
 !----------------------------------------------
       if (west_msg_exch) then
@@ -633,8 +623,8 @@
       if (east_msg_exch) then
         A(nxl+1:nxl+hl,jl0:jl1,:) = reshape(recvE(szE+1:szE+szEW),shEW)
         szE = szE+szEW
-      elseif (inode<np_xi-1) then
-        A(nxl+1:nxl+hl,jl0:jl1,:) = A(nxl:hl,jl0:jl1,:)
+      elseif (inode<npx-1) then
+        A(nxl+1:nxl+hl,jl0:jl1,:) =  A(nxl+1-hl:nxl,jl0:jl1,:)
       endif
  
       if (south_msg_exch) then
@@ -647,36 +637,36 @@
       if (north_msg_exch) then
         A(il0:il1,nyl+1:nyl+hl,:) = reshape(recvN(szN+1:szN+szNS),shNS)
         szN = szN+szNS
-      elseif (jnode<np_eta-1) then
-        A(il0:il1,nyl+1:nyl+hl,:) = A(il0:il1,nyl:hl,:)
+      elseif (jnode<npy-1) then
+        A(il0:il1,nyl+1:nyl+hl,:) = A(il0:il1,nyl+1-1:nyl,:)
       endif
 
-      if (south_msg_exch.and.west_msg_exch.and.do_corners) then
+      if (p_sw>=0.and.do_corners) then
         A(1-hl:0,1-hl:0,:) = reshape(recvSW(szSW+1:szSW+szCr),shCr)
         szSW = szSW+szCr
-      elseif ((inode>0).and.(jnode>0)) then
+      elseif (inode>0.and.jnode>0) then
         A(1-hl:0,1-hl:0,:) = A(1:hl,1:hl,:)
       endif
 
-      if (south_msg_exch.and.east_msg_exch.and.do_corners) then
+      if (p_se>=0.and.do_corners) then
         A(nxl+1:nxl+hl,1-hl:0,:) = reshape(recvSE(szSE+1:szSE+szCr),shCr)
         szSE = szSE+szCr
-      elseif ((jnode>0).and.(inode<np_xi-1).and.(do_corners)) then
-        A(nxl+1:nxl+hl,1-hl:0,:) = A(nxl:hl,1:hl,:)      
+      elseif (inode<npx-1.and.jnode>0) then
+        A(nxl+1:nxl+hl,1-hl:0,:) = A(nxl+1-hl:nxl,1:hl,:)
       endif
 
-      if (north_msg_exch.and.west_msg_exch.and.do_corners) then
+      if (p_nw>=0.and.do_corners) then
         A(1-hl:0,nyl+1:nyl+hl,:) = reshape(recvNW(szNW+1:szNW+szCr),shCr)
         szNW = szNW+szCr
-      elseif ((jnode<np_eta-1).and.(inode>0).and.(do_corners)) then
-        A(1-hl:0,nyl+1:nyl+hl,:) = A(1:hl,nyl:hl,:)
+      elseif (inode>0.and.jnode<npy-1) then
+        A(1-hl:0,nyl+1:nyl+hl,:) = A(1:hl,nyl+1-hl:nyl,:)
       endif
  
-      if (north_msg_exch.and.east_msg_exch.and.do_corners) then
+      if (p_ne>=0.and.do_corners) then
         A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = reshape(recvNE(szNE+1:szNE+szCr),shCr)
         szNE = szNE+szCr
-      elseif ((jnode<np_eta-1).and.(inode<np_xi-1).and.(do_corners)) then
-        A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = A(nxl:hl,nyl:hl,:)
+      elseif (inode<npx-1.and.jnode<npy-1) then
+        A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = A(nxl+1-hl:nxl,nyl+1-hl:nyl,:)
       endif
 
       end subroutine unpack_buffers !]
@@ -725,22 +715,26 @@
      &          p_N, 5, ocean_grid_comm, req(4), ierr)
         comm(4)=4
       endif
-      if (west_msg_exch.and.south_msg_exch) then
+!     if (west_msg_exch.and.south_msg_exch) then
+      if (p_sw>=0) then
         call MPI_Irecv (recvSW, szSW, MPI_DOUBLE_PRECISION,
      &            p_SW, 2, ocean_grid_comm, req(5), ierr)
         comm(5)=5
       endif
-      if (east_msg_exch.and.north_msg_exch) then
+!     if (east_msg_exch.and.north_msg_exch) then
+      if (p_ne>=0) then
         call MPI_Irecv (recvNE, szNE, MPI_DOUBLE_PRECISION,
      &            p_NE, 1, ocean_grid_comm, req(6), ierr)
         comm(6)=6
       endif
-      if (east_msg_exch.and.south_msg_exch) then
+!     if (east_msg_exch.and.south_msg_exch) then
+      if (p_se>=0) then
         call MPI_Irecv (recvSE, szSE, MPI_DOUBLE_PRECISION,
      &            p_SE, 4, ocean_grid_comm, req(7), ierr)
         comm(7)=7
       endif
-      if (west_msg_exch.and.north_msg_exch) then
+!     if (west_msg_exch.and.north_msg_exch) then
+      if (p_nw>=0) then
         call MPI_Irecv (recvNW, szNW, MPI_DOUBLE_PRECISION,
      &            p_NW, 3, ocean_grid_comm, req(8), ierr)
         comm(8)=8
@@ -768,22 +762,26 @@
      &         p_N, 6, ocean_grid_comm, req(12), ierr)
         comm(12)=12
       endif
-      if (west_msg_exch.and.south_msg_exch) then
+!     if (west_msg_exch.and.south_msg_exch) then
+      if (p_sw>=0) then
         call MPI_Isend (sendSW, szSW, MPI_DOUBLE_PRECISION,
      &           p_SW, 1, ocean_grid_comm, req(13), ierr)
         comm(13)=13
       endif
-      if (east_msg_exch.and.north_msg_exch) then
+!     if (east_msg_exch.and.north_msg_exch) then
+      if (p_ne>=0) then
         call MPI_Isend (sendNE, szNE, MPI_DOUBLE_PRECISION,
      &           p_NE, 2, ocean_grid_comm, req(14), ierr)
         comm(14)=14
       endif
-      if (east_msg_exch.and.south_msg_exch) then
+!     if (east_msg_exch.and.south_msg_exch) then
+      if (p_se>=0) then
         call MPI_Isend (sendSE, szSE, MPI_DOUBLE_PRECISION,
      &           p_SE, 3, ocean_grid_comm, req(15), ierr)
         comm(15)=15
       endif
-      if (west_msg_exch.and.north_msg_exch) then
+!     if (west_msg_exch.and.north_msg_exch) then
+      if (p_nw>=0) then
         call MPI_Isend (sendNW, szNW, MPI_DOUBLE_PRECISION,
      &           p_NW, 4, ocean_grid_comm, req(16), ierr)
         comm(16)=16

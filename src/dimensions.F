@@ -17,6 +17,9 @@
       integer,parameter, public :: gny = MMm
       integer,parameter, public ::  nz = N
 
+      integer,parameter, public :: npx = np_xi
+      integer,parameter, public :: npy = np_eta
+
       integer,parameter, public ::  bf = 2 ! allocation buffer size
 
 

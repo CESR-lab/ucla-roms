@@ -59,7 +59,6 @@
 #ifdef SOLVE3D
       call check_pre_step_switches(ierr)
       call check_step_uv1_switches(ierr)
-      call check_step_uv2_switches(ierr)
       call check_step_t_switches(ierr)
       call check_set_HUV1_switches(ierr)
 # ifdef LMD_KPP

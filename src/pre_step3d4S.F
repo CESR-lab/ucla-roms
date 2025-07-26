@@ -45,6 +45,7 @@
       use mixing
       use ocean_vars
       use scalars
+      use hidden_mpi_vars
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
