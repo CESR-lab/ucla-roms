@@ -108,12 +108,13 @@
       subroutine init_arrays_grid  ![
       implicit none
 
-#ifdef MASKING
-      allocate( rmask(GLOBAL_2D_ARRAY) ) ; rmask=1.
-      allocate( pmask(GLOBAL_2D_ARRAY) ) ; pmask=1.
-      allocate( umask(GLOBAL_2D_ARRAY) ) ; umask=1.
-      allocate( vmask(GLOBAL_2D_ARRAY) ) ; vmask=1.
-#endif
+      ! Initialize mask at zeros to allow for mpi-masking
+      ! functionality. Fully masked domains can be ignored,
+      ! so non-exchanged buffers need to be set to 'masked'
+      allocate( rmask(GLOBAL_2D_ARRAY) ) ; rmask=0.
+      allocate( pmask(GLOBAL_2D_ARRAY) ) ; pmask=0.
+      allocate( umask(GLOBAL_2D_ARRAY) ) ; umask=0.
+      allocate( vmask(GLOBAL_2D_ARRAY) ) ; vmask=0.
 
       allocate( h(GLOBAL_2D_ARRAY) )    ; h = 5.0
       allocate( hinv(GLOBAL_2D_ARRAY) ) ; hinv= 1./5       ! before only rmask was set in init_arrays...
