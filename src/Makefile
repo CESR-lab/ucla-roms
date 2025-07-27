@@ -21,12 +21,11 @@
 # export PATH=${NETCDF_ROOT}/bin:$PATH
 
 #export MARBL_ROOT=/home/username/MARBL
-
+#export USEMARBL=TRUE (if the MARBL library is available)
 
 #
 .SUFFIXES: .o .f .F .f90
 
-USEMARBL=FALSE
 
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
