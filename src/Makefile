@@ -21,12 +21,11 @@
 # export PATH=${NETCDF_ROOT}/bin:$PATH
 
 #export MARBL_ROOT=/home/username/MARBL
-
+#export USEMARBL=TRUE (if the MARBL library is available)
 
 #
 .SUFFIXES: .o .f .F .f90
 
-USEMARBL=FALSE
 
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
@@ -53,7 +52,11 @@ USEMARBL=FALSE
 	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
 	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
 
+ifeq ($(FCOMP),mpiifx)
 	MPI_INC = ${MPIHOME}/include/mpi
+else
+	MPI_INC = ${MPIHOME}/include
+endif
 
 
 ifeq ($(USEMARBL),TRUE)
@@ -83,7 +86,11 @@ endif
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
+ifeq ($(FCOMP),mpiifx)
 	FFLAGS = -O3 -ipo -fp-model fast
+else
+	FFLAGS = -O3 -ip -fp-model fast
+endif
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
 #	FFLAGS = -g -traceback -CA -CB -CS
