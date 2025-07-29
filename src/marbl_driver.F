@@ -32,7 +32,8 @@
      &                                        marbl_saved_state_type
 #endif            
       use param                       , only: mynode,nt,ntrc_bio,
-     &                                        isalt,itemp,Lm,Mm
+     &                                        isalt,itemp,Lm,Mm,
+     &                                        ocean_grid_comm
       use dimensions                  , only: nz
       use surf_flux                   , only: uwnd, vwnd
       use bgc_forces                  , only: pco2air,pco2air_alt,
@@ -759,7 +760,8 @@
 
       use netcdf
       use nc_read_write
-      use roms_read_write, only: dn_xr,dn_yr,dn_zr,dn_tm,xi_rho,eta_rho
+      use dimensions, only: xi_rho,eta_rho
+      use roms_read_write, only: dn_xr,dn_yr,dn_zr,dn_tm
       use param, only : N
       
       implicit none      

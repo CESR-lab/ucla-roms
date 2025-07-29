@@ -33,7 +33,7 @@
 #ifdef EW_PERIODIC
         istrR=istr-2
 #elif defined MPI
-        if (inode.eq.0) then
+        if (inode>0) then
           istrR=istr-2
         else
           istrR=istr-1
@@ -49,7 +49,7 @@
 #ifdef EW_PERIODIC
         iendR=iend+2
 #elif defined MPI
-        if (inode.eq.npx-1) then
+        if (inode<npx-1) then
           iendR=iend+2
         else
           iendR=iend+1
@@ -66,7 +66,7 @@
 # ifdef NS_PERIODIC
         jstrR=jstr-2
 # elif defined MPI
-        if (jnode.eq.0) then
+        if (jnode>0) then
           jstrR=jstr-2
         else
           jstrR=jstr-1
@@ -82,7 +82,7 @@
 # ifdef NS_PERIODIC
         jendR=jend+2
 # elif defined MPI
-        if (jnode.eq.npy-1) then
+        if (jnode<npy-1) then
           jendR=jend+2
         else
           jendR=jend+1
