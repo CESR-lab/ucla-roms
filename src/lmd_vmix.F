@@ -4,7 +4,7 @@
 
       subroutine lmd_vmix(tind)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer,save :: tile=0
@@ -50,7 +50,7 @@
       use mixing
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
 

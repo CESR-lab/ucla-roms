@@ -8,7 +8,6 @@
 ! and perform fast-time averaging to interact with baroclinic mode.
 
       use param
-      use hidden_mpi_vars
       use private_scratch
 
       implicit none
@@ -36,8 +35,7 @@
       use mixing
       use ocean_vars
       use scalars
-      use mpi_exchanges
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j, kbak, kold

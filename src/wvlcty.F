@@ -3,7 +3,7 @@
 
       subroutine wvlcty (tile, Wvlc)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer tile
@@ -27,7 +27,7 @@
       use grid
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k

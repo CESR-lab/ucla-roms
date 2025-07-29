@@ -4,7 +4,7 @@
 
       subroutine step3d_uv2(tile)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer tile
@@ -28,7 +28,7 @@
       use ocean_vars
       use scalars
       use surf_flux
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k

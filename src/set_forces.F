@@ -39,7 +39,7 @@
       use tides
       use wec_frc
       use bgc ! , only: set_bgc_surf_frc
-      use hidden_mpi_vars
+      use roms_mpi
       use scalars
       use analytical
       use boundary
@@ -168,8 +168,4 @@ c***              no code here
       call sg_bbl96 ILLEGAL
 #endif
 
-c>>>      if (ierr /= 0) may_day_flag=2
-#ifdef ANA_PSOURCE
-      if (ZEROTH_TILE) call ana_psource
-#endif
       end

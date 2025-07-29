@@ -6,7 +6,7 @@
 
       use param
       use grid
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none

@@ -20,7 +20,7 @@ c--# define CONST_TRACERS
       subroutine step3d_t(tile)   ! the list of agruments in call below
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none               ! are repeated to use the same memory
@@ -68,7 +68,7 @@ c--# define CONST_TRACERS
       use mixing
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td

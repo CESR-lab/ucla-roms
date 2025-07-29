@@ -1046,7 +1046,7 @@
 #ifdef SOLVE3D
       subroutine wstokes_wec (tile)  ![
       ! vertical Stokes drift velocity at rho-point
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer :: tile
@@ -1624,7 +1624,7 @@ C$OMP BARRIER
 !-----------------------------------------------------------------------
       subroutine wec_forces  ![
       ! this is mrl_wci (tile) from mrl_wci.F in old code.
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
 

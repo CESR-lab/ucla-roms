@@ -10,7 +10,7 @@
       use tracers
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
       use nc_read_write
       use roms_read_write
       use grid
@@ -182,13 +182,13 @@
       beta  = 1 - alpha
 
       if (diag_uv) then
-        allocate(Udiag(nx,ny,nz,nmd) )
-        allocate(Vdiag(nx,ny,nz,nmd) )
+        allocate(Udiag(0:nx+1,0:ny+1,nz,nmd) )
+        allocate(Vdiag(0:nx+1,0:ny+1,nz,nmd) )
         allocate(u_prev(nx,nz) )
         allocate(v_prev(nx,nz) )
         if (diag_avg) then   
-          allocate(Udiag_avg(nx,ny,nz,nmd))
-          allocate(Vdiag_avg(nx,ny,nz,nmd))
+          allocate(Udiag_avg(0:nx+1,0:ny+1,nz,nmd))
+          allocate(Vdiag_avg(0:nx+1,0:ny+1,nz,nmd))
           Udiag_avg = 0
           Vdiag_avg = 0
         endif
@@ -321,32 +321,28 @@
         ! The first/last interior flux can only be 2nd order 
         ! JM for now, the first and last domain may start/end
         ! JM at something different than 1 or nx/ny.
-        if (.not.west_msg_exch) then 
-          i=iwest
+        if (inode.eq.0) then 
           do j=1,ny
-            FX4(i,j) = 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
-     &                     *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) ) 
+            FX4( 1,j) = 0.25*( FlxU(1,j,k) + FlxU(2,j,k) )
+     &                     *( u(1,j,k,nrhs) + u(2,j,k,nrhs) ) 
           enddo
         endif
-        if(.not.east_msg_exch) then
-          i=ieast
+        if(inode.eq.npx-1) then
           do j=1,ny
-            FX4(i,j)= 0.25*( FlxU(i,j,k) + FlxU(i+1,j,k) )
-     &                    *( u(i,j,k,nrhs) + u(i+1,j,k,nrhs) )
+            FX4(nx,j)= 0.25*( FlxU(nx,j,k) + FlxU(nx+1,j,k) )
+     &                    *( u(nx,j,k,nrhs) + u(nx+1,j,k,nrhs) )
           enddo
         endif
-        if(.not.south_msg_exch) then
-          j=jsouth
+        if(jnode.eq.0) then
           do i=1,nx
-            FY4(i,j) = 0.25*( FlxV(i-1,j,k) + FlxV(i,j,k) )    
-     &                     *( u(i,j,k,nrhs) + u(i,j-1,k,nrhs) )
+            FY4(i,1) = 0.25*( FlxV(i,1,k) + FlxV(i,0,k) )    
+     &                     *( u(i,1,k,nrhs) + u(i,0,k,nrhs) )
           enddo
         endif
-        if(.not.north_msg_exch) then
-          j=jnorth+1
+        if(jnode.eq.npy-1) then
           do i=1,nx
-            FY4(i,j) = 0.25*( FlxV(i-1,j,k) + FlxV(i,j,k) )
-     &                     *( u(i,j,k,nrhs) + u(i,j-1,k,nrhs) )
+            FY4(i,ny+1) = 0.25*( FlxV(i,ny,k) + FlxV(i,ny+1,k) )
+     &                     *( u(i,ny,k,nrhs) + u(i,ny+1,k,nrhs) )
           enddo
         endif
 
@@ -420,33 +416,31 @@
         enddo
 
         ! The first/last interior flux can only be 2nd order 
-        if (.not.west_msg_exch) then 
+        if (inode.eq.0) then 
           do j=1,ny
-            i=iwest
-            FX4(i,j) = 0.25*( FlxU(i,j-1,k)+FlxU(i,j,k) )
-     &                     *( v(i-1,j,k,nrhs)+v(i,j,k,nrhs) )
+            FX4(1,j) = 0.25*( FlxU(1,j-1,k)+FlxU(1,j,k) )
+     &                     *( v(0,j,k,nrhs)+v(1,j,k,nrhs) )
           enddo
         endif
-        if(.not.east_msg_exch) then
-          i=ieast+1
+        if(inode.eq.npx-1) then
+          i=nx+1
           do j=1,ny
-            FX4(i,j) = 0.25*( FlxU(i,j-1,k)+FlxU(i,j,k) )
-     &                     *( v(i-1,j,k,nrhs)+ v(i,j,k,nrhs) )
+            FX4(nx+1,j) = 0.25*( FlxU(nx+1,j-1,k)+FlxU(nx+1,j,k) )
+     &                     *( v(nx,j,k,nrhs)+ v(nx+1,j,k,nrhs) )
           enddo
         endif
 
-        if(.not.south_msg_exch) then
+        if(jnode.eq.0) then
           j=jsouth
           do i=1,nx
             FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) )
      &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
           enddo
         endif
-        if(.not.north_msg_exch) then
-          j=jnorth
+        if(jnode.eq.npy-1) then
           do i=1,nx
-            FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) ) 
-     &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
+            FY4(i,ny) = 0.25*( FlxV(i,ny,k) + FlxV(i,ny+1,k) ) 
+     &                     *( v(i,ny,k,nrhs) + v(i,ny+1,k,nrhs) )
           enddo
         endif
 
@@ -677,8 +671,8 @@
       enddo
       ! For non-periodic domains, we extrapolate the gradients at the
       ! domain boundaries because the buffer is only 1 point wide.
-      if (.not.west_msg_exch) grd(0   ,1:ny) = grd(1   ,1:nx)
-      if (.not.east_msg_exch) grd(nx+2,1:ny) = grd(nx+1,1:nx)
+      if (inode.eq.0)     grd(0   ,1:ny) = grd(1   ,1:nx)
+      if (inode.eq.npx-1) grd(nx+2,1:ny) = grd(nx+1,1:nx)
       do j= 1,ny
         do i= 0,nx+1
           grd(i,j) = grd(i+1,j)+grd(i,j)
@@ -695,8 +689,8 @@
           grd(i,j) = (t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc))*vmask(i,j)
         enddo
       enddo
-      if (.not.north_msg_exch) grd(1:nx,0   ) = grd(1:nx,1   )
-      if (.not.south_msg_exch) grd(1:nx,ny+2) = grd(1:nx,ny+1)
+      if (jnode.eq.0)     grd(1:nx,0   ) = grd(1:nx,1   )
+      if (jnode.eq.npy-1) grd(1:nx,ny+2) = grd(1:nx,ny+1)
       do j= 0,ny+1
         do i= 1,nx
           grd(i,j) = grd(i,j+1)+grd(i,j)

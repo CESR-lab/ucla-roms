@@ -3,7 +3,7 @@
 
       subroutine setup_grid2 (tile)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer tile
@@ -26,7 +26,7 @@
       use grid
       use scalars
       use mpi
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j, nsub

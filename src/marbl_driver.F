@@ -44,7 +44,7 @@
       use grid                        , only : rmask
 #ifdef MPI
       use mpi
-      use hidden_mpi_vars
+      use roms_mpi
 #endif      
 #ifdef NOX_FORCING
       use bgc_forces                  , only: nox
@@ -678,8 +678,7 @@
       use nc_read_write, only: ncread,handle_ierr
       use netcdf
       use dimensions, only : i0,i1,j0,j1
-      use mpi_exchanges, only : exchange_xxx
-!      use hidden_mpi_vars
+      use roms_mpi, only : exchange_xxx
       use param, only : N
       implicit none
 

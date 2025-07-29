@@ -5,12 +5,11 @@
       ! Length is limited to 18 characters, because output_file_names
       ! are appended with frame and node number and are limited to 32
 
-      use netcdf
       use scalars
-      use nc_read_write
       use dimensions
-      use hidden_mpi_vars
-      use mpi_exchanges
+      use roms_mpi
+      use nc_read_write
+      use netcdf
 
       implicit none
 
@@ -100,7 +99,8 @@
       character(len=100),public::frctype ! variable across netcdf files (forcing module)
       ! average files
       character(len=100),public::avg_output=''
-      character(len=max_options_string),public::diagnostic_opt='diagnostics OFF'
+      character(len=max_options_string),
+     &               public::diagnostic_opt='diagnostics OFF'
       ! average diagnostic options
       character(len=100),public::diag_avg_output=''
 
@@ -118,15 +118,16 @@
       !            in "mpi_setup" rather tnan be parameters defined here.
 
 #if defined MPI && defined PARALLEL_FILES
-      integer, public ::  xi_rho, xi_u, eta_rho, eta_v
+!     integer, public ::  xi_rho, xi_u, eta_rho, eta_v
 #else
-      integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
-     &                              xi_u=xi_rho-1, eta_v=eta_rho-1
+!     integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
+!    &                              xi_u=xi_rho-1, eta_v=eta_rho-1
 #endif
 
       integer, parameter, public :: max_name_size=256
       character, public :: date_str*44, title*80
-      character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
+!     character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
+      character(len=max_name_size), public :: ininame,frcfile(max_frc_files)
 
 
       public :: insert_nodes
@@ -194,8 +195,6 @@
       ! Used so we can read in coarse surface
       ! forcing data
       !
-      use dimensions
-      use hidden_mpi_vars
       implicit none
 
       integer :: gnxc,gnyc
@@ -885,8 +884,6 @@
       subroutine coarse2fine(cdata,fdata,gtype) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
       ! NOT correct for u-grid or v-grid variables
-      use hidden_mpi_vars
-      use dimensions
       implicit none
 
       ! input/output

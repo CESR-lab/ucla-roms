@@ -4,7 +4,7 @@
       subroutine visc3d
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none

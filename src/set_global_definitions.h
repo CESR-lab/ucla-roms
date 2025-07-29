@@ -315,14 +315,15 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
  All these switches are the same for MPI/nonMPI code.  */
 
-#ifdef MPI
-# define ZEROTH_TILE (istr==iwest .and. jstr==jsouth)
-# define SINGLE_TILE_MODE (iend-istr==ieast-iwest .and. \
- jend-jstr==jnorth-jsouth)
-#else
-# define ZEROTH_TILE (istr==1 .and. jstr==1)
-# define SINGLE_TILE_MODE (iend-istr==Lm-1 .and.+jend-jstr==Mm-1)
-#endif
+c-#ifdef MPI
+c-# define ZEROTH_TILE (istr==iwest .and. jstr==jsouth)
+c-# define SINGLE_TILE_MODE (iend-istr==ieast-iwest .and. \
+c- jend-jstr==jnorth-jsouth)
+c-#else
+c-# define ZEROTH_TILE (istr==1 .and. jstr==1)
+c-# define SINGLE_TILE_MODE (iend-istr==Lm-1 .and.+jend-jstr==Mm-1)
+c-#endif
+# define SINGLE_TILE_MODE .true.
 
 
 /* Normally the initial condition exists only as a single time record

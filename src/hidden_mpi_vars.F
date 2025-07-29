@@ -1,4 +1,4 @@
-      module hidden_mpi_vars
+      module roms_mpi
 
 ! Variables for internal use by message exhanging routines:
 !---------- --- -------- --- -- ------- --------- ---------
@@ -20,5 +20,5 @@
       logical west_msg_exch,east_msg_exch, south_msg_exch,north_msg_exch
 #endif
 
-      end module hidden_mpi_vars
+      end module roms_mpi
  

@@ -55,19 +55,19 @@
 
       ierr=0                      ! <-- reset error counter
 !      call check_tiling(ierr)
-      call check_switches1(ierr)
+!     call check_switches1(ierr)
 #ifdef SOLVE3D
-      call check_pre_step_switches(ierr)
-      call check_step_uv1_switches(ierr)
-      call check_step_t_switches(ierr)
-      call check_set_HUV1_switches(ierr)
+!     call check_pre_step_switches(ierr)
+!     call check_step_uv1_switches(ierr)
+!     call check_step_t_switches(ierr)
+!     call check_set_HUV1_switches(ierr)
 # ifdef LMD_KPP
-      call check_kpp_switches(ierr)
+!     call check_kpp_switches(ierr)
 # endif
-      call check_switches2(ierr)
+!     call check_switches2(ierr)
 #endif
       if (ierr /= 0) return
-      mpi_master_only call print_switches
+!     mpi_master_only call print_switches
 
 ! Use pre-set default startup filename for known applications, or
 ! get it as an argument from command line via iargc-getarg (override

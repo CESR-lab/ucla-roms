@@ -4,7 +4,7 @@
       subroutine visc3d
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none
@@ -34,7 +34,7 @@
       use mixing
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, indx

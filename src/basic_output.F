@@ -6,6 +6,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       use netcdf
       use nc_read_write
       use roms_read_write

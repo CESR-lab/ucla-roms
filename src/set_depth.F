@@ -4,7 +4,7 @@
       subroutine set_depth(tile)
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none
@@ -27,7 +27,7 @@
       use ocean_vars
       use scalars
       use scoord
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -170,7 +170,7 @@
       subroutine set_HUV
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer,save:: tile=0
@@ -185,7 +185,7 @@
       use grid
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -235,7 +235,7 @@
       subroutine set_HUV1(tile)
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none
@@ -255,7 +255,7 @@
       use scalars
       use dimensions
       use diagnostics
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k

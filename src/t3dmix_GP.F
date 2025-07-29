@@ -3,7 +3,7 @@
 
       subroutine t3dmix
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer,save :: tile=0

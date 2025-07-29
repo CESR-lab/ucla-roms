@@ -11,7 +11,7 @@
       use dimensions
       use diagnostics
       use roms_read_write
-      use hidden_mpi_vars
+      use roms_mpi
       use mixing
 
       implicit none

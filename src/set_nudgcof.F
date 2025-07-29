@@ -4,10 +4,7 @@
       subroutine set_nudgcof (tile)  ! Set up nudging-to-climatology
 
       use param
-      use grid
-      use hidden_mpi_vars
       use private_scratch
-      use mpi_exchanges
 
       implicit none                  ! inverse time-scale coeffcients
       integer tile                   ! (units [1/sec])

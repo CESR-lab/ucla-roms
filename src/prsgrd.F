@@ -3,7 +3,7 @@
 
       subroutine prsgrd
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer,save:: tile=0
@@ -43,7 +43,7 @@
       use eos_vars
       use grid
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax

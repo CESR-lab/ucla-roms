@@ -15,9 +15,14 @@
       use roms_read_write
       use pipe_frc
       use scalars
-      use mpi_exchanges
+      use roms_mpi
       implicit none
 
+!-----------------------------------------------------
+!
+!     This needs to go to an option file
+!
+!-----------------------------------------------------
 !
 ! h         Model bottom topography (depth [m] at RHO-points.)
 ! f, fomn   Coriolis parameter [1/s] and compound term f/[pm*pn]

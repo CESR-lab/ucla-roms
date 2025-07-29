@@ -11,7 +11,7 @@
 #endif
       use coupling
       use grid
-      use hidden_mpi_vars
+      use roms_mpi
       use analytical
       use mixing
       use ocean_vars

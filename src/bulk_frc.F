@@ -4,7 +4,6 @@
 
       use param
       use dimensions
-      use mpi_exchanges
       use roms_read_write
       
       implicit none
