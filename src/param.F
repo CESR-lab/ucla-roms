@@ -23,8 +23,8 @@
 
       integer ocean_grid_comm, mynode,  iSW_corn, jSW_corn,
      &                         iwest, ieast, jsouth, jnorth
-      logical west_exchng,  east_exchng
-      logical south_exchng, north_exchng
+!     logical west_exchng,  east_exchng
+!     logical south_exchng, north_exchng
 #else
       integer, parameter :: Lm=LLm, Mm=MMm
 #endif

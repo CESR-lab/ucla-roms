@@ -35,7 +35,7 @@ C$    ierr=0
       call read_inp (ierr)
 
       if (ierr==0) call mpi_setup(ierr)
-  
+
       tstart=MPI_Wtime()
       if (ierr == 0) then
 # endif

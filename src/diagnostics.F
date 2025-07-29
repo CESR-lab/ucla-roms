@@ -1112,7 +1112,7 @@
       !local
       integer,   dimension(4) :: start    ! start vector for writing
 
-        if (.not.west_exchng) ud(1,:,:,:) = 0
+        if (inode.eq.0) ud(1,:,:,:) = 0
         start = (/1, bfy, 1, record/)
 
         call ncwrite(ncid,'u_pgr',ud(:,:,:,1),start)
@@ -1123,7 +1123,7 @@
         call ncwrite(ncid,'u_vmx',ud(:,:,:,6),start)
         call ncwrite(ncid,'u_cpl',ud(:,:,:,7),start)
           
-        if (.not.south_exchng) vd(:,1,:,:) = 0
+        if (jnode.eq.0) vd(:,1,:,:) = 0
         start = (/bfx, 1, 1, record/)
 
         call ncwrite(ncid,'v_pgr',vd(:,:,:,1),start)

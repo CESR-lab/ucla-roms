@@ -174,16 +174,16 @@
       integer :: pos
 
       pos = 2
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.inode.eq.0) then
         cflx_west = up(pos,1:ny) 
       endif
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.inode.eq.npx-1) then
         cflx_east = up(nx-pos+1,1:ny)
       endif
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.jnode.eq.0) then
         cflx_south = vp(1:nx,pos)
       endif
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.jnode.eq.npy-1) then
         cflx_north = vp(1:nx,ny-pos+1)
       endif
       
@@ -210,26 +210,26 @@
       call set_pflx
       call comp_cflx
 
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.jnode.eq.0) then
         ub_south = ub_south+alpha*(pflx_south-cflx_south)
         ub_south = max(ub_mn,ub_south)
         ub_south = min(ub_mx,ub_south)
 !       if (mynode==6) write(10,*),pflx_south(50),cflx_south(50),ub_south(50)
       endif
 
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.jnode.eq.npy-1) then
         ub_north = ub_north-alpha*(pflx_north-cflx_north)
         ub_north = max(ub_mn,ub_north)
         ub_north = min(ub_mx,ub_north)
       endif
       
-      if (obc_west.and.(.not.west_exchng)) then
+      if (obc_west.and.inode.eq.0) then
         ub_west = ub_west+alpha*(pflx_west-cflx_west)
         ub_west = max(ub_mn,ub_west)
         ub_west = min(ub_mx,ub_west)
       endif
 
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.inode.eq.npx-1) then
         ub_east = ub_east-alpha*(pflx_east-cflx_east)
         ub_east = max(ub_mn,ub_east)
         ub_east = min(ub_mx,ub_east)
@@ -259,13 +259,13 @@
       coef = 1./navg
 
       if (spn_avg) then
-        if (obc_south.and.(.not.south_exchng)) then
+        if (obc_south.and.jnode.eq.0) then
           cflx_south_avg = cflx_south_avg*(1-coef) + cflx_south*coef
           pflx_south_avg = pflx_south_avg*(1-coef) + pflx_south*coef
           ub_south_avg   =   ub_south_avg*(1-coef) +   ub_south*coef
         endif
 
-        if (obc_west.and.(.not.west_exchng)) then
+        if (obc_west.and.inode.eq.0) then
           cflx_west_avg = cflx_west_avg*(1-coef) + cflx_west*coef
           pflx_west_avg = pflx_west_avg*(1-coef) + pflx_west*coef
           ub_west_avg   =   ub_west_avg*(1-coef) +   ub_west*coef
