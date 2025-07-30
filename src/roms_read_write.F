@@ -174,14 +174,6 @@
 
       implicit none
 
-      ! Method 1
-!     i0=1; i1=nx; j0=1; j1=ny
-
-!     if (inode==0)        i0=0
-!     if (inode==NP_XI-1)  i1=nx+1
-!     if (jnode==0)        j0=0
-!     if (jnode==NP_ETA-1) j1=ny+1
-
       ! Method 2
       bfx = 1
       bfy = 1
