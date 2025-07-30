@@ -32,19 +32,20 @@
       ! Handle command line arguments
       call cmd_args_ncjoin
 
-!     call MPI_Bcast(nparts,1,MPI_INTEGER,0,part_comm,ierr)
-
-      print *, 'Joining partial files: ',mynode,nparts
+      if (mynode==0) print *, 'Joining partial files'
 
       ! Make joined file
       call make_joined_file
 
       call MPI_Barrier(part_comm, ierr)
      
-      print *, 'Writing joined file', mynode
+      if (mynode==0) print *, 'Writing joined file'
 
       call write_joined_file
 
+      if (mynode==0) print *, 'Done writing joined file'
+
+      call MPI_Barrier(part_comm, ierr)
       call MPI_Finalize(ierr)
 
       end program ncjoin

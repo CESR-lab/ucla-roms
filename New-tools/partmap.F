@@ -7,7 +7,7 @@
 
       implicit none
 
-      integer :: npartx,nparty
+!      integer :: npartx,nparty
 
       ! local
       real,dimension(:,:),allocatable :: mask,rflx,partition,inodes,jnodes
@@ -50,7 +50,7 @@
       gny = gny-2
 
       ! mask rho
-      allocate(mask(0:gnx,0:gny)); mask=1
+      allocate(mask(0:gnx+1,0:gny+1)); mask=1
       call ncread(ncid,'mask_rho',mask)
 
       ierr = nf90_close(ncid)

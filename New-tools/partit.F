@@ -20,7 +20,7 @@
 
 !     integer :: i,nargs 
 
-      integer :: npartx,nparty
+      !integer :: npartx,nparty
       integer :: ierr
       integer :: ifile
 

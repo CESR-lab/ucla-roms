@@ -12,7 +12,7 @@
 
       implicit none
 
-      integer :: npartx,nparty
+!      integer :: npartx,nparty
       integer :: ifile
 
       integer :: ncid,npid,ierr,       ! netcdf error handling
