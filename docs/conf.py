@@ -42,7 +42,7 @@ templates_path = ["_templates"]
 exclude_patterns = []
 
 # Markdown options
-myst_enable_extensions = ["dollarmath", "deflist", "colon_fence"] 
+myst_enable_extensions = ["dollarmath", "deflist", "colon_fence"]
 myst_heading_anchors = 3  # add anchor links to headers
 
 # -- Options for HTML output -------------------------------------------------

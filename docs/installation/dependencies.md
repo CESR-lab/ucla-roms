@@ -22,7 +22,7 @@ This is best suited to cloud instances, personal computers, and small-scale scie
 On high-performance computing systems, running MPI programs inside containers may be nontrivial. You may wish to consult your HPC's documentation or contact its support team.
 :::
 
-The easiest way to obtain a ROMS-ready environment is in a pre-built container. 
+The easiest way to obtain a ROMS-ready environment is in a pre-built container.
 We maintain two container images with pre-configured environments containing all of the above dependencies:
 
 - [Image 1](https://ghcr.io/dafyddstephenson/roms_gfortran_build_env:1.0) (uses gfortran, MPICH)
@@ -31,8 +31,8 @@ We maintain two container images with pre-configured environments containing all
 You can fetch and run these images using software like `podman` or `docker`, e.g.:
 
 ```
-podman pull ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0 
-podman run -it ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0 
+podman pull ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0
+podman run -it ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0
 ```
 
 You can then clone ROMS into the container as described on the {doc}`following page <compilation>`.
@@ -58,7 +58,7 @@ You will also need to set some necessary environment variables telling ROMS wher
 export ROMS_ROOT=⚠️ EDIT ME!<your ROMS clone location>⚠️
 export MPIHOME=${CONDA_PREFIX}
 export NETCDFHOME=${CONDA_PREFIX}
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$NETCDFHOME/lib" 
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$NETCDFHOME/lib"
 export PATH="$ROMS_ROOT/Tools-Roms:$PATH"
 ```
 
@@ -98,7 +98,7 @@ This variable will need to be set every time you wish to use MARBL, so it may be
 
 ```
 cd $MARBL_ROOT/src/
-make <compiler> USEMPI=TRUE 
+make <compiler> USEMPI=TRUE
 ```
 
 4. Where `<compiler>` is either `intel` (if your compiler is `ifx` or `ifort`) or `gnu` (if your compiler is `gfortran`).

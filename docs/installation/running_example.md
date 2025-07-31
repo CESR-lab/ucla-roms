@@ -17,7 +17,7 @@ cd $ROMS_ROOT/Examples/Rivers_real
 make
 ```
 
-You should now have an executable, `roms`, in the directory. 
+You should now have an executable, `roms`, in the directory.
 
 ## Running
 To run the model, do
