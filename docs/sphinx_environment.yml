@@ -1,0 +1,11 @@
+name: sphinx_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy
+  # Docs
+  - sphinx
+  - sphinxcontrib-bibtex
+  - sphinx-book-theme
+  - myst-parser
