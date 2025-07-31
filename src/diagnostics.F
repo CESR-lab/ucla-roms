@@ -1,6 +1,5 @@
       module diagnostics
 
-      ! Set DIAGNOSTICS flag in cppdefs.opt to activate diagnostics.
       ! Define options in diagnostics.opt
 
 #include "cppdefs.opt"
@@ -29,7 +28,10 @@
 
       ! Preamble:  ![
 
-      logical, public            :: calc_diag=.true.      ! flag to calculate diagnostics in equation system.
+      ! flag to calculate vertical momentum diagnostics (not functional yet! )
+      logical,parameter,public   :: diag_w = .false.
+
+      logical, public            :: calc_diag             ! flag to calculate diagnostics in equation system.
       logical                    :: init_done=.false.     ! flag to init diagnostics only once
       integer                    :: navg_diag = 0         ! number of samples in average
 
@@ -37,7 +39,7 @@
 
       ! u and v momentum:
       ! ---------------
-      integer,parameter,public :: nmd = 7    ! number of momentum diag terms
+      integer,parameter,public :: nmd = 8    ! number of momentum diag terms
       integer,parameter, public ::
      &  ipgr   = 1, ! Hydrostatic pressure gradient    
      &  icori  = 2, ! Coriolis & curvilinear coords  
@@ -45,12 +47,19 @@
      &  idiss  = 4, ! dissipation from advection      
      &  ihmix  = 5, ! Viscous terms (horiz mixing)    
      &  ivmix  = 6, ! Vertical mixing & 2D/3D coupling 
-     &  icoup  = 7  ! 2D/3D coupling
+     &  icoup  = 7, ! 2D/3D coupling
+     &  izxb   = 8  ! zx/zy*b, the cross term in prsg
+
+      ! For vertical flux equation (only hydrostatic balance for now)
+      integer,parameter, public ::
+     &  idzb   = 1 ! dzb in prsgr
 
       real,allocatable,dimension(:,:,:,:),public :: Udiag 
       real,allocatable,dimension(:,:,:,:),public :: Vdiag
+      real,allocatable,dimension(:,:,:,:),public :: Wdiag
       real,allocatable,dimension(:,:,:,:)        :: Udiag_avg ! Averages of diagnostics
       real,allocatable,dimension(:,:,:,:)        :: Vdiag_avg ! Averages of diagnostics
+      real,allocatable,dimension(:,:,:,:)        :: Wdiag_avg ! Averages of diagnostics
       real, public, allocatable, dimension(:,:)  :: u_prev
       real, public, allocatable, dimension(:,:)  :: v_prev
 
@@ -177,20 +186,32 @@
       ! local
       integer :: itrc,idx
 
+      if (.not.(diag_uv.or.diag_trc.or.diag_pflx)) then
+        calc_diag = .false.
+        print *,'No diagnostics.'
+        return
+      else
+        calc_diag = .true.
+        print *,'Getting ready to do online diagnostics.'
+      endif
+
       ! Coefficients for exponential smoothing
       alpha = dt / timescale
       beta  = 1 - alpha
 
       if (diag_uv) then
-        allocate(Udiag(0:nx+1,0:ny+1,nz,nmd) )
-        allocate(Vdiag(0:nx+1,0:ny+1,nz,nmd) )
+        allocate(Udiag(0:nx+1,0:ny+1,nz,nmd))
+        allocate(Vdiag(0:nx+1,0:ny+1,nz,nmd))
+        allocate(Wdiag(0:nx+1,0:ny+1,nz,1))
         allocate(u_prev(nx,nz) )
         allocate(v_prev(nx,nz) )
         if (diag_avg) then   
           allocate(Udiag_avg(0:nx+1,0:ny+1,nz,nmd))
           allocate(Vdiag_avg(0:nx+1,0:ny+1,nz,nmd))
+          allocate(Wdiag_avg(0:nx+1,0:ny+1,nz,1))
           Udiag_avg = 0
           Vdiag_avg = 0
+          Wdiag_avg = 0
         endif
       endif
 
@@ -203,14 +224,14 @@
           endif
         enddo
         ntdia = idx
-        allocate(Tdiag(0:nx+1,0:ny+1,nz,ntd,ntdia))
+        allocate(Tdiag(0:nx+1,0:ny+1,0:nz,ntd,ntdia))
         Tdiag = 0
         allocate(VFlxD(0:nx+1,nz))
         VFlxD = 0
         allocate(ZFlx(0:nx+1,nz))
         ZFlx = 0
         if (diag_avg) then
-          allocate(Tdiag_avg(0:nx+1,0:ny+1,nz,ntd,ntdia))
+          allocate(Tdiag_avg(0:nx+1,0:ny+1,0:nz,ntd,ntdia))
           Tdiag_avg = 0
         endif
       endif
@@ -221,14 +242,12 @@
           allocate(p_slow(GLOBAL_2D_ARRAY,nz) )     ! global 2D needed for exchange in get_init.F
           p_slow = 0
         endif
-        allocate(p_fast(0:nx,0:ny) )
+        allocate(p_fast(0:nx+1,0:ny+1) )
 
-        allocate( up(nx,ny) )
-        allocate( vp(nx,ny) )
-        allocate( up_avg(nx,ny) )
-        allocate( vp_avg(nx,ny) )
-        up_avg = 0
-        vp_avg = 0
+        allocate(up(0:nx+1,0:ny+1) );up=0
+        allocate(vp(0:nx+1,0:ny+1) );vp=0
+        allocate(up_avg(0:nx+1,0:ny+1) );up_avg=0
+        allocate(vp_avg(0:nx+1,0:ny+1) );vp_avg=0
 
         if (.not. allocated( u_slow )) then         ! in case already read in with get_init
           allocate(u_slow(1:nx+1,0:ny+1,nz) )
@@ -321,7 +340,7 @@
         ! The first/last interior flux can only be 2nd order 
         ! JM for now, the first and last domain may start/end
         ! JM at something different than 1 or nx/ny.
-        if (inode.eq.0) then 
+        if (inode.eq.0) then
           do j=1,ny
             FX4( 1,j) = 0.25*( FlxU(1,j,k) + FlxU(2,j,k) )
      &                     *( u(1,j,k,nrhs) + u(2,j,k,nrhs) ) 
@@ -335,14 +354,14 @@
         endif
         if(jnode.eq.0) then
           do i=1,nx
-            FY4(i,1) = 0.25*( FlxV(i,1,k) + FlxV(i,0,k) )    
+            FY4(i,1) = 0.25*( FlxV(i-1,1,k) + FlxV(i,1,k) )    
      &                     *( u(i,1,k,nrhs) + u(i,0,k,nrhs) )
           enddo
         endif
         if(jnode.eq.npy-1) then
           do i=1,nx
-            FY4(i,ny+1) = 0.25*( FlxV(i,ny,k) + FlxV(i,ny+1,k) )
-     &                     *( u(i,ny,k,nrhs) + u(i,ny+1,k,nrhs) )
+            FY4(i,ny+1) = 0.25*( FlxV(i-1,ny+1,k) + FlxV(i,ny+1,k) )
+     &                     *( u(i,ny+1,k,nrhs) + u(i,ny,k,nrhs) )
           enddo
         endif
 
@@ -431,10 +450,9 @@
         endif
 
         if(jnode.eq.0) then
-          j=jsouth
           do i=1,nx
-            FY4(i,j) = 0.25*( FlxV(i,j,k) + FlxV(i,j+1,k) )
-     &                     *( v(i,j,k,nrhs) + v(i,j+1,k,nrhs) )
+            FY4(i,1) = 0.25*( FlxV(i,1,k) + FlxV(i,2,k) )
+     &                     *( v(i,1,k,nrhs) + v(i,2,k,nrhs) )
           enddo
         endif
         if(jnode.eq.npy-1) then
@@ -500,7 +518,7 @@
       ! local
       integer :: i, j, k
 
-      do k=1,N
+      do k=1,nz
         do j=jstr,jend
           do i=istr,iend
             Wdiag(i,j,k,iwprsgr)   = Wdiag(i,j,k,iwprsgr)   * DC(i,0)  ! need to convert to dz*w now that we have DC
@@ -671,8 +689,10 @@
       enddo
       ! For non-periodic domains, we extrapolate the gradients at the
       ! domain boundaries because the buffer is only 1 point wide.
-      if (inode.eq.0)     grd(0   ,1:ny) = grd(1   ,1:nx)
-      if (inode.eq.npx-1) grd(nx+2,1:ny) = grd(nx+1,1:nx)
+      if (.not.ew_periodic) then
+        if (inode.eq.0)     grd(0   ,1:ny) = grd(1   ,1:nx)
+        if (inode.eq.npx-1) grd(nx+2,1:ny) = grd(nx+1,1:nx)
+      endif
       do j= 1,ny
         do i= 0,nx+1
           grd(i,j) = grd(i+1,j)+grd(i,j)
@@ -689,8 +709,10 @@
           grd(i,j) = (t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc))*vmask(i,j)
         enddo
       enddo
-      if (jnode.eq.0)     grd(1:nx,0   ) = grd(1:nx,1   )
-      if (jnode.eq.npy-1) grd(1:nx,ny+2) = grd(1:nx,ny+1)
+      if (.not.ns_periodic) then
+        if (jnode.eq.0)     grd(1:nx,0   ) = grd(1:nx,1   )
+        if (jnode.eq.npy-1) grd(1:nx,ny+2) = grd(1:nx,ny+1)
+      endif
       do j= 0,ny+1
         do i= 1,nx
           grd(i,j) = grd(i,j+1)+grd(i,j)
@@ -926,10 +948,10 @@
 
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
         if (diag_avg) then
-          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg)
+          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag_avg,Vdiag_avg,Wdiag_avg)
           if (diag_trc) call wrt_diag_trc(ncid,record,Tdiag_avg)
         else
-          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag)
+          if (diag_uv)  call wrt_diag_uv(ncid,record,Udiag,Vdiag,Wdiag)
           if (diag_trc) call wrt_diag_trc(ncid,record,Tdiag)
         endif
 
@@ -971,7 +993,7 @@
 
       if (diag_uv) then
         dimnames = (/dn_xu,dn_yr,dn_zr, dn_tm/)
-        dimsizes = (/ xi_u,  eta_rho,  nz,      0/)
+        dimsizes = (/ xi_u,  eta_rho,  nz, 0/)
 
         varid = nccreate(ncid,'u_pgr',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
@@ -1006,6 +1028,11 @@
         varid = nccreate(ncid,'u_cpl',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'2D/3D coupling')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        varid = nccreate(ncid,'u_zxb',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Cross term prsg')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
         dimnames = (/dn_xr,dn_yv,dn_zr, dn_tm/)
@@ -1046,37 +1073,58 @@
      &                               ,'2D/3D coupling')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
+        varid = nccreate(ncid,'v_zyb',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'Cross term prsg')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
+        dimnames = (/dn_xr,dn_yr,dn_zw, dn_tm/)
+        dimsizes = (/ xi_rho,  eta_rho, nz+1,    0/)
+
+        varid = nccreate(ncid,'w_dzb',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                               ,'vertical term prsg')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
       endif
 
       if (diag_trc) then
-        dimnames = (/dn_xr,dn_yr,dn_zr, dn_tm/)
-        dimsizes = (/ xi_rho,  eta_rho,  nz,    0/)
         do it=1,nt
           if (wrt_t_dia(it)) then
+
+           dimnames = (/dn_xu,dn_yr,dn_zr, dn_tm/)
+           dimsizes = (/ xi_u,  eta_rho,  nz,    0/)
            vname = trim(t_vname(it)) // '_advx'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
            ierr = nf90_put_att(ncid,varid,'long_name','x-advective flux')
-           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
-           vname = trim(t_vname(it)) // '_advy'
-           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','y-advective flux')
-           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
-           vname = trim(t_vname(it)) // '_advz'
-           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
-           ierr = nf90_put_att(ncid,varid,'long_name','z-advective flux')
            ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_mixx'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
            ierr = nf90_put_att(ncid,varid,'long_name','mixing x-flux')
            ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
+
+           dimnames = (/dn_xr,dn_yv,dn_zr, dn_tm/)
+           dimsizes = (/ xi_rho, eta_v, nz,  0/)
+           vname = trim(t_vname(it)) // '_advy'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','y-advective flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_mixy'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
            ierr = nf90_put_att(ncid,varid,'long_name','mixing y-flux')
+           ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
+
+           dimnames = (/dn_xr,dn_yr,dn_zw, dn_tm/)
+           dimsizes = (/ xi_rho, eta_rho, nz+1,   0/)
+           vname = trim(t_vname(it)) // '_advz'
+           varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
+           ierr = nf90_put_att(ncid,varid,'long_name','z-advective flux')
            ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
            vname = trim(t_vname(it)) // '_mixz'
            varid = nccreate(ncid,vname,dimnames,dimsizes,diag_prec)
            ierr = nf90_put_att(ncid,varid,'long_name','mixing z-flux')
            ierr = nf90_put_att(ncid,varid,'units','C m^3/s')
+
           endif
         enddo
       endif
@@ -1097,7 +1145,7 @@
 
       end subroutine create_diagvars  !]
 ! ----------------------------------------------------------------------
-      subroutine wrt_diag_uv(ncid,record,ud,vd)  ![
+      subroutine wrt_diag_uv(ncid,record,ud,vd,wd)  ![
       ! Write uv diagnostic vars to file
 
       use param
@@ -1107,32 +1155,37 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(:,:,:,:),intent(inout) :: ud,vd
+      real, dimension(0:nx+1,0:ny+1,nz,nmd),intent(inout) :: ud,vd
+      real, dimension(0:nx+1,0:ny+1,nz,1),intent(inout) :: wd
 
       !local
       integer,   dimension(4) :: start    ! start vector for writing
 
-        if (inode.eq.0) ud(1,:,:,:) = 0
-        start = (/1, bfy, 1, record/)
+        start = (/1, 1, 1, record/)
 
-        call ncwrite(ncid,'u_pgr',ud(:,:,:,1),start)
-        call ncwrite(ncid,'u_cor',ud(:,:,:,2),start)
-        call ncwrite(ncid,'u_adv',ud(:,:,:,3),start)
-        call ncwrite(ncid,'u_dis',ud(:,:,:,4),start)
-        call ncwrite(ncid,'u_hmx',ud(:,:,:,5),start)
-        call ncwrite(ncid,'u_vmx',ud(:,:,:,6),start)
-        call ncwrite(ncid,'u_cpl',ud(:,:,:,7),start)
+        if (.not.ew_periodic.and.inode==0) ud(1,:,:,:) = 0
+
+        call ncwrite(ncid,'u_pgr',ud(1:i1,j0:j1,:,1),start)
+        call ncwrite(ncid,'u_cor',ud(1:i1,j0:j1,:,2),start)
+        call ncwrite(ncid,'u_adv',ud(1:i1,j0:j1,:,3),start)
+        call ncwrite(ncid,'u_dis',ud(1:i1,j0:j1,:,4),start)
+        call ncwrite(ncid,'u_hmx',ud(1:i1,j0:j1,:,5),start)
+        call ncwrite(ncid,'u_vmx',ud(1:i1,j0:j1,:,6),start)
+        call ncwrite(ncid,'u_cpl',ud(1:i1,j0:j1,:,7),start)
+        call ncwrite(ncid,'u_zxb',ud(1:i1,j0:j1,:,8),start)
           
-        if (jnode.eq.0) vd(:,1,:,:) = 0
-        start = (/bfx, 1, 1, record/)
+        if (.not.ns_periodic.and.jnode==0) vd(:,1,:,:) = 0
 
-        call ncwrite(ncid,'v_pgr',vd(:,:,:,1),start)
-        call ncwrite(ncid,'v_cor',vd(:,:,:,2),start)
-        call ncwrite(ncid,'v_adv',vd(:,:,:,3),start)
-        call ncwrite(ncid,'v_dis',vd(:,:,:,4),start)
-        call ncwrite(ncid,'v_hmx',vd(:,:,:,5),start)
-        call ncwrite(ncid,'v_vmx',vd(:,:,:,6),start)
-        call ncwrite(ncid,'v_cpl',vd(:,:,:,7),start)
+        call ncwrite(ncid,'v_pgr',vd(i0:i1,1:j1,:,1),start)
+        call ncwrite(ncid,'v_cor',vd(i0:i1,1:j1,:,2),start)
+        call ncwrite(ncid,'v_adv',vd(i0:i1,1:j1,:,3),start)
+        call ncwrite(ncid,'v_dis',vd(i0:i1,1:j1,:,4),start)
+        call ncwrite(ncid,'v_hmx',vd(i0:i1,1:j1,:,5),start)
+        call ncwrite(ncid,'v_vmx',vd(i0:i1,1:j1,:,6),start)
+        call ncwrite(ncid,'v_cpl',vd(i0:i1,1:j1,:,7),start)
+        call ncwrite(ncid,'v_zyb',vd(i0:i1,1:j1,:,8),start)
+
+        call ncwrite(ncid,'w_dzb',wd(i0:i1,j0:j1,:,1),start)
 
       end subroutine wrt_diag_uv  !]
 ! ----------------------------------------------------------------------
@@ -1146,7 +1199,7 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(0:nx+1,0:ny+1,nz,ntd,ntdia),intent(in) :: trcd
+      real, dimension(0:nx+1,0:ny+1,0:nz,ntd,ntdia),intent(in) :: trcd
 
       !local
       integer :: it
@@ -1156,12 +1209,12 @@
         if (wrt_t_dia(it)) then
           start = (/1, 1, 1, record/)
 
-          call ncwrite(ncid,trim(t_vname(it))//'_advx' ,trcd(i0:i1,j0:j1,:,1,td(it)),start)
-          call ncwrite(ncid,trim(t_vname(it))//'_advy' ,trcd(i0:i1,j0:j1,:,2,td(it)),start)
-          call ncwrite(ncid,trim(t_vname(it))//'_advz' ,trcd(i0:i1,j0:j1,:,3,td(it)),start)
-          call ncwrite(ncid,trim(t_vname(it))//'_mixx' ,trcd(i0:i1,j0:j1,:,4,td(it)),start)
-          call ncwrite(ncid,trim(t_vname(it))//'_mixy' ,trcd(i0:i1,j0:j1,:,5,td(it)),start)
-          call ncwrite(ncid,trim(t_vname(it))//'_mixz' ,trcd(i0:i1,j0:j1,:,6,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_advx' ,trcd( 1:i1,j0:j1,1:nz,1,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_mixx' ,trcd( 1:i1,j0:j1,1:nz,4,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_advy' ,trcd(i0:i1, 1:j1,1:nz,2,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_mixy' ,trcd(i0:i1, 1:j1,1:nz,5,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_advz' ,trcd(i0:i1,j0:j1,0:nz,3,td(it)),start)
+          call ncwrite(ncid,trim(t_vname(it))//'_mixz' ,trcd(i0:i1,j0:j1,0:nz,6,td(it)),start)
         endif
       enddo
           
@@ -1177,25 +1230,16 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(:,:),intent(inout) :: up,vp
-!     real, dimension(:,:,:),intent(inout) :: up,vp
+      real, dimension(0:nx+1,0:ny+1),intent(inout) :: up,vp
 
       !local
 !     integer,   dimension(4) :: start    ! start vector for writing
       integer,   dimension(3) :: start    ! start vector for writing
 
-!     for 3D up data
-!     start = (/bfx, bfy, 1, record/)
-!     call ncwrite(ncid,'up',up(bfx:nx,1:ny,:),start)
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'up',up(bfx:nx,1:ny),start)
-          
-!     for 3D vp data
-!     start = (/bfx, bfy, 1, record/)
-!     call ncwrite(ncid,'vp',vp(1:nx,bfy:ny,:),start)
-      start = (/bfx, bfy, record/)
-      call ncwrite(ncid,'vp',vp(1:nx,bfy:ny),start)
+      start = (/1,1,record/)
 
+      call ncwrite(ncid,'up',up(1:i1,j0:j1),start)
+      call ncwrite(ncid,'vp',vp(i0:i1,1:j1),start)
 
       end subroutine wrt_diag_pflx  !]
 ! ----------------------------------------------------------------------

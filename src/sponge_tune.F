@@ -54,13 +54,16 @@
       ! local
       integer :: i
 
-      if (.not.diag_pflx.and.mynode==0) then
-        print *,'For Orlanski tuning,'
-        print *,'pflx diagnostics must be turned on!'
+      if (.not.diag_pflx) then
+        if (mynode==0) then
+          print *,'For Orlanski tuning,'
+          print *,'pflx diagnostics must be turned on!'
+          print *,'(diag_pflx=.true. in diagnostics.opt)'
+        endif
         stop
       endif
 
-      call store_string_att(bc_options,'UB_TUNING, ')
+      call store_string_att(bc_options,'obc_tuning, ')
 
 
       !! max value based of cfl condition
@@ -406,6 +409,18 @@
       ! local
       integer :: i,j
       integer :: ierr, varid
+
+      ! If you want to use obc tuning, you'll need to compute
+      ! the diagnostic pressure fluxes, or: diag_pflx=.true.
+      ! in diagnostics.opt
+
+      if (.not.diag_pflx) then
+        if (mynode.eq.0) then
+          print *, 'For obc tuning, ',
+     &     'you must have diag_pflx=.true.'
+        endif
+      endif
+        
 
       if (mynode==0) print *,'getting ub coefficients'
       if (obc_south.and.(jnode==0)) then

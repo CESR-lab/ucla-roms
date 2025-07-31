@@ -4,9 +4,7 @@
 !!    program main               ! Open MP version of ROMS driver
 
       use param
-#ifdef NHMG
       use nhmg
-#endif
       use tracers, only: init_tracers
       use mpi
       use roms_mpi
@@ -19,12 +17,7 @@
       real*8 tstart, tend
 C$    integer level,req_lev
 
-c**   call system('uname -nmr')
       ierr=1
-C$    req_lev=MPI_THREAD_MULTIPLE
-C$    call MPI_Init_thread(req_lev, level, ierr)
-C$ !!   write(*,*) 'MPI thread support levels =', req_lev,level
-C$    ierr=0
       if (ierr == 1) call MPI_Init(ierr)
 
       ocean_grid_comm=MPI_COMM_WORLD
@@ -174,10 +167,8 @@ C$OMP BARRIER
       
       call get_grid                  ! can be analytic or from netcdf
 
-
-#ifdef DIAGNOSTICS
       call init_diagnostics  
-#endif
+      print *,'calc_diag: ',calc_diag
 
 #ifdef NHMG
       call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
@@ -474,6 +465,7 @@ CR      write(*,*)  ' -2' MYID
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
+
       if (do_extract) call do_extract_data
 
       if (ub_tune)    call adjust_orlanski
@@ -482,9 +474,7 @@ CR      write(*,*)  ' -2' MYID
 
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
-#ifdef DIAGNOSTICS
-      if (diag_uv.or.diag_trc.or.diag_pflx) call do_diagnostics 
-#endif
+      if (calc_diag) call do_diagnostics 
 
       if (do_random) call wrt_random
 #if defined MARBL && defined MARBL_DIAGS

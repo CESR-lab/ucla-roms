@@ -41,11 +41,11 @@ c# define IMPLICIT_BOTTOM_DRAG
 #  define TS_DIF2
 #  define MIX_GP_TS
 
-c-#  define LMD_MIXING
-c-#  define LMD_KPP
-c-#  define LMD_BKPP
-c-#  define LMD_CONVEC
-c-#  define LMD_NONLOCAL
+#  define LMD_MIXING
+#  define LMD_KPP
+#  define LMD_BKPP
+#  define LMD_CONVEC
+#  define LMD_NONLOCAL
 
 #  define OBC_WEST
 #  define OBC_EAST

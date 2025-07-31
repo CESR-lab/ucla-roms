@@ -480,10 +480,10 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             if (lstr > 0) then
               idx = index(fname,'/',back=.true.)
               fname_orig = trim(fname(idx+1:lstr))
-              if (mynode==0) then
-                print *,'idx: ',idx
-                print *,'fnames: ',trim(fname),' ',trim(fname_orig)
-              endif
+!             if (mynode==0) then
+!               print *,'idx: ',idx
+!               print *,'fnames: ',trim(fname),' ',trim(fname_orig)
+!             endif
 # if defined MPI && defined PARALLEL_FILES
               call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif

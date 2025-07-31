@@ -482,11 +482,8 @@ c--#define VERBOSE
       
 #endif /* SOLVE3D */
 
-
-#ifdef DIAGNOSTICS
       if (diag_pflx) call get_init_slow(ncid,record,tindx)
       if (ub_tune)   call get_init_ub(ncid,record)
-#endif      
 
 ! Close input NetCDF file and  write greeting message depending
 ! on the the type of initial/restart procedure performed above.

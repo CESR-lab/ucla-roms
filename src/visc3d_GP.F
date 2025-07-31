@@ -389,14 +389,14 @@ c        enddo
         endif
       enddo
 
-# ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
+        print *,'diagnostics not working here (visc2d_GP)'
+        stop
 !       Udiag(:,:,:,ihmix) = (u(1:nx+1,1:ny,:,nnew)-u_prev)/ dt 
 !       Vdiag(:,:,:,ihmix) = (v(1:nx,1:ny+1,:,nnew)-v_prev)/ dt 
 !       u_prev = u(1:nx+1,1:ny,:,nnew)
 !       v_prev = v(1:nx,1:ny+1,:,nnew)
       endif
-# endif
 
       end
 #else

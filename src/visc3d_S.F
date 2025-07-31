@@ -116,8 +116,7 @@
 # if defined NHMG
 !   Do things
 # endif
-# ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) then
+      if (diag_uv) then
         do j=1,ny
           do i=1,nx
             Udiag(i,j,k,ihmix) = 0.5*dxdyi_u(i,j)*
@@ -129,7 +128,7 @@
           enddo
         enddo
       endif
-# endif
+
       enddo ! k loop
 
       end

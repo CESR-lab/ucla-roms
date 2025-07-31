@@ -54,14 +54,12 @@
 
       do j=jstr,jend
 
-# ifdef DIAGNOSTICS
 #  ifndef IMPLICIT_BOTTOM_DRAG
         if (diag_uv) then
           u_prev = u(1:nx,j,:,nnew)
           v_prev = v(1:nx,j,:,nnew)
         endif
 #  endif
-# endif
 
 
 # ifndef IMPLICIT_BOTTOM_DRAG
@@ -195,7 +193,6 @@
           enddo
         enddo        !--> discard DC,CF
 
-#  ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
        do k = 1,nz
         do i = 1,nx
@@ -206,7 +203,6 @@
         enddo
        enddo
       endif
-#  endif
 
 # else /* yes IMPLICIT_BOTTOM_DRAG */
         ! The only thing we do is 'coupling'.
@@ -237,7 +233,7 @@
 #  endif
           enddo
         enddo
-#  ifdef DIAGNOSTICS
+
         if (diag_uv .and. calc_diag) then
          do k=1,nz
           do i=1,nx
@@ -246,7 +242,6 @@
           enddo
          enddo
         endif
-#  endif
 
 # endif
 
@@ -326,7 +321,6 @@
             enddo
           enddo       !--> discard DC,CF(:,0)
 
-#  ifdef DIAGNOSTICS
       if (diag_uv .and. calc_diag) then
        do k=1,nz
         do i=1,nx
@@ -337,7 +331,6 @@
         enddo
        enddo
       endif
-#  endif
 
 
 # else  /* yes IMPLICIT_BOTTOM_DRAG */
@@ -368,7 +361,7 @@
             enddo
           enddo       !--> discard DC,CF(:,0)
 # endif
-#  ifdef DIAGNOSTICS
+
       if (diag_uv .and. calc_diag) then
        do k=1,nz
         do i=1,nx
@@ -377,7 +370,6 @@
         enddo
        enddo
       endif
-#  endif
 
         endif  !<-- j>=jstrV
 
@@ -435,17 +427,15 @@
 # endif /* NHMG */
 
 
-# ifdef DIAGNOSTICS
 !     if (diag_uv .and. calc_diag) then
-!       Udiag(:,j,:,ivmix) = ( u(1:nx,j,:,nnew)*
+!       Udiag(1:nx,j,:,ivmix) = ( u(1:nx,j,:,nnew)*
 !    &    0.5*( Hz(0:nx-1,j,:)+Hz(1:nx,j,:) )-u_prev ) / dt  
-!       Vdiag(:,j,:,ivmix) = ( v(1:nx,j,:,nnew)*
+!       Vdiag(1:nx,j,:,ivmix) = ( v(1:nx,j,:,nnew)*
 !    &    0.5*( Hz(1:nx,j-1,:)+Hz(1:nx,j,:) )-v_prev ) / dt  
 
-!       Udiag(:,j,nz,ivmix) = Udiag(:,j,nz,ivmix)+sustr(1:nx,j)
-!       Vdiag(:,j,nz,ivmix) = Vdiag(:,j,nz,ivmix)+svstr(1:nx,j)
+!       Udiag(1:nx,j,nz,ivmix) = Udiag(1:nx,j,nz,ivmix)+sustr(1:nx,j)
+!       Vdiag(1:nx,j,nz,ivmix) = Vdiag(1:nx,j,nz,ivmix)+svstr(1:nx,j)
 !     endif
-# endif
 
       enddo      ! <-- j
 
@@ -813,9 +803,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
           enddo
         enddo
       enddo
-# ifdef DIAGNOSTICS_NHMG
-      if (calc_diag) call set_diags_w_at_uv2( istr, iend, jstr, jend )
-# endif
+
+      if (diag_w) call set_diags_w_at_uv2( istr, iend, jstr, jend )
 !
 
 !--------------------------------------------------------------------
@@ -823,9 +812,8 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
       call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
 
-#  ifdef DIAGNOSTICS_NHMG
-      if (calc_diag) call set_diags_w_at_bc( istr, iend, jstr, jend )
-#  endif
+      if (diag_w) call set_diags_w_at_bc( istr, iend, jstr, jend )
+
 !--------------------------------------------------------------------
 ! Exchange periodic boundaries and computational margins. 
 !--------------------------------------------------------------------
@@ -835,11 +823,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # endif /* NHMG */
 
-# ifdef DIAGNOSTICS
-#  ifdef NHMGDIAG
-      if (calc_diag.and.diag_uv)  call set_diags_w_at_uv2_end
-#  endif
-# endif
+      if (diag_w)  call set_diags_w_at_uv2_end
 
       end
 
