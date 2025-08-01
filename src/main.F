@@ -4,18 +4,18 @@
 !!    program main               ! Open MP version of ROMS driver
 
       use param
+#ifdef NHMG
       use nhmg
+#endif
       use tracers, only: init_tracers
       use mpi
       use roms_mpi
       use obc_tune
 
 
-      implicit none                                        ! with single parallel region using
-      integer :: ierr                                      ! explicit barrier synchronization.
-# ifdef MPI
+      implicit none 
+      integer :: ierr
       real*8 tstart, tend
-C$    integer level,req_lev
 
       ierr=1
       if (ierr == 1) call MPI_Init(ierr)
@@ -31,7 +31,7 @@ C$    integer level,req_lev
 
       tstart=MPI_Wtime()
       if (ierr == 0) then
-# endif
+
 #ifdef BIOLOGY_BEC2
 !     When using BEC, BGC tracer indices are set in init_tracers
 !     then used in init_scalars, so this order must be maintained
