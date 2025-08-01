@@ -127,7 +127,7 @@ endif
 # Path names (non-hydrostatic & NetCDF libraries):
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
-	NHMG_INC  = $(NHMG_ROOT)/include
+	NHMG_INC  = -I$(NHMG_ROOT)/include
 
 	VPATH = ${MPIHOME}/include:${NHMG_INC}
 	CPATH = ${MPIHOME}/include:${NHMG_INC}
