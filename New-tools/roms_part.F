@@ -468,7 +468,7 @@
       integer :: i,j,varid
       integer :: dimids(4),ndims
       integer :: ivar,nvars,xtype
-      character(len=20) :: vname
+      character(len=50) :: vname
       type(ncstructure)  :: ncinfo
       character(len=10),dimension(5)  ::dname
       integer         ,dimension(5)  ::dsize
@@ -630,7 +630,7 @@
       real,dimension(:,:),allocatable   :: var2d,t2d
       real,dimension(:),allocatable     :: var0d
       character(len=1) :: charvar
-      character(len=20) :: vname
+      character(len=50) :: vname
       character(len=1)  :: bry
       type(ncstructure)  :: ncinfo
       integer,dimension(:),allocatable :: is,ie,js,je,
@@ -1071,7 +1071,7 @@
       integer :: dimids(4),ndims
       integer :: ivar,nvars,xtype
       type(ncstructure)  :: ncinfo
-      character(len=20) :: vname
+      character(len=50) :: vname
       character(len=7),dimension(5)  :: dname
       integer         ,dimension(5)  :: dsize
       integer         ,dimension(5)  :: did
@@ -1101,9 +1101,18 @@
 
       ! get global dimensions - look for attribute
       ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
-      ! if not present, then mpi_masking is not present, so simply grab 
+      if (ierr==nf90_noerr) then
+        ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
+        if (ierr/=nf90_noerr)
+     &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
+        ierr=nf90_inquire(npid,ndimensions=ndims)
+        do i = 1,ndims
+          ierr = nf90_inquire_dimension(npid,i,dname(i),dsize(i))
+          if (index(dname(i),'s_rho')>0)   gdims(3) = dsize(i)
+        enddo
+      ! if not present, then mpi_masking is not present, so simply grab
       ! final partial file to calculate global domains
-      if (ierr/=nf90_noerr) then
+      elseif (ierr/=nf90_noerr) then
         partfile = partfiles(nparts-1)
         ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
         if (ierr/=nf90_noerr) 
@@ -1245,7 +1254,7 @@
       integer,dimension(:),allocatable :: j0v,j1v
       integer :: lnx,lny,li0,li1,lj0,lj1,li0u,li1u,lj0v,lj1v
       real,dimension(:,:,:),allocatable :: var3d
-      character(len=30) :: vname
+      character(len=50) :: vname
       integer,dimension(:),allocatable :: is,ie,js,je
       type(ncstructure)  :: ncinfo
       character(len=7) :: ldname
@@ -1669,7 +1678,7 @@
       real              :: attparam
       character(len=10),allocatable,dimension(:) :: dnames
       character(len=10)  :: dname
-      character(len=20) :: vname
+      character(len=50) :: vname
       integer :: ierr, i, xtype,natts,dsize
       integer,dimension(5) :: dimids
       integer :: dimid,ndims,ivar,nvars
