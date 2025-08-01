@@ -4,9 +4,7 @@
 !!    program main               ! Open MP version of ROMS driver
 
       use param
-#ifdef NHMG
       use nhmg
-#endif
       use tracers, only: init_tracers
       use mpi
       use roms_mpi
