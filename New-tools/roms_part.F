@@ -816,11 +816,12 @@
               startwr = (/i0,js,record,1/)
               startw  = (/1,1,record,1/)
             endif
+
           case(3)
             ! ----- BOUNDARIES ONLY ----- ![
             if ((index(ncinfo%dims(ivar)%dimnames(3),'tim')>0).and.(bry/='i')) then
+              nz = ncinfo%dims(ivar)%dimsizes(2)
               if ((bry=='w').or.(bry=='e')) then
-                nz = ncinfo%dims(ivar)%dimsizes(2)
                 select case(ncinfo%vartype(ivar))
                 case('r')
                   allocate(var3d(lj0:lj1,nz,1))
