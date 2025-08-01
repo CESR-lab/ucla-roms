@@ -50,6 +50,7 @@ else ifeq ($(COMPILER),ifort)
     compatible_wrappers := mpifort mpiifort
 endif
 
+
 # Detect and set MPI wrapper if set to `auto` above:
 ifeq ($(MPI_WRAPPER),auto)
     MPI_WRAPPER := $(shell \
@@ -62,12 +63,17 @@ ifeq ($(MPI_WRAPPER),auto)
     $(info INFO: Automatically selected MPI_WRAPPER=$(MPI_WRAPPER) based on COMPILER=$(COMPILER))
 endif
 
-# Fail if MPI_WRAPPER is empty or still "auto" after it should have been set:
-ifeq ($(filter auto, $(MPI_WRAPPER)),auto)
-    $(error Failed to auto-detect a suitable MPI wrapper for COMPILER=$(COMPILER). Tried: $(compatible_wrappers))
+# If MPI_WRAPPER is still 'auto', or is now empty, autodetect failed - make sure it's empty in both cases to catch
+ifeq ($(MPI_WRAPPER),auto)
+    $(MPI_WRAPPER):=
 endif
 
-# Fail if the wrapper doesn't exist
+# Fail if MPI_WRAPPER is empty:
+ifeq ($(strip $(MPI_WRAPPER)),)
+    $(error MPI_WRAPPER not set or make failed to auto-detect a suitable MPI wrapper for COMPILER=$(COMPILER). Tried the following wrappers: $(compatible_wrappers))
+endif
+
+# Fail if the user-chosen wrapper doesn't exist
 ifeq ($(shell command -v $(MPI_WRAPPER) >/dev/null 2>&1 || echo missing),missing)
     $(error MPI_WRAPPER=$(MPI_WRAPPER) not found. Install it or set MPI_WRAPPER to a valid MPI wrapper)
 endif
@@ -75,7 +81,7 @@ endif
 # Fail if the chosen wrapper doesn't wrap the chosen compiler
 MPIVER := $(shell $(MPI_WRAPPER) --version | head -n1)
 ifeq ($(findstring $(expected_fc),$(MPIVER)),)
-    $(error COMPILER=$(COMPILER) expects $(expected_fc), but MPI_WRAPPER=$(MPI_WRAPPER) wraps $(MPIVER). Set COMPILER and MPI_WRAPPER to be compatible.)
+    $(error COMPILER=$(COMPILER) expects $(expected_fc), but MPI_WRAPPER=$(MPI_WRAPPER) does not wrap $(expected_fc). Set COMPILER and MPI_WRAPPER to be compatible.)
 endif
 
 # Set compiler and linker to chosen wrapper
@@ -90,9 +96,11 @@ else ifeq ($(BUILD_MODE),grof)
    KEEP_PPSRC=true
 endif
 
-#Check whether we're compiling with MARBL:
+#Check whether we're compiling with MARBL or NHMG:
 ifeq ($(wildcard cppdefs.opt),cppdefs.opt)
 	USEMARBL := $(shell grep -q '^[^!]*\#[[:space:]]*define[[:space:]]*MARBL' cppdefs.opt && echo true || echo false )
+	USENHMG :=  $(shell grep -q '^[^!]*\#[[:space:]]*define[[:space:]]*NHMG' cppdefs.opt && echo true || echo false )
+
 endif
 
 # C-preprocessor (cpp):
@@ -107,10 +115,6 @@ ifeq ($(COMPILER),intel)
 else
         CPP = /usr/bin/cpp
 	CPPFLAGS =  -traditional -D__IFC -I${MPIHOME}/include -I${NETCDFHOME}/include
-endif
-
-ifeq ($(USEMARBL),true)
-	CPPFLAGS+= -I${MARBL_ROOT}/include
 endif
 
 #   Since we no longer keep preprocessed files after compilation, if you want to still
@@ -139,25 +143,15 @@ endif
 ifeq ($(USEMARBL),true)
     ifeq ($(COMPILER),gnu)
         MARBL_INC = -I$(MARBL_ROOT)/include/gnu-mpi
-        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-gnu-mpi 
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-gnu-mpi
     else ifeq ($(COMPILER),intel)
         MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
         MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi
     else ifeq ($(COMPILER),ifort)
         MARBL_INC = -I$(MARBL_ROOT)/include/intel-mpi
-        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi 
+        MARBL_LIB = -L$(MARBL_ROOT)/lib -lmarbl-intel-mpi
     endif
 endif
-
-# COMPILER SETTINGS:
-# OpenMP flags:
-# ifeq ($(COMPILER),intel)
-# 	OMP_FLAG = -qopenmp
-# else ifeq ($(COMPILER),ifort)
-# 	OMP_FLAG = -fpp -qopenmp
-# else ifeq ($(COMPILER),gnu)
-# 	OMP_FLAG = -cpp -fopenmp
-# endif
 
 # Large memory runs (e.g. for bgc):
 #	LARGE_MEM_FLAG = -mcmodel=medium
@@ -171,11 +165,11 @@ else ifeq ($(COMPILER),ifort)
 endif
 
 # Fortran compiler options:
-CFTFLAGS += $(OMP_FLAG) $(LARGE_MEM_FLAG)
+CFTFLAGS += $(LARGE_MEM_FLAG)
 CFT += $(CFTFLAGS)
 
 # Fortran loader options:
-LDFLAGS = $(OMP_FLAG) $(CFTFLAGS) $(LARGE_MEM_FLAG)
+LDFLAGS = $(CFTFLAGS) $(LARGE_MEM_FLAG)
 LDR += $(LDFLAGS)
 
 # Fortran compiler options/flags:
@@ -208,13 +202,19 @@ ifeq ($(COMPILER),gnu)
 endif
 
 # Options to link to libraries & modules (NetCDF, etc):
-        LCDF = $(NHMG_LIB) $(NETCDFF_LIB) $(NETCDFC_LIB)
+        LCDF =  $(NETCDFF_LIB) $(NETCDFC_LIB)
 ifeq ($(USEMARBL),true)
 	LCDF += $(MARBL_LIB)
+endif
+ifeq ($(USENHMG),true)
+	LCDF += $(NHMG_LIB)
 endif
 	LCDF +=$(NETCDFF_INC) $(NETCDFC_INC)
 ifeq ($(USEMARBL),true)
 	LCDF += $(MARBL_INC)
+endif
+ifeq ($(USENHMG),true)
+	LCDF += $(NHMG_INC)
 endif
 
 
