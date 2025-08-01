@@ -11,7 +11,7 @@
       use grid
       use ocean3d
       use scalars
-      use hidden_mpi_vars
+      use roms_mpi
 !     use private_scratch, only: grad => A2d10
 
       implicit none

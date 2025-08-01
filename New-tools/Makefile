@@ -70,10 +70,10 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
-	FFLAGS = -O3 -ipo -fp-model fast
+        FFLAGS = -O3 -ipo -fp-model fast
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
- 	FFLAGS = -g -traceback -CA -CB -CS
+#	FFLAGS = -g -traceback -CA -CB -CS
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
@@ -83,35 +83,47 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 # - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
 #	FFLAGS = -O3 -ip -pg
 
-
-PSRC = partit.F roms_part_join.F nc_read_write.F
-
-JSRC = ncjoin.F roms_part_join.F nc_read_write.F
+PSRC = partit.F roms_part.F nc_read_write.F
+MSRC = partmap.F roms_part.F nc_read_write.F
+OSRC = optimal_part.F roms_part.F nc_read_write.F
+JSRC = ncjoin.F roms_part.F nc_read_write.F
 
   PCS = $(PSRC:.F=.f)
-  JCS = $(JSRC:.F=.f)
   PBJS = $(PSRC:.F=.o) 
+  MCS = $(MSRC:.F=.f)
+  MBJS = $(MSRC:.F=.o) 
+  OCS = $(OSRC:.F=.f)
+  OBJS = $(OSRC:.F=.o) 
+  JCS = $(JSRC:.F=.f)
   JBJS = $(JSRC:.F=.o) 
-  
+
 # Everything
-all: depend partit ncjoin
+all: depend partit partmap optimal ncjoin 
 
 partit:  $(PBJS)
 	@echo 'Making: $(PBJS)'
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit $(PBJS) $(LCDF)
+
+partmap:  $(MBJS)
+	@echo 'Making: $(MBJS)'
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o partmap $(MBJS) $(LCDF)
+
+optimal:  $(OBJS)
+	@echo 'Making: $(OBJS)'
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o optimal $(OBJS) $(LCDF)
 
 ncjoin:  $(JBJS)
 	@echo 'Making: $(JBJS)'
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o ncjoin $(JBJS) $(LCDF)
 
 depend:  # Note: cross_matrix no longer used
-	@makedepf90 $(PSRC) $(JSRC) > Make.depend
+	@makedepf90 $(PSRC) $(MSRC) $(OSRC) $(JSRC) > Make.depend
 	@echo 'Updated Make.depend (dependency list)'
 
 # Cleaning targets
 # -------- -------
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit ncjoin 
+	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit partmap optimal ncjoin 
 
 # Automatically generated dependency list:
 

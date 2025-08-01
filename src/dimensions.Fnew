@@ -6,7 +6,7 @@
 
       ! coded by Jeroen Molemaker
       use param
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
       private

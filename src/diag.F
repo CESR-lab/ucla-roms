@@ -21,7 +21,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
 
       subroutine diag
       use param
-      use hidden_mpi_vars
       use private_scratch
       use scalars
       implicit none

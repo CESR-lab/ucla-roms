@@ -4,7 +4,7 @@
 
       subroutine step3d_uv1(tile)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer tile
@@ -46,6 +46,7 @@
       use mixing
       use ocean_vars
       use scalars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
@@ -75,13 +76,9 @@
 
 # include "compute_auxiliary_bounds.h"
 
-# ifdef DIAGNOSTICS
-#  ifdef NHMGDIAG
-      if (diag_uv.and.calc_diag) then
-        Wdiag(istr:iend,jstr:jend,:,iwprsgr) =rw(istr:iend,jstr:jend,:)
+      if (diag_w) then
+!       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)
       endif
-#  endif
-# endif
 
 # ifdef NHMG
 
@@ -108,9 +105,8 @@
         enddo
 
       enddo
-#  ifdef DIAGNOSTICS_NHMG
-      if (calc_diag) call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
-#  endif
+
+      if (diag_w) call set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )
 # endif  /* NHMG */
 
       do k=1,N
@@ -121,12 +117,10 @@
       call compute_wec_rhs_uv_terms(istr,iend,jstr,jend,ru,rv,wrk1,wrk2)
 # endif
 
-# ifdef DIAGNOSTICS
-        if (diag_uv .and. calc_diag) then
-          call set_diags_u_4th_adv
-          call set_diags_v_4th_adv
-        endif
-# endif
+      if (diag_uv) then
+        call set_diags_u_4th_adv
+        call set_diags_v_4th_adv
+      endif
 
       do j=jstr,jend
 
@@ -216,8 +210,8 @@
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
           enddo
         enddo
-# ifdef DIAGNOSTICS
-        if (diag_uv.and.calc_diag) then
+
+        if (diag_uv) then
           do k=1,nz
            do i=1,nx
             Udiag(i,j,k,idiss) = ru(i,j,k)*dxdyi_u(i,j)*umask(i,j)
@@ -229,7 +223,6 @@
            enddo
           enddo
         endif
-# endif
 
         if (j >= jstrV) then
           do i=istr,iend
@@ -291,8 +284,7 @@
             enddo
           enddo
 
-# ifdef DIAGNOSTICS
-         if (diag_uv.and.calc_diag) then
+         if (diag_uv) then
           do k=1,nz
            do i=1,nx
             Vdiag(i,j,k,idiss) = rv(i,j,k)*dxdyi_v(i,j)*vmask(i,j)
@@ -304,7 +296,6 @@
            enddo
           enddo
          endif
-# endif
 
         endif   !<-- j >= jstrV
 
@@ -327,7 +318,6 @@
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
           enddo
         enddo
-# ifdef DIAGNOSTICS
         if (diag_uv.and.calc_diag) then
           do k=1,nz
             Udiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_u(:,j)*umask(i,j)
@@ -336,7 +326,6 @@
      &          - Udiag(:,j,k,iadv)
           enddo
         endif
-# endif
 
         if (j >= jstrV) then
           do i=istr,iend
@@ -356,7 +345,7 @@
               rvfrc(i,j)=rvfrc(i,j) +rv(i,j,k)
             enddo
           enddo
-# ifdef DIAGNOSTICS
+
         if (diag_uv.and.calc_diag) then
           do k=1,nz
             Vdiag(:,j,k,idiss) = rv(1:nx,j,k)*dxdyi_v(:,j)*vmask(i,j)
@@ -365,7 +354,7 @@
      &          - Vdiag(:,j,k,iadv)
           enddo
         endif
-# endif
+
         endif  !<-- if j>=jstrV
 
 # endif /* IMPLICIT_BOTTOM_DRAG */

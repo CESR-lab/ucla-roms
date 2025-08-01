@@ -19,7 +19,7 @@
       use scalars
       use grid
       use ocean_vars
-      use hidden_mpi_vars
+      use roms_mpi
 
       implicit none
 

@@ -7,7 +7,7 @@
       use param
       use roms_read_write
       use dimensions
-      use hidden_mpi_vars
+      use roms_mpi
       implicit none
 
       ! Set module to private and make vars explicitly public
@@ -255,7 +255,7 @@
 #  endif
       endif
 
-      if (obc_east.and.(.not.east_exchng)) then
+      if (obc_east.and.inode.eq.npx-1) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_e, zeta_east(j0:j1), obry=2 )
 #  endif
@@ -280,7 +280,7 @@
 #  endif
       endif
 
-      if (obc_south.and.(.not.south_exchng)) then
+      if (obc_south.and.jnode.eq.0) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_s, zeta_south(i0:i1), obry=2 )
 #  endif
@@ -305,7 +305,7 @@
 #  endif
       endif
 
-      if (obc_north.and.(.not.north_exchng)) then
+      if (obc_north.and.jnode.eq.npy-1) then
 #  ifdef Z_FRC_BRY
         call set_frc_data( nc_z_n, zeta_north(i0:i1), obry=2 )
 #  endif

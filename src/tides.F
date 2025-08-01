@@ -6,7 +6,7 @@
       use scalars                                          ! For iic, ntstart, deg2rad
       use nc_read_write
       use roms_read_write
-      use mpi_exchanges
+      use roms_mpi
       use grid
 
       implicit none
@@ -89,7 +89,7 @@
       ! and compute_auxilliary_bounds in the same subroutine as they both
       ! declare and compute. Fortan doesn't allow.
 
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch  ! this isn't needed?
 
       implicit none

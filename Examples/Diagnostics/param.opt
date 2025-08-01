@@ -22,4 +22,4 @@
 
       integer, parameter :: nt = 2 
 
-
+      integer, parameter :: nt_passive = 0 

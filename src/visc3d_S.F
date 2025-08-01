@@ -4,7 +4,7 @@
       subroutine visc3d
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none
@@ -34,6 +34,7 @@
       use mixing
       use ocean_vars
       use scalars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, indx
@@ -115,8 +116,7 @@
 # if defined NHMG
 !   Do things
 # endif
-# ifdef DIAGNOSTICS
-      if (diag_uv .and. calc_diag) then
+      if (diag_uv) then
         do j=1,ny
           do i=1,nx
             Udiag(i,j,k,ihmix) = 0.5*dxdyi_u(i,j)*
@@ -128,7 +128,7 @@
           enddo
         enddo
       endif
-# endif
+
       enddo ! k loop
 
       end

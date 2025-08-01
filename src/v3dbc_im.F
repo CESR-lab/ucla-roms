@@ -12,7 +12,7 @@
       use grid
       use ocean_vars
       use scalars
-      use sponge_tune
+      use obc_tune
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -86,9 +86,7 @@
      &                     -min(cy,0.)*grad(i+1,jstr)
      &                                    )/(cff+cx)
 #    if defined M3_FRC_BRY
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_south(i),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_south(i),1.0))
             v(i,jstr,k,nnew)=(1.-cext)*v(i,jstr,k,nnew)
      &                               +cext*v_south(i,k)
 #    endif
@@ -178,9 +176,7 @@
      &                      -min(cy,0.)*grad(i+1,jend+1)
      &                                      )/(cff+cx)
 #    if defined M3_FRC_BRY
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_north(i),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_north(i),1.0))
             v(i,jend+1,k,nnew)=(1.-cext)*v(i,jend+1,k,nnew)
      &                                   +cext*v_north(i,k)
 #    endif
@@ -261,9 +257,7 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
      &                                                     )
 
 #    if defined M3_FRC_BRY
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_west(j),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_west(j),1.0))
             v(istr-1,j,k,nnew)=(1.-cext)*v(istr-1,j,k,nnew)
      &                                    +cext*v_west(j,k)
 #    endif
@@ -341,9 +335,7 @@ cc            v(i,jend+1,k,nnew)=-vst(i,jend+1,k) ! no Lagrangian flux
      &                                                     )
 
 #    if defined M3_FRC_BRY 
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_east(j),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_east(j),1.0))
             v(iend+1,j,k,nnew)=(1.-cext)*v(iend+1,j,k,nnew)
      &                                    +cext*v_east(j,k)
 #    endif

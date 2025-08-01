@@ -3,7 +3,7 @@
 
       subroutine prsgrd
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer,save:: tile=0
@@ -43,6 +43,7 @@
       use eos_vars
       use grid
       use scalars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
@@ -212,20 +213,6 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           enddo
         enddo
       enddo   !<-- j
-
-#ifdef DIAGNOSTICS
-      if (CORR_STAGE) then
-        if (allocated(rho_d)) then    
-          rho_d = rho(1:nx,1:ny,:)
-        endif
-        if (allocated(p_int)) then    
-          p_int = 0
-          do k=1,nz
-           p_int = p_int + p(1:nx,1:ny,k)*Hz(1:nx,1:ny,k)
-          enddo
-        endif
-      endif
-#endif
 
 ! Compute XI-component of pressure gradient term:
 !-------- ------------ -- -------- -------- -----
@@ -457,19 +444,27 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 
       enddo   !<-- k
 
-# ifdef DIAGNOSTICS
       if (CORR_STAGE) then
         if ((calc_diag.and.diag_uv)) then
           do k=1,nz
-            Udiag(:,:,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u*umask(1:nx,1:ny)
-            Vdiag(:,:,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v*vmask(1:nx,1:ny)
+            Udiag(1:nx,1:ny,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u*umask(1:nx,1:ny)
+            Vdiag(1:nx,1:ny,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v*vmask(1:nx,1:ny)
+
+            Udiag(1:nx,1:ny,k,izxb) = Udiag(1:nx,1:ny,k,ipgr) - 
+     &        0.5*(Hz(1:nx,1:ny,k)+Hz(0:nx-1,1:ny,k))*dn_u(1:nx,1:ny)
+     &          *(P(0:nx-1,1:ny,k)-P(1:nx,1:ny,k))*dxdyi_u(1:nx,1:ny)
+            Vdiag(1:nx,1:ny,k,izxb) = Vdiag(1:nx,1:ny,k,ipgr) - 
+     &        0.5*(Hz(1:nx,1:ny,k)+Hz(1:nx,0:ny-1,k))*dm_v(1:nx,1:ny)
+     &          *(P(1:nx,0:ny-1,k)-P(1:nx,1:ny,k))*dxdyi_v(1:nx,1:ny)
+          enddo
+          do k=1,nz-1
+            Wdiag(1:nx,1:ny,k,idzb) = (P(1:nx,1:ny,k)-P(1:nx,1:ny,k+1))*dxdyi
           enddo
         endif
         if (diag_pflx) then
           call calc_diag_pflux(p)
         endif
       endif
-# endif
 
 # ifdef NHMG
 !
@@ -502,11 +497,9 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
          enddo
       enddo
-#  ifdef DIAGNOSTICS_NHMG
-      if (diag_uv.and.calc_diag) then
-        Wdiag(:,:,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
+      if (diag_w.and.calc_diag) then
+        Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
       endif
-#  endif
 # endif /* NHMG */
 
 

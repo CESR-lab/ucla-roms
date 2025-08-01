@@ -3,7 +3,7 @@
 
       subroutine grid_stiffness (tile)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       implicit none
       integer tile
 # include "compute_tile_bounds.h"
@@ -28,6 +28,7 @@
       use grid
       use ocean_vars
       use mpi
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k, NSUB

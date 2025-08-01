@@ -29,7 +29,7 @@
 #ifdef MARBL      
       use marbl_driver
 #endif      
-      use mpi_exchanges
+      use roms_mpi
       implicit none
       private
 

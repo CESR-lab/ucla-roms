@@ -20,7 +20,7 @@
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
       
       logical, parameter         :: diag_avg      = .true.    ! compute history (=F) or averages (=T)
-      integer, parameter         :: output_period =  400      ! output period
+      integer, parameter         :: output_period = 400       ! output period
       integer, parameter         :: nrpf          =  7        ! total recs per file
 
       logical, parameter, public :: diag_uv       = .true.    ! Momentum diagnostics
@@ -30,16 +30,6 @@
       real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering (in seconds)
 
       integer, parameter         :: diag_prec     = nf90_double ! Precision of output variables (nf90_float/nf90_double)
-
-
-      !  If diag_trc=.true., select for which tracers diagnostics are desired:
-!     logical,dimension(nt) :: wrt_t_dia = .true.
-!     wrt_t_dia(1) = .True.  ! diagnostics for temperature 
-!     wrt_t_dia(2) = .True.  ! diagnostics for salinity
-      logical,public,dimension(nt) :: wrt_t_dia = (/
-     &             .true. ,   !! Temperature
-     &             .false.    !! Salinity
-     &           /)
 
 
 

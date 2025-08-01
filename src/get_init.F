@@ -11,7 +11,7 @@
 #endif
       use coupling
       use grid
-      use hidden_mpi_vars
+      use roms_mpi
       use analytical
       use mixing
       use ocean_vars
@@ -20,7 +20,7 @@
       use netcdf
       use bgc_ecosys_vars
       use diagnostics
-      use sponge_tune
+      use obc_tune
       use nc_read_write, only: handle_ierr, ncread
       use roms_read_write
       use dimensions
@@ -482,11 +482,8 @@ c--#define VERBOSE
       
 #endif /* SOLVE3D */
 
-
-#ifdef DIAGNOSTICS
-      if (diag_pflx) call get_init_slow(ncid,record,tindx)
-      if (ub_tune)   call get_init_ub(ncid,record)
-#endif      
+      if (diag_pflx)  call get_init_slow(ncid,record,tindx)
+      if (obc_tuning) call get_init_tune(ncid,record)
 
 ! Close input NetCDF file and  write greeting message depending
 ! on the the type of initial/restart procedure performed above.

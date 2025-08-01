@@ -23,7 +23,7 @@
       integer, parameter         :: output_period =  20       ! output period
       integer, parameter         :: nrpf          =  7        ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .false.   ! Momentum diagnostics
+      logical, parameter, public :: diag_uv       = .false.   ! Horizontal momentum diagnostics
       logical, parameter, public :: diag_trc      = .false.   ! Selected tracers diagnostics
       logical, parameter, public :: diag_pflx     = .false.   ! Baroclinic pressure fluxes
 
