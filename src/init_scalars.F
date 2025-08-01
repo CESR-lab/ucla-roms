@@ -73,8 +73,6 @@ c      write(*,*) 'kmp_stacksize =', size
 #endif
 
       call init_dimensions          ! needs to come before init_output_indices
-      call init_output_indices      ! retire this soon (the bfx, bfy thing)
-
 
 #ifdef SOLVE3D
       call set_weights

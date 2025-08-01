@@ -8,7 +8,7 @@
       use tracers, only: init_tracers
       use mpi
       use roms_mpi
-      use sponge_tune
+      use obc_tune
 
 
       implicit none                                        ! with single parallel region using
@@ -103,7 +103,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use basic_output
       use scalars
       use analytical
-      use sponge_tune
+      use obc_tune
       use diagnostics
       use boundary
       use particles
@@ -171,16 +171,9 @@ C$OMP BARRIER
       print *,'calc_diag: ',calc_diag
 
 #ifdef NHMG
-      call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
+      call nhmg_init(nx,ny,nz,npx,npy)
 #endif
-#ifdef SPONGE_TUNE
-      if (ub_tune) call init_orlanski_tune
-#endif
-
-c--#define CR
-CR      write(*,*) '-11' MYID
-
-
+      if (obc_tuning) call init_orlanski_tune
 
       if (may_day_flag /= 0) goto 99 !-->  EXIT
 
@@ -318,7 +311,7 @@ CR      write(*,*)  ' -2' MYID
       use extract_data
       use diagnostics
       use scalars
-      use sponge_tune
+      use obc_tune
       use particles
       use surf_flux
       use random_output
@@ -468,7 +461,7 @@ CR      write(*,*)  ' -2' MYID
 
       if (do_extract) call do_extract_data
 
-      if (ub_tune)    call adjust_orlanski
+      if (obc_tuning)    call adjust_orlanski
 
       if (floats)     call do_particles
 

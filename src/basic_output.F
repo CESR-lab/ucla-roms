@@ -10,7 +10,7 @@
       use netcdf
       use nc_read_write
       use roms_read_write
-      use sponge_tune
+      use obc_tune
       use diagnostics
       use scalars
       use ocean_vars
@@ -621,8 +621,8 @@
 !       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,itemp),start)
 !       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,isalt),start)
 
-        if (ub_tune)   call wrt_rst_ub(ncid,rec_rst)
-        if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
+        if (obc_tuning) call wrt_rst_tune(ncid,rec_rst)
+        if (diag_pflx)  call wrt_rst_diag_slow(ncid,rec_rst)
 
 #ifdef MARBL
         call marbldrv_write_ss_vars_to_rst(ncid,rec_rst)
@@ -947,30 +947,29 @@
      &                               'time filtered pressure')
         ierr = nf90_put_att(ncid,varid,'units','Pa??')
       endif
-#ifdef SPONGE_TUNE
-       if (ub_tune) then
-         varid = nccreate(ncid,'ub_west',
+
+      if (obc_tuning) then
+        varid = nccreate(ncid,'ub_west',
      &                       (/dn_yr,dn_tm/),
      &                       (/eta_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'west bc tuning coeff')
-         varid = nccreate(ncid,'ub_east',
+        varid = nccreate(ncid,'ub_east',
      &                       (/dn_yr,dn_tm/),
      &                       (/eta_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'east bc tuning coeff')
-         varid = nccreate(ncid,'ub_north',
+        varid = nccreate(ncid,'ub_north',
      &                       (/dn_xr,dn_tm/),
      &                       (/xi_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'north bc tuning coeff')
-         varid = nccreate(ncid,'ub_south',
+        varid = nccreate(ncid,'ub_south',
      &                       (/dn_xr,dn_tm/),
      &                       (/xi_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'south bc tuning coeff')
-       endif
-#endif
+      endif
 
 #endif /* SOLVE3D */
 

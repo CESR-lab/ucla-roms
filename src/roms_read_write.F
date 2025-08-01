@@ -70,9 +70,6 @@
 !    &                                      ,ydimv= 'eta_v  '
 !    &                                      ,zdimw= 's_w    '
 
-      ! index ranges for netcdf output (See init_output_indices)
-      integer,public :: bfx,bfy
-
       ! index ranges for coarse netcdf input
       integer :: ic0,ic1,jc0,jc1
       integer :: iSWc,jSWc
@@ -134,7 +131,6 @@
       public :: findstr,append_date_node
       public :: set_frc_data
       public :: read_output_root_name
-      public :: init_output_indices
       public :: find_new_record
       public :: nc_check_units
       public :: put_global_atts
@@ -156,31 +152,6 @@
 
       contains
 
-! ----------------------------------------------------------------------
-      subroutine init_output_indices  ![
-      ! these indices also relate to reading input fields!
-      !
-      ! There are 2 approaches to outputting to netcdf files
-      ! in the interior, we alway output (1:nx,1:ny), the boundary
-      ! subdomains netcdf files are larger because they include buffers
-      ! Method 1:
-      ! For arrays that have buffers, we use i0:i1,j0:j1.
-      ! These indices are expanded for boundary adjacent
-      ! subdomains because there, we output domain buffers
-
-      ! Method 2:
-      ! Some arrays are size (nx,ny) only. For those, we just
-      ! skip the buffers for the boundary subdomain outputs.
-
-      implicit none
-
-      ! Method 2
-      bfx = 1
-      bfy = 1
-      if (inode==0) bfx = 2  ! Start writing at 2 to skip buffer
-      if (jnode==0) bfy = 2  ! Start writing at 2 to skip buffer
-
-      end subroutine init_output_indices  !]
 ! ----------------------------------------------------------------------
       subroutine init_coarse  ![
       ! Work out sizes for coarse arrays
@@ -252,8 +223,6 @@
       nyc_righ = ceiling(1.0*gnyc/np_eta) - floor(off_yc/2.0)
       ny_righ  = ceiling(1.0*gny/np_eta)  - floor(off_y/2.0)
       dfy  = max(ny_left - nyc_left*2, ny_righ-nyc_righ*2)
-!     print *, 'dfx: ', dfx
-!     print *, 'dfx: ', dfx
       cbf = max(ceiling(0.5*dfx)+1,2)
       cbf = max(ceiling(0.5*dfy)+1,cbf)
       cbf = cbf + 1
