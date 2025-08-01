@@ -1195,8 +1195,6 @@
 
       ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
 #endif
-!     ierr=nf90_put_att(ncid, nf90_global, 'global_x', gnx)
-!     ierr=nf90_put_att(ncid, nf90_global, 'global_y', gny)
       ierr=nf90_put_att(ncid, nf90_global, 'globaldims', (/gnx,gny/))
 
       ierr=nf90_put_att(ncid, nf90_global, 'title',title)         ! Title of the run
