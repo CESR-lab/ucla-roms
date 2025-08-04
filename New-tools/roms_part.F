@@ -1128,8 +1128,8 @@
         ierr = nf90_close(npid)
       endif
 
-      gnx = gdims(1)
-      gny = gdims(2)
+      gnx = gdims(1)+2
+      gny = gdims(2)+2
       nz  = gdims(3)
       
       if (mynode==0) then ! single node to create joined file
@@ -1253,7 +1253,7 @@
       integer,dimension(:),allocatable :: i0u,i1u
       integer,dimension(:),allocatable :: j0v,j1v
       integer :: lnx,lny,li0,li1,lj0,lj1,li0u,li1u,lj0v,lj1v
-      real,dimension(:,:,:),allocatable :: var3d
+      real,dimension(:,:,:),allocatable :: var3d,tmp3d
       character(len=50) :: vname
       integer,dimension(:),allocatable :: is,ie,js,je
       type(ncstructure)  :: ncinfo
@@ -1276,6 +1276,7 @@
       integer,dimension(3)             :: csizes
       integer,dimension(2)             :: ij
       integer                          :: mpi_role,write_comm,counter,total_nodes
+      character(len=1)                 :: bryvariable
       logical                          :: mpimasking
 
       if (mynode==0) then
@@ -1449,6 +1450,10 @@
         do ivar=1,ncinfo%nvars
 
           vname = ncinfo%varname(ivar)
+
+          ! check if bry var
+          bryvariable=ncinfo%bryvar(ivar)
+
           if (mynode==0) print *,'Processing: ',trim(vname)
 
           ndims = ncinfo%ndims(ivar)
@@ -1472,26 +1477,42 @@
           case(1)
             ! save for later
           case(2)
-            select case(ncinfo%vartype(ivar))
-            case('r')
-              allocate(var3d(gnx,lj0:lj1,1))
-              is = i0; ie = i1
-              js = j0; je = j1
-              startw = (/1,lj0,record,1/)
-            case('u')
-              allocate(var3d(gnx-1,lj0:lj1,1))
-              is = i0; ie = i1
-              js = j0; je = j1
-              startw = (/1,lj0,record,1/)
-            case('v')
-              allocate(var3d(gnx,lj0v:lj1v,1))
-              is = i0; ie = i1
-              js = j0; je = j1
-              startw = (/1,lj0,record,1/)
-            case('j')
-              print*,vname,'psi variables skipped'; cycle
-            end select
-            startr = (/1,1,record,1/)
+            if (index(ncinfo%dims(ivar)%dimnames(2),'time')>0) then
+              select case(ncinfo%vartype(ivar))
+              case('r')
+                if ((bryvariable=='w').or.(bryvariable=='e')) then
+                  allocate(var3d(lj0:lj1,1,1)); allocate(tmp3d(lj0:lj1,1,1))
+                  is = j0; ie = j1
+                  startw = (/lj0,record,1,1/)
+                elseif ((bryvariable=='s').or.(bryvariable=='n')) then
+                  allocate(var3d(gnx,1,1)); allocate(tmp3d(gnx,1,1))
+                  is = i0; ie = i1
+                  startw = (/1,record,1,1/)
+                endif
+              end select
+              startr = (/1,record,1,1/)
+            else
+              select case(ncinfo%vartype(ivar))
+              case('r')
+                allocate(var3d(gnx,lj0:lj1,1))
+                is = i0; ie = i1
+                js = j0; je = j1
+                startw = (/1,lj0,record,1/)
+              case('u')
+                allocate(var3d(gnx-1,lj0:lj1,1))
+                is = i0; ie = i1
+                js = j0; je = j1
+                startw = (/1,lj0,record,1/)
+              case('v')
+                allocate(var3d(gnx,lj0v:lj1v,1))
+                is = i0; ie = i1
+                js = j0; je = j1
+                startw = (/1,lj0,record,1/)
+              case('j')
+                print*,vname,'psi variables skipped'; cycle
+              end select
+              startr = (/1,1,record,1/)
+            endif
           case(3)
             if (index(ncinfo%dims(ivar)%dimnames(3),'time')>0) then
               select case(ncinfo%vartype(ivar))
@@ -1566,11 +1587,30 @@
           end select
 
           var3d = 0
+          ! ----- Boundary Variables ----- ![
+          ! conditional splits up loops, as boundary variables are dependent on current parition
+          ! unlike other partitionable variables. Conditional outside of loop results in two
+          ! seperate ones, but is slighlty faster if a large amount of partitions is present.
+          if (bryvariable/='i') then
+          tmp3d = 0
+          do part = rp0,rp1
+            partfile = partfiles(part)
+            ierr = nf90_open(trim(partfile),nf90_nowrite,npid)
+            call ncread(npid,vname,tmp3d(is(part):ie(part),:,:),startr)
+            ! since var3d is added to for ncwrite, we use a temporary array to see if this 
+            ! bry variable is present in current partition. If not, then we skip and do not
+            ! overwrite var3d with empty data.
+            if (minval(tmp3d(is(part):ie(part),:,:))==maxval(tmp3d(is(part):ie(part),:,:))) cycle
+            var3d(is(part):ie(part),:,:)=tmp3d(is(part):ie(part),:,:)
+          enddo
+          else
+          ! ------------------------------ !]
           do part = rp0,rp1
             partfile = partfiles(part)
             ierr = nf90_open(trim(partfile),nf90_nowrite,npid)
             call ncread(npid,vname,var3d(is(part):ie(part),js(part):je(part),:),startr)
           enddo
+          endif
 
           call MPI_Barrier(write_comm,ierr)
 
@@ -1584,6 +1624,7 @@
           ierr = nf90_close(ncid)
 
           if (allocated(var3d)) deallocate(var3d)
+          if (allocated(tmp3d)) deallocate(tmp3d)
 
         else !not-partitionable
 
