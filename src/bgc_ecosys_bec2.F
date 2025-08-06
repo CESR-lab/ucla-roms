@@ -250,15 +250,15 @@
                !!! and set the atmopspheric concentration of all other
                !!! tracer to 0 So that everything is additive.
                FLUX(i,j) = PV(i,j) * (N2OSAT_USED - t(i,j,N,nnew,iN2O))
-               STF(i,j,n2o_ind_t) = FLUX(i,j)
+               STF(i,j,bgc_idx(iN2O)) = FLUX(i,j)
                !!! Update tracer
                t(i,j,N,nnew,iN2O) = t(i,j,N,nnew,iN2O)+
-     &                 stf(i,j,n2o_ind_t)*dt/Hz(i,j,N)
+     &                 stf(i,j,bgc_idx(iN2O))*dt/Hz(i,j,N)
 
 # if defined BEC2_DIAG && defined Ncycle_SY
        if (wrt_bec2_diag_2d(fgn2o_idx_t)) then
           idiag = idx_bec2_diag_2d(fgn2o_idx_t)
-          bec2_diag_2d(i,j,idiag) = STF(i,j,n2o_ind_t)
+          bec2_diag_2d(i,j,idiag) = STF(i,j,bgc_idx(iN2O))
        endif
        if (wrt_bec2_diag_2d(pvn2o_idx_t)) then
            idiag = idx_bec2_diag_2d(pvn2o_idx_t)
@@ -304,11 +304,10 @@
      &                      * rmask(i,j)
 # endif
 !!!!!---------------Tracking only N2 excess for no2---------!!!!! to track full use:
-!                FLUX(i,j) = PV(i,j) * (N2SAT_USED - tracer(i,j,N,n2_ind_t))
                FLUX(i,j) = PV(i,j) * (c0 - t(i,j,N,nnew,iN2))
-               STF(i,j,n2_ind_t) = FLUX(i,j)
+               STF(i,j,bgc_idx(iN2)) = FLUX(i,j)
                t(i,j,N,nnew,iN2) = t(i,j,N,nnew,iN2)+
-     &                 stf(i,j,n2_ind_t)*dt/Hz(i,j,N)
+     &                 stf(i,j,bgc_idx(iN2))*dt/Hz(i,j,N)
 # ifdef BEC2_DIAG
        if (wrt_bec2_diag_2d(pvn2_idx_t)) then
           idiag = idx_bec2_diag_2d(pvn2_idx_t)
@@ -356,9 +355,9 @@
      &                      * rmask(i,j)
 # endif
                FLUX(i,j) = PV(i,j) * (O2SAT_USED - t(i,j,N,nnew,iO2))
-               STF(i,j,o2_ind_t) = FLUX(i,j)
+               STF(i,j,bgc_idx(iO2)) = FLUX(i,j)
                t(i,j,N,nnew,iO2) = t(i,j,N,nnew,iO2)+
-     &                 stf(i,j,o2_ind_t)*dt/Hz(i,j,N)
+     &                 stf(i,j,bgc_idx(iO2))*dt/Hz(i,j,N)
 # ifdef BEC2_DIAG
        if (wrt_bec2_diag_2d(pvo2_idx_t)) then
           idiag = idx_bec2_diag_2d(pvo2_idx_t)
@@ -459,11 +458,11 @@
              FLUX(istr:iend,j) = PV(istr:iend,j) * DCO2STAR_ROW(istr:iend)
           END DO  ! j = jstr,jend
 
-          STF(istr:iend,jstr:jend,dic_ind_t) = FLUX(istr:iend,jstr:jend)
+          STF(istr:iend,jstr:jend,bgc_idx(iDIC)) = FLUX(istr:iend,jstr:jend)
 
           t(istr:iend,jstr:jend,N,nnew,iDIC) =
      &       t(istr:iend,jstr:jend,N,nnew,iDIC) +
-     &       stf(istr:iend,jstr:jend,dic_ind_t)
+     &       stf(istr:iend,jstr:jend,bgc_idx(iDIC))
      &       *dt/Hz(istr:iend,jstr:jend,N)
 # ifdef BEC2_DIAG
         if (wrt_bec2_diag_2d(fgco2_idx_t)) then
@@ -485,10 +484,10 @@
           FLUX = c0
        endif
        FLUX = FLUX * parm_Fe_bioavail * nmol_cm2_to_mmol_m2
-       STF(istr:iend,jstr:jend,fe_ind_t) = FLUX(istr:iend,jstr:jend)
+       STF(istr:iend,jstr:jend,bgc_idx(iFE)) = FLUX(istr:iend,jstr:jend)
        t(istr:iend,jstr:jend,N,nnew,iFE) =
      &         t(istr:iend,jstr:jend,N,nnew,iFE) +
-     &         stf(istr:iend,jstr:jend,fe_ind_t)
+     &         stf(istr:iend,jstr:jend,bgc_idx(iFE))
      &         *dt/Hz(istr:iend,jstr:jend,N)
 
 # ifdef NOX_FORCING
@@ -575,6 +574,7 @@
        use grid
        use ocean_vars
        use scalars
+       use bgc
        use bgc_ecosys_vars
        use bgc_param_ini
 
@@ -2018,33 +2018,33 @@
      !  nitrate & ammonium
      !-----------------------------------------------------------------------
 # ifdef Ncycle_SY
-       DTRACER_MODULE(istr:iend,j,k,no3_ind_t) = nitrox - DENITRIF1 -
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNO3)) = nitrox - DENITRIF1 -
      &                                 SED_DENITRIF - sum(NO3_V, dim=2)+
      &                                 (r_no2tonh4_ax - c1) * anammox
 # ifdef NO3_RESTORE
      &                                 + restore_no3
 # endif
 
-       DTRACER_MODULE(istr:iend,j,k,no2_ind_t) = ammox * no2_nh4_yield1 - nitrox +
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNO2)) = ammox * no2_nh4_yield1 - nitrox +
      &                                 DENITRIF1 - DENITRIF2 - r_no2tonh4_ax * anammox - sum(NO2_V, dim=2)
 
-       DTRACER_MODULE(istr:iend,j,k,nh4_ind_t) = -sum(NH4_V, dim=2) - ammox - anammox + DON_remin + DONr_remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4)) = -sum(NH4_V, dim=2) - ammox - anammox + DON_remin + DONr_remin
      &     + Q * (zoo_loss_dic + sum(auto_loss_dic, dim=2) + sum(auto_graze_dic, dim=2)
      &     + POC_remin(istr:iend,j)
      &     * (c1 - DONrefract))
 
-       DTRACER_MODULE(istr:iend,j,k,n2o_ind_t) = ammox * n2o_nh4_yield1 + 0.5 * DENITRIF2 - DENITRIF3
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iN2O)) = ammox * n2o_nh4_yield1 + 0.5 * DENITRIF2 - DENITRIF3
 
-       DTRACER_MODULE(istr:iend,j,k,n2_ind_t) = DENITRIF3 + 0.5 * SED_DENITRIF + anammox
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iN2)) = DENITRIF3 + 0.5 * SED_DENITRIF + anammox
 
 # else
-       DTRACER_MODULE(istr:iend,j,k,no3_ind_t) = NITRIF - DENITRIF -
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNO3)) = NITRIF - DENITRIF -
      &                                 SED_DENITRIF - sum(NO3_V, dim=2)
 # ifdef NO3_RESTORE
      &                                 + restore_no3
 # endif
 
-       DTRACER_MODULE(istr:iend,j,k,nh4_ind_t) = -sum(NH4_V, dim=2) - NITRIF + DON_remin + DONr_remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4)) = -sum(NH4_V, dim=2) - NITRIF + DON_remin + DONr_remin
      &     + Q * (zoo_loss_dic + sum(auto_loss_dic, dim=2) + sum(auto_graze_dic, dim=2)
      &     + POC_remin(istr:iend,j)
      &     * (c1 - DONrefract))
@@ -2052,7 +2052,7 @@
 
        do auto_ind = 1, autotroph_cnt
           if (Nfixer(auto_ind))
-     &        DTRACER_MODULE(istr:iend,j,k,nh4_ind_t) = DTRACER_MODULE(istr:iend,j,k,nh4_ind_t)
+     &        DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4))
      &                                          + Nexcrete(istr:iend,auto_ind)
        end do
 
@@ -2060,11 +2060,11 @@
      !  dissolved iron
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,fe_ind_t) = P_iron_remin(istr:iend,j)
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iFE)) = P_iron_remin(istr:iend,j)
      &           + (Qfe_zoo * zoo_loss_dic) + DOFe_remin - sum(photoFe, dim=2) - Fe_scavenge
 
        do auto_ind = 1, autotroph_cnt
-          DTRACER_MODULE(istr:iend,j,k,fe_ind_t) = DTRACER_MODULE(istr:iend,j,k,fe_ind_t)
+          DTRACER_MODULE(istr:iend,j,k,bgc_idx(iFE)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iFE))
      &      + (Qfe(istr:iend,auto_ind) * (auto_loss_dic(istr:iend,auto_ind) + auto_graze_dic(istr:iend,auto_ind)))
      &      + auto_graze_zoo(istr:iend,auto_ind) * (Qfe(istr:iend,auto_ind)-Qfe_zoo)
        end do
@@ -2073,11 +2073,11 @@
      !  dissolved SiO3
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,sio3_ind_t) = P_SiO2_remin(istr:iend,j)
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iSIO3)) = P_SiO2_remin(istr:iend,j)
 
        do auto_ind = 1, autotroph_cnt
           if (kSiO3(auto_ind) > 0) then
-             DTRACER_MODULE(istr:iend,j,k,sio3_ind_t) = DTRACER_MODULE(istr:iend,j,k,sio3_ind_t)
+             DTRACER_MODULE(istr:iend,j,k,bgc_idx(iSIO3)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iSIO3))
      &                 - photoSi(istr:iend,auto_ind) + Qsi(istr:iend,auto_ind)
      &                 * (f_graze_si_remin * auto_graze(istr:iend,auto_ind)
      &                 + (c1 - loss_poc(auto_ind)) * auto_loss(istr:iend,auto_ind))
@@ -2088,7 +2088,7 @@
      !  phosphate
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,po4_ind_t) = DOP_remin(istr:iend,j) + DOPr_remin(istr:iend,j)
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4)) = DOP_remin(istr:iend,j) + DOPr_remin(istr:iend,j)
      &     - sum(PO4_V, dim=2)
      &     + Qp_zoo_pom * ((c1 - DOPrefract)
      &     * POC_remin(istr:iend,j)
@@ -2096,10 +2096,10 @@
 
        do auto_ind = 1, autotroph_cnt
           if (Qp(auto_ind) == Qp_zoo_pom) then
-             DTRACER_MODULE(istr:iend,j,k,po4_ind_t) = DTRACER_MODULE(istr:iend,j,k,po4_ind_t)
+             DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4))
      &       + Qp(auto_ind) * (auto_loss_dic(istr:iend,auto_ind) + auto_graze_dic(istr:iend,auto_ind))
           else
-             DTRACER_MODULE(istr:iend,j,k,po4_ind_t) = DTRACER_MODULE(istr:iend,j,k,po4_ind_t)
+             DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4))
      &                  + remaining_P_dip(istr:iend,auto_ind)
           endif
        end do
@@ -2141,35 +2141,35 @@
      !  zoo Carbon
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,zooC_ind_t) = sum(auto_graze_zoo, dim=2) - zoo_loss
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iZOOC)) = sum(auto_graze_zoo, dim=2) - zoo_loss
 
      !-----------------------------------------------------------------------
      !  dissolved organic matter
      !  from sinking remin small fraction to refractory pool
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,doc_ind_t) = DOC_prod - DOC_remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDOC)) = DOC_prod - DOC_remin
 
-       DTRACER_MODULE(istr:iend,j,k,don_ind_t) = (DON_prod * (c1 - DONrefract)) - DON_remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDON)) = (DON_prod * (c1 - DONrefract)) - DON_remin
 
-       DTRACER_MODULE(istr:iend,j,k,donr_ind_t) = (DON_prod * DONrefract) - DONr_remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDONR)) = (DON_prod * DONrefract) - DONr_remin
      &         + ( POC_remin(istr:iend,j)
      &         * DONrefract * Q)
 
-       DTRACER_MODULE(istr:iend,j,k,dop_ind_t) = (DOP_prod * (c1 - DOPrefract)) - DOP_remin(istr:iend,j)
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDOP)) = (DOP_prod * (c1 - DOPrefract)) - DOP_remin(istr:iend,j)
      &         - sum(DOP_V, dim=2)
 
-       DTRACER_MODULE(istr:iend,j,k,dopr_ind_t) = (DOP_prod * DOPrefract) - DOPr_remin(istr:iend,j)
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDOPR)) = (DOP_prod * DOPrefract) - DOPr_remin(istr:iend,j)
      &         + ( POC_remin(istr:iend,j)
      &         * DOPrefract * Qp_zoo_pom)
 
-       DTRACER_MODULE(istr:iend,j,k,dofe_ind_t) = DOFe_prod - DOFe_remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDOFE)) = DOFe_prod - DOFe_remin
 
      !-----------------------------------------------------------------------
      !   dissolved inorganic Carbon
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,dic_ind_t) =
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDIC)) =
      &       sum(auto_loss_dic, dim=2) + sum(auto_graze_dic, dim=2) - sum(photoC, dim=2)
      &       + DOC_remin
      &       + POC_remin(istr:iend,j) + P_CaCO3_remin(istr:iend,j)
@@ -2177,7 +2177,7 @@
 
        do auto_ind = 1, autotroph_cnt
           if (CaCO3_ind(auto_ind) > 0)
-     &        DTRACER_MODULE(istr:iend,j,k,dic_ind_t) = DTRACER_MODULE(istr:iend,j,k,dic_ind_t)
+     &        DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDIC)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDIC))
      &        + f_graze_CaCO3_REMIN * auto_graze(istr:iend,auto_ind) * QCaCO3(istr:iend,auto_ind)
      &        - CaCO3_PROD(istr:iend,auto_ind)
        end do
@@ -2186,13 +2186,13 @@
      !  alkalinity
      !-----------------------------------------------------------------------
 
-       DTRACER_MODULE(istr:iend,j,k,alk_ind_t) = -DTRACER_MODULE(istr:iend,j,k,no3_ind_t) +
-     &                  DTRACER_MODULE(istr:iend,j,k,nh4_ind_t) + c2
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iALK)) = -DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNO3)) +
+     &                  DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4)) + c2
      &     * P_CaCO3_remin(istr:iend,j)
 
        do auto_ind = 1, autotroph_cnt
           if (CaCO3_ind(auto_ind) > 0)
-     &        DTRACER_MODULE(istr:iend,j,k,alk_ind_t) = DTRACER_MODULE(istr:iend,j,k,alk_ind_t)
+     &        DTRACER_MODULE(istr:iend,j,k,bgc_idx(iALK)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iALK))
      &        + c2 * (f_graze_CaCO3_REMIN * auto_graze(istr:iend,auto_ind) * QCaCO3(istr:iend,auto_ind)
      &        - CaCO3_PROD(istr:iend,auto_ind))
        end do
@@ -2276,7 +2276,7 @@
      &   + DOC_remin - (SED_DENITRIF*denitrif_C_N) - OTHER_REMIN + zoo_loss_dic
      &   + sum(auto_loss_dic, dim=2) + sum(auto_graze_dic, dim=2)) / parm_Remin_D_C_O2 + (c2 * NITRIF))
 # endif
-       DTRACER_MODULE(istr:iend,j,k,o2_ind_t) = O2_PRODUCTION - O2_CONSUMPTION
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iO2)) = O2_PRODUCTION - O2_CONSUMPTION
 
 # ifdef BEC2_DIAG
       if (wrt_bec2_diag_3d(o2prod_idx_t)) then

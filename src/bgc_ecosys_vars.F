@@ -123,16 +123,6 @@
 # endif
      &  ,liron_flux,ldust_flux
 
-!
-! Relative tracer indices for prognostic variables:
-!
-      integer :: po4_ind_t, no3_ind_t, sio3_ind_t, nh4_ind_t, fe_ind_t, dic_ind_t, alk_ind_t,
-     &        o2_ind_t, doc_ind_t, don_ind_t, dofe_ind_t, dop_ind_t, dopr_ind_t, donr_ind_t,
-     &        zooc_ind_t, spchl_ind_t, spc_ind_t, spfe_ind_t, spcaco3_ind_t, diatchl_ind_t,
-     &        diatc_ind_t, diatfe_ind_t, diatsi_ind_t, diazchl_ind_t, diazc_ind_t, diazfe_ind_t
-#ifdef Ncycle_SY
-      integer :: no2_ind_t, n2_ind_t, n2o_ind_t
-# endif
 
 !
 ! Parameters related to sinking particles:
