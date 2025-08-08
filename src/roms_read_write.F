@@ -1194,6 +1194,11 @@
       ierr=nf90_def_dim(ncid,'eta_v',  eta_v,  dimid)
 
       ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
+
+      if (new_part) then
+        ierr=nf90_put_att(ncid, nf90_global, 'ij_nodes', (/NP_XI,NP_ETA/))
+        ierr=nf90_put_att(ncid, nf90_global, 'subdompos', (/inode,jnode/))
+      endif
 #endif
       ierr=nf90_put_att(ncid, nf90_global, 'globaldims', (/gnx,gny/))
 

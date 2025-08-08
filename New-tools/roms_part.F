@@ -9,6 +9,9 @@
 
       private
        
+      ! usage flags
+      logical,public :: del_part_files,classic
+
       ! partition/joining dimensions
       public :: npartx,nparty
 
@@ -16,7 +19,8 @@
       integer,public :: part_comm,mynode,nnodes  ! mpi vars
 
       ! range of partial files for this node
-      integer :: part0,part1,myparts,part
+      integer :: myparts,part
+      integer,public :: part0,part1
 
       ! global dimensions
       integer,public :: gnx,gny,nz,nzw
@@ -29,6 +33,8 @@
       character(len=128),public,allocatable, dimension(:) :: srcfiles
       character(len=128) :: fname
       character(len=128),public,allocatable, dimension(:) :: partfiles
+      character(len=128),public,dimension(:),allocatable:: allfiles
+      integer,public,dimension(:),allocatable :: file_indices
 
       ! Only used by mynode=0
       integer,dimension(:,:),allocatable :: iloc,jloc
@@ -66,8 +72,8 @@
       end type ncstructure
 
       type,public :: dimstruct
-        character(len=10),dimension(:),allocatable ::dimnames
-        integer,         dimension(:),allocatable ::dimsizes
+        character(len=10),dimension(:),allocatable  ::dimnames
+        integer,         dimension(:),allocatable   ::dimsizes
       end type dimstruct
 
       type,public :: attstruct
@@ -75,6 +81,11 @@
         character(len=200),dimension(:),allocatable ::attvalues
         real,dimension(:),allocatable               ::attparams
       end type attstruct
+ 
+      type,public :: filestruct
+        integer,dimension(:),allocatable            :: numfiles
+        character(len=128),dimension(:),allocatable :: filelist
+      end type filestruct
       
       public :: cmd_args_optimal
       public :: cmd_args_map
@@ -176,27 +187,98 @@
       subroutine cmd_args_ncjoin  ![
       implicit none
 
-      integer :: nargs,i
-      character(len=128) :: arg
+      integer :: nargs,nfiles,nflags,idx,total_files,i,count
+      character(len=128) :: arg,file,newfile
+
+      ! baseline options for flags
+      del_part_files = .false.
+      classic   = .false.
 
       nargs =  command_argument_count()
 
       if (nargs < 1) call show_use_ncjoin
       
-      nparts = nargs
-      allocate(partfiles(0:nparts-1))
+      nflags = 0
+      nfiles = 0
       do i = 1,nargs
         call get_command_argument(i,arg)
-        read(arg,*) partfiles(i-1)
+        ! look for flags ('--' or '-')
+        ! "delete" flag: removes all partial files
+        if (index(arg,'-delete')>0) then
+          print*,'Flag to delete partial files raised'
+          del_part_files = .true.
+          nflags         = nflags+1
+        ! "classic" flag: joins files without mpi_masking
+        elseif (index(arg,'-classic')>0) then
+          print*,'Joining in classic mode (ignoring mpi_masking)'
+          classic = .true.
+          nflags  = nflags+1
+        ! Per 'show_use_ncjoin' flags go in front. Any following input must be
+        ! a netcdf file. This convention allows for allocation of an array whose
+        ! length is exactly as many files being read in.
+        else
+          if (.not.(allocated(allfiles))) allocate(allfiles(0:nargs-nflags-1))  ! -1 for zero-based
+          read(arg,*) allfiles(i-nflags-1)                                      ! file naming convention
+          nfiles=nfiles+1
+        endif
       enddo
-      print *,partfiles(1)
 
-      myparts = ceiling(nparts*1.0/nnodes)
-!      part0 = myparts*mynode
-!      part1 = min(myparts*(mynode+1) -1,nparts-1)
+      !print*,'allfiles: ',allfiles
 
-      part0 = 0
-      part1 = nparts-1
+      ! check for multiple file submissions - generate queue of files if applicable
+      partfile = trim(allfiles(0))
+      idx = index(partfile,'.nc',back=.true.)
+      idx = index(partfile(1:idx-1),'.',back=.true.)
+
+      ! starting file
+      file = partfile(1:idx-1)
+      
+      ! search for other files that wished to be partitioned - recording total amount
+      total_files=1
+      if (.not.(allocated(file_indices))) allocate(file_indices(nfiles))
+      file_indices=-1  ! initialize with -1 as a form of mask
+      file_indices(1)=0
+      count=2          ! count to add properly file indices
+      do i=0,nfiles-1  ! zero-based
+        if (index(allfiles(i),trim(file))==0) then
+          ! save indices where this file ends and next begins
+          file_indices(count)=i-1
+          file_indices(count+1)=i
+          count=count+2  ! advance by two, such that each unique file has two indices (start and end)
+          ! move on to search for next unique set of files to be joined
+          newfile = allfiles(i)
+          idx = index(newfile ,'.nc',back=.true.)
+          idx = index(newfile(1:idx-1),'.',back=.true.)
+          file = newfile(1:idx-1)   ! fill file with new name to update search
+          total_files=total_files+1 ! and record presence of additional file
+        endif
+        ! close file_indices
+        if (i==(nfiles-1)) file_indices(count)=i
+      enddo
+
+      print*,'total files: ',total_files
+
+      file_indices=pack(file_indices, file_indices>-1)
+
+      print*,'file_indices: ',(file_indices)
+
+!      do i=1,size(file_indices)
+!        if (MOD(i,2)/=0) then
+!          stridx=file_indices(i); endidx=file_indices(i+1)
+!          allocate(partfiles(endidx-stridx+1))
+!          print*,'number of files: ', size(partfiles)
+!          partfiles=allfiles(stridx:endidx)
+!          print*,'File Ranges: ',partfiles
+!          deallocate(partfiles)
+!        endif
+!      enddo
+
+!      if (total_files==1) then
+!        nparts = nfiles
+!        part0 = 0
+!        part1 = nparts-1
+!      else
+!      endif
 
       end subroutine cmd_args_ncjoin !]
 ! ----------------------------------------------------------------------
@@ -224,7 +306,7 @@
       implicit none
 
       print *, 'Usage of ncjoin should be: ',
-     &       'ncjoin file1.??.nc ...'
+     &       'ncjoin --flags (optional) file1.??.nc ...'
      
       stop
 
@@ -499,7 +581,8 @@
      &    call handle_ierr(ierr,'creating file: ',trim(fname) )
 
         ! global rho-dimensions
-        ierr=nf90_put_att(npid, nf90_global, 'globaldims', ncinfo%gsize)
+        ierr=nf90_put_att(npid, nf90_global, 'globaldims', 
+     &                   (/ncinfo%gsize(1)-2,ncinfo%gsize(2)-2/))
 
         ! subdompos: i,j position of sub-domain
         subdompos = (/ i-1, j-1 /) ! zero-based!
@@ -884,6 +967,11 @@
                 startr = (/li0,lj0v,1,1/)
                 is = i0; ie = i1
                 js = j0v; je = j1v
+              case('w')
+                allocate(var3d(li0:li1,lj0:lj1,nz))
+                startr = (/li0,lj0,1,1/)
+                is = i0; ie = i1
+                js = j0; je = j1
               end select
               startw = (/1,1,1,1/)
             ! save for later (not present in pachug_rst.nc)
@@ -906,6 +994,11 @@
               startr = (/li0,lj0v,1,record/)
               is = i0; ie = i1
               js = j0v; je = j1v
+            case('w')
+              allocate(var3d(li0:li1,lj0:lj1,nz))
+              startr = (/li0,lj0,1,record/)
+              is = i0; ie = i1
+              js = j0; je = j1
             end select
             startw = (/1,1,1,record/)
           end select
@@ -1283,15 +1376,21 @@
       ! get number of rows (jnodes)
       ierr = nf90_open(trim(partfiles(part0)),nf90_nowrite,npid)
       ierr = nf90_get_att(npid,nf90_global,'ij_nodes',ij)
-      ! first check if provided in attributes
-      if (ierr==nf90_noerr) then
+      ! first check if provided in attributes, only when not in classic join mode
+      if (ierr==nf90_noerr.and.(.not.classic)) then
         ierr=nf90_close(npid)
         nrows=ij(2)
         ! make note of mpi_masking:
         mpimasking=.true.
-      ! backwards compatibility (no mpi_masking)
-      else
+        print*,'mpi_masking accounted for...'
+      ! classic mode for backwards compatibility (no mpi_masking)
+      elseif (((ierr==nf90_noerr).and.(classic)).or.   ! if new attributes are present,
+     &         (ierr/=nf90_noerr)) then                ! and user did not use mpi_masking
+                                                       ! OR if attribute is N/A --> auto classic
         mpimasking=.false.
+        if (classic.and.(ierr==nf90_noerr))
+     &    print*,'mpi_masking off, per classic flag'
+        if (ierr/=nf90_noerr) print*,'mpi_masking off'
         ierr=nf90_close(npid)
         allocate(j0(part0:part1))
         allocate(j1(part0:part1))
@@ -1320,21 +1419,20 @@
         enddo
         deallocate(j0)
         deallocate(j1)
+        jsize=size(jparts)
       endif  ! attribute version
-      print*,'Total J-Nodes: ',nrows
-      jsize=size(jparts)
-      print*,'jsize: ',jsize
       endif  ! mynode==0
 
-      ! broadcast size of jparts
-      call MPI_BCAST(jsize,1,MPI_INTEGER,0,part_comm,ierr)
+      call MPI_BCAST(mpimasking,1,MPI_LOGICAL,0,part_comm,ierr)
+
+      ! broadcast size of jparts (only needed for no mpi masking)
+      if (.not.mpimasking) call MPI_BCAST(jsize,1,MPI_INTEGER,0,part_comm,ierr)
       if (mynode/=0) then
         allocate(jparts(0:jsize))
       endif
+      if (.not.mpimasking) call MPI_BCAST(jparts,jsize,MPI_INTEGER,0,part_comm,ierr)
 
-      call MPI_BCAST(jparts,jsize,MPI_INTEGER,0,part_comm,ierr)
       call MPI_BCAST(nrows,1,MPI_INTEGER,0,part_comm,ierr)
-      call MPI_BCAST(mpimasking,1,MPI_LOGICAL,0,part_comm,ierr)
  
       call MPI_Barrier(part_comm,ierr)
 

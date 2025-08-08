@@ -8,6 +8,7 @@
       use netcdf
       use mpi
       use roms_part
+      use IFPORT
 
       ! ----- Allocation ----- 
       implicit none
@@ -19,7 +20,10 @@
 !     integer :: loc_x,loc_y,lnx,lny         ! partition lengths
 !     integer :: ifile
 
-      integer :: ierr
+      integer                        :: ierr,files_removed,i,idx
+      integer                        :: stridx,endidx
+      character(len=:), allocatable  :: command,file,newfile
+      type(filestruct)               :: joinlist
 
 
       call MPI_Init(ierr)
@@ -31,6 +35,21 @@
 
       ! Handle command line arguments
       call cmd_args_ncjoin
+
+      call MPI_Barrier(part_comm, ierr)
+      ! loop through all files that need to be joined
+      do i=1,size(file_indices)
+      if (MOD(i,2)/=0) then
+      stridx=file_indices(i); endidx=file_indices(i+1)
+      allocate(partfiles(0:endidx-stridx))
+      
+      !print*,'number of files: ', size(partfiles)
+      ! with new set of files, set definitions
+      partfiles=allfiles(stridx:endidx)
+      !print*,'File Ranges: ',partfiles
+      nparts   =size(partfiles)
+      part0    =0  ! always zero, but placed here for clarity
+      part1    =nparts-1
 
       if (mynode==0) print *, 'Joining partial files'
 
@@ -45,8 +64,24 @@
 
       if (mynode==0) print *, 'Done writing joined file'
 
+      deallocate(partfiles)
+      endif
+      call MPI_Barrier(part_comm, ierr)
+      enddo  ! <-- file loop
+
       call MPI_Barrier(part_comm, ierr)
       call MPI_Finalize(ierr)
+
+      if (mynode==0) then  ! avoid multiple cores deleting files
+      if (del_part_files) then
+       print*,'Deleting partial files'
+       do i=0,size(partfiles)-1
+         command = 'rm -r -- "' // trim(partfiles(i)) // '"'
+         call execute_command_line(command)
+       enddo
+       print*,'Removed ',size(partfiles),' files'
+      endif
+      endif  ! <-- mynode=0
 
       end program ncjoin
 

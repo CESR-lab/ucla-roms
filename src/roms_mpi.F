@@ -38,6 +38,7 @@
       integer :: szEW,szNS,szCr
       integer :: szW,szE,szN,szS,szNE,szNW,szSE,szSW
       logical :: init_buffer_done = .false.
+      logical,public :: new_part
 
       integer :: hl         ! Exchange halo can be less than the buffer size
       logical :: do_corners ! Argument to modify the some of the exchanges
@@ -67,7 +68,6 @@
       integer,dimension(2) :: subdompos
       integer,dimension(4) :: partition 
       character(len=128) :: fname
-      logical :: new_part
       integer :: offx,offy
 
 
