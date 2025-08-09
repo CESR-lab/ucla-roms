@@ -8,7 +8,6 @@
       use netcdf
       use mpi
       use roms_part
-      use IFPORT
 
       ! ----- Allocation ----- 
       implicit none
@@ -20,7 +19,7 @@
 !     integer :: loc_x,loc_y,lnx,lny         ! partition lengths
 !     integer :: ifile
 
-      integer                        :: ierr,files_removed,i,idx
+      integer                        :: ierr,files_removed,i,j,idx
       integer                        :: stridx,endidx
       character(len=:), allocatable  :: command,file,newfile
       type(filestruct)               :: joinlist
@@ -64,6 +63,17 @@
 
       if (mynode==0) print *, 'Done writing joined file'
 
+      if (mynode==0) then  ! avoid multiple cores deleting files
+      if (del_part_files) then
+       print*,'Deleting partial files'
+       do j=0,size(partfiles)-1
+         command = 'rm -r -- "' // trim(partfiles(j)) // '"'
+         call execute_command_line(command)
+       enddo
+       print*,'Removed ',size(partfiles),' files'
+      endif
+      endif  ! <-- mynode=0
+
       deallocate(partfiles)
       endif
       call MPI_Barrier(part_comm, ierr)
@@ -71,17 +81,6 @@
 
       call MPI_Barrier(part_comm, ierr)
       call MPI_Finalize(ierr)
-
-      if (mynode==0) then  ! avoid multiple cores deleting files
-      if (del_part_files) then
-       print*,'Deleting partial files'
-       do i=0,size(partfiles)-1
-         command = 'rm -r -- "' // trim(partfiles(i)) // '"'
-         call execute_command_line(command)
-       enddo
-       print*,'Removed ',size(partfiles),' files'
-      endif
-      endif  ! <-- mynode=0
 
       end program ncjoin
 
