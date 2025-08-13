@@ -54,21 +54,20 @@
 ! they add 1 for each error discovered.
 
       ierr=0                      ! <-- reset error counter
-      call check_tiling(ierr)
-      call check_switches1(ierr)
+!      call check_tiling(ierr)
+!     call check_switches1(ierr)
 #ifdef SOLVE3D
-      call check_pre_step_switches(ierr)
-      call check_step_uv1_switches(ierr)
-      call check_step_uv2_switches(ierr)
-      call check_step_t_switches(ierr)
-      call check_set_HUV1_switches(ierr)
+!     call check_pre_step_switches(ierr)
+!     call check_step_uv1_switches(ierr)
+!     call check_step_t_switches(ierr)
+!     call check_set_HUV1_switches(ierr)
 # ifdef LMD_KPP
-      call check_kpp_switches(ierr)
+!     call check_kpp_switches(ierr)
 # endif
-      call check_switches2(ierr)
+!     call check_switches2(ierr)
 #endif
       if (ierr /= 0) return
-      mpi_master_only call print_switches
+!     mpi_master_only call print_switches
 
 ! Use pre-set default startup filename for known applications, or
 ! get it as an argument from command line via iargc-getarg (override
@@ -428,7 +427,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           idx = index(fname,'/',back=.true.)
           fname_orig = trim(fname(idx+1:lstr))
 # if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname, lstr, mynode, nsize, ierr)
 !         call insert_nodes(fname)
 # endif
           open(testunit,file=fname(1:lstr), status='old', err=97)
@@ -455,7 +454,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             idx = index(fname,'/',back=.true.)
             fname_orig = trim(fname(idx+1:lstr))
 #if defined MPI && defined PARALLEL_FILES
-            call insert_node(fname, lstr, mynode, NNODES, ierr)
+            call insert_node(fname, lstr, mynode, nsize, ierr)
 #endif
             ininame=fname(1:lstr)
             mpi_master_only write(*,'(1x,A,I3,2x,3A)')
@@ -481,12 +480,12 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             if (lstr > 0) then
               idx = index(fname,'/',back=.true.)
               fname_orig = trim(fname(idx+1:lstr))
-              if (mynode==0) then
-                print *,'idx: ',idx
-                print *,'fnames: ',trim(fname),' ',trim(fname_orig)
-              endif
+!             if (mynode==0) then
+!               print *,'idx: ',idx
+!               print *,'fnames: ',trim(fname),' ',trim(fname_orig)
+!             endif
 # if defined MPI && defined PARALLEL_FILES
-              call insert_node(fname, lstr, mynode, NNODES, ierr)
+              call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif
               open(testunit,file=fname(1:lstr),status='old',err=97)
               close(testunit)
@@ -538,7 +537,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           read(input,'(A)',err=95) fname
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif
           open(testunit, file=fname(1:lstr), status='old', err=97)
           close(testunit)

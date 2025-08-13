@@ -32,7 +32,8 @@
      &                                        marbl_saved_state_type
 #endif            
       use param                       , only: mynode,nt,ntrc_bio,
-     &                                        isalt,itemp,Lm,Mm
+     &                                        isalt,itemp,Lm,Mm,
+     &                                        ocean_grid_comm
       use dimensions                  , only: nz
       use surf_flux                   , only: uwnd, vwnd
       use bgc_forces                  , only: pco2air,pco2air_alt,
@@ -44,7 +45,7 @@
       use grid                        , only : rmask
 #ifdef MPI
       use mpi
-      use hidden_mpi_vars
+      use roms_mpi
 #endif      
 #ifdef NOX_FORCING
       use bgc_forces                  , only: nox
@@ -678,8 +679,7 @@
       use nc_read_write, only: ncread,handle_ierr
       use netcdf
       use dimensions, only : i0,i1,j0,j1
-      use mpi_exchanges, only : exchange_xxx
-!      use hidden_mpi_vars
+      use roms_mpi, only : exchange_xxx
       use param, only : N
       implicit none
 
@@ -760,7 +760,8 @@
 
       use netcdf
       use nc_read_write
-      use roms_read_write, only: dn_xr,dn_yr,dn_zr,dn_tm,xi_rho,eta_rho
+      use dimensions, only: xi_rho,eta_rho
+      use roms_read_write, only: dn_xr,dn_yr,dn_zr,dn_tm
       use param, only : N
       
       implicit none      

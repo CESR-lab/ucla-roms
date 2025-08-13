@@ -18,6 +18,7 @@
       use mixing
       use ocean_vars
       use scalars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k

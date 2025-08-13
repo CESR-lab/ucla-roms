@@ -106,14 +106,14 @@ endif
 
 KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
-	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
-	mpi_test_arr.F private_scratch.F basic_output.F\
+	eos_vars.F grid.F roms_mpi.F mess_buffers.F mixing.F\
+	private_scratch.F basic_output.F\
 	scalars.F scoord.F strings.F work_mod.F nc_read_write.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
 	diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	setup_grid1.F	setup_grid2.F\
-	set_nudgcof.F  sponge_tune.F roms_read_write.F extract_data.F \
+	set_nudgcof.F  obc_tune.F roms_read_write.F extract_data.F \
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
@@ -127,13 +127,11 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
-        lenstr.F	setup_kwds.F	check_switches1.F\
-        ext_copy_prv2shr.F		check_switches2.F\
-\
-	mpi_setup.F\
+        lenstr.F	setup_kwds.F\
+        ext_copy_prv2shr.F\
 \
 	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F cstar_output.F mpi_exchanges.F	zslice_output.F\
+	random_output.F cstar_output.F 	zslice_output.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
 \

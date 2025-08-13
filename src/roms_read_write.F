@@ -5,12 +5,11 @@
       ! Length is limited to 18 characters, because output_file_names
       ! are appended with frame and node number and are limited to 32
 
-      use netcdf
       use scalars
-      use nc_read_write
       use dimensions
-      use hidden_mpi_vars
-      use mpi_exchanges
+      use roms_mpi
+      use nc_read_write
+      use netcdf
 
       implicit none
 
@@ -71,9 +70,6 @@
 !    &                                      ,ydimv= 'eta_v  '
 !    &                                      ,zdimw= 's_w    '
 
-      ! index ranges for netcdf output (See init_output_indices)
-      integer,public :: bfx,bfy
-
       ! index ranges for coarse netcdf input
       integer :: ic0,ic1,jc0,jc1
       integer :: iSWc,jSWc
@@ -100,7 +96,8 @@
       character(len=100),public::frctype ! variable across netcdf files (forcing module)
       ! average files
       character(len=100),public::avg_output=''
-      character(len=max_options_string),public::diagnostic_opt='diagnostics OFF'
+      character(len=max_options_string),
+     &               public::diagnostic_opt='diagnostics OFF'
       ! average diagnostic options
       character(len=100),public::diag_avg_output=''
 
@@ -118,22 +115,22 @@
       !            in "mpi_setup" rather tnan be parameters defined here.
 
 #if defined MPI && defined PARALLEL_FILES
-      integer, public ::  xi_rho, xi_u, eta_rho, eta_v
+!     integer, public ::  xi_rho, xi_u, eta_rho, eta_v
 #else
-      integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
-     &                              xi_u=xi_rho-1, eta_v=eta_rho-1
+!     integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
+!    &                              xi_u=xi_rho-1, eta_v=eta_rho-1
 #endif
 
       integer, parameter, public :: max_name_size=256
       character, public :: date_str*44, title*80
-      character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
+!     character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
+      character(len=max_name_size), public :: ininame,frcfile(max_frc_files)
 
 
       public :: insert_nodes
       public :: findstr,append_date_node
       public :: set_frc_data
       public :: read_output_root_name
-      public :: init_output_indices
       public :: find_new_record
       public :: nc_check_units
       public :: put_global_atts
@@ -156,46 +153,11 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine init_output_indices  ![
-      ! these indices also relate to reading input fields!
-      !
-      ! There are 2 approaches to outputting to netcdf files
-      ! in the interior, we alway output (1:nx,1:ny), the boundary
-      ! subdomains netcdf files are larger because they include buffers
-      ! Method 1:
-      ! For arrays that have buffers, we use i0:i1,j0:j1.
-      ! These indices are expanded for boundary adjacent
-      ! subdomains because there, we output domain buffers
-
-      ! Method 2:
-      ! Some arrays are size (nx,ny) only. For those, we just
-      ! skip the buffers for the boundary subdomain outputs.
-
-      implicit none
-
-      ! Method 1
-!     i0=1; i1=nx; j0=1; j1=ny
-
-!     if (inode==0)        i0=0
-!     if (inode==NP_XI-1)  i1=nx+1
-!     if (jnode==0)        j0=0
-!     if (jnode==NP_ETA-1) j1=ny+1
-
-      ! Method 2
-      bfx = 1
-      bfy = 1
-      if (inode==0) bfx = 2  ! Start writing at 2 to skip buffer
-      if (jnode==0) bfy = 2  ! Start writing at 2 to skip buffer
-
-      end subroutine init_output_indices  !]
-! ----------------------------------------------------------------------
       subroutine init_coarse  ![
       ! Work out sizes for coarse arrays
       ! Used so we can read in coarse surface
       ! forcing data
       !
-      use dimensions
-      use hidden_mpi_vars
       implicit none
 
       integer :: gnxc,gnyc
@@ -261,8 +223,6 @@
       nyc_righ = ceiling(1.0*gnyc/np_eta) - floor(off_yc/2.0)
       ny_righ  = ceiling(1.0*gny/np_eta)  - floor(off_y/2.0)
       dfy  = max(ny_left - nyc_left*2, ny_righ-nyc_righ*2)
-!     print *, 'dfx: ', dfx
-!     print *, 'dfx: ', dfx
       cbf = max(ceiling(0.5*dfx)+1,2)
       cbf = max(ceiling(0.5*dfy)+1,cbf)
       cbf = cbf + 1
@@ -763,18 +723,18 @@
         endif
       endif
       ! add force file info to output nc
-      if (mynode == 0) then
-        ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
+!      if (mynode == 0) then
+      ierr = nf90_get_att(ncid,nf90_global,'data_source',forcing_version)
         ! if forcing netcdf has information
-        if (len(trim(forcing_version)) /= 0) then
+      if (len(trim(forcing_version)) /= 0) then
           ! if attribute has not been set yet
-          if (index(force_info,forcing_version) == 0) then
-            write(frcstr,'(2A)') trim(adjustl(frctype)),trim(adjustl(forcing_version))
-            frcstr = trim(adjustl(frcstr))
-            call store_string_att(force_info,frcstr)
-          endif
+        if (index(force_info,forcing_version) == 0) then
+          write(frcstr,'(2A)') trim(adjustl(frctype)),trim(adjustl(forcing_version))
+          frcstr = trim(adjustl(frcstr))
+          call store_string_att(force_info,frcstr)
         endif
       endif
+!      endif
       ierr = nf90_close(ncid)
 
       call exchange_xxx(nc%vdata(:,:,it))
@@ -885,8 +845,6 @@
       subroutine coarse2fine(cdata,fdata,gtype) ![
       ! interpolates from (possibly partitioned) coarse to fine surface forcing data
       ! NOT correct for u-grid or v-grid variables
-      use hidden_mpi_vars
-      use dimensions
       implicit none
 
       ! input/output
@@ -1236,6 +1194,11 @@
       ierr=nf90_def_dim(ncid,'eta_v',  eta_v,  dimid)
 
       ierr=nf90_put_att(ncid, nf90_global, 'partition', ibuff)
+
+      if (new_part) then
+        ierr=nf90_put_att(ncid, nf90_global, 'ij_nodes', (/NP_XI,NP_ETA/))
+        ierr=nf90_put_att(ncid, nf90_global, 'subdompos', (/inode,jnode/))
+      endif
 #endif
       ierr=nf90_put_att(ncid, nf90_global, 'globaldims', (/gnx,gny/))
 

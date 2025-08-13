@@ -5,7 +5,7 @@
 
       subroutine rho_eos(tidx)
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer, intent(in) :: tidx

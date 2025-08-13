@@ -45,12 +45,12 @@ C$      if (trd>0) return !--> just return, if not master thread
         if (mod(j_E,2)==1) i_X=NSUB_X-1 -i_X   !<-- sweep reversal
 
 #ifdef MPI
-        if (mod(inode,2)>0) then               ! make mirror-image
-          i_X=NSUB_X-1 -i_X                    ! symmetry for sweep
-        endif                                  ! trajectories of MPI
-        if (mod(jnode,2)>0) then               ! subdomains adjacent
-          j_E=NSUB_E-1 -j_E                    ! in both directions
-        endif
+!       if (mod(inode,2)>0) then               ! make mirror-image
+!         i_X=NSUB_X-1 -i_X                    ! symmetry for sweep
+!       endif                                  ! trajectories of MPI
+!       if (mod(jnode,2)>0) then               ! subdomains adjacent
+!         j_E=NSUB_E-1 -j_E                    ! in both directions
+!       endif
 
         size_X=(ieast-iwest+NSUB_X)/NSUB_X
         margin_X=(NSUB_X*size_X - ieast+iwest-1)/2

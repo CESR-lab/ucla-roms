@@ -9,27 +9,29 @@
 #endif
       use tracers, only: init_tracers
       use mpi
-      use sponge_tune
+      use roms_mpi
+      use obc_tune
 
 
-      implicit none                                        ! with single parallel region using
-      integer :: ierr                                      ! explicit barrier synchronization.
-# ifdef MPI
+      implicit none 
+      integer :: ierr
       real*8 tstart, tend
-C$    integer level,req_lev
 
-c**   call system('uname -nmr')
       ierr=1
-C$    req_lev=MPI_THREAD_MULTIPLE
-C$    call MPI_Init_thread(req_lev, level, ierr)
-C$ !!   write(*,*) 'MPI thread support levels =', req_lev,level
-C$    ierr=0
       if (ierr == 1) call MPI_Init(ierr)
 
-      call mpi_setup(ierr)
+      ocean_grid_comm=MPI_COMM_WORLD
+      call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
+      call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
+
+      ierr=0
+      call read_inp (ierr)
+
+      if (ierr==0) call mpi_setup(ierr)
+
       tstart=MPI_Wtime()
       if (ierr == 0) then
-# endif
+
 #ifdef BIOLOGY_BEC2
 !     When using BEC, BGC tracer indices are set in init_tracers
 !     then used in init_scalars, so this order must be maintained
@@ -101,13 +103,12 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use basic_output
       use scalars
       use analytical
-      use sponge_tune
+      use obc_tune
       use diagnostics
       use boundary
       use particles
       use cstar_output
       use random_output
-      use cstar_output
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_param_ini
@@ -166,22 +167,13 @@ C$OMP BARRIER
       
       call get_grid                  ! can be analytic or from netcdf
 
-
-#ifdef DIAGNOSTICS
       call init_diagnostics  
-#endif
+      print *,'calc_diag: ',calc_diag
 
 #ifdef NHMG
-      call nhmg_init(Lm,Mm,N,NP_XI,NP_ETA)
+      call nhmg_init(nx,ny,nz,npx,npy)
 #endif
-#ifdef SPONGE_TUNE
-      if (ub_tune) call init_orlanski_tune
-#endif
-
-c--#define CR
-CR      write(*,*) '-11' MYID
-
-
+      if (obc_tuning) call init_orlanski_tune
 
       if (may_day_flag /= 0) goto 99 !-->  EXIT
 
@@ -319,7 +311,7 @@ CR      write(*,*)  ' -2' MYID
       use extract_data
       use diagnostics
       use scalars
-      use sponge_tune
+      use obc_tune
       use particles
       use surf_flux
       use random_output
@@ -466,24 +458,21 @@ CR      write(*,*)  ' -2' MYID
       call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
       call wrt_avg_ocean_vars
+
       if (do_extract) call do_extract_data
 
-      if (ub_tune)    call adjust_orlanski
+      if (obc_tuning)    call adjust_orlanski
 
       if (floats)     call do_particles
 
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
-#ifdef DIAGNOSTICS
-      if (diag_uv.or.diag_trc.or.diag_pflx) call do_diagnostics 
-#endif
+      if (calc_diag) call do_diagnostics 
 
       if (do_random) call wrt_random
 #if defined MARBL && defined MARBL_DIAGS
       if (do_cstar)  call wrt_cstar
 #endif
-
-      if (do_cstar)  call wrt_cstar
 
       if (do_zslice) call wrt_zslice
 

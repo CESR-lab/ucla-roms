@@ -3,7 +3,7 @@
 
       subroutine t3dmix
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
       implicit none
       integer,save :: tile=0
@@ -484,10 +484,11 @@ c**  &                                                             )
       enddo   ! --> k
 # endif /* TS_DIF4 */
 
-# ifdef DIAGNOSTICS
-!     if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag)
-!    &  call set_diags_t_h_mix(itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
-# endif
+      if (diag_trc.and.wrt_t_dia(itrc) ) then
+        print *,'diagnostics might not be working here'
+        stop
+!       call set_diags_t_h_mix(itrc)  ! Keep at end so either TS_DIF2 or TS_DIF4 works
+      endif
 
 # ifdef EXCHANGE
         call exchange_xxx(t(:,:,:,nnew,itrc) )

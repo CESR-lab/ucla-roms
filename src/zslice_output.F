@@ -75,7 +75,7 @@
           endif
       endif
  
-      allocate(zz(1:nx,0:N+1))
+      allocate(zz(1:nx,0:nz+1))
       allocate(var(1:nx,1:nz))
       allocate(var_zlv(nx,ndep))
 
@@ -84,10 +84,10 @@
      &    nt_z , ' tracers ' 
       if (mynode==0) then 
          do m=1,ndep  
-         write(*,'(7x,A,I2,A,F7.2)') 'zslice : dep(',m,')=',vecdep(m)
+         write(*,'(7x,A,I2,A,F8.2)') 'depth(',m,')=',vecdep(m)
          enddo
          do m=1,nt_z
-         write(*,'(7x,A,I2,A,A)') 'zslice : tracers(',trc2zsc(m),')=',t_vname(trc2zsc(m))
+         write(*,'(7x,A,I2,A,A)') 'tracers(',trc2zsc(m),')=',t_vname(trc2zsc(m))
          enddo
       endif
 
@@ -330,7 +330,7 @@
 
       ! local
       character(len=99),save :: fname
-      integer,dimension(3)   :: start
+      integer,dimension(4)   :: start
       integer                :: ncid,ierr
       integer                :: i,j,k,n
       logical,save           :: first_step=.true.
@@ -363,28 +363,31 @@
         if (ierr/=nf90_noerr) 
      &      call handle_ierr(ierr,'wrt_zslice, opening: ',fname)
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
+
+        start = (/1,1,1,record/)
+
         if (wrt_T_zsl) then
           do n=1,nt_z
           if (do_avg) then
-          call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz_avg(1:nx,1:ny,:,n),
-     &        (/bfx,bfy,1,record/))
+          call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz_avg(i0:i1,j0:j1,:,n),
+     &                                  start)
           else
-          call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz(1:nx,1:ny,:,n),(/bfx,bfy,1,record/))
+          call ncwrite(ncid,trim(t_vname(trc2zsc(n))),Tz(i0:i1,j0:j1,:,n),start)
           endif
           enddo
         endif
         if (wrt_U_zsl) then
           if (do_avg) then
-          call ncwrite(ncid,'u',Uz_avg(1:nx,1:ny,:),(/1,bfy,1,record/))
+          call ncwrite(ncid,'u',Uz_avg(1:i0,j0:j1,:),start)
           else
-          call ncwrite(ncid,'u',Uz(1:nx,1:ny,:),(/1,bfy,1,record/))
+          call ncwrite(ncid,'u',Uz(1:i0,j0:j1,:),start)
           endif
         endif
         if (wrt_V_zsl) then
           if (do_avg) then
-          call ncwrite(ncid,'v',Vz_avg(1:nx,1:ny,:),(/bfx,1,1,record/))
+          call ncwrite(ncid,'v',Vz_avg(i0:i1,1:j1,:),start)
           else
-          call ncwrite(ncid,'v',Vz(1:nx,1:ny,:),(/bfx,1,1,record/))
+          call ncwrite(ncid,'v',Vz(i0:i1,1:j1,:),start)
           endif
         endif
 

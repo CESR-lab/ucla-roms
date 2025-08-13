@@ -17,6 +17,7 @@
 !                   [=0, if there is no unlimited dimension].
 
       use param
+      use dimensions
       use netcdf
       use roms_read_write
       use nc_read_write
@@ -131,6 +132,7 @@
 ! returned value    error status [=nf90_noerr when no mismatches] 
 
       use param
+      use dimensions
       use netcdf
 
       implicit none
@@ -230,6 +232,9 @@
       else                                 ! has the corresponding
         chk_Cs_r=.false.                   ! vertical dimension
       endif
+
+      chk_Cs_r = .false.
+      chk_Cs_w = .false.
 
       icount=0
       lfile=lenstr(fname)

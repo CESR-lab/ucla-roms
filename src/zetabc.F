@@ -23,7 +23,7 @@ c--#define OBC_Z2ORLANSKI
 
 
 #ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
+      if (inode==0) then
 # if defined OBC_WEST && defined OBC_M2FLATHER
         do j=jstrV-1,jend
           cx=dtfast*pm(istr,j)*sqrt(g*h(istr,j))

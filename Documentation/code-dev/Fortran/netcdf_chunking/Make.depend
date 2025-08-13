@@ -1,0 +1,3 @@
+test.o : test.F test_routines.o 
+test_routines.o : test_routines.F nc_read_write.o 
+nc_read_write.o : nc_read_write.F nc_read_write.opt 
