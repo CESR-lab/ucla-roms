@@ -16,7 +16,7 @@
 #ifdef MARBL
       use marbl_driver
 #endif
-      use bgc_ecosys_vars
+      use bgc_shared_vars
       use nc_read_write
       use roms_read_write
       use netcdf

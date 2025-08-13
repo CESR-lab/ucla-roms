@@ -1,17 +1,9 @@
       module bec2_params
 
-      ! Set the BGC parameters 
+      ! Set the BGC parameters
       ! and initialisation of the
       ! BGC - bio-geo-chemical model
       ! -----------------------------
-!!====================================================================
-!! 10/2022 : Revised architecture from bgc_param_bec2.h and 
-!!           bgc_ecosys_bec2_init.F 
-!!====================================================================
-!!
-!! ---> Version for PACMED-25KM - 10/2022
-!!
-!!====================================================================
 
 #include "cppdefs.opt"
 #ifdef BIOLOGY_BEC2
@@ -20,9 +12,9 @@
 
 ! Parameters related to BEC model
       real c1, c0, c2,c10,c1000,p5,spd,dps,t0_kelvin,yps,mpercm
-       parameter ( c1=1., c0=0.0,c2=2., 
+       parameter ( c1=1., c0=0.0,c2=2.,
      & c10=10.,c1000=1000.,p5=0.5,
-     & spd = 86400.0,  
+     & spd = 86400.0,
      & dps = c1 / spd,           ! number of days per second
      & yps = c1 / (365.0*spd),   ! number of years in a second
      & mpercm = .01,             ! meters per cm
@@ -46,7 +38,7 @@
        character*80 lname(autotroph_cnt)     ! long name of each autotroph
        integer
      &   Chl_ind(autotroph_cnt),             ! tracer indices for Chl, C, Fe content
-     &   C_ind(autotroph_cnt), 
+     &   C_ind(autotroph_cnt),
      &   Fe_ind(autotroph_cnt),
      &   Si_ind(autotroph_cnt),
      &   CaCO3_ind(autotroph_cnt)            ! tracer indices for Si, CaCO3 content
@@ -75,14 +67,14 @@
      &   z_grz(autotroph_cnt),               ! grazing coef. (mmol C/m^3)
      &   graze_zoo(autotroph_cnt),           ! routing of grazed term, remainder goes to dic
      &   graze_poc(autotroph_cnt),
-     &   graze_doc(autotroph_cnt),    
+     &   graze_doc(autotroph_cnt),
      &   loss_poc(autotroph_cnt),            ! routing of loss term
      &   f_zoo_detr(autotroph_cnt)           ! fraction of zoo losses to detrital
        integer grazee_ind(autotroph_cnt)     ! which grazee category does autotroph belong to
        logical Nfixer(autotroph_cnt)         ! flag set to true for autotrophs that fix N2
        logical imp_calcifier(autotroph_cnt)  ! flag set to true if autotroph implicitly handles calcification
        logical exp_calcifier(autotroph_cnt)  ! flag set to true if autotroph explicitly handles calcification
-       
+
        common /ecosys_bec1/ Chl_ind, C_ind, Fe_ind, Si_ind, CaCO3_ind, grazee_ind
      &        , Nfixer, imp_calcifier, exp_calcifier, sname, lname
        common /ecosys_bec_reals/ kFe, kPO4, kDOP, kNO3, kNO2, kNH4, kSiO3,
@@ -115,7 +107,7 @@
      &   parm_Red_D_C_O2_diaz = parm_Red_D_C_P/150.0           ! carbon:oxygen for diazotrophs
 # ifdef Ncycle_SY
      &   ,parm_Red_D_C_O2_NO2V = parm_Red_D_C_P/162.0          ! carbon:oxygen for HNO2 uptake (assuming OM is C117H297O85N16P)
-# endif 
+# endif
      & )
 
 !----------------------------------------------------------------------------
@@ -141,15 +133,15 @@
      &   parm_kno3_den1,       ! no3 half saturation constant for denitrification 1 (no3-> no2, mmol/m^3)
      &   parm_kno2_den2,       ! no2 half saturation constant for denitrification 2 (no2-> n2o, mmol/m^3)
      &   parm_kn2o_den3,       ! n2o half saturation constant for denitrification 3 (n2o-> n2, mmol/m^3)
-     &   parm_ko2_oxic,        ! half saturation constant for oxygen consumption during oxic remin (mmol/m^3)	
+     &   parm_ko2_oxic,        ! half saturation constant for oxygen consumption during oxic remin (mmol/m^3)
      &   parm_ko2_den1,        ! exponential decay constant for denitrification 1 (NO3-> NO2, mmol/m^3)
      &   parm_ko2_den2,        ! exponential decay constant for denitrification 2 (NO2-> N2O, mmol/m^3)
      &   parm_ko2_den3,        ! exponential decay constant for denitrification 3 (N2O-> N2, mmol/m^3)
      &   parm_koxic,           ! maximum oxic remin specific rate (mmol C/m^3/s)
-     &   parm_kden1,           ! maximum denitrification 1 specific rate (mmol C/m^3/s)  
+     &   parm_kden1,           ! maximum denitrification 1 specific rate (mmol C/m^3/s)
      &   parm_kden2,           ! maximum denitrification 2 specific rate (mmol C/m^3/s)
      &   parm_kden3,           ! maximum denitrification 3 specific rate (mmol C/m^3/s)
-     &   parm_kax,             ! maximum anaerobic ammonium oxidation specific rate (mmol N/m^3/s) 
+     &   parm_kax,             ! maximum anaerobic ammonium oxidation specific rate (mmol N/m^3/s)
      &   parm_knh4_ax,         ! NH4 half saturation constant for anammox (mmol/m^3)
      &   parm_kno2_ax,         ! NO2 half saturation constant for anammox (mmol/m^3)
      &   parm_ko2_ax,          ! exponential decay constant for anammox (mmol/m^3)
@@ -171,7 +163,7 @@
      &   parm_SiO2_diss,         ! base SiO2 diss len scale
      &   parm_CaCO3_diss         ! base CaCO3 diss len scale
 
-       real 
+       real
      &   parm_scalelen_z(4),     ! depths of prescribed scalelen values
      &   parm_scalelen_vals(4)   ! prescribed scalelen values
 
@@ -186,7 +178,7 @@
 # ifdef Ncycle_SY
      &   , parm_kao, parm_kno, parm_ko2_ao, parm_knh4_ao, parm_ko2_no, parm_kno2_no, parm_kno3_den1,
      &   parm_kno2_den2, parm_kn2o_den3, parm_ko2_oxic, parm_ko2_den1, parm_ko2_den2, parm_ko2_den3,
-     &   parm_koxic, parm_kden1, parm_kden2, parm_kden3, parm_kax, parm_knh4_ax, 
+     &   parm_koxic, parm_kden1, parm_kden2, parm_kden3, parm_kax, parm_knh4_ax,
      &   parm_kno2_ax, parm_ko2_ax, r_no2tonh4_ax, parm_n2o_ji_a, parm_n2o_ji_b, parm_n2o_gor_a,
      &   parm_n2o_gor_b
 # endif
@@ -212,7 +204,7 @@
 !                        --------- *  ---------- * ----------
 !                         gDust       55.847 gFe     molFe
 !
-!     dust_to_Fe          conversion - dust to iron (CESM: nmol Fe/g Dust) 
+!     dust_to_Fe          conversion - dust to iron (CESM: nmol Fe/g Dust)
 !---------------------------------------------------------------------
 !
 ! DL: in ROMS we have to convert kg dust -> mmol Fe, so the above calculation
@@ -234,16 +226,16 @@
        real caco3_poc_min, spc_poc_fac, f_graze_sp_poc_lim,
      &   f_photosp_CaCO3, f_graze_CaCO3_remin, f_graze_si_remin
        parameter(
-     &   caco3_poc_min    = 0.4,  ! minimum proportionality between 
-     &                            !   QCaCO3 and grazing losses to POC 
+     &   caco3_poc_min    = 0.4,  ! minimum proportionality between
+     &                            !   QCaCO3 and grazing losses to POC
      &                            !   (mmol C/mmol CaCO3)
      &   spc_poc_fac      = 0.14, ! small phyto grazing factor (1/mmolC)
-     &   f_graze_sp_poc_lim = 0.36, 
-     &   f_photosp_CaCO3  = 0.4,  ! proportionality between small phyto 
+     &   f_graze_sp_poc_lim = 0.36,
+     &   f_photosp_CaCO3  = 0.4,  ! proportionality between small phyto
      &                            ! production and CaCO3 production
-     &   f_graze_CaCO3_remin = 0.33, ! fraction of spCaCO3 grazing 
+     &   f_graze_CaCO3_remin = 0.33, ! fraction of spCaCO3 grazing
      &                               !          which is remin
-     &   f_graze_si_remin    = 0.35  ! fraction of diatom Si grazing 
+     &   f_graze_si_remin    = 0.35  ! fraction of diatom Si grazing
      &                               !          which is remin
      & )
 
@@ -272,7 +264,7 @@
      &   QCaCO3_max    = 0.4,     !max QCaCO3
      &   ! carbon:nitrogen ratio for denitrification
      &   denitrif_C_N  = parm_Red_D_C_P/136.0,
-     &   denitrif_NO3_C  = 472.0 / 2.0 / 106.0, ! need to comment on that and check 
+     &   denitrif_NO3_C  = 472.0 / 2.0 / 106.0, ! need to comment on that and check
      &   denitrif_NO2_C  = 472.0 / 2.0 / 106.0,
      &   denitrif_N2O_C  = 472.0 / 2.0 / 106.0
      & )
@@ -319,7 +311,7 @@
      &   DOC_reminR  = (c1/(365.0*15.0)) * dps,      ! rate for semi-labile DOC 1/15years
      &   DON_reminR  = (c1/(365.0*15.0)) * dps,      ! rate for semi-labile DON 1/15years
      &   DOFe_reminR = (c1/(365.0*9.0)) * dps,       ! rate for semi-labile DOFe 1/9years
-     &   DOP_reminR  = (c1/(365.0*60.0)) * dps,      ! rate for semi-labile DOP 1/60years  
+     &   DOP_reminR  = (c1/(365.0*60.0)) * dps,      ! rate for semi-labile DOP 1/60years
      &   DONr_reminR = (c1/(365.0*9500.0)) * dps,    ! timescale for refrac DON 1/9500yrs
      &   DOPr_reminR = (c1/(365.0*16000.0)) * dps,   ! timescale for refrac DOP 1/16000yrs
      &   DONrefract = 0.0115,                        ! fraction of DON to refractory pool
@@ -366,7 +358,7 @@
       use param
       use grid
       use bgc
-      use bgc_ecosys_vars
+      use bgc_shared_vars
 
       implicit none
 
@@ -378,7 +370,7 @@
       !   default namelist settings
       !---------------------------------------------------------------------------
 
-      parm_Fe_bioavail       = 1.0  ! 0.02 switched to soluble iron forcing 
+      parm_Fe_bioavail       = 1.0  ! 0.02 switched to soluble iron forcing
       parm_o2_min            = 1.0  ! 4.0 mmol/m^3 = nmol/cm^3 (Taking down DENITRIF following (Babbin et al. 2014))
       parm_lowo2_remin_factor = 3.3
       parm_o2_min_delta      = 2.0  ! mmol/m^3 = nmol/cm^3
@@ -426,7 +418,7 @@
 # endif
 
      !---------------------------------------------
-     !  Biological/Ecosystem parameters 
+     !  Biological/Ecosystem parameters
      !--------------------------------- -----------
 
       parm_BSIbury           = 0.65  ! x1 default

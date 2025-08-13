@@ -111,7 +111,7 @@
       real,dimension(:,:,:)  ,pointer :: marbl_diag_2d ! points to bec2_diag_2d
 
 #endif
-!     Saved state variables: (mimicking structure of bgc_ecosys_vars for bec2_diag arrays)
+!     Saved state variables: (mimicking structure of bgc_shared_vars for bec2_diag arrays)
       integer                             :: nr_marbl_ss_2d,nr_marbl_ss_3d       ! No. of saved_state vars
       parameter( nr_marbl_ss_2d=3, nr_marbl_ss_3d=2)                             ! Hardcode no. of vars (error if wrong)
 
@@ -849,7 +849,7 @@
 !
 !     METHOD:
 !     1. Verify ROMS' hardcoded number of diagnostics variables
-!        (nr_bec2_diag_2d,nr_bec2_diag_3d in bgc_ecosys_vars.F)
+!        (nr_bec2_diag_2d,nr_bec2_diag_3d in bgc_shared_vars.F)
 !        corresponds to the number of diags in the MARBL instance
 !     2. Populate ROMS BGC diagnostics metadata arrays
 !        (vname_bec2_diag_2d,vname_bec2_diag_3d) using information
@@ -923,7 +923,7 @@
      &        ,(diag_cnt_sf_2d+diag_cnt_it_2d)
      &        ,'. Set nr_bec2_diag_2d = '
      &        ,(diag_cnt_sf_2d+diag_cnt_it_2d)
-     &        ,' in bgc_ecosys_vars.F and recompile'
+     &        ,' in bgc_shared_vars.F and recompile'
          error stop 'ERROR reported from MARBL driver'
 
       elseif ( size(vname_bgc_diag_3d(1,:)) .ne.
@@ -936,7 +936,7 @@
      &        ,(diag_cnt_sf_3d+diag_cnt_it_3d)
      &        ,'. Set nr_bec2_diag_3d = '
      &        ,(diag_cnt_sf_3d+diag_cnt_it_3d)
-     &        ,' in bgc_ecosys_vars.F and recompile'
+     &        ,' in bgc_shared_vars.F and recompile'
          error stop 'ERROR reported from MARBL driver'
       end if
 

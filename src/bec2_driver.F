@@ -19,7 +19,7 @@
        use grid
        use ocean_vars
        use scalars
-       use bgc_ecosys_vars
+       use bgc_shared_vars
        use bgc_forces
        use bec2_params
 
@@ -574,7 +574,7 @@
        use ocean_vars
        use scalars
        use bgc
-       use bgc_ecosys_vars
+       use bgc_shared_vars
        use bec2_params
 
         implicit none
@@ -2302,7 +2302,7 @@
         use param
         use ocean_vars
         use scalars
-        use bgc_ecosys_vars
+        use bgc_shared_vars
         use bec2_params
 
         implicit none
@@ -2438,7 +2438,7 @@
        use param
        use grid
        use ocean_vars
-       use bgc_ecosys_vars
+       use bgc_shared_vars
        use bec2_params
 
        implicit none

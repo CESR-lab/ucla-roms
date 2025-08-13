@@ -18,7 +18,7 @@
       use basic_output
       use scalars
       use netcdf
-      use bgc_ecosys_vars
+      use bgc_shared_vars
       use diagnostics
       use obc_tune
       use nc_read_write, only: handle_ierr, ncread
