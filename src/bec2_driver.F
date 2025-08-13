@@ -25,7 +25,6 @@
 
        implicit none
 
-!#include "bgc_param_bec2.h"
 
        integer i,j,k,m
        integer Istr,Iend,Jstr,Jend
@@ -579,8 +578,6 @@
        use bec2_params
 
         implicit none
-!#include "bgc_param_bec2.h"
-!#include "bgc_ecosys_bec2.h"
 
        integer istr,iend,i,j,k,n_loc,auto_ind,auto_ind2
        integer idiag
@@ -2309,8 +2306,6 @@
         use bec2_params
 
         implicit none
-!#include "bgc_param_bec2.h"
-!#include "bgc_ecosys_bec2.h"
 
      !---------------------------------------------------------------------------
      !   Set incoming fluxes (put into outgoing flux for first level usage).
@@ -2447,8 +2442,6 @@
        use bec2_params
 
        implicit none
-!#include "bgc_ecosys_bec2.h"
-!#include "bgc_param_bec2.h"
 
        integer istr, iend, i, j, k, n_loc, iB
        integer idiag
@@ -3391,7 +3384,6 @@
         use bec2_params
 
         implicit none
-!#include "bgc_param_bec2.h"
        integer,intent(in)::istr,iend,jstr,jend
        LOGICAL,DIMENSION(istr:iend,jstr:jend),intent(in) :: landmaskc
 
@@ -3537,7 +3529,6 @@
         use bec2_params
 
         implicit none
-!#include "bgc_param_bec2.h"
         integer,intent(in)::istr,iend,jstr,jend
         LOGICAL,DIMENSION(istr:iend,jstr:jend),intent(in) :: landmaskc
 
@@ -3630,7 +3621,6 @@
         use bec2_params
 
         implicit none
-!#include "bgc_param_bec2.h"
         integer,intent(in)::istr,iend,jstr,jend
         LOGICAL,DIMENSION(istr:iend,jstr:jend),intent(in) :: landmaskc
 
