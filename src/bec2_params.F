@@ -1,4 +1,4 @@
-      module bgc_param_ini
+      module bec2_params
 
       ! Set the BGC parameters 
       ! and initialisation of the
@@ -554,8 +554,4 @@
 ! ----------------------------------------------------------------------
 
 #endif /* BIOLOGY_BEC2 - entire module */
-      end module bgc_param_ini
-
-
-
-
+      end module bec2_params

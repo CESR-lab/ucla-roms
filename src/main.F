@@ -111,7 +111,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use random_output
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
-      use bgc_param_ini
+      use bec2_params
       use bgc
 # endif
 

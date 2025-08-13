@@ -21,7 +21,7 @@
        use scalars
        use bgc_ecosys_vars
        use bgc_forces
-       use bgc_param_ini
+       use bec2_params
 
        implicit none
 
@@ -576,7 +576,7 @@
        use scalars
        use bgc
        use bgc_ecosys_vars
-       use bgc_param_ini
+       use bec2_params
 
         implicit none
 !#include "bgc_param_bec2.h"
@@ -2306,7 +2306,7 @@
         use ocean_vars
         use scalars
         use bgc_ecosys_vars
-        use bgc_param_ini
+        use bec2_params
 
         implicit none
 !#include "bgc_param_bec2.h"
@@ -2444,7 +2444,7 @@
        use grid
        use ocean_vars
        use bgc_ecosys_vars
-       use bgc_param_ini
+       use bec2_params
 
        implicit none
 !#include "bgc_ecosys_bec2.h"
@@ -3256,7 +3256,7 @@
           subroutine N2OSATU(SSTT, SSSS,landmaskc, N2OSAT,istr,
      &         iend,jstr,jend)
 
-        use bgc_param_ini
+        use bec2_params
 
         implicit none
 ! needed for c0
@@ -3388,7 +3388,7 @@
           subroutine N2SATU(SSTT, SSSS, landmaskc, N2SAT,istr,
      &         iend,jstr,jend)
 
-        use bgc_param_ini
+        use bec2_params
 
         implicit none
 !#include "bgc_param_bec2.h"
@@ -3534,7 +3534,7 @@
           subroutine O2SATU(SSTT, SSSS,landmaskc, O2SAT,istr,
      &         iend,jstr,jend)
 
-        use bgc_param_ini
+        use bec2_params
 
         implicit none
 !#include "bgc_param_bec2.h"
@@ -3627,7 +3627,7 @@
           subroutine CSCHMIDT_CO2(SSTT,landmaskc,SCHMIDT_CO2,istr,
      &                     iend,jstr,jend )
 
-        use bgc_param_ini
+        use bec2_params
 
         implicit none
 !#include "bgc_param_bec2.h"
