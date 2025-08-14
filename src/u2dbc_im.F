@@ -39,7 +39,8 @@
      &                        )*(1.-0.292893218813452/cx)**2
             endif
             ubar(1,j,knew)=0.5*( (1.-cx)*ubar(1,j,kstp)
-     &                              +cx*ubar(2,j,kstp))
+     &                               +cx*ubar(2,j,kstp)
+     &             +ubar_west(j) -hx*(zx-zeta_west(j)))
      &                                      *umask(1,j)
           enddo
 
@@ -70,7 +71,8 @@
      &                            )*(1.-0.292893218813452/cx)**2
             endif
             ubar(nx+1,j,knew)=0.5*( (1.-cx)*ubar(nx+1,j,kstp)
-     &                                   +cx*ubar(nx,j,kstp))
+     &                                    +cx*ubar(nx,j,kstp)
+     &                   +ubar_east(j) +hx*(zx-zeta_east(j)))
      &                                         *umask(nx+1,j)
           enddo
 
@@ -114,6 +116,8 @@
      &                      -max(cy,0.)*grad(i-1,1)
      &                      -min(cy,0.)*grad(i  ,1)
      &                                            )
+            ubar(i,0,knew)=(1.-cext)*ubar(i,0,knew)
+     &                                  +cext*ubar_south(i)
             ubar(i,0,knew)=ubar(i,0,knew)*umask(i,0)
           enddo
 
@@ -156,6 +160,8 @@
      &                           -max(cy,0.)*grad(i-1,ny)
      &                           -min(cy,0.)*grad(i  ,ny)
      &                                                  )
+            ubar(i,ny+1,knew)=(1.-cext)*ubar(i,ny+1,knew)
+     &                                  +cext*ubar_north(i)
             ubar(i,ny+1,knew)=ubar(i,ny+1,knew)*umask(i,ny+1)
           enddo
 
