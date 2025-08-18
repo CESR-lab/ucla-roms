@@ -112,7 +112,7 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bec2_params
-      use bgc
+      use bgc_io
 # endif
 
       implicit none
@@ -320,7 +320,7 @@ CR      write(*,*)  ' -2' MYID
       use basic_output
       use boundary
       use analytical
-      use bgc
+      use bgc_io
       use tides
       use mixing
 

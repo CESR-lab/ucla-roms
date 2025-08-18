@@ -62,7 +62,7 @@
       use cdr_frc
       use bgc_shared_vars
       use bgc_forces
-      use bgc
+      use bgc_io
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend

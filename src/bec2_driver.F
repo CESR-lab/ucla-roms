@@ -15,7 +15,7 @@
 # ifdef BULK_FRC
        use bulk_frc, only: wspd_used ! to compute gas exchange
 # endif
-       use bgc
+       use bgc_io
        use grid
        use ocean_vars
        use scalars
@@ -574,7 +574,7 @@
        use grid
        use ocean_vars
        use scalars
-       use bgc
+       use bgc_io
        use bgc_shared_vars
        use bec2_params
 
