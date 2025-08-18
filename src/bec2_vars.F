@@ -1,6 +1,6 @@
       module bec2_vars
-
 #include "cppdefs.opt"
+#ifdef BIOLOGY_BEC2
 
       use param
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
@@ -27,9 +27,6 @@ C      integer, pointer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
 
       character*72, pointer ::  vname_bec2_diag_2d(:,:)
       character*72, pointer ::  vname_bec2_diag_3d(:,:)
-
-c      real, dimension(:,:,:,:), pointer :: bec2_diag_3d_avg !TODO clean
-c      real, dimension(:,:,:)  , pointer :: bec2_diag_2d_avg !TODO clean
 
 #if defined(BEC2_DIAG)
       ! Indices to be used in bec2_diag_3d only:
@@ -92,7 +89,7 @@ C
       logical,allocatable,dimension(:,:) :: landmask
 
 
-#ifdef BIOLOGY_BEC2
+c#ifdef BIOLOGY_BEC2
       logical :: lsource_sink,lflux_gas_o2, lflux_gas_co2
 #if defined Ncycle_SY
      &  ,lflux_gas_n2o, lflux_gas_n2
@@ -146,7 +143,7 @@ C
 !! Arrays related to carbon chemistry:
 !!
       real,allocatable,dimension(:,:) :: ph_srf
-#endif /*BIOLOGY_BEC2*/
+c#endif /*BIOLOGY_BEC2*/
 
       contains
 !----------------------------------------------------------------------
@@ -160,7 +157,7 @@ C
       allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
 
       allocate( landmask(GLOBAL_2D_ARRAY) )
-#if defined(BIOLOGY_BEC2)
+c#if defined(BIOLOGY_BEC2)
       allocate(P_CaCO3_sflux_out(GLOBAL_2D_ARRAY), P_CaCO3_hflux_out(GLOBAL_2D_ARRAY) )
       allocate( P_SiO2_sflux_out(GLOBAL_2D_ARRAY),  P_SiO2_hflux_out(GLOBAL_2D_ARRAY) )
       allocate(   dust_sflux_out(GLOBAL_2D_ARRAY),    dust_hflux_out(GLOBAL_2D_ARRAY) )
@@ -180,8 +177,9 @@ C
 
 
       allocate( ph_srf(GLOBAL_2D_ARRAY) )
-#endif /* BIOLOGY_BEC2*/
+c#endif /* BIOLOGY_BEC2*/
       end subroutine init_arrays_bec2_vars  !]
 
 !----------------------------------------------------------------------
+#endif BIOLOGY_BEC2
       end module bec2_vars

@@ -32,10 +32,10 @@ c # TODO marbldrve_configure_diagnostics for pointers example
 ! Diagnostic variables appearing in average and history files:
 !
       integer :: nr_bgc_wrdiag_2d, nr_bgc_wrdiag_3d, nr_bgc_wrdiag
-#ifndef MARBL_DIAGS
+#if defined(BEC2_DIAG)
       integer, parameter :: nr_bgc_diag_2d = nr_bec2_diag_2d
       integer, parameter :: nr_bgc_diag_3d = nr_bec2_diag_3d
-#else
+#elif defined(MARBL_DIAGS)
       ! Just hardcoding this for now but would be nice to obtain it dynamically
       integer, parameter ::  nr_bgc_diag_3d = nr_marbl_diag_3d
       integer, parameter ::  nr_bgc_diag_2d = nr_marbl_diag_2d
@@ -90,7 +90,7 @@ c # TODO marbldrve_configure_diagnostics for pointers example
 #include "bgc_2Ddiagnostics.opt"
 #include "bgc_3Ddiagnostics.opt"
 
-#endif
+#endif /* MARBL_DIAGS */
 
 
       nr_bgc_wrdiag_2d=0
