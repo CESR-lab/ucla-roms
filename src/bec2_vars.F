@@ -89,7 +89,7 @@ C
       logical,allocatable,dimension(:,:) :: landmask
 
 
-c#ifdef BIOLOGY_BEC2
+
       logical :: lsource_sink,lflux_gas_o2, lflux_gas_co2
 #if defined Ncycle_SY
      &  ,lflux_gas_n2o, lflux_gas_n2
@@ -143,8 +143,12 @@ c#ifdef BIOLOGY_BEC2
 !! Arrays related to carbon chemistry:
 !!
       real,allocatable,dimension(:,:) :: ph_srf
-c#endif /*BIOLOGY_BEC2*/
 
+      ! misc from porting ETH code:
+      character(len=40) tclm_name(NT) ! Taken from ETH code ncvars
+
+
+      public init_scalars_bec2
       contains
 !----------------------------------------------------------------------
 
@@ -157,7 +161,7 @@ c#endif /*BIOLOGY_BEC2*/
       allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
 
       allocate( landmask(GLOBAL_2D_ARRAY) )
-c#if defined(BIOLOGY_BEC2)
+
       allocate(P_CaCO3_sflux_out(GLOBAL_2D_ARRAY), P_CaCO3_hflux_out(GLOBAL_2D_ARRAY) )
       allocate( P_SiO2_sflux_out(GLOBAL_2D_ARRAY),  P_SiO2_hflux_out(GLOBAL_2D_ARRAY) )
       allocate(   dust_sflux_out(GLOBAL_2D_ARRAY),    dust_hflux_out(GLOBAL_2D_ARRAY) )
@@ -177,9 +181,64 @@ c#if defined(BIOLOGY_BEC2)
 
 
       allocate( ph_srf(GLOBAL_2D_ARRAY) )
-c#endif /* BIOLOGY_BEC2*/
+
       end subroutine init_arrays_bec2_vars  !]
 
 !----------------------------------------------------------------------
+      subroutine init_scalars_bec2()  ![
+!
+! Set initial values for  globally accessible (stored in common
+! blocks) scalar variables of the BEC model.
+!
+      use comm_vars
+      use scalars
+
+      implicit none
+      integer i,j, itrc ,lvar,lenstr ! ierr, DevinD removed ierr as arguement
+      integer omp_get_num_threads
+
+#ifdef SOLVE3D
+
+# ifdef BEC2_DIAG
+
+# endif /* BEC2_DIAG */
+
+      tclm_name(iPO4) = 'po4_time'
+      tclm_name(iNO3) = 'no3_time'
+      tclm_name(iSIO3) = 'sio3_time'
+      tclm_name(iO2) = 'o2_time'
+      tclm_name(iFE) = 'fe_time'
+      tclm_name(iDIC) = 'dic_time'
+      tclm_name(iALK) = 'alk_time'
+      tclm_name(iNH4) = 'nh4_time'
+      tclm_name(iDOC) = 'doc_time'
+      tclm_name(iDOP) = 'dop_time'
+      tclm_name(iDOP) = 'dop_time'
+      tclm_name(iDOPR) = 'dop_time'
+      tclm_name(iDON) = 'don_time'
+      tclm_name(iDONR) = 'don_time'
+      tclm_name(iDOFE) = 'dofe_time'
+      tclm_name(iSPC) = 'spc_time'
+      tclm_name(iSPCHL) = 'spchl_time'
+      tclm_name(iSPCACO3) = 'spcaco3_time'
+      tclm_name(iSPFE) = 'spfe_time'
+      tclm_name(iDIATC) = 'diatc_time'
+      tclm_name(iDIATCHL) = 'diatchl_time'
+      tclm_name(iDIATSI) = 'diatsi_time'
+      tclm_name(iDIATFE) = 'diatfe_time'
+      tclm_name(iZOOC) = 'zooc_time'
+      tclm_name(iDIAZC) = 'diazc_time'
+      tclm_name(iDIAZCHL) = 'diazchl_time'
+      tclm_name(iDIAZFE) = 'diazfe_time'
+# ifdef Ncycle_SY
+      tclm_name(iNO2) = 'no2_time'
+      tclm_name(iN2) = 'n2_time'
+      tclm_name(iN2O) = 'n2o_time'
+# endif
+#endif /* SOLVE3D */
+
+      end subroutine init_scalars_bec2  !]
+! ----------------------------------------------------------------------
+C
 #endif BIOLOGY_BEC2
       end module bec2_vars
