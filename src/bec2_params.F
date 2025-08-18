@@ -359,6 +359,7 @@
       use grid
       use bgc
       use bgc_shared_vars
+      use bec2_vars
 
       implicit none
 

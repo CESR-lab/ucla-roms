@@ -838,7 +838,7 @@
 
 #ifdef MARBL_DIAGS
       subroutine marbldrv_configure_diagnostics(
-     &     vname_bgc_diag_2d,vname_bgc_diag_3d
+     &     vname_marbl_diag_2d,vname_marbl_diag_3d
      &     )
 
 !-----------------------------------------------------------------------
@@ -856,7 +856,7 @@
 !        provided by the MARBL instance
 !
 !     INPUT/OUTPUT:
-!     - vname_bgc_diag_2d,vname_bgc_diag_3d:
+!     - vname_marbl_diag_2d,vname_marbl_diag_3d:
 !        diagnostics metadata arrays (short,long names and units)
 !
 !     NOTES:
@@ -866,8 +866,8 @@
 !
 !-----------------------------------------------------------------------
 
-      character*72, dimension(:,:), intent(inout) :: vname_bgc_diag_2d
-      character*72, dimension(:,:), intent(inout) :: vname_bgc_diag_3d
+      character*72, dimension(:,:), intent(inout) :: vname_marbl_diag_2d
+      character*72, dimension(:,:), intent(inout) :: vname_marbl_diag_3d
       integer                                     :: m,diagidx2d,diagidx3d
 
 !     1. Check hardcoded array size in ROMS matches MARBL expectations
@@ -913,12 +913,12 @@
       diag_cnt_3d_tot = diag_cnt_sf_3d + diag_cnt_it_3d
 
 !     Throw error/advise if counts don't match
-      if ( size(vname_bgc_diag_2d(1,:)) .ne.
+      if ( size(vname_marbl_diag_2d(1,:)) .ne.
      &     (diag_cnt_2d_tot) ) then
 
          write(*,'(7x,A,I4,A,I4,A,I4,A)')
      &        'ERROR: Allocated no. of 2D BGC diagnostics: '
-     &        ,size(vname_bgc_diag_2d(1,:))
+     &        ,size(vname_marbl_diag_2d(1,:))
      &        ,' does not match no. expected by MARBL: '
      &        ,(diag_cnt_sf_2d+diag_cnt_it_2d)
      &        ,'. Set nr_bec2_diag_2d = '
@@ -926,12 +926,12 @@
      &        ,' in bgc_shared_vars.F and recompile'
          error stop 'ERROR reported from MARBL driver'
 
-      elseif ( size(vname_bgc_diag_3d(1,:)) .ne.
+      elseif ( size(vname_marbl_diag_3d(1,:)) .ne.
      &        (diag_cnt_3d_tot) ) then
 
          write(*,'(7x,A,I4,A,I4,A,I4,A)')
      &        'ERROR: Allocated no. of 3D BGC diagnostics: '
-     &        ,size(vname_bgc_diag_3d(1,:))
+     &        ,size(vname_marbl_diag_3d(1,:))
      &        ,' does not match no. expected by MARBL: '
      &        ,(diag_cnt_sf_3d+diag_cnt_it_3d)
      &        ,'. Set nr_bec2_diag_3d = '
@@ -947,24 +947,24 @@
       do m=1,size(MARBL_instance%surface_flux_diags%diags)
          ! Check if this diagnostic is 2D (true) or 3D (false/else)
          if (trim(MARBL_instance%surface_flux_diags%diags(m)%vertical_grid) .eq. "none") then ! 2D field
-            vname_bgc_diag_2d(1,diagidx2d)=
+            vname_marbl_diag_2d(1,diagidx2d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%short_name)
-            vname_bgc_diag_2d(2,diagidx2d)=
+            vname_marbl_diag_2d(2,diagidx2d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%long_name)
-            vname_bgc_diag_2d(3,diagidx2d)=
+            vname_marbl_diag_2d(3,diagidx2d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%units)
-            vname_bgc_diag_2d(4,diagidx2d)='  '
+            vname_marbl_diag_2d(4,diagidx2d)='  '
             wrt_marbl_diag_2d(diagidx2d)=.false.
 
             diagidx2d=diagidx2d+1
          else                   ! 3D field
-            vname_bgc_diag_3d(1,diagidx3d)=
+            vname_marbl_diag_3d(1,diagidx3d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%short_name)
-            vname_bgc_diag_3d(2,diagidx3d)=
+            vname_marbl_diag_3d(2,diagidx3d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%long_name)
-            vname_bgc_diag_3d(3,diagidx3d)=
+            vname_marbl_diag_3d(3,diagidx3d)=
      &           trim(MARBL_instance%surface_flux_diags%diags(m)%units)
-            vname_bgc_diag_3d(4,diagidx3d)='  '
+            vname_marbl_diag_3d(4,diagidx3d)='  '
             wrt_marbl_diag_3d(diagidx3d)=.false.
 !
             diagidx3d=diagidx3d+1
@@ -974,24 +974,24 @@
 !     MARBL interior tendency diagnostics
       do m=1,size(MARBL_instance%interior_tendency_diags%diags)
          if (trim(MARBL_instance%interior_tendency_diags%diags(m)%vertical_grid) .eq. "none") then ! 2D field
-            vname_bgc_diag_2d(1,diagidx2d)=
+            vname_marbl_diag_2d(1,diagidx2d)=
      &           trim(MARBL_instance%interior_tendency_diags%diags(m)%short_name)
-            vname_bgc_diag_2d(2,diagidx2d)=
+            vname_marbl_diag_2d(2,diagidx2d)=
      &           trim(MARBL_instance%interior_tendency_diags%diags(m)%long_name)
-            vname_bgc_diag_2d(3,diagidx2d)=
+            vname_marbl_diag_2d(3,diagidx2d)=
      &           trim(MARBL_instance%interior_tendency_diags%diags(m)%units)
-               vname_bgc_diag_2d(4,diagidx2d)='  '
+               vname_marbl_diag_2d(4,diagidx2d)='  '
                wrt_marbl_diag_2d(diagidx2d)=.false.
 
             diagidx2d=diagidx2d+1
          else                   ! 3D field
-            vname_bgc_diag_3d(1,diagidx3d)=
+            vname_marbl_diag_3d(1,diagidx3d)=
      &           trim(MARBL_instance%interior_tendency_diags%diags(m)%short_name)
-            vname_bgc_diag_3d(2,diagidx3d)=
+            vname_marbl_diag_3d(2,diagidx3d)=
      &           trim(MARBL_instance%interior_tendency_diags%diags(m)%long_name)
-            vname_bgc_diag_3d(3,diagidx3d)=
+            vname_marbl_diag_3d(3,diagidx3d)=
      &            trim(MARBL_instance%interior_tendency_diags%diags(m)%units)
-            vname_bgc_diag_3d(4,diagidx3d)='  '
+            vname_marbl_diag_3d(4,diagidx3d)='  '
             wrt_marbl_diag_3d(diagidx3d)=.false.
 
             diagidx3d=diagidx3d+1
@@ -1000,7 +1000,7 @@
 
 !     Read user file to determine which diagnostics to write out
       call marbldrv_read_diagnostic_output_list(
-     &     vname_bgc_diag_2d,vname_bgc_diag_3d
+     &     vname_marbl_diag_2d,vname_marbl_diag_3d
      &     )                    !
 
       if (mynode==printnode) then
@@ -1012,7 +1012,7 @@
 
 
       subroutine marbldrv_read_diagnostic_output_list(
-     &     vname_bgc_diag_2d,vname_bgc_diag_3d
+     &     vname_marbl_diag_2d,vname_marbl_diag_3d
      &     )                    !
 !-----------------------------------------------------------------------
 !     SUBROUTINE: marbldrv_read_diagnostic_output_list
@@ -1031,8 +1031,8 @@
 !     $MARBL_ROOT/tests/regression_tests/requested_diagnostics/requested_diagnostics.py
 !-----------------------------------------------------------------------
 
-      character*72, dimension(:,:), intent(inout) :: vname_bgc_diag_2d
-      character*72, dimension(:,:), intent(inout) :: vname_bgc_diag_3d
+      character*72, dimension(:,:), intent(inout) :: vname_marbl_diag_2d
+      character*72, dimension(:,:), intent(inout) :: vname_marbl_diag_3d
 
       character(len=256)                         :: file_line
       integer :: marbl_diag_list, read_status,open_status,idx,ierr
@@ -1079,14 +1079,14 @@
                if (file_line(1:1) == '!') cycle ! Skip this iteration if it's a comment
 !     Set the "wrt_t" variable
                recognized_diag=.false.
-               do idx=1,size(vname_bgc_diag_2d(1,:))
-                  if (trim(vname_bgc_diag_2d(1,idx)) == trim(file_line))
+               do idx=1,size(vname_marbl_diag_2d(1,:))
+                  if (trim(vname_marbl_diag_2d(1,idx)) == trim(file_line))
      &                 then
                      wrt_marbl_diag_2d(idx) =.true.
                      if (mynode==printnode) then
                         write(*,'(2A)'),
      &                       'REQUESTED MARBL DIAGNOSTIC OUTPUT: ' //
-     &                       trim(vname_bgc_diag_2d(1,idx))
+     &                       trim(vname_marbl_diag_2d(1,idx))
                      end if
                      recognized_diag=.true.
                      no_diags_requested=.false.
@@ -1094,14 +1094,14 @@
                   end if
                end do           ! idx
 
-               do idx=1,size(vname_bgc_diag_3d(1,:))
-                  if (trim(vname_bgc_diag_3d(1,idx)) == trim(file_line))
+               do idx=1,size(vname_marbl_diag_3d(1,:))
+                  if (trim(vname_marbl_diag_3d(1,idx)) == trim(file_line))
      &                 then
                      wrt_marbl_diag_3d(idx) =.true.
                      if (mynode==printnode) then
                         write(*,'(2A)'),
      &                       'REQUESTED MARBL DIAGNOSTIC OUTPUT: ' //
-     &                       trim(vname_bgc_diag_3d(1,idx))
+     &                       trim(vname_marbl_diag_3d(1,idx))
                      end if
                      recognized_diag=.true.
                      no_diags_requested=.false.

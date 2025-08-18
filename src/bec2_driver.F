@@ -20,6 +20,7 @@
        use ocean_vars
        use scalars
        use bgc_shared_vars
+       use bec2_vars
        use bgc_forces
        use bec2_params
 

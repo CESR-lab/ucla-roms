@@ -8,11 +8,28 @@
 
 
       implicit none
-      ! tracer: values passed to biological model by ROMS
       ! DTRACER_MODULE: stores the tendencies of the biological tracers
       ! in the long run this should be removed, no need to copy arrays?
       ! local copies are made in ecosys_set_interior already anyway?
       real,allocatable,dimension(:,:,:,:) :: DTRACER_MODULE
+
+C      integer, pointer :: nr_bec2_diag_2d, nr_bec2_diag_3d, nr_bec2_diag
+C      integer, pointer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
+
+      real,dimension(:,:,:,:),pointer   :: bec2_diag_3d
+      real,dimension(:,:,:)  ,pointer   :: bec2_diag_2d
+
+! Control BEC2_DIAG Output vars
+      logical, dimension(:), pointer :: wrt_bec2_diag_2d
+      logical, dimension(:), pointer :: wrt_bec2_diag_3d
+      integer, dimension(:), pointer :: idx_bec2_diag_2d
+      integer, dimension(:), pointer :: idx_bec2_diag_3d
+
+      character*72, pointer ::  vname_bec2_diag_2d(:,:)
+      character*72, pointer ::  vname_bec2_diag_3d(:,:)
+
+c      real, dimension(:,:,:,:), pointer :: bec2_diag_3d_avg !TODO clean
+c      real, dimension(:,:,:)  , pointer :: bec2_diag_2d_avg !TODO clean
 
 #if defined(BEC2_DIAG)
       ! Indices to be used in bec2_diag_3d only:
@@ -64,8 +81,8 @@
 !      ! The IDs of the 2d vars are first, the those of the 3d.
 !      integer :: hisT_bec2_diag(nr_bec2_diag)  , avgT_bec2_diag(nr_bec2_diag),
 !     &           slavgT_bec2_diag(nr_bec2_diag), rstT_bec2_diag(nr_bec2_diag)
-      integer, parameter, public :: nr_bec2_diag_2d = 37
-      integer, parameter, public :: nr_bec2_diag_3d = 103
+      integer, parameter, public :: nr_bec2_diag_2d = 37 !TODO clean
+      integer, parameter, public :: nr_bec2_diag_3d = 103 !TODO clean
 C
 #endif /* BEC2_DIAG */
 
@@ -138,7 +155,6 @@ C
       subroutine init_arrays_bec2_vars  ![
       implicit none
 
-      allocate( tracer(GLOBAL_2D_ARRAY,N,ntrc_bio) )
       allocate( DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio) )
 
       allocate( ifrac(GLOBAL_2D_ARRAY), press(GLOBAL_2D_ARRAY) )
@@ -168,42 +184,4 @@ C
       end subroutine init_arrays_bec2_vars  !]
 
 !----------------------------------------------------------------------
-      subroutine find_write_bec2_diag
-      implicit none
-
-      integer idiag
-#if defined(BEC2_DIAG)
-#include "bgc_2Ddiagnostics.opt"
-#include "bgc_3Ddiagnostics.opt"
-
-
-      nr_bec2_wrdiag_2d=0
-      do idiag=1,nr_bec2_diag_2d
-        if (wrt_bec2_diag_2d(idiag)) then
-           nr_bec2_wrdiag_2d=nr_bec2_wrdiag_2d+1
-           idx_bec2_diag_2d(idiag)=nr_bec2_wrdiag_2d
-           if (mynode == 0) then
-              write(*,'(7x,A,I3,I3,A,A)') '2D BGC diags :: ',
-     &        nr_bec2_wrdiag_2d, idiag, ' ', vname_bec2_diag_2d(1,idiag)
-           endif
-        else
-           idx_bec2_diag_2d(idiag)=0
-        endif
-      enddo
-
-      nr_bec2_wrdiag_3d=0
-      do idiag=1,nr_bec2_diag_3d
-        if (wrt_bec2_diag_3d(idiag)) then
-           nr_bec2_wrdiag_3d=nr_bec2_wrdiag_3d+1
-           idx_bec2_diag_3d(idiag)=nr_bec2_wrdiag_3d
-           if (mynode == 0) then
-              write(*,'(7x,A,I3,I3,A,A)') '3D BGC diags :: ',
-     &        nr_bec2_wrdiag_3d, idiag, ' ',vname_bec2_diag_3d(1,idiag)
-           endif
-        else
-           idx_bec2_diag_3d(idiag)=0
-        endif
-      enddo
-      end subroutine find_write_bec2_diag
-
       end module bec2_vars

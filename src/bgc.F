@@ -292,18 +292,18 @@
           navg_dia_bgc = 0
           ierr=nf90_open(fname_avg,nf90_write,ncid)
           call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_avg/))
-          do itrc=1,nr_bec2_diag_2d
-            if (wrt_bec2_diag_2d(itrc)) then
-            idiag = idx_bec2_diag_2d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_2d(1,itrc),
-     &           bec2_diag_2d_avg(i0:i1,j0:j1,idiag),(/1,1,record_dia_avg/))
+          do itrc=1,nr_bgc_diag_2d
+            if (wrt_bgc_diag_2d(itrc)) then
+            idiag = idx_bgc_diag_2d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_2d(1,itrc),
+     &           bgc_diag_2d_avg(i0:i1,j0:j1,idiag),(/1,1,record_dia_avg/))
             endif
           enddo
-          do itrc=1,nr_bec2_diag_3d
-            if (wrt_bec2_diag_3d(itrc)) then
-            idiag = idx_bec2_diag_3d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_3d(1,itrc),
-     &           bec2_diag_3d_avg(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_avg/))
+          do itrc=1,nr_bgc_diag_3d
+            if (wrt_bgc_diag_3d(itrc)) then
+            idiag = idx_bgc_diag_3d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_3d(1,itrc),
+     &           bgc_diag_3d_avg(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_avg/))
             endif
           enddo
           if (mynode == 0) then
@@ -332,26 +332,19 @@
           output_time_dia_his = 0
           ierr=nf90_open(fname_his,nf90_write,ncid)
           call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_his/))
-          do itrc=1,nr_bec2_diag_2d
-            if (wrt_bec2_diag_2d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: history, diag = ', vname_bec2_diag_2d(1,itrc)
-!               endif
-            idiag = idx_bec2_diag_2d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_2d(1,itrc),
-     &           bec2_diag_2d(i0:i1,j0:j1,idiag),(/1,1,record_dia_his/))
+          do itrc=1,nr_bgc_diag_2d
+            if (wrt_bgc_diag_2d(itrc)) then
+            idiag = idx_bgc_diag_2d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_2d(1,itrc),
+     &           bgc_diag_2d(i0:i1,j0:j1,idiag),(/1,1,record_dia_his/))
             endif
           enddo
-          do itrc=1,nr_bec2_diag_3d
-            if (wrt_bec2_diag_3d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: history, diag = ', vname_bec2_diag_3d(1,itrc)
-!               endif
-            idiag = idx_bec2_diag_3d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_3d(1,itrc),
-     &           bec2_diag_3d(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_his/))
+          do itrc=1,nr_bgc_diag_3d
+            if (wrt_bgc_diag_3d(itrc)) then
+
+            idiag = idx_bgc_diag_3d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_3d(1,itrc),
+     &           bgc_diag_3d(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_his/))
             endif
           enddo
           if (mynode == 0) then
@@ -503,14 +496,14 @@
 
       t_avg_dia_bgc = t_avg_dia_bgc*(1-coef) + time*coef
 
-      do itrc=1,nr_bec2_wrdiag_2d
-        bec2_diag_2d_avg(i0:i1,j0:j1,itrc) = bec2_diag_2d_avg(i0:i1,j0:j1,itrc) *(1-coef)
-     &                                     + bec2_diag_2d(i0:i1,j0:j1,itrc)     *coef
+      do itrc=1,nr_bgc_wrdiag_2d
+        bgc_diag_2d_avg(i0:i1,j0:j1,itrc) = bgc_diag_2d_avg(i0:i1,j0:j1,itrc) *(1-coef)
+     &                                     + bgc_diag_2d(i0:i1,j0:j1,itrc)     *coef
       end do
-      do itrc=1,nr_bec2_wrdiag_3d
+      do itrc=1,nr_bgc_wrdiag_3d
         do k=1,N
-          bec2_diag_3d_avg(i0:i1,j0:j1,k,itrc) = bec2_diag_3d_avg(i0:i1,j0:j1,k,itrc) *(1-coef)
-     &                                         + bec2_diag_3d(i0:i1,j0:j1,k,itrc)     *coef
+          bgc_diag_3d_avg(i0:i1,j0:j1,k,itrc) = bgc_diag_3d_avg(i0:i1,j0:j1,k,itrc) *(1-coef)
+     &                                         + bgc_diag_3d(i0:i1,j0:j1,k,itrc)     *coef
         end do
       end do
 
@@ -533,22 +526,22 @@
       integer :: idiag, ierr, varid
 
       ! 2d diagnostics:
-      do idiag=1,nr_bec2_diag_2d
-        if (wrt_bec2_diag_2d(idiag)) then
-          varid = nccreate(ncid,vname_bec2_diag_2d(1,idiag),
+      do idiag=1,nr_bgc_diag_2d
+        if (wrt_bgc_diag_2d(idiag)) then
+          varid = nccreate(ncid,vname_bgc_diag_2d(1,idiag),
      &            (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
-          ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_2d(2,idiag))
-          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,idiag))
+          ierr = nf90_put_att(ncid,varid,'long_name',vname_bgc_diag_2d(2,idiag))
+          ierr = nf90_put_att(ncid,varid,'units',vname_bgc_diag_2d(3,idiag))
         endif
       enddo
 
       ! 3d diagnostics:
-      do idiag=1,nr_bec2_diag_3d
-        if (wrt_bec2_diag_3d(idiag)) then
-          varid = nccreate(ncid,vname_bec2_diag_3d(1,idiag),
+      do idiag=1,nr_bgc_diag_3d
+        if (wrt_bgc_diag_3d(idiag)) then
+          varid = nccreate(ncid,vname_bgc_diag_3d(1,idiag),
      &            (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
-          ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_3d(2,idiag))
-          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_3d(3,idiag))
+          ierr = nf90_put_att(ncid,varid,'long_name',vname_bgc_diag_3d(2,idiag))
+          ierr = nf90_put_att(ncid,varid,'units',vname_bgc_diag_3d(3,idiag))
         endif
       enddo
 
@@ -614,8 +607,8 @@
 #ifdef SOLVE3D
 
 # ifdef BEC2_DIAG
-#include "bgc_2Ddiagnostics.opt"
-#include "bgc_3Ddiagnostics.opt"
+c#include "bgc_2Ddiagnostics.opt"
+c#include "bgc_3Ddiagnostics.opt"
 # endif /* BEC2_DIAG */
 
       tclm_name(iPO4) = 'po4_time'
