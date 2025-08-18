@@ -175,6 +175,13 @@
       logical,save           :: first_step_avg=.true.
       logical,save           :: first_step_his=.true.
 
+      if (wrt_his .and. mod(output_period_his,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor of output_period_his!'
+      endif
+      if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
+      endif
+
 
       if (avg) then
 
@@ -273,6 +280,16 @@
       integer                :: itrc, ierr, idiag
       logical,save           :: first_step_dia_avg=.true.
       logical,save           :: first_step_dia_his=.true.
+
+      if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor ' //
+     &        'of output_period_his_dia for diagnostics!'
+      endif
+      if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor' //
+     &        'of output_period_avg_dia for diagnostics!'
+      endif
+
 
       if (wrt_avg_dia) then
 
@@ -587,28 +604,10 @@
       integer i,j, itrc ,lvar,lenstr ! ierr, DevinD removed ierr as arguement
       integer omp_get_num_threads
 
-      if (wrt_his .and. mod(output_period_his,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor of output_period_his!'
-      endif
-      if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
-      endif
-#ifdef BEC2_DIAG
-      if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor ' //
-     &        'of output_period_his_dia for diagnostics!'
-      endif
-      if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor' //
-     &        'of output_period_avg_dia for diagnostics!'
-      endif
-#endif /* BEC2_DIA */
-
 #ifdef SOLVE3D
 
 # ifdef BEC2_DIAG
-c#include "bgc_2Ddiagnostics.opt"
-c#include "bgc_3Ddiagnostics.opt"
+
 # endif /* BEC2_DIAG */
 
       tclm_name(iPO4) = 'po4_time'
