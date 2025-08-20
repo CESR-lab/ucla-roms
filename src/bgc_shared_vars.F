@@ -13,14 +13,14 @@ c # TODO marbldrve_configure_diagnostics for pointers example
       use bec2_vars
 #elif defined(MARBL)
       use marbl_driver,only: marbldrv_configure_saved_state
-# ifdef MARBL_DIAGS
+# ifdef MARBL_DIAGS      
      &     ,marbldrv_configure_diagnostics
      &     ,nr_marbl_diag_2d,nr_marbl_diag_3d
      &     ,marbl_diag_2d,marbl_diag_3d
      &     ,idx_marbl_diag_2d,idx_marbl_diag_3d
      &     ,wrt_marbl_diag_2d,wrt_marbl_diag_3d
-# endif
-#endif
+# endif      
+#endif      
 
       implicit none
 
@@ -72,12 +72,12 @@ c # TODO marbldrve_configure_diagnostics for pointers example
       wrt_marbl_diag_3d => wrt_bgc_diag_3d
       idx_marbl_diag_2d => idx_bgc_diag_2d
       idx_marbl_diag_3d => idx_bgc_diag_3d
-
-
+      
+      
       call marbldrv_configure_diagnostics(
      &     vname_bgc_diag_2d,vname_bgc_diag_3d
      & )
-
+    
 #elif defined(BEC2_DIAG)
 
       wrt_bec2_diag_2d => wrt_bgc_diag_2d
@@ -99,9 +99,9 @@ c # TODO marbldrve_configure_diagnostics for pointers example
            nr_bgc_wrdiag_2d=nr_bgc_wrdiag_2d+1
            idx_bgc_diag_2d(idiag)=nr_bgc_wrdiag_2d
            if (mynode == 0) then
-              write(*,'(7x,A,I3,I3,A,A)') '2D BGC diags :: ',
+              write(*,'(7x,A,I3,I3,A,A)') '2D BGC diags :: ', 
      &        nr_bgc_wrdiag_2d, idiag, ' ', vname_bgc_diag_2d(1,idiag)
-           endif
+           endif 
         else
            idx_bgc_diag_2d(idiag)=0
         endif
@@ -113,7 +113,7 @@ c # TODO marbldrve_configure_diagnostics for pointers example
            nr_bgc_wrdiag_3d=nr_bgc_wrdiag_3d+1
            idx_bgc_diag_3d(idiag)=nr_bgc_wrdiag_3d
            if (mynode == 0) then
-              write(*,'(7x,A,I3,I3,A,A)') '3D BGC diags :: ',
+              write(*,'(7x,A,I3,I3,A,A)') '3D BGC diags :: ', 
      &        nr_bgc_wrdiag_3d, idiag, ' ',vname_bgc_diag_3d(1,idiag)
            endif
         else
@@ -131,8 +131,8 @@ c # TODO marbldrve_configure_diagnostics for pointers example
 
 #if defined(BEC2_DIAG) || defined (MARBL_DIAGS)
 
-      call find_write_bgc_diag
-
+      call find_write_bgc_diag 
+   
       allocate( bgc_diag_3d(GLOBAL_2D_ARRAY,N,nr_bgc_wrdiag_3d) )
       allocate( bgc_diag_2d(GLOBAL_2D_ARRAY,nr_bgc_wrdiag_2d) )
 
@@ -144,8 +144,8 @@ c # TODO marbldrve_configure_diagnostics for pointers example
 #elif defined(BEC2_DIAG)
       bec2_diag_2d => bgc_diag_2d
       bec2_diag_3d => bgc_diag_3d
-#endif
-
+#endif      
+      
       if (wrt_avg_dia) then
         allocate( bgc_diag_3d_avg(GLOBAL_2D_ARRAY,N,nr_bgc_wrdiag_3d) )
         allocate( bgc_diag_2d_avg(GLOBAL_2D_ARRAY,nr_bgc_wrdiag_2d) )
@@ -156,7 +156,7 @@ c # TODO marbldrve_configure_diagnostics for pointers example
       if (mynode == 0) then
               write(*,'(7x,A,I3,I3)') 'BGC diags allocation :: ',
      &        nr_bgc_wrdiag_2d, nr_bgc_wrdiag_3d
-      endif
+      endif 
 
 #endif /* BEC2_DIAG || MARBL_DIAGS */
 
@@ -165,9 +165,9 @@ c # TODO marbldrve_configure_diagnostics for pointers example
       call marbldrv_configure_saved_state
 #elif defined(BIOLOGY_BEC2)
       call init_arrays_bec2_vars ! bec2 version
-#endif
+#endif 
 
       end subroutine init_arrays_bgc_shared_vars
 
-#endif  /* BIOLOGY_BEC2 || MARBL  */
+#endif /* BIOLOGY_BEC2 || MARBL  */
       end module bgc_shared_vars
