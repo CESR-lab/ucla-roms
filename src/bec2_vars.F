@@ -78,8 +78,8 @@ C      integer, pointer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
 !      ! The IDs of the 2d vars are first, the those of the 3d.
 !      integer :: hisT_bec2_diag(nr_bec2_diag)  , avgT_bec2_diag(nr_bec2_diag),
 !     &           slavgT_bec2_diag(nr_bec2_diag), rstT_bec2_diag(nr_bec2_diag)
-      integer, parameter, public :: nr_bec2_diag_2d = 37 !TODO clean
-      integer, parameter, public :: nr_bec2_diag_3d = 103 !TODO clean
+      integer, parameter, public :: nr_bec2_diag_2d = 37
+      integer, parameter, public :: nr_bec2_diag_3d = 103
 C
 #endif /* BEC2_DIAG */
 
