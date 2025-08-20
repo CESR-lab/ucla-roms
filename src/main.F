@@ -438,7 +438,7 @@ CR      write(*,*)  ' -2' MYID
       enddo
 
       ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
-      call step3d_uv2(0)   
+      call step3d_uv2
 
       call omega
       call step3d_t(0)

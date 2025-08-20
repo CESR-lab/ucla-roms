@@ -4,13 +4,10 @@
 #ifndef ADV_ISONEUTRAL
 # define UPSTREAM_TS
 #endif
-c--# define AKIMA
-c--# define CONST_TRACERS
 
 ! The following two CPPs activate switching triad and stabilizing
 ! algorithms.  They must always be defined whenever the isoneutral
 ! hyperdiffusion is selected.
-
 
 # ifdef ADV_ISONEUTRAL
 #  define SW_TRIADS
@@ -29,27 +26,17 @@ c--# define CONST_TRACERS
 
 # include "compute_tile_bounds.h"
 
-      call step3d_t_iso_tile( istr,iend,jstr,jend,
-     &                       A2d(1,1), A2d(1,2), A2d(1,3), A2d(1,4),
-     &                       A2d(1,1), A2d(1,2), A2d(1,3)
+      call step3d_t_iso_tile( istr,iend,jstr,jend
 # ifdef ADV_ISONEUTRAL
-     &                     , A2d(1,4), A2d(1,6), A2d(1,8), A2d(1,10)
+     &                     , A2d(1,10)
      &                                                    , A3d(1,1)
-#  ifdef STABILIZE
-     &                                                    , A3d(1,2)
-#  endif
 # endif
      &                                                             )
       end
 
-      subroutine step3d_t_iso_tile( istr,iend,jstr,jend, WC,FC,CF,DC
-     &                                                 ,  UFx,VFe, wrk1
+      subroutine step3d_t_iso_tile( istr,iend,jstr,jend
 # ifdef ADV_ISONEUTRAL
-     &                                           , FSC,dTdz,dTdx,dTde
      &                                                         , LapT
-#  ifdef STABILIZE
-     &                                                         ,  Akz
-#  endif
 # endif
      &                                                             )
 
@@ -73,16 +60,17 @@ c--# define CONST_TRACERS
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: UFx,VFe, wrk1
-      real, dimension(:,:),pointer     :: wrk3 
+# ifdef STABILIZE
+      real, dimension(:,:,:),pointer   :: Akz
+# endif
+      real, dimension(:,:),pointer     :: UFx,VFe,
+     &                                    WC,FC,CF,DC,
+     &                                    wrk1,wrk3 
 # ifdef ADV_ISONEUTRAL
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,2) :: FSC,  dTdz,
-     &                                               dTdx, dTde
+      real, dimension(:,:,:),pointer   :: FSC,dTdz,dTdx,dTde
+# endif
+# ifdef ADV_ISONEUTRAL
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: LapT
-#  ifdef STABILIZE
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Akz
-#  endif
 # endif
       real cff
       real, parameter :: epsil=1.E-33
@@ -103,36 +91,53 @@ c--# define CONST_TRACERS
 
 # include "compute_auxiliary_bounds.h"
 
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        imin=istr
-      else
-        imin=istr-1
-      endif
-      if (EASTERN_EDGE) then
-        imax=iend
-      else
-        imax=iend+1
-      endif
-# else
-      imin=istr-1
-      imax=iend+1
+      UFx(1-bf:nx+bf,1-bf:ny+bf)  => scratch_2d(:,1)
+      VFe(1-bf:nx+bf,1-bf:ny+bf)  => scratch_2d(:,2)
+      WC(1-bf:nx+bf,0:nz)         => scratch_2d(:,1)
+      FC(1-bf:nx+bf,0:nz)         => scratch_2d(:,2)
+      CF(1-bf:nx+bf,0:nz)         => scratch_2d(:,3)
+      DC(1-bf:nx+bf,0:nz)         => scratch_2d(:,4)
+      wrk1(1-bf:nx+bf,1-bf:ny+bf) => scratch_2d(:,5)
+# ifdef STABILIZE
+      Akz(1-bf:nx+bf,1-bf:ny+bf,0:nz) => scratch_3d(:,1)
 # endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        jmin=jstr
-      else
-        jmin=jstr-1
-      endif
-      if (NORTHERN_EDGE) then
-        jmax=jend
-      else
-        jmax=jend+1
-      endif
-# else
-      jmin=jstr-1
-      jmax=jend+1
+# ifdef ADV_ISONEUTRAL
+      FSC(1-bf:nx+bf,1-bf:ny+bf,0:2)  => scratch_3d(:,2)
+      dTdz(1-bf:nx+bf,1-bf:ny+bf,0:2) => scratch_3d(:,3)
+      dTdx(1-bf:nx+bf,1-bf:ny+bf,0:2) => scratch_3d(:,5)
+      dTde(1-bf:nx+bf,1-bf:ny+bf,0:2) => scratch_3d(:,4)
 # endif
+
+      if (.not.(ew_periodic)) then
+        if (inode==0) then
+          imin=1
+        else
+          imin=0
+        endif
+        if (inode==np_xi-1) then
+          imax=nx
+        else
+          imax=nx+1
+        endif
+      else
+        imin=0
+        imax=nx+1
+      endif
+      if (.not.(ns_periodic)) then
+        if (jnode==0) then
+          jmin=1
+        else
+          jmin=0
+        endif
+        if (jnode==np_eta-1) then
+          jmax=ny
+        else
+          jmax=ny+1
+        endif
+      else
+        jmin=0
+        jmax=ny+1
+      endif
 #  define ntdf nstp
 c--#  define ntdf nrhs
 
@@ -177,8 +182,8 @@ c--#  define ntdf nrhs
 #  endif
 # endif
 
-            do j=jstr,jend
-              do i=istr,iend
+            do j=1,ny
+              do i=1,nx
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)
      &                                *pn(i,j)*( UFx(i+1,j)-UFx(i,j)
      &                                          +VFe(i,j+1)-VFe(i,j)
@@ -483,54 +488,55 @@ c--#  define ntdf nrhs
 ! Apply lateral boundary conditions to the Laplacian (for the cases
 ! other than periodic: closed or gradient.
 
-#  ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then
-          do k=1,N
-            do j=jmin,jmax
-#   ifndef OBC_WEST
-              LapT(istr-1,j,k)=0.
-#   else
-              LapT(istr-1,j,k)=LapT(istr,j,k)
-#   endif
+        if (.not.(ew_periodic)) then
+          if (inode==0) then
+            do k=1,N
+              do j=jmin,jmax
+                if (.not.(obc_west)) then
+                  LapT(0,j,k)=0.
+                else
+                  LapT(0,j,k)=LapT(1,j,k)
+                endif
+              enddo
             enddo
-          enddo
-        endif
-        if (EASTERN_EDGE) then
-          do k=1,N
-            do j=jmin,jmax
-#   ifndef OBC_EAST
-              LapT(iend+1,j,k)=0.
-#   else
-              LapT(iend+1,j,k)=LapT(iend,j,k)
-#   endif
+          endif
+          if (inode==np_xi-1) then
+            do k=1,N
+              do j=jmin,jmax
+                if (.not.(obc_east)) then
+                  LapT(nx+1,j,k)=0.
+                else
+                  LapT(nx+1,j,k)=LapT(nx,j,k)
+                endif
+              enddo
             enddo
-          enddo
+          endif
         endif
-#  endif
-#  ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          do k=1,N
-            do i=imin,imax
-#   ifndef OBC_SOUTH
-              LapT(i,jstr-1,k)=0.
-#   else
-              LapT(i,jstr-1,k)=LapT(i,jstr,k)
-#   endif
+
+        if (.not.(ns_periodic)) then
+          if (jnode==0) then
+            do k=1,N
+              do i=imin,imax
+                if (.not.(obc_south)) then
+                  LapT(i,0,k)=0.
+                else
+                  LapT(i,0,k)=LapT(i,1,k)
+                endif
+              enddo
             enddo
-          enddo
-        endif
-        if (NORTHERN_EDGE) then
-          do k=1,N
-            do i=imin,imax
-#   ifndef OBC_NORTH
-              LapT(i,jend+1,k)=0.
-#   else
-              LapT(i,jend+1,k)=LapT(i,jend,k)
-#   endif
+          endif
+          if (jnode==np_eta-1) then
+            do k=1,N
+              do i=imin,imax
+                if (.not.(obc_north)) then
+                  LapT(i,ny+1,k)=0.
+                else
+                  LapT(i,ny+1,k)=LapT(i,ny,k)
+                endif
+              enddo
             enddo
-          enddo
+          endif
         endif
-#  endif /* !NS_PERIODIC */
 
 ! The second rotated Laplacian operator:
 !---- ------ ------- --------- ----------
@@ -541,15 +547,15 @@ c--#  define ntdf nrhs
           k2=3-k1
 
           if (k == 0) then
-            do j=jstr-1,jend+1
-              do i=istr-1,iend+1
+            do j=0,ny+1
+              do i=0,nx+1
                 FSC(i,j,k2)=0.
                 dTdz(i,j,k2)=idRz(i,j,1)*(LapT(i,j,2)-LapT(i,j,1))
               enddo
             enddo
           elseif (k < N) then
-            do j=jstr-1,jend+1
-              do i=istr-1,iend+1
+            do j=0,ny+1
+              do i=0,nx+1
                 FSC(i,j,k2)= idRz(i,j,k)*(z_r (i,j,k+1)-z_r (i,j,k))
                 dTdz(i,j,k2)=idRz(i,j,k)*(LapT(i,j,k+1)-LapT(i,j,k))
               enddo
@@ -564,8 +570,8 @@ c--#  define ntdf nrhs
           endif
 
           if (k < N) then
-            do j=jstr,jend
-              do i=istr,iend+1
+            do j=1,ny
+              do i=1,nx+1
                 dTdx(i,j,k2)=0.5*(pm(i,j)+pm(i-1,j))*( LapT(i,j,k+1)
      &                                              -LapT(i-1,j,k+1))
 #  ifdef MASKING
@@ -573,8 +579,8 @@ c--#  define ntdf nrhs
 #  endif
               enddo
             enddo
-            do j=jstr,jend+1
-              do i=istr,iend
+            do j=1,ny+1
+              do i=1,nx
                 dTde(i,j,k2)=0.5*(pn(i,j)+pn(i,j-1))*( LapT(i,j,k+1)
      &                                              -LapT(i,j-1,k+1))
 #  ifdef MASKING
@@ -585,8 +591,8 @@ c--#  define ntdf nrhs
           endif
 
           if (k > 0) then
-            do j=jstr,jend
-              do i=istr,iend+1
+            do j=1,ny
+              do i=1,nx+1
                 UFx(i,j)=-diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
      &                                                 *dn_u(i,j)*(
      &                      dTdx(i,j,k1)
@@ -601,8 +607,8 @@ c--#  define ntdf nrhs
               enddo
             enddo
 
-            do j=jstr,jend+1
-              do i=istr,iend
+            do j=1,ny+1
+              do i=1,nx
                 VFe(i,j)=-diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
      &                                                 *dm_v(i,j)*(
      &                      dTde(i,j,k1)
@@ -618,8 +624,8 @@ c--#  define ntdf nrhs
             enddo
 
             if (k < N) then    ! Compute the vertical component...
-              do j=jstr,jend
-                do i=istr,iend
+              do j=1,ny
+                do i=1,nx
 
 #  ifdef STABILIZE
 
@@ -782,8 +788,8 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
                 enddo
               enddo
             endif    !<-- k < N
-            do j=jstr,jend
-              do i=istr,iend
+            do j=1,ny
+              do i=1,nx
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) +dt*( pm(i,j)
      &               *pn(i,j)*(UFx(i+1,j)-UFx(i,j) +VFe(i,j+1)-VFe(i,j))
      &                                    +FSC(i,j,k2)-FSC(i,j,k1) )
@@ -814,8 +820,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 # endif /* ADV_ISONEUTRAL */
         enddo      !<-- k
 
-
-
 ! Compute and apply vertical advective fluxes.
 
 # ifdef DIAGNOSTICS
@@ -840,7 +844,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           enddo
         endif
 
-        do j=jstr,jend
+        do j=1,ny
 
 # include "compute_vert_tracer_fluxes.h"
 
@@ -858,7 +862,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 
           do k=1,nz
-            do i=istr,iend
+            do i=1,nx
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)*pn(i,j)
      &                                              *(FC(i,k)-FC(i,k-1))
 
@@ -879,7 +883,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
           !! JM add line for bottom tracer flux
-          do i=istr,iend
+          do i=1,nx
             t(i,j,N,nnew,itrc)=t(i,j,N,nnew,itrc)+dt*stflx(i,j,itrc)
 !           t(i,j,1,nnew,itrc)=t(i,j,1,nnew,itrc)+dt*btflx(i,j,itrc)
           enddo
@@ -892,7 +896,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
           if (itrc == itemp) then
             do k=N-1,1,-1
-              do i=istr,iend
+              do i=1,nx
                 cff=srflx(i,j)*swr_frac(i,j,k)
 #  ifdef LMD_NONLOCAL
      &                 -ghat(i,j,k)*(stflx(i,j,itemp)-srflx(i,j))
@@ -908,7 +912,7 @@ c?? way to the bottom is entirely absorbed within the botom-most grid
 c?? box, rather that reflected/scattered back to the water column. It
 c?? is not clear, however, how to deal with this situation correctly
 c??
-c??         do i=istr,iend
+c??         do i=1,nx
 c??           cff=srflx(i,j)*swr_frac(i,j,0)
 c??#  ifdef LMD_NONLOCAL
 c??  &               -ghat(i,j,0)*(stflx(i,j,itemp)-srflx(i,j))
@@ -919,7 +923,7 @@ c??         enddo
 #  if defined LMD_NONLOCAL && defined SALINITY
           elseif (itrc == isalt) then
             do k=N-1,1,-1
-              do i=istr,iend
+              do i=1,nx
                 cff=-dt*ghat(i,j,k)*stflx(i,j,isalt)
                 t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
@@ -969,7 +973,7 @@ c??         enddo
 
           iAkt=min(itrc,iTandS)
 
-          do i=istr,iend
+          do i=1,nx
             DC(i,0)=dt*pm(i,j)*pn(i,j) !<--horizontal metric
 
 # if defined ADV_ISONEUTRAL && defined STABILIZE
@@ -985,7 +989,7 @@ c??         enddo
             DC(i,1)=cff*t(i,j,1,nnew,itrc)
           enddo
           do k=2,N-1,+1
-            do i=istr,iend
+            do i=1,nx
 # if defined ADV_ISONEUTRAL && defined STABILIZE
               FC(i,k)=2.*dt*(Akt(i,j,k,iAkt)+Akz(i,j,k))
 # else
@@ -1006,7 +1010,7 @@ c??         enddo
      &                          FC(i,k-1)+max(WC(i,k-1),0.) ))
             enddo
           enddo          !--> discard DC(:,0)
-          do i=istr,iend
+          do i=1,nx
             t(i,j,N,nnew,itrc)=( t(i,j,N,nnew,itrc) +DC(i,N-1)*(
      &                               FC(i,N-1)+max(WC(i,N-1),0.) )
      &                   )/( Hz(i,j,N) +FC(i,N-1)-min(WC(i,N-1),0.)
@@ -1017,7 +1021,7 @@ c??         enddo
 # endif
           enddo
           do k=N-1,1,-1
-            do i=istr,iend
+            do i=1,nx
               t(i,j,k,nnew,itrc)=(DC(i,k)+CF(i,k)*t(i,j,k+1,nnew,itrc))
 # ifdef MASKING
      &                                                      *rmask(i,j)
@@ -1028,13 +1032,13 @@ c??         enddo
 # ifdef DIAGNOSTICS
           if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then 
             do k=1,nz
-              do i=istr,iend
+              do i=1,nx
                 VFlxD(i,k) =
      &            (VFlxD(i,k) - Hz(i,j,k)*t(i,j,k,nnew,itrc))/dt
               enddo
             enddo
             ! Convert divergence to fluxes on w-points
-            do i=istr,iend
+            do i=1,nx
               ZFlx(i,1)= VFlxD(i,1)/(pm(i,j)*pn(i,j)) 
               do k=2,nz
                 ZFlx(i,k)= VFlxD(i,k)/(pm(i,j)*pn(i,j)) + ZFlx(i,k-1)
@@ -1043,7 +1047,7 @@ c??         enddo
             if (j==20.and.mynode==0) then
 !              print *,maxval(Tdiag(1:nx,j,:,tmixz,td(itrc)))
             endif
-            do i=istr,iend
+            do i=1,nx
               do k=1,nz
 !               Tdiag(i,j,k,vmixd,td(itrc)) = 
 !    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
@@ -1065,20 +1069,28 @@ c??         enddo
 
 #ifdef CONST_TRACERS
           do k=1,N
-            do i=istr,iend
+            do i=1,nx
               t(i,j,k,nnew,itrc)=t(i,j,k,nstp,itrc)
             enddo
           enddo
 #endif
         enddo      !<-- j
 
-        call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
+        call t3dbc_tile (1,nx,1,ny, itrc, wrk1)
 # ifdef DIAGNOSTICS
 !       if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag)
 !    &    call set_diags_t_bc(itrc,td)
 # endif
 
       enddo     !<-- itrc
+
+      nullify(UFx,VFe,WC,FC,CF,DC)
+# ifdef STABILIZE
+      nullify(Akz)
+# endif
+# ifdef ADV_ISONEUTRAL
+      nullify(FSC,dTdz,dTdx,dTde)
+# endif
 
 # if defined(MARBL)
 
@@ -1091,26 +1103,27 @@ c??         enddo
 !         print *, shape(t), ' is the shape of t'
 !         print *, lbound(t), ' is the lower bound of t'
 !      end if
-      call marbldrv_column_physics(istr,iend,jstr,jend,t)
+      call marbldrv_column_physics(1,nx,1,ny,t)
 # elif defined(BIOLOGY_BEC2)
       if (mynode==0) then
       print *, 'doing BGC with BEC'
       end if
       
-      call ecosys_bec2_tile(istr,iend,jstr,jend) ! BEC, 2014
+      call ecosys_bec2_tile(1,nx,1,ny) ! BEC, 2014
 # endif
 
-# if defined EW_PERIODIC || defined NS_PERIODIC || defined MPI
+      if (ew_periodic.or.ns_periodic.or.mpi_status) then
       ! for BGC, we should be able to pack more tracer arrays
+
       ! in a single mpi_exchange
-      do itrc=1,nt-1,2
-        call exchange_xxx( t(:,:,:,nnew,itrc),
-     &                     t(:,:,:,nnew,itrc+1) )
-      enddo
-      if (mod(nt,2) == 1) then
-        call exchange_xxx( t(:,:,:,nnew,nt) )
+        do itrc=1,nt-1,2
+          call exchange_xxx( t(:,:,:,nnew,itrc),
+     &                       t(:,:,:,nnew,itrc+1) )
+        enddo
+        if (mod(nt,2) == 1) then
+          call exchange_xxx( t(:,:,:,nnew,nt) )
+        endif
       endif
-# endif
       end
 
       subroutine check_step_t_switches(ierr)

@@ -36,6 +36,11 @@
 !    &                      padd_E=(Mm_old+2)/2-(Mm_old+1)/2
       integer, parameter :: padd_X= 0,padd_E= 0
 
+# ifdef MPI
+      logical,parameter :: mpi_status = .true.
+# else
+      logical,parameter :: mpi_status = .false.
+# endif
 # ifdef EW_PERIODIC
       logical,parameter :: ew_periodic =.true.
 # else
