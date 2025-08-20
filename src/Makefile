@@ -109,7 +109,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	eos_vars.F grid.F roms_mpi.F mess_buffers.F mixing.F\
 	private_scratch.F basic_output.F\
 	scalars.F scoord.F strings.F work_mod.F nc_read_write.F\
-	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
+	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	analytical.F\
 	diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	setup_grid1.F	setup_grid2.F\
@@ -133,7 +133,9 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
 	random_output.F cstar_output.F 	zslice_output.F\
 \
-	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
+	bgc_shared_vars.F bgc_forces.F bgc_io.F\
+    bec2_vars.F bec2_params.F bec2_driver.F\
+    marbl_driver.F\
 \
 	main.F	
 
