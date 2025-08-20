@@ -921,7 +921,7 @@
      &        ,size(vname_marbl_diag_2d(1,:))
      &        ,' does not match no. expected by MARBL: '
      &        ,(diag_cnt_sf_2d+diag_cnt_it_2d)
-     &        ,'. Set nr_bec2_diag_2d = '
+     &        ,'. Set nr_bgc_diag_2d = '
      &        ,(diag_cnt_sf_2d+diag_cnt_it_2d)
      &        ,' in bgc_shared_vars.F and recompile'
          error stop 'ERROR reported from MARBL driver'
@@ -934,7 +934,7 @@
      &        ,size(vname_marbl_diag_3d(1,:))
      &        ,' does not match no. expected by MARBL: '
      &        ,(diag_cnt_sf_3d+diag_cnt_it_3d)
-     &        ,'. Set nr_bec2_diag_3d = '
+     &        ,'. Set nr_bgc_diag_3d = '
      &        ,(diag_cnt_sf_3d+diag_cnt_it_3d)
      &        ,' in bgc_shared_vars.F and recompile'
          error stop 'ERROR reported from MARBL driver'
