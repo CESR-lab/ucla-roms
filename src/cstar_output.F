@@ -8,7 +8,7 @@
       use param
       use tracers
       use marbl_driver
-      use bgc_ecosys_vars
+      use bgc_shared_vars
       use dimensions
       use roms_read_write
       use nc_read_write
@@ -119,12 +119,12 @@
       itot = 0
       ! Loop over 2D BGC diagnostics...
       ! ...but use itot as index (to include other diagnostics)
-      do idx=1,nr_bec2_diag_2d
+      do idx=1,nr_bgc_diag_2d
          itot=itot+1
-         if (vname_bec2_diag_2d(1,idx)=='FG_CO2') then
+         if (vname_bgc_diag_2d(1,idx)=='FG_CO2') then
            iFG = itot
          endif
-         if (vname_bec2_diag_2d(1,idx)=='FG_ALT_CO2') then
+         if (vname_bgc_diag_2d(1,idx)=='FG_ALT_CO2') then
            iFG_alt = itot
          endif
       enddo
@@ -132,12 +132,12 @@
       itot = 0
       ! Loop over 3D BGC diagnostics...
       ! ...but use itot as index (to include other diagnostics)
-      do idx=1,nr_bec2_diag_3d
+      do idx=1,nr_bgc_diag_3d
          itot=itot+1
-         if (vname_bec2_diag_3d(1,idx)=='pH_3D') then
+         if (vname_bgc_diag_3d(1,idx)=='pH_3D') then
            iPH = itot
          endif
-         if (vname_bec2_diag_3d(1,idx)=='pH_3D_ALT_CO2') then
+         if (vname_bgc_diag_3d(1,idx)=='pH_3D_ALT_CO2') then
            iPH_alt = itot
          endif
       enddo
@@ -226,13 +226,13 @@
 
       hDIC_alt_avg(:,:,:) = hDIC_alt_avg(:,:,:)*(1-coef) + t(:,:,:,knew,iDIC_alt)*Hz(:,:,:)*coef
 
-      pH_avg(:,:,:) = pH_avg(:,:,:)*(1-coef) + bec2_diag_3d(:,:,:,iPH)*coef
+      pH_avg(:,:,:) = pH_avg(:,:,:)*(1-coef) + bgc_diag_3d(:,:,:,iPH)*coef
 
-      pH_alt_avg(:,:,:) = pH_alt_avg(:,:,:)*(1-coef) + bec2_diag_3d(:,:,:,iPH_alt)*coef
+      pH_alt_avg(:,:,:) = pH_alt_avg(:,:,:)*(1-coef) + bgc_diag_3d(:,:,:,iPH_alt)*coef
 
-      FG_CO2_avg(:,:) = FG_CO2_avg(:,:)*(1-coef) + bec2_diag_2d(:,:,iFG)*coef
+      FG_CO2_avg(:,:) = FG_CO2_avg(:,:)*(1-coef) + bgc_diag_2d(:,:,iFG)*coef
 
-      FG_ALT_CO2_avg(:,:) = FG_ALT_CO2_avg(:,:)*(1-coef) + bec2_diag_2d(:,:,iFG_alt)*coef
+      FG_ALT_CO2_avg(:,:) = FG_ALT_CO2_avg(:,:)*(1-coef) + bgc_diag_2d(:,:,iFG_alt)*coef
 
       if (cdr_source) then
         ALK_source_avg(:,:,:) = ALK_source_avg(:,:,:)*(1-coef) + ALK_source(:,:,:)*coef
@@ -480,10 +480,10 @@
           call ncwrite(ncid,'hDIC',hDIC_tmp(i0:i1,j0:j1,:),(/1,1,1,record/))
           call ncwrite(ncid,'hALK_ALT_CO2',hALK_alt_tmp(i0:i1,j0:j1,:),(/1,1,1,record/))
           call ncwrite(ncid,'hDIC_ALT_CO2',hDIC_alt_tmp(i0:i1,j0:j1,:),(/1,1,1,record/))
-          call ncwrite(ncid,'pH',bec2_diag_3d(i0:i1,j0:j1,:,iPH),(/1,1,1,record/))
-          call ncwrite(ncid,'pH_ALT_CO2',bec2_diag_3d(i0:i1,j0:j1,:,iPH_alt),(/1,1,1,record/))
-          call ncwrite(ncid,'FG_CO2'  ,bec2_diag_2d(i0:i1,j0:j1,iFG),(/1,1,record/))
-          call ncwrite(ncid,'FG_ALT_CO2'  ,bec2_diag_2d(i0:i1,j0:j1,iFG_alt),(/1,1,record/))
+          call ncwrite(ncid,'pH',bgc_diag_3d(i0:i1,j0:j1,:,iPH),(/1,1,1,record/))
+          call ncwrite(ncid,'pH_ALT_CO2',bgc_diag_3d(i0:i1,j0:j1,:,iPH_alt),(/1,1,1,record/))
+          call ncwrite(ncid,'FG_CO2'  ,bgc_diag_2d(i0:i1,j0:j1,iFG),(/1,1,record/))
+          call ncwrite(ncid,'FG_ALT_CO2'  ,bgc_diag_2d(i0:i1,j0:j1,iFG_alt),(/1,1,record/))
           if (cdr_source) then
             call ncwrite(ncid,'ALK_source',ALK_source(i0:i1,j0:j1,:),(/1,1,1,record/))
             call ncwrite(ncid,'ALK_ALT_source',ALK_alt_source(i0:i1,j0:j1,:),(/1,1,1,record/))

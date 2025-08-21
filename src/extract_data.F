@@ -51,7 +51,7 @@
       use scalars
       use diagnostics
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
-      use bgc_ecosys_vars
+      use bgc_shared_vars
 #endif
 
       ! TODO: add averaging

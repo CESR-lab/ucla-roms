@@ -8,7 +8,7 @@
 ! Note that NONE of the model physical parameters is initialized here.
 
       use param
-      use bgc ! init_scalars_bec2
+      use bec2_vars ! init_scalars_bec2
       use boundary
       use comm_vars
       use mixing

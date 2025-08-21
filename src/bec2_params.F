@@ -1,17 +1,9 @@
-      module bgc_param_ini
+      module bec2_params
 
       ! Set the BGC parameters 
       ! and initialisation of the
       ! BGC - bio-geo-chemical model
       ! -----------------------------
-!!====================================================================
-!! 10/2022 : Revised architecture from bgc_param_bec2.h and 
-!!           bgc_ecosys_bec2_init.F 
-!!====================================================================
-!!
-!! ---> Version for PACMED-25KM - 10/2022
-!!
-!!====================================================================
 
 #include "cppdefs.opt"
 #ifdef BIOLOGY_BEC2
@@ -365,7 +357,9 @@
 
       use param
       use grid
-      use bgc_ecosys_vars
+      use bgc_io
+      use bgc_shared_vars
+      use bec2_vars
 
       implicit none
 
@@ -473,12 +467,12 @@
       Nfixer(auto_ind)        = .false.
       exp_calcifier(auto_ind) = .false.
       grazee_ind(auto_ind)    = auto_ind
-      C_ind(auto_ind)         = spC_ind_t
-      Chl_ind(auto_ind)       = spChl_ind_t
-      Fe_ind(auto_ind)        = spFe_ind_t
+      C_ind(auto_ind)         = bgc_idx(iSPC)
+      Chl_ind(auto_ind)       = bgc_idx(iSPCHL)
+      Fe_ind(auto_ind)        = bgc_idx(iSPFE)
       Si_ind(auto_ind)        = 0
       imp_calcifier(auto_ind) = .true.
-      CaCO3_ind(auto_ind)     = spCaCO3_ind_t
+      CaCO3_ind(auto_ind)     = bgc_idx(iSPCACO3)
 
       ! More default parameters for diatoms:
       auto_ind = diat_ind
@@ -488,10 +482,10 @@
       imp_calcifier(auto_ind) = .false.
       exp_calcifier(auto_ind) = .false.
       grazee_ind(auto_ind)    = auto_ind
-      C_ind(auto_ind)         = diatC_ind_t
-      Chl_ind(auto_ind)       = diatChl_ind_t
-      Fe_ind(auto_ind)        = diatFe_ind_t
-      Si_ind(auto_ind)        = diatSi_ind_t
+      C_ind(auto_ind)         = bgc_idx(iDIATC)
+      Chl_ind(auto_ind)       = bgc_idx(iDIATCHL)
+      Fe_ind(auto_ind)        = bgc_idx(iDIATFE)
+      Si_ind(auto_ind)        = bgc_idx(iDIATSI)
       CaCO3_ind(auto_ind)     = 0
 
       ! More default parameters for diazotrophs:
@@ -502,9 +496,9 @@
       imp_calcifier(auto_ind) = .false.
       exp_calcifier(auto_ind) = .false.
       grazee_ind(auto_ind)    = auto_ind
-      C_ind(auto_ind)         = diazC_ind_t
-      Chl_ind(auto_ind)       = diazChl_ind_t
-      Fe_ind(auto_ind)        = diazFe_ind_t
+      C_ind(auto_ind)         = bgc_idx(iDIAZC)
+      Chl_ind(auto_ind)       = bgc_idx(iDIAZCHL)
+      Fe_ind(auto_ind)        = bgc_idx(iDIAZFE)
       Si_ind(auto_ind)        = 0
       CaCO3_ind(auto_ind)     = 0
 
@@ -553,8 +547,4 @@
 ! ----------------------------------------------------------------------
 
 #endif /* BIOLOGY_BEC2 - entire module */
-      end module bgc_param_ini
-
-
-
-
+      end module bec2_params

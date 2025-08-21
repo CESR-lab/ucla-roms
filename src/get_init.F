@@ -5,7 +5,7 @@
 
       use param
       use tracers, only: t_vname, t, iTandS
-      use bgc ! get_init_bgc_diag
+      use bgc_io ! get_init_bgc_diag
 #ifdef MARBL
       use marbl_driver, only: marbldrv_read_ss_vars_from_rst
 #endif
@@ -18,7 +18,7 @@
       use basic_output
       use scalars
       use netcdf
-      use bgc_ecosys_vars
+      use bgc_shared_vars
       use diagnostics
       use obc_tune
       use nc_read_write, only: handle_ierr, ncread
