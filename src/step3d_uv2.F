@@ -804,7 +804,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         enddo
       enddo
 
-      if (diag_w) call set_diags_w_at_uv2( istr, iend, jstr, jend )
+!     if (diag_w) call set_diags_w_at_uv2( istr, iend, jstr, jend )
 !
 
 !--------------------------------------------------------------------
@@ -812,7 +812,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
       call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
 
-      if (diag_w) call set_diags_w_at_bc( istr, iend, jstr, jend )
+!     if (diag_w) call set_diags_w_at_bc( istr, iend, jstr, jend )
 
 !--------------------------------------------------------------------
 ! Exchange periodic boundaries and computational margins. 
@@ -823,7 +823,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # endif /* NHMG */
 
-      if (diag_w)  call set_diags_w_at_uv2_end
+!     if (diag_w)  call set_diags_w_at_uv2_end
 
       end
 

@@ -200,9 +200,9 @@
       beta  = 1 - alpha
 
       if (diag_uv) then
-        allocate(Udiag(0:nx+1,0:ny+1,nz,nmd))
-        allocate(Vdiag(0:nx+1,0:ny+1,nz,nmd))
-        allocate(Wdiag(0:nx+1,0:ny+1,nz,1))
+        allocate(Udiag(0:nx+1,0:ny+1,nz,nmd)); Udiag = 0
+        allocate(Vdiag(0:nx+1,0:ny+1,nz,nmd)); Vdiag = 0
+        allocate(Wdiag(0:nx+1,0:ny+1,nz,1)); Wdiag = 0
         allocate(u_prev(nx,nz) )
         allocate(v_prev(nx,nz) )
         if (diag_avg) then   
@@ -289,7 +289,7 @@
       allocate( flx( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FX4( GLOBAL_2D_ARRAY ) )       ! 4th order advection arrays. Used both uv & tracer, so always needed.
       allocate( FY4( GLOBAL_2D_ARRAY ) )       ! called within k loop so only need 2D slice per k
-      allocate( FZ4( GLOBAL_1DX_ARRAY, 0:N ) ) ! both u/v/tracer. vertical flux at z_w level.
+      allocate( FZ4( 0:nx+1,0:nz) ) ! both u/v/tracer. vertical flux at z_w level.
       FZ4(:,0) = 0  ! top and bottom vertical fluxes are always zero
       FZ4(:,nz)= 0
 

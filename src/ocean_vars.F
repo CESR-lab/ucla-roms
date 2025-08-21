@@ -5,6 +5,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       use scalars
       implicit none
       private

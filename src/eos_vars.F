@@ -5,6 +5,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       implicit none
 
 ! Tcoef, T0   Coefficients for linear Equation of State 

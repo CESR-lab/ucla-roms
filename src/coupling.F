@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       implicit none
 
 ! File "coupling":  Declare 2D arrays associated with coupling
