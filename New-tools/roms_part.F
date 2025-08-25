@@ -10,7 +10,7 @@
       private
        
       ! usage flags
-      logical,public :: del_part_files,classic
+      logical,public :: del_part_files,classic_part
 
       ! partition/joining dimensions
       public :: npartx,nparty
@@ -155,30 +155,39 @@
       integer,intent(out) :: npartx,nparty
 
       integer :: nargs,i
+      integer :: nflags = 0  ! assume no flags present
       character(len=128) :: arg
 
       nargs =  command_argument_count()
 
-      if (nargs < 4) call show_use_partit
-      
       ! first 2 should be number of subdomains in x- or y- direction
       call get_command_argument(1,arg);
-      read(arg,*) npartx
-      call get_command_argument(2,arg);
+      ! if instead we have the classic flag present, all indices are shifted by 1
+      if (index(arg,'-classic')>0) then
+        if (nargs < 5) call show_use_partit
+        print*,'Partition set to classic mode (ignoring mpi_masking)'
+        classic_part = .true.
+        nflags=1
+        ! get npartx
+        call get_command_argument(1+nflags,arg);
+        read(arg,*) npartx
+      else
+        if (nargs < 4) call show_use_partit
+        read(arg,*) npartx
+      endif
+
+      call get_command_argument(2+nflags,arg);
       read(arg,*) nparty
       print *,nargs,npartx,nparty
 
-      call get_command_argument(3,arg)
+      call get_command_argument(3+nflags,arg)
       grdfile = trim(adjustl(arg))
-!     read(arg,*) grdfile
-!     print *,'gridfile: ',grdfile
       
-      nfiles = nargs - 3
+      nfiles = nargs - 3 - nflags
       allocate(srcfiles(nfiles))
-      do i = 4,nargs
+      do i = (4+nflags),nargs
         call get_command_argument(i,arg)
-        srcfiles(i-3) = trim(adjustl(arg))
-!       read(arg,*) srcfiles(i-3)
+        srcfiles(i-3-nflags) = trim(adjustl(arg))
       enddo
       print *,grdfile,srcfiles(1)
 
@@ -192,7 +201,6 @@
 
       ! baseline options for flags
       del_part_files = .false.
-      classic   = .false.
 
       nargs =  command_argument_count()
 
@@ -208,11 +216,6 @@
           print*,'Flag to delete partial files raised'
           del_part_files = .true.
           nflags         = nflags+1
-        ! "classic" flag: joins files without mpi_masking
-        elseif (index(arg,'-classic')>0) then
-          print*,'Joining in classic mode (ignoring mpi_masking)'
-          classic = .true.
-          nflags  = nflags+1
         ! Per 'show_use_ncjoin' flags go in front. Any following input must be
         ! a netcdf file. This convention allows for allocation of an array whose
         ! length is exactly as many files being read in.
@@ -256,11 +259,11 @@
         if (i==(nfiles-1)) file_indices(count)=i
       enddo
 
-      print*,'total files: ',total_files
+      !print*,'total files: ',total_files
 
       file_indices=pack(file_indices, file_indices>-1)
 
-      print*,'file_indices: ',(file_indices)
+      !print*,'file_indices: ',(file_indices)
 
 !      do i=1,size(file_indices)
 !        if (MOD(i,2)/=0) then
@@ -296,7 +299,9 @@
       implicit none
 
       print *, 'Usage of partit should be: ',
-     &       'partit npx npy grdfile.nc, file1.nc...'
+     &       'partit --<user flags> npx npy grdfile.nc file1.nc...'
+
+      print *, 'optional: "classic" flag to partition without mpi masking'
      
       stop
 
@@ -306,8 +311,10 @@
       implicit none
 
       print *, 'Usage of ncjoin should be: ',
-     &       'ncjoin --flags (optional) file1.??.nc ...'
+     &       'ncjoin --<user flags> file1.??.nc ...'
      
+      print *, 'optional: "delete" flag to remove all partial files'
+
       stop
 
       end subroutine show_use_ncjoin !]
@@ -439,7 +446,9 @@
       allocate(mask(0:gnx+1,0:gny+1))
       call ncread(ncid, 'mask_rho',mask)
       ierr = nf90_close(ncid)
-!      mask = 1
+
+      ! Classic modes presence means all masks are set to 1 - cannot be ignored
+      if (classic_part) mask = 1
 
       ! Get interior subdomain size
       nx = ceiling(1.0*gnx/npx)
@@ -576,7 +585,6 @@
         call insert_nodes(fname,part-1,nparts)
 
        ierr=nf90_create(trim(fname),nf90_netcdf4,npid)
-!        ierr=nf90_create(trim(fname),nf90_classic_model,npid)
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'creating file: ',trim(fname) )
 
@@ -584,9 +592,21 @@
         ierr=nf90_put_att(npid, nf90_global, 'globaldims', 
      &                   (/ncinfo%gsize(1)-2,ncinfo%gsize(2)-2/))
 
+        ! NOTE: These are only saved when not in classical format such that
+        ! ncjoin and roms_mpi.F are properly informed of how files were partitioned
+        if (.not.classic_part) then
+        ! i and j nodes (how it was partitioned)
+        ierr=nf90_put_att(npid, nf90_global, 'ij_nodes', (/npartx,nparty/))
         ! subdompos: i,j position of sub-domain
         subdompos = (/ i-1, j-1 /) ! zero-based!
         ierr=nf90_put_att(npid, nf90_global, 'subdompos', subdompos)
+        ! neighbors: N,NE,E,SE,S,SW,W,NW (READ IN THAT ORDER)
+        loc_neigh = (/ node_map(j+1,i), node_map(j+1,i+1),
+     &                 node_map(j,i+1), node_map(j-1,i+1),
+     &                 node_map(j-1,i), node_map(j-1,i-1),
+     &                 node_map(j,i-1), node_map(j+1,i-1) /)
+        ierr=nf90_put_att(npid, nf90_global, 'neighbors',loc_neigh-1)
+        endif
 
         ! partition: node, total nodes, llc x, llc y
         ibuff = (/part-1, nparts, iloc(i,2), jloc(j,2) /)
@@ -600,16 +620,6 @@
         ibuff = (/iloc(i,3),jloc(j,3),ilcu(i,3),jlcv(j,3) /)
         ierr=nf90_put_att(npid, nf90_global, 'end_idx', ibuff)
 
-        ! i and j nodes (how it was partitioned)
-        ierr=nf90_put_att(npid, nf90_global, 'ij_nodes', (/npartx,nparty/))
-
-        ! neighbors: N,NE,E,SE,S,SW,W,NW (READ IN THAT ORDER)
-        loc_neigh = (/ node_map(j+1,i), node_map(j+1,i+1),
-     &                 node_map(j,i+1), node_map(j-1,i+1),
-     &                 node_map(j-1,i), node_map(j-1,i-1),
-     &                 node_map(j,i-1), node_map(j+1,i-1) /)
-        ierr=nf90_put_att(npid, nf90_global, 'neighbors',loc_neigh-1)
-         
         ! No I/O is performed when NF90_INQUIRE is called, since the required information is 
         ! available in memory for each open netCDF dataset.
 
@@ -1163,6 +1173,7 @@
       integer :: i,j,varid
       integer :: dimids(4),ndims
       integer :: ivar,nvars,xtype
+      integer,dimension(2) :: ij
       type(ncstructure)  :: ncinfo
       character(len=50) :: vname
       character(len=7),dimension(5)  :: dname
@@ -1193,8 +1204,14 @@
       call get_nc_info(npid,ncinfo)
 
       ! get global dimensions - look for attribute
-      ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
+      ierr = nf90_get_att(npid,nf90_global,'ij_nodes',ij)
+      ! if file has attribute, mpi masking is present
       if (ierr==nf90_noerr) then
+        ! "globaldims" is present in all files, following introduction
+        ! of mpi masking. But for backwards compatibility with files
+        ! partitioned before this attributes introduction (pre mpi masking)
+        ! we only rely on this attribute when mpi masking is known to be present
+        ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
         ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
         if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
@@ -1206,6 +1223,10 @@
       ! if not present, then mpi_masking is not present, so simply grab
       ! final partial file to calculate global domains
       elseif (ierr/=nf90_noerr) then
+        ! since we cannot fully rely on "globaldims" for complete backwards
+        ! compatibilty we use last file and add domain ranges. However, these
+        ! lack the -2 treatment globaldims received in mpimasking release.
+        ! therefore we subtract 3 rather than just 1 from these for consistency
         partfile = partfiles(nparts-1)
         ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
         if (ierr/=nf90_noerr) 
@@ -1214,12 +1235,14 @@
         ierr=nf90_inquire(npid,ndimensions=ndims)
         do i = 1,ndims
           ierr = nf90_inquire_dimension(npid,i,dname(i),dsize(i))
-          if (index(dname(i),'xi_rho')>0)  gdims(1) = ibuff(3) + dsize(i) -1
-          if (index(dname(i),'eta_rho')>0) gdims(2) = ibuff(4) + dsize(i) -1
+          if (index(dname(i),'xi_rho')>0)  gdims(1) = ibuff(3) + dsize(i) -3
+          if (index(dname(i),'eta_rho')>0) gdims(2) = ibuff(4) + dsize(i) -3
           if (index(dname(i),'s_rho')>0)   gdims(3) = dsize(i)
         enddo
         ierr = nf90_close(npid)
       endif
+
+      !print*,gdims(1),gdims(2)
 
       gnx = gdims(1)+2
       gny = gdims(2)+2
@@ -1376,21 +1399,16 @@
       ! get number of rows (jnodes)
       ierr = nf90_open(trim(partfiles(part0)),nf90_nowrite,npid)
       ierr = nf90_get_att(npid,nf90_global,'ij_nodes',ij)
-      ! first check if provided in attributes, only when not in classic join mode
-      if (ierr==nf90_noerr.and.(.not.classic)) then
-        ierr=nf90_close(npid)
+      ! first check if provided in attributes
+      if (ierr==nf90_noerr) then
+        ierr=nf90_close(npid)  ! file closed within conditionals as prev. ierr is needed
         nrows=ij(2)
         ! make note of mpi_masking:
         mpimasking=.true.
         print*,'mpi_masking accounted for...'
-      ! classic mode for backwards compatibility (no mpi_masking)
-      elseif (((ierr==nf90_noerr).and.(classic)).or.   ! if new attributes are present,
-     &         (ierr/=nf90_noerr)) then                ! and user did not use mpi_masking
-                                                       ! OR if attribute is N/A --> auto classic
+      elseif (ierr/=nf90_noerr) then
         mpimasking=.false.
-        if (classic.and.(ierr==nf90_noerr))
-     &    print*,'mpi_masking off, per classic flag'
-        if (ierr/=nf90_noerr) print*,'mpi_masking off'
+        print*,'mpi_masking off'
         ierr=nf90_close(npid)
         allocate(j0(part0:part1))
         allocate(j1(part0:part1))
