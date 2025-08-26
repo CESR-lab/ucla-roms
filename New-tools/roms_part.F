@@ -301,7 +301,7 @@
       print *, 'Usage of partit should be: ',
      &       'partit --<user flags> npx npy grdfile.nc file1.nc...'
 
-      print *, 'optional: "classic" flag to partition without mpi masking'
+      print *, 'optional: "classic" flag will partition like old Tool'
      
       stop
 
@@ -1204,14 +1204,9 @@
       call get_nc_info(npid,ncinfo)
 
       ! get global dimensions - look for attribute
-      ierr = nf90_get_att(npid,nf90_global,'ij_nodes',ij)
+      ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
       ! if file has attribute, mpi masking is present
       if (ierr==nf90_noerr) then
-        ! "globaldims" is present in all files, following introduction
-        ! of mpi masking. But for backwards compatibility with files
-        ! partitioned before this attributes introduction (pre mpi masking)
-        ! we only rely on this attribute when mpi masking is known to be present
-        ierr = nf90_get_att(npid,nf90_global,'globaldims',gdims)
         ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
         if (ierr/=nf90_noerr)
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
@@ -1223,11 +1218,10 @@
       ! if not present, then mpi_masking is not present, so simply grab
       ! final partial file to calculate global domains
       elseif (ierr/=nf90_noerr) then
-        ! since we cannot fully rely on "globaldims" for complete backwards
-        ! compatibilty we use last file and add domain ranges. However, these
-        ! lack the -2 treatment globaldims received in mpimasking release.
-        ! therefore we subtract 3 rather than just 1 from these for consistency
+        print*,'WARNING: globaldims attribute not found'
+        print*,'Assuming final partial file is the uppermost right part'
         partfile = partfiles(nparts-1)
+        print*,'final partfile: ',partfile
         ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'opening file: ',trim(partfile) )
@@ -1241,8 +1235,6 @@
         enddo
         ierr = nf90_close(npid)
       endif
-
-      !print*,gdims(1),gdims(2)
 
       gnx = gdims(1)+2
       gny = gdims(2)+2
@@ -1393,7 +1385,7 @@
       integer,dimension(2)             :: ij
       integer                          :: mpi_role,write_comm,counter,total_nodes
       character(len=1)                 :: bryvariable
-      logical                          :: mpimasking
+      logical                          :: newfile
 
       if (mynode==0) then
       ! get number of rows (jnodes)
@@ -1404,11 +1396,9 @@
         ierr=nf90_close(npid)  ! file closed within conditionals as prev. ierr is needed
         nrows=ij(2)
         ! make note of mpi_masking:
-        mpimasking=.true.
-        print*,'mpi_masking accounted for...'
+        newfile=.true.
       elseif (ierr/=nf90_noerr) then
-        mpimasking=.false.
-        print*,'mpi_masking off'
+        newfile=.false.
         ierr=nf90_close(npid)
         allocate(j0(part0:part1))
         allocate(j1(part0:part1))
@@ -1441,14 +1431,14 @@
       endif  ! attribute version
       endif  ! mynode==0
 
-      call MPI_BCAST(mpimasking,1,MPI_LOGICAL,0,part_comm,ierr)
+      call MPI_BCAST(newfile,1,MPI_LOGICAL,0,part_comm,ierr)
 
       ! broadcast size of jparts (only needed for no mpi masking)
-      if (.not.mpimasking) call MPI_BCAST(jsize,1,MPI_INTEGER,0,part_comm,ierr)
+      if (.not.newfile) call MPI_BCAST(jsize,1,MPI_INTEGER,0,part_comm,ierr)
       if (mynode/=0) then
         allocate(jparts(0:jsize))
       endif
-      if (.not.mpimasking) call MPI_BCAST(jparts,jsize,MPI_INTEGER,0,part_comm,ierr)
+      if (.not.newfile) call MPI_BCAST(jparts,jsize,MPI_INTEGER,0,part_comm,ierr)
 
       call MPI_BCAST(nrows,1,MPI_INTEGER,0,part_comm,ierr)
  
@@ -1456,11 +1446,10 @@
 
       ! get j partitions per row
       rowpart = ceiling(1.0*nrows/nnodes)
-      if (mynode==0) print*,'Jnodes per MPI Row: ',rowpart
+      !if (mynode==0) print*,'Jnodes per MPI Row: ',rowpart
 
       if ((mynode+1)*rowpart<=nrows) then
         mpi_role=1
-        print*,'Node ',mynode,'Active'
       else
         mpi_role=MPI_UNDEFINED
       endif
@@ -1477,8 +1466,8 @@
       partitions = -1
       counter=1
       do part=part0,part1
-        ! get jnodes (method based on presnce of mpimasking)
-        if (mpimasking) then
+        ! get jnodes
+        if (newfile) then
           ierr=nf90_open_par(trim(partfiles(part)),nf90_nowrite,write_comm,MPI_Info_Null,npid)
           ierr = nf90_get_att(npid,nf90_global,'subdompos',ij)
           jnode=ij(2)
@@ -1502,8 +1491,6 @@
       rp0 = partitions(1)
       rp1 = partitions(size(partitions))
   
-      print*,'Node ',mynode,'File ranges: ',partitions
-
       call MPI_Barrier(write_comm,ierr)
 
       ! Read partial files in range
