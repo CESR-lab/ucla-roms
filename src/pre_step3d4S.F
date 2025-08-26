@@ -191,20 +191,13 @@
       do j=jstr,jend  !! Start of the giant j-loop
 
         do itrc=1,nt
+
 # include "compute_vert_tracer_fluxes.h"
 
           do k=1,n
             do i=istr,iend   !! t(..) is Hz*T
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            -dtau*pm(i,j)*pn(i,j)*(FC(i,k)-FC(i,k-1))
-# ifdef PIPE_SOURCEXXX /*only add this during the corrector step */
-              if (pipe_idx(i,j)>0) then
-                pidx = pipe_idx(i,j)
-                t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
-     &            +dtau*pm(i,j)*pn(i,j)*
-     &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
-              endif
-# endif
 
 # ifdef CONST_TRACERS
               t(i,j,k,nnew,itrc)=t(i,j,k,nstp,itrc)
