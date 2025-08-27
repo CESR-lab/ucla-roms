@@ -50,18 +50,18 @@
       part0    =0  ! always zero, but placed here for clarity
       part1    =nparts-1
 
-      if (mynode==0) print *, 'Joining partial files'
+      !if (mynode==0) print *, 'Joining partial files'
 
       ! Make joined file
       call make_joined_file
 
       call MPI_Barrier(part_comm, ierr)
      
-      if (mynode==0) print *, 'Writing joined file'
+      !if (mynode==0) print *, 'Writing joined file'
 
       call write_joined_file
 
-      if (mynode==0) print *, 'Done writing joined file'
+      !if (mynode==0) print *, 'Done writing joined file'
 
       if (mynode==0) then  ! avoid multiple cores deleting files
       if (del_part_files) then
