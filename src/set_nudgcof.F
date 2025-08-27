@@ -4,10 +4,7 @@
       subroutine set_nudgcof (tile)  ! Set up nudging-to-climatology
 
       use param
-      use grid
-      use hidden_mpi_vars
       use private_scratch
-      use mpi_exchanges
 
       implicit none                  ! inverse time-scale coeffcients
       integer tile                   ! (units [1/sec])
@@ -19,13 +16,14 @@
       subroutine set_nudgcof_tile (istr,iend,jstr,jend, wrk)
 
       use param
+      use dimensions
       use mixing
       use scalars
 
       implicit none
       integer istr,iend,jstr,jend
       real wrk(PRIVATE_2D_SCRATCH_ARRAY)
-      integer i,j, isp , I1,I0,I2,J1,J0,J2, ibnd,itrc
+      integer i,j, isp,ibnd,itrc
       real cff,cff1,cff2,cff3, frac, Tau
 
 # include "compute_extended_bounds.h"

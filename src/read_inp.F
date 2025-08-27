@@ -5,7 +5,6 @@
 
       use param
       use surf_flux
-      use tracers, only: wrt_t, t_vname, wrt_t_avg
       use boundary
       use eos_vars
       use basic_output
@@ -13,15 +12,22 @@
       use scoord
       use mpi
       use roms_read_write
+#ifdef MARBL
+      use marbl_driver, only: marbl_namelist_fname, marbl_tracer_list_fname
+#ifdef MARBL_DIAGS
+     &     , marbl_diag_list_fname
+#endif      
+#endif       
 
       implicit none
       integer ierr
 
       integer, parameter :: input=15, testunit=40,
      &                  max_fname=256, max_kwsize=99
-      character(len=max_fname)  :: fname, force_string
+      character(len=max_fname)  :: fname, fname_orig,force_string
       character(len=max_kwsize) :: keyword
       character(len=3), parameter :: end_signal='end'
+      integer idx
       integer is,ie,  kwlen, lstr, lenstr
 #ifdef SOLVE3D
      &                                 , itrc
@@ -48,21 +54,20 @@
 ! they add 1 for each error discovered.
 
       ierr=0                      ! <-- reset error counter
-      call check_tiling(ierr)
-      call check_switches1(ierr)
+!      call check_tiling(ierr)
+!     call check_switches1(ierr)
 #ifdef SOLVE3D
-      call check_pre_step_switches(ierr)
-      call check_step_uv1_switches(ierr)
-      call check_step_uv2_switches(ierr)
-      call check_step_t_switches(ierr)
-      call check_set_HUV1_switches(ierr)
+!     call check_pre_step_switches(ierr)
+!     call check_step_uv1_switches(ierr)
+!     call check_step_t_switches(ierr)
+!     call check_set_HUV1_switches(ierr)
 # ifdef LMD_KPP
-      call check_kpp_switches(ierr)
+!     call check_kpp_switches(ierr)
 # endif
-      call check_switches2(ierr)
+!     call check_switches2(ierr)
 #endif
       if (ierr /= 0) return
-      mpi_master_only call print_switches
+!     mpi_master_only call print_switches
 
 ! Use pre-set default startup filename for known applications, or
 ! get it as an argument from command line via iargc-getarg (override
@@ -79,7 +84,7 @@
 #ifdef MPI
       if (mynode == 0) then
 #endif
-        is=iargc() ; if (is == 1) call getarg(is,fname)
+        is=iargc() ; if (is == 1) call getarg(is,fname) 
 #ifdef MPI
       endif
       call MPI_Bcast(fname,max_fname,MPI_BYTE, 0, ocean_grid_comm, ierr)
@@ -143,6 +148,27 @@
           ninfo=ninfo*ndtfast
 #endif
 
+#ifdef MARBL
+        elseif (keyword(1:kwlen) == 'MARBL_biogeochemistry') then
+          call cancel_kwd(keyword(1:kwlen), ierr)
+          read(input,'(A)',err=95) marbl_namelist_fname
+          lstr=lenstr(marbl_namelist_fname)
+             mpi_master_only write(*,'(1x,A,15x,A)'),
+     &            'MARBL namelist file',marbl_namelist_fname(1:lstr)
+       
+          read(input,'(A)',err=95) marbl_tracer_list_fname
+          lstr=lenstr(marbl_tracer_list_fname)
+             mpi_master_only write(*,'(1x,A,5x,A)'),
+     &            'MARBL tracer output list file',marbl_tracer_list_fname(1:lstr)
+             
+#ifdef MARBL_DIAGS          
+          read(input,'(A)',err=95) marbl_diag_list_fname
+          lstr=lenstr(marbl_diag_list_fname)
+             mpi_master_only write(*,'(1x,A,1x,A)'),
+     &            'MARBL diagnostic output list file',marbl_diag_list_fname(1:lstr)
+#endif
+#endif
+          
 ! Vertical S-coordinates transformation. Note that "hc" may be chosen
 ! to be very large (infinity) if vertically uniform sigma is desired.
 
@@ -398,8 +424,10 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           call cancel_kwd(keyword(1:kwlen), ierr)
           read(input,'(A)',err=95) fname
           lstr=lenstr(fname)
+          idx = index(fname,'/',back=.true.)
+          fname_orig = trim(fname(idx+1:lstr))
 # if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname, lstr, mynode, nsize, ierr)
 !         call insert_nodes(fname)
 # endif
           open(testunit,file=fname(1:lstr), status='old', err=97)
@@ -407,6 +435,8 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           grdname=fname(1:lstr)
           mpi_master_only write(*,'(1x,2A)') 'grid file: ',
      &                                     grdname(1:lstr)
+          grid_files = ''
+          call store_string_att(grid_files, fname_orig)
 #endif
 
 ! Initial conditions file name. Check its availability (in the case
@@ -421,15 +451,19 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #endif
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
+            idx = index(fname,'/',back=.true.)
+            fname_orig = trim(fname(idx+1:lstr))
 #if defined MPI && defined PARALLEL_FILES
-            call insert_node(fname, lstr, mynode, NNODES, ierr)
+            call insert_node(fname, lstr, mynode, nsize, ierr)
 #endif
             ininame=fname(1:lstr)
             mpi_master_only write(*,'(1x,A,I3,2x,3A)')
      &       'initial condition :: rec =', nrrec,  'file = ''',
      &                                   ininame(1:lstr), ''''
+            ini_files = ''
+            call store_string_att(ini_files, fname_orig)
 #ifdef ANA_INITIAL
-          endif
+         endif
 #endif
 
 ! Forcing file name. Check its availability.
@@ -444,8 +478,14 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             read(input,'(A)',err=95) fname
             lstr=lenstr(fname)
             if (lstr > 0) then
+              idx = index(fname,'/',back=.true.)
+              fname_orig = trim(fname(idx+1:lstr))
+!             if (mynode==0) then
+!               print *,'idx: ',idx
+!               print *,'fnames: ',trim(fname),' ',trim(fname_orig)
+!             endif
 # if defined MPI && defined PARALLEL_FILES
-              call insert_node(fname, lstr, mynode, NNODES, ierr)
+              call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif
               open(testunit,file=fname(1:lstr),status='old',err=97)
               close(testunit)
@@ -463,9 +503,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
                     write(*,'(23x,A)') frcfile(max_frc)(1:lstr)
                   endif
                   ! add to attributes
-                  if (mynode == 0) then
-                    call store_string_att(force_files, frcfile(max_frc)(1:lstr))
-                  endif
+                  call store_string_att(force_files, fname_orig)
 
 # ifdef MPI_SILENT_MODE
                 endif
@@ -479,7 +517,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
               endif
             endif
           enddo
-
 
 ! Climatology file name. Climatology data is needed for (1) to supply
 ! boundary data for T,S,u,v at open boundaries (just one row of points)
@@ -500,7 +537,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           read(input,'(A)',err=95) fname
           lstr=lenstr(fname)
 # if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname, lstr, mynode, nsize, ierr)
 # endif
           open(testunit, file=fname(1:lstr), status='old', err=97)
           close(testunit)
@@ -542,7 +579,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &  'A total of', ierr, 'configuration errors discovered.'
        return
       endif
-      call check_srcs
+!     call check_srcs
 #ifdef MPI
       call MPI_Barrier (ocean_grid_comm, ierr)
 #endif

@@ -1,0 +1,107 @@
+name: Automated Testing (ifx, containerized)
+
+on:
+  push:
+    branches: 
+      - main
+  pull_request:
+    branches: ['*']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/cworthy-ocean/marbl_ifx_openmpi:0.0
+    strategy:
+      fail-fast: false      
+      matrix:
+        include:
+          - example: "Rivers_real"
+          - example: "Rivers_ana"
+          - example: "Pipes_real"
+          - example: "Pipes_ana"
+          - example: "Flux_frc"
+          - example: "Filament"
+          - example: "bgc_real"
+            bgc_mode: "BEC"
+          - example: "bgc_real"
+            bgc_mode: "MARBL"
+    name: Test ${{ matrix.example }}${{ matrix.bgc_mode && format(' ({0})', matrix.bgc_mode) || '' }}    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        shell: bash
+        run: |
+          ROMS_ROOT=$(pwd)
+          echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
+          echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+
+      - name: Print system info
+        run: lscpu
+
+      - name: Compile Fortran Code
+        shell: bash
+        run: |
+          source $GITHUB_ENV
+          rsync -av ${ROMS_ROOT}/ci/ci_makefiles/ ${ROMS_ROOT}
+          cd Work/
+          make nhmg COMPILER=intel
+          cd ${ROMS_ROOT}/Tools-Roms/
+          make COMPILER=intel
+
+      - name: Cache input_data
+        id: cache-input
+        uses: actions/cache@v4
+        with:
+          path: Examples/input_data
+          key: roms-input-${{ hashFiles('ci/get_input_files.sh') }}
+
+      - name: Get input data (if not cached)
+        if: steps.cache-input.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cp ${ROMS_ROOT}/ci/get_input_files.sh ${ROMS_ROOT}/Examples/input_data/
+          cd ${ROMS_ROOT}/Examples/input_data/
+          ./get_input_files.sh
+      - name: Update COMPILER arg in make commands and allow OpenMPI oversubscription
+        shell: bash
+        run: |
+          sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
+          sed -i -e "s/make /make COMPILER=intel /g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh
+          sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/code_check/do_test_roms.sh
+          sed -i -e "s/mpirun/mpirun --oversubscribe/g" $ROMS_ROOT/Examples/bgc_real/code_check/do_test_roms.sh          
+
+      - name: Run test for ${{ matrix.example }}
+        shell: bash
+        run: |
+          source $GITHUB_ENV
+          cd $ROMS_ROOT/Examples/${{ matrix.example }}/code_check/
+          if [[ "${{ matrix.example }}" == "bgc_real" ]]; then
+          ./do_test_roms.sh github_ifx ${{ matrix.bgc_mode }}
+          else
+          ./do_test_roms.sh github_ifx
+          fi
+      - name: Print compilation logs (in case of failure)
+        if: failure()
+        shell: bash
+        run: |
+          source $GITHUB_ENV
+          cd ci
+          ./print_compilation_logs.sh        
+
+      - name: Print logs (in case of failure)
+        if: failure()
+        shell: bash
+        run: |
+          echo "--------------------------------------------------------------------------------"
+          echo "This step will print the test_old.log files from each case run by"
+          echo "Examples/code_check/do_test_all.sh"
+          echo "If the tests failed but you are confident in your changes,"
+          echo "overwrite the benchmark.result_github_ifx files for each case with"
+          echo "the contents of these log files"
+          echo "--------------------------------------------------------------------------------"
+          cd ci
+          ./print_output_logs.sh
+

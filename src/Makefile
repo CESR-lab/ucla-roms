@@ -20,21 +20,29 @@
 # export PATH=${NETCDFC_ROOT}/bin:$PATH
 # export PATH=${NETCDF_ROOT}/bin:$PATH
 
+#export MARBL_ROOT=/home/username/MARBL
+#export USEMARBL=TRUE (if the MARBL library is available)
+
 #
 .SUFFIXES: .o .f .F .f90
 
+
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
 	@/bin/rm -f $*.f
 .F.f:
 	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
+.f90.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
      CPP = cpp -traditional
 
-# Path names (non-hydrostatic & NetCDF libraries):
+# Path names (non-hydrostatic, MARBL and NetCDF libraries):
+	MARBL_INC = ${MARBL_ROOT}/include/intel-mpi
+	MARBL_LIB = -L${MARBL_ROOT}/lib -lmarbl-intel-mpi
 
 	NHMG_ROOT = $(ROMS_ROOT)/NHMG
 	NHMG_INC  = $(NHMG_ROOT)/include
@@ -44,15 +52,25 @@
 	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
 	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
 
+ifeq ($(FCOMP),mpiifx)
 	MPI_INC = ${MPIHOME}/include/mpi
+else
+	MPI_INC = ${MPIHOME}/include
+endif
 
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
 
-	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
+ifeq ($(USEMARBL),TRUE)
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(MARBL_LIB)
+else
+	LCDF = $(NHMG_LIB) $(NETCDF_LIB)
+endif
 
-# MARBL
-#       MARBL_INC = -I${MARBL_ROOT}/include/intel-mpi
-#   	MARBL_LIB = -lmarbl-intel-mpi -L${MARBL_ROOT}/lib
+ifeq ($(FCOMP),mpiifx)
+	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}:${MARBL_INC}
+	ICDF = 
+else
+	ICDF = -I$(MPI_INC) -I$(NHMG_INC) -I$(NETCDF_INC) -I$(MARBL_INC)
+endif
 
 
 # Large memory runs (e.g. for bgc):
@@ -68,7 +86,11 @@
 
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
+ifeq ($(FCOMP),mpiifx)
 	FFLAGS = -O3 -ipo -fp-model fast
+else
+	FFLAGS = -O3 -ip -fp-model fast
+endif
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
 #	FFLAGS = -g -traceback -CA -CB -CS
@@ -84,14 +106,14 @@
 
 KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	boundary.F buffer.F  comm_vars.F coupling.F diag_vars.F\
-	eos_vars.F grid.F hidden_mpi_vars.F mess_buffers.F mixing.F\
-	mpi_test_arr.F private_scratch.F basic_output.F\
+	eos_vars.F grid.F roms_mpi.F mess_buffers.F mixing.F\
+	private_scratch.F basic_output.F\
 	scalars.F scoord.F strings.F work_mod.F nc_read_write.F\
 	surf_flux.F bulk_frc.F flux_frc.F wec_frc.F	tides.F	bgc.F	analytical.F\
 	diagnostics.F	step2d_FB.F	read_inp.F\
 	set_weights.F	set_scoord.F	init_scalars.F	init_arrays.F\
 	setup_grid1.F	setup_grid2.F\
-	set_nudgcof.F  sponge_tune.F roms_read_write.F extract_data.F \
+	set_nudgcof.F  obc_tune.F roms_read_write.F extract_data.F \
 \
 	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
@@ -105,13 +127,11 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	lmd_vmix.F      lmd_kpp.F	lmd_swr_frac.F	\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
-        lenstr.F	setup_kwds.F	check_srcs.F	check_switches1.F\
-        get_date.F	ext_copy_prv2shr.F		check_switches2.F\
+        lenstr.F	setup_kwds.F\
+        ext_copy_prv2shr.F\
 \
-	mpi_setup.F\
-\
-	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F cstar_output.F mpi_exchanges.F	zslice_output.F\
+	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
+	random_output.F cstar_output.F 	zslice_output.F\
 \
 	bgc_ecosys_vars.F bgc_forces.F bgc_param_ini.F	bgc_ecosys_bec2.F marbl_driver.F\
 \

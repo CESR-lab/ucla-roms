@@ -6,7 +6,7 @@
       use scalars                                          ! For iic, ntstart, deg2rad
       use nc_read_write
       use roms_read_write
-      use mpi_exchanges
+      use roms_mpi
       use grid
 
       implicit none
@@ -86,7 +86,7 @@
       ! computes current forcing for boundaries and surface tidal
       ! potential
 
-      use hidden_mpi_vars
+      use roms_mpi
       use boundary
       use grid
       implicit none
@@ -195,7 +195,7 @@
             do j=0,ny
               do i=0,nx
                 ptide(i,j)=
-     &        + ptide_r(i,j,itide)*cos(omT)- ptide_i(i,j,itide)*sin(omT)
+     &          ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
               enddo
             enddo
           else

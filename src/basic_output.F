@@ -6,10 +6,11 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       use netcdf
       use nc_read_write
       use roms_read_write
-      use sponge_tune
+      use obc_tune
       use diagnostics
       use scalars
       use ocean_vars
@@ -74,6 +75,8 @@
       integer :: navg_ovars = 0                             ! number of samples in average
       character(len=99),public :: fname_rst                 ! restart filename needed by diagnostics
       integer,public           :: rec_rst=nrpf_rst          ! current file output record needed by diags
+      integer                :: prev_month
+      logical                :: write_another_step = .false.
 
       public :: wrt_his_ocean_vars
       public :: wrt_avg_ocean_vars
@@ -82,6 +85,19 @@
       public :: init_avg_arrays
 
       contains  !]
+!----------------------------------------------------------------------
+      subroutine init_restarts  ![
+
+      implicit none
+
+      integer,dimension(6)   :: date
+
+      if (wrt_file_rst .and. monthly_restarts) then
+          call sec2date(time,date)
+          prev_month = date(2)
+      endif
+
+      end subroutine init_restarts !]
 !----------------------------------------------------------------------
       subroutine init_avg_arrays  ![
       use scalars
@@ -465,6 +481,59 @@
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
 
+      implicit none
+
+      ! local
+      real,save              :: output_time_rst=0                    ! time since last output
+      integer,dimension(6)   :: date
+      character(len=15)      :: datestr
+
+      if (wrt_file_rst) then
+
+      if (monthly_restarts) then
+          ! We need to save the last two timesteps of the month, so that when the new simulation
+          ! loads the restart file the first timestep it takes will be the first timestep of the
+          ! new month.
+          ! time + 2*dt here so that it looks two timesteps ahead to see if we're changing months.
+          call sec2date(time+2*dt,date)
+          if ((date(2) - prev_month) /= 0) then
+            call wrt_restart_file
+            write_another_step = .true.
+          endif
+
+          if (write_another_step) then
+            call wrt_restart_file
+            write_another_step = .false.
+          endif
+
+          prev_month = date(2)
+      else
+!     if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
+!     first_step=.false.                                             ! as first step the ocean_vars values are for t=0
+          output_time_rst = output_time_rst + dt
+
+          if (output_time_rst    >=output_period_rst
+#ifdef EXACT_RESTART
+     &        .or.
+     &        output_time_rst+dt >=output_period_rst         ! timestep before
+#endif
+     &        ) then
+             call wrt_restart_file
+             if (output_time_rst>=output_period_rst) then
+                 output_time_rst=0                             ! catch for exact restart to not
+             endif                                             ! reset the time
+          endif ! it output_time > output_period
+      endif ! monthly_restarts
+
+      endif ! wrt_file_rst
+
+      end subroutine wrt_rst_ocean_vars  !]
+!----------------------------------------------------------------------
+      subroutine wrt_restart_file  ![
+      ! write ocean_vars variables to output netcdf restart file
+      ! ocean_vars variables are calculated for t=n in timestep t=n
+      ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
+
       use mixing
       use eos_vars
       use work_mod
@@ -483,19 +552,6 @@
       real,save              :: output_time_rst=0                    ! time since last output
       logical,save           :: first_step=.true.
       integer                :: tile, ierr, i, j, k
-
-      if (wrt_file_rst) then
-
-!     if (.not. first_step) output_time_rst = output_time_rst + dt   ! only start count after first timestep
-!     first_step=.false.                                             ! as first step the ocean_vars values are for t=0
-      output_time_rst = output_time_rst + dt
-
-      if (output_time_rst    >=output_period_rst
-#ifdef EXACT_RESTART
-     &    .or.
-     &    output_time_rst+dt >=output_period_rst                     ! timestep before
-#endif
-     &                    ) then
 
 
         if (rec_rst==nrpf_rst) then
@@ -538,6 +594,8 @@
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
+        call ncwrite(ncid,'DU_avg1',    DU_avg1( 1:i1,j0:j1),start)
+        call ncwrite(ncid,'DV_avg1',    DV_avg1(i0:i1, 1:j1),start)
         call ncwrite(ncid,'DU_avg2',    DU_avg2( 1:i1,j0:j1),start)
         call ncwrite(ncid,'DV_avg2',    DV_avg2(i0:i1, 1:j1),start)
         call ncwrite(ncid,'DU_avg_bak', DU_avg_bak( 1:i1,j0:j1),start)
@@ -563,8 +621,8 @@
 !       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,itemp),start)
 !       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,isalt),start)
 
-        if (ub_tune)   call wrt_rst_ub(ncid,rec_rst)
-        if (diag_pflx) call wrt_rst_diag_slow(ncid,rec_rst)
+        if (obc_tuning) call wrt_rst_tune(ncid,rec_rst)
+        if (diag_pflx)  call wrt_rst_diag_slow(ncid,rec_rst)
 
 #ifdef MARBL
         call marbldrv_write_ss_vars_to_rst(ncid,rec_rst)
@@ -577,14 +635,7 @@
      &     'step =', iic, 'rec =', rec_rst, '/', total_rec_rst
         endif
 
-        if (output_time_rst>=output_period_rst) then
-          output_time_rst=0                                          ! catch for exact restart to not
-        endif                                                        ! reset the time
-      endif
-
-      endif  ! <-- wrt_file_rst
-
-      end subroutine wrt_rst_ocean_vars  !]
+      end subroutine wrt_restart_file  !]
 !----------------------------------------------------------------------
       subroutine create_file_ocean_vars(fname,avg)  ![
       implicit none
@@ -833,6 +884,14 @@
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
+      varid = nccreate(ncid,'DU_avg1',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time averaged uflx>>')
+
+      varid = nccreate(ncid,'DV_avg1',(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/),nf90_double)
+      ierr=nf90_put_att(ncid, varid, 'long_name',
+     &           '<<fast-time-averaged vflx>>')
+
       varid = nccreate(ncid,'DU_avg2',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/),nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &           '<<fast-time averaged ubar(:,:,n+1/2)>>')
@@ -870,7 +929,7 @@
       ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
 # endif
 
-      if (diag_pflx) then  
+      if (diag_pflx) then
         varid = nccreate(ncid,'u_slow',(/dn_xu,dn_yr,dn_zr,dn_tm/),
      &                               (/xi_u,eta_rho,N,0/),nf90_double)
         ierr = nf90_put_att(ncid,varid,'long_name','time filtered u')
@@ -888,30 +947,29 @@
      &                               'time filtered pressure')
         ierr = nf90_put_att(ncid,varid,'units','Pa??')
       endif
-#ifdef SPONGE_TUNE
-       if (ub_tune) then
-         varid = nccreate(ncid,'ub_west',
+
+      if (obc_tuning) then
+        varid = nccreate(ncid,'ub_west',
      &                       (/dn_yr,dn_tm/),
      &                       (/eta_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'west bc tuning coeff')
-         varid = nccreate(ncid,'ub_east',
+        varid = nccreate(ncid,'ub_east',
      &                       (/dn_yr,dn_tm/),
      &                       (/eta_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'east bc tuning coeff')
-         varid = nccreate(ncid,'ub_north',
+        varid = nccreate(ncid,'ub_north',
      &                       (/dn_xr,dn_tm/),
      &                       (/xi_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'north bc tuning coeff')
-         varid = nccreate(ncid,'ub_south',
+        varid = nccreate(ncid,'ub_south',
      &                       (/dn_xr,dn_tm/),
      &                       (/xi_rho,0/),nf90_double)
-         ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                               'south bc tuning coeff')
-       endif
-#endif
+      endif
 
 #endif /* SOLVE3D */
 

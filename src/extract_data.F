@@ -1,4 +1,4 @@
-      module extract_data  
+      module extract_data
       ! Extract data at various positions and frequencies
       ! Only for things that need interpolating
 
@@ -17,7 +17,7 @@
       !    - Name of the object ('child1_south','mooring2', etc, etc,...
       !    - Output frequency of each object
       !    - Variables to be output
-      !  
+      !
       !
       ! 1) Assign positions to subdomains
       !    - if ispresent(iobj) then see above
@@ -50,7 +50,7 @@
       use basic_output, vn=>vname
       use scalars
       use diagnostics
-#ifdef BIOLOGY_BEC2 
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bgc_ecosys_vars
 #endif
 
@@ -71,7 +71,7 @@
 
       ! For vertical velocity
       real,dimension(:,:,:),allocatable :: Wvl   ! Vertical velocity
- 
+
       type extract_object  ! contains all information for a data_extraction object
 
         ! needed as input
@@ -105,7 +105,7 @@
         integer,dimension(:)  ,pointer     :: ipu,jpu   ! only for vectors
         integer,dimension(:)  ,pointer     :: ipv,jpv   ! only for vectors
         real   ,dimension(:,:),pointer     :: cfu,cfv   ! only for vectors
-        real   ,dimension(:,:),pointer     :: ui,vi     ! only for vectors 
+        real   ,dimension(:,:),pointer     :: ui,vi     ! only for vectors
 
         ! These logicals determine which variables are desired for an
         ! object. Only the ones listed below are currently functional
@@ -120,7 +120,7 @@
         logical :: salt = .false.
         logical :: up   = .false.
         logical :: vp   = .false.
-        logical :: bgc     = .false.
+        logical :: bgc  = .false.
 
       end type extract_object
 
@@ -147,6 +147,7 @@
 
       ! For vertical velocity
       allocate( Wvl(GLOBAL_2D_ARRAY,nz+1))
+
       if (diag_pflx) then
         allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
         allocate( vpe(GLOBAL_2D_ARRAY) ); vpe = 0
@@ -189,7 +190,7 @@
             allocate(obj(i)%ipu(np))
             allocate(obj(i)%jpu(np))
 
-            ! from rho-index to u-index 
+            ! from rho-index to u-index
             obj(i)%ipos = obj(i)%ipos+0.5
             call compute_coef(obj(i)%ipos,obj(i)%jpos,
      &                obj(i)%cfu,obj(i)%ipu,obj(i)%jpu,umask)
@@ -212,7 +213,7 @@
       end subroutine init_extract_data !]
 ! ----------------------------------------------------------------------
       subroutine read_extraction_objects  ![
-      ! Read all objects from file and determine local ranges 
+      ! Read all objects from file and determine local ranges
       implicit none
 
       ! local
@@ -238,7 +239,7 @@
 
       allocate(obj(nobj))
 
-      ! Read all objects from file. 
+      ! Read all objects from file.
       do iobj = 1,nobj
         ierr = nf90_inquire_variable(ncid,iobj,name=objname,dimids=dimids)
         if (ierr/=0) call handle_ierr(ierr,'read extr ')
@@ -251,9 +252,13 @@
         allocate(character(len=lstr) :: obj(iobj)%dname)
         obj(iobj)%dname = trim(dname)
         obj(iobj)%dsize = n1
-        
+
         ! scalar objects have i,j. Vector obj also have ang
-        if (n2==2) obj(iobj)%scalar = .true.
+        if (n2==2) then
+           obj(iobj)%scalar = .true.
+        else
+           obj(iobj)%scalar = .false.
+        endif
 
         allocate(object(n1,n2))
         call ncread(ncid,objname,object)
@@ -307,9 +312,8 @@
           if (findstr(variables,'w'   ) ) obj(iobj)%w    = .True.
           if (findstr(variables,'up'  ) ) obj(iobj)%up   = .True.
           if (findstr(variables,'vp'  ) ) obj(iobj)%vp   = .True.
-          if (findstr(variables,'bgc'    ) ) obj(iobj)%bgc     = .True.
+          if (findstr(variables,'bgc' ) ) obj(iobj)%bgc  = .True.
 
-          ! DIAGNOSTICS needs to be activated and diag_pflx=.true.
           if (obj(iobj)%up.and. .not.diag_pflx) then
             print *,'Fatal ERROR: up extraction, diag_pflx is not set'
             stop
@@ -318,12 +322,14 @@
             print *,'Fatal ERROR: vp extraction, diag_pflx is not set'
             stop
           endif
-#ifndef BIOLOGY_BEC2 
+#if !defined(BIOLOGY_BEC2) && !defined(MARBL)
          if (obj(iobj)%bgc) then
-            print *,'Fatal ERROR: BGC extraction, BIOLOGY_BEC2 not set'
+            print *,'Fatal ERROR: BGC extraction, BIOLOGY_BEC2'//
+     &           ' or MARBL cpp key not set'
             stop
          endif
 #endif
+
           if (obj(iobj)%up.or.obj(iobj)%vp) extend_up = .true.
 
         endif
@@ -348,7 +354,7 @@
       ! local
       integer :: i,start_idx,end_idx
       integer :: np
-      
+
       np = size(gobj_i)
       gobj_i = gobj_i-iSW_corn
       gobj_j = gobj_j-jSW_corn
@@ -408,8 +414,8 @@
         cfx    = ipos(i)-ip(i)
         jp(i)  = floor(jpos(i))
         cfy    = jpos(i)-jp(i)
-        coef(i,1) = (1-cfx)*(1-cfy)*mask(ip(i)  ,jp(i)  ) 
-        coef(i,2) = cfx    *(1-cfy)*mask(ip(i)+1,jp(i)  ) 
+        coef(i,1) = (1-cfx)*(1-cfy)*mask(ip(i)  ,jp(i)  )
+        coef(i,2) = cfx    *(1-cfy)*mask(ip(i)+1,jp(i)  )
         coef(i,3) = (1-cfx)*   cfy *mask(ip(i)  ,jp(i)+1)
         coef(i,4) =    cfx *   cfy *mask(ip(i)+1,jp(i)+1)
         !! possibly check for all masked ....
@@ -435,9 +441,9 @@
 
       np = size(ip,1)
       do i = 1,np
-          vari(i) = var(ip(i)  ,jp(i)  )*coef(i,1) + 
-     &              var(ip(i)+1,jp(i)  )*coef(i,2) + 
-     &              var(ip(i)  ,jp(i)+1)*coef(i,3) + 
+          vari(i) = var(ip(i)  ,jp(i)  )*coef(i,1) +
+     &              var(ip(i)+1,jp(i)  )*coef(i,2) +
+     &              var(ip(i)  ,jp(i)+1)*coef(i,3) +
      &              var(ip(i)+1,jp(i)+1)*coef(i,4)
       enddo
 
@@ -469,9 +475,9 @@
       np = size(ip,1)
       do i = 1,np
         do k = 1,nz
-          vari(i,k) = var(ip(i)  ,jp(i)  ,k)*coef(i,1) + 
-     &                var(ip(i)+1,jp(i)  ,k)*coef(i,2) + 
-     &                var(ip(i)  ,jp(i)+1,k)*coef(i,3) + 
+          vari(i,k) = var(ip(i)  ,jp(i)  ,k)*coef(i,1) +
+     &                var(ip(i)+1,jp(i)  ,k)*coef(i,2) +
+     &                var(ip(i)  ,jp(i)+1,k)*coef(i,3) +
      &                var(ip(i)+1,jp(i)+1,k)*coef(i,4)
         enddo
       enddo
@@ -511,7 +517,7 @@
       if (diag_pflx) then
         upe(1:nx,1:ny) = up
         vpe(1:nx,1:ny) = vp
-# ifdef EXCHANGE   
+# ifdef EXCHANGE
         call exchange_xxx(upe,vpe)
 # endif
       endif
@@ -678,29 +684,26 @@
       integer,          dimension(2) :: dsize ! dim lengths
       character(len=20),dimension(3) :: dname3 ! dimension names
       integer,          dimension(3) :: dsize3 ! dim lengths
+
       character(len=20) :: np_label
       character(len=20) :: time_label
-
-
       do i = 1,nobj
-        if (obj(i)%np>0) then
-          write(label,'(I0.3)') i
-!         dname = (/ 'np'//label, 'time_'//trim(obj(i)%set) /)
-          np_label = 'np'//label
-          time_label = 'time_'//trim(obj(i)%set)
-          dname = (/ np_label, time_label /)
-
-          dsize = (/ obj(i)%np ,  0/)
-          dname3(1) = 'np'//label
-          dname3(2) = 's_rho'
-          dname3(3) = 'time_'//trim(obj(i)%set)
-          dsize3 = (/ obj(i)%np , nz, 0/)
+         if (obj(i)%np>0) then
+            write(label,'(I0.3)') i
+            np_label='np'//label
+            time_label='time_'//trim(obj(i)%set)
+            dname = (/np_label,time_label/)
+            dsize = (/ obj(i)%np ,  0/)
+            dname3(1) = 'np'//label
+            dname3(2) = 's_rho'
+            dname3(3) = 'time_'//trim(obj(i)%set)
+            dsize3 = (/ obj(i)%np , nz, 0/)
 
           tname = trim(obj(i)%set)//'_time'
-          ierr=nf90_inq_varid(ncid,tname,varid)    
+          ierr=nf90_inq_varid(ncid,tname,varid)
           if (ierr/=0) then   ! Only create if not already present
             varid = nccreate(ncid,tname,(/dname(2)/),(/0/),nf90_double)
-            ierr = nf90_put_att(ncid,varid,'long_name', 
+            ierr = nf90_put_att(ncid,varid,'long_name',
      &                                     'Time since 2000')
             ierr = nf90_put_att(ncid,varid,'units','second' )
           endif

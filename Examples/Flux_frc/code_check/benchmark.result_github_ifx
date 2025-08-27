@@ -1,0 +1,208 @@
+ Activated CPP configuration switches:
+ <cppdefs.opt>
+       USWC_sample             SOLVE3D                 UV_ADV
+       UV_COR                  NONLIN_EOS              SPLIT_EOS
+       SALINITY                T_FRC_BRY               Z_FRC_BRY
+       M3_FRC_BRY              M2_FRC_BRY              UV_VIS2
+       TS_DIF2                 LMD_MIXING              LMD_KPP
+       LMD_NONLOCAL            LMD_RIMIX               LMD_CONVEC
+       LMD_BKPP                CURVGRID                SPHERICAL
+       MASKING                 MASK_LAND_DATA          OBC_M2FLATHER
+       OBC_M3ORLANSKI          OBC_TORLANSKI           OBC_WEST
+       OBC_NORTH               OBC_EAST                OBC_SOUTH
+       AVERAGES                ADV_ISONEUTRAL
+ <pre_step3d4S.F>
+       SPLINE_UV               SPLINE_TS
+ <step3d_uv1.F>
+       UPSTREAM_UV             SPLINE_UV
+ <step3d_uv2.F>
+       DELTA=0.28              EPSIL=0.36              GAMMA=8.333333333329999E-002
+       ALPHA_MAX=2.0
+ <step3d_t_ISO.F>
+       SPLINE_TS
+ <set_depth.F>
+       NOW=3.63                MID=4.47                BAK=2.05
+       (N-M+B-1)/B=0.102439024
+ <lmd_kpp.F>
+       INT_AT_RHO_POINTS       SMOOTH_HBL
+ <set_global_definitions.h>
+       CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       IMPLCT_NO_SLIP_BTTM_BC
+
+ Flux_frc module test.
+     ntimes =        20   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: input_data/sample_grd_riv.0.nc
+ forcing data file(s): input_data/sample_flux_frc.0.nc
+                       input_data/sample_bry_trace.0.nc
+ initial condition :: rec =  1  file = 'input_data/sample_init_trace.0.nc'
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+
+ WARNING: Urecognized keyword 'v_sponge' --> DISREGARDED.
+
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+ metadata about            2  tracers:
+ -----------
+ TRACER NO.:            1
+ SHORT NAME: temp                                      
+ LONG NAME: potential temperature                                       
+ UNITS: Celsius                                   
+ -----------
+ -----------
+ TRACER NO.:            2
+ SHORT NAME: salt                                      
+ LONG NAME: salinity                                                    
+ UNITS: PSU                                       
+ -----------
+
+ NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+       ocean_vars :: history file ouput_period = 400.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
+
+ Vertical S-coordinate system (z at W-points):
+
+  level      S-coord        Cs-curve         Z at hmin           at hc        half way         at hmax
+     50   0.0000E+00   0.0000000E+00     0.0000000E+00   0.0000000E+00   0.0000000E+00   0.0000000E+00
+     49  -2.0000E-02  -2.1600046E-04    -2.1600046E+16  -2.5270001E-01   1.0800023E+16   2.1600046E+16
+     48  -4.0000E-02  -8.6683444E-04    -8.6683444E+16  -5.1083543E-01   4.3341722E+16   8.6683444E+16
+     47  -6.0000E-02  -1.9610249E-03    -1.9610249E+17  -7.7451281E-01   9.8051243E+16   1.9610249E+17
+     46  -8.0000E-02  -3.5128600E-03    -3.5128600E+17  -1.0439107E+00   1.7564300E+17   3.5128600E+17
+     45  -1.0000E-01  -5.5425170E-03    -5.5425170E+17  -1.3192815E+00   2.7712585E+17   5.5425170E+17
+     44  -1.2000E-01  -8.0762310E-03    -8.0762310E+17  -1.6009529E+00   4.0381155E+17   8.0762310E+17
+     43  -1.4000E-01  -1.1146507E-02    -1.1146507E+18  -1.8893313E+00   5.5732535E+17   1.1146507E+18
+     42  -1.6000E-01  -1.4792367E-02    -1.4792367E+18  -2.1849046E+00   7.3961834E+17   1.4792367E+18
+     41  -1.8000E-01  -1.9059626E-02    -1.9059626E+18  -2.4882453E+00   9.5298131E+17   1.9059626E+18
+     40  -2.0000E-01  -2.4001189E-02    -2.4001189E+18  -2.8000149E+00   1.2000595E+18   2.4001189E+18
+     39  -2.2000E-01  -2.9677349E-02    -2.9677349E+18  -3.1209669E+00   1.4838674E+18   2.9677349E+18
+     38  -2.4000E-01  -3.6156070E-02    -3.6156070E+18  -3.4519509E+00   1.8078035E+18   3.6156070E+18
+     37  -2.6000E-01  -4.3513242E-02    -4.3513242E+18  -3.7939155E+00   2.1756621E+18   4.3513242E+18
+     36  -2.8000E-01  -5.1832858E-02    -5.1832858E+18  -4.1479107E+00   2.5916429E+18   5.1832858E+18
+     35  -3.0000E-01  -6.1207093E-02    -6.1207093E+18  -4.5150887E+00   3.0603546E+18   6.1207093E+18
+     34  -3.2000E-01  -7.1736228E-02    -7.1736228E+18  -4.8967028E+00   3.5868114E+18   7.1736228E+18
+     33  -3.4000E-01  -8.3528367E-02    -8.3528367E+18  -5.2941046E+00   4.1764184E+18   8.3528367E+18
+     32  -3.6000E-01  -9.6698875E-02    -9.6698875E+18  -5.7087359E+00   4.8349437E+18   9.6698875E+18
+     31  -3.8000E-01  -1.1136944E-01    -1.1136944E+19  -6.1421180E+00   5.5684720E+18   1.1136944E+19
+     30  -4.0000E-01  -1.2766669E-01    -1.2766669E+19  -6.5958336E+00   6.3833346E+18   1.2766669E+19
+     29  -4.2000E-01  -1.4572023E-01    -1.4572023E+19  -7.0715028E+00   7.2860113E+18   1.4572023E+19
+     28  -4.4000E-01  -1.6565994E-01    -1.6565994E+19  -7.5707493E+00   8.2829970E+18   1.6565994E+19
+     27  -4.6000E-01  -1.8761254E-01    -1.8761254E+19  -8.0951567E+00   9.3806268E+18   1.8761254E+19
+     26  -4.8000E-01  -2.1169704E-01    -2.1169704E+19  -8.6462129E+00   1.0584852E+19   2.1169704E+19
+     25  -5.0000E-01  -2.3801922E-01    -2.3801922E+19  -9.2252402E+00   1.1900961E+19   2.3801922E+19
+     24  -5.2000E-01  -2.6666485E-01    -2.6666485E+19  -9.8333106E+00   1.3333242E+19   2.6666485E+19
+     23  -5.4000E-01  -2.9769164E-01    -2.9769164E+19  -1.0471145E+01   1.4884582E+19   2.9769164E+19
+     22  -5.6000E-01  -3.3112002E-01    -3.3112002E+19  -1.1139000E+01   1.6556001E+19   3.3112002E+19
+     21  -5.8000E-01  -3.6692279E-01    -3.6692279E+19  -1.1836535E+01   1.8346139E+19   3.6692279E+19
+     20  -6.0000E-01  -4.0501403E-01    -4.0501403E+19  -1.2562675E+01   2.0250701E+19   4.0501403E+19
+     19  -6.2000E-01  -4.4523774E-01    -4.4523774E+19  -1.3315472E+01   2.2261887E+19   4.4523774E+19
+     18  -6.4000E-01  -4.8735711E-01    -4.8735711E+19  -1.4091964E+01   2.4367856E+19   4.8735711E+19
+     17  -6.6000E-01  -5.3104539E-01    -5.3104539E+19  -1.4888067E+01   2.6552270E+19   5.3104539E+19
+     16  -6.8000E-01  -5.7587989E-01    -5.7587989E+19  -1.5698499E+01   2.8793995E+19   5.7587989E+19
+     15  -7.0000E-01  -6.2134081E-01    -6.2134081E+19  -1.6516760E+01   3.1067041E+19   6.2134081E+19
+     14  -7.2000E-01  -6.6681673E-01    -6.6681673E+19  -1.7335209E+01   3.3340836E+19   6.6681673E+19
+     13  -7.4000E-01  -7.1161865E-01    -7.1161865E+19  -1.8145233E+01   3.5580932E+19   7.1161865E+19
+     12  -7.6000E-01  -7.5500399E-01    -7.5500399E+19  -1.8937550E+01   3.7750199E+19   7.5500399E+19
+     11  -7.8000E-01  -7.9621119E-01    -7.9621119E+19  -1.9702640E+01   3.9810559E+19   7.9621119E+19
+     10  -8.0000E-01  -8.3450416E-01    -8.3450416E+19  -2.0431302E+01   4.1725208E+19   8.3450416E+19
+      9  -8.2000E-01  -8.6922400E-01    -8.6922400E+19  -2.1115300E+01   4.3461200E+19   8.6922400E+19
+      8  -8.4000E-01  -8.9984320E-01    -8.9984320E+19  -2.1748040E+01   4.4992160E+19   8.9984320E+19
+      7  -8.6000E-01  -9.2601541E-01    -9.2601541E+19  -2.2325193E+01   4.6300770E+19   9.2601541E+19
+      6  -8.8000E-01  -9.4761265E-01    -9.4761265E+19  -2.2845158E+01   4.7380632E+19   9.4761265E+19
+      5  -9.0000E-01  -9.6474163E-01    -9.6474163E+19  -2.3309270E+01   4.8237081E+19   9.6474163E+19
+      4  -9.2000E-01  -9.7773318E-01    -9.7773318E+19  -2.3721665E+01   4.8886659E+19   9.7773318E+19
+      3  -9.4000E-01  -9.8710305E-01    -9.8710305E+19  -2.4088788E+01   4.9355152E+19   9.8710305E+19
+      2  -9.6000E-01  -9.9348846E-01    -9.9348846E+19  -2.4418606E+01   4.9674423E+19   9.9348846E+19
+      1  -9.8000E-01  -9.9757092E-01    -9.9757092E+19  -2.4719637E+01   4.9878546E+19   9.9757092E+19
+      0  -1.0000E+00  -1.0000000E+00    -1.0000000E+20  -2.5000000E+01   5.0000000E+19   1.0000000E+20
+
+ Spherical grid detected.
+
+ init buffers
+      get_grid :: read grid data from file 'input_data/sample_grd_riv.0.nc'.
+ hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
+ hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
+                                           open_cross = 5.4367977391196312E+06
+ Cg_max = 0.3808322   Cg_min = 0.0337713   Cu_Cor = 0.0016583
+
+ Maximum grid stiffness ratios:   rx0 = 0.100020449  rx1 =  17.833965349
+
+ WARNING: Exact restart is requested, but is not possible: initial
+          file 'input_data/sample_init_trace.0.nc' does not contain sufficient records.
+ WARNING: netCDF variable 'hbls' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+ Writing initial history file
+ Reference time used for simulation is: 2000/01/01
+       created new netcdf file flux_frc_his.20121209133435.0.nc
+
+ main :: initialization complete, started time-stepping.
+
+
+
+  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
+ 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263777680990899E-01 4.2518890443653429E-01
+         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
+ 1  4.2294649272949956E-03 2.7899249008248384E-03 3.9038524154051918E-01 3.6123655355967826E-01
+ 2  4.2246557296701332E-03 2.7863252690257930E-03 2.9986271060024566E-01 1.6427514796516524E-01
+ 3  4.2196332072326733E-03 2.7819030649976202E-03 4.2687990376310891E-01 3.1654424073376974E-01
+ 4  4.2135013647694765E-03 2.7761234072606017E-03 2.3987128060494617E-01 2.3987128060494617E-01
+ 5  4.2105933264046736E-03 2.7733960686319795E-03 2.1749774650987755E-01 1.0876048065905236E-01
+ 6  4.2090409919002926E-03 2.7718697161308176E-03 2.6454326870653444E-01 1.9492780360692594E-01
+ 7  4.2080671743413393E-03 2.7708744125615075E-03 2.0465320276507729E-01 1.9646960065351668E-01
+ 8  4.2089089916913115E-03 2.7716209934614240E-03 2.3014402271158046E-01 1.2166968353214234E-01
+ 9  4.2088859812976272E-03 2.7714191296588689E-03 2.4365633522193308E-01 1.8545488141503927E-01
+10  4.2070838134614869E-03 2.7694143089314429E-03 2.0602712077399132E-01 1.9762161461779068E-01
+11  4.2063566917307799E-03 2.7684354932226334E-03 2.0627287446261883E-01 1.9790163591820864E-01
+12  4.2055364948341096E-03 2.7673319445292608E-03 2.0648908165815347E-01 1.9815515473884202E-01
+13  4.2055564751722853E-03 2.7670537468172515E-03 2.0671724236236555E-01 1.9837418359284442E-01
+14  4.2056944826677888E-03 2.7668586391100805E-03 2.0698493974161350E-01 1.9855213689775211E-01
+15  4.2053744010300438E-03 2.7661822554867323E-03 2.0720968571315151E-01 1.9869146047844322E-01
+16  4.2044818381928601E-03 2.7649145867965547E-03 2.0723235519594363E-01 1.9877121422269309E-01
+17  4.2033382124549235E-03 2.7633617258256784E-03 2.0721796300611509E-01 1.9881973169754333E-01
+18  4.2031280306290067E-03 2.7627370719000848E-03 2.0727852391079352E-01 1.9885229907125512E-01
+19  4.2027848268063051E-03 2.7619690187712892E-03 2.0730728801720677E-01 1.9884357152178345E-01
+20  4.2007352331788067E-03 2.7594681764330892E-03 2.0727233425482622E-01 1.9879638597854482E-01
+       ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2
+ Process    0  thread  0  cpu time =      108.70 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   254.235361396076     

@@ -61,13 +61,13 @@ C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
       allocate(scratch_1d(1-bf:nx+bf,20)); scratch_1d=0
 
       ! allocate largest possible block of memory
-      if ((nx>ny).and.(nx>nz)) then
+      if ((nx>=ny).and.(nx>=nz)) then
         allocate(scratch_2d((nx+(2*bf)+1)**2,20)); scratch_2d=0
         allocate(scratch_3d((nx+(2*bf)+1)**3,20)); scratch_3d=0
-      elseif ((ny>nx).and.(ny>nz)) then
+      elseif ((ny>=nx).and.(ny>=nz)) then
         allocate(scratch_2d((ny+(2*bf)+1)**2,20)); scratch_2d=0
         allocate(scratch_3d((ny+(2*bf)+1)**3,20)); scratch_3d=0
-      elseif ((nz>nx).and.(nz>ny)) then
+      elseif ((nz>=nx).and.(nz>=ny)) then
         allocate(scratch_2d((nz+(2*bf)+1)**2,20)); scratch_2d=0
         allocate(scratch_3d((nz+(2*bf)+1)**3,20)); scratch_3d=0
       endif

@@ -7,8 +7,8 @@
 #endif
 
 
-      do j=0,ny+1              ! Set everything (except temperature
-        do i=0,nx+1            ! and salinity) to all-zero state, then
+      do j=1-bf,ny+bf          ! Set everything (except temperature
+        do i=1-bf,nx+bf        ! and salinity) to all-zero state, then
           zeta(i,j,1)=0.       ! modify some of the variables, if a
           ubar(i,j,1)=0.       ! non-trivial initialization required.
           vbar(i,j,1)=0.       ! Note: A code to initialize T [and S]
@@ -16,8 +16,8 @@
       enddo                    ! applications.
 # ifdef SOLVE3D
       do k=1,nz
-        do j=0,ny+1      
-          do i=0,nx+1    
+        do j=1-bf,ny+bf      
+          do i=1-bf,nx+bf    
             u(i,j,k,1)=0.
             u(i,j,k,2)=0.
             v(i,j,k,1)=0.
@@ -29,8 +29,8 @@
 
 #  ifdef SOLVE3D
       do k=1,nz
-        do j=0,ny+1      
-          do i=0,nx+1    
+        do j=1-bf,ny+bf      
+          do i=1-bf,nx+bf    
             t(i,j,k,1,itemp)=4.+10.*exp(z_r(i,j,k)/50.)
             t(i,j,k,1,isalt)=36.
             t(i,j,k,2,itemp)=t(i,j,k,1,itemp)

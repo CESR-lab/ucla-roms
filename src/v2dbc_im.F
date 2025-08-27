@@ -13,7 +13,6 @@
       use grid
       use ocean_vars
       use scalars
-      use hidden_mpi_vars
 
       implicit none
 
@@ -39,7 +38,8 @@
      &                        )*(1.-0.292893218813452/cx)**2
             endif
             vbar(i,1,knew)=0.5*( (1.-cx)*vbar(i,1,kstp)
-     &                              +cx*vbar(i,2,kstp))
+     &                               +cx*vbar(i,2,kstp)
+     &           +vbar_south(i) -hx*(zx-zeta_south(i)))
      &                                      *vmask(i,1)
           enddo
 
@@ -76,7 +76,8 @@
      &                            )*(1.-0.292893218813452/cx)**2
             endif
             vbar(i,ny+1,knew)=0.5*( (1.-cx)*vbar(i,ny+1,kstp)
-     &                                   +cx*vbar(i,ny,kstp))
+     &                                    +cx*vbar(i,ny,kstp)
+     &                 +vbar_north(i) +hx*(zx-zeta_north(i)))
      &                                         *vmask(i,ny+1)
           enddo
 
@@ -124,6 +125,8 @@
      &                      -max(cy,0.)*grad(1,j-1)
      &                      -min(cy,0.)*grad(1,j  )
      &                                            )
+            vbar(0,j,knew)=(1.-cext)*vbar(0,j,knew)
+     &                           +cext*vbar_west(j)
             vbar(0,j,knew)=vbar(0,j,knew)*vmask(0,j)
           enddo
 
@@ -167,6 +170,8 @@
      &                           -max(cy,0.)*grad(nx,j-1)
      &                           -min(cy,0.)*grad(nx,j  )
      &                                                  )
+            vbar(nx+1,j,knew)=(1.-cext)*vbar(nx+1,j,knew)
+     &                                 +cext*vbar_east(j)
             vbar(nx+1,j,knew)=vbar(nx+1,j,knew)*vmask(nx+1,j)
           enddo
 

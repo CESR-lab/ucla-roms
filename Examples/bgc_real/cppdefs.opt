@@ -60,13 +60,31 @@ c--# define LMD_CONVEC
 # define T_FRC_BRY
 # define SPONGE
 
+                        /* Biology Settings */
+c--# define MARBL
+c--# define MARBL_DIAGS
+
+#ifdef MARBL
+# define NOX_FORCING
+# define NHY_FORCING
+#endif
+
 # define BIOLOGY_BEC2
-# define BEC2_DIAG                /* BGC diagnostics */
+
+#ifdef BIOLOGY_BEC2
+# define BIOLOGY                  /* DPD current does nothing in new code */
+!# define BEC2_DIAG                /* BGC diagnostics */
 # define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
-# define PCO2AIR_FORCING          /* CO2 forcing */
 # undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
 # undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 
 # define DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
+
+#endif /* BIOLOGY_BEC2 */
+
+#if defined(BIOLOGY_BEC2) || defined(MARBL)
+# define PCO2AIR_FORCING
+#endif
+
 
 #endif
 

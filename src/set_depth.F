@@ -13,6 +13,7 @@
       use ocean_vars
       use scalars
       use scoord
+      use roms_mpi
 
       implicit none
       integer i,j,k
@@ -139,12 +140,12 @@
       end
 !----------------------------------------------------------------------
       subroutine set_HUV  ![
-
       use param
       use wec_frc
       use grid
       use ocean_vars
       use scalars
+      use roms_mpi
 
       implicit none
       integer :: i,j,k
@@ -196,6 +197,7 @@
       use scalars
       use dimensions
       use diagnostics
+      use roms_mpi
 
       implicit none
       integer :: i,j,k

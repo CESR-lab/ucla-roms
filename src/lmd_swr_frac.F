@@ -4,7 +4,6 @@
       subroutine swr_frac (tile)
 
       use param
-      use hidden_mpi_vars
       use private_scratch
 
       implicit none
@@ -32,7 +31,7 @@
       use param
       use mixing
       use ocean_vars
-      use mpi_exchanges
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend,     i,j,k, Jwt

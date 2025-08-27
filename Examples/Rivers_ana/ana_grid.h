@@ -21,8 +21,8 @@
       x0=0. ; y0=0.
 # endif
 
-      do j= 0,ny+1                      ! Setup Cartezian grid
-        do i= 0,nx+1                    ! (XI,ETA) at PSI- and RHO-
+      do j= 1-bf,ny+bf                  ! Setup Cartezian grid
+        do i= 1-bf,nx+bf                ! (XI,ETA) at PSI- and RHO-
           xp(i,j)=x0+dx* dble(i-1)      ! points and compute metric
           xr(i,j)=x0+dx*(dble(i)-0.5D0) ! transformation coefficients
           yp(i,j)=y0+dy* dble(j-1)      ! pm and pn, which are
@@ -37,8 +37,8 @@
 
       x0=Size_XI/2.
       y0=Size_ETA/2.
-      do j= 0,ny+1
-        do i=0,nx+1
+      do j= 1-bf,ny+bf
+        do i=1-bf,nx+bf
           f(i,j)=f0+beta*( yr(i,j)-y0 )
 # if defined NONTRAD_COR
 !         feta(i,j) = f0*cos(pi/4)
@@ -49,8 +49,8 @@
 
       shelf=size_eta/5 ! shelf location in meters from south
       slope=(max_depth-depth)/(size_eta*4/5) ! Similar triangles o/a=dh/pm=(max_depth-depth)/(MMm*4/5)
-      do j= 0,ny+1
-        do i= 0,nx+1
+      do j= 1-bf,ny+bf
+        do i= 1-bf,nx+bf
 
           if(yr(i,j)<shelf) then
             ! Constant shallow region 20% of domain in south.
@@ -70,8 +70,8 @@
       riv_west=xl*0.4 ! River west bank at 40% from west
       riv_east=xl*0.6 ! River west bank at 60% from west
 
-      do j= 0,ny+1
-        do i= 0,nx+1
+      do j= 1-bf,ny+bf
+        do i= 1-bf,nx+bf
           ! default is water
           rmask(i,j) = 1
 
@@ -85,17 +85,3 @@
           endif
         enddo
       enddo
-
-!     This happens in river_frc.F
-!     riv_cells = nint( (riv_east - riv_west)/dx) !number of cells in this river
-!     do j= 0,ny+1
-!       do i= 0,nx+1
-!         if (xr(i,j)>riv_west .and. xr(i,j)<riv_east) then
-!           ! find 'coastline' masked cells
-!           if (rmask(i,j)==0 .and. rmask(i,j+1)==1) then
-!             rflx(i,j) = 1.0+1.0/riv_cells
-!           endif
-!         endif
-!       enddo
-!     enddo
-

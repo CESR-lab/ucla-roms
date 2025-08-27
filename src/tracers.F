@@ -29,7 +29,7 @@
 #ifdef MARBL      
       use marbl_driver
 #endif      
-      use mpi_exchanges
+      use roms_mpi
       implicit none
       private
 
@@ -79,22 +79,20 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_surf_tracer_flx(istr,iend,jstr,jend) ![ set tracer flux at surface
+      subroutine set_surf_tracer_flx ![
+      ! set tracer flux at surface
 
       implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
       integer           :: itrc       ! tracer number for loop index
       character(len=46) :: t_flx_name ! Tracer time name
 
-      do itrc=iTandS+1,NT
+      do itrc=iTandS+1,nt
 
         if (t_ana_frc(itrc)==0) then ! Read in forcing data (not analytical)
 
-          call set_frc_data(nc_t(itrc), stflx(i0:i1,j0:j1,itrc) )
+          call set_frc_data(nc_t(itrc), stflx(:,:,itrc),'r' )
 
         elseif(t_ana_frc(itrc)==1) then ! Analytical forcing
 
@@ -111,7 +109,7 @@
 
         endif ! if(t_ana_frc(itrc)==0)
 
-        call exchange_xxx(stflx)
+!       call exchange_xxx(stflx)
 
       enddo
 
@@ -141,15 +139,16 @@
       endif
 
 !     Could have various switches here for the different tracers, e.g.:
-      u_pist = 5.55e-5 ! 0.20 cm/hour
-      u_pist = u_pist/20.  ! linearization of carbon chemistry
-      if(itrc==3) then
-         do j=0,ny+1
-           do i=0,nx+1
-             stflx(i,j,itrc)= -u_pist*t(i,j,nz,nrhs,itrc)
-           enddo
-         enddo
-      endif
+!     This should be an include file instead: ana_frc_trc.h
+!     u_pist = 5.55e-5 ! 0.20 cm/hour
+!     u_pist = u_pist/20.  ! linearization of carbon chemistry
+!     if(itrc==3) then
+!        do j=0,ny+1
+!          do i=0,nx+1
+!            stflx(i,j,itrc)= -u_pist*t(i,j,nz,nrhs,itrc)
+!          enddo
+!        enddo
+!     endif
 
       end subroutine set_ana_surf_tracer_flx  !]
 ! ----------------------------------------------------------------------

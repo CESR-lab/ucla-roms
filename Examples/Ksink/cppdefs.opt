@@ -59,24 +59,6 @@ C--# define LMD_CONVEC
 # define T_FRC_BRY
 # define SPONGE
 
-c--#  define WEC
-
-#  ifdef WEC
-#    define BRK0
-#    define SURFACE_BREAK
-#    undef SPEC_DD
-#    undef LOG_BDRAG
-#    undef WKB_WWAVE
-#    undef BBL
-#    define WAVE_OFFLINE
-#    define WAVE_FRICTION
-#    define BBL_S95
-#    define SUP_OFF
-#    define WAVE_DIFF_FROM_LM
-#  else
-#   define LOG_BDRAG
-#  endif
-#  define BULK_FRC
 
 c--# endif
 

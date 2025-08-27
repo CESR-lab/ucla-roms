@@ -11,9 +11,9 @@
       integer,parameter        :: nrpf   = 72          ! number of frames per file
       integer,parameter        :: ndep   =  6          ! number of depth slice
       real, dimension(ndep) :: vecdep = (/-2.0, -15.0, -30.0, -60.0, -120.0, -250.0/) ! depths slice  
-      logical,parameter     :: wrt_T = .false. ,     ! tracers
-     &                         wrt_U = .true. ,      ! u-velocity
-     &                         wrt_V = .true.        ! v-velocity
+      logical,parameter     :: wrt_T_zsl = .false. ,   ! tracers
+     &                         wrt_U_zsl = .true. ,    ! u-velocity
+     &                         wrt_V_zsl = .true.      ! v-velocity
       integer,parameter        :: nt_z   =  2        ! number of tracers to slice
       integer, dimension(nt_z) :: trc2zsc = (/1, 2/) ! index of the tracer to slice
       !

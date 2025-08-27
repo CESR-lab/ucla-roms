@@ -12,7 +12,7 @@
       use grid
       use ocean_vars
       use scalars
-      use sponge_tune
+      use obc_tune
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
@@ -31,8 +31,6 @@
 # define dt illegal
 
 # ifndef EW_PERIODIC
-!     if (.not.ew_periodic) then ! no boundary conditions if periodic
-!     if (.not. west_exchng) then
       if (inode==0) then
 #  ifdef OBC_WEST
 #   ifdef OBC_M3ORLANSKI
@@ -88,9 +86,7 @@
      &                      -min(cy,0.)*grad(istr,j+1)
      &                                     )/(cff+cx)
 #    if defined M3_FRC_BRY
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_west(j),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_west(j),1.0))
             u(istr,j,k,nnew)=(1.-cext)*u(istr,j,k,nnew)
      &                                +cext*u_west(j,k)
 #    endif
@@ -177,9 +173,7 @@
      &                       -min(cy,0.)*grad(iend+1,j+1)
      &                                        )/(cff+cx)
 #    if defined M3_FRC_BRY
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_east(j),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_east(j),1.0))
             u(iend+1,j,k,nnew)=(1.-cext)*u(iend+1,j,k,nnew)
      &                                    +cext*u_east(j,k)
 #    endif
@@ -257,9 +251,7 @@ c            u(iend+1,j,k,nnew)=-ust(iend+1,j,k) ! no Lagrangian flux
      &                                                     )
 
 #    if defined M3_FRC_BRY
-#      if defined SPONGE_TUNE
-           if (ub_tune) cext = max(cext,min(ub_south(i),1.0))
-#      endif
+           if (obc_tuning) cext = max(cext,min(ub_south(i),1.0))
            u(i,jstr-1,k,nnew)=(1.-cext)*u(i,jstr-1,k,nnew)
      &                                  +cext*u_south(i,k)
 #    endif
@@ -336,9 +328,7 @@ c            u(iend+1,j,k,nnew)=-ust(iend+1,j,k) ! no Lagrangian flux
      &                                                     )
 
 #    if defined M3_FRC_BRY 
-#      if defined SPONGE_TUNE
-            if (ub_tune) cext = max(cext,min(ub_north(i),1.0))
-#      endif
+            if (obc_tuning) cext = max(cext,min(ub_north(i),1.0))
             u(i,jend+1,k,nnew)=(1.-cext)*u(i,jend+1,k,nnew)
      &                                   +cext*u_north(i,k)
 #    endif

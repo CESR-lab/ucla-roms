@@ -1,0 +1,9 @@
+The ci directory houses files necessary for continuous integration for github actions
+
+- environment.yml : defines conda environment that can be used to compile ROMS and MARBL on a GitHub runner
+- get_input_files.sh: allows GitHub runner to obtain netcdf datasets to run example cases
+- ci_makefiles: makefiles that allow the GitHub runner to compile using gfortran
+- set_environs.sh: allows testing in a GitHub codespaces session
+
+See also:
+$ROMS_ROOT/.github/workflows/automated_testing_workflow.yml: the series of actions to be executed on the GitHub runner

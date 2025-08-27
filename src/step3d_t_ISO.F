@@ -20,7 +20,7 @@ c--# define CONST_TRACERS
       subroutine step3d_t(tile)   ! the list of agruments in call below
 
       use param
-      use hidden_mpi_vars
+      use roms_mpi
       use private_scratch
 
       implicit none               ! are repeated to use the same memory
@@ -55,18 +55,20 @@ c--# define CONST_TRACERS
 
       use param
       use pipe_frc
+      use cdr_frc
       use river_frc
       use surf_flux, only: stflx, srflx
       use tracers
-#ifdef MARBL      
+#ifdef MARBL
       use marbl_driver, only: marbldrv_column_physics
-#endif      
+#endif
       use diagnostics
       use eos_vars
       use grid
       use mixing
       use ocean_vars
       use scalars
+      use roms_mpi
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
@@ -165,12 +167,10 @@ c--#  define ntdf nrhs
 
 # include "compute_horiz_tracer_fluxes.h"
 
-# ifdef DIAGNOSTICS
-#  ifndef ADV_ISONEUTRAL
-          if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+# ifndef ADV_ISONEUTRAL
+          if (diag_trc.and.wrt_t_dia(itrc) ) then
             call diag_t_adv_hc4(k,itrc)
           endif
-#  endif
 # endif
 
             do j=jstr,jend
@@ -182,9 +182,8 @@ c--#  define ntdf nrhs
               enddo
             enddo                 !-->  discard FX,FE
 
-# ifdef DIAGNOSTICS
 #  ifdef ADV_ISONEUTRAL
-            if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+            if (diag_trc.and.wrt_t_dia(itrc) ) then
               do j= 1,ny
                 do i=1,nx+1
                   Tdiag(i,j,k,tadvx,td(itrc)) = FX(i,j)
@@ -197,7 +196,7 @@ c--#  define ntdf nrhs
               enddo
             endif
 #  else
-            if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+            if ( diag_trc.and.wrt_t_dia(itrc) ) then
               do j= 1,ny
                 do i=1,nx+1
                   Tdiag(i,j,k,tmixx,td(itrc)) = FX(i,j)
@@ -212,7 +211,6 @@ c--#  define ntdf nrhs
               enddo
             endif
 #  endif
-# endif
 
 # ifdef ADV_ISONEUTRAL
           endif !<-- k > 0
@@ -786,8 +784,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
               enddo
             enddo
 
-# ifdef DIAGNOSTICS
-            if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+            if (diag_trc.and.wrt_t_dia(itrc) ) then
               do j=1,ny
                 do i=1,nx+1
                   Tdiag(i,j,k,tmixx,td(itrc)) = -FX(i,j)
@@ -804,7 +801,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
                 enddo
               enddo
             endif
-# endif /* DIAGNOSTICS */
 
           endif   !<-- k > 0
 # endif /* ADV_ISONEUTRAL */
@@ -814,18 +810,31 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
 ! Compute and apply vertical advective fluxes.
 
-# ifdef DIAGNOSTICS
-        if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+        if (diag_trc.and.wrt_t_dia(itrc) ) then
           call diag_t_adv_vc4(itrc )
         endif
-# endif
+
+        if (cdr_source) then
+          ! Loop over cdr release locations in this subdomain
+          ! The global sum over all cdr_prf should be 1.
+          ! cdr_flux unit is [C/s]
+          do cidx=1,cdr_nprf
+            icdr = cdr_icdr(cidx)
+            i = cdr_iloc(cidx)
+            j = cdr_jloc(cidx)
+            do k=1,nz
+              t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
+     &           +dt*pm(i,j)*pn(i,j)*
+     &            cdr_prf(cidx,k)*cdr_flx(icdr,itrc)
+            enddo
+          enddo
+        endif
 
         do j=jstr,jend
 
 # include "compute_vert_tracer_fluxes.h"
 
-# ifdef DIAGNOSTICS
-          if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
+          if (diag_trc.and.wrt_t_dia(itrc) ) then
             do k=1,nz
               do i=1,nx
                 Tdiag(i,j,k,tadvz,td(itrc)) = FC(i,k)
@@ -833,9 +842,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
               enddo
             enddo
           endif
-
-# endif
-
 
           do k=1,nz
             do i=istr,iend
@@ -853,6 +859,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
             enddo
           enddo
+
 
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
@@ -1004,8 +1011,7 @@ c??         enddo
             enddo
           enddo           !--> discard FC,WC,CF,DC
 
-# ifdef DIAGNOSTICS
-          if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then 
+          if (diag_trc.and.wrt_t_dia(itrc) ) then
             do k=1,nz
               do i=istr,iend
                 VFlxD(i,k) =
@@ -1014,7 +1020,7 @@ c??         enddo
             enddo
             ! Convert divergence to fluxes on w-points
             do i=istr,iend
-              ZFlx(i,1)= VFlxD(i,1)/(pm(i,j)*pn(i,j)) 
+              ZFlx(i,1)= VFlxD(i,1)/(pm(i,j)*pn(i,j))
               do k=2,nz
                 ZFlx(i,k)= VFlxD(i,k)/(pm(i,j)*pn(i,j)) + ZFlx(i,k-1)
               enddo
@@ -1024,23 +1030,22 @@ c??         enddo
             endif
             do i=istr,iend
               do k=1,nz
-!               Tdiag(i,j,k,vmixd,td(itrc)) = 
-!    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
-!               Tdiag(i,j,k,tmixz,td(itrc)) = 
-!    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+!               Tdiag(i,j,k,vmixd,td(itrc)) =
+!    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc))
+!               Tdiag(i,j,k,tmixz,td(itrc)) =
+!    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc))
 
 #  ifdef ADV_ISONEUTRAL
                 Tdiag(i,j,k,tmixz,td(itrc)) = Tdiag(i,j,k,tmixz,td(itrc)) +
-     &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+     &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc))
 #  else
-                Tdiag(i,j,k,tmixz,td(itrc)) = 
-     &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc)) 
+                Tdiag(i,j,k,tmixz,td(itrc)) =
+     &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc))
 #  endif
               enddo
             enddo
 
           endif
-# endif
 
 #ifdef CONST_TRACERS
           do k=1,N
@@ -1052,10 +1057,6 @@ c??         enddo
         enddo      !<-- j
 
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
-# ifdef DIAGNOSTICS
-!       if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag)
-!    &    call set_diags_t_bc(itrc,td)
-# endif
 
       enddo     !<-- itrc
 
@@ -1064,7 +1065,7 @@ c??         enddo
       if (mynode==0) then
       print *, 'doing BGC with MARBL'
       end if
-      
+
 !     Pass indices, tracer and mask arrays, diagnostics arrays, and saved state arrays to MARBL
 !      if (mynode==0) then
 !         print *, shape(t), ' is the shape of t'
@@ -1075,7 +1076,7 @@ c??         enddo
       if (mynode==0) then
       print *, 'doing BGC with BEC'
       end if
-      
+
       call ecosys_bec2_tile(istr,iend,jstr,jend) ! BEC, 2014
 # endif
 

@@ -67,15 +67,42 @@
 
       type(ncstructure),public :: ncinfo
       
+      public :: cmd_args_optimal
       public :: cmd_args_partit
       public :: cmd_args_ncjoin
+      public :: check_mask
       public :: partition_mask
+      public :: partition_mask_abv
       public :: make_partial_files
       public :: write_partial_files
       public :: make_joined_file
       public :: write_joined_file
 
       contains
+! ----------------------------------------------------------------------
+      subroutine cmd_args_optimal(cores,grdfile)  ![
+      implicit none
+
+!     import/export
+      real,intent(out)            :: cores 
+      character(len=128),intent(out) :: grdfile 
+
+!     local
+      integer            :: nargs
+      character(len=128) :: arg 
+
+      nargs =  command_argument_count()
+
+      if (nargs < 2) call show_use_optimal
+
+!     available cpus/cores
+      call get_command_argument(1,arg);
+      read(arg, *) cores
+!     grdfile
+      call get_command_argument(2,arg);
+      grdfile = arg
+
+      end subroutine cmd_args_optimal !]
 ! ----------------------------------------------------------------------
       subroutine cmd_args_partit(npartx,nparty)  ![
       implicit none
@@ -145,6 +172,16 @@
 
       end subroutine cmd_args_ncjoin !]
 ! ----------------------------------------------------------------------
+      subroutine show_use_optimal ![
+      implicit none
+
+      print *, 'Usage of optimal should be: ',
+     &         'optimal_part cores grdfile.nc'
+       
+      stop
+
+      end subroutine show_use_optimal !]
+! ----------------------------------------------------------------------
       subroutine show_use_partit  ![
       implicit none
 
@@ -154,8 +191,7 @@
       stop
 
       end subroutine show_use_partit !]
-! ----------------------------------------------------------------------h
-
+! ----------------------------------------------------------------------
       subroutine show_use_ncjoin  ![
       implicit none
 
@@ -166,11 +202,194 @@
 
       end subroutine show_use_ncjoin !]
 ! ----------------------------------------------------------------------
+      subroutine check_mask(npx,npy,gnx,gny,mask)   ![
+      implicit none
+
+      ! input/outputs
+      integer, intent(in)            :: npx,npy,gnx,gny
+      real,dimension(:,:),intent(in) :: mask
+
+      ! local
+      real,dimension(:,:),allocatable :: rflx
+      real    :: msk_mx,rfx_mx
+      integer :: nx,ny
+      integer :: surplus_x,surplus_y
+      integer :: loc_x,loc_y
+      integer :: npi,npj
+      integer :: count
+      
+      ! Get interior subdomain size
+      nx = ceiling(1.0*gnx/npx)
+      ny = ceiling(1.0*gny/npy)
+
+      surplus_x = nx*npx - gnx
+      surplus_y = ny*npy - gny
+
+      ! Array's to store the location and size of each subdomain
+      allocate(iloc(npx,3)) ! lnx = iloc(:,1), is = iloc(:,2), ie = iloc(:,3)
+      allocate(jloc(npy,3)) ! lny = jloc(:,1), js = jloc(:,2), je = jloc(:,3)
+
+      loc_x = 1
+      do npi = 1,npx
+        if (npi==1) then ! left-most subdomain
+          iloc(npi,1) = nx - surplus_x/2
+        elseif (npi==npx) then ! East-most subdomain
+          iloc(npi,1) = nx - (surplus_x+1)/2
+        else
+          iloc(npi,1) = nx
+        endif
+        iloc(npi,2) = loc_x
+        iloc(npi,3) = loc_x + iloc(npi,1) -1
+        loc_x = loc_x + iloc(npi,1)
+      enddo
+
+      loc_y = 1
+      do npj = 1,npy
+        if (npj==1) then ! left-most subdomain
+          jloc(npj,1) = ny - surplus_y/2
+        elseif (npj==npy) then ! North-most subdomain
+          jloc(npj,1) = ny - (surplus_y+1)/2
+        else
+          jloc(npj,1) = ny
+        endif
+        jloc(npj,2) = loc_y
+        jloc(npj,3) = loc_y + jloc(npj,1) -1
+        loc_y = loc_y + jloc(npj,1)
+      enddo
+
+      allocate(node_map(0:npy+1,0:npx+1))
+      node_map = -98
+      allocate(npi_c(npx*npy))
+      allocate(npj_c(npx*npy))
+
+      count = 0
+      do npj = 1,npy
+        do npi = 1,npx
+          msk_mx = maxval(mask(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          !rfx_mx = maxval(rflx(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          if (msk_mx > 0) then
+            count = count+1
+            node_map(npj,npi) = count
+            npi_c(count) = npi
+            npj_c(count) = npj
+          endif
+        enddo
+      enddo
+      nparts = count
+
+      deallocate(iloc,jloc,node_map,npi_c,npj_c)
+
+      end subroutine check_mask !]
+! ----------------------------------------------------------------------
+      subroutine partition_mask_abv(npx,npy,npid)   ![
+      implicit none
+
+      ! input/outputs
+      integer,           intent(in)  :: npx,npy,npid
+
+      ! local
+      real,dimension(:,:),allocatable :: mask,rflx,partition
+      real    :: msk_mx,rfx_mx
+      integer :: nx,ny
+      integer :: ierr,ncid,dimid
+      integer :: surplus_x,surplus_y
+      integer :: loc_x,loc_y
+      integer :: npi,npj
+      integer :: count
+      
+
+      ierr = nf90_open(trim(adjustl(grdfile)), nf90_nowrite, ncid)
+       if (ierr/=0) call handle_ierr(ierr,'opening: ',trim(adjustl(grdfile)))
+
+      ierr = nf90_inq_dimid(ncid,'xi_rho',dimid)
+       if (ierr/=0) call handle_ierr(ierr,'getting dimid: ','xi_rho')
+      ierr = nf90_inquire_dimension(ncid, dimid, len=gnx)
+       if (ierr/=0) call handle_ierr(ierr,'getting dimension: ','xi_rho')
+
+      ierr = nf90_inq_dimid(ncid,'eta_rho',dimid)
+       if (ierr/=0) call handle_ierr(ierr,'getting dimid: ','eta_rho')
+      ierr = nf90_inquire_dimension(ncid, dimid, len=gny)
+       if (ierr/=0) call handle_ierr(ierr,'getting dimension: ','eta_rho')
+
+      gnx = gnx-2
+      gny = gny-2
+
+      allocate(mask(0:gnx+1,0:gny+1))
+      allocate(rflx(0:gnx+1,0:gny+1))
+      call ncread(ncid, 'mask_rho',mask)
+!      call ncread(ncid, 'river_flux',rflx)
+      ierr = nf90_close(ncid)
+!     mask = 1
+
+      ! Get interior subdomain size
+      nx = ceiling(1.0*gnx/npx)
+      ny = ceiling(1.0*gny/npy)
+
+      surplus_x = nx*npx - gnx
+      surplus_y = ny*npy - gny
+
+      ! Array's to store the location and size of each subdomain
+      allocate(iloc(npx,3)) ! lnx = iloc(:,1), is = iloc(:,2), ie = iloc(:,3)
+      allocate(jloc(npy,3)) ! lny = jloc(:,1), js = jloc(:,2), je = jloc(:,3)
+
+      loc_x = 1
+      do npi = 1,npx
+        if (npi==1) then ! left-most subdomain
+          iloc(npi,1) = nx - surplus_x/2
+        elseif (npi==npx) then ! East-most subdomain
+          iloc(npi,1) = nx - (surplus_x+1)/2
+        else
+          iloc(npi,1) = nx
+        endif
+        iloc(npi,2) = loc_x
+        iloc(npi,3) = loc_x + iloc(npi,1) -1
+        loc_x = loc_x + iloc(npi,1)
+      enddo
+
+      loc_y = 1
+      do npj = 1,npy
+        if (npj==1) then ! left-most subdomain
+          jloc(npj,1) = ny - surplus_y/2
+        elseif (npj==npy) then ! North-most subdomain
+          jloc(npj,1) = ny - (surplus_y+1)/2
+        else
+          jloc(npj,1) = ny
+        endif
+        jloc(npj,2) = loc_y
+        jloc(npj,3) = loc_y + jloc(npj,1) -1
+        loc_y = loc_y + jloc(npj,1)
+      enddo
+
+      allocate(node_map(0:npy+1,0:npx+1))
+      node_map = -98
+      allocate(npi_c(npx*npy))
+      allocate(npj_c(npx*npy))
+      allocate(partition(0:901,0:901))
+
+      count = 0
+      do npj = 1,npy
+        do npi = 1,npx
+          msk_mx = maxval(mask(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          !rfx_mx = maxval(rflx(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
+          if (msk_mx > 0) then
+            count = count+1
+            node_map(npj,npi) = count
+            npi_c(count) = npi
+            npj_c(count) = npj
+            partition(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3))=count
+          endif
+        enddo
+      enddo
+      nparts = count
+      call ncwrite(npid,'p',partition)
+      deallocate(mask,partition,rflx,iloc,jloc,node_map,npi_c,npj_c)
+      end subroutine partition_mask_abv   !]
+! ----------------------------------------------------------------------
       subroutine partition_mask(npx,npy)   ![
       implicit none
 
       ! input/outputs
-      integer,           intent(in) :: npx,npy
+      integer,           intent(in)  :: npx,npy
 
       ! local
       real,dimension(:,:),allocatable :: mask,rflx
@@ -202,7 +421,7 @@
       allocate(mask(0:gnx+1,0:gny+1))
       allocate(rflx(0:gnx+1,0:gny+1))
       call ncread(ncid, 'mask_rho',mask)
-      call ncread(ncid, 'river_flux',rflx)
+!      call ncread(ncid, 'river_flux',rflx)
       ierr = nf90_close(ncid)
 !     mask = 1
 
@@ -331,8 +550,8 @@
         fname = srcfile
         call insert_nodes(fname,part-1,nparts)
 
-!       ierr=nf90_create(trim(fname),nf90_netcdf4,npid)
-        ierr=nf90_create(trim(fname),nf90_classic_model,npid)
+       ierr=nf90_create(trim(fname),nf90_netcdf4,npid)
+!        ierr=nf90_create(trim(fname),nf90_classic_model,npid)
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'creating file: ',trim(fname) )
 
@@ -462,7 +681,7 @@
         if (ierr/=nf90_noerr) 
      &    call handle_ierr(ierr,'opening file: ',trim(fname) )
 
-        if (part.eq.part0) call get_nc_info(npid)
+!        if (part.eq.part0) call get_nc_info(npid)
 
         ierr = nf90_get_att(npid,nf90_global,'start_idx',llidx)
         i0(part) = llidx(1)
@@ -496,19 +715,19 @@
 
 !     ierr = nf90_open_par(trim(fullsrcfile),nf90_nowrite,part_comm,MPI_Info_Null, ncid)
       ierr = nf90_open(trim(fullsrcfile),nf90_nowrite,ncid)
+      print *, ierr,ncid
       if (ierr/=0) call handle_ierr(ierr,'opening: ',trim(fullsrcfile))
 
-      ierr = nf90_inq_dimid(ncid,'time',dimid)
-       if (ierr /= nf90_noerr) call handle_ierr(ierr)
-      ierr = nf90_inquire_dimension(ncid,dimid,len=nrecords)
-       if (ierr /= nf90_noerr) call handle_ierr(ierr)
+!      ierr = nf90_inq_dimid(ncid,'time',dimid)
+!       if (ierr /= nf90_noerr) call handle_ierr(ierr)
+!      ierr = nf90_inquire_dimension(ncid,dimid,len=nrecords)
+!      if (ierr /= nf90_noerr) call handle_ierr(ierr)
      
       print *,'nrecords: ',nrecords
 
+!     do record = 1,nrecords
 
-      do record = 1,nrecords
-
-        if (mynode==0) print *,'Processing record: ',record
+!       if (mynode==0) print *,'Processing record: ',record
       do ivar=1,ncinfo%nvars
 
         vname = ncinfo%varname(ivar)
@@ -633,7 +852,7 @@
 !       print *,'mynode: ', mynode
       enddo  ! ivars
 
-      enddo ! records
+!      enddo ! records
       ierr = nf90_close(ncid)
 
       deallocate(i0); deallocate(i0u);

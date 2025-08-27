@@ -5,9 +5,10 @@
       !-----------------------------------------------------------
 
       logical,public,parameter :: do_cstar = .false.
-      logical,parameter        :: do_avg   = .false.
+      logical,parameter        :: do_avg   = .true.
+      logical,parameter        :: monthly_averages = .false. ! This overrides output_period
       real   ,parameter :: output_period = 3600 ! in seconds
-      integer,parameter :: nrpf   = 10          ! number of frames per file
+      integer,parameter :: nrpf   = 4          ! number of frames per file
 
       !
       !-----------------------------------------------------------

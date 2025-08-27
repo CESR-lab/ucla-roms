@@ -35,10 +35,11 @@
       use tracers,   only: set_surf_tracer_flx, iTandS
       use river_frc
       use pipe_frc
+      use cdr_frc
       use tides
       use wec_frc
       use bgc ! , only: set_bgc_surf_frc
-      use hidden_mpi_vars
+      use roms_mpi
       use scalars
       use analytical
       use boundary
@@ -128,7 +129,7 @@ c***              no code here
 #  endif
 # endif
 
-      if(NT>iTandS) call set_surf_tracer_flx(istr,iend,jstr,jend)
+      if(nt>iTandS) call set_surf_tracer_flx
 
       ! BGC surface flux:
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
@@ -142,6 +143,8 @@ c***              no code here
       endif
 
       if (pipe_source) call set_pipe_frc
+
+      if (cdr_source) call set_cdr_frc
 
 # ifdef WEC
       call set_wec_frc_tile(istr,iend,jstr,jend,ierr)
@@ -165,8 +168,4 @@ c***              no code here
       call sg_bbl96 ILLEGAL
 #endif
 
-c>>>      if (ierr /= 0) may_day_flag=2
-#ifdef ANA_PSOURCE
-      if (ZEROTH_TILE) call ana_psource
-#endif
       end

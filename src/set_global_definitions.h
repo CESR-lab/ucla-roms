@@ -189,21 +189,21 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
 #ifndef EW_PERIODIC
 # ifdef MPI
-#  define WESTERN_EDGE istr==iwest .and. .not.west_exchng
-#  define EASTERN_EDGE iend==ieast .and. .not.east_exchng
+#  define WESTERN_EDGE inode==0
+#  define EASTERN_EDGE inode==np_xi-1
 # else
-#  define WESTERN_EDGE istr==1
-#  define EASTERN_EDGE iend==Lm
+#  define WESTERN_EDGE .true.
+#  define EASTERN_EDGE .true.
 # endif
 #endif
 
 #ifndef NS_PERIODIC
 # ifdef MPI
-#  define SOUTHERN_EDGE jstr==jsouth .and. .not.south_exchng
-#  define NORTHERN_EDGE jend==jnorth .and. .not.north_exchng
+#  define SOUTHERN_EDGE jnode==0
+#  define NORTHERN_EDGE jnode==np_eta-1
 # else
-#  define SOUTHERN_EDGE jstr==1
-#  define NORTHERN_EDGE jend==Mm
+#  define SOUTHERN_EDGE .true.
+#  define NORTHERN_EDGE .true.
 # endif
 #endif
 
@@ -315,14 +315,15 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
  All these switches are the same for MPI/nonMPI code.  */
 
-#ifdef MPI
-# define ZEROTH_TILE (istr==iwest .and. jstr==jsouth)
-# define SINGLE_TILE_MODE (iend-istr==ieast-iwest .and. \
- jend-jstr==jnorth-jsouth)
-#else
-# define ZEROTH_TILE (istr==1 .and. jstr==1)
-# define SINGLE_TILE_MODE (iend-istr==Lm-1 .and.+jend-jstr==Mm-1)
-#endif
+c-#ifdef MPI
+c-# define ZEROTH_TILE (istr==iwest .and. jstr==jsouth)
+c-# define SINGLE_TILE_MODE (iend-istr==ieast-iwest .and. \
+c- jend-jstr==jnorth-jsouth)
+c-#else
+c-# define ZEROTH_TILE (istr==1 .and. jstr==1)
+c-# define SINGLE_TILE_MODE (iend-istr==Lm-1 .and.+jend-jstr==Mm-1)
+c-#endif
+# define SINGLE_TILE_MODE .true.
 
 
 /* Normally the initial condition exists only as a single time record

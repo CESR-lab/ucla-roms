@@ -1,71 +1,80 @@
+# Makefile for UCLA ROMS tools
+#========== ======= =========== ======== === ==== =====
+# This makefile requires that you have the following 
+# environment variables defined: 
+#  ROMS_ROOT, NETCDF_ROOT, NETCDFC_ROOT, MPIHOME, FCOMP
+#
+#  Example entries in a .bashrc file:
+#
+# export FCOMP=mpiifx
+# export MPIHOME=/opt/intel/oneapi/mpi/latest
+# export NETCDF_ROOT=/opt/netcdf-fortran-4.6.1
+# export NETCDFC_ROOT=/opt/netcdf-c-4.9.2
+#
+# export LD_LIBRARY_PATH=${MPIHOME}/lib/:$LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH=${NETCDFC_ROOT}/lib/:$LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH=${NETCDF_ROOT}/lib/:$LD_LIBRARY_PATH
+
+# export ROMS_ROOT=/home/username/ucla-roms
+# export PATH=${ROMS_ROOT}/Tools-Roms:$PATH
+# export PATH=${NETCDFC_ROOT}/bin:$PATH
+# export PATH=${NETCDF_ROOT}/bin:$PATH
+
+#export MARBL_ROOT=/home/username/MARBL
+#export USEMARBL=TRUE (if the MARBL library is available)
+
 #
 .SUFFIXES: .o .f .F .f90
 
+
 .F.o:
 	@$(CPP) -P $*.F | mpc > $*.f
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
 	@/bin/rm -f $*.f
 .F.f:
 	$(CPP) -P  $*.F | mpc > $*.f
 .f.o:
-	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f $(LCDF)
+	$(FCOMP) -c $(FFLAGS) $(ICDF) -o $*.o $*.f
+.f90.o:
+	$(FCOMP) -c $(FFLAGS) -o $*.o $*.f90
 
      CPP = cpp -traditional
 
-# Path names (non-hydrostatic & NetCDF libraries):
-
-	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_INC  = $(NHMG_ROOT)/include
-	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
+# Path names of NetCDF and MPI libraries:
 
 	NETCDF_INC = $(NETCDF_ROOT)/include
 	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
-	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
 
+ifeq ($(FCOMP),mpiifx)
 	MPI_INC = ${MPIHOME}/include/mpi
+else
+	MPI_INC = ${MPIHOME}/include
+endif
 
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
 
-        CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
+ifeq ($(FCOMP),mpiifx)
+	CPATH = ${MPI_INC}:${NETCDF_INC}
+	ICDF = 
+else
+	ICDF = -I$(MPI_INC) -I$(NETCDF_INC)
+endif
+
+	LCDF = $(NETCDF_LIB)
+
 
 
 # Fortran loader name and options: 
  	LDR = $(FCOMP)  $(CFTFLAGS)
 
-# - Can't use -ip optimization for tools (partit won't compile)
-	FFLAGS = -O3
+# Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
+# - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
+ifeq ($(FCOMP),mpiifx)
+	FFLAGS = -O3 -ipo -fp-model fast
+else
+	FFLAGS = -O3 -ip -fp-model fast
+endif
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
-# - for profiling with grof to see source code, also comment '@/bin/rm -f $*.f':
-#	FFLAGS = -O3 -pg
-
-# OpenMP flags - needed for r2r_bry (and possibly others):
-#	note, -qopenmp is the new -openmp but is still needed for maya
-        OMP_FLAG = -qopenmp
-
-
-
-# Path names (non-hydrostatic & NetCDF libraries):
-
-	NHMG_ROOT = $(ROMS_ROOT)/NHMG
-	NHMG_INC  = $(NHMG_ROOT)/include
-	NHMG_LIB  = -L$(NHMG_ROOT)/lib -lnhmg
-
-	NETCDF_INC = $(NETCDF_ROOT)/include
-	NETCDF_LIB = -L$(NETCDF_ROOT)/lib -lnetcdff
-	NETCDFC_LIB = -L$(NETCDFC_ROOT)/lib -lnetcdf
-
-	MPI_INC = ${MPIHOME}/include/mpi
-
-	LCDF = $(NHMG_LIB) $(NETCDF_LIB) $(NETCDFC_LIB)
-
-	CPATH = ${MPI_INC}:${NHMG_INC}:${NETCDF_INC}
-
-# Fortran loader name and options: 
- 	LDR = $(FCOMP)  
-
-# Fortran compiler name and options: 
- 	CFT = $(FCOMP)  
 
 # --------------------------------------------------------------------
 
@@ -106,7 +115,7 @@ nc3to4z: nc3to4z.o lenstr.o read_string.o
 	
 mpc: mpc.F Makefile
 	$(CPP) $(CPPFLAGS) -P mpc.F > ./mpc.f
-	$(CFT) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
+	$(LDR) $(FFLAGS) $(LDFLAGS) -o mpc ./mpc.f
 	
 extract_data_join: ncjoin_mod.o extract_data_join.o  lenstr.o
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o extract_data_join ncjoin_mod.o extract_data_join.o lenstr.o  $(LCDF)

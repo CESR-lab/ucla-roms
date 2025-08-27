@@ -1,0 +1,20 @@
+
+      ! ****************************************************************
+      ! User inputs
+
+      type (ncforce) :: nc_pflx_w = ncforce( vname='pflx_west', tname='bry_time')
+      type (ncforce) :: nc_pflx_e = ncforce( vname='pflx_east', tname='bry_time')
+      type (ncforce) :: nc_pflx_s = ncforce( vname='pflx_south',tname='bry_time')
+      type (ncforce) :: nc_pflx_n = ncforce( vname='pflx_north',tname='bry_time')
+
+      logical,public  :: obc_tuning = .true.
+      logical         :: tune_avg = .true.
+
+      real,   parameter :: tune_timscale = 24*3600 ! filtering time scale
+
+      logical,parameter :: wrt_obc_tune =.false.    ! yes/no output sponge to file
+      integer,parameter :: nrpf = 10             ! Number of records per file
+      real   ,parameter :: output_period = 1800  ! time between outputs in seconds
+
+      ! End of user inputs
+      ! ****************************************************************
