@@ -5,6 +5,7 @@
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       use param
+      use dimensions
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use roms_read_write
 #ifdef MARBL      

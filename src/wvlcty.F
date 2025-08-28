@@ -3,6 +3,7 @@
 
       subroutine wvlcty (tile, Wvlc)
       use param
+      use dimensions
       use roms_mpi
       use private_scratch
       implicit none
@@ -24,6 +25,7 @@
 ! Unlike W, absolute vertical velocity is defined at RHO-points.
 
       use param
+      use dimensions
       use grid
       use ocean_vars
       use scalars

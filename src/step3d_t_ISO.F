@@ -861,7 +861,6 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           enddo
 
 
-
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
           !! JM add line for bottom tracer flux
@@ -1063,7 +1062,7 @@ c??         enddo
 # if defined(MARBL)
 
       if (mynode==0) then
-      print *, 'doing BGC with MARBL'
+!     print *, 'doing BGC with MARBL'
       end if
 
 !     Pass indices, tracer and mask arrays, diagnostics arrays, and saved state arrays to MARBL
@@ -1074,7 +1073,7 @@ c??         enddo
       call marbldrv_column_physics(istr,iend,jstr,jend,t)
 # elif defined(BIOLOGY_BEC2)
       if (mynode==0) then
-      print *, 'doing BGC with BEC'
+!     print *, 'doing BGC with BEC'
       end if
 
       call ecosys_bec2_tile(istr,iend,jstr,jend) ! BEC, 2014

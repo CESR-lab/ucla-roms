@@ -498,7 +498,7 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
          enddo
       enddo
       if (diag_w.and.calc_diag) then
-        Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
+!       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
       endif
 # endif /* NHMG */
 
