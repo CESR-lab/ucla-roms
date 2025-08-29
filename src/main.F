@@ -111,8 +111,8 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use random_output
       use cdr_frc
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
-      use bgc_param_ini
-      use bgc
+      use bec2_params
+      use bgc_io
 # endif
 
       implicit none
@@ -320,7 +320,7 @@ CR      write(*,*)  ' -2' MYID
       use basic_output
       use boundary
       use analytical
-      use bgc
+      use bgc_io
       use tides
       use mixing
 

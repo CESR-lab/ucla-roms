@@ -58,9 +58,9 @@
       use flux_frc
       use pipe_frc
       use cdr_frc
-      use bgc_ecosys_vars
+      use bgc_shared_vars
       use bgc_forces
-      use bgc
+      use bgc_io
 
       implicit none
       integer             :: i, j, k, itrc, itavg
@@ -163,7 +163,7 @@
 !     if (cdr_source) call init_cdr_frc ! must be after get_grid
 
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
-      call init_arrays_bgc_ecosys_vars
+      call init_arrays_bgc_shared_vars
       call init_arrays_bgc_forces
       call init_arrays_bgc_frc
 #endif
