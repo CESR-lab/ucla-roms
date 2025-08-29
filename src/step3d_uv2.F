@@ -799,14 +799,14 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         enddo
       enddo
 
-      if (diag_w) call set_diags_w_at_uv2( 1, nx, 1, ny )
+!     if (diag_w) call set_diags_w_at_uv2
 
 !--------------------------------------------------------------------
 ! Update physical boundary values
 !--------------------------------------------------------------------
       call w3dbc_tile (DC)
 
-      if (diag_w) call set_diags_w_at_bc( 1, nx, 1, ny )
+!     if (diag_w) call set_diags_w_at_bc
 
 !--------------------------------------------------------------------
 ! Exchange periodic boundaries and computational margins. 

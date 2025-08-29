@@ -502,15 +502,15 @@
       enddo      ! <-- j
 
       end subroutine set_diags_v_4th_adv  !]
+# ifdef NHMGDIAGSXXX
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )  ![
+      subroutine set_diags_w_at_uv1(DC, rw )  ![
       ! Set the diagnostic terms for prsgrd, horiz & vert advection.
       ! Prsgrd and horiz adv still need to also be convert to dz * w
 
       implicit none
 
       ! inputs
-      integer,                                       intent(in) :: 1, nx, 1, ny
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N), intent(in) :: rw
 
@@ -531,11 +531,8 @@
 
       end subroutine set_diags_w_at_uv1  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv2( 1, nx, 1, ny )  ![
+      subroutine set_diags_w_at_uv2  ![
       implicit none
-
-      ! inputs
-      integer, intent(in) :: 1, nx, 1, ny
 
       ! local
       integer :: i, j, k
@@ -560,14 +557,11 @@
 
       end subroutine set_diags_w_at_uv2  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_bc( 1, nx, 1, ny )  ![
+      subroutine set_diags_w_at_bc ![
       ! set the diagnostics terms for boundary changes in w
       ! called from step3d_uv2.F right after call to w3dbc_im.F
 
       implicit none
-
-      ! inputs/outputs
-      integer, intent(in) :: 1, nx, 1, ny
 
       ! local
       integer :: i, j, k
@@ -614,11 +608,8 @@
 
       end subroutine set_diags_w_at_bc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv2_end( i0, i1, j0, j1)  ![
+      subroutine set_diags_w_at_uv2_end ![
       implicit none
-
-      ! inputs
-      integer, intent(in) :: i0, i1, j0, j1 ! changed the name to use for u or v
 
       ! local
       integer :: i, j, k, tmp
@@ -644,6 +635,7 @@
 
       end subroutine set_diags_w_at_uv2_end  !]
 ! ----------------------------------------------------------------------
+# endif
       subroutine set_diags_t_h_mix(itrc)  ![
       ! Horizontal mixing from t3dmix_GP.F
       ! zero in interior beyond sponge layer if zero background diffusion!

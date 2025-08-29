@@ -104,7 +104,7 @@
 
       enddo
 
-      if (diag_w) call set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )
+!     if (diag_w) call set_diags_w_at_uv1(DC, rw )
 # endif  /* NHMG */
 
       do k=1,N
