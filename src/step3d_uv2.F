@@ -94,7 +94,7 @@
 !          [Hz(1)+FC(1)]*u_new(1) -FC(1)*u_new(2) = Hz(1)*u_old(1)
 !
 ! Basically FC(N)=FC(1)=0 conditions should be interpreted as the
-! implicit step merely red1ibutes the horizontal momentum
+! implicit step merely redistributes the horizontal momentum
 ! components u,v throughout the vertical column, while conserving
 ! its vertical integral. At this moment the content of arrays
 ! u,v(:,:,:,nnew) has meaning of Hz*velocity. After the implicit

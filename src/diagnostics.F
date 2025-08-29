@@ -503,7 +503,6 @@
 
       end subroutine set_diags_v_4th_adv  !]
 ! ----------------------------------------------------------------------
-# ifdef NHMGDIAG
       subroutine set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )  ![
       ! Set the diagnostic terms for prsgrd, horiz & vert advection.
       ! Prsgrd and horiz adv still need to also be convert to dz * w
@@ -644,8 +643,6 @@
       enddo
 
       end subroutine set_diags_w_at_uv2_end  !]
-# endif /* NHMGDIAG */
-
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_h_mix(itrc)  ![
       ! Horizontal mixing from t3dmix_GP.F
