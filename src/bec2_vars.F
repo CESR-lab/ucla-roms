@@ -240,5 +240,5 @@ C
       end subroutine init_scalars_bec2  !]
 ! ----------------------------------------------------------------------
 C
-#endif BIOLOGY_BEC2
+#endif /* BIOLOGY_BEC2 */
       end module bec2_vars
