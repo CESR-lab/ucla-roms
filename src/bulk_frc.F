@@ -830,12 +830,6 @@
 !---------------------------------------------------------------------
 !
 !
-!!!!!!!!!!!!! This exchange may probably not be necessary !!!!!
-!#if defined EW_PERIODIC || defined NS_PERIODIC || defined MPI
-!        call exchange_2_tile(istr,iend,jstr,jend,
-!     &                       u(START_2D_ARRAY,1,nnew), N,
-!     &                       v(START_2D_ARRAY,1,nnew), N)
-!# endif
       ! cfb_offset=  0.008
       ! cfb_slope = -0.0029
       ! This seems discontinuous.... should be Wspd_min = 3.7 m/s

@@ -800,7 +800,6 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
       enddo
 
       if (diag_w) call set_diags_w_at_uv2( 1, nx, 1, ny )
-!
 
 !--------------------------------------------------------------------
 ! Update physical boundary values
@@ -818,7 +817,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
 # endif /* NHMG */
 
-      if (diag_w)  call set_diags_w_at_uv2_end
+!     if (diag_w)  call set_diags_w_at_uv2_end
 
       end
 

@@ -1,4 +1,5 @@
 #include "cppdefs.opt"
+
 #ifdef SOLVE3D
                                     ! Note that arrays A2d(1,1:4) in
       subroutine pre_step3d (tile)  ! the call just below are repeated
@@ -137,7 +138,7 @@
                                              ! Advance tracer fields
         do itrc=1,nt                         ! starting with applying
                                              ! horizontal fluxes. Also
-# include "compute_horiz_tracer_fluxes.h"   
+# include "compute_horiz_tracer_fluxes.h"
 !! river included in above include file
                                              ! INITIALIZE CORRECTOR
           do j=1,ny                     ! STEP by pre-multiplying
@@ -188,30 +189,19 @@
       do j=1,ny  !! Start of the giant j-loop
 
         do itrc=1,nt
+
 # include "compute_vert_tracer_fluxes.h"
 
           do k=1,n
             do i=1,nx   !! t(..) is Hz*T
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            -dtau*pm(i,j)*pn(i,j)*(FC(i,k)-FC(i,k-1))
-# ifdef PIPE_SOURCEXXX /*only add this during the corrector step */
-              if (pipe_idx(i,j)>0) then
-                pidx = pipe_idx(i,j)
-                t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
-     &            +dtau*pm(i,j)*pn(i,j)*
-     &              pipe_flx(i,j)*pipe_prf(pidx,k)*pipe_trc(pidx,itrc)
-              endif
-# endif
-
-# ifdef CONST_TRACERS
-              t(i,j,k,nnew,itrc)=t(i,j,k,nstp,itrc)
-# endif
             enddo
           enddo            !--> discard FC
 
           iAkt=min(itrc,iTandS)
 
-          !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  )) 
+          !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  ))
           !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
           !!                                                  Hz*T(k)
           !! See numerical recipes p40
@@ -291,7 +281,7 @@
         do i=1,nx
           DC(i,0) =dtau*pm(i,j)*pn(i,j)
         enddo
-        !! w(indx),w(nstp) in m/s, 
+        !! w(indx),w(nstp) in m/s,
         !! w(0) is always zero
         do k=1,N-1
           do i=1,nx
@@ -302,7 +292,7 @@
             w(i,j,k,indx)=0.5*(Hz(i,j,k+1)+Hz(i,j,k))*w(i,j,k,nstp)
           enddo
         enddo
-        k = N   
+        k = N
         !! here is the special volume weighting for w(N)
         !! Still, write out the volume integrated (dz*w) vertical mixing eq.
         !! Just to check :)
@@ -324,7 +314,7 @@
 
           cff = 0.5*Hz_fwd(i,j,N) +FC(i,N-1)-min(WC(i,N-1),0.)
 
-          CF(i,N-1)= ( FC(i,N-1)+max(WC(i,N-1),0.) )/cff ! gam(n-1)=c(n)/bet 
+          CF(i,N-1)= ( FC(i,N-1)+max(WC(i,N-1),0.) )/cff ! gam(n-1)=c(n)/bet
 
           DC(i,N)=  DC(i,N)/cff                          ! u(1) = r(1)/bet
         enddo

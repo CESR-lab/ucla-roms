@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       implicit none
 
 ! This is include file "mixing"

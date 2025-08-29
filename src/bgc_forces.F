@@ -5,6 +5,7 @@
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
 
       use param
+      use dimensions
       implicit none
 
 #ifdef PCO2AIR_FORCING

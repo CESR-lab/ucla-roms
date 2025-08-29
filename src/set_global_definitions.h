@@ -143,33 +143,7 @@ c-# define IMPLICIT_BOTTOM_DRAG
  each side. These data for these two ghost zones is then exchanged by
  message passing.  */
 
-#ifdef MPI
 # define GLOBAL_2D_ARRAY 1-bf:nx+bf,1-bf:ny+bf
-# define START_2D_ARRAY -1,-1
-# define GLOBAL_1DX_ARRAY -1:Lm+2
-# define GLOBAL_1DY_ARRAY -1:Mm+2
-!# define START_1D -1
-!# define END_1DX Lm+2
-!# define END_1DY Mm+2
-#else
-# ifdef EW_PERIODIC
-#  ifdef NS_PERIODIC
-#   define GLOBAL_2D_ARRAY -1:Lm+2,-1:Mm+2
-#   define START_2D_ARRAY -1,-1
-#  else
-#   define GLOBAL_2D_ARRAY -1:Lm+2,0:Mm+1
-#   define START_2D_ARRAY -1,0
-#  endif
-# else
-#  ifdef NS_PERIODIC
-#   define GLOBAL_2D_ARRAY 0:Lm+1,-1:Mm+2
-#   define START_2D_ARRAY 0,-1
-#  else
-#   define GLOBAL_2D_ARRAY 0:Lm+1,0:Mm+1
-#   define START_2D_ARRAY 0,0
-#  endif
-# endif
-#endif
 
 #define PRIVATE_1D_SCRATCH_ARRAY 1-bf:nx+bf
 #define PRIVATE_2D_SCRATCH_ARRAY 1-bf:nx+bf,1-bf:ny+bf
