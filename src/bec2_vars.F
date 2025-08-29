@@ -3,6 +3,7 @@
 #ifdef BIOLOGY_BEC2
 
       use param
+      use dimensions
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use roms_read_write
 
