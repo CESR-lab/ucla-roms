@@ -58,7 +58,7 @@
       contains
 
 ! ----------------------------------------------------------------------
-      subroutine set_bgc_surf_frc(istr,iend,jstr,jend)  ![
+      subroutine set_bgc_surf_frc  ![
 
       ! read in bgc surface flux and interpolate to model time.
       ! Taken from get_smth.F & set_smth.F of ETH code.
@@ -76,9 +76,6 @@
 ! Needed for iron and dust variables, not yet ported to this module. Should do.
 !#include "bgc_forces.h"
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-      
       ! local
       integer :: i, j
 

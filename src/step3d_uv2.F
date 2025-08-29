@@ -785,7 +785,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !      do j=1,nx  ! BUG HERE
       do j=1,ny  ! BUG HERE
         do k=1,N
-          do i=Istr,Iend
+          do i=1,nx
             DC(i,0)=pm(i,j)*pn(i,j)
             ! at this time, Huon and Hvom CANNOT used : they are 
             ! defined at n+1/2 instead of n+1
@@ -805,7 +805,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
 ! Update physical boundary values
 !--------------------------------------------------------------------
-      call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
+      call w3dbc_tile (DC)
 
       if (diag_w) call set_diags_w_at_bc( 1, nx, 1, ny )
 

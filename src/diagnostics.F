@@ -504,14 +504,14 @@
       end subroutine set_diags_v_4th_adv  !]
 ! ----------------------------------------------------------------------
 # ifdef NHMGDIAG
-      subroutine set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )  ![
+      subroutine set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )  ![
       ! Set the diagnostic terms for prsgrd, horiz & vert advection.
       ! Prsgrd and horiz adv still need to also be convert to dz * w
 
       implicit none
 
       ! inputs
-      integer,                                       intent(in) :: istr, iend, jstr, jend
+      integer,                                       intent(in) :: 1, nx, 1, ny
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N), intent(in) :: rw
 
@@ -519,8 +519,8 @@
       integer :: i, j, k
 
       do k=1,nz
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             Wdiag(i,j,k,iwprsgr)   = Wdiag(i,j,k,iwprsgr)   * DC(i,0)  ! need to convert to dz*w now that we have DC
             Wdiag(i,j,k,iwhoriadv) = Wdiag(i,j,k,iwhoriadv) * DC(i,0)
             Wdiag(i,j,k,iwvertadv) = DC(i,0)*rw(i,j,k)
@@ -532,18 +532,18 @@
 
       end subroutine set_diags_w_at_uv1  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv2( istr, iend, jstr, jend )  ![
+      subroutine set_diags_w_at_uv2( 1, nx, 1, ny )  ![
       implicit none
 
       ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend
+      integer, intent(in) :: 1, nx, 1, ny
 
       ! local
       integer :: i, j, k
 
       ! This could well be wrong. Need to confirm with Jeroen.
       do k=1,N-1
-        do j=jstr,jend  ! I changed istr to jstr...
+        do j=1,ny  ! I changed 1 to 1...
           do i=Istr,Iend
             Wdiag(i,j,k,iwuv2) = w(i,j,k,nnew) * 0.5*( Hz(i,j,k+1)+Hz(i,j,k) ) - w_prev(i,j,k)
           enddo
@@ -553,7 +553,7 @@
       ! Need to do N seperately since can't do 0.5 * Hz(i,j,k+1)
       ! Do seperate loop rather than having if statement in loop? Not sure what is more efficient
       ! ifort compiler report could tell me if it fuses these loops...
-      do j=jstr,jend  ! I changed istr to jstr...
+      do j=1,ny  ! I changed 1 to 1...
         do i=Istr,Iend
           Wdiag(i,j,N,iwuv2) = w(i,j,N,nnew) * Hz(i,j,N) - w_prev(i,j,N)
         enddo
@@ -561,22 +561,22 @@
 
       end subroutine set_diags_w_at_uv2  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_bc( istr, iend, jstr, jend )  ![
+      subroutine set_diags_w_at_bc( 1, nx, 1, ny )  ![
       ! set the diagnostics terms for boundary changes in w
       ! called from step3d_uv2.F right after call to w3dbc_im.F
 
       implicit none
 
       ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend
+      integer, intent(in) :: 1, nx, 1, ny
 
       ! local
       integer :: i, j, k
 
       if (WESTERN_EDGE) then
-        i=istr-1
+        i=0
         do k=1,N-1            ! N-1 because of k+1
-          do j=jstr-1,jend+1
+          do j=0,ny+1
             Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
           enddo
         enddo
@@ -584,9 +584,9 @@
       endif
 
       if (EASTERN_EDGE) then
-        i=iend+1
+        i=nx+1
         do k=1,N-1
-          do j=jstr-1,jend+1
+          do j=0,ny+1
             Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
           enddo
         enddo
@@ -594,9 +594,9 @@
       endif
 
       if (SOUTHERN_EDGE) then
-        j=jstr-1
+        j=0
         do k=1,N-1
-          do i=istr-1,iend+1
+          do i=0,nx+1
             Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
           enddo
         enddo
@@ -604,9 +604,9 @@
       endif
 
       if (NORTHERN_EDGE) then
-        j=jend+1
+        j=ny+1
         do k=1,N-1
-          do i=istr-1,iend+1
+          do i=0,nx+1
             Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
           enddo
         enddo
@@ -615,18 +615,18 @@
 
       end subroutine set_diags_w_at_bc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR)  ![
+      subroutine set_diags_w_at_uv2_end( i0, i1, j0, j1)  ![
       implicit none
 
       ! inputs
-      integer, intent(in) :: istrR, iendR, jstrR, jendR ! changed the name to use for u or v
+      integer, intent(in) :: i0, i1, j0, j1 ! changed the name to use for u or v
 
       ! local
       integer :: i, j, k, tmp
 
       do k=1,N-1
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=j0,j1
+          do i=i0,i1
             ! Full loop ranges since u-change over every point including bry.
             tmp = w(i,j,k,nnew) * 0.5 * ( Hz(i,j,k+1)+Hz(i,j,k) )
             w_dif(i,j,k)   = tmp - wdz_old(i,j,k)
@@ -635,8 +635,8 @@
         enddo
       enddo
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=j0,j1
+        do i=i0,i1
           tmp = w(i,j,N,nnew) * Hz(i,j,N)
           w_dif(i,j,N)   = tmp - wdz_old(i,j,N)
           wdz_old(i,j,N) = tmp

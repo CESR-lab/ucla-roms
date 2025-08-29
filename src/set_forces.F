@@ -50,8 +50,6 @@
       integer ierr
       integer,save:: tile=0
 
-#include "compute_tile_bounds.h"
-
       ierr=0
 ! External data to supply at open boundaries. Note that there are
 ! two mutually exclusive mechanisms for each variable: either _BRY
@@ -67,17 +65,7 @@ c***              no code here
 # endif
 #endif
 
-!--> Climatological data
-
-#if defined M2NUDGING && !defined M2_FRC_BRY
-# ifdef ANA_SSH
-      call ana_ssh_tile(istr,iend,jstr,jend)
-# else
-      call set_ssh_tile(istr,iend,jstr,jend, ierr)
-# endif
-#endif
-
-                                        !--> Surface fluxes
+!--> Surface fluxes
 
 #ifdef ANA_SMFLUX
       call ana_smflux_tile
@@ -111,7 +99,7 @@ c***              no code here
       ! DevinD not sure what flag to use here to avoid set_flux for purely analytical
 #  ifndef ANA_SMFLUX
       frctype = 'SURF:'
-      call set_flux_frc(istr,iend,jstr,jend)
+      call set_flux_frc
 #  endif
 
 #  ifdef ANA_STFLUX
@@ -133,7 +121,7 @@ c***              no code here
 
       ! BGC surface flux:
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
-      call set_bgc_surf_frc(istr,iend,jstr,jend)
+      call set_bgc_surf_frc
 # endif
 
 
@@ -147,7 +135,7 @@ c***              no code here
       if (cdr_source) call set_cdr_frc
 
 # ifdef WEC
-      call set_wec_frc_tile(istr,iend,jstr,jend,ierr)
+      call set_wec_frc_tile(1,nx,1,ny,ierr)
       call wec_forces
 # endif
 
@@ -163,7 +151,7 @@ c***              no code here
 # ifdef ANA_WWAVE
       call ana_wwave ILLEGAL
 # else
-      call set_wwave_tile(istr,iend,jstr,jend)
+      call set_wwave_tile(1,nx,1,ny)
 # endif
       call sg_bbl96 ILLEGAL
 #endif

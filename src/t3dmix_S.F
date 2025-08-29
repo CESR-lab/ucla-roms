@@ -9,7 +9,6 @@
       integer,save:: tile=0
       integer itrc
 
-# include "compute_tile_bounds.h"
       do itrc=1,nt
         call t3dmix_tile (itrc, A2d(1,1),
      &                                     A2d(1,2), A2d(1,3))

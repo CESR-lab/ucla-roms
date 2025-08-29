@@ -194,7 +194,7 @@ CR      write(*,*) ' -8' MYID
       do tile=my_tile_range            ! Create three-dimensional
         call set_depth           ! S-coordinate system, which
 # ifdef LMD_KPP
-        call swr_frac(tile)            ! may be needed by ana_init.
+        call swr_frac                  ! may be needed by ana_init.
 # endif
       enddo
 C$OMP BARRIER                          ! Here it is assumed that free

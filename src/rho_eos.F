@@ -131,7 +131,7 @@
 
       integer, intent(in) :: tidx
 
-      integer istr,iend,jstr,jend, i,j,k
+      integer :: i,j,k
 # ifdef NONLIN_EOS
       real Ts,Tt,sqrtTs, dr00, K0
 #  ifndef SPLIT_EOS

@@ -47,18 +47,16 @@
 
 #include "ana_init.h"
 
-      call ana_init_generic(1,nx,1,ny) 
+      call ana_init_generic
 
       end subroutine ana_init !]
 ! ----------------------------------------------------------------------
-      subroutine ana_init_generic(istr,iend,jstr,jend) ![
+      subroutine ana_init_generic ![
 
       use param
       use boundary
       implicit none
 
-      ! input
-      integer, intent(in) :: istr,iend,jstr,jend
       ! local
       integer :: i,j,k, itrc
 
@@ -71,7 +69,6 @@
 ! which will remain constant thereafter and be used as the source of
 ! forcing data.  Note that this automatically guarantees consistency
 ! between the initial state and side boundary conditions.
-
 
 #  ifdef ANA_BRY
 #   ifdef OBC_WEST

@@ -4,7 +4,7 @@
 # define INT_AT_RHO_POINTS
 # define SMOOTH_HBL
 
-      subroutine lmd_kpp_tile (istr,iend,jstr,jend,       Kv,Kt,Ks,
+      subroutine lmd_kpp_tile (Kv,Kt,Ks,
      &                         ustar, Bo,Bosol, hbl,bbl, FX,FE,FE1,
      &                         Cr,FC, wrk1,wrk2,
      &                         Gm1,dGm1dS,  Gt1,dGt1dS,  Gs1,dGs1dS,
@@ -21,7 +21,7 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
+      integer :: i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv, Kt, Ks
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: ustar, Bo, Bosol
      &                                                  , hbl, bbl
@@ -75,40 +75,40 @@
 # ifdef SMOOTH_HBL
       integer imin,imax,jmin,jmax
 #  ifdef EW_PERIODIC
-      imin=istr-1
-      imax=iend+1
+      imin=0
+      imax=nx+1
 #  else
       if (WESTERN_EDGE) then
-        imin=istr
+        imin=1
       else
-        imin=istr-1
+        imin=0
       endif
       if (EASTERN_EDGE) then
-        imax=iend
+        imax=nx
       else
-        imax=iend+1
+        imax=nx+1
       endif
 #  endif
 #  ifdef NS_PERIODIC
-      jmin=jstr-1
-      jmax=jend+1
+      jmin=0
+      jmax=ny+1
 #  else
       if (SOUTHERN_EDGE) then
-        jmin=jstr
+        jmin=1
       else
-        jmin=jstr-1
+        jmin=0
       endif
       if (NORTHERN_EDGE) then
-        jmax=jend
+        jmax=ny
       else
-        jmax=jend+1
+        jmax=ny+1
       endif
 #  endif
 #  define I_EXT_RANGE imin,imax
 #  define J_EXT_RANGE jmin,jmax
 # else
-#  define I_EXT_RANGE istr,iend
-#  define J_EXT_RANGE jstr,jend
+#  define I_EXT_RANGE 1,nx
+#  define J_EXT_RANGE 1,ny
 # endif
 # ifdef LMD_KPP
 ! Nondimensional constants for computing non-local flux and convective
@@ -134,8 +134,7 @@
 # ifdef LMD_KPP
 #  define alpha Bosol
 #  define beta  Bo
-      call alfabeta_tile (istr,iend,jstr,jend, I_EXT_RANGE,
-     &                             J_EXT_RANGE, alpha,beta)
+      call alfabeta_tile (I_EXT_RANGE, J_EXT_RANGE, alpha,beta)
 # endif
       do j=J_EXT_RANGE
         do i=I_EXT_RANGE
@@ -304,7 +303,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 #   undef wrk
 #  endif
 
-      do j=jstr,jend   !--> restart j-loop till the very end
+      do j=1,ny   !--> restart j-loop till the very end
 # endif /* SMOOTH_HBL */
 # undef I_EXT_RANGE
 # undef J_EXT_RANGE
@@ -317,7 +316,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # if defined LMD_KPP || defined LMD_BKPP
         if (.not. FIRST_TIME_STEP) then
 # endif
-          do i=istr,iend
+          do i=1,nx
 # ifdef LMD_KPP
             hbl(i,j)=0.5*(hbl(i,j) + hbls(i,j))
 # endif
@@ -330,7 +329,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # endif
 
 # if defined MERGE_OVERLAP && defined LMD_KPP && defined LMD_BKPP
-        do i=istr,iend
+        do i=1,nx
           cff=z_w(i,j,N)-z_w(i,j,0)          ! if surface and bottom
           if (hbl(i,j)+bbl(i,j) > cff) then  ! boundary layers overlap
             hbl(i,j) = cff                   ! set both of them to the
@@ -340,11 +339,11 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # endif
 
 # ifdef LMD_KPP
-        do i=istr,iend
+        do i=1,nx
           kbls(i)=N          ! initialize search, then find
         enddo                ! new boundary layer index "kbls"
         do k=N-1,1,-1
-          do i=istr,iend
+          do i=1,nx
             if (z_w(i,j,k) > z_w(i,j,N)-hbl(i,j)) kbls(i)=k
           enddo
         enddo
@@ -358,7 +357,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 ! function coefficients Gx( ) by matching values and vertical
 ! derivatives of  interior mixing coefficients at hbl (ssgm=1).
 
-        do i=istr,iend
+        do i=1,nx
           k=kbls(i)
           z_bl=z_w(i,j,N)-hbl(i,j)
           zscale=hbl(i,j)
@@ -382,7 +381,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 !--------- -------- ----- ------ -------------
 ! Compute turbulent velocity scales at vertical W-points.
 
-        do i=istr,iend
+        do i=1,nx
           do k=N,0,-1
             Bfsfc=Bfsfc_bl(i)
             zscale=z_w(i,j,N)-z_w(i,j,k)
@@ -430,11 +429,11 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
         enddo
 # endif   /* LMD_KPP */
 
-        do i=istr,iend
+        do i=1,nx
           kbbl(i)=N          !<-- initialize search
         enddo
         do k=N-1,1,-1       ! find new boundary layer index "kbls"
-          do i=istr,iend
+          do i=1,nx
             if (z_w(i,j,k) > z_w(i,j,0)+bbl(i,j)) kbbl(i)=k
           enddo
         enddo
@@ -445,7 +444,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 ! with bottom drag, assuming no buoyancy forcing effects.
 
 
-        do i=istr,iend
+        do i=1,nx
           ! wmb = vonKar*ustar_bottom (rd*u)
           wmb=vonKar*vonKar*sqrt( 0.333333333333*(
      &               u(i,j,1,nstp)**2 +u(i+1,j,1,nstp)**2
@@ -478,7 +477,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
         enddo      !<-- i
 
 
-        do i=istr,iend
+        do i=1,nx
 # ifdef MASKING
           if (rmask(i,j) > 0.5) then
 # endif
@@ -533,91 +532,91 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
       enddo
 
 # ifdef LMD_KPP
-      do j=jstr,jend                   ! Copy "hbl" into shared array
-        do i=istr,iend                 ! and padd lateral ghost points
+      do j=1,ny                   ! Copy "hbl" into shared array
+        do i=1,nx                 ! and padd lateral ghost points
           hbls(i,j)=hbl(i,j)
         enddo
       enddo
 #  ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
-        do j=jstr,jend
-          hbls(istr-1,j)=hbls(istr,j)
+        do j=1,ny
+          hbls(0,j)=hbls(1,j)
         enddo
       endif
       if (EASTERN_EDGE) then
-        do j=jstr,jend
-          hbls(iend+1,j)=hbls(iend,j)
+        do j=1,ny
+          hbls(nx+1,j)=hbls(nx,j)
         enddo
       endif
 #  endif
 #  ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
-        do i=istr,iend
-          hbls(i,jstr-1)=hbls(i,jstr)
+        do i=1,nx
+          hbls(i,0)=hbls(i,1)
         enddo
       endif
       if (NORTHERN_EDGE) then
-        do i=istr,iend
-          hbls(i,jend+1)=hbls(i,jend)
+        do i=1,nx
+          hbls(i,ny+1)=hbls(i,ny)
         enddo
       endif
 #   ifndef EW_PERIODIC
       if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        hbls(istr-1,jstr-1)=hbls(istr,jstr)
+        hbls(0,0)=hbls(1,1)
       endif
       if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        hbls(istr-1,jend+1)=hbls(istr,jend)
+        hbls(0,ny+1)=hbls(1,ny)
       endif
       if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        hbls(iend+1,jstr-1)=hbls(iend,jstr)
+        hbls(nx+1,0)=hbls(nx,1)
       endif
       if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        hbls(iend+1,jend+1)=hbls(iend,jend)
+        hbls(nx+1,ny+1)=hbls(nx,ny)
       endif
 #   endif
 #  endif
 # endif   /* LMD_KPP */
 # ifdef LMD_BKPP
-      do j=jstr,jend                   ! Copy "bbl" into shared array
-        do i=istr,iend                 ! and padd lateral ghost points
+      do j=1,ny                   ! Copy "bbl" into shared array
+        do i=1,nx                 ! and padd lateral ghost points
           hbbl(i,j)=bbl(i,j)
         enddo
       enddo
 #  ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
-        do j=jstr,jend
-          hbbl(istr-1,j)=hbbl(istr,j)
+        do j=1,ny
+          hbbl(0,j)=hbbl(1,j)
         enddo
       endif
       if (EASTERN_EDGE) then
-        do j=jstr,jend
-          hbbl(iend+1,j)=hbbl(iend,j)
+        do j=1,ny
+          hbbl(nx+1,j)=hbbl(nx,j)
         enddo
       endif
 #  endif
 #  ifndef NS_PERIODIC
       if (SOUTHERN_EDGE) then
-        do i=istr,iend
-          hbbl(i,jstr-1)=hbbl(i,jstr)
+        do i=1,nx
+          hbbl(i,0)=hbbl(i,1)
         enddo
       endif
       if (NORTHERN_EDGE) then
-        do i=istr,iend
-          hbbl(i,jend+1)=hbbl(i,jend)
+        do i=1,nx
+          hbbl(i,ny+1)=hbbl(i,ny)
         enddo
       endif
 #   ifndef EW_PERIODIC
       if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        hbbl(istr-1,jstr-1)=hbbl(istr,jstr)
+        hbbl(0,0)=hbbl(1,1)
       endif
       if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        hbbl(istr-1,jend+1)=hbbl(istr,jend)
+        hbbl(0,ny+1)=hbbl(1,ny)
       endif
       if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        hbbl(iend+1,jstr-1)=hbbl(iend,jstr)
+        hbbl(nx+1,0)=hbbl(nx,1)
       endif
       if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        hbbl(iend+1,jend+1)=hbbl(iend,jend)
+        hbbl(nx+1,ny+1)=hbbl(nx,ny)
       endif
 #   endif
 #  endif

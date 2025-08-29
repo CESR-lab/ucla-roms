@@ -11,8 +11,6 @@
       integer,save :: tile=1
       integer      :: i,j
 
-#include "compute_tile_bounds.h"
-
       call init_arrays_private_scratch
 #ifdef SOLVE3D
       do i=1,N2d
