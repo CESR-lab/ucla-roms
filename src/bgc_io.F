@@ -91,7 +91,7 @@
 !#include "bgc_forces.h"
 
       ! local
-      integer :: i, j
+      integer :: istr,iend,jstr,jend,i, j
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
 # include "compute_extended_bounds.h"
