@@ -1,17 +1,7 @@
 #include "cppdefs.opt"
 #ifdef SOLVE3D
 
-      subroutine grid_stiffness (tile)
-      use param
-      use roms_mpi
-      implicit none
-      integer tile
-# include "compute_tile_bounds.h"
-      call grid_stiffness_tile (istr,iend,jstr,jend)
-      return
-      end
-
-      subroutine grid_stiffness_tile (istr,iend,jstr,jend)
+      subroutine grid_stiffness
 
 ! Survey three-dimensional grid in order to determine maximum
 ! grid stiffness ratio:
@@ -31,19 +21,17 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k, NSUB
+      integer :: i,j,k, NSUB
       real my_rx0, my_rx1
 # ifdef MPI
       real*8 buff(2)
       integer size, step, status(MPI_STATUS_SIZE), ierr
 # endif
-!
-# include "compute_auxiliary_bounds.h"
-!
+
       my_rx0=0. ; my_rx1=0.
 
-      do j=jstr,jend
-        do i=istrU,iend
+      do j=1,ny
+        do i=1,nx
 # ifdef MASKING
           if (umask(i,j)>0.5) then
 # endif
@@ -62,8 +50,8 @@
         enddo
       enddo
 
-      do j=jstrV,jend
-        do i=istr,iend
+      do j=1,ny
+        do i=1,nx
 # ifdef MASKING
           if (vmask(i,j)>0.5) then
 # endif

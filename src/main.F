@@ -178,12 +178,12 @@ C$OMP BARRIER
       if (may_day_flag /= 0) goto 99 !-->  EXIT
 
       do tile=my_tile_range            ! Compute various metric terms
-        call setup_grid1(tile)         ! and their combinations.
+        call setup_grid1               ! and their combinations.
       enddo
 C$OMP BARRIER
 CR      write(*,*) '-10' MYID
       do tile=my_tile_range
-        call setup_grid2(tile)
+        call setup_grid2
       enddo
 C$OMP BARRIER
 CR      write(*,*) '-9' MYID
@@ -199,7 +199,7 @@ CR      write(*,*) ' -8' MYID
       enddo
 C$OMP BARRIER                          ! Here it is assumed that free
       do tile=my_tile_range            ! surface zeta is at rest state,
-        call grid_stiffness(tile)      ! zeta=0). Also find and report
+        call grid_stiffness            ! zeta=0). Also find and report
       enddo                            ! extremal values of topographic
 C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
 CR      write(*,*) ' -6' MYID

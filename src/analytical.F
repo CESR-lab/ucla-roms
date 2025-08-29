@@ -2,6 +2,8 @@
 
       ! all analytical routines contained in this module
 
+      ! NOTE for 2.00 - GS set ANA ranges to be bf dependent
+
 #include "cppdefs.opt"
 
       use param
@@ -210,7 +212,7 @@
 
       end subroutine ana_vmix !]
 ! ----------------------------------------------------------------------
-      subroutine ana_smflux_tile(istr,iend,jstr,jend) ![
+      subroutine ana_smflux_tile ![
 
       use param
       use surf_flux !, only: sustr,svstr
@@ -218,14 +220,12 @@
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, i,j
-      real TauX, TauY, cff
-
-# include "compute_extended_bounds.h"
+      integer :: i,j
+      real    :: TauX, TauY, cff
 
       if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
-        do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
-          do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
+        do j=1-bf,ny+bf          ! momentum flux [m^2/s^2]) components
+          do i=1-bf,nx+bf        ! in XI- and ETA-directions [m^2/s^2])
             sustr(i,j)=0.0       ! at horizontal U- and V-points.
             svstr(i,j)=0.0       ! For code compactness, both are set
           enddo                  ! to zero at first (default values),
@@ -234,7 +234,7 @@
 
       end subroutine ana_smflux_tile !]
 ! ----------------------------------------------------------------------
-      subroutine ana_srflux_tile(istr,iend,jstr,jend)  ![
+      subroutine ana_srflux_tile  ![
 
 ! Set kinematic surface solar shortwave radiation flux "srflx"
 ! [degC m/s] using an analytical expression.
@@ -244,18 +244,16 @@
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, i,j
+      integer :: i,j
 
-# include "compute_extended_bounds.h"
-
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
           srflx(i,j)=0.
         enddo
       enddo
       end subroutine ana_srflux_tile  !]
 ! ----------------------------------------------------------------------
-      subroutine ana_stflux_tile(istr,iend,jstr,jend, itrc)  ![
+      subroutine ana_stflux_tile  ![
 
 ! Set kinematic surface flux of tracer type variables "stflx" (tracer
 ! units m/s) using analytical expressions.
@@ -265,17 +263,15 @@
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, itrc, i,j
-
-# include "compute_extended_bounds.h"
+      integer :: itrc, i,j
 
       if (itrc==itemp) then
 
 ! Set kinematic surface heat flux [degC m/s] at horizontal
 ! RHO-points.
 
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=1-bf,ny+bf
+          do i=1-bf,nx+bf
             stflx(i,j,itemp)=0.
           enddo
         enddo
@@ -286,8 +282,8 @@
 ! Set kinematic surface freshwater flux (m/s) at horizontal
 ! RHO-points, scaling by surface salinity is done in STEP3D.
 
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=1-bf,ny+bf
+          do i=1-bf,nx+bf
             stflx(i,j,isalt)=0.
           enddo
         enddo

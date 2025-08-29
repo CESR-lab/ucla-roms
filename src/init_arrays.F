@@ -21,10 +21,10 @@
       enddo
 #endif
 
-      call init_arrays_tile(istr,iend,jstr,jend)
+      call init_arrays_tile
       end
 
-      subroutine init_arrays_tile (istr,iend,jstr,jend)
+      subroutine init_arrays_tile
 
 ! This routine initialize "first-touches" model shared arrays. Most
 ! of them are assigned to zeros, vertical mixing coefficients are set
@@ -65,7 +65,6 @@
       use bgc
 
       implicit none
-      integer, intent(in) :: istr, iend, jstr, jend
       integer             :: i, j, k, itrc, itavg
       real, parameter     :: init0=0.    !!!!  0xFFFA5A5A ==> NaN
 #define ALL_DATA
@@ -75,8 +74,6 @@
       integer status(MPI_STATUS_SIZE), blank, ierr
 # endif
 #endif
-
-#include "compute_extended_bounds.h"
 
 #ifdef PRINT_TILE_RANGES
 # ifdef MPI
@@ -88,10 +85,6 @@
 # else
       i=proc(2)
 # endif
-      write(*,'(I4/2(6x,A6,I3,3x,A6,I3))') i, 'istr =',istr,
-     &        'iend =',iend,   'jstr =',jstr, 'jend =',jend
-      write(*,'(4x,2(6x,A6,I3,3x,A6,I3)/)')   'istrR=',istrR,
-     &        'iendR=',iendR, 'jstrR=',jstrR, 'jendR=',jendR
 # ifdef MPI
       if (mynode < NNODES) then
         call MPI_Send (blank, 1, MPI_INTEGER, mynode+1,
@@ -115,8 +108,9 @@
 
 #ifdef SOLVE3D
       do k=0,N
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        ! GS: set ranges per We and Wi usage
+        do j=0,ny
+          do i=0,nx
             We(i,j,k)=init0
             Wi(i,j,k)=init0
 # ifdef NHMG
@@ -138,12 +132,13 @@
 #endif
 
 # ifdef WEC
-      call init_arrays_wec_tile(istr,iend,jstr,jend)
+      call init_arrays_wec_tile
 # endif
 
+      ! NOTE: GS - should these be removed?
 #if defined M2NUDGING && !defined M2_FRC_BRY
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=0,ny
+        do i=0,nx
           ssh(i,j)=init0
 # ifndef ANA_SSH
           sshg(i,j,1)=init0

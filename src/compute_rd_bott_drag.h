@@ -85,5 +85,5 @@ c             rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
 ! rows into its periodic and/or computational margins, so there is no
 ! need for exchange call.
 
-        call ext_copy_prv2shr_2d_tile(1,nx,1,ny, rd,r_D)
+        call ext_copy_prv2shr_2d_tile(rd,r_D)
 

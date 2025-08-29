@@ -1,7 +1,7 @@
 #include "cppdefs.opt"
 #if defined SPONGE || defined TCLIMATOLOGY
 
-      subroutine set_nudgcof (tile)  ! Set up nudging-to-climatology
+      subroutine set_nudgcof  ! Set up nudging-to-climatology
 
       use param
       use private_scratch
@@ -9,11 +9,10 @@
       implicit none                  ! inverse time-scale coeffcients
       integer tile                   ! (units [1/sec])
 
-# include "compute_tile_bounds.h"
-      call set_nudgcof_tile (istr,iend,jstr,jend, A2d(1,1))
+      call set_nudgcof_tile (A2d(1,1))
       end
 
-      subroutine set_nudgcof_tile (istr,iend,jstr,jend, wrk)
+      subroutine set_nudgcof_tile (wrk)
 
       use param
       use dimensions
@@ -21,12 +20,9 @@
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend
       real wrk(PRIVATE_2D_SCRATCH_ARRAY)
       integer i,j, isp,ibnd,itrc
       real cff,cff1,cff2,cff3, frac, Tau
-
-# include "compute_extended_bounds.h"
 
 !
 ! The following code segment is rather a generic code go setup
@@ -39,9 +35,11 @@
       if (mynode==0) write(*,'(/1x,A,I3,A)')
      &  'Sponge layer = ',sponge_size,' interior grid points.'
 
+      ! GS - for 2.0, these are set to +1 to be safe
+
                                             ! Note that i+iSW_corn and
-      do j=max(-1,jstrR-1),jendR            ! j+jSW_corn are indices on
-        do i=max(-1,istrR-1),iendR          ! the physical grid (a.k.a.
+      do j=-1,ny+1                          ! j+jSW_corn are indices on
+        do i=-1,nx+1                        ! the physical grid (a.k.a.
           ibnd=isp                          ! absolute indices).
 #  ifdef MPI
 #   ifdef OBC_WEST
@@ -78,8 +76,10 @@
         enddo
       enddo
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      ! GS: set to 0 per usage of visc2_r in visc3d_GP and visc3d_S
+      !     set to nx/ny+1 per usage of diff2 in t3dmix_S
+      do j=0,ny+1
+        do i=0,nx+1
 #  ifdef SPONGE
 #   ifdef UV_VIS2
           visc2_r(i,j)=visc2_r(i,j)+v_sponge*wrk(i,j)
@@ -97,8 +97,9 @@
 
 #  ifdef SPONGE
 #   ifdef UV_VIS2
-      do j=jstr,jendR        ! viscosity at psi points
-        do i=istr,iendR
+      ! GS: set to 1 to nx/ny+1 per usage in visc2d
+      do j=1,ny+1            ! viscosity at psi points
+        do i=1,nx+1
           visc2_p(i,j)=visc2_p(i,j)+0.25*v_sponge*( wrk(i,j)
      &                  +wrk(i-1,j)+wrk(i,j-1)+wrk(i-1,j-1))
         enddo
@@ -106,8 +107,9 @@
 #   endif
 #   if defined SOLVE3D && defined TS_DIF2
       do itrc=2,NT           ! diffusivity for the other tracers
-        do j=jstrR,jendR
-          do i=istrR,iendR
+      ! GS: set to 0 to nx/ny+1 per usage of diff2 in t3dmix_S
+        do j=0,ny+1
+          do i=0,nx+1
             diff2(i,j,itrc)=diff2(i,j,itemp)  ! Waste of space to have this 2D array copied...
           enddo
         enddo

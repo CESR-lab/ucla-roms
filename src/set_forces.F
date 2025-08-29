@@ -80,7 +80,7 @@ c***              no code here
                                         !--> Surface fluxes
 
 #ifdef ANA_SMFLUX
-      call ana_smflux_tile(istr,iend,jstr,jend)
+      call ana_smflux_tile
 #endif
 
 ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
@@ -102,10 +102,10 @@ c***              no code here
 # ifdef BULK_FRC
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
-      call ana_srflux_tile(istr,iend,jstr,jend) ! Should move this to bulk module
+      call ana_srflux_tile ! Should move this to bulk module
 #   endif
 #  endif
-      call set_bulk_frc(istr,iend,jstr,jend)
+      call set_bulk_frc
 # else
 
       ! DevinD not sure what flag to use here to avoid set_flux for purely analytical
@@ -115,16 +115,16 @@ c***              no code here
 #  endif
 
 #  ifdef ANA_STFLUX
-      call ana_stflux_tile(istr,iend,jstr,jend, itemp) ! DevinD Should move to module
+      call ana_stflux_tile ! DevinD Should move to module
 #  endif
 #  ifdef LMD_KPP
 #   ifdef ANA_SRFLUX
-      call ana_srflux_tile(istr,iend,jstr,jend) ! DevinD Should move to module
+      call ana_srflux_tile ! DevinD Should move to module
 #   endif
 #  endif
 #  ifdef SALINITY
 #   ifdef ANA_SSFLUX
-      call ana_stflux_tile(istr,iend,jstr,jend, isalt) ! DevinD Should move to module
+      call ana_stflux_tile ! DevinD Should move to module
 #   endif
 #  endif
 # endif
