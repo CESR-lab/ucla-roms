@@ -213,7 +213,7 @@
         ! look for flags ('--' or '-')
         ! "delete" flag: removes all partial files
         if (index(arg,'-delete')>0) then
-          print*,'Flag to delete partial files raised'
+          if (mynode==0) print*,'Flag to delete partial files raised'
           del_part_files = .true.
           nflags         = nflags+1
         ! Per 'show_use_ncjoin' flags go in front. Any following input must be
@@ -288,7 +288,7 @@
       subroutine show_use_map  ![
       implicit none
 
-       print *, 'Usage of partit should be: ',
+       print *, 'Usage of partmap should be: ',
      &       'partmap npx npy grdfile.nc'
      
       stop
@@ -298,10 +298,17 @@
       subroutine show_use_partit  ![
       implicit none
 
-      print *, 'Usage of partit should be: ',
-     &       'partit --<user flags> npx npy grdfile.nc file1.nc...'
+      write(*,'(/1x,A//10x,2A)') 'Correct usage of partit:',
+     &      'mpiexec  -n  np  partit  ',
+     &      'np_x  np_y  grdfile.nc file1.nc...'
+          write(*,'(1x,A/10x,2A/)') 'or',
+     &      'mpiexec  -n  np  partit  ',
+     &      'np_x  np_y --classic  grdfile.nc file1.nc...'
+          write (*,'(/1x,2A/1x,2A//1x,2A/1x,A//1x,A//1x,A//)')
+     &      'np_x and np_y are the ',
+     &      'number of sub-domains you choose in x and y...',
+     &      '-classic will include masked domains in your partition'
 
-      print *, 'optional: "classic" flag will partition like old Tool'
      
       stop
 
@@ -310,10 +317,13 @@
       subroutine show_use_ncjoin  ![
       implicit none
 
-      print *, 'Usage of ncjoin should be: ',
-     &       'ncjoin --<user flags> file1.??.nc ...'
-     
-      print *, 'optional: "delete" flag to remove all partial files'
+      write(*,'(/1x,A//10x,2A)') 'Correct usage of ncjoin:',
+     &      'mpiexec  -n  np  ncjoin file1.nc...  '
+          write(*,'(1x,A/10x,2A/)') 'or',
+     &      'mpiexec  -n  np  ncjoin',
+     &      '--delete file1.nc...'
+          write (*,'(/1x,2A/1x,2A//1x,2A/1x,A//1x,A//1x,A//)')
+     &      '-delete will remove all partital files once joined'
 
       stop
 
@@ -1196,6 +1206,11 @@
       idx1 = index(joinfile,'.',back=.true.)
       joinfile = joinfile(1:idx1-1) //'.nc'
 
+      if (mynode==0) then
+        print *,'Joining:';
+        print *, trim(joinfile)
+      endif
+
       ! Open first partial file in range 
       ierr = nf90_open(trim(partfile), nf90_nowrite, npid)
       if (ierr/=nf90_noerr) 
@@ -1241,8 +1256,6 @@
       nz  = gdims(3)
       
       if (mynode==0) then ! single node to create joined file
-
-        print *,'Creating joined file'
 
         ierr=nf90_create(trim(joinfile),nf90_netcdf4,ncid)
         if (ierr/=nf90_noerr) 
@@ -1508,7 +1521,7 @@
       allocate(ie(rp0:rp1))
       allocate(je(rp0:rp1))
 
-      if (mynode==0) print *,'scanning partial files'
+      !if (mynode==0) print *,'scanning partial files'
       do part = rp0,rp1 
     
         partfile = partfiles(part)
@@ -1544,11 +1557,13 @@
 
       call MPI_Barrier(write_comm,ierr)
 
-      if (mynode==0) print *,'do all records: ',ncinfo%nrecords
+      if (mynode==0) print *,'Total records: ',ncinfo%nrecords
 
       do record = 1,ncinfo%nrecords
 
-        if (mynode==0) print *,'Processing record: ',record
+        if (mynode==0.and.ncinfo%nrecords/=1) then
+          print *,'Processing record: ',record,' of', ncinfo%nrecords
+        endif
 
         do ivar=1,ncinfo%nvars
 
@@ -1734,7 +1749,6 @@
           if (ncinfo%xtype(ivar).eq.nf90_char) cycle
  
           if (mynode==0) then
-            print *,trim(vname),' is NOT partitionable '
             select case(ndims)
             case(0)
               cycle

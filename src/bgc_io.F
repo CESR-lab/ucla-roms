@@ -1,4 +1,4 @@
-      module bgc
+      module bgc_io
 
       ! BGC - bio-geo-chemical module
       ! -----------------------------
@@ -16,7 +16,7 @@
 #ifdef MARBL      
       use marbl_driver 
 #endif      
-      use bgc_ecosys_vars
+      use bgc_shared_vars
       use nc_read_write
       use roms_read_write
       use netcdf
@@ -46,17 +46,31 @@
       real,save :: output_time_dia_his = 0
       real,save :: output_time_dia_avg = 0
 
-      ! misc from porting ETH code:
-      character(len=40) tclm_name(NT) ! Taken from ETH code ncvars
-
+      public bgc_idx, t_idx
       public set_bgc_surf_frc
       public init_arrays_bgc_frc
-      public init_scalars_bec2
+
       public wrt_bgc_diags
       public wrt_bgc
 
       contains
 
+      integer function bgc_idx(t_idx)
+      ! Takes a tracer array tracer index t(:,:,:,:,t_idx) and returns
+      ! the corresponding bgc tracer index.
+      ! Were previously harcoded individually as, e.g.
+      ! po4_ind_t     = iPO4-iTandS-nt_passive
+      integer, intent(in) :: t_idx
+      bgc_idx = t_idx-iTandS-nt_passive
+
+      end function bgc_idx
+
+      real function t_idx(b_idx)
+      ! Takes a bgc tracer index (e.g. dtracer_module(:,:,:,b_idx)) and
+      ! returns the corresponding tracer array index t(:,:,:,:,t_idx)
+      integer, intent(in) ::b_idx
+      t_idx = b_idx+iTandS+nt_passive
+      end function t_idx
 ! ----------------------------------------------------------------------
       subroutine set_bgc_surf_frc(istr,iend,jstr,jend)  ![
 
@@ -158,6 +172,13 @@
       logical,save           :: first_step_avg=.true.
       logical,save           :: first_step_his=.true.
 
+      if (wrt_his .and. mod(output_period_his,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor of output_period_his!'
+      endif
+      if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
+      endif
+
 
       if (avg) then
 
@@ -257,6 +278,16 @@
       logical,save           :: first_step_dia_avg=.true.
       logical,save           :: first_step_dia_his=.true.
 
+      if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor ' //
+     &        'of output_period_his_dia for diagnostics!'
+      endif
+      if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
+        stop 'ERROR :: bgc.opt - dt not a factor' //
+     &        'of output_period_avg_dia for diagnostics!'
+      endif
+
+
       if (wrt_avg_dia) then
 
 !         if (.not. first_step_dia_avg) then
@@ -275,18 +306,18 @@
           navg_dia_bgc = 0
           ierr=nf90_open(fname_avg,nf90_write,ncid)
           call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_avg/))
-          do itrc=1,nr_bec2_diag_2d
-            if (wrt_bec2_diag_2d(itrc)) then
-            idiag = idx_bec2_diag_2d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_2d(1,itrc),
-     &           bec2_diag_2d_avg(i0:i1,j0:j1,idiag),(/1,1,record_dia_avg/))
+          do itrc=1,nr_bgc_diag_2d
+            if (wrt_bgc_diag_2d(itrc)) then
+            idiag = idx_bgc_diag_2d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_2d(1,itrc),
+     &           bgc_diag_2d_avg(i0:i1,j0:j1,idiag),(/1,1,record_dia_avg/))
             endif
           enddo
-          do itrc=1,nr_bec2_diag_3d
-            if (wrt_bec2_diag_3d(itrc)) then
-            idiag = idx_bec2_diag_3d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_3d(1,itrc),
-     &           bec2_diag_3d_avg(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_avg/))
+          do itrc=1,nr_bgc_diag_3d
+            if (wrt_bgc_diag_3d(itrc)) then
+            idiag = idx_bgc_diag_3d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_3d(1,itrc),
+     &           bgc_diag_3d_avg(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_avg/))
             endif
           enddo
           if (mynode == 0) then
@@ -315,26 +346,19 @@
           output_time_dia_his = 0
           ierr=nf90_open(fname_his,nf90_write,ncid)
           call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_his/))
-          do itrc=1,nr_bec2_diag_2d
-            if (wrt_bec2_diag_2d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: history, diag = ', vname_bec2_diag_2d(1,itrc)
-!               endif
-            idiag = idx_bec2_diag_2d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_2d(1,itrc),
-     &           bec2_diag_2d(i0:i1,j0:j1,idiag),(/1,1,record_dia_his/))
+          do itrc=1,nr_bgc_diag_2d
+            if (wrt_bgc_diag_2d(itrc)) then
+            idiag = idx_bgc_diag_2d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_2d(1,itrc),
+     &           bgc_diag_2d(i0:i1,j0:j1,idiag),(/1,1,record_dia_his/))
             endif
           enddo
-          do itrc=1,nr_bec2_diag_3d
-            if (wrt_bec2_diag_3d(itrc)) then
-!               if (mynode == 0) then
-!                   write(*,'(7x,A,1x,A)')
-!     &            'wrt_bgc_dia :: history, diag = ', vname_bec2_diag_3d(1,itrc)
-!               endif
-            idiag = idx_bec2_diag_3d(itrc)
-            call ncwrite(ncid,vname_bec2_diag_3d(1,itrc),
-     &           bec2_diag_3d(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_his/))
+          do itrc=1,nr_bgc_diag_3d
+            if (wrt_bgc_diag_3d(itrc)) then
+
+            idiag = idx_bgc_diag_3d(itrc)
+            call ncwrite(ncid,vname_bgc_diag_3d(1,itrc),
+     &           bgc_diag_3d(i0:i1,j0:j1,:,idiag),(/1,1,1,record_dia_his/))
             endif
           enddo
           if (mynode == 0) then
@@ -486,14 +510,14 @@
 
       t_avg_dia_bgc = t_avg_dia_bgc*(1-coef) + time*coef
 
-      do itrc=1,nr_bec2_wrdiag_2d
-        bec2_diag_2d_avg(i0:i1,j0:j1,itrc) = bec2_diag_2d_avg(i0:i1,j0:j1,itrc) *(1-coef)
-     &                                     + bec2_diag_2d(i0:i1,j0:j1,itrc)     *coef
+      do itrc=1,nr_bgc_wrdiag_2d
+        bgc_diag_2d_avg(i0:i1,j0:j1,itrc) = bgc_diag_2d_avg(i0:i1,j0:j1,itrc) *(1-coef)
+     &                                     + bgc_diag_2d(i0:i1,j0:j1,itrc)     *coef
       end do
-      do itrc=1,nr_bec2_wrdiag_3d
+      do itrc=1,nr_bgc_wrdiag_3d
         do k=1,N
-          bec2_diag_3d_avg(i0:i1,j0:j1,k,itrc) = bec2_diag_3d_avg(i0:i1,j0:j1,k,itrc) *(1-coef)
-     &                                         + bec2_diag_3d(i0:i1,j0:j1,k,itrc)     *coef
+          bgc_diag_3d_avg(i0:i1,j0:j1,k,itrc) = bgc_diag_3d_avg(i0:i1,j0:j1,k,itrc) *(1-coef)
+     &                                         + bgc_diag_3d(i0:i1,j0:j1,k,itrc)     *coef
         end do
       end do
 
@@ -516,22 +540,22 @@
       integer :: idiag, ierr, varid
 
       ! 2d diagnostics:
-      do idiag=1,nr_bec2_diag_2d
-        if (wrt_bec2_diag_2d(idiag)) then
-          varid = nccreate(ncid,vname_bec2_diag_2d(1,idiag),
+      do idiag=1,nr_bgc_diag_2d
+        if (wrt_bgc_diag_2d(idiag)) then
+          varid = nccreate(ncid,vname_bgc_diag_2d(1,idiag),
      &            (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
-          ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_2d(2,idiag))
-          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_2d(3,idiag))
+          ierr = nf90_put_att(ncid,varid,'long_name',vname_bgc_diag_2d(2,idiag))
+          ierr = nf90_put_att(ncid,varid,'units',vname_bgc_diag_2d(3,idiag))
         endif
       enddo
 
       ! 3d diagnostics:
-      do idiag=1,nr_bec2_diag_3d
-        if (wrt_bec2_diag_3d(idiag)) then
-          varid = nccreate(ncid,vname_bec2_diag_3d(1,idiag),
+      do idiag=1,nr_bgc_diag_3d
+        if (wrt_bgc_diag_3d(idiag)) then
+          varid = nccreate(ncid,vname_bgc_diag_3d(1,idiag),
      &            (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
-          ierr = nf90_put_att(ncid,varid,'long_name',vname_bec2_diag_3d(2,idiag))
-          ierr = nf90_put_att(ncid,varid,'units',vname_bec2_diag_3d(3,idiag))
+          ierr = nf90_put_att(ncid,varid,'long_name',vname_bgc_diag_3d(2,idiag))
+          ierr = nf90_put_att(ncid,varid,'units',vname_bgc_diag_3d(3,idiag))
         endif
       enddo
 
@@ -564,113 +588,6 @@
 
       end subroutine  init_arrays_bgc_frc !]
 ! ----------------------------------------------------------------------
-      subroutine init_scalars_bec2()  ![
-#ifndef MARBL
-!     
-! Set initial values for  globally accessible (stored in common
-! blocks) scalar variables of the BEC model.
-!
-      use comm_vars
-      use scalars
-
-      implicit none
-      integer i,j, itrc ,lvar,lenstr ! ierr, DevinD removed ierr as arguement
-      integer omp_get_num_threads
-
-      if (wrt_his .and. mod(output_period_his,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor of output_period_his!'
-      endif
-      if (wrt_avg .and. mod(output_period_avg,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor of output_period_avg!'
-      endif
-#ifdef BEC2_DIAG
-      if (wrt_his_dia .and. mod(output_period_his_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor ' //
-     &        'of output_period_his_dia for diagnostics!'
-      endif
-      if (wrt_avg_dia .and. mod(output_period_avg_dia,dt) /= 0) then
-        stop 'ERROR :: bgc.opt - dt not a factor' //
-     &        'of output_period_avg_dia for diagnostics!'
-      endif
-#endif /* BEC2_DIA */
-
-#ifdef SOLVE3D
-
-! set the bgc tracer index for the bgc routines
-      po4_ind_t     = iPO4-iTandS-nt_passive     
-      no3_ind_t     = iNO3-iTandS-nt_passive
-      sio3_ind_t    = iSIO3-iTandS-nt_passive
-      nh4_ind_t     = iNH4-iTandS-nt_passive
-      fe_ind_t      = iFE-iTandS-nt_passive
-      o2_ind_t      = iO2-iTandS-nt_passive
-      dic_ind_t     = iDIC-iTandS-nt_passive
-      alk_ind_t     = iALK-iTandS-nt_passive
-      doc_ind_t     = iDOC-iTandS-nt_passive
-      don_ind_t     = iDon-iTandS-nt_passive
-      dofe_ind_t    = iDofe-iTandS-nt_passive
-      dop_ind_t     = iDop-iTandS-nt_passive
-      dopr_ind_t    = iDopr-iTandS-nt_passive
-      donr_ind_t    = iDonr-iTandS-nt_passive
-      zooc_ind_t    = iZOOC-iTandS-nt_passive
-      spc_ind_t     = iSPC-iTandS-nt_passive
-      spchl_ind_t   = iSPCHL-iTandS-nt_passive
-      spfe_ind_t    = iSPFE-iTandS-nt_passive
-      spcaco3_ind_t = iSPCACO3-iTandS-nt_passive
-      diatc_ind_t   = iDIATC-iTandS-nt_passive
-      diatchl_ind_t = iDIATCHL-iTandS-nt_passive
-      diatfe_ind_t  = iDIATFE-iTandS-nt_passive
-      diatsi_ind_t  = iDIATSI-iTandS-nt_passive
-      diazc_ind_t   = iDiazc-iTandS-nt_passive
-      diazchl_ind_t = iDiazchl-iTandS-nt_passive
-      diazfe_ind_t  = iDiazfe-iTandS-nt_passive
-#ifdef Ncycle_SY
-      no2_ind_t     = iNO2-iTandS-nt_passive
-      n2_ind_t      = iN2-iTandS-nt_passive
-      n2o_ind_t     = iN2O-iTandS-nt_passive
-#endif
-
-# ifdef BEC2_DIAG
-#include "bgc_2Ddiagnostics.opt"
-#include "bgc_3Ddiagnostics.opt"
-# endif /* BEC2_DIAG */
-
-      tclm_name(iPO4) = 'po4_time'
-      tclm_name(iNO3) = 'no3_time'
-      tclm_name(iSIO3) = 'sio3_time'
-      tclm_name(iO2) = 'o2_time'
-      tclm_name(iFE) = 'fe_time'
-      tclm_name(iDIC) = 'dic_time'
-      tclm_name(iALK) = 'alk_time'
-      tclm_name(iNH4) = 'nh4_time'
-      tclm_name(iDOC) = 'doc_time'
-      tclm_name(iDOP) = 'dop_time'
-      tclm_name(iDOP) = 'dop_time'
-      tclm_name(iDOPR) = 'dop_time'
-      tclm_name(iDON) = 'don_time'
-      tclm_name(iDONR) = 'don_time'
-      tclm_name(iDOFE) = 'dofe_time'
-      tclm_name(iSPC) = 'spc_time'
-      tclm_name(iSPCHL) = 'spchl_time'
-      tclm_name(iSPCACO3) = 'spcaco3_time'
-      tclm_name(iSPFE) = 'spfe_time'
-      tclm_name(iDIATC) = 'diatc_time'
-      tclm_name(iDIATCHL) = 'diatchl_time'
-      tclm_name(iDIATSI) = 'diatsi_time'
-      tclm_name(iDIATFE) = 'diatfe_time'
-      tclm_name(iZOOC) = 'zooc_time'
-      tclm_name(iDIAZC) = 'diazc_time'
-      tclm_name(iDIAZCHL) = 'diazchl_time'
-      tclm_name(iDIAZFE) = 'diazfe_time'
-# ifdef Ncycle_SY
-      tclm_name(iNO2) = 'no2_time'
-      tclm_name(iN2) = 'n2_time'
-      tclm_name(iN2O) = 'n2o_time'
-# endif
-#endif /* SOLVE3D */
-
-#endif /* ndef MARBL */      
-      end subroutine init_scalars_bec2  !]
-! ----------------------------------------------------------------------
       subroutine wrt_bgc(init)  ![
       implicit none
 
@@ -695,4 +612,4 @@
 ! ----------------------------------------------------------------------
 #endif /*(BIOLOGY_BEC2 || MARBL)*/
 
-      end module bgc
+      end module bgc_io
