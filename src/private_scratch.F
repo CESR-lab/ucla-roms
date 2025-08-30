@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
       implicit none
 
 ! Auxiliary module "private_scratch":   A set of tile-size arrays
@@ -29,9 +30,12 @@
 
 
       real,allocatable,dimension(:,:) :: A2d
+      real,allocatable,target,public :: scratch_1d(:,:)
+      real,allocatable,target,public :: scratch_2d(:,:)
 #ifdef SOLVE3D
       real,allocatable,dimension(:,:) :: A3d
       integer,allocatable,dimension(:,:) :: iA2d
+      real,allocatable,target,public :: scratch_3d(:,:)
 #endif
 C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 
@@ -54,6 +58,22 @@ C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 
       ! Initialize (first touch) private
       ! scratch arrays in parallel by each thread.
+      allocate(scratch_1d(1-bf:nx+bf,20)); scratch_1d=0
+
+      ! allocate largest possible block of memory
+      if ((nx>=ny).and.(nx>=nz)) then
+        allocate(scratch_2d((nx+(2*bf)+1)**2,20)); scratch_2d=0
+        allocate(scratch_3d((nx+(2*bf)+1)**3,20)); scratch_3d=0
+      elseif ((ny>=nx).and.(ny>=nz)) then
+        allocate(scratch_2d((ny+(2*bf)+1)**2,20)); scratch_2d=0
+        allocate(scratch_3d((ny+(2*bf)+1)**3,20)); scratch_3d=0
+      elseif ((nz>=nx).and.(nz>=ny)) then
+        allocate(scratch_2d((nz+(2*bf)+1)**2,20)); scratch_2d=0
+        allocate(scratch_3d((nz+(2*bf)+1)**3,20)); scratch_3d=0
+      endif
+
+
+      ! OLD
       allocate( A2d(N2d,32) ); A2d=0.
 #ifdef SOLVE3D
       allocate( A3d(N3d,6)  ); A3d=0.            ! if private scratch not set to zero result changes
@@ -61,7 +81,6 @@ C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 #endif
 
       end subroutine init_arrays_private_scratch  !]
-
-      !----------------------------------------------------------------
+!----------------------------------------------------------------
 
       end module private_scratch

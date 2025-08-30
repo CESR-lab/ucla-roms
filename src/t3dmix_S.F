@@ -9,14 +9,13 @@
       integer,save:: tile=0
       integer itrc
 
-# include "compute_tile_bounds.h"
       do itrc=1,nt
-        call t3dmix_tile (istr,iend,jstr,jend, itrc, A2d(1,1),
+        call t3dmix_tile (itrc, A2d(1,1),
      &                                     A2d(1,2), A2d(1,3))
       enddo
       end
  
-      subroutine t3dmix_tile (istr,iend,jstr,jend, itrc, FX,FE,LapT)
+      subroutine t3dmix_tile (itrc, FX,FE,LapT)
 
 ! Computes horizontal mixing of tracers along S-surfaces.
 
@@ -30,13 +29,11 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, itrc, i,j,k
+      integer :: itrc, i,j,k
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FX,FE, LapT
 # ifdef TS_DIF4
       integer imin,imax,jmin,jmax
 # endif
-
-# include "compute_auxiliary_bounds.h"
 
       do k=1,nz
  
@@ -46,8 +43,8 @@
 !--------------------------------------------------------------------
 ! Compute XI- and ETA-components of diffusive tracer flux.
 
-        do j=jstr,jend
-          do i=istr,iend+1
+        do j=1,ny
+          do i=1,nx+1
             FX(i,j)=0.25*(diff2(i,j,itrc)+diff2(i-1,j,itrc))
      &                   *pmon_u(i,j)*(Hz(i,j,k)+Hz(i-1,j,k))*(
      &                     t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc)
@@ -57,8 +54,8 @@
 #  endif
           enddo
         enddo
-        do j=jstr,jend+1
-          do i=istr,iend
+        do j=1,ny+1
+          do i=1,nx
             FE(i,j)=0.25*(diff2(i,j,itrc)+diff2(i,j-1,itrc))
      &                     *pnom_v(i,j)*(Hz(i,j,k)+Hz(i,j-1,k))*(
      &                      t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc)
@@ -69,14 +66,14 @@
           enddo
         enddo
         if (diag_trc .and. wrt_t_dia(itrc) .and. calc_diag) then
-          do j=jstr,jend
-            do i=istr,iend+1
+          do j=1,ny
+            do i=1,nx+1
               Tdiag(i,j,k,tmixx,td(itrc)) = 
      &           Tdiag(i,j,k,tmixx,td(itrc)) - FX(i,j)
             enddo
           enddo
-          do j=jstr,jend+1
-            do i=istr,iend
+          do j=1,ny+1
+            do i=1,nx
               Tdiag(i,j,k,tmixy,td(itrc)) = 
      &           Tdiag(i,j,k,tmixy,td(itrc)) - FE(i,j)
             enddo
@@ -85,8 +82,8 @@
 
 ! Add in horizontal diffusion of tracer [T m^3/s].
 
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+dt*pm(i,j)*pn(i,j)
      &                         *(FX(i+1,j)-FX(i,j)+FE(i,j+1)-FE(i,j))
      &                                                     /Hz(i,j,k)
@@ -96,33 +93,33 @@
 
 # ifdef TS_DIF4
 #  ifdef EW_PERIODIC
-      imin=istr-1
-      imax=iend+1
+      imin=0
+      imax=nx+1
 #  else
       if (WESTERN_EDGE) then
-        imin=istr
+        imin=1
       else
-        imin=istr-1
+        imin=0
       endif
       if (EASTERN_EDGE) then
-        imax=iend
+        imax=nx
       else
-        imax=iend+1
+        imax=nx+1
       endif
 #  endif
 #  ifdef NS_PERIODIC
-      jmin=jstr-1
-      jmax=jend+1
+      jmin=0
+      jmax=ny+1
 #  else
       if (SOUTHERN_EDGE) then
-        jmin=jstr
+        jmin=1
       else
-        jmin=jstr-1
+        jmin=0
       endif
       if (NORTHERN_EDGE) then
-        jmax=jend
+        jmax=ny
       else
-        jmax=jend+1
+        jmax=ny+1
       endif
 #  endif
 
@@ -175,40 +172,40 @@
 
 #  ifndef EW_PERIODIC
         if (WESTERN_EDGE) then
-          do j=jstr-1,jend+1
+          do j=0,ny+1
 #   ifdef WESTERN_WALL
-            LapT(istr-1,j)=0.
+            LapT(0,j)=0.
 #   else
-            LapT(istr-1,j)=LapT(istr,j)
+            LapT(0,j)=LapT(1,j)
 #   endif
           enddo
         endif
         if (EASTERN_EDGE) then
-          do j=jstr-1,jend+1
+          do j=0,ny+1
 #   ifdef EASTERN_WALL
-            LapT(iend+1,j)=0.
+            LapT(nx+1,j)=0.
 #   else
-            LapT(iend+1,j)=LapT(iend,j)
+            LapT(nx+1,j)=LapT(nx,j)
 #   endif
           enddo
         endif
 # endif
 # ifndef NS_PERIODIC
         if (SOUTHERN_EDGE) then
-          do i=istr-1,iend+1
+          do i=0,nx+1
 #  ifdef SOUTHERN_WALL
-            LapT(i,jstr-1)=0.
+            LapT(i,0)=0.
 #  else
-            LapT(i,jstr-1)=LapT(i,jstr)
+            LapT(i,0)=LapT(i,1)
 #  endif
           enddo
         endif
         if (NORTHERN_EDGE) then
-          do i=istr-1,iend+1
+          do i=0,nx+1
 #  ifdef NORTHERN_WALL
-            LapT(i,jend+1)=0.
+            LapT(i,ny+1)=0.
 #  else
-            LapT(i,jend+1)=LapT(i,jend)
+            LapT(i,ny+1)=LapT(i,ny)
 #  endif
           enddo
         endif
@@ -218,8 +215,8 @@
 ! compute and add in biharmonic mixing [T m^3/s]. Multiply by mixing
 ! coefficient.
 
-        do j=jstr,jend
-          do i=istr,iend+1
+        do j=1,ny
+          do i=1,nx+1
             FX(i,j)=0.25*(diff4(i,j,itrc)+diff4(i-1,j,itrc))
      &                   *pmon_u(i,j)*(Hz(i,j,k)+Hz(i-1,j,k))
      &                               *(LapT(i,j)-LapT(i-1,j))
@@ -228,8 +225,8 @@
 # endif
           enddo
         enddo
-        do j=jstr,jend+1
-          do i=istr,iend
+        do j=1,ny+1
+          do i=1,nx
             FE(i,j)=0.25*(diff4(i,j,itrc)+diff4(i,j-1,itrc))
      &                   *pnom_v(i,j)*(Hz(i,j,k)+Hz(i,j-1,k))
      &                               *(LapT(i,j)-LapT(i,j-1))
@@ -238,8 +235,8 @@
 # endif
           enddo
         enddo
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)+dt*pm(i,j)*pn(i,j)
      &                         *(FX(i,j)-FX(i+1,j)+FE(i,j)-FE(i,j+1))
      &                                                     /Hz(i,j,k)
