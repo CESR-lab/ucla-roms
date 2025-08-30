@@ -137,7 +137,8 @@
 
       character(len=30) :: string  
       allocate( pipe_idx(GLOBAL_2D_ARRAY) );      pipe_idx=0.
-      allocate( pipe_fraction(GLOBAL_2D_ARRAY) ); pipe_fraction=0.
+      allocate( pipe_fraction(GLOBAL_2D_ARRAY) );
+      pipe_fraction=0.
       allocate( pipe_flx(GLOBAL_2D_ARRAY) );      pipe_flx=0.
       allocate( pipe_trc(npip,nt) ) ;             pipe_trc=0.
 
