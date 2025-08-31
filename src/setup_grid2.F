@@ -1,18 +1,14 @@
 #include "cppdefs.opt"
 #define SUM_BY_PAIRS
 
-      subroutine setup_grid2 (tile)
+      subroutine setup_grid2
       use param
-      use roms_mpi
       use private_scratch
-      implicit none
-      integer tile
-
-#include "compute_tile_bounds.h"
-      call setup_grid2_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,3))
-      end
-
-      subroutine setup_grid2_tile (istr,iend,jstr,jend, dA,dV)
+      use comm_vars
+      use grid
+      use scalars
+      use mpi
+      use roms_mpi
 
 ! Find minimum and maximum depth of model topography; minimum and
 ! maximum horizontal XI- and ETA-grid intervals around h-points;
@@ -21,15 +17,9 @@
 ! and local grid intervals); combined crossection of all open
 ! boundaries.
 
-      use param
-      use comm_vars
-      use grid
-      use scalars
-      use mpi
-      use roms_mpi
-
       implicit none
-      integer istr,iend,jstr,jend, i,j, nsub
+
+      integer :: i,j, nsub
       real(kind=QUAD), dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dA,dV
       real(kind=QUAD)  my_area,  my_volume,  my_crss
       real my_hmax, my_grdmax, my_Cu_max, cff,
@@ -53,8 +43,6 @@
       real*QUAD buff(16)
 #endif
 
-#include "compute_auxiliary_bounds.h"
-
       my_hmin=+1.E+20              ! Here two-dimensional Courant
       my_hmax=-1.E+20              ! number is defined as
       my_grdmin=+1.E+20            !
@@ -63,8 +51,8 @@
       my_Cu_max=-1.E+20            ! where c=sqrt(g*h) is phase
       my_Cu_Cor=-1.E+20            ! speed for barotropic mode,
                                    ! and dx,dy are grid spacings
-      do j=jstrR,jendR             ! in each direction.
-        do i=istrR,iendR
+      do j=j0,j1             ! in each direction.
+        do i=i0,i1
 #ifdef MASKING
           if (rmask(i,j) > 0.5) then
 #endif
@@ -88,8 +76,8 @@
       enddo                        ! Compute unmasked total area and
 
                                    ! unperturbed volume of model grid
-      do j=jstr,jend               ! (assuming zero free-surface).
-        do i=istr,iend
+      do j=1,ny               ! (assuming zero free-surface).
+        do i=1,nx
 #ifdef MASKING
           dA(i,j)=rmask(i,j)/(pm(i,j)*pn(i,j))
 #else
@@ -103,22 +91,22 @@
 ! Perform summation of all dA within the tile using split-directional
 ! reduction-by-pairs algorithm to avoid accumulation of roundoff errors.
 
-      isize=iend-istr  ; jsize=jend-jstr
+      isize=nx-1  ; jsize=ny-1
 
       do while (isize>0 .or. jsize>0)
         if (jsize > 0) then
           js=(jsize+1)/2-1
           do j=0,js
-            jtg=jstr+j
-            do i=istr,istr+isize
+            jtg=1+j
+            do i=1,1+isize
               dA(i,jtg)=dA(i,jtg+j)+dA(i,jtg+j+1)
               dV(i,jtg)=dV(i,jtg+j)+dV(i,jtg+j+1)
             enddo
           enddo
           if (2*js+1 < jsize) then
             js=js+1
-            jtg=jstr+js
-            do i=istr,istr+isize
+            jtg=1+js
+            do i=1,1+isize
               dA(i,jtg)=dA(i,jtg+js)
               dV(i,jtg)=dV(i,jtg+js)
             enddo
@@ -128,17 +116,17 @@
 
         if (isize > 0) then
           is=(isize+1)/2-1
-          do j=jstr,jstr+jsize
+          do j=1,1+jsize
             do i=0,is
-              itg=istr+i
+              itg=1+i
               dA(itg,j)=dA(itg+i,j)+dA(itg+i+1,j)
               dV(itg,j)=dV(itg+i,j)+dV(itg+i+1,j)
             enddo
           enddo
           if (2*is+1 < isize) then
             is=is+1
-            itg=istr+is
-            do j=jstr,jstr+jsize
+            itg=1+is
+            do j=1,1+jsize
               dA(itg,j)=dA(itg+is,j)
               dV(itg,j)=dV(itg+is,j)
             enddo
@@ -147,14 +135,14 @@
         endif
       enddo
 
-      my_area  =dA(istr,jstr)
-      my_volume=dV(istr,jstr)
+      my_area  =dA(1,1)
+      my_volume=dV(1,1)
 
 #else
       my_area=QuadZero                  ! Straightforward summation:
       my_volume=QuadZero                ! this should produce the same
-      do j=jstr,jend                    ! result as the above with the
-        do i=istr,iend                  ! only difference is due to
+      do j=1,ny                    ! result as the above with the
+        do i=1,nx                  ! only difference is due to
           my_area  =my_area  +dA(i,j)   ! roundoff errors.
           my_volume=my_volume+dV(i,j)
         enddo
@@ -164,97 +152,97 @@
       my_crss=QuadZero                  ! of all open boundaries...
 #ifdef OBC_WEST
       if (WESTERN_EDGE) then
-        do j=jstr,jend
-          dA(istr,j)=0.5*(h(istr-1,j)+h(istr,j))*dn_u(istr,j)
+        do j=1,ny
+          dA(1,j)=0.5*(h(0,j)+h(1,j))*dn_u(1,j)
 # ifdef MASKING
-     &                                          *umask(istr,j)
+     &                                          *umask(1,j)
 # endif
 # ifndef SUM_BY_PAIRS
-          my_crss=my_crss + dA(istr,j)
+          my_crss=my_crss + dA(1,j)
 # endif
         enddo
 # ifdef SUM_BY_PAIRS
         jnc=1
-        do while(jstr<=jend-jnc)
+        do while(1<=ny-jnc)
           js=2*jnc
-          do j=jstr,jend-jnc,js
-            dA(istr,j) = dA(istr,j) + dA(istr,j+jnc)
+          do j=1,ny-jnc,js
+            dA(1,j) = dA(1,j) + dA(1,j+jnc)
           enddo
           jnc=js
         enddo
-        my_crss=my_crss + dA(istr,jstr)
+        my_crss=my_crss + dA(1,1)
 # endif
       endif
 #endif
 #ifdef OBC_EAST
       if (EASTERN_EDGE) then
-        do j=jstr,jend
-          dA(iend,j)=0.5*(h(iend,j)+h(iend+1,j))*dn_u(iend+1,j)
+        do j=1,ny
+          dA(nx,j)=0.5*(h(nx,j)+h(nx+1,j))*dn_u(nx+1,j)
 # ifdef MASKING
-     &                                         *umask(iend+1,j)
+     &                                         *umask(nx+1,j)
 # endif
 # ifndef SUM_BY_PAIRS
-          my_crss=my_crss + dA(iend,j)
+          my_crss=my_crss + dA(nx,j)
 # endif
         enddo
 # ifdef SUM_BY_PAIRS
         jnc=1
-        do while(jstr<=jend-jnc)
+        do while(1<=ny-jnc)
           js=2*jnc
-          do j=jstr,jend-jnc,js
-            dA(iend,j) = dA(iend,j) + dA(iend,j+jnc)
+          do j=1,ny-jnc,js
+            dA(nx,j) = dA(nx,j) + dA(nx,j+jnc)
           enddo
           jnc=js
         enddo
-        my_crss=my_crss + dA(iend,jstr)
+        my_crss=my_crss + dA(nx,1)
 # endif
       endif
 #endif
 #ifdef OBC_SOUTH
       if (SOUTHERN_EDGE) then
-        do i=istr,iend
-          dA(i,jstr)=0.5*(h(i,jstr)+h(i,jstr-1))*dm_v(i,jstr)
+        do i=1,nx
+          dA(i,1)=0.5*(h(i,1)+h(i,0))*dm_v(i,1)
 # ifdef MASKING
-     &                                         *vmask(i,jstr)
+     &                                         *vmask(i,1)
 # endif
 # ifndef SUM_BY_PAIRS
-          my_crss=my_crss + dA(i,jstr)
+          my_crss=my_crss + dA(i,1)
 # endif
         enddo
 # ifdef SUM_BY_PAIRS
         inc=1
-        do while(istr<=iend-inc)
+        do while(1<=nx-inc)
           is=2*inc
-          do i=istr,iend-inc,is
-            dA(i,jstr) = dA(i,jstr) + dA(i+inc,jstr)
+          do i=1,nx-inc,is
+            dA(i,1) = dA(i,1) + dA(i+inc,1)
           enddo
           inc=is
         enddo
-        my_crss=my_crss + dA(istr,jstr)
+        my_crss=my_crss + dA(1,1)
 # endif
       endif
 #endif
 #ifdef OBC_NORTH
       if (NORTHERN_EDGE) then
-        do i=istr,iend
-          dA(i,jend)=0.5*(h(i,jend)+h(i,jend+1))*dm_v(i,jend+1)
+        do i=1,nx
+          dA(i,ny)=0.5*(h(i,ny)+h(i,ny+1))*dm_v(i,ny+1)
 # ifdef MASKING
-     &                                         *vmask(i,jend+1)
+     &                                         *vmask(i,ny+1)
 # endif
 # ifndef SUM_BY_PAIRS
-          my_crss=my_crss + dA(i,jend)
+          my_crss=my_crss + dA(i,ny)
 # endif
         enddo
 # ifdef SUM_BY_PAIRS
         inc=1
-        do while(istr<=iend-inc)
+        do while(1<=nx-inc)
           is=2*inc
-          do i=istr,iend-inc,is
-            dA(i,jend) = dA(i,jend) + dA(i+inc,jend)
+          do i=1,nx-inc,is
+            dA(i,ny) = dA(i,ny) + dA(i+inc,ny)
           enddo
           inc=is
         enddo
-        my_crss=my_crss + dA(istr,jend)
+        my_crss=my_crss + dA(1,ny)
 # endif
       endif
 #endif

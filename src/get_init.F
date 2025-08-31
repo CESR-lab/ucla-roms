@@ -45,8 +45,7 @@
 #define tdays illegal
 #define nrrec illegal
 
-! needed for istr, iend, etc in order to fix closed boundaries to u(istr)=0, etc
-# include "compute_tile_bounds.h"
+! needed for 1, nx, etc in order to fix closed boundaries to u(1)=0, etc
 
 c--#define VERBOSE
 #ifdef VERBOSE
@@ -527,32 +526,32 @@ c--#define VERBOSE
       if(WESTERN_EDGE) then
         if(mynode==0) write (*,'(6x,A)')        ! S&W bry always contained in start node (==0)
      &  'get_init :: set closed west  boundary row to zero (u/ub/v/vb)'
-        u(   istr  ,:     ,:,tindx)=0.0         ! ensure closed boundary u on boundary is zero
-        ubar(istr  ,:     ,1)      =0.0         ! ubar read into index 1 above
+        u(   1  ,:     ,:,tindx)=0.0         ! ensure closed boundary u on boundary is zero
+        ubar(1  ,:     ,1)      =0.0         ! ubar read into index 1 above
       endif
 #endif
 #if !defined OBC_EAST && !defined EW_PERIODIC
       if(EASTERN_EDGE) then
         if(mynode==NNODES-1) write (*,'(6x,A)') ! N&E bry always contained in final node (==NNODES-1)
      &  'get_init :: set closed east  boundary row to zero (u/ub/v/vb)'
-        u(   iend+1,:     ,:,tindx)=0.0
-        ubar(iend+1,:     ,1)      =0.0
+        u(   nx+1,:     ,:,tindx)=0.0
+        ubar(nx+1,:     ,1)      =0.0
       endif
 #endif
 #if !defined OBC_SOUTH && !defined NS_PERIODIC
       if(SOUTHERN_EDGE) then
         if(mynode==0) write (*,'(6x,A)')
      &  'get_init :: set closed south boundary row to zero (u/ub/v/vb)'
-        v(   :     ,jstr  ,:,tindx)=0.0
-        vbar(:     ,jstr  ,1)      =0.0
+        v(   :     ,1  ,:,tindx)=0.0
+        vbar(:     ,1  ,1)      =0.0
       endif
 #endif
 #if !defined OBC_NORTH && !defined NS_PERIODIC
       if(NORTHERN_EDGE) then
         if(mynode==NNODES-1) write (*,'(6x,A)')
      &  'get_init :: set closed north boundary row to zero (u/ub/v/vb)'
-        v(   :     ,jend+1,:,tindx)=0.0
-        vbar(:     ,jend+1,1)      =0.0
+        v(   :     ,ny+1,:,tindx)=0.0
+        vbar(:     ,ny+1,1)      =0.0
       endif
 #endif
 
