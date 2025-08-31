@@ -8,7 +8,10 @@
 ! purposes and does not have any feedback onto the model.
 ! Unlike omega, absolute vertical velocity is defined at RHO-points.
 
-!     use param
+! When computing the release of potential energy, it is recommended
+! to separately multiply the omega, and uzx, vzy terms with the density
+! at u,v, and w-positions to get a more accurate computation.
+
       use dimensions
       use grid
       use ocean_vars
@@ -67,7 +70,7 @@
       do j=j0,j1
         do k=1,n
           do i=i0,i1
-            wvlc(i,j,k) = wvlc(i,j,k) 
+            wvlc(i,j,k) = wvlc(i,j,k)
      &         + 0.25*u(i  ,j,k,nstp)*(z_r(i,j,k)-z_r(i-1,j,k))
      &                                 *(pm(i,j)+pm(i-1,j))
      &         + 0.25*u(i+1,j,k,nstp)*(z_r(i,j,k)-z_r(i+1,j,k))
