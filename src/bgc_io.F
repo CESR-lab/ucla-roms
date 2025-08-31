@@ -74,38 +74,23 @@
 ! ----------------------------------------------------------------------
       subroutine set_bgc_surf_frc  ![
 
-      ! read in bgc surface flux and interpolate to model time.
-      ! Taken from get_smth.F & set_smth.F of ETH code.
+      ! Read in bgc surface flux and interpolate to model time.
 
       ! Since bgc is set up such that iron and dust have flux at surface but
       ! are not directly bgc tracers, I have separated them into set_bgc_frc
-
-      ! this routine is called by # if defined BIOLOGY_BEC2 in set_forces.F of ETH code
 
       use scalars
       use bgc_forces
 
       implicit none
 
-! Needed for iron and dust variables, not yet ported to this module. Should do.
-!#include "bgc_forces.h"
+      integer :: i,j
 
-      ! local
-      integer :: istr,iend,jstr,jend,i, j
-
-#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-# include "compute_extended_bounds.h"
-#endif
-
-
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
       call set_frc_data(nc_dust,dust,'r')
       call set_frc_data(nc_iron,iron,'r')
 
 
 #ifdef PCO2AIR_FORCING
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
       call set_frc_data(nc_pco2air,pco2air,'r')
 #ifdef MARBL
       call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
@@ -119,14 +104,12 @@
       call set_frc_data(nc_nhy,nhy,'r')
 #endif /* NHY_FORCING */
 
-
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
       call set_frc_data(nc_swrad_avg,swrad_avg,'r')
      
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j= 0,ny+1
+        do i= 0,nx+1
           swrad_avg(i,j)= swrad_avg(i,j)/(rho0*Cp)
           
 #ifdef SEA_ICE_NOFLUX
@@ -139,8 +122,8 @@
           endif
 #endif
 
-        enddo !<- istrR
-      enddo   !<- jstrR
+        enddo 
+      enddo   
      
 #endif /* DAILYPAR_PHOTOINHIBITION */ 
 
