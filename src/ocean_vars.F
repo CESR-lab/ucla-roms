@@ -30,12 +30,12 @@
       real,public,allocatable,dimension(:,:,:,:) :: v
       real,public,allocatable,dimension(:,:,:)   :: u_avg
       real,public,allocatable,dimension(:,:,:)   :: v_avg
-# if defined NHMG
+
+      ! nhmg related variables
       real,public,allocatable,dimension(:,:,:,:) :: w
       real,public,allocatable,dimension(:,:,:,:) :: nhdu
       real,public,allocatable,dimension(:,:,:,:) :: nhdv
       real,public,allocatable,dimension(:,:,:,:) :: nhdw
-# endif
 
       real,public,allocatable,dimension(:,:,:) :: FlxU
       real,public,allocatable,dimension(:,:,:) :: FlxV
@@ -84,12 +84,12 @@
       v(:,:,:,2)=0.0                             ! index 2 used on rhs v(indx) in pre_step for DC.
       v(:,:,:,3)=init                            ! multiplied by zero but can't be a nan.
 
-# if defined NHMG
-      allocate( w(GLOBAL_2D_ARRAY,0:N,3) )
-      allocate( nhdu(GLOBAL_2D_ARRAY,1:N,2) )
-      allocate( nhdv(GLOBAL_2D_ARRAY,1:N,2) )
-      allocate( nhdw(GLOBAL_2D_ARRAY,0:N,2) )
-# endif
+      if (nhmg) then
+        allocate( w(GLOBAL_2D_ARRAY,0:nz,3) )
+        allocate( nhdu(GLOBAL_2D_ARRAY,1:nz,2) )
+        allocate( nhdv(GLOBAL_2D_ARRAY,1:nz,2) )
+        allocate( nhdw(GLOBAL_2D_ARRAY,0:nz,2) )
+      endif
 
       allocate( FlxU(GLOBAL_2D_ARRAY,N) ) ; FlxU=init
       allocate( FlxV(GLOBAL_2D_ARRAY,N) ) ; FlxV=init

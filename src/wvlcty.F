@@ -1,20 +1,4 @@
-#include "cppdefs.opt"
-#ifdef SOLVE3D
-
-      subroutine wvlcty (tile, Wvlc)
-      use param
-      use dimensions
-      use roms_mpi
-      use private_scratch
-      implicit none
-      integer tile
-      real Wvlc(GLOBAL_2D_ARRAY,0:N)
-# include "compute_tile_bounds.h"
-      call wvlcty_tile (istr,iend,jstr,jend, Wvlc, A2d(1,1), A2d(1,1),   ! looks like a bug here repeated A2d(1,1)?
-     &                                                       A2d(1,2))
-      end
-
-      subroutine wvlcty_tile (istr,iend,jstr,jend, Wvlc, Wrk,Wxi,Weta)
+      subroutine wvlcty(Wvlc)
 
 ! Compute absolute vertical velocity, which consists of three
 ! components: S-coordinate vertical velocity  w*pm*pn; projection
@@ -22,9 +6,9 @@
 ! velocity of moving grid-box interfaces due to the motion of free
 ! surface. This computation is done solely for diagnostic/output
 ! purposes and does not have any feedback onto the model.
-! Unlike W, absolute vertical velocity is defined at RHO-points.
+! Unlike omega, absolute vertical velocity is defined at RHO-points.
 
-      use param
+!     use param
       use dimensions
       use grid
       use ocean_vars
@@ -32,27 +16,11 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
-      real Wvlc(GLOBAL_2D_ARRAY,0:N)
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: Wrk 
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: Wxi, Weta
 
-# include "compute_extended_bounds.h"
-
-# ifdef EW_PERIODIC
-      imin=max(istrR, istr-1)        ! The logic here is somewhat
-      imax=min(iendR, iend+1)        ! opposite to the standard
-#else
-      imin=istr                      ! "auxiliary" bounds: extend
-      imax=iend                      ! the range of computation of
-# endif
-# ifdef NS_PERIODIC
-      jmin=max(jstrR, jstr-1)        ! "Wvlc", by one row of points
-      jmax=min(jendR, jend+1)        ! on the side, but only in the
-# else
-      jmin=jstr                      ! case of periodic direction.
-      jmax=jend
-# endif
+      ! import/export
+      real,dimension(1-bf:nx+bf,1-bf:ny+bf,nz) :: wvlc
+      ! local
+      integer :: i,j,k
 
 ! Compute "omega" vertical velocity by means of integration of mass
 ! divergence of mass fluxes from bottom up. In this computation,
@@ -66,127 +34,76 @@
 ! in omega.F. Once omega vertical velocity is computed, interpolate
 ! it to vertical RHO-points.
 
-      do j=jmin,jmax
-        do i=imin,imax
-          Wrk(i,0)=0.
+      do j=j0,j1
+!       do i=i0,i1
+!         wvlc(i,j,0)=0.
+!       enddo
+        do i=i0,i1
+          wvlc(i,j,1) = -pm(i,j)*pn(i,j)*(
+     &             FlxU(i+1,j,1)-FlxU(i,j,1)
+     &            +FlxV(i,j+1,1)-FlxV(i,j,1))
         enddo
-        do k=1,N,+1
-          do i=imin,imax
-            Wrk(i,k)=Wrk(i,k-1)-pm(i,j)*pn(i,j)*(
+        do k=2,nz
+          do i=i0,i1
+            wvlc(i,j,k) = wvlc(i,j,k-1)-pm(i,j)*pn(i,j)*(
      &                      FlxU(i+1,j,k)-FlxU(i,j,k)
      &                     +FlxV(i,j+1,k)-FlxV(i,j,k))
-c**    Wrk(i,k)=0.!(uncomment to test the second part)
           enddo
         enddo
-        do i=imin,imax
-          Wvlc(i,j,N)=+0.375*Wrk(i,N) +0.75*Wrk(i,N-1)
-     &                                -0.125*Wrk(i,N-2)
+        do i=i0,i1
+          wvlc(i,j,1) = 0.5*(wvlc(i,j,1) )
         enddo
-        do k=N-1,2,-1
-          do i=imin,imax
-            Wvlc(i,j,k)=+0.5625*(Wrk(i,k  )+Wrk(i,k-1))
-     &                  -0.0625*(Wrk(i,k+1)+Wrk(i,k-2))
+        do k=2,nz
+          do i=i0,i1
+            wvlc(i,j,k) = 0.5*(wvlc(i,j,k)+wvlc(i,j,k-1))
           enddo
         enddo
-        do i=imin,imax
-          Wvlc(i,j,  1)= -0.125*Wrk(i,2) +0.75*Wrk(i,1)
-     &                                  +0.375*Wrk(i,0)
-        enddo
-      enddo
+      enddo ! j=loop
 
 ! Compute and add contributions due to quasi-horizontal motions along
 ! S=const surfaces by multiplying horizontal velocity components by
 ! slops S-coordinate surfaces:
 
-      do k=1,N
-        do j=jmin,jmax
-          do i=imin,imax+1
-            Wxi(i,j)=u(i,j,k,nstp)*(z_r(i,j,k)-z_r(i-1,j,k))
-     &                                  *(pm(i,j)+pm(i-1,j))
-          enddo
-        enddo
-        do j=jmin,jmax+1
-          do i=imin,imax
-            Weta(i,j)=v(i,j,k,nstp)*(z_r(i,j,k)-z_r(i,j-1,k))
-     &                                   *(pn(i,j)+pn(i,j-1))
-          enddo
-        enddo
-        do j=jmin,jmax
-          do i=imin,imax
-            Wvlc(i,j,k)=Wvlc(i,j,k)+0.25*(Wxi(i,j)+Wxi(i+1,j)
-     &                                +Weta(i,j)+Weta(i,j+1))
-          enddo
-        enddo
-      enddo
-# ifdef NHMG
+      do j=j0,j1
+        do k=1,n
+          do i=i0,i1
+            wvlc(i,j,k) = wvlc(i,j,k) 
+     &         + 0.25*u(i  ,j,k,nstp)*(z_r(i,j,k)-z_r(i-1,j,k))
+     &                                 *(pm(i,j)+pm(i-1,j))
+     &         + 0.25*u(i+1,j,k,nstp)*(z_r(i,j,k)-z_r(i+1,j,k))
+     &                                 *(pm(i,j)+pm(i+1,j))
+     &         + 0.25*v(i,j  ,k,nstp)*(z_r(i,j,k)-z_r(i,j-1,k))
+     &                                  *(pn(i,j)+pn(i,j-1))
+     &         + 0.25*v(i,j+1,k,nstp)*(z_r(i,j,k)-z_r(i,j+1,k))
+     &                                  *(pn(i,j)+pn(i,j+1))
+           enddo
+         enddo
+       enddo ! j=loop
+
+      if (nhmg) then
        ! overwrite with w var
-      do k=1,N  ! WASTED COMPUTING TO OVERWRITE SOMETHING USE IF ELSE RATHER
-        do j=jmin,jmax
-          do i=imin,imax
-            Wvlc(i,j,k) =  w(i,j,k,nstp)
+      do k=1,nz  ! WASTED COMPUTING TO OVERWRITE SOMETHING USE IF ELSE RATHER
+        do j=j0,j1
+          do i=i0,i1
+            Wvlc(i,j,k) = w(i,j,k,nstp)
           enddo
         enddo
       enddo
-# endif
+      endif
 
-!  Set lateral boundary conditions: gradient only.
+!  Set lateral boundary conditions: no gradient for wvlc only.
 
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        do k=1,N
-          do j=jmin,jmax
-            Wvlc(imin-1,j,k)=Wvlc(imin,j,k)
-          enddo
-        enddo
+      if (inode.eq.0.and.(.not.ew_periodic)) then
+        wvlc(0,j0:j1,:) = wvlc(1,j0:j1,:)
       endif
-      if (EASTERN_EDGE) then
-        do k=1,N
-          do j=jmin,jmax
-            Wvlc(imax+1,j,k)=Wvlc(imax,j,k)
-          enddo
-        enddo
+      if (inode.eq.npx-1.and.(.not.ew_periodic)) then
+        wvlc(nx+1,j0:j1,:) = wvlc(nx,j0:j1,:)
       endif
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do k=1,N
-          do i=imin,imax
-            Wvlc(i,jmin-1,k)=Wvlc(i,jmin,k)
-          enddo
-        enddo
+      if (jnode.eq.npy-1.and.(.not.ns_periodic)) then
+        wvlc(i0:i1,ny+1,:) = wvlc(i0:i1,ny,:)
       endif
-      if (NORTHERN_EDGE) then
-        do k=1,N
-          do i=imin,imax
-            Wvlc(i,jmax+1,k)=Wvlc(i,jmax,k)
-          enddo
-        enddo
+      if (jnode.eq.0.and.(.not.ns_periodic)) then
+        wvlc(i0:i1,0,:) = wvlc(i0:i1,1,:)
       endif
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=1,N
-          Wvlc(imin-1,jmin-1,k)=Wvlc(imin,jmin,k)
-        enddo
-      endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=1,N
-          Wvlc(imin-1,jmax+1,k)=Wvlc(imin,jmax,k)
-        enddo
-      endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=1,N
-          Wvlc(imax+1,jmin-1,k)=Wvlc(imax,jmin,k)
-        enddo
-      endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=1,N
-          Wvlc(imax+1,jmax+1,k)=Wvlc(imax,jmax,k)
-        enddo
-      endif
-#  endif
-# endif
+
       end
-#else
-      subroutine wvlcty_empty
-      end
-#endif /* SOLVE3D */

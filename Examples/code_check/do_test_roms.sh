@@ -47,7 +47,7 @@ rm *.nc      &> /dev/null
 rm diag.opt  &> /dev/null
 rm Make*     &> /dev/null
 rm param.opt &> /dev/null
-rm cppdefs.opt# &> /dev/null
+rm cppdefs.opt &> /dev/null
 rm roms      &> /dev/null
 
 # 2) Python - confirm values:
