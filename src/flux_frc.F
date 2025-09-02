@@ -10,7 +10,7 @@
       ! Modules needed:
       use dimensions
       use tracers
-      use surf_flux 
+      use surf_flux
       use roms_read_write
       use grid
 !     use scalars
@@ -20,7 +20,7 @@
 
       private ! All variables private to module unless public specified
 
-      real,parameter :: cmday2ms = 0.01/day2sec 
+      real,parameter :: cmday2ms = 0.01/day2sec
 
       ! Includes:
 #include "flux_frc.opt"
@@ -49,7 +49,7 @@
       endif
 
       ! Print user options (flux_frc.opt) to netcdf attributes
-      ! Note: to turn flux forces off, edit cppdefs! 
+      ! Note: to turn flux forces off, edit cppdefs!
       flux_frc_opt = ''
       if (interp_frc==1) then
         call store_string_att(flux_frc_opt, 'Interpolation ON')
@@ -103,20 +103,20 @@
       endif
 
       ! SST restoring
-      if (qcorrection) then 
+      if (qcorrection) then
         stflx(:,:,itemp) = stflx(:,:,itemp)
      &        -dSSSdt*(t(:,:,nz,nrhs,isalt)-sss(:,:))
       endif
 
       ! SST restoring
-      if (sflx_correction) then 
+      if (sflx_correction) then
         stflx(:,:,isalt) = stflx(:,:,isalt)
      &        -dSSSdt*(t(:,:,nz,nrhs,isalt)-sss(:,:))
       endif
 
       ! Diurnal modulation of averaged short wave radiation flux
       if (diurnal_srflux) then
-        call diurnal_mod_srflx  
+        call diurnal_mod_srflx
       endif
 
       end subroutine set_flux_frc  !]

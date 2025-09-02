@@ -1,7 +1,7 @@
       module surf_flux
       ! Declaration of surface flux variables
       ! Output of surface fluxes
-      ! Sets fields for flux correction 
+      ! Sets fields for flux correction
 
       ! Devin Dollery & Jeroen Molemaker (2020-2022)
 
@@ -33,8 +33,8 @@
       real,public,allocatable,dimension(:,:)   :: srflx    ! Short-wave radiation surface flux
 
       real,public,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
-      real,public,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind      
-      
+      real,public,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind
+
       ! averages of surface fluxes
       real,allocatable,dimension(:,:)  :: sustr_avg     ! surf stress u-point average
       real,allocatable,dimension(:,:)  :: svstr_avg     ! surf stress v-point average
@@ -49,7 +49,7 @@
       real,public :: dSSSdt                                ! input units (cm/day)
 
       ! Netcdf outputting:
-      real    :: output_time = 0  
+      real    :: output_time = 0
       integer :: record = nrpf     ! to trigger the first file creation
       integer :: ncid = -1, prev_fill_mode
 
@@ -67,7 +67,7 @@
 
       ! local
       allocate(  uwnd  (GLOBAL_2D_ARRAY)    );
-      allocate(  vwnd  (GLOBAL_2D_ARRAY)    );       
+      allocate(  vwnd  (GLOBAL_2D_ARRAY)    );
       allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
@@ -83,9 +83,9 @@
 
       if (sflx_avg) then
         if (wrt_smflx) allocate(sustr_avg(1:i1,j0:j1))
-        if (wrt_smflx) allocate(svstr_avg(i0:i1,1:j1)) 
-        if (wrt_stflx) allocate(stflx_avg(i0:i1,j0:j1,nt)) 
-        if (wrt_srflx) allocate(srflx_avg(i0:i1,j0:j1)) 
+        if (wrt_smflx) allocate(svstr_avg(i0:i1,1:j1))
+        if (wrt_stflx) allocate(stflx_avg(i0:i1,j0:j1,nt))
+        if (wrt_srflx) allocate(srflx_avg(i0:i1,j0:j1))
       endif
 
       end subroutine init_arrays_surf_flx  !]
@@ -189,7 +189,7 @@
       character(len=99),save :: fname
       integer                :: ierr
 
-      output_time = output_time + dt 
+      output_time = output_time + dt
 
       if (sflx_avg) call calc_sflx_avg
 
