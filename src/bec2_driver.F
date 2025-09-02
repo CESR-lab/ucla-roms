@@ -93,7 +93,7 @@
      &    N2SAT_1atm   ! N2 saturation @ 1 atm (mmol/m^3)
 # endif
 
-      if(mynode==0) write(*,'(7x,A)') 'ecosys_bec2_td:: computing bgc' ! DevinD added
+!     if(mynode==0) write(*,'(7x,A)') 'ecosys_bec2_td:: computing bgc' ! DevinD added
 
 # ifndef BULK_FRC
 !
