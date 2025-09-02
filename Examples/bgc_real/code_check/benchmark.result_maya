@@ -1,0 +1,481 @@
+
+ Flux_frc module test.
+     ntimes =        10   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: input_data/sample_grd_riv.0.nc
+ forcing data file(s): input_data/sample_flux_frc.0.nc
+                       input_data/sample_flux_bgc.0.nc
+                       input_data/sample_bry_bgc.0.nc
+                       input_data/roms_bry_trace.0.nc
+                       input_data/roms_bgcbry.0.nc
+                       input_data/roms_default_bgcbry.0.nc
+                       input_data/roms_LFfrc.0.nc
+ initial condition :: rec =  1  file = 'input_data/roms_init_bgc.0.nc'
+
+ WARNING: Urecognized keyword 'MARBL_biogeochemistry' --> DISREGARDED.
+
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+   tnu2( 3) = 0.000E+00  horizontal Laplacian diffusion for tracer  3, [m^2/s]
+   tnu2( 4) = 0.000E+00  horizontal Laplacian diffusion for tracer  4, [m^2/s]
+   tnu2( 5) = 0.000E+00  horizontal Laplacian diffusion for tracer  5, [m^2/s]
+   tnu2( 6) = 0.000E+00  horizontal Laplacian diffusion for tracer  6, [m^2/s]
+   tnu2( 7) = 0.000E+00  horizontal Laplacian diffusion for tracer  7, [m^2/s]
+   tnu2( 8) = 0.000E+00  horizontal Laplacian diffusion for tracer  8, [m^2/s]
+   tnu2( 9) = 0.000E+00  horizontal Laplacian diffusion for tracer  9, [m^2/s]
+   tnu2(10) = 0.000E+00  horizontal Laplacian diffusion for tracer 10, [m^2/s]
+   tnu2(11) = 0.000E+00  horizontal Laplacian diffusion for tracer 11, [m^2/s]
+   tnu2(12) = 0.000E+00  horizontal Laplacian diffusion for tracer 12, [m^2/s]
+   tnu2(13) = 0.000E+00  horizontal Laplacian diffusion for tracer 13, [m^2/s]
+   tnu2(14) = 0.000E+00  horizontal Laplacian diffusion for tracer 14, [m^2/s]
+   tnu2(15) = 0.000E+00  horizontal Laplacian diffusion for tracer 15, [m^2/s]
+   tnu2(16) = 0.000E+00  horizontal Laplacian diffusion for tracer 16, [m^2/s]
+   tnu2(17) = 0.000E+00  horizontal Laplacian diffusion for tracer 17, [m^2/s]
+   tnu2(18) = 0.000E+00  horizontal Laplacian diffusion for tracer 18, [m^2/s]
+   tnu2(19) = 0.000E+00  horizontal Laplacian diffusion for tracer 19, [m^2/s]
+   tnu2(20) = 0.000E+00  horizontal Laplacian diffusion for tracer 20, [m^2/s]
+   tnu2(21) = 0.000E+00  horizontal Laplacian diffusion for tracer 21, [m^2/s]
+   tnu2(22) = 0.000E+00  horizontal Laplacian diffusion for tracer 22, [m^2/s]
+   tnu2(23) = 0.000E+00  horizontal Laplacian diffusion for tracer 23, [m^2/s]
+   tnu2(24) = 0.000E+00  horizontal Laplacian diffusion for tracer 24, [m^2/s]
+   tnu2(25) = 0.000E+00  horizontal Laplacian diffusion for tracer 25, [m^2/s]
+   tnu2(26) = 0.000E+00  horizontal Laplacian diffusion for tracer 26, [m^2/s]
+   tnu2(27) = 0.000E+00  horizontal Laplacian diffusion for tracer 27, [m^2/s]
+   tnu2(28) = 0.000E+00  horizontal Laplacian diffusion for tracer 28, [m^2/s]
+   tnu2(29) = 0.000E+00  horizontal Laplacian diffusion for tracer 29, [m^2/s]
+   tnu2(30) = 0.000E+00  horizontal Laplacian diffusion for tracer 30, [m^2/s]
+   tnu2(31) = 0.000E+00  horizontal Laplacian diffusion for tracer 31, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+ neighbors att not found
+ input_data/sample_grd_riv.0.nc                                                 
+                                                                                
+                                                                                
+                    
+ metadata about           31  tracers:
+ -----------
+ TRACER NO.:            1
+ SHORT NAME: temp                                      
+ LONG NAME: potential temperature                                       
+ UNITS: Celsius                                   
+ -----------
+ -----------
+ TRACER NO.:            2
+ SHORT NAME: salt                                      
+ LONG NAME: salinity                                                    
+ UNITS: PSU                                       
+ -----------
+ -----------
+ TRACER NO.:            3
+ SHORT NAME: PO4                                       
+ LONG NAME: Phosphate                                                   
+ UNITS: mMol P m-3                                
+ -----------
+ -----------
+ TRACER NO.:            4
+ SHORT NAME: NO3                                       
+ LONG NAME: Nitrate                                                     
+ UNITS: mMol N m-3                                
+ -----------
+ -----------
+ TRACER NO.:            5
+ SHORT NAME: SiO3                                      
+ LONG NAME: Silicate                                                    
+ UNITS: mMol Si m-3                               
+ -----------
+ -----------
+ TRACER NO.:            6
+ SHORT NAME: NH4                                       
+ LONG NAME: Ammonium                                                    
+ UNITS: mMol N m-3                                
+ -----------
+ -----------
+ TRACER NO.:            7
+ SHORT NAME: Fe                                        
+ LONG NAME: Iron                                                        
+ UNITS: mMol Fe m-3                               
+ -----------
+ -----------
+ TRACER NO.:            8
+ SHORT NAME: O2                                        
+ LONG NAME: Oxygen                                                      
+ UNITS: mMol O2 m-3                               
+ -----------
+ -----------
+ TRACER NO.:            9
+ SHORT NAME: DIC                                       
+ LONG NAME: Dissolved inorganic carbon                                  
+ UNITS: mMol C m-3                                
+ -----------
+ -----------
+ TRACER NO.:           10
+ SHORT NAME: ALK                                       
+ LONG NAME: Alkalinity                                                  
+ UNITS: mMol m-3                                  
+ -----------
+ -----------
+ TRACER NO.:           11
+ SHORT NAME: DOC                                       
+ LONG NAME: Dissolved organic carbon                                    
+ UNITS: mMol C m-3                                
+ -----------
+ -----------
+ TRACER NO.:           12
+ SHORT NAME: DON                                       
+ LONG NAME: Dissolved organic nitrogen                                  
+ UNITS: mMol N m-3                                
+ -----------
+ -----------
+ TRACER NO.:           13
+ SHORT NAME: DOFE                                      
+ LONG NAME: Dissolved organic iron                                      
+ UNITS: mMol Fe m-3                               
+ -----------
+ -----------
+ TRACER NO.:           14
+ SHORT NAME: DOP                                       
+ LONG NAME: Dissolved organic phosphorus                                
+ UNITS: mMol P m-3                                
+ -----------
+ -----------
+ TRACER NO.:           15
+ SHORT NAME: DOPr                                      
+ LONG NAME: Refractory dissolved organic phosphorus                     
+ UNITS: mMol P m-3                                
+ -----------
+ -----------
+ TRACER NO.:           16
+ SHORT NAME: DONr                                      
+ LONG NAME: Refractory dissolved organic nitrogen                       
+ UNITS: mMol N m-3                                
+ -----------
+ -----------
+ TRACER NO.:           17
+ SHORT NAME: zooC                                      
+ LONG NAME: Zooplankton                                                 
+ UNITS: mMol C m-3                                
+ -----------
+ -----------
+ TRACER NO.:           18
+ SHORT NAME: spC                                       
+ LONG NAME: Small phytoplankton carbon                                  
+ UNITS: mMol C m-3                                
+ -----------
+ -----------
+ TRACER NO.:           19
+ SHORT NAME: spChl                                     
+ LONG NAME: Small phytoplankton chlorophyll                             
+ UNITS: mg Chl-a m-3                              
+ -----------
+ -----------
+ TRACER NO.:           20
+ SHORT NAME: spFe                                      
+ LONG NAME: Small phytoplankton iron                                    
+ UNITS: mMol Fe m-3                               
+ -----------
+ -----------
+ TRACER NO.:           21
+ SHORT NAME: spCaCO3                                   
+ LONG NAME: Small phytoplankton CaCO3                                   
+ UNITS: mMol CaCO3 m-3                            
+ -----------
+ -----------
+ TRACER NO.:           22
+ SHORT NAME: diatC                                     
+ LONG NAME: Diatom carbon                                               
+ UNITS: mMol C m-3                                
+ -----------
+ -----------
+ TRACER NO.:           23
+ SHORT NAME: diatChl                                   
+ LONG NAME: Diatom chlorophyll                                          
+ UNITS: mg Chl-a m-3                              
+ -----------
+ -----------
+ TRACER NO.:           24
+ SHORT NAME: diatFe                                    
+ LONG NAME: Diatom Iron                                                 
+ UNITS: mMol Fe m-3                               
+ -----------
+ -----------
+ TRACER NO.:           25
+ SHORT NAME: diatSi                                    
+ LONG NAME: Diatom silicon                                              
+ UNITS: mMol Si m-3                               
+ -----------
+ -----------
+ TRACER NO.:           26
+ SHORT NAME: diazC                                     
+ LONG NAME: Diazotroph carbon                                           
+ UNITS: mMol C m-3                                
+ -----------
+ -----------
+ TRACER NO.:           27
+ SHORT NAME: diazChl                                   
+ LONG NAME: Diazotroph chlorophyll                                      
+ UNITS: mg Chl-a m-3                              
+ -----------
+ -----------
+ TRACER NO.:           28
+ SHORT NAME: diazFe                                    
+ LONG NAME: Diazotroph iron                                             
+ UNITS: mMol Fe m-3                               
+ -----------
+ -----------
+ TRACER NO.:           29
+ SHORT NAME: NO2                                       
+ LONG NAME: Nitrite                                                     
+ UNITS: mMol N m-3                                
+ -----------
+ -----------
+ TRACER NO.:           30
+ SHORT NAME: N2                                        
+ LONG NAME: Dinitrogen                                                  
+ UNITS: mMol N2 m-3                               
+ -----------
+ -----------
+ TRACER NO.:           31
+ SHORT NAME: N2O                                       
+ LONG NAME: Nitrous oxide                                               
+ UNITS: mMol N2O m-3                              
+ -----------
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+
+ NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+       ocean_vars :: history file ouput_period = 100.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1F   temp                                      
+           t( 2F   salt                                      
+       2D BGC diags ::   1  2 PARinc                                                                  
+       2D BGC diags ::   2  3 FG_O2                                                                   
+       2D BGC diags ::   3  4 FG_CO2                                                                  
+       2D BGC diags ::   4 14 SED_DENITRIF                                                            
+       2D BGC diags ::   5 30 FG_N2O                                                                  
+       2D BGC diags ::   6 34 FG_N2                                                                   
+       3D BGC diags ::   1  1 PAR                                                                     
+       3D BGC diags ::   2  2 POC_FLUX_IN                                                             
+       3D BGC diags ::   3 26 TOT_PROD                                                                
+       3D BGC diags ::   4 59 SP_NO3_UPTAKE                                                           
+       3D BGC diags ::   5 60 DIAT_NO3_UPTAKE                                                         
+       3D BGC diags ::   6 61 DIAZ_NO3_UPTAKE                                                         
+       3D BGC diags ::   7 87 TOT_CHL                                                                 
+       3D BGC diags ::   8 91 TOT_PHYTOC                                                              
+       3D BGC diags ::   9 92 O2_CONSUMPTION                                                          
+       3D BGC diags ::  10 93 O2_PRODUCTION                                                           
+       3D BGC diags ::  11 95 NITROX                                                                  
+       3D BGC diags ::  12 96 ANAMMOX                                                                 
+       3D BGC diags ::  13 97 DENITRIF1                                                               
+       BGC diags allocation ::   6 13
+
+ Vertical S-coordinate system (z at W-points):
+
+  level      S-coord        Cs-curve         Z at hmin           at hc        half way         at hmax
+     50   0.0000E+00   0.0000000E+00     0.0000000E+00   0.0000000E+00   0.0000000E+00   0.0000000E+00
+     49  -2.0000E-02  -2.1600046E-04    -2.1600046E+16  -2.5270001E-01   1.0800023E+16   2.1600046E+16
+     48  -4.0000E-02  -8.6683444E-04    -8.6683444E+16  -5.1083543E-01   4.3341722E+16   8.6683444E+16
+     47  -6.0000E-02  -1.9610249E-03    -1.9610249E+17  -7.7451281E-01   9.8051243E+16   1.9610249E+17
+     46  -8.0000E-02  -3.5128600E-03    -3.5128600E+17  -1.0439107E+00   1.7564300E+17   3.5128600E+17
+     45  -1.0000E-01  -5.5425170E-03    -5.5425170E+17  -1.3192815E+00   2.7712585E+17   5.5425170E+17
+     44  -1.2000E-01  -8.0762310E-03    -8.0762310E+17  -1.6009529E+00   4.0381155E+17   8.0762310E+17
+     43  -1.4000E-01  -1.1146507E-02    -1.1146507E+18  -1.8893313E+00   5.5732535E+17   1.1146507E+18
+     42  -1.6000E-01  -1.4792367E-02    -1.4792367E+18  -2.1849046E+00   7.3961834E+17   1.4792367E+18
+     41  -1.8000E-01  -1.9059626E-02    -1.9059626E+18  -2.4882453E+00   9.5298131E+17   1.9059626E+18
+     40  -2.0000E-01  -2.4001189E-02    -2.4001189E+18  -2.8000149E+00   1.2000595E+18   2.4001189E+18
+     39  -2.2000E-01  -2.9677349E-02    -2.9677349E+18  -3.1209669E+00   1.4838674E+18   2.9677349E+18
+     38  -2.4000E-01  -3.6156070E-02    -3.6156070E+18  -3.4519509E+00   1.8078035E+18   3.6156070E+18
+     37  -2.6000E-01  -4.3513242E-02    -4.3513242E+18  -3.7939155E+00   2.1756621E+18   4.3513242E+18
+     36  -2.8000E-01  -5.1832858E-02    -5.1832858E+18  -4.1479107E+00   2.5916429E+18   5.1832858E+18
+     35  -3.0000E-01  -6.1207093E-02    -6.1207093E+18  -4.5150887E+00   3.0603546E+18   6.1207093E+18
+     34  -3.2000E-01  -7.1736228E-02    -7.1736228E+18  -4.8967028E+00   3.5868114E+18   7.1736228E+18
+     33  -3.4000E-01  -8.3528367E-02    -8.3528367E+18  -5.2941046E+00   4.1764184E+18   8.3528367E+18
+     32  -3.6000E-01  -9.6698875E-02    -9.6698875E+18  -5.7087359E+00   4.8349437E+18   9.6698875E+18
+     31  -3.8000E-01  -1.1136944E-01    -1.1136944E+19  -6.1421180E+00   5.5684720E+18   1.1136944E+19
+     30  -4.0000E-01  -1.2766669E-01    -1.2766669E+19  -6.5958336E+00   6.3833346E+18   1.2766669E+19
+     29  -4.2000E-01  -1.4572023E-01    -1.4572023E+19  -7.0715028E+00   7.2860113E+18   1.4572023E+19
+     28  -4.4000E-01  -1.6565994E-01    -1.6565994E+19  -7.5707493E+00   8.2829970E+18   1.6565994E+19
+     27  -4.6000E-01  -1.8761254E-01    -1.8761254E+19  -8.0951567E+00   9.3806268E+18   1.8761254E+19
+     26  -4.8000E-01  -2.1169704E-01    -2.1169704E+19  -8.6462129E+00   1.0584852E+19   2.1169704E+19
+     25  -5.0000E-01  -2.3801922E-01    -2.3801922E+19  -9.2252402E+00   1.1900961E+19   2.3801922E+19
+     24  -5.2000E-01  -2.6666485E-01    -2.6666485E+19  -9.8333106E+00   1.3333242E+19   2.6666485E+19
+     23  -5.4000E-01  -2.9769164E-01    -2.9769164E+19  -1.0471145E+01   1.4884582E+19   2.9769164E+19
+     22  -5.6000E-01  -3.3112002E-01    -3.3112002E+19  -1.1139000E+01   1.6556001E+19   3.3112002E+19
+     21  -5.8000E-01  -3.6692279E-01    -3.6692279E+19  -1.1836535E+01   1.8346139E+19   3.6692279E+19
+     20  -6.0000E-01  -4.0501403E-01    -4.0501403E+19  -1.2562675E+01   2.0250701E+19   4.0501403E+19
+     19  -6.2000E-01  -4.4523774E-01    -4.4523774E+19  -1.3315472E+01   2.2261887E+19   4.4523774E+19
+     18  -6.4000E-01  -4.8735711E-01    -4.8735711E+19  -1.4091964E+01   2.4367856E+19   4.8735711E+19
+     17  -6.6000E-01  -5.3104539E-01    -5.3104539E+19  -1.4888067E+01   2.6552270E+19   5.3104539E+19
+     16  -6.8000E-01  -5.7587989E-01    -5.7587989E+19  -1.5698499E+01   2.8793995E+19   5.7587989E+19
+     15  -7.0000E-01  -6.2134081E-01    -6.2134081E+19  -1.6516760E+01   3.1067041E+19   6.2134081E+19
+     14  -7.2000E-01  -6.6681673E-01    -6.6681673E+19  -1.7335209E+01   3.3340836E+19   6.6681673E+19
+     13  -7.4000E-01  -7.1161865E-01    -7.1161865E+19  -1.8145233E+01   3.5580932E+19   7.1161865E+19
+     12  -7.6000E-01  -7.5500399E-01    -7.5500399E+19  -1.8937550E+01   3.7750199E+19   7.5500399E+19
+     11  -7.8000E-01  -7.9621119E-01    -7.9621119E+19  -1.9702640E+01   3.9810559E+19   7.9621119E+19
+     10  -8.0000E-01  -8.3450416E-01    -8.3450416E+19  -2.0431302E+01   4.1725208E+19   8.3450416E+19
+      9  -8.2000E-01  -8.6922400E-01    -8.6922400E+19  -2.1115300E+01   4.3461200E+19   8.6922400E+19
+      8  -8.4000E-01  -8.9984320E-01    -8.9984320E+19  -2.1748040E+01   4.4992160E+19   8.9984320E+19
+      7  -8.6000E-01  -9.2601541E-01    -9.2601541E+19  -2.2325193E+01   4.6300770E+19   9.2601541E+19
+      6  -8.8000E-01  -9.4761265E-01    -9.4761265E+19  -2.2845158E+01   4.7380632E+19   9.4761265E+19
+      5  -9.0000E-01  -9.6474163E-01    -9.6474163E+19  -2.3309270E+01   4.8237081E+19   9.6474163E+19
+      4  -9.2000E-01  -9.7773318E-01    -9.7773318E+19  -2.3721665E+01   4.8886659E+19   9.7773318E+19
+      3  -9.4000E-01  -9.8710305E-01    -9.8710305E+19  -2.4088788E+01   4.9355152E+19   9.8710305E+19
+      2  -9.6000E-01  -9.9348846E-01    -9.9348846E+19  -2.4418606E+01   4.9674423E+19   9.9348846E+19
+      1  -9.8000E-01  -9.9757092E-01    -9.9757092E+19  -2.4719637E+01   4.9878546E+19   9.9757092E+19
+      0  -1.0000E+00  -1.0000000E+00    -1.0000000E+20  -2.5000000E+01   5.0000000E+19   1.0000000E+20
+
+ Spherical grid detected.
+
+ init buffers
+      get_grid :: read grid data from file 'input_data/sample_grd_riv.0.nc'.
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
+ hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
+                                           open_cross = 5.4367977391196312E+06
+ Cg_max = 0.3808322   Cg_min = 0.0337713   Cu_Cor = 0.0016583
+
+ Maximum grid stiffness ratios:   rx0 = 0.100020449  rx1 =  17.833965349
+
+ ecosys_bec2_init:: init bgc extras
+ WARNING: Exact restart is requested, but is not possible: initial
+          file 'input_data/roms_init_bgc.0.nc' does not contain sufficient records.
+  --- WARNING: ALK not in initial file.  Initialized to 0.0
+  --- WARNING: DOPr not in initial file.  Initialized to 0.0
+  --- WARNING: DONr not in initial file.  Initialized to 0.0
+  --- WARNING: zooC not in initial file.  Initialized to 0.0
+  --- WARNING: spC not in initial file.  Initialized to 0.0
+  --- WARNING: spChl not in initial file.  Initialized to 0.0
+  --- WARNING: spFe not in initial file.  Initialized to 0.0
+  --- WARNING: spCaCO3 not in initial file.  Initialized to 0.0
+  --- WARNING: diatC not in initial file.  Initialized to 0.0
+  --- WARNING: diatChl not in initial file.  Initialized to 0.0
+  --- WARNING: diatFe not in initial file.  Initialized to 0.0
+  --- WARNING: diatSi not in initial file.  Initialized to 0.0
+  --- WARNING: diazC not in initial file.  Initialized to 0.0
+  --- WARNING: diazChl not in initial file.  Initialized to 0.0
+  --- WARNING: diazFe not in initial file.  Initialized to 0.0
+ WARNING: netCDF variable 'hbls' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+         set_frc :: sustr            input time (days) =   4725.00     rec =   2
+         set_frc :: sustr            input time (days) =   4755.00     rec =   3
+         set_frc :: svstr            input time (days) =   4725.00     rec =   2
+         set_frc :: svstr            input time (days) =   4755.00     rec =   3
+         set_frc :: shflux           input time (days) =   4725.00     rec =   2
+         set_frc :: shflux           input time (days) =   4755.00     rec =   3
+         set_frc :: swflux           input time (days) =   4725.00     rec =   2
+         set_frc :: swflux           input time (days) =   4755.00     rec =   3
+         set_frc :: swrad            input time (days) =   4725.00     rec =   2
+         set_frc :: swrad            input time (days) =   4755.00     rec =   3
+         set_frc :: dust             input time (days) =   4702.00     rec =  11
+         set_frc :: dust             input time (days) =   4732.50     rec =  12
+         set_frc :: iron             input time (days) =   4702.00     rec =  11
+         set_frc :: iron             input time (days) =   4732.50     rec =  12
+         set_frc :: pco2_air         input time (days) =   4702.00     rec =  11
+         set_frc :: pco2_air         input time (days) =   4732.50     rec =  12
+         set_frc :: swrad_LFreq      input time (days) =   0.00000     rec =   1
+         set_frc :: swrad_LFreq      input time (days) =   6000.00     rec =   2
+
+ Sponge layer =  15 interior grid points.
+ Writing initial history file
+ Reference time used for simulation is: 2000/01/01
+       created new netcdf file bgc_his.20121209133435.0.nc
+       created new netcdf file bgc_bgc.20121209133435.0.nc
+       wrt_bgc_tracers :: history , trc =  PO4                                       
+       wrt_bgc_tracers :: history , trc =  NO3                                       
+       wrt_bgc_tracers :: history , trc =  O2                                        
+       wrt_bgc_tracers :: history , trc =  DIC                                       
+       bgc :: wrote history, tdays =   4726.5657  step =     -1 rec =   1
+       created new netcdf file bgc_bgc_dia.20121209133435.0.nc
+       bgc diag :: wrote history, tdays =   4726.5657  step =      0 rec =   1
+
+ main :: initialization complete, started time-stepping.
+
+
+  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
+ 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263777680990899E-01 4.2518890443653429E-01
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
+       ecosys_bec2_td:: computing bgc
+ 1  4.2294649426827752E-03 2.7899249149024373E-03 4.0042803391422283E-01 3.7077050964273728E-01
+       ecosys_bec2_td:: computing bgc
+ 2  4.2263016925914998E-03 2.7864445365095789E-03 2.9727921070808561E-01 1.5941239141462379E-01
+       ecosys_bec2_td:: computing bgc
+ 3  4.2225774050149529E-03 2.7823574532778545E-03 4.4126746280757168E-01 3.3094571426648878E-01
+       ecosys_bec2_td:: computing bgc
+ 4  4.2175559100636265E-03 2.7770322653037057E-03 2.0939178050410817E-01 2.0939178050410817E-01
+       ecosys_bec2_td:: computing bgc
+ 5  4.2156884387640394E-03 2.7748446670304043E-03 2.3177809649896658E-01 1.2055899482549366E-01
+       ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
+       wrt_bgc_tracers :: history , trc =  PO4                                       
+       wrt_bgc_tracers :: history , trc =  NO3                                       
+       wrt_bgc_tracers :: history , trc =  O2                                        
+       wrt_bgc_tracers :: history , trc =  DIC                                       
+       bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
+       bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
+       ecosys_bec2_td:: computing bgc
+ 6  4.2152040814771958E-03 2.7739722001996628E-03 2.9069716164208687E-01 2.1955254137677954E-01
+       ecosys_bec2_td:: computing bgc
+ 7  4.2151862902665071E-03 2.7735783950617195E-03 2.0236960308731700E-01 1.9417549565910255E-01
+       ecosys_bec2_td:: computing bgc
+ 8  4.2170121436412985E-03 2.7750135230121017E-03 2.5068775379237246E-01 1.3721936096844359E-01
+       ecosys_bec2_td:: computing bgc
+ 9  4.2180071756222270E-03 2.7755668732725898E-03 2.8034745621743856E-01 2.1845061661780407E-01
+       ecosys_bec2_td:: computing bgc
+10  4.2170859825898894E-03 2.7742121745185293E-03 2.0266617748652119E-01 1.9424691792347243E-01
+       ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
+       wrt_bgc_tracers :: history , trc =  PO4                                       
+       wrt_bgc_tracers :: history , trc =  NO3                                       
+       wrt_bgc_tracers :: history , trc =  O2                                        
+       wrt_bgc_tracers :: history , trc =  DIC                                       
+       bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
+       bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
+ Process    0  thread  0  cpu time =        4.08 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   4.12634904682636     

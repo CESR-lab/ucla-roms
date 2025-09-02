@@ -92,8 +92,8 @@
 
       ! Sea ice blocks heat fluxs and incoming light
       if (sea_ice_noflux) then
-        do j=j0,j1
-          do i=i0,i1
+        do j=0,ny+1
+          do i=0,nx+1
             if( t(i,j,nz,nrhs,itemp) .le. -1.8 ) then
               stflx(i,j,itemp) = 0.
               srflx(i,j) = 0.
