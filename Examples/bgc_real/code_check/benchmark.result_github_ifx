@@ -420,21 +420,16 @@
          set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
          set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
- doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 1  4.2294649426827743E-03 2.7899249149024364E-03 4.0042803391422283E-01 3.7077050964273728E-01
- doing BGC with BEC
+ 1  4.2294649426827752E-03 2.7899249149024373E-03 4.0042803391422283E-01 3.7077050964273728E-01
        ecosys_bec2_td:: computing bgc
- 2  4.2263010986340263E-03 2.7864445365130986E-03 2.9727921070808583E-01 1.5941239141462402E-01
- doing BGC with BEC
+ 2  4.2263016925914998E-03 2.7864445365095789E-03 2.9727921070808583E-01 1.5941239141462402E-01
        ecosys_bec2_td:: computing bgc
- 3  4.2225760985883862E-03 2.7823574534196933E-03 4.4126746280757184E-01 3.3094571426648900E-01
- doing BGC with BEC
+ 3  4.2225774050149538E-03 2.7823574532778545E-03 4.4126746280757184E-01 3.3094571426648900E-01
        ecosys_bec2_td:: computing bgc
- 4  4.2175537894076111E-03 2.7770322654641832E-03 2.0939178050410798E-01 2.0939178050410798E-01
- doing BGC with BEC
+ 4  4.2175559100636265E-03 2.7770322653037057E-03 2.0939178050410798E-01 2.0939178050410798E-01
        ecosys_bec2_td:: computing bgc
- 5  4.2156855156165749E-03 2.7748446673095924E-03 2.3177809649896658E-01 1.2055899482549376E-01
+ 5  4.2156884387640385E-03 2.7748446670304043E-03 2.3177809649896658E-01 1.2055899482549376E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -442,21 +437,16 @@
        wrt_bgc_tracers :: history , trc =  DIC                                       
        bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
- doing BGC with BEC
        ecosys_bec2_td:: computing bgc
- 6  4.2152003412827838E-03 2.7739722008516452E-03 2.9069716164208809E-01 2.1955254137678104E-01
- doing BGC with BEC
+ 6  4.2152040814771958E-03 2.7739722001996628E-03 2.9069716164208809E-01 2.1955254137678104E-01
        ecosys_bec2_td:: computing bgc
- 7  4.2151817454044995E-03 2.7735783961351092E-03 2.0236960307387089E-01 1.9417549565775544E-01
- doing BGC with BEC
+ 7  4.2151862902665062E-03 2.7735783950617200E-03 2.0236960308731675E-01 1.9417549565910239E-01
        ecosys_bec2_td:: computing bgc
- 8  4.2170067232140725E-03 2.7750135245570434E-03 2.5068775379237240E-01 1.3721936096844378E-01
- doing BGC with BEC
+ 8  4.2170121436412985E-03 2.7750135230121017E-03 2.5068775379237240E-01 1.3721936096844378E-01
        ecosys_bec2_td:: computing bgc
- 9  4.2180008699533641E-03 2.7755668751599546E-03 2.8034745621743645E-01 2.1845061661780243E-01
- doing BGC with BEC
+ 9  4.2180071756222270E-03 2.7755668732725894E-03 2.8034745621743645E-01 2.1845061661780243E-01
        ecosys_bec2_td:: computing bgc
-10  4.2170787295234425E-03 2.7742121767264372E-03 2.0266617746804758E-01 1.9424691793365764E-01
+10  4.2170859825898894E-03 2.7742121745185293E-03 2.0266617748652180E-01 1.9424691792347309E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -464,8 +454,4 @@
        wrt_bgc_tracers :: history , trc =  DIC                                       
        bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
        bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
- Process    0  thread  0  cpu time =       83.79 sec
-
- MAIN: DONE - Records written:
-
- MPI_run_time =   168.945391120118  
+ Process    0  thread  0  cpu time =       10.73 sec
