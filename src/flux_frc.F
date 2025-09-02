@@ -8,22 +8,22 @@
 #include "cppdefs.opt"
 
       ! Modules needed:
-      use param
       use dimensions
-      use tracers,    only: t
-      use surf_flux ! sustr, svstr, stflx, srflx, sss, sst
-      use scalars
+      use tracers
+      use surf_flux 
       use roms_read_write
       use grid
+!     use scalars
 
 
       implicit none
 
       private ! All variables private to module unless public specified
 
+      real,parameter :: cmday2ms = 0.01/day2sec 
+
       ! Includes:
 #include "flux_frc.opt"
-
 
       public set_flux_frc
       public init_arrays_flux_frc
@@ -57,117 +57,82 @@
         call store_string_att(flux_frc_opt, 'Interpolation OFF')
       endif
       flux_frc_opt = trim(adjustl(flux_frc_opt))
+
       end subroutine init_arrays_flux_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_flux_frc(istr,iend,jstr,jend)  ![
+      subroutine set_flux_frc  ![
 
       implicit none
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-
       ! local
-      integer :: i, j,ierr
+      integer :: i,j
 
-      ! 1) set surface momentum flux
+      ! Surface momentum flux
       call set_frc_data(nc_sustr,sustr,'u')
       call set_frc_data(nc_svstr,svstr,'v')
       sustr = sustr/rho0
       svstr = svstr/rho0
 
-      ! 2) set surface heat flux: stflx(itemp)
+      ! Surface heat flux
       call set_frc_data(nc_shflx,stflx(:,:,itemp),'r')
       stflx(:,:,itemp) = stflx(:,:,itemp) /(rho0*Cp)
-#ifdef SEA_ICE_NOFLUX
-      do j=j0,j1
-        do i=i0,i1
-          if( t(i,j,nz,nrhs,itemp) .le. -1.8 ) then
-            stflx(i,j,itemp)=0.
-#   if defined LMD_KPP
-            srflx(i,j)=0.
-#    endif
-          endif
-        enddo
-      enddo
-#endif
-# if defined QCORRECTION
-      do j=j0,j1
-        do i=i0,i1
-          stflx(i,j,itemp)=
-     &       -dSSTdt*(t(i,j,nz,nrhs,itemp) - sst(i,j))
-        enddo
-      enddo
-#endif
 
-      ! 2a) set bottom heat flux: stflx(itemp)
-!     call set_frc_data(nc_bhflx,btflx(i0:i1,j0:j1,itemp),'r')
-
-      ! 3) set short-wave radiation flux
-      call set_srflux
-
-#ifdef SALINITY
-      ! 4) set water flux: stflx(isalt)
-      call set_swflux
-#endif
-
-#ifdef EXCHANGE
-!     call exchange_xxx(sustr,svstr)
-!     call exchange_xxx(srflx,stflx(:,:,itemp))
-#ifdef SALINITY
-!     call exchange_xxx(stflx(:,:,isalt))
-#endif
-#endif
-!     srflx = 0
-!     print *,'maxval srflx: ', maxval(abs(srflx))
-
-      end subroutine set_flux_frc  !]
-! ----------------------------------------------------------------------
-      subroutine set_swflux  ![
-      ! set surface freshwater flux: stflx(isalt)
-
-      implicit none
-
-      ! local
-      integer i,j
-      real cmday2ms
-
+      ! Surface salinity flux
       call set_frc_data(nc_swflux,stflx(:,:,isalt),'r')
+      stflx(:,:,isalt) = stflx(:,:,isalt)*t(:,:,nz,nrhs,isalt)*cmday2ms
 
-      cmday2ms=0.01/day2sec ! Set coefficient outside of loop for efficiency
-      do j=j0,j1
-        do i=i0,i1
-          ! cm/day -> m/s
-          stflx(i,j,isalt)=stflx(i,j,isalt)*t(i,j,N,nrhs,isalt)*cmday2ms
-
-! Add relaxation of surface salinity back to climatological value to
-! avoid long-term drift.  Note that dSSSdt below is "piston velocity"
-! expressed in [m/s].
-# if defined SFLX_CORR
-     &                 -dSSSdt*( t(i,j,N,nrhs,isalt)-sss(i,j) )
-# endif
-
-        enddo
-      enddo
-
-      end subroutine set_swflux  !]
-! ----------------------------------------------------------------------
-      subroutine set_srflux  ![
-      ! set short-wave radiation flux
-
-      implicit none
-
-      ! local
-      integer i, j, it1, it2
-      real tmid, cff, cff1, cff2
-# ifdef DIURNAL_SRFLUX
-      real Ampl, cos_h, dec,cos_d,sin_d, tan_d, phi, csph,snph, h0
-      real, parameter :: year2day=365.25,  day2year=1.D0/year2day
-# endif
-
+      ! Incoming net shortwave radiation
       call set_frc_data(nc_swrad,srflx,'r')
       srflx = srflx/(rho0*Cp)
 
-# ifdef DIURNAL_SRFLUX
+      ! Bottom heat flux: stflx(itemp)
+!     call set_frc_data(nc_bhflx,btflx(:,:,itemp),'r')
+
+      ! Modulation of surface fluxes
+
+      ! Sea ice blocks heat fluxs and incoming light
+      if (sea_ice_noflux) then
+        do j=j0,j1
+          do i=i0,i1
+            if( t(i,j,nz,nrhs,itemp) .le. -1.8 ) then
+              stflx(i,j,itemp) = 0.
+              srflx(i,j) = 0.
+            endif
+          enddo
+        enddo
+      endif
+
+      ! SST restoring
+      if (qcorrection) then 
+        stflx(:,:,itemp) = stflx(:,:,itemp)
+     &        -dSSSdt*(t(:,:,nz,nrhs,isalt)-sss(:,:))
+      endif
+
+      ! SST restoring
+      if (sflx_correction) then 
+        stflx(:,:,isalt) = stflx(:,:,isalt)
+     &        -dSSSdt*(t(:,:,nz,nrhs,isalt)-sss(:,:))
+      endif
+
+      ! Diurnal modulation of averaged short wave radiation flux
+      if (diurnal_srflux) then
+        call diurnal_mod_srflx  
+      endif
+
+      end subroutine set_flux_frc  !]
+! ----------------------------------------------------------------------
+      subroutine diurnal_mod_srflx  ![
+      ! Daily modulation of short-wave radiation flux
+
+      implicit none
+
+      ! local
+      integer ::  i,j
+      real    :: cff
+
+      real Ampl, cos_h, dec,cos_d,sin_d, tan_d, phi, csph,snph, h0
+      real,parameter :: year2day=365.25
+      real,parameter :: day2year=1.0/year2day
 
 ! DIURNAL CYCLE - USED IN BOTH PHYSICAL AND ECOSYSTEM MODELS
 ! Patrick Marchesiello - 1999: Modulate average dayly insolation
@@ -186,8 +151,8 @@
         dec=-0.406*cos(deg2rad*(tdays-int(tdays*day2year)*year2day))
         cos_d=cos(dec) ; sin_d=sin(dec) ; tan_d=tan(dec)
 
-        do j=j0:j1
-          do i=i0:i1
+        do j=j0,j1
+          do i=i0,i1
             cos_h=cos( 2.*pi*(tdays+0.5 -int(tdays+0.5))
      &                               +deg2rad*lonr(i,j) )
             phi=deg2rad*latr(i,j)
@@ -203,9 +168,8 @@
             stflx(i,j,itemp)= cff+srflx(i,j)   ! modulate and add back
           enddo
         enddo
-# endif
 
-      end subroutine set_srflux  !]
+      end subroutine diurnal_mod_srflx  !]
 ! ----------------------------------------------------------------------
 
       end module flux_frc
