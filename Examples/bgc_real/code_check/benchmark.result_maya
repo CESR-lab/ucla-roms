@@ -1,0 +1,1618 @@
+
+ Flux_frc module test.
+     ntimes =        10   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: input_data/sample_grd_riv.0.nc
+ forcing data file(s): input_data/sample_flux_frc.0.nc
+                       input_data/sample_flux_bgc.0.nc
+                       input_data/sample_bry_bgc.0.nc
+                       input_data/roms_bry_trace.0.nc
+                       input_data/roms_bgcbry.0.nc
+                       input_data/roms_default_bgcbry.0.nc
+                       input_data/roms_LFfrc.0.nc
+ initial condition :: rec =  1  file = 'input_data/roms_init_bgc.0.nc'
+ MARBL namelist file               marbl_in
+ MARBL tracer output list                file     marbl_tracers_output_list
+ MARBL diagnostic output list                 file marbl_diagnostic_output_list
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+   tnu2( 3) = 0.000E+00  horizontal Laplacian diffusion for tracer  3, [m^2/s]
+   tnu2( 4) = 0.000E+00  horizontal Laplacian diffusion for tracer  4, [m^2/s]
+   tnu2( 5) = 0.000E+00  horizontal Laplacian diffusion for tracer  5, [m^2/s]
+   tnu2( 6) = 0.000E+00  horizontal Laplacian diffusion for tracer  6, [m^2/s]
+   tnu2( 7) = 0.000E+00  horizontal Laplacian diffusion for tracer  7, [m^2/s]
+   tnu2( 8) = 0.000E+00  horizontal Laplacian diffusion for tracer  8, [m^2/s]
+   tnu2( 9) = 0.000E+00  horizontal Laplacian diffusion for tracer  9, [m^2/s]
+   tnu2(10) = 0.000E+00  horizontal Laplacian diffusion for tracer 10, [m^2/s]
+   tnu2(11) = 0.000E+00  horizontal Laplacian diffusion for tracer 11, [m^2/s]
+   tnu2(12) = 0.000E+00  horizontal Laplacian diffusion for tracer 12, [m^2/s]
+   tnu2(13) = 0.000E+00  horizontal Laplacian diffusion for tracer 13, [m^2/s]
+   tnu2(14) = 0.000E+00  horizontal Laplacian diffusion for tracer 14, [m^2/s]
+   tnu2(15) = 0.000E+00  horizontal Laplacian diffusion for tracer 15, [m^2/s]
+   tnu2(16) = 0.000E+00  horizontal Laplacian diffusion for tracer 16, [m^2/s]
+   tnu2(17) = 0.000E+00  horizontal Laplacian diffusion for tracer 17, [m^2/s]
+   tnu2(18) = 0.000E+00  horizontal Laplacian diffusion for tracer 18, [m^2/s]
+   tnu2(19) = 0.000E+00  horizontal Laplacian diffusion for tracer 19, [m^2/s]
+   tnu2(20) = 0.000E+00  horizontal Laplacian diffusion for tracer 20, [m^2/s]
+   tnu2(21) = 0.000E+00  horizontal Laplacian diffusion for tracer 21, [m^2/s]
+   tnu2(22) = 0.000E+00  horizontal Laplacian diffusion for tracer 22, [m^2/s]
+   tnu2(23) = 0.000E+00  horizontal Laplacian diffusion for tracer 23, [m^2/s]
+   tnu2(24) = 0.000E+00  horizontal Laplacian diffusion for tracer 24, [m^2/s]
+   tnu2(25) = 0.000E+00  horizontal Laplacian diffusion for tracer 25, [m^2/s]
+   tnu2(26) = 0.000E+00  horizontal Laplacian diffusion for tracer 26, [m^2/s]
+   tnu2(27) = 0.000E+00  horizontal Laplacian diffusion for tracer 27, [m^2/s]
+   tnu2(28) = 0.000E+00  horizontal Laplacian diffusion for tracer 28, [m^2/s]
+   tnu2(29) = 0.000E+00  horizontal Laplacian diffusion for tracer 29, [m^2/s]
+   tnu2(30) = 0.000E+00  horizontal Laplacian diffusion for tracer 30, [m^2/s]
+   tnu2(31) = 0.000E+00  horizontal Laplacian diffusion for tracer 31, [m^2/s]
+   tnu2(32) = 0.000E+00  horizontal Laplacian diffusion for tracer 32, [m^2/s]
+   tnu2(33) = 0.000E+00  horizontal Laplacian diffusion for tracer 33, [m^2/s]
+   tnu2(34) = 0.000E+00  horizontal Laplacian diffusion for tracer 34, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+ neighbors att not found
+ input_data/sample_grd_riv.0.nc                                                 
+                                                                                
+                                                                                
+                    
+
+ Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
+
+marbl_in: 
+marbl_in: abio_dic_on = .false.
+marbl_in: base_bio_on = .true.
+marbl_in: ciso_on = .false.
+marbl_in: 
+marbl_in: PFT_defaults = "CESM2"
+marbl_in: autotroph_cnt = 3
+marbl_in: max_grazer_prey_cnt = 3
+marbl_in: zooplankton_cnt = 1
+marbl_in: 
+marbl_in: ladjust_bury_coeff = .false.
+marbl_in: lcheck_forcing = .false.
+marbl_in: lcompute_nhx_surface_emis = .true.
+marbl_in: lecovars_full_depth_tavg = .false.
+marbl_in: lflux_gas_co2 = .true.
+marbl_in: lflux_gas_o2 = .true.
+marbl_in: lo2_consumption_scalef = .false.
+marbl_in: lp_remin_scalef = .false.
+marbl_in: lsource_sink = .true.
+marbl_in: lvariable_PtoC = .true.
+marbl_in: 
+marbl_in: init_bury_coeff_opt = "settings_file"
+marbl_in: 
+marbl_in: Jint_Ctot_thres_molpm2pyr = 1e-09
+marbl_in: QCaCO3_max = 0.4
+marbl_in: auto_mort2_exp = 1.75
+marbl_in: bftt_dz_sum_thres = 1e-14
+marbl_in: bury_coeff_rmean_timescale_years = 10.0
+marbl_in: caco3_bury_thres_depth =   3.0000000000000000e+05
+marbl_in: caco3_bury_thres_omega_calc = 1.0
+marbl_in: caco3_bury_thres_opt = "omega_calc"
+marbl_in: f_graze_CaCO3_remin = 0.33
+marbl_in: gQ_Fe_kFe_thres = 10.0
+marbl_in: gQ_Si_kSi_thres = 5.0
+marbl_in: gQsi_0 = 0.137
+marbl_in: gQsi_max = 0.685
+marbl_in: gQsi_min = 0.0457
+marbl_in: o2_sf_o2_range_hi = 45.0
+marbl_in: o2_sf_o2_range_lo = 5.0
+marbl_in: o2_sf_val_lo_o2 = 3.0
+marbl_in: parm_CaCO3_gamma = 0.1
+marbl_in: parm_Fe_bioavail = 1.0
+marbl_in: parm_Fe_desorption_rate0 =   9.9999999999999995e-07
+marbl_in: parm_Lig_degrade_rate0 = 9.4e-05
+marbl_in: parm_SiO2_gamma = 0.1
+marbl_in: parm_f_prod_sp_CaCO3 = 0.07
+marbl_in: parm_hPOC_CaCO3_ratio = 0.05
+marbl_in: parm_hPOC_SiO2_ratio = 0.05
+marbl_in: parm_hPOC_dust_ratio = 0.05
+marbl_in: parm_labile_ratio = 0.94
+marbl_in: parm_o2_min = 5.0
+marbl_in: parm_o2_min_delta = 5.0
+marbl_in: parm_sed_denitrif_coeff = 1.0
+marbl_in: particulate_flux_ref_depth = 10000.0
+marbl_in: zoo_mort2_exp = 1.5
+marbl_in: 
+marbl_in: POM_bury_frac_max = 0.8
+marbl_in: PON_bury_coeff = 0.5
+marbl_in: bSi_bury_frac_max = 1.0
+marbl_in: parm_init_POC_bury_coeff = 1.1
+marbl_in: parm_init_POP_bury_coeff = 1.1
+marbl_in: parm_init_bSi_bury_coeff = 1.0
+marbl_in: 
+marbl_in: parm_CaCO3_diss =   5.0000000000000000e+04
+marbl_in: parm_POC_diss =   1.0000000000000000e+04
+marbl_in: parm_SiO2_diss =   6.5000000000000000e+04
+marbl_in: 
+marbl_in: parm_kappa_nitrif_per_day = 0.06
+marbl_in: parm_nitrif_par_lim = 1.0
+marbl_in: 
+marbl_in: parm_FeLig_scavenge_rate0 = 1.3
+marbl_in: parm_Fe_scavenge_rate0 = 24.0
+marbl_in: parm_Lig_scavenge_rate0 = 0.015
+marbl_in: 
+marbl_in: parm_scalelen_vals(1) = 1.0
+marbl_in: parm_scalelen_vals(2) = 3.2
+marbl_in: parm_scalelen_vals(3) = 4.8
+marbl_in: parm_scalelen_vals(4) = 5.3
+marbl_in: parm_scalelen_z(1) =   1.0000000000000000e+04
+marbl_in: parm_scalelen_z(2) =   2.5000000000000000e+04
+marbl_in: parm_scalelen_z(3) =   5.0000000000000000e+04
+marbl_in: parm_scalelen_z(4) =   1.0000000000000000e+05
+marbl_in: 
+marbl_in: autotroph_settings(1)%Ea = 0.32
+marbl_in: autotroph_settings(1)%Nfixer = .false.
+marbl_in: autotroph_settings(1)%PCref_per_day = 5.0
+marbl_in: autotroph_settings(1)%Qp_fixed =   8.5470085470085479e-03
+marbl_in: autotroph_settings(1)%agg_rate_max = 0.5
+marbl_in: autotroph_settings(1)%agg_rate_min = 0.01
+marbl_in: autotroph_settings(1)%alphaPI_per_day = 0.39
+marbl_in: autotroph_settings(1)%exp_calcifier = .false.
+marbl_in: autotroph_settings(1)%gQfe_0 =   3.4999999999999997e-05
+marbl_in: autotroph_settings(1)%gQfe_min = 2.7e-06
+marbl_in: autotroph_settings(1)%imp_calcifier = .true.
+marbl_in: autotroph_settings(1)%is_carbon_limited = .false.
+marbl_in: autotroph_settings(1)%kCO2 = 0.0
+marbl_in: autotroph_settings(1)%kDOP = 0.3
+marbl_in: autotroph_settings(1)%kFe = 3e-05
+marbl_in: autotroph_settings(1)%kNH4 = 0.01
+marbl_in: autotroph_settings(1)%kNO3 = 0.25
+marbl_in: autotroph_settings(1)%kPO4 = 0.01
+marbl_in: autotroph_settings(1)%kSiO3 = 0.0
+marbl_in: autotroph_settings(1)%lname = "Small Phyto"
+marbl_in: autotroph_settings(1)%loss_poc = 0.0
+marbl_in: autotroph_settings(1)%loss_thres = 0.01
+marbl_in: autotroph_settings(1)%loss_thres2 = 0.0
+marbl_in: autotroph_settings(1)%mort2_per_day = 0.01
+marbl_in: autotroph_settings(1)%mort_per_day = 0.1
+marbl_in: autotroph_settings(1)%silicifier = .false.
+marbl_in: autotroph_settings(1)%sname = "sp"
+marbl_in: autotroph_settings(1)%temp_func_form_opt = "q_10"
+marbl_in: autotroph_settings(1)%temp_thres = -10.0
+marbl_in: autotroph_settings(1)%thetaN_max = 2.5
+marbl_in: autotroph_settings(2)%Ea = 0.32
+marbl_in: autotroph_settings(2)%Nfixer = .false.
+marbl_in: autotroph_settings(2)%PCref_per_day = 5.0
+marbl_in: autotroph_settings(2)%Qp_fixed =   8.5470085470085479e-03
+marbl_in: autotroph_settings(2)%agg_rate_max = 0.5
+marbl_in: autotroph_settings(2)%agg_rate_min = 0.02
+marbl_in: autotroph_settings(2)%alphaPI_per_day = 0.39
+marbl_in: autotroph_settings(2)%exp_calcifier = .false.
+marbl_in: autotroph_settings(2)%gQfe_0 =   3.4999999999999997e-05
+marbl_in: autotroph_settings(2)%gQfe_min = 2.7e-06
+marbl_in: autotroph_settings(2)%imp_calcifier = .false.
+marbl_in: autotroph_settings(2)%is_carbon_limited = .false.
+marbl_in: autotroph_settings(2)%kCO2 = 0.0
+marbl_in: autotroph_settings(2)%kDOP = 0.5
+marbl_in: autotroph_settings(2)%kFe = 5.5e-05
+marbl_in: autotroph_settings(2)%kNH4 = 0.05
+marbl_in: autotroph_settings(2)%kNO3 = 0.5
+marbl_in: autotroph_settings(2)%kPO4 = 0.05
+marbl_in: autotroph_settings(2)%kSiO3 = 0.7
+marbl_in: autotroph_settings(2)%lname = "Diatom"
+marbl_in: autotroph_settings(2)%loss_poc = 0.0
+marbl_in: autotroph_settings(2)%loss_thres = 0.02
+marbl_in: autotroph_settings(2)%loss_thres2 = 0.0
+marbl_in: autotroph_settings(2)%mort2_per_day = 0.01
+marbl_in: autotroph_settings(2)%mort_per_day = 0.1
+marbl_in: autotroph_settings(2)%silicifier = .true.
+marbl_in: autotroph_settings(2)%sname = "diat"
+marbl_in: autotroph_settings(2)%temp_func_form_opt = "q_10"
+marbl_in: autotroph_settings(2)%temp_thres = -10.0
+marbl_in: autotroph_settings(2)%thetaN_max = 4.0
+marbl_in: autotroph_settings(3)%Ea = 0.32
+marbl_in: autotroph_settings(3)%Nfixer = .true.
+marbl_in: autotroph_settings(3)%PCref_per_day = 2.5
+marbl_in: autotroph_settings(3)%Qp_fixed =   2.7350427350427355e-03
+marbl_in: autotroph_settings(3)%agg_rate_max = 0.5
+marbl_in: autotroph_settings(3)%agg_rate_min = 0.01
+marbl_in: autotroph_settings(3)%alphaPI_per_day = 0.39
+marbl_in: autotroph_settings(3)%exp_calcifier = .false.
+marbl_in: autotroph_settings(3)%gQfe_0 =   6.9999999999999994e-05
+marbl_in: autotroph_settings(3)%gQfe_min = 5.4e-06
+marbl_in: autotroph_settings(3)%imp_calcifier = .false.
+marbl_in: autotroph_settings(3)%is_carbon_limited = .false.
+marbl_in: autotroph_settings(3)%kCO2 = 0.0
+marbl_in: autotroph_settings(3)%kDOP = 0.075
+marbl_in: autotroph_settings(3)%kFe = 4.5e-05
+marbl_in: autotroph_settings(3)%kNH4 = 0.2
+marbl_in: autotroph_settings(3)%kNO3 = 2.0
+marbl_in: autotroph_settings(3)%kPO4 = 0.015
+marbl_in: autotroph_settings(3)%kSiO3 = 0.0
+marbl_in: autotroph_settings(3)%lname = "Diazotroph"
+marbl_in: autotroph_settings(3)%loss_poc = 0.0
+marbl_in: autotroph_settings(3)%loss_thres = 0.02
+marbl_in: autotroph_settings(3)%loss_thres2 = 0.001
+marbl_in: autotroph_settings(3)%mort2_per_day = 0.01
+marbl_in: autotroph_settings(3)%mort_per_day = 0.1
+marbl_in: autotroph_settings(3)%silicifier = .false.
+marbl_in: autotroph_settings(3)%sname = "diaz"
+marbl_in: autotroph_settings(3)%temp_func_form_opt = "q_10"
+marbl_in: autotroph_settings(3)%temp_thres = 15.0
+marbl_in: autotroph_settings(3)%thetaN_max = 2.5
+marbl_in: 
+marbl_in: zooplankton_settings(1)%Ea = 0.65
+marbl_in: zooplankton_settings(1)%basal_respiration_rate_per_day = 0.0
+marbl_in: zooplankton_settings(1)%lname = "Zooplankton"
+marbl_in: zooplankton_settings(1)%loss_thres = 0.075
+marbl_in: zooplankton_settings(1)%sname = "zoo"
+marbl_in: zooplankton_settings(1)%temp_func_form_opt = "q_10"
+marbl_in: zooplankton_settings(1)%z_mort2_0_per_day = 0.4
+marbl_in: zooplankton_settings(1)%z_mort_0_per_day = 0.1
+marbl_in: 
+marbl_in: grazing_relationship_settings(1,1)%auto_ind(1) = 1
+marbl_in: grazing_relationship_settings(1,1)%auto_ind_cnt = 1
+marbl_in: grazing_relationship_settings(1,1)%f_zoo_detr = 0.12
+marbl_in: grazing_relationship_settings(1,1)%graze_doc = 0.06
+marbl_in: grazing_relationship_settings(1,1)%graze_poc = 0.0
+marbl_in: grazing_relationship_settings(1,1)%graze_zoo = 0.3
+marbl_in: grazing_relationship_settings(1,1)%grazing_function = 1
+marbl_in: grazing_relationship_settings(1,1)%lname = "Grazing of sp by zoo"
+marbl_in: grazing_relationship_settings(1,1)%sname = "grz_sp_zoo"
+marbl_in: grazing_relationship_settings(1,1)%z_grz = 1.2
+marbl_in: grazing_relationship_settings(1,1)%z_umax_0_per_day = 3.3
+marbl_in: grazing_relationship_settings(1,1)%zoo_ind_cnt = 0
+marbl_in: grazing_relationship_settings(2,1)%auto_ind(1) = 2
+marbl_in: grazing_relationship_settings(2,1)%auto_ind_cnt = 1
+marbl_in: grazing_relationship_settings(2,1)%f_zoo_detr = 0.24
+marbl_in: grazing_relationship_settings(2,1)%graze_doc = 0.06
+marbl_in: grazing_relationship_settings(2,1)%graze_poc = 0.38
+marbl_in: grazing_relationship_settings(2,1)%graze_zoo = 0.25
+marbl_in: grazing_relationship_settings(2,1)%grazing_function = 1
+marbl_in: grazing_relationship_settings(2,1)%lname = "Grazing of diat by zoo"
+marbl_in: grazing_relationship_settings(2,1)%sname = "grz_diat_zoo"
+marbl_in: grazing_relationship_settings(2,1)%z_grz = 1.2
+marbl_in: grazing_relationship_settings(2,1)%z_umax_0_per_day = 3.125
+marbl_in: grazing_relationship_settings(2,1)%zoo_ind_cnt = 0
+marbl_in: grazing_relationship_settings(3,1)%auto_ind(1) = 3
+marbl_in: grazing_relationship_settings(3,1)%auto_ind_cnt = 1
+marbl_in: grazing_relationship_settings(3,1)%f_zoo_detr = 0.12
+marbl_in: grazing_relationship_settings(3,1)%graze_doc = 0.06
+marbl_in: grazing_relationship_settings(3,1)%graze_poc = 0.1
+marbl_in: grazing_relationship_settings(3,1)%graze_zoo = 0.3
+marbl_in: grazing_relationship_settings(3,1)%grazing_function = 1
+marbl_in: grazing_relationship_settings(3,1)%lname = "Grazing of diaz by zoo"
+marbl_in: grazing_relationship_settings(3,1)%sname = "grz_diaz_zoo"
+marbl_in: grazing_relationship_settings(3,1)%z_grz = 1.2
+marbl_in: grazing_relationship_settings(3,1)%z_umax_0_per_day = 3.3
+marbl_in: grazing_relationship_settings(3,1)%zoo_ind_cnt = 0
+marbl_in: 
+marbl_in: tracer_restore_vars(1) = ""
+marbl_in: tracer_restore_vars(2) = ""
+marbl_in: tracer_restore_vars(3) = ""
+marbl_in: tracer_restore_vars(4) = ""
+marbl_in: tracer_restore_vars(5) = ""
+marbl_in: tracer_restore_vars(6) = ""
+marbl_in: tracer_restore_vars(7) = ""
+marbl_in: tracer_restore_vars(8) = ""
+marbl_in: tracer_restore_vars(9) = ""
+marbl_in: tracer_restore_vars(10) = ""
+marbl_in: tracer_restore_vars(11) = ""
+marbl_in: tracer_restore_vars(12) = ""
+marbl_in: tracer_restore_vars(13) = ""
+marbl_in: tracer_restore_vars(14) = ""
+marbl_in: tracer_restore_vars(15) = ""
+marbl_in: tracer_restore_vars(16) = ""
+marbl_in: tracer_restore_vars(17) = ""
+marbl_in: tracer_restore_vars(18) = ""
+marbl_in: tracer_restore_vars(19) = ""
+marbl_in: tracer_restore_vars(20) = ""
+marbl_in: tracer_restore_vars(21) = ""
+marbl_in: tracer_restore_vars(22) = ""
+marbl_in: tracer_restore_vars(23) = ""
+marbl_in: tracer_restore_vars(24) = ""
+marbl_in: tracer_restore_vars(25) = ""
+marbl_in: tracer_restore_vars(26) = ""
+marbl_in: tracer_restore_vars(27) = ""
+marbl_in: tracer_restore_vars(28) = ""
+marbl_in: tracer_restore_vars(29) = ""
+marbl_in: tracer_restore_vars(30) = ""
+marbl_in: tracer_restore_vars(31) = ""
+marbl_in: tracer_restore_vars(32) = ""
+Successfully read marbl_in to end of file
+we successfully read and closed marbl_in
+ 
+ --------------------
+ MARBL Tracer indices
+ --------------------
+ 
+   1. PO4
+   2. NO3
+   3. SiO3
+   4. NH4
+   5. Fe
+   6. Lig
+   7. O2
+   8. DIC
+   9. DIC_ALT_CO2
+  10. ALK
+  11. ALK_ALT_CO2
+  12. DOC
+  13. DON
+  14. DOP
+  15. DOPr
+  16. DONr
+  17. DOCr
+  18. zooC
+  19. spChl
+  20. spC
+  21. spP
+  22. spFe
+  23. spCaCO3
+  24. diatChl
+  25. diatC
+  26. diatP
+  27. diatFe
+  28. diatSi
+  29. diazChl
+  30. diazC
+  31. diazP
+  32. diazFe
+ base biotic tracers tracer module contains 32 tracers; indices are 1 to 32
+ 
+ -----------------------------
+ MARBL-Required Forcing Fields
+ -----------------------------
+ 
+ Surface:
+ * u10_sqr
+ * sss
+ * sst
+ * Ice Fraction
+ * Atmospheric Pressure
+ * xco2
+ * xco2_alt_co2
+ * Dust Flux
+ * Iron Flux
+ * NOx Flux
+ * NHy Flux
+ 
+ Interior:
+ * Dust Flux
+ * Surface Shortwave
+ * Potential Temperature
+ * Salinity
+ * Pressure
+ * Iron Sediment Flux
+ 
+ ------------------
+ Tunable Parameters
+ ------------------
+ 
+ base_bio_on = .true.
+ abio_dic_on = .false.
+ ciso_on = .false.
+ 
+ PFT_defaults = 'CESM2'
+ autotroph_cnt = 3
+ zooplankton_cnt = 1
+ max_grazer_prey_cnt = 3
+ 
+ lsource_sink = .true.
+ lecovars_full_depth_tavg = .false.
+ lflux_gas_co2 = .true.
+ lcheck_forcing = .false.
+ lflux_gas_o2 = .true.
+ lcompute_nhx_surface_emis = .true.
+ lvariable_PtoC = .true.
+ ladjust_bury_coeff = .false.
+ lo2_consumption_scalef = .false.
+ lp_remin_scalef = .false.
+ 
+ init_bury_coeff_opt = 'settings_file'
+ 
+ particulate_flux_ref_depth =   0.10000000000000000E+05
+ bftt_dz_sum_thres =   0.10000000000000000E-13
+ Jint_Ctot_thres_molpm2pyr =   0.10000000000000001E-08
+ gQsi_0 =   0.13700000000000001E+00
+ gQsi_max =   0.68500000000000005E+00
+ gQsi_min =   0.45699999999999998E-01
+ gQ_Fe_kFe_thres =   0.10000000000000000E+02
+ gQ_Si_kSi_thres =   0.50000000000000000E+01
+ parm_Fe_bioavail =   0.10000000000000000E+01
+ parm_o2_min =   0.50000000000000000E+01
+ parm_o2_min_delta =   0.50000000000000000E+01
+ parm_kappa_nitrif_per_day =   0.59999999999999998E-01
+ parm_nitrif_par_lim =   0.10000000000000000E+01
+ parm_labile_ratio =   0.93999999999999995E+00
+ parm_init_POC_bury_coeff =   0.11000000000000001E+01
+ parm_init_POP_bury_coeff =   0.11000000000000001E+01
+ parm_init_bSi_bury_coeff =   0.10000000000000000E+01
+ parm_Fe_scavenge_rate0 =   0.24000000000000000E+02
+ parm_Lig_scavenge_rate0 =   0.14999999999999999E-01
+ parm_FeLig_scavenge_rate0 =   0.13000000000000000E+01
+ parm_Lig_degrade_rate0 =   0.93999999999999994E-04
+ parm_Fe_desorption_rate0 =   0.99999999999999995E-06
+ parm_f_prod_sp_CaCO3 =   0.70000000000000007E-01
+ parm_POC_diss =   0.10000000000000000E+05
+ parm_SiO2_diss =   0.65000000000000000E+05
+ parm_SiO2_gamma =   0.10000000000000001E+00
+ parm_hPOC_SiO2_ratio =   0.50000000000000003E-01
+ parm_CaCO3_diss =   0.50000000000000000E+05
+ parm_CaCO3_gamma =   0.10000000000000001E+00
+ parm_hPOC_CaCO3_ratio =   0.50000000000000003E-01
+ parm_hPOC_dust_ratio =   0.50000000000000003E-01
+ o2_sf_o2_range_hi =   0.45000000000000000E+02
+ o2_sf_o2_range_lo =   0.50000000000000000E+01
+ o2_sf_val_lo_o2 =   0.30000000000000000E+01
+ parm_sed_denitrif_coeff =   0.10000000000000000E+01
+ bury_coeff_rmean_timescale_years =   0.10000000000000000E+02
+ 
+ parm_scalelen_z(1) =   0.10000000000000000E+05
+ parm_scalelen_z(2) =   0.25000000000000000E+05
+ parm_scalelen_z(3) =   0.50000000000000000E+05
+ parm_scalelen_z(4) =   0.10000000000000000E+06
+ parm_scalelen_vals(1) =   0.10000000000000000E+01
+ parm_scalelen_vals(2) =   0.32000000000000002E+01
+ parm_scalelen_vals(3) =   0.47999999999999998E+01
+ parm_scalelen_vals(4) =   0.52999999999999998E+01
+ 
+ caco3_bury_thres_opt = 'omega_calc'
+ caco3_bury_thres_depth =   0.30000000000000000E+06
+ caco3_bury_thres_omega_calc =   0.10000000000000000E+01
+ PON_bury_coeff =   0.50000000000000000E+00
+ POM_bury_frac_max =   0.80000000000000004E+00
+ bSi_bury_frac_max =   0.10000000000000000E+01
+ auto_mort2_exp =   0.17500000000000000E+01
+ zoo_mort2_exp =   0.15000000000000000E+01
+ QCaCO3_max =   0.40000000000000002E+00
+ f_graze_CaCO3_remin =   0.33000000000000002E+00
+ 
+ autotroph_settings(1)%sname = 'sp'
+ autotroph_settings(1)%lname = 'Small Phyto'
+ autotroph_settings(1)%temp_func_form_opt = 'q_10'
+ autotroph_settings(1)%Nfixer = .false.
+ autotroph_settings(1)%imp_calcifier = .true.
+ autotroph_settings(1)%exp_calcifier = .false.
+ autotroph_settings(1)%silicifier = .false.
+ autotroph_settings(1)%is_carbon_limited = .false.
+ autotroph_settings(1)%kFe =   0.30000000000000001E-04
+ autotroph_settings(1)%kPO4 =   0.10000000000000000E-01
+ autotroph_settings(1)%kDOP =   0.29999999999999999E+00
+ autotroph_settings(1)%kNO3 =   0.25000000000000000E+00
+ autotroph_settings(1)%kNH4 =   0.10000000000000000E-01
+ autotroph_settings(1)%kSiO3 =   0.00000000000000000E+00
+ autotroph_settings(1)%kCO2 =   0.00000000000000000E+00
+ autotroph_settings(1)%Qp_fixed =   0.85470085470085479E-02
+ autotroph_settings(1)%gQfe_0 =   0.34999999999999997E-04
+ autotroph_settings(1)%gQfe_min =   0.27000000000000000E-05
+ autotroph_settings(1)%alphaPI_per_day =   0.39000000000000001E+00
+ autotroph_settings(1)%PCref_per_day =   0.50000000000000000E+01
+ autotroph_settings(1)%thetaN_max =   0.25000000000000000E+01
+ autotroph_settings(1)%loss_thres =   0.10000000000000000E-01
+ autotroph_settings(1)%loss_thres2 =   0.00000000000000000E+00
+ autotroph_settings(1)%temp_thres =  -0.10000000000000000E+02
+ autotroph_settings(1)%mort_per_day =   0.10000000000000001E+00
+ autotroph_settings(1)%mort2_per_day =   0.10000000000000000E-01
+ autotroph_settings(1)%agg_rate_max =   0.50000000000000000E+00
+ autotroph_settings(1)%agg_rate_min =   0.10000000000000000E-01
+ autotroph_settings(1)%loss_poc =   0.00000000000000000E+00
+ autotroph_settings(1)%Ea =   0.32000000000000001E+00
+ 
+ autotroph_settings(2)%sname = 'diat'
+ autotroph_settings(2)%lname = 'Diatom'
+ autotroph_settings(2)%temp_func_form_opt = 'q_10'
+ autotroph_settings(2)%Nfixer = .false.
+ autotroph_settings(2)%imp_calcifier = .false.
+ autotroph_settings(2)%exp_calcifier = .false.
+ autotroph_settings(2)%silicifier = .true.
+ autotroph_settings(2)%is_carbon_limited = .false.
+ autotroph_settings(2)%kFe =   0.55000000000000002E-04
+ autotroph_settings(2)%kPO4 =   0.50000000000000003E-01
+ autotroph_settings(2)%kDOP =   0.50000000000000000E+00
+ autotroph_settings(2)%kNO3 =   0.50000000000000000E+00
+ autotroph_settings(2)%kNH4 =   0.50000000000000003E-01
+ autotroph_settings(2)%kSiO3 =   0.69999999999999996E+00
+ autotroph_settings(2)%kCO2 =   0.00000000000000000E+00
+ autotroph_settings(2)%Qp_fixed =   0.85470085470085479E-02
+ autotroph_settings(2)%gQfe_0 =   0.34999999999999997E-04
+ autotroph_settings(2)%gQfe_min =   0.27000000000000000E-05
+ autotroph_settings(2)%alphaPI_per_day =   0.39000000000000001E+00
+ autotroph_settings(2)%PCref_per_day =   0.50000000000000000E+01
+ autotroph_settings(2)%thetaN_max =   0.40000000000000000E+01
+ autotroph_settings(2)%loss_thres =   0.20000000000000000E-01
+ autotroph_settings(2)%loss_thres2 =   0.00000000000000000E+00
+ autotroph_settings(2)%temp_thres =  -0.10000000000000000E+02
+ autotroph_settings(2)%mort_per_day =   0.10000000000000001E+00
+ autotroph_settings(2)%mort2_per_day =   0.10000000000000000E-01
+ autotroph_settings(2)%agg_rate_max =   0.50000000000000000E+00
+ autotroph_settings(2)%agg_rate_min =   0.20000000000000000E-01
+ autotroph_settings(2)%loss_poc =   0.00000000000000000E+00
+ autotroph_settings(2)%Ea =   0.32000000000000001E+00
+ 
+ autotroph_settings(3)%sname = 'diaz'
+ autotroph_settings(3)%lname = 'Diazotroph'
+ autotroph_settings(3)%temp_func_form_opt = 'q_10'
+ autotroph_settings(3)%Nfixer = .true.
+ autotroph_settings(3)%imp_calcifier = .false.
+ autotroph_settings(3)%exp_calcifier = .false.
+ autotroph_settings(3)%silicifier = .false.
+ autotroph_settings(3)%is_carbon_limited = .false.
+ autotroph_settings(3)%kFe =   0.45000000000000003E-04
+ autotroph_settings(3)%kPO4 =   0.14999999999999999E-01
+ autotroph_settings(3)%kDOP =   0.74999999999999997E-01
+ autotroph_settings(3)%kNO3 =   0.20000000000000000E+01
+ autotroph_settings(3)%kNH4 =   0.20000000000000001E+00
+ autotroph_settings(3)%kSiO3 =   0.00000000000000000E+00
+ autotroph_settings(3)%kCO2 =   0.00000000000000000E+00
+ autotroph_settings(3)%Qp_fixed =   0.27350427350427355E-02
+ autotroph_settings(3)%gQfe_0 =   0.69999999999999994E-04
+ autotroph_settings(3)%gQfe_min =   0.54000000000000000E-05
+ autotroph_settings(3)%alphaPI_per_day =   0.39000000000000001E+00
+ autotroph_settings(3)%PCref_per_day =   0.25000000000000000E+01
+ autotroph_settings(3)%thetaN_max =   0.25000000000000000E+01
+ autotroph_settings(3)%loss_thres =   0.20000000000000000E-01
+ autotroph_settings(3)%loss_thres2 =   0.10000000000000000E-02
+ autotroph_settings(3)%temp_thres =   0.15000000000000000E+02
+ autotroph_settings(3)%mort_per_day =   0.10000000000000001E+00
+ autotroph_settings(3)%mort2_per_day =   0.10000000000000000E-01
+ autotroph_settings(3)%agg_rate_max =   0.50000000000000000E+00
+ autotroph_settings(3)%agg_rate_min =   0.10000000000000000E-01
+ autotroph_settings(3)%loss_poc =   0.00000000000000000E+00
+ autotroph_settings(3)%Ea =   0.32000000000000001E+00
+ 
+ zooplankton_settings(1)%sname = 'zoo'
+ zooplankton_settings(1)%lname = 'Zooplankton'
+ zooplankton_settings(1)%temp_func_form_opt = 'q_10'
+ zooplankton_settings(1)%z_mort_0_per_day =   0.10000000000000001E+00
+ zooplankton_settings(1)%loss_thres =   0.74999999999999997E-01
+ zooplankton_settings(1)%z_mort2_0_per_day =   0.40000000000000002E+00
+ zooplankton_settings(1)%basal_respiration_rate_per_day =   0.00000000000000000E
+ +00
+ zooplankton_settings(1)%Ea =   0.65000000000000002E+00
+ 
+ grazing_relationship_settings(1,1)%sname = 'grz_sp_zoo'
+ grazing_relationship_settings(1,1)%lname = 'Grazing of sp by zoo'
+ grazing_relationship_settings(1,1)%auto_ind_cnt = 1
+ grazing_relationship_settings(1,1)%zoo_ind_cnt = 0
+ grazing_relationship_settings(1,1)%grazing_function = 1
+ grazing_relationship_settings(1,1)%z_umax_0_per_day =   0.32999999999999998E+01
+ grazing_relationship_settings(1,1)%z_grz =   0.12000000000000000E+01
+ grazing_relationship_settings(1,1)%graze_zoo =   0.29999999999999999E+00
+ grazing_relationship_settings(1,1)%graze_poc =   0.00000000000000000E+00
+ grazing_relationship_settings(1,1)%graze_doc =   0.59999999999999998E-01
+ grazing_relationship_settings(1,1)%f_zoo_detr =   0.12000000000000000E+00
+ grazing_relationship_settings(1,1)%auto_ind(1) = 1
+ 
+ grazing_relationship_settings(2,1)%sname = 'grz_diat_zoo'
+ grazing_relationship_settings(2,1)%lname = 'Grazing of diat by zoo'
+ grazing_relationship_settings(2,1)%auto_ind_cnt = 1
+ grazing_relationship_settings(2,1)%zoo_ind_cnt = 0
+ grazing_relationship_settings(2,1)%grazing_function = 1
+ grazing_relationship_settings(2,1)%z_umax_0_per_day =   0.31250000000000000E+01
+ grazing_relationship_settings(2,1)%z_grz =   0.12000000000000000E+01
+ grazing_relationship_settings(2,1)%graze_zoo =   0.25000000000000000E+00
+ grazing_relationship_settings(2,1)%graze_poc =   0.38000000000000000E+00
+ grazing_relationship_settings(2,1)%graze_doc =   0.59999999999999998E-01
+ grazing_relationship_settings(2,1)%f_zoo_detr =   0.23999999999999999E+00
+ grazing_relationship_settings(2,1)%auto_ind(1) = 2
+ 
+ grazing_relationship_settings(3,1)%sname = 'grz_diaz_zoo'
+ grazing_relationship_settings(3,1)%lname = 'Grazing of diaz by zoo'
+ grazing_relationship_settings(3,1)%auto_ind_cnt = 1
+ grazing_relationship_settings(3,1)%zoo_ind_cnt = 0
+ grazing_relationship_settings(3,1)%grazing_function = 1
+ grazing_relationship_settings(3,1)%z_umax_0_per_day =   0.32999999999999998E+01
+ grazing_relationship_settings(3,1)%z_grz =   0.12000000000000000E+01
+ grazing_relationship_settings(3,1)%graze_zoo =   0.29999999999999999E+00
+ grazing_relationship_settings(3,1)%graze_poc =   0.10000000000000001E+00
+ grazing_relationship_settings(3,1)%graze_doc =   0.59999999999999998E-01
+ grazing_relationship_settings(3,1)%f_zoo_detr =   0.12000000000000000E+00
+ grazing_relationship_settings(3,1)%auto_ind(1) = 3
+ 
+ tracer_restore_vars(1) = ''
+ tracer_restore_vars(2) = ''
+ tracer_restore_vars(3) = ''
+ tracer_restore_vars(4) = ''
+ tracer_restore_vars(5) = ''
+ tracer_restore_vars(6) = ''
+ tracer_restore_vars(7) = ''
+ tracer_restore_vars(8) = ''
+ tracer_restore_vars(9) = ''
+ tracer_restore_vars(10) = ''
+ tracer_restore_vars(11) = ''
+ tracer_restore_vars(12) = ''
+ tracer_restore_vars(13) = ''
+ tracer_restore_vars(14) = ''
+ tracer_restore_vars(15) = ''
+ tracer_restore_vars(16) = ''
+ tracer_restore_vars(17) = ''
+ tracer_restore_vars(18) = ''
+ tracer_restore_vars(19) = ''
+ tracer_restore_vars(20) = ''
+ tracer_restore_vars(21) = ''
+ tracer_restore_vars(22) = ''
+ tracer_restore_vars(23) = ''
+ tracer_restore_vars(24) = ''
+ tracer_restore_vars(25) = ''
+ tracer_restore_vars(26) = ''
+ tracer_restore_vars(27) = ''
+ tracer_restore_vars(28) = ''
+ tracer_restore_vars(29) = ''
+ tracer_restore_vars(30) = ''
+ tracer_restore_vars(31) = ''
+ tracer_restore_vars(32) = ''
+ 
+ ---------------------
+ Setting derived parms
+ ---------------------
+ 
+ caco3_bury_thres_iopt = 2 (value computed from caco3_bury_thres_opt)
+ parm_kappa_nitrif =   0.69444444444444437E-06 (value computed from parm_kappa_n
+ itrif_per_day)
+ parm_Fe_scavenge_rate0_yps =   0.76103500761035006E-06 (value computed from par
+ m_Fe_scavenge_rate0)
+ parm_Lig_scavenge_rate0_yps =   0.47564687975646879E-09 (value computed from pa
+ rm_Lig_scavenge_rate0)
+ parm_FeLig_scavenge_rate0_yps =   0.41222729578893962E-07 (value computed from 
+ parm_FeLig_scavenge_rate0)
+ Jint_Ctot_thres =   0.31709791983764588E-11 (value computed from Jint_Ctot_thre
+ s_molpm2pyr)
+ Jint_Ntot_thres =   0.43363818097455852E-12 (value computed from Jint_Ctot_thre
+ s)
+ Jint_Ptot_thres =   0.27102386310909907E-13 (value computed from Jint_Ctot_thre
+ s)
+ Jint_Sitot_thres =   0.43442415017757489E-12 (value computed from Jint_Ctot_thr
+ es)
+ Jint_Fetot_thres =   0.95129375951293766E-17 (value computed from Jint_Ctot_thr
+ es)
+ CISO_Jint_13Ctot_thres =   0.31709791983764588E-11 (value computed from Jint_Ct
+ ot_thres)
+ CISO_Jint_14Ctot_thres =   0.31709791983764588E-11 (value computed from Jint_Ct
+ ot_thres)
+ 
+ autotroph_settings(1)%temp_func_form_iopt = 1 (value computed from autotroph_se
+ ttings(1)%temp_func_form_opt)
+ autotroph_settings(1)%Tref =   0.30000000000000000E+02 (value computed from aut
+ otroph_settings(1)%temp_func_form_opt)
+ autotroph_settings(1)%alphaPI =   0.45138888888888887E-05 (value computed from 
+ autotroph_settings(1)%alphaPI_per_day)
+ autotroph_settings(1)%PCref =   0.57870370370370366E-04 (value computed from au
+ totroph_settings(1)%PCref_per_day)
+ autotroph_settings(1)%mort =   0.11574074074074074E-05 (value computed from aut
+ otroph_settings(1)%mort_per_day)
+ autotroph_settings(1)%mort2 =   0.11574074074074074E-06 (value computed from au
+ totroph_settings(1)%mort2_per_day)
+ autotroph_settings(2)%temp_func_form_iopt = 1 (value computed from autotroph_se
+ ttings(2)%temp_func_form_opt)
+ autotroph_settings(2)%Tref =   0.30000000000000000E+02 (value computed from aut
+ otroph_settings(2)%temp_func_form_opt)
+ autotroph_settings(2)%alphaPI =   0.45138888888888887E-05 (value computed from 
+ autotroph_settings(2)%alphaPI_per_day)
+ autotroph_settings(2)%PCref =   0.57870370370370366E-04 (value computed from au
+ totroph_settings(2)%PCref_per_day)
+ autotroph_settings(2)%mort =   0.11574074074074074E-05 (value computed from aut
+ otroph_settings(2)%mort_per_day)
+ autotroph_settings(2)%mort2 =   0.11574074074074074E-06 (value computed from au
+ totroph_settings(2)%mort2_per_day)
+ autotroph_settings(3)%temp_func_form_iopt = 1 (value computed from autotroph_se
+ ttings(3)%temp_func_form_opt)
+ autotroph_settings(3)%Tref =   0.30000000000000000E+02 (value computed from aut
+ otroph_settings(3)%temp_func_form_opt)
+ autotroph_settings(3)%alphaPI =   0.45138888888888887E-05 (value computed from 
+ autotroph_settings(3)%alphaPI_per_day)
+ autotroph_settings(3)%PCref =   0.28935185185185183E-04 (value computed from au
+ totroph_settings(3)%PCref_per_day)
+ autotroph_settings(3)%mort =   0.11574074074074074E-05 (value computed from aut
+ otroph_settings(3)%mort_per_day)
+ autotroph_settings(3)%mort2 =   0.11574074074074074E-06 (value computed from au
+ totroph_settings(3)%mort2_per_day)
+ 
+ zooplankton_settings(1)%temp_func_form_iopt = 1 (value computed from zooplankto
+ n_settings(1)%temp_func_form_opt)
+ zooplankton_settings(1)%Tref =   0.30000000000000000E+02 (value computed from z
+ ooplankton_settings(1)%temp_func_form_opt)
+ zooplankton_settings(1)%z_mort_0 =   0.11574074074074074E-05 (value computed fr
+ om zooplankton_settings(1)%z_mort_0_per_day)
+ zooplankton_settings(1)%z_mort2_0 =   0.46296296296296296E-05 (value computed f
+ rom zooplankton_settings(1)%z_mort2_0_per_day)
+ zooplankton_settings(1)%basal_respiration_rate =   0.00000000000000000E+00 (val
+ ue computed from zooplankton_settings(1)%basal_respiration_rate_per_day)
+ 
+ grazing_relationship_settings(1,1)%z_umax_0 =   0.38194444444444444E-04 (value 
+ computed from grazing_relationship_settings(1,1)%z_umax_0_per_day)
+ grazing_relationship_settings(2,1)%z_umax_0 =   0.36168981481481479E-04 (value 
+ computed from grazing_relationship_settings(2,1)%z_umax_0_per_day)
+ grazing_relationship_settings(3,1)%z_umax_0 =   0.38194444444444444E-04 (value 
+ computed from grazing_relationship_settings(3,1)%z_umax_0_per_day)
+NO REQUESTED TRACERS FOUND IN marbl_tracers_output_list
+. Defaulting to  writing all BGC tracers to output file.
+Successfully read marbl_tracer_output_list to end of file
+we successfully read and closed marbl_tracers_output_list
+ Here are the SF forcings MARBL requested
+ var: u10_sqr
+ units:m^2/s^2
+ var: sss
+ units:psu
+ var: sst
+ units:degC
+ var: Ice Fraction
+ units:unitless
+ var: Atmospheric Pressure
+ units:atmospheres
+ var: xco2
+ units:ppmv
+ var: xco2_alt_co2
+ units:ppmv
+ var: Dust Flux
+ units:kg/m^2/s
+ var: Iron Flux
+ units:mmol/m^2/s
+ var: NOx Flux
+ units:mmol/m^2/s
+ var: NHy Flux
+ units:mmol/m^2/s
+ Here are the int. tend. forcings MARBL requested
+ var: Dust Flux
+ units: kg/m^2/s
+ var: Surface Shortwave
+ units: W/m^2
+ var: Potential Temperature
+ units: degC
+ var: Salinity
+ units: psu
+ var: Pressure
+ units: bars
+ var: Iron Sediment Flux
+ units: mmol/m^2/s
+ metadata about           34  tracers:
+ -----------
+ TRACER NO.:            1
+ SHORT NAME: temp                                      
+ LONG NAME: potential temperature                                       
+ UNITS: Celsius                                   
+ -----------
+ -----------
+ TRACER NO.:            2
+ SHORT NAME: salt                                      
+ LONG NAME: salinity                                                    
+ UNITS: PSU                                       
+ -----------
+ -----------
+ TRACER NO.:            3
+ SHORT NAME: PO4                                       
+ LONG NAME: Dissolved Inorganic Phosphate                               
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:            4
+ SHORT NAME: NO3                                       
+ LONG NAME: Dissolved Inorganic Nitrate                                 
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:            5
+ SHORT NAME: SiO3                                      
+ LONG NAME: Dissolved Inorganic Silicate                                
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:            6
+ SHORT NAME: NH4                                       
+ LONG NAME: Dissolved Ammonia                                           
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:            7
+ SHORT NAME: Fe                                        
+ LONG NAME: Dissolved Inorganic Iron                                    
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:            8
+ SHORT NAME: Lig                                       
+ LONG NAME: Iron Binding Ligand                                         
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:            9
+ SHORT NAME: O2                                        
+ LONG NAME: Dissolved Oxygen                                            
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           10
+ SHORT NAME: DIC                                       
+ LONG NAME: Dissolved Inorganic Carbon                                  
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           11
+ SHORT NAME: DIC_ALT_CO2                               
+ LONG NAME: Dissolved Inorganic Carbon, Alternative CO2                 
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           12
+ SHORT NAME: ALK                                       
+ LONG NAME: Alkalinity                                                  
+ UNITS: meq/m^3                                   
+ -----------
+ -----------
+ TRACER NO.:           13
+ SHORT NAME: ALK_ALT_CO2                               
+ LONG NAME: Alkalinity, Alternative CO2                                 
+ UNITS: meq/m^3                                   
+ -----------
+ -----------
+ TRACER NO.:           14
+ SHORT NAME: DOC                                       
+ LONG NAME: Dissolved Organic Carbon                                    
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           15
+ SHORT NAME: DON                                       
+ LONG NAME: Dissolved Organic Nitrogen                                  
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           16
+ SHORT NAME: DOP                                       
+ LONG NAME: Dissolved Organic Phosphorus                                
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           17
+ SHORT NAME: DOPr                                      
+ LONG NAME: Refractory DOP                                              
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           18
+ SHORT NAME: DONr                                      
+ LONG NAME: Refractory DON                                              
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           19
+ SHORT NAME: DOCr                                      
+ LONG NAME: Refractory DOC                                              
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           20
+ SHORT NAME: zooC                                      
+ LONG NAME: Zooplankton Carbon                                          
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           21
+ SHORT NAME: spChl                                     
+ LONG NAME: Small Phyto Chlorophyll                                     
+ UNITS: mg/m^3                                    
+ -----------
+ -----------
+ TRACER NO.:           22
+ SHORT NAME: spC                                       
+ LONG NAME: Small Phyto Carbon                                          
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           23
+ SHORT NAME: spP                                       
+ LONG NAME: Small Phyto Phosphorus                                      
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           24
+ SHORT NAME: spFe                                      
+ LONG NAME: Small Phyto Iron                                            
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           25
+ SHORT NAME: spCaCO3                                   
+ LONG NAME: Small Phyto CaCO3                                           
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           26
+ SHORT NAME: diatChl                                   
+ LONG NAME: Diatom Chlorophyll                                          
+ UNITS: mg/m^3                                    
+ -----------
+ -----------
+ TRACER NO.:           27
+ SHORT NAME: diatC                                     
+ LONG NAME: Diatom Carbon                                               
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           28
+ SHORT NAME: diatP                                     
+ LONG NAME: Diatom Phosphorus                                           
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           29
+ SHORT NAME: diatFe                                    
+ LONG NAME: Diatom Iron                                                 
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           30
+ SHORT NAME: diatSi                                    
+ LONG NAME: Diatom Silicon                                              
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           31
+ SHORT NAME: diazChl                                   
+ LONG NAME: Diazotroph Chlorophyll                                      
+ UNITS: mg/m^3                                    
+ -----------
+ -----------
+ TRACER NO.:           32
+ SHORT NAME: diazC                                     
+ LONG NAME: Diazotroph Carbon                                           
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           33
+ SHORT NAME: diazP                                     
+ LONG NAME: Diazotroph Phosphorus                                       
+ UNITS: mmol/m^3                                  
+ -----------
+ -----------
+ TRACER NO.:           34
+ SHORT NAME: diazFe                                    
+ LONG NAME: Diazotroph Iron                                             
+ UNITS: mmol/m^3                                  
+ -----------
+
+ NUMBER OF NODES:   6( 3 x  2) THREADS:   1 TILING: 1 x  1 GRID: 199 x  99 x 50
+
+       ocean_vars :: history file ouput_period = 100.0  recs/file =  10
+         his fields to be saved: (T/F)
+           zeta    T    free-surface elevation                    
+           ubar    T    vertically averaged u-momentum component  
+           vbar    T    vertically averaged v-momentum component  
+           u       T    u-momentum component                      
+           v       T    v-momentum component                      
+           rho     T    density anomaly                           
+           Omega   T    S-coordinate vertical velocity            
+           W       T    vertical velocity                         
+           Akv     T    vertical viscosity coefficient            
+           Akt     T    vertical thermal conductivity coefficient 
+           Aks     T    salinity vertical diffusion coefficient   
+           hbls    T    Thickness of KPP surface boundary layer   
+           hbbl    T    Thickness of KPP bottom boundary layer    
+
+           t( 1T   temp                                      
+           t( 2T   salt                                      
+NO REQUESTED DIAGNOSTICS FOUND IN marbl_diagnostic_output_list
+. Defaulting to  writing all BGC diagnostics to output file.
+Successfully read marbl_diagnostic_output_list to end of file
+we successfully read and closed marbl_diagnostic_output_list
+ number of 2D marbl diags         179
+ number of 3D marbl diags         164
+       2D BGC diags ::   1  1 ECOSYS_IFRAC                                                            
+       2D BGC diags ::   2  2 ECOSYS_XKW                                                              
+       2D BGC diags ::   3  3 ECOSYS_ATM_PRESS                                                        
+       2D BGC diags ::   4  4 PV_CO2                                                                  
+       2D BGC diags ::   5  5 SCHMIDT_CO2                                                             
+       2D BGC diags ::   6  6 PV_O2                                                                   
+       2D BGC diags ::   7  7 SCHMIDT_O2                                                              
+       2D BGC diags ::   8  8 O2SAT                                                                   
+       2D BGC diags ::   9  9 CO2STAR                                                                 
+       2D BGC diags ::  10 10 DCO2STAR                                                                
+       2D BGC diags ::  11 11 pCO2SURF                                                                
+       2D BGC diags ::  12 12 DpCO2                                                                   
+       2D BGC diags ::  13 13 FG_CO2                                                                  
+       2D BGC diags ::  14 14 PH                                                                      
+       2D BGC diags ::  15 15 ATM_CO2                                                                 
+       2D BGC diags ::  16 16 CO2STAR_ALT_CO2                                                         
+       2D BGC diags ::  17 17 DCO2STAR_ALT_CO2                                                        
+       2D BGC diags ::  18 18 pCO2SURF_ALT_CO2                                                        
+       2D BGC diags ::  19 19 DpCO2_ALT_CO2                                                           
+       2D BGC diags ::  20 20 FG_ALT_CO2                                                              
+       2D BGC diags ::  21 21 PH_ALT_CO2                                                              
+       2D BGC diags ::  22 22 ATM_ALT_CO2                                                             
+       2D BGC diags ::  23 23 IRON_FLUX                                                               
+       2D BGC diags ::  24 24 DUST_FLUX                                                               
+       2D BGC diags ::  25 25 NOx_FLUX                                                                
+       2D BGC diags ::  26 26 NHy_FLUX                                                                
+       2D BGC diags ::  27 27 NHx_SURFACE_EMIS                                                        
+       2D BGC diags ::  28 28 zsatcalc                                                                
+       2D BGC diags ::  29 29 zsatarag                                                                
+       2D BGC diags ::  30 30 O2_ZMIN                                                                 
+       2D BGC diags ::  31 31 O2_ZMIN_DEPTH                                                           
+       2D BGC diags ::  32 32 photoC_TOT_zint                                                         
+       2D BGC diags ::  33 33 photoC_TOT_zint_100m                                                    
+       2D BGC diags ::  34 34 photoC_NO3_TOT_zint                                                     
+       2D BGC diags ::  35 35 photoC_NO3_TOT_zint_100m                                                
+       2D BGC diags ::  36 36 DOC_prod_zint                                                           
+       2D BGC diags ::  37 37 DOC_prod_zint_100m                                                      
+       2D BGC diags ::  38 38 DOC_remin_zint                                                          
+       2D BGC diags ::  39 39 DOC_remin_zint_100m                                                     
+       2D BGC diags ::  40 40 DOCr_remin_zint                                                         
+       2D BGC diags ::  41 41 DOCr_remin_zint_100m                                                    
+       2D BGC diags ::  42 42 Jint_Ctot                                                               
+       2D BGC diags ::  43 43 Jint_Ntot                                                               
+       2D BGC diags ::  44 44 Jint_Ptot                                                               
+       2D BGC diags ::  45 45 Jint_Sitot                                                              
+       2D BGC diags ::  46 46 Jint_Fetot                                                              
+       2D BGC diags ::  47 47 calcToFloor                                                             
+       2D BGC diags ::  48 48 calcToSed                                                               
+       2D BGC diags ::  49 49 calcToSed_ALT_CO2                                                       
+       2D BGC diags ::  50 50 pocToFloor                                                              
+       2D BGC diags ::  51 51 pocToSed                                                                
+       2D BGC diags ::  52 52 ponToSed                                                                
+       2D BGC diags ::  53 53 SedDenitrif                                                             
+       2D BGC diags ::  54 54 OtherRemin                                                              
+       2D BGC diags ::  55 55 popToSed                                                                
+       2D BGC diags ::  56 56 bsiToSed                                                                
+       2D BGC diags ::  57 57 dustToSed                                                               
+       2D BGC diags ::  58 58 pfeToSed                                                                
+       2D BGC diags ::  59 59 sp_N_lim_surf                                                           
+       2D BGC diags ::  60 60 sp_N_lim_Cweight_avg_100m                                               
+       2D BGC diags ::  61 61 sp_P_lim_surf                                                           
+       2D BGC diags ::  62 62 sp_P_lim_Cweight_avg_100m                                               
+       2D BGC diags ::  63 63 sp_Fe_lim_surf                                                          
+       2D BGC diags ::  64 64 sp_Fe_lim_Cweight_avg_100m                                              
+       2D BGC diags ::  65 65 sp_light_lim_surf                                                       
+       2D BGC diags ::  66 66 sp_light_lim_Cweight_avg_100m                                           
+       2D BGC diags ::  67 67 photoC_sp_zint                                                          
+       2D BGC diags ::  68 68 photoC_sp_zint_100m                                                     
+       2D BGC diags ::  69 69 photoC_NO3_sp_zint                                                      
+       2D BGC diags ::  70 70 sp_CaCO3_form_zint                                                      
+       2D BGC diags ::  71 71 sp_CaCO3_form_zint_100m                                                 
+       2D BGC diags ::  72 72 graze_sp_zint                                                           
+       2D BGC diags ::  73 73 graze_sp_zint_100m                                                      
+       2D BGC diags ::  74 74 graze_sp_poc_zint                                                       
+       2D BGC diags ::  75 75 graze_sp_poc_zint_100m                                                  
+       2D BGC diags ::  76 76 graze_sp_doc_zint                                                       
+       2D BGC diags ::  77 77 graze_sp_doc_zint_100m                                                  
+       2D BGC diags ::  78 78 graze_sp_zoo_zint                                                       
+       2D BGC diags ::  79 79 graze_sp_zoo_zint_100m                                                  
+       2D BGC diags ::  80 80 sp_loss_zint                                                            
+       2D BGC diags ::  81 81 sp_loss_zint_100m                                                       
+       2D BGC diags ::  82 82 sp_loss_poc_zint                                                        
+       2D BGC diags ::  83 83 sp_loss_poc_zint_100m                                                   
+       2D BGC diags ::  84 84 sp_loss_doc_zint                                                        
+       2D BGC diags ::  85 85 sp_loss_doc_zint_100m                                                   
+       2D BGC diags ::  86 86 sp_agg_zint                                                             
+       2D BGC diags ::  87 87 sp_agg_zint_100m                                                        
+       2D BGC diags ::  88 88 diat_N_lim_surf                                                         
+       2D BGC diags ::  89 89 diat_N_lim_Cweight_avg_100m                                             
+       2D BGC diags ::  90 90 diat_P_lim_surf                                                         
+       2D BGC diags ::  91 91 diat_P_lim_Cweight_avg_100m                                             
+       2D BGC diags ::  92 92 diat_Fe_lim_surf                                                        
+       2D BGC diags ::  93 93 diat_Fe_lim_Cweight_avg_100m                                            
+       2D BGC diags ::  94 94 diat_SiO3_lim_surf                                                      
+       2D BGC diags ::  95 95 diat_SiO3_lim_Cweight_avg_100m                                          
+       2D BGC diags ::  96 96 diat_light_lim_surf                                                     
+       2D BGC diags ::  97 97 diat_light_lim_Cweight_avg_100m                                         
+       2D BGC diags ::  98 98 photoC_diat_zint                                                        
+       2D BGC diags ::  99 99 photoC_diat_zint_100m                                                   
+       2D BGC diags :: 100100 photoC_NO3_diat_zint                                                    
+       2D BGC diags :: 101101 graze_diat_zint                                                         
+       2D BGC diags :: 102102 graze_diat_zint_100m                                                    
+       2D BGC diags :: 103103 graze_diat_poc_zint                                                     
+       2D BGC diags :: 104104 graze_diat_poc_zint_100m                                                
+       2D BGC diags :: 105105 graze_diat_doc_zint                                                     
+       2D BGC diags :: 106106 graze_diat_doc_zint_100m                                                
+       2D BGC diags :: 107107 graze_diat_zoo_zint                                                     
+       2D BGC diags :: 108108 graze_diat_zoo_zint_100m                                                
+       2D BGC diags :: 109109 diat_loss_zint                                                          
+       2D BGC diags :: 110110 diat_loss_zint_100m                                                     
+       2D BGC diags :: 111111 diat_loss_poc_zint                                                      
+       2D BGC diags :: 112112 diat_loss_poc_zint_100m                                                 
+       2D BGC diags :: 113113 diat_loss_doc_zint                                                      
+       2D BGC diags :: 114114 diat_loss_doc_zint_100m                                                 
+       2D BGC diags :: 115115 diat_agg_zint                                                           
+       2D BGC diags :: 116116 diat_agg_zint_100m                                                      
+       2D BGC diags :: 117117 diaz_N_lim_surf                                                         
+       2D BGC diags :: 118118 diaz_N_lim_Cweight_avg_100m                                             
+       2D BGC diags :: 119119 diaz_P_lim_surf                                                         
+       2D BGC diags :: 120120 diaz_P_lim_Cweight_avg_100m                                             
+       2D BGC diags :: 121121 diaz_Fe_lim_surf                                                        
+       2D BGC diags :: 122122 diaz_Fe_lim_Cweight_avg_100m                                            
+       2D BGC diags :: 123123 diaz_light_lim_surf                                                     
+       2D BGC diags :: 124124 diaz_light_lim_Cweight_avg_100m                                         
+       2D BGC diags :: 125125 photoC_diaz_zint                                                        
+       2D BGC diags :: 126126 photoC_diaz_zint_100m                                                   
+       2D BGC diags :: 127127 photoC_NO3_diaz_zint                                                    
+       2D BGC diags :: 128128 graze_diaz_zint                                                         
+       2D BGC diags :: 129129 graze_diaz_zint_100m                                                    
+       2D BGC diags :: 130130 graze_diaz_poc_zint                                                     
+       2D BGC diags :: 131131 graze_diaz_poc_zint_100m                                                
+       2D BGC diags :: 132132 graze_diaz_doc_zint                                                     
+       2D BGC diags :: 133133 graze_diaz_doc_zint_100m                                                
+       2D BGC diags :: 134134 graze_diaz_zoo_zint                                                     
+       2D BGC diags :: 135135 graze_diaz_zoo_zint_100m                                                
+       2D BGC diags :: 136136 diaz_loss_zint                                                          
+       2D BGC diags :: 137137 diaz_loss_zint_100m                                                     
+       2D BGC diags :: 138138 diaz_loss_poc_zint                                                      
+       2D BGC diags :: 139139 diaz_loss_poc_zint_100m                                                 
+       2D BGC diags :: 140140 diaz_loss_doc_zint                                                      
+       2D BGC diags :: 141141 diaz_loss_doc_zint_100m                                                 
+       2D BGC diags :: 142142 diaz_agg_zint                                                           
+       2D BGC diags :: 143143 diaz_agg_zint_100m                                                      
+       2D BGC diags :: 144144 CaCO3_form_zint                                                         
+       2D BGC diags :: 145145 CaCO3_form_zint_100m                                                    
+       2D BGC diags :: 146146 zoo_loss_zint                                                           
+       2D BGC diags :: 147147 zoo_loss_zint_100m                                                      
+       2D BGC diags :: 148148 zoo_loss_zint_150m                                                      
+       2D BGC diags :: 149149 zoo_loss_basal_zint                                                     
+       2D BGC diags :: 150150 zoo_loss_basal_zint_100m                                                
+       2D BGC diags :: 151151 zoo_loss_poc_zint                                                       
+       2D BGC diags :: 152152 zoo_loss_poc_zint_100m                                                  
+       2D BGC diags :: 153153 zoo_loss_doc_zint                                                       
+       2D BGC diags :: 154154 zoo_loss_doc_zint_100m                                                  
+       2D BGC diags :: 155155 graze_zoo_zint                                                          
+       2D BGC diags :: 156156 graze_zoo_zint_100m                                                     
+       2D BGC diags :: 157157 graze_zoo_poc_zint                                                      
+       2D BGC diags :: 158158 graze_zoo_poc_zint_100m                                                 
+       2D BGC diags :: 159159 graze_zoo_doc_zint                                                      
+       2D BGC diags :: 160160 graze_zoo_doc_zint_100m                                                 
+       2D BGC diags :: 161161 graze_zoo_zoo_zint                                                      
+       2D BGC diags :: 162162 graze_zoo_zoo_zint_100m                                                 
+       2D BGC diags :: 163163 x_graze_zoo_zint                                                        
+       2D BGC diags :: 164164 x_graze_zoo_zint_100m                                                   
+       2D BGC diags :: 165165 POC_FLUX_10000m                                                         
+       2D BGC diags :: 166166 POP_FLUX_10000m                                                         
+       2D BGC diags :: 167167 CaCO3_FLUX_10000m                                                       
+       2D BGC diags :: 168168 SiO2_FLUX_10000m                                                        
+       2D BGC diags :: 169169 P_iron_FLUX_10000m                                                      
+       2D BGC diags :: 170170 POC_PROD_zint                                                           
+       2D BGC diags :: 171171 POC_PROD_zint_100m                                                      
+       2D BGC diags :: 172172 POC_REMIN_DOCr_zint                                                     
+       2D BGC diags :: 173173 POC_REMIN_DOCr_zint_100m                                                
+       2D BGC diags :: 174174 POC_REMIN_DIC_zint                                                      
+       2D BGC diags :: 175175 POC_REMIN_DIC_zint_100m                                                 
+       2D BGC diags :: 176176 CaCO3_PROD_zint                                                         
+       2D BGC diags :: 177177 CaCO3_PROD_zint_100m                                                    
+       2D BGC diags :: 178178 CaCO3_REMIN_zint                                                        
+       2D BGC diags :: 179179 CaCO3_REMIN_zint_100m                                                   
+       3D BGC diags ::   1  1 insitu_temp                                                             
+       3D BGC diags ::   2  2 CO3                                                                     
+       3D BGC diags ::   3  3 HCO3                                                                    
+       3D BGC diags ::   4  4 H2CO3                                                                   
+       3D BGC diags ::   5  5 pH_3D                                                                   
+       3D BGC diags ::   6  6 CO3_ALT_CO2                                                             
+       3D BGC diags ::   7  7 HCO3_ALT_CO2                                                            
+       3D BGC diags ::   8  8 H2CO3_ALT_CO2                                                           
+       3D BGC diags ::   9  9 pH_3D_ALT_CO2                                                           
+       3D BGC diags ::  10 10 co3_sat_calc                                                            
+       3D BGC diags ::  11 11 co3_sat_arag                                                            
+       3D BGC diags ::  12 12 NITRIF                                                                  
+       3D BGC diags ::  13 13 DENITRIF                                                                
+       3D BGC diags ::  14 14 O2_PRODUCTION                                                           
+       3D BGC diags ::  15 15 O2_CONSUMPTION                                                          
+       3D BGC diags ::  16 16 AOU                                                                     
+       3D BGC diags ::  17 17 PAR_avg                                                                 
+       3D BGC diags ::  18 18 graze_auto_TOT                                                          
+       3D BGC diags ::  19 19 photoC_TOT                                                              
+       3D BGC diags ::  20 20 photoC_NO3_TOT                                                          
+       3D BGC diags ::  21 21 DOC_prod                                                                
+       3D BGC diags ::  22 22 DOC_remin                                                               
+       3D BGC diags ::  23 23 DOCr_remin                                                              
+       3D BGC diags ::  24 24 DON_prod                                                                
+       3D BGC diags ::  25 25 DON_remin                                                               
+       3D BGC diags ::  26 26 DONr_remin                                                              
+       3D BGC diags ::  27 27 DOP_prod                                                                
+       3D BGC diags ::  28 28 DOP_remin                                                               
+       3D BGC diags ::  29 29 DOPr_remin                                                              
+       3D BGC diags ::  30 30 DOP_loss_P_bal                                                          
+       3D BGC diags ::  31 31 Fe_scavenge                                                             
+       3D BGC diags ::  32 32 Fe_scavenge_rate                                                        
+       3D BGC diags ::  33 33 Lig_prod                                                                
+       3D BGC diags ::  34 34 Lig_loss                                                                
+       3D BGC diags ::  35 35 Lig_scavenge                                                            
+       3D BGC diags ::  36 36 Fefree                                                                  
+       3D BGC diags ::  37 37 Lig_photochem                                                           
+       3D BGC diags ::  38 38 Lig_deg                                                                 
+       3D BGC diags ::  39 39 FESEDFLUX                                                               
+       3D BGC diags ::  40 40 POC_FLUX_IN                                                             
+       3D BGC diags ::  41 41 POC_sFLUX_IN                                                            
+       3D BGC diags ::  42 42 POC_hFLUX_IN                                                            
+       3D BGC diags ::  43 43 POC_PROD                                                                
+       3D BGC diags ::  44 44 POC_REMIN_DOCr                                                          
+       3D BGC diags ::  45 45 POC_REMIN_DIC                                                           
+       3D BGC diags ::  46 46 POP_FLUX_IN                                                             
+       3D BGC diags ::  47 47 POP_PROD                                                                
+       3D BGC diags ::  48 48 POP_REMIN_DOPr                                                          
+       3D BGC diags ::  49 49 POP_REMIN_PO4                                                           
+       3D BGC diags ::  50 50 PON_REMIN_DONr                                                          
+       3D BGC diags ::  51 51 PON_REMIN_NH4                                                           
+       3D BGC diags ::  52 52 CaCO3_FLUX_IN                                                           
+       3D BGC diags ::  53 53 CaCO3_PROD                                                              
+       3D BGC diags ::  54 54 CaCO3_REMIN                                                             
+       3D BGC diags ::  55 55 CaCO3_ALT_CO2_FLUX_IN                                                   
+       3D BGC diags ::  56 56 CaCO3_ALT_CO2_PROD                                                      
+       3D BGC diags ::  57 57 CaCO3_ALT_CO2_REMIN                                                     
+       3D BGC diags ::  58 58 SiO2_FLUX_IN                                                            
+       3D BGC diags ::  59 59 SiO2_PROD                                                               
+       3D BGC diags ::  60 60 SiO2_REMIN                                                              
+       3D BGC diags ::  61 61 dust_FLUX_IN                                                            
+       3D BGC diags ::  62 62 dust_REMIN                                                              
+       3D BGC diags ::  63 63 P_iron_FLUX_IN                                                          
+       3D BGC diags ::  64 64 P_iron_PROD                                                             
+       3D BGC diags ::  65 65 P_iron_REMIN                                                            
+       3D BGC diags ::  66 66 sp_Qp                                                                   
+       3D BGC diags ::  67 67 photoC_sp                                                               
+       3D BGC diags ::  68 68 photoC_NO3_sp                                                           
+       3D BGC diags ::  69 69 photoFe_sp                                                              
+       3D BGC diags ::  70 70 photoNO3_sp                                                             
+       3D BGC diags ::  71 71 photoNH4_sp                                                             
+       3D BGC diags ::  72 72 DOP_sp_uptake                                                           
+       3D BGC diags ::  73 73 PO4_sp_uptake                                                           
+       3D BGC diags ::  74 74 graze_sp                                                                
+       3D BGC diags ::  75 75 graze_sp_poc                                                            
+       3D BGC diags ::  76 76 graze_sp_doc                                                            
+       3D BGC diags ::  77 77 graze_sp_zootot                                                         
+       3D BGC diags ::  78 78 graze_sp_zoo                                                            
+       3D BGC diags ::  79 79 sp_loss                                                                 
+       3D BGC diags ::  80 80 sp_loss_poc                                                             
+       3D BGC diags ::  81 81 sp_loss_doc                                                             
+       3D BGC diags ::  82 82 sp_agg                                                                  
+       3D BGC diags ::  83 83 sp_CaCO3_form                                                           
+       3D BGC diags ::  84 84 diat_Qp                                                                 
+       3D BGC diags ::  85 85 photoC_diat                                                             
+       3D BGC diags ::  86 86 photoC_NO3_diat                                                         
+       3D BGC diags ::  87 87 photoFe_diat                                                            
+       3D BGC diags ::  88 88 photoNO3_diat                                                           
+       3D BGC diags ::  89 89 photoNH4_diat                                                           
+       3D BGC diags ::  90 90 DOP_diat_uptake                                                         
+       3D BGC diags ::  91 91 PO4_diat_uptake                                                         
+       3D BGC diags ::  92 92 graze_diat                                                              
+       3D BGC diags ::  93 93 graze_diat_poc                                                          
+       3D BGC diags ::  94 94 graze_diat_doc                                                          
+       3D BGC diags ::  95 95 graze_diat_zootot                                                       
+       3D BGC diags ::  96 96 graze_diat_zoo                                                          
+       3D BGC diags ::  97 97 diat_loss                                                               
+       3D BGC diags ::  98 98 diat_loss_poc                                                           
+       3D BGC diags ::  99 99 diat_loss_doc                                                           
+       3D BGC diags :: 100100 diat_agg                                                                
+       3D BGC diags :: 101101 diat_bSi_form                                                           
+       3D BGC diags :: 102102 diaz_Qp                                                                 
+       3D BGC diags :: 103103 photoC_diaz                                                             
+       3D BGC diags :: 104104 photoC_NO3_diaz                                                         
+       3D BGC diags :: 105105 photoFe_diaz                                                            
+       3D BGC diags :: 106106 photoNO3_diaz                                                           
+       3D BGC diags :: 107107 photoNH4_diaz                                                           
+       3D BGC diags :: 108108 DOP_diaz_uptake                                                         
+       3D BGC diags :: 109109 PO4_diaz_uptake                                                         
+       3D BGC diags :: 110110 graze_diaz                                                              
+       3D BGC diags :: 111111 graze_diaz_poc                                                          
+       3D BGC diags :: 112112 graze_diaz_doc                                                          
+       3D BGC diags :: 113113 graze_diaz_zootot                                                       
+       3D BGC diags :: 114114 graze_diaz_zoo                                                          
+       3D BGC diags :: 115115 diaz_loss                                                               
+       3D BGC diags :: 116116 diaz_loss_poc                                                           
+       3D BGC diags :: 117117 diaz_loss_doc                                                           
+       3D BGC diags :: 118118 diaz_agg                                                                
+       3D BGC diags :: 119119 diaz_Nfix                                                               
+       3D BGC diags :: 120120 bSi_form                                                                
+       3D BGC diags :: 121121 CaCO3_form                                                              
+       3D BGC diags :: 122122 Nfix                                                                    
+       3D BGC diags :: 123123 zoo_loss                                                                
+       3D BGC diags :: 124124 zoo_loss_basal                                                          
+       3D BGC diags :: 125125 zoo_loss_poc                                                            
+       3D BGC diags :: 126126 zoo_loss_doc                                                            
+       3D BGC diags :: 127127 graze_zoo                                                               
+       3D BGC diags :: 128128 graze_zoo_poc                                                           
+       3D BGC diags :: 129129 graze_zoo_doc                                                           
+       3D BGC diags :: 130130 graze_zoo_zootot                                                        
+       3D BGC diags :: 131131 graze_zoo_zoo                                                           
+       3D BGC diags :: 132132 x_graze_zoo                                                             
+       3D BGC diags :: 133133 PO4_RESTORE_TEND                                                        
+       3D BGC diags :: 134134 NO3_RESTORE_TEND                                                        
+       3D BGC diags :: 135135 SiO3_RESTORE_TEND                                                       
+       3D BGC diags :: 136136 NH4_RESTORE_TEND                                                        
+       3D BGC diags :: 137137 Fe_RESTORE_TEND                                                         
+       3D BGC diags :: 138138 Lig_RESTORE_TEND                                                        
+       3D BGC diags :: 139139 O2_RESTORE_TEND                                                         
+       3D BGC diags :: 140140 DIC_RESTORE_TEND                                                        
+       3D BGC diags :: 141141 DIC_ALT_CO2_RESTORE_TEND                                                
+       3D BGC diags :: 142142 ALK_RESTORE_TEND                                                        
+       3D BGC diags :: 143143 ALK_ALT_CO2_RESTORE_TEND                                                
+       3D BGC diags :: 144144 DOC_RESTORE_TEND                                                        
+       3D BGC diags :: 145145 DON_RESTORE_TEND                                                        
+       3D BGC diags :: 146146 DOP_RESTORE_TEND                                                        
+       3D BGC diags :: 147147 DOPr_RESTORE_TEND                                                       
+       3D BGC diags :: 148148 DONr_RESTORE_TEND                                                       
+       3D BGC diags :: 149149 DOCr_RESTORE_TEND                                                       
+       3D BGC diags :: 150150 zooC_RESTORE_TEND                                                       
+       3D BGC diags :: 151151 spChl_RESTORE_TEND                                                      
+       3D BGC diags :: 152152 spC_RESTORE_TEND                                                        
+       3D BGC diags :: 153153 spP_RESTORE_TEND                                                        
+       3D BGC diags :: 154154 spFe_RESTORE_TEND                                                       
+       3D BGC diags :: 155155 spCaCO3_RESTORE_TEND                                                    
+       3D BGC diags :: 156156 diatChl_RESTORE_TEND                                                    
+       3D BGC diags :: 157157 diatC_RESTORE_TEND                                                      
+       3D BGC diags :: 158158 diatP_RESTORE_TEND                                                      
+       3D BGC diags :: 159159 diatFe_RESTORE_TEND                                                     
+       3D BGC diags :: 160160 diatSi_RESTORE_TEND                                                     
+       3D BGC diags :: 161161 diazChl_RESTORE_TEND                                                    
+       3D BGC diags :: 162162 diazC_RESTORE_TEND                                                      
+       3D BGC diags :: 163163 diazP_RESTORE_TEND                                                      
+       3D BGC diags :: 164164 diazFe_RESTORE_TEND                                                     
+       BGC diags allocation :: 179164
+ MARBL SURFACE FLUX SAVED STATE VARIABLE MARBL_PH_SURF  
+ surface pH for base biotic tracers  pH
+ MARBL SURFACE FLUX SAVED STATE VARIABLE MARBL_ABIO_PH_SURF  
+ surface pH for abiotic tracers  pH
+ MARBL SURFACE FLUX SAVED STATE VARIABLE MARBL_PH_SURF_ALT_CO2  
+ surface pH for base biotic tracers (alternate CO2)  pH
+ MARBL INTERIOR TENDENCY SAVED STATE VARIABLE MARBL_PH_3D  3D pH  pH
+ MARBL INTERIOR TENDENCY SAVED STATE VARIABLE MARBL_PH_3D_ALT_CO2  
+ 3D pH (alternate CO2)  pH
+       MARBL saved state allocation                                 ::   3   2
+
+ Vertical S-coordinate system (z at W-points):
+
+  level      S-coord        Cs-curve         Z at hmin           at hc        half way         at hmax
+     50   0.0000E+00   0.0000000E+00     0.0000000E+00   0.0000000E+00   0.0000000E+00   0.0000000E+00
+     49  -2.0000E-02  -2.1600046E-04    -2.1600046E+16  -2.5270001E-01   1.0800023E+16   2.1600046E+16
+     48  -4.0000E-02  -8.6683444E-04    -8.6683444E+16  -5.1083543E-01   4.3341722E+16   8.6683444E+16
+     47  -6.0000E-02  -1.9610249E-03    -1.9610249E+17  -7.7451281E-01   9.8051243E+16   1.9610249E+17
+     46  -8.0000E-02  -3.5128600E-03    -3.5128600E+17  -1.0439107E+00   1.7564300E+17   3.5128600E+17
+     45  -1.0000E-01  -5.5425170E-03    -5.5425170E+17  -1.3192815E+00   2.7712585E+17   5.5425170E+17
+     44  -1.2000E-01  -8.0762310E-03    -8.0762310E+17  -1.6009529E+00   4.0381155E+17   8.0762310E+17
+     43  -1.4000E-01  -1.1146507E-02    -1.1146507E+18  -1.8893313E+00   5.5732535E+17   1.1146507E+18
+     42  -1.6000E-01  -1.4792367E-02    -1.4792367E+18  -2.1849046E+00   7.3961834E+17   1.4792367E+18
+     41  -1.8000E-01  -1.9059626E-02    -1.9059626E+18  -2.4882453E+00   9.5298131E+17   1.9059626E+18
+     40  -2.0000E-01  -2.4001189E-02    -2.4001189E+18  -2.8000149E+00   1.2000595E+18   2.4001189E+18
+     39  -2.2000E-01  -2.9677349E-02    -2.9677349E+18  -3.1209669E+00   1.4838674E+18   2.9677349E+18
+     38  -2.4000E-01  -3.6156070E-02    -3.6156070E+18  -3.4519509E+00   1.8078035E+18   3.6156070E+18
+     37  -2.6000E-01  -4.3513242E-02    -4.3513242E+18  -3.7939155E+00   2.1756621E+18   4.3513242E+18
+     36  -2.8000E-01  -5.1832858E-02    -5.1832858E+18  -4.1479107E+00   2.5916429E+18   5.1832858E+18
+     35  -3.0000E-01  -6.1207093E-02    -6.1207093E+18  -4.5150887E+00   3.0603546E+18   6.1207093E+18
+     34  -3.2000E-01  -7.1736228E-02    -7.1736228E+18  -4.8967028E+00   3.5868114E+18   7.1736228E+18
+     33  -3.4000E-01  -8.3528367E-02    -8.3528367E+18  -5.2941046E+00   4.1764184E+18   8.3528367E+18
+     32  -3.6000E-01  -9.6698875E-02    -9.6698875E+18  -5.7087359E+00   4.8349437E+18   9.6698875E+18
+     31  -3.8000E-01  -1.1136944E-01    -1.1136944E+19  -6.1421180E+00   5.5684720E+18   1.1136944E+19
+     30  -4.0000E-01  -1.2766669E-01    -1.2766669E+19  -6.5958336E+00   6.3833346E+18   1.2766669E+19
+     29  -4.2000E-01  -1.4572023E-01    -1.4572023E+19  -7.0715028E+00   7.2860113E+18   1.4572023E+19
+     28  -4.4000E-01  -1.6565994E-01    -1.6565994E+19  -7.5707493E+00   8.2829970E+18   1.6565994E+19
+     27  -4.6000E-01  -1.8761254E-01    -1.8761254E+19  -8.0951567E+00   9.3806268E+18   1.8761254E+19
+     26  -4.8000E-01  -2.1169704E-01    -2.1169704E+19  -8.6462129E+00   1.0584852E+19   2.1169704E+19
+     25  -5.0000E-01  -2.3801922E-01    -2.3801922E+19  -9.2252402E+00   1.1900961E+19   2.3801922E+19
+     24  -5.2000E-01  -2.6666485E-01    -2.6666485E+19  -9.8333106E+00   1.3333242E+19   2.6666485E+19
+     23  -5.4000E-01  -2.9769164E-01    -2.9769164E+19  -1.0471145E+01   1.4884582E+19   2.9769164E+19
+     22  -5.6000E-01  -3.3112002E-01    -3.3112002E+19  -1.1139000E+01   1.6556001E+19   3.3112002E+19
+     21  -5.8000E-01  -3.6692279E-01    -3.6692279E+19  -1.1836535E+01   1.8346139E+19   3.6692279E+19
+     20  -6.0000E-01  -4.0501403E-01    -4.0501403E+19  -1.2562675E+01   2.0250701E+19   4.0501403E+19
+     19  -6.2000E-01  -4.4523774E-01    -4.4523774E+19  -1.3315472E+01   2.2261887E+19   4.4523774E+19
+     18  -6.4000E-01  -4.8735711E-01    -4.8735711E+19  -1.4091964E+01   2.4367856E+19   4.8735711E+19
+     17  -6.6000E-01  -5.3104539E-01    -5.3104539E+19  -1.4888067E+01   2.6552270E+19   5.3104539E+19
+     16  -6.8000E-01  -5.7587989E-01    -5.7587989E+19  -1.5698499E+01   2.8793995E+19   5.7587989E+19
+     15  -7.0000E-01  -6.2134081E-01    -6.2134081E+19  -1.6516760E+01   3.1067041E+19   6.2134081E+19
+     14  -7.2000E-01  -6.6681673E-01    -6.6681673E+19  -1.7335209E+01   3.3340836E+19   6.6681673E+19
+     13  -7.4000E-01  -7.1161865E-01    -7.1161865E+19  -1.8145233E+01   3.5580932E+19   7.1161865E+19
+     12  -7.6000E-01  -7.5500399E-01    -7.5500399E+19  -1.8937550E+01   3.7750199E+19   7.5500399E+19
+     11  -7.8000E-01  -7.9621119E-01    -7.9621119E+19  -1.9702640E+01   3.9810559E+19   7.9621119E+19
+     10  -8.0000E-01  -8.3450416E-01    -8.3450416E+19  -2.0431302E+01   4.1725208E+19   8.3450416E+19
+      9  -8.2000E-01  -8.6922400E-01    -8.6922400E+19  -2.1115300E+01   4.3461200E+19   8.6922400E+19
+      8  -8.4000E-01  -8.9984320E-01    -8.9984320E+19  -2.1748040E+01   4.4992160E+19   8.9984320E+19
+      7  -8.6000E-01  -9.2601541E-01    -9.2601541E+19  -2.2325193E+01   4.6300770E+19   9.2601541E+19
+      6  -8.8000E-01  -9.4761265E-01    -9.4761265E+19  -2.2845158E+01   4.7380632E+19   9.4761265E+19
+      5  -9.0000E-01  -9.6474163E-01    -9.6474163E+19  -2.3309270E+01   4.8237081E+19   9.6474163E+19
+      4  -9.2000E-01  -9.7773318E-01    -9.7773318E+19  -2.3721665E+01   4.8886659E+19   9.7773318E+19
+      3  -9.4000E-01  -9.8710305E-01    -9.8710305E+19  -2.4088788E+01   4.9355152E+19   9.8710305E+19
+      2  -9.6000E-01  -9.9348846E-01    -9.9348846E+19  -2.4418606E+01   4.9674423E+19   9.9348846E+19
+      1  -9.8000E-01  -9.9757092E-01    -9.9757092E+19  -2.4719637E+01   4.9878546E+19   9.9757092E+19
+      0  -1.0000E+00  -1.0000000E+00    -1.0000000E+20  -2.5000000E+01   5.0000000E+19   1.0000000E+20
+
+ Spherical grid detected.
+
+ init buffers
+      get_grid :: read grid data from file 'input_data/sample_grd_riv.0.nc'.
+ No diagnostics.
+ hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
+ hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
+                                           open_cross = 5.4367977391196312E+06
+ Cg_max = 0.3808322   Cg_min = 0.0337713   Cu_Cor = 0.0016583
+
+ Maximum grid stiffness ratios:   rx0 = 0.100020449  rx1 =  17.833965349
+
+ WARNING: Exact restart is requested, but is not possible: initial
+          file 'input_data/roms_init_bgc.0.nc' does not contain sufficient records.
+  --- WARNING: Lig not in initial file.  Initialized to 0.0
+  --- WARNING: DIC_ALT_CO2 not in initial file.  Initialized to 0.0
+  --- WARNING: ALK not in initial file.  Initialized to 0.0
+  --- WARNING: ALK_ALT_CO2 not in initial file.  Initialized to 0.0
+  --- WARNING: DOPr not in initial file.  Initialized to 0.0
+  --- WARNING: DONr not in initial file.  Initialized to 0.0
+  --- WARNING: DOCr not in initial file.  Initialized to 0.0
+  --- WARNING: zooC not in initial file.  Initialized to 0.0
+  --- WARNING: spChl not in initial file.  Initialized to 0.0
+  --- WARNING: spC not in initial file.  Initialized to 0.0
+  --- WARNING: spP not in initial file.  Initialized to 0.0
+  --- WARNING: spFe not in initial file.  Initialized to 0.0
+  --- WARNING: spCaCO3 not in initial file.  Initialized to 0.0
+  --- WARNING: diatChl not in initial file.  Initialized to 0.0
+  --- WARNING: diatC not in initial file.  Initialized to 0.0
+  --- WARNING: diatP not in initial file.  Initialized to 0.0
+  --- WARNING: diatFe not in initial file.  Initialized to 0.0
+  --- WARNING: diatSi not in initial file.  Initialized to 0.0
+  --- WARNING: diazChl not in initial file.  Initialized to 0.0
+  --- WARNING: diazC not in initial file.  Initialized to 0.0
+  --- WARNING: diazP not in initial file.  Initialized to 0.0
+  --- WARNING: diazFe not in initial file.  Initialized to 0.0
+ WARNING: netCDF variable 'hbls' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
+  --- WARNING: MARBL_PH_SURF not in initial file.  Initialized to 0.0
+  --- WARNING: MARBL_ABIO_PH_SURF not in initial file.  Initialized to 0.0
+  --- WARNING: MARBL_PH_SURF_ALT_CO2 not in initial file.  Initialized to 0.0
+  --- WARNING: MARBL_PH_3D not in initial file.  Initialized to 0.0
+  --- WARNING: MARBL_PH_3D_ALT_CO2 not in initial file.  Initialized to 0.0
+      get_init :: Read initial conditions for day =   4726.5657 record =   1
+         set_frc :: sustr            input time (days) =   4725.00     rec =   2
+         set_frc :: sustr            input time (days) =   4755.00     rec =   3
+         set_frc :: svstr            input time (days) =   4725.00     rec =   2
+         set_frc :: svstr            input time (days) =   4755.00     rec =   3
+         set_frc :: shflux           input time (days) =   4725.00     rec =   2
+         set_frc :: shflux           input time (days) =   4755.00     rec =   3
+         set_frc :: swrad            input time (days) =   4725.00     rec =   2
+         set_frc :: swrad            input time (days) =   4755.00     rec =   3
+         set_frc :: swflux           input time (days) =   4725.00     rec =   2
+         set_frc :: swflux           input time (days) =   4755.00     rec =   3
+         set_frc :: dust             input time (days) =   4702.00     rec =  11
+         set_frc :: dust             input time (days) =   4732.50     rec =  12
+         set_frc :: iron             input time (days) =   4702.00     rec =  11
+         set_frc :: iron             input time (days) =   4732.50     rec =  12
+         set_frc :: pco2_air         input time (days) =   4702.00     rec =  11
+         set_frc :: pco2_air         input time (days) =   4732.50     rec =  12
+         set_frc :: pco2_air_alt     input time (days) =   4702.00     rec =  11
+         set_frc :: pco2_air_alt     input time (days) =   4732.50     rec =  12
+         set_frc :: nox              input time (days) =   4702.00     rec =  11
+         set_frc :: nox              input time (days) =   4732.50     rec =  12
+         set_frc :: nhy              input time (days) =   4702.00     rec =  11
+         set_frc :: nhy              input time (days) =   4732.50     rec =  12
+
+ Sponge layer =  15 interior grid points.
+ Writing initial history file
+ Reference time used for simulation is: 2000/01/01
+       created new netcdf file bgc_his.20121209133435.0.nc
+       created new netcdf file bgc_bgc.20121209133435.0.nc
+       wrt_bgc_tracers :: history , trc =  PO4                                       
+       wrt_bgc_tracers :: history , trc =  NO3                                       
+       wrt_bgc_tracers :: history , trc =  SiO3                                      
+       wrt_bgc_tracers :: history , trc =  NH4                                       
+       wrt_bgc_tracers :: history , trc =  Fe                                        
+       wrt_bgc_tracers :: history , trc =  Lig                                       
+       wrt_bgc_tracers :: history , trc =  O2                                        
+       wrt_bgc_tracers :: history , trc =  DIC                                       
+       wrt_bgc_tracers :: history , trc =  DIC_ALT_CO2                               
+       wrt_bgc_tracers :: history , trc =  ALK                                       
+       wrt_bgc_tracers :: history , trc =  ALK_ALT_CO2                               
+       wrt_bgc_tracers :: history , trc =  DOC                                       
+       wrt_bgc_tracers :: history , trc =  DON                                       
+       wrt_bgc_tracers :: history , trc =  DOP                                       
+       wrt_bgc_tracers :: history , trc =  DOPr                                      
+       wrt_bgc_tracers :: history , trc =  DONr                                      
+       wrt_bgc_tracers :: history , trc =  DOCr                                      
+       wrt_bgc_tracers :: history , trc =  zooC                                      
+       wrt_bgc_tracers :: history , trc =  spChl                                     
+       wrt_bgc_tracers :: history , trc =  spC                                       
+       wrt_bgc_tracers :: history , trc =  spP                                       
+       wrt_bgc_tracers :: history , trc =  spFe                                      
+       wrt_bgc_tracers :: history , trc =  spCaCO3                                   
+       wrt_bgc_tracers :: history , trc =  diatChl                                   
+       wrt_bgc_tracers :: history , trc =  diatC                                     
+       wrt_bgc_tracers :: history , trc =  diatP                                     
+       wrt_bgc_tracers :: history , trc =  diatFe                                    
+       wrt_bgc_tracers :: history , trc =  diatSi                                    
+       wrt_bgc_tracers :: history , trc =  diazChl                                   
+       wrt_bgc_tracers :: history , trc =  diazC                                     
+       wrt_bgc_tracers :: history , trc =  diazP                                     
+       wrt_bgc_tracers :: history , trc =  diazFe                                    
+       bgc :: wrote history, tdays =   4726.5657  step =     -1 rec =   1
+       created new netcdf file bgc_bgc_dia.20121209133435.0.nc
+       bgc diag :: wrote history, tdays =   4726.5657  step =      0 rec =   1
+
+ main :: initialization complete, started time-stepping.
+
+
+  STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
+ 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263777680990899E-01 4.2518890443653429E-01
+         set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
+         set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
+ 1  4.2294649426827743E-03 2.7899249149024364E-03 4.0042803391422305E-01 3.7077050964273750E-01
+ 2  4.2263010986340263E-03 2.7864445365130986E-03 2.9727921070808611E-01 1.5941239141462421E-01
+ 3  4.2225760985883862E-03 2.7823574534196933E-03 4.4126746280757045E-01 3.3094571426648800E-01
+ 4  4.2175537894076111E-03 2.7770322654641832E-03 2.0939178050410687E-01 2.0939178050410687E-01
+ 5  4.2156855156165749E-03 2.7748446673095924E-03 2.3177809649896608E-01 1.2055899482549325E-01
+       ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
+       wrt_bgc_tracers :: history , trc =  PO4                                       
+       wrt_bgc_tracers :: history , trc =  NO3                                       
+       wrt_bgc_tracers :: history , trc =  SiO3                                      
+       wrt_bgc_tracers :: history , trc =  NH4                                       
+       wrt_bgc_tracers :: history , trc =  Fe                                        
+       wrt_bgc_tracers :: history , trc =  Lig                                       
+       wrt_bgc_tracers :: history , trc =  O2                                        
+       wrt_bgc_tracers :: history , trc =  DIC                                       
+       wrt_bgc_tracers :: history , trc =  DIC_ALT_CO2                               
+       wrt_bgc_tracers :: history , trc =  ALK                                       
+       wrt_bgc_tracers :: history , trc =  ALK_ALT_CO2                               
+       wrt_bgc_tracers :: history , trc =  DOC                                       
+       wrt_bgc_tracers :: history , trc =  DON                                       
+       wrt_bgc_tracers :: history , trc =  DOP                                       
+       wrt_bgc_tracers :: history , trc =  DOPr                                      
+       wrt_bgc_tracers :: history , trc =  DONr                                      
+       wrt_bgc_tracers :: history , trc =  DOCr                                      
+       wrt_bgc_tracers :: history , trc =  zooC                                      
+       wrt_bgc_tracers :: history , trc =  spChl                                     
+       wrt_bgc_tracers :: history , trc =  spC                                       
+       wrt_bgc_tracers :: history , trc =  spP                                       
+       wrt_bgc_tracers :: history , trc =  spFe                                      
+       wrt_bgc_tracers :: history , trc =  spCaCO3                                   
+       wrt_bgc_tracers :: history , trc =  diatChl                                   
+       wrt_bgc_tracers :: history , trc =  diatC                                     
+       wrt_bgc_tracers :: history , trc =  diatP                                     
+       wrt_bgc_tracers :: history , trc =  diatFe                                    
+       wrt_bgc_tracers :: history , trc =  diatSi                                    
+       wrt_bgc_tracers :: history , trc =  diazChl                                   
+       wrt_bgc_tracers :: history , trc =  diazC                                     
+       wrt_bgc_tracers :: history , trc =  diazP                                     
+       wrt_bgc_tracers :: history , trc =  diazFe                                    
+       bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
+       bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
+ 6  4.2152003412827830E-03 2.7739722008516452E-03 2.9069716164208781E-01 2.1955254137678018E-01
+ 7  4.2151817454044987E-03 2.7735783961351092E-03 2.0236960307386684E-01 1.9417549565775136E-01
+ 8  4.2170067232140717E-03 2.7750135245570434E-03 2.5068775379237240E-01 1.3721936096844359E-01
+ 9  4.2180008699533641E-03 2.7755668751599546E-03 2.8034745621743884E-01 2.1845061661780424E-01
+10  4.2170787295234425E-03 2.7742121767264372E-03 2.0266617746804455E-01 1.9424691793365467E-01
+       ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
+       wrt_bgc_tracers :: history , trc =  PO4                                       
+       wrt_bgc_tracers :: history , trc =  NO3                                       
+       wrt_bgc_tracers :: history , trc =  SiO3                                      
+       wrt_bgc_tracers :: history , trc =  NH4                                       
+       wrt_bgc_tracers :: history , trc =  Fe                                        
+       wrt_bgc_tracers :: history , trc =  Lig                                       
+       wrt_bgc_tracers :: history , trc =  O2                                        
+       wrt_bgc_tracers :: history , trc =  DIC                                       
+       wrt_bgc_tracers :: history , trc =  DIC_ALT_CO2                               
+       wrt_bgc_tracers :: history , trc =  ALK                                       
+       wrt_bgc_tracers :: history , trc =  ALK_ALT_CO2                               
+       wrt_bgc_tracers :: history , trc =  DOC                                       
+       wrt_bgc_tracers :: history , trc =  DON                                       
+       wrt_bgc_tracers :: history , trc =  DOP                                       
+       wrt_bgc_tracers :: history , trc =  DOPr                                      
+       wrt_bgc_tracers :: history , trc =  DONr                                      
+       wrt_bgc_tracers :: history , trc =  DOCr                                      
+       wrt_bgc_tracers :: history , trc =  zooC                                      
+       wrt_bgc_tracers :: history , trc =  spChl                                     
+       wrt_bgc_tracers :: history , trc =  spC                                       
+       wrt_bgc_tracers :: history , trc =  spP                                       
+       wrt_bgc_tracers :: history , trc =  spFe                                      
+       wrt_bgc_tracers :: history , trc =  spCaCO3                                   
+       wrt_bgc_tracers :: history , trc =  diatChl                                   
+       wrt_bgc_tracers :: history , trc =  diatC                                     
+       wrt_bgc_tracers :: history , trc =  diatP                                     
+       wrt_bgc_tracers :: history , trc =  diatFe                                    
+       wrt_bgc_tracers :: history , trc =  diatSi                                    
+       wrt_bgc_tracers :: history , trc =  diazChl                                   
+       wrt_bgc_tracers :: history , trc =  diazC                                     
+       wrt_bgc_tracers :: history , trc =  diazP                                     
+       wrt_bgc_tracers :: history , trc =  diazFe                                    
+       bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
+       bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
+ Process    0  thread  0  cpu time =        9.01 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   9.09566986933351     
