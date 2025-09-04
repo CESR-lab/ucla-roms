@@ -5,6 +5,7 @@
       use param
       use dimensions
       use roms_read_write
+      use scalars
       
       implicit none
 
@@ -728,13 +729,14 @@
 !
           evap=-cp*hflat/Hlv
           ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
-          stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
+          ! cmday2ms is also defined in flux_frc.F
+          swflx(i,j) = prate(i,j)*cmday2ms-evap
+!         stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
 #endif
 # ifdef MASKING
+! Is that neccesary?
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
-# ifdef SALINITY
           stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
-# endif          
 # endif
 !
 !  Save for the calculation of wind stress

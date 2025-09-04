@@ -25,6 +25,7 @@
      &                                       Drhs, UFx,UFe,VFx,VFe)
 
       use param
+      use surf_flux
       use river_frc
       use pipe_frc
       use cdr_frc
@@ -148,13 +149,13 @@
       do j=jstrV-1,jend !! why are these from ...-1?
         do i=istrU-1,iend
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
-     &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
+     &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1)
+     &                + swflx(i,j) )
           if (pipe_source) then          ! If pipe_source is false, the branch will
             if (pipe_idx(i,j) > 0.) then ! be eliminated by compile optimization
               zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
             endif
           endif
-
 
 #ifdef MASKING
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed

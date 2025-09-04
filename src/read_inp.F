@@ -355,52 +355,6 @@
      &     'ubind =', ubind, 'open boundary binding velcity [m/s]'
 
 
-/* OBSOLETE --->
-! Parameters for OBC nudging and nudging layers;
-! converted from [days] to [sec^-1]
-
-
-c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) tauM2_in, tauM2_out, attnM2
-# ifdef SOLVE3D
-     &                       , tauM3_in, tauM3_out
-     &                       , tauT_in,  tauT_out
-# endif
-          if (tauM2_in > 0.) then                ! convert relaxation
-            tauM2_in =1./(tauM2_in *day2sec)     ! time [units = days]
-          endif                                  ! into
-          if (tauM2_out > 0.) then               ! nudging coefficient
-            tauM2_out=1./(tauM2_out*day2sec)     ! [units = 1/sec]
-          endif
-# ifdef SOLVE3D
-          if (tauM3_in > 0.) then
-            tauM3_in =1./(tauM3_in *day2sec)
-          endif
-          if (tauM3_out > 0.) then
-            tauM3_out=1./(tauM3_out*day2sec)
-          endif
-          if (tauT_in > 0.) then
-            tauT_in =1./(tauT_in *day2sec)
-          endif
-          if (tauT_out > 0.) then
-            tauT_out=1./(tauT_out*day2sec)
-          endif
-# endif
-          mpi_master_only write(*,'(6x,A,ES10.3,ES10.3,2A)')
-     &          'tauM2 =', tauM2_in, tauM2_out, '(in/out)  Nudging ',
-     &                                   'for barotropic mode [s^-1]'
-          mpi_master_only write(*,'(5x,A,ES10.3,2x,2A)') 'attnM2 =',
-     &    attnM2,'open boundary pressure-gradient attenuation [s^-1]'
-# ifdef SOLVE3D
-          mpi_master_only write(*,'(6x,A,ES10.3,ES10.3,2A)')
-     &          'tauM3 =', tauM3_in, tauM3_out, '(in/out)  Nudging ',
-     &                                   'for baroclinic mode [s^-1]'
-          mpi_master_only write(*,'(7x,A,ES10.3,ES10.3,2A)')
-     &             'tauT =', tauT_in, tauT_out, '(in/out)  Nudging ',
-     &                                          'for tracers [s^-1]'
-# endif
-           <--- OBSOLETE */
 #endif
 
 

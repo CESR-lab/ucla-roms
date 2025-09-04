@@ -4,7 +4,6 @@
       subroutine omega
 
       use param
-      use roms_mpi
       use private_scratch
 
       implicit none
@@ -41,6 +40,7 @@
       use grid
       use ocean_vars
       use scalars
+      use surf_flux
       use roms_mpi
 
       implicit none
@@ -96,6 +96,10 @@ c**     dtau=(1.-1./6.)*dt
             CX(i,k)=max(FlxU(i+1,j,k),0.)-min(FlxU(i,j,k),0.)
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)
           enddo
+        enddo
+       ! rain water
+        do i=1,nx
+          Wi(i,j,nz) = Wi(i,j,nz) + swflx(i,j)
         enddo
         do i=istr,iend
           wrk(i)=Wi(i,j,N)/(z_w(i,j,N)-z_w(i,j,0))
