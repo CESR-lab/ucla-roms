@@ -1,3 +1,69 @@
+
+ Flux_frc module test.
+     ntimes =        10   total number of 3D timesteps
+         dt =    20.0000  time step [sec] for 3D equations
+    ndtfast =        30   mode-splitting ratio
+      ninfo =         1   number of steps between runtime diagnostics
+
+    theta_s = 6.0000000  vertical S-coordinate surface
+    theta_b = 6.0000000  and bottom stretching parameters
+         hc =  25.00000  critical depth [m]
+ grid file: input_data/sample_grd_riv.0.nc
+ forcing data file(s): input_data/sample_flux_frc.0.nc
+                       input_data/sample_flux_bgc.0.nc
+                       input_data/sample_bry_bgc.0.nc
+                       input_data/roms_bry_trace.0.nc
+                       input_data/roms_bgcbry.0.nc
+                       input_data/roms_default_bgcbry.0.nc
+                       input_data/roms_LFfrc.0.nc
+ initial condition :: rec =  1  file = 'input_data/roms_init_bgc.0.nc'
+
+ WARNING: Urecognized keyword 'MARBL_biogeochemistry' --> DISREGARDED.
+
+      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
+       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
+   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
+   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
+   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
+   tnu2( 3) = 0.000E+00  horizontal Laplacian diffusion for tracer  3, [m^2/s]
+   tnu2( 4) = 0.000E+00  horizontal Laplacian diffusion for tracer  4, [m^2/s]
+   tnu2( 5) = 0.000E+00  horizontal Laplacian diffusion for tracer  5, [m^2/s]
+   tnu2( 6) = 0.000E+00  horizontal Laplacian diffusion for tracer  6, [m^2/s]
+   tnu2( 7) = 0.000E+00  horizontal Laplacian diffusion for tracer  7, [m^2/s]
+   tnu2( 8) = 0.000E+00  horizontal Laplacian diffusion for tracer  8, [m^2/s]
+   tnu2( 9) = 0.000E+00  horizontal Laplacian diffusion for tracer  9, [m^2/s]
+   tnu2(10) = 0.000E+00  horizontal Laplacian diffusion for tracer 10, [m^2/s]
+   tnu2(11) = 0.000E+00  horizontal Laplacian diffusion for tracer 11, [m^2/s]
+   tnu2(12) = 0.000E+00  horizontal Laplacian diffusion for tracer 12, [m^2/s]
+   tnu2(13) = 0.000E+00  horizontal Laplacian diffusion for tracer 13, [m^2/s]
+   tnu2(14) = 0.000E+00  horizontal Laplacian diffusion for tracer 14, [m^2/s]
+   tnu2(15) = 0.000E+00  horizontal Laplacian diffusion for tracer 15, [m^2/s]
+   tnu2(16) = 0.000E+00  horizontal Laplacian diffusion for tracer 16, [m^2/s]
+   tnu2(17) = 0.000E+00  horizontal Laplacian diffusion for tracer 17, [m^2/s]
+   tnu2(18) = 0.000E+00  horizontal Laplacian diffusion for tracer 18, [m^2/s]
+   tnu2(19) = 0.000E+00  horizontal Laplacian diffusion for tracer 19, [m^2/s]
+   tnu2(20) = 0.000E+00  horizontal Laplacian diffusion for tracer 20, [m^2/s]
+   tnu2(21) = 0.000E+00  horizontal Laplacian diffusion for tracer 21, [m^2/s]
+   tnu2(22) = 0.000E+00  horizontal Laplacian diffusion for tracer 22, [m^2/s]
+   tnu2(23) = 0.000E+00  horizontal Laplacian diffusion for tracer 23, [m^2/s]
+   tnu2(24) = 0.000E+00  horizontal Laplacian diffusion for tracer 24, [m^2/s]
+   tnu2(25) = 0.000E+00  horizontal Laplacian diffusion for tracer 25, [m^2/s]
+   tnu2(26) = 0.000E+00  horizontal Laplacian diffusion for tracer 26, [m^2/s]
+   tnu2(27) = 0.000E+00  horizontal Laplacian diffusion for tracer 27, [m^2/s]
+   tnu2(28) = 0.000E+00  horizontal Laplacian diffusion for tracer 28, [m^2/s]
+   tnu2(29) = 0.000E+00  horizontal Laplacian diffusion for tracer 29, [m^2/s]
+   tnu2(30) = 0.000E+00  horizontal Laplacian diffusion for tracer 30, [m^2/s]
+   tnu2(31) = 0.000E+00  horizontal Laplacian diffusion for tracer 31, [m^2/s]
+       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
+      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
+        Zob = 1.000E-02  bottom roughness height [m]
+     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
+      ubind = 1.000E-01  open boundary binding velcity [m/s]
+ neighbors att not found
+ input_data/sample_grd_riv.0.nc                                                 
+                                                                                
+                                                                                
+                    
  metadata about           31  tracers:
  -----------
  TRACER NO.:            1
@@ -186,97 +252,6 @@
  UNITS: mMol N2O m-3                              
  -----------
 
- Activated CPP configuration switches:
- <cppdefs.opt>
-       RIVERS                  SPONGE_TUNE             RIVER_SOURCE
-       EXTRACT_DATA            SOLVE3D                 UV_COR
-       UV_ADV                  CURVGRID                SPHERICAL
-       MASKING                 SALINITY                NONLIN_EOS
-       SPLIT_EOS               EXACT_RESTART           IMPLICIT_BOTTOM_DRAG
-       UV_VIS2                 TS_DIF2                 LMD_MIXING
-       LMD_KPP                 LMD_BKPP                LMD_RIMIX
-       LMD_NONLOCAL            OBC_WEST                OBC_EAST
-       OBC_NORTH               OBC_SOUTH               OBC_M2FLATHER
-       OBC_M3ORLANSKI          OBC_TORLANSKI           Z_FRC_BRY
-       M2_FRC_BRY              M3_FRC_BRY              T_FRC_BRY
-       SPONGE                  BIOLOGY_BEC2            BIOLOGY
-       BEC2_DIAG               Ncycle_SY               DAILYPAR_PHOTOINHIBITION
-       PCO2AIR_FORCING
- <pre_step3d4S.F>
-       SPLINE_UV               SPLINE_TS
- <step3d_uv1.F>
-       UPSTREAM_UV             SPLINE_UV
- <step3d_uv2.F>
-       DELTA=0.28              EPSIL=0.36
- <step3d_t_ISO.F>
-       UPSTREAM_TS             SPLINE_TS
- <set_depth.F>
-       NOW=3.63                MID=4.47                BAK=2.05
-       (N-M+B-1)/B=0.102439024
- <lmd_kpp.F>
-       INT_AT_RHO_POINTS       SMOOTH_HBL
- <set_global_definitions.h>
-       CORR_COUPLED_MODE       EXTRAP_BAR_FLUXES       IMPLCT_NO_SLIP_BTTM_BC
-
- Flux_frc module test.
-     ntimes =        10   total number of 3D timesteps
-         dt =    20.0000  time step [sec] for 3D equations
-    ndtfast =        30   mode-splitting ratio
-      ninfo =         1   number of steps between runtime diagnostics
-
-    theta_s = 6.0000000  vertical S-coordinate surface
-    theta_b = 6.0000000  and bottom stretching parameters
-         hc =  25.00000  critical depth [m]
- grid file: input_data/sample_grd_riv.0.nc
- forcing data file(s): input_data/sample_flux_frc.0.nc
-                       input_data/sample_flux_bgc.0.nc
-                       input_data/sample_bry_trace.0.nc
-                       input_data/sample_bry_bgc.0.nc
-                       input_data/sample_LFfrc.0.nc
- initial condition :: rec =  1  file = 'input_data/sample_init_trace.0.nc'
-
- WARNING: Urecognized keyword 'MARBL_biogeochemistry' --> DISREGARDED.
-
-      visc2 = 0.000E+00  horizontal Laplacian kinematic viscosity [m^2/s]
-       rho0 = 1027.5000  Boussinesq reference density [kg/m^3].
-   v_sponge =      1.00  maximum viscosity in sponge layer [m^2/s]
-   tnu2( 1) = 0.000E+00  horizontal Laplacian kinematic heat conductivity [m^2/s]
-   tnu2( 2) = 0.000E+00  horizontal Laplacian diffusion for tracer  2, [m^2/s]
-   tnu2( 3) = 0.000E+00  horizontal Laplacian diffusion for tracer  3, [m^2/s]
-   tnu2( 4) = 0.000E+00  horizontal Laplacian diffusion for tracer  4, [m^2/s]
-   tnu2( 5) = 0.000E+00  horizontal Laplacian diffusion for tracer  5, [m^2/s]
-   tnu2( 6) = 0.000E+00  horizontal Laplacian diffusion for tracer  6, [m^2/s]
-   tnu2( 7) = 0.000E+00  horizontal Laplacian diffusion for tracer  7, [m^2/s]
-   tnu2( 8) = 0.000E+00  horizontal Laplacian diffusion for tracer  8, [m^2/s]
-   tnu2( 9) = 0.000E+00  horizontal Laplacian diffusion for tracer  9, [m^2/s]
-   tnu2(10) = 0.000E+00  horizontal Laplacian diffusion for tracer 10, [m^2/s]
-   tnu2(11) = 0.000E+00  horizontal Laplacian diffusion for tracer 11, [m^2/s]
-   tnu2(12) = 0.000E+00  horizontal Laplacian diffusion for tracer 12, [m^2/s]
-   tnu2(13) = 0.000E+00  horizontal Laplacian diffusion for tracer 13, [m^2/s]
-   tnu2(14) = 0.000E+00  horizontal Laplacian diffusion for tracer 14, [m^2/s]
-   tnu2(15) = 0.000E+00  horizontal Laplacian diffusion for tracer 15, [m^2/s]
-   tnu2(16) = 0.000E+00  horizontal Laplacian diffusion for tracer 16, [m^2/s]
-   tnu2(17) = 0.000E+00  horizontal Laplacian diffusion for tracer 17, [m^2/s]
-   tnu2(18) = 0.000E+00  horizontal Laplacian diffusion for tracer 18, [m^2/s]
-   tnu2(19) = 0.000E+00  horizontal Laplacian diffusion for tracer 19, [m^2/s]
-   tnu2(20) = 0.000E+00  horizontal Laplacian diffusion for tracer 20, [m^2/s]
-   tnu2(21) = 0.000E+00  horizontal Laplacian diffusion for tracer 21, [m^2/s]
-   tnu2(22) = 0.000E+00  horizontal Laplacian diffusion for tracer 22, [m^2/s]
-   tnu2(23) = 0.000E+00  horizontal Laplacian diffusion for tracer 23, [m^2/s]
-   tnu2(24) = 0.000E+00  horizontal Laplacian diffusion for tracer 24, [m^2/s]
-   tnu2(25) = 0.000E+00  horizontal Laplacian diffusion for tracer 25, [m^2/s]
-   tnu2(26) = 0.000E+00  horizontal Laplacian diffusion for tracer 26, [m^2/s]
-   tnu2(27) = 0.000E+00  horizontal Laplacian diffusion for tracer 27, [m^2/s]
-   tnu2(28) = 0.000E+00  horizontal Laplacian diffusion for tracer 28, [m^2/s]
-   tnu2(29) = 0.000E+00  horizontal Laplacian diffusion for tracer 29, [m^2/s]
-   tnu2(30) = 0.000E+00  horizontal Laplacian diffusion for tracer 30, [m^2/s]
-   tnu2(31) = 0.000E+00  horizontal Laplacian diffusion for tracer 31, [m^2/s]
-       rdrg = 0.000E+00  linear bottom drag coefficient [m/s]
-      rdrg2 = 1.000E-03  quadratic bottom drag coefficient, nondim
-        Zob = 1.000E-02  bottom roughness height [m]
-     gamma2 = 1.000E+00  slipperiness parameter: free-slip = +1, or no-slip = -1.
-      ubind = 1.000E-01  open boundary binding velcity [m/s]
-
  Mode splitting: ndtfast = 30    nfast =  41        p,q,r =  2.0  4.0   0.2500
 
 
@@ -380,6 +355,18 @@
 
  init buffers
       get_grid :: read grid data from file 'input_data/sample_grd_riv.0.nc'.
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
  hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
  hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
                                            open_cross = 5.4367977391196312E+06
@@ -389,10 +376,43 @@
 
  ecosys_bec2_init:: init bgc extras
  WARNING: Exact restart is requested, but is not possible: initial
-          file 'input_data/sample_init_trace.0.nc' does not contain sufficient records.
- WARNING: netCDF variable 'hbls' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
- WARNING: netCDF variable 'hbbl' not found in 'input_data/sample_init_trace.0.nc' ==> initialized to zero state.
+          file 'input_data/roms_init_bgc.0.nc' does not contain sufficient records.
+  --- WARNING: ALK not in initial file.  Initialized to 0.0
+  --- WARNING: DOPr not in initial file.  Initialized to 0.0
+  --- WARNING: DONr not in initial file.  Initialized to 0.0
+  --- WARNING: zooC not in initial file.  Initialized to 0.0
+  --- WARNING: spC not in initial file.  Initialized to 0.0
+  --- WARNING: spChl not in initial file.  Initialized to 0.0
+  --- WARNING: spFe not in initial file.  Initialized to 0.0
+  --- WARNING: spCaCO3 not in initial file.  Initialized to 0.0
+  --- WARNING: diatC not in initial file.  Initialized to 0.0
+  --- WARNING: diatChl not in initial file.  Initialized to 0.0
+  --- WARNING: diatFe not in initial file.  Initialized to 0.0
+  --- WARNING: diatSi not in initial file.  Initialized to 0.0
+  --- WARNING: diazC not in initial file.  Initialized to 0.0
+  --- WARNING: diazChl not in initial file.  Initialized to 0.0
+  --- WARNING: diazFe not in initial file.  Initialized to 0.0
+ WARNING: netCDF variable 'hbls' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
+ WARNING: netCDF variable 'hbbl' not found in 'input_data/roms_init_bgc.0.nc' ==> initialized to zero state.
       get_init :: Read initial conditions for day =   4726.5657 record =   1
+         set_frc :: sustr            input time (days) =   4725.00     rec =   2
+         set_frc :: sustr            input time (days) =   4755.00     rec =   3
+         set_frc :: svstr            input time (days) =   4725.00     rec =   2
+         set_frc :: svstr            input time (days) =   4755.00     rec =   3
+         set_frc :: shflux           input time (days) =   4725.00     rec =   2
+         set_frc :: shflux           input time (days) =   4755.00     rec =   3
+         set_frc :: swflux           input time (days) =   4725.00     rec =   2
+         set_frc :: swflux           input time (days) =   4755.00     rec =   3
+         set_frc :: swrad            input time (days) =   4725.00     rec =   2
+         set_frc :: swrad            input time (days) =   4755.00     rec =   3
+         set_frc :: dust             input time (days) =   4702.00     rec =  11
+         set_frc :: dust             input time (days) =   4732.50     rec =  12
+         set_frc :: iron             input time (days) =   4702.00     rec =  11
+         set_frc :: iron             input time (days) =   4732.50     rec =  12
+         set_frc :: pco2_air         input time (days) =   4702.00     rec =  11
+         set_frc :: pco2_air         input time (days) =   4732.50     rec =  12
+         set_frc :: swrad_LFreq      input time (days) =   0.00000     rec =   1
+         set_frc :: swrad_LFreq      input time (days) =   6000.00     rec =   2
 
  Sponge layer =  15 interior grid points.
  Writing initial history file
@@ -412,8 +432,8 @@
 
   STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
  0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263777680990899E-01 4.2518890443653429E-01
-         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
+         set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
          set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
          set_frc :: zeta_north       input time (days) =   4726.57     rec =   1
@@ -423,13 +443,13 @@
        ecosys_bec2_td:: computing bgc
  1  4.2294649426827752E-03 2.7899249149024373E-03 4.0042803391422283E-01 3.7077050964273728E-01
        ecosys_bec2_td:: computing bgc
- 2  4.2263016925914998E-03 2.7864445365095789E-03 2.9727921070808583E-01 1.5941239141462402E-01
+ 2  4.2263016925914998E-03 2.7864445365095789E-03 2.9727921070808561E-01 1.5941239141462379E-01
        ecosys_bec2_td:: computing bgc
- 3  4.2225774050149538E-03 2.7823574532778545E-03 4.4126746280757184E-01 3.3094571426648900E-01
+ 3  4.2225774050149529E-03 2.7823574532778545E-03 4.4126746280757168E-01 3.3094571426648878E-01
        ecosys_bec2_td:: computing bgc
- 4  4.2175559100636265E-03 2.7770322653037057E-03 2.0939178050410798E-01 2.0939178050410798E-01
+ 4  4.2175559100636265E-03 2.7770322653037057E-03 2.0939178050410817E-01 2.0939178050410817E-01
        ecosys_bec2_td:: computing bgc
- 5  4.2156884387640385E-03 2.7748446670304043E-03 2.3177809649896658E-01 1.2055899482549376E-01
+ 5  4.2156884387640394E-03 2.7748446670304043E-03 2.3177809649896658E-01 1.2055899482549366E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -438,15 +458,15 @@
        bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        ecosys_bec2_td:: computing bgc
- 6  4.2152040814771958E-03 2.7739722001996628E-03 2.9069716164208809E-01 2.1955254137678104E-01
+ 6  4.2152040814771958E-03 2.7739722001996628E-03 2.9069716164208687E-01 2.1955254137677954E-01
        ecosys_bec2_td:: computing bgc
- 7  4.2151862902665062E-03 2.7735783950617200E-03 2.0236960308731675E-01 1.9417549565910239E-01
+ 7  4.2151862902665071E-03 2.7735783950617195E-03 2.0236960308731700E-01 1.9417549565910255E-01
        ecosys_bec2_td:: computing bgc
- 8  4.2170121436412985E-03 2.7750135230121017E-03 2.5068775379237240E-01 1.3721936096844378E-01
+ 8  4.2170121436412985E-03 2.7750135230121017E-03 2.5068775379237246E-01 1.3721936096844359E-01
        ecosys_bec2_td:: computing bgc
- 9  4.2180071756222270E-03 2.7755668732725894E-03 2.8034745621743645E-01 2.1845061661780243E-01
+ 9  4.2180071756222270E-03 2.7755668732725898E-03 2.8034745621743856E-01 2.1845061661780407E-01
        ecosys_bec2_td:: computing bgc
-10  4.2170859825898894E-03 2.7742121745185293E-03 2.0266617748652180E-01 1.9424691792347309E-01
+10  4.2170859825898894E-03 2.7742121745185293E-03 2.0266617748652119E-01 1.9424691792347243E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -454,4 +474,8 @@
        wrt_bgc_tracers :: history , trc =  DIC                                       
        bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
        bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
- Process    0  thread  0  cpu time =       10.73 sec
+ Process    0  thread  0  cpu time =        4.08 sec
+
+ MAIN: DONE - Records written:
+
+ MPI_run_time =   4.12634904682636     

@@ -138,7 +138,7 @@
           w_avg=0
         endif
         if (wrt_avg_W) then
-          allocate( wvl_avg(GLOBAL_2D_ARRAY,0:N) )
+          allocate( wvl_avg(GLOBAL_2D_ARRAY,nz) )
           wvl_avg=0.
         endif
 
@@ -346,11 +346,8 @@
           call ncwrite(ncid,vname(1,indxO),work(i0:i1,j0:j1,:),start)
         endif
         if (wrt_W) then                              ! true vertical velocity (m/s).
-!         do tile=0,NSUB_X*NSUB_E-1
-!           call wvlcty (tile, work)
-!         enddo
-          call wvlcty (0, work)
-          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:N),start)
+          call wvlcty(work(:,:,1:nz))
+          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:nz),start)
         endif
         if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
         if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
@@ -1026,7 +1023,7 @@
      &                                      + ( We(i0:i1,j0:j1,:)+Wi(i0:i1,j0:j1,:) ) *coef
         if (wrt_avg_W) then
           ! the w averaging, calculation and output should be checked at some point.
-          call wvlcty_tile(1,nx,1,ny, work, A2d(1,1), A2d(1,2), A2d(1,3))  ! as per set_avg
+          call wvlcty(work)
 
           wvl_avg(i0:i1,j0:j1,1:N) = wvl_avg(i0:i1,j0:j1,1:N)*(1-coef)
      &                               + work(i0:i1,j0:j1,1:N)*coef

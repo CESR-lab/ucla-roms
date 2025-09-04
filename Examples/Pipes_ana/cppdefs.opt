@@ -8,15 +8,6 @@
 #define ANA_PIPES
 
 /*
-    Embedded (nested) grid configuration segment
-*/
-
-c--#ifndef MAX_GRID_LEVEL
-c--# define MAX_GRID_LEVEL 2
-c--# include "redefs.X"
-c--#endif
-
-/*
    Main switch starts here: model configuration choice.
 */
 

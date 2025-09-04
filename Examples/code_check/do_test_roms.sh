@@ -23,7 +23,6 @@ cp -p ../*.h . &> /dev/null
 cp -p ../cppdefs.opt .
 cp -p ../param.opt .
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
-#cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
 make compile_clean &> /dev/null
 make > compile.log 
@@ -47,7 +46,7 @@ rm *.nc      &> /dev/null
 rm diag.opt  &> /dev/null
 rm Make*     &> /dev/null
 rm param.opt &> /dev/null
-rm cppdefs.opt# &> /dev/null
+rm cppdefs.opt &> /dev/null
 rm roms      &> /dev/null
 
 # 2) Python - confirm values:

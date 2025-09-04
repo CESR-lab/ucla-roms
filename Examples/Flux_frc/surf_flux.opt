@@ -2,11 +2,12 @@
       ! ****************************************************************
       ! User inputs
 
-      logical,public,parameter :: wrt_smflx = .false.              ! output surface momentum flux
-      logical,public,parameter :: wrt_stflx = .false.              ! output surface tracer flux
-      logical,parameter :: sflx_avg  = .false.              ! write averaged sflx data
+      logical,public,parameter :: wrt_smflx = .true.       ! output surface momentum flux
+      logical,public,parameter :: wrt_stflx = .true.       ! output surface tracer flux
+      logical,public,parameter :: wrt_srflx = .true.       ! output surface swr flux
+      logical,parameter :: sflx_avg  = .true.              ! write averaged sflx data
 
-      real,parameter           :: output_period = 120       ! output averaging period in seconds
+      real,parameter           :: output_period = 200       ! output averaging period in seconds
       integer,parameter        :: nrpf          = 10        ! total recs per file
 
 
