@@ -1,0 +1,23 @@
+
+!     Choices for lmd_mixing
+
+      logical,parameter :: lmd_kpp    = .true.
+      logical,parameter :: lmd_bkpp   = .true.
+      logical,parameter :: lmd_nonloc = .true.
+      logical,parameter :: lmd_rimix  = .true.
+
+      logical,parameter :: lmd_convec = .false. ! off by default
+      logical,parameter :: smooth_ri  = .true.  ! on by default
+
+      real,parameter :: Ri0 = 0.7       ! Critical gradient Richardson number
+      real,parameter :: nu0m = 1.e-2    ! Maximum viscosity and diffusivity
+      real,parameter :: nu0s = 1.e-2    ! due to shear instability [m^2/s];
+      real,parameter :: nu0c = 0.1      ! Convective adjustment [m^2/s];
+      real,parameter :: nuwm = 1.0e-4   ! Interior viscosity and diffusivity
+      real,parameter :: nuws = 0.1e-4   ! due to wave breaking, [m^2/s]
+
+      real,parameter :: Lturb = 10.     ! Length scale of bottom boundary layer
+                                        ! where turbulence is supressed
+
+      real,parameter :: lmd_nu = 1.5e-6 ! Molecular viscosity [m^2/s];
+!--------------------------------------------------------------------------------------

@@ -202,8 +202,6 @@
             enddo
           enddo            !--> discard FC
 
-          iAkt=min(itrc,iTandS)
-
           !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  ))
           !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
           !!                                                  Hz*T(k)
@@ -212,7 +210,7 @@
           !! c(1) =       - dt*2*Ak(1)/(Hz(2)+Hz(1))
           !! U(k) --> DC(k)
           do i=istr,iend
-            FC(i,1)=2.*dtau*Akt(i,j,1,iAkt)/( Hz_fwd(i,j,2) !!  dt*2*Ak(1)/(Hz(2)+Hz(1))
+            FC(i,1)=2.*dtau*Akt(i,j,1)/( Hz_fwd(i,j,2) !!  dt*2*Ak(1)/(Hz(2)+Hz(1))
      &                                       +Hz_fwd(i,j,1))
             DC(i,0)=dtau*pm(i,j)*pn(i,j)
             WC(i,1)=DC(i,0)*Wi(i,j,1)
@@ -224,7 +222,7 @@
 
           do k=2,N-1,+1
             do i=istr,iend
-              FC(i,k)=2.*dtau*Akt(i,j,k,iAkt)/( Hz_fwd(i,j,k+1)
+              FC(i,k)=2.*dtau*Akt(i,j,k)/( Hz_fwd(i,j,k+1)
      &                                         +Hz_fwd(i,j,k) )
               WC(i,k)=DC(i,0)*Wi(i,j,k)
 

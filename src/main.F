@@ -323,6 +323,7 @@ CR      write(*,*)  ' -2' MYID
       use bgc_io
       use tides
       use mixing
+      use lmd_mixing
 
       implicit none
 

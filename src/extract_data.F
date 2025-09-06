@@ -47,7 +47,6 @@
       use netcdf
       use tracers, only: t, t_vname, t_lname, t_units  ! need to get names of tracers
       use ocean_vars
-      use basic_output, vn=>vname
       use scalars
       use diagnostics
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
@@ -708,20 +707,18 @@
             ierr = nf90_put_att(ncid,varid,'units','second' )
           endif
 
-          if (obj(i)%zeta) call create_var(ncid,obj(i),'zeta',dname,dsize,indxZ)
-          if (obj(i)%ubar) call create_var(ncid,obj(i),'ubar',dname,dsize,indxUb)
-          if (obj(i)%vbar) call create_var(ncid,obj(i),'vbar',dname,dsize,indxVb)
-          if (obj(i)%temp) call create_var(ncid,obj(i),'temp',dname3,dsize3,indxT)
-#ifdef SALINITY
-          if (obj(i)%salt) call create_var(ncid,obj(i),'salt',dname3,dsize3,indxS)
-#endif
-          if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3,indxU)
-          if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3,indxV)
-          if (obj(i)%w)    call create_var(ncid,obj(i),'w',dname3,dsize3,indxW)
+          if (obj(i)%zeta) call create_var(ncid,obj(i),'zeta',dname,dsize)
+          if (obj(i)%ubar) call create_var(ncid,obj(i),'ubar',dname,dsize)
+          if (obj(i)%vbar) call create_var(ncid,obj(i),'vbar',dname,dsize)
+          if (obj(i)%temp) call create_var(ncid,obj(i),'temp',dname3,dsize3)
+          if (obj(i)%salt) call create_var(ncid,obj(i),'salt',dname3,dsize3)
+          if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3)
+          if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3)
+          if (obj(i)%w)    call create_var(ncid,obj(i),'w',dname3,dsize3)
           if (obj(i)%up)   call create_var(ncid,obj(i),'up',dname,dsize)
           if (obj(i)%vp)   call create_var(ncid,obj(i),'vp',dname,dsize)
           if (obj(i)%bgc) then
-              do indt=isalt+nt_passive+1,NT
+              do indt=isalt+nt_passive+1,nt
               call create_var(ncid,obj(i),t_vname(indt),dname3,dsize3,-99)
               enddo
           endif
@@ -757,15 +754,29 @@
 
       if (present(idx)) then
         if (idx>=0) then
-        ierr = nf90_put_att(ncid,varid,'long_name',vn(2,idx))
-        ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
+!       ierr = nf90_put_att(ncid,varid,'long_name',vn(2,idx))
+!       ierr = nf90_put_att(ncid,varid,'units',vn(3,idx))
         else
         ierr = nf90_put_att(ncid,varid,'long_name','bgc concentration')
         ierr = nf90_put_att(ncid,varid,'units','mmol/m^3')
         endif
       else
-        ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')
-        ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+        if (findstr(trim(vname),'zeta')) then
+          ierr = nf90_put_att(ncid,varid,'long_name','free surface elevation')
+          ierr = nf90_put_att(ncid,varid,'units','m')
+        endif
+        if (findstr(trim(vname),'u')) then
+          ierr = nf90_put_att(ncid,varid,'long_name','u-momentum')
+          ierr = nf90_put_att(ncid,varid,'units','m/s')
+        endif
+        if (findstr(trim(vname),'v')) then
+          ierr = nf90_put_att(ncid,varid,'long_name','v-momentum')
+          ierr = nf90_put_att(ncid,varid,'units','m/s')
+        endif
+        if (findstr(trim(vname),'up').or.findstr(trim(vname),'vp') ) then
+          ierr = nf90_put_att(ncid,varid,'long_name','pressure flux')
+          ierr = nf90_put_att(ncid,varid,'units','W/m^2')
+        endif
       endif
 
       end subroutine create_var  !]

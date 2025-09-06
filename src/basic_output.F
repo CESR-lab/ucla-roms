@@ -14,60 +14,26 @@
       use diagnostics
       use scalars
       use ocean_vars
+      use eos_vars
+      use grid
+      use coupling
+      use mixing
+      use tracers
+
       implicit none
       private
 
 #include "ocean_vars.opt"
 
-# ifdef SOLVE3D
       real,allocatable,dimension(:,:,:) :: akv_avg
       real,allocatable,dimension(:,:,:) :: akt_avg
-#  ifdef SALINITY
-      real,allocatable,dimension(:,:,:) :: aks_avg
-#  endif
-#  ifdef LMD_KPP
-      real,allocatable,dimension(:,:) :: hbl_avg
-#  endif
-#  ifdef LMD_BKPP
-      real,allocatable,dimension(:,:) :: hbbl_avg
-#  endif
+
+      real,allocatable,dimension(:,:)   :: hbls_avg
+      real,allocatable,dimension(:,:)   :: hbbl_avg
       real,allocatable,dimension(:,:,:) :: rho_avg
-# endif
 
-      ![   Taken from old ncvars (should be improved eventually):
-      integer, parameter, public :: indxTime=1, indxZ=2, indxUb=3, indxVb=4
-#ifdef SOLVE3D
-     &                    , indxU=5, indxV=6, indxO=7, indxW=8
-     &                    , indxR=9, indxT=10
-# ifdef SALINITY
-     &                    , indxS=indxT+1
-# endif
-     &                    , indxAkv=indxT+NT,   indxAkt=indxAkv+1
-# ifdef SALINITY
-     &                    , indxAks=indxAkt+1
-# endif
-# ifdef LMD_KPP
-#  ifdef SALINITY
-     &                    , indxHbls=indxAks+1
-#  else
-     &                    , indxHbls=indxAkt+1
-#  endif
-# ifdef LMD_BKPP
-     &                    , indxHbbl=indxHbls+1
-# endif
-# else
-# ifdef LMD_BKPP
-     &                    , indxHbbl=indxAks+1
-# endif
-# endif
-
-#endif
-      !]
-
-      character*42, public ::  vname(3, 180) ! DevinD 180 copied from old code only
       integer, parameter, public :: iaux=6           ! Length of netCDF variable "time_step"
 
-      ! end old ncvars
 
       ! netcdf outputting:
       integer :: ncid=-1, prev_fill_mode
@@ -100,16 +66,8 @@
       end subroutine init_restarts !]
 !----------------------------------------------------------------------
       subroutine init_avg_arrays  ![
-      use scalars
 
       implicit none
-
-      if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
-        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_his!'
-      endif
-      if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
-        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_avg!'
-      endif
 
       if (wrt_file_avg) then
         if (wrt_avg_Z)  then
@@ -133,6 +91,16 @@
           allocate( v_avg(GLOBAL_2D_ARRAY,N) )
           v_avg=0.
         endif
+
+        if (wrt_avg_Tem) then
+          allocate( tem_avg(GLOBAL_2D_ARRAY,N) )
+          u_avg=0.
+        endif
+        if (wrt_avg_Sal) then
+          allocate( sal_avg(GLOBAL_2D_ARRAY,N) )
+          sal_avg=0.
+        endif
+
         if (wrt_avg_O) then
           allocate( w_avg(GLOBAL_2D_ARRAY,0:N) )
           w_avg=0
@@ -144,97 +112,28 @@
 
         ! the following variables do not 'live' in this module, but in order to prevent
         ! circular reference cause by e.g. wrt_R logical, they are allocated here.
+
         if (wrt_avg_R) then
-          allocate( rho_avg(GLOBAL_2D_ARRAY,N) )
+          allocate( rho_avg(GLOBAL_2D_ARRAY,nz) )
           rho_avg=0.
         endif
-        if (wrt_avg_Akv)  allocate( akv_avg(GLOBAL_2D_ARRAY,0:N) )
-        if (wrt_avg_Akt)  allocate( akt_avg(GLOBAL_2D_ARRAY,0:N) )
-# ifdef SALINITY
-        if (wrt_avg_Aks)  allocate( aks_avg(GLOBAL_2D_ARRAY,0:N) )
-# endif
+        if (wrt_avg_Akv) then
+          allocate( akv_avg(GLOBAL_2D_ARRAY,0:nz) )
+          Akv_avg = 0
+        endif
+        if (wrt_avg_Akt) then
+          allocate( akt_avg(GLOBAL_2D_ARRAY,0:nz) )
+          Akt_avg = 0
+        endif
+
 # ifdef LMD_KPP
-        if (wrt_avg_Hbls) allocate( hbl_avg(GLOBAL_2D_ARRAY) )
+        if (wrt_avg_hbls) allocate( hbls_avg(GLOBAL_2D_ARRAY) )
 # endif
 # ifdef LMD_BKPP
-        if (wrt_avg_Hbbl) allocate( hbbl_avg(GLOBAL_2D_ARRAY) )
+        if (wrt_avg_hbbl) allocate( hbbl_avg(GLOBAL_2D_ARRAY) )
 # endif
 
       endif  ! <-- wrt_file_avg
-
-! Names of variables in NetCDF output files. The first element
-! is the name of the variable; the other two are are attributes.
-
-      vname(1,indxTime)='ocean_time'
-      vname(2,indxTime)='Time since initialization'
-      vname(3,indxTime)='second'
-
-      vname(1,indxZ)='zeta'
-      vname(2,indxZ)='free-surface elevation'
-      vname(3,indxZ)='meter'
-
-      vname(1,indxUb)='ubar'
-      vname(2,indxUb)='vertically averaged u-momentum component'
-      vname(3,indxUb)='meter second-1'
-
-      vname(1,indxVb)='vbar'
-      vname(2,indxVb)='vertically averaged v-momentum component'
-      vname(3,indxVb)='meter second-1'
-
-#ifdef SOLVE3D
-      vname(1,indxU)='u'
-      vname(2,indxU)='u-momentum component'
-      vname(3,indxU)='meter second-1'
-
-      vname(1,indxV)='v'
-      vname(2,indxV)='v-momentum component'
-      vname(3,indxV)='meter second-1'
-
-      vname(1,indxO)='omega'
-      vname(2,indxO)='S-coordinate vertical velocity'
-      vname(3,indxO)='meter second-1'
-
-      vname(1,indxW)='w'
-      vname(2,indxW)='vertical velocity'
-      vname(3,indxW)='meter second-1'
-
-      vname(1,indxR)='rho'
-      vname(2,indxR)='density anomaly'
-      vname(3,indxR)='kilogram meter-3'
-
-      vname(1,indxT)='temp'
-      vname(2,indxT)='potential temperature'
-      vname(3,indxT)='Celsius'
-
-# ifdef SALINITY
-      vname(1,indxS)='salt'
-      vname(2,indxS)='salinity'
-      vname(3,indxS)='PSU'
-# endif
-
-      vname(1,indxAkv)='Akv'
-      vname(2,indxAkv)='vertical viscosity coefficient'
-      vname(3,indxAkv)='meter2 second-1'
-
-      vname(1,indxAkt)='Akt'
-      vname(2,indxAkt)='vertical thermal conductivity coefficient'
-      vname(3,indxAkt)='meter2 second-1'
-# ifdef SALINITY
-      vname(1,indxAks)='AKs'
-      vname(2,indxAks)='salinity vertical diffusion coefficient'
-      vname(3,indxAks)='meter2 second-1'
-# endif
-# ifdef LMD_KPP
-      vname(1,indxHbls)='hbls'
-      vname(2,indxHbls)='Thickness of KPP surface boundary layer'
-      vname(3,indxHbls)='meter'
-# endif
-# ifdef LMD_BKPP
-      vname(1,indxHbbl)='hbbl'
-      vname(2,indxHbbl)='Thickness of KPP bottom boundary layer'
-      vname(3,indxHbbl)='meter'
-# endif
-#endif
 
       ! NOTE: call this here to prevent output in between timesteps which would break code
       ! checking script.
@@ -247,12 +146,6 @@
       ! write ocean_vars variables to output netcdf file
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
-
-      use mixing
-      use eos_vars
-      use work_mod
-      use grid
-      use tracers    !, only: wrt_his_trc
 
       implicit none
 
@@ -269,6 +162,8 @@
       logical,save           :: supress=.false.
       logical                :: blowup,initial
 
+      real,dimension(:,:,:),allocatable  :: work
+
 
       blowup = .false.
       initial= .false.
@@ -282,6 +177,8 @@
 
 
       if (wrt_file_his.or.blowup) then
+
+        allocate( work(1-bf:nx+bf,1-bf:ny+bf,0:nz))
 
         if (.not.present(special)) then 
          output_time_his = output_time_his + dt  
@@ -310,27 +207,29 @@
         call write_time_step( ncid, rec_his, total_rec_his )
 
         start=1; start(3)=rec_his                                    ! back to 2D vars
-        if (wrt_Z)  call ncwrite(ncid,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
-        if (wrt_Ub) call ncwrite(ncid,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
-        if (wrt_Vb) call ncwrite(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
+        if (wrt_Z)  call ncwrite(ncid,'zeta',zeta(i0:i1,j0:j1,knew),start)
+        if (wrt_Ub) call ncwrite(ncid,'ubar',ubar( 1:i1,j0:j1,knew),start)
+        if (wrt_Vb) call ncwrite(ncid,'vbar',vbar(i0:i1, 1:j1,knew),start)
 
-#ifdef SOLVE3D
-! 3D momentum components in XI- and ETA-directions:
+! 3D momentum components in x- and y-directions:
 ! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
 ! in the previous timestep (same result).
 ! wrt_his called at the middle of next timestep as some variables only calculated there for t=n.
 
         start(3)=1; start(4)=rec_his
-        if (wrt_U) call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nnew),start)
-        if (wrt_V) call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nnew),start)
+        if (wrt_U) call ncwrite(ncid,'u',u( 1:i1,j0:j1,:,nnew),start)
+        if (wrt_V) call ncwrite(ncid,'v',v(i0:i1, 1:j1,:,nnew),start)
+
+        if (wrt_Tem) call ncwrite(ncid,'temp',t(i0:i1,j0:j1,:,nnew,1),start)
+        if (wrt_Sal) call ncwrite(ncid,'salt',t(i0:i1,j0:j1,:,nnew,2),start)
 
         call wrt_his_trc(ncid,start)                              ! tracer variables
 
         if (wrt_R) then
 # ifdef SPLIT_EOS
-          call ncwrite(ncid,vname(1,indxR),rho1(i0:i1,j0:j1,:),start)
+          call ncwrite(ncid,'rho', rho1(i0:i1,j0:j1,:),start)
 # else
-          call ncwrite(ncid,vname(1,indxR), rho(i0:i1,j0:j1,:),start)
+          call ncwrite(ncid,'rho', rho(i0:i1,j0:j1,:),start)
 # endif
         endif
         if (wrt_O) then                              ! s-coordinate omega vertical velocity (m/s).
@@ -343,25 +242,19 @@
               enddo
             enddo
           enddo
-          call ncwrite(ncid,vname(1,indxO),work(i0:i1,j0:j1,:),start)
+          call ncwrite(ncid,'omega',work(i0:i1,j0:j1,:),start)
         endif
         if (wrt_W) then                              ! true vertical velocity (m/s).
           call wvlcty(work(:,:,1:nz))
-          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:nz),start)
+          call ncwrite(ncid,'w',work(i0:i1,j0:j1,1:nz),start)
         endif
-        if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
-        if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
-# ifdef SALINITY
-        if (wrt_Aks) call ncwrite(ncid,vname(1,indxAks),Akt(i0:i1,j0:j1,:,isalt),start)
-# endif
+        if (wrt_Akv) call ncwrite(ncid,'Akv',Akv(i0:i1,j0:j1,:),start)
+        if (wrt_Akt) call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:),start)
+
         start(3)=rec_his                                      ! back to 2D vars
-# ifdef LMD_KPP
-        if (wrt_Hbls) call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)
-# endif
-# ifdef LMD_BKPP
-        if (wrt_Hbbl) call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)
-# endif
-#endif
+        if (wrt_hbls) call ncwrite(ncid,'hbls',hbls(i0:i1,j0:j1),start)
+        if (wrt_hbbl) call ncwrite(ncid,'hbbl',hbbl(i0:i1,j0:j1),start)
+
         ierr=nf90_close(ncid)
         if (mynode == 0 .and. (.not.code_check)) then                 ! supress output for code_check
           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
@@ -373,7 +266,10 @@
         output_time_his=0
       endif
 
+      deallocate(work)
+
       endif  ! <-- wrt_file_his
+
 
       end subroutine wrt_his_ocean_vars  !]
 ! ----------------------------------------------------------------------
@@ -383,10 +279,6 @@
       ! but this 0.5dt error has always been in ROMS.
       ! for 2 steps. True avg would be 0.5*t0 + t1 + 0.5*t2, but we've never done that.
 
-      use eos_vars
-      use mixing
-      use tracers
-      use grid
       implicit none
 
       ! local
@@ -425,37 +317,38 @@
         call ncwrite(ncid,'ocean_time',(/t_avg_ovars/),(/rec_avg/))
 
         start=1; start(3)=rec_avg                                    ! back to 2D vars
-        if (wrt_avg_Z)   call ncwrite(ncid, vname(1,indxZ),  zeta_avg(i0:i1,j0:j1), start)
-        if (wrt_avg_Ub)  call ncwrite(ncid, vname(1,indxUb), ubar_avg( 1:i1,j0:j1), start)
-        if (wrt_avg_Vb)  call ncwrite(ncid, vname(1,indxVb), vbar_avg(i0:i1, 1:j1), start)
-# ifdef SOLVE3D
+        if (wrt_avg_Z)   call ncwrite(ncid,'zeta', zeta_avg(i0:i1,j0:j1), start)
+        if (wrt_avg_Ub)  call ncwrite(ncid,'ubar', ubar_avg( 1:i1,j0:j1), start)
+        if (wrt_avg_Vb)  call ncwrite(ncid,'vbar', vbar_avg(i0:i1, 1:j1), start)
+
         start(3)=1; start(4)=rec_avg
-        if (wrt_avg_U)   call ncwrite(ncid, vname(1,indxU),     u_avg( 1:i1,j0:j1,:), start)
-        if (wrt_avg_V)   call ncwrite(ncid, vname(1,indxV),     v_avg(i0:i1, 1:j1,:), start)
+        if (wrt_avg_U)   call ncwrite(ncid,'u',u_avg( 1:i1,j0:j1,:), start)
+        if (wrt_avg_V)   call ncwrite(ncid,'v',v_avg(i0:i1, 1:j1,:), start)
+
+        if (wrt_avg_Tem)   call ncwrite(ncid,'temp',tem_avg( 1:i1,j0:j1,:), start)
+        if (wrt_avg_Sal)   call ncwrite(ncid,'salt',sal_avg(i0:i1, 1:j1,:), start)
 
         call wrt_avg_trc(ncid,start)     ! STILL NEED TO UPDATE                                   ! tracer variables
 
-        if (wrt_avg_R)   call ncwrite(ncid, vname(1,indxR),   rho_avg(i0:i1,j0:j1,:), start)
+        if (wrt_avg_R)   call ncwrite(ncid,'rho',rho_avg(i0:i1,j0:j1,:), start)
+
         if (wrt_avg_O) then
-          do k=0,N
+          do k=0,nz
             w_avg(i0:i1,j0:j1,k) = w_avg(i0:i1,j0:j1,k)*pm(i0:i1,j0:j1)*pn(i0:i1,j0:j1)  ! convert before write.
           enddo
-          call ncwrite(ncid, vname(1,indxO),     w_avg(i0:i1,j0:j1,:), start)            ! here rather than calc_avg
+          call ncwrite(ncid,'omega',w_avg(i0:i1,j0:j1,:), start)            ! here rather than calc_avg
         endif                                                                            ! for efficiency
-        if (wrt_avg_W)   call ncwrite(ncid, vname(1,indxW),   wvl_avg(i0:i1,j0:j1,1:N), start)
-        if (wrt_avg_Akv) call ncwrite(ncid, vname(1,indxAkv), akv_avg(i0:i1,j0:j1,:), start)
-        if (wrt_avg_Akt) call ncwrite(ncid, vname(1,indxAkt), akt_avg(i0:i1,j0:j1,:), start)
-#  ifdef SALINITY
-        if (wrt_avg_Aks) call ncwrite(ncid, vname(1,indxAks), aks_avg(i0:i1,j0:j1,:), start)
-#  endif
+        if (wrt_avg_W)   call ncwrite(ncid,'w',   wvl_avg(i0:i1,j0:j1,1:N), start)
+        if (wrt_avg_Akv) call ncwrite(ncid,'Akv', akv_avg(i0:i1,j0:j1,:), start)
+        if (wrt_avg_Akt) call ncwrite(ncid,'Akt', akt_avg(i0:i1,j0:j1,:), start)
+
         start(3)=rec_avg                                                ! back to 2D vars
 #  ifdef LMD_KPP
-        if (wrt_avg_Hbls) call ncwrite(ncid, vname(1,indxHbls),  hbl_avg(i0:i1,j0:j1), start)
+        if (wrt_avg_Hbls) call ncwrite(ncid,'hbls',  hbls_avg(i0:i1,j0:j1), start)
 #  endif
 #  ifdef LMD_BKPP
-        if (wrt_avg_Hbbl) call ncwrite(ncid, vname(1,indxHbbl), hbbl_avg(i0:i1,j0:j1), start)
+        if (wrt_avg_Hbbl) call ncwrite(ncid,'hbbl', hbbl_avg(i0:i1,j0:j1), start)
 #  endif
-# endif /* SOLVE3D */
 
         navg_ovars=0
         output_time_avg=0
@@ -531,12 +424,6 @@
       ! ocean_vars variables are calculated for t=n in timestep t=n
       ! (unlike u/v/etc which are calculated for t=n+1 in timestep t=n)
 
-      use mixing
-      use eos_vars
-      use work_mod
-      use grid
-      use tracers 
-      use coupling
 #ifdef MARBL
 !     add MARBL saved state to restart to restart file
       use marbl_driver, only: marbldrv_write_ss_vars_to_rst
@@ -572,22 +459,25 @@
         call write_time_step( ncid, rec_rst, total_rec_rst )
 
         start=1; start(3)=rec_rst                                    ! back to 2D vars
-        call ncwrite(ncid,vname(1,indxZ), zeta(i0:i1,j0:j1,knew),start)
-        call ncwrite(ncid,vname(1,indxUb),ubar( 1:i1,j0:j1,knew),start)
-        call ncwrite(ncid,vname(1,indxVb),vbar(i0:i1, 1:j1,knew),start)
-#ifdef SOLVE3D
-! 3D momentum components in XI- and ETA-directions:
+        call ncwrite(ncid,'zeta',zeta(i0:i1,j0:j1,knew),start)
+        call ncwrite(ncid,'ubar',ubar( 1:i1,j0:j1,knew),start)
+        call ncwrite(ncid,'vbar',vbar(i0:i1, 1:j1,knew),start)
+
+! 3D momentum components in x- and y-directions:
 ! 'nstp' index is current timestep 'n', which was computed as the final 'nnew'
 ! in the previous timestep (same result).
 ! wrt_rst called at the middle of next timestep as some variables only calculated there for t=n.
 
         start(3)=1; start(4)=rec_rst
-        call ncwrite(ncid,vname(1,indxU),u( 1:i1,j0:j1,:,nnew),start)
-        call ncwrite(ncid,vname(1,indxV),v(i0:i1, 1:j1,:,nnew),start)
+        call ncwrite(ncid,'u',u( 1:i1,j0:j1,:,nnew),start)
+        call ncwrite(ncid,'v',v(i0:i1, 1:j1,:,nnew),start)
 
-        call wrt_rst_trc(ncid,start)                              ! tracer variables
+        call ncwrite(ncid,'temp',t(i0:i1,j0:j1,:,nnew,1),start)
+        call ncwrite(ncid,'salt',t(i0:i1,j0:j1,:,nnew,2),start)
 
-        start(3)=rec_rst                                      ! back to 2D vars
+        call wrt_rst_trc(ncid,start)  ! beyond T and S tracer variables
+
+        start(3)=rec_rst                             ! back to 2D vars
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
@@ -606,17 +496,11 @@
 
 
 # ifdef LMD_KPP
-        call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)
+        call ncwrite(ncid,'hbls',hbls(i0:i1,j0:j1),start)
 # endif
 # ifdef LMD_BKPP
-        call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)
+        call ncwrite(ncid,'hbbl',hbbl(i0:i1,j0:j1),start)
 # endif
-#endif
-        ! Added for perfect restart reasons
-!       start(3)=1; start(4)=rec_rst
-!       call ncwrite(ncid,'Akv',Akv(i0:i1,j0:j1,:),start)
-!       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,itemp),start)
-!       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,isalt),start)
 
         if (obc_tuning) call wrt_rst_tune(ncid,rec_rst)
         if (diag_pflx)  call wrt_rst_diag_slow(ncid,rec_rst)
@@ -708,118 +592,91 @@
      &       'time step and record numbers from initialization')
 
       if ( (wrt_Z .and. .not. avg) .or. (wrt_avg_Z .and. avg) ) then ! .or. needed for his or avg output selection
-        if (.not. avg) text_lname=vname(2,indxZ)
-        if (      avg) text_lname='averaged '/ /vname(2,indxZ)
-        varid = nccreate(ncid,vname(1,indxZ),(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
+        varid = nccreate(ncid,'zeta',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','free surface elevation')
+        ierr = nf90_put_att(ncid,varid,'units','meter')
       endif
       if ( (wrt_Ub .and. .not. avg) .or. (wrt_avg_Ub .and. avg) ) then
-        if (.not. avg) text_lname=vname(2,indxUb)
-        if (      avg) text_lname='averaged '/ /vname(2,indxUb)
-        varid = nccreate(ncid,vname(1,indxUb),(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
+        varid = nccreate(ncid,'ubar',(/dn_xu,dn_yr,dn_tm/),(/xi_u,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,
+     &                  'long_name','vertically averaged u-momentum')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
       endif
       if ( (wrt_Vb .and. .not. avg) .or. (wrt_avg_Vb .and. avg) ) then
-        if (.not. avg) text_lname=vname(2,indxVb)
-        if (      avg) text_lname='averaged '/ /vname(2,indxVb)
-        varid = nccreate(ncid,vname(1,indxVb),(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
-      endif
-#ifdef SOLVE3D
-      if ( (wrt_U .and. .not. avg) .or. (wrt_avg_U .and. avg) ) then
-        if (.not. avg) text_lname=vname(2,indxU)
-        if (      avg) text_lname='averaged '/ /vname(2,indxU)
-        varid = nccreate(ncid,vname(1,indxU),(/dn_xu,dn_yr,dn_zr,dn_tm/),(/xi_u,eta_rho,N,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
-      endif
-      if ( (wrt_V .and. .not. avg) .or. (wrt_avg_V .and. avg) ) then
-        if (.not. avg) text_lname=vname(2,indxV)
-        if (      avg) text_lname='averaged '/ /vname(2,indxV)
-        varid = nccreate(ncid,vname(1,indxV),(/dn_xr,dn_yv,dn_zr,dn_tm/),(/xi_rho,eta_v,N,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
+        varid = nccreate(ncid,'vbar',(/dn_xr,dn_yv,dn_tm/),(/xi_rho,eta_v,0/))
+        ierr = nf90_put_att(ncid,varid,
+     &                  'long_name','vertically averaged v-momentum')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
       endif
 
-      if (avg) then
-        call def_avg_trc( ncid )
-      else
-        call def_his_trc( ncid )
+      if ( (wrt_U .and. .not. avg) .or. (wrt_avg_U .and. avg) ) then
+        varid = nccreate(ncid,'u',(/dn_xu,dn_yr,dn_zr,dn_tm/),(/xi_u,eta_rho,nz,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','u-momentum')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
+      endif
+
+      if ( (wrt_V .and. .not. avg) .or. (wrt_avg_V .and. avg) ) then
+        varid = nccreate(ncid,'v',(/dn_xr,dn_yv,dn_zr,dn_tm/),(/xi_rho,eta_v,nz,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','v-momentum')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
+      endif
+
+      if ( (wrt_Tem .and. .not. avg) .or. (wrt_avg_tem .and. avg) ) then
+        varid = nccreate(ncid,'temp',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','potential temperature')
+        ierr = nf90_put_att(ncid,varid,'units','Degrees Celsius')
+      endif
+
+      if ( (wrt_Sal .and. .not. avg) .or. (wrt_avg_sal .and. avg) ) then
+        varid = nccreate(ncid,'salt',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','salinity')
+        ierr = nf90_put_att(ncid,varid,'units','PSU')
       endif
 
       if ( (wrt_R .and. .not. avg) .or. (wrt_avg_R .and. avg) ) then
-        if (.not. avg) text_lname=vname(2,indxR)
-        if (      avg) text_lname='averaged '/ /vname(2,indxR)
-        varid = 
-     &   nccreate(ncid,vname(1,indxR),(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,n,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxR))
+        varid = nccreate(ncid,'rho',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','density anomaly')
+        ierr = nf90_put_att(ncid,varid,'units','kilogram meter-3')
       endif
-      if ( (wrt_O .and. .not. avg) .or. (wrt_avg_O .and. avg) ) then    ! s-coordinate "omega" vertical velocity.
-        if (.not. avg) text_lname=vname(2,indxO)
-        if (      avg) text_lname='averaged '/ /vname(2,indxO)
-        varid = 
-     &    nccreate(ncid,vname(1,indxO),(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,n+1,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxO))
+
+      if ( (wrt_O .and. .not. avg) .or. (wrt_avg_O .and. avg) ) then
+        varid = nccreate(ncid,'omega',(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,nz+1,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','S-coordinate vertical flux')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
       endif
-      if ( (wrt_W .and. .not. avg) .or. (wrt_avg_W .and. avg) ) then   ! true W-vertical velocity.
-        if (.not. avg) text_lname=vname(2,indxW)
-        if (      avg) text_lname='averaged '/ /vname(2,indxW)
-        varid = 
-     &    nccreate(ncid,vname(1,indxW),(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,n,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxW))
+      if ( (wrt_W .and. .not. avg) .or. (wrt_avg_W .and. avg) ) then
+        varid = nccreate(ncid,'w',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','vertical velocity')
+        ierr = nf90_put_att(ncid,varid,'units','meter second-1')
       endif
-      if ( (wrt_Akv .and. .not. avg) .or. (wrt_avg_Akv .and. avg)) then ! vertical viscosity coefficient.
-        if (.not. avg) text_lname=vname(2,indxAkv)
-        if (      avg) text_lname='averaged '/ /vname(2,indxAkv)
-        varid = nccreate(ncid,vname(1,indxAkv),
-     &    (/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,n+1,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkv))
+      if ( (wrt_Akv .and. .not. avg) .or. (wrt_avg_Akv .and. avg)) then
+        varid = nccreate(ncid,'Akv',(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,nz+1,0/))
+        ierr = nf90_put_att(ncid,varid,
+     &      'long_name','vertical momentum mixing coefficient')
+        ierr = nf90_put_att(ncid,varid,'units','meter2 second-1')
       endif
-      if ( (wrt_Akt .and. .not. avg) .or. (wrt_avg_Akt .and. avg) ) then  ! vertical thermal conductivity coefficient.
-        if (.not. avg) text_lname=vname(2,indxAkt)
-        if (      avg) text_lname='averaged '/ /vname(2,indxAkt)
-        varid = nccreate(ncid,vname(1,indxAkt),
-     &      (/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,N+1,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkt))
+      if ( (wrt_Akt .and. .not. avg) .or. (wrt_avg_Akt .and. avg) ) then
+        varid = nccreate(ncid,'Akt',
+     &      (/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,nz+1,0/))
+        ierr = nf90_put_att(ncid,varid,
+     &      'long_name','vertical tracer mixing coefficient')
+        ierr = nf90_put_att(ncid,varid,'units','meter2 second-1')
       endif
-# ifdef SALINITY
-      if ( (wrt_Aks .and. .not. avg) .or. (wrt_avg_Aks .and. avg) ) then! vertical diffusion coefficient for salinity.
-        if (.not. avg) text_lname=vname(2,indxAks)
-        if (      avg) text_lname='averaged '/ /vname(2,indxAks)
-        varid = 
-     &    nccreate(ncid,vname(1,indxAks),(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,N+1,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAks))
-      endif
-# endif /* SALINITY */
+
 # ifdef LMD_KPP
-      if ( (wrt_Hbls .and. .not. avg) .or. (wrt_avg_Hbls .and. avg) ) then                                   ! depth of surface planetary boundary layer.
-        if (.not. avg) text_lname=vname(2,indxHbls)
-        if (      avg) text_lname='averaged '/ /vname(2,indxHbls)
-        varid = nccreate(ncid,vname(1,indxHbls),(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
+      if ( (wrt_Hbls .and. .not. avg) .or. (wrt_avg_Hbls .and. avg) ) then 
+        varid = nccreate(ncid,'hbls',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','surface BL thickness')
+        ierr = nf90_put_att(ncid,varid,'units','meter')
       endif
 # endif
 # ifdef LMD_BKPP
-      if ( (wrt_Hbbl .and. .not. avg) .or. (wrt_avg_Hbbl .and. avg) ) then       ! thickness of bottom boundary layer.
-        if (.not. avg) text_lname=vname(2,indxHbbl)
-        if (      avg) text_lname='averaged '/ /vname(2,indxHbbl)
-        varid = nccreate(ncid,vname(1,indxHbbl),
-     &         (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
+      if ( (wrt_Hbbl .and. .not. avg) .or. (wrt_avg_Hbbl .and. avg) ) then
+        varid = nccreate(ncid,'hbbl',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name','bottom BL thickness')
+        ierr = nf90_put_att(ncid,varid,'units','meter')
       endif
 # endif
-#endif /* SOLVE3D */
 
       end subroutine def_vars_ocean_vars  !]
 ! ----------------------------------------------------------------------
@@ -839,40 +696,54 @@
 ! Time-step number and time-record indices: (history file only, this
 ! may be needed in the event when a history record is used to restart
 ! the current model run);
+
       varid = nccreate(ncid,'time_step',(/dn_aux,dn_tm/),(/iaux,0/),nf90_int)
 
       ierr=nf90_put_att (ncid, varid, 'long_name',
      &       'time step and record numbers from initialization')
 
-      varid = nccreate(ncid,vname(1,indxZ),(/dn_xr,dn_yr,dn_tm/),
+      varid = nccreate(ncid,'zeta',(/dn_xr,dn_yr,dn_tm/),
      &                                     (/xi_rho,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxZ))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxZ))
+      ierr = nf90_put_att(ncid,varid,'long_name','free surface elevation')
+      ierr = nf90_put_att(ncid,varid,'units','meter')
 
-      varid = nccreate(ncid,vname(1,indxUb),(/dn_xu,dn_yr,dn_tm/),
+      varid = nccreate(ncid,'ubar',(/dn_xu,dn_yr,dn_tm/),
      &                                      (/xi_u,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxUb))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxUb))
+      ierr = nf90_put_att(ncid,varid,
+     &           'long_name','vertically averaged u-momentum')
+      ierr = nf90_put_att(ncid,varid,'units','meter second -1')
 
-      varid = nccreate(ncid,vname(1,indxVb),(/dn_xr,dn_yv,dn_tm/),
+      varid = nccreate(ncid,'vbar',(/dn_xr,dn_yv,dn_tm/),
      &                                      (/xi_rho,eta_v,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxVb))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxVb))
+      ierr = nf90_put_att(ncid,varid,
+     &           'long_name','vertically averaged v-momentum')
+      ierr = nf90_put_att(ncid,varid,'units','meter second -1')
+
 #ifdef MARBL
       call marbldrv_create_ss_vars_in_rst(ncid)
 #endif      
-#ifdef SOLVE3D
-      varid = nccreate(ncid,vname(1,indxU),(/dn_xu,dn_yr,dn_zr,dn_tm/),
-     &                                     (/xi_u,eta_rho,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxU))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxU))
+      varid = nccreate(ncid,'u',(/dn_xu,dn_yr,dn_zr,dn_tm/),
+     &                                     (/xi_u,eta_rho,nz,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','u-momentum')
+      ierr = nf90_put_att(ncid,varid,'units','meter second -1')
 
-      varid = nccreate(ncid,vname(1,indxV),(/dn_xr,dn_yv,dn_zr,dn_tm/),
-     &                                     (/xi_rho,eta_v,N,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxV))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxV))
+      varid = nccreate(ncid,'v',(/dn_xr,dn_yv,dn_zr,dn_tm/),
+     &                                     (/xi_rho,eta_v,nz,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','v-momentum')
+      ierr = nf90_put_att(ncid,varid,'units','meter second -1')
 
-      do itrc=1,NT
+      varid = nccreate(ncid,'temp',(/dn_xr,dn_yr,dn_zr,dn_tm/),
+     &                              (/xi_rho,eta_rho,nz,0/), nf90_double)
+      ierr=nf90_put_att (ncid,varid,'long_name', 'potential temperature')
+      ierr=nf90_put_att (ncid,varid,'units', 'degrees Celsius')
+
+      varid = nccreate(ncid,'salt',(/dn_xr,dn_yr,dn_zr,dn_tm/),
+     &                              (/xi_rho,eta_rho,nz,0/), nf90_double)
+      ierr=nf90_put_att (ncid,varid,'long_name', 'salinity')
+      ierr=nf90_put_att (ncid,varid,'units', 'PSU')
+
+      ! tracers beyond T and S
+      do itrc=3,nt
         varid = nccreate(ncid,t_vname(itrc),(/dn_xr,dn_yr,dn_zr,dn_tm/),
      &                                         (/xi_rho,eta_rho,N,0/), nf90_double)
         ierr=nf90_put_att (ncid, varid, 'long_name', t_lname(itrc))
@@ -915,15 +786,16 @@
 # endif  /* EXACT_RESTART */
 
 # ifdef LMD_KPP
-      varid = nccreate(ncid,vname(1,indxHbls),
+      varid = nccreate(ncid,'hbls',
      &   (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbls))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbls))
+      ierr = nf90_put_att(ncid,varid,'long_name','surface BL thickness')
+      ierr = nf90_put_att(ncid,varid,'units','meter')
 # endif
 # ifdef LMD_BKPP
-      varid = nccreate(ncid,vname(1,indxHbbl),(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/),nf90_double)
-      ierr = nf90_put_att(ncid,varid,'long_name',vname(2,indxHbbl))
-      ierr = nf90_put_att(ncid,varid,'units',vname(3,indxHbbl))
+      varid = nccreate(ncid,'hbbl',
+     &   (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/),nf90_double)
+      ierr = nf90_put_att(ncid,varid,'long_name','bottom BL thickness')
+      ierr = nf90_put_att(ncid,varid,'units','meter')
 # endif
 
       if (diag_pflx) then
@@ -968,8 +840,6 @@
      &                               'south bc tuning coeff')
       endif
 
-#endif /* SOLVE3D */
-
       end subroutine def_vars_rst_ocean_vars  !]
 ! ----------------------------------------------------------------------
       subroutine calc_avg_ocean_vars  ![
@@ -1005,9 +875,11 @@
         if (wrt_avg_Z)  zeta_avg(i0:i1,j0:j1) = zeta_avg(i0:i1,j0:j1)*(1-coef) + zeta(i0:i1,j0:j1,knew)*coef
         if (wrt_avg_Ub) ubar_avg( 1:i1,j0:j1) = ubar_avg( 1:i1,j0:j1)*(1-coef) + ubar( 1:i1,j0:j1,knew)*coef
         if (wrt_avg_Vb) vbar_avg(i0:i1, 1:j1) = vbar_avg(i0:i1, 1:j1)*(1-coef) + vbar(i0:i1, 1:j1,knew)*coef
-# ifdef SOLVE3D
         if (wrt_avg_U)   u_avg( 1:i1,j0:j1,:) = u_avg( 1:i1,j0:j1,:)*(1-coef) + u( 1:i1,j0:j1,:,nstp)*coef
         if (wrt_avg_V)   v_avg(i0:i1, 1:j1,:) = v_avg(i0:i1, 1:j1,:)*(1-coef) + v(i0:i1, 1:j1,:,nstp)*coef
+
+        if (wrt_avg_Tem) tem_avg( 1:i1,j0:j1,:) = tem_avg(i0:i1,j0:j1,:)*(1-coef) + t(i0:i1,j0:j1,:,nstp,1)*coef
+        if (wrt_avg_Sal) sal_avg(i0:i1, 1:j1,:) = sal_avg(i0:i1,j0:j1,:)*(1-coef) + t(i0:i1,j0:j1,:,nstp,2)*coef
 
         call set_avg_trc(coef)                                        ! tracer variables
 
@@ -1029,17 +901,13 @@
      &                               + work(i0:i1,j0:j1,1:N)*coef
         endif
         if (wrt_avg_Akv) akv_avg(i0:i1,j0:j1,:) = akv_avg(i0:i1,j0:j1,:)*(1-coef) + akv(i0:i1,j0:j1,:)*coef
-        if (wrt_avg_Akt) akt_avg(i0:i1,j0:j1,:) = akt_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,itemp)*coef
-#  ifdef SALINITY
-        if (wrt_avg_Aks) aks_avg(i0:i1,j0:j1,:) = aks_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,isalt)*coef
-#  endif
+        if (wrt_avg_Akt) akt_avg(i0:i1,j0:j1,:) = akt_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:)*coef
 #  ifdef LMD_KPP
-        if (wrt_avg_Hbls) hbl_avg(i0:i1,j0:j1)  =  hbl_avg(i0:i1,j0:j1)*(1-coef) + hbls(i0:i1,j0:j1)*coef
+        if (wrt_avg_Hbls) hbls_avg(i0:i1,j0:j1)  =  hbls_avg(i0:i1,j0:j1)*(1-coef) + hbls(i0:i1,j0:j1)*coef
 #  endif
 #  ifdef LMD_BKPP
         if (wrt_avg_Hbbl) hbbl_avg(i0:i1,j0:j1) = hbbl_avg(i0:i1,j0:j1)*(1-coef) + hbbl(i0:i1,j0:j1)*coef
 #  endif
-# endif /* SOLVE3D */
 
 !     endif  ! <-- .not. first_step
 
@@ -1089,33 +957,29 @@
 
       if (mynode==0) write(*,'(9x,A,13(/11x,A,T20,L1,4x,A),/)')      ! 13(....) repeats formatting 11 times.
      &               'his fields to be saved: (T/F)'                 ! T20 moves to the 20th character on line
-     &                 , 'zeta',   wrt_Z,    vname(2,indxZ)
-     &                 , 'ubar',   wrt_Ub,   vname(2,indxUb)
-     &                 , 'vbar',   wrt_Vb,   vname(2,indxVb)
-#ifdef SOLVE3D
-     &                 , 'u',      wrt_U,    vname(2,indxU)
-     &                 , 'v',      wrt_V,    vname(2,indxV)
+     &                 , 'zeta',   wrt_Z,    'free surface elevation'
+     &                 , 'ubar',   wrt_Ub,   'vertically averaged u-momentum'
+     &                 , 'vbar',   wrt_Vb,   'vertically averaged v-momentum'
+     &                 , 'u',      wrt_U,    'u-momentum'
+     &                 , 'v',      wrt_V,    'v-momentum'
+     &                 , 'temp',   wrt_Tem,  'Temperature'
+     &                 , 'salt',   wrt_Sal,  'Salinity'
+     &                 , 'rho',    wrt_R,    'density anomaly'
+     &                 , 'Omega',  wrt_O,    'S-coordinate vertical flux'
+     &                 , 'W',      wrt_W,    'vertical velocity'
 
-     &                 , 'rho',    wrt_R,    vname(2,indxR)
-     &                 , 'Omega',  wrt_O,    vname(2,indxO)
-     &                 , 'W',      wrt_W,    vname(2,indxW)
-
-     &                 , 'Akv',    wrt_Akv,  vname(2,indxAkv)
-     &                 , 'Akt',    wrt_Akt,  vname(2,indxAkt)
-# ifdef SALINITY
-     &                 , 'Aks',    wrt_Aks,  vname(2,indxAks)
-# endif
+     &                 , 'Akv',    wrt_Akv,  'vertical momentum mixing'
+     &                 , 'Akt',    wrt_Akt,  'vertical tracer mixing'
 # ifdef LMD_KPP
-     &                 , 'hbls',   wrt_Hbls, vname(2,indxHbls)
+     &                 , 'hbls',   wrt_Hbls, 'surface bl thickness'
 # endif
 # ifdef LMD_BKPP
-     &                 , 'hbbl',   wrt_Hbbl, vname(2,indxHbbl)
+     &                 , 'hbbl',   wrt_Hbbl, 'bottom bl thickness'
 # endif
-          do itrc=1,iTandS+nt_passive
+          do itrc=3,2+nt_passive
             if (mynode==0) write(*,'(11x,A,I2,A,T16,L1,T20,A)') 't(',
      &        itrc, ')', wrt_t(itrc), t_vname(itrc)
           enddo
-#endif /* SOLVE3D */
 
       end subroutine display_output_settings_to_terminal  !]
 !-----------------------------------------------------------------------
@@ -1133,33 +997,29 @@
 
       if (mynode==0) write(*,'(9x,A,13(/11x,A,T20,L1,4x,A),/)')      ! 13(....) repeats formatting 11 times.
      &               'avg fields to be saved: (T/F)'                 ! T20 moves to the 20th character on line
-     &                 , 'zeta',   wrt_avg_Z,    vname(2,indxZ)
-     &                 , 'ubar',   wrt_avg_Ub,   vname(2,indxUb)
-     &                 , 'vbar',   wrt_avg_Vb,   vname(2,indxVb)
-#ifdef SOLVE3D
-     &                 , 'u',      wrt_avg_U,    vname(2,indxU)
-     &                 , 'v',      wrt_avg_V,    vname(2,indxV)
+     &                 , 'zeta',   wrt_Z,    'free surface elevation'
+     &                 , 'ubar',   wrt_Ub,   'vertically averaged u-momentum'
+     &                 , 'vbar',   wrt_Vb,   'vertically averaged v-momentum'
+     &                 , 'u',      wrt_U,    'u-momentum'
+     &                 , 'v',      wrt_V,    'v-momentum'
+     &                 , 'temp',   wrt_Tem,  'Temperature'
+     &                 , 'salt',   wrt_Sal,  'Salinity'
+     &                 , 'rho',    wrt_R,    'density anomaly'
+     &                 , 'Omega',  wrt_O,    'S-coordinate vertical flux'
+     &                 , 'W',      wrt_W,    'vertical velocity'
 
-     &                 , 'rho',    wrt_avg_R,    vname(2,indxR)
-     &                 , 'Omega',  wrt_avg_O,    vname(2,indxO)
-     &                 , 'W',      wrt_avg_W,    vname(2,indxW)
-
-     &                 , 'Akv',    wrt_avg_Akv,  vname(2,indxAkv)
-     &                 , 'Akt',    wrt_avg_Akt,  vname(2,indxAkt)
-# ifdef SALINITY
-     &                 , 'Aks',    wrt_avg_Aks,  vname(2,indxAks)
-# endif
+     &                 , 'Akv',    wrt_Akv,  'vertical momentum mixing'
+     &                 , 'Akt',    wrt_Akt,  'vertical tracer mixing'
 # ifdef LMD_KPP
-     &                 , 'hbls',   wrt_avg_Hbls, vname(2,indxHbls)
+     &                 , 'hbls',   wrt_hbls, 'surface bl thickness'
 # endif
 # ifdef LMD_BKPP
-     &                 , 'hbbl',   wrt_avg_Hbbl, vname(2,indxHbbl)
+     &                 , 'hbbl',   wrt_hbbl, 'bottom bl thickness'
 # endif
-          do itrc=1,iTandS+nt_passive
+          do itrc=3,2+nt_passive
             if (mynode==0) write(*,'(11x,A,I2,A,T16,L1,T20,A)') 't(',
      &        itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
           enddo
-#endif /* SOLVE3D */
 
       end subroutine display_output_settings_to_terminal_avg  !]
 ! ----------------------------------------------------------------------

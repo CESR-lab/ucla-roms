@@ -1,6 +1,8 @@
       module tracers
 
       ! initial coding: Devin Dollery & Jeroen Molemaker (2020 Oct)
+      ! This module mostly focusses on the tracers beyond T and S.
+      ! It will write separate output files for passive and bgc tracers
       !
       ! INFO:  ![
       ! 1) in order to specify tracer variable details, user must
@@ -162,7 +164,7 @@
       ! local
       integer itrc, ierr, varid
 
-      do itrc=1,iTandS+nt_passive
+      do itrc=3,iTandS+nt_passive
         if (wrt_t(itrc)) then
           varid = nccreate(ncid,t_vname(itrc),
      &      (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
@@ -182,7 +184,7 @@
       integer :: itrc, ierr, varid
       character(len=64) :: long_name
 
-      do itrc=1,iTandS+nt_passive
+      do itrc=3,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           long_name='averaged '/ /t_lname(itrc) ! Add averaged to long name
           varid = nccreate(ncid,t_vname(itrc),
@@ -205,7 +207,7 @@
       ! local
       integer :: itrc
 
-      do itrc=1,iTandS+nt_passive
+      do itrc=3,iTandS+nt_passive
         if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nnew,itrc),start)
       enddo
 
@@ -222,7 +224,7 @@
       ! local
       integer :: itrc, itavg
 
-      do itrc=1,iTandS+nt_passive
+      do itrc=3,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)                                   ! get respective index for t_avg(itavg) -> t(itrc)
           call ncwrite(ncid,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start)
@@ -241,7 +243,7 @@
       integer,dimension(:),intent(in) :: start
       ! local
       integer :: itrc
-      do itrc=1,NT
+      do itrc=3,nt
         call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nnew,itrc),start)
       enddo
 
@@ -256,7 +258,7 @@
       ! local
       integer :: itrc, itavg
 
-      do itrc=1,iTandS+nt_passive
+      do itrc=3,iTandS+nt_passive
         if (wrt_t_avg(itrc)) then
           itavg = NT_2_t_avg(itrc)                         ! get respective index for t_avg(itavg) -> t(itrc)
           t_avg(i0:i1,j0:j1,:,itavg) = t_avg(i0:i1,j0:j1,:,itavg)     *(1-coef) +
@@ -312,7 +314,7 @@
 
       if (mynode==0) then
          print *, 'metadata about ',NT, ' tracers:'
-         do itrc=1,NT
+         do itrc=3,NT
             print *, '-----------'
             print *, 'TRACER NO.: ', itrc
             print *,'SHORT NAME: ', t_vname(itrc)

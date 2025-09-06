@@ -31,6 +31,8 @@
      &           ierr,  start(4), count(2), ibuff(iaux),
      &           checkdims , itrc
       real    :: time_scale
+      character(len=40) :: time_unit
+
       integer :: init_type, tile=0 ! set tile to zero for compute_tile_bounds.h below. Needed to fixed closed boundaries.
       integer, parameter :: init_run=1,  rst_run=2
 #ifdef EXACT_RESTART
@@ -163,7 +165,7 @@ c--#define VERBOSE
 ! (3) restart from a file created by this code with activated
 ! EXACT_RESTART.
 
-      ierr=nf90_inq_varid(ncid, vname(1,indxTime), varid)
+      ierr=nf90_inq_varid(ncid,'ocean_time', varid)
 
 ! The following is done for backward compatibility: normally time
 ! variable is named "ocean_time", but legacy startup files may name
@@ -179,17 +181,17 @@ c--#define VERBOSE
 
       ierr=nf90_get_var(ncid, varid, start_time, start=(/record/) )
       if (ierr/=0) call handle_ierr(ierr,'get_init: get time')
-      ierr=nf90_get_att(ncid, varid, 'units', vname(3,indxTime))
+      ierr=nf90_get_att(ncid, varid, 'units', time_unit)
       if (ierr/=0) call handle_ierr(ierr,'get_init: get time units')
 
-      if (vname(3,indxTime)(1:6) == 'second') then
-        time_scale=1.D0
-      elseif (vname(3,indxTime)(1:3) == 'day') then
-        time_scale=day2sec
+      if (trim(time_unit) == 'second') then
+        time_scale = 1.0
+      elseif (trim(time_unit) == 'day') then
+        time_scale = day2sec
       else
-        write(*,'(/1x,4A/12x,3A/)')    '### ERROR: get_init :: ',
-     &  'unknown units for variable ''',trim(vname(1,indxTime)),
-     &         '''', 'in netCDF file ''', trim(ininame), '''.'
+        write(*,'(/1x,4A/12x,3A/)')   '### ERROR: get_init :: ',
+     &  'unknown units for variable ocean_time ',
+     &              'in netCDF file ''', trim(ininame), '''.'
         goto 99                                    !--> ERROR
       endif
       start_time=start_time*time_scale
@@ -224,7 +226,7 @@ c--#define VERBOSE
               iic = 0 ! set back to zero if exact restart fails
             endif
           else
-            write(*,2) trim(vname(1,indxTime)), record,
+            write(*,2) 'ocean_time', record,
      &                 trim(ininame), nf90_strerror(ierr)
             goto 99
           endif
@@ -388,13 +390,13 @@ c--#define VERBOSE
 
       start=1; start(4)=record                                       ! 3D vars
 
-      call ncread(ncid,vname(1,indxU), u(1:i1,j0:j1,:,tindx),start) 
+      call ncread(ncid,'u',u(1:i1,j0:j1,:,tindx),start) 
       do k=1,nz
         u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
       enddo
       call exchange_xxx(u(:,:,:,tindx) )
 
-      call ncread(ncid,vname(1,indxV), v(i0:i1, 1:j1,:,tindx),start)           ! v requires masking and
+      call ncread(ncid,'v', v(i0:i1, 1:j1,:,tindx),start)
        do k=1,nz
          v(i0:i1,1:j1,k,tindx) = v(i0:i1,1:j1,k,tindx)*vmask(i0:i1,1:j1)
        enddo
@@ -426,7 +428,7 @@ c--#define VERBOSE
         ierr=nf90_inq_varid(ncid, t_vname(itrc), varid)
         if (ierr == nf90_noerr) then
           call ncread(ncid, t_vname(itrc), t(i0:i1,j0:j1,:,tindx,itrc), start)
-          do k=1,N
+          do k=1,nz
             t(i0:i1,j0:j1,k,tindx,itrc)=t(i0:i1,j0:j1,k,tindx,itrc)*rmask(i0:i1,j0:j1)
           enddo
           call exchange_xxx(t(:,:,:,tindx,itrc) ) 
@@ -449,27 +451,27 @@ c--#define VERBOSE
 
       start=1; start(3)=record                                       ! 2D vars
 # ifdef LMD_KPP
-      ierr=nf90_inq_varid(ncid, vname(1,indxHbls), varid)
+      ierr=nf90_inq_varid(ncid, 'hbls', varid)
       if (ierr == nf90_noerr) then
-        call ncread(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
+        call ncread(ncid,'hbls',hbls(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
         hbls(i0:i1,j0:j1)=hbls(i0:i1,j0:j1)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
         call exchange_xxx(hbls(:,:) )
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
-     & 'variable ''', trim(vname(1,indxHbls)), ''' not found in ''',
+     & 'variable ''', 'hbls', ''' not found in ''',
      &           trim(ininame), ''' ==> initialized to zero state.'
 
       endif
 # endif
 # ifdef LMD_BKPP
-      ierr=nf90_inq_varid(ncid, vname(1,indxHbbl), varid)
+      ierr=nf90_inq_varid(ncid, 'hbbl', varid)
       if (ierr == nf90_noerr) then
-        call ncread(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
+        call ncread(ncid,'hbbl',hbbl(i0:i1,j0:j1),start)      ! mask doesn't change answer but makes
         hbbl(i0:i1,j0:j1)=hbbl(i0:i1,j0:j1)*rmask(i0:i1,j0:j1)     ! output mask 0, rather than random numbers
         call exchange_xxx(hbbl(:,:) )            ! confirmed needs an exchange, not sure why
       else
         mpi_nonexit_warn write(*,'(1x,6A)')        'WARNING: netCDF ',
-     & 'variable ''', trim(vname(1,indxHbbl)), ''' not found in ''',
+     & 'variable ''', 'hbbl', ''' not found in ''',
      &      trim(ininame), ''' ==> initialized to zero state.'
 
       endif

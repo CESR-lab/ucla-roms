@@ -18,6 +18,7 @@
       real,public,allocatable,dimension(:,:) :: zeta_avg
       real,public,allocatable,dimension(:,:) :: ubar_avg
       real,public,allocatable,dimension(:,:) :: vbar_avg
+
 #ifdef NHMG
       real,public,allocatable,dimension(:,:) :: nh_ubar
       real,public,allocatable,dimension(:,:) :: nh_vbar
@@ -30,6 +31,9 @@
       real,public,allocatable,dimension(:,:,:,:) :: v
       real,public,allocatable,dimension(:,:,:)   :: u_avg
       real,public,allocatable,dimension(:,:,:)   :: v_avg
+
+      real,public,allocatable,dimension(:,:,:) :: tem_avg
+      real,public,allocatable,dimension(:,:,:) :: sal_avg
 
       ! nhmg related variables
       real,public,allocatable,dimension(:,:,:,:) :: w
