@@ -206,11 +206,16 @@
      &   a_s=-28.86,    ! momentum and tracers in their 1/3-power
      &   c_s=98.96      ! law regime;
 
-      real, parameter :: r2=0.5, r3=1./3., r4=0.25, EPS=1.E-20
+      real,parameter :: r2=0.5, r3=1./3., r4=0.25, EPS=1.E-20
+
+      real,parameter :: Cg = Cstar * vonKar * (c_s*vonKar*epssfc)**(1./3.)
+      real,parameter :: Vtc= Cv * sqrt(-betaT/(c_s*epssfc)) / (Ricr*vonKar**2)
 
 
-      real Cg, ustar3, Bfsfc, zscale, zetahat, ws,wm, Kern, Vtc,Vtsq,
+      real ustar3, Bfsfc, zscale, zetahat, ws,wm, Kern, Vtsq,
      &         ssgm, z_bl, cff,cff1, cff_up,cff_dn
+!     real Cg, ustar3, Bfsfc, zscale, zetahat, ws,wm, Kern, Vtc,Vtsq,
+!    &         ssgm, z_bl, cff,cff1, cff_up,cff_dn
 
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb,amp
       integer  :: istr,iend,jstr,jend
@@ -262,14 +267,13 @@
 #  define I_EXT_RANGE 1,nx
 #  define J_EXT_RANGE 1,ny
 # endif
-# ifdef LMD_KPP
+
 ! Nondimensional constants for computing non-local flux and convective
 ! deepening of surface boundary layer. The only reason why they are not
 ! parameters and computed here is because of power function involved.
 
-      Cg=Cstar * vonKar * (c_s*vonKar*epssfc)**(1./3.)
-      Vtc=Cv * sqrt(-betaT/(c_s*epssfc)) / (Ricr*vonKar**2)
-# endif
+!     Cg=Cstar * vonKar * (c_s*vonKar*epssfc)**(1./3.)
+!     Vtc=Cv * sqrt(-betaT/(c_s*epssfc)) / (Ricr*vonKar**2)
 
 ! Compute thermal expansion, "alpha" [kg/m^3/degC], and saline
 ! contraction, "beta" [kg/m^3/PSU], coefficients at surface; then
@@ -289,12 +293,12 @@
       call alfabeta_tile (1,nx,1,ny, I_EXT_RANGE,
      &                             J_EXT_RANGE, alpha,beta)
 # endif
+      ! JM if we move away from a virtual salt flux, this will have to 
+      ! change: stflx(isalt) = - pme*sss
       do j=J_EXT_RANGE
         do i=I_EXT_RANGE
           Bo(i,j)=g*( alpha(i,j)*(stflx(i,j,itemp)-srflx(i,j))
-#  ifdef SALINITY
      &                              -beta(i,j)*stflx(i,j,isalt)
-#  endif
      &                                                        )
           Bosol(i,j)=g*alpha(i,j)*srflx(i,j)
 #  undef beta
