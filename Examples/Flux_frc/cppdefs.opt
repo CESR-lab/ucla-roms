@@ -7,19 +7,6 @@
 
 #define USWC_sample
 
-/*
-    Embedded (nested) grid configuration segment
-*/
-
-c--#ifndef MAX_GRID_LEVEL
-c--# define MAX_GRID_LEVEL 2
-c--# include "redefs.X"
-c--#endif
-
-/*
-   Main switch starts here: model configuration choice.
-*/
-
 #if defined USWC_sample
 
                      /* Basics */
@@ -30,18 +17,14 @@ c--#endif
 #define NONLIN_EOS
 #define SPLIT_EOS
 #define SALINITY
-c-dd#define SFLX_CORR    /* DevinD turned off as new 25km input wrong for sss */
-                     /*  Forcing */
                      /*         - surface */
 #define DIURNAL_SRFLUX /* Note this is 'undef'ed' below */
-c-dd#define QCORRECTION /* DevinD no longer used for bulk force */
-                     /*         - lateral */
+
 #define T_FRC_BRY
 #define Z_FRC_BRY
 #define M3_FRC_BRY
 #define M2_FRC_BRY
-c#define SPONGE
-c#define SPONGE_WIDTH /* # of sponge points is input parameter */
+
                      /* Mixing */
                      /*        - lateral */
 #define UV_VIS2
