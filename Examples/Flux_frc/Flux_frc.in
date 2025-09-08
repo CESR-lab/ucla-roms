@@ -26,6 +26,7 @@ lateral_visc:   VISC2,    VISC4    [m^2/sec for all]
 
 vertical_mixing:  Akv  Akt1  Akt2
                   0.0  0.0   0.0
+
 rho0:
       1027.5
 
