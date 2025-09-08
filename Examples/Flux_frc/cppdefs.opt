@@ -37,6 +37,7 @@ c--# define SPONGE_TUNE
 #define Z_FRC_BRY
 #define M3_FRC_BRY
 #define M2_FRC_BRY
+#define SPONGE
                      
                      /*        - lateral */
 #define UV_VIS2
