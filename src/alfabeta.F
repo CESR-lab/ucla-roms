@@ -1,5 +1,4 @@
 #include "cppdefs.opt"
-#if defined SOLVE3D && defined LMD_KPP
 
       subroutine alfabeta_tile(istr,iend,jstr,jend,
      &                         imin,imax,jmin,jmax,
@@ -74,7 +73,3 @@
         enddo
       enddo
       end
-#else
-      subroutine alfabeta_empty
-      end
-#endif /* LMD_KPP */

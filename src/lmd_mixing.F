@@ -287,12 +287,10 @@
 ! RHO-points. Initialize boundary layer depth "hbl" and index "kbls"
 ! to the maximum (bottomed out) values.
 
-# ifdef LMD_KPP
 #  define alpha Bosol
 #  define beta  Bo
       call alfabeta_tile (1,nx,1,ny, I_EXT_RANGE,
      &                             J_EXT_RANGE, alpha,beta)
-# endif
       ! JM if we move away from a virtual salt flux, this will have to 
       ! change: stflx(isalt) = - pme*sss
       do j=J_EXT_RANGE
@@ -449,16 +447,15 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # ifdef SMOOTH_HBL
       enddo  !<-- break j-loop if smoothing of hbl or bbl takes place
 
-#  ifdef LMD_KPP
 #   define wrk hbl
 #   include "lmd_kpp_smooth_hbl.h"
 #   undef wrk
-#  endif
-#  ifdef LMD_BKPP
+
+
 #   define wrk bbl
 #   include "lmd_kpp_smooth_hbl.h"
 #   undef wrk
-#  endif
+
 
       do j=jstr,jend   !--> restart j-loop till the very end
 # endif /* SMOOTH_HBL */
@@ -470,22 +467,13 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # define jmax illegal
 
 
-# if defined LMD_KPP || defined LMD_BKPP
         if (.not. FIRST_TIME_STEP) then
-# endif
           do i=1,nx
-# ifdef LMD_KPP
             hbl(i,j)=0.5*(hbl(i,j) + hbls(i,j))
-# endif
-# ifdef LMD_BKPP
             bbl(i,j)=0.5*(bbl(i,j) + hbbl(i,j))
-# endif
           enddo
-# if defined LMD_KPP || defined LMD_BKPP
         endif 
-# endif
 
-# if defined MERGE_OVERLAP && defined LMD_KPP && defined LMD_BKPP
         do i=1,nx
           cff=z_w(i,j,N)-z_w(i,j,0)          ! if surface and bottom
           if (hbl(i,j)+bbl(i,j) > cff) then  ! boundary layers overlap
@@ -493,9 +481,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
             bbl(i,j) = cff                   ! total depth of water
           endif                              ! column.
         enddo
-# endif
 
-# ifdef LMD_KPP
         do i=1,nx
           kbls(i)=N          ! initialize search, then find
         enddo                ! new boundary layer index "kbls"
@@ -565,7 +551,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
               amp = ssgm**2
               AKv(i,j,k)=sqrt((amp*AKv(i,j,k))**2 + (wm*hbl(i,j)*cff)**2 )
               AKt(i,j,k)=sqrt((amp*AKt(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
-#  endif
 
 #  ifdef LMD_NONLOCAL
               if (Bfsfc < 0.) then
@@ -665,7 +650,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
         enddo
       enddo
 
-# ifdef LMD_KPP
       do j=jstr,jend                   ! Copy "hbl" into shared array
         do i=istr,iend                 ! and padd lateral ghost points
           hbls(i,j)=hbl(i,j)
@@ -709,8 +693,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
       endif
 #   endif
 #  endif
-# endif   /* LMD_KPP */
-# ifdef LMD_BKPP
       do j=jstr,jend                   ! Copy "bbl" into shared array
         do i=istr,iend                 ! and padd lateral ghost points
           hbbl(i,j)=bbl(i,j)
@@ -754,22 +736,11 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
       endif
 #   endif
 #  endif
-# endif   /* LMD_KPP */
 
 # ifdef EXCHANGE
-#  ifdef LMD_KPP
-#   ifdef LMD_BKPP
       call exchange_xxx(Akv)
       call exchange_xxx(hbls)
       call exchange_xxx(hbbl)
-#   else
-      call exchange_xxx(Akv)
-      call exchange_xxx(hbls)
-#   endif
-#  else
-      call exchange_xxx(Akv)
-      call exchange_xxx(hbbl)
-#  endif
       call exchange_xxx(Akt)
 # endif
       end subroutine lmd_tbl !]

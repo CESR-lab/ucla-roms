@@ -285,11 +285,11 @@
           read(input,*,err=95) Akv_bak,(Akt_bak(itrc),itrc=1,NT)
           mpi_master_only write(*,'(4x,A,ES10.3,2x,A)')  'Akv_bak =',
      &               Akv_bak, 'background vertical viscosity [m^2/s]'
-          do itrc=1,NT
+          do itrc=1,nt
             mpi_master_only write(*,'(1x,A,I1,A,ES10.3,2x,2A)')
      &                     'Akt_bak(',  itrc,  ') =',  Akt_bak(itrc),
      &                     'background vertical mixing [m^2/s] for ',
-     &        vname(2,indxT+itrc-1)(1:lenstr(vname(2,indxT+itrc-1)))
+     &        'tracers'
           enddo
 # endif
 # ifdef MY25_MIXING
