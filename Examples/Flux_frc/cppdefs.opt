@@ -24,6 +24,7 @@
 #define Z_FRC_BRY
 #define M3_FRC_BRY
 #define M2_FRC_BRY
+#define SPONGE
 
                      /* Mixing */
                      /*        - lateral */
@@ -73,23 +74,10 @@
 #define OBC_SOUTH
 
 /* Switches required for Flux correction */
-c-dd#define SFLX_CORR ! Already defined in cppdefs_UP.h & DEVIND IN NEW CODE
-#undef VFLX_CORR
-#undef QCORRECTION
-c-dd#define TAU_CORRECTION
 #undef DIURNAL_SRFLUX
 
-     /* Output */
-#define AVERAGES
 
 #define ADV_ISONEUTRAL
-
-     /* Biology */
-c-dd#define BIOLOGY_BEC2
-
-c-dd#define BULK_FRC
-c-dd#define BULK_FLUX_OUTPUT /* DevinD added this for sustr and svstr outputs in new code */
-
 
 #endif
 
