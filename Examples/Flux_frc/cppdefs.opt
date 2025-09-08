@@ -31,11 +31,11 @@
 #define TS_DIF2
                      /*        - vertical */
 #define LMD_MIXING
-c-#define LMD_KPP
-c-#define LMD_NONLOCAL
+#define LMD_KPP
+#define LMD_NONLOCAL
 #define LMD_RIMIX
-c-#define LMD_CONVEC
-c-#define LMD_BKPP
+#define LMD_CONVEC
+#define LMD_BKPP
 
                       /* Grid Configuration */
 #define CURVGRID
