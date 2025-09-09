@@ -59,6 +59,7 @@
       use dimensions
       use flux_frc
       use pipe_frc
+      use lmd_mixing
       use cdr_frc
       use bgc_shared_vars
       use bgc_forces
@@ -99,6 +100,8 @@
       endif
 # endif
 #endif
+
+      if (lmd_mix) call init_lmd_mix
 
       call init_arrays_ocean
 

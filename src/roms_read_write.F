@@ -79,6 +79,7 @@
       integer,parameter :: max_options_string=2000
 
       ! option string to go into output file attributes
+      character(len=max_options_string),public::lmd_mix_opt = 'N/A'
 
       character(len=max_options_string),public::bc_options   = 'OFF'
       character(len=max_options_string),public::pipe_frc_opt ='OFF'
@@ -89,7 +90,7 @@
       character(len=max_options_string),public::particle_opt='OFF'
       character(len=max_options_string),public::cdr_frc_opt  ='OFF'      
       ! forcing file specifications
-      character(len=max_options_string),public::grid_files='N/A'
+      character(len=max_options_string),public::grid_files = 'N/A'
       character(len=max_options_string),public::ini_files='N/A'
       character(len=max_options_string),public::force_files='N/A'
       character(len=max_options_string),public::force_info='N/A'
@@ -1306,12 +1307,7 @@
       ierr=nf90_put_att (ncid,nf90_global, 'Zob_units', 'm')
 #endif
 
-      ierr=nf90_put_att (ncid, nf90_global, 'SRCS', srcs)  ! List of source-code file names and activated CPP-switches
-      ierr=nf90_put_att (ncid, nf90_global, 'CPPS', cpps)
-
-      ! string set added to get values from modules without struggling with circular references
-      ! as those modules use roms_read_write so this module can't use them.
-      ! rather the string is filled in the module's init and can be written here to all files.
+      ! Strings that should contain the user options for all modules
       ierr=nf90_put_att (ncid, nf90_global, 'bc_options', bc_options)
       ierr=nf90_put_att (ncid, nf90_global, 'bulk_frc_options', bulk_frc_opt)
       ierr=nf90_put_att (ncid, nf90_global, 'flux_frc_options', flux_frc_opt)
@@ -1319,6 +1315,7 @@
       ierr=nf90_put_att (ncid, nf90_global, 'river_frc_options', river_frc_opt)
       ierr=nf90_put_att (ncid, nf90_global, 'pipe_frc_options', pipe_frc_opt)
       ierr=nf90_put_att (ncid, nf90_global, 'particle_options', particle_opt)
+      ierr=nf90_put_att (ncid, nf90_global, 'lmd_mix_options', lmd_mix_opt)
       call add_git_hash(ncid)
 
       end subroutine put_global_atts  !]
