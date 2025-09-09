@@ -10,19 +10,16 @@
       implicit none
       integer,parameter :: tile=0
 
-#include "compute_tile_bounds.h"
-
-      call visc3d_tile (istr,iend,jstr,jend,
-     &                    A2d(1,1),  A2d(1, 2), A2d(1, 3), A2d(1,4),
+      call visc3d_tile (  A2d(1,1),  A2d(1, 2), A2d(1, 3), A2d(1,4),
      &                    A2d(1, 5), A2d(1, 7), A2d(1, 9), A2d(1,11),
      &                    A2d(1,13), A2d(1,15), A2d(1,17), A2d(1,19),
      &                    A2d(1,21), A2d(1,23), A2d(1,25), A2d(1,27))
       end
 
-      subroutine visc3d_tile (istr,iend,jstr,jend, UFx, UFe,
-     &                              VFx,VFe, UFs,VFs, dnUdx,  dmUde,
-     &                              dUdz,    dnVdx,   dmVde,  dVdz,
-     &                              dZdx_r,  dZdx_p,  dZde_r, dZde_p)
+      subroutine visc3d_tile (  UFx, UFe, VFx, VFe,
+     &                          UFs, VFs, dnUdx,  dmUde,
+     &                          dUdz,    dnVdx,   dmVde,  dVdz,
+     &                          dZdx_r,  dZdx_p,  dZde_r, dZde_p)
 
 
 ! Compute horizontal (along geopotential surfaces) viscous terms as
@@ -64,7 +61,7 @@
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k, k1,k2, indx
+      integer :: i,j,k, k1,k2, indx
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFe,VFx
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,2) :: UFs,VFs,
      &                          dmUde,dmVde,dnUdx,dnVdx, dUdz,dVdz,
@@ -73,7 +70,6 @@
       real cff, cff1,cff2,cff3,cff4, cff5,cff6,cff7,cff8,
      &                           dmUdz,dnUdz,dmVdz,dnVdz
 
-# include "compute_auxiliary_bounds.h"
       indx=3-nstp    !--> time index for target arrays;
 
 ! Compute horizontal harmonic viscosity along geopotential surfaces.
@@ -99,8 +95,8 @@
         k1=k2
         k2=3-k1
         if (k<N) then
-          do j=jstr-1,jend+1
-            do i=istrU-1,iend+1
+          do j=0,ny+1
+            do i=0,nx+1
               UFx(i,j)=0.5*(z_r(i,j,k+1)-z_r(i-1,j,k+1))
      &                               *(pm(i-1,j)+pm(i,j))
 # ifdef MASKING
@@ -108,8 +104,8 @@
 # endif
             enddo
           enddo
-          do j=jstrV-1,jend+1
-            do i=istr-1,iend+1
+          do j=0,ny+1
+            do i=0,nx+1
               VFe(i,j)=0.5*(z_r(i,j,k+1)-z_r(i,j-1,k+1))
      &                               *(pn(i,j-1)+pn(i,j))
 # ifdef MASKING
@@ -117,8 +113,8 @@
 # endif
             enddo
           enddo
-          do j=jstrV-1,jend
-            do i=istrU-1,iend
+          do j=0,ny
+            do i=0,nx
               dnUdx(i,j,k2)=0.5*pm(i,j)*(
      &               (pn(i  ,j)+pn(i+1,j))*u(i+1,j,k+1,nstp)
      &              -(pn(i-1,j)+pn(i  ,j))*u(i  ,j,k+1,nstp))
@@ -135,8 +131,8 @@
               dZde_r(i,j,k2)=0.5*(VFe(i,j)+VFe(i,j+1))
             enddo
           enddo
-          do j=jstr,jend+1
-            do i=istr,iend+1
+          do j=1,ny+1
+            do i=1,nx+1
               dmUde(i,j,k2)=0.125*(pn(i,j)+pn(i-1,j)+pn(i,j-1)
      &                                            +pn(i-1,j-1))
      &            *( (pm(i-1,j  )+pm(i,j  ))*u(i,j  ,k+1,nstp)
@@ -158,8 +154,8 @@
         endif
 
 
-c        do j=jstrV-1,jend+1       ! This
-c          do i=istrU-1,iend+1
+c        do j=0,ny+1       ! This
+c          do i=0,nx+1
 c            dZdx_r(i,j,k2)=0.
 c            dZde_r(i,j,k2)=0.
 c            dZdx_p(i,j,k2)=0.
@@ -170,28 +166,28 @@ c        enddo
 
 
         if (k==0 .or. k==N) then
-          do j=jstr-1,jend+1
-            do i=istrU-1,iend+1
+          do j=0,ny+1
+            do i=0,nx+1
               dUdz(i,j,k2)=0.
               UFs(i,j,k2)=0.
             enddo
           enddo
-          do j=jstrV-1,jend+1
-            do i=istr-1,iend+1
+          do j=0,ny+1
+            do i=0,nx+1
               dVdz(i,j,k2)=0.
               VFs(i,j,k2)=0.
             enddo
           enddo
         else
-          do j=jstr-1,jend+1
-            do i=istrU-1,iend+1
+          do j=0,ny+1
+            do i=0,nx+1
               dUdz(i,j,k2)=2.*(u(i,j,k+1,nstp)-u(i,j,k,nstp))
      &                          /( z_r(i-1,j,k+1)-z_r(i-1,j,k)
      &                            +z_r(i  ,j,k+1)-z_r(i  ,j,k))
             enddo
           enddo
-          do j=jstrV-1,jend+1
-            do i=istr-1,iend+1
+          do j=0,ny+1
+            do i=0,nx+1
               dVdz(i,j,k2)=2.*(v(i,j,k+1,nstp)-v(i,j,k,nstp))
      &                          /( z_r(i,j-1,k+1)-z_r(i,j-1,k)
      &                            +z_r(i,j  ,k+1)-z_r(i,j  ,k))
@@ -203,8 +199,8 @@ c        enddo
 ! geopotential surfaces in the XI- and ETA-directions.
 
         if (k>0) then
-          do j=jstrV-1,jend   ! UFx at rho-points hence this covers interior (non-boundary)
-            do i=istrU-1,iend
+          do j=0,ny   ! UFx at rho-points hence this covers interior (non-boundary)
+            do i=0,nx
               cff=visc2_r(i,j)*Hz(i,j,k)*(
      &         dn_r(i,j)*( dnUdx(i,j,k1) - 0.5*pn(i,j)*(
      &           min(dZdx_r(i,j,k1),0.)*(dUdz(i,j,k1)+dUdz(i+1,j,k2))
@@ -221,8 +217,8 @@ c        enddo
               VFe(i,j)=dm_r(i,j)*dm_r(i,j)*cff
             enddo
           enddo
-          do j=jstr,jend+1
-            do i=istr,iend+1
+          do j=1,ny+1
+            do i=1,nx+1
               cff=visc2_p(i,j)*0.25*( Hz(i,j,k) +Hz(i-1,j,k)
      &                               +Hz(i,j-1,k) +Hz(i-1,j-1,k))
      &       *( dn_p(i,j)*( dnVdx(i,j,k1)-0.125*( pn(i,j)+pn(i-1,j)
@@ -247,8 +243,8 @@ c        enddo
 ! surfaces.
 
           if (k<N) then
-            do j=jstr,jend
-              do i=istrU,iend
+            do j=1,ny
+              do i=1,nx
                 cff1=0.5*(pn(i-1,j)+pn(i,j))
                 cff2=0.5*(pm(i-1,j)+pm(i,j))
                 cff=0.25*( dVdz(i,j,k2)+dVdz(i-1,j,k2)
@@ -302,8 +298,8 @@ c        enddo
               enddo
             enddo
 
-            do j=jstrV,jend
-              do i=istr,iend
+            do j=1,ny
+              do i=1,nx
                 cff1=0.5*(pn(i,j-1)+pn(i,j))
                 cff2=0.5*(pm(i,j-1)+pm(i,j))
                 cff=0.25*( dUdz(i,j,k2)+dUdz(i+1,j,k2)
@@ -363,8 +359,8 @@ c        enddo
 ! integral of viscous terms and add it into coupling terms for the
 ! barotropic mode
 
-          do j=jstr,jend
-            do i=istrU,iend
+          do j=1,ny
+            do i=1,nx
               cff=0.125*(pm(i-1,j)+pm(i,j))*(pn(i-1,j) +pn(i,j))
      &               *( (pn(i-1,j)+pn(i,j))*(UFx(i,j)-UFx(i-1,j))
      &                 +(pm(i-1,j)+pm(i,j))*(UFe(i,j+1)-UFe(i,j))
@@ -375,8 +371,8 @@ c        enddo
      &                                              -UFs(i,j,k1))
             enddo
           enddo
-          do j=jstrV,jend
-            do i=istr,iend
+          do j=1,ny
+            do i=1,nx
               cff=0.125*(pm(i,j)+pm(i,j-1))*(pn(i,j) +pn(i,j-1))
      &               *( (pn(i,j-1)+pn(i,j))*(VFx(i+1,j)-VFx(i,j))
      &                 -(pm(i,j-1)+pm(i,j))*(VFe(i,j)-VFe(i,j-1))

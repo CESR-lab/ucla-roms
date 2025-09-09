@@ -1,8 +1,7 @@
 #include "cppdefs.opt"
 #if defined SOLVE3D && defined LMD_KPP
 
-      subroutine alfabeta_tile(istr,iend,jstr,jend,
-     &                         imin,imax,jmin,jmax,
+      subroutine alfabeta_tile(imin,imax,jmin,jmax,
      &                                  alpha,beta)
 
 ! Compute thermal expansion "alpha" and saline contraction "beta"
@@ -23,7 +22,7 @@
       use scalars
 
       implicit none
-      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j
+      integer :: imin,imax,jmin,jmax, i,j
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: alpha,beta
 
 # ifdef NONLIN_EOS

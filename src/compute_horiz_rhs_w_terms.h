@@ -20,20 +20,20 @@
 #endif
 #ifndef EW_PERIODIC
           if (WESTERN_EDGE) then       ! Determine extended index
-            imin=istr                  ! range for computation of
+            imin=1                  ! range for computation of
           else                         ! elementary differences: it
-            imin=istr-1                ! needs to be restricted
+            imin=0                ! needs to be restricted
           endif                        ! because in the vicinity of
           if (EASTERN_EDGE) then       ! physical boundary the extra
-            imax=iend                  ! point may be not available,
+            imax=nx                  ! point may be not available,
           else                         ! and extrapolation of slope
-            imax=iend+1                ! is used instead.
+            imax=nx+1                ! is used instead.
           endif
 #else
-          imin=istr-1
-          imax=iend+1
+          imin=0
+          imax=nx+1
 #endif
-          do j=jstr,jend
+          do j=1,ny
             do i=imin,imax+1
               FX(i,j)=(w(i,j,k,nrhs)-w(i-1,j,k,nrhs))
 #ifdef MASKING
@@ -43,18 +43,18 @@
           enddo
 #ifndef EW_PERIODIC
           if (WESTERN_EDGE) then
-            do j=jstr,jend
-              FX(istr-1,j)=FX(istr,j)
+            do j=1,ny
+              FX(0,j)=FX(1,j)
             enddo
           endif
           if (EASTERN_EDGE) then
-            do j=jstr,jend
-              FX(iend+2,j)=FX(iend+1,j)
+            do j=1,ny
+              FX(nx+2,j)=FX(nx+1,j)
             enddo
           endif
 #endif
-          do j=jstr,jend
-            do i=istr-1,iend+1
+          do j=1,ny
+            do i=0,nx+1
 #if defined UPSTREAM_W
               curv(i,j)=FX(i+1,j)-FX(i,j)
 #else
@@ -62,8 +62,8 @@
 #endif
             enddo
           enddo             !--> discard FX
-          do j=jstr,jend
-            do i=istr,iend+1
+          do j=1,ny
+            do i=1,nx+1
               if (k<N) then
                 Uflxw= 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
               else
@@ -88,21 +88,21 @@
 
 #ifndef NS_PERIODIC
           if (SOUTHERN_EDGE) then
-            jmin=jstr
+            jmin=1
           else
-            jmin=jstr-1
+            jmin=0
           endif
           if (NORTHERN_EDGE) then
-            jmax=jend
+            jmax=ny
           else
-            jmax=jend+1
+            jmax=ny+1
           endif
 #else
-          jmin=jstr-1
-          jmax=jend+1
+          jmin=0
+          jmax=ny+1
 #endif
           do j=jmin,jmax+1
-            do i=istr,iend
+            do i=1,nx
               FE(i,j)=(w(i,j,k,nrhs)-w(i,j-1,k,nrhs))
 #ifdef MASKING
      &                                               *vmask(i,j)
@@ -111,18 +111,18 @@
           enddo
 #ifndef NS_PERIODIC
           if (SOUTHERN_EDGE) then
-            do i=istr,iend
-              FE(i,jstr-1)=FE(i,jstr)
+            do i=1,nx
+              FE(i,0)=FE(i,1)
             enddo
           endif
           if (NORTHERN_EDGE) then
-            do i=istr,iend
-              FE(i,jend+2)=FE(i,jend+1)
+            do i=1,nx
+              FE(i,ny+2)=FE(i,ny+1)
             enddo
           endif
 #endif
-          do j=jstr-1,jend+1
-            do i=istr,iend
+          do j=0,ny+1
+            do i=1,nx
 #if defined UPSTREAM_W
               curv(i,j)=FE(i,j+1)-FE(i,j)
 #else
@@ -131,8 +131,8 @@
             enddo
           enddo            !--> discard FE
 
-          do j=jstr,jend+1
-            do i=istr,iend
+          do j=1,ny+1
+            do i=1,nx
               if (k<N) then
                 Vflxw= 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
               else
@@ -155,8 +155,8 @@
             enddo
           enddo             !--> discard curv,grad, keep FE
 
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             rw(i,j,k)=rw(i,j,k)-(FX(i+1,j)-FX(i,j))
      &                         -(FE(i,j+1)-FE(i,j))
 #ifdef DIAGNOSTICS_NHMG

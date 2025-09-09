@@ -5,7 +5,7 @@
 ! maximum velocity, maximum Courant number and it location, etc. Since
 ! this operation involves computation of  global sums, it is done in
 ! three stages: at first, summation within the current tile [subdomain
-! of indices (istr:iend,jstr:jend)] done independently by an individual
+! of indices (1:nx,1:ny)] done independently by an individual
 ! thread (in 3D cases this stage also performs vertical integration);
 ! then summation across the threads of the same MPI process (if any);
 ! and, finally, MPI reduction to compute global integrals.
@@ -29,15 +29,13 @@ c--#define MAX_BY_VERT_CFL_ONLY
       integer   i,j
       integer,save:: tile=0
 
-#include "compute_tile_bounds.h"
-
       j=min(iic,2*ninfo)-1             ! This introduces "logarithmic"
       i=1                              ! scaling of diag call frequency
       do while(i<j)                    ! at the beginning of model run.
         i=2*i
       enddo
       if (mod(iic,min(i,ninfo)) == 0) then
-        call diag_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2),A2d(1,3)
+        call diag_tile (A2d(1,1),A2d(1,2),A2d(1,3)
 #ifdef SOLVE3D
      &               , A2d(1,4), A2d(1,5), A2d(1,6), A2d(1,7), A2d(1,8)
 #endif
@@ -45,7 +43,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
       endif
       end
 
-      subroutine diag_tile (istr,iend,jstr,jend, dVol, ke,pe
+      subroutine diag_tile (dVol, ke,pe
 #ifdef SOLVE3D
      &                            , ke2b, ke3bc, kesrf, ub,vb
 #endif
@@ -64,7 +62,6 @@ c--#define MAX_BY_VERT_CFL_ONLY
 
 #include "diag.opt"
 
-      integer istr,iend,jstr,jend
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: dVol, ke, pe
 #ifdef SOLVE3D
      &                             , ke2b, ke3bc, kesrf, ub, vb
@@ -111,18 +108,18 @@ c--#define MAX_BY_VERT_CFL_ONLY
 # else
       my_v3d_max=0. ;  my_v3bc_max=0.
 # endif
-      do j=jstr,jend+1
-        do i=istr,iend+1
+      do j=1,ny+1
+        do i=1,nx+1
           ub(i,j)=(Hz(i,j,N)+Hz(i-1,j,N))*u(i,j,N,nstp)
           vb(i,j)=(Hz(i,j,N)+Hz(i,j-1,N))*v(i,j,N,nstp)
         enddo
         do k=N-1,2,-1
-          do i=istr,iend+1
+          do i=1,nx+1
             ub(i,j)=ub(i,j)+(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nstp)
             vb(i,j)=vb(i,j)+(Hz(i,j,k)+Hz(i,j-1,k))*v(i,j,k,nstp)
           enddo
         enddo
-        do i=istr,iend+1
+        do i=1,nx+1
           ub(i,j)=(ub(i,j)+(Hz(i,j,1)+Hz(i-1,j,1))*u(i,j,1,nstp))
      &         /(z_w(i,j,N)+z_w(i-1,j,N)-z_w(i,j,0)-z_w(i-1,j,0))
           vb(i,j)=(vb(i,j)+(Hz(i,j,1)+Hz(i,j-1,1))*v(i,j,1,nstp))
@@ -131,8 +128,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
       enddo
 
       cff=g/rho0
-      do j=jstr,jend
-        do i=istr,iend
+      do j=1,ny
+        do i=1,nx
           v2=0.5*(ub(i,j)**2+ub(i+1,j)**2 +vb(i,j)**2+vb(i,j+1)**2)
           my_v2d_max=max(my_v2d_max, v2)
 
@@ -145,7 +142,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
      &                     +v(i,j,N,nstp)**2 + v(i,j+1,N,nstp)**2)
         enddo
         do k=N,1,-1
-          do i=istr,iend
+          do i=1,nx
             v2=0.5*( u(i,j,k,nstp)**2 + u(i+1,j,k,nstp)**2
      &              +v(i,j,k,nstp)**2 + v(i,j+1,k,nstp)**2)
 
@@ -206,7 +203,7 @@ c--#define MAX_BY_VERT_CFL_ONLY
             ke3bc(i,j)=ke3bc(i,j) + 0.5*v2bc*Hz(i,j,k)
           enddo
         enddo
-        do i=istr,iend
+        do i=1,nx
 # ifdef MASKING
           dA=rmask(i,j)/(pm(i,j)*pn(i,j))
 # else
@@ -222,8 +219,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
       enddo
 #else
       cff=0.5*g
-      do j=jstr,jend
-        do i=istr,iend
+      do j=1,ny
+        do i=1,nx
           v2=0.5*( ubar(i,j,kstp)**2+ubar(i+1,j,kstp)**2
      &            +vbar(i,j,kstp)**2+vbar(i,j+1,kstp)**2)
           my_v2d_max=max(my_v2d_max, v2)
@@ -240,15 +237,15 @@ c--#define MAX_BY_VERT_CFL_ONLY
 #endif /* SOLVE3D */
 #ifdef SUM_BY_PAIRS
 
-      isize=iend-istr                  ! Horizontal summation within 
-      jsize=jend-jstr                  ! the tile: compute partial sums
+      isize=nx-1                  ! Horizontal summation within 
+      jsize=ny-1                  ! the tile: compute partial sums
                                        ! using a split-directional 
       do while (isize>0 .or. jsize>0)  ! reduction-by-pairs algorithm
         if (jsize>0) then              ! in order to avoid accumulation 
           js=(jsize+1)/2-1             ! of roundoff errors.
           do j=0,js
-            jtg=jstr+j
-            do i=istr,istr+isize
+            jtg=1+j
+            do i=1,1+isize
                dVol(i,jtg) =  dVol(i,jtg+j) +  dVol(i,jtg+j+1)
                  ke(i,jtg) =    ke(i,jtg+j) +    ke(i,jtg+j+1)
                  pe(i,jtg) =    pe(i,jtg+j) +    pe(i,jtg+j+1)
@@ -261,8 +258,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
           enddo
           if (2*js+1 < jsize) then     ! carry-over points which do not
             js=js+1                    ! have pair to be added together
-            jtg=jstr+js
-            do i=istr,istr+isize
+            jtg=1+js
+            do i=1,1+isize
                dVol(i,jtg) =  dVol(i,jtg+js)
                  ke(i,jtg) =    ke(i,jtg+js)
                  pe(i,jtg) =    pe(i,jtg+js)
@@ -278,9 +275,9 @@ c--#define MAX_BY_VERT_CFL_ONLY
 
         if (isize>0) then
           is=(isize+1)/2-1
-          do j=jstr,jstr+jsize
+          do j=1,1+jsize
             do i=0,is
-              itg=istr+i
+              itg=1+i
                dVol(itg,j) =  dVol(itg+i,j) +  dVol(itg+i+1,j)
                  ke(itg,j) =    ke(itg+i,j) +    ke(itg+i+1,j)
                  pe(itg,j) =    pe(itg+i,j) +    pe(itg+i+1,j)
@@ -293,8 +290,8 @@ c--#define MAX_BY_VERT_CFL_ONLY
           enddo
           if (2*is+1 < isize) then
             is=is+1
-            itg=istr+is
-            do j=jstr,jstr+jsize
+            itg=1+is
+            do j=1,1+jsize
                dVol(itg,j) =  dVol(itg+is,j)
                  ke(itg,j) =    ke(itg+is,j)
                  pe(itg,j) =    pe(itg+is,j)
@@ -312,37 +309,37 @@ c--#define MAX_BY_VERT_CFL_ONLY
 ! Alternative: a two-stage (one for each direction) straightforward
 ! summation algorithm as an effort to mitigate roundoff errors.
 
-      do j=jstr+1,jend
-        do i=istr,iend
-          dVol(i,jstr)  = dVol(i,jstr)  + dVol(i,j)
-          ke(i,jstr)    = ke(i,jstr)    + ke(i,j)
-          pe(i,jstr)    = pe(i,jstr)    + pe(i,j)
+      do j=2,ny
+        do i=1,nx
+          dVol(i,1)  = dVol(i,1)  + dVol(i,j)
+          ke(i,1)    = ke(i,1)    + ke(i,j)
+          pe(i,1)    = pe(i,1)    + pe(i,j)
 # ifdef SOLVE3D
-          ke2b(i,jstr)  = ke2b(i,jstr)  + ke2b(i,j)
-          ke3bc(i,jstr) = ke3bc(i,jstr) + ke3bc(i,j)
-          kesrf(i,jstr) = kesrf(i,jstr) + kesrf(i,j)
+          ke2b(i,1)  = ke2b(i,1)  + ke2b(i,j)
+          ke3bc(i,1) = ke3bc(i,1) + ke3bc(i,j)
+          kesrf(i,1) = kesrf(i,1) + kesrf(i,j)
 # endif
         enddo
       enddo
-      do i=istr+1,iend
-        dVol(istr,jstr)  = dVol(istr,jstr)  + dVol(i,jstr)
-        ke(istr,jstr)    = ke(istr,jstr)    + ke(i,jstr)
-        pe(istr,jstr)    = pe(istr,jstr)    + pe(i,jstr)
+      do i=2,nx
+        dVol(1,1)  = dVol(1,1)  + dVol(i,1)
+        ke(1,1)    = ke(1,1)    + ke(i,1)
+        pe(1,1)    = pe(1,1)    + pe(i,1)
 # ifdef SOLVE3D
-        ke2b(istr,jstr)  = ke2b(istr,jstr)  + ke2b(i,jstr)
-        ke3bc(istr,jstr) = ke3bc(istr,jstr) + ke3bc(i,jstr)
-        kesrf(istr,jstr) = kesrf(istr,jstr) + kesrf(i,jstr)
+        ke2b(1,1)  = ke2b(1,1)  + ke2b(i,1)
+        ke3bc(1,1) = ke3bc(1,1) + ke3bc(i,1)
+        kesrf(1,1) = kesrf(1,1) + kesrf(i,1)
 # endif
       enddo
 #endif /* SUM_BY_PAIRS */
 
-      my_avzeta=dVol(istr,jstr)
-      my_ke=ke(istr,jstr)
-      my_pe=pe(istr,jstr)
+      my_avzeta=dVol(1,1)
+      my_ke=ke(1,1)
+      my_pe=pe(1,1)
 #ifdef SOLVE3D
-      my_ke2b=ke2b(istr,jstr)
-      my_ke3bc=ke3bc(istr,jstr)
-      my_kesrf=kesrf(istr,jstr)
+      my_ke2b=ke2b(1,1)
+      my_ke3bc=ke3bc(1,1)
+      my_kesrf=kesrf(1,1)
 #endif
       if (SINGLE_TILE_MODE) then
         nsubs=1

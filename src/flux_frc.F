@@ -59,12 +59,9 @@
       flux_frc_opt = trim(adjustl(flux_frc_opt))
       end subroutine init_arrays_flux_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_flux_frc(istr,iend,jstr,jend)  ![
+      subroutine set_flux_frc
 
       implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
 
       ! local
       integer :: i, j,ierr

@@ -1,19 +1,18 @@
 #include "cppdefs.opt"
 #ifdef LMD_KPP
 
-      subroutine swr_frac (tile)
+      subroutine swr_frac
 
       use param
       use private_scratch
 
       implicit none
       integer tile
-# include "compute_tile_bounds.h"
-      call swr_frac_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2))
+      call swr_frac_tile (A2d(1,1),A2d(1,2))
       end
 
 
-      subroutine swr_frac_tile (istr,iend,jstr,jend, swdk1,swdk2)
+      subroutine swr_frac_tile (swdk1,swdk2)
 !
 ! Compute fraction of solar shortwave flux penetrating to the
 ! specified depth due to exponential decay in Jerlov water type
@@ -31,11 +30,12 @@
       use param
       use mixing
       use ocean_vars
+      use dimensions
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend,     i,j,k, Jwt
-      real  swdk1(istr:iend), swdk2(istr:iend)
+      integer :: i,j,k, Jwt
+      real  swdk1(1:nx), swdk2(1:nx)
       real mu1(5),mu2(5), r1(5), attn1, attn2, xi1,xi2
 
       mu1(1)=0.35    ! reciprocal of the absorption coefficient
@@ -61,14 +61,14 @@
       attn1=-1./mu1(Jwt)
       attn2=-1./mu2(Jwt)
 
-      do j=jstr,jend                     ! Algorithm: set fractions
-        do i=istr,iend                   ! for each spectral band at
+      do j=1,ny                     ! Algorithm: set fractions
+        do i=1,nx                   ! for each spectral band at
           swdk1(i)=r1(Jwt)               ! surface, then attenuate
           swdk2(i)=1.-swdk1(i)           ! them separately throughout
           swr_frac(i,j,N)=1.             ! the water column.
         enddo
         do k=N,1,-1
-          do i=istr,iend
+          do i=1,nx
             xi1=attn1*Hz(i,j,k)
             if (xi1 > -20.) then        ! this logic to avoid
               swdk1(i)=swdk1(i)*exp(xi1)   ! computing exponent for

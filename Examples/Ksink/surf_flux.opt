@@ -2,8 +2,9 @@
       ! ****************************************************************
       ! User inputs
 
-      logical,public,parameter :: wrt_smflx = .false.              ! output surface momentum flux
-      logical,public,parameter :: wrt_stflx = .false.              ! output surface tracer flux
+      logical,public,parameter :: wrt_smflx = .false.               ! output surface momentum flux
+      logical,public,parameter :: wrt_stflx = .false.               ! output surface tracer flux
+
       logical,parameter :: sflx_avg  = .false.              ! write averaged sflx data
 
       real,parameter           :: output_period = 120       ! output averaging period in seconds
