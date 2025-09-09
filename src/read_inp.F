@@ -289,7 +289,7 @@
             mpi_master_only write(*,'(1x,A,I1,A,ES10.3,2x,2A)')
      &                     'Akt_bak(',  itrc,  ') =',  Akt_bak(itrc),
      &                     'background vertical mixing [m^2/s] for ',
-     &        vname(2,indxT+itrc-1)(1:lenstr(vname(2,indxT+itrc-1)))
+     &        'tracer'
           enddo
 # endif
 # ifdef MY25_MIXING

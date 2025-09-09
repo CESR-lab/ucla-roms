@@ -287,12 +287,10 @@
 ! RHO-points. Initialize boundary layer depth "hbl" and index "kbls"
 ! to the maximum (bottomed out) values.
 
-# ifdef LMD_KPP
 #  define alpha Bosol
 #  define beta  Bo
       call alfabeta_tile (1,nx,1,ny, I_EXT_RANGE,
      &                             J_EXT_RANGE, alpha,beta)
-# endif
       ! JM if we move away from a virtual salt flux, this will have to 
       ! change: stflx(isalt) = - pme*sss
       do j=J_EXT_RANGE
@@ -405,9 +403,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
           else
             hbl(i,j)=z_w(i,j,N)-z_w(i,j,0)
           endif
-#   ifdef MASKING
-          hbl(i,j)=hbl(i,j)*rmask(i,j)
-#   endif
+          hbl(i,j)=hbl(i,j)*rmask(i,j) ! is this needed?
         enddo
 #   undef swdk_r
 
@@ -495,7 +491,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
         enddo
 # endif
 
-# ifdef LMD_KPP
         do i=1,nx
           kbls(i)=N          ! initialize search, then find
         enddo                ! new boundary layer index "kbls"
@@ -565,7 +560,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
               amp = ssgm**2
               AKv(i,j,k)=sqrt((amp*AKv(i,j,k))**2 + (wm*hbl(i,j)*cff)**2 )
               AKt(i,j,k)=sqrt((amp*AKt(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
-#  endif
+
 
 #  ifdef LMD_NONLOCAL
               if (Bfsfc < 0.) then

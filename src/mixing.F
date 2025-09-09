@@ -99,7 +99,7 @@
       bvf=0.
 # else
       Akv=Akv_bak
-      Akt=Akt_bak
+      Akt=Akt_bak(1)
 # endif
 
       end subroutine init_arrays_mixing  !]

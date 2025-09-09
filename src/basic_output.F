@@ -19,6 +19,7 @@
       use coupling
       use mixing
       use tracers
+      use lmd_mixing
 
       implicit none
       private
@@ -252,8 +253,8 @@
         if (wrt_Akt) call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:),start)
 
         start(3)=rec_his                                      ! back to 2D vars
-        if (wrt_hbls) call ncwrite(ncid,'hbls',hbls(i0:i1,j0:j1),start)
-        if (wrt_hbbl) call ncwrite(ncid,'hbbl',hbbl(i0:i1,j0:j1),start)
+        if (wrt_hbls.and.lmd_kpp) call ncwrite(ncid,'hbls',hbls(i0:i1,j0:j1),start)
+        if (wrt_hbbl.and.lmd_bkpp) call ncwrite(ncid,'hbbl',hbbl(i0:i1,j0:j1),start)
 
         ierr=nf90_close(ncid)
         if (mynode == 0 .and. (.not.code_check)) then                 ! supress output for code_check
