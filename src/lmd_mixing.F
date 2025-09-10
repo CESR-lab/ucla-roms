@@ -76,8 +76,6 @@
       real :: dist,mult
       real,dimension(:,:),allocatable :: Rig
 
-!     integer  :: istr,iend,jstr,jend
- 
       if (.not.allocated(fx)) then
         allocate(fx(0:nx+1,0:ny+1))
         allocate(fy(0:nx+1,0:ny+1))
@@ -254,6 +252,10 @@
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb,amp
       integer  :: istr,iend,jstr,jend
 
+      istr =  1
+      iend = nx
+      jstr =  1
+      jend = ny
 
 ! Compute thermal expansion, "alpha" [kg/m^3/degC], and saline
 ! contraction, "beta" [kg/m^3/PSU], coefficients at surface; then
