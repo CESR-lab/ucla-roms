@@ -27,6 +27,9 @@
 !
 ! output: swr_frac (in "mixing")  shortwave radiation fraction
 !
+! While the water type is the same, we do this pre-computation
+! to account for varying z locations of the vertical grid.
+! Currently, only used when lmd_kpp is true
 
       use param
       use mixing

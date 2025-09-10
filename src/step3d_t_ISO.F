@@ -869,6 +869,9 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 !           t(i,j,1,nnew,itrc)=t(i,j,1,nnew,itrc)+dt*btflx(i,j,itrc)
           enddo
 
+! JM: The swr_frac should not depend on the presence of lmd_kpp
+! Additionally, this is an awkward implementation of what 
+! is the divergence of a vertical flux
 # ifdef LMD_KPP
 ! Add the solar radiation flux in temperature equation. Also compute
 ! the nonlocal transport flux for unstable (convective) forcing
