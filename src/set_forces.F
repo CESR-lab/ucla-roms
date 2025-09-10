@@ -111,7 +111,7 @@ c***              no code here
       ! DevinD not sure what flag to use here to avoid set_flux for purely analytical
 #  ifndef ANA_SMFLUX
       frctype = 'SURF:'
-      call set_flux_frc(istr,iend,jstr,jend)
+      call set_flux_frc
 #  endif
 
 #  ifdef ANA_STFLUX

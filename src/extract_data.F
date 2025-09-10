@@ -146,7 +146,7 @@
       call read_extraction_objects
 
       ! For vertical velocity
-      allocate( Wvl(GLOBAL_2D_ARRAY,nz+1))
+      allocate( Wvl(GLOBAL_2D_ARRAY,nz))
 
       if (diag_pflx) then
         allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
@@ -611,7 +611,7 @@
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%w) then
-              call wvlcty (0,Wvl)
+              call wvlcty (Wvl)
               oname = trim(obj(i)%set)//'_w'//trim(obj(i)%bnd)
               call interpolate(Wvl(-1:nx+2,-1:ny+2,1:nz),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
