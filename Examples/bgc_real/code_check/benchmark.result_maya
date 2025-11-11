@@ -1415,6 +1415,17 @@ we successfully read and closed marbl_diagnostic_output_list
  init buffers
       get_grid :: read grid data from file 'input_data/sample_grd_riv.0.nc'.
  No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ calc_diag:  F
+ No diagnostics.
+ No diagnostics.
+ calc_diag:  F
+ calc_diag:  F
  hmin =    1.876481   grdmin = 1.1972389E+02     area = 2.6170048067541334E+08
  hmax =  241.183158   grdmax = 1.2041986E+02   volume = 1.7988563819826324E+10
                                            open_cross = 5.4367977391196312E+06
@@ -1531,11 +1542,11 @@ we successfully read and closed marbl_diagnostic_output_list
          set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
          set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
- 1  4.2294649426827743E-03 2.7899249149024364E-03 4.0042803391422305E-01 3.7077050964273750E-01
- 2  4.2263010986340263E-03 2.7864445365130986E-03 2.9727921070808611E-01 1.5941239141462421E-01
- 3  4.2225760985883862E-03 2.7823574534196933E-03 4.4126746280757045E-01 3.3094571426648800E-01
- 4  4.2175537894076111E-03 2.7770322654641832E-03 2.0939178050410687E-01 2.0939178050410687E-01
- 5  4.2156855156165749E-03 2.7748446673095924E-03 2.3177809649896608E-01 1.2055899482549325E-01
+ 1  4.2294649426827743E-03 2.7899249149024364E-03 4.0042803391422283E-01 3.7077050964273728E-01
+ 2  4.2263010986340263E-03 2.7864445365130986E-03 2.9727921070808561E-01 1.5941239141462379E-01
+ 3  4.2225760985883862E-03 2.7823574534196933E-03 4.4126746280757168E-01 3.3094571426648878E-01
+ 4  4.2175537894076111E-03 2.7770322654641832E-03 2.0939178050410817E-01 2.0939178050410817E-01
+ 5  4.2156855156165749E-03 2.7748446673095920E-03 2.3177809649896658E-01 1.2055899482549366E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -1571,11 +1582,11 @@ we successfully read and closed marbl_diagnostic_output_list
        wrt_bgc_tracers :: history , trc =  diazFe                                    
        bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
- 6  4.2152003412827830E-03 2.7739722008516452E-03 2.9069716164208781E-01 2.1955254137678018E-01
- 7  4.2151817454044987E-03 2.7735783961351092E-03 2.0236960307386684E-01 1.9417549565775136E-01
- 8  4.2170067232140717E-03 2.7750135245570434E-03 2.5068775379237240E-01 1.3721936096844359E-01
- 9  4.2180008699533641E-03 2.7755668751599546E-03 2.8034745621743884E-01 2.1845061661780424E-01
-10  4.2170787295234425E-03 2.7742121767264372E-03 2.0266617746804455E-01 1.9424691793365467E-01
+ 6  4.2152003412827838E-03 2.7739722008516452E-03 2.9069716164208687E-01 2.1955254137677954E-01
+ 7  4.2151817454044995E-03 2.7735783961351092E-03 2.0236960307387428E-01 1.9417549565775896E-01
+ 8  4.2170067232140725E-03 2.7750135245570439E-03 2.5068775379237246E-01 1.3721936096844359E-01
+ 9  4.2180008699533658E-03 2.7755668751599551E-03 2.8034745621743856E-01 2.1845061661780407E-01
+10  4.2170787295234434E-03 2.7742121767264372E-03 2.0266617746805660E-01 1.9424691793366688E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -1611,8 +1622,8 @@ we successfully read and closed marbl_diagnostic_output_list
        wrt_bgc_tracers :: history , trc =  diazFe                                    
        bgc :: wrote history, tdays =   4726.5680  step =      9 rec =   3
        bgc diag :: wrote history, tdays =   4726.5680  step =     10 rec =   3
- Process    0  thread  0  cpu time =        9.01 sec
+ Process    0  thread  0  cpu time =       13.89 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   9.09566986933351     
+ MPI_run_time =   13.9917022154550     
