@@ -29,6 +29,8 @@
 
       cff=1.D0/12.D0 ; cff1=3.D0/16.D0
 
+!     if (mynode.eq.0) print *,'wrk: ',wrk(10,10)
+
 #  ifndef EW_PERIODIC
       if (WESTERN_EDGE) then
         do j=J_EXT_RANGE
@@ -101,3 +103,5 @@
 #  endif
         enddo
       enddo              !--> discard FX,FE,FE1
+
+!     if (mynode.eq.0) print *,'wrks: ',wrk(10,10)

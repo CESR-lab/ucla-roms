@@ -76,6 +76,8 @@
       real :: dist,mult
       real,dimension(:,:),allocatable :: Rig
 
+      integer  :: istr,iend,jstr,jend
+ 
       if (.not.allocated(fx)) then
         allocate(fx(0:nx+1,0:ny+1))
         allocate(fy(0:nx+1,0:ny+1))
@@ -83,15 +85,13 @@
         allocate(fy1(0:nx+1,0:ny+1))
       endif
 
-!      istr = 1
-!      jstr = 1
-!      iend = nx
-!      jend = ny
+       istr = 1
+       jstr = 1
+       iend = nx
+       jend = ny
 
 
       if (lmd_rimix) then
-        
-        ! Could do this once in module init
 
         allocate(Rig(0:nx+1,0:ny+1))
 
@@ -131,14 +131,14 @@
               AKt(i,j,k)=nuws + nu0s*nu_sx
 
               if (lmd_convec.and.(Rig(i,j)<0.) ) then
-                ! Mix tracers only
+                AKv(i,j,k) = AKv(i,j,k) + nu0c
                 AKt(i,j,k) = AKt(i,j,k) + nu0c
               endif
             enddo
           enddo
         enddo
 
-      else  ! internal wave breaking only, 'background' mixing
+      else  ! internal wave breaking only
 
         do k=1,nz-1
           do j=1,ny
@@ -204,11 +204,15 @@
       
       ! Local
       integer i,j,k
-      real, dimension(1-bf:nx+bf,1-bf:ny+bf) :: ustar, Bo, Bosol
-     &                                                  , hbl, bbl
+!     real, dimension(1-bf:nx+bf,1-bf:ny+bf) :: ustar, Bo, Bosol
+!    &                                                  , hbl, bbl
+!    &                                              , FX, FE, FE1
+      real, dimension(0:nx+1,0:ny+1) :: ustar, Bo, Bosol
+      real, dimension(0:nx+1,0:ny+1) :: hbl,bbl,FX,FE,FE1
 
       real, dimension(0:nx+1,0:nz) :: Cr,FC, wrk1,wrk2
-      real, dimension(0:nx+1)    :: Bfsfc_bl
+      real, dimension(0:nx+1) ::  Bfsfc_bl,
+     &                               Gm1,dGm1dS, Gt1,dGt1dS, Gs1,dGs1dS
       integer, dimension(0:nx+1) :: kbls, kmo,kbbl
       integer :: tind
 
@@ -238,8 +242,6 @@
 
       real,parameter :: r2=0.5, r3=1./3., r4=0.25, EPS=1.E-20
 
-! Nondimensional constants for computing non-local flux and convective
-! deepening of surface boundary layer. 
       real,parameter :: Cg = Cstar * vonKar * (c_s*vonKar*epssfc)**(1./3.)
       real,parameter :: Vtc= Cv * sqrt(-betaT/(c_s*epssfc)) / (Ricr*vonKar**2)
 
@@ -252,10 +254,60 @@
       real Kv0, Kt0, Ks0, wmb,wsb, sgmb,amp
       integer  :: istr,iend,jstr,jend
 
-      istr =  1
-      iend = nx
-      jstr =  1
-      jend = ny
+
+
+      !! When smoothing hbl, we try to not 
+      !! smooth over the mask and the domain
+      !! boundaries
+# ifdef SMOOTH_HBL
+      integer imin,imax,jmin,jmax
+#  ifdef EW_PERIODIC
+      imin=0
+      imax=nx+1
+#  else
+      if (WESTERN_EDGE) then
+        imin=1
+      else
+        imin=0
+      endif
+      if (EASTERN_EDGE) then
+        imax=nx
+      else
+        imax=nx+1
+      endif
+#  endif
+#  ifdef NS_PERIODIC
+      jmin=0
+      jmax=ny+1
+#  else
+      if (SOUTHERN_EDGE) then
+        jmin=1
+      else
+        jmin=0
+      endif
+      if (NORTHERN_EDGE) then
+        jmax=ny
+      else
+        jmax=ny+1
+      endif
+#  endif
+       istr = 1
+       jstr = 1
+       iend = nx
+       jend = ny
+#  define I_EXT_RANGE imin,imax
+#  define J_EXT_RANGE jmin,jmax
+# else
+#  define I_EXT_RANGE 1,nx
+#  define J_EXT_RANGE 1,ny
+# endif
+
+! Nondimensional constants for computing non-local flux and convective
+! deepening of surface boundary layer. The only reason why they are not
+! parameters and computed here is because of power function involved.
+
+!     Cg=Cstar * vonKar * (c_s*vonKar*epssfc)**(1./3.)
+!     Vtc=Cv * sqrt(-betaT/(c_s*epssfc)) / (Ricr*vonKar**2)
 
 ! Compute thermal expansion, "alpha" [kg/m^3/degC], and saline
 ! contraction, "beta" [kg/m^3/PSU], coefficients at surface; then
@@ -271,12 +323,12 @@
 
 #  define alpha Bosol
 #  define beta  Bo
-      call alfabeta_tile (1,nx,1,ny,0,nx+1,0,ny+1,alpha,beta)
-
+      call alfabeta_tile (1,nx,1,ny, I_EXT_RANGE,
+     &                             J_EXT_RANGE, alpha,beta)
       ! JM if we move away from a virtual salt flux, this will have to 
       ! change: stflx(isalt) = - pme*sss
-      do j=0,ny+1
-        do i= 0,nx+1
+      do j=J_EXT_RANGE
+        do i=I_EXT_RANGE
           Bo(i,j)=g*( alpha(i,j)*(stflx(i,j,itemp)-srflx(i,j))
      &                              -beta(i,j)*stflx(i,j,isalt)
      &                                                        )
@@ -284,6 +336,9 @@
 #  undef beta
 #  undef alpha
 
+! DevinD & JM: better to use rho variables for sustr & svstr since we
+! currently calculated both u/v and rho versions. If we converted u/v back to rho
+! it would be a double average and dilute the answer further.
 #   ifdef BULK_FRC
           ustar(i,j)=sqrt( sqrt( sustr_r(i,j)**2 +svstr_r(i,j)**2 ))
 #   else
@@ -298,14 +353,23 @@
           bbl(i,j)=hbbl(i,j)     ! as the initial guess
 
           kbls(i)=0
-          Cr(i,nz)=0.
+          Cr(i,N)=0.
           Cr(i,0)=0.
-          FC(i,nz)=0.
+          FC(i,N)=0.
         enddo  !--> discard alpha,beta; keep Bo,Bosol to the very end.
 
 
-        do k=nz-1,1,-1
-          do i=0,nx+1
+
+# if defined BULK_DIFFERENCE
+
+# elif defined INT_AT_W_POINTS
+
+# elif defined INT_AT_RHO_POINTS
+
+!/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+
+        do k=N-1,1,-1
+          do i=I_EXT_RANGE
             cff_up=(z_w(i,j,N)-z_w(i,j,k))**2
             cff_dn=(z_w(i,j,k)-z_w(i,j,0))**2
             Kern=cff_up*cff_dn/( (cff_up +(epssfc*hbl(i,j))**2)
@@ -325,7 +389,7 @@
         enddo
 
 
-        do i = 0,nx+1
+        do i=I_EXT_RANGE
           z_bl=z_w(i,j,0)+0.25*Hz(i,j,1)
           cff_up=(z_w(i,j,N)-z_bl)**2
           cff_dn=(z_bl-z_w(i,j,0))**2
@@ -341,9 +405,8 @@
         enddo
 
 #   define swdk_r wrk1
-        ! Surface kpp boundary layer
-        do k = nz,1,-1
-          do i = 0,nx+1
+        do k=N,1,-1
+          do i=I_EXT_RANGE
             swdk_r(i,k)=sqrt(swr_frac(i,j,k)*swr_frac(i,j,k-1))
 
             zscale=z_w(i,j,N)-z_r(i,j,k)
@@ -361,35 +424,34 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
           enddo
         enddo
 
-        do i = 0,nx+1
+        do i=I_EXT_RANGE
           if (kbls(i) > 0) then
             k=kbls(i)
-            if (k == nz) then
-              hbl(i,j)=z_w(i,j,nz)-z_r(i,j,nz)
+            if (k == N) then
+              hbl(i,j)=z_w(i,j,N)-z_r(i,j,N)
             else
-              hbl(i,j)=z_w(i,j,nz)-( z_r(i,j,k)*Cr(i,k+1)
+              hbl(i,j)=z_w(i,j,N)-( z_r(i,j,k)*Cr(i,k+1)
      &                              -z_r(i,j,k+1)*Cr(i,k)
      &                              )/(Cr(i,k+1)-Cr(i,k))
             endif
           else
-            hbl(i,j)=z_w(i,j,nz)-z_w(i,j,0)
+            hbl(i,j)=z_w(i,j,N)-z_w(i,j,0)
           endif
           hbl(i,j)=hbl(i,j)*rmask(i,j) ! is this needed?
         enddo
 #   undef swdk_r
 
-        ! Bottom kpp boundary layer
-        do i= 0,nx+1
+        do i=I_EXT_RANGE
           kbbl(i)=0       ! reset Cr at bottom and kbls for BKPP
           Cr(i,0)=0.D0
         enddo
-        do k=1,nz
-          do i = 0,nx+1
+        do k=1,N,+1
+          do i=I_EXT_RANGE
             Cr(i,k)=FC(i,k)-FC(i,0)
             if (kbbl(i) == 0 .and. Cr(i,k) > 0.) kbbl(i)=k
           enddo
         enddo
-        do i = 0,nx+1
+        do i=I_EXT_RANGE
           if (kbbl(i) > 0) then
             k=kbbl(i)
             if (k == 1) then
@@ -399,48 +461,94 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
      &                            )/(Cr(i,k)-Cr(i,k-1)) -z_w(i,j,0)
             endif
           else
-            bbl(i,j)=z_w(i,j,nz)-z_w(i,j,0) ! total depth
+            bbl(i,j)=z_w(i,j,N)-z_w(i,j,0) ! total depth
           endif
+#   ifdef MASKING
           bbl(i,j)=bbl(i,j)*rmask(i,j)
+#   endif
         enddo     !--> discard FC, Cr and kbbl
+# else
+      ERROR: Algorithm for Bulk Richardson number is not specified.
+# endif
 
-      enddo  ! j-loop 
+!/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+!\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+!/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+!\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 
-      if (lmd_kpp)  call smooth_2d(hbl)
-      if (lmd_bkpp) call smooth_2d(bbl)
 
-      do j=1,ny
+      enddo  !<-- break j-loop if smoothing of hbl or bbl takes place
 
+#  ifdef LMD_KPP
+#   define wrk hbl
+#   include "lmd_kpp_smooth_hbl.h"
+#   undef wrk
+#  endif
+#  ifdef LMD_BKPP
+#   define wrk bbl
+#   include "lmd_kpp_smooth_hbl.h"
+#   undef wrk
+#  endif
+!     call smooth_2d(hbl)
+!     call smooth_2d(bbl)
+!     stop
+
+      do j=jstr,jend   !--> restart j-loop till the very end
+
+# undef I_EXT_RANGE
+# undef J_EXT_RANGE
+# define imin illegal
+# define imax illegal
+# define jmin illegal
+# define jmax illegal
+
+
+# if defined LMD_KPP || defined LMD_BKPP
         if (.not. FIRST_TIME_STEP) then
-          ! 'time' averaging
-          if (lmd_kpp)  hbl(1:nx,j)=0.5*(hbl(1:nx,j)+hbls(1:nx,j))
-          if (lmd_bkpp) bbl(1:nx,j)=0.5*(bbl(1:nx,j)+hbbl(1:nx,j))
+# endif
+          do i=1,nx
+# ifdef LMD_KPP
+            hbl(i,j)=0.5*(hbl(i,j) + hbls(i,j))
+# endif
+# ifdef LMD_BKPP
+            bbl(i,j)=0.5*(bbl(i,j) + hbbl(i,j))
+# endif
+          enddo
+# if defined LMD_KPP || defined LMD_BKPP
         endif 
+# endif
 
-        ! Surface boundary layer
+# if defined MERGE_OVERLAP && defined LMD_KPP && defined LMD_BKPP
+        do i=1,nx
+          cff=z_w(i,j,N)-z_w(i,j,0)          ! if surface and bottom
+          if (hbl(i,j)+bbl(i,j) > cff) then  ! boundary layers overlap
+            hbl(i,j) = cff                   ! set both of them to the
+            bbl(i,j) = cff                   ! total depth of water
+          endif                              ! column.
+        enddo
+# endif
 
         do i=1,nx
-          kbls(i)=nz         ! initialize search, then find
+          kbls(i)=N          ! initialize search, then find
         enddo                ! new boundary layer index "kbls"
-        do k=nz-1,1,-1
-          do i= 1,nx
-            if (z_w(i,j,k) > z_w(i,j,nz)-hbl(i,j)) kbls(i)=k
+        do k=N-1,1,-1
+          do i=istr,iend
+            if (z_w(i,j,k) > z_w(i,j,N)-hbl(i,j)) kbls(i)=k
           enddo
         enddo
 
-!       do i=1,nx
-!         msk = z_w(i,j,:) > z_w(i,j,nz)-hbl(i,j)
-!         kbls(i) = findloc(z_w(i,j,:),.true.,msk)
-!       enddo
+! Compare "hbl" with physically limiting cases (Ekman depth and
+! Monin-Obukhov depth) and correct.
 
-! Find buoyancy forcing for final "hbl" values, and compute turbulent
+
+! Find buoyancy forcing for final "hbl" values, and compute tubulent
 ! velocity scales (wm,ws) at "hbl".  Then compute nondimensional shape
 ! function coefficients Gx( ) by matching values and vertical
 ! derivatives of  interior mixing coefficients at hbl (ssgm=1).
 
-        do i = 1,nx
+        do i=istr,iend
           k=kbls(i)
-          z_bl = z_w(i,j,nz)-hbl(i,j)
+          z_bl=z_w(i,j,N)-hbl(i,j)
           zscale=hbl(i,j)
 
           if (swr_frac(i,j,k-1) > 0.) then
@@ -471,22 +579,21 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
 ! Compute vertical mixing coefficients
 
-            ! boundary layer coordinate [0,1]
-            ssgm=(z_w(i,j,nz)-z_w(i,j,k))/max(hbl(i,j),EPS)
+            ssgm=(z_w(i,j,N)-z_w(i,j,k))/max(hbl(i,j),EPS)
 
             if (ssgm < 1.) then
-              ! add a little non-zero tail to the mixing near
-              ! the surface
               if (ssgm<0.07D0) then
                 cff=0.5*(ssgm-0.07D0)**2/0.07D0
               else
-                cff=0.0
+                cff=0.D0
               endif
               cff=cff + ssgm*(1.-ssgm)**2
-
-              ! amp scales away the 'background' or Ri mixing related Kv to 
-              ! zero near the surface. It's the equivalent of mult below for
-              ! the bottom boundary layer
+              ! JM
+              ! not entirely sure where this amp factor came from
+              ! and whether we need it or not
+              ! Check in with Jon on this
+              !Kv(i,j,k)=Kv(i,j,k) + wm*hbl(i,j)*cff
+              !Kt(i,j,k)=Kt(i,j,k) + ws*hbl(i,j)*cff
               amp = ssgm**2
               AKv(i,j,k)=sqrt((amp*AKv(i,j,k))**2 + (wm*hbl(i,j)*cff)**2 )
               AKt(i,j,k)=sqrt((amp*AKt(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
@@ -508,7 +615,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
         enddo
 
         do i=istr,iend
-          kbbl(i) = nz       !<-- initialize search
+          kbbl(i)=N          !<-- initialize search
         enddo
         do k=N-1,1,-1       ! find new boundary layer index "kbls"
           do i=istr,iend
@@ -557,7 +664,18 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
           if (rmask(i,j) > 0.5) then
 # endif
             if (FIRST_TIME_STEP) then
-            else
+              do k=0,nz
+!               Akv(i,j,k)=Kv(i,j,k)
+!               Akt(i,j,k,itemp)=Kt(i,j,k)
+              enddo
+            else  !! Average 2 time steps of mixing coefficients
+              do k=0,N
+!               Akv(i,j,k)       = 0.5*Akv(i,j,k)       + 0.5*Kv(i,j,k)
+!               Akt(i,j,k,itemp) = 0.5*Akt(i,j,k,itemp) + 0.5*Kt(i,j,k)
+!               Akv(i,j,k)       = Kv(i,j,k)
+!               Akt(i,j,k,itemp) = Kt(i,j,k)
+              enddo
+
 # ifdef WEC
               do k=1,N      ! Apply wave effects
                 Akv(i,j,k) = Akv(i,j,k)+Akb(i,j,k)
@@ -577,7 +695,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
           endif
 # endif
         enddo
-      enddo ! j-loop
+      enddo
 
 # ifdef LMD_KPP
       do j=jstr,jend                   ! Copy "hbl" into shared array
@@ -728,6 +846,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
       ! Local
       integer :: i,j
 
+!     if (mynode.eq.0) print *, 'f: ',f(10,10)
 
       if (.not.ew_periodic) then
         if (inode.eq.0) then
@@ -779,6 +898,8 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
      &                            +fy(i,j+1)-fy(i,j))
         enddo
       enddo 
+
+!     if (mynode.eq.0) print *, 'fs: ',f(10,10)
 
       end subroutine smooth_2d  !]
 !---------------------------------------------------------
