@@ -168,7 +168,7 @@ C$OMP BARRIER
       call get_grid                  ! can be analytic or from netcdf
 
       call init_diagnostics  
-      print *,'calc_diag: ',calc_diag
+!     print *,'calc_diag: ',calc_diag
 
 #ifdef NHMG
       call nhmg_init(nx,ny,nz,npx,npy)
@@ -455,8 +455,8 @@ CR      write(*,*)  ' -2' MYID
 
       call diag  ! log file output of global norms
 
-      call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
+      call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
 
       if (do_extract) call do_extract_data

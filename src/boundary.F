@@ -8,6 +8,7 @@
       use roms_read_write
       use dimensions
       use roms_mpi
+      use tracers
       implicit none
 
       ! Set module to private and make vars explicitly public
@@ -73,7 +74,6 @@
 
 !----------------------------------------------------------------------
       subroutine init_arrays_boundary  ![
-      use tracers, only: t_vname
       implicit none
 
       ! local
@@ -249,7 +249,11 @@
 #   endif
 #   ifdef T_FRC_BRY
         do itrc=1,nt
-          call set_frc_data( nc_t_w(itrc), var2d=t_west(j0:j1,:,itrc), obry=1 )
+          if (t_bry_dat(itrc)) then
+            call set_frc_data( nc_t_w(itrc), var2d=t_west(j0:j1,:,itrc), obry=1 )
+          else
+            t_west(j0:j1,:,itrc) = t_bry_val(itrc)
+          endif
         enddo
 #   endif
 #  endif
@@ -273,8 +277,12 @@
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
-        do itrc=1,NT
-          call set_frc_data( nc_t_e(itrc), var2d=t_east(j0:j1,:,itrc), obry=1 )
+        do itrc=1,nt
+          if (t_bry_dat(itrc)) then
+            call set_frc_data( nc_t_e(itrc), var2d=t_east(j0:j1,:,itrc), obry=1 )
+          else
+            t_east(j0:j1,:,itrc) = t_bry_val(itrc)
+          endif
         enddo
 #   endif
 #  endif
@@ -299,7 +307,11 @@
 #   endif
 #   ifdef T_FRC_BRY
         do itrc=1,nt
-          call set_frc_data( nc_t_s(itrc), var2d=t_south(i0:i1,:,itrc), obry=1 )
+          if (t_bry_dat(itrc)) then
+            call set_frc_data( nc_t_s(itrc), var2d=t_south(i0:i1,:,itrc), obry=1 )
+          else
+            t_south(i0:i1,:,itrc) = t_bry_val(itrc)
+          endif
         enddo
 #   endif
 #  endif
@@ -323,8 +335,12 @@
 #     endif
 #   endif
 #   ifdef T_FRC_BRY
-        do itrc=1,NT
-          call set_frc_data( nc_t_n(itrc), var2d=t_north(i0:i1,:,itrc), obry=1 )
+        do itrc=1,nt
+          if (t_bry_dat(itrc)) then
+            call set_frc_data( nc_t_n(itrc), var2d=t_north(i0:i1,:,itrc), obry=1 )
+          else
+            t_north(i0:i1,:,itrc) = t_bry_val(itrc)
+          endif
         enddo
 #   endif
 #  endif

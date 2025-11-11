@@ -52,16 +52,40 @@
 !             itot=itot+1, then itot can populate arrays in correct position;
 ! wrt_t_dia = Only with DIAGNOSTICS flag. Don't need otherwise.
 !             True/False to output tracer diagnostics.
+! t_bry_dat = True/False flag for whether we expect data in the boundary data
+!             If not specified, t_bry_dat is true and data needs to be specified 
+!             in the boundary netcdf files. 
+! t_bry_val = If the t_bry_dat is false, we can specify a constant value for 
+!              the tracer at the boundary. If not specified, this  t_bry_val=0
 !
 ! nt_passive= Number of passive tracers (default=0). Set here is you have them.
 
-! - TEMP & SALT:
 
-      wrt_t     (itemp)=.True.;    wrt_t_avg(itemp) =.True.    ! temp
+!  Temperature and salinity are considered 'core' tracers and will always be 
+!  computed. Variable names and attributes are hardcoped and not optional
+The options below should go to a basic_output.opt file
+
+      wrt_t(itemp)     = .true.
+      wrt_t_avg(itemp) = .true.
       wrt_t_dia(itemp) = .true.
       
-#ifdef SALINITY
-      wrt_t     (isalt)=.True.;    wrt_t_avg(isalt) =.True.    ! salinity
+      wrt_t(isalt)     = .true.
+      wrt_t_avg(isalt) = .true. 
       wrt_t_dia(isalt) = .true.
-#endif
+
+! Additional tracers: 
+
+! For instance, a passive tracer, but similar for bgc tracers
+!     itot=3;
+!     wrt_t(itot)     = .true.  ! Output this tracer in history files (True/False)
+!     wrt_t_avg(itot) = .true.  ! Output this tracer in average files (True/False)
+!     wrt_t_dia(itot) = .true.  ! Include this in diagnostics
+!     t_vname(itot) = 'passive' ! Variable name in netcdf files
+!     t_lname(itot) = 'passive' ! Long name in netcdf file
+!     t_units(itot) = 'n/a'     ! Units attribute
+!     t_tname(itot) = ''        ! Name of governing time for the surface flux of tracer
+!     t_ana_frc(itot)=1         ! Analytical surface flux instead of data in netcdf file
+!     t_bry_dat(itot)=.false.   ! No data available in bry files for this tracer
+!     t_bry_val(itot)= 0        ! Value used for this tracer at the boundary
+
 
