@@ -145,8 +145,8 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
 # define GLOBAL_2D_ARRAY 1-bf:nx+bf,1-bf:ny+bf
 
-#define PRIVATE_1D_SCRATCH_ARRAY istr-2:iend+2
-#define PRIVATE_2D_SCRATCH_ARRAY istr-2:iend+2,jstr-2:jend+2
+#define PRIVATE_1D_SCRATCH_ARRAY 1-bf:nx+bf
+#define PRIVATE_2D_SCRATCH_ARRAY 1-bf:nx+bf,1-bf:ny+bf
 
 /* The following macros contain logical expressions which answer
  the question: ''Am I a thread working on subdomain (tile) which is

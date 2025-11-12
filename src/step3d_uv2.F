@@ -2,19 +2,17 @@
 
 #ifdef SOLVE3D
 
-      subroutine step3d_uv2(tile)
+      subroutine step3d_uv2
       use param
       use roms_mpi
       use private_scratch
       implicit none
       integer tile
 
-# include "compute_tile_bounds.h"
-      call step3d_uv2_tile( istr,iend,jstr,jend, A2d(1,1), A2d(1,2),
-     &                                           A2d(1,3), A2d(1,4))
+      call step3d_uv2_tile( A2d(1,1), A2d(1,2), A2d(1,3), A2d(1,4))
       end
 
-      subroutine step3d_uv2_tile(istr,iend,jstr,jend, WC,FC,CF,DC)
+      subroutine step3d_uv2_tile( WC,FC,CF,DC)
 
       use param
       use river_frc
@@ -31,13 +29,12 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
+      integer :: i,j,k
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real cff !,dmax,div
       real ub,ut
       real :: uint,vint
       real :: huint,hvint
-!     integer ierr
 
 # ifdef ADV_ISONEUTRAL
       real dRz,dRx_max, dpth, r0g, cfs,cfb
@@ -48,11 +45,9 @@
 #  define GAMMA 0.0833333333333
 # endif
 
-# include "compute_auxiliary_bounds.h"
-
 # define IMPLICIT_BOTTOM_DRAG
 
-      do j=jstr,jend
+      do j=1,ny
 
 #  ifndef IMPLICIT_BOTTOM_DRAG
         if (diag_uv) then
@@ -123,7 +118,7 @@
 ! Time step momentum equation in the XI-direction
 !----- ---- -------- -------- -- --- ------------
 
-        do i=istrU,iend
+        do i=1,nx
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
 
           FC(i,N-1)= 2.*dt*(Akv(i,j,N-1)+Akv(i-1,j,N-1))
@@ -140,7 +135,7 @@
           DC(i,N)=cff*u(i,j,N,nnew)
         enddo
         do k=N-1,2,-1      !--> forward elimination
-          do i=istrU,iend
+          do i=1,nx
             FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
      &                        /(  Hz(i,j,k  )+Hz(i-1,j,k  )
      &                           +Hz(i,j,k-1)+Hz(i-1,j,k-1))
@@ -158,7 +153,7 @@
      &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
           enddo
         enddo       !--> discard WC,DC(i,0)
-        do i=istrU,iend
+        do i=1,nx
           DC(i,1)=( u(i,j,1,nnew) +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                                )/( 0.5*(Hz(i,j,1)+Hz(i-1,j,1))
 #  ifdef IMPLCT_NO_SLIP_BTTM_BC
@@ -172,7 +167,7 @@
           DC(i,0)=CF(i,0)*DC(i,1)
         enddo
         do k=2,N,+1          !--> backsubstitution
-          do i=istrU,iend
+          do i=1,nx
             DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1) !<-- backsubstitution
 !>
             cff=0.5*(Hz(i,j,k)+Hz(i-1,j,k))      !--> coupling
@@ -180,12 +175,12 @@
             DC(i,0)=DC(i,0)+cff*DC(i,k)          !    [ integration ]
           enddo
         enddo
-        do i=istrU,iend
+        do i=1,nx
           DC(i,0)=( DC(i,0)*dn_u(i,j)-DU_avg1(i,j)  !<-- mismatch
      &                       )/(CF(i,0)*dn_u(i,j))
         enddo
         do k=N,1,-1
-          do i=istrU,iend
+          do i=1,nx
             u(i,j,k,nnew)=(DC(i,k)-DC(i,0))      !<-- correction
 #  ifdef MASKING
      &                          *umask(i,j)
@@ -208,25 +203,25 @@
         ! The only thing we do is 'coupling'.
         ! Correcting the 3D flow to be in line with the 2D prediction
 
-        do i=istrU,iend                          !--> coupling only
+        do i=1,nx                          !--> coupling only
           CF(i,0)=0.5*(Hz(i,j,N)+Hz(i-1,j,N))
           DC(i,0)=u(i,j,N,nnew)
           u(i,j,N,nnew)=u(i,j,N,nnew)/CF(i,0)
         enddo
         do k=N-1,1,-1
-          do i=istrU,iend
+          do i=1,nx
             cff=0.5*(Hz(i,j,k)+Hz(i-1,j,k))
             CF(i,0)=CF(i,0) +cff
             DC(i,0)=DC(i,0) +u(i,j,k,nnew)
             u(i,j,k,nnew)=u(i,j,k,nnew)/cff
           enddo
         enddo
-        do i=istrU,iend
+        do i=1,nx
           DC(i,0)=( DC(i,0)*dn_u(i,j)-DU_avg1(i,j)  !<-- mismatch
      &                       )/(CF(i,0)*dn_u(i,j))
         enddo
         do k=1,nz
-          do i=istrU,iend
+          do i=1,nx
             u(i,j,k,nnew)=(u(i,j,k,nnew)-DC(i,0))
 #  ifdef MASKING
      &                                *umask(i,j)
@@ -245,7 +240,7 @@
 
 # endif
 
-        if (j>=jstrV) then
+        if (j>=1) then
 
 # ifndef IMPLICIT_BOTTOM_DRAG
 
@@ -253,7 +248,7 @@
 !----- ---- -------- -------- -- --- --------------
 ! (All steps are similar to XI-component above.)
 
-          do i=istr,iend
+          do i=1,nx
             DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
 
             FC(i,N-1)= 2.*dt*(Akv(i,j,N-1)+Akv(i,j-1,N-1))
@@ -270,7 +265,7 @@
             DC(i,N)=cff*v(i,j,N,nnew)
           enddo
           do k=N-1,2,-1      !--> forward elimination
-            do i=istr,iend
+            do i=1,nx
               FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i,j-1,k-1))
      &                          /(  Hz(i,j,k  )+Hz(i,j-1,k  )
      &                             +Hz(i,j,k-1)+Hz(i,j-1,k-1))
@@ -288,7 +283,7 @@
      &                   +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
             enddo
           enddo
-          do i=istr,iend
+          do i=1,nx
             DC(i,1)=( v(i,j,1,nnew) +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                                  )/( 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
      &                                    +0.5*dt*(r_D(i,j)+r_D(i,j-1))
@@ -300,7 +295,7 @@
             DC(i,0)=CF(i,0)*DC(i,1)
           enddo
           do k=2,N,+1          !--> backsubstitution
-            do i=istr,iend
+            do i=1,nx
               DC(i,k)=DC(i,k)+CF(i,k-1)*DC(i,k-1) !<-- backsubstitution
 !>
               cff=0.5*(Hz(i,j,k)+Hz(i,j-1,k))     !--> coupling
@@ -308,12 +303,12 @@
               DC(i,0)=DC(i,0)+cff*DC(i,k)         !    [ integration ]
             enddo
           enddo
-          do i=istr,iend
+          do i=1,nx
             DC(i,0)=( DC(i,0)*dm_v(i,j)-DV_avg1(i,j)  !<-- mismatch
      &                         )/(CF(i,0)*dm_v(i,j))
           enddo
           do k=N,1,-1
-            do i=istr,iend
+            do i=1,nx
               v(i,j,k,nnew)=(DC(i,k)-DC(i,0))     !<-- correction
 #  ifdef MASKING
      &                            *vmask(i,j)
@@ -335,25 +330,25 @@
 
 # else  /* yes IMPLICIT_BOTTOM_DRAG */
 
-          do i=istr,iend
+          do i=1,nx
             CF(i,0)=0.5*(Hz(i,j,N)+Hz(i,j-1,N))
             DC(i,0)=v(i,j,N,nnew)
             v(i,j,N,nnew)=v(i,j,N,nnew)/CF(i,0)
           enddo
           do k=N-1,1,-1
-            do i=istr,iend
+            do i=1,nx
               cff=0.5*(Hz(i,j,k)+Hz(i,j-1,k))
               CF(i,0)=CF(i,0) +cff
               DC(i,0)=DC(i,0) +v(i,j,k,nnew)
               v(i,j,k,nnew)=v(i,j,k,nnew)/cff
             enddo
           enddo      !--> discard FC, keep DC,CF(:,0)
-          do i=istr,iend
+          do i=1,nx
             DC(i,0)=( DC(i,0)*dm_v(i,j)-DV_avg1(i,j)
      &                         )/(CF(i,0)*dm_v(i,j))
           enddo
           do k=1,N
-            do i=istr,iend
+            do i=1,nx
               v(i,j,k,nnew)=(v(i,j,k,nnew)-DC(i,0))
 #  ifdef MASKING
      &                                  *vmask(i,j)
@@ -371,11 +366,11 @@
        enddo
       endif
 
-        endif  !<-- j>=jstrV
+        endif  !<-- j>=1
 
 # ifdef NHMG
       !!! JM fix this wrt to IMPLICIT BOTTOM STRESS
-        do i=istr,iend
+        do i=1,nx
           DC(i,0) =dt*pm(i,j)*pn(i,j)
           FC(i,N-1)= 0.5*dt*(Akv(i,j,N)+Akv(i,j,N-1))
      &                      /Hz(i,j,N)
@@ -391,7 +386,7 @@
         enddo
 
         do k=N-1,2,-1      !--> forward elimination for w
-          do i=istr,iend
+          do i=1,nx
             FC(i,k-1)= 0.5*dt*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
      &                   /Hz(i,j,k)
 
@@ -410,7 +405,7 @@
         enddo
         !! change this you feel energetic. Instead of no-flux at the bottom we
         !! have w(0) = 0 (different BC for tri-diag system)
-        do i=istr,iend
+        do i=1,nx
           w(i,j,1,nnew)=( w(i,j,k,nnew)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                         )/( 0.5*(Hz(i,j,2)+Hz(i,j,1))
      &                                       +FC(i,1)+max(WC(i,1),0.)
@@ -418,7 +413,7 @@
      &                                                               )
         enddo
         do k=2,N,+1          !--> backsubstitution for w
-          do i=istr,iend
+          do i=1,nx
             w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
           enddo
         enddo
@@ -442,8 +437,8 @@
 ! Set PHYSICAL lateral boundary conditions.
 
 !     call u3dbc_new
-      call u3dbc_tile (istr,iend,jstr,jend, DC)
-      call v3dbc_tile (istr,iend,jstr,jend, DC)
+      call u3dbc_tile (DC)
+      call v3dbc_tile (DC)
 
 
 ! Coupling 2D and 3D momentum equations:
@@ -476,17 +471,17 @@
 ! (that is including boundary points).
 
 # ifdef EW_PERIODIC
-#  define IU_RANGE istr,iend
-#  define IV_RANGE istr,iend
+#  define IU_RANGE 1,nx
+#  define IV_RANGE 1,nx
 # else
-#  define IU_RANGE istr,iendR
-#  define IV_RANGE istrR,iendR
+#  define IU_RANGE 1,i1
+#  define IV_RANGE i0,i1
 # endif
 
 # ifdef NS_PERIODIC
-#  define J_RANGE jstr,jend
+#  define J_RANGE 1,ny
 # else
-#  define J_RANGE jstrR,jendR
+#  define J_RANGE j0,j1
 # endif
       ! DevinD & JM: seems un-necessary to 2D-3D couple the interior when only
       ! the boundary has been update since the first 2D-3D correction above.
@@ -589,7 +584,7 @@ c>># define DELTA 0.5790
           enddo
         enddo
 
-        if (j >= jstr) then         !--> ETA-component
+        if (j >= 1) then         !--> ETA-component
           do i=IV_RANGE
             DC(i,N)=0.5*(Hz(i,j,N)+Hz(i,j-1,N))*dm_v(i,j)
             DC(i,0)=DC(i,N)
@@ -668,10 +663,10 @@ c>># define DELTA 0.5790
             enddo
           enddo
 # ifdef ADV_ISONEUTRAL
-          if (j <= jend) then
+          if (j <= ny) then
             r0g=rho0/g
             do k=1,N-1
-              do i=istr,iend
+              do i=1,nx
 #  define ISO
 #  ifdef ISO
 #    ifdef SPLIT_EOS
@@ -729,14 +724,14 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 
               enddo
             enddo
-          endif      !<-- j <= jend
+          endif      !<-- j <= ny
 # endif
-        endif    !<-- j >= jstr
+        endif    !<-- j >= 1
       enddo    ! <-- j
 
       if (river_source) then
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
 
             if (abs(riv_uflx(i,j)).gt.1e-3) then
               riv_depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
@@ -787,10 +782,10 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
 !
       ! We've modified u and v, w needs to be made consistent
-!      do j=istr,iend  ! BUG HERE
-      do j=jstr,jend  ! BUG HERE
+!      do j=1,nx  ! BUG HERE
+      do j=1,ny  ! BUG HERE
         do k=1,N
-          do i=Istr,Iend
+          do i=1,nx
             DC(i,0)=pm(i,j)*pn(i,j)
             ! at this time, Huon and Hvom CANNOT used : they are 
             ! defined at n+1/2 instead of n+1
@@ -804,15 +799,14 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         enddo
       enddo
 
-!     if (diag_w) call set_diags_w_at_uv2( istr, iend, jstr, jend )
-!
+!     if (diag_w) call set_diags_w_at_uv2
 
 !--------------------------------------------------------------------
 ! Update physical boundary values
 !--------------------------------------------------------------------
-      call w3dbc_tile (Istr,Iend,Jstr,Jend, DC)
+      call w3dbc_tile (DC)
 
-!     if (diag_w) call set_diags_w_at_bc( istr, iend, jstr, jend )
+!     if (diag_w) call set_diags_w_at_bc
 
 !--------------------------------------------------------------------
 ! Exchange periodic boundaries and computational margins. 

@@ -18,21 +18,21 @@ c---#define BIO_1ST_USTREAM_TEST
         if (itrc>isalt) then       ! biological tracer components:
 !       if (itrc>0) then       ! biological tracer components: 
           if (nrhs==3) then         ! compute fluxes during corrector
-            do j=jstr,jend            ! stage only
-              do i=istr,iend+1
+            do j=1,ny            ! stage only
+              do i=1,nx+1
                 FX(i,j)=t(i-1,j,k,nstp,itrc)*max(FlxU(i,j,k),0.)
      &                 +t(i  ,j,k,nstp,itrc)*min(FlxU(i,j,k),0.)
               enddo
             enddo
-            do j=jstr,jend+1
-              do i=istr,iend
+            do j=1,ny+1
+              do i=1,nx
                 FE(i,j)=t(i,j-1,k,nstp,itrc)*max(FlxV(i,j,k),0.)
      &                 +t(i,j  ,k,nstp,itrc)*min(FlxV(i,j,k),0.)
               enddo
             enddo
           else                         ! there is no need to compute
-            do j=jstr,jend+1           ! fluxes during predictor stage
-              do i=istr,iend+1         ! because there is no use for
+            do j=1,ny+1           ! fluxes during predictor stage
+              do i=1,nx+1         ! because there is no use for
                 FX(i,j)=0.             ! t(:,:,:,:,n+1/2) in the case
                 FE(i,j)=0.             ! of 1st-order upsteam (note
               enddo                    ! index "nstp" instead of
@@ -49,20 +49,20 @@ c---#define BIO_1ST_USTREAM_TEST
 #endif
 #ifndef EW_PERIODIC
           if (WESTERN_EDGE) then       ! Determine extended index
-            imin=istr                  ! range for computation of
+            imin=1                  ! range for computation of
           else                         ! elementary differences: it
-            imin=istr-1                ! needs to be restricted
+            imin=0                ! needs to be restricted
           endif                        ! because in the vicinity of
           if (EASTERN_EDGE) then       ! physical boundary the extra
-            imax=iend                  ! point may be not available,
+            imax=nx                  ! point may be not available,
           else                         ! and extrapolation of slope
-            imax=iend+1                ! is used instead.
+            imax=nx+1                ! is used instead.
           endif
 #else
-          imin=istr-1
-          imax=iend+1
+          imin=0
+          imax=nx+1
 #endif
-          do j=jstr,jend
+          do j=1,ny
             do i=imin,imax+1
               FX(i,j)=(t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc))
 #ifdef MASKING
@@ -72,18 +72,18 @@ c---#define BIO_1ST_USTREAM_TEST
           enddo
 #ifndef EW_PERIODIC
           if (WESTERN_EDGE) then
-            do j=jstr,jend
-              FX(istr-1,j)=FX(istr,j)
+            do j=1,ny
+              FX(0,j)=FX(1,j)
             enddo
           endif
           if (EASTERN_EDGE) then
-            do j=jstr,jend
-              FX(iend+2,j)=FX(iend+1,j)
+            do j=1,ny
+              FX(nx+2,j)=FX(nx+1,j)
             enddo
           endif
 #endif
-          do j=jstr,jend
-            do i=istr-1,iend+1
+          do j=1,ny
+            do i=0,nx+1
 #if defined UPSTREAM_TS
               curv(i,j)=FX(i+1,j)-FX(i,j)
 #elif defined AKIMA
@@ -98,8 +98,8 @@ c---#define BIO_1ST_USTREAM_TEST
 #endif
             enddo
           enddo             !--> discard FX
-          do j=jstr,jend
-            do i=istr,iend+1
+          do j=1,ny
+            do i=1,nx+1
 #ifdef UPSTREAM_TS
               FX(i,j)=0.5*(t(i,j,k,nrhs,itrc)+t(i-1,j,k,nrhs,itrc))
      &                                                  *FlxU(i,j,k)
@@ -115,21 +115,21 @@ c---#define BIO_1ST_USTREAM_TEST
 
 #ifndef NS_PERIODIC
           if (SOUTHERN_EDGE) then
-            jmin=jstr
+            jmin=1
           else
-            jmin=jstr-1
+            jmin=0
           endif
           if (NORTHERN_EDGE) then
-            jmax=jend
+            jmax=ny
           else
-            jmax=jend+1
+            jmax=ny+1
           endif
 #else
-          jmin=jstr-1
-          jmax=jend+1
+          jmin=0
+          jmax=ny+1
 #endif
           do j=jmin,jmax+1
-            do i=istr,iend
+            do i=1,nx
               FE(i,j)=(t(i,j,k,nrhs,itrc)-t(i,j-1,k,nrhs,itrc))
 #ifdef MASKING
      &                                               *vmask(i,j)
@@ -138,18 +138,18 @@ c---#define BIO_1ST_USTREAM_TEST
           enddo
 #ifndef NS_PERIODIC
           if (SOUTHERN_EDGE) then
-            do i=istr,iend
-              FE(i,jstr-1)=FE(i,jstr)
+            do i=1,nx
+              FE(i,0)=FE(i,1)
             enddo
           endif
           if (NORTHERN_EDGE) then
-            do i=istr,iend
-              FE(i,jend+2)=FE(i,jend+1)
+            do i=1,nx
+              FE(i,ny+2)=FE(i,ny+1)
             enddo
           endif
 #endif
-          do j=jstr-1,jend+1
-            do i=istr,iend
+          do j=0,ny+1
+            do i=1,nx
 #if defined UPSTREAM_TS
               curv(i,j)=FE(i,j+1)-FE(i,j)
 #elif defined AKIMA
@@ -165,8 +165,8 @@ c---#define BIO_1ST_USTREAM_TEST
             enddo
           enddo            !--> discard FE
 
-          do j=jstr,jend+1
-            do i=istr,iend
+          do j=1,ny+1
+            do i=1,nx
 #ifdef UPSTREAM_TS
               FE(i,j)=0.5*(t(i,j,k,nrhs,itrc)+t(i,j-1,k,nrhs,itrc))
      &                                                  *FlxV(i,j,k)
@@ -186,8 +186,8 @@ c---#define BIO_1ST_USTREAM_TEST
         if (river_source) then
           !! inefficient because this is inside a k-loop
           !! we could try to compute riv_uvel(i,j) somewhere else
-          do j=jstr,jend
-            do i=istr,iend+1
+          do j=1,ny
+            do i=1,nx+1
               if (abs(riv_uflx(i,j)).gt.1e-3) then
                 riv_depth = 0.5*( z_w(i-1,j,N)-z_w(i-1,j,0)
      &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )
@@ -199,8 +199,8 @@ c---#define BIO_1ST_USTREAM_TEST
               endif
             enddo
           enddo
-          do j=jstr,jend+1
-            do i=istr,iend
+          do j=1,ny+1
+            do i=1,nx
               if (abs(riv_vflx(i,j)).gt.1e-3) then
                 riv_depth = 0.5*( z_w(i,j-1,N)-z_w(i,j-1,0)
      &                      + z_w(i  ,j,N)-z_w(i  ,j,0) )

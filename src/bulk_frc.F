@@ -79,14 +79,11 @@
 
       end subroutine init_arrays_bulk_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_bulk_frc(istr,iend,jstr,jend) ![
+      subroutine set_bulk_frc ![
 
       use surf_flux, only: srflx,uwnd,vwnd
 
       implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
 
       ! Short/Long radiation:
       ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
@@ -123,7 +120,7 @@
       ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY:
 
       ! CALCULATE FLUX INTERACTIONS:
-      call calc_all_bulk_forces(istr,iend,jstr,jend)
+      call calc_all_bulk_forces
 
       if (do_check_units) then
         if(mynode==0) print *,'Checking Bulk force units'
@@ -136,7 +133,7 @@
 
       end subroutine set_bulk_frc  !]
 !-----------------------------------------------------------------------
-      subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
+      subroutine calc_all_bulk_forces  ![
 
 ! Compute bulk parameterization for surface wind stress and net heat
 ! fluxes. Adapted from COARE code originally written by David Rutgers
@@ -190,8 +187,6 @@
       implicit none
 
       ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
-
       integer i,j, IterMax,iter
       real a
       real rho0i
@@ -312,8 +307,6 @@
 
 ! Extended bounds needed since u2rho and rho2u averaging occurs, and
 ! lmd_kpp has SMOOTH_HBL which requires extended loop ranges for smoothing.
-# include "compute_extended_bounds.h"
-
 
       ! SET_SRFLUX.F PLACED HERE FOR MODULE VERSION
       ! ===========================================
@@ -379,8 +372,11 @@
         cos_d=cos(dec) ; sin_d=sin(dec) ; tan_d=tan(dec)
 # endif
 
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        ! not entirely sure, this may be needed due to repeated
+        ! rho --> u and u --> rho averaging...
+        ! GS
+        do j=-1,ny+2
+          do i=-1,nx+2
 # ifdef DIURNAL_SRFLUX
 #  ifdef UTC_CORRECTION
             cos_h=cos( 2.*pi*(tdays+0.5 -int(tdays+0.5))
@@ -443,8 +439,10 @@
 
       ! All calculations in this loop at rho-points. Loop over extended
       ! bounds.
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      ! Again, unsure if these need to be dependent on the buffer
+      ! GS
+      do j=-1,ny+2
+        do i=-1,nx+2
 
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
@@ -845,8 +843,10 @@
       ! iend+1 instead of iendR because rho2u sustr_r = u(i) + u(i+1) & since
       ! iendR=iend+2 for interior tiles (as per compute_extended_bounds.h)
       ! if we used i=iendR then u(i+1) = u(iend+3) is not a value.
-      do j=jstrR,jendR
-        do i=istrR,iend+1
+      ! NOTE: updated for 2.0 to be a rho-->u 2x averaging range not dependent on bf
+      ! GS
+      do j=-1,ny+1
+        do i=-1,nx+1
 
           wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
 
@@ -873,22 +873,18 @@
           ! Convert sustr at rho-point to u-point for Eq.System
           ! Need if (i >= istrR+1) because loop over istrR, but we use
           ! index i-1 below which is out of array bounds at tile's western boundary.
-          if (i >= istrR+1) then
-            sustr(i,j) = ( sustr_r(i-1,j) + sustr_r(i,j) ) / 2
-# ifdef MASKING
-          !! JM: I don't think that this is actually doing anything useful
+          ! GS - previously this was set for when (i=istrR+1)
+          sustr(i,j) = ( sustr_r(i-1,j) + sustr_r(i,j) ) / 2
      &                    *umask(i,j)
-# endif
-          end if
-
         enddo
       enddo
 
       ! jend+1 instead of jendR because rho2u svstr_r = v(j) + v(j+1) & since
       ! jendR=jend+2 for interior tiles (as per compute_extended_bounds.h)
       ! if we used j=jendR then v(j+1) = u(jend+3) is not a value.
-      do j=jstrR,jend+1
-        do i=istrR,iendR
+      ! GS
+      do j=-1,ny+1
+        do i=-1,nx+1
 
           wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
 
@@ -911,12 +907,9 @@
           ! Convert svstr at rho-point to v-point for Eq.System
           ! Need if (j >= jstrR+1) because loop over jstrR, but we use
           ! index j-1 below which is out of array bounds at tile's southern boundary.
-          if (j >= jstrR+1) then
-            svstr(i,j) = ( svstr_r(i,j-1) + svstr_r(i,j) ) / 2
-# ifdef MASKING
+          ! GS - previously this was set for when (j=jstrR+1)
+          svstr(i,j) = ( svstr_r(i,j-1) + svstr_r(i,j) ) / 2
      &                    *vmask(i,j)
-# endif
-          end if
         enddo
       enddo
 

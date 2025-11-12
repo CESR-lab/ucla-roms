@@ -16,15 +16,15 @@
 # define curv CF
 
           do k=1,N-1
-            do i=istr,iend
+            do i=1,nx
               curv(i,k) = w(i,j,k+1,nrhs) - 2*w(i,j,k,nrhs) + w(i,j,k-1,nrhs)
             enddo
           enddo
-          do i=istr,iend !! extrapolate to k=N
+          do i=1,nx !! extrapolate to k=N
             curv(i,N) = 2*curv(i,N-1) - curv(i,N-2)
           enddo
           do k=1,N
-            do i=istr,iend
+            do i=1,nx
               Flxw = 0.5*(We(i,j,k)+We(i,j,k-1))
               FC(i,k) = 0.5*(w(i,j,k,nrhs)+w(i,j,k-1,nrhs))*Flxw
      &          -0.1666666666666666*( curv(i,k-1)*max(Flxw,0.)
@@ -34,14 +34,14 @@
   
           !! These guys (FC) are fluxes (m3/s) of velocity (m/s) -> m4/s2
           do k=1,N-1
-            do i=istr,iend
+            do i=1,nx
               rw(i,j,k) = rw(i,j,k) - FC(i,k+1) + FC(i,k)
             enddo
           enddo
 
           ! flux at surface is zero because it moves with omega.
           ! this also takes care of the half-volume of w(N)
-          do i=istr,iend
+          do i=1,nx
             rw(i,j,N) = rw(i,j,N)   + FC(i,N)
           enddo
 #endif

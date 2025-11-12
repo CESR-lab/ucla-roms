@@ -812,7 +812,7 @@
 #endif /* ANA_WEC_FRC */
 
 ! ----------------------------------------------------------------------
-      subroutine init_arrays_wec_tile (istr,iend,jstr,jend)  ![
+      subroutine init_arrays_wec_tile  ![
       ! this is called from init_arrays_tile of init_arrays.F
       ! it is needed to "first touch" arrays to optimize
       ! NUMA shared memory allocation on linux.

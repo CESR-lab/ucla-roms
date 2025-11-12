@@ -19,8 +19,8 @@
       !        with u, v, temp and salinity diagnostics.
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
       
-      logical, parameter         :: diag_avg      = .true.    ! compute history (=F) or averages (=T)
-      integer, parameter         :: output_period = 400       ! output period
+      logical, parameter         :: diag_avg      = .false.    ! compute history (=F) or averages (=T)
+      integer, parameter         :: output_period = 200       ! output period
       integer, parameter         :: nrpf          =  7        ! total recs per file
 
       logical, parameter, public :: diag_uv       = .false.   ! Momentum diagnostics
@@ -31,9 +31,6 @@
 
       integer, parameter         :: diag_prec     = nf90_double ! Precision of output variables (nf90_float/nf90_double)
 
-
-
-      
       ! End of user inputs                                  
       ! ***************************************************************
 

@@ -11,19 +11,18 @@
       integer, intent(in) :: tidx
       integer,save :: tile=0
 
-# include "compute_tile_bounds.h"
 # if defined NONLIN_EOS && !defined SPLIT_EOS 
-      call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2),tidx)
+      call rho_eos_tile (A2d(1,1), A2d(1,2),tidx)
 # else
-      call rho_eos_tile (istr,iend,jstr,jend,tidx)
+      call rho_eos_tile (tidx)
 # endif
       end
 
 
 # if defined NONLIN_EOS && !defined SPLIT_EOS 
-      subroutine rho_eos_tile (istr,iend,jstr,jend, K_up,K_dw,tidx)
+      subroutine rho_eos_tile (K_up,K_dw,tidx)
 # else
-      subroutine rho_eos_tile (istr,iend,jstr,jend,tidx)
+      subroutine rho_eos_tile (tidx)
 # endif
 
 ! Compute density anomaly from T,S via Equation Of State (EOS) for
@@ -132,7 +131,7 @@
 
       integer, intent(in) :: tidx
 
-      integer istr,iend,jstr,jend, i,j,k
+      integer :: i,j,k
 # ifdef NONLIN_EOS
       real Ts,Tt,sqrtTs, dr00, K0
 #  ifndef SPLIT_EOS
@@ -175,8 +174,6 @@
       real dpth
 # endif
 
-# include "compute_extended_bounds.h"
-
 # ifdef NONLIN_EOS
       Tt=3.8D0 ; Ts=34.5D0 ; sqrtTs=sqrt(Ts)
 #  ifdef DUKO_2001
@@ -188,10 +185,11 @@
       dr00=r00-rho0
 # endif
 
-      do j=jstrR,jendR
+      ! ranges set to match GLOBAL_2D_ARRAYS w/ adjustable buffer, bf
+      do j=1-bf,ny+bf
 # ifdef NONLIN_EOS
         do k=1,N                                       ! NONLINEAR
-          do i=istrR,iendR                             !  EQUATION
+          do i=1-bf,nx+bf                             !  EQUATION
             Tt=t(i,j,k,tidx,itemp)                     !  OF STATE
 #  ifdef SALINITY
             Ts=t(i,j,k,tidx,isalt) ; sqrtTs=sqrt(max(0.,Ts))
@@ -250,7 +248,7 @@
 
         cff=g/rho0
         do k=1,N-1
-          do i=istrR,iendR
+          do i=1-bf,nx+bf
 
 #   ifdef SPLIT_EOS
 c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
@@ -283,7 +281,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
         enddo
 #  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
    || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
-        do i=istrR,iendR
+        do i=1-bf,nx+bf
           bvf(i,j,N)=bvf(i,j,N-1)
           bvf(i,j,0)=bvf(i,j,  1)
         enddo
@@ -297,7 +295,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
         cff=Tcoef*T0
 #  endif 
         do k=1,N
-          do i=istrR,iendR
+          do i=1-bf,nx+bf
 #  ifdef SPLIT_EOS
             rho1(i,j,k)=cff -Tcoef*t(i,j,k,tidx,itemp) 
 #   ifdef SALINITY
@@ -324,12 +322,12 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
    || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
         cff=g/rho0
         do k=1,N-1
-          do i=istrR,iendR
+          do i=1-bf,nx+bf
             bvf(i,j,k)=cff*(rho(i,j,k)-rho(i,j,k+1))
      &                     /(z_r(i,j,k+1)-z_r(i,j,k))
           enddo
         enddo
-        do i=istrR,iendR
+        do i=1-bf,nx+bf
           bvf(i,j,N)=bvf(i,j,N-1)
           bvf(i,j,0)=bvf(i,j,  1)
         enddo
@@ -345,7 +343,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 ! are nondimensional quantities of comparable value.
 
 # ifdef VAR_RHO_2D
-        do i=istrR,iendR
+        do i=1-bf,nx+bf
 #  ifdef SPLIT_EOS
 c**       dpth=z_w(i,j,N)-z_r(i,j,N)
           dpth=-z_r(i,j,N)
@@ -358,7 +356,7 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
           rhoA(i,j)=cff
         enddo
         do k=N-1,1,-1
-          do i=istrR,iendR
+          do i=1-bf,nx+bf
 #  ifdef SPLIT_EOS
             dpth=-z_r(i,j,k)
             cff=Hz(i,j,k)*(rho1(i,j,k)+qp1(i,j,k)*dpth*(1.-qp2*dpth))
@@ -370,7 +368,7 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
           enddo
         enddo
         cff1=1./rho0
-        do i=istrR,iendR
+        do i=1-bf,nx+bf
           cff=1./(z_w(i,j,N)-z_w(i,j,0))
           rhoA(i,j)=cff*cff1*rhoA(i,j)
           rhoS(i,j)=2.*cff*cff*cff1*rhoS(i,j)
@@ -379,7 +377,7 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
 # ifdef NON_TRADITIONAL
         cff=0.5*rho0/g
         do k=1,N
-          do i=istrR,iendR
+          do i=1-bf,nx+bf
             rho1(i,j,k)=rho1(i,j,k) +cff*(
      &            f_XI(i,j)*(v(i,j,k,tidx)+v(i,j+1,k,tidx))
      &          -f_ETA(i,j)*(u(i,j,k,tidx)+u(i+1,j,k,tidx))

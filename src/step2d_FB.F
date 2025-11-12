@@ -8,23 +8,6 @@
 ! and perform fast-time averaging to interact with baroclinic mode.
 
       use param
-      use private_scratch
-
-      implicit none
-      integer,save :: tile=0
-
-#include "compute_tile_bounds.h"
-      call step2d_FB_tile( istr,iend,jstr,jend, A2d(1,1),  A2d(1,2),
-     &                    A2d(1, 3), A2d(1, 4), A2d(1, 5), A2d(1, 6),
-     &                    A2d(1, 7), A2d(1, 8), A2d(1, 9), A2d(1,10),
-     &                               A2d(1,11), A2d(1,12), A2d(1,13))
-      end
-
-      subroutine step2d_FB_tile( istr,iend,jstr,jend, zeta_new,Dnew,
-     &                           rubar,rvbar, urhs,vrhs,  DUon,DVom,
-     &                                       Drhs, UFx,UFe,VFx,VFe)
-
-      use param
       use river_frc
       use pipe_frc
       use cdr_frc
@@ -35,17 +18,36 @@
       use mixing
       use ocean_vars
       use scalars
+      use private_scratch
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, i,j, kbak, kold
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: zeta_new, Dnew,
-     &                         rubar,rvbar,  urhs,vrhs,  DUon,DVom,
-     &                                       Drhs, UFx,UFe,VFx,VFe
-      real fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
-     &            cff,cff1,cff2, DUnew,DVnew
 
-#include "compute_auxiliary_bounds.h"
+      ! local
+      integer :: i,j, kbak, kold
+      real :: fwd,fwd1,fwd2, bkw_new,bkw,bkw1,bkw2,
+     &        cff,cff1,cff2, DUnew,DVnew,
+     &        base, rss1, rss2, rss3
+
+      real,dimension(:,:),pointer :: zeta_new,Dnew,Drhs,
+     &                               DUon,DVom,
+     &                               rubar,rvbar,
+     &                               UFx,UFe,VFx,VFe,
+     &                               urhs,vrhs
+
+      ! set pointers to scratch arrays
+      Drhs(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,1)
+      Dnew(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,2)
+      DUon(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,3)
+      DVom(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,4)
+      rubar(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,5)
+      rvbar(1-bf:nx+bf,1-bf:ny+bf)    => scratch_2d(:,6)
+      UFx(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,7)
+      UFe(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,8)
+      VFx(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,9)
+      VFe(1-bf:nx+bf,1-bf:ny+bf)      => scratch_2d(:,10)
+      urhs(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,11)
+      vrhs(1-bf:nx+bf,1-bf:ny+bf)     => scratch_2d(:,12)
 
 ! Set coefficients for AB3-AM4 forward-backward algorithm.
 !---- ------------ --- ------- ------- -------- ----------
@@ -90,6 +92,9 @@
          bkw_new=0.614 ; bkw=0.285 ; bkw1=0.088 ; bkw2=0.013
       endif
 
+! Note: See Schepetkin, A.F. &  McWilliams, J.C. (2005) 
+!       for references to coefficients used above
+
 ! Preliminary step: compute total depth of water column and vertically
 ! ----------- ----- integrated fluxes needed for computing horizontal
 ! divergence to advance free surface and for nonlinear advection terms
@@ -97,14 +102,14 @@
 ! H*dx*Vbar, at u, and v positions respectively
 ! In case of WEC, ust2d is added to Ubar (and vst2d added to Vbar)
 
-      do j=jstrV-2,jend+1
-        do i=istrU-2,iend+1
+      do j=-1,ny+1
+        do i=-1,nx+1
           Drhs(i,j)=h(i,j) +fwd*zeta(i,j,kstp) +fwd1*zeta(i,j,kbak)
      &                                          +fwd2*zeta(i,j,kold)
         enddo
       enddo
-      do j=jstr-1,jend+1
-        do i=istrU-1,iend+1
+      do j=0,ny+1
+        do i=0,nx+1
           urhs(i,j)=fwd*ubar(i,j,kstp) +fwd1*ubar(i,j,kbak)
      &                                         +fwd2*ubar(i,j,kold)
           DUon(i,j)=0.5*(Drhs(i,j)+Drhs(i-1,j))*dn_u(i,j)*( urhs(i,j)
@@ -114,8 +119,8 @@
      &                                                               )
         enddo
       enddo
-      do j=jstrV-1,jend+1
-        do i=istr-1,iend+1
+      do j=0,ny+1
+        do i=0,nx+1
           vrhs(i,j)=fwd*vbar(i,j,kstp) +fwd1*vbar(i,j,kbak)
      &                                         +fwd2*vbar(i,j,kold)
           DVom(i,j)=0.5*(Drhs(i,j)+Drhs(i,j-1))*dm_v(i,j)*(vrhs(i,j)
@@ -126,6 +131,9 @@
         enddo
       enddo
 
+      ! reallocate scratch for zeta_new
+      nullify(Drhs)
+      zeta_new(1-bf:nx+bf,1-bf:ny+bf) => scratch_2d(:,1)
 
 ! Advance free-surface:  Compute "zeta_new" at new time step and
 !-------- ---- --------  interpolate it half-step backward, "zwrk"
@@ -135,6 +143,7 @@
 #define rzeta  UFe
 #define rzeta2  VFe
 #define rzetaSA VFx
+
       if (cdr_source.and.cdr_volume) then
         do cidx=1,cdr_nprf
           icdr = cdr_icdr(cidx)
@@ -145,22 +154,21 @@
      &               *cdr_vol(icdr)*sum(cdr_prf(cidx,:))
         enddo
       endif
-      do j=jstrV-1,jend !! why are these from ...-1?
-        do i=istrU-1,iend
+
+      do j=0,ny
+        do i=0,nx
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
+
           if (pipe_source) then          ! If pipe_source is false, the branch will
             if (pipe_idx(i,j) > 0.) then ! be eliminated by compile optimization
               zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
             endif
           endif
 
-
-#ifdef MASKING
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) ! not sure this is needed
-#endif
-          Dnew(i,j)=zeta_new(i,j)+h(i,j)
 
+          Dnew(i,j)=zeta_new(i,j)+h(i,j)
           zwrk(i,j)=bkw_new*zeta_new(i,j) +bkw*zeta(i,j,kstp)
      &              +bkw1*zeta(i,j,kbak) +bkw2*zeta(i,j,kold)
 
@@ -173,15 +181,14 @@
           rzeta2(i,j)=rzeta(i,j)*zwrk(i,j) !! zeta^2
         enddo
       enddo
-
-
+      
 ! Set boundary conditions for the free-surface, after which copy
 ! the newly computed free-surface zeta_new into shared array.
 
-      call zetabc_tile (istr,iend,jstr,jend, zeta_new)
+      call zetabc (zeta_new)
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=j0,j1
+        do i=i0,i1
           zeta(i,j,knew)=zeta_new(i,j)
         enddo
       enddo
@@ -193,12 +200,11 @@
 ! physical boundary points, but not periodic ghost points or
 ! computation  MPI computational margins.
 
-#ifdef SOLVE3D
         cff1=weight(1,iif) ; cff2=weight(2,iif)
 
         if (FIRST_2D_STEP) then
-          do j=jstrR,jendR
-            do i=istrR,iendR
+          do j=j0,j1
+            do i=i0,i1
 # ifdef EXTRAP_BAR_FLUXES
 ! PAC23 verified setting with theoretical alpha_max=1.0877. 
 ! the number 0.1024390... is the ratio of delta/gamma=0.21/2.05
@@ -220,15 +226,14 @@
             enddo
           enddo
         else
-          do j=jstrR,jendR
-            do i=istrR,iendR
+          do j=j0,j1
+            do i=i0,i1
               Zt_avg1(i,j)=Zt_avg1(i,j) + cff1*zeta(i,j,knew)
               DU_avg2(i,j)=DU_avg2(i,j) + cff2*DUon(i,j)
               DV_avg2(i,j)=DV_avg2(i,j) + cff2*DVom(i,j)
             enddo
           enddo
         endif
-#endif
 
 ! Compute pressure-gradient terms:  NOTE that "rubar" and "rvbar" are
 !-------- -------- -------- ------  computed within the same fused loop
@@ -240,8 +245,8 @@
 ! a factor of 1.5 resulting in overall more efficient code.
 
       cff=0.5*g
-      do j=jstr,jend
-        do i=istr,iend
+      do j=1,ny
+        do i=1,nx
           rubar(i,j)=cff*dn_u(i,j)*( (h(i-1,j)+h(i,j))*(rzeta(i-1,j)
      &                        -rzeta(i,j)) +rzeta2(i-1,j)-rzeta2(i,j)
 
@@ -256,7 +261,7 @@
      &                                       *( sup(i,j)-sup(i-1,j) )
 #endif
      &                                                              )
-!>
+
           rvbar(i,j)=cff*dm_v(i,j)*( (h(i,j-1)+h(i,j))*(rzeta(i,j-1)
      &                        -rzeta(i,j)) +rzeta2(i,j-1)-rzeta2(i,j)
 
@@ -316,11 +321,10 @@
 ! remain constant during  the fast-time stepping and will added to
 ! "rubar" and "rvbar" during all subsequent barotropic steps.
 
-#ifdef SOLVE3D
       if (FIRST_2D_STEP) then
 
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
 
 ! Compensate for (cancel out) bottom drag terms: at input into
 ! step2d "rufrc" and "rvfrc" contain bottom drag terms computed by
@@ -347,8 +351,8 @@
 # define rzeta2  VFe
 # define rzetaSA VFx
 
-        do j=jstrV-1,jend
-          do i=istrU-1,iend
+        do j=0,ny
+          do i=0,nx
             zwrk(i,j)=zeta_new(i,j)-zeta(i,j,kstp)
 # if defined VAR_RHO_2D
             rzeta(i,j)=(1.+rhoS(i,j))*zwrk(i,j)
@@ -362,8 +366,8 @@
         enddo
 
         cff=0.5*g
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             rubar(i,j)=rubar(i,j) +cff*dn_u(i,j)*( (h(i-1,j)+h(i,j))
      &          *(rzeta(i-1,j)-rzeta(i,j)) +rzeta2(i-1,j)-rzeta2(i,j)
 # if defined VAR_RHO_2D
@@ -389,7 +393,6 @@
 # undef rzeta
 # undef zwrk
       endif   !<-- FIRST_2D_STEP
-#endif
 
 ! Advance 2D momentum components while simultaneously adding them to
 ! accumulate fast-time-averages to compute barotropic fluxes. Doing so
@@ -402,8 +405,8 @@
 
 #define Dstp DUon
 
-      do j=jstrV-1,jend
-        do i=istrU-1,iend
+      do j=0,ny
+        do i=0,nx
           Dstp(i,j)=zeta(i,j,kstp)+h(i,j)
         enddo
       enddo
@@ -411,165 +414,82 @@
       cff =0.5*dtfast
       cff1=0.5*weight(1,iif)
 
-      do j=jstr,jend
-        do i=istrU,iend
+      do j=1,ny
+        do i=1,nx
           DUnew=( (Dstp(i,j)+Dstp(i-1,j))*ubar(i,j,kstp)
      &        +cff*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
-c<<     &     +cff*iA_u(i,j)
-     &                            *(rubar(i,j)+rufrc(i,j))
-     &                                                   )
-#ifdef MASKING
+     &                           *(rubar(i,j)+rufrc(i,j)))
      &                                         *umask(i,j)
-#endif
-          ubar(i,j,knew)=DUnew/( Dnew(i,j)+Dnew(i-1,j)
-     &                                                   )
-
-          DU_avg1(i,j)=DU_avg1(i,j)+cff1*dn_u(i,j)*( DUnew
-# ifdef WEC
-     &                 +(Dnew(i,j)+Dnew(i-1,j))*ust2d(i,j)
-# endif
-     &                                                   )
-
+          ubar(i,j,knew)=DUnew/( Dnew(i,j)+Dnew(i-1,j))
         enddo
       enddo
-      do j=jstrV,jend
-        do i=istr,iend
+
+      do j=1,ny
+        do i=1,nx
           DVnew=( (Dstp(i,j)+Dstp(i,j-1))*vbar(i,j,kstp)
      &        +cff*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
-c<<     &     +cff*iA_v(i,j)
-     &                            *(rvbar(i,j)+rvfrc(i,j))
-     &                                                   )
-#ifdef MASKING
+     &                           *(rvbar(i,j)+rvfrc(i,j)))
      &                                         *vmask(i,j)
-#endif
-          vbar(i,j,knew)=DVnew/( Dnew(i,j)+Dnew(i,j-1)
-     &                                                   )
- 
-          DV_avg1(i,j)=DV_avg1(i,j) +cff1*dm_v(i,j) * ( DVnew
-# ifdef WEC 
-     &                 +(Dnew(i,j)+Dnew(i,j-1))*vst2d(i,j)
-# endif
-     &                                                   )
+          vbar(i,j,knew)=DVnew/( Dnew(i,j)+Dnew(i,j-1))
         enddo
       enddo
 
 ! Set boundary conditions and compute integral mass flux across all
 ! open boundaries, if any.
 
-      call    u2dbc_tile(istr,iend,jstr,jend, UFx)
-      call    v2dbc_tile(istr,iend,jstr,jend, UFx)
+      call    u2dbc_tile(UFx)
+      call    v2dbc_tile(UFx)
 
 ! Fast-time-averaged barotropic fluxes along physical boundaries.
 
-#ifdef SOLVE3D
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        do j=jstr-1,jendR
-          Dnew(istr-1,j)=h(istr-1,j)+zeta_new(istr-1,j)
+      if (inode==0.and.(.not.ew_periodic)) then
+        do j=0,j1
+          Dnew(0,j)=h(0,j)+zeta_new(0,j)
         enddo
       endif
-      if (EASTERN_EDGE) then
-        do j=jstr-1,jendR
-          Dnew(iend+1,j)=h(iend+1,j)+zeta_new(iend+1,j)
+      if (inode==np_xi-1.and.(.not.ew_periodic)) then
+        do j=0,j1
+          Dnew(nx+1,j)=h(nx+1,j)+zeta_new(nx+1,j)
         enddo
       endif
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do i=istr-1,iendR
-          Dnew(i,jstr-1)=h(i,jstr-1)+zeta_new(i,jstr-1)
+
+      if (jnode==0.and.(.not.ns_periodic)) then
+        do i=0,i1
+          Dnew(i,0)=h(i,0)+zeta_new(i,0)
         enddo
       endif
-      if (NORTHERN_EDGE) then
-        do i=istr-1,iendR
-          Dnew(i,jend+1)=h(i,jend+1)+zeta_new(i,jend+1)
+      if (jnode==np_eta-1.and.(.not.ns_periodic)) then
+        do i=0,i1
+          Dnew(i,ny+1)=h(i,ny+1)+zeta_new(i,ny+1)
         enddo
       endif
-# endif
+
       cff1=0.5*weight(1,iif)
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        do j=jstrR,jendR
-          DU_avg1(istrU-1,j)=DU_avg1(istrU-1,j)+cff1*(Dnew(istrU-1,j)
+      do i=i0,i1
+        do j=j0,j1
+          DU_avg1(i,j)=DU_avg1(i,j)+cff1*(Dnew(i,j)
 
-     &         +Dnew(istrU-2,j))*( ubar(istrU-1,j,knew)
+     &         +Dnew(i-1,j))*( ubar(i,j,knew)
 # ifdef WEC
-     &                                             +ust2d(istrU-1,j)
+     &                                             +ust2d(i,j)
 # endif
-     &                                             )*dn_u(istrU-1,j)  
+     &                                             )*dn_u(i,j)  
         enddo
-        do j=jstrV,jend
-          DV_avg1(istr-1,j)=DV_avg1(istr-1,j) +cff1*(Dnew(istr-1,j)
-
-     &       +Dnew(istr-1,j-1) )*( vbar(istr-1,j,knew)
-# ifdef WEC
-     &                                              +vst2d(istr-1,j)
-# endif
-     &                                              )*dm_v(istr-1,j)
-        enddo
-      endif
-      if (EASTERN_EDGE) then
-        do j=jstrR,jendR
-          DU_avg1(iend+1,j)=DU_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-     &            +Dnew(iend,j) )*( ubar(iend+1,j,knew)
+      enddo
+      do i=i0,i1
+        do j=j0,j1
+          DV_avg1(i,j)=DV_avg1(i,j)+cff1*(Dnew(i,j)
+     &         +Dnew(i,j-1))*( vbar(i,j,knew)
 # ifdef WEC 
-     &                                              +ust2d(iend+1,j)
+     &                                              +vst2d(i,j)
 # endif
-     &                                              )*dn_u(iend+1,j)
+     &                                              )*dm_v(i,j)
         enddo
-        do j=jstrV,jend
-          DV_avg1(iend+1,j)=DV_avg1(iend+1,j) +cff1*( Dnew(iend+1,j)
-     &        +Dnew(iend+1,j-1) )*( vbar(iend+1,j,knew)
-# ifdef WEC 
-     &                                              +vst2d(iend+1,j)
-# endif
-     &                                              )*dm_v(iend+1,j)   
-       enddo
-      endif
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do i=istrU,iend
-          DU_avg1(i,jstr-1)=DU_avg1(i,jstr-1) +cff1*( Dnew(i,jstr-1)
-     &        +Dnew(i-1,jstr-1) )*( ubar(i,jstr-1,knew)
-# ifdef WEC
-     &                                              +ust2d(i,jstr-1)
-# endif
-     &                                              )*dn_u(i,jstr-1)
-        enddo
-        do i=istrR,iendR
-          DV_avg1(i,jstrV-1)=DV_avg1(i,jstrV-1)+cff1*(Dnew(i,jstrV-1)
-     &         +Dnew(i,jstrV-2))*( vbar(i,jstrV-1,knew)
-# ifdef WEC 
-     &                                              +vst2d(i,jstrV-1)
-# endif
-     &                                              )*dm_v(i,jstrV-1)
-        enddo
-      endif
-      if (NORTHERN_EDGE) then
-        do i=istrU,iend
-          DU_avg1(i,jend+1)=DU_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-     &        +Dnew(i-1,jend+1) )*( ubar(i,jend+1,knew)
-# ifdef WEC 
-     &                                               +ust2d(i,jend+1)
-# endif
-     &                                               )*dn_u(i,jend+1)
-        enddo
-        do i=istrR,iendR
-          DV_avg1(i,jend+1)=DV_avg1(i,jend+1) +cff1*( Dnew(i,jend+1)
-     &            +Dnew(i,jend) )*( vbar(i,jend+1,knew)
-# ifdef WEC 
-     &                                               +vst2d(i,jend+1)
-# endif
-     &                                               )*dm_v(i,jend+1)
-        enddo
-      endif
-# endif
-#endif
+      enddo
 
       if (river_source) then
-        do j=jstr,jend
-          do i=istrU,iend
+        do j=1,ny
+          do i=1,nx
             if (abs(riv_uflx(i,j)).gt.1e-3) then
               iriver = nint(riv_uflx(i,j)/10)
               river_flux = riv_vol(iriver)*(riv_uflx(i,j)-10*iriver)
@@ -579,8 +499,8 @@ c<<     &     +cff*iA_v(i,j)
             endif
           enddo
         enddo
-        do j=jstrV,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             if (abs(riv_vflx(i,j)).gt.1e-3) then
               iriver = nint(riv_vflx(i,j)/10)
               river_flux = riv_vol(iriver)*(riv_vflx(i,j)-10*iriver)
@@ -592,6 +512,9 @@ c<<     &     +cff*iA_v(i,j)
         enddo
       endif ! <-- river_source
 
+      ! nulllify workspace
+      nullify(zeta_new,Dnew,DUon,DVom,rubar,rvbar,UFx,UFe,VFx,VFe,urhs,vrhs)
+
 ! At the end of the last 2D step replace the new free-surface field
 ! "zeta(:,:,knew)" with its fast-time-averaged "_avg1" version: this
 ! is the only version of free surface which communicates with 3D part
@@ -600,12 +523,12 @@ c<<     &     +cff*iA_v(i,j)
 ! during the next 3D-step.
 
       if (iif == nfast) then
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=j0,j1
+          do i=i0,i1
             zeta(i,j,knew)=Zt_avg1(i,j)
           enddo
         enddo
-        call set_depth_tile(istr,iend,jstr,jend)
+        call set_depth
       endif
 
 #ifdef EXCHANGE
