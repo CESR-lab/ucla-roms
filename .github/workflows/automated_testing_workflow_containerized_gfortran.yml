@@ -3,9 +3,7 @@ name: Automated Testing (gfortran, containerized)
 on:
   push:
     branches:
-      - main
   pull_request:
-    branches: '*'
 
 jobs:
   test:
