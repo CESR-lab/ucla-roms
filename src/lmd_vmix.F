@@ -376,7 +376,6 @@ c----#  define tind nstp
         enddo
       enddo
 
-# if defined LMD_KPP || defined LMD_BKPP
 ! Pad out surface and bottom values for lmd_blmix calculations.
 ! The interior values used here may not be the best values to
 ! use for the padding.
@@ -391,6 +390,8 @@ c----#  define tind nstp
           Kt(i,j,0)=Kt(i,j,  1)
         enddo
       enddo
+
+# if defined LMD_KPP || defined LMD_BKPP
       ! vertical smoothing of interior mixing
       do k=1,N-1
         do j=jstr,jend

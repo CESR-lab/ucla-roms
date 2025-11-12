@@ -60,17 +60,10 @@
 ! swr_frac  fraction of solar short-wave radiation penetrating
 !                                depth z_w [non-dimensional]
 
-# ifdef LMD_KPP
       real,allocatable,dimension(:,:) :: hbls
-
       real,allocatable,dimension(:,:,:) :: swr_frac
-#  ifdef LMD_NONLOCAL
       real,allocatable,dimension(:,:,:) :: ghat
-#  endif
-# endif /* LMD_KPP */
-# ifdef LMD_BKPP
       real,allocatable,dimension(:,:) :: hbbl
-# endif /* LMD_BKPP */
 #endif /* SOLVE3D */
 
       integer :: sponge_size  ! number of grid point of sponge layer
