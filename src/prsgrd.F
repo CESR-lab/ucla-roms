@@ -457,6 +457,10 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
      &        0.5*(Hz(1:nx,1:ny,k)+Hz(1:nx,0:ny-1,k))*dm_v(1:nx,1:ny)
      &          *(P(1:nx,0:ny-1,k)-P(1:nx,1:ny,k))*dxdyi_v(1:nx,1:ny)
           enddo
+          ! JM: figure out Wdiag(:,:,nz), what to do with zeta and tidal pot?
+          Wdiag(1:nx,1:ny,nz,idzb) = (P(1:nx,1:ny,nz)-g*z_w(i,j,nz))*dxdyi
+          if (pot_tides) Wdiag(1:nx,1:ny,nz,idzb) = 
+     &      Wdiag(1:nx,1:ny,nz,idzb) - g*ptide(1:nx,1:ny)*dxdyi
           do k=1,nz-1
             Wdiag(1:nx,1:ny,k,idzb) = (P(1:nx,1:ny,k)-P(1:nx,1:ny,k+1))*dxdyi
           enddo

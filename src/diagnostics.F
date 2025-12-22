@@ -188,11 +188,15 @@
 
       if (.not.(diag_uv.or.diag_trc.or.diag_pflx)) then
         calc_diag = .false.
-        print *,'No diagnostics.'
+        if (mynode.eq.0) then
+           print *,'No diagnostics.'
+        endif
         return
       else
         calc_diag = .true.
-        print *,'Getting ready to do online diagnostics.'
+        if (mynode.eq.0) then
+           print *,'Getting ready to do online diagnostics.'
+        endif
       endif
 
       ! Coefficients for exponential smoothing
