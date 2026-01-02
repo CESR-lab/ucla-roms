@@ -167,7 +167,6 @@ C$OMP BARRIER
       
       call get_grid                  ! can be analytic or from netcdf
 
-      call init_diagnostics  
 
 #ifdef NHMG
       call nhmg_init(nx,ny,nz,npx,npy)
@@ -280,6 +279,7 @@ CR      write(*,*)  ' -2' MYID
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
+       call init_diagnostics  
       if (do_random) call init_random
       if (do_cstar)  call init_cstar
 
