@@ -11,6 +11,7 @@
       use scalars
       use tracers
       use diagnostics
+      use surf_flux
       use grid
       use ocean_vars
       implicit none
@@ -26,9 +27,9 @@
 
 
       real,allocatable, dimension(:,:,:,:) :: u2_bdg,v2_bdg,w2_bdg
-      real,allocatable, dimension(:,:,:,:) :: ek_bdg,ek_bdg_avg 
+      real,allocatable, dimension(:,:,:,:) :: ek_bdg,ek_bdg_avg
 
-      real,allocatable, dimension(:,:) :: u_hlf,v_hlf,uflx,vlfx,om
+      real,allocatable, dimension(:,:) :: u_hlf,v_hlf,uf_hlf,vf_hlf,om
       real,allocatable, dimension(:,:) :: ustr,vstr
 
 
@@ -57,8 +58,8 @@
 
       allocate(u_hlf(nx+1,ny+1))
       allocate(v_hlf(nx+1,ny+1))
-      allocate(uflx(nx+1,ny+1))
-      allocate(vflx(nx+1,ny+1))
+      allocate(uf_hlf(nx+1,ny+1))
+      allocate(vf_hlf(nx+1,ny+1))
       allocate(om(nx,ny))
 
       allocate(ustr(nx+1,ny+1))
@@ -66,7 +67,7 @@
 
       allocate(u2_bdg(GLOBAL_2D_ARRAY,nz,nmd))
       allocate(v2_bdg(GLOBAL_2D_ARRAY,nz,nmd))
-      allocate(w2_bdg(GLOBAL_2D_ARRAY,0:nz,2))
+      allocate(w2_bdg(GLOBAL_2D_ARRAY,0:nz,1))
       u2_bdg = 0
       v2_bdg = 0
       w2_bdg = 0
@@ -85,18 +86,13 @@
       subroutine calc_energy_budget ![
       ! Calculate variables for energy budget
 
-      ! Special emphasis is directed at the conversion between kinetic and 
+      ! Special emphasis is directed at the conversion between kinetic and
       ! potential energy. Traditionally this is diagnosed as w*b, where w is
-      ! the 'true' vertical velocity w= omega + u*z_x + v*z_y (see wvlcty.F) 
+      ! the 'true' vertical velocity w= omega + u*z_x + v*z_y (see wvlcty.F)
       ! We now recognize that wb should be diagnosed as:
       ! wb = om*dz*b + u*dz_x*b, where the buoyancy terms are taken from the
       ! pressure gradient subroutine to be consistent with the model computations
       ! the terms dz*b and z_x*b are stored in Wdiag, and U/Vdiag
-
-      ! Barotropic/baroclinic omega:
-      ! om_bt = z_t*(zr+h)/(zeta+h) ! dz/dt is computed in diagnostic.F
-      ! om_bc = om - om_bt !! 
-      ! the grid corrected omega is in fact the baroclinic omega
 
       implicit none
 
@@ -114,18 +110,21 @@
         diag_dzt_added = .false.
       endif
 
-      ! Hack!! to extract wind work from the vmx term 
+      ! Hack!! to extract wind work from the vmx term
       ! Move windstress to the hmx term (5) (which is mostly zero)
+      if (.not.diag_norm) then
+        stop 'diag_norm must be true for 3D energy budgets'
+      endif
 
-      ! sustr is multiplied by dz, so need to remove that here, since 
-      ! udiag is normalized by dz
-      ustr(1:nx,1:ny) = 2*ustr(1:nx,1:ny)/(Hz(1:nx,1:ny,nz)+Hz(0:nx-1,1:ny,nz))
-      vstr(1:nx,1:ny) = 2*vstr(1:nx,1:ny)/(Hz(1:nx,1:ny,nz)+Hz(1:nx,0:ny-1,nz))
+      ! sustr is multiplied by dz, so need to remove that here, since
+      ! udiag is normalized by dz (diag_norm=.true.)
+      ustr(1:nx,1:ny) = 2*sustr(1:nx,1:ny)/(Hz(1:nx,1:ny,nz)+Hz(0:nx-1,1:ny,nz))
+      vstr(1:nx,1:ny) = 2*svstr(1:nx,1:ny)/(Hz(1:nx,1:ny,nz)+Hz(1:nx,0:ny-1,nz))
 
-      Udiag(:,:,nz,6) = Udiag(:,:,nz,6) - ustr(1:nx,1:ny)
-      Vdiag(:,:,nz,6) = Vdiag(:,:,nz,6) - vstr(1:nx,1:ny)
-      Udiag(:,:,nz,5) = Udiag(:,:,nz,5) + ustr(1:nx,1:ny)
-      Vdiag(:,:,nz,5) = Vdiag(:,:,nz,5) + vstr(1:nx,1:ny)
+      Udiag(1:nx,1:ny,nz,6) = Udiag(1:nx,1:ny,nz,6) - ustr(1:nx,1:ny)
+      Vdiag(1:nx,1:ny,nz,6) = Vdiag(1:nx,1:ny,nz,6) - vstr(1:nx,1:ny)
+      Udiag(1:nx,1:ny,nz,5) = Udiag(1:nx,1:ny,nz,5) + ustr(1:nx,1:ny)
+      Vdiag(1:nx,1:ny,nz,5) = Vdiag(1:nx,1:ny,nz,5) + vstr(1:nx,1:ny)
 
       ! KE budget
       om = 0.0
@@ -134,14 +133,14 @@
           do i = 1,nx+1
             u_hlf(i,j) = 0.5*( u(i,j,k,nstp)+u(i,j,k,nnew) )
             v_hlf(i,j) = 0.5*( v(i,j,k,nstp)+v(i,j,k,nnew) )
-            uflx(i,j) = 0.5*u_hlf(i,j)*(Hz(i-1,j,k)+Hz(i,j,k))*dn_u(i,j)
-            vflx(i,j) = 0.5*v_hlf(i,j)*(Hz(i,j-1,k)+Hz(i,j,k))*dm_v(i,j)
+            uf_hlf(i,j) = 0.5*u_hlf(i,j)*(Hz(i-1,j,k)+Hz(i,j,k))*dn_u(i,j)
+            vf_hlf(i,j) = 0.5*v_hlf(i,j)*(Hz(i,j-1,k)+Hz(i,j,k))*dm_v(i,j)
           enddo
         enddo
         ! vertical flux in m/s
         do j = 1,ny
           do i = 1,nx
-            om(i,j) = -(uflx(i+1,j)-uflx(i,j)+vflx(i,j+1)-vflx(i,j))
+            om(i,j) = -(uf_hlf(i+1,j)-uf_hlf(i,j)+vf_hlf(i,j+1)-vf_hlf(i,j))
      &               *pm(i,j)*pn(i,j) + om(i,j)
           enddo
         enddo
@@ -169,6 +168,10 @@
       do itrm=1,nmd
         call exchange_xxx(u2_bdg(:,:,:,itrm),v2_bdg(:,:,:,itrm))
       enddo
+
+      ! Don't include boundaries in budget computations
+      if (.not.ew_periodic.and.inode==0) u2_bdg(1,:,:,:) = 0
+      if (.not.ns_periodic.and.jnode==0) v2_bdg(:,1,:,:) = 0
 
       do k = 1,nz
        do j = 1,ny
@@ -256,11 +259,6 @@
      &                 'ek balance; WB')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'pres',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
-       ierr = nf90_put_att(ncid,varid,'long_name',
-     &                 'pressure')
-       ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
-
       end subroutine def_vars_energy  !]
 !----------------------------------------------------------------------
       subroutine wrt_energy_budget  ![
@@ -272,7 +270,7 @@
       character(len=99),save :: fname
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
-      
+
       call calc_energy_budget
       if (output_avg) call calc_average
 
@@ -289,7 +287,7 @@
         record = record+1
 
         ierr=nf90_open(fname,nf90_write,ncid)
-        if (ierr/=nf90_noerr) 
+        if (ierr/=nf90_noerr)
      &      call handle_ierr(ierr,'wrt_energy_budg, opening: ',fname)
 
 !       ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)     ! set fill value - nf90_nofill for optimized writing
@@ -315,7 +313,6 @@
         call ncwrite(ncid,'ek_cpl',ek_bdg(i0:i1,j0:j1,:,7),(/1,1,1,record/))
         call ncwrite(ncid,'ek_dzt',ek_bdg(i0:i1,j0:j1,:,8),(/1,1,1,record/))
         call ncwrite(ncid,'ek_omb',ek_bdg(i0:i1,j0:j1,:,9),(/1,1,1,record/))
-        call ncwrite(ncid,'pres',Wdiag(i0:i1,j0:j1,:,2),(/1,1,1,record/))
 
         ierr=nf90_close (ncid)
 

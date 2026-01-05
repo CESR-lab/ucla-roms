@@ -126,8 +126,6 @@
 
       real,public,allocatable,dimension(:,:)  :: dzt ! dzeta/dt
       real,public,allocatable,dimension(:,:)  :: Uflx,Vflx
-      real,public,allocatable,dimension(:,:,:):: rho_d  ! rho for diagnostics
-      real,public,allocatable,dimension(:,:)  :: p_int  ! for barotropic/baroclinic diagnostics
 
       real, public :: alpha, beta              ! filtering constants (needed for child bry)
 
@@ -288,8 +286,8 @@
       endif
 
       if (diag_pflx) then
-        allocate( Uflx(nx+1,ny) )
-        allocate( Vflx(nx,ny+1) )
+        allocate( Uflx(nx+1,ny+1) )
+        allocate( Vflx(nx+1,ny+1) )
 
         ! strictly speaking for barotropic/baroclinic balance only
         allocate( dzt(nx,ny) )
@@ -842,13 +840,13 @@
         ! WEC terms can modify the match between
         ! integrated flux and ubar,vbar
 
-        Uflx =  sum(Flxu(1:nx+1,1:ny,:),dim=3)
-        Vflx =  sum(Flxv(1:nx,1:ny+1,:),dim=3)
+        Uflx =  sum(Flxu(1:nx+1,1:ny+1,:),dim=3)
+        Vflx =  sum(Flxv(1:nx+1,1:ny+1,:),dim=3)
 
         ! Strictly speaking only neccesary for barotropic/baroclinic
         ! balance
-        dzt  = -dxdyi*( Uflx(2:nx+1,:)-Uflx(1:nx,:) +
-     &                  Vflx(:,2:ny+1)-Vflx(:,1:ny) )
+        dzt  = -dxdyi*( Uflx(2:nx+1,1:ny)-Uflx(1:nx,1:ny) +
+     &                  Vflx(1:nx,2:ny+1)-Vflx(1:nx,1:ny) )
 
         ! Divide the barotropic fluxes into velocities [m/s]
         do j=1,ny
@@ -941,14 +939,13 @@
           Udiag(1:nx,1:ny,k,idzt) = -u_hlf(1:nx,1:ny)*dzudt(1:nx,1:ny)
           Vdiag(1:nx,1:ny,k,idzt) = -v_hlf(1:nx,1:ny)*dzvdt(1:nx,1:ny)
 
-          do itrm=1,nmd
-            Udiag(1:nx,1:ny,k,itrm) = Udiag(1:nx,1:ny,k,itrm)/dzu_hlf(1:nx,1:ny)
-            Vdiag(1:nx,1:ny,k,itrm) = Vdiag(1:nx,1:ny,k,itrm)/dzv_hlf(1:nx,1:ny)
-          enddo
-
-          ! devide by dz at w-points
-          Wdiag(1:nx,1:ny,k,1) = Wdiag(1:nx,1:ny,k,1)/dzw_hlf(1:nx,1:ny)
-
+          if (diag_norm) then
+            do itrm=1,nmd
+              Udiag(1:nx,1:ny,k,itrm) = Udiag(1:nx,1:ny,k,itrm)/dzu_hlf(1:nx,1:ny)
+              Vdiag(1:nx,1:ny,k,itrm) = Vdiag(1:nx,1:ny,k,itrm)/dzv_hlf(1:nx,1:ny)
+            enddo
+            Wdiag(1:nx,1:ny,k,1) = Wdiag(1:nx,1:ny,k,1)/dzw_hlf(1:nx,1:ny)
+          endif
 
         enddo
 
@@ -1376,6 +1373,15 @@
         ierr=nf90_put_att (ncid, nf90_global, 'diag_avg_time', adjustl(diag_avg_output))
         ierr=nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
       endif
+
+      if (diag_norm) then
+         ierr=nf90_put_att(ncid,nf90_global,
+     &          'normalization','Momentum diag terms without dz factor')
+      else
+         ierr=nf90_put_att(ncid,nf90_global,
+     &          'normalization','Momentum diag terms include dz factor')
+      endif
+
 
       call create_diagvars(ncid)
 
