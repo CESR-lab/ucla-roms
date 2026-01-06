@@ -20,8 +20,7 @@ echo "  test compiling..."
 echo "##############################"
 
 cp -p ../*.h . &> /dev/null
-cp -p ../cppdefs.opt .
-cp -p ../param.opt .
+cp -p ../*.opt .
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
 cp -p $ROMS_ROOT/Examples/Makefile .
 make compile_clean &> /dev/null
@@ -43,10 +42,8 @@ fi
 
 rm *.h       &> /dev/null
 rm *.nc      &> /dev/null
-rm diag.opt  &> /dev/null
+rm *.opt     &> /dev/null
 rm Make*     &> /dev/null
-rm param.opt &> /dev/null
-rm cppdefs.opt &> /dev/null
 rm roms      &> /dev/null
 
 # 2) Python - confirm values:

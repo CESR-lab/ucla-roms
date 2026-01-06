@@ -33,6 +33,7 @@
       character(len=7),public,parameter :: dn_zr = 's_rho'
       character(len=7),public,parameter :: dn_zw = 's_w'
       character(len=7),public,parameter :: dn_tm = 'time'
+      character(len=7),public,parameter :: dn_nm = 'nmd'   ! number of terms in budget
 
       ! ---- user input ends
 

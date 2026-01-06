@@ -14,8 +14,6 @@ c--# define DIAGNOSTICS
 c--# define TIDES
 c--# define BULK_FRC
 # define SPONGE_TUNE
-# define RIVER_SOURCE
-# define EXTRACT_DATA
 
 c--# define SFLX_CORR
 
