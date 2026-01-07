@@ -274,11 +274,11 @@
         allocate(vp_avg(0:nx+1,0:ny+1) );vp_avg=0
 
         if (.not. allocated( u_slow )) then         ! in case already read in with get_init
-          allocate(u_slow(1:nx+1,0:ny+1,nz) )
+          allocate(u_slow(GLOBAL_2D_ARRAY,nz) )
           u_slow = 0
         endif
         if (.not. allocated( v_slow )) then
-          allocate(v_slow(0:nx+1,1:ny+1,nz) )
+          allocate(v_slow(GLOBAL_2D_ARRAY,nz) )
           v_slow = 0
         endif
         allocate(u_fast(nx+1,ny) )
@@ -1406,11 +1406,11 @@
 
       if (mynode==0) print *,'getting u,v,p slow'
       if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
-        allocate(u_slow(nx+1,0:ny+1,nz ))
+        allocate(u_slow(GLOBAL_2D_ARRAY,nz))
         u_slow = 0
       endif
       if (.not. allocated(v_slow)) then
-        allocate( v_slow(0:nx+1,ny+1,nz ))
+        allocate(v_slow(GLOBAL_2D_ARRAY,nz))
         v_slow = 0
       endif
       if (.not. allocated(p_slow)) then
@@ -1427,10 +1427,11 @@
             if (umask(i,j)<1) u_slow(i,j,:) = 0
           enddo
         enddo
+        call exchange_xxx(u_slow)
 #endif
       else
 !       u_slow = 0.0
-        u_slow(1:i1,j0:j1,:) = u(1:i1,j0:j1,:,tindx)
+        u_slow(0:nx+1,0:ny+1,:) = u(0:nx+1,0:ny+1,:,tindx)
         mpi_master_only write(*,*) ' --- WARNING: '
      &    ,'u_slow not in initial file.'
      &    ,'  Initialized to u'
@@ -1446,10 +1447,11 @@
             if (vmask(i,j)<1) v_slow(i,j,:) = 0
           enddo
         enddo
+        call exchange_xxx(v_slow)
 #endif
       else
 !       v_slow = 0.0
-        v_slow(i0:i1,1:j1,:) = v(i0:i1,1:j1,:,tindx)
+        v_slow(0:nx+1,0:ny+1,:) = v(0:nx+1,0:ny+1,:,tindx)
         mpi_master_only write(*,*) ' --- WARNING: '
      &    ,'v_slow not in initial file.'
      &    ,'  Initialized to v'

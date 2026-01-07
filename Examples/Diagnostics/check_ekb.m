@@ -15,7 +15,7 @@ else
   diag_norm = logical(1);
 end
 
-[nxu,nyp,nz] = size(ncread(fname,'u',[1 1 1 ifr],[inf inf inf 1]));
+[nxu,nyp,nz] = size(ncread(hname,'u',[1 1 1 ifr],[inf inf inf 1]));
 nx = nxu-1;
 ny = nyp-2;
 nyv= nyp-1;
@@ -36,10 +36,10 @@ v21 = 0.5*v1.*v1;
 e1 = 0.5*(u21(2:end,:,:)+u21(1:end-1,:,:)+v21(:,2:end,:)+v21(:,1:end-1,:) );
 
 z1 = ncread(hname,'zeta',[1 1 ifr],[inf inf 1]);
-zw = zlevs(h,z1,hname,'w');
-dz = zw(:,:,2:end)-zw(:,:,1:end-1);
-dzu1 = 0.5*(dz(2:end,2:end-1,:) + dz(1:end-1,2:end-1,:));
-dzv1 = 0.5*(dz(2:end-1,2:end,:) + dz(2:end-1,1:end-1,:));
+zw1 = zlevs(h,z1,hname,'w');
+dz1 = zw1(:,:,2:end)-zw1(:,:,1:end-1);
+dzu1 = 0.5*(dz1(2:end,2:end-1,:) + dz1(1:end-1,2:end-1,:));
+dzv1 = 0.5*(dz1(2:end-1,2:end,:) + dz1(2:end-1,1:end-1,:));
 
 t2 = ncread(hname,'ocean_time',[ifr+1],[1]);
 u2 = ncread(hname,'u',[1 2 1 ifr+1],[nxu ny inf 1]);
@@ -51,10 +51,10 @@ v22 = 0.5*v2.*v2;
 e2 = 0.5*(u22(2:end,:,:)+u22(1:end-1,:,:)+v22(:,2:end,:)+v22(:,1:end-1,:) );
 
 z2 = ncread(hname,'zeta',[1 1 ifr+1],[inf inf 1]);
-zw = zlevs(h,z2,hname,'w');
-dz = zw(:,:,2:end)-zw(:,:,1:end-1);
-dzu2 = 0.5*(dz(2:end,2:end-1,:) + dz(1:end-1,2:end-1,:));
-dzv2 = 0.5*(dz(2:end-1,2:end,:) + dz(2:end-1,1:end-1,:));
+zw2 = zlevs(h,z2,hname,'w');
+dz2 = zw2(:,:,2:end)-zw2(:,:,1:end-1);
+dzu2 = 0.5*(dz2(2:end,2:end-1,:) + dz2(1:end-1,2:end-1,:));
+dzv2 = 0.5*(dz2(2:end-1,2:end,:) + dz2(2:end-1,1:end-1,:));
 
 uhlf = 0.5*(u1+u2);
 vhlf = 0.5*(v1+v2);
@@ -75,6 +75,10 @@ edia8 = ncread(ename,'ek_dzt',[2 2 1 ifr],[nx ny inf 1]);
 edia9 = ncread(ename,'ek_omb',[2 2 1 ifr],[nx ny inf 1]);
 
 edia = edia1 + edia2 + edia3 + edia4 + edia5 + edia6 + edia7 + edia8;
+
+sedia1 = sum(edia1.*dzhlf,3);
+sedia8 = sum(edia8.*dzhlf,3);
+sedia9 = sum(edia9.*dzhlf,3);
 
 dt = t2-t1;
 de = (e2-e1)/dt;

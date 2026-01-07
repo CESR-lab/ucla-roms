@@ -1,5 +1,6 @@
       module energy_budget
       ! Compute kinetic energy budget
+      ! Vertically integrated version
 
 #include "cppdefs.opt"
 
@@ -9,9 +10,9 @@
       use nc_read_write
       use netcdf
       use scalars
+      use surf_flux
       use tracers
       use diagnostics
-      use surf_flux
       use grid
       use ocean_vars
       implicit none
@@ -26,11 +27,11 @@
 
 
 
-      real,allocatable, dimension(:,:,:,:) :: u2_bdg,v2_bdg,w2_bdg
-      real,allocatable, dimension(:,:,:,:) :: ek_bdg,ek_bdg_avg
+      real,allocatable, dimension(:,:,:) :: u2_bdg,v2_bdg,w2_bdg
+      real,allocatable, dimension(:,:,:) :: ek_bdg,ek_bdg_avg 
 
       real,allocatable, dimension(:,:) :: u_hlf,v_hlf,uf_hlf,vf_hlf,om
-      real,allocatable, dimension(:,:) :: ustr,vstr
+!     real,allocatable, dimension(:,:) :: ustr,vstr
 
 
       ! Public functions
@@ -62,20 +63,20 @@
       allocate(vf_hlf(nx+1,ny+1))
       allocate(om(nx,ny))
 
-      allocate(ustr(nx+1,ny+1))
-      allocate(vstr(nx+1,ny+1))
+!     allocate(ustr(nx+1,ny+1))
+!     allocate(vstr(nx+1,ny+1))
 
-      allocate(u2_bdg(GLOBAL_2D_ARRAY,nz,nmd))
-      allocate(v2_bdg(GLOBAL_2D_ARRAY,nz,nmd))
-      allocate(w2_bdg(GLOBAL_2D_ARRAY,0:nz,1))
+      allocate(u2_bdg(GLOBAL_2D_ARRAY,nmd))
+      allocate(v2_bdg(GLOBAL_2D_ARRAY,nmd))
+      allocate(w2_bdg(GLOBAL_2D_ARRAY,1))
       u2_bdg = 0
       v2_bdg = 0
       w2_bdg = 0
 
-      allocate(ek_bdg(GLOBAL_2D_ARRAY,nz,nmd))
+      allocate(ek_bdg(GLOBAL_2D_ARRAY,nmd))
       ek_bdg = 0
       if (output_avg) then
-        allocate(ek_bdg_avg(GLOBAL_2D_ARRAY,nz,nmd))
+        allocate(ek_bdg_avg(GLOBAL_2D_ARRAY,nmd))
         ek_bdg_avg = 0
       endif
 
@@ -86,13 +87,18 @@
       subroutine calc_energy_budget ![
       ! Calculate variables for energy budget
 
-      ! Special emphasis is directed at the conversion between kinetic and
+      ! Special emphasis is directed at the conversion between kinetic and 
       ! potential energy. Traditionally this is diagnosed as w*b, where w is
-      ! the 'true' vertical velocity w= omega + u*z_x + v*z_y (see wvlcty.F)
+      ! the 'true' vertical velocity w= omega + u*z_x + v*z_y (see wvlcty.F) 
       ! We now recognize that wb should be diagnosed as:
       ! wb = om*dz*b + u*dz_x*b, where the buoyancy terms are taken from the
       ! pressure gradient subroutine to be consistent with the model computations
       ! the terms dz*b and z_x*b are stored in Wdiag, and U/Vdiag
+
+      ! Barotropic/baroclinic omega:
+      ! om_bt = z_t*(zr+h)/(zeta+h) ! dz/dt is computed in diagnostic.F
+      ! om_bc = om - om_bt !! 
+      ! the grid corrected omega is in fact the baroclinic omega
 
       implicit none
 
@@ -104,30 +110,22 @@
       ! nstp -> n
       ! nnew -> n+1
 
-      if (.not.diag_dzt_added) then
-        stop 'diagnostics and energy_budget out of order'
-      else
-        diag_dzt_added = .false.
-      endif
-
-      ! Hack!! to extract wind work from the vmx term
+      ! Hack!! to extract wind work from the vmx term 
       ! Move windstress to the hmx term (5) (which is mostly zero)
-      if (.not.diag_norm) then
-        stop 'diag_norm must be true for 3D energy budgets'
-      endif
 
-      ! sustr is multiplied by dz, so need to remove that here, since
-      ! udiag is normalized by dz (diag_norm=.true.)
-      ustr(1:nx,1:ny) = 2*sustr(1:nx,1:ny)/(Hz(1:nx,1:ny,nz)+Hz(0:nx-1,1:ny,nz))
-      vstr(1:nx,1:ny) = 2*svstr(1:nx,1:ny)/(Hz(1:nx,1:ny,nz)+Hz(1:nx,0:ny-1,nz))
+      ! No need to remove dz factor from sustr/svstr since we work here
+      ! with dz*diag terms (non-normalized)
 
-      Udiag(1:nx,1:ny,nz,6) = Udiag(1:nx,1:ny,nz,6) - ustr(1:nx,1:ny)
-      Vdiag(1:nx,1:ny,nz,6) = Vdiag(1:nx,1:ny,nz,6) - vstr(1:nx,1:ny)
-      Udiag(1:nx,1:ny,nz,5) = Udiag(1:nx,1:ny,nz,5) + ustr(1:nx,1:ny)
-      Vdiag(1:nx,1:ny,nz,5) = Vdiag(1:nx,1:ny,nz,5) + vstr(1:nx,1:ny)
+      Udiag(1:nx,1:ny,nz,6) = Udiag(1:nx,1:ny,nz,6) - sustr(1:nx,1:ny)
+      Vdiag(1:nx,1:ny,nz,6) = Vdiag(1:nx,1:ny,nz,6) - svstr(1:nx,1:ny)
+      Udiag(1:nx,1:ny,nz,5) = Udiag(1:nx,1:ny,nz,5) + sustr(1:nx,1:ny)
+      Vdiag(1:nx,1:ny,nz,5) = Vdiag(1:nx,1:ny,nz,5) + svstr(1:nx,1:ny)
 
       ! KE budget
       om = 0.0
+      u2_bdg = 0.0
+      v2_bdg = 0.0
+      w2_bdg = 0.0
       do k = 1,nz
         do j = 1,ny+1
           do i = 1,nx+1
@@ -147,41 +145,39 @@
         do itrm = 1,nmd
           do j = 1,ny
             do i = 1,nx
-              u2_bdg(i,j,k,itrm) = u_hlf(i,j)*Udiag(i,j,k,itrm)
-              v2_bdg(i,j,k,itrm) = v_hlf(i,j)*Vdiag(i,j,k,itrm)
+              u2_bdg(i,j,itrm) = u2_bdg(i,j,itrm) + u_hlf(i,j)*Udiag(i,j,k,itrm)
+              v2_bdg(i,j,itrm) = v2_bdg(i,j,itrm) + v_hlf(i,j)*Vdiag(i,j,k,itrm)
             enddo
           enddo
         enddo
 
         ! omega == 0 at k=0 so ok to do om*wdiag from 1:nz
+        ! Wdiag(:,:,nz) is already half the amplitude to we're good to add 
+        ! it in to the vertical integral
         do itrm = 1,1
           do j = 1,ny
             do i = 1,nx
-              w2_bdg(i,j,k,itrm) = om(i,j)*Wdiag(i,j,k,itrm)
+              w2_bdg(i,j,itrm) = w2_bdg(i,j,itrm) + om(i,j)*Wdiag(i,j,k,itrm)
             enddo
           enddo
         enddo
 
       enddo ! k-loop
 
-      ! Don't include boundaries in budget computations
-      if (.not.ew_periodic.and.inode==0) u2_bdg(1,:,:,:) = 0
-      if (.not.ns_periodic.and.jnode==0) v2_bdg(:,1,:,:) = 0
+      if (.not.ew_periodic.and.inode==0) u2_bdg(1,:,:) = 0
+      if (.not.ns_periodic.and.jnode==0) v2_bdg(:,1,:) = 0
 
 !     exchange_xxx assumes that arrays are global_2d_array in size
       do itrm=1,nmd
-        call exchange_xxx(u2_bdg(:,:,:,itrm),v2_bdg(:,:,:,itrm))
+        call exchange_xxx(u2_bdg(:,:,itrm),v2_bdg(:,:,itrm))
       enddo
 
-      do k = 1,nz
-       do j = 1,ny
+      do j = 1,ny
         do i = 1,nx
-          ek_bdg(i,j,k,:)= 0.5*(u2_bdg(i,j,k,:)+u2_bdg(i+1,j,k,:))
-     &                   + 0.5*(v2_bdg(i,j,k,:)+v2_bdg(i,j+1,k,:))
-          ek_bdg(i,j,k,9)=   ek_bdg(i,j,k,9)
-     &                  - 0.5*(w2_bdg(i,j,k,1)+w2_bdg(i,j,k-1,1))
+          ek_bdg(i,j,:) = 0.5*(u2_bdg(i,j,:)+u2_bdg(i+1,j,:))
+     &                  + 0.5*(v2_bdg(i,j,:)+v2_bdg(i,j+1,:))
+          ek_bdg(i,j,9) = ek_bdg(i,j,9) - w2_bdg(i,j,1)
         enddo
-       enddo
       enddo
 
       end subroutine calc_energy_budget  !]
@@ -214,47 +210,47 @@
 
       ierr = nf90_redef(ncid)
 
-       varid = nccreate(ncid,'ek_pgr',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_pgr',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; pressure gradient')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_cor',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_cor',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; coriolis term')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_adv',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_adv',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; advection')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_dis',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_dis',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; dissipation')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_hmx',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_hmx',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; horizontal mixing')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_vmx',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_vmx',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; vertical mixing')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_cpl',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_cpl',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; coupling')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_dzt',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_dzt',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; time varying dz sizes')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
 
-       varid = nccreate(ncid,'ek_omb',(/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
+       varid = nccreate(ncid,'ek_omb',(/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
        ierr = nf90_put_att(ncid,varid,'long_name',
      &                 'ek balance; WB')
        ierr = nf90_put_att(ncid,varid,'units','m^2/s^3')
@@ -263,14 +259,18 @@
 !----------------------------------------------------------------------
       subroutine wrt_energy_budget  ![
       ! Call wrt_energy_budg after completion of the time-step
-      ! (After step3d_uv2)
       implicit none
 
       ! local
       character(len=99),save :: fname
       integer,dimension(3)   :: start
       integer                :: ncid,ierr
-
+      
+      ! for 2d energy budgets, we don't want the 
+      ! normalization in diagnostics
+      if (diag_norm) then
+        stop 'turn off normalization in diagnostics'
+      endif
       call calc_energy_budget
       if (output_avg) call calc_average
 
@@ -287,7 +287,7 @@
         record = record+1
 
         ierr=nf90_open(fname,nf90_write,ncid)
-        if (ierr/=nf90_noerr)
+        if (ierr/=nf90_noerr) 
      &      call handle_ierr(ierr,'wrt_energy_budg, opening: ',fname)
 
 !       ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)     ! set fill value - nf90_nofill for optimized writing
@@ -304,15 +304,15 @@
 !         print *,'ed write: ',ek_bdg(12,12,20,1)
 !       endif
 
-        call ncwrite(ncid,'ek_pgr',ek_bdg(i0:i1,j0:j1,:,1),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_cor',ek_bdg(i0:i1,j0:j1,:,2),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_adv',ek_bdg(i0:i1,j0:j1,:,3),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_dis',ek_bdg(i0:i1,j0:j1,:,4),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_hmx',ek_bdg(i0:i1,j0:j1,:,5),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_vmx',ek_bdg(i0:i1,j0:j1,:,6),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_cpl',ek_bdg(i0:i1,j0:j1,:,7),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_dzt',ek_bdg(i0:i1,j0:j1,:,8),(/1,1,1,record/))
-        call ncwrite(ncid,'ek_omb',ek_bdg(i0:i1,j0:j1,:,9),(/1,1,1,record/))
+        call ncwrite(ncid,'ek_pgr',ek_bdg(i0:i1,j0:j1,1),(/1,1,record/))
+        call ncwrite(ncid,'ek_cor',ek_bdg(i0:i1,j0:j1,2),(/1,1,record/))
+        call ncwrite(ncid,'ek_adv',ek_bdg(i0:i1,j0:j1,3),(/1,1,record/))
+        call ncwrite(ncid,'ek_dis',ek_bdg(i0:i1,j0:j1,4),(/1,1,record/))
+        call ncwrite(ncid,'ek_hmx',ek_bdg(i0:i1,j0:j1,5),(/1,1,record/))
+        call ncwrite(ncid,'ek_vmx',ek_bdg(i0:i1,j0:j1,6),(/1,1,record/))
+        call ncwrite(ncid,'ek_cpl',ek_bdg(i0:i1,j0:j1,7),(/1,1,record/))
+        call ncwrite(ncid,'ek_dzt',ek_bdg(i0:i1,j0:j1,8),(/1,1,record/))
+        call ncwrite(ncid,'ek_omb',ek_bdg(i0:i1,j0:j1,9),(/1,1,record/))
 
         ierr=nf90_close (ncid)
 
