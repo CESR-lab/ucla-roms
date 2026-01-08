@@ -54,10 +54,11 @@ c--# define CONST_TRACERS
      &                                                             )
 
       use param
+      use bulk_frc
       use pipe_frc
       use cdr_frc
       use river_frc
-      use surf_flux, only: stflx, srflx
+      use surf_flux
       use tracers
 #ifdef MARBL
       use marbl_driver, only: marbldrv_column_physics
@@ -858,6 +859,13 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
               endif
 
             enddo
+          enddo
+
+          ! Add in the heat of rain water, use the 2m air temperature
+          ! until a better suggestion comes up.
+          do i=istr,iend
+             t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) +dt*pm(i,j)*pn(i,j)*
+     &            swflx(i,j)*tair(i,j)
           enddo
 
 

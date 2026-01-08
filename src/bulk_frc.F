@@ -13,7 +13,7 @@
 
 #include "bulk_frc.opt"
 
-      real,allocatable,dimension(:,:) ::  tair             ! air temp
+      real,allocatable,public,dimension(:,:) ::  tair      ! air temp, used in step3d_t to add the heat of rain water
       real,allocatable,dimension(:,:) ::     Q             ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
       real,allocatable,dimension(:,:) :: prate             ! prate (precipitation rate) - 'rain' variable in old code
       real,allocatable,dimension(:,:) :: lwrad             ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
