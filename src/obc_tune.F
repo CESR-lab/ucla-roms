@@ -178,16 +178,16 @@
 
       pos = 2
       if (obc_west.and.inode.eq.0) then
-        cflx_west = up(pos,1:ny) 
+        cflx_west(1:ny) = up(pos,1:ny) 
       endif
       if (obc_east.and.inode.eq.npx-1) then
-        cflx_east = up(nx-pos+1,1:ny)
+        cflx_east(1:ny) = up(nx-pos+1,1:ny)
       endif
       if (obc_south.and.jnode.eq.0) then
-        cflx_south = vp(1:nx,pos)
+        cflx_south(1:nx) = vp(1:nx,pos)
       endif
       if (obc_north.and.jnode.eq.npy-1) then
-        cflx_north = vp(1:nx,ny-pos+1)
+        cflx_north(1:nx) = vp(1:nx,ny-pos+1)
       endif
       
       end subroutine comp_cflx !]
@@ -201,6 +201,7 @@
       ! local 
       real    :: alpha,beta,eps
       real    :: ub_mn,ub_mx
+      integer :: i,j
 
       eps = 1e-6
       ub_mx = 2.0 
@@ -214,27 +215,35 @@
       call comp_cflx
 
       if (obc_south.and.jnode.eq.0) then
-        ub_south = ub_south+alpha*(pflx_south-cflx_south)
-        ub_south = max(ub_mn,ub_south)
-        ub_south = min(ub_mx,ub_south)
+        do i=1,nx
+          ub_south(i) = ub_south(i)+alpha*(pflx_south(i)-cflx_south(i))
+          ub_south(i) = max(ub_mn,ub_south(i))
+          ub_south(i) = min(ub_mx,ub_south(i))
+        enddo
       endif
 
       if (obc_north.and.jnode.eq.npy-1) then
-        ub_north = ub_north-alpha*(pflx_north-cflx_north)
-        ub_north = max(ub_mn,ub_north)
-        ub_north = min(ub_mx,ub_north)
+        do i=1,nx
+          ub_north(i) = ub_north(i)-alpha*(pflx_north(i)-cflx_north(i))
+          ub_north(i) = max(ub_mn,ub_north(i))
+          ub_north(i) = min(ub_mx,ub_north(i))
+        enddo
       endif
       
       if (obc_west.and.inode.eq.0) then
-        ub_west = ub_west+alpha*(pflx_west-cflx_west)
-        ub_west = max(ub_mn,ub_west)
-        ub_west = min(ub_mx,ub_west)
+        do j=1,ny
+          ub_west(j) = ub_west(j)+alpha*(pflx_west(j)-cflx_west(j))
+          ub_west(j) = max(ub_mn,ub_west(j))
+          ub_west(j) = min(ub_mx,ub_west(j))
+        enddo
       endif
 
       if (obc_east.and.inode.eq.npx-1) then
-        ub_east = ub_east-alpha*(pflx_east-cflx_east)
-        ub_east = max(ub_mn,ub_east)
-        ub_east = min(ub_mx,ub_east)
+        do j=1,ny
+          ub_east(j) = ub_east(j)-alpha*(pflx_east(j)-cflx_east(j))
+          ub_east(j) = max(ub_mn,ub_east(j))
+          ub_east(j) = min(ub_mx,ub_east(j))
+        enddo
       endif
 
       if (wrt_obc_tune) then
