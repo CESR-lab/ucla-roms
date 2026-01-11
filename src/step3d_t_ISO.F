@@ -861,11 +861,13 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
-          ! Add in the heat of rain water, use the 2m air temperature
-          ! until a better suggestion comes up.
+          ! Add or remove the heat of water, due to evaporation or precipitation
+          ! both effects would work slightly differently. 
+          ! We'll use the actual water temperature to avoid temperature effects
+          ! for the time being untill something better is suggested
           do i=istr,iend
-             t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) +dt*pm(i,j)*pn(i,j)*
-     &            swflx(i,j)*tair(i,j)
+             t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc) +dt*pm(i,j)*pn(i,j)*
+     &            swflx(i,j)*t(i,j,nz,nnew,itrc)
           enddo
 
 
