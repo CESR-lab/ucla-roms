@@ -63,7 +63,7 @@
 
 !  Temperature and salinity are considered 'core' tracers and will always be 
 !  computed. Variable names and attributes are hardcoped and not optional
-The options below should go to a basic_output.opt file
+!  The options below should go to a basic_output.opt file
 
       wrt_t(itemp)     = .true.
       wrt_t_avg(itemp) = .true.
