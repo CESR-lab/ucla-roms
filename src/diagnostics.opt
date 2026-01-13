@@ -27,8 +27,8 @@
 !     integer, parameter         :: output_period = 100   ! output period
       integer, parameter         :: nrpf          = 10       ! total recs per file
 
-      logical, parameter, public :: diag_uv       = .true.    ! Momentum diagnostics
-      logical, parameter, public :: diag_trc      = .true.    ! Selected tracers diagnostics
+      logical, parameter, public :: diag_uv       = .false.   ! Momentum diagnostics
+      logical, parameter, public :: diag_trc      = .false.   ! Selected tracers diagnostics
       logical, parameter, public :: diag_pflx     = .false.   ! Baroclinic pressure fluxes
 
       real,    parameter         :: timescale     = 1*3600*24 ! timescale for filtering (in seconds)

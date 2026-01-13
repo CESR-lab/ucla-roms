@@ -146,11 +146,12 @@
      &               *cdr_vol(icdr)*sum(cdr_prf(cidx,:))
         enddo
       endif
+      ! swflx is in m/s
       do j=jstrV-1,jend !! why are these from ...-1?
         do i=istrU-1,iend
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
-     &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1)
-     &                + swflx(i,j) )
+     &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
+     &                + dtfast*swflx(i,j) 
           if (pipe_source) then          ! If pipe_source is false, the branch will
             if (pipe_idx(i,j) > 0.) then ! be eliminated by compile optimization
               zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)

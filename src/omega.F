@@ -99,7 +99,7 @@ c**     dtau=(1.-1./6.)*dt
         enddo
        ! rain water
         do i=1,nx
-          Wi(i,j,nz) = Wi(i,j,nz) + swflx(i,j)
+          Wi(i,j,nz) = Wi(i,j,nz) + swflx(i,j)*dm_r(i,j)*dn_r(i,j)
         enddo
         do i=istr,iend
           wrk(i)=Wi(i,j,N)/(z_w(i,j,N)-z_w(i,j,0))

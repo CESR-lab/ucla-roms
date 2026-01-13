@@ -865,10 +865,12 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           ! both effects would work slightly differently. 
           ! We'll use the actual water temperature to avoid temperature effects
           ! for the time being untill something better is suggested
-          do i=istr,iend
-             t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc) +dt*pm(i,j)*pn(i,j)*
-     &            swflx(i,j)*t(i,j,nz,nnew,itrc)
-          enddo
+          if (itrc.eq.1) then
+            do i=istr,iend
+               t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)  ! +  dt*pm(i,j)*pn(i,j)*
+     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+            enddo
+          endif
 
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
