@@ -575,10 +575,10 @@
       pry => part(1:np,ipry)
       prz => part(1:np,iprz)
 
-!     do k=0,nz
-!       Wp(:,:,k) = (We(0:nx+1,0:ny+1,k)+Wi(0:nx+1,0:ny+1,k))
-!    &                *pm(0:nx+1,0:ny+1)*pn(0:nx+1,0:ny+1)
-!     enddo
+      do k=0,nz
+        Wp(:,:,k) = (We(0:nx+1,0:ny+1,k)+Wi(0:nx+1,0:ny+1,k))
+     &                *pm(0:nx+1,0:ny+1)*pn(0:nx+1,0:ny+1)
+      enddo
       ! first data at first rho-point, assume no gradient below that
       do ip = 1,np
         if (pz(ip)< 2*nz) then
