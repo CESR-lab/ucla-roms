@@ -15,9 +15,9 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm=920, MMm=480, N=60    ! Pacific 25km grid
+      integer, parameter :: LLm=1840, MMm=960, N=100    
 
-      integer, parameter :: NP_XI = 16, NP_ETA = 8
+      integer, parameter :: NP_XI = 40, NP_ETA =16
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
       ! Defining number of tracers
@@ -41,4 +41,8 @@
 
       integer, parameter :: nt=1+nt_passive+ntrc_bio+ntrc_salt
     
-      
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+      integer, parameter :: NT_sed = 3
+#endif
+
+     

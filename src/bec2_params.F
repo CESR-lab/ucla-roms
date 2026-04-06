@@ -7,6 +7,7 @@
 
 #include "cppdefs.opt"
 #ifdef BIOLOGY_BEC2
+      use param
 
       implicit none
 
@@ -81,6 +82,10 @@
      &        Qp, gQfe_0, gQfe_min, alphaPI, PCref, thetaN_max, loss_thres, loss_thres2,
      &        temp_thres, mort, mort2, agg_rate_max, agg_rate_min, z_umax_0, z_grz,
      &        graze_zoo, graze_poc, graze_doc, loss_poc, f_zoo_detr
+
+# ifdef SED_BUCKET
+       real t_remin_sed(NT_sed)
+#  endif
 
 !-----------------------------------------------------------------------------
 !   Redfield Ratios, dissolved & particulate
@@ -164,8 +169,8 @@
      &   parm_CaCO3_diss         ! base CaCO3 diss len scale
 
        real 
-     &   parm_scalelen_z(4),     ! depths of prescribed scalelen values
-     &   parm_scalelen_vals(4)   ! prescribed scalelen values
+     &   parm_scalelen_z(5),     ! depths of prescribed scalelen values
+     &   parm_scalelen_vals(5)   ! prescribed scalelen values
 
        common /ecosys_bec2/ parm_Fe_bioavail, parm_o2_min, parm_o2_min_delta, parm_lowo2_remin_factor, parm_kappa_nitrif,
      &   parm_nitrif_par_lim, parm_z_mort_0, parm_z_mort2_0, parm_labile_ratio, parm_POMbury,
@@ -427,10 +432,10 @@
       parm_f_prod_sp_CaCO3   = 0.055 ! 2.4% in  Moore et al. 2004 (Upper ocean ...)
       parm_POC_diss          = 105.0 ! 88.0
       parm_SiO2_diss         = 300.0 ! 250.0
-      parm_CaCO3_diss        = 180.0 ! 150.0 (ref was 180.0; Moore et al.,2001 uses 600m)
+      parm_CaCO3_diss        = 340.0 ! 150.0 (ref was 180.0; Moore et al.,2001 uses 600m)
 
-      parm_scalelen_z    = (/ 100.0, 300.0, 600.0, 900.0 /) ! DL: converted to m
-      parm_scalelen_vals = (/   1.0,   3.5,   7.0,   8.5 /) ! (/     1.0,     2.9,     5.6,      5.7 /)
+      parm_scalelen_z    = (/ 100.0, 300.0, 750.0, 1500.0, 2000.0 /)
+      parm_scalelen_vals = (/   2.5,   1.5,   2.0,    3.5,    8.5 /)
 
       ! The following arrays give parameters in this order: sp, diat, diaz
       kFe = (/ 0.025e-3, 0.05e-3, 0.025e-3 /)  ! mmol Fe/m3
@@ -460,6 +465,10 @@
       graze_doc = (/ 0.06, 0.06, 0.06 /)
       loss_poc = (/ 0.0, 0.0, 0.0 /)
       f_zoo_detr = (/ 0.1, 0.2, 0.1 /)
+
+# ifdef SED_BUCKET
+       t_remin_sed = (/ 0.003*dps, 0.003*dps, 0.003*dps /)  ! /d
+#  endif
 
       auto_ind = sp_ind
       sname(auto_ind)         = 'sp'
@@ -505,14 +514,14 @@
       !---------------------------------------------------------------------------
       !   Initialize diagnostic variables:
       !---------------------------------------------------------------------------
-#ifdef BEC2_DIAG
-      bec2_diag_2d = c0
-      bec2_diag_3d = c0
-#  ifdef AVERAGES
-      bec2_diag_3d_avg = c0
-      bec2_diag_2d_avg = c0
-#  endif /* AVERAGES */
-#endif /* BEC2_DIAG */
+!#ifdef BEC2_DIAG
+!      bec2_diag_2d = c0
+!      bec2_diag_3d = c0
+!#  ifdef AVERAGES
+!      bec2_diag_3d_avg = c0
+!      bec2_diag_2d_avg = c0
+!#  endif /* AVERAGES */
+!#endif /* BEC2_DIAG */
 
       !---------------------------------------------------------------------------
       !   Initialize ph for CO2 flux computation :
