@@ -11,6 +11,7 @@
       use mpi
       use roms_mpi
       use obc_tune
+      use pressure_grad
 
 
       implicit none 
@@ -322,6 +323,7 @@ CR      write(*,*)  ' -2' MYID
       use bgc_io
       use tides
       use mixing
+      use pressure_grad
 
       implicit none
 

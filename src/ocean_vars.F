@@ -24,7 +24,10 @@
       real,public,allocatable,dimension(:,:) :: nh_wcor
 #endif
 
-      ! 3D - taken from what was ocean2d.F
+      ! rhs sides for horizontal momentum
+      real,public,allocatable,dimension(:,:,:) :: ru
+      real,public,allocatable,dimension(:,:,:) :: rv
+
 #ifdef SOLVE3D
       real,public,allocatable,dimension(:,:,:,:) :: u
       real,public,allocatable,dimension(:,:,:,:) :: v
@@ -73,8 +76,11 @@
       allocate( nh_wcor(GLOBAL_2D_ARRAY) )
 #endif
 
-
 #ifdef SOLVE3D
+
+      allocate( ru(GLOBAL_2D_ARRAY,nz) )
+      allocate( rv(GLOBAL_2D_ARRAY,nz) )
+
       allocate( u(GLOBAL_2D_ARRAY,N,3) )
       u(:,:,:,1)=init
       u(:,:,:,2)=0.0                             ! index 2 used on rhs u(indx) in pre_step for DC.

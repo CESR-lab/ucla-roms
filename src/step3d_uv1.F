@@ -10,7 +10,7 @@
       integer tile
 
 # include "compute_tile_bounds.h"
-      call step3d_uv1_tile( istr,iend,jstr,jend,    A3d(1,1),A3d(1,2),
+      call step3d_uv1_tile( istr,iend,jstr,jend,  
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                            A2d(1,1),A2d(1,2),A2d(1,3),A2d(1,4),
      &                                              A2d(1,5),A2d(1,6)
@@ -20,7 +20,7 @@
      &                                                              )
       end
 
-      subroutine step3d_uv1_tile( istr,iend,jstr,jend, ru,rv,
+      subroutine step3d_uv1_tile( istr,iend,jstr,jend,
      &                                            WC,FC,CF,DC,
      &                             UFx,UFe,VFx,VFe, wrk1,wrk2 
 # ifdef NHMG
@@ -50,7 +50,7 @@
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
+!     real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe,
      &                                                   wrk1,wrk2
