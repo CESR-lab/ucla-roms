@@ -4,21 +4,21 @@
 
       ! note: choice of bgc tracers to output is still selected in tracers.opt.
 
-      logical,parameter :: wrt_his           = .false.             ! t/f to write module history file
-      real,parameter    :: output_period_his = 60*60        ! output period in seconds
-      integer,parameter :: nrpf_his          = 24                  ! total recs per file
+      logical,parameter :: wrt_his           = .true.             ! t/f to write module history file
+      real,parameter    :: output_period_his = 30*24*60*60        ! output period in seconds
+      integer,parameter :: nrpf_his          = 2                  ! total recs per file
       
       logical,parameter :: wrt_avg           = .true.             ! t/f to write module averages file
-      real,parameter    :: output_period_avg = 2635200        ! output averaging period in seconds 2635200
-      integer,parameter :: nrpf_avg          = 12                  ! total recs per file
+      real,parameter    :: output_period_avg = 30*24*60*60        ! output averaging period in seconds
+      integer,parameter :: nrpf_avg          = 1                  ! total recs per file
 
       logical,parameter :: wrt_his_dia           = .false.        ! t/f to write module history file
-      real,parameter    :: output_period_his_dia = 60*60  ! output period in seconds
-      integer,parameter :: nrpf_his_dia          = 24             ! total recs per file
+      real,parameter    :: output_period_his_dia = 2635200  ! output period in seconds
+      integer,parameter :: nrpf_his_dia          = 13             ! total recs per file
 
       logical,parameter :: wrt_avg_dia           = .true.         ! t/f to write module history file
-      real,parameter    :: output_period_avg_dia = 2635200    ! output period in seconds 2635200
-      integer,parameter :: nrpf_avg_dia          = 12              ! total recs per file
+      real,parameter    :: output_period_avg_dia = 30*24*60*60    ! output period in seconds
+      integer,parameter :: nrpf_avg_dia          = 1              ! total recs per file
 
       integer, parameter :: nbgc_flx = 2                   ! number of surface bgc flux forcings
 #ifdef PCO2AIR_FORCING
@@ -50,7 +50,6 @@
 #ifdef FESEDFLUX_FORCING
       type (ncforce) :: nc_fesedflux        = ncforce(vname='fesedflux', tname='fesedflux_time' )
 #endif
-
 
 !#include "bgc_tracers.h"
 !#include "bgc_bio_diag.h"
