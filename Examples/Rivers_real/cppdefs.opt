@@ -12,7 +12,7 @@
 
 c--# define DIAGNOSTICS
 c--# define TIDES
-# define BULK_FRC
+c--# define BULK_FRC
 # define SPONGE_TUNE
 
 c--# define SFLX_CORR
