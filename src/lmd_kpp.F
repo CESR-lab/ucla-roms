@@ -162,8 +162,9 @@
 #   endif /* BULK_FRC */
 
           hbl(i,j)=hbls(i,j)     ! use old-time-step values
+# ifdef LMD_BKPP          
           bbl(i,j)=hbbl(i,j)     ! as the initial guess
-
+# endif
           kbls(i)=0
           Cr(i,N)=0.
           Cr(i,0)=0.
@@ -228,7 +229,7 @@
 
 c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
-            Vtsq=Vtc*ws*sqrt(max(0., bvf(i,j,k-1) ))  !<-- fix by Gokhan
+            Vtsq=1.8*Vtc*ws*sqrt(max(1.e-5, bvf(i,j,k-1) ))  !<-- fix by Jeroen
 
             Cr(i,k)=FC(i,k)+Vtsq
 
@@ -416,7 +417,7 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
 #  ifdef LMD_NONLOCAL
               if (Bfsfc < 0.) then
-                ghat(i,j,k)=Cg * ssgm*(1.-ssgm)**2
+                ghat(i,j,k)=-Cg * ssgm*(1.-ssgm)**2
               else
                 ghat(i,j,k)=0.
               endif

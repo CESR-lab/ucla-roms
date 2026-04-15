@@ -1056,7 +1056,9 @@
       endif
 
 #if defined MPI && defined PARALLEL_FILES
-      if (nnodes<10) then
+      if (nnodes==1) then
+        indxstr = ' '
+      elseif (nnodes<10) then
         write(indxstr,'(A,I0.1)') '.',mynode
       elseif (nnodes<100) then
         write(indxstr,'(A,I0.2)') '.',mynode
@@ -1101,7 +1103,10 @@
 
 
 #if defined MPI && defined PARALLEL_FILES
-      if (nnodes<10) then
+      if (nnodes==1) then  ! single subdomain
+        print *,' single node'
+        indxstr = ' '
+      elseif (nnodes<10) then
         write(indxstr,'(A,I0.1)') '.',mynode
       elseif (nnodes<100) then
         write(indxstr,'(A,I0.2)') '.',mynode

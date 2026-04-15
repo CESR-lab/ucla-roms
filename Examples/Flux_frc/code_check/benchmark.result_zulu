@@ -191,8 +191,8 @@
 20  4.1948823828322499E-03 2.7589337172227116E-03 2.0006208779596948E-01 1.9155410900171899E-01
        ocean_vars :: wrote history, tdays =   4726.5703  step =     20 rec =   2
        surf_flux :: wrote surface flux, tdays =   4726.5703  step =     20 rec =   2
- Process    0  thread  0  cpu time =        2.28 sec
+ Process    0  thread  0  cpu time =        2.32 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   2.30260481871665     
+ MPI_run_time =   2.34217453375459     
