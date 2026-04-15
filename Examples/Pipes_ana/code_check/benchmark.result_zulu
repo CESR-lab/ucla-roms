@@ -35,13 +35,13 @@
  -----------
  TRACER NO.:            1
  SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
+ LONG NAME: Potential temperature                                       
  UNITS: Celsius                                   
  -----------
  -----------
  TRACER NO.:            2
  SHORT NAME: salt                                      
- LONG NAME: salinity                                                    
+ LONG NAME: Salinity                                                    
  UNITS: PSU                                       
  -----------
 
@@ -128,4 +128,4 @@
 
  MAIN: DONE - Records written:
 
- MPI_run_time =  0.113235600292683     
+ MPI_run_time =  0.117228904739022     

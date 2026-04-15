@@ -772,13 +772,13 @@ we successfully read and closed marbl_tracers_output_list
  -----------
  TRACER NO.:            1
  SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
+ LONG NAME: Potential temperature                                       
  UNITS: Celsius                                   
  -----------
  -----------
  TRACER NO.:            2
  SHORT NAME: salt                                      
- LONG NAME: salinity                                                    
+ LONG NAME: Salinity                                                    
  UNITS: PSU                                       
  -----------
  -----------
@@ -1522,7 +1522,7 @@ we successfully read and closed marbl_diagnostic_output_list
 
 
   STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
- 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263777680990899E-01 4.2518890443653429E-01
+ 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263851886338721E-01 4.2518964649001245E-01
          set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_east        input time (days) =   4726.59     rec =   2
@@ -1531,11 +1531,11 @@ we successfully read and closed marbl_diagnostic_output_list
          set_frc :: zeta_north       input time (days) =   4726.59     rec =   2
          set_frc :: zeta_south       input time (days) =   4726.57     rec =   1
          set_frc :: zeta_south       input time (days) =   4726.59     rec =   2
- 1  4.2294649427074126E-03 2.7899249149122363E-03 4.0042803391422283E-01 3.7077050964273728E-01
- 2  4.2260368092595403E-03 2.7864445921635039E-03 2.9727922378774657E-01 1.5941240331124246E-01
- 3  4.2221100836905357E-03 2.7823576888627403E-03 4.4126761135548132E-01 3.3094586966577638E-01
- 4  4.2168950899162455E-03 2.7770327976178334E-03 2.0939287143076704E-01 2.0939287143076704E-01
- 5  4.2148427252093629E-03 2.7748455829128436E-03 2.3177772974947017E-01 1.2055846617075580E-01
+ 1  4.2294649419793084E-03 2.7899249134862754E-03 4.0043040055580725E-01 3.7077293924717214E-01
+ 2  4.2260537539218898E-03 2.7864446009272605E-03 2.9727946168572034E-01 1.5941260680203986E-01
+ 3  4.2221437686353093E-03 2.7823577082437853E-03 4.4126943472354863E-01 3.3094756543607645E-01
+ 4  4.2169454316009622E-03 2.7770328277468732E-03 2.0939450813902180E-01 2.0939450813902180E-01
+ 5  4.2149097752360682E-03 2.7748456343601501E-03 2.3177853271542842E-01 1.2055935161006902E-01
        ocean_vars :: wrote history, tdays =   4726.5668  step =      5 rec =   2
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -1571,11 +1571,11 @@ we successfully read and closed marbl_diagnostic_output_list
        wrt_bgc_tracers :: history , trc =  diazFe                                    
        bgc :: wrote history, tdays =   4726.5668  step =      4 rec =   2
        bgc diag :: wrote history, tdays =   4726.5668  step =      5 rec =   2
- 6  4.2141807088764242E-03 2.7739735773438441E-03 2.9069644503673092E-01 2.1955151827673103E-01
- 7  4.2139920807293309E-03 2.7735802977519688E-03 2.0214490862936307E-01 1.9394271875158992E-01
- 8  4.2156532086182544E-03 2.7750160038102784E-03 2.5068715396035141E-01 1.3721844165964572E-01
- 9  4.2164876344549145E-03 2.7755699818956250E-03 2.8034690520509153E-01 2.1844972183515099E-01
-10  4.2154094834940866E-03 2.7742159588878580E-03 2.0239006508889890E-01 1.9396086104063082E-01
+ 6  4.2142643242234100E-03 2.7739736490761105E-03 2.9069895489265390E-01 2.1955388057736006E-01
+ 7  4.2140919096186847E-03 2.7735803844070100E-03 2.0219283448211034E-01 1.9399144246959649E-01
+ 8  4.2157691655039051E-03 2.7750161068176658E-03 2.5068799336046999E-01 1.3721930776088095E-01
+ 9  4.2166196637851089E-03 2.7755701116770662E-03 2.8034993678505465E-01 2.1845246090348222E-01
+10  4.2155574498670152E-03 2.7742161158165095E-03 2.0246052218298527E-01 1.9403247324101935E-01
        ocean_vars :: wrote history, tdays =   4726.5680  step =     10 rec =   3
        wrt_bgc_tracers :: history , trc =  PO4                                       
        wrt_bgc_tracers :: history , trc =  NO3                                       
@@ -1615,4 +1615,4 @@ we successfully read and closed marbl_diagnostic_output_list
 
  MAIN: DONE - Records written:
 
- MPI_run_time =   8.89913327991962     
+ MPI_run_time =   8.90404633432627     
