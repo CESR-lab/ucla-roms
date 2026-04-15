@@ -162,8 +162,9 @@
 #   endif /* BULK_FRC */
 
           hbl(i,j)=hbls(i,j)     ! use old-time-step values
+# ifdef LMD_BKPP          
           bbl(i,j)=hbbl(i,j)     ! as the initial guess
-
+# endif
           kbls(i)=0
           Cr(i,N)=0.
           Cr(i,0)=0.
