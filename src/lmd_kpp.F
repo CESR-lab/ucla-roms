@@ -162,8 +162,9 @@
 #   endif /* BULK_FRC */
 
           hbl(i,j)=hbls(i,j)     ! use old-time-step values
+# ifdef LMD_BKPP          
           bbl(i,j)=hbbl(i,j)     ! as the initial guess
-
+# endif
           kbls(i)=0
           Cr(i,N)=0.
           Cr(i,0)=0.
@@ -229,7 +230,6 @@
 c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
             Vtsq=1.8*Vtc*ws*sqrt(max(1.e-5, bvf(i,j,k-1) ))  !<-- fix by Jeroen
-!            Vtsq=Vtc*ws*sqrt(max(0., bvf(i,j,k-1) ))        !<-- fix by Gokhan
 
             Cr(i,k)=FC(i,k)+Vtsq
 
