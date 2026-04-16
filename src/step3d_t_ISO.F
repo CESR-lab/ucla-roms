@@ -70,6 +70,7 @@ c--# define CONST_TRACERS
       use ocean_vars
       use scalars
       use roms_mpi
+      use bulk_frc, only: tair
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
@@ -863,12 +864,14 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
           ! Add or remove the heat of water, due to evaporation or precipitation
           ! both effects would work slightly differently. 
-          ! We'll use the actual water temperature to avoid temperature effects
+          ! We started with the actual water temperature to avoid temperature effects
+          ! But it is unstable so swtich to air temperature
           ! for the time being untill something better is suggested
           if (itrc.eq.1) then
             do i=istr,iend
                t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)  ! +  dt*pm(i,j)*pn(i,j)*
-     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+     &            + dt*swflx(i,j)*tair(i,j)
+!     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
             enddo
           endif
 
