@@ -38,6 +38,7 @@ jobs:
           ROMS_ROOT=$(pwd)
           echo "ROMS_ROOT=$ROMS_ROOT" >> $GITHUB_ENV
           echo "PATH=./:$PATH:$ROMS_ROOT/Tools-Roms" >> $GITHUB_ENV
+          echo "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" >> $GITHUB_ENV
 
       - name: Print system info
         run: lscpu

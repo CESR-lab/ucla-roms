@@ -224,7 +224,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
 
       do k=nz,1,-1
         do j=1,ny
-          do i=-1,nx+2
+          do i=0,nx+1
             FC(i,j)=(z_r(i,j,k)-z_r(i-1,j,k))
 # ifdef MASKING
      &                              *umask(i,j)
@@ -325,7 +325,7 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
 ! ETA-component of pressure gradient term:
 !-------------- -- -------- -------- -----
 
-        do j=-1,ny+2
+        do j= 0,ny+1
           do i=1,nx
             FC(i,j)=(z_r(i,j,k)-z_r(i,j-1,k))
 # ifdef MASKING
