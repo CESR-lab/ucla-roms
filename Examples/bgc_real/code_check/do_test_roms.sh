@@ -22,6 +22,9 @@ esac
 BGC_MODEL=$2
 
 bm_file="benchmark.result_$1"                    # set benchmark specific to machine (maya/expanse)
+if [ -f "${bm_file}_${BGC_MODEL}" ]; then         # prefer per-BGC-model benchmark if present
+    bm_file="${bm_file}_${BGC_MODEL}"
+fi
 echo "$bm_file"
 
 echo "Running bgc_real test with ${BGC_MODEL}"
