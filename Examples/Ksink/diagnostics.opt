@@ -18,6 +18,9 @@
       !        averaging is expensive and will likely slow your simulation by 30-40%
       !        with u, v, temp and salinity diagnostics.
       !     6) history (snap-shot) diagnostics is relatively inexpensive.
+
+      ! normalization should typically be on for 3d budgets and off for vertically integrated versions
+      logical, parameter,public  :: diag_norm     = .true.   ! Normalization of diagnostic terms
       
       logical, parameter         :: diag_avg      = .true.    ! compute history (=F) or averages (=T)
       integer, parameter         :: output_period = 400       ! output period

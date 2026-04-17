@@ -1,16 +1,12 @@
 #include "cppdefs.opt"
-#ifdef SOLVE3D
 
       subroutine prsgrd
       use param
       use roms_mpi
       use private_scratch
       implicit none
-      integer,save:: tile=0
 
-# include "compute_tile_bounds.h"
-      call prsgrd_tile(istr,iend,jstr,jend,  A3d(1,1),A3d(1,2),
-     &                                                      A3d(1,3),
+      call prsgrd_tile(A3d(1,1),A3d(1,2),A3d(1,3),
 # ifdef SPLIT_EOS
      &                                                      A3d(1,4),
 # endif
@@ -22,7 +18,7 @@
      &                                                             )
       end
 
-      subroutine prsgrd_tile(istr,iend,jstr,jend, ru,rv, P,
+      subroutine prsgrd_tile(ru,rv,P,
 # ifdef SPLIT_EOS
      &                                                       rho,
 # endif
@@ -46,16 +42,16 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k, imin,imax,jmin,jmax
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: ru,rv, P
+      integer i,j,k
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,nz) :: ru,rv, P
 # ifdef SPLIT_EOS
      &                                                    , rho
       real dpth
 # endif
 # ifdef NHMG
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: rw
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:nz) :: rw
 # endif
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: dR,dZ
+      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:nz) :: dR,dZ
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: FC,dZx,rx,dRx
 
       real grho, HalfGRho, cff, cfr
@@ -107,38 +103,38 @@
 ! (see above) to zero makes scheme become identical to the standard
 ! POM density Jacobian.
 
-# include "compute_auxiliary_bounds.h"
+!!!!!!# include "compute_auxiliary_bounds.h"
 
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then          ! Restrict extended ranges by
-        imin=istrU                    ! one row of points inward near
-      else                            ! the physical boundaries.
-        imin=istrU-1
-      endif                           ! Note that in the code below
-      if (EASTERN_EDGE) then          ! imin,imax appear only in the
-        imax=iend                     ! context of XI-component, while
-      else                            ! jmin,jmax only for ETA.
-        imax=iend+1
-      endif
-# else
-      imin=istr-1
-      imax=iend+1
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        jmin=jstrV
-      else
-        jmin=jstrV-1
-      endif
-      if (NORTHERN_EDGE) then
-        jmax=jend
-      else
-        jmax=jend+1
-      endif
-# else
-      jmin=jstr-1
-      jmax=jend+1
-# endif
+!# ifndef EW_PERIODIC
+!     if (WESTERN_EDGE) then          ! Restrict extended ranges by
+!       imin=istrU                    ! one row of points inward near
+!     else                            ! the physical boundaries.
+!       imin=istrU-1
+!     endif                           ! Note that in the code below
+!     if (EASTERN_EDGE) then          ! imin,imax appear only in the
+!       imax=iend                     ! context of XI-component, while
+!     else                            ! jmin,jmax only for ETA.
+!        imax=iend+1
+!      endif
+!# else
+!      imin=istr-1
+!      imax=iend+1
+!# endif
+!# ifndef NS_PERIODIC
+!      if (SOUTHERN_EDGE) then
+!        jmin=jstrV
+!      else
+!        jmin=jstrV-1
+!      endif
+!      if (NORTHERN_EDGE) then
+!        jmax=jend
+!      else
+!        jmax=jend+1
+!      endif
+!# else
+!      jmin=jstr-1
+!      jmax=jend+1
+!# endif
 
 ! Preliminary step (same for XI- and ETA-components):
 !------------ ---- ----- --- --- --- ----------------
@@ -191,12 +187,12 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           enddo
         enddo
 
-        do i=istrU-1,iend
-          P(i,j,N)=g*z_w(i,j,N) + grho*( rho(i,j,N)
-     &       +0.5*(rho(i,j,N)-rho(i,j,N-1))*(z_w(i,j,N)-z_r(i,j,N))
-     &          /(z_r(i,j,N)-z_r(i,j,N-1)) )*(z_w(i,j,N)-z_r(i,j,N))
+        do i=0,nx
+          P(i,j,nz)=g*z_w(i,j,nz) + grho*( rho(i,j,nz)
+     &       +0.5*(rho(i,j,nz)-rho(i,j,nz-1))*(z_w(i,j,nz)-z_r(i,j,nz))
+     &          /(z_r(i,j,nz)-z_r(i,j,nz-1)) )*(z_w(i,j,nz)-z_r(i,j,nz))
           if (pot_tides) then
-            P(i,j,N) = P(i,j,N) - g*ptide(i,j)
+            P(i,j,nz) = P(i,j,nz) - g*ptide(i,j)
           endif
         enddo
         if (CORR_STAGE.and.calc_diag.and.diag_uv) then
@@ -209,7 +205,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           enddo
         endif
         do k=nz-1,1,-1
-          do i=istrU-1,iend
+          do i= 0,nx
             P(i,j,k)=P(i,j,k+1)+HalfGRho*( (rho(i,j,k+1)+rho(i,j,k))
      &                                     *(z_r(i,j,k+1)-z_r(i,j,k))
 
@@ -226,9 +222,9 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
 ! Compute XI-component of pressure gradient term:
 !-------- ------------ -- -------- -------- -----
 
-      do k=N,1,-1
-        do j=jstr,jend
-          do i=imin,imax
+      do k=nz,1,-1
+        do j=1,ny
+          do i=-1,nx+2
             FC(i,j)=(z_r(i,j,k)-z_r(i-1,j,k))
 # ifdef MASKING
      &                              *umask(i,j)
@@ -251,23 +247,22 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
           enddo
         enddo
 
-# ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then         ! Extrapolate elementary
-          do j=jstr,jend               ! differences near physical
-            FC(imin-1,j)=FC(imin,j)    ! boundaries to compensate.
-            rx(imin-1,j)=rx(imin,j)    ! for reduced loop ranges.
+        ! Extrapolate near physical boundaries
+        if (inode.eq.0.and.(.not.ew_periodic)) then
+          do j=1,ny          
+            FC(1,j)=FC(2,j) 
+            rx(1,j)=rx(2,j)
           enddo
         endif
-        if (EASTERN_EDGE) then
-          do j=jstr,jend
-            FC(imax+1,j)=FC(imax,j)
-            rx(imax+1,j)=rx(imax,j)
+        if (inode.eq.npx-1.and.(.not.ew_periodic)) then
+          do j=1,ny
+            FC(nx+1,j)=FC(nx,j)
+            rx(nx+1,j)=rx(nx,j)
           enddo
         endif
-# endif
 
-        do j=jstr,jend
-          do i=istrU-1,iend
+        do j=1,ny
+          do i=0,nx
             cff=2.*FC(i,j)*FC(i+1,j)
             if (cff > epsil) then
               dZx(i,j)=cff/(FC(i,j)+FC(i+1,j))
@@ -287,7 +282,7 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
 # endif
           enddo               !--> discard FC, rx
 
-          do i=istrU,iend
+          do i=1,nx
             ru(i,j,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)*(
      &                              P(i-1,j,k)-P(i,j,k)-HalfGRho*(
 
@@ -305,25 +300,15 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
 # ifdef ADV_ISONEUTRAL
         if (CORR_STAGE) then   !<-- corrector stage only
           r0g=rho0/g
-          do j=jstr,jend
-            do i=istr,iendR
+          do j=1,ny
+            do i=1,i1
 #define ISO
 #  ifdef ISO
-c              dRdx(i,j,k)=-0.5*(pm(i,j)+pm(i-1,j))*rx(i,j)
-
               dRdx(i,j,k)=0.5*(pm(i,j)+pm(i-1,j))*(
      &                     r0g*0.25*(f(i,j)+f(i-1,j))**2
      &                        *(z_r(i,j,k)-z_r(i-1,j,k))
 
-c    &                  -rx(i,j)
-
-c    &          -0.5*rx(i,j)-0.25*(dRx(i,j)+dRx(i-1,j))
-
-c    &                       -0.5*(dRx(i,j)+dRx(i-1,j))
-
      &          -0.5*rx(i,j)-0.25*(rx(i-1,j)+rx(i+1,j))
-
-c    &        -0.75*rx(i,j)-0.125*(rx(i-1,j)+rx(i+1,j))
 
      &                                                )
 #  else
@@ -340,8 +325,8 @@ c    &        -0.75*rx(i,j)-0.125*(rx(i-1,j)+rx(i+1,j))
 ! ETA-component of pressure gradient term:
 !-------------- -- -------- -------- -----
 
-        do j=jmin,jmax
-          do i=istr,iend
+        do j=-1,ny+2
+          do i=1,nx
             FC(i,j)=(z_r(i,j,k)-z_r(i,j-1,k))
 # ifdef MASKING
      &                              *vmask(i,j)
@@ -364,23 +349,27 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
           enddo
         enddo
 
-# ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          do i=istr,iend
-            FC(i,jmin-1)=FC(i,jmin)
-            rx(i,jmin-1)=rx(i,jmin)
-          enddo
-        endif
-        if (NORTHERN_EDGE) then
-          do i=istr,iend
-            FC(i,jmax+1)=FC(i,jmax)
-            rx(i,jmax+1)=rx(i,jmax)
-          enddo
-        endif
-# endif
+        ! WE: imin = istr+1 = 2
+        ! IN: imin = istr-2 = -1
+        ! EE: imax = nx
+        ! in: imax = nx+1
 
-        do j=jstrV-1,jend
-          do i=istr,iend
+        ! Extrapolate near physical boundaries
+        if (jnode.eq.0.and.(.not.ns_periodic)) then
+          do i=1,nx
+            FC(i,1)=FC(i,2)
+            rx(i,1)=rx(i,2)
+          enddo
+        endif
+        if (jnode.eq.npy-1.and.(.not.ns_periodic)) then
+          do i=1,nx
+            FC(i,ny+1)=FC(i,ny)
+            rx(i,ny+1)=rx(i,ny)
+          enddo
+        endif
+
+        do j=0,ny
+          do i=1,nx
             cff=2.*FC(i,j)*FC(i,j+1)
             if (cff > epsil) then
               dZx(i,j)=cff/(FC(i,j)+FC(i,j+1))
@@ -400,8 +389,7 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
 # endif
           enddo               !--> discard FC, rx
 
-          if (j >= jstrV) then
-            do i=istr,iend
+          do i=1,nx
               rv(i,j,k)=0.5*(Hz(i,j,k)+Hz(i,j-1,k))*dm_v(i,j)*(
      &                             P(i,j-1,k)-P(i,j,k) -HalfGRho*(
 
@@ -414,15 +402,14 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
      &                            -OneTwelfth*(dRx(i,j)+dRx(i,j-1)) )
      &                                                            )))
 
-            enddo
-          endif
+          enddo
         enddo   ! <-- j
 
 # ifdef ADV_ISONEUTRAL
         if (CORR_STAGE) then   !<-- corrector stage only
           r0g=rho0/g
-          do j=jstr,jendR
-            do i=istr,iend
+          do j=1,j1
+            do i=1,nx
 #ifdef ISO
 c              dRde(i,j,k)=-0.5*(pn(i,j)+pn(i,j-1))*rx(i,j)
 
@@ -485,9 +472,9 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 !
 !     We are re-using dR as a work array
 
-      do j=Jstr,Jend
-         do k = 1,N
-            do i=Istr,Iend
+      do j=1,ny
+         do k =1,nz
+            do i=1,nx
               dR(i,k) = dzdxi(i,j,k) *(
      $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k))
      $            + ru(i+1,j,k  )/(Hz(i,j,k)+Hz(i+1,j,k)))
@@ -498,13 +485,13 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
          enddo
 
          !! rw is a V*dwdt units object (m4/s2), just like ru, rv
-         do k = 1,N-1
-            do i=Istr,Iend
+         do k = 1,nz-1
+            do i=1,nx
               rw(i,j,k)=-0.25*(dR(i,k+1)+dR(i,k))*(Hz(i,j,k+1)+Hz(i,j,k))
             enddo
          enddo
-         do i=Istr,Iend
-            rw(i,j,N) = -0.5*dR(i,N)*Hz(i,j,N)
+         do i=1,nx
+            rw(i,j,nz) = -0.5*dR(i,nz)*Hz(i,j,nz)
          enddo
       enddo
       if (diag_w.and.calc_diag) then
@@ -523,27 +510,27 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
       !! JM We should be able to add these term directly to the
       !! hydrostatic pressure above
       !! In addition, instead of K, we should compute  ust.u_z in place
-      do k=N,1,-1           !--> irreversible
-        if (k.eq.N) then
-          do j=jstrV-1,jend
-            do i=istrU-1,iend
-              FC(i,j)=-(z_w(i,j,N)-z_r(i,j,N))
-     &                          *(1.5*kvf(i,j,N)-0.5*kvf(i,j,N-1))
-     &          *(z_w(i,j,N)-z_r(i,j,N))/(z_r(i,j,N)-z_r(i,j,N-1))
+      do k=nz,1,-1           !--> irreversible
+        if (k.eq.nz) then
+          do j=0,ny
+            do i=0,nx
+              FC(i,j)=-(z_w(i,j,nz)-z_r(i,j,nz))
+     &                          *(1.5*kvf(i,j,nz)-0.5*kvf(i,j,nz-1))
+     &          *(z_w(i,j,nz)-z_r(i,j,nz))/(z_r(i,j,nz)-z_r(i,j,nz-1))
               DC(i,j)=-g*sup(i,j)-calP(i,j)+Kapsrf(i,j)  !! additional surface pressure gradient
             enddo
           enddo
         else
-          do j=jstrV-1,jend
-            do i=istrU-1,iend
+          do j=0,ny
+            do i=0,nx
               FC(i,j)=FC(i,j)-0.5*(kvf(i,j,k+1)+kvf(i,j,k))
      &                           *(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
         endif
 
-        do j=jstr,jend
-          do i=istrU,iend
+        do j=1,ny
+          do i=1,nx
             cff  = 0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
             cff1 = cff*( FC(i-1,j)-FC(i,j) +0.5*( kvf(i,j,k)
      &           +kvf(i-1,j,k) )*(z_r(i,j,k)-z_r(i-1,j,k)) )
@@ -551,8 +538,8 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             ru(i,j,k)=ru(i,j,k) + cff1 + cff2
           enddo
         enddo
-        do j=jstrV,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             cff  = 0.5*(Hz(i,j,k)+Hz(i,j-1,k))*dm_v(i,j)
             cff1 = cff*( FC(i,j-1)-FC(i,j) +0.5*( kvf(i,j,k)
      &           +kvf(i,j-1,k) )*(z_r(i,j,k)-z_r(i,j-1,k)) )
@@ -565,9 +552,3 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 #endif /* WEC */
 
       end
-
-
-#else
-      subroutine prsgrd_empty
-      end
-#endif /* SOLVE3D */
