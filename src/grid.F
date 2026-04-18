@@ -56,10 +56,8 @@
       real,allocatable,dimension(:,:) :: hinv
       real,allocatable,dimension(:,:) :: f
       real,allocatable,dimension(:,:) :: fomn
-# ifdef NON_TRADITIONAL
       real,allocatable,dimension(:,:) :: f_XI
       real,allocatable,dimension(:,:) :: f_ETA
-# endif
 
       real,allocatable,dimension(:,:) :: angler
 
