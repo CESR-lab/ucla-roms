@@ -57,9 +57,7 @@ c      write(*,*) 'kmp_stacksize =', size
       hmin=+1.E+20   ; hmax=-1.E+20     ! Set extreme values to large
       grdmin=+1.E+20 ; grdmax=-1.E+20   ! unrealistic numbers, positive
       Cg_min=+1.E+20 ; Cg_max=-1.E+20   ! or negative, depending on the
-#ifdef SOLVE3D
-      rx0=-1.E+20    ; rx1=-1.E+20      ! context.
-#endif
+                                        ! context.
       bc_crss=QuadZero
                              ! Set slipperness parameter to "free slip"
       gamma2=1.              ! along the straight boundaries: this may

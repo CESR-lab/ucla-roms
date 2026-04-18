@@ -43,11 +43,8 @@
         call init_tracers
 #endif
         if (ierr == 0) then
-C$        call omp_set_dynamic(.false.)
-C$OMP PARALLEL                           ! fast-time averaging weights
-          call roms_thread               ! for barotropic mode, and
-C$OMP END PARALLEL                       ! launch the model in OpenMP
-        endif                            ! parallel regime.
+          call roms_thread
+        endif
 #ifdef NHMG  
       ! write nhmg statistics to fort.10
       call nhmg_clean()
@@ -82,14 +79,11 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
         if (diag_sync .and. may_day_flag /= 0) goto 99
       enddo
   99  call stop_timers()                 ! summarized among all nodes
-      if (may_day_flag /=0) 
+      if (may_day_flag /=0)
      &  call wrt_his_ocean_vars(.true.)  ! Emergency history file output
-C$OMP BARRIER                            ! and broadcasted by "diag"
-C$OMP MASTER                             ! [which sets diag_sync=T to
-      call closecdf                      ! signal that "may_day_flag"
-C$OMP END MASTER                         ! is in uniform state]. This
-      return                             ! is THE ONLY route to exit
-      end                                ! if something goes wrong.
+      call closecdf                      ! and broadcasted by "diag"
+      return                             ! [which sets diag_sync=T to
+      end                                ! signal uniform state].
 #endif
 
       subroutine roms_init
@@ -118,23 +112,16 @@ C$OMP END MASTER                         ! is in uniform state]. This
       implicit none
 
       integer trd, tile, my_first, my_last, range
-C$    integer omp_get_thread_num, omp_get_num_threads
       integer ierr
 
       numthreads=1 ; trd=0
-C$    numthreads=omp_get_num_threads()
-C$    trd=omp_get_thread_num()
       proc(2)=trd
 
       if (mod(NSUB_X*NSUB_E,numthreads) /= 0) then
-C$OMP MASTER
         mpi_master_only write(*,'(/3(1x,A,I3),A/)')
      &    '### ERROR: Wrong choice of numthreads =', numthreads,
-c        endif
      &         'while NSUB_X =', NSUB_X, 'NSUB_E =', NSUB_E,'.'
         may_day_flag=8
-C$OMP END MASTER
-C$OMP BARRIER
         goto 99 !-->  EXIT
       endif
                                        ! NOTE: This code is written
@@ -155,13 +142,10 @@ C$OMP BARRIER
       do tile=my_tile_range              ! Initialize or "first touch"
         call init_arrays(tile,my_first)  ! global arrays (most of them
       enddo                              ! are just set to to zero).
-C$OMP BARRIER
 
 #ifdef SOLVE3D
-C$OMP MASTER                           ! Setup vertical stretching
-      call set_scoord                  ! functions for S-coordinate
-C$OMP END MASTER                       ! system
-C$OMP BARRIER
+      call set_scoord                  ! Setup vertical stretching
+                                       ! functions for S-coordinate
       if (may_day_flag /= 0) goto 99
 #endif
       
@@ -178,12 +162,10 @@ C$OMP BARRIER
       do tile=my_tile_range            ! Compute various metric terms
         call setup_grid1(tile)         ! and their combinations.
       enddo
-C$OMP BARRIER
 CR      write(*,*) '-10' MYID
       do tile=my_tile_range
         call setup_grid2(tile)
       enddo
-C$OMP BARRIER
 CR      write(*,*) '-9' MYID
 
 CR      write(*,*) ' -8' MYID
@@ -195,12 +177,8 @@ CR      write(*,*) ' -8' MYID
         call swr_frac(tile)            ! may be needed by ana_init.
 # endif
       enddo
-C$OMP BARRIER                          ! Here it is assumed that free
-      do tile=my_tile_range            ! surface zeta is at rest state,
-        call grid_stiffness(tile)      ! zeta=0). Also find and report
-      enddo                            ! extremal values of topographic
-C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
-CR      write(*,*) ' -6' MYID
+      call grid_stiffness              ! Report topographic slope
+                                       ! parameters rx0, rx1
 #endif
 
 # if defined(BIOLOGY_BEC2)
@@ -257,7 +235,6 @@ CR      write(*,*)  ' -4' MYID
       do tile=my_tile_range
         call set_HUV
       enddo
-C$OMP BARRIER
 CR      write(*,*)  ' -3' MYID
 
       call omega

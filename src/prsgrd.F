@@ -103,39 +103,6 @@
 ! (see above) to zero makes scheme become identical to the standard
 ! POM density Jacobian.
 
-!!!!!!# include "compute_auxiliary_bounds.h"
-
-!# ifndef EW_PERIODIC
-!     if (WESTERN_EDGE) then          ! Restrict extended ranges by
-!       imin=istrU                    ! one row of points inward near
-!     else                            ! the physical boundaries.
-!       imin=istrU-1
-!     endif                           ! Note that in the code below
-!     if (EASTERN_EDGE) then          ! imin,imax appear only in the
-!       imax=iend                     ! context of XI-component, while
-!     else                            ! jmin,jmax only for ETA.
-!        imax=iend+1
-!      endif
-!# else
-!      imin=istr-1
-!      imax=iend+1
-!# endif
-!# ifndef NS_PERIODIC
-!      if (SOUTHERN_EDGE) then
-!        jmin=jstrV
-!      else
-!        jmin=jstrV-1
-!      endif
-!      if (NORTHERN_EDGE) then
-!        jmax=jend
-!      else
-!        jmax=jend+1
-!      endif
-!# else
-!      jmin=jstr-1
-!      jmax=jend+1
-!# endif
-
 ! Preliminary step (same for XI- and ETA-components):
 !------------ ---- ----- --- --- --- ----------------
 
