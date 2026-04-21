@@ -376,7 +376,7 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
           rhoS(i,j)=2.*cff*cff*cff1*rhoS(i,j)
         enddo
 # endif         /* VAR_RHO_2D */
-# ifdef NON_TRADITIONAL
+# ifdef NONTRAD_COR
         cff=0.5*rho0/g
         do k=1,N
           do i=istrR,iendR

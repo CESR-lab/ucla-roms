@@ -123,7 +123,7 @@
       allocate( hinv(GLOBAL_2D_ARRAY) ) ; hinv= 1./5       ! before only rmask was set in init_arrays...
       allocate( f(GLOBAL_2D_ARRAY) )    ; f = 0
       allocate( fomn(GLOBAL_2D_ARRAY) ) ; fomn= 0
-# ifdef NON_TRADITIONAL
+# ifdef NONTRAD_COR
       allocate( f_XI(GLOBAL_2D_ARRAY) )  ; f_XI = 0
       allocate( f_ETA(GLOBAL_2D_ARRAY) ) ; f_ETA =0
 # endif

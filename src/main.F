@@ -13,7 +13,7 @@
       use obc_tune
 
 
-      implicit none 
+      implicit none
       integer :: ierr
       real*8 tstart, tend
 
@@ -45,7 +45,7 @@
         if (ierr == 0) then
           call roms_thread
         endif
-#ifdef NHMG  
+#ifdef NHMG
       ! write nhmg statistics to fort.10
       call nhmg_clean()
 #endif
@@ -141,7 +141,7 @@
                                        ! functions for S-coordinate
       if (may_day_flag /= 0) goto 99
 #endif
-      
+
       call get_grid                    ! Can be analytic or read from netcdf
 
 
@@ -155,16 +155,12 @@
       call setup_grid1
       call setup_grid2
 
-#ifdef SOLVE3D
-      do tile=my_tile_range            ! Create three-dimensional
-        call set_depth(tile)           ! S-coordinate system, which
+      call set_depth
 # ifdef LMD_KPP
-        call swr_frac(tile)            ! may be needed by ana_init.
+      call swr_frac(0)                 ! may be needed by ana_init.
 # endif
-      enddo
       call grid_stiffness              ! Report topographic slope
                                        ! parameters rx0, rx1
-#endif
 
 # if defined(BIOLOGY_BEC2)
 !     pH is initialized to 0 in ecosys_init
@@ -180,13 +176,13 @@
       call set_forces               ! model prognostic variables,
       call ana_init                 ! may require surface forcing
                                     ! either analytically or read
-      if (nrrec > 0) then 
+      if (nrrec > 0) then
 #endif
 
-      
+
 #ifdef EXACT_RESTART
-        call get_init(nrrec-1,2) 
-        call set_depth(0)
+        call get_init(nrrec-1,2)
+        call set_depth
 #endif
         call get_init(nrrec, 1)
 
@@ -204,10 +200,10 @@
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
       call set_forces
-      call set_depth(0)
+      call set_depth
 
 !----------------------------------------------------------------------
-!  Set NHMG horizontal and vertical grids 
+!  Set NHMG horizontal and vertical grids
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
 #ifdef NHMG
@@ -216,11 +212,7 @@
      &                   dn_r(0:Lm+1,0:Mm+1)    )
 #endif
 
-CR      write(*,*)  ' -4' MYID
-      do tile=my_tile_range
-        call set_HUV
-      enddo
-CR      write(*,*)  ' -3' MYID
+      call set_HUV
 
       call omega
       call rho_eos(nrhs)
@@ -231,17 +223,17 @@ CR      write(*,*)  ' -2' MYID
         call init_particles
       endif
 
-#if defined SPONGE 
+#if defined SPONGE
       call set_nudgcof(0)
 #endif
       ! The optional argument refers to
-      ! blowup if true, and initial if false. 
+      ! blowup if true, and initial if false.
       ! Come up with a better name!
       call wrt_his_ocean_vars(.false.)
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
-       call init_diagnostics  
+       call init_diagnostics
       if (do_random) call init_random
       if (do_cstar)  call init_cstar
 
@@ -341,14 +333,14 @@ CR      write(*,*)  ' -2' MYID
       call prsgrd
       call pre_step3d(0)  ! u is m/s here
 
-      !! nnew ==n+1/2  
+      !! nnew ==n+1/2
 
 
       !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
       !! set_HUV1 works with nnew, which here is time n+1/2
       ! It's using the Hz from time n though
       ! Look into this to understand what it does
-      call set_HUV1(0)
+      call set_HUV1
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING
 
@@ -391,7 +383,7 @@ CR      write(*,*)  ' -2' MYID
       enddo
 
       ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
-      call step3d_uv2(0)   
+      call step3d_uv2(0)
 
       call omega
       call step3d_t(0)
@@ -410,7 +402,7 @@ CR      write(*,*)  ' -2' MYID
       time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
 
-      call calc_avg_ocean_vars 
+      call calc_avg_ocean_vars
 
 !     Done with stepping, time for outputs
 
@@ -428,7 +420,7 @@ CR      write(*,*)  ' -2' MYID
 
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
-      if (calc_diag) call do_diagnostics 
+      if (calc_diag) call do_diagnostics
 
       if (do_random) call wrt_random
 #if defined MARBL && defined MARBL_DIAGS
