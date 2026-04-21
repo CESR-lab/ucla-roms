@@ -14,10 +14,6 @@
      &                                 sendW, sendE, recvW, recvE, sn_SW, sendS,
      &                                 sn_SE, rv_SW, recvS, rv_SE
 
-C$OMP THREADPRIVATE(sn_NW,rv_NW, sendN,recvN, sn_NE,rv_NE)
-C$OMP THREADPRIVATE(sendW,recvW, sendE,recvE)
-C$OMP THREADPRIVATE(sn_SW,rv_SW, sendS,recvS, sn_SE,rv_SE)
-
       contains
 
 !----------------------------------------------------------------------

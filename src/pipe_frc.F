@@ -102,6 +102,8 @@
       integer :: ierr,ncid,v_id,i,j
 
 
+      if (.not.pipe_source) return
+
       if (p_analytical) then
 
         ! pipe_flx is defined in ana_pipe_frc.h
