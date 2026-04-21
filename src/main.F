@@ -117,13 +117,6 @@
       numthreads=1 ; trd=0
       proc(2)=trd
 
-      if (mod(NSUB_X*NSUB_E,numthreads) /= 0) then
-        mpi_master_only write(*,'(/3(1x,A,I3),A/)')
-     &    '### ERROR: Wrong choice of numthreads =', numthreads,
-     &         'while NSUB_X =', NSUB_X, 'NSUB_E =', NSUB_E,'.'
-        may_day_flag=8
-        goto 99 !-->  EXIT
-      endif
                                        ! NOTE: This code is written
       iic=0  ; kstp=1 ; knew=1         ! under an assumption that all
 #ifdef SOLVE3D
@@ -149,7 +142,7 @@
       if (may_day_flag /= 0) goto 99
 #endif
       
-      call get_grid                  ! can be analytic or from netcdf
+      call get_grid                    ! Can be analytic or read from netcdf
 
 
 #ifdef NHMG
@@ -159,16 +152,8 @@
 
       if (may_day_flag /= 0) goto 99 !-->  EXIT
 
-      do tile=my_tile_range            ! Compute various metric terms
-        call setup_grid1(tile)         ! and their combinations.
-      enddo
-CR      write(*,*) '-10' MYID
-      do tile=my_tile_range
-        call setup_grid2(tile)
-      enddo
-CR      write(*,*) '-9' MYID
-
-CR      write(*,*) ' -8' MYID
+      call setup_grid1
+      call setup_grid2
 
 #ifdef SOLVE3D
       do tile=my_tile_range            ! Create three-dimensional

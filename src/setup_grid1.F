@@ -1,10 +1,9 @@
 #include "cppdefs.opt"
                                             ! Setting up curvilinear
-      subroutine setup_grid1(tile)          ! grid: Compute various
+      subroutine setup_grid1                ! grid: Compute various
       use param
       use roms_mpi
       implicit none                         ! combinations of metric
-      integer tile                          ! terms.
 
       call setup_Corls_tile
       call setup_grid1_tile

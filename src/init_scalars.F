@@ -54,11 +54,6 @@ c      write(*,*) 'kmp_stacksize =', size
                                      ! volume conservation constraint.
 
 
-      hmin=+1.E+20   ; hmax=-1.E+20     ! Set extreme values to large
-      grdmin=+1.E+20 ; grdmax=-1.E+20   ! unrealistic numbers, positive
-      Cg_min=+1.E+20 ; Cg_max=-1.E+20   ! or negative, depending on the
-                                        ! context.
-      bc_crss=QuadZero
                              ! Set slipperness parameter to "free slip"
       gamma2=1.              ! along the straight boundaries: this may
                              ! be overwritten later by "read_inp".
