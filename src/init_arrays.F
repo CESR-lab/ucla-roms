@@ -14,7 +14,6 @@
       use mixing,            only: init_arrays_mixing
       use work_mod,          only: init_arrays_work_mod
       use boundary,          only: init_arrays_boundary
-      use buffer,            only: init_arrays_buffer
       use pipe_frc,          only: init_arrays_pipes
 #ifdef BULK_FRC
       use bulk_frc,          only: init_arrays_bulk_frc
@@ -66,7 +65,6 @@
       call init_arrays_mixing
       call init_arrays_work_mod   ! DevinD added this here to allocate
       call init_arrays_boundary
-      call init_arrays_buffer     ! DevinD added this here to allocate
 
       call init_arrays_pipes
 

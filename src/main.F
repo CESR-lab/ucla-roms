@@ -223,9 +223,8 @@ CR      write(*,*)  ' -2' MYID
         call init_particles
       endif
 
-#if defined SPONGE
-      call set_nudgcof(0)
-#endif
+      call set_sponge
+
       ! The optional argument refers to
       ! blowup if true, and initial if false.
       ! Come up with a better name!

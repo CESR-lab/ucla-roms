@@ -38,7 +38,11 @@
 # endif
       character(len=256), public :: grdname
 
-
+# ifdef SPONGE
+      logical,parameter,public :: bry_sponge = .true.
+# else
+      logical,parameter,public :: bry_sponge = .false. 
+# endif
 
 
       public :: init_dimensions
@@ -63,7 +67,6 @@
       if (jnode==NP_ETA-1) j1=ny+1
 
       end subroutine init_dimensions  !]
-
 ! ----------------------------------------------------------------------
 
       end module dimensions
