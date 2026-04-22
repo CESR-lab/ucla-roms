@@ -92,6 +92,7 @@
       use nhmg
 #endif
       use dimensions
+      use scoord
       use grid
       use ocean_vars
       use basic_output
