@@ -4,6 +4,7 @@
                                         ! startup file.
 
       use param
+      use dimensions
       use surf_flux
       use boundary
       use eos_vars
@@ -404,7 +405,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #endif
 
 
-#ifdef SPONGE
+c#ifdef SPONGE
 ! Parameters for the sponge layers
 
         elseif (keyword(1:kwlen) == 'v_sponge') then
@@ -412,7 +413,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           read(input,*,err=95) v_sponge
           mpi_master_only write(*,'(3x,A,F10.2,2x,A)') 'v_sponge =',
      &        v_sponge, 'maximum viscosity in sponge layer [m^2/s]'
-#endif
+c#endif
 
 ! Input file controls:  grid, initial conditions, surface forcing,
 !----- ----- ---------  lateral boundary forcing data

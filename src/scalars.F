@@ -86,9 +86,8 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
       real Akq_bak,   q2nu2,   q2nu4
 # endif
 #endif
-#ifdef SPONGE
+
       real v_sponge
-#endif
 
 # if defined OBC_M2ORLANSKI && ( defined M2_FRC_BRY \
                                || defined M2NUDGING )

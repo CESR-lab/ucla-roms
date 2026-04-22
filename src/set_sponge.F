@@ -13,8 +13,8 @@
       use scalars
 
       implicit none
-      integer :: i,j,isp
-      real    :: mult
+      integer :: i,j,isp,dist
+      real,dimension(:,:),allocatable  :: mult
 
       if (.not.bry_sponge) return
 
@@ -26,50 +26,31 @@
       if (mynode.eq.0) write(*,'(/1x,A,I3,A)')
      &  'Sponge layer = ',sponge_size,' interior grid points.'
 
-      ! Since this code only considers sponge values in subdomains adjacent to a
-      !  boundary, we're in trouble if the sponge region is wider than a subdomain.
+      allocate(mult(1-bf:nx+bf,1-bf:ny+bf))
 
-      if ((isp>nx).or.(isp>ny)) then
-        if (mynode.eq.0)
-     &   print *, 'WARNING: sub-domains might be too small for the sponge layer'
-      endif
-
-
-      do i= 0,isp
-        mult = float(isp-i)/float(isp)
-        if (inode.eq.0.and.obc_west) then
-# ifdef UV_VIS2
-          visc2_r(i,1-bf:ny+bf)=visc2_r(i,1-bf:ny+bf)+v_sponge*mult
-# endif
-# ifdef TS_DIF2
-          diff2(i,1-bf:ny+bf,:)=diff2(i,1-bf:ny+bf,:)+v_sponge*mult
-# endif
-        endif
-        if (inode.eq.npx-1.and.obc_east) then
-# ifdef UV_VIS2
-          visc2_r(nx+1-i,1-bf:ny+bf)=visc2_r(nx+1-i,1-bf:ny+bf)+v_sponge*mult
-# endif
-# ifdef TS_DIF2
-          diff2(nx+1-i,1-bf:ny+bf,:)=diff2(nx+1-i,1-bf:ny+bf,:)+v_sponge*mult
-# endif
-        endif
-        if (jnode.eq.0.and.obc_south) then
-# ifdef UV_VIS2
-          visc2_r(1-bf:nx+bf,i)=visc2_r(1-bf:nx+bf,i)+v_sponge*mult
-# endif
-# ifdef TS_DIF2
-          diff2(1-bf:nx+bf,i,:)=diff2(1-bf:nx+bf,i,:)+v_sponge*mult
-# endif
-        endif
-        if (jnode.eq.npy-1.and.obc_north) then
-# ifdef UV_VIS2
-          visc2_r(1-bf:nx+bf,ny+1-i)=visc2_r(1-bf:nx+bf,ny+1-i)+v_sponge*mult
-# endif
-# ifdef TS_DIF2
-          diff2(1-bf:nx+bf,ny+1-i,:)=diff2(1-bf:nx+bf,ny+1-i,:)+v_sponge*mult
-# endif
-        endif
+      ! find minimum distance to physical boundary
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
+          dist = isp
+          if (obc_west)  dist = min(dist,i+iSW_corn)
+          if (obc_east)  dist = min(dist,gnx+1-i-iSW_corn)
+          if (obc_south) dist = min(dist,j+jSW_corn)
+          if (obc_north) dist = min(dist,gny+1-j-jSW_corn)
+          mult(i,j) = float(isp-dist)/float(isp)
+        enddo
       enddo
+
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
+# ifdef UV_VIS2
+          visc2_r(i,j)=visc2_r(i,j)+v_sponge*mult(i,j)
+# endif
+# ifdef TS_DIF2
+          diff2(i,j,:)=diff2(i,j,:)+v_sponge*mult(i,j)
+# endif
+        enddo
+      enddo
+      deallocate(mult)
 
 # ifdef UV_VIS2
       ! viscosity at psi points
