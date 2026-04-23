@@ -788,12 +788,7 @@
       Wspd_min=3.        ! [m/s]
       stau_ref=-0.0027   ! [N.m^-3.s]
 
-      ! maybe move computation of ustar to here
-      ! Note loop ranges: iend+1 is needed because lmd_kpp uses SMOOTH_HBL
-      ! and smoothing needs iend+1 buffer information for ustar calc.
-      ! iend+1 instead of iendR because rho2u sustr_r = u(i) + u(i+1) & since
-      ! iendR=iend+2 for interior tiles (as per compute_extended_bounds.h)
-      ! if we used i=iendR then u(i+1) = u(iend+3) is not a value.
+      ! Maybe move computation of ustar to here
       do j=1-bf,ny+bf
         do i=1-bf,nx+1
 

@@ -128,7 +128,6 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
         diag.F		timers.F	wvlcty.F	grid_stiffness.F\
         lenstr.F	setup_kwds.F\
-        ext_copy_prv2shr.F\
 \
 	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
 	random_output.F cstar_output.F 	zslice_output.F energy_budget.F\
