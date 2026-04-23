@@ -27,6 +27,8 @@
       integer,public :: i0,i1,j0,j1     ! accounts for physical boundary buffers
       integer,public :: inode,jnode     ! location of subdomain in the grid
 
+      logical,public :: east_bnd,west_bnd,north_bnd,south_bnd
+
       integer, public ::  xi_rho, xi_u, eta_rho, eta_v
 
       logical,public :: nhmg = .false.  ! engage the mg based non-hydrostatic computations

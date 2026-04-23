@@ -1,26 +1,12 @@
 #include "cppdefs.opt"
-#ifdef SOLVE3D
 
       subroutine omega
-
-      use param
-      use roms_mpi
-      use private_scratch
-
-      implicit none
-      integer,save :: tile = 0
-
-# include "compute_tile_bounds.h"
-      call omega_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2))
-      end
-
-      subroutine omega_tile (istr,iend,jstr,jend, CX,wrk)
 
 ! Compute S-coordinate vertical velocity, w=[Hz/(m*n)]*omega [m^3/s],
 ! which has the meaning of FINITE_VOLUME FLUX across MOVING grid-box
 ! interfaces of RHO-boxes. To compute it we first integrate divergence
 ! of horizontal mass fluxes from bottom up, starting with the no-flow
-! boundary condition at the bottom (k=0); After this operation W(:,:,N)
+! boundary condition at the bottom (k=0); After this operation W(:,:,nz)
 ! contains vertical velocity flux at the free surface, which is the
 ! time-tendency of the free surface, d_zeta/d_t multiplied by grid-box
 ! area as seen from above;  To convert W(:,:,:) into S-coordinate
@@ -31,27 +17,34 @@
 ! S-coordinate system is "breathes" by linear in Z-space expansion
 ! and contraction set by variation in free surface.
 
-! Parameter setting: "cu_min" is threshold value for Courant Number
+! Parameter setting: cu_min is the threshold value for Courant Number
 ! below which vertical advection is fully explicit; "cu_max" is the
 ! maximum CN which the explicit component "We" is allowed to reach.
 
-      use param
+      use dimensions
       use pipe_frc
       use cdr_frc
       use grid
       use ocean_vars
       use scalars
       use roms_mpi
+      use work_mod, only: wrk_x,wrk_xz
 
       implicit none
-      integer istr,iend,jstr,jend, i,j,k
-      real CX(PRIVATE_1D_SCRATCH_ARRAY,0:N),  dtau, c2d,dh, cw, cff, 
-     &    wrk(PRIVATE_1D_SCRATCH_ARRAY),      cw_min,cw_max,cw_max2
-      real, parameter :: cu_min=0.6D0, cu_max=1.0D0,
-     &  cmnx_ratio=cu_min/cu_max,  cutoff=2.D0-cmnx_ratio,
-     &                      r4cmx=0.25D0/(1.D0-cmnx_ratio)
 
-# include "compute_auxiliary_bounds.h"
+      integer ::  i,j,k
+      real, parameter :: cu_min=0.6D0
+      real, parameter :: cu_max=1.0D0
+      real, parameter :: cmnx_ratio=cu_min/cu_max
+      real, parameter :: cutoff=2.D0-cmnx_ratio
+      real, parameter :: r4cmx=0.25D0/(1.D0-cmnx_ratio)
+      real,dimension(:,:),pointer :: CX => null()
+      real,dimension(:),  pointer :: wrk => null()
+      real  dtau, c2d,dh, cw, cff
+      real   cw_min,cw_max,cw_max2
+
+      CX => wrk_xz
+      wrk=> wrk_x
 
       if (CORR_STAGE) then
         dtau=dt
@@ -76,13 +69,13 @@ c**     dtau=(1.-1./6.)*dt
         enddo
       endif
 
-      do j=jstr,jend
+      do j=1,ny
 
       !!! For NHMG pipes, the flux needs to be out of the bottom.
-      !!! Additionally, modify, where needed, the We to Wi split 
+      !!! Additionally, modify, where needed, the We to Wi split
       !!! for pipe sources
-        do k=1,N,+1        !--> recursive
-          do i=istr,iend
+        do k=1,nz,+1        !--> recursive
+          do i=1,nx
             Wi(i,j,k)=Wi(i,j,k-1) -FlxU(i+1,j,k) +FlxU(i,j,k)
      &                            -FlxV(i,j+1,k) +FlxV(i,j,k)
             if (pipe_source) then
@@ -97,22 +90,22 @@ c**     dtau=(1.-1./6.)*dt
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)
           enddo
         enddo
-        do i=istr,iend
-          wrk(i)=Wi(i,j,N)/(z_w(i,j,N)-z_w(i,j,0))
-          Wi(i,j,N)=0.
-          We(i,j,N)=0.                      ! note that
-          We(i,j,0)=0.                      ! CX(i,k)*CX(i,0)/Hz(i,j,k) 
+        do i=1,nx
+          wrk(i)=Wi(i,j,nz)/(z_w(i,j,nz)-z_w(i,j,0))
+          Wi(i,j,nz)=0.
+          We(i,j,nz)=0.                     ! note that
+          We(i,j,0)=0.                      ! CX(i,k)*CX(i,0)/Hz(i,j,k)
           CX(i,0)=dtau*pm(i,j)*pn(i,j)      ! is horizontal 2D Courant
         enddo                               ! number within Hz(i,j,k)
-        do k=N-1,1,-1
-          do i=istr,iend
+        do k=nz-1,1,-1
+          do i=1,nx
             Wi(i,j,k)=Wi(i,j,k)-wrk(i)*(z_w(i,j,k)-z_w(i,j,0))  !! this removes the grid motion
 
-c*          if (Wi(i,j,k) > 0.) then         ! Three different variants 
-c*            c2d=CX(i,k)   ; dh=Hz(i,j,k)   ! for computing 2D Courant 
-c*          else                             ! number at the interface: 
-c*            c2d=CX(i,k+1) ; dh=Hz(i,j,k+1) ! (1) use value from the 
-c*          endif                            !     grid box upstream in 
+c*          if (Wi(i,j,k) > 0.) then         ! Three different variants
+c*            c2d=CX(i,k)   ; dh=Hz(i,j,k)   ! for computing 2D Courant
+c*          else                             ! number at the interface:
+c*            c2d=CX(i,k+1) ; dh=Hz(i,j,k+1) ! (1) use value from the
+c*          endif                            !     grid box upstream in
                                              !     vertical direction;
 c>          c2d=0.5*(CX(i,k) +CX(i,k+1))
 c>          dh=0.5*(Hz(i,j,k)+Hz(i,j,k+1))   ! (2) average the two; or
@@ -131,7 +124,7 @@ c>          dh=0.5*(Hz(i,j,k)+Hz(i,j,k+1))   ! (2) average the two; or
               if (cw < cw_min) then
                 cff=cw_max2
               elseif (cw < cutoff*cw_max) then
-                cff=cw_max2 +r4cmx*(cw-cw_min)**2 
+                cff=cw_max2 +r4cmx*(cw-cw_min)**2
               else
                 cff=cw_max*cw
               endif
@@ -150,74 +143,68 @@ c**         Wi(i,j,k)=0.            !<-- back to fully explicit code
         enddo
       enddo
 
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then                       ! Set lateral
-        do k=0,N                                   ! boundary
-          do j=jstr,jend                           ! conditions
-            We(istr-1,j,k)=We(istr,j,k)
-            Wi(istr-1,j,k)=Wi(istr,j,k)
+      CX => null()
+      wrk=> null()
+
+      ! Fill physical buffers of domain
+      if (west_bnd) then
+        do k=0,nz
+          do j=1,ny
+            We(0,j,k)=We(1,j,k)
+            Wi(0,j,k)=Wi(1,j,k)
           enddo
         enddo
       endif
-      if (EASTERN_EDGE) then
-        do k=0,N
-          do j=jstr,jend
-            We(iend+1,j,k)=We(iend,j,k)
-            Wi(iend+1,j,k)=Wi(iend,j,k)
+      if (east_bnd) then
+        do k=0,nz
+          do j=1,ny
+            We(nx+1,j,k)=We(nx,j,k)
+            Wi(nx+1,j,k)=Wi(nx,j,k)
           enddo
         enddo
       endif
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do k=0,N
-          do i=istr,iend
-            We(i,jstr-1,k)=We(i,jstr,k)
-            Wi(i,jstr-1,k)=Wi(i,jstr,k)
+      if (south_bnd) then
+        do k=0,nz
+          do i=1,nx
+            We(i,0,k)=We(i,1,k)
+            Wi(i,0,k)=Wi(i,1,k)
           enddo
         enddo
       endif
-      if (NORTHERN_EDGE) then
-        do k=0,N
-          do i=istr,iend
-            We(i,jend+1,k)=We(i,jend,k)
-            Wi(i,jend+1,k)=Wi(i,jend,k)
+      if (north_bnd) then
+        do k=0,nz
+          do i=1,nx
+            We(i,ny+1,k)=We(i,ny,k)
+            Wi(i,ny+1,k)=Wi(i,ny,k)
           enddo
         enddo
       endif
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=0,N
-          We(istr-1,jstr-1,k)=We(istr,jstr,k)
-          Wi(istr-1,jstr-1,k)=Wi(istr,jstr,k)
+      if (west_bnd.and.south_bnd) then
+        do k=0,nz
+          We(0,0,k)=We(1,1,k)
+          Wi(0,0,k)=Wi(1,1,k)
         enddo
       endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=0,N
-          We(istr-1,jend+1,k)=We(istr,jend,k)
-          Wi(istr-1,jend+1,k)=Wi(istr,jend,k)
+      if (west_bnd.and.north_bnd) then
+        do k=0,nz
+          We(0,ny+1,k)=We(1,ny,k)
+          Wi(0,ny+1,k)=Wi(1,ny,k)
         enddo
       endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        do k=0,N
-          We(iend+1, jstr-1,k)=We(iend,jstr,k)
-          Wi(iend+1, jstr-1,k)=Wi(iend,jstr,k)
+      if (east_bnd.and.south_bnd) then
+        do k=0,nz
+          We(nx+1,0,k)=We(nx,1,k)
+          Wi(nx+1,0,k)=Wi(nx,1,k)
         enddo
       endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        do k=0,N
-          We(iend+1,jend+1,k)=We(iend,jend,k)
-          Wi(iend+1,jend+1,k)=Wi(iend,jend,k)
+      if (east_bnd.and.north_bnd) then
+        do k=0,nz
+          We(nx+1,ny+1,k)=We(nx,ny,k)
+          Wi(nx+1,ny+1,k)=Wi(nx,ny,k)
         enddo
       endif
-#  endif
-# endif
+
 # ifdef EXCHANGE
       call exchange_xxx(We,Wi)
 # endif
       end
-#else
-      subroutine omega_empty
-      end
-#endif /* SOLVE3D */
-
