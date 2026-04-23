@@ -24,7 +24,7 @@ c# define ANA_BRY
         /* Equation of State */
 c# define NONLIN_EOS
 c# define SPLIT_EOS
-c# define SALINITY
+# define SALINITY
 
         /* Mixing */
         /*        - lateral */

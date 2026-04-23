@@ -111,19 +111,6 @@ c-# define IMPLICIT_BOTTOM_DRAG
 # define EXACT_RESTART
 #endif
 
-/* Assign points within the land to special value rather than zero.
- For RHO-point this means all points where mask_rho == 0.  For U- and
- V-points this applies only to points which are fully inside, that both
- RHO-points adjacent to the respective velocity component in upstream
- and downstream directions are land (if only one land, the other is
- water, then the velocity point in on the coast line, so its value is
- still set to zero according to no-normal flow boundary condition).
-*/
-
-#ifdef MASKING
-# define MASK_LAND_DATA
-#endif
-
 
 /* Switch ON/OFF double precision for real type variables (since this
  is mostly controlled by mpc and/or compiler options, this CPP-switch
