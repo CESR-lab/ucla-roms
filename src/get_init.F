@@ -557,7 +557,7 @@ c--#define VERBOSE
 #endif
 
 #if defined ANA_BRY
-      call ana_init_generic(1,nx,1,ny)
+      call ana_init_generic
 #endif
 
 
