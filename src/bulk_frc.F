@@ -828,9 +828,6 @@
         enddo
       enddo
 
-      ! jend+1 instead of jendR because rho2u svstr_r = v(j) + v(j+1) & since
-      ! jendR=jend+2 for interior tiles (as per compute_extended_bounds.h)
-      ! if we used j=jendR then v(j+1) = u(jend+3) is not a value.
       do j=1-bf,ny+1
         do i=1-bf,nx+bf
 
