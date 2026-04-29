@@ -20,7 +20,7 @@
               curv(i,k) = w(i,j,k+1,nrhs) - 2*w(i,j,k,nrhs) + w(i,j,k-1,nrhs)
             enddo
           enddo
-          do i=1,nx !! extrapolate to k=N
+          do i=1,nx !! extrapolate to k=nz
             curv(i,nz) = 2*curv(i,nz-1) - curv(i,nz-2)
           enddo
           do k=1,nz
@@ -40,7 +40,7 @@
           enddo
 
           ! flux at surface is zero because it moves with omega.
-          ! this also takes care of the half-volume of w(N)
+          ! this also takes care of the half-volume of w(nz)
           do i=1,nx
             rw(i,j,nz) = rw(i,j,nz)   + FC(i,nz)
           enddo

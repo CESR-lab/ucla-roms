@@ -1,11 +1,11 @@
 #include "cppdefs.opt"
 
                                     ! Note that arrays A2d(1,1:4) in
-      subroutine pre_step3d (tile)  ! the call just below are repeated
+      subroutine pre_step3d        ! the call just below are repeated
       use param
       use private_scratch
       implicit none                 ! within the list of agruments to
-      integer tile                  ! use the same memory for vertical
+                                    ! use the same memory for vertical
                                     ! and horizontal scratch arrays.
 
       call pre_step3d_tile (A3d(1,1),A3d(1,2),

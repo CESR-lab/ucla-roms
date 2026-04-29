@@ -331,7 +331,7 @@ CR      write(*,*)  ' -2' MYID
 
       ! nrhs points to u/v at time level n
       call prsgrd
-      call pre_step3d(0)  ! u is m/s here
+      call pre_step3d   ! u is m/s here
 
       !! nnew ==n+1/2
 
@@ -362,7 +362,7 @@ CR      write(*,*)  ' -2' MYID
       ! All of this seems to happen with Hz's from time n
       ! Corrector step
       call prsgrd
-      call step3d_uv1(0)  ! update u/v(nnew) with dt*ru/rv
+      call step3d_uv1  ! update u/v(nnew) with dt*ru/rv
 
 #  ifdef UV_VIS2
       call visc3d
