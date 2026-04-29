@@ -386,7 +386,7 @@ CR      write(*,*)  ' -2' MYID
       call step3d_uv2
 
       call omega
-      call step3d_t(0)
+      call step3d_t
 # if defined TS_DIF2 || defined TS_DIF4
       call t3dmix
 # endif
