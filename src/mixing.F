@@ -13,12 +13,8 @@
       real,allocatable,dimension(:,:) :: visc2_p
 #endif
 #ifdef SOLVE3D
-# ifdef TS_DIF2
       real,allocatable,dimension(:,:,:) :: diff2
-# endif
-# ifdef TS_DIF4
       real,allocatable,dimension(:,:,:) :: diff4
-# endif
 # ifdef ADV_ISONEUTRAL
       real,allocatable,dimension(:,:,:) :: diff3u
       real,allocatable,dimension(:,:,:) :: diff3v

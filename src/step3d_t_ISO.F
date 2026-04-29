@@ -445,9 +445,9 @@ c--#  define ntdf nrhs
           do k=1,nz
             do j=0,ny+1
               if (obc_west) then
-                LapT(0,j,k)=0.
-              else
                 LapT(0,j,k)=LapT(1,j,k)
+              else
+                LapT(0,j,k)=0.
               endif
             enddo
           enddo
@@ -456,9 +456,9 @@ c--#  define ntdf nrhs
           do k=1,nz
             do j=0,ny+1
               if (obc_east) then
-                LapT(nx+1,j,k)=0.
-              else
                 LapT(nx+1,j,k)=LapT(nx,j,k)
+              else
+                LapT(nx+1,j,k)=0.
               endif
             enddo
           enddo
@@ -468,9 +468,9 @@ c--#  define ntdf nrhs
           do k=1,nz
             do i=0,nx+1
               if (obc_south) then
-                LapT(i,0,k)=0.
-              else
                 LapT(i,0,k)=LapT(i,1,k)
+              else
+                LapT(i,0,k)=0.
               endif
             enddo
           enddo
@@ -479,9 +479,9 @@ c--#  define ntdf nrhs
           do k=1,nz
             do i=0,nx+1
               if (obc_north) then
-                LapT(i,ny+1,k)=0.
-              else
                 LapT(i,ny+1,k)=LapT(i,ny,k)
+              else
+                LapT(i,ny+1,k)=0.
               endif
             enddo
           enddo

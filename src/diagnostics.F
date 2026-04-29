@@ -672,7 +672,7 @@
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_h_mix(itrc)  ![
-      ! Horizontal mixing from t3dmix_GP.F
+      ! Horizontal mixing from t3dmix.F
       ! zero in interior beyond sponge layer if zero background diffusion!
 
       use tracers, only: t
