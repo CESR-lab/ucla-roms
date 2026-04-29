@@ -1,20 +1,7 @@
 #include "cppdefs.opt"
-#ifdef LMD_KPP
 
-      subroutine swr_frac (tile)
+      subroutine lmd_swr_frac
 
-      use param
-      use private_scratch
-
-      implicit none
-      integer tile
-# include "compute_tile_bounds.h"
-      call swr_frac_tile (istr,iend,jstr,jend, A2d(1,1),A2d(1,2))
-      end
-
-
-      subroutine swr_frac_tile (istr,iend,jstr,jend, swdk1,swdk2)
-!
 ! Compute fraction of solar shortwave flux penetrating to the
 ! specified depth due to exponential decay in Jerlov water type
 ! using Paulson and Simpson (1977) two-wavelength-band solar
@@ -34,9 +21,13 @@
       use roms_mpi
 
       implicit none
-      integer istr,iend,jstr,jend,     i,j,k, Jwt
-      real  swdk1(istr:iend), swdk2(istr:iend)
+
+      ! Local
+      integer :: i,j,k, Jwt
+      real,dimension(:),allocatable :: swdk1,swdk2
       real mu1(5),mu2(5), r1(5), attn1, attn2, xi1,xi2
+
+#if defined LMD_KPP
 
       mu1(1)=0.35    ! reciprocal of the absorption coefficient
       mu1(2)=0.6     ! for each of the two solar wavelength bands
@@ -61,14 +52,17 @@
       attn1=-1./mu1(Jwt)
       attn2=-1./mu2(Jwt)
 
-      do j=jstr,jend                     ! Algorithm: set fractions
-        do i=istr,iend                   ! for each spectral band at
+      allocate(swdk1(nx))
+      allocate(swdk2(nx))
+
+      do j=1,ny                          ! Algorithm: set fractions
+        do i=1,nx                        ! for each spectral band at
           swdk1(i)=r1(Jwt)               ! surface, then attenuate
           swdk2(i)=1.-swdk1(i)           ! them separately throughout
-          swr_frac(i,j,N)=1.             ! the water column.
+          swr_frac(i,j,nz)=1.             ! the water column.
         enddo
-        do k=N,1,-1
-          do i=istr,iend
+        do k=nz,1,-1
+          do i=1,nx
             xi1=attn1*Hz(i,j,k)
             if (xi1 > -20.) then        ! this logic to avoid
               swdk1(i)=swdk1(i)*exp(xi1)   ! computing exponent for
@@ -87,13 +81,11 @@
           enddo
         enddo
       enddo
-# ifdef EXCHANGE
+
       call exchange_xxx(swr_frac)
-# endif
-      end
-#else
-      subroutine swr_frac_empty
-      end
-#endif /* LMD_KPP */
 
+      deallocate(swdk1)
+      deallocate(swdk2)
+#endif
 
+      end subroutine lmd_swr_frac

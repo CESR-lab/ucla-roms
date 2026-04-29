@@ -157,9 +157,7 @@
       call setup_grid2
 
       call set_depth
-# ifdef LMD_KPP
-      call swr_frac(0)                 ! may be needed by ana_init.
-# endif
+      call lmd_swr_frac                ! may be needed by ana_init.
       call grid_stiffness              ! Report topographic slope
                                        ! parameters rx0, rx1
 
