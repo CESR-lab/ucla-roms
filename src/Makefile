@@ -115,7 +115,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	setup_grid1.F	setup_grid2.F\
 	set_sponge.F   obc_tune.F roms_read_write.F extract_data.F \
 \
-	prsgrd.F	pre_step3d4S.F	step3d_uv1.F	step3d_uv2.F\
+	prsgrd.F	pre_step3d.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F\
 	visc3d_S.F	t3dmix_S.F      particles.F\
 \
