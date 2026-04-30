@@ -430,8 +430,8 @@ c<<     &     +cff*iA_v(i,j)
 ! Set boundary conditions and compute integral mass flux across all
 ! open boundaries, if any.
 
-      call    u2dbc_tile(1,nx,1,ny, UFx)
-      call    v2dbc_tile(1,nx,1,ny, UFx)
+      call u2dbc(UFx)
+      call v2dbc_tile(1,nx,1,ny, UFx)
 
       if (west_bnd) then
         do j=0,j1
