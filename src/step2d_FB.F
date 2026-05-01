@@ -431,7 +431,7 @@ c<<     &     +cff*iA_v(i,j)
 ! open boundaries, if any.
 
       call u2dbc(UFx)
-      call v2dbc_tile(1,nx,1,ny, UFx)
+      call v2dbc(UFx)
 
       if (west_bnd) then
         do j=0,j1
