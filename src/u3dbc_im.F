@@ -42,6 +42,8 @@
         dtfwd=dt              ! in the vicinity of open boundary is
       endif                   ! actually a halfstep.
 
+! Normal faces: east & west -- u is the normal component
+
       if (west_bnd) then
         if (obc_west) then
           if (obc_m3orlanski) then
@@ -110,7 +112,6 @@
           enddo
         endif  ! obc_west
       endif   ! west_bnd
-
 
       if (east_bnd) then
         if (obc_east) then
@@ -243,7 +244,6 @@
         endif  ! obc_south
       endif   ! south_bnd
 
-
       if (north_bnd) then
         if (obc_north) then
           if (obc_m3orlanski) then
@@ -258,7 +258,7 @@
      &                                  *( pn(i,ny+1)+pn(i-1,ny+1)
      &                                    +pn(i,ny  )+pn(i-1,ny  ) )
 
-                cy=0.125*dtfwd*(u(i,ny,k,nrhs)+u(i,ny+1,k,nrhs))
+                cy=0.125*dtfwd*(u(i,ny  ,k,nrhs)+u(i  ,ny+1,k,nrhs))
      &                                  *( pm(i,ny+1)+pm(i-1,ny+1)
      &                                    +pm(i,ny  )+pm(i-1,ny  ) )
 
@@ -312,25 +312,22 @@
 
       if (west_bnd.and.south_bnd.and.obc_west.and.obc_south) then
         do k=1,nz
-          u(1,0,k,nnew)=0.5*( u(2,0,k,nnew) +u(1,1,k,nnew))
+          u(1,0,k,nnew)=0.5*( u(2,0,k,nnew)+u(1,1,k,nnew))
         enddo
       endif
       if (east_bnd.and.south_bnd.and.obc_east.and.obc_south) then
         do k=1,nz
-          u(nx+1,0,k,nnew)=0.5*( u(nx,0,k,nnew)
-     &                                 +u(nx+1,1,k,nnew))
+          u(nx+1,0,k,nnew)=0.5*( u(nx,0,k,nnew)+u(nx+1,1,k,nnew))
         enddo
       endif
       if (west_bnd.and.north_bnd.and.obc_west.and.obc_north) then
         do k=1,nz
-          u(1,ny+1,k,nnew)=0.5*( u(2,ny+1,k,nnew)
-     &                               +u(1  ,ny  ,k,nnew))
+          u(1   ,ny+1,k,nnew)=0.5*(u(2 ,ny+1,k,nnew)+u(1   ,ny,k,nnew))
         enddo
       endif
       if (east_bnd.and.north_bnd.and.obc_east.and.obc_north) then
         do k=1,nz
-          u(nx+1,ny+1,k,nnew)=0.5*( u(nx,ny+1,k,nnew)
-     &                                 +u(nx+1,ny,k,nnew))
+          u(nx+1,ny+1,k,nnew)=0.5*(u(nx,ny+1,k,nnew)+u(nx+1,ny,k,nnew))
         enddo
       endif
 

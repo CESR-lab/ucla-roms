@@ -433,7 +433,7 @@
 ! Set PHYSICAL lateral boundary conditions.
 
       call u3dbc(DC)
-      call v3dbc_tile (1,nx,1,ny, DC)
+      call v3dbc(DC)
 
 
 ! Coupling 2D and 3D momentum equations:

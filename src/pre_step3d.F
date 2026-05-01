@@ -526,7 +526,7 @@
       endif  ! <-- river_source
 
       call u3dbc(wrk1)
-      call v3dbc_tile (1,nx,1,ny, wrk1)
+      call v3dbc(wrk1)
 
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)
