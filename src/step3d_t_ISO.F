@@ -1,5 +1,4 @@
 #include "cppdefs.opt"
-#ifdef SOLVE3D
 
 #ifndef ADV_ISONEUTRAL
 # define UPSTREAM_TS
@@ -1039,35 +1038,3 @@ c??         enddo
 # endif
       end
 
-      subroutine check_step_t_switches(ierr)
-
-! The following routine keeps track of the status of CPP settings in
-! "compute_horiz_tracer_fluxes.h" and "compute_horiz_vert_fluxes.h".
-! This code must be placed here rather than in a separate file so it
-! is exposed to the relevant CPP-settings.   It does not affect any
-! model results, other than signature in global attribute "CPPS" in
-! the output netCDF files.
-
-      use param
-      use strings
-
-      implicit none
-      integer ierr, is,ie, lenstr
-
-      ie=lenstr(cpps)
-      is=ie+2 ; ie=is+15
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='<step3d_t_ISO.F>'
-
-# include "track_advec_switches.h"
-
-      return
-  99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings".',
-     &        'Increase parameter "max_opt_size" it and recompile.'
-      ierr=ierr+1
-      end
-#else
-      subroutine step3d_t_empty
-      end
-#endif  /* SOLVE3D */

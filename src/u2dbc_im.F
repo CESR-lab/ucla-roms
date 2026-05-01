@@ -6,9 +6,6 @@
 ! integrated) x-component velocity ubar(:,:,knew).
 
       use param
-#ifdef WEC
-      use wec_frc
-#endif
       use boundary
       use grid
       use ocean_vars
@@ -22,7 +19,6 @@
       ! Local
       integer i,j
       real :: cx,cy, cext, cff, dft,dfx,dfy, zx,hx
-      real, parameter :: eps=1.D-33
 
 ! For open bc's: m2flather,m2specified,no-gradient
 
@@ -36,6 +32,8 @@
       logical,parameter ::obc_m2flather   = .false.
       logical,parameter ::obc_m2specified = .false.
 # endif
+
+! Normal faces: west & east -- u is the normal component
 
       if (west_bnd) then
         if (obc_west) then
@@ -107,6 +105,7 @@
         endif  ! obc_east
       endif  ! east_bnd
 
+! Tangential faces: south & north -- u is the tangential component
 
       if (south_bnd) then
         if (obc_south) then
@@ -154,14 +153,12 @@
             enddo
           endif  ! obc_m2flather, obc_m2specified, or no-gradient
         else ! slip or no-slip at wall
-          do i=i0,i1  
+          do i=i0,i1
             ubar(i,0,knew)=gamma2*ubar(i,1,knew)
      &                                *umask(i,0)
           enddo
         endif   ! obc_south
       endif   ! south_bnd
-
-
 
       if (north_bnd) then
         if (obc_north) then
@@ -174,7 +171,7 @@
 
               cx=0.125*dtfast*(vbar(i,ny+1,kstp)+vbar(i-1,ny+1,kstp))
      &             *(pn(i,ny)+pn(i-1,ny)+pn(i,ny+1)+pn(i-1,ny+1))
-  
+
               cy=0.125*dtfast*(ubar(i,ny,kstp)+ubar(i,ny+1,kstp))
      &             *(pm(i,ny)+pm(i-1,ny)+pm(i,ny+1)+pm(i-1,ny+1))
 
@@ -232,5 +229,4 @@
      &                                +ubar(nx+1,ny,knew))
       endif
 
-      end
-
+      end u2dbc
