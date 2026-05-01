@@ -718,15 +718,12 @@
 
 !     ! velocities are now in m/s
 
-!     call u3dbc_tile(1,nx,1,ny, wrk1)
-!     call v3dbc_tile(1,nx,1,ny, wrk1)
-!     call w3dbc_tile(1,nx,1,ny, wrk1)
+      call w3dbc(wrk1)
+      call exchange_xxx(w(:,:,:,nnew))
 
       !! u and v are exchanged in set_depth (set_HUV1)
       !! for neatness, we could move this exchange there as well
-#  ifdef EXCHANGE
-      call exchange_xxx(w(:,:,:,nnew))
-#  endif
+
 
 # endif /* NHMG */
 

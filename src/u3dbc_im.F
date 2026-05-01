@@ -35,7 +35,6 @@
       logical,parameter ::obc_m3specified = .false.
 # endif
 
-
       if (PRED_STAGE) then    ! because predictor sub-step advances
         dtfwd=0.5*dt          ! u, v, t to "n+1/2", the forward step
       else                    ! employed here for upstream advection
@@ -208,12 +207,10 @@
 
                 u(i,0,k,nnew)=(1.-cx)*( u(i,0,k,nstp)
      &                                -max(cy,0.)*grad(i-1,0)
-     &                                -min(cy,0.)*grad(i  ,0)
-     &                                                     )
+     &                                -min(cy,0.)*grad(i  ,0) )
      &                            +cx*( u(i,1,k,nstp)
      &                                -max(cy,0.)*grad(i-1,1)
-     &                                -min(cy,0.)*grad(i  ,1)
-     &                                                     )
+     &                                -min(cy,0.)*grad(i  ,1) )
 
                 if (obc_tuning) cext = max(cext,min(ub_south(i),1.0))
 
@@ -270,12 +267,10 @@
 
                 u(i,ny+1,k,nnew)=(1.-cx)*(  u(i,ny+1,k,nstp)
      &                          -max(cy,0.)*grad(i-1,ny+1)
-     &                          -min(cy,0.)*grad(i  ,ny+1)
-     &                                                     )
+     &                          -min(cy,0.)*grad(i  ,ny+1) )
      &                       +cx*(         u(i,ny,k,nstp)
      &                            -max(cy,0.)*grad(i-1,ny)
-     &                            -min(cy,0.)*grad(i  ,ny)
-     &                                                     )
+     &                            -min(cy,0.)*grad(i  ,ny) )
 
                 if (obc_tuning) cext = max(cext,min(ub_north(i),1.0))
 

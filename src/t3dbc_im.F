@@ -57,7 +57,7 @@
               else
                 cext=-cx ; cx=0.
               endif
-   
+
               t(0,j,k,nnew,itrc)=(1.-cx)*( t(0,j,k,nstp,itrc)
      &                                  -max(cy,0.)*grad(0,j  )
      &                                  -min(cy,0.)*grad(0,j+1)
@@ -225,7 +225,7 @@
 
               t(i,ny+1,k,nnew,itrc)=(1.-cext)*t(i,ny+1,k,nnew,itrc)
      &                                        +cext*t_north(i,k,itrc)
- 
+
               t(i,ny+1,k,nnew,itrc)=t(i,ny+1,k,nnew,itrc)*rmask(i,ny+1)
             enddo
           enddo
