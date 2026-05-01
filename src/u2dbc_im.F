@@ -229,4 +229,4 @@
      &                                +ubar(nx+1,ny,knew))
       endif
 
-      end u2dbc
+      end subroutine u2dbc
