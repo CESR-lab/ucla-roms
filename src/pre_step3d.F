@@ -537,7 +537,7 @@
 ! Set PHYSICAL lateral boundary conditions for tracer fields.
 
       do itrc=1,nt
-        call t3dbc_tile (1,nx,1,ny, itrc, wrk1)
+        call t3dbc(itrc, wrk1)
 # ifdef EXCHANGE
         ! Another opportunity to pack more mpi_exchanges
         call exchange_xxx(t(:,:,:,nnew,itrc))

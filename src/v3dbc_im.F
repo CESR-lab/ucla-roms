@@ -35,7 +35,6 @@
       logical,parameter ::obc_m3specified = .false.
 # endif
 
-
       if (PRED_STAGE) then    ! because predictor sub-step advances
         dtfwd=0.5*dt          ! u, v, t to "n+1/2", the forward step
       else                    ! employed here for upstream advection

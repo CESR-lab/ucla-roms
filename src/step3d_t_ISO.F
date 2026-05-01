@@ -1015,7 +1015,7 @@ c??         enddo
 #endif
         enddo      !<-- j
 
-        call t3dbc_tile (1,nx,1,ny, itrc, wrk1)
+        call t3dbc(itrc, wrk1)
 
       enddo     !<-- itrc
 
