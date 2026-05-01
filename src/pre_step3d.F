@@ -525,16 +525,7 @@
         enddo
       endif  ! <-- river_source
 
-!     if (split_bc) then
-!       call u3dbc(u_slow)
-!       call u3dbc(u_fast)
-!       call v3dbc(v_slow)
-!       call v3dbc(v_fast)
-
-!     else
-!     endif
-
-      call u3dbc_tile (1,nx,1,ny, wrk1)
+      call u3dbc(wrk1)
       call v3dbc_tile (1,nx,1,ny, wrk1)
 
 ! WARNING: Preliminary time step for 3D momentum equitions is not

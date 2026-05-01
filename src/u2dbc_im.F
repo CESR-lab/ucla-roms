@@ -153,7 +153,7 @@
             enddo
           endif  ! obc_m2flather, obc_m2specified, or no-gradient
         else ! slip or no-slip at wall
-          do i=i0,i1
+          do i=1,i1
             ubar(i,0,knew)=gamma2*ubar(i,1,knew)
      &                                *umask(i,0)
           enddo
@@ -204,7 +204,7 @@
             enddo
           endif
         else  ! slip or no-slip at closed boundary
-          do i=i0,i1
+          do i=1,i1
             ubar(i,ny+1,knew)=gamma2*ubar(i,ny,knew)
      &                                *umask(i,ny+1)
           enddo

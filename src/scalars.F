@@ -95,20 +95,7 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 # endif
 
 
-
-#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined TNUDGING \
-  || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
-                                             || defined M3NUDGING
       real ubind
-
-
-/* --> OBSOLETE
-      real tauM2_in, tauM2_out
-# ifdef SOLVE3D
-      real tauM3_in, tauM3_out,  tauT_in, tauT_out
-# endif
-*/
-#endif
 
       integer ntstart, ntimes, ndtfast, nfast, ninfo, may_day_flag,
      &                                                barr_count(16)

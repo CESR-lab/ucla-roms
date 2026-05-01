@@ -153,7 +153,7 @@
             enddo
           endif  ! obc_m2flather, obc_m2specified, or no-gradient
         else ! slip or no-slip at wall
-          do j=j0,j1
+          do j=1,j1
             vbar(0,j,knew)=gamma2*vbar(1,j,knew)
      &                                *vmask(0,j)
           enddo
@@ -204,7 +204,7 @@
             enddo
           endif
         else ! slip or no-slip at closed boundary
-          do j=j0,j1
+          do j=1,j1
             vbar(nx+1,j,knew)=gamma2*vbar(nx,j,knew)
      &                                *vmask(nx+1,j)
           enddo

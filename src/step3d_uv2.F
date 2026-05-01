@@ -432,8 +432,7 @@
 
 ! Set PHYSICAL lateral boundary conditions.
 
-!     call u3dbc_new
-      call u3dbc_tile (1,nx,1,ny, DC)
+      call u3dbc(DC)
       call v3dbc_tile (1,nx,1,ny, DC)
 
 
