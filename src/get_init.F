@@ -31,7 +31,7 @@
      &           ierr,  start(4), count(2), ibuff(iaux),
      &           checkdims , itrc
       real    :: time_scale
-      integer :: init_type, tile=0 ! set tile to zero for compute_tile_bounds.h below. Needed to fixed closed boundaries.
+      integer :: init_type
       integer, parameter :: init_run=1,  rst_run=2
 #ifdef EXACT_RESTART
      &                    , apprx_rst=3, exact_rst=4

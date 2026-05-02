@@ -21,33 +21,12 @@
 # endif
 
       real,allocatable,dimension(:,:,:) :: Akv
-# ifdef SALINITY
       real,allocatable,dimension(:,:,:,:) :: Akt
-# else
-      real,allocatable,dimension(:,:,:,:) :: Akt
-# endif
-# if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-  || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING\
-  || defined LMD_BKPP
+
+# if defined LMD_MIXING 
       real,allocatable,dimension(:,:,:) :: bvf
 # endif
 
-
-# ifdef MY25_MIXING
-
-! Mellor-Yamada (1982) Level 2.5 vertical mixing variables
-! Akq     Vertical mixing coefficient [m^2/s] for TKE
-! Lscale  Turbulent length scale (m).
-! q2      Turbulent kinetic energy [m^2/s^2] at horizontal RHO-
-!                                       and vertical W-points.
-! q2l     TKE times turbulent length scale[m^3/s^2] at horizontal
-!                                   RHO- and vertical W-points.
-
-      real,allocatable,dimension(:,:,:) :: Akq
-      real,allocatable,dimension(:,:,:) :: Lscale
-      real,allocatable,dimension(:,:,:,:) :: q2
-      real,allocatable,dimension(:,:,:,:) :: q2l
-#endif /* MY25_MIXING */
 
 ! Large/McWilliams/Doney oceanic planetary boundary layer variables
 ! hbls  thickness of oceanic planetary boundary layer [m, positive].
