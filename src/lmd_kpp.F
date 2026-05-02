@@ -1,5 +1,4 @@
 #include "cppdefs.opt"
-#if defined SOLVE3D && defined LMD_KPP 
 
 # define INT_AT_RHO_POINTS
 # define SMOOTH_HBL
@@ -647,47 +646,3 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 # endif
       end
 
-
-      subroutine check_kpp_switches (ierr)
-
-! This routine is to keep track of the status of CPP-switches defined
-! locally in this file above. It must be placed here rather than stored
-! in a separate file in order to be exposed to relevant CPP-settings.
-! This routine does not affect model results, other than signature in
-! global attribute "CPPS" in output netCDF files.
-
-      use param
-      use strings
-
-      implicit none
-      integer ierr, is,ie, lenstr
-
-      ie=lenstr(cpps)
-      is=ie+2 ; ie=is+10
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='<lmd_kpp.F>'
-# ifdef INT_AT_RHO_POINTS
-      is=ie+2 ; ie=is+16
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='INT_AT_RHO_POINTS'
-# endif
-# ifdef SMOOTH_HBL
-      is=ie+2 ; ie=is+9
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='SMOOTH_HBL'
-# endif
-# ifdef MERGE_OVERLAP
-      is=ie+2 ; ie=is+13
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='MERGE_OVERLAP'
-# endif
-      return
-  99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings".',
-     &        'Increase parameter "max_opt_size" it and recompile.'
-      ierr=ierr+1
-      end
-#else
-      subroutine lmd_kpp_empty
-      end
-#endif /* LMD_KPP || LMD_BKPP */
