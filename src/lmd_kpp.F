@@ -1,4 +1,5 @@
 #include "cppdefs.opt"
+#if defined SOLVE3D && defined LMD_KPP
 
 # define INT_AT_RHO_POINTS
 # define SMOOTH_HBL
@@ -645,4 +646,8 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 #  endif
 # endif
       end
+#else
+      subroutine lmd_kpp_empty
+      end
+#endif /* SOLVE3D && LMD_KPP */
 
