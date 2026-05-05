@@ -89,6 +89,7 @@
       character(len=max_options_string),public::flux_frc_opt='OFF'
       character(len=max_options_string),public::particle_opt='OFF'
       character(len=max_options_string),public::cdr_frc_opt  ='OFF'      
+      character(len=max_options_string),public::lmd_mix_opt  ='OFF'      
       ! forcing file specifications
       character(len=max_options_string),public::grid_files='N/A'
       character(len=max_options_string),public::ini_files='N/A'
