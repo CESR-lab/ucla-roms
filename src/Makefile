@@ -156,28 +156,15 @@ all: tools depend $(SBIN)
 
 # Auxiliary utility programs
 # --------- ------- --------
- TOOLS = cppcheck srcscheck checkkwds redefs
+ TOOLS = checkkwds
 
 tools: $(TOOLS)
 
     TMP = .
 
-cppcheck: cppcheck.o
-	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o cppcheck cppcheck.o
-
-srcscheck: srcscheck.o
-	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o srcscheck srcscheck.o
-
 checkkwds: checkkwds.o
 	$(FCOMP) $(FFLAGS) $(LDFLAGS) -o checkkwds checkkwds.o
 
-
-checkdefs: check_switches1.F setup_kwds.F
-
-check_switches1.F: cppcheck cppdefs.opt
-	./cppcheck cppdefs.opt
-check_srcs.F: srcscheck Makefile
-	./srcscheck
 setup_kwds.F: checkkwds read_inp.F
 	./checkkwds
 
