@@ -144,10 +144,6 @@
 
 #define NO_RECORD_CHECK
 #include "compute_starts_counts.h"
-#if defined MPI && !defined PARALLEL_FILES
-      count(1)=LLm+2-imin  !<-- dimensions of the variable
-      count(2)=MMm+2-jmin  !<-- on the entire physical grid
-#endif
 
       lfnm=lenstr(fname)
       ierr=nf90_inquire_variable(ncid, varid, vname, vtype, ndims, dimid, natts)

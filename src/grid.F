@@ -311,10 +311,6 @@
       ! local
       integer :: varid, ierr, ncdf_write
 
-#if defined MPI && !defined PARALLEL_FILES
-      if (mynode == 0) then
-#endif
-
 ! Grid type switch: Spherical or Cartesian.
 
         ierr=nf90_inq_varid(ncid, 'spherical', varid)
@@ -360,10 +356,6 @@
         if (ierr /= nf90_noerr)  goto 99                   !--> ERROR
 #endif
 
-
-#if defined MPI && !defined PARALLEL_FILES
-      endif
-#endif
 
       call ncwrite(ncid,'h', h(i0:i1,j0:j1))                    ! Bathymetry.
       call ncwrite(ncid,'f', f(i0:i1,j0:j1))                    ! Coriolis parameter.
