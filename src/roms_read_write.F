@@ -125,6 +125,11 @@
       character, public :: date_str*44, title*80
 !     character(len=max_name_size), public :: ininame, grdname, frcfile(max_frc_files)
       character(len=max_name_size), public :: ininame,frcfile(max_frc_files)
+#ifdef MAG
+      !         Initial condition netcdf for MAG
+      character(len=max_name_size), public :: mag_init_name
+#endif
+
 
 
       public :: insert_nodes
@@ -1211,6 +1216,12 @@
       ierr=nf90_put_att (ncid, nf90_global, 'forcing_files', force_files)
       ierr=nf90_put_att (ncid, nf90_global, 'forcing_info', adjustl(force_info))
 #endif
+
+#ifdef MAG
+      ierr=nf90_put_att(ncid,nf90_global,'mag_init',mag_init_name)
+#endif
+
+
       ierr=nf90_put_att(ncid, nf90_global, 'init_file',ini_files)
 
       ierr=nf90_put_att(ncid, nf90_global, 'ntimes', ntimes)         ! Time stepping parameters

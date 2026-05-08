@@ -376,10 +376,6 @@ c----#  define tind nstp
         enddo
       enddo
 
-! Pad out surface and bottom values for lmd_blmix calculations.
-! The interior values used here may not be the best values to
-! use for the padding.
-
       do j=jstr,jend
         do i=istr,iend
           Kv(i,j,N)=Kv(i,j,N-1)

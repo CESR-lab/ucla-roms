@@ -220,17 +220,40 @@
       implicit none
       integer istr,iend,jstr,jend, i,j
       real TauX, TauY, cff
-
+      real tramp
 # include "compute_extended_bounds.h"
 
-      if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
+      ! b/c we're varying wind in time, comment out the if (FIRST_TIME_STEP)
+      !if (FIRST_TIME_STEP) then  ! Set wind stress (kinematic surface
         do j=jstrR,jendR         ! momentum flux [m^2/s^2]) components
           do i=istrR,iendR       ! in XI- and ETA-directions [m^2/s^2])
+          
+      
+
+#ifdef ANA_WINDSTRESS
+          !Time ramp of turning on wind-stress
+          !nday_ramp = 2.0 !number of ramping days
+       !   if (time/86400.le.nday_ramp) then
+       !      tramp = (1/nday_ramp)*(time/86400.0)
+       !   else
+       !      tramp=1.0
+       !   endif
+          !sustr(i,j)=(taux0/rho0)*tramp
+          !svstr(i,j)=(tauy0/rho0)*tramp
+
+           sustr(i,j)=sustr0
+           svstr(i,j)=svstr0
+
+#else
             sustr(i,j)=0.0       ! at horizontal U- and V-points.
             svstr(i,j)=0.0       ! For code compactness, both are set
+#endif
           enddo                  ! to zero at first (default values),
         enddo                    ! then either one of them, or both may
-      endif                      ! be overwritten by nontrivial values.
+      !endif                      ! be overwritten by nontrivial values.
+
+
+
 
       end subroutine ana_smflux_tile !]
 ! ----------------------------------------------------------------------

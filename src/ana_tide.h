@@ -4,9 +4,8 @@
       integer :: i,j
 
       cI = cmplx(0.0,1.0)
-      f0 = 9e-5 
-      f0 = 1e-11
-      D = 4000 
+      f0 = 1e-4
+      D = 500 
       c = sqrt(g*D)   ! = om/k
       Ld = c/f0
       amp = 0.01
@@ -35,6 +34,8 @@
         enddo
        enddo
       endif
+      
+
       kh = 2*pi/(2e6*1.4)
       if (pot_tides) then
        do j=-1,ny+2          ! Extended ranges for x,y arrays

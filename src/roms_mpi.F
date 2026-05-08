@@ -6,7 +6,7 @@
 !      Pack data in buffers (depends on bf,2d/3d/, and nvars)
 !      Use mpi to send and receive buffers
 !      Unpack data in buffers (depends on bf,2d/3d/, and nvars)
- 
+
 !      We can have bf size and number of mpi-exchanged rows be
 !      different (for instance, for the nhmg solver, we need only 1 row
 !      of u, and v. Also, in that case, we only need to transfer to the
@@ -18,13 +18,13 @@
       use param
       use dimensions
       use mpi
-      use netcdf 
+      use netcdf
       use nc_read_write
 
       implicit none
-   
+
       private
- 
+
       integer,public :: p_W, p_SW, p_S, p_SE, p_E, p_NE, p_N,p_NW
 
       real,dimension(:),allocatable :: sendW,sendE
@@ -48,7 +48,7 @@
       ! Default values are halo=bf, do_corners = .true., and bl = bf
 
       interface exchange_xxx
-        module procedure 
+        module procedure
      &        exchange_2,exchange_22,exchange_222,exchange_2222
      &       ,exchange_3,exchange_33,exchange_333,exchange_3333
      &                  ,exchange_32,exchange_332
@@ -66,7 +66,7 @@
       integer :: ierr,ncid
       integer,dimension(8) :: neighbors
       integer,dimension(2) :: subdompos
-      integer,dimension(4) :: partition 
+      integer,dimension(4) :: partition
       character(len=128) :: fname
       integer :: offx,offy
 
@@ -89,13 +89,13 @@
           ierr=nf90_get_att(ncid,nf90_global,"subdompos",subdompos)
         else
           if (mynode.eq.0) print * ,'neighbors att not found',grdname
-          new_part = .false. 
+          new_part = .false.
           nnodes = np_xi*np_eta
         endif
         ierr=nf90_close(ncid)
       endif
 
-      ! Check whether the number of expected nodes 
+      ! Check whether the number of expected nodes
       ! matches the mpirun or mpiexec argument
 
       ! Also check npx,npy somewhere
@@ -108,8 +108,8 @@
         return
       endif
 
-!     Determine position of subdomain in logical grid. inodes, jnodes 
-!     will be needed to determine whether the subdomain is at a physical 
+!     Determine position of subdomain in logical grid. inodes, jnodes
+!     will be needed to determine whether the subdomain is at a physical
 !     boundary.
 !     Afterwards, determine the mpi ranks of the neighboring subdomains.
 !     These are needed to designate MPI ranks for sources of
@@ -140,9 +140,9 @@
         p_NW= ijnode2rank(inode-1,jnode+1,npx,npy)
       endif
 
-!     Determine the sizes of subdomains. 
+!     Determine the sizes of subdomains.
 !     The first and last subdomain are possibly smaller to add
-!     to the exact size of the domain. Half of the surplus is 
+!     to the exact size of the domain. Half of the surplus is
 !     removed from those. If the surplus (offx,offy) is odd, the
 !     last subdomain will be the smallest.
 
@@ -150,9 +150,9 @@
       ny = ceiling(1.0*gny/npy)
 
         ! Check against original weird integer devision
-        if (nx.ne.(gnx+npx-1)/npx ) 
+        if (nx.ne.(gnx+npx-1)/npx )
      &       stop 'integer devision error in mpi_setup'
-        if (ny.ne.(gny+npy-1)/npy ) 
+        if (ny.ne.(gny+npy-1)/npy )
      &       stop 'integer devision error in mpi_setup'
 
 
@@ -199,24 +199,24 @@
         xi_u   = nx
         if (inode.eq.0) then
           i0 = 0
-          xi_rho = nx+1
+          xi_rho = xi_rho+1
         endif
         if (inode.eq.npx-1) then
           i1 = nx+1
-          xi_rho = nx+1
-          xi_u   = nx+1
+          xi_rho = xi_rho+1
+          xi_u   = xi_u  +1
         endif
 
         eta_rho = ny
         eta_v   = ny
         if (jnode.eq.0) then
           j0=0
-          eta_rho = ny+1
+          eta_rho = eta_rho+1
         endif
         if (jnode.eq.npy-1) then
           j1=ny+1
-          eta_rho = ny+1
-          eta_v   = ny+1
+          eta_rho = eta_rho+1
+          eta_v   = eta_v  +1
         endif
 
       end subroutine mpi_setup !]
@@ -277,9 +277,9 @@
 
       if (.not.init_buffer_done) call init_mpi_buffers
 
-      ! Provide the ability to work with arrays with non-standard 
+      ! Provide the ability to work with arrays with non-standard
       ! allocated buffer sizes
-      bl = bf 
+      bl = bf
       if (present(array_bf)) then
         bl = array_bf
       endif
@@ -431,7 +431,7 @@
       call mpi_buffer_exchange
 
       call reset_buffer_sizes
-      call unpack_3dvar(A) 
+      call unpack_3dvar(A)
 
       end subroutine exchange_3 !]
 !--------------------------------------------------------
@@ -637,7 +637,7 @@
       nxl = dims(1) -2*bl
       nyl = dims(2) -2*bl
       call pack_buffers(A,nxl,nyl,1)
-        
+
       end subroutine pack_2dvar !]
 !--------------------------------------------------------
       subroutine pack_3dvar(A) ![
@@ -656,7 +656,7 @@
       nyl = dims(2) -2*bl
       nzl = dims(3)
       call pack_buffers(A,nxl,nyl,nzl)
-        
+
       end subroutine pack_3dvar !]
 !--------------------------------------------------------
       subroutine unpack_2dvar(A) ![
@@ -674,7 +674,7 @@
       nxl = dims(1) -2*bl
       nyl = dims(2) -2*bl
       call unpack_buffers(A,nxl,nyl,1)
-        
+
       end subroutine unpack_2dvar !]
 !--------------------------------------------------------
       subroutine unpack_3dvar(A) ![
@@ -693,7 +693,7 @@
       nyl = dims(2) -2*bl
       nzl = dims(3)
       call unpack_buffers(A,nxl,nyl,nzl)
-        
+
       end subroutine unpack_3dvar !]
 !--------------------------------------------------------
       subroutine init_mpi_buffers ![
@@ -828,14 +828,14 @@
       elseif (inode>0) then
         A(1-hl:0,jl0:jl1,:) = A(1:hl,jl0:jl1,:)
       endif
- 
+
       if (p_e>=0) then
         A(nxl+1:nxl+hl,jl0:jl1,:) = reshape(recvE(szE+1:szE+szEW),shEW)
         szE = szE+szEW
       elseif (inode<npx-1) then
         A(nxl+1:nxl+hl,jl0:jl1,:) =  A(nxl+1-hl:nxl,jl0:jl1,:)
       endif
- 
+
       if (p_s>=0) then
         A(il0:il1,1-hl:0,:) = reshape(recvS(szS+1:szS+szNS),shNS)
         szS = szS+szNS
@@ -870,7 +870,7 @@
       elseif (inode>0.and.jnode<npy-1) then
         A(1-hl:0,nyl+1:nyl+hl,:) = A(1:hl,nyl+1-hl:nyl,:)
       endif
- 
+
       if (p_ne>=0.and.do_corners) then
         A(nxl+1:nxl+hl,nyl+1:nyl+hl,:) = reshape(recvNE(szNE+1:szNE+szCr),shCr)
         szNE = szNE+szCr
@@ -897,13 +897,13 @@
 ! This is needed because later in this code array "req" is subject to
 ! rearrangement in order to ignore directions from which no message is
 ! expected, as well as to ignore requests from which messages are
-      
+
                      ! tags for receive      for send        ! each sub-domain can receive up to 8 exchanges.
       do i=1,16      !         3  5  1        4  6  2        ! the 'tag' value indicates which side/corner
         comm(i)=0    !         8     7        7     8        ! the message came from.
       enddo          !         2  6  4        1  5  3
 
-! Prepare to receive:  
+! Prepare to receive:
       if (p_w>=0) then
         call MPI_Irecv (recvW, szW, MPI_DOUBLE_PRECISION,
      &          p_W, 8, ocean_grid_comm, req(1), ierr)
@@ -1012,4 +1012,4 @@
 ! ----------------------------------------------------------------------
 
       end module roms_mpi
- 
+

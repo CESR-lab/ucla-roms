@@ -45,7 +45,10 @@
           ibnd=isp                          ! absolute indices).
 #  ifdef MPI
 #   ifdef OBC_WEST
+#     ifndef NOSPONGE_WEST
+          ! D.DAUHAJRE harcode NOPONGE_WEST for foarm test case
           ibnd=min(ibnd,         i+iSW_corn )
+#     endif
 #   endif
 #   ifdef OBC_EAST
           ibnd=min(ibnd, LLm+1 -(i+iSW_corn))
@@ -58,7 +61,9 @@
 #   endif
 #  else
 #   ifdef OBC_WEST
+#     ifndef NOSPONGE_WEST !CUSTOM FOR FARM CHANNEL
           ibnd=min(ibnd,      i)
+#     endif
 #   endif
 #   ifdef OBC_EAST
           ibnd=min(ibnd, Lm+1-i)

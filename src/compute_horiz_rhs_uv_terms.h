@@ -28,6 +28,41 @@
             UFx(i,j)=cff*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
             VFe(i,j)=cff*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
 # endif
+#ifdef MAG
+#  ifdef ALGAE_DRAG
+
+           ! Seaweed drag coefficient at u,v points (for ru,rv)
+           !    convert algae_lad from rho- to u,v points
+           vegcoeffu = 0.5 * P_algae * Cd_algae * 0.5 * (algae_lad(i,j,k) + algae_lad(i-1,j,k))
+           vegcoeffv = 0.5 * P_algae * Cd_algae * 0.5 * (algae_lad(i,j,k) + algae_lad(i,j-1,k))
+
+           !Volume of grid-cell at u,v points
+           vegvolu  = 0.5 * (Hz(i,j,k) + Hz(i-1,j,k)) * dm_u(i,j) * dn_u(i,j)
+           vegvolv  = 0.5 * (Hz(i,j,k) + Hz(i,j-1,k)) * dm_v(i,j) * dm_v(i,j)
+
+
+           !Put v at u-points for magnitude
+           ! v at rho-p i
+           v_ri1 = 0.5 * (v(i,j,k,nrhs) + v(i,j+1,k,nrhs))
+           ! v at rho-p i-1
+           v_ri2 = 0.5 * (v(i-1,j,k,nrhs) + v(i-1,j+1,k,nrhs))
+           ! u at rho-p j
+           u_rj1 = 0.5 * (u(i,j,k,nrhs) + v(i+1,j,k,nrhs))
+           ! u at rho-p j-1
+           u_rj2 = 0.5 * (v(i,j-1,k,nrhs) + v(i+1,j-1,k,nrhs))
+
+
+           !Velocity magnitude at u,v points
+           velocmagu = sqrt(u(i,j,k,nrhs)**2 + (0.5 * (v_ri1 + v_ri2))**2)
+           velocmagv = sqrt(v(i,j,k,nrhs)**2 + (0.5 * (u_rj2 + u_rj2))**2)
+
+           !u drag term at u-point
+           vegdrag_u(i,j,k) = vegcoeffu * vegvolu * velocmagu * u(i,j,k,nrhs)
+           !v drag term at v-point
+           vegdrag_v(i,j,k) = vegcoeffv * vegvolv * velocmagv * v(i,j,k,nrhs)
+#  endif
+#endif
+
           enddo
         enddo
         do j=jstr,jend
@@ -36,6 +71,11 @@
 # ifdef WEC
      &               + 0.5*(UFe(i,j)+UFe(i-1,j))
 # endif
+#ifdef MAG
+#  ifdef ALGAE_DRAG
+     &               - vegdrag_u(i,j,k)
+#  endif
+#endif
           enddo
         enddo
         do j=jstrV,jend
@@ -44,6 +84,11 @@
 # ifdef WEC
      &               -0.5*(VFx(i,j)+VFx(i,j-1))
 # endif
+#ifdef MAG
+# ifdef ALGAE_DRAG
+     &              - vegdrag_v(i,j,k)
+# endif
+#endif
           enddo
         enddo
 
@@ -54,6 +99,13 @@
             Vdiag(1:nx,1:ny,k,icori) =-0.5*(VFe(1:nx,1:ny)+VFe(1:nx,0:ny-1))*dxdyi_v
           endif
         endif
+#ifdef ALGAE_DRAG
+	if (diag_uv.and.calc_diag) then
+	   Udiag(:,:,k,ialgdrg) = -vegdrag_u(1:nx,1:ny,k)*dxdyi_u
+           Vdiag(:,:,k,ialgdrg) = -vegdrag_v(1:nx,1:ny,k)*dxdyi_v
+	endif
+#endif
+
 
 #endif  /* UV_COR */
 

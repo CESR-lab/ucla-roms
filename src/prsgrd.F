@@ -60,6 +60,9 @@
 
       real grho, HalfGRho, cff, cfr
       real, parameter :: OneFifth=0.2, OneTwelfth=1./12., epsil=0.
+#ifdef ARTIFICIAL_PGF_ETA
+      real uadd
+#endif
 
 # ifdef ADV_ISONEUTRAL
       real r0g
@@ -171,7 +174,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
           dZ(i,0 )=dZ(i,1)
         enddo
         ! Irreversible due to in-place overwriting of dZ and dR
-        do k=nz,1,-1 
+        do k=nz,1,-1
           do i=0,nx
             cff=2.*dZ(i,k)*dZ(i,k-1)
             dZ(i,k)=cff/(dZ(i,k)+dZ(i,k-1))
@@ -199,6 +202,15 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
             P(i,j,N) = P(i,j,N) - g*ptide(i,j)
           endif
         enddo
+        if (CORR_STAGE.and.calc_diag.and.diag_uv) then
+          do i=1,nx
+            if (pot_tides) then
+              Wdiag(i,j,nz,idzb) = P(i,j,nz) + g*ptide(i,j)
+            else
+              Wdiag(i,j,nz,idzb) = P(i,j,nz);
+            endif
+          enddo
+        endif
         do k=nz-1,1,-1
           do i=istrU-1,iend
             P(i,j,k)=P(i,j,k+1)+HalfGRho*( (rho(i,j,k+1)+rho(i,j,k))
@@ -393,7 +405,17 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
 
           if (j >= jstrV) then
             do i=istr,iend
+#ifdef ARTIFICIAL_PGF_ETA
+         !Magnitude has vertical decay scale
+         !u0_geo,Ldecay,zdecay set in param.opt
+         ! --> needs to match initial conditon (python scripts :/ )
+            uadd = u0_geo*0.5 +
+     &              (u0_geo*0.5*tanh(Ldecay* (z_r(i,j,k) - zdecay)))
+#endif
               rv(i,j,k)=0.5*(Hz(i,j,k)+Hz(i,j-1,k))*dm_v(i,j)*(
+# ifdef ARTIFICIAL_PGF_ETA
+     &                     ( 0.5*(f(i,j)+f(i,j-1))*uadd*dm_v(i,j)) +
+# endif              
      &                             P(i,j-1,k)-P(i,j,k) -HalfGRho*(
 
      &            (rho(i,j,k)+rho(i,j-1,k))*(z_r(i,j,k)-z_r(i,j-1,k))
@@ -450,15 +472,16 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             Udiag(1:nx,1:ny,k,ipgr) = ru(1:nx,1:ny,k)*dxdyi_u*umask(1:nx,1:ny)
             Vdiag(1:nx,1:ny,k,ipgr) = rv(1:nx,1:ny,k)*dxdyi_v*vmask(1:nx,1:ny)
 
-            Udiag(1:nx,1:ny,k,izxb) = Udiag(1:nx,1:ny,k,ipgr) - 
+            Udiag(1:nx,1:ny,k,izxb) = Udiag(1:nx,1:ny,k,ipgr) -
      &        0.5*(Hz(1:nx,1:ny,k)+Hz(0:nx-1,1:ny,k))*dn_u(1:nx,1:ny)
      &          *(P(0:nx-1,1:ny,k)-P(1:nx,1:ny,k))*dxdyi_u(1:nx,1:ny)
-            Vdiag(1:nx,1:ny,k,izxb) = Vdiag(1:nx,1:ny,k,ipgr) - 
+            Vdiag(1:nx,1:ny,k,izxb) = Vdiag(1:nx,1:ny,k,ipgr) -
      &        0.5*(Hz(1:nx,1:ny,k)+Hz(1:nx,0:ny-1,k))*dm_v(1:nx,1:ny)
      &          *(P(1:nx,0:ny-1,k)-P(1:nx,1:ny,k))*dxdyi_v(1:nx,1:ny)
           enddo
+!    &    Wdiag(:,:,nz,idzb) is filled  above
           do k=1,nz-1
-            Wdiag(1:nx,1:ny,k,idzb) = (P(1:nx,1:ny,k)-P(1:nx,1:ny,k+1))*dxdyi
+            Wdiag(1:nx,1:ny,k,idzb) = (P(1:nx,1:ny,k)-P(1:nx,1:ny,k+1))
           enddo
         endif
         if (diag_pflx) then
@@ -473,22 +496,22 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 !       dpdz = -zx*dpdx - zy*dpdy (See Molemaker et al., 2018)
 !--------------------------------------------------------------------
 !
-!     We are re-using dR as a work array 
+!     We are re-using dR as a work array
 
       do j=Jstr,Jend
          do k = 1,N
             do i=Istr,Iend
-              dR(i,k) = dzdxi(i,j,k) *(                                
-     $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k)) 
+              dR(i,k) = dzdxi(i,j,k) *(
+     $              ru(i  ,j,k  )/(Hz(i,j,k)+Hz(i-1,j,k))
      $            + ru(i+1,j,k  )/(Hz(i,j,k)+Hz(i+1,j,k)))
-     $            +     dzdeta(i,j,k) *(                               
-     $              rv(i,j  ,k  )/(Hz(i,j,k)+Hz(i,j-1,k)) 
+     $            +     dzdeta(i,j,k) *(
+     $              rv(i,j  ,k  )/(Hz(i,j,k)+Hz(i,j-1,k))
      $            + rv(i,j+1,k  )/(Hz(i,j,k)+Hz(i,j+1,k)))
             enddo
          enddo
 
          !! rw is a V*dwdt units object (m4/s2), just like ru, rv
-         do k = 1,N-1 
+         do k = 1,N-1
             do i=Istr,Iend
               rw(i,j,k)=-0.25*(dR(i,k+1)+dR(i,k))*(Hz(i,j,k+1)+Hz(i,j,k))
             enddo

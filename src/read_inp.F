@@ -518,6 +518,28 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             endif
           enddo
 
+!Daniel add
+#if defined MAG
+! only read if you're initializing offline
+#ifndef ANA_MAG_INIT
+! Kelp intial condition file name. Check its availability.
+        elseif (keyword(1:kwlen) .eq. 'mag_init') then
+          call cancel_kwd (keyword(1:kwlen), ierr)
+          read(input,'(A)',err=95) fname
+          lstr=lenstr(fname)
+# if defined MPI && defined PARALLEL_FILES
+          !call insert_node (fname, lstr, mynode, NNODES, ierr)
+          call insert_node(fname,lstr,mynode,nsize,ierr)
+# endif
+          open(testunit,file=fname(1:lstr), status='old', err=97)
+          close(testunit)
+          mag_init_name=fname(1:lstr)
+          mpi_master_only write(*,'(1x,3A)')
+     &       'mag initial condition = ''', mag_init_name(1:lstr), ''''
+#endif
+#endif
+! end Daniel add
+
 ! Climatology file name. Climatology data is needed for (1) to supply
 ! boundary data for T,S,u,v at open boundaries (just one row of points)
 ! and (2) nudging to T,S data inside the domain within the  nudging

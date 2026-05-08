@@ -40,11 +40,29 @@
       character*60, dimension(nt), public :: t_lname                 ! long name
       character*42, dimension(nt), public :: t_units                 ! tracer units
       character*47, dimension(nt), public :: t_tname                 ! tracer input time variable name
+
+#ifdef ANA_BEC_INI
+      real,    dimension(nt),public       :: t_anamax                ! tracer analyitcal max (Daniel add)
+      real,    dimension(nt),public       :: t_anamin                ! tracer analyitcal max (Daniel add)
+      real,    dimension(nt),public       :: t_anagamma              ! sets structure of shape function
+#endif
+
       logical, dimension(nt), public      :: wrt_t                   ! t/f output tracer.
       logical, dimension(nt), public      :: wrt_t_avg               ! t/f output avg tracer.
       logical, dimension(nt), public      :: wrt_t_dia = .false.     ! t/f diagnostics tracer.
 
       integer, dimension(nt)              :: t_ana_frc               ! whether surface flux is read in (0), or analytical (1)
+# ifdef SINK_TRACER
+      !Initialize arrays declared in tracers.opt that
+      ! set sinking rate
+      real, dimension(nt),public             :: t_wsink
+      !logical, dimension(nt),public          :: t_release
+#endif
+
+
+
+      logical, dimension(nt),public       :: t_bry_dat = .true.      ! whether bry data is available or not (true/false)
+      real,    dimension(nt),public       :: t_bry_val = 0           ! whether bry data is available or not (true/false)
 
       !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
       ! Final tracer concentrations live in 't' in ocean3d
@@ -165,7 +183,7 @@
       do itrc=1,iTandS+nt_passive
         if (wrt_t(itrc)) then
           varid = nccreate(ncid,t_vname(itrc),
-     &      (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
+     &      (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,nz,0/))
           ierr = nf90_put_att(ncid,varid,'long_name',t_lname(itrc))
           ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
         endif
@@ -290,16 +308,17 @@
       ! local
       integer :: cnt=0, itrc
 
-      ! Core tracers - temp and salt:
-      t_vname(itemp)='temp';        t_units(itemp)='Celsius'
-      t_lname(itemp)='potential temperature'
-      iTandS = 1         ! if only temp, no salt.
-#ifdef SALINITY
-      t_vname(isalt)='salt';        t_units(isalt)='PSU'
-      t_lname(isalt)='salinity'
-      iTandS = 2         ! if both temp and salt.
-#endif
-      itot=iTandS        ! set up counting for additional tracers
+      ! Core tracers - temp and salt, always present
+
+      t_vname(itemp) = 'temp'
+      t_units(itemp) = 'Celsius'
+      t_lname(itemp) = 'Potential temperature'
+      t_vname(isalt) = 'salt'
+      t_units(isalt) = 'PSU'
+      t_lname(isalt) = 'Salinity'
+
+      iTandS = 2      ! Always both temp and salt.
+      itot=2          ! set up counting for additional tracers
 
       ! Additional passive tracers:
 #include "tracers.opt"

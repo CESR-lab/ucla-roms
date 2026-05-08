@@ -15,23 +15,44 @@
 !------- -----------
 ! nt  must be 2 or more if Salinity is defined
 
-      integer, parameter :: LLm=920, MMm=480, N=60    ! Pacific 25km grid
 
-      integer, parameter :: NP_XI = 16, NP_ETA = 8
+! Domain
+! ------
+
+      !------- kelp-dev farm test open channel ----
+      integer, parameter :: LLm = 128, MMm = 18, N=100
+      integer, parameter :: NP_XI = 16, NP_ETA =4 
+
+     
       integer, parameter :: NSUB_X = 1, NSUB_E = 1
 
       ! Defining number of tracers
-      integer, parameter :: nt_passive=0      
+      integer, parameter :: nt_passive=0 
+
+# ifdef SPONGE
+      ! note that b/c this is declared here, we comment out the declaration in mixng.F
+      integer :: sponge_size = 15
+# endif
+
+#ifdef MAGBEC_COUPLE
+      ! THESE ARE HARDCODED (UGH)
+      integer,parameter :: ntrc_pockelp=3
+      integer,parameter :: ntrc_dockelp=2
+      integer, parameter :: ntrc_magbec = ntrc_pockelp + ntrc_dockelp
+#else
+      integer,parameter :: ntrc_magbec=0
+#endif
+
 # ifdef BIOLOGY_BEC2
 #   ifdef Ncycle_SY
-      integer,parameter :: ntrc_bio=29
+      integer,parameter :: ntrc_bio=29 + ntrc_magbec 
 #   else
-      integer,parameter :: ntrc_bio=26
+      integer,parameter :: ntrc_bio=26  + ntrc_magbec
 #   endif
 # elif defined MARBL
-      integer,parameter :: ntrc_bio=32
-# else
-      integer,parameter :: ntrc_bio=0
+      integer,parameter :: ntrc_bio=32  + ntrc_magbec
+# else 
+      integer,parameter :: ntrc_bio=0  
 # endif
 #ifdef SALINITY
       integer,parameter :: ntrc_salt=1
@@ -41,4 +62,52 @@
 
       integer, parameter :: nt=1+nt_passive+ntrc_bio+ntrc_salt
     
-      
+
+
+
+#ifdef ANA_WINDSTRESS
+      ! safeguard to not accidentally have non-zero sustr in analytical.F
+      !frmscl16v5 --> testing less wind, same u_geo as v3
+      real, parameter :: sustr0=2e-5
+      real, parameter :: svstr0=4.8e-5
+#endif
+
+#ifdef ARTIFICIAL_PGF_ETA
+!---------------------------------------------------
+!    Parameters for artificial geostrophic flow
+!       these are added to rv in prsgrd.F
+! ----------------------------------------------
+
+      !---------------------------------------
+      ! Pulpo spinup setup (frmscl16v2)
+      !magnitude of geostrophic flow [m/s]
+
+      !frmscl16v4 --> slower PGF driven flow
+      !real, parameter :: u0_geo = 0.025
+      !frmscl16v2,v3, v5
+      real, parameter :: u0_geo = 0.05 !0.01
+
+      !frmscl16v6
+      !real, parameter :: u0_geo = 0.005
+
+      !frmscl16v7
+      !real, parameter :: u0_geo = 0.0005
+
+
+      !Decay scale
+      real, parameter :: Ldecay  = 0.025
+      !Where velocity transitions to zero [m]
+      real, parameter :: zdecay = -200 !-300
+      !---------------------------------------
+
+      !------------------------------------
+      ! ORIGINAL frm18, frmscl setup
+      !magnitude of geostrophic flow [m/s]
+      !real, parameter :: u0_geo = 0.05 !0.01
+      !Decay scale
+      !real, parameter :: Ldecay  = 0.01
+      !Where velocity transitions to zero [m]
+      !real, parameter :: zdecay = -200 !-300
+      !-----------------------------------------
+#endif
+

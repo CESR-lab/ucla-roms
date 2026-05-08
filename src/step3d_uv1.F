@@ -47,6 +47,8 @@
       use ocean_vars
       use scalars
       use roms_mpi
+      use mag
+
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k

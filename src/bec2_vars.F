@@ -6,13 +6,17 @@
       use dimensions
       use tracers               ! for iPO4, etc, indices of bgc tracers (formerly in param.h)
       use roms_read_write
-
+      use grid 
+      use netcdf
 
       implicit none
       ! DTRACER_MODULE: stores the tendencies of the biological tracers
       ! in the long run this should be removed, no need to copy arrays?
       ! local copies are made in ecosys_set_interior already anyway?
       real,allocatable,dimension(:,:,:,:) :: DTRACER_MODULE
+# ifdef SED_BUCKET
+      real,allocatable,dimension(:,:,:) :: DTRACER_SED_MODULE
+# endif
 
 C      integer, pointer :: nr_bec2_diag_2d, nr_bec2_diag_3d, nr_bec2_diag
 C      integer, pointer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
@@ -73,13 +77,14 @@ C      integer, pointer :: nr_bec2_wrdiag_2d, nr_bec2_wrdiag_3d, nr_bec2_wrdiag
      &   dco2star_idx_t, fesedflux_idx_t, fluxtosed_idx_t, caco3fluxtosed_idx_t, sio2fluxtosed_idx_t,
      &   pironfluxtosed_idx_t, dustfluxtosed_idx_t, pocsedloss_idx_t, otherremin_idx_t,
      &   caco3sedloss_idx_t, sio2sedloss_idx_t, schmidt_n2o_idx_t, pvn2o_idx_t, n2osat_idx_t,
-     &   fgn2o_idx_t, schmidt_n2_idx_t, pvn2_idx_t, fgn2_idx_t, n2sat_idx_t
+     &   fgn2o_idx_t, schmidt_n2_idx_t, pvn2_idx_t, fgn2_idx_t, n2sat_idx_t,
+     &   fluxfromsed_idx_t, caco3fluxfromsed_idx_t, sio2fluxfromsed_idx_t
 
 !      ! Array for storing the Netcdf variable IDs of the diagnostics:
 !      ! The IDs of the 2d vars are first, the those of the 3d.
 !      integer :: hisT_bec2_diag(nr_bec2_diag)  , avgT_bec2_diag(nr_bec2_diag),
 !     &           slavgT_bec2_diag(nr_bec2_diag), rstT_bec2_diag(nr_bec2_diag)
-      integer, parameter, public :: nr_bec2_diag_2d = 37
+      integer, parameter, public :: nr_bec2_diag_2d = 39
       integer, parameter, public :: nr_bec2_diag_3d = 103
 C
 #endif /* BEC2_DIAG */
@@ -148,14 +153,34 @@ C
       ! misc from porting ETH code:
       character(len=40) tclm_name(NT) ! Taken from ETH code ncvars
 
+# ifdef SED_BUCKET
+      real,allocatable,dimension(:,:,:) :: t_sed
+      real,allocatable,dimension(:,:,:) :: t_sed_avg
+
+      character*42, dimension(NT_sed), public :: t_sed_vname   ! short name
+      character*60, dimension(NT_sed), public :: t_sed_lname   ! long name
+      character*42, dimension(NT_sed), public :: t_sed_units   ! tracer units
+      character*47, dimension(NT_sed), public :: t_sed_tname   ! tracer input time variable name
+      logical, dimension(NT_sed), public  :: wrt_t_sed         ! t/f output tracer.
+      logical, dimension(NT_sed), public  :: wrt_t_sed_avg     ! t/f output avg tracer.
+      integer, dimension(NT_sed), public  :: NTsed_2_t_avg
+      integer, public        :: n_tsed_avg
+
+      integer :: sed_poc_ind, sed_caco3_ind, sed_si_ind
+#  endif
 
       public init_scalars_bec2
+      public get_init_trc_sed
+
       contains
 !----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
       subroutine init_arrays_bec2_vars  ![
       implicit none
+
+      ! local
+      integer :: cnt=0, itrc
 
       allocate( DTRACER_MODULE(GLOBAL_2D_ARRAY,N,ntrc_bio) )
 
@@ -182,6 +207,37 @@ C
 
 
       allocate( ph_srf(GLOBAL_2D_ARRAY) )
+
+# ifdef SED_BUCKET
+#include "tracers_sed.opt"
+
+      allocate( DTRACER_SED_MODULE(GLOBAL_2D_ARRAY,NT_sed) )
+      DTRACER_SED_MODULE=0.
+
+      allocate( t_sed(GLOBAL_2D_ARRAY,NT_sed) )
+      t_sed=0.
+
+      NTsed_2_t_avg=0
+      do itrc=1,NT_sed
+        if (wrt_t_sed_avg(itrc)) then
+          cnt=cnt+1
+          NTsed_2_t_avg(itrc)=cnt
+          if (mynode == 0) then
+              write(*,'(7x,A,I3,I3)') 'NTsed_2_t_avg :: ',
+     &        itrc,cnt
+          endif
+        endif
+      enddo
+
+      if (mynode == 0) then
+              write(*,'(7x,A,I3)') 'SED tracers 2 AVG :: ',
+     &        cnt
+      endif
+
+      n_tsed_avg = cnt
+      allocate( t_sed_avg(GLOBAL_2D_ARRAY, n_tsed_avg) )
+      t_sed_avg=0.
+# endif
 
       end subroutine init_arrays_bec2_vars  !]
 
@@ -236,10 +292,56 @@ C
       tclm_name(iN2) = 'n2_time'
       tclm_name(iN2O) = 'n2o_time'
 # endif
+# ifdef MAGBEC_COUPLE 
+      tclm_name(iKELPPOClrg) = 'kelppoclrg_time'
+      tclm_name(iKELPPOCsm)  = 'kelppocsm_time'
+      tclm_name(iKELPPOChrv)  = 'kelppochrv_time'
+      tclm_name(iKELPDOC)   = 'kelpdoc_time'
+      tclm_name(iKELPDOCR)  = 'kelpdocr_time'
+
+# endif
+
+
 #endif /* SOLVE3D */
 
       end subroutine init_scalars_bec2  !]
 ! ----------------------------------------------------------------------
-C
+
+!----------------------------------------------------------------------
+      subroutine get_init_trc_sed(ncid,record)  ![
+      ! get initial sediment 
+      implicit none
+
+      ! input
+      integer,intent(in) :: ncid,record
+
+# ifdef SED_BUCKET
+      ! local
+      integer :: itrc
+      integer :: ierr, varid
+      integer,dimension(3) :: start
+
+      start=1; start(3)=record              ! 2D vars
+
+      do itrc=1,NT_sed
+
+        ierr=nf90_inq_varid(ncid, t_sed_vname(itrc), varid)
+        if (ierr == nf90_noerr) then
+          call ncread(ncid, t_sed_vname(itrc), t_sed(i0:i1,j0:j1,itrc), start)
+          t_sed(i0:i1,j0:j1,itrc)=t_sed(i0:i1,j0:j1,itrc)*rmask(i0:i1,j0:j1)
+          call exchange_xxx(t_sed(:,:,itrc) )
+        else
+          t_sed(GLOBAL_2D_ARRAY,itrc) = 0.0
+          if(mynode==0) write(*,*) ' --- WARNING : '
+     &         , trim(t_sed_vname(itrc))
+     &         , ' not in initial file.  Initialized to 0.0'
+          ierr=nf90_noerr
+        endif
+
+      enddo
+# endif /* SED_BUCKET */
+      end subroutine get_init_trc_sed
+! ----------------------------------------------------------------------
+
 #endif /*BIOLOGY_BEC2 */
       end module bec2_vars

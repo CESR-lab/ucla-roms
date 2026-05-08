@@ -43,6 +43,7 @@
       use scalars
       use analytical
       use boundary
+      use mag
 
       implicit none
 
@@ -135,7 +136,13 @@ c***              no code here
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       call set_bgc_surf_frc(istr,iend,jstr,jend)
 # endif
-
+      ! MAG focing
+      ! can be prescribed biomass and/or surface flux of POC kelp (for
+      ! sinking biomass)
+# if defined MAG
+      !print *, 'HELLO SET MAG FORCE FROM SET FORCES'
+      call set_mag_frc
+# endif
 
       if (river_source) then
         frctype = 'RIVERS:'

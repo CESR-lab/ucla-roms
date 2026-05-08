@@ -89,7 +89,8 @@
       ! input
       integer               :: ncid
       character(len=*)      :: vname
-      real,dimension(:,:,:),contiguous :: dat
+!     real,dimension(:,:,:),contiguous :: dat
+      real,dimension(:,:,:) :: dat
 
       integer,dimension(:),optional :: start
 
@@ -184,7 +185,8 @@
       ! input
       integer               :: ncid
       character(len=*)      :: vname
-      real,dimension(:,:,:),contiguous :: dat
+!     real,dimension(:,:,:),contiguous :: dat
+      real,dimension(:,:,:) :: dat
 
       integer,dimension(:),optional :: start
 
@@ -194,7 +196,6 @@
       integer,dimension(4) :: count
       real,dimension(:,:,:),allocatable :: tmp
 
-      
       dims = shape(dat)
       allocate(tmp(dims(1),dims(2),dims(3)))
       tmp = dat

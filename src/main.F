@@ -114,6 +114,11 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use bec2_params
       use bgc_io
 # endif
+#ifdef MAG
+      use mag
+#endif
+
+
 
       implicit none
 
@@ -167,8 +172,6 @@ C$OMP BARRIER
       
       call get_grid                  ! can be analytic or from netcdf
 
-      call init_diagnostics  
-      print *,'calc_diag: ',calc_diag
 
 #ifdef NHMG
       call nhmg_init(nx,ny,nz,npx,npy)
@@ -221,6 +224,10 @@ CR      write(*,*) ' -6' MYID
                                     ! either analytically or read
       if (nrrec > 0) then 
 #endif
+#ifdef MAG
+      call set_mag_frc
+#endif
+
 
       
 #ifdef EXACT_RESTART
@@ -281,6 +288,12 @@ CR      write(*,*)  ' -2' MYID
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
+#ifdef MAG
+      call wrt_mag_from_main
+#endif
+
+
+       call init_diagnostics  
       if (do_random) call init_random
       if (do_cstar)  call init_cstar
 
@@ -323,6 +336,7 @@ CR      write(*,*)  ' -2' MYID
       use bgc_io
       use tides
       use mixing
+      use mag
 
       implicit none
 
@@ -455,8 +469,8 @@ CR      write(*,*)  ' -2' MYID
 
       call diag  ! log file output of global norms
 
-      call wrt_his_ocean_vars
       call wrt_rst_ocean_vars
+      call wrt_his_ocean_vars
       call wrt_avg_ocean_vars
 
       if (do_extract) call do_extract_data
@@ -479,5 +493,9 @@ CR      write(*,*)  ' -2' MYID
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc
 #endif
+#if defined MAG
+      call wrt_mag_from_main
+#endif
+
 
       end

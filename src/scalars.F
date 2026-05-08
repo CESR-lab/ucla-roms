@@ -90,26 +90,11 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
       real v_sponge
 #endif
 
-# if defined OBC_M2ORLANSKI && ( defined M2_FRC_BRY \
-                               || defined M2NUDGING )
-      real attnM2
-# endif
+      real,parameter :: attnM2 = 0.005 
 
 
+      real :: ubind   ! controls restoring time in some obc cases
 
-#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined TNUDGING \
-  || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
-                                             || defined M3NUDGING
-      real ubind
-
-
-/* --> OBSOLETE
-      real tauM2_in, tauM2_out
-# ifdef SOLVE3D
-      real tauM3_in, tauM3_out,  tauT_in, tauT_out
-# endif
-*/
-#endif
 
       integer ntstart, ntimes, ndtfast, nfast, ninfo, may_day_flag,
      &                                                barr_count(16)
@@ -117,20 +102,22 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
       integer forw_start
 #endif
 
-! Physical constants:  Earth radius [m]; Aceleration of gravity
-!--------- ----------  duration of the day in seconds; Specific
-! heat [Joules/kg/degC] for seawater (it is approximately 4000,
-! and varies only slightly, see Gill, 1982, Appendix 3);  von
-! Karman constant.
+ 
+! Physical constants:  
+! Specific heat [Joules/kg/degC] for seawater is approximately 4000,
+! and varies only slightly, see Gill, 1982, Appendix 3
 
-      real, parameter :: pi=3.14159265358979323, Eradius=6371315.,
-     &              deg2rad=pi/180., rad2deg=180./pi, day2sec=86400.,
-     &                   sec2day=1./86400., Cp=3985., vonKar=0.41
-     &                 , g=9.81 ! m/s^2
-#if defined(BIOLOGY_BEC2) || defined(MARBL)
-      real nmol_cm2_to_mmol_m2
-      parameter (nmol_cm2_to_mmol_m2 = 0.01)
-#endif
+      real,parameter :: Eradius = 6371315.        ! Earth radius (m)
+      real,parameter :: g=9.81                    ! Gravity acceleration m/s^2 
+      real,parameter :: Cp = 3985.                ! Specific heat (J/kg/degC)
+      real,parameter :: vonKar = 0.41             ! von Karman constant
+      real,parameter :: day2sec=86400.            ! Seconds per day [s]
+      real,parameter :: sec2day=1./86400.
+      real,parameter :: cmday2ms = 0.01/day2sec   ! cm/day to m/s
+      real,parameter :: pi = 3.14159265358979323
+      real,parameter :: deg2rad=pi/180.  
+      real,parameter :: rad2deg=180./pi
+      real,parameter :: nmol_cm2_to_mmol_m2 = 0.01
 
       real :: init  !=1.0e+33          ! initialize all arrays. set to huge number to check for bugs.
 

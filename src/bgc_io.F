@@ -99,7 +99,14 @@
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
 # include "compute_extended_bounds.h"
 #endif
-
+!DANIEL ADD FOR IDEALIZED (ANA_BEC_FRC)
+#ifdef ANA_BEC_FRC
+      dust=dust0
+      iron=iron0
+#ifdef PCO2AIR_FORCING
+      pco2air=pco2air0
+#endif
+#else
 
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
 !     call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
@@ -114,7 +121,10 @@
       call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
 #endif      
 #endif /* PCO2AIR_FORCING */
-      
+
+#endif /* ANA_BEC_FRC */
+
+
 #ifdef NOX_FORCING
       call set_frc_data(nc_nox,nox,'r')
 #endif /* NOX_FORCING */   

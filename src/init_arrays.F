@@ -63,6 +63,7 @@
       use bgc_shared_vars
       use bgc_forces
       use bgc_io
+      use mag
 
       implicit none
       integer, intent(in) :: istr, iend, jstr, jend
@@ -173,6 +174,10 @@
       call init_arrays_bgc_shared_vars
       call init_arrays_bgc_forces
       call init_arrays_bgc_frc
+#endif
+
+#if defined MAG
+      call init_arrays_mag
 #endif
 
       end

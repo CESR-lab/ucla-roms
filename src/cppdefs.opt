@@ -5,63 +5,94 @@
  * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
  */
 
-#define PACIFIC_PD /* PierreD's pacific coast model with tau-correction */
-c-dd#define USWC_sample
 
-/*
-    Embedded (nested) grid configuration segment
-*/
+! PARENT --> DOUBLY PERIODIC BOX TO SPIN UP FLOW
+!#define IDEAL_FARM_PARENT
+!--> NESTED WITH BEC,MAG
+!#define UPWELL_BGC
 
-c--#ifndef MAX_GRID_LEVEL
-c--# define MAX_GRID_LEVEL 2
-c--# include "redefs.X"
-c--#endif
+#define IDEAL_CHANNEL_FARM
 
+
+#if defined IDEAL_CHANNEL_FARM
 /*
    Main switch starts here: model configuration choice.
 */
+!never turn off sink_tracer with tracer.opt
+# define SINK_TRACER
 
-#if defined PACIFIC_PD || defined USWC_sample
-/* PierreD's pacific coast model */
+!artificial pressure gradient for channel inflow
+#define ARTIFICIAL_PGF_ETA
 
-c-dd#define BIOLOGY_BEC2
-c-dd# define WEC
+/*analytical wind-stress in param*/
+# define ANA_WINDSTRESS
+
+/* MAG AND BEC BIG KEYS */ 
+# define BIOLOGY_BEC2
+# define MAG
+
+/* MAG SPECIFIC KEYS */ 
+#ifdef MAG
+!# define ANA_MAG_INIT     /* prescibe mag IC analytically (online)*/
+
+# define MAG_EVOLVE       /* time-step MAG */
+# define ALGAE_DRAG       /* ROMS-MAG kelp drag*/
+# define MAGBEC_COUPLE    /* ROMS-BEC bgc coupling*/
+# define MAGBEC_SHADING   /* canaopy shading for PAR in BEC */
+
+
+!Eventually delete these CPPs
+# define MAGBEC_CPL_POCKELP
+# define MAGBEC_CPL_NO3
+# define MAGBEC_CPL_O2
+# define MAGBEC_CPL_NH4
+# define MAGBEC_CPL_PO4
+# define MAGBEC_CPL_DIC
+#endif
+
+
+/* Biology Settings */
+#ifdef BIOLOGY_BEC2
+# define BIOLOGY                  /* DPD current does nothing in new code. Needed for init_scalars.F */
+# define DEFAULT_BRY_VALUES       /* Default values set to tracers not found in bry forcing file */
+# define PCO2AIR_FORCING          /* CO2 forcing */
+!Analytical BEC forcing
+!# define ANA_BEC_INI         /* analytical initial condition */
+# define ANA_PAR                 /* anlayitcal PAR (for idealized) */
+# define ANA_BEC_FRC             /* Const. dust, iron, pco2air */
+# define BEC2_DIAG              /* diagnostics thing that is necessary for compilation */
+#endif /* BIOLOGY_BEC2 */
+
+/* Grid Configuration */
+c#define CURVGRID
+c#define SPHERICAL
+#define MASKING
+
 
 /* Basics */
 #define SOLVE3D
 #define UV_ADV
 #define UV_COR
-c--#define ADV_ISONEUTRAL
+
+!CAUSES NOISE AT BOUNDARIES IN THIS SETUP!
+!leaving here for record, do not turn on in idealzied channel!
+c#define ADV_ISONEUTRAL
+
 
 /* Equation of State */
-#define NONLIN_EOS
-#define SPLIT_EOS
+#define LIN_EOS
 #define SALINITY
 
 /*  Forcing */
+/*atmospheric*/
+# define ANA_SMFLUX
+# define ANA_SRFLUX
+# define ANA_STFLUX
+# define ANA_SSFLUX
+!# define DIURNAL_SRFLUX_ANA
 
-/*   - surface */
-#define BULK_FRC         /* comment out for default flux forcing */
-#define DIURNAL_SRFLUX   /* Note this is 'undef'ed' below */
-c-dd#define QCORRECTION  /* DevinD no longer used for bulk force */
-c-dd#define SFLX_CORR    /* DevinD turned off as new 25km input wrong for sss */
-
-/*   - switches required for flux correction */
-#undef VFLX_CORR
-#undef QCORRECTION
-c-dd#define TAU_CORRECTION
-#undef DIURNAL_SRFLUX
-
-/*   - lateral */
-#define T_FRC_BRY
-#define Z_FRC_BRY
-#define M3_FRC_BRY
-#define M2_FRC_BRY
-#define SPONGE
-#define SPONGE_WIDTH /* # of sponge points is input parameter */
 
 /* Mixing */
-
 /*  - lateral */
 #define UV_VIS2
 #define TS_DIF2
@@ -71,82 +102,173 @@ c-dd#define TAU_CORRECTION
 #define LMD_KPP
 #define LMD_NONLOCAL
 #define LMD_RIMIX
-#define LMD_CONVEC
+!NO LMD CONVEC!!  --> BAD!
+!#define LMD_CONVEC
 #define LMD_BKPP
 
-/* Grid Configuration */
-#define CURVGRID
-#define SPHERICAL
-#define MASKING
 
-/* Output Options */
-#define MASK_LAND_DATA
+/* Boundary Conditions */
+/*   - lateral */
 
-/* Restart */
-c#define EXACT_RESTART
+#define SPONGE
+! hardcoded CPP to only sponge eastern boundary
+# define NOSPONGE_WEST
+
+
 
 /* Open Boundary Conditions */
-#define OBC_M2FLATHER  /* Barotop. BC: OBC_M2FLATHER, OBC_M2ORLANSKI, OBC_M2SPECIFIED */
-#define OBC_M3ORLANSKI /* Baroclin. BC: OBC_M3ORLANSKI, OBC_M3SPECIFIED */
-#define OBC_TORLANSKI  /* Tracer BC: OBC_TORLANSKI, OBC_TSPECIFIED */
+!ANA_BRY TO USE INITIAL CONDITION AS BRY
+#define ANA_BRY
 
+!Nudge to bry values
+#define T_FRC_BRY
+#define Z_FRC_BRY
+#define M3_FRC_BRY
+#define M2_FRC_BRY
 
-/* Open Boundaries */
-#define OBC_WEST /* Open boundary in the west (in order: SO out, SO in, Ind. throughflow) */
-#define OBC_NORTH  /* Open boundary North (Arctic) */
+!#define OBC_M3SPECIFIED
+!trying zero grad BC
+! comment out OBC_M3_ORLANSKI
+! test M2_FRC_BRY / sponge
+
+# define OBC_M3ORLANSKI
+#define OBC_M2FLATHER
+#define OBC_TSPECIFIED
+#define OBC_WEST
 #define OBC_EAST
-#define OBC_SOUTH
-#undef SPONGE /* DevinD - defined in cppdefs_UP.h */
+
+
+#define NS_PERIODIC
+!#define OBC_NORTH
+!#define OBC_SOUTH
+
+
+
+#elif defined UPWELL_BGC
+/*
+   Main switch starts here: model configuration choice.
+*/
+!never turn off sink_tracer with tracer.opt
+# define SINK_TRACER
+
+/*analytical wind-stress in param*/
+# define ANA_WINDSTRESS
+
+/* MAG AND BEC BIG KEYS */ 
+# define BIOLOGY_BEC2
+# define MAG
+
+/* MAG SPECIFIC KEYS */ 
+#ifdef MAG
+# define ANA_MAG_INIT     /* prescibe mag IC analytically (online)*/
+
+# define MAG_EVOLVE       /* time-step MAG */
+# define ALGAE_DRAG       /* ROMS-MAG kelp drag*/
+# define MAGBEC_COUPLE    /* ROMS-BEC bgc coupling*/
+# define MAGBEC_SHADING   /* canaopy shading for PAR in BEC */
+
+
+!Eventually delete these CPPs
+# define MAGBEC_CPL_POCKELP
+# define MAGBEC_CPL_NO3
+# define MAGBEC_CPL_O2
+# define MAGBEC_CPL_NH4
+# define MAGBEC_CPL_PO4
+# define MAGBEC_CPL_DIC
+#endif
+
+
 
 /* Biology Settings */
 #ifdef BIOLOGY_BEC2
 # define BIOLOGY                  /* DPD current does nothing in new code. Needed for init_scalars.F */
 # define DEFAULT_BRY_VALUES       /* Default values set to tracers not found in bry forcing file */
-# define BEC2_DIAG                /* BGC diagnostics */
-# define Ncycle_SY                /* N Cycle with NO2, N2O and N2 tracers */
-# undef N2O_TRACER_DECOMP         /* Deleted  */
-# undef N2O_NEV                   /* Deleted  */
-# undef RIVER_LOAD_N              /* under construction */ 
-# undef RIVER_LOAD_P              /* under construction */
-c-dd# undef define NHY_FORCING        /* under construction */
-c-dd# undef define NOX_FORCING        /* under construction */
 # define PCO2AIR_FORCING          /* CO2 forcing */
-# undef BEC_COCCO                 /* Coccolitophorus */ 
-# undef TDEP_REMIN                /* Temperature dependency for Particulate  remin */ 
-# undef DAILYPAR_BEC              /* daily average value used for BGC (ony works with bulk) */ 
-# undef DAILYPAR_PHOTOINHIBITION  /* daily average value used only for the evaluation of photoinhibited  nitrification */
+!Analytical BEC forcing
+# define ANA_BEC_INI         /* analytical initial condition */
+# define ANA_PAR                 /* anlayitcal PAR (for idealized) */
+# define ANA_BEC_FRC             /* Const. dust, iron, pco2air */
+# define BEC2_DIAG              /* diagnostics thing that is necessary for compilation */
 #endif /* BIOLOGY_BEC2 */
 
-/* Tides */
-#ifdef PACIFIC_PD
-# define TIDES
-#endif
-#ifdef TIDES
-# define POT_TIDES
-# define SSH_TIDES
-# define UV_TIDES
-c-dd-gone#  define TIDERAMP ! No longer using tideramp
-#endif
 
-#ifdef WEC
-# define BRK0
-# define SURFACE_BREAK
-# undef SPEC_DD
-# undef LOG_BDRAG
-# undef WKB_WWAVE
-# undef BBL
-# define WAVE_OFFLINE
-# define WAVE_FRICTION
-# define BBL_S95
-c# define BBL_F00
-# define SUP_OFF
-# define WAVE_DIFF_FROM_LM
-#endif /* WEC */
 
-#elif defined DUMMY_CASE
 
-# define MASKING
 
+
+!analytical initial condition
+# define ANA_GRID
+# define ANA_INITIAL
+# define ANA_BRY
+
+/* Grid Configuration */
+c#define CURVGRID
+c#define SPHERICAL
+#define MASKING
+
+
+/* Basics */
+#define SOLVE3D
+#define UV_ADV
+#define UV_COR
+
+!CAUSES NOISE AT BOUNDARIES IN THIS SETUP!
+!leaving here for record, do not turn on in idealzied channel!
+c#define ADV_ISONEUTRAL
+
+
+/* Equation of State */
+#define LIN_EOS
+#define SALINITY
+
+/*  Forcing */
+/*atmospheric*/
+# define ANA_SMFLUX
+# define ANA_SRFLUX
+# define ANA_STFLUX
+# define ANA_SSFLUX
+! PLAYING WITH DIURNAL SURFACE FLUX
+!# define DIURNAL_SRFLUX_ANA
+
+
+/* Mixing */
+/*  - lateral */
+#define UV_VIS2
+#define TS_DIF2
+
+/*  - vertical */
+#define LMD_MIXING
+#define LMD_KPP
+#define LMD_NONLOCAL
+#define LMD_RIMIX
+#define LMD_BKPP
+
+
+/* Boundary Conditions */
+/*   - lateral */
+
+!Open in west, N/S periodic, closed in east
+#define OBC_WEST
+#define NS_PERIODIC
+
+! 2D radiation
+#define OBC_M2FLATHER
+! Tracer radiation (orlanski)
+#define OBC_TORLANSKI
+! no M3 velocity defined --> defaults to zero-gradient
+!# define OBC_M3ORLANSKI
+
+!Nudging (tracers and zeta)
+#define T_FRC_BRY
+#define Z_FRC_BRY
+#define M2_FRC_BRY
+!#define M3_FRC_BRY
+
+!OTHER OPTIONS
+!#define OBC_TSPECIFIED
+!#define OBC_M3SPECIFIED
+
+#define SPONGE
 #endif
 
 

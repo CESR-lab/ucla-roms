@@ -66,7 +66,7 @@
       real,allocatable,dimension(:,:) :: hbbl
 #endif /* SOLVE3D */
 
-      integer :: sponge_size  ! number of grid point of sponge layer
+      !integer :: sponge_size  ! number of grid point of sponge layer
 
       contains
 

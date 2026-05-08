@@ -1,0 +1,211 @@
+
+      ! ****************************************************************
+      ! OPTIONS FILE FOR MAG ([Mo]MAG version) in ROMS
+      ! 	COUPLING PARAMETERS FOR ROMS (drag) and BEC in here
+
+      ! ======================================================================
+      ! --- HARVEST PARAMETERS  ---
+      ! ======================================================================
+      ! [NAME]                [UNIT]                [DESCRIPTION]
+      ! ----------------------------------------------------------------------
+      ! harvest_thresh_b2d   [g-dry / m^2]      threshold to harvest 
+      ! harvest_rate         [1/sec]            harvest rate 
+      ! harvest_t0           [sec]              time to start harvest 
+      ! harvest_t1           [sec]              time to stop harvest     
+      ! ----------------------------------------------------------------------
+      real, parameter :: harvest_thresh_b2d = 200 
+      ! USE LARGE harves_t0 to disable harvesting 
+      !real, parameter :: harvest_t0 =  30*12*86400         
+      real, parameter :: harvest_t0 = 30*100000*8400
+      real, parameter :: harvest_t1 = harvest_t0 + (5.0*86400)
+      real, parameter :: harvest_rate = 1 /(3.0* 86400)
+ 
+      ! ======================================================================
+      ! --- [Mo]MAG PARAMETERS  ---
+      ! ======================================================================
+      ! [NAME]          [UNIT]                [DESCRIPTION]
+      ! ----------------------------------------------------------------------
+
+      ! ---- JUVENILE GROWTH (!!NOT USED RIGHT NOW!!) ---
+      ! juve_age        [sec]                juvenile age threshold  
+      ! g0_juve         [1/sec]              const. juvenile growth rate
+
+
+      ! -- [Mo]MAG GROWTH MODEL (REGRESSION MODEL) --
+      ! NPP_max         [g-dry/m^2/sec]      maximum allowed NPP 
+      ! NPP_coeff_no3   [m^3 /( mmol*sec)]   nitrate NPP coefficient
+      ! NPP_coeff_par   [m^2 W^-1 sec^-1]    PAR NPP coefficient
+      ! NPP_coeff_age   [1/sec^2]            age NPP coefficient
+      ! L_coeff_no3     [m^3 /( mmol*sec)]   nitrate LOSS coefficient (>0)
+      ! L_coeff_par     [m^2 W^-1 sec^-1]    PAR LOSS coefficient  (>0)
+      ! L_coeff_age     [m^3 /( mmol*sec)]   age LOSS coefficient  (>0)
+      
+      !-- LOSS PARTITIONING  --
+      ! coeff_frondL    [none]               frac. of losses to fronds (large POC) 
+      ! coeff_exuL      [none]               frac. of losses to exudation 
+      ! coeff_spomL     [none]               frac. of losses to small POC 
+      ! ---------------------------------------------------------------------
+
+      ! ---- JUVENILE GROWTH (**NOT CURRENTLY USED IN MODEL**) ---
+      ! Make juvenile age = 0 for now before we get early-stage model in there
+      real(8), parameter :: juve_age = 0  
+      real(8), parameter :: g0_juve = 2.43e-7 
+
+      ! -- [Mo]MAG GROWTH MODEL (REGRESSION MODEL) --
+      real(8), parameter :: NPP_max = 0.08*1e3/86400.
+      ! Soure: Jupyter notebook of LTER analysis, values taken from MoMAG_redux.ipynb 
+      !    these regression coefficients use an attenuated par (see notebook)
+      real(8), parameter :: NPP_coeff_no3 = 3.3618226390488955e-08 !1.9237391549923817e-0 
+      real(8), parameter :: NPP_coeff_par = 6.650615956500967e-09 !5.754628863071285e-09
+      real(8), parameter :: NPP_coeff_age = 2.3895833092979957e-15 ! 1.8707905305101746e-15 
+      real(8), parameter :: L_coeff_no3 = 1.5978024365851195e-08 !7.28593426747482e-09 
+      real(8), parameter :: L_coeff_par = 3.75049679956388e-09 !3.3354163903513155e-09   
+      real(8), parameter :: L_coeff_age =  6.753312935978203e-15 !6.390461127977898e-15   
+
+
+
+      ! --- LOSS PARTITIONING --
+      ! arbitrarily partition into thirds due to lack of data 
+      real, parameter :: coeff_frondL = 1./3.
+      real, parameter :: coeff_exuL   = 1./3.
+      real, parameter :: coeff_spomL  = 1 - (coeff_exuL + coeff_frondL)
+
+           
+      ! =======================================================================
+      ! --- KELP VERTICAL SHAPE ---
+      !
+      ! 	length = (Hmax * B) / (Hmax + Kh)
+      !   where B is a vert. integrated biomass [g-dry/m^2] 
+      ! 
+      !  	Hmax is now a function of z_cult (Hmax ~ 3 * abs(z_cult))
+      !         Kh derived from assuming 1 m long plant at 2 months
+      !         using B=B_0 at 2months = 0.0177e3 g-dry/m^2
+      ! 
+      ! =======================================================================
+      ! [NAME]         [UNIT]         [DESCRIPTION]
+      ! -----------------------------------------------------------------------
+      ! Kh            [g-dry/m^2]    half-saturation const. for length
+      ! Hmax          [m]            maximum length
+      ! cmax_shape    [none]         max fraction of biomass redistr. in canopy
+      ! Hc            [m]            vert scale for canopy accumulation 
+      ! -----------------------------------------------------------------------
+      real, parameter :: Kh = 513.3
+      real, parameter :: Hmax = 30 
+      real, parameter :: cmax_shape = 0.6
+      real, parameter :: Hc = 0.5
+
+
+
+      ! ======================================================================
+      ! --- KELP DRAG PARAMETERS  ---
+      ! ======================================================================
+      ! [NAME]                [UNIT]                [DESCRIPTION]
+      ! ----------------------------------------------------------------------
+      ! P_alge                [none]       plant morphology tensor 
+      ! Cd_alge               [none]       drag coefficeint 
+      ! ---------------------------------------------------------------------
+
+      ! 1/2 due to lack of data (assume plant moves in all directions)
+      real,parameter,public :: P_algae=0.5 
+      !Value from Utter & Denny 1996  
+      real,parameter,public :: Cd_algae=0.0148
+
+      ! =======================================================================
+      ! --- MISC KELP PARAMETERS ---
+      ! =======================================================================
+      ! [NAME]         [UNIT]         [DESCRIPTION]
+      ! -----------------------------------------------------------------------
+      ! sa2b0         [m^2 / g-wet]   surface area to biomass (used for LAD) 
+      ! dry_wet       [g-dry/g-wet]   dry to wet weight conversion 
+      ! Qmin          [mg N / g-dry]  nitrogen nutrient quota (for conv to B)
+      ! MW_N          [g/mol]         molecular weight of N
+      ! ----------------------------------------------------------------------- 
+      real, parameter :: sa2b0 = 32.2e-4
+      real, parameter :: dry_wet = 0.094 
+      real, parameter :: Qmin    = 10   
+      real, parameter :: MW_N = 14.006720 
+     
+
+      ! =======================================================================
+      ! --- BEC COUPLING PARAMETERS ---
+      ! =======================================================================
+      ! [NAME]            [UNIT]        [DESCRIPTION]
+      ! -----------------------------------------------------------------------
+      
+      ! --- LIGHT ATTENUATION --
+      ! PAR_KNf           [m^2 / mg N]  light attenuation factor
+      
+      ! -- DOM & POM PARTITIONING -- 
+      ! fdic_kelp_exu    [none]        fraction of kelp exu to DIC [0-1] 
+      ! fdoc_kelp_exu    [none]        fraction of kelp exu to DOC [
+      ! fdic_kelp_remin  [none]        fraction of kelp POM remin to DIC
+      ! fdoc_kelp_remin  [none]        fraction of kelp POM remin to DOC
+      ! fdonR_kelp_exu   [none]        fraction of kelp DOM exu that is refractory
+      ! fdocR_kelp_remin [none]        fraction of kelp POM remin that is refractory
+      
+      ! -- DOM & POM DEGRADATION -- 
+      ! parm_kelp_d0_poclrg [1/sec]     degradation rate for kelp POC (large)     
+      ! parm_kelp_d0_pocsm  [1/sec]     degradation rate for kelp POC (small)     
+      ! parm_kelp_d0_pochrv [1/sec]     degradation rate for kelp POC (harvested)     
+      ! parm_kelp_d0_doc  [1/sec]       degradation rate for kelp DOC (labile)       
+      ! parm_kelp_d0_docr [1/sec]       degradation rate for kelp DOC (refractory)       
+      ! parm_kelp_d0_Q10  [none]        remin const        
+      ! parm_kelp_d0_T0   [deg C]       temp dependence for degradation        
+      ! parm_kelp_d0_ko2  [mmol O/m^3]  half saturation constant        
+
+
+      ! --- STOCHIOMETRY ---
+      ! Qkelp_CtoN       [none]         kelp C:N ratio
+      ! Qkelp_NtoC       [none]         kelp N:C ratio
+      ! Qkelp_PtoN       [none]         kelp P:N ratio
+      ! Qkelp_PtoN       [none]         kelp P:N ratio
+      ! Qkelp_PtoC       [none]         kelp P:C ratio
+      ! Qkelp_OtoC       [none]         kelp O:C ratio
+     
+      ! ----------------------------------------------------------------------- 
+ 
+      !----- LIGHT ATTENUATION ------- 
+      !PAR_Knf is public for use in BEC
+      real, parameter, public :: PAR_KNf   = 0.0001 
+
+      !----DOM & POM PARTITIONING ----
+      real, parameter, public :: fdic_kelp_exu = 0.5
+      real, parameter, public :: fdoc_kelp_exu = 1 - fdic_kelp_exu
+      real, parameter, public :: fdic_kelp_remin = 0.5
+      real, parameter, public :: fdoc_kelp_remin = 1 - fdic_kelp_remin
+
+      !0.2 refractory, 0.8 is labile (1-fdonR_algae_Exu)
+      real, parameter, public :: fdonR_kelp_exu = 0.2
+      !0.2 refractory, 0.8 is labile (1-fdonR_algae_Exu)
+      real, parameter, public :: fdocR_kelp_remin = 0.2
+          
+
+      ! -- DOM & POM DEGRADATION --
+      real, parameter, public :: parm_kelp_d0_poclrg = 0.1/ 86400.
+      real, parameter, public :: parm_kelp_d0_pocsm = 0.1/ 86400.
+      real, parameter, public :: parm_kelp_d0_pochrv = 0.1/ 86400.
+      real, parameter, public :: parm_kelp_d0_doc = 0.13 / 86400.
+      real, parameter, public :: parm_kelp_d0_docr = 0.013 / 86400. 
+      real, parameter, public :: parm_kelp_Q10 = 2.4      
+      real, parameter, public :: parm_kelp_T0  = 4        
+      real, parameter, public :: parm_kelp_ko2  = 13      
+ 
+
+      !---STOCHIOMETRY----
+      !S ource: Sheppard et al. 2023 (DOI: 10.1111/jpy.13381)
+      real, parameter, public :: Qkelp_CN = 15.
+      real, parameter, public :: Qkelp_NC = 1/15.
+      real, parameter, public :: Qkelp_PN = 1./20
+      real, parameter, public :: Qkelp_PC = 1./300.
+      real, parameter, public :: Qkelp_OC = 300./354.
+    
+
+      !---------------------------------------------
+      !OLD / DEPRACATED PARAMS (here for tracking in code)
+      !--------------------------------------
+
+
+
+
+      ! End of user inputs
+      ! *************************************************************

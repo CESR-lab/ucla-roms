@@ -22,6 +22,7 @@ c--# define CONST_TRACERS
       use param
       use roms_mpi
       use private_scratch
+      use mag
 
       implicit none               ! are repeated to use the same memory
       integer tile                ! for vertical and horizontal scratch
@@ -54,10 +55,11 @@ c--# define CONST_TRACERS
      &                                                             )
 
       use param
+      use bulk_frc
       use pipe_frc
       use cdr_frc
       use river_frc
-      use surf_flux, only: stflx, srflx
+      use surf_flux
       use tracers
 #ifdef MARBL
       use marbl_driver, only: marbldrv_column_physics
@@ -69,6 +71,8 @@ c--# define CONST_TRACERS
       use ocean_vars
       use scalars
       use roms_mpi
+      use bulk_frc, only: tair
+      use mag
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
@@ -860,6 +864,24 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
+          ! Add or remove the heat of water, due to evaporation or precipitation
+          ! both effects would work slightly differently. 
+          ! We started with the actual water temperature to avoid temperature effects
+          ! But it is unstable so swtich to air temperature
+          ! for the time being untill something better is suggested
+          if (itrc.eq.1) then
+            do i=istr,iend
+               t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)  ! +  dt*pm(i,j)*pn(i,j)*
+
+!Daniel added this if/else b/c not using bulk_frc in idealized case
+#ifdef BULK_FRC
+     &            + dt*swflx(i,j)*tair(i,j)
+#else
+     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+#endif
+            enddo
+          endif
+
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
@@ -963,8 +985,13 @@ c??         enddo
             FC(i,1)=2.*dt* Akt(i,j,1,iAkt)
 # endif
      &                           /(Hz(i,j,1)+Hz(i,j,2))
-            WC(i,1)=DC(i,0)*Wi(i,j,1)
-
+            WC(i,1)=DC(i,0)*( Wi(i,j,1)
+#ifdef SINK_TRACER
+                        ! t_wsink -> [m/s]
+     &                + (t_wsink(itrc) * (1./( pm(i,j)*pn(i,j) ))))
+#else
+     &                                             )
+#endif
             cff=1./(Hz(i,j,1) +FC(i,1)+max(WC(i,1),0.))
             CF(i,1)=cff*(      FC(i,1)-min(WC(i,1),0.))
             DC(i,1)=cff*t(i,j,1,nnew,itrc)
@@ -978,7 +1005,14 @@ c??         enddo
 # endif
      &                            /(Hz(i,j,k)+Hz(i,j,k+1))
 
-              WC(i,k)=Wi(i,j,k)*DC(i,0)
+              WC(i,k)=DC(i,0) * ( Wi(i,j,k)
+#ifdef SINK_TRACER
+                     ! t_wsink -> [m/s]                
+     &                + (t_wsink(itrc) * (1./( pm(i,j)*pn(i,j) ))))
+#else
+     &                                             )
+#endif
+
 
               cff=1./( Hz(i,j,k) +FC(i,k)+max(WC(i,k),0.)
      &                         +FC(i,k-1)-min(WC(i,k-1),0.)
@@ -1058,6 +1092,31 @@ c??         enddo
         call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
 
       enddo     !<-- itrc
+ 
+#if defined MAG_EVOLVE
+      ! Evolve Macroalgae 
+      ! step_mag time-steps 2D algae biomass to next
+      ! ROMS time-step (t=n+1)
+      ! along the way, it computes terms for BEC coupling using fields
+      ! current time-step (t=n)
+      !         - (nitrate) uptake
+      !         - loss due to exudation
+      !         - small POC losses
+      !         - large/frond loss (contribution to POCkelp)
+      !         - PAR shading fraction (?? do this in BEC or base it off
+      !         of 'previous' time-step?)
+      !         - remin. of sinking large POCkelp (THIS ONE IS COMPUTED
+      !         ONLIN IN BEC AS IT IS NOT A FUNCTION OF LIVE MAG BIOMASS)
+     
+      ! make sure t(iNO3) is in correct units (and not *Hz)??
+      if (.not.FIRST_TIME_STEP.and.kelp_initialized) then
+            if (mynode==0) then
+                 print *, 'evolving macroalgae with MoMAG'
+            endif
+         call step_mag
+      endif
+#endif
+
 
 # if defined(MARBL)
       call marbldrv_column_physics(istr,iend,jstr,jend,t)

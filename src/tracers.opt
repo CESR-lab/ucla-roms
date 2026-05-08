@@ -54,14 +54,526 @@
 !             True/False to output tracer diagnostics.
 !
 ! nt_passive= Number of passive tracers (default=0). Set here is you have them.
+! t_bry_dat = True/False flag for whether we expect data in the boundary data
+!             If not specified, t_bry_dat is true and data needs to be specified
+!             in the boundary netcdf files.
+! t_bry_val = If the t_bry_dat is false, we can specify a constant value for
+!              the tracer at the boundary. If not specified, this  t_bry_val=0
+!
 
-! - TEMP & SALT:
+! t_wsink = sinking velocity of tracer (explicitly added); used for bgc/seaweed/passive tracers
+!           for now, need to declare for every tracer (even temp/salt, even though=0)
 
-      wrt_t     (itemp)=.True.;    wrt_t_avg(itemp) =.True.    ! temp
+
+!  Temperature and salinity are considered 'core' tracers and will always be
+!  computed. Variable names and attributes are hardcoped and not optional
+!  The options below should go to a basic_output.opt file
+
+      wrt_t(itemp)     = .true.
+      wrt_t_avg(itemp) = .true.
       wrt_t_dia(itemp) = .true.
-      
-#ifdef SALINITY
-      wrt_t     (isalt)=.True.;    wrt_t_avg(isalt) =.True.    ! salinity
+      t_wsink(itemp) = 0. !should not be needed
+
+      wrt_t(isalt)     = .true.
+      wrt_t_avg(isalt) = .true.
       wrt_t_dia(isalt) = .true.
+      t_wsink(isalt) = 0. ! should not be needed
+
+
+#ifdef BIOLOGY_BEC2
+
+      ! itrc_bio=1+iTandS ! Starting tracer index for bgc tracers. Set in tracers_defs.h
+
+      itot=itot+1;                iPO4=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='PO4';        t_units  (itot)='mMol P m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Phosphate'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.14
+      !t_anamax(itot) = 1.44 
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iNO3=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='NO3';        t_units  (itot)='mMol N m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Nitrate'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 1.5
+      !t_anamax(itot) = 15
+      !t_anagamma(itot) = -1 
+
+
+      itot=itot+1;                iSIO3=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='SiO3';       t_units  (itot)='mMol Si m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Silicate'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 2
+      !t_anamax(itot) = 23
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iNH4=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='NH4';        t_units  (itot)='mMol N m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Ammonium'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.1
+      !t_anamax(itot) = 1
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iFE=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='Fe';         t_units  (itot)='mMol Fe m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Iron'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.001
+      !t_anamax(itot) = 0.01
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iO2=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='O2';         t_units  (itot)='mMol O2 m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Oxygen'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 30
+      !t_anamax(itot) = 300
+      !t_anagamma(itot) = 1 
+
+
+
+
+
+
+      itot=itot+1;                iDIC=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIC';        t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Dissolved inorganic carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 2000
+      !t_anamax(itot) = 2150
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iALK=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='Alk';        t_units  (itot)='mMol m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Alkalinity'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 2000
+      !t_anamax(itot) = 2300
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iDOC=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DOC';        t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Dissolved organic carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 36
+      !t_anagamma(itot) = 1 
+
+
+
+      itot=itot+1;                iDon=itot
+      wrt_t  (itot) =.True.;      wrt_t_avg(itot)=.True.
+      t_vname(itot)='DON';        t_units  (itot)='mMol N m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Dissolved organic nitrogen'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.5
+      !t_anamax(itot) = 5
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iDofe=itot
+      wrt_t  (itot) =.True.;      wrt_t_avg(itot)=.True.
+      t_vname(itot)='DOFE';       t_units  (itot)='mMol Fe m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Dissolved organic iron'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.0003
+      !t_anamax(itot) = 0.003
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iDop=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DOP';        t_units  (itot)='mMol P m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Dissolved organic phosphorus'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.03
+      !t_anamax(itot) = 0.3
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iDopr=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DOPR';       t_units  (itot)='mMol P m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Refractory dissolved organic phosphorus'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.04
+      !t_anamax(itot) = 0.4
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iDonr=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DONR';       t_units  (itot)='mMol N m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Refractory dissolved organic nitrogen'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0.4
+      !t_anamax(itot) = 0.6
+      !t_anagamma(itot) = -1 
+
+
+
+      itot=itot+1;                iZOOC=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='ZOOC';       t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Zooplankton'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = -1 
+
+
+
+
+      itot=itot+1;                iSPC=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='SPC';        t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Small phytoplankton carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+
+      itot=itot+1;                iSPCHL=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='SPCHL';      t_units  (itot)='mg Chl-a m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Small phytoplankton chlorophyll'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+      itot=itot+1;                iSPFE=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='SPFE';       t_units  (itot)='mMol Fe m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Small phytoplankton iron'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+      itot=itot+1;                iSPCACO3=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='SPCACO3';    t_units  (itot)='mMol CaCO3 m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Small phytoplankton CaCO3'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+      itot=itot+1;                iDIATC=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIATC';      t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diatom carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+
+
+
+      itot=itot+1;                iDIATCHL=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIATCHL';    t_units  (itot)='mg Chl-a m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diatom chlorophyll'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+      itot=itot+1;                iDIATFE=itot
+      wrt_t  (itot) =.True.;      wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIATFE';     t_units  (itot)='mMol Fe m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diatom Iron'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+
+      itot=itot+1;                iDIATSI=itot
+      wrt_t  (itot) =.True.;      wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIATSI';     t_units  (itot)='mMol Si m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diatom silicon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+      itot=itot+1;                iDiazc=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIAZC';      t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diazotroph carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+
+
+
+
+      itot=itot+1;                iDiazchl=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIAZCHL';    t_units  (itot)='mg Chl-a m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diazotroph chlorophyll'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+     
+      itot=itot+1;                iDiazfe=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='DIAZFE';     t_units  (itot)='mMol Fe m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Diazotroph iron'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0     
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 1e-6
+      !t_anagamma(itot) = 1 
+
+
+
+
+      !ntrc_bio_base=26 ! Total number of base bgc tracers. Hard-coded for now. Use itot later.
+
+#ifdef Ncycle_SY
+      itot=itot+1;                iNO2=itot
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='NO2';        t_units  (itot)='mMol N m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Nitrite'
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+
+
+      itot=itot+1;                iN2=itot;
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='N2';         t_units  (itot)='mMol N2 m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Dinitrogen'
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+
+    
+      itot=itot+1;                iN2O=itot;
+      wrt_t  (itot)=.True.;       wrt_t_avg(itot)=.True.
+      t_vname(itot)='N2O';        t_units  (itot)='mMol N2O m-3'
+      t_tname(itot)='';           t_ana_frc(itot)=1
+      t_lname(itot)='Nitrous oxide'
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+
+
+#endif /* Ncycle_SY */
+
+       
+      !KELP ADDS ADDITIONAL REACTIVE TRACERS TO BEC 
+#ifdef MAGBEC_COUPLE 
+      !LARGE KELP POC
+      itot=itot+1;                 iKELPPOClrg=itot
+      wrt_t  (itot)=.True.;        wrt_t_avg(itot)=.True.
+      t_vname(itot)='kelpPOClrg';  t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';            t_ana_frc(itot)=1
+      t_lname(itot)='large particulate organic kelp carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=-0.012 ! 1000 m / day (Sten paper)
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 0
+      !t_anagamma(itot) = 1 
+
+
+
+   
+
+      !SMALL KELP POC
+      itot=itot+1;                 iKELPPOCsm=itot
+      wrt_t  (itot)=.True.;        wrt_t_avg(itot)=.True.
+      t_vname(itot)='kelpPOCsm';   t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';            t_ana_frc(itot)=1
+      t_lname(itot)='small particulate organic kelp carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=-0.0006 ! 50 m / day (Sten)
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 0
+      !t_anagamma(itot) = 1 
+
+
+
+   
+
+      !PROCSSED (HARVESTED) KELP POC
+      itot=itot+1;                 iKELPPOChrv=itot
+      wrt_t  (itot)=.True.;        wrt_t_avg(itot)=.True.
+      t_vname(itot)='kelpPOChrv';   t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';            t_ana_frc(itot)=1
+      t_lname(itot)='processed particulate organic kelp carbon'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=--0.012 !same as large (1000 m / day) 
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 0
+      !t_anagamma(itot) = 1 
+
+
+
+      !LABILE KELP DOC
+      itot=itot+1;                 iKELPDOC=itot
+      wrt_t  (itot)=.True.;        wrt_t_avg(itot)=.True.
+      t_vname(itot)='kelpDOC';  t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';            t_ana_frc(itot)=1
+      t_lname(itot)='kelp dissolved organic carbon (labile)'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 0
+      !t_anagamma(itot) = 1 
+
+
+
+      !REFRACTORY KELP DOC
+      itot=itot+1;                 iKELPDOCR=itot
+      wrt_t  (itot)=.True.;        wrt_t_avg(itot)=.True.
+      t_vname(itot)='kelpDOCR';    t_units  (itot)='mMol C m-3'
+      t_tname(itot)='';            t_ana_frc(itot)=1
+      t_lname(itot)='kelp dissolved organic carbon (refractory)'
+      wrt_t_dia(itot)=.false.
+      t_wsink(itot)=0.0
+      t_bry_dat(itot)=.false.
+      !t_anamin(itot) = 0
+      !t_anamax(itot) = 0
+      !t_anagamma(itot) = 1 
+
+
 #endif
 
+#endif /* BIOLOGY_BEC2 */

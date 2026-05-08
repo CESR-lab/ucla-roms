@@ -1,0 +1,104 @@
+
+      ! ****************************************************************
+      ! User inputs
+
+
+      !---------------------------------------
+      ! time to wait before turning on kelp (e.g., let sol spinup)
+      real, parameter :: twait_kelp = 86400 * 20   ! [seconds]
+ 
+      !---------------------------------------
+
+
+      !---------------------------------------------     
+      ! Forcing with remotely sensed data
+      ! which means biomass-to-length diagnostic should always give a canopy
+      logical, parameter :: satellite_frc=.false.
+
+      !---------------------------------------------
+
+      ! Switch if you want  constant vertical shape
+      logical, parameter :: const_Bm_shape = .false.
+
+      !--------------------------------------------------
+      ! 		Output options
+      !--------------------------------------------------
+      logical,parameter        :: wrt_file_his = .false.             ! t/f to write module history file
+      real,parameter           :: output_period_his = 86400             ! output period in seconds
+      integer,parameter        :: nrpf_his          = 24              ! total recs per file
+      
+      logical,parameter        :: wrt_file_avg = .true.             ! t/f to write module averages file
+      real,parameter           :: output_period_avg = 86400 !21600          ! output averaging period in seconds
+      integer,parameter        :: nrpf_avg          = 30              ! total recs per file
+
+      ! controls both his and avg variables:
+      logical :: wrt_b = .true.                                  ! 3d biomass
+      logical :: wrt_b2d = .true.                                ! vert. integrated biomass
+      logical :: wrt_lad = .true.                                ! leaf-area density 
+      logical :: wrt_length =.true.                              ! length
+      logical :: wrt_shape = .true.                              !  biomass shape function 
+      logical :: wrt_npp =.false.                                 !  npp
+      logical :: wrt_loss = .false.                               !  losses
+      logical :: wrt_harv = .false.                               !  harvest
+      logical :: wrt_uptno3 = .false.                             !  nitrate uptake
+      logical :: wrt_exuL = .false.                               ! exudation losses  [N units]
+      logical :: wrt_spomL = .false.                              ! small particulate losses [N units] 
+      logical :: wrt_frondL = .false.                             ! frond losses [N units]
+      logical :: wrt_harvL = .false.                              ! harvest losses [N units]
+      logical :: wrt_reminpoclrg =.false.                         ! remin of fronds / large pieces
+      logical :: wrt_reminpocsm = .false.                         ! remin of small kelp particles
+      logical :: wrt_reminpochrv = .false.                         ! remin of harvest particles
+      logical :: wrt_par = .false.                                ! 3D PAR 
+
+      logical :: wrt_remindoc = .true.                           ! remin of kelp doc
+      logical :: wrt_remindocref = .true.                        ! remin of kelp doc refractory
+      ! ADD avg version of wrt_ booleans
+      logical :: wrt_avg_b = .true.                                  
+      logical :: wrt_avg_b2d = .true.                                
+      logical :: wrt_avg_lad = .true.                              
+      logical :: wrt_avg_length = .true. 
+      logical :: wrt_avg_shape = .true.                             
+      logical :: wrt_avg_npp =.true.                              
+      logical :: wrt_avg_loss = .true.                         
+      logical :: wrt_avg_harv = .true.                         
+      logical :: wrt_avg_uptno3 = .true.                        
+      logical :: wrt_avg_exuL = .true.                         
+      logical :: wrt_avg_spomL = .true.                        
+      logical :: wrt_avg_frondL = .true.                     
+      logical :: wrt_avg_reminpoclrg = .true.
+      logical :: wrt_avg_reminpocsm = .true.
+      logical :: wrt_avg_reminpochrv = .true.
+      logical :: wrt_avg_par = .true.                  
+      logical :: wrt_avg_remindoc = .true.
+      logical :: wrt_avg_remindocref = .true.
+ 
+
+      !-----------------------------------------
+      !Forcing file for MAG
+    
+      ! biomass2D --> [kg / m^2] vert integrated biomass as a function of time
+      ! pockelp_sflx --> [kg C / m^2 / day] surface flux of biomass (kelp POC)
+      
+      !---------------------------------------
+      logical, parameter :: init_biomass = .true. !initialze biomass ('unforced') to be evolved    
+      logical, parameter :: frc_biomass = .false.  !read in 2D biomass from forcing file (biomass can be time-variable)
+      logical, parameter :: frc_sflxpockelp = .false. ! read in surface flux of kelp POC
+
+      type (ncforce) :: nc_biomass        = ncforce(vname='B_2D', tname='kelp_time' )  ! biomass forcing
+      type (ncforce) :: nc_sflxkelp        = ncforce(vname='pockelp_sflx', tname='kelp_time' )  ! surface injection of kelp POC
+
+
+      !----------------------------------------------------
+      ! 		DEPRACATED / USED FOR TESTING
+      !---------------------------------------------------- 
+      !Fake growth
+      real, parameter :: g0_fake = 0.0076/86400 !eyeball of LTER data [1/s]
+      real, parameter  :: L0_fake = 0.005 / 86400 !eyeball of LTER data [1/s]
+      real, parameter  :: fake_loss_age = 6*30*86400 !6 months [seconds]
+      !Growth rate amplifier
+      real, parameter :: alpha_growth = 1.0 ! amplify growth before corrector stage
+      real, parameter :: alpha_loss = 1. 
+ 
+
+      ! End of user inputs
+      ! *************************************************************

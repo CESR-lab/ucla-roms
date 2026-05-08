@@ -40,3 +40,10 @@
      & , iN2 =0
      & , iN2O=0
 #endif /* Ncycle_SY */
+#ifdef MAGBEC_COUPLE
+     & , iKELPPOClrg=0
+     &,  iKELPPOCsm=0
+     &,  iKELPPOChrv=0
+     &,  iKELPDOC=0
+     &,  iKELPDOCR=0
+#endif

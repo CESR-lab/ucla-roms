@@ -2,23 +2,41 @@
       ! ****************************************************************
       ! User inputs
 
+      ! --- Idelized coastal upwelling test case ---
+      ! Daniel add --> ANALYTICAL FORCINGS FOR BEC (JUST FOR IDEALIZED)
+      real, public,parameter :: swrad0      = 400 ! W/m^2 shortwave radiative flux for ANA_PAR option
+      real, parameter :: dust0              = 1e-12 ! dust deposition flux [kg m-2 s-1] ANA_BEC_FRC option
+      real, parameter :: iron0              = 1e-7 ! iron deposition flux [nmol cm-2 s-1] ANA_BEC_FRC option
+      real, parameter :: pco2air0           = 423 ! pco2 air conc. [ppm] ANA_BEC_FRC option
+
+
+
+
+      ! ANA_PAR parameter
+      ! frm16 PAR sensitivity test (want to know if this is limiting kelp NPP)
+      !real, public,parameter :: swrad0 = 220 ! W/m^2 shortwave radiative flux for ANA_PAR option
+      !real, public,parameter :: swrad0 = 120 ! W/m^2 shortwave radiative flux for ANA_PAR option
+!      real, public,parameter :: swrad0 = 400 ! W/m^2 shortwave radiative flux for ANA_PAR option
+
+
+
       ! note: choice of bgc tracers to output is still selected in tracers.opt.
 
-      logical,parameter :: wrt_his           = .true.             ! t/f to write module history file
-      real,parameter    :: output_period_his = 30*24*60*60        ! output period in seconds
-      integer,parameter :: nrpf_his          = 2                  ! total recs per file
+      logical,parameter :: wrt_his           = .false.             ! t/f to write module history file
+      real,parameter    :: output_period_his = 21600        ! output period in seconds
+      integer,parameter :: nrpf_his          = 24                  ! total recs per file
       
       logical,parameter :: wrt_avg           = .true.             ! t/f to write module averages file
-      real,parameter    :: output_period_avg = 30*24*60*60        ! output averaging period in seconds
-      integer,parameter :: nrpf_avg          = 1                  ! total recs per file
+      real,parameter    :: output_period_avg = 86400        ! output averaging period in seconds
+      integer,parameter :: nrpf_avg          = 30                 ! total recs per file
 
       logical,parameter :: wrt_his_dia           = .false.        ! t/f to write module history file
       real,parameter    :: output_period_his_dia = 2635200  ! output period in seconds
       integer,parameter :: nrpf_his_dia          = 13             ! total recs per file
 
       logical,parameter :: wrt_avg_dia           = .true.         ! t/f to write module history file
-      real,parameter    :: output_period_avg_dia = 30*24*60*60    ! output period in seconds
-      integer,parameter :: nrpf_avg_dia          = 1              ! total recs per file
+      real,parameter    :: output_period_avg_dia = 86400    ! output period in seconds
+      integer,parameter :: nrpf_avg_dia          = 30              ! total recs per file
 
       integer, parameter :: nbgc_flx = 2                   ! number of surface bgc flux forcings
 #ifdef PCO2AIR_FORCING
@@ -39,13 +57,16 @@
 #endif      
 #endif            
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      type (ncforce) :: nc_swrad_avg   = ncforce(vname='swrad_davg', tname='srf_davg_time' )
+      type (ncforce) :: nc_swrad_avg   = ncforce(vname='swrad_LFreq', tname='rad_time_LFreq' )
 #endif
 #ifdef NOX_FORCING
       type (ncforce) :: nc_nox        = ncforce(vname='nox', tname='nox_time' )
 #endif
 #ifdef NHY_FORCING
       type (ncforce) :: nc_nhy        = ncforce(vname='nhy', tname='nhy_time' )
+#endif
+#ifdef FESEDFLUX_FORCING
+      type (ncforce) :: nc_fesedflux        = ncforce(vname='fesedflux', tname='fesedflux_time' )
 #endif
 
 !#include "bgc_tracers.h"

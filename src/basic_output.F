@@ -138,7 +138,7 @@
           w_avg=0
         endif
         if (wrt_avg_W) then
-          allocate( wvl_avg(GLOBAL_2D_ARRAY,0:N) )
+          allocate( wvl_avg(GLOBAL_2D_ARRAY,nz) )
           wvl_avg=0.
         endif
 
@@ -346,11 +346,8 @@
           call ncwrite(ncid,vname(1,indxO),work(i0:i1,j0:j1,:),start)
         endif
         if (wrt_W) then                              ! true vertical velocity (m/s).
-!         do tile=0,NSUB_X*NSUB_E-1
-!           call wvlcty (tile, work)
-!         enddo
-          call wvlcty (0, work)
-          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:N),start)
+          call wvlcty(work(:,:,1:nz))
+          call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:nz),start)
         endif
         if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
         if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
@@ -543,7 +540,11 @@
 #ifdef MARBL
 !     add MARBL saved state to restart to restart file
       use marbl_driver, only: marbldrv_write_ss_vars_to_rst
-#endif       
+#endif
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+      use bgc_io
+#endif
+       
       implicit none
 
       ! local
@@ -591,6 +592,10 @@
         call wrt_rst_trc(ncid,start)                              ! tracer variables
 
         start(3)=rec_rst                                      ! back to 2D vars
+
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+        call wrt_rst_trc_sed(ncid,start)
+#endif
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
@@ -832,7 +837,11 @@
 #ifdef MARBL
 !     add MARBL saved state to restart to restart file
       use marbl_driver, only: marbldrv_create_ss_vars_in_rst
-#endif       
+#endif
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+      use bgc_shared_vars
+#endif
+       
       implicit none
 
       ! local
@@ -881,6 +890,15 @@
         ierr=nf90_put_att (ncid, varid, 'long_name', t_lname(itrc))
         ierr=nf90_put_att (ncid, varid, 'units', t_units(itrc))
       enddo
+
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+      do itrc=1,NT_sed
+        varid = nccreate(ncid,t_sed_vname(itrc),
+     &      (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/), nf90_double)
+        ierr=nf90_put_att (ncid, varid, 'long_name', t_sed_lname(itrc))
+        ierr=nf90_put_att (ncid, varid, 'units', t_sed_units(itrc))
+      enddo
+#endif
 
 # ifdef EXACT_RESTART
 #  ifdef EXTRAP_BAR_FLUXES
@@ -1026,7 +1044,7 @@
      &                                      + ( We(i0:i1,j0:j1,:)+Wi(i0:i1,j0:j1,:) ) *coef
         if (wrt_avg_W) then
           ! the w averaging, calculation and output should be checked at some point.
-          call wvlcty_tile(1,nx,1,ny, work, A2d(1,1), A2d(1,2), A2d(1,3))  ! as per set_avg
+          call wvlcty(work)
 
           wvl_avg(i0:i1,j0:j1,1:N) = wvl_avg(i0:i1,j0:j1,1:N)*(1-coef)
      &                               + work(i0:i1,j0:j1,1:N)*coef
@@ -1085,7 +1103,7 @@
       ! local
       integer :: itrc
 
-      if (mynode==0) write(*,'(/7x,2A,F6.1,2x,A,I4)')                ! write to terminal output in simulation pre-amble text which
+      if (mynode==0) write(*,'(/7x,2A,F12.1,2x,A,I4)')               ! write to terminal output in simulation pre-amble text which
      &  'ocean_vars :: history file ',                               ! result variables are being stored
      &  'ouput_period =', output_period_his,
      &  'recs/file =', nrpf_his
@@ -1114,7 +1132,8 @@
 # ifdef LMD_BKPP
      &                 , 'hbbl',   wrt_Hbbl, vname(2,indxHbbl)
 # endif
-          do itrc=1,iTandS+nt_passive
+!          do itrc=1,iTandS+nt_passive
+          do itrc=1,NT
             if (mynode==0) write(*,'(11x,A,I2,A,T16,L1,T20,A)') 't(',
      &        itrc, ')', wrt_t(itrc), t_vname(itrc)
           enddo
@@ -1129,7 +1148,7 @@
       ! local
       integer :: itrc
 
-      if (mynode==0) write(*,'(/7x,2A,F6.1,2x,A,I4)')                ! write to terminal output in simulation pre-amble text which
+      if (mynode==0) write(*,'(/7x,2A,F14.1,2x,A,I4)')               ! write to terminal output in simulation pre-amble text which
      &  'ocean_vars :: average file ',                               ! result variables are being stored
      &  'ouput_period =', output_period_avg,
      &  'recs/file =', nrpf_avg
@@ -1158,7 +1177,8 @@
 # ifdef LMD_BKPP
      &                 , 'hbbl',   wrt_avg_Hbbl, vname(2,indxHbbl)
 # endif
-          do itrc=1,iTandS+nt_passive
+!          do itrc=1,iTandS+nt_passive
+          do itrc=1,NT
             if (mynode==0) write(*,'(11x,A,I2,A,T16,L1,T20,A)') 't(',
      &        itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
           enddo

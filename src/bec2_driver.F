@@ -23,6 +23,7 @@
        use bec2_vars
        use bgc_forces
        use bec2_params
+       use mag
 
        implicit none
 
@@ -146,6 +147,16 @@
        shf_qsw_avg(istr:iend,jstr:jend) =
      &               swrad_avg(istr:iend,jstr:jend)*rho0*Cp
        shf_qsw(istr:iend,jstr:jend)=srflx(istr:iend,jstr:jend)*rho0*Cp
+#elif defined ANA_PAR
+       !Analytical PAR (user-defined in bgc.opt)
+       ! so that you can turn on light without forcing physics (via
+       ! srflx in analytical.F)
+       !Added by D. Dauhajre 2023
+       ! give it a diurnal cycle (12 hours dark, 12 hours light)
+       shf_qsw(istr:iend,jstr:jend)= max(0.d0, swrad0 * cos( 2.d0*pi *(tdays + 0.45) )) 
+       !if (mynode.eq.0) then
+       !   print *, 'swrad =', max(0.d0, swrad0 * sin( 2.d0*pi * (tdays - 0.5) ))
+       !endif
 #else
        shf_qsw(istr:iend,jstr:jend)=srflx(istr:iend,jstr:jend)*rho0*Cp
 #endif
@@ -577,6 +588,7 @@
        use bgc_io
        use bgc_shared_vars
        use bec2_params
+       use mag
 
         implicit none
 
@@ -645,6 +657,30 @@
      &    n2o_nh4_yield1,   ! N2O yield during ammonium oxidation (0 --> 1)  
      &    no2_nh4_yield1,   ! NO2 yield during ammonium oxidation (0 --> 1)
 # endif
+#ifdef MAGBEC_COUPLE
+
+     !KELP PARTICULATE (POC) ARRAYS
+     & POCkelplrg_loc,       ! local copy of POCkelp tracer [mmol C / m^3] (sinking biomass)
+     & remin_pockelplrg,       !remin term [mmol C / m^3 / sec] --> computed here
+     !& prod_pockelplrg,        ! prod term [ mmol C / m^3 / sec] --> from forcing file (read in mag.F)
+     & POCkelphrv_loc,       ! local copy of POCkelp tracer [mmol C / m^3] (sinking biomass)
+     & remin_pockelphrv,     !remin term [mmol C / m^3 / sec] --> computed here
+     & prod_pockelphrv,      ! prod term [ mmol C / m^3 / sec] --> from forcing file (read in mag.F)
+     & POCkelpsm_loc,       ! local copy of POCkelp tracer [mmol C / m^3] (sinking biomass)
+     & remin_pockelpsm,       !remin term [mmol C / m^3 / sec] --> computed here
+     & remin_pockelp_tot,      ! sum of all kelp POC remin [mmol C / m^2 / sec] --> computed here
+
+
+     !KELP DOC ARRAYS
+     & DOC_kelp_loc,    !local copy of DOCkelp tracer [mmol C / m^3] (labile kelp DOC)
+     & DOCR_kelp_loc,    !local copy of DOCkelp tracer [mmol C / m^3] (refractory kelp DOC)
+     & remin_doc_kelp,   ! remin term of labile DOC [mmol C / m^3 / sec] --> computed locally
+     & remin_docr_kelp,   ! remin term of refractory DOC [mmol C / m^3 / sec] --> computed locally
+
+#endif
+
+
+
      &    QA_dust_def,     ! incoming deficit in the QA(dust) POC flux
      &    NITRIF,          ! nitrification (NH4 -> NO3) (mmol N/m^3/sec)
      &    DENITRIF,        ! water column nitrification (NO3 -> N2) (mmol N/m^3/sec)
@@ -787,6 +823,14 @@
        N2_loc  = MAX(c0, T(istr:iend,j,k,nnew,iN2))
        N2O_loc = MAX(c0, t(istr:iend,j,k,nnew,iN2O))
 # endif
+# ifdef MAGBEC_COUPLE
+       POCkelplrg_loc  = MAX(c0, T(istr:iend,j,k,nnew,iKELPPOClrg))
+       POCkelpsm_loc  = MAX(c0, T(istr:iend,j,k,nnew,iKELPPOCsm))
+       POCkelphrv_loc  = MAX(c0, T(istr:iend,j,k,nnew,iKELPPOChrv))
+       DOC_kelp_loc  = MAX(c0, T(istr:iend,j,k,nnew,iKELPDOC))
+       DOCR_kelp_loc  = MAX(c0, T(istr:iend,j,k,nnew,iKELPDOCR))
+# endif
+
 
 #ifdef BEC2_DIAG
        if (wrt_bec2_diag_3d(totchl_idx_t)) then
@@ -970,11 +1014,29 @@
           else
              KPARdz(i) = 0.1131*(KPARdz(i)**0.4562) * Hz(i,j,k)
           end if
+# ifdef MAGBEC_SHADING
+        !Add in shading due to macroalgae
+                            ![m^2 / mg N] * [mg N / m^3]
+        !if (algae_Nf(i,j,k).ne.0) then
+        !    print *, 'KPARdz pre shading =', KPARdz(i)
+        !endif
+        KPARdz(i) = KPARdz(i) + PAR_KNf * algae_Nf(i,j,k) * Hz(i,j,k)
+        !if (algae_Nf(i,j,k).ne.0) then
+        !   print *, 'KPARdz after shading =', KPARdz(i)
+        !endif
+# endif
+
 #if defined DAILYPAR_PHOTOINHIBITION
           PAR_out_AVG(i) = PAR_in_AVG(i) * exp(-KPARdz(i))
 #endif
           PAR_out(i) = PAR_in(i) * exp(-KPARdz(i))
           PAR_lay(i) = PAR_in(i) * (c1 - exp(-KPARdz(i))) / KPARdz(i)
+
+#ifdef MAG
+          !WRITE PAR_lay to public MAG variable
+          ! --> eventually depracate, redundant with bec diag
+          PAR_3d_mag(i,j,k) = PAR_lay(i)
+#endif
 # ifdef BEC2_DIAG
         if (wrt_bec2_diag_3d(par_idx_t)) then
           idiag = idx_bec2_diag_3d(par_idx_t)
@@ -2011,6 +2073,151 @@
      !-----------------------------------------------------------------------
      !  Collect tendencies of biological processes in DTRACER_MODULE
      !-----------------------------------------------------------------------
+# ifdef MAGBEC_COUPLE
+# ifdef MAGBEC_CPL_POCKELP
+
+       !---------------------------------------------
+       !                LARGE POC KELP
+       !---------------------------------------------
+
+       !Siegel / Sten formulation of remin baed on temp,oxygen
+        remin_pockelplrg = POCkelplrg_loc *
+     &            (parm_kelp_d0_poclrg *
+     &          parm_kelp_Q10**( (temp - parm_kelp_T0) / 10 )
+     &         * (O2_loc / (O2_loc + parm_kelp_ko2)))
+
+       !put remin into MAG array for saving/outputing
+       remin_lrgpocalgae(istr:iend,j,k) = remin_pockelplrg
+       !POC kelp has 'natural' frond loss as source
+       ! and remin as sink
+       !!!!--> no more prod at surface for 'frond loss' (this is now in
+       !harvested POC pool i.e., processed !!!
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPPOClrg)) = !prod_pockelplrg
+     &                        + Qkelp_CN * algae_frondL(istr:iend,j,k)
+     &                           -remin_pockelplrg
+
+       !---------------------------------------------
+       !                PROCESSED (HARVESTED) POC KELP
+       !---------------------------------------------
+
+       !Siegel / Sten formulation of remin baed on temp,oxygen
+        remin_pockelphrv = POCkelphrv_loc *
+     &            (parm_kelp_d0_pochrv *
+     &          parm_kelp_Q10**( (temp - parm_kelp_T0) / 10 )
+     &         * (O2_loc / (O2_loc + parm_kelp_ko2)))
+
+       !Assign surface injection that is read in/converted in mag.F
+       ! prod_ckelp is non-zero in top grid cell (k=N)
+       if (k.eq.N) then
+          prod_pockelphrv = pockelp_prod_surf(istr:iend,j)
+       else
+          prod_pockelphrv=0.0
+       endif
+#ifdef CHECK_SEAWEED_INJECT
+       !NO REMIN
+       remin_pockelphrv=0.0
+#endif
+       !put remin into MAG array for saving/outputing
+       remin_hrvpocalgae(istr:iend,j,k) = remin_pockelphrv
+       !POC kelp has 'natural' frond loss + surface injection (prod_pockelp) as sources
+       ! and remin as sink
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPPOChrv)) = prod_pockelphrv
+     &                        + Qkelp_CN * algae_harvL(istr:iend,j,k)
+     &                           -remin_pockelphrv
+
+       !---------------------------------------------
+       !                SMALL POC KELP
+       !---------------------------------------------
+
+       !Siegel / Sten formulation of remin baed on temp,oxygen
+        remin_pockelpsm = POCkelpsm_loc *
+     &            (parm_kelp_d0_pocsm *
+     &          parm_kelp_Q10**( (temp - parm_kelp_T0) / 10 )
+     &         * (O2_loc / (O2_loc + parm_kelp_ko2)))
+
+#ifdef CHECK_SEAWEED_INJECT
+       !NO REMIN
+       remin_pockelpsm=0.0
+#endif
+
+       !put remin into MAG array for saving/outputing
+       remin_smpocalgae(istr:iend,j,k) = remin_pockelpsm
+       ! Small POC kelp just a natural loss term from MoMAG
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPPOCsm)) =
+     &                        + Qkelp_CN * algae_spomL(istr:iend,j,k)
+     &                           -remin_pockelpsm
+
+
+
+
+      !sum all kelp poc remin for use in other BEC tendencies
+      remin_pockelp_tot = remin_pockelpsm + remin_pockelplrg + remin_pockelphrv
+      
+
+#  else
+      DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPPOClrg))=0.
+      DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPPOChrv))=0.
+      DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPPOCsm))=0.0
+#    endif
+#  endif 
+
+     !-----------------------------------------------------
+     !  KELP DOC POOLS (labile and refractory)
+
+     !-----------------------------------------------------
+
+# ifdef MAGBEC_COUPLE
+
+      !----------------------------------
+      ! kelp DOC (labile)
+      !---------------------------------
+     !Siegel / Sten formulation of remin baed on temp,oxygen
+        remin_doc_kelp = DOC_kelp_loc *
+     &            (parm_kelp_d0_doc *
+     &          parm_kelp_Q10**( (temp - parm_kelp_T0) / 10 )
+     &         * (O2_loc / (O2_loc + parm_kelp_ko2)))
+
+        !STORE REMIN INTO ARRAY FOR MAG
+        remin_docalgae(istr:iend,j,k) = remin_doc_kelp
+        ! KELP DOC has source from kelp remin and exudation
+        ! and loss from DOM remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPDOC)) =
+                   !remin of kelp POC as source
+     &       fdoc_kelp_remin *(1- fdocR_kelp_remin)* remin_pockelp_tot
+                   ! kelp exudation as source
+     &     + fdoc_kelp_exu * (1  - fdonR_kelp_exu) * Qkelp_CN*algae_exuL(istr:iend,j,k)
+                   !remin of kelp DOC as loss
+     &       - remin_doc_kelp
+
+
+      !----------------------------------
+      ! kelp DOCR (refractory)
+      !---------------------------------
+     !Siegel / Sten formulation of remin baed on temp,oxygen
+        remin_docr_kelp = DOCR_kelp_loc *
+     &            (parm_kelp_d0_docr *
+     &          parm_kelp_Q10**( (temp - parm_kelp_T0) / 10 )
+     &         * (O2_loc / (O2_loc + parm_kelp_ko2)))
+        !STORE REMIN INTO ARRAY FOR MAG
+        remin_docrefalgae(istr:iend,j,k) = remin_docr_kelp
+
+        !STORE REMIN INTO ARRAY FOR MAG (NEED TO CODE)!
+        !remin_docRalgae(istr:ind,j,k) = remin_doc_kelp
+        ! KELP DOC has source from kelp remin and exudation
+        ! and loss from DOM remin
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iKELPDOCR)) =
+                   !remin of kelp POC as source
+     &       fdoc_kelp_remin * fdocR_kelp_remin * remin_pockelp_tot 
+                   ! kelp exudation as source
+     &       +fdoc_kelp_exu *  fdonR_kelp_exu * Qkelp_CN*algae_exuL(istr:iend,j,k)
+                   !remin of kelp DOC as loss
+     &       - remin_docr_kelp
+
+#endif
+
+
+
+
 
      !-----------------------------------------------------------------------
      !  nitrate & ammonium
@@ -2046,7 +2253,18 @@
      &     + Q * (zoo_loss_dic + sum(auto_loss_dic, dim=2) + sum(auto_graze_dic, dim=2)
      &     + POC_remin(istr:iend,j)
      &     * (c1 - DONrefract))
+# endif /*Ncycle_SY*/
+#ifdef MAGBEC_COUPLE
+# ifdef MAGBEC_CPL_NO3
+      !Add(subtract) to .RH.S
+      DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNO3)) =
+     &                              DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNO3))
+     &                              - algae_uptno3(istr:iend,j,k)
+
 # endif
+
+#endif
+
 
        do auto_ind = 1, autotroph_cnt
           if (Nfixer(auto_ind))
@@ -2054,6 +2272,17 @@
      &                                          + Nexcrete(istr:iend,auto_ind)
        end do
 
+#ifdef MAGBEC_COUPLE
+# ifdef MAGBEC_CPL_NH4
+       ! sinking seaweed is a source of NH4 (SOURCE!)
+       DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iNH4))
+                 !remin of kelp POC is source
+     &          + Qkelp_NC * fdic_kelp_remin * remin_pockelp_tot
+                 !remin of kelp DOM is source (labile + refractory)
+     &          + Qkelp_NC * (remin_doc_kelp+ remin_docr_kelp)
+
+#  endif
+#endif
      !-----------------------------------------------------------------------
      !  dissolved iron
      !-----------------------------------------------------------------------
@@ -2101,6 +2330,19 @@
      &                  + remaining_P_dip(istr:iend,auto_ind)
           endif
        end do
+#ifdef MAGBEC_COUPLE
+# ifdef MAGBEC_CPL_PO4
+      DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iPO4))
+               !MAG nitrate uptake is phosphate uptake
+     &                  - Qkelp_PN*algae_uptno3(istr:iend,j,k)
+               ! kelp POC remin is a source of phosphate
+     &                + Qkelp_PC * fdic_kelp_remin*remin_pockelp_tot
+               ! kelp DOC remin is source of phosphate
+     &                + Qkelp_PC *(remin_doc_kelp + remin_docr_kelp)
+
+
+#  endif
+#endif
 
 
      !-----------------------------------------------------------------------
@@ -2179,6 +2421,19 @@
      &        + f_graze_CaCO3_REMIN * auto_graze(istr:iend,auto_ind) * QCaCO3(istr:iend,auto_ind)
      &        - CaCO3_PROD(istr:iend,auto_ind)
        end do
+#ifdef MAGBEC_COUPLE
+#  ifdef MAGBEC_CPL_DIC
+          DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDIC)) = DTRACER_MODULE(istr:iend,j,k,bgc_idx(iDIC))
+                 ! uptake of N by live kelp is a sink of DIC
+     &                        - Qkelp_CN * algae_uptno3(istr:iend,j,k)
+                 !exudation of labile DOM by kelp goes to DIC
+     &                     + Qkelp_CN * fdic_kelp_exu * (1-fdonR_kelp_exu) * algae_exuL(istr:iend,j,k)
+                 ! remin of kelp POC a source
+     &                     + fdic_kelp_remin*remin_pockelp_tot 
+                 ! remin of kelp DOC as  a source (labile + refractory)
+     &                     + remin_doc_kelp + remin_docr_kelp
+# endif
+#endif
 
      !-----------------------------------------------------------------------
      !  alkalinity
@@ -2276,6 +2531,18 @@
 # endif
        DTRACER_MODULE(istr:iend,j,k,bgc_idx(iO2)) = O2_PRODUCTION - O2_CONSUMPTION
 
+#ifdef MAGBEC_COUPLE
+#   ifdef MAGBEC_CPL_O2
+     ! NO3 uptake by seaweed a source of O2
+     &                            + (Qkelp_OC * Qkelp_CN) *algae_uptno3(istr:iend,j,k)
+     ! kelp POC remin sink of O2
+     &       - Qkelp_OC * fdic_kelp_remin * remin_pockelp_tot
+     ! kelp DOC remin sink of O2 (labile + refractory)
+     &       - Qkelp_OC *  (remin_doc_kelp +remin_docr_kelp)
+#   endif
+#endif
+
+
 # ifdef BEC2_DIAG
       if (wrt_bec2_diag_3d(o2prod_idx_t)) then
           idiag = idx_bec2_diag_3d(o2prod_idx_t)
@@ -2305,6 +2572,7 @@
         use scalars
         use bgc_shared_vars
         use bec2_params
+        use mag
 
         implicit none
 

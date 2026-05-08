@@ -131,13 +131,14 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
         ext_copy_prv2shr.F\
 \
 	cdr_frc.F	river_frc.F	pipe_frc.F      add_git_hash.F\
-	random_output.F cstar_output.F 	zslice_output.F\
+	random_output.F cstar_output.F 	zslice_output.F energy_budget.F\
 \
 	bgc_shared_vars.F bgc_forces.F bgc_io.F\
-    bec2_vars.F bec2_params.F bec2_driver.F\
+    bec2_vars.F bec2_params.F bec2_driver.F mag.F\
     marbl_driver.F\
 \
-	main.F	
+       main.F
+ 
 
 IOSRC = checkdims.F	insert_node.F\
 	get_init.F	set_forces.F	closecdf.F\

@@ -1,0 +1,25 @@
+
+      sed_poc_ind = 1
+      wrt_t_sed    (sed_poc_ind)=.True.      
+      wrt_t_sed_avg(sed_poc_ind)=.True.
+      t_sed_vname  (sed_poc_ind)='Sed_POC'        
+      t_sed_units  (sed_poc_ind)='mMol C m-2'
+      t_sed_tname  (sed_poc_ind)='';     
+      t_sed_lname  (sed_poc_ind)='Sedimented Particulate Organic Carbon'
+
+      sed_caco3_ind = 2
+      wrt_t_sed    (sed_caco3_ind)=.True.      
+      wrt_t_sed_avg(sed_caco3_ind)=.True.
+      t_sed_vname  (sed_caco3_ind)='Sed_CaCO3'   
+      t_sed_units  (sed_caco3_ind)='mMol C m-2'
+      t_sed_tname  (sed_caco3_ind)='';     
+      t_sed_lname  (sed_caco3_ind)='Sedimented Particulate Calcium Carbonate'
+
+      sed_si_ind = 3
+      wrt_t_sed    (sed_si_ind)=.True.      
+      wrt_t_sed_avg(sed_si_ind)=.True.
+      t_sed_vname  (sed_si_ind)='Sed_Si'   
+      t_sed_units  (sed_si_ind)='mMol Si m-2'
+      t_sed_tname  (sed_si_ind)='';     
+      t_sed_lname  (sed_si_ind)='Sedimented Particulate Silicate'
+

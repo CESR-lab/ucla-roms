@@ -7,7 +7,7 @@
       implicit none
       integer :: ncid,ierr
 
-      git_hash= 'xxx'
+      git_hash="d305439ca6c682d998bc7e875e3365e62adbda54"
 
       ierr=nf90_put_att(ncid, nf90_global, 'git_version',git_hash) 
       if (ierr/=nf90_noerr)

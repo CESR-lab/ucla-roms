@@ -24,6 +24,10 @@
       use nc_read_write, only: handle_ierr, ncread
       use roms_read_write
       use dimensions
+#ifdef SED_BUCKET
+      use bec2_vars 
+#endif
+
 
       implicit none
 
@@ -446,6 +450,10 @@ c--#define VERBOSE
 
         endif
       enddo
+
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+        call get_init_trc_sed(ncid,record)
+#endif
 
       start=1; start(3)=record                                       ! 2D vars
 # ifdef LMD_KPP

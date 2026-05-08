@@ -44,7 +44,7 @@
       vname_bec2_diag_3d(2,pocprod_idx_t)='POC production'
       vname_bec2_diag_3d(3,pocprod_idx_t)='mmol C/m2/s '
       vname_bec2_diag_3d(4,pocprod_idx_t)=' '
-      wrt_bec2_diag_3d(pocprod_idx_t)=.false.
+      wrt_bec2_diag_3d(pocprod_idx_t)=.true.
 
       pocremin_idx_t=4
       vname_bec2_diag_3d(1,pocremin_idx_t)='POC_REMIN'
@@ -135,21 +135,21 @@
       vname_bec2_diag_3d(2,grazesp_idx_t)='Grazing rate on small phytoplankton'
       vname_bec2_diag_3d(3,grazesp_idx_t)='mmol C/m2/s '
       vname_bec2_diag_3d(4,grazesp_idx_t)=' '
-      wrt_bec2_diag_3d(grazesp_idx_t)=.false.
+      wrt_bec2_diag_3d(grazesp_idx_t)=.true.
 
       grazediat_idx_t=17
       vname_bec2_diag_3d(1,grazediat_idx_t)='GRAZE_DIAT'
       vname_bec2_diag_3d(2,grazediat_idx_t)='Grazing rate on diatoms'
       vname_bec2_diag_3d(3,grazediat_idx_t)='mmol C/m2/s'
       vname_bec2_diag_3d(4,grazediat_idx_t)=' '
-      wrt_bec2_diag_3d(grazediat_idx_t)=.false.
+      wrt_bec2_diag_3d(grazediat_idx_t)=.true.
 
       grazediaz_idx_t=18
       vname_bec2_diag_3d(1,grazediaz_idx_t)='GRAZE_DIAZ'
       vname_bec2_diag_3d(2,grazediaz_idx_t)='Grazing rate on diazotrophs'
       vname_bec2_diag_3d(3,grazediaz_idx_t)='mmol C/m2/s'
       vname_bec2_diag_3d(4,grazediaz_idx_t)=' '
-      wrt_bec2_diag_3d(grazediaz_idx_t)=.false.
+      wrt_bec2_diag_3d(grazediaz_idx_t)=.true.
 
       sploss_idx_t=19
       vname_bec2_diag_3d(1,sploss_idx_t)='SP_LOSS'
@@ -191,14 +191,14 @@
       vname_bec2_diag_3d(2,photocsp_idx_t)='C fixation rate by small phytoplankton'
       vname_bec2_diag_3d(3,photocsp_idx_t)='mmol C/m2/s '
       vname_bec2_diag_3d(4,photocsp_idx_t)=' '
-      wrt_bec2_diag_3d(photocsp_idx_t)=.false.
+      wrt_bec2_diag_3d(photocsp_idx_t)=.true.
 
       photocdiat_idx_t=25
       vname_bec2_diag_3d(1,photocdiat_idx_t)='PHOTOC_DIAT'
       vname_bec2_diag_3d(2,photocdiat_idx_t)='C fixation rate by diatoms'
       vname_bec2_diag_3d(3,photocdiat_idx_t)='mmol C/m2/s '
       vname_bec2_diag_3d(4,photocdiat_idx_t)=' '
-      wrt_bec2_diag_3d(photocdiat_idx_t)=.false.
+      wrt_bec2_diag_3d(photocdiat_idx_t)=.true.
 
       totprod_idx_t=26
       vname_bec2_diag_3d(1,totprod_idx_t)='TOT_PROD'
@@ -212,7 +212,7 @@
       vname_bec2_diag_3d(2,docprod_idx_t)='DOC production'
       vname_bec2_diag_3d(3,docprod_idx_t)='mmol C/m2/s '
       vname_bec2_diag_3d(4,docprod_idx_t)=' '
-      wrt_bec2_diag_3d(docprod_idx_t)=.false.
+      wrt_bec2_diag_3d(docprod_idx_t)=.true.
 
       docremin_idx_t=28
       vname_bec2_diag_3d(1,docremin_idx_t)='DOC_REMIN'
@@ -233,7 +233,7 @@
       vname_bec2_diag_3d(2,spnlim_idx_t)='N limitation factor of small phytoplankton'
       vname_bec2_diag_3d(3,spnlim_idx_t)=' '
       vname_bec2_diag_3d(4,spnlim_idx_t)=' '
-      wrt_bec2_diag_3d(spnlim_idx_t)=.false.
+      wrt_bec2_diag_3d(spnlim_idx_t)=.true.
 
       spfeuptake_idx_t=31
       vname_bec2_diag_3d(1,spfeuptake_idx_t)='SP_FE_LIM'
@@ -254,14 +254,14 @@
       vname_bec2_diag_3d(2,splightlim_idx_t)='Small phytoplankton light limitation factor'
       vname_bec2_diag_3d(3,splightlim_idx_t)=' '
       vname_bec2_diag_3d(4,splightlim_idx_t)=' '
-      wrt_bec2_diag_3d(splightlim_idx_t)=.false.
+      wrt_bec2_diag_3d(splightlim_idx_t)=.true.
 
       diatnlim_idx_t=34
       vname_bec2_diag_3d(1,diatnlim_idx_t)='DIAT_N_LIM'
       vname_bec2_diag_3d(2,diatnlim_idx_t)='N limitation factor of diatoms'
       vname_bec2_diag_3d(3,diatnlim_idx_t)=' '
       vname_bec2_diag_3d(4,diatnlim_idx_t)=' '
-      wrt_bec2_diag_3d(diatnlim_idx_t)=.false.
+      wrt_bec2_diag_3d(diatnlim_idx_t)=.true.
 
       diatfeuptake_idx_t=35
       vname_bec2_diag_3d(1,diatfeuptake_idx_t)='DIAT_FE_LIM'
@@ -289,7 +289,7 @@
       vname_bec2_diag_3d(2,diatlightlim_idx_t)='Diatom light limitation factor'
       vname_bec2_diag_3d(3,diatlightlim_idx_t)=' '
       vname_bec2_diag_3d(4,diatlightlim_idx_t)=' '
-      wrt_bec2_diag_3d(diatlightlim_idx_t)=.false.
+      wrt_bec2_diag_3d(diatlightlim_idx_t)=.true.
 
       caco3prod_idx_t=39
       vname_bec2_diag_3d(1,caco3prod_idx_t)='CACO3_PROD'
@@ -317,7 +317,7 @@
       vname_bec2_diag_3d(2,photocdiaz_idx_t)='Diazotroph C-fixation'
       vname_bec2_diag_3d(3,photocdiaz_idx_t)='mmol/m2/s  '
       vname_bec2_diag_3d(4,photocdiaz_idx_t)=' '
-      wrt_bec2_diag_3d(photocdiaz_idx_t)=.false.
+      wrt_bec2_diag_3d(photocdiaz_idx_t)=.true.
 
       diazpo4uptake_idx_t=43
       vname_bec2_diag_3d(1,diazpo4uptake_idx_t)='DIAZ_PO4_LIM'
@@ -338,7 +338,7 @@
       vname_bec2_diag_3d(2,diazlightlim_idx_t)='Diazotroph light limitation'
       vname_bec2_diag_3d(3,diazlightlim_idx_t)=' '
       vname_bec2_diag_3d(4,diazlightlim_idx_t)=' '
-      wrt_bec2_diag_3d(diazlightlim_idx_t)=.false.
+      wrt_bec2_diag_3d(diazlightlim_idx_t)=.true.
 
       fescavengerate_idx_t=46
       vname_bec2_diag_3d(1,fescavengerate_idx_t)='FE_SCAVENGE_RATE'
@@ -422,14 +422,14 @@
       vname_bec2_diag_3d(2,nitrif_idx_t)='Nitrification'
       vname_bec2_diag_3d(3,nitrif_idx_t)='mmol/m2/s  '
       vname_bec2_diag_3d(4,nitrif_idx_t)=' '
-      wrt_bec2_diag_3d(nitrif_idx_t)=.false.
+      wrt_bec2_diag_3d(nitrif_idx_t)=.true.
 
       denitrif_idx_t=58
       vname_bec2_diag_3d(1,denitrif_idx_t)='DENITRIF'
       vname_bec2_diag_3d(2,denitrif_idx_t)='Denitrification'
       vname_bec2_diag_3d(3,denitrif_idx_t)='mmol/m2/s  '
       vname_bec2_diag_3d(4,denitrif_idx_t)=' '
-      wrt_bec2_diag_3d(denitrif_idx_t)=.false.
+      wrt_bec2_diag_3d(denitrif_idx_t)=.true.
 
       spno3uptake_idx_t=59
       vname_bec2_diag_3d(1,spno3uptake_idx_t)='SP_NO3_UPTAKE'
@@ -457,21 +457,21 @@
       vname_bec2_diag_3d(2,spnh4uptake_idx_t)='NH4 uptake rate of small phyto'
       vname_bec2_diag_3d(3,spnh4uptake_idx_t)='mmol/m2/s  '
       vname_bec2_diag_3d(4,spnh4uptake_idx_t)=' '
-      wrt_bec2_diag_3d(spnh4uptake_idx_t)=.false.
+      wrt_bec2_diag_3d(spnh4uptake_idx_t)=.true.
 
       diatnh4uptake_idx_t=63
       vname_bec2_diag_3d(1,diatnh4uptake_idx_t)='DIAT_NH4_UPTAKE'
       vname_bec2_diag_3d(2,diatnh4uptake_idx_t)='NH4 uptake rate of diatoms'
       vname_bec2_diag_3d(3,diatnh4uptake_idx_t)='mmol/m2/s  '
       vname_bec2_diag_3d(4,diatnh4uptake_idx_t)=' '
-      wrt_bec2_diag_3d(diatnh4uptake_idx_t)=.false.
+      wrt_bec2_diag_3d(diatnh4uptake_idx_t)=.true.
 
       diaznh4uptake_idx_t=64
       vname_bec2_diag_3d(1,diaznh4uptake_idx_t)='DIAZ_NH4_UPTAKE'
       vname_bec2_diag_3d(2,diaznh4uptake_idx_t)='NH4 uptake rate of diazotrophs'
       vname_bec2_diag_3d(3,diaznh4uptake_idx_t)='mmol/m2/s  '
       vname_bec2_diag_3d(4,diaznh4uptake_idx_t)=' '
-      wrt_bec2_diag_3d(diaznh4uptake_idx_t)=.false.
+      wrt_bec2_diag_3d(diaznh4uptake_idx_t)=.true.
 
       grazedicsp_idx_t=65
       vname_bec2_diag_3d(1,grazedicsp_idx_t)='SP_GRAZE_DIC'
@@ -534,21 +534,21 @@
       vname_bec2_diag_3d(2,grazespzoo_idx_t)='Grazing rate on small phytoplankton routed to zoo'
       vname_bec2_diag_3d(3,grazespzoo_idx_t)='mmol C/m2/s '
       vname_bec2_diag_3d(4,grazespzoo_idx_t)=' '
-      wrt_bec2_diag_3d(grazespzoo_idx_t)=.false.
+      wrt_bec2_diag_3d(grazespzoo_idx_t)=.true.
 
       grazediatzoo_idx_t=74
       vname_bec2_diag_3d(1,grazediatzoo_idx_t)='GRAZE_DIAT_ZOO'
       vname_bec2_diag_3d(2,grazediatzoo_idx_t)='Grazing rate on diatoms routed to zoo'
       vname_bec2_diag_3d(3,grazediatzoo_idx_t)='mmol C/m2/s'
       vname_bec2_diag_3d(4,grazediatzoo_idx_t)=' '
-      wrt_bec2_diag_3d(grazediatzoo_idx_t)=.false.
+      wrt_bec2_diag_3d(grazediatzoo_idx_t)=.true.
 
       grazediazzoo_idx_t=75
       vname_bec2_diag_3d(1,grazediazzoo_idx_t)='GRAZE_DIAZ_ZOO'
       vname_bec2_diag_3d(2,grazediazzoo_idx_t)='Grazing rate on diazotrophs routed to zoo'
       vname_bec2_diag_3d(3,grazediazzoo_idx_t)='mmol C/m2/s'
       vname_bec2_diag_3d(4,grazediazzoo_idx_t)=' '
-      wrt_bec2_diag_3d(grazediazzoo_idx_t)=.false.
+      wrt_bec2_diag_3d(grazediazzoo_idx_t)=.true.
 
       spqcaco3_idx_t=76
       vname_bec2_diag_3d(1,spqcaco3_idx_t)='QCACO3'
