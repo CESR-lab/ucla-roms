@@ -138,8 +138,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
 	main.F	
 
-IOSRC = checkdims.F	insert_node.F\
-	get_init.F	set_forces.F	closecdf.F\
+IOSRC = checkdims.F	get_init.F	set_forces.F	closecdf.F\
 
   SRCS = $(KRNSRC) $(IOSRC)
    RCS = $(SRCS:.F=.f)
