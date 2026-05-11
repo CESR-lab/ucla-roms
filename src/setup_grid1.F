@@ -68,7 +68,6 @@
       use scalars
       use roms_mpi
       implicit none
-!     integer :: istr,iend,jstr,jend, i,j
       integer :: i,j
 
 #ifdef MASKING
