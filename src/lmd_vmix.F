@@ -10,21 +10,20 @@
       implicit none
       integer      :: tind
 
-      call lmd_vmix_work(A3d(1,1), A3d(1,2),A3d(1,4),
+      call lmd_vmix_work(A3d(1,4),
      &                                 A2d(1,1), A2d(1,2), A2d(1,3),
      &                                                         tind)
 # if defined LMD_KPP || defined LMD_BKPP
-      call lmd_kpp_tile  (1,nx,1,ny, A3d(1,1), A3d(1, 2),
-     &                    A2d(1, 1), A2d(1, 2), A2d(1, 3), A2d(1, 4),
-     &                    A2d(1, 5), A2d(1, 6), A2d(1, 7), A2d(1, 8),
-     &                    A2d(1, 9), A2d(1,10), A2d(1,11), A2d(1,12),
-     &                    A2d(1,13), A2d(1,14), A2d(1,15), A2d(1,16),
-     &                    A2d(1,17), A2d(1,18), iA2d(1,1), iA2d(1,2),
-     &                                                          tind)
+      call lmd_kpp (A2d(1, 1), A2d(1, 2), A2d(1, 3), A2d(1, 4),
+     &              A2d(1, 5), A2d(1, 6), A2d(1, 7), A2d(1, 8),
+     &              A2d(1, 9), A2d(1,10), A2d(1,11), A2d(1,12),
+     &              A2d(1,13), A2d(1,14), A2d(1,15), A2d(1,16),
+     &              A2d(1,17), A2d(1,18), iA2d(1,1), iA2d(1,2),
+     &                                                       tind)
 # endif
       end
 
-      subroutine lmd_vmix_work(Kv,Kt,Rig,FX,FE,FE1,tind)
+      subroutine lmd_vmix_work(Rig,FX,FE,FE1,tind)
 
 ! Compute vertical mixing coefficients for momentum and tracers at the
 ! ocean interior using the Large, McWilliams, and Doney (1994) mixing
@@ -48,8 +47,8 @@
 
       integer  :: tind
       integer  :: i,j,k
-      real, dimension(GLOBAL_2D_ARRAY,0:nz) :: Kv,Kt,Rig
-      real, dimension(GLOBAL_2D_ARRAY) :: FX,FE,FE1
+      real,dimension(GLOBAL_2D_ARRAY,0:nz) :: Rig
+      real,dimension(GLOBAL_2D_ARRAY) :: FX,FE,FE1
       real :: Kv_cur,Kt_cur
       real nu_sx, cff,cff1, dudz,dvdz
       real, parameter ::     ! Critical gradient Richardson number
@@ -179,19 +178,19 @@
             nu_sx=1. - cff*cff                ! to shear instability
             nu_sx=nu_sx*nu_sx*nu_sx           ! and internal wave
                                               ! breaking.
-            Kv(i,j,k)=nuwm + nu0m*nu_sx
-            Kt(i,j,k)=nuws + nu0s*nu_sx
+            AKv(i,j,k)=nuwm + nu0m*nu_sx
+            AKt(i,j,k)=nuws + nu0s*nu_sx
 # else
-            Kv(i,j,k)=nuwm                    ! internal waves
-            Kt(i,j,k)=nuws                    ! only
+            AKv(i,j,k)=nuwm                    ! internal waves
+            AKt(i,j,k)=nuws                    ! only
 # endif
             ! Convective adjustment will now be added everywhere
             ! but 'tailed' near the bottom
             ! It is not generally recommended to use...
 # if defined LMD_CONVEC
             if (Rig(i,j,k) < 0.) then
-              Kv(i,j,k)=Kv(i,j,k) + nu0c
-              Kt(i,j,k)=Kt(i,j,k) + nu0c
+              AKv(i,j,k)=AKv(i,j,k) + nu0c
+              AKt(i,j,k)=AKt(i,j,k) + nu0c
             endif
 # endif
           enddo
@@ -206,8 +205,8 @@
             dist = z_w(i,j,k)-z_w(i,j,0)
             if (dist<Lturb) then
               mult = sin(0.5*pi*(z_w(i,j,k) - z_w(i,j,0))/Lturb)
-              Kv(i,j,k) = Kv(i,j,k)*mult
-              Kt(i,j,k) = Kt(i,j,k)*mult
+              AKv(i,j,k) = AKv(i,j,k)*mult
+              AKt(i,j,k) = AKt(i,j,k)*mult
             endif
           enddo
         enddo
@@ -215,48 +214,37 @@
 
       do j=1,ny
         do i=1,nx
-          Kv(i,j,nz)=Kv(i,j,nz-1)
-          Kt(i,j,nz)=Kt(i,j,nz-1)
-          Kv(i,j, 0)=Kv(i,j,   1)
-          Kt(i,j, 0)=Kt(i,j,   1)
+          AKv(i,j,nz)=AKv(i,j,nz-1)
+          AKt(i,j,nz)=AKt(i,j,nz-1)
+          AKv(i,j, 0)=AKv(i,j,   1)
+          AKt(i,j, 0)=AKt(i,j,   1)
         enddo
       enddo
 
-# if defined LMD_KPP || defined LMD_BKPP
-      ! vertical smoothing of interior mixing
-      FX(1:nx,1:ny) = Kv(1:nx,1:ny,0)
-      FE(1:nx,1:ny) = Kt(1:nx,1:ny,0)
+      ! Vertical smoothing of interior mixing
+      FX(1:nx,1:ny) = AKv(1:nx,1:ny,0)
+      FE(1:nx,1:ny) = AKt(1:nx,1:ny,0)
       do k=1,nz-1
         do j=1,ny
           do i=1,nx
-            Kv_cur    = Kv(i,j,k)    ! save original before overwrite                                                                                      
-            Kt_cur    = Kt(i,j,k)
-!           Kv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
-!           Kt(i,j,k)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
-            Kv(i,j,k)=0.5*Kv(i,j,k)+0.25*FX(i,j)+0.25*Kv(i,j,k+1)
-            Kt(i,j,k)=0.5*Kt(i,j,k)+0.25*FE(i,j)+0.25*Kt(i,j,k+1)
+            Kv_cur    = AKv(i,j,k)    ! save original before overwrite                                                                                      
+            Kt_cur    = AKt(i,j,k)
+!           AKv(i,j,k)=0.5*AKv(i,j,k)+0.25*AKv(i,j,k-1)+0.25*AKv(i,j,k+1)
+!           AKt(i,j,k)=0.5*AKt(i,j,k)+0.25*AKt(i,j,k-1)+0.25*AKt(i,j,k+1)
+            AKv(i,j,k)=0.5*AKv(i,j,k)+0.25*FX(i,j)+0.25*AKv(i,j,k+1)
+            AKt(i,j,k)=0.5*AKt(i,j,k)+0.25*FE(i,j)+0.25*AKt(i,j,k+1)
             FX(i,j) = Kv_cur
             FE(i,j) = Kt_cur
           enddo
         enddo
       enddo
-# else /* no kpp at all */
 
-! Finalize: Copy everything into shared arrays:
-
-      do k=1,nz-1
-        do j=1,ny
-          do i=1,nx
-            AKv(i,j,k) = 0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
-            AKt(i,j,k) = 0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
-          enddo
-        enddo
-      enddo
-
-      !! Do we really need to exchange the mixing coefficients?
+# if defined LMD_KPP || defined LMD_BKPP
+      !! exchange done in lmd_kpp
+# else
       call exchange_xxx(Akv,Akt)
-
 # endif /* LMD_KPP || LMD_BKPP */
+
       end
 #else
       subroutine lmd_vmix_empty
