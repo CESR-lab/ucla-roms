@@ -3,7 +3,7 @@
 # define INT_AT_RHO_POINTS
 # define SMOOTH_HBL
 
-      subroutine lmd_kpp_tile (istr,iend,jstr,jend,       Kv,Kt,Ks,
+      subroutine lmd_kpp_tile (istr,iend,jstr,jend,       Kv,Kt,
      &                         ustar, Bo,Bosol, hbl,bbl, FX,FE,FE1,
      &                         Cr,FC, wrk1,wrk2,
      &                         Gm1,dGm1dS,  Gt1,dGt1dS,  Gs1,dGs1dS,
@@ -21,7 +21,7 @@
 
       implicit none
       integer istr,iend,jstr,jend, i,j,k
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Kv, Kt, Ks
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:nz) :: Kv, Kt
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: ustar, Bo, Bosol
      &                                                  , hbl, bbl
 # ifdef SMOOTH_HBL
@@ -66,7 +66,7 @@
       real Cg, ustar3, Bfsfc, zscale, zetahat, ws,wm, Kern, Vtc,Vtsq,
      &         ssgm, z_bl, cff,cff1, cff_up,cff_dn
 
-      real Kv0, Kt0, Ks0, wmb,wsb, sgmb,amp
+      real Kv0, Kt0, wmb,wsb, sgmb,amp
 
       !! When smoothing hbl, we try to not 
       !! smooth over the mask and the domain
@@ -133,15 +133,14 @@
 # ifdef LMD_KPP
 c-#  define alpha Bosol
 c-#  define beta  Bo
-      call alfabeta_tile (istr,iend,jstr,jend, I_EXT_RANGE,
-     &                             J_EXT_RANGE, Bosol,Bo)
+      call alfabeta_tile (Bosol,Bo)
 # endif
       do j=J_EXT_RANGE
         do i=I_EXT_RANGE
           Bo(i,j)=g*( Bosol(i,j)*(stflx(i,j,itemp)-srflx(i,j))
      &                              -bo(i,j)*stflx(i,j,isalt)
      &                                                        )
-          Bosol(i,j)=g*bosol(i,j)*srflx(i,j)
+          Bosol(i,j)=g*Bosol(i,j)*srflx(i,j)
 #  undef beta
 #  undef alpha
 
@@ -407,10 +406,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
               amp = ssgm**2
               Kv(i,j,k)=sqrt((amp*Kv(i,j,k))**2 + (wm*hbl(i,j)*cff)**2 )
               Kt(i,j,k)=sqrt((amp*Kt(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
-#  ifdef SALINITY
-              !Ks(i,j,k)=Ks(i,j,k) + ws*hbl(i,j)*cff
-              Ks(i,j,k)=sqrt((amp*Ks(i,j,k))**2 + (ws*hbl(i,j)*cff)**2 )
-#  endif
 
 #  ifdef LMD_NONLOCAL
               if (Bfsfc < 0.) then
@@ -467,9 +462,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 
               Kv(i,j,k)=sqrt( Kv(i,j,k)**2 + (wmb*bbl(i,j)*cff1)**2 )
               Kt(i,j,k)=sqrt( Kt(i,j,k)**2 + (wsb*bbl(i,j)*cff1)**2 )
-#  ifdef SALINITY
-              Ks(i,j,k)=sqrt( Ks(i,j,k)**2 + (wsb*bbl(i,j)*cff1)**2 )
-#  endif
 
             endif
           enddo      !<-- k
