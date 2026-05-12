@@ -19,49 +19,25 @@
 
 #include "ocean_vars.opt"
 
-# ifdef SOLVE3D
       real,allocatable,dimension(:,:,:) :: akv_avg
       real,allocatable,dimension(:,:,:) :: akt_avg
-#  ifdef SALINITY
-      real,allocatable,dimension(:,:,:) :: aks_avg
-#  endif
-#  ifdef LMD_KPP
-      real,allocatable,dimension(:,:) :: hbl_avg
-#  endif
-#  ifdef LMD_BKPP
-      real,allocatable,dimension(:,:) :: hbbl_avg
-#  endif
+      real,allocatable,dimension(:,:)   :: hbl_avg
+      real,allocatable,dimension(:,:)   :: hbbl_avg
       real,allocatable,dimension(:,:,:) :: rho_avg
-# endif
 
       ![   Taken from old ncvars (should be improved eventually):
       integer, parameter, public :: indxTime=1, indxZ=2, indxUb=3, indxVb=4
-#ifdef SOLVE3D
      &                    , indxU=5, indxV=6, indxO=7, indxW=8
      &                    , indxR=9, indxT=10
-# ifdef SALINITY
      &                    , indxS=indxT+1
-# endif
-     &                    , indxAkv=indxT+NT,   indxAkt=indxAkv+1
-# ifdef SALINITY
-     &                    , indxAks=indxAkt+1
-# endif
+     &                    , indxAkv=indxT+nt,   indxAkt=indxAkv+1
 # ifdef LMD_KPP
-#  ifdef SALINITY
-     &                    , indxHbls=indxAks+1
-#  else
      &                    , indxHbls=indxAkt+1
 #  endif
 # ifdef LMD_BKPP
      &                    , indxHbbl=indxHbls+1
 # endif
-# else
-# ifdef LMD_BKPP
-     &                    , indxHbbl=indxAks+1
-# endif
-# endif
 
-#endif
       !]
 
       character*42, public ::  vname(3, 180) ! DevinD 180 copied from old code only
@@ -148,11 +124,8 @@
           allocate( rho_avg(GLOBAL_2D_ARRAY,N) )
           rho_avg=0.
         endif
-        if (wrt_avg_Akv)  allocate( akv_avg(GLOBAL_2D_ARRAY,0:N) )
-        if (wrt_avg_Akt)  allocate( akt_avg(GLOBAL_2D_ARRAY,0:N) )
-# ifdef SALINITY
-        if (wrt_avg_Aks)  allocate( aks_avg(GLOBAL_2D_ARRAY,0:N) )
-# endif
+        if (wrt_avg_Akv)  allocate( akv_avg(GLOBAL_2D_ARRAY,0:nz) )
+        if (wrt_avg_Akt)  allocate( akt_avg(GLOBAL_2D_ARRAY,0:nz) )
 # ifdef LMD_KPP
         if (wrt_avg_Hbls) allocate( hbl_avg(GLOBAL_2D_ARRAY) )
 # endif
@@ -206,24 +179,18 @@
       vname(2,indxT)='potential temperature'
       vname(3,indxT)='Celsius'
 
-# ifdef SALINITY
       vname(1,indxS)='salt'
       vname(2,indxS)='salinity'
       vname(3,indxS)='PSU'
-# endif
 
       vname(1,indxAkv)='Akv'
       vname(2,indxAkv)='vertical viscosity coefficient'
       vname(3,indxAkv)='meter2 second-1'
 
       vname(1,indxAkt)='Akt'
-      vname(2,indxAkt)='vertical thermal conductivity coefficient'
+      vname(2,indxAkt)='vertical tracer conductivity coefficient'
       vname(3,indxAkt)='meter2 second-1'
-# ifdef SALINITY
-      vname(1,indxAks)='AKs'
-      vname(2,indxAks)='salinity vertical diffusion coefficient'
-      vname(3,indxAks)='meter2 second-1'
-# endif
+
 # ifdef LMD_KPP
       vname(1,indxHbls)='hbls'
       vname(2,indxHbls)='Thickness of KPP surface boundary layer'
@@ -350,10 +317,8 @@
           call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:nz),start)
         endif
         if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
-        if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:,itemp),start)
-# ifdef SALINITY
-        if (wrt_Aks) call ncwrite(ncid,vname(1,indxAks),Akt(i0:i1,j0:j1,:,isalt),start)
-# endif
+        if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:),start)
+
         start(3)=rec_his                                      ! back to 2D vars
 # ifdef LMD_KPP
         if (wrt_Hbls) call ncwrite(ncid,vname(1,indxHbls),hbls(i0:i1,j0:j1),start)
@@ -445,9 +410,6 @@
         if (wrt_avg_W)   call ncwrite(ncid, vname(1,indxW),   wvl_avg(i0:i1,j0:j1,1:N), start)
         if (wrt_avg_Akv) call ncwrite(ncid, vname(1,indxAkv), akv_avg(i0:i1,j0:j1,:), start)
         if (wrt_avg_Akt) call ncwrite(ncid, vname(1,indxAkt), akt_avg(i0:i1,j0:j1,:), start)
-#  ifdef SALINITY
-        if (wrt_avg_Aks) call ncwrite(ncid, vname(1,indxAks), aks_avg(i0:i1,j0:j1,:), start)
-#  endif
         start(3)=rec_avg                                                ! back to 2D vars
 #  ifdef LMD_KPP
         if (wrt_avg_Hbls) call ncwrite(ncid, vname(1,indxHbls),  hbl_avg(i0:i1,j0:j1), start)
@@ -612,11 +574,6 @@
         call ncwrite(ncid,vname(1,indxHbbl),hbbl(i0:i1,j0:j1),start)
 # endif
 #endif
-        ! Added for perfect restart reasons
-!       start(3)=1; start(4)=rec_rst
-!       call ncwrite(ncid,'Akv',Akv(i0:i1,j0:j1,:),start)
-!       call ncwrite(ncid,'Akt',Akt(i0:i1,j0:j1,:,itemp),start)
-!       call ncwrite(ncid,'Aks',Akt(i0:i1,j0:j1,:,isalt),start)
 
         if (obc_tuning) call wrt_rst_tune(ncid,rec_rst)
         if (diag_pflx)  call wrt_rst_diag_slow(ncid,rec_rst)
@@ -790,16 +747,7 @@
         ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
         ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAkt))
       endif
-# ifdef SALINITY
-      if ( (wrt_Aks .and. .not. avg) .or. (wrt_avg_Aks .and. avg) ) then! vertical diffusion coefficient for salinity.
-        if (.not. avg) text_lname=vname(2,indxAks)
-        if (      avg) text_lname='averaged '/ /vname(2,indxAks)
-        varid = 
-     &    nccreate(ncid,vname(1,indxAks),(/dn_xr,dn_yr,dn_zw,dn_tm/),(/xi_rho,eta_rho,N+1,0/))
-        ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
-        ierr = nf90_put_att(ncid,varid,'units',vname(3,indxAks))
-      endif
-# endif /* SALINITY */
+
 # ifdef LMD_KPP
       if ( (wrt_Hbls .and. .not. avg) .or. (wrt_avg_Hbls .and. avg) ) then                                   ! depth of surface planetary boundary layer.
         if (.not. avg) text_lname=vname(2,indxHbls)
@@ -1029,10 +977,7 @@
      &                               + work(i0:i1,j0:j1,1:N)*coef
         endif
         if (wrt_avg_Akv) akv_avg(i0:i1,j0:j1,:) = akv_avg(i0:i1,j0:j1,:)*(1-coef) + akv(i0:i1,j0:j1,:)*coef
-        if (wrt_avg_Akt) akt_avg(i0:i1,j0:j1,:) = akt_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,itemp)*coef
-#  ifdef SALINITY
-        if (wrt_avg_Aks) aks_avg(i0:i1,j0:j1,:) = aks_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:,isalt)*coef
-#  endif
+        if (wrt_avg_Akt) akt_avg(i0:i1,j0:j1,:) = akt_avg(i0:i1,j0:j1,:)*(1-coef) + akt(i0:i1,j0:j1,:)*coef
 #  ifdef LMD_KPP
         if (wrt_avg_Hbls) hbl_avg(i0:i1,j0:j1)  =  hbl_avg(i0:i1,j0:j1)*(1-coef) + hbls(i0:i1,j0:j1)*coef
 #  endif
@@ -1102,9 +1047,6 @@
 
      &                 , 'Akv',    wrt_Akv,  vname(2,indxAkv)
      &                 , 'Akt',    wrt_Akt,  vname(2,indxAkt)
-# ifdef SALINITY
-     &                 , 'Aks',    wrt_Aks,  vname(2,indxAks)
-# endif
 # ifdef LMD_KPP
      &                 , 'hbls',   wrt_Hbls, vname(2,indxHbls)
 # endif
@@ -1146,9 +1088,6 @@
 
      &                 , 'Akv',    wrt_avg_Akv,  vname(2,indxAkv)
      &                 , 'Akt',    wrt_avg_Akt,  vname(2,indxAkt)
-# ifdef SALINITY
-     &                 , 'Aks',    wrt_avg_Aks,  vname(2,indxAks)
-# endif
 # ifdef LMD_KPP
      &                 , 'hbls',   wrt_avg_Hbls, vname(2,indxHbls)
 # endif

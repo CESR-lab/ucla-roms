@@ -77,15 +77,9 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
       real rdrg,rdrg2,Zob, visc2,gamma2
 !     real :: xl,el
 
-#ifdef SOLVE3D
       real rho0, tnu2(NT)
+      real Akv_bak, Akt_bak
 
-      real Akv_bak, Akt_bak(NT)
-
-# ifdef MY25_MIXING
-      real Akq_bak,   q2nu2,   q2nu4
-# endif
-#endif
 
       real v_sponge
 

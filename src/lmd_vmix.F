@@ -268,41 +268,35 @@ c----#  define tind nstp
       enddo     ! <-- k
 
 ! Supress mixing away near the bottom. 
-      do k=1,N-1
-        do j=jstr,jend
-          do i=istr,iend
+      do k=1,nz-1
+        do j=1,ny
+          do i=1,nx
             dist = z_w(i,j,k)-z_w(i,j,0)
             if (dist<Lturb) then
               mult = sin(0.5*pi*(z_w(i,j,k) - z_w(i,j,0))/Lturb)
               Kv(i,j,k) = Kv(i,j,k)*mult
               Kt(i,j,k) = Kt(i,j,k)*mult
-#  ifdef SALINITY
-              Ks(i,j,k) = Ks(i,j,k)*mult
-#  endif
             endif
           enddo
         enddo
       enddo
 
-      do j=jstr,jend
-        do i=istr,iend
-          Kv(i,j,N)=Kv(i,j,N-1)
-          Ks(i,j,N)=Ks(i,j,N-1)
-          Kt(i,j,N)=Kt(i,j,N-1)
-          Kv(i,j,0)=Kv(i,j,  1)
-          Ks(i,j,0)=Ks(i,j,  1)
-          Kt(i,j,0)=Kt(i,j,  1)
+      do j=1,ny
+        do i=1,nx
+          Kv(i,j,nz)=Kv(i,j,nz-1)
+          Kt(i,j,nz)=Kt(i,j,nz-1)
+          Kv(i,j, 0)=Kv(i,j,   1)
+          Kt(i,j, 0)=Kt(i,j,   1)
         enddo
       enddo
 
 # if defined LMD_KPP || defined LMD_BKPP
       ! vertical smoothing of interior mixing
-      do k=1,N-1
+      do k=1,nz-1
         do j=jstr,jend
           do i=istr,iend
             Kv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
             Kt(i,j,k)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
-            Ks(i,j,k)=0.5*Ks(i,j,k)+0.25*Ks(i,j,k-1)+0.25*Ks(i,j,k+1)
           enddo
         enddo
       enddo
@@ -313,26 +307,15 @@ c----#  define tind nstp
       do k=1,N-1
         do j=jstr,jend
           do i=istr,iend
-!           Akv(i,j,k)=Kv(i,j,k) 
-            AKv(i,j,k)=0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
-!           Akt(i,j,k,itemp)=Kt(i,j,k)
-            AKt(i,j,k,itemp)=0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
-#  ifdef SALINITY
-!           Akt(i,j,k,isalt)=Ks(i,j,k)
-            AKt(i,j,k,isalt)=0.5*Ks(i,j,k)+0.25*Ks(i,j,k-1)+0.25*Ks(i,j,k+1)
-#  endif
+            AKv(i,j,k) = 0.5*Kv(i,j,k)+0.25*Kv(i,j,k-1)+0.25*Kv(i,j,k+1)
+            AKt(i,j,k) = 0.5*Kt(i,j,k)+0.25*Kt(i,j,k-1)+0.25*Kt(i,j,k+1)
           enddo
         enddo
       enddo
 
       !! Do we really need to exchange the mixing coefficients?
-#  ifdef EXCHANGE
-#   ifdef SALINITY
-      call exchange_xxx(Akv,Akt(:,:,:,itemp),Akt(:,:,:,isalt))
-#   else
-      call exchange_xxx(Akv,Akt(:,:,:,itemp))
-#   endif
-#  endif
+      call exchange_xxx(Akv,Akt)
+
 # endif /* LMD_KPP || LMD_BKPP */
       end
 #else

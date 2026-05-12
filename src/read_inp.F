@@ -276,39 +276,17 @@
 #endif
 
 #ifdef SOLVE3D
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
+# if !defined LMD_MIXING
 
 ! Background vertical viscosity and mixing coefficients for tracers.
 
         elseif (keyword(1:kwlen) == 'vertical_mixing') then
           call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) Akv_bak,(Akt_bak(itrc),itrc=1,NT)
-          mpi_master_only write(*,'(4x,A,ES10.3,2x,A)')  'Akv_bak =',
+          read(input,*,err=95) Akv_bak,Akt_bak
+          if (mynode.eq.0) write(*,'(4x,A,ES10.3,2x,A)')  'Akv_bak =',
      &               Akv_bak, 'background vertical viscosity [m^2/s]'
-          do itrc=1,NT
-            mpi_master_only write(*,'(1x,A,I1,A,ES10.3,2x,2A)')
-     &                     'Akt_bak(',  itrc,  ') =',  Akt_bak(itrc),
-     &                     'background vertical mixing [m^2/s] for ',
-     &        vname(2,indxT+itrc-1)(1:lenstr(vname(2,indxT+itrc-1)))
-          enddo
-# endif
-# ifdef MY25_MIXING
-! Mellor-Yamada Level 2.5 turbulent closure parameters.
-
-        elseif (keyword(1:kwlen) == 'MY_bak_mixing') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) Akq_bak, q2nu2, q2nu4
-          mpi_master_only write(*,'(1x,A,ES10.3,1x,A)')  'Akq_bak =',
-     &        Akq_bak, 'Background vertical mixing for TKE, [m^2/s]'
-#  ifdef Q_DIF2
-          mpi_master_only write(*,'(1x,A,ES10.3,1x,A)')    'q2nu2 =',
-     &         q2nu2, 'Horizontal Laplacian mixing for TKE, [m^2/s]'
-#  endif
-#  ifdef Q_DIF4
-          mpi_master_only write(*,'(1x,A,ES10.3,1x,A)')    'q2nu4 =',
-     &        q2nu4, 'Horizontal biharmonic mixing for TKE, [m^4/s]'
-#  endif
+          if (mynode.eq.0) write(*,'(4x,A,ES10.3,2x,A)')  'Akt_bak =',
+     &               Akt_bak, 'tracer background vertical mixing [m^2/s]'
 # endif
 
 # if defined SFLX_CORR && defined SALINITY

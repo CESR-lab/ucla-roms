@@ -21,11 +21,8 @@
 # endif
 
       real,allocatable,dimension(:,:,:) :: Akv
-      real,allocatable,dimension(:,:,:,:) :: Akt
-
-# if defined LMD_MIXING 
+      real,allocatable,dimension(:,:,:) :: Akt
       real,allocatable,dimension(:,:,:) :: bvf
-# endif
 
 
 ! Large/McWilliams/Doney oceanic planetary boundary layer variables
@@ -70,11 +67,7 @@
 # endif
 
       allocate( Akv(GLOBAL_2D_ARRAY,0:nz) ); Akv=init
-# ifdef SALINITY
-      allocate( Akt(GLOBAL_2D_ARRAY,0:nz,isalt) ); Akt=init
-# else
-      allocate( Akt(GLOBAL_2D_ARRAY,0:nz,itemp) ); Akt=init
-# endif
+      allocate( Akt(GLOBAL_2D_ARRAY,0:nz) ); Akt=init
 # if defined LMD_KPP || defined LMD_BKPP
       allocate( bvf(GLOBAL_2D_ARRAY,0:nz) ); bvf=0
 # endif
@@ -116,22 +109,17 @@
 ! vertical mixing coefficients are those specified by the background
 ! values.
 
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
-
+# if !defined LMD_MIXING
       Akv=Akv_bak
 # else
       Akv=0.
 # endif
 
-      do itrc=1,iTandS
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
-        Akt(:,:,:,itrc)=Akt_bak(itrc)
+# if !defined LMD_MIXING 
+      Akt = Akt_bak
 # else
-        Akt(:,:,:,itrc)=0.
+      Akt = 0.
 # endif
-      enddo
 
       ! averaging variables allocated in ocean_vars to prevent circular reference from wrt_* logicals
 

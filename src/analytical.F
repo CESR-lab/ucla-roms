@@ -198,12 +198,7 @@
 #include "ana_vmix.h"
 
 # ifdef EXCHANGE
-      call exchange_xxx(Akv,Akt(:,:,:,itemp))
-
-#  ifdef SALINITY
-      call exchange_xxx(Akt(:,:,:,isalt))
-#  endif
-
+      call exchange_xxx(Akv,Akt)
 # endif  /* EXCHANGE */
 
 

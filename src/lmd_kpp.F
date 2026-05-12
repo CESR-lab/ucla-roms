@@ -1,5 +1,4 @@
 #include "cppdefs.opt"
-#if defined SOLVE3D && defined LMD_KPP
 
 # define INT_AT_RHO_POINTS
 # define SMOOTH_HBL
@@ -78,12 +77,12 @@
       imin=istr-1
       imax=iend+1
 #  else
-      if (WESTERN_EDGE) then
+      if (west_bnd) then
         imin=istr
       else
         imin=istr-1
       endif
-      if (EASTERN_EDGE) then
+      if (east_bnd) then
         imax=iend
       else
         imax=iend+1
@@ -93,12 +92,12 @@
       jmin=jstr-1
       jmax=jend+1
 #  else
-      if (SOUTHERN_EDGE) then
+      if (south_bnd) then
         jmin=jstr
       else
         jmin=jstr-1
       endif
-      if (NORTHERN_EDGE) then
+      if (north_bnd) then
         jmax=jend
       else
         jmax=jend+1
@@ -132,19 +131,17 @@
 ! to the maximum (bottomed out) values.
 
 # ifdef LMD_KPP
-#  define alpha Bosol
-#  define beta  Bo
+c-#  define alpha Bosol
+c-#  define beta  Bo
       call alfabeta_tile (istr,iend,jstr,jend, I_EXT_RANGE,
-     &                             J_EXT_RANGE, alpha,beta)
+     &                             J_EXT_RANGE, Bosol,Bo)
 # endif
       do j=J_EXT_RANGE
         do i=I_EXT_RANGE
-          Bo(i,j)=g*( alpha(i,j)*(stflx(i,j,itemp)-srflx(i,j))
-#  ifdef SALINITY
-     &                              -beta(i,j)*stflx(i,j,isalt)
-#  endif
+          Bo(i,j)=g*( Bosol(i,j)*(stflx(i,j,itemp)-srflx(i,j))
+     &                              -bo(i,j)*stflx(i,j,isalt)
      &                                                        )
-          Bosol(i,j)=g*alpha(i,j)*srflx(i,j)
+          Bosol(i,j)=g*bosol(i,j)*srflx(i,j)
 #  undef beta
 #  undef alpha
 
@@ -486,47 +483,29 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
             if (FIRST_TIME_STEP) then
               do k=0,N
                 Akv(i,j,k)=Kv(i,j,k)
-                Akt(i,j,k,itemp)=Kt(i,j,k)
-# ifdef SALINITY
-                Akt(i,j,k,isalt)=Ks(i,j,k)
-# endif
+                Akt(i,j,k)=Kt(i,j,k)
               enddo
             else  !! Average 2 time steps of mixing coefficients
-              do k=0,N
-!               Akv(i,j,k)       = 0.5*Akv(i,j,k)       + 0.5*Kv(i,j,k)
-!               Akt(i,j,k,itemp) = 0.5*Akt(i,j,k,itemp) + 0.5*Kt(i,j,k)
-                Akv(i,j,k)       = Kv(i,j,k)
-                Akt(i,j,k,itemp) = Kt(i,j,k)
-# ifdef SALINITY
-!               Akt(i,j,k,isalt) = 0.5*Akt(i,j,k,isalt) + 0.5*Ks(i,j,k)
-                Akt(i,j,k,isalt) = Ks(i,j,k)
-# endif
+              do k=0,nz
+                Akv(i,j,k) = Kv(i,j,k)
+                Akt(i,j,k) = Kt(i,j,k)
               enddo
 
 # ifdef WEC
-              do k=1,N      ! Apply wave effects
-                Akv(i,j,k)       =Akv(i,j,k)+Akb(i,j,k)
-                Akt(i,j,k,itemp) =Akt(i,j,k,itemp)+Akb(i,j,k)+Akw(i,j,k)
-#  ifdef SALINITY
-                Akt(i,j,k,isalt) =Akt(i,j,k,isalt)+Akb(i,j,k)+Akw(i,j,k)
-#  endif
+              do k=1,nz     ! Apply wave effects
+                Akv(i,j,k) = Akv(i,j,k) + Akb(i,j,k)
+                Akt(i,j,k) = Akt(i,j,k) + Akb(i,j,k)+Akw(i,j,k)
               enddo
-              Akv(i,j,0)       =2.*Akv(i,j,1)-Akv(i,j,2)
-              Akt(i,j,0,itemp) =2.*Akt(i,j,1,itemp)-Akt(i,j,2,itemp)
-#  ifdef SALINITY
-              Akt(i,j,0,isalt) =2.*Akt(i,j,1,isalt)-Akt(i,j,2,isalt)
-#  endif
+              Akv(i,j,0) = 2.*Akv(i,j,1)-Akv(i,j,2)
+              Akt(i,j,0) = 2.*Akt(i,j,1)-Akt(i,j,2)
 # endif
 
             endif  !<-- FIRST_TIME_STEP
 # ifdef MASKING
           else
-            do k=0,N
-              Akv(i,j,k)=0.
-              Akt(i,j,k,itemp)=0.
-#  ifdef SALINITY
-              Akt(i,j,k,isalt)=0.
-#  endif
+            do k=0,nz
+              Akv(i,j,k) = 0.
+              Akt(i,j,k) = 0.
             enddo
           endif
 # endif
@@ -534,94 +513,83 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
       enddo
 
 # ifdef LMD_KPP
-      do j=jstr,jend                   ! Copy "hbl" into shared array
-        do i=istr,iend                 ! and padd lateral ghost points
+      do j=1,ny                        ! Copy "hbl" into shared array
+        do i=1,nx                      ! and padd lateral ghost points
           hbls(i,j)=hbl(i,j)
         enddo
       enddo
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        do j=jstr,jend
-          hbls(istr-1,j)=hbls(istr,j)
+      if (west_bnd) then
+        do j=1,ny
+          hbls(0,j)=hbls(1,j)
         enddo
       endif
-      if (EASTERN_EDGE) then
-        do j=jstr,jend
-          hbls(iend+1,j)=hbls(iend,j)
+      if (east_bnd) then
+        do j=1,ny
+          hbls(nx+1,j)=hbls(nx,j)
         enddo
       endif
-#  endif
-#  ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do i=istr,iend
-          hbls(i,jstr-1)=hbls(i,jstr)
+      if (south_bnd) then
+        do i=1,nx
+          hbls(i,0)=hbls(i,1)
         enddo
       endif
-      if (NORTHERN_EDGE) then
-        do i=istr,iend
-          hbls(i,jend+1)=hbls(i,jend)
+      if (north_bnd) then
+        do i=1,nx
+          hbls(i,ny+1)=hbls(i,ny)
         enddo
       endif
-#   ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        hbls(istr-1,jstr-1)=hbls(istr,jstr)
+      if (west_bnd .and. south_bnd) then
+        hbls(0,0)=hbls(1,1)
       endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        hbls(istr-1,jend+1)=hbls(istr,jend)
+      if (west_bnd .and. north_bnd) then
+        hbls(0,ny+1)=hbls(1,ny)
       endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        hbls(iend+1,jstr-1)=hbls(iend,jstr)
+      if (east_bnd .and. south_bnd) then
+        hbls(nx+1,0)=hbls(nx,1)
       endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        hbls(iend+1,jend+1)=hbls(iend,jend)
+      if (east_bnd .and. north_bnd) then
+        hbls(nx+1,ny+1)=hbls(nx,ny)
       endif
-#   endif
-#  endif
 # endif   /* LMD_KPP */
+
 # ifdef LMD_BKPP
       do j=jstr,jend                   ! Copy "bbl" into shared array
         do i=istr,iend                 ! and padd lateral ghost points
           hbbl(i,j)=bbl(i,j)
         enddo
       enddo
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
+      if (west_bnd) then
         do j=jstr,jend
           hbbl(istr-1,j)=hbbl(istr,j)
         enddo
       endif
-      if (EASTERN_EDGE) then
+      if (east_bnd) then
         do j=jstr,jend
           hbbl(iend+1,j)=hbbl(iend,j)
         enddo
       endif
-#  endif
-#  ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
+      if (south_bnd) then
         do i=istr,iend
           hbbl(i,jstr-1)=hbbl(i,jstr)
         enddo
       endif
-      if (NORTHERN_EDGE) then
+      if (north_bnd) then
         do i=istr,iend
           hbbl(i,jend+1)=hbbl(i,jend)
         enddo
       endif
-#   ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
+      if (west_bnd .and. south_bnd) then
         hbbl(istr-1,jstr-1)=hbbl(istr,jstr)
       endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
+      if (west_bnd .and. north_bnd) then
         hbbl(istr-1,jend+1)=hbbl(istr,jend)
       endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
+      if (east_bnd .and. south_bnd) then
         hbbl(iend+1,jstr-1)=hbbl(iend,jstr)
       endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
+      if (east_bnd .and. north_bnd) then
         hbbl(iend+1,jend+1)=hbbl(iend,jend)
       endif
-#   endif
-#  endif
 # endif   /* LMD_KPP */
 
 # ifdef EXCHANGE
@@ -638,16 +606,5 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
       call exchange_xxx(Akv)
       call exchange_xxx(hbbl(:,:))
 #  endif
-#  ifdef SALINITY
-      call exchange_xxx(Akt(:,:,:,itemp))
-      call exchange_xxx(Akt(:,:,:,isalt))
-#  else
-      call exchange_xxx(Akt(:,:,:,itemp))
-#  endif
 # endif
       end
-#else
-      subroutine lmd_kpp_empty
-      end
-#endif /* SOLVE3D && LMD_KPP */
-

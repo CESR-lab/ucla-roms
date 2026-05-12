@@ -79,7 +79,7 @@ c--# define CONST_TRACERS
 # endif
       real cff
       real, parameter :: epsil=1.E-33
-      integer itrc, iAkt
+      integer itrc
 # ifdef ADV_ISONEUTRAL
       integer k1,k2
       real sumX,sumE
@@ -911,16 +911,13 @@ c??         enddo
 ! the content of array t(:,:,:,nnew,itrc) has meaning of Hz*tracer.
 ! After the implicit step it becomes just tracer.
 
-
-          iAkt=min(itrc,iTandS)
-
           do i=1,nx
             DC(i,0)=dt*pm(i,j)*pn(i,j) !<--horizontal metric
 
 # if defined ADV_ISONEUTRAL && defined STABILIZE
-            FC(i,1)=2.*dt*(Akt(i,j,1,iAkt)+Akz(i,j,1))
+            FC(i,1)=2.*dt*(Akt(i,j,1)+Akz(i,j,1))
 # else
-            FC(i,1)=2.*dt* Akt(i,j,1,iAkt)
+            FC(i,1)=2.*dt* Akt(i,j,1)
 # endif
      &                           /(Hz(i,j,1)+Hz(i,j,2))
             WC(i,1)=DC(i,0)*Wi(i,j,1)
@@ -932,9 +929,9 @@ c??         enddo
           do k=2,nz-1,+1
             do i=1,nx
 # if defined ADV_ISONEUTRAL && defined STABILIZE
-              FC(i,k)=2.*dt*(Akt(i,j,k,iAkt)+Akz(i,j,k))
+              FC(i,k)=2.*dt*(Akt(i,j,k)+Akz(i,j,k))
 # else
-              FC(i,k)=2.*dt* Akt(i,j,k,iAkt)
+              FC(i,k)=2.*dt* Akt(i,j,k)
 # endif
      &                            /(Hz(i,j,k)+Hz(i,j,k+1))
 

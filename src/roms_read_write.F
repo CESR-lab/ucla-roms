@@ -1263,10 +1263,6 @@
       ierr=nf90_put_att(ncid, nf90_global, 'Akt_bak', Akt_bak)
       ierr=nf90_put_att (ncid, nf90_global, 'Akt_bak_units', 'm^2/s')
 # endif
-# ifdef MY25_MIXING
-      ierr=nf90_put_att(ncid, nf90_global, 'Akq_bak',Akq_bak)
-      ierr=nf90_put_att (ncid, nf90_global, 'Akq_bak_units', 'm^2/s')
-# endif
 #endif
 
 #if  defined T_FRC_BRY || defined M2_FRC_BRY || defined M3_FRC_BRY
