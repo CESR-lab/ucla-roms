@@ -6,6 +6,7 @@
       subroutine set_weights
 
       use param
+      use roms_mpi
       use coupling
       use scalars
 
@@ -162,7 +163,7 @@ c**       weight(1,i)=1.                   !<-- FLAT
         weight(2,i)=cff*weight(2,i)
       enddo
 
-      mpi_master_only write(*,'(/1x,A,I3,4x,A,I4,8x,A,2F5.1,F9.4/)')
+      if (mynode.eq.0) write(*,'(/1x,A,I3,4x,A,I4,8x,A,2F5.1,F9.4/)')
      &        'Mode splitting: ndtfast =', ndtfast, 'nfast =', nfast
 # ifdef POWER_FUNCTION
      &                                             ,'p,q,r =', p,q,r

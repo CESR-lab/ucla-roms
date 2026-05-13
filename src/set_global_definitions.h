@@ -199,11 +199,11 @@ c-# define IMPLICIT_BOTTOM_DRAG
 #else
 # ifdef EW_PERIODIC
 #  define WEST_EXCHNG istr==1
-#  define EAST_EXCHNG iend==Lm
+#  define EAST_EXCHNG iend==nx
 # endif
 # ifdef NS_PERIODIC
 #  define SOUTH_EXCHNG jstr==1
-#  define NORTH_EXCHNG jend==Mm
+#  define NORTH_EXCHNG jend==ny
 # endif
 #endif
 

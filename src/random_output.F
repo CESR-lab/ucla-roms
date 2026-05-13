@@ -6,6 +6,7 @@
       use param
       use dimensions
       use roms_read_write
+      use roms_mpi
       use nc_read_write
       use netcdf
       use scalars

@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
 
       implicit none
 
@@ -41,10 +42,10 @@
       implicit none
 
 #ifdef ALLOW_SINGLE_BLOCK_MODE
-      size_XI=6+Lm; size_ETA=6+Mm
+      size_XI=6+nx; size_ETA=6+ny
 #else
-      size_XI=7+(Lm+NSUB_X-1)/NSUB_X
-      size_ETA=7+(Mm+NSUB_E-1)/NSUB_E
+      size_XI=7+(nx+NSUB_X-1)/NSUB_X
+      size_ETA=7+(ny+NSUB_E-1)/NSUB_E
 #endif
       sse=size_ETA/(N+1);  ssz=(N+1)/size_ETA
       N2d=size_XI*(sse*size_ETA+ssz*(N+1))/(sse+ssz)

@@ -459,7 +459,7 @@
         enddo
       endif
 
-      call nhmg_solve(Lm,Mm,nz,halo,padd_X,padd_E,
+      call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
      &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
 
 

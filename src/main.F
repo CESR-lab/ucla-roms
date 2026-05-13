@@ -4,6 +4,7 @@
 !!    program main               ! Open MP version of ROMS driver
 
       use param
+      use dimensions
 #ifdef NHMG
       use nhmg
 #endif
@@ -18,19 +19,19 @@
       real*8 tstart, tend
 
       ierr=1
-      if (ierr == 1) call MPI_Init(ierr)
+      if (ierr==1) call MPI_Init(ierr)
 
       ocean_grid_comm=MPI_COMM_WORLD
       call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
       call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
 
       ierr=0
-      call read_inp (ierr)
+      call read_inp(ierr)
 
       if (ierr==0) call mpi_setup(ierr)
 
       tstart=MPI_Wtime()
-      if (ierr == 0) then
+      if (ierr==0) then
 
 #ifdef BIOLOGY_BEC2
 !     When using BEC, BGC tracer indices are set in init_tracers
@@ -112,39 +113,23 @@
 
       implicit none
 
-      integer trd, tile, my_first, my_last, range
       integer ierr
 
-      numthreads=1 ; trd=0
-      proc(2)=trd
+      iic=0  ; kstp=1 ; knew=1  
+      iif=1  ; nstp=1          
+      nnew=1 ; nrhs=1         
 
-                                       ! NOTE: This code is written
-      iic=0  ; kstp=1 ; knew=1         ! under an assumption that all
-#ifdef SOLVE3D
-      iif=1  ; nstp=1                  ! the scalar variables assigned
-      nnew=1 ; nrhs=1                  ! on the left here are placed
-#endif
-      synchro_flag=.true.              ! into a THREADPRIVATE common
-      diag_sync=.false.                ! block so each thread must
-      priv_count=0                     ! assign them to same values.
+      synchro_flag=.true.    
+      diag_sync=.false.     
+      priv_count=0         
 
-      range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
-      my_first=trd*range
-      my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
-#define my_tile_range my_first,my_last
+      call init_arrays
 
-      do tile=my_tile_range              ! Initialize or "first touch"
-        call init_arrays(tile,my_first)  ! global arrays (most of them
-      enddo                              ! are just set to to zero).
-
-#ifdef SOLVE3D
       call set_scoord                  ! Setup vertical stretching
                                        ! functions for S-coordinate
       if (may_day_flag /= 0) goto 99
-#endif
 
       call get_grid                    ! Can be analytic or read from netcdf
-
 
 #ifdef NHMG
       call nhmg_init(nx,ny,nz,npx,npy)
@@ -206,9 +191,9 @@
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
 #ifdef NHMG
-      call nhmg_matrices(Lm,Mm,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
-     &                   dm_r(0:Lm+1,0:Mm+1),
-     &                   dn_r(0:Lm+1,0:Mm+1)    )
+      call nhmg_matrices(nx,ny,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
+     &                   dm_r(0:nx+1,0:ny+1),
+     &                   dn_r(0:nx+1,0:ny+1)    )
 #endif
 
       call set_HUV

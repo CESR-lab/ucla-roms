@@ -16,6 +16,7 @@
       use dimensions                                       ! has dimensions, a list of forcing files, and rmask
       use roms_read_write
       use nc_read_write
+      use roms_mpi
       use scalars
 
       implicit none

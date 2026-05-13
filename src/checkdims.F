@@ -1,5 +1,6 @@
 #include "cppdefs.opt"
 
+!-----------------------------------------------------------------------------------------------
       integer function checkdims(ncid, fname, max_rec)  ![
 
 ! Verify that all spatial dimensions in file with netCDF ID=ncid
@@ -112,8 +113,10 @@
       checkdims=icount
 
       end  !]
-
+!-----------------------------------------------------------------------------------------------
       integer function check_vardims(ncid,fname, varid, horiz_type,n3)  ![
+
+      use dimensions
 
 ! Verify that spatial dimensions of a specified variable in netCDF
 ! file match that expected by the running mode.
@@ -196,8 +199,7 @@
       check_vardims=ierr
 
       end  !]
-
-
+!-----------------------------------------------------------------------------------------------
       function read_nc1dat(ncid, fname, vname, nlen, value)  ![
 
 ! A basic function to retrieve a simple variable [stored as either
@@ -221,6 +223,7 @@
 ! returned value  error status =0 means no error.
 
       use param
+      use dimensions
       use netcdf
 
       implicit none
@@ -289,7 +292,7 @@
             endif
           endif
         else
-          mpi_master_only write(*,'(/1x,6A/14x,A/)')
+          if (mynode.eq.0) write(*,'(/1x,6A/14x,A/)')
      &             '### WARNING: read_nc1dat :: ',
      &            'Cannot determine netCDF ID for ''',  vname(1:lvar),
      &      ''' in file ''', fname(1:lfile), '''.', nf90_strerror(ierr)

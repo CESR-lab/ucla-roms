@@ -10,6 +10,7 @@
       use netcdf
       use nc_read_write
       use roms_read_write
+      use roms_mpi
       use obc_tune
       use diagnostics
       use scalars
@@ -302,8 +303,8 @@
         endif
         if (wrt_O) then                              ! s-coordinate omega vertical velocity (m/s).
           do k=0,N
-            do j=0,Mm+1
-              do i=0,Lm+1
+            do j=0,ny+1
+              do i=0,nx+1
                 work(i,j,k)=pm(i,j)*pn(i,j)*(We(i,j,k)+Wi(i,j,k))
                 ! Implicit omega only
 !               work(i,j,k)=pm(i,j)*pn(i,j)*Wi(i,j,k)

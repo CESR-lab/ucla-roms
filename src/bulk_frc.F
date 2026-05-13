@@ -5,6 +5,7 @@
       use param
       use dimensions
       use roms_read_write
+      use roms_mpi
       
       implicit none
 

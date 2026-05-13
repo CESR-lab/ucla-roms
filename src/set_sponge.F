@@ -9,6 +9,7 @@
 !     Extended ranges (filling the full buffer) are used to avoid mpi exchanges
 
       use dimensions
+      use roms_mpi
       use mixing
       use scalars
 

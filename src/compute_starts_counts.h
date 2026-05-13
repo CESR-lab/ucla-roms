@@ -66,7 +66,7 @@
         jmax=jnorth
       endif
 #else                        /* non-MPI --> */
-      imax=Lm+1 ; jmax=Mm+1
+      imax=nx+1 ; jmax=ny+1
 #endif
       count(1)=imax-imin+1
       count(2)=jmax-jmin+1

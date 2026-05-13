@@ -740,6 +740,7 @@
       subroutine exchange_particles![
       ! Deal with particles entering/leaving the domain.
       ! Deal with particles switching sub-domains
+      ! Account for periodic boundary conditions
       use roms_mpi
       implicit none
 
@@ -750,79 +751,71 @@
       is_ne= 0;is_nw= 0;is_sw= 0;is_se = 0
 
       ! remove nx,ny when sending to e,n
+      ! add nx,ny when receiving from e or n
       do ip = 1,np
 
-       if (is_n>szx-13.or.is_s>szx-13) then
-         print *, 'is_n/s: ',is_n,is_s,szx
-         stop
-       endif
-       if (is_e>szy-13.or.is_w>szy-13) then
-         print *, 'is_e/w: ',is_e,is_w,szy
-         stop
-       endif
-
        if (part(ip,ipz)<nz) then
-        if (part(ip,ipx)>nx) then
-          if (inode<npx-1) then
-            if (part(ip,ipy)>ny.and.jnode<npy-1) then
-              part(ip,ipx) = part(ip,ipx) - nx
-              part(ip,ipy) = part(ip,ipy) - ny
-              sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
-              is_ne = is_ne+npv
-            elseif (part(ip,ipy)<0.and.jnode>0) then
-              part(ip,ipx) = part(ip,ipx) - nx
-              sn_se(is_se+1:is_se+npv) = part(ip,:)
-              is_se = is_se+npv
-            else
-              part(ip,ipx) = part(ip,ipx) - nx
-              sn_e(is_e+1:is_e+npv) = part(ip,:)
-              is_e = is_e+npv
-            endif
-          endif
-          part(ip,ipz) = 10*nz                   ! indicate particle no longer in domain
-        elseif (part(ip,ipx)< 0.0) then
-          if (inode>0) then
-            if (part(ip,ipy)>ny) then
-              part(ip,ipy) = part(ip,ipy) - ny
-              sn_nw(is_nw+1:is_nw+npv) = part(ip,:)
-              is_nw = is_nw+npv
-            elseif (part(ip,ipy)<0) then
-              sn_sw(is_sw+1:is_sw+npv) = part(ip,:)
-              is_sw = is_sw+npv
-            else
-              sn_w(is_w+1:is_w+npv) = part(ip,:)
-              is_w = is_w+npv
-            endif
-          endif
-          part(ip,ipz) = 10*nz
-        elseif (part(ip,ipy)>ny) then              ! corners already accounted for so only if north
-          if (jnode<npy-1) then
-            part(ip,ipy) = part(ip,ipy) - ny
-            sn_n(is_n+1:is_n+npv) = part(ip,:)
-            is_n = is_n+npv
-          endif
-          part(ip,ipz) = 10*nz
-        elseif (part(ip,ipy)< 0.0) then
-          if (jnode>0) then
-            sn_s(is_s+1:is_s+npv) = part(ip,:)
-            is_s = is_s+npv
-          endif
-          part(ip,ipz) = 10*nz
-        endif
+         if (part(ip,ipx)>nx) then
+           if (part(ip,ipy)>ny) then
+             if (p_NE>=0) then
+               part(ip,ipx) = part(ip,ipx) - nx
+               part(ip,ipy) = part(ip,ipy) - ny
+               sn_ne(is_ne+1:is_ne+npv) = part(ip,:)
+               is_ne = is_ne+npv
+             endif
+           elseif (part(ip,ipy)<0) then
+             if (p_SE>=0) then
+               part(ip,ipx) = part(ip,ipx) - nx
+               sn_se(is_se+1:is_se+npv) = part(ip,:)
+               is_se = is_se+npv
+             endif
+           else
+             if (p_E>=0) then
+               part(ip,ipx) = part(ip,ipx) - nx
+               sn_e(is_e+1:is_e+npv) = part(ip,:)
+               is_e = is_e+npv
+             endif
+           endif
+           part(ip,ipz) = 10*nz    ! Indicate particle is no longer in this domain
+         elseif (part(ip,ipx)< 0.0) then
+           if (part(ip,ipy)>ny) then
+             if (p_NW>=0) then
+               part(ip,ipy) = part(ip,ipy) - ny
+               sn_nw(is_nw+1:is_nw+npv) = part(ip,:)
+               is_nw = is_nw+npv
+             endif
+           elseif (part(ip,ipy)<0) then
+             if (p_SW>=0) then
+               sn_sw(is_sw+1:is_sw+npv) = part(ip,:)
+               is_sw = is_sw+npv
+             endif
+           else
+             if (p_W>=0) then
+               sn_w(is_w+1:is_w+npv) = part(ip,:)
+               is_w = is_w+npv
+             endif
+           endif
+           part(ip,ipz) = 10*nz
+         elseif (part(ip,ipy)>ny) then              ! corners already accounted for so only if north
+           if (p_N>=0) then
+             part(ip,ipy) = part(ip,ipy) - ny
+             sn_n(is_n+1:is_n+npv) = part(ip,:)
+             is_n = is_n+npv
+           endif
+           part(ip,ipz) = 10*nz
+         elseif (part(ip,ipy)< 0.0) then
+           if (p_S>=0) then
+             sn_s(is_s+1:is_s+npv) = part(ip,:)
+             is_s = is_s+npv
+           endif
+           part(ip,ipz) = 10*nz
+         endif
        endif ! (part(ip,ipz)<nz)
       enddo
       
       call exchange_data
 
-      if (mynode==1) then
-        do ip = 1,np
-          if (part(ip,itag)==200000177) then
-            print *,'trck 1: ', part(ip,itag),part(ip,ipx),mynode
-          endif
-        enddo
-      endif
-
-      ! add nx,ny when receiving from the e,n 
+      ! Add nx,ny when receiving from the e,n 
       ! We order this in sw,s,se,w,e,nw,n,ne to match the desired sorting of the particle array
       if (rn_sw>0) then         ! divide buffer size by npv to get particle count  
         rn_sw = rn_sw/npv     
@@ -865,8 +858,6 @@
           enddo
         enddo
         np = np+rn_w
-!       if (mynode==1) print *,'rn_w: ',rn_w,np
-!       if (mynode==1) print *,'rv_w: ',rv_w(1:rn_w*npv)
       endif
 
       if (rn_e>0) then

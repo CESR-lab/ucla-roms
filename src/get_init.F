@@ -401,9 +401,9 @@ c--#define VERBOSE
 # if defined NHMG
       ! since ncdf_read already does an exchange to fill buffers, we're
       ! ready to initialy w using no-div
-!     do j=1,Lm
+!     do j=1,nx
 !       do k=1,N
-!         do i=1,Mm
+!         do i=1,ny
 !           DC(i,0)=pm(i,j)*pn(i,j)
 !           w(i,j,k,nnew)=w(i,j,k-1,nnew)
 !    &      - DC(i,0)*(

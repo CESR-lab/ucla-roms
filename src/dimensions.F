@@ -29,6 +29,9 @@
 
       logical,public :: east_bnd,west_bnd,north_bnd,south_bnd
 
+      integer,public :: ocean_grid_comm,mynode,iSW_corn,jSW_corn
+
+
       integer, public ::  xi_rho, xi_u, eta_rho, eta_v
 
       logical,public :: nhmg = .false.  ! engage the mg based non-hydrostatic computations
