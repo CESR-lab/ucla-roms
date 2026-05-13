@@ -12,9 +12,10 @@
       real,allocatable,dimension(:,:) :: visc2_r
       real,allocatable,dimension(:,:) :: visc2_p
 #endif
-#ifdef SOLVE3D
+
       real,allocatable,dimension(:,:,:) :: diff2
       real,allocatable,dimension(:,:,:) :: diff4
+
 # ifdef ADV_ISONEUTRAL
       real,allocatable,dimension(:,:,:) :: diff3u
       real,allocatable,dimension(:,:,:) :: diff3v
@@ -24,7 +25,6 @@
       real,allocatable,dimension(:,:,:) :: Akt
       real,allocatable,dimension(:,:,:) :: bvf
 
-
 ! Large/McWilliams/Doney oceanic planetary boundary layer variables
 ! hbls  thickness of oceanic planetary boundary layer [m, positive].
 ! ghat  nonlocal transport proportionality coefficient
@@ -33,10 +33,9 @@
 !                                depth z_w [non-dimensional]
 
       real,allocatable,dimension(:,:) :: hbls
+      real,allocatable,dimension(:,:) :: hbbl
       real,allocatable,dimension(:,:,:) :: swr_frac
       real,allocatable,dimension(:,:,:) :: ghat
-      real,allocatable,dimension(:,:) :: hbbl
-#endif /* SOLVE3D */
 
       integer :: sponge_size  ! number of grid point of sponge layer
 
@@ -58,9 +57,7 @@
 # ifdef TS_DIF2
       allocate( diff2(GLOBAL_2D_ARRAY,nt) ); diff2=init
 # endif
-# ifdef TS_DIF4
-      allocate( diff4(GLOBAL_2D_ARRAY,nt) ); diff4=init
-# endif
+
 # ifdef ADV_ISONEUTRAL
       allocate( diff3u(GLOBAL_2D_ARRAY,nz) ); diff3u=init
       allocate( diff3v(GLOBAL_2D_ARRAY,nz) ); diff3v=init

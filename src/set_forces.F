@@ -64,7 +64,7 @@
 
       ! BGC surface flux:
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
-      call set_bgc_surf_frc(1,nx,1,ny)
+      call set_bgc_surf_frc
 # endif
 
       if (river_source) call set_river_frc

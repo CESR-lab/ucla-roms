@@ -20,13 +20,9 @@
 
       implicit none
       integer :: i,j,k
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: ustar, Bo, Bosol
-     &                                                  , hbl, bbl
-# ifdef SMOOTH_HBL
-     &                                              , FX, FE, FE1
-# else
-      real FX, FE, FE1  !<-- not in use, except as arguments
-# endif
+      real, dimension(GLOBAL_2D_ARRAY) :: ustar, Bo, Bosol
+      real, dimension(GLOBAL_2D_ARRAY) :: hbl,bbl
+      real, dimension(GLOBAL_2D_ARRAY) :: FX,FE,FE1
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:nz) :: Cr,FC, wrk1,wrk2
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY) ::  Bfsfc_bl,
      &                               Gm1,dGm1dS, Gt1,dGt1dS, Gs1,dGs1dS
@@ -244,7 +240,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 !/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 !\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 
-# ifdef SMOOTH_HBL
       enddo  !<-- break j-loop if smoothing of hbl or bbl takes place
 
 #  ifdef LMD_KPP
@@ -259,7 +254,6 @@ c--         Vtsq=Vtc*ws*sqrt(max(0., 0.5*(bvf(i,j,k)+bvf(i,j,k-1)) ))
 #  endif
 
       do j=1,ny   !--> restart j-loop till the very end
-# endif /* SMOOTH_HBL */
 
 # if defined LMD_KPP || defined LMD_BKPP
         if (.not. FIRST_TIME_STEP) then

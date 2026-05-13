@@ -1017,9 +1017,9 @@ c??         enddo
       enddo     !<-- itrc
 
 # if defined(MARBL)
-      call marbldrv_column_physics(1,nx,1,ny,t)
+      call marbldrv_column_physics(t)
 # elif defined(BIOLOGY_BEC2)
-      call ecosys_bec2_tile(1,nx,1,ny) ! BEC, 2014
+      call ecosys_bec2_tile ! BEC, 2014
 # endif
 
 # if defined EW_PERIODIC || defined NS_PERIODIC || defined MPI

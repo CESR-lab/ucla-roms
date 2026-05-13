@@ -72,8 +72,7 @@
 
 
 #  ifdef ANA_BRY
-#   ifdef OBC_WEST
-      if (WESTERN_EDGE) then
+      if (obc_west.and.west_bnd) then
 #    ifdef M2_FRC_BRY
         do j=1,ny                       ! Save perimeter values
           zeta_west(j)=zeta(0,j,1)      ! of the initial fields
@@ -81,7 +80,6 @@
           vbar_west(j)=vbar(0,j,1)      ! forcing data for side
         enddo                           ! boundaries.
 #    endif
-#    ifdef SOLVE3D
         do k=1,nz
           do j=1,ny
 #     ifdef M3_FRC_BRY
@@ -93,12 +91,9 @@
 #     endif
           enddo
         enddo
-#    endif
       endif
-#   endif
 
-#   ifdef OBC_EAST
-      if (EASTERN_EDGE) then
+      if (obc_east.and.east_bnd) then
 #    ifdef M2_FRC_BRY
         do j=1,ny
           zeta_east(j)=zeta(nx+1,j,1)
@@ -106,7 +101,6 @@
           vbar_east(j)=vbar(nx+1,j,1)
         enddo
 #    endif
-#    ifdef SOLVE3D
         do k=1,nz
           do j=1,ny
 #     ifdef M3_FRC_BRY
@@ -118,13 +112,10 @@
 #     endif
           enddo
         enddo
-#    endif
       endif
-#   endif
 
 
-#   ifdef OBC_SOUTH
-      if (SOUTHERN_EDGE) then
+      if (obc_south.and.south_bnd) then
 #    ifdef M2_FRC_BRY
         do i=1,nx
           zeta_south(i)=zeta(i,0,1)
@@ -132,24 +123,20 @@
           vbar_south(i)=vbar(i,1,1)
         enddo
 #    endif
-#    ifdef SOLVE3D
         do k=1,nz
           do i=1,nx
-#     ifdef M3_FRC_BRY
+#    ifdef M3_FRC_BRY
             u_south(i,k)=u(i,0,k,1)
             v_south(i,k)=v(i,1,k,1)
-#     endif
-#     ifdef T_FRC_BRY
+#    endif
+#    ifdef T_FRC_BRY
             t_south(i,k,:)=t(i,0,k,1,:)
-#     endif
+#    endif
           enddo
         enddo
-#    endif
       endif
-#   endif
 
-#   ifdef OBC_NORTH
-      if (NORTHERN_EDGE) then
+      if (obc_north.and.north_bnd) then
 #    ifdef M2_FRC_BRY
         do i=1,nx
           zeta_north(i)=zeta(i,ny+1,1)
@@ -157,21 +144,18 @@
           vbar_north(i)=vbar(i,ny+1,1)
         enddo
 #    endif
-#    ifdef SOLVE3D
         do k=1,nz
           do i=1,nx
-#     ifdef M3_FRC_BRY
+#    ifdef M3_FRC_BRY
             u_north(i,k)=u(i,ny+1,k,1)
             v_north(i,k)=v(i,ny+1,k,1)
-#     endif
-#     ifdef T_FRC_BRY
+#    endif
+#    ifdef T_FRC_BRY
             t_north(i,k,:)=t(i,ny+1,k,1,:)
-#     endif
+#    endif
           enddo
         enddo
-#    endif
       endif
-#   endif
 #  endif /* ANA_BRY */
 
 
