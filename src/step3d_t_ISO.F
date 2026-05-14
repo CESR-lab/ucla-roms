@@ -828,8 +828,11 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           if (itrc.eq.1) then
             do i=1,nx
                t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)  ! +  dt*pm(i,j)*pn(i,j)*
+# ifdef BULK_FRC
      &            + dt*swflx(i,j)*tair(i,j)
-!    &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+# else
+     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+# endif
             enddo
           endif
 
