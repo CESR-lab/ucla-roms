@@ -183,10 +183,15 @@
           ny = ny -(offy+1)/2
         endif
 
-        Lm = nx
-        Mm = ny
+!       Lm = nx
+!       Mm = ny
         iwest = 1;  ieast = nx
         jsouth = 1; jnorth = ny
+
+        west_bnd = inode == 0     .and. .not.ew_periodic   
+        east_bnd = inode == npx-1 .and. .not.ew_periodic   
+        south_bnd= jnode == 0     .and. .not.ns_periodic   
+        north_bnd= jnode == npy-1 .and. .not.ns_periodic   
 
         ! Set sizes for output files. The first and last partial files
         ! include the buffers (for the rho-dimension), the others are

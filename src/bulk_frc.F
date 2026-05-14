@@ -5,6 +5,7 @@
       use param
       use dimensions
       use roms_read_write
+      use roms_mpi
       
       implicit none
 
@@ -79,14 +80,11 @@
 
       end subroutine init_arrays_bulk_frc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_bulk_frc(istr,iend,jstr,jend) ![
+      subroutine set_bulk_frc ![
 
       use surf_flux, only: srflx,uwnd,vwnd
 
       implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
 
       ! Short/Long radiation:
       ! Thermodynamic forcing: Note that BULK_FLUX requires computing the
@@ -120,10 +118,8 @@
 !     call exchange_xxx(prate)
 
 
-      ! NEED TO ADD QCORRECTOR CALLS FOR SEA SURFACE TEMP AND/OR SALINITY:
-
       ! CALCULATE FLUX INTERACTIONS:
-      call calc_all_bulk_forces(istr,iend,jstr,jend)
+      call calc_all_bulk_forces
 
       if (do_check_units) then
         if(mynode==0) print *,'Checking Bulk force units'
@@ -136,7 +132,7 @@
 
       end subroutine set_bulk_frc  !]
 !-----------------------------------------------------------------------
-      subroutine calc_all_bulk_forces(istr,iend,jstr,jend)  ![
+      subroutine calc_all_bulk_forces  ![
 
 ! Compute bulk parameterization for surface wind stress and net heat
 ! fluxes. Adapted from COARE code originally written by David Rutgers
@@ -188,9 +184,6 @@
       use scalars
 
       implicit none
-
-      ! input/outputs
-      integer,intent(in)  :: istr,iend,jstr,jend
 
       integer i,j, IterMax,iter
       real a
@@ -312,30 +305,8 @@
 
 ! Extended bounds needed since u2rho and rho2u averaging occurs, and
 ! lmd_kpp has SMOOTH_HBL which requires extended loop ranges for smoothing.
-# include "compute_extended_bounds.h"
 
 
-      ! SET_SRFLUX.F PLACED HERE FOR MODULE VERSION
-      ! ===========================================
-
-! Set-up shortwave radiation flux for current tile.
-
-!      implicit none
-!      integer istr,iend,jstr,jend, ierr, i,j, it1,it2
-!      real tmid, cff, cff1, cff2
-!# ifdef DIURNAL_SRFLUX
-!      real Ampl, cos_h, dec,cos_d,sin_d, tan_d, phi, csph,snph, h0
-!      real, parameter :: year2day=365.25,  day2year=1.D0/year2day
-!# elif defined ROBUST_DIURNAL_SRFLUX
-!      real Ampl, dtau, tau1,tau2
-!# endif
-!# include "param.h"
-!# include "scalars"
-!# include "grid"
-!
-!# include "compute_extended_bounds.h"
-!
-!
 !
 !! Set coefficients for interpolation. Check that for the next time
 !! step [when time=time+dt] both weights will still be positive, and
@@ -379,8 +350,8 @@
         cos_d=cos(dec) ; sin_d=sin(dec) ; tan_d=tan(dec)
 # endif
 
-        do j=jstrR,jendR
-          do i=istrR,iendR
+        do j=1-bf,ny+bf
+          do i=1-bf,nx+bf
 # ifdef DIURNAL_SRFLUX
 #  ifdef UTC_CORRECTION
             cos_h=cos( 2.*pi*(tdays+0.5 -int(tdays+0.5))
@@ -411,27 +382,6 @@
           enddo
         enddo
 !
-!        if (cff1 < 0. .or. cff2 < 0.) then
-!          if (ZEROTH_TILE) then
-!            write(*,'(/1x,3A/3(1x,A,F16.10)/)')       '### WARNING: ',
-!     &     'set_srflux_tile :: Current model time is outside bounds ',
-!     &     'of ''srf_time''.', 'srf_tstart =', srf_time(it1)*sec2day,
-!     &                         'tdays =',      tdays,
-!     &                         'srf_tend =',   srf_time(it2)*sec2day
-!          endif
-!          ierr=ierr+1
-!        endif
-!      else     !--> ntsrf == 1                ! load time-invariant
-!        if (iic == ntstart) then              ! shortwave radiation
-!          cff=1/(rho0*Cp)                     ! flux
-!          do j=jstrR,jendR
-!            do i=istrR,iendR
-!              srflx(i,j)=cff*swradg(i,j,itsrf)
-!            enddo
-!          enddo
-!        endif
-!      endif
-!      end
 
 
       ! SUBROUTINE FROM BULK_FLUX_COARE.F STARTS HERE
@@ -443,8 +393,8 @@
 
       ! All calculations in this loop at rho-points. Loop over extended
       ! bounds.
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
 
 !          uwnd=cff1*uwind(i,j,it1)+cff2*uwind(i,j,it2)
 !          vwnd=cff1*vwind(i,j,it1)+cff2*vwind(i,j,it2)
@@ -839,14 +789,9 @@
       Wspd_min=3.        ! [m/s]
       stau_ref=-0.0027   ! [N.m^-3.s]
 
-      ! maybe move computation of ustar to here
-      ! Note loop ranges: iend+1 is needed because lmd_kpp uses SMOOTH_HBL
-      ! and smoothing needs iend+1 buffer information for ustar calc.
-      ! iend+1 instead of iendR because rho2u sustr_r = u(i) + u(i+1) & since
-      ! iendR=iend+2 for interior tiles (as per compute_extended_bounds.h)
-      ! if we used i=iendR then u(i+1) = u(iend+3) is not a value.
-      do j=jstrR,jendR
-        do i=istrR,iend+1
+      ! Maybe move computation of ustar to here
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+1
 
           wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
 
@@ -873,7 +818,7 @@
           ! Convert sustr at rho-point to u-point for Eq.System
           ! Need if (i >= istrR+1) because loop over istrR, but we use
           ! index i-1 below which is out of array bounds at tile's western boundary.
-          if (i >= istrR+1) then
+          if (i >= 2-bf) then
             sustr(i,j) = ( sustr_r(i-1,j) + sustr_r(i,j) ) / 2
 # ifdef MASKING
           !! JM: I don't think that this is actually doing anything useful
@@ -884,11 +829,8 @@
         enddo
       enddo
 
-      ! jend+1 instead of jendR because rho2u svstr_r = v(j) + v(j+1) & since
-      ! jendR=jend+2 for interior tiles (as per compute_extended_bounds.h)
-      ! if we used j=jendR then v(j+1) = u(jend+3) is not a value.
-      do j=jstrR,jend+1
-        do i=istrR,iendR
+      do j=1-bf,ny+1
+        do i=1-bf,nx+bf
 
           wspd=sqrt( uwnd(i,j)*uwnd(i,j) + vwnd(i,j)*vwnd(i,j) )
 
@@ -911,7 +853,7 @@
           ! Convert svstr at rho-point to v-point for Eq.System
           ! Need if (j >= jstrR+1) because loop over jstrR, but we use
           ! index j-1 below which is out of array bounds at tile's southern boundary.
-          if (j >= jstrR+1) then
+          if (j >= 2-bf) then
             svstr(i,j) = ( svstr_r(i,j-1) + svstr_r(i,j) ) / 2
 # ifdef MASKING
      &                    *vmask(i,j)

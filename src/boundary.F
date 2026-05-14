@@ -102,25 +102,25 @@
 
 # ifdef OBC_WEST
 #  ifdef Z_FRC_BRY
-      allocate( zeta_west(0:Mm+1) )
+      allocate( zeta_west(0:ny+1) )
       allocate( nc_z_w%vdata(j0:j1,1,2) )
 #  endif
 #  ifdef M2_FRC_BRY
-      allocate( ubar_west(0:Mm+1), vbar_west(0:Mm+1) )
+      allocate( ubar_west(0:ny+1), vbar_west(0:ny+1) )
       allocate( nc_ub_w%vdata(j0:j1,1,2) )
       allocate( nc_vb_w%vdata( 1:j1,1,2) )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      allocate( u_west(0:Mm+1,N), v_west(0:Mm+1,N) )
+      allocate( u_west(0:ny+1,N), v_west(0:ny+1,N) )
       allocate( nc_u_w%vdata(j0:j1,nz,2) )
       allocate( nc_v_w%vdata( 1:j1,nz,2) )
 #    ifdef NHMG
-      allocate( w_west(0:Mm+1,N), nc_w_w%vdata(j0:j1,nz,2) )
+      allocate( w_west(0:ny+1,N), nc_w_w%vdata(j0:j1,nz,2) )
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-      allocate( t_west(0:Mm+1,N,NT) )
+      allocate( t_west(0:ny+1,N,NT) )
       do itrc=1,nt
         nc_t_w(itrc)%vname = trim(t_vname(itrc)) / / '_west'
         allocate( nc_t_w(itrc)%vdata(j0:j1,nz,2) )
@@ -131,25 +131,25 @@
 
 # ifdef OBC_EAST
 #  ifdef Z_FRC_BRY
-      allocate( zeta_east(0:Mm+1) )
+      allocate( zeta_east(0:ny+1) )
       allocate( nc_z_e%vdata(j0:j1,1,2) )
 #  endif
 #  ifdef M2_FRC_BRY
-      allocate( ubar_east(0:Mm+1), vbar_east(0:Mm+1) )
+      allocate( ubar_east(0:ny+1), vbar_east(0:ny+1) )
       allocate( nc_ub_e%vdata(j0:j1,1,2) )
       allocate( nc_vb_e%vdata( 1:j1,1,2) )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      allocate( u_east(0:Mm+1,N), v_east(0:Mm+1,N) )
+      allocate( u_east(0:ny+1,N), v_east(0:ny+1,N) )
       allocate( nc_u_e%vdata(j0:j1,nz,2) )
       allocate( nc_v_e%vdata( 1:j1,nz,2) )
 #    ifdef NHMG
-      allocate( w_east(0:Mm+1,N), nc_w_e%vdata(j0:j1,nz,2) )
+      allocate( w_east(0:ny+1,N), nc_w_e%vdata(j0:j1,nz,2) )
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-      allocate( t_east(0:Mm+1,N,NT) )
+      allocate( t_east(0:ny+1,N,NT) )
       do itrc=1,nt
         nc_t_e(itrc)%vname = trim(t_vname(itrc)) / / '_east'
         allocate( nc_t_e(itrc)%vdata(j0:j1,nz,2) )
@@ -160,25 +160,25 @@
 
 # ifdef OBC_SOUTH
 #  ifdef Z_FRC_BRY
-      allocate( zeta_south(0:Lm+1) )
+      allocate( zeta_south(0:nx+1) )
       allocate( nc_z_s%vdata(i0:i1,1,2) )
 #  endif
 #  ifdef M2_FRC_BRY
-      allocate( ubar_south(0:Lm+1), vbar_south(0:Lm+1) )
+      allocate( ubar_south(0:nx+1), vbar_south(0:nx+1) )
       allocate( nc_ub_s%vdata( 1:i1,1,2) )
       allocate( nc_vb_s%vdata(i0:i1,1,2) )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      allocate( u_south(0:Lm+1,N), v_south(0:Lm+1,N) )
+      allocate( u_south(0:nx+1,N), v_south(0:nx+1,N) )
       allocate( nc_u_s%vdata( 1:i1,nz,2) )
       allocate( nc_v_s%vdata(i0:i1,nz,2) )
 #    ifdef NHMG
-      allocate( w_south(0:Lm+1,N), nc_w_s%vdata(i0:i1,nz,2) )
+      allocate( w_south(0:nx+1,N), nc_w_s%vdata(i0:i1,nz,2) )
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-      allocate( t_south(0:Lm+1,N,NT) )
+      allocate( t_south(0:nx+1,N,NT) )
       do itrc=1,nt
         nc_t_s(itrc)%vname = trim(t_vname(itrc)) / / '_south'
         allocate( nc_t_s(itrc)%vdata(i0:i1,nz,2) )
@@ -189,25 +189,25 @@
 
 # ifdef OBC_NORTH
 #  ifdef Z_FRC_BRY
-      allocate( zeta_north(0:Lm+1) )
+      allocate( zeta_north(0:nx+1) )
       allocate( nc_z_n%vdata(i0:i1,1,2) )
 #  endif
 #  ifdef M2_FRC_BRY
-      allocate( ubar_north(0:Lm+1), vbar_north(0:Lm+1) )
+      allocate( ubar_north(0:nx+1), vbar_north(0:nx+1) )
       allocate( nc_ub_n%vdata( 1:i1,1,2) )
       allocate( nc_vb_n%vdata(i0:i1,1,2) )
 #  endif
 #  ifdef SOLVE3D
 #   ifdef M3_FRC_BRY
-      allocate( u_north(0:Lm+1,N), v_north(0:Lm+1,N) )
+      allocate( u_north(0:nx+1,N), v_north(0:nx+1,N) )
       allocate( nc_u_n%vdata( 1:i1,nz,2) )
       allocate( nc_v_n%vdata(i0:i1,nz,2) )
 #    ifdef NHMG
-      allocate( w_north(0:Lm+1,N), nc_w_n%vdata(i0:i1,nz,2) )
+      allocate( w_north(0:nx+1,N), nc_w_n%vdata(i0:i1,nz,2) )
 #    endif
 #   endif
 #   ifdef T_FRC_BRY
-      allocate( t_north(0:Lm+1,N,NT) )
+      allocate( t_north(0:nx+1,N,NT) )
       do itrc=1,nt
         nc_t_n(itrc)%vname = trim(t_vname(itrc)) / / '_north'
         allocate( nc_t_n(itrc)%vdata(i0:i1,nz,2) )

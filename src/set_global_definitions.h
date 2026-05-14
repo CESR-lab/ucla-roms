@@ -10,7 +10,6 @@
  defined).  */
 
 #define MPI
-#define PARALLEL_FILES
 
 /* Turn OFF printout (other than error messages) from MPI nodes with
  rank > 0.   This does not affect the model results other than making
@@ -111,19 +110,6 @@ c-# define IMPLICIT_BOTTOM_DRAG
 # define EXACT_RESTART
 #endif
 
-/* Assign points within the land to special value rather than zero.
- For RHO-point this means all points where mask_rho == 0.  For U- and
- V-points this applies only to points which are fully inside, that both
- RHO-points adjacent to the respective velocity component in upstream
- and downstream directions are land (if only one land, the other is
- water, then the velocity point in on the coast line, so its value is
- still set to zero according to no-normal flow boundary condition).
-*/
-
-#ifdef MASKING
-# define MASK_LAND_DATA
-#endif
-
 
 /* Switch ON/OFF double precision for real type variables (since this
  is mostly controlled by mpc and/or compiler options, this CPP-switch
@@ -213,11 +199,11 @@ c-# define IMPLICIT_BOTTOM_DRAG
 #else
 # ifdef EW_PERIODIC
 #  define WEST_EXCHNG istr==1
-#  define EAST_EXCHNG iend==Lm
+#  define EAST_EXCHNG iend==nx
 # endif
 # ifdef NS_PERIODIC
 #  define SOUTH_EXCHNG jstr==1
-#  define NORTH_EXCHNG jend==Mm
+#  define NORTH_EXCHNG jend==ny
 # endif
 #endif
 
@@ -289,16 +275,7 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
  All these switches are the same for MPI/nonMPI code.  */
 
-c-#ifdef MPI
-c-# define ZEROTH_TILE (istr==iwest .and. jstr==jsouth)
-c-# define SINGLE_TILE_MODE (iend-istr==ieast-iwest .and. \
-c- jend-jstr==jnorth-jsouth)
-c-#else
-c-# define ZEROTH_TILE (istr==1 .and. jstr==1)
-c-# define SINGLE_TILE_MODE (iend-istr==Lm-1 .and.+jend-jstr==Mm-1)
-c-#endif
 # define SINGLE_TILE_MODE .true.
-
 
 /* Normally the initial condition exists only as a single time record
  at given time.  This requires the use of a two-time-level scheme

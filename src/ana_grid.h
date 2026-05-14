@@ -28,8 +28,8 @@
       x0=0. ; y0=0.
 # endif
 
-      do j=-1,ny+2          ! Extended ranges for x,y arrays
-        do i=-1,nx+2
+      do j=1-bf,ny+bf         ! Extended ranges for x,y arrays
+        do i=1-bf,nx+bf
           xr(i,j)=x0+dx*(dble(i)-0.5D0) -x_mid
           yr(i,j)=y0+dy*(dble(j)-0.5D0)
 
@@ -41,8 +41,8 @@
 
       x0=SizeX/2.   ! Define center of the domain
       y0=SizeY/2.
-      do j=-1,ny+2          ! Extended ranges for x,y arrays
-        do i=-1,nx+2
+      do j=1-bf,ny+bf         ! Extended ranges for x,y arrays
+        do i=1-bf,nx+bf
           f(i,j)=f0+beta*( yr(i,j)-y0 )
 # if defined NONTRAD_COR
 !         feta(i,j) = f0*cos(pi/4)
@@ -51,15 +51,15 @@
         enddo
       enddo
 
-      do j=-1,ny+2
-        do i=-1,nx+2
+      do j=1-bf,ny+bf 
+        do i=1-bf,nx+bf
           h(i,j)=1000
         enddo
       enddo
 
 # ifdef MASKING
-      do j=-1,ny+2
-        do i=-1,nx+2
+      do j=1-bf,ny+bf 
+        do i=1-bf,nx+bf
           ! default is water
           rmask(i,j) = 1
         enddo

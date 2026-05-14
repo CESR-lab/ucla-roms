@@ -85,7 +85,7 @@
       v(:,:,:,3)=init                            ! multiplied by zero but can't be a nan.
 
       if (nhmg) then
-        allocate( w(GLOBAL_2D_ARRAY,0:nz,3) )
+        allocate( w(GLOBAL_2D_ARRAY,0:nz,3) );  w = init
         allocate( nhdu(GLOBAL_2D_ARRAY,1:nz,2) )
         allocate( nhdv(GLOBAL_2D_ARRAY,1:nz,2) )
         allocate( nhdw(GLOBAL_2D_ARRAY,0:nz,2) )

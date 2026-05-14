@@ -30,10 +30,7 @@ c# define ANA_RIVER_FRC
 # ifdef ANA_RIVER_FRC
 #  define ANA_GRID
 #  define ANA_INITIAL
-#  define ANA_SMFLUX
-#  define ANA_SRFLUX
-#  define ANA_STFLUX
-#  define ANA_SSFLUX
+#  define ANA_SURFLUX
 # endif /* ANA_RIVER_FRC */
 
         /* Basics */

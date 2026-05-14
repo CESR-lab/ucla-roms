@@ -1,78 +1,65 @@
 /* This is "cppdefs.opt": MODEL CONFIGURATION FILE
    ==== == ============ ===== ============= ==== */
 
-#define USWC_sample
+#define Flux_frc
 
 /*
    Main switch starts here: model configuration choice.
 */
 
-#if defined USWC_sample
+#if defined Flux_frc
 
 c--# define DIAGNOSTICS
 c--# define TIDES
 c--# define BULK_FRC
-c--# define SPONGE_TUNE
 
-                     /* Basics */
-#define SOLVE3D
-#define UV_ADV
-#define UV_COR
+# define SOLVE3D
+# define UV_ADV
+# define UV_COR
 
-#define CURVGRID
-#define SPHERICAL
-#define MASKING
+# define CURVGRID
+# define SPHERICAL
+# define MASKING
 
-                     /*  Equation of State */
-#define SALINITY
-#define NONLIN_EOS
-#define SPLIT_EOS
+# define SALINITY
+# define NONLIN_EOS
+# define SPLIT_EOS
 
-                      /* Grid Configuration */
-#define DIURNAL_SRFLUX /* Note this is 'undef'ed' below */
-#undef DIURNAL_SRFLUX
-#undef QCORRECTION
+# define EXACT_RESTART
+# define IMPLICIT_BOTTOM_DRAG
 
-#define T_FRC_BRY
-#define Z_FRC_BRY
-#define M3_FRC_BRY
-#define M2_FRC_BRY
-#define SPONGE
-                     
-                     /*        - lateral */
-#define UV_VIS2
-#define TS_DIF2
-                     /*        - vertical */
-#define LMD_MIXING
-#define LMD_KPP
-#define LMD_NONLOCAL
-#define LMD_RIMIX
-#define LMD_CONVEC
-#define LMD_BKPP
+c# define ADV_ISONEUTRAL
 
+# define UV_VIS2
+# define TS_DIF2
 
-/* Open Boundaries */
-#define OBC_WEST
-#define OBC_NORTH
-#define OBC_EAST
-#define OBC_SOUTH
+# define LMD_MIXING
+# define LMD_KPP
+# define LMD_BKPP
+# define LMD_RIMIX
+# define LMD_NONLOCAL
+# define LMD_CONVEC
 
-                      /* Restart */
-#define EXACT_RESTART
+# define OBC_WEST
+# define OBC_NORTH
+# define OBC_EAST
+# define OBC_SOUTH
 
-                      /* Open Boundary Conditions */
 #define OBC_M2FLATHER  /* Barotop. BC: OBC_M2FLATHER, OBC_M2ORLANSKI, OBC_M2SPECIFIED */
 #define OBC_M3ORLANSKI /* Baroclin. BC: OBC_M3ORLANSKI, OBC_M3SPECIFIED */
 #define OBC_TORLANSKI  /* Tracer BC: OBC_TORLANSKI, OBC_TSPECIFIED */
+ 
+# define Z_FRC_BRY
+# define M2_FRC_BRY
+# define M3_FRC_BRY
+# define T_FRC_BRY
+# define SPONGE
 
 
 /* Switches required for Flux correction */
 c-dd#define TAU_CORRECTION
 
      /* Output */
-#define AVERAGES
-
-#define ADV_ISONEUTRAL
 
 #endif
 

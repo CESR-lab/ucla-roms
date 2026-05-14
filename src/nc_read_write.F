@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use netcdf
+      use dimensions
 
       implicit none
       private
@@ -273,7 +274,6 @@
       ! handle fatal ierr with error messages.
       ! err_msg1 & 2 are optional messages
       ! get this from roms_read_write module rather at some point
-      use param
       implicit none
 
       ! inputs

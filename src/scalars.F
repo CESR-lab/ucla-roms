@@ -77,18 +77,11 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
       real rdrg,rdrg2,Zob, visc2,gamma2
 !     real :: xl,el
 
-#ifdef SOLVE3D
       real rho0, tnu2(NT)
+      real Akv_bak, Akt_bak
 
-      real Akv_bak, Akt_bak(NT)
 
-# ifdef MY25_MIXING
-      real Akq_bak,   q2nu2,   q2nu4
-# endif
-#endif
-#ifdef SPONGE
       real v_sponge
-#endif
 
 # if defined OBC_M2ORLANSKI && ( defined M2_FRC_BRY \
                                || defined M2NUDGING )
@@ -96,20 +89,7 @@ C$OMP THREADPRIVATE( iif, nstp, nnew, nrhs )
 # endif
 
 
-
-#if  defined T_FRC_BRY || defined M2_FRC_BRY || defined TNUDGING \
-  || defined Z_FRC_BRY || defined M3_FRC_BRY || defined M2NUDGING \
-                                             || defined M3NUDGING
       real ubind
-
-
-/* --> OBSOLETE
-      real tauM2_in, tauM2_out
-# ifdef SOLVE3D
-      real tauM3_in, tauM3_out,  tauT_in, tauT_out
-# endif
-*/
-#endif
 
       integer ntstart, ntimes, ndtfast, nfast, ninfo, may_day_flag,
      &                                                barr_count(16)

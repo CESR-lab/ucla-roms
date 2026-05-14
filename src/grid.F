@@ -56,10 +56,8 @@
       real,allocatable,dimension(:,:) :: hinv
       real,allocatable,dimension(:,:) :: f
       real,allocatable,dimension(:,:) :: fomn
-# ifdef NON_TRADITIONAL
       real,allocatable,dimension(:,:) :: f_XI
       real,allocatable,dimension(:,:) :: f_ETA
-# endif
 
       real,allocatable,dimension(:,:) :: angler
 
@@ -94,12 +92,10 @@
       real,allocatable,dimension(:,:) :: pnom_v
 !     real,allocatable,dimension(:,:) :: grdscl
 
-#ifdef MASKING
       real,allocatable,dimension(:,:) :: rmask
       real,allocatable,dimension(:,:) :: pmask
       real,allocatable,dimension(:,:) :: umask
       real,allocatable,dimension(:,:) :: vmask
-#endif
 
       real :: xl,el
 
@@ -125,7 +121,7 @@
       allocate( hinv(GLOBAL_2D_ARRAY) ) ; hinv= 1./5       ! before only rmask was set in init_arrays...
       allocate( f(GLOBAL_2D_ARRAY) )    ; f = 0
       allocate( fomn(GLOBAL_2D_ARRAY) ) ; fomn= 0
-# ifdef NON_TRADITIONAL
+# ifdef NONTRAD_COR
       allocate( f_XI(GLOBAL_2D_ARRAY) )  ; f_XI = 0
       allocate( f_ETA(GLOBAL_2D_ARRAY) ) ; f_ETA =0
 # endif
@@ -289,14 +285,12 @@
       ierr=nf90_put_att(ncid, varid, 'units', 'radians')
       ierr=nf90_put_att(ncid, varid, 'field', 'angle, scalar')
 #endif
-#ifdef MASKING
 ! Land-Sea mask at RHO-points.
       varid = nccreate(ncid,'mask_rho',(/dn_xr,dn_yr/),(/xi_rho,eta_rho/), nf90_double)
       ierr=nf90_put_att(ncid, varid, 'long_name',
      &                               'mask on RHO-points')
       ierr=nf90_put_att(ncid, varid, 'option_0', 'land' )
       ierr=nf90_put_att(ncid, varid, 'option_1', 'water')
-#endif
 
       end subroutine def_grid  !]
 !----------------------------------------------------------------------
@@ -316,10 +310,6 @@
       integer,intent(in) :: ncid
       ! local
       integer :: varid, ierr, ncdf_write
-
-#if defined MPI && !defined PARALLEL_FILES
-      if (mynode == 0) then
-#endif
 
 ! Grid type switch: Spherical or Cartesian.
 
@@ -367,10 +357,6 @@
 #endif
 
 
-#if defined MPI && !defined PARALLEL_FILES
-      endif
-#endif
-
       call ncwrite(ncid,'h', h(i0:i1,j0:j1))                    ! Bathymetry.
       call ncwrite(ncid,'f', f(i0:i1,j0:j1))                    ! Coriolis parameter.
 
@@ -387,9 +373,7 @@
 #ifdef CURVGRID
       call ncwrite(ncid,'angle', angler(i0:i1,j0:j1))           ! angle between XI-axis and EAST at RHO-points
 #endif
-#ifdef MASKING
       call ncwrite(ncid,'mask_rho', rmask(i0:i1,j0:j1))         ! masking fields at RHO-points.
-#endif
 #ifdef MPI_SILENT_MODE
       if (mynode == 0) then
 #endif
@@ -527,10 +511,8 @@
       call ncread(ncid,'angle',angler(i0:i1,j0:j1),start)  ! Angle (radians) between XI-axis and EAST at RHO-points.
       call exchange_xxx(angler)
 # endif
-# ifdef MASKING
       call ncread(ncid,'mask_rho',rmask(i0:i1,j0:j1),start)! Mask at RHO-points.
       call exchange_xxx(rmask)
-# endif
       ierr=nf90_close(ncid)
       if (ierr==nf90_noerr) then
 #ifdef MPI_SILENT_MODE
@@ -559,7 +541,6 @@
 #endif /* ifdef ANA_GRID */
 
       end subroutine get_grid  !]
-
 !----------------------------------------------------------------------
 
       end module grid
