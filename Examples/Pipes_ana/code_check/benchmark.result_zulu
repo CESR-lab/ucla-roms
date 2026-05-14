@@ -33,13 +33,13 @@
  -----------
  TRACER NO.:            1
  SHORT NAME: temp                                      
- LONG NAME: potential temperature                                       
+ LONG NAME: Potential temperature                                       
  UNITS: Celsius                                   
  -----------
  -----------
  TRACER NO.:            2
  SHORT NAME: salt                                      
- LONG NAME: salinity                                                    
+ LONG NAME: Salinity                                                    
  UNITS: PSU                                       
  -----------
 
@@ -121,8 +121,8 @@
 19  6.4735736089594936E-06 7.3806486032210157E-08 2.0769222025366704E-01 2.0710364886884330E-01
 20  8.1585128705395407E-06 7.9163928003189791E-08 2.3081762894176894E-01 2.3008064192824093E-01
        ocean_vars :: wrote history, tdays =      0.0139  step =     20 rec =   2
- Process    0  thread  0  cpu time =        0.12 sec
+ Process    0  thread  0  cpu time =        0.11 sec
 
  MAIN: DONE - Records written:
 
- MPI_run_time =  0.133792174980044     
+ MPI_run_time =  0.117473939433694     
