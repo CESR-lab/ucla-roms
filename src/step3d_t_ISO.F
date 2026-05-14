@@ -49,10 +49,11 @@ c--# define CONST_TRACERS
      &                                                             )
 
       use param
+      use bulk_frc
       use pipe_frc
       use cdr_frc
       use river_frc
-      use surf_flux, only: stflx, srflx
+      use surf_flux
       use tracers
 #ifdef MARBL
       use marbl_driver, only: marbldrv_column_physics
@@ -820,6 +821,17 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
+          ! Add or remove the heat of water, due to evaporation or precipitation
+          ! both effects would work slightly differently. 
+          ! We tried  the actual water temperature to avoid temperature effects
+          ! but it turned out to be unstable so we'll use the air temp instead
+          if (itrc.eq.1) then
+            do i=1,nx
+               t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)  ! +  dt*pm(i,j)*pn(i,j)*
+     &            + dt*swflx(i,j)*tair(i,j)
+!    &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+            enddo
+          endif
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 

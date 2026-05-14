@@ -6,6 +6,7 @@
       use dimensions
       use roms_read_write
       use roms_mpi
+      use scalars
       
       implicit none
 
@@ -13,7 +14,7 @@
 
 #include "bulk_frc.opt"
 
-      real,allocatable,dimension(:,:) ::  tair             ! air temp
+      real,allocatable,public,dimension(:,:) ::  tair      ! air temp. Public so it can be used in step3d_t to add rain water heat
       real,allocatable,dimension(:,:) ::     Q             ! SPECIFIC humidity (kg/kg) (not relative), qair in old code
       real,allocatable,dimension(:,:) :: prate             ! prate (precipitation rate) - 'rain' variable in old code
       real,allocatable,dimension(:,:) :: lwrad             ! Long wave radiation - get_bulk_rad.F & set_bulk_rad() in old code
@@ -249,38 +250,13 @@
       ! storing the interpolated time in its own array.
 
       real wspd ! uwnd, vwnd, - DevinD commented
-!      real tair ! DevinD commented
-!      real prate ! DevinD commented
-!      real rhum ! DevinD commented
       real radlw
-!!!      real uwnd,vwnd, wspd,wspd0, szero, ss
-!!!      real Tsea,Ssea,evap, radlw
-!!!      real rho0i, prate
-!!!      real ew,rw,qw,es, rhum, rs,ra,qa
-!!!      real tair, vtair,rhoair,a,ce,cs,htevap
-!!!      real hflat,hfsen
 
 
-!  Input variables:
-!
-!      - radsw, srflx
-!      - radlw        downward longwave radiation
-!      - prate
-!      - sst           t(N,itemp) or sstsk
-!      - sss           t(N,isalt)
-!      - tair
-!      - rhum
-!      - wspd
-!      - uwnd
-!      - vwnd
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+!--------------------------------------------------------------------------
 
-      real, parameter ::
-!!!     &      cpair=0.240*4186.8, ! specific heat for air in
-!!!                                ! Joules/(kg*degC), where 4186.8 is
-!!!                                ! to convert from cal/g to Joules/kg
-     &      cpi=1./Cp    ! inverse of specific heat for seawater
-                         ! [kg*degC/Joule], Cp is defined in "scalars"
+      real, parameter :: cpi=1./Cp    ! inverse of specific heat for seawater
+                                      ! [kg*degC/Joule], Cp is defined in "scalars"
 
 
       ! DevinD don't need these anymore!
@@ -673,18 +649,18 @@
 !
           stflx(i,j,itemp)=srflx(i,j)+hflw+hflat+hfsen
 !
-# ifdef SALINITY          
-!  Total surface salt flux
+!         Instead of a virtual salt flux, we now use an explicit
+!         surface fresh water flux
 !
           evap=-cp*hflat/Hlv
           ! Divide prate by 100.*3600.*24. to convert from [cm/day] to [m/s]
-          stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,N,nrhs,isalt)
-#endif
+          ! cmday2ms is also defined in flux_frc.F
+          swflx(i,j) = prate(i,j)*cmday2ms-evap
+!         stflx(i,j,isalt)=(evap- ( prate(i,j)/(100.*3600.*24.) ) )*t(i,j,nz,nrhs,isalt)
+
 # ifdef MASKING
           stflx(i,j,itemp)=stflx(i,j,itemp)*rmask(i,j)
-# ifdef SALINITY
           stflx(i,j,isalt)=stflx(i,j,isalt)*rmask(i,j)
-# endif          
 # endif
 !
 !  Save for the calculation of wind stress
@@ -738,13 +714,12 @@
 ! Flux correction to surface salt flux.
 !--------------------------------------------------------------
 # ifdef SFLX_CORR
-# ifdef SALINITY          
-          stflx(i,j,isalt)=stflx(i,j,isalt) -dSSSdt*(
-     &           t(i,j,N,nrhs,isalt) - sss(i,j)  )
-#  ifdef MASKING
+      ! Since we removed the virtual salt flux, this is now the 
+      ! only surface salt flux in play. Be careful if you ever
+      ! want to add another surface salt flux.. 
+          stflx(i,j,isalt)= -dSSSdt*(
+     &           t(i,j,nz,nrhs,isalt) - sss(i,j)  )
      &                                           *rmask(i,j)
-#  endif
-# endif          
 # endif
 
 !---------------------------------------------------------------

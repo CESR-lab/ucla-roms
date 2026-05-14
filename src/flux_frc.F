@@ -13,14 +13,13 @@
       use surf_flux
       use roms_read_write
       use grid
-!     use scalars
+      use scalars
 
 
       implicit none
 
       private ! All variables private to module unless public specified
 
-      real,parameter :: cmday2ms = 0.01/day2sec
 
       ! Includes:
 #include "flux_frc.opt"
@@ -79,7 +78,9 @@
 
       ! Surface salinity flux
       call set_frc_data(nc_swflux,stflx(:,:,isalt),'r')
-      stflx(:,:,isalt) = stflx(:,:,isalt)*t(:,:,nz,nrhs,isalt)*cmday2ms
+!     stflx(:,:,isalt) = stflx(:,:,isalt)*t(:,:,nz,nrhs,isalt)*cmday2ms
+      swflx = -stflx(:,:,isalt)*cmday2ms
+      stflx(:,:,isalt) = 0
 
       ! Incoming net shortwave radiation
       call set_frc_data(nc_swrad,srflx,'r')

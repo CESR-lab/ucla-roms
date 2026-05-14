@@ -25,9 +25,9 @@
       use pipe_frc
       use cdr_frc
       use grid
+      use surf_flux
       use ocean_vars
       use scalars
-      use roms_mpi
       use work_mod, only: wrk_x,wrk_xz
 
       implicit none
@@ -90,6 +90,12 @@ c**     dtau=(1.-1./6.)*dt
      &             +max(FlxV(i,j+1,k),0.)-min(FlxV(i,j,k),0.)
           enddo
         enddo
+
+       ! rain water
+        do i=1,nx
+          Wi(i,j,nz) = Wi(i,j,nz) + swflx(i,j)*dm_r(i,j)*dn_r(i,j)
+        enddo
+
         do i=1,nx
           wrk(i)=Wi(i,j,nz)/(z_w(i,j,nz)-z_w(i,j,0))
           Wi(i,j,nz)=0.

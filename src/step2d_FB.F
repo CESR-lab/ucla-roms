@@ -23,6 +23,7 @@
      &                                       Drhs, UFx,UFe,VFx,VFe)
 
       use param
+      use surf_flux
       use dimensions
       use river_frc
       use pipe_frc
@@ -147,12 +148,12 @@
         do i=0,nx
           zeta_new(i,j)=zeta(i,j,kstp) + dtfast*pm(i,j)*pn(i,j)
      &            *(DUon(i,j)-DUon(i+1,j)+DVom(i,j)-DVom(i,j+1))
-          if (pipe_source) then          ! If pipe_source is false, the branch will
-            if (pipe_idx(i,j) > 0.) then ! be eliminated by compile optimization
+     &            + dtfast*swflx(i,j)   ! swflx is already in m/s
+          if (pipe_source) then
+            if (pipe_idx(i,j) > 0.) then
               zeta_new(i,j)=zeta_new(i,j) + dtfast*pm(i,j)*pn(i,j)*pipe_flx(i,j)
             endif
           endif
-
 
           zeta_new(i,j)=zeta_new(i,j)*rmask(i,j) 
           Dnew(i,j)=zeta_new(i,j)+h(i,j)
