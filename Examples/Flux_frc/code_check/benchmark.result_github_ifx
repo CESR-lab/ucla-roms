@@ -158,7 +158,7 @@
 
 
   STEP KINETIC_ENRG     BAROTR_KE        MAX_ADV_CFL     MAX_VERT_CFL
-  0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263851886338721E-01 4.2518964649001245E-01
+ 0  4.2294863111058626E-03 2.7899525690339697E-03 5.4263851886338721E-01 4.2518964649001245E-01
          set_frc :: zeta_west        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_east        input time (days) =   4726.57     rec =   1
          set_frc :: zeta_west        input time (days) =   4726.59     rec =   2
