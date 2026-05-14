@@ -183,8 +183,8 @@
           ny = ny -(offy+1)/2
         endif
 
-        Lm = nx
-        Mm = ny
+!       Lm = nx
+!       Mm = ny
         iwest = 1;  ieast = nx
         jsouth = 1; jnorth = ny
 

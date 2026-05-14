@@ -31,10 +31,10 @@
       use MARBL_interface_public_types, only: marbl_diagnostics_type,
      &                                        marbl_saved_state_type
 #endif            
-      use param                       , only: mynode,nt,ntrc_bio,
-     &                                        isalt,itemp,
-     &                                        ocean_grid_comm
-      use dimensions                  , only: nx,ny,nz,bf
+      use param                       , only: nt,ntrc_bio,
+     &                                        isalt,itemp
+      use dimensions                  , only: nx,ny,nz,bf,
+     &                                        ocean_grid_comm,mynode
       use surf_flux                   , only: uwnd, vwnd
       use bgc_forces                  , only: pco2air,pco2air_alt,
      &                                        dust,iron

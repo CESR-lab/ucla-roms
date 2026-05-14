@@ -61,8 +61,8 @@
 
 !     nx = Lm
 !     ny = Mm
-      Lm = nx
-      Mm = ny
+!     Lm = nx
+!     Mm = ny
 
       i0=1; i1=nx; j0=1; j1=ny
 
