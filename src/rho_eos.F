@@ -1,31 +1,8 @@
 #include "cppdefs.opt"
-#ifdef SOLVE3D
-# define DUKO_2001
-
 
       subroutine rho_eos(tidx)
-      use param
-      use roms_mpi
-      use private_scratch
-      implicit none
-      integer, intent(in) :: tidx
-      integer,save :: tile=0
 
-# include "compute_tile_bounds.h"
-# if defined NONLIN_EOS && !defined SPLIT_EOS 
-      call rho_eos_tile (istr,iend,jstr,jend, A2d(1,1), A2d(1,2),tidx)
-# else
-      call rho_eos_tile (istr,iend,jstr,jend,tidx)
-# endif
-      end
-
-
-# if defined NONLIN_EOS && !defined SPLIT_EOS 
-      subroutine rho_eos_tile (istr,iend,jstr,jend, K_up,K_dw,tidx)
-# else
-      subroutine rho_eos_tile (istr,iend,jstr,jend,tidx)
-# endif
-
+!  ![
 ! Compute density anomaly from T,S via Equation Of State (EOS) for
 !-------- ------- ------- ----  for seawater. Following Jackett and
 ! McDougall, 1995, physical EOS is assumed to have form
@@ -118,7 +95,10 @@
 ! geopotential  surfaces,  that  is,  depth  and  pressure  are
 ! interchangeable. >>
 !                                          John Wilkin, 29 July 92
+!  !]
 
+      use dimensions
+      use roms_mpi
       use param
       use tracers, only: t
       use coupling
@@ -132,13 +112,9 @@
 
       integer, intent(in) :: tidx
 
-      integer istr,iend,jstr,jend, i,j,k
+      integer i,j,k
 # ifdef NONLIN_EOS
       real Ts,Tt,sqrtTs, dr00, K0
-#  ifndef SPLIT_EOS
-      real K1, K2                     
-      real dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: K_up,K_dw
-#  endif
 
 ! EOS coefficient notation: first index is for salinity, second for
 ! temperature powers, "S" for 3/2 power of salinity.
@@ -157,45 +133,28 @@
      &                                              K13=2.326469e-4,
      &      KS0=-5.587545,      KS1=+0.7390729,     KS2=-1.909078e-2
 
-#  ifndef SPLIT_EOS 
-      real, parameter ::   B00=0.4721788,
-     &      B01=0.01028859,     B02=-2.512549e-4,   B03=-5.939910e-7,
-     &      B10=-0.01571896,    B11=-2.598241e-4,   B12=7.267926e-6,
-     &                          BS1=2.042967e-3,
+      real K0_Duk 
 
-     &      E00=+1.045941e-5,   E01=-5.782165e-10,  E02=+1.296821e-7,
-     &      E10=-2.595994e-7,   E11=-1.248266e-9,   E12=-3.508914e-9
-#  endif 
-#  ifdef DUKO_2001
-      real K0_Duk  !, rho1_0
-#  endif
 # endif /* NONLIN_EOS */
       real cff,cff1
-# ifdef SPLIT_EOS
       real dpth
-# endif
-
-# include "compute_extended_bounds.h"
 
 # ifdef NONLIN_EOS
       Tt=3.8D0 ; Ts=34.5D0 ; sqrtTs=sqrt(Ts)
-#  ifdef DUKO_2001
       K0_Duk= Tt*( K01+Tt*( K02+Tt*( K03+Tt*K04 )))
      &       +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
      &            +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
 
-#  endif
       dr00=r00-rho0
 # endif
 
-      do j=jstrR,jendR
+      do j=1-bf,ny+bf
 # ifdef NONLIN_EOS
-        do k=1,N                                       ! NONLINEAR
-          do i=istrR,iendR                             !  EQUATION
+        do k=1,nz                                      ! NONLINEAR
+          do i=1-bf,nx+bf                              !  EQUATION
             Tt=t(i,j,k,tidx,itemp)                     !  OF STATE
-#  ifdef SALINITY
             Ts=t(i,j,k,tidx,isalt) ; sqrtTs=sqrt(max(0.,Ts))
-#  endif
+
             rho1(i,j,k)=( dr00 +Tt*( r01+Tt*( r02+Tt*( r03+Tt*(
      &                                            r04+Tt*r05 ))))
 
@@ -210,49 +169,19 @@
      &         +Ts*( K10+Tt*( K11+Tt*( K12+Tt*K13 ))
      &              +sqrtTs*( KS0+Tt*( KS1+Tt*KS2 )))
 
-#  ifdef SPLIT_EOS
-#   ifdef DUKO_2001
             qp1(i,j,k)= 0.1D0*(rho0+rho1(i,j,k))*(K0_Duk-K0)
      &                               /((K00+K0)*(K00+K0_Duk))
-#   else
-            qp1(i,j,k)=( 0.000649D0 +0.1D0*( K00*rho1(i,j,k)
-     &                             -rho0*K0)/(K00*(K00+K0)) )
-#   endif
 #   ifdef MASKING
      &                                            *rmask(i,j)
 #   endif
-#  else
-            K1=B00+Tt*(B01+Tt*(B02+Tt*B03)) +Ts*( B10+Tt*( B11
-     &                                    +Tt*B12 )+sqrtTs*BS1 )
-
-            K2=E00+Tt*(E01+Tt*E02) +Ts*(E10+Tt*(E11+Tt*E12))
-
-            dpth=-z_r(i,j,k)
-            cff=K00-0.1*dpth
-            cff1=K0+dpth*(K1+K2*dpth)
-            rho(i,j,k)=( rho1(i,j,k)*cff*(K00+cff1)
-     &                           -0.1*dpth*rho0*cff1
-     &                            )/(cff*(cff+cff1))
-#   ifdef MASKING
-            rho(i,j,k)=rho(i,j,k)*rmask(i,j)
-#   endif
-#  endif
-#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP 
-#   ifndef SPLIT_EOS
-            dpth=-z_w(i,j,k)
-            K_up(i,k)=K0+dpth*(K1+K2*dpth)
-
-            dpth=-z_w(i,j,k-1)
-            K_dw(i,k)=K0+dpth*(K1+K2*dpth)
-#   endif
+#  if defined  LMD_KPP
           enddo
         enddo
 
         cff=g/rho0
-        do k=1,N-1
-          do i=istrR,iendR
+        do k=1,nz-1
+          do i=1-bf,nx+bf
 
-#   ifdef SPLIT_EOS
 c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
             dpth=          -0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 
@@ -260,55 +189,34 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
      &                        +(qp1(i,j,k+1)-qp1(i,j,k)) ! adiabatic
      &                            *dpth*(1.- qp2*dpth)   ! difference
      &                       )/(z_r(i,j,k+1)-z_r(i,j,k))
-#   else
-            cff1=0.1*(z_w(i,j,N)-z_w(i,j,k))
-            bvf(i,j,k)=-cff*(   (rho1(i,j,k+1)-rho1(i,j,k))
-     &                        *(K00+K_dw(i,k+1))*(K00+K_up(i,k))
-
-     &                     -cff1*( rho0*(K_dw(i,k+1)-K_up(i,k))
-     &                            +K00*(rho1(i,j,k+1)-rho1(i,j,k))
-     &                                  +rho1(i,j,k+1)*K_dw(i,k+1)
-     &                                      -rho1(i,j,k)*K_up(i,k)
-
-     &          ) )/(  (K00+K_dw(i,k+1)-cff1)*(K00+K_up(i,k)-cff1)
-     &                                  *(z_r(i,j,k+1)-z_r(i,j,k))
-     &                                                          )
-
-#   endif
 #   ifdef MASKING
      &                   *rmask(i,j)
 #   endif
 #  endif
           enddo
         enddo
-#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-   || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
-        do i=istrR,iendR
-          bvf(i,j,N)=bvf(i,j,N-1)
-          bvf(i,j,0)=bvf(i,j,  1)
+#  ifdef LMD_KPP
+        do i=1-bf,nx+bf
+          bvf(i,j,nz)=bvf(i,j,nz-1)
+          bvf(i,j,0 )=bvf(i,j,   1)
         enddo
 #  endif
 
 # else /* NONLIN_EOS */
-!-----------------> LINEAR EQUATION OF STATE
-#  ifdef SALINITY
+
+       ! Linear equation of state
+
         cff=Tcoef*T0-Scoef*S0
-#  else
-        cff=Tcoef*T0
-#  endif 
-        do k=1,N
-          do i=istrR,iendR
+
+        do k=1,nz
+          do i=1-bf,nx+bf
 #  ifdef SPLIT_EOS
             rho1(i,j,k)=cff -Tcoef*t(i,j,k,tidx,itemp) 
-#   ifdef SALINITY
      &                      +Scoef*t(i,j,k,tidx,isalt)
-#   endif
             qp1(i,j,k)=0.
 #  else
             rho(i,j,k)=cff  -Tcoef*t(i,j,k,tidx,itemp)
-#   ifdef SALINITY
      &                      +Scoef*t(i,j,k,tidx,isalt)
-#   endif
 #  endif
 
 #  ifdef MASKING
@@ -320,18 +228,17 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 #  endif
           enddo
         enddo
-#  if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-   || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING
+#  if defined LMD_KPP 
         cff=g/rho0
-        do k=1,N-1
-          do i=istrR,iendR
+        do k=1,nz-1
+          do i=1-bf,nx+bf
             bvf(i,j,k)=cff*(rho(i,j,k)-rho(i,j,k+1))
      &                     /(z_r(i,j,k+1)-z_r(i,j,k))
           enddo
         enddo
-        do i=istrR,iendR
-          bvf(i,j,N)=bvf(i,j,N-1)
-          bvf(i,j,0)=bvf(i,j,  1)
+        do i=1-bf,nx+bf
+          bvf(i,j,nz)=bvf(i,j,nz-1)
+          bvf(i,j,0 )=bvf(i,j,   1)
         enddo
 #  endif
 # endif /* NONLIN_EOS */
@@ -345,20 +252,20 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 ! are nondimensional quantities of comparable value.
 
 # ifdef VAR_RHO_2D
-        do i=istrR,iendR
+        do i=1-bf,nx+bf
 #  ifdef SPLIT_EOS
 c**       dpth=z_w(i,j,N)-z_r(i,j,N)
-          dpth=-z_r(i,j,N)
+          dpth=-z_r(i,j,nz)
 
-          cff=Hz(i,j,N)*(rho1(i,j,N)+qp1(i,j,N)*dpth*(1.-qp2*dpth))
+          cff=Hz(i,j,nz)*(rho1(i,j,nz)+qp1(i,j,nz)*dpth*(1.-qp2*dpth))
 #  else
-          cff=Hz(i,j,N)*rho(i,j,N)
+          cff=Hz(i,j,nz)*rho(i,j,nz)
 #  endif
-          rhoS(i,j)=0.5*cff*Hz(i,j,N)
+          rhoS(i,j)=0.5*cff*Hz(i,j,nz)
           rhoA(i,j)=cff
         enddo
-        do k=N-1,1,-1
-          do i=istrR,iendR
+        do k=nz-1,1,-1
+          do i=1-bf,nx+bf
 #  ifdef SPLIT_EOS
             dpth=-z_r(i,j,k)
             cff=Hz(i,j,k)*(rho1(i,j,k)+qp1(i,j,k)*dpth*(1.-qp2*dpth))
@@ -370,16 +277,19 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
           enddo
         enddo
         cff1=1./rho0
-        do i=istrR,iendR
-          cff=1./(z_w(i,j,N)-z_w(i,j,0))
+        do i=1-bf,nx+bf
+          cff=1./(z_w(i,j,nz)-z_w(i,j,0))
           rhoA(i,j)=cff*cff1*rhoA(i,j)
           rhoS(i,j)=2.*cff*cff*cff1*rhoS(i,j)
         enddo
 # endif         /* VAR_RHO_2D */
-# ifdef NON_TRADITIONAL
+# ifdef NONTRAD_COR
         cff=0.5*rho0/g
-        do k=1,N
-          do i=istrR,iendR
+        do k=1,nz
+          do i=1-bf,nx+bf
+#  if !defined SPLIT_EOS
+            stop 'NONTRAD_COR needs SPLIT_EOS'
+#  endif
             rho1(i,j,k)=rho1(i,j,k) +cff*(
      &            f_XI(i,j)*(v(i,j,k,tidx)+v(i,j+1,k,tidx))
      &          -f_ETA(i,j)*(u(i,j,k,tidx)+u(i+1,j,k,tidx))
@@ -390,7 +300,3 @@ c**       dpth=z_w(i,j,N)-z_r(i,j,N)
       enddo    ! <-- j
 
       end
-#else
-      subroutine rho_eos_empty
-      end
-#endif /* SOLVE3D */

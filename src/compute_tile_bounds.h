@@ -14,10 +14,10 @@
 #ifdef MPI
       integer size_X, margin_X, size_E, margin_E
 #else
-      integer, parameter :: size_X=(Lm+NSUB_X-1)/NSUB_X,
-     &                    margin_X=(NSUB_X*size_X-Lm)/2,
-     &                      size_E=(Mm+NSUB_E-1)/NSUB_E,
-     &                    margin_E=(NSUB_E*size_E-Mm)/2
+      integer, parameter :: size_X=(nx+NSUB_X-1)/NSUB_X,
+     &                    margin_X=(NSUB_X*size_X-nx)/2,
+     &                      size_E=(ny+NSUB_E-1)/NSUB_E,
+     &                    margin_E=(NSUB_E*size_E-ny)/2
 #endif
 
 ! 2021/03: currently ALLOW_SINGLE_BLOCK_MODE is not defined.
@@ -33,9 +33,9 @@ C$      if (trd>0) return !--> just return, if not master thread
         jend=jnorth
 # else
         istr=1
-        iend=Lm
+        iend=nx
         jstr=1
-        jend=Mm
+        jend=ny
       else
 # endif
 #endif
@@ -59,7 +59,7 @@ C$      if (trd>0) return !--> just return, if not master thread
         istr=max(istr,iwest)
 #else
         istr=1-margin_X + i_X*size_X
-        iend=min( istr + size_X-1, Lm)
+        iend=min( istr + size_X-1, nx)
         istr=max(istr,1)
 #endif
 
@@ -72,7 +72,7 @@ C$      if (trd>0) return !--> just return, if not master thread
         jstr=max(jstr,jsouth)
 #else
         jstr=1-margin_E + j_E*size_E
-        jend=min( jstr + size_E-1, Mm)
+        jend=min( jstr + size_E-1, ny)
         jstr=max(jstr,1)
 #endif
 

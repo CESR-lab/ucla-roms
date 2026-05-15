@@ -14,8 +14,6 @@ forcing: filename
 initial: NRREC  filename
           0
 
-climatology: filename
-
 boundary: filename
 
 restart:          NRST, NRPFRST / filename

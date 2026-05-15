@@ -13,8 +13,8 @@
 
       
       do k=1,nz
-        do j=-1,ny+2
-          do i=-1,nx+2
+        do j=1-bf,ny+bf
+          do i=1-bf,nx+bf
             t(i,j,k,1,itemp)= 20
             t(i,j,k,2,itemp)=t(i,j,k,1,itemp)
 # ifdef SALINITY
@@ -25,8 +25,8 @@
         enddo
       enddo
 
-      do j=0,ny+1
-        do i=0,nx+1
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
           ubar(i,j,1)=0.
           ubar(i,j,2)=ubar(i,j,1)
           vbar(i,j,1)=0

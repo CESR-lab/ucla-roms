@@ -17,7 +17,7 @@
 #  define EXTRACT_DATA
 #  define DIAGNOSTICS
 c--#  define HIS_DOUBLE
-#   define SPONGE_TUNE
+#define ADV_ISONEUTRAL
 
 #  define SOLVE3D
 #  define UV_COR

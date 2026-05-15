@@ -57,14 +57,14 @@
        if (ierr/=0) call handle_ierr(ierr,'closing: ',trim(adjustl(grdfile)))
 
       ! make new netcdf to visalize parition
-      ierr = nf90_create('part.nc',nf90_netcdf4,npid)
-       if (ierr/=0) call handle_ierr(ierr,'creating: ','part.nc')
+!     ierr = nf90_create('part.nc',nf90_netcdf4,npid)
+!      if (ierr/=0) call handle_ierr(ierr,'creating: ','part.nc')
 
-      ! add variables
-      vname='p'
-      dname=(/'xi_rho','eta_rho'/)
-      dsize=(/gnx+2,gny+2/)
-      varid=nccreate(npid,vname,dname,dsize)
+!     ! add variables
+!     vname='p'
+!     dname=(/'xi_rho','eta_rho'/)
+!     dsize=(/gnx+2,gny+2/)
+!     varid=nccreate(npid,vname,dname,dsize)
 
       ar    = real(gnx)/real(gny)   ! aspect ratio grid:
       ocean = (sum(msk)/(gnx*gny))  ! fraction of the grid that is not masked
@@ -83,7 +83,7 @@
       do npy = npy0,npy1
         do npx = npx0,npx1
           if ((npx*npy>=cores).and.(npx*npy<=cores/ocean)) then
-            call check_mask(npx,npy,gnx,gny,msk)
+            call check_mask(npx,npy,gnx,gny,msk,.false.)
             i = i+1
             if (nparts<=cores) then
               active(i,1) = nparts
@@ -94,7 +94,7 @@
         enddo
       enddo
 
-      ierr = nf90_close(npid)
+!     ierr = nf90_close(npid)
                      
       call sort(active)
 
@@ -102,6 +102,9 @@
         print *,'---',int(active(k,2)),'x',int(active(k,3)),'---'
         print *,int(active(k,1)),'cores out of',int(cores),'used'
       enddo
+      npx = int(active(1,2))
+      npy = int(active(1,3))
+      call check_mask(npx,npy,gnx,gny,msk,.true.)
 
       deallocate(active)
 

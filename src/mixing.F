@@ -12,46 +12,18 @@
       real,allocatable,dimension(:,:) :: visc2_r
       real,allocatable,dimension(:,:) :: visc2_p
 #endif
-#ifdef SOLVE3D
-# ifdef TS_DIF2
+
       real,allocatable,dimension(:,:,:) :: diff2
-# endif
-# ifdef TS_DIF4
       real,allocatable,dimension(:,:,:) :: diff4
-# endif
+
 # ifdef ADV_ISONEUTRAL
       real,allocatable,dimension(:,:,:) :: diff3u
       real,allocatable,dimension(:,:,:) :: diff3v
 # endif
 
       real,allocatable,dimension(:,:,:) :: Akv
-# ifdef SALINITY
-      real,allocatable,dimension(:,:,:,:) :: Akt
-# else
-      real,allocatable,dimension(:,:,:,:) :: Akt
-# endif
-# if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-  || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING\
-  || defined LMD_BKPP
+      real,allocatable,dimension(:,:,:) :: Akt
       real,allocatable,dimension(:,:,:) :: bvf
-# endif
-
-
-# ifdef MY25_MIXING
-
-! Mellor-Yamada (1982) Level 2.5 vertical mixing variables
-! Akq     Vertical mixing coefficient [m^2/s] for TKE
-! Lscale  Turbulent length scale (m).
-! q2      Turbulent kinetic energy [m^2/s^2] at horizontal RHO-
-!                                       and vertical W-points.
-! q2l     TKE times turbulent length scale[m^3/s^2] at horizontal
-!                                   RHO- and vertical W-points.
-
-      real,allocatable,dimension(:,:,:) :: Akq
-      real,allocatable,dimension(:,:,:) :: Lscale
-      real,allocatable,dimension(:,:,:,:) :: q2
-      real,allocatable,dimension(:,:,:,:) :: q2l
-#endif /* MY25_MIXING */
 
 ! Large/McWilliams/Doney oceanic planetary boundary layer variables
 ! hbls  thickness of oceanic planetary boundary layer [m, positive].
@@ -61,10 +33,9 @@
 !                                depth z_w [non-dimensional]
 
       real,allocatable,dimension(:,:) :: hbls
+      real,allocatable,dimension(:,:) :: hbbl
       real,allocatable,dimension(:,:,:) :: swr_frac
       real,allocatable,dimension(:,:,:) :: ghat
-      real,allocatable,dimension(:,:) :: hbbl
-#endif /* SOLVE3D */
 
       integer :: sponge_size  ! number of grid point of sponge layer
 
@@ -84,44 +55,20 @@
 #endif
 #ifdef SOLVE3D
 # ifdef TS_DIF2
-      allocate( diff2(GLOBAL_2D_ARRAY,NT) ); diff2=init
+      allocate( diff2(GLOBAL_2D_ARRAY,nt) ); diff2=init
 # endif
-# ifdef TS_DIF4
-      allocate( diff4(GLOBAL_2D_ARRAY,NT) ); diff4=init
-# endif
+
 # ifdef ADV_ISONEUTRAL
-      allocate( diff3u(GLOBAL_2D_ARRAY,N) ); diff3u=init
-      allocate( diff3v(GLOBAL_2D_ARRAY,N) ); diff3v=init
+      allocate( diff3u(GLOBAL_2D_ARRAY,nz) ); diff3u=init
+      allocate( diff3v(GLOBAL_2D_ARRAY,nz) ); diff3v=init
 # endif
 
-      allocate( Akv(GLOBAL_2D_ARRAY,0:N) ); Akv=init
-# ifdef SALINITY
-      allocate( Akt(GLOBAL_2D_ARRAY,0:N,isalt) ); Akt=init
-# else
-      allocate( Akt(GLOBAL_2D_ARRAY,0:N,itemp) ); Akt=init
-# endif
-# if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-  || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING\
-  || defined LMD_BKPP
-      allocate( bvf(GLOBAL_2D_ARRAY,0:N) ); bvf=init
+      allocate( Akv(GLOBAL_2D_ARRAY,0:nz) ); Akv=init
+      allocate( Akt(GLOBAL_2D_ARRAY,0:nz) ); Akt=init
+# if defined LMD_KPP || defined LMD_BKPP
+      allocate( bvf(GLOBAL_2D_ARRAY,0:nz) ); bvf=0
 # endif
 
-
-# ifdef MY25_MIXING
-
-! Mellor-Yamada (1982) Level 2.5 vertical mixing variables
-! Akq     Vertical mixing coefficient [m^2/s] for TKE
-! Lscale  Turbulent length scale (m).
-! q2      Turbulent kinetic energy [m^2/s^2] at horizontal RHO-
-!                                       and vertical W-points.
-! q2l     TKE times turbulent length scale[m^3/s^2] at horizontal
-!                                   RHO- and vertical W-points.
-
-      allocate( Akq(GLOBAL_2D_ARRAY,0:N) ); Akq=init
-      allocate( Lscale(GLOBAL_2D_ARRAY,N) ); Lscale=init
-      allocate( q2(GLOBAL_2D_ARRAY,0:N,2) ); q2=init
-      allocate( q2l(GLOBAL_2D_ARRAY,0:N,2) ); q2l=init
-#endif /* MY25_MIXING */
 
 ! Large/McWilliams/Doney oceanic planetary boundary layer variables
 ! hbls  thickness of oceanic planetary boundary layer [m, positive].
@@ -149,7 +96,7 @@
 #endif
 #ifdef SOLVE3D
 # ifdef TS_DIF2
-      do itrc=1,NT
+      do itrc=1,nt
         diff2(:,:,itrc)=tnu2(itrc)
       enddo
 # endif
@@ -159,27 +106,17 @@
 ! vertical mixing coefficients are those specified by the background
 ! values.
 
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
-
+# if !defined LMD_MIXING
       Akv=Akv_bak
 # else
       Akv=0.
 # endif
-# if defined BVF_MIXING || defined LMD_MIXING  || defined LMD_KPP \
-  || defined MY2_MIXING || defined MY25_MIXING || defined PP_MIXING \
-  || defined LMD_BKPP
-      bvf=0.
-# endif
 
-      do itrc=1,iTandS
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
-        Akt(:,:,:,itrc)=Akt_bak(itrc)
+# if !defined LMD_MIXING 
+      Akt = Akt_bak
 # else
-        Akt(:,:,:,itrc)=0.
+      Akt = 0.
 # endif
-      enddo
 
       ! averaging variables allocated in ocean_vars to prevent circular reference from wrt_* logicals
 

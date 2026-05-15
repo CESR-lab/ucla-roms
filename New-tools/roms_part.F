@@ -39,7 +39,8 @@
       ! Only used by mynode=0
       integer,dimension(:,:),allocatable :: iloc,jloc
       integer,dimension(:,:),allocatable :: ilcu,jlcv
-      integer,dimension(:,:),allocatable :: node_map
+!     integer,dimension(:,:),allocatable :: node_map
+      real   ,dimension(:,:),allocatable :: node_map
       integer,dimension(:)  ,allocatable :: npi_c,npj_c
       integer,dimension(:)  ,allocatable :: boundary_nodes
 
@@ -339,12 +340,13 @@
 
       end subroutine show_use_optimal !]
 ! ----------------------------------------------------------------------
-      subroutine check_mask(npx,npy,gnx,gny,mask)   ![
+      subroutine check_mask(npx,npy,gnx,gny,mask,do_nc)   ![
       implicit none
 
       ! input/outputs
       integer, intent(in)                        :: npx,npy,gnx,gny
       real,dimension(0:gnx+1,0:gny+1),intent(in) :: mask
+      logical, intent(in) :: do_nc
 
       ! local
       real,dimension(:,:),allocatable :: rflx
@@ -354,6 +356,7 @@
       integer :: loc_x,loc_y
       integer :: npi,npj
       integer :: count
+      integer :: ncid,ierr,varid
       
       ! Get interior subdomain size
       nx = ceiling(1.0*gnx/npx)
@@ -394,7 +397,7 @@
         loc_y = loc_y + jloc(npj,1)
       enddo
 
-      allocate(node_map(0:npy+1,0:npx+1))
+      allocate(node_map(npx,npy))
       node_map = -98
       allocate(npi_c(npx*npy))
       allocate(npj_c(npx*npy))
@@ -407,13 +410,27 @@
 !         rfx_mx = maxval(rflx(iloc(npi,2):iloc(npi,3),jloc(npj,2):jloc(npj,3)))
           if (msk_mx > 0.or.rfx_mx>0) then
             count = count+1
-            node_map(npj,npi) = count
+            node_map(npi,npj) = count
             npi_c(count) = npi
             npj_c(count) = npj
           endif
         enddo
       enddo
       nparts = count
+
+      if (do_nc) then
+        print *,'writing node_map: ',nparts,npx,npy
+        ! make new netcdf to visalize parition
+        ierr = nf90_create('part.nc',nf90_netcdf4,ncid)
+         if (ierr/=0) call handle_ierr(ierr,'creating: ','part.nc')
+        varid=nccreate(ncid,'p',(/'npx','npy'/),(/npx,npy/))
+
+!       ierr = nf90_close(ncid)
+!       ierr = nf90_open('part.nc',nf90_write,ncid)
+
+        call ncwrite(ncid,'p',node_map)
+        ierr = nf90_close(ncid)
+      endif
 
       deallocate(iloc,jloc,node_map,npi_c,npj_c)
 

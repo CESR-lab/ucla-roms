@@ -1,7 +1,7 @@
       module surf_flux
       ! Declaration of surface flux variables
       ! Output of surface fluxes
-      ! Sets fields for flux correction 
+      ! Sets fields for flux correction
 
       ! Devin Dollery & Jeroen Molemaker (2020-2022)
 
@@ -20,12 +20,6 @@
 
 #include "surf_flux.opt"
 
-#if defined SALINITY 
-      logical,parameter :: salinity=.true.
-#else
-      logical,parameter :: salinity=.false.
-#endif
-
       logical :: init_done=.false.        ! flag to init surf_flux
       integer :: navg_sflx = 0            ! number of samples in average
 
@@ -37,19 +31,17 @@
       real,public,allocatable,dimension(:,:)   :: svstr_r  ! rho-point, only used in lmd_kpp to get ustar
       real,public,allocatable,dimension(:,:,:) :: stflx    ! Surface fluxes of tracer type variables (rho-points)
       real,public,allocatable,dimension(:,:)   :: srflx    ! Short-wave radiation surface flux
+      real,public,allocatable,dimension(:,:)   :: swflx    ! Precip minus evaporation flux (surface water flux)
 
-      real,public,allocatable,dimension(:,:) ::  uwnd             ! time interpolated u-wind
-      real,public,allocatable,dimension(:,:) ::  vwnd             ! time interpolated v-wind      
-      
-      character(len=5) :: sustr_name = 'sustr'
-      character(len=5) :: svstr_name = 'svstr'
-      character(len=5) :: shflx_name = 'shflx'
-      character(len=5) :: ssflx_name = 'ssflx'
+      real,public,allocatable,dimension(:,:) ::  uwnd      ! time interpolated u-wind
+      real,public,allocatable,dimension(:,:) ::  vwnd      ! time interpolated v-wind
 
       ! averages of surface fluxes
       real,allocatable,dimension(:,:)  :: sustr_avg     ! surf stress u-point average
       real,allocatable,dimension(:,:)  :: svstr_avg     ! surf stress v-point average
       real,allocatable,dimension(:,:,:):: stflx_avg     ! surf tracer flux average
+      real,allocatable,dimension(:,:)  :: srflx_avg     ! surf srw flux average
+      real,allocatable,dimension(:,:)  :: swflx_avg     ! surf srw flux average
 
 
       ! Sea-surface temperature (SST) and salinity (SSS) data for restoring
@@ -59,7 +51,7 @@
       real,public :: dSSSdt                                ! input units (cm/day)
 
       ! Netcdf outputting:
-      real    :: output_time = 0  
+      real    :: output_time = 0
       integer :: record = nrpf     ! to trigger the first file creation
       integer :: ncid = -1, prev_fill_mode
 
@@ -77,13 +69,15 @@
 
       ! local
       allocate(  uwnd  (GLOBAL_2D_ARRAY)    );
-      allocate(  vwnd  (GLOBAL_2D_ARRAY)    );       
+      allocate(  vwnd  (GLOBAL_2D_ARRAY)    );
       allocate( sustr  (GLOBAL_2D_ARRAY)    ); sustr=init
       allocate( sustr_r(GLOBAL_2D_ARRAY)    ); sustr_r=init
       allocate( svstr  (GLOBAL_2D_ARRAY)    ); svstr=init
       allocate( svstr_r(GLOBAL_2D_ARRAY)    ); svstr_r=init
       allocate( stflx  (GLOBAL_2D_ARRAY,nt) ); stflx=init
       allocate( srflx  (GLOBAL_2D_ARRAY)    ); srflx=init
+      allocate( swflx(GLOBAL_2D_ARRAY))
+      swflx = 0
 
 #if defined SFLX_CORR && defined SALINITY && !defined ANA_SSFLUX
       allocate( sss(GLOBAL_2D_ARRAY)        ); sss=init
@@ -92,9 +86,11 @@
 #endif
 
       if (sflx_avg) then
-        allocate(sustr_avg(1:i1,j0:j1))
-        allocate(svstr_avg(i0:i1,1:j1)) 
-        allocate(stflx_avg(i0:i1,j0:j1,nt)) 
+        if (wrt_smflx) allocate(sustr_avg(1:i1,j0:j1))
+        if (wrt_smflx) allocate(svstr_avg(i0:i1,1:j1))
+        if (wrt_stflx) allocate(stflx_avg(i0:i1,j0:j1,nt))
+        if (wrt_srflx) allocate(srflx_avg(i0:i1,j0:j1))
+        if (wrt_swflx) allocate(swflx_avg(i0:i1,j0:j1))
       endif
 
       end subroutine init_arrays_surf_flx  !]
@@ -133,6 +129,12 @@
       if (wrt_stflx) then  ! surface tracer fluxes
         stflx_avg = stflx_avg*(1-coef)+stflx(i0:i1,j0:j1,:)*coef
       endif
+      if (wrt_srflx) then  ! surface swr flux
+        srflx_avg = srflx_avg*(1-coef)+srflx(i0:i1,j0:j1)*coef
+      endif
+      if (wrt_swflx) then  ! surface water flux
+        swflx_avg = swflx_avg*(1-coef)+swflx(i0:i1,j0:j1)*coef
+      endif
 
       end subroutine calc_sflx_avg !]
 !----------------------------------------------------------------------
@@ -160,19 +162,35 @@
       endif
 
       if (wrt_stflx) then
-        varid = nccreate(ncid,shflx_name,(/dn_xr,dn_yr,dn_tm/),
+        varid = nccreate(ncid,'stflx',(/dn_xr,dn_yr,dn_tm/),
      &                 (/xi_rho,eta_rho,0/))
         ierr = nf90_put_att(ncid,varid,'long_name',
      &                            'Surface heat flux')
         ierr = nf90_put_att(ncid,varid,'units','degC m/s')
-        if (salinity) then
-          varid = nccreate(ncid,'ssflx',(/dn_xr,dn_yr,dn_tm/),
+
+        varid = nccreate(ncid,'ssflx',(/dn_xr,dn_yr,dn_tm/),
      &                 (/xi_rho,eta_rho,0/))
-          ierr = nf90_put_att(ncid,varid,'long_name',
+        ierr = nf90_put_att(ncid,varid,'long_name',
      &                            'Surface Salinity flux')
-          ierr = nf90_put_att(ncid,varid,'units','PSU m/s')
-        endif
+        ierr = nf90_put_att(ncid,varid,'units','PSU m/s')
       endif
+
+      if (wrt_srflx) then
+        varid = nccreate(ncid,'srflx',(/dn_xr,dn_yr,dn_tm/),
+     &                 (/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',
+     &                            'Short wave radiation flux')
+        ierr = nf90_put_att(ncid,varid,'units','Wm/s')
+      endif
+
+      if (wrt_swflx) then
+        varid = nccreate(ncid,'swflx',(/dn_xr,dn_yr,dn_tm/),
+     &                 (/xi_rho,eta_rho,0/))
+        ierr = nf90_put_att(ncid,varid,'long_name',
+     &                            'Fresh water flux (P-E)')
+        ierr = nf90_put_att(ncid,varid,'units','m/s')
+      endif
+
 
       end subroutine create_sflx_vars  !]
 ! ----------------------------------------------------------------------
@@ -188,7 +206,7 @@
       character(len=99),save :: fname
       integer                :: ierr
 
-      output_time = output_time + dt 
+      output_time = output_time + dt
 
       if (sflx_avg) call calc_sflx_avg
 
@@ -214,10 +232,14 @@
             call ncwrite(ncid,'svstr',svstr_avg,start)
           endif
           if (wrt_stflx) then
-            call ncwrite(ncid,'shflx',stflx_avg(:,:,1),start)
-            if (salinity) then
-             call ncwrite(ncid,'ssflx',stflx_avg(:,:,2),start)
-            endif
+            call ncwrite(ncid,'stflx',stflx_avg(:,:,1),start)
+            call ncwrite(ncid,'ssflx',stflx_avg(:,:,2),start)
+          endif
+          if (wrt_srflx) then
+            call ncwrite(ncid,'srflx',srflx_avg(:,:),start)
+          endif
+          if (wrt_swflx) then
+            call ncwrite(ncid,'swflx',swflx_avg(:,:),start)
           endif
         else  ! snapshots
           if (wrt_smflx) then
@@ -225,10 +247,14 @@
             call ncwrite(ncid,'svstr',svstr(i0:i1,1:j1),start)
           endif
           if (wrt_stflx) then
-            call ncwrite(ncid,'shflx',stflx(i0:i1,j0:j1,1),start)
-            if (salinity) then
-             call ncwrite(ncid,'ssflx',stflx(i0:i1,j0:j1,2),start)
-            endif
+            call ncwrite(ncid,'stflx',stflx(i0:i1,j0:j1,1),start)
+            call ncwrite(ncid,'ssflx',stflx(i0:i1,j0:j1,2),start)
+          endif
+          if (wrt_srflx) then
+            call ncwrite(ncid,'srflx',srflx(i0:i1,j0:j1),start)
+          endif
+          if (wrt_swflx) then
+            call ncwrite(ncid,'swflx',swflx(i0:i1,j0:j1),start)
           endif
         endif
         ierr=nf90_close(ncid)

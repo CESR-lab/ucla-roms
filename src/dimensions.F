@@ -27,7 +27,14 @@
       integer,public :: i0,i1,j0,j1     ! accounts for physical boundary buffers
       integer,public :: inode,jnode     ! location of subdomain in the grid
 
+      logical,public :: east_bnd,west_bnd,north_bnd,south_bnd
+
+      integer,public :: ocean_grid_comm,mynode,iSW_corn,jSW_corn
+
+
       integer, public ::  xi_rho, xi_u, eta_rho, eta_v
+
+      logical,public :: do_nhmg = .false.  ! engage the mg based non-hydrostatic computations
 
 # ifdef ANA_GRID
       logical,parameter,public :: analytical_grid = .true.
@@ -36,7 +43,11 @@
 # endif
       character(len=256), public :: grdname
 
-
+# ifdef SPONGE
+      logical,parameter,public :: bry_sponge = .true.
+# else
+      logical,parameter,public :: bry_sponge = .false. 
+# endif
 
 
       public :: init_dimensions
@@ -50,8 +61,8 @@
 
 !     nx = Lm
 !     ny = Mm
-      Lm = nx
-      Mm = ny
+!     Lm = nx
+!     Mm = ny
 
       i0=1; i1=nx; j0=1; j1=ny
 
@@ -61,7 +72,6 @@
       if (jnode==NP_ETA-1) j1=ny+1
 
       end subroutine init_dimensions  !]
-
 ! ----------------------------------------------------------------------
 
       end module dimensions

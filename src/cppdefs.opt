@@ -79,9 +79,6 @@ c-dd#define TAU_CORRECTION
 #define SPHERICAL
 #define MASKING
 
-/* Output Options */
-#define MASK_LAND_DATA
-
 /* Restart */
 c#define EXACT_RESTART
 

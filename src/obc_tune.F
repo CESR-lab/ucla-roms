@@ -38,6 +38,9 @@
       real,allocatable,dimension(:) :: pflx_west_avg
       real,allocatable,dimension(:) ::   ub_west_avg
 
+      real,allocatable,dimension(:) :: cflx_east_avg
+      real,allocatable,dimension(:) :: pflx_east_avg
+      real,allocatable,dimension(:) ::   ub_east_avg
 
       public adjust_orlanski
       public init_orlanski_tune
@@ -81,7 +84,7 @@
         cflx_west_avg = 0
         if (.not.allocated(ub_west)) then
           allocate(ub_west(0:ny+1))
-          ub_west = 0.
+          ub_west = 1.
         endif
         allocate(ub_west_avg(0:ny+1))
         ub_west_avg = 0.
@@ -90,12 +93,18 @@
         allocate(nc_pflx_e%vdata(j0:j1,1,2))
         allocate(pflx_east(0:ny+1))
         pflx_east = 0
+        allocate(pflx_east_avg(0:ny+1))
+        pflx_east_avg = 0
         allocate(cflx_east(0:ny+1))
         cflx_east = 0
+        allocate(cflx_east_avg(0:ny+1))
+        cflx_east_avg = 0
         if (.not.allocated(ub_east)) then
           allocate(ub_east(0:ny+1))
-          ub_east = 0.
+          ub_east = 1.
         endif
+        allocate(ub_east_avg(0:ny+1))
+        ub_east_avg = 0.
       endif
       if (obc_north.and.jnode.eq.np_eta-1) then
         allocate(nc_pflx_n%vdata(i0:i1,1,2))
@@ -105,7 +114,7 @@
         cflx_north = 0
         if (.not.allocated(ub_north)) then
           allocate(ub_north(0:nx+1))
-          ub_north = 0.
+          ub_north = 1.
         endif
       endif
       if (obc_south.and.jnode.eq.0) then
@@ -120,7 +129,7 @@
         cflx_south_avg = 0
         if (.not.allocated(ub_south)) then
           allocate(ub_south(0:nx+1))
-          ub_south = 0.
+          ub_south = 1.
         endif
         allocate(ub_south_avg(0:nx+1))
         ub_south_avg = 0
@@ -178,16 +187,16 @@
 
       pos = 2
       if (obc_west.and.inode.eq.0) then
-        cflx_west = up(pos,1:ny) 
+        cflx_west(1:ny) = up(pos,1:ny) 
       endif
       if (obc_east.and.inode.eq.npx-1) then
-        cflx_east = up(nx-pos+1,1:ny)
+        cflx_east(1:ny) = up(nx-pos+1,1:ny)
       endif
       if (obc_south.and.jnode.eq.0) then
-        cflx_south = vp(1:nx,pos)
+        cflx_south(1:nx) = vp(1:nx,pos)
       endif
       if (obc_north.and.jnode.eq.npy-1) then
-        cflx_north = vp(1:nx,ny-pos+1)
+        cflx_north(1:nx) = vp(1:nx,ny-pos+1)
       endif
       
       end subroutine comp_cflx !]
@@ -201,6 +210,7 @@
       ! local 
       real    :: alpha,beta,eps
       real    :: ub_mn,ub_mx
+      integer :: i,j
 
       eps = 1e-6
       ub_mx = 2.0 
@@ -214,27 +224,35 @@
       call comp_cflx
 
       if (obc_south.and.jnode.eq.0) then
-        ub_south = ub_south+alpha*(pflx_south-cflx_south)
-        ub_south = max(ub_mn,ub_south)
-        ub_south = min(ub_mx,ub_south)
+        do i=1,nx
+          ub_south(i) = ub_south(i)+alpha*(pflx_south(i)-cflx_south(i))
+          ub_south(i) = max(ub_mn,ub_south(i))
+          ub_south(i) = min(ub_mx,ub_south(i))
+        enddo
       endif
 
       if (obc_north.and.jnode.eq.npy-1) then
-        ub_north = ub_north-alpha*(pflx_north-cflx_north)
-        ub_north = max(ub_mn,ub_north)
-        ub_north = min(ub_mx,ub_north)
+        do i=1,nx
+          ub_north(i) = ub_north(i)-alpha*(pflx_north(i)-cflx_north(i))
+          ub_north(i) = max(ub_mn,ub_north(i))
+          ub_north(i) = min(ub_mx,ub_north(i))
+        enddo
       endif
       
       if (obc_west.and.inode.eq.0) then
-        ub_west = ub_west+alpha*(pflx_west-cflx_west)
-        ub_west = max(ub_mn,ub_west)
-        ub_west = min(ub_mx,ub_west)
+        do j=1,ny
+          ub_west(j) = ub_west(j)+alpha*(pflx_west(j)-cflx_west(j))
+          ub_west(j) = max(ub_mn,ub_west(j))
+          ub_west(j) = min(ub_mx,ub_west(j))
+        enddo
       endif
 
       if (obc_east.and.inode.eq.npx-1) then
-        ub_east = ub_east-alpha*(pflx_east-cflx_east)
-        ub_east = max(ub_mn,ub_east)
-        ub_east = min(ub_mx,ub_east)
+        do j=1,ny
+          ub_east(j) = ub_east(j)-alpha*(pflx_east(j)-cflx_east(j))
+          ub_east(j) = max(ub_mn,ub_east(j))
+          ub_east(j) = min(ub_mx,ub_east(j))
+        enddo
       endif
 
       if (wrt_obc_tune) then
@@ -274,6 +292,12 @@
           pflx_west_avg = pflx_west_avg*(1-coef) + pflx_west*coef
           ub_west_avg   =   ub_west_avg*(1-coef) +   ub_west*coef
         endif
+
+        if (obc_east.and.inode.eq.npx-1) then
+          cflx_east_avg = cflx_east_avg*(1-coef) + cflx_east*coef
+          pflx_east_avg = pflx_east_avg*(1-coef) + pflx_east*coef
+          ub_east_avg   =   ub_east_avg*(1-coef) +   ub_east*coef
+        endif
       endif
 
       end subroutine calc_tune_avg !]
@@ -306,7 +330,9 @@
         call ncwrite(ncid,'ub_south',  ub_south_avg(1:i1),(/1,record/))
       endif
       if (obc_east.and.(inode==np_xi-1)) then
-!       call ncwrite(ncid,'ub_east',ub_east(j0:j1),(/1,record /))
+        call ncwrite(ncid,'cf_east',cflx_east_avg(j0:j1),(/1,record/))
+        call ncwrite(ncid,'pf_east',pflx_east_avg(j0:j1),(/1,record/))
+        call ncwrite(ncid,'ub_east',  ub_east_avg(j0:j1),(/1,record /))
       endif
       if (obc_west.and.(inode==0)) then
         call ncwrite(ncid,'cf_west',cflx_west_avg(1:j1),(/1,record/))
@@ -370,6 +396,21 @@
      &                            ,'West boundary binding velocity')
       ierr = nf90_put_att(ncid,varid,'units','m/s' )
 
+      varid = nccreate(ncid,'cf_east',(/dn_yr,dn_tm/),(/xi_rho,0/))
+      ierr = nf90_put_att(ncid,varid,'long_name'
+     &                            ,'East boundary child flux')
+      ierr = nf90_put_att(ncid,varid,'units','W/m' )
+
+      varid = nccreate(ncid,'pf_east',(/dn_yr,dn_tm/),(/xi_rho,0/))
+      ierr = nf90_put_att(ncid,varid,'long_name'
+     &                            ,'East boundary parent flux')
+      ierr = nf90_put_att(ncid,varid,'units','W/m' )
+
+      varid = nccreate(ncid,'ub_east',(/dn_yr,dn_tm/),(/xi_rho,0/))
+      ierr = nf90_put_att(ncid,varid,'long_name'
+     &                            ,'East boundary binding velocity')
+      ierr = nf90_put_att(ncid,varid,'units','m/s' )
+
       ierr = nf90_close(ncid)
 
       end subroutine create_obc_tune_file !]
@@ -425,56 +466,56 @@
 
       if (obc_south.and.(jnode==0)) then
         if (.not. allocated(ub_south)) then
-           allocate(ub_south(0:nx+1));ub_south = 0
+           allocate(ub_south(0:nx+1))
         endif
         ierr=nf90_inq_varid (ncid, 'ub_south', varid)
         if (ierr == nf90_noerr) then
           call ncread(ncid,'ub_south', ub_south(i0:i1),(/1,record/))
         else
           if (mynode==0) print *,'--WARNING: ub_south'
-     &      ,' not in initial file, setting to zero.'
-          ub_south = 0
+     &      ,' not in initial file, setting to one.'
+          ub_south = 1
         endif
       endif
       if (obc_north.and.(jnode==np_eta-1)) then
         if (.not. allocated(ub_north)) then
-           allocate(ub_north(0:nx+1));ub_north = 0
+           allocate(ub_north(0:nx+1))
         endif
         ierr=nf90_inq_varid (ncid, 'ub_north', varid)
         if (ierr == nf90_noerr) then
           call ncread(ncid,'ub_north', ub_north(i0:i1),(/1,record/))
         else
           if (mynode==0) print *,'--WARNING: ub_north'
-     &      ,' not in initial file, setting to zero.'
-          ub_north = 0
+     &      ,' not in initial file, setting to one.'
+          ub_north = 1
         endif
       endif
 
       if (obc_east.and.(inode==np_xi-1)) then
         if (.not. allocated(ub_east)) then
-           allocate(ub_east(0:ny+1));ub_east = 0
+           allocate(ub_east(0:ny+1))
         endif
         ierr=nf90_inq_varid (ncid, 'ub_east', varid)
         if (ierr == nf90_noerr) then
           call ncread(ncid,'ub_east', ub_east(i0:j1),(/1,record/))
         else
           if (mynode==0) print *,'--WARNING: ub_east'
-     &      ,' not in initial file, setting to zero.'
-          ub_east = 0
+     &      ,' not in initial file, setting to one.'
+          ub_east = 1
         endif
       endif
 
       if (obc_west.and.(inode==0)) then
         if (.not. allocated(ub_west)) then
-           allocate(ub_west(0:ny+1));ub_west = 0
+           allocate(ub_west(0:ny+1))
         endif
         ierr=nf90_inq_varid (ncid, 'ub_west', varid)
         if (ierr == nf90_noerr) then
           call ncread(ncid,'ub_west', ub_west(j0:j1),(/1,record/))
         else
           if (mynode==0) print *,'--WARNING: ub_west'
-     &      ,' not in initial file, setting to zero.'
-          ub_west = 0
+     &      ,' not in initial file, setting to one.'
+          ub_west = 1
         endif
 
       endif

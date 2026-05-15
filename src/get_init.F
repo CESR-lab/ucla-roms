@@ -31,7 +31,7 @@
      &           ierr,  start(4), count(2), ibuff(iaux),
      &           checkdims , itrc
       real    :: time_scale
-      integer :: init_type, tile=0 ! set tile to zero for compute_tile_bounds.h below. Needed to fixed closed boundaries.
+      integer :: init_type
       integer, parameter :: init_run=1,  rst_run=2
 #ifdef EXACT_RESTART
      &                    , apprx_rst=3, exact_rst=4
@@ -45,8 +45,6 @@
 #define tdays illegal
 #define nrrec illegal
 
-! needed for istr, iend, etc in order to fix closed boundaries to u(istr)=0, etc
-# include "compute_tile_bounds.h"
 
 c--#define VERBOSE
 #ifdef VERBOSE
@@ -258,7 +256,7 @@ c--#define VERBOSE
         start(1)=1 ; start(2)=record ; count(2)=1
         ibuff(1:iaux)=0
         ierr=nf90_get_var(ncid, varid, ibuff, start, count)
-        if (ierr/=0) 
+        if (ierr/=0)
      &  call handle_ierr(ierr,'get_init: cannot read time_step')
         ntstart=ibuff(1)+1
 
@@ -266,7 +264,7 @@ c--#define VERBOSE
         if (tindx == 2 .and. record < max_rec) then
           start(2)=record+1
           ierr=nf90_get_var(ncid, varid, ibuff, start, count)
-          if (ierr/=0) 
+          if (ierr/=0)
      &  call handle_ierr(ierr,'get_init: cannot read 2nd time_step')
 # ifdef VERBOSE
           write(*,*) 'ibuff(1),ntstart =', ibuff(1), ntstart
@@ -322,7 +320,7 @@ c--#define VERBOSE
       call exchange_xxx(zeta(:,:,1))
 
       call ncread(ncid,'ubar',ubar( 1:i1,j0:j1,1),start)
-      ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)  
+      ubar(1:i1,j0:j1,1) = ubar(1:i1,j0:j1,1)*umask(1:i1,j0:j1)
       call exchange_xxx(ubar(:,:,1))
 
       call ncread(ncid,'vbar',vbar(i0:i1, 1:j1,1),start)
@@ -388,7 +386,7 @@ c--#define VERBOSE
 
       start=1; start(4)=record                                       ! 3D vars
 
-      call ncread(ncid,vname(1,indxU), u(1:i1,j0:j1,:,tindx),start) 
+      call ncread(ncid,vname(1,indxU), u(1:i1,j0:j1,:,tindx),start)
       do k=1,nz
         u(1:i1,j0:j1,k,tindx) = u(1:i1,j0:j1,k,tindx)*umask(1:i1,j0:j1)
       enddo
@@ -403,9 +401,9 @@ c--#define VERBOSE
 # if defined NHMG
       ! since ncdf_read already does an exchange to fill buffers, we're
       ! ready to initialy w using no-div
-!     do j=1,Lm
+!     do j=1,nx
 !       do k=1,N
-!         do i=1,Mm
+!         do i=1,ny
 !           DC(i,0)=pm(i,j)*pn(i,j)
 !           w(i,j,k,nnew)=w(i,j,k-1,nnew)
 !    &      - DC(i,0)*(
@@ -429,7 +427,7 @@ c--#define VERBOSE
           do k=1,N
             t(i0:i1,j0:j1,k,tindx,itrc)=t(i0:i1,j0:j1,k,tindx,itrc)*rmask(i0:i1,j0:j1)
           enddo
-          call exchange_xxx(t(:,:,:,tindx,itrc) ) 
+          call exchange_xxx(t(:,:,:,tindx,itrc) )
         else
 
           if (itrc <= iTandS) then ! temperature and salt(s) always require inital condition
@@ -478,8 +476,8 @@ c--#define VERBOSE
 #ifdef MARBL
 !     Read in MARBL saved_state variables here
       call marbldrv_read_ss_vars_from_rst(ncid,record)
-#endif /* MARBL */      
-      
+#endif /* MARBL */
+
 #endif /* SOLVE3D */
 
       if (diag_pflx)  call get_init_slow(ncid,record,tindx)
@@ -523,41 +521,25 @@ c--#define VERBOSE
       ! Here we catch an initial file that does not have the boundary values of u/v
       ! set to zero, even though we prescribed a closed boundary. This is necessary
       ! for conservation tests.
-#if !defined OBC_WEST && !defined EW_PERIODIC
-      if(WESTERN_EDGE) then
-        if(mynode==0) write (*,'(6x,A)')        ! S&W bry always contained in start node (==0)
-     &  'get_init :: set closed west  boundary row to zero (u/ub/v/vb)'
-        u(   istr  ,:     ,:,tindx)=0.0         ! ensure closed boundary u on boundary is zero
-        ubar(istr  ,:     ,1)      =0.0         ! ubar read into index 1 above
+      if (west_bnd .and. .not. obc_west) then
+        u(1,: ,:,tindx)=0.0
+        ubar(1,:,1)    =0.0
       endif
-#endif
-#if !defined OBC_EAST && !defined EW_PERIODIC
-      if(EASTERN_EDGE) then
-        if(mynode==NNODES-1) write (*,'(6x,A)') ! N&E bry always contained in final node (==NNODES-1)
-     &  'get_init :: set closed east  boundary row to zero (u/ub/v/vb)'
-        u(   iend+1,:     ,:,tindx)=0.0
-        ubar(iend+1,:     ,1)      =0.0
+      if (east_bnd .and. .not. obc_east) then
+        u(nx+1,:,:,tindx)=0.0
+        ubar(nx+1,:,1)   =0.0
       endif
-#endif
-#if !defined OBC_SOUTH && !defined NS_PERIODIC
-      if(SOUTHERN_EDGE) then
-        if(mynode==0) write (*,'(6x,A)')
-     &  'get_init :: set closed south boundary row to zero (u/ub/v/vb)'
-        v(   :     ,jstr  ,:,tindx)=0.0
-        vbar(:     ,jstr  ,1)      =0.0
+      if (south_bnd .and. .not. obc_south) then
+        v(:,1,:,tindx)=0.0
+        vbar(:,1,1)   =0.0
       endif
-#endif
-#if !defined OBC_NORTH && !defined NS_PERIODIC
-      if(NORTHERN_EDGE) then
-        if(mynode==NNODES-1) write (*,'(6x,A)')
-     &  'get_init :: set closed north boundary row to zero (u/ub/v/vb)'
-        v(   :     ,jend+1,:,tindx)=0.0
-        vbar(:     ,jend+1,1)      =0.0
+      if (north_bnd .and. .not. obc_north) then
+        v(:,ny+1,:,tindx)=0.0
+        vbar(:,ny+1,1)   =0.0
       endif
-#endif
 
 #if defined ANA_BRY
-      call ana_init_generic(1,nx,1,ny)
+      call ana_init_generic
 #endif
 
 
