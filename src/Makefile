@@ -87,13 +87,13 @@ endif
 # Fortran compiler options/flags: (Legacy to have both CFTFLAGS & FFLAGS)
 # - Optimized: (-ip = additional interprocedural optimizations for single-file compilation. )
 ifeq ($(FCOMP),mpiifx)
-	FFLAGS = -O3 -ipo -fp-model fast
+	FFLAGS = -O3 -ipo -fp-model fast -qopt-report=3 
 else
 	FFLAGS = -O3 -ip -fp-model fast
 endif
 # - uncomment for debugging:
 #	FFLAGS = -g -traceback -check all -CA -CB -CS
-#	FFLAGS = -g -traceback -CA -CB -CS
+#	FFLAGS = -g -traceback -CA -CB -CS  -check arg_temp_created  
 # - uncomment for traceback only (traceback not as accurate as full debug mode...)
 #	FFLAGS = -O3 -ip -traceback
 # - for code_check script ensure consistency with -fp-model strict:
@@ -116,7 +116,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 	set_sponge.F   obc_tune.F roms_read_write.F extract_data.F \
 \
 	prsgrd.F	pre_step3d.F	step3d_uv1.F	step3d_uv2.F\
-	step3d_t_ISO.F	set_depth.F	omega.F\
+	step3d_t_ISO.F	set_depth.F	omega.F         advection.F\
 	visc3d_S.F	t3dmix_S.F      particles.F\
 \
 	zetabc.F	u2dbc_im.F	v2dbc_im.F\

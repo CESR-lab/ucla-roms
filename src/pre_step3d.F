@@ -44,6 +44,7 @@
       use ocean_vars
       use scalars
       use roms_mpi
+      use advection
 
       implicit none
       integer ::  i,j,k
@@ -161,7 +162,9 @@
 # undef FE                                /* ! barotropic mode. */
 # undef FX
 
-# include "compute_horiz_rhs_uv_terms.h"
+!# include "compute_horiz_rhs_uv_terms.h"
+        call uv_cor_curv(ru,rv,k)
+        call uv_hor_adv(ru,rv,k)
 
       enddo !<-- k
 
