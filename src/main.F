@@ -25,6 +25,7 @@
       call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
       call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
 
+      nnodes = nsize
       ierr=0
       call read_inp(ierr)
 
