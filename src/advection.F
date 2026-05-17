@@ -683,7 +683,7 @@
 
         do k=1,nz
           do i=1,nx
-            crv(i,k) = FC(i,k)-FC(i,k-1)
+            DC(i,k) = FC(i,k)-FC(i,k-1)
           enddo
         enddo
 
@@ -692,12 +692,12 @@
             Flxw = 0.5*(We(i,j,k)+We(i-1,j,k))
             FC(i,k)=0.5*(u(i,j,k,nrhs)+u(i,j,k+1,nrhs))
      &                                                *Flxw
-     &                  - coef_up3*( crv(i,k  )*max(Flxw,0.)
-     &                              +crv(i,k+1)*min(Flxw,0.))
+     &                  - coef_up3*( DC(i,k  )*max(Flxw,0.)
+     &                              +DC(i,k+1)*min(Flxw,0.))
           enddo
         enddo
 !       flxw>0 :   3/6*(u(k+1) + u(k) )   1/6* ( u(k+1) - 2*u(k) - u(k-1) )
-         
+
         FC(1:nx,0)  = 0
         FC(1:nx,nz) = 0
 
@@ -753,16 +753,12 @@
       ! Centered 'modified' 4th order  (-f(k+2) +7*f(k+1) + 7*f(k) -f(k-1))/12
       ! modified when coef_c4 = 1/12, normal for coef_c4=1./16
 
-!  This file is included within a larger j-loop
-
-
       ! Import
       integer, intent(in) :: j
       real,dimension(GLOBAL_2D_ARRAY,nz) :: ru,rv
       ! local
       integer :: i,k
 
-!    NEED FIXING!
 !     u-component -------------------------------------------------------
 
       do k= 2,nz-1
@@ -771,8 +767,8 @@
         enddo
       enddo
       do i=1,nx
-        FC(i,1 ) = u(i,j,2   ,nrhs)-u(i,j,1 ,nrhs)
-        FC(i,nz) = u(i,j,nz-1,nrhs)-u(i,j,nz,nrhs)
+        FC(i,1 ) = u(i,j,2 ,nrhs)-u(i,j,1 ,nrhs)
+        FC(i,nz) = u(i,j,nz,nrhs)-u(i,j,nz-1,nrhs)
       enddo
 
       do k=1,nz-1
@@ -800,8 +796,8 @@
         enddo
       enddo
       do i=1,nx
-        FC(i,1 ) = v(i,j,2   ,nrhs)-v(i,j,1 ,nrhs)
-        FC(i,nz) = v(i,j,nz-1,nrhs)-v(i,j,nz,nrhs)
+        FC(i,1 ) = v(i,j,2 ,nrhs)-v(i,j,1 ,nrhs)
+        FC(i,nz) = v(i,j,nz,nrhs)-v(i,j,nz-1,nrhs)
       enddo
       do k=1,nz-2
         do i=1,nx
@@ -1090,80 +1086,78 @@
 
       end subroutine t_vadv_spline !]
 !----------------------------------------------------------------
-      subroutine t_vadv_up3(flx,j,itrc) ![
+      subroutine t_vadv_up3(Fz,j,itrc) ![
 !DIR$ ATTRIBUTES FORCEINLINE :: t_vadv_up3
 
       ! Vertical tracer advection fluxes using a upwind 3rd order algorithm
 
       ! Import
       integer, intent(in) :: j,itrc
-      real,dimension(1-bf:nx+bf,0:nz) :: flx ! use flx to avoid with module
-      ! local                                ! local FC var
+      real,dimension(1-bf:nx+bf,0:nz) :: Fz
+      ! local
       integer :: i,k
-      real :: cff
 
       do k=1,nz-1
         do i = 1,nx
-          CF(i,k)=(t(i,j,k+1,nrhs,itrc)-t(k,j,k,nrhs,itrc))
+          FC(i,k)=(t(i,j,k+1,nrhs,itrc)-t(i,j,k,nrhs,itrc))
         enddo
       enddo
       do i=1,nx
-        CF(i,nz)= 2*CF(i,nz-1)-CF(i,nz-2)
-        CF(i,0) = 0
+        FC(i,nz)= 2*FC(i,nz-1)-FC(i,nz-2)
+        FC(i,0) = 0
       enddo
 
       do k=1,nz
         do i=1,nx
-          DC(i,k) = CF(i,k)-CF(i,k-1)
+          DC(i,k) = FC(i,k)-FC(i,k-1)
         enddo
       enddo
 
-      ! No fluxes through top and bottom
-      flx(1:nx,0 ) = 0
-      flx(1:nx,nz) = 0
       do k= 1,nz-1
         do i=1,nx
-          flx(i,j)=0.5*(t(i,j,k,nrhs,itrc)+t(i,j,k+1,nrhs,itrc))
+          Fz(i,k)=0.5*(t(i,j,k,nrhs,itrc)+t(i,j,k+1,nrhs,itrc))
      &                                                  *We(i,j,k)
-     &           -0.1666666666666666*( DC(i,k  )*max(We(i,j,k),0.)
-     &                                +DC(i,k+1)*min(We(i,j,k),0.))
+     &                    -coef_up3*( DC(i,k  )*max(We(i,j,k),0.)
+     &                               +DC(i,k+1)*min(We(i,j,k),0.))
         enddo
       enddo
+
+      Fz(1:nx,0 ) = 0
+      Fz(1:nx,nz) = 0
 
       end subroutine t_vadv_up3 !]
 !----------------------------------------------------------------
-      subroutine t_vadv_c4(flx,j,itrc) ![
+      subroutine t_vadv_c4(Fz,j,itrc) ![
 !DIR$ ATTRIBUTES FORCEINLINE :: t_vadv_c4
 
       ! Vertical tracer advection fluxes using a centered 4th order algorithm
 
       ! Import
       integer, intent(in) :: j,itrc
-      real,dimension(1-bf:nx+bf,0:nz) :: flx ! use flx to avoid with module
-      ! local                                ! local FC var
+      real,dimension(1-bf:nx+bf,0:nz) :: Fz
+      ! local
       integer :: i,k
-      real :: cff
 
-      do k=1,nz-1
+      do k=2,nz-1
         do i = 1,nx
-          CF(i,k)=(t(i,j,k+1,nrhs,itrc)-t(k,j,k,nrhs,itrc))
+          FC(i,k)= t(i,j,k+1,nrhs,itrc)-t(i,j,k-1,nrhs,itrc)
         enddo
       enddo
       do i=1,nx
-        CF(i,nz)= 2*CF(i,nz-1)-CF(i,nz-2)
-        CF(i,0) = 0
+        FC(i,1) = t(i,j,2 ,nrhs,itrc)-t(i,j,1,nrhs,itrc)
+        FC(i,nz)= t(i,j,nz,nrhs,itrc)-t(i,j,nz-1,nrhs,itrc)
       enddo
 
       do k=1,nz-1
         do i=1,nx
-          FC(i,k)= 0.5*(We(i,j,k)+We(i-1,j,k))*(
-     &               0.5*(t(i,j,k,nrhs,itrc)+u(i,j,k+1,nrhs))
-     &              -coef_c4*(CF(i,k+1)-CF(i,k)) )
+          Fz(i,k)=  We(i,j,k)*(
+     &         0.5*(t(i,j,k,nrhs,itrc)+t(i,j,k+1,nrhs,itrc))
+     &                  -coef_c4*(FC(i,k+1)-FC(i,k)) )
         enddo
       enddo
 
-      FC(1:nx,0)  = 0
-      FC(1:nx,nz) = 0
+      Fz(1:nx,0)  = 0
+      Fz(1:nx,nz) = 0
 
       end subroutine t_vadv_c4 !]
 !----------------------------------------------------------------
