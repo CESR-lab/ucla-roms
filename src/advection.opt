@@ -1,0 +1,30 @@
+#include "cppdefs.opt"
+
+      ! various choices related to advection and coriolis
+
+#if defined UV_ADV
+      logical,parameter :: uv_adv = .true.
+# else
+      logical,parameter :: uv_adv = .false.
+# endif
+#if defined UV_COR 
+      logical,parameter :: uv_cor = .true.
+# else
+      logical,parameter :: uv_cor = .false.
+# endif
+#if defined CURVGRID && defined UV_ADV
+      logical,parameter :: curvgrid = .true.
+# else
+      logical,parameter :: curvgrid = .false.
+# endif
+#if defined ADV_ISONEUTRAL
+      logical,parameter :: adv_isoneutral = .true.
+# else
+      logical,parameter :: adv_isoneutral = .false.
+# endif
+
+      ! weno is not ready yet
+
+      integer,parameter :: adv_up3 = 1,adv_c4 = 2,adv_weno=3,adv_spline=4
+      integer,parameter :: hadv_scheme = adv_up3
+      integer,parameter :: vadv_scheme = adv_spline
