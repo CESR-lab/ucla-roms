@@ -127,10 +127,10 @@
                                              ! Advance tracer fields
         do itrc=1,nt                         ! starting with applying
                                              ! horizontal fluxes. Also
-# include "compute_horiz_tracer_fluxes.h"
-!! river included in above include file
+          call t_hadv_pre(FX,FE,k,itrc)
+          call river_tfluxes(FX,FE,k,itrc)
                                              ! INITIALIZE CORRECTOR
-          do j=1,ny                     ! STEP by pre-multiplying
+          do j=1,ny                          ! STEP by pre-multiplying
             do i=1,nx
               t(i,j,k,nnew,itrc)=Hz_bak(i,j,k)*(
      &                                    cf_stp*t(i,j,k,nstp,itrc)
@@ -150,8 +150,6 @@
 
 # undef FE                                /* ! barotropic mode. */
 # undef FX
-
-!# include "compute_horiz_rhs_uv_terms.h"
 
         call uv_cor_curv(ru,rv,k)
         call uv_hadv_pre(ru,rv,k)
@@ -182,7 +180,7 @@
 
         do itrc=1,nt
 
-          call t_vadv_spline(FC,j,itrc)
+          call t_vadv_pre(FC,j,itrc)
 
           do k=1,nz
             do i=1,nx   !! t(..) is Hz*T
