@@ -83,7 +83,7 @@
          enddo
        enddo ! j=loop
 
-      if (nhmg) then
+      if (do_nhmg) then
        ! overwrite with w var
       do k=1,nz  ! WASTED COMPUTING TO OVERWRITE SOMETHING USE IF ELSE RATHER
         do j=j0,j1

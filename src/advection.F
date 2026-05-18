@@ -41,6 +41,8 @@
       public t_hadv_cor
       public t_vadv_pre
       public t_vadv_cor
+      public uv_hadv_c4
+      public uv_vadv_c4
 
       contains
 
@@ -938,7 +940,7 @@
       do j=1,ny
         do i=1,nx+1
           Fx(i,j)=0.5*(t(i,j,k,nrhs,itrc)+t(i-1,j,k,nrhs,itrc))*FlxU(i,j,k)
-     &          -0.1666666666666666*( wrk1(i-1,j)*max(FlxU(i,j,k),0.)
+     &                    -coef_up3*( wrk1(i-1,j)*max(FlxU(i,j,k),0.)
      &                               +wrk1(i  ,j)*min(FlxU(i,j,k),0.))
         enddo
       enddo
@@ -966,7 +968,7 @@
       do j=1,ny+1
         do i=1,nx
           Fy(i,j)=0.5*(t(i,j,k,nrhs,itrc)+t(i,j-1,k,nrhs,itrc))*FlxV(i,j,k)
-     &          -0.1666666666666666*( wrk1(i,j-1)*max(FlxV(i,j,k),0.)
+     &                    -coef_up3*( wrk1(i,j-1)*max(FlxV(i,j,k),0.)
      &                               +wrk1(i,j  )*min(FlxV(i,j,k),0.))
         enddo
       enddo

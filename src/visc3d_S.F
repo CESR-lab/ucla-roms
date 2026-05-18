@@ -106,7 +106,7 @@
             v(i,j,k,indx)=v(i,j,k,indx) + dt*cff
           enddo
         enddo
-      if (nhmg) then
+      if (do_nhmg) then
 !        Do things
       endif
       if (diag_uv) then

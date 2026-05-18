@@ -25,8 +25,6 @@
       integer :: record  = nrpf ! to trigger the first file creation
       integer :: navg = 0      ! number of samples in average
 
-
-
       real,allocatable, dimension(:,:,:) :: u2_bdg,v2_bdg,w2_bdg
       real,allocatable, dimension(:,:,:) :: ek_bdg,ek_bdg_avg 
 
