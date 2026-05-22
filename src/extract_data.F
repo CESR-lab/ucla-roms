@@ -92,7 +92,7 @@
         !! Initializing record at nrpf will trigger the making of a file
         !! at the first time step
         integer                        :: record=nrpf   ! record number in file
-        real                               :: otime=0   ! time since last output
+        real                           :: otime = 0     ! time since last output
 
         real,   dimension(:,:),pointer     :: vari      ! data for output
 
@@ -287,6 +287,7 @@
         ierr = nf90_get_att(ncid,iobj,'output_period',period)
         if (ierr/=0) call handle_ierr(ierr,'read extr ')
         obj(iobj)%period   = period
+        obj(iobj)%otime    = period  ! triggers output at the first call
 
         if (obj(iobj)%np>0) then
           !! only for objects with a presences in this subdomain
@@ -506,7 +507,6 @@
 
       if (.not.allocated(obj)) then
         call init_extract_data
-        return
       endif
 
       if (obj(1)%record==nrpf) then

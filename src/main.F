@@ -212,6 +212,8 @@ CR      write(*,*)  ' -2' MYID
 
       call set_sponge
 
+      if (do_extract) call do_extract_data
+
       ! The optional argument refers to
       ! blowup if true, and initial if false.
       ! Come up with a better name!
