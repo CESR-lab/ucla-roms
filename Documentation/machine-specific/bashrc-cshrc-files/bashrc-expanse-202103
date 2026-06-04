@@ -42,6 +42,9 @@ export PATH=$PATH:$ROMS_ROOT/Tools-Roms
 # - set ROMS environment variables to match Expanse module paths:
 export NETCDFHOME=$NETCDF_FORTRANHOME
 export MPIHOME=$MVAPICH2HOME
+export FCOMP=mpifort
+export NETCDF_ROOT=$NETCDF_FORTRANHOME
+export NETCDFC_ROOT=$NETCDF_CHOME
 
 
 
