@@ -98,6 +98,7 @@
       use scoord
       use grid
       use ocean_vars
+      use extract_data
       use basic_output
       use scalars
       use analytical

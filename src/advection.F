@@ -1,6 +1,11 @@
       module advection
 
       ! Contains various advection algorithms for momentum and tracers
+      !
+      ! Pay attention!
+      ! The uv_hadv/uv_vadv routines add a flux divergence
+      ! to the incoming rhs terms (ru,rv). The t_hadv/t_vadv routines
+      ! overwrite advective fluxes. (Fx,Fy,Fz)
 
       use dimensions
       use diagnostics

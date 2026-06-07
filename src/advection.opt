@@ -23,7 +23,7 @@
       logical,parameter :: adv_isoneutral = .false.
 # endif
 
-      ! weno is not ready yet
+      ! weno is not ready yet, spline only for vertical advection
 
       integer,parameter :: adv_up3 = 1,adv_c4 = 2,adv_weno=3,adv_spline=4
       integer,parameter :: hadv_scheme = adv_up3

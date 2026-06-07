@@ -2,6 +2,7 @@
       ! Define and advect particles
 
       ! Particles live in index space: [0:nx]x[0:ny][0:nz]
+      ! Coded by Jeroen Molemaker 2023-2026
 
 #include "cppdefs.opt"
 
