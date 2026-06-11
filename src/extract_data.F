@@ -67,7 +67,7 @@
       integer :: nobj  ! number of extraction objects
 
       logical                         :: extend_up !! flag to extend up,vp
-      real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
+!     real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
 
       ! For vertical velocity
       real,dimension(:,:,:),allocatable :: Wvl   ! Vertical velocity
@@ -149,8 +149,8 @@
       allocate( Wvl(GLOBAL_2D_ARRAY,nz))
 
       if (diag_pflx) then
-        allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
-        allocate( vpe(GLOBAL_2D_ARRAY) ); vpe = 0
+!       allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
+!       allocate( vpe(GLOBAL_2D_ARRAY) ); vpe = 0
       endif
 
       do i = 1,nobj
@@ -515,10 +515,11 @@
       endif
 
       if (diag_pflx) then
-        upe(1:nx,1:ny) = up
-        vpe(1:nx,1:ny) = vp
+!       upe(1:nx,1:ny) = up
+!       vpe(1:nx,1:ny) = vp
 # ifdef EXCHANGE
-        call exchange_xxx(upe,vpe)
+!       call exchange_xxx(upe,vpe)
+        call exchange_xxx(up,vp)
 # endif
       endif
 
@@ -617,15 +618,15 @@
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%up) then
-              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
-              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
+              call interpolate(up,ui(:,1),cfu,ipu,jpu)
+              call interpolate(vp,vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
               oname = trim(obj(i)%set)//'_up'//trim(obj(i)%bnd)
               call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%vp) then
-              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
-              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
+              call interpolate(up,ui(:,1),cfu,ipu,jpu)
+              call interpolate(vp,vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
               oname = trim(obj(i)%set)//'_vp'//trim(obj(i)%bnd)
               call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
