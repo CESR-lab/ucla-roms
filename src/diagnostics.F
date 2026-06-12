@@ -262,10 +262,10 @@
         endif
         allocate(p_fast(0:nx+1,0:ny+1) )
 
-        allocate(up(0:nx+1,0:ny+1) );up=0
-        allocate(vp(0:nx+1,0:ny+1) );vp=0
-        allocate(up_avg(0:nx+1,0:ny+1) );up_avg=0
-        allocate(vp_avg(0:nx+1,0:ny+1) );vp_avg=0
+        allocate(up(GLOBAL_2D_ARRAY) );up=0
+        allocate(vp(GLOBAL_2D_ARRAY) );vp=0
+        allocate(up_avg(GLOBAL_2D_ARRAY) );up_avg=0
+        allocate(vp_avg(GLOBAL_2D_ARRAY) );vp_avg=0
 
         if (.not. allocated( u_slow )) then         ! in case already read in with get_init
           allocate(u_slow(GLOBAL_2D_ARRAY,nz) )
@@ -1313,7 +1313,7 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(0:nx+1,0:ny+1),intent(inout) :: up,vp
+      real, dimension(GLOBAL_2D_ARRAY),intent(inout) :: up,vp
 
       !local
 !     integer,   dimension(4) :: start    ! start vector for writing
