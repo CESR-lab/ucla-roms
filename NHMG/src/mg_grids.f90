@@ -513,7 +513,7 @@ contains
 
     nl1 = 1+floor( log( nhg * one / nhmin * one) / log(two) )
 
-    nl2 = 1+floor( log( nzg * one / nzmin * one) / log(two) )
+    nl2 = 2+floor( log( nzg * one / nzmin * one) / log(two) )
 
     nlevs = min(nl1,nl2) ! The number of grid levels in the MG.
 

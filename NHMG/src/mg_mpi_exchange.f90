@@ -420,6 +420,8 @@ contains
     real(kind=rp), dimension(:,:,:), pointer :: sendSW,recvSW,sendSE,recvSE
     real(kind=rp), dimension(:,:,:), pointer :: sendNW,recvNW,sendNE,recvNE
 
+    call tic(lev,'fill_halo_3D_relax')
+
     nx = grid(lev)%nx
     ny = grid(lev)%ny
     nz = size(p,dim=1)
@@ -738,6 +740,8 @@ contains
        p(:,ny+1:ny+nh,1-nh:0) = p(:,ny:ny-nh+1:-1,1-nh:0)
     endif
 
+    call toc(lev,'fill_halo_3D_relax')
+
   end subroutine fill_halo_3D_relax
 
   !----------------------------------------------------------------------------
@@ -784,6 +788,8 @@ contains
     else
        lbc=.false.
     endif
+
+    call tic(lev,'fill_halo_3D')
 
     nx = grid(lev)%nx
     ny = grid(lev)%ny
@@ -1240,6 +1246,8 @@ contains
        p(:,ny+1:ny+nh,1-nh:0) = p(:,ny:ny-nh+1:-1,1-nh:0)
     endif
 
+    call toc(lev,'fill_halo_3D')
+
   end subroutine fill_halo_3D
 
   !----------------------------------------------------------------------------
@@ -1593,9 +1601,13 @@ contains
 
     integer(kind=ip) :: ierr
 
-    ! note: the global comm using MPI_COMM_WORLD is over-kill for levels 
+    call tic(lev,'global_sum')
+
+    ! note: the global comm using MPI_COMM_WORLD is over-kill for levels
     ! where subdomains are gathered
-    call MPI_ALLREDUCE(sumloc,sumglo,1,MPI_DOUBLE_PRECISION,MPI_sum,MPI_COMM_WORLD,ierr)   
+    call MPI_ALLREDUCE(sumloc,sumglo,1,MPI_DOUBLE_PRECISION,MPI_sum,MPI_COMM_WORLD,ierr)
+
+    call toc(lev,'global_sum')
 
     ! therefore we need to rescale the global sum
     sumglo = sumglo * (grid(lev)%npx*grid(lev)%npy)/(grid(1)%npx*grid(1)%npy)

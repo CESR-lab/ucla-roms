@@ -33,6 +33,8 @@ contains
     integer(kind=ip):: ierr
     real(kind=rp),dimension(:,:,:,:),pointer :: buffer
 
+    call tic(lev,'gather_2D')
+
     ! number of cores per direction involved in this gathering (1 or 2)
     ngx = grid(lev)%ngx
     ngy = grid(lev)%ngy
@@ -81,6 +83,8 @@ contains
        enddo
     enddo
 
+    call toc(lev,'gather_2D')
+
   end subroutine gather_2D
   !----------------------------------------
   subroutine gather_3D(lev,x,y)
@@ -103,6 +107,8 @@ contains
 
     !  ngx = 1,2 the number of subdomains to be gathered in x
     !  ngy = 1,2 the number of subdomains to be gathered in y
+
+    call tic(lev,'gather_3D')
 
     ngx = grid(lev)%ngx
     ngy = grid(lev)%ngy
@@ -153,6 +159,8 @@ contains
           enddo
        enddo
     enddo
+
+    call toc(lev,'gather_3D')
 
   end subroutine gather_3D
 
