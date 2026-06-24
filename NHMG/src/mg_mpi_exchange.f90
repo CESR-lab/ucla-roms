@@ -1601,6 +1601,14 @@ contains
 
     integer(kind=ip) :: ierr
 
+    ! diagnostic: a synchronizing barrier absorbs the load-imbalance wait, so
+    ! 'barrier_wait' measures how long this rank idles for the straggler while
+    ! 'global_sum' isolates the true allreduce network cost. Remove the barrier
+    ! once the imbalance is characterized (it adds a real synchronization point).
+    call tic(lev,'barrier_wait')
+    call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    call toc(lev,'barrier_wait')
+
     call tic(lev,'global_sum')
 
     ! note: the global comm using MPI_COMM_WORLD is over-kill for levels

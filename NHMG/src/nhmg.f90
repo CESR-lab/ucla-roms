@@ -300,9 +300,10 @@ contains
 
     !   call grids_dealloc()
 
-    if (myrank==0) then
-       call print_tictoc(myrank)
-    endif
+    ! diagnostic: every rank writes its own nhmg_prof_rankNNNN.log so the
+    ! per-rank spread (load imbalance / collective-wait straggler) is visible.
+    ! Revert to (myrank==0) once the imbalance is characterized.
+    call print_tictoc(myrank)
 
   end subroutine nhmg_clean
 
