@@ -26,6 +26,7 @@
       call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
 
       nnodes = nsize
+
       ierr=0
       call read_inp(ierr)
 
@@ -107,6 +108,7 @@
       use cstar_output
       use random_output
       use cdr_frc
+      use energy_budget
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bec2_params
       use bgc_io
@@ -218,6 +220,7 @@ CR      write(*,*)  ' -2' MYID
       call wrt_bgc(.true.)
 #endif
        call init_diagnostics
+      if (do_energy_budget) call init_energy_budget
       if (do_random) call init_random
       if (do_cstar)  call init_cstar
 
@@ -247,6 +250,7 @@ CR      write(*,*)  ' -2' MYID
       use ocean_vars
       use extract_data
       use diagnostics
+      use energy_budget
       use scalars
       use obc_tune
       use particles
@@ -406,6 +410,7 @@ CR      write(*,*)  ' -2' MYID
 
       if (calc_diag) call do_diagnostics
 
+      if (do_energy_budget) call wrt_energy_budget
       if (do_random) call wrt_random
 #if defined MARBL && defined MARBL_DIAGS
       if (do_cstar)  call wrt_cstar

@@ -84,7 +84,7 @@
       v(:,:,:,2)=0.0                             ! index 2 used on rhs v(indx) in pre_step for DC.
       v(:,:,:,3)=init                            ! multiplied by zero but can't be a nan.
 
-      if (nhmg) then
+      if (do_nhmg) then
         allocate( w(GLOBAL_2D_ARRAY,0:nz,3) );  w = init
         allocate( nhdu(GLOBAL_2D_ARRAY,1:nz,2) )
         allocate( nhdv(GLOBAL_2D_ARRAY,1:nz,2) )
