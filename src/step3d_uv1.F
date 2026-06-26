@@ -137,8 +137,6 @@
 #  endif
 # endif
 
-#define IMPLICIT_BOTTOM_DRAG
-# ifdef IMPLICIT_BOTTOM_DRAG
         if (diag_uv) then
           u_prev = u(1:nx,j,:,nnew)
           v_prev = v(1:nx,j,:,nnew)
@@ -291,62 +289,6 @@
           enddo
         endif
 
-# else  /* --> not IMPLICIT_BOTTOM_DRAG */
-
-        do i=1,nx
-          DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
-
-          u(i,j,nz,nnew)=u(i,j,nz,nnew) +DC(i,0)*ru(i,j,nz)
-     &                                     +dt*sustr(i,j) !! add brk2dx
-          u(i,j,1,nnew)=u(i,j,1,nnew)+DC(i,0)*ru(i,j,1)
-
-          rufrc(i,j)=ru(i,j,1) +ru(i,j,nz) +dn_u(i,j)*dm_u(i,j)*(
-     &                                                 sustr(i,j)
-     &                 -0.5*(r_D(i-1,j)+r_D(i,j))*u(i,j,1,nstp) )!! add brk2dx
-        enddo
-        do k=2,nz-1
-          do i=1,nx
-            u(i,j,k,nnew)=u(i,j,k,nnew)+DC(i,0)*ru(i,j,k)  ! u*dz
-            rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
-          enddo
-        enddo
-        if (diag_uv.and.calc_diag) then
-          do k=1,nz
-            Udiag(:,j,k,idiss) = ru(1:nx,j,k)*dxdyi_u(:,j)*umask(i,j)
-     &          - Udiag(:,j,k,ipgr)
-     &          - Udiag(:,j,k,icori)
-     &          - Udiag(:,j,k,iadv)
-          enddo
-        endif
-
-        do i=1,nx
-          DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
-
-          v(i,j,nz,nnew)=v(i,j,nz,nnew) +DC(i,0)*rv(i,j,nz)
-     &                                     +dt*svstr(i,j)
-          v(i,j,1,nnew)=v(i,j,1,nnew) +DC(i,0)*rv(i,j,1)
-
-          rvfrc(i,j)=rv(i,j,1) +rv(i,j,nz) +dm_v(i,j)*dn_v(i,j)*(
-     &                                                 svstr(i,j) ! add brk2de
-     &                 -0.5*(r_D(i,j-1)+r_D(i,j))*v(i,j,1,nstp) )
-        enddo
-        do k=2,nz-1
-          do i=1,nx
-            v(i,j,k,nnew)=v(i,j,k,nnew)+DC(i,0)*rv(i,j,k)
-            rvfrc(i,j)=rvfrc(i,j) +rv(i,j,k)
-          enddo
-        enddo
-
-        if (diag_uv.and.calc_diag) then
-          do k=1,nz
-            Vdiag(:,j,k,idiss) = rv(1:nx,j,k)*dxdyi_v(:,j)*vmask(i,j)
-     &          - Vdiag(:,j,k,ipgr)
-     &          - Vdiag(:,j,k,icori)
-     &          - Vdiag(:,j,k,iadv)
-          enddo
-        endif
-
-# endif /* IMPLICIT_BOTTOM_DRAG */
       enddo  !<-- j
       !! velocities are in the form:  u*dz, v*dz, w*dz
 

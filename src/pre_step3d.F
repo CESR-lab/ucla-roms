@@ -410,9 +410,7 @@
         do i=1,nx
           u(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                         )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i-1,j,1))
-# ifdef IMPLCT_NO_SLIP_BTTM_BC
      &                                   +0.5*dtau*(rd(i,j)+rd(i-1,j))
-# endif
      &                                       +FC(i,1)+max(WC(i,1),0.)
      &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                               )
@@ -476,9 +474,7 @@
         do i=1,nx
           v(i,j,1,nnew)=( DC(i,1)+DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                       )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i,j-1,1))
-# ifdef IMPLCT_NO_SLIP_BTTM_BC
      &                                 +0.5*dtau*(rd(i,j)+rd(i,j-1))
-# endif
      &                                     +FC(i,1)+max(WC(i,1),0.)
      &                            -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                             )

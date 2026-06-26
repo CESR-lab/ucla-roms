@@ -53,13 +53,6 @@ c             rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
 # endif
 
 
-# if !defined IMPLICIT_BOTTOM_DRAG
-#  if !defined IMPLCT_NO_SLIP_BTTM_BC
-                                                     ! must have
-              rd(i,j)=min(rd(i,j), 0.8*Hz(i,j,1)/dt) ! restriction
-                                                     ! for stability
-#  endif
-# endif
             enddo
           enddo
         else  !<-- Zob > 0.
