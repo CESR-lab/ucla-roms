@@ -144,7 +144,15 @@
 
         do i=1,nx
           DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
+        enddo
+        do k=1,nz
+          do i=1,nx
+            DC(i,k)= u(i,j,k,nnew) +DC(i,0)*ru(i,j,k)
+            !! add ru into rufrc here as well
+          enddo
+        enddo
 
+        do i=1,nx
           FC(i,nz-1)= 2.*dt*(Akv(i,j,nz-1)+Akv(i-1,j,nz-1))
      &                      /(  Hz(i,j,nz  )+Hz(i-1,j,nz  )
      &                         +Hz(i,j,nz-1)+Hz(i-1,j,nz-1))
@@ -156,9 +164,8 @@
 
           CF(i,nz-1)=cff*( FC(i,nz-1)+max(WC(i,nz-1),0.) )
 
-          DC(i,nz)=cff*( u(i,j,nz,nnew) +DC(i,0)*ru(i,j,nz)
-     &                                     +dt*sustr(i,j)
-     &                                                  )
+!         DC(i,nz)=cff*( u(i,j,nz,nnew) +DC(i,0)*ru(i,j,nz)
+          DC(i,nz)=cff*( DC(i,nz) +dt*sustr(i,j) )
         enddo
         do k=nz-1,2,-1      !--> forward elimination
           do i=1,nx

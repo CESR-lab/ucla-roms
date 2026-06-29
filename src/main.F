@@ -323,7 +323,6 @@ CR      write(*,*)  ' -2' MYID
 
       !! nnew ==n+1/2
 
-
       !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
       !! set_HUV1 works with nnew, which here is time n+1/2
       ! It's using the Hz from time n though
