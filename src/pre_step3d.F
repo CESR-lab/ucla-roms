@@ -44,6 +44,7 @@
       use ocean_vars
       use scalars
       use roms_mpi
+      use advection
 
       implicit none
       integer ::  i,j,k
@@ -61,18 +62,7 @@
 
       real dtau, cf_stp,cf_bak,  cff, FlxDiv
       real, parameter :: AM3_crv=1./6., epsil=1.E-33
-     &                 , delta=0.1666666666666667 !! delta=0.125
-# ifdef UPSTREAM_UV
-     &                 , gamma=0.3333333333333333 !! gamma=0.25
-# endif
       integer indx, itrc
-
-! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
-! but needs to be declared here in declarations section not in
-! the compute_horiz_rhs_uv_terms.h file else wont compile.
-# ifdef WEC
-      real cff1
-# endif
 
 
 ! Preliminary step: initialize computations of the new time step
@@ -137,10 +127,10 @@
                                              ! Advance tracer fields
         do itrc=1,nt                         ! starting with applying
                                              ! horizontal fluxes. Also
-# include "compute_horiz_tracer_fluxes.h"
-!! river included in above include file
+          call t_hadv_pre(FX,FE,k,itrc)
+          call river_tfluxes(FX,FE,k,itrc)
                                              ! INITIALIZE CORRECTOR
-          do j=1,ny                     ! STEP by pre-multiplying
+          do j=1,ny                          ! STEP by pre-multiplying
             do i=1,nx
               t(i,j,k,nnew,itrc)=Hz_bak(i,j,k)*(
      &                                    cf_stp*t(i,j,k,nstp,itrc)
@@ -161,7 +151,8 @@
 # undef FE                                /* ! barotropic mode. */
 # undef FX
 
-# include "compute_horiz_rhs_uv_terms.h"
+        call uv_cor_curv(ru,rv,k)
+        call uv_hadv_pre(ru,rv,k)
 
       enddo !<-- k
 
@@ -189,7 +180,7 @@
 
         do itrc=1,nt
 
-# include "compute_vert_tracer_fluxes.h"
+          call t_vadv_pre(FC,j,itrc)
 
           do k=1,nz
             do i=1,nx   !! t(..) is Hz*T
@@ -258,7 +249,7 @@
 !                      ! and wind forcing at surface.
 !                      ! ru,rv, and rw are volume integrated and [m4/s2]
 
-# include "compute_vert_rhs_uv_terms.h"
+        call uv_vadv_pre(ru,rv,j)
 
 # ifdef WEC
 #  if defined WAVE_FRICTION && !defined BODY_FRICTION

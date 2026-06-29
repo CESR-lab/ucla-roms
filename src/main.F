@@ -98,6 +98,7 @@
       use scoord
       use grid
       use ocean_vars
+      use extract_data
       use basic_output
       use scalars
       use analytical
@@ -212,6 +213,9 @@ CR      write(*,*)  ' -2' MYID
 
       call set_sponge
 
+      call init_diagnostics
+      if (do_extract) call do_extract_data
+
       ! The optional argument refers to
       ! blowup if true, and initial if false.
       ! Come up with a better name!
@@ -219,7 +223,6 @@ CR      write(*,*)  ' -2' MYID
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
-       call init_diagnostics
       if (do_energy_budget) call init_energy_budget
       if (do_random) call init_random
       if (do_cstar)  call init_cstar
