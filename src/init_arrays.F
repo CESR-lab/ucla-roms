@@ -15,6 +15,7 @@
       use work_mod,          only: init_arrays_work_mod
       use boundary,          only: init_arrays_boundary
       use pipe_frc,          only: init_arrays_pipes
+      use advection,         only: init_advection
 #ifdef BULK_FRC
       use bulk_frc,          only: init_arrays_bulk_frc
 #else
@@ -37,6 +38,8 @@
       call init_arrays_private_scratch
 
       call init_arrays_ocean
+
+      call init_advection
 
       call init_avg_arrays
 

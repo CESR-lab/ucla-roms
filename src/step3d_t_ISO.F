@@ -65,6 +65,7 @@ c--# define CONST_TRACERS
       use ocean_vars
       use scalars
       use roms_mpi
+      use advection
 
       implicit none
       integer :: i,j,k
@@ -129,7 +130,8 @@ c--#  define ntdf nrhs
 ! concentration of tracer "itrc" taken at time corresponding to "nstp"
 ! and already MULTIPLIED by Hz(:,:,:) at "nstp" in "pre_step3d_tile".
 
-# include "compute_horiz_tracer_fluxes.h"
+        call t_hadv_cor(FX,FE,k,itrc)
+        call river_tfluxes(FX,FE,k,itrc)
 
 # ifndef ADV_ISONEUTRAL
           if (diag_trc.and.wrt_t_dia(itrc) ) then
@@ -793,7 +795,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
         do j=1,ny
 
-# include "compute_vert_tracer_fluxes.h"
+          call t_vadv_cor(FC,j,itrc)
 
           if (diag_trc.and.wrt_t_dia(itrc) ) then
             do k=1,nz

@@ -39,7 +39,7 @@
       real, parameter :: epsil=1.E-33
       !  Alphamax = 4 leads to mixing that is worse than
       ! up3 over steep slopes
-#  define  ALPHA_MAX 2.  
+#  define  ALPHA_MAX 2.
 #  define GAMMA 0.0833333333333
 # endif
 
@@ -181,9 +181,9 @@
 
 !     if (diag_uv .and. calc_diag) then
 !       Udiag(1:nx,j,:,ivmix) = ( u(1:nx,j,:,nnew)*
-!    &    0.5*( Hz(0:nx-1,j,:)+Hz(1:nx,j,:) )-u_prev ) / dt  
+!    &    0.5*( Hz(0:nx-1,j,:)+Hz(1:nx,j,:) )-u_prev ) / dt
 !       Vdiag(1:nx,j,:,ivmix) = ( v(1:nx,j,:,nnew)*
-!    &    0.5*( Hz(1:nx,j-1,:)+Hz(1:nx,j,:) )-v_prev ) / dt  
+!    &    0.5*( Hz(1:nx,j-1,:)+Hz(1:nx,j,:) )-v_prev ) / dt
 
 !       Udiag(1:nx,j,nz,ivmix) = Udiag(1:nx,j,nz,ivmix)+sustr(1:nx,j)
 !       Vdiag(1:nx,j,nz,ivmix) = Vdiag(1:nx,j,nz,ivmix)+svstr(1:nx,j)
@@ -229,13 +229,13 @@
       ! We only add the boundary changes to the diagnostics and our budget still closes,
       ! as the interior correction is only in the order of e-17.
       do j=j0,j1                    !--> XI-component
-        do i=1,i1     
+        do i=1,i1
           DC(i,nz)=0.5*(Hz(i,j,nz)+Hz(i-1,j,nz))*dn_u(i,j)
           DC(i,0)=DC(i,nz)
           FC(i,0)=DC(i,nz)*u(i,j,nz,nnew)
         enddo
         do k=nz-1,1,-1
-          do i=1,i1     
+          do i=1,i1
             DC(i,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)
             DC(i,0)=DC(i,0)+DC(i,k)
             FC(i,0)=FC(i,0)+DC(i,k)*u(i,j,k,nnew)
@@ -246,13 +246,13 @@
           DC(i,0)=1./DC(i,0)  !!1/H
           ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)  !! avg1 is at n+1?
 # ifdef WEC
-     &                   -ust2d(i,j) 
+     &                   -ust2d(i,j)
 ! JM mask thing we do understand. Fix by properly masking in wec_frc
 #   ifdef MASKING
            ubar(i,j,knew)=ubar(i,j,knew)*umask(i,j)
      &                +ust2d(i,j)*(umask(i,j)-1.0)
-#   endif 
-# endif 
+#   endif
+# endif
 
           FC(i,0)=DC(i,0)*(FC(i,0)-DU_avg1(i,j)) !! FC(0) is now correction velocity
 # ifdef WEC
@@ -267,7 +267,7 @@
             u(i,j,k,nnew)=(u(i,j,k,nnew)-FC(i,0))
 # ifdef MASKING
      &                                  *umask(i,j)
-#  ifdef WEC 
+#  ifdef WEC
             ! again, weird mask - 1.0 thing --> waiting to hear back
             ! from Yusuke
             u(i,j,k,nnew)=u(i,j,k,nnew)*umask(i,j)
@@ -284,7 +284,7 @@ c--# define TR
      &                                            +ust(i,j,k) )
 #  else
             CF(i,k)=0.5*DC(i,k)*(u(i,j,k,nstp)+u(i,j,k,nnew))
-#  endif 
+#  endif
 # else
 c--#define EPSIL 0.125
 c--#define DELTA 0.75
@@ -297,8 +297,8 @@ c>># define DELTA 0.5790
 
             CF(i,k)=DELTA*FlxU(i,j,k) + EPSIL*DC(i,k)
      &                         *(u(i,j,k,nstp)+u(i,j,k,nnew)
-#  ifdef WEC 
-     &                                  + 2. * ust(i,j,k)       
+#  ifdef WEC
+     &                                  + 2. * ust(i,j,k)
 #  endif
      &                                                        )
 # endif
@@ -316,7 +316,7 @@ c>># define DELTA 0.5790
 ! JM Good question, fix in wec_frc and investigate
 #if defined WEC && defined MASKING
             FlxU(i,j,k)=FlxU(i,j,k)*umask(i,j)
-#endif 
+#endif
 
 # ifdef ADV_ISONEUTRAL
             diff3u(i,j,k)=sqrt(GAMMA*abs(u(i,j,k,nnew))*dm_u(i,j))
@@ -343,7 +343,7 @@ c>># define DELTA 0.5790
             vbar(i,j,knew)=DC(i,0)*DV_avg1(i,j)
 !Daniel add, again weird mask -1
 # ifdef WEC
-     &                             -vst2d(i,j) 
+     &                             -vst2d(i,j)
 #  ifdef MASKING
             vbar(i,j,knew)=vbar(i,j,knew)*vmask(i,j)
      &                  +vst2d(i,j)*(vmask(i,j)-1.0)
@@ -354,7 +354,7 @@ c>># define DELTA 0.5790
             FC(i,0)=DC(i,0)*(FC(i,0)-DV_avg1(i,j))
 # ifdef WEC
      &                             +vst2d(i,j)
-# endif 
+# endif
 !>
             CF(i,0)=0.
           enddo        !--> keep DC(:,0) for later
@@ -381,7 +381,7 @@ c>># define DELTA 0.5790
               CF(i,k)=DELTA*FlxV(i,j,k) + EPSIL*DC(i,k)
      &                           *(v(i,j,k,nstp)+v(i,j,k,nnew)
 #  ifdef WEC
-     &                                  +2.*vst(i,j,k) 
+     &                                  +2.*vst(i,j,k)
 #  endif
      &                                                        )
 # endif
@@ -448,13 +448,13 @@ c*   &                                                               )
 # endif
 # ifdef LMD_BKPP
                 cfb=min(1., (z_w(i,j,k)-z_w(i,j,0))/max( 50.,
-     &                                    hbbl(i,j) )) 
+     &                                    hbbl(i,j) ))
 # else
                 cfb=min(1., (z_w(i,j,k)-z_w(i,j,0))/50.)
 # endif
 
                 cff=ALPHA_MAX*cfs*(2.-cfs) * cfb*(2.-cfb)
- 
+
 
 c               idRz(i,j,k)=1./dRz
 
@@ -520,7 +520,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         do k=1,nz
           do i=1,nx
             DC(i,0)=pm(i,j)*pn(i,j)
-            ! at this time, Huon and Hvom CANNOT used : they are 
+            ! at this time, Huon and Hvom CANNOT used : they are
             ! defined at n+1/2 instead of n+1
             w(i,j,k,nnew)=w(i,j,k-1,nnew)
      &      - DC(i,0)*(
@@ -543,7 +543,7 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !     if (diag_w) call set_diags_w_at_bc( 1, nx, 1, ny )
 
 !--------------------------------------------------------------------
-! Exchange periodic boundaries and computational margins. 
+! Exchange periodic boundaries and computational margins.
 !--------------------------------------------------------------------
 #  ifdef EXCHANGE
       call exchange_xxx(w(:,:,:,nnew))

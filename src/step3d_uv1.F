@@ -1,5 +1,4 @@
 #include "cppdefs.opt"
-# define UPSTREAM_UV
 
       subroutine step3d_uv1
       use param
@@ -44,6 +43,7 @@
       use ocean_vars
       use scalars
       use roms_mpi
+      use advection
 
       implicit none
       integer  i,j,k
@@ -52,24 +52,12 @@
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY) :: UFx,UFe,VFx,VFe,
      &                                                   wrk1,wrk2
       real cff
-      real, parameter ::  delta=0.1666666666666667 ! delta=0.125
-# ifdef UPSTREAM_UV
-     &                  , gamma=0.3333333333333333 ! gamma=0.25
-# endif
 # ifdef NHMG
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:nz) :: rw
       real  Flxw,Uflxw,Vflxw
       real  ub,ut
       real  div,dmax
-!     integer :: ierr !,imx,jmx,kmx
 #endif
-
-! Taken from rhs3d35S.F for WEC, used in compute_horiz_rhs_uv_terms.h
-! but needs to be declared here in declarations section not in
-! the compute_horiz_rhs_uv_terms.h file else wont compile.
-# ifdef WEC
-      real cff1
-# endif
 
       if (diag_w) then
 !       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)
@@ -105,7 +93,8 @@
 # endif  /* NHMG */
 
       do k=1,nz
-# include "compute_horiz_rhs_uv_terms.h"
+        call uv_cor_curv(ru,rv,k)
+        call uv_hadv_cor(ru,rv,k)
       enddo
 
 # ifdef WEC
@@ -119,23 +108,7 @@
 
       do j=1,ny
 
-# include "compute_vert_rhs_uv_terms.h"
-
-! Apply wave bottom streaming stress as a body force in the bottom-most
-! grid cells only (if !defined BODY_FRICTION)
-!! JM move this bit to inside compute_wec_rhs_uv_terms...
-# ifdef WECXXX
-#  if defined WAVE_FRICTION && !defined BODY_FRICTION
-        !! JM add this somehow like a bustr in a manner like below
-        !! or move into compute_wec_rhs_uv.
-        do i=1,nx
-          ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
-        enddo
-        do i=1,nx
-          rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
-        enddo
-#  endif
-# endif
+        call uv_vadv_cor(ru,rv,j)
 
         if (diag_uv) then
           u_prev = u(1:nx,j,:,nnew)
