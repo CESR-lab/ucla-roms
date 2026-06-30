@@ -87,10 +87,60 @@
           enddo
         enddo
 
-      enddo
 
-      if (diag_w) call set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )
-# endif  /* NHMG */
+        do i=1,nx
+          DC(i,0) =dt*pm(i,j)*pn(i,j)
+          FC(i,nz-1)= 0.5*dt*(Akv(i,j,nz)+Akv(i,j,nz-1))
+     &                      /Hz(i,j,nz)
+
+          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz)+Wi(i,j,nz-1))
+
+          cff=1./( 0.5*(Hz(i,j,nz)                )
+     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
+
+          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
+
+          DC(i,nz)=cff*w(i,j,nz,nnew)
+        enddo
+
+        do k=nz-1,2,-1      !--> forward elimination for w
+          do i=1,nx
+            FC(i,k-1)= 0.5*dt*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
+     &                   /Hz(i,j,k)
+
+            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
+
+            cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j,k-1))
+     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
+     &                            +FC(i,k  )+max(WC(i,k),0.)
+     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
+     &                                                       )
+            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
+
+            DC(i,k)=cff*( w(i,j,k,nnew)
+     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+          enddo
+        enddo
+        !! change this you feel energetic. Instead of no-flux at the bottom we
+        !! have w(0) = 0 (different BC for tri-diag system)
+        do i=1,nx
+          w(i,j,1,nnew)=( w(i,j,1,nnew)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
+     &                         )/( 0.5*(Hz(i,j,2)+Hz(i,j,1))
+     &                                       +FC(i,1)+max(WC(i,1),0.)
+     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
+     &                                                               )
+        enddo
+        do k=2,nz,+1          !--> backsubstitution for w
+          do i=1,nx
+            w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
+          enddo
+        enddo
+        !------- end computing of w(:,:,:,nnew) -----
+
+      enddo  ! j-loop
+!     if (diag_w) call set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )
+# endif /* NHMG */
+
 
       do k=1,nz
         call uv_cor_curv(ru,rv,k)
@@ -251,7 +301,7 @@
           do i=1,nx
             DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1)
 
-            v(i,j,k,nnew)=DC(i,k) * 0.5*(Hz(i,j,k)+Hz(i,j-1,k))
+            v(i,j,k,nnew)=DC(i,k)* 0.5*(Hz(i,j,k)+Hz(i,j-1,k))
             rvfrc(i,j)=rvfrc(i,j) + rv(i,j,k)
           enddo
         enddo
@@ -272,45 +322,31 @@
       enddo  !<-- j
       !! velocities are in the form:  u*dz, v*dz, w*dz
 
+      !! Translate to u,v so we can do boundary conditions
+      do k=1,nz
+        do j=1,ny
+          do i=1,nx
+            u(i,j,k,nnew)=u(i,j,k,nnew)/(0.5*(Hz(i,j,k)+Hz(i-1,j,k)))
+            v(i,j,k,nnew)=v(i,j,k,nnew)/(0.5*(Hz(i,j,k)+Hz(i,j-1,k)))
+          enddo
+        enddo
+      enddo
+
+      call u3dbc(wrk1)
+      call v3dbc(wrk1)
+
+      do k=1,nz
+        do j=1,ny+1
+          do i=1,nx+1
+            u(i,j,k,nnew)=u(i,j,k,nnew)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
+            v(i,j,k,nnew)=v(i,j,k,nnew)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
+          enddo
+        enddo
+      enddo
+
 # if defined NHMG
 
-      if (west_bnd) then
-        do k=1,nz
-          do j=1,ny
-            u(1,j,k,nnew) = u(1,j,k,nnew)*
-     &         0.5*(Hz(0,j,k)+Hz(1,j,k))
-          enddo
-        enddo
-      endif
-      if (east_bnd) then
-        do k=1,nz
-          do j=1,ny
-            u(nx+1,j,k,nnew) = u(nx+1,j,k,nnew)*
-     &         0.5*(Hz(nx+1,j,k)+Hz(nx,j,k))
-          enddo
-        enddo
-      endif
-      if (south_bnd) then
-        do k=1,nz
-          do i=1,nx
-            v(i,1,k,nnew) = v(i,1,k,nnew)*
-     &         0.5*(Hz(i,0,k)+Hz(i,1,k))
-          enddo
-        enddo
-      endif
-      if (north_bnd) then
-        do k=1,nz
-          do i=1,nx
-            v(i,ny+1,k,nnew) = v(i,ny+1,k,nnew)*
-     &         0.5*(Hz(i,ny+1,k)+Hz(i,ny,k))
-          enddo
-        enddo
-      endif
-
-
-      ! Translate to fluxes, different than in pre_step, we have dz*u
-      ! instead of u
-
+      ! Translate to fluxes
       do k=1,nz
         do j=1,ny
           do i=1,nx+1
@@ -425,6 +461,8 @@
           enddo
         endif
       enddo
+
+      ! u,v, and w contain again dz*u,dz*v, and dz*w
 
       iprec1 = 1+mod(iprec1,2)
       iprec2 = 1+mod(iprec2,2)
