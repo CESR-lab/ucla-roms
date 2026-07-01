@@ -174,7 +174,7 @@
 #   ifdef MASKING
      &                                            *rmask(i,j)
 #   endif
-#  if defined  LMD_KPP
+#  if defined LMD_KPP || defined LMD_BKPP || defined LMD_RIMIX
           enddo
         enddo
 
@@ -195,7 +195,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 #  endif
           enddo
         enddo
-#  ifdef LMD_KPP
+#  if defined LMD_KPP || defined LMD_BKPP || defined LMD_RIMIX
         do i=1-bf,nx+bf
           bvf(i,j,nz)=bvf(i,j,nz-1)
           bvf(i,j,0 )=bvf(i,j,   1)
@@ -228,7 +228,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
 #  endif
           enddo
         enddo
-#  if defined LMD_KPP 
+#  if defined LMD_KPP || defined LMD_BKPP || defined LMD_RIMIX
         cff=g/rho0
         do k=1,nz-1
           do i=1-bf,nx+bf

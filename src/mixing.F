@@ -65,7 +65,7 @@
 
       allocate( Akv(GLOBAL_2D_ARRAY,0:nz) ); Akv=init
       allocate( Akt(GLOBAL_2D_ARRAY,0:nz) ); Akt=init
-# if defined LMD_KPP || defined LMD_BKPP
+# if defined LMD_KPP || defined LMD_BKPP || defined LMD_RIMIX
       allocate( bvf(GLOBAL_2D_ARRAY,0:nz) ); bvf=0
 # endif
 
