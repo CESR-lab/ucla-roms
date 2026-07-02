@@ -77,10 +77,12 @@
 ! swr_frac  fraction of solar short-wave radiation penetrating
 !                                depth z_w [non-dimensional]
 
+      allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) ); swr_frac=init  ! solar
+                                    ! penetration - needed whenever a 3D
+                                    ! temperature equation is solved, not
+                                    ! only under LMD_KPP.
 # ifdef LMD_KPP
       allocate( hbls(GLOBAL_2D_ARRAY) ); hbls=0.
-
-      allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) ); swr_frac=init
 #  ifdef LMD_NONLOCAL
       allocate( ghat(GLOBAL_2D_ARRAY,0:N) ); ghat=0.
 #  endif

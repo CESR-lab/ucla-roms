@@ -846,17 +846,17 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 !           t(i,j,1,nnew,itrc)=t(i,j,1,nnew,itrc)+dt*btflx(i,j,itrc)
           enddo
 
-# ifdef LMD_KPP
-! Add the solar radiation flux in temperature equation. Also compute
-! the nonlocal transport flux for unstable (convective) forcing
-! conditions into matrix DC when using the Large et al. 1994 KPP
-! scheme.
+! Add the penetrating solar radiation flux to the temperature equation.
+! This is done whenever a 3D temperature equation is solved (it is not
+! tied to LMD_KPP).  The nonlocal transport terms below are KPP-specific
+! and remain gated on LMD_NONLOCAL.
 
           if (itrc == itemp) then
             do k=nz-1,1,-1
               do i=1,nx
                 cff=srflx(i,j)*swr_frac(i,j,k)
-#  ifdef LMD_NONLOCAL
+
+#  if defined LMD_KPP && defined LMD_NONLOCAL
      &                 -ghat(i,j,k)*(stflx(i,j,itemp)-srflx(i,j))
 #  endif
                 t(i,j,k+1,nnew,itemp)=t(i,j,k+1,nnew,itemp) -dt*cff
@@ -889,8 +889,6 @@ c??         enddo
             enddo
 #  endif
           endif
-
-# endif
 
 ! Perform an implicit time step for vertical diffusion
 !
