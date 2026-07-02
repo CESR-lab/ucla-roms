@@ -9,6 +9,7 @@ module bgc_shared_vars
   use error_handling_mod, only: error_log
   use param, only: mynode, nt_passive, nt_bgc, lm, mm, nz
   use roms_read_write, only: ncforce
+  use bgc_forces, only: xco2air_default   ! declared in bgc_forces; read here via BGC_SETTINGS
   use tracers, only: itands, t_vname, wrt_t, t_lname, t
 #if defined(BIOLOGY_BEC2)
   use tracers, only: ialk, idic, ife, io2, ipo4, isio3, idoc,&
@@ -136,7 +137,8 @@ module bgc_shared_vars
   &output_period_bgc_avg, nrpf_bgc_avg,&
   &output_period_bgc_his_dia, nrpf_bgc_his_dia,&
   &output_period_bgc_avg_dia, nrpf_bgc_avg_dia,&
-  &nbgc_flx
+  &nbgc_flx,&
+  &xco2air_default
 #if defined(BEC2_DIAG) || defined(MARBL_DIAGS)
 !
 ! Diagnostic variables appearing in average and history files:

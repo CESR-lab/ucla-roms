@@ -267,6 +267,8 @@ nrpf_bgc_his_dia = 10           ! Number of time records per BGC diagnostics fil
 wrt_bgc_dia_avg = .false.   ! Write averaged BGC diagnostics to output
 output_period_bgc_avg_dia = 100 ! Frequency/period of averaged diagnostic output
 nrpf_bgc_avg_dia = 10           ! Number of time records per BGC diagnostics file
+!
+xco2air_default = 284.7         ! Atmospheric xCO2 (ppm) when PCO2AIR_FORCING is off
 /
 
 &MARBL_BIOGEOCHEMISTRY_SETTINGS                                  !marbl_driver.F

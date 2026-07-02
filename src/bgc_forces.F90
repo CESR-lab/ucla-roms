@@ -25,9 +25,11 @@ module bgc_forces
   integer(kind=4) :: xco2air_ncycle,  xco2air_rec, itxco2air, ntxco2air,&
   &xco2air_file_id, xco2air_id,  xco2air_tid
 # endif
-# else
-  real(kind=8),parameter :: xco2air_default = 284.7   ! pre-industrial [micromol/mol]
 #endif /* PCO2AIR_FORCING */
+
+! Atmospheric xCO2 [ppm] applied when PCO2AIR_FORCING is off (not read from a forcing
+! file). Set via the BGC_SETTINGS namelist; read in bgc_shared_vars::read_nml_bgc.
+  real(kind=8) :: xco2air_default = 284.7   ! pre-industrial [micromol/mol]
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
 ! daily avg swrad

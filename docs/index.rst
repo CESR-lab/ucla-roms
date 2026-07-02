@@ -24,13 +24,12 @@ Key technical information:
    Installing ROMS <installation/index>
 
 .. toctree::
-
    :maxdepth: 1
    :caption: Customizing ROMS simulations
 
    ROMS settings <model_settings/index>
 
-
+.. toctree::
    :maxdepth: 1
    :caption: Tutorials
 
@@ -41,3 +40,9 @@ Key technical information:
    :caption: References
 
    References <references>
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Release notes
+
+   Release notes <releases>
