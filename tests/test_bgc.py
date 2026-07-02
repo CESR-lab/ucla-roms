@@ -54,7 +54,7 @@ def test_bgc_real_marbl(tmp_path, input_dir, reference_results):
     cpp_keys = (
         UNIVERSAL_CPP_KEYS + OCEAN_PHYSICS_CPP_KEYS
         + REALISTIC_CPP_KEYS + BGC_REALISTIC_CPP_KEYS
-        + MARBL_CPP_KEYS + ["TIDES"]
+        + MARBL_CPP_KEYS + ["TIDES"] + ["SFLX_CORR", "CFLX_CORR"]
     )
     build_dir = tmp_path / "build"
     conf = ROMSConfiguration(cpp_keys=cpp_keys, location=build_dir)
@@ -72,11 +72,15 @@ def test_bgc_real_marbl(tmp_path, input_dir, reference_results):
     nml["TIME_STEPPING"].update({"dt": 20, "ntimes": 10})
     nml["TIDAL_FRC_SETTINGS"].update({"pot_tides": True, "ntides": 2})
     nml["PARAM_SETTINGS"]["nt_bgc"] = 32
+    nml["SSS_CORRECTION"].update({"dSSSdt": 7.777})
+    nml["DIC_ALK_CORRECTION"].update({"dCdt": 7.777})
     nml["FORCING_FILES"] = {
         "frcfiles": [
             str(input_dir / "example_input_boundary_forcing.nc"),
             str(input_dir / "example_input_surface_forcing.nc"),
             str(input_dir / "example_input_bgc_surface_forcing.nc"),
+            str(input_dir / "example_input_restoring_sss.nc"),
+            str(input_dir / "example_input_restoring_dic_alk.nc"),
             str(input_dir / "example_input_co2_surface_forcing.nc"),
             str(input_dir / "example_input_river_forcing.nc"),
             str(input_dir / "example_input_bgc_boundary_forcing.nc"),

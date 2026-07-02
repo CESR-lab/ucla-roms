@@ -15,6 +15,8 @@ def create_roms_tools_inputs(target_dir: Path):
     create_rti_bgc_3d(target_dir)
     create_rti_phys_3d(target_dir)
     create_rti_bgc_surf(target_dir)
+    create_rti_restore_surf_sss(target_dir)
+    create_rti_restore_surf_dic_alk(target_dir)
     create_rti_phys_surf(target_dir)
     create_rti_tides(target_dir)
 
@@ -256,6 +258,54 @@ def create_rti_phys_surf(target_dir: Path):
                                    [[287.048, np.nan], [287.251, 287.491]]], dtype=np.float32)
 
     ds.to_netcdf(target_dir / "fake_phys_surf_data.nc")
+
+
+def create_rti_restore_surf_sss(target_dir: Path):
+    time = pd.date_range("2010-01-01", periods=12, freq="MS")
+    lat  = np.array([34.75, 34.0], dtype=np.float64)
+    lon = np.array([239.0, 240.25], dtype=np.float64)
+    depth = np.array([0, 5], dtype=np.uint16)
+
+    coords = {"time": time, "depth": depth, "lat": lat, "lon": lon}
+
+    dims   = ("time", "depth", "lat", "lon")
+    shape  = (12, 2, 2, 2)
+
+    data_vars = {}
+    for v in ["s_an"]:
+        data_vars[v] = xr.DataArray(np.full(shape, np.nan, dtype=np.float32), dims=dims)
+
+    ds = xr.Dataset(data_vars, coords=coords)
+    ds["s_an"].values = np.tile(
+        np.array([[[34.26629, 34.25049], [34.24159, 34.23449]],
+                  [[34.21961, 34.21701], [34.21481, 34.21321]]]),
+        (12, 1, 1, 1)
+    )
+
+    ds.to_netcdf(target_dir / "fake_restore_sss_surf_data.nc")
+
+
+def create_rti_restore_surf_dic_alk(target_dir: Path):
+    time = pd.date_range("2010-01-01", periods=2, freq="MS")
+    lat  = np.array([34.75, 34.0], dtype=np.float64)
+    lon = np.array([239.0, 240.25], dtype=np.float64)
+
+    coords = {"time": time, "lat": lat, "lon": lon}
+
+    dims   = ("time", "lat", "lon")
+    shape  = (2, 2, 2)
+
+    data_vars = {}
+    for v in ["dic", "talk"]:
+        data_vars[v] = xr.DataArray(np.full(shape, np.nan, dtype=np.float32), dims=dims)
+
+    ds = xr.Dataset(data_vars, coords=coords)
+    ds["dic"].values   = np.array([[[2128.926, 2126.35], [2126.53, 2130.384]],
+                                   [[2123.166, 2122.308], [2123.678, 2128.579]]], dtype=np.float32)
+    ds["talk"].values   = np.array([[[2307.035, 2310.081], [2310.379, 2307.275]],
+                                   [[2299.036, 2299.596], [2296.624, 2294.987]]], dtype=np.float32)
+
+    ds.to_netcdf(target_dir / "fake_restore_dic_alk_surf_data.nc")
 
 
 def create_rti_tides(target_dir: Path):
