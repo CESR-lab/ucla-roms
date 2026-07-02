@@ -72,8 +72,8 @@ def test_bgc_real_marbl(tmp_path, input_dir, reference_results):
     nml["TIME_STEPPING"].update({"dt": 20, "ntimes": 10})
     nml["TIDAL_FRC_SETTINGS"].update({"pot_tides": True, "ntides": 2})
     nml["PARAM_SETTINGS"]["nt_bgc"] = 32
-    nml["SSS_CORRECTION"].update({"dSSSdt": 7.777})
-    nml["DIC_ALK_CORRECTION"].update({"dCdt": 7.777})
+    nml["SSS_CORRECTION"] = {"dSSSdt": 7.777}
+    nml["DIC_ALK_CORRECTION"] = {"dCdt": 7.777}
     nml["FORCING_FILES"] = {
         "frcfiles": [
             str(input_dir / "example_input_boundary_forcing.nc"),
