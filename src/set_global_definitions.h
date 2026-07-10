@@ -58,18 +58,14 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 
 c--#define KEEP_CORIOLIS
 
-/* Activation of the first switch of the following two makes computing
- vertical viscous terms as well as implicit part of vertical advection
- take place before the barotropic mode (i.e., moves tri-diagonal solver
- from step3d_uv2 to step3d_uv1) which makes it possible to compute the
- bottom drag term within the tri-diagonal solver, and yet have it
- explicitly available as forcing to the barotropic mode.  The second
- switch makes implicit no-slip b.c. at bottom be an integral part of
- the tri-diagonal solver as opposite to computing it explicitly from
- whatever latest velocity values available. */
-
-c-# define IMPLICIT_BOTTOM_DRAG
-# define IMPLCT_NO_SLIP_BTTM_BC
+/* Bottom drag is now treated implicitly as the unconditional default:
+ the vertical viscous terms and the implicit part of vertical advection
+ are computed before the barotropic mode (tri-diagonal solver in
+ step3d_uv1), so the bottom drag term is computed within the tri-diagonal
+ solver and is explicitly available as forcing to the barotropic mode;
+ the predictor (pre_step3d) applies the same implicit bottom-drag term.
+ This was formerly gated by the IMPLICIT_BOTTOM_DRAG / IMPLCT_NO_SLIP_BTTM_BC
+ cpp switches, now retired and hardcoded. */
 
 
 /* Take into account nonuniformity of density field in computation of

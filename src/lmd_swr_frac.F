@@ -27,7 +27,7 @@
       real,dimension(:),allocatable :: swdk1,swdk2
       real mu1(5),mu2(5), r1(5), attn1, attn2, xi1,xi2
 
-#if defined LMD_KPP
+#if defined SOLVE3D
 
       mu1(1)=0.35    ! reciprocal of the absorption coefficient
       mu1(2)=0.6     ! for each of the two solar wavelength bands

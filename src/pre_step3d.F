@@ -351,12 +351,12 @@
         enddo
         do k=1,nz
           do i=1,nx
-            !! DC is dz*u
+            !! DC is dz*u + dt*ru/(dx*dy)
             DC(i,k)=0.5*(Hz_bak(i,j,k)+Hz_bak(i-1,j,k))*(
      &                  cf_stp*u(i,j,k,nstp)+cf_bak*u(i,j,k,indx) )
      &                                           +DC(i,0)*ru(i,j,k)
 
-            !! also dz*u
+            !! dz*u^n. After index rotation this will be u(nnew)
             u(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nstp)
           enddo
         enddo
@@ -373,12 +373,7 @@
 
           CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
 
-          DC(i,nz)=cff*( DC(i,nz)
-     &                                  +dtau*sustr(i,j)
-#    if defined WEC && defined SURFACE_BREAK
-     &                            + dtau*brk2dx(i,j)
-#    endif
-     &                                                 )
+          DC(i,nz)=cff*( DC(i,nz)  +dtau*sustr(i,j) )
         enddo
         do k=nz-1,2,-1      !--> forward elimination
           do i=1,nx
@@ -401,9 +396,7 @@
         do i=1,nx
           u(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                         )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i-1,j,1))
-# ifdef IMPLCT_NO_SLIP_BTTM_BC
      &                                   +0.5*dtau*(rd(i,j)+rd(i-1,j))
-# endif
      &                                       +FC(i,1)+max(WC(i,1),0.)
      &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                               )
@@ -467,9 +460,7 @@
         do i=1,nx
           v(i,j,1,nnew)=( DC(i,1)+DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
      &                       )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i,j-1,1))
-# ifdef IMPLCT_NO_SLIP_BTTM_BC
      &                                 +0.5*dtau*(rd(i,j)+rd(i,j-1))
-# endif
      &                                     +FC(i,1)+max(WC(i,1),0.)
      &                            -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                             )

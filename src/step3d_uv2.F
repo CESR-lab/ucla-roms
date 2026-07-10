@@ -44,161 +44,11 @@
 # endif
 
 
-# define IMPLICIT_BOTTOM_DRAG
 
       do j=1,ny
 
-#  ifndef IMPLICIT_BOTTOM_DRAG
-        if (diag_uv) then
-          u_prev = u(1:nx,j,:,nnew)
-          v_prev = v(1:nx,j,:,nnew)
-        endif
-#  endif
 
 
-# ifndef IMPLICIT_BOTTOM_DRAG
-
-! Apply implicit time step for vertical viscosity term to horizontal
-! velocity components,
-!
-!   du(k)     1     [         u(k+1)-u(k)             u(k)-u(k-1) ]
-!  ------ = ----- * [ Akv(k)* ----------- - Akv(k-1)* ----------- ]
-!    dt     Hz(k)   [           dz(k)                   dz(k-1)   ]
-!
-! where u(k) represents u,v(:,:,:,nnew) velocity components; Hz(k) and
-! dz(k) are grid spacing between vertical W and RHO-points respectively
-! interpolated to horizontal U,V locations. Backward Euler implicit
-! time step requires solution of a tri-diagonal system,
-!
-!     -FC(k-1)*u_new(k-1) +[Hz(k)+FC(k-1)+FC(k)]*u_new(k)
-!                       -FC(k)*u_new(k+1) = Hz(k)*u_old(k)
-!
-!                dt*Akv(k)
-! where FC(k) = ----------- is normalized vertical viscosity defined
-!                  dz(k)
-!
-! at W-points; u_new(k) is the new-time-step (unknown) velocity;
-! u_old(k) is old-time-step tracer (known).  As long as vertical
-! viscosity Ak(k) is nonnegative, the tri-diagonal matrix is
-! diagonally dominant which guarantees stability of Gaussian
-! elimination procedure, (e.g., Richtmeyer annd  Morton,  1967).
-! Since top (wind) and bottom (drag) boundary stresses are applied
-! explicitly, for the purpose of solving the tri-diagonal system
-! boundary conditions are effectively no-stress Akv(nz)=Akt(0)=0, so
-! that the corresponding FC(nz)=FC(1)=0. This leads to equations for
-! top and bottom grid boxes,
-!
-!   -FC(nz-1)*u_new(nz-1) +[Hz(nz)+FC(nz-1)]*u_new(nz) = Hz(nz)*u_old(nz)
-!
-!          [Hz(1)+FC(1)]*u_new(1) -FC(1)*u_new(2) = Hz(1)*u_old(1)
-!
-! Basically FC(nz)=FC(1)=0 conditions should be interpreted as the
-! implicit step merely redistributes the horizontal momentum
-! components u,v throughout the vertical column, while conserving
-! its vertical integral. At this moment the content of arrays
-! u,v(:,:,:,nnew) has meaning of Hz*velocity. After the implicit
-! step they becomes just velocity, which is temporarily loaded into
-! array DC(:,1:nz)
-!>
-! Also perform coupling between the barotropic and baroclinic modes.
-! For the purpose of the computational efficiency (cache utilization)
-! the implicit time step and coupling are partially overlapped. To
-! distinguish the two operations in the code below we place separator
-! (!>): lines above the separator (!>) belong to the tri-diagonal
-! solver, while operations below it belong to the coupling.
-! The coupling procedure makes vertical integration of the newly
-! computed velocities [which ends up being stored in the scratch
-! array DC(:,1:nz) after the tri-diagonal problem is resolved] to
-! compute its vertical mean [stored as DC(:,0)], and replace it with
-! that from the 2D barotropic sub-model ubar=DU_avg1/(D*dn_u), where
-! D=CF(:,0) is the total depth of water column.
-!
-!
-! Time step momentum equation in the XI-direction
-!----- ---- -------- -------- -- --- ------------
-
-        do i=1,nx
-          DC(i,0)=dt*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
-
-          FC(i,nz-1)= 2.*dt*(Akv(i,j,nz-1)+Akv(i-1,j,nz-1))
-     &                      /(  Hz(i,j,nz  )+Hz(i-1,j,nz  )
-     &                         +Hz(i,j,nz-1)+Hz(i-1,j,nz-1))
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i-1,j,nz-1))
-
-          cff=1./( 0.5*(Hz(i,j,nz)+Hz(i-1,j,nz))
-     &                   +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*( FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*u(i,j,nz,nnew)
-        enddo
-        do k=nz-1,2,-1      !--> forward elimination
-          do i=1,nx
-            FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
-     &                        /(  Hz(i,j,k  )+Hz(i-1,j,k  )
-     &                           +Hz(i,j,k-1)+Hz(i-1,j,k-1))
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i-1,j,k-1))
-
-            cff=1./( 0.5*(Hz(i,j,k)+Hz(i-1,j,k))
-     &                           +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                             +FC(i,k)+max(WC(i,k),0.)
-     &                    -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                      )
-            CF(i,k-1)=cff*(   FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*( u(i,j,k,nnew)
-     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
-          enddo
-        enddo       !--> discard WC,DC(i,0)
-        do i=1,nx
-          DC(i,1)=( u(i,j,1,nnew) +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                                )/( 0.5*(Hz(i,j,1)+Hz(i-1,j,1))
-#  ifdef IMPLCT_NO_SLIP_BTTM_BC
-     &                                  +0.5*dt*(r_D(i,j)+r_D(i-1,j))
-#  endif
-     &                                      +FC(i,1)+max(WC(i,1),0.)
-     &                             -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                       )
-!>
-          CF(i,0)=0.5*(Hz(i,j,1)+Hz(i-1,j,1))    !--> coupling
-          DC(i,0)=CF(i,0)*DC(i,1)
-        enddo
-        do k=2,nz,+1          !--> backsubstitution
-          do i=1,nx
-            DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1) !<-- backsubstitution
-!>
-            cff=0.5*(Hz(i,j,k)+Hz(i-1,j,k))      !--> coupling
-            CF(i,0)=CF(i,0)+cff                  !    [ vertical    ]
-            DC(i,0)=DC(i,0)+cff*DC(i,k)          !    [ integration ]
-          enddo
-        enddo
-        do i=1,nx
-          DC(i,0)=( DC(i,0)*dn_u(i,j)-DU_avg1(i,j)  !<-- mismatch
-     &                       )/(CF(i,0)*dn_u(i,j))
-        enddo
-        do k=nz,1,-1
-          do i=1,nx
-            u(i,j,k,nnew)=(DC(i,k)-DC(i,0))      !<-- correction
-#  ifdef MASKING
-     &                          *umask(i,j)
-#  endif
-          enddo
-        enddo        !--> discard DC,CF
-
-      if (diag_uv .and. calc_diag) then
-       do k = 1,nz
-        do i = 1,nx
-          Udiag(i,j,1:nz,ivmix) = ( DC(i,k)*
-     &          0.5*( Hz(i,j,k)+Hz(i-1,j,k) )-u_prev(i,k) ) / dt
-          Udiag(i,j,k,icoup) = -DC(i,0)*umask(i,j)
-     &           *0.5*(Hz(i,j,k)+Hz(i-1,j,k))/dt
-        enddo
-       enddo
-      endif
-
-# else /* yes IMPLICIT_BOTTOM_DRAG */
         ! The only thing we do is 'coupling'.
         ! Correcting the 3D flow to be in line with the 2D prediction
 
@@ -237,96 +87,8 @@
          enddo
         endif
 
-# endif
 
 
-# ifndef IMPLICIT_BOTTOM_DRAG
-
-! Time step momentum equation in the ETA-direction.
-!----- ---- -------- -------- -- --- --------------
-! (All steps are similar to XI-component above.)
-
-          do i=1,nx
-            DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
-
-            FC(i,nz-1)= 2.*dt*(Akv(i,j,nz-1)+Akv(i,j-1,nz-1))
-     &                        /(  Hz(i,j,nz  )+Hz(i,j-1,nz  )
-     &                           +Hz(i,j,nz-1)+Hz(i,j-1,nz-1))
-
-            WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i,j-1,nz-1))
-
-            cff=1./( 0.5*(Hz(i,j,nz)+Hz(i,j-1,nz))
-     &                     +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-            CF(i,nz-1)=cff*( FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-            DC(i,nz)=cff*v(i,j,nz,nnew)
-          enddo
-          do k=nz-1,2,-1      !--> forward elimination
-            do i=1,nx
-              FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i,j-1,k-1))
-     &                          /(  Hz(i,j,k  )+Hz(i,j-1,k  )
-     &                             +Hz(i,j,k-1)+Hz(i,j-1,k-1))
-
-              WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i,j-1,k-1))
-
-              cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j-1,k))
-     &                              +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                                +FC(i,k)+max(WC(i,k),0.)
-     &                       -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                        )
-              CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-              DC(i,k)=cff*( v(i,j,k,nnew)
-     &                   +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
-            enddo
-          enddo
-          do i=1,nx
-            DC(i,1)=( v(i,j,1,nnew) +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                                  )/( 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
-     &                                    +0.5*dt*(r_D(i,j)+r_D(i,j-1))
-     &                                        +FC(i,1)+max(WC(i,1),0.)
-     &                               -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                              )
-!>
-            CF(i,0)=0.5*(Hz(i,j,1)+Hz(i,j-1,1))   !--> coupling
-            DC(i,0)=CF(i,0)*DC(i,1)
-          enddo
-          do k=2,nz,+1          !--> backsubstitution
-            do i=1,nx
-              DC(i,k)=DC(i,k)+CF(i,k-1)*DC(i,k-1) !<-- backsubstitution
-!>
-              cff=0.5*(Hz(i,j,k)+Hz(i,j-1,k))     !--> coupling
-              CF(i,0)=CF(i,0)+cff                 !    [ vertical    ]
-              DC(i,0)=DC(i,0)+cff*DC(i,k)         !    [ integration ]
-            enddo
-          enddo
-          do i=1,nx
-            DC(i,0)=( DC(i,0)*dm_v(i,j)-DV_avg1(i,j)  !<-- mismatch
-     &                         )/(CF(i,0)*dm_v(i,j))
-          enddo
-          do k=nz,1,-1
-            do i=1,nx
-              v(i,j,k,nnew)=(DC(i,k)-DC(i,0))     !<-- correction
-#  ifdef MASKING
-     &                            *vmask(i,j)
-#  endif
-            enddo
-          enddo       !--> discard DC,CF(:,0)
-
-      if (diag_uv .and. calc_diag) then
-       do k=1,nz
-        do i=1,nx
-          Vdiag(i,j,k,ivmix) = ( DC(i,k)*
-     &          0.5*( Hz(i,j-1,k)+Hz(i,j,k) )-v_prev(i,k) ) / dt
-          Vdiag(i,j,k,icoup) = -DC(i,0)*vmask(i,j)
-     &           *0.5*(Hz(i,j,k)+Hz(i,j-1,k))/dt
-        enddo
-       enddo
-      endif
-
-
-# else  /* yes IMPLICIT_BOTTOM_DRAG */
 
           do i=1,nx
             CF(i,0)=0.5*(Hz(i,j,nz)+Hz(i,j-1,nz))
@@ -353,7 +115,6 @@
 #  endif
             enddo
           enddo       !--> discard DC,CF(:,0)
-# endif
 
       if (diag_uv .and. calc_diag) then
        do k=1,nz
@@ -364,58 +125,6 @@
        enddo
       endif
 
-# ifdef NHMG
-      !!! JM fix this wrt to IMPLICIT BOTTOM STRESS
-        do i=1,nx
-          DC(i,0) =dt*pm(i,j)*pn(i,j)
-          FC(i,nz-1)= 0.5*dt*(Akv(i,j,nz)+Akv(i,j,nz-1))
-     &                      /Hz(i,j,nz)
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz)+Wi(i,j,nz-1))
-
-          cff=1./( 0.5*(Hz(i,j,nz)                )
-     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*w(i,j,nz,nnew)
-        enddo
-
-        do k=nz-1,2,-1      !--> forward elimination for w
-          do i=1,nx
-            FC(i,k-1)= 0.5*dt*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
-     &                   /Hz(i,j,k)
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
-
-            cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j,k-1))
-     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                            +FC(i,k  )+max(WC(i,k),0.)
-     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                       )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*( w(i,j,k,nnew)
-     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
-          enddo
-        enddo
-        !! change this you feel energetic. Instead of no-flux at the bottom we
-        !! have w(0) = 0 (different BC for tri-diag system)
-        do i=1,nx
-          w(i,j,1,nnew)=( w(i,j,k,nnew)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                         )/( 0.5*(Hz(i,j,2)+Hz(i,j,1))
-     &                                       +FC(i,1)+max(WC(i,1),0.)
-     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                               )
-        enddo
-        do k=2,nz,+1          !--> backsubstitution for w
-          do i=1,nx
-            w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
-          enddo
-        enddo
-        !------- end computing of w(:,:,:,nnew) -----
-
-# endif /* NHMG */
 
 
 !     if (diag_uv .and. calc_diag) then

@@ -65,7 +65,7 @@
 
       allocate( Akv(GLOBAL_2D_ARRAY,0:nz) ); Akv=init
       allocate( Akt(GLOBAL_2D_ARRAY,0:nz) ); Akt=init
-# if defined LMD_KPP || defined LMD_BKPP
+# if defined LMD_KPP || defined LMD_BKPP || defined LMD_RIMIX
       allocate( bvf(GLOBAL_2D_ARRAY,0:nz) ); bvf=0
 # endif
 
@@ -77,10 +77,12 @@
 ! swr_frac  fraction of solar short-wave radiation penetrating
 !                                depth z_w [non-dimensional]
 
+      allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) ); swr_frac=init  ! solar
+                                    ! penetration - needed whenever a 3D
+                                    ! temperature equation is solved, not
+                                    ! only under LMD_KPP.
 # ifdef LMD_KPP
       allocate( hbls(GLOBAL_2D_ARRAY) ); hbls=0.
-
-      allocate( swr_frac(GLOBAL_2D_ARRAY,0:N) ); swr_frac=init
 #  ifdef LMD_NONLOCAL
       allocate( ghat(GLOBAL_2D_ARRAY,0:N) ); ghat=0.
 #  endif
