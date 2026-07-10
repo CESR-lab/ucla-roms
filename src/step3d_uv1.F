@@ -130,15 +130,19 @@
      &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
      &                                                               )
         enddo
-        do k=2,nz,+1          !--> backsubstitution for w
+        do k=2,nz-1           !--> backsubstitution for w
           do i=1,nx
-            w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
+            w(i,j,k,nnew)=(DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew))
+     &                  *0.5*(Hz(i,j,k+1) + Hz(i,j,k))
           enddo
+        enddo
+        do i=1,nx
+          w(i,j,nz,nnew)=(DC(i,nz) +CF(i,nz-1)*w(i,j,nz-1,nnew))
+     &              *0.5*Hz(i,j,nz)
         enddo
         !------- end computing of w(:,:,:,nnew) -----
 
       enddo  ! j-loop
-!     if (diag_w) call set_diags_w_at_uv1( 1, nx, 1, ny, DC, rw )
 # endif /* NHMG */
 
 
