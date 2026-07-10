@@ -45,6 +45,7 @@
       use scalars
       use roms_mpi
       use advection
+      use tri_solvers
 
       implicit none
       integer ::  i,j,k
@@ -63,6 +64,8 @@
       real dtau, cf_stp,cf_bak,  cff, FlxDiv
       real, parameter :: AM3_crv=1./6., epsil=1.E-33
       integer indx, itrc
+
+      real,dimension(nx,0:nz) :: Av,om
 
 
 ! Preliminary step: initialize computations of the new time step
@@ -189,6 +192,24 @@
             enddo
           enddo            !--> discard FC
 
+
+# define TRI_SOLVE
+# ifdef TRI_SOLVE
+          om(:,0)  = 0
+          om(:,nz) = 0
+
+          do i=1,nx
+            DC(i,0)=dtau*pm(i,j)*pn(i,j)
+          enddo
+          do k=1,nz-1
+            do i=1,nx
+             om(i,k)=DC(i,0)*Wi(i,j,k)
+             Av(i,k)= Akt(i,j,k)
+            enddo
+          enddo
+
+          call pre_t_solve(t(:,:,:,nnew,itrc),dtau,Hz_fwd,Av,om,j)
+# else
           !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  ))
           !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
           !!                                                  Hz*T(k)
@@ -237,6 +258,8 @@
               t(i,j,k,nnew,itrc)=DC(i,k)+CF(i,k)*t(i,j,k+1,nnew,itrc)
             enddo
           enddo
+
+# endif /* TRI_SOLVE */
         enddo   !<-- itrc  !--> discard DC,CF,FC
 
 
