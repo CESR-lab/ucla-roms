@@ -66,6 +66,8 @@
       integer indx, itrc
 
       real,dimension(nx,0:nz) :: Av,om
+      real,dimension(nx,nz) :: dz
+      real,dimension(nx) :: drag
 
 
 ! Preliminary step: initialize computations of the new time step
@@ -171,15 +173,32 @@
 # define rd wrk1
 # include "compute_rd_bott_drag.h"
 
-! ...continue computation of the auxiliary tracer field: compute its
-! change due to vertical advection.  Vertical advective fluxes require
-! interpolation of tracer values to the verical grid-box interfaces
-! (W-points). This can be is done by either using parabolic spline
-! interpolation or, more simple local cubic polynomial [with or without
-! monotonicity constraint; linear interpolation is considered obsolete,
-! but the code is retained for reference].
+! Continue computation of the tracer fields: 
+!  - Compute its change due to vertical advection.  
+!  - Do an implicit solve for vertical mixing and implicit vertical advection
 
-      do j=1,ny  !! Start of the giant j-loop
+! set the implicit advection and mixing  to zero on the boundaries
+      om(:,0)  = 0
+      om(:,nz) = 0
+      Av(:,0)  = 0
+      Av(:,nz) = 0
+
+      do j=1,ny  !! Start of the big j-loop
+
+        do i=1,nx
+          DC(i,0)=dtau*pm(i,j)*pn(i,j)
+        enddo
+        do k=1,nz-1
+          do i=1,nx
+           om(i,k)=DC(i,0)*Wi(i,j,k)
+           Av(i,k)= Akt(i,j,k)
+          enddo
+        enddo
+        do k=1,nz
+          do i=1,nx
+           dz(i,k)= Hz_fwd(i,j,k)
+          enddo
+        enddo
 
         do itrc=1,nt
 
@@ -190,78 +209,11 @@
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc)
      &            -dtau*pm(i,j)*pn(i,j)*(FC(i,k)-FC(i,k-1))
             enddo
-          enddo            !--> discard FC
+          enddo 
 
+          call pre_t_solve(t(:,:,:,nnew,itrc),dtau,dz,Av,om,j)
 
-# define TRI_SOLVE
-# ifdef TRI_SOLVE
-          om(:,0)  = 0
-          om(:,nz) = 0
-
-          do i=1,nx
-            DC(i,0)=dtau*pm(i,j)*pn(i,j)
-          enddo
-          do k=1,nz-1
-            do i=1,nx
-             om(i,k)=DC(i,0)*Wi(i,j,k)
-             Av(i,k)= Akt(i,j,k)
-            enddo
-          enddo
-
-          call pre_t_solve(t(:,:,:,nnew,itrc),dtau,Hz_fwd,Av,om,j)
-# else
-          !! Hz*T(k) - dt*2*Ak(k  )*(T(k+1)-T(k  ))/(Hz(k+1)+Hz(k  ))
-          !!         + dt*2*Ak(k-1)*(T(k  )-T(k-1))/(Hz(k  )+Hz(k-1)) =
-          !!                                                  Hz*T(k)
-          !! See numerical recipes p40
-          !! b(1) = Hz(1) + dt*2*Ak(1)/(Hz(2)+Hz(1))
-          !! c(1) =       - dt*2*Ak(1)/(Hz(2)+Hz(1))
-          !! U(k) --> DC(k)
-          do i=1,nx
-            FC(i,1)=2.*dtau*Akt(i,j,1)/( Hz_fwd(i,j,2) !!  dt*2*Ak(1)/(Hz(2)+Hz(1))
-     &                                       +Hz_fwd(i,j,1))
-            DC(i,0)=dtau*pm(i,j)*pn(i,j)
-            WC(i,1)=DC(i,0)*Wi(i,j,1)
-
-            cff=1./(Hz_fwd(i,j,1) +FC(i,1)+max(WC(i,1),0.))  !! 1./bet
-            CF(i,1)=cff*(          FC(i,1)-min(WC(i,1),0.))  !! c(1)/bet
-            DC(i,1)=cff*t(i,j,1,nnew,itrc)                 !! u(1) = r(1)/bet
-          enddo
-
-          do k=2,nz-1,+1
-            do i=1,nx
-              FC(i,k)=2.*dtau*Akt(i,j,k)/( Hz_fwd(i,j,k+1)
-     &                                         +Hz_fwd(i,j,k) )
-              WC(i,k)=DC(i,0)*Wi(i,j,k)
-
-              cff=1./( Hz_fwd(i,j,k) +FC(i,k)+max(WC(i,k),0.)  !!  1./((b(k) -a(k)*c(k-1))/bet)
-     &                             +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                  -CF(i,k-1)*(FC(i,k-1)+max(WC(i,k-1),0.))
-     &                                                          )
-              CF(i,k)=cff*(FC(i,k)-min(WC(i,k),0.))             !! c(k)/bet
-
-              DC(i,k)=cff*( t(i,j,k,nnew,itrc) +DC(i,k-1)*(     !!  u(k)=(r(k)-u(j-1)*a(j))/bet
-     &                          FC(i,k-1)+max(WC(i,k-1),0.) ))
-            enddo
-          enddo  !--> discard DC(:,0)
-
-          do i=1,nx
-            t(i,j,nz,nnew,itrc)=( t(i,j,nz,nnew,itrc) +DC(i,nz-1)*(
-     &                                FC(i,nz-1)+max(WC(i,nz-1),0.) )
-     &               )/( Hz_fwd(i,j,nz) +FC(i,nz-1)-min(WC(i,nz-1),0.)
-     &                      -CF(i,nz-1)*(FC(i,nz-1)+max(WC(i,nz-1),0.))
-     &                                                            )
-          enddo
-
-          do k=nz-1,1,-1
-            do i=1,nx
-              t(i,j,k,nnew,itrc)=DC(i,k)+CF(i,k)*t(i,j,k+1,nnew,itrc)
-            enddo
-          enddo
-
-# endif /* TRI_SOLVE */
-        enddo   !<-- itrc  !--> discard DC,CF,FC
-
+        enddo   !<-- itrc
 
 
 

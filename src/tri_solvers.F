@@ -38,7 +38,7 @@
 
       end subroutine init_tri_solve !]
 !----------------------------------------------------------------------
-      subroutine pre_t_solve(t,dt,dz,Av,om,j)  ![
+      subroutine pre_t_solve(t,dt,dz,Av,om,j,drag)  ![
       implicit none
 
       ! Solve:
@@ -51,9 +51,10 @@
 
       ! import/export
       real,intent(in) :: dt
-      real,dimension(1-bf:nx+bf,1-bf:ny+bf,nz),intent(in) :: dz
       real,dimension(1-bf:nx+bf,1-bf:ny+bf,nz),intent(inout) :: t
+      real,dimension(nx,nz),intent(in) :: dz
       real,dimension(nx,0:nz),intent(in) :: om,Av
+      real,dimension(nx),intent(in),optional :: drag
       integer,intent(in) :: j
 
       ! local
@@ -61,20 +62,24 @@
 
       do k=1,nz-1
         do i=1,nx
-          cf(i,k)=2.*dt*Av(i,k)/(dz(i,j,k+1)+dz(i,j,k))
+          cf(i,k)=2.*dt*Av(i,k)/(dz(i,k+1)+dz(i,k))
         enddo
       enddo
 
       do k=1,nz
         do i=1,nx
           a(i,k) = -cf(i,k-1)  - max(om(i,k-1),0.)
-          b(i,k) =  dz(i,j,k) +cf(i,k)+cf(i,k-1)
+          b(i,k) =  dz(i,k) +cf(i,k)+cf(i,k-1)
      &                      + max(om(i,k),0.) - min(om(i,k-1),0.)
           c(i,k) = -cf(i,k) + min(om(i,k),0.)
           d(i,k) = t(i,j,k);
         enddo
       enddo
- 
+
+      if (present(drag)) then
+        b(:,1) = b(:,1) + drag
+      endif
+
       call tri_solve(a,b,c,d)
 
       do k=1,nz
