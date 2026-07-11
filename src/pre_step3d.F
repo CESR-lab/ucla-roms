@@ -226,21 +226,178 @@
 
         call uv_vadv_pre(ru,rv,j)
 
-# ifdef WEC
-#  if defined WAVE_FRICTION && !defined BODY_FRICTION
+# define TRI_SOLVE_U
+
+# ifdef TRI_SOLVE_U
         do i=1,nx
-          ru(i,j,1) =ru(i,j,1) + dm_u(i,j)*dn_u(i,j)*frc2dx(i,j)
+          DC(i,0)=dtau*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
+        enddo
+        do k=1,nz
+          do i=1,nx
+            !! dz*u =  dz*u + dt*ru/(dx*dy)
+            u(i,j,k,nnew)=0.5*(Hz_bak(i,j,k)+Hz_bak(i-1,j,k))*(
+     &                   cf_stp*u(i,j,k,nstp)+cf_bak*u(i,j,k,indx) )
+     &                                        + DC(i,0)*ru(i,j,k)
+
+            !! dz*u^n. After index rotation this will be u(nnew)
+            u(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nstp)
+          enddo
         enddo
         do i=1,nx
-          rv(i,j,1) =rv(i,j,1) + dm_v(i,j)*dn_v(i,j)*frc2de(i,j)
+           u(i,j,nz,nnew) = u(i,j,nz,nnew) + dtau*sustr(i,j)
         enddo
-#  endif
-# endif   /* WEC */
+
+        do k=1,nz-1
+          do i=1,nx
+            om(i,k)= DC(i,0)*0.5*( Wi(i,j,k)+Wi(i-1,j,k) )
+            Av(i,k)= 0.5*( Akv(i,j,k) + Akv(i-1,j,k) )
+          enddo
+        enddo
+        do k=1,nz
+          do i=1,nx
+            dz(i,k)= 0.5*( Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k) )
+          enddo
+        enddo
+        do i=1,nx
+          drag(i) = 0.5*dtau*(rd(i,j) + rd(i-1,j) )
+        enddo
+
+        call pre_t_solve(u(:,:,:,nnew),dtau,dz,Av,om,j,drag)
+
+# else
+        do i=1,nx
+          DC(i,0)=dtau*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
+        enddo
+        do k=1,nz
+          do i=1,nx
+            !! DC is dz*u + dt*ru/(dx*dy)
+            DC(i,k)=0.5*(Hz_bak(i,j,k)+Hz_bak(i-1,j,k))*(
+     &                  cf_stp*u(i,j,k,nstp)+cf_bak*u(i,j,k,indx) )
+     &                                           +DC(i,0)*ru(i,j,k)
+
+            !! dz*u^n. After index rotation this will be u(nnew)
+            u(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nstp)
+          enddo
+        enddo
+
+        do i=1,nx
+          FC(i,nz-1)= 2.*dtau*(Akv(i,j,nz-1)+Akv(i-1,j,nz-1))
+     &                 /( Hz_fwd(i,j,nz  )+Hz_fwd(i-1,j,nz  )
+     &                   +Hz_fwd(i,j,nz-1)+Hz_fwd(i-1,j,nz-1))
+
+          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i-1,j,nz-1))
+
+          cff=1./( 0.5*(Hz_fwd(i,j,nz)+Hz_fwd(i-1,j,nz))
+     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
+
+          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
+
+          DC(i,nz)=cff*( DC(i,nz)  +dtau*sustr(i,j) )
+        enddo
+        do k=nz-1,2,-1      !--> forward elimination
+          do i=1,nx
+            FC(i,k-1)= 2.*dtau*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
+     &                   /( Hz_fwd(i,j,k  )+Hz_fwd(i-1,j,k  )
+     &                     +Hz_fwd(i,j,k-1)+Hz_fwd(i-1,j,k-1))
+
+            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i-1,j,k-1))
+
+            cff=1./( 0.5*(Hz_fwd(i,j,k)+Hz_fwd(i-1,j,k))
+     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
+     &                              +FC(i,k)+max(WC(i,k),0.)
+     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
+     &                                                       )
+            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
+
+            DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+          enddo
+        enddo
+        do i=1,nx
+          u(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
+     &                         )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i-1,j,1))
+     &                                   +0.5*dtau*(rd(i,j)+rd(i-1,j))
+     &                                       +FC(i,1)+max(WC(i,1),0.)
+     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
+     &                                                               )
+        enddo
+        do k=2,nz,+1          !--> backsubstitution
+          do i=1,nx
+            u(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*u(i,j,k-1,nnew)
+          enddo
+        enddo
+# endif
+        !------- end computing of u(:,:,:,nnew) -----
+
+        do i=1,nx
+          DC(i,0)=dtau*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
+        enddo
+        do k=1,nz
+          do i=1,nx
+            DC(i,k)=0.5*(Hz_bak(i,j,k)+Hz_bak(i,j-1,k))*(
+     &                  cf_stp*v(i,j,k,nstp)+cf_bak*v(i,j,k,indx) )
+     &                                          + DC(i,0)*rv(i,j,k)
+
+            v(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i,j-1,k))*v(i,j,k,nstp)
+          enddo
+        enddo
+        do i=1,nx
+          FC(i,nz-1)= 2.*dtau*(Akv(i,j,nz-1)+Akv(i,j-1,nz-1))
+     &                 /( Hz_fwd(i,j,nz  )+Hz_fwd(i,j-1,nz  )
+     &                   +Hz_fwd(i,j,nz-1)+Hz_fwd(i,j-1,nz-1))
+
+          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i,j-1,nz-1))
+
+          cff=1./( 0.5*(Hz_fwd(i,j,nz)+Hz_fwd(i,j-1,nz))
+     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
+
+          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
+
+          DC(i,nz)=cff*( DC(i,nz)
+     &                                    +dtau*svstr(i,j)
+#    if defined WEC && defined SURFACE_BREAK
+     &                            + dtau*brk2de(i,j)
+#    endif
+     &                                                   )
+        enddo
+        do k=nz-1,2,-1      !--> forward elimination
+          do i=1,nx
+            FC(i,k-1)= 2.*dtau*(Akv(i,j,k-1)+Akv(i,j-1,k-1))
+     &                     /( Hz_fwd(i,j,k  )+Hz_fwd(i,j-1,k  )
+     &                       +Hz_fwd(i,j,k-1)+Hz_fwd(i,j-1,k-1))
+
+            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i,j-1,k-1))
+
+            cff=1./( 0.5*(Hz_fwd(i,j,k)+Hz_fwd(i,j-1,k))
+     &                           +FC(i,k-1)-min(WC(i,k-1),0.)
+     &                             +FC(i,k)+max(WC(i,k),0.)
+     &                    -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
+     &                                                      )
+            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
+
+            DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+          enddo
+        enddo
+        do i=1,nx
+          v(i,j,1,nnew)=( DC(i,1)+DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
+     &                       )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i,j-1,1))
+     &                                 +0.5*dtau*(rd(i,j)+rd(i,j-1))
+     &                                     +FC(i,1)+max(WC(i,1),0.)
+     &                            -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
+     &                                                             )
+        enddo
+        do k=2,nz,+1          !--> backsubstitution
+          do i=1,nx
+            v(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*v(i,j,k-1,nnew)
+          enddo
+        enddo
 
 # ifdef NHMG
-
+![
 #  include "compute_vert_rhs_w_terms.h"
 
+c--#   define TRI_SOLVE_W
+#   ifdef TRI_SOLVE_W
+#   else
         do i=1,nx
           DC(i,0) =dtau*pm(i,j)*pn(i,j)
         enddo
@@ -318,133 +475,11 @@
             w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
           enddo
         enddo
+#   endif
         !------- end computing of w(:,:,:,nnew) -----
+!]
 # endif /* NHMG */
 
-        do i=1,nx
-          DC(i,0)=dtau*0.25*(pm(i,j)+pm(i-1,j))*(pn(i,j)+pn(i-1,j))
-        enddo
-        do k=1,nz
-          do i=1,nx
-            !! DC is dz*u + dt*ru/(dx*dy)
-            DC(i,k)=0.5*(Hz_bak(i,j,k)+Hz_bak(i-1,j,k))*(
-     &                  cf_stp*u(i,j,k,nstp)+cf_bak*u(i,j,k,indx) )
-     &                                           +DC(i,0)*ru(i,j,k)
-
-            !! dz*u^n. After index rotation this will be u(nnew)
-            u(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*u(i,j,k,nstp)
-          enddo
-        enddo
-
-        do i=1,nx
-          FC(i,nz-1)= 2.*dtau*(Akv(i,j,nz-1)+Akv(i-1,j,nz-1))
-     &                 /( Hz_fwd(i,j,nz  )+Hz_fwd(i-1,j,nz  )
-     &                   +Hz_fwd(i,j,nz-1)+Hz_fwd(i-1,j,nz-1))
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i-1,j,nz-1))
-
-          cff=1./( 0.5*(Hz_fwd(i,j,nz)+Hz_fwd(i-1,j,nz))
-     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*( DC(i,nz)  +dtau*sustr(i,j) )
-        enddo
-        do k=nz-1,2,-1      !--> forward elimination
-          do i=1,nx
-            FC(i,k-1)= 2.*dtau*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
-     &                   /( Hz_fwd(i,j,k  )+Hz_fwd(i-1,j,k  )
-     &                     +Hz_fwd(i,j,k-1)+Hz_fwd(i-1,j,k-1))
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i-1,j,k-1))
-
-            cff=1./( 0.5*(Hz_fwd(i,j,k)+Hz_fwd(i-1,j,k))
-     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                              +FC(i,k)+max(WC(i,k),0.)
-     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                       )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
-          enddo
-        enddo
-        do i=1,nx
-          u(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                         )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i-1,j,1))
-     &                                   +0.5*dtau*(rd(i,j)+rd(i-1,j))
-     &                                       +FC(i,1)+max(WC(i,1),0.)
-     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                               )
-        enddo
-        do k=2,nz,+1          !--> backsubstitution
-          do i=1,nx
-            u(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*u(i,j,k-1,nnew)
-          enddo
-        enddo
-        !------- end computing of u(:,:,:,nnew) -----
-
-        do i=1,nx
-          DC(i,0)=dtau*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
-        enddo
-        do k=1,nz
-          do i=1,nx
-            DC(i,k)=0.5*(Hz_bak(i,j,k)+Hz_bak(i,j-1,k))*(
-     &                  cf_stp*v(i,j,k,nstp)+cf_bak*v(i,j,k,indx) )
-     &                                          + DC(i,0)*rv(i,j,k)
-
-            v(i,j,k,indx)=0.5*(Hz(i,j,k)+Hz(i,j-1,k))*v(i,j,k,nstp)
-          enddo
-        enddo
-        do i=1,nx
-          FC(i,nz-1)= 2.*dtau*(Akv(i,j,nz-1)+Akv(i,j-1,nz-1))
-     &                 /( Hz_fwd(i,j,nz  )+Hz_fwd(i,j-1,nz  )
-     &                   +Hz_fwd(i,j,nz-1)+Hz_fwd(i,j-1,nz-1))
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i,j-1,nz-1))
-
-          cff=1./( 0.5*(Hz_fwd(i,j,nz)+Hz_fwd(i,j-1,nz))
-     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*( DC(i,nz)
-     &                                    +dtau*svstr(i,j)
-#    if defined WEC && defined SURFACE_BREAK
-     &                            + dtau*brk2de(i,j)
-#    endif
-     &                                                   )
-        enddo
-        do k=nz-1,2,-1      !--> forward elimination
-          do i=1,nx
-            FC(i,k-1)= 2.*dtau*(Akv(i,j,k-1)+Akv(i,j-1,k-1))
-     &                     /( Hz_fwd(i,j,k  )+Hz_fwd(i,j-1,k  )
-     &                       +Hz_fwd(i,j,k-1)+Hz_fwd(i,j-1,k-1))
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i,j-1,k-1))
-
-            cff=1./( 0.5*(Hz_fwd(i,j,k)+Hz_fwd(i,j-1,k))
-     &                           +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                             +FC(i,k)+max(WC(i,k),0.)
-     &                    -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                      )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
-          enddo
-        enddo
-        do i=1,nx
-          v(i,j,1,nnew)=( DC(i,1)+DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                       )/( 0.5*(Hz_fwd(i,j,1)+Hz_fwd(i,j-1,1))
-     &                                 +0.5*dtau*(rd(i,j)+rd(i,j-1))
-     &                                     +FC(i,1)+max(WC(i,1),0.)
-     &                            -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                             )
-        enddo
-        do k=2,nz,+1          !--> backsubstitution
-          do i=1,nx
-            v(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*v(i,j,k-1,nnew)
-          enddo
-        enddo
       enddo     !<-- j
 # undef rd
       !! velocities are now in m/s
@@ -479,6 +514,7 @@
           enddo
         enddo
       endif  ! <-- river_source
+
 
       call u3dbc(wrk1)
       call v3dbc(wrk1)
