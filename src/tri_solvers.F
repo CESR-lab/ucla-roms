@@ -19,7 +19,8 @@
       real,allocatable,dimension(:)   :: bet_inv
 
       public init_tri_solve
-      public pre_t_solve
+      public vmix_solve
+      public vmix_solve_w
 
       contains
 
@@ -38,7 +39,8 @@
 
       end subroutine init_tri_solve !]
 !----------------------------------------------------------------------
-      subroutine pre_t_solve(t,dt,dz,Av,om,j,drag)  ![
+      subroutine vmix_solve(t,dt,dz,Av,om,j,drag)  ![
+!DIR$ ATTRIBUTES FORCEINLINE :: vmix_solve
       implicit none
 
       ! Solve:
@@ -65,6 +67,7 @@
           cf(i,k)=2.*dt*Av(i,k)/(dz(i,k+1)+dz(i,k))
         enddo
       enddo
+      cf(:,0) = 0
 
       do k=1,nz
         do i=1,nx
@@ -88,10 +91,79 @@
         enddo
       enddo
 
+      end subroutine vmix_solve  !]
+!----------------------------------------------------------------------
+      subroutine vmix_solve_w(w,dt,dz,Av,om,j)  ![
+!DIR$ ATTRIBUTES FORCEINLINE :: vmix_solve_w
+      implicit none
 
-      end subroutine pre_t_solve  !]
+      ! Solve:
+      !  0.5*(dz(k)+dz(k+1))*w(k) - dt*( 0.5*(Av(k)+Av(k+1))*(w(k+1)-w(k  ))/dz(k+1)
+      !                + dt*( 0.5*(Av(k)+Av(k-1))*(w(k  )-w(k-1))/dz(k  )
+      !                + 0.5*(om(k)+om(k+1))*w(k+1) (om<0) / w(k)  (om>0)
+      !                - 0.5*(om(k)+om(k-1))*w(k  ) (om<0) / w(k-1)(om>0)
+      !    = 0.5*(dz(k)+dz(k+1))*w(k)
+      !  w(0) = 0; This means we can just ignore a(1) and leave b(1) and c(1) as is.
+      !  0.5*dz(nz)*w(nz) -
+      !          + dt*( 0.5*(Av(nz)+Av(nz-1))*(w(nz)-w(nz-1))/dz(nz )
+      !          - 0.5*(om(nz-1))*w(nz  ) (om<0) / w(nz-1)(om>0)
+      !  = 0.5+dz(nz)*w(nz)
+      !
+      !  or: a(k)*w(k-1) + b(k)*w(k) + c(k)*w(k+1) = w(k)
+      ! with:
+      !    a(k) = -dt*0.5*(Av(k)+Av(k-1)) /dz(k  ) - max(0.5*(om(k)+om(k-1),0)
+      !    b(k) = -dt*0.5*(Av(k)+Av(k-1)) /dz(k  ) - min(0.5*(om(k)+om(k-1),0)
+      !           +dt*0.5*(Av(k)+Av(k+1)) /dz(k+1) - max(0.5*(om(k)+om(k+1),0)
+      !    c(k) = +dt*0.5*(Av(k)+Av(k+1)) /dz(k+1) - min(0.5*(om(k)+om(k+1),0)
+
+      ! import/export
+      real,intent(in) :: dt
+      real,dimension(1-bf:nx+bf,1-bf:ny+bf,0:nz),intent(inout) :: w
+      real,dimension(nx,nz),intent(in) :: dz
+      real,dimension(nx,0:nz),intent(in) :: om,Av
+      integer,intent(in) :: j
+
+      ! local
+      integer :: i,k
+
+      do k=0,nz-1
+        do i=1,nx
+          cf(i,k)=dt*0.5*(Av(i,k)+Av(i,k+1))/dz(i,k+1)
+        enddo
+      enddo
+
+      do k=1,nz-1
+        do i=1,nx
+          a(i,k) = -cf(i,k-1)- max(0.5*(om(i,k)+om(i,k-1)),0.)
+          b(i,k) = 0.5*(dz(i,k)+dz(i,k+1))
+     &                   +cf(i,k)+cf(i,k-1)
+     &                       + max(0.5*(om(i,k)+om(i,k+1)),0.)
+     &                       - min(0.5*(om(i,k)+om(i,k-1)),0.)
+          c(i,k) = -cf(i,k  )+ min(0.5*(om(i,k)+om(i,k+1)),0.)
+          d(i,k) = w(i,j,k);
+        enddo
+      enddo
+      do i=1,nx
+        a(i,nz) = -cf(i,nz-1)- max(0.5*(om(i,nz)+om(i,nz-1)),0.)
+        b(i,nz) = 0.5*dz(i,nz)
+     &                +cf(i,nz)+cf(i,nz-1)
+     &                       - min(0.5*(om(i,nz)+om(i,nz-1)),0.)
+        d(i,nz) = w(i,j,nz);
+      enddo
+
+      call tri_solve(a,b,c,d)
+
+      do k=1,nz
+        do i=1,nx
+          w(i,j,k) = d(i,k)
+        enddo
+      enddo
+
+
+      end subroutine vmix_solve_w  !]
 !----------------------------------------------------------------------
       subroutine tri_solve(a,b,c,d)  ![
+!DIR$ ATTRIBUTES FORCEINLINE :: tri_solve
       implicit none
 
       ! import/export

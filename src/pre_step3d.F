@@ -211,7 +211,7 @@
             enddo
           enddo 
 
-          call pre_t_solve(t(:,:,:,nnew,itrc),dtau,dz,Av,om,j)
+          call vmix_solve(t(:,:,:,nnew,itrc),dtau,dz,Av,om,j)
 
         enddo   !<-- itrc
 
@@ -260,7 +260,7 @@
           drag(i) = 0.5*dtau*(rd(i,j) + rd(i-1,j) )
         enddo
 
-        call pre_t_solve(u(:,:,:,nnew),dtau,dz,Av,om,j,drag)
+        call vmix_solve(u(:,:,:,nnew),dtau,dz,Av,om,j,drag)
 
 !-----  Solve implicitly for vertical mixing and vertical advection of v -----
         do i=1,nx
@@ -294,16 +294,13 @@
           drag(i) = 0.5*dtau*(rd(i,j) + rd(i,j-1) )
         enddo
 
-        call pre_t_solve(v(:,:,:,nnew),dtau,dz,Av,om,j,drag)
+        call vmix_solve(v(:,:,:,nnew),dtau,dz,Av,om,j,drag)
 
 !-----  Solve implicitly for vertical mixing and vertical advection of w -----
 # ifdef NHMG
 ![
 #  include "compute_vert_rhs_w_terms.h"
 
-c--#   define TRI_SOLVE_W
-#   ifdef TRI_SOLVE_W
-#   else
         do i=1,nx
           DC(i,0) =dtau*pm(i,j)*pn(i,j)
         enddo
@@ -311,77 +308,35 @@ c--#   define TRI_SOLVE_W
         !! w(0) is always zero
         do k=1,nz-1
           do i=1,nx
-            DC(i,k)=0.5*(Hz_bak(i,j,k+1)+Hz_bak(i,j,k))*(
+            w(i,j,k,nnew)=0.5*(Hz_bak(i,j,k+1)+Hz_bak(i,j,k))*(
      &                  cf_stp*w(i,j,k,nstp)+cf_bak*w(i,j,k,indx) )
      &                                           + DC(i,0)*rw(i,j,k)
 
             w(i,j,k,indx)=0.5*(Hz(i,j,k+1)+Hz(i,j,k))*w(i,j,k,nstp)
           enddo
         enddo
-        k = nz
-        !! here is the special volume weighting for w(nz)
-        !! Still, write out the volume integrated (dz*w) vertical mixing eq.
-        !! Just to check :)
+        !! w(nz) is weighted with 0.5*Hz(nz)
         do i=1,nx
-          DC(i,k)=0.5*(   Hz_bak(i,j,k))*(
-     &                cf_stp*w(i,j,k,nstp)+cf_bak*w(i,j,k,indx) )
-     &                                         + DC(i,0)*rw(i,j,k)
-
-          w(i,j,k,indx)=0.5*(  Hz(i,j,k))*w(i,j,k,nstp)
+          w(i,j,nz,nnew)=0.5*(  Hz_bak(i,j,nz))*(
+     &                cf_stp*w(i,j,nz,nstp)+cf_bak*w(i,j,nz,indx) )
+     &                                         + DC(i,0)*rw(i,j,nz)
+          w(i,j,nz,indx)=0.5*(  Hz(i,j,nz))*w(i,j,nz,nstp)
         enddo
 
-        !! start of tri-diag solve
-        !   FC(i,1)=0.5*dtau*(Akt(i,j,k+1)+Akt(i,j,k)/( Hz_fwd(i,j,k)
-        do i=1,nx
-          FC(i,nz-1)= 0.5*dtau*(-Akv(i,j,nz)+Akv(i,j,nz-1)) ! see notes, exception for k=N
-     &                      /Hz_fwd(i,j,nz)
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz)+Wi(i,j,nz-1))
-
-          cff = 0.5*Hz_fwd(i,j,nz) +FC(i,nz-1)-min(WC(i,nz-1),0.)
-
-          CF(i,nz-1)= ( FC(i,nz-1)+max(WC(i,nz-1),0.) )/cff ! gam(n-1)=c(n)/bet
-
-          DC(i,nz)=  DC(i,nz)/cff                          ! u(1) = r(1)/bet
-        enddo
-
-        do k=nz-1,2,-1      !--> forward elimination for w
+        do k=0,nz
           do i=1,nx
-            FC(i,k-1)= 0.5*dtau*(Akv(i,j,k)+Akv(i,j,k-1))!! A(k-1)
-     &                   /Hz_fwd(i,j,k)
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
-
-            cff=1./( 0.5*(Hz_fwd(i,j,k)+Hz_fwd(i,j,k-1))
-     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                              +FC(i,k)+max(WC(i,k),0.)
-     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                       )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*(DC(i,k)+DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+            om(i,k)= DC(i,0)*Wi(i,j,k)
+            Av(i,k)= Akv(i,j,k)
           enddo
         enddo
-        !! Use the fact that w(0) is always 0
-        do i=1,nx
-          FC(i,0)= 0.5*dtau*(Akv(i,j,1)+Akv(i,j,0))!! A(0)
-     &                   /Hz_fwd(i,j,1)
-
-          WC(i,0)= DC(i,0)*0.5*(Wi(i,j,1)+Wi(i,j,0))
-
-          w(i,j,1,nnew)=( DC(i,1)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                         )/( 0.5*(Hz_fwd(i,j,2)+Hz_fwd(i,j,1))
-     &                                       +FC(i,0)-min(WC(i,0),0.)
-     &                                       +FC(i,1)+max(WC(i,1),0.)
-     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                               )
-        enddo
-        do k=2,nz,+1          !--> backsubstitution for w
+        do k=1,nz
           do i=1,nx
-            w(i,j,k,nnew)=DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew)
+            dz(i,k)= Hz_fwd(i,j,k)
           enddo
         enddo
-#   endif
+
+        call vmix_solve_w(w(:,:,:,nnew),dtau,dz,Av,om,j)
+
         !------- end computing of w(:,:,:,nnew) -----
 !]
 # endif /* NHMG */
