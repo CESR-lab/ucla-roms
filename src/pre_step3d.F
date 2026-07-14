@@ -257,7 +257,7 @@
           enddo
         enddo
         do i=1,nx
-          drag(i) = 0.5*dtau*(rd(i,j) + rd(i-1,j) )
+          drag(i) = 0.5*(rd(i,j) + rd(i-1,j) )
         enddo
 
         call vmix_solve(u(:,:,:,nnew),dtau,dz,Av,om,j,drag)
@@ -291,7 +291,7 @@
           enddo
         enddo
         do i=1,nx
-          drag(i) = 0.5*dtau*(rd(i,j) + rd(i,j-1) )
+          drag(i) = 0.5*(rd(i,j) + rd(i,j-1) )
         enddo
 
         call vmix_solve(v(:,:,:,nnew),dtau,dz,Av,om,j,drag)

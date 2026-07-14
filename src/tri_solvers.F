@@ -80,7 +80,7 @@
       enddo
 
       if (present(drag)) then
-        b(:,1) = b(:,1) + drag
+        b(:,1) = b(:,1) + dt*drag
       endif
 
       call tri_solve(a,b,c,d)
