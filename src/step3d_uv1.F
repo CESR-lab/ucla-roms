@@ -44,6 +44,7 @@
       use scalars
       use roms_mpi
       use advection
+      use tri_solvers
 
       implicit none
       integer  i,j,k
@@ -58,6 +59,10 @@
       real  ub,ut
       real  div,dmax
 #endif
+      real,dimension(nx,0:nz) :: Av,om
+      real,dimension(nx,nz) :: dz
+      real,dimension(nx) :: drag               
+
 
       if (diag_w) then
 !       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)
@@ -87,59 +92,30 @@
           enddo
         enddo
 
-
-        do i=1,nx
-          DC(i,0) =dt*pm(i,j)*pn(i,j)
-          FC(i,nz-1)= 0.5*dt*(Akv(i,j,nz)+Akv(i,j,nz-1))
-     &                      /Hz(i,j,nz)
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz)+Wi(i,j,nz-1))
-
-          cff=1./( 0.5*(Hz(i,j,nz)                )
-     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*w(i,j,nz,nnew)
-        enddo
-
-        do k=nz-1,2,-1      !--> forward elimination for w
+        do k=0,nz
           do i=1,nx
-            FC(i,k-1)= 0.5*dt*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
-     &                   /Hz(i,j,k)
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
-
-            cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j,k-1))
-     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                            +FC(i,k  )+max(WC(i,k),0.)
-     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                       )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*( w(i,j,k,nnew)
-     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+            om(i,k)= DC(i,0)*Wi(i,j,k)
+            Av(i,k)= Akv(i,j,k) 
           enddo
         enddo
-        !! change this you feel energetic. Instead of no-flux at the bottom we
-        !! have w(0) = 0 (different BC for tri-diag system)
-        do i=1,nx
-          w(i,j,1,nnew)=( w(i,j,1,nnew)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                         )/( 0.5*(Hz(i,j,2)+Hz(i,j,1))
-     &                                       +FC(i,1)+max(WC(i,1),0.)
-     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                               )
-        enddo
-        do k=2,nz-1           !--> backsubstitution for w
+        do k=1,nz
           do i=1,nx
-            w(i,j,k,nnew)=(DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew))
-     &                  *0.5*(Hz(i,j,k+1) + Hz(i,j,k))
+            dz(i,k)= Hz(i,j,k)
+          enddo
+        enddo
+
+        call vmix_solve_w(w(:,:,:,nnew),dt,dz,Av,om,j)
+
+        ! w is expected to be as dz*w
+        do k=1,nz-1
+          do i=1,nx
+            w(i,j,k,nnew) = 0.5*(Hz(i,j,k)+Hz(i,j,k+1))*w(i,j,k,nnew)
           enddo
         enddo
         do i=1,nx
-          w(i,j,nz,nnew)=(DC(i,nz) +CF(i,nz-1)*w(i,j,nz-1,nnew))
-     &              *0.5*Hz(i,j,nz)
+          w(i,j,nz,nnew) = 0.5*Hz(i,j,nz)*w(i,j,nz,nnew)
         enddo
+
         !------- end computing of w(:,:,:,nnew) -----
 
       enddo  ! j-loop
