@@ -44,6 +44,7 @@
       use scalars
       use roms_mpi
       use advection
+      use tri_solvers
 
       implicit none
       integer  i,j,k
@@ -58,10 +59,20 @@
       real  ub,ut
       real  div,dmax
 #endif
+      real,dimension(nx,0:nz) :: Av,om
+      real,dimension(nx,nz) :: dz
+      real,dimension(nx) :: drag
+
 
       if (diag_w) then
 !       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)
       endif
+
+! set the implicit advection and mixing  to zero on the boundaries
+      om(:,0)  = 0
+      om(:,nz) = 0
+      Av(:,0)  = 0
+      Av(:,nz) = 0
 
 # ifdef NHMG
 
@@ -87,59 +98,30 @@
           enddo
         enddo
 
-
-        do i=1,nx
-          DC(i,0) =dt*pm(i,j)*pn(i,j)
-          FC(i,nz-1)= 0.5*dt*(Akv(i,j,nz)+Akv(i,j,nz-1))
-     &                      /Hz(i,j,nz)
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz)+Wi(i,j,nz-1))
-
-          cff=1./( 0.5*(Hz(i,j,nz)                )
-     &                    +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*(  FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*w(i,j,nz,nnew)
-        enddo
-
-        do k=nz-1,2,-1      !--> forward elimination for w
+        do k=0,nz
           do i=1,nx
-            FC(i,k-1)= 0.5*dt*(Akv(i,j,k)+Akv(i,j,k-1))!! flux coef between w(k) and w(k-1)
-     &                   /Hz(i,j,k)
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k)+Wi(i,j,k-1))
-
-            cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j,k-1))
-     &                            +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                            +FC(i,k  )+max(WC(i,k),0.)
-     &                     -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                       )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*( w(i,j,k,nnew)
-     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)))
+            om(i,k)= DC(i,0)*Wi(i,j,k)
+            Av(i,k)= Akv(i,j,k)
           enddo
         enddo
-        !! change this you feel energetic. Instead of no-flux at the bottom we
-        !! have w(0) = 0 (different BC for tri-diag system)
-        do i=1,nx
-          w(i,j,1,nnew)=( w(i,j,1,nnew)  +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                         )/( 0.5*(Hz(i,j,2)+Hz(i,j,1))
-     &                                       +FC(i,1)+max(WC(i,1),0.)
-     &                              -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                               )
-        enddo
-        do k=2,nz-1           !--> backsubstitution for w
+        do k=1,nz
           do i=1,nx
-            w(i,j,k,nnew)=(DC(i,k) +CF(i,k-1)*w(i,j,k-1,nnew))
-     &                  *0.5*(Hz(i,j,k+1) + Hz(i,j,k))
+            dz(i,k)= Hz(i,j,k)
+          enddo
+        enddo
+
+        call vmix_solve_w(w(:,:,:,nnew),dt,dz,Av,om,j)
+
+        ! w is expected to be as dz*w
+        do k=1,nz-1
+          do i=1,nx
+            w(i,j,k,nnew) = 0.5*(Hz(i,j,k)+Hz(i,j,k+1))*w(i,j,k,nnew)
           enddo
         enddo
         do i=1,nx
-          w(i,j,nz,nnew)=(DC(i,nz) +CF(i,nz-1)*w(i,j,nz-1,nnew))
-     &              *0.5*Hz(i,j,nz)
+          w(i,j,nz,nnew) = 0.5*Hz(i,j,nz)*w(i,j,nz,nnew)
         enddo
+
         !------- end computing of w(:,:,:,nnew) -----
 
       enddo  ! j-loop
@@ -174,67 +156,80 @@
         enddo
         do k=1,nz
           do i=1,nx
-            DC(i,k)= u(i,j,k,nnew) +DC(i,0)*ru(i,j,k)
-            !! add ru into rufrc here as well
-          enddo
-        enddo
-
-        do i=1,nx
-          FC(i,nz-1)= 2.*dt*(Akv(i,j,nz-1)+Akv(i-1,j,nz-1))
-     &                      /(  Hz(i,j,nz  )+Hz(i-1,j,nz  )
-     &                         +Hz(i,j,nz-1)+Hz(i-1,j,nz-1))
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i-1,j,nz-1))
-
-          cff=1./( 0.5*(Hz(i,j,nz)+Hz(i-1,j,nz))
-     &                   +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*( FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-!         DC(i,nz)=cff*( u(i,j,nz,nnew) +DC(i,0)*ru(i,j,nz)
-          DC(i,nz)=cff*( DC(i,nz) +dt*sustr(i,j) )
-        enddo
-        do k=nz-1,2,-1      !--> forward elimination
-          do i=1,nx
-            FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i-1,j,k-1))
-     &                        /(  Hz(i,j,k  )+Hz(i-1,j,k  )
-     &                           +Hz(i,j,k-1)+Hz(i-1,j,k-1))
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i-1,j,k-1))
-
-            cff=1./( 0.5*(Hz(i,j,k)+Hz(i-1,j,k))
-     &                           +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                             +FC(i,k)+max(WC(i,k),0.)
-     &                    -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                      )
-            CF(i,k-1)=cff*(   FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*( u(i,j,k,nnew) +DC(i,0)*ru(i,j,k)
-     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
+            u(i,j,k,nnew) = u(i,j,k,nnew) +DC(i,0)*ru(i,j,k)
           enddo
         enddo
         do i=1,nx
-          DC(i,1)=( u(i,j,1,nnew) +DC(i,0)*ru(i,j,1)
-     &                      +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                          )/( 0.5*(Hz(i,j,1)+Hz(i-1,j,1))
-     &                            +0.5*dt*(r_D(i,j)+r_D(i-1,j))
-     &                                +FC(i,1)+max(WC(i,1),0.)
-     &                       -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                       )
-
-          u(i,j,1,nnew)=DC(i,1) * 0.5*(Hz(i,j,1)+Hz(i-1,j,1))
-
-          rufrc(i,j)=ru(i,j,1) +dm_u(i,j)*dn_u(i,j)*(
-     &                                      sustr(i,j)
-     &            -0.5*(r_D(i-1,j)+r_D(i,j))*DC(i,1) )
+          u(i,j,nz,nnew)= u(i,j,nz,nnew) +dt*sustr(i,j)
         enddo
-        do k=2,nz,+1          !--> backsubstitution
+
+        do k=1,nz-1
           do i=1,nx
-            DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1)
+            om(i,k)= DC(i,0)*0.5*( Wi(i,j,k)+Wi(i-1,j,k) )
+            Av(i,k)= 0.5*( Akv(i,j,k) + Akv(i-1,j,k) )
+          enddo
+        enddo
+        do k=1,nz
+          do i=1,nx
+            dz(i,k)= 0.5*( Hz(i,j,k)+Hz(i-1,j,k) )
+          enddo
+        enddo
+        do i=1,nx
+          drag(i) = 0.5*(r_D(i,j) + r_D(i-1,j) )
+        enddo 
 
-            u(i,j,k,nnew)=DC(i,k) * 0.5*(Hz(i,j,k)+Hz(i-1,j,k))
+        call vmix_solve(u(:,:,:,nnew),dt,dz,Av,om,j,drag)
 
+        do i=1,nx
+          rufrc(i,j)=dm_u(i,j)*dn_u(i,j)*(
+     &               sustr(i,j) -drag(i)*u(i,j,1,nnew) )
+        enddo
+        do k=1,nz
+          do i=1,nx
+            u(i,j,k,nnew) = u(i,j,k,nnew)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
             rufrc(i,j)=rufrc(i,j) +ru(i,j,k)
+          enddo
+        enddo
+
+
+! start of v solve
+        do i=1,nx
+          DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
+        enddo
+        do k=1,nz
+          do i=1,nx
+            v(i,j,k,nnew) = v(i,j,k,nnew) +DC(i,0)*rv(i,j,k)
+          enddo
+        enddo
+        do i=1,nx
+          v(i,j,nz,nnew)= v(i,j,nz,nnew) +dt*svstr(i,j)
+        enddo
+
+        do k=1,nz-1
+          do i=1,nx
+            om(i,k)= DC(i,0)*0.5*( Wi(i,j,k)+Wi(i,j-1,k) )
+            Av(i,k)= 0.5*( Akv(i,j,k) + Akv(i,j-1,k) )
+          enddo
+        enddo
+        do k=1,nz
+          do i=1,nx
+            dz(i,k)= 0.5*( Hz(i,j,k) + Hz(i,j-1,k) )
+          enddo
+        enddo
+        do i=1,nx
+          drag(i) = 0.5*(r_D(i,j) + r_D(i,j-1) )
+        enddo
+
+        call vmix_solve(v(:,:,:,nnew),dt,dz,Av,om,j,drag)
+
+        do i=1,nx
+          rvfrc(i,j)=dm_v(i,j)*dn_v(i,j)*(
+     &               svstr(i,j) -drag(i)*v(i,j,1,nnew) )
+        enddo
+        do k=1,nz
+          do i=1,nx
+            v(i,j,k,nnew) = v(i,j,k,nnew)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
+            rvfrc(i,j)=rvfrc(i,j) +rv(i,j,k)
           enddo
         enddo
 
@@ -249,68 +244,7 @@
      &              ru(i,j,k)*dxdyi_u(i,j)
            enddo
           enddo
-        endif
 
-        do i=1,nx
-          DC(i,0)=dt*0.25*(pm(i,j)+pm(i,j-1))*(pn(i,j)+pn(i,j-1))
-
-          FC(i,nz-1)= 2.*dt*(Akv(i,j,nz-1)+Akv(i,j-1,nz-1))
-     &                      /(  Hz(i,j,nz  )+Hz(i,j-1,nz  )
-     &                         +Hz(i,j,nz-1)+Hz(i,j-1,nz-1))
-
-          WC(i,nz-1)= DC(i,0)*0.5*(Wi(i,j,nz-1)+Wi(i,j-1,nz-1))
-
-          cff=1./( 0.5*(Hz(i,j,nz)+Hz(i,j-1,nz))
-     &                   +FC(i,nz-1)-min(WC(i,nz-1),0.) )
-
-          CF(i,nz-1)=cff*( FC(i,nz-1)+max(WC(i,nz-1),0.) )
-
-          DC(i,nz)=cff*( v(i,j,nz,nnew) +DC(i,0)*rv(i,j,nz)
-     &                                     +dt*svstr(i,j)
-     &                                                  )
-        enddo
-        do k=nz-1,2,-1      !--> forward elimination
-          do i=1,nx
-            FC(i,k-1)= 2.*dt*(Akv(i,j,k-1)+Akv(i,j-1,k-1))
-     &                        /(  Hz(i,j,k  )+Hz(i,j-1,k  )
-     &                           +Hz(i,j,k-1)+Hz(i,j-1,k-1))
-
-            WC(i,k-1)= DC(i,0)*0.5*(Wi(i,j,k-1)+Wi(i,j-1,k-1))
-
-            cff=1./( 0.5*(Hz(i,j,k)+Hz(i,j-1,k))
-     &                           +FC(i,k-1)-min(WC(i,k-1),0.)
-     &                             +FC(i,k)+max(WC(i,k),0.)
-     &                    -CF(i,k)*(FC(i,k)-min(WC(i,k),0.))
-     &                                                      )
-            CF(i,k-1)=cff*( FC(i,k-1)+max(WC(i,k-1),0.) )
-
-            DC(i,k)=cff*( v(i,j,k,nnew) +DC(i,0)*rv(i,j,k)
-     &                 +DC(i,k+1)*(FC(i,k)-min(WC(i,k),0.)) )
-          enddo
-        enddo
-        do i=1,nx
-          DC(i,1)=( v(i,j,1,nnew) +DC(i,0)*rv(i,j,1)
-     &                      +DC(i,2)*(FC(i,1)-min(WC(i,1),0.))
-     &                          )/( 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
-     &                            +0.5*dt*(r_D(i,j)+r_D(i,j-1))
-     &                                +FC(i,1)+max(WC(i,1),0.)
-     &                       -CF(i,1)*(FC(i,1)-min(WC(i,1),0.))
-     &                                                       )
-          v(i,j,1,nnew)=DC(i,1) * 0.5*(Hz(i,j,1)+Hz(i,j-1,1))
-          rvfrc(i,j)=rv(i,j,1) +dm_v(i,j)*dn_v(i,j)*(
-     &                                      svstr(i,j)
-     &            -0.5*(r_D(i,j-1)+r_D(i,j))*DC(i,1) )
-        enddo
-        do k=2,nz,+1          !--> backsubstitution
-          do i=1,nx
-            DC(i,k)=DC(i,k) +CF(i,k-1)*DC(i,k-1)
-
-            v(i,j,k,nnew)=DC(i,k)* 0.5*(Hz(i,j,k)+Hz(i,j-1,k))
-            rvfrc(i,j)=rvfrc(i,j) + rv(i,j,k)
-          enddo
-        enddo
-
-        if (diag_uv) then
           do k=1,nz
            do i=1,nx
             Vdiag(i,j,k,idiss) = rv(i,j,k)*dxdyi_v(i,j)*vmask(i,j)

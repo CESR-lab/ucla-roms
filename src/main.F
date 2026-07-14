@@ -110,6 +110,7 @@
       use random_output
       use cdr_frc
       use energy_budget
+      use tri_solvers
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bec2_params
       use bgc_io
@@ -127,6 +128,7 @@
       diag_sync=.false.     
       priv_count=0         
 
+      call init_tri_solve
       call init_arrays
 
       call set_scoord                  ! Setup vertical stretching
