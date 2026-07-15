@@ -76,19 +76,13 @@
 
 # ifdef NHMG
 
-#  define FX UFx
-#  define FE VFe
-
       do k=1,nz
-#  include "compute_horiz_rhs_w_terms.h"
+        call w_hadv_up3(rw,k)    ! upwinded in the corrector
       enddo
-
-#  undef FE
-#  undef FX
 
       do j=1,ny
 
-#  include "compute_vert_rhs_w_terms.h"
+        call w_vadv_up3(rw,j)    ! upwinded in the corrector
         do i=1,nx
           DC(i,0)=dt*pm(i,j)*pn(i,j)
         enddo
@@ -242,11 +236,7 @@
      &          - Udiag(i,j,k,iadv)
             Udiag(i,j,k,ivmix) = (u(i,j,k,nnew)-u_prev(i,k))/dt -
      &              ru(i,j,k)*dxdyi_u(i,j)
-           enddo
-          enddo
 
-          do k=1,nz
-           do i=1,nx
             Vdiag(i,j,k,idiss) = rv(i,j,k)*dxdyi_v(i,j)*vmask(i,j)
      &          - Vdiag(i,j,k,ipgr)
      &          - Vdiag(i,j,k,icori)

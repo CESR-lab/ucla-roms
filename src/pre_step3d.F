@@ -150,7 +150,7 @@
                                              ! it is owerwritten by
 
 # ifdef NHMG
-#  include "compute_horiz_rhs_w_terms.h"
+        call w_hadv_c4(rw,k)     ! non-dissipative in the predictor
 # endif
 
 # undef FE                                /* ! barotropic mode. */
@@ -299,7 +299,7 @@
 !-----  Solve implicitly for vertical mixing and vertical advection of w -----
 # ifdef NHMG
 ![
-#  include "compute_vert_rhs_w_terms.h"
+        call w_vadv_c4(rw,j)     ! non-dissipative in the predictor
 
         do i=1,nx
           DC(i,0) =dtau*pm(i,j)*pn(i,j)

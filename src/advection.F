@@ -48,6 +48,10 @@
       public t_vadv_cor
       public uv_hadv_c4
       public uv_vadv_c4
+      public w_hadv_up3
+      public w_hadv_c4
+      public w_vadv_up3
+      public w_vadv_c4
 
       contains
 
@@ -806,7 +810,7 @@
         FC(i,1 ) = v(i,j,2 ,nrhs)-v(i,j,1 ,nrhs)
         FC(i,nz) = v(i,j,nz,nrhs)-v(i,j,nz-1,nrhs)
       enddo
-      do k=1,nz-2
+      do k=1,nz-1
         do i=1,nx
           FC(i,k)= 0.5*(We(i,j,k)+We(i-1,j,k))*(
      &               0.5*(v(i,j,k,nrhs)+v(i,j,k+1,nrhs))
@@ -1167,5 +1171,301 @@
       Fz(1:nx,nz) = 0
 
       end subroutine t_vadv_c4 !]
+!----------------------------------------------------------------
+      subroutine w_hadv_up3(rw,k) ![
+!DIR$ ATTRIBUTES FORCEINLINE :: w_hadv_up3
+
+      ! Horizontal up3 advection of vertical momentum w at level k
+      ! (non-hydrostatic only): interpolate w to horizontal velocity
+      ! points with 3-point upstream-biased parabolic interpolation,
+      ! flux with FlxU/FlxV averaged to w-levels, and add the flux
+      ! divergence to rw.
+
+      ! Import/export
+      integer, intent(in) :: k
+      real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
+      ! local
+      integer :: i,j
+      real    :: Uflxw,Vflxw
+
+      do j=1,ny
+        do i=0,nx+2
+          UFx(i,j)=(w(i,j,k,nrhs)-w(i-1,j,k,nrhs))*umask(i,j)
+        enddo
+      enddo
+      if (west_bnd) then
+        do j=1,ny
+          UFx(0,j)=UFx(1,j)
+        enddo
+      endif
+      if (east_bnd) then
+        do j=1,ny
+          UFx(nx+2,j)=UFx(nx+1,j)
+        enddo
+      endif
+
+      do j=1,ny
+        do i=0,nx+1
+          wrk1(i,j)=UFx(i+1,j)-UFx(i,j)
+        enddo
+      enddo  
+      do j=1,ny
+        do i=1,nx+1
+          if (k<nz) then
+            Uflxw= 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
+          else
+            Uflxw= 0.5*(FlxU(i,j,k)              )
+          endif
+          UFx(i,j)=0.5*(w(i,j,k,nrhs)+w(i-1,j,k,nrhs))*Uflxw
+     &                -coef_up3*( wrk1(i-1,j)*max(Uflxw,0.)
+     &                           +wrk1(i  ,j)*min(Uflxw,0.))
+        enddo
+      enddo                          !--> discard curv, keep UFx
+
+      do j=0,ny+2
+        do i=1,nx
+          VFe(i,j)=(w(i,j,k,nrhs)-w(i,j-1,k,nrhs))*vmask(i,j)
+        enddo
+      enddo
+      if (south_bnd) then
+        do i=1,nx
+          VFe(i,0)=VFe(i,1)
+        enddo
+      endif
+      if (north_bnd) then
+        do i=1,nx
+          VFe(i,ny+2)=VFe(i,ny+1)
+        enddo
+      endif
+
+      do j=0,ny+1
+        do i=1,nx
+          wrk1(i,j)=VFe(i,j+1)-VFe(i,j)
+        enddo
+      enddo                          !--> discard VFe
+      do j=1,ny+1
+        do i=1,nx
+          if (k<nz) then
+            Vflxw= 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
+          else
+            Vflxw= 0.5*(FlxV(i,j,k)              )
+          endif
+          VFe(i,j)=0.5*(w(i,j,k,nrhs)+w(i,j-1,k,nrhs))*Vflxw
+     &                -coef_up3*( wrk1(i,j-1)*max(Vflxw,0.)
+     &                           +wrk1(i,j  )*min(Vflxw,0.))
+        enddo
+      enddo                          !--> discard curv, keep VFe
+
+      do j=1,ny
+        do i=1,nx
+          rw(i,j,k)=rw(i,j,k)-(UFx(i+1,j)-UFx(i,j))
+     &                       -(VFe(i,j+1)-VFe(i,j))
+        enddo
+      enddo
+
+      end subroutine w_hadv_up3 !]
+!----------------------------------------------------------------
+      subroutine w_hadv_c4(rw,k) ![
+!DIR$ ATTRIBUTES FORCEINLINE :: w_hadv_c4
+
+      ! Horizontal c4 (non-dissipative) advection of vertical momentum
+      ! w at level k (non-hydrostatic only): 4-point symmetric
+      ! fourth-order interpolation of w to horizontal velocity points,
+      ! flux with FlxU/FlxV averaged to w-levels, and add the flux
+      ! divergence to rw.
+
+      ! Import/export
+      integer, intent(in) :: k
+      real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
+      ! local
+      integer :: i,j
+      real    :: Uflxw,Vflxw
+
+# define grad wrk1
+
+      do j=1,ny
+        do i=0,nx+2
+          UFx(i,j)=(w(i,j,k,nrhs)-w(i-1,j,k,nrhs))*umask(i,j)
+        enddo
+      enddo
+      if (west_bnd) then
+        do j=1,ny
+          UFx(0,j)=UFx(1,j)
+        enddo
+      endif
+      if (east_bnd) then
+        do j=1,ny
+          UFx(nx+2,j)=UFx(nx+1,j)
+        enddo
+      endif
+
+      do j=1,ny
+        do i=0,nx+1
+          grad(i,j)=0.5*(UFx(i+1,j)+UFx(i,j))
+        enddo
+      enddo                          !--> discard UFx
+      do j=1,ny
+        do i=1,nx+1
+          if (k<nz) then
+            Uflxw= 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
+          else
+            Uflxw= 0.5*(FlxU(i,j,k)              )
+          endif
+          UFx(i,j)=0.5*( w(i,j,k,nrhs)+w(i-1,j,k,nrhs)
+     &                  -gamma*(grad(i,j)-grad(i-1,j)) )*Uflxw
+        enddo
+      enddo                          !--> discard grad, keep UFx
+
+      do j=0,ny+2
+        do i=1,nx
+          VFe(i,j)=(w(i,j,k,nrhs)-w(i,j-1,k,nrhs))*vmask(i,j)
+        enddo
+      enddo
+      if (south_bnd) then
+        do i=1,nx
+          VFe(i,0)=VFe(i,1)
+        enddo
+      endif
+      if (north_bnd) then
+        do i=1,nx
+          VFe(i,ny+2)=VFe(i,ny+1)
+        enddo
+      endif
+
+      do j=0,ny+1
+        do i=1,nx
+          grad(i,j)=0.5*(VFe(i,j+1)+VFe(i,j))
+        enddo
+      enddo                          !--> discard VFe
+      do j=1,ny+1
+        do i=1,nx
+          if (k<nz) then
+            Vflxw= 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
+          else
+            Vflxw= 0.5*(FlxV(i,j,k)              )
+          endif
+          VFe(i,j)=0.5*( w(i,j,k,nrhs)+w(i,j-1,k,nrhs)
+     &                  -gamma*(grad(i,j)-grad(i,j-1)) )*Vflxw
+        enddo
+      enddo                          !--> discard grad, keep VFe
+
+      do j=1,ny
+        do i=1,nx
+          rw(i,j,k)=rw(i,j,k)-(UFx(i+1,j)-UFx(i,j))
+     &                       -(VFe(i,j+1)-VFe(i,j))
+# ifdef DIAGNOSTICS_NHMG
+          Wdiag(i,j,k,iwhoriadv)=rw(i,j,k)-Wdiag(i,j,k,iwprsgr)
+# endif
+        enddo
+      enddo
+
+# undef grad
+
+      end subroutine w_hadv_c4 !]
+!----------------------------------------------------------------
+      subroutine w_vadv_up3(rw,j) ![
+!DIR$ ATTRIBUTES FORCEINLINE :: w_vadv_up3
+
+      ! Vertical up3 advection of vertical momentum w in row j
+      ! (non-hydrostatic only). Fluxes live at cell centers k
+      ! (between w(k-1) and w(k)); the advecting velocity is We
+      ! averaged to the cell center.
+      !  Fz(k) = w(k-1/2)*0.5*(We(k)+We(k-1))
+      !  w(k-1/2) = 0.5*(w(k)+w(k-1)) - coef_up3*curv(upwind side)
+      !  curv(k) = w(k+1) - 2*w(k) + w(k-1)
+
+      ! Import/export
+      integer, intent(in) :: j
+      real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
+      ! local
+      integer :: i,k
+      real    :: Flxw
+
+# define curv CF
+
+      do k=1,nz-1
+        do i=1,nx
+          curv(i,k) = w(i,j,k+1,nrhs) -2*w(i,j,k,nrhs) +w(i,j,k-1,nrhs)
+        enddo
+      enddo
+      do i=1,nx                      !! extrapolate to k=nz
+        curv(i,nz) = 2*curv(i,nz-1) -curv(i,nz-2)
+      enddo
+      ! NOTE: curv(i,0) is read below (bottom flux, k=1) but never set
+      ! here; it carries stale scratch content, exactly as in the
+      ! original include file. To be resolved in a next phase.
+
+      do k=1,nz
+        do i=1,nx
+          Flxw = 0.5*(We(i,j,k)+We(i,j,k-1))
+          FC(i,k) = 0.5*(w(i,j,k,nrhs)+w(i,j,k-1,nrhs))*Flxw
+     &                -coef_up3*( curv(i,k-1)*max(Flxw,0.)
+     &                           +curv(i,k  )*min(Flxw,0.))
+        enddo
+      enddo
+
+      !! These guys (FC) are fluxes (m3/s) of velocity (m/s) -> m4/s2
+      do k=1,nz-1
+        do i=1,nx
+          rw(i,j,k) = rw(i,j,k) -FC(i,k+1)+FC(i,k)
+        enddo
+      enddo
+
+      ! flux at surface is zero because it moves with omega.
+      ! this also takes care of the half-volume of w(nz)
+      do i=1,nx
+        rw(i,j,nz) = rw(i,j,nz) +FC(i,nz)
+      enddo
+
+# undef curv
+
+      end subroutine w_vadv_up3 !]
+!----------------------------------------------------------------
+      subroutine w_vadv_c4(rw,j) ![
+!DIR$ ATTRIBUTES FORCEINLINE :: w_vadv_c4
+
+      ! Vertical c4 (non-dissipative) advection of vertical momentum
+      ! w in row j (non-hydrostatic only). Centered counterpart of
+      ! w_vadv_up3, built like uv_vadv_c4: centered differences (CF)
+      ! replace the upwinded curvature; one-sided at bottom/surface.
+
+      ! Import/export
+      integer, intent(in) :: j
+      real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
+      ! local
+      integer :: i,k
+      real    :: Flxw
+
+      do k=1,nz-1
+        do i=1,nx
+          CF(i,k)= w(i,j,k+1,nrhs)-w(i,j,k-1,nrhs)
+        enddo
+      enddo
+      do i=1,nx
+        CF(i,0 )= w(i,j,1 ,nrhs)-w(i,j,0   ,nrhs)
+        CF(i,nz)= w(i,j,nz,nrhs)-w(i,j,nz-1,nrhs)
+      enddo
+
+      do k=1,nz
+        do i=1,nx
+          Flxw = 0.5*(We(i,j,k)+We(i,j,k-1))
+          FC(i,k)= Flxw*( 0.5*(w(i,j,k,nrhs)+w(i,j,k-1,nrhs))
+     &                   -coef_c4*(CF(i,k)-CF(i,k-1)) )
+        enddo
+      enddo
+
+      do k=1,nz-1
+        do i=1,nx
+          rw(i,j,k) = rw(i,j,k) -FC(i,k+1)+FC(i,k)
+        enddo
+      enddo
+
+      ! flux at surface is zero because it moves with omega.
+      ! this also takes care of the half-volume of w(nz)
+      do i=1,nx
+        rw(i,j,nz) = rw(i,j,nz) +FC(i,nz)
+      enddo
+
+      end subroutine w_vadv_c4 !]
 !----------------------------------------------------------------
       end module advection
