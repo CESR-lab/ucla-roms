@@ -1390,10 +1390,8 @@
       enddo
       do i=1,nx                      !! extrapolate to k=nz
         curv(i,nz) = 2*curv(i,nz-1) -curv(i,nz-2)
+        curv(i,0)  = 2*curv(i,1)    -curv(i,2)
       enddo
-      ! NOTE: curv(i,0) is read below (bottom flux, k=1) but never set
-      ! here; it carries stale scratch content, exactly as in the
-      ! original include file. To be resolved in a next phase.
 
       do k=1,nz
         do i=1,nx
