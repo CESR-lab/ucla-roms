@@ -45,6 +45,7 @@
       use roms_mpi
       use advection
       use tri_solvers
+      use hmixing
 
       implicit none
       integer  i,j,k
@@ -125,6 +126,9 @@
       do k=1,nz
         call uv_cor_curv(ru,rv,k)
         call uv_hadv_cor(ru,rv,k)
+# ifdef UV_VIS2
+        call uv_visc3d(ru,rv,k)
+# endif
       enddo
 
 # ifdef WEC
@@ -234,6 +238,7 @@
      &          - Udiag(i,j,k,ipgr)
      &          - Udiag(i,j,k,icori)
      &          - Udiag(i,j,k,iadv)
+     &          - Udiag(i,j,k,ihmix)
             Udiag(i,j,k,ivmix) = (u(i,j,k,nnew)-u_prev(i,k))/dt -
      &              ru(i,j,k)*dxdyi_u(i,j)
 
@@ -241,6 +246,7 @@
      &          - Vdiag(i,j,k,ipgr)
      &          - Vdiag(i,j,k,icori)
      &          - Vdiag(i,j,k,iadv)
+     &          - Vdiag(i,j,k,ihmix)
             Vdiag(i,j,k,ivmix) = (v(i,j,k,nnew)-v_prev(i,k))/dt -
      &              rv(i,j,k)*dxdyi_v(i,j)
            enddo

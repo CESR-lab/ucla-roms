@@ -117,7 +117,7 @@ KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
 \
 	prsgrd.F	pre_step3d.F	step3d_uv1.F	step3d_uv2.F\
 	step3d_t_ISO.F	set_depth.F	omega.F         advection.F\
-	visc3d_S.F	t3dmix_S.F      particles.F\
+	hmixing.F	t3dmix_S.F      particles.F\
 \
 	zetabc.F	u2dbc_im.F	v2dbc_im.F	tri_solvers.F\
 \

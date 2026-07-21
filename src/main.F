@@ -356,11 +356,6 @@ CR      write(*,*)  ' -2' MYID
       call prsgrd
       call step3d_uv1  ! update u/v(nnew) with dt*ru/rv
 
-#  ifdef UV_VIS2
-      call visc3d
-#  endif
-
-
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
