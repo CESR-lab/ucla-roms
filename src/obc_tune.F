@@ -341,14 +341,14 @@
       ! fluxes and ub coefficients are defined as nx, ny sized arrays
       ! so use method 2 for output (see roms_read_write)
       if (obc_south.and.(jnode==0)) then
-        call ncwrite(ncid,'cf_south',cflx_south_avg(1:i1),(/1,record/))
-        call ncwrite(ncid,'pf_south',pflx_south_avg(1:i1),(/1,record/))
-        call ncwrite(ncid,'ub_south',  ub_south_avg(1:i1),(/1,record/))
+        call ncwrite(ncid,'cf_south',cflx_south_avg(i0:i1),(/1,record/))
+        call ncwrite(ncid,'pf_south',pflx_south_avg(i0:i1),(/1,record/))
+        call ncwrite(ncid,'ub_south',  ub_south_avg(i0:i1),(/1,record/))
       endif
       if (obc_north.and.(jnode==npy-1)) then
-        call ncwrite(ncid,'cf_north',cflx_north_avg(1:i1),(/1,record/))
-        call ncwrite(ncid,'pf_north',pflx_north_avg(1:i1),(/1,record/))
-        call ncwrite(ncid,'ub_north',  ub_north_avg(1:i1),(/1,record/))
+        call ncwrite(ncid,'cf_north',cflx_north_avg(i0:i1),(/1,record/))
+        call ncwrite(ncid,'pf_north',pflx_north_avg(i0:i1),(/1,record/))
+        call ncwrite(ncid,'ub_north',  ub_north_avg(i0:i1),(/1,record/))
       endif
       if (obc_east.and.(inode==npx-1)) then
         call ncwrite(ncid,'cf_east',cflx_east_avg(j0:j1),(/1,record/))
@@ -356,9 +356,9 @@
         call ncwrite(ncid,'ub_east',  ub_east_avg(j0:j1),(/1,record /))
       endif
       if (obc_west.and.(inode==0)) then
-        call ncwrite(ncid,'cf_west',cflx_west_avg(1:j1),(/1,record/))
-        call ncwrite(ncid,'pf_west',pflx_west_avg(1:j1),(/1,record/))
-        call ncwrite(ncid,'ub_west',  ub_west_avg(1:j1),(/1,record/))
+        call ncwrite(ncid,'cf_west',cflx_west_avg(j0:j1),(/1,record/))
+        call ncwrite(ncid,'pf_west',pflx_west_avg(j0:j1),(/1,record/))
+        call ncwrite(ncid,'ub_west',  ub_west_avg(j0:j1),(/1,record/))
       endif
       
       ierr=nf90_close(ncid)    
