@@ -812,7 +812,7 @@
       enddo
       do k=1,nz-1
         do i=1,nx
-          FC(i,k)= 0.5*(We(i,j,k)+We(i-1,j,k))*(
+          FC(i,k)= 0.5*(We(i,j,k)+We(i,j-1,k))*(
      &               0.5*(v(i,j,k,nrhs)+v(i,j,k+1,nrhs))
      &              -coef_c4*(FC(i,k+1)-FC(i,k)) )
         enddo
