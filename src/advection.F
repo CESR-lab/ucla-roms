@@ -1188,6 +1188,8 @@
       integer :: i,j
       real    :: Uflxw,Vflxw
 
+      if (.not.uv_adv) return
+
       do j=1,ny
         do i=0,nx+2
           UFx(i,j)=(w(i,j,k,nrhs)-w(i-1,j,k,nrhs))*umask(i,j)
@@ -1281,6 +1283,7 @@
       integer :: i,j
       real    :: Uflxw,Vflxw
 
+      if (.not.uv_adv) return
 # define grad wrk1
 
       do j=1,ny
@@ -1381,6 +1384,8 @@
       integer :: i,k
       real    :: Flxw
 
+      if (.not.uv_adv) return
+
 # define curv CF
 
       do k=1,nz-1
@@ -1433,6 +1438,8 @@
       ! local
       integer :: i,k
       real    :: Flxw
+
+      if (.not.uv_adv) return
 
       do k=1,nz-1
         do i=1,nx
