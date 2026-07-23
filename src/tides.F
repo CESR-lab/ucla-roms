@@ -189,8 +189,8 @@
 !-----------------------------------------------------------------------
 !  Tidal potential (applied as a pressure-gradient force in prsgrd)
 !-----------------------------------------------------------------------
-          do j=0,ny
-            do i=0,nx
+          do j=0,ny+1
+            do i=0,nx+1
               ptide(i,j)= ptide(i,j)
      &      + ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
             enddo

@@ -57,6 +57,24 @@
       real grho, HalfGRho, cff, cfr
       real, parameter :: OneFifth=0.2, OneTwelfth=1./12., epsil=0.
 
+      ! Loop ranges run one point beyond the interior on the high
+      ! side: ru is computed at faces 1..nx+1 and rv at 1..ny+1, so
+      ! that the NHMG dpdz block at the end has the full rho-centered
+      ! PGF average at every interior point (hydrostatic code reads
+      ! only ru(1..nx)/rv(1..ny); the extra points are computed
+      ! regardless, keeping one uniform set of ranges). The deepest
+      ! stencil reach is FC/rx at nx+2/ny+2, exactly the bf=2 halo
+      ! edge (z_r/z_w/Hz exchanged in set_depth; rho/rho1/qp1 computed
+      ! over the full extended range in rho_eos). At interior tile
+      ! seams and periodic wraps the extended values are bit-identical
+      ! to the neighboring rank's interior values. At physical
+      ! boundaries all faces on or inside the domain are computed from
+      ! data (the boundary ring is real: h from the grid file, zeta/t
+      ! from the BCs); only the faces one beyond the domain (0 and
+      ! nx+2/ny+2) are extrapolated — symmetric west/east and
+      ! south/north. (ptide is filled over 0..nx+1/0..ny+1 in
+      ! set_tides to match the extended P columns.)
+
 # ifdef ADV_ISONEUTRAL
       real r0g
 # endif
@@ -109,9 +127,9 @@
       grho=g/rho0
       HalfGRho=0.5*grho
 
-      do j=0,ny
+      do j=0,ny+1
         do k=1,nz-1
-          do i=0,nx
+          do i=0,nx+1
             dZ(i,k)=z_r(i,j,k+1)-z_r(i,j,k)
 # ifdef SPLIT_EOS
 c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
@@ -127,7 +145,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
         enddo
         ! Extend derivatives top and bottom
         ! dR and dZ are at 'w-points'
-        do i=0,nx
+        do i=0,nx+1
           dR(i,nz)=dR(i,nz-1)
           dR(i,0 )=dR(i,1)
           dZ(i,nz)=dZ(i,nz-1)
@@ -135,7 +153,7 @@ c**         dpth=z_w(i,j,N)-0.5*(z_r(i,j,k+1)+z_r(i,j,k))
         enddo
         ! Irreversible due to in-place overwriting of dZ and dR
         do k=nz,1,-1
-          do i=0,nx
+          do i=0,nx+1
             cff=2.*dZ(i,k)*dZ(i,k-1)
             dZ(i,k)=cff/(dZ(i,k)+dZ(i,k-1))
 
@@ -154,7 +172,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           enddo
         enddo
 
-        do i=0,nx
+        do i=0,nx+1
           P(i,j,nz)=g*z_w(i,j,nz) + grho*( rho(i,j,nz)
      &       +0.5*(rho(i,j,nz)-rho(i,j,nz-1))*(z_w(i,j,nz)-z_r(i,j,nz))
      &          /(z_r(i,j,nz)-z_r(i,j,nz-1)) )*(z_w(i,j,nz)-z_r(i,j,nz))
@@ -172,7 +190,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           enddo
         endif
         do k=nz-1,1,-1
-          do i= 0,nx
+          do i= 0,nx+1
             P(i,j,k)=P(i,j,k+1)+HalfGRho*( (rho(i,j,k+1)+rho(i,j,k))
      &                                     *(z_r(i,j,k+1)-z_r(i,j,k))
 
@@ -191,7 +209,7 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
 
       do k=nz,1,-1
         do j=1,ny
-          do i=0,nx+1
+          do i=0,nx+2
             FC(i,j)=(z_r(i,j,k)-z_r(i-1,j,k))
 # ifdef MASKING
      &                              *umask(i,j)
@@ -214,22 +232,34 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
           enddo
         enddo
 
-        ! Extrapolate near physical boundaries
-        if (inode.eq.0.and.(.not.ew_periodic)) then
+        ! Physical boundaries: the boundary-face difference itself is
+        ! kept as computed (boundary-ring h/zeta/t are real data, so
+        ! FC/rx at faces 1 and nx+1 (ny+1) are valid); only the face
+        ! one beyond the physical domain is extrapolated, mirroring
+        ! dR(i,0)=dR(i,1) at the vertical edges.
+        if (west_bnd) then
           do j=1,ny          
             FC(1,j)=FC(2,j) 
             rx(1,j)=rx(2,j)
+            FC(0,j)=0
+            rx(0,j)=0
+!           FC(0,j)=FC(1,j) 
+!           rx(0,j)=rx(1,j)
           enddo
         endif
-        if (inode.eq.npx-1.and.(.not.ew_periodic)) then
+        if (east_bnd) then
           do j=1,ny
             FC(nx+1,j)=FC(nx,j)
             rx(nx+1,j)=rx(nx,j)
+            FC(nx+2,j)= 0
+            rx(nx+2,j)= 0
+!           FC(nx+2,j)=FC(nx+1,j)
+!           rx(nx+2,j)=rx(nx+1,j)
           enddo
         endif
 
         do j=1,ny
-          do i=0,nx
+          do i=0,nx+1
             cff=2.*FC(i,j)*FC(i+1,j)
             if (cff > epsil) then
               dZx(i,j)=cff/(FC(i,j)+FC(i+1,j))
@@ -249,7 +279,7 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
 # endif
           enddo               !--> discard FC, rx
 
-          do i=1,nx
+          do i=1,nx+1
             ru(i,j,k)=0.5*(Hz(i,j,k)+Hz(i-1,j,k))*dn_u(i,j)*(
      &                              P(i-1,j,k)-P(i,j,k)-HalfGRho*(
 
@@ -292,7 +322,7 @@ c**   &               -z_r(i,j,k)-z_r(i-1,j,k))
 ! ETA-component of pressure gradient term:
 !-------------- -- -------- -------- -----
 
-        do j= 0,ny+1
+        do j= 0,ny+2
           do i=1,nx
             FC(i,j)=(z_r(i,j,k)-z_r(i,j-1,k))
 # ifdef MASKING
@@ -316,26 +346,33 @@ c**  &                -z_r(i,j,k)-z_r(i,j-1,k))
           enddo
         enddo
 
-        ! WE: imin = istr+1 = 2
-        ! IN: imin = istr-2 = -1
-        ! EE: imax = nx
-        ! in: imax = nx+1
-
-        ! Extrapolate near physical boundaries
-        if (jnode.eq.0.and.(.not.ns_periodic)) then
+        ! Physical boundaries: the boundary-face difference itself is
+        ! kept as computed (boundary-ring h/zeta/t are real data, so
+        ! FC/rx at faces 1 and nx+1 (ny+1) are valid); only the face
+        ! one beyond the physical domain is extrapolated, mirroring
+        ! dR(i,0)=dR(i,1) at the vertical edges.
+        if (south_bnd) then
           do i=1,nx
             FC(i,1)=FC(i,2)
             rx(i,1)=rx(i,2)
+            FC(i,0)= 0
+            rx(i,0)= 0
+!           FC(i,0)=FC(i,1)
+!           rx(i,0)=rx(i,1)
           enddo
         endif
-        if (jnode.eq.npy-1.and.(.not.ns_periodic)) then
+        if (north_bnd) then
           do i=1,nx
             FC(i,ny+1)=FC(i,ny)
             rx(i,ny+1)=rx(i,ny)
+            FC(i,ny+2)= 0
+            rx(i,ny+2)= 0
+!           FC(i,ny+2)=FC(i,ny+1)
+!           rx(i,ny+2)=rx(i,ny+1)
           enddo
         endif
 
-        do j=0,ny
+        do j=0,ny+1
           do i=1,nx
             cff=2.*FC(i,j)*FC(i,j+1)
             if (cff > epsil) then
@@ -438,6 +475,8 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
 !--------------------------------------------------------------------
 !
 !     We are re-using dR as a work array
+!     ru(nx+1) and rv(:,ny+1) are valid here: the fill loops above run
+!     to nx+1/ny+1 (see the loop-range note in the declaration section).
 
       do j=1,ny
          do k =1,nz
