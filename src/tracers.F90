@@ -58,6 +58,8 @@ module tracers
 
   integer(kind=4), dimension(:), allocatable              :: t_ana_frc               ! whether surface flux is read
 
+  integer, dimension(nt), public      :: itrc_alk_pair = 0       ! Pairing logic
+
   !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
   ! Final tracer concentrations live in 't' in ocean3d
   ! Surface tracer flux lives in 'stflx' in surf_flux.F module.
@@ -300,7 +302,7 @@ contains
     ! local
     integer(kind=4) itrc, ierr, varid
 
-    do itrc=1,iTandS+nt_passive
+    do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       if (wrt_t(itrc)) then
         varid = nccreate(ncid,t_vname(itrc),&
         &(/dn_xr,dn_yr,dn_zr,dn_tm/),(/ds_xr,ds_yr,ds_zr,0/),nf90_double)
@@ -320,7 +322,7 @@ contains
     integer(kind=4) :: itrc, ierr, varid
     character(len=64) :: long_name
 
-    do itrc=1,iTandS+nt_passive
+    do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       if (wrt_t_avg(itrc)) then
         long_name='averaged '//t_lname(itrc) ! Add averaged to long name
         varid = nccreate(ncid,t_vname(itrc),&
@@ -343,7 +345,7 @@ contains
     ! local
     integer(kind=4) :: itrc
 
-    do itrc=1,iTandS+nt_passive
+    do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       if (wrt_t(itrc)) call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nnew,itrc),start, .true.)
     enddo
 
@@ -360,7 +362,7 @@ contains
     ! local
     integer(kind=4) :: itrc, itavg
 
-    do itrc=1,iTandS+nt_passive
+    do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       if (wrt_t_avg(itrc)) then
         itavg = NT_2_t_avg(itrc)                                   ! get respective index for t_avg(itavg) -> t(itrc)
         call ncwrite(ncid,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),start, .true.)
@@ -395,7 +397,7 @@ contains
     ! local
     integer(kind=4) :: itrc, itavg
 
-    do itrc=1,iTandS+nt_passive
+    do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       if (wrt_t_avg(itrc)) then
         itavg = NT_2_t_avg(itrc)                         ! get respective index for t_avg(itavg) -> t(itrc)
         t_avg(i0:i1,j0:j1,:,itavg) = t_avg(i0:i1,j0:j1,:,itavg)     *(1-coef) +&
@@ -464,6 +466,39 @@ contains
       wrt_t(itrc) = .false.
       wrt_t_dia(itrc) = .false.
       t_ana_frc(itrc)=1
+      itot = itot+1
+    enddo
+
+    do itrc=iTandS+nt_passive+1,iTandS+nt_passive+nt_cdr_oae,2
+      write(passive_tracer_num, '(I0)') (itrc-iTandS-nt_passive)
+      t_vname(itrc)='CDR_OAE_ALK' // TRIM(passive_tracer_num)
+      t_units(itrc)='mMol m-3'
+      t_lname(itrc)='CDR OAE ALK tracer' // TRIM(passive_tracer_num)
+      wrt_t(itrc) = .false.
+      wrt_t_dia(itrc) = .false.
+      t_ana_frc(itrc)=2
+      itot = itot+1
+
+      write(passive_tracer_num, '(I0)') (itrc+1-iTandS-nt_passive)
+      t_vname(itrc+1)='CDR_OAE_DIC' // TRIM(passive_tracer_num)
+      t_units(itrc+1)='mMol m-3'
+      t_lname(itrc+1)='CDR OAE DIC tracer' // TRIM(passive_tracer_num)
+      wrt_t(itrc+1) = .false.
+      wrt_t_dia(itrc+1) = .false.
+      t_ana_frc(itrc+1)=2
+      ! Identify the corresponding ALK tracer
+      itrc_alk_pair(itrc+1) = itrc
+      itot = itot+1
+    enddo
+
+    do itrc=iTandS+nt_passive+2*nt_cdr_oae+1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
+      write(passive_tracer_num, '(I0)') (itrc-iTandS-nt_passive-2*nt_cdr_oae)
+      t_vname(itrc)='CDR_DOR_DIC' // TRIM(passive_tracer_num)
+      t_units(itrc)='mMol m-3'
+      t_lname(itrc)='CDR DOR DIC tracer' // TRIM(passive_tracer_num)
+      wrt_t(itrc) = .false.
+      wrt_t_dia(itrc) = .false.
+      t_ana_frc(itrc)=2
       itot = itot+1
     enddo
 

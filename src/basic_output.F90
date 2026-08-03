@@ -1684,7 +1684,7 @@ contains                  !]
       &, 'hbbl',   wrt_Hbbl, vname(2,indxHbbl)&
 # endif
       &, ''
-      do itrc=1,iTandS+nt_passive
+      do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       write(*,'(11x,A,I2,A,T30,L1,T36,A)') 't(',&
       &itrc, ')', wrt_t(itrc), t_vname(itrc)
       enddo
@@ -1738,7 +1738,7 @@ contains                  !]
         &, 'hbbl',   wrt_avg_Hbbl, vname(2,indxHbbl)&
 # endif
         &,''
-        do itrc=1,iTandS+nt_passive
+        do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
         write(*,'(11x,A,I2,A,T30,L1,T36,A)') 't(',&
         &itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
         enddo

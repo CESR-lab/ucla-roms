@@ -201,7 +201,7 @@ contains
     ! Were previously harcoded individually as, e.g.
     ! po4_ind_t     = iPO4-iTandS-nt_passive
     integer(kind=4), intent(in) :: t_idx
-    bgc_idx = t_idx-iTandS-nt_passive
+    bgc_idx = t_idx-iTandS-nt_passive-2*nt_cdr_oae-nt_cdr_dor
 
   end function bgc_idx
 
@@ -209,7 +209,7 @@ contains
     ! Takes a bgc tracer index (e.g. dtracer_module(:,:,:,b_idx)) and
     ! returns the corresponding tracer array index t(:,:,:,:,t_idx)
     integer(kind=4), intent(in) ::b_idx
-    t_idx = b_idx+iTandS+nt_passive
+    t_idx = b_idx+iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
   end function t_idx
 
 
