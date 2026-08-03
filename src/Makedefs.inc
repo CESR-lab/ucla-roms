@@ -11,6 +11,10 @@ BUILD_MODE ?=regular
 KEEP_PPSRC ?=false
 # Allow additional FFLAGS to defaults without overriding them:
 USER_FFLAGS ?=
+# Allow additional link flags (e.g. -Wl,-rpath,<dir>) without overriding defaults.
+# Note: MPI wrappers that inject their own -rpath flags (e.g. spack-built OpenMPI)
+# make the linker ignore LD_RUN_PATH, so rpaths must be passed explicitly here.
+USER_LDFLAGS ?=
 ##############################
 #       FILE EXTENSIONS      #
 
@@ -200,7 +204,7 @@ CFTFLAGS += $(LARGE_MEM_FLAG)
 CFT += $(CFTFLAGS)
 
 # Fortran loader options:
-LDFLAGS = $(CFTFLAGS) $(LARGE_MEM_FLAG)
+LDFLAGS = $(CFTFLAGS) $(LARGE_MEM_FLAG) $(USER_LDFLAGS)
 LDR += $(LDFLAGS)
 
 # Fortran compiler options/flags:
