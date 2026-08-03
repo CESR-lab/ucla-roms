@@ -57,7 +57,7 @@ module extract_data
   use ocean_vars, only: zeta, ubar, vbar, u, v, hz, hz_u
   use scalars, only: dt, knew, nstp, time
   use param, only: isalt, nt, itemp, isw_corn, jsw_corn,&
-  &nt_passive, mynode, lm, mm, nz, ocean_grid_comm
+  &nt_passive, mynode, lm, mm, nz, ocean_grid_comm, nt_cdr_oae, nt_cdr_dor
   use scoord, only: theta_s, theta_b, hc
   use calc_pflx_mod, only:  up, vp
   use basic_output, only: &
@@ -918,11 +918,6 @@ contains
           endif
           endif
 #endif
-
-
-        if (findstr(variables,'passive') ) obj(iobj)%passive = .True.
-        if (findstr(variables,'cdr_oae') ) obj(iobj)%cdr_oae = .True.
-        if (findstr(variables,'cdr_dor') ) obj(iobj)%cdr_dor = .True.
 
           if (obj(i)%passive) then
             do indt=isalt+1,nt_passive

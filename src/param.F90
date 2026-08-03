@@ -20,6 +20,7 @@ module param
   integer(kind=4), public :: nz
   integer(kind=4), parameter, public :: NSUB_X = 1, NSUB_E = 1  ! shared-memory tiling: hardcoded, no longer namelist-configurable
   integer(kind=4), public :: nt = 1
+  integer(kind=4), public :: nt_cdr_oae = 0, nt_cdr_dor = 0
   integer(kind=4), public :: nt_passive = 0, nt_bgc = 0
   namelist /PARAM_SETTINGS/ NP_XI, NP_ETA, LLm, MMm,&
   &nz, nt_passive, nt_cdr_oae, nt_cdr_dor, nt_bgc

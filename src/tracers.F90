@@ -18,7 +18,7 @@ module tracers
   !]
 
 #include "cppdefs.opt"
-  use param, only: isalt, itemp, lm, mm, mynode, nt_passive
+  use param, only: isalt, itemp, lm, mm, mynode, nt_passive, nt_cdr_oae, nt_cdr_dor
   use dimensions, only: i0, i1, j0, j1, nx, ny, eta_rho, xi_rho&
   &, ds_xr, ds_yr, ds_zr
   use surf_flux, only: stflx                          ! surface tracer flux should possibly live in this module rath
@@ -58,7 +58,7 @@ module tracers
 
   integer(kind=4), dimension(:), allocatable              :: t_ana_frc               ! whether surface flux is read
 
-  integer, dimension(nt), public      :: itrc_alk_pair = 0       ! Pairing logic
+  integer, dimension(:), public, allocatable :: itrc_alk_pair ! Pairing logic
 
   !-- Tracer netcdf variables as arrays/matrices of 'NT' length:
   ! Final tracer concentrations live in 't' in ocean3d
@@ -441,7 +441,10 @@ contains
     allocate(t_ana_frc(nt))
     allocate(nc_t(nt))
     allocate(NT_2_t_avg(nt))
+    allocate(itrc_alk_pair(nt))
     wrt_t_dia(:) = .false.
+
+    itrc_alk_pair(:) = 0
 
     ! Core tracers - temp and salt:
     t_vname(itemp)='temp';        t_units(itemp)='Celsius'
