@@ -442,6 +442,8 @@ contains
     allocate(nc_t(nt))
     allocate(NT_2_t_avg(nt))
     allocate(itrc_alk_pair(nt))
+    wrt_t(:) = .false.
+    wrt_t_avg(:) = .false.
     wrt_t_dia(:) = .false.
 
     itrc_alk_pair(:) = 0
