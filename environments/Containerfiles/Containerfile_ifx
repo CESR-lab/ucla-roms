@@ -197,7 +197,7 @@ RUN bash -c "source /opt/intel/oneapi/setvars.sh \
 RUN python3 -m venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir roms-tools==4.0.0a2 pytest==8 f90nml==1.4 h5py h5netcdf
+RUN pip install --no-cache-dir roms-tools==4.0.0 pytest==8 f90nml==1.4 h5py h5netcdf
 
 # Add a non-root user so OpenMPI doesn't warn:
 RUN useradd -ms /bin/bash container_user

@@ -7,7 +7,7 @@ dependencies:
   - xarray
   - ipykernel
   - jupyter
-  - roms-tools>=4.0.0a2
+  - roms-tools>=4.0.0
   - compilers
   - netcdf-fortran
   - h5netcdf
