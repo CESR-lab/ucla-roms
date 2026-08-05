@@ -574,8 +574,8 @@ subroutine ecosys_bec2_tile(Istr,Iend,Jstr,Jend)
 
   do k=1,nz
     do m=1,nt_bgc
-      t(istr:iend,jstr:jend,k,nnew,isalt+nt_passive+m) =&
-      &t(istr:iend,jstr:jend,k,nnew,isalt+nt_passive+m)&
+      t(istr:iend,jstr:jend,k,nnew,isalt+nt_passive+2*nt_cdr_oae+nt_cdr_dor+m) =&
+      &t(istr:iend,jstr:jend,k,nnew,isalt+nt_passive+2*nt_cdr_oae+nt_cdr_dor+m)&
       &+ dt * DTRACER_MODULE(istr:iend,jstr:jend,k,m)
     enddo
 

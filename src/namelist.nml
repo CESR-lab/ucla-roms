@@ -56,6 +56,8 @@ LLm = 199           ! Number of grid points in X
 MMm = 99            ! Number of grid points in Y
 nz = 50             ! Number of vertical levels
 nt_passive = 0      ! Number of passive tracers; must be named passive_tracer1, etc.
+nt_cdr_oae = 0      ! Number of OAE (ALK-mimicking) passive CDR tracers
+nt_cdr_dor = 0      ! Number of DOR (DIC-mimicking) passive CDR tracers
 nt_bgc = 0          ! Number of BGC tracers
 /
 

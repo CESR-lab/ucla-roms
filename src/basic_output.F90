@@ -26,7 +26,7 @@ module basic_output
   use ocean_vars, only:&
   &zeta_avg, ubar_avg, vbar_avg, u_avg, v_avg,&
   &w_avg, wvl_avg, zeta, ubar, vbar, u, v, z_r, We, Wi
-  use param, only: Lm, Mm, isalt, itemp, mynode, nt_passive, ocean_grid_comm
+  use param, only: Lm, Mm, isalt, itemp, mynode, nt_passive, ocean_grid_comm, nt_cdr_oae, nt_cdr_dor
   use error_handling_mod, only: error_log
   use pio_roms, only: pio_gtype
 #ifdef PARALLEL_IO
@@ -1684,7 +1684,7 @@ contains                  !]
       &, 'hbbl',   wrt_Hbbl, vname(2,indxHbbl)&
 # endif
       &, ''
-      do itrc=1,iTandS+nt_passive
+      do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
       write(*,'(11x,A,I2,A,T30,L1,T36,A)') 't(',&
       &itrc, ')', wrt_t(itrc), t_vname(itrc)
       enddo
@@ -1738,7 +1738,7 @@ contains                  !]
         &, 'hbbl',   wrt_avg_Hbbl, vname(2,indxHbbl)&
 # endif
         &,''
-        do itrc=1,iTandS+nt_passive
+        do itrc=1,iTandS+nt_passive+2*nt_cdr_oae+nt_cdr_dor
         write(*,'(11x,A,I2,A,T30,L1,T36,A)') 't(',&
         &itrc, ')', wrt_t_avg(itrc), t_vname(itrc)
         enddo
