@@ -169,6 +169,12 @@ def create_roms_surface_forcing_restoring_sss(grid, target_dir: Path):
         grid=grid,
         type="restoring",
         restoring_forces=['sss'],
+        # roms-tools' default coarse_grid_mode="auto" coarsens by a factor of 2
+        # for low-resolution sources like this synthetic one. ROMS reads the
+        # restoring fields at full resolution (surf_flux.F90 never sets
+        # ncforce%coarse, unlike bulk_frc/flux_frc/bgc_io), so a coarse file
+        # aborts with NetCDF "Start+count exceeds dimension bound".
+        coarse_grid_mode="never",
         start_time=dt.datetime(2010, 1, 1),
         end_time=dt.datetime(2010, 1, 2),
         source={"name": "WOA",
@@ -183,6 +189,9 @@ def create_roms_surface_forcing_restoring_dic_alk(grid, target_dir: Path):
         grid=grid,
         type="restoring",
         restoring_forces=['sDIC', 'sALK'],
+        # See create_roms_surface_forcing_restoring_sss: ROMS reads sDIC/sALK at
+        # full resolution too, so keep this file on the fine grid.
+        coarse_grid_mode="never",
         start_time=dt.datetime(2010, 1, 1),
         end_time=dt.datetime(2010, 1, 2),
         source={"name": "SODA",
