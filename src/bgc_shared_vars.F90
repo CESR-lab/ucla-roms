@@ -7,7 +7,7 @@ module bgc_shared_vars
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
   use namelist_open_mod, only: open_namelist_file
   use error_handling_mod, only: error_log
-  use param, only: mynode, nt_passive, nt_bgc, lm, mm, nz
+  use param, only: mynode, nt_passive, nt_bgc, lm, mm, nz, nt_cdr_oae, nt_cdr_dor
   use roms_read_write, only: ncforce
   use bgc_forces, only: xco2air_default   ! declared in bgc_forces; read here via BGC_SETTINGS
   use tracers, only: itands, t_vname, wrt_t, t_lname, t

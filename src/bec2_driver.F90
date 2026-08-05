@@ -20,6 +20,7 @@ subroutine ecosys_bec2_tile(Istr,Iend,Jstr,Jend)
   use grid, only: isalt, rmask
   use ocean_vars, only: hz
   use scalars, only: cp, dt, nmol_cm2_to_mmol_m2, nnew, rho0
+  use param, only: nt_cdr_oae, nt_cdr_dor
   use bgc_shared_vars, only:&
   &t, ialk, idic, ife, io2, ipo4, isio3,&
   &mynode, nt_passive, bgc_idx

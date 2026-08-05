@@ -11,7 +11,7 @@ module bgc_io
 #if defined BIOLOGY_BEC2 || defined MARBL
 
   ! param needed for GLOBAL_2D_array to work. NT = number tracer from param
-  use param, only: ieast, itemp, iwest, jnorth, jsouth, ocean_grid_comm
+  use param, only: ieast, itemp, iwest, jnorth, jsouth, ocean_grid_comm, nt_cdr_oae, nt_cdr_dor
   use tracers, only: t_avg, wrt_t_avg, nt_2_t_avg, t_units
 #ifdef MARBL_DIAGS
   use marbl_driver, only: marbldrv_compute_init_diagnostics
