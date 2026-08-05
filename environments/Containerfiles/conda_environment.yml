@@ -7,8 +7,21 @@ dependencies:
   - xarray
   - ipykernel
   - jupyter
-  - roms-tools>=4.0.0a2
+  - roms-tools>=4.0.0
   - compilers
+  # Pin the GNU toolchain and keep conda-gcc-specs out of the environment.
+  # conda-forge's gxx 14.4.0 build _1 (2026-07-30) flipped to depending on the
+  # conda-gcc-specs variant of gcc; that package's specs file rewrites
+  # *link_command: and drops crtendS.o/crtn.o from libtool's shared-object
+  # links, so Score-P's bundled cubelib fails to link its plugins with
+  # undefined `__TMC_END__'. conda-forge documents conda-gcc-specs as
+  # unsuitable for build environments. 14.3 is the series that last built
+  # this image successfully (2026-07-09).
+  - gcc=14.3
+  - gxx=14.3
+  - gfortran=14.3
+  - gcc-no-conda-specs=14.3
+  - binutils=2.45.1
   - netcdf-fortran
   - h5netcdf
   - h5py

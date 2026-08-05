@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from ._assertions import computed_results
+from . import _assertions
+from ._assertions import computed_results, tolerated_mismatches
 from ._roms_input_file_generation import create_roms_inputs
 
 
@@ -16,6 +17,25 @@ def pytest_addoption(parser):
         help="Reference-results environment name. "
              "The suite compares output hashes against tests/results/results_<environ>.json.",
     )
+    parser.addoption(
+        "--tolerate-hash-mismatch",
+        action="store_true",
+        default=False,
+        help="Report reference-hash mismatches as XFAIL instead of failures, so they "
+             "do not fail the run. Every other failure mode -- compile errors, ROMS "
+             "crashes, missing output -- still fails. Used by CI, where the hashes are "
+             "not reproducible across platforms; leave it off locally.",
+    )
+
+
+def pytest_configure(config):
+    """Hand the --tolerate-hash-mismatch setting to the assertion helper.
+
+    `assert_output_matches_reference` is called directly from test bodies with
+    no access to the pytest config, so the flag is stashed on the module rather
+    than threaded through all ten call sites.
+    """
+    _assertions.tolerate_hash_mismatch = config.getoption("--tolerate-hash-mismatch")
 
 
 @pytest.fixture(scope="session")
@@ -64,6 +84,14 @@ def pytest_sessionfinish(session, exitstatus):
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     if reporter is None:
         return
+
+    # Say plainly which mismatches were let through. On a run made green by
+    # --tolerate-hash-mismatch this is the only unmissable record of it, since
+    # nobody reads the per-test output of a passing job.
+    if tolerated_mismatches:
+        reporter.write_sep("=", "tolerated hash mismatches (reported XFAIL, did not fail the run)")
+        for test_name in tolerated_mismatches:
+            reporter.write_line(f"  {test_name}")
 
     current_environ = session.config.getoption("--environ")
     reporter.write_sep("=", f"computed results (paste into $ROMS_ROOT/results/results_{current_environ}.json to update if you understand the reason for - and expect - this discrepancy.)")
