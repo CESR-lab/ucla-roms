@@ -11,6 +11,10 @@ BUILD_MODE ?=regular
 KEEP_PPSRC ?=false
 # Allow additional FFLAGS to defaults without overriding them:
 USER_FFLAGS ?=
+# Allow additional link flags (e.g. -Wl,-rpath,<dir>) without overriding defaults.
+# Note: MPI wrappers that inject their own -rpath flags (e.g. spack-built OpenMPI)
+# make the linker ignore LD_RUN_PATH, so rpaths must be passed explicitly here.
+USER_LDFLAGS ?=
 ##############################
 #       FILE EXTENSIONS      #
 
@@ -114,10 +118,10 @@ endif
 #   The CPP line below needs to have 'spaces' not 'tabs' unlike the rest.
 ifeq ($(COMPILER),intel)
 	CPP = fpp
-	CPPFLAGS = -D__IFC -free -I${MPIHOME}/include -I${NETCDFHOME}/include
+	CPPFLAGS = -D__IFC -free -I${MPIHOME}/include -I${NETCDFHOME}/include -I${NETCDFFHOME}/include
 else
         CPP = /usr/bin/cpp
-	CPPFLAGS =  -traditional -D__IFC -Wno-invalid-pp-token -I${MPIHOME}/include -I${NETCDFHOME}/include
+	CPPFLAGS =  -traditional -D__IFC -Wno-invalid-pp-token -I${MPIHOME}/include -I${NETCDFHOME}/include -I${NETCDFFHOME}/include
 endif
 
 #   Since we no longer keep preprocessed files after compilation, if you want to still
@@ -133,18 +137,24 @@ endif
 	NHMG_INC  = -I$(NHMG_ROOT)/include
 
 	VPATH = ${MPIHOME}/include:${NHMG_INC}
+	# CPATH is set but never exported, so it does not reach the compiler;
+	# includes are handled explicitly via -I flags (CPPFLAGS/NETCDF*_INC/etc).
 	CPATH = ${MPIHOME}/include:${NHMG_INC}
 
 # Get netCDF paths and options ('shell' is needed to use command)
 # Some systems return empty strings for `n{c,f}-config --args`, so using $(or as a fallback
-	NETCDFF_INC=$(or $(shell nf-config --fflags), -I$(NETCDFHOME)include)
-	NETCDFF_LIB=$(or $(shell nf-config --flibs) , -L$(NETCDFHOME)lib -lnetcdf -lnetcdff)
-	NETCDFC_INC=$(or $(shell nc-config --cflags), -I$(NETCDFHOME)include)
-	NETCDFC_LIB=$(or $(shell nc-config --libs),   -L$(NETCDFHOME)lib -lnetcdf)
+	# On split installs (e.g. spack/Lmod HPC systems) netcdf-fortran lives in its
+	# own prefix; NETCDFFHOME points at it. Defaults to NETCDFHOME for combined
+	# prefixes (e.g. conda).
+	NETCDFFHOME ?= $(NETCDFHOME)
+	NETCDFF_INC=$(or $(shell nf-config --fflags), -I$(NETCDFFHOME)/include)
+	NETCDFF_LIB=$(or $(shell nf-config --flibs) , -L$(NETCDFFHOME)/lib -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf)
+	NETCDFC_INC=$(or $(shell nc-config --cflags), -I$(NETCDFHOME)/include)
+	NETCDFC_LIB=$(or $(shell nc-config --libs),   -L$(NETCDFHOME)/lib -lnetcdf)
 
 ifeq ($(USEPIO),true)
-        PNETCDF_INC= -I$(PNETCDFHOME)include
-        PNETCDF_LIB= -L$(PNETCDFHOME)lib -lpnetcdf
+        PNETCDF_INC= -I$(PNETCDFHOME)/include
+        PNETCDF_LIB= -L$(PNETCDFHOME)/lib -lpnetcdf
 endif
 
 # MARBL
@@ -194,7 +204,7 @@ CFTFLAGS += $(LARGE_MEM_FLAG)
 CFT += $(CFTFLAGS)
 
 # Fortran loader options:
-LDFLAGS = $(CFTFLAGS) $(LARGE_MEM_FLAG)
+LDFLAGS = $(CFTFLAGS) $(LARGE_MEM_FLAG) $(USER_LDFLAGS)
 LDR += $(LDFLAGS)
 
 # Fortran compiler options/flags:
