@@ -205,6 +205,7 @@ N_chd = 90                        ! Number of vertical levels in nested domain
 theta_s_chd = 5.0                 ! `theta_s` of nested domain
 theta_b_chd = 2.0                 ! `theta_b` of nested domain
 hc_chd = 250.0                    ! `hc` of nested domain
+extract_root_name = "child"
 /
 
 &SPONGE_TUNE_SETTINGS                                              !sponge_tune.F
