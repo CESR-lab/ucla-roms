@@ -123,6 +123,9 @@ module extract_data
   real(kind=8)    :: otime=0   ! time since last output
 
   logical, dimension(4) :: child_bnds = .false.
+  logical, dimension(4) :: child_w    = .false.
+  logical, dimension(4) :: child_up   = .false.
+  logical, dimension(4) :: child_vp   = .false.
   integer, dimension(4) :: child_dimsize_t
   integer, dimension(4) :: child_dimsize_u
   integer, dimension(4) :: child_dimsize_v
@@ -535,6 +538,26 @@ contains
         if (findstr(variables,'up'  ) ) obj(iobj)%up   = .True.
         if (findstr(variables,'vp'  ) ) obj(iobj)%vp   = .True.
         if (findstr(variables,'bgc'    ) ) obj(iobj)%bgc     = .True.
+
+        ! Record which boundaries request w/up/vp, so the PIO define
+        ! (create_edata_file) defines exactly what do_extract_data writes.
+        if (obj(iobj)%bnd == '_north') then
+          if (obj(iobj)%w)  child_w(1)  = .true.
+          if (obj(iobj)%up) child_up(1) = .true.
+          if (obj(iobj)%vp) child_vp(1) = .true.
+        else if (obj(iobj)%bnd == '_south') then
+          if (obj(iobj)%w)  child_w(2)  = .true.
+          if (obj(iobj)%up) child_up(2) = .true.
+          if (obj(iobj)%vp) child_vp(2) = .true.
+        else if (obj(iobj)%bnd == '_east') then
+          if (obj(iobj)%w)  child_w(3)  = .true.
+          if (obj(iobj)%up) child_up(3) = .true.
+          if (obj(iobj)%vp) child_vp(3) = .true.
+        else if (obj(iobj)%bnd == '_west') then
+          if (obj(iobj)%w)  child_w(4)  = .true.
+          if (obj(iobj)%up) child_up(4) = .true.
+          if (obj(iobj)%vp) child_vp(4) = .true.
+        endif
 
         if (obj(iobj)%up.and. .not.calc_pflx) then
           call error_log%raise_global(&
@@ -1326,6 +1349,26 @@ contains
         ierr=nf90_def_var(ncid,'v_' // trim(child_bnd_name(bnd)),nf90_double,dimid3d,varid)
         ierr = nf90_put_att(ncid,varid,'long_name',"v-momentum component")
         ierr = nf90_put_att(ncid,varid,'units',"meter second-1")
+
+
+        if (child_w(bnd)) then
+          dimid3d = (/child_dimnums_t(bnd), dimid5, dimid0/)
+          ierr=nf90_def_var(ncid,'w_' // trim(child_bnd_name(bnd)),nf90_double,dimid3d,varid)
+          ierr = nf90_put_att(ncid,varid,'long_name',"vertical velocity")
+          ierr = nf90_put_att(ncid,varid,'units',"meter second-1")
+        endif
+        if (child_up(bnd)) then
+          dimid2d = (/child_dimnums_u(bnd), dimid0/)
+          ierr=nf90_def_var(ncid,'up_' // trim(child_bnd_name(bnd)),nf90_double,dimid2d,varid)
+          ierr = nf90_put_att(ncid,varid,'long_name',"u-momentum pressure flux")
+          ierr = nf90_put_att(ncid,varid,'units',"meter3 second-2")
+        endif
+        if (child_vp(bnd)) then
+          dimid2d = (/child_dimnums_v(bnd), dimid0/)
+          ierr=nf90_def_var(ncid,'vp_' // trim(child_bnd_name(bnd)),nf90_double,dimid2d,varid)
+          ierr = nf90_put_att(ncid,varid,'long_name',"v-momentum pressure flux")
+          ierr = nf90_put_att(ncid,varid,'units',"meter3 second-2")
+        endif
         endif
       enddo
 
