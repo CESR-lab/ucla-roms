@@ -53,13 +53,18 @@
      &                     +FlxV(i,j+1,k)-FlxV(i,j,k))
           enddo
         enddo
-        do i=i0,i1
-          wvlc(i,j,1) = 0.5*(wvlc(i,j,1) )
-        enddo
-        do k=2,nz
+        ! Interpolate the interface values to RHO-points DESCENDING, so
+        ! that wvlc(k-1) is still the un-overwritten interface value when
+        ! used (ascending in-place averaging recursively contaminates the
+        ! profile with the already-averaged level below); the bottom cell
+        ! is halved last (interface value at the seabed is zero).
+        do k=nz,2,-1
           do i=i0,i1
             wvlc(i,j,k) = 0.5*(wvlc(i,j,k)+wvlc(i,j,k-1))
           enddo
+        enddo
+        do i=i0,i1
+          wvlc(i,j,1) = 0.5*(wvlc(i,j,1) )
         enddo
       enddo ! j=loop
 
@@ -70,14 +75,18 @@
       do j=j0,j1
         do k=1,n
           do i=i0,i1
+            ! Both one-sided u*dz/dxi (v*dz/deta) contributions must be
+            ! ADDED: the i+1 and j+1 terms take z_r(i+1)-z_r(i) and
+            ! z_r(j+1)-z_r(j), otherwise the pair nearly cancels and the
+            ! slope part of w is lost (bottom w then violates no-normal-flow).
             wvlc(i,j,k) = wvlc(i,j,k)
      &         + 0.25*u(i  ,j,k,nstp)*(z_r(i,j,k)-z_r(i-1,j,k))
      &                                 *(pm(i,j)+pm(i-1,j))
-     &         + 0.25*u(i+1,j,k,nstp)*(z_r(i,j,k)-z_r(i+1,j,k))
+     &         + 0.25*u(i+1,j,k,nstp)*(z_r(i+1,j,k)-z_r(i,j,k))
      &                                 *(pm(i,j)+pm(i+1,j))
      &         + 0.25*v(i,j  ,k,nstp)*(z_r(i,j,k)-z_r(i,j-1,k))
      &                                  *(pn(i,j)+pn(i,j-1))
-     &         + 0.25*v(i,j+1,k,nstp)*(z_r(i,j,k)-z_r(i,j+1,k))
+     &         + 0.25*v(i,j+1,k,nstp)*(z_r(i,j+1,k)-z_r(i,j,k))
      &                                  *(pn(i,j)+pn(i,j+1))
            enddo
          enddo
