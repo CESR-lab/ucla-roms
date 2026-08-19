@@ -57,24 +57,6 @@
       real grho, HalfGRho, cff, cfr
       real, parameter :: OneFifth=0.2, OneTwelfth=1./12., epsil=0.
 
-      ! Loop ranges run one point beyond the interior on the high
-      ! side: ru is computed at faces 1..nx+1 and rv at 1..ny+1, so
-      ! that the NHMG dpdz block at the end has the full rho-centered
-      ! PGF average at every interior point (hydrostatic code reads
-      ! only ru(1..nx)/rv(1..ny); the extra points are computed
-      ! regardless, keeping one uniform set of ranges). The deepest
-      ! stencil reach is FC/rx at nx+2/ny+2, exactly the bf=2 halo
-      ! edge (z_r/z_w/Hz exchanged in set_depth; rho/rho1/qp1 computed
-      ! over the full extended range in rho_eos). At interior tile
-      ! seams and periodic wraps the extended values are bit-identical
-      ! to the neighboring rank's interior values. At physical
-      ! boundaries all faces on or inside the domain are computed from
-      ! data (the boundary ring is real: h from the grid file, zeta/t
-      ! from the BCs); only the faces one beyond the domain (0 and
-      ! nx+2/ny+2) are extrapolated — symmetric west/east and
-      ! south/north. (ptide is filled over 0..nx+1/0..ny+1 in
-      ! set_tides to match the extended P columns.)
-
 # ifdef ADV_ISONEUTRAL
       real r0g
 # endif
