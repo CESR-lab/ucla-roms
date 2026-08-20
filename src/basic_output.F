@@ -972,7 +972,7 @@
      &                                      + ( We(i0:i1,j0:j1,:)+Wi(i0:i1,j0:j1,:) ) *coef
         if (wrt_avg_W) then
           ! the w averaging, calculation and output should be checked at some point.
-          call wvlcty(work)
+          call wvlcty((work(:,:,1:nz)))
 
           wvl_avg(i0:i1,j0:j1,1:N) = wvl_avg(i0:i1,j0:j1,1:N)*(1-coef)
      &                               + work(i0:i1,j0:j1,1:N)*coef
