@@ -11,8 +11,10 @@ module mg_namelist
   integer(kind=ip) :: ns_pre      =   3        ! Number of relax sweeps before coarsening  (going down)
   integer(kind=ip) :: ns_post     =   2        ! Number of relax sweeps after interpolation(going up)
 
-  real(kind=rp)    :: solver_prec    = 1.d-6   !- solver precision 
+  real(kind=rp)    :: solver_prec    = 1.d-6   !- solver precision
   integer(kind=ip) :: solver_maxiter = 10      !- maximum of solver iterations
+
+  logical          :: solver_cg = .false.      !- wrap the F-cycle in flexible CG
 
   logical          :: autotune    =.false.     !- tuning test after a number of time steps (by default 100)
   integer(kind=ip) :: autotune_ts = 100        !- tuning test time step (if autotune=.true.)
@@ -33,6 +35,7 @@ module mg_namelist
   namelist/nhparam/    &
        solver_prec   , &
        solver_maxiter, &
+       solver_cg     , &
        nsmall        , &
        ns_coarsest   , &
        ns_pre        , &
@@ -105,6 +108,7 @@ contains
           write(*,*)'  Non hydrostatic parameters:'
           write(*,*)'  - solver_prec   : ', solver_prec
           write(*,*)'  - solver_maxiter: ', solver_maxiter
+          write(*,*)'  - solver_cg     : ', solver_cg
           write(*,*)'  - nsmall        : ', nsmall 
           write(*,*)'  - ns_coarsest   : ', ns_coarsest
           write(*,*)'  - ns_pre        : ', ns_pre
