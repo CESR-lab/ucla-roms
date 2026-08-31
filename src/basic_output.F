@@ -314,8 +314,12 @@
           call ncwrite(ncid,vname(1,indxO),work(i0:i1,j0:j1,:),start)
         endif
         if (wrt_W) then                              ! true vertical velocity (m/s).
+# ifdef NHMG
+          call ncwrite(ncid,vname(1,indxW),w(i0:i1,j0:j1,1:nz,nnew),start)
+# else
           call wvlcty(work(:,:,1:nz))
           call ncwrite(ncid,vname(1,indxW),work(i0:i1,j0:j1,1:nz),start)
+# endif
         endif
         if (wrt_Akv) call ncwrite(ncid,vname(1,indxAkv),Akv(i0:i1,j0:j1,:),start)
         if (wrt_Akt) call ncwrite(ncid,vname(1,indxAkt),Akt(i0:i1,j0:j1,:),start)

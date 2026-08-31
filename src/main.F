@@ -252,6 +252,8 @@ CR      write(*,*)  ' -2' MYID
       subroutine roms_step
 
       use param
+      use nhmg
+      use grid
       use ocean_vars
       use extract_data
       use diagnostics
@@ -312,6 +314,14 @@ CR      write(*,*)  ' -2' MYID
       ! Computes horizontal fluxes, using nrhs => time n
       ! Hz is computed by set_depth
       call set_HUV
+
+#ifdef NHMG
+      if (mod(iic,20)==0) then
+        call nhmg_matrices(nx,ny,nz,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
+     &                   dm_r(0:nx+1,0:ny+1),
+     &                   dn_r(0:nx+1,0:ny+1)    )
+      endif
+#endif
 
       ! Computes vertical flux omega, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
