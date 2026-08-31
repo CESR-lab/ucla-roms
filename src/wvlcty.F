@@ -53,13 +53,14 @@
      &                     +FlxV(i,j+1,k)-FlxV(i,j,k))
           enddo
         enddo
-        do i=i0,i1
-          wvlc(i,j,1) = 0.5*(wvlc(i,j,1) )
-        enddo
-        do k=2,nz
+
+        do k=nz,2,-1
           do i=i0,i1
             wvlc(i,j,k) = 0.5*(wvlc(i,j,k)+wvlc(i,j,k-1))
           enddo
+        enddo
+        do i=i0,i1
+          wvlc(i,j,1) = 0.5*(wvlc(i,j,1) )
         enddo
       enddo ! j=loop
 
@@ -73,11 +74,11 @@
             wvlc(i,j,k) = wvlc(i,j,k)
      &         + 0.25*u(i  ,j,k,nstp)*(z_r(i,j,k)-z_r(i-1,j,k))
      &                                 *(pm(i,j)+pm(i-1,j))
-     &         + 0.25*u(i+1,j,k,nstp)*(z_r(i,j,k)-z_r(i+1,j,k))
+     &         + 0.25*u(i+1,j,k,nstp)*(z_r(i+1,j,k)-z_r(i,j,k))
      &                                 *(pm(i,j)+pm(i+1,j))
      &         + 0.25*v(i,j  ,k,nstp)*(z_r(i,j,k)-z_r(i,j-1,k))
      &                                  *(pn(i,j)+pn(i,j-1))
-     &         + 0.25*v(i,j+1,k,nstp)*(z_r(i,j,k)-z_r(i,j+1,k))
+     &         + 0.25*v(i,j+1,k,nstp)*(z_r(i,j+1,k)-z_r(i,j,k))
      &                                  *(pn(i,j)+pn(i,j+1))
            enddo
          enddo
