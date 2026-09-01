@@ -89,6 +89,15 @@
         endif
       endif
 
+      ! North-east ghost corner: the loops above leave (nx+1,ny+1) unset
+      ! (west/east fill j=0:ny, south/north fill i=0:nx; the other three
+      ! corners are covered by that overlap).  Fill it here unless both
+      ! adjacent boundaries are open, which is handled below.
+      if (east_bnd.and.north_bnd .and.
+     &    .not.(obc_east.and.obc_north)) then
+        zeta_new(nx+1,ny+1)=zeta_new(nx,ny+1)*rmask(nx+1,ny+1)
+      endif
+
       ! Corners between adjacent open boundaries
       if (west_bnd.and.south_bnd.and.obc_west.and.obc_south) then
         zeta_new(   0,0)=0.5*(zeta_new( 1,0)+zeta_new(  0,1))

@@ -89,50 +89,49 @@
       do k = 1,nz
          do j = 0,ny+1
             do i = 0,nx+1
-               dzdxi (i,j,k)=0.5*(z_r(i+1,j,k)-z_r(i-1,j,k))*pn(i,j)
-               dzdeta(i,j,k)=0.5*(z_r(i,j+1,k)-z_r(i,j-1,k))*pm(i,j)
+               dzdxi (i,j,k)=0.5*(z_r(i+1,j,k)-z_r(i-1,j,k))*pm(i,j)
+               dzdeta(i,j,k)=0.5*(z_r(i,j+1,k)-z_r(i,j-1,k))*pn(i,j)
             enddo
          enddo
       enddo
 
-      ! z_r is buffer filled in the interior halos but not in the outer halos
+      ! Physical boundaries: the boundary-ring (i=1/nx, j=1/ny) slopes
+      ! are valid as computed -- the centered difference only reaches the
+      ! ghost ring, whose z_r comes from real data (no-gradient zeta/h
+      ! fill).  Only the ghost ring itself lacks a centered difference;
+      ! mirror the boundary ring into it, consistent with the dz halo
+      ! treatment in libnhmg (fill_outer_halos).  Zeroing the boundary
+      ! ring here makes the NHMG operator inconsistent along the walls
+      ! and drives spurious circulation, O(amp^2) in surface amplitude.
       if (inode.eq.0.and.(.not.ew_periodic)) then
          do k = 1,nz
             do j = 0,ny+1
-               dzdxi (0,j,k) = 0.
-               dzdxi (1,j,k) = 0.
-               dzdeta(0,j,k) = 0.
-               dzdeta(1,j,k) = 0.
+               dzdxi (0,j,k) = dzdxi (1,j,k)
+               dzdeta(0,j,k) = dzdeta(1,j,k)
             enddo
          enddo
        endif
       if (inode.eq.npx-1.and.(.not.ew_periodic)) then
          do k = 1,nz
             do j = 0,ny+1
-               dzdxi (nx  ,j,k) = 0.
-               dzdxi (nx+1,j,k) = 0.
-               dzdeta(nx  ,j,k) = 0.
-               dzdeta(nx+1,j,k) = 0.
+               dzdxi (nx+1,j,k) = dzdxi (nx,j,k)
+               dzdeta(nx+1,j,k) = dzdeta(nx,j,k)
             enddo
          enddo
        endif
       if (jnode.eq.0.and.(.not.ns_periodic)) then
          do k = 1,nz
             do i = 0,nx+1
-               dzdxi (i,0,k) = 0.
-               dzdxi (i,1,k) = 0.
-               dzdeta(i,0,k) = 0.
-               dzdeta(i,1,k) = 0.
+               dzdxi (i,0,k) = dzdxi (i,1,k)
+               dzdeta(i,0,k) = dzdeta(i,1,k)
             enddo
          enddo
        endif
       if (jnode.eq.npy-1.and.(.not.ns_periodic)) then
          do k = 1,nz
             do i = 0,nx+1
-               dzdxi (i,ny  ,k) = 0.
-               dzdxi (i,ny+1,k) = 0.
-               dzdeta(i,ny  ,k) = 0.
-               dzdeta(i,ny+1,k) = 0.
+               dzdxi (i,ny+1,k) = dzdxi (i,ny,k)
+               dzdeta(i,ny+1,k) = dzdeta(i,ny,k)
             enddo
          enddo
        endif
