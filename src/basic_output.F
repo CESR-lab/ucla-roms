@@ -81,13 +81,6 @@
 
       implicit none
 
-      if (wrt_file_his .and. mod(output_period_his,dt) /= 0) then
-        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_his!'
-      endif
-      if (wrt_file_avg .and. mod(output_period_avg,dt) /= 0) then
-        stop 'ERROR :: ocean_vars.opt - dt not a factor of output_period_avg!'
-      endif
-
       if (wrt_file_avg) then
         if (wrt_avg_Z)  then
           allocate( zeta_avg(GLOBAL_2D_ARRAY) )
