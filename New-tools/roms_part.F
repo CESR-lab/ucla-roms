@@ -42,6 +42,8 @@
 !     integer,dimension(:,:),allocatable :: node_map
       real   ,dimension(:,:),allocatable :: node_map
       integer,dimension(:)  ,allocatable :: npi_c,npj_c
+      ! filled by rank 0 in partition_mask,
+      ! broadcast to all ranks in write_partial_files
       integer,dimension(:)  ,allocatable :: boundary_nodes
 
       ! Dimension names for in netcdf files
@@ -533,10 +535,10 @@
             node_map(npj,npi) = count
             npi_c(count) = npi
             npj_c(count) = npj
-          endif
-          ! record if at boundary
-          if (((npi==1).or.(npi==npx)).or.((npj==1).or.(npj==npy))) then
-            boundary_nodes(count)=1
+            ! record if at boundary
+            if (((npi==1).or.(npi==npx)).or.((npj==1).or.(npj==npy))) then
+              boundary_nodes(count)=1
+            endif
           endif
         enddo
       enddo
@@ -774,6 +776,11 @@
       myparts = ceiling(nparts*1.0/nnodes)
       part0 = myparts*mynode
       part1 = min(myparts*(mynode+1) -1,nparts-1)
+
+      ! partition_mask ran on rank 0 only; share the boundary flags
+      if (mynode/=0) allocate(boundary_nodes(npartx*nparty))
+      call MPI_Bcast(boundary_nodes,npartx*nparty,MPI_INTEGER,0,
+     &               part_comm,ierr)
 
       ! get info about variables from first partial file in range
 

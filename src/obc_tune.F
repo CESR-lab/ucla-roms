@@ -213,8 +213,9 @@
 ! ----------------------------------------------------------------------
       subroutine adjust_orlanski ![
       ! Adjust the restoring rate at the boundary
-      ! by modifying ubind based on the difference 
-      ! between parent and child pressure flux
+      ! by updating the nudging weights ub_* (C_dyn in the
+      ! OBC paper) based on the difference between parent
+      ! and child baroclinic pressure flux
       implicit none
 
       ! local 
@@ -399,8 +400,8 @@
 
       varid = nccreate(ncid,'ub_south',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
-     &                            ,'South boundary binding velocity')
-      ierr = nf90_put_att(ncid,varid,'units','m/s' )
+     &                            ,'South boundary OBC nudging weight')
+      ierr = nf90_put_att(ncid,varid,'units','nondimensional' )
 
       varid = nccreate(ncid,'cf_north',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
@@ -414,8 +415,8 @@
 
       varid = nccreate(ncid,'ub_north',(/dn_xr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
-     &                            ,'North boundary binding velocity')
-      ierr = nf90_put_att(ncid,varid,'units','m/s' )
+     &                            ,'North boundary OBC nudging weight')
+      ierr = nf90_put_att(ncid,varid,'units','nondimensional' )
 
       varid = nccreate(ncid,'cf_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
@@ -429,8 +430,8 @@
 
       varid = nccreate(ncid,'ub_west',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
-     &                            ,'West boundary binding velocity')
-      ierr = nf90_put_att(ncid,varid,'units','m/s' )
+     &                            ,'West boundary OBC nudging weight')
+      ierr = nf90_put_att(ncid,varid,'units','nondimensional' )
 
       varid = nccreate(ncid,'cf_east',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
@@ -444,8 +445,8 @@
 
       varid = nccreate(ncid,'ub_east',(/dn_yr,dn_tm/),(/xi_rho,0/))
       ierr = nf90_put_att(ncid,varid,'long_name'
-     &                            ,'East boundary binding velocity')
-      ierr = nf90_put_att(ncid,varid,'units','m/s' )
+     &                            ,'East boundary OBC nudging weight')
+      ierr = nf90_put_att(ncid,varid,'units','nondimensional' )
 
       ierr = nf90_close(ncid)
 
