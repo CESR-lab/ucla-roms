@@ -38,6 +38,7 @@
       use ocean_vars
       use eos_vars
       use grid
+      use zstar_geom
       use scalars
       use roms_mpi
 
@@ -59,6 +60,10 @@
 
 # ifdef ADV_ISONEUTRAL
       real r0g
+# endif
+
+# ifdef NHMG
+      if (CORR_STAGE) call set_zstar
 # endif
 
 ! A non-conservative Density-Jacobian scheme using cubic polynomial
@@ -161,6 +166,16 @@ c**         dpth=z_w(i,j,N)-z_r(i,j,k)
           if (pot_tides) then
             P(i,j,nz) = P(i,j,nz) - g*ptide(i,j)
           endif
+# ifdef NHMG
+          ! We correct the surface pressure to it's n+1/2 (zstar)
+          ! time level instead of n (z_w).
+          ! We'll have to correct back before going to step2d since
+          ! there we rely on the surface being z_w.
+          if (CORR_STAGE) then
+            P(i,j,nz)=P(i,j,nz)
+     &               +g*(1.+rhoS(i,j))*(zstar(i,j)-z_w(i,j,nz))
+          endif
+# endif
         enddo
         if (CORR_STAGE.and.calc_diag.and.diag_uv) then
           do i=1,nx

@@ -27,6 +27,7 @@
       use param
 # ifdef NHMG
       use nhmg
+      use zstar_geom
       use mg_grids, mggrid => grid
       use mg_tictoc, only : tic, toc
 # endif
@@ -350,6 +351,25 @@
           enddo
         enddo
       endif
+
+      ! zeta* compensation: remove the exact depth integral of the
+      ! surface-pressure shift dP = g*(zeta*-z_w(:,:,nz)) added by the
+      ! corrector prsgrd (dP is constant over the column), so the
+      ! barotropic mode forcing is unchanged identically.
+      do j=1,ny
+        do i=1,nx
+          rufrc(i,j)=rufrc(i,j) -g*dn_u(i,j)
+     &      *0.5*( z_w(i  ,j,nz)-z_w(i  ,j,0)
+     &            +z_w(i-1,j,nz)-z_w(i-1,j,0) )
+     &      *( (1.+rhoS(i-1,j))*(zstar(i-1,j)-z_w(i-1,j,nz))
+     &        -(1.+rhoS(i  ,j))*(zstar(i  ,j)-z_w(i  ,j,nz)) )
+          rvfrc(i,j)=rvfrc(i,j) -g*dm_v(i,j)
+     &      *0.5*( z_w(i,j  ,nz)-z_w(i,j  ,0)
+     &            +z_w(i,j-1,nz)-z_w(i,j-1,0) )
+     &      *( (1.+rhoS(i,j-1))*(zstar(i,j-1)-z_w(i,j-1,nz))
+     &        -(1.+rhoS(i,j  ))*(zstar(i,j  )-z_w(i,j  ,nz)) )
+        enddo
+      enddo
 
       call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
      &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )

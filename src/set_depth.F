@@ -1,5 +1,27 @@
 #include "cppdefs.opt"
 
+      module zstar_geom  ![
+      ! zeta* support (design D, minimal): zflt/zflt_bak hold the two
+      ! most recent fast-filtered zetas (recorded by set_depth at the
+      ! end of each fast window); zeta* = 1.5*zflt - 0.5*zflt_bak is
+      ! centered at n+1/2 of the upcoming fast window.  The corrector
+      ! prsgrd shifts its surface pressure by g*(zeta*-z_w(:,:,nz));
+      ! step3d_uv1 removes the exact depth integral of that shift
+      ! from rufrc/rvfrc, so the barotropic forcing is unchanged
+      ! identically while the divergence seen by the NH projection
+      ! carries the n+1/2 free surface.
+      ! (see Documentation/readme-specifics/README.time_levels)
+      use param
+      use dimensions
+      implicit none
+
+      real,allocatable,dimension(:,:) :: zflt, zflt_bak, zstar
+      logical :: zstar_init = .false.
+
+      end module zstar_geom  !]
+
+
+
       subroutine set_depth ![
 
 ! Compute evolving z-coordinates "z_r" and "z_w" and the heights
@@ -14,6 +36,7 @@
       use scalars
       use scoord
       use roms_mpi
+      use zstar_geom
 
       implicit none
       integer ::  i,j,k
@@ -139,7 +162,30 @@
 #endif /* NHMG or NONTRAD_COR */
 
 
+      ! zstar prototype: record fast-filtered zeta history (set_depth
+      ! runs at the end of each fast window and at init, so
+      ! zeta(:,:,knew) here is the filtered free surface).
+      if (.not.zstar_init) then
+        allocate( zflt    (GLOBAL_2D_ARRAY) )
+        allocate( zflt_bak(GLOBAL_2D_ARRAY) )
+        allocate( zstar   (GLOBAL_2D_ARRAY) )
+        zflt = zeta(:,:,knew)
+        zstar_init = .true.
+      endif
+      zflt_bak = zflt
+      zflt = zeta(:,:,knew)
+
       end subroutine set_depth !]
+! ----------------------------------------------------------------------------
+      subroutine set_zstar ![
+      ! compute zeta* = 1.5*zflt - 0.5*zflt_bak (centered n+1/2)
+      use dimensions
+      use roms_mpi
+      use zstar_geom
+      implicit none
+      zstar = 1.5*zflt - 0.5*zflt_bak
+      call exchange_xxx(zstar)
+      end subroutine set_zstar !]
 ! ----------------------------------------------------------------------------
       subroutine set_HUV ![
 

@@ -89,6 +89,9 @@
         allocate( nhdu(GLOBAL_2D_ARRAY,1:nz,2) )
         allocate( nhdv(GLOBAL_2D_ARRAY,1:nz,2) )
         allocate( nhdw(GLOBAL_2D_ARRAY,0:nz,2) )
+        nhdu = 0
+        nhdv = 0
+        nhdw = 0
       endif
 
       allocate( FlxU(GLOBAL_2D_ARRAY,N) ) ; FlxU=init
