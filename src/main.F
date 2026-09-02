@@ -252,7 +252,9 @@ CR      write(*,*)  ' -2' MYID
       subroutine roms_step
 
       use param
+#ifdef NHMG
       use nhmg
+#endif
       use grid
       use ocean_vars
       use extract_data
