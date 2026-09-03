@@ -24,10 +24,7 @@
               ! attempt to get a max value of 0.005 m^2/s
               Akv(i,j,k) = cff*0.005/0.15
 
-              Akt(i,j,k,itemp)=cff*0.005/0.15
-#  ifdef SALINITY
-              Akt(i,j,k,isalt)=Akt_bak(isalt)
-#  endif
+              Akt(i,j,k) = cff*0.005/0.15
             enddo
           enddo
         enddo

@@ -67,7 +67,7 @@
       integer :: nobj  ! number of extraction objects
 
       logical                         :: extend_up !! flag to extend up,vp
-      real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
+!     real,dimension(:,:),allocatable :: upe,vpe  !! buffer filled versions of up,vp
 
       ! For vertical velocity
       real,dimension(:,:,:),allocatable :: Wvl   ! Vertical velocity
@@ -92,7 +92,7 @@
         !! Initializing record at nrpf will trigger the making of a file
         !! at the first time step
         integer                        :: record=nrpf   ! record number in file
-        real                               :: otime=0   ! time since last output
+        real                           :: otime = 0     ! time since last output
 
         real,   dimension(:,:),pointer     :: vari      ! data for output
 
@@ -146,11 +146,11 @@
       call read_extraction_objects
 
       ! For vertical velocity
-      allocate( Wvl(GLOBAL_2D_ARRAY,nz+1))
+      allocate( Wvl(GLOBAL_2D_ARRAY,nz))
 
       if (diag_pflx) then
-        allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
-        allocate( vpe(GLOBAL_2D_ARRAY) ); vpe = 0
+!       allocate( upe(GLOBAL_2D_ARRAY) ); upe = 0
+!       allocate( vpe(GLOBAL_2D_ARRAY) ); vpe = 0
       endif
 
       do i = 1,nobj
@@ -287,6 +287,7 @@
         ierr = nf90_get_att(ncid,iobj,'output_period',period)
         if (ierr/=0) call handle_ierr(ierr,'read extr ')
         obj(iobj)%period   = period
+        obj(iobj)%otime    = period  ! triggers output at the first call
 
         if (obj(iobj)%np>0) then
           !! only for objects with a presences in this subdomain
@@ -506,7 +507,6 @@
 
       if (.not.allocated(obj)) then
         call init_extract_data
-        return
       endif
 
       if (obj(1)%record==nrpf) then
@@ -515,10 +515,11 @@
       endif
 
       if (diag_pflx) then
-        upe(1:nx,1:ny) = up
-        vpe(1:nx,1:ny) = vp
+!       upe(1:nx,1:ny) = up
+!       vpe(1:nx,1:ny) = vp
 # ifdef EXCHANGE
-        call exchange_xxx(upe,vpe)
+!       call exchange_xxx(upe,vpe)
+        call exchange_xxx(up,vp)
 # endif
       endif
 
@@ -611,21 +612,21 @@
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%w) then
-              call wvlcty (0,Wvl)
+              call wvlcty (Wvl)
               oname = trim(obj(i)%set)//'_w'//trim(obj(i)%bnd)
               call interpolate(Wvl(-1:nx+2,-1:ny+2,1:nz),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%up) then
-              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
-              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
+              call interpolate(up,ui(:,1),cfu,ipu,jpu)
+              call interpolate(vp,vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%cosa*ui(:,1) - obj(i)%sina*vi(:,1)
               oname = trim(obj(i)%set)//'_up'//trim(obj(i)%bnd)
               call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)
             endif
             if (obj(i)%vp) then
-              call interpolate(upe,ui(:,1),cfu,ipu,jpu)
-              call interpolate(vpe,vi(:,1),cfv,ipv,jpv)
+              call interpolate(up,ui(:,1),cfu,ipu,jpu)
+              call interpolate(vp,vi(:,1),cfv,ipv,jpv)
               obj(i)%vari(:,1) = obj(i)%sina*ui(:,1) + obj(i)%cosa*vi(:,1)
               oname = trim(obj(i)%set)//'_vp'//trim(obj(i)%bnd)
               call ncwrite(ncid,oname,obj(i)%vari(:,1),start1D)

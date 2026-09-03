@@ -20,12 +20,6 @@
 
 #include "diagnostics.opt"
 
-      ![ Potential issues:
-      !  - Since we don't have pressure in the boundary buffer, we can't get u'p' at the bry.
-      !    We therefore just use the first internal pressure point instead, which introduces
-      !    a dx/2 error.
-      !]
-
       ! Preamble:  ![
 
       ! flag to calculate vertical momentum diagnostics (not functional yet! )
@@ -39,22 +33,23 @@
 
       ! u and v momentum:
       ! ---------------
-      integer,parameter,public :: nmd = 8    ! number of momentum diag terms
+      integer,parameter,public :: nmd = 9    ! number of momentum diag terms
       integer,parameter, public ::
-     &  ipgr   = 1, ! Hydrostatic pressure gradient    
-     &  icori  = 2, ! Coriolis & curvilinear coords  
-     &  iadv   = 3, ! purely advective fluxes        
-     &  idiss  = 4, ! dissipation from advection      
-     &  ihmix  = 5, ! Viscous terms (horiz mixing)    
-     &  ivmix  = 6, ! Vertical mixing & 2D/3D coupling 
+     &  ipgr   = 1, ! Hydrostatic pressure gradient
+     &  icori  = 2, ! Coriolis & curvilinear coords
+     &  iadv   = 3, ! purely advective fluxes
+     &  idiss  = 4, ! dissipation from advection
+     &  ihmix  = 5, ! Viscous terms (horiz mixing)
+     &  ivmix  = 6, ! Vertical mixing & 2D/3D coupling
      &  icoup  = 7, ! 2D/3D coupling
-     &  izxb   = 8  ! zx/zy*b, the cross term in prsg
+     &  idzt   = 8, ! Varying dz
+     &  izxb   = 9  ! zx/zy*b, the cross term in prsg
 
       ! For vertical flux equation (only hydrostatic balance for now)
       integer,parameter, public ::
      &  idzb   = 1 ! dzb in prsgr
 
-      real,allocatable,dimension(:,:,:,:),public :: Udiag 
+      real,allocatable,dimension(:,:,:,:),public :: Udiag
       real,allocatable,dimension(:,:,:,:),public :: Vdiag
       real,allocatable,dimension(:,:,:,:),public :: Wdiag
       real,allocatable,dimension(:,:,:,:)        :: Udiag_avg ! Averages of diagnostics
@@ -69,7 +64,14 @@
 
       real,allocatable, dimension(:,:) :: grd,flx ! work arrays for 4th order advection
 
-      ! Tracers: 
+      ! variables to deal with varying dz effects
+      real,allocatable, dimension(:,:,:) :: dz_n,dzw_n
+      real,allocatable, dimension(:,:)   :: u_hlf,v_hlf
+      real,allocatable, dimension(:,:)   :: dzw_hlf,dzu_hlf,dzv_hlf
+      real,allocatable, dimension(:,:)   :: dzudt,dzvdt
+      logical,public :: diag_dzt_added= .false. ! verify that diag terms are scaled
+
+      ! Tracers:
       ! --------
 
       integer,parameter :: ntd = 7   ! number of tracer diag terms
@@ -100,8 +102,8 @@
 
       ! Netcdf outputting:
       ! -----------------
-      real    :: output_time = 0         ! record number of output. 0 indicates we need new file
-      integer :: record = nrpf           ! to trigger the first file creation
+      real    :: output_time = 0         ! time between outputs
+      integer :: record = nrpf           ! Triggers the first file creation
       integer :: ncid=-1, prev_fill_mode
 
       real, public,allocatable, dimension(:,:) :: dxdyi_u, dxdyi_v,dxdyi ! 1/ surface of cells
@@ -113,13 +115,11 @@
 
       real,public,allocatable,dimension(:,:) :: p_fast,u_fast,v_fast
 
-      real,allocatable,dimension(:,:),public :: up,vp         ! u'p' (at upoint) and v'p' (at v_point) 
+      real,allocatable,dimension(:,:),public :: up,vp         ! u'p' (at upoint) and v'p' (at v_point)
       real,allocatable,dimension(:,:)        :: up_avg,vp_avg ! averaged u'p' and v'p'
 
       real,public,allocatable,dimension(:,:)  :: dzt ! dzeta/dt
       real,public,allocatable,dimension(:,:)  :: Uflx,Vflx
-      real,public,allocatable,dimension(:,:,:):: rho_d  ! rho for diagnostics
-      real,public,allocatable,dimension(:,:)  :: p_int  ! for barotropic/baroclinic diagnostics
 
       real, public :: alpha, beta              ! filtering constants (needed for child bry)
 
@@ -133,7 +133,7 @@
       ! NOTE: u & v are 1:N in z, but w is 0:N hence different variables needed
 # ifdef NHMGDIAG
       integer, public, parameter                         :: nwd = 5    ! number of 'w' momentum diag terms (for NHMG runs)
-      real,allocatable,dimension(:,:,:,:),public :: Wdiag 
+      real,allocatable,dimension(:,:,:,:),public :: Wdiag
 
       integer, parameter, public ::
      &  iwprsgr   = 1,
@@ -167,7 +167,7 @@
       public set_diags_w_at_bc
 # endif /* NHMGDIAG */
 
-      public init_diagnostics 
+      public init_diagnostics
       public do_diagnostics
       public set_diags_u_4th_adv
       public set_diags_v_4th_adv
@@ -188,11 +188,15 @@
 
       if (.not.(diag_uv.or.diag_trc.or.diag_pflx)) then
         calc_diag = .false.
-        print *,'No diagnostics.'
+        if (mynode.eq.0) then
+           print *,'No diagnostics.'
+        endif
         return
       else
         calc_diag = .true.
-        print *,'Getting ready to do online diagnostics.'
+        if (mynode.eq.0) then
+           print *,'Getting ready to do online diagnostics.'
+        endif
       endif
 
       ! Coefficients for exponential smoothing
@@ -205,7 +209,7 @@
         allocate(Wdiag(0:nx+1,0:ny+1,nz,1)); Wdiag = 0
         allocate(u_prev(nx,nz) )
         allocate(v_prev(nx,nz) )
-        if (diag_avg) then   
+        if (diag_avg) then
           allocate(Udiag_avg(0:nx+1,0:ny+1,nz,nmd))
           allocate(Vdiag_avg(0:nx+1,0:ny+1,nz,nmd))
           allocate(Wdiag_avg(0:nx+1,0:ny+1,nz,1))
@@ -213,6 +217,20 @@
           Vdiag_avg = 0
           Wdiag_avg = 0
         endif
+
+        allocate(u_hlf(nx,ny))
+        allocate(v_hlf(nx,ny))
+        allocate(dzw_hlf(nx,ny))
+        allocate(dzu_hlf(nx,ny))
+        allocate(dzv_hlf(nx,ny))
+        allocate(dzudt(nx,ny))
+        allocate(dzvdt(nx,ny))
+        allocate(dz_n(0:nx+1,0:ny+1,nz))
+        allocate(dzw_n(0:nx+1,0:ny+1,0:nz))
+        dz_n(0:nx+1,-0:ny+1,:) = Hz(0:nx+1,-0:ny+1,:)
+        dzw_n(1:nx,1:ny,1:nz-1)= z_r(1:nx,1:ny,2:nz)-z_r(1:nx,1:ny,1:nz-1)
+        dzw_n(1:nx,1:ny,nz) = z_w(1:nx,1:ny,nz)-z_r(1:nx,1:ny,nz)
+
       endif
 
       if (diag_trc) then
@@ -244,17 +262,17 @@
         endif
         allocate(p_fast(0:nx+1,0:ny+1) )
 
-        allocate(up(0:nx+1,0:ny+1) );up=0
-        allocate(vp(0:nx+1,0:ny+1) );vp=0
-        allocate(up_avg(0:nx+1,0:ny+1) );up_avg=0
-        allocate(vp_avg(0:nx+1,0:ny+1) );vp_avg=0
+        allocate(up(GLOBAL_2D_ARRAY) );up=0
+        allocate(vp(GLOBAL_2D_ARRAY) );vp=0
+        allocate(up_avg(GLOBAL_2D_ARRAY) );up_avg=0
+        allocate(vp_avg(GLOBAL_2D_ARRAY) );vp_avg=0
 
         if (.not. allocated( u_slow )) then         ! in case already read in with get_init
-          allocate(u_slow(1:nx+1,0:ny+1,nz) )
+          allocate(u_slow(GLOBAL_2D_ARRAY,nz) )
           u_slow = 0
         endif
         if (.not. allocated( v_slow )) then
-          allocate(v_slow(0:nx+1,1:ny+1,nz) )
+          allocate(v_slow(GLOBAL_2D_ARRAY,nz) )
           v_slow = 0
         endif
         allocate(u_fast(nx+1,ny) )
@@ -262,9 +280,9 @@
       endif
 
       if (diag_pflx) then
-        allocate( Uflx(nx+1,ny) )
-        allocate( Vflx(nx,ny+1) )
-        
+        allocate( Uflx(nx+1,ny+1) )
+        allocate( Vflx(nx+1,ny+1) )
+
         ! strictly speaking for barotropic/baroclinic balance only
         allocate( dzt(nx,ny) )
       endif
@@ -302,7 +320,7 @@
       call store_string_att(diagnostic_opt, 'Chosen Diagnostics = ')
       if (diag_uv) call store_string_att(diagnostic_opt, 'Momentum')
       if (diag_trc) call store_string_att(diagnostic_opt, ', Tracers')
-      if (diag_pflx) call store_string_att(diagnostic_opt, 
+      if (diag_pflx) call store_string_att(diagnostic_opt,
      & ', Baroclinic Pressure Fluxes')
 
       end subroutine init_diagnostics  !]
@@ -323,7 +341,7 @@
         ! The Uu flux is to the east of u(i,j)
         do j=1,ny
           do i=0,nx
-            FX4(i,j) = inv24*( FlxU(i,j,k) + FlxU(i+1,j,k) ) 
+            FX4(i,j) = inv24*( FlxU(i,j,k) + FlxU(i+1,j,k) )
      &                * (-u(i-1,j,k,nrhs) + 7*u(i  ,j,k,nrhs)
      &                   -u(i+2,j,k,nrhs) + 7*u(i+1,j,k,nrhs) )
           enddo
@@ -331,19 +349,19 @@
         ! The Vu flux is to the south of u(i,j)
         do j=1,ny+1
           do i=1,nx
-            FY4(i,j) = inv24*( FlxV(i-1,j,k) + FlxV(i,j,k) ) 
+            FY4(i,j) = inv24*( FlxV(i-1,j,k) + FlxV(i,j,k) )
      &                * (-u(i  ,j-2,k,nrhs) + 7*u(i  ,j-1,k,nrhs)
      &                   -u(i  ,j+1,k,nrhs) + 7*u(i  ,j  ,k,nrhs) )
           enddo
         enddo
 
-        ! The first/last interior flux can only be 2nd order 
+        ! The first/last interior flux can only be 2nd order
         ! JM for now, the first and last domain may start/end
         ! JM at something different than 1 or nx/ny.
         if (inode.eq.0) then
           do j=1,ny
             FX4( 1,j) = 0.25*( FlxU(1,j,k) + FlxU(2,j,k) )
-     &                     *( u(1,j,k,nrhs) + u(2,j,k,nrhs) ) 
+     &                     *( u(1,j,k,nrhs) + u(2,j,k,nrhs) )
           enddo
         endif
         if(inode.eq.npx-1) then
@@ -354,7 +372,7 @@
         endif
         if(jnode.eq.0) then
           do i=1,nx
-            FY4(i,1) = 0.25*( FlxV(i-1,1,k) + FlxV(i,1,k) )    
+            FY4(i,1) = 0.25*( FlxV(i-1,1,k) + FlxV(i,1,k) )
      &                     *( u(i,1,k,nrhs) + u(i,0,k,nrhs) )
           enddo
         endif
@@ -381,7 +399,7 @@
         do k=2,nz-2
           do i=1,nx
             FZ4(i,k) = inv24*( We(i-1,j,k)+We(i,j,k)+Wi(i-1,j,k)+Wi(i,j,k) )
-     &                   * (-u(i,j,k-1,nrhs) + 7*u(i,j,k  ,nrhs)  
+     &                   * (-u(i,j,k-1,nrhs) + 7*u(i,j,k  ,nrhs)
      &                      -u(i,j,k+2,nrhs) + 7*u(i,j,k+1,nrhs) )
           enddo
         enddo
@@ -390,13 +408,13 @@
         do k=1,nz-1,nz-2
           do i=1,nx
             FZ4(i,k)= 0.25*( We(i-1,j,k)+We(i,j,k)+Wi(i-1,j,k)+Wi(i,j,k) )
-     &                     *( u(i,j,k,nrhs)+u(i,j,k+1,nrhs) ) 
+     &                     *( u(i,j,k,nrhs)+u(i,j,k+1,nrhs) )
           enddo
         enddo
 
         do k=1,nz
           do i=1,nx
-            Udiag(i,j,k,iadv) = Udiag(i,j,k,iadv) 
+            Udiag(i,j,k,iadv) = Udiag(i,j,k,iadv)
      &                        - dxdyi_u(i,j)*( FZ4(i,k)-FZ4(i,k-1) )
           enddo
         enddo
@@ -419,14 +437,14 @@
 
         ! the Uv flux is to the west of v(i,j)
         do j=1,ny
-          do i=1,nx+1 
+          do i=1,nx+1
             FX4(i,j) = inv24*( FlxU(i,j-1,k)+FlxU(i,j,k) )
      &                * (-v(i-2,j,k,nrhs) + 7*v(i-1,j,k,nrhs)
      &                   -v(i+1,j,k,nrhs) + 7*v(i  ,j,k,nrhs) )
           enddo
         enddo
         ! the Vv flux is to the north of v(i,j)
-        do j=0,ny 
+        do j=0,ny
           do i=1,nx
             FY4(i,j) = inv24*( FlxV(i,j,k) + FlxV(i,j+1,k) )
      &                * (-v(i,j-1,k,nrhs) + 7*v(i,j  ,k,nrhs)
@@ -434,8 +452,8 @@
           enddo
         enddo
 
-        ! The first/last interior flux can only be 2nd order 
-        if (inode.eq.0) then 
+        ! The first/last interior flux can only be 2nd order
+        if (inode.eq.0) then
           do j=1,ny
             FX4(1,j) = 0.25*( FlxU(1,j-1,k)+FlxU(1,j,k) )
      &                     *( v(0,j,k,nrhs)+v(1,j,k,nrhs) )
@@ -457,7 +475,7 @@
         endif
         if(jnode.eq.npy-1) then
           do i=1,nx
-            FY4(i,ny) = 0.25*( FlxV(i,ny,k) + FlxV(i,ny+1,k) ) 
+            FY4(i,ny) = 0.25*( FlxV(i,ny,k) + FlxV(i,ny+1,k) )
      &                     *( v(i,ny,k,nrhs) + v(i,ny+1,k,nrhs) )
           enddo
         endif
@@ -465,7 +483,7 @@
         do j=1,ny
           do i=1,nx
             Vdiag(i,j,k,iadv) = -dxdyi_v(i,j)
-     &                    *( FX4(i+1,j)-FX4(i,j)+FY4(i,j)-FY4(i,j-1) ) 
+     &                    *( FX4(i+1,j)-FX4(i,j)+FY4(i,j)-FY4(i,j-1) )
           enddo
         enddo
       enddo  ! <-- k
@@ -478,8 +496,8 @@
         do k=2,nz-2
           do i=1,nx
             FZ4(i,k) = inv24*( We(i,j-1,k)+Wi(i,j-1,k)+We(i,j,k)+Wi(i,j,k) )
-     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)    
-     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )  
+     &                   * (-v(i,j,k-1,nrhs) + 7*v(i,j,k  ,nrhs)
+     &                      -v(i,j,k+2,nrhs) + 7*v(i,j,k+1,nrhs) )
           enddo
         enddo
 
@@ -494,7 +512,7 @@
 
         do k=1,nz
           do i=1,nx
-            Vdiag(i,j,k,iadv) = Vdiag(i,j,k,iadv)         
+            Vdiag(i,j,k,iadv) = Vdiag(i,j,k,iadv)
      &                        - dxdyi_v(i,j)*( FZ4(i,k)-FZ4(i,k-1) )
           enddo
         enddo
@@ -504,14 +522,13 @@
       end subroutine set_diags_v_4th_adv  !]
 ! ----------------------------------------------------------------------
 # ifdef NHMGDIAG
-      subroutine set_diags_w_at_uv1( istr, iend, jstr, jend, DC, rw )  ![
+      subroutine set_diags_w_at_uv1(DC, rw )  ![
       ! Set the diagnostic terms for prsgrd, horiz & vert advection.
       ! Prsgrd and horiz adv still need to also be convert to dz * w
 
       implicit none
 
       ! inputs
-      integer,                                       intent(in) :: istr, iend, jstr, jend
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N), intent(in) :: DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N), intent(in) :: rw
 
@@ -519,8 +536,8 @@
       integer :: i, j, k
 
       do k=1,nz
-        do j=jstr,jend
-          do i=istr,iend
+        do j=1,ny
+          do i=1,nx
             Wdiag(i,j,k,iwprsgr)   = Wdiag(i,j,k,iwprsgr)   * DC(i,0)  ! need to convert to dz*w now that we have DC
             Wdiag(i,j,k,iwhoriadv) = Wdiag(i,j,k,iwhoriadv) * DC(i,0)
             Wdiag(i,j,k,iwvertadv) = DC(i,0)*rw(i,j,k)
@@ -532,19 +549,16 @@
 
       end subroutine set_diags_w_at_uv1  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv2( istr, iend, jstr, jend )  ![
+      subroutine set_diags_w_at_uv2  ![
       implicit none
-
-      ! inputs
-      integer, intent(in) :: istr, iend, jstr, jend
 
       ! local
       integer :: i, j, k
 
       ! This could well be wrong. Need to confirm with Jeroen.
-      do k=1,N-1
-        do j=jstr,jend  ! I changed istr to jstr...
-          do i=Istr,Iend
+      do k=1,nz-1
+        do j=1,ny
+          do i=1,nx
             Wdiag(i,j,k,iwuv2) = w(i,j,k,nnew) * 0.5*( Hz(i,j,k+1)+Hz(i,j,k) ) - w_prev(i,j,k)
           enddo
         enddo
@@ -553,80 +567,78 @@
       ! Need to do N seperately since can't do 0.5 * Hz(i,j,k+1)
       ! Do seperate loop rather than having if statement in loop? Not sure what is more efficient
       ! ifort compiler report could tell me if it fuses these loops...
-      do j=jstr,jend  ! I changed istr to jstr...
-        do i=Istr,Iend
-          Wdiag(i,j,N,iwuv2) = w(i,j,N,nnew) * Hz(i,j,N) - w_prev(i,j,N)
+      do j=1,ny
+        do i=1,nx
+          Wdiag(i,j,N,iwuv2) = w(i,j,nz,nnew) * Hz(i,j,nz) - w_prev(i,j,nz)
         enddo
       enddo
 
       end subroutine set_diags_w_at_uv2  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_bc( istr, iend, jstr, jend )  ![
+      subroutine set_diags_w_at_bc  ![
       ! set the diagnostics terms for boundary changes in w
       ! called from step3d_uv2.F right after call to w3dbc_im.F
 
       implicit none
 
-      ! inputs/outputs
-      integer, intent(in) :: istr, iend, jstr, jend
-
       ! local
-      integer :: i, j, k
+      integer :: i,j,k
 
-      if (WESTERN_EDGE) then
-        i=istr-1
-        do k=1,N-1            ! N-1 because of k+1
-          do j=jstr-1,jend+1
-            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
+      if (west_bnd) then
+        i=0
+        do j=0,ny+1
+          do k=1,nz-1            ! nz-1 because of k+1
+            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k))
+     &           -wdz_old(i,j,k)
           enddo
+          Wdiag(i,j,nz,iwbc) = w(i,j,nz,nnew) * Hz(i,j,nz) - wdz_old(i,j,N)
         enddo
-        Wdiag(i,j,N,iwbc) = w(i,j,N,nnew) * Hz(i,j,N) - wdz_old(i,j,N)
       endif
 
-      if (EASTERN_EDGE) then
-        i=iend+1
-        do k=1,N-1
-          do j=jstr-1,jend+1
-            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
+      if (east_bnd) then
+        i=nx+1
+        do j=0,ny+1
+          do k=1,nz-1
+            Wdiag(i,j,k,iwbc)=w(i,j,k,nnew)*0.5*(Hz(i,j,k+1)+Hz(i,j,k))
+     &           -wdz_old(i,j,k)
           enddo
+          Wdiag(i,j,nz,iwbc) = w(i,j,nz,nnew) * Hz(i,j,nz) - wdz_old(i,j,nz)
         enddo
-        Wdiag(i,j,N,iwbc) = w(i,j,N,nnew) * Hz(i,j,N) - wdz_old(i,j,N)
       endif
 
-      if (SOUTHERN_EDGE) then
-        j=jstr-1
-        do k=1,N-1
-          do i=istr-1,iend+1
-            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
+      if (south_bnd) then
+        j=0
+        do i=0,nx+1
+          do k=1,nz-1
+            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) 
+     &           - wdz_old(i,j,k)
           enddo
+          Wdiag(i,j,nz,iwbc) = w(i,j,nz,nnew) * Hz(i,j,nz) - wdz_old(i,j,nz)
         enddo
-        Wdiag(i,j,N,iwbc) = w(i,j,N,nnew) * Hz(i,j,N) - wdz_old(i,j,N)
       endif
 
-      if (NORTHERN_EDGE) then
-        j=jend+1
-        do k=1,N-1
-          do i=istr-1,iend+1
-            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k)) - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
+      if (north_bnd) then
+        j=ny+1
+        do i=0,nx+1
+          do k=1,nz-1
+            Wdiag(i,j,k,iwbc) = w(i,j,k,nnew) * 0.5*(Hz(i,j,k+1)+Hz(i,j,k))
+      &      - wdz_old(i,j,k) ! w_prev is already u_current, can do this because have uvdz_old already
           enddo
+          Wdiag(i,j,nz,iwbc) = w(i,j,nz,nnew) * Hz(i,j,nz) - wdz_old(i,j,nz)
         enddo
-        Wdiag(i,j,N,iwbc) = w(i,j,N,nnew) * Hz(i,j,N) - wdz_old(i,j,N)
       endif
 
       end subroutine set_diags_w_at_bc  !]
 ! ----------------------------------------------------------------------
-      subroutine set_diags_w_at_uv2_end( istrR, iendR, jstrR, jendR)  ![
+      subroutine set_diags_w_at_uv2_end ![
       implicit none
 
-      ! inputs
-      integer, intent(in) :: istrR, iendR, jstrR, jendR ! changed the name to use for u or v
-
       ! local
-      integer :: i, j, k, tmp
+      integer :: i,j,k,tmp
 
-      do k=1,N-1
-        do j=jstrR,jendR
-          do i=istrR,iendR
+      do k=1,nz-1
+        do j=0,ny+1
+          do i=0,nx+1
             ! Full loop ranges since u-change over every point including bry.
             tmp = w(i,j,k,nnew) * 0.5 * ( Hz(i,j,k+1)+Hz(i,j,k) )
             w_dif(i,j,k)   = tmp - wdz_old(i,j,k)
@@ -635,11 +647,11 @@
         enddo
       enddo
 
-      do j=jstrR,jendR
-        do i=istrR,iendR
-          tmp = w(i,j,N,nnew) * Hz(i,j,N)
-          w_dif(i,j,N)   = tmp - wdz_old(i,j,N)
-          wdz_old(i,j,N) = tmp
+      do j=0,ny+1
+        do i=0,nx+1
+          tmp = w(i,j,nz,nnew) * Hz(i,j,nz)
+          w_dif(i,j,nz)   = tmp - wdz_old(i,j,nz)
+          wdz_old(i,j,nz) = tmp
         enddo
       enddo
 
@@ -648,7 +660,7 @@
 
 ! ----------------------------------------------------------------------
       subroutine set_diags_t_h_mix(itrc)  ![
-      ! Horizontal mixing from t3dmix_GP.F
+      ! Horizontal mixing from t3dmix.F
       ! zero in interior beyond sponge layer if zero background diffusion!
 
       use tracers, only: t
@@ -683,7 +695,7 @@
       integer :: i,j
 
       do j= 1,ny
-        do i= 0,nx+2 
+        do i= 0,nx+2
           grd(i,j) = (t(i,j,k,nrhs,itrc)-t(i-1,j,k,nrhs,itrc))*umask(i,j)
         enddo
       enddo
@@ -745,8 +757,8 @@
         ! 2nd order: (due to surface/bottom contraints)
         do k=1,nz-1,nz-2     ! i.e. do k=1 and k=nz-1
           do i= 1,nx
-                                                                        
-            FZ4(i,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )                  
+
+            FZ4(i,k) = 0.5 * ( We(i,j,k) + Wi(i,j,k) )
      &                 * ( t(i,j,k  ,nrhs,itrc) + t(i,j,k+1,nrhs,itrc) )
 
           enddo
@@ -755,11 +767,11 @@
         ! 4th order:
         do k=2,nz-2
           do i= 1,nx
-                                                                        
-            FZ4(i,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )      
+
+            FZ4(i,k) = 0.0833333333333 * ( We(i,j,k) + Wi(i,j,k) )
      &               * (-t(i,j,k-1,nrhs,itrc) + 7*t(i,j,k  ,nrhs,itrc)
      &                  -t(i,j,k+2,nrhs,itrc) + 7*t(i,j,k+1,nrhs,itrc) )
-                                                                        
+
           enddo
         enddo
 
@@ -767,7 +779,7 @@
         ! Initialize Tdiag to zero!
         do k=1,nz-1
           do i= 1,nx
-            Tdiag(i,j,k,tadvz,td(itrc)) = FZ4(i,k) 
+            Tdiag(i,j,k,tadvz,td(itrc)) = FZ4(i,k)
           enddo
         enddo
 
@@ -816,13 +828,13 @@
         ! WEC terms can modify the match between
         ! integrated flux and ubar,vbar
 
-        Uflx =  sum(Flxu(1:nx+1,1:ny,:),dim=3)
-        Vflx =  sum(Flxv(1:nx,1:ny+1,:),dim=3)
+        Uflx =  sum(Flxu(1:nx+1,1:ny+1,:),dim=3)
+        Vflx =  sum(Flxv(1:nx+1,1:ny+1,:),dim=3)
 
-        ! Strictly speaking only neccesary for barotropic/baroclinic 
+        ! Strictly speaking only neccesary for barotropic/baroclinic
         ! balance
-        dzt  = -dxdyi*( Uflx(2:nx+1,:)-Uflx(1:nx,:) +
-     &                  Vflx(:,2:ny+1)-Vflx(:,1:ny) )
+        dzt  = -dxdyi*( Uflx(2:nx+1,1:ny)-Uflx(1:nx,1:ny) +
+     &                  Vflx(1:nx,2:ny+1)-Vflx(1:nx,1:ny) )
 
         ! Divide the barotropic fluxes into velocities [m/s]
         do j=1,ny
@@ -852,7 +864,7 @@
           do j=1,ny
             do i=1,nx+1
               u_slow(i,j,k) = beta*u_slow(i,j,k)
-     &            + alpha*( u(i,j,k,nrhs)-Uflx(i,j)) 
+     &            + alpha*( u(i,j,k,nrhs)-Uflx(i,j))
               u_fast(i,j) = u(i,j,k,nrhs)-Uflx(i,j)- u_slow(i,j,k)
             enddo
           enddo
@@ -878,6 +890,62 @@
 
       end subroutine calc_diag_pflux  !]
 ! ----------------------------------------------------------------------
+      subroutine add_dzt_effect ![
+      use coupling
+      use param
+      use eos_vars
+      implicit none
+
+      ! (u2-u1)/dt  = udia/dzhlf - uhlf*dz2-dz1)/dt/dzhlf
+
+      !local
+      integer :: i,j,k,itrm
+
+      if (diag_uv) then
+
+        do k=1,nz
+
+          if (k==nz) then
+            dzw_hlf(1:nx,1:ny)= 0.5*(z_w(1:nx,1:ny,k)-z_r(1:nx,1:ny,k)
+     &                        +  dzw_n(1:nx,1:ny,k))
+          else
+            dzw_hlf(1:nx,1:ny)= 0.5*(z_r(1:nx,1:ny,k+1)-z_r(1:nx,1:ny,k)
+     &                        + dzw_n(1:nx,1:ny,k))
+          endif
+
+          do j=1,ny
+            do i=1,nx
+              u_hlf(i,j) = 0.5*( u(i,j,k,nstp)+u(i,j,k,nnew) )
+              v_hlf(i,j) = 0.5*( v(i,j,k,nstp)+v(i,j,k,nnew) )
+              dzu_hlf(i,j)= 0.25*(Hz(i-1,j,k)+Hz(i,j,k)+dz_n(i-1,j,k)+dz_n(i,j,k))
+              dzv_hlf(i,j)= 0.25*(Hz(i,j-1,k)+Hz(i,j,k)+dz_n(i,j-1,k)+dz_n(i,j,k))
+              dzudt(i,j)= 0.5*(Hz(i-1,j,k)+Hz(i,j,k)-dz_n(i-1,j,k)-dz_n(i,j,k))/dt
+              dzvdt(i,j)= 0.5*(Hz(i,j-1,k)+Hz(i,j,k)-dz_n(i,j-1,k)-dz_n(i,j,k))/dt
+            enddo
+          enddo
+
+          Udiag(1:nx,1:ny,k,idzt) = -u_hlf(1:nx,1:ny)*dzudt(1:nx,1:ny)
+          Vdiag(1:nx,1:ny,k,idzt) = -v_hlf(1:nx,1:ny)*dzvdt(1:nx,1:ny)
+
+          if (diag_norm) then
+            do itrm=1,nmd
+              Udiag(1:nx,1:ny,k,itrm) = Udiag(1:nx,1:ny,k,itrm)/dzu_hlf(1:nx,1:ny)
+              Vdiag(1:nx,1:ny,k,itrm) = Vdiag(1:nx,1:ny,k,itrm)/dzv_hlf(1:nx,1:ny)
+            enddo
+            Wdiag(1:nx,1:ny,k,1) = Wdiag(1:nx,1:ny,k,1)/dzw_hlf(1:nx,1:ny)
+          endif
+
+        enddo
+
+        dz_n(0:nx+1,-0:ny+1,:) = Hz(0:nx+1,-0:ny+1,:)
+        dzw_n(1:nx,1:ny,1:nz-1)= z_r(1:nx,1:ny,2:nz)-z_r(1:nx,1:ny,1:nz-1)
+        dzw_n(1:nx,1:ny,nz) = z_w(1:nx,1:ny,nz)-z_r(1:nx,1:ny,nz)
+        diag_dzt_added = .true.
+
+      endif  ! if diag_uv
+
+      end subroutine add_dzt_effect  !]
+! ----------------------------------------------------------------------
       subroutine calc_diag_avg ![
       ! Update diagnostics averages
       ! The average is always scaled properly throughout
@@ -896,6 +964,7 @@
         if (diag_uv) then
           Udiag_avg = Udiag_avg*(1-coef) + Udiag*coef
           Vdiag_avg = Vdiag_avg*(1-coef) + Vdiag*coef
+          Wdiag_avg = Wdiag_avg*(1-coef) + Wdiag*coef
         endif
         if (diag_trc) then
           Tdiag_avg = Tdiag_avg*(1-coef) + Tdiag*coef
@@ -922,9 +991,11 @@
       integer :: dim,diag, prev_fill_mode
       character(len=99),save  :: fname
       character(len=100) :: output_time_string
+
+      call add_dzt_effect
       call calc_diag_avg
 
-      output_time = output_time + dt    
+      output_time = output_time + dt
 
       if (output_time>=output_period) then  ! time for an output
 
@@ -940,11 +1011,11 @@
         if (record==nrpf) then
           call create_diagnostics_file(fname)
           record = 0
-        endif 
+        endif
         record = record + 1
 
         ierr=nf90_open(fname,nf90_write,ncid)
-        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)  
+        ierr=nf90_set_fill(ncid, nf90_nofill, prev_fill_mode)
 
         call ncwrite(ncid,'ocean_time',(/time/),(/record/))
         if (diag_avg) then
@@ -1030,6 +1101,11 @@
      &                               ,'2D/3D coupling')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
+        varid = nccreate(ncid,'u_dzt',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                             ,'Effect of time varying dz')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
         varid = nccreate(ncid,'u_zxb',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'Cross term prsg')
@@ -1073,12 +1149,17 @@
      &                               ,'2D/3D coupling')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
+        varid = nccreate(ncid,'v_dzt',dimnames,dimsizes,diag_prec)
+        ierr = nf90_put_att(ncid,varid,'long_name'
+     &                           ,'Effect of time varying dz')
+        ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
+
         varid = nccreate(ncid,'v_zyb',dimnames,dimsizes,diag_prec)
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'Cross term prsg')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
 
-        dimnames = (/dn_xr,dn_yr,dn_zw, dn_tm/)
+        dimnames = (/dn_xr,dn_yr,dn_zr, dn_tm/)
         dimsizes = (/ xi_rho,  eta_rho, nz+1,    0/)
 
         varid = nccreate(ncid,'w_dzb',dimnames,dimsizes,diag_prec)
@@ -1172,8 +1253,9 @@
         call ncwrite(ncid,'u_hmx',ud(1:i1,j0:j1,:,5),start)
         call ncwrite(ncid,'u_vmx',ud(1:i1,j0:j1,:,6),start)
         call ncwrite(ncid,'u_cpl',ud(1:i1,j0:j1,:,7),start)
-        call ncwrite(ncid,'u_zxb',ud(1:i1,j0:j1,:,8),start)
-          
+        call ncwrite(ncid,'u_dzt',ud(1:i1,j0:j1,:,8),start)
+        call ncwrite(ncid,'u_zxb',ud(1:i1,j0:j1,:,9),start)
+
         if (.not.ns_periodic.and.jnode==0) vd(:,1,:,:) = 0
 
         call ncwrite(ncid,'v_pgr',vd(i0:i1,1:j1,:,1),start)
@@ -1183,7 +1265,8 @@
         call ncwrite(ncid,'v_hmx',vd(i0:i1,1:j1,:,5),start)
         call ncwrite(ncid,'v_vmx',vd(i0:i1,1:j1,:,6),start)
         call ncwrite(ncid,'v_cpl',vd(i0:i1,1:j1,:,7),start)
-        call ncwrite(ncid,'v_zyb',vd(i0:i1,1:j1,:,8),start)
+        call ncwrite(ncid,'v_dzt',vd(i0:i1,1:j1,:,8),start)
+        call ncwrite(ncid,'v_zyb',vd(i0:i1,1:j1,:,9),start)
 
         call ncwrite(ncid,'w_dzb',wd(i0:i1,j0:j1,:,1),start)
 
@@ -1217,7 +1300,7 @@
           call ncwrite(ncid,trim(t_vname(it))//'_mixz' ,trcd(i0:i1,j0:j1,0:nz,6,td(it)),start)
         endif
       enddo
-          
+
       end subroutine wrt_diag_trc  !]
 ! ----------------------------------------------------------------------
       subroutine wrt_diag_pflx(ncid,record,up,vp)  ![
@@ -1230,7 +1313,7 @@
       !import/export
       integer, intent(in) :: ncid
       integer, intent(in) :: record
-      real, dimension(0:nx+1,0:ny+1),intent(inout) :: up,vp
+      real, dimension(GLOBAL_2D_ARRAY),intent(inout) :: up,vp
 
       !local
 !     integer,   dimension(4) :: start    ! start vector for writing
@@ -1279,6 +1362,15 @@
         ierr=nf90_put_att(ncid,nf90_global,'filtering_time_scale',timescale )
       endif
 
+      if (diag_norm) then
+         ierr=nf90_put_att(ncid,nf90_global,
+     &          'normalization','Momentum diag terms without dz factor')
+      else
+         ierr=nf90_put_att(ncid,nf90_global,
+     &          'normalization','Momentum diag terms include dz factor')
+      endif
+
+
       call create_diagvars(ncid)
 
       ierr = nf90_close(ncid)
@@ -1302,11 +1394,11 @@
 
       if (mynode==0) print *,'getting u,v,p slow'
       if (.not. allocated(u_slow)) then              ! do_diagnostics not called yet so need to init u_slow,p_slow
-        allocate(u_slow(nx+1,0:ny+1,nz ))
+        allocate(u_slow(GLOBAL_2D_ARRAY,nz))
         u_slow = 0
       endif
       if (.not. allocated(v_slow)) then
-        allocate( v_slow(0:nx+1,ny+1,nz ))
+        allocate(v_slow(GLOBAL_2D_ARRAY,nz))
         v_slow = 0
       endif
       if (.not. allocated(p_slow)) then
@@ -1323,10 +1415,11 @@
             if (umask(i,j)<1) u_slow(i,j,:) = 0
           enddo
         enddo
+        call exchange_xxx(u_slow)
 #endif
       else
 !       u_slow = 0.0
-        u_slow(1:i1,j0:j1,:) = u(1:i1,j0:j1,:,tindx)
+        u_slow(0:nx+1,0:ny+1,:) = u(0:nx+1,0:ny+1,:,tindx)
         mpi_master_only write(*,*) ' --- WARNING: '
      &    ,'u_slow not in initial file.'
      &    ,'  Initialized to u'
@@ -1342,10 +1435,11 @@
             if (vmask(i,j)<1) v_slow(i,j,:) = 0
           enddo
         enddo
+        call exchange_xxx(v_slow)
 #endif
       else
 !       v_slow = 0.0
-        v_slow(i0:i1,1:j1,:) = v(i0:i1,1:j1,:,tindx)
+        v_slow(0:nx+1,0:ny+1,:) = v(0:nx+1,0:ny+1,:,tindx)
         mpi_master_only write(*,*) ' --- WARNING: '
      &    ,'v_slow not in initial file.'
      &    ,'  Initialized to v'

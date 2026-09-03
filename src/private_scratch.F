@@ -3,6 +3,8 @@
 #include "cppdefs.opt"
 
       use param
+      use dimensions
+
       implicit none
 
 ! Auxiliary module "private_scratch":   A set of tile-size arrays
@@ -29,24 +31,21 @@
 
 
       real,allocatable,dimension(:,:) :: A2d
-#ifdef SOLVE3D
       real,allocatable,dimension(:,:) :: A3d
       integer,allocatable,dimension(:,:) :: iA2d
-#endif
-C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 
       contains
 
-!----------------------------------------------------------------------
+      !----------------------------------------------------------------------
       subroutine init_arrays_private_scratch  ![
       use scalars
       implicit none
 
 #ifdef ALLOW_SINGLE_BLOCK_MODE
-      size_XI=6+Lm; size_ETA=6+Mm
+      size_XI=6+nx; size_ETA=6+ny
 #else
-      size_XI=7+(Lm+NSUB_X-1)/NSUB_X
-      size_ETA=7+(Mm+NSUB_E-1)/NSUB_E
+      size_XI=7+(nx+NSUB_X-1)/NSUB_X
+      size_ETA=7+(ny+NSUB_E-1)/NSUB_E
 #endif
       sse=size_ETA/(N+1);  ssz=(N+1)/size_ETA
       N2d=size_XI*(sse*size_ETA+ssz*(N+1))/(sse+ssz)
@@ -61,7 +60,6 @@ C$OMP THREADPRIVATE( A3d, A2d, iA2d, A2d )
 #endif
 
       end subroutine init_arrays_private_scratch  !]
-
       !----------------------------------------------------------------
 
       end module private_scratch

@@ -10,7 +10,6 @@
  defined).  */
 
 #define MPI
-#define PARALLEL_FILES
 
 /* Turn OFF printout (other than error messages) from MPI nodes with
  rank > 0.   This does not affect the model results other than making
@@ -59,18 +58,14 @@ c--#define ALLOW_SINGLE_BLOCK_MODE
 
 c--#define KEEP_CORIOLIS
 
-/* Activation of the first switch of the following two makes computing
- vertical viscous terms as well as implicit part of vertical advection
- take place before the barotropic mode (i.e., moves tri-diagonal solver
- from step3d_uv2 to step3d_uv1) which makes it possible to compute the
- bottom drag term within the tri-diagonal solver, and yet have it
- explicitly available as forcing to the barotropic mode.  The second
- switch makes implicit no-slip b.c. at bottom be an integral part of
- the tri-diagonal solver as opposite to computing it explicitly from
- whatever latest velocity values available. */
-
-c-# define IMPLICIT_BOTTOM_DRAG
-# define IMPLCT_NO_SLIP_BTTM_BC
+/* Bottom drag is now treated implicitly as the unconditional default:
+ the vertical viscous terms and the implicit part of vertical advection
+ are computed before the barotropic mode (tri-diagonal solver in
+ step3d_uv1), so the bottom drag term is computed within the tri-diagonal
+ solver and is explicitly available as forcing to the barotropic mode;
+ the predictor (pre_step3d) applies the same implicit bottom-drag term.
+ This was formerly gated by the IMPLICIT_BOTTOM_DRAG / IMPLCT_NO_SLIP_BTTM_BC
+ cpp switches, now retired and hardcoded. */
 
 
 /* Take into account nonuniformity of density field in computation of
@@ -111,19 +106,6 @@ c-# define IMPLICIT_BOTTOM_DRAG
 # define EXACT_RESTART
 #endif
 
-/* Assign points within the land to special value rather than zero.
- For RHO-point this means all points where mask_rho == 0.  For U- and
- V-points this applies only to points which are fully inside, that both
- RHO-points adjacent to the respective velocity component in upstream
- and downstream directions are land (if only one land, the other is
- water, then the velocity point in on the coast line, so its value is
- still set to zero according to no-normal flow boundary condition).
-*/
-
-#ifdef MASKING
-# define MASK_LAND_DATA
-#endif
-
 
 /* Switch ON/OFF double precision for real type variables (since this
  is mostly controlled by mpc and/or compiler options, this CPP-switch
@@ -145,8 +127,8 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
 # define GLOBAL_2D_ARRAY 1-bf:nx+bf,1-bf:ny+bf
 
-#define PRIVATE_1D_SCRATCH_ARRAY istr-2:iend+2
-#define PRIVATE_2D_SCRATCH_ARRAY istr-2:iend+2,jstr-2:jend+2
+#define PRIVATE_1D_SCRATCH_ARRAY 1-bf:nx+bf
+#define PRIVATE_2D_SCRATCH_ARRAY 1-bf:nx+bf,1-bf:ny+bf
 
 /* The following macros contain logical expressions which answer
  the question: ''Am I a thread working on subdomain (tile) which is
@@ -213,11 +195,11 @@ c-# define IMPLICIT_BOTTOM_DRAG
 #else
 # ifdef EW_PERIODIC
 #  define WEST_EXCHNG istr==1
-#  define EAST_EXCHNG iend==Lm
+#  define EAST_EXCHNG iend==nx
 # endif
 # ifdef NS_PERIODIC
 #  define SOUTH_EXCHNG jstr==1
-#  define NORTH_EXCHNG jend==Mm
+#  define NORTH_EXCHNG jend==ny
 # endif
 #endif
 
@@ -289,16 +271,7 @@ c-# define IMPLICIT_BOTTOM_DRAG
 
  All these switches are the same for MPI/nonMPI code.  */
 
-c-#ifdef MPI
-c-# define ZEROTH_TILE (istr==iwest .and. jstr==jsouth)
-c-# define SINGLE_TILE_MODE (iend-istr==ieast-iwest .and. \
-c- jend-jstr==jnorth-jsouth)
-c-#else
-c-# define ZEROTH_TILE (istr==1 .and. jstr==1)
-c-# define SINGLE_TILE_MODE (iend-istr==Lm-1 .and.+jend-jstr==Mm-1)
-c-#endif
 # define SINGLE_TILE_MODE .true.
-
 
 /* Normally the initial condition exists only as a single time record
  at given time.  This requires the use of a two-time-level scheme

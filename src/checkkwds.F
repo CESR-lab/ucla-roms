@@ -62,7 +62,7 @@
      &                          'commands "make checkkwds"   !!!!!!',
      &  '!!!!!! or "make depend".',                         '!!!!!!'
       write(iout,'(5(/6x,A), /6x,A /8x,A, 2(/6x,A))')
-     &  'use param', 'use scalars', 'use strings',
+     &  'use param', 'use scalars', 'use strings','use dimensions',
      &  'implicit none', 'integer ierr, is,ie', ! DevinD edited for param module '#include "param.h"',
      &  'do is=1,max_opt_size',  'kwds(is:is)='' ''',
      &  'enddo',    'is=1'

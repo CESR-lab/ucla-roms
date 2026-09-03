@@ -1,5 +1,4 @@
 #include "cppdefs.opt"
-#ifdef SOLVE3D
 
 #ifndef ADV_ISONEUTRAL
 # define UPSTREAM_TS
@@ -16,21 +15,18 @@ c--# define CONST_TRACERS
 #  define SW_TRIADS
 #  define STABILIZE
 # endif
-                                  ! Note that arrays A2d(1,1:4) within
-      subroutine step3d_t(tile)   ! the list of agruments in call below
+
+      subroutine step3d_t
 
       use param
       use roms_mpi
-      use private_scratch
-
+      use private_scratch         ! Note that arrays A2d(1,1:4) within
+                                  ! the list of agruments in call below
       implicit none               ! are repeated to use the same memory
-      integer tile                ! for vertical and horizontal scratch
+                                  ! for vertical and horizontal scratch
                                   ! arrays.
 
-# include "compute_tile_bounds.h"
-
-      call step3d_t_iso_tile( istr,iend,jstr,jend,
-     &                       A2d(1,1), A2d(1,2), A2d(1,3), A2d(1,4),
+      call step3d_t_iso_tile(A2d(1,1), A2d(1,2), A2d(1,3), A2d(1,4),
      &                       A2d(1,1), A2d(1,2), A2d(1,3)
 # ifdef ADV_ISONEUTRAL
      &                     , A2d(1,4), A2d(1,6), A2d(1,8), A2d(1,10)
@@ -42,8 +38,7 @@ c--# define CONST_TRACERS
      &                                                             )
       end
 
-      subroutine step3d_t_iso_tile( istr,iend,jstr,jend, WC,FC,CF,DC
-     &                                                 ,  FX,FE, wrk1
+      subroutine step3d_t_iso_tile(WC,FC,CF,DC,FX,FE, wrk1
 # ifdef ADV_ISONEUTRAL
      &                                           , FSC,dTdz,dTdx,dTde
      &                                                         , LapT
@@ -54,10 +49,11 @@ c--# define CONST_TRACERS
      &                                                             )
 
       use param
+      use bulk_frc
       use pipe_frc
       use cdr_frc
       use river_frc
-      use surf_flux, only: stflx, srflx
+      use surf_flux
       use tracers
 #ifdef MARBL
       use marbl_driver, only: marbldrv_column_physics
@@ -69,22 +65,23 @@ c--# define CONST_TRACERS
       use ocean_vars
       use scalars
       use roms_mpi
+      use advection
 
       implicit none
-      integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
-      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:N) :: WC,FC,CF,DC
+      integer :: i,j,k
+      real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:nz) :: WC,FC,CF,DC
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY)     :: FX,FE, wrk1
 # ifdef ADV_ISONEUTRAL
       real, dimension(PRIVATE_2D_SCRATCH_ARRAY,2) :: FSC,  dTdz,
      &                                               dTdx, dTde
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,N) :: LapT
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,nz) :: LapT
 #  ifdef STABILIZE
-      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:N) :: Akz
+      real, dimension(PRIVATE_2D_SCRATCH_ARRAY,0:nz) :: Akz
 #  endif
 # endif
       real cff
       real, parameter :: epsil=1.E-33
-      integer itrc, iAkt
+      integer itrc
 # ifdef ADV_ISONEUTRAL
       integer k1,k2
       real sumX,sumE
@@ -99,38 +96,6 @@ c--# define CONST_TRACERS
 #  endif
 # endif
 
-# include "compute_auxiliary_bounds.h"
-
-# ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        imin=istr
-      else
-        imin=istr-1
-      endif
-      if (EASTERN_EDGE) then
-        imax=iend
-      else
-        imax=iend+1
-      endif
-# else
-      imin=istr-1
-      imax=iend+1
-# endif
-# ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        jmin=jstr
-      else
-        jmin=jstr-1
-      endif
-      if (NORTHERN_EDGE) then
-        jmax=jend
-      else
-        jmax=jend+1
-      endif
-# else
-      jmin=jstr-1
-      jmax=jend+1
-# endif
 #  define ntdf nstp
 c--#  define ntdf nrhs
 
@@ -152,12 +117,12 @@ c--#  define ntdf nrhs
 
 # ifdef ADV_ISONEUTRAL
         k2=1
-        do k=0,N,+1       !--> recursive
+        do k=0,nz,+1       !--> recursive
           k1=k2
           k2=3-k1
           if (k > 0) then
 # else
-        do k=1,N
+        do k=1,nz
 # endif
 
 ! Compute and add in contribution due to horizontal advection fluxes.
@@ -165,7 +130,8 @@ c--#  define ntdf nrhs
 ! concentration of tracer "itrc" taken at time corresponding to "nstp"
 ! and already MULTIPLIED by Hz(:,:,:) at "nstp" in "pre_step3d_tile".
 
-# include "compute_horiz_tracer_fluxes.h"
+        call t_hadv_cor(FX,FE,k,itrc)
+        call river_tfluxes(FX,FE,k,itrc)
 
 # ifndef ADV_ISONEUTRAL
           if (diag_trc.and.wrt_t_dia(itrc) ) then
@@ -173,8 +139,8 @@ c--#  define ntdf nrhs
           endif
 # endif
 
-            do j=jstr,jend
-              do i=istr,iend
+            do j=1,ny
+              do i=1,nx
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)
      &                                *pn(i,j)*( FX(i+1,j)-FX(i,j)
      &                                          +FE(i,j+1)-FE(i,j)
@@ -277,24 +243,24 @@ c--#  define ntdf nrhs
 ! converted later to the actual flux.
 
           if (k == 0) then
-            do j=jmin-1,jmax+1
-              do i=imin-1,imax+1
+            do j=-1,ny+2
+              do i=-1,nx+2
                 FSC(i,j,k2)=0.
                 dTdz(i,j,k2)=idRz(i,j,1)*( t(i,j,2,ntdf,itrc)
      &                                   - t(i,j,1,ntdf,itrc) )
               enddo
             enddo
-          elseif (k < N) then
-            do j=jmin-1,jmax+1
-              do i=imin-1,imax+1
+          elseif (k < nz) then
+            do j=-1,ny+2
+              do i=-1,nx+2
                 FSC(i,j,k2)=idRz(i,j,k)*(z_r (i,j,k+1)-z_r (i,j,k))
                 dTdz(i,j,k2)=idRz(i,j,k)*( t(i,j,k+1,ntdf,itrc)
      &                                       - t(i,j,k,ntdf,itrc) )
               enddo
             enddo
-          elseif (k == N) then
-            do j=jmin-1,jmax+1
-              do i=imin-1,imax+1
+          elseif (k == nz) then
+            do j=-1,ny+2
+              do i=-1,nx+2
                 FSC(i,j,k2)=0.
                 dTdz(i,j,k2)=dTdz(i,j,k1)
               enddo
@@ -308,9 +274,9 @@ c--#  define ntdf nrhs
 ! to FSC further below, where both slices of dTdx,dTde will be used
 ! simultaneously.
 
-          if (k < N) then
-            do j=jmin,jmax
-              do i=imin,imax+1
+          if (k < nz) then
+            do j=0,ny+1
+              do i=0,nx+2
                 dTdx(i,j,k2)=0.5*(pm(i,j)+pm(i-1,j))*(
      &            t(i,j,k+1,ntdf,itrc)-t(i-1,j,k+1,ntdf,itrc) )
 #  ifdef MASKING
@@ -319,8 +285,8 @@ c--#  define ntdf nrhs
               enddo
             enddo
 
-            do j=jmin,jmax+1
-              do i=imin,imax
+            do j=0,ny+2
+              do i=0,nx+1
                 dTde(i,j,k2)=0.5*(pn(i,j)+pn(i,j-1))*(
      &            t(i,j,k+1,ntdf,itrc)-t(i,j-1,k+1,ntdf,itrc) )
 #  ifdef MASKING
@@ -333,8 +299,8 @@ c--#  define ntdf nrhs
 ! Compute horizontal components of isopycnic diffusive flux
 
           if (k > 0) then
-            do j=jmin,jmax
-              do i=imin,imax+1
+            do j=0,ny+1
+              do i=0,nx+2
                 FX(i,j)=diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
      &                                                  *dn_u(i,j)*(
      &                       dTdx(i,j,k1)
@@ -349,8 +315,8 @@ c--#  define ntdf nrhs
               enddo
             enddo
 
-            do j=jmin,jmax+1
-              do i=imin,imax
+            do j=0,ny+2
+              do i=0,nx+1
                 FE(i,j)=diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
      &                                                  *dm_v(i,j)*(
      &                       dTde(i,j,k1)
@@ -367,9 +333,9 @@ c--#  define ntdf nrhs
 
 ! Finalize computation of the vertical component FSC
 
-            if (k < N) then
-              do j=jmin,jmax
-                do i=imin,imax
+            if (k < nz) then
+              do j=0,ny+1
+                do i=0,nx+1
 #  ifdef SW_TRIADS
                   sumX=0. ; idx=0
 
@@ -463,8 +429,8 @@ c--#  define ntdf nrhs
                 enddo
               enddo
             endif     !<--   k < N
-            do j=jmin,jmax
-              do i=imin,imax
+            do j=0,ny+1
+              do i=0,nx+1
                 LapT(i,j,k)=( pm(i,j)*pn(i,j)*( FX(i+1,j)-FX(i,j)
      &                                         +FE(i,j+1)-FE(i,j)
      &                      )+FSC(i,j,k2)-FSC(i,j,k1) )/Hz(i,j,k)
@@ -477,89 +443,86 @@ c--#  define ntdf nrhs
 ! Apply lateral boundary conditions to the Laplacian (for the cases
 ! other than periodic: closed or gradient.
 
-#  ifndef EW_PERIODIC
-        if (WESTERN_EDGE) then
-          do k=1,N
-            do j=jmin,jmax
-#   ifndef OBC_WEST
-              LapT(istr-1,j,k)=0.
-#   else
-              LapT(istr-1,j,k)=LapT(istr,j,k)
-#   endif
+        if (west_bnd) then
+          do k=1,nz
+            do j=0,ny+1
+              if (obc_west) then
+                LapT(0,j,k)=LapT(1,j,k)
+              else
+                LapT(0,j,k)=0.
+              endif
             enddo
           enddo
         endif
-        if (EASTERN_EDGE) then
-          do k=1,N
-            do j=jmin,jmax
-#   ifndef OBC_EAST
-              LapT(iend+1,j,k)=0.
-#   else
-              LapT(iend+1,j,k)=LapT(iend,j,k)
-#   endif
+        if (east_bnd) then
+          do k=1,nz
+            do j=0,ny+1
+              if (obc_east) then
+                LapT(nx+1,j,k)=LapT(nx,j,k)
+              else
+                LapT(nx+1,j,k)=0.
+              endif
             enddo
           enddo
         endif
-#  endif
-#  ifndef NS_PERIODIC
-        if (SOUTHERN_EDGE) then
-          do k=1,N
-            do i=imin,imax
-#   ifndef OBC_SOUTH
-              LapT(i,jstr-1,k)=0.
-#   else
-              LapT(i,jstr-1,k)=LapT(i,jstr,k)
-#   endif
+
+        if (south_bnd) then
+          do k=1,nz
+            do i=0,nx+1
+              if (obc_south) then
+                LapT(i,0,k)=LapT(i,1,k)
+              else
+                LapT(i,0,k)=0.
+              endif
             enddo
           enddo
         endif
-        if (NORTHERN_EDGE) then
-          do k=1,N
-            do i=imin,imax
-#   ifndef OBC_NORTH
-              LapT(i,jend+1,k)=0.
-#   else
-              LapT(i,jend+1,k)=LapT(i,jend,k)
-#   endif
+        if (north_bnd) then
+          do k=1,nz
+            do i=0,nx+1
+              if (obc_north) then
+                LapT(i,ny+1,k)=LapT(i,ny,k)
+              else
+                LapT(i,ny+1,k)=0.
+              endif
             enddo
           enddo
         endif
-#  endif /* !NS_PERIODIC */
 
 ! The second rotated Laplacian operator:
 !---- ------ ------- --------- ----------
 
         k2=1
-        do k=0,N,+1
+        do k=0,nz,+1
           k1=k2
           k2=3-k1
 
           if (k == 0) then
-            do j=jstr-1,jend+1
-              do i=istr-1,iend+1
+            do j=0,ny+1
+              do i=0,nx+1
                 FSC(i,j,k2)=0.
                 dTdz(i,j,k2)=idRz(i,j,1)*(LapT(i,j,2)-LapT(i,j,1))
               enddo
             enddo
-          elseif (k < N) then
-            do j=jstr-1,jend+1
-              do i=istr-1,iend+1
+          elseif (k < nz) then
+            do j=0,ny+1
+              do i=0,nx+1
                 FSC(i,j,k2)= idRz(i,j,k)*(z_r (i,j,k+1)-z_r (i,j,k))
                 dTdz(i,j,k2)=idRz(i,j,k)*(LapT(i,j,k+1)-LapT(i,j,k))
               enddo
             enddo
-          elseif (k == N) then
-            do j=jmin-1,jmax+1
-              do i=imin-1,imax+1
+          elseif (k == nz) then
+            do j=0,ny+1
+              do i=0,nx+1
                 FSC(i,j,k2)=0.
                 dTdz(i,j,k2)=dTdz(i,j,k1)
               enddo
             enddo
           endif
 
-          if (k < N) then
-            do j=jstr,jend
-              do i=istr,iend+1
+          if (k < nz) then
+            do j=1,ny
+              do i=1,nx+1
                 dTdx(i,j,k2)=0.5*(pm(i,j)+pm(i-1,j))*( LapT(i,j,k+1)
      &                                              -LapT(i-1,j,k+1))
 #  ifdef MASKING
@@ -567,8 +530,8 @@ c--#  define ntdf nrhs
 #  endif
               enddo
             enddo
-            do j=jstr,jend+1
-              do i=istr,iend
+            do j=1,ny+1
+              do i=1,nx
                 dTde(i,j,k2)=0.5*(pn(i,j)+pn(i,j-1))*( LapT(i,j,k+1)
      &                                              -LapT(i,j-1,k+1))
 #  ifdef MASKING
@@ -579,8 +542,8 @@ c--#  define ntdf nrhs
           endif
 
           if (k > 0) then
-            do j=jstr,jend
-              do i=istr,iend+1
+            do j=1,ny
+              do i=1,nx+1
                 FX(i,j)=-diff3u(i,j,k)*0.5*(Hz(i,j,k)+Hz(i-1,j,k))
      &                                                 *dn_u(i,j)*(
      &                      dTdx(i,j,k1)
@@ -595,8 +558,8 @@ c--#  define ntdf nrhs
               enddo
             enddo
 
-            do j=jstr,jend+1
-              do i=istr,iend
+            do j=1,ny+1
+              do i=1,nx
                 FE(i,j)=-diff3v(i,j,k)*0.5*(Hz(i,j,k)+Hz(i,j-1,k))
      &                                                 *dm_v(i,j)*(
      &                      dTde(i,j,k1)
@@ -611,9 +574,9 @@ c--#  define ntdf nrhs
               enddo
             enddo
 
-            if (k < N) then    ! Compute the vertical component...
-              do j=jstr,jend
-                do i=istr,iend
+            if (k < nz) then    ! Compute the vertical component...
+              do j=1,ny
+                do i=1,nx
 
 #  ifdef STABILIZE
 
@@ -776,8 +739,8 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
                 enddo
               enddo
             endif    !<-- k < N
-            do j=jstr,jend
-              do i=istr,iend
+            do j=1,ny
+              do i=1,nx
                 t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) +dt*( pm(i,j)
      &               *pn(i,j)*(FX(i+1,j)-FX(i,j) +FE(i,j+1)-FE(i,j))
      &                                    +FSC(i,j,k2)-FSC(i,j,k1) )
@@ -830,9 +793,9 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           enddo
         endif
 
-        do j=jstr,jend
+        do j=1,ny
 
-# include "compute_vert_tracer_fluxes.h"
+          call t_vadv_cor(FC,j,itrc)
 
           if (diag_trc.and.wrt_t_dia(itrc) ) then
             do k=1,nz
@@ -844,7 +807,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
           endif
 
           do k=1,nz
-            do i=istr,iend
+            do i=1,nx
               t(i,j,k,nnew,itrc)=t(i,j,k,nnew,itrc) -dt*pm(i,j)*pn(i,j)
      &                                              *(FC(i,k)-FC(i,k-1))
 
@@ -860,26 +823,40 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
+          ! Add or remove the heat of water, due to evaporation or precipitation
+          ! both effects would work slightly differently. 
+          ! We tried  the actual water temperature to avoid temperature effects
+          ! but it turned out to be unstable so we'll use the air temp instead
+          if (itrc.eq.1) then
+            do i=1,nx
+               t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)  ! +  dt*pm(i,j)*pn(i,j)*
+# ifdef BULK_FRC
+     &            + dt*swflx(i,j)*tair(i,j)
+# else
+     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
+# endif
+            enddo
+          endif
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
 
           !! JM add line for bottom tracer flux
-          do i=istr,iend
-            t(i,j,N,nnew,itrc)=t(i,j,N,nnew,itrc)+dt*stflx(i,j,itrc)
+          do i=1,nx
+            t(i,j,nz,nnew,itrc)=t(i,j,nz,nnew,itrc)+dt*stflx(i,j,itrc)
 !           t(i,j,1,nnew,itrc)=t(i,j,1,nnew,itrc)+dt*btflx(i,j,itrc)
           enddo
 
-# ifdef LMD_KPP
-! Add the solar radiation flux in temperature equation. Also compute
-! the nonlocal transport flux for unstable (convective) forcing
-! conditions into matrix DC when using the Large et al. 1994 KPP
-! scheme.
+! Add the penetrating solar radiation flux to the temperature equation.
+! This is done whenever a 3D temperature equation is solved (it is not
+! tied to LMD_KPP).  The nonlocal transport terms below are KPP-specific
+! and remain gated on LMD_NONLOCAL.
 
           if (itrc == itemp) then
-            do k=N-1,1,-1
-              do i=istr,iend
+            do k=nz-1,1,-1
+              do i=1,nx
                 cff=srflx(i,j)*swr_frac(i,j,k)
-#  ifdef LMD_NONLOCAL
+
+#  if defined LMD_KPP && defined LMD_NONLOCAL
      &                 -ghat(i,j,k)*(stflx(i,j,itemp)-srflx(i,j))
 #  endif
                 t(i,j,k+1,nnew,itemp)=t(i,j,k+1,nnew,itemp) -dt*cff
@@ -893,7 +870,7 @@ c?? way to the bottom is entirely absorbed within the botom-most grid
 c?? box, rather that reflected/scattered back to the water column. It
 c?? is not clear, however, how to deal with this situation correctly
 c??
-c??         do i=istr,iend
+c??         do i=1,nx
 c??           cff=srflx(i,j)*swr_frac(i,j,0)
 c??#  ifdef LMD_NONLOCAL
 c??  &               -ghat(i,j,0)*(stflx(i,j,itemp)-srflx(i,j))
@@ -903,8 +880,8 @@ c??         enddo
 
 #  if defined LMD_NONLOCAL && defined SALINITY
           elseif (itrc == isalt) then
-            do k=N-1,1,-1
-              do i=istr,iend
+            do k=nz-1,1,-1
+              do i=1,nx
                 cff=-dt*ghat(i,j,k)*stflx(i,j,isalt)
                 t(i,j,k+1,nnew,isalt)=t(i,j,k+1,nnew,isalt) -cff
                 t(i,j,k  ,nnew,isalt)=t(i,j,k  ,nnew,isalt) +cff
@@ -912,8 +889,6 @@ c??         enddo
             enddo
 #  endif
           endif
-
-# endif
 
 ! Perform an implicit time step for vertical diffusion
 !
@@ -936,14 +911,14 @@ c??         enddo
 ! is nonnegative, the tri-diagonal matrix is diagonally dominant which
 ! guarantees stability of the Gaussian elimination algorithm.  Top and
 ! bottom boundary conditions are assumed to be no-flux, effectively
-! Akt(N)=Akt(0)=0, hence FC(N)=FC(1)=0. This leads to equations for
+! Akt(nz)=Akt(0)=0, hence FC(nz)=FC(1)=0. This leads to equations for
 ! top and bottom grid boxes;
 !
-!   -FC(N-1)*q_new(N-1) +[Hz(N)+FC(N-1)]*q_new(N) = Hz(N)*q_old(N)
+!   -FC(nz-1)*q_new(nz-1) +[Hz(nz)+FC(nz-1)]*q_new(nz) = Hz(nz)*q_old(nz)
 !
 !          [Hz(1)+FC(1)]*q_new(1) -FC(1)*q_new(2) = Hz(1)*q_old(1)
 !
-! The FC(N)=FC(0)=0 boundary conditions does not mean that physical
+! The FC(nz)=FC(0)=0 boundary conditions does not mean that physical
 ! boundary conditions are no flux: the forcing fluxes have been
 ! applied explicitly above.  Instead, the no-flux condition should
 ! be interpreted as that the implicit step merely redistributes the
@@ -951,16 +926,13 @@ c??         enddo
 ! the content of array t(:,:,:,nnew,itrc) has meaning of Hz*tracer.
 ! After the implicit step it becomes just tracer.
 
-
-          iAkt=min(itrc,iTandS)
-
-          do i=istr,iend
+          do i=1,nx
             DC(i,0)=dt*pm(i,j)*pn(i,j) !<--horizontal metric
 
 # if defined ADV_ISONEUTRAL && defined STABILIZE
-            FC(i,1)=2.*dt*(Akt(i,j,1,iAkt)+Akz(i,j,1))
+            FC(i,1)=2.*dt*(Akt(i,j,1)+Akz(i,j,1))
 # else
-            FC(i,1)=2.*dt* Akt(i,j,1,iAkt)
+            FC(i,1)=2.*dt* Akt(i,j,1)
 # endif
      &                           /(Hz(i,j,1)+Hz(i,j,2))
             WC(i,1)=DC(i,0)*Wi(i,j,1)
@@ -969,12 +941,12 @@ c??         enddo
             CF(i,1)=cff*(      FC(i,1)-min(WC(i,1),0.))
             DC(i,1)=cff*t(i,j,1,nnew,itrc)
           enddo
-          do k=2,N-1,+1
-            do i=istr,iend
+          do k=2,nz-1,+1
+            do i=1,nx
 # if defined ADV_ISONEUTRAL && defined STABILIZE
-              FC(i,k)=2.*dt*(Akt(i,j,k,iAkt)+Akz(i,j,k))
+              FC(i,k)=2.*dt*(Akt(i,j,k)+Akz(i,j,k))
 # else
-              FC(i,k)=2.*dt* Akt(i,j,k,iAkt)
+              FC(i,k)=2.*dt* Akt(i,j,k)
 # endif
      &                            /(Hz(i,j,k)+Hz(i,j,k+1))
 
@@ -991,18 +963,18 @@ c??         enddo
      &                          FC(i,k-1)+max(WC(i,k-1),0.) ))
             enddo
           enddo          !--> discard DC(:,0)
-          do i=istr,iend
-            t(i,j,N,nnew,itrc)=( t(i,j,N,nnew,itrc) +DC(i,N-1)*(
-     &                               FC(i,N-1)+max(WC(i,N-1),0.) )
-     &                   )/( Hz(i,j,N) +FC(i,N-1)-min(WC(i,N-1),0.)
-     &                      -CF(i,N-1)*(FC(i,N-1)+max(WC(i,N-1),0.))
+          do i=1,nx
+            t(i,j,nz,nnew,itrc)=( t(i,j,nz,nnew,itrc) +DC(i,nz-1)*(
+     &                               FC(i,nz-1)+max(WC(i,nz-1),0.) )
+     &                   )/( Hz(i,j,nz) +FC(i,nz-1)-min(WC(i,nz-1),0.)
+     &                      -CF(i,nz-1)*(FC(i,nz-1)+max(WC(i,nz-1),0.))
      &                                                             )
 # ifdef MASKING
      &                                                  *rmask(i,j)
 # endif
           enddo
-          do k=N-1,1,-1
-            do i=istr,iend
+          do k=nz-1,1,-1
+            do i=1,nx
               t(i,j,k,nnew,itrc)=(DC(i,k)+CF(i,k)*t(i,j,k+1,nnew,itrc))
 # ifdef MASKING
      &                                                      *rmask(i,j)
@@ -1012,13 +984,13 @@ c??         enddo
 
           if (diag_trc.and.wrt_t_dia(itrc) ) then
             do k=1,nz
-              do i=istr,iend
+              do i=1,nx
                 VFlxD(i,k) =
      &            (VFlxD(i,k) - Hz(i,j,k)*t(i,j,k,nnew,itrc))/dt
               enddo
             enddo
             ! Convert divergence to fluxes on w-points
-            do i=istr,iend
+            do i=1,nx
               ZFlx(i,1)= VFlxD(i,1)/(pm(i,j)*pn(i,j))
               do k=2,nz
                 ZFlx(i,k)= VFlxD(i,k)/(pm(i,j)*pn(i,j)) + ZFlx(i,k-1)
@@ -1027,7 +999,7 @@ c??         enddo
             if (j==20.and.mynode==0) then
 !              print *,maxval(Tdiag(1:nx,j,:,tmixz,td(itrc)))
             endif
-            do i=istr,iend
+            do i=1,nx
               do k=1,nz
 !               Tdiag(i,j,k,vmixd,td(itrc)) =
 !    &               ZFlx(i,k) - Tdiag(i,j,k,tadvz,td(itrc))
@@ -1047,22 +1019,22 @@ c??         enddo
           endif
 
 #ifdef CONST_TRACERS
-          do k=1,N
-            do i=istr,iend
+          do k=1,nz
+            do i=1,nx
               t(i,j,k,nnew,itrc)=t(i,j,k,nstp,itrc)
             enddo
           enddo
 #endif
         enddo      !<-- j
 
-        call t3dbc_tile (istr,iend,jstr,jend, itrc, wrk1)
+        call t3dbc(itrc, wrk1)
 
       enddo     !<-- itrc
 
 # if defined(MARBL)
-      call marbldrv_column_physics(istr,iend,jstr,jend,t)
+      call marbldrv_column_physics(t)
 # elif defined(BIOLOGY_BEC2)
-      call ecosys_bec2_tile(istr,iend,jstr,jend) ! BEC, 2014
+      call ecosys_bec2_tile ! BEC, 2014
 # endif
 
 # if defined EW_PERIODIC || defined NS_PERIODIC || defined MPI
@@ -1078,35 +1050,3 @@ c??         enddo
 # endif
       end
 
-      subroutine check_step_t_switches(ierr)
-
-! The following routine keeps track of the status of CPP settings in
-! "compute_horiz_tracer_fluxes.h" and "compute_horiz_vert_fluxes.h".
-! This code must be placed here rather than in a separate file so it
-! is exposed to the relevant CPP-settings.   It does not affect any
-! model results, other than signature in global attribute "CPPS" in
-! the output netCDF files.
-
-      use param
-      use strings
-
-      implicit none
-      integer ierr, is,ie, lenstr
-
-      ie=lenstr(cpps)
-      is=ie+2 ; ie=is+15
-      if (ie > max_opt_size) goto 99
-      cpps(is:ie)='<step3d_t_ISO.F>'
-
-# include "track_advec_switches.h"
-
-      return
-  99  mpi_master_only write(*,'(/1x,2A/12x,A/)')      '### ERROR: ',
-     &  'Insufficient length of string "cpps" in file "strings".',
-     &        'Increase parameter "max_opt_size" it and recompile.'
-      ierr=ierr+1
-      end
-#else
-      subroutine step3d_t_empty
-      end
-#endif  /* SOLVE3D */
