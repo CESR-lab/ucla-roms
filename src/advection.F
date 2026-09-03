@@ -19,9 +19,13 @@
 
 #include "advection.opt"
 
-      ! These control whether we use 'real' or 'modified' up3 and c4
-      real,parameter :: coef_up3 = 1./6. ! coef_up3 = 1./8. for 'real' up3
-      real,parameter :: coef_c4 = 1./12. ! coef_c4 = 1./16. for 'real' c4
+      ! While it might appear that the c3/c4 coefficients aren't  actually 3rd and 4th order accurate, 
+      ! they are consistent when the flux divergence is considered. 
+      ! See, for instance:
+      ! Nishikawa, 2021: The QUICK scheme is a third-order finite-volume scheme with point-valued numerical solutions
+      ! Leonard, (1995): Order of accuracy of QUICK and related convection-diffusion schemes
+      real,parameter :: coef_up3 = 1./6. 
+      real,parameter :: coef_c4  = 1./12.
       real,parameter :: delta = 0.1666666666666667 !! delta=0.125
       real,parameter :: gamma = 0.3333333333333333 !! gamma=0.25
 
@@ -342,6 +346,11 @@
       ! Upwind  3rd order:         :  ( 3*f(k+1) + 6*f(k) -f(k-1))/8 (we>0)
       ! 'Modified' upwind 3rd order:  ( 2*f(k+1) + 5*f(k) -f(k-1))/6 (we>0)
       ! we get the modified version if coef_up3 is set to 1/6 in advection.opt
+      ! The advecting flux (FlxU,FlxV) is the arithmetic mean of the two
+      ! adjacent face fluxes, consistent with the vertical kernels and the
+      ! c4 diagnostic; only the advected velocity carries the curvature
+      ! correction (a 4th-order flux interpolation is energy-neutral only
+      ! if applied consistently in all three directions, and adds no order).
 
 
       ! Import
@@ -354,26 +363,22 @@
       do j=1,ny
         do i=0,nx+1
           wrk1(i,j)=u(i-1,j,k,nrhs)-2.*u(i,j,k,nrhs)+u(i+1,j,k,nrhs)
-          wrk2(i,j)=FlxU(i-1,j,k) -2.*FlxU(i,j,k) +FlxU(i+1,j,k)
         enddo
       enddo
 
       if (west_bnd) then
         do j=1,ny
           wrk1(1,j) = wrk1(2,j)
-          wrk2(1,j) = wrk2(2,j)
         enddo
       endif
       if (east_bnd) then
         do j=1,ny
           wrk1(nx+1,j) = wrk1(nx,j)
-          wrk2(nx+1,j) = wrk2(nx,j)
         enddo
       endif
       do j=1,ny
         do i=0,nx
-          cff=FlxU(i,j,k)+FlxU(i+1,j,k)-delta*( wrk2(i  ,j)
-     &                                            +wrk2(i+1,j))
+          cff=FlxU(i,j,k)+FlxU(i+1,j,k)
           UFx(i,j)=0.25*( cff*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
      &                          -gamma*( max(cff,0.)*wrk1(i  ,j)
      &                                  +min(cff,0.)*wrk1(i+1,j)
@@ -382,42 +387,35 @@
       enddo
 
 # define vee wrk1
-# define Hvee wrk2
       do j=0,ny+1
         do i=1,nx
           vee(i,j)=v(i,j-1,k,nrhs)-2.*v(i,j,k,nrhs)+v(i,j+1,k,nrhs)
-          Hvee(i,j)=FlxV(i,j-1,k) -2.*FlxV(i,j,k)  +FlxV(i,j+1,k)
         enddo
       enddo
 
       if (south_bnd) then
         do i=1,nx
           vee(i,1) =vee(i,2)
-          Hvee(i,1)=Hvee(i,2)
         enddo
       endif
       if (north_bnd) then
         do i=1,nx
           vee(i,ny+1)=vee(i,ny)
-          Hvee(i,ny+1)=Hvee(i,ny)
         enddo
       endif
 
       do j=0,ny
         do i=1,nx
-          cff=FlxV(i,j,k)+FlxV(i,j+1,k)-delta*( Hvee(i,j  )
-     &                                           +Hvee(i,j+1))
+          cff=FlxV(i,j,k)+FlxV(i,j+1,k)
           VFe(i,j)=0.25*( cff*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
      &                          -gamma*( max(cff,0.)*vee(i,j  )
      &                                  +min(cff,0.)*vee(i,j+1)
      &                                                      ))
         enddo
       enddo
-# undef Hvee
 # undef vee
 
 # define uee wrk1
-# define Hvxx wrk2
 
       do j=0,ny+1
         do i=1,nx
@@ -436,25 +434,17 @@
       endif
 
       do j=1,ny+1
-        do i=0,nx
-         Hvxx(i,j)=FlxV(i-1,j,k)-2.*FlxV(i,j,k)+FlxV(i+1,j,k)
-        enddo
-      enddo
-      do j=1,ny+1
         do i=1,nx
-          cff=FlxV(i,j,k)+FlxV(i-1,j,k)-delta*( Hvxx(i  ,j)
-     &                                           +Hvxx(i-1,j))
+          cff=FlxV(i,j,k)+FlxV(i-1,j,k)
           UFe(i,j)=0.25*( cff*(u(i,j,k,nrhs)+u(i,j-1,k,nrhs))
      &                          -gamma*( max(cff,0.)*uee(i,j-1)
      &                                  +min(cff,0.)*uee(i,j  )
      &                                                      ))
         enddo
       enddo
-# undef Hvxx
 # undef uee
 
 # define vxx wrk1
-# define Huee wrk2
 
       do j=1,ny
         do i=0,nx+1
@@ -471,22 +461,15 @@
           vxx(nx+1,j)=vxx(nx,j)
         enddo
       endif
-      do j=0,ny
-        do i=1,nx+1
-         Huee(i,j)=FlxU(i,j-1,k)-2.*FlxU(i,j,k)+FlxU(i,j+1,k)
-        enddo
-      enddo
       do j=1,ny
         do i=1,nx+1
-          cff=FlxU(i,j,k)+FlxU(i,j-1,k)-delta*( Huee(i,j  )
-     &                                           +Huee(i,j-1))
+          cff=FlxU(i,j,k)+FlxU(i,j-1,k)
           VFx(i,j)=0.25*( cff*(v(i,j,k,nrhs)+v(i-1,j,k,nrhs))
      &                          -gamma*( max(cff,0.)*vxx(i-1,j)
      &                                  +min(cff,0.)*vxx(i  ,j)
      &                                                      ))
         enddo
       enddo
-# undef Huee
 # undef vxx
       do j=1,ny
         do i=1,nx
@@ -512,6 +495,8 @@
       ! Centered  4th order:           (-f(k+2) +9*f(k+1) + 9*f(k) -f(k-1))/16
       ! Centered 'modified' 4th order  (-f(k+2) +7*f(k+1) + 7*f(k) -f(k-1))/12
       ! modified when coef_c4 = 1/12, normal for coef_c4=1./16
+      ! The advecting flux is the arithmetic mean of the adjacent face
+      ! fluxes (see uv_hadv_up3); only the advected velocity is interpolated.
 
       ! Import
       integer, intent(in) :: k
@@ -523,50 +508,42 @@
       do j=1,ny
         do i=0,nx+1
           wrk1(i,j)=u(i-1,j,k,nrhs)-2.*u(i,j,k,nrhs)+u(i+1,j,k,nrhs)
-          wrk2(i,j)=FlxU(i-1,j,k) -2.*FlxU(i,j,k) +FlxU(i+1,j,k)
         enddo
       enddo
 
       if (west_bnd) then
         do j=1,ny
           wrk1(1,j) = wrk1(2,j)
-          wrk2(1,j) = wrk2(2,j)
         enddo
       endif
       if (east_bnd) then
         do j=1,ny
           wrk1(nx+1,j) = wrk1(nx,j)
-          wrk2(nx+1,j) = wrk2(nx,j)
         enddo
       endif
       do j=1,ny
         do i=0,nx
           UFx(i,j)=0.25*( u(i,j,k,nrhs)+u(i+1,j,k,nrhs)
      &                         -delta*(wrk1(i,j)+wrk1(i+1,j))
-     &                  )*( FlxU(i,j,k)+FlxU(i+1,j,k)
-     &                      -delta*(wrk2(i,j)+wrk2(i+1,j)))
+     &                  )*( FlxU(i,j,k)+FlxU(i+1,j,k) )
         enddo
       enddo
 
 # define vee wrk1
-# define Hvee wrk2
       do j=0,ny+1
         do i=1,nx
           vee(i,j)=v(i,j-1,k,nrhs)-2.*v(i,j,k,nrhs)+v(i,j+1,k,nrhs)
-          Hvee(i,j)=FlxV(i,j-1,k) -2.*FlxV(i,j,k)  +FlxV(i,j+1,k)
         enddo
       enddo
 
       if (south_bnd) then
         do i=1,nx
           vee(i,1) =vee(i,2)
-          Hvee(i,1)=Hvee(i,2)
         enddo
       endif
       if (north_bnd) then
         do i=1,nx
           vee(i,ny+1)=vee(i,ny)
-          Hvee(i,ny+1)=Hvee(i,ny)
         enddo
       endif
 
@@ -574,15 +551,12 @@
         do i=1,nx
           VFe(i,j)=0.25*( v(i,j,k,nrhs)+v(i,j+1,k,nrhs)
      &                        -delta*(vee(i,j)+vee(i,j+1))
-     &                   )*( FlxV(i,j,k)+FlxV(i,j+1,k)
-     &                      -delta*(Hvee(i,j)+Hvee(i,j+1)))
+     &                   )*( FlxV(i,j,k)+FlxV(i,j+1,k) )
         enddo
       enddo
-# undef Hvee
 # undef vee
 
 # define uee wrk1
-# define Hvxx wrk2
       do j=0,ny+1
         do i=1,nx
           uee(i,j)=u(i,j-1,k,nrhs)-2.*u(i,j,k,nrhs)+u(i,j+1,k,nrhs)
@@ -600,23 +574,15 @@
       endif
 
       do j=1,ny+1
-        do i=0,nx
-         Hvxx(i,j)=FlxV(i-1,j,k)-2.*FlxV(i,j,k)+FlxV(i+1,j,k)
-        enddo
-      enddo
-      do j=1,ny+1
         do i=1,nx
           UFe(i,j)=0.25*( u(i,j,k,nrhs)+u(i,j-1,k,nrhs)
      &                        -delta*(uee(i,j)+uee(i,j-1))
-     &                  )*( FlxV(i,j,k)+FlxV(i-1,j,k)
-     &                     -delta*(Hvxx(i,j)+Hvxx(i-1,j)))
+     &                  )*( FlxV(i,j,k)+FlxV(i-1,j,k) )
         enddo
       enddo
-# undef Hvxx
 # undef uee
 
 # define vxx wrk1
-# define Huee wrk2
 
       do j=1,ny
         do i=0,nx+1
@@ -633,20 +599,13 @@
           vxx(nx+1,j)=vxx(nx,j)
         enddo
       endif
-      do j=0,ny
-        do i=1,nx+1
-         Huee(i,j)=FlxU(i,j-1,k)-2.*FlxU(i,j,k)+FlxU(i,j+1,k)
-        enddo
-      enddo
       do j=1,ny
         do i=1,nx+1
           VFx(i,j)=0.25*( v(i,j,k,nrhs)+v(i-1,j,k,nrhs)
      &                        -delta*(vxx(i,j)+vxx(i-1,j))
-     &                  )*( FlxU(i,j,k)+FlxU(i,j-1,k)
-     &                     -delta*(Huee(i,j)+Huee(i,j-1)))
+     &                  )*( FlxU(i,j,k)+FlxU(i,j-1,k) )
         enddo
       enddo
-# undef Huee
 # undef vxx
       do j=1,ny
         do i=1,nx
