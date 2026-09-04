@@ -39,6 +39,11 @@
       real,allocatable,dimension(:,:) :: crv
       real,allocatable,dimension(:,:) :: CF
       real,allocatable,dimension(:,:) :: DC
+# ifdef NHMG
+      ! w_metric work space: C2 u,v advection forces and the slope
+      ! tilt z_x*u + z_y*v at w-levels (see w_metric)
+      real,allocatable,dimension(:,:,:) :: cu2,cv2,tilt
+# endif
 
       public init_advection
       public uv_cor_curv
@@ -56,6 +61,9 @@
       public w_hadv_c4
       public w_vadv_up3
       public w_vadv_c4
+# ifdef NHMG
+      public w_metric
+# endif
 
       contains
 
@@ -78,6 +86,12 @@
       allocate(FC(nx,0:nz))
       allocate(CF(nx,0:nz))
       allocate(DC(nx,0:nz))
+# ifdef NHMG
+      allocate(cu2 (GLOBAL_2D_ARRAY,  nz))
+      allocate(cv2 (GLOBAL_2D_ARRAY,  nz))
+      allocate(tilt(GLOBAL_2D_ARRAY,0:nz))
+      cu2 = 0.;  cv2 = 0.;  tilt = 0.
+# endif
 
       end subroutine init_advection !]
 !------------------------------------------------------------------------------
@@ -1431,5 +1445,276 @@
       enddo
 
       end subroutine w_vadv_c4 !]
+!----------------------------------------------------------------
+# ifdef NHMG
+      subroutine w_metric(ru,rv,rw) ![
+
+      ! Metric terms of the W equation and the bottom-row completion
+      ! of the u,v equations, generated through T (non-hydrostatic).
+      !
+      ! The W kernels above advect the prognostic w.  The Cartesian
+      ! vertical momentum is w_c = w + z_x*u + z_y*v (exact for the
+      ! fluxes: U per unit area is the Cartesian u), so advecting w
+      ! alone misses adv(tilt), tilt = z_x*u + z_y*v, while the u,v
+      ! equations carry slope-related work that has no partner.  The
+      ! paper's product-rule identity
+      !     adv(W) + metric  =  adv(w_c) - z_x o adv(U) - z_y o adv(V)
+      ! gives the metric terms as
+      !     metric = adv_c2(tilt) + dzw * [W-row of T](a_u, a_v, 0),
+      !     a_u = CU_c2/(dxu*Arx),  a_v = CV_c2/(dyv*Ary),
+      ! with CU_c2, CV_c2 the C2 flux-form advection forces of u and v,
+      ! and the k=1 rows of T (gamma, beta: the eliminated bottom w)
+      ! completing ru, rv.  Both pieces use the same C2 operator, so
+      ! the transport parts cancel and what remains is the local
+      ! source U u.grad(z_x) + V u.grad(z_y): no derivative acts on
+      ! the velocity, no dispersion, no dt constraint.  The forces are
+      ! recomputed here from the primitive fields with the TOTAL
+      ! vertical flux We+Wi (the kernels apply Wi implicitly, so
+      ! ru/rv never contain it); this keeps the term local and
+      ! independent of the time splitting.  Wi enters at the old time
+      ! level -- the only O(dt) inconsistency.
+      ! Metrics are NHMG's own (frozen with the projection matrix), so
+      ! the exchange with the projection and the momenta pairing of
+      ! the diagnostics is exact.  Reference: New-tools/adv_terms.m,
+      ! demo_w_metric_3d.m (2nd order, ~1e-10 relative leak with C2;
+      ! the direct discretization of eq. 23 is 1st order in this
+      ! bottom convention).  Surface row follows T: dropped under
+      ! Neumann, half weights under Dirichlet.
+      ! Units: ru,rv,rw volume integrated, m^4/s^2.
+
+      use mg_grids, only: mggrid => grid
+      use mg_namelist, only: surface_neumann
+
+      ! Import/export
+      real,dimension(GLOBAL_2D_ARRAY,  nz) :: ru,rv
+      real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
+      ! local
+      integer :: i,j,k
+      real    :: cff,Uflxw,Vflxw,dwr,gam,dflag
+
+      if (.not.uv_adv) return
+
+      if (surface_neumann) then
+        dflag = 0.
+      else
+        dflag = 1.
+      endif
+
+      !-- 1. tilt = z_x*u + z_y*v at w-levels (T's W-row averaging:
+      !      cell slope x mean face velocity, mean of the two cells
+      !      sharing the level; one cell at the surface; 0 at the
+      !      bottom face, which carries no momentum) -----------------
+      do k=1,nz
+        do j=0,ny+1
+          do i=0,nx+1
+            tilt(i,j,k) =
+     &        mggrid(1)%zxdy(k,j,i)/mggrid(1)%dy(j,i)
+     &                 *0.5*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
+     &      + mggrid(1)%zydx(k,j,i)/mggrid(1)%dx(j,i)
+     &                 *0.5*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
+          enddo
+        enddo
+      enddo
+      do k=1,nz-1                    ! in place: tilt(k+1) still cell k+1
+        do j=0,ny+1
+          do i=0,nx+1
+            tilt(i,j,k) = 0.5*(tilt(i,j,k)+tilt(i,j,k+1))
+          enddo
+        enddo
+      enddo
+      tilt(:,:,0) = 0.
+
+      !-- 2. C2 u-CV advection force, faces i=1..nx+1, rows j=0..ny,
+      !      total vertical flux We+Wi ----------------------------------
+      do k=1,nz
+        do j=0,ny
+          do i=0,nx+1
+            UFx(i,j)=0.25*( u(i,j,k,nrhs)+u(i+1,j,k,nrhs) )
+     &                   *( FlxU(i,j,k)+FlxU(i+1,j,k) )
+          enddo
+        enddo
+        do j=0,ny+1
+          do i=1,nx+1
+            UFe(i,j)=0.25*( u(i,j,k,nrhs)+u(i,j-1,k,nrhs) )
+     &                   *( FlxV(i,j,k)+FlxV(i-1,j,k) )
+          enddo
+        enddo
+        do j=0,ny
+          do i=1,nx+1
+            cu2(i,j,k) = -UFx(i,j)+UFx(i-1,j) -UFe(i,j+1)+UFe(i,j)
+          enddo
+        enddo
+      enddo
+      wrk1(1:nx+1,0:ny) = 0.                       ! flux below level 1
+      do k=1,nz-1
+        do j=0,ny
+          do i=1,nx+1
+            wrk2(i,j) = 0.25*( We(i  ,j,k)+Wi(i  ,j,k)
+     &                        +We(i-1,j,k)+Wi(i-1,j,k) )
+     &                      *( u(i,j,k,nrhs)+u(i,j,k+1,nrhs) )
+            cu2(i,j,k) = cu2(i,j,k) + wrk1(i,j) - wrk2(i,j)
+            wrk1(i,j) = wrk2(i,j)
+          enddo
+        enddo
+      enddo
+      do j=0,ny
+        do i=1,nx+1
+          cu2(i,j,nz) = cu2(i,j,nz) + wrk1(i,j)   ! no flux through top
+        enddo
+      enddo
+
+      !-- 3. C2 v-CV advection force, faces j=1..ny+1, columns i=0..nx --
+      do k=1,nz
+        do j=0,ny+1
+          do i=0,nx
+            VFe(i,j)=0.25*( v(i,j,k,nrhs)+v(i,j+1,k,nrhs) )
+     &                   *( FlxV(i,j,k)+FlxV(i,j+1,k) )
+          enddo
+        enddo
+        do j=1,ny+1
+          do i=0,nx+1
+            VFx(i,j)=0.25*( v(i,j,k,nrhs)+v(i-1,j,k,nrhs) )
+     &                   *( FlxU(i,j,k)+FlxU(i,j-1,k) )
+          enddo
+        enddo
+        do j=1,ny+1
+          do i=0,nx
+            cv2(i,j,k) = -VFx(i+1,j)+VFx(i,j) -VFe(i,j)+VFe(i,j-1)
+          enddo
+        enddo
+      enddo
+      wrk1(0:nx,1:ny+1) = 0.
+      do k=1,nz-1
+        do j=1,ny+1
+          do i=0,nx
+            wrk2(i,j) = 0.25*( We(i,j  ,k)+Wi(i,j  ,k)
+     &                        +We(i,j-1,k)+Wi(i,j-1,k) )
+     &                      *( v(i,j,k,nrhs)+v(i,j,k+1,nrhs) )
+            cv2(i,j,k) = cv2(i,j,k) + wrk1(i,j) - wrk2(i,j)
+            wrk1(i,j) = wrk2(i,j)
+          enddo
+        enddo
+      enddo
+      do j=1,ny+1
+        do i=0,nx
+          cv2(i,j,nz) = cv2(i,j,nz) + wrk1(i,j)
+        enddo
+      enddo
+
+      ! wall faces are BC-owned: no advective force there
+      if (west_bnd)  cu2(1   ,:,:) = 0.
+      if (east_bnd)  cu2(nx+1,:,:) = 0.
+      if (south_bnd) cv2(:,1   ,:) = 0.
+      if (north_bnd) cv2(:,ny+1,:) = 0.
+
+      !-- 4. rw += adv_c2(tilt): horizontal (level-averaged fluxes,
+      !      half flux in the surface half-cell) and vertical (total
+      !      flux, no flux through bottom face or moving surface) ------
+      do k=1,nz
+        do j=1,ny
+          do i=1,nx+1
+            if (k<nz) then
+              Uflxw = 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
+            else
+              Uflxw = 0.5* FlxU(i,j,k)
+            endif
+            UFx(i,j) = 0.5*(tilt(i,j,k)+tilt(i-1,j,k))*Uflxw
+          enddo
+        enddo
+        do j=1,ny+1
+          do i=1,nx
+            if (k<nz) then
+              Vflxw = 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
+            else
+              Vflxw = 0.5* FlxV(i,j,k)
+            endif
+            VFe(i,j) = 0.5*(tilt(i,j,k)+tilt(i,j-1,k))*Vflxw
+          enddo
+        enddo
+        do j=1,ny
+          do i=1,nx
+            rw(i,j,k) = rw(i,j,k) -(UFx(i+1,j)-UFx(i,j))
+     &                             -(VFe(i,j+1)-VFe(i,j))
+          enddo
+        enddo
+      enddo
+      do k=1,nz                 ! wrk2 = flux through cell k (w-levels
+        do j=1,ny               ! k-1 -> k), wrk1 = the one below it
+          do i=1,nx
+            cff = 0.5*( We(i,j,k  )+Wi(i,j,k  )
+     &                 +We(i,j,k-1)+Wi(i,j,k-1) )
+            wrk2(i,j) = cff*0.5*(tilt(i,j,k)+tilt(i,j,k-1))
+            if (k>1) rw(i,j,k-1) = rw(i,j,k-1) + wrk1(i,j) - wrk2(i,j)
+            wrk1(i,j) = wrk2(i,j)
+          enddo
+        enddo
+      enddo
+      do j=1,ny
+        do i=1,nx
+          rw(i,j,nz) = rw(i,j,nz) + wrk1(i,j)     ! surface half-cell
+        enddo
+      enddo
+
+      !-- 5. rw += dzw * [W-row of T](a_u,a_v,0)  (cf. correction_uvw) --
+      do k=1,nz-1                        ! ROMS w-level k = NHMG k+1
+        do j=1,ny
+          do i=1,nx
+            dwr = -0.25*(
+     &         mggrid(1)%zxdy(k  ,j,i)*( cu2(i  ,j,k  )/mggrid(1)%Arx(k  ,j,i  )
+     &                                  +cu2(i+1,j,k  )/mggrid(1)%Arx(k  ,j,i+1) )
+     &        +mggrid(1)%zxdy(k+1,j,i)*( cu2(i  ,j,k+1)/mggrid(1)%Arx(k+1,j,i  )
+     &                                  +cu2(i+1,j,k+1)/mggrid(1)%Arx(k+1,j,i+1) )
+     &        +mggrid(1)%zydx(k  ,j,i)*( cv2(i,j  ,k  )/mggrid(1)%Ary(k  ,j  ,i)
+     &                                  +cv2(i,j+1,k  )/mggrid(1)%Ary(k  ,j+1,i) )
+     &        +mggrid(1)%zydx(k+1,j,i)*( cv2(i,j  ,k+1)/mggrid(1)%Ary(k+1,j  ,i)
+     &                                  +cv2(i,j+1,k+1)/mggrid(1)%Ary(k+1,j+1,i) )
+     &                  )
+            rw(i,j,k) = rw(i,j,k) + mggrid(1)%dzw(k+1,j,i)*dwr
+          enddo
+        enddo
+      enddo
+      k = nz                             ! surface row: Dirichlet only
+      do j=1,ny
+        do i=1,nx
+          dwr = -0.5*(
+     &       mggrid(1)%zxdy(k,j,i)*( cu2(i  ,j,k)/mggrid(1)%Arx(k,j,i  )
+     &                              +cu2(i+1,j,k)/mggrid(1)%Arx(k,j,i+1) )
+     &      +mggrid(1)%zydx(k,j,i)*( cv2(i,j  ,k)/mggrid(1)%Ary(k,j  ,i)
+     &                              +cv2(i,j+1,k)/mggrid(1)%Ary(k,j+1,i) )
+     &                )
+          rw(i,j,k) = rw(i,j,k) + dflag*mggrid(1)%dzw(k+1,j,i)*dwr
+        enddo
+      enddo
+
+      !-- 6. bottom rows of u,v: gamma scaling and beta cross terms
+      !      (the k=1 rows of T applied to a_u,a_v; interior rows of
+      !      T leave the advection forces unchanged) ------------------
+      do j=1,ny
+        do i=1,nx
+          if (i==1 .and. west_bnd) cycle
+          gam = 0.5*( mggrid(1)%gamu(j,i)+mggrid(1)%gamu(j,i-1) )
+          ru(i,j,1) = ru(i,j,1) + (gam-1.)*cu2(i,j,1)
+     &      - mggrid(1)%dxu(j,i)*(
+     &          mggrid(1)%beta(j,i-1)*( cv2(i-1,j  ,1)/mggrid(1)%Ary(1,j  ,i-1)
+     &                                 +cv2(i-1,j+1,1)/mggrid(1)%Ary(1,j+1,i-1) )
+     &         +mggrid(1)%beta(j,i  )*( cv2(i  ,j  ,1)/mggrid(1)%Ary(1,j  ,i  )
+     &                                 +cv2(i  ,j+1,1)/mggrid(1)%Ary(1,j+1,i  ) ) )
+        enddo
+      enddo
+      do j=1,ny
+        if (j==1 .and. south_bnd) cycle
+        do i=1,nx
+          gam = 0.5*( mggrid(1)%gamv(j,i)+mggrid(1)%gamv(j-1,i) )
+          rv(i,j,1) = rv(i,j,1) + (gam-1.)*cv2(i,j,1)
+     &      - mggrid(1)%dyv(j,i)*(
+     &          mggrid(1)%beta(j-1,i)*( cu2(i  ,j-1,1)/mggrid(1)%Arx(1,j-1,i  )
+     &                                 +cu2(i+1,j-1,1)/mggrid(1)%Arx(1,j-1,i+1) )
+     &         +mggrid(1)%beta(j  ,i)*( cu2(i  ,j  ,1)/mggrid(1)%Arx(1,j  ,i  )
+     &                                 +cu2(i+1,j  ,1)/mggrid(1)%Arx(1,j  ,i+1) ) )
+        enddo
+      enddo
+
+      end subroutine w_metric !]
+# endif /* NHMG */
 !----------------------------------------------------------------
       end module advection

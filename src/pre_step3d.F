@@ -161,6 +161,12 @@
 
       enddo !<-- k
 
+# ifdef NHMG
+      ! metric terms of the W equation + bottom-row completion of u,v
+      ! (C2 forces recomputed with We+Wi, completed through T)
+      call w_metric(ru,rv,rw)
+# endif
+
 #ifdef WEC
       call compute_wec_rhs_uv_terms(1,nx,1,ny,ru,rv,wrk1,wrk2)
 #endif

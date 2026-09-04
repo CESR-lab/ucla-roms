@@ -82,6 +82,10 @@
         call w_hadv_up3(rw,k)    ! upwinded in the corrector
       enddo
 
+      ! metric terms of the W equation + bottom-row completion of u,v
+      ! (C2 forces recomputed with We+Wi, completed through T)
+      call w_metric(ru,rv,rw)
+
       do j=1,ny
 
         call w_vadv_up3(rw,j)    ! upwinded in the corrector
