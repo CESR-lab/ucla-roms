@@ -141,7 +141,7 @@
       call get_grid                    ! Can be analytic or read from netcdf
 
 #ifdef NHMG
-      call nhmg_init(nx,ny,nz,npx,npy)
+      call nhmg_init(nx,ny,nz,npx,npy,ew_periodic,ns_periodic)
 #endif
       if (obc_tuning) call init_orlanski_tune
 

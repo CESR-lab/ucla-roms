@@ -29,10 +29,14 @@ module nhmg
 contains
 
   !--------------------------------------------------------------
-  subroutine nhmg_init(nx,ny,nz,npxg,npyg)
+  subroutine nhmg_init(nx,ny,nz,npxg,npyg,ew_perio,ns_perio)
       
     integer(kind=ip), intent(in) :: nx, ny, nz
     integer(kind=ip), intent(in) :: npxg, npyg
+    ! periodicity of the calling model, checked against the namelist
+    logical, optional, intent(in) :: ew_perio, ns_perio
+
+    integer(kind=ip) :: ierr
 
     call tic(1,'nhmg_init')
 
@@ -41,6 +45,26 @@ contains
     if (myrank==0) write(*,*)' nhmg_init:'
 
     call read_nhnamelist(vbrank=myrank)
+
+    ! The namelist flags decide where the library places walls (see
+    ! set_face_masks); a mismatch with the model leaves its closed sides
+    ! unmasked or wraps an open one, and the run blows up from the edges.
+    if (present(ew_perio)) then
+       if (ew_perio .neqv. east_west_perio) then
+          if (myrank==0) write(*,*) 'nhmg_init: east_west_perio =', &
+               east_west_perio,' in nhmg_namelist but the model is', &
+               ' E/W periodic = ',ew_perio,' -- fix the namelist'
+          call MPI_Abort(MPI_COMM_WORLD,1,ierr)
+       endif
+    endif
+    if (present(ns_perio)) then
+       if (ns_perio .neqv. north_south_perio) then
+          if (myrank==0) write(*,*) 'nhmg_init: north_south_perio =', &
+               north_south_perio,' in nhmg_namelist but the model is', &
+               ' N/S periodic = ',ns_perio,' -- fix the namelist'
+          call MPI_Abort(MPI_COMM_WORLD,1,ierr)
+       endif
+    endif
 
     call define_grids(npxg,npyg,nx,ny,nz)
 
