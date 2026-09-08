@@ -86,6 +86,9 @@
       robin_beta = theta_fs*theta_fs*g*dt*dt
       allocate( Un(GLOBAL_2D_ARRAY) ) ; Un=0.
       allocate( Vn(GLOBAL_2D_ARRAY) ) ; Vn=0.
+      ! the start-up transports (set_depth, iic=0) are not exchanged; the
+      ! corrector reads their ghosts at the first step (Un, DU_avg2)
+      call exchange_xxx(DU_avg1,DV_avg1)
       allocate( DU_half(GLOBAL_2D_ARRAY) ) ; DU_half=DU_avg1
       allocate( DV_half(GLOBAL_2D_ARRAY) ) ; DV_half=DV_avg1
       ! open boundaries: prescribed surface flux in the adjacent cells

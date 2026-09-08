@@ -404,6 +404,21 @@
             nhdv(i,j,k,iprec1) = mggrid(1)%dv(k,j,i)/dt !stored as a trend
           enddo
         enddo
+#ifdef NH_IMPLICIT_FS
+        ! the physical east/north faces are not projected (masked) but
+        ! were converted to fluxes above and are summed into DU_avg1 by
+        ! implicit_fs_finish: return them to dz*u units as well
+        if (east_bnd) then
+          do j=1,ny
+            u(nx+1,j,k,nnew) = u(nx+1,j,k,nnew)*pn_u(nx+1,j)
+          enddo
+        endif
+        if (north_bnd) then
+          do i=1,nx
+            v(i,ny+1,k,nnew) = v(i,ny+1,k,nnew)*pm_v(i,ny+1)
+          enddo
+        endif
+#endif
 
         if (k==nz) then
           do j=1,ny
