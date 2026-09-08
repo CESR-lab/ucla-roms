@@ -54,7 +54,8 @@
       use roms_mpi
       use boundary
 #ifdef NH_IMPLICIT_FS
-      use mg_namelist, only: robin_beta, surface_neumann, sfcfac
+      use mg_namelist, only: robin_beta, surface_neumann, sfcfac,
+     &                       east_west_perio, north_south_perio
       use mpi
 #endif
 
@@ -76,8 +77,29 @@
       implicit none
       character(len=16) :: cenv
       integer :: ilen, istat, i
+      logical :: lew, lns
       call get_environment_variable('THETA_FS',cenv,ilen,istat)
       if (istat==0 .and. ilen>0) read(cenv,*) theta_fs
+      ! the library's periodicity must match the model's: with a periodic
+      ! pressure solve on a non-periodic domain the boundary faces are
+      ! not walls and the projected transports (which define zeta here)
+      ! couple the two edges -- explosive (COOL, 2026-09-08)
+#ifdef EW_PERIODIC
+      lew=.true.
+#else
+      lew=.false.
+#endif
+#ifdef NS_PERIODIC
+      lns=.true.
+#else
+      lns=.false.
+#endif
+      if ((east_west_perio.neqv.lew).or.(north_south_perio.neqv.lns)) then
+        if (mynode==0) write(*,*) 'implicit_fs: nhmg_namelist periodicity',
+     &    ' (east_west_perio/north_south_perio) disagrees with the',
+     &    ' EW_PERIODIC/NS_PERIODIC cpp keys -- fix the namelist'
+        call MPI_Abort(MPI_COMM_WORLD,1,i)
+      endif
       if (surface_neumann) then
         if (mynode==0) write(*,*) 'implicit_fs: NH_IMPLICIT_FS needs',
      &    ' surface_neumann = .false. (the Robin surface replaces Dirichlet)'
