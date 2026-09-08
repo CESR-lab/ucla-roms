@@ -42,7 +42,9 @@
 ! barotropic waves reflect.  A radiating (implicit Flather) boundary row
 ! is the follow-up if the reflection proves harmful.
 
-#ifdef NH_IMPLICIT_FS
+      ! module dependencies outside the option guard so that the
+      ! dependency generator orders the compilation (the option only
+      ! guards the contents)
       use param
       use dimensions
       use scalars
@@ -51,11 +53,14 @@
       use coupling
       use roms_mpi
       use boundary
+#ifdef NH_IMPLICIT_FS
       use mg_namelist, only: robin_beta, surface_neumann, sfcfac
       use mpi
+#endif
 
       implicit none
       private
+#ifdef NH_IMPLICIT_FS
 
       real, public :: theta_fs = 0.5    ! implicitness of the surface; env THETA_FS
       real, allocatable, dimension(:,:) :: Un, Vn   ! transports at time n
