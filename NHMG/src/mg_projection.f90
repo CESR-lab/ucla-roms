@@ -299,22 +299,31 @@ contains
 
   !-------------------------------------------------------------------------
   subroutine assemble_masked_stencil()
+    ! Read the fine-grid operator M T M G off 27 colouring vectors and
+    ! store it in cA (15-point symmetric storage: 8 slots per cell plus
+    ! the halo slots read by the east, north and south rows).  Each cell
+    ! meets each offset exactly once over the 27 colours, so every value
+    ! goes straight to its slot: no extra 3D storage (a 27+8 field
+    ! scratch was 0.7 GB per rank on a 96x96x256 subdomain, 2026-09-08).
+    ! Checks: agreement with the formulas (interior cells) and the size
+    ! of entries outside the pattern are taken as running maxima; the
+    ! symmetry of the true operator is tested globally with
+    ! <y,A x> = <x,A y> on two deterministic vectors.
 
     integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,di,dj,dk,m,ig,jg,pi,pj
     integer(kind=ip) :: ierr
-    real(kind=rp), dimension(:,:,:,:), allocatable :: A27, cAf
-    real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw
+    real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw,x,y
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
-    real(kind=rp) :: dint, dext, dsym, dnul, amax, gl(4), lc(4)
+    real(kind=rp) :: dint, dext, dnul, amax, v, gl(4), lc(4), gs(2), ls(2), sxy, syx
 
     nx = grid(1)%nx;  ny = grid(1)%ny;  nz = grid(1)%nz
     p  => grid(1)%p;  du => grid(1)%du;  dv => grid(1)%dv;  dw => grid(1)%dw
     cA => grid(1)%cA
+    x  => grid(1)%b;  y  => grid(1)%r        ! free work arrays at init
     pj = myrank/grid(1)%npx
     pi = mod(myrank,grid(1)%npx)
 
-    allocate(A27(27,nz,ny,nx));  A27 = zero
-    allocate(cAf(8,nz,0:ny+1,0:nx+1));  cAf = cA        ! formula stencil, kept for the check
+    dint = zero;  dext = zero;  dnul = zero
 
     ! 27 colours on GLOBAL indices (consistent across seams)
     do a = 0,2
@@ -352,94 +361,72 @@ contains
                 do m = -1,1
                   if (mod(k+m+3,3) == c) dk = m
                 enddo
-                m = 14 + di + 3*dj + 9*dk           ! 1..27, centre = 14
-                A27(m,k,j,i) = -( du(k,j,i+1) - du(k,j,i)     &
-                                + dv(k,j+1,i) - dv(k,j,i)     &
-                                + dw(k+1,j,i) - dw(k,j,i) )
+                v = -( du(k,j,i+1) - du(k,j,i)     &
+                     + dv(k,j+1,i) - dv(k,j,i)     &
+                     + dw(k+1,j,i) - dw(k,j,i) )
+                call put(v,dk,dj,di,k,j,i)
               enddo
             enddo
           enddo
         enddo
       enddo
     enddo
-    p = zero
 
-    ! stencil -> the 8 stored diagonals (interior cells)
+    ! symmetry of the true operator: <y,Ax> - <x,Ay> on two vectors
     do i = 1,nx
+      ig = i + pi*nx
       do j = 1,ny
+        jg = j + pj*ny
         do k = 1,nz
-          cA(1,k,j,i) = A27(14      ,k,j,i)            ! ( 0, 0, 0)
-          cA(2,k,j,i) = A27(14-9    ,k,j,i)            ! (-1, 0, 0)  k-1
-          cA(3,k,j,i) = A27(14+9-3  ,k,j,i)            ! (+1,-1, 0)
-          cA(4,k,j,i) = A27(14-3    ,k,j,i)            ! ( 0,-1, 0)
-          cA(6,k,j,i) = A27(14+9-1  ,k,j,i)            ! (+1, 0,-1)
-          cA(7,k,j,i) = A27(14-1    ,k,j,i)            ! ( 0, 0,-1)
-          if (k >= 2) then
-            cA(5,k,j,i) = A27(14-9-3,k,j,i)            ! (-1,-1, 0)
-            cA(8,k,j,i) = A27(14-9-1,k,j,i)            ! (-1, 0,-1)
-          else
-            cA(5,k,j,i) = A27(14+3-1,k,j,i)            ! ( 0,+1,-1)  bottom xy
-            cA(8,k,j,i) = A27(14-3-1,k,j,i)            ! ( 0,-1,-1)  bottom xy
-          endif
+          x(k,j,i) = sin(0.731_rp*ig + 1.213_rp*jg + 2.117_rp*k)
+          y(k,j,i) = cos(1.379_rp*ig + 0.577_rp*jg + 1.911_rp*k)
         enddo
       enddo
     enddo
-    ! halo-stored diagonals read by the interior rows (east, north, south)
-    do j = 1,ny
-      do k = 1,nz
-        cA(7,k,j,nx+1) = A27(14+1,k,j,nx)                     ! ( 0, 0,+1)
-        if (k >= 2) cA(6,k-1,j,nx+1) = A27(14-9+1,k,j,nx)     ! (-1, 0,+1)
-        if (k <= nz-1) cA(8,k+1,j,nx+1) = A27(14+9+1,k,j,nx)  ! (+1, 0,+1)
-      enddo
-      cA(5,1,j-1,nx+1) = A27(14-3+1,1,j,nx)                   ! ( 0,-1,+1)
-      cA(8,1,j+1,nx+1) = A27(14+3+1,1,j,nx)                   ! ( 0,+1,+1)
-    enddo
-    do i = 1,nx
-      do k = 1,nz
-        cA(4,k,ny+1,i) = A27(14+3,k,ny,i)                     ! ( 0,+1, 0)
-        if (k >= 2) cA(3,k-1,ny+1,i) = A27(14-9+3,k,ny,i)     ! (-1,+1, 0)
-        if (k <= nz-1) cA(5,k+1,ny+1,i) = A27(14+9+3,k,ny,i)  ! (+1,+1, 0)
-      enddo
-      cA(8,1,ny+1,i+1) = A27(14+3+1,1,ny,i)                   ! ( 0,+1,+1)
-      cA(5,1,0,i+1)    = A27(14-3+1,1,1,i)                    ! ( 0,-1,+1)
-    enddo
-
-    ! checks: (1) interior agreement with the formulas away from the
-    ! perimeter, (2) size of the coefficients outside the 15-point
-    ! pattern, (3) symmetry A(c,n) = A(n,c) for in-rank pairs
-    amax = maxval(abs(cA(1,1:nz,1:ny,1:nx)))
-    dint = zero;  dext = zero;  dsym = zero;  dnul = zero
+    p = x;  call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
+    syx = zero
     do i = 1,nx
       do j = 1,ny
         do k = 1,nz
-          if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2) then
-            dint = max(dint, maxval(abs(cA(1:8,k,j,i)-cAf(1:8,k,j,i))))
-          else
-            dext = max(dext, maxval(abs(cA(1:8,k,j,i)-cAf(1:8,k,j,i))))
-          endif
-          ! pattern: allowed offsets (dk,dj,di)
-          do m = 1,27
-            dk = (m-1)/9 - 1;  dj = mod((m-1)/3,3) - 1;  di = mod(m-1,3) - 1
-            if (dj/=0 .and. di/=0 .and. .not.(k==1 .and. dk==0)) dnul = max(dnul,abs(A27(m,k,j,i)))
-            if (dj/=0 .and. di/=0 .and. k==1 .and. dk/=0)       dnul = max(dnul,abs(A27(m,k,j,i)))
-            if (dk/=0 .and. dj/=0 .and. di/=0)                  dnul = max(dnul,abs(A27(m,k,j,i)))
-            ! symmetry with the reverse offset at the neighbour (in-rank)
-            if (k+dk>=1 .and. k+dk<=nz .and. j+dj>=1 .and. j+dj<=ny .and. i+di>=1 .and. i+di<=nx) &
-              dsym = max(dsym, abs(A27(m,k,j,i) - A27(28-m,k+dk,j+dj,i+di)))
-          enddo
+          syx = syx - y(k,j,i) * ( du(k,j,i+1) - du(k,j,i)  &
+                                 + dv(k,j+1,i) - dv(k,j,i)  &
+                                 + dw(k+1,j,i) - dw(k,j,i) )
         enddo
       enddo
     enddo
-    lc = (/ dint, dext, dsym, dnul /)
+    p = y;  call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
+    sxy = zero
+    do i = 1,nx
+      do j = 1,ny
+        do k = 1,nz
+          sxy = sxy - x(k,j,i) * ( du(k,j,i+1) - du(k,j,i)  &
+                                 + dv(k,j+1,i) - dv(k,j,i)  &
+                                 + dw(k+1,j,i) - dw(k,j,i) )
+        enddo
+      enddo
+    enddo
+    p = zero;  x = zero;  y = zero
+
+    amax = zero
+    do i = 1,nx
+      do j = 1,ny
+        do k = 1,nz
+          amax = max(amax, abs(cA(1,k,j,i)))
+        enddo
+      enddo
+    enddo
+    lc = (/ dint, dext, dnul, amax /)
     call MPI_Allreduce(lc,gl,4,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
-    lc(1) = amax
-    call MPI_Allreduce(lc(1),amax,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+    amax = gl(4)
+    ls = (/ syx, sxy /)
+    call MPI_Allreduce(ls,gs,2,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierr)
+    syx = gs(1);  sxy = gs(2)
     if (myrank==0) then
        write(*,'(A)') '     masked stencil (fine grid):'
        write(*,'(A,ES9.2,A,ES9.2,A)') '       max|num-formula| interior ', gl(1)/amax, &
             '   near perimeter ', gl(2)/amax, '   (rel. to max|diag|)'
-       write(*,'(A,ES9.2,A,ES9.2)') '       symmetry defect ', gl(3)/amax, &
-            '   outside 15-point pattern ', gl(4)/amax
+       write(*,'(A,ES9.2,A,ES9.2)') '       symmetry |<y,Ax>-<x,Ay>|/|<y,Ax>| ', &
+            abs(syx-sxy)/max(abs(syx),tiny(one)), '   outside 15-point pattern ', gl(3)/amax
     endif
     if (gl(1)/amax > 1e-10_rp) then
        if (robin_beta > 0._rp) then
@@ -452,7 +439,61 @@ contains
           call MPI_Abort(MPI_COMM_WORLD,1,ierr)
        endif
     endif
-    deallocate(A27,cAf)
+
+  contains
+
+    subroutine put(v,dk,dj,di,k,j,i)
+      ! value v of the operator at cell (k,j,i) for the neighbour at
+      ! offset (dk,dj,di) -> its slot in the 15-point storage
+      real(kind=rp), intent(in) :: v
+      integer(kind=ip), intent(in) :: dk,dj,di,k,j,i
+      ! slots stored at the cell itself (compared with the formulas)
+      if (dk==0 .and. dj==0 .and. di==0) then;        call slot(v,1,k,j,i)
+      elseif (dk==-1 .and. dj==0 .and. di==0) then;   call slot(v,2,k,j,i)
+      elseif (dk==1 .and. dj==-1 .and. di==0) then;   call slot(v,3,k,j,i)
+      elseif (dk==0 .and. dj==-1 .and. di==0) then;   call slot(v,4,k,j,i)
+      elseif (dk==1 .and. dj==0 .and. di==-1) then;   call slot(v,6,k,j,i)
+      elseif (dk==0 .and. dj==0 .and. di==-1) then;   call slot(v,7,k,j,i)
+      elseif (k>=2 .and. dk==-1 .and. dj==-1 .and. di==0) then;  call slot(v,5,k,j,i)
+      elseif (k>=2 .and. dk==-1 .and. dj==0 .and. di==-1) then;  call slot(v,8,k,j,i)
+      elseif (k==1 .and. dk==0 .and. dj==1 .and. di==-1) then;   call slot(v,5,k,j,i)   ! bottom xy
+      elseif (k==1 .and. dk==0 .and. dj==-1 .and. di==-1) then;  call slot(v,8,k,j,i)   ! bottom xy
+      else
+        ! entries outside the 15-point pattern (xy corners, except the
+        ! bottom level's own xy pair, and all xyz corners)
+        if (dj/=0 .and. di/=0 .and. .not.(k==1 .and. dk==0)) dnul = max(dnul,abs(v))
+      endif
+      ! halo-stored slots read by the interior rows (east, north, south)
+      if (i == nx) then
+        if (dk==0 .and. dj==0 .and. di==1)             cA(7,k,j,nx+1)   = v
+        if (k>=2 .and. dk==-1 .and. dj==0 .and. di==1) cA(6,k-1,j,nx+1) = v
+        if (k<=nz-1 .and. dk==1 .and. dj==0 .and. di==1) cA(8,k+1,j,nx+1) = v
+        if (k==1 .and. dk==0 .and. dj==-1 .and. di==1) cA(5,1,j-1,nx+1) = v
+        if (k==1 .and. dk==0 .and. dj==1 .and. di==1)  cA(8,1,j+1,nx+1) = v
+      endif
+      if (j == ny) then
+        if (dk==0 .and. dj==1 .and. di==0)             cA(4,k,ny+1,i)   = v
+        if (k>=2 .and. dk==-1 .and. dj==1 .and. di==0) cA(3,k-1,ny+1,i) = v
+        if (k<=nz-1 .and. dk==1 .and. dj==1 .and. di==0) cA(5,k+1,ny+1,i) = v
+        if (k==1 .and. dk==0 .and. dj==1 .and. di==1)  cA(8,1,ny+1,i+1) = v
+      endif
+      if (j == 1) then
+        if (k==1 .and. dk==0 .and. dj==-1 .and. di==1) cA(5,1,0,i+1)    = v
+      endif
+    end subroutine put
+
+    subroutine slot(v,n,k,j,i)
+      ! store v in cA(n,k,j,i); the formula value still there is the
+      ! reference for the interior / perimeter mismatch
+      real(kind=rp), intent(in) :: v
+      integer(kind=ip), intent(in) :: n,k,j,i
+      if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2) then
+        dint = max(dint, abs(v - cA(n,k,j,i)))
+      else
+        dext = max(dext, abs(v - cA(n,k,j,i)))
+      endif
+      cA(n,k,j,i) = v
+    end subroutine slot
 
   end subroutine assemble_masked_stencil
 
