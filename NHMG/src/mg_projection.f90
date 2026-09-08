@@ -34,7 +34,9 @@ contains
   end subroutine set_face_masks
 
   !-----------------------------------------------------------------------------------
-  subroutine set_matrices()
+  subroutine set_matrices(first)
+
+    logical, optional, intent(in) :: first   ! stage prints when .true.
 
     ! Define matrix coefficients cA
     ! Coefficients are stored in order of diagonals
@@ -274,11 +276,24 @@ contains
        ! colouring vectors through correction_uvw itself, hence exact by
        ! construction; the interior is checked against the formulas.
        if (lev == 1) then
+          call stage('face masks')
           call set_face_masks()
+          call stage('stencil extraction (27 colours)')
           call assemble_masked_stencil()
        endif
+       if (lev == 1 .and. nlevs > 1) call stage('coarse levels')
 
     enddo
+
+  contains
+    subroutine stage(what)
+      character(len=*), intent(in) :: what
+      if (.not.present(first)) return
+      if (first .and. myrank==0) then
+         write(*,'(A,A)') '  set_matrices: ', what
+         flush(6)
+      endif
+    end subroutine stage
 
   end subroutine set_matrices
 

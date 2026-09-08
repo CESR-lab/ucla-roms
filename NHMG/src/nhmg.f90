@@ -20,6 +20,7 @@ module nhmg
     integer(kind=ip) :: tscount = 1
     integer(kind=ip),public,parameter :: halo = 2
     integer(kind=ip),public :: iprec1 = 1,iprec2 = 2
+    logical :: matrices_first = .true.   ! stage prints on the first call
 
     public nhmg_matrices
     public nhmg_init
@@ -103,6 +104,7 @@ contains
        call set_horiz_grids()
 
     end if
+    call stage('horizontal grids')
 
     do i = -1,nx+2
        do j = -1,ny+2
@@ -122,12 +124,26 @@ contains
     enddo
 
     call fill_outer_halos(grid(1)%dz,nx,ny,nz)
+    call stage('dz, slopes, outer halos')
 
     call set_vert_grids()
+    call stage('vertical grids')
 
-    call set_matrices()
+    call set_matrices(matrices_first)
+    call stage('matrices')
+    matrices_first = .false.
 
     call toc(1,'nhmg_matrices')
+
+  contains
+    subroutine stage(what)
+      ! first-call progress line, flushed so a silent death shows where
+      character(len=*), intent(in) :: what
+      if (matrices_first .and. myrank==0) then
+         write(*,'(A,A)') '  nhmg_matrices: ', what
+         flush(6)
+      endif
+    end subroutine stage
 
   end subroutine nhmg_matrices
 
