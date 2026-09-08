@@ -426,24 +426,6 @@
         endif
       enddo
 
-      if (diag_uv) then                 ! projection correction terms
-        do k=1,nz
-          do j=1,ny
-            do i=1,nx
-              Udiag(i,j,k,inhp) = nhdu(i,j,k,iprec1)*pn_u(i,j)
-              Vdiag(i,j,k,inhp) = nhdv(i,j,k,iprec1)*pm_v(i,j)
-              if (k<nz) then
-                Wdiag(i,j,k,iwnhp) = nhdw(i,j,k,iprec1)*dxdyi(i,j)
-     &                              *0.5*(Hz(i,j,k+1)+Hz(i,j,k))
-              else
-                Wdiag(i,j,k,iwnhp) = nhdw(i,j,k,iprec1)*dxdyi(i,j)
-     &                              *0.5* Hz(i,j,k)
-              endif
-            enddo
-          enddo
-        enddo
-      endif
-
       ! u,v, and w contain again dz*u,dz*v, and dz*w
 
       iprec1 = 1+mod(iprec1,2)
