@@ -28,6 +28,9 @@ module mg_namelist
   logical           :: surface_neumann  = .true.
   real(kind=rp)     :: robin_beta = 0._rp  !- implicit free surface: q + robin_beta dq/dz = f at the
                                           !- surface (0 = Dirichlet); set at run time by the caller
+  real(kind=rp), allocatable :: sfcfac(:,:) !- fine-grid per-column multiplier of the surface factor
+                                          !- (j,i): 1 Robin/Dirichlet, 0 prescribed surface flux
+                                          !- (clamped open-boundary cells); allocated by the caller
 
   logical           :: east_west_perio = .false.
   logical           :: north_south_perio = .false.
@@ -138,5 +141,17 @@ contains
        sig = dzwtop / (dzwtop + robin_beta)
     endif
   end function sigtop
+
+  !----------------------------------------------------------------
+  function sfcf(j,i) result(f)
+    ! fine-grid column multiplier of the surface factor (1 if unset)
+    integer(kind=ip), intent(in) :: j,i
+    real(kind=rp) :: f
+    if (allocated(sfcfac)) then
+       f = sfcfac(j,i)
+    else
+       f = 1._rp
+    endif
+  end function sfcf
 
 end module mg_namelist

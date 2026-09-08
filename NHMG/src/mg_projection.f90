@@ -64,7 +64,7 @@ contains
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
 
     integer(kind=ip) :: dirichlet_flag 
-    real(kind=rp)    :: sig
+    real(kind=rp)    :: sig, fj, fjm, fi, fim
     
 
     if (surface_neumann) then
@@ -189,9 +189,13 @@ contains
        do i = 1,nx
           do j = 1,ny+1
              ! couples with j-1
+             fj = 1._rp ; fjm = 1._rp
+             if (lev == 1) then
+                fj = sfcf(j,i) ; fjm = sfcf(j-1,i)
+             endif
              cA(4,k,j,i) = Ary(k,j,i) / dyv(j,i) &
-                  + qrt * ( - zydx(k,j-1,i)*(2*sigtop(dzw(k+1,j-1,i))-1) &
-                            + zydx(k,j  ,i)*(2*sigtop(dzw(k+1,j  ,i))-1) ) 
+                  + qrt * ( - zydx(k,j-1,i)*(2*sigtop(dzw(k+1,j-1,i))*fjm-1) &
+                            + zydx(k,j  ,i)*(2*sigtop(dzw(k+1,j  ,i))*fj -1) ) 
              ! couples with k-1,j-1
              cA(5,k,j,i) = - qrt * ( zydx(k-1,j,i) + zydx(k,j-1,i) )
           enddo
@@ -202,9 +206,13 @@ contains
              ! with Neumann BC, the CA(7,:,:) has flip signed on the slope term
              ! this will be in the paper
              ! couples with i-1
+             fi = 1._rp ; fim = 1._rp
+             if (lev == 1) then
+                fi = sfcf(j,i) ; fim = sfcf(j,i-1)
+             endif
              cA(7,k,j,i) = Arx(k,j,i) / dxu(j,i) &
-                  + qrt * ( -zxdy(k,j,i-1)*(2*sigtop(dzw(k+1,j,i-1))-1) &
-                            +zxdy(k,j,i  )*(2*sigtop(dzw(k+1,j,i  ))-1) ) 
+                  + qrt * ( -zxdy(k,j,i-1)*(2*sigtop(dzw(k+1,j,i-1))*fim-1) &
+                            +zxdy(k,j,i  )*(2*sigtop(dzw(k+1,j,i  ))*fi -1) ) 
              ! couples with k-1,i-1
              cA(8,k,j,i) = - qrt * ( zxdy(k-1,j,i) + zxdy(k,j,i-1) )
           enddo
@@ -236,8 +244,10 @@ contains
              enddo
 
              k=nz ! upper level
+             fi = 1._rp
+             if (lev == 1) fi = sfcf(j,i)
              cA(1,k,j,i) = &
-                  - Arz(j,i) / dzw(k+1,j,i) * alpha(k,j,i) * sigtop(dzw(k+1,j,i)) &
+                  - Arz(j,i) / dzw(k+1,j,i) * alpha(k,j,i) * sigtop(dzw(k+1,j,i)) * fi &
                   - Arz(j,i) / dzw(k  ,j,i) * hlf * (alpha(k-1,j,i) + alpha(k,j,i)) &
                   - Arx(k,j,i  )/dxu(j,i  )  &
                   - Arx(k,j,i+1)/dxu(j,i+1)  &
@@ -526,8 +536,8 @@ contains
              pz(k,j,i) = -one / dzw(k,j,i) * (p(k,j,i)-p(k-1,j,i))
           enddo
 
-          k = nz+1 !surface: Dirichlet, Neumann or Robin (q + beta dq/dz = f)
-          pz(k,j,i) =  -one / dzw(k,j,i) * (-p(k-1,j,i)) * sigtop(dzw(k,j,i))
+          k = nz+1 !surface: Dirichlet, Neumann or Robin (q + beta dq/dz = f); 0 where prescribed
+          pz(k,j,i) =  -one / dzw(k,j,i) * (-p(k-1,j,i)) * sigtop(dzw(k,j,i)) * sfcf(j,i)
 
        enddo
     enddo
@@ -635,7 +645,7 @@ contains
           ! factor (1 Dirichlet, 0 Neumann, dzw/(dzw+beta) Robin) so that the
           ! operator stays symmetric with the two*dzw*pz terms of the u,v rows
           dw(k,j,i) = alpha(k-1,j,i) * Arz(j,i) * pz(k,j,i) &
-               + sigtop(dzw(k,j,i)) * ( &
+               + sigtop(dzw(k,j,i)) * sfcf(j,i) * ( &
                - hlf * ( &
                + zxdy(k-1,j,i) * dxu(j,i  ) * px(k-1,j,i  ) &
                + zxdy(k-1,j,i) * dxu(j,i+1) * px(k-1,j,i+1) ) &
