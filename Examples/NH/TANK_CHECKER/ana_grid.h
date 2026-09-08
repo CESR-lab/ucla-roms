@@ -1,0 +1,65 @@
+
+      real    :: SizeX,SizeY
+      real    :: f0,beta,d2
+      real    :: x0,y0,dx,dy
+      integer :: i,j
+
+      ! Additional vars that are needed
+      real  :: x_mid,y_mid
+
+
+      SizeX =  10.e0  !! Domain size in x-direction [m]
+      SizeY =  10.e0  !! Domain size in y-direction [m]
+
+      f0 = 0;
+      beta = 0
+
+      dx = SizeX/gnx   !! grid size in x-direction
+      dy = SizeY/gny
+
+      x_mid=SizeX/2.
+      y_mid=SizeY/2.
+
+
+# ifdef MPI
+      x0=dx*dble(iSW_corn)             ! Coordinates of south-west
+      y0=dy*dble(jSW_corn)             ! corner of MPI subdomain
+# else
+      x0=0. ; y0=0.
+# endif
+
+      do j=1-bf,ny+bf         ! Extended ranges for x,y arrays
+        do i=1-bf,nx+bf
+          xr(i,j)=x0+dx*(dble(i)-0.5D0) -x_mid
+          yr(i,j)=y0+dy*(dble(j)-0.5D0) -y_mid
+
+          pm(i,j)=1./dx
+          pn(i,j)=1./dy
+        enddo
+      enddo
+
+
+      x0=SizeX/2.   ! Define center of the domain
+      y0=SizeY/2.
+      do j=1-bf,ny+bf         ! Extended ranges for x,y arrays
+        do i=1-bf,nx+bf
+          f(i,j)=f0+beta*( yr(i,j)-y0 )
+# if defined NONTRAD_COR
+!         feta(i,j) = f0*cos(pi/4)
+!         fxi(i,j)  = f0*sin(pi/4)
+# endif
+        enddo
+      enddo
+
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
+          h(i,j)= 10 
+        enddo
+      enddo
+
+      print *,mynode, maxval(xr),minval(xr),x_mid
+
+# ifdef MASKING
+      rmask = 1     ! flat tank, no island (surface-BC stability test)
+# endif
+

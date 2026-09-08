@@ -27,6 +27,9 @@
       use param
 # ifdef NHMG
       use nhmg
+#ifdef NH_IMPLICIT_FS
+      use implicit_fs
+#endif
       use zstar_geom
       use mg_grids, mggrid => grid
       use mg_tictoc, only : tic, toc
@@ -375,6 +378,9 @@
         enddo
       enddo
 
+#  ifdef NH_IMPLICIT_FS
+      call implicit_fs_surface_flux   ! Robin: scale w* at the surface by dzw/(dzw+beta)
+#  endif
       call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
      &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
 
@@ -420,11 +426,32 @@
         endif
       enddo
 
+      if (diag_uv) then                 ! projection correction terms
+        do k=1,nz
+          do j=1,ny
+            do i=1,nx
+              Udiag(i,j,k,inhp) = nhdu(i,j,k,iprec1)*pn_u(i,j)
+              Vdiag(i,j,k,inhp) = nhdv(i,j,k,iprec1)*pm_v(i,j)
+              if (k<nz) then
+                Wdiag(i,j,k,iwnhp) = nhdw(i,j,k,iprec1)*dxdyi(i,j)
+     &                              *0.5*(Hz(i,j,k+1)+Hz(i,j,k))
+              else
+                Wdiag(i,j,k,iwnhp) = nhdw(i,j,k,iprec1)*dxdyi(i,j)
+     &                              *0.5* Hz(i,j,k)
+              endif
+            enddo
+          enddo
+        enddo
+      endif
+
       ! u,v, and w contain again dz*u,dz*v, and dz*w
 
       iprec1 = 1+mod(iprec1,2)
       iprec2 = 1+mod(iprec2,2)
 
+#  ifdef NH_IMPLICIT_FS
+      call implicit_fs_finish   ! zeta(n+1), DU_avg1, DU_avg2 from the final transports
+#  endif
 # endif /* NHMG */
 
 

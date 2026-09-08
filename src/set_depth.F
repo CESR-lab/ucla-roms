@@ -182,8 +182,15 @@
       use dimensions
       use roms_mpi
       use zstar_geom
+#ifdef NH_IMPLICIT_FS
+      use ocean_vars, only: z_w
+#endif
       implicit none
+#ifdef NH_IMPLICIT_FS
+      zstar = z_w(:,:,nz)     ! surface handled implicitly: no shift
+#else
       zstar = 1.5*zflt - 0.5*zflt_bak
+#endif
       call exchange_xxx(zstar)
       end subroutine set_zstar !]
 ! ----------------------------------------------------------------------------
@@ -248,6 +255,9 @@
       use dimensions
       use diagnostics
       use roms_mpi
+#ifdef NH_IMPLICIT_FS
+      use implicit_fs, only: DU_half, DV_half
+#endif
 
       implicit none
       integer :: i,j,k
@@ -276,7 +286,11 @@
         enddo
 
 
-# ifdef CORR_COUPLED_MODE
+# if defined NH_IMPLICIT_FS
+        do i=1,i1                    ! implicit surface: extrapolated
+          FC(i,0)=(FC(i,0)-DU_half(i,j))/DC(i,0)   ! implicit transports
+        enddo
+# elif defined CORR_COUPLED_MODE
 #  ifdef EXTRAP_BAR_FLUXES
         if (FIRST_TIME_STEP) then
 #  endif
@@ -361,7 +375,11 @@
               FC(i,0)=FC(i,0)+DC(i,k)*v(i,j,k,nnew)
             enddo
           enddo
-# ifdef CORR_COUPLED_MODE
+# if defined NH_IMPLICIT_FS
+          do i=i0,i1
+            FC(i,0)=(FC(i,0)-DV_half(i,j))/DC(i,0)
+          enddo
+# elif defined CORR_COUPLED_MODE
 #  ifdef EXTRAP_BAR_FLUXES
           if (FIRST_TIME_STEP) then
 #  endif

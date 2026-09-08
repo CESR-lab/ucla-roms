@@ -91,6 +91,9 @@
 
       subroutine roms_init
       use param
+#ifdef NH_IMPLICIT_FS
+      use implicit_fs, only: init_implicit_fs
+#endif
 #ifdef NHMG
       use nhmg
 #endif
@@ -197,6 +200,9 @@
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
 #ifdef NHMG
+#ifdef NH_IMPLICIT_FS
+      call init_implicit_fs        ! sets the Robin coefficient robin_beta
+#endif
       call nhmg_matrices(nx,ny,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
      &                   dm_r(0:nx+1,0:ny+1),
      &                   dn_r(0:nx+1,0:ny+1)    )
@@ -366,11 +372,17 @@ CR      write(*,*)  ' -2' MYID
       ! All of this seems to happen with Hz's from time n
       ! Corrector step
       call prsgrd
+#ifdef NH_IMPLICIT_FS
+      kstp=knew              ! implicit free surface: one zeta level
+      knew=kstp+1            ! per baroclinic step, set in step3d_uv1
+      if (knew > 4) knew=1
+#endif
       call step3d_uv1  ! update u/v(nnew) with dt*ru/rv
 
 
 ! Solve the 2D equations for the barotropic mode.
 !------ --- -- --------- --- --- ---------- -----
+#ifndef NH_IMPLICIT_FS
       do iif=1,nfast
 
         kstp=knew
@@ -380,6 +392,7 @@ CR      write(*,*)  ' -2' MYID
         call step2d
 
       enddo
+#endif
 
       ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
       call step3d_uv2

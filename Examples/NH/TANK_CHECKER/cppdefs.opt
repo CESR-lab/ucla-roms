@@ -1,0 +1,89 @@
+/* This is "cppdefs.opt": MODEL CONFIGURATION FILE
+   ==== == ============ ===== ============= ==== */
+
+/*
+ * CHOOSE ONLY ONE PRIMARY FLAG FOR SWITCH LIST BELOW
+ */
+
+#define SWITCH
+
+#if defined SWITCH
+
+# define NHMG
+c# define NH_IMPLICIT_FS   /* implicit (Robin) free surface, see readme */
+c# define NH_PRED_HOLD     /* first-order hold of the NH trend in the predictor */
+
+# define DIAGNOSTICS
+c# define ANA_BRY
+
+# define ANA_GRID
+# define ANA_INITIAL
+# define ANA_SMFLUX
+# define ANA_SRFLUX
+# define ANA_STFLUX
+# define ANA_SSFLUX
+# define ANA_SURFLUX
+
+        /* Basics */
+# define SOLVE3D
+# define UV_ADV
+# define UV_COR
+
+        /* Equation of State */
+c-# define NONLIN_EOS
+c-# define SPLIT_EOS
+# define SALINITY
+
+        /* Mixing */
+        /*        - lateral */
+# define UV_VIS2
+# define TS_DIF2
+
+        /*        - vertical */
+c-# define ANA_VMIX
+c-# define LMD_MIXING
+c-# define LMD_KPP
+c-# define LMD_BKPP
+c# define LMD_NONLOCAL
+c-# define LMD_RIMIX
+
+        /* Grid Configuration */
+c# define CURVGRID
+c# define SPHERICAL
+# define MASKING
+
+        /* Boundaries */
+c# define NS_PERIODIC
+c# define EW_PERIODIC
+
+c#  define OBC_WEST
+c#  define OBC_EAST
+c#  define OBC_NORTH
+c#  define OBC_SOUTH
+
+c#  define OBC_M2FLATHER
+c#  define OBC_M3ORLANSKI
+c#  define OBC_TORLANSKI
+
+c#  define Z_FRC_BRY
+c#  define M2_FRC_BRY
+c#  define M3_FRC_BRY
+c#  define T_FRC_BRY
+
+        /* Waves Effect on Current */
+c# define WEC
+# ifdef WEC
+#  define ANA_WEC_FRC
+#  define WAVE_OFFLINE /* DPD: for ust_r */
+#  define WAVE_DIFF_FROM_LM
+# endif
+
+#elif defined DUMMY_CASE
+
+#  define AVERAGES
+
+#endif
+
+
+#include "set_global_definitions.h"
+

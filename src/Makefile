@@ -105,7 +105,7 @@ endif
 
 
 KRNSRC = 		param.F dimensions.F	ocean_vars.F tracers.F\
-	boundary.F  comm_vars.F coupling.F diag_vars.F\
+	boundary.F  comm_vars.F coupling.F implicit_fs.F diag_vars.F\
 	eos_vars.F grid.F roms_mpi.F mixing.F\
 	private_scratch.F basic_output.F\
 	scalars.F scoord.F strings.F work_mod.F nc_read_write.F\

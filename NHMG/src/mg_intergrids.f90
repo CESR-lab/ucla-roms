@@ -165,7 +165,7 @@ contains
 
     else
 
-       call coarse2fine_3D_linear(rf,pc,nxc,nyc,nzc)
+       call coarse2fine_3D_linear(rf,pc,nxc,nyc,nzc,lev)
 
     endif
 
@@ -217,11 +217,12 @@ contains
   end subroutine coarse2fine_2D_linear
 
   !------------------------------------------------------------
-  subroutine coarse2fine_3D_linear(xf,xc,nx,ny,nz)
+  subroutine coarse2fine_3D_linear(xf,xc,nx,ny,nz,lev)
 
     real(kind=rp),dimension(:,:,:),pointer,intent(inout) :: xf
     real(kind=rp),dimension(:,:,:),pointer,intent(in)  :: xc
-    integer(kind=ip),intent(in) :: nx, ny, nz
+    integer(kind=ip),intent(in) :: nx, ny, nz, lev
+    real(kind=rp) :: sig
 
     ! local
     integer(kind=ip) :: i,j,k,i2,j2,k2,kp
@@ -234,6 +235,9 @@ contains
     else
        dirichlet_flag = 1
     endif
+    ! surface factor of the fine level (Robin: level-uniform value; only
+    ! the convergence rate depends on it, not the converged solution)
+    sig = sigtop(grid(lev)%dzw(2*nz+1,1,1))
 
     !
     ! weights for bilinear in (i,j), nearest in k
@@ -296,16 +300,16 @@ contains
 
           ! top level
           k = nz*2
-          xf(k  ,j  ,i  ) =  (1-hlf*dirichlet_flag)  * (     &
+          xf(k  ,j  ,i  ) =  (1-hlf*sig)  * (     &
                a * xc(k2,j2  ,i2) + c * xc(k2,j2-1,i2-1) +   &
                b * xc(k2,j2-1,i2) + b * xc(k2,j2  ,i2-1)   )
-          xf(k  ,j+1,i  ) =  (1-hlf*dirichlet_flag) * (      &
+          xf(k  ,j+1,i  ) =  (1-hlf*sig) * (      &
                a * xc(k2,j2  ,i2) + c * xc(k2,j2+1,i2-1) +   &
                b * xc(k2,j2+1,i2) + b * xc(k2,j2  ,i2-1)   )
-          xf(k  ,j  ,i+1) =  (1-hlf*dirichlet_flag)  * (     &
+          xf(k  ,j  ,i+1) =  (1-hlf*sig)  * (     &
                a * xc(k2,j2  ,i2) + c * xc(k2,j2-1,i2+1) +   &
                b * xc(k2,j2-1,i2) + b * xc(k2,j2  ,i2+1)   ) 
-          xf(k  ,j+1,i+1) =  (1-hlf*dirichlet_flag)  * (     &
+          xf(k  ,j+1,i+1) =  (1-hlf*sig)  * (     &
                a * xc(k2,j2  ,i2) + c * xc(k2,j2+1,i2+1) +   &
                b * xc(k2,j2+1,i2) + b * xc(k2,j2  ,i2+1)   )
        enddo

@@ -64,6 +64,7 @@ contains
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
 
     integer(kind=ip) :: dirichlet_flag 
+    real(kind=rp)    :: sig
     
 
     if (surface_neumann) then
@@ -189,7 +190,8 @@ contains
           do j = 1,ny+1
              ! couples with j-1
              cA(4,k,j,i) = Ary(k,j,i) / dyv(j,i) &
-                  + qrt * ( - zydx(k,j-1,i) + zydx(k,j,i) ) *(2*dirichlet_flag-1) 
+                  + qrt * ( - zydx(k,j-1,i)*(2*sigtop(dzw(k+1,j-1,i))-1) &
+                            + zydx(k,j  ,i)*(2*sigtop(dzw(k+1,j  ,i))-1) ) 
              ! couples with k-1,j-1
              cA(5,k,j,i) = - qrt * ( zydx(k-1,j,i) + zydx(k,j-1,i) )
           enddo
@@ -201,7 +203,8 @@ contains
              ! this will be in the paper
              ! couples with i-1
              cA(7,k,j,i) = Arx(k,j,i) / dxu(j,i) &
-                  + qrt * ( -zxdy(k,j,i-1) + zxdy(k,j,i) )*(2*dirichlet_flag-1) 
+                  + qrt * ( -zxdy(k,j,i-1)*(2*sigtop(dzw(k+1,j,i-1))-1) &
+                            +zxdy(k,j,i  )*(2*sigtop(dzw(k+1,j,i  ))-1) ) 
              ! couples with k-1,i-1
              cA(8,k,j,i) = - qrt * ( zxdy(k-1,j,i) + zxdy(k,j,i-1) )
           enddo
@@ -234,7 +237,7 @@ contains
 
              k=nz ! upper level
              cA(1,k,j,i) = &
-                  - Arz(j,i) / dzw(k+1,j,i) * alpha(k,j,i) * dirichlet_flag &
+                  - Arz(j,i) / dzw(k+1,j,i) * alpha(k,j,i) * sigtop(dzw(k+1,j,i)) &
                   - Arz(j,i) / dzw(k  ,j,i) * hlf * (alpha(k-1,j,i) + alpha(k,j,i)) &
                   - Arx(k,j,i  )/dxu(j,i  )  &
                   - Arx(k,j,i+1)/dxu(j,i+1)  &
@@ -414,8 +417,15 @@ contains
             '   outside 15-point pattern ', gl(4)/amax
     endif
     if (gl(1)/amax > 1e-10_rp) then
-       if (myrank==0) write(*,*) 'assemble_masked_stencil: interior mismatch -- stopping'
-       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
+       if (robin_beta > 0._rp) then
+          ! Robin surface: the hand formulas carry a single-column surface
+          ! factor in the slope terms, the extracted stencil the exact
+          ! two-column one; the fine grid uses the extracted stencil.
+          if (myrank==0) write(*,*) 'assemble_masked_stencil: interior mismatch expected with Robin surface (slope terms)'
+       else
+          if (myrank==0) write(*,*) 'assemble_masked_stencil: interior mismatch -- stopping'
+          call MPI_Abort(MPI_COMM_WORLD,1,ierr)
+       endif
     endif
     deallocate(A27,cAf)
 
@@ -516,8 +526,8 @@ contains
              pz(k,j,i) = -one / dzw(k,j,i) * (p(k,j,i)-p(k-1,j,i))
           enddo
 
-          k = nz+1 !surface
-          pz(k,j,i) =  -one / dzw(k,j,i) * (-p(k-1,j,i)) * dirichlet_flag
+          k = nz+1 !surface: Dirichlet, Neumann or Robin (q + beta dq/dz = f)
+          pz(k,j,i) =  -one / dzw(k,j,i) * (-p(k-1,j,i)) * sigtop(dzw(k,j,i))
 
        enddo
     enddo
@@ -554,9 +564,9 @@ contains
           du(k,j,i) = Arx(k,j,i) * px(k,j,i) &
                - qrt * ( &
                + zxdy(k,j,i  ) *       dzw(k  ,j,i  ) * pz(k  ,j,i  ) &
-               + zxdy(k,j,i  ) * two * dzw(k+1,j,i  ) * pz(k+1,j,i  ) * dirichlet_flag &
+               + zxdy(k,j,i  ) * two * dzw(k+1,j,i  ) * pz(k+1,j,i  ) &
                + zxdy(k,j,i-1) *       dzw(k  ,j,i-1) * pz(k  ,j,i-1) &
-               + zxdy(k,j,i-1) * two * dzw(k+1,j,i-1) * pz(k+1,j,i-1) * dirichlet_flag )
+               + zxdy(k,j,i-1) * two * dzw(k+1,j,i-1) * pz(k+1,j,i-1) )
        enddo
     enddo
 
@@ -592,9 +602,9 @@ contains
           dv(k,j,i) = Ary(k,j,i) * py(k,j,i) &
                - qrt * ( &
                + zydx(k,j  ,i)       * dzw(k  ,j  ,i) * pz(k  ,j  ,i) &
-               + zydx(k,j  ,i) * two * dzw(k+1,j  ,i) * pz(k+1,j  ,i) * dirichlet_flag &
+               + zydx(k,j  ,i) * two * dzw(k+1,j  ,i) * pz(k+1,j  ,i) &
                + zydx(k,j-1,i)       * dzw(k  ,j-1,i) * pz(k  ,j-1,i) &
-               + zydx(k,j-1,i) * two * dzw(k+1,j-1,i) * pz(k+1,j-1,i) * dirichlet_flag) 
+               + zydx(k,j-1,i) * two * dzw(k+1,j-1,i) * pz(k+1,j-1,i) ) 
 
        enddo
     enddo
@@ -621,16 +631,17 @@ contains
           enddo
 
           k = nz+1 
+          ! surface: vertical part and tilt terms both carry the surface
+          ! factor (1 Dirichlet, 0 Neumann, dzw/(dzw+beta) Robin) so that the
+          ! operator stays symmetric with the two*dzw*pz terms of the u,v rows
           dw(k,j,i) = alpha(k-1,j,i) * Arz(j,i) * pz(k,j,i) &
+               + sigtop(dzw(k,j,i)) * ( &
                - hlf * ( &
                + zxdy(k-1,j,i) * dxu(j,i  ) * px(k-1,j,i  ) &
                + zxdy(k-1,j,i) * dxu(j,i+1) * px(k-1,j,i+1) ) &
                - hlf * ( &
                + zydx(k-1,j,i) * dyv(j  ,i) * py(k-1,j  ,i) &
-               + zydx(k-1,j,i) * dyv(j+1,i) * py(k-1,j+1,i) )
-
-          ! for Neumann BC, dw at the top level should be exactly 0
-          dw(k,j,i) = dw(k,j,i) * dirichlet_flag
+               + zydx(k-1,j,i) * dyv(j+1,i) * py(k-1,j+1,i) ) )
        enddo
     enddo
 

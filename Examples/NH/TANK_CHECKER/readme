@@ -1,0 +1,51 @@
+TANK_CHECKER: surface-condition coupling test for the non-hydrostatic pressure
+==============================================================================
+
+Flat 10 x 10 x 10 m tank (64^3, dx = 0.156 m, dt = 0.025 s, NDTFAST 20),
+uniform density, no island, started from rest with a 2dx checkerboard in
+zeta of 1 mm (kH ~ 200 at that scale).  Nothing physical should happen: the
+seed holds ~0.5 J of potential energy.
+
+  make            build (4 MPI ranks, NP_XI = NP_ETA = 2)
+  ./run_both.sh   run with surface_neumann = .false. (Dirichlet, q = 0 at the
+                  surface) and .true. (Neumann), join, print growth tables
+  checker.py DIR  checkerboard amplitude, rms/max zeta, max/rms w per second
+
+Reference behaviour (2026-09-07):
+  Neumann   : checkerboard annihilated within 1 s (1e-3 -> 1e-8 m),
+              max |w| 3e-4 m/s, kinetic energy ~5e-14 at the end.
+  Dirichlet : checkerboard grows 1.0 -> 1.9 mm in 40 steps, max |w| reaches
+              0.43 m/s within 2 s (rms 0.25 m/s), kinetic energy ~1e10 above
+              Neumann, decaying slowly as grid-scale vortical motion.
+
+Mechanism: under Dirichlet the projection sets the surface flux, so the
+depth integral of its increment carries the non-hydrostatic correction to
+the surface-wave restoring force, a fraction 1 - tanh(kH)/(kH) of g H grad
+zeta.  That force enters the barotropic mode through rufrc/rvfrc and is
+frozen over the baroclinic step while the fast mode integrates the full
+hydrostatic gradient; at large kH the two nearly cancel and the lag turns
+grid-scale zeta noise into velocity with an energy gain of ~1e5.  The
+response is linear (seed 1e-6 m gives 1e-3 of the velocities), scales with
+dt (dt/4 gives 1/4 of the velocity), falls only slowly with wavelength (4dx
+seed: 0.20 m/s), is unaffected by the predictor's NH-pressure extrapolation,
+and disappears when the increment is withheld from rufrc/rvfrc.  Neumann
+keeps the fast mode purely hydrostatic and never enters this regime.
+
+Use: regression for any change to the surface condition, the projection's
+barotropic coupling (step3d_uv1.F rufrc/rvfrc), or the mode splitting.
+A fix for Dirichlet should bring its table to the Neumann one while keeping
+the non-hydrostatic dispersion of the resolved sloshing mode (see
+TANK_NH/convergence).
+
+Implicit free surface (NH_IMPLICIT_FS, prototype 2026-09-07): with
+`# define NH_IMPLICIT_FS` in cppdefs.opt (surface_neumann = .false.) the
+split-explicit barotropic step is replaced by a Robin surface row in the
+projection (src/implicit_fs.F, NHMG robin_beta).  Reference behaviour,
+theta from the environment variable THETA_FS:
+  theta = 1.0 (backward Euler): checkerboard 1e-3 -> 2.7e-4 m at 1 s ->
+              6e-7 at 5 s, max |w| 1.4e-3 m/s, kinetic energy ~3e-12.
+  theta = 0.5 (Crank-Nicolson): bounded, checkerboard ~5e-4 m for 10 s,
+              max |w| ~1e-2 m/s, kinetic energy ~1e-8 (neutral at grid scale).
+Seiche dispersion (TANK_NH/convergence, external Dirichlet, dt 0.025):
+theta 0.5 gives T = 3.6253 s (+0.085 %) with 0.49 % loss per period,
+against +0.136 % and 1.39 % for the split-explicit Dirichlet run.

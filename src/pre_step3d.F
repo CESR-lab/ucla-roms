@@ -408,13 +408,24 @@
 !======================================================================
 
 !     if (iic.lt.-10) then ! should never happen, so always project twice
-      if (iic.ge.(ntstart+2)) then ! Use AB2 extrapolation for the NH prsgrd
-!       if  (mynode==0) print *, 'AB2 extrapolate'
+      ! NH pressure force in the predictor from the stored corrector
+      ! trends: AB2 extrapolation (default) or, with NH_PRED_HOLD, a
+      ! first-order hold of the latest trend.  The extrapolation amplifies
+      ! step-alternating components by 2 and makes the predictor/corrector
+      ! loop unstable for 3-4 dz modes of w once the explicit vertical
+      ! Courant number exceeds ~0.5 (marginal ~0.8 with the hold); the hold
+      ! keeps the predictor field second-order accurate.
+#ifdef NH_PRED_HOLD
+#  define NHD_PRED(a) (1.0*a(i,j,k,iprec2))
+#else
+#  define NHD_PRED(a) (1.5*a(i,j,k,iprec2)-0.5*a(i,j,k,iprec1))
+#endif
+      if (iic.ge.(ntstart+2)) then ! NH prsgrd from the stored trends
         do k=1,nz
           do j=1,ny
             do i=1,nx
               u(i,j,k,nnew) = u(i,j,k,nnew)
-     &            + (1.5*nhdu(i,j,k,iprec2)-0.5*nhdu(i,j,k,iprec1))*dtau
+     &            + NHD_PRED(nhdu)*dtau
      &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i-1,j,k))) * pn_u(i,j)
             enddo
           enddo
@@ -422,7 +433,7 @@
           do j=1,ny
             do i=1,nx
               v(i,j,k,nnew) = v(i,j,k,nnew)
-     &            + (1.5*nhdv(i,j,k,iprec2)-0.5*nhdv(i,j,k,iprec1))*dtau
+     &            + NHD_PRED(nhdv)*dtau
      &            /(0.5*(Hz_fwd(i,j,k) + Hz_fwd(i,j-1,k))) * pm_v(i,j)
             enddo
           enddo
@@ -430,12 +441,13 @@
           do j=1,ny
             do i=1,nx
               w(i,j,k,nnew) = w(i,j,k,nnew)
-     &            + (1.5*nhdw(i,j,k,iprec2)-0.5*nhdw(i,j,k,iprec1))*dtau
+     &            + NHD_PRED(nhdw)*dtau
      &            * (pm(i,j)*pn(i,j))
             enddo
           enddo
         enddo
 
+#undef NHD_PRED
       else  !! instead of using AB2 to extrapolate the nh pressure gradient from corrector steps, we project here
       if (west_bnd) then
         do k=1,nz

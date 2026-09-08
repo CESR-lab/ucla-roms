@@ -26,6 +26,8 @@ module mg_namelist
   integer(kind=ip)  :: output_freq = 100000000 ! Number of iterations between output of statistics
 
   logical           :: surface_neumann  = .true.
+  real(kind=rp)     :: robin_beta = 0._rp  !- implicit free surface: q + robin_beta dq/dz = f at the
+                                          !- surface (0 = Dirichlet); set at run time by the caller
 
   logical           :: east_west_perio = .false.
   logical           :: north_south_perio = .false.
@@ -122,5 +124,19 @@ contains
     endif
 
   end subroutine read_nhnamelist
+
+  !----------------------------------------------------------------
+  function sigtop(dzwtop) result(sig)
+    ! surface factor of the top vertical coupling: 1 Dirichlet (q=0),
+    ! 0 Neumann (dq/dz=0), dzw/(dzw+beta) for the Robin condition
+    ! q + beta dq/dz = f (implicit free surface, beta = theta g dt^2)
+    real(kind=rp), intent(in) :: dzwtop
+    real(kind=rp) :: sig
+    if (surface_neumann) then
+       sig = 0._rp
+    else
+       sig = dzwtop / (dzwtop + robin_beta)
+    endif
+  end function sigtop
 
 end module mg_namelist
