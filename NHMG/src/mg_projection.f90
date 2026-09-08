@@ -36,7 +36,8 @@ contains
   !-----------------------------------------------------------------------------------
   subroutine set_matrices(first)
 
-    logical, optional, intent(in) :: first   ! stage prints when .true.
+    logical, optional, intent(in) :: first   ! full extraction + stage prints
+    logical :: full
 
     ! Define matrix coefficients cA
     ! Coefficients are stored in order of diagonals
@@ -276,10 +277,17 @@ contains
        ! colouring vectors through correction_uvw itself, hence exact by
        ! construction; the interior is checked against the formulas.
        if (lev == 1) then
-          call stage('face masks')
-          call set_face_masks()
-          call stage('stencil extraction (27 colours)')
-          call assemble_masked_stencil()
+          full = .true.
+          if (present(first)) full = first
+          if (full) then
+             call stage('face masks')
+             call set_face_masks()
+             call stage('stencil extraction (27 colours)')
+             call assemble_masked_stencil()
+          else
+             ! only the wall-adjacent rows differ from the formulas
+             call refresh_wall_rows()
+          endif
        endif
        if (lev == 1 .and. nlevs > 1) call stage('coarse levels')
 
@@ -310,7 +318,7 @@ contains
     ! symmetry of the true operator is tested globally with
     ! <y,A x> = <x,A y> on two deterministic vectors.
 
-    integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,di,dj,dk,m,ig,jg,pi,pj
+    integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,di,dj,dk,m,n,ig,jg,pi,pj
     integer(kind=ip) :: ierr
     real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw,x,y
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
@@ -364,7 +372,20 @@ contains
                 v = -( du(k,j,i+1) - du(k,j,i)     &
                      + dv(k,j+1,i) - dv(k,j,i)     &
                      + dw(k+1,j,i) - dw(k,j,i) )
-                call put(v,dk,dj,di,k,j,i)
+                n = stencil_slot(dk,dj,di,k)
+                if (n > 0) then
+                  ! the formula value still in the slot is the reference
+                  if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2) then
+                    dint = max(dint, abs(v - cA(n,k,j,i)))
+                  else
+                    dext = max(dext, abs(v - cA(n,k,j,i)))
+                  endif
+                elseif (dj/=0 .and. di/=0 .and. .not.(k==1 .and. dk==0)) then
+                  ! outside the 15-point pattern (xy corners except the
+                  ! bottom level's own pair, and all xyz corners)
+                  dnul = max(dnul,abs(v))
+                endif
+                call put_entry(cA,nx,ny,nz,v,dk,dj,di,k,j,i)
               enddo
             enddo
           enddo
@@ -440,70 +461,160 @@ contains
        endif
     endif
 
-  contains
-
-    subroutine put(v,dk,dj,di,k,j,i)
-      ! value v of the operator at cell (k,j,i) for the neighbour at
-      ! offset (dk,dj,di) -> its slot in the 15-point storage
-      real(kind=rp), intent(in) :: v
-      integer(kind=ip), intent(in) :: dk,dj,di,k,j,i
-      ! slots stored at the cell itself (compared with the formulas)
-      if (dk==0 .and. dj==0 .and. di==0) then;        call slot(v,1,k,j,i)
-      elseif (dk==-1 .and. dj==0 .and. di==0) then;   call slot(v,2,k,j,i)
-      elseif (dk==1 .and. dj==-1 .and. di==0) then;   call slot(v,3,k,j,i)
-      elseif (dk==0 .and. dj==-1 .and. di==0) then;   call slot(v,4,k,j,i)
-      elseif (dk==1 .and. dj==0 .and. di==-1) then;   call slot(v,6,k,j,i)
-      elseif (dk==0 .and. dj==0 .and. di==-1) then;   call slot(v,7,k,j,i)
-      elseif (k>=2 .and. dk==-1 .and. dj==-1 .and. di==0) then;  call slot(v,5,k,j,i)
-      elseif (k>=2 .and. dk==-1 .and. dj==0 .and. di==-1) then;  call slot(v,8,k,j,i)
-      elseif (k==1 .and. dk==0 .and. dj==1 .and. di==-1) then;   call slot(v,5,k,j,i)   ! bottom xy
-      elseif (k==1 .and. dk==0 .and. dj==-1 .and. di==-1) then;  call slot(v,8,k,j,i)   ! bottom xy
-      else
-        ! entries outside the 15-point pattern (xy corners, except the
-        ! bottom level's own xy pair, and all xyz corners)
-        if (dj/=0 .and. di/=0 .and. .not.(k==1 .and. dk==0)) dnul = max(dnul,abs(v))
-      endif
-      ! halo-stored slots read by the interior rows (east, north, south)
-      if (i == nx) then
-        if (dk==0 .and. dj==0 .and. di==1)             cA(7,k,j,nx+1)   = v
-        if (k>=2 .and. dk==-1 .and. dj==0 .and. di==1) cA(6,k-1,j,nx+1) = v
-        if (k<=nz-1 .and. dk==1 .and. dj==0 .and. di==1) cA(8,k+1,j,nx+1) = v
-        if (k==1 .and. dk==0 .and. dj==-1 .and. di==1) cA(5,1,j-1,nx+1) = v
-        if (k==1 .and. dk==0 .and. dj==1 .and. di==1)  cA(8,1,j+1,nx+1) = v
-      endif
-      if (j == ny) then
-        if (dk==0 .and. dj==1 .and. di==0)             cA(4,k,ny+1,i)   = v
-        if (k>=2 .and. dk==-1 .and. dj==1 .and. di==0) cA(3,k-1,ny+1,i) = v
-        if (k<=nz-1 .and. dk==1 .and. dj==1 .and. di==0) cA(5,k+1,ny+1,i) = v
-        if (k==1 .and. dk==0 .and. dj==1 .and. di==1)  cA(8,1,ny+1,i+1) = v
-      endif
-      if (j == 1) then
-        if (k==1 .and. dk==0 .and. dj==-1 .and. di==1) cA(5,1,0,i+1)    = v
-      endif
-    end subroutine put
-
-    subroutine slot(v,n,k,j,i)
-      ! store v in cA(n,k,j,i); the formula value still there is the
-      ! reference for the interior / perimeter mismatch
-      real(kind=rp), intent(in) :: v
-      integer(kind=ip), intent(in) :: n,k,j,i
-      if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2) then
-        dint = max(dint, abs(v - cA(n,k,j,i)))
-      else
-        dext = max(dext, abs(v - cA(n,k,j,i)))
-      endif
-      cA(n,k,j,i) = v
-    end subroutine slot
-
   end subroutine assemble_masked_stencil
 
+  !-------------------------------------------------------------------------
+  function stencil_slot(dk,dj,di,k) result(n)
+    ! slot (1..8) of the 15-point storage that holds, at a cell on level
+    ! k, the coupling to the neighbour at offset (dk,dj,di); 0 if that
+    ! coupling is stored at the neighbour instead (or is off-pattern)
+    integer(kind=ip), intent(in) :: dk,dj,di,k
+    integer(kind=ip) :: n
+    n = 0
+    if (dk==0 .and. dj==0 .and. di==0) then;        n = 1
+    elseif (dk==-1 .and. dj==0 .and. di==0) then;   n = 2
+    elseif (dk==1 .and. dj==-1 .and. di==0) then;   n = 3
+    elseif (dk==0 .and. dj==-1 .and. di==0) then;   n = 4
+    elseif (dk==1 .and. dj==0 .and. di==-1) then;   n = 6
+    elseif (dk==0 .and. dj==0 .and. di==-1) then;   n = 7
+    elseif (k>=2) then
+      if (dk==-1 .and. dj==-1 .and. di==0) n = 5
+      if (dk==-1 .and. dj==0 .and. di==-1) n = 8
+    else                                              ! bottom level: xy pair
+      if (dk==0 .and. dj==1 .and. di==-1) n = 5
+      if (dk==0 .and. dj==-1 .and. di==-1) n = 8
+    endif
+  end function stencil_slot
+
+  !-------------------------------------------------------------------------
+  subroutine put_entry(cA,nx,ny,nz,v,dk,dj,di,k,j,i)
+    ! store the operator value v of row (k,j,i), offset (dk,dj,di):
+    ! its own slot, and the halo slots read by the rows east, north and
+    ! south of the subdomain (their mirror couplings)
+    real(kind=rp), dimension(:,:,:,:), pointer, intent(in) :: cA
+    integer(kind=ip), intent(in) :: nx,ny,nz,dk,dj,di,k,j,i
+    real(kind=rp), intent(in) :: v
+    integer(kind=ip) :: n
+    n = stencil_slot(dk,dj,di,k)
+    if (n > 0) cA(n,k,j,i) = v
+    if (i == nx) then
+      if (dk==0 .and. dj==0 .and. di==1)               cA(7,k,j,nx+1)   = v
+      if (k>=2 .and. dk==-1 .and. dj==0 .and. di==1)   cA(6,k-1,j,nx+1) = v
+      if (k<=nz-1 .and. dk==1 .and. dj==0 .and. di==1) cA(8,k+1,j,nx+1) = v
+      if (k==1 .and. dk==0 .and. dj==-1 .and. di==1)   cA(5,1,j-1,nx+1) = v
+      if (k==1 .and. dk==0 .and. dj==1 .and. di==1)    cA(8,1,j+1,nx+1) = v
+    endif
+    if (j == ny) then
+      if (dk==0 .and. dj==1 .and. di==0)               cA(4,k,ny+1,i)   = v
+      if (k>=2 .and. dk==-1 .and. dj==1 .and. di==0)   cA(3,k-1,ny+1,i) = v
+      if (k<=nz-1 .and. dk==1 .and. dj==1 .and. di==0) cA(5,k+1,ny+1,i) = v
+      if (k==1 .and. dk==0 .and. dj==1 .and. di==1)    cA(8,1,ny+1,i+1) = v
+    endif
+    if (j == 1) then
+      if (k==1 .and. dk==0 .and. dj==-1 .and. di==1)   cA(5,1,0,i+1)    = v
+    endif
+  end subroutine put_entry
+
+  !-------------------------------------------------------------------------
+  subroutine refresh_wall_rows()
+    ! Matrix recompute: the formulas are exact except in the rows of the
+    ! cells touching a physical wall (masked faces). Re-extract those rows
+    ! with the 27 colourings restricted to a band along each wall of this
+    ! rank: the operator is applied in the band only, and the colour
+    ! pattern is a function of global indices, so the seam halos are
+    ! filled without communication. Ranks without walls do nothing.
+    integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,ig,jg,pi,pj
+    real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw
+    real(kind=rp), dimension(:,:,:,:), pointer :: cA
+    logical :: west,east,south,north
+
+    west  = grid(1)%neighb(4) == MPI_PROC_NULL
+    east  = grid(1)%neighb(2) == MPI_PROC_NULL
+    south = grid(1)%neighb(1) == MPI_PROC_NULL
+    north = grid(1)%neighb(3) == MPI_PROC_NULL
+    if (.not.(west.or.east.or.south.or.north)) return
+
+    nx = grid(1)%nx;  ny = grid(1)%ny;  nz = grid(1)%nz
+    p  => grid(1)%p;  du => grid(1)%du;  dv => grid(1)%dv;  dw => grid(1)%dw
+    cA => grid(1)%cA
+    pj = myrank/grid(1)%npx
+    pi = mod(myrank,grid(1)%npx)
+
+    do a = 0,2
+      do bb = 0,2
+        do c = 0,2
+          do i = 0,nx+1
+            ig = i + pi*nx
+            do j = 0,ny+1
+              jg = j + pj*ny
+              do k = 1,nz
+                p(k,j,i) = merge(one, zero, mod(ig+3,3)==a .and. mod(jg+3,3)==bb .and. mod(k,3)==c)
+              enddo
+            enddo
+          enddo
+          ! wall halos as fill_halo sets them (not seen by the masked rows)
+          if (west)  p(:,1:ny,0)    = p(:,1:ny,1)
+          if (east)  p(:,1:ny,nx+1) = p(:,1:ny,nx)
+          if (south) p(:,0,1:nx)    = p(:,1,1:nx)
+          if (north) p(:,ny+1,1:nx) = p(:,ny,1:nx)
+          dw(1,:,:) = zero
+          if (west)  call correction_uvw(i0=0,    i1=3)
+          if (east)  call correction_uvw(i0=nx-2, i1=nx+1)
+          if (south) call correction_uvw(j0=0,    j1=3)
+          if (north) call correction_uvw(j0=ny-2, j1=ny+1)
+          if (west)  call rows(1, 1, 1,ny)
+          if (east)  call rows(nx,nx,1,ny)
+          if (south) call rows(1,nx,1, 1)
+          if (north) call rows(1,nx,ny,ny)
+        enddo
+      enddo
+    enddo
+    p = zero
+
+  contains
+
+    subroutine rows(ia,ib,ja,jb)
+      integer(kind=ip), intent(in) :: ia,ib,ja,jb
+      integer(kind=ip) :: di,dj,dk,m
+      real(kind=rp) :: v
+      do i = ia,ib
+        ig = i + pi*nx
+        di = -2                                ! offset with colour a
+        do m = -1,1
+          if (mod(ig+m+3,3) == a) di = m
+        enddo
+        do j = ja,jb
+          jg = j + pj*ny
+          dj = -2
+          do m = -1,1
+            if (mod(jg+m+3,3) == bb) dj = m
+          enddo
+          do k = 1,nz
+            dk = -2
+            do m = -1,1
+              if (mod(k+m+3,3) == c) dk = m
+            enddo
+            v = -( du(k,j,i+1) - du(k,j,i)     &
+                 + dv(k,j+1,i) - dv(k,j,i)     &
+                 + dw(k+1,j,i) - dw(k,j,i) )
+            call put_entry(cA,nx,ny,nz,v,dk,dj,di,k,j,i)
+          enddo
+        enddo
+      enddo
+    end subroutine rows
+
+  end subroutine refresh_wall_rows
+
   !-------------------------------------------------------------------------     
-  subroutine correction_uvw()
+  subroutine correction_uvw(i0,i1,j0,j1)
+    ! optional bounds restrict the i and j loops (band extraction of the
+    ! wall rows at a matrix recompute); default = whole subdomain
+    integer(kind=ip), optional, intent(in) :: i0,i1,j0,j1
 
     !! u,v,w are fluxes, the correction is T*grad(p)
 
     integer(kind=ip):: k, j, i
-    integer(kind=ip):: nx, ny, nz
+    integer(kind=ip):: nx, ny, nz, ia, ib, ja, jb
 
     real(kind=rp) :: gamma
     real(kind=rp), dimension(:,:)  , pointer :: dx,dy
@@ -531,6 +642,11 @@ contains
     nx = grid(1)%nx
     ny = grid(1)%ny
     nz = grid(1)%nz
+    ia = 0;  ib = nx+1;  ja = 0;  jb = ny+1
+    if (present(i0)) ia = i0
+    if (present(i1)) ib = i1
+    if (present(j0)) ja = j0
+    if (present(j1)) jb = j1
 
     dx    => grid(1)%dx
     dy    => grid(1)%dy
@@ -552,16 +668,16 @@ contains
     py => grid(1)%py
     pz => grid(1)%pz
 
-    do i = 1,nx+1
-        do j = 0,ny+1
+    do i = max(1,ia),min(nx+1,ib)
+        do j = max(0,ja),min(ny+1,jb)
           do k = 1,nz
              px(k,j,i) = -one / dxu(j,i) * (p(k,j,i)-p(k,j,i-1))
           enddo
        enddo
     enddo
 
-    do i = 0,nx+1
-       do j = 1,ny+1 
+    do i = max(0,ia),min(nx+1,ib)
+       do j = max(1,ja),min(ny+1,jb)
           do k = 1,nz
              py(k,j,i) = -one / dyv(j,i) * (p(k,j,i)-p(k,j-1,i))
           enddo
@@ -570,21 +686,20 @@ contains
 
     ! column masking: no pressure gradient through no-flux faces
     if (allocated(umsk)) then
-       do i = 1,nx+1
-          do j = 0,ny+1
+       do i = max(1,ia),min(nx+1,ib)
+          do j = max(0,ja),min(ny+1,jb)
              px(:,j,i) = px(:,j,i)*umsk(j,i)
           enddo
        enddo
-       do i = 0,nx+1
-          do j = 1,ny+1
+       do i = max(0,ia),min(nx+1,ib)
+          do j = max(1,ja),min(ny+1,jb)
              py(:,j,i) = py(:,j,i)*vmsk(j,i)
           enddo
        enddo
     endif
 
-    do i = 0,nx+1
-       do j = 0,ny+1
-
+    do i = max(0,ia),min(nx+1,ib)
+       do j = max(0,ja),min(ny+1,jb)
           k = 1 !bottom pressure gradient is undefined
           pz(k,j,i) = 9999999999.
 
@@ -602,8 +717,8 @@ contains
 
     du => grid(1)%du
 
-    do i = 1,nx+1  
-       do j = 1,ny 
+    do i = max(1,ia),min(nx+1,ib)
+       do j = max(1,ja),min(ny,jb)
           k = 1
           gamma = one - qrt * ( &
                (zxdy(k,j,i  )/dy(j,i  ))**2/alpha(k,j,i  ) + &
@@ -640,8 +755,8 @@ contains
 
     dv => grid(1)%dv
 
-    do i = 1,nx
-       do j = 1,ny+1
+    do i = max(1,ia),min(nx,ib)
+       do j = max(1,ja),min(ny+1,jb)
           k = 1
           gamma = one - qrt * (  &
                (zydx(k,j  ,i)/dx(j  ,i))**2/alpha(k,j  ,i  ) + &
@@ -679,9 +794,8 @@ contains
 
     dw => grid(1)%dw
 
-    do i = 1,nx
-       do j = 1,ny
-
+    do i = max(1,ia),min(nx,ib)
+       do j = max(1,ja),min(ny,jb)
           do k = 2,nz
              dw(k,j,i) =  hlf * (alpha(k-1,j,i) + alpha(k,j,i)) * Arz(j,i) * pz(k,j,i) &
                   - qrt * ( &
@@ -713,13 +827,13 @@ contains
 
     ! row masking: no flux correction through no-flux faces
     if (allocated(umsk)) then
-       do i = 1,nx+1
-          do j = 1,ny
+       do i = max(1,ia),min(nx+1,ib)
+          do j = max(1,ja),min(ny,jb)
              du(:,j,i) = du(:,j,i)*umsk(j,i)
           enddo
        enddo
-       do i = 1,nx
-          do j = 1,ny+1
+       do i = max(1,ia),min(nx,ib)
+          do j = max(1,ja),min(ny+1,jb)
              dv(:,j,i) = dv(:,j,i)*vmsk(j,i)
           enddo
        enddo
