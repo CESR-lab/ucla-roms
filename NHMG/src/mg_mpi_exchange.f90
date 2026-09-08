@@ -477,7 +477,11 @@ contains
        recvNE => gbuffers(lev)%recvNEp
 
     else
-       STOP
+       write(*,'(A,I0,A,I0,A,I0,A,I0,A,I0,A,I0)') &
+            ' mg_mpi_exchange: fill_halo_3D_relax: rank ',myrank, &
+            ' lev ',lev,' nz ',nz,' is neither grid%nz ',grid(lev)%nz, &
+            ' nor +1  (nx,ny ',nx,',',ny,')'
+       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
     endif
 
     comm(:) = 0
@@ -842,8 +846,10 @@ contains
           recvNE => gbuffers(lev)%recvNEp
 
        else
-          write(*,*) 'mg_mpi_exchange: fill_halo_3D: pb 1 !'
-          STOP
+          write(*,'(A,I0,A,I0,A,I0,A,I0)') &
+               ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+               ' halo 1: nz ',nz,' is neither grid%nz nor +1, grid%nz ',grid(lev)%nz
+          call MPI_Abort(MPI_COMM_WORLD,1,ierr)
        endif
 
     elseif (nh == 2) then
@@ -889,13 +895,17 @@ contains
           recvNE => gbuffers(lev)%recvNE3D2p
 
        else
-          write(*,*) 'mg_mpi_exchange: fill_halo_3D: pb 2 !'
-          STOP
+          write(*,'(A,I0,A,I0,A,I0,A,I0)') &
+               ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+               ' halo 2: nz ',nz,' is neither grid%nz nor +1, grid%nz ',grid(lev)%nz
+          call MPI_Abort(MPI_COMM_WORLD,1,ierr)
        endif
 
     else
-       write(*,*) 'mg_mpi_exchange: fill_halo_3D: pb 3 !', nh,nx,ny,nz
-       stop
+       write(*,'(A,I0,A,I0,A,I0,A,I0,A,I0,A,I0)') &
+            ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+            ' halo width ',nh,' not 1 or 2  (nx,ny,nz ',nx,',',ny,',',nz,')'
+       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
     endif
 
     comm(:) = 0
@@ -960,7 +970,10 @@ contains
           elseif(ih == 2) then
              p(:,-1,1:nx) = two * p(:,1,1:nx) - p(:,2,1:nx)
           else
-             stop
+             write(*,'(A,I0,A,I0,A,I0)') &
+                  ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+                  ' physical-boundary fill: halo width ',nh,' not 1 or 2'
+             call MPI_Abort(MPI_COMM_WORLD,1,ierr)
           endif
        enddo
     endif
@@ -980,7 +993,10 @@ contains
           elseif(ih == 2) then
              p(:,1:ny,nx+2) = two * p(:,1:ny,nx) - p(:,1:ny,nx-1)
           else
-             stop
+             write(*,'(A,I0,A,I0,A,I0)') &
+                  ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+                  ' physical-boundary fill: halo width ',nh,' not 1 or 2'
+             call MPI_Abort(MPI_COMM_WORLD,1,ierr)
           endif
        enddo
     endif
@@ -1000,7 +1016,10 @@ contains
           elseif(ih == 2) then
              p(:,ny+2,1:nx) = two * p(:,ny,1:nx) - p(:,ny-1,1:nx)
           else
-             stop
+             write(*,'(A,I0,A,I0,A,I0)') &
+                  ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+                  ' physical-boundary fill: halo width ',nh,' not 1 or 2'
+             call MPI_Abort(MPI_COMM_WORLD,1,ierr)
           endif
        enddo
     endif
@@ -1020,7 +1039,10 @@ contains
           elseif(ih == 2) then
              p(:,1:ny,-1) = two * p(:,1:ny,1) - p(:,1:ny,2)
           else
-             stop
+             write(*,'(A,I0,A,I0,A,I0)') &
+                  ' mg_mpi_exchange: fill_halo_3D: rank ',myrank,' lev ',lev, &
+                  ' physical-boundary fill: halo width ',nh,' not 1 or 2'
+             call MPI_Abort(MPI_COMM_WORLD,1,ierr)
           endif
        enddo
     endif
@@ -1530,6 +1552,7 @@ contains
 
     integer(kind=ip) :: nx, ny
     integer(kind=ip) :: south, east, north, west
+    integer(kind=ip) :: ierr
 
     nx = grid(1)%nx
     ny = grid(1)%ny
@@ -1560,7 +1583,9 @@ contains
        endif
 
     else
-       stop
+       write(*,'(A,I0,A,A,A)') ' mg_mpi_exchange: set_rurvbc2zero_3D: rank ', &
+            myrank,' grid type ''',gt,''' is not u or v'
+       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
     endif
 
   end subroutine set_rurvbc2zero_3D
