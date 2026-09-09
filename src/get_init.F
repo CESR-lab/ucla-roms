@@ -358,6 +358,10 @@ c--#define VERBOSE
         call ncread(ncid,'DV_avg2',   DV_avg2(i0:i1, 1:j1),start)
         call ncread(ncid,'DU_avg_bak',DU_avg_bak( 1:i1,j0:j1),start)
         call ncread(ncid,'DV_avg_bak',DV_avg_bak(i0:i1, 1:j1),start)
+        ! read over the rank's own range: ghosts must be exchanged (the
+        ! iic=1 hack above keeps set_depth from recomputing them)
+        call exchange_xxx(DU_avg1,DV_avg1,DU_avg2,DV_avg2)
+        call exchange_xxx(DU_avg_bak,DV_avg_bak)
       else
         forw_start=ntstart    !--> cancel exact restart
         iic = 0 ! set back to zero
