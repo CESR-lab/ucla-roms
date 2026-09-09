@@ -320,9 +320,10 @@ contains
   end subroutine tridiag
 
   !----------------------------------------
-  subroutine compute_residual(lev,res)
+  subroutine compute_residual(lev,res,after_rb)
     integer(kind=ip), intent(in) :: lev
     real(kind=rp)   , intent(out):: res
+    logical, optional, intent(in) :: after_rb   ! p just relaxed by the RB line sweep
 
     real(kind=rp),dimension(:,:,:)  , pointer:: p
     real(kind=rp),dimension(:,:,:)  , pointer:: b
@@ -331,6 +332,11 @@ contains
 
     integer(kind=ip) :: nx, ny, nz, nd
     real(kind=rp) ::resloc
+    logical :: half
+
+    half = .false.
+    if (present(after_rb)) half = after_rb .and. &
+         (trim(relax_method)=='RB' .or. trim(relax_method)=='Red-Black')
 
     p  => grid(lev)%p
     b  => grid(lev)%b
@@ -348,11 +354,13 @@ contains
 
     else
 
-       call compute_residual_3D_8(res,p,b,r,cA,nx,ny,nz)
-
+       call compute_residual_3D_8(res,p,b,r,cA,nx,ny,nz,half,          &
+            grid(lev)%neighb(4)==MPI_PROC_NULL, grid(lev)%neighb(2)==MPI_PROC_NULL, &
+            grid(lev)%neighb(1)==MPI_PROC_NULL, grid(lev)%neighb(3)==MPI_PROC_NULL)
     end if
 
-    call fill_halo(lev,r)
+    ! no halo fill of r: the restriction reads the interior only and the
+    ! gather path refreshes the coarse halos itself
 
     if (lev < 2) then
        resloc=res
@@ -400,7 +408,7 @@ contains
   end subroutine compute_residual_2D_5
 
   !----------------------------------------
-  subroutine compute_residual_3D_8(res,p,b,r,cA,nx,ny,nz)
+  subroutine compute_residual_3D_8(res,p,b,r,cA,nx,ny,nz,half,west,east,south,north)
 
     real(kind=rp)                            , intent(out)  :: res
     real(kind=rp),dimension(:,:,:)  , pointer, intent(inout):: p
@@ -408,6 +416,16 @@ contains
     real(kind=rp),dimension(:,:,:)  , pointer, intent(inout)   :: r
     real(kind=rp),dimension(:,:,:,:), pointer, intent(in)   :: cA
     integer(kind=ip)                        , intent(in)   :: nx, ny, nz
+    logical                                  , intent(in)   :: half
+    logical                                  , intent(in)   :: west,east,south,north
+    ! half: p was just relaxed by relax_3D_8_RB, whose second colour
+    ! (i+j odd) solves each column exactly with the first colour fixed:
+    ! those columns have zero residual except at k = 1, where the bottom
+    ! cross terms couple same-colour columns updated in the same half
+    ! sweep, and except next to a physical wall (west..north: this rank's
+    ! walls), where the mirrored halo (coarse levels) changes with the
+    ! column itself.  Elsewhere only the k = 1 row is evaluated there
+    ! (about half a pass).
 
     ! Coefficients are stored in order of diagonals
     ! cA(1,:,:,:)      -> p(k,j,i)
@@ -441,6 +459,13 @@ contains
                - cA(8,k,j,i)*p(k,j-1,i-1) - cA(8,k,j+1,i+1)*p(k,j+1,i+1)
 
           res = res+r(k,j,i)*r(k,j,i)
+
+          if (half .and. mod(i+j,2) == 1 .and. .not. (         &
+               (west .and. i==1) .or. (east .and. i==nx) .or.  &
+               (south .and. j==1) .or. (north .and. j==ny) )) then
+             r(2:nz,j,i) = zero
+             cycle
+          endif
 
           do k = 2,nz-1 !interior levels
              r(k,j,i) = b(k,j,i)                                           &

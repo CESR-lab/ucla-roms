@@ -69,7 +69,7 @@ contains
 
        call Fcycle()
 
-       call compute_residual(1,rnorm)
+       call compute_residual(1,rnorm,after_rb=ns_post>0)   ! cycle ends with the level-1 post-sweep
        rnorm = rnorm/bnorm
        conv = res0/rnorm ! error reduction after this iteration
        res0 = rnorm
@@ -143,7 +143,7 @@ contains
 
     do lev=lev1,nlevs-1
        call relax(lev,ns_pre)
-       call compute_residual(lev,rnorm)
+       call compute_residual(lev,rnorm,after_rb=ns_pre>0)
        call fine2coarse(lev)
     enddo
 
