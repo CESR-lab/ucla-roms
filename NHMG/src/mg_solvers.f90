@@ -104,7 +104,7 @@ contains
   !---------------------------------------------------------------------
   subroutine Fcycle()
 
-    integer(kind=ip):: lev,maxlev
+    integer(kind=ip):: lev,maxlev,i,j,k
 
     call tic(1,'Fcycle')
 
@@ -112,7 +112,15 @@ contains
 
     do lev=1,maxlev-1
        call fine2coarse(lev)
-       grid(lev+1)%r=grid(lev+1)%b
+       ! copy with loops: a whole-array assignment between pointer arrays
+       ! builds a full-field stack temporary (possible aliasing)
+       do i = lbound(grid(lev+1)%b,3), ubound(grid(lev+1)%b,3)
+          do j = lbound(grid(lev+1)%b,2), ubound(grid(lev+1)%b,2)
+             do k = lbound(grid(lev+1)%b,1), ubound(grid(lev+1)%b,1)
+                grid(lev+1)%r(k,j,i) = grid(lev+1)%b(k,j,i)
+             enddo
+          enddo
+       enddo
     enddo
 
     call relax(maxlev, ns_coarsest)

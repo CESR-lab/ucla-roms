@@ -140,7 +140,7 @@ contains
     real(kind=rp),dimension(:,:,:),pointer :: rf
     real(kind=rp),dimension(:,:,:),pointer :: pc
 
-    integer(kind=ip) :: nxc, nyc, nzc
+    integer(kind=ip) :: nxc, nyc, nzc, i, j, k
 
     nxc = grid(lev+1)%nx
     nyc = grid(lev+1)%ny
@@ -171,7 +171,16 @@ contains
 
     call fill_halo(lev,grid(lev)%r)
 
-    grid(lev)%p = grid(lev)%p + grid(lev)%r
+    ! loops: a whole-array expression between pointer arrays builds a
+    ! full-field stack temporary (possible aliasing), ~20 MB per level
+    ! on a 96x96x256 tile
+    do i = lbound(grid(lev)%p,3), ubound(grid(lev)%p,3)
+       do j = lbound(grid(lev)%p,2), ubound(grid(lev)%p,2)
+          do k = lbound(grid(lev)%p,1), ubound(grid(lev)%p,1)
+             grid(lev)%p(k,j,i) = grid(lev)%p(k,j,i) + grid(lev)%r(k,j,i)
+          enddo
+       enddo
+    enddo
 
   end subroutine coarse2fine
 
