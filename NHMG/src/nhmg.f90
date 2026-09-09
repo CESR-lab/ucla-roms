@@ -21,6 +21,7 @@ module nhmg
     integer(kind=ip),public,parameter :: halo = 2
     integer(kind=ip),public :: iprec1 = 1,iprec2 = 2
     logical :: matrices_first = .true.   ! stage prints on the first call
+    logical :: solve_first = .true.      ! rhs check on the first solve
 
     public nhmg_matrices
     public nhmg_init
@@ -216,6 +217,13 @@ contains
        enddo
     enddo
 
+    if (solve_first) then
+       ! first solve: sanity of the right-hand side (model-side input)
+       call rhs_check()
+       solve_first = .false.
+    endif
+
+
     !- auto tuning tests if autotune = .true.
     if ((tscount == autotune_ts).and.(autotune)) then
        call sb_autotune()  !- test of autotuning
@@ -250,6 +258,25 @@ contains
     endif
 
     call toc(1,'nhmg_solve')
+
+  contains
+    subroutine rhs_check()
+      integer(kind=ip) :: i,j,k,ierr
+      real(kind=rp) :: bmax,nnan,l(2),g(2)
+      bmax = 0._rp;  nnan = 0._rp
+      do i = 1,nx
+         do j = 1,ny
+            do k = 1,nz
+               if (grid(1)%b(k,j,i) /= grid(1)%b(k,j,i)) nnan = nnan + 1._rp
+               bmax = max(bmax, abs(grid(1)%b(k,j,i)))
+            enddo
+         enddo
+      enddo
+      l = (/ bmax, nnan /)
+      call MPI_Allreduce(l,g,2,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+      call MPI_Allreduce(nnan,l(2),1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierr)
+      if (myrank==0) write(*,'(A,ES9.2,A,I0)') '  nhmg_solve: first rhs max|div| ',g(1),'  NaN cells ',int(l(2))
+    end subroutine rhs_check
 
   end subroutine nhmg_solve
 

@@ -276,9 +276,10 @@ contains
        ! residual (LOCK, 2026-09-04).  The stencil is read off 27
        ! colouring vectors through correction_uvw itself, hence exact by
        ! construction; the interior is checked against the formulas.
+       full = .true.
+       if (present(first)) full = first
+       if (full) call level_check(lev)
        if (lev == 1) then
-          full = .true.
-          if (present(first)) full = first
           if (full) then
              call stage('face masks')
              call set_face_masks()
@@ -294,6 +295,34 @@ contains
     enddo
 
   contains
+    subroutine level_check(lev)
+      ! first call: per-level sanity of the assembled matrix (diagonal
+      ! range over interior cells, NaN count), so a bad coarse level or
+      ! gather shows in the start-up log
+      integer(kind=ip), intent(in) :: lev
+      integer(kind=ip) :: i,j,k,ierr,nx,ny,nz
+      real(kind=rp) :: dmin,dmax,nnan,l(3),g(3)
+      real(kind=rp), dimension(:,:,:,:), pointer :: cA
+      nx = grid(lev)%nx;  ny = grid(lev)%ny;  nz = grid(lev)%nz
+      cA => grid(lev)%cA
+      dmin = huge(dmin);  dmax = zero;  nnan = zero
+      do i = 1,nx
+        do j = 1,ny
+          do k = 1,nz
+            if (any(cA(:,k,j,i) /= cA(:,k,j,i))) nnan = nnan + one
+            dmin = min(dmin, abs(cA(1,k,j,i)))
+            dmax = max(dmax, abs(cA(1,k,j,i)))
+          enddo
+        enddo
+      enddo
+      l = (/ -dmin, dmax, nnan /)
+      call MPI_Allreduce(l,g,3,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+      call MPI_Allreduce(nnan,l(3),1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierr)
+      if (myrank==0) write(*,'(A,I2,A,I0,A,I0,A,I0,A,I0,A,ES9.2,A,ES9.2,A,I0)') &
+           '     level ',lev,': ',nx,'x',ny,'x',nz,' gather ',grid(lev)%gather, &
+           '  |diag| min ',-g(1),' max ',g(2),'  NaN cells ',int(l(3))
+    end subroutine level_check
+
     subroutine stage(what)
       character(len=*), intent(in) :: what
       if (.not.present(first)) return
