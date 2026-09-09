@@ -71,6 +71,7 @@
      &                                                   )
           enddo
         enddo
+        call exchange_xxx(DU_avg1,DV_avg1)   ! ghosts consistent from the start
 
       endif  ! first time
 
