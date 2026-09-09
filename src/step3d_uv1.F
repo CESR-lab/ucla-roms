@@ -405,17 +405,20 @@
           enddo
         enddo
 #ifdef NH_IMPLICIT_FS
-        ! the physical east/north faces are not projected (masked) but
-        ! were converted to fluxes above and are summed into DU_avg1 by
-        ! implicit_fs_finish: return them to dz*u units as well
+        ! the physical east/north faces were converted to fluxes above
+        ! and are summed into DU_avg1 by implicit_fs_finish: apply their
+        ! correction (radiating open faces; zero for walls and clamped
+        ! faces) and return them to dz*u units as well
         if (east_bnd) then
           do j=1,ny
-            u(nx+1,j,k,nnew) = u(nx+1,j,k,nnew)*pn_u(nx+1,j)
+            u(nx+1,j,k,nnew) = (u(nx+1,j,k,nnew)
+     &                          + mggrid(1)%du(k,j,nx+1))*pn_u(nx+1,j)
           enddo
         endif
         if (north_bnd) then
           do i=1,nx
-            v(i,ny+1,k,nnew) = v(i,ny+1,k,nnew)*pm_v(i,ny+1)
+            v(i,ny+1,k,nnew) = (v(i,ny+1,k,nnew)
+     &                          + mggrid(1)%dv(k,ny+1,i))*pm_v(i,ny+1)
           enddo
         endif
 #endif

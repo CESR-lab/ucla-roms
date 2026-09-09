@@ -76,6 +76,8 @@ contains
        dirichlet_flag = 1
     endif
 
+    if (allocated(obcrob_u)) call set_obc_leak()
+
     do lev = 1, nlevs
 
        nx = grid(lev)%nx
@@ -260,6 +262,19 @@ contains
           enddo
        enddo
 
+       ! coarse levels: the open-boundary leak (fine grid: in the extracted
+       ! stencil through correction_uvw) as a diagonal term per cell; the
+       ! cycle diverges when the coarse operators lack it (COOL, 2026-09-09)
+       if (lev > 1 .and. allocated(obcrob_u)) then
+          do i = 1,nx
+             do j = 1,ny
+                do k = 1,nz
+                   cA(1,k,j,i) = cA(1,k,j,i) - grid(lev)%leak(j,i)*grid(lev)%dz(k,j,i)
+                enddo
+             enddo
+          enddo
+       endif
+
        if (netcdf_output) then
           if (myrank==0) write(*,*)'       write cA in a netcdf file'
           call write_netcdf(grid(lev)%cA,vname='ca',netcdf_file_name='cA.nc',rank=myrank,iter=lev)
@@ -333,6 +348,65 @@ contains
     end subroutine stage
 
   end subroutine set_matrices
+
+  !-------------------------------------------------------------------------
+  subroutine set_obc_leak()
+    ! Per-cell leak density of the radiating open faces, |obcrob|*(face
+    ! width), so that the diagonal term of a cell is leak*dz; coarsened
+    ! as a 2x2 block SUM (the block's total leak per unit dz) with the
+    ! same gather protocol as dx.
+    integer(kind=ip) :: lev,nx,ny,nxf,nyf,nxc,nyc,i,j
+    real(kind=rp), dimension(:,:), pointer :: lf,lc
+
+    do lev = 1,nlevs
+       nx = grid(lev)%nx;  ny = grid(lev)%ny
+       if (lev == 1) then
+          lc => grid(1)%leak
+          lc = zero
+          if (grid(1)%neighb(4) == MPI_PROC_NULL) then
+             do j = 1,ny
+                lc(j,1)  = lc(j,1)  + abs(obcrob_u(j,1))   *grid(1)%dy(j,1)
+             enddo
+          endif
+          if (grid(1)%neighb(2) == MPI_PROC_NULL) then
+             do j = 1,ny
+                lc(j,nx) = lc(j,nx) + abs(obcrob_u(j,nx+1))*grid(1)%dy(j,nx)
+             enddo
+          endif
+          if (grid(1)%neighb(1) == MPI_PROC_NULL) then
+             do i = 1,nx
+                lc(1,i)  = lc(1,i)  + abs(obcrob_v(1,i))   *grid(1)%dx(1,i)
+             enddo
+          endif
+          if (grid(1)%neighb(3) == MPI_PROC_NULL) then
+             do i = 1,nx
+                lc(ny,i) = lc(ny,i) + abs(obcrob_v(ny+1,i))*grid(1)%dx(ny,i)
+             enddo
+          endif
+       else
+          nxf = grid(lev-1)%nx;  nyf = grid(lev-1)%ny
+          lf => grid(lev-1)%leak
+          if (grid(lev)%gather == 1) then
+             nxc = nx/grid(lev)%ngx;  nyc = ny/grid(lev)%ngy
+             allocate(lc(0:nyc+1,0:nxc+1))
+          else
+             nxc = nx;  nyc = ny
+             lc => grid(lev)%leak
+          endif
+          lc = zero
+          do i = 1,nxc
+             do j = 1,nyc
+                lc(j,i) = lf(2*j-1,2*i-1) + lf(2*j,2*i-1) + lf(2*j-1,2*i) + lf(2*j,2*i)
+             enddo
+          enddo
+          if (grid(lev)%gather == 1) then
+             call gather(lev,lc,grid(lev)%leak)
+             deallocate(lc)
+          endif
+       endif
+       call fill_halo(lev,grid(lev)%leak)
+    enddo
+  end subroutine set_obc_leak
 
   !-------------------------------------------------------------------------
   subroutine assemble_masked_stencil()
@@ -880,6 +954,41 @@ contains
              dv(:,j,i) = dv(:,j,i)*vmsk(j,i)
           enddo
        enddo
+    endif
+
+    ! radiating open faces (implicit Flather, masked otherwise): the face
+    ! flux leaks in proportion to the adjacent cell's pressure,
+    ! du = n Arx/(theta c dt) p, which summed over the column is Flather
+    ! at the new time level with zeta(n+1)-zeta(n) = pbar/(theta g dt)
+    if (allocated(obcrob_u)) then
+       if (grid(1)%neighb(4) == MPI_PROC_NULL .and. ia <= 1) then
+          do j = max(1,ja),min(ny,jb)
+             do k = 1,nz
+                du(k,j,1) = du(k,j,1) + obcrob_u(j,1)*Arx(k,j,1)*p(k,j,1)
+             enddo
+          enddo
+       endif
+       if (grid(1)%neighb(2) == MPI_PROC_NULL .and. ib >= nx+1) then
+          do j = max(1,ja),min(ny,jb)
+             do k = 1,nz
+                du(k,j,nx+1) = du(k,j,nx+1) + obcrob_u(j,nx+1)*Arx(k,j,nx+1)*p(k,j,nx)
+             enddo
+          enddo
+       endif
+       if (grid(1)%neighb(1) == MPI_PROC_NULL .and. ja <= 1) then
+          do i = max(1,ia),min(nx,ib)
+             do k = 1,nz
+                dv(k,1,i) = dv(k,1,i) + obcrob_v(1,i)*Ary(k,1,i)*p(k,1,i)
+             enddo
+          enddo
+       endif
+       if (grid(1)%neighb(3) == MPI_PROC_NULL .and. jb >= ny+1) then
+          do i = max(1,ia),min(nx,ib)
+             do k = 1,nz
+                dv(k,ny+1,i) = dv(k,ny+1,i) + obcrob_v(ny+1,i)*Ary(k,ny+1,i)*p(k,ny,i)
+             enddo
+          enddo
+       endif
     endif
 
   end subroutine correction_uvw

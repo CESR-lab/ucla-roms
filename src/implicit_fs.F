@@ -33,14 +33,22 @@
 ! the standard code does with the fast-averaged ones; the predictor uses
 ! the extrapolated NH trend as before.
 !
-! Open boundaries (fallback, 'clamped'): the cells adjacent to an open
-! boundary get a PRESCRIBED surface flux (zeta_ext(n+1)-zeta(n))/dt from
-! the boundary data instead of the Robin row (library sfcfac = 0 there),
-! and the boundary-face transport is set to ubar_ext*D before the solve
-! (baroclinic profile from the 3D boundary condition kept).  Both zeta
-! and the transport are thus specified: incoming signals enter, outgoing
-! barotropic waves reflect.  A radiating (implicit Flather) boundary row
-! is the follow-up if the reflection proves harmful.
+! Open boundaries follow the barotropic option of the split-explicit
+! code.  OBC_M2FLATHER (radiating): the face transport at n+1 obeys
+! Flather with the elevation of the adjacent cell,
+!     F(n+1) = F_ext + n c dn (zeta_1(n+1) - zeta_ext),  c = sqrt(g h),
+! n the outward normal sign.  Made local by the barotropic approximation
+! of the boundary column, zeta_1(n+1)-zeta_1(n) = pbar/(theta g dt) with
+! pbar the column mean of the library pressure: per level the face flux
+! correction is du(k) = n Arx(k)/(theta c dt) p(k) (library obcrob_u/v,
+! a symmetric diagonal leak in the masked face row) and the provisional
+! face transport is set to the explicit Flather value with zeta_1(n)
+! before the solve (set_face_transport, u3dbc profile kept).  The
+! boundary cell keeps its Robin surface row; the ghost elevation is
+! zero-gradient (diagnostic).  OBC_M2SPECIFIED ('clamped'): the adjacent
+! cells get a PRESCRIBED surface flux (zeta_ext(n+1)-zeta(n))/dt instead
+! of the Robin row (library sfcfac = 0 there) and the face transport is
+! set to ubar_ext*D: incoming signals enter, outgoing waves reflect.
 
       ! module dependencies outside the option guard so that the
       ! dependency generator orders the compilation (the option only
@@ -54,7 +62,8 @@
       use roms_mpi
       use boundary
 #ifdef NH_IMPLICIT_FS
-      use mg_namelist, only: robin_beta, surface_neumann, sfcfac
+      use mg_namelist, only: robin_beta, surface_neumann, sfcfac,
+     &                       obcrob_u, obcrob_v
       use mpi
 #endif
 
@@ -75,7 +84,7 @@
       subroutine init_implicit_fs  ![
       implicit none
       character(len=16) :: cenv
-      integer :: ilen, istat, i
+      integer :: ilen, istat, i, j
       call get_environment_variable('THETA_FS',cenv,ilen,istat)
       if (istat==0 .and. ilen>0) read(cenv,*) theta_fs
       if (surface_neumann) then
@@ -88,7 +97,35 @@
       allocate( Vn(GLOBAL_2D_ARRAY) ) ; Vn=0.
       allocate( DU_half(GLOBAL_2D_ARRAY) ) ; DU_half=DU_avg1
       allocate( DV_half(GLOBAL_2D_ARRAY) ) ; DV_half=DV_avg1
-      ! open boundaries: prescribed surface flux in the adjacent cells
+#ifdef OBC_M2FLATHER
+      ! radiating open faces: leak coefficient n/(theta c dt) per column
+      if (.not.allocated(obcrob_u)) allocate( obcrob_u(0:ny+1,0:nx+1) )
+      if (.not.allocated(obcrob_v)) allocate( obcrob_v(0:ny+1,0:nx+1) )
+      obcrob_u=0. ; obcrob_v=0.
+      if (west_bnd.and.obc_west) then
+        do j=1,ny
+          obcrob_u(j,1)=-1./(theta_fs*dt*sqrt(g*0.5*(h(0,j)+h(1,j))))
+        enddo
+      endif
+      if (east_bnd.and.obc_east) then
+        do j=1,ny
+          obcrob_u(j,nx+1)=1./(theta_fs*dt*sqrt(g*0.5*(h(nx,j)+h(nx+1,j))))
+        enddo
+      endif
+      if (south_bnd.and.obc_south) then
+        do i=1,nx
+          obcrob_v(1,i)=-1./(theta_fs*dt*sqrt(g*0.5*(h(i,0)+h(i,1))))
+        enddo
+      endif
+      if (north_bnd.and.obc_north) then
+        do i=1,nx
+          obcrob_v(ny+1,i)=1./(theta_fs*dt*sqrt(g*0.5*(h(i,ny)+h(i,ny+1))))
+        enddo
+      endif
+      if (mynode==0 .and. (obc_west.or.obc_east.or.obc_south.or.obc_north))
+     &  write(*,*) ' implicit_fs: open boundaries radiating (implicit Flather)'
+#else
+      ! clamped open boundaries: prescribed surface flux in the adjacent cells
       if (.not.allocated(sfcfac)) allocate( sfcfac(0:ny+1,0:nx+1) )
       sfcfac=1.
       if (west_bnd .and.obc_west ) sfcfac(:,1 )=0.
@@ -97,6 +134,7 @@
       if (north_bnd.and.obc_north) sfcfac(ny,:)=0.
       if (mynode==0 .and. (obc_west.or.obc_east.or.obc_south.or.obc_north))
      &  write(*,*) ' implicit_fs: open boundaries clamped (zeta_ext, ubar_ext)'
+#endif
       if (mynode==0) write(*,'(A,F6.3,A,E12.4)')
      &   ' implicit_fs: theta_fs =',theta_fs,'  robin_beta [m] =',robin_beta
       end subroutine init_implicit_fs  !]
@@ -112,6 +150,7 @@
       implicit none
       integer :: i,j
       real :: dzwtop, th, wsn
+      real, dimension(0:max(nx,ny)+1) :: ubt
       th=theta_fs
       Un=DU_avg1 ; Vn=DV_avg1              ! U(n), kept for finish
       do j=1,ny
@@ -122,8 +161,41 @@
      &                    -th*(1.-th)*g*dt*dt*wsn )/(dzwtop+robin_beta)
         enddo
       enddo
-      ! open boundaries (clamped): prescribed surface flux in the adjacent
-      ! cells and ubar_ext*D at the boundary faces (u,v hold fluxes here)
+#ifdef OBC_M2FLATHER
+      ! radiating: depth-mean of the provisional face flux = explicit
+      ! Flather with zeta_1(n); the projection adds n kappa p (library),
+      ! so the final transport is Flather at zeta_1(n+1)
+      if (west_bnd.and.obc_west) then
+        do j=1,ny
+          ubt(j)=ubar_west(j) -sqrt(g/(0.5*(h(0,j)+h(1,j))))
+     &                          *(zeta(1,j,kstp)-zeta_west(j))
+        enddo
+        call set_face_transport(1,1,ny,ubt,.true.)
+      endif
+      if (east_bnd.and.obc_east) then
+        do j=1,ny
+          ubt(j)=ubar_east(j) +sqrt(g/(0.5*(h(nx,j)+h(nx+1,j))))
+     &                          *(zeta(nx,j,kstp)-zeta_east(j))
+        enddo
+        call set_face_transport(nx+1,1,ny,ubt,.true.)
+      endif
+      if (south_bnd.and.obc_south) then
+        do i=1,nx
+          ubt(i)=vbar_south(i) -sqrt(g/(0.5*(h(i,0)+h(i,1))))
+     &                           *(zeta(i,1,kstp)-zeta_south(i))
+        enddo
+        call set_face_transport(1,1,nx,ubt,.false.)
+      endif
+      if (north_bnd.and.obc_north) then
+        do i=1,nx
+          ubt(i)=vbar_north(i) +sqrt(g/(0.5*(h(i,ny)+h(i,ny+1))))
+     &                           *(zeta(i,ny,kstp)-zeta_north(i))
+        enddo
+        call set_face_transport(ny+1,1,nx,ubt,.false.)
+      endif
+#else
+      ! clamped: prescribed surface flux in the adjacent cells and
+      ! ubar_ext*D at the boundary faces (u,v hold fluxes here)
       if (west_bnd.and.obc_west) then
         do j=1,ny
           w(1,j,nz,nnew)=(zeta_west(j)-zeta(1,j,kstp))/(dt*pm(1,j)*pn(1,j))
@@ -150,6 +222,7 @@
         enddo
         call set_face_transport(ny+1,1,nx,vbar_north,.false.)
       endif
+#endif
       end subroutine implicit_fs_surface_flux  !]
 
 !----------------------------------------------------------------------
@@ -190,10 +263,18 @@
         enddo
       enddo
       call zetabc(zeta(:,:,knew))
+#ifdef OBC_M2FLATHER
+      ! ghost elevation is diagnostic under the radiating faces
+      if (west_bnd .and.obc_west ) zeta(0   ,1:ny,knew)=zeta(1 ,1:ny,knew)
+      if (east_bnd .and.obc_east ) zeta(nx+1,1:ny,knew)=zeta(nx,1:ny,knew)
+      if (south_bnd.and.obc_south) zeta(1:nx,0   ,knew)=zeta(1:nx,1 ,knew)
+      if (north_bnd.and.obc_north) zeta(1:nx,ny+1,knew)=zeta(1:nx,ny,knew)
+#else
       if (west_bnd .and.obc_west ) zeta(0   ,1:ny,knew)=zeta_west(1:ny)
       if (east_bnd .and.obc_east ) zeta(nx+1,1:ny,knew)=zeta_east(1:ny)
       if (south_bnd.and.obc_south) zeta(1:nx,0   ,knew)=zeta_south(1:nx)
       if (north_bnd.and.obc_north) zeta(1:nx,ny+1,knew)=zeta_north(1:nx)
+#endif
       call exchange_xxx(zeta(:,:,knew))
       Zt_avg1=zeta(:,:,knew)
       call set_depth            ! new z_w, Hz (done by step2d otherwise)

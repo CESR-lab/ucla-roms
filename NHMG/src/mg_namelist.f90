@@ -31,6 +31,13 @@ module mg_namelist
   real(kind=rp), allocatable :: sfcfac(:,:) !- fine-grid per-column multiplier of the surface factor
                                           !- (j,i): 1 Robin/Dirichlet, 0 prescribed surface flux
                                           !- (clamped open-boundary cells); allocated by the caller
+  real(kind=rp), allocatable :: obcrob_u(:,:), obcrob_v(:,:)
+                                          !- fine-grid radiating (implicit Flather) open faces, (j,i)
+                                          !- on u faces 1..nx+1 / v faces 1..ny+1: n/(theta c dt) with
+                                          !- n the outward normal sign (-1 west/south, +1 east/north),
+                                          !- c = sqrt(g h); 0 elsewhere. The face flux correction is
+                                          !- du = obcrob_u*Arx*p(adjacent cell): a diagonal-only,
+                                          !- symmetric leak term. Allocated by the caller (implicit_fs).
 
   logical           :: east_west_perio = .false.
   logical           :: north_south_perio = .false.

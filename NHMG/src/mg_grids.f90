@@ -49,6 +49,7 @@ module mg_grids
      real(kind=rp),dimension(:,:)  ,pointer :: dxu => null()  ! Mesh in x  (1 halo point)
      real(kind=rp),dimension(:,:)  ,pointer :: dyv => null()  ! Mesh in y  (1 halo point)
      real(kind=rp),dimension(:,:,:),pointer :: dz => null()   ! Mesh in z at w point   (nz  , 2 halo points)
+     real(kind=rp),dimension(:,:)  ,pointer :: leak => null() ! open-boundary leak per unit dz, per cell (coarse levels)
 
      ! All these variables are dependent on dx, dy, and dz
      real(kind=rp),dimension(:,:,:),pointer :: dzw   => null() ! Cell height at w-points
@@ -198,6 +199,7 @@ contains
        allocate(grid(lev)%dy(0:ny+1,0:nx+1))
        allocate(grid(lev)%dxu(0:ny+1,0:nx+1))
        allocate(grid(lev)%dyv(0:ny+1,0:nx+1))
+       allocate(grid(lev)%leak(0:ny+1,0:nx+1)); grid(lev)%leak = 0._rp
     enddo
 
     do lev=1,nlevs ! set_vert_grids
