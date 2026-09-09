@@ -464,6 +464,10 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 !--------------------------------------------------------------------
 !
       ! We've modified u and v, w needs to be made consistent
+      if (diag_uv .and. calc_diag) then     ! dz_w*w before the rebuild
+        Wdiag(1:nx,1:ny,1:nz,iwcpl) = Wdiag(1:nx,1:ny,1:nz,iwcpl)
+     &                              - w(1:nx,1:ny,1:nz,nnew)/dt
+      endif
       do j=1,ny
         do k=1,nz
           do i=1,nx
@@ -480,15 +484,19 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
         enddo
       enddo
 
-!     if (diag_w) call set_diags_w_at_uv2( 1, nx, 1, ny )
-!
+      if (diag_uv .and. calc_diag) then     ! + dz_w*w after the rebuild
+        do k=1,nz-1
+          Wdiag(1:nx,1:ny,k,iwcpl) = Wdiag(1:nx,1:ny,k,iwcpl)
+     &        + w(1:nx,1:ny,k,nnew)*0.5*(Hz(1:nx,1:ny,k+1)+Hz(1:nx,1:ny,k))/dt
+        enddo
+        Wdiag(1:nx,1:ny,nz,iwcpl) = Wdiag(1:nx,1:ny,nz,iwcpl)
+     &        + w(1:nx,1:ny,nz,nnew)*0.5*Hz(1:nx,1:ny,nz)/dt
+      endif
 
 !--------------------------------------------------------------------
 ! Update physical boundary values
 !--------------------------------------------------------------------
       call w3dbc(DC)
-
-!     if (diag_w) call set_diags_w_at_bc( 1, nx, 1, ny )
 
 !--------------------------------------------------------------------
 ! Exchange periodic boundaries and computational margins.
@@ -498,7 +506,5 @@ c             idRz(i,j,k)=ALPHA_MAX/max(ALPHA_MAX*dRz,dRx_max,epsil)
 #  endif
 
 # endif /* NHMG */
-
-!     if (diag_w)  call set_diags_w_at_uv2_end
 
       end

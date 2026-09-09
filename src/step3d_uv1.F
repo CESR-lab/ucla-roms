@@ -69,10 +69,6 @@
       real,dimension(nx) :: drag
 
 
-      if (diag_w) then
-!       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)
-      endif
-
 ! set the implicit advection and mixing  to zero on the boundaries
       om(:,0)  = 0
       om(:,nz) = 0
@@ -81,13 +77,52 @@
 
 # ifdef NHMG
 
+      if (diag_uv) then                 ! W diagnostics: dz_w*w at n;
+        do k=1,nz                       ! the corrector residual (term
+          do j=1,ny                     ! iwdis) is completed after the
+            do i=1,nx                   ! implicit solve below
+              Wdiag(i,j,k,iwdis) = -w(i,j,k,nnew)/dt
+              Wdiag(i,j,k,iwcpl) = 0.   ! accumulated: nh_wcor here, rebuild in uv2
+            enddo
+          enddo
+        enddo
+        ! the fields the corrector's kernels advect and advect with
+        u_rhs_d(1:nx+1,1:ny,1:nz) = u(1:nx+1,1:ny,1:nz,nrhs)
+        v_rhs_d(1:nx,1:ny+1,1:nz) = v(1:nx,1:ny+1,1:nz,nrhs)
+        w_rhs_d(1:nx,1:ny,1:nz)   = w(1:nx,1:ny,1:nz,nrhs)
+        flxu_d(1:nx+1,1:ny,1:nz)  = FlxU(1:nx+1,1:ny,1:nz)
+        flxv_d(1:nx,1:ny+1,1:nz)  = FlxV(1:nx,1:ny+1,1:nz)
+        we_d(1:nx,1:ny,0:nz)      = We(1:nx,1:ny,0:nz)
+        wi_d(1:nx,1:ny,0:nz)      = Wi(1:nx,1:ny,0:nz)
+      endif
+
       do k=1,nz
         call w_hadv_up3(rw,k)    ! upwinded in the corrector
       enddo
 
       ! metric terms of the W equation + bottom-row completion of u,v
       ! (C2 forces recomputed with We+Wi, completed through T)
+      if (diag_uv) then                 ! capture w_metric across the call
+        rw4(1:nx,1:ny,1:nz) = -rw(1:nx,1:ny,1:nz)
+        ru_met = -ru(1:nx,1:ny,1)*dxdyi_u
+        rv_met = -rv(1:nx,1:ny,1)*dxdyi_v
+      endif
       call w_metric(ru,rv,rw)
+      if (diag_uv) then
+        rw4(1:nx,1:ny,1:nz) = rw4(1:nx,1:ny,1:nz) + rw(1:nx,1:ny,1:nz)
+        ru_met = ru_met + ru(1:nx,1:ny,1)*dxdyi_u
+        rv_met = rv_met + rv(1:nx,1:ny,1)*dxdyi_v
+        do k=1,nz                       ! + the centered (C4) advection
+          call w_hadv_c4(rw4,k)         !   of w: term iwadv = C4 + metric
+        enddo
+        do j=1,ny
+          call w_vadv_c4(rw4,j)
+        enddo
+        do k=1,nz
+          Wdiag(1:nx,1:ny,k,iwadv) = rw4(1:nx,1:ny,k)*dxdyi
+          Wdiag(1:nx,1:ny,k,iwcor) = 0.  ! until uvw_cor is wired in
+        enddo
+      endif
 
       do j=1,ny
 
@@ -128,6 +163,18 @@
         !------- end computing of w(:,:,:,nnew) -----
 
       enddo  ! j-loop
+
+      if (diag_uv) then                 ! corrector residual: everything
+        do k=1,nz                       ! non-conservative (UP3-C4,
+          do j=1,ny                     ! implicit mixing + advection)
+            do i=1,nx
+              Wdiag(i,j,k,iwdis) = Wdiag(i,j,k,iwdis) + w(i,j,k,nnew)/dt
+     &                           - Wdiag(i,j,k,iwpgr) - Wdiag(i,j,k,iwcor)
+     &                           - Wdiag(i,j,k,iwadv)
+            enddo
+          enddo
+        enddo
+      endif
 # endif /* NHMG */
 
 
@@ -146,6 +193,12 @@
       if (diag_uv) then
         call set_diags_u_4th_adv
         call set_diags_v_4th_adv
+# ifdef NHMG
+        ! bottom-row metric completion of u,v (w_metric) belongs to the
+        ! conservative advective set
+        Udiag(1:nx,1:ny,1,iadv) = Udiag(1:nx,1:ny,1,iadv) + ru_met
+        Vdiag(1:nx,1:ny,1,iadv) = Vdiag(1:nx,1:ny,1,iadv) + rv_met
+# endif
       endif
 
       do j=1,ny
@@ -357,6 +410,22 @@
             enddo
           enddo
         enddo
+        if (diag_uv) then         ! barotropic pre-match of the column
+          do k=1,nz               ! divergence: part of the 2D/3D
+            do j=1,ny             ! coupling term (flux -> dz*w units)
+              do i=1,nx
+                if (k<nz) then
+                  cff = 0.5*(Hz(i,j,k+1)+Hz(i,j,k))
+                else
+                  cff = 0.5*Hz(i,j,k)
+                endif
+                Wdiag(i,j,k,iwcpl) = Wdiag(i,j,k,iwcpl) - nh_wcor(i,j)
+     &                 * (z_w(i,j,k)-z_w(i,j,0))/(z_w(i,j,nz)-z_w(i,j,0))
+     &                 * dxdyi(i,j)*cff/dt
+              enddo
+            enddo
+          enddo
+        endif
       endif
 
       ! zeta* compensation: remove the exact depth integral of the
@@ -443,6 +512,24 @@
           enddo
         endif
       enddo
+
+      if (diag_uv) then                 ! projection correction terms
+        do k=1,nz
+          do j=1,ny
+            do i=1,nx
+              Udiag(i,j,k,inhp) = nhdu(i,j,k,iprec1)*pn_u(i,j)
+              Vdiag(i,j,k,inhp) = nhdv(i,j,k,iprec1)*pm_v(i,j)
+              if (k<nz) then
+                Wdiag(i,j,k,iwnhp) = nhdw(i,j,k,iprec1)*dxdyi(i,j)
+     &                              *0.5*(Hz(i,j,k+1)+Hz(i,j,k))
+              else
+                Wdiag(i,j,k,iwnhp) = nhdw(i,j,k,iprec1)*dxdyi(i,j)
+     &                              *0.5* Hz(i,j,k)
+              endif
+            enddo
+          enddo
+        enddo
+      endif
 
       ! u,v, and w contain again dz*u,dz*v, and dz*w
 

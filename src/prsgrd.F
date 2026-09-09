@@ -497,8 +497,10 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
             rw(i,j,nz) = -0.5*dR(i,nz)*Hz(i,j,nz)
          enddo
       enddo
-      if (diag_w.and.calc_diag) then
-!       Wdiag(1:nx,1:ny,:,iwprsgr) =rw(1:nx,1:ny,:)*dxdyi
+      if (CORR_STAGE.and.calc_diag.and.diag_uv) then
+        do k=1,nz
+          Wdiag(1:nx,1:ny,k,iwpgr) = rw(1:nx,1:ny,k)*dxdyi
+        enddo
       endif
 # endif /* NHMG */
 
