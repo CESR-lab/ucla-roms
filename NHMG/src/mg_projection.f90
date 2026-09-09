@@ -404,7 +404,14 @@ contains
         enddo
       enddo
     enddo
-    p = x;  call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
+    do i = 0,nx+1                       ! loops: pointer targets may alias,
+      do j = 0,ny+1                     ! a whole-array copy would build a
+        do k = 1,nz                     ! full-field temporary on the stack
+          p(k,j,i) = x(k,j,i)
+        enddo
+      enddo
+    enddo
+    call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
     syx = zero
     do i = 1,nx
       do j = 1,ny
@@ -415,7 +422,14 @@ contains
         enddo
       enddo
     enddo
-    p = y;  call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
+    do i = 0,nx+1
+      do j = 0,ny+1
+        do k = 1,nz
+          p(k,j,i) = y(k,j,i)
+        enddo
+      enddo
+    enddo
+    call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
     sxy = zero
     do i = 1,nx
       do j = 1,ny
