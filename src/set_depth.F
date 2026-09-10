@@ -291,6 +291,11 @@
         do i=1,i1                    ! implicit surface: extrapolated
           FC(i,0)=(FC(i,0)-DU_half(i,j))/DC(i,0)   ! implicit transports
         enddo
+        ! physical ghost rows: no transport is defined there without a
+        ! 2D step, the column keeps its u3dbc value (as in step3d_uv2)
+        if ((j==0 .and. south_bnd) .or. (j==ny+1 .and. north_bnd)) then
+          FC(1:i1,0)=0.
+        endif
 # elif defined CORR_COUPLED_MODE
 #  ifdef EXTRAP_BAR_FLUXES
         if (FIRST_TIME_STEP) then
@@ -380,6 +385,8 @@
           do i=i0,i1
             FC(i,0)=(FC(i,0)-DV_half(i,j))/DC(i,0)
           enddo
+          if (west_bnd) FC(0   ,0)=0.    ! physical ghost columns, as above
+          if (east_bnd) FC(nx+1,0)=0.
 # elif defined CORR_COUPLED_MODE
 #  ifdef EXTRAP_BAR_FLUXES
           if (FIRST_TIME_STEP) then
