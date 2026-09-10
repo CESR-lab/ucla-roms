@@ -28,6 +28,9 @@
       implicit none
       integer i,j,k
       real, dimension(PRIVATE_1D_SCRATCH_ARRAY,0:nz) :: WC,FC,CF,DC
+# ifdef NH_IMPLICIT_FS
+      logical :: gj                  ! physical ghost row (no 2D step)
+# endif
       real cff !,dmax,div
       real ub,ut
       real :: uint,vint
@@ -177,6 +180,11 @@
       ! We only add the boundary changes to the diagnostics and our budget still closes,
       ! as the interior correction is only in the order of e-17.
       do j=j0,j1                    !--> XI-component
+# ifdef NH_IMPLICIT_FS
+        ! implicit surface: no 2D step fills the physical ghost rows,
+        ! their transports are those of the u3dbc/v3dbc columns
+        gj=(j==0 .and. south_bnd) .or. (j==ny+1 .and. north_bnd)
+# endif
         do i=1,i1
           DC(i,nz)=0.5*(Hz(i,j,nz)+Hz(i-1,j,nz))*dn_u(i,j)
           DC(i,0)=DC(i,nz)
@@ -192,6 +200,9 @@
         ! FC(0) is int(dz*U)*dy, DC(0) is int(dz)*dy
         do i=1,i1
           DC(i,0)=1./DC(i,0)  !!1/H
+# ifdef NH_IMPLICIT_FS
+          if (gj) DU_avg1(i,j)=FC(i,0)
+# endif
           ubar(i,j,knew)=DC(i,0)*DU_avg1(i,j)  !! avg1 is at n+1?
 # ifdef WEC
      &                   -ust2d(i,j)
@@ -254,6 +265,9 @@ c>># define DELTA 0.5790
           enddo
         enddo
         do i=1,i1
+# ifdef NH_IMPLICIT_FS
+          if (gj) DU_avg2(i,j)=CF(i,0)
+# endif
           CF(i,0)=DC(i,0)*(CF(i,0)-DU_avg2(i,j))  !<-- mismatch
         enddo
 
@@ -286,6 +300,10 @@ c>># define DELTA 0.5790
               FC(i,0)=FC(i,0)+DC(i,k)*v(i,j,k,nnew)
             enddo
           enddo
+# ifdef NH_IMPLICIT_FS
+          if (west_bnd) DV_avg1(0   ,j)=FC(0   ,0)   ! ghost columns, as
+          if (east_bnd) DV_avg1(nx+1,j)=FC(nx+1,0)   ! the rows above
+# endif
           do i=i0,i1
             DC(i,0)=1./DC(i,0)
             vbar(i,j,knew)=DC(i,0)*DV_avg1(i,j)
@@ -336,6 +354,10 @@ c>># define DELTA 0.5790
               CF(i,0)=CF(i,0)+CF(i,k)
             enddo
           enddo
+# ifdef NH_IMPLICIT_FS
+          if (west_bnd) DV_avg2(0   ,j)=CF(0   ,0)
+          if (east_bnd) DV_avg2(nx+1,j)=CF(nx+1,0)
+# endif
           do i=i0,i1
             CF(i,0)=DC(i,0)*(CF(i,0)-DV_avg2(i,j))
           enddo
