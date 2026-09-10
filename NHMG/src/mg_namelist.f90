@@ -26,6 +26,8 @@ module mg_namelist
   integer(kind=ip)  :: output_freq = 100000000 ! Number of iterations between output of statistics
 
   logical           :: surface_neumann  = .true.
+  logical           :: coarse_galerkin  = .false. !- coarse operators by aggregation (Galerkin) of the
+                                                  !- fine one (always for a 2D level); .false.: geometric
   real(kind=rp)     :: robin_beta = 0._rp  !- implicit free surface: q + robin_beta dq/dz = f at the
                                           !- surface (0 = Dirichlet); set at run time by the caller
   real(kind=rp), allocatable :: sfcfac(:,:) !- fine-grid per-column multiplier of the surface factor
@@ -55,6 +57,7 @@ module mg_namelist
        netcdf_output , &
        output_freq   , &
        surface_neumann, &
+       coarse_galerkin, &
        east_west_perio, &
        north_south_perio
 
@@ -127,6 +130,7 @@ contains
           write(*,*)'  - netcdf_output : ', netcdf_output
           write(*,*)'  - output freq   : ', output_freq
           write(*,*)'  - surf neumann  : ', surface_neumann
+          write(*,*)'  - coarse galerk : ', coarse_galerkin
           write(*,*)'  - E/W periodic  : ', east_west_perio
           write(*,*)'  - N/S periodic  : ', north_south_perio
           write(*,*)'  '

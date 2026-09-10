@@ -84,6 +84,17 @@ contains
        ny = grid(lev)%ny
        nz = grid(lev)%nz
 
+       ! coarse operator by Galerkin aggregation of the finer one: always
+       ! for a 2D level (nz = 1: the 3D formulas below do not apply to its
+       ! 5-point storage), otherwise on request (coarse_galerkin)
+       if (lev > 1 .and. (coarse_galerkin .or. nz == 1)) then
+          call set_galerkin(lev)
+          full = .true.
+          if (present(first)) full = first
+          if (full) call level_check(lev)
+          cycle
+       endif
+
        dx    => grid(lev)%dx    !
        dy    => grid(lev)%dy    !
        dxu   => grid(lev)%dxu   !
@@ -307,6 +318,7 @@ contains
        endif
        if (lev == 1 .and. nlevs > 1) call stage('coarse levels')
 
+
     enddo
 
   contains
@@ -348,6 +360,134 @@ contains
     end subroutine stage
 
   end subroutine set_matrices
+
+  !-------------------------------------------------------------------------
+  subroutine set_galerkin(lev)
+    ! Coarse operator of level lev by piecewise-constant aggregation of
+    ! the operator of level lev-1: R = sum over the 2x2x2 block (the
+    ! restriction in use), P = R^T.  The gradient couplings get the
+    ! factor 1/2 that makes RAP equal the geometric coarse operator on a
+    ! uniform grid (a block-constant function sees the fine spacing);
+    ! the diagonal is rebuilt as minus the coupling sum plus the surface
+    ! (Robin/Dirichlet) and open-boundary leak terms from the coarse
+    ! metrics, which are area terms and carry no 1/2.  The result fits
+    ! the same 15-point storage (5-point at a 2D level); masked or
+    ! leaking fine faces coarsen consistently.  Each fine coupling is
+    ! stored once, from the fine cell whose block keeps the coarse pair;
+    ! the reverse visit feeds the coupling sum only.
+    integer(kind=ip), intent(in) :: lev
+    integer(kind=ip) :: nxf,nyf,nzf,nxc,nyc,nzc,ndc,i,j,k,dk,dj,di,s
+    integer(kind=ip) :: kc,jc,ic,kn,jn,in,ierr,m
+    real(kind=rp) :: a
+    real(kind=rp), dimension(:,:,:,:), pointer :: cf,cc,cA
+    real(kind=rp), dimension(:,:,:), pointer :: t3
+    integer(kind=ip), parameter :: noff = 18
+    integer(kind=ip), dimension(3,noff), parameter :: off = reshape( (/ &
+         -1,0,0,  1,0,0,  0,-1,0,  0,1,0,  0,0,-1,  0,0,1, &
+         -1,-1,0, -1,1,0,  1,-1,0,  1,1,0, -1,0,-1, -1,0,1,  1,0,-1,  1,0,1, &
+          0,-1,-1, 0,-1,1,  0,1,-1,  0,1,1 /), (/3,noff/) )   ! last 4: bottom xy pairs
+
+    nxf = grid(lev-1)%nx;  nyf = grid(lev-1)%ny;  nzf = grid(lev-1)%nz
+    cf => grid(lev-1)%cA
+    cA => grid(lev)%cA;    ndc = size(cA,1)
+    nzc = grid(lev)%nz
+    if (nzf == 1) then
+       if (myrank==0) write(*,*) 'set_galerkin: 2D -> 2D coarsening not implemented'
+       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
+    endif
+    if (grid(lev)%gather == 1) then
+       nxc = grid(lev)%nx/grid(lev)%ngx;  nyc = grid(lev)%ny/grid(lev)%ngy
+       allocate(cc(ndc,nzc,0:nyc+1,0:nxc+1))
+    else
+       nxc = grid(lev)%nx;  nyc = grid(lev)%ny
+       cc => cA
+    endif
+    cc = zero
+
+    call fill_halo(lev-1,cf)
+
+    do i = 1,nxf
+       ic = (i+1)/2
+       do j = 1,nyf
+          jc = (j+1)/2
+          do k = 1,nzf
+             kc = (k+1)/2;  if (nzc == 1) kc = 1
+             do m = 1,noff
+                if (m > 14 .and. k /= 1) cycle           ! xy pairs exist at the bottom only
+                dk = off(1,m);  dj = off(2,m);  di = off(3,m)
+                kn = k+dk;  jn = j+dj;  in = i+di
+                if (kn < 1 .or. kn > nzf) cycle
+                if (jn < 0 .or. jn > nyf+1 .or. in < 0 .or. in > nxf+1) cycle
+                ! the fine coupling, wherever the symmetric storage keeps it
+                s = stencil_slot(dk,dj,di,k)
+                if (s > 1) then
+                   a = cf(s,k,j,i)
+                else
+                   s = stencil_slot(-dk,-dj,-di,kn)
+                   if (s <= 1) cycle
+                   a = cf(s,kn,jn,in)
+                endif
+                if (a == zero) cycle
+                kn = (kn+1)/2;  if (nzc == 1) kn = 1
+                jn = (jn+1)/2;  in = (in+1)/2
+                if (kn == kc .and. jn == jc .and. in == ic) cycle   ! internal to the block
+                cc(1,kc,jc,ic) = cc(1,kc,jc,ic) - hlf*a           ! coupling sum
+                if (nzc > 1) then
+                   s = stencil_slot(kn-kc,jn-jc,in-ic,kc)
+                else
+                   s = slot2d(jn-jc,in-ic)
+                endif
+                if (s > 1) cc(s,kc,jc,ic) = cc(s,kc,jc,ic) + hlf*a
+             enddo
+          enddo
+       enddo
+    enddo
+
+    if (grid(lev)%gather == 1) then
+       ! gather slot by slot; the gather fills interior points only, so
+       ! the halo slots (walls of the gathered grid) are set to zero here
+       t3 => grid(lev)%dummy3
+       cA = zero
+       do s = 1,ndc
+          do i = 0,nxc+1;  do j = 0,nyc+1;  do k = 1,nzc
+             t3(k,j,i) = cc(s,k,j,i)
+          enddo;  enddo;  enddo
+          call gather(lev,t3,grid(lev)%r)
+          do i = 1,grid(lev)%nx;  do j = 1,grid(lev)%ny;  do k = 1,nzc
+             cA(s,k,j,i) = grid(lev)%r(k,j,i)
+          enddo;  enddo;  enddo
+       enddo
+       deallocate(cc)
+       grid(lev)%r = zero
+    endif
+
+    ! surface and open-boundary leak terms (area terms: no 1/2)
+    do i = 1,grid(lev)%nx
+       do j = 1,grid(lev)%ny
+          cA(1,nzc,j,i) = cA(1,nzc,j,i) - grid(lev)%Arz(j,i)/grid(lev)%dzw(nzc+1,j,i) &
+               * grid(lev)%alpha(nzc,j,i) * sigtop(grid(lev)%dzw(nzc+1,j,i))
+          if (allocated(obcrob_u)) then
+             do k = 1,nzc
+                cA(1,k,j,i) = cA(1,k,j,i) - grid(lev)%leak(j,i)*grid(lev)%dz(k,j,i)
+             enddo
+          endif
+       enddo
+    enddo
+
+    call fill_halo(lev,cA)
+
+  contains
+    function slot2d(dj,di) result(n)
+      ! 5-point storage of a 2D level: 2 (j-1), 3 (i-1), 4 (j-1,i-1), 5 (j+1,i-1)
+      integer(kind=ip), intent(in) :: dj,di
+      integer(kind=ip) :: n
+      n = 0
+      if (dj==-1 .and. di==0) n = 2
+      if (dj==0 .and. di==-1) n = 3
+      if (dj==-1 .and. di==-1) n = 4
+      if (dj==1 .and. di==-1) n = 5
+    end function slot2d
+  end subroutine set_galerkin
 
   !-------------------------------------------------------------------------
   subroutine set_obc_leak()
