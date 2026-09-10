@@ -94,8 +94,6 @@
       ! u,v,w at nrhs; FlxU,FlxV,We,Wi as the kernels read them), written
       ! un-averaged so an offline pairing of the tendencies with the
       ! very fields they were computed from is exact (m/s and m^3/s).
-      real, public, allocatable, dimension(:,:,:) :: u_rhs_d, v_rhs_d, w_rhs_d
-      real, public, allocatable, dimension(:,:,:) :: flxu_d, flxv_d, we_d, wi_d
       character(len=8),  dimension(nwd) :: wvname = (/ 'w_dzb   ',
      &  'w_pgr   ','w_cor   ','w_adv   ','w_dis   ','w_cpl   ',
      &  'w_dzt   ','w_nhp   ' /)
@@ -225,13 +223,6 @@
         allocate(rw4(GLOBAL_2D_ARRAY,0:nz)); rw4 = 0
         allocate(ru_met(nx,ny)); ru_met = 0
         allocate(rv_met(nx,ny)); rv_met = 0
-        allocate(u_rhs_d(0:nx+1,0:ny+1,nz)); u_rhs_d = 0
-        allocate(v_rhs_d(0:nx+1,0:ny+1,nz)); v_rhs_d = 0
-        allocate(w_rhs_d(0:nx+1,0:ny+1,nz)); w_rhs_d = 0
-        allocate(flxu_d (0:nx+1,0:ny+1,nz)); flxu_d  = 0
-        allocate(flxv_d (0:nx+1,0:ny+1,nz)); flxv_d  = 0
-        allocate(we_d(0:nx+1,0:ny+1,0:nz));  we_d = 0
-        allocate(wi_d(0:nx+1,0:ny+1,0:nz));  wi_d = 0
         allocate(dzwh_n(nx,ny,nz))
         dzwh_n(:,:,1:nz-1) = 0.5*(Hz(1:nx,1:ny,1:nz-1)+Hz(1:nx,1:ny,2:nz))
         dzwh_n(:,:,nz)     = 0.5* Hz(1:nx,1:ny,nz)
@@ -1103,36 +1094,6 @@
         ierr = nf90_put_att(ncid,varid,'long_name'
      &                               ,'NH pressure correction')
         ierr = nf90_put_att(ncid,varid,'units','m^2/s^2' )
-        ! corrector fields at n+1/2 (advected velocities, advecting fluxes)
-        dimnames = (/dn_xu,dn_yr,dn_zr, dn_tm/)
-        dimsizes = (/ xi_u,  eta_rho,  nz, 0/)
-        varid = nccreate(ncid,'u_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','u at nrhs (n+1/2), corrector')
-        ierr = nf90_put_att(ncid,varid,'units','m/s' )
-        varid = nccreate(ncid,'flxu_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','FlxU at n+1/2, corrector')
-        ierr = nf90_put_att(ncid,varid,'units','m^3/s' )
-        dimnames = (/dn_xr,dn_yv,dn_zr, dn_tm/)
-        dimsizes = (/ xi_rho,  eta_v,  nz,    0/)
-        varid = nccreate(ncid,'v_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','v at nrhs (n+1/2), corrector')
-        ierr = nf90_put_att(ncid,varid,'units','m/s' )
-        varid = nccreate(ncid,'flxv_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','FlxV at n+1/2, corrector')
-        ierr = nf90_put_att(ncid,varid,'units','m^3/s' )
-        dimnames = (/dn_xr,dn_yr,dn_zr, dn_tm/)
-        dimsizes = (/ xi_rho,  eta_rho, nz,    0/)
-        varid = nccreate(ncid,'w_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','w at nrhs (n+1/2), corrector, w-levels 1..nz')
-        ierr = nf90_put_att(ncid,varid,'units','m/s' )
-        dimnames = (/dn_xr,dn_yr,dn_zw, dn_tm/)
-        dimsizes = (/ xi_rho,  eta_rho, nz+1,  0/)
-        varid = nccreate(ncid,'we_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','We (explicit vertical flux) at n+1/2, corrector')
-        ierr = nf90_put_att(ncid,varid,'units','m^3/s' )
-        varid = nccreate(ncid,'wi_rhs',dimnames,dimsizes,diag_prec)
-        ierr = nf90_put_att(ncid,varid,'long_name','Wi (implicit vertical flux) at n+1/2, corrector')
-        ierr = nf90_put_att(ncid,varid,'units','m^3/s' )
 # endif
 
       endif
@@ -1244,13 +1205,6 @@
         enddo
         call ncwrite(ncid,'u_nhp',ud(1:i1,j0:j1,:,inhp),start)
         call ncwrite(ncid,'v_nhp',vd(i0:i1,1:j1,:,inhp),start)
-        call ncwrite(ncid,'u_rhs',   u_rhs_d(1:i1,j0:j1,:),start)
-        call ncwrite(ncid,'flxu_rhs',flxu_d (1:i1,j0:j1,:),start)
-        call ncwrite(ncid,'v_rhs',   v_rhs_d(i0:i1,1:j1,:),start)
-        call ncwrite(ncid,'flxv_rhs',flxv_d (i0:i1,1:j1,:),start)
-        call ncwrite(ncid,'w_rhs',   w_rhs_d(i0:i1,j0:j1,:),start)
-        call ncwrite(ncid,'we_rhs',  we_d(i0:i1,j0:j1,0:nz),start)
-        call ncwrite(ncid,'wi_rhs',  wi_d(i0:i1,j0:j1,0:nz),start)
 # endif
 
       end subroutine wrt_diag_uv  !]

@@ -86,14 +86,6 @@
             enddo
           enddo
         enddo
-        ! the fields the corrector's kernels advect and advect with
-        u_rhs_d(1:nx+1,1:ny,1:nz) = u(1:nx+1,1:ny,1:nz,nrhs)
-        v_rhs_d(1:nx,1:ny+1,1:nz) = v(1:nx,1:ny+1,1:nz,nrhs)
-        w_rhs_d(1:nx,1:ny,1:nz)   = w(1:nx,1:ny,1:nz,nrhs)
-        flxu_d(1:nx+1,1:ny,1:nz)  = FlxU(1:nx+1,1:ny,1:nz)
-        flxv_d(1:nx,1:ny+1,1:nz)  = FlxV(1:nx,1:ny+1,1:nz)
-        we_d(1:nx,1:ny,0:nz)      = We(1:nx,1:ny,0:nz)
-        wi_d(1:nx,1:ny,0:nz)      = Wi(1:nx,1:ny,0:nz)
       endif
 
       do k=1,nz
