@@ -66,6 +66,7 @@
       type (ncforce) :: nc_w_e = ncforce( vname='w_east', tname='bry_time')
       type (ncforce) :: nc_w_s = ncforce( vname='w_south', tname='bry_time')
       type (ncforce) :: nc_w_n = ncforce( vname='w_north', tname='bry_time')
+      logical,dimension(4) :: w_bry_dat = .false.  ! w_west,east,south,north found in bry files
 #endif
 
       public :: set_bry_all
@@ -111,6 +112,11 @@
         allocate(v_west(0:ny+1,nz),nc_v_w%vdata( 1:j1,nz,2) )
 # ifdef NHMG
         allocate( w_west(0:ny+1,nz), nc_w_w%vdata(j0:j1,nz,2) )
+        if (inode==0) then
+          w_bry_dat(1) = in_frc_files(nc_w_w%vname)
+          if (.not.w_bry_dat(1) .and. jnode==0)
+     &      write(*,*) 'boundary: w_west not in bry files, set to 0'
+        endif
 # endif
         allocate( t_west(0:ny+1,nz,nt) )
         do itrc=1,nt
@@ -132,6 +138,11 @@
         allocate( nc_v_e%vdata( 1:j1,nz,2) )
 #    ifdef NHMG
         allocate( w_east(0:ny+1,nz), nc_w_e%vdata(j0:j1,nz,2) )
+        if (inode==npx-1) then
+          w_bry_dat(2) = in_frc_files(nc_w_e%vname)
+          if (.not.w_bry_dat(2) .and. jnode==0)
+     &      write(*,*) 'boundary: w_east not in bry files, set to 0'
+        endif
 #    endif
         allocate( t_east(0:ny+1,nz,nt) )
         do itrc=1,nt
@@ -153,6 +164,11 @@
         allocate( nc_v_s%vdata(i0:i1,nz,2) )
 #    ifdef NHMG
         allocate( w_south(0:nx+1,nz), nc_w_s%vdata(i0:i1,nz,2) )
+        if (jnode==0) then
+          w_bry_dat(3) = in_frc_files(nc_w_s%vname)
+          if (.not.w_bry_dat(3) .and. inode==0)
+     &      write(*,*) 'boundary: w_south not in bry files, set to 0'
+        endif
 #    endif
         allocate( t_south(0:nx+1,nz,nt) )
         do itrc=1,nt
@@ -174,6 +190,11 @@
         allocate( nc_v_n%vdata(i0:i1,nz,2) )
 #    ifdef NHMG
         allocate( w_north(0:nx+1,nz), nc_w_n%vdata(i0:i1,nz,2) )
+        if (jnode==npy-1) then
+          w_bry_dat(4) = in_frc_files(nc_w_n%vname)
+          if (.not.w_bry_dat(4) .and. inode==0)
+     &      write(*,*) 'boundary: w_north not in bry files, set to 0'
+        endif
 #    endif
         allocate( t_north(0:nx+1,nz,nt) )
         do itrc=1,nt
@@ -203,8 +224,11 @@
         call set_frc_data( nc_u_w, var2d=u_west(j0:j1,:), obry=1 )
         call set_frc_data( nc_v_w, var2d=v_west( 1:j1,:), obry=1 )
 #     ifdef NHMG
-!       call set_frc_data( nc_w_w, var2d=w_west(j0:j1,:), obry=1 )
-        w_west = 0
+        if (w_bry_dat(1)) then
+          call set_frc_data( nc_w_w, var2d=w_west(j0:j1,:), obry=1 )
+        else
+          w_west = 0
+        endif
 #     endif
         do itrc=1,nt
           if (t_bry_dat(itrc)) then
@@ -222,8 +246,11 @@
         call set_frc_data( nc_u_e, var2d=u_east(j0:j1,:), obry=1 )
         call set_frc_data( nc_v_e, var2d=v_east( 1:j1,:), obry=1 )
 #     ifdef NHMG
-!       call set_frc_data( nc_w_e, var2d=w_east(j0:j1,:), obry=1 )
-        w_east = 0
+        if (w_bry_dat(2)) then
+          call set_frc_data( nc_w_e, var2d=w_east(j0:j1,:), obry=1 )
+        else
+          w_east = 0
+        endif
 #     endif
         do itrc=1,nt
           if (t_bry_dat(itrc)) then
@@ -241,8 +268,11 @@
         call set_frc_data( nc_u_s, var2d=u_south( 1:i1,:), obry=1 )
         call set_frc_data( nc_v_s, var2d=v_south(i0:i1,:), obry=1 )
 #     ifdef NHMG
-!       call set_frc_data( nc_w_s, var2d=w_south(i0:i1,:), obry=1 )
-        w_south = 0
+        if (w_bry_dat(3)) then
+          call set_frc_data( nc_w_s, var2d=w_south(i0:i1,:), obry=1 )
+        else
+          w_south = 0
+        endif
 #     endif
         do itrc=1,nt
           if (t_bry_dat(itrc)) then
@@ -260,8 +290,11 @@
         call set_frc_data( nc_u_n, var2d=u_north( 1:i1,:), obry=1 )
         call set_frc_data( nc_v_n, var2d=v_north(i0:i1,:), obry=1 )
 #     ifdef NHMG
-!       call set_frc_data( nc_w_n, var2d=w_north(i0:i1,:), obry=1 )
-        w_north = 0
+        if (w_bry_dat(4)) then
+          call set_frc_data( nc_w_n, var2d=w_north(i0:i1,:), obry=1 )
+        else
+          w_north = 0
+        endif
 #     endif
         do itrc=1,nt
           if (t_bry_dat(itrc)) then
@@ -273,6 +306,25 @@
       endif
 
       end subroutine set_bry_all  !]
+!----------------------------------------------------------------------
+      logical function in_frc_files(vname) ![
+      ! True if vname is found in any of the forcing files
+      use netcdf
+      implicit none
+      character(len=*),intent(in) :: vname
+      integer :: ifile,ncid,vid,ierr
+
+      in_frc_files = .false.
+      do ifile=1,max_frc
+        ierr = nf90_open(frcfile(ifile),nf90_nowrite,ncid)
+        if (ierr/=nf90_noerr) cycle
+        ierr = nf90_inq_varid(ncid,vname,vid)
+        in_frc_files = (ierr==nf90_noerr)
+        ierr = nf90_close(ncid)
+        if (in_frc_files) return
+      enddo
+
+      end function in_frc_files !]
 
 !----------------------------------------------------------------------
 

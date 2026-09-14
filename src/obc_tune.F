@@ -534,7 +534,7 @@
         endif
         ierr=nf90_inq_varid (ncid, 'ub_east', varid)
         if (ierr == nf90_noerr) then
-          call ncread(ncid,'ub_east', ub_east(i0:j1),(/1,record/))
+          call ncread(ncid,'ub_east', ub_east(j0:j1),(/1,record/))
         else
           if (mynode==0) print *,'--WARNING: ub_east'
      &      ,' not in initial file, setting to one.'
