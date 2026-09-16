@@ -71,7 +71,8 @@
       private
 #ifdef NH_IMPLICIT_FS
 
-      real, public :: theta_fs = 0.5    ! implicitness of the surface; env THETA_FS
+      real, public :: theta_fs = 0.6    ! implicitness of the surface (0.5 = CN,
+                                        ! undamped: unstable on LOCK); env THETA_FS overrides
       real, allocatable, dimension(:,:) :: Un, Vn   ! transports at time n
       real, allocatable, dimension(:,:), public :: DU_half, DV_half  ! predictor target transports
 
