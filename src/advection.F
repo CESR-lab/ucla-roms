@@ -63,6 +63,7 @@
       public w_vadv_c4
 # ifdef NHMG
       public w_metric
+      public w_retilt
 # endif
 
       contains
@@ -1447,6 +1448,80 @@
       end subroutine w_vadv_c4 !]
 !----------------------------------------------------------------
 # ifdef NHMG
+      subroutine calc_tilt(it) ![
+      ! tilt = z_x*u + z_y*v at the w-levels for time slot it, with
+      ! NHMG's slopes (frozen with the projection matrix) and T's W-row
+      ! averaging: cell slope x mean face velocity, mean of the two
+      ! cells sharing the level; one cell at the surface; 0 at the
+      ! bottom face, which carries no momentum.
+      use mg_grids, only: mggrid => grid
+
+      ! input
+      integer, intent(in) :: it
+      ! local
+      integer :: i,j,k
+
+      do k=1,nz
+        do j=0,ny+1
+          do i=0,nx+1
+            tilt(i,j,k) =
+     &        mggrid(1)%zxdy(k,j,i)/mggrid(1)%dy(j,i)
+     &                 *0.5*(u(i,j,k,it)+u(i+1,j,k,it))
+     &      + mggrid(1)%zydx(k,j,i)/mggrid(1)%dx(j,i)
+     &                 *0.5*(v(i,j,k,it)+v(i,j+1,k,it))
+          enddo
+        enddo
+      enddo
+      do k=1,nz-1                    ! in place: tilt(k+1) still cell k+1
+        do j=0,ny+1
+          do i=0,nx+1
+            tilt(i,j,k) = 0.5*(tilt(i,j,k)+tilt(i,j,k+1))
+          enddo
+        enddo
+      enddo
+      tilt(:,:,0) = 0.
+
+      end subroutine calc_tilt !]
+!----------------------------------------------------------------
+      subroutine w_retilt(cff) ![
+      ! w -> w + cff*tilt at time levels n and n-1, with the current
+      ! NHMG slopes.  Called around nhmg_matrices, cff=+1 before and
+      ! -1 after: the prognostic w is relative to the sigma slopes
+      ! that T froze, so refreshing the slopes without this shift
+      ! would jump the Cartesian velocity w_c = w + tilt (and the
+      ! kinetic energy) by (dz_x)*u + (dz_y)*v.  This is the lumped
+      ! slope-tendency term U dz_x/dt + V dz_y/dt of the W equation.
+      ! The shift leaves a sigma-frame divergence of second order in
+      ! the slope change, removed by the next projection.
+
+      ! input
+      real, intent(in) :: cff
+      ! local
+      integer :: i,j,k,it,indx
+
+      indx = 3-nstp
+      do it=1,2
+        if (it==1) then
+          call calc_tilt(nstp)
+        else
+          call calc_tilt(indx)
+        endif
+        do k=1,nz
+          do j=0,ny+1
+            do i=0,nx+1
+              if (it==1) then
+                w(i,j,k,nstp) = w(i,j,k,nstp) + cff*tilt(i,j,k)
+              else
+                w(i,j,k,indx) = w(i,j,k,indx) + cff*tilt(i,j,k)
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+      call exchange_xxx(w(:,:,:,nstp),w(:,:,:,indx))
+
+      end subroutine w_retilt !]
+!----------------------------------------------------------------
       subroutine w_metric(ru,rv,rw) ![
 
       ! Metric terms of the W equation and the bottom-row completion
@@ -1500,29 +1575,8 @@
         dflag = 1.
       endif
 
-      !-- 1. tilt = z_x*u + z_y*v at w-levels (T's W-row averaging:
-      !      cell slope x mean face velocity, mean of the two cells
-      !      sharing the level; one cell at the surface; 0 at the
-      !      bottom face, which carries no momentum) -----------------
-      do k=1,nz
-        do j=0,ny+1
-          do i=0,nx+1
-            tilt(i,j,k) =
-     &        mggrid(1)%zxdy(k,j,i)/mggrid(1)%dy(j,i)
-     &                 *0.5*(u(i,j,k,nrhs)+u(i+1,j,k,nrhs))
-     &      + mggrid(1)%zydx(k,j,i)/mggrid(1)%dx(j,i)
-     &                 *0.5*(v(i,j,k,nrhs)+v(i,j+1,k,nrhs))
-          enddo
-        enddo
-      enddo
-      do k=1,nz-1                    ! in place: tilt(k+1) still cell k+1
-        do j=0,ny+1
-          do i=0,nx+1
-            tilt(i,j,k) = 0.5*(tilt(i,j,k)+tilt(i,j,k+1))
-          enddo
-        enddo
-      enddo
-      tilt(:,:,0) = 0.
+      !-- 1. tilt = z_x*u + z_y*v at w-levels ----------------------
+      call calc_tilt(nrhs)
 
       !-- 2. C2 u-CV advection force, faces i=1..nx+1, rows j=0..ny,
       !      total vertical flux We+Wi ----------------------------------

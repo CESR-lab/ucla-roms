@@ -261,6 +261,7 @@ CR      write(*,*)  ' -2' MYID
       use param
 #ifdef NHMG
       use nhmg
+      use advection, only: w_retilt
 #endif
       use grid
       use ocean_vars
@@ -326,9 +327,13 @@ CR      write(*,*)  ' -2' MYID
 
 #ifdef NHMG
       if (mod(iic,20)==0) then
+        ! refresh the frozen metrics of T; w is relative to the sigma
+        ! slopes, so carry it through as the Cartesian w_c (w_retilt)
+        call w_retilt(+1.)
         call nhmg_matrices(nx,ny,nz,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
      &                   dm_r(0:nx+1,0:ny+1),
      &                   dn_r(0:nx+1,0:ny+1)    )
+        call w_retilt(-1.)
       endif
 #endif
 
