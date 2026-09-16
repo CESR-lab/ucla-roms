@@ -43,6 +43,8 @@
       ! w_metric work space: C2 u,v advection forces and the slope
       ! tilt z_x*u + z_y*v at w-levels (see w_metric)
       real,allocatable,dimension(:,:,:) :: cu2,cv2,tilt
+      real,allocatable,dimension(:,:),public :: wbot  ! provisional bottom
+                                     ! flux W*(0) of the ghost bottom
 # endif
 
       public init_advection
@@ -91,7 +93,8 @@
       allocate(cu2 (GLOBAL_2D_ARRAY,  nz))
       allocate(cv2 (GLOBAL_2D_ARRAY,  nz))
       allocate(tilt(GLOBAL_2D_ARRAY,0:nz))
-      cu2 = 0.;  cv2 = 0.;  tilt = 0.
+      allocate(wbot(GLOBAL_2D_ARRAY))
+      cu2 = 0.;  cv2 = 0.;  tilt = 0.;  wbot = 0.
 # endif
 
       end subroutine init_advection !]
@@ -1342,6 +1345,9 @@
 !----------------------------------------------------------------
       subroutine w_vadv_up3(rw,j) ![
 !DIR$ ATTRIBUTES FORCEINLINE :: w_vadv_up3
+# ifdef NHMG
+      use mg_namelist, only: ghost_bottom
+# endif
 
       ! Vertical up3 advection of vertical momentum w in row j
       ! (non-hydrostatic only). Fluxes live at cell centers k
@@ -1387,6 +1393,13 @@
           rw(i,j,k) = rw(i,j,k) -FC(i,k+1)+FC(i,k)
         enddo
       enddo
+# ifdef NHMG
+      if (ghost_bottom) then         ! bottom half-cell (w(0) = 0 is not
+        do i=1,nx                    ! stepped): the flux FC(1) leaves it
+          rw(i,j,0) = rw(i,j,0) -FC(i,1)
+        enddo
+      endif
+# endif
 
       ! flux at surface is zero because it moves with omega.
       ! this also takes care of the half-volume of w(nz)
@@ -1400,6 +1413,9 @@
 !----------------------------------------------------------------
       subroutine w_vadv_c4(rw,j) ![
 !DIR$ ATTRIBUTES FORCEINLINE :: w_vadv_c4
+# ifdef NHMG
+      use mg_namelist, only: ghost_bottom
+# endif
 
       ! Vertical c4 (non-dissipative) advection of vertical momentum
       ! w in row j (non-hydrostatic only). Centered counterpart of
@@ -1438,6 +1454,13 @@
           rw(i,j,k) = rw(i,j,k) -FC(i,k+1)+FC(i,k)
         enddo
       enddo
+# ifdef NHMG
+      if (ghost_bottom) then         ! bottom half-cell (w(0) = 0 is not
+        do i=1,nx                    ! stepped): the flux FC(1) leaves it
+          rw(i,j,0) = rw(i,j,0) -FC(i,1)
+        enddo
+      endif
+# endif
 
       ! flux at surface is zero because it moves with omega.
       ! this also takes care of the half-volume of w(nz)
@@ -1452,9 +1475,12 @@
       ! tilt = z_x*u + z_y*v at the w-levels for time slot it, with
       ! NHMG's slopes (frozen with the projection matrix) and T's W-row
       ! averaging: cell slope x mean face velocity, mean of the two
-      ! cells sharing the level; one cell at the surface; 0 at the
-      ! bottom face, which carries no momentum.
+      ! cells sharing the level; one cell at the surface and, with the
+      ! ghost bottom, at the bottom face (w(0) = 0: w_c = tilt there,
+      ! the kinematic condition); 0 at the bottom with the reduced T,
+      ! whose bottom face carries no momentum.
       use mg_grids, only: mggrid => grid
+      use mg_namelist, only: ghost_bottom
 
       ! input
       integer, intent(in) :: it
@@ -1472,6 +1498,11 @@
           enddo
         enddo
       enddo
+      if (ghost_bottom) then
+        tilt(:,:,0) = tilt(:,:,1)    ! cell 1 (before the averaging)
+      else
+        tilt(:,:,0) = 0.
+      endif
       do k=1,nz-1                    ! in place: tilt(k+1) still cell k+1
         do j=0,ny+1
           do i=0,nx+1
@@ -1479,7 +1510,6 @@
           enddo
         enddo
       enddo
-      tilt(:,:,0) = 0.
 
       end subroutine calc_tilt !]
 !----------------------------------------------------------------
@@ -1539,7 +1569,14 @@
       !     a_u = CU_c2/(dxu*Arx),  a_v = CV_c2/(dyv*Ary),
       ! with CU_c2, CV_c2 the C2 flux-form advection forces of u and v,
       ! and the k=1 rows of T (gamma, beta: the eliminated bottom w)
-      ! completing ru, rv.  Both pieces use the same C2 operator, so
+      ! completing ru, rv.  With the ghost bottom (NHMG ghost_bottom)
+      ! T is the unreduced operator: the k=1 rows are interior rows
+      ! (nothing to complete) and the bottom face is a half-cell
+      ! control volume like the surface one, with its own row rw(0)
+      ! (adv(tilt) and the kinematic row of T); w(0) = 0 is never
+      ! stepped, rw(0) is handed to the projection as a provisional
+      ! bottom flux and removed through the ghost pressure.
+      ! Both pieces use the same C2 operator, so
       ! the transport parts cancel and what remains is the local
       ! source U u.grad(z_x) + V u.grad(z_y): no derivative acts on
       ! the velocity, no dispersion, no dt constraint.  The forces are
@@ -1558,13 +1595,13 @@
       ! Units: ru,rv,rw volume integrated, m^4/s^2.
 
       use mg_grids, only: mggrid => grid
-      use mg_namelist, only: surface_neumann
+      use mg_namelist, only: surface_neumann, ghost_bottom
 
       ! Import/export
       real,dimension(GLOBAL_2D_ARRAY,  nz) :: ru,rv
       real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
       ! local
-      integer :: i,j,k
+      integer :: i,j,k,k0
       real    :: cff,Uflxw,Vflxw,dwr,gam,dflag
 
       if (.not.uv_adv) return
@@ -1662,12 +1699,17 @@
       if (north_bnd) cv2(:,ny+1,:) = 0.
 
       !-- 4. rw += adv_c2(tilt): horizontal (level-averaged fluxes,
-      !      half flux in the surface half-cell) and vertical (total
-      !      flux, no flux through bottom face or moving surface) ------
-      do k=1,nz
+      !      half flux in the surface and bottom half-cells) and
+      !      vertical (total flux, none through the bottom face or the
+      !      moving surface); level 0 only with the ghost bottom ------
+      k0 = 1
+      if (ghost_bottom) k0 = 0
+      do k=k0,nz
         do j=1,ny
           do i=1,nx+1
-            if (k<nz) then
+            if (k==0) then
+              Uflxw = 0.5* FlxU(i,j,1)
+            elseif (k<nz) then
               Uflxw = 0.5*(FlxU(i,j,k)+FlxU(i,j,k+1))
             else
               Uflxw = 0.5* FlxU(i,j,k)
@@ -1677,7 +1719,9 @@
         enddo
         do j=1,ny+1
           do i=1,nx
-            if (k<nz) then
+            if (k==0) then
+              Vflxw = 0.5* FlxV(i,j,1)
+            elseif (k<nz) then
               Vflxw = 0.5*(FlxV(i,j,k)+FlxV(i,j,k+1))
             else
               Vflxw = 0.5* FlxV(i,j,k)
@@ -1698,7 +1742,16 @@
             cff = 0.5*( We(i,j,k  )+Wi(i,j,k  )
      &                 +We(i,j,k-1)+Wi(i,j,k-1) )
             wrk2(i,j) = cff*0.5*(tilt(i,j,k)+tilt(i,j,k-1))
-            if (k>1) rw(i,j,k-1) = rw(i,j,k-1) + wrk1(i,j) - wrk2(i,j)
+            if (k>1) then
+              rw(i,j,k-1) = rw(i,j,k-1) + wrk1(i,j) - wrk2(i,j)
+            elseif (ghost_bottom) then
+              ! leaves the bottom half-cell; with it the implicit part
+              ! of the w flux (C2, explicit here: the kernels give the
+              ! bottom row their We flux, vmix_solve_w applies Wi to
+              ! w(1) only)
+              rw(i,j,0) = rw(i,j,0) - wrk2(i,j)
+     &                  - 0.25*(Wi(i,j,1)+Wi(i,j,0))*w(i,j,1,nrhs)
+            endif
             wrk1(i,j) = wrk2(i,j)
           enddo
         enddo
@@ -1739,10 +1792,25 @@
           rw(i,j,k) = rw(i,j,k) + dflag*mggrid(1)%dzw(k+1,j,i)*dwr
         enddo
       enddo
+      if (ghost_bottom) then             ! bottom row: the kinematic row
+        k = 1                            ! of the unreduced T, mirror of
+        do j=1,ny                        ! the surface row (NHMG cell 1)
+          do i=1,nx
+            dwr = -0.5*(
+     &         mggrid(1)%zxdy(k,j,i)*( cu2(i  ,j,k)/mggrid(1)%Arx(k,j,i  )
+     &                                +cu2(i+1,j,k)/mggrid(1)%Arx(k,j,i+1) )
+     &        +mggrid(1)%zydx(k,j,i)*( cv2(i,j  ,k)/mggrid(1)%Ary(k,j  ,i)
+     &                                +cv2(i,j+1,k)/mggrid(1)%Ary(k,j+1,i) )
+     &                  )
+            rw(i,j,0) = rw(i,j,0) + mggrid(1)%dzw(1,j,i)*dwr
+          enddo
+        enddo
+        return                           ! k=1 u,v rows are interior rows
+      endif
 
       !-- 6. bottom rows of u,v: gamma scaling and beta cross terms
-      !      (the k=1 rows of T applied to a_u,a_v; interior rows of
-      !      T leave the advection forces unchanged) ------------------
+      !      (the k=1 rows of the reduced T applied to a_u,a_v; the
+      !      interior rows leave the advection forces unchanged) ------
       do j=1,ny
         do i=1,nx
           if (i==1 .and. west_bnd) cycle

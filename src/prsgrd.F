@@ -28,6 +28,9 @@
      &                                      dR,dZ, FC,dZx,rx,dRx)
 
       use param
+# ifdef NHMG
+      use mg_namelist, only: ghost_bottom
+# endif
 #ifdef WEC
       use wec_frc, cff1 => cff_ext, cff2 => cff_ext2
 #endif
@@ -496,6 +499,11 @@ c    &            -0.75*rx(i,j)-0.125*(rx(i,j-1)+rx(i,j+1))
          do i=1,nx
             rw(i,j,nz) = -0.5*dR(i,nz)*Hz(i,j,nz)
          enddo
+         if (ghost_bottom) then     ! bottom half-cell (unreduced T):
+            do i=1,nx               ! mirror of the surface row
+               rw(i,j,0) = -0.5*dR(i,1)*Hz(i,j,1)
+            enddo
+         endif
       enddo
       if (CORR_STAGE.and.calc_diag.and.diag_uv) then
         do k=1,nz

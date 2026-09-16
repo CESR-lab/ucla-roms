@@ -32,6 +32,7 @@
 #endif
       use zstar_geom
       use mg_grids, mggrid => grid
+      use mg_namelist, only: ghost_bottom
       use mg_tictoc, only : tic, toc
 # endif
 # ifdef WEC
@@ -453,8 +454,21 @@
 #  ifdef NH_IMPLICIT_FS
       call implicit_fs_surface_flux   ! Robin: scale w* at the surface by dzw/(dzw+beta)
 #  endif
-      call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
+      if (ghost_bottom) then
+        ! provisional bottom-face flux: the force on the bottom half-cell
+        ! as a flux (the surface conversion above), removed by the
+        ! projection through the ghost pressure; w(0) = 0 is not stepped
+        do j=1,ny
+          do i=1,nx
+            wbot(i,j) = dt*rw(i,j,0)/(0.5*Hz(i,j,1))
+          enddo
+        enddo
+        call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
+     &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew),wbot )
+      else
+        call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
      &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
+      endif
 
 
       ! At this point u,v,w are fluxes with the dimension of m^3/s
@@ -515,6 +529,15 @@
           enddo
         endif
       enddo
+      if (ghost_bottom) then
+        ! bottom face: the projection removes the provisional flux
+        ! exactly (w stays 0); its trend is kept for the diagnostics
+        do j=1,ny
+          do i=1,nx
+            nhdw(i,j,0,iprec1) = mggrid(1)%dw(1,j,i)/dt
+          enddo
+        enddo
+      endif
 
       if (diag_uv) then                 ! projection correction terms
         do k=1,nz
