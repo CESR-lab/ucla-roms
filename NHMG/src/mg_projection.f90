@@ -16,22 +16,99 @@ module mg_projection
   ! interior land mask can be folded in later through the same arrays.
   ! umsk(j,i): u-face i (west face of cell i);  vmsk(j,i): v-face j.
   real(kind=rp), dimension(:,:), allocatable :: umsk, vmsk
+  ! rmsk(j,i): cell mask (1 fluid, 0 land); have_mask: an interior land
+  ! mask exists somewhere (global), which switches the coarse operators
+  ! to Galerkin aggregation and adds identity rows for land
+  real(kind=rp), dimension(:,:), allocatable :: rmsk
+  logical :: have_mask = .false.
 
 contains
   !-----------------------------------------------------------------------------------
   subroutine set_face_masks()
+    ! walls of the domain perimeter (zeroed on top of any land mask set
+    ! by set_land_masks)
     integer(kind=ip) :: nx, ny
     nx = grid(1)%nx
     ny = grid(1)%ny
-    if (.not.allocated(umsk)) allocate(umsk(0:ny+1,0:nx+1))
-    if (.not.allocated(vmsk)) allocate(vmsk(0:ny+1,0:nx+1))
-    umsk = one
-    vmsk = one
+    if (.not.allocated(umsk)) then
+       allocate(umsk(0:ny+1,0:nx+1));  umsk = one
+    endif
+    if (.not.allocated(vmsk)) then
+       allocate(vmsk(0:ny+1,0:nx+1));  vmsk = one
+    endif
     if (grid(1)%neighb(4) == MPI_PROC_NULL) umsk(:,1   ) = zero   ! west wall
     if (grid(1)%neighb(2) == MPI_PROC_NULL) umsk(:,nx+1) = zero   ! east wall
     if (grid(1)%neighb(1) == MPI_PROC_NULL) vmsk(1   ,:) = zero   ! south wall
     if (grid(1)%neighb(3) == MPI_PROC_NULL) vmsk(ny+1,:) = zero   ! north wall
   end subroutine set_face_masks
+
+  !-----------------------------------------------------------------------------------
+  subroutine set_land_masks(rm,um,vm)
+    ! interior land mask from the model (fine grid, halos included):
+    ! cells rm, u faces um (face i = west face of cell i), v faces vm
+    real(kind=rp), dimension(0:,0:), intent(in) :: rm,um,vm
+    integer(kind=ip) :: nx,ny,ierr
+    logical :: l
+    nx = grid(1)%nx;  ny = grid(1)%ny
+    if (.not.allocated(umsk)) allocate(umsk(0:ny+1,0:nx+1))
+    if (.not.allocated(vmsk)) allocate(vmsk(0:ny+1,0:nx+1))
+    if (.not.allocated(rmsk)) allocate(rmsk(0:ny+1,0:nx+1))
+    umsk = um;  vmsk = vm;  rmsk = rm
+    l = any(rmsk(1:ny,1:nx) == zero)
+    call MPI_Allreduce(l,have_mask,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,ierr)
+    grid(1)%lmsk = rmsk
+    if (myrank==0 .and. have_mask) write(*,*) '    - interior land mask: coarse operators by Galerkin aggregation'
+  end subroutine set_land_masks
+
+  !-----------------------------------------------------------------------------------
+  subroutine set_level_masks()
+    ! fluid fraction of the coarse columns: mean over the 2x2 block,
+    ! with the gather protocol of dx (see set_obc_leak)
+    integer(kind=ip) :: lev,nx,ny,nxf,nyf,nxc,nyc,i,j
+    real(kind=rp), dimension(:,:), pointer :: lf,lc
+    do lev = 2,nlevs
+       nx = grid(lev)%nx;  ny = grid(lev)%ny
+       nxf = grid(lev-1)%nx;  nyf = grid(lev-1)%ny
+       lf => grid(lev-1)%lmsk
+       if (grid(lev)%gather == 1) then
+          nxc = nx/grid(lev)%ngx;  nyc = ny/grid(lev)%ngy
+          allocate(lc(0:nyc+1,0:nxc+1))
+       else
+          nxc = nx;  nyc = ny
+          lc => grid(lev)%lmsk
+       endif
+       lc = one
+       do i = 1,nxc
+          do j = 1,nyc
+             lc(j,i) = qrt*(lf(2*j-1,2*i-1) + lf(2*j,2*i-1) + lf(2*j-1,2*i) + lf(2*j,2*i))
+          enddo
+       enddo
+       if (grid(lev)%gather == 1) then
+          call gather(lev,lc,grid(lev)%lmsk)
+          deallocate(lc)
+       endif
+       call fill_halo(lev,grid(lev)%lmsk)
+    enddo
+  end subroutine set_level_masks
+
+  !-----------------------------------------------------------------------------------
+  subroutine land_rows(lev)
+    ! identity rows for land columns: no couplings (the ones through
+    ! masked faces are already zero), unit diagonal, so p = b = 0 there
+    integer(kind=ip), intent(in) :: lev
+    integer(kind=ip) :: i,j,k,nx,ny,nz
+    nx = grid(lev)%nx;  ny = grid(lev)%ny;  nz = grid(lev)%nz
+    do i = 1,nx
+       do j = 1,ny
+          if (grid(lev)%lmsk(j,i) == zero) then
+             do k = 1,nz
+                grid(lev)%cA(:,k,j,i) = zero
+                grid(lev)%cA(1,k,j,i) = -one
+             enddo
+          endif
+       enddo
+    enddo
+  end subroutine land_rows
 
   !-----------------------------------------------------------------------------------
   subroutine set_matrices(first)
@@ -77,6 +154,7 @@ contains
     endif
 
     if (allocated(obcrob_u)) call set_obc_leak()
+    if (have_mask) call set_level_masks()
 
     do lev = 1, nlevs
 
@@ -87,8 +165,9 @@ contains
        ! coarse operator by Galerkin aggregation of the finer one: always
        ! for a 2D level (nz = 1: the 3D formulas below do not apply to its
        ! 5-point storage), otherwise on request (coarse_galerkin)
-       if (lev > 1 .and. (coarse_galerkin .or. nz == 1)) then
+       if (lev > 1 .and. (coarse_galerkin .or. have_mask .or. nz == 1)) then
           call set_galerkin(lev)
+          if (have_mask) call land_rows(lev)
           full = .true.
           if (present(first)) full = first
           if (full) call level_check(lev)
@@ -312,9 +391,11 @@ contains
              call stage('stencil extraction (27 colours)')
              call assemble_masked_stencil()
           else
-             ! only the wall-adjacent rows differ from the formulas
+             ! only the rows next to walls and masked faces differ from
+             ! the formulas
              call refresh_wall_rows()
           endif
+          if (have_mask) call land_rows(1)
        endif
        if (lev == 1 .and. nlevs > 1) call stage('coarse levels')
 
@@ -465,10 +546,10 @@ contains
     do i = 1,grid(lev)%nx
        do j = 1,grid(lev)%ny
           cA(1,nzc,j,i) = cA(1,nzc,j,i) - grid(lev)%Arz(j,i)/grid(lev)%dzw(nzc+1,j,i) &
-               * grid(lev)%alpha(nzc,j,i) * sigtop(grid(lev)%dzw(nzc+1,j,i))
+               * grid(lev)%alpha(nzc,j,i) * sigtop(grid(lev)%dzw(nzc+1,j,i)) * grid(lev)%lmsk(j,i)
           if (allocated(obcrob_u)) then
              do k = 1,nzc
-                cA(1,k,j,i) = cA(1,k,j,i) - grid(lev)%leak(j,i)*grid(lev)%dz(k,j,i)
+                cA(1,k,j,i) = cA(1,k,j,i) - grid(lev)%leak(j,i)*grid(lev)%dz(k,j,i)*grid(lev)%lmsk(j,i)
              enddo
           endif
        enddo
@@ -566,6 +647,7 @@ contains
     real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw,x,y
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
     real(kind=rp) :: dint, dext, dnul, amax, v, gl(4), lc(4), gs(2), ls(2), sxy, syx
+    logical, allocatable :: clear(:,:)
 
     nx = grid(1)%nx;  ny = grid(1)%ny;  nz = grid(1)%nz
     p  => grid(1)%p;  du => grid(1)%du;  dv => grid(1)%dv;  dw => grid(1)%dw
@@ -573,6 +655,15 @@ contains
     x  => grid(1)%b;  y  => grid(1)%r        ! free work arrays at init
     pj = myrank/grid(1)%npx
     pi = mod(myrank,grid(1)%npx)
+
+    ! rows checked against the formulas: no masked face within 2 cells
+    allocate(clear(1:ny,1:nx));  clear = .true.
+    do i = 1,nx
+      do j = 1,ny
+        if (any(umsk(max(0,j-2):min(ny+1,j+2),max(0,i-2):min(nx+1,i+3)) == zero) .or. &
+            any(vmsk(max(0,j-2):min(ny+1,j+3),max(0,i-2):min(nx+1,i+2)) == zero)) clear(j,i) = .false.
+      enddo
+    enddo
 
     dint = zero;  dext = zero;  dnul = zero
 
@@ -783,13 +874,32 @@ contains
     integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,ig,jg,pi,pj
     real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
-    logical :: west,east,south,north
+    logical :: west,east,south,north,land
+    integer(kind=ip) :: li0,li1,lj0,lj1
 
     west  = grid(1)%neighb(4) == MPI_PROC_NULL
     east  = grid(1)%neighb(2) == MPI_PROC_NULL
     south = grid(1)%neighb(1) == MPI_PROC_NULL
     north = grid(1)%neighb(3) == MPI_PROC_NULL
-    if (.not.(west.or.east.or.south.or.north)) return
+    ! interior land on this rank: the rows within two cells of the land
+    ! box (the bottom cross terms reach one cell past a masked face)
+    land = .false.
+    if (have_mask) then
+       land = any(rmsk(1:grid(1)%ny,1:grid(1)%nx) == zero)
+       if (land) then
+          li0 = grid(1)%nx;  li1 = 1;  lj0 = grid(1)%ny;  lj1 = 1
+          do i = 1,grid(1)%nx
+             do j = 1,grid(1)%ny
+                if (rmsk(j,i) == zero) then
+                   li0 = min(li0,i);  li1 = max(li1,i);  lj0 = min(lj0,j);  lj1 = max(lj1,j)
+                endif
+             enddo
+          enddo
+          li0 = max(1,li0-2);  li1 = min(grid(1)%nx,li1+2)
+          lj0 = max(1,lj0-2);  lj1 = min(grid(1)%ny,lj1+2)
+       endif
+    endif
+    if (.not.(west.or.east.or.south.or.north.or.land)) return
 
     nx = grid(1)%nx;  ny = grid(1)%ny;  nz = grid(1)%nz
     p  => grid(1)%p;  du => grid(1)%du;  dv => grid(1)%dv;  dw => grid(1)%dw
@@ -823,6 +933,10 @@ contains
           if (east)  call rows(nx,nx,1,ny)
           if (south) call rows(1,nx,1, 1)
           if (north) call rows(1,nx,ny,ny)
+          if (land) then
+             call correction_uvw(i0=li0-1,i1=li1+1,j0=lj0-1,j1=lj1+1)
+             call rows(li0,li1,lj0,lj1)
+          endif
         enddo
       enddo
     enddo

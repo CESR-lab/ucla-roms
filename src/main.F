@@ -203,6 +203,7 @@
 #ifdef NH_IMPLICIT_FS
       call init_implicit_fs        ! sets the Robin coefficient robin_beta
 #endif
+      call nhmg_set_masks(nx,ny,halo,padd_X,padd_E,rmask,umask,vmask)
       call nhmg_matrices(nx,ny,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
      &                   dm_r(0:nx+1,0:ny+1),
      &                   dn_r(0:nx+1,0:ny+1)    )

@@ -342,6 +342,11 @@
         enddo
 
         call vmix_solve_w(w(:,:,:,nnew),dtau,dz,Av,om,j)
+        do k=1,nz                    ! no vertical velocity in land
+          do i=1,nx
+            w(i,j,k,nnew)=w(i,j,k,nnew)*rmask(i,j)
+          enddo
+        enddo
 
         !------- end computing of w(:,:,:,nnew) -----
 !]
@@ -385,6 +390,19 @@
 
       call u3dbc(wrk1)
       call v3dbc(wrk1)
+# ifdef NHMG
+      ! no velocity on land faces: the projection stores no correction
+      ! there, so the predictor must not carry the pressure-driven values
+      ! into the advection and metric kernels
+      do k=1,nz
+        do j=1,ny+1
+          do i=1,nx+1
+            u(i,j,k,nnew)=u(i,j,k,nnew)*umask(i,j)
+            v(i,j,k,nnew)=v(i,j,k,nnew)*vmask(i,j)
+          enddo
+        enddo
+      enddo
+# endif
 
 ! WARNING: Preliminary time step for 3D momentum equitions is not
 ! complete after this moment: the computed fields u,v(i,j,k,nnew)

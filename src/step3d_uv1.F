@@ -332,6 +332,17 @@
       enddo
 
 # if defined NHMG
+      ! the projection needs the land-masked provisional field: no flux
+      ! through land faces in the pre-match, the divergence or the
+      ! transports (without NHMG the mask is applied in step3d_uv2)
+      do k=1,nz
+        do j=1,ny+1
+          do i=1,nx+1
+            u(i,j,k,nnew)=u(i,j,k,nnew)*umask(i,j)
+            v(i,j,k,nnew)=v(i,j,k,nnew)*vmask(i,j)
+          enddo
+        enddo
+      enddo
 
       ! Translate to fluxes
       do k=1,nz

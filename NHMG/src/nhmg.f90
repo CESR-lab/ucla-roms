@@ -24,6 +24,7 @@ module nhmg
     logical :: solve_first = .true.      ! rhs check on the first solve
 
     public nhmg_matrices
+    public nhmg_set_masks
     public nhmg_init
     public nhmg_clean
     public nhmg_solve
@@ -77,6 +78,23 @@ contains
     call toc(1,'nhmg_init')
 
   end subroutine nhmg_init
+
+  !--------------------------------------------------------------
+  subroutine nhmg_set_masks(nx,ny,hl,pdx,pdy,rma,uma,vma)
+    ! land mask of the model (rho cells, u and v faces, halos included):
+    ! to be called once after nhmg_init and before the first
+    ! nhmg_matrices; without interior land nothing changes
+    integer(kind=ip), intent(in) :: nx,ny,hl,pdx,pdy
+    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy), intent(in) :: rma,uma,vma
+    real(kind=rp), dimension(0:ny+1,0:nx+1) :: rm,um,vm
+    integer(kind=ip) :: i,j
+    do i = 0,nx+1
+       do j = 0,ny+1
+          rm(j,i) = rma(i,j);  um(j,i) = uma(i,j);  vm(j,i) = vma(i,j)
+       enddo
+    enddo
+    call set_land_masks(rm,um,vm)
+  end subroutine nhmg_set_masks
 
   !--------------------------------------------------------------
   subroutine nhmg_matrices(nx,ny,nz,hl,pdx,pdy,zxa,zya,Hza,dxa,dya)
@@ -216,6 +234,16 @@ contains
           enddo
        enddo
     enddo
+    if (have_mask) then
+       ! land columns are identity rows: p = 0 there (the model masks the
+       ! provisional u,v on land faces before the solve; w in land is
+       ! rebuilt afterwards, so its divergence is dropped here)
+       do i = 1,nx
+          do j = 1,ny
+             if (rmsk(j,i) == zero) grid(1)%b(:,j,i) = zero
+          enddo
+       enddo
+    endif
 
     if (solve_first) then
        ! first solve: sanity of the right-hand side (model-side input)

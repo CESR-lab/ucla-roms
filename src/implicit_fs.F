@@ -257,9 +257,9 @@
 
       do j=1,ny
         do i=1,nx
-          zeta(i,j,knew)=zeta(i,j,kstp) - dt*pm(i,j)*pn(i,j)*(
+          zeta(i,j,knew)=( zeta(i,j,kstp) - dt*pm(i,j)*pn(i,j)*(
      &                       DU_avg2(i+1,j)-DU_avg2(i,j)
-     &                      +DV_avg2(i,j+1)-DV_avg2(i,j) )
+     &                      +DV_avg2(i,j+1)-DV_avg2(i,j) ) )*rmask(i,j)
         enddo
       enddo
       call zetabc(zeta(:,:,knew))
