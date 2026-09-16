@@ -2,7 +2,7 @@ title:
    Sloshing over seamount
 
 time_stepping: NTIMES   dt[sec]  NDTFAST  NINFO
-               160      0.025     20       10
+              6000      0.05      20       10
 
 S-coord: THETA_S,   THETA_B,    hc (m)
           0.0D0        0.0D0    10000
@@ -44,5 +44,5 @@ ubind: OBC binding velocity scale [m/s]
        0.1
        
 lin_rho_eos:  Tcoef    T0    Scoef   S0
-               1.0   0.0   0.000  0.0
+              -1.0   0.0   0.000  0.0
 
