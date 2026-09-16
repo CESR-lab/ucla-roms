@@ -117,7 +117,7 @@
                 w(nx+1,j,k,nnew)=(1.-cx)*( w(nx+1,j,k,nstp)
      &                          -max(cy,0.)*grad(nx+1,j  )
      &                          -min(cy,0.)*grad(nx+1,j+1)  )
-     &                            +cx *( w(nx  ,j,k,nnew)
+     &                            +cx *( w(nx  ,j,k,nstp)
      &                          -max(cy,0.)*grad(nx  ,j  )
      &                          -min(cy,0.)*grad(nx  ,j+1)  )
 
@@ -225,7 +225,7 @@
                 w(i,ny+1,k,nnew)=(1.-cx)*( w(i,ny+1,k,nstp)
      &                             -max(cy,0.)*grad(i  ,ny+1)
      &                             -min(cy,0.)*grad(i+1,ny+1) )
-     &                             +cx*( w(i,ny  ,k,nnew)
+     &                             +cx*( w(i,ny  ,k,nstp)
      &                             -max(cy,0.)*grad(i  ,ny  )
      &                             -min(cy,0.)*grad(i+1,ny  ) )
 
@@ -287,4 +287,3 @@
       endif
 
       end subroutine w3dbc
-

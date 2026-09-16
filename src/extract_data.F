@@ -492,6 +492,7 @@
 
       ! local
       integer :: i,itrc,ierr,ncid,k,record,indt
+      integer :: ii,jj
       character(len=30) :: obj_name
       character(len=99),save :: fname
       character(len=20)              :: tname
@@ -612,7 +613,14 @@
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
             endif
             if (obj(i)%w) then
-              call wvlcty (Wvl)
+              ! omega (m/s) at w-levels k=1..nz, as in his omega; We,Wi halos exchanged in omega.F
+              do k=1,nz
+                do jj=0,ny+1
+                  do ii=0,nx+1
+                    Wvl(ii,jj,k)=pm(ii,jj)*pn(ii,jj)*(We(ii,jj,k)+Wi(ii,jj,k))
+                  enddo
+                enddo
+              enddo
               oname = trim(obj(i)%set)//'_w'//trim(obj(i)%bnd)
               call interpolate(Wvl(-1:nx+2,-1:ny+2,1:nz),obj(i)%vari,coef,ip,jp)
               call ncwrite(ncid,oname,obj(i)%vari,start2D)
@@ -718,7 +726,7 @@
 #endif
           if (obj(i)%u)    call create_var(ncid,obj(i),'u',dname3,dsize3,indxU)
           if (obj(i)%v)    call create_var(ncid,obj(i),'v',dname3,dsize3,indxV)
-          if (obj(i)%w)    call create_var(ncid,obj(i),'w',dname3,dsize3,indxW)
+          if (obj(i)%w)    call create_var(ncid,obj(i),'w',dname3,dsize3,indxO)
           if (obj(i)%up)   call create_var(ncid,obj(i),'up',dname,dsize)
           if (obj(i)%vp)   call create_var(ncid,obj(i),'vp',dname,dsize)
           if (obj(i)%bgc) then

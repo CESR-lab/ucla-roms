@@ -374,11 +374,10 @@
       call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
      &           u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
 
-
       ! At this point u,v,w are fluxes with the dimension of m^3/s
       do k=1,nz
         do j=1,ny
-          do i=1,nx
+          do i=1,nx+1
             u(i,j,k,nnew) = (u(i,j,k,nnew) + mggrid(1)%du(k,j,i) )*pn_u(i,j)
 
             rufrc(i,j) = rufrc(i,j) + dn_u(i,j)*mggrid(1)%du(k,j,i)/dt
@@ -386,7 +385,7 @@
           enddo
         enddo
 
-        do j=1,ny
+        do j=1,ny+1
           do i=1,nx
             v(i,j,k,nnew) = (v(i,j,k,nnew) + mggrid(1)%dv(k,j,i) )*pm_v(i,j)
 
