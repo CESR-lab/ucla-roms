@@ -211,7 +211,7 @@ contains
 
   end subroutine fill_outer_halos
   !--------------------------------------------------------------
-  subroutine nhmg_solve(nx,ny,nz,hl,pdx,pdy,ua,va,wa)
+  subroutine nhmg_solve(nx,ny,nz,hl,pdx,pdy,ua,va,wa,wb)
 
     integer(kind=ip), intent(in) :: nx,ny,nz
     integer(kind=ip), intent(in) :: hl,pdx,pdy
@@ -219,6 +219,11 @@ contains
     real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in) :: ua
     real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in) :: va
     real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz+1),intent(in) :: wa
+    ! ghost bottom: provisional bottom-face flux W*(0) [m^3/s] of the
+    ! predictor (force on the bottom half-cell momentum), removed by the
+    ! projection through the ghost pressure; wa(:,:,1) itself stays the
+    ! model's bottom flux (zero)
+    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy), optional, intent(in) :: wb
 
     integer(kind=ip) :: i,j,k
 
@@ -234,6 +239,24 @@ contains
           enddo
        enddo
     enddo
+    if (ghost_bottom) then
+       ! ghost row: the bottom face's flux balance, W*(0) + dW(0) = 0;
+       ! cell 1 sees the same provisional flux through its bottom face
+       do i = 1,nx
+          do j = 1,ny
+             grid(1)%bg(j,i) = wa(i,j,1)
+          enddo
+       enddo
+       if (present(wb)) then
+          do i = 1,nx
+             do j = 1,ny
+                grid(1)%bg(j,i)  = grid(1)%bg(j,i)  + wb(i,j)
+                grid(1)%b(1,j,i) = grid(1)%b(1,j,i) - wb(i,j)
+             enddo
+          enddo
+       endif
+       call fill_halo(1,grid(1)%bg)
+    endif
     if (have_mask) then
        ! land columns are identity rows: p = 0 there (the model masks the
        ! provisional u,v on land faces before the solve; w in land is
@@ -241,6 +264,7 @@ contains
        do i = 1,nx
           do j = 1,ny
              if (rmsk(j,i) == zero) grid(1)%b(:,j,i) = zero
+             if (rmsk(j,i) == zero .and. ghost_bottom) grid(1)%bg(j,i) = zero
           enddo
        enddo
     endif
@@ -262,6 +286,8 @@ contains
     tscount = tscount + 1
 
     call correction_uvw()
+
+
 
 !   do i = 1,nx
 !      do j = 1,ny 

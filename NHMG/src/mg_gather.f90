@@ -204,4 +204,29 @@ contains
 
   end subroutine split
 
+  !----------------------------------------
+  subroutine split_2D(lev,x,y)
+    ! 2D twin of split (ghost-bottom rows pg on a gathered level)
+    integer(kind=ip),intent(in) :: lev
+    real(kind=rp),dimension(:,:),pointer,intent(in) :: x
+    real(kind=rp),dimension(:,:),pointer,intent(inout) :: y
+    integer(kind=ip):: nx,ny,ngx,ngy,i,j,l,m,ii,jj,key
+    ngx = grid(lev)%ngx
+    ngy = grid(lev)%ngy
+    nx = grid(lev)%nx / ngx
+    ny = grid(lev)%ny / ngy
+    key = grid(lev)%key
+    l = mod(key,2)
+    m = key/2
+    ii = l*nx
+    do i= 0,nx+1
+       jj = 0+m*ny
+       do j= 0,ny+1
+          y(j,i) = x(jj,ii)
+          jj=jj+1
+       enddo
+       ii=ii+1
+    enddo
+  end subroutine split_2D
+
 end module mg_gather

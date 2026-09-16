@@ -39,6 +39,13 @@ module mg_grids
      real(kind=rp),dimension(:,:,:),pointer :: p => null()    ! Pressure
      real(kind=rp),dimension(:,:,:),pointer :: b => null()    ! Right-hand side
      real(kind=rp),dimension(:,:,:),pointer :: r => null()    ! Residual
+     ! bottom ghost pressure level (ghost_bottom): one row per column
+     real(kind=rp),dimension(:,:)  ,pointer :: pg => null()   ! ghost pressure p(0)
+     real(kind=rp),dimension(:,:)  ,pointer :: bg => null()   ! its rhs (provisional bottom flux)
+     real(kind=rp),dimension(:,:)  ,pointer :: rg => null()   ! its residual
+     real(kind=rp),dimension(:,:,:),pointer :: cAg => null()  ! its row: (6,j,i) = diag, and the
+                                                              ! couplings to p(1) at (j,i),(j-1,i),(j+1,i),(j,i-1),(j,i+1)
+     real(kind=rp),dimension(:,:)  ,pointer :: dummy2 => null() ! 2D gather buffer for pg/bg/rg
 
      real(kind=rp),dimension(:,:,:),pointer :: px => null()    ! Pressure
      real(kind=rp),dimension(:,:,:),pointer :: py => null()    ! Right-hand side
@@ -245,6 +252,12 @@ contains
        allocate(grid(lev)%p(nz,0:ny+1,0:nx+1))
        allocate(grid(lev)%b(nz,0:ny+1,0:nx+1))
        allocate(grid(lev)%r(nz,0:ny+1,0:nx+1))
+       if (ghost_bottom) then
+          allocate(grid(lev)%pg(0:ny+1,0:nx+1));  grid(lev)%pg = 0._rp
+          allocate(grid(lev)%bg(0:ny+1,0:nx+1));  grid(lev)%bg = 0._rp
+          allocate(grid(lev)%rg(0:ny+1,0:nx+1));  grid(lev)%rg = 0._rp
+          allocate(grid(lev)%cAg(6,0:ny+1,0:nx+1));  grid(lev)%cAg = 0._rp
+       endif
     enddo
 
     do lev=1,nlevs !
@@ -518,6 +531,9 @@ contains
     nl1 = 1+floor( log( nhg * one / nhmin * one) / log(two) )
 
     nl2 = 1+floor( log( nzg * one / nzmin * one) / log(two) ) +1
+    ! ghost bottom: every level keeps its ghost row below a column of
+    ! at least two cells (no 2D levels)
+    if (ghost_bottom) nl2 = nl2 - 1
 
     nlevs = min(nl1,nl2) ! The number of grid levels in the MG.
 
@@ -756,6 +772,7 @@ contains
           nx = nx/ngx ! ngx is 1 or 2 (and generally 2)
           ny = ny/ngy ! ngy is 1 or 2 (and generally 2)
           allocate(grid(lev)%dummy3(nz,0:ny+1,0:nx+1))
+          if (ghost_bottom) allocate(grid(lev)%dummy2(0:ny+1,0:nx+1))
 
           allocate(grid(lev)%gatherbuffer2D(0:ny+1,0:nx+1,0:ngx-1,0:ngy-1))
           allocate(grid(lev)%gatherbuffer (1:nz  ,0:ny+1,0:nx+1,0:ngx-1,0:ngy-1))
@@ -810,6 +827,11 @@ contains
           if (associated(grid(lev)%p))              deallocate(grid(lev)%p)
           if (associated(grid(lev)%b))              deallocate(grid(lev)%b)
           if (associated(grid(lev)%r))              deallocate(grid(lev)%r)
+          if (associated(grid(lev)%pg))             deallocate(grid(lev)%pg)
+          if (associated(grid(lev)%bg))             deallocate(grid(lev)%bg)
+          if (associated(grid(lev)%rg))             deallocate(grid(lev)%rg)
+          if (associated(grid(lev)%cAg))            deallocate(grid(lev)%cAg)
+          if (associated(grid(lev)%dummy2))         deallocate(grid(lev)%dummy2)
           if (associated(grid(lev)%dx))             deallocate(grid(lev)%dx)
           if (associated(grid(lev)%dy))             deallocate(grid(lev)%dy)
           if (associated(grid(lev)%dz))             deallocate(grid(lev)%dz)

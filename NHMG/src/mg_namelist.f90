@@ -41,6 +41,11 @@ module mg_namelist
                                           !- du = obcrob_u*Arx*p(adjacent cell): a diagonal-only,
                                           !- symmetric leak term. Allocated by the caller (implicit_fs).
 
+  logical           :: ghost_bottom = .false. !- bottom ghost pressure level (route B): the bottom-face w
+                                          !- keeps its own kinematic row of T (no gamma/beta lumping),
+                                          !- enforced by the projection through a ghost pressure p(0)
+                                          !- per column (grid%pg). Coarse levels by Galerkin aggregation,
+                                          !- vertical coarsening stops at nz = 2 (no 2D levels).
   logical           :: east_west_perio = .false.
   logical           :: north_south_perio = .false.
 
@@ -58,6 +63,7 @@ module mg_namelist
        output_freq   , &
        surface_neumann, &
        coarse_galerkin, &
+       ghost_bottom  , &
        east_west_perio, &
        north_south_perio
 
@@ -131,6 +137,7 @@ contains
           write(*,*)'  - output freq   : ', output_freq
           write(*,*)'  - surf neumann  : ', surface_neumann
           write(*,*)'  - coarse galerk : ', coarse_galerkin
+          write(*,*)'  - ghost bottom  : ', ghost_bottom
           write(*,*)'  - E/W periodic  : ', east_west_perio
           write(*,*)'  - N/S periodic  : ', north_south_perio
           write(*,*)'  '

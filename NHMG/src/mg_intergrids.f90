@@ -21,6 +21,7 @@ contains
 
     real(kind=rp),dimension(:,:,:),pointer :: r
     real(kind=rp),dimension(:,:,:),pointer :: b
+    real(kind=rp),dimension(:,:),pointer :: r2,b2
 
     integer(kind=ip) :: nx, ny, nz
 
@@ -63,6 +64,24 @@ contains
     call fill_halo(lev+1,grid(lev+1)%b)
 
     grid(lev+1)%p = zero
+
+    if (ghost_bottom) then
+       ! ghost rows: 2D restriction (sum of the four fine rows)
+       if (grid(lev+1)%gather == 1) then
+          b2 => grid(lev+1)%dummy2
+       else
+          b2 => grid(lev+1)%bg
+       endif
+       r2 => grid(lev)%rg
+       call fine2coarse_ghost(r2,b2,nx,ny)
+       if (grid(lev+1)%gather == 1) then
+          r2 => grid(lev+1)%dummy2
+          b2 => grid(lev+1)%bg
+          call gather(lev+1,r2,b2)
+       endif
+       call fill_halo(lev+1,grid(lev+1)%bg)
+       grid(lev+1)%pg = zero
+    endif
 
   end subroutine fine2coarse
 
@@ -139,6 +158,7 @@ contains
 
     real(kind=rp),dimension(:,:,:),pointer :: rf
     real(kind=rp),dimension(:,:,:),pointer :: pc
+    real(kind=rp),dimension(:,:),pointer :: rf2,pc2
 
     integer(kind=ip) :: nxc, nyc, nzc, i, j, k
 
@@ -182,7 +202,64 @@ contains
        enddo
     enddo
 
+    if (ghost_bottom) then
+       ! ghost rows: bilinear 2D prolongation of the coarse ghost pressure
+       pc2 => grid(lev+1)%pg
+       if (grid(lev+1)%gather == 1) then
+          rf2 => grid(lev+1)%dummy2
+          call split_2D(lev+1,pc2,rf2)
+          pc2 => grid(lev+1)%dummy2
+       endif
+       rf2 => grid(lev)%rg
+       call coarse2fine_ghost(rf2,pc2,nxc,nyc)
+       call fill_halo(lev,grid(lev)%rg)
+       do i = lbound(grid(lev)%pg,2), ubound(grid(lev)%pg,2)
+          do j = lbound(grid(lev)%pg,1), ubound(grid(lev)%pg,1)
+             grid(lev)%pg(j,i) = grid(lev)%pg(j,i) + grid(lev)%rg(j,i)
+          enddo
+       enddo
+    endif
+
   end subroutine coarse2fine
+
+  !------------------------------------------------------------
+  subroutine fine2coarse_ghost(x,y,nx,ny)
+    ! 2D restriction of the ghost rows (volume-integrated form: plain sum)
+    real(kind=rp),dimension(:,:),pointer,intent(in) :: x
+    real(kind=rp),dimension(:,:),pointer,intent(inout) :: y
+    integer(kind=ip), intent(in) :: nx, ny
+    integer(kind=ip) :: i,j,i2,j2
+    do i2=1,nx
+       i=2*i2-1
+       do j2=1,ny
+          j=2*j2-1
+          y(j2,i2) = x(j,i)+x(j,i+1)+x(j+1,i)+x(j+1,i+1)
+       enddo
+    enddo
+  end subroutine fine2coarse_ghost
+
+  !------------------------------------------------------------
+  subroutine coarse2fine_ghost(xf,xc,nx,ny)
+    ! 2D bilinear prolongation of the ghost rows (coarse2fine_2D_linear)
+    real(kind=rp),dimension(:,:),pointer,intent(inout) :: xf
+    real(kind=rp),dimension(:,:),pointer,intent(in)  :: xc
+    integer(kind=ip),intent(in) :: nx, ny
+    integer(kind=ip) :: i,j,i2,j2
+    real(kind=rp) :: a,b,c
+    a = 9._8 / 16._8
+    b = 3._8 / 16._8
+    c = 1._8 / 16._8
+    do i2=1,nx
+       i=2*i2-1
+       do j2=1,ny
+          j=2*j2-1
+          xf(j  ,i  ) = a*xc(j2,i2) + c*xc(j2-1,i2-1) + b*xc(j2-1,i2) + b*xc(j2,i2-1)
+          xf(j+1,i  ) = a*xc(j2,i2) + c*xc(j2+1,i2-1) + b*xc(j2+1,i2) + b*xc(j2,i2-1)
+          xf(j  ,i+1) = a*xc(j2,i2) + c*xc(j2-1,i2+1) + b*xc(j2-1,i2) + b*xc(j2,i2+1)
+          xf(j+1,i+1) = a*xc(j2,i2) + c*xc(j2+1,i2+1) + b*xc(j2+1,i2) + b*xc(j2,i2+1)
+       enddo
+    enddo
+  end subroutine coarse2fine_ghost
 
   !------------------------------------------------------------
   subroutine coarse2fine_2D_linear(xf,xc,nx,ny)
