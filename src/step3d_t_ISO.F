@@ -70,7 +70,9 @@ c--# define CONST_TRACERS
       use ocean_vars
       use scalars
       use roms_mpi
+# ifdef BULK_FRC
       use bulk_frc, only: tair
+# endif /* BULK_FRC */
 
       implicit none
       integer istr,iend,jstr,jend, imin,imax,jmin,jmax, i,j,k!, td
@@ -862,6 +864,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
             enddo
           enddo
 
+# ifdef BULK_FRC
           ! Add or remove the heat of water, due to evaporation or precipitation
           ! both effects would work slightly differently. 
           ! We started with the actual water temperature to avoid temperature effects
@@ -874,6 +877,7 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 !     &            + dt*swflx(i,j)*t(i,j,nz,nstp,itrc)/Hz(i,j,nz)
             enddo
           endif
+# endif /* BULK_FRC */
 
 
 ! Start computation of vertical diffusion: add surface forcing fluxes
